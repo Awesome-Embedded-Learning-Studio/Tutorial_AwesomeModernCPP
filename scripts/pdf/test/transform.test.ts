@@ -210,6 +210,45 @@ test('a rendered fragment contains no known component residue and retains its ti
   assert.match(rendered.html, /<h1[^>]*>Fixture<\/h1>/)
 })
 
+test('publishes nested details as static asides and keeps title links and body intact', async () => {
+  const context: TransformContext = {
+    repositoryRoot: '/tmp/pdf-transform-fixture',
+    markdown: { render: (value: string) => value } as TransformContext['markdown'],
+    locale, assets: {} as TransformContext['assets'],
+    resolveLink: (href) => ({ kind: 'external', href }),
+  }
+  const result = await transformDocument(source(`<h1>Fixture</h1><details id="note"><summary id="caption">点开看：<em>解释</em></summary>
+<p>Before</p><details><summary>Click to expand: Nested</summary><p>Inside</p></details><p>After</p></details>`), context)
+  const { document } = parseHTML(result.html)
+  assert.equal(document.querySelectorAll('details, summary').length, 0)
+  assert.equal(document.querySelectorAll('aside.book-details').length, 2)
+  assert.equal(document.querySelector('.custom-block-title em')?.textContent, '解释')
+  assert.match(result.html, /doc-fixture-topic--note/)
+  assert.match(result.html, /doc-fixture-topic--caption/)
+  assert.doesNotMatch(result.html, /点开看|Click to expand/)
+  for (const text of ['Before', 'Inside', 'After', 'Nested']) assert.ok(result.html.includes(text))
+})
+
+test('separates an image from its preceding text without dropping inline markup or anchors', async () => {
+  const context: TransformContext = {
+    repositoryRoot: '/tmp/pdf-transform-fixture',
+    markdown: { render: (value: string) => value } as TransformContext['markdown'],
+    locale,
+    assets: {
+      resolveSourceAsset: (_from: string, raw: string) => `/tmp/pdf-transform-fixture/${raw}`,
+      copyLocalAsset: async () => '/assets/image.png',
+    } as TransformContext['assets'],
+    resolveLink: (href) => ({ kind: 'external', href }),
+  }
+  const result = await transformDocument(source('<h1>Fixture</h1><blockquote><p id="intro">说明 <em>重点</em>\n<img src="image.png" alt="图注">后文</p></blockquote>'), context)
+  const { document } = parseHTML(result.html)
+  assert.equal(document.querySelector('.book-image-intro em')?.textContent, '重点')
+  assert.equal(document.querySelector('figure figcaption')?.textContent, '图注')
+  assert.equal(document.querySelectorAll('img').length, 1)
+  assert.equal(document.querySelectorAll('[id$="--intro"]').length, 1)
+  assert.ok(result.html.includes('后文'))
+})
+
 test('promotes a title-like h2 when translated source has no h1', async () => {
   const context: TransformContext = {
     repositoryRoot: '/tmp/pdf-transform-fixture',

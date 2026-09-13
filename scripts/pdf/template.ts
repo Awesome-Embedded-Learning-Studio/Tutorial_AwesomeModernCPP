@@ -74,44 +74,30 @@ function chapterKey(document: RenderedDocument): string {
   return chapter === '' ? '' : `${document.unit.id}:${chapter}`
 }
 
-/**
- * A chapter index normally precedes its articles. The second pass maps the
- * articles' frontmatter chapter value back to that human-readable title, so a
- * running header says "指针与引用" instead of merely "4".
- */
+/** Prefer the nearest directory index: chapter numbers are often reused by
+ * unrelated sections. A nested index must not leak into its parent's articles. */
 function prepareDocuments(
   documents: readonly RenderedDocument[],
   bookTitle: string,
 ): PreparedDocument[] {
-  const titleByChapter = new Map<string, string>()
-  let precedingChapterTitle = ''
-  let precedingUnit = ''
-
-  for (const document of documents) {
-    if (document.unit.id !== precedingUnit) {
-      precedingUnit = document.unit.id
-      precedingChapterTitle = ''
-    }
-    if (document.kind === 'book-index') precedingChapterTitle = ''
-    if (document.kind === 'chapter-index') precedingChapterTitle = document.title
-    const key = chapterKey(document)
-    if (key !== '' && precedingChapterTitle !== '' && !titleByChapter.has(key)) {
-      titleByChapter.set(key, precedingChapterTitle)
-    }
-  }
+  const chapters = documents
+    .filter((document) => document.kind === 'chapter-index')
+    .map((document) => ({
+      document,
+      directory: document.repositoryPath.slice(0, document.repositoryPath.lastIndexOf('/') + 1),
+    }))
+    .sort((a, b) => b.directory.length - a.directory.length)
 
   const prepared: PreparedDocument[] = []
   let runningTitle = bookTitle
   let previousArticleChapter = ''
   let currentUnit = ''
-  let inExplicitChapterScope = false
 
   for (const document of documents) {
     if (document.unit.id !== currentUnit) {
       currentUnit = document.unit.id
       runningTitle = bookTitle
       previousArticleChapter = ''
-      inExplicitChapterScope = false
     }
     const key = chapterKey(document)
     let chapterStart = document.kind === 'chapter-index'
@@ -119,34 +105,21 @@ function prepareDocuments(
     if (document.kind === 'book-index') {
       runningTitle = bookTitle
       previousArticleChapter = ''
-      inExplicitChapterScope = false
     } else if (document.kind === 'chapter-index') {
       runningTitle = document.title
       if (key !== '') previousArticleChapter = key
-      inExplicitChapterScope = true
     } else {
-      const mappedChapterTitle = key === '' ? undefined : titleByChapter.get(key)
+      const owner = chapters.find(({ document: index, directory }) => (
+        index.unit.id === document.unit.id && document.repositoryPath.startsWith(directory)
+      ))
       if (key !== '' && key !== previousArticleChapter) {
         // Collections without an explicit chapter index still get one break at
         // the start of a new chapter value, but not before every article.
-        chapterStart = mappedChapterTitle === undefined
+        chapterStart = owner === undefined
         previousArticleChapter = key
       }
 
-      if (mappedChapterTitle !== undefined) {
-        runningTitle = mappedChapterTitle
-        inExplicitChapterScope = true
-      } else if (key !== '') {
-        // A frontmatter chapter number alone does not provide a useful human
-        // header. Flat collections often reuse one number for every article.
-        runningTitle = document.title
-        inExplicitChapterScope = false
-      } else if (key === '' && !inExplicitChapterScope) {
-        // Flat books such as getting-started have no chapter frontmatter. A
-        // running header follows the current article without forcing that
-        // article onto a new page.
-        runningTitle = document.title
-      }
+      runningTitle = owner?.document.title ?? document.title
     }
 
     prepared.push({ document, chapterStart, runningTitle })

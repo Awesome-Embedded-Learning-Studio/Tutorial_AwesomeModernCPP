@@ -175,7 +175,7 @@ jobs:
       - name: Install fonts and PDF validators
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends -y fonts-cascadia-code fonts-noto-cjk-extra poppler-utils qpdf
+          sudo apt-get install --no-install-recommends -y fonts-cascadia-code fonts-noto-core fonts-noto-cjk-extra poppler-utils qpdf
           fc-cache -f
           serif_family="$(fc-match -f '%{family}\n' 'Noto Serif CJK SC' | head -n 1)"
           [[ "$serif_family" == *'Noto Serif CJK SC'* ]] || {
@@ -185,6 +185,11 @@ jobs:
           mono_family="$(fc-match -f '%{family}\n' 'Cascadia Mono' | head -n 1)"
           [[ "$mono_family" == *'Cascadia Mono'* ]] || {
             echo "Cascadia Mono was not selected: $mono_family" >&2
+            exit 1
+          }
+          mono_fallback="$(fc-match -f '%{family}\n' 'Noto Sans Mono' | head -n 1)"
+          [[ "$mono_fallback" == *'Noto Sans Mono'* ]] || {
+            echo "Noto Sans Mono fallback was not selected: $mono_fallback" >&2
             exit 1
           }
 

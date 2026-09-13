@@ -163,7 +163,7 @@ pnpm test:pdf
 | 仓库文件或目录链接 | 已存在文件转 GitHub `blob`，目录转 `tree`；兼容 VitePress 产生的 `README.html`、`foo.cpp.html` |
 | 任何未解析的本地/站内链接 | 无论有无扩展名都直接失败，不降级为看似可用的外链 |
 | code-fold | 书稿 renderer 不加载站点自动折叠插件，代码全部进入正常文档流 |
-| `details` / code-group | details 强制 `open`；code-group 隐藏 tab 控件并展示所有代码变体 |
+| `details` / code-group | details 转为无交互的静态说明框，避免跨页产生浏览器默认标题；code-group 隐藏 tab 控件并展示所有代码变体 |
 | mermaid | 保留源码数据，浏览器从本地模块渲染 SVG；失败或没有 SVG 则停止构建 |
 | 数学公式 | VitePress `math: true` 在 Markdown 阶段渲染；展示公式禁止从中间分页 |
 | `![](file.drawio)` | 复制源文件，使用固定版本本地 viewer 渲染；等待最终稳定 SVG 后才分页 |
@@ -175,7 +175,8 @@ pnpm test:pdf
 代码使用 VitePress `createMarkdownRenderer`，启用浅色 `github-light` Shiki 主题、数学、kbd、
 mermaid 及项目的 C++ 模板转义插件。书稿样式与网站主题完全分离。代码块允许在 Shiki
 `.line` 之间分页，每一源代码行保持不可拆；转换阶段给每行物化稳定行号，Paged.js 克隆和
-跨页后仍连续。超长行会换行，而不是裁掉或制造横向滚动区。
+跨页后仍连续。续页显示代码块名称和“（续）”，并尽量为每个分片保留数行上下文。超长行会
+换行，而不是裁掉或制造横向滚动区。
 
 ## Fail-closed 保证
 
@@ -201,8 +202,12 @@ HTTP 错误、请求失败、页面异常或 console error 都会使构建失败
 3. 图表新增的图片和字体再次就绪；
 4. 全部内部目标和源文档 sentinel 存在；
 5. Paged.js 显式执行一次分页；
-6. 分页前后的文档尾 sentinel 未丢失，drawio 未丢失；
-7. 没有空白分页、横向溢出或页数不一致。
+6. 分页前后的文档尾 sentinel、每一代码行和每一表格行未丢失或重复；
+7. 跨页表格拥有完整重复表头，交互式 details 已消除，在线示例和代码块没有空分片；
+8. 没有空白分页、横向溢出或页数不一致。
+
+浏览器阶段失败时，暂存目录会保留 `failure-diagnostics.json`，记录 ready state、已生成页数、
+具体失败分片及浏览器错误，命令行错误也会打印该文件路径。
 
 Chromium 返回值还需具有 `%PDF-` 签名且大于最小尺寸。若本机存在 `qpdf`、`pdfinfo`、
 `pdffonts`、`pdftotext`，postflight 会继续做结构、页数、字体和文本检查；缺少这些命令在
@@ -214,8 +219,10 @@ Chromium 返回值还需具有 `%PDF-` 签名且大于最小尺寸。若本机�
 ## 排版和超长卷
 
 首期采用“现代技术书 + 教材级中文细节”的书风，而不是高密度论文版式。书稿为
-176 mm × 250 mm 的 B5 页面，宋体正文、无衬线标题，以及 Cascadia Mono（中文回退
-Noto Sans Mono CJK SC）代码字体。封面只显示系列名、卷名、书名、工作室与年份，不显示
+176 mm × 250 mm 的 B5 页面，宋体正文、无衬线标题，以及 Cascadia Mono（拉丁回退
+Noto Sans Mono，中文回退 Noto Sans Mono CJK SC）代码字体。Cascadia Mono 是 Consolas
+的开源继任字体：网站端 VitePress 默认等宽栈在 Windows 浏览器上落到 Consolas，书稿用
+Cascadia 才能和站点观感对齐，同时 CI 可以合法安装。封面只显示系列名、卷名、书名、工作室与年份，不显示
 版本号、提交 SHA 和长 URL，也不显示页眉页脚；目录和正文使用左右页镜像边距、running book/chapter title 和页码。目录页码由
 Paged.js 的 `target-counter(attr(href), page)` 从最终分页结果回填。章索引和检测到的新章可
 换页，正文设置 widows/orphans；表格可在行间分页并重复表头，单行保持完整；图表受版心宽度
@@ -251,15 +258,27 @@ CSS 首选字体为：
 
 - 正文：`Noto Serif CJK SC` / `Source Han Serif SC`；
 - 标题：`Noto Sans CJK SC` / `Source Han Sans SC`；
-- 代码：Noto/思源等宽字体，回退到 `DejaVu Sans Mono`。
+- 代码：`Cascadia Mono` 优先；缺 Cascadia 的机器拉丁回退到 `Noto Sans Mono`（不能直接落到
+  CJK 等宽字体——其半宽拉丁设计明显偏窄，会让整块代码变样）；中文注释回退到
+  `Noto Sans Mono CJK SC` / 思源等宽字体。
 
 Ubuntu/WSL2 推荐与 CI 对齐：
 
 ```bash
 sudo apt-get update
-sudo apt-get install --no-install-recommends -y fonts-noto-cjk-extra poppler-utils qpdf
+sudo apt-get install --no-install-recommends -y fonts-cascadia-code fonts-noto-core fonts-noto-cjk-extra poppler-utils qpdf
 fc-cache -f
 fc-match 'Noto Serif CJK SC'
+fc-match 'Cascadia Mono'
+```
+
+Arch/WSL2 可用 `sudo pacman -S ttf-cascadia-code poppler qpdf`；或直接复制 Windows 侧的
+OFL 字体（免 root，合法）：
+
+```bash
+mkdir -p ~/.local/share/fonts
+cp /mnt/c/Windows/Fonts/CascadiaMono.ttf ~/.local/share/fonts/
+fc-cache -f && fc-match 'Cascadia Mono'
 ```
 
 Chromium 在 `page.pdf()` 时嵌入实际使用的字体。CI 使用 `pdffonts` 要求所有字体行显示已嵌入，
@@ -290,7 +309,7 @@ PR 可由维护者添加 `export-pdf` 标签，自动构建全部 15 本中文�
 PDF workflow。
 
 plan job 从 `pnpm pdf:list --json` 动态生成矩阵并校验 ID。build job 使用 `ubuntu-latest`、
-Node 22、pnpm 10，安装匹配 Chrome、Cascadia Mono、CJK 衬线字体、qpdf 和 Poppler；每个矩阵项只构建一本，
+Node 22、pnpm 10，安装匹配 Chrome、Noto Sans Mono、CJK 字体、qpdf 和 Poppler；每个矩阵项只构建一本，
 最多并行 3 本。每本 PDF 必须通过 `qpdf --check`、有效页数、字体嵌入和非空文本检查，随后
 连同 JSON 报告作为保留 14 天的 Actions artifact 上传。
 
@@ -377,6 +396,7 @@ pnpm pdf -- --book getting-started --keep-staging
 | `window.__BOOK_READY__ timed out` | 保留 staging，先看具体资源/图表/分页异常；仅总分页较慢时提高 `--timeout` |
 | `blocked external requests` | 将运行期依赖暂存为本地资源；不要放宽 Chromium 网络策略 |
 | `Horizontal overflow after pagination` | 检查报告所列页面和元素，修正源长 token、表格或专用书稿 CSS |
+| `Print fragment integrity failed` | 查看暂存目录的 `failure-diagnostics.json`；按其中的代码行、表格行、表头或空示例卡定位 |
 | sentinel、空页或页数不一致 | 视为内容丢失风险，不发布；用小册/HTML staging 缩小触发范围 |
 | 字体 warning 或页码漂移 | 安装并确认 Noto Serif CJK SC，刷新字体缓存后重建 |
 | 本地缺少 qpdf/Poppler | 安装工具后重跑；CI 不会跳过这些检查 |

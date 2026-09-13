@@ -12,14 +12,24 @@
   --book-rule: #cec5bb;
   --book-accent: #8a3025;
   --book-accent-soft: #f5e8e2;
-  --book-code-bg: #f4f1ed;
-  --book-code-rule: #d7cfc5;
+  --book-code-bg: #f7f5f2;
+  --book-code-inline-bg: #f3f1ed;
+  --book-code-rule: #ded8d1;
+  --book-code-ink: #37332f;
+  --book-code-size: 8.4pt;
+  --book-code-leading: 1.45;
   --book-serif: "Noto Serif CJK SC", "Source Han Serif SC", "Noto Serif SC",
     "Songti SC", SimSun, serif;
   --book-sans: "Noto Sans CJK SC", "Source Han Sans SC", "Noto Sans SC",
     system-ui, sans-serif;
-  --book-mono: "Cascadia Mono", "Noto Sans Mono CJK SC", "Source Han Mono SC",
-    "Noto Sans Mono", "DejaVu Sans Mono", monospace;
+  /* Cascadia Mono first: it is Microsoft's open-source successor to Consolas,
+   * which is what the site renders in Windows browsers, so the book and the
+   * site read as the same face. CI installs fonts-cascadia-code. Noto Sans
+   * Mono stays ahead of the CJK face as the Latin safety net for machines
+   * without Cascadia: the CJK face's half-width Latin is noticeably condensed
+   * and would take over the whole code block. */
+  --book-mono: "Cascadia Mono", "Noto Sans Mono", "Noto Sans Mono CJK SC",
+    "Source Han Mono SC", "DejaVu Sans Mono", monospace;
 }
 
 @page {
@@ -378,6 +388,10 @@ body {
   text-justify: inter-ideograph;
 }
 
+.book-content p.book-image-intro {
+  text-align: left;
+}
+
 .book-content h1,
 .book-content h2,
 .book-content h3,
@@ -483,9 +497,10 @@ body {
 
 /* Code fragments keep their syntax colors but use a print-safe background. */
 .book-content :not(pre) > code {
-  padding: 0.07em 0.28em;
+  padding: 0.05em 0.24em;
   border-radius: 0.7mm;
-  background: var(--book-code-bg);
+  background: var(--book-code-inline-bg);
+  color: #45403b;
   font-family: var(--book-mono);
   font-size: 0.86em;
   overflow-wrap: anywhere;
@@ -512,8 +527,8 @@ body {
   max-width: 100%;
   min-width: 0;
   margin: 1.1em 0;
-  border: 0.2mm solid var(--book-code-rule);
-  border-radius: 1.2mm;
+  border: 0.15mm solid var(--book-code-rule);
+  border-radius: 1.6mm;
   background: var(--book-code-bg) !important;
 }
 
@@ -526,10 +541,10 @@ body {
   padding: 3mm 3.2mm;
   border: 0;
   background: var(--book-code-bg) !important;
-  color: #282521;
+  color: var(--book-code-ink);
   font-family: var(--book-mono);
-  font-size: 7.8pt;
-  line-height: 1.37;
+  font-size: var(--book-code-size);
+  line-height: var(--book-code-leading);
   tab-size: 4;
   white-space: pre-wrap;
   word-break: normal;
@@ -555,11 +570,29 @@ body {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  min-height: 1.37em;
+  min-height: 1.45em;
   padding-left: 3.2em;
   break-inside: avoid;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
+}
+
+/* Keep a small amount of source context at both ends of a code fragment. */
+.book-content pre code > .line:first-child,
+.book-content pre code > .line:nth-last-child(2),
+.book-content pre code > .line:nth-last-child(3) {
+  break-after: avoid;
+}
+
+.book-content .book-code-continuation {
+  display: block;
+  margin-bottom: 1.5mm;
+  color: var(--book-muted);
+  font-family: var(--book-sans);
+  font-size: 8pt;
+  font-weight: 600;
+  break-after: avoid;
+  white-space: normal;
 }
 
 .book-content pre code > .line > span {
@@ -567,13 +600,24 @@ body {
   overflow-wrap: inherit;
 }
 
+/* github-light is tuned for a bright screen. These print overrides keep its
+ * semantic distinctions while reducing saturation against the warm paper. */
+.book-content pre span[style*="color:#24292E"] { color: var(--book-code-ink) !important; }
+.book-content pre span[style*="color:#D73A49"] { color: #9b504d !important; }
+.book-content pre span[style*="color:#6F42C1"] { color: #665c85 !important; }
+.book-content pre span[style*="color:#032F62"] { color: #416871 !important; }
+.book-content pre span[style*="color:#005CC5"] { color: #47718a !important; }
+.book-content pre span[style*="color:#6A737D"] { color: #7f827f !important; }
+.book-content pre span[style*="color:#E36209"] { color: #a26442 !important; }
+.book-content pre span[style*="color:#B31D28"] { color: #93464a !important; }
+
 .book-content pre code > .line::before {
   display: inline-block;
   width: 2.5em;
   margin-left: -3.2em;
   margin-right: 0.7em;
   content: attr(data-line-number);
-  color: #958b80;
+  color: #aaa198;
   font-variant-numeric: tabular-nums;
   text-align: right;
   user-select: none;
@@ -582,7 +626,6 @@ body {
 .book-content .line-numbers-wrapper,
 .book-content button.copy,
 .book-content .lang,
-.book-content .vp-code-fold > details,
 .book-content .mermaid-maximize-btn {
   display: none !important;
 }
@@ -618,6 +661,8 @@ body {
 
 .book-content thead {
   display: table-header-group;
+  break-inside: avoid;
+  break-after: avoid;
 }
 
 .book-content tfoot {
@@ -743,16 +788,8 @@ body {
   overflow-wrap: anywhere;
 }
 
-.book-content details[open] {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  break-inside: auto;
-}
-
-.book-content .custom-block-title,
-.book-content summary {
+.book-content .custom-block-title {
+  break-before: avoid;
   break-after: avoid;
   font-family: var(--book-sans);
   font-weight: 700;
@@ -946,20 +983,31 @@ body {
 .book-content .online-demo {
   margin: 1.25em 0;
   padding: 3mm 3.5mm;
-  border: 0.25mm solid var(--book-code-rule);
-  border-top: 0.8mm solid #536d76;
-  background: #f6f8f8;
+  border: 0.18mm solid var(--book-code-rule);
+  border-top: 0.55mm solid #7b9297;
+  background: #fbfaf7;
 }
 
 .book-content .online-demo > h3 {
+  break-before: avoid;
   margin: 0 0 2.5mm;
-  color: #314b54;
+  color: #405c62;
   font-size: 12pt;
 }
 
 .book-content .online-demo-source {
   min-width: 0;
+  break-before: avoid;
   break-inside: auto;
+}
+
+.book-content .online-demo div[class*="language-"] {
+  border-color: #e6e1db;
+  background: #f9f7f4 !important;
+}
+
+.book-content .online-demo > p:not(.online-demo-note) {
+  break-after: avoid;
 }
 
 .book-content .online-demo-source > h4 {
