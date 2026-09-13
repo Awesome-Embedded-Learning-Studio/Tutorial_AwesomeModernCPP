@@ -201,6 +201,7 @@ jobs:
           pnpm pdf -- --book "${{ matrix.book }}" \
             --language "${{ matrix.language }}" \
             --output dist/pdf \
+            --keep-staging \
             --no-sandbox
 
       # A pagination failure on a runner cannot be reproduced locally (font
