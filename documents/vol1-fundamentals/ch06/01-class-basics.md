@@ -467,6 +467,7 @@ Rectangle(width=10, height=4)
 ```cpp
 #include <iostream>
 #include <chrono>
+#include <thread>
 
 class Timer
 {
@@ -500,10 +501,7 @@ int main()
 {
     Timer timer;
     timer.start();
-    for (int i = 0; i < 1000000; ++i)
-    {
-        // 模拟一些工作
-    }
+    std::this_thread::sleep_for(std::chrono::microseconds(200));
 
     timer.stop();
     std::cout << "运行时间: " << timer.elapsed() << " 微秒" << std::endl;
@@ -520,7 +518,7 @@ g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
 运行结果：
 
 ```text
-运行时间: 412 微秒
+运行时间: 285 微秒
 ```
 
 :::

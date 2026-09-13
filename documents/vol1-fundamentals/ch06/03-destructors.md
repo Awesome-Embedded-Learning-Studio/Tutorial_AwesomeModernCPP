@@ -379,51 +379,51 @@ cat raii_demo.txt
 ::: details 参考答案
 
 ```cpp
+#include <chrono>
 #include <ctime>
 #include <iomanip>
 #include <iostream>
+#include <thread>
 
 class ScopedLogger
 {
 private:
     std::time_t start_time_;
-    std::time_t end_time_;
 
 public:
+    // 构造：记录开始时间戳
     ScopedLogger()
     {
         start_time_ = std::time(nullptr);
-        std::tm *local_time = std::localtime(&start_time_);
+
+        std::tm* local_time = std::localtime(&start_time_);
         std::cout << "Start time: "
                   << std::setfill('0') << std::setw(2) << local_time->tm_hour
-                  << ":"
-                  << std::setfill('0') << std::setw(2) << local_time->tm_min
-                  << ":"
-                  << std::setfill('0') << std::setw(2) << local_time->tm_sec
+                  << ":" << std::setw(2) << local_time->tm_min
+                  << ":" << std::setw(2) << local_time->tm_sec
                   << std::endl;
     }
+
+    // 析构：打印从构造到析构经过的秒数
     ~ScopedLogger()
     {
-        end_time_ = std::time(nullptr);
         std::cout << "elapsed "
-                  << (end_time_ - start_time_)
+                  << (std::time(nullptr) - start_time_)
                   << " seconds"
                   << std::endl;
     }
-    ScopedLogger(const ScopedLogger &) = delete;
-    ScopedLogger &operator=(const ScopedLogger &) = delete;
+
+    // 禁止拷贝
+    ScopedLogger(const ScopedLogger&) = delete;
+    ScopedLogger& operator=(const ScopedLogger&) = delete;
 };
 
 int main()
 {
     ScopedLogger logger;
 
-    for (int i = 0; i < 100000000; ++i)
-    {
-        for (int i = 0; i < 100; ++i)
-        {
-        }
-    }
+    // 休眠 2 秒，模拟一段被计时的代码
+    std::this_thread::sleep_for(std::chrono::seconds(2));
 
     return 0;
 }
@@ -438,11 +438,11 @@ g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
 运行结果：
 
 ```text
-Start time: 20:29:39
-elapsed 4 seconds
+Start time: 11:17:43
+elapsed 2 seconds
 ```
 
-> 小技巧：`std::setfill('0')` 配合 `std::setw(2)` 可以让时分秒在不足两位时自动补 `0`，比如 `9:5:3` 会显示为 `09:05:03`。
+> 小技巧：`std::setfill('0')` 配合 `std::setw(2)` 可以让时分秒在不足两位时自动补 `0`（比如 9 时 5 分 3 秒会显示成 `09:05:03`）。其中 `setfill` 设置的填充字符会一直保留在流上，写一次即可；而 `setw` 只对紧随其后的一个输出生效，每个字段都要重新设置。另外，`Start time` 取决于运行时的本地时间，你跑出来的结果和这里不一定相同。
 
 :::
 
