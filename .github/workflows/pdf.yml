@@ -203,6 +203,21 @@ jobs:
             --output dist/pdf \
             --no-sandbox
 
+      # A pagination failure on a runner cannot be reproduced locally (font
+      # metrics decide where pages break). Ship the runner's own staging
+      # output so the divergence can be diffed against a local run.
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pdf-failure-${{ matrix.book }}-${{ matrix.language }}
+          path: |
+            .pdf-build/**/failure-diagnostics.json
+            .pdf-build/**/index.html
+            .pdf-build/**/*.css
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Validate and normalize PDF name
         id: validate
         shell: bash
