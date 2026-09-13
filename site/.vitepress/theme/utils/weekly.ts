@@ -4,11 +4,19 @@ export interface WeekProblem { src: string; title: string; type: string; stars: 
 export interface WeeklyContributor { github: string; role: string }
 export interface Week { slug: string; title: string; dateRange?: string; description?: string; weeklyThanks?: WeeklyContributor[]; problems: WeekProblem[] }
 
-export const quizStatusLabel: Record<QuizStatus, string> = {
-  untouched: '未开始', attempted: '尝试过', revealed: '已看题解', passed: '已通过',
+/** 展示态:在存储的四种状态之上多一个「已跳过」——跳过是旁路标志,盖在底层状态上显示 */
+export type QuizDisplayStatus = QuizStatus | 'skipped'
+
+export const quizStatusLabel: Record<QuizDisplayStatus, string> = {
+  untouched: '未开始', attempted: '尝试过', revealed: '已看题解', passed: '已通过', skipped: '已跳过',
 }
-export const quizStatusMark: Record<QuizStatus, string> = {
-  untouched: '○', attempted: '◐', revealed: '◇', passed: '✓',
+export const quizStatusMark: Record<QuizDisplayStatus, string> = {
+  untouched: '○', attempted: '◐', revealed: '◇', passed: '✓', skipped: '∅',
+}
+
+/** 跳过时显示「已跳过」;取消跳过后底层状态原样回来,不需要任何迁移 */
+export function displayStatusOf(record: QuizRecord | null | undefined): QuizDisplayStatus {
+  return record?.skipped ? 'skipped' : (record?.status ?? 'untouched')
 }
 
 export function issueNumber(week: Week): string {
@@ -34,7 +42,8 @@ export function goToProblem(src: string): void {
 }
 
 export function resumeProblem(week: Week, records: Record<string, QuizRecord | null>, drafts: Set<string>): WeekProblem | undefined {
-  const unfinished = week.problems.filter(p => records[p.src]?.status !== 'passed')
+  // 跳过的题不再派发(草稿优先级也一并让位);全做完或全跳过时回顾第一题
+  const unfinished = week.problems.filter(p => records[p.src]?.status !== 'passed' && !records[p.src]?.skipped)
   return unfinished.find(p => drafts.has(p.src))
     ?? unfinished.find(p => records[p.src]?.status === 'attempted')
     ?? unfinished[0]

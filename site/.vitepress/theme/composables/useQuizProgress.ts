@@ -15,6 +15,8 @@ export interface QuizRecord {
   /** 已解锁的提示条数 */
   hintsUsed: number
   updatedAt: number
+  /** 跳过标志:旁路于状态链——这题先放放/已会,「继续练习」不再派发;随时可取消,底层状态原样保留 */
+  skipped?: boolean
 }
 
 export interface QuizDraft {
@@ -56,7 +58,12 @@ function coerceRecord(raw: unknown): QuizRecord | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Partial<QuizRecord>
   if (r.status !== 'untouched' && r.status !== 'attempted' && r.status !== 'passed' && r.status !== 'revealed') return null
-  return { status: r.status, hintsUsed: typeof r.hintsUsed === 'number' ? r.hintsUsed : 0, updatedAt: r.updatedAt ?? 0 }
+  return {
+    status: r.status,
+    hintsUsed: typeof r.hintsUsed === 'number' ? r.hintsUsed : 0,
+    updatedAt: r.updatedAt ?? 0,
+    ...(typeof r.skipped === 'boolean' ? { skipped: r.skipped } : {}),
+  }
 }
 
 export function loadQuizRecord(id: string): QuizRecord | null {
@@ -73,6 +80,8 @@ export function saveQuizRecord(id: string, patch: Partial<QuizRecord>): QuizReco
     status,
     hintsUsed: Math.max(prev.hintsUsed, patch.hintsUsed ?? 0),
     updatedAt: Date.now(),
+    // 跳过是开关不是等级:patch 显式给 false 即取消,不走只升不降的 rank
+    skipped: patch.skipped ?? prev.skipped,
   }
   store[id] = next
   writeStore(PROGRESS_KEY, store)
@@ -104,6 +113,70 @@ export function clearQuizData(id: string): void {
   const drafts = readStore(DRAFTS_KEY)
   delete drafts[id]
   writeStore(DRAFTS_KEY, drafts)
+}
+
+// ── 备份:进度跟浏览器走,换设备/清缓存前导出一份,到新设备再导回来 ──
+
+export interface QuizBackup {
+  app: 'weekly-problems'
+  version: 1
+  exportedAt: string
+  progress: Record<string, unknown>
+  drafts: Record<string, unknown>
+}
+
+export function exportQuizData(): string {
+  const backup: QuizBackup = {
+    app: 'weekly-problems',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    progress: readStore(PROGRESS_KEY),
+    drafts: readStore(DRAFTS_KEY),
+  }
+  return JSON.stringify(backup)
+}
+
+export interface QuizImportResult {
+  /** 合并进本浏览器的进度条数 */
+  progress: number
+  /** 覆盖写入的草稿条数 */
+  drafts: number
+}
+
+/** 导入备份:进度按题合并(updatedAt 新者胜,两边都做题也不丢);草稿以文件为准覆盖同名题。格式不对返回 null。 */
+export function importQuizData(raw: string): QuizImportResult | null {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return null
+  }
+  const data = parsed && typeof parsed === 'object' ? (parsed as Partial<QuizBackup>) : null
+  if (!data || !data.progress || !data.drafts || typeof data.progress !== 'object' || typeof data.drafts !== 'object') return null
+
+  const progress = readStore(PROGRESS_KEY)
+  let progressCount = 0
+  for (const [id, rawRecord] of Object.entries(data.progress)) {
+    const incoming = coerceRecord(rawRecord)
+    if (!incoming) continue
+    const local = coerceRecord(progress[id])
+    if (!local || incoming.updatedAt >= local.updatedAt) {
+      progress[id] = incoming
+      progressCount++
+    }
+  }
+  writeStore(PROGRESS_KEY, progress)
+
+  const drafts = readStore(DRAFTS_KEY)
+  let draftsCount = 0
+  for (const [id, rawDraft] of Object.entries(data.drafts)) {
+    const draft = rawDraft && typeof rawDraft === 'object' ? (rawDraft as Partial<QuizDraft>) : null
+    if (!draft || (draft.source === undefined && draft.fill === undefined && !draft.marks?.length)) continue
+    drafts[id] = draft
+    draftsCount++
+  }
+  writeStore(DRAFTS_KEY, drafts)
+  return { progress: progressCount, drafts: draftsCount }
 }
 
 // 组件侧的响应式封装:record 在 onMounted 后才从 localStorage 加载(SSR/水合安全)

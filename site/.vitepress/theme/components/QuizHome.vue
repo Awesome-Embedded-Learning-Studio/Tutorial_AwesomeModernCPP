@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useData, withBase } from 'vitepress'
 import WeeklyCoverArt from './WeeklyCoverArt.vue'
 import WeeklyAcknowledgements from './WeeklyAcknowledgements.vue'
+import QuizProgressBackup from './QuizProgressBackup.vue'
 import { loadWeeklyCatalog, useWeeklyOverview } from '../composables/useWeeklyOverview'
 import { issueNumber, issueTitle, problemAnchor, quizStatusLabel, quizStatusMark, resumeProblem, type Week } from '../utils/weekly'
 import { QUIZ_TYPE_LABELS, type QuizType } from '../utils/quiz-data'
@@ -14,7 +15,7 @@ const latest = computed(() => weeks.value[0])
 const past = computed(() => weeks.value.slice(1))
 const error = ref('')
 const loading = ref(!weeks.value.length)
-const { records, drafts, doneCount, statusOf, started } = useWeeklyOverview(weeks)
+const { records, drafts, doneCount, displayOf, skippedCount, started } = useWeeklyOverview(weeks)
 const weekLink = (week: Week) => withBase(`/weekly-problems/${week.slug}`)
 function continueLink(week: Week) {
   const target = resumeProblem(week, records.value, drafts.value)
@@ -55,11 +56,11 @@ onMounted(() => { void reload() })
         </div>
         <a :href="weekLink(latest)" class="weekly-index__art-link" :aria-label="`打开${latest.title}`"><WeeklyCoverArt :issue="issueNumber(latest)" /></a>
         <div class="weekly-index__problems">
-          <a v-for="(problem, index) in latest.problems" :key="problem.src" :href="`${weekLink(latest)}#${problemAnchor(problem.src)}`" :data-status="statusOf(problem.src)">
+          <a v-for="(problem, index) in latest.problems" :key="problem.src" :href="`${weekLink(latest)}#${problemAnchor(problem.src)}`" :data-status="displayOf(problem.src)">
             <span class="weekly-mono">{{ String(index + 1).padStart(2, '0') }}</span>
             <strong>{{ problem.title }}</strong>
             <span class="weekly-index__type">{{ QUIZ_TYPE_LABELS[problem.type as QuizType] || problem.type }}</span>
-            <span class="weekly-index__problem-status">{{ quizStatusMark[statusOf(problem.src)] }} {{ quizStatusLabel[statusOf(problem.src)] }}</span>
+            <span class="weekly-index__problem-status">{{ quizStatusMark[displayOf(problem.src)] }} {{ quizStatusLabel[displayOf(problem.src)] }}</span>
             <span aria-hidden="true">↗</span>
           </a>
         </div>
@@ -74,13 +75,14 @@ onMounted(() => { void reload() })
             <WeeklyAcknowledgements :people="week.weeklyThanks ?? []" />
             <p>{{ week.description }}</p>
             <a class="weekly-primary" :href="continueLink(week)">{{ action(week) }} <span aria-hidden="true">→</span></a>
-            <small>{{ doneCount(week) }} / {{ week.problems.length }} 已通过</small>
+            <small>{{ doneCount(week) }} / {{ week.problems.length }} 已通过<template v-if="skippedCount(week)"> · 跳过 {{ skippedCount(week) }}</template></small>
           </div>
           <a :href="weekLink(week)" class="weekly-index__art-link" :aria-label="`打开${week.title}`"><WeeklyCoverArt :issue="issueNumber(week)" /></a>
         </article>
       </div>
     </template>
     <p v-else-if="!loading && !error" class="weekly-notice">第一期正在准备中，过些时候再来看看。</p>
+    <QuizProgressBackup />
     <footer class="weekly-index__footer"><span>每周一些题，保持一点手感。</span><span>进度保存在本地哦~</span></footer>
   </div>
 </template>

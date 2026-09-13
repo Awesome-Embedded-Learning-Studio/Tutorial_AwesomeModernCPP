@@ -23,7 +23,7 @@ onMounted(async () => {
     <a :href="link" class="weekly-widget__link">
       <span class="weekly-widget__issue"><small>WEEK</small>{{ issueNumber(latest) }}</span>
       <span class="weekly-widget__copy"><span class="weekly-widget__label">每周一些题 <i aria-hidden="true"></i></span><strong>{{ issueTitle(latest) }}</strong></span>
-      <span class="weekly-widget__progress"><span>{{ doneCount(latest) }} / {{ latest.problems.length }} 已通过</span><span class="weekly-widget__segments" aria-hidden="true"><i v-for="p in latest.problems" :key="p.src" :class="{ 'is-done': records[p.src]?.status === 'passed' }"></i></span></span>
+      <span class="weekly-widget__progress"><span>{{ doneCount(latest) }} / {{ latest.problems.length }} 已通过</span><span class="weekly-widget__segments" aria-hidden="true"><i v-for="p in latest.problems" :key="p.src" :class="{ 'is-done': records[p.src]?.status === 'passed', 'is-skipped': records[p.src]?.skipped }"></i></span></span>
       <span class="weekly-widget__go">{{ complete ? '回顾本期' : started(latest) ? '继续练习' : '打开本期' }} <span aria-hidden="true">→</span></span>
     </a>
   </div>

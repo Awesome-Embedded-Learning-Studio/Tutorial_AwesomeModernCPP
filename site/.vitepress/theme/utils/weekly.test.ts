@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve, sep } from 'node:path'
 import { outputDifference } from './output-difference'
-import { issueTitle, problemAnchor, resumeProblem, type Week } from './weekly'
+import { displayStatusOf, issueTitle, problemAnchor, resumeProblem, type Week } from './weekly'
 import { applyWeeklyPageData } from '../../config/weekly-manifest'
 import type { PageData } from 'vitepress'
 
@@ -14,7 +14,7 @@ const week: Week = {
   })),
 }
 const [first, second, third] = week.problems
-const record = (status: 'passed' | 'revealed' | 'attempted') => ({ status, hintsUsed: 0, updatedAt: 1 })
+const record = (status: 'passed' | 'revealed' | 'attempted', skipped = false) => ({ status, hintsUsed: 0, updatedAt: 1, skipped })
 
 test('首次进入从第一题开始,空题包不产生无效链接', () => {
   assert.equal(resumeProblem(week, {}, new Set()), first)
@@ -27,6 +27,17 @@ test('继续入口优先恢复未通过题目的草稿,不退回已通过题目'
 test('已看题解仍可继续,全部通过后回顾第一题', () => {
   assert.equal(resumeProblem(week, { [first.src]: record('revealed') }, new Set()), first)
   assert.equal(resumeProblem(week, Object.fromEntries(week.problems.map(p => [p.src, record('passed')])), new Set()), first)
+})
+test('跳过的题从继续入口剔除:草稿与尝试都让位,全部处理完回顾第一题', () => {
+  assert.equal(resumeProblem(week, { [first.src]: record('attempted', true) }, new Set([first.src])), second)
+  assert.equal(resumeProblem(week, { [first.src]: record('passed'), [second.src]: record('attempted', true) }, new Set()), third)
+  assert.equal(resumeProblem(week, { [first.src]: record('passed'), [second.src]: record('passed'), [third.src]: record('attempted', true) }, new Set()), first)
+})
+test('跳过只是旁路标志:显示时盖住底层状态,取消后原样回来', () => {
+  assert.equal(displayStatusOf(record('attempted', true)), 'skipped')
+  assert.equal(displayStatusOf(record('revealed', true)), 'skipped')
+  assert.equal(displayStatusOf(record('attempted')), 'attempted')
+  assert.equal(displayStatusOf(null), 'untouched')
 })
 test('深链接不随题目标题或顺序变化', () => {
   assert.equal(problemAnchor(second.src), 'problem-02-two')
