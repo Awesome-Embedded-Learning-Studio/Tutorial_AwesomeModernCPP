@@ -28,6 +28,8 @@ const locale: BookLocale = {
     lectureResources: '讲座资料',
     sourceCode: '示例源码',
     armSourceCode: 'ARM 示例源码',
+    animationNote: '此处为一段可分步播放的动画，纸质版从略，线上版：',
+    videoNote: '此处为一段演示视频，纸质版从略，线上版：',
   },
 }
 

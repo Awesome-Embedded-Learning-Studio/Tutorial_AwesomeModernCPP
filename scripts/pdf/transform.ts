@@ -10,7 +10,7 @@ import { canonicalRepositoryPath } from './path-safety'
 
 const KNOWN_COMPONENT_NAMES = [
   'ChapterNav', 'ChapterLink', 'OnlineCompilerDemo', 'RefLink',
-  'ReferenceCard', 'ReferenceItem', 'TalkInfoCard', 'QQGroupCard',
+  'ReferenceCard', 'ReferenceItem', 'TalkInfoCard', 'QQGroupCard', 'Anim',
 ] as const
 const KNOWN_COMPONENTS = new Map(
   KNOWN_COMPONENT_NAMES.map((name) => [name.toLowerCase(), name]),
@@ -22,6 +22,9 @@ const PASSIVE_HTML = new Set([
   'h4', 'h5', 'h6', 'hr', 'i', 'img', 'ins', 'kbd', 'li', 'mark', 'ol', 'p', 'picture', 'pre', 'q',
   'rp', 'rt', 'ruby', 's', 'samp', 'small', 'source', 'span', 'strong', 'sub', 'summary', 'sup',
   'table', 'tbody', 'td', 'tfoot', 'th', 'thead', 'time', 'tr', 'u', 'ul', 'var', 'wbr',
+  // Standard active-media elements are passive markup, but the component
+  // transform below replaces them with print-native notes before rendering.
+  'video',
 ])
 
 // A lone lower-case angle token is otherwise indistinguishable from an
@@ -60,6 +63,7 @@ const statsTemplate: TransformStats = {
   internalLinks: 0,
   crossBookLinks: 0,
   paperContext: 0,
+  anim: 0,
 }
 
 export interface LinkResolution {
@@ -408,6 +412,20 @@ function isDisposableNavigationHeading(element: Element | null): boolean {
   return Boolean(element && /^h[2-6]$/i.test(element.tagName))
 }
 
+function replaceWithMediaNote(
+  document: Document,
+  component: Element,
+  source: SourceDocument,
+  context: TransformContext,
+  noteText: string,
+): void {
+  const note = document.createElement('p')
+  note.className = 'book-media-note'
+  const onlineUrl = `${context.locale.onlinePrefix.replace(/\/$/, '')}${source.canonicalPath}`
+  note.innerHTML = `${escapeHtml(noteText)}<a href="${escapeHtml(onlineUrl)}">${escapeHtml(source.title)}</a>`
+  component.replaceWith(note)
+}
+
 async function transformComponents(
   document: Document,
   root: Element,
@@ -427,6 +445,20 @@ async function transformComponents(
     stats.chapterLink += 1
     const href = attr(component, 'href')
     replaceWithHtml(document, component, `<a class="chapter-xref" href="${escapeHtml(href)}">${component.innerHTML}</a>`)
+  }
+
+  // An <Anim> player cannot play on paper. Keep a quiet pointer to the live
+  // article instead, so the surrounding prose ("播放下面的动画") still lands
+  // on something meaningful.
+  for (const component of Array.from(root.querySelectorAll('anim'))) {
+    stats.anim += 1
+    replaceWithMediaNote(document, component, source, context, context.locale.strings.animationNote)
+  }
+
+  // Local <video> demos (e.g. a Renode capture) get the same treatment.
+  for (const component of Array.from(root.querySelectorAll('video'))) {
+    stats.anim += 1
+    replaceWithMediaNote(document, component, source, context, context.locale.strings.videoNote)
   }
 
   for (const component of Array.from(root.querySelectorAll('onlinecompilerdemo'))) {

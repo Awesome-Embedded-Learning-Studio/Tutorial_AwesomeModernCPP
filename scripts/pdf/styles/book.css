@@ -1030,6 +1030,20 @@ body {
   overflow-wrap: anywhere;
 }
 
+/* <Anim> players and local <video> demos cannot play on paper; the transform
+ * leaves a one-line pointer to the live article in their place. */
+.book-content .book-media-note {
+  margin: 0.9em 0;
+  padding: 1.2mm 0 1.2mm 3mm;
+  border-left: 0.5mm solid var(--book-rule);
+  break-inside: avoid;
+  color: var(--book-muted);
+  font-family: var(--book-sans);
+  font-size: 8.4pt;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
 .document-endnotes {
   margin-top: 8mm;
   padding-top: 4mm;
