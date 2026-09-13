@@ -11,7 +11,7 @@ order: 3
 platform: host
 prerequisites:
 - 构造函数
-reading_time_minutes: 10
+reading_time_minutes: 17
 tags:
 - cpp-modern
 - host
@@ -372,9 +372,180 @@ cat raii_demo.txt
 
 ## 练习
 
-**练习 1：作用域日志计时器**。写一个 `ScopedLogger` 类，构造时记录时间戳（格式 `HH:MM:SS`），析构时打印"elapsed X seconds"。提示：使用 `<ctime>` 中的 `std::time` 和 `std::localtime`。
+### 练习 1：作用域日志计时器
 
-**练习 2：简易文件句柄**。实现一个 `FileHandle` 类，构造时打开文件，析构时自动关闭。提供 `read_line()` 方法（返回 `std::string`）和 `is_valid()` 方法。用 Rule of Three 的思路想想：这个类需要禁用拷贝吗？为什么？
+写一个 `ScopedLogger` 类，构造时记录时间戳（格式 `HH:MM:SS`），析构时打印"elapsed X seconds"。提示：使用 `<ctime>` 中的 `std::time` 和 `std::localtime`。
+
+::: details 参考答案
+
+```cpp
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <iostream>
+#include <thread>
+
+class ScopedLogger
+{
+private:
+    std::time_t start_time_;
+
+public:
+    // 构造：记录开始时间戳
+    ScopedLogger()
+    {
+        start_time_ = std::time(nullptr);
+
+        std::tm* local_time = std::localtime(&start_time_);
+        std::cout << "Start time: "
+                  << std::setfill('0') << std::setw(2) << local_time->tm_hour
+                  << ":" << std::setw(2) << local_time->tm_min
+                  << ":" << std::setw(2) << local_time->tm_sec
+                  << std::endl;
+    }
+
+    // 析构：打印从构造到析构经过的秒数
+    ~ScopedLogger()
+    {
+        std::cout << "elapsed "
+                  << (std::time(nullptr) - start_time_)
+                  << " seconds"
+                  << std::endl;
+    }
+
+    // 禁止拷贝
+    ScopedLogger(const ScopedLogger&) = delete;
+    ScopedLogger& operator=(const ScopedLogger&) = delete;
+};
+
+int main()
+{
+    ScopedLogger logger;
+
+    // 休眠 2 秒，模拟一段被计时的代码
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
+    return 0;
+}
+```
+
+编译运行：
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果：
+
+```text
+Start time: 11:17:43
+elapsed 2 seconds
+```
+
+> 小技巧：`std::setfill('0')` 配合 `std::setw(2)` 可以让时分秒在不足两位时自动补 `0`（比如 9 时 5 分 3 秒会显示成 `09:05:03`）。其中 `setfill` 设置的填充字符会一直保留在流上，写一次即可；而 `setw` 只对紧随其后的一个输出生效，每个字段都要重新设置。另外，`Start time` 取决于运行时的本地时间，你跑出来的结果和这里不一定相同。
+
+:::
+
+### 练习 2：简易文件句柄
+
+实现一个 `FileHandle` 类，构造时打开文件，析构时自动关闭。提供 `read_line()` 方法（返回 `std::string`）和 `is_valid()` 方法。用 Rule of Three 的思路想想：这个类需要禁用拷贝吗？为什么？
+
+::: details 参考答案
+
+```cpp
+#include <cstdio>
+#include <iostream>
+#include <string>
+
+class FileHandle
+{
+private:
+    FILE *handle;
+
+public:
+    // 构造：打开文件
+    FileHandle(const char *filename)
+    {
+        handle = fopen(filename, "r");
+    }
+
+    // 析构：关闭文件
+    ~FileHandle()
+    {
+        if (handle != nullptr)
+        {
+            fclose(handle);
+        }
+    }
+
+    // 读取一行
+    std::string read_line()
+    {
+        char buffer[256];
+
+        if (fgets(buffer, sizeof(buffer), handle) != nullptr)
+        {
+            return std::string(buffer);
+        }
+
+        return {};
+    }
+
+    // 判断文件是否打开成功
+    bool is_valid() const
+    {
+        return handle != nullptr;
+    }
+
+    // 禁止拷贝
+    FileHandle(const FileHandle &) = delete;
+    FileHandle &operator=(const FileHandle &) = delete;
+};
+
+int main()
+{
+    FileHandle file("test.txt");
+
+    // 判断文件是否打开成功
+    if (!file.is_valid())
+    {
+        std::cout << "open file failed" << std::endl;
+        return 1;
+    }
+
+    // 读取第一行
+    std::cout << file.read_line();
+
+    // 读取第二行
+    std::cout << file.read_line();
+
+    return 0;
+}
+```
+
+准备一个测试用的 `test.txt`：
+
+```text
+Hello from line 1
+Hello from line 2
+```
+
+编译运行：
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果：
+
+```text
+Hello from line 1
+Hello from line 2
+```
+
+> 关于练习里的追问：这个类**需要禁用拷贝**。`FileHandle` 持有裸 `FILE*` 资源，编译器默认生成的拷贝操作只做浅拷贝——两个对象的 `handle` 指向同一个 `FILE*`，作用域结束时会对同一个句柄 `fclose` 两次，属于未定义行为。这正是本章 Rule of Three 的应用场景：手写了析构函数，就必须同时审视拷贝语义——要么实现深拷贝，要么像这里一样直接禁止拷贝。
+
+:::
 
 ## 小结
 
