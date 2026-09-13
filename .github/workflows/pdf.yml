@@ -216,6 +216,7 @@ jobs:
             .pdf-build/**/failure-diagnostics.json
             .pdf-build/**/index.html
             .pdf-build/**/*.css
+          include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 7
 
