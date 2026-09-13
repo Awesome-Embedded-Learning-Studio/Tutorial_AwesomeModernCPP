@@ -10,7 +10,7 @@ import { issueNumber, issueTitle, problemAnchor, quizStatusLabel, quizStatusMark
 const { frontmatter } = useData()
 const week = computed(() => frontmatter.value.weeklyIssue as Week | undefined)
 const weeks = computed(() => week.value ? [week.value] : [])
-const { records, drafts, statusOf, doneCount, started } = useWeeklyOverview(weeks)
+const { records, drafts, displayOf, doneCount, skippedCount, started } = useWeeklyOverview(weeks)
 const target = computed(() => week.value && resumeProblem(week.value, records.value, drafts.value))
 const complete = computed(() => !!week.value?.problems.length && doneCount(week.value) === week.value.problems.length)
 const action = computed(() => complete.value ? '回顾本期' : week.value && started(week.value) ? `继续：${target.value?.title ?? '本期练习'}` : '开始本期练习')
@@ -48,14 +48,14 @@ function onTabKey(event: KeyboardEvent) {
     <nav v-show="practicing" ref="navRef" class="weekly-nav" role="tablist" aria-label="本期题目" @keydown="onTabKey">
       <button v-for="(problem, index) in week.problems" :key="problem.src" type="button"
         :id="`tab-${problemAnchor(problem.src)}`" role="tab" :aria-controls="problemAnchor(problem.src)" class="weekly-nav__item"
-        :class="{ 'is-active': active === problem.src }" :data-status="statusOf(problem.src)"
+        :class="{ 'is-active': active === problem.src }" :data-status="displayOf(problem.src)"
         :aria-selected="active === problem.src" :tabindex="active === problem.src ? 0 : -1"
-        :aria-label="`${index + 1}. ${problem.title}，${quizStatusLabel[statusOf(problem.src)]}`"
+        :aria-label="`${index + 1}. ${problem.title}，${quizStatusLabel[displayOf(problem.src)]}`"
         @click="practice?.select(problem.src)">
-        <span class="weekly-status-mark" aria-hidden="true">{{ quizStatusMark[statusOf(problem.src)] }}</span>
+        <span class="weekly-status-mark" aria-hidden="true">{{ quizStatusMark[displayOf(problem.src)] }}</span>
         <span class="weekly-nav__number">{{ String(index + 1).padStart(2, '0') }}</span>
         <span class="weekly-nav__title">{{ problem.title }}</span>
-        <span class="weekly-nav__status">{{ quizStatusLabel[statusOf(problem.src)] }}</span>
+        <span class="weekly-nav__status">{{ quizStatusLabel[displayOf(problem.src)] }}</span>
       </button>
       <span v-if="!week.problems.length" class="weekly-nav__empty">本期题目准备中</span>
     </nav>
@@ -75,7 +75,7 @@ function onTabKey(event: KeyboardEvent) {
         <span><span class="weekly-small-dot" aria-hidden="true"></span>在线练习 · 无需登录</span>
         <span class="weekly-cover__progress" aria-live="polite">
           <span v-if="complete" class="weekly-complete-stamp">✓ 本期完成</span>
-          <span>已通过 <b>{{ doneCount(week) }}</b> / {{ week.problems.length }}</span>
+          <span>已通过 <b>{{ doneCount(week) }}</b> / {{ week.problems.length }}<template v-if="skippedCount(week)"> · 跳过 {{ skippedCount(week) }}</template></span>
           <span class="weekly-progress-track" aria-hidden="true"><i :style="{ width: `${week.problems.length ? doneCount(week) / week.problems.length * 100 : 0}%` }"></i></span>
         </span>
       </div>
@@ -86,7 +86,7 @@ function onTabKey(event: KeyboardEvent) {
         <a v-for="(problem, index) in week.problems" :key="problem.src" :href="`#${problemAnchor(problem.src)}`" @click.prevent="practice?.select(problem.src, true)">
           <span class="weekly-nav__number">{{ String(index + 1).padStart(2, '0') }}</span>
           <strong>{{ problem.title }}</strong>
-          <span class="weekly-entry-problems__status">{{ quizStatusMark[statusOf(problem.src)] }} {{ quizStatusLabel[statusOf(problem.src)] }}</span>
+          <span class="weekly-entry-problems__status">{{ quizStatusMark[displayOf(problem.src)] }} {{ quizStatusLabel[displayOf(problem.src)] }}</span>
           <span aria-hidden="true">→</span>
         </a>
       </div>

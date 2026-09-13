@@ -49,6 +49,7 @@ body:has(.weekly-nav, .weekly-index, .quiz-solutions) { min-width: 0; }
 [data-status='passed'] > .weekly-status-mark { color: var(--weekly-success); }
 [data-status='attempted'] > .weekly-status-mark { color: var(--vp-c-brand-1); }
 [data-status='revealed'] > .weekly-status-mark { color: var(--weekly-amber); }
+[data-status='skipped'] > .weekly-status-mark { color: var(--vp-c-text-3); }
 .weekly-nav__empty { padding: 20px; font-size: 14px; }
 .weekly-session { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 8px 0 24px; }
 .weekly-session h1 { margin: 8px 0 0; font-size: 26px; line-height: 1.3; font-weight: 750; }
@@ -126,12 +127,18 @@ body:has(.weekly-nav, .weekly-index, .quiz-solutions) { min-width: 0; }
 .weekly-index__problems .weekly-mono, .weekly-index__type, .weekly-index__problem-status { color: var(--vp-c-text-2); font-size: 12px; font-weight: 400; }
 .weekly-index__problems [data-status='passed'] .weekly-index__problem-status { color: var(--weekly-success); }
 .weekly-index__problems [data-status='revealed'] .weekly-index__problem-status { color: var(--weekly-amber); }
+.weekly-index__problems [data-status='skipped'] .weekly-index__problem-status { color: var(--vp-c-text-3); }
 .weekly-section-heading--archive { margin-top: 48px; }
 .weekly-index__opening { border-block: 1px solid var(--vp-c-divider); padding: 28px 0; display: flex; gap: 26px; align-items: center; }
 .weekly-index__opening-mark { font: 34px var(--vp-font-family-mono); color: var(--vp-c-text-3); }
 .weekly-index__opening strong { font-size: 15px; font-weight: 600; }
 .weekly-index__opening p { margin: 5px 0 0; font-size: 13px; color: var(--vp-c-text-2); }
 .weekly-index__footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 32px 0 0; color: var(--vp-c-text-2); font-size: 12px; }
+/* 备份条:进度在本地,给它一条导出/导入的活路 */
+.weekly-backup { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px 18px; margin-top: 36px; padding: 14px 18px; border: 1px dashed var(--vp-c-divider); border-radius: 10px; color: var(--vp-c-text-2); font-size: 12px; }
+.weekly-backup__actions { display: inline-flex; align-items: center; gap: 18px; flex: none; }
+.weekly-backup__file { display: none; }
+.weekly-backup__note { flex-basis: 100%; color: var(--weekly-amber); }
 .weekly-notice { padding: 32px; border: 1px solid var(--vp-c-divider); border-radius: 12px; color: var(--vp-c-text-2); }
 
 /* 主站入口:周封面的紧凑横版。 */
@@ -148,6 +155,7 @@ body:has(.weekly-nav, .weekly-index, .quiz-solutions) { min-width: 0; }
 .weekly-widget__segments { display: flex; gap: 4px; }
 .weekly-widget__segments i { height: 3px; flex: 1; background: var(--vp-c-divider); border-radius: 2px; }
 .weekly-widget__segments i.is-done { background: var(--weekly-success); }
+.weekly-widget__segments i.is-skipped { background: var(--vp-c-text-3); }
 .weekly-widget__go { display: flex; gap: 24px; align-items: center; margin-left: 10px; padding: 12px 0 12px 25px; border-left: 1px solid var(--vp-c-divider); font-size: 13px; font-weight: 600; color: var(--vp-c-brand-1); white-space: nowrap; }
 .weekly-widget__go > span { transition: transform .2s; }
 .weekly-widget__link:hover .weekly-widget__go > span { transform: translateX(3px); }
@@ -164,6 +172,7 @@ body:has(.weekly-nav, .weekly-index, .quiz-solutions) { min-width: 0; }
 .quiz-problem__status-dot[data-status='attempted'] { background: var(--vp-c-brand-1); opacity: 1; }
 .quiz-problem__status-dot[data-status='revealed'] { background: var(--weekly-amber); opacity: 1; }
 .quiz-problem__status-dot[data-status='passed'] { background: var(--weekly-success); opacity: 1; }
+.quiz-problem__status-dot[data-status='skipped'] { background: var(--vp-c-text-3); opacity: 1; }
 /* 题面/题解说明里客户端渲染的代码块:与站内代码块同款底色与边框 */
 .quiz-problem__statement .shiki { margin: 0.8em 0; padding: 14px; border-radius: 8px; overflow: auto; font-size: 0.84rem; line-height: 1.6; background: var(--vp-code-block-bg); border: 1px solid var(--vp-c-divider); }
 .quiz-problem__statement > :first-child { margin-top: 0; }
@@ -236,6 +245,9 @@ body:has(.weekly-nav, .weekly-index, .quiz-solutions) { min-width: 0; }
 .quiz-problem__status-text { color: var(--vp-c-text-2); font-size: 12px; }
 .quiz-problem__layout-toggle { font-size: 12px; color: var(--vp-c-text-2); padding: 7px 9px; border: 1px solid var(--vp-c-divider); border-radius: 5px; cursor: pointer; }
 .quiz-problem__layout-toggle:hover, .quiz-problem__layout-toggle[aria-pressed='true'] { color: var(--vp-c-brand-1); border-color: var(--vp-c-brand-1); }
+.quiz-problem__skip { flex: none; padding: 7px 10px; border: 1px solid var(--vp-c-divider); border-radius: 5px; background: transparent; color: var(--vp-c-text-2); font-size: 12px; line-height: 1; cursor: pointer; transition: border-color 0.15s, color 0.15s; }
+.quiz-problem__skip:hover { color: var(--vp-c-brand-1); border-color: var(--vp-c-brand-1); }
+.quiz-problem__skip[aria-pressed='true'] { color: var(--weekly-amber); border-color: var(--weekly-amber); }
 .quiz-problem__reset { min-width: 34px; width: 34px; height: 34px; flex: none; }
 .quiz-problem__workspace, .quiz-problem__statement, .quiz-problem__card { min-width: 0; }
 .quiz-problem[role='tabpanel'] { min-height: 260px; }
@@ -280,6 +292,7 @@ body:has(.weekly-nav, .weekly-index, .quiz-solutions) { min-width: 0; }
 .quiz-problem__comparison mark { color: var(--vp-c-danger-1); background: #e455551a; border-radius: 2px; }
 .quiz-problem__next { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding-top: 18px; margin-top: 4px; border-top: 1px solid var(--vp-c-divider); font-size: 13px; }
 .quiz-problem__next > span { color: var(--weekly-success); }
+.quiz-problem__next--skipped > span { color: var(--vp-c-text-3); }
 .vp-doc .quiz-problem__next a { text-decoration: none; }
 .quiz-problem__option { padding: 14px; }
 .quiz-problem__option-text { font-family: inherit; font-size: 14px; }
@@ -362,6 +375,7 @@ body:has(.weekly-nav, .weekly-index, .quiz-solutions) { min-width: 0; }
   .quiz-problem__statusbar-spacer { display: none; }
   .quiz-problem__status-dot { margin-left: auto; }
   .quiz-problem__status-text { font-size: 10px; }
+  .quiz-problem__skip { order: 2; padding: 6px 8px; font-size: 11px; }
   .quiz-problem__reset { min-width: 36px; width: 36px; height: 36px; }
   .quiz-problem__statement { font-size: 14px; }
   .quiz-problem__editor-wrap { height: 320px; }
