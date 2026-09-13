@@ -96,7 +96,7 @@ export const HOME_PATH_NODES: PathNode[] = [
   { id: 'v10',   name: { cn: '卷十 · 演讲笔记', en: 'Vol.10 Talk Notes' }, sub: { cn: 'CppCon 二创', en: 'CppCon notes' },                 x: 890,  y: 640, w: 160, h: 58, kind: 'proj', status: 'doing', tier: 'domain', href: '/vol10-open-lecture-notes/',  badge: 'V10' },
   { id: 'proj',  name: { cn: '贯穿式项目', en: 'Capstone Projects' },   sub: { cn: '协程服务器 · INI 解析器', en: 'Coroutine server · INI' }, x: 1130, y: 640, w: 160, h: 58, kind: 'proj', status: 'doing', tier: 'domain', href: '/projects/',              badge: 'PRJ' },
   { id: 'community', name: { cn: '社区文章', en: 'Community' },         sub: { cn: '来稿与收录', en: 'Submissions' },                       x: 430,  y: 784, w: 140, h: 46, kind: 'sup',  status: 'doing', tier: 'domain', href: '/community/',                badge: 'COM' },
-  { id: 'tags',  name: { cn: '标签索引', en: 'Tags' },                  sub: { cn: '按主题检索', en: 'Browse by topic' },                   x: 700,  y: 784, w: 140, h: 46, kind: 'sup',  status: 'doing', tier: 'domain', href: '/tags/',                      badge: 'IDX' },
+  { id: 'tags',  name: { cn: '标签索引', en: 'Tags' },                  sub: { cn: '按主题检索', en: 'Browse by topic' },                   x: 700,  y: 784, w: 140, h: 46, kind: 'sup',  status: 'done', tier: 'domain', href: '/tags',                       badge: 'IDX' },
 ]
 
 export const HOME_PATH_EDGES: PathEdge[] = [

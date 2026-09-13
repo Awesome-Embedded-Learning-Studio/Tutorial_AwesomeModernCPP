@@ -2,6 +2,7 @@ import { defineConfig } from 'vitepress'
 import withDrawio from '@dhlx/vitepress-plugin-drawio'
 import { navEn } from './nav'
 import { applyWeeklyPageData, generateWeeklyManifest, MANIFEST_REL } from './weekly-manifest'
+import { applyTagsPageData } from './tags-manifest'
 import { buildSidebar } from './sidebar'
 import { sharedThemeConfig, sharedMarkdown, makeSocialLinks, localSearchBoxAlias } from './shared'
 import { createReadStream, existsSync } from 'node:fs'
@@ -64,6 +65,7 @@ export default withDrawio(defineConfig({
   srcDir: '../documents',
   transformPageData(pageData) {
     applyWeeklyPageData(pageData, PROJECT_ROOT)
+    applyTagsPageData(pageData)
   },
 
   title: '现代 C++ 教程',
@@ -100,7 +102,7 @@ export default withDrawio(defineConfig({
         // socialLinks 不补 base 前缀,必须显式给 EN 自己的加群页全路径
         socialLinks: makeSocialLinks('/Tutorial_AwesomeModernCPP/en/community/join'),
         editLink: {
-          pattern: 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/edit/main/documents/en/:path',
+          pattern: 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/edit/main/documents/:path',
           text: 'Edit this page on GitHub',
         },
       },

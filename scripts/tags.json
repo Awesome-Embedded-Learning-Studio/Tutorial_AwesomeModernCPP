@@ -1,0 +1,96 @@
+{
+  "_comment": "标签分类唯一数据源:scripts/tags.py(Python 校验器)与 site/.vitepress/config/tags-manifest.ts(标签索引页生成器)都读这一份。补标签只改本文件。role 含义:topic=主题标签,进 /tags/ 标签墙;platform=平台标签,降级为筛选器;audience=受众/难度标签,降级为筛选器(cpp-modern 不进 UI)。",
+  "categories": [
+    {
+      "key": "concepts",
+      "zh": "概念",
+      "en": "Concepts",
+      "role": "topic",
+      "tags": ["RAII", "移动语义", "零开销抽象", "编译期计算", "类型安全", "内存管理", "异步编程", "模板元编程"]
+    },
+    {
+      "key": "features",
+      "zh": "语言特性",
+      "en": "Language Features",
+      "role": "topic",
+      "tags": ["constexpr", "consteval", "constinit", "lambda", "CRTP", "concepts", "coroutine", "if_constexpr", "模板", "泛型"]
+    },
+    {
+      "key": "patterns",
+      "zh": "设计模式",
+      "en": "Patterns",
+      "role": "topic",
+      "tags": ["对象池", "状态机", "工厂模式", "策略模式", "单例模式", "观察者模式", "RAII守卫", "回调机制", "构建器模式", "原型模式", "适配器模式", "桥接模式", "组合模式", "装饰器模式", "外观模式", "享元模式", "代理模式", "命令模式", "备忘录模式", "访问者模式", "迭代器模式", "责任链模式", "解释器模式", "中介者模式", "模板方法模式"]
+    },
+    {
+      "key": "containers",
+      "zh": "容器",
+      "en": "Containers",
+      "role": "topic",
+      "tags": ["array", "span", "vector", "map", "unordered_map", "循环缓冲区", "侵入式容器", "容器"]
+    },
+    {
+      "key": "smart-pointers",
+      "zh": "智能指针",
+      "en": "Smart Pointers",
+      "role": "topic",
+      "tags": ["unique_ptr", "shared_ptr", "weak_ptr", "intrusive_ptr", "智能指针", "引用计数"]
+    },
+    {
+      "key": "type-safety",
+      "zh": "类型安全",
+      "en": "Type Safety",
+      "role": "topic",
+      "tags": ["enum", "enum_class", "variant", "optional", "expected", "类型别名", "字面量"]
+    },
+    {
+      "key": "functional",
+      "zh": "函数式",
+      "en": "Functional",
+      "role": "topic",
+      "tags": ["函数对象", "std_function", "std_invoke", "Ranges"]
+    },
+    {
+      "key": "concurrency",
+      "zh": "并发",
+      "en": "Concurrency",
+      "role": "topic",
+      "tags": ["atomic", "memory_order", "mutex", "无锁", "并发"]
+    },
+    {
+      "key": "embedded",
+      "zh": "嵌入式",
+      "en": "Embedded",
+      "role": "topic",
+      "tags": ["嵌入式", "单片机", "外设管理", "寄存器", "链接器", "交叉编译", "工具链", "CMake", "clangd", "renode"]
+    },
+    {
+      "key": "domains",
+      "zh": "领域",
+      "en": "Domains",
+      "role": "topic",
+      "tags": ["网络编程", "内存安全", "调试", "测试"]
+    },
+    {
+      "key": "general",
+      "zh": "通用",
+      "en": "General",
+      "role": "topic",
+      "tags": ["基础", "入门", "进阶", "实战", "优化", "工程实践"]
+    },
+    {
+      "key": "platforms",
+      "zh": "平台",
+      "en": "Platforms",
+      "role": "platform",
+      "tags": ["host", "stm32f1", "stm32f4"]
+    },
+    {
+      "key": "audience",
+      "zh": "难度与受众",
+      "en": "Audience",
+      "role": "audience",
+      "tags": ["beginner", "intermediate", "advanced", "cpp-modern"]
+    }
+  ]
+}
