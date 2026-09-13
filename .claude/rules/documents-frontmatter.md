@@ -37,7 +37,7 @@ globs: documents/**/*.md
 
 ## 标签体系（VALID_TAGS）
 
-标签分为以下类别，所有标签必须来自此集合。如果需要新标签，须先在 `scripts/validate_frontmatter.py` 的 `VALID_TAGS` 中添加。
+标签分为以下类别，所有标签必须来自此集合。单一数据源是 `scripts/tags.json`（Python 校验器与 `/tags/` 标签索引页生成器共读），如果需要新标签，直接在该 JSON 对应分类里添加。
 
 ### 概念类
 `RAII` `移动语义` `零开销抽象` `编译期计算` `类型安全` `内存管理` `异步编程` `模板元编程`

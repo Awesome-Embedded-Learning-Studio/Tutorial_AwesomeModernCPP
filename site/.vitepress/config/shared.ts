@@ -208,7 +208,7 @@ export function sharedEnThemeConfig(): DefaultTheme.Config {
       options: localSearchOptions,
     },
     editLink: {
-      pattern: 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/edit/main/documents/en/:path',
+      pattern: 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/edit/main/documents/:path',
       text: 'Edit this page on GitHub',
     },
     footer: {

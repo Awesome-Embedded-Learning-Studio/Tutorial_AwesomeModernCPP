@@ -185,17 +185,20 @@ function generateVolumeConfig(vol: Volume, lang: 'zh' | 'en', absSiteDir: string
   const vpDir = join(absSiteDir, '.vitepress')
   const relShared = relative(vpDir, join(MAIN_VP, 'config', 'shared')).replace(/\\/g, '/')
   const relSidebar = relative(vpDir, join(MAIN_VP, 'config', 'sidebar')).replace(/\\/g, '/')
+  const relTagsManifest = relative(vpDir, join(MAIN_VP, 'config', 'tags-manifest')).replace(/\\/g, '/')
 
   return `import { defineConfig } from 'vitepress'
 import withDrawio from '@dhlx/vitepress-plugin-drawio'
 import { sharedBase, ${lang === 'en' ? 'sharedEnThemeConfig' : 'sharedThemeConfig'} } from '${relShared}'
 import { volumeSidebar } from '${relSidebar}'
+import { applyTagsPageData } from '${relTagsManifest}'
 
 export default withDrawio(defineConfig({
   ...sharedBase,
   srcDir: '${relSrc.replace(/\\/g, '/')}',
   outDir: '${relOut.replace(/\\/g, '/')}',
   ignoreDeadLinks: true,
+  transformPageData(pageData) { applyTagsPageData(pageData) },
   title: '${lang === 'en' ? 'Modern C++ Tutorial' : '现代 C++ 教程'}',
   lang: '${lang === 'en' ? 'en-US' : 'zh-CN'}',
   ${locale}
@@ -221,25 +224,28 @@ function generateRootConfig(absSiteDir: string, absSrcDir: string): string {
   const relShared = relative(vpDir, join(MAIN_VP, 'config', 'shared')).replace(/\\/g, '/')
   const relNav = relative(vpDir, join(MAIN_VP, 'config', 'nav')).replace(/\\/g, '/')
   const relSidebar = relative(vpDir, join(MAIN_VP, 'config', 'sidebar')).replace(/\\/g, '/')
+  const relTagsManifest = relative(vpDir, join(MAIN_VP, 'config', 'tags-manifest')).replace(/\\/g, '/')
 
   return `import { defineConfig } from 'vitepress'
 import withDrawio from '@dhlx/vitepress-plugin-drawio'
 import { sharedBase, sharedThemeConfig, sharedEnThemeConfig, makeSocialLinks } from '${relShared}'
 import { navEn } from '${relNav}'
 import { buildSidebar } from '${relSidebar}'
+import { applyTagsPageData } from '${relTagsManifest}'
 
 export default withDrawio(defineConfig({
   ...sharedBase,
   srcDir: '${relSrc.replace(/\\/g, '/')}',
   outDir: '${relOut.replace(/\\/g, '/')}',
   ignoreDeadLinks: true,
+  transformPageData(pageData) { applyTagsPageData(pageData) },
   title: '现代 C++ 教程',
   description: '系统化的现代 C++ 教程 — 从基础入门到领域实战',
   lang: 'zh-CN',
   locales: {
     root: { label: '中文', lang: 'zh-CN', title: '现代 C++ 教程', description: '系统化的现代 C++ 教程 — 从基础入门到领域实战' },
     en: { label: 'English', lang: 'en-US', title: 'Modern C++ Tutorial', description: 'A systematic modern C++ tutorial', link: '/en/',
-      themeConfig: { nav: navEn, socialLinks: makeSocialLinks('/Tutorial_AwesomeModernCPP/en/community/join'), editLink: { pattern: 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/edit/main/documents/en/:path', text: 'Edit this page on GitHub' } } },
+      themeConfig: { nav: navEn, socialLinks: makeSocialLinks('/Tutorial_AwesomeModernCPP/en/community/join'), editLink: { pattern: 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/edit/main/documents/:path', text: 'Edit this page on GitHub' } } },
   },
   themeConfig: {
     ...sharedThemeConfig(),
