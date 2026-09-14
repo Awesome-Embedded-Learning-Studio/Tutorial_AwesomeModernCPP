@@ -34,6 +34,8 @@ const locale: BookLocale = {
     lectureResources: '讲座资料',
     sourceCode: '示例源码',
     armSourceCode: 'ARM 示例源码',
+    animationNote: '此处为一段可分步播放的动画，纸质版从略，线上版：',
+    videoNote: '此处为一段演示视频，纸质版从略，线上版：',
   },
 }
 
@@ -42,6 +44,7 @@ test('preserves known components, standard HTML, and CommonMark autolinks', () =
   <ChapterLink num="1" href="/fixture/topic">Topic</ChapterLink>
 </ChapterNav>
 <OnlineCompilerDemo source-path="code/example.cpp" />
+<Anim id="compilation-pipeline" />
 <RefLink id="ref-1" />
 <ReferenceCard title="References"><ReferenceItem id="ref-1" /></ReferenceCard>
 <TalkInfoCard speaker="Ada" />
@@ -208,6 +211,81 @@ test('a rendered fragment contains no known component residue and retains its ti
   assert.match(rendered.html, /class="talk-info-card"/)
   assert.match(rendered.html, /href="#doc-fixture-topic--memory-management"/)
   assert.match(rendered.html, /<h1[^>]*>Fixture<\/h1>/)
+})
+
+test('renders an Anim player as a pointer to the live article', async () => {
+  const context: TransformContext = {
+    repositoryRoot: '/tmp/pdf-transform-fixture',
+    markdown: { render: (value: string) => value } as TransformContext['markdown'],
+    locale, assets: {} as TransformContext['assets'],
+    resolveLink: (href) => ({ kind: 'external', href }),
+  }
+  const result = await transformDocument(source('<h1>Fixture</h1><p>先看动画：</p><Anim id="opp1-vector-growth" />'), context)
+
+  const { document } = parseHTML(result.html)
+  const note = document.querySelector('p.book-media-note')
+  assert.ok(note, 'expected a .book-media-note paragraph')
+  assert.equal(note.querySelector('a')?.getAttribute('href'), 'https://example.test/fixture/topic')
+  assert.equal(note.querySelector('a')?.textContent, 'Fixture topic')
+  assert.doesNotMatch(result.html, /<anim\b/i)
+  assert.equal(result.stats.anim, 1)
+})
+
+test('renders a local video demo as a pointer to the live article', async () => {
+  const context: TransformContext = {
+    repositoryRoot: '/tmp/pdf-transform-fixture',
+    markdown: { render: (value: string) => value } as TransformContext['markdown'],
+    locale, assets: {} as TransformContext['assets'],
+    resolveLink: (href) => ({ kind: 'external', href }),
+  }
+  const result = await transformDocument(
+    source('<h1>Fixture</h1><p>跑起来是这副样子：</p><video controls muted src="./blinky.mp4" width="640"></video>'),
+    context,
+  )
+
+  assert.doesNotMatch(result.html, /<video\b/i)
+  assert.match(result.html, /class="book-media-note"/)
+  assert.match(result.html, /href="https:\/\/example\.test\/fixture\/topic"/)
+  assert.equal(result.stats.anim, 1)
+})
+
+test('publishes nested details as static asides and keeps title links and body intact', async () => {
+  const context: TransformContext = {
+    repositoryRoot: '/tmp/pdf-transform-fixture',
+    markdown: { render: (value: string) => value } as TransformContext['markdown'],
+    locale, assets: {} as TransformContext['assets'],
+    resolveLink: (href) => ({ kind: 'external', href }),
+  }
+  const result = await transformDocument(source(`<h1>Fixture</h1><details id="note"><summary id="caption">点开看：<em>解释</em></summary>
+<p>Before</p><details><summary>Click to expand: Nested</summary><p>Inside</p></details><p>After</p></details>`), context)
+  const { document } = parseHTML(result.html)
+  assert.equal(document.querySelectorAll('details, summary').length, 0)
+  assert.equal(document.querySelectorAll('aside.book-details').length, 2)
+  assert.equal(document.querySelector('.custom-block-title em')?.textContent, '解释')
+  assert.match(result.html, /doc-fixture-topic--note/)
+  assert.match(result.html, /doc-fixture-topic--caption/)
+  assert.doesNotMatch(result.html, /点开看|Click to expand/)
+  for (const text of ['Before', 'Inside', 'After', 'Nested']) assert.ok(result.html.includes(text))
+})
+
+test('separates an image from its preceding text without dropping inline markup or anchors', async () => {
+  const context: TransformContext = {
+    repositoryRoot: '/tmp/pdf-transform-fixture',
+    markdown: { render: (value: string) => value } as TransformContext['markdown'],
+    locale,
+    assets: {
+      resolveSourceAsset: (_from: string, raw: string) => `/tmp/pdf-transform-fixture/${raw}`,
+      copyLocalAsset: async () => '/assets/image.png',
+    } as TransformContext['assets'],
+    resolveLink: (href) => ({ kind: 'external', href }),
+  }
+  const result = await transformDocument(source('<h1>Fixture</h1><blockquote><p id="intro">说明 <em>重点</em>\n<img src="image.png" alt="图注">后文</p></blockquote>'), context)
+  const { document } = parseHTML(result.html)
+  assert.equal(document.querySelector('.book-image-intro em')?.textContent, '重点')
+  assert.equal(document.querySelector('figure figcaption')?.textContent, '图注')
+  assert.equal(document.querySelectorAll('img').length, 1)
+  assert.equal(document.querySelectorAll('[id$="--intro"]').length, 1)
+  assert.ok(result.html.includes('后文'))
 })
 
 test('promotes a title-like h2 when translated source has no h1', async () => {

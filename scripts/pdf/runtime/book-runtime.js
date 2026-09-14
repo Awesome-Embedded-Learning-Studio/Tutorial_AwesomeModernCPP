@@ -689,6 +689,207 @@
     }
   }
 
+  function preparePrintFragments() {
+    function rowCells(row) {
+      return Array.from(row.cells, function recordCell(cell) {
+        return cell.textContent.replace(/\s+/g, ' ').trim()
+      })
+    }
+    function tableCells(section) {
+      return Array.from(section.rows, rowCells)
+    }
+    var tables = []
+    document.querySelectorAll('.book-content table').forEach(function recordTable(table, index) {
+      var id = 'book-table-' + index
+      table.dataset.bookTable = id
+      var rows = Array.from(table.querySelectorAll('tbody > tr')).filter(function ownRow(row) {
+        return row.closest('table') === table
+      })
+      rows.forEach(function markRow(row, rowIndex) { row.dataset.bookRow = id + '-' + rowIndex })
+      tables.push({
+        id: id,
+        header: table.tHead ? tableCells(table.tHead) : null,
+        rows: rows.map(function rowRecord(row) { return { id: row.dataset.bookRow, cells: rowCells(row) } }),
+      })
+    })
+    var codeLines = []
+    document.querySelectorAll('.book-content pre').forEach(function recordCode(pre, index) {
+      pre.dataset.bookCode = 'book-code-' + index
+      pre.querySelectorAll('code > .line').forEach(function recordLine(line) {
+        var id = pre.dataset.bookCode + '-' + line.dataset.lineNumber
+        line.dataset.bookLine = id
+        codeLines.push({ id: id, text: line.textContent })
+      })
+    })
+
+    // Insert headers while the continuation is being laid out, before overflow
+    // calculation. Adding them after pagination would push rows off the page.
+    class BookFragments extends window.Paged.Handler {
+      renderNode(clone, source) {
+        var sourceElement = source.nodeType === 1 ? source : source.parentElement
+        var renderedElement = clone.nodeType === 1 ? clone : clone.parentElement
+        var sourcePre = sourceElement && sourceElement.closest('pre')
+        var pre = renderedElement && renderedElement.closest('pre')
+        if (pre && sourcePre && pre.hasAttribute('data-split-from')
+          && !pre.querySelector(':scope > .book-code-continuation')) {
+          var continuation = document.createElement('span')
+          continuation.className = 'book-code-continuation'
+          continuation.textContent = (sourcePre.dataset.codeCaption || 'Code')
+            + (sourcePre.dataset.codeContinuation || ' (continued)')
+          pre.insertBefore(continuation, pre.firstChild)
+        }
+        var sourceTable = sourceElement && sourceElement.closest('table')
+        var table = renderedElement && renderedElement.closest('table')
+        while (table && sourceTable) {
+          var inHeader = sourceElement.closest('thead')
+          if (table.hasAttribute('data-split-from') && !table.tHead && sourceTable.tHead
+            && !(inHeader && inHeader.closest('table') === sourceTable)) {
+            var header = sourceTable.tHead.cloneNode(true)
+            header.dataset.repeatedHeader = 'true'
+            ;[header].concat(Array.from(header.querySelectorAll('*'))).forEach(function removePaginationIdentity(node) {
+              node.removeAttribute('id')
+              node.removeAttribute('data-ref')
+              node.removeAttribute('data-split-from')
+              node.removeAttribute('data-split-to')
+            })
+            table.insertBefore(header, table.firstChild)
+            if (!table.querySelector(':scope > colgroup')) {
+              sourceTable.querySelectorAll(':scope > colgroup').forEach(function repeatColumns(group) {
+                var columns = group.cloneNode(true)
+                ;[columns].concat(Array.from(columns.querySelectorAll('*'))).forEach(function removeIdentity(node) {
+                  node.removeAttribute('id')
+                  node.removeAttribute('data-ref')
+                  node.removeAttribute('data-split-from')
+                  node.removeAttribute('data-split-to')
+                })
+                table.insertBefore(columns, header)
+              })
+            }
+          }
+          table = table.parentElement && table.parentElement.closest('table')
+          sourceTable = sourceTable.parentElement && sourceTable.parentElement.closest('table')
+        }
+      }
+
+      afterPageLayout(pageElement, page, breakToken, chunker) {
+        if (!breakToken || !breakToken.node) return
+        var rewound = false
+        function restartAt(fragment) {
+          if (rewound) return
+          var source = chunker.source.querySelector('[data-ref="' + fragment.dataset.ref + '"]')
+          if (!source || !source.contains(breakToken.node)) return
+          // Restart at the whole component, retaining every child in the source.
+          breakToken.node = source
+          breakToken.offset = undefined
+          fragment.remove()
+          rewound = true
+        }
+        pageElement.querySelectorAll('.online-demo:not([data-split-from])').forEach(function removeEmptyOpening(card) {
+          if (card.textContent.trim() || card.querySelector('img, svg, canvas')) return
+          restartAt(card)
+        })
+        if (rewound) return
+
+        var pageBounds = pageElement.getBoundingClientRect()
+        pageElement.querySelectorAll('.book-content div[class*="language-"]:not([data-split-from])')
+          .forEach(function moveCodeWithoutVisibleLines(wrapper) {
+            var visibleLine = Array.from(wrapper.querySelectorAll('pre code > .line')).some(function visible(line) {
+              return Array.from(line.getClientRects()).some(function intersectsPage(rect) {
+                return rect.width > 0 && rect.height > 0
+                  && rect.bottom > pageBounds.top + 0.5 && rect.top < pageBounds.bottom - 0.5
+              })
+            })
+            if (!visibleLine) restartAt(wrapper)
+          })
+      }
+    }
+    window.Paged.registerHandlers(BookFragments)
+    return { tables: tables, codeLines: codeLines }
+  }
+
+  function assertPrintFragments(expected) {
+    var output = document.querySelector('.pagedjs_pages')
+    var failures = []
+    var diagnostics = []
+    function compactText(value) { return value.replace(/\s+/g, ' ').trim().slice(0, 240) }
+    function pageNumber(node) {
+      var pages = Array.from(output.querySelectorAll('.pagedjs_page'))
+      return pages.indexOf(node.closest('.pagedjs_page')) + 1
+    }
+    function rowCells(row) {
+      return Array.from(row.cells, function recordCell(cell) {
+        return cell.textContent.replace(/\s+/g, ' ').trim()
+      })
+    }
+    function tableCells(section) {
+      return Array.from(section.rows, rowCells)
+    }
+    function checkRecords(records, attribute, read, expectedValue) {
+      var actual = new Map()
+      output.querySelectorAll('[' + attribute + ']').forEach(function collect(node) {
+        var id = node.getAttribute(attribute)
+        if (!actual.has(id)) actual.set(id, [])
+        actual.get(id).push(read(node))
+      })
+      records.forEach(function check(record) {
+        var copies = actual.get(record.id) || []
+        var wanted = expectedValue(record)
+        if (copies.length !== 1 || JSON.stringify(copies[0]) !== JSON.stringify(wanted)) {
+          failures.push(record.id + ' missing, duplicated or changed')
+          diagnostics.push({
+            kind: attribute,
+            id: record.id,
+            expected: typeof wanted === 'string' ? compactText(wanted) : wanted,
+            copies: copies.map(function compactCopy(value) {
+              return typeof value === 'string' ? compactText(value) : value
+            }),
+          })
+        }
+      })
+    }
+    checkRecords(expected.codeLines, 'data-book-line', function lineText(node) { return node.textContent }, function expectedText(record) { return record.text })
+    var rows = []
+    expected.tables.forEach(function checkTable(record) {
+      rows = rows.concat(record.rows)
+      output.querySelectorAll('[data-book-table="' + record.id + '"]').forEach(function checkFragment(table) {
+        var ownRows = Array.from(table.querySelectorAll('tbody > tr')).filter(function ownRow(row) {
+          return row.closest('table') === table
+        })
+        if (!ownRows.length || record.header === null) return
+        var header = table.tHead ? tableCells(table.tHead) : null
+        if (JSON.stringify(header) !== JSON.stringify(record.header)) {
+          failures.push(record.id + ' continuation is missing its complete header')
+          diagnostics.push({
+            kind: 'table-header', id: record.id, page: pageNumber(table),
+            expected: record.header, actual: header || null,
+            rows: ownRows.map(function rowId(row) { return row.dataset.bookRow || null }),
+          })
+        }
+      })
+    })
+    checkRecords(rows, 'data-book-row', rowCells, function expectedCells(record) { return record.cells })
+    output.querySelectorAll('.online-demo').forEach(function checkCard(card) {
+      if (!card.textContent.trim() && !card.querySelector('img, svg, canvas')) failures.push('empty online-demo fragment')
+    })
+    output.querySelectorAll('.book-content div[class*="language-"]').forEach(function checkCodeWrapper(wrapper) {
+      var page = wrapper.closest('.pagedjs_page')
+      var content = page && page.querySelector('.pagedjs_page_content')
+      var bounds = (content || page).getBoundingClientRect()
+      var visibleLine = Array.from(wrapper.querySelectorAll('pre code > .line')).some(function visible(line) {
+        return Array.from(line.getClientRects()).some(function intersectsPage(rect) {
+          return rect.width > 0 && rect.height > 0
+            && rect.bottom > bounds.top + 0.5 && rect.top < bounds.bottom - 0.5
+        })
+      })
+      if (!visibleLine) failures.push('empty code fragment on page ' + pageNumber(wrapper))
+    })
+    if (output.querySelector('details, summary')) failures.push('interactive details survived publication conversion')
+    if (failures.length) {
+      window.__BOOK_FAILURE_DIAGNOSTICS__ = { failures: failures, fragments: diagnostics }
+      throw new Error('Print fragment integrity failed: ' + failures.slice(0, 12).join('; '))
+    }
+  }
+
   async function paginate(expectedDocumentIds, expectedMermaidCount, expectedDrawioCount) {
     var polyfill = window.PagedPolyfill
     if (!polyfill || typeof polyfill.preview !== 'function') {
@@ -698,6 +899,7 @@
       throw new Error('Paged.js output already exists before explicit preview(); auto pagination must remain disabled')
     }
 
+    var expectedFragments = preparePrintFragments()
     document.body.dataset.readyState = 'paginating'
     var flow = await polyfill.preview()
     await nextPaint(2)
@@ -712,6 +914,7 @@
     assertDocumentSentinels(expectedDocumentIds)
     assertMermaidOutput(expectedMermaidCount)
     assertDrawioOutput(expectedDrawioCount)
+    assertPrintFragments(expectedFragments)
     assertNoBlankPages()
     assertNoHorizontalOverflow()
     assertNoVerticalOverflow()

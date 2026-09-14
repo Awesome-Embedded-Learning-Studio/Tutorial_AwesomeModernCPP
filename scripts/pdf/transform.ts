@@ -10,7 +10,7 @@ import { canonicalRepositoryPath } from './path-safety'
 
 const KNOWN_COMPONENT_NAMES = [
   'ChapterNav', 'ChapterLink', 'OnlineCompilerDemo', 'RefLink',
-  'ReferenceCard', 'ReferenceItem', 'TalkInfoCard', 'QQGroupCard',
+  'ReferenceCard', 'ReferenceItem', 'TalkInfoCard', 'QQGroupCard', 'Anim',
 ] as const
 const KNOWN_COMPONENTS = new Map(
   KNOWN_COMPONENT_NAMES.map((name) => [name.toLowerCase(), name]),
@@ -22,6 +22,9 @@ const PASSIVE_HTML = new Set([
   'h4', 'h5', 'h6', 'hr', 'i', 'img', 'ins', 'kbd', 'li', 'mark', 'ol', 'p', 'picture', 'pre', 'q',
   'rp', 'rt', 'ruby', 's', 'samp', 'small', 'source', 'span', 'strong', 'sub', 'summary', 'sup',
   'table', 'tbody', 'td', 'tfoot', 'th', 'thead', 'time', 'tr', 'u', 'ul', 'var', 'wbr',
+  // Standard active-media elements are passive markup, but the component
+  // transform below replaces them with print-native notes before rendering.
+  'video',
 ])
 
 // A lone lower-case angle token is otherwise indistinguishable from an
@@ -60,6 +63,7 @@ const statsTemplate: TransformStats = {
   internalLinks: 0,
   crossBookLinks: 0,
   paperContext: 0,
+  anim: 0,
 }
 
 export interface LinkResolution {
@@ -321,6 +325,9 @@ function sourceCodeBlock(
   const template = document.createElement('template')
   const language = languageForPath(path)
   template.innerHTML = `<section class="online-demo-source"><h4>${escapeHtml(label)}</h4>${renderCodeFence(markdown, code, language, source.relativePath)}</section>`
+  for (const pre of Array.from(template.content.querySelectorAll('pre'))) {
+    pre.setAttribute('data-code-caption', path.split('/').at(-1) || label)
+  }
   return template.content
 }
 
@@ -405,6 +412,20 @@ function isDisposableNavigationHeading(element: Element | null): boolean {
   return Boolean(element && /^h[2-6]$/i.test(element.tagName))
 }
 
+function replaceWithMediaNote(
+  document: Document,
+  component: Element,
+  source: SourceDocument,
+  context: TransformContext,
+  noteText: string,
+): void {
+  const note = document.createElement('p')
+  note.className = 'book-media-note'
+  const onlineUrl = `${context.locale.onlinePrefix.replace(/\/$/, '')}${source.canonicalPath}`
+  note.innerHTML = `${escapeHtml(noteText)}<a href="${escapeHtml(onlineUrl)}">${escapeHtml(source.title)}</a>`
+  component.replaceWith(note)
+}
+
 async function transformComponents(
   document: Document,
   root: Element,
@@ -424,6 +445,20 @@ async function transformComponents(
     stats.chapterLink += 1
     const href = attr(component, 'href')
     replaceWithHtml(document, component, `<a class="chapter-xref" href="${escapeHtml(href)}">${component.innerHTML}</a>`)
+  }
+
+  // An <Anim> player cannot play on paper. Keep a quiet pointer to the live
+  // article instead, so the surrounding prose ("播放下面的动画") still lands
+  // on something meaningful.
+  for (const component of Array.from(root.querySelectorAll('anim'))) {
+    stats.anim += 1
+    replaceWithMediaNote(document, component, source, context, context.locale.strings.animationNote)
+  }
+
+  // Local <video> demos (e.g. a Renode capture) get the same treatment.
+  for (const component of Array.from(root.querySelectorAll('video'))) {
+    stats.anim += 1
+    replaceWithMediaNote(document, component, source, context, context.locale.strings.videoNote)
   }
 
   for (const component of Array.from(root.querySelectorAll('onlinecompilerdemo'))) {
@@ -534,6 +569,32 @@ async function transformImages(
   context: TransformContext,
   stats: TransformStats,
 ): Promise<void> {
+  // Markdown may put a short introduction and its image in the same paragraph.
+  // Separate the image before figure conversion so justification cannot stretch
+  // the introduction across the full line above the image.
+  for (const paragraph of Array.from(root.querySelectorAll('p'))) {
+    if (!Array.from(paragraph.children).some((child) => child.tagName.toLowerCase() === 'img')) continue
+    if (paragraph.children.length === 1 && !paragraph.textContent?.trim()) continue
+    const parts: Element[] = []
+    let text = paragraph.cloneNode(false) as Element
+    text.removeAttribute('id')
+    for (const node of Array.from(paragraph.childNodes)) {
+      if (node.nodeType === 1 && (node as Element).tagName.toLowerCase() === 'img') {
+        if (text.textContent?.trim() || text.children.length) {
+          text.classList.add('book-image-intro')
+          parts.push(text)
+        }
+        const imageParagraph = document.createElement('p')
+        imageParagraph.append(node)
+        parts.push(imageParagraph)
+        text = paragraph.cloneNode(false) as Element
+        text.removeAttribute('id')
+      } else text.append(node)
+    }
+    if (text.textContent?.trim() || text.children.length) parts.push(text)
+    if (paragraph.id && parts.length) parts[0].id = paragraph.id
+    paragraph.replaceWith(...parts)
+  }
   for (const image of Array.from(root.querySelectorAll('img'))) {
     const raw = image.getAttribute('src') ?? ''
     if (!raw || raw.startsWith('data:')) continue
@@ -566,6 +627,7 @@ async function transformImages(
         && parent.children.length === 1
         && parent.firstElementChild === image
       ) {
+        if (parent.id) figure.id = parent.id
         parent.replaceWith(figure)
       } else {
         image.replaceWith(figure)
@@ -575,14 +637,15 @@ async function transformImages(
     image.setAttribute('src', stagedUrl)
     const parent = image.parentElement
     const alt = image.getAttribute('alt') || ''
-      if (
-        parent?.tagName.toLowerCase() === 'p'
-        && parent.textContent?.trim() === ''
-        && parent.children.length === 1
-        && parent.firstElementChild === image
-      ) {
+    if (
+      parent?.tagName.toLowerCase() === 'p'
+      && parent.textContent?.trim() === ''
+      && parent.children.length === 1
+      && parent.firstElementChild === image
+    ) {
       const figure = document.createElement('figure')
       figure.className = 'book-figure'
+      if (parent.id) figure.id = parent.id
       parent.replaceWith(figure)
       figure.append(image)
       if (alt) {
@@ -594,8 +657,30 @@ async function transformImages(
   }
 }
 
-function normalizeStructure(root: Element): void {
-  for (const details of Array.from(root.querySelectorAll('details'))) details.setAttribute('open', '')
+function normalizeStructure(root: Element, locale: BookLocale): void {
+  // Native details generates a default "Details" summary when its summary is
+  // left on the preceding page by Paged.js. Publish a passive aside instead.
+  for (const details of Array.from(root.querySelectorAll('details')).reverse()) {
+    const aside = root.ownerDocument.createElement('aside')
+    for (const attribute of Array.from(details.attributes)) {
+      if (attribute.name !== 'open') aside.setAttribute(attribute.name, attribute.value)
+    }
+    aside.classList.add('custom-block', 'book-details')
+    for (const child of Array.from(details.childNodes)) {
+      if (child.nodeType === 1 && (child as Element).tagName.toLowerCase() === 'summary') {
+        const summary = child as Element
+        const title = root.ownerDocument.createElement('p')
+        for (const attribute of Array.from(summary.attributes)) title.setAttribute(attribute.name, attribute.value)
+        title.classList.add('custom-block-title')
+        title.innerHTML = summary.innerHTML
+        // Only known introductory UI phrases; preserve the meaningful title.
+        replaceText(title, /^\s*(?:点开看|点击展开|展开查看|Click to expand)\s*[:：]?\s*/i, '')
+        if (!title.textContent?.trim()) title.textContent = locale.language === 'zh' ? '补充说明' : 'Additional details'
+        aside.append(title)
+      } else aside.append(child)
+    }
+    details.replaceWith(aside)
+  }
   for (const tabs of Array.from(root.querySelectorAll('.vp-code-group .tabs'))) tabs.remove()
   for (const copyButton of Array.from(root.querySelectorAll('button.copy'))) copyButton.remove()
   for (const group of Array.from(root.querySelectorAll('.vp-code-group'))) {
@@ -610,6 +695,10 @@ function normalizeStructure(root: Element): void {
     // HTML is static, so retaining it would look like an unhandled Vue directive.
     pre.removeAttribute('v-pre')
     pre.classList.add('book-code-block')
+    if (!pre.hasAttribute('data-code-caption')) {
+      pre.setAttribute('data-code-caption', locale.language === 'zh' ? '代码' : 'Code')
+    }
+    pre.setAttribute('data-code-continuation', locale.language === 'zh' ? '（续）' : ' (continued)')
     const lines = Array.from(pre.querySelectorAll('code > .line'))
     lines.forEach((line, index) => line.setAttribute('data-line-number', String(index + 1)))
     if (lines.length) {
@@ -723,7 +812,7 @@ export async function transformDocument(source: SourceDocument, context: Transfo
 
   await transformComponents(document, root, source, context, stats)
   await transformImages(document, root, source, context, stats)
-  normalizeStructure(root)
+  normalizeStructure(root, context.locale)
   ensureDocumentTitle(document, root, source)
   const headings = prefixIdentifiers(root, source)
   assertNoComponentResidue(root, source)

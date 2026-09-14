@@ -175,7 +175,7 @@ jobs:
       - name: Install fonts and PDF validators
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends -y fonts-cascadia-code fonts-noto-cjk-extra poppler-utils qpdf
+          sudo apt-get install --no-install-recommends -y fonts-cascadia-code fonts-noto-core fonts-noto-cjk-extra poppler-utils qpdf
           fc-cache -f
           serif_family="$(fc-match -f '%{family}\n' 'Noto Serif CJK SC' | head -n 1)"
           [[ "$serif_family" == *'Noto Serif CJK SC'* ]] || {
@@ -187,6 +187,11 @@ jobs:
             echo "Cascadia Mono was not selected: $mono_family" >&2
             exit 1
           }
+          mono_fallback="$(fc-match -f '%{family}\n' 'Noto Sans Mono' | head -n 1)"
+          [[ "$mono_fallback" == *'Noto Sans Mono'* ]] || {
+            echo "Noto Sans Mono fallback was not selected: $mono_fallback" >&2
+            exit 1
+          }
 
       - name: Build one book
         env:
@@ -196,7 +201,24 @@ jobs:
           pnpm pdf -- --book "${{ matrix.book }}" \
             --language "${{ matrix.language }}" \
             --output dist/pdf \
+            --keep-staging \
             --no-sandbox
+
+      # A pagination failure on a runner cannot be reproduced locally (font
+      # metrics decide where pages break). Ship the runner's own staging
+      # output so the divergence can be diffed against a local run.
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pdf-failure-${{ matrix.book }}-${{ matrix.language }}
+          path: |
+            .pdf-build/**/failure-diagnostics.json
+            .pdf-build/**/index.html
+            .pdf-build/**/*.css
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Validate and normalize PDF name
         id: validate
