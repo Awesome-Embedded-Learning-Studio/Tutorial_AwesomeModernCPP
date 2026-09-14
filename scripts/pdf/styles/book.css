@@ -577,8 +577,7 @@ body {
   white-space: pre-wrap;
 }
 
-/* Keep a small amount of source context at both ends of a code fragment. */
-.book-content pre code > .line:first-child,
+/* Keep a small amount of source context at the end of a code fragment. */
 .book-content pre code > .line:nth-last-child(2),
 .book-content pre code > .line:nth-last-child(3) {
   break-after: avoid;
