@@ -360,38 +360,42 @@ class IntBufferIterator;
 
 class IntBuffer {
  private:
-    std::array<int, 4> data{};
+  std::array<int, 4> data{};
 
  public:
-    IntBuffer() {
-      for (std::size_t i = 0; i < data.size(); ++i) {
-        data[i] = static_cast<int>(i * 2);
-      }
+  IntBuffer() {
+    for (std::size_t i = 0; i < data.size(); ++i) {
+      data[i] = static_cast<int>(i * 2);
     }
+  }
 
-    friend class IntBufferIterator;
+  friend class IntBufferIterator;
 };
 
 class IntBufferIterator {
  private:
-    const IntBuffer* buffer = nullptr;
-    std::size_t index = 0;
+  const IntBuffer* buffer = nullptr;
+  std::size_t index = 0;
 
  public:
-    explicit IntBufferIterator(const IntBuffer& buffer) : buffer(&buffer) {}
+  explicit IntBufferIterator(const IntBuffer& buffer) : buffer(&buffer) {}
 
-    bool hasNext() const { return index < buffer->data.size(); }
+  bool hasNext() const { return index < buffer->data.size(); }
 
-    int next() { return buffer->data[index++]; }
+  int next() {
+    int value = buffer->data[index];
+    ++index;
+    return value;
+  }
 };
 
 int main() {
-    IntBuffer buffer;
-    IntBufferIterator iterator{buffer};
+  IntBuffer buffer;
+  IntBufferIterator iterator{buffer};
 
-    while (iterator.hasNext()) {
-      std::cout << iterator.next() << std::endl;
-    }
+  while (iterator.hasNext()) {
+    std::cout << iterator.next() << std::endl;
+  }
 }
 ```
 
@@ -411,6 +415,7 @@ g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
 ```
 
 :::
+
 ## 小结
 
 友元是 C++ 封装体系中一个经过审慎设计的"逃生舱"——在不完全放弃 `private` 保护的前提下，为特定的外部函数或类授予访问权限。友元函数适合运算符重载（尤其是 `operator<<`），友元类适合紧耦合的实现搭档（容器与迭代器、数学类型协作），友元成员函数则在需要最小权限授权时发挥作用。
