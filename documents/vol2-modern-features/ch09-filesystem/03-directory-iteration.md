@@ -24,14 +24,6 @@ title: 目录遍历与搜索
 
 C++17 提供了两个迭代器来完成目录遍历：`directory_iterator` 做单层遍历，`recursive_directory_iterator` 做递归遍历。这一篇我们从基本用法到性能优化，再到错误处理，把目录遍历彻底搞透。
 
-> **学习目标**
->
-> - 完成本章后，你将能够：
-> - [ ] 使用 `directory_iterator` 和 `recursive_directory_iterator` 遍历目录
-> - [ ] 理解 `directory_entry` 的缓存优势
-> - [ ] 编写带过滤条件的文件搜索器
-> - [ ] 处理遍历过程中的权限错误和其他异常
-
 ## 环境说明
 
 和前两篇一样，C++17 标准，GCC 13+ / Clang 15+ / MSVC 2022。头文件 `<filesystem>`，命名空间 `namespace fs = std::filesystem;`。
@@ -74,7 +66,7 @@ pip
 
 就这么简单——一个 range-based for 循环，遍历目录下所有项，输出文件名。如果目录是空的，循环体不会执行。如果目录不存在或没有读取权限，构造迭代器时就会抛出 `filesystem_error` 异常。
 
-⚠️ `directory_iterator` 遍历的顺序是**未指定的**——不保证按字母序、不保证按创建时间、不保证任何特定顺序。如果你需要排序，就把结果收集到 `vector` 里然后 `std::sort`。
+`directory_iterator` 遍历的顺序是**未指定的**——不保证按字母序、不保证按创建时间、不保证任何特定顺序。如果你需要排序，就把结果收集到 `vector` 里然后 `std::sort`。
 
 ### 过滤文件
 
@@ -165,7 +157,7 @@ src/
 CMakeLists.txt
 ```
 
-⚠️ 注意 `depth()` 返回的是当前条目相对于起始目录的深度，不是相对于根目录。起始目录下的直接子项深度为 0，子目录下的子项深度为 1，以此类推。如果你在遍历过程中需要跳过某个子目录（不想递归进去），可以调用迭代器的 `disable_recursion_pending()` 方法——下一篇我们会展示具体用法。
+注意 `depth()` 返回的是当前条目相对于起始目录的深度，不是相对于根目录。起始目录下的直接子项深度为 0，子目录下的子项深度为 1，以此类推。如果你在遍历过程中需要跳过某个子目录（不想递归进去），可以调用迭代器的 `disable_recursion_pending()` 方法——下一篇我们会展示具体用法。
 
 ### directory_options：控制遍历行为
 
@@ -193,7 +185,7 @@ for (const auto& entry : fs::recursive_directory_iterator(
 
 ### 缓存的优势
 
-`directory_entry` 可能会缓存文件状态信息（类型、大小等），以减少系统调用次数。当你在遍历过程中多次调用 `is_regular_file()`、`is_directory()`、`file_size()` 等方法时，可以直接从缓存读取，避免重复的 `stat()` 调用。⚠️ 注意：缓存行为是**实现定义的**（implementation-defined），标准不保证一定会缓存或缓存何时失效。
+`directory_entry` 可能会缓存文件状态信息（类型、大小等），以减少系统调用次数。当你在遍历过程中多次调用 `is_regular_file()`、`is_directory()`、`file_size()` 等方法时，可以直接从缓存读取，避免重复的 `stat()` 调用。注意：缓存行为是**实现定义的**（implementation-defined），标准不保证一定会缓存或缓存何时失效。
 
 ```cpp
 for (const auto& entry : fs::directory_iterator(dir)) {
@@ -209,7 +201,7 @@ for (const auto& entry : fs::directory_iterator(dir)) {
 }
 ```
 
-⚠️ `directory_entry` 的缓存是在迭代器构造时获取的。如果在遍历过程中文件被修改或删除，缓存可能已经过期。如果你需要实时状态，可以调用 `entry.refresh()` 强制刷新，或者直接用 `fs::status(entry.path())` 获取最新状态。不过这种情况比较少见——大多数遍历场景下，缓存数据是足够准确的。
+`directory_entry` 的缓存是在迭代器构造时获取的。如果在遍历过程中文件被修改或删除，缓存可能已经过期。如果你需要实时状态，可以调用 `entry.refresh()` 强制刷新，或者直接用 `fs::status(entry.path())` 获取最新状态。不过这种情况比较少见——大多数遍历场景下，缓存数据是足够准确的。
 
 ## 遍历时过滤：按扩展名、大小、时间
 
@@ -438,14 +430,6 @@ int main() {
 ```
 
 这个工具综合运用了本篇和前两篇的所有知识：`recursive_directory_iterator` 做递归遍历，`directory_entry::is_regular_file()` 做类型过滤，`path::extension()` 做扩展名过滤，`path` 的迭代器做目录名过滤。在实际项目中，你可以扩展它来统计空行数、注释行数、代码行数等更细粒度的指标。
-
-## 小结
-
-这一篇我们学习了 `directory_iterator` 和 `recursive_directory_iterator` 的用法。`directory_iterator` 做单层遍历，适合已知目录结构的场景。`recursive_directory_iterator` 做深度优先递归遍历，适合需要搜索整个目录树的场景。`directory_entry` 的缓存机制避免了不必要的 `stat()` 调用，在遍历大型目录时有显著的性能优势。
-
-关于错误处理，始终使用 `skip_permission_denied` 选项来避免遍历被权限错误中断。关于性能，限制递归深度、避免跟随符号链接、优先使用 `recursive_directory_iterator` 而不是手动递归。实战部分我们写了代码统计工具和批量重命名工具，它们综合运用了本系列三篇文章的所有知识。
-
-到这里，`<filesystem>` 库的核心内容我们就讲完了。从 `path` 的语法处理，到文件操作的状态查询与修改，再到目录遍历与搜索——这套 API 让 C++ 终于有了标准化的文件系统操作能力，不用再依赖 POSIX API 或第三方库了。
 
 ## 参考资源
 

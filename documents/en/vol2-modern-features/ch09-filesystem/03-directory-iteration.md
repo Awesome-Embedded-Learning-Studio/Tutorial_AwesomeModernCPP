@@ -30,14 +30,6 @@ In the previous two articles, we learned how to handle paths using `std::filesys
 
 C++17 provides two iterators to handle directory traversal: `directory_iterator` for single-level traversal, and `recursive_directory_iterator` for recursive traversal. In this article, we will cover everything from basic usage to performance optimization and error handling, to thoroughly master directory traversal.
 
-> **Learning Objectives**
->
-> - After completing this chapter, you will be able to:
-> - [ ] Use `directory_iterator` and `recursive_directory_iterator` to traverse directories
-> - [ ] Understand the caching advantages of `directory_entry`
-> - [ ] Write file searchers with filtering conditions
-> - [ ] Handle permission errors and other exceptions during traversal
-
 ## Environment Setup
 
 Just like the previous two articles: C++17 standard, GCC 13+ / Clang 15+ / MSVC 2022. Header file `<filesystem>`, namespace `std::filesystem`.
@@ -347,14 +339,6 @@ Extension       Files   Lines
 ```
 
 This tool comprehensively uses the knowledge from this article and the previous two: `recursive_directory_iterator` for recursive traversal, `is_regular_file` for type filtering, `extension` for extension filtering, and `directory_entry`'s iterator for directory name filtering. In actual projects, you can extend it to count empty lines, comment lines, code lines, and other more fine-grained metrics.
-
-## Summary
-
-In this article, we learned the usage of `directory_iterator` and `recursive_directory_iterator`. `directory_iterator` performs single-level traversal and is suitable for scenarios with known directory structures. `recursive_directory_iterator` performs depth-first recursive traversal and is suitable for scenarios requiring searching the entire directory tree. The caching mechanism of `directory_entry` avoids unnecessary `stat` calls and offers significant performance advantages when traversing large directories.
-
-Regarding error handling, always use the `skip_permission_denied` option to avoid traversal being interrupted by permission errors. Regarding performance, limit recursion depth, avoid following symbolic links, and prioritize using `recursive_directory_iterator` over manual recursion. In the practical section, we wrote a code statistics tool and a batch renaming tool, which comprehensively applied the knowledge from all three articles in this series.
-
-At this point, we have covered the core content of the `std::filesystem` library. From the syntax handling of `path`, to file operation status queries and modifications, to directory traversal and search—this set of APIs finally gives C++ standardized file system operation capabilities, eliminating the need to rely on POSIX APIs or third-party libraries.
 
 ## Reference Resources
 

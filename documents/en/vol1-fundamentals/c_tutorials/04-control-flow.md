@@ -31,15 +31,6 @@ So far, the programs we have written run straight from the first line to the las
 
 These statements look simple, but they hide many potential pitfalls. In this article, we will go through C language control flow from start to finish, focusing on those "you thought it worked this way, but it actually doesn't" moments.
 
-> **Learning Objectives**
-> After completing this chapter, you will be able to:
->
-> - [ ] Understand the dangling else problem in if/else and how to solve it.
-> - [ ] Master the fall-through behavior of switch and the limitations of case labels.
-> - [ ] Proficiently use the three loop structures and their applicable scenarios.
-> - [ ] Understand the behavior and limitations of break/continue.
-> - [ ] Implement a practical state machine using switch.
-
 ## Environment Setup
 
 We will conduct all subsequent experiments in the following environment:
@@ -434,12 +425,6 @@ for (int val : arr) {
 ```
 
 C++17 introduced `if constexpr`, which evaluates conditions at compile time and directly removes branches that don't meet the condition from the code. There's also `std::variant` + `std::visit`, which provides a type-safe way to replace traditional `switch`—the compiler checks if you have handled all types, and if you miss one, it will result in a compilation error.
-
-## Summary
-
-Control flow is the skeleton of program logic. `if` handles conditional branching; add curly braces to eliminate dangling else ambiguity. `switch` is suitable for multi-way branching; the fall-through feature requires `break` to stop it, and don't forget `default`. `for`/`while`/`do-while` each have their scenarios. `break` and `continue` only affect the innermost layer. `goto` is a reasonable choice for resource cleanup in error handling. Using `switch` to implement state machines is a fundamental skill in embedded development.
-
-Next, we will learn about functions—how to organize code into reusable modules.
 
 ## Exercises
 

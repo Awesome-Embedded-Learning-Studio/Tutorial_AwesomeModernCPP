@@ -33,16 +33,6 @@ When writing desktop applications, we rarely worry about whether the compiler wi
 
 In this tutorial, we break down these patterns one by one. Understanding these patterns is a necessary prerequisite for learning embedded C++ applications—`constexpr` register configuration, zero-overhead abstractions, and type-safe hardware access.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Master three register access modes (bit manipulation, structure mapping, atomic access)
-> - [ ] Correctly use the `volatile` qualifier and understand its semantic boundaries
-> - [ ] Implement interrupt-safe data exchange patterns
-> - [ ] Design a layered peripheral abstraction layer
-> - [ ] Understand the startup process and linker scripts of bare-metal programs
-
 ## Environment Setup
 
 The code in this article targets the ARM Cortex-M platform, but all concepts and patterns apply to other architectures as well. On the host machine, we can verify the compilation using a cross-compiler:

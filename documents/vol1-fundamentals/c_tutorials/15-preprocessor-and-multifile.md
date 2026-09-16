@@ -26,17 +26,6 @@ title: 预处理器与多文件工程
 
 但多文件工程带来的不仅仅是组织上的挑战，它还牵出了 C 语言中一个经常被误解的角色——**预处理器**（preprocessor）。理解预处理器的本质，是避免那些莫名其妙的编译错误、奇怪的宏展开行为和头文件循环包含的第一步。
 
-> **学习目标**
->
-> 完成本章后，你将能够：
->
-> - [ ] 理解编译四阶段中预处理阶段的角色
-> - [ ] 正确使用 `#include`、`#define`、条件编译等预处理指令
-> - [ ] 掌握宏的编写技巧和常见陷阱
-> - [ ] 使用头文件防护和 `#pragma once` 组织头文件
-> - [ ] 构建多文件 C 工程，理解编译单元与链接过程
-> - [ ] 对比 C++ 中的 const/inline/constexpr/template/modules 替代方案
-
 ## 环境说明
 
 我们接下来的所有实验都在这个环境下进行：
@@ -68,7 +57,7 @@ C 程序从源代码变成可执行文件要经过四个阶段：预处理、编
 char buffer[kMaxBufferSize];
 ```
 
-⚠️ 宏定义末尾**不要加分号**。`#define kMaxBufferSize 1024;` 会把分号也作为替换文本的一部分。
+宏定义末尾**不要加分号**。`#define kMaxBufferSize 1024;` 会把分号也作为替换文本的一部分。
 
 ### 函数宏：带参数的文本替换
 
@@ -155,7 +144,7 @@ extern int kConfigMaxRetryCount;
 int kConfigMaxRetryCount = 3;
 ```
 
-⚠️ 头文件里写 `int kConfigMaxRetryCount = 3;`（没有 `extern`）被多个 `.c` 文件 include 会导致 `multiple definition` 错误。
+头文件里写 `int kConfigMaxRetryCount = 3;`（没有 `extern`）被多个 `.c` 文件 include 会导致 `multiple definition` 错误。
 
 ## 多文件编译与链接
 
@@ -182,10 +171,6 @@ gcc -o demo main.c -L. -lmath_utils
 - `namespace` 替代文件级 `static`——更清晰的命名空间组织
 - `using` 替代 `typedef`——语法更直观，支持别名模板
 - C++20 Modules——用 `export`/`import` 替代文本粘贴的 `#include`
-
-## 小结
-
-预处理器虽然原始，但在 C 语言的多文件工程中是不可或缺的粘合剂。C++ 用 `constexpr`、`inline`、`template`、`namespace`、Modules 等更安全的机制逐步替代了预处理器的功能。理解预处理器的本质，才能理解 C++ 为什么要做这些改进。
 
 ## 练习
 

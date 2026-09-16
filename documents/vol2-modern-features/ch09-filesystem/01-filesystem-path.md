@@ -23,14 +23,6 @@ title: path 操作：跨平台路径处理
 
 C++17 引入的 `<filesystem>` 库彻底解决了这个问题。`std::filesystem::path` 提供了一套统一的跨平台路径处理 API，不管你在什么操作系统上，路径的构造、分解、修改都可以用同一套代码完成。这篇文章我们聚焦在 `path` 类型本身——它的构造、分解、修改和比较。文件操作（exists、copy、remove 等）我们留到下一篇。
 
-> **学习目标**
->
-> - 完成本章后，你将能够：
-> - [ ] 理解 `std::filesystem::path` 的内部结构和跨平台设计
-> - [ ] 掌握路径分解（root_name、parent_path、filename 等）
-> - [ ] 掌握路径修改（replace_extension、append、concat 等）
-> - [ ] 编写跨平台的路径处理代码
-
 ## 环境说明
 
 本文所有代码基于 C++17 标准，在 Linux (GCC 13+)、macOS (Clang 15+) 和 Windows (MSVC 2022) 上均可编译运行。编译时需要链接 `<filesystem>` 支持——GCC 9 之前需要 `-lstdc++fs`，其他编译器通常直接支持。头文件为 `<filesystem>`，命名空间为 `std::filesystem`，为了简洁，我们后面用别名 `namespace fs = std::filesystem;`。
@@ -82,7 +74,7 @@ p3: "C:\\Users\\Alice\\Documents"
 
 注意 `operator<<` 输出 `path` 时会加上引号。如果你不想要引号，可以用 `p.string()` 输出。
 
-⚠️ `path` 的构造函数支持 `std::string_view`（从 C++17 起）。你可以直接传入 `string_view`：
+`path` 的构造函数支持 `std::string_view`（从 C++17 起）。你可以直接传入 `string_view`：
 
 ```cpp
 std::string_view sv = "/tmp/test";
@@ -204,7 +196,7 @@ auto dir = p.remove_filename();
 // dir = "/usr/local/bin/"
 ```
 
-⚠️ 注意 `remove_filename()` 和 `parent_path()` 的区别：`parent_path()` 返回的是逻辑上的父目录（不含末尾分隔符），而 `remove_filename()` 只是简单地删掉最后一个组件（保留末尾分隔符）。在大多数情况下，`parent_path()` 才是你想要的。
+注意 `remove_filename()` 和 `parent_path()` 的区别：`parent_path()` 返回的是逻辑上的父目录（不含末尾分隔符），而 `remove_filename()` 只是简单地删掉最后一个组件（保留末尾分隔符）。在大多数情况下，`parent_path()` 才是你想要的。
 
 ### append 和 concat：路径拼接的两种方式
 
@@ -307,7 +299,7 @@ fs::path from_str = fs::path(s);
 const char* c = p.c_str();  // Windows 上是 const wchar_t*
 ```
 
-⚠️ 在 Windows 上，`path` 内部使用 `wchar_t`（UTF-16），所以 `string()` 返回的是从 UTF-16 转换后的 UTF-8 或 ANSI 字符串，`native()` 返回的是 `std::wstring`。在 Linux/macOS 上，`path` 内部使用 `char`（UTF-8），没有这个转换问题。
+在 Windows 上，`path` 内部使用 `wchar_t`（UTF-16），所以 `string()` 返回的是从 UTF-16 转换后的 UTF-8 或 ANSI 字符串，`native()` 返回的是 `std::wstring`。在 Linux/macOS 上，`path` 内部使用 `char`（UTF-8），没有这个转换问题。
 
 ## 路径比较与迭代
 
@@ -390,12 +382,6 @@ int main() {
 ```
 
 这个函数综合使用了 `path` 的分解（`extension()`）、查询（`filename()`）和比较功能，同时也用到了下一篇才会详细讲的 `fs::exists`、`fs::is_directory`、`fs::directory_iterator` 等文件系统操作。你先有个印象就好，下一篇我们详细讲这些。
-
-## 小结
-
-`std::filesystem::path` 是 C++17 给我们带来的跨平台路径处理利器。它只做语法层面的路径处理（不碰文件系统），提供了完整的路径分解（root_name、parent_path、filename、stem、extension）、修改（replace_extension、remove_filename、append、concat）、比较和迭代功能。它内部使用通用格式（正斜杠），自动处理跨平台分隔符差异。在路径拼接时，`/=` 是语义拼接（推荐），`+=` 是纯字符串拼接（小心使用）。
-
-理解了 `path` 的操作之后，下一篇我们就来看看如何用 `<filesystem>` 库进行实际的文件和目录操作——创建、复制、删除、权限管理，以及一个实用的日志轮转工具。
 
 ## 参考资源
 

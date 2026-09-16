@@ -32,16 +32,6 @@ In the previous chapter, we divided the program's memory space into four major a
 
 Ta-da! The answer is the theme of this chapter: **alignment and padding**. To satisfy CPU memory access efficiency requirements, the compiler inserts "blank" bytes between struct members to align each member to specific address boundaries. These blank bytes store no valid data, but they genuinely occupy memory space. Understanding alignment rules not only allows you to accurately predict `sizeof` results but also enables you to reduce struct size in performance-sensitive scenarios by adjusting member order—this optimization requires no changes to logic code, simply reordering member declarations can save considerable memory.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Explain why CPUs need memory alignment and what happens when data is misaligned.
-> - [ ] Manually calculate the `sizeof` result for any struct.
-> - [ ] Use `alignas` and `alignof` (or `alignof`) to control and query alignment requirements.
-> - [ ] Optimize struct memory layout by adjusting member order.
-> - [ ] Understand the purpose and potential risks of `#pragma pack`.
-
 ## Alignment—The Secret Agreement Between CPU and Memory
 
 To understand alignment, we must first look at how the CPU accesses memory. Many people assume the CPU can freely read and write data at any address on a byte-by-byte basis—from a programmer's perspective, this seems true, but the underlying hardware doesn't actually work that way. When modern CPUs access memory via the bus, they typically perform transfers in units of words. A 32-bit CPU can read or write 4 bytes at a time, and a 64-bit CPU can read or write 8 bytes at a time. Furthermore, hardware often requires that the starting address of this read/write operation be an integer multiple of the word size.
@@ -337,9 +327,3 @@ struct Heavy {
 ### Exercise 3: Allocate Aligned Buffers for SIMD
 
 Write a function that allocates a 32-byte aligned `double` array (at least 8 elements), loads data using AVX's `_mm256_load_pd`, and prints the result. Hint: you can use `alignas(32)` to declare a stack array, or use `aligned_alloc` to allocate on the heap.
-
-## Summary
-
-In this chapter, we revealed the secrets behind `sizeof`. CPUs access data most efficiently at aligned addresses, so compilers insert padding bytes between struct members to satisfy alignment requirements. Every type has a natural alignment value (usually equal to its size), a struct's alignment equals that of its largest member, and its total size must be a multiple of that alignment value. Member declaration order directly impacts padding amount—placing members with larger alignment requirements first and those with smaller requirements later can significantly reduce struct size. `alignas` allows us to manually specify stricter alignment requirements, which is indispensable for SIMD, cache line optimization, and hardware interaction. `#pragma pack` can eliminate padding for compact layouts, but at the cost of potential unaligned access risks.
-
-With this, the content of Volume 1 is fully concluded. We have journeyed from C++ basic types, control flow, and functions to pointers, arrays, memory layout, and alignment, covering the foundation of C++ programming. This knowledge will recur repeatedly in subsequent studies—understanding memory layout and alignment allows you to grasp why `std::unique_ptr` overhead is almost zero when learning move semantics and smart pointers in Volume 2; understanding the difference between stack and heap allows you to immediately appreciate how RAII can cure memory leaks. In Volume 2, we will enter the core features of Modern C++: RAII, move semantics, smart pointers, lambdas, constexpr—these are the key forces that transform C++ from "C with Classes" into a modern system programming language. See you in Volume 2.

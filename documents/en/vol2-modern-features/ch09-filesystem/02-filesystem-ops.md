@@ -29,15 +29,6 @@ In the previous post, we learned how to use `std::filesystem::path` to handle pa
 
 As before, our environment is C++17, GCC 13+ / Clang 15+ / MSVC 2022. The header file is `<filesystem>`, and the namespace is `std::filesystem`.
 
-> **Learning Objectives**
->
-> - After completing this chapter, you will be able to:
-> - [ ] Use `exists`, `is_regular_file`, `is_directory` to check file status
-> - [ ] Master the usage of `create_directory`, `create_directories`
-> - [ ] Safely perform file copying and deletion operations
-> - [ ] Understand `file_size`, `last_write_time`, `status` and other metadata queries
-> - [ ] Write a practical log rotation tool
-
 ## File Status Queries: Does it exist? What type is it?
 
 The first step in file system operations is usually "check what is actually at this path." `std::filesystem` provides a set of query functions to answer this.
@@ -322,12 +313,6 @@ if (ec) {
 ```
 
 My personal preference is: for initialization operations at program startup (creating config directories, etc.), use the throwing version—because if these fail, the program cannot run normally, and an exception can directly terminate the startup process. For operations that might fail normally at runtime (copying files, deleting temporary files, etc.), use the `error_code&` version—because these failures are expected and need to be handled gracefully.
-
-## Summary
-
-In this post, we covered the core file operations of the `std::filesystem` library. File status queries (`exists`, `is_regular_file`, `is_directory`) and metadata queries (`file_size`, `last_write_time`, `status`) let us understand "what is actually on the file system." `create_directory` and `create_directories` handle directory creation, with the latter automatically creating intermediate directories, which is very convenient. `copy` / `copy_file` provide flexible file copying, `remove` / `remove_all` provide file deletion, and `rename` provides atomic renaming. `permissions` and `space` handle permission and disk space queries respectively. `temp_directory_path` and the "write to temp file + atomic rename" pattern are key techniques for ensuring data integrity.
-
-In the next post, let's talk about directory traversal—`directory_iterator` and `recursive_directory_iterator`, and how to efficiently search for files in the file system.
 
 ## Reference Resources
 

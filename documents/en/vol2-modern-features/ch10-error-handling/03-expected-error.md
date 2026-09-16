@@ -276,12 +276,6 @@ This example demonstrates the advantage of `std::expected` in multi-layer operat
 
 ------
 
-## Summary
-
-`std::expected` is C++23's core tool for type-safe error handling. It provides more error information than `std::optional`, is better suited for performance-sensitive and embedded scenarios than exceptions, and monadic operations make error propagation chains elegant. If you are still on C++17, a simplified `std::expected` implementation covers most needs.
-
-In the next post, we will comprehensively compare all error handling schemes and provide a scenario-based selection guide.
-
 ## Reference Resources
 
 - [cppreference: std::expected](https://en.cppreference.com/w/cpp/utility/expected)

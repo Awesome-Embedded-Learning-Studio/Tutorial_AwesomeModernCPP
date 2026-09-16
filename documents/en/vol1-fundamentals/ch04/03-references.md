@@ -323,11 +323,3 @@ Design a class `ServerConfig`, containing `port` and `timeout` two `int` members
 ServerConfig config;
 config.set_port(8080).set_timeout(30);
 ```
-
-## Summary
-
-In this chapter, starting from the "pain points of pointers," we learned about the core C++ feature: references. A reference is an alias for an existing object; it must be initialized when declared and cannot be changed once bound. Compared to pointers, references have no null value, require no dereferencing syntax, and have an immutable binding relationship—these constraints make them the best choice for "passing objects that definitely exist."
-
-When used as function parameters, references make code cleaner than the pointer version; when modified with `const`, it becomes the standard paradigm for "no copy, no modification" read-only parameter passing. Be extra careful when returning references; you must ensure the referenced object's lifetime is longer than the function call—local variables absolutely cannot have their references returned. Finally, `const` references can bind to temporary objects and extend their lifetime; this feature is common in actual code but is limited to const references.
-
-The next chapter will touch on the basics of C++ dynamic memory management—although it's not yet time to talk about smart pointers, you can have an impression first: modern C++ thoroughly solves the "who is responsible for releasing memory" problem through RAII and smart pointers. Before that, make sure your foundation in references is solid, and the subsequent steps will be much easier.

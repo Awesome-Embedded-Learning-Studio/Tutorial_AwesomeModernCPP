@@ -428,12 +428,6 @@ static_assert(kDebugUart.compute_brr(72000000) == 625);  // 72MHz / 115200
 
 有虚函数或有虚基类的类永远不可能是字面类型（直到目前的标准都是如此）。如果你需要在编译期使用一个类型层次结构，考虑用 CRTP（Curiously Recurring Template Pattern）来替代虚函数。
 
-## 小结
-
-这一章我们覆盖了字面类型的定义和约束、`constexpr` 构造函数的写法、`constexpr` 成员函数的使用，以及 C++14/C++20/C++23 对这些限制的逐步放宽。核心要点是：只要你的类型的内存布局和生命周期在编译期就能完全确定，编译器就可以在编译期构造和操作它。编译期复数、日期、字符串、配置结构这些类型都可以成为字面类型，从而参与到更复杂的编译期计算中去。
-
-下一章我们会介绍 C++20 新增的 `consteval` 和 `constinit` 关键字，看看它们如何精确控制编译期求值的行为。
-
 ## 参考资源
 
 - [cppreference: constexpr specifier](https://en.cppreference.com/w/cpp/language/constexpr)

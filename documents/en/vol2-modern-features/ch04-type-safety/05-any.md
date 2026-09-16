@@ -417,14 +417,6 @@ In embedded systems, `std::any` is usually not the first choice. There are three
 
 If you truly need "dynamic typing" functionality in an embedded project, a more recommended approach is to use `std::variant` + an enum tag to implement a restricted version—all possible types are determined at compile time, requiring no RTTI and no heap allocation.
 
-## Summary
-
-`std::any` is the most "dynamic" type-safe container in C++17. It achieves the ability to "store values of any type" through type erasure, and provides type safety checks upon retrieval through `std::any_cast`. Small Buffer Optimization ensures that the performance of small objects is not affected by heap allocation.
-
-But the flexibility of `std::any` comes at a cost: it gives up compile-time type checking (all checks happen at runtime), it may trigger heap allocation (for large objects), and it does not support `std::visit`-style pattern matching. In the vast majority of scenarios, if your type set is known, `std::variant` is the better choice. `std::any` is suited for scenarios that truly require "runtime polymorphism"—plugin systems, scripting engines, and dynamic configuration.
-
-With our understanding of `std::any`, our type safety journey in ch04 comes to a close. From `std::optional` to strong-typedefs, from `std::variant` to `std::expected` and then to `std::any`—the common theme of these tools is: **leverage the type system to catch as many errors as possible at compile time, minimizing runtime uncertainty**.
-
 ## Reference Resources
 
 - [cppreference: std::any](https://en.cppreference.com/w/cpp/utility/any)

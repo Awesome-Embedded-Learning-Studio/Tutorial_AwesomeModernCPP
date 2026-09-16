@@ -31,14 +31,6 @@ Pointers are likely the most famous, yet intimidating, feature in C. If you are 
 
 Admittedly, building intuition for pointers takes some time. But don't panic—we won't touch complex topics like multi-level pointers or function pointers just yet. Today, we focus on one thing: **a pointer is an address, and an address is just a locker number**. Once you grasp this, you will have a solid foundation for all advanced pointer-related features.
 
-> **Learning Objectives**
-> After completing this chapter, you will be able to:
->
-> - [ ] Use the "locker" model to understand the relationship between memory and addresses.
-> - [ ] Correctly declare and initialize pointer variables.
-> - [ ] Understand the inverse operations of address-of (`&`) and dereference (`*`).
-> - [ ] Master pointer arithmetic and distance calculation.
-
 ## Environment Setup
 
 We will conduct all experiments in the following environment:
@@ -251,12 +243,6 @@ Everything works as expected.
 C++ makes two key improvements on top of C pointers. The first is the **reference**. A reference `T&` is essentially a const pointer that the compiler automatically dereferences—it must be initialized when declared and cannot be rebound once set. You don't use the `*` operator when using it; syntactically, it acts like the original variable. References are much safer than pointers, and passing by reference is preferred for C++ function parameters.
 
 The second is **smart pointers**. `std::unique_ptr` and `std::shared_ptr` use the RAII mechanism to automatically manage memory lifecycles—memory is released when the pointer goes out of scope, fundamentally eliminating memory leaks and dangling pointers caused by manual `new`/`delete`. We will discuss these in depth later; for now, just know that the core philosophy of C++ is "using the type system and object lifecycles for automatic management."
-
-## Summary
-
-Today we established a basic understanding of pointers: a pointer is a variable that stores a memory address. `&` takes the address, `*` dereferences it—they are inverse operations. Pointer arithmetic steps by the size of the pointed-to type, naturally fitting array traversal. Pointers must be initialized (even if just to `NULL`); uninitialized pointers are dangerous.
-
-We have only laid the "foundation" for pointers so far. Next, we will tackle questions like: What is the exact relationship between arrays and pointers? How do we distinguish between `*ptr++` and `(*ptr)++? What is the difference between NULL pointers and wild pointers? We will discuss these in the next article.
 
 ## Exercises
 

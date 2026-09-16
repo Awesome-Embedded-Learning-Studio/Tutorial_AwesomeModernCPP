@@ -269,11 +269,3 @@ process(studentObj);
 ```
 
 Hint: Change the parameter to pass by reference. Think about this: if the function needs to store the object (for example, putting it into a container), is a reference still sufficient?
-
-## Summary
-
-In this chapter, we delved into the core mechanisms of single inheritance. Inheritance uses the `:` syntax to express "is-a" relationships, where derived classes automatically acquire all members of the base class. Construction goes from base to derived, and destruction is the reverse—this holds true for inheritance chains of any depth. Derived classes can directly use the `public` and `protected` members of the base class, while `private` members can only be accessed indirectly via interfaces. Protected members (`protected`) are designed for inheritance scenarios but should be used cautiously; default to `private` to maintain encapsulation.
-
-Object slicing is the easiest pitfall in inheritance: any value type conversion from a derived class to a base class will lose the parts specific to the derived class. There is only one solution—use references or pointers.
-
-So far, the inheritance we have discussed is static: which version of a function to call is determined at compile time. In the next chapter, we introduce virtual functions, allowing the target of a function call to be determined at runtime—that is the realm of polymorphism.

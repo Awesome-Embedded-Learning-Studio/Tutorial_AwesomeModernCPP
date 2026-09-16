@@ -413,14 +413,6 @@ constexpr int bad_divide(int a, int b)
   allow-x86-asm
 />
 
-## 小结
-
-到这里，我们已经把 `constexpr` 的基础机制梳理了一遍。总结几个关键点：
-
-`constexpr` 变量是真正的编译期常量，而 `const` 只保证"不可修改"。`constexpr` 函数是一种双模式函数，编译器根据上下文决定它在编译期还是运行期执行。从 C++11 到 C++17，`constexpr` 的限制逐步放宽，从只能写单一 `return` 语句到支持循环、局部变量和 lambda。`static_assert` 是 `constexpr` 的天然搭档，让编译期测试成为可能。能用 `constexpr` 函数解决的问题就不要上模板元编程——代码更清晰、错误信息更友好。
-
-下一章我们会深入到 `constexpr` 构造函数和字面类型，看看如何让自定义类型也参与编译期计算。
-
 ## 参考资源
 
 - [cppreference: constexpr specifier](https://en.cppreference.com/w/cpp/language/constexpr)

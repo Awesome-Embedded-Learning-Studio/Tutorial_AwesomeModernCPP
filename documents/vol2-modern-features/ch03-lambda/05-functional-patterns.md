@@ -30,14 +30,6 @@ title: 函数式编程模式
 
 这一章我们来看看 C++ 中有哪些实用的函数式编程模式——高阶函数、函数组合、偏应用，以及怎么用 STL 算法写出函数式风格的数据处理管道。最后我们会预告一下 C++20 的 Ranges 库，它可以说是 C++ 函数式编程的"终极形态"。
 
-> **学习目标**
->
-> - 理解高阶函数的概念并在 C++ 中实现
-> - 掌握函数组合（compose/pipe）的技巧
-> - 学会用 STL 算法实现 map/filter/reduce 模式
-> - 了解柯里化和偏应用在 C++ 中的实现方式
-> - 对 C++20 Ranges 建立基本认知
-
 ---
 
 ## 高阶函数——接受或返回函数的函数
@@ -503,17 +495,6 @@ void demo_ranges_preview() {
 Ranges 的 `views::filter` 和 `views::transform` 对应函数式编程的 filter 和 map，`views::take` 和 `views::drop` 对应 Haskell 的 `take` 和 `drop`，`views::join` 对应 `concat`。可以说 Ranges 就是 C++ 对函数式数据处理的官方回答。我们在卷四中会深入展开 Ranges 库的细节。
 
 ---
-
-## 小结
-
-函数式编程不是要用 C++ 去写 Haskell——而是借鉴函数式编程中有用的思维方式和模式，让 C++ 代码更清晰、更容易测试、更容易组合。核心要点回顾：
-
-- 高阶函数是接受或返回函数的函数，STL 算法就是高阶函数的经典案例
-- 函数组合用 `compose`/`pipe` 把多个函数串联成管道，C++17 的 fold expression 让可变参数版本非常紧凑
-- 偏应用用 lambda 固定部分参数，比 `std::bind` 更清晰更安全
-- map/filter/reduce 用 `std::transform`/`std::copy_if`/`std::accumulate` 实现，是数据处理的"三板斧"
-- 不可变数据思维可以减少副作用、提高线程安全性，但有选择地使用
-- C++20 Ranges 通过惰性求值解决了中间容器问题，是函数式数据处理的终极形态
 
 ## 参考资源
 

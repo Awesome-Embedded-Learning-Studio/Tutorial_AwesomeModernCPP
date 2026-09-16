@@ -282,11 +282,3 @@ Try editing and running this code online to see the effect of modifying the outp
   description="Edit and run your first C++ program in the browser and observe the output."
   allow-run
 />
-
-## Summary
-
-In this chapter, we started from scratch, wrote a complete C++ program, and dissected it thoroughly. Let's review the key points: `#include` is used to introduce standard library functional modules, `int main()` is the program entry, `std::cout` and `std::cin` are responsible for output and input respectively, `<<` and `>>` are the corresponding data flow operators, and compilation requires four stages: preprocessing, compilation, assembly, and linking.
-
-More importantly, we learned how to read compiler error messages—this is probably the most practical skill in this chapter. In your future studies, you will face compiler errors countless times. Don't be afraid; look at the first one, fix the first one, and recompile.
-
-In the next chapter, we start learning C++'s type system—how variables actually store data, the difference between integers and floating-point numbers, and why C++ is so obsessed with types. This knowledge is the foundation for writing any meaningful program later on.

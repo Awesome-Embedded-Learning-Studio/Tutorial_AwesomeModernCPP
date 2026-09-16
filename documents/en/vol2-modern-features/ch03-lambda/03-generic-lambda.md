@@ -35,13 +35,6 @@ translation:
 
 In the previous two chapters, the lambda parameter types we used were all concrete—`int`, `float`, `std::string`, and so on. However, in real-world projects, much lambda logic is type-agnostic: a sorting comparator only requires the type to support `operator<`, and an accumulator only requires support for `operator+`. If we write a lambda for each type, we revert to the C++98 functor path—repetitive and redundant. C++14 gave lambdas generic capabilities (`auto` parameters), and C++20 went further by allowing lambdas to have explicit template parameter lists. In this chapter, we will thoroughly clarify the underlying mechanisms, usage, and boundaries of generic lambdas.
 
-> **Learning Objectives**
->
-> - Understand the underlying implementation of C++14 generic lambdas—template call operators
-> - Master the usage of `decltype(auto)` within lambdas
-> - Learn C++20 template lambda syntax and concept constraints
-> - Understand the implementation methods and trade-offs of recursive lambdas
-
 ---
 
 ## C++14 Generic Lambdas — `auto` Parameters
@@ -283,16 +276,6 @@ print_container(l1); // Works for list
 The flexibility of generic lambdas makes these "write once, use everywhere" generic operations very natural. You don't need to write an overload for each container type—`auto` parameters combined with range-based for loops handle all containers that support iteration with a single lambda.
 
 ---
-
-## Summary
-
-Generic lambdas evolve lambda expressions from "a fixed piece of code" into "a parameterized piece of code." Core takeaways:
-
-- C++14 generic lambda `auto` parameters correspond to template parameters of the closure type's `operator()`
-- `if constexpr` allows generic lambdas to select different code paths based on type information
-- C++20 template lambdas use `template<>` syntax to provide explicit template parameters and Concepts constraints
-- Recursive lambdas can be implemented via `std::function` (simple but with overhead) or the Y combinator pattern (efficient but slightly more complex syntax)
-- Generic lambdas are extremely useful in scenarios like generic comparators, transformers, and container operations
 
 ## Reference Resources
 

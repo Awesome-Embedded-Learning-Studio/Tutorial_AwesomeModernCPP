@@ -389,14 +389,6 @@ auto& b = get_ref();     // int&（显式保留引用）
 
 ------
 
-## 小结
-
-`auto` 的推导规则可以归纳为一句话：默认丢弃引用和顶层 const，保留底层 const。四种常见写法对应不同的需求：`auto` 按值拷贝，`auto&` 获取可修改引用，`const auto&` 获取只读引用，`auto&&` 用于转发。
-
-在实践中，`auto` 最适合用在迭代器、lambda、范围 for 循环和函数返回类型中。配合 `using` 类型别名，可以让代码既简洁又清晰。但要注意花括号初始化的陷阱、代理类型的兼容性问题，以及默认拷贝可能带来的性能开销。
-
-下一章我们会深入 `decltype` 和 `decltype(auto)`，看看它们如何补充 `auto` 无法覆盖的场景——特别是当你需要精确保留表达式的引用语义时。
-
 ## 参考资源
 
 - [cppreference: auto specifier](https://en.cppreference.com/w/cpp/language/auto)

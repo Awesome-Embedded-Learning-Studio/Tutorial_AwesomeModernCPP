@@ -26,16 +26,6 @@ title: 类的定义
 
 这一章我们从 C 语言的 `struct` 出发，搞清楚 C++ 的 `class` 到底多了什么、为什么需要访问控制、成员函数怎么定义和使用，最后用一个完整的 `Point` 类把所有知识串起来。
 
-> **学习目标**
->
-> 完成本章后，你将能够：
->
-> - [ ] 理解从 C struct 到 C++ class 的演进动机
-> - [ ] 定义包含成员变量和成员函数的类
-> - [ ] 使用 `public`、`private`、`protected` 控制成员的访问权限
-> - [ ] 在类外定义成员函数，理解 `::` 作用域解析运算符
-> - [ ] 区分 `class` 和 `struct` 的语义差异并合理选用
-
 ## 环境说明
 
 - 平台：Linux x86\_64（WSL2 也可以）
@@ -112,8 +102,7 @@ public:
 
 类体内部可以包含两类东西：成员变量（也叫数据成员，描述对象的"状态"）和成员函数（也叫方法，描述对象能"做什么"）。注意类定义结束的大括号后面**必须加分号**——忘记写分号是新手最容易犯的错误之一，而且编译器给出的错误信息往往指向下一行，非常具有迷惑性。
 
-> ⚠️ **踩坑预警**
-> 类定义结束时的大括号后面**必须加分号**。忘记写分号是 C++ 新手最容易犯的错误之一，而且编译器给出的错误信息往往指向下一行，非常具有迷惑性。比如你写 `class Foo { ... }` 后面忘了分号，紧跟着写 `int main() { ... }`，编译器可能报 `error: expected ';' after class definition` 或者更离谱的 `error: 'main' does not name a type`——让你满世界找 `main` 的毛病，实际上问题出在上一行。
+类定义结束时的大括号后面**必须加分号**。忘记写分号是 C++ 新手最容易犯的错误之一，而且编译器给出的错误信息往往指向下一行，非常具有迷惑性。比如你写 `class Foo { ... }` 后面忘了分号，紧跟着写 `int main() { ... }`，编译器可能报 `error: expected ';' after class definition` 或者更离谱的 `error: 'main' does not name a type`——让你满世界找 `main` 的毛病，实际上问题出在上一行。
 
 ### 访问控制：public、private、protected
 
@@ -160,8 +149,7 @@ public:
 
 这就是封装的核心价值：不是"防黑客"，而是在语法层面告诉使用者——这些内部细节你不该碰，你只应该通过我提供的接口来操作。对于类的作者来说，只要接口不变，内部实现怎么改都行，完全不影响使用者的代码。
 
-> ⚠️ **踩坑预警**
-> 从类外部访问 `private` 成员会导致编译错误，而且这个错误信息在不同编译器上差异很大。GCC 可能报 `error: 'double BankAccount::balance' is private within this context`，Clang 报 `error: 'balance' is a private member of 'BankAccount'`，MSVC 报 `error C2248: 'BankAccount::balance': cannot access private member declared in class 'BankAccount'`。如果你看到这类信息，先检查是不是试图从类外面碰了不该碰的成员。
+从类外部访问 `private` 成员会导致编译错误，而且这个错误信息在不同编译器上差异很大。GCC 可能报 `error: 'double BankAccount::balance' is private within this context`，Clang 报 `error: 'balance' is a private member of 'BankAccount'`，MSVC 报 `error C2248: 'BankAccount::balance': cannot access private member declared in class 'BankAccount'`。如果你看到这类信息，先检查是不是试图从类外面碰了不该碰的成员。
 
 ## 第三步——成员函数的定义方式
 
@@ -231,8 +219,7 @@ void Point::print() const
 
 `Point::set` 中的 `Point::` 就是作用域解析——"这个 `set` 函数不是全局函数，它是 `Point` 类的成员函数"。如果你忘了写 `Point::`，编译器会认为你在定义一个普通的全局函数，然后发现它不知道 `x` 和 `y` 是什么，直接报错。
 
-> ⚠️ **踩坑预警**
-> 在类体外定义成员函数时，`const` 限定符不能丢。如果你在类体内声明了 `void print() const;`，在类体外定义时也必须写 `void Point::print() const { ... }`。如果写成 `void Point::print() { ... }`（漏掉 `const`），编译器会认为这是两个不同的函数——一个有 `const` 的声明没有定义，一个没有 `const` 的定义没有声明——链接的时候就会报"undefined reference"错误。这个坑非常隐蔽，因为编译阶段不一定能发现，要等到链接时才炸。
+在类体外定义成员函数时，`const` 限定符不能丢。如果你在类体内声明了 `void print() const;`，在类体外定义时也必须写 `void Point::print() const { ... }`。如果写成 `void Point::print() { ... }`（漏掉 `const`），编译器会认为这是两个不同的函数——一个有 `const` 的声明没有定义，一个没有 `const` 的定义没有声明——链接的时候就会报"undefined reference"错误。这个坑非常隐蔽，因为编译阶段不一定能发现，要等到链接时才炸。
 
 ## 第四步——class 和 struct 到底有什么区别
 
@@ -358,8 +345,7 @@ distance(p1, origin) = 5
 
 我们来看一下这段代码的几个设计决策。成员变量 `x_` 和 `y_` 用了下划线后缀——这是一种常见的命名风格，用来区分成员变量和函数参数。`get_x` 和 `get_y` 是典型的 getter 函数，被声明为 `const` 因为读取坐标不需要修改对象。`distance_to` 接受一个 `const Point&` 参数——注意，虽然 `other` 是另一个对象，但 `Point` 的成员函数可以访问同类所有对象的 `private` 成员，所以 `other.x_` 在这里是合法的。测试数据选了 (3, 4) 和 (6, 8) 这两个勾股数，距离都是 5，方便一眼验证结果是否正确。
 
-> ⚠️ **踩坑预警**
-> `Point p1;` 能够编译通过，是因为编译器自动生成了一个默认构造函数——一个什么都不做的无参构造函数。这意味着 `x_` 和 `y_` 的初始值是未定义的。如果你在调用 `set` 之前就调用 `print`，会输出垃圾值。下一章我们会讲如何用构造函数确保对象创建时就处于合法状态。
+`Point p1;` 能够编译通过，是因为编译器自动生成了一个默认构造函数——一个什么都不做的无参构造函数。这意味着 `x_` 和 `y_` 的初始值是未定义的。如果你在调用 `set` 之前就调用 `print`，会输出垃圾值。下一章我们会讲如何用构造函数确保对象创建时就处于合法状态。
 
 ## 在线运行
 
@@ -412,7 +398,7 @@ public:
 
     void print() const
     {
-        std::cout << "Rectangle(width=" << width_ 
+        std::cout << "Rectangle(width=" << width_
                   << ", height=" << height_ << ")" << std::endl;
     }
 };
@@ -522,13 +508,3 @@ g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
 ```
 
 :::
-
-## 小结
-
-这一章我们从 C 语言 `struct` 的局限性出发，理解了 C++ 引入 `class` 的动机。核心要点：类通过 `public`、`private`、`protected` 管理成员可见性；成员函数可以在类体内定义（隐式 `inline`），也可以在类体外用 `::` 定义；`class` 和 `struct` 功能等价，区别仅在于默认访问权限——用 `struct` 表达"纯数据"，用 `class` 表达"有行为和约束的类型"。
-
-不过我们故意留下了一个重要问题：对象创建时如何保证处于合法状态？上面的 `Point` 类需要先创建再调用 `set`，如果使用者忘了呢？下一章我们就来解决这个问题——构造函数和析构函数，它们是 RAII 的基石，也是 C++ 资源管理思想的起点。
-
----
-
-> **难度自评**：如果你对 `private` 和 `public` 的访问边界还不太确定，试着在 `point.cpp` 的 `main` 函数里故意写几条访问私有成员的语句（比如 `p1.x_ = 100;`），看看编译器怎么报错。理解这些错误信息的含义，是掌握 C++ 类的第一步。

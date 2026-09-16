@@ -271,7 +271,7 @@ try {
 
 在这个状态下，`std::visit` 会抛出 `std::bad_variant_access`，`std::get` 也会抛异常。所以如果你的代码中 `variant` 可能遇到这种情况，最好在访问前检查一下。
 
-⚠️ 实际上，在正常使用中 `valueless_by_exception` 极少出现。它只在"构造新值时抛异常"这个特定场景下才会触发。如果你所有的备选类型的构造函数都是 `noexcept` 的（或者你不用异常），那就完全不用担心这个状态。
+实际上，在正常使用中 `valueless_by_exception` 极少出现。它只在"构造新值时抛异常"这个特定场景下才会触发。如果你所有的备选类型的构造函数都是 `noexcept` 的（或者你不用异常），那就完全不用担心这个状态。
 
 ## 实战应用——消息类型系统
 
@@ -423,7 +423,7 @@ struct UnaryExpr {
 };
 ```
 
-⚠️ 注意这里使用了 `std::unique_ptr<BinaryExpr>` 而不是直接的 `BinaryExpr`，因为 `variant` 不能直接包含不完整类型。递归数据结构必须通过指针（或 `std::unique_ptr`）来打破循环依赖。
+注意这里使用了 `std::unique_ptr<BinaryExpr>` 而不是直接的 `BinaryExpr`，因为 `variant` 不能直接包含不完整类型。递归数据结构必须通过指针（或 `std::unique_ptr`）来打破循环依赖。
 
 ## 内存布局与性能考量
 
@@ -441,16 +441,6 @@ std::cout << "sizeof(string): " << sizeof(std::string) << "\n";
 > 可以参考 [YukunJ](https://github.com/YukunJ) 老师提供的[案例](https://godbolt.org/z/sbvEMW56G)
 
 这个大小对于大多数应用来说完全可接受。但在内存极端受限的嵌入式场景中，你可能需要评估一下是否值得用 `variant` 替代手写的 `union` + `enum` 标签方案。`variant` 带来的类型安全收益通常远大于几个字节的内存开销。
-
-## 小结
-
-`std::variant` 是 C++17 中最重要的类型安全工具之一。它解决了裸 `union` 的三个核心问题：不知道当前持有什么类型（通过内部标签解决）、不会管理对象生命周期（自动调用构造/析构函数）、不支持非平凡类型（没有任何限制）。
-
-`std::visit` 是 `variant` 的核心访问机制，配合 `Overloaded` 惯用法可以实现类型安全的模式匹配。当你的类型集合是有限且已知的（消息类型、配置值、AST 节点等），`variant` 比虚函数更高效、更安全。但如果类型集合是开放的（第三方可以扩展），虚函数仍然是更合适的选择。
-
-`valueless_by_exception` 是一个需要了解但通常不用担心的问题——它只在构造新值时抛异常的极端场景下出现。了解这个状态的存在就够了，在实际代码中不必为此过度防御。
-
-下一篇我们要讨论的 `std::optional`，可以看作 `variant` 的一个特例——当你的"类型集合"只有两种可能（"有值"和"没有值"）时，`optional` 就是更简洁的选择。
 
 ## 参考资源
 

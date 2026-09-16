@@ -28,13 +28,6 @@ title: 泛型 Lambda 与模板 Lambda
 
 在前面两章里，我们用的 lambda 参数类型都是具体的——`int`、`double`、`const std::string&` 之类的。但在实际项目中，很多 lambda 的逻辑对类型是中性的：排序的比较器只要求类型支持 `<`，累加器只要求类型支持 `+`。如果我们为每种类型都写一个 lambda，那就回到了 C++98 仿函数的老路上——重复、冗余。C++14 给了 lambda 泛型的能力（`auto` 参数），C++20 更是直接让 lambda 拥有了显式模板参数列表。这一章我们就来彻底搞清楚泛型 lambda 的底层机制、用法和边界。
 
-> **学习目标**
->
-> - 理解 C++14 泛型 lambda 的底层实现——模板调用运算符
-> - 掌握 `if constexpr` 在 lambda 内部的使用方式
-> - 学会 C++20 模板 lambda 的语法和概念约束
-> - 了解递归 lambda 的几种实现方式及其权衡
-
 ---
 
 ## C++14 泛型 lambda——auto 参数
@@ -444,16 +437,6 @@ void demo_polymorphic_container() {
 泛型 lambda 的灵活性让这种"写一次、到处用"的通用操作变得非常自然。你不需要为每种容器类型各写一个重载——`auto` 参数配合范围 for 循环，一个 lambda 搞定所有支持迭代的容器。
 
 ---
-
-## 小结
-
-泛型 lambda 让 lambda 表达式从"一段固定的代码"进化成了"一段参数化的代码"。核心要点回顾：
-
-- C++14 泛型 lambda 的 `auto` 参数对应闭包类型 `operator()` 的模板参数
-- `if constexpr` 让泛型 lambda 可以根据类型信息选择不同的代码路径
-- C++20 模板 lambda 用 `[]<typename T>` 语法提供了显式模板参数和 Concepts 约束
-- 递归 lambda 可以通过 `std::function`（简单但有开销）或 Y 组合子模式（高效但语法稍复杂）来实现
-- 泛型 lambda 在通用比较器、变换器、容器操作等场景下极其有用
 
 ## 参考资源
 

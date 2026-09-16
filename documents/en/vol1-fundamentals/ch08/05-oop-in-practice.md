@@ -31,15 +31,6 @@ translation:
 
 So far, we have dismantled all the core components of OOP—classes and objects, construction and destruction, inheritance and polymorphism, operator overloading, and virtual inheritance. Each concept individually isn't overly complex, but in real-world projects, these components appear simultaneously and collaborate. In this chapter, we switch gears: instead of discussing scattered concepts, we will implement a complete graphics rendering system from start to finish, stringing together all the OOP techniques we've learned. Finally, we will discuss the design choice between inheritance versus composition.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Design a complete class inheritance hierarchy based on requirements
-> - [ ] Comprehensively use abstract base classes, pure virtual functions, and `override` to implement polymorphism
-> - [ ] Use `unique_ptr` to manage containers of polymorphic objects
-> - [ ] Understand "Is-a" vs. "Has-a" design principles and make reasonable choices between inheritance and composition
-
 ## Design First—The Class Hierarchy of a Graphics System
 
 Before writing code, let's clarify the requirements. Don't just start coding immediately; halfway through, you might find the class relationship designed incorrectly, and then you'll be adding `dynamic_cast` and `static_cast` everywhere—we don't do that.
@@ -477,11 +468,3 @@ Implement a `ShapeGroup` class that **inherits from `Shape`** and internally hol
 ### Exercise 3: JSON Serialization
 
 Add a `toJson()` virtual function to `Shape`, where each concrete class overrides it to output JSON. Then add a `toJson()` method in `Canvas` to output the canvas as a JSON array. No third-party libraries are needed; manually splicing strings is sufficient.
-
-## Summary
-
-In this chapter, we implemented a complete graphics rendering system from scratch. The abstract base class `Shape` defined the polymorphic interface, three concrete shape classes implemented their respective calculation logic through inheritance and `override`, `Canvas` used `unique_ptr` to uniformly manage all shape objects, and `ColoredShape` demonstrated the practice of composition over inheritance.
-
-A few core takeaways: Virtual destructors are a baseline requirement for polymorphic class hierarchies; `override` is a free error-checking tool; `unique_ptr` is the best choice for managing polymorphic objects. When hesitating between inheritance and composition, ask yourself "Is-a or Has-a?"—if the relationship isn't stable, use composition.
-
-The OOP section ends here. The next chapter enters Template Basics—the core mechanism of C++ generic programming. If OOP is "organizing code with inheritance hierarchies," then templates are "generating code with type parameters"—two completely different abstraction methods, and both are essential weapons for a C++ programmer.

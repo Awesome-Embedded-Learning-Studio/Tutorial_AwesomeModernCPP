@@ -26,16 +26,6 @@ title: std::vector 快速上手
 
 这一章我们从零开始，把 `vector` 的构造、增删改查、容量管理、遍历方式全部过一遍，最后用一个任务管理器的实战程序把所有知识串起来。
 
-> **学习目标**
->
-> 完成本章后，你将能够：
->
-> - [ ] 使用多种方式构造 `std::vector`
-> - [ ] 掌握 `push_back`、`emplace_back`、`insert`、`erase` 等增删操作
-> - [ ] 理解 `size` 与 `capacity` 的区别，合理使用 `reserve` 优化性能
-> - [ ] 用 range-for、索引和迭代器三种方式遍历 vector
-> - [ ] 运用 remove-erase 惯用法删除满足条件的元素
-
 ## 从零开始——构造一个 vector
 
 `std::vector` 有好几种构造方式，我们逐一来看：
@@ -54,7 +44,7 @@ std::vector<int> v6(std::move(v5));     // 移动构造，接管资源
 
 这里有一个值得注意的点：`v2(10)` 创建了 10 个元素，每个值都是 `int()` 也就是 0。这不是"预留 10 个位置但没有元素"，而是真的有 10 个元素在里面。预留空间和实际元素是两个概念，后面讲到 `reserve` 的时候会深入讨论。
 
-> **踩坑预警**：`vector<bool>` 是 `vector` 的一个特化版本，它为了节省空间把每个 `bool` 压缩成了 1 bit。这导致 `vector<bool>` 的很多行为和普通 `vector<T>` 不一样——比如 `operator[]` 返回的不是 `bool&` 而是一个代理对象。如果你需要一个真正的 bool 数组，用 `vector<char>` 或者 `deque<bool>` 更安全。
+`vector<bool>` 是 `vector` 的一个特化版本，它为了节省空间把每个 `bool` 压缩成了 1 bit。这导致 `vector<bool>` 的很多行为和普通 `vector<T>` 不一样——比如 `operator[]` 返回的不是 `bool&` 而是一个代理对象。如果你需要一个真正的 bool 数组，用 `vector<char>` 或者 `deque<bool>` 更安全。
 
 ## 往里面塞东西——添加元素
 
@@ -83,7 +73,7 @@ v.insert(v.begin() + 1, 15);  // v: {10, 15, 20, 30, 40}
 
 不过要注意，`insert` 在中间插入时需要把后面所有元素往后挪，时间复杂度是 O(n)。如果你发现自己频繁在 vector 的头部或中间插入元素，也许应该考虑换用 `std::deque` 或 `std::list`。
 
-> **踩坑预警**：任何可能导致 vector 重新分配内存的操作（包括 `push_back`、`emplace_back`、`insert`）都会使之前保存的所有迭代器、指针和引用失效。看下面这段代码：
+任何可能导致 vector 重新分配内存的操作（包括 `push_back`、`emplace_back`、`insert`）都会使之前保存的所有迭代器、指针和引用失效。看下面这段代码：
 
 ```cpp
 std::vector<int> v = {1, 2, 3};
@@ -108,7 +98,7 @@ int y = v.at(10);    // 抛出 std::out_of_range
 
 另外还有几个便捷的访问函数：`front()` 返回第一个元素的引用（等价于 `v[0]`），`back()` 返回最后一个元素的引用（等价于 `v[v.size() - 1]`），`data()` 返回指向底层数组的指针——因为 vector 的元素是连续存储的，`v.data()` 可以直接当作 C 数组来用，在和 C 风格 API 交互的时候特别方便。
 
-> **踩坑预警**：对空的 vector 调用 `front()`、`back()` 或 `operator[]` 都是未定义行为——不会抛异常，而是直接进入 UB 的深渊。`at()` 是唯一会对空 vector 做边界检查的方式。所以在调用 `front()` 或 `back()` 之前，要么确认 vector 不为空，要么先用 `empty()` 检查一下。
+对空的 vector 调用 `front()`、`back()` 或 `operator[]` 都是未定义行为——不会抛异常，而是直接进入 UB 的深渊。`at()` 是唯一会对空 vector 做边界检查的方式。所以在调用 `front()` 或 `back()` 之前，要么确认 vector 不为空，要么先用 `empty()` 检查一下。
 
 ## 去掉不要的——删除元素
 
@@ -310,7 +300,7 @@ g++ -std=c++17 -Wall -Wextra -o task_manager task_manager.cpp && ./task_manager
 
 注意最后 `capacity` 仍然是 4——`erase` 不会释放内存。这个小细节在实际开发中经常被忽略。
 
-> **踩坑预警**：在 range-for 循环中直接 `erase` 元素会导致未定义行为，因为 `erase` 会使迭代器失效。如果你需要在遍历中删除元素，要么用索引循环从后往前遍历，要么用迭代器循环配合 `erase` 的返回值。不过大多数情况下，先标记、再统一 remove-erase 是更清晰的做法，就像上面代码中 `remove_completed` 那样。
+在 range-for 循环中直接 `erase` 元素会导致未定义行为，因为 `erase` 会使迭代器失效。如果你需要在遍历中删除元素，要么用索引循环从后往前遍历，要么用迭代器循环配合 `erase` 的返回值。不过大多数情况下，先标记、再统一 remove-erase 是更清晰的做法，就像上面代码中 `remove_completed` 那样。
 
 ## 动手试试——练习题
 
@@ -335,14 +325,6 @@ std::vector<int> deduplicate(const std::vector<int>& sorted);
 ### 练习 3：感受 reserve 的威力
 
 分别用"不调用 reserve"和"调用 reserve(100000)"两种方式向 vector 中插入 100000 个元素，用 `<chrono>` 计时并比较两者的耗时。体会一下提前分配内存的威力。
-
-## 小结
-
-这一章我们完整地过了一遍 `std::vector` 的核心操作。构造方式从默认构造到初始化列表到拷贝移动，增删操作从 `push_back`/`emplace_back` 到 `erase` 再到经典的 remove-erase 惯用法，访问方式从 `operator[]` 到 `at` 到 `data()`，容量管理从 `size`/`capacity` 的区别到 `reserve` 的性能优化。最后通过一个任务管理器的实战程序把这些知识点全部串了起来。
-
-几个关键要点：优先使用 `emplace_back` 而非 `push_back`，注意扩容导致迭代器失效的问题，理解 `size` 和 `capacity` 的区别并在合适的时候调用 `reserve`，以及删除满足条件的元素时用 remove-erase 惯用法（或者 C++20 的 `std::erase`）。
-
-下一章我们来看 `std::map` 和 `std::set`——当你需要按键查找或者维护有序集合时，它们就是主力选手了。
 
 ---
 

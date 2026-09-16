@@ -381,12 +381,6 @@ static_assert(check_config(115200, 8), "Invalid UART config");
   allow-run
 />
 
-## 小结
-
-C++20 的 `consteval` 和 `constinit` 是对 `constexpr` 体系的精准补充。`consteval` 填补了"我想强制编译期求值"这个需求空白，而 `constinit` 解决了 C++ 长期以来的静态初始化顺序问题。三者各有分工：`constexpr` 提供灵活性，`consteval` 提供强制性，`constinit` 提供初始化安全。理解它们之间的精确差异并合理选择，是写出高质量编译期计算代码的关键。
-
-下一章我们将进入实战，综合运用这些知识来实现编译期查表、字符串处理和状态机设计。
-
 ## 参考资源
 
 - [cppreference: consteval specifier (C++20)](https://en.cppreference.com/w/cpp/language/consteval)

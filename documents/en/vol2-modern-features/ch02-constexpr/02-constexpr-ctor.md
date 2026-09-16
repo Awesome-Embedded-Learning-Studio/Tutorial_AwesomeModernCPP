@@ -306,12 +306,6 @@ If your class has a non-trivial destructor (e.g., it manually manages resources)
 
 Classes with virtual functions or virtual base classes can never be literal types (at least up to the current standard). If you need to use a type hierarchy at compile time, consider using CRTP (Curiously Recurring Template Pattern) to replace virtual functions.
 
-## Summary
-
-In this chapter, we covered the definition and constraints of literal types, how to write `constexpr` constructors, the use of `constexpr` member functions, and the gradual relaxation of these restrictions in C++14/20/23. The key takeaway is: as long as your type's memory layout and lifetime can be fully determined at compile time, the compiler can construct and manipulate it then. Compile-time complex numbers, dates, strings, and configuration structures can all become literal types, thereby participating in more complex compile-time computations.
-
-In the next chapter, we will introduce the `consteval` and `constinit` keywords added in C++20, and see how they precisely control compile-time evaluation behavior.
-
 ## Reference Resources
 
 - [cppreference: constexpr specifier](https://en.cppreference.com/w/cpp/language/constexpr)

@@ -38,12 +38,6 @@ When writing an event system, we encountered a very practical problem: we needed
 
 In this chapter, we start with the internal mechanism of `std::function`, move to `std::invoke` (the "universal invoker"), and finally discuss zero-overhead callback design patterns—finding a balance between type safety and performance.
 
-> **Learning Objectives**
->
-> - Understand the type erasure mechanism and SBO of `std::function`
-> - Master `std::invoke` for uniformly calling callable objects
-> - Learn to design zero-overhead callback systems using templates and lambdas
-
 ---
 
 ## The Callable Object Family in C++
@@ -298,16 +292,6 @@ std::function:    7.5x  (type erasure overhead)
 ```
 
 ---
-
-## Summary
-
-In this chapter, we connected the storage and invocation mechanisms for callable objects in C++:
-
-- `std::function` unifies various callable object types via type erasure, and SBO avoids heap allocation for small objects.
-- Function pointers offer zero overhead but cannot carry context, suitable for stateless callbacks.
-- `std::invoke` is a unified invocation interface for callable objects, offering zero overhead in template code.
-- The core idea of zero-overhead callbacks is "use templates instead of type erasure when possible; when type erasure is necessary, use function pointer tables instead of virtual functions."
-- Choose the appropriate solution based on the trade-off between generality and performance in your specific scenario.
 
 ## Reference Resources
 

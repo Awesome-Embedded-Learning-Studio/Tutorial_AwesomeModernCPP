@@ -32,15 +32,6 @@ Before we start writing C++, we need to set up our workspace. The goal of this a
 
 Why Linux? To put it plainly, the entire C++ toolchain ecosystem grew up around Unix/Linux. The first line of GCC code was written in 1987, and Clang and CMake are also Unix-first designs. When compiling and debugging C++ code on Linux, the resources you can find, the answers on Stack Overflow, and the CI configurations of open-source projects almost all assume you are running Linux. Furthermore, subsequent tutorials will involve embedded cross-compilation and WSL development, so a Linux environment is an unavoidable foundation. (Personal note: I put Linux before Windows because I prefer developing on Linux; my Windows PC is strictly for gaming. Who wouldn't rush to Linux to write code, right? *Just kidding*.)
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Install the GCC or Clang compiler on a Linux system and verify the version.
-> - [ ] Install the CMake build tool and understand its basic role.
-> - [ ] Configure VS Code for a handy C++ development environment.
-> - [ ] Create a CMake-managed C++ project from scratch and successfully compile and run it.
-
 ## Environment Overview
 
 All commands in this article have been verified under the following environments:
@@ -263,13 +254,3 @@ WSL accessing the Windows file system (paths under `/mnt`) is much slower than a
 - Check the community.
 - Ask AI, or ask the experts around you.
 - Send a private email, or go to <https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP> and open an Issue to ask me. I sometimes see Issues faster than emails. As for why this is a separate point: I'm a novice, not really an expert, but I can help look at beginner issues.
-
-## Summary
-
-At this point, we have completed the full setup of the C++ development environment on Linux. Let's review what we did: installed the GCC compiler (via the `build-essential` meta package), installed the CMake build tool, configured VS Code's C++ development extensions, and finally created a CMake project from scratch and successfully compiled and ran it.
-
-This environment is the infrastructure for all subsequent tutorials. Starting from the next chapter, we will officially enter the world of C++. If you are on Windows and don't want to install WSL, the next article will cover the Windows environment setup; if you have successfully run `./hello` here, you can jump straight to the C Language Crash Course chapter and start writing real code.
-
----
-
-> **Self-Assessment of Difficulty**: If you can complete the operations in this article smoothly and understand the reason for each step, your Linux basic operation skills are in place. If the meaning of certain commands isn't clear yet, don't worry—we will use these tools repeatedly in subsequent chapters, and practice makes perfect.

@@ -37,14 +37,6 @@ When it comes to functional programming, many C++ developers' first reaction mig
 
 In this chapter, we will look at practical functional programming patterns in C++—higher-order functions, function composition, partial application, and how to use STL algorithms to write functional-style data processing pipelines. Finally, we will preview C++20's Ranges library, which can be considered the "ultimate form" of functional programming in C++.
 
-> **Learning Objectives**
->
-> - Understand the concept of higher-order functions and implement them in C++
-> - Master function composition (compose/pipe) techniques
-> - Learn to implement map/filter/reduce patterns using STL algorithms
-> - Understand the implementation of currying and partial application in C++
-> - Establish a basic understanding of C++20 Ranges
-
 ---
 
 ## Higher-Order Functions—Functions that Accept or Return Functions
@@ -364,17 +356,6 @@ This pipeline expresses: filter even numbers from `nums`, double them, then take
 Ranges' `std::views::filter` and `std::views::transform` correspond to functional programming's filter and map, `std::views::take` and `std::views::drop` correspond to Haskell's `take` and `drop`, and `std::accumulate` corresponds to `foldl`. It can be said that Ranges is C++'s official answer to functional data processing. We will dive deeper into the details of the Ranges library in Volume IV.
 
 ---
-
-## Summary
-
-Functional programming isn't about using C++ to write Haskell—it's about borrowing useful ways of thinking and patterns from functional programming to make C++ code clearer, easier to test, and easier to compose. Core takeaways:
-
-- Higher-order functions are functions that accept or return functions; STL algorithms are classic examples.
-- Function composition uses `compose`/`pipe` to chain multiple functions into a pipeline; C++17's fold expression makes the variadic version very compact.
-- Partial application uses lambdas to fix some arguments, which is clearer and safer than `std::bind`.
-- map/filter/reduce are implemented with `std::transform`/`std::copy_if`/`std::accumulate` and are the "three axes" of data processing.
-- Immutable data thinking can reduce side effects and improve thread safety, but should be used selectively.
-- C++20 Ranges solves the intermediate container problem through lazy evaluation and is the ultimate form of functional data processing.
 
 ## Reference Resources
 

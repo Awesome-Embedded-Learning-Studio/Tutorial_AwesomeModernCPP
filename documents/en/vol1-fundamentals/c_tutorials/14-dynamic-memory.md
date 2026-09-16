@@ -32,16 +32,6 @@ All the programs we have written so far have had variable sizes determined at co
 
 C's solution to this problem is dynamic memory management—requesting a block of memory of a specified size from the system while the program is running, and returning it when finished. This set of APIs looks like it only has four functions: `malloc`, `calloc`, `realloc`, `free`, which takes ten minutes to learn. But using them correctly is one thing; keeping them from crashing is another—memory leaks, dangling pointers, double frees, out-of-bounds writes—each one can crash your program inexplicably.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Draw a program memory layout diagram and explain the responsibilities of the text/rodata/data/bss/heap/stack sections.
-> - [ ] Correctly use `malloc`/`calloc`/`realloc`/`free` and handle errors.
-> - [ ] Identify and avoid five common memory errors.
-> - [ ] Use Valgrind and AddressSanitizer to detect memory issues.
-> - [ ] Understand how RAII and smart pointers solve the pain points of manual C management.
-
 ## Environment Setup
 
 We will conduct all subsequent experiments in this environment:
@@ -203,10 +193,6 @@ Bind the lifecycle of a resource to the lifecycle of an object. The constructor 
 ### Standard Library Containers
 
 `std::vector` replaces manual `malloc` dynamic arrays, `std::string` replaces manual `malloc` string buffers. In modern C++, you almost never need to use `malloc`/`free` directly, let alone `new`/`delete`.
-
-## Summary
-
-We started with memory layout, clarified the roles of the stack and heap, dissected the semantics and traps of the four dynamic memory functions one by one, summarized the five most common memory errors, and finally compared C++'s RAII and smart pointers. Dynamic memory management is one of the most error-prone areas in C, but once you master the correct methodology and tools, most errors can be avoided.
 
 ## Exercises
 

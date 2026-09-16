@@ -439,14 +439,6 @@ int main() {
 
 ------
 
-## 小结
-
-`std::optional` 在错误处理领域的定位很明确：它适合那些"失败不需要原因"的简单场景——查找、解析、缓存、默认值。如果场景需要区分错误类型、需要错误传播链、或者需要在链末端诊断问题，就该换 `expected` 或者其他更重的方案了。
-
-C++23 的 monadic 操作（`and_then`、`transform`、`or_else`）让 `optional` 的链式处理变得优雅，大大减少了嵌套的 `if/else` 代码。如果你的项目还在 C++17，手写几个辅助函数也能达到类似效果。
-
-下一篇我们就来看看 `std::expected<T, E>` —— 当你需要"值 + 错误信息"时，它是怎么做的。
-
 ## 参考资源
 
 - [cppreference: std::optional](https://en.cppreference.com/w/cpp/utility/optional)

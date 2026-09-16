@@ -20,32 +20,15 @@ title: Windows 环境搭建
 ---
 # Windows 环境搭建
 
-> ⚠LLM：这部分内容笔者没有精力仔细验证，懂行的朋友欢迎批评指正！
+Windows上的C++开发属于是有点地狱的，真的，对我而言。
 
-说实话，在 Windows 上搞 C++ 开发，以前确实是一件挺折腾的事情——各种编译器版本、环境变量、路径空格，能把人逼疯。但现在情况好多了，Windows 上的 C++ 工具链已经相当成熟，无论你是想用微软亲儿子 MSVC，还是更习惯 Linux 下那套 GCC 的工作流，都能找到顺手的方案。我们这篇就来把 Windows 上的 C++ 开发环境从头到尾搭一遍，确保后面写代码的时候不会在工具链上卡壳。
+各种编译器版本、环境变量、路径空格，能把人逼疯，兄弟你但凡中间有一点中文，你就乐吧。CMD拉给你一长串的报错，笑都笑不出来！
+
+但现在情况好多了，Windows 上的 C++ 工具链已经相当成熟，无论你是想用微软亲儿子 MSVC，还是更习惯 Linux 下那套 GCC 的工作流，都能找到顺手的方案。我们这篇就来把 Windows 上的 C++ 开发环境从头到尾搭一遍，确保后面写代码的时候不会在工具链上卡壳。
 
 Windows 上主流的 C++ 编译器有两条路线：一条是微软的 Visual Studio（MSVC 编译器），这是 Windows 原生开发的主流选择，IDE 集成度极高，调试体验一流；另一条是 MinGW-w64（通过 MSYS2 安装），本质上是把 GCC 工具链搬到 Windows 上，如果你之前在 Linux 下写过 C++，用这套会觉得很熟悉。两条路线都能完美配合 CMake 和 vcpkg，选哪条纯粹看个人偏好。
 
-> **学习目标**
->
-> 完成本章后，你将能够：
->
-> - [ ] 安装并配置 Visual Studio 2022（MSVC）或 MinGW-w64（MSYS2）编译器
-> - [ ] 使用 CMake 构建一个 C++ 项目并成功运行
-> - [ ] 安装 vcpkg 并用它管理第三方库依赖
-> - [ ] 在 VS Code 中配置 C++ 开发与调试环境
-
-## 环境说明
-
-本篇以 Windows 10/11 为基准环境，所有命令和截图基于以下版本验证：
-
-- **操作系统**：Windows 11 23H2（Windows 10 21H2+ 同样适用）
-- **方案 A**：Visual Studio 2022 Community 17.14（MSVC v143）
-- **方案 B**：MSYS2 + MinGW-w64 UCRT64（GCC 14.x）
-- **构建工具**：CMake 3.28+
-- **编辑器**：VS Code 1.90+（配合 C/C++ / CMake Tools 扩展）
-
-两条路线选一条就好，不需要同时安装。如果你没有强烈偏好，建议直接走 Visual Studio 路线，省心。
+**但是笔者要说一下：后续我们默认在Linux下开发！包括编译的指令，验证等。原因无他，方便。Windows的朋友，您自行变通！**
 
 ## 第一步（方案 A）——安装 Visual Studio 2022 Community
 
@@ -62,17 +45,19 @@ cl
 如果一切正常，你会看到类似这样的输出：
 
 ```text
-用于 x86 的 Microsoft (R) C/C++ 优化编译器版本 19.42.34435.0
+用于 x64 的 Microsoft (R) C/C++ 优化编译器版本 19.42.34435.0
 版权所有(C) Microsoft Corporation。保留所有权利。
 
 用法: cl [ 选项... ] 文件名... [ /link 链接选项... ]
 ```
 
-看到这个用法提示就说明 MSVC 编译器已经就位了。注意这里显示的是 x86，如果你打开的是 x64 版本的 Developer Command Prompt，会显示 x64，两者都能用，本教程后续统一使用 x64 版本。
+看到这个用法提示就说明 MSVC 编译器已经就位了。注意这里显示的是 x64，如果你打开的是 x86 版本的 Developer Command Prompt，会显示 x86，两者都能用，本教程后续统一使用 x64 版本。
 
-> ⚠️ **踩坑预警**：如果你在普通的 PowerShell 或 CMD 里直接敲 `cl`，大概率会报 "cl 不是内部或外部命令"。这是因为 MSVC 的环境变量只在 Developer Command Prompt 里才会被设置。不要试图手动添加环境变量，直接用 Developer Command Prompt 就行。
+> 如果你在普通的 PowerShell 或 CMD 里直接敲 `cl`，大概率会报 "cl 不是内部或外部命令"。这是因为 MSVC 的环境变量只在 Developer Command Prompt 里才会被设置。**不要试图手动添加环境变量，不要试图手动添加环境变量，不要试图手动添加环境变量，直接用 Developer Command Prompt 就行。**
 
 Visual Studio 2022 自带了对 CMake 的原生支持。打开 VS，选择 "打开本地文件夹" 指向一个包含 `CMakeLists.txt` 的目录，VS 就会自动识别并配置项目，不需要额外的安装步骤。不过如果你想在命令行里用 `cmake` 命令，还是需要确认一下 CMake 是否在 PATH 里——在 Developer Command Prompt 中运行 `cmake --version`，如果能看到版本号就没问题。
+
+关于调试等，请查看其他的博客，笔者这里想了想，不准备教授了。这个IDE笔者没好感。
 
 ## 第一步（方案 B）——通过 MSYS2 安装 MinGW-w64
 
@@ -92,7 +77,7 @@ pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x
 
 这里解释一下为什么选 UCRT64 而不是 MINGW64。UCRT（Universal C Runtime）是微软在 Windows 10 以后推出的新版 C 运行时，API 兼容性更好，是 MSYS2 官方推荐的环境。如果你的系统是 Windows 10 以上，直接用 UCRT64 就对了。
 
-> ⚠️ **踩坑预警**：MSYS2 有多个子环境（MSYS2、MINGW32、MINGW64、UCRT64、CLANG64），安装的包名前缀不同。UCRT64 环境下的包名是 `mingw-w64-ucrt-x86_64-` 开头的，别装错了环境。一个简单的判断方法是看终端窗口标题栏，或者运行 `echo $MSYSTEM`，应该输出 `UCRT64`。
+> MSYS2 有多个子环境（MSYS2、MINGW32、MINGW64、UCRT64、CLANG64），安装的包名前缀不同。UCRT64 环境下的包名是 `mingw-w64-ucrt-x86_64-` 开头的，别装错了环境。一个简单的判断方法是看终端窗口标题栏，或者运行 `echo $MSYSTEM`，应该输出 `UCRT64`。
 
 安装完成后，我们需要把 MinGW 的 bin 目录加到系统 PATH 里，这样在普通的 CMD 和 PowerShell 里也能使用 gcc 和 cmake。把 `C:\msys64\ucrt64\bin` 添加到系统的环境变量 PATH 中。
 
@@ -178,7 +163,7 @@ cmake -B build -G "MinGW Makefiles"
 cmake --build build
 ```
 
-> ⚠️ **踩坑预警**：使用 MinGW Makefiles 生成器时，如果 PATH 里有其他带 `make.exe` 的程序（比如 Qt 自带的、或者某些旧版 MinGW 的），可能会导致构建失败。如果碰到这个问题，可以在构建时显式指定 make 路径：`cmake -B build -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe`。
+使用 MinGW Makefiles 生成器时，如果 PATH 里有其他带 `make.exe` 的程序（比如 Qt 自带的、或者某些旧版 MinGW 的），可能会导致构建失败。如果碰到这个问题，可以在构建时显式指定 make 路径：`cmake -B build -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe`。
 
 无论哪条路线，构建成功后都会在 `build` 目录下生成一个 `hello.exe`（或者 `Release/hello.exe`）。运行它：
 
@@ -206,83 +191,11 @@ Compiler: GCC 14.2
 
 看到编译器名称正确输出，整个工具链就完全通了。很好，到这里我们已经有了一个能正常工作的编译环境。
 
-## 第三步——安装 vcpkg 管理第三方库
-
-在 C++ 的世界里，第三方库管理一直是个痛点——不像 Python 有 pip、Rust 有 cargo，C++ 长期以来都是手动下载源码、手动编译链接。vcpkg 是微软开源的 C++ 包管理器，虽然不是标准的一部分，但已经成了事实上的主流方案之一。它能帮我们自动下载、编译、安装第三方库，并且和 CMake 无缝集成。
-
-安装 vcpkg 本身非常简单，它就是一个 Git 仓库。找一个你喜欢的目录（建议放在 `C:\vcpkg` 或者项目目录外面），然后在 PowerShell 中执行：
-
-```powershell
-git clone https://github.com/microsoft/vcpkg.git
-cd vcpkg
-.\bootstrap-vcpkg.bat
-```
-
-bootstrap 脚本会编译 vcpkg 自身并生成 `vcpkg.exe`。如果你没有梯子，这一步可能会比较慢，因为 vcpkg 需要从 GitHub 下载一些工具。
-
-装好之后我们来试试安装一个库。我们选 `fmt` 作为例子，它是一个现代化的 C++ 格式化库，后面教程也会用到：
-
-```powershell
-.\vcpkg install fmt:x64-windows
-```
-
-这里的 `:x64-windows` 是一个 triplet，表示目标平台。如果你用的是 MinGW，应该换成 `:x64-mingw-dynamic` 或 `:x64-mingw-static`。vcpkg 会自动下载 fmt 的源码，用你本地的编译器编译好，然后把头文件和库文件放到 `installed/` 目录下。
-
-接下来关键的一步是让 CMake 能找到 vcpkg 安装的库。vcpkg 提供了一个 CMake 工具链文件，我们只需要在 cmake 配置时指定它就行了。假设 vcpkg 安装在 `C:\vcpkg`，那么构建命令变成：
-
-```powershell
-cmake -B build -G "MinGW Makefiles" -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
-cmake --build build
-```
-
-或者对于 Visual Studio：
-
-```powershell
-cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
-cmake --build build --config Release
-```
-
-在 CMakeLists.txt 里使用 fmt 就很简单了：
-
-```cmake
-cmake_minimum_required(VERSION 3.16)
-project(HelloWindows LANGUAGES CXX)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-find_package(fmt CONFIG REQUIRED)
-add_executable(hello hello.cpp)
-target_link_libraries(hello PRIVATE fmt::fmt)
-```
-
-对应的 `hello.cpp`：
-
-```cpp
-#include <fmt/core.h>
-
-int main()
-{
-    fmt::print("Hello from {} on Windows!\n",
-#if defined(_MSC_VER)
-        "MSVC"
-#elif defined(__GNUC__)
-        "GCC"
-#else
-        "unknown compiler"
-#endif
-    );
-    return 0;
-}
-```
-
-构建运行后就能看到 fmt 的彩色输出了。vcpkg 配合 CMake 的这套流程，基本上就是目前 Windows 上 C++ 第三方库管理的标准做法，后面我们会频繁用到。
-
-## 第四步——在 VS Code 里配置开发环境
+## 第三步——在 VS Code 里配置开发环境
 
 不管你用了哪条编译器路线，VS Code 都是一个很不错的轻量级编辑器选择。我们需要安装以下几个扩展：**C/C++**（Microsoft 出品，提供语法高亮、调试支持）和 **CMake Tools**（CMake 项目管理和构建）。如果你习惯用中文界面，再加一个 Chinese Language Pack 就行。
 
-> 代码补全、跳转这些「IntelliSense」功能，这套教程推荐另装 **clangd** 扩展来管（比 C/C++ 扩展准），C/C++ 扩展留着管调试就行。详细做法见 [新手起步卷 · 装 clangd](/getting-started/05-vscode-clangd)。
+> 代码补全、跳转这些"IntelliSense"功能，这套教程推荐另装 **clangd** 扩展来管（比 C/C++ 扩展准），C/C++ 扩展留着管调试就行。详细做法见 [新手起步卷 · 装 clangd](/getting-started/05-vscode-clangd)。
 
 CMake Tools 扩展会自动检测系统中的编译器。安装好扩展后打开我们的项目目录，VS Code 底部状态栏会出现一个 "Kit" 选择项，点击它就能选择要用的编译器——如果你同时装了 MSVC 和 MinGW，这里可以切换。选好之后 CMake Tools 会自动配置项目，状态栏上会显示构建配置和编译器信息。
 
@@ -319,9 +232,3 @@ CMake Tools 扩展会自动检测系统中的编译器。安装好扩展后打�
 对于 MSVC 路线，把 `MIMode` 改成 `"vsdbg"` 并去掉 `miDebuggerPath` 就行，VS 的调试器会自动接管。
 
 到这里，Windows 上的 C++ 开发环境就搭建完成了。我们有编译器（MSVC 或 GCC）、有构建系统（CMake）、有包管理器（vcpkg）、有编辑器（VS Code），整套工具链已经可以跑起来了。
-
-## 小结
-
-我们来回顾一下做了什么。首先选择了一条编译器路线——Visual Studio（MSVC）适合想开箱即用、重度依赖调试器的开发者，MSYS2 + MinGW-w64 适合需要跟 Linux 保持一致工作流的场景。然后我们用 CMake 构建了一个测试项目来验证工具链的完整性，接着安装了 vcpkg 来管理第三方库依赖，最后在 VS Code 里把开发环境也配好了。
-
-下一步，我们会开始正式进入 C++ 语言的学习。在动手写代码之前，我们建议你先用刚刚搭好的环境试一试——把上面的 hello 项目改一改，换几个输出内容，跑几次构建和调试，确认整条链路从写代码、构建、运行到断点调试都走通了。后面正式学习的时候，工具就不再是障碍了。

@@ -299,11 +299,3 @@ Verification: Create a few `Student` objects, use `std::cout` to output their in
 **Exercise 2: Design a Container-Iterator friend pair**
 
 Implement a `IntBuffer` container and an `IntBufferIterator` iterator. `IntBuffer` internally uses a fixed-size `int` array to store data, and `IntBufferIterator` accesses this array through friend permissions to perform traversal. External code must not be able to directly access the internal array of `IntBuffer`. Hint: `IntBuffer` declares `friend class IntBufferIterator;`, and the iterator holds a pointer to the container.
-
-## Summary
-
-Friends are a carefully designed "escape hatch" in C++'s encapsulation system—granting access permissions to specific external functions or classes without completely abandoning `private` protection. Friend functions are suited for operator overloading (especially `operator<<`), friend classes are suited for tightly coupled implementation partners (containers and iterators, mathematical type collaborations), and friend member functions come into play when minimum-privilege authorization is needed.
-
-But friends are also a double-edged sword—every additional friend declaration adds another crack in encapsulation. Our advice is: before writing `friend`, ask yourself, "Is there an alternative that doesn't break encapsulation?" If there is, use the alternative; if there isn't, and the scenario genuinely requires direct access to internal data, then go ahead and use a friend with confidence.
-
-In the next chapter, we will turn our attention to `this` pointers and cascading calls—gaining a deeper understanding of the role `this` plays in the object model, and how to leverage it to write more elegant chained interfaces.

@@ -357,14 +357,6 @@ If you want to preserve reference semantics, you must write `auto&` or `decltype
 
 ------
 
-## Summary
-
-`auto` deduction rules can be summarized in one sentence: it discards references and top-level const by default, while preserving low-level const. The four common forms correspond to different needs: `auto` copies by value, `auto&` obtains a modifiable reference, `const auto&` obtains a read-only reference, and `auto&&` is used for forwarding.
-
-In practice, `auto` is best suited for iterators, lambdas, range-for loops, and function return types. Combined with `using` type aliases, it makes code both concise and clear. However, be mindful of the brace initialization trap, compatibility issues with proxy types, and the potential performance cost of default copying.
-
-In the next chapter, we will dive into `decltype` and `decltype(auto)` to see how they cover scenarios that `auto` cannot—especially when you need to precisely preserve the reference semantics of an expression.
-
 ## Reference Resources
 
 - [cppreference: auto specifier](https://en.cppreference.com/w/cpp/language/auto)

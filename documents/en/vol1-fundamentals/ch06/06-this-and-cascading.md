@@ -276,7 +276,3 @@ If you write `return this;`, the return type must be `ClassName*`—the caller g
 1. **Implement a `Rectangle` class with chained setters**. Requirements: provide `setWidth` and `setHeight` chainable methods, and a `getArea` method that returns the area. Write a test snippet to verify that a `3x4` `Rectangle` yields an area of 12.
 
 2. **Implement a simple `SqlBuilder`**. Requirements: build a SQL query string via method chaining—`select`, `where`, `orderBy` should return `SqlBuilder&`. Hint: maintain a character buffer internally using the `StringBuilder` approach, where each chainable method appends the corresponding SQL fragment.
-
-## Summary
-
-In this chapter, we dissected the underlying mechanism of the `this` pointer—every non-static member function has a hidden `this` parameter pointing to the object invoking the function. `const` member functions turn `this` into a pointer to a constant, thereby prohibiting object modification at compile time. The method chaining pattern links multiple method calls together by returning a reference to `*this`. This pattern is heavily used in the Builder pattern and operator overloading. At this point, we have covered all the basics of OOP. In the next chapter, we will enter operator overloading—let's see how to make custom types support operators like `+`, `-`, `[]`, just like built-in types.

@@ -28,15 +28,6 @@ translation:
 
 If you have written some C code before, you likely just hit "Run" in an IDE and called it a day—you might never have cared about the intermediate process of how code in a `.c` file becomes a runnable binary. However, understanding the compilation model becomes crucial when learning C++ later: template instantiation, header file strategies, and the ODR (One Definition Rule) are basically black magic if you don't understand the basic compilation workflow. So, let's clarify this from the very beginning.
 
-> **Learning Objectives**
->
-> - After completing this chapter, you will be able to:
-> - [ ] Understand the basic structure of a C program (`main` function, header file inclusion).
-> - [ ] Master the principles of the four compilation stages and how to perform them manually.
-> - [ ] Understand the header file search mechanism and the difference between `<>` and `""`.
-> - [ ] Proficiently use common format specifiers for `printf`/`scanf`.
-> - [ ] Independently complete the compilation and linking of multi-file programs.
-
 ## Environment Setup
 
 All commands and code in this article have been verified in the following environment:
@@ -335,19 +326,6 @@ The ODR (One Definition Rule) is the core rule of the C++ linking model: an enti
 | `multiple definition of ...` | The same symbol defined more than once | Check if the header file is missing an include guard |
 | `No such file or directory` | Incorrect header file path | Check filename spelling and `-I` path |
 | `multiple definition of global variable` | Global variables/functions defined in headers | Place only declarations in headers, definitions in `.c` files |
-
-## Summary
-
-At this point, we have a clear understanding of the complete path of a C program from source code to executable. Preprocessing expands all `#` directives, the compiler translates C code to assembly, the assembler generates binary object files, and the linker assembles everything. Headers are the contracts between modules, `printf`/`scanf` are the most basic I/O tools, and multi-file compilation is the inevitable choice as project scale grows.
-
-### Key Takeaways
-
-- [ ] C program entry is `int main(void)` or `int main(int argc, char* argv[])`.
-- [ ] Four compilation stages: Preprocessing → Compilation → Assembly → Linking.
-- [ ] `#include <>` searches system directories; `#include ""` searches the current directory first.
-- [ ] Use include guards in headers to prevent multiple inclusion.
-- [ ] Multi-file compilation: Compile `.c` to `.o` separately, then link.
-- [ ] Understanding the compilation model is a prerequisite for learning C++ templates and ODR.
 
 ## Exercises
 

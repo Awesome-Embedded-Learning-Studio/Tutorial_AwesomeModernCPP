@@ -38,17 +38,6 @@ To be honest, linked lists are the first hurdle many encounter when learning dat
 
 So, in this chapter, we won't do anything fancy. We will steadily build a classic singly linked list from scratch, covering core operations like node design, insertion, deletion, searching, traversal, and sentinel nodes, while leveling up our practical skills with pointers and memory management.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Understand singly linked list node structure design and the memory model.
-> - [ ] Implement insertion and deletion at the head, tail, and specific positions.
-> - [ ] Master the sentinel node (dummy head) technique.
-> - [ ] Handle various edge cases in linked list operations.
-> - [ ] Understand linked list memory ownership and release strategies.
-> - [ ] Understand the design trade-offs of C++ standard library linked list containers.
-
 ## Environment Description
 
 All code in this article was written and tested in the following environment:
@@ -604,22 +593,6 @@ When we wrote linked list traversals earlier, we always used `ListNode* current 
 The C++ iterator pattern abstracts the "traversal" operation. Whether it's a linked list, an array, or a tree, as long as it provides an iterator, we can traverse it using a unified `for (auto it = container.begin(); it != container.end(); ++it)`, or even a range-based for loop `for (auto& elem : container)`. The underlying implementation of an iterator is still pointer manipulation—for a linked list, `++it` is essentially `it = it->next`, and for an array, it's just pointer arithmetic. But the caller doesn't need to worry about these details.
 
 Implementing iterators in pure C is quite troublesome—without operator overloading or templates, achieving generic programming requires function pointers or macros. However, once we understand the design intent behind C++ iterators, we can achieve a similar level of abstraction in C—by defining a traversal function that accepts a callback function pointer and invokes it for each element. This pattern is also used in the C standard library (such as the comparison function in `qsort` or the callback in `bsearch`).
-
-## Summary
-
-At this point, we have built a complete singly linked list from scratch. The node design used a self-referential struct; insertion and deletion revolved around "finding the predecessor node"; head operations required special handling of the head node; the sentinel node trick eliminated this special casing; and memory ownership followed the "who creates, destroys" single-ownership principle. These aren't just linked list facts—they are universal paradigms for all pointer-intensive data structures. Trees, graphs, and the chaining method in hash tables all rely on similar node and pointer operations under the hood.
-
-### Key Takeaways
-
-- A singly linked list node contains a data field and a pointer field, chained together via pointers.
-- Head insertion/deletion is O(1); tail and middle operations require traversing to the target position.
-- The core of deletion is maintaining the predecessor node to bypass the deleted node.
-- "Store before delete" is the basic pattern for linked list memory release; reversing the order results in Use-After-Free.
-- Sentinel nodes eliminate special handling for the head node, making code more concise and less error-prone.
-- Memory ownership must be defined during design—whether managed by the list or the caller.
-- Boundary conditions (empty list, single node, tail) are the focus of testing.
-- `std::forward_list` corresponds to a singly linked list, and `std::list` corresponds to a doubly linked list.
-- Smart pointers make linked list memory management safer, and `std::move` explicitly expresses ownership transfer.
 
 ## Exercises
 

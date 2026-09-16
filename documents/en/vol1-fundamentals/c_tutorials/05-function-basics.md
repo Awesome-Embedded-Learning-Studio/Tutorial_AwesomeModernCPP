@@ -31,14 +31,6 @@ Up to this point, we have crammed all our code into the `main` function. However
 
 This sounds simple, but to truly master functions, we need to understand the mechanisms behind them: how parameters are passed in, how return values come back, and how stack frames operate. Only with this solid foundation can we avoid confusion when we later tackle C++ reference passing, function overloading, and templates.
 
-> **Learning Objectives**
-> After completing this chapter, you will be able to:
->
-> - [ ] Correctly declare, define, and call C functions
-> - [ ] Understand that C only supports pass-by-value
-> - [ ] Master techniques for achieving multiple return values via pointers
-> - [ ] Understand the principles of recursion and the risks of stack overflow
-
 ## Environment Setup
 
 We will conduct all subsequent experiments in the following environment:
@@ -332,12 +324,6 @@ C++ makes comprehensive enhancements to functions. The most direct change is **r
 C++ also supports **function overloading**. Functions with the same name can have different parameter lists, and the compiler automatically selects the correct one based on the argument types. This solves the naming bloat problem seen in C with functions like `add_int`, `add_float`, `add_double`. **Variadic templates** (introduced in C++11) provide a type-safe mechanism for variadic arguments, perfectly replacing C's `<stdarg.h>`.
 
 The `constexpr` function allows functions to execute at compile time. If the arguments are compile-time constants, the function result is also a compile-time constant. This is much safer than C macros.
-
-## Summary
-
-Functions are the foundation of modular programming in C. Understanding the essence of pass-by-value—that all parameters are copies—is the prerequisite for mastering pointer parameters and techniques for multiple return values. If you need to modify the caller's variable, pass a pointer. For large structures, pass a `const` pointer. While recursion is elegant, be wary of stack overflow. Variadic functions provide flexibility but lack type safety.
-
-At this point, we have mastered the basic usage of functions. The next question arises: how are variable scope and lifetime managed? What is the actual use of the `static` keyword? These are the topics we will discuss in the next article.
 
 ## Exercises
 

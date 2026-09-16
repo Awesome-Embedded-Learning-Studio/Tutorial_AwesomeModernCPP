@@ -315,9 +315,3 @@ int main() {
 ### Exercise 3: Write a Function Using `const` Reference Parameters
 
 Write a function `printSum` that accepts two `int` parameters and outputs their sum. Then call it in `main`. Think about it: for a small type like `int`, is there a performance difference between using `const int&` and passing `int` directly? What types of parameters are best suited for `const T&` passing?
-
-## Summary
-
-In this chapter, we focused on the `const` keyword and reviewed the most common "read-only" mechanisms in C++. `const` variables must be initialized at declaration and cannot be modified afterward; they are safer, more type-safe, and easier to debug than `#define`. The combination of `const` and pointers is the most error-prone area—`const int*` is a "pointer to constant" (data immutable, pointer mutable), `int* const` is a "constant pointer" (pointer immutable, data mutable), and reading right-to-left is an effective way to distinguish them. `const` references are extremely common in function parameters; the `const T&` pattern avoids copying while ensuring safety. `constexpr` is a stricter constant—it requires the value to be calculable at compile time, making programs faster and usable in scenarios requiring constant expressions like array sizes.
-
-In the next chapter, we will enter the world of value categories—what exactly are lvalues and rvalues, and why does move semantics make programs faster? These concepts sound abstract, but understanding `const` first will reveal many shared ideas.

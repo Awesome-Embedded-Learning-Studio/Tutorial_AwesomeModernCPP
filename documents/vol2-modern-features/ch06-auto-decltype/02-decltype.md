@@ -132,7 +132,7 @@ private:
 
 如果用 `auto` 代替 `decltype(auto)`，`operator[]` 的返回类型会变成 `int`（拷贝），你就无法通过 `container[0] = 42` 来修改容器内容了。
 
-### ⚠️ 悬空引用的危险
+### 悬空引用的危险
 
 `decltype(auto)` 的精确性是一把双刃剑。它可能推导出引用类型，导致返回局部变量的引用：
 
@@ -260,7 +260,7 @@ template<typename T, typename U>
 using add_result_t = decltype(std::declval<T>() + std::declval<U>());
 ```
 
-⚠️ 注意：`std::declval` 只能在不求值上下文中使用（如 `decltype`、`sizeof`、`noexcept`、`typeid`）。如果你在运行时代码中调用它，会触发编译错误，因为它只有声明没有定义。
+注意：`std::declval` 只能在不求值上下文中使用（如 `decltype`、`sizeof`、`noexcept`、`typeid`）。如果你在运行时代码中调用它，会触发编译错误，因为它只有声明没有定义。
 
 ------
 
@@ -303,14 +303,6 @@ void process_range(Range&& r) {
 ```
 
 ------
-
-## 小结
-
-`decltype` 的核心价值在于"精确保留表达式的类型"，不丢弃引用和 const。它的推导规则可以总结为三条：对于不加括号的变量名，返回声明的类型；对于加括号的变量名或左值表达式，返回左值引用；对于右值表达式，返回非引用类型。
-
-`decltype(auto)` 是 C++14 引入的便利工具，让函数返回类型推导能保留引用语义，但要注意 `return (local_var)` 的悬空引用陷阱。尾置返回类型在 C++11 中是处理依赖参数的返回类型的唯一方式，C++14 之后大部分场景被 `auto` 和 `decltype(auto)` 替代。
-
-在模板和元编程中，`decltype` 配合 `std::declval` 是构建类型特征和 SFINAE 约束的基础工具。理解了这些，你在阅读和编写泛型代码时就会自信得多。
 
 ## 参考资源
 

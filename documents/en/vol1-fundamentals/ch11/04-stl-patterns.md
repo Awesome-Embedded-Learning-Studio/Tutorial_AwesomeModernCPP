@@ -32,16 +32,6 @@ In the previous three chapters, we covered sequence containers, associative cont
 
 In this chapter, we will connect these scattered pieces of knowledge. We will first clarify the high-frequency decision problem of "which container to use for which scenario," then review the most common pitfalls in STL usage, discuss performance-related basics, and finally tie everything together—container selection, algorithm combination, and defensive programming—into a comprehensive practical example. By the end of this chapter, your understanding of STL will upgrade from "knowing how to use it" to "knowing how to use it right."
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Quickly select the appropriate STL container based on actual requirements
-> - [ ] Identify and avoid common pitfalls like iterator invalidation and modifying containers during traversal
-> - [ ] Understand the impact of cache friendliness on container performance
-> - [ ] Proficiently use the erase-remove idiom and C++20's `std::erase`
-> - [ ] Apply the principle of "algorithms over hand-written loops" to write clearer code
-
 ## Making the Choice — A Container Selection Guide
 
 After learning about a bunch of containers, many people feel even more conflicted: which one should I actually use? In reality, the decision logic is very clear for the vast majority of scenarios. Let's walk through it based on your core needs:
@@ -315,16 +305,6 @@ int val = m["key"]; // Potential pitfall?
 ### Exercise 3: Performance Comparison
 
 Write a benchmark: store 100,000 random integers in `std::vector` and `std::list` respectively. Use `std::chrono` to time and compare the (a) sequential traversal sum time, and (b) sorting time. Experience the impact of cache friendliness with real data.
-
-## Summary
-
-In this chapter, we reorganized the knowledge from the previous three chapters from the perspective of "how to use STL correctly." Regarding container selection, the core idea is decision-making based on requirements: sequential storage -> `std::vector`, fast lookup -> `std::unordered_map`, ordered key-value -> `std::map`, deduplication -> `std::set`, fixed size -> `std::array`. If unsure, just use `std::vector`; it's almost always a choice that won't be wrong.
-
-For pitfall defense, the three traps to be most vigilant about are iterator invalidation (especially with vector reallocation and after erase), modifying containers during traversal (use remove-erase instead of hand-written delete loops), and `map::operator[]` silently inserting elements (use `find` or `contains` for read-only lookups).
-
-Regarding performance, the cache friendliness of contiguous memory means `std::vector` often runs faster in real scenarios than `std::list`, which has better theoretical complexity. `reserve` is a powerful tool to eliminate reallocation overhead, effective for both `vector` and `unordered_map`.
-
-This concludes Chapter 11. We started with `std::vector`, learned associative containers and the algorithm library, and finally integrated this knowledge into systematic STL usage patterns. The next chapter will dive deep into the C++ memory model—from memory layout to stack/heap allocation, from `new`/`delete` to memory alignment—these are the low-level foundations for writing high-performance C++ code.
 
 ---
 

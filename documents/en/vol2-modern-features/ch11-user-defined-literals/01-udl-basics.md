@@ -408,18 +408,6 @@ auto angle = 3.14159_rad;
 
 Every number is accompanied by its unit, making the code almost self-explanatory (it's truly satisfying to read!)
 
-
-## Summary
-
-User-defined literals essentially use compile-time capabilities to dress "bare numbers" in units—`100_ms`, `72_MHz`, `4_KiB` are instantly readable, with all conversions happening at compile time and zero runtime overhead. Keep these key points in mind:
-
-- `operator""` has four cooked forms (`unsigned long long`, `long double`, `const char*`, `char`) plus one raw form (string templates). For daily use, cooked forms are sufficient; only reach for raw forms when parsing custom numeric syntax (like binary or thousand separators).
-- Suffixes must **start with an underscore** (`_ms`). Suffixes without underscores (`ms`) are reserved for the standard library; using them yourself will eventually lead to trouble.
-- Use what is available in the standard library first (`chrono`'s `1h/1min/1s`, `"abc"s`, `"abc"sv`), and define your own only when those aren't enough.
-- Literals are compile-time constants, so you can safely place them in `constexpr`, template parameters, and array sizes.
-
-The cost is almost zero, and the benefit is completely eliminating the question "what unit is this number?" from code reviews. We'll save how to organize a complete literal library in a real-world project for the practical UDL chapter.
-
 ## References
 
 - [cppreference: User-defined literals](https://en.cppreference.com/w/cpp/language/user_literal)

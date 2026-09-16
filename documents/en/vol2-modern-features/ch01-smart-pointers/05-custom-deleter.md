@@ -347,14 +347,6 @@ UniqueSpi spi1(new SpiHandle{SPI1, &hdma_spi1_tx});
 
 This pattern is very common in embedded driver development. `std::unique_ptr` + stateless deleters are suitable for "exclusive use" scenarios (only one module holds it at a time), while intrusive reference counting is suitable for "shared use" scenarios (multiple modules hold it simultaneously). Both are lighter and more suitable for resource-constrained environments than `std::shared_ptr`.
 
-## Summary
-
-Custom deleters allow smart pointers to break the limitation of "only managing new/delete," capable of adapting to any type of resource release method. The three deleter forms—function pointers, lambdas, and function objects—each have pros and cons: function objects can achieve zero overhead through EBO and are the first choice for performance-sensitive scenarios; lambdas are convenient to write but watch out for size increases due to captures; function pointers are the most intuitive but double the size of `std::unique_ptr`.
-
-Intrusive reference counting is an effective alternative to `std::shared_ptr` in performance and memory-constrained scenarios. By embedding the reference count inside the object, it eliminates the heap allocation of the control block and extra indirect access. The cost is modifying the object type (intrusiveness), but in performance-sensitive fields like embedded systems and game engines, this trade-off is usually worth it.
-
-In the next article, we will discuss `scope_guard`—a more general RAII variant that can manage not only resources but also any operation that needs to be executed when exiting a scope.
-
 ## Reference Resources
 
 - [cppreference: std::unique_ptr, Deleters](https://en.cppreference.com/w/cpp/memory/unique_ptr)

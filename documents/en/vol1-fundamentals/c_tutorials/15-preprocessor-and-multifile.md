@@ -33,17 +33,6 @@ If you have been writing all your C code in a single `.c` file up to this point,
 
 However, multi-file projects bring more than just organizational challenges; they introduce a frequently misunderstood role in C—the **preprocessor**. Understanding the nature of the preprocessor is the first step in avoiding baffling compilation errors, strange macro expansion behaviors, and circular header inclusions.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Understand the role of the preprocessing stage in the four-stage compilation process.
-> - [ ] Correctly use preprocessor directives such as `#include`, `#define`, and conditional compilation.
-> - [ ] Master macro writing techniques and common pitfalls.
-> - [ ] Organize header files using header guards and `#pragma once`.
-> - [ ] Build multi-file C projects and understand compilation units and the linking process.
-> - [ ] Compare C approaches with C++ alternatives like `const`, `inline`, `constexpr`, templates, and modules.
-
 ## Environment Setup
 
 We will conduct all subsequent experiments in the following environment:
@@ -189,10 +178,6 @@ gcc -o demo main.c -L. -lmath_utils
 - `namespace` instead of file-level `static`—clearer namespace organization
 - `using` instead of `typedef`—more intuitive syntax, supports alias templates
 - C++20 Modules—using `export`/`import` instead of the textual paste of `#include`
-
-## Summary
-
-Although the preprocessor is primitive, it remains an indispensable glue for multi-file projects in C. C++ gradually replaces preprocessor functionality with safer mechanisms like `constexpr`, `inline`, `template`, `namespace`, and Modules. Understanding the nature of the preprocessor allows us to understand why C++ implements these improvements.
 
 ## Exercises
 

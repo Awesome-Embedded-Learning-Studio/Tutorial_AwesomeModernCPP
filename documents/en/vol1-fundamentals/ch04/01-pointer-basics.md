@@ -363,9 +363,3 @@ int main()
     return 0;
 }
 ```
-
-## Summary
-
-This chapter started with memory addresses and reviewed the core concepts of pointers. `&` obtains an address, a pointer is a variable that stores an address, and `*` dereferences a pointer to read or write data. The pointer's type determines how memory is interpreted during dereferencing, but the pointer itself is always 8 bytes on a 64-bit system. `nullptr` is the correct way to represent a null pointer in modern C++, and dereferencing a null pointer results in undefined behavior (UB). The three combinations of `const` and pointers control whether the data and the pointer itself are mutable. Uninitialized pointers, dangling pointers, and double frees are the three most common pitfalls.
-
-In the next chapter, we will dive into the world of pointer arithmetic and arrays—what does adding 1 to a pointer actually mean, and what is the true relationship between an array name and a pointer? This knowledge will upgrade pointers from "variables storing addresses" to "tools for traversing memory."

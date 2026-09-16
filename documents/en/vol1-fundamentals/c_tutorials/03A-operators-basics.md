@@ -31,14 +31,6 @@ In the previous post, we dissected C data types from the inside out—how intege
 
 You can think of operators as the "verbs" of C—variables and constants are nouns, operators connect them to form expressions, expressions combine into statements, and statements build programs. We only use a handful of operators in daily programming, but each has its own quirks. In this post, we will go through the most common arithmetic, relational, and logical operators, focusing on the pitfalls that are easy to stumble into. We'll leave bitwise operations and deeper evaluation order issues for the next post.
 
-> **Learning Objectives**
-> After completing this chapter, you will be able to:
->
-> - [ ] Skillfully use the five arithmetic operators and increment/decrement operators.
-> - [ ] Understand the "round towards zero" rule for integer division.
-> - [ ] Master the short-circuit evaluation characteristics of relational and logical operators.
-> - [ ] Correctly use the conditional operator and the comma operator.
-
 ## Environment Setup
 
 We will conduct all subsequent experiments in the following environment:
@@ -345,12 +337,6 @@ Note that the comma in `int i = 0, j = 10` is a declaration separator (not the c
 C++ does two important things regarding operators. First, it introduces C++ versions of `<stdbool.h>`—`true`, `false`, and `bool` are built-in keywords in C++, unlike macros in C. Second is operator overloading—you can define behaviors for operators like `+`, `==`, etc., for custom types, making custom types feel as natural to use as built-in types.
 
 However, there is an important limitation: although C++ allows overloading `&&` and `||`, **overloading them loses the short-circuit evaluation property**. Because overloaded operators are essentially function calls, both parameters will be evaluated, and the short-circuit characteristic is gone. Therefore, in practice, never overload `&&` and `||`.
-
-## Summary
-
-At this point, we have gone through the most commonly used operators in C. Key takeaways: integer division directly discards the decimal part, it does not round; prefix and postfix increment/decrement behave differently in expressions, but do not use them twice on the same variable in one expression; short-circuit evaluation of `&&` and `||` is very practical, and checking safety conditions before performing actual operations is a common programming pattern.
-
-The next question is—we haven't covered bitwise operations yet. If you plan to touch embedded development later, bitwise operations are part of the daily routine: configuring hardware registers, parsing bit fields in communication protocols—it's all indispensable. These topics, combined with deeper operator precedence and evaluation order, are the bones we will pick in the next post.
 
 ## Exercises
 

@@ -339,10 +339,6 @@ if (result) {
 
 ------
 
-## 小结
-
-这一章我们回顾了 C++ 错误处理的演进：从 C 的错误码，到 C++ 的异常，再到 C++17/23 的类型安全方案。每种方案都有它存在的理由，没有银弹。接下来的三篇文章，我们会分别深入 `optional` 用于错误处理、`std::expected<T, E>` 的用法、以及一个综合的选择指南，帮你在实际项目中做出正确的决策。
-
 ## 参考资源
 
 - [cppreference: Error handling](https://en.cppreference.com/w/cpp/error)

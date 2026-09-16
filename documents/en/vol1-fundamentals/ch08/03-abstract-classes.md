@@ -334,9 +334,3 @@ public:
 ### Exercise 2: Plugin System Framework
 
 Design a simple plugin framework: define an `IPlugin` interface (containing four pure virtual functions: `getName`, `initialize`, `execute`, and `shutdown`), and then implement two or three concrete plugin classes. Write a `PluginManager` that uses a `std::vector` to manage all plugins, and provides `loadAll` and `executeAll` methods. This exercise will help you combine abstract classes, interfaces, and runtime polymorphism in one go.
-
-## Summary
-
-In this chapter, centered around the requirement that "base classes shouldn't be instantiated," we learned about pure virtual functions and abstract classes. The key takeaways are: appending `= 0` after a virtual function declaration makes it a pure virtual function, which in turn makes the containing class an abstract class; derived classes must implement all pure virtual functions to become concrete classes. C++ doesn't have a dedicated `interface` keyword, but a class with "all pure virtual functions + no data members + virtual destructor" is a de facto interface. The Interface Segregation Principle tells us that rather than designing an all-encompassing fat interface, we should split it into several small, focused interfaces, letting each class bear only the responsibilities it truly needs.
-
-In the next chapter, we'll discuss multiple inheritance and virtual inheritance—when inheritance relationships become complex, what mechanisms does C++ provide to handle ambiguity and redundancy.

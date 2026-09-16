@@ -300,12 +300,6 @@ Run the `consteval` and `constinit` examples online to observe C++20 compile-tim
   allow-run
 />
 
-## Summary
-
-C++20's `consteval` and `constinit` are precise supplements to the `constexpr` system. `consteval` fills the gap for "I want to force compile-time evaluation," while `constinit` solves C++'s long-standing static initialization order problem. The three have their own division of labor: `constexpr` provides flexibility, `consteval` provides enforcement, and `constinit` provides initialization safety. Understanding their precise differences and making reasonable choices is the key to writing high-quality compile-time calculation code.
-
-In the next chapter, we will enter practical application, comprehensively using this knowledge to implement compile-time table lookups, string processing, and state machine design.
-
 ## References
 
 - [cppreference: consteval specifier (C++20)](https://en.cppreference.com/w/cpp/language/consteval)

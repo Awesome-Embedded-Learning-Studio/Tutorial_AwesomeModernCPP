@@ -28,16 +28,6 @@ title: 算法库初见
 
 这一章我们从实际需求出发，把最常用的一批算法全部上手实操一遍。过程中会频繁用到 lambda 表达式——它是配合 STL 算法的最佳搭档，所以我们先花一点时间把它搞明白。
 
-> **学习目标**
->
-> 完成本章后，你将能够：
->
-> - [ ] 理解 lambda 表达式的基本语法和捕获方式
-> - [ ] 使用 `std::sort`、`std::stable_sort` 对数据排序
-> - [ ] 使用 `std::find`、`std::find_if`、`std::binary_search`、`std::lower_bound` 查找元素
-> - [ ] 使用 `std::copy`、`std::transform`、`std::replace`、`std::remove` 修改数据
-> - [ ] 使用 `std::accumulate`、`std::count`、`std::min_element`、`std::max_element` 做统计
-
 ## 先认识我们的搭档——lambda 表达式
 
 STL 算法经常需要一个"判断条件"或者"操作方式"作为参数——比如"按什么规则排序"、"什么条件的元素要找出来"。在 C++11 之前，这个角色由函数指针或函数对象来承担，写起来啰嗦又不直观。lambda 表达式彻底改变了这个局面。
@@ -61,7 +51,7 @@ std::for_each(data.begin(), data.end(), [&sum](int x) { sum += x; });
 // sum == 15
 ```
 
-> **踩坑预警**：当 lambda 以引用方式捕获局部变量时，如果 lambda 的生命周期超过了该局部变量，就会产生悬垂引用——引用指向的内存已经被释放了。这种情况在异步回调和存储 lambda 的场景中尤其常见。如果你的 lambda 需要被存储或者传递到其他线程，优先用值捕获或者显式列出要按值捕获的变量。
+当 lambda 以引用方式捕获局部变量时，如果 lambda 的生命周期超过了该局部变量，就会产生悬垂引用——引用指向的内存已经被释放了。这种情况在异步回调和存储 lambda 的场景中尤其常见。如果你的 lambda 需要被存储或者传递到其他线程，优先用值捕获或者显式列出要按值捕获的变量。
 
 ## 排个序——std::sort 与 std::stable_sort
 
@@ -83,7 +73,7 @@ std::sort(v.begin(), v.end(), [](int a, int b) { return a > b; });
 
 `std::stable_sort` 和 `sort` 的区别在于"稳定性"——当两个元素比较结果相等时，`stable_sort` 保证它们保持原来的相对顺序。比如你先按成绩排序，再按班级排序，第二次排序时同一个班级内的学生仍然保持成绩从高到低的顺序。`stable_sort` 的代价是时间和空间开销略大，但对于需要保持排序稳定性的场景来说无可替代。
 
-> **踩坑预警**：给 `sort` 传入的比较函数必须满足"严格弱序"（strict weak ordering）。简单说就是：`comp(a, a)` 必须返回 `false`，如果 `comp(a, b)` 为 `true` 则 `comp(b, a)` 必须为 `false`，传递性也必须成立。如果你写了 `<=` 而不是 `<`，在某些标准库实现上会导致未定义行为——可能死循环，可能崩溃，也可能只是排序结果不对。所以比较函数永远用 `<`（升序）或 `>`（降序），不要用 `<=` 或 `>=`。
+给 `sort` 传入的比较函数必须满足"严格弱序"（strict weak ordering）。简单说就是：`comp(a, a)` 必须返回 `false`，如果 `comp(a, b)` 为 `true` 则 `comp(b, a)` 必须为 `false`，传递性也必须成立。如果你写了 `<=` 而不是 `<`，在某些标准库实现上会导致未定义行为——可能死循环，可能崩溃，也可能只是排序结果不对。所以比较函数永远用 `<`（升序）或 `>`（降序），不要用 `<=` 或 `>=`。
 
 ## 找东西——std::find 家族与二分查找
 
@@ -310,14 +300,6 @@ std::vector<std::string> lines = {
     "Hello World", "", "hello world", "Goodbye", "GOODBYE", "", "Alice"
 };
 ```
-
-## 小结
-
-这一章我们把 `<algorithm>` 和 `<numeric>` 里最常用的一批算法过了一遍。排序用 `std::sort`，需要稳定性时用 `std::stable_sort`。查找分两路走：无序数据用 `std::find` / `std::find_if` 做线性搜索，有序数据用 `std::binary_search` / `std::lower_bound` 做二分查找。修改序列靠 `std::copy`、`std::transform`、`std::replace`，删除元素用 remove-erase 惯用法。统计归纳则有 `std::accumulate`、`std::count` / `std::count_if`、`std::min_element` / `std::max_element`。
-
-贯穿所有这些算法的是一个核心理念：不要手写循环来表达"做什么"，而是用算法的名字直接声明意图。配合 lambda 表达式，我们可以灵活定制比较规则、过滤条件、变换逻辑，同时保持代码的可读性。
-
-下一章我们会继续深入 STL，看看更多容器与算法搭配使用的经典模式。
 
 ---
 

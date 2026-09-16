@@ -353,14 +353,6 @@ If you prefer not to maintain your own strong type framework, there are several 
 
 However, my suggestion is: if your requirement is simply to "distinguish parameters of the same type but different semantics," hand-writing a simple `StrongInt` template is sufficient. It is less than one hundred lines of code, fully controllable, and has no external dependencies. You only need to introduce a third-party library when you require more complex features (such as operator inheritance or custom implicit conversion strategies).
 
-## Summary
-
-`typedef` and `using` only create type aliases; the compiler does not distinguish between them. The Phantom type pattern allows the compiler to distinguish values that are "semantically different but share an underlying type" at compile time by using a zero-size template tag parameter. The runtime overhead of strong type wrappers is zero—the empty tag class is optimized away by EBO (Empty Base Optimization), and all functions are inlined.
-
-Type-safe unit systems and ID systems are the most typical application scenarios for strong types. The former prevents the mixing of different physical quantities, while the latter prevents confusing values that share the same underlying type but have different semantics. In the embedded field, strong types can also be used to distinguish register addresses of different peripherals, preventing accidental miswrites.
-
-The next topic we will discuss, `std::variant`, solves a different problem (runtime polymorphism vs. compile-time type distinction), but it also falls under the broad theme of "using the type system to prevent errors."
-
 ## References
 
 - [foonathan.net: Emulating strong/opaque typedefs in C++](https://www.foonathan.net/2016/10/strong-typedefs/)

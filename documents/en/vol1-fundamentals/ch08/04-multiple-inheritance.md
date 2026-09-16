@@ -33,16 +33,6 @@ In previous chapters, we focused on single inheritance—where a class has only 
 
 In this chapter, we will clarify the syntax of multiple inheritance, the diamond inheritance problem, the solution provided by virtual inheritance, and when to turn to safer alternatives.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Use multiple inheritance syntax to equip a class with multiple capabilities.
-> - [ ] Identify and resolve name ambiguities caused by multiple inheritance.
-> - [ ] Understand the cause of the diamond inheritance problem and its impact on object layout.
-> - [ ] Use virtual inheritance to solve the diamond inheritance problem and understand its costs.
-> - [ ] Make sound engineering judgments between "multiple inheritance" and "composition/interface delegation."
-
 ## Environment Setup
 
 All code is compiled and run in the following environment:
@@ -349,9 +339,3 @@ public:
 ```
 
 Hint: After modification, don't forget to directly initialize the virtual base class `Device` in the `SmartDevice` constructor's initialization list.
-
-## Summary
-
-Multiple inheritance is a powerful type composition mechanism, but it must be used with caution. In this chapter, we mastered three key judgments: multiple interface inheritance (base classes are all pure virtual functions) is safe and should be the first choice; virtual inheritance can solve data duplication and ambiguity in diamond inheritance, but introduces additional layout complexity; when reusing functional implementations, composition is almost always a better choice than inheritance.
-
-In the next chapter, we will synthesize our knowledge of classes, inheritance, and polymorphism by building a complete mini-project to experience how object-oriented design operates in real-world development.

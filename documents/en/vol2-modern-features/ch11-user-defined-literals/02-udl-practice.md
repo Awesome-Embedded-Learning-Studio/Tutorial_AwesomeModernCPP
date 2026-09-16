@@ -299,14 +299,6 @@ This exercise will help you consolidate the combination of templates, operator o
 
 ------
 
-## Summary
-
-In this post, we applied the basics of UDLs to a practical scenario. Through the combination of a `PhysicalQuantity` template, operator overloading, and literal operators, we built a type-safe physical unit system: lengths can be added to lengths, length divided by time yields velocity, but length and time cannot be added directly—all these checks happen at compile time with zero runtime overhead.
-
-In embedded scenarios, UDLs are particularly suitable for frequency/baud rate literals (`100_Hz`, `115200_baud`), memory size literals (`4_KB`, `32_MB`), and register address literals. These literals significantly improve the readability of bare-metal code, and combined with `static_assert`, can catch resource allocation errors at compile time.
-
-This concludes chapter 11 on user-defined literals. UDL is a concise yet practical language feature—its syntax is not complex, but when used in the right context, it can dramatically improve code clarity and safety.
-
 ## Reference Resources
 
 - [cppreference: User-defined literals](https://en.cppreference.com/w/cpp/language/user_literal)

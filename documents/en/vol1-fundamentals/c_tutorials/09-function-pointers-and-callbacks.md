@@ -32,15 +32,6 @@ If pointers are the most powerful feature of C, then function pointers are argua
 
 We have systematically covered various pointer usages in previous tutorials. In this chapter, we will tackle this hard nut: function pointers. We will start with declarations and basic usage, move on to arrays of function pointers and the callback pattern, and finally look at the comfortable improvements C++ has made in this area.
 
-> **Learning Objectives**
->
-> - After completing this chapter, you will be able to:
-> - [ ] Understand function pointer declaration syntax and use it correctly.
-> - [ ] Use `typedef` to simplify complex function pointer types.
-> - [ ] Implement a callback-based sorting interface similar to `qsort`.
-> - [ ] Build a simple event dispatch system.
-> - [ ] Understand the corresponding relationships in C++ regarding `std::function`, lambdas, and function objects.
-
 ## Environment Setup
 
 All code in this chapter has been verified in the following environment:
@@ -305,19 +296,6 @@ C++ has made multi-level improvements in this direction, from basic function obj
 **Template Strategy Pattern**: Strategies are determined at compile time, resulting in zero runtime overhead, but increasing compilation time.
 
 From C's function pointers to C++'s lambdas and `std::function`, the core idea is consistent—parameterizing "behavior". C achieved the most basic version with function pointers, while C++ added type safety, closures, and a unified callable object interface on top of that.
-
-## Summary
-
-Function pointers are the core mechanism for implementing callbacks and the strategy pattern in C. The declaration syntax is indeed unfriendly, but once managed with `typedef`, they are very practical. Arrays of function pointers enable table-driven dispatch logic. The callback pattern is clearly illustrated through the classic case of `qsort`—the algorithm framework and specific strategy are decoupled via function pointers. The event dispatch system is a direct application of callbacks in event-driven programming.
-
-### Key Takeaways
-
-- [ ] Function names implicitly convert to function pointers in most contexts.
-- [ ] Parentheses in declaration syntax cannot be omitted: `int (*ptr)(int)` vs `int *ptr(int)`.
-- [ ] `typedef` is the best practice for managing complex function pointer types.
-- [ ] Arrays of function pointers can implement table-driven command/state dispatch.
-- [ ] The core of callbacks is "algorithm invariant, strategy replaceable."
-- [ ] `void*` provides generic capabilities at the cost of type safety; C++ templates and `std::function` solve this issue.
 
 ## Exercises
 

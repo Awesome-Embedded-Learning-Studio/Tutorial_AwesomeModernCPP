@@ -401,11 +401,3 @@ DivResult divmod(int dividend, int divisor);
 divmod(17, 5) → 商: 3, 余: 2
 divmod(100, 7) → 商: 14, 余: 2
 ```
-
-## Summary
-
-In this chapter, we learned the fundamental mechanisms of C++ functions from scratch. A function declaration tells the compiler "this function exists," while the definition provides the concrete implementation—the compiler must see either the declaration or the definition before we can use the function. The return type determines the type of value the function produces, and every execution path in a non-`void` function must have a `return` statement. Arguments are passed by position and correspond one-to-one, defaulting to value copies. The scope of local variables is limited to the function body, and they are automatically destroyed when the function returns—this is exactly why we must never return a reference or a pointer to a local variable.
-
-Function overloading allows us to handle different argument types using the same name, with the compiler automatically selecting the most appropriate version. Additionally, we encountered recursion for the first time—a programming technique where a function calls itself—and demonstrated its basic usage with factorial calculation.
-
-These concepts form the skeleton of functions. Next, we will dive into the details of parameter passing—the working mechanisms and appropriate use cases for pass-by-value, pass-by-reference, and pass-by-pointer. These are the factors that truly determine program performance and correctness.

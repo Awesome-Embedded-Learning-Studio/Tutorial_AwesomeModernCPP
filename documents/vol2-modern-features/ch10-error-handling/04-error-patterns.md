@@ -386,14 +386,6 @@ std::expected<Config, AppError> load_config(const std::string& path) {
 
 ------
 
-## 小结
-
-错误处理没有银弹。错误码简单粗暴，异常优雅但重，`optional` 轻量但没信息，`expected` 是目前最均衡的方案但需要 C++23（或自己实现）。选择方案时需要考虑环境约束（是否能用异常）、性能需求（是否有热路径）、以及团队偏好（是否统一风格）。
-
-笔者建议的策略是：**默认用 `expected`，查找/缓存场景用 `optional`，构造函数和不可恢复错误用异常/终止，C API 边界做一次性转换**。工具箱里放得下多种工具，但要知道什么时候用什么。
-
-到这里，ch10 错误处理就全部讲完了。下一篇我们进入 ch11，聊一聊用户自定义字面量——一种让代码更直观、更安全的有趣机制。
-
 ## 参考资源
 
 - [cppreference: Error handling](https://en.cppreference.com/w/cpp/error)

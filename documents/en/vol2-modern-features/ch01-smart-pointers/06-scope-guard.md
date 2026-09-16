@@ -405,14 +405,6 @@ The verification code includes the following test cases:
 
 These tests cover all the key scenarios we discussed. You can run them directly to observe the output, or modify the code to test edge cases.
 
-## Summary
-
-scope_guard is a generalization of the RAII concept—it manages not only resource acquisition and release, but any operation that needs to be executed when a scope exits. By wrapping an operation in the destructor of a stack object, scope_guard guarantees that the operation will be executed regardless of how the control flow leaves the scope (normal return, early return, exception propagation).
-
-Today we implemented three guard variants: `ScopeGuard` (always execute), `ScopeSuccess` (execute only on normal exit), `ScopeFail` (execute only on exception exit), and the `DEFER` macro to provide Go-style deferred execution syntax. These tools can simplify code and improve reliability in scenarios like transaction processing, state rollback, and resource cleanup—you can run the verification code to see their performance in actual scenarios.
-
-This chapter comes to an end here. From RAII to smart pointers (`unique_ptr`, `shared_ptr`, `weak_ptr`), from custom deleters to intrusive reference counting, to the general-purpose scope_guard—we have fully covered the core toolkit for modern C++ resource management. Mastering these tools equips you with the foundation to write safe, efficient, and maintainable C++ code.
-
 ## References
 
 - [cppreference: std::uncaught_exceptions](https://en.cppreference.com/w/cpp/error/uncaught_exception)

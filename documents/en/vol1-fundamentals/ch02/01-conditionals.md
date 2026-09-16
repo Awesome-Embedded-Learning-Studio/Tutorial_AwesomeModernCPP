@@ -31,7 +31,7 @@ translation:
 
 Let's be honest, you can't write programs without `if`/`else`, right? If a program just executes a single straight line from start to finish, it's no different from a machine that just repeats itself. Real-world programs need to make decisions—"Did the user enter a negative number? Show an error." "Is the sensor reading above the threshold? Trigger an alarm." Conditional statements are the mechanism that gives programs the ability to "make decisions."
 
-In this chapter, we will go through C++ conditional statements from top to bottom: `if`, `if-else`, the ternary operator, and the `if`/`switch` with initializers introduced in C++17. They may look simple on the surface, but they hide quite a few pitfalls, especially confusing assignment with comparison and `switch` fall-through issues. These are high-frequency sources of bugs in actual projects.
+In this chapter, we will go through C++ conditional statements from top to bottom: `if`, `if-else`, and the ternary operator. They may look simple on the surface, but they hide quite a few pitfalls, especially confusing assignment with comparison and `switch` fall-through issues. These are high-frequency sources of bugs in actual projects.
 
 ## `if` and `if-else` — The Most Basic Branching
 
@@ -206,29 +206,6 @@ const int limit = (is_admin) ? 1000 : 100;
 
 However, the ternary operator is not suitable for nesting. Something like `condition1 ? a : condition2 ? b : c` is syntactically legal but has terrible readability. If the logic involves more than two layers of selection, honestly write `if-else`.
 
-## C++17: `if` and `switch` with Initializers
-
-C++17 introduced a very practical feature — you can place an initialization statement in the condition part of `if` and `switch`, separated by a semicolon from the conditional expression:
-
-```cpp
-if (auto result = initializeResource(); result.isValid()) {
-    // Use result
-}
-```
-
-Variables declared in the initialization statement are visible throughout the entire `if` statement (including any `else if` and `else` blocks) and go out of scope when the statement ends. Previously, you might have needed to declare a temporary variable before `if`, and it would stay alive until the end of the function — this feature makes scopes tighter, destroying variables immediately after use.
-
-`switch` supports the same syntax:
-
-```cpp
-switch (int ch = getchar(); ch) {
-    case 'a':
-        // ...
-}
-```
-
-The scope of `ch` is restricted inside the `switch` and won't leak outside.
-
 ## Real-World Practice — conditional.cpp
 
 Now let's integrate what we learned in this chapter into a complete program: output a grade based on an input score, implemented in different ways.
@@ -353,9 +330,3 @@ Result: 5
 ### Exercise 3: Date Validity Check
 
 Write a function that takes three integers (year, month, day) and uses conditional statements to determine if the date is valid. You need to consider if the month is within 1-12, the different maximum days for each month, and leap years (February has 29 days). Hint: using `switch` to handle days for different months will be very clear.
-
-## Summary
-
-Conditional statements are the skeleton of program logic. `if` is the most general branching tool, `switch` is suitable for multi-way matching against discrete values, the ternary operator fits simple binary choices within expressions, and C++17's initializer `if` makes scope control more precise. Always wrap branch bodies in braces, never confuse `=` and `==`, write `break` for every `case` in `switch`, and don't nest ternary operators. If you develop good habits from day one regarding these seemingly simple but frequently occurring pitfalls, the road ahead will be much smoother.
-
-In the next chapter, we will learn about loop statements — teaching programs to repeat. Loops combined with conditionals constitute Turing-complete computational power; any computable problem can be expressed with them.

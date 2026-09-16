@@ -114,7 +114,7 @@ std::cout << "sizeof(shared_ptr): " << sizeof(p1) << "\n";  // 16 (64-bit)
 std::cout << "sizeof(unique_ptr): " << sizeof(std::unique_ptr<Connection>) << "\n";  // 8
 ```
 
-⚠️ `make_shared` 也有一个不太为人知的缺点：由于对象和控制块共享同一个内存块，当所有 `shared_ptr` 都被销毁时（强引用归零），对象会被析构，但控制块的内存不会立即释放——必须等到所有 `weak_ptr` 也都销毁（弱引用归零）后，整个内存块才会被回收。如果对象很大且有 `weak_ptr` 仍在使用，可能会造成内存占用比预期更高的现象。如果您预期会有 `weak_ptr` 长期存在，可以考虑使用 `std::shared_ptr<T>(new T)` 来让对象的内存独立于控制块，这样强引用归零时对象内存就能立即释放。
+`make_shared` 也有一个不太为人知的缺点：由于对象和控制块共享同一个内存块，当所有 `shared_ptr` 都被销毁时（强引用归零），对象会被析构，但控制块的内存不会立即释放——必须等到所有 `weak_ptr` 也都销毁（弱引用归零）后，整个内存块才会被回收。如果对象很大且有 `weak_ptr` 仍在使用，可能会造成内存占用比预期更高的现象。如果您预期会有 `weak_ptr` 长期存在，可以考虑使用 `std::shared_ptr<T>(new T)` 来让对象的内存独立于控制块，这样强引用归零时对象内存就能立即释放。
 
 ## 引用计数的原子操作与线程安全
 
@@ -240,7 +240,7 @@ void session_demo() {
 }
 ```
 
-⚠️ 使用 `shared_from_this()` 有一个前提条件：对象必须已经被一个 `shared_ptr` 管理。如果您在栈上创建对象或用裸指针管理，调用 `shared_from_this()` 会导致未定义行为。此外，构造函数中不能调用 `shared_from_this()`——因为此时 `shared_ptr` 还没有完成构造。
+使用 `shared_from_this()` 有一个前提条件：对象必须已经被一个 `shared_ptr` 管理。如果您在栈上创建对象或用裸指针管理，调用 `shared_from_this()` 会导致未定义行为。此外，构造函数中不能调用 `shared_from_this()`——因为此时 `shared_ptr` 还没有完成构造。
 
 ## 常见误用与踩坑
 

@@ -30,13 +30,6 @@ In the previous chapter, we mastered the basics of pointers—declaration, initi
 
 Don't worry, we'll take this one step at a time. There's a lot to cover, but the core logic is actually quite clear.
 
-> **Learning Objectives**
-> After completing this chapter, you will be able to:
->
-> - [ ] Understand the mechanism of array name decay to pointers and the two exceptional cases.
-> - [ ] Correctly read and write the four combined declarations of `const` and pointers.
-> - [ ] Distinguish between `NULL` pointers and wild pointers, and master defensive methods.
-
 ## Environment Setup
 
 We will run all our experiments in the following environment:
@@ -257,12 +250,6 @@ std::unique_ptr<int> p(new int(42)); // C++ style
 ```
 
 We will discuss these in depth in the subsequent C++ tutorials. For now, just know the core philosophy: **C++ uses the type system and object lifecycles for automatic management, rather than relying on programmer self-discipline**.
-
-## Summary
-
-Let's review the core points of this chapter. An array name decays to a pointer to its first element in most contexts, but `sizeof` and `&` are two exceptions—in these scenarios, the array name retains its "array" identity. `const` and pointers have four combinations; just remember "const on the left of `*` modifies the data, on the right modifies the pointer itself". While `NULL` pointers cause segmentation faults, that is a "good crash"; wild pointers are the real time bombs. Remembering the three rules of defense (initialize on declaration, set to `NULL` after `free`, check before use) will help you avoid the vast majority of disasters.
-
-At this point, we have built a solid foundation in pointers. Next, we will learn about functions—how to organize code to make it more reusable and maintainable.
 
 ## Exercises
 

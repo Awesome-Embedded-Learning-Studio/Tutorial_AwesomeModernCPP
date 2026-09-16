@@ -26,17 +26,6 @@ title: 关联容器快速上手
 
 这一章我们要搞明白的是三兄弟：`std::map`（有序键值对）、`std::set`（有序唯一元素集合）、`std::unordered_map`（哈希键值对）。它们的共同特点是：查找、插入、删除操作都很快，不需要我们把整个容器遍历一遍。区别在于 `map` 和 `set` 内部用红黑树实现，元素始终有序，操作复杂度 O(log n)；而 `unordered_map` 用哈希表实现，平均 O(1) 但不保证顺序。
 
-> **学习目标**
->
-> 完成本章后，你将能够：
->
-> - [ ] 使用 `std::map` 的插入、查找、删除操作
-> - [ ] 理解 `operator[]` 的默认插入陷阱并知道何时该用 `at` 或 `find`
-> - [ ] 使用 `std::set` 维护有序唯一元素集合
-> - [ ] 用结构化绑定遍历 map：`for (auto& [k, v] : map)`
-> - [ ] 理解 `unordered_map` 与 `map` 的性能差异并做出合理选择
-> - [ ] 用 map 和 set 编写词频统计和拼写检查的实战程序
-
 ## 上号——std::map 基本操作
 
 `std::map` 是一个有序的键值对容器，声明在 `<map>` 头文件中。它的每个元素是一个 `std::pair<const Key, Value>`，其中 Key 是键的类型，Value 是值的类型。内部用红黑树（一种自平衡二叉搜索树）存储，所以元素始终按 key 升序排列，查找、插入、删除都是 O(log n)。
@@ -71,7 +60,7 @@ int main()
 }
 ```
 
-这几种插入方式各有适用场景。`operator[]` 最直观，但它有一个非常阴险的行为——如果 key 不存在，它会自动插入一个值初始化的元素（对于 `int` 就是 0，对于类类型会调用默认构造函数）。也就是说 `scores["Eve"]` 即使你只是想看一下值，也会往 map 里塞一个 `{"Eve", 0}`。这一点后面踩坑预警会详细说。
+这几种插入方式各有适用场景。`operator[]` 最直观，但它有一个非常阴险的行为——如果 key 不存在，它会自动插入一个值初始化的元素（对于 `int` 就是 0，对于类类型会调用默认构造函数）。也就是说 `scores["Eve"]` 即使你只是想看一下值，也会往 map 里塞一个 `{"Eve", 0}`。这一点后面会详细说。
 
 接下来是查找。`find` 返回一个迭代器，指向找到的元素；找不到则返回 `end()`。`count` 返回匹配元素的个数（对于 map 来说要么是 0 要么是 1）。C++20 新增了 `contains`，语义更直观：
 
@@ -101,7 +90,7 @@ scores.erase(scores.begin());   // 删除第一个元素（key 最小的）
 scores.clear();                 // 清空整个 map
 ```
 
-> **踩坑预警**：`map[key]` 在 key 不存在时会**自动插入一个默认值**。这意味着两个后果：第一，如果你只是想检查某个 key 是否存在，用 `operator[]` 会导致 map 被悄悄修改，这在逻辑上是 bug，而且如果你的 value 类型没有默认构造函数，直接编译不过；第二，在 `const map` 上 `operator[]` 根本不可用，因为它是修改操作。所以，只读查找请用 `find`、`count` 或 `contains`，需要带边界检查的访问请用 `at()`——它和 vector 的 `at` 一样，key 不存在时抛出 `std::out_of_range` 异常。
+`map[key]` 在 key 不存在时会**自动插入一个默认值**。这意味着两个后果：第一，如果你只是想检查某个 key 是否存在，用 `operator[]` 会导致 map 被悄悄修改，这在逻辑上是 bug，而且如果你的 value 类型没有默认构造函数，直接编译不过；第二，在 `const map` 上 `operator[]` 根本不可用，因为它是修改操作。所以，只读查找请用 `find`、`count` 或 `contains`，需要带边界检查的访问请用 `at()`——它和 vector 的 `at` 一样，key 不存在时抛出 `std::out_of_range` 异常。
 
 ## 换个姿势——std::set 维护唯一有序集合
 
@@ -232,7 +221,7 @@ int main()
 }
 ```
 
-> **踩坑预警**：`unordered_map` 要求 key 类型要么有默认的 `std::hash` 特化，要么你手动提供哈希函数。标准库已经为内置类型（`int`、`double`、`std::string` 等）提供了 `std::hash` 特化，所以这些类型可以直接用作 key。但如果你想把自定义结构体当作 `unordered_map` 的 key，你需要自己实现 `std::hash` 特化和 `operator==`，否则编译直接报错。相比之下，`std::map` 只要求 key 支持 `operator<`（或自定义比较器），门槛更低。如果你发现自定义类型做 key 编译不过，先检查是不是用了 `unordered_map` 却忘了提供哈希函数。
+`unordered_map` 要求 key 类型要么有默认的 `std::hash` 特化，要么你手动提供哈希函数。标准库已经为内置类型（`int`、`double`、`std::string` 等）提供了 `std::hash` 特化，所以这些类型可以直接用作 key。但如果你想把自定义结构体当作 `unordered_map` 的 key，你需要自己实现 `std::hash` 特化和 `operator==`，否则编译直接报错。相比之下，`std::map` 只要求 key 支持 `operator<`（或自定义比较器），门槛更低。如果你发现自定义类型做 key 编译不过，先检查是不是用了 `unordered_map` 却忘了提供哈希函数。
 
 ## 实战时间——词频统计与拼写检查
 
@@ -380,14 +369,6 @@ std::set<int> set_union(const std::set<int>& a, const std::set<int>& b);
 std::set<int> set_intersection(const std::set<int>& a, const std::set<int>& b);
 std::set<int> set_difference(const std::set<int>& a, const std::set<int>& b);
 ```
-
-## 小结
-
-这一章我们把 C++ 的三个核心关联容器过了一遍。`std::map` 用红黑树存储有序键值对，查找插入删除都是 O(log n)，适合需要按 key 顺序遍历或做范围查询的场景。`std::set` 本质上是"只有 key 的 map"，用来维护有序唯一元素集合，接口和 map 几乎一致。`std::unordered_map` 用哈希表实现，平均 O(1) 的查找速度，适合纯粹的按键查找场景，代价是不保证元素顺序，而且自定义 key 类型需要手动提供哈希函数。
-
-几个关键要点：遍历 map 时优先用 C++17 的结构化绑定 `for (auto& [k, v] : map)` 让代码更清晰；只读查找不要用 `operator[]`，用 `find`、`count` 或 `contains`；不确定用 map 还是 unordered_map 的时候，问问自己需不需要有序遍历——不需要就选 `unordered_map`。
-
-下一章我们要进入 STL 算法库了——排序、查找、变换、统计，标准库提供了一大批通用算法等着我们去用。到时候你会发现，容器加上算法，才是 STL 真正的威力所在。
 
 ---
 

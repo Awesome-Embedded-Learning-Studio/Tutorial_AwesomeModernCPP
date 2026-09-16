@@ -318,9 +318,3 @@ Before looking at the answer, predict the results of the following expressions o
 ### Exercise 3: Experience the Floating-Point Precision Trap
 
 Write a program that uses a `float` variable starting from 0, adding 0.1 ten times, then judge if the result equals 1.0. Do the same with `double`. Observe the difference in behavior, and use `std::cout` to print the exact value after each accumulation step.
-
-## Summary
-
-In this chapter, we went through C++'s basic data types from start to finish. Integer types include `char`, `short`, `int`, `long`, `long long` and their unsigned versions, with sizes varying by platform; fixed-width types like `int32_t` solve the cross-platform consistency issue. Floating-point types include `float`, `double`, and `long double`, with increasing precision, but always remember that floating-point numbers are approximate representations and cannot be compared directly with `==`. Character types sit at the intersection of integers and text; `char`, `signed char`, and `unsigned char` are three distinct types. The boolean type is simple, but implicit conversion rules can easily create subtle bugs. The `sizeof` operator calculates type size at compile time, and `std::numeric_limits` provides value ranges for types.
-
-In the next chapter, we will look at how these types convert between each other—when implicit conversions are safe or dangerous, and how to properly use `static_cast` and other casts. Type conversion is one of the most problematic areas in the C++ type system; understanding it will give us much more peace of mind when writing code.

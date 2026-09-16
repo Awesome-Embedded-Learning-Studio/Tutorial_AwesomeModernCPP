@@ -281,16 +281,6 @@ static_assert(sizeof(std::variant<char, std::string>) == sizeof(std::string) + s
 
 This size is completely acceptable for most applications. However, in memory-constrained embedded scenarios, you may need to evaluate whether it is worth using `std::variant` instead of a hand-written `union` + tag scheme. The type safety benefits of `std::variant` usually far outweigh the cost of a few bytes of memory overhead.
 
-## Summary
-
-`std::variant` is one of the most important type-safety tools in C++17. It solves the three core problems of raw `union`s: not knowing what type is currently held (solved by an internal tag), not managing object lifetimes (automatic constructor/destructor calls), and not supporting non-trivial types (no restrictions).
-
-`std::visit` is the core access mechanism for `std::variant`. Combined with the `overloaded` idiom, it enables type-safe pattern matching. When your set of types is finite and known (message types, configuration values, AST nodes, etc.), `std::variant` is more efficient and safer than virtual functions. However, if the type set is open (third parties can extend it), virtual functions remain the more appropriate choice.
-
-`valueless_by_exception` is a state worth knowing about but usually not something to worry about—it only appears in the extreme scenario where constructing a new value throws an exception. Knowing this state exists is enough; there is no need to be overly defensive about it in actual code.
-
-The next topic we will discuss, `std::optional`, can be seen as a special case of `std::variant`—when your "type set" has only two possibilities ("has value" and "does not have value"), `std::optional` is the more concise choice.
-
 ## References
 
 - [cppreference: std::variant](https://en.cppreference.com/w/cpp/utility/variant)

@@ -33,17 +33,6 @@ In the previous chapter, we went through `std::vector` from beginning to end—d
 
 In this chapter, we will focus on the trio: `std::map` (ordered key-value pairs), `std::set` (ordered unique element sets), and `std::unordered_map` (hashed key-value pairs). Their shared characteristic is that lookup, insertion, and deletion operations are fast without traversing the entire container. The difference lies in the implementation: `std::map` and `std::set` use red-black trees internally, keeping elements ordered with O(log n) complexity; while `std::unordered_map` uses hash tables, offering average O(1) performance without guaranteed order.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Use `std::map` for insertion, lookup, and deletion operations
-> - [ ] Understand the default insertion trap of `operator[]` and know when to use `insert()` or `try_emplace()`
-> - [ ] Use `std::set` to maintain ordered unique element sets
-> - [ ] Iterate over maps using structured binding: `for (auto &[key, value] : map)`
-> - [ ] Understand the performance differences between `std::map` and `std::unordered_map` and make informed choices
-> - [ ] Write practical programs for word frequency statistics and spell checking using maps and sets
-
 ## Getting Started — Basic Operations with std::map
 
 `std::map` is an ordered key-value container declared in the `<map>` header file. Each element is a `std::pair<Key, Value>`, where `Key` is the key type and `Value` is the value type. It uses a red-black tree (a self-balancing binary search tree) internally, so elements are always sorted in ascending order by key. Lookup, insertion, and deletion are all O(log n).
@@ -441,14 +430,6 @@ int main() {
     return 0;
 }
 ```
-
-## Summary
-
-In this chapter, we covered three core associative containers in C++. `std::map` uses a red-black tree to store ordered key-value pairs with O(log n) lookup, insertion, and deletion, suitable for scenarios requiring ordered traversal or range queries by key. `std::set` is essentially a "map with only keys," used to maintain ordered unique element sets with an interface almost identical to `map`. `std::unordered_map` uses a hash table for average O(1) lookup speed, suitable for pure key-based lookup scenarios, at the cost of guaranteed element order and requiring manual hash functions for custom key types.
-
-Key takeaways: When iterating maps, prioritize C++17's structured binding `for (auto &[key, value] : map)` for clarity. For read-only lookup, avoid `operator[]`; use `find()`, `contains()`, or `count()`. When unsure whether to use `map` or `unordered_map`, ask yourself if you need ordered traversal—if not, choose `unordered_map`.
-
-In the next chapter, we will dive into the STL algorithm library—sorting, searching, transforming, and statistics. The standard library provides a plethora of generic algorithms ready for use. You will discover that containers combined with algorithms represent the true power of the STL.
 
 ---
 

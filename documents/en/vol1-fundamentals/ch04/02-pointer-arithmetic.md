@@ -33,14 +33,6 @@ If you have already grasped the fact that "a pointer is an address," then we mus
 
 In this chapter, we will connect pointer arithmetic, array-to-pointer decay, and C-style string pointer operations. If you previously felt that arrays and pointers were "related but somehow indistinct," today we will untie this knot once and for all.
 
-> **Learning Objectives**
-> After completing this chapter, you will be able to:
->
-> - [ ] Understand the mechanism and trigger conditions for array-to-pointer decay.
-> - [ ] Grasp the relationship between the actual byte count and element count in pointer addition and subtraction.
-> - [ ] Use pointers to traverse arrays and C-style strings.
-> - [ ] Understand that the `[]` operator is essentially syntactic sugar for pointer arithmetic.
-
 ## Environment Setup
 
 We will conduct all subsequent experiments in the following environment:
@@ -394,26 +386,6 @@ first 和 last 之间隔了 5 个元素
 ```
 
 This program brings together the core concepts of this chapter: pointer traversal, calculating distance via pointer subtraction, scanning C-style strings with pointers, and in-place array reversal using the two-pointer technique. The "two-pointer" trick for reversing arrays—where one pointer starts at the beginning and the other at the end, moving inward while swapping—is a frequent guest in interview questions and algorithm challenges.
-
-## Summary
-
-Let's review the core points of this chapter:
-
-- In most expressions, an array name **decays** into a pointer to its first element, losing length information in the process.
-- Pointer arithmetic steps by the **size of the pointed-to type**; `p + 1` actually moves `sizeof(*p)` bytes.
-- Two pointers pointing to the same array can be **subtracted**, yielding the number of elements between them.
-- The `[]` operator is essentially syntactic sugar for `*(p + n)`, which explains why `sizeof` fails on array parameters.
-- A C-style string is a `char` array terminated by `'\0'`; traversing until `'\0'` signifies the end of the string.
-- Prefer range-based `for` loops for daily array traversal; use pointer traversal when fine-grained control is needed.
-
-### Common Pitfalls
-
-| Error | Cause | Solution |
-|------|------|----------|
-| `sizeof(arr)` returns pointer size inside a function | Array decay; the function parameter is actually a pointer | Pass the length as a separate parameter, or use `std::array`/`std::span` |
-| Dereferencing a past-the-end pointer `*(arr + len)` | Past-the-end pointers are for comparison only, not access | Use `!=` instead of `<=` in loop conditions, and never dereference |
-| Modifying a string literal `s[0] = 'H'` | Literals reside in read-only memory; writing triggers a segmentation fault | Use `char s[]` to copy to the stack before modifying |
-| Subtracting unrelated pointers | The two pointers must point to the same memory block | Always ensure pointers involved in arithmetic belong to the same array |
 
 ## Exercises
 

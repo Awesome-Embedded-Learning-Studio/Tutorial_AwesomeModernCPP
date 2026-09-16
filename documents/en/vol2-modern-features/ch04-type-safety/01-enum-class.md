@@ -478,14 +478,6 @@ Run the enum class example online to compare the issues of C-style enums with st
   allow-run
 />
 
-## Summary
-
-`enum class` has existed since C++11 and is today an indispensable basic tool in modern C++. Through three core improvements—scope isolation, prohibition of implicit conversion, and specifiable underlying types—it completely fixes the type safety issues of C-style `enum`.
-
-Bitwise operations require manually overloading operators, but this is precisely the embodiment of type safety: the compiler won't mix values of two different enumerations for bitwise operations without your knowledge. The combination of `enum class` and `switch` allows the compiler to check exhaustiveness, and with the `-Wswitch` option, no branches are missed when adding new enumeration values. C++20's `using enum` provides a convenient shorthand for frequent enumeration usage while maintaining type safety.
-
-The next topic we will discuss, "strong typedef," solves the same class of problems as `enum class`—except it faces not "finite enumeration values" but "values with the same underlying type but different semantics."
-
 ## References
 
 - [cppreference: Enumeration declaration](https://en.cppreference.com/w/cpp/language/enum)

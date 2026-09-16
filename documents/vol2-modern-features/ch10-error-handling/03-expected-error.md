@@ -520,12 +520,6 @@ int main() {
 
 ------
 
-## 小结
-
-`std::expected<T, E>` 是 C++23 在类型安全错误处理方面的核心工具。它比 `optional` 多了错误信息，比异常更适合性能敏感和嵌入式场景，monadic 操作让错误传播链变得优雅。如果你还在 C++17，一个简化版的 `expected` 实现就能覆盖大部分需求。
-
-下一篇我们会综合对比所有错误处理方案，给出一个场景化的选择指南。
-
 ## 参考资源
 
 - [cppreference: std::expected](https://en.cppreference.com/w/cpp/utility/expected)
