@@ -4,7 +4,7 @@ description: "理解 friend 函数和 friend 类的用法，掌握友元的合�
 chapter: 6
 order: 5
 difficulty: beginner
-reading_time_minutes: 10
+reading_time_minutes: 16
 platform: host
 prerequisites:
   - "static 成员"
@@ -44,7 +44,7 @@ float dot_product(const Vector3D& a, const Vector3D& b)
 }
 ```
 
-这里有几个要点需要搞清楚。首先，`friend` 声明出现在类的内部，但 `dot_product` **不是** `Vector3D` 的成员函数——它是一个普通的全局函数，只不过获得了访问 `Vector3D` 私有成员的特权。调用时和普通函数一样：`dot_product(v1, v2)`，而不是 `v1.dot_product(v2)`。
+这里有几个要点需要搞清楚。首先，`friend` 声明出现在类的内部，但 `dot_product` **不是** `Vector3D` 的成员函数——它是一个普通的全局函数,只不过获得了访问 `Vector3D` 私有成员的特权。调用时和普通函数一样：`dot_product(v1, v2)`，而不是 `v1.dot_product(v2)`。
 
 其次，`friend` 声明可以放在类的任何位置——`public`、`private`、`protected` 区域都无所谓，效果完全相同。通常我们把它集中放在类的开头或末尾，和成员函数声明分开，一眼就能看出"哪些外部函数拥有特殊权限"。
 
@@ -274,9 +274,11 @@ class Student {
 private:
     int id;
     float score;
+    std::string name;
 
 public:
-    Student(int id, float score) : id(id), score(score) {}
+    Student(int id, float score, const std::string& name)
+        : id(id), score(score), name(name) {}
 
     // 在这里添加友元声明
 };
@@ -286,9 +288,133 @@ public:
 
 验证方式：创建几个 `Student` 对象，用 `std::cout` 输出它们的信息，确认格式正确。
 
+::: details 参考答案
+
+```cpp
+#include <iostream>
+#include <string>
+
+class Student {
+ private:
+    int id;
+    float score;
+    std::string name;
+
+ public:
+    Student(int id, float score, const std::string& name)
+        : id(id), score(score), name(name) {}
+
+    friend std::ostream& operator<<(std::ostream& os, const Student& student);
+};
+
+std::ostream& operator<<(std::ostream& os, const Student& student) {
+    os << "学生ID:" << student.id << ","
+       << "姓名：" << student.name << ","
+       << "成绩：" << student.score;
+    return os;
+}
+
+int main() {
+    // 创建多个 Student 对象
+    Student student1(1, 95.5f, "小明");
+    Student student2(2, 88.0f, "小红");
+    Student student3(3, 76.5f, "杰");
+
+    // 输出学生信息，验证 operator<<
+    std::cout << student1 << std::endl;
+    std::cout << student2 << std::endl;
+    std::cout << student3 << std::endl;
+
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+学生ID:1,姓名：小明,成绩：95.5
+学生ID:2,姓名：小红,成绩：88
+学生ID:3,姓名：杰,成绩：76.5
+```
+
+:::
+
 **练习 2：设计 Container-Iterator 友元对**
 
 实现一个 `IntBuffer` 容器和一个 `IntBufferIterator` 迭代器。`IntBuffer` 内部用固定大小的 `int` 数组存储数据，`IntBufferIterator` 通过友元权限访问该数组完成遍历。要求外部代码无法直接访问 `IntBuffer` 的内部数组。提示：`IntBuffer` 声明 `friend class IntBufferIterator;`，迭代器持有指向容器的指针。
+
+::: details 参考答案
+
+```cpp
+#include <array>
+#include <cstddef>
+#include <iostream>
+
+class IntBufferIterator;
+
+class IntBuffer {
+ private:
+  std::array<int, 4> data{};
+
+ public:
+  IntBuffer() {
+    for (std::size_t i = 0; i < data.size(); ++i) {
+      data[i] = static_cast<int>(i * 2);
+    }
+  }
+
+  friend class IntBufferIterator;
+};
+
+class IntBufferIterator {
+ private:
+  const IntBuffer* buffer = nullptr;
+  std::size_t index = 0;
+
+ public:
+  explicit IntBufferIterator(const IntBuffer& buffer) : buffer(&buffer) {}
+
+  bool hasNext() const { return index < buffer->data.size(); }
+
+  int next() {
+    int value = buffer->data[index];
+    ++index;
+    return value;
+  }
+};
+
+int main() {
+  IntBuffer buffer;
+  IntBufferIterator iterator{buffer};
+
+  while (iterator.hasNext()) {
+    std::cout << iterator.next() << std::endl;
+  }
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+0
+2
+4
+6
+```
+
+:::
 
 ## 小结
 

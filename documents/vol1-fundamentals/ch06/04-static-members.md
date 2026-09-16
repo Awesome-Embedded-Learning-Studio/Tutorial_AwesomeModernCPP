@@ -11,7 +11,7 @@ order: 4
 platform: host
 prerequisites:
 - 析构函数与资源管理
-reading_time_minutes: 11
+reading_time_minutes: 16
 tags:
 - cpp-modern
 - host
@@ -311,9 +311,132 @@ Next ID to be assigned: 5
 
 写一个 `UniqueIdGenerator` 类，它不存储任何对象数据，只通过静态成员提供一个全局递增的 ID。接口设计参考：`static int generate()` 每次调用返回一个新的唯一 ID，`static void reset(int start)` 允许重置起始值。写完后测试：调用三次 `generate()`，确认返回 1、2、3；然后 `reset(100)`，再调用两次，确认返回 100、101。
 
+::: details 参考答案
+
+```cpp
+#include <iostream>
+
+class UniqueIdGenerator
+{
+private:
+    inline static int next_id_ = 1;
+
+public:
+    UniqueIdGenerator() = delete;
+
+    static int generate()
+    {
+        return next_id_++;
+    }
+
+    static void reset(int start)
+    {
+        next_id_ = start;
+    }
+};
+
+int main()
+{
+    std::cout << UniqueIdGenerator::generate() << '\n';
+    std::cout << UniqueIdGenerator::generate() << '\n';
+    std::cout << UniqueIdGenerator::generate() << '\n';
+
+    UniqueIdGenerator::reset(100);
+
+    std::cout << UniqueIdGenerator::generate() << '\n';
+    std::cout << UniqueIdGenerator::generate() << '\n';
+
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+1
+2
+3
+100
+101
+```
+
+:::
+
 ### 练习二：实例追踪器
 
 写一个 `TrackedObject` 类，它同时维护两个计数器——`active_count`（当前存活对象数）和 `total_created`（总共创建过的对象数，只增不减）。在构造和析构函数中更新这两个计数器，并提供两个静态函数来查询。验证方法：创建 5 个对象，通过花括号作用域销毁其中 3 个，打印两个计数器的值——`active_count` 应该是 2，`total_created` 应该是 5。
+
+::: details 参考答案
+
+```cpp
+#include <iostream>
+
+class TrackedObject
+{
+private:
+    // 当前存活对象数量
+    inline static int active_count = 0;
+    // 总共创建过的对象数量
+    inline static int total_created = 0;
+
+public:
+    TrackedObject()
+    {
+        ++active_count;
+        ++total_created;
+    }
+
+    ~TrackedObject()
+    {
+        --active_count;
+    }
+
+    static int get_active_count()
+    {
+        return active_count;
+    }
+
+    static int get_total_created()
+    {
+        return total_created;
+    }
+};
+
+int main()
+{
+    TrackedObject object1;
+    {
+        TrackedObject object2;
+        TrackedObject object3;
+        TrackedObject object4;
+    }
+    TrackedObject object5;
+
+    std::cout << "当前存活对象数: " << TrackedObject::get_active_count() << '\n'
+              << "总共创建过的对象数: " << TrackedObject::get_total_created() << '\n';
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+当前存活对象数: 2
+总共创建过的对象数: 5
+```
+
+:::
 
 ## 小结
 
