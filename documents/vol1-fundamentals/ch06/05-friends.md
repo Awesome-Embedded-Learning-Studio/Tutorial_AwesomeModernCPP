@@ -1,4 +1,4 @@
-﻿---
+---
 title: "友元"
 description: "理解 friend 函数和 friend 类的用法，掌握友元的合理使用场景与滥用风险"
 chapter: 6
@@ -44,7 +44,7 @@ float dot_product(const Vector3D& a, const Vector3D& b)
 }
 ```
 
-这里有几个要点需要搞清楚。首先，`friend` 声明出现在类的内部，但 `dot_product` **不是** `Vector3D` 的成员函数——它是一个普通的全局函数，只不过获得了访问 `Vector3D` 私有成员的特权。调用时和普通函数一样：`dot_product(v1, v2)`，而不是 `v1.dot_product(v2)`。
+这里有几个要点需要搞清楚。首先，`friend` 声明出现在类的内部，但 `dot_product` **不是** `Vector3D` 的成员函数——它是一个普通的全局函数,只不过获得了访问 `Vector3D` 私有成员的特权。调用时和普通函数一样：`dot_product(v1, v2)`，而不是 `v1.dot_product(v2)`。
 
 其次，`friend` 声明可以放在类的任何位置——`public`、`private`、`protected` 区域都无所谓，效果完全相同。通常我们把它集中放在类的开头或末尾，和成员函数声明分开，一眼就能看出"哪些外部函数拥有特殊权限"。
 
