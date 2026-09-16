@@ -11,7 +11,7 @@ order: 6
 platform: host
 prerequisites:
 - 友元
-reading_time_minutes: 11
+reading_time_minutes: 15
 tags:
 - cpp-modern
 - host
@@ -335,9 +335,104 @@ Point& set_x(int x)
 
 ## 练习
 
-1. **实现一个链式 setter 的 `Rectangle` 类**。要求：提供 `set_width(int)` 和 `set_height(int)` 两个链式方法，再提供一个 `area() const` 返回面积。写一段测试代码验证 `rect.set_width(3).set_height(4).area()` 的结果是否为 12。
+**练习 1：实现一个链式 setter 的 `Rectangle` 类**。要求：提供 `set_width(int)` 和 `set_height(int)` 两个链式方法，再提供一个 `area() const` 返回面积。写一段测试代码验证 `rect.set_width(3).set_height(4).area()` 的结果是否为 12。
 
-2. **实现一个简易 `QueryBuilder`**。要求：通过链式调用构建一个 SQL 查询字符串——`select("id, name").from("users").where("age > 18").build()` 应该返回 `"SELECT id, name FROM users WHERE age > 18"`。提示：内部用 `StringBuilder` 的思路维护一个字符缓冲区，每个链式方法往里面追加对应的 SQL 片段。
+::: details 参考答案
+
+```cpp
+#include <array>
+#include <iostream>
+
+class Rectangle {
+ private:
+  int width_{};
+  int height_{};
+
+ public:
+  Rectangle() = default;
+  Rectangle(int width, int height) : width_(width), height_(height) {}
+  Rectangle& set_width(int width) {
+    this->width_ = width;
+    return *this;
+  }
+  Rectangle& set_height(int height) {
+    this->height_ = height;
+    return *this;
+  }
+  int area() const { return this->width_ * this->height_; }
+};
+int main()
+{
+    Rectangle rect{};
+    std::cout<<"面积 : "<<rect.set_width(3).set_height(4).area()<<std::endl;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+运行结果:
+
+```text
+面积 : 12
+```
+
+:::
+
+**练习 2：实现一个简易 `QueryBuilder`**。要求：通过链式调用构建一个 SQL 查询字符串——`select("id, name").from("users").where("age > 18").build()` 应该返回 `"SELECT id, name FROM users WHERE age > 18"`。提示：内部用 `StringBuilder` 的思路维护一个字符缓冲区，每个链式方法往里面追加对应的 SQL 片段。
+
+::: details 参考答案
+
+```cpp
+#include <iostream>
+
+class QueryBuilder {
+ private:
+  std::string str_{};
+
+ public:
+  QueryBuilder() = default;
+  QueryBuilder& select(const char* str) {
+    this->str_ = this->str_ + " SELECT " + str;
+    return *this;
+  }
+
+  QueryBuilder& from(const char* str) {
+    this->str_ = this->str_ + " FROM " + str;
+    return *this;
+  }
+
+  QueryBuilder& where(const char* str) {
+    this->str_ = this->str_ + " WHERE " + str;
+    return *this;
+  }
+
+  std::string build() const { return this->str_; }
+};
+int main() {
+  QueryBuilder builder{};
+  std::cout
+      << builder.select("id, name").from("users").where("age > 18").build()
+      << std::endl;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+运行结果:
+
+```text
+ SELECT id, name FROM users WHERE age > 18
+```
+
+:::
 
 ## 小结
 
