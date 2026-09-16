@@ -1,0 +1,392 @@
+/* Article fences only. Interactive editors and PDF have their own presentation. */
+:root {
+  --article-code-bg: #fdfcf9;
+  --article-code-border: #e2dfd8;
+  --article-code-header: #f5f4f8;
+  --article-code-accent: #656198;
+  --article-code-badge: #eeedf5;
+  --article-code-shadow: 0 3px 8px rgb(49 39 24 / 3%), 0 14px 36px -18px rgb(49 39 24 / 22%);
+  --article-code-hover-shadow: 0 6px 14px rgb(49 39 24 / 5%), 0 18px 38px -18px rgb(49 39 24 / 26%);
+  --article-code-number: #93949d;
+  --article-output-bg: #f0f5f2;
+  --article-output-border: #d7e3dc;
+  --article-output-ink: #36534b;
+  --article-output-label: #54766a;
+  --article-output-hover-shadow: 0 5px 14px rgb(33 70 53 / 9%);
+  --article-code-font: 'Cascadia Code', 'Cascadia Mono', 'SFMono-Regular', Consolas,
+    'Liberation Mono', 'Noto Sans Mono CJK SC', 'Noto Sans CJK SC',
+    'PingFang SC', 'Microsoft YaHei', monospace;
+}
+
+.dark {
+  --article-code-bg: #20232b;
+  --article-code-border: #363a46;
+  --article-code-header: #282b38;
+  --article-code-accent: #c0b8e6;
+  --article-code-badge: #363345;
+  --article-code-shadow: 0 3px 8px rgb(0 0 0 / 12%), 0 16px 36px -18px rgb(0 0 0 / 40%);
+  --article-code-hover-shadow: 0 6px 14px rgb(0 0 0 / 18%), 0 20px 40px -18px rgb(0 0 0 / 48%);
+  --article-code-number: #8e95a5;
+  --article-output-bg: #202d29;
+  --article-output-border: #344c42;
+  --article-output-ink: #c1d8cc;
+  --article-output-label: #a1c1b0;
+  --article-output-hover-shadow: 0 5px 14px rgb(0 0 0 / 20%);
+}
+
+.vp-doc div[class*='language-'] {
+  --vp-font-family-mono: var(--article-code-font);
+  --vp-code-font-size: 0.91rem;
+  --vp-code-line-height: 1.75;
+  --vp-code-line-number-color: var(--article-code-number);
+  --vp-code-block-bg: var(--article-code-bg);
+  --vp-code-copy-code-bg: var(--article-code-bg);
+  --vp-code-copy-code-hover-bg: var(--article-code-badge);
+  --vp-code-copy-code-border-color: var(--article-code-border);
+  --vp-code-copy-code-hover-border-color: var(--article-code-accent);
+  margin: 24px 0;
+  border: 1px solid var(--article-code-border);
+  border-radius: 14px;
+  /* Paint the tint on the card itself so the line-number padding cannot cut it. */
+  background: radial-gradient(ellipse 520px 90px at 0 0, var(--article-code-header), transparent),
+    var(--article-code-bg);
+  box-shadow: var(--article-code-shadow);
+  font-size: var(--vp-code-font-size);
+}
+
+/* A quiet top surface, without a full-width toolbar rule. */
+.vp-doc div[class*='language-']::before {
+  display: block;
+  height: 44px;
+  content: '';
+}
+
+.vp-doc [class*='language-'] pre {
+  padding: 8px 0 20px;
+}
+
+.vp-doc [class*='language-'] pre,
+.vp-doc [class*='language-'] code,
+.vp-doc .line-numbers-wrapper {
+  font-family: var(--article-code-font);
+  font-variant-ligatures: none;
+}
+
+.vp-doc div[class*='language-'].line-numbers-mode {
+  padding-left: 40px;
+}
+
+.vp-doc .line-numbers-wrapper {
+  top: 44px;
+  width: 40px;
+  padding-top: 8px;
+  border-right: 0;
+}
+
+.vp-doc [class*='language-'] > span.lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  top: 10px;
+  right: auto;
+  left: 16px;
+  padding: 4px 9px;
+  border-radius: 7px;
+  background: var(--article-code-badge);
+  color: var(--article-code-accent);
+  font: 600 11px/18px var(--vp-font-family-base);
+  letter-spacing: 0.025em;
+}
+
+.vp-doc [class*='language-'] > span.lang::before,
+.vp-doc .vp-cf-icon::before {
+  width: 14px;
+  height: 14px;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m8 7-5 5 5 5m8-10 5 5-5 5m-3-14-2 18' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  content: '';
+}
+
+.vp-doc [class*='language-'] > button.copy {
+  top: 10px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--article-code-border);
+  border-radius: 8px;
+  background-size: 15px;
+  opacity: 0.7;
+}
+
+.vp-doc [class*='language-'] > button.copy:focus-visible {
+  outline: 2px solid var(--article-code-accent);
+  outline-offset: 3px;
+}
+
+.vp-doc [class*='language-']:hover > button.copy + span.lang,
+.vp-doc [class*='language-'] > button.copy:focus + span.lang {
+  opacity: 1;
+}
+
+.vp-doc [class*='language-'] > button.copy.copied::before {
+  top: -1px;
+  height: 30px;
+  border-radius: 8px 0 0 8px;
+}
+
+/* Output has its own space and a lighter visual weight than source. */
+.vp-doc div.language-output {
+  --article-code-hover-shadow: var(--article-output-hover-shadow);
+  --vp-code-block-color: var(--article-output-ink);
+  --vp-code-copy-code-bg: var(--article-output-bg);
+  --vp-code-copy-code-hover-bg: var(--article-output-border);
+  --vp-code-copy-code-hover-border-color: var(--article-output-label);
+  --vp-code-copy-code-active-text: var(--article-output-ink);
+  margin: 22px 0 28px;
+  border-color: var(--article-output-border);
+  border-left: 3px solid var(--article-output-border);
+  border-radius: 10px;
+  background: var(--article-output-bg);
+  box-shadow: none;
+}
+
+.vp-doc div.language-output::before {
+  height: 38px;
+  background: none;
+}
+
+.vp-doc .language-output pre {
+  padding-top: 4px;
+  padding-bottom: 16px;
+}
+
+.vp-doc .language-output .vp-code span {
+  color: inherit;
+}
+
+.vp-doc .language-output > span.lang {
+  top: 9px;
+  left: 20px;
+  padding: 0;
+  background: none;
+  color: var(--article-output-label);
+}
+
+.vp-doc .language-output > span.lang::before {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m5 6 6 6-6 6m9 0h6' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.vp-doc .language-output > button.copy {
+  top: 7px;
+  border-color: transparent;
+}
+
+.vp-doc .language-output .line-numbers-wrapper {
+  top: 38px;
+  padding-top: 4px;
+}
+
+/* Override VitePress's negative gap without joining either block. */
+.vp-doc div[class*='language-'] + div[class*='language-'],
+.vp-doc .vp-code-fold + div.language-output {
+  margin-top: 22px;
+}
+
+/* Long examples use the same surface as ordinary source cards. The native
+ * details element controls the sibling code block, including without JS. */
+.vp-doc .vp-code-fold {
+  margin: 24px 0;
+  border: 1px solid var(--article-code-border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: radial-gradient(ellipse 520px 90px at 0 0, var(--article-code-header), transparent),
+    var(--article-code-bg);
+  box-shadow: var(--article-code-shadow);
+}
+
+.vp-doc .vp-code-fold > details > summary {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto 16px;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  margin: 0;
+  padding: 13px 16px;
+  list-style: none;
+  color: var(--article-code-accent);
+  font: 600 13px/1.6 var(--vp-font-family-base);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s ease;
+}
+
+.vp-doc .vp-code-fold > details > summary:hover {
+  background-color: var(--article-code-header);
+}
+
+.vp-doc .vp-code-fold > details > summary:focus-visible {
+  outline: 2px solid var(--article-code-accent);
+  outline-offset: -4px;
+  border-radius: 12px;
+}
+
+.vp-doc .vp-code-fold > details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.vp-doc .vp-cf-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: var(--article-code-badge);
+}
+
+.vp-doc .vp-cf-count {
+  padding: 2px 8px;
+  border: 1px solid var(--article-code-border);
+  border-radius: 6px;
+  color: var(--vp-c-text-2);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.vp-doc .vp-code-fold > details > summary::after {
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  transition: transform 0.2s ease;
+  content: '';
+}
+
+.vp-doc .vp-code-fold > details[open] > summary {
+  border-bottom: 1px solid var(--article-code-border);
+}
+
+.vp-doc .vp-code-fold > details[open] > summary::after {
+  transform: rotate(180deg);
+}
+
+.vp-doc .vp-code-fold > details:not([open]) .vp-cf-open,
+.vp-doc .vp-code-fold > details[open] .vp-cf-closed {
+  display: none;
+}
+
+.vp-doc .vp-code-fold > div[class*='language-'] {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.vp-doc .vp-code-fold:not(:has(> details[open])) > div[class*='language-'] {
+  display: none;
+}
+
+/* Code groups and folded examples already provide their own header. */
+.vp-doc .vp-code-group div[class*='language-']::before,
+.vp-doc .vp-code-fold > div[class*='language-']::before {
+  display: none;
+}
+
+.vp-doc .vp-code-group div[class*='language-'],
+.vp-doc .vp-code-fold > div[class*='language-'] {
+  box-shadow: none;
+}
+
+.vp-doc .vp-code-group .line-numbers-wrapper,
+.vp-doc .vp-code-fold .line-numbers-wrapper {
+  top: 0;
+  padding-top: 20px;
+}
+
+.vp-doc .vp-code-group [class*='language-'] pre,
+.vp-doc .vp-code-fold [class*='language-'] pre {
+  padding-top: 20px;
+}
+
+.vp-doc .vp-code-group [class*='language-'] > span.lang,
+.vp-doc .vp-code-fold [class*='language-'] > span.lang {
+  display: none;
+}
+
+.vp-doc .vp-code-group [class*='language-'] > button.copy,
+.vp-doc .vp-code-fold [class*='language-'] > button.copy {
+  opacity: 0;
+}
+
+.vp-doc .vp-code-group [class*='language-']:hover > button.copy,
+.vp-doc .vp-code-fold [class*='language-']:hover > button.copy,
+.vp-doc .vp-code-group [class*='language-'] > button.copy:focus,
+.vp-doc .vp-code-fold [class*='language-'] > button.copy:focus {
+  opacity: 1;
+}
+
+.vp-doc .vp-code-group .tabs {
+  margin-right: 0;
+  margin-left: 0;
+  border-radius: 14px 14px 0 0;
+  background: var(--article-code-header);
+}
+
+/* Move only the outer panel, so nested examples cannot float twice. */
+@media screen and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .vp-doc div[class*='language-']:not(.vp-code-fold *, .vp-code-group *, blockquote *),
+  .vp-doc .vp-code-fold:not(blockquote *) {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .vp-doc div[class*='language-']:not(.vp-code-fold *, .vp-code-group *, blockquote *):hover,
+  .vp-doc .vp-code-fold:not(blockquote *):hover {
+    transform: translateY(-2px);
+    box-shadow: var(--article-code-hover-shadow);
+  }
+}
+
+@media (max-width: 639px) {
+  .vp-doc div[class*='language-'],
+  .vp-doc .vp-code-fold {
+    border-radius: 10px;
+  }
+  .vp-doc .vp-code-fold > details > summary {
+    gap: 10px;
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+  .vp-doc div[class*='language-'].line-numbers-mode {
+    padding-left: 32px;
+  }
+  .vp-doc .line-numbers-wrapper {
+    width: 32px;
+  }
+}
+
+@media print {
+  .vp-doc div[class*='language-'],
+  .vp-doc .vp-code-fold {
+    box-shadow: none;
+  }
+  .vp-doc .vp-code-fold {
+    overflow: visible;
+  }
+  .vp-doc .vp-code-fold > details {
+    display: none;
+  }
+  .vp-doc .vp-code-fold > div[class*='language-'] {
+    display: block !important;
+  }
+  .vp-doc [class*='language-'] > button.copy {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vp-doc .vp-code-fold > details > summary,
+  .vp-doc .vp-code-fold > details > summary::after {
+    transition: none;
+  }
+}

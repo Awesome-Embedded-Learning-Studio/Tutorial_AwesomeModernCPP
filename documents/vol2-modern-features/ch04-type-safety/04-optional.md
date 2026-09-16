@@ -22,8 +22,6 @@ title: std::optional：优雅表达'可能没有值'
 ---
 # std::optional：优雅表达"可能没有值"
 
-## 引言
-
 笔者写过太多这样的代码了：函数返回 `-1` 表示"没找到"，返回 `nullptr` 表示"出错了"，返回空字符串表示"配置项不存在"。这些约定在写的时候觉得理所当然，三个月后回头看就开始冒冷汗——`-1` 到底是"没找到"还是"真的返回了 -1"？`nullptr` 是"可选的空值"还是"出错了"？每一个返回特殊值的函数都在给未来的自己埋雷。
 
 `std::optional`（C++17 引入）就是来解决"如何安全表达可能没有值"这个问题的。它把"有值还是没值"这个信息编码进了类型系统——编译器和调用方都能从函数签名直接看到"这个返回值可能为空"，不需要靠注释或文档来传达。
@@ -140,6 +138,10 @@ std::cout << "sizeof(optional<double>): " << sizeof(std::optional<double>) << "\
 std::cout << "sizeof(string):           " << sizeof(std::string) << "\n";    // 典型：32
 std::cout << "sizeof(optional<string>): " << sizeof(std::optional<std::string>) << "\n"; // 典型：40
 ```
+
+咱们把这两部分画出来（以 `optional<int>` 为例，有值和无值各看一格）：
+
+![std::optional 的内存布局：对齐缓冲区加 bool 标志位](./04-optional-layout.drawio)
 
 实际的 `sizeof` 结果取决于标准库的实现和平台的对齐要求。但核心事实是：`optional<T>` 大约比 `T` 大一个对齐后的 `bool` 的大小。由于对齐的要求，有时候会增加得比预期多一些。这不是 `optional` 的设计缺陷——它是在栈上直接存储 `T` 的值，不涉及堆分配，所以这个额外开销是合理的。
 

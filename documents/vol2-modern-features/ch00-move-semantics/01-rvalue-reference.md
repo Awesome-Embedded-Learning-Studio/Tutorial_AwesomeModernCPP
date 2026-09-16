@@ -220,6 +220,10 @@ int&& r3 = std::move(x); // OK：std::move(x) 是 xvalue
 error: cannot bind rvalue reference of type 'int&&' to lvalue of type 'int'
 ```
 
+值类别的分法和右值引用的绑定规则做成了动画,您可以播放、暂停,也可以按步进键单步看:
+
+<Anim id="lvalue-rvalue" />
+
 这个绑定规则背后的直觉是：右值引用的设计目的是让您能够"接管"临时对象的资源。如果一个对象是 lvalue（有名字、有地址、还在被人用），您怎么能安全地偷走它的东西呢？编译器在这里拦住您，完全是为了安全。
 
 不过先记一笔：这条"`T&&` 只绑右值"的规则，说的是**写死类型**的右值引用，比如 `int&&`、`std::string&&`。等到第四篇讲完美转发时，咱们会碰到模板里的 `T&&`——它叫**转发引用**（forwarding reference），左值右值都能绑，是另一套规则。别拿这一篇的结论去套模板里的 `T&&`，会撞墙。

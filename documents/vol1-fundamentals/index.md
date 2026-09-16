@@ -14,7 +14,7 @@ tags:
 
 ## 章节导航
 
-<ChapterNav>
+<ChapterNav variant="sub">
   <ChapterLink num="0" href="ch00/">环境搭建与第一个程序</ChapterLink>
   <ChapterLink num="1" href="ch01/">类型与值类别</ChapterLink>
   <ChapterLink num="2" href="ch02/">控制流</ChapterLink>

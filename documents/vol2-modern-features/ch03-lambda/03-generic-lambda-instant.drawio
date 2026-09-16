@@ -1,0 +1,71 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Generic Lambda Instantiation" id="generic-lambda-instantiation">
+    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="泛型 lambda 的实例化：一份 lambda，多份 operator()" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="114" y="28" width="600" height="34" as="geometry" />
+        </mxCell>
+
+        <!-- 你写的 lambda -->
+        <mxCell id="src-card" value="你写的（C++14 泛型 lambda）&lt;br&gt;&lt;b&gt;auto add = [](auto a, auto b) { return a + b; };&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#e8f0fe;fontSize=15;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="164" y="76" width="500" height="64" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow-src" value="编译器生成的闭包类型（简化）" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;fontSize=12;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="414" y="140" as="sourcePoint" />
+            <mxPoint x="414" y="178" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 闭包类型：operator() 是成员函数模板 -->
+        <mxCell id="closure-card" value="&lt;b&gt;struct ClosureType&lt;/b&gt; {&lt;br&gt;template&amp;lt;typename T1, typename T2&amp;gt;&lt;br&gt;auto operator()(T1 a, T2 b) const { return a + b; }&lt;br&gt;};" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#f2f2f2;fontSize=14;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="74" y="182" width="680" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- 三次调用，三份实例 -->
+        <mxCell id="fan1" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="179" y="282" as="sourcePoint" />
+            <mxPoint x="179" y="342" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="fan2" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="414" y="282" as="sourcePoint" />
+            <mxPoint x="414" y="342" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="fan3" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="649" y="282" as="sourcePoint" />
+            <mxPoint x="649" y="342" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="inst1" value="&lt;b&gt;add(3, 4)&lt;/b&gt;&lt;br&gt;operator()&amp;lt;int, int&amp;gt;&lt;br&gt;返回 7（int）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=14;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="74" y="346" width="210" height="128" as="geometry" />
+        </mxCell>
+        <mxCell id="inst2" value="&lt;b&gt;add(3.14, 2.72)&lt;/b&gt;&lt;br&gt;operator()&amp;lt;double, double&amp;gt;&lt;br&gt;返回 5.86（double）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=14;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="309" y="346" width="210" height="128" as="geometry" />
+        </mxCell>
+        <mxCell id="inst3" value="&lt;b&gt;add(std::string(&quot;hi &quot;),&lt;br&gt;std::string(&quot;there&quot;))&lt;/b&gt;&lt;br&gt;operator()&amp;lt;std::string, std::string&amp;gt;&lt;br&gt;返回 &quot;hi there&quot;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=14;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="544" y="346" width="210" height="128" as="geometry" />
+        </mxCell>
+
+        <mxCell id="caption" value="同一个 lambda 对象 add——三种类型组合各自实例化一份 operator()，每个 auto 参数独立推导、互不影响，行为与函数模板的实例化完全一致" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=14;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="74" y="482" width="680" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- 对比：C++20 模板 lambda -->
+        <mxCell id="cpp20-card" value="&lt;b&gt;C++20 模板 lambda：[]&amp;lt;typename T&amp;gt;(T a, T b)&lt;/b&gt;&lt;br&gt;模板参数有了名字——可加 Concepts 约束、可在体内使用，且两个参数必须同为 T&lt;br&gt;&lt;font color=&quot;#c00000&quot;&gt;&lt;b&gt;add_explicit(3, 4.0)&lt;/b&gt;：编译错误——T 不能同时是 int 和 double&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=14;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="74" y="536" width="680" height="122" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

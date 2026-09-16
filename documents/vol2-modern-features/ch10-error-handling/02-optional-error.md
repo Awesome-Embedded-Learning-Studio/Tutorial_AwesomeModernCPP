@@ -21,7 +21,7 @@ tags:
 - 类型安全
 title: optional 用于错误处理
 ---
-# optional 用于错误处理
+# optional 用于错误处理：轻便，但装不下错误详情
 
 在上一篇里我们梳理了 C++ 错误处理的演进路线，最后提到 `std::optional` 可以用于表达"可能失败的操作"。这一篇我们就来深入看看，`optional` 在错误处理场景下到底好不好用、该怎么用、以及什么时候不该用它。
 
@@ -113,6 +113,10 @@ if (user) {
 auto missing = registry.find(99);
 // missing 是 nullopt，但这是正常情况，不是错误
 ```
+
+把 find 的两条返回路径和调用方的三种访问方式画成一张图：
+
+![find 返回 optional 的两分支与调用方访问方式](./02-optional-error-flow.drawio)
 
 ### 场景二：解析操作
 

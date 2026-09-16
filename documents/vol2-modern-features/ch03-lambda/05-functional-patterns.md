@@ -22,9 +22,7 @@ tags:
 - 函数对象
 title: 函数式编程模式
 ---
-# 函数式编程模式
-
-## 引言
+# 函数式编程模式：把函数当值传来传去
 
 说到函数式编程，很多 C++ 开发者的第一反应可能是："这不是 Haskell 那帮人搞的东西吗？跟 C++ 有什么关系？"事实上，C++ 从 C++11 开始就一直在吸收函数式编程的理念——lambda 是一等公民的匿名函数，`std::function` 是高阶类型，`std::algorithm` 系列本质上就是 map/filter/reduce 的变体。只是 C++ 没有把这些东西包装成那么"纯函数式"的接口而已。
 
@@ -285,6 +283,10 @@ void demo_partial_application() {
 ## map/filter/reduce——STL 算法的函数式写法
 
 map（映射）、filter（过滤）、reduce（归约）是函数式编程处理数据的"三板斧"。C++ 的 STL 算法提供了对应的工具：`std::transform` 对应 map，`std::copy_if` / `std::remove_if` 对应 filter，`std::accumulate` 对应 reduce。
+
+三步连起来，数据是这样一站一站流动的：
+
+![filter、map、reduce 数据处理管道](./05-functional-patterns-pipeline.drawio)
 
 让我们用一个完整的数据处理管道来演示这三种操作：
 

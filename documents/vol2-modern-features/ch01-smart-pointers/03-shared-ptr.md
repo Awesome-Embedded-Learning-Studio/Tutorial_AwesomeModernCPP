@@ -76,6 +76,10 @@ use_count: 1
 Disconnected from 192.168.1.1:8080
 ```
 
+这场计数涨落做成了动画，您可以播放、暂停，也可以按步进键单步看，把 use_count 的每一次加减都看个清楚：
+
+<Anim id="shared-refcount" />
+
 看起来很美好。但共享所有权不是免费的——每一个 `shared_ptr` 的拷贝和析构都需要更新引用计数，而引用计数必须是线程安全的（原子操作）。此外，`shared_ptr` 内部还需要维护一个控制块（control block）来存储引用计数和其他元信息。这些开销在频繁创建和销毁 `shared_ptr` 的场景下会变得非常明显。
 
 笔者的建议是：能用 `unique_ptr` 就用 `unique_ptr`，只在真正需要共享所有权的场景下才使用 `shared_ptr`。`shared_ptr` 不应该成为"懒得思考所有权"的借口。

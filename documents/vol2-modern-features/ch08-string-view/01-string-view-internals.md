@@ -60,6 +60,10 @@ string_view substr(size_t pos, size_t count) const {
 }
 ```
 
+同一块内存上的窗口收窄与平移做成了动画，您可以播放、暂停，也可以按步进键单步看，把指针和长度的每一次调整都看个清楚：
+
+<Anim id="string-view-window" />
+
 完全没有开辟新内存，仅调整指针和长度。而 `std::string::substr` 必须走一遍完整的分配-拷贝流程。假设我们要处理一个 1MB 的配置文件，对其中的每个字段都做一次 `substr`，可能有几千次调用——用 `std::string` 就是几千次堆分配，用 `string_view` 就是几千次指针调整。差距不言而喻。
 
 除了 `substr`，`find`、`compare`、`rfind` 等查询操作也直接基于 `_ptr` 指向的内存遍历（依赖 `Traits::compare`），不涉及新内存创建。`string_view` 的设计哲学可以用一句话概括：它是一个 lightweight facade（轻量外壳），把任意字符序列变成"可操作的只读字符串对象"，但永远不负责内存。这既是它最大的优势，也是所有风险的根源——毕竟不负责清理，就要有人负责，而那个人就是你，程序员。

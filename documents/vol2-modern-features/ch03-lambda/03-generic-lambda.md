@@ -24,8 +24,6 @@ title: 泛型 Lambda 与模板 Lambda
 ---
 # 泛型 Lambda 与模板 Lambda
 
-## 引言
-
 在前面两章里，我们用的 lambda 参数类型都是具体的——`int`、`double`、`const std::string&` 之类的。但在实际项目中，很多 lambda 的逻辑对类型是中性的：排序的比较器只要求类型支持 `<`，累加器只要求类型支持 `+`。如果我们为每种类型都写一个 lambda，那就回到了 C++98 仿函数的老路上——重复、冗余。C++14 给了 lambda 泛型的能力（`auto` 参数），C++20 更是直接让 lambda 拥有了显式模板参数列表。这一章我们就来彻底搞清楚泛型 lambda 的底层机制、用法和边界。
 
 ---
@@ -46,6 +44,10 @@ std::string xs = add(std::string("hi "), std::string("there"));
 ```
 
 同一个 lambda 对象，被不同类型的参数调用时，编译器会为每种参数类型组合生成一份 `operator()` 的实例。这个行为和函数模板的实例化完全一致。
+
+一个 lambda 对象、三份 `operator()` 实例的对应关系画出来就是这样：
+
+![泛型 lambda 的实例化：一份 lambda 对应多份 operator() 实例](./03-generic-lambda-instant.drawio)
 
 ### 底层实现：模板调用运算符
 

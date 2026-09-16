@@ -80,6 +80,10 @@ Point make_point_nrvo(double x, double y)
 
 在没有优化的情况下，`make_point_rvo` 会先在函数内部构造 `Point(x, y)`，然后拷贝（或移动）到调用者的空间。`make_point_nrvo` 也是一样：构造 `p`，然后拷贝/移动 `p` 到调用者。但有了 RVO/NRVO 之后，编译器直接在调用者的栈帧上分配空间，让函数内部的构造操作直接发生在这个空间里，根本不存在中间对象，拷贝和移动都无从谈起。
 
+咱们把这两种情况画成图对比一下：
+
+![RVO/NRVO 拷贝消除对比](./03-rvo-nrvo-elision.drawio)
+
 咱们来验证一下：
 
 ```cpp

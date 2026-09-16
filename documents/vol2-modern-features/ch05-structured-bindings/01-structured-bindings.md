@@ -48,6 +48,10 @@ if (inserted) {
 }
 ```
 
+`.first`、`.second` 怎么各自绑到一个名字上，做成了动画，您可以播放、暂停，也可以按步进键单步看：
+
+<Anim id="structured-bindings" />
+
 在范围 for 中遍历 map 的时候更是优雅到不行。以前写 `it->first`、`it->second`，现在直接 `[key, value]`：
 
 ```cpp

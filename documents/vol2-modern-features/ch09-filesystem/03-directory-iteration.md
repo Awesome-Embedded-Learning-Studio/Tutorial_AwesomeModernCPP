@@ -18,13 +18,11 @@ tags:
 - intermediate
 title: 目录遍历与搜索
 ---
-# 目录遍历与搜索
+# 目录遍历与搜索：把目录树递归扫一遍
 
 前两篇我们学会了用 `path` 处理路径、用文件操作函数管理文件和目录。但在实际项目中，最常见的需求其实是"在某个目录下找到我想要的文件"。比如：收集所有 `.cpp` 文件送给编译器，在资源目录里找到所有纹理图片，或者统计项目代码的总行数。
 
 C++17 提供了两个迭代器来完成目录遍历：`directory_iterator` 做单层遍历，`recursive_directory_iterator` 做递归遍历。这一篇我们从基本用法到性能优化，再到错误处理，把目录遍历彻底搞透。
-
-## 环境说明
 
 和前两篇一样，C++17 标准，GCC 13+ / Clang 15+ / MSVC 2022。头文件 `<filesystem>`，命名空间 `namespace fs = std::filesystem;`。
 
@@ -129,6 +127,10 @@ void list_all_files(const fs::path& dir) {
 /home/user/project/src/utils/helper.h
 /home/user/project/CMakeLists.txt
 ```
+
+把两个迭代器的访问顺序标到同一棵目录树上：
+
+![单层与递归遍历的访问顺序](./03-iteration-order.drawio)
 
 ### 深度控制
 

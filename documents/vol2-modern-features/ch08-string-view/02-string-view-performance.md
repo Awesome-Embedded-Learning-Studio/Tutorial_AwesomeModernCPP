@@ -17,13 +17,11 @@ tags:
 - intermediate
 title: string_view 性能分析
 ---
-# string_view 性能分析
+# string_view 性能分析：到底快多少，用数据说话
 
 上一篇我们深入了 `string_view` 的内部原理，知道了它是"指针 + 长度"的非拥有视图。这一篇我们用数据说话——`string_view` 到底比 `const std::string&` 快多少？在什么场景下收益最大？有没有反而更慢的情况？
 
 笔者为了写这篇文章，着实跑了不少 benchmark。说实话，有些结果跟笔者的直觉是一致的（substr 确实快很多），有些则出乎意料（在某些 ABI 下，按值传 `string_view` 并不总是比 `const string&` 快）。我们一个一个来看。
-
-## 环境说明
 
 我们今天所有基准测试的环境如下：Linux 6.x（x86_64），GCC 13.2，编译选项 `-std=c++17 -O2 -march=native`。测试机器是一台普通的 x86 开发板。所有时间测量使用 `std::chrono::high_resolution_clock`，每个测试用例循环执行足够多次以减少误差。
 
@@ -207,6 +205,10 @@ const string& + char* arg:   95.7 ms   ← 慢了 8 倍！
 string_view   + string arg:  12.1 ms
 string_view   + char* arg:   35.2 ms   ← 快了 3 倍
 ```
+
+把三种签名的传参机制和上面四个数字画在一张图里：
+
+![字符串传参成本对比：按值、const 引用与 string_view](./02-sv-passing-cost.drawio)
 
 关键数据在第二行和第四行的对比上。当调用者传入 `const char*` 时，`const string&` 版本因为要隐式构造 100 万个临时 `std::string`，耗时暴增到 95ms。而 `string_view` 版本虽然也需要对 `const char*` 做一次 `strlen`，但不需要堆分配，所以只用了 35ms。至于传入 `std::string` 的情况，两者的性能基本持平——`const string&` 是直接传引用，`string_view` 是构造一个 16 字节的 view，都是几个时钟周期的事，差异在噪声范围内。
 

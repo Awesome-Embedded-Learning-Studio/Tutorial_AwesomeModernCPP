@@ -1,0 +1,96 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Lambda Capture Layout" id="lambda-capture-layout">
+    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="闭包对象的内存布局：捕获列表即成员" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="114" y="30" width="600" height="34" as="geometry" />
+        </mxCell>
+
+        <!-- 左卡：值捕获 [threshold] -->
+        <mxCell id="vl-header" value="值捕获 [threshold]" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#f2f2f2;fontSize=16;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="70" y="80" width="330" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="vl-closure" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="95" y="132" width="280" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="vl-closure-label" value="闭包对象 is_high（栈上）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="95" y="136" width="280" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="vl-member" value="&lt;b&gt;int threshold&lt;/b&gt; = 100（副本）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=15;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="115" y="162" width="240" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="vl-arrow" value="创建时复制一次" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;dashed=1;fontSize=12;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="235" y="272" as="sourcePoint" />
+            <mxPoint x="235" y="208" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vl-external" value="&lt;b&gt;外部变量 threshold&lt;/b&gt;&lt;br&gt;之后被改成 200——影响不到闭包里的副本" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=14;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="95" y="274" width="280" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="vl-note" value="sizeof(is_high) == 4 字节——就是一个 int（无捕获时仅 1 字节）&lt;br&gt;is_high(150) 为 false：闭包里的副本还是 100" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=14;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="70" y="350" width="330" height="64" as="geometry" />
+        </mxCell>
+
+        <!-- 右卡：引用捕获 [&sum] -->
+        <mxCell id="vr-header" value="引用捕获 [&amp;amp;sum]" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#f2f2f2;fontSize=16;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="430" y="80" width="330" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="vr-closure" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="455" y="132" width="280" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="vr-closure-label" value="闭包对象 accumulate（栈上）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="455" y="136" width="280" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="vr-member" value="&lt;b&gt;int&amp;amp; sum&lt;/b&gt;（存的是地址）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=15;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="475" y="162" width="240" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="vr-arrow" value="一直指向外部对象" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;fontSize=12;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="615" y="208" as="sourcePoint" />
+            <mxPoint x="615" y="272" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vr-external" value="&lt;b&gt;外部变量 sum&lt;/b&gt;&lt;br&gt;accumulate(10/20/30)：0 → 60" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=14;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="455" y="274" width="280" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="vr-note" value="sizeof(accumulate) == 8 字节——一个指针（64 位系统）&lt;br&gt;零拷贝，但 sum 必须活得比 lambda 久" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=14;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="430" y="350" width="330" height="64" as="geometry" />
+        </mxCell>
+
+        <!-- 底卡：悬垂引用 -->
+        <mxCell id="dg-header" value="悬垂引用：被引用的变量没能活得比 lambda 久" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=16;fontStyle=1;fontColor=#c00000;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="70" y="436" width="690" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="dg-closure" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="95" y="488" width="200" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="dg-closure-label" value="闭包对象 bad" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="95" y="492" width="200" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="dg-member" value="&lt;b&gt;int&amp;amp; count&lt;/b&gt;（地址还在）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="105" y="514" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="dg-arrow" value="仍指向原地址" style="endArrow=classic;html=1;rounded=0;strokeColor=#c00000;strokeWidth=2;dashed=1;fontSize=12;fontColor=#c00000;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="295" y="534" as="sourcePoint" />
+            <mxPoint x="420" y="534" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="dg-dead" value="&lt;font color=&quot;#c00000&quot;&gt;&lt;b&gt;int count&lt;/b&gt;&lt;br&gt;已随函数返回销毁&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#c00000;strokeWidth=2;dashed=1;fillColor=#f2f2f2;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="420" y="488" width="180" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="dg-note" value="&lt;font color=&quot;#c00000&quot;&gt;&lt;b&gt;bad()&lt;/b&gt;&lt;br&gt;未定义行为&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=15;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="625" y="488" width="120" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="dg-fix" value="修复：让闭包自己持有状态——值捕获 [count]() mutable，或初始化捕获 [count = 0]() mutable" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=14;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="70" y="592" width="690" height="40" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

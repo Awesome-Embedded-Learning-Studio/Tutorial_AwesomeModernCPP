@@ -23,8 +23,6 @@ title: path 操作：跨平台路径处理
 
 C++17 引入的 `<filesystem>` 库彻底解决了这个问题。`std::filesystem::path` 提供了一套统一的跨平台路径处理 API，不管你在什么操作系统上，路径的构造、分解、修改都可以用同一套代码完成。这篇文章我们聚焦在 `path` 类型本身——它的构造、分解、修改和比较。文件操作（exists、copy、remove 等）我们留到下一篇。
 
-## 环境说明
-
 本文所有代码基于 C++17 标准，在 Linux (GCC 13+)、macOS (Clang 15+) 和 Windows (MSVC 2022) 上均可编译运行。编译时需要链接 `<filesystem>` 支持——GCC 9 之前需要 `-lstdc++fs`，其他编译器通常直接支持。头文件为 `<filesystem>`，命名空间为 `std::filesystem`，为了简洁，我们后面用别名 `namespace fs = std::filesystem;`。
 
 ## path 的核心设计思想
@@ -154,6 +152,10 @@ stem:         "archive.tar"
 extension:    ".gz"
 ------
 ```
+
+咱们把第二条路径 `/home/user/report.pdf` 的分解画成一张图：
+
+![path 路径分解示意图](./01-path-anatomy.drawio)
 
 我们来逐个理解这些组成部分。`root_name` 在 Linux 上永远是空字符串——因为 Linux 没有驱动器号的概念。在 Windows 上，`C:` 就是 root_name。`root_directory` 是根目录分隔符，Linux 上是 `/`，Windows 上也是 `\`（或 `/`）。`root_path` 等于 `root_name / root_directory` 的组合。`relative_path` 是去掉 root_path 之后的部分。`parent_path` 是父目录的路径——如果你熟悉 POSIX 的 `dirname` 命令，它做的事情一样。`filename` 是路径中最后一个组件——相当于 `basename`。`stem` 是 filename 去掉最后一个扩展名的部分。`extension` 是最后一个扩展名（包含 `.`）。
 

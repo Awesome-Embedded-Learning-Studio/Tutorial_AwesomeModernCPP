@@ -17,11 +17,15 @@ tags:
 - intermediate
 title: 文件与目录操作
 ---
-# 文件与目录操作
+# 文件与目录操作：这回真要碰磁盘了
 
 上一篇我们学会了用 `std::filesystem::path` 处理路径的语法问题——构造、分解、修改、比较，全是纯计算，不碰磁盘。这一篇我们开始动真格的：用 `<filesystem>` 库直接操作文件系统——检查文件是否存在、创建目录、复制文件、删除文件、查询权限和磁盘空间。
 
 和上一篇一样，我们的环境是 C++17，GCC 13+ / Clang 15+ / MSVC 2022。头文件 `<filesystem>`，命名空间 `namespace fs = std::filesystem;`。
+
+先把本篇展开最多的几个操作放到同一棵 /tmp 目录树上，看看每个调用落在哪个节点、执行之后这棵树多了什么少了什么：
+
+![exists、copy、create、remove 在一棵 /tmp 目录树上的落点](./02-dir-tree-ops.drawio)
 
 ## 文件状态查询：它存在吗？它是什么类型？
 

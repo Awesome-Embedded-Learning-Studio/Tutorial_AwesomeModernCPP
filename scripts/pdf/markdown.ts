@@ -17,6 +17,8 @@ export async function createBookMarkdownRenderer(repositoryRoot: string): Promis
       ld: 'c',
       nasm: 'asm',
     },
+    // Match the website's semantic output fence; the book uses its own renderer.
+    languages: [{ name: 'output', scopeName: 'text.output', patterns: [] }],
     theme: 'github-light',
     config(md) {
       cppTemplateEscapePlugin(md)

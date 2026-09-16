@@ -23,8 +23,6 @@ title: 强类型 typedef：防止混淆的类型安全
 ---
 # 强类型 typedef：防止混淆的类型安全
 
-## 引言
-
 笔者在某次代码审查中见过一段非常经典的 bug：一个函数的签名是 `void set_rect(int width, int height)`，调用方写成了 `set_rect(h, w)`——参数顺序搞反了。编译器没有任何警告，因为 `width` 和 `height` 都是 `int`，类型完全匹配。但屏幕上的矩形就是歪的.这个bug不难解,但是就是感觉整个人被狠狠发可了一顿.
 
 这种 bug 的根源在于：`typedef` 和 `using` 创建的只是**类型别名**，不是新类型。`using Width = int;` 和 `using Height = int;` 之后，`Width` 和 `Height` 仍然是同一个 `int`，编译器不会帮你区分它们。要真正创建编译器能够区分的类型，我们需要一种叫做"强类型 typedef"（也叫 opaque typedef、phantom type）的技术。
@@ -97,6 +95,10 @@ set_rect(Width(100), Height(200));  // OK
 `WidthTag` 和 `HeightTag` 是空的类，不占用任何存储空间（因为 C++ 的空基类优化 EBO）。编译器在生成代码时，`StrongInt<WidthTag>` 和 `StrongInt<HeightTag>` 的运行时表现和裸 `int` 完全一样——零额外开销。
 
 这个模式的精髓在于：**用编译期的类型信息换取运行时的零开销**。类型检查全部在编译期完成，运行时就是普通的整数操作。
+
+两种写法放在一起对比，同一句 `set_rect(h, w)` 的编译结果如下：
+
+![类型别名与强类型包装对同一句 set_rect(h, w) 的不同编译结果](./02-strong-types-wrapper.drawio)
 
 ## 第三步——构建实用的强类型包装器
 

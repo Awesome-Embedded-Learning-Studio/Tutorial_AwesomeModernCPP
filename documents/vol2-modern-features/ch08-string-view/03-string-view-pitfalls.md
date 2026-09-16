@@ -56,6 +56,10 @@ std::string_view sv = std::string("temp");  // UB！临时 string 立刻析构
 
 这行代码看起来像是在给 `string_view` 赋值，但实际上 `std::string("temp")` 是一个临时对象，在这行语句结束时就被销毁了。`sv` 从诞生那一刻起就指向了已释放的内存。
 
+这个过程做成了动画，您可以播放、单步看：临时对象析构后箭头还悬在原地，后半段是先落变量的正确写法：
+
+<Anim id="dangling-view" />
+
 再来看一个稍微间接一点的版本：
 
 ```cpp

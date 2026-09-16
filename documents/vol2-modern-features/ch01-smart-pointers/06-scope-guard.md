@@ -75,6 +75,10 @@ void update_config_guarded(Config& cfg) {
 
 `restore_mode` 是一个 RAII 对象——它的析构函数会在作用域退出时调用那个 lambda。不管是 `return`、异常传播、还是函数正常执行到末尾，恢复操作都会被执行。您只需要写一次恢复代码，再也不用担心遗漏。
 
+把 guard 的生命周期放到一条时间线上看，构造只有一处，出口却有三条，每条出口都会走到同一段析构逻辑：
+
+![scope_guard 执行时间线](./06-scope-guard-timeline.drawio)
+
 ## 实现一个通用的 ScopeGuard 类
 
 scope_guard 的核心实现非常精简——一个模板类，包装一个可调用对象和一个 active 标志位。咱们从最基础版本开始，逐步完善。

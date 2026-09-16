@@ -230,154 +230,11 @@ html[data-font-size='xxlarge'] {
   font-size: 0.95rem;
 }
 
-/* ================================================================
-   移动端代码块:取消 VitePress 默认 margin:16px -24px 的出血
-   (<640px 时代码块左右各扩 24px 顶到视口边缘,长代码右侧被遮)。
-   改为不出血 + 恢复四角圆角,长行靠 overflow-x:auto 横滚。
-   ================================================================ */
-@media (max-width: 639px) {
-  .vp-doc div[class*='language-'] {
-    margin: 16px 0;
-    border-radius: 8px;
-  }
-}
-
-/* Code Blocks
-   字号统一走 --vp-code-font-size 变量:代码(code)与行号(line-numbers-wrapper)
-   都引用它,必须同步——否则两者行盒高度不同,会逐行累积错位(行号越往下越偏离代码行)。
-   用 rem 覆盖 VitePress 默认的 0.875em,避免 em 在本 div 内被 font-size 二次缩放。 */
-.vp-doc div[class*='language-'] {
-  border-radius: 8px;
-  font-size: 0.96rem;
-  --vp-code-font-size: 0.96rem;
-  line-height: 1.6;
-}
-
+/* 正文代码块样式见 article-code.css。 */
 .vp-doc :not(pre)>code {
   font-size: 0.78em;
   padding: 0.15em 0.35em;
   border-radius: 4px;
-}
-
-/* ================================================================
-   长代码折叠(.vp-code-fold):构建期 code-fold-plugin 把 >30 行的代码块
-   包成 <div class="vp-code-fold"><details><summary/></details><代码/></div>。
-   - 行为:收起 = 只显示 summary 条(代码完全隐藏);展开 = 代码全部显示。
-     不做"预览"(收起态露几行)—— 要么全展开要么全不展开,二态干净。
-   - 代码在 <details>【外】,靠纯 CSS :has(details[open]) 控制 display;
-     零 JS、无 JS 也能点 summary 展开;@media print 强制显示,打印完整(纯 CSS)。
-   - 内部 div.language-* 兄弟链(copy/lang/pre/line-numbers)不动,复制按钮不受影响。
-   ================================================================ */
-.vp-doc .vp-code-fold {
-  margin: 16px 0;
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--vp-code-block-bg);
-}
-
-.vp-doc .vp-code-fold > details > summary {
-  list-style: none;
-  cursor: pointer;
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--vp-c-text-2);
-  user-select: none;
-  background: linear-gradient(90deg, var(--vp-c-brand-soft) 0%, var(--vp-code-block-bg) 45%);
-  border-left: 3px solid var(--vp-c-brand-1);
-  transition: color 0.2s ease, background 0.2s ease;
-}
-
-.vp-doc .vp-code-fold > details > summary:hover {
-  color: var(--vp-c-brand-1);
-  background: linear-gradient(90deg, var(--vp-c-brand-soft-2) 0%, var(--vp-code-block-bg) 45%);
-}
-
-.vp-doc .vp-code-fold > details > summary::-webkit-details-marker {
-  display: none;
-}
-
-/* 展开三角:放进 brand-soft 圆角容器(通知条式 icon badge);展开时旋转 */
-.vp-doc .vp-code-fold > details > summary::before {
-  content: '▶';
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  font-size: 0.62rem;
-  line-height: 1;
-  color: var(--vp-c-brand-1);
-  background: var(--vp-c-brand-soft);
-  border-radius: 5px;
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s ease;
-}
-
-.vp-doc .vp-code-fold > details > summary:hover::before {
-  background: var(--vp-c-brand-soft-2);
-}
-
-.vp-doc .vp-code-fold:has(details[open]) > details > summary::before {
-  transform: rotate(90deg);
-}
-
-/* 展开态:summary 底加分隔线,与代码块不糊一起 */
-.vp-doc .vp-code-fold:has(details[open]) > details > summary {
-  border-bottom: 1px solid var(--vp-c-divider);
-}
-
-/* 展开/收起文案随 details[open] 切换(:has 全浏览器 2023+ 支持) */
-.vp-doc .vp-code-fold:not(:has(details[open])) .vp-cf-open {
-  display: none;
-}
-
-.vp-doc .vp-code-fold:has(details[open]) .vp-cf-closed {
-  display: none;
-}
-
-.vp-doc .vp-code-fold:has(details[open]) .vp-cf-open {
-  display: inline;
-}
-
-.vp-doc .vp-code-fold > details > summary em {
-  font-style: normal;
-  font-size: 0.76rem;
-  font-weight: 600;
-  color: var(--vp-c-brand-1);
-  background: var(--vp-c-brand-soft);
-  padding: 1px 7px;
-  border-radius: 999px;
-  margin-left: 6px;
-  white-space: nowrap;
-}
-
-/* 代码块:收起态完全隐藏(不预览);展开态默认显示。margin/圆角由外层 .vp-code-fold 统一裁 */
-.vp-doc .vp-code-fold > div[class*='language-'] {
-  margin: 0;
-  border-radius: 0;
-}
-
-.vp-doc .vp-code-fold:not(:has(details[open])) > div[class*='language-'] {
-  display: none;
-}
-
-/* 打印:强制显示所有折叠代码,PDF 完整(代码始终在 DOM 中,纯 CSS,无需 JS) */
-@media print {
-  .vp-doc .vp-code-fold > div[class*='language-'] {
-    display: block !important;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .vp-doc .vp-code-fold > details > summary,
-  .vp-doc .vp-code-fold > details > summary::before {
-    transition: none;
-  }
 }
 
 /* Tables */
@@ -398,12 +255,7 @@ html[data-font-size='xxlarge'] {
   background-color: rgba(0, 0, 0, 0.02);
 }
 
-/* Blockquotes */
-.vp-doc blockquote {
-  border-left: 4px solid var(--vp-c-brand-1);
-  border-radius: 0 4px 4px 0;
-  background: var(--vp-c-brand-soft);
-}
+/* 正文引用面板样式见 article-quote.css。 */
 
 /* Links */
 .vp-doc a {
@@ -2041,10 +1893,6 @@ body.rs-resizing {
 
 /* ── Content Dark Mode ─────────────────────────────────────────── */
 
-.dark .vp-doc blockquote {
-  background: var(--vp-c-brand-soft-2);
-}
-
 .dark .vp-doc table tr:nth-child(even) {
   background-color: rgba(255, 255, 255, 0.03);
 }
@@ -2061,4 +1909,3 @@ body.rs-resizing {
 .mxgraph {
   position: relative;
 }
-
