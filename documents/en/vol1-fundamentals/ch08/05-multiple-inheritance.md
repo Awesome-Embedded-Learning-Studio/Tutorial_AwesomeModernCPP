@@ -9,7 +9,7 @@ description: Understand the syntax of multiple inheritance, the diamond inherita
   problem, and the solution using virtual inheritance, and learn to use multiple inheritance
   judiciously.
 difficulty: intermediate
-order: 4
+order: 5
 platform: host
 prerequisites:
 - 抽象类与接口
@@ -21,7 +21,7 @@ tags:
 - 进阶
 title: Multiple Inheritance and Virtual Inheritance
 translation:
-  source: documents/vol1-fundamentals/ch08/04-multiple-inheritance.md
+  source: documents/vol1-fundamentals/ch08/05-multiple-inheritance.md
   source_hash: 2cfb7763eeefbc861e9763e6ea88c3a78887d8e6dc56721c5db746f2ac667386
   translated_at: '2026-06-16T03:45:13.140095+00:00'
   engine: anthropic

@@ -9,7 +9,7 @@ description: Comprehensively apply inheritance, polymorphism, and operator overl
   to implement a complete shape drawing system, and discuss the design choice between
   inheritance versus composition.
 difficulty: intermediate
-order: 5
+order: 6
 platform: host
 prerequisites:
 - 多继承与虚继承
@@ -21,10 +21,10 @@ tags:
 - 进阶
 title: OOP in Practice
 translation:
-  source: documents/vol1-fundamentals/ch08/05-oop-in-practice.md
-  source_hash: 5950795ab4c4eea079d00f78a4c8444713e5d063593f5a9a23084a8749eeb7a7
-  translated_at: '2026-06-16T03:45:50.156835+00:00'
-  engine: anthropic
+  source: documents/vol1-fundamentals/ch08/06-oop-in-practice.md
+  source_hash: bf42567b3138e82c4db1ee7c034c628f6ace3c93d58bc04107eb5638ff55df3b
+  translated_at: '2026-09-17T00:00:00+00:00'
+  engine: manual
   token_count: 3239
 ---
 # OOP in Practice
@@ -447,13 +447,11 @@ c1 == c3: 0
 
 Check key values: Circle area ~78.54, Rectangle area 40.00, Triangle area 6.00, Total Area ~124.54 match. The largest area is the circle. Two circles with radius 5 are judged equal, and different radii are judged unequal.
 
-## Inheritance vs Composition—A Design Choice You Must Get Right
+## Inheritance vs Composition: The Criteria, Verified in Practice
 
-With the system implemented, let's step back and discuss a higher-level topic. You will notice two types of relationships in the code: `Circle` inherits from `Shape` (Inheritance), while `Canvas` uses shape functionality by holding a `unique_ptr<Shape>` (Composition). When do you use which?
+The first article of this chapter established the decision order: ask whether composition works first, then whether is-a holds, and finally whether behavior stays substitutable. Looking back at the finished system, both relationships coexist, each passing its own test. `Circle` inherits from `Shape`: a circle **is a kind of** shape—an essential, stable relationship—and it genuinely needs to be operated through a base-class pointer by `Canvas`, so both is-a and the polymorphism requirement hold. `Canvas` holds shapes: a canvas **contains** shapes, but a canvas is not a shape, so has-a takes composition—and it only touches shapes through `Shape`'s public interface, which keeps the coupling naturally low.
 
-Inheritance expresses an "Is-a" relationship: A Circle **is a kind of** Shape, so `Circle` inheriting from `Shape` is natural. Composition expresses a "Has-a" relationship: A Canvas **contains** Shapes, but a Canvas is not itself a Shape. Inheritance is high coupling—derived classes depend on the base class's interface and implementation details. Composition is loose coupling—`Canvas` only uses shapes through `Shape`'s public interface.
-
-The key is judging the **stability** of the relationship: Essential, stable relationships (Circle is a Shape) use inheritance; Accidental, variable relationships (Shape has a color) use composition. `ColoredShape` is a practical example of the latter—you can add color to any shape without creating new subclasses, and adding transparency or borders later just requires another layer of composition.
+`ColoredShape` verifies the other half: color is an accidental, variable attribute of a shape, not an essential relationship, so it gets layered composition—adding color to any shape requires no new subclasses, and transparency or borders later on just means one more layer, with no bloating of the class hierarchy.
 
 ## Exercises
 

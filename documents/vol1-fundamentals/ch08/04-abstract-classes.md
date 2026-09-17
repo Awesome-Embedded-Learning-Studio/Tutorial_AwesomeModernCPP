@@ -2,7 +2,7 @@
 title: "抽象类与接口"
 description: "掌握纯虚函数、抽象类的设计方法，学会用接口隔离原则组织类型层次"
 chapter: 8
-order: 3
+order: 4
 difficulty: intermediate
 reading_time_minutes: 12
 platform: host

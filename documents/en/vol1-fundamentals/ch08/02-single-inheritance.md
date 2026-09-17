@@ -8,7 +8,7 @@ cpp_standard:
 description: Master single inheritance syntax, construction and destruction order,
   and understand object slicing and its solutions.
 difficulty: intermediate
-order: 1
+order: 2
 platform: host
 prerequisites:
 - 函数调用与类型转换
@@ -20,15 +20,15 @@ tags:
 - 进阶
 title: Single Inheritance
 translation:
-  source: documents/vol1-fundamentals/ch08/01-single-inheritance.md
-  source_hash: 376ea1b98d2b58cd5d6b521c744807707f050f68e0eb11eaf1c8891ae4dce688
-  translated_at: '2026-06-16T03:45:21.597953+00:00'
-  engine: anthropic
+  source: documents/vol1-fundamentals/ch08/02-single-inheritance.md
+  source_hash: d8e4b22bbeec9cdf72d737e2c76a590bcd0c06db569a722c07f5e331a63b5dda
+  translated_at: '2026-09-17T00:00:00+00:00'
+  engine: manual
   token_count: 2304
 ---
 # Single Inheritance
 
-All the classes we have written so far are "standalone"—each class encapsulates its own data and provides its own interface, with no familial relationship between them. However, real-world entities do not exist in isolation: a Student is a Person, a Car is a Vehicle. This "is-a" relationship is the core semantic that inheritance expresses.
+The previous article established the judgment of "should inheritance be used at all": inheritance enters only when a genuine is-a relationship exists and the class really needs to be operated through its base. Now it is inheritance's turn: how the syntax is written, in what order constructors and destructors run, and what object slicing is. A Student is a Person, a Car is a Vehicle—how these is-a relationships land in the type system is what this article delivers.
 
 Inheritance allows us to derive a new class from an existing one. The new class automatically acquires the members and capabilities of the base class, and then adds its own specific features on top of that. To put it plainly, inheritance is not about "writing fewer lines of code"—though it certainly achieves that—but rather **how to establish clear hierarchical relationships between types**. Once the hierarchy is established, the subsequent implementation of polymorphism and interface abstractions has a solid foundation.
 

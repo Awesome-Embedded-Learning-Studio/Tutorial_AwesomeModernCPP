@@ -3,7 +3,7 @@ title: Abstract Classes and Interfaces
 description: Master the design of pure virtual functions and abstract classes, and
   learn to organize type hierarchies using the interface segregation principle.
 chapter: 8
-order: 3
+order: 4
 difficulty: intermediate
 reading_time_minutes: 12
 platform: host
@@ -20,7 +20,7 @@ cpp_standard:
 - 17
 - 20
 translation:
-  source: documents/vol1-fundamentals/ch08/03-abstract-classes.md
+  source: documents/vol1-fundamentals/ch08/04-abstract-classes.md
   source_hash: 84024ca39ba3d7140e2edd9a9e59c171b4845b54a36bd079cfd3bb322066b64e
   translated_at: '2026-05-26T10:54:11.683879+00:00'
   engine: anthropic

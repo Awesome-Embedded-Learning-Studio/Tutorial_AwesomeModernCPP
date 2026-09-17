@@ -7,7 +7,7 @@ cpp_standard:
 - 20
 description: 理解多继承的语法、菱形继承问题及虚继承的解决方案，学会审慎使用多继承
 difficulty: intermediate
-order: 4
+order: 5
 platform: host
 prerequisites:
 - 抽象类与接口

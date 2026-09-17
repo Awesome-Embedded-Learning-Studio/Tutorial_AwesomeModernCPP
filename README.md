@@ -30,7 +30,7 @@
 ---
 
 <!-- COVERAGE_START -->
-![English Coverage](https://img.shields.io/badge/en_coverage-95%25-green.svg) 577/607 docs translated
+![English Coverage](https://img.shields.io/badge/en_coverage-95%25-green.svg) 578/608 docs translated
 <!-- COVERAGE_END -->
 
 ## 嘿！这是什么？
