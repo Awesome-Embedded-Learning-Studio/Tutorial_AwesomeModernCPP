@@ -48,6 +48,10 @@ if (inserted) {
 }
 ```
 
+`.first`、`.second` 怎么各自绑到一个名字上，做成了动画，您可以播放、暂停，也可以按步进键单步看：
+
+<Anim id="structured-bindings" />
+
 在范围 for 中遍历 map 的时候更是优雅到不行。以前写 `it->first`、`it->second`，现在直接 `[key, value]`：
 
 ```cpp
@@ -185,7 +189,7 @@ auto& y = __anonymous.second;
 
 这意味着绑定变量本身永远是引用——它们引用的是那个隐藏的匿名对象的成员。您没法拿到"绑定变量本身"的地址，只能拿到它所引用的子对象的地址。
 
-⚠️ 注意：`auto&` 要求右侧是左值。如果右侧是临时对象（比如 `std::make_pair(1, 2)` 的返回值），`auto&` 会编译失败，因为非 const 引用不能绑定到右值。这时应该用 `const auto&` 或直接 `auto` 按值拷贝。
+注意：`auto&` 要求右侧是左值。如果右侧是临时对象（比如 `std::make_pair(1, 2)` 的返回值），`auto&` 会编译失败，因为非 const 引用不能绑定到右值。这时应该用 `const auto&` 或直接 `auto` 按值拷贝。
 
 ```cpp
 // 错误：auto& 不能绑定到临时对象

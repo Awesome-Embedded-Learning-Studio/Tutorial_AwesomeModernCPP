@@ -33,16 +33,6 @@ In the previous post, we completely dissected the memory layout of structs and f
 
 These four features are almost inseparable in embedded development. If you look at the header files of any MCU (like STM32's CMSIS headers), you will find that register definitions are a combination of unions + structs + bit-fields + typedef. Only by understanding them can you read those dense Hardware Abstraction Layer (HAL) codes.
 
-> **Learning Objectives**
->
-> - After completing this chapter, you will be able to:
-> - [ ] Understand the memory sharing mechanism of unions and type punning techniques.
-> - [ ] Master the definition, usage, and limitations of enums.
-> - [ ] Use bit-fields to define compact hardware register structures.
-> - [ ] Skillfully use typedef to simplify complex type declarations.
-> - [ ] Combine these features to implement tagged unions and protocol frame parsing.
-> - [ ] Understand the corresponding type-safe alternatives in C++.
-
 ## Environment Setup
 
 All code in this post has been verified in the following environment:
@@ -364,10 +354,6 @@ using IntPtr = int*;
 template<typename T>
 using Vec = std::vector<T>; // Typedef can't do this easily
 ```
-
-## Summary
-
-In this post, we covered four C language features—unions, enums, bit-fields, and typedef—as well as their modern alternatives in C++. These four features share a common theme: they are typical cases where C language chooses "flexibility" over "safety". C++'s improvement approach is very clear: `enum class` constrains enums, `std::variant` automatically manages the active member of unions, `std::bitset` provides portable bit set operations, and `using` provides a more intuitive alias syntax.
 
 ## Exercises
 

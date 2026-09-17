@@ -260,9 +260,3 @@ If you implemented your own `Fraction` class in the previous chapter's exercise,
 Design a simple `Matrix` class that internally stores N x M elements in a one-dimensional array. Overload `operator[]` to return a reference to the first element of a specific row—this requires you to define a helper `RowProxy` class. First, implement a basic version where only the read operation of `matrix[i][j]` works correctly, then consider write operations.
 
 Hint: `operator[]` returns a `RowProxy` object, and `RowProxy` again returns the specific element reference. This is a classic application of the "Proxy Pattern" in C++.
-
-## Summary
-
-In this chapter, we mastered two sets of operators that make custom types "integrate into the language ecosystem." The stream operators `<<` and `>>` must be implemented as non-member functions (because the left operand is the stream object, not your class), and are usually declared as friends to access private data; they return a reference to the stream to support chaining like `std::cout << a << b`. `operator>>` requires special attention to checking stream state and input validity, setting `failbit` on failure and not modifying the object. The subscript operator `operator[]` is a standard for container classes, and you must provide both `const` and non-`const` versions—the non-`const` version returns a modifiable reference for writing, while the `const` version returns a read-only reference for reading. If boundary checking is needed, additionally provide an `at()` method that throws a `std::out_of_range` exception on out-of-bounds access.
-
-In the next chapter, we will look at the function call operator `operator()` and type conversion operators—the former makes your objects "callable," and the latter controls how your type converts to and from other types. Using these two operators well can boost productivity, but using them poorly marks the start of debugging nightmares.

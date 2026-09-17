@@ -38,16 +38,6 @@ Developers in other languages, such as Python or Java, basically don't need to w
 
 In this tutorial, we will dissect the ARM processor from an architectural perspective, figuring out its memory architecture, instruction sets, register files, exception mechanisms, and processor modes. This is not to teach you to write assembly, but to give you a clear mental model of what is happening at the underlying level when you write C/C++—when you use `volatile` on a register, you know why; when you debug a HardFault caused by a stack overflow, you can locate the problem quickly.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Distinguish between von Neumann architecture, Harvard architecture, and Modified Harvard architecture.
-> - [ ] Explain the differences and use cases for ARM, Thumb, and Thumb-2 instruction sets.
-> - [ ] Identify the roles of registers R0-R15 and the AAPCS calling convention.
-> - [ ] Describe the Cortex-M exception vector table structure and the push/pop (stacking/unstacking) mechanism.
-> - [ ] Understand Thread/Handler modes and privilege level divisions.
-
 ## Environment
 
 This content is theoretical but closely tied to actual hardware. All code examples can be verified using an ARM toolchain.

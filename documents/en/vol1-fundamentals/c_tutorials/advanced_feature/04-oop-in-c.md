@@ -33,17 +33,6 @@ To be honest, I debated for a long time whether to write this topic. After all, 
 
 In this article, we will manually implement encapsulation, inheritance, polymorphism, and interface abstraction in pure C, and finally build a working graphics framework. After writing this, looking back at C++ `class`, `virtual`, and `abstract class`, you will have that "aha" moment of clarity.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Simulate C++ classes using structs and function pointers
-> - [ ] Implement encapsulation using opaque pointers
-> - [ ] Implement single inheritance using struct nesting
-> - [ ] Simulate runtime polymorphism using vtables
-> - [ ] Implement interface abstraction using function pointer tables
-> - [ ] Complete a graphics framework hands-on project featuring inheritance and polymorphism
-
 ## Environment Setup
 
 We can use GCC or Clang to compile directly on the host machine; no third-party libraries are required. The code follows the C11 standard, as we will be using anonymous structs and designated initializers. If you are running on an embedded platform, these techniques are equally portable—structs and function pointers do not rely on any specific runtime features.

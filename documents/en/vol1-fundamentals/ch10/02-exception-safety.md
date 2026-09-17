@@ -265,11 +265,3 @@ public:
     operator FILE*() { return file; } // Transparent use
 };
 ```
-
-## Summary
-
-In this post, we focused on the topic of exception safety. The four levels of exception safety form a ladder from weak to strong: no guarantee (nothing is managed), basic guarantee (no leaks, valid state), strong guarantee (either success or rollback), and nothrow guarantee (never throws). Among these levels, RAII is the core mechanism for implementing the basic guarantee—as long as the lifecycle of all resources is bound to objects, stack unwinding will complete all cleanup work for you. `std::lock_guard` is the classic application of RAII in concurrent scenarios, while the copy-and-swap idiom provides the path to the strong guarantee.
-
-A practical design principle is: **aim for the basic guarantee by default, pursue the strong guarantee for critical operations, and make destructors and move operations noexcept**. You don't need to pursue the highest level for every line of code—that's neither realistic nor necessary—but ensure your code doesn't leave a mess of fragments when an exception flies by.
-
-In the next post, we will step out of the exception framework and compare several major error handling methods in C++ from a higher perspective: exceptions, return values/error codes, `std::optional`, and `std::expected`, to see which scenarios they fit best and how to choose them in actual projects.

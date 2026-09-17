@@ -184,27 +184,11 @@ int* const p = &x;
 
 The power of pointers comes with danger. Beginners almost inevitably fall into the following traps. Recognizing them early will save you significant debugging time.
 
-### Uninitialized Pointers
-
-Declaring a pointer without assigning a value leaves it with a garbage address. Dereferencing it is undefined behavior, and it can be even worse than a null pointer (a null pointer at least causes an immediate crash, whereas a garbage address might point to a valid memory area, leading to silent data corruption). **Initialize pointers immediately upon declaration**. If we don't know where it should point yet, assign `nullptr` for now.
-
-### Returning Addresses of Local Variables
-
-Local variables inside a function are allocated on the stack. After the function returns, the stack space is reclaimed. Returning a pointer to a local variable gives the caller a **dangling pointer** — the address still exists, but the data is no longer valid:
-
-```cpp
-int* get_value()
-{
-    int local = 42;
-    return &local;  // 悬空指针！
-}
-```
-
-Compiling with `-Wall` will issue `warning: address of local variable 'local' returned`, which we must take seriously.
-
-### Double Free and Use-After-Free
-
-These fall under the scope of dynamic memory management, which we will cover in detail later. The core principle is that memory allocated via `new` should be `delete`d exactly once. Freeing twice (double free) or continuing to use memory after it has been freed (use-after-free) are both serious forms of undefined behavior (UB).
+| Pitfall | How It Happens | How Bad It Gets | How to Avoid It |
+| --- | --- | --- | --- |
+| **Uninitialized pointers** | Declaring a pointer without assigning a value leaves it holding a garbage address | Dereferencing it is undefined behavior, and can be even worse than a null pointer: a null pointer at least causes an immediate crash, whereas a garbage address might point to a valid memory area and silently corrupt data | Initialize pointers immediately upon declaration; if we don't know where it should point yet, assign `nullptr` for now |
+| **Returning addresses of local variables** | Local variables inside a function are allocated on the stack, which is reclaimed after the function returns | The caller gets a **dangling pointer**: the address still exists, but the data is no longer valid | Don't return addresses of locals; compiling with `-Wall` issues `warning: address of local variable 'local' returned`, which must be taken seriously |
+| **Double free and use-after-free** | Memory allocated via `new` is not `delete`d exactly once | Freeing twice (double free) or continuing to use memory after it has been freed (use-after-free) are both serious forms of undefined behavior | Stick to the "exactly once" pairing rule; the details belong to dynamic memory management, which we will cover in detail later |
 
 > **Warning**: The three pitfalls above share a common root cause—pointers give you the ability to manipulate memory directly, but the compiler cannot verify correct usage in all scenarios. Consequently, pointer-related issues often only manifest at runtime, and the symptoms can be highly unstable (sometimes it runs fine, but crashes with different compiler options). Developing good pointer usage habits is far more efficient than debugging issues after they arise.
 
@@ -363,9 +347,3 @@ int main()
     return 0;
 }
 ```
-
-## Summary
-
-This chapter started with memory addresses and reviewed the core concepts of pointers. `&` obtains an address, a pointer is a variable that stores an address, and `*` dereferences a pointer to read or write data. The pointer's type determines how memory is interpreted during dereferencing, but the pointer itself is always 8 bytes on a 64-bit system. `nullptr` is the correct way to represent a null pointer in modern C++, and dereferencing a null pointer results in undefined behavior (UB). The three combinations of `const` and pointers control whether the data and the pointer itself are mutable. Uninitialized pointers, dangling pointers, and double frees are the three most common pitfalls.
-
-In the next chapter, we will dive into the world of pointer arithmetic and arrays—what does adding 1 to a pointer actually mean, and what is the true relationship between an array name and a pointer? This knowledge will upgrade pointers from "variables storing addresses" to "tools for traversing memory."

@@ -66,6 +66,10 @@ void circular_reference_bug() {
 
 运行这段代码您会发现：`~Node()` 的析构输出**永远不会出现**——`Node("A") 析构` 和 `~Node("B") 析构` 都没有打印。两个节点互相持有对方的 `shared_ptr`，形成了一个"死锁环"，谁都不会被释放。这就是循环引用导致的内存泄漏。
 
+这个死锁环做成了动画，您可以播放、暂停，也可以按步进键单步看，两条 `shared_ptr` 怎么互相扣住、`weak_ptr` 又怎么把环断开：
+
+<Anim id="weak-ptr-cycle" />
+
 这种问题在实际工程中并不罕见。观察者模式中，主题（Subject）持有观察者的 `shared_ptr`，观察者也持有主题的 `shared_ptr`；树形结构中，父节点持有子节点的 `shared_ptr`，子节点也持有父节点的 `shared_ptr`；图结构中，任意两个相邻节点都可能互相引用。只要形成了环，`shared_ptr` 的引用计数机制就失灵了。
 
 ## weak_ptr 的 API：lock()、expired()、use_count()
@@ -112,7 +116,7 @@ void weak_ptr_api_demo() {
 }
 ```
 
-⚠️ `weak_ptr` 不能直接解引用——您无法写 `*weak` 或 `weak->member`。必须先通过 `lock()` 获取 `shared_ptr`，然后通过 `shared_ptr` 访问对象。这个设计是故意的：`weak_ptr` 是一种"不确定对象是否还存在"的引用，直接访问太危险了。`lock()` 的原子检查保证了您获取到的 `shared_ptr` 要么指向一个活着的对象，要么是空的——不会出现"获取到指针但对象已经被删"的悬垂指针问题。
+`weak_ptr` 不能直接解引用——您无法写 `*weak` 或 `weak->member`。必须先通过 `lock()` 获取 `shared_ptr`，然后通过 `shared_ptr` 访问对象。这个设计是故意的：`weak_ptr` 是一种"不确定对象是否还存在"的引用，直接访问太危险了。`lock()` 的原子检查保证了您获取到的 `shared_ptr` 要么指向一个活着的对象，要么是空的——不会出现"获取到指针但对象已经被删"的悬垂指针问题。
 
 ## weak_ptr 打破循环的原理
 

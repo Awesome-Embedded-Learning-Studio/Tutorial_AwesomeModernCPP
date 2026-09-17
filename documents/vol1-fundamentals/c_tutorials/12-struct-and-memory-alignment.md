@@ -25,24 +25,6 @@ title: 结构体与内存对齐
 
 所以这一篇，我们不仅要学会怎么定义和使用结构体，还要彻底搞清楚结构体在内存里的真实模样。
 
-> **学习目标**
->
-> 完成本章后，你将能够：
->
-> - [ ] 熟练定义、初始化和操作结构体及其指针
-> - [ ] 理解内存对齐的原理和填充字节的分布规则
-> - [ ] 使用 `_Alignas`、`alignof` 和 `offsetof` 进行对齐控制和验证
-> - [ ] 掌握指定初始化器和柔性数组成员的使用
-> - [ ] 了解结构体到 C++ class 的演进关系
-
-## 环境说明
-
-我们接下来的所有实验都在这个环境下进行：
-
-- 平台：Linux x86\_64（WSL2 也可以）
-- 编译器：GCC 13+ 或 Clang 17+
-- 编译选项：`-Wall -Wextra -std=c17`
-
 ## 第一步——掌握结构体的定义与基本操作
 
 ### 定义一个结构体
@@ -442,22 +424,6 @@ using AlignedStorage = std::aligned_storage_t<sizeof(MyStruct), alignof(MyStruct
 
 这些概念在后续的 C++ 章节中会详细讨论。这里只需要知道：C 语言中对齐控制的思路，在 C++ 中被更系统化、更安全地实现了。
 
-## 小结
-
-我们在这篇教程里把结构体从"怎么用"到"内存里长什么样"彻底拆了一遍。结构体是 C 语言中最核心的复合类型，理解它的内存布局——尤其是对齐和填充——是写出高效、正确、可移植代码的基础。
-
-### 关键要点
-
-- [ ] 结构体用 `typedef struct { ... } Name;` 定义，搭配指针用 `->` 访问成员
-- [ ] C99 指定初始化器 `.field = value` 比顺序初始化更安全、更可读
-- [ ] 编译器会在成员间和结构体尾部插入填充字节，确保每个成员对齐
-- [ ] 按对齐要求从大到小排列字段可以减少填充，节省内存
-- [ ] `offsetof` 宏可以精确验证字段的偏移量
-- [ ] C11 的 `alignas`/`alignof` 提供了标准化的对齐控制能力
-- [ ] 柔性数组成员用于变长尾部数据，必须通过指针和动态分配使用
-- [ ] `__attribute__((packed))` 取消填充，用于二进制协议解析，但有性能和可移植性代价
-- [ ] C++ 的 `struct` 是默认 public 的 `class`，POD 类型保持与 C 兼容的内存布局
-
 ## 练习
 
 ### 练习 1：对齐预测与验证
@@ -679,27 +645,21 @@ FrameAligned: type=0, value=4, sizeof=8
 #include <stdint.h>
 #include <stdbool.h>
 
-
 void Append_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength);
 
 bool Verify_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength);
 
-
 uint8_t Get_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength,
                            uint8_t ucCRC8);
 
-
 void Append_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength);
 
-
 bool Verify_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength);
-
 
 uint16_t Get_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength,
                              uint16_t wCRC);
 
 #endif
-
 
 ```
 
@@ -712,7 +672,6 @@ uint16_t Get_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength,
 #include <stddef.h>
 
 /* CRC 查表和接口命名改编自 RoboMaster 官方例程；为便于对照保留原命名。 */
-
 
 // 查表法 CRC
 
@@ -883,7 +842,6 @@ void Append_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength)
   pchMessage[dwLength - 2u] = (uint8_t)(wCRC & 0x00ffu);
   pchMessage[dwLength - 1u] = (uint8_t)((wCRC >> 8u) & 0x00ffu);
 }
-
 
 ```
 
@@ -1132,7 +1090,6 @@ int main(void) {
     return EXIT_SUCCESS;
 }
 
-
 ```
 
 把三个文件放在同一目录后编译运行：
@@ -1164,8 +1121,7 @@ crc16 check:           passed
 
 固定线上帧头长度取 `offsetof(protocol_frame_t, payload)`，而不是把 `sizeof(protocol_frame_t)` 当成协议长度。柔性数组成员本身不计入 `sizeof`，但标准允许结构体在末尾保留额外填充；用成员偏移计算线上头长，才能准确找到 payload 真正开始的位置。分配内存时仍使用 `sizeof(protocol_frame_t)`，这样连同可能的尾部填充也有足够空间；CRC16 则放在同一次分配中、紧跟 payload 的两个额外字节里。
 
-> ⚠️ **踩坑预警**
-> CRC 不只是一个“CRC16”名字：多项式、初值、输入/输出反射、最终异或值和线上字节序共同决定结果。本例的 CRC-8 使用多项式 `0x31`、初值 `0xFF`、反射输入/输出、最终异或值 `0x00`；CRC-16 使用多项式 `0x1021`、初值 `0xFFFF`、反射输入/输出、最终异或值 `0x0000`，并按小端写入帧尾。`"123456789"` 的固定测试结果分别为 `0x0B` 和 `0x6F91`，用于防止示例内部参数被误改；接入真实设备时，仍必须同协议文档或设备给出的测试帧逐项核对，不能只看位数相同就直接复用。
+CRC 不只是一个“CRC16”名字：多项式、初值、输入/输出反射、最终异或值和线上字节序共同决定结果。本例的 CRC-8 使用多项式 `0x31`、初值 `0xFF`、反射输入/输出、最终异或值 `0x00`；CRC-16 使用多项式 `0x1021`、初值 `0xFFFF`、反射输入/输出、最终异或值 `0x0000`，并按小端写入帧尾。`"123456789"` 的固定测试结果分别为 `0x0B` 和 `0x6F91`，用于防止示例内部参数被误改；接入真实设备时，仍必须同协议文档或设备给出的测试帧逐项核对，不能只看位数相同就直接复用。
 
 :::
 

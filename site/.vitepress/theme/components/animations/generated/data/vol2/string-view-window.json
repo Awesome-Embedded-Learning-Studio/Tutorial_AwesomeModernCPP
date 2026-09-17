@@ -1,0 +1,1141 @@
+{
+ "version": 1,
+ "id": "string-view-window",
+ "title": "string_view：同一块内存，三个窗口",
+ "subtitle": "\"hello, world\" 上的窗口收窄与平移",
+ "source": "projects/vol2-ch08-strview/02-dsl/string-view-window.yaml",
+ "backend": "web",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#17171f",
+  "text": "#ECECE4",
+  "muted": "#9a9aad",
+  "fill": "#5EC8E0",
+  "fillEdge": "#2E86AB",
+  "emptyEdge": "#4a4a5e",
+  "grow": "#FFB454",
+  "numOnFill": "#0e2430",
+  "ok": "#7BC96A",
+  "bad": "#E06C75",
+  "cardBg": "#1e1e2a"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "string_view：同一块内存，三个窗口",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 6.8288,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "\"hello, world\" 上的窗口收窄与平移",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.236,
+   "h": 0.272
+  },
+  "counter": {
+   "kind": "text",
+   "text": "size = 0    capacity = 0",
+   "x": 0.0,
+   "y": 1.6,
+   "fs": 0.3,
+   "color": "#ECECE4",
+   "mono": true,
+   "anchor": "middle",
+   "w": 4.95,
+   "h": 0.3
+  },
+  "_empty": {
+   "kind": "text",
+   "text": "还没申请内存",
+   "x": 0.0,
+   "y": -1.0,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.584,
+   "h": 0.272
+  },
+  "_cap_row": {
+   "kind": "text",
+   "text": "申请内存: capacity 0 → 12",
+   "x": -1.2,
+   "y": 0.1632,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.9648,
+   "h": 0.3264
+  },
+  "row:row": {
+   "kind": "cells",
+   "cap": 12,
+   "side": 0.358,
+   "cx": -1.2,
+   "cy": -1.0,
+   "w": 4.9555,
+   "h": 0.358,
+   "cells": [
+    {
+     "i": 0,
+     "x": -3.4988,
+     "y": -1.0,
+     "s": 0.358
+    },
+    {
+     "i": 1,
+     "x": -3.0808,
+     "y": -1.0,
+     "s": 0.358
+    },
+    {
+     "i": 2,
+     "x": -2.6629,
+     "y": -1.0,
+     "s": 0.358
+    },
+    {
+     "i": 3,
+     "x": -2.2449,
+     "y": -1.0,
+     "s": 0.358
+    },
+    {
+     "i": 4,
+     "x": -1.8269,
+     "y": -1.0,
+     "s": 0.358
+    },
+    {
+     "i": 5,
+     "x": -1.409,
+     "y": -1.0,
+     "s": 0.358
+    },
+    {
+     "i": 6,
+     "x": -0.991,
+     "y": -1.0,
+     "s": 0.358
+    },
+    {
+     "i": 7,
+     "x": -0.5731,
+     "y": -1.0,
+     "s": 0.358
+    },
+    {
+     "i": 8,
+     "x": -0.1551,
+     "y": -1.0,
+     "s": 0.358
+    },
+    {
+     "i": 9,
+     "x": 0.2629,
+     "y": -1.0,
+     "s": 0.358
+    },
+    {
+     "i": 10,
+     "x": 0.6808,
+     "y": -1.0,
+     "s": 0.358
+    },
+    {
+     "i": 11,
+     "x": 1.0988,
+     "y": -1.0,
+     "s": 0.358
+    }
+   ],
+   "idx": []
+  },
+  "show:card_buf": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.508,
+   "w": 3.4336,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "const char* buf =",
+     "w": 2.244
+    },
+    {
+     "text": "    \"hello, world\";",
+     "w": 2.508
+    }
+   ],
+   "cx": 4.05,
+   "cy": 0.5
+  },
+  "show:lb_buf": {
+   "kind": "text",
+   "text": "buf 的 12 个字符",
+   "x": -1.409,
+   "y": -1.665,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.048,
+   "h": 0.272,
+   "id": "lb_buf"
+  },
+  "ptr:p_ptr": {
+   "kind": "ptr",
+   "id": "p_ptr",
+   "name": "_ptr",
+   "above": true,
+   "x": -0.5731,
+   "tipY": -0.581,
+   "baseY": -0.191,
+   "txt": {
+    "text": "_ptr",
+    "x": -0.5731,
+    "y": -0.031,
+    "fs": 0.22,
+    "color": "#ECECE4",
+    "mono": true,
+    "anchor": "middle",
+    "w": 0.5808,
+    "h": 0.22
+   },
+   "cx": -0.5731,
+   "cy": -0.251,
+   "w": 0.5808,
+   "h": 0.66
+  },
+  "ptr:p_end": {
+   "kind": "ptr",
+   "id": "p_end",
+   "name": "_ptr+_len",
+   "above": true,
+   "x": 1.2778,
+   "tipY": -0.581,
+   "baseY": -0.191,
+   "txt": {
+    "text": "_ptr+_len",
+    "x": 1.2778,
+    "y": -0.031,
+    "fs": 0.22,
+    "color": "#ECECE4",
+    "mono": true,
+    "anchor": "middle",
+    "w": 1.3068,
+    "h": 0.22
+   },
+   "cx": 1.2778,
+   "cy": -0.251,
+   "w": 1.3068,
+   "h": 0.66
+  },
+  "show:lb_full": {
+   "kind": "text",
+   "text": "两个指针框出窗口",
+   "x": -1.409,
+   "y": -1.665,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.112,
+   "h": 0.272,
+   "id": "lb_full"
+  },
+  "show:card_sv2": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 3.036,
+   "w": 3.9616,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "string_view sv2(buf,5);",
+     "w": 3.036
+    },
+    {
+     "text": "// 只看 \"hello\"",
+     "w": 1.98
+    }
+   ],
+   "cx": 3.95,
+   "cy": 0.5
+  },
+  "show:lb_hello": {
+   "kind": "text",
+   "text": "长度缩到 5：hello",
+   "x": -2.6629,
+   "y": -1.665,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.188,
+   "h": 0.272,
+   "id": "lb_hello"
+  },
+  "show:card_rp": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.64,
+   "w": 3.5656,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "string_view sv(buf);",
+     "w": 2.64
+    },
+    {
+     "text": "sv.remove_prefix(7);",
+     "w": 2.64
+    }
+   ],
+   "cx": 4.1,
+   "cy": 0.5
+  },
+  "show:lb_world": {
+   "kind": "text",
+   "text": "起点后挪 7 格：world",
+   "x": 0.2629,
+   "y": -1.665,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.576,
+   "h": 0.272,
+   "id": "lb_world"
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "string_view = (指针, 长度)",
+   "x": 0.0,
+   "y": -2.084,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.9456,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "收窄、平移只改两个字段：O(1)、零分配",
+   "x": 0.0,
+   "y": -2.6604,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.664,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "不拥有内存：底层一销毁，窗口就悬空",
+   "x": 0.0,
+   "y": -3.2368,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.3856,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 5.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 2.4,
+     "dur": 0.5
+    },
+    {
+     "type": "fadein",
+     "target": "counter",
+     "t": 2.4,
+     "dur": 0.5
+    },
+    {
+     "type": "write",
+     "target": "_empty",
+     "t": 3.4,
+     "dur": 1.07
+    },
+    {
+     "type": "fadeout",
+     "target": "_empty",
+     "t": 5.5,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "grow_to",
+   "label": "申请 12",
+   "note": "capacity 0->12, 搬 0 格",
+   "duration": 6.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "_cap_row",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "row_create",
+     "target": "row:row",
+     "g": {
+      "kind": "cells",
+      "cap": 12,
+      "side": 0.358,
+      "cx": -1.2,
+      "cy": -1.0,
+      "w": 4.9555,
+      "h": 0.358,
+      "cells": [
+       {
+        "i": 0,
+        "x": -3.4988,
+        "y": -1.0,
+        "s": 0.358
+       },
+       {
+        "i": 1,
+        "x": -3.0808,
+        "y": -1.0,
+        "s": 0.358
+       },
+       {
+        "i": 2,
+        "x": -2.6629,
+        "y": -1.0,
+        "s": 0.358
+       },
+       {
+        "i": 3,
+        "x": -2.2449,
+        "y": -1.0,
+        "s": 0.358
+       },
+       {
+        "i": 4,
+        "x": -1.8269,
+        "y": -1.0,
+        "s": 0.358
+       },
+       {
+        "i": 5,
+        "x": -1.409,
+        "y": -1.0,
+        "s": 0.358
+       },
+       {
+        "i": 6,
+        "x": -0.991,
+        "y": -1.0,
+        "s": 0.358
+       },
+       {
+        "i": 7,
+        "x": -0.5731,
+        "y": -1.0,
+        "s": 0.358
+       },
+       {
+        "i": 8,
+        "x": -0.1551,
+        "y": -1.0,
+        "s": 0.358
+       },
+       {
+        "i": 9,
+        "x": 0.2629,
+        "y": -1.0,
+        "s": 0.358
+       },
+       {
+        "i": 10,
+        "x": 0.6808,
+        "y": -1.0,
+        "s": 0.358
+       },
+       {
+        "i": 11,
+        "x": 1.0988,
+        "y": -1.0,
+        "s": 0.358
+       }
+      ],
+      "idx": []
+     },
+     "t": 2.4,
+     "dur": 0.7
+    },
+    {
+     "type": "fadeout",
+     "target": "_cap_row",
+     "t": 5.85,
+     "dur": 0.3
+    },
+    {
+     "type": "counter",
+     "text": "size = 0    capacity = 12",
+     "t": 6.15,
+     "dur": 0.25
+    }
+   ]
+  },
+  {
+   "kind": "push",
+   "label": "push ×12 (normal)",
+   "note": "[0,12)",
+   "duration": 2.16,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 0,
+     "s": 1,
+     "cap": 12,
+     "counter": true,
+     "t": 0.0,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 1,
+     "s": 2,
+     "cap": 12,
+     "counter": true,
+     "t": 0.18,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 2,
+     "s": 3,
+     "cap": 12,
+     "counter": true,
+     "t": 0.36,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 3,
+     "s": 4,
+     "cap": 12,
+     "counter": true,
+     "t": 0.54,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 4,
+     "s": 5,
+     "cap": 12,
+     "counter": true,
+     "t": 0.72,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 5,
+     "s": 6,
+     "cap": 12,
+     "counter": true,
+     "t": 0.9,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 6,
+     "s": 7,
+     "cap": 12,
+     "counter": true,
+     "t": 1.08,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 7,
+     "s": 8,
+     "cap": 12,
+     "counter": true,
+     "t": 1.26,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 8,
+     "s": 9,
+     "cap": 12,
+     "counter": true,
+     "t": 1.44,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 9,
+     "s": 10,
+     "cap": 12,
+     "counter": true,
+     "t": 1.62,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 10,
+     "s": 11,
+     "cap": 12,
+     "counter": true,
+     "t": 1.8,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 11,
+     "s": 12,
+     "cap": 12,
+     "counter": true,
+     "t": 1.98,
+     "dur": 0.18
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_buf",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_buf",
+     "cx": 4.05,
+     "cy": 0.5,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.6s",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show lb_buf",
+   "note": "",
+   "duration": 1.79,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_buf",
+     "t": 0.0,
+     "dur": 1.79
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_buf",
+   "note": "",
+   "duration": 1.41,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_buf",
+     "t": 1.01,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide card_buf",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:card_buf",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 _ptr 出场",
+   "note": "index 0",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_show",
+     "target": "p_ptr",
+     "t": 0.0,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 _ptr+_len 出场",
+   "note": "index 12",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_show",
+     "target": "p_end",
+     "t": 0.0,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [0,12) gold",
+   "note": "",
+   "duration": 1.7,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#FFB454",
+      "cx": -1.2,
+      "cy": -1.0,
+      "w": 5.0556,
+      "h": 0.458
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#FFB454",
+      "cx": -1.2,
+      "cy": -1.0,
+      "w": 5.0556,
+      "h": 0.458
+     },
+     "t": 1.4,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_full",
+   "note": "",
+   "duration": 1.31,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_full",
+     "t": 0.0,
+     "dur": 1.31
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.0s",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_full",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_full",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 _ptr+_len → 5",
+   "note": "index 5",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_move",
+     "target": "p_end",
+     "to": [
+      -1.409,
+      -0.581
+     ],
+     "t": 0.0,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [0,5) gold",
+   "note": "",
+   "duration": 1.7,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#FFB454",
+      "cx": -2.6628,
+      "cy": -1.0,
+      "w": 2.1299,
+      "h": 0.458
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#FFB454",
+      "cx": -2.6628,
+      "cy": -1.0,
+      "w": 2.1299,
+      "h": 0.458
+     },
+     "t": 1.4,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_sv2",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_sv2",
+     "cx": 3.95,
+     "cy": 0.5,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_hello",
+   "note": "",
+   "duration": 1.79,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_hello",
+     "t": 0.0,
+     "dur": 1.79
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.2s",
+   "duration": 1.2,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_hello",
+   "note": "",
+   "duration": 1.01,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_hello",
+     "t": 0.61,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide card_sv2",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:card_sv2",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 _ptr+_len → 12",
+   "note": "index 12",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_move",
+     "target": "p_end",
+     "to": [
+      1.2778,
+      -0.581
+     ],
+     "t": 0.0,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 _ptr → 7",
+   "note": "index 7",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_move",
+     "target": "p_ptr",
+     "to": [
+      -0.5731,
+      -0.581
+     ],
+     "t": 0.0,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [7,12) gold",
+   "note": "",
+   "duration": 1.7,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#FFB454",
+      "cx": 0.2629,
+      "cy": -1.0,
+      "w": 2.1299,
+      "h": 0.458
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#FFB454",
+      "cx": 0.2629,
+      "cy": -1.0,
+      "w": 2.1299,
+      "h": 0.458
+     },
+     "t": 1.4,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_rp",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_rp",
+     "cx": 4.1,
+     "cy": 0.5,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_world",
+   "note": "",
+   "duration": 2.03,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_world",
+     "t": 0.0,
+     "dur": 2.03
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.2s",
+   "duration": 1.2,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_world",
+   "note": "",
+   "duration": 1.27,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_world",
+     "t": 0.87,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide card_rp",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:card_rp",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 13.85,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 2.75,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 5.5,
+     "dur": 2.39
+    },
+    {
+     "type": "pulse",
+     "target": "counter",
+     "t": 10.85,
+     "dur": 1.0
+    }
+   ]
+  }
+ ]
+}

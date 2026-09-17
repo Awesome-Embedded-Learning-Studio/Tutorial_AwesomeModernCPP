@@ -1,0 +1,211 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Dir Tree Ops" id="dir-tree-ops">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="exists / copy / create / remove 在一棵 /tmp 目录树上的落点" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="26" width="600" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- 目录树外框 -->
+        <mxCell id="treebox" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="70" y="88" width="400" height="544" as="geometry" />
+        </mxCell>
+
+        <!-- 树节点 -->
+        <mxCell id="n_root" value="/tmp/" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#f2f2f2;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="100" width="110" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="n_source" value="source.txt" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#FFFFFF;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="170" y="144" width="130" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="n_dest" value="dest.txt" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;dashed=1;fillColor=#e8f0fe;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="170" y="188" width="130" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="n_temp" value="temp_file.txt" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="170" y="232" width="150" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="n_cfg" value="myapp_config/" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;dashed=1;fillColor=#e6f4ea;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="170" y="276" width="160" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="n_myapp" value="myapp/" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;dashed=1;fillColor=#e6f4ea;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="170" y="320" width="100" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="n_data" value="data/" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;dashed=1;fillColor=#e6f4ea;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="230" y="364" width="90" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="n_cache" value="cache/" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;dashed=1;fillColor=#e6f4ea;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="290" y="408" width="95" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="n_tmpd" value="tmp/" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;dashed=1;fillColor=#e6f4ea;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="350" y="452" width="85" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="n_rtdir" value="my_temp_dir/" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="170" y="496" width="150" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="n_alog" value="a.log" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="230" y="540" width="90" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="n_blog" value="b.log" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="230" y="584" width="90" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- 删除标记 -->
+        <mxCell id="b_temp" value="✕" style="ellipse;whiteSpace=wrap;html=1;strokeColor=none;fillColor=#c00000;fontColor=#FFFFFF;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="159" y="237" width="22" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="b_rtdir" value="✕" style="ellipse;whiteSpace=wrap;html=1;strokeColor=none;fillColor=#c00000;fontColor=#FFFFFF;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="159" y="501" width="22" height="22" as="geometry" />
+        </mxCell>
+
+        <!-- 节点旁注 -->
+        <mxCell id="l_source" value="exists() 只读检查&lt;br&gt;copy() 的复制源" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="318" y="144" width="146" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="l_dest" value="copy() 生成的&lt;br&gt;新文件" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontColor=#1f4e9c;" vertex="1" parent="1">
+          <mxGeometry x="318" y="188" width="146" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="l_temp" value="remove() 删除" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontColor=#c00000;" vertex="1" parent="1">
+          <mxGeometry x="328" y="232" width="136" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="l_cfg" value="create_directory()&lt;br&gt;父目录 /tmp 已存在" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontColor=#2E7D32;" vertex="1" parent="1">
+          <mxGeometry x="338" y="276" width="126" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="l_myapp" value="create_directories()&lt;br&gt;逐级新建到 tmp/" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontColor=#2E7D32;" vertex="1" parent="1">
+          <mxGeometry x="286" y="320" width="178" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="l_rtdir" value="remove_all() 递归删" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontColor=#c00000;" vertex="1" parent="1">
+          <mxGeometry x="328" y="496" width="136" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="l_alog" value="子树内文件&lt;br&gt;一并删除" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontColor=#c00000;" vertex="1" parent="1">
+          <mxGeometry x="328" y="540" width="136" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- 树连线：根 -->
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#666666;strokeWidth=1.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="110" y="132" as="sourcePoint" />
+            <mxPoint x="170" y="160" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="110" y="160" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#666666;strokeWidth=1.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="110" y="132" as="sourcePoint" />
+            <mxPoint x="170" y="204" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="110" y="204" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#666666;strokeWidth=1.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="110" y="132" as="sourcePoint" />
+            <mxPoint x="170" y="248" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="110" y="248" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#666666;strokeWidth=1.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="110" y="132" as="sourcePoint" />
+            <mxPoint x="170" y="292" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="110" y="292" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#666666;strokeWidth=1.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="110" y="132" as="sourcePoint" />
+            <mxPoint x="170" y="336" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="110" y="336" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#666666;strokeWidth=1.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="110" y="132" as="sourcePoint" />
+            <mxPoint x="170" y="512" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="110" y="512" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <!-- 树连线：create_directories 链 -->
+        <mxCell id="e7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#666666;strokeWidth=1.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="190" y="352" as="sourcePoint" />
+            <mxPoint x="230" y="380" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="190" y="380" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#666666;strokeWidth=1.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="250" y="396" as="sourcePoint" />
+            <mxPoint x="290" y="424" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="250" y="424" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#666666;strokeWidth=1.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="310" y="440" as="sourcePoint" />
+            <mxPoint x="350" y="468" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="310" y="468" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <!-- 树连线：remove_all 子树 -->
+        <mxCell id="e10" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#666666;strokeWidth=1.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="190" y="528" as="sourcePoint" />
+            <mxPoint x="230" y="556" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="190" y="556" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#666666;strokeWidth=1.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="190" y="528" as="sourcePoint" />
+            <mxPoint x="230" y="600" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="190" y="600" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 右侧操作卡片 -->
+        <mxCell id="c_exists" value="&lt;b&gt;&lt;font color=&quot;#7f6000&quot;&gt;exists(p) 只读查询&lt;/font&gt;&lt;/b&gt;&lt;br&gt;fs::exists(&quot;/tmp/source.txt&quot;)&lt;br&gt;不改动目录树；不存在返回 false" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="486" y="132" width="270" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="c_copy" value="&lt;b&gt;&lt;font color=&quot;#1f4e9c&quot;&gt;copy(src, dst) 复制&lt;/font&gt;&lt;/b&gt;&lt;br&gt;fs::copy(&quot;/tmp/source.txt&quot;,&lt;br&gt;&quot;/tmp/dest.txt&quot;)&lt;br&gt;from 是普通文件时复制内容，dest.txt 成为新节点（虚线）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="486" y="230" width="270" height="104" as="geometry" />
+        </mxCell>
+        <mxCell id="c_create" value="&lt;b&gt;&lt;font color=&quot;#2E7D32&quot;&gt;create_directory / create_directories 新建目录&lt;/font&gt;&lt;/b&gt;&lt;br&gt;fs::create_directory(&quot;/tmp/myapp_config&quot;)&lt;br&gt;父目录 /tmp 必须已存在，否则失败&lt;br&gt;fs::create_directories(&lt;br&gt;&quot;/tmp/myapp/data/cache/tmp&quot;)&lt;br&gt;自动补齐缺失的中间目录，等价 mkdir -p" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="486" y="346" width="270" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="c_remove" value="&lt;b&gt;&lt;font color=&quot;#c00000&quot;&gt;remove / remove_all 删除&lt;/font&gt;&lt;/b&gt;&lt;br&gt;fs::remove(&quot;/tmp/temp_file.txt&quot;)&lt;br&gt;删文件或空目录；路径不存在返回 false，不报错&lt;br&gt;fs::remove_all(&quot;/tmp/my_temp_dir&quot;)&lt;br&gt;递归删除整棵子树，返回删除的数量" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="486" y="494" width="270" height="126" as="geometry" />
+        </mxCell>
+
+        <!-- 图例 -->
+        <mxCell id="legend" value="实线框 = 操作前已存在；虚线框 = 操作新建的节点；红底加 ✕ = 被删除（路径与调用均取自本篇示例代码）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="70" y="646" width="686" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

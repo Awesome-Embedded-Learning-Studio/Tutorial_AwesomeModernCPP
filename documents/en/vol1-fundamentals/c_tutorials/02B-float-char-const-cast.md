@@ -31,14 +31,6 @@ In the previous post, we dissected the integer family from the inside out—inte
 
 To be honest, some parts of this lesson—especially implicit type conversion—might seem convoluted at first glance. But don't worry; these "pitfalls" are precisely the motivation behind C++'s stronger type system. Once you understand "what goes wrong" in C, learning "how C++ fixes these problems" will feel like a natural next step.
 
-> **Learning Objectives**
-> After completing this chapter, you will be able to:
->
-> - [ ] Understand the precision characteristics of floating-point types and avoid common errors in floating-point comparisons.
-> - [ ] Recognize the true nature of character types—they are just small integers.
-> - [ ] Correctly use the `const` qualifier to protect data.
-> - [ ] Understand the rules of implicit type conversion and avoid the traps of mixing signed and unsigned integers.
-
 ## Environment Setup
 
 We will conduct all subsequent experiments in the following environment:
@@ -306,12 +298,6 @@ C++ significantly hardens the type system, with many improvements directly addre
 - `std::numeric_limits<T>::epsilon()` provides a more precise tool for floating-point comparison than hand-written epsilon values.
 
 The motivation for all these improvements stems from the "pitfalls" we discussed today. Once we understand "what goes wrong" in C, learning "how C++ solves these problems" becomes very natural.
-
-## Summary
-
-Let's recap the core points of this post. Floating-point numbers are approximations; `0.1 + 0.2 != 0.3` is an inherent characteristic of IEEE 754, so we must use epsilon for comparisons instead of `==`. `char` is essentially a small integer, and its signedness depends on the platform. `const` puts a compile-time protection lock on a variable and helps the compiler place data in Flash in embedded scenarios. Implicit type conversion—especially mixing signed and unsigned integers—is a high-risk area for bugs; when mixing them, we must explicitly write a cast.
-
-At this point, we have laid a solid foundation for C language data types. Next, we will enter the world of operators and see how we perform various operations on this data.
 
 ## Exercises
 

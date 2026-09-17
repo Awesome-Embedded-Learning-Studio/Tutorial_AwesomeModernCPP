@@ -288,9 +288,3 @@ Implement a `Result` class template that either holds a valid value or an error 
 Hint: You can use `std::variant` or a `bool` flag plus a `std::string` to store the data.
 
 Verification: Create a `Result<int>` holding a value and a `Result<int>` holding an error. Test the boolean conversion behavior with `if` respectively to confirm the logic is correct.
-
-## Summary
-
-In this chapter, we completed the final two stops of our operator overloading journey. `operator()` gives objects the ability to be called. By encapsulating state and behavior, function objects are far more powerful than bare function pointers—they are the infrastructure for understanding C++ lambdas, standard library algorithms, and generic programming. Type conversion operators give objects the ability to "shapeshift" across types, but the danger of implicit conversion requires us to use it with extreme caution—C++11's `explicit` modifier is the key weapon to solve this problem, eliminating almost all dangerous implicit conversion paths without sacrificing the convenience of boolean contexts.
-
-At this point, the entire operator overloading chapter is complete. From arithmetic operators to subscript access, from stream operations to function calls and type conversions, we have mastered the core technologies for truly integrating custom types into the C++ type system. In the next chapter, we will enter a brand new domain—inheritance and polymorphism. This is the other half of the map of C++ object-oriented programming and the foundation for understanding modern C++ design patterns.

@@ -32,16 +32,6 @@ We previously spent considerable time discussing language-level features like ty
 
 Understanding memory layout essentially comes down to two things: **where data resides**, and **how long it lives**. In this chapter, we break down a program's memory space into several major regions, analyzing the characteristics, typical use cases, and common pitfalls of each.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Name the four main memory regions of a program and their responsibilities
-> - [ ] Determine which region any given variable resides in
-> - [ ] Understand the stack's growth direction, size limits, and the causes of stack overflow
-> - [ ] Distinguish between the various cases of static storage duration (global variables, `static` local variables, constants)
-> - [ ] Write a program that prints the addresses of variables in each region to verify the memory layout model
-
 ## The Four Major Memory Regions
 
 When a C++ program runs, the operating system allocates a block of virtual address space for it. This space is not a single homogeneous region; rather, it is divided into several segments, each with its own purpose and management method. For our purposes, the four most critical regions are:
@@ -263,11 +253,3 @@ int fibonacci(int n)
 ### Exercise 3: Verify the Layout Model
 
 Write a program that declares a local variable, allocates a heap variable, defines a `static` local variable, and prints the address of a global variable, all within the same function. Observe whether their address distribution matches the layout model we described. Then, call a sub-function within that function, and print the address of a local variable inside the sub-function to verify whether the sub-function's stack variable address is smaller than the parent function's (the stack grows toward lower addresses).
-
-## Summary
-
-In this chapter, we broke down a C++ program's memory space into four main regions. The text segment stores compiled machine instructions and read-only constants, with its size determined at compile time. The data and BSS segments store global and `static` variables, which are initialized at program startup and live until the program ends. The stack manages local variables and function call frames, is automatically managed by the compiler, and is extremely fast but limited in space. The heap stores dynamically allocated memory, offering massive space but requiring manual management (or relying on RAII to let smart pointers do the work).
-
-The key to understanding these regions lies in two dimensions: **where data resides** determines what operations on it are legal (for example, you cannot modify read-only data in the text segment), and **how long data lives** determines when accessing it is safe (for example, stack variables no longer exist after a function returns). Getting a clear grasp of these two questions lays a solid foundation for subsequently learning dynamic memory management, smart pointers, and memory optimization.
-
-In the next chapter, we will dive into the details of dynamic memory management—what `new` and `delete` actually do, how RAII uses the stack's automatic destruction mechanism to manage heap resources, and how smart pointers let us say goodbye to the nightmare of manual `delete`.

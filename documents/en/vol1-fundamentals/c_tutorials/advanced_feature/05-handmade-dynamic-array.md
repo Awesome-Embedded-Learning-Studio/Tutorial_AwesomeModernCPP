@@ -39,15 +39,6 @@ One of the most painful aspects of writing C programs is that array sizes must b
 
 Today, we will start from zero and hand-roll a complete dynamic array library. Through this process, we will clarify data structure design, memory expansion and contraction strategies, error handling patterns, and finally compare our implementation with C++'s `std::vector` to see how the standard library handles these tasks.
 
-> **Learning Objectives**
->
-> - [ ] Understand the necessity of the three-field design: size, capacity, and data.
-> - [ ] Master the 2x expansion strategy and its amortized O(1) complexity analysis.
-> - [ ] Understand when to shrink capacity to avoid frequent `realloc` calls.
-> - [ ] Master the error handling pattern using enum return codes.
-> - [ ] Be able to independently design a complete CRUD API.
-> - [ ] Understand the internal mechanisms of `std::vector` and its correspondence to the C implementation.
-
 ## Environment Setup
 
 All code examples in this article are compiled and run in a standard C environment. It is recommended to always compile with `-Wall -Wextra`—implementing a dynamic array involves extensive pointer arithmetic and `memcpy`/`memmove` calls, so compiler warnings can help you catch many potential issues.

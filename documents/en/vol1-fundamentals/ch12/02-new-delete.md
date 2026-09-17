@@ -32,16 +32,6 @@ In the previous chapter, we divided the program's memory space into four major a
 
 In this chapter, we will answer these questions head-on. Dynamic memory is the greatest freedom C++ grants us—you can request memory of any size on demand at runtime, completely unconstrained by stack space limits. But this freedom brings the heaviest responsibility: every block of memory `new`'d must be properly `delete`'d, or it leaks; every `new` must correspond to the correct `delete`, or it is undefined behavior.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Correctly use `new`/`delete` and `new[]`/`delete[]` to avoid mismatch errors.
-> - [ ] Use AddressSanitizer to detect memory leaks.
-> - [ ] Understand how RAII binds heap resource lifetimes to stack objects.
-> - [ ] Skillfully use `unique_ptr`, `shared_ptr`, `weak_ptr`, and their factory functions.
-> - [ ] Understand the existence and use cases of `placement new`.
-
 ## Starting with new/delete
 
 C++ uses `new` and `delete` to replace C's `malloc` and `free`. Simply put, `new` is a wrapper around `malloc` plus a constructor call; `delete` calls the destructor first, then reclaims the memory. This distinction is the fundamental watershed between C++ and C dynamic memory management.
@@ -296,11 +286,3 @@ void legacy_code() {
 ### Exercise 2: Implement a Simple Memory Pool with Custom Deleter
 
 Implement a fixed-size memory pool class. Use `unique_ptr` with a custom deleter to manage objects allocated from the pool. Hint: the deleter doesn't have to `delete`; it can call `pool.free()` to return memory.
-
-## Summary
-
-In this chapter, we started from `new`/`delete` and walked a complete cognitive path. The problem with raw `new`/`delete` isn't complex syntax, but that you must guarantee `delete` is correctly executed on every possible exit path—normal return, early `return`, exception exit. Every omission is a potential memory leak. RAII fundamentally solves this by binding the lifetime of heap resources to stack objects.
-
-`unique_ptr` is the default choice—zero overhead, exclusive ownership, non-copyable but movable. `shared_ptr` is for scenarios that truly require shared ownership, but be mindful of reference counting overhead and circular references. `weak_ptr` is the tool to break circular references; it observes but does not own. `std::make_unique` and `std::make_shared` are the preferred ways to create smart pointers. AddressSanitizer is a powerful tool for detecting memory issues and should always be enabled during development and testing.
-
-With dynamic memory management mastered, our next step is to dive into a related topic—memory alignment and padding. Why does `sizeof` a struct with just a few fields always result in a few more bytes than the sum of the field sizes? The answer lies in the alignment rules.

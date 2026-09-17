@@ -1,0 +1,541 @@
+{
+ "version": 1,
+ "id": "constexpr-two-worlds",
+ "title": "何时求值？上下文说了算",
+ "subtitle": "C++11 起 · constexpr 双面间谍",
+ "source": "projects/vol2-ch02-constexpr/02-dsl/constexpr-two-worlds.yaml",
+ "backend": "web",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#17171f",
+  "text": "#ECECE4",
+  "muted": "#9a9aad",
+  "fill": "#5EC8E0",
+  "fillEdge": "#2E86AB",
+  "emptyEdge": "#4a4a5e",
+  "grow": "#FFB454",
+  "numOnFill": "#0e2430",
+  "ok": "#7BC96A",
+  "bad": "#E06C75",
+  "cardBg": "#1e1e2a"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "何时求值？上下文说了算",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.6464,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "C++11 起 · constexpr 双面间谍",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.676,
+   "h": 0.272
+  },
+  "show:fn": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 3.564,
+   "w": 4.4896,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "constexpr int square(int x)",
+     "w": 3.564
+    },
+    {
+     "text": "{ return x * x; }",
+     "w": 2.244
+    }
+   ],
+   "cx": -3.6,
+   "cy": 0.8
+  },
+  "show:a_ct": {
+   "kind": "arrow",
+   "x1": -1.1752,
+   "y1": 0.8,
+   "x2": 1.7052,
+   "y2": 0.8,
+   "cx": 0.265,
+   "cy": 0.8,
+   "w": 2.8804,
+   "h": 0.0,
+   "label": {
+    "text": "编译期求值",
+    "x": 0.265,
+    "y": 1.1524,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.188,
+    "h": 0.2448
+   }
+  },
+  "show:ct": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.904,
+   "w": 3.8296,
+   "h": 1.734,
+   "rows": [
+    {
+     "text": "constexpr int kResult",
+     "w": 2.772
+    },
+    {
+     "text": "    = square(8);",
+     "w": 2.112
+    },
+    {
+     "text": "// 编译期直接替换为 64",
+     "w": 2.904
+    }
+   ],
+   "cx": 3.8,
+   "cy": 0.8
+  },
+  "show:lb_ctx": {
+   "kind": "text",
+   "text": "数组长度/模板实参",
+   "x": 3.8,
+   "y": -0.5,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.236,
+   "h": 0.272,
+   "id": "lb_ctx"
+  },
+  "show:lb_burn": {
+   "kind": "text",
+   "text": "结果直接写进二进制",
+   "x": 3.8,
+   "y": -0.98,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.376,
+   "h": 0.272,
+   "id": "lb_burn"
+  },
+  "show:a_rt": {
+   "kind": "arrow",
+   "x1": -3.6,
+   "y1": -0.008,
+   "x2": -3.6,
+   "y2": -0.553,
+   "cx": -3.6,
+   "cy": -0.2805,
+   "w": 0.0,
+   "h": 0.545,
+   "label": {
+    "text": "运行期求值",
+    "x": -4.344,
+    "y": -0.2805,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.188,
+    "h": 0.2448
+   }
+  },
+  "show:rt": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 3.432,
+   "w": 4.3576,
+   "h": 1.734,
+   "rows": [
+    {
+     "text": "int runtime_input = 42;",
+     "w": 3.036
+    },
+    {
+     "text": "int result =",
+     "w": 1.584
+    },
+    {
+     "text": "    square(runtime_input);",
+     "w": 3.432
+    }
+   ],
+   "cx": -3.6,
+   "cy": -1.6
+  },
+  "show:lb_rt1": {
+   "kind": "text",
+   "text": "参数来自运行期",
+   "x": 0.4,
+   "y": -1.2,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.848,
+   "h": 0.272,
+   "id": "lb_rt1"
+  },
+  "show:lb_rt2": {
+   "kind": "text",
+   "text": "像普通函数一样执行",
+   "x": 0.4,
+   "y": -1.75,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.376,
+   "h": 0.272,
+   "id": "lb_rt2"
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "同一个函数，两种命运",
+   "x": 0.0,
+   "y": 0.3764,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.168,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "你写一份代码，编译器按上下文决定何时执行",
+   "x": 0.0,
+   "y": -0.2,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 6.336,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "要编译期结果，用 constexpr 变量接住返回值",
+   "x": 0.0,
+   "y": -0.7764,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 6.3888,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 2.67,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 1.67
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 1.67,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show fn",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:fn",
+     "cx": 0,
+     "cy": 0.8,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "move",
+   "label": "move fn",
+   "note": "to [-3.6, 0.8]",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "move",
+     "target": "show:fn",
+     "frm": [
+      0,
+      0.8
+     ],
+     "to": [
+      -3.6,
+      0.8
+     ],
+     "t": 0.0,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a_ct",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_ct",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show ct",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:ct",
+     "cx": 3.8,
+     "cy": 0.8,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_ctx",
+   "note": "",
+   "duration": 1.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_ctx",
+     "t": 0.0,
+     "dur": 1.43
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_burn",
+   "note": "",
+   "duration": 1.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_burn",
+     "t": 0.0,
+     "dur": 1.43
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.4s",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show a_rt",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_rt",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show rt",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:rt",
+     "cx": -3.6,
+     "cy": -1.6,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_rt1",
+   "note": "",
+   "duration": 1.19,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_rt1",
+     "t": 0.0,
+     "dur": 1.19
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_rt2",
+   "note": "",
+   "duration": 1.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_rt2",
+     "t": 0.0,
+     "dur": 1.43
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.6s",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 16.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:fn",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a_ct",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:ct",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a_rt",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:rt",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb_burn",
+     "t": 1.5,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb_ctx",
+     "t": 1.8,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb_rt1",
+     "t": 2.1,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb_rt2",
+     "t": 2.4,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 2.7,
+     "dur": 1.55
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 4.6,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 7.35,
+     "dur": 2.4
+    }
+   ]
+  }
+ ]
+}

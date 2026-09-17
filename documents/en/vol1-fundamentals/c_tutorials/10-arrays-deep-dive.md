@@ -28,16 +28,6 @@ translation:
 
 In the previous crash course and pointer chapters, we touched on arrays, but honestly, we stayed at the "just using them" level. Arrays seem simple to use—declare, initialize, access by index—who doesn't know how? But once you start asking questions like "How are multi-dimensional arrays actually laid out?", "Why can't I assign arrays directly?", or "When are arrays and pointers the same and when are they different?"—you'll find there are quite a few details worth unpacking. These details aren't just theoretical; understanding the memory model of arrays will clarify exactly what problems C++'s `std::array`, `std::vector`, and `std::span` are solving later on.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Master various initialization methods for one-dimensional arrays (including C99 designated initializers).
-> - [ ] Understand the memory layout of multi-dimensional arrays and row-major storage.
-> - [ ] Understand the principles and limitations of Variable Length Arrays (VLA).
-> - [ ] Grasp the fundamental limitations of arrays.
-> - [ ] Precisely distinguish the differences between arrays and pointers.
-
 ## Environment Setup
 
 All code in this chapter is based on the C99 standard, tested under GCC 13.x / Clang 17.x on a Linux x86-64 environment. Sections involving Variable Length Arrays (VLA) require compiler support for C99 (`-std=c99` or `-std=c11`). If you are using MSVC, note that Microsoft's C compiler has incomplete support for C99, and some VLA features may not be available—using GCC or Clang is recommended.
@@ -351,21 +341,6 @@ for (int& val : vec) {
 ```
 
 It is worth noting that the range-based for loop can also be used for raw C arrays (as long as the array size is visible in the current scope), but its use cases are limited—once an array decays to a pointer, the size information is lost, and the range-based for loop can no longer be used. This is another advantage of `std::array` over raw arrays.
-
-## Summary
-
-The memory model of arrays is actually not complex—it's just a contiguous arrangement of elements of the same type. One-dimensional arrays have diverse initialization methods, and C99's designated initializers are particularly useful for sparse data. Multi-dimensional arrays are "arrays of arrays," stored in row-major order; understanding this is important for performance optimization. While VLAs are convenient, they carry the risk of stack overflow and are generally not recommended in industry and embedded fields. Arrays have several fundamental limitations—cannot be assigned, cannot be used as function return values—limitations that `std::array` in C++ solves perfectly. While arrays and pointers are interchangeable in most scenarios, they are fundamentally different types—`sizeof` and `&` are where the differences are most exposed. Understanding these underlying details allows you to appreciate the motivation behind every design decision when learning C++ containers later.
-
-### Key Takeaways
-
-- [ ] Elements not specified during partial initialization are automatically filled with zero; `int arr[10] = {0};` is the idiomatic way to zero an array.
-- [ ] C99 designated initializers allow initialization by position, suitable for sparse data and configuration tables.
-- [ ] Multi-dimensional arrays are stored contiguously in row-major order; the address of `matrix[i][j]` is `base + i * N + j`.
-- [ ] VLAs are allocated on the stack, have unpredictable sizes, and were demoted to an optional feature in C11.
-- [ ] Arrays cannot be assigned or used as function return values, but wrapping them in a struct allows this.
-- [ ] Array names do not decay to pointers in `sizeof` and `&` operands.
-- [ ] `std::array` is a zero-overhead fixed-size container supporting assignment and copying.
-- [ ] `std::vector` is a dynamic-size container and a safe alternative to VLAs.
 
 ## Exercises
 

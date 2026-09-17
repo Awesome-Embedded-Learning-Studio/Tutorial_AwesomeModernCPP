@@ -33,15 +33,6 @@ Honestly, setting up a C++ development environment on Windows used to be quite a
 
 There are two mainstream paths for C++ compilers on Windows: one is Microsoft's Visual Studio (MSVC compiler), which is the mainstream choice for native Windows development, featuring highly integrated IDE and a top-tier debugging experience; the other is MinGW-w64 (installed via MSYS2), which essentially ports the GCC toolchain to Windows. If you have written C++ on Linux before, this will feel very familiar. Both paths work perfectly with CMake and vcpkg, so the choice is purely a matter of personal preference.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Install and configure Visual Studio 2022 (MSVC) or MinGW-w64 (MSYS2) compilers
-> - [ ] Use CMake to build a C++ project and run it successfully
-> - [ ] Install vcpkg and use it to manage third-party library dependencies
-> - [ ] Configure a C++ development and debugging environment in VS Code
-
 ## Environment Overview
 
 This article is based on Windows 10/11. All commands and screenshots are verified against the following versions:
@@ -290,9 +281,3 @@ Regarding debugging configuration, CMake Tools provides excellent integration. M
 For the MSVC path, just change `"cppdbg"` to `"cppvsdbg"` and remove `"miDebuggerPath"`, and VS's debugger will take over automatically.
 
 At this point, the Windows C++ development environment setup is complete. We have a compiler (MSVC or GCC), a build system (CMake), a package manager (vcpkg), and an editor (VS Code). The entire toolchain is ready to run.
-
-## Summary
-
-Let's review what we have done. First, we chose a compiler path—Visual Studio (MSVC) is suitable for developers who want an out-of-the-box experience and rely heavily on debuggers, while MSYS2 + MinGW-w64 is suitable for scenarios requiring a workflow consistent with Linux. Then, we used CMake to build a test project to verify the integrity of the toolchain, installed vcpkg to manage third-party library dependencies, and finally set up the development environment in VS Code.
-
-Next, we will officially start learning the C++ language. Before writing code, I suggest you try out the environment you just built—modify the hello project above, change the output content, run the build and debug a few times, and confirm that the entire pipeline from coding, building, and running to breakpoint debugging works smoothly. When we start learning formally, the tools will no longer be an obstacle.

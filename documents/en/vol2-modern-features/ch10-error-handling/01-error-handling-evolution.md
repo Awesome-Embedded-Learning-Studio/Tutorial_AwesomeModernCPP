@@ -228,10 +228,6 @@ In embedded development, the choice of error handling is often not a question of
 
 ------
 
-## Summary
-
-In this chapter, we reviewed the evolution of C++ error handling: from C error codes to C++ exceptions, to C++17/23 type-safe solutions. Each solution has its reasons for existence; there is no silver bullet. In the next three articles, we will dive deep into `std::optional` for error handling, the usage of `std::expected`, and a comprehensive selection guide to help you make the right decisions in actual projects.
-
 ## Reference Resources
 
 - [cppreference: Error handling](https://en.cppreference.com/w/cpp/error)

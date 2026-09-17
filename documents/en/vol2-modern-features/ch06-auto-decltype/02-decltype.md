@@ -262,14 +262,6 @@ for (decltype(auto) elem : vec) {
 
 ------
 
-## Summary
-
-The core value of `decltype` lies in "precisely preserving the type of an expression," without discarding references and const. Its deduction rules can be summarized in three points: for unparenthesized variable names, it returns the declared type; for parenthesized variable names or lvalue expressions, it returns an lvalue reference; and for rvalue expressions, it returns a non-reference type.
-
-`decltype(auto)` is a convenience tool introduced in C++14 that allows function return type deduction to preserve reference semantics, but be wary of the dangling reference trap with `decltype(auto)`. Trailing return types were the only way to handle parameter-dependent return types in C++11, but since C++14, they have been largely replaced by `auto` and `decltype(auto)` in most scenarios.
-
-In templates and metaprogramming, `decltype` combined with `std::declval` is a foundational tool for building type traits and SFINAE constraints. Understanding these concepts will give you much greater confidence when reading and writing generic code.
-
 ## References
 
 - [cppreference: decltype specifier](https://en.cppreference.com/w/cpp/language/decltype)

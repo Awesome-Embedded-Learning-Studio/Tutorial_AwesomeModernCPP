@@ -31,17 +31,6 @@ title: 手搓动态数组——从零实现容器
 
 今天我们就从零开始，手搓一个完整的动态数组库，在这个过程中搞清楚数据结构设计、内存扩缩容策略、错误处理模式，最后对照 C++ 的 `std::vector` 看看标准库是怎么做这些事的。
 
-> **学习目标**
->
-> - [ ] 理解动态数组 size/capacity/data 三字段设计的必要性
-> - [ ] 掌握 2x 扩容策略及其摊还 O(1) 复杂度分析
-> - [ ] 理解缩容时机选择，避免频繁 realloc
-> - [ ] 掌握枚举返回码的错误处理模式
-> - [ ] 能够独立设计完整的增删改查 API
-> - [ ] 理解 `std::vector` 的内部机制与 C 手搓版本的对应关系
-
-## 环境说明
-
 本文所有代码示例均在标准 C 环境下编译运行。编译时建议始终带上 `-Wall -Wextra`——动态数组的实现涉及大量指针运算和 `memcpy/memmove` 调用，编译器警告能帮你捕捉不少潜在问题。
 
 ```text
@@ -79,8 +68,7 @@ typedef struct _DynamicArray_ {
 
 四个字段各司其职：`data` 管"存在哪里"，`size` 管"用了几个"，`capacity` 管"总共有几个坑位"，`element_size` 管"每个坑位多大"。有了 `element_size`，定位第 `i` 个元素的地址就是 `(char*)data + i * element_size`——必须先转成 `char*`，因为 `char` 恰好是 1 字节，这样指针运算才是精确的字节偏移。直接对 `void*` 做加减，编译器会报错（C 标准不允许，虽然 GCC 作为扩展允许，但不可移植）。
 
-> ⚠️ **踩坑预警**
-> `size` 是"实际有多少个有效元素"，`capacity` 是"这块内存最多能放多少个元素"，`size <= capacity`。如果你在遍历的时候用了 `capacity` 而不是 `size` 作上界，就会读到未初始化的垃圾数据。
+`size` 是"实际有多少个有效元素"，`capacity` 是"这块内存最多能放多少个元素"，`size <= capacity`。如果你在遍历的时候用了 `capacity` 而不是 `size` 作上界，就会读到未初始化的垃圾数据。
 
 `std::vector` 内部的数据布局和我们几乎一模一样，只不过模板参数 `T` 替代了 `void*` + `element_size` 的组合，类型安全在编译期就得到了保证。`sizeof(std::vector<int>)` 在大多数实现上是 24 字节——三个 8 字节字段（指针 + size + capacity），`element_size` 在模板实例化后不需要存储。
 
@@ -153,8 +141,7 @@ DynamicArray* dynamic_array_create(size_t initial_capacity, size_t element_size)
 
 分配结构体内存后必须立刻检查 `malloc` 返回值——不检查就访问 `arr->data`，程序直接段错误。我们设定了最小容量 8 作为经验值，太小导致频繁扩容，太大浪费内存。
 
-> ⚠️ **踩坑预警**
-> 注意 `free(arr)` 的存在。这是一个非常经典的资源泄露场景：结构体分配成功了，但数据区分配失败了。如果你直接 `return NULL` 而不 `free(arr)`，那块结构体内存就永远泄露了。这种"分配了一部分资源但后续步骤失败"的情况是 C 内存管理中最容易出错的地方。
+注意 `free(arr)` 的存在。这是一个非常经典的资源泄露场景：结构体分配成功了，但数据区分配失败了。如果你直接 `return NULL` 而不 `free(arr)`，那块结构体内存就永远泄露了。这种"分配了一部分资源但后续步骤失败"的情况是 C 内存管理中最容易出错的地方。
 
 使用方式：
 
@@ -219,8 +206,7 @@ DynamicArrayStatus dynamic_array_reserve(DynamicArray* arr, size_t min_capacity)
 
 `realloc` 会尝试在原位置就地扩展，不行就在堆上找一块更大的空间并把旧数据复制过去。无论哪种情况返回的指针都指向有效内存，旧数据完好无损。
 
-> ⚠️ **踩坑预警**
-> `realloc` 可能返回不同的地址！你必须用 `arr->data = new_data` 更新指针。如果你写成 `realloc(arr->data, ...)` 而不接收返回值，搬家后就丢失了新地址，旧地址指向的内存也已经被释放了——双重灾难。
+`realloc` 可能返回不同的地址！你必须用 `arr->data = new_data` 更新指针。如果你写成 `realloc(arr->data, ...)` 而不接收返回值，搬家后就丢失了新地址，旧地址指向的内存也已经被释放了——双重灾难。
 
 ### 缩容——避免抖动
 
@@ -348,8 +334,7 @@ DynamicArrayStatus dynamic_array_pop_back(DynamicArray* arr)
 
 被"删掉"的元素还躺在内存里，下次 `push_back` 会被覆盖。
 
-> ⚠️ **踩坑预警**
-> 我们没有在 `pop_back` 后触发缩容——刚 `pop` 完马上又 `push` 的话缩容就白做了。缩容应该由调用者显式调用 `shrink_to_fit`。`std::vector::pop_back` 也是同样的设计。
+我们没有在 `pop_back` 后触发缩容——刚 `pop` 完马上又 `push` 的话缩容就白做了。缩容应该由调用者显式调用 `shrink_to_fit`。`std::vector::pop_back` 也是同样的设计。
 
 ### insert 与 erase——中间插入和删除
 

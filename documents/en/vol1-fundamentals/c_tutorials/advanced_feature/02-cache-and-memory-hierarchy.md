@@ -36,16 +36,6 @@ To be honest, many application-level developers may never touch the Cache direct
 
 Languages like Python and Java completely abstract away memory management, leaving programmers with little opportunity to perceive the existence of the Cache—the virtual machine and interpreter handle that worry for you. C is different; it exposes the bare metal of memory directly to you. How you layout data, how you traverse it, and how you align it are all up to you. Building on C, C++ provides a few additional standardized tools (such as `alignas` and `hardware_destructive_interference_size`), allowing us to work with the Cache in a portable way. In this article, we will dissect the Cache from the inside out: starting from the memory hierarchy, to cache lines, mapping policies, and coherence protocols, and finally landing on how to write code that makes the Cache "comfortable," and what tools in C++ can help us achieve this.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Understand the design motivation and characteristics of the memory hierarchy.
-> - [ ] Explain the working principles of Cache Lines, mapping policies, and replacement policies.
-> - [ ] Understand the basic state transitions of the MESI coherence protocol.
-> - [ ] Write cache-friendly C code and verify it.
-> - [ ] Use `alignas` and `hardware_destructive_interference_size` in C++ for cache line alignment.
-
 ## Environment Description
 
 All code examples in this article can be compiled and run on a standard x86-64 platform. The timing results for the stride experiment and matrix traversal depend on the specific CPU model and cache configuration, but the trends remain consistent.

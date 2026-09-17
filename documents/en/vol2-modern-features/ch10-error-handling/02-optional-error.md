@@ -201,14 +201,6 @@ This example demonstrates the typical usage of `std::optional`: using `std::opti
 
 ------
 
-## Summary
-
-`std::optional` has a clear position in the field of error handling: it is suitable for simple scenarios where "failure needs no reason"—lookups, parsing, caching, default values. If the scenario requires distinguishing error types, needs error propagation chains, or requires diagnosing issues at the end of the chain, you should switch to `std::expected` or other heavier solutions.
-
-C++23's monadic operations (`and_then`, `transform`, `or_else`) make chaining `std::optional` elegant, greatly reducing nested `if` code. If your project is still on C++17, writing a few helper functions can achieve a similar effect.
-
-In the next post, we will look at `std::expected`—when you need "value + error information," how does it handle it?
-
 ## Reference Resources
 
 - [cppreference: std::optional](https://en.cppreference.com/w/cpp/utility/optional)

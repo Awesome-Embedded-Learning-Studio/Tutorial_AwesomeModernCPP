@@ -76,6 +76,10 @@ use_count: 1
 Disconnected from 192.168.1.1:8080
 ```
 
+这场计数涨落做成了动画，您可以播放、暂停，也可以按步进键单步看，把 use_count 的每一次加减都看个清楚：
+
+<Anim id="shared-refcount" />
+
 看起来很美好。但共享所有权不是免费的——每一个 `shared_ptr` 的拷贝和析构都需要更新引用计数，而引用计数必须是线程安全的（原子操作）。此外，`shared_ptr` 内部还需要维护一个控制块（control block）来存储引用计数和其他元信息。这些开销在频繁创建和销毁 `shared_ptr` 的场景下会变得非常明显。
 
 笔者的建议是：能用 `unique_ptr` 就用 `unique_ptr`，只在真正需要共享所有权的场景下才使用 `shared_ptr`。`shared_ptr` 不应该成为"懒得思考所有权"的借口。
@@ -114,7 +118,7 @@ std::cout << "sizeof(shared_ptr): " << sizeof(p1) << "\n";  // 16 (64-bit)
 std::cout << "sizeof(unique_ptr): " << sizeof(std::unique_ptr<Connection>) << "\n";  // 8
 ```
 
-⚠️ `make_shared` 也有一个不太为人知的缺点：由于对象和控制块共享同一个内存块，当所有 `shared_ptr` 都被销毁时（强引用归零），对象会被析构，但控制块的内存不会立即释放——必须等到所有 `weak_ptr` 也都销毁（弱引用归零）后，整个内存块才会被回收。如果对象很大且有 `weak_ptr` 仍在使用，可能会造成内存占用比预期更高的现象。如果您预期会有 `weak_ptr` 长期存在，可以考虑使用 `std::shared_ptr<T>(new T)` 来让对象的内存独立于控制块，这样强引用归零时对象内存就能立即释放。
+`make_shared` 也有一个不太为人知的缺点：由于对象和控制块共享同一个内存块，当所有 `shared_ptr` 都被销毁时（强引用归零），对象会被析构，但控制块的内存不会立即释放——必须等到所有 `weak_ptr` 也都销毁（弱引用归零）后，整个内存块才会被回收。如果对象很大且有 `weak_ptr` 仍在使用，可能会造成内存占用比预期更高的现象。如果您预期会有 `weak_ptr` 长期存在，可以考虑使用 `std::shared_ptr<T>(new T)` 来让对象的内存独立于控制块，这样强引用归零时对象内存就能立即释放。
 
 ## 引用计数的原子操作与线程安全
 
@@ -240,7 +244,7 @@ void session_demo() {
 }
 ```
 
-⚠️ 使用 `shared_from_this()` 有一个前提条件：对象必须已经被一个 `shared_ptr` 管理。如果您在栈上创建对象或用裸指针管理，调用 `shared_from_this()` 会导致未定义行为。此外，构造函数中不能调用 `shared_from_this()`——因为此时 `shared_ptr` 还没有完成构造。
+使用 `shared_from_this()` 有一个前提条件：对象必须已经被一个 `shared_ptr` 管理。如果您在栈上创建对象或用裸指针管理，调用 `shared_from_this()` 会导致未定义行为。此外，构造函数中不能调用 `shared_from_this()`——因为此时 `shared_ptr` 还没有完成构造。
 
 ## 常见误用与踩坑
 

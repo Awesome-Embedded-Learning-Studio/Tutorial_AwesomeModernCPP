@@ -25,19 +25,6 @@ title: 用 C 实现面向对象编程
 
 这篇我们就来用纯 C 把封装、继承、多态、接口抽象全部手撸一遍，最后拼出一个能跑的图形框架。写完之后回头看 C++ 的 `class`、`virtual`、`abstract class`，会有一种"原来如此"的通透感。
 
-> **学习目标**
->
-> 完成本章后，你将能够：
->
-> - [ ] 用结构体 + 函数指针模拟 C++ 的类
-> - [ ] 用不透明指针实现封装
-> - [ ] 用结构体嵌套实现单继承
-> - [ ] 用 vtable（虚函数表）模拟运行时多态
-> - [ ] 用函数指针表实现接口抽象
-> - [ ] 完成一个包含继承和多态的图形框架实战
-
-## 环境说明
-
 我们用 GCC 或 Clang 在主机上编译即可，不需要任何第三方库。代码遵循 C11 标准，因为要用到匿名结构体和指定初始化器。如果你在嵌入式平台上跑，这些写法同样是可移植的——struct 和函数指针不依赖任何运行时特性。
 
 ```text
@@ -134,7 +121,7 @@ typedef struct Counter {
     int min;
     int max;
 
-    // 「方法」——函数指针
+    // "方法"——函数指针
     void (*increment)(struct Counter* self);
     void (*decrement)(struct Counter* self);
     int  (*get_value)(const struct Counter* self);
@@ -159,7 +146,7 @@ static int counter_get_value(const Counter* self)
     return self->value;
 }
 
-// 「构造函数」——初始化对象并绑定方法
+// "构造函数"——初始化对象并绑定方法
 void counter_init(Counter* self, int min, int max)
 {
     self->value = min;
@@ -182,8 +169,7 @@ c.increment(&c);
 printf("value = %d\n", c.get_value(&c));  // value = 2
 ```
 
-> ⚠️ **踩坑预警**
-> 把函数指针直接塞进每个实例里意味着每个对象都存了一份函数指针——在 64 位系统上这个 `Counter` 光函数指针就占 32 字节。如果你创建一万个对象，就有十万份完全相同的指针。下一节我们用 vtable 来优化这个问题。
+把函数指针直接塞进每个实例里意味着每个对象都存了一份函数指针——在 64 位系统上这个 `Counter` 光函数指针就占 32 字节。如果你创建一万个对象，就有十万份完全相同的指针。下一节我们用 vtable 来优化这个问题。
 
 ## 第三步——用结构体嵌套实现继承
 
@@ -192,7 +178,7 @@ C 没有语法层面的继承，但我们可以用**结构体嵌套**来模拟�
 ### 动物家族
 
 ```c
-// 「基类」——所有动物共有的属性
+// "基类"——所有动物共有的属性
 typedef struct Animal {
     const char* name;
     int    age;
@@ -208,7 +194,7 @@ void animal_print_info(const Animal* self)
     printf("\n");
 }
 
-// 「派生类」——狗
+// "派生类"——狗
 typedef struct Dog {
     Animal base;          // 基类放第一个！
     const char* breed;
@@ -224,7 +210,7 @@ void dog_init(Dog* self, const char* name, int age, const char* breed)
     self->breed = breed;
 }
 
-// 「派生类」——猫
+// "派生类"——猫
 typedef struct Cat {
     Animal base;
     int lives_remaining;
@@ -264,8 +250,7 @@ for (int i = 0; i < 2; i++) {
 
 虽然我们都是通过 `Animal*` 指针调用，但 `Dog` 和 `Cat` 各自发出了不同的叫声。这就是多态的雏形——同一接口，不同行为。
 
-> ⚠️ **踩坑预警**
-> 基类**必须**放在第一个字段。如果你把它放到中间或末尾，`&dog == (Animal*)&dog` 就不成立了，类型转换会得到错误的偏移量，轻则数据错乱，重则直接 crash。
+基类**必须**放在第一个字段。如果你把它放到中间或末尾，`&dog == (Animal*)&dog` 就不成立了，类型转换会得到错误的偏移量，轻则数据错乱，重则直接 crash。
 
 ## 第四步——用虚函数表（vtable）实现多态
 
@@ -276,7 +261,7 @@ for (int i = 0; i < 2; i++) {
 ```c
 typedef struct Shape Shape;
 
-// 虚函数表——所有 Shape「类」共享的函数指针表
+// 虚函数表——所有 Shape"类"共享的函数指针表
 typedef struct ShapeVtable {
     double (*area)(const Shape* self);
     double (*perimeter)(const Shape* self);
@@ -409,8 +394,7 @@ Drawable* d2 = &ts->drawable;       // 也 OK，更明确
 Serializable* s = &ts->serializable;    // 正确
 ```
 
-> ⚠️ **踩坑预警**
-> 在 C++ 里编译器会自动计算多重继承的偏移量，但在 C 里做手搓 OOP，你必须自己保证指针转换的正确性。这就是为什么很多 C 项目（比如 Linux 内核）倾向于只做单继承 + 回调函数，而不是搞多重接口继承。如果你一定要做多接口，务必用 `&obj->interface` 来获取指针，不要直接 cast。
+在 C++ 里编译器会自动计算多重继承的偏移量，但在 C 里做手搓 OOP，你必须自己保证指针转换的正确性。这就是为什么很多 C 项目（比如 Linux 内核）倾向于只做单继承 + 回调函数，而不是搞多重接口继承。如果你一定要做多接口，务必用 `&obj->interface` 来获取指针，不要直接 cast。
 
 ## 第六步——实战：拼一个图形管理框架
 

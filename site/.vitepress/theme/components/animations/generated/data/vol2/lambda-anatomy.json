@@ -1,0 +1,519 @@
+{
+ "version": 1,
+ "id": "lambda-anatomy",
+ "title": "你写的是 lambda，编译器看到的是类",
+ "subtitle": "C++11 · 值捕获与闭包类型",
+ "source": "projects/vol2-ch03-lambda/02-dsl/lambda-anatomy.yaml",
+ "backend": "web",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#17171f",
+  "text": "#ECECE4",
+  "muted": "#9a9aad",
+  "fill": "#5EC8E0",
+  "fillEdge": "#2E86AB",
+  "emptyEdge": "#4a4a5e",
+  "grow": "#FFB454",
+  "numOnFill": "#0e2430",
+  "ok": "#7BC96A",
+  "bad": "#E06C75",
+  "cardBg": "#1e1e2a"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "你写的是 lambda，编译器看到的是类",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 6.88,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "C++11 · 值捕获与闭包类型",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.104,
+   "h": 0.272
+  },
+  "show:lam": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 3.96,
+   "w": 4.8856,
+   "h": 2.212,
+   "rows": [
+    {
+     "text": "int threshold = 50;",
+     "w": 2.508
+    },
+    {
+     "text": "auto by_value =",
+     "w": 1.98
+    },
+    {
+     "text": " [threshold](int value)",
+     "w": 3.036
+    },
+    {
+     "text": " { return value > threshold; }",
+     "w": 3.96
+    }
+   ],
+   "cx": -3.2,
+   "cy": 0.35
+  },
+  "show:lb_cap": {
+   "kind": "text",
+   "text": "[] 捕获列表",
+   "x": -4.7,
+   "y": -1.5,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.428,
+   "h": 0.272,
+   "id": "lb_cap"
+  },
+  "show:lb_param": {
+   "kind": "text",
+   "text": "() 参数列表",
+   "x": -2.9,
+   "y": -1.5,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.428,
+   "h": 0.272,
+   "id": "lb_param"
+  },
+  "show:lb_body": {
+   "kind": "text",
+   "text": "{} 函数体",
+   "x": -1.1,
+   "y": -1.5,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.164,
+   "h": 0.272,
+   "id": "lb_body"
+  },
+  "show:a_gen": {
+   "kind": "arrow",
+   "x1": -0.5861,
+   "y1": 0.2495,
+   "x2": 0.7514,
+   "y2": 0.198,
+   "cx": 0.0827,
+   "cy": 0.2237,
+   "w": 1.3375,
+   "h": 0.0514,
+   "label": {
+    "text": "编译器生成",
+    "x": 0.0827,
+    "y": 0.5761,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.188,
+    "h": 0.2448
+   }
+  },
+  "show:cls": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 3.828,
+   "w": 4.7536,
+   "h": 2.212,
+   "rows": [
+    {
+     "text": "struct /* 唯一名字 */ {",
+     "w": 3.036
+    },
+    {
+     "text": "  int threshold;",
+     "w": 2.112
+    },
+    {
+     "text": "  bool operator()(int) const;",
+     "w": 3.828
+    },
+    {
+     "text": "};",
+     "w": 0.264
+    }
+   ],
+   "cx": 3.3,
+   "cy": 0.1
+  },
+  "show:lb_map1": {
+   "kind": "text",
+   "text": "捕获列表变数据成员",
+   "x": 3.3,
+   "y": -1.4,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.376,
+   "h": 0.272,
+   "id": "lb_map1"
+  },
+  "show:lb_map2": {
+   "kind": "text",
+   "text": "() 和 {} 进 operator()",
+   "x": 3.3,
+   "y": -1.95,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.76,
+   "h": 0.272,
+   "id": "lb_map2"
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "lambda = 编译器生成的匿名函数对象",
+   "x": 0.0,
+   "y": 0.3764,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.1408,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "捕获变成员，参数与体进 operator()",
+   "x": 0.0,
+   "y": -0.2,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.1216,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "闭包类型独一无二，用 auto 接",
+   "x": 0.0,
+   "y": -0.7764,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.3776,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 3.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 2.4,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lam",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:lam",
+     "cx": 0,
+     "cy": 0.35,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "move",
+   "label": "move lam",
+   "note": "to [-3.2, 0.35]",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "move",
+     "target": "show:lam",
+     "frm": [
+      0,
+      0.35
+     ],
+     "to": [
+      -3.2,
+      0.35
+     ],
+     "t": 0.0,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_cap",
+   "note": "",
+   "duration": 1.19,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_cap",
+     "t": 0.0,
+     "dur": 1.19
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.3s",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show lb_param",
+   "note": "",
+   "duration": 1.19,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_param",
+     "t": 0.0,
+     "dur": 1.19
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.3s",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show lb_body",
+   "note": "",
+   "duration": 1.07,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_body",
+     "t": 0.0,
+     "dur": 1.07
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.5s",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show a_gen",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_gen",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show cls",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:cls",
+     "cx": 3.3,
+     "cy": 0.1,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.3s",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show lb_map1",
+   "note": "",
+   "duration": 1.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_map1",
+     "t": 0.0,
+     "dur": 1.43
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_map2",
+   "note": "",
+   "duration": 2.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_map2",
+     "t": 0.0,
+     "dur": 2.4
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 15.97,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lam",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a_gen",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:cls",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb_body",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb_cap",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb_map1",
+     "t": 1.5,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb_map2",
+     "t": 2.52,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb_param",
+     "t": 2.82,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 3.12,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 5.87,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 8.62,
+     "dur": 2.39
+    }
+   ]
+  }
+ ]
+}

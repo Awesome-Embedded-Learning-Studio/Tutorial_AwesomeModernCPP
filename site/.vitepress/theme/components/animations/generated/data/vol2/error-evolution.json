@@ -1,0 +1,639 @@
+{
+ "version": 1,
+ "id": "error-evolution",
+ "title": "错误处理的演进",
+ "subtitle": "从错误码到类型安全",
+ "source": "projects/vol2-ch10-evolution/02-dsl/error-evolution.yaml",
+ "backend": "web",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#17171f",
+  "text": "#ECECE4",
+  "muted": "#9a9aad",
+  "fill": "#5EC8E0",
+  "fillEdge": "#2E86AB",
+  "emptyEdge": "#4a4a5e",
+  "grow": "#FFB454",
+  "numOnFill": "#0e2430",
+  "ok": "#7BC96A",
+  "bad": "#E06C75",
+  "cardBg": "#1e1e2a"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "错误处理的演进",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.9568,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "从错误码到类型安全",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.376,
+   "h": 0.272
+  },
+  "show:card_ec": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.376,
+   "w": 3.3016,
+   "h": 1.734,
+   "rows": [
+    {
+     "text": "int read_config();",
+     "w": 2.376
+    },
+    {
+     "text": "if (ret != 0){}",
+     "w": 1.98
+    },
+    {
+     "text": "// -1? 翻宏去",
+     "w": 1.716
+    }
+   ],
+   "cx": -4.05,
+   "cy": -0.35
+  },
+  "show:s_ec": {
+   "kind": "text",
+   "text": "C:错误码+errno",
+   "x": -4.05,
+   "y": 1.15,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.784,
+   "h": 0.272,
+   "id": "s_ec"
+  },
+  "show:v_ec": {
+   "kind": "text",
+   "text": "忘检查,编译器不拦",
+   "x": -4.05,
+   "y": -1.85,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.236,
+   "h": 0.272,
+   "id": "v_ec"
+  },
+  "show:a1": {
+   "kind": "arrow",
+   "x1": -2.2192,
+   "y1": -0.35,
+   "x2": -1.6988,
+   "y2": -0.35,
+   "cx": -1.959,
+   "cy": -0.35,
+   "w": 0.5204,
+   "h": 0.0,
+   "label": {
+    "text": "演进",
+    "x": -1.959,
+    "y": 0.0024,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:card_ex": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.112,
+   "w": 3.0376,
+   "h": 1.734,
+   "rows": [
+    {
+     "text": "try { f(); }",
+     "w": 1.584
+    },
+    {
+     "text": "catch (e) {...}",
+     "w": 1.98
+    },
+    {
+     "text": "// 抛了啥?看不出",
+     "w": 2.112
+    }
+   ],
+   "cx": 0,
+   "cy": -0.35
+  },
+  "show:s_ex": {
+   "kind": "text",
+   "text": "C++98:异常",
+   "x": 0,
+   "y": 1.15,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.272,
+   "h": 0.272,
+   "id": "s_ex"
+  },
+  "show:v_ex": {
+   "kind": "text",
+   "text": "栈展开重·嵌入式常禁",
+   "x": 0,
+   "y": -1.85,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.5,
+   "h": 0.272,
+   "id": "v_ex"
+  },
+  "show:a2": {
+   "kind": "arrow",
+   "x1": 1.6988,
+   "y1": -0.35,
+   "x2": 2.2192,
+   "y2": -0.35,
+   "cx": 1.959,
+   "cy": -0.35,
+   "w": 0.5204,
+   "h": 0.0,
+   "label": {
+    "text": "演进",
+    "x": 1.959,
+    "y": 0.0024,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:card_ty": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.376,
+   "w": 3.3016,
+   "h": 1.734,
+   "rows": [
+    {
+     "text": "std::optional<T>",
+     "w": 2.112
+    },
+    {
+     "text": "std::expected<T,E>",
+     "w": 2.376
+    },
+    {
+     "text": "if (r) r.value();",
+     "w": 2.244
+    }
+   ],
+   "cx": 4.05,
+   "cy": -0.35
+  },
+  "show:s_ty": {
+   "kind": "text",
+   "text": "C++17/23:错误进类型",
+   "x": 4.05,
+   "y": 1.15,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.436,
+   "h": 0.272,
+   "id": "s_ty"
+  },
+  "show:v_ty": {
+   "kind": "text",
+   "text": "类型强迫你面对",
+   "x": 4.05,
+   "y": -1.85,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.848,
+   "h": 0.272,
+   "id": "v_ty"
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "错误码可忽略,异常抛出重",
+   "x": 0.0,
+   "y": 0.6646,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.6336,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "expected:成功给值,失败给错误",
+   "x": 0.0,
+   "y": 0.0882,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.3392,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "嵌入式常禁异常,返回值是主力",
+   "x": 0.0,
+   "y": -0.4882,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.2672,
+   "h": 0.3264
+  },
+  "concl:3": {
+   "kind": "text",
+   "text": "标准库不强制检查,[[nodiscard]] 自己加",
+   "x": 0.0,
+   "y": -1.0646,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.7168,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 2.19,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 1.19
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 1.19,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_ec",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_ec",
+     "cx": 0,
+     "cy": -0.35,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "move",
+   "label": "move card_ec",
+   "note": "to [-4.05, -0.35]",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "move",
+     "target": "show:card_ec",
+     "frm": [
+      0,
+      -0.35
+     ],
+     "to": [
+      -4.05,
+      -0.35
+     ],
+     "t": 0.0,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show s_ec",
+   "note": "",
+   "duration": 1.67,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:s_ec",
+     "t": 0.0,
+     "dur": 1.67
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show v_ec",
+   "note": "",
+   "duration": 1.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:v_ec",
+     "t": 0.0,
+     "dur": 1.43
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.4s",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show a1",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_ex",
+   "note": "",
+   "duration": 2.55,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_ex",
+     "cx": 0,
+     "cy": -0.35,
+     "t": 0.0,
+     "dur": 2.55
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show s_ex",
+   "note": "",
+   "duration": 1.31,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:s_ex",
+     "t": 0.0,
+     "dur": 1.31
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show v_ex",
+   "note": "",
+   "duration": 1.55,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:v_ex",
+     "t": 0.0,
+     "dur": 1.55
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.4s",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show a2",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_ty",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_ty",
+     "cx": 4.05,
+     "cy": -0.35,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show s_ty",
+   "note": "",
+   "duration": 2.03,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:s_ty",
+     "t": 0.0,
+     "dur": 2.03
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show v_ty",
+   "note": "",
+   "duration": 1.19,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:v_ty",
+     "t": 0.0,
+     "dur": 1.19
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 20.17,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:card_ec",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a1",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:card_ex",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a2",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:card_ty",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:s_ec",
+     "t": 1.5,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:s_ex",
+     "t": 1.8,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:s_ty",
+     "t": 2.1,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:v_ec",
+     "t": 2.4,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:v_ex",
+     "t": 2.7,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:v_ty",
+     "t": 3.0,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 3.3,
+     "dur": 1.79
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 5.44,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 8.19,
+     "dur": 2.03
+    },
+    {
+     "type": "write",
+     "target": "concl:3",
+     "t": 10.57,
+     "dur": 2.4
+    }
+   ]
+  }
+ ]
+}

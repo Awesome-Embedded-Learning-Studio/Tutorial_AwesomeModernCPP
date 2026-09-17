@@ -492,9 +492,3 @@ Run the Buffer move semantics example online and compare the resource overhead o
   allow-run
   allow-x86-asm
 />
-
-## Summary
-
-In this post, we broke down move constructors and move assignment operators from start to finish. The core of move operations is **resource ownership transfer**—don't copy data, just steal the pointer, and then null the source object. Move assignment has one more step than move construction: you must release the old resources held by the target object first. All move operations should be marked `noexcept`, which directly affects the behavior of containers like `std::vector` during reallocation. If your class manages resources, remember the Rule of Five: destructor, copy constructor, move constructor, copy assignment, move assignment—either write all five, or `= default` all five.
-
-In the next post, we will look at another major thing the compiler does for us behind the scenes—Return Value Optimization (RVO and NRVO), which can make the cost of returning large objects from functions drop to zero.

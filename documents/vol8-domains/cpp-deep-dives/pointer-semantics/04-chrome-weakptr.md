@@ -23,8 +23,6 @@ title: Chrome-like WeakPtr：引用计数控制块与 WeakPtrFactory
 ---
 # Chrome-like WeakPtr：引用计数控制块与 WeakPtrFactory
 
-## 引言
-
 上一篇我们用 `shared_ptr<Flag>` 解决了 control block 的生命周期安全问题。它确实管用，但也带来了 `shared_ptr` 自身的开销——堆分配、两个原子引用计数（strong count + weak count）、控制块对象本身的内存占用。
 
 对于一个只是存了 `bool alive` 的小结构来说，这些开销有点重了。

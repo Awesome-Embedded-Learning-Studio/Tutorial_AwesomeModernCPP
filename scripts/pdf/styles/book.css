@@ -458,11 +458,27 @@ body {
 
 .book-content blockquote {
   margin: 1em 0;
-  padding: 2.5mm 4mm;
-  border-left: 0.8mm solid var(--book-accent);
-  background: var(--book-accent-soft);
-  color: #423b35;
+  padding: 3mm 4mm;
+  border: 0.2mm solid #dcd7e5;
+  border-left: 0.65mm solid #a296b8;
+  border-radius: 2mm;
+  background: #f5f3f8;
+  color: #514c60;
+  /* Long quotations must remain free to split across book pages. */
   break-inside: auto;
+}
+
+.book-content blockquote blockquote {
+  margin: 0.65em 0;
+  padding: 0.5mm 0 0.5mm 3mm;
+  border: 0;
+  border-left: 0.4mm solid #d0c8dc;
+  border-radius: 0;
+  background: none;
+}
+
+.book-content blockquote > :first-child {
+  margin-top: 0;
 }
 
 .book-content blockquote > :last-child {
@@ -620,6 +636,38 @@ body {
   font-variant-numeric: tabular-nums;
   text-align: right;
   user-select: none;
+}
+
+/* Program output stays distinct from source without a dark, ink-heavy panel. */
+.book-content div.language-output {
+  border-color: #a7bbc9;
+  border-left: 0.65mm solid #6b90a8;
+  background: #eef3f5 !important;
+}
+
+.book-content div.language-output::before {
+  display: block;
+  padding: 2.2mm 3.2mm 0;
+  content: attr(data-output-label);
+  color: #5d7788;
+  font-family: var(--book-sans);
+  font-size: 7.5pt;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  break-after: avoid;
+}
+
+.book-content .language-output pre {
+  background: #eef3f5 !important;
+  padding-top: 1.6mm;
+}
+
+.book-content .language-output pre code > .line {
+  padding-left: 0;
+}
+
+.book-content .language-output pre code > .line::before {
+  display: none;
 }
 
 .book-content .line-numbers-wrapper,

@@ -30,15 +30,6 @@ In the previous two articles, we discussed the internal mechanics and performanc
 
 In this article, we will focus specifically on the "gotchas" of `std::string_view`. I will compile the pitfalls I have encountered myself, seen others fall into, and those that static analysis tools can help you catch. Finally, I will provide a best practices cheat sheet.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Identify all common patterns of `std::string_view` dangling references.
-> - [ ] Understand the null termination issue and its impact on C API interoperability.
-> - [ ] Master the safe usage boundaries of `std::string_view`.
-> - [ ] Learn about the future of `std::string_view` in C++23.
-
 ## Pitfall 1: Dangling References—The Number One Killer
 
 `std::string_view` does not own the underlying data and does not extend the lifetime of any object. This is its most fundamental characteristic and the root cause of the vast majority of bugs. Dangling references occur more often than you might think.
@@ -300,12 +291,6 @@ The C++ community has also recognized the shortcomings of `std::string_view` reg
 The design philosophy of `std::zstring_view` is to add a NUL termination guarantee to the basis of `std::string_view`, making it safe to pass to C APIs. It is still non-owning, so lifetime issues remain, but it at least solves the NUL termination half of the pain point.
 
 Before `std::zstring_view` officially enters the standard, if you need similar functionality, you can wrap a lightweight `ZStringView` class yourself—the core idea is: inherit from (or compose) `std::string_view`, check for NUL termination during construction, and have the `data()` method return a pointer guaranteed to be NUL-terminated. However, honestly, in most projects, directly using `std::string` is sufficient.
-
-## Summary
-
-`std::string_view` is a double-edged sword. Its performance benefits are real and significant, but its lifetime risks are also real and serious. My summary of usage principles is: feel free to use `std::string_view` for function parameters (read-only, short-term use); use it cautiously for return values (ensure the pointed-to data lives long enough); try to avoid it for member variables and container storage (unless you are very clear about the data's lifetime); and when calling C APIs, remember to explicitly convert to a NUL-terminated `std::string`.
-
-The key to using `std::string_view` well is not memorizing a bunch of rules, but developing an intuition: every time you write `std::string_view`, automatically ask yourself a question in your mind—"Is the data it points to still there?"
 
 ## Reference Resources
 

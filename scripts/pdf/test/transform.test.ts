@@ -405,6 +405,27 @@ test('materializes stable Shiki line numbers before Paged.js cloning', async () 
   assert.equal(renderedLines[1].getAttribute('data-line-number'), '2')
 })
 
+test('renders semantic output fences in the PDF pipeline', async () => {
+  const repositoryRoot = resolve(import.meta.dirname, '..', '..', '..')
+  const markdown = await createBookMarkdownRenderer(repositoryRoot)
+  const context: TransformContext = {
+    repositoryRoot,
+    markdown,
+    locale,
+    assets: {} as TransformContext['assets'],
+    resolveLink: (href) => ({ kind: 'external', href }),
+  }
+
+  const rendered = await transformDocument(
+    source('# Fixture topic\n\n```output:no-line-numbers\nvalue = 42\n```'),
+    context,
+  )
+  assert.match(rendered.html, /class="language-output"/)
+  assert.match(rendered.html, /data-output-label="运行结果"/)
+  assert.match(rendered.html, /data-code-caption="运行结果"/)
+  assert.match(rendered.html, /value = 42/)
+})
+
 test('rejects executable or embedded-document link schemes', () => {
   for (const href of ['javascript:alert(1)', 'data:text/html,unsafe']) {
     const rendered = {

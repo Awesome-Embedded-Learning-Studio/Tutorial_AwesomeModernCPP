@@ -302,9 +302,3 @@ for (int i = 0; i <= 5; ++i) { // Bug here
 ```
 
 This off-by-one error is very common in beginner code.
-
-## Summary
-
-In this chapter, we dissected C-style arrays. Arrays are stored contiguously in memory, indices start at 0, and `sizeof` can get the number of elements (but only valid within the declaration scope). Multidimensional arrays are stored contiguously by row, and row-major traversal is more cache-friendly. Arrays decay to pointers when passed as arguments, losing size information. They cannot be assigned, returned, or bounds-checked—these pain points are the very reason `std::array` exists.
-
-In the next chapter, we will look at `std::array`—the modern alternative that retains the performance advantages of C arrays while fixing all the shortcomings.

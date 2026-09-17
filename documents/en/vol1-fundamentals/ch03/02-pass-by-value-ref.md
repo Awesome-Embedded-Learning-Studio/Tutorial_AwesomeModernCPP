@@ -401,11 +401,3 @@ int main()
 ```
 
 Hint: Think about what happens to the local variable `prefix` after the function returns.
-
-## Summary
-
-In this chapter, we clarified the three core parameter passing methods in C++. Pass by value copies the actual argument, and the function operates on a copy. For basic types, this is simple and safe, but for large objects, it incurs non-negligible performance overhead. Pass by reference lets the function directly access the caller's original variable, offering zero-copy and the ability to modify data. It's suitable for scenarios like `swap` where we need to change the actual argument, but a non-const reference cannot bind to rvalues. Pass by const reference combines zero-copy with read-only safety; `const T&` can bind to both lvalues and rvalues, making it the standard approach for read-only parameters of non-trivial types.
-
-For return values, just return by value directly. Modern compilers' RVO/NRVO optimizations will eliminate unnecessary copies. Never return a reference to a local variable — that's a classic source of dangling references. When a function needs to output multiple results, prefer returning a struct over using output parameters.
-
-In the next chapter, we'll learn about function overloading and default arguments — making the same function name behave differently based on argument types or counts, which is one of the foundations of C++ polymorphism.

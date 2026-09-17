@@ -39,17 +39,6 @@ But this doesn't mean we can't write clean, modular code in C—it just means we
 
 In this article, we will systematically review this methodology—from modular design principles and header file interface design to opaque pointers for hiding implementation, configuration management, and cross-platform porting.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Understand the core principles of modular design and split functionality into independent compilation units.
-> - [ ] Write clean header file interfaces, ensuring "headers contain only declarations, no implementation."
-> - [ ] Use the opaque pointer pattern to hide implementation details.
-> - [ ] Distinguish between compile-time and runtime configuration use cases.
-> - [ ] Write a Platform Abstraction Layer (PAL) to achieve cross-platform porting.
-> - [ ] Manage API version compatibility.
-
 ## Environment Setup
 
 All code examples in this text can be compiled and run in a standard C environment. The C++ section uses the C++17 standard. It is recommended to always enable the `-Wall -Wextra` compiler flags to catch potential issues.

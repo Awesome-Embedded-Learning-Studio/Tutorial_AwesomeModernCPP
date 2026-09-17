@@ -1,0 +1,60 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Functional Pipeline" id="functional-patterns-pipeline">
+    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="filter、map、reduce：一条函数式数据处理管道" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="114" y="40" width="600" height="34" as="geometry" />
+        </mxCell>
+
+        <!-- 输入 -->
+        <mxCell id="card-input" value="&lt;b&gt;输入 readings&lt;/b&gt;&lt;br&gt;8 条传感器读数&lt;br&gt;temp_01 / temp_02 / temp_03 混在一起" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=14;align=center;verticalAlign=middle;spacing=4;" vertex="1" parent="1">
+          <mxGeometry x="40" y="110" width="142" height="165" as="geometry" />
+        </mxCell>
+
+        <!-- Filter -->
+        <mxCell id="card-filter" value="&lt;b&gt;Filter 过滤&lt;/b&gt;&lt;br&gt;std::copy_if&lt;br&gt;谓词 lambda：&lt;br&gt;r.sensor_id ==&lt;br&gt;&quot;temp_01&quot;&lt;br&gt;&lt;font color=&quot;#008000&quot;&gt;&lt;b&gt;只剩 4 条 temp_01&lt;/b&gt;&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=14;align=center;verticalAlign=middle;spacing=4;" vertex="1" parent="1">
+          <mxGeometry x="242" y="110" width="142" height="165" as="geometry" />
+        </mxCell>
+
+        <!-- Map -->
+        <mxCell id="card-map" value="&lt;b&gt;Map 映射&lt;/b&gt;&lt;br&gt;std::transform&lt;br&gt;lambda：&lt;br&gt;return r.value;&lt;br&gt;{23.5, 24.1, 22.8, 25}" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=14;align=center;verticalAlign=middle;spacing=4;" vertex="1" parent="1">
+          <mxGeometry x="444" y="110" width="142" height="165" as="geometry" />
+        </mxCell>
+
+        <!-- Reduce -->
+        <mxCell id="card-reduce" value="&lt;b&gt;Reduce 归约&lt;/b&gt;&lt;br&gt;std::accumulate&lt;br&gt;求和 95.4&lt;br&gt;再除以 4&lt;br&gt;平均 &lt;font color=&quot;#008000&quot;&gt;&lt;b&gt;23.85&lt;/b&gt;&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#f2f2f2;fontSize=14;align=center;verticalAlign=middle;spacing=4;" vertex="1" parent="1">
+          <mxGeometry x="646" y="110" width="142" height="165" as="geometry" />
+        </mxCell>
+
+        <!-- 管道箭头：标签是每一段流动的变量名 -->
+        <mxCell id="arr1" value="readings" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;fontSize=12;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="182" y="192" as="sourcePoint" />
+            <mxPoint x="242" y="192" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arr2" value="filtered" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;fontSize=12;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="384" y="192" as="sourcePoint" />
+            <mxPoint x="444" y="192" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arr3" value="values" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;fontSize=12;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="586" y="192" as="sourcePoint" />
+            <mxPoint x="646" y="192" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 底注：中间容器的代价，衔接 Ranges -->
+        <mxCell id="note-cost" value="&lt;font color=&quot;#c00000&quot;&gt;&lt;b&gt;代价：filtered 和 values 都是全新分配的中间 vector&lt;/b&gt;&lt;/font&gt;&lt;br&gt;100 万元素的 filter+transform 管道，这种每步落一份新容器的写法比 C++20 Ranges 慢约 16 倍、额外分配约 4 MB——Ranges 靠惰性求值（迭代时才逐个计算）消掉中间容器" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=14;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="325" width="748" height="84" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

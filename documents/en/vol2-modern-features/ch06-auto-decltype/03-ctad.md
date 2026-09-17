@@ -449,14 +449,6 @@ This example demonstrates the design philosophy of CTAD: for types that already 
 
 ------
 
-## Summary
-
-CTAD is a practical "boilerplate reduction" feature in C++17. It makes instantiating class templates feel more like using ordinary classes. Standard library types like `pair`, `tuple`, `vector`, `array`, `optional`, and `lock_guard` all support CTAD, which is sufficient for daily development.
-
-There are three main takeaways: first, implicit deduction guides are automatically generated from constructors, covering most scenarios; second, when implicit deduction isn't enough, you can write custom deduction guides to extend the behavior; and third, **be aware that not all class templates support CTAD**—smart pointers and aggregate types have significant limitations.
-
-Limitations to watch out for: smart pointers (`unique_ptr`/`shared_ptr`) do not support CTAD from raw pointers, aggregate types still do not support general CTAD in C++20, alias templates do not support CTAD, and forwarding references can lead to unexpected reference type deductions. As long as you are aware of these "gotchas," you can quickly identify the issue when you encounter them.
-
 ## References
 
 - [cppreference: Class template argument deduction](https://en.cppreference.com/w/cpp/language/class_template_argument_deduction)

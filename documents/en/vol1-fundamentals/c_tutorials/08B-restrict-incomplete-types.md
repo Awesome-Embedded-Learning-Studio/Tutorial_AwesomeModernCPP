@@ -32,15 +32,6 @@ In the previous post, we mastered multi-level pointers and declaration reading. 
 
 These three things may seem unrelated, but they are all very practical in C language engineering practices—and they all have corresponding modern versions in C++.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Understand what problems the `restrict` qualifier solves and its usage rules.
-> - [ ] Use incomplete types and forward declarations to reduce header file dependencies.
-> - [ ] Implement the opaque pointer pattern to hide implementation details.
-> - [ ] Use the `->` operator to manipulate structure pointers.
-
 ## Environment Setup
 
 We will conduct all subsequent experiments in the following environment:
@@ -271,10 +262,6 @@ The C++ standard has not introduced `restrict`. C++ class semantics and referenc
 | Using members directly after forward declaration | `sizeof`, accessing members all fail | Forward declarations can only declare pointers; full usage requires full definition |
 | Confusing `.` and `->` | Pointers use `->`, variables use `.` | `ptr->x` is equivalent to `(*ptr).x` |
 | Mixing up `memcpy` and `memmove` | Using `memcpy` with overlapping source and destination is UB | Use `memmove` if there is any risk of overlap |
-
-## Summary
-
-In this post, we looked at three independent but practical mechanisms. `restrict` allows the compiler to perform more aggressive optimizations by eliminating pointer aliasing, but it is a contract where "the programmer guarantees to the compiler"—breaking it leads to undefined behavior. Incomplete types and forward declarations allow us to design interfaces without exposing internal details, and the opaque pointer pattern is a classic technique for information hiding in C. `->` is the tool for daily manipulation of structure pointers; just remember "variables use `.`, pointers use `->`".
 
 ## Exercises
 

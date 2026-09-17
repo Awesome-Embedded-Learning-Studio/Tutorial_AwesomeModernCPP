@@ -35,16 +35,6 @@ Honestly, many people's intuition is indeed to write loops by hand. However, the
 
 In this chapter, starting from practical requirements, we will get hands-on experience with the most commonly used algorithms. We will frequently use lambda expressions—they are the best partners for STL algorithms—so we will spend some time upfront to understand them thoroughly.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Understand the basic syntax and capture modes of lambda expressions
-> - [ ] Use `std::sort`, `std::stable_sort` to sort data
-> - [ ] Use `std::find`, `std::find_if`, `std::binary_search`, `std::lower_bound` to find elements
-> - [ ] Use `std::copy`, `std::transform`, `std::replace`, `std::remove` to modify data
-> - [ ] Use `std::accumulate`, `std::count`, `std::count_if`, `std::minmax_element` to perform statistics
-
 ## Meet Our Partner—Lambda Expressions
 
 STL algorithms often require a "predicate" or "operation" as a parameter—such as "what rule to sort by" or "which elements to find." Before C++11, this role was filled by function pointers or function objects (functors), which were verbose and unintuitive. Lambda expressions have completely changed this landscape.
@@ -302,14 +292,6 @@ std::vector<std::string> lines = {
 
 // TODO: Implement pipeline
 ```
-
-## Summary
-
-In this chapter, we went through the most commonly used algorithms in `<algorithm>` and `<numeric>`. Use `std::sort` for sorting, and `std::stable_sort` when stability is required. Finding elements splits into two paths: for unsorted data, use `std::find` / `std::find_if` for linear search; for sorted data, use `std::binary_search` / `std::lower_bound` for binary search. Modifying sequences relies on `std::copy`, `std::transform`, `std::replace`, and deleting elements uses the remove-erase idiom. For statistics and reduction, we have `std::accumulate`, `std::count` / `std::count_if`, and `std::minmax_element`.
-
-Running through all these algorithms is a core concept: don't write loops to express "what to do"; instead, declare intent directly using algorithm names. Combined with lambda expressions, we can flexibly customize comparison rules, filter conditions, and transformation logic while maintaining code readability.
-
-In the next chapter, we will continue to dive deeper into the STL and explore more classic patterns of combining containers with algorithms.
 
 ---
 

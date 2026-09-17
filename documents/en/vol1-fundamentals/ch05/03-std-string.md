@@ -33,16 +33,6 @@ In the previous tutorial, we spent a lot of effort wrestling with C-style string
 
 In this chapter, we start with the construction methods of `std::string`, move through concatenation, searching, substring extraction, and interoperability with C strings, and finally tie all the knowledge together with a comprehensive string processing program. After finishing this, you will find that those blood-pressure-raising string operations (I've been there—after learning `std::string`, I sometimes couldn't figure out how to use C strings properly) can be written safely and elegantly in C++.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Construct `std::string` objects in various ways
-> - [ ] Perform string concatenation, insertion, deletion, and replacement
-> - [ ] Master search and substring operations like `find` and `substr`
-> - [ ] Correctly convert between C++ strings and C-style strings
-> - [ ] Use conversion functions like `std::to_string` and `std::stoi`
-
 ## Environment Setup
 
 We will conduct all subsequent experiments in the following environment:
@@ -396,19 +386,3 @@ Write a function `std::string replace(std::string s, const std::string& from, co
 ### Exercise 3: trim Function
 
 Write two functions, `ltrim` and `rtrim`, to remove whitespace characters (spaces, `\t`, `\n`) from the beginning and end of a string respectively, then combine them into a `trim` function. Hint: `ltrim` uses `find_first_not_of` to locate the first non-whitespace character and then `substr`; `rtrim` is similar, using `find_last_not_of`.
-
-## Summary
-
-In this chapter, starting from the various pain points of C-style strings, we learned about `std::string`, the string type provided by the C++ Standard Library. Let's review the core points:
-
-- `std::string` manages memory automatically, eliminating the need for manual allocation and deallocation, fundamentally preventing buffer overflows.
-- Diverse construction methods: literals, repeated characters, copying, partial extraction, `operator+` concatenation, covering common use cases.
-- The `find` series of functions and `substr` are core tools for text processing, with `npos` serving as the sentinel value for "not found".
-- `c_str()` and `data()` provide a bridge for interoperability with C APIs, but pay attention to pointer lifetimes.
-- `std::to_string` and `std::stoi`/`std::stod` solve conversion needs between strings and numbers.
-
-This concludes Chapter 5, "Arrays and Strings". We started from the most basic C arrays, passed through the low-level perspective of pointer arithmetic, and finally arrived at the high-level abstraction of `std::string`. This path itself reflects C++'s design philosophy: **low-level capabilities are not reduced, but the standard library provides safe and easy-to-use tools at the upper layer**. Next, in Chapter 6, we will enter the world of C++ Object-Oriented Programming—classes and objects. That is the true stage of C++.
-
----
-
-> **Self-Assessment**: If you are still unsure about the check mechanism for `find` returning `npos`, I suggest going back and retyping the code in the "Searching and Substrings" section, paying special attention to the update logic of `pos` in loops. String operations are the foundation for all future projects, so spending extra time here is absolutely worth it.

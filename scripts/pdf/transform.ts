@@ -695,8 +695,13 @@ function normalizeStructure(root: Element, locale: BookLocale): void {
     // HTML is static, so retaining it would look like an unhandled Vue directive.
     pre.removeAttribute('v-pre')
     pre.classList.add('book-code-block')
+    const isOutput = pre.parentElement?.classList.contains('language-output') ?? false
+    const outputLabel = locale.language === 'zh' ? '运行结果' : 'Output'
+    if (isOutput) pre.parentElement?.setAttribute('data-output-label', outputLabel)
     if (!pre.hasAttribute('data-code-caption')) {
-      pre.setAttribute('data-code-caption', locale.language === 'zh' ? '代码' : 'Code')
+      pre.setAttribute('data-code-caption', isOutput
+        ? outputLabel
+        : (locale.language === 'zh' ? '代码' : 'Code'))
     }
     pre.setAttribute('data-code-continuation', locale.language === 'zh' ? '（续）' : ' (continued)')
     const lines = Array.from(pre.querySelectorAll('code > .line'))

@@ -32,14 +32,6 @@ translation:
 
 Up to this point, we have been working with raw pointers for several chapters. Pointers are indeed powerful, but they are also dangerous—every time we `new` a block of memory, we must remember to `delete` it. If we miss even a single path, we end up with a memory leak. Modern C++ provides a systematic solution to this: **smart pointers**. In this chapter, we won't go too deep; instead, we will simply introduce the problems they solve and their basic usage. The comprehensive explanation will come in Volume Two, where we will systematically cover them alongside move semantics and RAII.
 
-> **Learning Objectives**
-> After completing this chapter, you will be able to:
->
-> - [ ] Understand the three classic problems of raw pointers regarding memory management.
-> - [ ] Grasp the basic concept of RAII—acquire at construction, release at destruction.
-> - [ ] Use `std::unique_ptr` and `std::make_unique` for basic dynamic memory management.
-> - [ ] Understand the zero-overhead advantage of `unique_ptr` compared to raw pointers.
-
 ## The Three Sins of Raw Pointers
 
 Raw pointers suffer from three classic problems in memory management (which sounds a bit like an indictment).
@@ -235,22 +227,6 @@ Want to verify the leak yourself? Compile with AddressSanitizer: `g++ -Wall -Wex
 ## More Smart Pointers—Saved for Volume Two
 
 The smart pointer family still has `shared_ptr` (shared ownership, reference counting) and `weak_ptr` (weak reference, breaking circular dependencies) waiting in the wings. `unique_ptr` also has advanced uses like custom deleters. These all require move semantics and rvalue references as a foundation, which are core topics in Volume Two. For now, remember two things: first, **avoid writing `new` and `delete` directly** and prefer `std::make_unique`; second, `unique_ptr` is zero-overhead—it won't slow down your program, but it will protect it from a whole class of memory bugs.
-
-## Summary
-
-- The three major memory issues with raw pointers: **leaks** (forgetting `delete`), **double free**, and **dangling pointers** (use-after-free). The root cause is that resource acquisition and release are scattered in different places.
-- **RAII** leverages the automatic invocation mechanism of C++ destructors to bind the resource lifecycle to the object's scope.
-- `std::unique_ptr` provides a smart pointer with exclusive ownership; it automatically releases memory when it goes out of scope, cannot be copied, but can be moved.
-- `std::make_unique<T>(args...)` is the recommended way to create a `unique_ptr`; it is safer and more concise than writing `new` directly.
-- `unique_ptr` is **zero-overhead** compared to raw pointers, so there is no reason not to use it in new code.
-
-### Common Pitfalls
-
-| Error | Cause | Solution |
-|------|------|----------|
-| Attempting to copy a `unique_ptr` | Exclusive semantics prohibit copying | Use `std::move()` to transfer ownership |
-| `make_unique` unavailable under C++11 | Introduced in C++14 | Upgrade the standard or use `unique_ptr<T>(new T(...))` |
-| Dereferencing `unique_ptr<int[]>` with `*p` | Array version does not support `*` | Use subscript access `p[i]` or `p.get()` |
 
 ## Exercises
 

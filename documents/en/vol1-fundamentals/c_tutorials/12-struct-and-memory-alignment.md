@@ -31,16 +31,6 @@ But structures are far more than just "bundling data." The moment we put a struc
 
 So, in this chapter, we will not only learn how to define and use structures but also thoroughly understand their true appearance in memory.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Proficiently define, initialize, and operate on structures and their pointers.
-> - [ ] Understand the principles of memory alignment and the distribution rules of padding bytes.
-> - [ ] Use `alignas`, `alignof`, and `offsetof` for alignment control and verification.
-> - [ ] Master the use of designated initializers and flexible array members.
-> - [ ] Understand the evolutionary relationship from C structures to C++ classes.
-
 ## Environment Setup
 
 We will conduct all subsequent experiments in the following environment:
@@ -372,22 +362,6 @@ SensorData* sensor = new (&sensor_buffer) SensorData();
 ```
 
 These concepts will be discussed in detail in later C++ chapters. For now, just know: the idea of alignment control in C is implemented more systematically and safely in C++.
-
-## Summary
-
-In this tutorial, we thoroughly dissected structures from "how to use them" to "what they look like in memory." The structure is the core composite type in C. Understanding its memory layout—especially alignment and padding—is the foundation for writing efficient, correct, and portable code.
-
-### Key Takeaways
-
-- [ ] Structures are defined with `struct`, and pointers use `->` to access members.
-- [ ] C99 designated initializers `.field = val` are safer and more readable than sequential initialization.
-- [ ] The compiler inserts padding bytes between members and at the end of the structure to ensure alignment.
-- [ ] Ordering fields from largest to smallest alignment requirement can reduce padding and save memory.
-- [ ] The `offsetof` macro can precisely verify field offsets.
-- [ ] C11's `alignas`/`alignof` provide standardized alignment control capabilities.
-- [ ] Flexible array members are for variable-length tail data and must be used with pointers and dynamic allocation.
-- [ ] `__attribute__((packed))` removes padding for binary protocol parsing but has performance and portability costs.
-- [ ] C++ `struct` is a `class` with default public access; POD types maintain a C-compatible memory layout.
 
 ## Exercises
 

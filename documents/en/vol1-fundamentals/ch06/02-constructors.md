@@ -265,9 +265,3 @@ Write a `Date` class containing `year`, `month`, and `day` members. Provide a de
 ### Exercise 2: Implement a Vector3D Class
 
 Write a `Vector3D` class containing `x`, `y`, `z` as `double` members. Use delegating constructor to make the default constructor delegate to the parameterized constructor `Vector3D(double x, double y, double z)`. Also implement a copy constructor and a `magnitude()` method that returns the vector's magnitude. Verification: create a default vector, a custom vector, and a copied vector, and print their values and magnitudes.
-
-## Summary
-
-The constructor is the starting point of an object's lifecycle, ensuring the object is born in a valid state. The default constructor creates objects without arguments, but remember—once you write any constructor, the default constructor is no longer auto-generated. Parameterized constructors initialize objects with specific data, and `explicit` prevents implicit conversion for single-argument constructors. The member initializer list is the proper way to initialize; it is the only choice for `const` and reference members, and the initialization order follows declaration order, not writing order. Copy constructors create new objects from existing ones; the default behavior is memberwise copy—a hidden bomb for classes with pointers. C++11's delegating constructors allow constructors to reuse each other, reducing code duplication.
-
-In the next chapter, we will discuss destructors—the constructor brings the object in, and the destructor is responsible for safely sending it out. Together, they form the core philosophy of C++ resource management: RAII.

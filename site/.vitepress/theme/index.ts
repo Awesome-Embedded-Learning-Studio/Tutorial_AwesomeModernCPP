@@ -31,6 +31,8 @@ import TagExplorer from './components/TagExplorer.vue'
 import DocTags from './components/DocTags.vue'
 import { setupDevFakeLag } from './dev-fake-lag'
 import './custom.css'
+import './article-code.css'
+import './article-quote.css'
 import './weekly.css'
 import './tags.css'
 

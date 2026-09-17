@@ -33,16 +33,6 @@ In previous chapters, we used `std::string` to handle text and `std::array` to m
 
 In this chapter, starting from the limitations of C's `struct`, we will clarify exactly what C++ `class` adds, why access control is needed, how to define and use member functions, and finally tie it all together with a complete `Point` class.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Understand the motivation for evolving from C `struct` to C++ `class`.
-> - [ ] Define classes containing member variables and member functions.
-> - [ ] Use `public`, `private`, and `protected` to control member access permissions.
-> - [ ] Define member functions outside the class body and understand the scope resolution operator `::`.
-> - [ ] Distinguish between the semantic differences of `class` and `struct` and choose the appropriate one.
-
 ## Environment Setup
 
 - **Platform**: Linux x86_64 (WSL2 is also acceptable)
@@ -328,13 +318,3 @@ Design a `Rectangle` class containing private member variables `width` and `heig
 ### Exercise 2: Timer Class
 
 Design a `Timer` class to simulate a simple timer. Private member variables include `start_time` and `end_time`, and public member functions include `start()`, `stop()`, and `elapsed_seconds()`. Hint: use `std::chrono`'s `std::chrono::steady_clock::now()` to get time points.
-
-## Summary
-
-In this chapter, starting from the limitations of C's `struct`, we understood the motivation for C++ introducing `class`. Key takeaways: classes manage member visibility through `public`, `private`, and `protected`; member functions can be defined inside the class body (implicitly `inline`) or outside the class body using `::`; `class` and `struct` are functionally equivalent, differing only in default access permissions—use `struct` to express "plain data" and `class` to express "types with behavior and constraints."
-
-However, we intentionally left an important question: how do we ensure an object is in a valid state when created? The `Point` class above required creating the object first and then calling `set`. What if the user forgets? In the next chapter, we will solve this problem—constructors and destructors. They are the cornerstone of RAII and the starting point of C++ resource management philosophy.
-
----
-
-> **Self-Assessment**: If you are still unsure about the access boundaries of `public` and `private`, try intentionally writing a few statements accessing private members in `main` (like `p1.x_ = 0;`), and see how the compiler reports errors. Understanding the meaning of these error messages is the first step to mastering C++ classes.

@@ -84,6 +84,10 @@ if (auto it = cache.find(key); it != cache.end()) {
 
 对比一下没初始化器的写法，差别很明显：以前的 `it` 会漏到 `if` 之后，现在它的生命周期被精确卡在 `if/else` 块内。
 
+两种写法里 `it` 的可见范围对比如下：
+
+![旧写法与 if 初始化器中 it 的作用域对比](./02-init-scope.drawio)
+
 ### 结合结构化绑定
 
 上一篇讲过结构化绑定，它跟 if 初始化器搭在一起更顺手。`std::map::insert` 返回 `pair<iterator, bool>`，那个 `bool` 表示是否插入成功。一行就能搞定：

@@ -69,15 +69,16 @@ export const codeFoldPlugin: PluginSimple = (md: MarkdownIt) => {
     // (见 scripts/build.ts 的 EN 分支)。CN 卷不带该前缀。
     const relativePath = env?.relativePath
     const isEn = typeof relativePath === 'string' && relativePath.startsWith('en/')
-    const closedLabel = isEn
-      ? `Expand <em>(${lineCount} lines)</em>`
-      : `展开代码 <em>(共 ${lineCount} 行)</em>`
+    const closedLabel = isEn ? 'Expand code' : '展开代码'
     const openLabel = isEn ? 'Collapse' : '收起代码'
+    const countLabel = isEn ? `${lineCount} lines` : `共 ${lineCount} 行`
 
     return (
       `<div class="vp-code-fold" data-lines="${lineCount}">` +
-      `<details><summary><span class="vp-cf-closed">${closedLabel}</span>` +
-      `<span class="vp-cf-open">${openLabel}</span></summary></details>` +
+      `<details><summary><span class="vp-cf-icon" aria-hidden="true"></span>` +
+      `<span class="vp-cf-title"><span class="vp-cf-closed">${closedLabel}</span>` +
+      `<span class="vp-cf-open">${openLabel}</span></span>` +
+      `<span class="vp-cf-count">${countLabel}</span></summary></details>` +
       html +
       `</div>`
     )

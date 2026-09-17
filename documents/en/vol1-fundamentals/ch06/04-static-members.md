@@ -244,9 +244,3 @@ Write an `IdGenerator` class that stores no object data, only provides a globall
 ### Exercise 2: Instance Tracker
 
 Write an `InstanceTracker` class that maintains two counters—`active` (current number of surviving objects) and `total` (total number of objects created, monotonically increasing). Update these two counters in the constructor and destructor, and provide two static functions to query them. Verification method: create 5 objects, destroy 3 of them using a brace scope, print the values of the two counters—`active` should be 2, `total` should be 5.
-
-## Summary
-
-`static` members elevate data and functions from the object level to the class level. Static member variables have only one copy in memory, shared by all objects, and must be defined outside the class (except for C++17's `inline`); static member functions have no `this` pointer, can only access static members, and are called using `ClassName::` syntax. `static constexpr` provides an elegant way to write compile-time constants, and `static` member + private constructor is the cornerstone of the Singleton pattern.
-
-In the next chapter, we will look at `friend`—the mechanism provided by C++ to "selectively break encapsulation."
