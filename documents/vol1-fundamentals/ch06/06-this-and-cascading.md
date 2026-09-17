@@ -11,7 +11,7 @@ order: 6
 platform: host
 prerequisites:
 - 友元
-reading_time_minutes: 11
+reading_time_minutes: 15
 tags:
 - cpp-modern
 - host
@@ -335,3 +335,48 @@ Config: name=UART1, baud=115200, parity=no, timeout=500ms
 ### 实现链式 setter 的 Rectangle 类
 
 请您实现一个链式 setter 的 `Rectangle` 类：提供 `set_width(int)` 和 `set_height(int)` 两个链式方法，再提供一个 `area() const` 返回面积。写一段测试代码验证 `rect.set_width(3).set_height(4).area()` 的结果是否为 12。
+
+::: details 参考答案
+
+```cpp
+#include <array>
+#include <iostream>
+
+class Rectangle {
+ private:
+  int width_{};
+  int height_{};
+
+ public:
+  Rectangle() = default;
+  Rectangle(int width, int height) : width_(width), height_(height) {}
+  Rectangle& set_width(int width) {
+    this->width_ = width;
+    return *this;
+  }
+  Rectangle& set_height(int height) {
+    this->height_ = height;
+    return *this;
+  }
+  int area() const { return this->width_ * this->height_; }
+};
+int main()
+{
+    Rectangle rect{};
+    std::cout<<"面积 : "<<rect.set_width(3).set_height(4).area()<<std::endl;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+运行结果:
+
+```text
+面积 : 12
+```
+
+:::
