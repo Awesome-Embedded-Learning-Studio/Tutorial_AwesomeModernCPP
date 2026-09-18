@@ -254,6 +254,8 @@ documents/community/incoming/
 
 社区初刊不代表最终定稿，但上线前仍需满足基本要求：内容可以正常渲染、没有明显技术硬伤、来源和引用清楚、作者同意公开展示。
 
+给在线做题栏目「每周一些题」出题、投稿题解是另一条独立路径，有自己的手册和模板包：机制详解见 `documents/community/weekly-guide/`，可直接复制的题目模板在 `code/volumn_codes/weekly-problems/_template/`。不想研究结构的话，把题面文本和参考答案直接发到 issue，维护者代为落地，署名照给。
+
 ## 本地预览
 
 在提交前，建议本地预览文档：
