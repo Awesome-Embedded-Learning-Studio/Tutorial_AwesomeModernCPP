@@ -1,0 +1,13 @@
+{
+  "type": "judge-assert",
+  "title": "题目名",
+  "stars": 2,
+  "hints": [
+    "第一条提示:给方向,别直接给答案。支持行内 markdown,比如 `std::optional`。",
+    "第二条提示:更具体的方向。学员卡住时逐条解锁。"
+  ],
+  "tests": [
+    "your_function(0) == 1",
+    "your_function(10) == 55"
+  ]
+}
