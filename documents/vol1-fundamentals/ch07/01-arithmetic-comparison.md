@@ -430,13 +430,11 @@ bool operator<=(const Data& data1, const Data& data2) {
 bool operator>=(const Data& data1, const Data& data2) {
   return !(data1 < data2);
 }
-bool operator==(const Data& data1, const Data& data2)
-{
-  return (!(data1<data2))&&(!(data2<data1));
+bool operator==(const Data& data1, const Data& data2) {
+  return (!(data1 < data2)) && (!(data2 < data1));
 }
-bool operator!=(const Data& data1, const Data& data2)
-{
-    return (data1<data2)||(data2<data1);
+bool operator!=(const Data& data1, const Data& data2) {
+  return !(data1 == data2);
 }
 ```
 
