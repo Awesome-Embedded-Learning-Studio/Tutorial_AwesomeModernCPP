@@ -403,38 +403,38 @@ auto operator<=>(const Fraction&, const Fraction&) = default;
 ::: details 参考答案
 
 ```cpp
-class Data {
+class Date {
  private:
   int year_{};
   int month_{};
   int day_{};
 
  public:
-  Data() = default;
-  Data(int year, int month, int day) : year_(year), month_(month), day_(day) {}
-  friend bool operator<(const Data& data1, const Data& data2);
+  Date() = default;
+  Date(int year, int month, int day) : year_(year), month_(month), day_(day) {}
+  friend bool operator<(const Date& Date1, const Date& Date2);
 };
-bool operator<(const Data& data1, const Data& data2) {
-  if (data1.year_ != data2.year_) {
-    return data1.year_ < data2.year_;
+bool operator<(const Date& Date1, const Date& Date2) {
+  if (Date1.year_ != Date2.year_) {
+    return Date1.year_ < Date2.year_;
   }
-  if (data1.month_ != data2.month_) {
-    return data1.month_ < data2.month_;
+  if (Date1.month_ != Date2.month_) {
+    return Date1.month_ < Date2.month_;
   }
-  return data1.day_ < data2.day_;
+  return Date1.day_ < Date2.day_;
 }
-bool operator>(const Data& data1, const Data& data2) { return data2 < data1; }
-bool operator<=(const Data& data1, const Data& data2) {
-  return !(data2 < data1);
+bool operator>(const Date& Date1, const Date& Date2) { return Date2 < Date1; }
+bool operator<=(const Date& Date1, const Date& Date2) {
+  return !(Date2 < Date1);
 }
-bool operator>=(const Data& data1, const Data& data2) {
-  return !(data1 < data2);
+bool operator>=(const Date& Date1, const Date& Date2) {
+  return !(Date1 < Date2);
 }
-bool operator==(const Data& data1, const Data& data2) {
-  return (!(data1 < data2)) && (!(data2 < data1));
+bool operator==(const Date& Date1, const Date& Date2) {
+  return (!(Date1 < Date2)) && (!(Date2 < Date1));
 }
-bool operator!=(const Data& data1, const Data& data2) {
-  return !(data1 == data2);
+bool operator!=(const Date& Date1, const Date& Date2) {
+  return !(Date1 == Date2);
 }
 ```
 
