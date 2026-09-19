@@ -31,14 +31,6 @@ While working on an IniParser project recently, I dealt with strings so much I a
 
 In this article, we focus on the internal principles of `std::string_view`: what it looks like, why it is so lightweight, the essential differences from `std::string`, and the operations it provides.
 
-> **Learning Objectives**
->
-> - After completing this chapter, you will be able to:
-> - [ ] Understand the internal representation of `std::string_view` (pointer + length)
-> - [ ] Distinguish between "view" and "ownership" semantics
-> - [ ] Master the construction sources and core member functions of `std::string_view`
-> - [ ] Understand the essential differences from `const std::string&` parameters
-
 ## What exactly is string_view
 
 `std::string_view` (C++17) is a lightweight, immutable "string view" type. The keyword is "view"—it **does not own** the character buffer; it only holds two things: a pointer to the start of the character sequence and the length of that sequence. As you can see, the name is very straightforward: it is just a "view," an observation window, not the owner of the data.
@@ -348,12 +340,6 @@ Run the string_view example online to experience zero-copy string operations:
   description="Run online and observe the zero-copy characteristics of string_view split and key-value parsing."
   allow-run
 />
-
-## Summary
-
-The essence of `std::string_view` is a "pointer + length" non-owning view. It allocates no memory, has a very low copy cost (16 bytes), and substring operations are all O(1). It can be constructed from `std::string`, `const char*`, literals, and other sources, making it an ideal choice for function parameters. However, it does not guarantee NUL termination and does not manage data lifecycles—these "irresponsible" aspects are exactly what we need to be extra careful about when using it.
-
-Once you understand these internal principles, in the next article we will look at the actual performance benefits of `std::string_view` using benchmark data.
 
 ## References
 

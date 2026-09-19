@@ -32,15 +32,6 @@ C lacks a true "string type"—a realization every developer transitioning from 
 
 Countless security vulnerabilities throughout history, from the early Morris Worm to recent CVEs, trace back to a single root cause: **buffer overflow**. In this tutorial, we will dissect C strings inside and out, understand their essence, master safe handling techniques, recognize classic pitfalls, and ultimately build a solid low-level foundation for learning C++'s `std::string`.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Understand the `\0`-terminated memory model of C strings.
-> - [ ] Skillfully use core string and memory manipulation functions in `string.h`.
-> - [ ] Master `snprintf` for safe formatted output.
-> - [ ] Identify and prevent buffer overflow vulnerabilities.
-
 ## Environment Setup
 
 We will conduct all subsequent experiments in the following environment:
@@ -308,10 +299,6 @@ With these two tools, `strcpy`, `strcat`, `sprintf`, and `strlen` should basical
 | Modifying string literals | Stored in read-only segments; modification triggers a segmentation fault | Use an array copy: `char s[] = "Hello"` |
 | Third parameter of `strncat` | It is "maximum characters to append", not total buffer size | Use `sizeof(dst) - strlen(dst) - 1` |
 | `memcpy` with overlapping regions | Undefined behavior | Use `memmove` when overlapping |
-
-## Summary
-
-A C string is simply a `\0`-terminated `char` array. Without the protection of the type system, the entire safety responsibility lies with the programmer. The function family provided by `string.h` are the basic tools for string manipulation. Versions without length limits (`strcpy`, `strcat`, `sprintf`) are the primary source of buffer overflows; we should prioritize the `n`-suffixed versions or `snprintf`. `memcpy` is for non-overlapping memory copying, while `memmove` handles potentially overlapping situations. Compiler flags provide an additional safety net. C++'s `std::string` manages memory automatically, and `std::string_view` provides zero-copy references—understanding the underlying C string model is the prerequisite for understanding why these C++ tools are designed this way.
 
 ## Exercises
 

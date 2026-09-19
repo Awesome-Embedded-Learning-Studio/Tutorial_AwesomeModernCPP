@@ -31,15 +31,6 @@ In the previous post, we clarified the relationship between pointers, arrays, `c
 
 Honestly, these concepts are easy to mix up when learning. However, my experience is: don't rote memorize. Once you master a methodology for reading declarations, you can deconstruct even the most complex ones. More importantly, C++ features like `unique_ptr<T[]>`, `std::span`, and pointer transfers via move semantics are all built upon these underlying mechanisms.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Understand the memory model and practical use cases of multi-level pointers.
-> - [ ] Distinguish between pointer arrays and array pointers.
-> - [ ] Deconstruct any C declaration using the cdecl reading method.
-> - [ ] Correctly read and write multi-level `const` pointer declarations.
-
 ## Environment Setup
 
 We will conduct all subsequent experiments in the following environment:
@@ -279,10 +270,6 @@ Move semantics essentially boils down to pointer transfer—instead of copying d
 `std::reference_wrapper<int>` provides rebindable reference semantics, acting as a cleaner alternative to multi-level pointers when storing "references" in containers.
 
 We will discuss these topics in depth in the upcoming C++ tutorials. For now, just remember the core philosophy: **C++ relies on the type system to automatically manage resources, rather than relying on programmer discipline.**
-
-## Summary
-
-The core logic of multi-level pointers is actually quite simple: each level stores the address of the next level, and dereferencing simply moves down the chain. The real source of confusion lies between pointer arrays and array pointers—just remember to "check the parentheses first, then read the direction." The cdecl reading method is the most important skill from this article; with a little practice, you can dissect any declaration. Analyze multi-level `const` layer by layer using the right-left rule, rather than trying to read it all at once.
 
 ## Exercises
 

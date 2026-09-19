@@ -32,6 +32,8 @@ export interface BookLocale {
     lectureResources: string
     sourceCode: string
     armSourceCode: string
+    animationNote: string
+    videoNote: string
   }
 }
 
@@ -90,6 +92,7 @@ export interface TransformStats {
   internalLinks: number
   crossBookLinks: number
   paperContext: number
+  anim: number
 }
 
 export interface BuildMetadata {

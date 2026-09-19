@@ -35,17 +35,6 @@ Honestly, I've fallen into more traps learning C than I've written correct code.
 
 In this article, we will systematically sort through the easiest pitfalls to fall into in C—not just generic "be careful" advice, but understanding from the perspective of compiler behavior, standards, and low-level mechanisms: Why does it go wrong? How does the compiler actually understand it? Once you get these things clear, you will find that many seemingly bizarre bugs are actually traceable, and the various features introduced in C++ were not created out of thin air—each one is a lesson learned from the blood and tears of predecessors.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Understand the greedy matching rules of lexical analysis and their impact.
-> - [ ] Identify and avoid operator precedence traps.
-> - [ ] Distinguish between the classic confusion of assignment and comparison.
-> - [ ] Understand the subtle role of semicolons in control structures.
-> - [ ] Identify ambiguities between declarations and expressions.
-> - [ ] Master preventive methods for semantic traps like array out-of-bounds, uninitialized variables, and integer overflow.
-
 ## Environment Setup
 
 All code examples in this article can be compiled and run in a standard C environment. To demonstrate the effect of compiler warnings, it is recommended to always enable the `-Wall -Wextra` compiler flags—you will find that many traps can actually be caught by warnings in modern compilers, provided you don't ignore them.

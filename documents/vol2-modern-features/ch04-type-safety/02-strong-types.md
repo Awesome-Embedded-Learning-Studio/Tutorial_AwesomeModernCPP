@@ -23,8 +23,6 @@ title: 强类型 typedef：防止混淆的类型安全
 ---
 # 强类型 typedef：防止混淆的类型安全
 
-## 引言
-
 笔者在某次代码审查中见过一段非常经典的 bug：一个函数的签名是 `void set_rect(int width, int height)`，调用方写成了 `set_rect(h, w)`——参数顺序搞反了。编译器没有任何警告，因为 `width` 和 `height` 都是 `int`，类型完全匹配。但屏幕上的矩形就是歪的.这个bug不难解,但是就是感觉整个人被狠狠发可了一顿.
 
 这种 bug 的根源在于：`typedef` 和 `using` 创建的只是**类型别名**，不是新类型。`using Width = int;` 和 `using Height = int;` 之后，`Width` 和 `Height` 仍然是同一个 `int`，编译器不会帮你区分它们。要真正创建编译器能够区分的类型，我们需要一种叫做"强类型 typedef"（也叫 opaque typedef、phantom type）的技术。
@@ -97,6 +95,10 @@ set_rect(Width(100), Height(200));  // OK
 `WidthTag` 和 `HeightTag` 是空的类，不占用任何存储空间（因为 C++ 的空基类优化 EBO）。编译器在生成代码时，`StrongInt<WidthTag>` 和 `StrongInt<HeightTag>` 的运行时表现和裸 `int` 完全一样——零额外开销。
 
 这个模式的精髓在于：**用编译期的类型信息换取运行时的零开销**。类型检查全部在编译期完成，运行时就是普通的整数操作。
+
+两种写法放在一起对比，同一句 `set_rect(h, w)` 的编译结果如下：
+
+![类型别名与强类型包装对同一句 set_rect(h, w) 的不同编译结果](./02-strong-types-wrapper.drawio)
 
 ## 第三步——构建实用的强类型包装器
 
@@ -343,14 +345,6 @@ void uart_write(UartRegAddr addr, uint32_t value);
 如果你不想自己维护一套强类型框架，社区里有几个成熟的开源库可以考虑。Jonathan Mueller 的 [NamedType](https://github.com/joboccara/NamedType) 是最知名的一个，它支持运算符继承、函数式操作、哈希、流输出等，功能非常全面。Boost 也有 [Boost.StrongTypes](https://github.com/boostorg/strong_typedef)（实验性质的 strong_typedef）。
 
 不过笔者的建议是：如果你的需求只是"区分不同语义的同类型参数"，手写一个简单的 `StrongInt` 模板就够了——代码不到一百行，完全可控，没有外部依赖。只有在需要更复杂的特性（如运算符继承、隐式转换策略定制）时，才需要引入第三方库。
-
-## 小结
-
-`typedef` 和 `using` 创建的只是类型别名，编译器不会帮你区分它们。Phantom type 模式通过一个不占空间的模板标签参数，让编译器在编译期就能区分"语义不同但底层类型相同"的值。强类型包装器的运行时开销为零——空标签类被 EBO 优化掉，所有函数都会被内联。
-
-类型安全的单位系统和 ID 系统是强类型最典型的应用场景。前者防止不同物理量被混用，后者防止相同底层类型但语义不同的值被搞混。在嵌入式领域，强类型还可以用来区分不同外设的寄存器地址，防止误写入。
-
-下一篇我们要讨论的 `std::variant`，虽然解决的问题不同（运行时多态 vs 编译期类型区分），但同样属于"用类型系统来防止错误"这个大主题。
 
 ## 参考资源
 

@@ -338,9 +338,3 @@ Use the reference version of the range-based for loop to take the absolute value
 ```cpp
 // Write your code here
 ```
-
-## Summary
-
-In this chapter, starting from the pain points of traditional for loops, we learned about the range-based for loop, a C++11 syntactic sugar. The range-based for loop lets the compiler take over index management, so we no longer need to write boundary conditions manually. When paired with `auto`, we must distinguish between three forms: `auto x` for value copying, `auto& x` for modifiable references, and `const auto& x` for read-only references. The range-based for loop cannot be used with raw pointers because pointers lose the information about the number of elements. Mechanically, it is just a wrapper for `begin()` and `end()`, and any type providing these two interfaces can use it.
-
-With this, we have finished covering control flow in Chapter 2. `if`/`else` branches, `switch` multi-way selection, the three classic loops, and the range-based for loop—combined, these tools are sufficient for programs to handle the vast majority of execution flows. In the next chapter, we enter the world of functions—encapsulating repetitive code to make the program structure clearer.

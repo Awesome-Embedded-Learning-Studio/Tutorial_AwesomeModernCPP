@@ -1,0 +1,97 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Optional Error Flow" id="optional-error-flow">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="std::optional&lt;User&gt; 表达「可能没有」：find 的两分支与调用方的访问方式" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="26" width="600" height="32" as="geometry" />
+        </mxCell>
+
+        <mxCell id="func" value="&lt;b&gt;UserRegistry::find(int id)&lt;/b&gt;&lt;br&gt;返回 std::optional&lt;User&gt;" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#e8f0fe;fontSize=15;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="214" y="78" width="400" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge_left" value="users_ 里有这个 id" style="endArrow=classic;html=1;rounded=0;strokeColor=#2E7D32;strokeWidth=2;fontColor=#2E7D32;fontSize=13;fontStyle=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="334" y="134" as="sourcePoint" />
+            <mxPoint x="244" y="196" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_right" value="没找到：id 不存在" style="endArrow=classic;html=1;rounded=0;strokeColor=#555555;strokeWidth=2;fontColor=#555555;fontSize=13;fontStyle=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="494" y="134" as="sourcePoint" />
+            <mxPoint x="584" y="196" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="l1" value="return it-&gt;second;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffffff;fontSize=15;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="94" y="196" width="300" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="l2" value="&lt;b&gt;optional 持有 User（有值）&lt;/b&gt;&lt;br&gt;find(1) 的返回结果" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="94" y="276" width="300" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="l3" value="if (user) 判断为&lt;b&gt;真&lt;/b&gt;&lt;br&gt;user-&gt;name 取出 Alice" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="94" y="378" width="300" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_l12" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="244" y="236" as="sourcePoint" />
+            <mxPoint x="244" y="276" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_l23" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="244" y="338" as="sourcePoint" />
+            <mxPoint x="244" y="378" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="r1" value="return std::nullopt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffffff;fontSize=15;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="434" y="196" width="300" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" value="&lt;b&gt;optional 为空（nullopt）&lt;/b&gt;&lt;br&gt;find(99) 的返回结果" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#f2f2f2;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="434" y="276" width="300" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="r3" value="if (user) 判断为&lt;b&gt;假&lt;/b&gt;&lt;br&gt;「没找到」是正常情况，不是错误&lt;br&gt;调用方不需要知道原因" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#f2f2f2;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="434" y="378" width="300" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_r12" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="584" y="236" as="sourcePoint" />
+            <mxPoint x="584" y="276" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_r23" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="584" y="338" as="sourcePoint" />
+            <mxPoint x="584" y="378" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="access_header" value="调用方的三种访问方式" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="94" y="482" width="640" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="card_a" value="&lt;b&gt;if (opt)&lt;/b&gt;&lt;br&gt;先判断有没有值&lt;br&gt;有值为真，空为假" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="94" y="514" width="200" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="card_b" value="&lt;b&gt;*opt / opt-&gt;成员&lt;/b&gt;&lt;br&gt;确认有值后取值&lt;br&gt;如 *result、user-&gt;name" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="314" y="514" width="200" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="card_c" value="&lt;b&gt;.value_or(默认值)&lt;/b&gt;&lt;br&gt;为空时直接给默认值&lt;br&gt;LOG_LEVEL 没设置时用 INFO" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="534" y="514" width="200" height="88" as="geometry" />
+        </mxCell>
+
+        <mxCell id="conclusion" value="&lt;b&gt;语义在类型里&lt;/b&gt;：签名 std::optional&lt;User&gt; 本身就告诉调用方「可能没有值」，不需要查文档、记约定" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#e8f0fe;fontSize=15;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="94" y="630" width="640" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="source_note" value="例子取自本文 UserRegistry：registry.find(1) 与 registry.find(99)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="94" y="698" width="640" height="18" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

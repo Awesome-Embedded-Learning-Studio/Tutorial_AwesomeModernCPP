@@ -258,11 +258,3 @@ std::string& getGreeting() {
 ```
 
 Hint: Think about whether this function should return a value or a reference? Does the local variable `temp` still exist after the function returns?
-
-## Summary
-
-In this chapter, we spent a fair amount of time understanding value categories—lvalues, rvalues, and their relationship with references. Lvalues are expressions with names, addresses, and longer lifecycles; rvalues are temporary expressions without persistent identities. Lvalue references `T&` can only bind to lvalues, const lvalue references `const T&` can bind to anything, and rvalue references `T&&` (C++11) can only bind to rvalues. References must be initialized, cannot be rebound, and the most common trap is returning a reference to a local variable.
-
-This knowledge might seem theoretical, but it is the cornerstone for understanding subsequent content. When we get to move semantics (Volume II), you will find that today's concepts become key factors in determining program performance. But for now, no need to rush; let's get the basics solid first.
-
-In the next chapter, we move into control flow—learning to use `if`/`else` for judgment and loops for repetition, to make the program truly "think."

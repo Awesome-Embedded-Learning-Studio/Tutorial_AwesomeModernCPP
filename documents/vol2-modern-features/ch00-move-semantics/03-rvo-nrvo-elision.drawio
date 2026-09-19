@@ -1,0 +1,81 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="RVO NRVO Elision" id="rvo-nrvo-elision">
+    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="按值返回 Point：未优化与拷贝消除的对比" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="114" y="28" width="600" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- 左面板：未优化（概念上） -->
+        <mxCell id="panelL" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="64" y="80" width="310" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="headerL" value="未优化（概念上）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=16;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="64" y="80" width="310" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="calleeL" value="make_point_rvo() 的栈帧" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffffff;fontSize=13;fontStyle=1;align=center;verticalAlign=top;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="84" y="140" width="270" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="tempL" value="&lt;b&gt;临时对象 Point(x, y)&lt;/b&gt;&lt;br&gt;（NRVO 场景：局部变量 p）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="104" y="172" width="230" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="arrowL" value="拷贝 / 移动构造" style="endArrow=classic;html=1;rounded=0;strokeColor=#c00000;strokeWidth=2;fontColor=#c00000;fontSize=13;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="219" y="250" as="sourcePoint" />
+            <mxPoint x="219" y="340" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="callerL" value="调用方（main）的栈帧" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffffff;fontSize=13;fontStyle=1;align=center;verticalAlign=top;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="84" y="340" width="270" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="slotL" value="&lt;b&gt;Point a&lt;/b&gt;（空槽）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#f2f2f2;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="104" y="372" width="230" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="captionL" value="构造一次，再拷贝/移动一次" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontColor=#c00000;" vertex="1" parent="1">
+          <mxGeometry x="74" y="460" width="290" height="28" as="geometry" />
+        </mxCell>
+
+        <!-- 右面板：RVO/NRVO 开启（拷贝消除） -->
+        <mxCell id="panelR" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="454" y="80" width="310" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="headerR" value="RVO/NRVO 开启（拷贝消除）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=16;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="454" y="80" width="310" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="calleeR" value="make_point_rvo() 的栈帧" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffffff;fontSize=13;fontStyle=1;align=center;verticalAlign=top;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="474" y="140" width="270" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="recipeR" value="&lt;b&gt;Point(x, y) 只是「构造配方」&lt;/b&gt;&lt;br&gt;（prvalue，不是对象）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="494" y="172" width="230" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="arrowR" value="构造指令直接写入预留槽" style="endArrow=classic;html=1;rounded=0;strokeColor=#008000;strokeWidth=2;fontColor=#008000;fontSize=13;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="609" y="250" as="sourcePoint" />
+            <mxPoint x="609" y="340" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="callerR" value="调用方（main）的栈帧" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffffff;fontSize=13;fontStyle=1;align=center;verticalAlign=top;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="474" y="340" width="270" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="slotR" value="&lt;b&gt;Point a 的栈槽（编译器预留）&lt;/b&gt;&lt;br&gt;构造函数直接在这里落位" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="494" y="372" width="230" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="captionR" value="只构造一次，零拷贝零移动" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontColor=#008000;" vertex="1" parent="1">
+          <mxGeometry x="464" y="460" width="290" height="28" as="geometry" />
+        </mxCell>
+
+        <!-- 底部：RVO 与 NRVO 的保证程度差异 -->
+        <mxCell id="noteRVO" value="&lt;b&gt;RVO：return Point(x, y);（prvalue）&lt;/b&gt;&lt;br&gt;C++17 起是语言&lt;b&gt;保证&lt;/b&gt;的消除&lt;br&gt;-fno-elide-constructors 也关不掉" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=14;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="64" y="520" width="340" height="96" as="geometry" />
+        </mxCell>
+        <mxCell id="noteNRVO" value="&lt;b&gt;NRVO：return p;（具名局部变量）&lt;/b&gt;&lt;br&gt;仍是「允许但非必需」的优化&lt;br&gt;失效时退化为一次隐式移动" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=14;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="424" y="520" width="340" height="96" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

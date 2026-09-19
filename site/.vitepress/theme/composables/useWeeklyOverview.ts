@@ -1,6 +1,6 @@
 import { onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue'
 import { loadQuizDraft, loadQuizRecord, QUIZ_PROGRESS_EVENT, type QuizRecord } from './useQuizProgress'
-import type { Week } from '../utils/weekly'
+import { displayStatusOf, type Week } from '../utils/weekly'
 import { fetchRepoText, WEEKLY_MANIFEST_PATH } from '../utils/repo-file'
 
 // 仅客户端首次请求创建 Promise;双首页挂件共享请求,不在 SSR 进程保存个人状态。
@@ -44,7 +44,9 @@ export function useWeeklyOverview(weeks: Ref<Week[]>) {
     window.removeEventListener('storage', refresh)
   })
   const statusOf = (src: string) => records.value[src]?.status ?? 'untouched'
+  const displayOf = (src: string) => displayStatusOf(records.value[src])
   const doneCount = (week: Week) => week.problems.filter(p => statusOf(p.src) === 'passed').length
+  const skippedCount = (week: Week) => week.problems.filter(p => records.value[p.src]?.skipped).length
   const started = (week: Week) => week.problems.some(p => statusOf(p.src) !== 'untouched' || drafts.value.has(p.src))
-  return { records, drafts, statusOf, doneCount, started }
+  return { records, drafts, statusOf, displayOf, doneCount, skippedCount, started }
 }

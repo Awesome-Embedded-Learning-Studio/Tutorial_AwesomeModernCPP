@@ -123,7 +123,7 @@
    "kind": "rowlist",
    "w": 9.5616,
    "h": 3.034,
-   "noteX": 2.8108,
+   "noteX": 7.3416,
    "entries": [
     {
      "card": {
@@ -427,6 +427,8 @@
     {
      "type": "rowlist_show",
      "target": "show:matrix",
+     "cx": 0,
+     "cy": -0.75,
      "t": 0.0,
      "dur": 3.6
     }

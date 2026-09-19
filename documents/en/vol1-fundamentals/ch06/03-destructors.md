@@ -322,9 +322,3 @@ The content is correct; we didn't manually write `file.close()`—the destructor
 **Exercise 1: Scope Log Timer**. Write a `LogTimer` class that records a timestamp upon construction (format `HH:MM:SS`) and prints "elapsed X seconds" upon destruction. Hint: Use `std::chrono` and `std::ctime`.
 
 **Exercise 2: Simple File Handle**. Implement a `FileHandle` class that opens a file in the constructor and closes it automatically in the destructor. Provide a `get()` method (returning `FILE*`) and a `write()` method. Think about the Rule of Three: does this class need to disable copying? Why?
-
-## Summary
-
-In this chapter, we covered syntax, timing, and the central role of destructors in resource management. Destructors are called automatically when an object leaves scope or is `delete`d. RAII binds resource acquisition and release to the object lifecycle, making "no leaks" the default behavior. The Rule of Three reminds us to reconsider copy semantics when writing destructors. Virtual destructors are a hard requirement in polymorphic scenarios.
-
-Next, we will look at another important class mechanism—static members.

@@ -30,16 +30,6 @@ translation:
 
 In the previous chapter, we learned how to use `template <typename T>` to make functions generic—one function body handles various types. However, function templates can only generalize "a piece of logic." What if we want a generic "data structure"? For example, a stack—the logic for `push`, `pop`, and `top` is exactly the same for all types, but the stack internally needs to store a set of elements of the same type. This "type" is determined when we write the class. The reason the C++ Standard Library can provide flexible containers like `std::vector` and `std::map` is due to class templates. This is the protagonist of our chapter! It allows us to parameterize types at the class level—member variables, member functions, and even nested types can all use template parameters. In this chapter, we will clarify the syntax of class templates, how to define member functions, the types of template parameters, and finally, implement a complete generic stack by hand.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Use `template <typename T>` syntax to define class templates
-> - [ ] Define member functions of template classes both inside and outside the class
-> - [ ] Distinguish between type parameters and non-type parameters, and master the use of default template arguments
-> - [ ] Understand the basic concepts of C++17's CTAD (Class Template Argument Deduction)
-> - [ ] Implement a complete `Stack` generic stack
-
 ## Step 1 — Understanding Basic Class Template Syntax
 
 The definition of a class template begins with `template <typename T>`, followed immediately by the class definition. Everywhere `T` appears will be replaced by the actual type upon instantiation—including member variables, member function parameters, return types, and even friend declarations.
@@ -304,9 +294,3 @@ Implement a generic `Pair` class template that stores two values of different ty
 ### Exercise 2: Implement `RingBuffer`
 
 Implement a ring buffer class template, using the non-type template parameter `N` to specify capacity. Requirements: provide `put` to write an element, `get` to read and remove the earliest written element, `empty` and `full` to check status, and `size` to return the current element count. Use `T data[N]` for underlying storage, and use two indices (read and write) to track positions. The core idea of a ring buffer is to use the modulo operator `% N` to make the index wrap from the end of the array back to the head.
-
-## Summary
-
-In this chapter, we extended generic capabilities from functions to classes. The core syntax of class templates is almost identical to function templates—starting with `template <typename T>`, `T` can appear anywhere a type is needed: member variables, member function parameters, return types, etc. When defining member functions outside the class, you must include the complete template header and qualify with `ClassName`, a pitfall newcomers often trip over. Template parameters are divided into type parameters (`typename T`) and non-type parameters (`std::size_t N`), both can be mixed, and defaults are provided continuously from right to left. When organizing template code, declarations and implementations must be in the header file (or use explicit instantiation), and you must be mindful of code bloat—each instantiation type generates a complete copy of the code.
-
-In the next chapter, we enter template specialization—when a generic solution isn't good enough for certain specific types, how to provide specialized implementations for them. We briefly touched on the concept of specialization in the function template chapter, but class template specialization is more flexible and powerful, supporting partial specialization, which is a core tool for building advanced generic components.

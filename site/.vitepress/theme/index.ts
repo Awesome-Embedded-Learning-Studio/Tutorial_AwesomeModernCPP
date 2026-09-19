@@ -27,9 +27,14 @@ import MermaidLightbox from './components/MermaidLightbox.vue'
 import NavSpinner from './components/NavSpinner.vue'
 import QQGroupCard from './components/QQGroupCard.vue'
 import Anim from './components/Anim.vue'
+import TagExplorer from './components/TagExplorer.vue'
+import DocTags from './components/DocTags.vue'
 import { setupDevFakeLag } from './dev-fake-lag'
 import './custom.css'
+import './article-code.css'
+import './article-quote.css'
 import './weekly.css'
+import './tags.css'
 
 export default {
   extends: DefaultTheme,
@@ -37,6 +42,7 @@ export default {
     return h(WeeklyPracticeProvider, null, { default: () => h(DefaultTheme.Layout, null, {
       'layout-top': () => [h(NavSpinner), h(ReadingProgress), h(ResizableSidebar), h(MermaidLightbox)],
       'doc-before': () => h(WeeklyPageHeader),
+      'doc-footer-before': () => h(DocTags),
       'home-hero-image': () => h(HomeHeroVisual),
       'home-hero-actions-after': () => h('div', { class: 'proof-on-mobile' }, [h(WeeklyHomeWidget), h(ProofStrip)]),
       'home-hero-after': () => [h(WeeklyHomeWidget), h('div', { class: 'proof-on-desktop' }, [h(ProofStrip)])],
@@ -63,6 +69,7 @@ export default {
     app.component('QuizSolutions', QuizSolutions)
     app.component('QuizHome', QuizHome)
     app.component('QQGroupCard', QQGroupCard)
+    app.component('TagExplorer', TagExplorer)
     app.component('Anim', Anim)
   }
 } satisfies Theme

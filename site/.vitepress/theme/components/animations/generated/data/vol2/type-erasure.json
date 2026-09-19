@@ -1,0 +1,829 @@
+{
+ "version": 1,
+ "id": "type-erasure",
+ "title": "三个不同的类型，怎么统一成一个？",
+ "subtitle": "std::function<int(int,int)> 的存入与调用",
+ "source": "projects/vol2-ch03-stdfunction/02-dsl/type-erasure.yaml",
+ "backend": "web",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#17171f",
+  "text": "#ECECE4",
+  "muted": "#9a9aad",
+  "fill": "#5EC8E0",
+  "fillEdge": "#2E86AB",
+  "emptyEdge": "#4a4a5e",
+  "grow": "#FFB454",
+  "numOnFill": "#0e2430",
+  "ok": "#7BC96A",
+  "bad": "#E06C75",
+  "cardBg": "#1e1e2a"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "三个不同的类型，怎么统一成一个？",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 6.7584,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "std::function<int(int,int)> 的存入与调用",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.056,
+   "h": 0.272
+  },
+  "show:fn": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.772,
+   "w": 3.6976,
+   "h": 1.734,
+   "rows": [
+    {
+     "text": "普通函数",
+     "w": 1.056
+    },
+    {
+     "text": "int add(int a, int b)",
+     "w": 2.772
+    },
+    {
+     "text": "  { return a + b; }",
+     "w": 2.508
+    }
+   ],
+   "cx": -3.0,
+   "cy": 1.05
+  },
+  "show:s1": {
+   "kind": "arrow",
+   "x1": -0.9712,
+   "y1": 1.05,
+   "x2": 1.3012,
+   "y2": 1.05,
+   "cx": 0.165,
+   "cy": 1.05,
+   "w": 2.2724,
+   "h": 0.0,
+   "label": {
+    "text": "func = add",
+    "x": 0.165,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.116,
+    "h": 0.2448
+   }
+  },
+  "show:func": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.112,
+   "w": 3.0376,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "std::function<",
+     "w": 1.848
+    },
+    {
+     "text": "  int(int, int)>",
+     "w": 2.112
+    }
+   ],
+   "cx": 3.0,
+   "cy": 1.05
+  },
+  "show:fptr": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.376,
+   "w": 3.3016,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "函数指针",
+     "w": 1.056
+    },
+    {
+     "text": "int(*op)(int, int)",
+     "w": 2.376
+    }
+   ],
+   "cx": -3.0,
+   "cy": 1.05
+  },
+  "show:s2": {
+   "kind": "arrow",
+   "x1": -1.1692,
+   "y1": 1.05,
+   "x2": 1.3012,
+   "y2": 1.05,
+   "cx": 0.066,
+   "cy": 1.05,
+   "w": 2.4704,
+   "h": 0.0,
+   "label": {
+    "text": "func = op",
+    "x": 0.066,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.0044,
+    "h": 0.2448
+   }
+  },
+  "show:lam": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.508,
+   "w": 3.4336,
+   "h": 1.734,
+   "rows": [
+    {
+     "text": "lambda",
+     "w": 0.792
+    },
+    {
+     "text": "[](int a, int b)",
+     "w": 2.112
+    },
+    {
+     "text": "  { return a * b; }",
+     "w": 2.508
+    }
+   ],
+   "cx": -3.0,
+   "cy": -1.25
+  },
+  "show:s3": {
+   "kind": "arrow",
+   "x1": -1.1032,
+   "y1": 1.05,
+   "x2": 1.3012,
+   "y2": 1.05,
+   "cx": 0.099,
+   "cy": 1.05,
+   "w": 2.4044,
+   "h": 0.0,
+   "label": {
+    "text": "func = lambda",
+    "x": 0.099,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.4508,
+    "h": 0.2448
+   }
+  },
+  "show:call_lb": {
+   "kind": "text",
+   "text": "func(3, 4)",
+   "x": 5.3,
+   "y": 1.05,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.24,
+   "h": 0.272,
+   "id": "call_lb"
+  },
+  "show:d1": {
+   "kind": "arrow",
+   "x1": 3.0,
+   "y1": 0.242,
+   "x2": 3.0,
+   "y2": -0.442,
+   "cx": 3.0,
+   "cy": -0.1,
+   "w": 0.0,
+   "h": 0.684,
+   "label": {
+    "text": "ptr_->invoke()",
+    "x": 2.0688,
+    "y": -0.1,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.5624,
+    "h": 0.2448
+   }
+  },
+  "show:model": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.244,
+   "w": 3.1696,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "CallableImpl<T>",
+     "w": 1.98
+    },
+    {
+     "text": "  invoke(args...)",
+     "w": 2.244
+    }
+   ],
+   "cx": 3.0,
+   "cy": -1.25
+  },
+  "show:d2": {
+   "kind": "arrow",
+   "x1": 1.2352,
+   "y1": -1.25,
+   "x2": -1.1032,
+   "y2": -1.25,
+   "cx": 0.066,
+   "cy": -1.25,
+   "w": 2.3384,
+   "h": 0.0,
+   "label": {
+    "text": "callable(args...)",
+    "x": 0.066,
+    "y": -0.8976,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.8972,
+    "h": 0.2448
+   }
+  },
+  "show:ret_lb": {
+   "kind": "text",
+   "text": "返回 12",
+   "x": -3.0,
+   "y": -2.42,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.9,
+   "h": 0.272,
+   "id": "ret_lb"
+  },
+  "show:c1": {
+   "kind": "text",
+   "text": "SBO 范围外触发堆分配",
+   "x": 0.5,
+   "y": -2.42,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.608,
+   "h": 0.272,
+   "id": "c1"
+  },
+  "show:c2": {
+   "kind": "text",
+   "text": "虚函数间接难内联",
+   "x": 3.6,
+   "y": -2.42,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.112,
+   "h": 0.272,
+   "id": "c2"
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "一个类型装下所有可调用对象",
+   "x": 0.0,
+   "y": 0.3764,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.1184,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "调用走虚函数表间接，阻碍内联",
+   "x": 0.0,
+   "y": -0.2,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.4352,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "SBO 范围外还有堆分配，实测慢 7-9 倍",
+   "x": 0.0,
+   "y": -0.7764,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.4576,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 3.27,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 2.27
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 2.27,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show fn",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:fn",
+     "cx": -3.0,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show s1",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:s1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show func",
+   "note": "",
+   "duration": 2.67,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:func",
+     "cx": 3.0,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 2.67
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.6s",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide s1",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:s1",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide fn",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:fn",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show fptr",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:fptr",
+     "cx": -3.0,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show s2",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:s2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.6s",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide s2",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:s2",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide fptr",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:fptr",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lam",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:lam",
+     "cx": -3.0,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show s3",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:s3",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.5s",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show call_lb",
+   "note": "",
+   "duration": 1.55,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:call_lb",
+     "t": 0.0,
+     "dur": 1.55
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show d1",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:d1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show model",
+   "note": "",
+   "duration": 2.79,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:model",
+     "cx": 3.0,
+     "cy": -1.25,
+     "t": 0.0,
+     "dur": 2.79
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide s3",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:s3",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "move",
+   "label": "move lam",
+   "note": "to [-3.0, -1.25]",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "move",
+     "target": "show:lam",
+     "frm": [
+      -3.0,
+      1.05
+     ],
+     "to": [
+      -3.0,
+      -1.25
+     ],
+     "t": 0.0,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show d2",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:d2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show ret_lb",
+   "note": "",
+   "duration": 0.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:ret_lb",
+     "t": 0.0,
+     "dur": 0.95
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.5s",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show c1",
+   "note": "",
+   "duration": 1.79,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:c1",
+     "t": 0.0,
+     "dur": 1.79
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show c2",
+   "note": "",
+   "duration": 1.31,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:c2",
+     "t": 0.0,
+     "dur": 1.31
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 15.94,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:func",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lam",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:d1",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:model",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:d2",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:c1",
+     "t": 1.5,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:c2",
+     "t": 1.8,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:call_lb",
+     "t": 2.1,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:ret_lb",
+     "t": 2.4,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 2.7,
+     "dur": 1.91
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 4.96,
+     "dur": 2.03
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 7.34,
+     "dur": 2.4
+    }
+   ]
+  }
+ ]
+}

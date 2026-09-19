@@ -365,9 +365,3 @@ The full code above provides implementations for `operator-=` and `operator/=`, 
 **Exercise 2: Implement Comparison Operators for a Date Class**
 
 Create a `Date` class containing `year`, `month`, and `day` fields, and implement all six comparison operators. Hint: You can implement `operator<` first (compare year, then month, then day), then derive the other five based on it. Think about this: If two `Date` objects have different years but the same month, how should the comparison logic be written?
-
-## Summary
-
-In this chapter, we focused on the core practices of operator overloading, covering the complete path from theory to implementation. Compound assignment operators (`+=`, `-=`, `*=`, `/=`) are implemented as member functions, modifying the object in place and returning a reference to `*this`. Binary arithmetic operators (`+`, `-`, `*`, `/`) are implemented as non-member functions, passing the left operand by value, reusing compound assignment logic, and returning the new object by value. For comparison operators, `operator!=` is based on `operator==`, and `>`, `<=`, `>=` are based on `operator<`, ensuring a single source of truth. Non-member functions ensure symmetry of operands, allowing both `fraction + 1` and `1 + fraction` to work correctly.
-
-In the next chapter, we continue our journey into operator overloading by looking at stream operators (`<<`, `>>`) and the subscript operator (`[]`)—the former allows custom types to work with `iostream`, and the latter is a standard interface for custom containers.

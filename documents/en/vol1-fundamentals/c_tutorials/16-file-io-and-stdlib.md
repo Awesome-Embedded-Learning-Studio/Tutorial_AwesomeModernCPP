@@ -35,17 +35,6 @@ Until now, every program we have written has shared a common limitation—data r
 
 C's file operations are built upon a concise yet powerful API—`fopen` to open, `fread`/`fwrite` to read and write, `fclose` to close, plus the `printf`/`scanf` family for formatted input and output. These functions have survived from the 1970s to today. However, they also carry the rough edges of that era—type unsafety, error handling via global variables, and lenient compilers regarding mismatches between format strings and arguments. C++ later repackaged this system with stream libraries, `std::filesystem`, and `std::format`, but understanding C's raw API remains foundational.
 
-> **Learning Objectives**
->
-> - After completing this chapter, you will be able to:
-> - [ ] Skillfully use file operation functions like fopen/fclose/fread/fwrite
-> - [ ] Understand the difference between text mode and binary mode
-> - [ ] Master the printf/scanf family for formatted I/O
-> - [ ] Use errno/perror/strerror for error handling
-> - [ ] Write programs that accept command-line arguments
-> - [ ] Understand core standard library utilities
-> - [ ] Understand how C++'s stream libraries, std::filesystem, and std::format improve upon C's approach
-
 ## Environment Setup
 
 All code in this chapter has been verified in the following environment:
@@ -241,10 +230,6 @@ std::string s = std::format("Value: {}", 42);
 ### `<system_error>`
 
 `std::error_code` is a value type and thread-safe, making it much safer than the global `errno`.
-
-## Summary
-
-The core of file operations lies in `fopen` and `fread`/`fwrite`/`fgets`/`fputs`, formatted I/O relies on the `printf`/`scanf` family, and error handling depends on `errno` + `perror`. The standard library provides fundamental tools like numeric conversion, sorting/searching, math functions, character classification, and assertions. C++ has comprehensively upgraded these tools for type safety using stream libraries, `std::filesystem`, `std::format`, and `std::span`.
 
 ## Exercises
 

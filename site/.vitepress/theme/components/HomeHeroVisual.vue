@@ -154,7 +154,7 @@ onBeforeUnmount(() => {
   background: linear-gradient(135deg, var(--term-bg-from) 0%, var(--term-bg-to) 100%);
   box-shadow:
     0 22px 56px var(--term-shadow),
-    0 6px 14px rgba(0, 0, 0, 0.22);
+    0 6px 14px rgba(0, 0, 0, 0.16);
   animation: terminal-glow 4s ease-in-out infinite;
 }
 
@@ -230,7 +230,7 @@ onBeforeUnmount(() => {
   50% {
     box-shadow:
       0 22px 56px var(--term-shadow),
-      0 6px 14px rgba(0, 0, 0, 0.25),
+      0 6px 14px rgba(0, 0, 0, 0.20),
       0 0 26px 3px var(--term-glow);
   }
 }

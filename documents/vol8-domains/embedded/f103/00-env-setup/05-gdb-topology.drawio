@@ -1,0 +1,52 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="gdb-topology" name="GDB调试两条路">
+    <mxGraphModel dx="900" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="960" pageHeight="400" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="grp1" value="模拟器路线·本篇" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=none;strokeColor=#999999;fontSize=14;fontStyle=1;verticalAlign=top;align=left;spacingLeft=12;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="60" y="80" width="620" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="grp2" value="真机路线·06 篇" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=none;strokeColor=#999999;fontSize=14;fontStyle=1;verticalAlign=top;align=left;spacingLeft=12;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="60" y="240" width="780" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="gdb1" value="GDB" style="rounded=1;whiteSpace=wrap;html=1;fontSize=16;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="90" y="120" width="110" height="46" as="geometry"/>
+        </mxCell>
+        <mxCell id="server" value="Renode 内置&#10;GDB Server" style="rounded=1;whiteSpace=wrap;html=1;fontSize=16;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="290" y="120" width="170" height="46" as="geometry"/>
+        </mxCell>
+        <mxCell id="vcpu" value="虚拟 Cortex-M3" style="rounded=1;whiteSpace=wrap;html=1;fontSize=16;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="550" y="120" width="110" height="46" as="geometry"/>
+        </mxCell>
+        <mxCell id="e1" value="TCP 3333" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=12;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="gdb1" target="server">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="server" target="vcpu">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="gdb2" value="GDB" style="rounded=1;whiteSpace=wrap;html=1;fontSize=16;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="90" y="280" width="110" height="46" as="geometry"/>
+        </mxCell>
+        <mxCell id="openocd" value="OpenOCD" style="rounded=1;whiteSpace=wrap;html=1;fontSize=16;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="290" y="280" width="170" height="46" as="geometry"/>
+        </mxCell>
+        <mxCell id="probe" value="ST-Link 探针" style="rounded=1;whiteSpace=wrap;html=1;fontSize=16;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="550" y="280" width="110" height="46" as="geometry"/>
+        </mxCell>
+        <mxCell id="chip" value="真芯片" style="rounded=1;whiteSpace=wrap;html=1;fontSize=16;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="720" y="280" width="100" height="46" as="geometry"/>
+        </mxCell>
+        <mxCell id="e3" value="TCP 3333" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=12;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="gdb2" target="openocd">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e4" value="USB" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=12;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="openocd" target="probe">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5" value="SWD" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=12;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="probe" target="chip">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

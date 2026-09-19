@@ -330,11 +330,3 @@ Verification method: `Serializer<bool>{}.serialize(true)` should return `"true"`
 ### Exercise 2: Pointer-Aware Container
 
 Design a simple `Box` class template that stores a value and provides a `get` method. Then write a partial specialization `Box<T*>` that stores a pointer, where `get` returns the dereferenced value, and provides an additional `is_empty` method to check if the pointer is null. This exercise will help you familiarize yourself with partial specialization syntax and interface consistency.
-
-## Summary
-
-In this chapter, we learned the three forms of template specialization. Full specialization uses `template <>` to fix all template parameters to specific types, providing a completely independent implementation. Although function templates support full specialization, because explicit specialization does not participate in overload resolution, function overloading is recommended in practice. Partial specialization fixes only some parameters, allowing it to match an entire family of types (like all pointer types, or a combination where a specific parameter has a specific value), but it only applies to class templates.
-
-The core principle of using specialization is: specialization provides a custom implementation for a specific instance of an existing template, and the interface should remain consistent with the generic version. If the generic version's performance is sufficient, or if function overloading solves the problem, there is no need to introduce specialization.
-
-This concludes the chapter on templates. From function templates to class templates, from variadic templates to specialization, we have built the basic framework for C++ generic programming. In the next chapter, we enter exception handling—discussing C++ error reporting mechanisms, the relationship between RAII and exception safety, and the trade-offs of exceptions in embedded scenarios.

@@ -27,16 +27,6 @@ In the previous chapters, we covered the core of the C++ language—type systems
 
 In this chapter, we will start from scratch and walk through `vector`'s construction, insertion, deletion, access, capacity management, and traversal. We will tie everything together with a hands-on task manager program at the end.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Construct `std::vector` in multiple ways
-> - [ ] Master insertion and deletion operations: `push_back`, `emplace_back`, `insert`, `erase`
-> - [ ] Understand the difference between `size` and `capacity`, and use `reserve` to optimize performance
-> - [ ] Traverse a vector using range-for, index-based, and iterator-based approaches
-> - [ ] Apply the remove-erase idiom to delete elements matching a condition
-
 ## Starting from Scratch — Constructing a vector
 
 `std::vector` has several construction methods. Let's look at them one by one:
@@ -336,14 +326,6 @@ std::vector<int> deduplicate(const std::vector<int>& sorted);
 ### Exercise 3: Feel the Power of reserve
 
 Insert 100,000 elements into a vector in two ways—without calling `reserve` and with `reserve(100000)`. Use `<chrono>` to time both approaches and compare the results. Experience the power of pre-allocating memory.
-
-## Summary
-
-In this chapter, we thoroughly covered the core operations of `std::vector`. Construction methods range from default construction to initializer lists to copy and move semantics. Insertion and deletion operations range from `push_back`/`emplace_back` to `erase` to the classic remove-erase idiom. Access methods range from `operator[]` to `at` to `data()`. Capacity management spans from the distinction between `size` and `capacity` to performance optimization with `reserve`. Finally, we tied all the knowledge points together through a hands-on task manager program.
-
-Key takeaways: prefer `emplace_back` over `push_back`, be mindful of iterator invalidation caused by reallocation, understand the difference between `size` and `capacity` and call `reserve` when appropriate, and use the remove-erase idiom (or C++20's `std::erase`) when deleting elements that match a condition.
-
-In the next chapter, we will look at `std::map` and `std::set`—when you need to look up by key or maintain a sorted collection, they are the go-to choices.
 
 ---
 

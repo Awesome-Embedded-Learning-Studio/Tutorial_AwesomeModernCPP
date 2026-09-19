@@ -92,8 +92,8 @@ const hasLinks = computed(() =>
 
 .talk-info-card:hover {
   border-color: var(--vp-c-brand-1);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.1),
-              0 4px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.07),
+              0 3px 8px rgba(0, 0, 0, 0.04);
   transform: translateY(-2px);
 }
 

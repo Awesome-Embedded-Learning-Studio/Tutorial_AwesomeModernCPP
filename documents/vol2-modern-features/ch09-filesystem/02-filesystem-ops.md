@@ -17,20 +17,15 @@ tags:
 - intermediate
 title: 文件与目录操作
 ---
-# 文件与目录操作
+# 文件与目录操作：这回真要碰磁盘了
 
 上一篇我们学会了用 `std::filesystem::path` 处理路径的语法问题——构造、分解、修改、比较，全是纯计算，不碰磁盘。这一篇我们开始动真格的：用 `<filesystem>` 库直接操作文件系统——检查文件是否存在、创建目录、复制文件、删除文件、查询权限和磁盘空间。
 
 和上一篇一样，我们的环境是 C++17，GCC 13+ / Clang 15+ / MSVC 2022。头文件 `<filesystem>`，命名空间 `namespace fs = std::filesystem;`。
 
-> **学习目标**
->
-> - 完成本章后，你将能够：
-> - [ ] 使用 `exists`、`is_regular_file`、`is_directory` 检查文件状态
-> - [ ] 掌握 `create_directory`、`create_directories` 的使用
-> - [ ] 安全地进行文件复制和删除操作
-> - [ ] 理解 `permissions`、`space`、`last_write_time` 等元数据查询
-> - [ ] 编写实用的日志轮转工具
+先把本篇展开最多的几个操作放到同一棵 /tmp 目录树上，看看每个调用落在哪个节点、执行之后这棵树多了什么少了什么：
+
+![exists、copy、create、remove 在一棵 /tmp 目录树上的落点](./02-dir-tree-ops.drawio)
 
 ## 文件状态查询：它存在吗？它是什么类型？
 
@@ -57,7 +52,7 @@ int main() {
 }
 ```
 
-⚠️ `exists()` 在某些情况下会抛出异常（比如权限不足导致无法访问父目录）。如果你不希望异常传播，使用不接受 `std::error_code` 的重载版本，或者用 try-catch 包裹。更好的做法是使用接受 `std::error_code` 的重载：
+`exists()` 在某些情况下会抛出异常（比如权限不足导致无法访问父目录）。如果你不希望异常传播，使用不接受 `std::error_code` 的重载版本，或者用 try-catch 包裹。更好的做法是使用接受 `std::error_code` 的重载：
 
 ```cpp
 std::error_code ec;
@@ -83,7 +78,7 @@ if (fs::is_directory(p)) {
 }
 ```
 
-⚠️ 如果路径不存在，这些函数返回 `false`——不会抛异常。所以你不需要先 `exists()` 再判断类型，直接判断就行。但要注意：如果 `status()` 调用本身失败（比如权限问题），会抛 `filesystem_error` 异常。
+如果路径不存在，这些函数返回 `false`——不会抛异常。所以你不需要先 `exists()` 再判断类型，直接判断就行。但要注意：如果 `status()` 调用本身失败（比如权限问题），会抛 `filesystem_error` 异常。
 
 ### file_size / last_write_time / status：元数据查询
 
@@ -139,7 +134,7 @@ int main() {
 }
 ```
 
-⚠️ `last_write_time` 在 C++20 之前转换成可读格式有点繁琐（如上所示），因为 `file_time_type` 的时钟不一定是 `system_clock`。C++20 提供了更简洁的方式，通过 `std::chrono::clock_cast`，但 C++17 只能用上面的近似方法。在实际项目中，用 `std::ctime` 做简单显示够用了，只是精度可能不完全准确。
+`last_write_time` 在 C++20 之前转换成可读格式有点繁琐（如上所示），因为 `file_time_type` 的时钟不一定是 `system_clock`。C++20 提供了更简洁的方式，通过 `std::chrono::clock_cast`，但 C++17 只能用上面的近似方法。在实际项目中，用 `std::ctime` 做简单显示够用了，只是精度可能不完全准确。
 
 ## 创建目录
 
@@ -166,7 +161,7 @@ std::cout << "创建完成\n";
 
 `create_directories` 是笔者用得最多的文件系统操作之一。在程序启动时，确保配置目录、日志目录、缓存目录都存在，这是一个非常常见的需求。用 `create_directories` 一行代码就搞定了，不用手动检查每一级是否存在。
 
-⚠️ `create_directory` 在目录已经存在时返回 `false`，但不会报错。`create_directories` 同理——如果所有目录都存在，它也返回 `false`。所以你不应该用返回值来判断"是否出错"，而应该用 `std::error_code` 版本。
+`create_directory` 在目录已经存在时返回 `false`，但不会报错。`create_directories` 同理——如果所有目录都存在，它也返回 `false`。所以你不应该用返回值来判断"是否出错"，而应该用 `std::error_code` 版本。
 
 ## 复制文件和目录
 
@@ -205,7 +200,7 @@ fs::copy("/tmp/source_dir", "/tmp/dest_dir",
          fs::copy_options::overwrite_existing);
 ```
 
-`fs::copy_file(from, to, options)` 是专门用于文件复制的函数。它和 `copy` 的区别在于：`copy_file` 只处理普通文件，而且提供了更精细的控制。⚠️ 注意：`copy_file` **不提供原子性保证**——如果复制过程中失败（如磁盘空间不足、断电等），目标文件可能处于部分写入状态。如需原子性，应使用"复制到临时文件 + 原子重命名"模式。(参见"临时文件处理部分"的`safe_write_file`函数范例)
+`fs::copy_file(from, to, options)` 是专门用于文件复制的函数。它和 `copy` 的区别在于：`copy_file` 只处理普通文件，而且提供了更精细的控制。注意：`copy_file` **不提供原子性保证**——如果复制过程中失败（如磁盘空间不足、断电等），目标文件可能处于部分写入状态。如需原子性，应使用"复制到临时文件 + 原子重命名"模式。(参见"临时文件处理部分"的`safe_write_file`函数范例)
 
 ```cpp
 // 不安全的文件复制（无原子性保证）
@@ -247,9 +242,9 @@ auto count = fs::remove_all(temp_dir);
 std::cout << "删除了 " << count << " 个文件/目录\n";
 ```
 
-⚠️ `remove_all` 是不可逆的操作。笔者有一次在调试时不小心把路径写错了（少了一层目录），差点把整个项目目录清空。幸好当时跑在测试环境里，没有造成实际损失。从那以后，笔者在调用 `remove_all` 之前一定会打印路径并确认。建议你也养成这个习惯。
+`remove_all` 是不可逆的操作。笔者有一次在调试时不小心把路径写错了（少了一层目录），差点把整个项目目录清空。幸好当时跑在测试环境里，没有造成实际损失。从那以后，笔者在调用 `remove_all` 之前一定会打印路径并确认。建议你也养成这个习惯。
 
-`fs::rename(old_path, new_path)` 重命名或移动文件/目录。在大多数实现中，同一文件系统上的重命名是原子操作（只修改目录项，不移动数据）。⚠️ 注意：跨文件系统的重命名通常**会失败**（抛出异常或返回错误），而不是自动执行复制+删除。如需跨文件系统移动，应显式使用 `copy` + `remove`：
+`fs::rename(old_path, new_path)` 重命名或移动文件/目录。在大多数实现中，同一文件系统上的重命名是原子操作（只修改目录项，不移动数据）。注意：跨文件系统的重命名通常**会失败**（抛出异常或返回错误），而不是自动执行复制+删除。如需跨文件系统移动，应显式使用 `copy` + `remove`：
 
 ```cpp
 std::error_code ec;
@@ -463,12 +458,6 @@ if (ec) {
 ```
 
 笔者个人的偏好是：对于程序启动时的初始化操作（创建配置目录等），用抛异常的版本——因为这些操作失败意味着程序无法正常运行，异常可以直接终止启动流程。对于运行时可能正常失败的操作（复制文件、删除临时文件等），用 `error_code` 版本——因为这些失败是可预期的，需要优雅地处理。
-
-## 小结
-
-这一篇我们覆盖了 `<filesystem>` 库的核心文件操作。文件状态查询（`exists`、`is_regular_file`、`is_directory`）和元数据查询（`file_size`、`last_write_time`、`status`）让我们能了解"文件系统上到底有什么"。`create_directory` 和 `create_directories` 负责创建目录，后者会自动创建中间目录，非常方便。`copy` / `copy_file` 提供灵活的文件复制，`remove` / `remove_all` 提供文件删除，`rename` 提供原子重命名。`permissions` 和 `space` 分别处理权限和磁盘空间查询。`temp_directory_path` 和"写临时文件 + 原子重命名"模式是保证数据完整性的关键技巧。
-
-下一篇我们来聊聊目录遍历——`directory_iterator` 和 `recursive_directory_iterator`，以及如何高效地在文件系统中搜索文件。
 
 ## 参考资源
 

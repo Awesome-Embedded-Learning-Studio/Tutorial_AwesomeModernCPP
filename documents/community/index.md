@@ -24,6 +24,7 @@ description: "社区来稿、初刊文章与已审阅收录内容"
   <ChapterLink num="2" href="incoming/">社区来稿初刊</ChapterLink>
   <ChapterLink num="3" href="articles/">已审阅收录</ChapterLink>
   <ChapterLink num="4" href="dev/">项目开发</ChapterLink>
+  <ChapterLink num="5" href="weekly-guide/">出题与题解手册</ChapterLink>
 </ChapterNav>
 
 ## 流转方式

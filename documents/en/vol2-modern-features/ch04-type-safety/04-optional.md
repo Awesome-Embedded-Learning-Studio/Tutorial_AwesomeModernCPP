@@ -287,16 +287,6 @@ if (temp) {
 
 The value of `std::optional` in this scenario is that it encodes "read failure" into the return type. The caller cannot possibly forget to handle the "read failure" case—because you must check `has_value()` before accessing the temperature value. This is much safer than returning a `float` and relying on the caller to "remember that 0.0 might indicate failure."
 
-## Summary
-
-`std::optional` is the standard way in C++17 to express "possibly no value." It is safer than sentinel values (won't be confused with legal values), has clearer semantics than raw pointers (value semantics vs reference semantics), and is more elegant than `std::pair` (API designed specifically for this).
-
-The core API of `std::optional` is very concise: `has_value()` to check, `operator*` to dereference, and `value_or` to provide a default value. It involves no dynamic memory allocation; objects are stored directly inside the `optional`. C++23's `transform`, `and_then`, and `or_else` provide more elegant syntax for chaining.
-
-The key principle for using `std::optional` is: use it to express the semantic of "missing value," not "error." If you need to pass error information (error codes, error descriptions), please use `std::expected` (C++23) or a custom `Result` type. `std::optional` is only responsible for "has or has not," not "why not."
-
-The next topic we will discuss, `std::variant`, belongs to the same family as `std::optional`—"can hold a certain value or hold nothing"—but `std::variant` is more powerful and comes at a higher cost.
-
 ## Reference Resources
 
 - [cppreference: std::optional](https://en.cppreference.com/w/cpp/utility/optional)

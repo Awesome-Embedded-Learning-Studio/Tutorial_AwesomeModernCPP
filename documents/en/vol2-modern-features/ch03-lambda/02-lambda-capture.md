@@ -34,13 +34,6 @@ translation:
 
 In the previous chapter, we quickly reviewed the basic syntax of lambdas and briefly mentioned the existence of the capture list. However, you might still have a few questions in mind: What exactly does a value capture copy? Is a reference capture just a pointer under the hood? What are the pitfalls with default captures like `[=]` and `[&]`? What makes C++14 init capture so useful? In this chapter, we will dissect the capture mechanism from start to finish. We won't just cover "how to use it," but clearly explain "what the compiler does behind the scenes" and "which usages might explode at runtime."
 
-> **Learning Objectives**
->
-> - Understand the underlying semantics of value and reference capture—what exactly the closure type stores.
-> - Master the usage and motivation behind C++14 init capture and C++17 `*this` capture.
-> - Identify and avoid common capture-related pitfalls (dangling references, lifetime issues).
-> - Understand the size and performance impact of lambda objects.
-
 ---
 
 ## Value Capture — Copying into the Closure Object
@@ -324,17 +317,6 @@ Run the Lambda capture mechanism examples online and compare the effects of diff
   description="Run online to compare the behavioral differences between value capture, reference capture, mutable, and init capture."
   allow-run
 />
-
-## Summary
-
-The lambda capture mechanism is key to understanding lambda performance and safety. Core takeaways:
-
-- Value capture copies variables into the closure object, default `const`, `mutable` allows modification of the internal copy.
-- Reference capture stores the variable's address/reference, zero-copy but requires guaranteeing lifetime.
-- C++14 init capture allows lambdas to have independent state and supports move capture.
-- C++17 `*this` capture copies the entire object by value, solving the dangling pointer problem of `this`.
-- The size of a lambda object equals the sum of the sizes of all captured variables.
-- When runtime polymorphism is not needed, passing lambdas via `auto` or template parameters yields the best performance.
 
 ## References
 

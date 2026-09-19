@@ -1,0 +1,71 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Compile Time Practice: Lookup Table" id="compile-time-practice-table">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="CRC-32 查找表：运行期初始化 vs 编译期生成" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="26" width="600" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- 左列：传统做法，运行期初始化 -->
+        <mxCell id="left_header" value="传统做法：运行期初始化" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#c00000;" vertex="1" parent="1">
+          <mxGeometry x="70" y="70" width="310" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="left_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="70" y="104" width="310" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="left_label" value="每次程序启动（嵌入式：每次上电）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="110" width="290" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="left_s1" value="启动阶段执行 make_crc32_table()" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="90" y="140" width="270" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="left_s2" value="256 项 × 8 轮位运算，逐项计算" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="90" y="180" width="270" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="left_s3" value="算好的表放进 RAM（可写内存）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="90" y="220" width="270" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="left_result" value="启动时间被表的初始化消耗&lt;br&gt;算错了也没有编译期兜底" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="70" y="288" width="310" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="left_note" value="另一条传统路：外部工具生成表代码再 #include 进来——构建流程复杂，表和代码两处维护" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;fontColor=#555555;spacing=2;" vertex="1" parent="1">
+          <mxGeometry x="70" y="350" width="310" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- 右列：constexpr 编译期生成 -->
+        <mxCell id="right_header" value="constexpr：编译期一次算好" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#2E7D32;" vertex="1" parent="1">
+          <mxGeometry x="447" y="70" width="310" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="right_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="447" y="104" width="310" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="right_label" value="编译阶段（编译器做常量求值）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="457" y="110" width="290" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="right_s1" value="constexpr 求值 make_crc32_table()" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="467" y="140" width="270" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="right_s2" value="static_assert 校验关键项的值" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="467" y="180" width="270" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="right_s3" value="表写进 .rodata 只读段（Flash）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="467" y="220" width="270" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="right_result" value="运行期零初始化开销，加载即用&lt;br&gt;crc32() 运行期只剩查表 + XOR" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="447" y="288" width="310" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="right_note" value="objdump -s -j .rodata 可亲眼验证表数据；断言的 table[1] == 0x77073096、table[255] == 0x2D02EF8D" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;fontColor=#555555;spacing=2;" vertex="1" parent="1">
+          <mxGeometry x="447" y="350" width="310" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="source_note" value="内容对应本文「第一步——编译期查表」：多项式 0xEDB88320，256 项 uint32_t 表占 1KB" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="113" y="422" width="600" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

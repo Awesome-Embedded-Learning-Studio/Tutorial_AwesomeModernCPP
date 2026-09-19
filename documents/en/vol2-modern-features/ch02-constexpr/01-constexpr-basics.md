@@ -347,14 +347,6 @@ Run the `constexpr` basic examples online to observe the difference between comp
   allow-x86-asm
 />
 
-## Summary
-
-By now, we have sorted out the basic mechanism of `constexpr`. Let's summarize a few key points:
-
-`constexpr` variables are true compile-time constants, while `const` only guarantees "read-only". `constexpr` functions are a dual-mode function where the compiler decides whether to execute them at compile time or runtime based on context. From C++11 to C++17, the restrictions on `constexpr` have been gradually relaxed, from only allowing a single `return` statement to supporting loops, local variables, and lambdas. `static_assert` is the natural partner of `constexpr`, making compile-time testing possible. Don't use template metaprogramming if a `constexpr` function can solve the problem—the code is clearer and error messages are friendlier.
-
-In the next chapter, we will dive into `constexpr` constructors and literal types to see how to make custom types participate in compile-time calculation.
-
 ## Reference Resources
 
 - [cppreference: constexpr specifier](https://en.cppreference.com/w/cpp/language/constexpr)

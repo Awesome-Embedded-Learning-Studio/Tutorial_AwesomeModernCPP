@@ -41,6 +41,7 @@ export const navZh: DefaultTheme.NavItem[] = [
   {
     text: '更多',
     items: [
+      { text: '标签索引', link: '/tags' },
       { text: '附录', link: '/appendix/' },
       { text: '路线图', link: '/roadmap/' },
       { text: '贡献者', link: '/team/' },
@@ -88,6 +89,7 @@ export const navEn: DefaultTheme.NavItem[] = [
   {
     text: 'More',
     items: [
+      { text: 'Tag Index', link: '/en/tags' },
       { text: 'Appendix', link: '/en/appendix/' },
       { text: 'Roadmap', link: '/en/roadmap/' },
       { text: 'Team', link: '/en/team/' },

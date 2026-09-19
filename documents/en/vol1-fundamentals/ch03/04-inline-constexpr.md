@@ -332,11 +332,3 @@ Write a `constexpr` function to generate a `std::array<uint32_t, 30>` containing
 ### Exercise 3: constexpr popcount
 
 Write a `constexpr int count_bits(int n)` function that returns the number of 1s in the binary representation of an integer `n`. Use `static_assert` to verify `count_bits(0) == 0`, `count_bits(7) == 3`, and `count_bits(255) == 8`. Hint: each `n &= (n - 1)` eliminates the lowest set bit (Brian Kernighan's algorithm).
-
-## Summary
-
-In this chapter, we broke down two keywords closely related to function execution methods. The true meaning of `inline` is not "force inline," but rather ODR exemption—allowing the same function definition to appear in multiple translation units. `constexpr` is the cornerstone of compile-time computation in modern C++—functions marked as `constexpr` automatically evaluate at compile time when all arguments are compile-time constants, otherwise degrading into normal runtime calls. C++14 relaxed function body restrictions, C++20 introduced `consteval` and `constinit`, and the overall trend is to move as much computation as possible to compile time.
-
-The core benefit of mastering `constexpr` lies in: **shifting runtime workload to the compiler**. Lookup table generation, configuration parameter computation, type trait checks—these pure computations that do not rely on runtime state should all be handed off to the compiler as much as possible.
-
-In the next chapter, we will learn about pointers and references—things that drive countless beginners crazy in C++, yet keep veterans coming back for more. Don't worry; with the foundation we've built so far, the picture of pointers and references will be much clearer than you might imagine.

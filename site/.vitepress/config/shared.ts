@@ -9,6 +9,8 @@ import { kbdPlugin } from '../plugins/kbd-plugin'
 import { cppTemplateEscapePlugin } from '../plugins/escape-cpp-templates'
 import { mermaidPlugin } from '../plugins/mermaid-plugin'
 import { codeFoldPlugin } from '../plugins/code-fold-plugin'
+import { codeLabelPlugin } from '../plugins/code-label-plugin'
+import { articleCodeThemes } from './article-code-theme'
 import { getBuildInfo } from './build-info'
 import { applyWeeklyPageData } from './weekly-manifest'
 
@@ -27,15 +29,15 @@ export const sharedMarkdown = {
     ld: 'c',
     nasm: 'asm',
   },
-  theme: {
-    light: 'github-light',
-    dark: 'github-dark',
-  },
+  // Shiki 的纯文本别名不会解析自定义 output；注册空语法以保留语义标签。
+  languages: [{ name: 'output', scopeName: 'text.output', patterns: [] }],
+  theme: articleCodeThemes,
   config(md) {
     cppTemplateEscapePlugin(md)
     md.use(kbdPlugin)
     md.use(mermaidPlugin)
     md.use(codeFoldPlugin)
+    md.use(codeLabelPlugin)
   },
 }
 
@@ -208,7 +210,7 @@ export function sharedEnThemeConfig(): DefaultTheme.Config {
       options: localSearchOptions,
     },
     editLink: {
-      pattern: 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/edit/main/documents/en/:path',
+      pattern: 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/edit/main/documents/:path',
       text: 'Edit this page on GitHub',
     },
     footer: {

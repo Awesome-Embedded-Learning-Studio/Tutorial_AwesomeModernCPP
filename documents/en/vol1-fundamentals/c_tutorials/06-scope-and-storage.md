@@ -32,16 +32,6 @@ The root of these problems lies in **scope** and **storage classes**. The former
 
 Today, we will untangle this mess—starting from the most basic scope rules, moving through storage classes, linkage, and lifetimes, and finally examining what the three distinct usages of `static` actually are. Once we understand these, we can stop relying on gut feeling when organizing code in multi-file projects.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Identify the four scopes in C and their differences.
-> - [ ] Explain the meanings of `auto`, `static`, `extern`, and `register`.
-> - [ ] Understand how linkage (internal/external/none) controls symbol visibility.
-> - [ ] Correctly use the three semantics of `static`.
-> - [ ] Organize symbols in multi-file projects using `static` and `extern`.
-
 ## Environment Setup
 
 We use GCC 12+ or Clang 15+ on Linux or WSL2. All examples can be compiled and run with a simple command:
@@ -390,23 +380,6 @@ void use() {
 ```
 
 Finally, C++11's `thread_local` provides thread-level storage duration—each thread has its own independent copy of the variable. This is very useful in multithreaded programming. C11 also has corresponding `_Thread_local`, but its support and usability are not as good as C++.
-
-## Summary
-
-Scope, storage classes, and linkage together form the complete system of "name management" in C. Scope determines where a name is visible, storage classes determine how long data lives and where it is stored, and linkage determines whether a name can be accessed across files.
-
-`static` is the most confusing keyword in this system—inside a function it changes lifetime, outside a function it changes linkage. But as long as you remember this distinction, you won't get mixed up again. `extern` is the tool for sharing global variables in multi-file projects, used in conjunction with the pattern of header declarations and source file definitions.
-
-In actual projects, form a habit: **add `static` to all global variables and helper functions not intended for external exposure**. This is the most practical information-hiding measure at the C language level and can significantly reduce naming conflicts and accidental dependencies in multi-file projects.
-
-### Key Points
-
-- [ ] C has four scopes: block, file, function, and function prototype.
-- [ ] `static` local variables have static lifetime but block scope.
-- [ ] `static` global variables/functions have internal linkage and are invisible to other files.
-- [ ] `extern` declares a symbol defined elsewhere.
-- [ ] Global variables without `static` have external linkage; any file can access them via `extern`.
-- [ ] Symbols with internal linkage do not conflict even if they have the same name in multiple files.
 
 ## Exercises
 

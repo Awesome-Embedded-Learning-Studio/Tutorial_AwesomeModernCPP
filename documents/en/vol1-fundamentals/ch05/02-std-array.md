@@ -35,14 +35,6 @@ However, C arrays are notoriously easy to shoot yourself in the foot with: they 
 
 `std::array` was born to solve these problems. It allocates memory on the stack, making it just as compact and efficient as a C array, but it boasts true value semantics—it can be copied, assigned, passed as arguments, and returned, and it always knows its own size. Next, let's look at why, starting with C++11, `std::array` should be the preferred choice for fixed-size arrays.
 
-> **Learning Objectives**
-> After completing this chapter, you will be able to:
->
-> - [ ] Correctly declare and use `std::array`
-> - [ ] Understand the difference between value semantics and array decay
-> - [ ] Use `std::array` with STL algorithms for common operations
-> - [ ] Obtain the underlying pointer when interacting with C APIs
-
 ## Environment Setup
 
 - Platform: Linux x86\_64 (WSL2 is also fine)
@@ -309,23 +301,6 @@ g++ -Wall -Wextra -std=c++17 std_array.cpp -o std_array && ./std_array
 The improvements are comprehensive: the parameter for `print_stats` is `const std::array<int, 5>&`, making the type and size clear at a glance; all STL algorithms are used directly—sorting, searching, reversing, and finding min/max values are all one-liners; and you will never encounter the problem of array decay losing length information.
 
 > If you see C-style signatures like `void func(int arr[], int n)` in your code, we suggest changing them to `void func(const std::array<int, N>& arr)` (fixed size) or `void func(std::span<int> arr)` (size determined at runtime). Both approaches preserve length information and are much safer than manually passing `n`.
-
-## Summary
-
-- `std::array<T, N>` allocates on the stack, making it just as compact as a C array, but without the array decay problem
-- Use `[]` (no checking) or `at()` (throws exception on out-of-bounds) to access elements, and use `data()` when interacting with C APIs
-- It has true value semantics—it can be copied, assigned, passed as arguments, and returned, which is its biggest advantage over C arrays
-- `fill()`, `swap()`, and iterator interfaces allow it to work seamlessly with STL algorithms
-- Zero-overhead abstraction—runtime performance is completely equivalent to C arrays
-
-### Common Mistakes
-
-| Mistake | Cause | Solution |
-|---------|-------|----------|
-| Reading without initializing | Element values are undefined for an uninitialized local `std::array` | Use `std::array<int, N> arr = {};` or `arr.fill(0)` |
-| `arr[arr.size()]` out of bounds | Index range is `[0, size())` | Use `arr.at()` for bounds checking |
-| Passing large arrays by value | Copies the entire array contents | Pass using a `const` reference |
-| Trying to change size dynamically | `std::array` size is fixed at compile time | Use `std::vector` if you need a dynamic size |
 
 ## Exercises
 

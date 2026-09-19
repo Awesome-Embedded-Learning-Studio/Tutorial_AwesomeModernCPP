@@ -276,14 +276,6 @@ In scenarios like high-frequency interrupt handling, signal processing, or real-
 
 ------
 
-## Summary
-
-There is no silver bullet for error handling. Error codes are simple and crude; exceptions are elegant but heavy; `optional` is lightweight but information-free; `expected` is currently the most balanced solution but requires C++23 (or self-implementation). When choosing a scheme, consider environmental constraints (can exceptions be used?), performance requirements (are there hot paths?), and team preference (is the style unified?).
-
-My recommended strategy is: **default to `expected`, use `optional` for lookup/cache scenarios, use exceptions/termination for constructors and unrecoverable errors, and perform one-time conversion at C API boundaries**. You can keep multiple tools in your toolbox, but you must know when to use which one.
-
-With this, Chapter 10 on Error Handling is complete. In the next article, we enter Chapter 11 to discuss user-defined literals—an interesting mechanism that makes code more intuitive and safe.
-
 ## Reference Resources
 
 - [cppreference: Error handling](https://en.cppreference.com/w/cpp/error)

@@ -31,14 +31,6 @@ If you have used Python before, you might remember that writing `x = 42` is all 
 
 The ultimate goal of this entire C tutorial is to pave the way for learning C++, and C++ has done significant work to strengthen the type system of C. Once you understand "where C's types are prone to problems," learning "how C++ solves these problems" later will feel very natural. So, let's thoroughly master C's type system, starting with the most basic integers.
 
-> **Learning Objectives**
-> After completing this chapter, you will be able to:
->
-> - [ ] Understand the hierarchy of the C integer family and the guaranteed ranges of each type.
-> - [ ] Distinguish between the storage methods and use cases for signed and unsigned integers.
-> - [ ] Skillfully use fixed-width types provided by `stdint.h`.
-> - [ ] Use the `sizeof` operator to measure the memory size of types and variables.
-
 ## Environment Setup
 
 We will conduct all subsequent experiments in the following environment:
@@ -306,12 +298,6 @@ char c {x};     // Error: narrowing conversion not allowed with {}
 ```
 
 This feature is very effective in eliminating a whole class of implicit conversion bugs. If you write C++ code in the future, it is highly recommended to develop the habit of using `{}` for initialization.
-
-## Summary
-
-At this point, we have a clear understanding of the basic mechanisms of integer storage in C. The core points can be summarized in a few sentences: the C standard only specifies a minimum guaranteed bit count for each integer type; actual widths vary by platform, so cross-platform code should use the fixed-width types from `<stdint.h>`. The difference between signed and unsigned is not just "can it store negative numbers"; their overflow behaviors are completely different—unsigned wrapping is legal, while signed overflow is undefined behavior. `sizeof` is our tool for measuring memory at compile time; combined with arrays, it can calculate element counts, but be aware that arrays decay into pointers when passed to functions.
-
-The next question arises: we've covered integers, but what about decimals? How are characters stored? Can we protect a variable from accidental modification after declaring it? These are the topics we will discuss in the next article.
 
 ## Exercises
 

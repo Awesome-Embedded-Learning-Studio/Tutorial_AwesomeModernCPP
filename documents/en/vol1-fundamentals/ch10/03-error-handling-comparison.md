@@ -296,11 +296,3 @@ Assume you have a function `read_config`, which might fail for three reasons: fi
 ### Exercise 3: Error Propagation Chain
 
 Use `std::expected` to implement a simple parsing chain: `parse_header` -> `validate_checksum` -> `deserialize_payload`. Each function returns `std::expected<T, Error>`. Write a complete call chain in `main` to ensure any failure in any step is correctly propagated to the top level with clear error information.
-
-## Summary
-
-At this point, we have gone through four mainstream error handling methods in C++—error codes, exceptions, `std::optional`, and `std::expected`. Error codes are the oldest and simplest but too easily ignored; exceptions guarantee "errors cannot be ignored" at the language level but at the cost of runtime overhead and unavailability in embedded scenarios; `std::optional` is lightweight and elegant but can only express "has or has not," unable to convey "why not"; `std::expected` is currently the most comprehensive solution, offering type-safe value passing and rich error information, though it requires C++23 support.
-
-There is no absolute right or wrong in choosing which method, the key is to maintain consistency at the project level. In desktop and server projects where exceptions are allowed, exceptions handle "unexpected, unrecoverable" errors, `std::expected` handles "expected, needs recovery" errors, and `std::optional` handles simple "not found, doesn't exist" cases. In embedded projects where exceptions are disabled, error codes are used for minimal scenarios and high-frequency paths, while `std::optional` and `std::expected` take on most error handling duties. Regardless of the choice, **the most important thing is for the whole team to reach a consensus on "when to use what"**, rather than letting everyone choose based on intuition.
-
-Chapter 10 concludes here. We discussed the basic mechanism of exceptions, the four levels of exception safety, the RAII guard pattern, and today's grand comparison of error handling strategies. With this knowledge, we have a solid error handling toolbox. Next, in Chapter 11, we will enter a brand new domain—the Standard Template Library (STL). Starting with `std::vector`, we will gradually get to know a series of powerful containers and algorithms provided by the C++ standard library, allowing us to stop reinventing the wheel.

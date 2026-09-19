@@ -523,12 +523,6 @@ Run the compile-time practical examples online to observe the CRC-32 lookup tabl
   allow-x86-asm
 />
 
-## Summary
-
-In this chapter, we applied all the compile-time computation techniques we learned earlier from a practical perspective. Lookup table generation (CRC, trigonometric functions, polynomials) demonstrated the power of `constexpr` in data preprocessing; string hashing and compile-time state machines showed its value in code structure design; and embedded register address calculation and configuration verification highlighted its safety assurance capabilities in actual engineering.
-
-The core philosophy is: **if a calculation can be completed at compile time and its result remains constant at runtime, we should consider moving it to compile time**. This isn't about showing off, but about making runtime code simpler, faster, and safer. The compiler is your colleague; let it do the heavy lifting so your MCU can do less.
-
 ## References
 
 - [cppreference: constexpr specifier](https://en.cppreference.com/w/cpp/language/constexpr)

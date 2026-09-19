@@ -29,15 +29,6 @@ When writing cross-platform code in the past, nothing gave me more headaches tha
 
 The `std::filesystem` library introduced in C++17 completely solves this problem. `std::filesystem` provides a unified set of cross-platform path handling APIs. Regardless of your operating system, path construction, decomposition, and modification can be performed using the same code. This article focuses on the `std::filesystem::path` type itself—its construction, decomposition, modification, and comparison. We will leave file operations (such as `exists`, `copy`, `remove`, etc.) for the next post.
 
-> **Learning Objectives**
->
-> After completing this chapter, you will be able to:
->
-> - [ ] Understand the internal structure and cross-platform design of `std::filesystem::path`
-> - [ ] Master path decomposition (`root_name`, `parent_path`, `filename`, etc.)
-> - [ ] Master path modification (`replace_extension`, `append`, `concat`, etc.)
-> - [ ] Write cross-platform path handling code
-
 ## Environment Setup
 
 All code in this article is based on the C++17 standard and compiles and runs on Linux (GCC 13+), macOS (Clang 15+), and Windows (MSVC 2022). When compiling, you need to link `std::filesystem` support—before GCC 9, you need `-lstdc++fs`, while other compilers usually support it directly. The header file is `<filesystem>`, and the namespace is `std::filesystem`. For brevity, we will use the alias `fs` later on.
@@ -304,12 +295,6 @@ int main() {
 ```
 
 This function comprehensively uses `path`'s decomposition (`filename`), query (`extension`), and comparison features. It also uses filesystem operations like `exists`, `is_directory`, `directory_iterator`, and `is_regular_file` which will be covered in detail in the next post. Just get a general impression for now; we will cover these in detail next time.
-
-## Summary
-
-`std::filesystem::path` is a cross-platform path handling tool brought to us by C++17. It only handles syntax-level path processing (without touching the filesystem) and provides complete path decomposition (`root_name`, `parent_path`, `filename`, `stem`, `extension`), modification (`replace_extension`, `remove_filename`, `append`, `concat`), comparison, and iteration features. It uses the generic format (forward slash) internally and automatically handles cross-platform separator differences. When joining paths, `/=` (append) is semantic joining (recommended), while `+=` (concat) is pure string joining (use with caution).
-
-Once we understand `path` operations, the next article will look at how to use the `std::filesystem` library for actual file and directory operations—creation, copying, deletion, permission management, and a practical log rotation utility.
 
 ## References
 

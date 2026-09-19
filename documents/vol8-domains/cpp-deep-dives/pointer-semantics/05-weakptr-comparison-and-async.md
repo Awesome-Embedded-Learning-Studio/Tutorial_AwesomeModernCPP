@@ -24,8 +24,6 @@ title: std::weak_ptr 对比与异步回调实战
 ---
 # std::weak_ptr 对比与异步回调实战
 
-## 引言
-
 前面四篇我们从头到尾手搓了一套非拥有指针类型——从 Borrowed 到 ObserverPtr 到各种 WeakPtr。现在到了把所有东西拉通对比的时候。
 
 这一篇要做两件事：第一，把 `std::weak_ptr<T>` 和 Chrome-like `WeakPtr<T>` 放在一起，说清楚它们的核心差异；第二，用六种异步回调捕获模式做实战对比，让你直观感受到"错误捕获"和"正确捕获"之间的区别。

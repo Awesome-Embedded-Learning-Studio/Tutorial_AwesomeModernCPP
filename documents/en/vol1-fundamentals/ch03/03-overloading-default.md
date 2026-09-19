@@ -343,9 +343,3 @@ int main()
 ```
 
 **Hint:** The type of `'A'` is `char`. What kind of conversion levels do `char` → `int` and `char` → `short` belong to? Do integral promotion and integral conversion have the same priority in overload resolution?
-
-## Summary
-
-In this chapter, we explored two important tools for C++ function interface design. Function overloading allows functions with the same name to exhibit different behaviors based on argument types and the number of arguments. The compiler determines which version to call through a strict set of overload resolution rules—an exact match takes precedence over a promotion, and a promotion takes precedence over a standard conversion. When two candidate functions are equally good, the compiler reports an ambiguity error. Default parameters allow callers to omit trailing arguments that are "almost always the same value." The rule is that parameters with default values must form a contiguous block at the end of the parameter list, and the default value is specified only once, at the declaration. Both tools have their strengths—overloading handles "different types," while default parameters handle "optional arguments"—but combining them can easily lead to ambiguity, so we must be cautious.
-
-In the next chapter, we will look at `inline` and `constexpr` functions—when the overhead of a function call becomes the problem, what mechanisms does C++ provide to eliminate it?

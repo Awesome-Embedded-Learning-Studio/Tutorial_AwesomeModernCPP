@@ -17,6 +17,10 @@ export const CONTENT_UNITS: readonly ContentUnit[] = [
   { id: 'cpp-reference', sourceDir: 'cpp-reference', urlPrefix: '/cpp-reference' },
   { id: 'projects', sourceDir: 'projects', urlPrefix: '/projects' },
   { id: 'community', sourceDir: 'community', urlPrefix: '/community' },
+  // Online-only section: not part of any printed book, but registered so
+  // internal links (e.g. from the roadmap) resolve to the live site instead
+  // of failing the fail-closed link check.
+  { id: 'weekly-problems', sourceDir: 'weekly-problems', urlPrefix: '/weekly-problems' },
   { id: 'roadmap', sourceDir: 'roadmap', urlPrefix: '/roadmap' },
   { id: 'appendix', sourceDir: 'appendix', urlPrefix: '/appendix' },
   { id: 'team', sourceDir: 'team', urlPrefix: '/team' },
@@ -48,6 +52,8 @@ const localeStrings = {
     strings: {
       contents: '目录', generated: '生成日期', sourceRevision: '源码版本', onlineEdition: '在线版',
       references: '参考资料', lectureResources: '讲座资料', sourceCode: '示例源码', armSourceCode: 'ARM 示例源码',
+      animationNote: '此处为一段可分步播放的动画，纸质版从略，线上版：',
+      videoNote: '此处为一段演示视频，纸质版从略，线上版：',
     },
   },
   en: {
@@ -57,6 +63,8 @@ const localeStrings = {
     strings: {
       contents: 'Contents', generated: 'Generated', sourceRevision: 'Source revision', onlineEdition: 'Online edition',
       references: 'References', lectureResources: 'Talk resources', sourceCode: 'Example source', armSourceCode: 'ARM example source',
+      animationNote: 'This step-by-step animation is omitted in print and plays in the online edition: ',
+      videoNote: 'This demo video is omitted in print and plays in the online edition: ',
     },
   },
 } as const

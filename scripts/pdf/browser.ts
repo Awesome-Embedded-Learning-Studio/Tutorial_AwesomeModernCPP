@@ -1,5 +1,5 @@
 import { createReadStream } from 'node:fs'
-import { lstat, mkdir, realpath, rename, rm, stat } from 'node:fs/promises'
+import { lstat, mkdir, realpath, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { createServer, type ServerResponse } from 'node:http'
 import type { AddressInfo, Socket } from 'node:net'
 import { dirname, extname, isAbsolute, relative, resolve, sep } from 'node:path'
@@ -356,6 +356,8 @@ export async function exportBookPdf(options: PdfBrowserOptions): Promise<PdfBrow
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) throw new Error(`Invalid timeout: ${timeoutMs}`)
 
+  const failureDiagnosticsPath = resolve(options.stagingDir, 'failure-diagnostics.json')
+  await rm(failureDiagnosticsPath, { force: true })
   const server = await startLoopbackStaticServer(options.stagingDir)
   const diagnostics: BrowserDiagnostics = {
     blockedRequests: [],
@@ -416,9 +418,21 @@ export async function exportBookPdf(options: PdfBrowserOptions): Promise<PdfBrow
       elapsedMs: Date.now() - startedAt,
     }
   } catch (error) {
+    let capturedDiagnostics = false
+    const runtime = page
+      ? await page.evaluate(() => ({
+        readyState: document.body?.dataset.readyState,
+        pageCount: document.querySelectorAll('.pagedjs_page').length,
+        details: (globalThis as typeof globalThis & { __BOOK_FAILURE_DIAGNOSTICS__?: unknown })
+          .__BOOK_FAILURE_DIAGNOSTICS__,
+      })).catch((captureError) => ({ captureError: String(captureError) }))
+      : { captureError: 'Browser page was not created' }
+    await writeFile(failureDiagnosticsPath, `${JSON.stringify({ runtime, browser: diagnostics }, null, 2)}\n`, 'utf8')
+      .then(() => { capturedDiagnostics = true }, () => undefined)
     const details = formatDiagnostics(diagnostics)
     const message = error instanceof Error ? error.message : String(error)
-    const combined = details && !message.includes(details) ? `${message}\n${details}` : message
+    let combined = details && !message.includes(details) ? `${message}\n${details}` : message
+    if (capturedDiagnostics) combined += `\nrendering diagnostics: ${failureDiagnosticsPath}`
     throw new Error(combined, { cause: error })
   } finally {
     if (page) await page.close().catch(() => undefined)

@@ -314,9 +314,3 @@ Run the rvalue reference example online and trace the complete process of constr
   description="Run online and observe the order of Tracker object construction, copy construction, move construction, and destruction."
   allow-run
 />
-
-## Summary
-
-In this article, we laid the groundwork for rvalue references. C++'s value category system is divided into three categories: lvalue, xvalue, and prvalue, which intersect based on the dimensions of "has identity" and "can be moved." An rvalue reference `T&&` can only bind to rvalues (prvalue or xvalue), which ensures we don't accidentally steal resources from an lvalue that is still in use. `std::move` is essentially a `static_cast<T&&>`; it performs no move operation—the ones actually moving resources are the move constructor and move assignment operator. When a temporary object is bound to an rvalue reference, its lifetime is extended to the end of the reference's scope.
-
-These concepts may seem abstract, but they form the foundation of the entire edifice of move semantics. In the next article, we will build on this foundation—implementing move constructors and move assignment operators to truly achieve zero-copy resource transfer.

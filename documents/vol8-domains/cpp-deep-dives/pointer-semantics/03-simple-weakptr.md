@@ -22,8 +22,6 @@ title: SimpleWeakPtr：T* + shared_ptr<Flag> 的安全改进
 ---
 # SimpleWeakPtr：T* + shared_ptr\<Flag\> 的安全改进
 
-## 引言
-
 上一篇我们拆解了 `T* + raw Flag*` 的致命问题：Flag 的生命周期绑定在 Owner 上，Owner 析构后 Flag 也跟着没了，外部 WeakPtr 手里的 `flag_` 变成悬垂指针——`is_valid()` 本身就是 UB。
 
 解法很直接：让 Flag 的生命周期独立于 Owner。怎么做？用 `std::shared_ptr<Flag>` 来持有它——Factory 和所有 WeakPtr 共享同一个 Flag 的所有权。Owner 析构时只 invalidate Flag（设 `alive = false`），但 Flag 对象本身继续活着，直到最后一个持有它的 WeakPtr 也销毁。

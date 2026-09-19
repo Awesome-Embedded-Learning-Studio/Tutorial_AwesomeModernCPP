@@ -373,9 +373,3 @@ Write a complete temperature conversion program that reads a Celsius temperature
 Enter Celsius: 26.5
 Fahrenheit: 79.7
 ```
-
-## Summary
-
-In this chapter, we went through C++'s type conversion mechanism. Implicit conversion operates silently behind the compiler's curtain, covering integer promotion, arithmetic conversion, assignment conversion, and boolean conversion—when you don't understand the rules, it is an invisible source of bugs. `static_cast` is the main force for daily casting, safer and more explicit in intent than C-style casts. Regarding numerical precision, integer division truncation, the inability to directly compare floating-point numbers, and integer overflow are all high-frequency traps.
-
-Remember a few core principles: when both sides of integer division are integers, the result must be an integer; never use `==` to compare floating-point numbers; use the difference and epsilon to judge approximate equality; be extra careful when mixing signed and unsigned operations, and turn on compiler warnings. In the next chapter, we learn the basic usage of `const`—how to let the compiler help us guard the bottom line of "values that shouldn't change."

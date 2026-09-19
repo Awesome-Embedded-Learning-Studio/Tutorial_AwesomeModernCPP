@@ -326,14 +326,6 @@ If you are unsure where an attribute should go, cppreference is the most reliabl
 
 ------
 
-## Summary
-
-Standard attributes from C++11 to C++17 provide practical static checking tools for daily development. `[[nodiscard]]` enforces return value checking, `[[maybe_unused]]` eliminates unused warnings, `[[deprecated]]` marks obsolete APIs, `[[fallthrough]]` marks intentional fallthrough, and `[[noreturn]]` marks non-returning functions. Each attribute solves a specific engineering problem—not for showing off, but for letting the compiler help you review code.
-
-In team development, it is recommended to establish unified standards for using these attributes: which functions must have `[[nodiscard]]` (e.g., all functions returning error codes), which scenarios suit `[[deprecated]]` (e.g., during API version migration), and when to use compiler extension attributes. Unified standards are more effective than scattered individual habits.
-
-The next chapter will look at attributes added in C++20 and C++23—`[[likely]]`/`[[unlikely]]`, `[[no_unique_address]]`, `[[assume]]`, etc.—which lean more towards performance optimization, representing the "make the compiler generate better code" direction.
-
 ## Reference Resources
 
 - [cppreference: C++ attributes](https://en.cppreference.com/w/cpp/language/attributes)

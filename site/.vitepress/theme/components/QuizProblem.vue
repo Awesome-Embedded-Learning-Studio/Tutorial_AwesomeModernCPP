@@ -1,5 +1,5 @@
 <template>
-  <section v-show="!practice?.week.value || (practice.practicing.value && practice.active.value === src)" ref="rootRef" :id="problemAnchor(src)" class="quiz-problem" :data-status="status" tabindex="-1" :role="practice?.week.value ? 'tabpanel' : undefined" :aria-labelledby="practice?.week.value ? `tab-${problemAnchor(src)}` : undefined" :aria-label="config?.title || '练习题'">
+  <section v-show="!practice?.week.value || (practice.practicing.value && practice.active.value === src)" ref="rootRef" :id="problemAnchor(src)" class="quiz-problem" :data-status="displayStatus" tabindex="-1" :role="practice?.week.value ? 'tabpanel' : undefined" :aria-labelledby="practice?.week.value ? `tab-${problemAnchor(src)}` : undefined" :aria-label="config?.title || '练习题'">
     <!-- 加载/坏卡态 -->
     <div v-if="loadError" class="quiz-problem__card quiz-problem__card--broken">
       题目加载失败:{{ loadError }} <button class="quiz-problem__btn" @click="loadProblem">重新加载</button>
@@ -15,8 +15,15 @@
           '★'.repeat(config.stars) + '☆'.repeat(3 - config.stars)
         }}</span>
         <span class="quiz-problem__statusbar-spacer"></span>
-        <span class="quiz-problem__status-dot" :data-status="status"></span>
+        <span class="quiz-problem__status-dot" :data-status="displayStatus"></span>
         <span class="quiz-problem__status-text">{{ statusLabel }}</span>
+        <button
+          type="button"
+          class="quiz-problem__skip"
+          :aria-pressed="skipped"
+          :title="skipped ? '继续练习不再派这道题;点一下恢复原来的状态' : '这题我会了或先放放:继续练习不再派来,草稿和状态都留着,随时可取消'"
+          @click="toggleSkip"
+        >{{ skipped ? '取消跳过' : '跳过此题' }}</button>
         <button v-if="isJudge" type="button" class="quiz-problem__layout-toggle" :aria-pressed="splitView" @click="splitView = !splitView">{{ splitView ? '☰ 纵向阅读' : '◫ 双栏做题' }}</button>
         <button
           type="button"
@@ -180,13 +187,20 @@
             看看其他人是如何解决的呢 ↗<span v-if="solutionCount !== null" class="quiz-problem__answer-note">{{ solutionCount }} 篇</span>
           </a>
           <p class="quiz-problem__solution-note">题解在独立展区:每位投稿人一份代码与思路,附 issue 讨论入口;点开会记「已看答案」。</p>
-          <div v-if="config.type === 'find-bug' || config.type === 'reveal'" class="quiz-problem__selfeval">
-            <span>自评:</span>
-            <button type="button" class="quiz-problem__btn quiz-problem__btn--primary" @click="selfEval(true)">答上了 ✓</button>
-            <button type="button" class="quiz-problem__btn" @click="selfEval(false)">没答上 ✗</button>
+          <div class="quiz-problem__selfeval">
+            <template v-if="config.type === 'find-bug' || config.type === 'reveal'">
+              <span>自评:</span>
+              <button type="button" class="quiz-problem__btn quiz-problem__btn--primary" @click="selfEval(true)">答上了 ✓</button>
+              <button type="button" class="quiz-problem__btn" @click="selfEval(false)">没答上 ✗</button>
+            </template>
+            <template v-else>
+              <span>这道题已经在别处做过了?</span>
+              <button type="button" class="quiz-problem__btn" @click="selfEval(true)">标记为已通过</button>
+            </template>
           </div>
         </div>
         <div v-if="status === 'passed'" class="quiz-problem__next"><span>✓ 这一题，拿下了。</span><a v-if="nextProblem" :href="`#${problemAnchor(nextProblem.src)}`" @click.prevent="practice?.select(nextProblem.src, true)">下一题：{{ nextProblem.title }} →</a><a v-else :href="withBase('/weekly-problems/')">返回历期目录 →</a></div>
+        <div v-else-if="skipped" class="quiz-problem__next quiz-problem__next--skipped"><span>这题先跳过——状态和草稿都留着,「取消跳过」随时回来。</span><a v-if="nextProblem" :href="`#${problemAnchor(nextProblem.src)}`" @click.prevent="practice?.select(nextProblem.src, true)">下一题：{{ nextProblem.title }} →</a><a v-else :href="withBase('/weekly-problems/')">返回历期目录 →</a></div>
       </div>
       </div>
     </template>
@@ -200,7 +214,7 @@ import { useData, withBase } from 'vitepress'
 
 import CppCodeEditor from './CppCodeEditor.vue'
 import { checkCppSource, type CodeCheck } from '../utils/cpp-check'
-import { problemAnchor, type Week } from '../utils/weekly'
+import { problemAnchor, quizStatusLabel, type QuizDisplayStatus, type Week } from '../utils/weekly'
 import { useWeeklyPractice } from '../composables/useWeeklyPractice'
 import { outputDifference } from '../utils/output-difference'
 import { loadQuizDraft, saveQuizDraft, useQuizState } from '../composables/useQuizProgress'
@@ -340,15 +354,13 @@ function onResetClick(): void {
   marks.value = []
 }
 const status = computed(() => record.value?.status ?? 'untouched')
-const statusLabel = computed(
-  () =>
-    ({
-      untouched: '未开始',
-      attempted: '尝试过',
-      revealed: '已看答案',
-      passed: '✓ 已通过',
-    })[status.value],
-)
+const skipped = computed(() => record.value?.skipped ?? false)
+// 展示态:跳过盖在底层状态上;「✓ 已通过」这类文案跟着展示态走
+const displayStatus = computed<QuizDisplayStatus>(() => (skipped.value ? 'skipped' : status.value))
+const statusLabel = computed(() => quizStatusLabel[displayStatus.value])
+function toggleSkip(): void {
+  update({ skipped: !skipped.value })
+}
 
 // ── 提示(多级)──────────────────────────────────────
 const hintsUnlocked = ref(0)

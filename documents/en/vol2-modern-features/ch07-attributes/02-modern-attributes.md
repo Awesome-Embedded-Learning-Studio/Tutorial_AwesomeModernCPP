@@ -336,14 +336,6 @@ For `[[no_unique_address]]`, verification is more direct—just look at the `siz
 
 ------
 
-## Summary
-
-New attributes in C++20-23 extend compiler hints from "finding bugs" to "performing optimizations." `[[likely]]` and `[[unlikely]]` help the compiler with branch prediction, `[[no_unique_address]]` eliminates memory waste from empty class members, and `[[assume]]` allows the compiler to make more aggressive optimizations based on deterministic assumptions.
-
-The risks of these three attributes vary. `[[no_unique_address]]` is mostly harmless—the worst case is the optimization doesn't kick in, and `sizeof` remains unchanged. `[[likely]]`/`[[unlikely]]` are also low risk—the worst case is a wrong hint, leading to slightly worse performance. `[[assume]]` is the only truly dangerous attribute—a wrong assumption leads to undefined behavior and must be used with caution.
-
-In practice, `[[no_unique_address]]` can be used almost mindlessly in generic code (policy pattern), `[[likely]]`/`[[unlikely]]` are recommended after profiling confirms hotspots, and `[[assume]]` should only be used in extreme performance-sensitive scenarios, accompanied by corresponding assertions or tests to ensure assumptions always hold.
-
 ## Reference Resources
 
 - [cppreference: assume (C++23)](https://en.cppreference.com/w/cpp/language/attributes/assume)

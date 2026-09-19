@@ -30,13 +30,6 @@ In the previous article, we dove into the internal mechanics of `std::string_vie
 
 To write this article, the author ran quite a few benchmarks. Honestly, some results aligned with intuition (e.g., `substr` is indeed much faster), while others were unexpected (e.g., under certain ABIs, passing `std::string_view` by value isn't always faster than passing `const std::string&`). Let's examine them one by one.
 
-> **Learning Objectives**
->
-> - After completing this chapter, you will be able to:
-> - [ ] Understand the performance differences of `std::string_view` in scenarios like `substr` and parameter passing.
-> - [ ] Master the method of writing micro-benchmarks using Google Benchmark.
-> - [ ] Learn about the practical application of `std::string_view` in embedded command parsing.
-
 ## Environment Setup
 
 The environment for all benchmarks today is as follows: Linux 6.x (x86_64), GCC 13.2, compiler flags `-O3 -march=native`. The test machine is a standard x86 development board. All time measurements use `std::chrono::high_resolution_clock`, and each test case loops enough times to minimize error.
@@ -325,12 +318,6 @@ parse_command(std::string_view(rx_buffer.data(), received_len));
 This parser requires absolutely no heap allocation—all operations are completed between `std::string_view` objects on the stack. `rx_buffer` is a static array, and `std::string_view` just "peeks" at it. On an STM32F103 with only 20KB of RAM, this zero-allocation string processing method means you can use it freely without worrying about running out of memory or fragmentation.
 
 Of course, this JSON parser is toy-grade—it doesn't handle escaping, nesting, arrays, or other complex situations. But it demonstrates the core value of `std::string_view` in resource-constrained environments: providing string manipulation capabilities at minimal cost. If you need a complete JSON parser, consider libraries like ArduinoJson, which also heavily use non-owning reference techniques similar to `std::string_view` internally.
-
-## Summary
-
-In this article, we verified the performance advantages of `std::string_view` with benchmark data. The core conclusions are as follows: The `substr` operation is `std::string_view`'s biggest performance killer; the difference between O(1) and O(n) amplifies to over a hundred times with frequent calls. In the function parameter scenario, `std::string_view` has a clear advantage for `const char*` callers, but little difference for `std::string` callers. Reducing temporary `std::string` construction is another important benefit of `std::string_view`. In embedded scenarios, `std::string_view`'s zero-allocation nature makes it the preferred solution for string processing in resource-constrained environments.
-
-However, performance isn't everything. In the next article, we will discuss the pitfalls of `std::string_view`—dangling references, null termination, implicit conversions, and other issues. If these are ignored, no amount of performance can make up for the cost of a crash.
 
 ## Reference Resources
 

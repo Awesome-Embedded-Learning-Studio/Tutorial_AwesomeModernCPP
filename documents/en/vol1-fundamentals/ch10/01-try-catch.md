@@ -376,9 +376,3 @@ Write a function `std::vector<double> parse_doubles(const std::string& input)` t
 ### Exercise 3: The noexcept operator
 
 Write two functions: `void safe_calc(int x) noexcept` performs a simple calculation, and `void risky_calc(int x)` throws `std::invalid_argument` when `x` is negative. Then, in `main`, use the `noexcept(safe_calc)` and `noexcept(risky_calc)` compile-time operators to check their `noexcept` status and print the results.
-
-## Summary
-
-In this chapter, we built the basic framework of C++ exception handling from scratch. `throw` is responsible for throwing exception objects, `try` marks the monitored region, and `catch` catches and handles exceptions—this trio forms the syntactic core of the exception mechanism. Stack unwinding ensures that all local objects are correctly destructed when an exception flies by, and the inheritance hierarchy of standard exception classes allows us to perform polymorphic catching using base class references. "Throw by value, catch by const reference" is the key convention for avoiding object slicing, `throw;` is used to rethrow the original exception, and `noexcept` is used to mark functions that don't throw exceptions—it serves as both an optimization hint for the compiler and a contractual promise to the caller.
-
-However, knowing how to throw and how to catch is only the first step. A more important question is: when an exception flies by, what about the resources that were already allocated, the files that were opened, and the mutexes that were locked beforehand? In the next article, we will discuss this topic—exception safety. We will learn about the four levels of exception safety, see how RAII guarantees no resource leaks when exceptions occur, and learn how to use the copy-and-swap idiom to give operations transaction-level strong safety guarantees.

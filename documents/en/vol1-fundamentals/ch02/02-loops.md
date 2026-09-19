@@ -35,14 +35,6 @@ Humans get tired. If I asked you to manually print 100 lines of "Hello", you'd t
 
 In this chapter, we will dissect C++'s three loop structures inside and out. We will focus on which scenarios suit each loop, when to use `break` and `continue`, and the common pitfalls to avoid in nested loops.
 
-> **Learning Objectives**
-> After completing this chapter, you will be able to:
->
-> - [ ] Master the syntax and use cases for `while`, `do-while`, and `for` loops.
-> - [ ] Correctly use `break` and `continue` to control loop flow.
-> - [ ] Understand the execution process and time complexity of nested loops.
-> - [ ] Independently write programs for pattern printing and simple numerical calculations.
-
 ## Step 1 — The `while` Loop: Keep Going Until a Condition is Met
 
 The `while` loop is the most straightforward loop structure: it checks the condition first; if true, it executes the loop body. After execution, it returns to check the condition again, stopping only when the condition becomes false.
@@ -383,13 +375,3 @@ Input an odd number N and print a diamond pattern with N rows. For example, when
 ```
 
 Hint: The top half is the same as the pyramid; the bottom half is a mirror image of the pyramid—the row numbers go from large to small.
-
-## Summary
-
-In this chapter, we went through all three of C++'s loop structures. `while` is suitable for "unknown count, continue while condition is met" scenarios. `do-while` guarantees the loop body executes at least once (most common in menu systems). `for` is clearest when the loop count is known because it groups initialization, condition, and increment together. `break` is for emergency exits, and `continue` is for skipping the current round, but don't abuse them—clear loop conditions are always better than control flow that jumps around everywhere. Nested loops can solve 2D problems, but be mindful of the O(N^2) growth in execution count.
-
-In the next chapter, we will encounter the range-based `for` loop introduced in C++11—a more modern and safer way to traverse containers and arrays. With the foundation of this chapter, you will find range-for to be a breath of fresh air.
-
----
-
-> **Self-Assessment of Difficulty**: If you are confused about the execution order of nested loops, I suggest taking a pen and manually simulating the execution process of the 9x9 multiplication table on paper—track the values of the outer variable `i` and the inner variable `j` at each step. This will build a very intuitive understanding.

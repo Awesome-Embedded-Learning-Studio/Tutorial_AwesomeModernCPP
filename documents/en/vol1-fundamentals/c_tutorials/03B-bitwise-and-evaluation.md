@@ -30,14 +30,6 @@ In the previous chapter, we covered common operators like arithmetic, relational
 
 Admittedly, these topics can feel a bit confusing when you're starting out. But don't worry, we'll take it step by step, starting with the most intuitive part: bitwise operations.
 
-> **Learning Objectives**
-> After completing this chapter, you will be able to:
->
-> - [ ] Master the four classic bitwise operations: set, clear, toggle, and check.
-> - [ ] Understand the details and pitfalls of left and right shifts.
-> - [ ] Remember the most counter-intuitive rules regarding operator precedence.
-> - [ ] Understand evaluation order and sequence points to avoid writing code with undefined behavior.
-
 ## Environment Setup
 
 We will conduct all subsequent experiments in the following environment:
@@ -275,12 +267,6 @@ If you want to understand UB deeply, think of it like traffic rules: the standar
 C++ has done several useful things regarding bitwise operations. `std::bitset` allows direct access to individual bits using the `[]` operator, and provides `set`, `reset`, `flip`, `test` operations with clear semantics—safer and more readable than manual bitwise operations. In C++, prefer `std::bitset` unless you need extreme performance or direct hardware manipulation.
 
 Regarding evaluation order, C++17 strengthened the rules—function expressions are guaranteed to be evaluated before arguments, making it more deterministic than C's "unspecified." Additionally, `constexpr` functions trigger a compiler error if they cause UB at compile time—effectively a free UB detector.
-
-## Summary
-
-The four classic bitwise operations—Set (`|` + `<<`), Clear (`&` + `~` + `<<`), Toggle (`^` + `<<`), and Check (`&` + `<<`)—are essential skills for embedded development. The biggest pitfall in operator precedence is that bitwise operators have lower precedence than relational operators, so parentheses are mandatory when mixing them. The core principle of evaluation order and sequence points is: never modify the same variable multiple times within the same expression—that is undefined behavior.
-
-At this point, we have covered all aspects of C operators. Next, we will learn about control flow—how to make programs execute different code based on conditions and how to repeat code blocks.
 
 ## Exercises
 
