@@ -249,12 +249,12 @@ onBeforeUnmount(() => {
   overflow: hidden;
   border: 1px solid var(--vp-c-divider);
   background: var(--vp-c-bg-soft);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
   transition: border-color 0.25s, box-shadow 0.25s;
 }
 .shot-carousel__cell.is-center:hover .shot-carousel__link {
   border-color: var(--vp-c-brand-1);
-  box-shadow: 0 20px 48px rgba(15, 52, 96, 0.26);
+  box-shadow: 0 20px 48px rgba(15, 52, 96, 0.19);
 }
 .shot-carousel__link img {
   display: block;

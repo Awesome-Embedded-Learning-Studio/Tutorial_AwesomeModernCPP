@@ -1,12 +1,12 @@
 /* Article fences only. Interactive editors and PDF have their own presentation. */
 :root {
-  --article-code-bg: #fdfcf9;
+  --article-code-bg: #fffefb;
   --article-code-border: #e2dfd8;
   --article-code-header: #f5f4f8;
   --article-code-accent: #656198;
   --article-code-badge: #eeedf5;
-  --article-code-shadow: 0 3px 8px rgb(49 39 24 / 3%), 0 14px 36px -18px rgb(49 39 24 / 22%);
-  --article-code-hover-shadow: 0 6px 14px rgb(49 39 24 / 5%), 0 18px 38px -18px rgb(49 39 24 / 26%);
+  --article-code-shadow: 0 3px 8px rgb(49 39 24 / 3%), 0 14px 36px -18px rgb(49 39 24 / 14%);
+  --article-code-hover-shadow: 0 6px 14px rgb(49 39 24 / 5%), 0 18px 38px -18px rgb(49 39 24 / 18%);
   --article-code-number: #93949d;
   --article-output-bg: #f0f5f2;
   --article-output-border: #d7e3dc;

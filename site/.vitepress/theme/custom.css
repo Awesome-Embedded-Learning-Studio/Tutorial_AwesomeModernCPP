@@ -1,7 +1,7 @@
 /* ================================================================
    品牌色系统 · 钢蓝(Steel Blue) + 暖中性底
    强调色:钢蓝 brand-1 #2563EB(亮)/ #60A5FA(暗提亮)——现代/类型安全/性能/工程
-   中性底:骨白 #F7F3EC(亮)/ 暖炭 #17120E(暗),暖偏黄底调利长篇中文+代码阅读
+   中性底:骨白 #FCFAF6(亮)/ 暖炭 #17120E(暗),暖偏黄底调利长篇中文+代码阅读
    钢蓝只作强调(边/进度/hover/link),不通篇蓝底。暖中性底+字体栈 1:1 镜像 C-Journey。
    ================================================================ */
 :root {
@@ -13,11 +13,11 @@
   --vp-c-brand-soft-2: rgba(37, 99, 235, 0.16);
   --vp-c-brand: var(--vp-c-brand-1);
 
-  /* ── 背景 · 骨白(与 C-Journey 一致,品牌色无关)── */
-  --vp-c-bg: #F7F3EC;
-  --vp-c-bg-soft: #EFE8DC;
-  --vp-c-bg-soft-up: #FBF8F2;
-  --vp-c-bg-elv: #FFFCF7;
+  /* ── 背景 · 骨白(与 C-Journey 一致,品牌色无关;2026-09 反馈偏暗,整体提亮一档)── */
+  --vp-c-bg: #FCFAF6;
+  --vp-c-bg-soft: #F4F0E9;
+  --vp-c-bg-soft-up: #FEFCF9;
+  --vp-c-bg-elv: #FFFDF9;
 
   /* ── 文字 · 深炭 ── */
   --vp-c-text-1: #2A2420;
@@ -44,7 +44,7 @@
   --term-bg-from: #0f172a;     /* slate-900 */
   --term-bg-to:   #1e3a5f;     /* 深钢蓝(替代原紫蓝 #0f3460) */
   --term-border: rgba(96, 165, 250, 0.30);  /* brand-3,替代 indigo */
-  --term-shadow: rgba(15, 23, 42, 0.45);
+  --term-shadow: rgba(15, 23, 42, 0.36);
   --term-glow:   rgba(96, 165, 250, 0.26);  /* brand-3 光晕,替代 indigo */
   --term-title:  rgba(226, 232, 240, 0.55);
   --term-code:   #cbd5e1;
@@ -272,7 +272,7 @@ html[data-font-size='xxlarge'] {
 /* Images */
 .vp-doc img {
   border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 /* Online Compiler Demo */
@@ -1345,8 +1345,8 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
 
 .VPFeature.link:hover {
   border-color: var(--vp-c-brand-1) !important;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1),
-    0 4px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.07),
+    0 3px 8px rgba(0, 0, 0, 0.04);
   transform: translateY(-4px);
 }
 
@@ -1523,7 +1523,7 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
 
 .contributor-card:hover {
   border-color: var(--vp-c-brand-1);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.07), 0 3px 8px rgba(0, 0, 0, 0.04);
   transform: translateY(-4px);
 }
 
