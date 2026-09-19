@@ -8,10 +8,9 @@ on:
     paths:
       - 'documents/**/*.md'
       - 'scripts/check_quality.py'
-  push:
-    branches: [main]
-    paths:
-      - 'documents/**/*.md'
+      - 'scripts/tags.py'
+      - 'scripts/tags.json'
+      - '.github/workflows/content-quality.yml'
 
 jobs:
   quality-check:

@@ -113,7 +113,7 @@ function countMdFiles(dir: string): number {
 }
 
 /** Compute a stable content hash for change detection across fresh checkouts. */
-function hashDir(dir: string): string {
+function hashDir(dir: string, ignoreFile?: (relativePath: string) => boolean): string {
   const h = createHash('sha256')
   function walk(d: string) {
     try {
@@ -122,7 +122,9 @@ function hashDir(dir: string): string {
         if (e.name.startsWith('.')) continue
         const full = join(d, e.name)
         if (e.isDirectory()) { walk(full); continue }
-        h.update(`file:${relative(dir, full)}\n`)
+        const filePath = relative(dir, full)
+        if (ignoreFile?.(filePath)) continue
+        h.update(`file:${filePath}\n`)
         h.update(readFileSync(full))
         h.update('\n')
       }
@@ -130,6 +132,11 @@ function hashDir(dir: string): string {
   }
   walk(dir)
   return h.digest('hex').substring(0, 16)
+}
+
+function isNonBuildSiteFile(filePath: string): boolean {
+  const name = basename(filePath)
+  return name === 'README.md' || name.endsWith('.test.ts')
 }
 
 function hashFile(path: string): string {
@@ -142,10 +149,11 @@ function hashFile(path: string): string {
 function hashBuildInputs(): string {
   const h = createHash('sha256')
   for (const [label, value] of [
-    ['site', hashDir(MAIN_VP)],
+    ['site', hashDir(MAIN_VP, isNonBuildSiteFile)],
     ['package', hashFile(join(PROJECT_ROOT, 'package.json'))],
     ['lockfile', hashFile(join(PROJECT_ROOT, 'pnpm-lock.yaml'))],
     ['build-script', hashFile(join(PROJECT_ROOT, 'scripts', 'build.ts'))],
+    ['tags', hashFile(join(PROJECT_ROOT, 'scripts', 'tags.json'))],
   ]) {
     h.update(`${label}:${value}\n`)
   }
@@ -268,7 +276,7 @@ interface BuildTask {
   id: string                // e.g. "vol1-zh", "vol1-en"
   vol: Volume
   lang: 'zh' | 'en'
-  cacheKey: string          // hash of source dir
+  cacheKey: string          // hash of shared inputs and this volume's inputs
   cached: boolean           // can skip build?
 }
 
@@ -281,7 +289,14 @@ function prepareVolume(vol: Volume, lang: 'zh' | 'en', manifest: Manifest, build
   const volDocDir = lang === 'en' ? join(DOCUMENTS, 'en', vol.srcDir) : join(DOCUMENTS, vol.srcDir)
   const id = lang === 'en' ? `${vol.name}-en` : vol.name
   const docHash = existsSync(volDocDir) ? hashDir(volDocDir) : ''
-  const cacheKey = `${buildInputsHash}-${docHash}`
+  // Weekly pages embed quiz metadata and the set of available solutions.
+  const weeklyCodeHash = vol.name === 'weekly-problems' && lang === 'zh'
+    ? `-${hashDir(WEEKLY_PROBLEMS_CODE, filePath => {
+        const name = basename(filePath)
+        return name !== 'quiz.json' && name !== 'answer.md'
+      })}`
+    : ''
+  const cacheKey = `${buildInputsHash}-${docHash}${weeklyCodeHash}`
   const prev = manifest[id]
   const cached = !FORCE_REBUILD && prev && prev.hash === cacheKey && existsSync(join(CACHE_DIR, 'output', id))
   return { id, vol, lang, cacheKey, cached }
