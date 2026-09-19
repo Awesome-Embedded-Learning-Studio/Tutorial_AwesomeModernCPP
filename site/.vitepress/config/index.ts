@@ -38,7 +38,15 @@ function serveCodeExamplesInDev() {
           if (!rel.startsWith(prefix)) continue
           // 规范化后必须仍落在对应目录内，防止路径穿越
           const filePath = normalize(join(root, rel.slice(prefix.length)))
-          if (!filePath.startsWith(root) || !existsSync(filePath)) continue
+          if (!filePath.startsWith(root) || !existsSync(filePath)) {
+            // 命中 code/ 前缀但文件不存在:必须回 404,不能 next() 落进 SPA 回退——
+            // 否则 dev 下 Vite 拿 index.html 壳当 200 响应,fetchRepoText 把 HTML 壳
+            // 当文件内容返回(线上 Pages 是 404,走到组件的 catch 分支;题解的
+            // solution.cpp 可选加载就会把壳渲染成代码面板)
+            res.statusCode = 404
+            res.end('Not Found')
+            return
+          }
           res.setHeader('Content-Type', 'text/plain; charset=utf-8')
           createReadStream(filePath).pipe(res)
           return

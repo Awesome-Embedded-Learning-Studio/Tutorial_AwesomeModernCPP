@@ -1,0 +1,16 @@
+{
+  "type": "judge-assert",
+  "title": "八皇后",
+  "stars": 3,
+  "hints": [
+    "一行放一个皇后,按行往下搜:第 r 行枚举第 0 到 n-1 列,和前面几行已放的皇后不冲突,才递归进入下一行。",
+    "冲突判定:两个皇后 (r1, c1)、(r2, c2),同列是 `c1 == c2`,同对角线是 `|c1 - c2| == |r1 - r2|`。n 行全部放满,就找到了一组解。"
+  ],
+  "tests": [
+    "count_solutions(1) == 1",
+    "count_solutions(4) == 2",
+    "count_solutions(5) == 10",
+    "count_solutions(6) == 4",
+    "count_solutions(8) == 92"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "type": "judge-assert",
+  "title": "copy_n",
+  "stars": 2,
+  "hints": [
+    "一次循环干两件事:`src` 还没走到 `'\\0'` 就照抄;走到之后,`dst` 剩下几格就补几个 `'\\0'`。",
+    "可以只用一个下标 i:`dst[i] = src[i]` 照抄,发现 `src[i] == '\\0'` 之后,把 i 之后到 n 的格子全填 `'\\0'` 再收工。"
+  ],
+  "tests": [
+    "[]{ char s[] = \"ab\"; char d[4]{'#','#','#','#'}; copy_n(d, s, 4); return d[0] == 'a' && d[1] == 'b' && d[2] == 0 && d[3] == 0; }() == true",
+    "[]{ char s[] = \"abcdef\"; char d[3]{'#','#','#'}; copy_n(d, s, 3); return d[0] == 'a' && d[1] == 'b' && d[2] == 'c'; }() == true",
+    "[]{ char s[] = \"\"; char d[3]{'#','#','#'}; copy_n(d, s, 3); return d[0] == 0 && d[1] == 0 && d[2] == 0; }() == true"
+  ]
+}
