@@ -141,27 +141,9 @@ public:
 
 ### 边界检查：operator[] vs at()
 
-`operator[]` 传统的做法是**不做边界检查**，这和原生数组的行为一致，追求最高性能，越界访问是未定义行为。咱们要是需要边界检查，标准库容器提供了 `at()` 成员函数，越界时抛出 `std::out_of_range` 异常。在自己的容器中也可以照做：
+`operator[]` 传统的做法是**不做边界检查**，这和原生数组的行为一致，追求最高性能，越界访问是未定义行为。那需要检查的时候怎么办？标准库的约定是再提供一个 `at()` 成员函数：它先检查下标，越界就抛出 `std::out_of_range` 异常，把错误明确报出来，而不是放任程序进入未定义行为。
 
-```cpp
-int& at(std::size_t index)
-{
-    if (index >= count) {
-        throw std::out_of_range("IntArray::at: index out of range");
-    }
-    return data[index];
-}
-
-const int& at(std::size_t index) const
-{
-    if (index >= count) {
-        throw std::out_of_range("IntArray::at: index out of range");
-    }
-    return data[index];
-}
-```
-
-这样咱们就有了两种选择：`[]` 追求性能不检查，`at()` 追求安全抛异常。调试阶段用 `at()`、发布版本用 `[]` 是常见的策略。
+异常机制要到讲异常那一章才正式学，您这里先把结论记下来就行：`[]` 快但不检查，`at()` 多一道检查、越界会立刻报错，讲标准库容器时咱们还会再见到它。给自己的容器写 `operator[]` 时照这个约定来——一般不检查，想要安全版本就再加一个 `at()`。调试阶段多用 `at()`、发布版本用 `[]` 是常见的策略。
 
 ## 实战：io_overload.cpp
 
@@ -172,7 +154,6 @@ const int& at(std::size_t index) const
 // 流运算符和下标运算符综合演练
 
 #include <iostream>
-#include <stdexcept>
 #include <cmath>
 
 class Fraction {
@@ -203,7 +184,7 @@ public:
         : numerator(num), denominator(denom)
     {
         if (denominator == 0) {
-            throw std::invalid_argument("分母不能为零");
+            denominator = 1;   // 沿用上一篇的简化处理
         }
         reduce();
     }
@@ -282,14 +263,6 @@ public:
         return data[index];
     }
 
-    const int& at(std::size_t index) const
-    {
-        if (index >= count) {
-            throw std::out_of_range("IntArray::at: index out of range");
-        }
-        return data[index];
-    }
-
     std::size_t size() const { return count; }
 
     /// @brief 打印所有元素
@@ -333,14 +306,6 @@ int main()
     const IntArray& const_arr = arr;
     std::cout << "const_arr[2] = " << const_arr[2] << std::endl;  // 20
 
-    // 边界检查
-    try {
-        std::cout << "arr.at(10) = " << arr.at(10) << std::endl;
-    }
-    catch (const std::out_of_range& e) {
-        std::cout << "捕获异常: " << e.what() << std::endl;
-    }
-
     return 0;
 }
 ```
@@ -358,10 +323,9 @@ a (double) = 0.75
 
 arr = [0, 10, 20, 30, 40]
 const_arr[2] = 20
-捕获异常: IntArray::at: index out of range
 ```
 
-咱们验证一下：`3/4 + 1/3 = 9/12 + 4/12 = 13/12`，正确。`arr` 被赋值为 `{0, 10, 20, 30, 40}`，`const_arr[2]` 是 20，`at(10)` 越界被异常捕获，都没问题。
+咱们验证一下：`3/4 + 1/3 = 9/12 + 4/12 = 13/12`，正确。`arr` 被赋值为 `{0, 10, 20, 30, 40}`，`const_arr[2]` 是 20，都没问题。
 
 ## 动手试试
 
