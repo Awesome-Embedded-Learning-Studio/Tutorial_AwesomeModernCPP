@@ -1,6 +1,6 @@
 ---
 title: "起步"
-description: "动手装任何东西之前,先用四份只有点灯写法不同的固件回答一个问题:单片机上凭什么用 C++——所有数字可复现;环境与工具链各篇正按新蓝图重写,陆续上线"
+description: "动手装任何东西之前,先用四份只有点灯写法不同的固件回答一个问题:单片机上凭什么用 C++——所有数字可复现;随后从 Renode 观测、工作环境、第一个固件到调试、真机、clangd,环境七篇齐装"
 chapter: 0
 order: 0
 tags:
@@ -16,7 +16,7 @@ platform: stm32f1
 
 动手装任何东西之前，先回答一个问题：单片机上凭什么用 C++？开篇用四份只有点灯写法不同的固件把"C++ 笨重""C++ 就是 OOP"两条旧印象上秤称掉——体积、指令、报错时机三个维度全是实测数字，您可以逐条复现。第二篇接着回答"这些坏印象是哪来的"：从 1979 年的 C with Classes 到九十年代的 EC++ 砍特性事件，史实全部带出处。
 
-后续的开发环境、调试与工具链内容正在按新结构重写，写好一篇上一篇。
+环境这一侧从 Renode 观测起步，一路走过工具链解剖、第一个固件、调试、真机烧录，最后让 clangd 看懂这套交叉编译的代码。
 
 ## 开篇
 
@@ -27,4 +27,6 @@ platform: stm32f1
   <ChapterLink href="03-toolchain-anatomy">工作环境:您装的那四样东西,到底是什么</ChapterLink>
   <ChapterLink href="04-first-firmware">第一个自己的固件:往库里加 target</ChapterLink>
   <ChapterLink href="05-debugging">调试:从隔着玻璃采样,到停下来看现场</ChapterLink>
+  <ChapterLink href="06-flashing">真机:烧第一块真板,串口跑通</ChapterLink>
+  <ChapterLink href="07-clangd">clangd:让编辑器看懂交叉编译的代码</ChapterLink>
 </ChapterNav>

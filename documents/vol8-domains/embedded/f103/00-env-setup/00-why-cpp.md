@@ -48,7 +48,7 @@ related:
 
 ![孩子们看到这个Alternative Text的时候请想一下我的可爱的STM32F103C8T6，他很可爱](mylovelystm32.jpg)
 
-笔者使用的编译器不是armcc，额，不考虑闭源的编译器，只是不喜欢用。所以我用的是 arm-none-eabi-gcc 16.1.0，统一 Release 构建（`-O3 -DNDEBUG`）。四份固件共用同一份骨架：`HAL_Init`、把时钟从内置 8 MHz 拉到 PLL 64 MHz、主循环里亮 500 毫秒灭 500 毫秒，延时都用 `HAL_Delay`。骨架一样，差异就只剩"怎么把引脚配成输出"和"怎么翻转它"。
+笔者使用的编译器不是armcc，额，不考虑闭源的编译器，只是不喜欢用。所以我用的是 arm-none-eabi-gcc 16.2.0，统一 Release 构建（`-O3 -DNDEBUG`）。四份固件共用同一份骨架：`HAL_Init`、把时钟从内置 8 MHz 拉到 PLL 64 MHz、主循环里亮 500 毫秒灭 500 毫秒，延时都用 `HAL_Delay`。骨架一样，差异就只剩"怎么把引脚配成输出"和"怎么翻转它"。
 
 > 如果您发现一些涉及到工具描述的内容，实在有一些令人费解，可以移步到起步站的[《工作环境》](03-toolchain-anatomy)补课，随时回来。
 
@@ -195,11 +195,11 @@ for (;;) {
 第三位男嘉宾是这套教程的主角 libestdx，现代 C++ 模板写法，咱们后面每一站都拿它当工具箱：
 
 ```cpp
-using LedPin =
-    estdx::stm32f1::Gpio<estdx::stm32f1::GpioPort::C, GPIO_PIN_13, estdx::GpioDirection::Output>;
-using Led = estdx::LED<LedPin, estdx::GpioPolarity::ActiveLow>; // 板载灯低电平亮
+using LedPin = estdx::stm32f1::Gpio<estdx::stm32f1::GpioPort::C, GPIO_PIN_13,
+                                    estdx::gpio::GpioDirection::Output>;
+using Led = estdx::device::LED<LedPin, estdx::gpio::GpioPolarity::ActiveLow>; // 板载灯低电平亮
 
-static_assert(estdx::GPIOOutputPin<LedPin>); // 编译器:🤔嗯。。。这确实是个输出引脚，放你过去！
+static_assert(estdx::gpio::GPIOOutputPin<LedPin>); // 编译器:🤔嗯。。。这确实是个输出引脚，放你过去！
 
 int main() {
     HAL_Init();
@@ -335,13 +335,13 @@ arm-none-eabi-nm build/virtual | grep _ZTV    # _ZTV = vtable 符号前缀
 那虚函数到底什么时候真的收您RAM的空间呢？咱们把第五份固件造出来看：**运行期才知道对象是谁**的时候。两个引脚对象藏在**另一个编译单元（也就是其他的C++文件）**里，`main` 只拿到一个基类引用，选哪个引脚由运行期的条件决定：
 
 ```text
-8000182: f000 f81d  bl   _Z4pickb        ; 运行期选出对象,返回 IGpio&
-8000186: 6803        ldr  r3, [r0, #0]   ; 从对象头部读出 vptr
-800018a: 681b        ldr  r3, [r3, #0]   ; 从 vtable 取目标函数的槽位
-800018c: 4798        blx  r3             ; 间接调用
+8000198: f000 f848  bl   _Z4pickb        ; 运行期选出对象,返回 IGpio&
+800019c: 6803        ldr  r3, [r0, #0]   ; 从对象头部读出 vptr
+80001a0: 681b        ldr  r3, [r3, #0]   ; 从 vtable 取目标函数的槽位
+80001a2: 4798        blx  r3             ; 间接调用
 ```
 
-这次 vtable 真的进固件了（`_ZTV7GpioPin`，躺在 Flash 里），每个对象头部多出 4 字节的 vptr，每次调用多两次内存读外加间接跳转。这份固件 text 涨到 5904，data 从 12 涨到 96，咱们多付的这些字节，就是虚函数真实的开销。
+这次 vtable 真的进固件了（`_ZTV7GpioPin`，躺在 Flash 里），每个对象头部多出 4 字节的 vptr，每次调用多两次内存读外加间接跳转。这份固件 text 涨到 5964，data 从 12 涨到 96，咱们多付的这些字节，就是虚函数真实的开销。
 
 所以"C++ 就是 OOP"这句话在嵌入式语境下有两处错了，而且笔者认为错的很离谱！
 
@@ -372,10 +372,10 @@ echo $?
 ```text
 arm-none-eabi-g++ ... -c estdx_broken.cpp
 error: template constraint failure for 'template<class Pin, ...>
-       requires GPIOOutputPin<Pin>' struct estdx::LED'
+       requires GPIOOutputPin<Pin>' struct estdx::device::LED'
 note: constraints not satisfied
   • required for the satisfaction of 'GPIOOutputPin<Pin>'
-    [with Pin = estdx::stm32f1::Gpio<..., estdx::GpioDirection::Input, ...>]
+    [with Pin = estdx::stm32f1::Gpio<..., estdx::gpio::GpioDirection::Input, ...>]
 ```
 
 编译当场拒绝，报错把三个问题全替咱们答了：哪个约束没满足（`GPIOOutputPin`）、哪个类型不达标（那个 `Gpio<...>`）、它实际配成了什么方向（`Input`）。错误从"上板后某天晚上"提前到了"敲下回车的这一秒"，而抓错的家伙是 `LED` 模板参数上那个 `GPIOOutputPin` 约束，加上 `main` 前面那行 `static_assert` 的双保险。这就是抽象赚回来的东西：**运行时的参数检查，变成了编译期的类型检查**。
