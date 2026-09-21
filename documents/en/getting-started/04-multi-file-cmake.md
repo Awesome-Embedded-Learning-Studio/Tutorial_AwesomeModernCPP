@@ -207,7 +207,7 @@ First, open a terminal. On Windows, hit Win+R and type `cmd`. Or, the smoother w
 First command, configure (`-B build` means "put the build files in the `build` subdirectory", so the project root stays clean):
 
 ```bash
-cmake -B build
+cmake -B build -S . -G Ninja
 ```
 
 Second command, build:
@@ -224,7 +224,9 @@ After it finishes, the executable lives at `build/greeter.exe` (Windows) or `bui
 
 The terminal still prints `Hello, world!`. Clicking buttons and typing commands run the same CMake underneath, the result is identical.
 
-The first time you run `cmake -B build`, it asks which "generator" to use and detects your compiler, and prints a screenful of information. When you see `Generating done` at the end, configuration is done and you can move on to build.
+`-G Ninja` selects the Ninja generator; CMake writes the build files Ninja needs into the `build` directory. `cmake --build build` then invokes Ninja for you, so you don't have to type `ninja` directly. To use MinGW Makefiles instead, run `cmake -B build -S . -G "MinGW Makefiles"` from Windows `cmd` where `mingw32-make` is available. Don't reuse the same `build` directory with different generators; remove the old directory before reconfiguring. See the [CMake generator reference](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html) for generator requirements.
+
+On the first configure, CMake detects the compiler and shows the selected generator. When you see `Generating done` at the end, configuration is complete and you can build.
 :::
 
 The three-file project runs, and CMake has taken over the annoying chores of "which files to compile, who depends on whom, whether a change needs a rebuild". From here on, no matter how big the project gets, you just keep adding names to the `add_executable` line.

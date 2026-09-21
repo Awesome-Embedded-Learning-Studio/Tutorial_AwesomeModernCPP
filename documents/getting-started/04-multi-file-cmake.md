@@ -206,7 +206,7 @@ add_executable(greeter main.cpp greet.cpp)
 第一条命令，配置（`-B build` 意思是「构建文件放到 `build` 子目录里」，省得把工程根目录弄乱）：
 
 ```bash
-cmake -B build -S .
+cmake -B build -S . -G Ninja
 ```
 
 第二条命令，编译：
@@ -223,7 +223,9 @@ cmake --build build -j
 
 终端照样打印 `Hello, world!`。鼠标点按钮和敲命令，背后跑的是同一套 CMake，结果一样。
 
-第一次跑 `cmake -B build` 时它会问您用哪个「生成器」、检测编译器，刷一屏信息。看到末尾 `Generating done`，就是配置好了，可以接着 build。
+`-G Ninja` 选择 Ninja 生成器；CMake 会在 `build` 目录写出 Ninja 需要的构建文件。`cmake --build build -j` 再调用 Ninja 执行构建，您不用直接敲 `ninja`。如果改用 MinGW Makefiles，需在能找到 `mingw32-make` 的 Windows `cmd` 里运行 `cmake -B build -S . -G "MinGW Makefiles"`；两种生成器不要共用同一个 `build` 目录，切换时删掉旧目录再配置。更多生成器要求见 [CMake 官方文档](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html)。
+
+第一次配置时 CMake 会检测编译器并显示生成器。看到末尾 `Generating done`，就是配置好了，可以接着 build。
 :::
 
 三个文件的工程跑通了，CMake 也帮咱们把「哪些文件要编译、谁依赖谁、改了要不要重编」这几件麻烦事管起来了。往后工程再大，往 `add_executable` 那行加名字就是。
