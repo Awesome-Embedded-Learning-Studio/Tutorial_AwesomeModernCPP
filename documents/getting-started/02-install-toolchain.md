@@ -92,6 +92,14 @@ vscode 是微软做的一个免费的编辑器，咱们以后写代码就在它�
 pacman -S mingw-w64-ucrt-x86_64-gcc
 ```
 
+GCC 只负责把 C++ 源码编译成目标文件；CMake 还需要一个构建程序来执行生成的规则。咱们后面用 Ninja，所以把它也装上；如果您想用 Makefiles，也可以一起装 MinGW 的 `mingw32-make`：
+
+```bash
+pacman -S mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-make
+```
+
+这里的 `mingw32-make` 是程序名，不是 `make`。Ninja 和 Make 都是构建程序，CMake 是生成构建规则并调用它们的工具；下一篇会实际看到它们怎么配合。包名可查 [MSYS2 的 Ninja 软件包](https://packages.msys2.org/packages/mingw-w64-ucrt-x86_64-ninja) 和 [MinGW Make 软件包](https://packages.msys2.org/packages/mingw-w64-ucrt-x86_64-make)。
+
 ::: details 点开看：您可能的输出？
 
 我还真遇到过有人问下面这个美刀符号啥意思的，我想了想，额，您就认为是计算机的shell给您的一个前导的提示符，看到这个加上后面一闪一闪的光标，计算机就是在静候您的输出。

@@ -86,6 +86,14 @@ After opening the UCRT64 terminal you'll see a command-line window with purple t
 pacman -S mingw-w64-ucrt-x86_64-gcc
 ```
 
+GCC compiles C++ source files into object files. CMake also needs a build program to run the generated rules. We'll use Ninja in the next article, so install it too. If you'd also like the Makefiles option, install MinGW's `mingw32-make` alongside it:
+
+```bash
+pacman -S mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-make
+```
+
+The executable is named `mingw32-make`, not `make`. Ninja and Make are build programs; CMake generates the build rules and invokes one of them. The next article shows how they fit together. Package names are listed in the [MSYS2 Ninja package](https://packages.msys2.org/packages/mingw-w64-ucrt-x86_64-ninja) and [MinGW Make package](https://packages.msys2.org/packages/mingw-w64-ucrt-x86_64-make).
+
 `pacman` is the command that drives the MSYS2 "app store". `-S` means "install (sync)", and that long string after it is the name of the package to install.
 
 The first time you install something, pacman will ask whether to continue and whether the package is the right one. Type `Y` and Enter to confirm. It'll download a few tens of megabytes, give it a moment.
