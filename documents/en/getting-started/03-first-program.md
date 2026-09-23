@@ -82,7 +82,7 @@ The run button that comes with vscode (or pressing `F5`) doesn't know which comp
 
 (Some of you will ask: didn't article 1 say the compiler can compile directly? Right — calling `g++ main.cpp` on the command line does work. But vscode's graphical buttons go through the CMake pipeline. Since we're going to click buttons in vscode, we follow CMake's rules. CMake also handles multi-file projects, as we'll see in article 4.)
 
-Next to `main.cpp`, use the same "New File" icon from Step 2 to create another file named `CMakeLists.txt` (mind the capitalization: `C`, `M`, `a`, `k`, `e` are uppercase, the `L` in `Lists` is uppercase, the rest lowercase, with the `.txt` suffix). CMake dictates this name exactly. One letter off and it won't recognize it.
+Next to `main.cpp`, use the same "New File" icon from Step 2 to create another file named `CMakeLists.txt` (mind the capitalization: `C` and `M` are uppercase, the `L` in `Lists` is uppercase, the rest lowercase, with the `.txt` suffix). CMake dictates this name exactly. One letter off and it won't recognize it.
 
 Paste this in:
 
@@ -107,6 +107,10 @@ The fourth line, `set(CMAKE_CXX_STANDARD 17)`, says "use the C++17 version of th
 The fifth line, `set(CMAKE_CXX_STANDARD_REQUIRED ON)`, says "the standard above isn't a suggestion, it's a hard requirement". If the compiler doesn't support C++17, it errors out instead of quietly dropping back to an older standard — because if it silently downgraded, you wouldn't know, and debugging the mess later would be a nightmare.
 
 The last line, `add_executable(hello main.cpp)`, is the most important one. `add_executable` means "produce an executable program". The first argument inside the parentheses, `hello`, is the name of the program to produce, and the second, `main.cpp`, is the source file to compile. Read as a whole: compile `main.cpp` into an executable program named `hello` (on Windows that's `hello.exe`).
+
+> Note:
+> Don't put a CMake project under a path that contains non-ASCII characters, or you'll run into weird problems (some toolchain components only handle ASCII paths).
+> Also make sure `mingw32-make` is installed; if no compiler gets selected automatically (the status bar shows `No Kit Selected`), press `Ctrl+Shift+P` to open the command palette, type `CMake: Select a Kit`, and press Enter.
 
 ## Step 5: Pick a kit
 
