@@ -1,0 +1,106 @@
+Connecting to COM8...
+Connected.
+
+# 06
+
+[0ms][Error][boot] libestdx 07_log example
+[3ms][Warn ][boot] MinLevel=Info, clock=HalTickClock
+[8ms][Info ][boot] watch PTY /tmp/libestdx-log
+[513ms][Info ][led] blink=1
+[515ms][Info ][ledf] n=1 hex=0x1
+[1019ms][Info ][led] blink=2
+[1021ms][Info ][ledf] n=2 hex=0x2
+[1525ms][Info ][led] blink=3
+[1527ms][Info ][ledf] n=3 hex=0x3
+[2031ms][Info ][led] blink=4
+[2033ms][Info ][ledf] n=4 hex=0x4
+[2537ms][Info ][led] blink=5
+[2539ms][Info ][ledf] n=5 hex=0x5
+[3043ms][Info ][led] blink=6
+[3045ms][Info ][ledf] n=6 hex=0x6
+[3549ms][Info ][led] blink=7
+[3551ms][Info ][ledf] n=7 hex=0x7
+[4055ms][Info ][led] blink=8
+[4057ms][Info ][ledf] n=8 hex=0x8
+[4561ms][Info ][led] blink=9
+[4563ms][Info ][ledf] n=9 hex=0x9
+[5067ms][Info ][led] blink=10
+[5069ms][Info ][ledf] n=10 hex=0xa
+[5574ms][Info ][led] blink=11
+[5576ms][Info ][ledf] n=11 hex=0xb
+[6081ms][Info ][led] blink=12
+[6083ms][Info ][ledf] n=12 hex=0xc
+[6588ms][Info ][led] blink=13
+[6590ms][Info ][ledf] n=13 hex=0xd
+[7095ms][Info ][led] blink=14
+[7097ms][Info ][ledf] n=14 hex=0xe
+[7602ms][Info ][led] blink=15
+[7604ms][Info ][ledf] n=15 hex=0xf
+[8109ms][Info ][led] blink=16
+[8111ms][Info ][ledf] n=16 hex=0x10
+[8616ms][Info ][led] blink=17
+[8618ms][Info ][ledf] n=17 hex=0x11
+[9123ms][Info ][led] blink=18
+[9125ms][Info ][ledf] n=18 hex=0x12
+[9630ms][Info ][led] blink=19
+[9632ms][Info ][ledf] n=19 hex=0x13
+[10137ms][Info ][led] blink=20
+[10139ms][Info ][ledf] n=20 hex=0x14
+[10644ms][Info ][led] blink=21
+[10646ms][Info ][ledf] n=21 hex=0x15
+[11151ms][Info ][led] blink=22
+[11153ms][Info ][ledf] n=22 hex=0x16
+[11658ms][Info ][led] blink=23
+[11660ms][Info ][ledf] n=23 hex=0x17
+[12165ms][Info ][led] blink=24
+[12167ms][Info ][ledf] n=24 hex=0x18
+[12672ms][Info ][led] blink=25
+[12674ms][Info ][ledf] n=25 hex=0x19
+[13179ms][Info ][led] blink=26
+[13181ms][Info ][ledf] n=26 hex=0x1a
+[13686ms][Info ][led] blink=27
+[13688ms][Info ][ledf] n=27 hex=0x1b
+[14193ms][Info ][led] blink=28
+[14195ms][Info ][ledf] n=28 hex=0x1c
+[14700ms][Info ][led] blink=29
+[14702ms][Info ][ledf] n=29 hex=0x1d
+[15207ms][Info ][led] blink=30
+
+# 07 
+[19302ms][Info ][edge] 19302
+[19345ms][Info ][press] 19345
+[19665ms][Info ][release] 19665
+[20146ms][Info ][edge] 20146
+[20205ms][Info ][press] 20205
+[20585ms][Info ][release] 20585
+[20962ms][Info ][edge] 20962
+[21005ms][Info ][press] 21005
+[21705ms][Info ][long] 21705
+[23045ms][Info ][release] 23045
+[23497ms][Info ][edge] 23497
+[23545ms][Info ][press] 23545
+[23925ms][Info ][release] 23925
+[24284ms][Info ][edge] 24284
+[24326ms][Info ][press] 24326
+[24866ms][Info ][release] 24866
+[25187ms][Info ][edge] 25187
+[25246ms][Info ][press] 25246
+[25946ms][Info ][long] 25946
+[26586ms][Info ][release] 26586
+
+
+# 08 
+[0ms][Info ][boot] ring console ready
+[3ms][Info ][boot] type help for commands
+> help
+[3039ms][Info ][help] help, ping, led on, led off, status, echo TEXT, sleep MS
+> led off
+[6078ms][Info ][led] off
+> lef on
+[7928ms][Warn ][cmd] unknown command: lef on
+> echo hello
+[12578ms][Info ][echo] hello
+> sleep 1
+[14351ms][Info ][sleep] busy 1
+[14356ms][Info ][sleep] done
+> 
