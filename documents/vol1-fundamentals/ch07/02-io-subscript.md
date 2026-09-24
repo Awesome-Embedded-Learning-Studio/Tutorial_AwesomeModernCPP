@@ -512,7 +512,7 @@ g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
 化简后的分数 c = 1/2
 ```
 
-> 当`std::cin >> c`输入的内容格式不符合要求时，通过`is.setstate(ios::failbit);`返回`false`配合`if (std::cin >> c)`进行判断
+> 当`std::cin >> c`输入的内容格式不符合要求时，通过`is.setstate(ios::failbit);`将流错误状态内部的`failbit`输入/输出操作失败（格式化或提取错误）状态位置为 1。表示本次格式化输入或数据提取失败。由于 `operator>>` 返回的是流对象本身，而流对象会记录这些状态位，并可根据当前状态转换为`bool`，因此对`std::cin >> c`的判断就会得到`false`
 
 :::
 
