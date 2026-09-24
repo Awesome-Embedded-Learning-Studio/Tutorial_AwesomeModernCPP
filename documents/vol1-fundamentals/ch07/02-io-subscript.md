@@ -263,25 +263,6 @@ public:
         return data[index];
     }
 
-<<<<<<< Updated upstream
-=======
-    const int& at(std::size_t index) const
-    {
-        if (index >= count) {
-            throw std::out_of_range("IntArray::at: index out of range");
-        }
-        return data[index];
-    }
-
-   int& at(std::size_t index) 
-    {
-        if (index >= count) {
-            throw std::out_of_range("IntArray::at: index out of range");
-        }
-        return data[index];
-    }
-
->>>>>>> Stashed changes
     std::size_t size() const { return count; }
 
     /// @brief 打印所有元素
@@ -420,7 +401,6 @@ class Fraction {
   }
   Fraction& operator/=(const Fraction& rhs) {
     if (rhs.numerator_ == 0) {
-      std::cout << "分母不能为0";
       return *this;
     }
     this->numerator_ = this->numerator_ * rhs.denominator_;
