@@ -6,8 +6,8 @@ cpp_standard:
 - 17
 - 20
 - 23
-description: Understand the core value, application domains, and learning path of
-  C++, and start your journey with modern C++
+description: Understand the core value of C++, where it is actually used, and the
+  learning route ahead — the start of your modern C++ journey
 difficulty: beginner
 order: 0
 platform: host
@@ -20,88 +20,110 @@ tags:
 title: 'Preface: Why Learn C++'
 translation:
   source: documents/vol1-fundamentals/ch00/00-preface.md
-  source_hash: a325c7da9e2ba36456be49c902b9a6730af1aac620735e336a7e96d8d591b134
-  translated_at: '2026-06-16T03:39:05.903466+00:00'
+  source_hash: 2ef47889e6a21eafd46980fc30b41281f1d840eb24f7379bcc547bc0e87e5f18
+  translated_at: '2026-09-25T09:42:43+00:00'
   engine: anthropic
-  token_count: 1321
+  token_count: 3200
 ---
-# Preface: Why Learn C++
+# Hey Everyone, Welcome to C++
 
-To be honest, I thought for a long time about how to start this preface—what tone to strike. If I just coldly listed a bunch of reasons why "C++ is powerful," it would be no different from reading Wikipedia, which is boring. So, I want to try a different approach: let's talk about why I personally bother with C++, and why I believe that in 2026, C++ is still worth your time and serious effort.
+No need for the words "to be honest" here — this simply *is* the truth. At the very beginning, this opening was nothing special; I wrote it back when the project was first getting started. I never imagined that one day this project would grow this lively! Which is why I've decided to perk up, pick up my keyboard, and give this opening a proper write.
 
-## The Origin of This Tutorial
+I am not a language zealot, and honestly I have zero desire to become one of those die-hard fans of language X. I have **always held that a language is a form of expression for solving problems: there are only expressions that fit and expressions that don't — there is no "correct" or "incorrect" expression. (This is one of the baselines I want this tutorial to build on: explain where a language fits, analyze its pros and cons, and give those of us who love programming something new to think about, not a new dogma. In short: never expect one feature to solve every engineering problem.)**
 
-First, a little background. The starting point of this tutorial is actually a very personal motivation—in the process of doing embedded development, I increasingly felt that writing pure C became a struggle as projects grew. Manually managing resources, passing callback function pointers everywhere, and using macros for generics—these patterns, when used for a long time, cause code bloat that gives you a headache, and maintenance costs get higher and higher. I wondered, is there a way that doesn't lose the "close-to-hardware" control of C, but allows us to use more modern language features to organize code? The answer, of course, is C++. And not the "C with Classes" from the 90s, but Modern C++ that has evolved from C++11 all the way to C++23. (My journey into Modern C++ started with *Effective Modern C++*, which completely shattered my previous conceptions of C++.)
+So, by convention, most tutorials would start hyping C++ right about here — hey, our C++ is so fresh, so tasty, so awesome. Not me. I'd rather just sit down with you for a chat, drawing on the work I've done and the code I've written — about why we're all sitting here discussing the question "Why C++?".
 
-Later, when I actually knew a little C++ (really just a tiny bit... compared to the big shots), I found that many existing so-called "C++11" tutorials cover features that have since been deprecated or for which better solutions exist in newer C++ standards!
+> What I also mean is: a cold list of "C++ is powerful" reasons is no different from flipping through Wikipedia — frankly boring. So I want to try a different angle: talk about why I personally bother with C++, and why I believe that today, in 2026, C++ is still worth your time and serious study.
 
-Well, in the AI era, learning is definitely much easier. I thought—could I create a Mono C++ collection repository, organizing the notes at hand into a more complete basic tutorial? This is the origin of this repository:
+## Where This Tutorial Came From
+
+Every journey owns its beginning, and we're no exception — ours will span at least 10 volumes, maybe more. My starting point traces back to December 2025, over one lunch break (yes, nothing sacred about the moment at all, purely a case of having eaten my fill): I was sitting in the company cafeteria when I suddenly found myself remembering my days writing embedded code. These days I do big-frontend development work in C++ — modern C++, at that. That trip down memory lane planted a question in me: C and C++ are such close neighbors, so why do they feel so different to write?
+
+> How are they different? Let me sketch it briefly!
+> This tutorial also expects everyone to be at least familiar with C. If your C seems to have faded, head over to the [C prerequisite content](../c_tutorials/01-program-structure-and-compilation.md) and start your journey from there. If you simply don't know C at all, this journey may not exactly suit you. But that's okay — you can still carry on; only the slope will feel a little different.
+> C is Spartan-simple, so simple you can see straight through it to the assembly it becomes. But it's also a hassle: it doesn't suit large projects that demand both high-speed iteration and extremely high stability. We have to manage resources by hand, pass callback function pointers everywhere, and do generics with macros — keep up those habits long enough and the code bloat becomes a headache, with maintenance costs climbing ever higher. As for C++ — once you've studied it, you'll notice it really does differ from C by no small margin.
+
+There I was, face to face with my stir-fried pork with chili peppers, wondering: is there a way to keep C's "close-to-the-metal" control while still using more modern language features to organize code? The answer, of course, is C++ — and not the 1990s "C with Classes" kind, but modern C++, evolved all the way from C++11 up to C++23.
+
+> My modern C++ journey began with *Effective Modern C++*, a book that pretty much punched straight through my old ideas about the language. I'll recommend it here as a quick way to survey modern C++ — although it isn't suited for learning the more recent flavors of C++ (it mostly stays within C++11), for building the entry-level mindset it fits the bill well.
+
+I did know a little C++ (really just a tiny bit... compared with the real heavyweights), and I had come across plenty of excellent modern C++ tutorials. But far more of them, back in my day, were so-called `modern C++` tutorials that really meant C++11 — and quite a few of their features have since been deprecated, or gained better answers in newer C++!
+
+Well, it's the AI era — learning has certainly gotten much easier. So I thought: could I build a mono C++ collection repository, comb through the notes I had on hand, and shape them into a more complete foundational tutorial? That is this repository:
 
 > <https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP>
 
-and this specific volume. Of course, there are other volumes; I am slowly organizing my notes and using LLMs to see if there are points that can be expanded. This is how this set of tutorials came about. It's just that simple. I try to make this tutorial look, well, not like a language lawyer's manual, nor a translation of an official standard document—it is the study notes of someone struggling with C++ (looking up at various giants every day), recording the complete journey of mastering C++ from scratch.
+— and the origin of this volume. There are other volumes, of course; I'll keep slowly organizing my notes and bringing in LLMs to see what can be expanded. Let the whole chain read as smoothly as possible, and give friends still writing C in embedded-land a taste of something fresh!
 
-> Q: Is there LLM-generated content?
-> A: Yes, I admit that. I see LLMs as a good tool, but they are not reliable enough. So I hold myself to a standard: published content must be rewritten, at least striving to erase the traces of the LLM—at the very least, this is the responsibility I fulfill for my serious published content.
+As the work went on, I simply went more general: Tutorial Awesome Modern C++. I've tried hard to make this tutorial look, um, not like a language-lawyer's manual, and not like a translation of the official standard document — it's the study notes of someone wrestling with C++ (gazing up at one legend.png after another, all day), recording the complete journey of mastering C++ from zero.
 
-## Where is C++ Actually Used?
+> Q: Even after rewriting this today, I still have to QA it all over again. Is there any LLM-generated content?
+> A: There is — I admit that. In my view the LLM is a good tool, but not a reliable one. So the bar I set for myself is that published content must be rewritten, at least with the goal of scrubbing out the LLM's traces — the bare-minimum responsibility I owe to anything I publish seriously.
 
-If you are still hesitating, wondering "is there a future in learning C++?", let's look at what C++ actually does in the real world.
+## Where Is C++ Actually Used?
 
-The game industry is almost C++ home turf. Unreal Engine has been built with C++ since its inception and remains the engine of choice for Triple-A game development today; Unity's underlying runtime is also C++; even the recently popular Godot engine has its core modules written in C++. The game industry's extreme pursuit of performance—a budget of 16 milliseconds per frame, real-time rendering of millions of polygons, physics simulation, and AI logic—makes C++ almost irreplaceable in this field.
+If you're still hesitating over whether learning C++ leads anywhere, then let's look at what C++ is actually doing in the real world.
 
-Operating systems and infrastructure software are traditional C++ territory. Windows core components make extensive use of C++, as do many system frameworks in macOS. While the Linux kernel itself insists on C, the entire user-space ecosystem surrounding it—from desktop environments to graphics drivers—relies heavily on C++. The database field goes without saying: the core implementations of MySQL, PostgreSQL, MongoDB, Redis—every single one of these names depends on C++.
+Let's start with two examples whose developer documentation you can find directly. In game development, Unreal Engine provides a complete [C++ programming entry point](https://dev.epicgames.com/documentation/en-us/unreal-engine/programming-with-cplusplus?application_version=4.27); in browsers, Chromium's Blink rendering engine communicates with its host through a [C++ API](https://www.chromium.org/blink/public-c-api/). My own work involves dealing with Chromium, and later I'll pull out some favorite components to discuss, such as WeakPtr / Factory. Learning C++ lets us read the implementations of these projects directly and understand what's really happening behind the interfaces.
 
-Browsers are perhaps one of C++'s most successful application scenarios. Chrome's rendering engine Blink, Firefox's Gecko, Safari's WebKit—software used by billions of people every day—is all written in C++. Browsers need to do incredibly complex things: parse HTML and CSS, execute JavaScript, render pages, manage network requests and caches, all while maintaining 60fps fluidity. This places near-harsh demands on language performance. (My work involves dealing with Chromium; man, the C++ is written very well. I will pick out many component concepts to discuss, such as my favorite WeakPtr/Factory components).
+That said, when listing application domains, C and C++ have to be kept straight. For example! [PostgreSQL is developed mainly in C](https://wiki.postgresql.org/wiki/Developer_FAQ), and [CPython is likewise a Python interpreter implemented in C](https://docs.python.org/3/glossary.html#term-CPython); you can't conclude a project is C++ just because it cares about performance and lives close to the metal. Language selection isn't a competition either: existing code, toolchains, team experience, and resource budgets are all far more concrete than "whose ranking is higher".
 
-High-frequency trading and financial systems are also deep users of C++. In the competition for nanosecond-level latency, every microsecond means real money. C++'s zero-overhead abstractions and precise memory control capabilities make it the standard language for quantitative trading systems. Compilers and development tools are the same—the cores of Clang and GCC are both C++. Even "higher-level" languages like Python and Java rely heavily on C++ in the bottom layers of their interpreters and virtual machines (CPython's reference implementation, the JVM's HotSpot compiler are classic examples).
+And in the embedded field — the scenario this tutorial series pays special attention to — what we care about is how, on top of existing C drivers and hardware interfaces, to use C++ to express resource ownership, interface constraints, and module relationships more clearly. The STM32 hands-on chapters later will unfold along exactly this direction. Not every platform is suited to enabling every language feature: compiler support, code size, and runtime cost all have to be factored in together. That's also why I want this tutorial series to lean heavily on real testing.
 
-And in the embedded field—the scenario this tutorial focuses on specifically—from peripheral drivers on STM32 microcontrollers, to task scheduling in RTOSs, to system-level programming on embedded Linux, C++ is gradually replacing traditional pure C solutions. This is because Modern C++ provides type safety and zero-overhead abstractions that are particularly valuable in resource-constrained environments. This is the value I originally wanted to demonstrate with this tutorial (trying to differentiate it). I personally love embedded systems, even though my skill level is terrible.
+## So, Why C++, of All Languages?
 
-## What Makes C++ Unique?
+At this point you might ask: C++ isn't the only language with good performance — isn't Rust strong too? Isn't Go fast too? Why learn C++, of all things?
 
-At this point, you might ask: Aren't there other languages with good performance? Isn't Rust also strong? Isn't Go fast? Why learn C++ specifically?
+Some friend might say: "Hey, are you about to start a flame war?"
 
-That's a good question. Let's not rush to a conclusion, but look at a core concept of C++—**zero-overhead abstraction**. This is a quote from Bjarne Stroustrup, and the gist is: you don't pay any runtime cost for features you don't use, and for the features you do use, hand-written code won't be faster than what the compiler generates. This means you can use high-level abstractions like templates, RAII, smart pointers, and lambda expressions in C++ to organize code, while the compiler optimizes them into machine instructions almost identical to hand-written C code. This dual capability of "high-level abstraction + low-level control" is C++'s core competitive advantage.
+Not at all. My actual answer is: there's no real need. The question above is missing an engineering context, so there's nothing to answer. **My answer is: it just so happens that the one widely used language I know best is C++. That's all. I have no plans to round up more reasons to defend C++**
 
-Rust is indeed an excellent language. Its ownership system and borrow checker have made revolutionary contributions to memory safety. But the reality is, as of 2026, C++ still has over 16 million developers, its position as the world's fourth most popular language is rock-solid, and billions of lines of code libraries continue to run. Rust's ecosystem is still in a growth phase, while C++'s ecosystem is already deeply embedded in the marrow of key infrastructure like operating systems, game engines, compilers, and databases. This isn't to say Rust is bad, but rather that C++'s accumulation is too thick—decades of standard libraries, third-party libraries, toolchains, community experience, and documentation resources cannot be replaced in the short term.
+Rust, Go, and their like are indeed sweeping the globe, gradually spreading into any scenario that demands high performance and high concurrency. C++, for most people, serves as perhaps their first genuine, multi-paradigm, high-level programming language. Starting from here, we get to see the programming notions common across computer programming — arguably all of them — and push our understanding deeper into the fields we're about to enter. Those can be high-performance computing, embedded engineering, backend work, or even the big-frontend where I sit; any position, any job. The sheer weight of its history — understanding what happened, and why it evolved this way — is itself our initiation into the world of computing, from the bottom at the level of registers, CPUs, and circuits, to the top at the browser you use to surf the internet.
 
-Moreover, C++ itself hasn't stood still. Starting with C++11, the language has undergone a modernization rebirth: `auto` type deduction, move semantics, smart pointers, lambdas, `constexpr` compile-time computation, modules, concepts, coroutines, ranges—almost a new standard every three years, continuously improving the language's expressiveness and safety. The upcoming C++26 is even more heavyweight—static reflection, contracts, asynchronous senders/receivers, and other features have entered the standard, which will once again change the way we write C++. So the worry that "learning C++ is learning a dying language" can really be put to rest in 2026.
+> In other words, by learning C++ we hope to answer more rationally: "why C++, or any other programming language, is or isn't the right solution here." And Rust, Go, and the languages mentioned above each have engineering scenarios where they fit, too. We learn C++ here mainly to understand and maintain the C++ projects we care about, and to practice trading off between low-level control and code organization — we don't need developer headcounts or ranking boards to justify the choice. I also hope each of you can walk free of the church of language worship, and tell yourselves: "Just A Choice, Whatever". If this tutorial can help you get to that point, it is my honor.
 
-> Of course, to be honest, this is also a burden. I myself have gone through the process of learning C++98 to learning Modern C++. To be honest, it was painful, really painful. This also makes it very unfriendly to friends who want to build programs quickly. So, C++ (I might even say, including C) is really not suitable for friends who aren't interested in computers themselves. Dealing closely with memory, CPU, and possibly disks is not child's play.
+This tutorial series runs along the C++11–C++23 mainline: for example, `auto` type deduction, move semantics, and lambdas have been provided since C++11, while concepts, coroutines, and ranges arrive with C++20. When we reach a specific feature, we'll mark the standard version and verify the examples; content from newer standards is left to the corresponding deep-dive topics — it is not a prerequisite for getting started.
 
-## What Does This Volume Cover?
+> Honestly speaking, though, this is also a burden. I myself went through the pipeline of learning C++98 and then modern C++, and it was painful — truly painful. That makes it thoroughly unfriendly to friends who just want to build a program quickly. So C++ (I'm tempted to say C included) really doesn't suit people who aren't interested in the computer itself. Working up close with memory, the CPU, and maybe even the disk is no laughing matter.
 
-Having talked so much about "why learn," let's talk about "what exactly do we learn."
+## What This Volume Covers
 
-This volume is the **Foundation** of the entire tutorial system. The goal is to help you build a solid C++ foundation. We won't start with template metaprogramming or memory models—those are topics for later volumes. The content arrangement of this volume is gradual:
+This volume is the foundations of the whole tutorial system. I don't plan to drag you into template metaprogramming or the concurrency memory model right at the start — those wait in later volumes; no need for them to jump out now and scare everyone half to death. What this volume will do is build the fundamentals rock-solid: from how objects are stored and how lifetimes are reckoned, to types, functions, and classes — step by step.
 
-First is environment setup and running your first program, getting your development environment running, compiling and executing a piece of C++ code yourself, and feeling the complete process from source code to executable. Then we enter the type system and value categories, understanding how C++ views data—integers, floats, pointers, references, and the difference between lvalues and rvalues. Next is control flow, covering conditional branches, loops, and basic program logic organization. Further on are functions—parameter passing, return values, overloading, and default parameters, which are the basic units for building complex programs.
+The order goes like this: first get your development environment running, compile and execute a piece of C++ code with your own hands, and experience the whole journey from source code to executable; then move into the type system and value categories — integers, floating point, pointers, references, plus the lvalue/rvalue way C++ views data; control flow and functions follow — parameter passing, return values, overloading, default arguments — the basic units from which every complex program is later built. Only on top of that does object orientation get its turn: classes and objects, construction and destruction, inheritance and polymorphism, operator overloading. The volume closes with template basics, exception handling, an STL overview, and the memory management model, handing you a full picture of C++.
 
-On top of this, we start touching on Object-Oriented Programming: classes and objects, construction and destruction, inheritance and polymorphism, and operator overloading. These are the core paradigms of C++ and the foundation for understanding subsequent advanced features. Finally, we will cover template basics, exception handling, an overview of the STL standard library, and the memory management model, giving you a basic grasp of the full picture of C++.
+One thing to spell out up front: learning the fundamentals with a modern compilation environment does not mean you must first swallow C++98 style wholesale. Modern features like move semantics, smart pointers, lambdas, and constexpr will be dug into in later volumes; the idea of RAII, though, predates C++11, and this volume walks step by step from construction and destruction up to resource management. If you already have some C++ background and find this too simple, jump straight to the later volumes and pick whatever looks fun; if you're a newcomer, or want to consolidate the fundamentals systematically, I strongly recommend reading in order.
 
-Note that this volume mainly covers C++ basic knowledge and core features from the C++98 era. Deep dives into Modern C++ (C++11 and later)—including move semantics, smart pointers, lambdas, `constexpr`, RAII, etc.—will be expanded in later volumes. So if you already have a certain C++ foundation and feel this is too simple, you can jump directly to later volumes to challenge more interesting content. But if you are a beginner, or want to systematically consolidate your foundation, I strongly suggest reading in order—the content ahead relies on understanding what comes before.
+No C background at all? Don't worry. This volume carries a standalone C tutorial sub-directory, covering data types, pointers, and arrays all the way to structs and memory management — the complete C basics are all in there. It's positioned as supplementary material, not a mandatory prerequisite: absolute beginners can start directly from this chapter's environment setup, and whenever you find yourself short on C interface or pointer knowledge along the way, circle back and look it up as needed.
 
-If you have absolutely no C language background, don't worry. In this volume, we provide an independent C language tutorial subdirectory, covering complete C language basics from data types, pointers, and arrays to structs and memory management. You can spend some time going through the C language tutorial first to establish a basic understanding of the underlying memory model and pointer operations, and then come back to learn C++—it will be much smoother.
+Here's the roadmap. Every stretch you finish, leave yourself a small runnable achievement; if you get lost later in your reading, come back and find your current position.
+
+![Volume 1 learning route: first run programs, then learn types and control flow, functions and pointers, classes and objects, and finally move into templates, exceptions, STL, and memory fundamentals](./assets/00-preface/learning-route.drawio)
+
+Starting from zero, pick either [Linux Environment Setup](./01-setup-linux) or [Windows Environment Setup](./02-setup-windows); if you can already compile a program, go straight into [Your First C++ Program](./03-first-program). Off you go, kids!
 
 ## How to Use This Tutorial
 
-Regarding usage, I have a few very practical suggestions.
+On usage, I have a few practical suggestions.
 
-**Read in order, do not skip around.** This tutorial is carefully sequenced; later content often references concepts explained earlier. If you skip around, you will likely hit a wall halfway through and be forced to look back—which wastes more time. If you really feel you have mastered a part, you can skim it to confirm you haven't missed anything, but try not to skip it entirely.
+First: if you really, truly don't know how to start, consider reading in order — don't skip. The ordering of this series is designed: later content constantly references concepts covered earlier; skip around and you'll easily crash into something incomprehensible midway, then be forced to backtrack for it — costing more time in the end.
 
-**Type the code out yourself.** This isn't a pleasantry. Understanding a piece of code and typing it out, compiling, running, and seeing the output yourself are two completely different learning experiences. You will discover various unexpected small problems while typing—spelling errors (kids, `int mian` isn't funny), forgetting semicolons (you aren't writing Python anymore), missing header files (who's family is `implicit declaration of XXX`)—these are all part of real programming. Meeting them early and getting used to them early is better than anything. So even if the example code in the tutorial looks simple, please type it out yourself.
+**Type the code yourself. Type the code yourself. Type the code yourself. Type the code yourself. Type the code yourself.**
 
-LLMs are useful; I use AI to slack off myself, this is normal. But in the learning phase, I really don't recommend slacking off. I watched my buddy slack off only to be crushed by `undefined reference` all over the floor, finally discovering it was due to a lack of common sense in compilation technology. This example doesn't have much to do with C++, but it illustrates a point.
+I stress this to myself all the time, and I hope the emphasis takes root in your hearts as well. This tutorial will have mistakes; AI makes mistakes too. Does the compiler make mistakes? Extremely rarely — but for everyone still reading here, you'll seldom have a way to make it the culprit. Most of the time, the most practical move is to check whether we got something wrong ourselves.
 
-**Think for yourself when you don't understand, but don't get stuck.** If you don't understand a concept after two or three reads, mark it and continue reading. Many concepts will become clear in subsequent practical applications because the context changes, and your understanding will deepen accordingly. But if you come back and still don't understand, you can look for community discussions (I don't know if there are friends from the post-AI era; I am a regular on CSDN and StackOverflow; in the pre-AI era, I was a major code porter on these communities (really, I bow down to these dads)) or check the detailed explanations on cppreference.com.
+In other words: understanding a piece of code by reading it, and typing it out with your own hands, compiling it, and watching the output — those are two completely different learning experiences. Along the way you'll run into all sorts of unexpected little problems — `int mian` (kids, this one really isn't funny), a missing semicolon (you're not writing Python anymore), a forgotten header include (whose `implicit declaration of XXX` is that?) — these are all part of real programming. Meeting them early and getting used to them early beats everything. However simple an example in this tutorial looks, please type it out once yourself.
 
-## Let's Get Started
+LLMs are handy — I use AI to slack off myself, and that's perfectly normal. But in the learning stage, truly, don't cut corners. I watched with my own eyes as my own bro cut corners, got elbowed into pieces all over the floor by undefined reference, and finally discovered his compilation fundamentals weren't up to par. That example has little to do with C++, but it makes the point well enough.
 
-Writing this, I feel the basic groundwork is covered. C++ is a language with depth, and the learning curve isn't exactly smooth—I won't bullshit you on that. But it is also a language with extremely rich rewards: when you truly understand the elegance of RAII, the power of templates, and the philosophy of zero-overhead abstraction, you will find writing C++ to be a very satisfying experience.
+One more: when stuck, think first — don't grind yourself to death against it. If a concept still doesn't click after two or three readings, mark it and keep going — many concepts only become clear in the practical applications that come later; as the context changes, understanding deepens with it. If it still doesn't make sense when you look back, go discuss it in the community (I don't know whether any of you are friends from the post-AI era; I myself am a CSDN and Stack Overflow regular — in the AI-less era I was one of those communities' big-time code haulers (I truly knelt before those gods)), or flip through the detailed write-ups on cppreference.com.
 
-This tutorial won't turn you into a C++ expert overnight—no tutorial can do that. But it will accompany you step-by-step along the whole road, from the most basic types and variables, to object-oriented design, to the use of templates and the standard library, providing clear explanations and runnable code at every stage. We don't need to be gifted, nor do we need a formal background in CS; all we need is patience and a willingness to get our hands dirty.
+## All Set? Rest Up a Bit, Then Let's Begin
 
-Alright, enough nonsense. In the next chapter, we start by setting up the development environment, getting the compiler running, and writing our first C++ program.
+Take a rest, everyone! Work and study are hard on all of us — catch your breath, stand up, walk a couple of laps. In the days ahead, we're blasting through C++ together!
 
-We are on our way.
+Still here? No knowledge in this section — we don't do the rat race. Having learned C++ to this day, my conclusion is: C++ is a language with depth, and its learning curve is honestly not gentle (or rather, where exactly is it gentle?) — on this point I won't snow you. But it is also a richly rewarding language — once you've truly got a handle on RAII, templates, zero-overhead abstraction and company, you'll find that writing C++ is a downright exhilarating thing.
+
+This tutorial series won't turn you into a C++ expert overnight — **no tutorial can do that, and if someone claims theirs will make you a C++ master in 30 days, you'd better ask them what modern C++ even is**. The road will be rough, but I hope these tutorials can accompany you all the way to the end of it: from the most basic types and variables, to object-oriented design, and on to the use of templates and the standard library. Patience and the willingness to get hands-on, I believe, will decide how far our great expedition can go.
+
+Rest a bit, folks — we're setting out.

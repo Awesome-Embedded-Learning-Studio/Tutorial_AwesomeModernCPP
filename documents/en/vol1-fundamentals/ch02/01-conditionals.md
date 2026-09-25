@@ -5,13 +5,13 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Master `if`/`else`, `switch`, and ternary operators, and learn to control
-  program flow with conditional statements.
+description: Master if/else, switch, and the ternary operator, and learn to
+  steer your program's flow with conditional statements.
 difficulty: beginner
 order: 1
 platform: host
 prerequisites:
-- 值类别简介
+- Introduction to Value Categories
 reading_time_minutes: 10
 tags:
 - cpp-modern
@@ -22,29 +22,28 @@ tags:
 title: Conditional Statements
 translation:
   source: documents/vol1-fundamentals/ch02/01-conditionals.md
-  source_hash: c665d23d83b71176a5d5e5b9f543efff4d59f2af9a8e0fe65ec8f403bb8b2397
-  translated_at: '2026-06-16T03:41:27.016990+00:00'
+  source_hash: 10642e23321d7bb03002b4260a0cb7104b0f32219593162035cde2282daa2aae
+  translated_at: '2026-09-25T10:12:37+00:00'
   engine: anthropic
-  token_count: 1942
+  token_count: 9800
 ---
-# Conditional Statements
+# Conditional Statements: Teaching Your Program to Read the Room
 
-Let's be honest, you can't write programs without `if`/`else`, right? If a program just executes a single straight line from start to finish, it's no different from a machine that just repeats itself. Real-world programs need to make decisions—"Did the user enter a negative number? Show an error." "Is the sensor reading above the threshold? Trigger an alarm." Conditional statements are the mechanism that gives programs the ability to "make decisions."
-
-In this chapter, we will go through C++ conditional statements from top to bottom: `if`, `if-else`, and the ternary operator. They may look simple on the surface, but they hide quite a few pitfalls, especially confusing assignment with comparison and `switch` fall-through issues. These are high-frequency sources of bugs in actual projects.
+Well, you can't write programs without if/else, right? If a program only ever runs one straight line from start to finish, it's no different from a machine that can do nothing but parrot the same thing. Real-world programs need to make judgments—"the user typed a negative number? Then show an error." "the sensor reading crossed the threshold? Then trigger the alarm." Conditional statements are the mechanism that gives a program this ability to "make decisions."
 
 ## `if` and `if-else` — The Most Basic Branching
 
-The syntax of the `if` statement is very straightforward: put a conditional expression in parentheses. If the condition is true (i.e., can be converted to `true`), execute the following code block.
+The syntax of an `if` statement is dead simple: put a conditional expression in the parentheses, and if the condition holds (that is, it converts to `true`), the code block after it runs.
 
 ```cpp
 #include <iostream>
 
-int main() {
-    int score = 85;
+int main()
+{
+    int temperature = 38;
 
-    if (score >= 60) {
-        std::cout << "Passed!" << std::endl;
+    if (temperature > 37) {
+        std::cout << "温度偏高，请注意降温" << std::endl;
     }
 
     return 0;
@@ -54,208 +53,229 @@ int main() {
 Output:
 
 ```text
-Passed!
+温度偏高，请注意降温
 ```
 
-Sometimes doing nothing when the condition isn't met isn't enough. We need an "otherwise" branch — this is `else`. Furthermore, if there are third or fourth scenarios, we can chain multiple conditions with `else if`:
+Sometimes "do nothing when the condition fails" isn't good enough. We need an "otherwise" branch—that's `else`. And if there's a third or fourth case beyond that, `else if` chains several conditions together:
 
 ```cpp
-#include <iostream>
+int score = 85;
 
-int main() {
-    int score = 85;
-
-    if (score >= 90) {
-        std::cout << "Grade: A" << std::endl;
-    } else if (score >= 80) {
-        std::cout << "Grade: B" << std::endl;
-    } else if (score >= 70) {
-        std::cout << "Grade: C" << std::endl;
-    } else if (score >= 60) {
-        std::cout << "Grade: D" << std::endl;
-    } else {
-        std::cout << "Grade: F" << std::endl;
-    }
-
-    return 0;
+if (score >= 90) {
+    std::cout << "等级: A" << std::endl;
+} else if (score >= 80) {
+    std::cout << "等级: B" << std::endl;
+} else if (score >= 70) {
+    std::cout << "等级: C" << std::endl;
+} else if (score >= 60) {
+    std::cout << "等级: D" << std::endl;
+} else {
+    std::cout << "等级: F" << std::endl;
 }
 ```
 
 Output:
 
 ```text
-Grade: B
+等级: B
 ```
 
-Here is a detail that is easily overlooked: `else if` is not an independent keyword in C++. It is actually an `else` followed by a new `if` statement. The compiler sees a nested binary branch tree. Conditions are checked from top to bottom. Once a condition is true, all subsequent branches are skipped — if you put `score >= 60` before `score >= 80`, a score of 85 would be classified as Grade D.
+Here's a detail that's easy to miss: `else if` is not a standalone C++ keyword. It's really an `else` followed by a brand-new `if` statement. What the compiler sees is a nested tree of binary branches. Conditions are checked from top to bottom, and once one of them is true, every branch below it gets skipped—if you put `score >= 60` in front of `score >= 90`, a score of 85 would land in grade D.
 
-Of course, the condition inside `if` parentheses must be convertible to `bool`: a non-zero integer is `true`, a non-null pointer is `true`. This implicit conversion leads to a classic pitfall later on.
+Of course, the condition inside the `if` parentheses must be convertible to `bool`: a non-zero integer is `true`, and a non-null pointer is `true`. This implicit conversion sets up a classic trap, coming right up.
 
-## The Pits We've Fallen Into — Common `if` Traps
+## The Traps We've Stepped In Over the Years — Common `if` Pitfalls
 
 ### Assignment vs Comparison — The Compiler Won't Stop Your Typos
 
 ```cpp
+int x = 0;
 if (x = 5) {
-    // ...
+    std::cout << "x is 5" << std::endl;
 }
 ```
 
-You might think this means "if x equals 5", but `=` is the assignment operator, `==` is the comparison operator. What this code actually does is: assign 5 to `x`, and because the result of an assignment expression is the assigned value (5, which is non-zero), the condition is always true. Even worse, `x` is accidentally modified to 5.
+You might think this means "if x equals 5", but `=` is the assignment operator; `==` is the comparison operator. What this code actually does is assign 5 to `x`, and since the result of an assignment expression is the value that was assigned (5, non-zero), the condition is always true. Worse yet, `x` gets quietly changed to 5 along the way.
 
-> **Pitfall Warning**: `if (x = 5)` compiles without error, but the logic is almost certainly not what you want. Always enable the `-Wparentheses` compiler option; GCC and Clang will warn you about this style. Some programmers prefer putting the constant on the left (`if (5 == x)`), so if you accidentally write `if (5 = x)`, the compiler will error directly because you cannot assign to a constant.
+`if (x = 5)` compiles without a peep, but the logic is almost certainly not what you wanted. Always enable the `-Wall -Wextra` compiler options—GCC and Clang will warn when they see this pattern. Some programmers make a habit of putting the constant on the left, `if (5 == x)`, so that a slip of the finger producing `if (5 = x)` fails to compile outright, because you can't assign to a constant.
 
-### Dangling Else and Brace Habits
+### Dangling `else` and the Braces Habit
 
-In the code below, the indentation makes it look like `else` pairs with the first `if`:
+In the code below, the indentation makes it look like the `else` pairs with the first `if`:
 
 ```cpp
-if (score > 90)
-    if (score > 95)
-        std::cout << "Excellent!" << std::endl;
+if (a > 0)
+    if (b > 0)
+        result = 1;
 else
-    std::cout << "Keep trying" << std::endl;
+    result = -1;
 ```
 
-But C++ rules state that **`else` always binds to the nearest, unpaired `if`**. So this code is actually equivalent to:
+But C++'s rule is that **`else` always binds to the nearest `if` that doesn't already have one**. So this code is actually equivalent to:
 
 ```cpp
-if (score > 90) {
-    if (score > 95) {
-        std::cout << "Excellent!" << std::endl;
+if (a > 0) {
+    if (b > 0) {
+        result = 1;
     } else {
-        std::cout << "Keep trying" << std::endl;
+        result = -1;
     }
 }
 ```
 
-If our intention was to pair `else` with the outer `if` (setting `y` to -1 when `x < 0`), this code is completely wrong. So I have to thank my colleague; when he saw me write
+If our intention was for the `else` to pair with the outer `if` (setting `result` to -1 when `a <= 0`), then this code is flat-out wrong. Which is why I'm deeply grateful to my colleague: the moment he saw me write
 
 ```cpp
-if (x > 0)
-    if (y > 0)
-        doSomething();
-else
-    doAnotherThing();
+if(a > 1) return -1;
 ```
 
-he said without hesitation: "If you dare commit this code, you won't pass the Code Review." Now I don't dare write code without wrapping it in braces.
+he said without blinking: if you dare hand in code like this, don't expect it to get through code review. To this day I barely dare write code that isn't wrapped in braces.
 
-> **Pitfall Warning**: So, even if the branch body has only one line, use braces! Use braces! Use braces! Use braces! This isn't about typing a few extra characters, but preventing ambiguity and bugs during future maintenance — when you add a line of code and forget to add braces, the logic changes completely.
+So, even if the branch body is only one line, add the braces! Add the braces! Add the braces! Add the braces! Add the braces! This isn't about typing a few extra characters—it's about preventing ambiguity and future-maintenance bugs: the day you add one more line and forget to add the braces, the logic changes completely underneath you.
 
-## `switch` Statement — The Tool for Multi-way Branching
+## The `switch` Statement — A Sharp Tool for Multi-way Branching
 
-When you need to compare the same expression against multiple discrete values, `switch` is clearer than an `if-else` chain. Compilers can often optimize it into a jump table, making lookup nearly O(1).
+When you need to compare the same expression against multiple discrete values, `switch` is clearer than an `if/else if` chain. Compilers usually optimize it into a jump table too, so the lookup is close to O(1).
 
 ```cpp
-#include <iostream>
+// Folks, just get familiar with the look for now: you can treat enum class as plain enum for the time being, but it is clearly better than enum — feel free to ask an AI why
+enum class Command {
+    kStart,
+    kStop,
+    kPause,
+    kResume
+};
 
-int main() {
-    int option = 2;
-
-    switch (option) {
-        case 1:
-            std::cout << "Option 1 selected" << std::endl;
+void handle_command(Command cmd)
+{
+    switch (cmd) {
+        case Command::kStart:
+            std::cout << "启动操作" << std::endl;
             break;
-        case 2:
-            std::cout << "Option 2 selected" << std::endl;
+        case Command::kStop:
+            std::cout << "停止操作" << std::endl;
             break;
-        case 3:
-            std::cout << "Option 3 selected" << std::endl;
+        case Command::kPause:
+            std::cout << "暂停操作" << std::endl;
+            break;
+        case Command::kResume:
+            std::cout << "恢复操作" << std::endl;
             break;
         default:
-            std::cout << "Invalid option" << std::endl;
+            std::cout << "未知命令" << std::endl;
             break;
     }
-
-    return 0;
 }
 ```
 
-### Fall-Through — Forgetting `break` Causes "Leaks"
+### Fall-Through — Forget `break` and It "Leaks"
 
-The `break` at the end of each `case` is used to jump out of the `switch`. If you forget to write it, execution won't stop after the current `case`; instead, it will "fall through" to the next `case` — this is called fall-through. For example, when `option` is `2` but you forget to write `break`, the output would be:
+The `break` at the end of each `case` jumps out of the `switch`. Forget to write it, and once the current case finishes, execution doesn't stop—it "falls through" into the next case and keeps going. That's fall-through. For instance, when `cmd` is `Command::kStart` and you forgot the `break`, the output would be:
 
 ```text
-Option 2 selected
-Option 3 selected
-Invalid option
+启动
+停止
 ```
 
-It stopped as soon as it started, which is the bug caused by fall-through.
+It stopped the moment it started—that's the kind of bug fall-through brings.
 
-> **Pitfall Warning**: When writing `switch`, you must write `break`. This is an iron rule. Make it a habit: write `break` immediately after writing a `case` label, then fill in the logic. If you intentionally want to use fall-through (e.g., merging multiple `case`s to the same logic), add a `[[fallthrough]]` comment to indicate your intent, otherwise maintainers will think it's a bug.
+**When you write a `switch`, you must write the `break`. Make it a habit!**
 
-### Restrictions on Case Labels
+> A veteran might say: ooh, how scary—but in plenty of common cases I *want* fall-through (that is, not breaking is exactly my intent).
+> Then remember to tag it with a [[fall-through]] attribute, or add a `/* fall through */` comment if it's not supported. That's my whole point!
 
-`switch` case labels must be **integer constant expressions** — integers whose values are known at compile time. You cannot use variables, floating-point numbers, or strings. Also, develop the habit of writing a `default` branch, even if it just logs a line. This is especially true when your enumeration gains new members later but you forget to update the `switch` — `default` is your safety net.
+### Restrictions on `case` Labels
 
-## Ternary Operator — Concise Conditional Expression
+A `switch`'s case labels must be **integer constant expressions**—integers whose values are known at compile time. Variables, floating-point numbers, and strings don't qualify. Also, build the habit of writing a `default` branch, even if all it does is log one line. Especially when your enum later gains a new member and you forget to update the `switch`, `default` is your safety net.
 
-The syntax of the ternary operator is `condition ? expr1 : expr2`. It is an expression form of `if-else`, suitable for choosing between two values:
+## The Ternary Operator — A Concise Conditional Expression
+
+The ternary operator's syntax is `condition ? value_if_true : value_if_false`. It is the expression form of `if/else`, well suited to choosing between two values:
 
 ```cpp
-int max = (a > b) ? a : b;
+int a = 10;
+int b = 20;
+int max_val = (a > b) ? a : b;  // max_val = 20
 ```
 
-The ternary operator can be embedded directly into expressions, which is particularly useful when initializing `const` variables — `const` can only be initialized, not assigned, so you can't do this with `if`:
+Because it slots directly into an expression, the ternary operator is especially useful when initializing `const` variables—`const` can only be initialized, never assigned, so `if/else` can't do the job:
 
 ```cpp
-const int limit = (is_admin) ? 1000 : 100;
+const int kBufferSize = (mode == Mode::kHighSpeed) ? 1024 : 256;
 ```
 
-However, the ternary operator is not suitable for nesting. Something like `condition1 ? a : condition2 ? b : c` is syntactically legal but has terrible readability. If the logic involves more than two layers of selection, honestly write `if-else`.
+But the ternary operator does not nest well. Something like `a ? b ? c : d : e` is syntactically legal yet nearly unreadable. Once your logic involves more than two levels of choice, honestly write `if/else`.
 
-## Real-World Practice — conditional.cpp
+## Hands-On Practice — conditional.cpp
 
-Now let's integrate what we learned in this chapter into a complete program: output a grade based on an input score, implemented in different ways.
+Now let's fold everything from this chapter into one complete program: read an exam score, print the grade, and implement it in several different ways.
 
 ```cpp
 #include <iostream>
 
-int main() {
-    int score;
-    std::cout << "Enter score (0-100): ";
-    std::cin >> score;
-
-    // Method 1: if-else chain
+/// @brief Determine the letter grade with an if-else chain
+/// @param score Score on a 0-100 scale
+/// @return The grade letter
+char grade_by_if(int score)
+{
     if (score >= 90) {
-        std::cout << "[if-else] Grade: A" << std::endl;
+        return 'A';
     } else if (score >= 80) {
-        std::cout << "[if-else] Grade: B" << std::endl;
+        return 'B';
     } else if (score >= 70) {
-        std::cout << "[if-else] Grade: C" << std::endl;
+        return 'C';
     } else if (score >= 60) {
-        std::cout << "[if-else] Grade: D" << std::endl;
+        return 'D';
     } else {
-        std::cout << "[if-else] Grade: F" << std::endl;
+        return 'F';
     }
+}
 
-    // Method 2: switch (using integer division)
-    // Map 0-100 to 0-10
+/// @brief Determine the letter grade with a switch
+/// @param score Score on a 0-100 scale
+/// @return The grade letter
+char grade_by_switch(int score)
+{
     switch (score / 10) {
         case 10:
         case 9:
-            std::cout << "[switch] Grade: A" << std::endl;
-            break;
+            return 'A';
         case 8:
-            std::cout << "[switch] Grade: B" << std::endl;
-            break;
+            return 'B';
         case 7:
-            std::cout << "[switch] Grade: C" << std::endl;
-            break;
+            return 'C';
         case 6:
-            std::cout << "[switch] Grade: D" << std::endl;
-            break;
+            return 'D';
         default:
-            std::cout << "[switch] Grade: F" << std::endl;
-            break;
+            return 'F';
+    }
+}
+
+int main()
+{
+    int score = 0;
+    std::cout << "请输入成绩 (0-100): ";
+    std::cin >> score;
+
+    if (score < 0 || score > 100) {
+        std::cout << "无效的成绩输入" << std::endl;
+        return 1;
     }
 
-    // Method 3: Ternary operator (simplified logic)
-    std::cout << "[ternary] Result: "
-              << (score >= 60 ? "Passed" : "Failed")
-              << std::endl;
+    char grade = grade_by_if(score);
+    std::cout << "if-else 判定结果: " << grade << std::endl;
+
+    grade = grade_by_switch(score);
+    std::cout << "switch 判定结果:  " << grade << std::endl;
+
+    std::cout << "是否及格: "
+              << (score >= 60 ? "是" : "否") << std::endl;
+
+    if (int diff = score - 60; diff >= 0) {
+        std::cout << "超过及格线 " << diff << " 分" << std::endl;
+    } else {
+        std::cout << "距离及格还差 " << -diff << " 分" << std::endl;
+    }
 
     return 0;
 }
@@ -264,69 +284,254 @@ int main() {
 Compile and run:
 
 ```bash
-g++ -std=c++17 conditional.cpp -o conditional
+g++ -std=c++17 -Wall -Wextra -o conditional conditional.cpp
 ./conditional
 ```
 
 Test input 85:
 
 ```text
-Enter score (0-100): 85
-[if-else] Grade: B
-[switch] Grade: B
-[ternary] Result: Passed
+请输入成绩 (0-100): 85
+if-else 判定结果: B
+switch 判定结果:  B
+是否及格: 是
+超过及格线 25 分
 ```
 
 Test input 42:
 
 ```text
-Enter score (0-100): 42
-[if-else] Grade: F
-[switch] Grade: F
-[ternary] Result: Failed
+请输入成绩 (0-100): 42
+if-else 判定结果: F
+switch 判定结果:  F
+是否及格: 否
+距离及格还差 18 分
 ```
 
-Great, all three conditional statements produced correct and consistent results. Note that `switch` uses integer division (`score / 10`) to map the score to 0-10, then uses fall-through to merge 10 and 9. You might see this trick in actual projects occasionally, but if you find it hard to read, using an `if-else` chain is fine; readability comes first.
+Nice—all three conditional constructs produced correct, consistent results. Note that `grade_by_switch` uses `score / 10` to map the score into 0-10, then leans on fall-through to merge 10 and 9. You will run into this trick in real projects now and then, but if you find it hard to read, an `if-else` chain is perfectly fine—readability comes first.
 
-## Run Online
+## Run It Online
 
-Run the comprehensive example below online to observe the results of `if-else`, `switch`, and the ternary operator:
+Run the comprehensive example below online and watch how `if-else`, `switch`, and the ternary operator each make their call:
 
 <OnlineCompilerDemo
   title="Conditional Statements Demo: if-else / switch / Ternary"
   source-path="code/examples/vol1/05_conditionals.cpp"
-  description="Run online and observe multiple implementations of grade determination. Try modifying kScore to see different results."
+  description="Run it online and compare several implementations of grade determination. Try changing the value of kScore and see how the results change."
   allow-run
 />
 
 ## Try It Yourself
 
-Reading without practicing is like not learning at all. Here are three exercises with increasing difficulty. I suggest you write each one by hand.
+Reading without practicing amounts to not learning. Here are three exercises in rising order of difficulty; I suggest writing every one of them yourself.
 
 ### Exercise 1: Positive, Negative, or Zero
 
-Write a program that reads an integer and determines if it is positive, negative, or zero. Implement it using both an `if-else` chain and the ternary operator.
+Write a program that reads an integer and decides whether it is positive, negative, or zero. Implement it two ways: once with an `if-else` chain and once with the ternary operator. Picking one of three outcomes with the ternary forces you to nest—once you've written both, compare them: which one would you be willing to reread half a year from now?
 
 Expected interaction:
 
 ```text
-Enter a number: -5
-Negative
+请输入一个整数: -7
+-7 是负数
 ```
 
-### Exercise 2: Simple Calculator
+::: details Reference answer
 
-Use `switch` to implement a simple calculator: read two integers and an operator (`+`, `-`, `*`, `/`) from standard input, and output the result. Handle division by zero.
+**main.cpp** (if-else chain version)
+
+```cpp
+#include <iostream>
+
+int main()
+{
+    int value = 0;
+    std::cout << "请输入一个整数: ";
+    std::cin >> value;
+
+    if (value > 0) {
+        std::cout << value << " 是正数" << std::endl;
+    } else if (value < 0) {
+        std::cout << value << " 是负数" << std::endl;
+    } else {
+        std::cout << value << " 是零" << std::endl;
+    }
+
+    return 0;
+}
+```
+
+**main.cpp** (ternary operator version)
+
+```cpp
+#include <iostream>
+
+int main()
+{
+    int value = 0;
+    std::cout << "请输入一个整数: ";
+    std::cin >> value;
+
+    std::cout << value
+              << (value > 0 ? " 是正数"
+                            : value < 0 ? " 是负数"
+                                        : " 是零")
+              << std::endl;
+
+    return 0;
+}
+```
+
+This version is exactly the "does not nest well" style the main text warned about—the exercise demands the ternary operator, so a three-way choice has to nest. Compared with the if-else version above, just counting the question marks and colons strains your eyes; "nearly unreadable" is precisely this feeling. One taste is enough: in real code, once you're past two levels of choice, honestly write `if/else` and save the ternary for two-way picks.
+
+Compile and run:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+Output:
+
+```text
+请输入一个整数: 10
+10 是正数
+```
+
+:::
+
+### Exercise 2: A Simple Calculator
+
+Use `switch` to build a simple calculator: read two integers and an operator (`+`, `-`, `*`, `/`) from standard input, and print the result of the operation. For division, handle the divide-by-zero case.
 
 Expected interaction:
 
 ```text
-Enter first number: 10
-Enter operator: /
-Enter second number: 2
-Result: 5
+请输入表达式（如 3 + 5）: 10 / 0
+错误：除数不能为零
 ```
+
+::: details Reference answer
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+
+int main()
+{
+    int left = 0;
+    int right = 0;
+    char operation = 0;
+
+    std::cout << "请输入表达式（如 3 + 5）: ";
+    if (!(std::cin >> left >> operation >> right)) {
+        std::cout << "错误：输入格式无效" << std::endl;
+        return 1;
+    }
+
+    switch (operation) {
+    case '+':
+        std::cout << left + right << std::endl;
+        break;
+    case '-':
+        std::cout << left - right << std::endl;
+        break;
+    case '*':
+        std::cout << left * right << std::endl;
+        break;
+    case '/':
+        if (right == 0) {
+            std::cout << "错误：除数不能为零" << std::endl;
+            return 1;
+        }
+        std::cout << left / right << std::endl;
+        break;
+    default:
+        std::cout << "错误：不支持的运算符" << std::endl;
+        return 1;
+    }
+
+    return 0;
+}
+```
+
+Compile and run:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+Output:
+
+```text
+请输入表达式（如 3 + 5）: 10/0
+错误：除数不能为零
+```
+
+:::
 
 ### Exercise 3: Date Validity Check
 
-Write a function that takes three integers (year, month, day) and uses conditional statements to determine if the date is valid. You need to consider if the month is within 1-12, the different maximum days for each month, and leap years (February has 29 days). Hint: using `switch` to handle days for different months will be very clear.
+Write a function that receives three integers—year, month, and day—and uses conditional statements to decide whether the date is valid. You need to consider whether the month falls within 1-12, the differing day limits of each month, and the fact that February has 29 days in leap years. Hint: using `switch` to handle the day counts of different months comes out remarkably clean.
+
+::: details Reference answer
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+
+int main()
+{
+    int year, month, day;
+    std::cout << "请输入年、月、日（用空格分隔，例如：2024 2 29）: ";
+    if (!(std::cin >> year >> month >> day)) {
+        std::cout << "错误：输入格式无效" << std::endl;
+        return 1;
+    }
+
+    if (year <= 0 || month < 1 || month > 12 || day < 1) {
+        std::cout << "这个日期不合法" << std::endl;
+        return 1;
+    }
+
+    int maxDay = 31;
+    switch (month) {
+    case 2:
+        maxDay = ((year % 400 == 0) ||
+                  (year % 4 == 0 && year % 100 != 0))
+                     ? 29
+                     : 28;
+        break;
+    case 4:
+    case 6:
+    case 9:
+    case 11:
+        maxDay = 30;
+        break;
+    }
+
+    if (day > maxDay) {
+        std::cout << "这个日期不合法" << std::endl;
+        return 1;
+    }
+
+    std::cout << "这个日期合法" << std::endl;
+    return 0;
+}
+```
+
+Compile and run:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+Output:
+
+```text
+请输入年、月、日（用空格分隔，例如：2024 2 29）: 2024 2 29
+这个日期合法
+```
+
+:::
