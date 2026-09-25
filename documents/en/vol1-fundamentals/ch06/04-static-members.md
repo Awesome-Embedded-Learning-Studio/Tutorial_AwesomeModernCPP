@@ -6,241 +6,441 @@ cpp_standard:
 - 17
 - 20
 description: Master `static` member variables and functions, and understand class-level
-  shared state and the initial concepts of the singleton pattern.
+  shared state and the first ideas behind the singleton pattern.
 difficulty: beginner
 order: 4
 platform: host
 prerequisites:
-- 析构函数与资源管理
-reading_time_minutes: 11
+- Destructors and Resource Management
+reading_time_minutes: 16
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-title: Static Member
+title: static Members
 translation:
   source: documents/vol1-fundamentals/ch06/04-static-members.md
-  source_hash: 943fd1161a33105016393858eac03d822f992858cc641403bf4a073c0e4a7217
-  translated_at: '2026-06-16T03:44:23.696093+00:00'
+  source_hash: 6761408c8755fcfdc6b00353b74de2a1055de0ed0dce3b783f28cf248715824e
+  translated_at: '2026-09-25T11:01:53+00:00'
   engine: anthropic
-  token_count: 2305
+  token_count: 4200
 ---
-# Static Members
+# static Members: Belonging to the Class, Not to Any Object
 
-Until now, every member variable and member function we have encountered has been bound to an "object"—every time we create an object, we get another copy of the member variables, independent of each other. However, in real-world engineering, there is a class of data and operations that naturally do not belong to a specific object, but rather to the **entire class**. For example: How many instances of a specific class currently exist in the system? Has the Hardware Abstraction Layer (HAL) been initialized? What is the default sampling frequency shared by all peripherals?
+Up to this point, every member variable and member function we have encountered has been bound to an "object": each time we create a `Sensor`, we get one more copy of `pin` and one more copy of `cached_value`, all independent of each other. In real-world engineering, however, there is a category of data and operations that naturally does not belong to any specific object—it belongs to the **entire class**. For example: how many `UARTPort` instances have actually been created in the system right now? Has the hardware abstraction layer been initialized yet? What is the default sampling frequency shared by all `Sensor` objects?
 
-If we look closely at these requirements, their common characteristic is: the data exists in only one copy, shared by all objects; or the function is related only to the class logic and does not depend on the state of any specific instance. C++ uses the `static` keyword to satisfy these needs—by adding it to a member declaration, that member moves from the "object level" to the "class level."
+Look closely at these requirements and a common trait emerges: the data exists as a single copy shared by all objects; or the function relates only to the class's logic and does not depend on the state of any concrete instance. C++ answers this need with the `static` keyword: put it in front of a member declaration, and that member moves from the "object level" to the "class level".
 
-In this chapter, we will clarify static member variables and static member functions separately, implement an automatic ID allocator along the way, and finally take a quick look at how `static` paves the way for the Singleton pattern.
+In this chapter we will take static member variables and static member functions apart and make each of them clear, build an automatic ID allocator along the way, and finally see how `static` feeds into the singleton pattern.
 
-## Static Member Variables—Shared Data Belonging to the Class
+## Static Member Variables—Shared Data That Belongs to the Class
 
-Declaring a static member variable is simple; just add `static` before the type:
-
-```cpp
-class MyClass {
-public:
-    static int s_count; // Declaration
-};
-```
-
-`s_count` has only one copy in memory. Whether you create one hundred or zero `MyClass` objects, `s_count` exists (strictly speaking, it exists from program start to finish). Each `MyClass` object has its own non-static members, but all objects see the same `s_count`.
-
-Here is a classic pitfall: **static member variables must be defined outside the class**. The `s_count` inside the class is just a declaration, telling the compiler "this thing exists," but it does not actually allocate memory. The real definition must be written outside the class:
-
-```cpp
-// Definition (usually in the .cpp file)
-int MyClass::s_count = 0;
-```
-
-If you only declare but do not define, the compilation will pass—because the compiler only sees the declaration when processing the class definition. But when it gets to the linking stage, the linker finds that no object file contains the actual storage location for `s_count` and will throw a linker error. This "compiles OK, link fails" problem often drives people crazy, because you have to search across multiple files to figure out which static member you forgot to define.
-
-> **Pitfall Warning**: Before C++17, non-`const` integral static member variables had to be defined outside the class. If you declared it in a header file but forgot to write the definition in the corresponding `.cpp` file, every translation unit including that header would compile, but the final link would crash. Furthermore, the error messages are often abstract, and beginners have no idea what they are talking about.
-
-However, in C++17, this pain point was alleviated—`inline` allows static members to be defined directly inside the class:
-
-```cpp
-class MyClass {
-public:
-    static inline int s_count = 0; // C++17 inline variable
-};
-```
-
-`inline` here means "allowed to be defined in a header file without violating the ODR (One Definition Rule)," and it is the same keyword as for inline functions, but with a different meaning. If your project can use C++17, it is recommended to use `inline` directly, saving the trouble of maintaining a pile of definitions in `.cpp` files.
-
-## Static Member Functions—Class Operations Without `this`
-
-Static member functions, like static member variables, belong to the class itself. Their key characteristic is **no `this` pointer**—because calling them does not require a specific object. No `this` means they cannot access any non-static members, as the compiler doesn't know "which object's members you are operating on."
-
-```cpp
-class MyClass {
-public:
-    static void func() {
-        // No 'this' pointer here
-        s_count = 0; // OK: accessing static member
-        // x = 0;     // Error: 'x' is non-static
-    }
-private:
-    static int s_count;
-    int x; // Non-static member
-};
-```
-
-Call a static member function using the `ClassName::functionName` syntax, no need to create an object first:
-
-```cpp
-MyClass::func();
-```
-
-Of course, calling a static function through an object (`obj.func()`) is also syntactically legal, but this is just syntactic sugar—the compiler will still translate it to `MyClass::func()`, and the object instance does not participate at runtime. The author suggests trying to use the `ClassName::` method for calling, as the semantics are clearer, and readers can see at a glance that this is a static function.
-
-## In Practice: Automatic ID Allocator
-
-Putting the pieces together, let's write a complete `Employee` class that automatically assigns a unique ID upon creation and counts how many employee objects currently exist:
+Declaring a static member variable is simple: just add `static` in front of the type:
 
 ```cpp
 class Employee {
-public:
-    Employee() : m_id(next_id++) { ++active_count; }
-    ~Employee() { --active_count; }
-
-    int get_id() const { return m_id; }
-    static int get_active_count() { return active_count; }
-
 private:
-    int m_id;
-    static int next_id;      // Monotonically increasing ID generator
-    static int active_count; // Current number of surviving objects
+    int id_;
+    std::string name_;
+    static int next_id_;  // Declaration: a counter shared by all Employee objects
 };
-
-// Definition of static members
-int Employee::next_id = 1;
-int Employee::active_count = 0;
 ```
 
-The design idea here is: `next_id` is a monotonically increasing counter; every time an object is constructed, it increments and takes the current value as that object's ID; `active_count` increments on construction and decrements on destruction, reflecting in real-time the number of currently surviving objects.
+`next_id_` has exactly one copy in memory. Whether we create a hundred `Employee` objects or zero, `next_id_` exists (strictly speaking, it lives from program start to program end). Each `Employee` object has its own `id_` and `name_`, but the `next_id_` that all objects see is the very same one.
 
-## Combination of `static` and `const`
+Here we run into a classic pitfall: **static member variables must be defined outside the class**. The `static int next_id_;` inside the class is only a declaration—it tells the compiler "something like this exists" without actually allocating any memory. The real definition has to be written outside the class:
 
-When `static` and `const` (or `constexpr`) are combined, the situation is different. C++ allows `const` integral members to be initialized directly inside the class without an out-of-class definition:
+```cpp
+// Employee.cpp
+int Employee::next_id_ = 1;  // Define and initialize
+```
+
+If we only declare it but never define it, compilation still passes, because while processing the class definition the compiler only sees the declaration. But at the linking stage, the linker discovers that no object file contains the actual storage for `Employee::next_id_`, and it throws an `undefined reference` error. This kind of "compiles fine, blows up at link time" problem is a notorious blood-pressure booster, because we have to hunt back and forth across multiple files to find which static member we forgot to define.
+
+Before C++17, non-`const` integral static member variables had to be defined outside the class. If we declare `static int count_;` in a header but forget to write `int MyClass::count_ = 0;` in the matching `.cpp` file, every translation unit that includes that header compiles just fine—then the final link explodes. Worse, the wording of the error message is usually abstract enough that a beginner has no idea what it is talking about.
+
+C++17, however, eased this pain point: `inline static` allows defining a static member directly inside the class:
+
+```cpp
+class Employee {
+private:
+    int id_;
+    std::string name_;
+    inline static int next_id_ = 1;  // C++17: defined in-class, no out-of-class definition needed
+};
+```
+
+What `inline` means here is "allowed to be defined in a header without violating the ODR (One Definition Rule)"—the same keyword as the `inline` on inline functions, but with a different meaning. If your project can use C++17, we recommend going straight to `inline static` and saving yourself the chore of maintaining a pile of `Type Class::member = value;` lines in a `.cpp` file.
+
+## Static Member Functions—Class Operations That Need No this
+
+Static member functions, like static member variables, belong to the class itself. Their key characteristic is that they have **no `this` pointer**, because calling one does not require going through any concrete object. Having no `this` means they cannot access any non-static member—after all, the compiler has no way of knowing "which object's members we are operating on".
+
+```cpp
+class Employee {
+private:
+    int id_;
+    std::string name_;
+    static int next_id_;
+
+public:
+    Employee(const std::string& name)
+        : id_(next_id_++), name_(name) {}
+
+    /// @brief Get the next ID that will be assigned (static function)
+    static int peek_next_id() {
+        return next_id_;       // OK: accessing a static member
+        // return id_;         // Compile error! A static function has no this, so it cannot access non-static members
+    }
+};
+```
+
+We call a static member function with the `ClassName::function_name()` syntax—no need to create an object first:
+
+```cpp
+std::cout << Employee::peek_next_id() << std::endl;  // No Employee instance needed
+```
+
+Calling a static function through an object (`emp.peek_next_id()`) is of course syntactically legal too, but that is just syntactic sugar—the compiler still translates it into `Employee::peek_next_id()`, and the object instance plays no part at runtime. Our advice is to prefer the `ClassName::function()` form: the semantics are clearer, and we can tell at a glance that it is a static function.
+
+## In Practice: An Automatic ID Allocator
+
+Let's assemble the pieces from above and write a complete `Employee` class that automatically assigns a unique ID on creation and keeps count of how many employee objects currently exist:
+
+```cpp
+class Employee {
+private:
+    int id_;
+    std::string name_;
+    static int next_id_;
+    static int active_count_;
+
+public:
+    explicit Employee(const std::string& name)
+        : id_(next_id_++), name_(name)
+    {
+        ++active_count_;
+    }
+
+    ~Employee() { --active_count_; }
+
+    int id() const { return id_; }
+    const std::string& name() const { return name_; }
+
+    static int get_active_count() { return active_count_; }
+    static int peek_next_id() { return next_id_; }
+};
+
+// Static member definitions
+int Employee::next_id_ = 1;
+int Employee::active_count_ = 0;
+```
+
+The design idea: `next_id_` is a counter that only ever grows—each construction increments it and takes the current value as that object's ID; `active_count_` goes up by one on construction and down by one on destruction, reflecting the number of currently alive objects in real time.
+
+## Combining `static` and `const`
+
+Things change again when we combine `static` with `const` (or `constexpr`). C++ allows `static constexpr` integral members to be initialized directly in the class, with no out-of-class definition:
 
 ```cpp
 class Config {
 public:
-    static const int MAX_ITEMS = 100;
+    static constexpr int kMaxRetries = 3;       // OK: a const integral, initialized in-class
+    static constexpr double kPi = 3.14159265;   // Since C++11, floating-point types may also be initialized in-class
 };
 ```
 
-This usage has been widespread since C++11. `const` implicitly implies `inline` for this purpose, and requires the value to be determinable at compile time, so the compiler can inline the value directly where it is used, without needing to allocate actual storage space for it—unless you take its address (`&Config::MAX_ITEMS`), in which case ODR-use rules require you to provide an out-of-class definition.
+This style has been in wide use since C++11. `constexpr` implies `const`, and it requires the value to be determinable at compile time, so the compiler can simply inline the value at each use without allocating actual storage for it—unless we take its address (`&Config::kMaxRetries`), in which case the ODR-use rules require us to provide an out-of-class definition.
 
-However, there is a confusing legacy issue here: in the C++03 era, only `const` integers (and `bool`, `char`, etc.) could be initialized in-class. If you wrote `static const double`, a C++03 compiler would error directly. After C++11 introduced `constexpr`, this restriction basically disappeared—now it is recommended to uniformly use `constexpr`, as the semantics are clearer and you won't hit the pitfalls of old standards.
+There is one easily confused piece of historical baggage here: in the C++03 era, only `static const int` (and other integral types such as `short`, `char`, and `long`) could be initialized in-class. If we wrote `static const double pi = 3.14;`, a C++03 compiler would reject it outright. Once C++11 introduced `constexpr`, this restriction essentially disappeared—the recommendation today is to use `static constexpr` uniformly: the semantics are clearer, and it avoids the pitfalls of the old standards.
 
-If you need a static member whose initial value is determined at runtime (e.g., read from a configuration file), you cannot use `constexpr`; you must use a normal `static` member plus an initialization function to assign the value.
+If we need a static member whose initial value is only determined at runtime (say, read from a configuration file), then `constexpr` is off the table; the only option is an ordinary `static` member plus an initialization function that assigns the value.
 
-## Prototype of the Singleton Pattern
+## A First Sketch of the Singleton Pattern
 
-Mentioning `static`, we cannot avoid its relationship with the Singleton Pattern. The core requirement of the Singleton pattern is: a class has only one instance in the entire program and provides a global access point. Its implementation cannot be separated from `static`—using a static member function to provide the access entry, and a static member variable to hold that unique instance.
+Talking about `static` means talking about its relationship with the singleton pattern. The core requirement of the singleton pattern is: a class has exactly one instance in the entire program, and it provides a global access point. Its implementation cannot do without `static`: a static member function provides the access entry, and a static member variable holds that one and only instance.
 
-Let's just look at a simplified prototype, touching on it without expanding into full implementation details:
+We will look at only the most stripped-down sketch—a light touch, without unfolding the full implementation details:
 
 ```cpp
-class Singleton {
-public:
-    static Singleton& getInstance() {
-        static Singleton instance; // Initialized on first call
-        return instance;
-    }
-    // Delete copy and move operations
-    Singleton(const Singleton&) = delete;
-    Singleton& operator=(const Singleton&) = delete;
-
+class SystemClock {
 private:
-    Singleton() = default;  // Private constructor
-    ~Singleton() = default;
+    SystemClock() = default;  // Constructor is private: prevents external instantiation
+
+    static SystemClock& instance() {
+        static SystemClock clock;  // A local static; C++11 guarantees thread-safe initialization
+        return clock;
+    }
+
+public:
+    // Delete copy and assignment to guarantee uniqueness
+    SystemClock(const SystemClock&) = delete;
+    SystemClock& operator=(const SystemClock&) = delete;
+
+    /// @brief Get the globally unique clock instance
+    static SystemClock& get() { return instance(); }
+
+    uint64_t now() const {
+        // Return the current timestamp
+        return 0;  // Simplified
+    }
 };
+
+// Usage
+uint64_t t = SystemClock::get().now();
 ```
 
-This pattern is called Meyers' Singleton. It utilizes an important guarantee of C++11: `static` local variables inside a function are initialized when the declaration is first executed, and the initialization is thread-safe. We won't discuss the pros and cons of Singletons deeply here—just remember: `static` member + private constructor is the cornerstone of the Singleton. We will expand on this formally when we cover design patterns.
+This pattern is called Meyers' Singleton, and it relies on an important C++11 guarantee: a `static` local variable inside a function is initialized the first time execution reaches its declaration, and that initialization is thread-safe. We will not dive into the pros and cons of singletons here—just remember: `static` members plus a `private` constructor are the foundation of a singleton. We will expand on this properly when we reach design patterns.
 
-## Live Combat—static_demo.cpp
+## Hands-On Walkthrough—static_demo.cpp
 
-Let's integrate the knowledge points of this chapter into a complete program:
+Let's fold this chapter's ideas into one complete program:
 
 ```cpp
+// static_demo.cpp
+// A combined walkthrough of static members: automatic ID assignment, instance counting, static constants
+
 #include <iostream>
+#include <string>
 
 class Employee {
-public:
-    Employee() : m_id(next_id++) {
-        ++active_count;
-        std::cout << "Employee " << m_id << " created. Active: " << active_count << "\n";
-    }
-
-    ~Employee() {
-        --active_count;
-        std::cout << "Employee " << m_id << " destroyed. Active: " << active_count << "\n";
-    }
-
-    int get_id() const { return m_id; }
-    static int get_active_count() { return active_count; }
-    static int get_next_id() { return next_id; }
-
 private:
-    int m_id;
-    static int next_id;
-    static int active_count;
+    int id_;
+    std::string name_;
+    static int next_id_;
+    static int active_count_;
+
+public:
+    static constexpr int kMaxNameLength = 50;
+
+    explicit Employee(const std::string& name)
+        : id_(next_id_++), name_(name)
+    {
+        ++active_count_;
+        std::cout << "[construct] Employee #" << id_
+                  << " \"" << name_ << "\" created. "
+                  << "Active: " << active_count_ << std::endl;
+    }
+
+    ~Employee()
+    {
+        --active_count_;
+        std::cout << "[destruct]  Employee #" << id_
+                  << " \"" << name_ << "\" destroyed. "
+                  << "Active: " << active_count_ << std::endl;
+    }
+
+    int id() const { return id_; }
+    const std::string& name() const { return name_; }
+
+    static int get_active_count() { return active_count_; }
+    static int peek_next_id() { return next_id_; }
 };
 
-// Definitions
-int Employee::next_id = 1;
-int Employee::active_count = 0;
+int Employee::next_id_ = 1;
+int Employee::active_count_ = 0;
 
-int main() {
-    std::cout << "Initial: next_id=" << Employee::get_next_id()
-              << ", active=" << Employee::get_active_count() << "\n";
+/// @brief Create some temporary objects and watch the counters change
+void demo_scope()
+{
+    std::cout << "\n--- Enter demo_scope ---" << std::endl;
+    Employee temp1("Zhang San");
+    Employee temp2("Li Si");
+    std::cout << "Inside scope, active count: "
+              << Employee::get_active_count() << std::endl;
+    std::cout << "--- Leave demo_scope ---" << std::endl;
+    // temp1, temp2 leave the scope and are destroyed
+}
 
-    Employee e1, e2;
-    {
-        Employee e3, e4;
-        std::cout << "Inside scope: active=" << Employee::get_active_count() << "\n";
-    } // e3, e4 destroyed here
+int main()
+{
+    std::cout << "=== Static Member Demo ===" << std::endl;
+    std::cout << "Max name length: " << Employee::kMaxNameLength << std::endl;
+    std::cout << "Next ID before any creation: "
+              << Employee::peek_next_id() << std::endl;
 
-    std::cout << "Outside scope: active=" << Employee::get_active_count() << "\n";
-    std::cout << "Final next_id: " << Employee::get_next_id() << "\n";
+    Employee emp1("Wang Wu");
+    Employee emp2("Zhao Liu");
+
+    std::cout << "\nCurrent active count: "
+              << Employee::get_active_count() << std::endl;
+    std::cout << "Next ID to be assigned: "
+              << Employee::peek_next_id() << std::endl;
+
+    demo_scope();
+
+    std::cout << "\nAfter demo_scope, active count: "
+              << Employee::get_active_count() << std::endl;
+    std::cout << "Next ID to be assigned: "
+              << Employee::peek_next_id() << std::endl;
 
     return 0;
 }
 ```
 
-Compile and run: `g++ -std=c++17 static_demo.cpp -o static_demo && ./static_demo`
+Compile and run: `g++ -std=c++17 -Wall -Wextra -o static_demo static_demo.cpp && ./static_demo`
 
 Expected output:
 
 ```text
-Initial: next_id=1, active=0
-Employee 1 created. Active: 1
-Employee 2 created. Active: 2
-Employee 3 created. Active: 3
-Employee 4 created. Active: 4
-Inside scope: active=4
-Employee 4 destroyed. Active: 3
-Employee 3 destroyed. Active: 2
-Outside scope: active=2
-Final next_id: 5
+=== Static Member Demo ===
+Max name length: 50
+Next ID before any creation: 1
+[construct] Employee #1 "Wang Wu" created. Active: 1
+[construct] Employee #2 "Zhao Liu" created. Active: 2
+
+Current active count: 2
+Next ID to be assigned: 3
+
+--- Enter demo_scope ---
+[construct] Employee #3 "Zhang San" created. Active: 3
+[construct] Employee #4 "Li Si" created. Active: 4
+Inside scope, active count: 4
+--- Leave demo_scope ---
+[destruct]  Employee #4 "Li Si" destroyed. Active: 3
+[destruct]  Employee #3 "Zhang San" destroyed. Active: 2
+
+After demo_scope, active count: 2
+Next ID to be assigned: 5
+[destruct]  Employee #2 "Zhao Liu" destroyed. Active: 1
+[destruct]  Employee #1 "Wang Wu" destroyed. Active: 0
 ```
 
-Verify: IDs start at 1 and increment without repetition; entering the scope `active_count` rises to 4, drops to 2 after exiting; `next_id` only increases, ending at 5 instead of 3—this is exactly the behavior we wanted.
+Let's verify: IDs start at 1 and increment without repetition; entering `demo_scope` raises `active_count` to 4, and leaving drops it back to 2; `next_id_` only ever grows, so after the scope it is 5 rather than 3—exactly the behavior we wanted.
 
-> **Pitfall Warning**: If your static members involve copy or move semantics, be very careful. The default copy constructor copies member-by-member, but it will not copy static members—because static members do not belong to the object. If you expect to "copy the entire class's state by copying an object," the design is flawed. The value of a static member is unaffected by the creation, copying, or destruction of any single object (unless you explicitly modify it in the constructor/destructor).
+Be careful when static members are involved in copy or move semantics. The default copy constructor copies member by member, but it does not copy static members—static members do not belong to the object. If the design expects "copying an object to replicate the entire class's state", then something is wrong with that design. The value of a static member is unaffected by the creation, copying, or destruction of any single object (unless we explicitly modify it in a constructor/destructor).
 
 ## Try It Yourself
 
 ### Exercise 1: Implement an ID Generator
 
-Write an `IdGenerator` class that stores no object data, only provides a globally incrementing ID through static members. Interface design reference: `next()` returns a new unique ID each time it is called, `reset(val)` allows resetting the starting value. After writing, test: call `next()` three times, confirm it returns 1, 2, 3; then `reset(100)`, call twice more, confirm it returns 100, 101.
+Write a `UniqueIdGenerator` class that stores no object data at all and provides a globally incrementing ID purely through static members. For the interface, follow this sketch: `static int generate()` returns a new unique ID on each call, and `static void reset(int start)` allows resetting the starting value. Once you have written it, test it: call `generate()` three times and confirm it returns 1, 2, 3; then call `reset(100)` and call twice more, confirming it returns 100, 101.
+
+::: details Reference Answer
+
+```cpp
+#include <iostream>
+
+class UniqueIdGenerator
+{
+private:
+    inline static int next_id_ = 1;
+
+public:
+    UniqueIdGenerator() = delete;
+
+    static int generate()
+    {
+        return next_id_++;
+    }
+
+    static void reset(int start)
+    {
+        next_id_ = start;
+    }
+};
+
+int main()
+{
+    std::cout << UniqueIdGenerator::generate() << '\n';
+    std::cout << UniqueIdGenerator::generate() << '\n';
+    std::cout << UniqueIdGenerator::generate() << '\n';
+
+    UniqueIdGenerator::reset(100);
+
+    std::cout << UniqueIdGenerator::generate() << '\n';
+    std::cout << UniqueIdGenerator::generate() << '\n';
+
+    return 0;
+}
+```
+
+Compile and run:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+Output:
+
+```text
+1
+2
+3
+100
+101
+```
+
+:::
 
 ### Exercise 2: Instance Tracker
 
-Write an `InstanceTracker` class that maintains two counters—`active` (current number of surviving objects) and `total` (total number of objects created, monotonically increasing). Update these two counters in the constructor and destructor, and provide two static functions to query them. Verification method: create 5 objects, destroy 3 of them using a brace scope, print the values of the two counters—`active` should be 2, `total` should be 5.
+Write a `TrackedObject` class that maintains two counters at once—`active_count` (the number of currently alive objects) and `total_created` (the total number of objects ever created, monotonically increasing). Update both counters in the constructor and destructor, and provide two static functions to query them. To verify: create 5 objects, destroy 3 of them via a brace scope, then print the values of both counters—`active_count` should be 2, and `total_created` should be 5.
+
+::: details Reference Answer
+
+```cpp
+#include <iostream>
+
+class TrackedObject
+{
+private:
+    // Number of currently alive objects
+    inline static int active_count = 0;
+    // Total number of objects ever created
+    inline static int total_created = 0;
+
+public:
+    TrackedObject()
+    {
+        ++active_count;
+        ++total_created;
+    }
+
+    ~TrackedObject()
+    {
+        --active_count;
+    }
+
+    static int get_active_count()
+    {
+        return active_count;
+    }
+
+    static int get_total_created()
+    {
+        return total_created;
+    }
+};
+
+int main()
+{
+    TrackedObject object1;
+    {
+        TrackedObject object2;
+        TrackedObject object3;
+        TrackedObject object4;
+    }
+    TrackedObject object5;
+
+    std::cout << "当前存活对象数: " << TrackedObject::get_active_count() << '\n'
+              << "总共创建过的对象数: " << TrackedObject::get_total_created() << '\n';
+}
+```
+
+Compile and run:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+Output:
+
+```text
+当前存活对象数: 2
+总共创建过的对象数: 5
+```
+
+:::

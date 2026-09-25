@@ -5,13 +5,13 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Master overloading `operator()` and type conversion operators, and learn
+description: Master overloading `operator()` and conversion operators, and learn
   to implement function objects and safe implicit conversions.
 difficulty: intermediate
 order: 3
 platform: host
 prerequisites:
-- 流与下标运算符
+- Stream and Subscript Operators
 reading_time_minutes: 14
 tags:
 - cpp-modern
@@ -21,220 +21,279 @@ tags:
 title: Function Calls and Type Conversion
 translation:
   source: documents/vol1-fundamentals/ch07/03-call-and-conversion.md
-  source_hash: 569e11b5dcbf5c5430be51687672788375143643ebe6d38a1e0b19ce3bf372c2
-  translated_at: '2026-06-16T03:45:21.638246+00:00'
+  source_hash: 9ceca71e7a5a52ca9c334045ef675be164124b0f8001541dc89b45902b42c971
+  translated_at: '2026-09-25T11:13:11+00:00'
   engine: anthropic
-  token_count: 2612
+  token_count: 7800
 ---
-# Function Call and Type Conversion
+# Function Calls and Type Conversion: Objects That Can Be Used Like Functions
 
-In previous chapters, we have enabled custom types to support arithmetic operations, subscript access, and stream input/output—making objects behave like values, containers, and printable entities. However, the power of operator overloading extends far beyond that. In this chapter, we will tackle two very interesting scenarios: making objects behave like functions, and allowing objects to implicitly or explicitly "transform" into another type.
+In the preceding chapters we have given our custom types arithmetic, subscript access, and stream I/O—making objects behave like values, like containers, like printable things. But the power of operator overloading goes far beyond that. In this chapter we take on two particularly interesting scenarios: making an object behave like a function, and letting an object "become" another type, implicitly or explicitly.
 
-Sounds a bit magical? It's actually not complicated. An object overloading `operator()` can be "called" like a function—we call it a **function object** (functor), which is a core component of callback mechanisms and generic algorithms in C++. Type conversion operators, on the other hand, give objects the ability to "shapeshift" between types, for example, allowing a smart pointer to be naturally checked for emptiness in an `if` statement. Together, these two mechanisms are key tools for building flexible and expressive abstractions.
+Sounds a bit magical? It's really not complicated. An object with an overloaded `operator()` can be "called" just like a function—we call it a **function object** (functor), and it is a core building block of callback mechanisms and generic algorithms in C++. Back in the earliest days of C++, we used this trick everywhere.
 
-However, both are areas where it is easy to trip up when overloading. Implicit type conversions can happen silently without you noticing, and improper state management in function objects can lead to completely incorrect algorithm results. Let's take this step by step: first, we will thoroughly clarify the mechanism of `operator()`, then dive deep into type conversion operators—including how the `explicit` version introduced in C++11 helps us avoid those ancient pitfalls.
+Conversion operators, for their part, let an object convert into another type—for example, letting a smart pointer test itself for null naturally inside an `if` statement. Together, these two mechanisms are key tools for building flexible, expressive abstractions.
+
+But the two are also the biggest minefields in overloading. An implicit conversion can sneak in without our noticing, and a function object with badly managed state can make an algorithm's results come out completely wrong. So let's proceed step by step: first we will nail down the mechanics of `operator()`, then dig into conversion operators—including how the `explicit` variants introduced in C++11 help us dodge those age-old traps.
 
 ## Making Objects Callable — operator()
 
-The syntax of the function call operator `operator()` is not complex, but the paradigm shift it brings to programming is profound. Once a class overloads `operator()`, its instances can be used in function call syntax just like a function—by placing parentheses and an argument list after the object:
+The syntax of the function call operator `operator()` is not complicated, but the paradigm shift it brings is profound. Once a class overloads `operator()`, its instances can be used with function-call syntax just like a function: append a pair of parentheses and an argument list after the object.
 
 ```cpp
-struct Multiplier {
-    int factor;
-    Multiplier(int f) : factor(f) {}
+class Multiplier {
+private:
+    int factor_;
 
-    int operator()(int x) const {
-        return x * factor;
-    }
-};
-
-Multiplier times3(3);
-int result = times3(10); // result is 30
-```
-
-Here, `times3(10)` looks like a normal function call, but it is actually syntactic sugar for `times3.operator()(10)`. The instance `times3` of `Multiplier` is an object, but its behavior is indistinguishable from a function—hence we call it a **function object** or **functor**.
-
-You might ask: what's the difference between this and a normal function pointer? The difference is huge. A normal function pointer can only point to a function and cannot carry additional state information. A function object, however, is a true object—it has member variables, can save parameters during construction, and utilize this saved state in every call. The `Multiplier` above is a typical example: `factor` is its "state"; different instances can have different multipliers, yet their "call interface" remains identical. This kind of "function with state" is extremely useful in generic programming.
-
-Regarding the signature of `operator()`, there is one specific point to note: it can have almost any signature. Parameter types, number of parameters, and return type can all be freely chosen—the only limit is that it must be a member function (because the language rules dictate `operator()` cannot be overloaded as a non-member). It can have multiple overloaded versions, be a template function, or even be a variadic version. This flexibility allows function objects to adapt to almost any scenario requiring a "callable entity."
-
-Additionally, you will notice that the `operator()` above is marked `const`. This is a good habit—if the function object's call does not modify internal state, add `const`. This ensures it works correctly in `const` contexts. Of course, some function object designs inherently require modifying internal state (like a counter), in which case omitting `const` is the correct choice.
-
-## Practical Application of Function Objects
-
-Just looking at a `Multiplier` might not be intuitive enough, so let's look at a more practical example—a custom comparator used with `std::sort`. The standard library's sorting algorithm accepts an optional comparison parameter; you can pass a function object to define your own sorting rules:
-
-```cpp
-struct DescendingCompare {
-    bool operator()(int a, int b) const {
-        return a > b; // Sort from large to small
-    }
-};
-
-std::vector<int> data = {5, 2, 8, 1, 9};
-std::sort(data.begin(), data.end(), DescendingCompare());
-// data is now {9, 8, 5, 2, 1}
-```
-
-Note that we passed `DescendingCompare()` to `std::sort`—this is a temporary function object instance. `std::sort` internally copies this object and calls its `operator()` whenever it needs to compare two elements. This pattern is ubiquitous in the standard library: `std::find_if` accepts a predicate function object, `std::transform` accepts a transformation function object, `std::accumulate` accepts an accumulation function object—they all implement "injecting custom behavior" through `operator()`.
-
-> **Pitfall Warning: Stateful Function Objects and Algorithm Copy Semantics**
-> The pitfall here is very subtle. Standard library algorithms **copy** the function object you pass in. If you design a stateful function object (for example, a counter to track comparison counts), the copy inside the algorithm is independent of the original object—you cannot read the algorithm's internal execution results from the original object. Consider this example:
->
-> ```cpp
-> struct Counter {
->     int count = 0;
->     bool operator()(int, int) {
->         return ++count % 2 == 0;
->     }
-> } counter;
->
-> std::vector<int> v(100);
-> std::sort(v.begin(), v.end(), counter);
-> std::cout << counter.count; // Output is likely 0, not the actual comparison count!
-> ```
->
-> If you truly need to extract the function object's state from an algorithm, C++11's `std::ref` can help—`std::ref(counter)` passes a reference wrapper in, avoiding the copy. But a better approach is: understand the algorithm's copy semantics and design the function object with this in mind from the start.
-
-The power of function objects became even more accessible after C++11 introduced lambdas—a lambda is essentially a function object automatically generated by the compiler. But before understanding lambdas, writing function objects by hand is a necessary step to understanding the mechanism. We will discuss lambdas specifically later; for now, let's keep our focus on the mechanism of `operator()` itself.
-
-## Type Conversion Operators — Making Objects "Transform"
-
-Type conversion operators allow an object of a class to be implicitly or explicitly converted to another type. Its syntax is `operator Type()`, with no return type declaration (because the return type is the target type itself):
-
-```cpp
-class SmartPtr {
-    int* ptr;
 public:
-    operator bool() const {
-        return ptr != nullptr;
-    }
-    operator int*() const {
-        return ptr;
-    }
+    explicit Multiplier(int factor) : factor_(factor) {}
+
+    int operator()(int x) const { return x * factor_; }
 };
 
-SmartPtr p;
-if (p) { /* ... */ } // Calls operator bool()
-int* raw = p;        // Calls operator int*()
+Multiplier triple(3);
+int result = triple(10);  // 30 — triple acts just like a "multiply by 3" function
 ```
 
-Here, `operator bool()` allows `SmartPtr` to be used directly in an `if` statement, and `operator int*()` allows it to be assigned to an `int*` variable. In certain scenarios, this is indeed very convenient—for example, a smart pointer overloading `operator bool()` to check for emptiness is a classic usage.
+Here `triple(10)` looks like an ordinary function call, but it is really syntactic sugar for `triple.operator()(10)`. The `Multiplier` instance `triple` is an object, yet it behaves no differently from a function—so we call it a **function object**, or a **functor**.
 
-But behind convenience lies danger. Implicit type conversion can be triggered silently in places where you **had absolutely no intention for it to happen**. The compiler will automatically call the conversion operator whenever it deems "types don't match, but can be matched via conversion." Consider the following scenario:
+You might ask: what's the difference from an ordinary function pointer? The difference is enormous. A plain function pointer can only point at a function; it cannot carry any extra state. A function object, by contrast, is a real object: it has member variables, it can save parameters at construction time, and it can lean on that saved state in every subsequent call. The `Multiplier` above is a textbook example: `factor_` is its "state"; different instances can carry different multipliers while their "call interface" stays exactly the same. "Functions with state" like this are tremendously useful in generic programming.
 
-```cpp
-SmartPtr p(nullptr);
-int value = 100 + p; // p becomes 0, result is 100
-```
+One point about `operator()`'s signature deserves special attention: it can have almost any signature. Parameter types, parameter count, and return type are all up to you; the only restriction is that it must be a member function (the language specifies that `operator()` cannot be overloaded as a non-member). It can come in multiple overloaded versions, it can be a function template, and it can even be variadic. That flexibility lets function objects fit nearly every scenario that calls for a "callable entity".
 
-If this is your expected behavior, then fine. But what if your `SmartPtr` holds a null value? `value` gets `100`—the null value is quietly treated as 0 in the arithmetic operation, without any warning. Even worse, if a class provides both `operator T` and `operator bool`, ambiguity may arise during overload resolution. The compiler will hesitate between the two conversion paths and then produce a baffling error.
+Also, you'll notice that the `operator()` above is marked `const`. That's a good habit: if calling the function object doesn't modify internal state, mark it `const`, and it will then work correctly in `const` contexts too. Of course, some function objects are designed from the start to modify internal state (a counter, say)—in that case, omitting `const` is the right choice.
 
-> **Pitfall Warning: Non-explicit Type Conversion Operators are the Most Dangerous Implicit Contracts**
-> A classic negative example comes from the "safe bool idiom" of the C++98 era. At that time, to support `if (ptr)` syntax, smart pointers usually overloaded `operator void*` or some member pointer type. But `void*` participates in arithmetic operations—`ptr + 1` could actually compile, because `ptr` is first implicitly converted to `void*` (0 or 1), and then pointer arithmetic occurs. This kind of implicit conversion is extremely difficult to troubleshoot in large codebases. C++11 gave us a clean solution—`explicit bool`, which we will discuss next.
+## Function Objects in Practice
 
-## explicit Conversion Operators (C++11) — The Safe Default
-
-C++11 introduced the `explicit` modifier for type conversion operators. Its function is similar to `explicit` constructors: **prohibit implicit conversion, only allow explicit usage**. However, there is a very subtle exception—in boolean contexts (the condition part of `if`, `while`, `for`, and the operands of `!`, `&&`, `||`), `explicit operator bool` can still be implicitly triggered. This exception is designed specifically for types like smart pointers that need boolean testing:
+A lone `Multiplier` may not feel very concrete, so let's look at a more practical example: a custom comparator working with `std::sort`. The standard library's sorting algorithm accepts an optional comparison argument, and we can pass in a function object to define our own ordering rule:
 
 ```cpp
-class SafePtr {
-    int* ptr;
-public:
-    explicit operator bool() const {
-        return ptr != nullptr;
-    }
-};
-
-SafePtr p;
-if (p) { /* ... */ }        // OK: Contextual conversion
-bool b = static_cast<bool>(p); // OK: Explicit cast
-// int x = p + 10;         // Error: No implicit conversion to int
-```
-
-Notice the last two commented-out lines—without `explicit` on `operator bool`, they would compile (though the semantics are completely wrong). But with `explicit`, the compiler directly rejects this dangerous implicit conversion. In a boolean context like `if (p)`, the restriction of `explicit` is automatically relaxed—this is exactly the behavior we want: safely test for boolean values without allowing accidental numerical participation.
-
-This gives us a clear design guideline: **type conversion operators should be `explicit` by default**. The only scenario where you might omit `explicit` is for conversions with extremely clear semantics that are unlikely to cause misunderstanding—for example, a string wrapper class's `operator std::string()`. But even in that case, think twice before doing it.
-
-## In Practice — callable.cpp
-
-Now let's put `operator()` and type conversion operators together and write a complete example. This program contains three parts: a threshold checker function object, a safe boolean wrapper, and a string-number class supporting explicit conversion.
-
-```cpp
-#include <iostream>
-#include <string>
-#include <vector>
 #include <algorithm>
+#include <vector>
 
-// 1. Stateful function object: Range checker with counter
-class RangeChecker {
-    int min_val, max_val;
-    int rejected_count = 0;
+struct DescendingOrder {
+    bool operator()(int a, int b) const { return a > b; }
+};
+
+int main()
+{
+    std::vector<int> data = {3, 1, 4, 1, 5, 9, 2, 6};
+
+    // Pass in a function object to sort in descending order
+    std::sort(data.begin(), data.end(), DescendingOrder());
+
+    // data is now {9, 6, 5, 4, 3, 2, 1, 1}
+    return 0;
+}
+```
+
+Notice that what we pass to `std::sort` is `DescendingOrder()`—a temporary function object instance. `std::sort` copies that object internally, then invokes its `operator()` each time two elements need to be compared. The pattern is everywhere in the standard library: `std::find_if` takes a predicate function object, `std::transform` takes a transformation function object, `std::accumulate` takes an accumulation function object—they all use `operator()` as the channel for "injecting custom behavior".
+
+Stateful function objects and the copy semantics of algorithms—the trap here is exceptionally well hidden. Standard library algorithms **copy** the function objects we pass in. If we design a stateful function object (a counter tallying comparisons, for example), the copy inside the algorithm and the original object are independent, and none of the algorithm's internal results can be read back from the original object. Take a look:
+
+```cpp
+struct CountingComparator {
+    int count = 0;
+    bool operator()(int a, int b) { ++count; return a < b; }
+};
+
+CountingComparator comp;
+std::vector<int> v = {5, 2, 8, 1, 9};
+std::sort(v.begin(), v.end(), comp);
+// comp.count is very likely still 0!
+// because sort made its own copy of comp; the comparison count lives in that copy
+```
+
+If we truly do need to extract a function object's state from an algorithm, C++11's `std::ref` can help—`std::sort(v.begin(), v.end(), std::ref(comp))` passes in a reference wrapper and dodges the copy. But the better approach is to understand the algorithm's copy semantics and take it into account when designing the function object in the first place.
+
+The power of function objects became far easier to reach once C++11 brought in lambdas—a lambda is, at heart, a function object the compiler generates for you. But before you understand lambdas, writing function objects by hand is the obligatory path to understanding the mechanism. We'll give lambdas a dedicated discussion later; for now, keep the focus on the mechanics of `operator()` itself.
+
+## Conversion Operators: Turning Objects into Another Type
+
+> PS: we do not recommend abusing this feature wholesale—judge whether each conversion feels natural. Take smart pointers: a smart pointer is a kind of pointer, and native pointers can be tested in boolean contexts, so we can add a matching `operator bool()` to keep the call sites reading naturally.
+
+A conversion operator lets an object of a class be converted, implicitly or explicitly, into another type. The syntax is `operator TargetType()`, with no return-type declaration (because the return type is the target type itself):
+
+```cpp
+class NullableInt {
+private:
+    int value_;
+    bool has_value_;
+
 public:
-    RangeChecker(int min_v, int max_v) : min_val(min_v), max_val(max_v) {}
+    NullableInt(int v) : value_(v), has_value_(true) {}
+    NullableInt() : value_(0), has_value_(false) {}
 
-    bool operator()(int value) {
-        if (value < min_val || value > max_val) {
-            ++rejected_count;
+    // Implicit conversion to bool: checks whether it holds a value
+    operator bool() const { return has_value_; }
+
+    // Implicit conversion to int: retrieves the value
+    operator int() const { return value_; }
+};
+
+NullableInt a(42);
+NullableInt b;  // empty value
+
+if (a) {
+    // a holds a value, so we end up in here
+    int x = a;  // implicitly converts to int, x = 42
+}
+```
+
+Here we use `operator bool()` so a `NullableInt` works directly in an `if` statement, and `operator int()` so it can be assigned to an `int` variable. In some scenarios this is genuinely convenient—a smart pointer overloading `operator bool()` to test for null is a thoroughly classic usage.
+
+But the flip side of convenience is danger. Implicit conversions fire quietly in places where we **never intended them to happen**. Whenever the compiler decides "the types don't match, but a conversion could make them match", it will call the conversion operator automatically. Consider this scenario:
+
+```cpp
+NullableInt a(10);
+NullableInt b(20);
+int result = a + b;
+// We might expect a compile error here — NullableInt doesn't overload operator+
+// But in reality: a implicitly converts to int(10), b to int(20), result = 30
+```
+
+If that is the behavior we wanted, fine. But what if one of our `NullableInt`s holds the empty value? `NullableInt() + NullableInt(5)` yields `0 + 5 = 5`—the empty value silently joins the arithmetic as 0, without a single warning. Worse still, if a class provides both `operator int()` and `operator double()`, overload resolution can turn ambiguous: the compiler wavers between the two conversion paths and then emits a thoroughly baffling error.
+
+Non-explicit conversion operators are the most dangerous kind of implicit contract. A classic cautionary tale comes from the "safe bool idiom" of the C++98 era. Back then, smart pointers that wanted to support the `if (ptr)` syntax would typically overload `operator bool()` or some member-pointer type. But `operator bool()` takes part in arithmetic—`ptr + 1` would actually compile, because `ptr` gets implicitly converted to `bool` first (0 or 1), and then `1 + 1 = 2`. Implicit conversions like these are brutally hard to hunt down in a large codebase. C++11 handed us a clean solution: `explicit operator bool`, which we'll get to right away.
+
+## explicit Conversion Operators (C++11): The Safe Default
+
+C++11 introduced the `explicit` specifier for conversion operators, and its effect mirrors an `explicit` constructor: **implicit conversion is forbidden; only explicit use is allowed**. But there is one exquisitely crafted exception—in boolean contexts (the condition parts of `if`, `while`, and `for`, plus the operands of `!`, `&&`, and `||`), an `explicit operator bool` can still be triggered implicitly. That exception was designed precisely for types like smart pointers that need boolean testing:
+
+```cpp
+class SafeBool {
+private:
+    bool value_;
+
+public:
+    explicit SafeBool(bool v) : value_(v) {}
+
+    explicit operator bool() const { return value_; }
+};
+
+SafeBool sb(true);
+
+// Boolean context: implicit use is fine
+if (sb) {
+    // we enter the branch as usual
+}
+
+// Non-boolean context: explicit conversion required
+bool b = static_cast<bool>(sb);  // OK
+// int n = sb;  // Compile error! No implicit conversion allowed
+// int x = sb + 1;  // Compile error! Won't take part in arithmetic
+```
+
+Look closely at the last two commented-out lines: had `operator bool()` not been `explicit`, they would compile (even though the semantics would be utterly wrong); with `explicit`, the compiler refuses the dangerous implicit conversion outright. Meanwhile, in a boolean context like `if (sb)`, the `explicit` restriction is automatically relaxed—precisely the behavior we want: test the boolean safely, but refuse any accidental participation in arithmetic.
+
+This leaves us with a crisp design guideline: **conversion operators should be `explicit` by default**. The only cases that can go without `explicit` are conversions whose semantics are so unambiguous that misreading is nearly impossible—`operator std::string_view() const` on a string wrapper class, say—but even then, think twice before you commit.
+
+## Practice: callable.cpp
+
+Now let's put `operator()` and conversion operators together and write one complete example. The program has three parts: a threshold-based checker function object, a safe bool wrapper, and a string-number class supporting explicit conversions.
+
+```cpp
+// callable.cpp
+#include <cstdio>
+#include <cstring>
+#include <string>
+
+/// @brief A threshold-based range-checking function object
+class ThresholdChecker {
+private:
+    int min_;
+    int max_;
+    int rejected_count_;
+
+public:
+    ThresholdChecker(int min_val, int max_val)
+        : min_(min_val), max_(max_val), rejected_count_(0)
+    {
+    }
+
+    /// @brief Checks whether a value is in range; increments the rejection count when it is not
+    bool operator()(int value)
+    {
+        if (value < min_ || value > max_) {
+            ++rejected_count_;
             return false;
         }
         return true;
     }
 
-    int get_rejected_count() const { return rejected_count; }
+    int rejected_count() const { return rejected_count_; }
+
+    void reset() { rejected_count_ = 0; }
 };
 
-// 2. Safe boolean wrapper
-class SafeBoolWrapper {
-    bool valid;
+/// @brief A safe bool wrapper using explicit operator bool
+class SafeBool {
+private:
+    bool value_;
+
 public:
-    SafeBoolWrapper(bool v) : valid(v) {}
+    explicit SafeBool(bool v) : value_(v) {}
 
-    explicit operator bool() const { return valid; }
+    explicit operator bool() const { return value_; }
 };
 
-// 3. String-Number class with explicit conversions
+/// @brief A number stored as a string, supporting explicit conversion to int and const char*
 class StringNumber {
-    std::string str;
+private:
+    char buffer_[32];
+
 public:
-    StringNumber(const std::string& s) : str(s) {}
+    explicit StringNumber(const char* str)
+    {
+        std::strncpy(buffer_, str, sizeof(buffer_) - 1);
+        buffer_[sizeof(buffer_) - 1] = '\0';
+    }
 
-    explicit operator int() const { return std::stoi(str); }
-    explicit operator double() const { return std::stod(str); }
+    explicit operator int() const { return std::atoi(buffer_); }
 
-    std::string get_str() const { return str; }
+    explicit operator const char*() const { return buffer_; }
 };
 
-int main() {
-    // 1. Test RangeChecker
-    std::vector<int> test_values = {1, 5, 10, 15, 20, 25, 30};
-    RangeChecker checker(10, 20);
+int main()
+{
+    // --- ThresholdChecker: function object ---
+    ThresholdChecker checker(0, 100);
 
-    std::cout << "Testing RangeChecker (10-20):\n";
-    for (int v : test_values) {
-        if (checker(v)) {
-            std::cout << v << " accepted\n";
-        } else {
-            std::cout << v << " rejected\n";
-        }
+    int test_values[] = {50, -1, 75, 200, 30, -5, 88};
+    const char* labels[] = {"50", "-1", "75", "200", "30", "-5", "88"};
+
+    std::printf("=== ThresholdChecker (0..100) ===\n");
+    for (int i = 0; i < 7; ++i) {
+        bool ok = checker(test_values[i]);
+        std::printf("  %s -> %s\n", labels[i], ok ? "PASS" : "REJECT");
     }
-    std::cout << "Total rejected: " << checker.get_rejected_count() << "\n\n";
+    std::printf("  Rejected: %d\n", checker.rejected_count());
 
-    // 2. Test SafeBoolWrapper
-    SafeBoolWrapper wrapper(true);
-    if (wrapper) {
-        std::cout << "SafeBoolWrapper is true\n";
+    // --- SafeBool: explicit operator bool ---
+    std::printf("\n=== SafeBool ===\n");
+    SafeBool flag_true(true);
+    SafeBool flag_false(false);
+
+    if (flag_true) {
+        std::printf("  flag_true is truthy\n");
     }
-    // bool b = wrapper; // Error: Cannot convert implicitly
-    bool b = static_cast<bool>(wrapper); // OK
-    std::cout << "Explicit cast result: " << std::boolalpha << b << "\n\n";
+    if (!flag_false) {
+        std::printf("  flag_false is falsy\n");
+    }
 
-    // 3. Test StringNumber
-    StringNumber num("123");
-    // int x = num; // Error: Implicit conversion disabled
-    int x = static_cast<int>(num); // OK
-    double y = static_cast<double>(num); // OK
-    std::cout << "StringNumber '" << num.get_str() << "' -> int: " << x << ", double: " << y << "\n";
+    // --- StringNumber: explicit conversion ---
+    std::printf("\n=== StringNumber ===\n");
+    StringNumber sn("42");
+    StringNumber sn2("100");
+
+    int val = static_cast<int>(sn);
+    int val2 = static_cast<int>(sn2);
+    const char* str = static_cast<const char*>(sn);
+
+    std::printf("  StringNumber(\"42\") as int: %d\n", val);
+    std::printf("  StringNumber(\"100\") as int: %d\n", val2);
+    std::printf("  StringNumber(\"42\") as string: %s\n", str);
+    std::printf("  Sum: %d\n", val + val2);
 
     return 0;
 }
@@ -243,48 +302,53 @@ int main() {
 Compile and run:
 
 ```bash
-g++ -std=c++20 -o callable callable.cpp && ./callable
+g++ -std=c++17 -Wall -Wextra -o callable callable.cpp && ./callable
 ```
 
 Expected output:
 
 ```text
-Testing RangeChecker (10-20):
-1 rejected
-5 rejected
-10 accepted
-15 accepted
-20 accepted
-25 rejected
-30 rejected
-Total rejected: 3
+=== ThresholdChecker (0..100) ===
+  50 -> PASS
+  -1 -> REJECT
+  75 -> PASS
+  200 -> REJECT
+  30 -> PASS
+  -5 -> REJECT
+  88 -> PASS
+  Rejected: 3
 
-SafeBoolWrapper is true
-Explicit cast result: true
+=== SafeBool ===
+  flag_true is truthy
+  flag_false is falsy
 
-StringNumber '123' -> int: 123, double: 123
+=== StringNumber ===
+  StringNumber("42") as int: 42
+  StringNumber("100") as int: 100
+  StringNumber("42") as string: 42
+  Sum: 142
 ```
 
-Let's break this down block by block. `RangeChecker` is a typical stateful function object—it checks if a value is within a specified range on each call to `operator()`, while counting the number of rejections. Note that `operator()` here is not marked `const` because it modifies `rejected_count`. You can see that out of 7 test values, 3 were rejected, and `rejected_count` accurately recorded this number—if we had passed it to an algorithm via `std::ref`, it could tell us "how many comparisons were made" or "how many were rejected" after the algorithm finished.
+Let's take it apart piece by piece. `ThresholdChecker` is a typical stateful function object: every call to `operator()` checks whether the value falls inside the given range while tallying how many were rejected. Note that `operator()` here is not marked `const`, because it modifies `rejected_count_`. Of the 7 test values, 3 are rejected, and `rejected_count()` records that number faithfully—handed to some algorithm via `std::ref`, it could tell us "how many comparisons were made" or "how many were rejected" once the algorithm finishes.
 
-`SafeBoolWrapper` demonstrates the correct usage of `explicit operator bool`. It works naturally in an `if` condition, but if you try to assign it to a `bool` variable or participate in arithmetic, the compiler will error out directly. This is exactly what we want—clear boolean semantics with no risk of overflow.
+`SafeBool` demonstrates the correct use of `explicit operator bool`. It works naturally in an `if` condition, but the moment you try assigning it to an `int` or letting it join an arithmetic expression, the compiler barks. Exactly what we want—boolean semantics stay clean, with no overflow risk.
 
-`StringNumber` shows the coexistence of multiple explicit conversion operators. It supports conversion to both `int` and `double`, but since both are marked `explicit`, you must use `static_cast` to explicitly request the conversion—there is no possibility of the compiler "taking matters into its own hands" to choose a conversion path.
+`StringNumber` shows several explicit conversion operators coexisting. It supports conversion to both `int` and `const char*`, but since both are marked `explicit`, you must request the conversion explicitly with a `static_cast`—there is no room for the compiler to pick a conversion path "on our behalf".
 
-## Exercises
+## Try It Yourself
 
-**Exercise 1: Implement a Generic Comparator Function Object**
+### Exercise 1: Implement a Generic Comparator Function Object
 
-Write a template class `GenericComparator`, whose constructor accepts a sorting strategy (ascending or descending), and then performs comparisons via `operator()`. Requirements: support any comparable type (implement using templates), and provide a member function to return the total comparison count.
+Write a template class `GenericComparator` whose constructor accepts a sort strategy (ascending or descending) and which performs its comparisons through `operator()`. It must support any comparable type (implement it with templates) and offer a member function that returns the total comparison count.
 
-Hint: You can use an enum `class SortStrategy { Ascending, Descending }` to represent the strategy, and inside `operator()`, decide to return `a < b` or `a > b` based on the strategy.
+Hint: we can represent the sort strategy with the enum `enum class Order { kAscending, kDescending };`, and inside `operator()` return `a < b` or `a > b` depending on which strategy is active.
 
-Verification: Use your `GenericComparator` with `std::sort` to sort a `std::vector<int>` in ascending and descending order, outputting the results before and after sorting.
+To verify: use your `GenericComparator` together with `std::sort` to sort a `std::vector<double>` in ascending and then descending order, printing the results before and after each sort.
 
-**Exercise 2: Implement explicit operator bool for a Result Class**
+### Exercise 2: Implement explicit operator bool for a Result Class
 
-Implement a `Result` class template that either holds a valid value or an error message string. Requirements: overload `explicit operator bool` to judge if it holds a valid value; provide a `get_value()` member function to retrieve the valid value (terminate with error message if no value); provide a `get_error()` member function to retrieve the error message.
+Implement a `Result<T>` class template that either holds a valid value or holds an error-message string. Requirements: overload `explicit operator bool()` to tell whether a valid value is held; provide a `value()` member function to fetch the valid value (print the error message and terminate when there is none); and provide an `error()` member function to fetch the error message.
 
-Hint: You can use `std::variant` or a `bool` flag plus a `std::string` to store the data.
+Hint: we can store the data using `std::optional<T>`, or with a `bool` flag plus a `union`.
 
-Verification: Create a `Result<int>` holding a value and a `Result<int>` holding an error. Test the boolean conversion behavior with `if` respectively to confirm the logic is correct.
+To verify: create one `Result<int>` holding a value and one holding an error, test the boolean conversion of each with `if (result)`, and confirm the logic is correct.
