@@ -1,16 +1,16 @@
 ---
-title: Inheritance and Polymorphism
-description: First establish the design judgment of inheritance versus composition, then dive
-  into inheritance hierarchies, virtual functions, abstract classes, and polymorphism mechanisms
+title: "Inheritance and Polymorphism"
+description: "First establish the design judgment between inheritance and composition, then dive into inheritance hierarchies, virtual functions, abstract classes, and the polymorphism mechanism"
 translation:
   source: documents/vol1-fundamentals/ch08/index.md
   source_hash: 2b18a0661ab4b55198be70f74928e529f546d45f805a6b6a6610d266a9f74433
-  translated_at: '2026-09-17T00:00:00+00:00'
-  engine: manual
+  translated_at: '2026-09-25T11:39:30+00:00'
+  engine: anthropic
+  token_count: 250
 ---
 # Inheritance and Polymorphism
 
-The power of object-oriented programming lies in "manipulating different types of objects through a uniform interface," and the core mechanism that makes this possible is inheritance and polymorphism. This chapter first establishes a design judgment—inheritance or composition, and when each applies—then starts from single inheritance syntax, clarifies what the virtual function table really is, explores how pure virtual functions and abstract classes design interfaces, and examines the complexity of multiple inheritance and virtual inheritance. Finally, we tie these OOP design concepts together through a hands-on case study.
+The power of object-oriented programming lies in "manipulating objects of different types through a unified interface"—and the core mechanisms that make this possible are inheritance and polymorphism. In this chapter we first establish a design judgment—inheritance or composition, and when to reach for each—then start from single-inheritance syntax, figure out what the virtual function table actually is, and see how pure virtual functions and abstract classes let us design interfaces. From there we look at the complexity that multiple inheritance and virtual inheritance bring in, and finally tie the whole OOP design approach together through a hands-on case study.
 
 ## Chapter Contents
 
