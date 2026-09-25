@@ -446,7 +446,7 @@ std::cout << "sizeof(string): " << sizeof(std::string) << "\n";
 // Typical output: 32
 ```
 
-> A quick aside on the size of int: you can read the details at this [link](https://en.cppreference.com/cpp/language/types). The short version: int is required to be at least 16 bits, that is, 2 bytes; on every other platform it is 4 bytes. Of course, don't memorize this as rote trivia.
+> A quick aside on the size of int: you can read the details on [cppreference: Fundamental types](https://en.cppreference.com/cpp/language/types). The short version: int is required to be at least 16 bits, that is, 2 bytes; on every other platform it is 4 bytes. Of course, don't memorize this as rote trivia.
 > Credit to [YukunJ](https://github.com/YukunJ) for providing the [example](https://godbolt.org/z/sbvEMW56G).
 
 This size is perfectly acceptable for most applications. But in severely memory-constrained embedded scenarios, you may want to evaluate whether `variant` is worth using instead of a hand-written `union` + `enum` tag scheme. The type-safety benefit `variant` brings usually far outweighs a few bytes of memory overhead.
