@@ -4,289 +4,323 @@ cpp_standard:
 - 11
 - 14
 - 17
-description: Deep dive into `unique_ptr` implementation principles, usage, and best
+description: A deep dive into unique_ptr's implementation principles, usage, and best
   practices
 difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- 'Chapter 1: RAII 深入理解'
+- 'Deep Dive into RAII: The Cornerstone of Resource Management'
 reading_time_minutes: 17
 related:
-- shared_ptr 详解
-- 自定义删除器
+- 'Deep Dive into shared_ptr: Shared Ownership and Reference Counting'
+- 'Custom Deleters and Intrusive Reference Counting'
 tags:
 - host
 - cpp-modern
 - intermediate
 - unique_ptr
 - 智能指针
-title: 'unique_ptr Deep Dive: A Zero-Overhead Smart Pointer with Exclusive Ownership'
+title: 'Deep Dive into unique_ptr: A Zero-Overhead Smart Pointer with Exclusive Ownership'
 translation:
   source: documents/vol2-modern-features/ch01-smart-pointers/02-unique-ptr.md
-  source_hash: 87969e610bdf36639634ebf96ce8e6a76df739cb4cdeb207e4614bfa72f1af6e
-  translated_at: '2026-06-16T03:55:20.972417+00:00'
+  source_hash: f125fba833ef1d415ea74acf0055fd3c279aa941392688ebea07d794bf98e65d
+  translated_at: '2026-09-25T14:31:09+00:00'
   engine: anthropic
-  token_count: 3500
+  token_count: 3300
 ---
-# Deep Dive into unique_ptr: Zero-Overhead Smart Pointer with Exclusive Ownership
+# Deep Dive into unique_ptr: A Zero-Overhead Smart Pointer with Exclusive Ownership
 
-In the previous post, we discussed RAII—the cornerstone of C++ resource management. Now, let's look at the most direct manifestation of the RAII philosophy in the realm of smart pointers: `std::unique_ptr`. The design philosophy of this class can be summarized in a single sentence: **one object, one owner, zero overhead**. It doesn't bother with reference counting, atomic operations, or allocating extra control blocks—you give it an object, it manages it for you; you leave the scope, it deletes it for you. It's just that simple. (By the way, why do interviewers love this topic so much?)
+In the previous article we talked about RAII—the cornerstone of C++ resource management. Now let's look at the most direct embodiment of the RAII idea in the smart pointer world: `std::unique_ptr`. The design philosophy of this class boils down to one sentence: **one object, one owner, zero overhead**. It doesn't do reference counting, doesn't perform atomic operations, doesn't allocate any extra control block—you hand it an object, and it manages the object for you; you leave the scope, and it deletes the object for you. That simple. (By the way, why do interviews love quizzing on this thing so much?)
 
-But simple doesn't mean shallow. Behind `std::unique_ptr` lie topics like ownership semantics, move semantics, custom deleters, and Empty Base Optimization (EBO)—each worth a deep understanding. Today, we'll unpack all of these.
+But simple doesn't mean shallow. The topics sitting behind `unique_ptr`—ownership semantics, move semantics, custom deleters, Empty Base Optimization (EBO)—each deserves a deep understanding. Today we'll take all of them apart.
 
-## Exclusive Ownership: Why No Copying
+## Exclusive Ownership: Why Copying Is Not Allowed
 
-The core semantic of `std::unique_ptr` is "exclusive"—at any given moment, only one `std::unique_ptr` owns the object. This means copy construction and copy assignment are prohibited; only move operations are allowed. This isn't a limitation, but a precise expression of design: if copying were allowed, two `std::unique_ptr` instances would both believe they own the object. Upon leaving the scope, both would attempt to delete—double free, leading directly to undefined behavior (UB).
+The most fundamental semantic of `unique_ptr` is "exclusive"—at any given moment, exactly one `unique_ptr` owns the object. This means copy construction and copy assignment are not permitted; only moves are. This isn't some restriction imposed from outside—it's design expressing itself precisely: if copying were allowed, two `unique_ptr`s would each believe they own the object, and both would attempt to delete it upon leaving scope—a double free, leading straight to undefined behavior.
 
 ```cpp
 #include <memory>
 #include <iostream>
 
 struct Widget {
-    Widget() { std::cout << "Widget constructed\n"; }
-    ~Widget() { std::cout << "Widget destroyed\n"; }
+    int value;
+    explicit Widget(int v) : value(v) {
+        std::cout << "Widget(" << value << ") 构造\n";
+    }
+    ~Widget() {
+        std::cout << "~Widget(" << value << ") 析构\n";
+    }
 };
 
-int main() {
-    // Create a unique_ptr
-    std::unique_ptr<Widget> ptr1 = std::make_unique<Widget>();
+void ownership_demo() {
+    auto p1 = std::make_unique<Widget>(42);
+    // auto p2 = p1;              // Compile error! unique_ptr is not copyable
+    auto p2 = std::move(p1);      // OK: ownership transfers from p1 to p2
 
-    // Transfer ownership via move
-    std::unique_ptr<Widget> ptr2 = std::move(ptr1);
-
-    // ptr1 is now null; ptr2 owns the object
-    if (!ptr1) {
-        std::cout << "ptr1 is empty\n";
-    }
-
-    // Error: cannot copy unique_ptr
-    // std::unique_ptr<Widget> ptr3 = ptr2;
-
-    return 0;
-}
+    // Now p1 == nullptr, and p2 owns the object
+    std::cout << "p1: " << p1.get() << "\n";  // Output: 0 or nullptr
+    std::cout << "p2: " << p2.get() << "\n";  // Output: a valid address
+    std::cout << "p2->value: " << p2->value << "\n";  // Output: 42
+}   // p2 is destroyed, and the Widget is deleted automatically
 ```
 
 Output:
 
 ```text
-Widget constructed
-ptr1 is empty
-Widget destroyed
+Widget(42) 构造
+p1: 0
+p2: 0x55a3c8f42eb0
+p2->value: 42
+~Widget(42) 析构
 ```
 
-This "non-copyable, movable" design perfectly maps to real-world ownership transfer—like handing a key to someone else; you no longer possess that key. At the code level, `std::move(ptr1)` transfers the raw pointer inside `ptr1` to `ptr2`, and then sets `ptr1` to null. The entire process involves no extra memory allocation and no reference counting overhead.
+We've turned the three segments—exclusive ownership, copy rejected, ownership handed over via move—into an animation. You can play it, pause it, or single-step through it with the step button to see every move clearly:
+
+<Anim id="unique-ownership" />
+
+This "non-copyable, movable" design maps perfectly onto ownership transfer in real life—hand your key to someone, and you no longer have that key. At the code level, `std::move` hands the raw pointer inside `p1` over to `p2`, then sets `p1` to null. No additional memory allocation happens along the way, and no reference-counting overhead either.
 
 ## make_unique vs new: Why C++14 Added This Function
 
-C++11 introduced `std::unique_ptr` but forgot to provide `std::make_unique` (widely considered an oversight), which was added in C++14. So, what advantages does `std::make_unique` have over using `new` directly?
+C++11 introduced `std::unique_ptr` but forgot to provide `std::make_unique` (widely regarded as an oversight); C++14 filled the gap. So what advantages does `make_unique` have over a direct `new`?
 
-First is **exception safety**. Consider the following function call:
-
-```cpp
-void process(std::unique_ptr<Widget> ptr, int value);
-
-// Dangerous approach (pre-C++17)
-process(std::unique_ptr<Widget>(new Widget()), compute_value());
-```
-
-In the dangerous approach, the C++ compiler needs to complete the following steps sequentially before calling `process`: `new Widget`, construct the `std::unique_ptr`, and call `compute_value`. **Before C++17**, the C++ standard did not mandate the evaluation order of function arguments—the compiler might `new Widget`, then call `compute_value`, and finally construct the `std::unique_ptr`. If `compute_value` throws an exception, the `new`ed `Widget` leaks—because the `std::unique_ptr` hasn't taken over yet.
-
-⚠️ **Important Update**: Starting from **C++17**, the standard mandates that function arguments must be evaluated left-to-right. Therefore, in C++17 and later, the "dangerous" approach is actually safe. However, `std::make_unique` still has other advantages (code conciseness, avoiding repeating type names) and compatibility with older standards, so it remains the recommended practice.
-
-`std::make_unique` wraps allocation and construction in a single function call, eliminating this "intermediate state," making it exception-safe.
-
-Second is **code conciseness**. `std::make_unique` avoids the appearance of naked `new` in code, reducing the chance of errors:
+First, **exception safety**. Consider this function call:
 
 ```cpp
-// Concise and safe
-auto ptr = std::make_unique<Widget>();
+// Suppose we have a function with this signature
+void process(std::unique_ptr<Widget> ptr, int computed_value);
+
+// The dangerous version (C++11 style)
+process(std::unique_ptr<Widget>(new Widget(42)), compute_something());
+
+// The safe version (C++14 style)
+process(std::make_unique<Widget>(42), compute_something());
 ```
 
-⚠️ `std::make_unique` has a limitation: it does not support custom deleters. If you need a custom deleter (e.g., managing memory allocated by `malloc` or C APIs), you must construct `std::unique_ptr` directly. We will discuss this issue in detail in the "Custom Deleters" section later.
+In the dangerous version, before calling `process` the C++ compiler has to get three things done in sequence: `new Widget(42)`, construct the `unique_ptr`, and call `compute_something()`. **Before C++17**, the C++ standard did not specify the evaluation order of function arguments—the compiler could `new` first, then call `compute_something()`, and construct the `unique_ptr` last. If `compute_something()` throws an exception, the `Widget` from that `new` leaks—because the `unique_ptr` hasn't taken it over yet.
 
-## The Deep Relationship Between Move Semantics and unique_ptr
+**Important update**: starting with **C++17**, the standard mandates that function arguments be evaluated left to right. So in C++17 and later, the dangerous version is actually safe as well. That said, `make_unique` still has other advantages (more concise code, no repeated type names) and works with older standards, so it remains the recommended practice.
 
-`std::unique_ptr` and move semantics are intimately linked. Before C++11, C++ only had copy semantics—making a "copy" of an object. But for `std::unique_ptr`, copying means "two pointers point to the same object," which violates exclusive ownership semantics. The introduction of move semantics solves this problem perfectly: moving isn't "copying," but "transferring"—the source object relinquishes ownership, and the target object takes over.
+`make_unique` wraps allocation and construction inside a single function call, so this kind of "intermediate state" never exists—which is what makes it exception-safe.
 
-This allows `std::unique_ptr` to be stored in standard containers:
+Second, **code conciseness**. `make_unique` keeps bare `new` out of your code, reducing the chance of mistakes:
+
+```cpp
+// Comparison
+auto p1 = std::unique_ptr<Widget>(new Widget(42));  // Verbose, and easy to forget the unique_ptr wrapper
+auto p2 = std::make_unique<Widget>(42);              // Concise, impossible to forget the management
+```
+
+`make_unique` has one limitation: it doesn't support custom deleters. If you need a custom deleter (say, to manage a `FILE*` or `malloc`-allocated memory), you must construct the `unique_ptr` directly. We'll discuss this issue in detail in the later "Custom Deleters" article.
+
+## The Deep Connection Between Move Semantics and unique_ptr
+
+`unique_ptr` and move semantics are tightly bound together. Before C++11, C++ had copy semantics only—making a "replica" of an object. But for `unique_ptr`, copying would mean "two pointers pointing at the same object", which violates exclusive ownership. The introduction of move semantics solved exactly this problem: moving is not "replicating" but "transferring"—the source object gives up ownership, and the destination object takes over.
+
+This is what allows `unique_ptr` to live inside standard containers:
 
 ```cpp
 #include <memory>
 #include <vector>
+#include <iostream>
+
+struct Sensor {
+    int id;
+    explicit Sensor(int i) : id(i) {}
+};
 
 int main() {
-    std::vector<std::unique_ptr<Widget>> widgets;
-    widgets.reserve(3);
+    std::vector<std::unique_ptr<Sensor>> sensors;
 
-    widgets.push_back(std::make_unique<Widget>());
-    widgets.push_back(std::make_unique<Widget>());
-    widgets.push_back(std::make_unique<Widget>());
+    // push_back needs to move, because unique_ptr is not copyable
+    sensors.push_back(std::make_unique<Sensor>(1));
+    sensors.push_back(std::make_unique<Sensor>(2));
+    sensors.push_back(std::make_unique<Sensor>(3));
 
-    // Vector expansion automatically moves unique_ptrs
-    widgets.emplace_back(std::make_unique<Widget>());
+    // When the vector grows, the unique_ptrs inside are transferred via move construction
+    // This is also why unique_ptr's move operations are marked noexcept
+    for (const auto& s : sensors) {
+        std::cout << "Sensor id: " << s->id << "\n";
+    }
 
-    return 0;
+    // Returning a unique_ptr from a function also goes through a move (or RVO)
+    auto make_sensor = [](int id) -> std::unique_ptr<Sensor> {
+        return std::make_unique<Sensor>(id);
+    };
+
+    auto s = make_sensor(99);
+    std::cout << "Created sensor " << s->id << "\n";
 }
 ```
 
-Here is an important detail: `std::unique_ptr`'s move constructor and move assignment operator are marked `noexcept`. This has a direct impact on `std::vector` behavior—when a vector expands, if the element's move constructor is `noexcept`, the vector will prefer moving; otherwise, it falls back to copying (but `std::unique_ptr` isn't copyable, so it must move). Therefore, the `noexcept` nature of `std::unique_ptr`'s move operations is the key guarantee for safely storing it in containers.
+There's an important detail here: both the move constructor and the move assignment operator of `unique_ptr` are marked `noexcept`. This has a direct impact on how `std::vector` behaves—when a vector grows, it prefers moves if the element's move constructor is `noexcept`; otherwise it falls back to copying (but `unique_ptr` cannot be copied, so it must move). Noexcept move operations are therefore the key guarantee that lets `unique_ptr` sit safely inside containers.
 
-You can run `unique_ptr_vector.cpp` to verify this. This example shows how the vector safely moves objects managed by `std::unique_ptr` during expansion and verifies that all elements remain valid after resizing.
+## unique_ptr<T[]>: The Array Version
 
-## unique_ptr<T[]>: Array Version
-
-`std::unique_ptr` has a partial specialization for arrays, `std::unique_ptr<T[]>`, which calls `delete[]` instead of `delete` upon destruction.
+`unique_ptr` has a partial specialization for arrays, `unique_ptr<T[]>`, whose destructor calls `delete[]` instead of `delete`.
 
 ```cpp
-std::unique_ptr<int[]> arr = std::make_unique<int[]>(10);
-arr[0] = 100;
+auto arr = std::make_unique<int[]>(64);  // Allocate 64 ints
+arr[0] = 42;
+arr[1] = 17;
+// Automatically calls delete[] on destruction
 ```
 
-However, honestly, scenarios requiring manual management of dynamic arrays in C++ are very rare. If you need a fixed-size array, using `std::array` or `std::vector` is almost always a better choice. `std::unique_ptr<T[]>` is primarily used to interface with C APIs that return dynamically allocated arrays, like:
+Honestly, though, scenarios in C++ where you need to hand-manage dynamic arrays have become very rare. If you need a fixed-size array, `std::array` or `std::vector` is almost always the better choice. `unique_ptr<T[]>` is mainly for interfacing with C APIs that return dynamically allocated arrays, for example:
 
 ```cpp
-// Assuming a C API: int* get_buffer(size_t size);
-void buffer_deleter(int* p) {
-    // C API cleanup function
-    c_api_free(p);
+// Suppose some C API returns a malloc-allocated array
+extern "C" int* create_buffer(size_t size);
+extern "C" void free_buffer(int* buf);
+
+auto buffer = std::unique_ptr<int[], void(*)(int*)>(
+    create_buffer(1024),
+    [](int* p) { free_buffer(p); }
+);
+buffer[0] = 42;
+```
+
+Our strong recommendation: don't use `unique_ptr<T[]>` as a replacement for `std::vector`. `vector` gives you `size()`, iterators, bounds checking (via `at()`), and more, while `unique_ptr<T[]>` gives you nothing but automatic release.
+
+## Custom Deleter Basics
+
+The second template parameter of `unique_ptr` is the deleter's type. The default is `std::default_delete<T>`, which simply does a `delete ptr` inside. But you can replace it with any callable—function pointer, lambda, function object—as long as it has the `void operator()(T*)` signature.
+
+The most common scenario is managing resources returned from C APIs:
+
+```cpp
+#include <cstdio>
+#include <memory>
+
+// Function pointer as the deleter
+using FilePtr = std::unique_ptr<FILE, decltype(&std::fclose)>;
+
+FilePtr open_file(const char* path, const char* mode) {
+    FILE* f = std::fopen(path, mode);
+    return FilePtr(f, &std::fclose);
 }
 
-std::unique_ptr<int[], void(*)(int*)> buf(get_buffer(1024), buffer_deleter);
-```
-
-⚠️ I strongly suggest: do not use `std::unique_ptr<T[]>` to replace `std::vector`. `std::vector` provides `size()`, iterators, bounds checking (via `at()`), etc., whereas `std::unique_ptr<T[]>` offers nothing beyond automatic release.
-
-## Custom Deleters Basics
-
-The second template parameter of `std::unique_ptr` is the deleter type. By default, it's `std::default_delete`, which internally simply performs `delete`. However, you can replace it with any callable object—function pointer, lambda, functor—provided it matches the `void(T*)` signature.
-
-The most common scenario is managing resources returned by C APIs:
-
-```cpp
-// Managing FILE* from C standard library
-auto file_closer = [](FILE* f) { fclose(f); };
-std::unique_ptr<FILE, decltype(file_closer)> log_file(fopen("log.txt", "w"), file_closer);
-
-// Using fprintf...
-fprintf(log_file.get(), "Hello, %s!\n", "World");
+// Lambda as the deleter (captureless → stateless → zero overhead)
+auto make_closer = []() {
+    auto deleter = [](FILE* f) noexcept { if (f) std::fclose(f); };
+    return std::unique_ptr<FILE, decltype(deleter)>(std::fopen("/tmp/log", "w"), deleter);
+};
 ```
 
 Function objects (functors) as deleters are also a common choice, especially when you want the deleter type to have a name:
 
 ```cpp
-struct HandleDeleter {
-    void operator()(HANDLE h) const {
-        if (h && h != INVALID_HANDLE_VALUE) {
-            CloseHandle(h);
-        }
+struct FreeDeleter {
+    void operator()(void* p) noexcept {
+        std::free(p);
     }
 };
 
-using UniqueHandle = std::unique_ptr<void, HandleDeleter>;
-UniqueHandle h(CreateFile(...));
+// Managing malloc-allocated memory
+auto buf = std::unique_ptr<char, FreeDeleter>(
+    static_cast<char*>(std::malloc(256))
+);
 ```
 
-For a deeper discussion on custom deleters (stateful deleters, EBO optimization, deleters in `std::shared_ptr`), we will expand on this in the dedicated article "Custom Deleters and Intrusive Reference Counting."
+For a deeper discussion of custom deleters (stateful deleters, EBO, deleters in `shared_ptr`, and so on), we'll dedicate the "Custom Deleters and Intrusive Reference Counting" article to the topic.
 
-## Proof of Zero Overhead: sizeof and Assembly Analysis
+## Proving Zero Overhead: sizeof and Assembly Analysis
 
-`std::unique_ptr` is often touted as a "zero-overhead abstraction," but this isn't marketing fluff—we can verify it with actual code. First, let's compare `sizeof`:
+`unique_ptr` is often advertised as a "zero-overhead abstraction", but that's no marketing slogan—we can verify it with real code. First, a `sizeof` comparison:
 
 ```cpp
 #include <memory>
 #include <iostream>
 
+struct EmptyDeleter {
+    void operator()(int* p) noexcept { delete p; }
+};
+
+// Stateful deleter: carries a data member, so EBO can't apply
+struct StatefulDeleter {
+    int extra;
+    void operator()(int* p) noexcept { delete p; }
+};
+
 int main() {
-    std::unique_ptr<int> up1;
-    int* raw = nullptr;
-    std::unique_ptr<int, void(*)(int*)> up2(nullptr, [](int*) {});
-
-    std::cout << "sizeof(raw): " << sizeof(raw) << "\n";
-    std::cout << "sizeof(unique_ptr): " << sizeof(up1) << "\n";
-    std::cout << "sizeof(unique_ptr with func ptr): " << sizeof(up2) << "\n";
-
-    return 0;
+    std::cout << "sizeof(int*):                             " << sizeof(int*) << "\n";
+    std::cout << "sizeof(unique_ptr<int>):                  " << sizeof(std::unique_ptr<int>) << "\n";
+    std::cout << "sizeof(unique_ptr<int, EmptyDeleter>):    " << sizeof(std::unique_ptr<int, EmptyDeleter>) << "\n";
+    std::cout << "sizeof(unique_ptr<int, void(*)(int*)>):   " << sizeof(std::unique_ptr<int, void(*)(int*)>) << "\n";
+    std::cout << "sizeof(unique_ptr<int, StatefulDeleter>): " << sizeof(std::unique_ptr<int, StatefulDeleter>) << "\n";
 }
 ```
 
-Typical output on a 64-bit platform:
+Output on a 64-bit platform (GCC 16.1.1, x86_64):
 
 ```text
-sizeof(raw): 8
-sizeof(unique_ptr): 8
-sizeof(unique_ptr with func ptr): 16
+sizeof(int*):                             8
+sizeof(unique_ptr<int>):                  8
+sizeof(unique_ptr<int, EmptyDeleter>):    8
+sizeof(unique_ptr<int, void(*)(int*)>):   16
+sizeof(unique_ptr<int, StatefulDeleter>): 16
 ```
 
-`std::unique_ptr` with a default deleter or stateless function object is exactly the same size as a raw pointer—8 bytes. This is the magic of Empty Base Optimization (EBO): `std::unique_ptr` usually inherits from the deleter type. When the deleter is an empty class (no data members), the compiler optimizes its size to zero, so `std::unique_ptr` only needs to store that one raw pointer.
+With the default deleter or a stateless function object, a `unique_ptr` is exactly as large as a raw pointer—8 bytes. That's Empty Base Optimization (EBO) at work: internally, `unique_ptr` typically inherits from the deleter type, and when the deleter is an empty class (no data members), the compiler optimizes its size down to 0, leaving the `unique_ptr` with just the one raw pointer to store. The moment the deleter carries state—a function pointer needs its address stored, `StatefulDeleter` needs its `extra` stored—EBO can't help, and the size climbs to 16 bytes.
 
-You can run `unique_ptr_sizeof.cpp` to verify this. Typical output on x86_64-linux (g++ 15.2.1):
+And when a function pointer serves as the deleter, the `unique_ptr` has to store that extra function pointer, so the size doubles—16 bytes. That's the precondition for "zero overhead": **the deleter must be stateless**.
 
-```text
-sizeof(raw ptr): 8
-sizeof(unique_ptr): 8
-sizeof(unique_ptr<func_ptr>): 16
-sizeof(unique_ptr<stateless_lambda>): 8
-```
-
-As you can see, when using a stateless deleter, `std::unique_ptr` is exactly the same size as a raw pointer, whereas using a function pointer or stateful deleter adds overhead.
-
-When using a function pointer as the deleter, `std::unique_ptr` needs to store an extra function pointer, so the size doubles—16 bytes. This is the prerequisite for "zero overhead": **the deleter must be stateless**.
-
-Let's verify this from an assembly perspective. Here is a simple example:
+Let's verify it from the assembly angle next. Here's a simple example:
 
 ```cpp
-void raw_ptr_version() {
-    int* p = new int(42);
-    // ... use p ...
-    delete p;
+// Manage an int with unique_ptr
+int use_unique_ptr() {
+    auto p = std::make_unique<int>(42);
+    return *p;
 }
 
-void unique_ptr_version() {
-    auto p = std::make_unique<int>(42);
-    // ... use p ...
+// The equivalent raw-pointer version
+int use_raw_ptr() {
+    int* p = new int(42);
+    int v = *p;
+    delete p;
+    return v;
 }
 ```
 
-With optimizations enabled (`-O2`), the assembly code generated for these two functions is almost identical. Check `unique_ptr_asm.s` compiled with `-O2 -S`, and you will see both functions generate:
+With optimizations enabled (`-O2`), the assembly generated for these two functions is nearly identical. Save the two functions above into a file, compile with `g++ -std=c++17 -O2 -S`, and you'll see that both produce:
 
 ```asm
-; x86-64 example
-mov     edi, 4
-call    operator new(unsigned long)
-; ... check for null ...
-mov     dword ptr [rax], 42
-; ... use the value ...
-mov     rdi, rax
-call    operator delete(void*)
+movl    $42, %eax
+ret
 ```
 
-The compiler inlines the construction and destruction of `std::unique_ptr`, and even eliminates `new` and `delete` (because the object's lifetime is short and has no side effects). This is the power of C++ abstraction: you gain safety and readability at the source level, but pay no price at the machine code level.
+The compiler inlines the `unique_ptr` construction and destruction away, and even the `new` and `delete` are eliminated (the object's lifetime is short and free of side effects). This is the power of C++ abstraction: you gain safety and readability at the source level, yet pay nothing at the machine-code level.
 
-## PIMPL Idiom: Hiding Implementation Details
+## The PIMPL Idiom: Hiding Implementation Details
 
-PIMPL (Pointer to Implementation) is a classic technique in C++ for reducing compilation dependencies. `std::unique_ptr`'s support for incomplete types makes it the best tool for implementing PIMPL.
+PIMPL (Pointer to Implementation) is a classic technique in C++ for reducing compile-time dependencies. `unique_ptr`'s support for incomplete types makes it the best tool for implementing PIMPL.
 
-Header file `widget.h`:
+Header `widget.h`:
 
 ```cpp
-#ifndef WIDGET_H
-#define WIDGET_H
-
+#pragma once
 #include <memory>
 
 class Widget {
 public:
     Widget();
-    ~Widget(); // Must be declared in header
-    void work();
+    ~Widget();  // Must be declared here and defined in the implementation file
+
+    Widget(Widget&&) noexcept;
+    Widget& operator=(Widget&&) noexcept;
+
+    // Copying disabled (or implement a deep copy yourself)
+    Widget(const Widget&) = delete;
+    Widget& operator=(const Widget&) = delete;
+
+    void do_something();
 
 private:
-    struct Impl;
-    std::unique_ptr<Impl> pImpl;
+    struct Impl;                  // Forward declaration, an incomplete type
+    std::unique_ptr<Impl> impl_;  // unique_ptr supports incomplete types
 };
-
-#endif
 ```
 
 Implementation file `widget.cpp`:
@@ -294,128 +328,164 @@ Implementation file `widget.cpp`:
 ```cpp
 #include "widget.h"
 #include <iostream>
+#include <string>
 
+// The real implementation is defined here—includers of the header see none of these details
 struct Widget::Impl {
+    std::string name;
+    int count;
+
+    Impl() : name("default"), count(0) {}
+
     void do_work() {
-        std::cout << "Working hard in Impl...\n";
+        ++count;
+        std::cout << name << " working (count=" << count << ")\n";
     }
 };
 
-Widget::Widget() : pImpl(std::make_unique<Impl>()) {}
+Widget::Widget() : impl_(std::make_unique<Impl>()) {}
 
-Widget::~Widget() = default; // Defined here, Impl is complete
+Widget::~Widget() = default;  // Impl is a complete type here, so delete runs correctly
 
-void Widget::work() {
-    pImpl->do_work();
+Widget::Widget(Widget&&) noexcept = default;
+Widget& Widget::operator=(Widget&&) noexcept = default;
+
+void Widget::do_something() {
+    impl_->do_work();
 }
 ```
 
-The benefits of PIMPL are obvious: modifying the definition of `Impl` (like adding members or changing methods) only requires recompiling `widget.cpp`. All files including `widget.h` don't need to be recompiled. For large projects, this significantly reduces compilation time.
+The benefit of PIMPL is plain to see: modify `Impl`'s definition (add a member, change a method) and only `widget.cpp` needs recompiling—every file that includes `widget.h` stays untouched. For large projects, this can significantly shorten build times.
 
-The complete PIMPL example code can be found in `pimpl_example/`:
+Compile `widget.h`, `widget.cpp`, and the user code that uses `Widget` separately and then link them, and you can watch PIMPL in action: modify the `Impl` struct and only `widget.cpp` gets rebuilt; all files that merely include `widget.h` skip recompilation.
 
-- `pimpl_widget.h` - Public interface header
-- `pimpl_widget.cpp` - Implementation (contains full definition of `Impl`)
-- `pimpl_main.cpp` - User code example
-
-You can compile and run it like this:
-
-```bash
-cd pimpl_example
-cmake -B build
-cmake --build build
-./build/pimpl_example
-```
-
-This example demonstrates the key feature of the PIMPL pattern: the public interface exposes absolutely no implementation details, and modifying the `Impl` struct does not require recompiling user code.
-
-⚠️ There are a few caveats when using `std::unique_ptr` with PIMPL. First, the destructor must be defined in the implementation file—because destruction requires `Impl` to be a complete type, while the header file only has a forward declaration. Second, the move constructor and move assignment should also be defaulted in the implementation file for the same reason. If you `= default` them in the header, the compiler will attempt to instantiate `std::unique_ptr`'s destructor in the header, where `Impl` is incomplete, causing a compilation error.
+A few gotchas come with using `unique_ptr` for PIMPL. First, `~Widget()` must be defined in the implementation file—destruction requires `Impl` to be a complete type, while the header only holds a forward declaration. Second, the move constructor and move assignment should also be `= default`-ed in the implementation file, for the same reason. If you `= default` them in the header, the compiler will try to instantiate `unique_ptr<Impl>`'s destructor right there, where `Impl` is still incomplete, and you get a compile error.
 
 ## Factory Functions Returning unique_ptr
 
-Factory functions returning `std::unique_ptr` is a very common pattern. It is not only safe (callers can't forget to release), but also expresses clear ownership semantics: the factory creates the object, and the caller owns it exclusively.
+Factory functions returning `unique_ptr` is a very common pattern. It is not only safe (the caller cannot possibly forget to release) but also expresses crisp ownership semantics: the factory creates the object, the caller owns it exclusively.
 
 ```cpp
-class Base {
+#include <memory>
+#include <string>
+
+class Logger {
 public:
-    virtual void interface() = 0;
-    virtual ~Base() = default;
+    virtual ~Logger() = default;
+    virtual void log(const std::string& msg) = 0;
 };
 
-class Derived : public Base {
+class ConsoleLogger : public Logger {
 public:
-    void interface() override { /* ... */ }
+    void log(const std::string& msg) override {
+        std::cout << "[LOG] " << msg << "\n";
+    }
 };
 
-std::unique_ptr<Base> create_object() {
-    return std::make_unique<Derived>();
+class FileLogger : public Logger {
+public:
+    explicit FileLogger(const std::string& path) : path_(path) {}
+    void log(const std::string& msg) override {
+        // Write to the file (implementation omitted)
+    }
+private:
+    std::string path_;
+};
+
+// Factory function: returns unique_ptr<Logger>
+std::unique_ptr<Logger> create_logger(bool use_file, const std::string& path = "") {
+    if (use_file) {
+        return std::make_unique<FileLogger>(path);
+    }
+    return std::make_unique<ConsoleLogger>();
+}
+
+// Usage
+void application() {
+    auto logger = create_logger(true, "/tmp/app.log");
+    logger->log("Application started");
+
+    // Ownership can also be handed to other components via move
+    // set_global_logger(std::move(logger));
 }
 ```
 
-This pattern has a clever feature: the factory function returns `std::unique_ptr<Base>` (base class pointer), but actually creates `Derived` or other (derived class objects). As long as `Base` has a virtual destructor (which we indeed declared), polymorphic destruction is safe.
+There's another neat touch to this pattern: the factory function returns a `unique_ptr<Logger>` (a base-class pointer), while what's actually created is a `ConsoleLogger` or `FileLogger` (a derived-class object). As long as `Logger` has a virtual destructor (and we did declare `virtual ~Logger() = default`), polymorphic destruction is safe.
 
-It is worth noting that returning `std::unique_ptr` incurs no performance penalty. In modern compilers, Return Value Optimization (RVO) and move semantics ensure the whole process is zero-copy—the `std::unique_ptr` created in the factory function is directly "moved" into the caller's variable.
+Worth noting: returning a `unique_ptr` brings no performance penalty. On modern compilers, return value optimization (RVO) and move semantics keep the whole trip copy-free—the `unique_ptr` created inside the factory function is simply "carried over" into the caller's variable.
 
-Specifically:
+Concretely:
 
-- C++11/14: Relies mainly on move semantics (move constructor).
-- C++17: Guaranteed copy elision further optimizes this scenario.
+- C++11/14: relies mainly on move semantics (the move constructor)
+- C++17: guaranteed copy elision optimizes this case even further
 
-In either case, no extra memory allocation or reference counting operations occur, and performance is equivalent to returning a raw pointer.
+In either case, no extra memory allocation or reference counting happens, and performance is on par with returning a raw pointer directly.
 
 ## release(), reset(), and get(): Three Key Operations
 
-`std::unique_ptr` provides several methods for manual ownership management, and understanding their differences is crucial.
+`unique_ptr` provides a few methods for manually managing ownership, and understanding the differences between them really matters.
 
-`get()` returns the internal raw pointer without transferring ownership. This is useful when you need to pass the pointer to a function that uses but does not own the object:
+`get()` returns the internal raw pointer without transferring ownership. This is useful when you need to pass the pointer to a function that merely uses it but doesn't own it:
 
 ```cpp
-void use_widget(Widget* w);
-use_widget(ptr.get());
+void print_widget(const Widget* w);
+
+auto p = std::make_unique<Widget>(42);
+print_widget(p.get());  // Passed to a read-only function; p still owns the object
 ```
 
-`release()` relinquishes ownership and returns the raw pointer—the `std::unique_ptr` becomes empty, but the object is not deleted. This is equivalent to "I'm giving you the object, you are responsible for releasing it":
+`release()` gives up ownership and returns the raw pointer—the `unique_ptr` becomes empty, but the object is not deleted. It amounts to saying "I've handed the object to you; releasing it is your responsibility":
 
 ```cpp
-Widget* raw = ptr.release();
+auto p = std::make_unique<Widget>(42);
+Widget* raw = p.release();  // p becomes nullptr, raw points to the object
 // ... use raw ...
-delete raw; // Don't forget!
+delete raw;  // You must release it manually
 ```
 
-⚠️ `release()` is an operation that requires caution. Once you call it, you are back in the world of raw pointers—if you forget to `delete`, you get a memory leak. In most cases, using `std::move` to transfer ownership to another `std::unique_ptr` is the better choice.
+`release()` is an operation that calls for caution. The moment you call it, you're back in the raw-pointer world—forget the `delete`, and you've leaked memory. In most cases, transferring ownership to another `unique_ptr` with `std::move()` is the better choice.
 
-`reset()` replaces the currently managed object. If no argument is passed, it simply releases the current object and sets the pointer to null:
+`reset()` replaces the currently managed object. Called without arguments, it simply releases the current object and empties the pointer:
 
 ```cpp
-ptr.reset(); // Frees the Widget, ptr becomes null
-ptr.reset(new Widget()); // Frees old Widget, manages new one
+auto p = std::make_unique<Widget>(1);
+p.reset(new Widget(2));  // Frees Widget(1), takes over Widget(2)
+p.reset();               // Frees Widget(2), p becomes nullptr
 ```
 
 ## Embedded Practice: Hardware Handle Management
 
-In embedded development, `std::unique_ptr` combined with custom deleters can elegantly manage hardware resources. For example, managing a DMA buffer allocated via a HAL:
+In embedded development, `unique_ptr` paired with a custom deleter manages hardware resources elegantly. For example, managing a DMA buffer allocated through the HAL:
 
 ```cpp
-// Custom deleter for HAL DMA buffer
-auto dma_deleter = [](uint8_t* p) {
-    if (p) {
-        HAL_DMA_Free(p);
+struct DmaBuffer {
+    void* data;
+    size_t size;
+};
+
+struct DmaDeleter {
+    void operator()(DmaBuffer* buf) noexcept {
+        if (buf) {
+            hal_dma_free(buf->data);  // Free the DMA buffer
+            delete buf;
+        }
     }
 };
 
-using DmaBuffer = std::unique_ptr<uint8_t, decltype(dma_deleter)>;
+using UniqueDmaBuffer = std::unique_ptr<DmaBuffer, DmaDeleter>;
 
-DmaBuffer buffer(static_cast<uint8_t*>(HAL_DMA_Malloc(1024)), dma_deleter);
-
-// Use buffer for DMA transfer...
-// HAL_DMA_Start(buffer.get(), ...);
+UniqueDmaBuffer allocate_dma_buffer(size_t size) {
+    void* data = hal_dma_alloc(size);
+    if (!data) return nullptr;
+    return UniqueDmaBuffer(new DmaBuffer{data, size});
+}
 ```
 
-The benefit of this approach is that any return path—whether it's a normal return, error return, or exception—will correctly release the DMA buffer. In complex driver code, this automatic management significantly reduces bug rates.
+The beauty of this style: every return path—normal return, error return, or exception—releases the DMA buffer correctly. In complex driver code, this kind of automatic management can noticeably cut the bug rate.
 
-The next chapter turns to `std::shared_ptr`—a completely different ownership model: shared ownership. That's where the real complexity begins.
+The next article moves on to `shared_ptr`—a completely different ownership model: shared ownership. That's where the real complexity begins.
 
-## Reference Resources
+## References
 
 - [cppreference: std::unique_ptr](https://en.cppreference.com/w/cpp/memory/unique_ptr)
 - [cppreference: std::make_unique](https://en.cppreference.com/w/cpp/memory/unique_ptr/make_unique)

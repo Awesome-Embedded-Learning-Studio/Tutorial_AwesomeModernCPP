@@ -4,17 +4,17 @@ cpp_standard:
 - 11
 - 14
 - 17
-description: Master the core mechanisms of move semantics to implement zero-copy resource
+description: Master the core mechanisms of move semantics and achieve zero-copy resource
   transfer
 difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- 'Chapter 0: 右值引用'
-reading_time_minutes: 19
+- 'Rvalue References: From Copy to Move'
+reading_time_minutes: 23
 related:
-- RVO 与 NRVO
-- 完美转发
+- 'RVO and NRVO: The Compiler''s Return Value Optimization'
+- 'Perfect Forwarding: Preserving Value Categories Exactly'
 tags:
 - host
 - cpp-modern
@@ -23,367 +23,470 @@ tags:
 title: Move Construction and Move Assignment
 translation:
   source: documents/vol2-modern-features/ch00-move-semantics/02-move-semantics.md
-  source_hash: 2fd26cd9e10b01ed7661cc2dadb4e706657d417e541c9e788ad0f96acaf956eb
-  translated_at: '2026-06-16T03:54:35.931166+00:00'
+  source_hash: 44c694dcc05d07a27469491f910ec105102d9e467fdd56073499ec330cf345fe
+  translated_at: '2026-09-25T14:16:20+00:00'
   engine: anthropic
-  token_count: 4408
+  token_count: 4300
 ---
-# Move Construction and Move Assignment
+# Move Construction and Move Assignment: Teaching Classes to Truly Move, Not Copy
 
-In the previous post, we laid the groundwork for value categories and rvalue references. Now it's time for the real work—making our classes truly "move" instead of "copy". Honestly, I made quite a few mistakes when I first wrote move constructors by hand: forgetting to null out the source object's pointer, forgetting to handle self-assignment, and not being sure when to add `noexcept`. This article shares the pitfalls I've encountered to help you avoid these detours.
+In the previous article we laid the groundwork of value categories and rvalue references. Now it's time for the real work—teaching our classes to truly "move" instead of "copy". Honestly, we made quite a few mistakes the first time we hand-wrote a move constructor: forgetting to null out the source object's pointer, forgetting to handle self-assignment, never being quite sure when to add `noexcept`... This article rounds up all the pitfalls we stumbled into, in the hope of sparing you a few detours.
 
-We will start with a simple but realistic scenario: implementing a dynamic buffer class ourselves, and using it to understand move constructors, move assignment, and the so-called "Rule of Five" step by step.
+We'll start from a simple but realistic-enough scenario: implement a dynamic buffer class ourselves, then use it to work through move construction, move assignment, and the so-called Rule of Five, step by step.
 
-## Why We Need Move—Starting with the Cost of Copying
+## Why We Need Move—Starting from the Cost of Copying
 
-Suppose you are writing a text processing tool that needs to pass large chunks of text data between functions frequently. Let's look at a naive dynamic buffer implementation first:
+Suppose you are writing a text-processing tool that constantly passes big chunks of text data between functions. First, here is the most bare-bones dynamic buffer implementation:
 
 ```cpp
 class Buffer {
+    char* data_;
+    std::size_t size_;
+    std::size_t capacity_;
+
 public:
-    Buffer() : data_(nullptr), size_(0), capacity_(0) {}
+    explicit Buffer(std::size_t capacity)
+        : data_(new char[capacity])
+        , size_(0)
+        , capacity_(capacity)
+    {
+    }
 
-    explicit Buffer(size_t size) : data_(new char[size]), size_(size), capacity_(size) {}
+    // Copy constructor: deep copy
+    Buffer(const Buffer& other)
+        : data_(new char[other.capacity_])
+        , size_(other.size_)
+        , capacity_(other.capacity_)
+    {
+        std::memcpy(data_, other.data_, size_); // Just a plain, direct copy of the data
+    }
 
-    ~Buffer() {
+    // Copy assignment: deep copy
+    Buffer& operator=(const Buffer& other)
+    {
+        if (this != &other) {
+            delete[] data_;
+            data_ = new char[other.capacity_];
+            size_ = other.size_;
+            capacity_ = other.capacity_;
+            std::memcpy(data_, other.data_, size_);
+        }
+        return *this;
+    }
+
+    ~Buffer()
+    {
         delete[] data_;
     }
 
-    // Copy constructor - deep copy
-    Buffer(const Buffer& other)
-        : data_(new char[other.size_]), size_(other.size_), capacity_(other.capacity_) {
-        std::copy(other.data_, other.data_ + size_, data_);
-    }
-
-    // Copy assignment - deep copy
-    Buffer& operator=(const Buffer& other) {
-        if (this != &other) {
-            delete[] data_;
-            size_ = other.size_;
-            capacity_ = other.capacity_;
-            data_ = new char[size_];
-            std::copy(other.data_, other.data_ + size_, data_);
-        }
-        return *this;
-    }
-
-private:
-    char* data_;
-    size_t size_;
-    size_t capacity_;
-};
-```
-
-Now let's do an experiment: create a 1MB buffer and pass it into a function.
-
-```cpp
-void process(Buffer buf) {
-    // Do something with buf
-}
-
-int main() {
-    Buffer buf(1024 * 1024); // 1MB buffer
-    process(buf);
-}
-```
-
-What happens when `process` is called? The parameter `buf` is passed by value, so the compiler calls the copy constructor of `Buffer` to create `buf`—this means allocating 1MB of new memory and copying the data from `buf` byte by byte. When the function returns, `buf` triggers another copy constructor to create the return value. Including the destruction of `buf` at the end of the function—the whole process performs **two 1MB memory allocations, two 1MB memory copies, and one 1MB memory deallocation**. But what we actually need is just to transfer the data from `buf` in `main` to `buf` in `process`. (I estimate old C++ hands would be blushing seeing this, and I believe you won't be able to hold it back either.)
-
-This is the fundamental problem with copy semantics: when you no longer need the source object, the copy constructor still faithfully copies every byte, and then the source object dutifully releases that block of memory when it destructs. Resources are allocated and then released, data is copied and then discarded—pure waste.
-
-## Move Constructor—Transfer of Resource Ownership
-
-The core idea of the move constructor is very simple: don't copy data, just transfer ownership of resources. For classes that manage dynamic memory, this means "stealing" the pointer from the source object and then nulling out the source object's pointer to prevent it from freeing that memory when it destructs.
-
-```cpp
-// Move constructor
-Buffer(Buffer&& other) noexcept
-    : data_(other.data_), size_(other.size_), capacity_(other.capacity_) {
-    other.data_ = nullptr;
-    other.size_ = 0;
-    other.capacity_ = 0;
-}
-```
-
-Let's look at this move constructor line by line. The signature `Buffer(Buffer&& other)` indicates that this is a move constructor—it only accepts rvalue arguments. In the function body, we do three things: copy the three members of `other` directly to `this` (three pointer/integer assignments, very low cost), and then set the source object's pointer to null. This last step is crucial—if we don't set `other.data_` to null, when `other` destructs, its destructor will free the memory we just transferred, and `this` will hold a dangling pointer, leading to a guaranteed crash on subsequent access.
-
-Now we use `std::move` to trigger the move constructor:
-
-```cpp
-int main() {
-    Buffer buf(1024 * 1024);
-    process(std::move(buf)); // Trigger move constructor
-}
-```
-
-What happens in the whole process? Three pointer/integer assignments—done. No `new`, no `memcpy`, no `delete`. It turns an O(n) copy operation into an O(1) pointer transfer. For a 1MB buffer, this is the difference between "allocate 1MB memory plus copy 1MB data" and "assign three registers".
-
-## Move Assignment Operator—One More Step Than Move Construction
-
-The move assignment operator is slightly more complex than the move constructor because the target object of the assignment may already hold resources—we must release the old resources before taking over the new ones.
-
-```cpp
-// Move assignment operator
-Buffer& operator=(Buffer&& other) noexcept {
-    if (this != &other) { // Self-assignment check
-        delete[] data_;   // Release old resources
-
-        data_ = other.data_;
-        size_ = other.size_;
-        capacity_ = other.capacity_;
-
-        other.data_ = nullptr;
-        other.size_ = 0;
-        other.capacity_ = 0;
-    }
-    return *this;
-}
-```
-
-Note the first step `delete[] data_`—this is the key difference between move assignment and move construction. During move construction, the target object is not yet initialized, so there are no old resources to release; during move assignment, the target object already exists, and if we don't release the old resources first, we will leak memory. The self-assignment check `if (this != &other)` is also necessary—although code like `buf = std::move(buf)` rarely appears in normal development, generic implementations of standard library components (like `std::vector`) might produce equivalent operations, so adding this safeguard is a responsible practice.
-
-Let's look at the effect of move assignment in actual code:
-
-```cpp
-int main() {
-    Buffer buf1(1024);
-    Buffer buf2(2048);
-
-    buf2 = std::move(buf1); // Move assignment
-    // buf1 is now in a "valid but unspecified" state
-    // buf2 owns the 1024-byte buffer
-}
-```
-
-> ⚠️ **Pitfall Warning**: The source object after a move is in a "valid but unspecified" state. This means you can safely assign a new value to it or let it destruct, but you shouldn't read its value—for example, `buf1.size()` might return 0, or it might return the original value, depending on the specific implementation. My advice is: let the source object leave scope immediately after moving, or assign it a clear new value; never let a "moved" object wander around in your code.
-
-## noexcept—The Safety Promise of Move Operations
-
-You may have noticed that both move operations are marked with `noexcept`. This is not optional decoration—it has real performance implications.
-
-The reason lies in the expansion behavior of `std::vector`. When `std::vector` needs to grow its capacity, it must transfer existing elements to a new memory block. If the element's move constructor is `noexcept`, `std::vector` will confidently use move; if the move constructor might throw an exception, `std::vector` will fall back to using the copy constructor—because if an exception is thrown during a move, the half-moved state is hard to recover, but if an exception is thrown during a copy, the original data is still intact.
-
-```cpp
-// If move constructor is noexcept, vector uses move
-// If move constructor is not noexcept, vector uses copy
-std::vector<Buffer> vec;
-vec.push_back(Buffer(1024)); // May trigger reallocation
-```
-
-You can use `std::is_nothrow_move_constructible` to verify if your class truly satisfies `noexcept` move:
-
-```cpp
-static_assert(std::is_nothrow_move_constructible_v<Buffer>,
-              "Buffer should be noexcept move constructible");
-```
-
-This isn't just theory on paper—we can write an experiment to verify the actual behavior of `std::vector`. Prepare two `Buffer` classes with identical structure, the only difference being whether the move constructor has `noexcept`, and then let `std::vector` expand. The results are very clear:
-
-```text
-With noexcept move constructor:
-  Reallocation triggered: using move constructor (fast)
-
-Without noexcept move constructor:
-  Reallocation triggered: using copy constructor (slow)
-```
-
-Compiled and run with GCC 15, `-O2`, the behavior matches expectations perfectly. Full code see `noexcept_demo.cpp`.
-
-## Rule of Five
-
-C++ has a classic "Rule of Three": if your class needs a custom destructor, copy constructor, or copy assignment operator, it likely needs all three. C++11 adds move constructor and move assignment operator, making it the "Rule of Five".
-
-If you only declare a destructor but do not declare move operations, the compiler will **not** automatically generate move constructor and move assignment operator. So what happens? It will fall back to using copy operations. This often confuses beginners: clearly `std::move` was used, but the copy constructor is actually called. `std::move` itself doesn't move anything—it's just a type cast from an lvalue reference to an rvalue reference. The ultimate decision to call the move constructor or the copy constructor lies in the class definition. If the class doesn't have a move constructor, the rvalue reference will perfectly match the copy constructor that takes `const Buffer&`.
-
-```cpp
-class Buffer {
-public:
-    ~Buffer(); // Destructor declared
-    // No move constructor declared
-
-    // Compiler will NOT generate move constructor
-    // std::move(buf) will match the copy constructor
-};
-```
-
-The consequence here is more serious than "inefficiency"—because the implicitly generated copy constructor does a shallow copy (copying pointers member by member), `buf1` and `buf2`'s `data_` will point to the same memory block. When both destruct, `delete[]` is called twice, directly triggering a double free. We can use type traits to verify this behavior:
-
-```cpp
-class Buffer {
-public:
-    ~Buffer() {}
-    // No move/copy declarations
-};
-
-static_assert(std::is_move_constructible_v<Buffer>, "Move constructible?");
-// But there is no real move constructor!
-```
-
-Seems contradictory? Not really. `is_move_constructible` being true is because the compiler can use the copy constructor to "satisfy" the move constructor requirement (rvalues can bind to `const Buffer&`), but this doesn't mean there exists a real move constructor to do pointer transfer. Complete verification code is in `rule_of_five_demo.cpp`.
-
-For classes that manage resources, the safest approach is to **either fully customize all five special member functions, or fully default them**. If you use smart pointers to manage resources, you can usually use `= default` to let the compiler generate the correct version—this is exactly what modern C++ recommends. But for classes like ours that manually manage raw pointers, we must honestly write all five:
-
-```cpp
-class Buffer {
-public:
-    // 1. Destructor
-    ~Buffer() { delete[] data_; }
-
-    // 2. Copy constructor
-    Buffer(const Buffer& other);
-
-    // 3. Move constructor
-    Buffer(Buffer&& other) noexcept;
-
-    // 4. Copy assignment
-    Buffer& operator=(const Buffer& other);
-
-    // 5. Move assignment
-    Buffer& operator=(Buffer&& other) noexcept;
-};
-```
-
-It looks a bit long, but the logic is repetitive—copy operations do deep copies, move operations do pointer transfers plus source object nulling.
-
-## copy-and-swap Idiom—Reduce Code Duplication
-
-If you think writing four assignment operators (copy + move) is too verbose, there's a classic idiom that can help you simplify. The core idea is: **let copy assignment and move assignment share a single implementation**, leveraging value-passing semantics to automatically choose between copy or move.
-
-```cpp
-class Buffer {
-public:
-    // Unified assignment operator (takes value)
-    Buffer& operator=(Buffer other) noexcept {
-        swap(*this, other);
-        return *this;
-    }
-
-    friend void swap(Buffer& a, Buffer& b) noexcept {
-        using std::swap;
-        swap(a.data_, b.data_);
-        swap(a.size_, b.size_);
-        swap(a.capacity_, b.capacity_);
-    }
-};
-```
-
-Here `operator=` receives the parameter by value—if you pass an lvalue in, `other` is created via the copy constructor; if you pass an rvalue (like `std::move(buf)`), `other` is created via the move constructor. Then `swap` swaps the contents of `*this` and `other`, and when the function ends, `other` destructs, automatically releasing the old resources.
-
-The advantage of this idiom is less code, exception safety, and automatic handling of self-assignment. The disadvantage is an extra `swap` operation (three pointer swaps), which might have a tiny impact in extreme performance scenarios. However, in the vast majority of scenarios, this overhead is completely negligible—comparing assembly with GCC 15 at `-O2` reveals that the move assignment path of copy-and-swap adds about three register move instructions (the cost of `swap`) compared to the standalone move assignment operator, but there are no extra function calls or memory operations. For classes managing dynamic memory, the overhead of `new`/`delete` far outweighs these three register instructions, so the extra cost of copy-and-swap is practically immeasurable in reality.
-
-## General Example—Moving File Handles
-
-Besides dynamic memory, move semantics is equally powerful for classes managing other resources. File handles are a typical example—the operating system limits the number of open files; if you accidentally copy an object holding a file handle, it can lead to handle leaks or duplicate closes.
-
-```cpp
-class FileHandle {
-public:
-    explicit FileHandle(const char* filename) {
-        fd_ = open(filename, O_RDONLY);
-    }
-
-    // Delete copy operations
-    FileHandle(const FileHandle&) = delete;
-    FileHandle& operator=(const FileHandle&) = delete;
-
-    // Move constructor
-    FileHandle(FileHandle&& other) noexcept : fd_(other.fd_) {
-        other.fd_ = -1;
-    }
-
-    // Move assignment
-    FileHandle& operator=(FileHandle&& other) noexcept {
-        if (this != &other) {
-            close(fd_);
-            fd_ = other.fd_;
-            other.fd_ = -1;
-        }
-        return *this;
-    }
-
-    ~FileHandle() {
-        if (fd_ != -1) {
-            close(fd_);
-            std::cout << "File closed\n";
+    void append(const char* str, std::size_t len)
+    {
+        if (size_ + len <= capacity_) {
+            std::memcpy(data_ + size_, str, len);
+            size_ += len;
         }
     }
 
-private:
-    int fd_;
+    const char* data() const { return data_; }
+    std::size_t size() const { return size_; }
 };
 ```
 
-This example demonstrates a common design pattern: **non-copyable but movable**. A file handle physically exists only once and shouldn't be "copied" to a second copy—copying would lead to both objects trying to close the same file. But moving is reasonable: `openFile` creates a file handle, then transfers ownership to the caller, and the temporary object inside the function no longer holds any resources.
-
-Running this program, you will see:
-
-```text
-File opened
-File closed
-```
-
-Note there is only one "File closed" output—although both `handle` and the temporary object in `openFile` go through destruction, the temporary object's `fd_` was set to `-1` after the move, so the `if` check in its destructor fails, preventing a duplicate close.
-
-## Hands-on Experiment—move_semantics_demo.cpp
-
-Let's write a complete program to verify all key behaviors of move semantics.
+Now let's run an experiment: create a 1MB buffer, then pass it into a function.
 
 ```cpp
 #include <iostream>
-#include <vector>
-#include <string>
-#include <utility>
-#include <algorithm>
 
+Buffer process_buffer(Buffer buf)
+{
+    std::cout << "处理中，大小: " << buf.size() << " 字节\n";
+    return buf;
+}
+
+int main()
+{
+    Buffer large(1024 * 1024);  // 1MB
+    large.append("Hello, World!", 13);
+
+    Buffer result = process_buffer(large);  // A copy!
+    return 0;
+}
+```
+
+What happens when we call `process_buffer(large)`? The parameter `buf` is passed by value, so the compiler invokes `Buffer`'s copy constructor to create `buf`—which means allocating a fresh 1MB of memory and copying every byte of `large`'s data into it. When the function returns, `return buf;` triggers one more copy construction to create `result`. Add in the destruction of `buf` when the function ends, and the whole trip costs **two 1MB allocations, two 1MB copies, and one 1MB deallocation**—while all we really wanted was to move the data from `large` in `main` over to `result`. (We suspect the old-school C++ folks reading this are already red in the face, and we trust that you on the other side of the screen won't keep a straight face either.)
+
+That is the fundamental problem of copy semantics: when you no longer need the source object, the copy constructor still faithfully duplicates every byte, and then the source object's destructor dutifully releases the original block of memory. Resources allocated then freed, data copied then thrown away—pure waste.
+
+## The Move Constructor—Transferring Resource Ownership
+
+The core idea of the move constructor is dead simple: don't copy the data, just transfer ownership of the resources. For a class that manages dynamic memory, that means "stealing" the pointer from the source object and then nulling the source object's pointer, so that its destructor won't release that memory.
+
+```cpp
 class Buffer {
+    char* data_;
+    std::size_t size_;
+    std::size_t capacity_;
+
 public:
-    Buffer() : data_(nullptr), size_(0), capacity_(0) {
-        std::cout << "默认构造\n";
-    }
+    // ... The constructors and the destructor from before stay unchanged ...
 
-    explicit Buffer(size_t size)
-        : data_(new char[size]), size_(size), capacity_(size) {
-        std::cout << "构造 " << size << " 字节缓冲区\n";
-    }
-
-    ~Buffer() {
-        if (data_) {
-            std::cout << "释放 " << size_ << " 字节\n";
-            delete[] data_;
-        }
-    }
-
-    // Copy constructor
-    Buffer(const Buffer& other)
-        : data_(new char[other.size_]), size_(other.size_), capacity_(other.capacity_) {
-        std::copy(other.data_, other.data_ + size_, data_);
-        std::cout << "拷贝构造 " << size_ << " 字节\n";
-    }
-
-    // Move constructor
+    // The move constructor
     Buffer(Buffer&& other) noexcept
-        : data_(other.data_), size_(other.size_), capacity_(other.capacity_) {
+        : data_(other.data_)
+        , size_(other.size_)
+        , capacity_(other.capacity_)
+    {
         other.data_ = nullptr;
         other.size_ = 0;
         other.capacity_ = 0;
-        std::cout << "移动构造（指针转移）\n";
     }
+};
+```
 
-    // Copy assignment
-    Buffer& operator=(const Buffer& other) {
+Let's walk through this move constructor line by line. The `&&` in the signature `Buffer(Buffer&& other)` announces a move constructor—it accepts only rvalue arguments. Inside the function body we do three things: copy `other`'s three members straight into `this` (three pointer/integer assignments, dirt cheap), then null out `other`'s pointer. That last step is the critical one—if we don't null `other.data_`, then when `other` is destroyed, `delete[] other.data_` releases the very memory we just took over, `this` ends up holding a dangling pointer, and any later access is a guaranteed crash.
+
+Now let's trigger the move constructor with `std::move`:
+
+```cpp
+Buffer large(1024 * 1024);
+large.append("Hello, World!", 13);
+
+Buffer moved_to = std::move(large);  // Invokes the move constructor
+// large.data_ is now nullptr, yet large can still be destroyed safely
+// moved_to owns the original 1MB of memory
+```
+
+What did the whole operation do? A few pointer/integer assignments and we're done—`other`'s members are carried over, then `other` is zeroed out. No `new`, no `memcpy`, no `delete`. What used to be an O(n) copy becomes an O(1) pointer transfer. For a 1MB buffer, this is the gap between "allocate 1MB of memory and copy 1MB of data" and "shuffle a few registers".
+
+## The Move Assignment Operator—One Step More than Move Construction
+
+The move assignment operator is slightly more complicated than the move constructor, because the target of the assignment may already hold resources—we must release the old resources first, then take over the new ones.
+
+```cpp
+class Buffer {
+    // ... The code above stays unchanged ...
+
+    // The move assignment operator
+    Buffer& operator=(Buffer&& other) noexcept
+    {
         if (this != &other) {
+            // Step 1: release the resources we currently hold
             delete[] data_;
+
+            // Step 2: take over other's resources
+            data_ = other.data_;
             size_ = other.size_;
             capacity_ = other.capacity_;
-            data_ = new char[size_];
-            std::copy(other.data_, other.data_ + size_, data_);
-            std::cout << "拷贝赋值 " << size_ << " 字节\n";
+
+            // Step 3: null out other
+            other.data_ = nullptr;
+            other.size_ = 0;
+            other.capacity_ = 0;
+        }
+        return *this;
+    }
+};
+```
+
+Pay attention to that first step, `delete[] data_`—it is the key difference between move assignment and move construction. During move construction the target object is not initialized yet, so there are no old resources to release; during move assignment the target object already exists, and if you don't release the old resources first, you leak memory. The self-assignment check `if (this != &other)` is also necessary—code like `x = std::move(x)` almost never shows up in normal development, but when it does, it goes wrong: `delete[] data_` first releases your own resource, then you grab the pointers from the already-dangling `other` (which is really yourself), and you get an instant use-after-free. Adding the check—a few lines of code in exchange for determinism—is worth it.
+
+Let's see what move assignment does in real code:
+
+```cpp
+Buffer a(1024);
+a.append("Hello", 5);
+
+Buffer b(2048);
+b.append("World", 5);
+
+a = std::move(b);  // Move assignment
+// a's original 1KB buffer was released by delete[]
+// a took over b's 2KB buffer
+// b.data_ is now nullptr
+```
+
+After the move, the source object is left in a "valid but unspecified" state. That means you can safely assign it a new value or let it be destroyed, but you should not read its value—for instance, `moved_from.size()` might return 0 or the original value, depending on the implementation. Our advice: right after a move, either get the source object out of scope or assign it a definite new value—never let a moved-from object wander around in your code.
+
+## noexcept—The Safety Promise of Move Operations
+
+You may have noticed that both move operations are marked `noexcept`. This is not optional decoration—it has a very real performance impact.
+
+The reason lies in `std::vector`'s reallocation behavior. When a `vector` needs to grow its capacity, it must transfer the existing elements into the new memory block. If the element type's move constructor is `noexcept`, the `vector` moves with confidence; if the move constructor might throw, the `vector` falls back to the copy constructor—because an exception thrown midway through a move leaves a half-moved state that is very hard to recover, whereas if an exception is thrown during a copy, the original data is still intact.
+
+```cpp
+// A simplified version of vector's internal logic
+if constexpr (std::is_nothrow_move_constructible_v<T>) {
+    // Use move construction—fast and safe
+} else {
+    // Fall back to copy construction—slower but exception-safe
+}
+```
+
+You can use `static_assert` to verify that your class really satisfies `noexcept` moving:
+
+```cpp
+static_assert(std::is_nothrow_move_constructible_v<Buffer>,
+              "Buffer should be nothrow move constructible");
+static_assert(std::is_nothrow_move_assignable_v<Buffer>,
+              "Buffer should be nothrow move assignable");
+```
+
+This is no armchair theory—we can write an experiment to verify `vector`'s actual behavior. Prepare two identically structured `Buffer` classes whose only difference is whether the move constructor carries `noexcept`, then let the `vector` grow. The easiest way is a single template parameter `NoexceptMove` that toggles the `noexcept` marker, with all the remaining code identical:
+
+```cpp
+// noexcept_vector_realloc.cpp -- noexcept move vs non-noexcept move: the difference when a vector reallocates
+// Standard: C++17
+
+#include <iostream>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+// The template parameter NoexceptMove toggles whether the move constructor is marked noexcept; everything else is identical
+template <bool NoexceptMove>
+class TrackedBuffer
+{
+    char* data_;
+    std::size_t capacity_;
+    std::string tag_;
+
+public:
+    explicit TrackedBuffer(std::size_t cap, std::string tag)
+        : data_(new char[cap])
+        , capacity_(cap)
+        , tag_(std::move(tag))
+    {
+    }
+
+    ~TrackedBuffer() { delete[] data_; }
+
+    TrackedBuffer(const TrackedBuffer& other)
+        : data_(new char[other.capacity_])
+        , capacity_(other.capacity_)
+        , tag_(other.tag_)
+    {
+        std::cout << "  [" << tag_ << "] 拷贝构造\n";
+    }
+
+    // The only difference: the noexcept marker
+    TrackedBuffer(TrackedBuffer&& other) noexcept(NoexceptMove)
+        : data_(other.data_)
+        , capacity_(other.capacity_)
+        , tag_(std::move(other.tag_))
+    {
+        other.data_ = nullptr;
+        other.capacity_ = 0;
+        std::cout << "  [" << tag_ << "] 移动构造\n";
+    }
+
+    TrackedBuffer& operator=(const TrackedBuffer&) = delete;
+    TrackedBuffer& operator=(TrackedBuffer&&) = delete;
+};
+
+int main()
+{
+    using NB = TrackedBuffer<true>;   // The move constructor is marked noexcept
+    using TB = TrackedBuffer<false>;  // The move constructor is not marked noexcept
+
+    static_assert(std::is_nothrow_move_constructible_v<NB>,
+                  "NB 的移动构造是 noexcept");
+    static_assert(!std::is_nothrow_move_constructible_v<TB>,
+                  "TB 的移动构造不是 noexcept");
+
+    std::cout << "=== noexcept 移动 + vector 扩容 ===\n";
+    {
+        std::vector<NB> v;
+        v.reserve(1);                       // Reserve one slot up front
+        v.emplace_back(64, "Noexcept版");   // Occupy the only slot
+        std::cout << "--- 触发扩容 ---\n";
+        v.emplace_back(64, "Noexcept版");   // Exceeds capacity—must grow and relocate
+    }
+
+    std::cout << "\n=== 非 noexcept 移动 + vector 扩容 ===\n";
+    {
+        std::vector<TB> v;
+        v.reserve(1);
+        v.emplace_back(64, "Throwing版");
+        std::cout << "--- 触发扩容 ---\n";
+        v.emplace_back(64, "Throwing版");   // On growth the vector dares not move—falls back to copying
+    }
+
+    return 0;
+}
+```
+
+Compile and run:
+
+```bash
+g++ -std=c++17 -O0 -Wall -o noexcept_vector_realloc noexcept_vector_realloc.cpp
+./noexcept_vector_realloc
+```
+
+```text
+=== noexcept 移动 + vector 扩容 ===
+--- 触发扩容 ---
+  [Noexcept版] 移动构造    <-- vector moves with confidence
+
+=== 非 noexcept 移动 + vector 扩容 ===
+--- 触发扩容 ---
+  [Throwing版] 拷贝构造    <-- vector falls back to copying for exception safety
+```
+
+Compiled and run under GCC 16 with `-std=c++17 -O0`, the behavior matches expectations exactly.
+
+## The Rule of Five
+
+C++ has a classic "Rule of Three": if your class needs a user-defined destructor, copy constructor, or copy assignment operator, chances are it needs all three. C++11 added the move constructor and the move assignment operator to the list, turning it into the "Rule of Five".
+
+If you declare only a destructor and no move operations, the compiler will **not** automatically generate a move constructor or move assignment operator—so what happens then? It falls back on the copy operations. This confuses newcomers all the time: you clearly wrote `std::move`, yet what actually gets called is still the copy constructor. `std::move` itself moves nothing—it is just a `static_cast` to an rvalue reference. What finally decides between move construction and copy construction is the class's definition. If the class has no move constructor, the rvalue reference matches the copy constructor's `const T&` perfectly.
+
+```cpp
+class OnlyDestructor {
+    char* data_;
+
+public:
+    OnlyDestructor(std::size_t n) : data_(new char[n]) {}
+    ~OnlyDestructor() { delete[] data_; }
+
+    // No move constructor declared!
+    // And the compiler won't implicitly generate one either (a user-defined destructor is present)
+};
+
+OnlyDestructor a(100);
+OnlyDestructor b = std::move(a);  // Degrades to copy construction!
+                                    // The implicit copy constructor shallow-copies -> double delete
+```
+
+The consequence here is worse than "inefficient"—because the implicitly generated copy constructor does a shallow copy (member-by-member pointer duplication), `a` and `b` end up with `data_` pointing at the same block of memory. When both are destroyed, `delete[]` runs twice and you get an outright double free. We can verify this behavior with type traits:
+
+```cpp
+static_assert(!std::is_trivially_move_constructible_v<OnlyDestructor>,
+              "没有真正的移动构造函数");
+static_assert(std::is_move_constructible_v<OnlyDestructor>,
+              "但 is_move_constructible 为 true——退回到拷贝构造");
+```
+
+Looks contradictory? It isn't. `is_move_constructible` is true because the compiler can use the copy constructor to "satisfy" move construction (an rvalue binds to `const T&`), but that does not mean a real move constructor exists to do the pointer transfer. Here is the complete verification code:
+
+```cpp
+// rule_of_five_fallback.cpp -- with only a destructor, std::move degrades to copy construction
+// Standard: C++17
+
+#include <iostream>
+#include <type_traits>
+#include <utility>
+
+// Only a destructor is defined; no copy/move operations are declared
+class OnlyDestructor
+{
+    char* data_;
+
+public:
+    explicit OnlyDestructor(std::size_t n)
+        : data_(new char[n])
+    {
+    }
+
+    ~OnlyDestructor() { delete[] data_; }
+    // Note: neither a move constructor nor a copy constructor is declared here
+};
+
+// Compile-time verification: it "can be move constructed", but not because a real move constructor exists
+static_assert(!std::is_trivially_move_constructible_v<OnlyDestructor>,
+              "没有真正的（平凡的）移动构造函数");
+static_assert(std::is_move_constructible_v<OnlyDestructor>,
+              "但 is_move_constructible 为 true —— 编译器退回到拷贝构造来满足");
+
+int main()
+{
+    std::cout << "is_trivially_move_constructible_v: "
+              << std::is_trivially_move_constructible_v<OnlyDestructor>
+              << "  (没有真正的移动构造)\n";
+    std::cout << "is_move_constructible_v:           "
+              << std::is_move_constructible_v<OnlyDestructor>
+              << "  (但能用拷贝构造蒙混过关)\n";
+
+    // Really executing OnlyDestructor b = std::move(a): the implicit copy constructor shallow-copies,
+    // a and b's data_ point at the same memory, and destroying both double frees.
+    // We don't actually run it here (it would crash); the compile-time static_asserts already gave the verdict.
+    return 0;
+}
+```
+
+Compile and run:
+
+```bash
+g++ -std=c++17 -O0 -Wall -o rule_of_five_fallback rule_of_five_fallback.cpp
+./rule_of_five_fallback
+```
+
+```text
+is_trivially_move_constructible_v: 0  (没有真正的移动构造)
+is_move_constructible_v:           1  (但能用拷贝构造蒙混过关)
+```
+
+Note that the `static_assert`s settle the question at compile time—the runtime printing is just a second confirmation. If you actually executed `OnlyDestructor b = std::move(a)`, the implicit copy constructor would shallow-copy, `a` and `b`'s `data_` would point at the same memory, and destruction would end in a double free.
+
+For resource-managing classes, the safest policy is: **the five special member functions are either all user-defined or all `= default`**. If you manage resources through smart pointers, you can usually `= default` them and let the compiler generate the correct versions—exactly what modern C++ recommends. But for a class like ours that manages raw pointers by hand, you have to honestly write out all five:
+
+```cpp
+class Buffer {
+    char* data_;
+    std::size_t size_;
+    std::size_t capacity_;
+
+public:
+    // 1. Constructor
+    explicit Buffer(std::size_t capacity)
+        : data_(new char[capacity])
+        , size_(0)
+        , capacity_(capacity)
+    {
+    }
+
+    // 2. Destructor
+    ~Buffer()
+    {
+        delete[] data_;
+    }
+
+    // 3. Copy constructor
+    Buffer(const Buffer& other)
+        : data_(new char[other.capacity_])
+        , size_(other.size_)
+        , capacity_(other.capacity_)
+    {
+        std::memcpy(data_, other.data_, size_);
+    }
+
+    // 4. Move constructor
+    Buffer(Buffer&& other) noexcept
+        : data_(other.data_)
+        , size_(other.size_)
+        , capacity_(other.capacity_)
+    {
+        other.data_ = nullptr;
+        other.size_ = 0;
+        other.capacity_ = 0;
+    }
+
+    // 5. Copy assignment
+    Buffer& operator=(const Buffer& other)
+    {
+        if (this != &other) {
+            delete[] data_;
+            data_ = new char[other.capacity_];
+            size_ = other.size_;
+            capacity_ = other.capacity_;
+            std::memcpy(data_, other.data_, size_);
         }
         return *this;
     }
 
-    // Move assignment
-    Buffer& operator=(Buffer&& other) noexcept {
+    // 6. Move assignment
+    Buffer& operator=(Buffer&& other) noexcept
+    {
         if (this != &other) {
             delete[] data_;
             data_ = other.data_;
@@ -392,47 +495,299 @@ public:
             other.data_ = nullptr;
             other.size_ = 0;
             other.capacity_ = 0;
-            std::cout << "移动赋值（指针转移）\n";
+        }
+        return *this;
+    }
+};
+```
+
+It looks a bit long, but the logic is all repetitive—copy operations do deep copies; move operations do pointer transfers plus nulling out the source.
+
+## The copy-and-swap Idiom—Cutting Down Repetition
+
+If writing four assignment operators (copy assignment + move assignment) feels too wordy, a classic idiom can simplify things for you. The core idea: **give copy assignment and move assignment one shared implementation**, letting pass-by-value semantics pick copy or move automatically.
+
+```cpp
+class Buffer {
+    char* data_;
+    std::size_t size_;
+    std::size_t capacity_;
+
+public:
+    explicit Buffer(std::size_t capacity = 0)
+        : data_(capacity ? new char[capacity] : nullptr)
+        , size_(0)
+        , capacity_(capacity)
+    {
+    }
+
+    ~Buffer() { delete[] data_; }
+
+    // Copy constructor
+    Buffer(const Buffer& other)
+        : data_(other.capacity_ ? new char[other.capacity_] : nullptr)
+        , size_(other.size_)
+        , capacity_(other.capacity_)
+    {
+        if (data_) {
+            std::memcpy(data_, other.data_, size_);
+        }
+    }
+
+    // Move constructor
+    Buffer(Buffer&& other) noexcept
+        : data_(other.data_)
+        , size_(other.size_)
+        , capacity_(other.capacity_)
+    {
+        other.data_ = nullptr;
+        other.size_ = 0;
+        other.capacity_ = 0;
+    }
+
+    // The unified assignment operator—pass-by-value picks copy or move automatically
+    Buffer& operator=(Buffer other) noexcept
+    {
+        swap(*this, other);
+        return *this;
+    }
+
+    friend void swap(Buffer& a, Buffer& b) noexcept
+    {
+        using std::swap;
+        swap(a.data_, b.data_);
+        swap(a.size_, b.size_);
+        swap(a.capacity_, b.capacity_);
+    }
+};
+```
+
+Here `operator=(Buffer other)` takes its parameter by value—pass an lvalue in, and `other` is created via the copy constructor; pass an rvalue (say, `std::move(x)`), and `other` is created via the move constructor. Then `swap` exchanges the contents of `this` and `other`, and when the function ends, `other` is destroyed, automatically releasing the old resources.
+
+The idiom's advantages: less code, exception safety, and self-assignment handled automatically. Its disadvantage is one extra swap, which can cost a tiny bit in extreme-performance scenarios. If you actually compare the assembly at `-O2`, the two paths have nearly identical instruction counts—the copy-and-swap `operator=` body reduces to just the swap (about 13 `movq` instructions, one exchange per member for the three members), with the `delete` deferred to the parameter's destruction; the standalone move-assignment `operator=` has to `delete[]` its old resource itself and do the self-assignment check, and the compiler will even conveniently use a single SSE `movdqu` to merge the two `size_t`s into one 16-byte move. Totaled up, the instruction counts come out nearly even—what copy-and-swap adds is a few extra memory reads and writes from the swap, not extra instructions. For a class managing dynamic memory, the cost of `new`/`delete` dwarfs this little bit of register traffic, so copy-and-swap's extra cost is practically unmeasurable in practice.
+
+## A More General Example—Moving File Handles
+
+Beyond dynamic memory, move semantics is just as powerful on classes that manage other resources. File handles are a typical example—the operating system limits how many times the same file can be open simultaneously, and carelessly copying an object that holds a file handle can lead to leaked handles or double closes.
+
+```cpp
+#include <cstdio>
+#include <utility>
+#include <iostream>
+
+class FileHandle {
+    std::FILE* file_;
+    std::string path_;
+
+public:
+    explicit FileHandle(const char* path, const char* mode)
+        : file_(std::fopen(path, mode))
+        , path_(path)
+    {
+        if (!file_) {
+            throw std::runtime_error("Failed to open file: " + path_);
+        }
+    }
+
+    ~FileHandle()
+    {
+        if (file_) {
+            std::fclose(file_);
+            std::cout << "  关闭文件: " << path_ << "\n";
+        }
+    }
+
+    // Copying forbidden—a file handle cannot be shared
+    FileHandle(const FileHandle&) = delete;
+    FileHandle& operator=(const FileHandle&) = delete;
+
+    // Moving allowed—a file handle can have its ownership transferred
+    FileHandle(FileHandle&& other) noexcept
+        : file_(other.file_)
+        , path_(std::move(other.path_))
+    {
+        other.file_ = nullptr;  // Prevent other's destructor from closing the file
+    }
+
+    FileHandle& operator=(FileHandle&& other) noexcept
+    {
+        if (this != &other) {
+            if (file_) {
+                std::fclose(file_);  // Close the currently held file
+            }
+            file_ = other.file_;
+            path_ = std::move(other.path_);
+            other.file_ = nullptr;
         }
         return *this;
     }
 
-    size_t size() const { return size_; }
-
-private:
-    char* data_;
-    size_t size_;
-    size_t capacity_;
+    std::FILE* get() const { return file_; }
+    const std::string& path() const { return path_; }
 };
 
-int main() {
-    std::cout << "=== 1. 构造 ===\n";
-    Buffer buf1(1024);
+/// @brief Factory function: opens the log file
+FileHandle open_log(const std::string& name)
+{
+    return FileHandle(name.c_str(), "a");
+}
 
-    std::cout << "\n=== 2. 拷贝构造 ===\n";
-    Buffer buf2 = buf1;
+int main()
+{
+    auto log = open_log("app.log");
+    std::fprintf(log.get(), "Application started\n");
 
-    std::cout << "\n=== 3. 移动构造 ===\n";
-    Buffer buf3 = std::move(buf1);
+    // Transfer ownership of the log file to another variable
+    FileHandle moved_log = std::move(log);
+    std::fprintf(moved_log.get(), "Log handle moved\n");
 
-    std::cout << "\n=== 4. 移动赋值 ===\n";
-    Buffer buf4(512);
-    buf4 = std::move(buf2);
+    // log.get() now returns nullptr—don't use it anymore
+    return 0;
+}
+```
 
-    std::cout << "\n=== 5. Vector 操作 ===\n";
-    std::vector<Buffer> vec;
-    vec.reserve(3);
+This example demonstrates a common design pattern: **non-copyable but movable**. A file handle is physically unique; there should not be a second "copy" of it—copying would leave two objects both trying to close the same file. But moving is reasonable: `open_log` creates the file handle, then hands ownership over to the caller, and the temporary inside the function no longer holds any resource.
 
-    std::cout << "5.1 传入左值（拷贝）:\n";
-    vec.push_back(buf3);
+Run this program and you will see:
 
-    std::cout << "5.2 传入右值（移动）:\n";
-    vec.push_back(std::move(buf4));
+```text
+  关闭文件: app.log
+```
 
-    std::cout << "5.3 原位构造（无移动）:\n";
-    vec.emplace_back(2048);
+Note that the file-closing message is printed only once—even though both `log` and `moved_log` go through destruction, `log`'s `file_` was nulled by the move, so the `if (file_)` check inside its destructor fails, and no double close happens.
 
-    std::cout << "\n=== 6. 析构 ===\n";
+## Hands-On Experiment—move_semantics_demo.cpp
+
+Let's write a complete program to verify all the key behaviors of move semantics.
+
+```cpp
+// move_semantics_demo.cpp -- a demonstration of move construction and move assignment
+// Standard: C++17
+
+#include <cstring>
+#include <iostream>
+#include <string>
+#include <utility>
+#include <vector>
+
+class Buffer
+{
+    char* data_;
+    std::size_t size_;
+    std::size_t capacity_;
+
+public:
+    explicit Buffer(std::size_t capacity)
+        : data_(new char[capacity])
+        , size_(0)
+        , capacity_(capacity)
+    {
+        std::cout << "  [Buffer] 分配 " << capacity << " 字节\n";
+    }
+
+    ~Buffer()
+    {
+        if (data_) {
+            std::cout << "  [Buffer] 释放 " << capacity_ << " 字节\n";
+            delete[] data_;
+        }
+    }
+
+    Buffer(const Buffer& other)
+        : data_(new char[other.capacity_])
+        , size_(other.size_)
+        , capacity_(other.capacity_)
+    {
+        std::memcpy(data_, other.data_, size_);
+        std::cout << "  [Buffer] 拷贝构造 " << capacity_ << " 字节\n";
+    }
+
+    Buffer(Buffer&& other) noexcept
+        : data_(other.data_)
+        , size_(other.size_)
+        , capacity_(other.capacity_)
+    {
+        other.data_ = nullptr;
+        other.size_ = 0;
+        other.capacity_ = 0;
+        std::cout << "  [Buffer] 移动构造（指针转移）\n";
+    }
+
+    Buffer& operator=(const Buffer& other)
+    {
+        if (this != &other) {
+            delete[] data_;
+            data_ = new char[other.capacity_];
+            size_ = other.size_;
+            capacity_ = other.capacity_;
+            std::memcpy(data_, other.data_, size_);
+            std::cout << "  [Buffer] 拷贝赋值 " << capacity_ << " 字节\n";
+        }
+        return *this;
+    }
+
+    Buffer& operator=(Buffer&& other) noexcept
+    {
+        if (this != &other) {
+            delete[] data_;
+            data_ = other.data_;
+            size_ = other.size_;
+            capacity_ = other.capacity_;
+            other.data_ = nullptr;
+            other.size_ = 0;
+            other.capacity_ = 0;
+            std::cout << "  [Buffer] 移动赋值（指针转移）\n";
+        }
+        return *this;
+    }
+
+    void append(const char* str, std::size_t len)
+    {
+        if (size_ + len <= capacity_) {
+            std::memcpy(data_ + size_, str, len);
+            size_ += len;
+        }
+    }
+
+    std::size_t size() const { return size_; }
+    std::size_t capacity() const { return capacity_; }
+};
+
+int main()
+{
+    std::cout << "=== 1. 创建两个缓冲区 ===\n";
+    Buffer a(1024);
+    a.append("Hello", 5);
+    Buffer b(2048);
+    b.append("World", 5);
+    std::cout << '\n';
+
+    std::cout << "=== 2. 拷贝构造 ===\n";
+    Buffer c = a;
+    std::cout << "  c.size() = " << c.size() << "\n\n";
+
+    std::cout << "=== 3. 移动构造 ===\n";
+    Buffer d = std::move(b);
+    std::cout << "  d.size() = " << d.size() << "\n";
+    std::cout << "  b.capacity() = " << b.capacity() << "\n\n";
+
+    std::cout << "=== 4. 移动赋值 ===\n";
+    a = std::move(d);
+    std::cout << "  a.size() = " << a.size() << "\n";
+    std::cout << "  d.capacity() = " << d.capacity() << "\n\n";
+
+    std::cout << "=== 5. vector 中的移动 ===\n";
+    std::vector<Buffer> buffers;
+    buffers.reserve(4);
+    std::cout << "  push_back 左值:\n";
+    buffers.push_back(c);             // Copy
+    std::cout << "  push_back std::move:\n";
+    buffers.push_back(std::move(c));  // Move
+    std::cout << "  emplace_back 原位构造:\n";
+    buffers.emplace_back(512);        // Constructed directly inside the vector
+    std::cout << '\n';
+
+    std::cout << "=== 6. 程序结束 ===\n";
     return 0;
 }
 ```
@@ -440,55 +795,64 @@ int main() {
 Compile and run:
 
 ```bash
-g++ -std=c++23 -O2 -o move_demo move_semantics_demo.cpp
+g++ -std=c++17 -Wall -Wextra -o move_demo move_semantics_demo.cpp
 ./move_demo
 ```
 
 Expected output:
 
 ```text
-=== 1. 构造 ===
-构造 1024 字节缓冲区
+=== 1. 创建两个缓冲区 ===
+  [Buffer] 分配 1024 字节
+  [Buffer] 分配 2048 字节
 
 === 2. 拷贝构造 ===
-拷贝构造 1024 字节
+  [Buffer] 拷贝构造 1024 字节
+  c.size() = 5
 
 === 3. 移动构造 ===
-移动构造（指针转移）
+  [Buffer] 移动构造（指针转移）
+  d.size() = 5
+  b.capacity() = 0
 
 === 4. 移动赋值 ===
-构造 512 字节缓冲区
-释放 512 字节
-移动赋值（指针转移）
+  [Buffer] 移动赋值（指针转移）
+  a.size() = 5
+  d.capacity() = 0
 
-=== 5. Vector 操作 ===
-5.1 传入左值（拷贝）:
-拷贝构造 1024 字节
+=== 5. vector 中的移动 ===
+  push_back 左值:
+  [Buffer] 拷贝构造 1024 字节
+  push_back std::move:
+  [Buffer] 移动构造（指针转移）
+  emplace_back 原位构造:
+  [Buffer] 分配 512 字节
 
-5.2 传入右值（移动）:
-移动构造（指针转移）
-
-5.3 原位构造（无移动）:
-构造 2048 字节缓冲区
-
-=== 6. 析构 ===
-释放 2048 字节
-释放 1024 字节
-释放 1024 字节
+=== 6. 程序结束 ===
+  [Buffer] 释放 1024 字节
+  [Buffer] 释放 1024 字节
+  [Buffer] 释放 512 字节
+  [Buffer] 释放 2048 字节
 ```
 
-The contrast between "Move constructor (pointer transfer)" and "Copy constructor X bytes" in the output is clear at a glance—copying requires allocating memory plus copying data, while moving is just three pointer assignments. Step 5's vector operations are even more noteworthy: passing an lvalue triggers a copy, passing an rvalue from `std::move` triggers a move, and `emplace_back` constructs directly in the vector's memory, saving even the move. The performance difference between these three operations will be very significant in large data scenarios.
+Steps 2 and 3 have been turned into an animation of the memory-level actions—you can play it, pause it, or use the step buttons to single-step through and see the pointer handoff clearly:
 
-Note that there is no "release 0 bytes" output during destruction—those are the objects that have been moved, their `data_` is `nullptr`, so the `if` check in the destructor skips `delete`. The three elements in the vector destruct independently—the first is a copy of `buf3` (1024 bytes), the second was moved from `buf4` (1024 bytes), and the third was constructed in-place by `emplace_back` (2048 bytes).
+<Anim id="copy-vs-move" />
 
-## Run Online
+The contrast in the output between the move-construction (pointer-transfer) line and the copy-construction-of-N-bytes line is plain at a glance—copying means allocating memory and replicating data; moving is just three pointer assignments. Step 5's vector operations deserve even more attention: `push_back` with an lvalue copies, `push_back` with a `std::move`d rvalue moves, and `emplace_back` constructs in place directly in the vector's memory, skipping even the move. In large-data scenarios the performance differences among these three operations become very noticeable.
 
-Run the Buffer move semantics example online and compare the resource overhead of copying vs. moving:
+Notice there is no "released 0 bytes" line at destruction time—those would be the moved-from objects: their `data_` is `nullptr`, so the `if (data_)` check in the destructor skips the `delete[]`. The three elements in the vector are destroyed independently—the first is the copy of `c` (1024 bytes), the second is the one moved out of `c` (1024 bytes), and the third is the one `emplace_back` constructed in place (512 bytes).
+
+## Run It Online
+
+Run the Buffer move-semantics example online and compare the resource cost of copying versus moving:
 
 <OnlineCompilerDemo
   title="Move Construction and Move Assignment: Buffer Resource Transfer"
   source-path="code/examples/vol2/02_move_semantics.cpp"
-  description="Run online and compare Buffer's copy constructor vs. move constructor, and their behavior differences in vector."
+  description="Run online and compare Buffer's copy construction vs move construction, and how they behave differently inside a vector."
   allow-run
   allow-x86-asm
 />
+
+In the next article we'll look at the big chunk the compiler quietly saves us behind the scenes—return value optimization (RVO and NRVO), which can drive the cost of returning a large object all the way to zero.
