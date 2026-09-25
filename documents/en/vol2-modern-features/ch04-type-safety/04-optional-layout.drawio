@@ -1,0 +1,105 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="optional Layout" id="optional-layout">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="std::optional&lt;T&gt; 的内存布局：对齐缓冲区 + bool 标志位" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="26" width="600" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- 左列：有值状态 -->
+        <mxCell id="left_header" value="有值状态（has_value() 为 true）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#2E7D32;" vertex="1" parent="1">
+          <mxGeometry x="70" y="64" width="310" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="left_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="70" y="96" width="310" height="152" as="geometry" />
+        </mxCell>
+        <mxCell id="left_label" value="std::optional&lt;int&gt; opt = 42;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="102" width="290" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="left_storage" value="存储区：存放 T 的对齐缓冲区&lt;br&gt;&lt;b&gt;int 值：42（已构造）&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="90" y="128" width="270" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="left_storage_bytes" value="4 字节" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="296" y="128" width="56" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="left_padding" value="对齐填充（padding）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#888888;strokeWidth=1;dashed=1;fillColor=#f2f2f2;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="90" y="176" width="270" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="left_padding_bytes" value="3 字节" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="296" y="176" width="56" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="left_bool" value="bool 标志位：&lt;b&gt;true（有值）&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=14;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="90" y="202" width="270" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="left_bool_bytes" value="1 字节" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="296" y="202" width="56" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="left_sizeof" value="sizeof(optional&lt;int&gt;) = &lt;b&gt;8 字节&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="70" y="262" width="310" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="left_note" value="T 直接嵌在 optional 内部，没有堆分配；持有值时，析构会自动调用 T 的析构函数。" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;fontColor=#555555;spacing=2;" vertex="1" parent="1">
+          <mxGeometry x="70" y="308" width="310" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- 右列：无值状态 -->
+        <mxCell id="right_header" value="无值状态（has_value() 为 false）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#c00000;" vertex="1" parent="1">
+          <mxGeometry x="447" y="64" width="310" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="right_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="447" y="96" width="310" height="152" as="geometry" />
+        </mxCell>
+        <mxCell id="right_label" value="std::optional&lt;int&gt; opt = std::nullopt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="457" y="102" width="290" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="right_storage" value="存储区：未构造的原始字节&lt;br&gt;（内容无意义，读取是 UB）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#888888;strokeWidth=1;dashed=1;fillColor=#f2f2f2;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="467" y="128" width="270" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="right_storage_bytes" value="4 字节" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="673" y="128" width="56" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="right_padding" value="对齐填充（padding）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#888888;strokeWidth=1;dashed=1;fillColor=#f2f2f2;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="467" y="176" width="270" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="right_padding_bytes" value="3 字节" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="673" y="176" width="56" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="right_bool" value="bool 标志位：&lt;b&gt;false（无值）&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=14;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="467" y="202" width="270" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="right_bool_bytes" value="1 字节" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="673" y="202" width="56" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="right_sizeof" value="空 optional 仍占 8 字节，大小不随状态改变" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="447" y="262" width="310" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="right_note" value="std::nullopt 显式表达“无值”；类型签名直接告诉调用方“可能没有值”，不靠 -1 / nullptr 这类约定" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;fontColor=#555555;spacing=2;" vertex="1" parent="1">
+          <mxGeometry x="447" y="308" width="310" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- 底部：sizeof 对比 -->
+        <mxCell id="bottom_header" value="sizeof(optional&lt;T&gt;) 通常大于 sizeof(T)：大约多出一个对齐后的 bool" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="372" width="600" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="card_int" value="&lt;b&gt;int&lt;/b&gt;&lt;br&gt;4 → &lt;b&gt;8&lt;/b&gt; 字节" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="113" y="404" width="190" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="card_double" value="&lt;b&gt;double&lt;/b&gt;&lt;br&gt;8 → &lt;b&gt;16&lt;/b&gt; 字节" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="318" y="404" width="190" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="card_string" value="&lt;b&gt;string&lt;/b&gt;&lt;br&gt;32 → &lt;b&gt;40&lt;/b&gt; 字节" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="523" y="404" width="190" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="pointer_note" value="为什么不用指针表达“可能没有”：T* 语义太宽泛，可以是可选值、观察指针或指向动态分配的对象，调用方无法从类型上区分；optional 是值语义，T 直接嵌在对象内部，拷贝的就是值，没有堆分配。" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;fontColor=#555555;spacing=2;" vertex="1" parent="1">
+          <mxGeometry x="113" y="476" width="600" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="footnote" value="以上 sizeof 为典型值，实际结果取决于标准库实现和平台的对齐要求" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="113" y="528" width="600" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

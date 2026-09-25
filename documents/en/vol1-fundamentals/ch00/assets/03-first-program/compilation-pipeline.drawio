@@ -1,0 +1,58 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="03-compilation-pipeline.drawio" name="从源码到运行（GCC / Linux）">
+    <mxGraphModel dx="800" dy="780" grid="1" gridSize="10" page="1" pageWidth="800" pageHeight="780">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="source" value="hello.cpp&#10;保存的 C++ 源码" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#8b96a5;fontColor=#202a35;fontFamily=Noto Sans CJK SC;fontSize=18;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="60" y="30" width="260" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="preprocess" value="① 预处理 · -E&#10;hello.ii：展开后的文本" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#8b96a5;fontColor=#202a35;fontFamily=Noto Sans CJK SC;fontSize=18;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="60" y="145" width="260" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="compile" value="② 编译 · -S&#10;hello.s：汇编文本" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#8b96a5;fontColor=#202a35;fontFamily=Noto Sans CJK SC;fontSize=18;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="60" y="275" width="260" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="assemble" value="③ 汇编 · -c&#10;hello.o：目标文件" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#8b96a5;fontColor=#202a35;fontFamily=Noto Sans CJK SC;fontSize=18;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="60" y="405" width="260" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="link" value="④ 链接&#10;hello：可执行文件" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#fff2cc;strokeColor=#8b96a5;fontColor=#202a35;fontFamily=Noto Sans CJK SC;fontSize=18;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="60" y="535" width="260" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="run" value="⑤ 运行 · ./hello&#10;标准输出：Hello, C++!" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#d5e8d4;strokeColor=#8b96a5;fontColor=#202a35;fontFamily=Noto Sans CJK SC;fontSize=18;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="60" y="665" width="260" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="header" value="找不到头文件？&#10;检查文件名与包含路径" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f5f5f5;strokeColor=#8b96a5;fontColor=#202a35;fontFamily=Noto Sans CJK SC;fontSize=18;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="400" y="145" width="340" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="syntax" value="少了分号、类型不匹配？&#10;先看第一条编译诊断" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f5f5f5;strokeColor=#8b96a5;fontColor=#202a35;fontFamily=Noto Sans CJK SC;fontSize=18;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="400" y="275" width="340" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="libraries" value="其他目标文件与所需库&#10;由链接器解析符号引用" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#fff2cc;strokeColor=#8b96a5;fontColor=#202a35;fontFamily=Noto Sans CJK SC;fontSize=18;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="400" y="535" width="340" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="note" value="到运行这一步才有输出&#10;构建成功 ≠ 已执行程序" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#d5e8d4;strokeColor=#8b96a5;fontColor=#202a35;fontFamily=Noto Sans CJK SC;fontSize=18;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="400" y="665" width="340" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="edge0" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#687787;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="source" target="preprocess">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#687787;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="preprocess" target="compile">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#687787;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="compile" target="assemble">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#687787;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="assemble" target="link">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#687787;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="libraries" target="link">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#687787;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="link" target="run">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

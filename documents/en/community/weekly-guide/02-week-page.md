@@ -1,5 +1,5 @@
 ---
-title: Writing the Week Page: week-NN.md
+title: "Writing the Week Page: week-NN.md"
 description: A field-by-field walkthrough of the week page's frontmatter, the body skeleton, a directly copyable template, and source-level constraints such as single-line fields
 chapter: 1
 order: 2

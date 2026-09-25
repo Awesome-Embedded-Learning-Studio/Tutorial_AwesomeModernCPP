@@ -1,0 +1,74 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="unique_ptr Deleter Layout" id="custom-deleter-layout">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="unique_ptr&lt;T, Deleter&gt; 的内存布局：无状态 vs 带状态删除器" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="26" width="600" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- 左列：无状态删除器（EBO） -->
+        <mxCell id="left_header" value="无状态删除器（EBO 生效）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#2E7D32;" vertex="1" parent="1">
+          <mxGeometry x="70" y="70" width="310" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="left_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="70" y="104" width="310" height="124" as="geometry" />
+        </mxCell>
+        <mxCell id="left_label" value="unique_ptr&lt;T, EmptyDeleter&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="110" width="290" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="left_ptr" value="T* ptr" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=14;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="90" y="140" width="270" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="left_ptr_bytes" value="8 字节" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="296" y="140" width="56" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="left_ebo" value="EmptyDeleter 空基类：EBO 后占 &lt;b&gt;0 字节&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#888888;strokeWidth=1;dashed=1;fillColor=#f2f2f2;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="90" y="180" width="270" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="left_sizeof" value="sizeof = 8 字节（和裸指针一样大）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="70" y="262" width="310" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="left_note" value="同样保持 8 字节：unique_ptr&lt;int&gt;（默认删除器）、无捕获 lambda、空函数对象（如 FreeDeleter）" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;fontColor=#555555;spacing=2;" vertex="1" parent="1">
+          <mxGeometry x="70" y="310" width="310" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- 右列：带状态删除器 -->
+        <mxCell id="right_header" value="带状态删除器" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#c00000;" vertex="1" parent="1">
+          <mxGeometry x="447" y="70" width="310" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="right_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="447" y="104" width="310" height="124" as="geometry" />
+        </mxCell>
+        <mxCell id="right_label" value="unique_ptr&lt;T, StatefulDeleter&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="457" y="110" width="290" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="right_ptr" value="T* ptr" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=14;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="467" y="140" width="270" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="right_ptr_bytes" value="8 字节" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="673" y="140" width="56" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="right_deleter" value="deleter 成员（StatefulDeleter）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="467" y="180" width="270" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="right_deleter_bytes" value="8 字节" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="673" y="180" width="56" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="right_sizeof" value="sizeof = 16 字节（指针之外多出删除器的空间）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="447" y="262" width="310" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="right_note" value="同样会到 16 字节：函数指针 void(*)(FILE*)（多存一个函数地址）、捕获了变量的 lambda（如 log_fd）" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;fontColor=#555555;spacing=2;" vertex="1" parent="1">
+          <mxGeometry x="447" y="310" width="310" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="source_note" value="数值为文章实测输出：x86_64-linux-gnu，GCC 16.1.1，-O0" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="113" y="386" width="600" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
