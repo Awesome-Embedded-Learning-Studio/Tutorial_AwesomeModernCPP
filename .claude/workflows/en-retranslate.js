@@ -156,8 +156,14 @@ if (!titleMap.length) {
   log('警告: 标题对照表为空,翻译 agent 将各自定标题')
 }
 
-const results = await pipeline(
-  FILES,
+// 429 限流应对:分波推进,每波 5 篇,波间串行,把瞬时并发压下来
+const WAVE = 5
+const results = []
+for (let w = 0; w < FILES.length; w += WAVE) {
+  const wave = FILES.slice(w, w + WAVE)
+  log(`${BATCH}: wave ${Math.floor(w / WAVE) + 1}/${Math.ceil(FILES.length / WAVE)} (${wave.length} 篇)`)
+  const waveResults = await pipeline(
+    wave,
   (zh) => agent(translatePrompt(zh, titleMap), { label: `tl:${short(zh)}`, phase: 'Translate', schema: OUT_T }),
   (t, zh) =>
     t && t.ok
@@ -192,9 +198,11 @@ const results = await pipeline(
       notes: x.t.notes,
     }
   }
-)
+  )
+  results.push(...waveResults.filter(Boolean))
+}
 
-const ok = results.filter(Boolean)
+const ok = results
 const produced = ok.filter((r) => r.status !== 'TRANSLATE_FAILED').length
 log(`${BATCH} 完成: ${produced}/${ok.length} 篇产出`)
 return ok
