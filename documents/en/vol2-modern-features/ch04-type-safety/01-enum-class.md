@@ -5,17 +5,16 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Say goodbye to implicit integer conversions, and build type-safe enumerations
-  with `enum class`.
+description: Say goodbye to implicit integer conversions and build type-safe enumerations with enum class
 difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
-- 'Chapter 0: 移动构造与移动赋值'
+- 'Chapter 0: Move Construction and Move Assignment'
 reading_time_minutes: 13
 related:
-- 强类型 typedef
-- std::variant
+- 'Strong Typedefs: Type Safety That Prevents Mix-Ups'
+- 'std::variant: A Type-Safe Union'
 tags:
 - host
 - cpp-modern
@@ -25,136 +24,138 @@ tags:
 title: enum class and Scoped Enums
 translation:
   source: documents/vol2-modern-features/ch04-type-safety/01-enum-class.md
-  source_hash: 853a064143ba3eedf2f9d1773f161cabf00fb0011b4dd880a924e5141e1833b0
-  translated_at: '2026-06-16T03:57:17.399366+00:00'
+  source_hash: 1c4af3b2f3230482c449d35c7d8268526c50e69429d35fabb1c5356a6ef40de5
+  translated_at: '2026-09-25T15:29:45+00:00'
   engine: anthropic
-  token_count: 3094
+  token_count: 4400
 ---
-# enum class and Scoped Enumerations
+# enum class and Scoped Enums
 
-## Introduction
+Before writing this article, we flipped through some of our old C-style code—screen after screen of `enum Color { Red, Green, Blue };`, with things like `if (color == 1)` everywhere.
 
-Before writing this article, I looked back at some of my old C-style code—screens filled with ``enum Color { Red, Green, Blue };``, and ``if (color == 1)`` appearing everywhere.
+If it's a legacy project, fine, there's no helping it—but still writing this way in 2026 is basically digging a pit for your future self. Implicit integer conversion, namespace pollution, and no way to forward-declare: that's the C-style enum's three-axe combo, and any single swing is enough to get you chewed out in code review.
 
-If this is a legacy project, there's no choice, but writing like this in 2026 is basically digging a hole for yourself. The implicit integer conversion, namespace pollution, and inability to forward declare C-style enums—these three issues are enough to get you scolded in a code review.
+`enum class` (the strongly typed enumeration introduced in C++11) exists to solve exactly these problems. It isn't just syntactic sugar—it's a promise made at the level of type safety. In this chapter we start from the pain points of C-style enums and work out, step by step, exactly which bugs `enum class` fixes and how to use it to write safer code.
 
-`enum class` (strongly-typed enumeration introduced in C++11) exists to solve these problems. It is not just syntactic sugar—it is a commitment at the level of type safety. In this chapter, starting from the pain points of C-style enums, we will figure out exactly what bugs `enum class` fixes and how to use it to write safer code.
+## Step 1—The Three Sins of C-Style Enums
 
-## Step 1 — The Three Cardinal Sins of C-style Enums
-
-Before discussing `enum class`, let's look at the problems with old `enum` that really raise your blood pressure.
+Before we get to `enum class`, let's first look at what kinds of blood-pressure-raising problems the old `enum` actually has.
 
 ### Sin 1: Implicit Conversion to Integer
 
-Values of old-style `enum` can be implicitly converted to `int`. This sounds "convenient," but it actually encourages you to write code like this:
+Values of an old-style `enum` implicitly convert to `int`. That sounds like "convenience", but what it actually does is encourage code like this:
 
-````cpp
+```cpp
 enum Color { Red, Green, Blue };
 enum Fruit { Apple, Orange, Banana };
 
 void paint(int c);
 
-paint(Red);       // OK，隐式转成 int
-paint(Orange);    // 也 OK！但语义完全错了
-paint(42);        // 编译通过，运行时才知道出问题
+paint(Red);       // OK, implicitly converts to int
+paint(Orange);    // Also OK! But semantically completely wrong
+paint(42);        // Compiles; you only find out at runtime
 
 if (Red == Apple) {
-    // 居然编译通过，而且为 true！因为都是 0
+    // It even compiles—and it's true! Because both are 0
 }
-````
+```
 
-Values of different enumeration types can be compared with each other and passed to any function accepting `int`—the compiler doesn't care if these values match semantically. These bugs are extremely hard to track down in large codebases because the compiler won't give you any warnings.
+Values from different enum types compare against each other just fine and can be passed to any function accepting `int`—the compiler doesn't care in the slightest whether the values match semantically. Once the codebase gets big, this class of bug is brutally hard to track down, because the compiler never gives you a single warning.
 
 ### Sin 2: Namespace Pollution
 
-All enumerators of an old-style `enum` are exposed directly to the outer scope. If you have two enums that both define common names like `OK` or `Error`, a conflict occurs:
+Every enumerator of an old-style `enum` is dumped directly into the enclosing scope. If two enums both define a popular name like `None` or `Error`, you get a collision:
 
-````cpp
+```cpp
 enum Status { None, Ok, Error };
-enum Permission { None, Read, Write, Execute };  // 编译错误！None 重定义
+enum Permission { None, Read, Write, Execute };  // Compile error! None redefined
 
-// 常见的变通方案：加前缀
+// A common workaround: add prefixes
 enum Status { Status_None, Status_Ok, Status_Error };
 enum Permission { Perm_None, Perm_Read, Perm_Write, Perm_Execute };
-````
+```
 
-Adding prefixes can indeed solve the problem, but this replaces language mechanisms with manual conventions—every team might have a different prefix style, driving up maintenance costs significantly.
+Prefixes do fix the problem, but that's replacing a language mechanism with a manual convention—every team may end up with its own prefix style, and the maintenance cost goes through the roof.
 
-### Sin 3: Inability to Forward Declare
+### Sin 3: No Forward Declarations
 
-The underlying type of a C-style `enum` is decided by the compiler, so the compiler cannot determine its size before seeing the `enum` definition. This prevents `enum` from being forward declared (unless you manually specify the underlying type, but then it's not "pure C-style"), which is very inconvenient for header file dependency management.
+The underlying type of a C-style `enum` is up to the compiler, so before the compiler has seen the enum's definition it cannot know its size. As a result, the `enum` cannot be forward-declared (unless you spell out the underlying type yourself—but then it's no longer "pure C style"), which makes header dependency management distinctly inconvenient.
 
-````cpp
+```cpp
 // status.h
-enum Status { Ok, Error };  // 必须看到完整定义
+enum Status { Ok, Error };  // The full definition must be visible
 
 // device.h
-// enum Status;  // 编译错误！无法前向声明
+// enum Status;  // Compile error! Cannot forward-declare
 class Device {
 public:
-    Status get_status() const;  // 必须包含 status.h
+    Status get_status() const;  // Must include status.h
 };
-````
+```
 
-These three points together are basically a textbook example of "lack of type safety." C++11's `enum class` provides a clear solution for each one.
+Stack those three together and you have pretty much the anti-textbook example of "type safety". C++11's `enum class` delivers a concrete fix for each and every one of them.
 
-## Step 2 — The Three Major Improvements of enum class
+## Step 2—The Three Major Improvements of enum class
 
 ### Scope Isolation
 
-Enumerators of `enum class` do not leak into the outer scope. They must be accessed via `Enum::Value`:
+The enumerators of an `enum class` do not leak into the surrounding scope. They must be accessed as `EnumName::Value`:
 
-````cpp
+```cpp
 enum class Color { Red, Green, Blue };
 enum class Fruit { Apple, Orange, Banana };
 
-Color c = Color::Red;   // 正确
-// Color c = Red;        // 编译错误！Red 不在外部作用域
-// Fruit f = Color::Red; // 编译错误！类型不匹配
-````
+Color c = Color::Red;   // Correct
+// Color c = Red;        // Compile error! Red is not in the enclosing scope
+// Fruit f = Color::Red; // Compile error! Type mismatch
+```
 
-Now `Color::Red` and `TrafficLight::Red` each manage their own scope; they can never clash or be mixed up. The compiler can intercept all cross-type misuse at compile time.
+Now `Color::Red` and `Fruit::Apple` each mind their own business—name collisions and cross-type mix-ups are permanently off the table. The compiler intercepts every cross-type misuse for you at compile time.
 
-### No Implicit Conversion
+### No Implicit Conversions
 
-`enum class` does not implicitly convert to any integer type; you must use `static_cast` for explicit conversion:
+An `enum class` does not implicitly convert to any integer type; you must convert explicitly with `static_cast`:
 
-````cpp
+```cpp
 enum class Color : uint8_t { Red, Green, Blue };
 
-// int x = Color::Red;                          // 编译错误！
-int x = static_cast<int>(Color::Red);           // OK，显式转换
+// int x = Color::Red;                          // Compile error!
+int x = static_cast<int>(Color::Red);           // OK, explicit conversion
 
 void paint(Color c);
 paint(Color::Red);      // OK
-// paint(0);             // 编译错误！
-// paint(static_cast<Color>(0));  // OK 但不推荐——绕过类型检查
-````
+// paint(0);             // Compile error!
+// paint(static_cast<Color>(0));  // OK but not recommended—bypasses type checking
+```
 
-You might think "writing `static_cast` every time is so troublesome." My view is: **The trouble is the price of safety**. If a place needs to use an enumeration value as an integer, you must write it out explicitly—this means you are making a conscious decision at that location, rather than being unintentionally let through by the compiler.
+You may feel that writing `static_cast` every single time is a chore. Our view: **the chore is precisely the price of safety**. If some location genuinely needs to treat an enumerator as an integer, you must write that out explicitly—which means you are making a conscious decision at that spot, rather than being waved through by the compiler without ever noticing.
 
-### Specifying Underlying Type and Forward Declaration
+Let's put the earlier counterexample and the corrected version side by side in one diagram: on the left, the old `enum` silently waving things through; on the right, `enum class` intercepting at compile time:
 
-`enum class` can specify the underlying type, defaulting to `int`. Once the underlying type is specified, the compiler knows the size of the enumeration at declaration time, making forward declarations feasible:
+![C-style enum letting implicit conversions through vs. enum class intercepting them at compile time](./01-enum-class-compare.drawio)
 
-````cpp
-// status.h —— 前向声明
+### Specifying the Underlying Type and Forward Declarations
+
+An `enum class` can specify its underlying type, which defaults to `int`. Once the underlying type is pinned down, the compiler knows the enum's size at the point of declaration, so forward declaration becomes viable:
+
+```cpp
+// status.h — forward declaration
 enum class Status : uint8_t;
 
-// device.h —— 只需要前向声明
+// device.h — only the forward declaration is needed
 class Device {
 public:
     Status get_status() const;
     void set_status(Status s);
 };
 
-// status.cpp —— 完整定义
+// status.cpp — full definition
 enum class Status : uint8_t { kOk = 0, kError = 1, kBusy = 2 };
-````
+```
 
-In a header file, you only need a forward declaration; the full definition can be placed in the `.cpp` file, breaking circular dependencies between headers. Furthermore, in embedded systems, you can specify the underlying type as `uint8_t`, ensuring enumeration variables only occupy one byte:
+Headers need only the forward declaration; the full definition lives in a `.cpp` file, which breaks circular dependencies between headers. And in embedded work you can pin the underlying type to `uint8_t`, guaranteeing that an enum variable occupies exactly one byte:
 
-````cpp
+```cpp
 enum class SensorState : uint8_t {
     kOff = 0,
     kInit = 1,
@@ -163,21 +164,21 @@ enum class SensorState : uint8_t {
 };
 
 static_assert(sizeof(SensorState) == 1, "SensorState should be 1 byte");
-````
+```
 
-## Step 3 — Bitwise Operations and enum class
+## Step 3—Bitwise Operations and enum class
 
-In C-style code, using enumeration values as bit flags (bitmasks) is a very common operation:
+In C-style code, using enumerators as bit flags (a bitmask) is a very common practice:
 
-````cpp
-// C 风格：天然支持位运算（因为隐式转换成 int）
+```cpp
+// C style: bitwise operations work natively (implicit conversion to int)
 enum Permission { Read = 1, Write = 2, Execute = 4 };
 int perms = Read | Write;  // OK
-````
+```
 
-However, `enum class` prohibits implicit conversion, so `flags | Flags::Read` results in a compilation error. To support bitwise operations, we need to manually overload operators:
+But `enum class` forbids implicit conversion, so writing `Color::Red | Color::Green` is a straight compile error. To support bitwise operations, we need to overload the operators by hand:
 
-````cpp
+```cpp
 #include <type_traits>
 
 enum class Permission : uint32_t {
@@ -187,7 +188,7 @@ enum class Permission : uint32_t {
     kExecute = 1 << 2
 };
 
-// 辅助函数：枚举值到底层类型的转换
+// Helper: convert an enumerator to its underlying type
 template <typename E>
 constexpr auto to_underlying(E e) noexcept
 {
@@ -226,41 +227,41 @@ constexpr Permission& operator&=(Permission& a, Permission b) noexcept
     return a;
 }
 
-// 辅助判断：是否有任何标志位被设置
+// Helper check: whether any flag bits are set
 constexpr bool has_any_flag(Permission flags) noexcept
 {
     return to_underlying(flags) != 0;
 }
 
-// 辅助判断：是否包含特定标志位
+// Helper check: whether a specific flag bit is present
 constexpr bool has_flag(Permission flags, Permission flag) noexcept
 {
     return to_underlying(flags & flag) != 0;
 }
-````
+```
 
-Using it feels very natural:
+Using it all feels perfectly natural:
 
-````cpp
+```cpp
 Permission user_perms = Permission::kRead | Permission::kWrite;
 
 if (has_flag(user_perms, Permission::kWrite)) {
-    // 用户有写权限
+    // The user has write permission
 }
 
-user_perms |= Permission::kExecute;  // 添加执行权限
-user_perms &= ~Permission::kWrite;   // 移除写权限
-````
+user_perms |= Permission::kExecute;  // Add execute permission
+user_perms &= ~Permission::kWrite;   // Remove write permission
+```
 
-Although this code looks a bit long (after all, you have to hand-write six operators), it guarantees type safety: you cannot mix values from `Flags` and `Permissions` for bitwise operations. In actual projects, these operators are usually extracted into a common header file, reused using templates or macros.
+Granted, this code looks a bit long (six hand-written operators, after all), but it guarantees type safety: you can never mix `Permission` and `Color` values in a bitwise operation. In real projects, these operators usually get factored out into a shared header and reused through templates or macros.
 
-Speaking of which, it's worth mentioning the progress in C++23. `std::to_underlying` has been officially included in the standard library in C++23, so the `to_underlying` helper function above can be replaced directly with `std::to_underlying`. As for `std::bitmask` (a type wrapper specifically designed for bitmasks), it is still in the proposal stage (P1872) and has not yet entered the standard. Until then, manually overloading operators remains the most mainstream approach.
+Speaking of which, the C++23 progress here is worth a mention. `std::to_underlying` has officially been adopted into the standard library in C++23, so the `to_underlying` helper above can be swapped directly for `std::to_underlying` from `<utility>`. As for a dedicated bitmask-oriented type wrapper like `std::flags`, it is still at the proposal stage (P1872) and has not entered the standard. Until then, hand-written operator overloads remain the mainstream practice.
 
-## Step 4 — Switch Matching and Compiler Warnings
+## Step 4—switch Matching and Compiler Warnings
 
-`enum class` and `switch` statements are a match made in heaven. Because `enum class` values must be accessed via qualified names, the compiler knows all possible values and can warn you when a branch is missing:
+`enum class` and the `switch` statement are a natural pair. Because `enum class` values must be accessed via their qualified names, the compiler knows all the possible values and can warn you when a branch goes missing:
 
-````cpp
+```cpp
 enum class NetworkState : uint8_t {
     kDisconnected,
     kConnecting,
@@ -274,21 +275,21 @@ std::string_view to_string(NetworkState state)
     case NetworkState::kDisconnected: return "disconnected";
     case NetworkState::kConnecting:   return "connecting";
     case NetworkState::kConnected:    return "connected";
-    // 如果缺少 kError 分支，-Wswitch 会发出警告
+    // If the kError branch is missing, -Wswitch emits a warning
     }
     return "unknown";
 }
-````
+```
 
-I strongly suggest: **When using `enum class` with `switch`, do not write a `default` branch**. The reason is: if you write `default`, the compiler assumes you have handled all "other" cases, and the `-Wswitch` warning becomes ineffective. If you don't write `default`, when you add new enumeration values later, the compiler will issue warnings at all `switch` statements that missed them, helping you nip bugs in the bud at compile time.
+Our strong recommendation: **when switching over an `enum class`, do not write a `default` branch**. The reason: once you write `default`, the compiler assumes you have handled every "other" case, and the `-Wswitch` warning is neutralized. Leave out the `default`, and when a new enumerator is added later, the compiler will flag every `switch` that misses it, strangling those bugs at compile time.
 
-The corresponding compiler options are GCC/Clang's `-Wswitch` (enabled by default) or `-Wswitch-enum` (stricter, warns even if there is a `default`). Adding these options to your project's CMakeLists.txt is good engineering practice.
+The corresponding compiler options are GCC/Clang's `-Wswitch` (on by default) or `-Wswitch-enum` (stricter—it warns even when a `default` exists). Adding these options to your project's CMakeLists.txt is a sound engineering practice.
 
-## Step 5 — C++20 using enum
+## Step 5—C++20 using enum
 
-While the scope isolation of `enum class` is a good thing, sometimes in a function that frequently uses a certain enumeration, repeatedly writing `Enum::Value` is indeed a bit verbose. C++20 introduced the `using enum` declaration, which introduces all values of an enumeration into the current scope at once:
+The scope isolation of `enum class` is a good thing, but in a function that leans heavily on one enum, repeatedly typing `EnumName::` does get a bit wordy. C++20 introduced the `using enum` declaration, which imports all of an enum's values into the current scope in one go:
 
-````cpp
+```cpp
 enum class TokenType {
     kNumber, kString, kIdentifier,
     kPlus, kMinus, kStar, kSlash,
@@ -297,7 +298,7 @@ enum class TokenType {
 
 std::string_view token_to_string(TokenType type)
 {
-    // 把所有枚举值引入函数作用域
+    // Bring all enumerators into the function scope
     using enum TokenType;
 
     switch (type) {
@@ -314,29 +315,29 @@ std::string_view token_to_string(TokenType type)
     }
     return "unknown";
 }
-````
+```
 
-The scope of `using enum` is limited to the current block (inside curly braces), so it won't pollute the outer scope. It can also be used in class definitions:
+The scope of `using enum` is limited to the current block (inside the braces), so it does not pollute the outer scope. It works inside class definitions too:
 
-````cpp
+```cpp
 class Lexer {
 public:
-    using enum TokenType;  // 所有枚举值成为类的成员
+    using enum TokenType;  // All enumerators become members of the class
 
     TokenType next_token();
     bool is_operator(TokenType t);
 };
-````
+```
 
-⚠️ There is a pitfall here: `using enum` introduces all enumeration values into the current scope. If two enumerations have values with the same name, using `using enum` for both simultaneously will cause a conflict. So when using it, ensure you are clear about all values of that enumeration and that they won't conflict with names in the current scope.
+Here is the pitfall: `using enum` pulls every enumerator into the current scope. If two enums have same-named values, bringing both in via `using enum` at the same time produces a conflict. So before using it, make sure you know all of the enum's values and that they will not collide with names already present in the current scope.
 
-## Practical Application — State Machines and Error Codes
+## Practical Applications—State Machines and Error Codes
 
-### State Machine
+### State Machines
 
-State machines are one of the most common patterns in embedded systems and protocol parsing. Using `enum class` to represent states, combined with `switch` to implement state transitions, is both clear and safe:
+The state machine is one of the most common patterns in embedded systems and protocol parsing. Representing states with an `enum class` and driving the transitions with a `switch` is both clear and safe:
 
-````cpp
+```cpp
 #include <cstdio>
 
 enum class DeviceState : uint8_t {
@@ -406,15 +407,15 @@ private:
     static bool is_error(const char* e)      { return e[0] == 'E'; }
     static bool is_reset(const char* e)      { return e[0] == 'R'; }
 };
-````
+```
 
-The benefit of this code is: if you later add a new state to `State` (e.g., `Suspending`), the compiler will warn at every `switch` missing this branch (provided you didn't write `default`), ensuring you don't miss any state transition logic.
+The payoff of this code: if you later add a new state to `DeviceState` (say, `kPaused`), the compiler warns at every `switch` that lacks the branch for it (provided you didn't write a `default`), so no state-transition logic gets missed.
 
 ### Error Codes
 
-Using `enum class` for error codes is much safer than using `std::error_code` or naked `int`:
+Using `enum class` for error codes is far safer than `#define` or a raw `int`:
 
-````cpp
+```cpp
 #include <string_view>
 
 enum class ErrorCode : int {
@@ -438,18 +439,18 @@ Result open_file(const char* path)
     if (!path || path[0] == '\0') {
         return {ErrorCode::kInvalidArgument, "path is empty"};
     }
-    // ... 实际的文件打开逻辑
+    // ... the actual file-opening logic
     return {ErrorCode::kOk, "success"};
 }
-````
+```
 
-The benefit here is: the caller cannot casually pass an `int` as an error code—it must use a value of type `ErrorCode`. Although this compile-time check is simple, it saves you a lot of debugging time in large projects.
+The benefit here: callers cannot just pass in a `42` as an error code—they must use a value of type `ErrorCode`. This compile-time check is simple, but in a large project it saves you a great deal of debugging time.
 
 ## C and C++ Interface Interoperability
 
-In actual projects, `enum class` sometimes encounters scenarios interacting with C interfaces. The underlying C library might require passing `int` or `uint32_t`, while your C++ code uses `enum class`. Explicit conversion is needed at this point:
+In real projects, `enum class` sometimes runs into scenarios where it must talk to a C interface. The underlying C library may demand an `int` or `uint32_t`, while your C++ code uses an `enum class`. That's when an explicit conversion is needed:
 
-````cpp
+```cpp
 extern "C" void hal_set_mode(uint8_t mode);
 
 enum class HalMode : uint8_t {
@@ -460,21 +461,21 @@ enum class HalMode : uint8_t {
 
 void set_device_mode(HalMode mode)
 {
-    // enum class -> 底层类型 -> C 接口
+    // enum class -> underlying type -> C interface
     hal_set_mode(static_cast<uint8_t>(mode));
 }
-````
+```
 
-If you need to do this conversion frequently, the `to_underlying` helper function (or C++23's `std::to_underlying`) can save you a few lines of `static_cast`. However, in my experience, this conversion is usually concentrated at the interface layer (adapter layer) and not scattered in business logic, so the code volume isn't large.
+If you make this conversion frequently, the `to_underlying` helper (or C++23's `std::to_underlying`) can save you a few lines of `static_cast`. In our experience, though, these conversions usually concentrate in the interface layer (the adapter layer) rather than scattering through the business logic, so the amount of code stays small.
 
-## Run Online
+## Run It Online
 
-Run the enum class example online to compare the issues of C-style enums with strongly-typed improvements:
+Run the enum class example online and compare the problems of C-style enums against the strongly typed improvements:
 
 <OnlineCompilerDemo
-  title="enum class: Strongly-Typed Enumerations and Type Safety"
+  title="enum class: Strongly Typed Enums and Type Safety"
   source-path="code/examples/vol2/10_enum_class.cpp"
-  description="Run online and observe the implicit conversion issues of C-style enums and the type safety improvements of enum class."
+  description="Run it online and observe the implicit-conversion problems of C-style enums and the type-safety improvements of enum class."
   allow-run
 />
 

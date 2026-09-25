@@ -1,20 +1,20 @@
 ---
-title: Structured Bindings and Initialization
-description: Unpack multiple values on a single line, narrowing variable scope
+title: "Structured Bindings and Initialization"
+description: "Unpack multiple values in one line and narrow variable scope"
 translation:
   source: documents/vol2-modern-features/ch05-structured-bindings/index.md
   source_hash: a2666aa7a0e3ad4117968b082c4339b2311df99308b1615d101d79c0f8b44945
-  translated_at: '2026-05-26T11:29:06.359286+00:00'
+  translated_at: '2026-09-25T15:37:42+00:00'
   engine: anthropic
-  token_count: 105
+  token_count: 250
 ---
-# Structured Bindings and Init Statements
+# Structured Bindings and Initialization
 
-C++17 structured bindings let us unpack pairs, tuples, arrays, and structs in a single line—no more ugly ``std::tie`` syntax. Combined with if/switch init statements, we can limit variable scope to exactly where it is needed, preventing variables from leaking into the outer scope. Although this chapter contains only two articles, both cover features we use frequently in day-to-day development.
+C++17 structured bindings let you unpack pairs, tuples, arrays, and structs in a single line of code — no more of that ugly `std::tie` style. Combined with if/switch initializers, you can restrict a variable's scope to exactly where it is truly needed, preventing variables from leaking into the enclosing scope. This chapter has only two articles, but both cover features you will reach for constantly in day-to-day development.
 
 ## Chapter Contents
 
 <ChapterNav variant="sub">
-  <ChapterLink href="01-structured-bindings">Structured Bindings: Unpacking Multiple Values in One Line</ChapterLink>
-  <ChapterLink href="02-init-statements">if/switch Init Statements: Narrowing Variable Scope</ChapterLink>
+  <ChapterLink href="01-structured-bindings">Structured Binding: Unpacking Multiple Values in One Line</ChapterLink>
+  <ChapterLink href="02-init-statements">if/switch Initializers: Narrowing Variable Scope</ChapterLink>
 </ChapterNav>
