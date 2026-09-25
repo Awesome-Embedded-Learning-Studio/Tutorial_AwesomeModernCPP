@@ -1,75 +1,70 @@
 ---
+title: "inline and constexpr Functions"
+description: "Understand what inline really means and how constexpr functions compute at compile time, laying the groundwork for zero-overhead abstraction in modern C++"
 chapter: 3
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-description: Understand the true meaning of `inline` and the compile-time evaluation
-  capabilities of `constexpr` functions, laying the foundation for zero-overhead abstraction
-  in modern C++.
-difficulty: beginner
 order: 4
+difficulty: beginner
+reading_time_minutes: 19
 platform: host
 prerequisites:
-- 重载与默认参数
-reading_time_minutes: 13
+  - "Overloading and Default Parameters"
 tags:
-- cpp-modern
-- host
-- beginner
-- 入门
-- 基础
-title: '`inline` and `constexpr` Functions'
+  - cpp-modern
+  - host
+  - beginner
+  - 入门
+  - 基础
+cpp_standard: [11, 14, 17, 20]
 translation:
-  engine: anthropic
   source: documents/vol1-fundamentals/ch03/04-inline-constexpr.md
-  source_hash: e063dd484f26dbf9f70231b6ed77c286b56eda156e7954857199027f2ace75b3
-  token_count: 2356
-  translated_at: '2026-05-26T10:46:46.225217+00:00'
+  source_hash: c72fc784f83a76340f619bd6aaff809278cd29106750a269039cad6e32ad12cc
+  translated_at: '2026-09-25T10:24:00+00:00'
+  engine: anthropic
+  token_count: 8500
 ---
-# inline and constexpr Functions
 
-We have written quite a few functions by now. Every time we call a function, the program actually has a lot of work to do—saving the current execution position, allocating a stack frame, jumping to the function body, jumping back after execution, destroying the stack frame, and restoring the scene. For a large function of dozens of lines, this overhead is negligible, but for a small function that only does `return x * x`, the call overhead might exceed the computation of the function itself. Can we directly expand these "paper-thin" function calls, eliminating all the costs of jumping and stack frames? This is exactly the problem that `inline` and `constexpr` aim to solve.
+# inline and constexpr Functions: Don't Send a One-Liner on a Wasted Trip
+
+We've written quite a few functions by now. Every time we call one, the program actually has a fair bit of work to do: save the current execution position, allocate a stack frame, jump to the function body, jump back when it's done, destroy the stack frame, and restore the caller's state. For a big function of dozens of lines, that overhead is nothing; but for a tiny function that just does `return x * x`, the call overhead can be larger than the function's own computation. Can we expand these one-or-two-line functions right at the call site and skip the whole cost of jumping and stack frames? That's exactly the problem `inline` and `constexpr` are here to solve.
 
 ## inline—The Most Misunderstood Keyword
 
-### inline Does Not Mean "Force Inline"
+### inline Is Not "Forced Inlining"
 
-Many people understand `inline` as "suggesting that the compiler expand this function at the call site." This understanding was not entirely wrong in the past, but in modern C++, it has seriously deviated from the true purpose of `inline`. The fact is: **the compiler has full authority to ignore the `inline` keyword you wrote**. Modern compilers have very mature inline heuristics and automatically decide whether to inline based on factors like function body size and call frequency. Conversely, even if you don't write `inline`, the compiler might still inline a short function.
+Many people read `inline` as "suggesting that the compiler expand this function at the call site." That understanding wasn't exactly wrong in the past, but in modern C++ it has drifted far from what `inline` is really for. The fact is: **the compiler is fully entitled to ignore the `inline` keyword we write**. Modern compilers have highly mature inlining heuristics and decide automatically whether to inline, based on factors such as function body size and call frequency. Conversely, even when we don't write `inline`, the compiler may perfectly well expand a short function inline.
 
-So what does `inline` actually do? The answer is related to the ODR.
+So what does `inline` actually do? The answer has to do with the ODR—let's lay that rule out.
 
-### The True Meaning of inline—ODR Exemption
+### What inline Really Means—ODR Exemption
 
-C++ has an ironclad rule called the **ODR (One Definition Rule)**: a function can have only one definition throughout the entire program. If you write a function definition in a header file, and that header file is included by two `.cpp` files, the linker will see two identical definitions and directly report a redefinition error.
+C++ has one rule we must follow, the **ODR (One Definition Rule)**: a function may have only one definition in the entire program. If we write a function definition in a header file and that header gets included by two `.cpp` files, the linker sees two identical definitions and reports a redefinition error on the spot.
 
-The `inline` keyword can break this rule. A function marked as `inline` is allowed to have identical definitions in multiple translation units, as long as all definitions are exactly the same—the linker will automatically merge them and keep only one copy. So the essence of `inline` is not "please expand this function," but rather "allow this function to be defined in a header file so that being included multiple times won't blow up."
+The `inline` keyword can break that rule. A function marked `inline` is allowed to have identical definitions across multiple translation units; **as long as all the definitions are exactly the same, the linker merges them automatically and keeps only one copy**. So the essence of `inline` as we see it is "this function may be defined in a header, and being included multiple times won't blow up"—a completely different thing from "please expand this function."
 
 ```cpp
 // math_utils.h
 #pragma once
 
-// 有了 inline：多个 .cpp include 此头文件不会重定义
+// With inline: multiple .cpp files including this header won't cause redefinition
 inline int square(int x)
 {
     return x * x;
 }
 ```
 
-> **Pitfall Warning**: The definition of an `inline` function must appear in a header file. If you only write an `inline` declaration in the header file and put the definition in a `.cpp` file, other translation units won't find the function body when calling it, and the linker will either report an error or fall back to a normal function call. **The definition must appear in the header file together with the declaration.**
->
-> C++17 introduced `inline` variables. Just like `inline` functions, they allow defining global variables in header files without violating the ODR when included multiple times. For example, `inline static const int kMaxSize = 100;` can be written like this in a header file.
+**The definition of an `inline` function must appear in a header file.** If we write only an `inline` declaration in the header and put the definition in a `.cpp`, other translation units can't find the function body when they call it, and the linker reports an undefined reference outright.
 
-After C++17, the presence of `inline` as a keyword has grown increasingly weak. `constexpr` functions are `inline` by default, member functions defined within a class body are also `inline` by default, and template functions are similarly `inline` by default. The only scenario where you truly need to manually write `inline` is almost exclusively "defining a non-template, non-constexpr free function in a header file." However, understanding its true meaning remains an important step in understanding the C++ compilation and linking model.
+C++17 introduced `inline` variables. Just like `inline` functions, they let us define global variables in a header file without violating the ODR when it's included multiple times. Write `inline int mode_flags = 0;` in a header, include it from several `.cpp` files—in the end there is still only one definition. One boundary line is worth knowing here: namespace-scope `const` variables have internal linkage to begin with, so they don't violate the ODR even without `inline`; what genuinely needs `inline` variables are the global variables that change.
 
-## constexpr Functions—Evaluate at Compile Time If Possible
+After C++17, `inline` as a keyword has been fading into the background. `constexpr` functions are `inline` by default, member functions defined inside the class body are `inline` by default, and function templates are `inline` by default too. The one scenario that still genuinely requires writing `inline` by hand is pretty much "defining a non-template, non-constexpr free function in a header file." But understanding what it really means remains an important step toward understanding C++'s compile-and-link model.
 
-If `inline` solves "allowing multiple definitions," then `constexpr` solves a more fundamental question: **can we let a function finish computing at compile time and directly "hardcode" the result into the binary file?**
+## constexpr Functions—Compute at Compile Time When We Can
+
+If `inline` solves "allowing multiple definitions," then `constexpr` solves a more fundamental problem: **can we have a function finish computing at compile time and write the result straight into the binary?**
 
 ### The Basic Meaning of constexpr
 
-`constexpr` is a keyword introduced in C++11, used to declare functions or variables that "may be evaluated at compile time." When a `constexpr` function is called, if all arguments are compile-time known constants, the function's evaluation occurs during the compilation phase, and the result directly becomes a constant. If the arguments contain values that can only be determined at runtime, the function degrades into a normal runtime call. This dual-mode characteristic of "evaluate at compile time if possible, otherwise evaluate at runtime" is the most powerful aspect of `constexpr`.
+`constexpr` is a keyword introduced in C++11 that declares a function or variable as "possibly evaluated at compile time." When a `constexpr` function is called and every argument is a constant known at compile time, the evaluation happens during compilation and the result becomes a constant directly. If any argument is a value that can only be determined at runtime, the function degrades into an ordinary runtime call—we don't need to write two versions of the code for the two scenarios. This dual-mode nature of "compute at compile time when possible, fall back to runtime otherwise" is what makes `constexpr` so practical.
 
 ```cpp
 constexpr int square(int x)
@@ -79,37 +74,37 @@ constexpr int square(int x)
 
 int main()
 {
-    constexpr int kResult = square(5);  // 编译期求值，kResult = 25
+    constexpr int kResult = square(5);  // Evaluated at compile time, kResult = 25
 
     int x = 0;
     std::cin >> x;
-    int runtime_result = square(x);    // 运行时求值，退化为普通调用
+    int runtime_result = square(x);    // Evaluated at runtime, degrades to an ordinary call
 
     return 0;
 }
 ```
 
-> **Pitfall Warning**: `constexpr` does not equal `const`. `constexpr` means "compile-time constant" (the value is determined at compile time), while `const` means "immutable at runtime" (the value is determined at runtime but cannot be changed). If you need a value determined at compile time, use `constexpr` instead of `const`.
+`constexpr` is not the same as `const`. `constexpr` means "compile-time constant" (the value is determined at compile time); `const` means "not modifiable at runtime" (the value is determined at runtime but cannot change). If you need a value fixed at compile time, reach for `constexpr`, not `const`.
 
-### The Evolution of constexpr—Stronger with Each Generation
+### The Evolution of constexpr—Stronger with Every Generation
 
-What a `constexpr` function can and cannot do has seen restrictions relaxed with every C++ standard. In C++11, a `constexpr` function body could only contain a single `return` statement, with no local variables, loops, or `if/else`—writing a factorial function relied entirely on recursion combined with the ternary operator:
+Every C++ standard has relaxed what a `constexpr` function may and may not do. In C++11, a `constexpr` function body could contain only a single `return` statement—no local variables, no loops, no `if/else`—so writing factorial meant recursion plus the ternary operator:
 
 ```cpp
-// C++11：只能用 return + 三元运算符
+// C++11: only return + the ternary operator allowed
 constexpr int factorial(int n)
 {
     return (n <= 1) ? 1 : n * factorial(n - 1);
 }
 ```
 
-C++14 significantly relaxed these restrictions—function bodies could have local variables, `if/else`, and `for/while` loops, making the syntax finally normal. C++17 further allowed `constexpr` lambdas and `if constexpr`, and C++20 lifted almost all restrictions—even allowing the use of `std::vector`, `std::string`, and dynamic memory allocation inside `constexpr` functions. By C++23, exceptions can even be thrown and caught with `try/catch` inside `constexpr`. This trend is very clear: **C++ is enabling as much logic as possible to execute at compile time**.
+C++14 loosened the restrictions dramatically: the function body could now have local variables, `if/else`, and `for/while` loops—the code finally looked normal. C++17 went further and allowed `constexpr` lambdas and `if constexpr`. C++20 lifted almost all remaining restrictions, even permitting `std::vector`, `std::string`, and dynamic memory allocation inside `constexpr` functions. By C++26, even throwing exceptions and catching them with `try/catch` during `constexpr` evaluation is allowed. The trend is unmistakable: **C++ is pushing for as much logic as possible to run at compile time**.
 
-## Practical Examples of Compile-Time Computation
+## Compile-Time Computation in Practice
 
 ### Compile-Time Fibonacci and static_assert
 
-`static_assert` is a compile-time assertion—if the condition is not met, compilation fails directly. Using it to verify the results of a `constexpr` function both ensures logical correctness and forces the compiler to actually complete the computation at compile time.
+`static_assert` is a compile-time assertion: if the condition fails, compilation fails right there. We use it to verify the results of `constexpr` functions—it both ensures the logic is correct and forces the compiler to actually finish the computation at compile time.
 
 ```cpp
 constexpr int fib(int n)
@@ -123,30 +118,30 @@ static_assert(fib(1) == 1);
 static_assert(fib(10) == 55);
 ```
 
-However, the recursive version of Fibonacci has a time complexity of O(2^n), and the compiler must bear this exponential cost when executing it at compile time. In compile-time computations, we should try to use iteration to control complexity.
+Note, though, that the recursive Fibonacci has O(2^n) time complexity, and the compiler pays that same exponential price when executing it at compile time. In compile-time computation we should stick to iteration wherever possible to keep complexity under control.
 
-### Using constexpr for Template Parameter Computation
+### Using constexpr for Template Argument Computation
 
-Non-type parameters of a template must be compile-time constants, and the return value of a `constexpr` function perfectly satisfies this condition:
+Non-type template arguments must be compile-time constants, and the return value of a `constexpr` function satisfies exactly that:
 
 ```cpp
 constexpr int bytes_from_bits(int bits)
 {
-    return (bits + 7) / 8;  // bit 数换算成 byte 数
+    return (bits + 7) / 8;  // convert a bit count into a byte count
 }
 
-// 模板参数需要编译期常量，constexpr 函数完美适配
+// Template arguments need compile-time constants; constexpr functions fit perfectly
 std::array<uint8_t, bytes_from_bits(32)> buffer{};
 ```
 
-This usage is especially common in embedded development—values that can be determined at compile time, such as register widths, buffer sizes, and DMA transfer lengths, can be computed by `constexpr` functions and directly fed to templates, ensuring type safety without any runtime overhead.
+This pattern shows up constantly in embedded development: register widths, buffer sizes, DMA transfer lengths—values that can be pinned down at compile time. We compute them with `constexpr` functions and pass them straight to templates, getting type safety with zero runtime overhead.
 
 ### Compile-Time Lookup Tables
 
-In embedded development, we often need precomputed lookup tables. The traditional approach is to hand-write an array, and when parameters change, you have to manually recalculate. With `constexpr`, we can let the compiler generate it for us:
+Embedded development often calls for precomputed lookup tables. The traditional approach is to write the array by hand and recompute it by hand whenever a parameter changes. With `constexpr`, we can have the compiler generate it for us:
 
 ```cpp
-/// @brief 编译期生成 CRC8 查找表
+/// @brief Generate a CRC8 lookup table at compile time
 constexpr std::array<uint8_t, 256> make_crc8_table()
 {
     std::array<uint8_t, 256> table{};
@@ -161,17 +156,17 @@ constexpr std::array<uint8_t, 256> make_crc8_table()
     return table;
 }
 
-// 编译期生成，运行时零开销
+// Generated at compile time, zero runtime overhead
 constexpr auto kCrc8Table = make_crc8_table();
 ```
 
-The entire lookup table is fully generated during the compilation phase and directly embedded in the `.rodata` section of the binary file. Accessing it at runtime is no different from accessing a hand-written `const` array.
+The entire lookup table is generated during compilation and embedded directly into the `.rodata` section of the binary. Accessing it at runtime is in no way different from accessing a hand-written `const` array.
 
 ## consteval and constinit—Stricter Control (C++20)
 
-C++20 introduced two new keywords building upon `constexpr`; for now, we just need to know they exist.
+C++20 introduced two new keywords on top of `constexpr`; for now, we just need to know they exist.
 
-Functions declared with `consteval` **must** be evaluated at compile time—calling them with a runtime value will cause the compiler to report an error directly. This is completely different from `constexpr`, which "compiles if it can, otherwise runs at runtime":
+A function declared `consteval` **must** be evaluated at compile time; call it with a runtime value and the compiler errors out immediately. That's completely different from `constexpr`'s "compile time when possible, runtime otherwise":
 
 ```cpp
 consteval int power(int base, int exp)
@@ -181,33 +176,33 @@ consteval int power(int base, int exp)
     return result;
 }
 
-constexpr int kVal = power(2, 10);  // OK：编译期求值，kVal = 1024
+constexpr int kVal = power(2, 10);  // OK: evaluated at compile time, kVal = 1024
 // int x; std::cin >> x;
-// int y = power(x, 3);             // 编译错误：x 不是编译期常量
+// int y = power(x, 3);             // compile error: x is not a compile-time constant
 ```
 
-`constinit` applies to variable declarations, guaranteeing that the variable completes initialization at compile time without requiring it to become a `const`. This solves the "static initialization order fiasco"—the initialization order of global variables across different translation units is undefined, which can lead to undefined behavior. `constinit` ensures initialization happens at compile time, directly bypassing this problem.
+`constinit` applies to variable declarations: it guarantees the variable is initialized at compile time without demanding that it be `const`. This defuses the "static initialization order trap"—global variables across different translation units are initialized in an unspecified order, which can lead to undefined behavior. `constinit` moves initialization to compile time, letting us sidestep the problem entirely.
 
 ## When to Use constexpr
 
-A simple rule of thumb: **if a function is a pure function—given the same input it always returns the same output, and it has no side effects—then it is a candidate for `constexpr`.** Math functions (square, absolute value, greatest common divisor), lookup table generation (sine tables, CRC tables), configuration value computation (register addresses, buffer sizes), type trait checks (`std::size()`, `std::extent_v`)—these pure computations that do not rely on runtime state should all be handed off to the compiler as much as possible. The compiler has more patience than the CPU, and it only calculates once.
+One simple rule of thumb: **if a function is a pure function—same input always yields the same output, and no side effects—then it is a candidate for `constexpr`.** Math functions (square, absolute value, greatest common divisor), lookup table generation (sine tables, CRC tables), configuration value computation (register addresses, buffer sizes), type trait queries (`std::size()`, `std::extent_v`)—pure computations like these that don't depend on runtime state should all be handed to the compiler as much as possible: compute once at compile time, and zero times at runtime.
 
 ## Hands-On Practice—inline_constexpr.cpp
 
-Now let's integrate the content of this chapter into a complete program, demonstrating the different behaviors of `constexpr` at compile time and runtime.
+Let's pull everything from this chapter into one complete program that demonstrates how `constexpr` behaves at compile time versus at runtime.
 
 ```cpp
 #include <array>
 #include <cstdint>
 #include <cstdio>
 
-/// @brief 编译期平方计算
+/// @brief Compile-time square computation
 constexpr int square(int x)
 {
     return x * x;
 }
 
-/// @brief 编译期阶乘（迭代版，C++14 风格）
+/// @brief Compile-time factorial (iterative, C++14 style)
 constexpr int factorial(int n)
 {
     int result = 1;
@@ -217,7 +212,7 @@ constexpr int factorial(int n)
     return result;
 }
 
-/// @brief 编译期整数幂
+/// @brief Compile-time integer power
 constexpr int power(int base, int exp)
 {
     int result = 1;
@@ -227,7 +222,7 @@ constexpr int power(int base, int exp)
     return result;
 }
 
-/// @brief 编译期生成 CRC8 查找表
+/// @brief Generate a CRC8 lookup table at compile time
 constexpr std::array<uint8_t, 256> make_crc8_table()
 {
     std::array<uint8_t, 256> table{};
@@ -242,17 +237,17 @@ constexpr std::array<uint8_t, 256> make_crc8_table()
     return table;
 }
 
-// 编译期验证
+// Compile-time verification
 static_assert(square(5) == 25, "square(5) should be 25");
 static_assert(square(-3) == 9, "square(-3) should be 9");
 static_assert(factorial(5) == 120, "5! should be 120");
 static_assert(factorial(10) == 3628800, "10! should be 3628800");
 static_assert(power(2, 10) == 1024, "2^10 should be 1024");
 
-// 编译期生成查找表
+// Generate the lookup table at compile time
 constexpr auto kCrc8Table = make_crc8_table();
 
-/// @brief 用查找表计算 CRC8
+/// @brief Compute CRC8 using the lookup table
 uint8_t compute_crc8(const uint8_t* data, size_t length)
 {
     uint8_t crc = 0;
@@ -315,20 +310,184 @@ runtime  square(7)  = 49
 结果一致: 是
 ```
 
-`static_assert` has already verified the correctness of all computation results during the compilation phase—if there is a bug in a function's implementation, the compilation simply won't pass. `kCrc8Table` is a 256-byte lookup table, completely generated at compile time and embedded in the binary file, with no initialization overhead when accessed at runtime. `square(7)` produces the same results at compile time and runtime, which is the essence of `constexpr`'s "one code, two modes" approach.
+`static_assert` has already verified the correctness of every computed result during compilation—if any function's implementation has a bug, the build simply won't pass. `kCrc8Table` is a 256-byte lookup table, generated entirely at compile time and embedded into the binary; accessing it at runtime costs no initialization whatsoever. `square(7)` produced the same result at compile time and at runtime—that's what `constexpr`'s "one piece of code, two modes" means.
 
-> **Pitfall Warning**: If a `constexpr` function contains floating-point operations, the results of compile-time evaluation and runtime evaluation might have minor differences—floating-point precision is not entirely consistent across different compilers and platforms. This is not an issue for integer operations, but if you use floating-point algorithms in a `constexpr` function, it's best to use `static_assert` to lock in the expected result.
+If a `constexpr` function involves floating-point arithmetic, compile-time evaluation and runtime evaluation may differ slightly—floating-point precision isn't completely uniform across compilers and platforms. Integer arithmetic doesn't have this problem, but if we do use a floating-point algorithm in a `constexpr` function, it's best to pin down the expected result with a `static_assert`.
 
 ## Try It Yourself
 
 ### Exercise 1: constexpr Greatest Common Divisor
 
-Write a `constexpr int gcd(int a, int b)` function that uses the Euclidean algorithm to compute the greatest common divisor of two positive integers. Use `static_assert` to verify `gcd(12, 8) == 4` and `gcd(100, 75) == 25`.
+Write a `constexpr int gcd(int a, int b)` function that uses the Euclidean algorithm to compute the greatest common divisor of two positive integers. Verify with `static_assert` that `gcd(12, 8) == 4` and `gcd(100, 75) == 25`.
 
-### Exercise 2: Compile-Time Fibonacci Lookup Table
+::: details Reference answer
 
-Write a `constexpr` function to generate a `std::array<uint32_t, 30>` containing 30 elements, where the i-th element is the i-th Fibonacci number. Use `static_assert` to verify `table[10] == 55` and `table[20] == 6765`. Note: use iteration instead of recursion to avoid exponential compilation time.
+```cpp
+#include <iostream>
+
+constexpr int gcd(int a, int b)
+{
+    return (b == 0) ? a : gcd(b, a % b);
+}
+
+static_assert(gcd(12, 8) == 4, "12和8的最大公约数应为4");
+static_assert(gcd(100, 75) == 25, "100和75的最大公约数应为25");
+
+int main()
+{
+    std::cout << "=== 编译期计算结果 ===" << std::endl;
+    std::cout << "12和8的最大公约数: " << gcd(12, 8) << std::endl;
+    std::cout << "100和75的最大公约数: " << gcd(100, 75) << std::endl;
+    return 0;
+}
+```
+
+Compile and run:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+Output:
+
+```text
+=== 编译期计算结果 ===
+12和8的最大公约数: 4
+100和75的最大公约数: 25
+```
+
+:::
+
+### Exercise 2: A Compile-Time Fibonacci Lookup Table
+
+Write a `constexpr` function that generates a `std::array<uint32_t, 30>` of 30 elements, where the i-th element is the i-th Fibonacci number. Verify with `static_assert` that `table[10] == 55` and `table[20] == 6765`. Use iteration rather than recursion, to avoid exponential compile times.
+
+::: details Reference answer
+
+```cpp
+#include <array>
+#include <cstdint>
+#include <iostream>
+
+constexpr std::array<std::uint32_t, 30> fibonacci()
+{
+    std::array<std::uint32_t, 30> fib{};
+    fib[0] = 0;
+    fib[1] = 1;
+    for (std::size_t i = 2; i < 30; ++i)
+    {
+        fib[i] = fib[i - 1] + fib[i - 2];
+    }
+    return fib;
+}
+
+constexpr auto table = fibonacci();
+static_assert(table[10] == 55, "Fibonacci(10) 应为 55");
+static_assert(table[20] == 6765, "Fibonacci(20) 应为 6765");
+
+int main()
+{
+    std::cout << "=== 编译期计算结果 ===" << std::endl;
+    for (std::size_t i = 0; i < 30; ++i)
+    {
+        std::cout << "Fibonacci(" << i << ") = " << table[i] << std::endl;
+    }
+    return 0;
+}
+```
+
+Compile and run:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+Output:
+
+```text
+=== 编译期计算结果 ===
+Fibonacci(0) = 0
+Fibonacci(1) = 1
+Fibonacci(2) = 1
+Fibonacci(3) = 2
+Fibonacci(4) = 3
+Fibonacci(5) = 5
+Fibonacci(6) = 8
+Fibonacci(7) = 13
+Fibonacci(8) = 21
+Fibonacci(9) = 34
+Fibonacci(10) = 55
+Fibonacci(11) = 89
+Fibonacci(12) = 144
+Fibonacci(13) = 233
+Fibonacci(14) = 377
+Fibonacci(15) = 610
+Fibonacci(16) = 987
+Fibonacci(17) = 1597
+Fibonacci(18) = 2584
+Fibonacci(19) = 4181
+Fibonacci(20) = 6765
+Fibonacci(21) = 10946
+Fibonacci(22) = 17711
+Fibonacci(23) = 28657
+Fibonacci(24) = 46368
+Fibonacci(25) = 75025
+Fibonacci(26) = 121393
+Fibonacci(27) = 196418
+Fibonacci(28) = 317811
+Fibonacci(29) = 514229
+```
+
+:::
 
 ### Exercise 3: constexpr popcount
 
-Write a `constexpr int count_bits(int n)` function that returns the number of 1s in the binary representation of an integer `n`. Use `static_assert` to verify `count_bits(0) == 0`, `count_bits(7) == 3`, and `count_bits(255) == 8`. Hint: each `n &= (n - 1)` eliminates the lowest set bit (Brian Kernighan's algorithm).
+Write a `constexpr int count_bits(int n)` function that returns how many 1s are in the binary representation of the integer `n`. Verify with `static_assert` that `count_bits(0) == 0`, `count_bits(7) == 3`, and `count_bits(255) == 8`. Hint: each `n &= (n - 1)` clears the lowest set 1 (the Brian Kernighan trick).
+
+::: details Reference answer
+
+```cpp
+#include <iostream>
+
+constexpr int count_bits(int n)
+{
+    unsigned int value = static_cast<unsigned int>(n);
+    int count = 0;
+    while (value != 0)
+    {
+        value &= (value - 1);
+        ++count;
+    }
+    return count;
+}
+
+static_assert(count_bits(0) == 0, "0的二进制表示中1的个数应为0");
+static_assert(count_bits(7) == 3, "7的二进制表示中1的个数应为3");
+static_assert(count_bits(255) == 8, "255的二进制表示中1的个数应为8");
+
+int main()
+{
+    std::cout << "=== 编译期计算结果 ===" << std::endl;
+    std::cout << "0的二进制表示中1的个数: " << count_bits(0) << std::endl;
+    std::cout << "7的二进制表示中1的个数: " << count_bits(7) << std::endl;
+    std::cout << "255的二进制表示中1的个数: " << count_bits(255) << std::endl;
+    return 0;
+}
+```
+
+Compile and run:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+Output:
+
+```text
+=== 编译期计算结果 ===
+0的二进制表示中1的个数: 0
+7的二进制表示中1的个数: 3
+255的二进制表示中1的个数: 8
+```
+
+:::

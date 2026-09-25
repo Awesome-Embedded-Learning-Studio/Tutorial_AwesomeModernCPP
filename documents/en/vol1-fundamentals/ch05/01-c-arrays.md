@@ -5,300 +5,511 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Master the declaration, initialization, and multidimensional usage of
-  C-style arrays, and understand array decay and its impact on function parameter
-  passing.
+description: Master the declaration, initialization, and multidimensional use of C-style
+  arrays, and understand array decay and its impact on passing arrays to functions.
 difficulty: beginner
 order: 1
 platform: host
 prerequisites:
-- 智能指针预告
-reading_time_minutes: 10
+- Smart Pointer Preview
+reading_time_minutes: 13
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-title: C-style array
+title: C-Style Arrays
 translation:
   source: documents/vol1-fundamentals/ch05/01-c-arrays.md
-  source_hash: dd254ebd95f09c207595816fc7b28f9450282e00098ce8b95cc72653bfa0d60e
-  translated_at: '2026-06-16T03:43:28.087762+00:00'
+  source_hash: 6940fabd3d4bb448e235a87f147b1ed027bbb4721d9587225db03384655462de
+  translated_at: '2026-09-25T10:51:43+00:00'
   engine: anthropic
-  token_count: 2099
+  token_count: 4500
 ---
-# C-Style Arrays
+# C-Style Arrays: Raw, Direct, and No Protection Whatsoever
 
-So far, we have handled data in a "one variable, one value" manner. However, real-world data rarely exists in isolation—a set of sensor readings, a string of characters, a matrix, a grade table—these things are naturally "a pile of data of the same type lined up in a row." The array is the most primitive mechanism provided by C and C++ for storing this "contiguous homogeneous data."
+Up to this point, the way we have handled data has been "one variable holds one value." But real-world data rarely exists in isolation—a batch of sensor readings, a string of characters, a matrix, a grade sheet: these things are inherently "a bunch of values of the same type lined up in a row." The array is the most primitive mechanism C and C++ offer for storing this kind of "contiguous data of the same type."
 
-C-style arrays have many issues—they cannot be assigned, cannot be returned, lose length information when passed as arguments, and have no bounds checking—but they are an excellent entry point for understanding memory layout. Only by understanding these pain points can we understand why C++ introduced `std::array`. In this chapter, we will dissect C-style arrays inside out.
+C-style arrays come with plenty of problems: they cannot be assigned, cannot be returned, lose length information when passed as arguments, and have no bounds checking. But they are a superb entry point for understanding memory layout—only once we understand these pain points can we understand why C++ introduced `std::array`. Let's take C-style arrays apart from the inside out.
 
-## Declaration and Initialization — What Does an Array Look Like
+## Declaration and Initialization—What an Array Looks Like
 
-To declare an array, the core syntax is to add square brackets after the variable name, specifying the number of elements inside:
+To declare an array, the core syntax is a pair of square brackets after the variable name, containing the number of elements:
 
 ```cpp
-int scores[5];
+int scores[5];  // 5 ints, uninitialized (the values are indeterminate)
 ```
 
-This code tells the compiler: allocate space for 5 `int`s contiguously on the stack. Note that **uninitialized local arrays contain garbage values**—not zero. Therefore, we almost always initialize at the same time as declaration.
+This code tells the compiler: allocate space for 5 `int`s contiguously on the stack. Note that **an uninitialized local array holds garbage values**—not zeros. So we almost always initialize at the same time we declare.
 
 ```cpp
 int scores[5] = {90, 85, 78, 92, 88};
 ```
 
-These five values are filled into the five positions of the array in order. If there are fewer initial values than the array size, the remaining elements are automatically initialized to zero:
+These five values are poured into the array's five positions in order. If we supply fewer initializers than the array size, the remaining elements are automatically initialized to zero:
 
 ```cpp
-int scores[5] = {90, 85}; // {90, 85, 0, 0, 0}
+int data[5] = {10, 20};  // data = {10, 20, 0, 0, 0}
 ```
 
-Conversely, if the initial values exceed the array size, the compiler will error directly.
+The other way around—if we supply more initializers than the array size, compilation fails outright.
 
-If the initialization list provides enough values, the array size can be omitted, letting the compiler count itself:
+When the initializer list provides enough values, we can omit the size and let the compiler count them itself:
 
 ```cpp
-int scores[] = {90, 85, 78, 92, 88}; // Size is 5
+int primes[] = {2, 3, 5, 7, 11, 13};  // the compiler deduces the size as 6
 ```
 
-The benefit of this approach is that you don't need to synchronize the number in the square brackets when adding or removing elements later.
+The benefit of this style: when we add or remove elements later on, there is no number inside the brackets that needs updating in lockstep.
 
-To know how many elements an array has, there is a classic formula:
+When we want to know how many elements an array holds, there is a classic formula:
 
 ```cpp
-size_t n = sizeof(scores) / sizeof(scores[0]);
+int primes[] = {2, 3, 5, 7, 11, 13};
+constexpr int kCount = sizeof(primes) / sizeof(primes[0]);  // kCount = 6
 ```
 
-`sizeof(scores)` is the total bytes occupied by the whole array, and `sizeof(scores[0])` is the bytes occupied by a single element. Dividing them gives the number of elements. This trick is everywhere in C code, but we will discuss its limitations later.
+`sizeof(primes)` is the number of bytes the whole array occupies, `sizeof(primes[0])` is the number of bytes a single element occupies, and dividing the two gives the element count. This trick is everywhere in C code, but we will get to its limitations later.
 
-## Accessing Elements — A Zero-Based World
+## Accessing Elements: Subscripts Start at 0
 
-C++ array indices start at 0. For an array of size 5, the valid indices are 0 to 4. This is not an arbitrary design choice—`scores[i]` is equivalent at the low level to `*(scores + i)`, which means the position offset by `i` elements from the array's starting address.
+First, let's burn this in: C++ array subscripts start at 0. For an array of size 5, the valid subscripts are 0 through 4. This design is not arbitrary: under the hood, `arr[i]` is equivalent to `*(arr + i)`—the position reached by offsetting `i` elements past the array's starting address.
 
 ```cpp
-int first = scores[0]; // 90
-int third = scores[2]; // 78
+int scores[5] = {90, 85, 78, 92, 88};
+
+std::cout << scores[0] << std::endl;  // 90 (the first element)
+std::cout << scores[4] << std::endl;  // 88 (the last element)
 ```
 
-> **Pitfall Warning**: C-style arrays perform no bounds checking. `scores[-1]`, `scores[5]`, `scores[100]`—these out-of-bounds accesses produce no errors at compile time and throw no exceptions at runtime—they silently read/write memory outside the array. This undefined behavior might coincidentally "look normal," might crash immediately, or might silently modify the values of other variables. Your blood pressure will really spike when debugging such issues.
+C-style arrays perform no bounds checking whatsoever. Out-of-bounds accesses like `scores[5]`, `scores[100]`, or `scores[-1]` draw no compile-time error and throw no exception at runtime—they silently read and write memory beyond the array. This undefined behavior may happen to "look fine," may crash immediately, or may quietly change the values of other variables. Debugging this kind of issue is a genuine blood-pressure test.
 
-Modifying array elements is also done via indices:
+We modify array elements through subscripts too:
 
 ```cpp
-scores[0] = 95; // Change the first score to 95
+scores[2] = 80;  // change the third element from 78 to 80
 ```
 
-There are several ways to traverse an array. The most traditional is an index loop, but the range-based `for` loop introduced in C++11 is more concise:
+There are several ways to traverse an array: the most traditional is a subscript loop, while the range-based `for` introduced in C++11 is more concise.
 
 ```cpp
-for (int val : scores) {
-    std::cout << val << " ";
+// Range-based for traversal (only valid within the declaring scope)
+for (int s : scores) {
+    std::cout << s << " ";
 }
+// Output: 90 85 80 92 88
 ```
 
-The range-based `for` loop can only be used for arrays that "know their own size"—it stops working once passed to a function, and we will explain why later.
+The range-based `for` only works on arrays that "know their own size"—once the array has been passed to a function, it stops working, and we will explain why later.
 
-## Multidimensional Arrays — The Memory Truth of Matrices
+## Multidimensional Arrays: Stored Row by Row, Contiguously
 
-C++ supports multidimensional arrays, which are essentially "arrays of arrays." The most common is the two-dimensional array, used to represent matrices or tables:
+C++ supports multidimensional arrays, which are essentially "arrays of arrays." The one we use most is the two-dimensional array, for representing matrices or tables:
 
 ```cpp
 int matrix[3][4] = {
-    {1, 2, 3, 4},
-    {5, 6, 7, 8},
+    {1,  2,  3,  4},
+    {5,  6,  7,  8},
     {9, 10, 11, 12}
 };
 ```
 
-This code declares a matrix with 3 rows and 4 columns. `matrix[0]` is the first row (itself an array containing 4 `int`s), and `matrix[0][2]` is the third element of the first row, with a value of 3.
+We have declared a matrix with 3 rows and 4 columns. `matrix[0]` is the first row (itself an array of 4 `int`s), and `matrix[0][2]` is the third element of the first row, with the value 3.
 
-Key question: What does this matrix look like in memory? The answer is **stored contiguously by row** (row-major), with all elements tightly packed in a single contiguous block of memory:
+Now a key question: what does this matrix look like in memory? The answer is **row-major contiguous storage**—all the elements are packed tightly into one contiguous block of memory:
 
-```cpp
-// Memory layout visualization:
-// 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+```text
+Address:  low →→→→→→→→→→→→→→→→→→→→→→→ high
+Content:  1 2 3 4 5 6 7 8 9 10 11 12
+          ↑--- row 0 ---↑--- row 1 ---↑--- row 2 ---↑
 ```
 
-`matrix[0][3]` is immediately adjacent to `matrix[1][0]` in memory. Understanding this is crucial for grasping the relationship between pointers and arrays later.
+`matrix[1][0]` sits in memory immediately after `matrix[0][3]`. This point is crucial when we study the relationship between pointers and arrays later on.
 
-Traverse a 2D array with nested loops:
+We traverse a two-dimensional array with nested loops:
 
 ```cpp
 for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 4; ++j) {
-        std::cout << matrix[i][j] << " ";
+        std::cout << matrix[i][j] << "\t";
     }
-    std::cout << "\n";
+    std::cout << std::endl;
 }
 ```
 
 Output:
 
 ```text
-1 2 3 4
-5 6 7 8
+1  2  3  4
+5  6  7  8
 9 10 11 12
 ```
 
-Here is a performance detail: because memory is stored by row, traversing rows in the outer loop and columns in the inner loop is the most cache-friendly approach. If you swap the inner and outer loops, the CPU will jump around in memory on every access, cache hit rates will plummet, and the difference in large-scale data can be several times.
+Here is a performance detail: because memory is laid out row by row, iterating rows in the outer loop and columns in the inner loop is the most cache-friendly order. If we swap the two loops, every access the CPU makes jumps around in memory, cache hit rates plummet, and on large data sets the difference can reach several-fold.
 
-## Passing Arrays — The Start of All Nightmares
+## Passing Arrays to Functions: The Biggest Pitfall Lives Here
 
-Now we come to the biggest pitfall of C-style arrays: when passing an array to a function, it undergoes **decay**.
+Now we arrive at the biggest pitfall of C-style arrays: when an array is passed to a function, it **decays**.
 
 ```cpp
-#include <iostream>
-
-void print_size(int arr[5]) {
-    std::cout << "Inside function: " << sizeof(arr) << "\n";
+void print_array(int arr[])
+{
+    std::cout << "sizeof(arr) = " << sizeof(arr) << std::endl;
 }
 
-int main() {
-    int arr[5] = {1, 2, 3, 4, 5};
-    std::cout << "In main: " << sizeof(arr) << "\n";
-    print_size(arr);
+int main()
+{
+    int data[5] = {1, 2, 3, 4, 5};
+    std::cout << "sizeof(data) = " << sizeof(data) << std::endl;
+    print_array(data);
+    return 0;
 }
 ```
 
 Output:
 
 ```text
-In main: 20
-Inside function: 8
+sizeof(data) = 20
+sizeof(arr) = 8
 ```
 
-In `main`, `sizeof(arr)` is 20 (5 `int`s, 4 bytes each). But inside the function, `sizeof(arr)` becomes 8—this is the size of a pointer on a 64-bit system, not the size of the array.
+Inside `main`, `sizeof(data)` is 20 (5 `int`s at 4 bytes each). But inside the function, `sizeof(arr)` has become 8—that is the size of a pointer on a 64-bit system, not the size of the array.
 
-This is array decay: when passed as an argument, an array automatically decays into a pointer to its first element. The function signatures `void func(int arr[5])` and `void func(int *arr)` are completely equivalent.
+What we are seeing is array decay: when passed as an argument, an array automatically decays into a pointer to its first element, and `int arr[]` in a function signature is completely equivalent to `int* arr`.
 
-> **Pitfall Warning**: Array decay means the function completely loses the size information of the array. You can't use `sizeof` to calculate the number of elements, nor can you use a range-based `for` loop to traverse it. If you write `sizeof(arr) / sizeof(arr[0])` inside the function, you don't get the array length, but a meaningless result of "a pointer divided by an int." This is why C-style functions almost always require you to pass the array length as an extra argument.
+Array decay means the function has completely lost the array's size information. We cannot compute the element count with `sizeof`, and we cannot traverse the array with a range-based `for` loop. If we write `sizeof(arr) / sizeof(arr[0])` inside the function, what we get is not the array length but the meaningless result of "one pointer divided by one int." That is why C-style functions almost always require us to pass the array length in as an extra parameter.
 
-So the correct way is to explicitly pass the size:
+So the right approach is to pass the size explicitly:
 
 ```cpp
-void print_array(const int arr[], size_t size) {
-    for (size_t i = 0; i < size; ++i) {
+void print_array(const int arr[], int size)
+{
+    for (int i = 0; i < size; ++i) {
         std::cout << arr[i] << " ";
     }
+    std::cout << std::endl;
 }
 ```
 
-We use `const` because the function only reads and does not modify, which is a good habit—the compiler will error if you accidentally modify it.
+We mark it `const` because the function only reads and never modifies—a good habit, since the compiler will then flag any accidental modification.
 
 ### Passing Multidimensional Arrays
 
-Passing multidimensional arrays is more troublesome—you must tell the compiler the size of the second dimension (and higher), otherwise the compiler cannot calculate element addresses:
+Passing multidimensional arrays is even more troublesome: we must tell the compiler the size of the second (and any higher) dimension, otherwise it cannot compute element addresses:
 
 ```cpp
-void print_matrix(int matrix[][4], size_t rows) {
-    // ...
+// The compiler needs to know the second dimension is 4 to compute the address of matrix[i][j] correctly
+void print_matrix(int matrix[][4], int rows)
+{
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            std::cout << matrix[i][j] << "\t";
+        }
+        std::cout << std::endl;
+    }
 }
 ```
 
-This directly limits the function to only accept arrays where the second dimension is exactly 4; a 3x3 matrix won't work. This is one of the reasons why C-style arrays are very difficult to use in actual projects.
+This directly means the function only accepts arrays whose second dimension is exactly 4—hand it a 3x3 matrix and it is useless. This is one of the reasons C-style arrays are so painful to use in real projects.
 
-## C Arrays vs Modern Alternatives
+## C Arrays vs. the Modern Replacements
 
-Having said all that, we have felt the various pain points of C-style arrays. They cannot be assigned directly—`int a[5] = b;` is rejected by the compiler; they cannot be used as function return values—returning a pointer to a local array is even more dangerous because the memory is invalid after the stack frame is reclaimed; they decay to pointers and lose size information; their length must be determined at compile time, supporting no runtime dynamic sizing.
+After all this, we have felt the pain points of C-style arrays firsthand: they cannot be assigned directly (`int b[3] = a;` gets flat-out rejected by the compiler); they cannot be returned from functions, and returning a pointer to a local array is even more dangerous, because the memory is already dead once the stack frame is reclaimed; they decay into pointers and lose their size information; and their length must be fixed at compile time—no runtime sizing.
 
-> **Pitfall Warning**: C-style arrays have another easily overlooked trap—you cannot use `auto` to deduce an array type. `auto arr = array` deduces to `int*`, not an array. `template<typename T> void foo(T t)` (where `T` is an array) deduces `T` as a pointer, not a copy of the array. These implicit behaviors are all related to array decay; if you are not careful, you will write code that behaves completely differently from expectations.
+C-style arrays hold one more easily overlooked trap: we cannot deduce an array type with `auto`. `auto a = {1,2,3};` deduces `std::initializer_list<int>`, not an array. `auto b = arr;` (where `arr` is an array) deduces a pointer, not a copy of the array. These implicit behaviors are all tied to array decay—one moment of carelessness and we have written code that behaves nothing like what we expected.
 
-These problems are exactly the reason C++11 introduced `std::array`—it allocates memory on the stack (just like C arrays), but provides modern features like assignment, comparison, range-based `for` loops, and `.size()`, and it does not decay to a pointer. But understanding C-style arrays remains important because you will constantly encounter them in legacy code, C language libraries, and embedded code.
+These problems are exactly why C++11 introduced `std::array`: it allocates memory on the stack (just like a C array) but offers modern features such as assignment, comparison, range-based `for`, and `.size()`, and it never decays into a pointer. Understanding C-style arrays still matters, though, because you will keep running into them in legacy code, C libraries, and embedded code.
 
-## Practical Exercise — arrays.cpp
+## Hands-On Practice—arrays.cpp
 
-Integrate the core knowledge points of this chapter into one program:
+Let's fold this chapter's core points into a single program:
 
 ```cpp
-#include <iostream>
-#include <stddef.h> // for size_t
+// arrays.cpp
+// A comprehensive tour of C-style arrays: initialization, traversal, function parameters, matrix operations
 
-// Calculate average
-double calculate_average(const int arr[], size_t size) {
-    if (size == 0) return 0.0;
-    long sum = 0;
-    for (size_t i = 0; i < size; ++i) {
-        sum += arr[i];
+#include <iostream>
+
+/// @brief Print a one-dimensional array
+void print_array(const int arr[], int size)
+{
+    for (int i = 0; i < size; ++i) {
+        std::cout << arr[i];
+        if (i < size - 1) {
+            std::cout << ", ";
+        }
     }
-    return static_cast<double>(sum) / size;
+    std::cout << std::endl;
 }
 
-// Transpose a 3x4 matrix to 4x3
-void transpose_matrix(const int src[3][4], int dst[4][3]) {
-    for (size_t i = 0; i < 3; ++i) {
-        for (size_t j = 0; j < 4; ++j) {
+/// @brief Compute the sum of the array elements
+int array_sum(const int arr[], int size)
+{
+    int total = 0;
+    for (int i = 0; i < size; ++i) {
+        total += arr[i];
+    }
+    return total;
+}
+
+/// @brief Print a matrix (second dimension fixed at 4)
+void print_matrix(const int matrix[][4], int rows)
+{
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            std::cout << matrix[i][j] << "\t";
+        }
+        std::cout << std::endl;
+    }
+}
+
+/// @brief Transpose a 3x4 matrix into a 4x3 matrix
+void transpose_3x4(const int src[][4], int dst[][3])
+{
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 4; ++j) {
             dst[j][i] = src[i][j];
         }
     }
 }
 
-int main() {
-    // 1. Basic array initialization
+int main()
+{
+    // --- Initialization styles ---
+    std::cout << "=== 初始化方式 ===" << std::endl;
+
+    int full_init[5] = {10, 20, 30, 40, 50};
+    std::cout << "完全初始化: ";
+    print_array(full_init, 5);
+
+    int partial_init[5] = {1, 2};  // the rest are filled with 0 automatically
+    std::cout << "部分初始化: ";
+    print_array(partial_init, 5);
+
+    int zero_init[5] = {};  // all zeros
+    std::cout << "零初始化:   ";
+    print_array(zero_init, 5);
+
+    int deduced[] = {2, 3, 5, 7, 11, 13};
+    constexpr int kDeducedCount = sizeof(deduced) / sizeof(deduced[0]);
+    std::cout << "大小推断:   ";
+    print_array(deduced, kDeducedCount);
+    std::cout << std::endl;
+
+    // --- Traversal and summing ---
+    std::cout << "=== 遍历与求和 ===" << std::endl;
     int scores[] = {90, 85, 78, 92, 88};
-    size_t n = sizeof(scores) / sizeof(scores[0]);
+    constexpr int kScoreCount = sizeof(scores) / sizeof(scores[0]);
 
-    // 2. Calculate average
-    double avg = calculate_average(scores, n);
-    std::cout << "Average score: " << avg << "\n";
+    std::cout << "成绩: ";
+    print_array(scores, kScoreCount);
 
-    // 3. Matrix transposition
+    int total = array_sum(scores, kScoreCount);
+    double average = static_cast<double>(total) / kScoreCount;
+    std::cout << "总分: " << total << std::endl;
+    std::cout << "均分: " << average << std::endl;
+    std::cout << std::endl;
+
+    // --- Matrix operations ---
+    std::cout << "=== 矩阵操作 ===" << std::endl;
     int matrix[3][4] = {
-        {1, 2, 3, 4},
-        {5, 6, 7, 8},
+        {1,  2,  3,  4},
+        {5,  6,  7,  8},
         {9, 10, 11, 12}
     };
-    int transposed[4][3];
-    transpose_matrix(matrix, transposed);
 
-    std::cout << "Transposed matrix:\n";
-    for (size_t i = 0; i < 4; ++i) {
-        for (size_t j = 0; j < 3; ++j) {
-            std::cout << transposed[i][j] << " ";
+    std::cout << "原始矩阵 (3x4):" << std::endl;
+    print_matrix(matrix, 3);
+
+    int transposed[4][3] = {};
+    transpose_3x4(matrix, transposed);
+
+    std::cout << std::endl << "转置矩阵 (4x3):" << std::endl;
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            std::cout << transposed[i][j] << "\t";
         }
-        std::cout << "\n";
+        std::cout << std::endl;
     }
 
     return 0;
 }
 ```
 
-Compile and run: `g++ -std=c++17 arrays.cpp && ./a.out`
+Compile and run: `g++ -std=c++17 -Wall -Wextra -o arrays arrays.cpp && ./arrays`
 
 Expected output:
 
 ```text
-Average score: 86.6
-Transposed matrix:
-1 5 9
-2 6 10
-3 7 11
-4 8 12
+=== 初始化方式 ===
+完全初始化: 10, 20, 30, 40, 50
+部分初始化: 1, 2, 0, 0, 0
+零初始化:   0, 0, 0, 0, 0
+大小推断:   2, 3, 5, 7, 11, 13
+
+=== 遍历与求和 ===
+成绩: 90, 85, 78, 92, 88
+总分: 433
+均分: 86.6
+
+=== 矩阵操作 ===
+原始矩阵 (3x4):
+1  2  3  4
+5  6  7  8
+9  10 11 12
+
+转置矩阵 (4x3):
+1  5  9
+2  6  10
+3  7  11
+4  8  12
 ```
 
-Verify: 90 + 85 + 78 + 92 + 88 = 433, average 86.6, correct. After matrix transposition, row 0 becomes column 0, correct.
+Let's double-check: 90 + 85 + 78 + 92 + 88 = 433, average 86.6—checks out. After the transpose, row 0 became column 0—correct.
 
 ## Try It Yourself
 
-Reading without practicing is like not learning. It is recommended to write each question by hand.
+Reading without practicing is the same as not learning—work through every exercise yourself.
 
 ### Exercise 1: Array Sum and Average
 
-Write a program that declares an array containing 10 integers, and write two functions to calculate the sum and the average (return the average as `double`). Verification method: manually add them up once and compare with the program output.
+Write a program that declares an array of 10 integers and two functions that compute the total and the average respectively (the average returns a `double`). How to verify: add the numbers up by hand and compare with the program's output.
 
-### Exercise 2: Matrix Transposition
-
-Write a function to transpose an N x M two-dimensional array into M x N. First implement it with a fixed size (2x3 transposed to 3x2), then think: can C-style arrays handle it if the number of rows and columns also needs to be parameters?
-
-### Exercise 3: Fix the Out-of-Bounds Bug
-
-The following code has an out-of-bounds access bug. Find it and fix it:
+::: details Reference answer
 
 ```cpp
-int arr[5] = {1, 2, 3, 4, 5};
-for (int i = 0; i <= 5; ++i) { // Bug here
-    std::cout << arr[i] << "\n";
+#include <iostream>
+
+constexpr int sum(const int a[], int n)
+{
+    int total = 0;
+
+    for (int i = 0; i < n; i++)
+    {
+        total += a[i];
+    }
+
+    return total;
+}
+
+constexpr double average(const int a[], int n)
+{
+    if (n == 0 || n < 0)
+        return 0.0;
+
+    return static_cast<double>(sum(a, n)) / n;
+}
+
+int main()
+{
+    constexpr int arr[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    constexpr int size = sizeof(arr) / sizeof(arr[0]);
+
+    constexpr int total = sum(arr, size);
+    constexpr double avg = average(arr, size);
+
+    std::cout << "总和: " << total << std::endl;
+    std::cout << "平均值: " << avg << std::endl;
+
+    return 0;
 }
 ```
 
-This off-by-one error is very common in beginner code.
+Compile and run:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+Result:
+
+```text
+总和: 55
+平均值: 5.5
+```
+
+:::
+
+### Exercise 2: Matrix Transpose
+
+Write a function that transposes an N × M two-dimensional array into M × N. First implement it with fixed sizes (2×3 into 3×2), then think about this: if the row and column counts must be passed in at runtime, how should standard C++ represent that matrix memory?
+
+::: details Reference answer
+
+**2x3 transposed into 3x2**
+
+```cpp
+constexpr void transpose_2x3(const int (&matrix)[2][3], int (&result)[3][2])
+{
+    for (int i = 0; i < 2; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            result[j][i] = matrix[i][j];
+        }
+    }
+}
+```
+
+We can also look at the C99 VLA approach (not standard C++):
+
+```c
+void transpose(int m, int n, const int matrix[m][n], int result[n][m])
+{
+    for (int i = 0; i < m; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            result[j][i] = matrix[i][j];
+        }
+    }
+}
+```
+
+Note that the function parameters above use **variable-length array** (VLA) syntax: the bounds of `matrix[m][n]` and `result[n][m]` are determined by runtime parameters. This is a C99 feature (C11 made VLAs optional), but it is not standard C++ syntax; even when a C++ compiler accepts it, it is a compiler extension and must not go into portable C++ code.
+
+**The standard C++ way to handle runtime sizes**
+
+In standard C++, the bounds of a built-in array are part of its type, so we cannot express runtime sizes through ordinary function parameters. That is, "rows and columns as parameters" does not mean C-style arrays cannot take part in function calls at all—it means we cannot spell the parameter directly in VLA form as `int matrix[m][n]`. One simple, portable approach is to store the matrix row-contiguously in a one-dimensional array and pass the row and column counts alongside:
+
+```cpp
+void transpose(int rows, int cols, const int* matrix, int* result)
+{
+    for (int row = 0; row < rows; ++row)
+    {
+        for (int col = 0; col < cols; ++col)
+        {
+            result[col * rows + row] = matrix[row * cols + col];
+        }
+    }
+}
+```
+
+The caller must guarantee that `matrix` holds at least `rows * cols` elements and that `result` holds at least as many. If we want to keep the two-dimensional subscript form, we can use templates to express compile-time-fixed row and column counts, or reach for types like `std::vector` or `std::span` that are better suited to runtime sizes.
+
+:::
+
+### Exercise 3: Fix an Out-of-Bounds Bug
+
+The code below contains an out-of-bounds bug—find it and fix it:
+
+```cpp
+int data[5] = {10, 20, 30, 40, 50};
+for (int i = 0; i <= 5; ++i) {  // Hint: look closely at the loop condition
+    std::cout << data[i] << std::endl;
+}
+```
+
+::: details Reference answer
+
+```cpp
+int data[5] = {10, 20, 30, 40, 50};
+for (int i = 0; i < 5; ++i) {
+    std::cout << data[i] << std::endl;
+}
+```
+
+:::
+
+This kind of off-by-one error is remarkably easy to write when we are just starting out.
