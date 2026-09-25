@@ -3,15 +3,14 @@ chapter: 1
 cpp_standard:
 - 11
 - 17
-description: Register access patterns, proper use of `volatile`, interrupt-safe programming,
-  peripheral abstraction layer design, and bare-metal development patterns
+description: Register access patterns, correct use of volatile, interrupt-safe programming, peripheral abstraction layer design, and bare-metal development patterns
 difficulty: intermediate
 order: 107
 platform: host
 prerequisites:
-- 结构体、联合体与内存对齐
-- 函数指针与回调机制
-- 指针进阶：多级指针、指针与 const
+- Structures and Memory Alignment
+- Function Pointers and the Callback Pattern
+- 'Advanced Pointers: Multilevel Pointers, Pointers and const'
 reading_time_minutes: 16
 tags:
 - host
@@ -22,334 +21,390 @@ tags:
 title: Embedded C Programming Patterns
 translation:
   source: documents/vol1-fundamentals/c_tutorials/advanced_feature/07-embedded-c-patterns.md
-  source_hash: e4f778ecdc255a226c66eb3e61c0946ddf67d1d159783a0e884f231c956125cb
-  translated_at: '2026-06-16T03:38:47.648537+00:00'
+  source_hash: 660f3902dc7a7de554f854a10d40fe59837ed4a7fe76cbaadcf62e4d76332aa7
+  translated_at: '2026-09-25T13:55:05+00:00'
   engine: anthropic
-  token_count: 3377
+  token_count: 4900
 ---
 # Embedded C Programming Patterns
 
-When writing desktop applications, we rarely worry about whether the compiler will optimize away a memory read operation or if two threads will step on the same data. However, once we look at bare-metal—no operating system, no standard library, and sometimes not even a standard `main` entry—these issues surface immediately. Embedded C programming has its own pattern language: mapping registers with structures, protecting hardware state with `volatile`, and carefully designing synchronization mechanisms for data exchange between interrupts and the main loop.
+When we write desktop programs, we barely need to care whether the compiler might quietly optimize away a memory read, or whether two pieces of code might stomp on the same data at the same instant. But the moment you turn your gaze to bare metal—no operating system, no standard library, not even a standard `main` entry point—all of these questions come pouring out. Embedded C programming has a pattern language of its own: registers are mapped through structures, hardware state must be protected with `volatile`, and data exchange between interrupts and the main loop needs carefully designed synchronization mechanisms.
 
-In this tutorial, we break down these patterns one by one. Understanding these patterns is a necessary prerequisite for learning embedded C++ applications—`constexpr` register configuration, zero-overhead abstractions, and type-safe hardware access.
+In this tutorial we take these patterns apart one by one. Understanding them is a necessary prerequisite for the embedded applications of C++ that come later in this series—`constexpr` register configuration, zero-overhead abstraction, and type-safe hardware access.
 
-## Environment Setup
+The code in this article targets ARM Cortex-M, but every concept and pattern applies equally well to other architectures. On the host, you can verify compilation with a cross-compiler:
 
-The code in this article targets the ARM Cortex-M platform, but all concepts and patterns apply to other architectures as well. On the host machine, we can verify the compilation using a cross-compiler:
-
-```bash
-# Verify cross-compiler installation
-arm-none-eabi-gcc --version
-
-# Compile a test file (do not link yet)
-arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -c main.c -o main.o
+```text
+Platform: ARM Cortex-M3/M4 (STM32F1/F4, etc.)
+Compiler: arm-none-eabi-gcc >= 10
+Host verification: gcc -Wall -Wextra -std=c11 (non-hardware-related code)
+Dependencies: none
 ```
 
-## Step 1 — Figuring Out How to Interact with Hardware Registers
+## Step 1 — Figure Out How to Talk to Hardware Registers
 
-The most fundamental operation in embedded development is reading and writing hardware registers—those peripheral control ports mapped to the memory address space. Let's look at three access patterns, ranging from primitive to elegant.
+The most fundamental operation in embedded development is reading and writing hardware registers—those peripheral control ports mapped into the memory address space. Let's look at three access patterns, from the rawest to the most elegant.
 
-### Bit Manipulation: The Most Primitive and Flexible
+### Bit Manipulation: The Most Primitive and the Most Flexible
 
-Every bit in a peripheral register has an independent meaning. For example, in a GPIO port mode register, the lower 2 bits might control the mode (input/output/alternate/analog), and the next 2 bits control pull-up/pull-down. First, let's define a set of generic bit manipulation macros; almost every embedded project has a similar utility header file:
+Every bit in a peripheral register carries its own meaning. For example, a GPIO port's mode register might use the lowest 2 bits to control the mode (input/output/alternate/analog) and the next 2 bits to control pull-up/pull-down. First, let's define a set of generic bit-manipulation macros—nearly every embedded project has a utility header somewhere that looks like this:
 
 ```c
-// Bit manipulation macros
-#define SET_BIT(reg, bit)       ((reg) |= (1U << (bit)))
-#define CLEAR_BIT(reg, bit)     ((reg) &= ~(1U << (bit)))
-#define READ_BIT(reg, bit)      (((reg) >> (bit)) & 1U)
-#define MODIFY_REG(reg, mask, val) ((reg) = ((reg) & ~(mask)) | (val))
+// bit_ops.h — generic bit manipulation utilities
+#define BIT_SET(reg, n)       ((reg) |=  (1U << (n)))
+#define BIT_CLEAR(reg, n)     ((reg) &= ~(1U << (n)))
+#define BIT_TOGGLE(reg, n)    ((reg) ^=  (1U << (n)))
+#define BIT_READ(reg, n)      (((reg) >> (n)) & 1U)
 
-// Extract bitfield
-#define GET_BITS(reg, mask, pos) (((reg) & (mask)) >> (pos))
+// Field write: writes val into the [high:low] range of reg
+#define FIELD_WRITE(reg, val, high, low) \
+    do { \
+        uint32_t mask = ~(((1U << ((high) - (low) + 1)) - 1) << (low)); \
+        (reg) = ((reg) & mask) | (((val) & ((1U << ((high) - (low) + 1)) - 1)) << (low)); \
+    } while (0)
 ```
 
-> ⚠️ **Warning**
-> If the macro parameters contain expressions with side effects (like `i++`), they will be evaluated multiple times. In production code, `inline` functions are preferred, but macro versions are so prevalent in embedded codebases that you need to be able to read them.
+If the `reg` macro argument is an expression with side effects (say `*ptr++`), it will be evaluated multiple times. In production code, `static inline` functions are the preferred replacement, but the macro versions are so ubiquitous in embedded codebases that you need to be able to read them.
 
-Let's see how these macros configure a hypothetical GPIO port. Assume the GPIOA base address is `0x40020000`, offset `0x00` is the mode register `MODER`, and every 2 bits control one pin:
+Let's see these macros configure an imaginary GPIO port. Suppose GPIOA's base address is `0x40020000`, offset `0x00` holds the mode register `MODER`, and every 2 bits control one pin:
 
 ```c
-#define GPIOA_BASE 0x40020000
-#define GPIOA_MODER (*(volatile uint32_t *)(GPIOA_BASE + 0x00))
+#define GPIOA_BASE   0x40020000U
+#define GPIOA_MODER  (*(volatile uint32_t*)(GPIOA_BASE + 0x00))
+#define GPIOA_ODR    (*(volatile uint32_t*)(GPIOA_BASE + 0x14))
 
-// Set Pin 5 to Output mode (bits 10:11 = 01)
-MODIFY_REG(GPIOA_MODER, (0x3 << 10), (0x1 << 10));
+// Configure PA5 as output mode (bit[11:10] = 01)
+void gpioa_pin5_output_enable(void)
+{
+    uint32_t moder = GPIOA_MODER;
+    moder &= ~(3U << 10);   // clear bit[11:10]
+    moder |=  (1U << 10);   // set it to 01 (output)
+    GPIOA_MODER = moder;
+}
+
+void gpioa_pin5_set(void)   { BIT_SET(GPIOA_ODR, 5); }
+void gpioa_pin5_clear(void) { BIT_CLEAR(GPIOA_ODR, 5); }
 ```
 
-Note that `volatile` cast—it tells the compiler: the value at this address can change at any time (by hardware), so every read and write must actually access memory; do not cache or optimize it away.
+Notice the `*(volatile uint32_t*)` cast—`volatile` tells the compiler that the value at this address may be changed by hardware at any moment, so every read and write must genuinely reach memory; it cannot be cached or optimized away.
 
 ### Structure Mapping: Giving Registers Names
 
-Using address offsets and bit manipulation directly works, but readability is poor—who can instantly recognize that `*(uint32_t*)0x40020014` is the GPIOA output data register? Structure mapping is a more elegant solution:
+Raw address offsets and bit operations get the job done, but the readability is dreadful—who can tell at a glance that `*(uint32_t*)(0x40020000 + 0x14)` is GPIOA's output data register? Structure mapping is the more elegant solution:
 
 ```c
 typedef struct {
-    volatile uint32_t MODER;    // Mode register
-    volatile uint32_t OTYPER;   // Output type register
-    volatile uint32_t OSPEEDR;  // Output speed register
-    volatile uint32_t PUPDR;    // Pull-up/pull-down register
-    volatile uint32_t IDR;      // Input data register
-    volatile uint32_t ODR;      // Output data register
-    uint32_t RESERVED;          // Padding
-    volatile uint32_t BSRR;     // Bit set/reset register
-} GPIO_TypeDef;
+    volatile uint32_t MODER;    // offset 0x00
+    volatile uint32_t OTYPER;   // offset 0x04
+    volatile uint32_t OSPEEDR;  // offset 0x08
+    volatile uint32_t PUPDR;    // offset 0x0C
+    volatile uint32_t IDR;      // offset 0x10
+    volatile uint32_t ODR;      // offset 0x14
+    volatile uint32_t BSRR;     // offset 0x18
+    volatile uint32_t LCKR;     // offset 0x1C
+    volatile uint32_t AFRL;    // offset 0x20
+    volatile uint32_t AFRH;    // offset 0x24
+} GpioReg;
 
-#define GPIOA ((GPIO_TypeDef *) 0x40020000)
-
-// Usage
-GPIOA->MODER = (GPIOA->MODER & ~(0x3 << 10)) | (0x1 << 10);
-GPIOA->BSRR = (1 << 5); // Set Pin 5
+#define GPIOA  ((GpioReg*) 0x40020000U)
+#define GPIOB  ((GpioReg*) 0x40020400U)
 ```
 
-Now the configuration code becomes very clear: `GPIOA->MODER = ...`.
+Now the configuration code becomes wonderfully clear: `GPIOA->MODER &= ~(3U << 10); GPIOA->MODER |= (1U << 10);`.
 
-Structure mapping has an implicit premise: the memory layout must match the hardware register layout exactly. Most ARM peripheral registers are aligned 32-bit, matching the natural alignment of `uint32_t`. If there are reserved spaces between registers, we must add `uint32_t RESERVED` placeholders in the struct—this is exactly how Cortex-M CMSIS headers work.
+Structure mapping carries one implicit premise: the memory layout must match the hardware register layout exactly. Most ARM peripheral registers are arranged 32-bit aligned, which matches `uint32_t`'s natural alignment perfectly. When there is reserved space between registers, you have to add `volatile uint32_t RESERVED0` placeholders to the structure—that is exactly how the CMSIS headers for Cortex-M do it.
 
 ### Atomic Access: The BSRR Pattern
 
-The previous pin configuration used a "read-modify-write" sequence. This is fine when there are no interrupts, but if an interrupt occurs between the "read" and the "write", and the ISR modifies the same register, your "write" will overwrite the interrupt's modification. This is the classic read-modify-write race condition.
+The pin configuration above used the three-step "read-modify-write". That is fine when no interrupt interferes, but if an interrupt lands between the "read" and the "write", and that interrupt also modifies the same register—your "write" then clobbers the interrupt's modification. This is the classic read-modify-write race.
 
-Some peripherals provide atomic operation registers to solve this. The STM32 GPIO `BSRR` is a classic example—writing 1 to the lower 16 bits sets the corresponding pin, writing 1 to the upper 16 bits clears it, and writing 0 does nothing. Just write directly; the hardware guarantees atomicity:
+Some peripherals offer atomic-operation registers to solve this problem. The STM32 GPIO's BSRR is a typical example—writing 1 to a bit in the low 16 bits sets the corresponding pin, writing 1 to a bit in the high 16 bits clears it, and writing 0 has no effect. You just write to it, and the hardware guarantees atomicity:
 
 ```c
-// Set Pin 5 (atomic operation)
-GPIOA->BSRR = (1 << 5);
-
-// Reset Pin 5 (atomic operation)
-GPIOA->BSRR = (1 << (16 + 5));
+// Atomically set PA5 and PA6
+GPIOA->BSRR = (1U << 5) | (1U << 6);
+// Atomically clear PA7
+GPIOA->BSRR = (1U << (7 + 16));
 ```
 
-If the hardware lacks such atomic registers, we must rely on disabling interrupts to protect critical sections.
+If the hardware has no such atomic-operation register, the only recourse is protecting the critical section by disabling interrupts.
 
-## Step 2 — Understanding What `volatile` Does and Doesn't Do
+## Step 2 — Understand What volatile Does and Doesn't Do
 
-`volatile` is likely the most misunderstood keyword in embedded C.
+`volatile` is probably the most deeply misunderstood keyword in embedded C.
 
-### What `volatile` Does
+### What volatile Does
 
-`volatile` tells the compiler: every access to this object must actually be executed; it cannot be optimized away, nor can it be reordered across other `volatile` accesses. Specifically: the compiler will not cache the value of a `volatile` variable in a register, will not optimize seemingly "redundant" reads/writes, and will not reorder the sequence of `volatile` operations.
+`volatile` tells the compiler: every access to this object must actually happen—it must not be optimized away, and it must not be reordered to the other side of another `volatile` access. Concretely: the compiler will not cache a `volatile` variable's value in a register, will not optimize away reads and writes that look "redundant", and will not reorder the sequence of `volatile` operations.
 
 ```c
-volatile uint32_t *flag = (volatile uint32_t *)0x40000000;
+// Without volatile — the compiler may optimize away the entire loop
+int* flag = (int*)0x20000000;
+while (*flag == 0) {
+    // The compiler may read flag just once, then spin forever
+}
 
-// The compiler will perform exactly 10 memory reads
-for (int i = 0; i < 10; i++) {
-    if (*flag) break;
+// With volatile — the value is re-read every iteration
+volatile int* flag = (volatile int*)0x20000000;
+while (*flag == 0) {
+    // The compiler emits a real memory read every time
 }
 ```
 
-### What `volatile` Doesn't Do (More Important)
+### What volatile Does Not Do (This Matters More)
 
-`volatile` is **not** a thread synchronization tool. It **does not guarantee** atomicity, and it **does not prevent** CPU out-of-order execution. `volatile` constrains the compiler, not the CPU—ARM Cortex-M can reorder normal memory accesses, so two `volatile` writes might appear ordered to the compiler, but the CPU might commit them to the bus in a different order. If strict memory ordering is required, memory barrier instructions like DMB/DSB must be used.
+`volatile` is **not** a thread-synchronization tool. It does **not** guarantee atomicity, and it does **not** stop the CPU's out-of-order execution. `volatile` constrains only the compiler, not the CPU—ARM Cortex-M may reorder ordinary memory accesses, so two `volatile` writes look ordered from the compiler's point of view, yet the CPU may commit them to the bus in a different order. If you need strict memory ordering, you must use memory-barrier instructions such as DMB/DSB.
 
-Additionally, `volatile` does not guarantee the atomicity of read-modify-write operations:
+Moreover, `volatile` does not make read-modify-write operations atomic:
 
 ```c
-volatile int counter = 0;
-
-// Interrupt-safe? NO.
-void increment_counter(void) {
-    counter++; // Actually three steps: read, add 1, write back
-}
+volatile uint32_t counter;
+counter++;  // Not atomic! Three steps: read, add, write
 ```
 
-`counter++` is actually a "read, add 1, write back" sequence. If an interrupt modifies `counter` between the read and the write, an update is lost.
+`counter++` is actually a three-step operation: read, add 1, write back. If an interrupt fires between the read and the write, and the interrupt also modifies counter, one update is lost.
 
-> ⚠️ **Warning**
-> **Reasonable use cases for `volatile`**: Hardware register mapping, simple flags shared between interrupts and the main loop. **Scenarios where `volatile` should NOT be used**: Thread synchronization (use mutex or atomic), bulk data transfer (use DMA), any situation requiring atomic read-modify-write.
+Legitimate uses of `volatile`: hardware register mapping, and simple flags shared between an interrupt and the main loop. Situations where `volatile` should not be used: synchronization between threads (use a mutex or atomics), bulk data transfer (use DMA), and anything that requires an atomic read-modify-write.
 
-## Step 3 — Mastering Interrupt-Safe Programming
+## Step 3 — Master Interrupt-Safe Programming
 
-Interrupts are the core mechanism of embedded systems—hardware events break the current execution flow and jump to the ISR. The problem is that the ISR and the main loop share the same memory space; if both access the same data simultaneously, it can lead to data corruption or system crashes.
+Interrupts are the core mechanism of embedded systems—a hardware event arrives, breaks the current execution flow, and jumps into an ISR to be handled. The problem is that the ISR and the main loop share the same memory space; if both access the same data at once, the mild outcome is corrupted data and the severe one is a system that runs off into the weeds.
 
 ### Critical Section Protection
 
-The simplest but effective method: disable interrupts before accessing shared data, and re-enable them after. Here, a nested counter is used to support nested critical sections:
+The crudest-but-effective method: disable interrupts before touching shared data, re-enable them when done. Here a nesting counter is used to support nested critical sections:
 
 ```c
-static uint32_t irq_lock_state = 0;
+static volatile uint32_t s_critical_nesting = 0;
 
-void enter_critical_section(void) {
-    // Disable interrupts and save previous state
-    irq_lock_state = __get_PRIMASK();
+void critical_enter(void)
+{
     __disable_irq();
+    s_critical_nesting++;
 }
 
-void exit_critical_section(void) {
-    // Restore previous state
-    if (!(irq_lock_state & 1)) {
+void critical_exit(void)
+{
+    if (s_critical_nesting > 0) {
+        s_critical_nesting--;
+    }
+    if (s_critical_nesting == 0) {
         __enable_irq();
     }
 }
-
-// Usage
-void update_shared_data(int value) {
-    enter_critical_section();
-    shared_buffer[index++] = value;
-    exit_critical_section();
-}
 ```
 
-> ⚠️ **Warning**
-> Disabling interrupts has a cost: all interrupts are masked during the critical section, degrading system real-time performance. Critical sections must be kept as short as possible—get in, do the necessary work, and get out immediately. Never call blocking functions or perform complex calculations inside a critical section.
+Disabling interrupts has a price: while they are disabled, every interrupt is masked and the system's real-time behavior degrades. Critical sections must be kept as short as possible—get in, do the necessary operation, get out immediately. Never call blocking functions or do heavy computation inside a critical section.
 
-### Ring Buffer: The Classic Interrupt-Safe Data Structure
+### The Ring Buffer: The Classic Interrupt-Safe Data Structure
 
-The most common communication pattern between interrupts and the main loop is "producer-consumer"—the interrupt writes data, and the main loop reads it. The ring buffer is the standard implementation. The beauty is that as long as "writing" and "reading" are each executed in only one context, no locks are needed:
+The most common communication pattern between an interrupt and the main loop is "producer-consumer"—the interrupt writes data in, the main loop reads it out. The ring buffer is the standard implementation, and its elegance is that as long as "write" and "read" each run in exactly one context, no lock is needed:
 
 ```c
-#define BUFFER_SIZE 16
+#define RING_BUFFER_SIZE 64
 
 typedef struct {
-    volatile uint16_t head; // Modified only by writer
-    volatile uint16_t tail; // Modified only by reader
-    uint8_t data[BUFFER_SIZE];
-} ring_buffer_t;
+    volatile uint32_t head;     // write position (modified by the ISR)
+    volatile uint32_t tail;     // read position (modified by the main loop)
+    uint8_t buffer[RING_BUFFER_SIZE];
+} RingBuffer;
 
-bool ring_push(ring_buffer_t *buf, uint8_t byte) {
-    uint16_t next_head = (buf->head + 1) % BUFFER_SIZE;
-    if (next_head == buf->tail) return false; // Full
-    buf->data[buf->head] = byte;
-    buf->head = next_head;
-    return true;
+void ring_buffer_init(RingBuffer* rb)
+{
+    rb->head = 0;
+    rb->tail = 0;
 }
 
-bool ring_pop(ring_buffer_t *buf, uint8_t *byte) {
-    if (buf->tail == buf->head) return false; // Empty
-    *byte = buf->data[buf->tail];
-    buf->tail = (buf->tail + 1) % BUFFER_SIZE;
-    return true;
+// Called from the ISR: only the ISR modifies head
+uint32_t ring_buffer_write(RingBuffer* rb, uint8_t data)
+{
+    uint32_t next_head = (rb->head + 1) % RING_BUFFER_SIZE;
+    if (next_head == rb->tail) {
+        return 0;  // buffer full
+    }
+    rb->buffer[rb->head] = data;
+    rb->head = next_head;
+    return 1;
+}
+
+// Called from the main loop: only the main loop modifies tail
+uint32_t ring_buffer_read(RingBuffer* rb, uint8_t* data)
+{
+    if (rb->head == rb->tail) {
+        return 0;  // buffer empty
+    }
+    *data = rb->buffer[rb->tail];
+    rb->tail = (rb->tail + 1) % RING_BUFFER_SIZE;
+    return 1;
 }
 ```
 
-The key constraint is: `head` is modified only by the writer, and `tail` is modified only by the reader. Since both sides only read the other's pointer and write their own, no mutex is required.
+The key constraint: `head` is modified only by the writer, `tail` only by the reader. Because each side only reads the other's pointer and only writes its own, no mutex is required.
 
-### Golden Rule of Interrupt Handling
+### The Golden Rule of Interrupt Handling
 
-For simple "event occurred" notifications, a simple `volatile bool` flag is sufficient:
+For a simple "event happened" notification, a single `volatile` flag is enough:
 
 ```c
-volatile bool data_ready = false;
+static volatile uint8_t s_timer_flag = 0;
 
-void UART_IRQHandler(void) {
-    if (UART->ISR & UART_FLAG_RXNE) {
-        rx_byte = UART->RDR;
-        data_ready = true; // Set flag for main loop
-        UART->ICR = UART_FLAG_RXNE; // Clear interrupt
+void TIM2_IRQHandler(void)
+{
+    if (TIM2->SR & TIM_SR_UIF) {
+        TIM2->SR &= ~TIM_SR_UIF;
+        s_timer_flag = 1;
     }
 }
 
-int main(void) {
-    while (1) {
-        if (data_ready) {
-            process_byte(rx_byte);
-            data_ready = false;
-        }
-        // Other tasks...
-    }
+// Main loop
+if (s_timer_flag) {
+    s_timer_flag = 0;
+    handle_timer_event();  // heavy work is handled in the main loop
 }
 ```
 
-The ISR does the bare minimum—clear the interrupt flag, set the application-level flag. This is the golden rule of interrupt handling: **Keep the ISR as short as possible, leave the heavy lifting to the main loop.**
+The ISR does the bare minimum—clear the interrupt flag, set the application-level flag. This is the golden rule of interrupt handling: **keep the ISR as short as possible and leave the heavy lifting to the main loop**.
 
-## Step 4 — Designing a Layered Peripheral Abstraction Layer
+## Step 4 — Design a Layered Peripheral Abstraction Layer
 
-If an embedded project manipulates register addresses directly in business logic, the code becomes an unmaintainable, unportable mess. The solution is to introduce a Peripheral Abstraction Layer (PAL) to encapsulate hardware details in low-level drivers.
+If an embedded project manipulates register addresses directly from its business logic, the code becomes an unportable plate of spaghetti. The way out is to introduce a peripheral abstraction layer (PAL) that encapsulates the hardware details inside low-level drivers.
 
-### Three-Layer Architecture
+### The Three-Layer Architecture
 
-A reasonable layering usually looks like this: the bottom layer is register definitions and bit manipulation utilities (chip-specific), the middle layer is peripheral drivers (GPIO, UART, SPI, etc.), and the top layer is application logic (completely register-agnostic). The middle layer interface should be chip-independent:
+A sensible layering usually looks like this: the bottom layer holds register definitions and bit-manipulation utilities (bound to the specific chip), the middle layer holds peripheral drivers (GPIO, UART, SPI, and friends), and the top layer holds application logic (which never touches registers). The middle layer's interface must be designed to be independent of the specific chip:
 
 ```c
-// hal_gpio.h (Hardware Abstraction Layer)
-typedef struct {
-    GPIO_TypeDef *port;
-    uint16_t pin;
-} gpio_pin_t;
+// gpio_driver.h — hardware-independent interface
+typedef enum {
+    kGpioModeInput  = 0,
+    kGpioModeOutput = 1,
+    kGpioModeAltFunc = 2,
+    kGpioModeAnalog = 3
+} GpioMode;
 
-void gpio_init(gpio_pin_t *pin, uint32_t mode, uint32_t pull);
-void gpio_write(gpio_pin_t *pin, int value);
-int gpio_read(gpio_pin_t *pin);
+typedef struct {
+    GpioReg* port;   // pointer to the GPIO port's register structure
+    uint8_t  pin;    // pin number 0-15
+} GpioPin;
+
+void gpio_init(const GpioPin* gpio, GpioMode mode, GpioPull pull);
+void gpio_write(const GpioPin* gpio, bool value);
+bool gpio_read(const GpioPin* gpio);
+void gpio_toggle(const GpioPin* gpio);
 ```
 
 ```c
-// hal_gpio.c (Implementation)
-void gpio_write(gpio_pin_t *pin, int value) {
+// gpio_driver.c — implementation details
+void gpio_init(const GpioPin* gpio, GpioMode mode, GpioPull pull)
+{
+    uint32_t moder = gpio->port->MODER;
+    moder &= ~(3U << (gpio->pin * 2));
+    moder |=  ((uint32_t)mode << (gpio->pin * 2));
+    gpio->port->MODER = moder;
+
+    uint32_t pupdr = gpio->port->PUPDR;
+    pupdr &= ~(3U << (gpio->pin * 2));
+    pupdr |=  ((uint32_t)pull << (gpio->pin * 2));
+    gpio->port->PUPDR = pupdr;
+}
+
+void gpio_write(const GpioPin* gpio, bool value)
+{
     if (value) {
-        pin->port->BSRR = (1 << pin->pin); // Set
+        gpio->port->BSRR = (1U << gpio->pin);
     } else {
-        pin->port->BSRR = (1 << (16 + pin->pin)); // Reset
+        gpio->port->BSRR = (1U << (gpio->pin + 16));
     }
 }
 ```
 
-The upper application touches no registers at all:
+The application layer above never touches registers:
 
 ```c
-// main.c
-gpio_pin_t led = {GPIOA, 5};
-gpio_init(&led, GPIO_MODE_OUTPUT, GPIO_NOPULL);
+static const GpioPin kLedPin = { GPIOA, 5 };
 
-while (1) {
-    gpio_write(&led, 1);
-    delay_ms(500);
-    gpio_write(&led, 0);
-    delay_ms(500);
-}
+gpio_init(&kLedPin, kGpioModeOutput, kGpioPullNone);
+gpio_toggle(&kLedPin);
 ```
 
-When switching chips, only the bottom layer register definitions and middle layer implementation need to change; the upper application code remains untouched. The `gpio_pin_t` structure bundles "which port and which pin" into a passable object, which is much clearer than passing raw `GPIOA, 5` parameters everywhere.
+When you switch chips, only the bottom-layer register definitions and the middle-layer implementation change; the application code above does not move at all. The `GpioPin` structure packages "which pin of which port" into a passable object—far clearer than passing bare `(GPIOA, 5)` arguments everywhere.
 
-## Step 5 — Understanding the Bare-Metal Startup Process
+## Step 5 — Understand the Boot Flow of a Bare-Metal Program
 
-Without an operating system, even `main` isn't the first thing executed. Understanding the complete flow from power-on to `main` is a fundamental skill.
+Free of an operating system, even `main` is not the first thing executed. Understanding the complete flow of a bare-metal program from power-on to entering `main` is a fundamental skill.
 
 ### Startup Code
 
-The ARM Cortex-M flow after power-on: The CPU reads the initial stack pointer (first 32-bit word) and reset vector (second 32-bit word, i.e., `Reset_Handler` address) from the vector table, then jumps to `Reset_Handler`. `Reset_Handler` does three things: copy the `.data` section from Flash to SRAM, zero out the `.bss` section, and call `SystemInit`.
+The ARM Cortex-M flow after power-on: the CPU reads the initial stack pointer (the first 32-bit word) and the reset vector (the second 32-bit word, i.e. the Reset_Handler address) from the vector table, then jumps to Reset_Handler. Reset_Handler does three things: copy the `.data` section from Flash to SRAM, zero the `.bss` section, and call `main`.
 
 ```c
-// startup.c
-void Reset_Handler(void) {
-    // Copy .data section (Flash -> RAM)
-    uint32_t *src = &_sidata; // Load address
-    uint32_t *dst = &_sdata;  // Run address
-    while (dst < &_edata) {
-        *dst++ = *src++;
-    }
+// startup.c — minimal startup code (ARM Cortex-M)
+extern uint32_t _estack;    // top-of-stack address (defined by the linker script)
+extern uint32_t _sidata;    // start of .data in Flash
+extern uint32_t _sdata;     // start of .data in SRAM
+extern uint32_t _edata;     // end of .data in SRAM
+extern uint32_t _sbss;      // start of .bss
+extern uint32_t _ebss;      // end of .bss
 
-    // Zero .bss section
+int main(void);
+
+void default_handler(void) { while (1) {} }
+
+__attribute__((section(".isr_vector")))
+void (*const g_vector_table[])(void) = {
+    (void (*)(void))(&_estack),    // initial stack pointer
+    Reset_Handler,                  // Reset
+    NMI_Handler,                    // NMI
+    HardFault_Handler,              // Hard Fault
+    default_handler,                // MemManage
+    default_handler,                // BusFault
+    default_handler,                // UsageFault
+    0, 0, 0, 0,                    // reserved
+    default_handler,                // SVCall
+    default_handler,                // Debug Monitor
+    0,                              // reserved
+    default_handler,                // PendSV
+    default_handler,                // SysTick
+};
+
+void Reset_Handler(void)
+{
+    // 1. Copy the .data section from Flash to SRAM
+    uint32_t* src = &_sidata;
+    uint32_t* dst = &_sdata;
+    while (dst < &_edata) { *dst++ = *src++; }
+
+    // 2. Zero the .bss section
     dst = &_sbss;
-    while (dst < &_ebss) {
-        *dst++ = 0;
-    }
+    while (dst < &_ebss) { *dst++ = 0; }
 
-    // System initialization (clock config, etc.)
-    SystemInit();
-
-    // Jump to main
+    // 3. Enter main
     main();
-
-    // If main returns, trap here
-    while (1) {}
+    while (1) {}  // bare-metal main must not return
 }
+
+__attribute__((weak)) void NMI_Handler(void) { default_handler(); }
+__attribute__((weak)) void HardFault_Handler(void) { default_handler(); }
 ```
 
-> ⚠️ **Warning**
-> Symbols like `_sidata`, `_sdata` are not real variables—they are address labels defined in the linker script. Declaring them with `extern` in C code allows taking their address to get the start/end positions of sections. The vector table is forced to the beginning of Flash using `__attribute__((section(".isr_vector")))`, and `__weak` allows users to override default interrupt handlers.
+Symbols like `_estack` and `_sdata` are not real variables—they are address labels defined in the linker script. Once declared `extern` in C code, taking their address yields the start or end of the corresponding section. The vector table is forced to the beginning of Flash with `__attribute__((section(".isr_vector")))`, and `__attribute__((weak))` allows users to override the default interrupt handlers.
 
-### Linker Script
+### The Linker Script
 
-The linker script tells the linker the memory layout of the program—where Flash starts and ends, where SRAM starts and ends, and where each section goes. The key concept is **LMA (Load Memory Address) vs VMA (Virtual Memory Address)**—the `.data` section's run address (VMA) is in RAM, but its load address (LMA) is in Flash. After power-on, the startup code copies it to RAM. The `.bss` section only has start and end addresses; the startup code zeroes it directly.
+The linker script tells the linker the program's memory layout—where Flash starts and ends, where SRAM starts and ends, and which section goes where. The key concept is `> RAM AT > FLASH`—the `.data` section's run address is in RAM, but its load address is in Flash. After power-on, the startup code copies it into RAM. The `.bss` section has only start and end addresses, and the startup code simply zeroes it.
 
-```ld
-MEMORY {
-    FLASH (rx) : ORIGIN = 0x08000000, LENGTH = 256K
-    RAM (rwx)  : ORIGIN = 0x20000000, LENGTH = 64K
+```c
+/* link.ld — minimal Cortex-M3 linker script */
+MEMORY
+{
+    FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 64K
+    RAM   (rwx) : ORIGIN = 0x20000000, LENGTH = 20K
 }
 
-SECTIONS {
+_stack_size = 1024;
+
+SECTIONS
+{
     .isr_vector : {
         . = ALIGN(4);
         KEEP(*(.isr_vector))
@@ -357,82 +412,81 @@ SECTIONS {
     } > FLASH
 
     .text : {
-        *(.text*)
-        *(.rodata*)
+        *(.text*) *(.rodata*)
+        _etext = .;
     } > FLASH
 
     .data : {
         _sdata = .;
         *(.data*)
-        . = ALIGN(4);
         _edata = .;
     } > RAM AT > FLASH
-
     _sidata = LOADADDR(.data);
 
     .bss : {
         _sbss = .;
-        *(.bss*)
-        *(COMMON)
-        . = ALIGN(4);
+        *(.bss*) *(COMMON)
         _ebss = .;
     } > RAM
 }
 ```
 
-## C++ Transition
+## Bridging to C++
 
-Embedded C++ has several important constraints: exceptions require stack unwinding runtime support, which most bare-metal projects disable with `-fno-exceptions`, preferring return values for errors; RTTI (`dynamic_cast`/`typeid`) increases code size and is usually disabled with `-fno-rtti`; bare-metal lacks an OS heap manager, so `new`/`delete` are unavailable by default—static allocation (fixed-size containers and memory pools replacing dynamic allocation) is recommended.
+Embedded C++ carries a few important constraints: exceptions require stack-unwinding runtime support, so most bare-metal projects disable them with `-fno-exceptions` and report errors through return values instead; RTTI (`dynamic_cast`/`typeid`) adds code size and is usually disabled with `-fno-rtti`; and bare metal has no OS heap manager, so `new`/`delete` are unavailable by default—full static allocation is recommended (`std::array` instead of `std::vector`, fixed-size containers and memory pools instead of dynamic allocation).
 
-C++ improvements for embedded code focus on three areas:
+C++'s improvements for embedded code concentrate on three fronts:
 
 | C Pattern | C++ Improvement |
-|--------|----------|
-| Manually ensuring init/cleanup pairing | RAII automatic management via constructors/destructors |
-| Macros for bit manipulation | `constexpr` compile-time calculation of configuration values |
-| Runtime register config table lookup | Templates固化 port/pin constants at compile-time, generating code as efficient as hand-written |
-| Function pointers + `void*` context | Lambdas or template callbacks |
+|-----------|-----------------|
+| Manually ensuring init/cleanup pairing | RAII constructors/destructors manage it automatically |
+| Macros for bit manipulation | `constexpr` computes configuration values at compile time |
+| Register config tables consulted at runtime | Templates bake port/pin constants in at compile time, generating code as efficient as handwritten |
+| Function pointers + `void*` context | `std::function` or template callbacks |
 
-`constexpr` is particularly valuable in the embedded field—calculating register configuration values at compile-time allows writing pre-calculated constants directly at runtime, eliminating both runtime calculation overhead and the possibility of runtime errors. Later in this series, when diving deep into C++ embedded applications, we will detail how `constexpr` + templates implement zero-overhead hardware abstraction layers.
+`constexpr` is especially valuable in the embedded domain—compute register configuration values at compile time, and at runtime simply write precomputed constants. This removes the runtime computation overhead and eliminates the chance of runtime errors in one stroke. When this series later digs into the embedded applications of C++, we will expand in detail on how `constexpr` + templates deliver a zero-overhead hardware abstraction layer.
 
-## Common Pitfalls Cheat Sheet
+## Common Pitfalls Quick Reference
 
-| Pitfall | Description | Solution |
-|------|------|----------|
-| Using `volatile` for thread sync | `volatile` doesn't guarantee atomicity or memory order | Use atomic operations or disable interrupts |
-| Forgetting padding in struct mapping | Compiler padding doesn't match hardware layout | Check the manual and add `reserved` fields |
-| Doing too much in ISR | Interrupt latency increases, system response slows | ISR only sets flags; heavy work in main loop |
-| Read-modify-write race | Interrupt modifies the same register between read and write | Use atomic registers (BSRR) or disable interrupts |
-| Returning from `main` | Bare-metal `main` has no OS to catch the return | Add an infinite loop after `main` in startup code |
+| Pitfall | Description | Fix |
+|---------|-------------|-----|
+| Using `volatile` as thread synchronization | `volatile` guarantees neither atomicity nor memory ordering | Use atomic operations or interrupt masking |
+| Structure mapping without padding | Compiler padding doesn't match the hardware layout | Check the manual and add `RESERVED` fields |
+| Doing too much in the ISR | Interrupt latency grows and the system responds slower | The ISR only sets flags; heavy work goes to the main loop |
+| Read-modify-write race | An interrupt modifies the same register in the read-write gap | Use an atomic-operation register (BSRR) or disable interrupts |
+| `main` returns | On bare metal, no OS takes over after `main` returns | Put an infinite loop after `main()` in the startup code |
 
 ## Exercises
 
-### Exercise 1: Generic Ring Buffer
+### Exercise 1: A Generic Ring Buffer
 
-**Difficulty: Intermediate** · turn the uint8_t version into a generic void* version
+**Difficulty: Intermediate** · Turn the uint8_t version into a generic void* version
 
-Refactor the `uint8_t` ring buffer from the text into a generic version (using `void*` + element size):
+Rework the article's `uint8_t` ring buffer into a generic version (implemented with `void*` + element size):
 
 ```c
 typedef struct {
-    volatile uint16_t head;
-    volatile uint16_t tail;
-    uint8_t *buffer;       // External buffer pointer
-    uint16_t capacity;     // Max elements
-    uint16_t elem_size;    // Size of each element
-} generic_ring_t;
+    // You need to design the internal fields
+} RingBuffer;
 
-bool ring_push(generic_ring_t *ring, const void *data);
-bool ring_pop(generic_ring_t *ring, void *data);
+/// @brief Initialize the ring buffer
+void ring_buffer_init(RingBuffer* rb, void* storage,
+                       size_t item_size, size_t capacity);
+/// @brief Write one element
+uint32_t ring_buffer_write(RingBuffer* rb, const void* item);
+/// @brief Read one element
+uint32_t ring_buffer_read(RingBuffer* rb, void* item);
+/// @brief Query the current element count
+uint32_t ring_buffer_count(const RingBuffer* rb);
 ```
 
-**Hint**: Use `memcpy` internally for generic byte copying. Change `head`/`tail` to absolute counts (don't worry about overflow), and calculate the actual index via `count % capacity`.
+Hint: use `memcpy` internally for generic byte copying, change `head`/`tail` to absolute counts (a `uint32_t` fears no overflow), and compute the actual index as `count % capacity`.
 
-### Exercise 2: UART Abstraction Layer Interface Design
+### Exercise 2: Designing a UART Abstraction Layer Interface
 
-**Difficulty: Intermediate** · design the interface only, do not implement the interrupt timing
+**Difficulty: Intermediate** · Design the interface only; no interrupt timing implementation
 
-Following the peripheral-abstraction approach in this chapter, design a chip-independent UART abstraction-layer interface. You do not have to implement interrupt-driven byte-by-byte transmission — just define the interface clearly: which fields the driver struct needs (TX/RX buffers, state), the signatures of `init`/`write`/`read`, and "what write returns when the buffer is full".
+Following the peripheral abstraction layer approach in this article, design a chip-independent UART abstraction layer interface. You are not required to implement interrupt-driven byte-by-byte transmission; you only need to define the interface clearly: which fields the driver structure needs (transmit/receive buffers, state), the signatures of the `init`/`write`/`read` trio, and what `write` should return when the buffer is full.
 
 ```c
 typedef struct { /* your design */ } UartDriver;
@@ -442,19 +496,19 @@ size_t uart_write(UartDriver* uart, const uint8_t* data, size_t len);
 size_t uart_read(UartDriver* uart, uint8_t* data, size_t len);
 ```
 
-Think about it: why does hiding the buffers and state inside the struct, exposing only function interfaces, keep upper-layer code from being tied to a specific chip?
+Think about it: why does hiding the buffers and state inside the structure and exposing only function interfaces keep the upper-layer code from being welded to a specific chip?
 
 ### Exercise 3: Reading a Linker Script
 
-**Difficulty: Basic** · explain an existing script, no need to write one from scratch
+**Difficulty: Basic** · Read and explain an existing script; writing one from scratch not required
 
-Find an existing Cortex-M linker script (one was shown in this chapter's startup-flow section) and explain it section by section: which regions does `MEMORY` define? Why is the vector table placed at the start of Flash? What does `AT > FLASH` on the `.data` section mean? Why does the `.bss` section use `NOLOAD`?
+Find an existing Cortex-M linker script (the startup-flow section of this article provided an example) and explain it section by section: which regions does the `MEMORY` command define? Why does the vector table sit at the start of Flash? What does `AT > FLASH` on the `.data` section mean? Why does the `.bss` section use `NOLOAD`?
 
-Also think: to change Flash to 256K and SRAM to 64K in this script, which lines do you need to edit?
+Then think once more: to change Flash in this script to 256K and SRAM to 64K, which lines would you need to touch?
 
-## Reference Resources
+## References
 
 - [ARM Cortex-M Programming Guide](https://developer.arm.com/documentation)
-- [volatile keyword - cppreference](https://en.cppreference.com/w/c/language/volatile)
-- [GCC Linker Script Reference](https://sourceware.org/binutils/docs/ld/Scripts.html)
+- [The volatile keyword - cppreference](https://en.cppreference.com/w/c/language/volatile)
+- [GCC Linker Script reference](https://sourceware.org/binutils/docs/ld/Scripts.html)
 - [CMSIS - Cortex Microcontroller Software Interface Standard](https://arm-software.github.io/CMSIS_5/General/html/index.html)
