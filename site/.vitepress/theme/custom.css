@@ -237,23 +237,8 @@ html[data-font-size='xxlarge'] {
   border-radius: 4px;
 }
 
-/* Tables */
-.vp-doc table {
-  font-size: 0.88rem;
-  /* 表格 0.78rem→0.88rem≈14px,随正文等比放大 */
-  line-height: 1.6;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.vp-doc table th {
-  font-weight: 600;
-  background-color: var(--vp-c-bg-soft);
-}
-
-.vp-doc table tr:nth-child(even) {
-  background-color: rgba(0, 0, 0, 0.02);
-}
+/* 正文表格样式见 article-table.css。 */
+/* 正文列表样式见 article-list.css。 */
 
 /* 正文引用面板样式见 article-quote.css。 */
 
@@ -1892,10 +1877,6 @@ body.rs-resizing {
 }
 
 /* ── Content Dark Mode ─────────────────────────────────────────── */
-
-.dark .vp-doc table tr:nth-child(even) {
-  background-color: rgba(255, 255, 255, 0.03);
-}
 
 .dark .vp-doc img {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);

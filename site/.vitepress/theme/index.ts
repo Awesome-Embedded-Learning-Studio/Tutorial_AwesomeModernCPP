@@ -33,6 +33,8 @@ import { setupDevFakeLag } from './dev-fake-lag'
 import './custom.css'
 import './article-code.css'
 import './article-quote.css'
+import './article-table.css'
+import './article-list.css'
 import './weekly.css'
 import './tags.css'
 

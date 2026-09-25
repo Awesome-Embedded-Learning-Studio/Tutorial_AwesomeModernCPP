@@ -10,6 +10,7 @@ import { cppTemplateEscapePlugin } from '../plugins/escape-cpp-templates'
 import { mermaidPlugin } from '../plugins/mermaid-plugin'
 import { codeFoldPlugin } from '../plugins/code-fold-plugin'
 import { codeLabelPlugin } from '../plugins/code-label-plugin'
+import { tableWrapPlugin } from '../plugins/table-wrap-plugin'
 import { articleCodeThemes } from './article-code-theme'
 import { getBuildInfo } from './build-info'
 import { applyWeeklyPageData } from './weekly-manifest'
@@ -38,6 +39,7 @@ export const sharedMarkdown = {
     md.use(mermaidPlugin)
     md.use(codeFoldPlugin)
     md.use(codeLabelPlugin)
+    md.use(tableWrapPlugin)
   },
 }
 
@@ -111,7 +113,8 @@ export const sharedBase = {
 const SEARCH_CACHE_DIR = join(fileURLToPath(new URL('./', import.meta.url)), '..', '.search-cache')
 const SEARCH_CACHE_BUNDLE = join(SEARCH_CACHE_DIR, 'bundle.json')
 // 渲染管线行为变化时(markdown 插件增删、vitepress 升级)手动递增,使旧缓存整体失效
-const SEARCH_CACHE_VERSION = 'v1'
+// v2: 新增 tableWrapPlugin,markdown 表格输出包了 .vp-table-wrap
+const SEARCH_CACHE_VERSION = 'v2'
 
 let searchRenderBundle: Record<string, string> | null = null
 let searchRenderDirty = false
