@@ -6,9 +6,9 @@ cpp_standard:
 - 11
 - 17
 - 20
-description: CppCon 2025 Presentation Notes — Complete Implementation of Move Construction/Assignment,
-  The True Meaning of std::move, NRVO and C++17 Mandatory Copy Elision, Moved-from
-  State
+description: CppCon 2025 talk notes — the complete implementation of move construction/assignment,
+  what std::move really does, NRVO and C++17 mandatory copy elision, and the moved-from
+  state
 difficulty: beginner
 order: 3
 platform: host
@@ -25,25 +25,25 @@ video_youtube: https://www.youtube.com/watch?v=szU5b972F7E
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/04-back-to-basics-move-semantics/03-move-ops-stdmove-and-elision.md
   source_hash: a8bf721af9dd5ce9a4ab31451951bcb02d4b7b45889d0cf598f4277a1b27bcfb
-  translated_at: '2026-06-24T01:17:26.367523+00:00'
+  translated_at: '2026-09-26T16:21:24+00:00'
   engine: anthropic
-  token_count: 4576
+  token_count: 5400
 ---
 # Move Operations, std::move, and Copy Elision
 
 :::tip
-This article is the third in the series of notes from CppCon 2025 "Back to Basics: Move Semantics". The previous two parts discussed copy overhead and move motivation, as well as lvalues, rvalues, and the reference system. This part focuses on core practical issues: how to write move constructors and move assignments, what exactly `std::move` does, and how C++17 copy elision changes the rules of the game.
+This article is the third in our series of notes on CppCon 2025's "Back to Basics: Move Semantics". The first two parts covered the cost of copying and the motivation for moves, then lvalues, rvalues, and the reference system. This part zeroes in on the practical core: how to write a move constructor and a move assignment operator, what `std::move` actually does, and how C++17's copy elision changed the rules of the game.
 :::
 
-Honestly, I used to think I "understood" move semantics—isn't it just stealing pointers? How hard could it be? Then one day, I saw a colleague write `return std::move(result);` in a code review. I casually remarked, "Nice, explicit move," only to be shut down by a senior engineer next to me: **"Are you sure that won't inhibit NRVO?"**
+Honestly, I used to think I "understood" move semantics—isn't it just stealing pointers? How hard could it be? Then one day in a code review I saw a colleague write `return std::move(result);`, casually remarked "nice, an explicit move," and got slapped down on the spot by the senior engineer sitting next to me: **"Are you sure that won't inhibit NRVO?"**
 
-After spending a whole evening digging into it, I finally realized—`return std::move(result)` doesn't help optimization; instead, it turns a return value transfer that the compiler could have completed at zero cost into an extra move construction. From that day on, I truly realized that the devil in move semantics is entirely in the details.
+It took a whole evening of digging to sort it out—`return std::move(result)` doesn't just fail to help optimization; it turns a return-value handoff the compiler could have completed at zero cost into an extra move construction. That was the day I truly understood that in move semantics, the devil lives entirely in the details.
 
-In this article, we will unpack these details one by one. Our experimental environment is Arch Linux WSL, GCC 16.1.1, with the compiler flag `-std=c++20`. If you plan to follow along and run the code, we recommend using this version or a newer compiler.
+In this article we'll take those details apart one by one. Our experiment environment is Arch Linux WSL with GCC 16.1.1, compiled with `-std=c++20`; if you plan to follow along and run the code, get this version or a newer compiler ready.
 
-## Move Constructor: The Art of Stealing Pointers
+## The Move Constructor: The Art of Stealing Pointers
 
-In the previous article, we implemented the complete copy operations for `MyString`. Now, let's add a move constructor to it. Using Ben Saks' words, the task of this function is a "**destructive copy**"—we "steal" the data from the source object and then leave the source object in a harmless state.
+In the previous article we gave `MyString` a complete set of copy operations. Now let's add the move constructor. What this function does is, in Ben Saks's words, a "**destructive copy**"—we "steal" the source object's data, then leave the source object in a harmless state.
 
 ```cpp
 class MyString
@@ -52,9 +52,9 @@ class MyString
     char* actual_str_;
 
 public:
-    // ... 之前的构造函数、析构函数、拷贝操作 ...
+    // ... previous constructors, destructor, and copy operations ...
 
-    // 移动构造函数
+    // move constructor
     MyString(MyString&& s) noexcept
         : stored_length_(s.stored_length_)
         , actual_str_(s.actual_str_)
@@ -65,67 +65,67 @@ public:
 };
 ```
 
-Let's break down this code line by line, as every line serves a specific purpose.
+Let's take this code apart line by line, because every single line earns its place.
 
-First, the parameter type `MyString&& s`—this is an rvalue reference. An rvalue reference can only bind to an rvalue (a temporary object, the result of `std::move`, etc.), which means this constructor is called only when the compiler confirms that the "source object is about to die." This is the first layer of safety guarantees provided by move semantics: the compiler helps enforce this via overload resolution.
+First, the parameter type `MyString&& s`—an rvalue reference. An rvalue reference can only bind to rvalues (temporaries, the result of `std::move`, and so on), which means this constructor gets called only when the compiler has confirmed that "the source object is about to die." That is the first layer of safety in move semantics: the compiler checks it for you through overload resolution.
 
-Next is the member initializer list. `stored_length_(s.stored_length_)` takes the source object's length directly—since `std::size_t` is a built-in type, this "copy" is just an integer assignment, which is virtually zero-cost. `actual_str_(s.actual_str_)` is the key: we assign the source object's pointer directly to the new object, so the new object now points to the heap memory previously allocated by the source. At this point, both objects point to the same memory block—if we stopped here, we would have a double delete, leading to undefined behavior.
+Next, the initializer list. `stored_length_(s.stored_length_)` simply takes the source's length—`std::size_t` is a built-in type, so this "copy" is one integer assignment, essentially free. `actual_str_(s.actual_str_)` is the key move: we assign the source's pointer directly to the new object, and the new object now points at the heap memory the source had allocated. At this point both objects point at the same memory—if we ended things right there, we'd have a double delete, which is undefined behavior.
 
-Therefore, the two lines inside the function body are the crux of the matter. `s.actual_str_ = nullptr` nullifies the source object's pointer, and `s.stored_length_ = 0` resets the length. This way, when the source object's destructor executes `delete[] actual_str_`, it is actually calling `delete[] nullptr`—and the standard explicitly states<RefLink :id="1" preview="C++ Standard, [expr.delete] — deleting a null pointer has no effect" /> that deleting a null pointer is a safe no-op.
+That's why the two lines in the function body are the soul of the whole thing. `s.actual_str_ = nullptr` nulls out the source's pointer, and `s.stored_length_ = 0` zeroes the length. Now when the source's destructor runs `delete[] actual_str_`, what actually executes is `delete[] nullptr`—and the standard explicitly states <RefLink :id="1" preview="C++ Standard, [expr.delete] — deleting a null pointer has no effect" /> that deleting a null pointer is a safe no-op.
 
-You may have noticed that although the move constructor's parameter `s` is an rvalue reference, `s`'s destructor will still be called. This is a point many overlook: a move operation doesn't mean "take over and forget about the source object." On the contrary, the source object remains a valid, legal object after the move—except we have intentionally set its internal state to a "harmless" value. It will still be destructed normally, but the destructor will release nothing.
+You may have noticed that although the move constructor's parameter `s` is an rvalue reference, `s`'s destructor still runs. This is a point many people miss: a move operation is not "take over and never worry about the source again." Quite the opposite—after the move completes, the source object is still a complete, legitimate object; we've just deliberately put its internal state into "harmless" values. It still gets destroyed normally; the destruction just won't free anything.
 
-## Overload Resolution: How Does the Compiler Choose?
+## Overload Resolution: How the Compiler Chooses
 
-With both copy constructor and move constructor versions available, how does the compiler choose when facing an initialization expression? The answer is overload resolution based on the value category of the argument<RefLink :id="2" preview="C++ Standard, [over.match] — overload resolution selects the best viable function" />.
+With both a copy constructor and a move constructor available, how does the compiler choose when facing an initialization expression? The answer is overload resolution based on the argument's value category<RefLink :id="2" preview="C++ Standard, [over.match] — overload resolution selects the best viable function" />.
 
 ```cpp
 MyString s1("hello");
 
-// s1 是左值（有名字）→ 调用拷贝构造函数
+// s1 is an lvalue (it has a name) → the copy constructor is called
 MyString s2(s1);
 
-// std::move(s1) 是右值 → 调用移动构造函数
+// std::move(s1) is an rvalue → the move constructor is called
 MyString s3(std::move(s1));
 ```
 
-In the first line, `MyString s2(s1)`, `s1` is an lvalue—it has a name, and we can take its address. The compiler sees that the argument is an lvalue, looks for a constructor that accepts `const MyString&`, and finds the copy constructor.
+In `MyString s2(s1)`, `s1` is an lvalue—it has a name, and you can take its address. Seeing an lvalue argument, the compiler looks for a constructor that accepts `const MyString&` and lands on the copy constructor.
 
-In the second line, `MyString s3(std::move(s1))`, the result of `std::move(s1)` is an rvalue reference. The compiler looks for a constructor that accepts `MyString&&`, and finds the move constructor. This is why we need both constructors to coexist: the copy constructor handles cases where "the source object will still be used," while the move constructor handles cases where "the source object is going to die anyway."
+In `MyString s3(std::move(s1))`, the result of `std::move(s1)` is an rvalue reference, so the compiler looks for a constructor that accepts `MyString&&` and lands on the move constructor. This is why the two constructors must coexist: the copy constructor handles "the source object will keep being used," while the move constructor handles "the source object is doomed anyway."
 
-Ben Saks emphasized a key point in his talk: **an rvalue reference does not perform a move on its own**. It merely provides a signal to the compiler at the type system level—"this reference is bound to an rvalue." What actually decides between copying or moving is overload resolution. If our `MyString` lacked a move constructor, `std::move(s1)` would only trigger the copy constructor—the compiler would fall back to the `const MyString&` version, because `MyString&&` can be accepted by `const MyString&`. It would not error, but it would not move. We will revisit this point later.
+Ben Saks made a point of emphasizing this in the talk: **an rvalue reference does not itself perform a move**. It is only a signal to the compiler at the type-system level—"this reference is bound to an rvalue." What actually decides copy versus move is overload resolution. If our `MyString` had no move constructor, `std::move(s1)` would still trigger the copy constructor—the compiler would settle for the `const MyString&` version, because a `MyString&&` can be received by a `const MyString&`. No error, but no move either. We'll come back to this point later.
 
-## Move Assignment Operator: Clean Up the Old Object First
+## The Move Assignment Operator: Clean Up the Old Object First
 
-The move constructor handles scenarios where we are "creating a new object," whereas move assignment handles scenarios where we are "overwriting an existing object." Their core logic is similar, but move assignment has an extra step: we must clean up the old resources of the target object first.
+Move construction handles the "create a new object" scenario; move assignment handles "overwrite an existing object." The core logic of the two is very similar, but move assignment adds one step—it must first clean up the target object's old resources.
 
 ```cpp
 MyString& operator=(MyString&& s) noexcept
 {
     if (this != &s) {
-        delete[] actual_str_;         // 第一步：清理自己的旧资源
+        delete[] actual_str_;         // step 1: release our own old resource
         stored_length_ = s.stored_length_;
-        actual_str_ = s.actual_str_;  // 第二步：偷源对象的资源
-        s.actual_str_ = nullptr;      // 第三步：置空源对象
+        actual_str_ = s.actual_str_;  // step 2: steal the source's resource
+        s.actual_str_ = nullptr;      // step 3: null out the source
         s.stored_length_ = 0;
     }
     return *this;
 }
 ```
 
-The order here is critical. We first release our previous heap memory with `delete[] actual_str_`, and then take over the source object's pointer. If we reversed the order—assigning first and then deleting—we would delete the pointer given to us by the source object, which is a classic use-after-free scenario.
+The order matters. We first `delete[] actual_str_` to release our own previous heap memory, and only then take over the source's pointer. If we did it the other way around—assign first, delete later—we'd delete the very pointer the source just handed us. That's a textbook use-after-free.
 
-The self-assignment check `if (this != &s)` is equally important in move assignment. Although `s` is an rvalue reference and theoretically no one should write code like `x = std::move(x)`, the language does not prohibit it, and sometimes template instantiation can produce this effect. Without the self-assignment check, `delete[] actual_str_` would free our own memory, and then `actual_str_ = s.actual_str_` would assign a dangling pointer back to ourselves—resulting in an immediate crash.
+The self-assignment check `if (this != &s)` matters just as much in move assignment. Granted, `s` is an rvalue reference and in theory nobody should write code like `x = std::move(x)`, but nothing in the language forbids it, and template instantiation can sometimes produce exactly that effect. Without the self-assignment check, `delete[] actual_str_` would free our own memory, and then `actual_str_ = s.actual_str_` would assign a dangling pointer right back to ourselves—an instant explosion.
 
-Note that the return type is `MyString&`—an lvalue reference, not an rvalue reference. This is because the target of the assignment operator (the object on the left side of `=`) is always an lvalue. Whether or not we use `std::move`, the recipient of the assignment is always "a named object with an address."
+Note that the return type is `MyString&`—an lvalue reference, not an rvalue reference. That's because the target of an assignment operator (the object on the left of `=`) is always an lvalue. Whether or not you use `std::move`, the receiving end of an assignment is invariably "an object with a name and an address."
 
-Additionally, this implementation is exception-safe—the data members of `MyString` are only built-in types (`std::size_t` and `char*`), and operations on these types do not throw exceptions. This is also why I marked it `noexcept`. If your class has more complex data members (like another `std::string`), you need to consider exception safety more carefully.
+By the way, this implementation is safe in terms of exception safety—`MyString`'s data members are all built-in types (`std::size_t` and `char*`), and operations on those types don't throw. That's also why I marked it `noexcept`. If your class has more complicated data members (another `std::string`, say), you'll need to think carefully about exception safety.
 
 ## std::move: The Most Misunderstood Function in C++
 
-The name `std::move` is terribly misleading. When I first saw it, I naturally assumed it "performs a move operation"—after all, it's called "move". But the fact is, **`std::move` does not move anything itself**.
+The name `std::move` is a trap. The first time I saw it, I naturally assumed it "performs a move operation"—it's called "move", after all. But the truth is that **`std::move` itself moves nothing**.
 
-Its real identity is a type cast to an rvalue reference, equivalent to a `static_cast`. The standard library implementation is roughly equivalent to:
+Its real identity is a `static_cast` to an rvalue reference. The standard library's implementation is roughly equivalent to:
 
 ```cpp
 template<typename T>
@@ -135,13 +135,13 @@ constexpr typename std::remove_reference<T>::type&& move(T&& t) noexcept
 }
 ```
 
-Setting aside the template metaprogramming of `remove_reference`, the core is simply `static_cast<T&&>(t)`. It casts the passed argument to an rvalue reference and returns it. That is all. It generates no move code, invokes no move constructors, and does not modify the state of any object.
+Ignore the `remove_reference` template gymnastics and the core is just `static_cast<T&&>(t)`: it converts its argument to an rvalue reference and returns it. That's all. It generates no move code, calls no move constructor, and modifies no object's state.
 
-Ben Saks stated a plain truth in his talk: **If we could do it all over again, we would probably call it `make_movable` or `as_rvalue`**. At the very least, this name wouldn't mislead anyone into thinking it performs a move.
+Ben Saks said it straight in the talk: **if we could do it all over, we'd probably have named it `make_movable` or `as_rvalue`**. At least those names wouldn't mislead people into thinking it performs a move.
 
-### Why we need std::move: The naming trap in swap
+### Why We Need std::move: The Naming Trap in swap
 
-Since `std::move` doesn't actually move, why do we need it? Let's look at the `swap` function. This scenario illustrates the problem best.
+So if `std::move` doesn't move, why do we need it at all? Look at the `swap` function—the scenario that makes the answer clearest.
 
 ```cpp
 template<typename T>
@@ -153,81 +153,81 @@ void swap(T& x, T& y)
 }
 ```
 
-This C++03 style `swap` performs three copies. We certainly want to change it to a move version—after all, our previous two articles emphasized that moving is much faster than copying. However, a problem arises: `x`, `y`, and `temp` inside the function body are all lvalues. They all have names, you can take their addresses, and their lifetimes span multiple statements. The compiler cannot automatically treat them as rvalues—what if you still need to use `temp` after the third line?
+This C++03-style `swap` performs three copies. Of course we'd like to turn it into a move version—we've spent two whole articles saying moves are much faster than copies. But here's the problem: inside the function body, `x`, `y`, and `temp` are all lvalues. They all have names, you can take their addresses, and their lifetimes span multiple statements. The compiler can't just treat them as rvalues automatically—what if you still want to use `temp` after line three?
 
-C++ has a general rule: **if something has a name, it is an lvalue**. Only nameless things (like temporary objects, literals, or function results returned by value) can be rvalues. This rule is very reasonable—the compiler must be conservative; it cannot assume that `temp` will not be used in the next line.
+C++ has a general rule: **if it has a name, it's an lvalue**. Only nameless things (temporaries, literals, a function's by-value return result) can be rvalues. The rule is entirely sensible—the compiler must stay conservative; it cannot assume `temp` goes unused on the next line.
 
-Therefore, we need to explicitly tell the compiler: "I know `temp` will not be used afterwards, so please treat it as an rvalue." This is exactly what `std::move` is for:
+So we need to tell the compiler explicitly: "I know `temp` won't be used again after this—please treat it as an rvalue." That is exactly what `std::move` is for:
 
 ```cpp
 template<typename T>
 void move_swap(T& x, T& y)
 {
-    T temp(std::move(x));    // 移动构造 temp
-    x = std::move(y);        // 移动赋值 x
-    y = std::move(temp);     // 移动赋值 y
+    T temp(std::move(x));    // move-construct temp
+    x = std::move(y);        // move-assign x
+    y = std::move(temp);     // move-assign y
 }
 ```
 
-Every `std::move` sends a message to the compiler: **"Here, I confirm that it is safe to move resources from this object."** Only after receiving this information will the compiler select the moving version during overload resolution.
+Every `std::move` passes one message to the compiler: **"right here, I confirm it is safe to move resources out of this object."** Only with that information in hand does the compiler pick the move version during overload resolution.
 
 ### std::move Does Not Guarantee a Move
 
-There is another easily overlooked pitfall: `std::move` does not guarantee that a move will actually occur. If a type only has copy operations and no move operations, the result of `std::move` will degrade to a copy.
+Here's another easily missed trap: `std::move` does not guarantee that a move will actually happen. If a type has only copy operations and no move operations, the result of `std::move` degrades into a copy.
 
 ```cpp
 struct CopyOnly
 {
     CopyOnly() = default;
     CopyOnly(const CopyOnly&) { std::cout << "copy\n"; }
-    // 没有移动构造函数！
+    // no move constructor!
 };
 
 CopyOnly a;
-CopyOnly b(std::move(a));  // 输出 "copy" —— 退化为拷贝构造
+CopyOnly b(std::move(a));  // prints "copy" — degrades to copy construction
 ```
 
-Here, `std::move(a)` casts `a` to an rvalue reference, but `CopyOnly` does not have a constructor accepting an rvalue reference. The compiler falls back to the copy constructor taking `const CopyOnly&` (because `CopyOnly&&` can bind to `const CopyOnly&`). This won't cause an error, but the "move" you expected silently turns into a "copy."
+Here `std::move(a)` turns `a` into an rvalue reference, but `CopyOnly` has no constructor that accepts an rvalue reference. The compiler settles for the `const CopyOnly&` copy constructor (because a `CopyOnly&&` can bind to a `const CopyOnly&`). No error occurs—it's just that the "move" you expected turned into a "copy". And it happens without a whisper.
 
 ## The Naming Paradox of Rvalue Reference Parameters
 
-This is one of the most confusing aspects of move semantics, and it's a point Ben Saks spent considerable time emphasizing.
+This is the most confusing part of move semantics, and it's the part Ben Saks spent quite a while emphasizing.
 
-When we write a function that accepts an rvalue reference parameter, that parameter is treated as an **lvalue** inside the function body:
+When we write a function that takes an rvalue reference parameter, that parameter is **treated as an lvalue** inside the function:
 
 ```cpp
 void process(MyString&& s)
 {
-    // s 有名字 → s 是左值
-    MyString copy(s);             // 调用拷贝构造！不是移动构造！
-    MyString moved(std::move(s)); // 这才调用移动构造
+    // s has a name → s is an lvalue
+    MyString copy(s);             // calls the COPY constructor! Not the move constructor!
+    MyString moved(std::move(s)); // THIS one calls the move constructor
 }
 ```
 
-From the perspective of the caller, the passed argument is an rvalue (for example, `process(std::move(x))` or `process(MyString("temp"))`). However, once inside the function body, `s` becomes a named variable—it persists across multiple statements, and the compiler cannot assume it will be used only once. Therefore, the rule that "named variables are lvalues" still applies.
+From outside the function, the argument being passed in is an rvalue (say `process(std::move(x))` or `process(MyString("temp"))`). But the moment execution enters the function body, `s` is a named variable—it exists across multiple statements, and the compiler can't assume it is used only once. So the "has a name → is an lvalue" rule still applies.
 
-This leads to a practical consequence: **inside the function, if you want to move resources from an rvalue reference parameter, you must explicitly use `std::move`**. Furthermore, once you have moved from it, the value of that parameter in subsequent code becomes unpredictable—this is the "moved-from" state we will discuss in the next section.
+This has a practical consequence: **inside a function, if you want to move resources out of an rvalue reference parameter, you must use `std::move` explicitly**. And once you have moved from it, the parameter's value in the code that follows is unpredictable—that is the moved-from state, which is exactly what the next section discusses.
 
 ## Implicitly Movable Return Expressions
 
-The good news is that there is an important exception to the "named variables are lvalues" rule—the `return` statement.
+Here's the good news: the "has a name → is an lvalue" rule has one important exception—the `return` statement.
 
 ```cpp
 MyString make_greeting()
 {
     MyString temp("hello world");
-    // ... 对 temp 做一些操作 ...
-    return temp;  // 不需要 std::move！
+    // ... do some work on temp ...
+    return temp;  // no std::move needed!
 }
 ```
 
-In this code, although `temp` has a name (which technically makes it an lvalue), `return temp;` is the last use of `temp` within the function. The compiler knows that `temp`'s lifetime ends immediately after the function returns, so the standard allows it to treat `temp` as an implicitly movable entity <RefLink :id="3" preview="C++ Standard, [class.copy.elision] — NRVO and implicit move" />.
+In this code, `temp` has a name (which by the rule should make it an lvalue), but `return temp;` is the last use of `temp` in the function. The compiler knows `temp`'s lifetime ends the instant the function returns, so the standard allows it to treat `temp` as an implicitly movable entity<RefLink :id="3" preview="C++ Standard, [class.copy.elision] — NRVO and implicit move" />.
 
-This means we **do not** need to write `return std::move(temp);`. Simply writing `return temp;` is sufficient—the compiler will automatically select the move constructor (or even better, it will elide the construction entirely, which we will discuss next).
+That means you do **not** need to write `return std::move(temp);`. Plain `return temp;` is enough—the compiler automatically selects the move constructor (or, even better, eliminates the construction outright; more on that right below).
 
-## NRVO: An Optimization Better Than Moving
+## NRVO: An Optimization Even Better Than Moving
 
-Discussing "implicitly movable" entities isn't the end of the story. The compiler can actually do better than moving—it can allow the return value to reach the caller at **zero cost**, without even requiring a move. This is known as **Named Return Value Optimization (NRVO)**.
+And "implicitly movable" isn't even the end of the story. The compiler can actually do better than a move—it can get the return value to the caller at **zero cost**, without even a move. This is the **Named Return Value Optimization (NRVO)**.
 
 ```cpp
 MyString make_greeting()
@@ -239,119 +239,119 @@ MyString make_greeting()
 MyString s = make_greeting();
 ```
 
-In a world without NRVO, the execution flow looks like this: first, construct `temp` on the stack frame of `make_greeting`, then construct a temporary object at the location of `s` (via move or copy), then destroy `temp`, then move or copy the temporary object into `s`, and finally destroy the temporary object. That sounds wasteful.
+In a world without NRVO, the execution flow looks like this: first construct `temp` on `make_greeting`'s stack frame; then construct a temporary at `s`'s location (via move or copy); then destroy `temp`; then move or copy the temporary into `s`; then destroy the temporary. It sounds wasteful because it is.
 
-The idea behind NRVO is very clever: when generating code, the compiler constructs `temp` directly at the location of `s`. Instead of constructing first and then copying, it places the object in the correct spot from the very beginning. `temp` *is* `s`; they share the exact same memory. When the function returns, no copy or move is necessary—the object is already exactly where it belongs.
+NRVO's idea is wonderfully clever: when generating code, the compiler simply constructs `temp` at `s`'s location. Not "construct first, then copy," but "put it in the right place from the very start." `temp` *is* `s`—they share the same memory. When the function returns, no copy or move is needed; the object was already where it belonged.
 
-Starting with C++17, this optimization became **mandatory** in certain scenarios<RefLink :id="4" preview="C++ Standard, [class.copy.elision] — mandatory elision in certain contexts" />—the compiler must elide the copy, rather than "can elide but might choose not to." This is not an optional optimization, but a defined behavior of the language. Historical reasons keep the name "optimization," but in reality, it is a guarantee.
+Since C++17, this optimization has become **mandatory** in certain contexts<RefLink :id="4" preview="C++ Standard, [class.copy.elision] — mandatory elision in certain contexts" />—the compiler must elide the copy, rather than "may elide it, or may not." This is no longer an optional optimization; it is defined behavior of the language. Historical reasons are why it's still called an "optimization," but in practice it has become a guarantee.
 
-For the complete technical details regarding NRVO and RVO, we have a dedicated article in Volume 2: [RVO and NRVO: The Compiler's Return Value Optimization](../../../../vol2-modern-features/ch00-move-semantics/03-rvo-nrvo.md).
+For the complete technical details of NRVO and RVO, we have a dedicated article in vol2: [RVO and NRVO: The Compiler's Return Value Optimization](../../../../vol2-modern-features/ch00-move-semantics/03-rvo-nrvo.md).
 
-## Never Use std::move on Return Values
+## Never Use std::move on a Return Value
 
-This is arguably the most common mistake I see related to move semantics. As mentioned earlier, `return temp;` is implicitly movable. The compiler either performs NRVO (zero cost) or automatically falls back to move construction (the cost of a single pointer assignment). One might think: since `std::move` "requests a move," wouldn't `return std::move(temp);` be more explicit and safer?
+This is probably the most common move-semantics mistake I've ever seen. We said that `return temp;` is implicitly movable: the compiler either applies NRVO (zero cost) or automatically falls back to the move constructor (the cost of one pointer assignment). So some people figure: since `std::move` is a "request to move," wouldn't `return std::move(temp);` be more explicit, more defensive?
 
-**Quite the opposite.**
+**Exactly backwards.**
 
 ```cpp
-// 正确写法：允许 NRVO
+// correct version: allows NRVO
 MyString make_good()
 {
     MyString temp("good");
     return temp;
 }
 
-// 错误写法：阻止 NRVO！
+// wrong version: inhibits NRVO!
 MyString make_bad()
 {
     MyString temp("bad");
-    return std::move(temp);  // 反而更慢！
+    return std::move(temp);  // actually slower!
 }
 ```
 
-The reason lies in the trigger conditions for NRVO<RefLink :id="5" preview="C++ Standard, [class.copy.elision] — the return expression must be the name of a local variable" />: the `return` expression must be the name of a local variable. When we write `return std::move(temp);`, the return expression is no longer the name `temp`—it is `std::move(temp)`, which is a function call expression. The compiler cannot perform NRVO on this expression, so it falls back to move construction.
+The reason lies in NRVO's trigger conditions<RefLink :id="5" preview="C++ Standard, [class.copy.elision] — the return expression must be the name of a local variable" />: the `return` expression must be the name of a local object. When you write `return std::move(temp);`, the return expression is no longer the name `temp`—it is `std::move(temp)`, a function call expression. The compiler cannot apply NRVO to that expression, so it can only settle for the move constructor.
 
-In other words, `return std::move(temp);` forces the compiler to take the move construction path, whereas `return temp;` gives the compiler a chance to take the NRVO path (zero cost). This is why Ben Saks emphasized repeatedly in his talk: **do not use `std::move` on return values**.
+In other words, `return std::move(temp);` forces the compiler down the move-construction path, while `return temp;` keeps the NRVO path (zero cost) open. That's why Ben Saks hammered the point repeatedly in his talk: **do not use `std::move` on return values**.
 
-We can use the `-fno-elide-constructors` compiler flag to compare the difference between the two. This flag disables GCC's copy elision optimization, allowing us to see what the world looks like "without NRVO."
+We can use the `-fno-elide-constructors` compiler flag to compare the difference between the two. This flag turns off GCC's copy elision optimization, letting us see what a world "without NRVO" looks like.
 
-First, let's look at the behavior of `return temp;` with elision disabled—it falls back to move construction because `temp` is implicitly movable. Meanwhile, `return std::move(temp);` also results in move construction—there is no difference between the two when elision is disabled. However, once elision is enabled (the default behavior), `return temp;` becomes a no-op, while `return std::move(temp);` still performs move construction. That is where the difference lies.
+First, the behavior of `return temp;` with elision disabled—it falls back to move construction, because `temp` is implicitly movable. And `return std::move(temp);` is likewise a move construction—with elision off, there is no difference between the two. But once elision is enabled (the default behavior), `return temp;` becomes a zero-op, while `return std::move(temp);` still pays for a move construction. That's where the gap is.
 
-I tested this with GCC 16.1.1. After adding print logs to the various constructors of `MyString`, the comparison results are as follows:
+I ran the actual test on GCC 16.1.1—after adding print logs to `MyString`'s various constructors, the comparison looked like this:
 
 ```bash
-# 默认开启 NRVO
+# NRVO on by default
 $ g++ -std=c++20 -O2 test.cpp && ./a.out
 === return temp; (NRVO) ===
-  构造: "hello"          # 只有这一次构造，没有移动，没有拷贝
+  构造: "hello"          # this is the only construction — no move, no copy
 
 === return std::move(temp); ===
   构造: "hello"
-  移动构造: "hello"       # 多了一次移动构造！
+  移动构造: "hello"       # one extra move construction!
   析构: "(null)"
 ```
 
-You see, `return std::move(temp);` explicitly adds one move construction. For a class like `MyString`, which only contains a pointer and an integer, the cost of move construction is very low (just one pointer assignment). However, for more complex classes (such as objects containing multiple dynamic containers), the cost of this extra move cannot be ignored.
+See? `return std::move(temp);` clearly pays one extra move construction. For a class like `MyString` that holds nothing but a pointer and an integer, a move is cheap (one pointer assignment), but for more complex classes—objects containing several dynamic containers, say—the cost of this extra move can no longer be ignored.
 
 ```bash
-# 关闭 NRVO 后对比
+# comparison with NRVO disabled
 $ g++ -std=c++20 -O2 -fno-elide-constructors test.cpp && ./a.out
 === return temp; ===
   构造: "hello"
-  移动构造: "hello"       # 没有 NRVO，退回到移动构造
+  移动构造: "hello"       # no NRVO — falls back to move construction
   析构: "(null)"
 
 === return std::move(temp); ===
   构造: "hello"
-  移动构造: "hello"       # 同样是移动构造
+  移动构造: "hello"       # a move construction here too
   析构: "(null)"
 ```
 
-With NRVO disabled, both behaviors are indeed identical—both involve a single move construction. However, this precisely demonstrates that `return std::move(temp);` needlessly wastes an opportunity for NRVO under default settings.
+With NRVO disabled, the two really do behave identically—both perform a single move construction. But that is precisely what shows how `return std::move(temp);` needlessly throws away the NRVO opportunity under default settings.
 
-:::warning C++20/C++23 Further Expand the Scope of "Implicitly Movable"
-The rule discussed in this section—"Don't use `std::move` on return values"—**holds true across all standard versions (C++11 through C++26)** and is absolutely safe advice. However, the mechanism of "implicit move" itself is continuously strengthened in later standards, and it is worth noting: C++11 introduced the initial implicit move (where the compiler can treat returning a local object as a move); C++20 (proposal P1825 "More implicit moves") expanded the scope of "implicitly movable entities"—for example, local variables bound to rvalue references and throwing a local object are now included in implicit moves; C++23 (proposal P2266) further refined this, allowing return values to be treated as xvalues in certain scenarios, covering more construction paths.
+:::warning C++20/C++23 further widened the scope of "implicitly movable"
+The rule this section teaches—"don't use `std::move` on return values"—holds in **every standard version (C++11 through C++26)** and is unconditionally safe advice. The implicitly-movable machinery itself, however, has kept getting strengthened in later standards, and that's worth knowing about: C++11 introduced the original implicit move (when `return`ing a local object, the compiler may treat it as movable); C++20 (proposal P1825, "More implicit moves") widened the scope of "implicitly movable entities"—things like local variables bound to rvalue references, and `throw`ing a local object, were brought into implicit move as well; C++23 (proposal P2266) then refined things further, so that return values are treated as xvalues in certain contexts, covering more construction paths.
 
-However, regardless of these extensions, **the iron rule "do not write `std::move` when returning a local object" has never changed**—P1825/P2266 expand the scope of "what the compiler can automatically move," whereas `std::move` actually disrupts the conditions for triggering NRVO. The conclusion remains: write `return temp;` and leave the choice between NRVO and implicit move to the compiler.
+But however these extensions evolve, **the iron rule—"when returning a local object, don't write `std::move`"—has never changed**. What P1825/P2266 widened is the range of things "the compiler can move automatically," while `std::move` actually breaks NRVO's trigger conditions. The conclusion stands as before: write `return temp;`, and leave the choice between NRVO and implicit move to the compiler.
 :::
 
-## Moved-From State: Valid but Unspecified
+## The moved-from State: Valid but Unknowable
 
-After a move operation, the source object enters a state that the standard calls "**valid but unspecified state**" <RefLink :id="6" preview="C++ Standard, [lib.types.movedfrom] — moved-from objects are in a valid but unspecified state" />. These words are worth dissecting one by one.
+After a move operation completes, the source object is left in what the standard calls a "**valid but unspecified state**"<RefLink :id="6" preview="C++ Standard, [lib.types.movedfrom] — moved-from objects are in a valid but unspecified state" />. Every word of that phrase deserves to be unpacked.
 
-"Valid" means: there will be no memory leaks, no resource leaks, and no undefined behavior. You can safely let this object be destroyed—its destructor will execute normally, without double freeing or crashing. For our `MyString`, after the move, `actual_str_` is set to `nullptr` and `stored_length_` becomes 0, so `delete[] nullptr` does nothing during destruction.
+"Valid" means: no memory leaks, no resource leaks, no undefined behavior triggered. You can safely let this object destruct—its destructor will execute normally, with no double free and no crash. For our `MyString`, after the move `actual_str_` has been set to `nullptr` and `stored_length_` to 0, so the destructor's `delete[] nullptr` does nothing.
 
-"Unspecified" means: you cannot make any assumptions about the value held by the moved-from object. The standard does not mandate that a moved-from `std::string` must be an empty string, nor does it mandate that a moved-from `std::vector` must be empty. Different standard library implementations may exhibit different behaviors. Our own `MyString` returns `"(null)"` after a move (which is our own safety fallback), but a moved-from `std::string` might return an empty string, or it might return the original value—you cannot rely on it.
+"Unspecified" means: you may not make any assumptions about the value a moved-from object holds. The standard does not promise that a moved-from `std::string` is necessarily an empty string, nor that a moved-from `std::vector` is necessarily empty. Different standard library implementations may behave differently. Our own `MyString` returns `"(null)"` from `c_str()` after a move (that's our own safety fallback), but a moved-from `std::string` might return an empty string—or the original value. You can't rely on either.
 
 ```cpp
 MyString a("hello");
 MyString b(std::move(a));
 
-// 安全操作：
-// 1. 析构 —— 永远安全
-// 2. 赋新值 —— 永远安全
+// Safe operations:
+// 1. destruction — always safe
+// 2. assigning a new value — always safe
 a = MyString("new value");  // OK
 
-// 不安全操作：
-// 1. 假设 a 仍持有 "hello"
-// 2. 假设 a.size() 是 0
-// 3. 假设 a.c_str() 返回空串
-// 这些假设在某些实现上可能碰巧成立，但标准不保证
+// Unsafe operations:
+// 1. assuming a still holds "hello"
+// 2. assuming a.size() is 0
+// 3. assuming a.c_str() returns an empty string
+// These assumptions might happen to hold on some implementations, but the standard does not guarantee them
 ```
 
-:::warning Restrictions on moved-from objects
-In a Q&A session, Ben Saks was asked if a moved-from object can still be used. His answer was unequivocal: **After moving, the only things you should do with the source object are assign a new value to it or let it be destroyed**. Any other operation (reading the value, comparing, passing it to other functions) is a gamble—you might win (if the implementation happens to give you a predictable value), or you might lose (if the implementation changes or you switch standard libraries). Don't gamble.
+:::warning Restrictions on using moved-from objects
+In the Q&A, Ben Saks was asked "can a moved-from object keep being used?" His answer was refreshingly blunt: **after a move, the only things you should do with the source object are assign it a new value, or let it destruct**. Any other operation—reading its value, comparing it, passing it to other functions—is gambling. You might win (the implementation happens to hand you a predictable value), or you might lose (the implementation changed, or you switched standard libraries). Don't gamble.
 
-Do not confuse "valid" with "useful"—a moved-from object is a valid object, but it is not an object with a determined state. If you need an empty object, create one explicitly; if you need a specific value, assign it explicitly. Don't rely on move operations to do this for you.
+Don't confuse "valid" with "useful"—a moved-from object is a legitimate object, but not an object with well-defined contents. If you need an empty object, create one explicitly; if you need a specific value, assign it explicitly. Don't count on the move operation to do any of that for you.
 :::
 
-## The importance of `noexcept`: the hidden trap of vector reallocation
+## Why noexcept Matters: The Hidden Trap in vector Reallocation
 
-Finally, let's discuss a problem often overlooked in real-world engineering but with significant impact: **move constructors should be `noexcept`**.
+Finally, let's talk about a problem that is routinely overlooked in real-world engineering yet has a huge impact: **move constructors should be `noexcept`**.
 
-Why? Let's look at the scenario of `std::vector` reallocation. When a `vector`'s capacity is insufficient, it needs to allocate a larger block of memory and transfer the old elements to the new memory. If the element's move constructor is `noexcept`, the `vector` will use move operations to transfer them—very fast. If the move constructor is not `noexcept`, the `vector` will fall back to copying<RefLink :id="7" preview="C++ Standard, [vector.modifiers] — if move ctor is not noexcept, vector uses copy during reallocation" />.
+Why? Look at the `std::vector` growth scenario. When a `vector`'s capacity runs out, it needs to allocate a larger block of memory and then transfer the old elements into it. If the element's move constructor is `noexcept`, `vector` uses moves for the transfer—very fast. If the move constructor is not `noexcept`, `vector` falls back to copies<RefLink :id="7" preview="C++ Standard, [vector.modifiers] — if move ctor is not noexcept, vector uses copy during reallocation" />.
 
-This is because `vector` must provide a strong exception safety guarantee: if an exception is thrown during reallocation, the `vector`'s state must be rolled back to before the reallocation. If moving is used, once an exception is thrown midway, the moved elements cannot be restored (their resources have already been stolen). If copying is used, the original data is still intact, allowing for a safe rollback.
+The reason is that `vector` offers the strong exception safety guarantee: if an exception is thrown during reallocation, the `vector`'s state must roll back to what it was before the reallocation. If moves are being used, then once an exception fires midway, the already-moved elements cannot be restored (their resources have already been stolen). If copies are being used, the original data is still there, so a safe rollback is possible.
 
 Let's write a simple test to verify this behavior:
 
@@ -387,7 +387,7 @@ public:
         std::cout << "  COPY ctor: " << str_ << "\n";
     }
 
-    // 没有 noexcept！
+    // no noexcept!
     StringNoNoexcept(StringNoNoexcept&& o)
         : len_(o.len_)
         , str_(o.str_)
@@ -408,7 +408,7 @@ int main()
     std::cout << "=== push 3 elements (triggers reallocation) ===\n";
     vec.emplace_back("AAA");
     vec.emplace_back("BBB");
-    vec.emplace_back("CCC");  // 这里触发扩容
+    vec.emplace_back("CCC");  // this one triggers the reallocation
 
     std::cout << "\n=== final contents ===\n";
     for (const auto& s : vec) {
@@ -418,7 +418,7 @@ int main()
 }
 ```
 
-After compiling and running, you will see output similar to this (GCC 16.1.1, `-std=c++20 -O2`):
+Compile and run, and you'll see output like this (GCC 16.1.1, `-std=c++20 -O2`):
 
 ```bash
 $ g++ -std=c++20 -O2 test_noexcept.cpp && ./a.out
@@ -426,19 +426,19 @@ $ g++ -std=c++20 -O2 test_noexcept.cpp && ./a.out
   ctor: AAA
   ctor: BBB
   ctor: CCC
-  COPY ctor: AAA    # 扩容时用的是拷贝！不是移动！
+  COPY ctor: AAA    # reallocation used COPIES! Not moves!
   COPY ctor: BBB
 ```
 
-Did you see that? When the third element triggered reallocation, `vector` **copied** the first two elements to the new memory—even though we explicitly implemented a move constructor. The reason is that our move constructor is not marked `noexcept`.
+See that? When the third element triggers reallocation, `vector` **copies** the first two elements into the new memory—even though we clearly implemented a move constructor. The reason is precisely that our move constructor was not marked `noexcept`.
 
-Now, let's add `noexcept` to the move constructor:
+Now add `noexcept` to the move constructor:
 
 ```cpp
-StringNoNoexcept(StringNoNoexcept&& o) noexcept  // 加上 noexcept
+StringNoNoexcept(StringNoNoexcept&& o) noexcept  // noexcept added
 ```
 
-Rebuild and run:
+Recompile and run:
 
 ```bash
 $ g++ -std=c++20 -O2 test_noexcept.cpp && ./a.out
@@ -446,17 +446,17 @@ $ g++ -std=c++20 -O2 test_noexcept.cpp && ./a.out
   ctor: AAA
   ctor: BBB
   ctor: CCC
-  MOVE ctor: AAA    # 现在用移动了！
+  MOVE ctor: AAA    # now it moves!
   MOVE ctor: BBB
 ```
 
-A single difference with the `noexcept` keyword directly determines whether a `vector` uses copy or move during reallocation. For a class managing dynamic memory, this difference can translate to an order-of-magnitude performance gap when dealing with large volumes of data.
+A single `noexcept` keyword is what decides copy versus move when a `vector` reallocates. For a class holding dynamic memory, in scenarios with large amounts of data, this difference can mean an order-of-magnitude performance gap.
 
-This is a genuine production-level pitfall. Many developers write move constructors but forget to add `noexcept`, only to be puzzled during performance tests by "why move semantics didn't kick in." The answer often lies in these two words.
+This is a genuine production-grade trap. Plenty of people write a move constructor but forget the `noexcept`, then sit there during performance testing wondering "why didn't move semantics take effect." The answer is very often that one missing keyword.
 
-## Complete MyString: The Rule of Five Assembled
+## The Complete MyString: The Big Five, All Present
 
-Combining the content from this and the previous two posts, we arrive at a complete `MyString` implementation that adheres to the Rule of Five:
+Put this article together with the previous two, and we get a complete `MyString` implementation that satisfies the Rule of Five:
 
 ```cpp
 #include <cstring>
@@ -468,7 +468,7 @@ class MyString
     char* actual_str_;
 
 public:
-    // 构造函数
+    // constructor
     explicit MyString(const char* s = "")
         : stored_length_(std::strlen(s))
         , actual_str_(new char[stored_length_ + 1])
@@ -476,13 +476,13 @@ public:
         std::memcpy(actual_str_, s, stored_length_ + 1);
     }
 
-    // 析构函数
+    // destructor
     ~MyString()
     {
         delete[] actual_str_;
     }
 
-    // 拷贝构造函数
+    // copy constructor
     MyString(const MyString& other)
         : stored_length_(other.stored_length_)
         , actual_str_(new char[other.stored_length_ + 1])
@@ -490,7 +490,7 @@ public:
         std::memcpy(actual_str_, other.actual_str_, stored_length_ + 1);
     }
 
-    // 移动构造函数 —— noexcept！
+    // move constructor — noexcept!
     MyString(MyString&& s) noexcept
         : stored_length_(s.stored_length_)
         , actual_str_(s.actual_str_)
@@ -499,7 +499,7 @@ public:
         s.stored_length_ = 0;
     }
 
-    // 拷贝赋值运算符
+    // copy assignment operator
     MyString& operator=(const MyString& other)
     {
         if (this != &other) {
@@ -511,7 +511,7 @@ public:
         return *this;
     }
 
-    // 移动赋值运算符 —— noexcept！
+    // move assignment operator — noexcept!
     MyString& operator=(MyString&& s) noexcept
     {
         if (this != &s) {
@@ -529,15 +529,15 @@ public:
 };
 ```
 
-The five special member functions—destructor, copy constructor, copy assignment, move constructor, and move assignment—are all present. This is known as the **Rule of Five**: if you need to customize any one of them, you most likely need to customize all five. The compiler-generated default versions are unsafe for classes holding raw pointers.
+All five special member functions—destructor, copy constructor, copy assignment, move constructor, move assignment—are present and accounted for. This is the so-called Rule of Five: if you need to customize any one of them, odds are you need to customize all five. The compiler-generated default versions are unsafe for classes that hold raw pointers.
 
-## What We've Learned So Far
+## What We've Figured Out So Far
 
-Across three articles, we started with the three copies involved in `swap`, navigated the value category system of lvalues and rvalues, and finally dissected the full implementation details of move operations in this article. Let me use a concise checklist to review the core points of this article.
+Over the three articles of this series, we started from `swap`'s three deep copies, worked through the lvalue/rvalue value-category system, and finally, in this one, took apart every implementation detail of the move operations. Let me close with a compact checklist recapping this article's key points.
 
-The core of the move constructor is "destructive copy"—stealing the source object's resource pointer and then leaving the source object in a harmless state. Overload resolution automatically selects between copy and move; you don't need to make extra judgments at the call site. `std::move` doesn't move anything; it is just a cast to an rvalue reference that enables overload resolution to select the move version. An rvalue reference parameter is an lvalue inside a function—because it has a name—so you still need `std::move` to move from it. The `return` statement is an exception to the "named is lvalue" rule; the compiler automatically recognizes implicitly movable return expressions. NRVO (Named Return Value Optimization) allows the return value to reach the caller at zero cost—whereas `return std::move(temp)` inhibits NRVO, so never write it that way. A moved-from object is in a "valid but unspecified" state; the only safe operations are assigning a new value or destruction. Move constructors must be marked `noexcept`—otherwise `std::vector` will fall back to copying during reallocation, which can cause a massive performance difference.
+The essence of the move constructor is a "destructive copy"—steal the source object's resource pointer, then put the source object into a harmless state. Overload resolution selects copy or move automatically; you don't need to do anything extra at the call site. `std::move` moves nothing itself—it is just a cast to an rvalue reference that lets overload resolution select the move version. An rvalue reference parameter is an lvalue inside the function—because it has a name—so you still need `std::move` to move from it. The `return` statement is the exception to the "has a name → is an lvalue" rule; the compiler automatically recognizes implicitly movable return expressions. NRVO can get a return value to the caller at zero cost—and `return std::move(temp)` inhibits NRVO, so never write that. A moved-from object is in a "valid but unspecified" state; the only safe operations are assigning a new value or letting it destruct. Always mark your move constructors `noexcept`—otherwise `std::vector` falls back to copying during reallocation, and the performance gap can be enormous.
 
-If you want to dive deeper into more applications of move semantics—perfect forwarding, universal references, reference collapsing—check out vol2's [Perfect Forwarding: Preserving Value Categories Exactly](../../../../vol2-modern-features/ch00-move-semantics/04-perfect-forwarding.md). Move semantics combined with perfect forwarding form the complete foundation of modern C++ template programming.
+If you want to dig further into move semantics' many application scenarios—perfect forwarding, universal references, reference collapsing—see vol2's [Perfect Forwarding: Preserving Value Categories Exactly](../../../../vol2-modern-features/ch00-move-semantics/04-perfect-forwarding.md). Move semantics combined with perfect forwarding is what forms the complete foundation of modern C++ template programming.
 
 <ReferenceCard title="References">
   <ReferenceItem
@@ -580,7 +580,7 @@ If you want to dive deeper into more applications of move semantics—perfect fo
     author="ISO/IEC 14882:2020"
     title="C++ Standard, [lib.types.movedfrom]"
     :year="2020"
-    chapter="Standard library moved-from objects are in a valid but unspecified state"
+    chapter="Moved-from objects of standard library types are in a valid but unspecified state"
   />
   <ReferenceItem
     :id="7"
