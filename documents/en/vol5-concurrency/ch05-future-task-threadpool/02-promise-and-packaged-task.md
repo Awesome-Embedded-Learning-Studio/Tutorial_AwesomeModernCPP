@@ -5,17 +5,16 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Manually set the value and exception for a future, wrap a callable object
-  with `packaged_task`, and build flexible task channels.
+description: Set a future's value and exception by hand, wrap callables with packaged_task, and build flexible task channels
 difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- std::async 与 future
+- std::async and future
 reading_time_minutes: 23
 related:
-- jthread 与停止令牌
-- 线程池设计
+- jthread and Stop Tokens
+- Thread Pool Design
 tags:
 - host
 - cpp-modern
@@ -25,531 +24,558 @@ title: promise and packaged_task
 translation:
   source: documents/vol5-concurrency/ch05-future-task-threadpool/02-promise-and-packaged-task.md
   source_hash: f8d8687e129e44ddf71f47c4debb5bea02b4d51cd9291c2274645f77151767c5
-  translated_at: '2026-06-16T04:05:36.134196+00:00'
+  translated_at: '2026-09-26T08:29:02+00:00'
   engine: anthropic
-  token_count: 4640
+  token_count: 11500
 ---
 # promise and packaged_task
 
-In the previous post, we used `std::async` to launch asynchronous tasks and retrieve results via `std::future`. While the process is convenient, I found a limitation that feels restrictive: `std::async` tightly couples "launching a task" with "getting the result." As soon as you call `std::async`, the task launches, and the returned `future` is bound to that specific task. You cannot create a `future` first and manually satisfy it later, nor can you wrap an existing function object into an asynchronous task to be queued for execution later. Once you need to decouple "task submission" from "task execution" (for instance, in a thread pool), `std::async` simply isn't enough.
+In the previous article, we used `std::async` to launch asynchronous tasks and got the results back through `std::future`. The whole thing is certainly convenient, but after wrestling with it for a while, we found one restriction rather uncomfortable: `std::async` hard-couples "launching the task" and "getting the result". Once you call `std::async`, the task is launched, and the returned future is bound to that task. You can't create a future first and push a value into it at some chosen moment; nor can you wrap an existing function object into an asynchronous task, drop it into a queue, and run it later. The moment you want to separate "task submission" from "task execution" (a thread pool, for instance), `std::async` stops being enough.
 
-In this post, we will meet the other side of `std::future`—`std::promise` and `std::packaged_task`. They allow us to manually control when values are set and when tasks are executed, serving as the infrastructure for building more flexible asynchronous pipelines (such as task submission interfaces for thread pools). We will also encounter `std::shared_future`, which solves the pain point of `std::future` being "read-only once."
+In this article we meet the "other end" of `std::future`: `std::promise` and `std::packaged_task`. They let you control manually when a value is set and when a task runs, and they are the infrastructure for building more flexible asynchronous pipelines (a thread pool's task-submission interface, for example). We will also meet `std::shared_future`, which fixes the pain point of `std::future` being "readable only once".
 
-## std::promise\<T\>: Manually Setting a future's Value
+## std::promise\<T\>: Setting a future's Value by Hand
 
-Let's start with `std::promise`. You can think of it as the write end of a `std::future`. A promise and a future are connected via a shared state: you set the value through the promise, and read the value through the future. Their lifecycle relationship is: the promise calls `get_future()` to retrieve the associated future, then passes the future to the consumer thread, while remaining in the producer thread to set the value.
+Let's start with `std::promise`. You can think of it as the write end of a `std::future`. A promise and a future are connected through a shared state: you set the value through the promise and read the value through the future. The lifecycle relationship between the two goes like this: the promise first calls `get_future()` to obtain the associated future, hands that future to the consumer thread, and stays behind in the producer thread to set the value.
 
-Let's not overcomplicate things yet. Here is a minimal example to establish the relationship between a promise and a future. The following code compiles and runs on any standard compiler supporting C++11 or later:
+No need to overthink it yet—let's establish the relationship between promise and future with the simplest possible example. The following code compiles and runs on any standard-conforming compiler at C++11 or later:
 
 ```cpp
 #include <future>
-#include <thread>
 #include <iostream>
+#include <thread>
 
-void worker(std::promise<int> prom) {
-    try {
-        // Simulate some work
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        // Set the result
-        prom.set_value(42);
-    } catch (...) {
-        // If an exception occurs, set it
-        prom.set_exception(std::current_exception());
-    }
+void worker(std::promise<int> prom)
+{
+    // Simulate some work
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    // Set the result value through the promise
+    prom.set_value(42);
 }
 
-int main() {
-    // 1. Create promise
+int main()
+{
+    // Create the promise-future pair
     std::promise<int> prom;
-
-    // 2. Get associated future
     std::future<int> fut = prom.get_future();
 
-    // 3. Move promise to worker thread
+    // Move the promise to the worker thread
     std::thread t(worker, std::move(prom));
 
-    // 4. Wait for result in main thread
-    std::cout << "Result: " << fut.get() << std::endl;
+    // Wait for the result via the future on the main thread
+    int result = fut.get();
+    std::cout << "从 worker 收到: " << result << "\n";
 
     t.join();
     return 0;
 }
 ```
 
-The core flow of this code is: the main thread creates a `std::promise`, calls `get_future()` to get the associated `std::future`, and then moves the `std::promise` to the worker thread via `std::move` (because `std::promise` is also move-only). After the worker thread finishes its work, it calls `set_value()`, and the `std::future` in the main thread receives this value. You will notice that we didn't use `std::async` at all—promise allows us to manually control "when to set the value."
+The core flow of this code: the main thread creates the `promise`, calls `get_future()` to obtain the associated `future`, then hands the `promise` over to the worker thread with `std::move` (because `std::promise` is also a move-only type). When the worker thread finishes its work, it calls `prom.set_value(42)`, and the main thread's `fut.get()` picks up the value. You'll notice that `std::async` appears nowhere in the process—the promise gives us manual control over "when the value gets set".
 
-Here is an important design choice: why is the promise passed to the worker thread by move instead of by reference? Because a promise represents the "authority to set a value"—this authority is exclusive and should not be shared. By moving the promise, you explicitly transfer the authority to set the value to the worker thread, leaving the main thread with only the read-only future. This is a very clear expression of ownership.
+There is an important design choice hiding here: why is the promise passed to the worker thread by move rather than by reference? Because a promise stands for the "right to set the value"—that right is exclusive and should not be shared. By moving the promise, you explicitly transfer the right to set the value to the worker thread, leaving the main thread holding nothing but the read-only future. This is a very clean expression of ownership.
 
 ### set_value(), set_exception(), and get_future()
 
-Now that we understand the basic usage, let's look closely at the three core operations of a promise. First is `get_future()`, which returns a `std::future` associated with this promise—this operation can only be called once; a second call throws `std::future_error`. The returned future shares the same underlying shared state with the promise. Next is `set_value()`, which sets the value in the shared state; once the value is set, all threads waiting on this shared state via futures are woken up. If the promise's template parameter is `void`, `set_value()` takes no arguments and simply signifies "computation complete." Just like `get_future()`, `set_value()` can only be called once—attempting to set a second value throws `std::future_error`. Finally, there is `set_exception()`, which sets an exception into the shared state; when the consumer calls `get()`, this exception will be re-thrown. It is typically used with `std::current_exception`—capturing the current exception in a catch block and storing it into the promise.
+With the basic usage in hand, let's now line up the three core operations of a promise and look at them clearly. First, `get_future()` returns the `std::future` associated with this promise—this operation can be called exactly once; a second call throws `std::future_error`. The returned future and the promise share the same underlying shared state. Next, `set_value()` sets the value of the shared state; once the value is set, every thread waiting on a future over that shared state is woken up. If the promise's template parameter is `void`, then `set_value()` takes no arguments and simply means "the computation is done". Like `get_future()`, `set_value()` can also be called only once—attempting to set a second value throws `std::future_error`. Finally, `set_exception()` stores an exception into the shared state; when the consumer calls `future.get()`, that exception is rethrown. It is usually paired with `std::current_exception()`—capture the current exception inside a catch block and store it into the promise.
 
-Let's look at a complete example that demonstrates both normal value passing and exception passing, chaining these three operations together:
+Here is a complete example demonstrating both the normal value path and the exception path, tying the three operations above together:
 
 ```cpp
 #include <future>
-#include <thread>
 #include <iostream>
+#include <thread>
 #include <stdexcept>
 
-void worker(std::promise<int> prom) {
+void compute(std::promise<int> prom, int x)
+{
     try {
-        // Simulate an error condition
-        throw std::runtime_error("Something went wrong in worker");
+        if (x < 0) {
+            throw std::invalid_argument("输入不能为负数");
+        }
+        prom.set_value(x * x);
     } catch (...) {
-        // Capture exception and store it in promise
+        // Capture the exception and store it into the promise
         prom.set_exception(std::current_exception());
     }
 }
 
-int main() {
-    std::promise<int> prom;
-    std::future<int> fut = prom.get_future();
+int main()
+{
+    // Normal path
+    {
+        std::promise<int> prom;
+        std::future<int> fut = prom.get_future();
+        std::thread t(compute, std::move(prom), 5);
 
-    std::thread t(worker, std::move(prom));
-
-    try {
-        // This will re-throw the exception set in the worker
-        int result = fut.get();
-        std::cout << "Result: " << result << std::endl;
-    } catch (const std::runtime_error& e) {
-        std::cout << "Caught exception: " << e.what() << std::endl;
+        try {
+            std::cout << "5 的平方: " << fut.get() << "\n";
+        } catch (const std::exception& e) {
+            std::cout << "异常: " << e.what() << "\n";
+        }
+        t.join();
     }
 
-    t.join();
+    // Exception path
+    {
+        std::promise<int> prom;
+        std::future<int> fut = prom.get_future();
+        std::thread t(compute, std::move(prom), -3);
+
+        try {
+            std::cout << "-3 的平方: " << fut.get() << "\n";
+        } catch (const std::invalid_argument& e) {
+            std::cout << "捕获到异常: " << e.what() << "\n";
+        }
+        t.join();
+    }
     return 0;
 }
 ```
 
-Before moving on, let's break down this exception passing chain clearly. `std::current_exception` is a function used in a catch block that returns a `std::exception_ptr` pointing to the currently handled exception. `set_exception()` accepts this `std::exception_ptr` and stores the exception into the shared state. When the consumer calls `get()`, the stored exception is re-thrown, allowing you to handle it with a corresponding catch block on the consumer side.
+Before rushing on, let's untangle the exception-delivery chain in this code. `std::current_exception()` is a function used inside a catch block; it returns a `std::exception_ptr` pointing at the exception currently being handled. That `exception_ptr` is exactly what `promise.set_exception()` accepts, and it stores the exception into the shared state. When the consumer calls `fut.get()`, the stored exception is rethrown, and you can handle it with a matching catch block on the consumer side.
 
-This exception passing pattern is incredibly useful for cross-thread communication—you don't need to design error code systems, nor do you need to serialize exception information into strings. The exception object crosses thread boundaries intact, with type information preserved. Honestly, I was quite surprised when I first realized exceptions could be passed across threads, given that thread stacks are independent, but the standard library solves this elegantly via `std::exception_ptr`.
+This exception-delivery pattern is extremely useful in cross-thread communication—you don't need to design an error-code scheme, you don't need to serialize exception information into strings; the exception object crosses the thread boundary intact, type information and all. Honestly, we were rather surprised the first time we realized exceptions can travel across threads—thread stacks are independent, after all—but the standard library solves the problem elegantly through `exception_ptr`.
 
-### The Value Channel of promise
+### The Value Channel of a promise
 
-Now, let's look back at the core abstraction of promise/future. The value channel of a promise is the essence of the entire model: promise is the write end, future is the read end, and the shared state is the pipe between them. This abstraction allows us to pass values between different threads without needing shared variables or locks—synchronization is entirely guaranteed by the internal mechanism of the shared state.
+Now let's step back and look at the core abstraction of promise/future. The value channel of a promise is the essence of the whole model: the promise is the write end, the future is the read end, and the shared state is the pipe between them. This abstraction lets us pass values between threads without shared variables or locks—synchronization is guaranteed entirely by the internal machinery of the shared state.
 
-The value channel has a very important characteristic called a "synchronization point": when the producer calls `set_value()`, the value is written to the shared state and all waiting consumers are woken up; when the consumer calls `get()`, it blocks if the value is not yet ready. You will find that the semantics of this synchronization point are much clearer than condition variables—no predicates, no spurious wakeup defenses, no manual locking. For simple "one-shot value passing" scenarios, promise/future is much easier to use than `condition_variable`.
+The value channel has an important property called the "synchronization point": when the producer calls `set_value()`, the value is written into the shared state and all waiting consumers are woken; when a consumer calls `get()`, it blocks until the value is ready if it isn't yet. You'll find that the semantics of this synchronization point are far clearer than condition variables—no predicates, no spurious-wakeup defenses, no manual locking. For a simple "one-shot value delivery" scenario, promise/future is much nicer to use than `condition_variable`.
 
-But don't rush to use promise for everything—it has a non-negligible limitation: it is one-shot. `set_value()` can only be called once; after that, the promise is useless. This symmetry with the one-shot consumption semantics of `std::future`—one end writes once, the other reads once—is intentional. If you need a channel that can be repeatedly written to and read from, you should use `std::atomic` or a message queue, not promise/future.
+But don't reach for a promise for everything—it has a limitation you cannot ignore: it is one-shot. `set_value()` can be called only once, and after that call the promise has little use left. This is symmetric with the one-shot consumption semantics of `std::future`—one end writes once, the other end reads once. If you need a channel that can be written and read repeatedly, you should use `std::condition_variable` or a message queue, not promise/future.
 
 ## std::packaged_task\<F\>: Wrapping Callable Objects
 
-Great, now we know that a promise can manually set a future's value. But writing try-catch blocks and manually calling `set_value()` or `set_exception()` every time is tedious. The C++ standard library provides a higher-level wrapper—`std::packaged_task`. It wraps a callable object (function, lambda, functor, etc.) and automatically associates a promise/future pair. When you invoke this `packaged_task`, it internally calls the wrapped callable object and automatically pushes the return value into the promise (or pushes the exception if one is thrown).
+Good—now we know a promise can set a future's value by hand. But writing try-catch yourself and manually calling `set_value()` or `set_exception()` every single time gets tedious. The C++ standard library offers a higher-level wrapper: `std::packaged_task<F>`. It wraps a callable (a function, a lambda, a function object, and so on) and automatically pairs it with a promise/future pair. When you invoke this packaged_task, it internally calls the wrapped callable and automatically stuffs the return value into the promise (or the exception, if one is thrown).
 
-The value of `packaged_task` lies in "decoupling task definition from task execution"—you can create a `packaged_task` in one thread, push it into a queue, and then pull it out for execution in another thread. This is the foundational model of a thread pool, and exactly what we aim to build in this volume.
+The value of packaged_task lies in "decoupling task definition from task execution"—you can create a packaged_task in one thread, drop it into a queue, and then pull it out and execute it in another thread. This is the basic model of a thread pool, and it is what we will ultimately build in this volume.
 
 ```cpp
 #include <future>
-#include <thread>
 #include <iostream>
+#include <thread>
 #include <queue>
+#include <mutex>
+#include <functional>
+#include <memory>
 
-int calculate(int a, int b) {
-    // Simulate heavy computation
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+int add(int a, int b)
+{
     return a + b;
 }
 
-int main() {
-    // 1. Wrap function into packaged_task
-    // Template parameter is the function signature
-    std::packaged_task<int(int, int)> task(calculate);
+int main()
+{
+    // Create a packaged_task wrapping a callable
+    std::packaged_task<int(int, int)> task(add);
 
-    // 2. Get future before moving the task
+    // Get the associated future
     std::future<int> fut = task.get_future();
 
-    // 3. Move task to worker thread
+    // Execute the task on another thread
     std::thread t(std::move(task), 10, 20);
 
-    // 4. Wait for result
-    std::cout << "Result: " << fut.get() << std::endl;
+    // Fetch the result on the main thread
+    int result = fut.get();
+    std::cout << "10 + 20 = " << result << "\n";
 
     t.join();
     return 0;
 }
 ```
 
-Let's break down this code. The template parameter for `packaged_task` is a function signature, for example, `int(int, int)` indicates "accepts two int arguments and returns an int." The signature of the wrapped callable must be compatible with this template parameter. When you call `get_future()`, you get the future associated with the internal promise. When you call `task(10, 20)`—note it's not `run()` or `execute()`, just the function call operator directly—the internal promise is automatically set.
+Let's take this code apart. The template parameter of a packaged_task is a function signature; `int(int, int)`, for instance, means "takes two int arguments and returns int". The signature of the wrapped callable must be compatible with this template parameter. When you call `task.get_future()`, what you get is the future associated with the internal promise. And when you call `task(args...)`—note, not `task.run()` and not `task.execute()`, just the plain function-call operator—the internal promise is set automatically.
 
-Also, note that `packaged_task` is also a move-only type—you cannot copy it, only move it. This design is reasonable: if two `packaged_task`s shared the same callable object and shared state, calling it twice would lead to the promise being set twice (the second time throwing an exception), which is clearly not the desired behavior.
+Also note that packaged_task is a move-only type too—you cannot copy it, only move it. The design is sound: if two packaged_tasks shared the same callable and shared state, invoking them twice would set the promise twice (with the second call throwing), which is clearly not the intended behavior.
 
 ### Exception Propagation in packaged_task
 
-So, what happens if the wrapped function throws an exception? The good news is that `packaged_task` handles this automatically—no need for manual try-catch and `set_exception`. When the wrapped function throws an exception, `packaged_task` captures it internally and stores it in the shared state, which the consumer can retrieve via `get()`.
+Next question: what happens if the wrapped function throws? The good news is that packaged_task handles it for you automatically—no manual try-catch followed by set_exception. When the wrapped function throws an exception, the packaged_task catches it internally and stores it in the shared state, and the consumer picks it up through `future.get()`.
 
 ```cpp
 #include <future>
-#include <thread>
 #include <iostream>
 #include <stdexcept>
 
-void failingTask() {
-    throw std::runtime_error("Task failed!");
+int risky_func(int x)
+{
+    if (x == 0) {
+        throw std::runtime_error("除零错误");
+    }
+    return 100 / x;
 }
 
-int main() {
-    std::packaged_task<void()> task(failingTask);
-    std::future<void> fut = task.get_future();
+int main()
+{
+    std::packaged_task<int(int)> task(risky_func);
+    std::future<int> fut = task.get_future();
 
-    std::thread t(std::move(task));
+    // Invoke the task on the current thread (another thread works too)
+    task(0);  // Pass 0, triggering the exception
 
     try {
-        // task() call inside thread won't throw here
-        // The exception is captured by packaged_task
-        fut.get(); // Re-throws the exception here
+        int result = fut.get();  // Rethrows the exception
+        std::cout << "结果: " << result << "\n";
     } catch (const std::runtime_error& e) {
-        std::cout << "Caught: " << e.what() << std::endl;
+        std::cout << "捕获到异常: " << e.what() << "\n";
     }
-
-    t.join();
     return 0;
 }
 ```
 
-Note that the call to `task()` inside the thread does not throw—the exception is silently captured by `packaged_task`. What actually throws is `fut.get()`. This design allows task invocation and error handling to happen in different threads, which is very flexible—the worker thread only executes, while the main thread only handles results and exceptions, each doing its own job.
+Note that the `task(0)` call itself does not throw—the exception is captured silently inside the packaged_task. The call that actually throws is `fut.get()`. This design lets task invocation and error handling happen on different threads, which is very flexible—the worker thread just executes, the main thread just handles results and exceptions, each sticking to its own job.
 
 ### Building a Simple Task Queue with packaged_task
 
-The most typical application scenario for `packaged_task` is as the task type for a thread pool. In this section, we will build a rudimentary version—a task queue with only one worker thread. Small as it is, it fully demonstrates how promise, packaged_task, and future work together.
+The most typical use of packaged_task is as a thread pool's task type. In this section we build the most bare-bones version first—a task queue with a single worker thread. Small as it is, it has all the vital organs, and it shows clearly how promise, packaged_task, and future cooperate.
 
 ```cpp
 #include <future>
-#include <thread>
 #include <iostream>
+#include <thread>
 #include <queue>
+#include <mutex>
+#include <condition_variable>
 #include <functional>
 
-using Task = std::function<void()>;
+class SimpleTaskQueue
+{
+public:
+    using TaskType = std::function<void()>;
 
-void worker_thread(std::queue<Task>& q, std::mutex& m, std::condition_variable& cv) {
-    while (true) {
-        Task task;
-        {
-            std::unique_lock<std::mutex> lock(m);
-            // Wait for task (simplified: no stop mechanism)
-            cv.wait(lock, [&]{ return !q.empty(); });
-            task = std::move(q.front());
-            q.pop();
-        }
-        // Execute task
-        task();
-    }
-}
-
-template<typename F, typename... Args>
-auto submit_task(std::queue<Task>& q, std::mutex& m, std::condition_variable& cv, F f, Args... args) {
-    // Deduce return type
-    using R = std::invoke_result_t<F, Args...>;
-
-    // 1. Wrap callable into packaged_task
-    std::packaged_task<R(Args...)> task(f);
-
-    // 2. Get future
-    std::future<R> fut = task.get_future();
-
-    // 3. Wrap packaged_task into type-erased function
-    Task wrapper = [task = std::move(task), args...]() mutable {
-        task(args...);
-    };
-
-    // 4. Push to queue
+    SimpleTaskQueue()
     {
-        std::lock_guard<std::mutex> lock(m);
-        q.push(std::move(wrapper));
+        worker_ = std::thread([this]() { worker_loop(); });
     }
-    cv.notify_one();
 
-    // 5. Return future to caller
-    return fut;
-}
+    ~SimpleTaskQueue()
+    {
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            done_ = true;
+        }
+        cv_.notify_one();
+        worker_.join();
+    }
 
-int main() {
-    std::queue<Task> q;
-    std::mutex m;
-    std::condition_variable cv;
+    // Submit a packaged_task and return the corresponding future
+    template <typename F, typename... Args>
+    auto submit(F&& f, Args&&... args)
+        -> std::future<std::invoke_result_t<F, Args...>>
+    {
+        using ReturnType = std::invoke_result_t<F, Args...>;
 
-    std::thread worker(worker_thread, std::ref(q), std::ref(m), std::ref(cv));
+        auto task = std::make_shared<std::packaged_task<ReturnType()>>(
+            std::bind(std::forward<F>(f), std::forward<Args>(args)...));
 
-    // Submit a task
-    auto fut = submit_task(q, m, cv, [](int x) {
-        return x * x;
-    }, 10);
+        std::future<ReturnType> fut = task->get_future();
 
-    std::cout << "Waiting for result..." << std::endl;
-    std::cout << "Result: " << fut.get() << std::endl; // Prints 100
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            queue_.push([task]() { (*task)(); });
+        }
+        cv_.notify_one();
 
-    // Cleanup omitted for brevity
-    // ...
-}
+        return fut;
+    }
+
+private:
+    void worker_loop()
+    {
+        while (true) {
+            TaskType task;
+            {
+                std::unique_lock<std::mutex> lock(mutex_);
+                cv_.wait(lock, [this]() { return done_ || !queue_.empty(); });
+                if (done_ && queue_.empty()) {
+                    return;
+                }
+                task = std::move(queue_.front());
+                queue_.pop();
+            }
+            task();
+        }
+    }
+
+    std::thread worker_;
+    std::queue<TaskType> queue_;
+    std::mutex mutex_;
+    std::condition_variable cv_;
+    bool done_{false};
+};
 ```
 
-Although this `submit_task` is rudimentary, it demonstrates the collaboration of promise, packaged_task, and future in a task queue. Let's break down the flow of `submit_task`: it wraps the user-provided callable into a `std::packaged_task`, wraps that in a `std::function` to push into the queue, and returns the corresponding future to the caller. The worker thread pulls the task from the queue and executes it; the execution result is automatically set into the shared state via the promise inside `packaged_task`, and the caller's future can `get()` the result. The entire chain is: caller submits task -> packaged_task enqueued -> worker thread dequeues and executes -> promise auto set_value -> caller receives result via future.
+Bare-bones as it is, this `SimpleTaskQueue` already shows how promise, packaged_task, and future cooperate inside a task queue. Let's unpack the flow of `submit()`: it wraps the user-supplied callable into a `packaged_task`, wraps that in a `shared_ptr`, pushes it into the queue, and returns the corresponding future to the caller. The worker thread pulls the task from the queue and executes it; the execution result is set into the shared state automatically through the promise inside the packaged_task, and the caller's future can `get()` it. The whole chain strung together reads: caller submits task -> packaged_task enqueued -> worker thread dequeues and executes -> promise calls set_value automatically -> caller receives the result through the future.
 
-Usage is as follows:
+Here is how you use it:
 
 ```cpp
-int main() {
-    // ... setup queue and worker ...
+int heavy_compute(int x)
+{
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    return x * x;
+}
 
-    auto fut1 = submit_task(q, m, cv, [](int a, int b) { return a + b; }, 2, 3);
-    auto fut2 = submit_task(q, m, cv, [](std::string s) { return s + " world"; }, std::string("Hello"));
+int main()
+{
+    SimpleTaskQueue queue;
 
-    std::cout << "Task 1: " << fut1.get() << std::endl;
-    std::cout << "Task 2: " << fut2.get() << std::endl;
+    auto f1 = queue.submit(heavy_compute, 5);
+    auto f2 = queue.submit(heavy_compute, 10);
+    auto f3 = queue.submit([]() {
+        return std::string("hello from task queue");
+    });
+
+    std::cout << "f1: " << f1.get() << "\n";  // 25
+    std::cout << "f2: " << f2.get() << "\n";  // 100
+    std::cout << "f3: " << f3.get() << "\n";  // hello from task queue
+    return 0;
 }
 ```
 
-The return type of `submit_task` is automatically adapted via trailing return type deduction—no matter what callable you pass, it correctly deduces the return type and returns the corresponding `std::future`. `std::invoke_result_t` is a type trait provided in C++17 to deduce the return type of a callable. If your compiler only supports C++11/14, you can use `std::result_of` (which was deprecated in C++17 and removed in C++20, so using `std::invoke_result_t` is recommended).
+The return type of `submit()` adapts automatically through trailing-return-type deduction—whatever callable you pass in, it deduces the correct return type and returns the matching `std::future<T>`. `std::invoke_result_t<F, Args...>` is a type trait provided by C++17 for deducing the return type of `F(Args...)`. If your compiler only supports C++11/14, you can substitute `std::result_of_t<F(Args...)>` instead (`std::result_of` was deprecated in C++17 and removed in C++20, so going straight to `invoke_result_t` is the recommended move).
 
-## std::shared_future\<T\>: Shareable Future Values
+## std::shared_future\<T\>: Sharing the Future Value
 
-Previously, we emphasized the one-shot consumption semantics of `std::future`—`get()` can only be called once, after which the future is invalid. In most scenarios, this is fine, but sometimes you need multiple threads to wait for the same result. For example, after an initialization task completes, multiple worker threads need the initialization result before they can start—in this case, a single `std::future` isn't enough because after the first thread calls `get()`, the future is invalid. `std::shared_future` is designed for this "one-to-many" scenario.
+We have stressed repeatedly the one-shot consumption semantics of `std::future`—`get()` can be called only once, and after that the future is spent. For most scenarios this is no problem, but sometimes you need multiple threads waiting on the same result. For example, once an initialization task finishes, several worker threads all need the initialization result before they can start—one `std::future` is no longer enough, because the first thread's `get()` spends it. `std::shared_future<T>` is designed for exactly this "one-to-many" scenario.
 
-The key difference between `std::shared_future` and `std::future` is: `shared_future::get()` returns a const reference (for object types) instead of an rvalue reference, so it can be called repeatedly without consuming the shared state. Also, `shared_future` is copyable—each waiting thread can hold its own copy, and all copies share the same underlying state.
+The key difference between `std::shared_future` and `std::future` is this: `shared_future`'s `get()` returns a `const` reference (for object types) instead of an rvalue reference, so it can be called repeatedly without consuming the shared state. At the same time, `std::shared_future` is copyable—each waiting thread can hold its own copy, and all copies share the same underlying state.
 
-You obtain a `std::shared_future` by calling the `share()` method on a `std::future`. At this point, the original `std::future` becomes invalid (its `valid()` returns `false`), and the state is transferred to the `shared_future`.
+You obtain a `std::shared_future` by calling the `share()` method on a `std::future` to convert it. At that point the original `std::future` becomes invalid (`valid()` turns false), and the state is transferred to the shared_future.
 
 ```cpp
 #include <future>
-#include <thread>
 #include <iostream>
+#include <thread>
+#include <vector>
+
+int main()
+{
+    std::promise<int> prom;
+    std::shared_future<int> sf = prom.get_future().share();
+
+    // prom.get_future() returns std::future<int>
+    // .share() converts the future to shared_future<int>; the original future becomes invalid
+
+    auto worker = [sf](int id) {
+        // Each thread fetches the result through its own shared_future copy
+        int value = sf.get();  // Can be called repeatedly
+        std::cout << "worker " << id << " 收到: " << value << "\n";
+    };
+
+    std::vector<std::thread> threads;
+    for (int i = 0; i < 4; ++i) {
+        threads.emplace_back(worker, i);
+    }
+
+    // The main thread sets the value (simulating completed initialization)
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    prom.set_value(42);
+
+    for (auto& t : threads) {
+        t.join();
+    }
+    return 0;
+}
+```
+
+A few points in this code deserve a note. The lambda captures `sf`—since shared_future is copyable, the lambda holds a copy. The four threads each have their own shared_future copy, but they all point to the same shared state. When `prom.set_value(42)` is called, every future waiting on that shared state is woken up.
+
+Here is a thread-safety detail worth spelling out: the member functions of `std::shared_future` such as `get()` and `wait()` are thread-safe by guarantee of the standard—multiple threads can call `get()` concurrently on the same shared_future object without a data race. This is another important difference between shared_future and future: `std::future::get()` can be called only once, while `std::shared_future::get()` supports not only repeated calls but concurrent ones. In practice, though, the recommended approach is still to let each thread hold its own shared_future copy—the code's intent is clearer that way, and it removes any worry about contention on a single object.
+
+### The Broadcast Pattern for Multiple Waiters
+
+The most typical use of `std::shared_future` is the "one-shot broadcast"—one producer sets the value, and many consumers wake up at the same time. If you are familiar with `std::condition_variable::notify_all()`, you'll find shared_future's semantics simpler: no predicate, no lock, no worrying about spurious wakeups. There is a price, of course—it works only once, and set_value can be called only once.
+
+```cpp
+#include <future>
+#include <iostream>
+#include <thread>
 #include <vector>
 #include <chrono>
 
-int main() {
-    // Producer
-    std::promise<int> prom;
-    std::future<int> fut = prom.get_future();
-    std::shared_future<int> shared_fut = fut.share(); // fut is now invalid
+int main()
+{
+    // Simulate loading a global configuration
+    std::promise<std::string> config_prom;
+    std::shared_future<std::string> config_fut = config_prom.get_future().share();
 
-    // Consumers
+    auto worker = [config_fut](int id) {
+        // Wait for the configuration to finish loading
+        std::string config = config_fut.get();
+        std::cout << "[worker " << id << "] 收到配置: "
+                  << config << "，开始工作\n";
+    };
+
     std::vector<std::thread> threads;
-    for (int i = 0; i < 4; ++i) {
-        threads.emplace_back([shared_fut, i]() {
-            // Wait for result
-            int value = shared_fut.get(); // Can be called multiple times
-            std::cout << "Thread " << i << " got " << value << std::endl;
-        });
-    }
-
-    // Simulate work
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    prom.set_value(42);
-
-    for (auto& t : threads) t.join();
-    return 0;
-}
-```
-
-A few points in this code are worth explaining. The lambda captures `shared_fut` by value—since `shared_future` is copyable, the lambda holds a copy. The four threads each have their own `shared_future` copy, but they all point to the same shared state. When `prom.set_value(42)` is called, all futures waiting on this shared state are woken up.
-
-Here is a thread-safety detail worth noting: `shared_future`'s `get()` and `wait()` member functions are guaranteed by the standard to be thread-safe—multiple threads can concurrently call `get()` on the same `shared_future` object without data races. This is also an important distinction between `std::future` and `std::shared_future`: `std::future::get()` can only be called once, while `shared_future::get()` not only supports repeated calls but also concurrent calls. However, the recommended practice is still for each thread to hold its own `shared_future` copy, which makes the code's intent clearer and avoids concerns about contention on the same object.
-
-### Broadcast Mode for Multiple Waiters
-
-The most typical usage of `std::shared_future` is "one-shot broadcast"—one producer sets a value, and multiple consumers are woken up simultaneously. If you are familiar with `condition_variable`, you will find `shared_future` semantics much simpler: no predicates, no locks, no worries about spurious wakeup. The cost, of course, is that it can only be used once—`set_value` can only be called once.
-
-```cpp
-#include <future>
-#include <thread>
-#include <iostream>
-#include <vector>
-
-int main() {
-    std::promise<void> prom;
-    std::shared_future<void> ready = prom.get_future().share();
-
-    std::vector<std::thread> workers;
     for (int i = 0; i < 5; ++i) {
-        workers.emplace_back([ready, i]() {
-            ready.wait(); // All threads wait here
-            std::cout << "Worker " << i << " started!" << std::endl;
-        });
+        threads.emplace_back(worker, i);
     }
 
-    std::cout << "Starting all workers..." << std::endl;
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    prom.set_value(); // Signal all workers
+    // Simulate loading the configuration
+    std::cout << "正在加载配置...\n";
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    config_prom.set_value("mode=production, threads=8, cache=512MB");
 
-    for (auto& t : workers) t.join();
+    std::cout << "配置已广播\n";
+
+    for (auto& t : threads) {
+        t.join();
+    }
     return 0;
 }
 ```
 
-This pattern is very practical in scenarios like system initialization or global state change notifications. The producer only needs one `set_value`, and all consumers automatically receive the notification.
+This pattern is very practical in scenarios such as system initialization or global-state-change notification. One `set_value()` from the producer, and every consumer is notified automatically.
 
-## Pattern: Task Submission -> promise -> Queue -> worker -> set_value
+## Pattern: task submission -> promise -> queue -> worker -> set_value
 
-At this point, we have reviewed the usage of promise, packaged_task, and future. Now let's put them together to see how they collaborate in a thread pool scenario. This is a classic design pattern, and almost every C++ thread pool is built on this structure.
+With that done, we have been through the individual usage of promise, packaged_task, and future. Now it's time to put them together and see how they cooperate in a thread-pool setting. This is a thoroughly classic design; almost every C++ thread pool has this structure at its core.
 
-The entire flow is: the caller submits a task (a callable object + arguments), the thread pool wraps it into a `std::packaged_task`, gets a `std::future` from `packaged_task::get_future()`, returns the future to the caller, and pushes the `packaged_task` (wrapped in a `std::function`) into the task queue. The worker thread pulls the task from the queue and executes it—upon execution, the internal `promise` of `packaged_task` is automatically set (via `set_value` or `set_exception`), and the `future` in the caller's hand becomes ready. The caller doesn't need to know which thread executes the task, and the worker thread doesn't need to know the source or destination of the return value.
+The whole flow goes like this: the caller submits a task (a callable plus arguments); the thread pool wraps it into a `packaged_task`, obtains the `future` from the `packaged_task`, returns the future to the caller, and pushes the `packaged_task` (wrapped in a `std::function`) into the task queue. A worker thread pulls the task from the queue and executes it—during execution, the promise inside the `packaged_task` is set automatically (via `set_value` or `set_exception`), and the future in the caller's hand becomes ready. Throughout the process, the caller never needs to know which thread the task runs on, and the worker thread never needs to know where the task came from.
 
-Here is a pseudo-code diagram representing this flow:
+Here is the flow rendered as a pseudocode diagram:
 
 ```mermaid
 sequenceDiagram
-    participant Caller
-    participant ThreadPool
-    participant Queue
-    participant Worker
+    participant Caller Thread
+    participant Task Queue
+    participant Worker Thread
 
-    Caller->>ThreadPool: submit(task)
-    ThreadPool->>ThreadPool: packaged_task wrap
-    ThreadPool->>ThreadPool: get_future()
-    ThreadPool-->>Caller: return future
-    ThreadPool->>Queue: push(task)
-    Worker->>Queue: pop(task)
-    Worker->>Worker: task() -> set_value
-    Worker-->>Caller: future ready
-    Caller->>Caller: future.get()
+    Caller Thread->>Task Queue: submit(func, args)<br/>(creates a packaged_task)
+    Note right of Caller Thread: obtain the future
+    Task Queue-->>Caller Thread: return the future
+    Task Queue->>Worker Thread: dequeue the task
+    Worker Thread->>Worker Thread: task() — invokes func
+    Note right of Worker Thread: promise.set_value
+    Note over Caller Thread,Worker Thread: shared state ready
+    Caller Thread->>Caller Thread: future.get()<br/>(receives the result or exception)
 ```
 
-The core advantage of this pattern is **decoupling**: the caller doesn't need to know where or when the task executes; the worker thread doesn't need to know the task's source or return value destination. They communicate via shared state (held jointly by the promise inside packaged_task and the future returned to the caller), and all synchronization details are encapsulated in the `std::future`/`std::promise` implementation.
+The core advantage of this pattern is **decoupling**: the caller does not need to know which thread executes the task or when; the worker thread does not need to know where the task came from or where its return value goes. The two sides communicate through the shared state (jointly held by the `promise` inside the packaged_task and the `future` returned to the caller), and every synchronization detail is encapsulated inside the implementation of `std::promise`/`std::future`.
 
-This is also why we said in the previous post that "thread pools are suitable for large numbers of short tasks"—through the encapsulation of `packaged_task`, the result passing and exception handling for each task are automatic. The caller only needs two steps: `submit` and `future.get()`.
+This is also why we said in the previous article that "thread pools suit large numbers of short tasks"—with the packaging of packaged_task, result delivery and exception handling for every task are automatic, and the caller needs only the two steps `submit()` + `get()`.
 
-## Exercises: Value Passing Chains using promise/packaged_task
+## Exercises: Value-Passing Chains with promise/packaged_task
 
-### Exercise 1: Promise Chain Passing
+### Exercise 1: Chaining Promises
 
-Create a processing chain of three threads: Thread A generates a random number and passes it to Thread B via promise/future; Thread B multiplies this number by 2 and passes it to Thread C via promise/future; Thread C prints the result. Each thread runs independently, and values are passed between threads via promise/future.
+Build a processing chain of three threads: thread A produces a random number and passes it to thread B via promise/future; thread B multiplies the number by 2 and passes it to thread C via promise/future; thread C prints the result. Each thread runs independently, with values traveling between threads through promise/future.
 
 ```cpp
 #include <future>
+#include <iostream>
 #include <thread>
 #include <random>
-#include <iostream>
 
-void stage_a(std::promise<int> prom) {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(1, 100);
-    int val = dis(gen);
-    std::cout << "Stage A generated: " << val << std::endl;
-    prom.set_value(val);
+void stage_a(std::promise<int> out)
+{
+    std::mt19937 rng(12345);
+    std::uniform_int_distribution<int> dist(1, 100);
+    int value = dist(rng);
+    std::cout << "[A] 产生: " << value << "\n";
+    out.set_value(value);
 }
 
-void stage_b(std::future<int> fut, std::promise<int> prom) {
-    int val = fut.get();
-    int processed = val * 2;
-    std::cout << "Stage B processed: " << val << " -> " << processed << std::endl;
-    prom.set_value(processed);
+void stage_b(std::future<int> in, std::promise<int> out)
+{
+    int value = in.get();  // Wait for A's result
+    int doubled = value * 2;
+    std::cout << "[B] 翻倍: " << doubled << "\n";
+    out.set_value(doubled);
 }
 
-void stage_c(std::future<int> fut) {
-    int val = fut.get();
-    std::cout << "Stage C received: " << val << std::endl;
+void stage_c(std::future<int> in)
+{
+    int value = in.get();  // Wait for B's result
+    std::cout << "[C] 最终结果: " << value << "\n";
 }
 
-int main() {
-    std::promise<int> prom_a_b;
-    std::future<int> fut_a_b = prom_a_b.get_future();
+int main()
+{
+    // The A -> B channel
+    std::promise<int> prom_ab;
+    std::future<int> fut_ab = prom_ab.get_future();
 
-    std::promise<int> prom_b_c;
-    std::future<int> fut_b_c = prom_b_c.get_future();
+    // The B -> C channel
+    std::promise<int> prom_bc;
+    std::future<int> fut_bc = prom_bc.get_future();
 
-    std::thread t_a(stage_a, std::move(prom_a_b));
-    std::thread t_b(stage_b, std::move(fut_a_b), std::move(prom_b_c));
-    std::thread t_c(stage_c, std::move(fut_b_c));
+    std::thread ta(stage_a, std::move(prom_ab));
+    std::thread tb(stage_b, std::move(fut_ab), std::move(prom_bc));
+    std::thread tc(stage_c, std::move(fut_bc));
 
-    t_a.join();
-    t_b.join();
-    t_c.join();
-
+    ta.join();
+    tb.join();
+    tc.join();
     return 0;
 }
 ```
 
-Note that `stage_b` accepts both a `std::future` (as input) and a `std::promise` (as output), acting as an intermediate node in the processing chain. `std::move` ensures the exclusive ownership of promises and futures is correctly transferred between threads.
+Note that `stage_b` takes both a `future` (as input) and a `promise` (as output), acting as the middle node of the processing chain. `std::move` ensures that the exclusive ownership of the promise and the future is transferred correctly between threads.
 
-### Exercise 2: Implement Timeout Waiting with packaged_task
+### Exercise 2: Timeout Waits with packaged_task
 
-Create a `std::packaged_task` that wraps a potentially time-consuming calculation. Use `future.wait_for()` to set a timeout: if the task completes before the timeout, print the result; if it times out, print "Calculation timed out" and stop waiting.
+Create a `packaged_task` wrapping a potentially slow computation. Use `wait_for()` to set a timeout: if the task finishes before the timeout, print the result; if the timeout expires, print "computation timed out" and give up waiting.
 
 ```cpp
 #include <future>
-#include <thread>
 #include <iostream>
 #include <chrono>
 
-int heavy_computation() {
+int slow_computation()
+{
+    // Simulate a computation that takes 3 seconds
     std::this_thread::sleep_for(std::chrono::seconds(3));
     return 42;
 }
 
-int main() {
-    std::packaged_task<int()> task(heavy_computation);
+int main()
+{
+    std::packaged_task<int()> task(slow_computation);
     std::future<int> fut = task.get_future();
 
+    // Execute on a separate thread
     std::thread t(std::move(task));
 
-    std::future_status status = fut.wait_for(std::chrono::seconds(1));
+    // Set a 2-second timeout
+    auto status = fut.wait_for(std::chrono::seconds(2));
 
     if (status == std::future_status::ready) {
-        std::cout << "Result: " << fut.get() << std::endl;
+        std::cout << "结果: " << fut.get() << "\n";
+    } else if (status == std::future_status::timeout) {
+        std::cout << "计算超时，放弃等待\n";
+        // Note: the worker thread is still running; we need to wait for it to finish
     } else {
-        std::cout << "Calculation timed out." << std::endl;
+        std::cout << "任务被延迟\n";
     }
 
-    // Note: The thread is still running in the background
-    // In a real app, you need a mechanism to stop it (e.g., jthread + stop_token)
-    t.join();
+    t.join();  // Make sure the thread ends cleanly
     return 0;
 }
 ```
 
-Note that the timeout here only prevents the main thread from waiting indefinitely, but the worker thread itself is not cancelled—C++ standards currently do not provide a thread cancellation mechanism. If the task never ends, `t.join()` will block indefinitely. In the next post, when discussing `jthread` and stop tokens, we will see how to gracefully terminate long-running tasks via cooperative cancellation.
+Note that the timeout merely spares the main thread from waiting forever; the worker thread itself has not been cancelled—the C++ standard currently provides no thread-cancellation mechanism. If the task never finishes, `t.join()` blocks forever. In the next article, when we discuss jthread and stop tokens, we will see how cooperative cancellation gracefully terminates long-running tasks.
 
 ### Exercise 3: shared_future Broadcast
 
-Use `std::shared_future` to implement a "starting gun": the main thread sets a shared_future, and multiple worker threads wait for this future to be ready before starting work simultaneously. Observe if their start times are close (indicating they were woken up simultaneously, not serially).
-
-```cpp
-#include <future>
-#include <thread>
-#include <iostream>
-#include <vector>
-#include <chrono>
-
-int main() {
-    std::promise<void> prom;
-    std::shared_future<void> start_signal = prom.get_future().share();
-
-    std::vector<std::thread> runners;
-    for (int i = 0; i < 5; ++i) {
-        runners.emplace_back([start_signal, i]() {
-            start_signal.wait();
-            auto now = std::chrono::steady_clock::now();
-            std::cout << "Runner " << i << " started at "
-                      << now.time_since_epoch().count() << std::endl;
-        });
-    }
-
-    // Give threads time to reach wait()
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-    // BANG!
-    prom.set_value();
-
-    for (auto& t : runners) t.join();
-    return 0;
-}
-```
+Use `std::shared_future` to build a "starting gun": the main thread sets a shared_future, and multiple worker threads wait on that future and start working the moment it is ready. Observe whether their start times are close together (evidence that they were woken simultaneously rather than one after another).
 
 ## Summary
 
-In this post, we met three partners of `std::future`: `std::promise`, `std::packaged_task`, and `std::shared_future`.
+In this article we met the three partners of `std::future`: `std::promise`, `std::packaged_task`, and `std::shared_future`.
 
-`std::promise` is the write end of `std::future`, setting normal results via `set_value` and exception results via `set_exception`. Promise and future communicate via a shared state, providing simpler synchronization semantics than condition variables—no locks, no predicates, no spurious wakeup defenses. The cost is that it is one-shot; you can only set a value once, but for single-shot result passing, this is actually a safe design.
+`std::promise<T>` is the write end of `std::future<T>`: set the normal result with `set_value()`, set the exceptional result with `set_exception()`. The promise and the future communicate through the shared state, offering synchronization semantics far simpler than condition variables—no lock, no predicate, no spurious-wakeup defense. The price is that it is one-shot, a value can be set only once—but for a single result delivery, that is if anything a safe design.
 
-`std::packaged_task` is a higher-level wrapper that packages a callable object with a promise, automatically pushing the result (or exception) into the promise when called. Its greatest value is decoupling task definition from execution, which is the foundational model of thread pool task queues: the caller submits a `packaged_task`, the worker thread pulls and executes it, and the `future` passes the result across both.
+`std::packaged_task<F>` is a higher-level wrapper—it bundles a callable together with a promise, and when invoked, automatically stuffs the result (or exception) into the promise. Its greatest value is decoupling task definition from task execution, which is the basic model behind a thread pool's task queue: the caller submits the packaged_task, the worker thread dequeues and executes it, and the future carries the result across the two.
 
-`std::shared_future` solves the limitation of `std::future` being "read-only once"—it allows the same result to be read by multiple consumers, and `get()` can be called repeatedly and is thread-safe. The typical usage is "one-shot broadcast": one producer calls `set_value`, and all waiting consumers are woken up simultaneously.
+`std::shared_future<T>` lifts the "readable only once" restriction of `std::future`—it allows the same result to be read by multiple consumers, and `get()` can be called repeatedly and is thread-safe. The typical use is the "one-shot broadcast": one producer calls set_value, and every waiting consumer wakes up at the same time.
 
-These four components (future, promise, packaged_task, shared_future) form the C++ standard library's infrastructure for asynchronous value passing. Mastering them provides a solid foundation for building thread pools. In the next post, we will continue discussing `jthread` and stop tokens, looking at the improvements C++20 brings to thread lifecycle management—specifically, a cooperative cancellation mechanism that I feel should have existed a long time ago.
+These four components (future, promise, packaged_task, shared_future) form the asynchronous value-delivery infrastructure of the C++ standard library. With them in hand, we have a solid foundation for the thread pools coming later. In the next article we will move on to jthread and stop tokens, to see what C++20 improves in thread lifecycle management—in particular, a cooperative cancellation mechanism that made us think "this should have existed all along".
 
-> 💡 Complete example code is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), visit `docs/async/promise_packaged_task.md`.
+> 💡 The complete example code is in [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP); visit `code/volumn_codes/vol5/ch05-future-task-threadpool/`.
 
 ## References
 
