@@ -1,44 +1,43 @@
 ---
 title: 'print: Direct Output in C++23 and Decoupling from iostream'
-description: 'A deep dive into `std::print`/`std::println`: how they bypass `cout`''s
-  `sync_with_stdio` and locale overhead to write directly to the stream, why mixing
-  them with `cout` after disabling sync leads to out-of-order execution (and how `print(cout,
-  ...)` saves the day), the order-of-magnitude performance difference in real-world
-  benchmarks compared to `cout`/`printf`, and the engineering trade-offs between `FILE*`/`ostream`
-  overloading and Unicode output.'
+description: A thorough walkthrough of how std::print/std::println bypass cout's sync_with_stdio
+  and locale overhead to write straight to the stream, why mixing them with cout after
+  sync is turned off scrambles the output order (and how print(cout,...) rescues it
+  in one move), the order-of-magnitude gap of print vs cout/printf under a real benchmark,
+  and the engineering trade-offs of the FILE*/ostream overload pair and Unicode output
 chapter: 7
 order: 53
 cpp_standard:
-- 23
+  - 23
 difficulty: intermediate
 platform: host
 reading_time_minutes: 14
 prerequisites:
-- 迭代器适配器：反向、插入与流
-- char8_t 与 UTF-8
+  - 'Iterator Adapters: Reverse, Insert, and Stream — Repurposing Existing Iterators with New Behaviors'
+  - 'char8_t and UTF-8 Strings'
 related:
-- 容器选择指南：按操作、内存与失效规则挑对容器
+  - 'Container Selection Guide: Choosing the Right Container Based on Operations, Memory, and Invalidation Rules'
 tags:
-- host
-- cpp-modern
-- intermediate
-- 基础
+  - host
+  - cpp-modern
+  - intermediate
+  - 基础
 translation:
   source: documents/vol3-standard-library/strings/53-print.md
   source_hash: 97459e32ff8bc7f9723c65bea233c8acbd5b6b50d6c55099b0218f995b1a17ee
-  translated_at: '2026-06-24T02:29:52.940771+00:00'
+  translated_at: '2026-09-26T00:01:26+00:00'
   engine: anthropic
-  token_count: 3589
+  token_count: 6900
 ---
-# print: C++23 Decoupled Output and iostream
+# print: Direct Output in C++23 and Decoupling from iostream
 
-`std::format` (C++20) solved the problem of "how to stitch data into a string," but left an awkward tail end: to get that formatted string onto the screen, we still had to hand it back to `std::cout << std::format(...)`. This detour gives back the performance gains that `format` worked so hard to save—`cout` carries the entire weight of iostream synchronization and locale mechanisms, making every `<<` call expensive. `std::print` / `std::println` (C++23) are here to finish the job: they combine formatting and output into a single call, writing directly to the stream, bypassing the iostream `<<` chain entirely.
+`std::format` (C++20) solved the problem of "how do I stitch data into a string", but it left an awkward tail behind: to get the finished string onto the screen, you still had to hand it back to `std::cout << std::format(...)`. That detour hands back the overhead `format` worked so hard to save — `cout` carries iostream's entire synchronization-and-locale apparatus on its back, so every `<<` costs real money. `std::print` / `std::println` (C++23) exist to close out that tail: formatting and output merged into a single call that writes straight to the stream, no longer routed through iostream's `<<` chain.
 
-In this post, we focus on the **output semantics** of `print`—why it is faster than `cout`, the classic ordering chaos when mixing it with `cout`, the orders of magnitude we see in real-world benchmarks, and how to choose between the `FILE*` and `ostream` overloads. We won't repeat format string syntax (like `{}`, `{:x}`, `{:.3f}`) here, as that belongs to the previous post on `std::format`. Here, we only care about "how the result gets out, if it gets out fast, and if it fights with other output methods."
+This article focuses on the **output semantics** of `print` — what entitles it to be faster than `cout`, the classic ordering trap that springs when you mix it with `cout`, the orders of magnitude under a real benchmark, and how to choose between the `FILE*` and `ostream` overload sets. Format-string syntax (`{}`, `{:x}`, `{:.3f}` and friends) belongs to the previous article on `std::format`, so we won't repeat it here; all we care about is "how the stitched-together result gets out, how fast it gets out, and whether it fights with the other output paths".
 
-## Let's Try It Out
+## Get It Running First
 
-The basic look of `print` is almost identical to `format`, with the only difference being that it writes the result directly to stdout instead of returning a string:
+`print` looks almost exactly like `format`; the only difference is that it writes the result straight to stdout instead of returning a string:
 
 ```cpp
 // Standard: C++23
@@ -47,26 +46,26 @@ The basic look of `print` is almost identical to `format`, with the only differe
 
 int main()
 {
-    // 重载 (1):直接写 stdout
+    // Overload (1): writes directly to stdout
     std::print("Hello, {}\n", "world");
-    std::print("{2} {1}{0}!\n", 23, "C++", "Hello");   // 手动索引,可以乱序
+    std::print("{2} {1}{0}!\n", 23, "C++", "Hello");   // manual indexing, any order you like
 
-    // println:末尾自动加换行,不用自己补 \n
+    // println: appends the newline for you, no need to add \n yourself
     std::println("一行带换行: {}", 42);
 
-    // 带 format-spec 的格式串(语法细节归 format 那篇)
+    // A format string with format-specs (syntax details belong to the format article)
     std::println("十六进制: {:x}  浮点: {:.3f}", 255, 3.14159265);
 
-    // 转义花括号
+    // Escaping braces
     std::println("字典字面量: {{key: {}}}", "value");
 
-    // print 到 stderr(stderr 无缓冲,行不会卡)
+    // print to stderr (stderr is unbuffered, the line won't sit around)
     std::println(stderr, "这条进 stderr");
     return 0;
 }
 ```
 
-Here is the output generated by `g++ -std=c++23 -O2` (local GCC 16.1.1):
+Run it with `g++ -std=c++23 -O2` (local GCC 16.1.1):
 
 ```text
 这条进 stderr
@@ -77,24 +76,24 @@ Hello C++23!
 字典字面量: {key: value}
 ```
 
-Note the first line—the content from `stderr` actually appears at the very top. This isn't a bug; it is precisely the core mechanism we want to explain: `println(stderr, ...)` writes to the unbuffered `stderr`, so it lands immediately. Meanwhile, `print` writes to `stdout`, which (when redirected to a pipe or an editor's output window) is fully buffered and waits until the program finishes to flush everything at once. The two streams use their own separate buffers, so who lands first depends on who isn't buffering. This "separate buffering" is exactly the root cause of the ordering confusion we will encounter later.
+Notice the first line — the `stderr` content actually shows up first. That is not a bug; it is precisely the core mechanism we are here to discuss: `println(stderr, ...)` writes to unbuffered `stderr` and lands immediately, while the `stdout` that `print` writes to is block-buffered in this setting (when redirected to a pipe or an editor's output pane) and waits for the program to end before being flushed out in one batch. The two streams each run their own buffer, and whoever doesn't buffer lands first. That "each running its own buffer" is exactly the root of the ordering trap coming later.
 
-## Why `print` is faster than `cout`: bypassing two layers of overhead
+## Why print Can Beat cout: Skipping Two Layers of Overhead
 
-To understand the design motivation behind `print`, we first need to look at why `std::cout` is slow. With a statement like `std::cout << "i=" << i << '\n'`, every `<<` operator carries two specific burdens:
+To understand what motivated `print`'s design, you first have to see why `cout` is slow. A statement like `std::cout << "i=" << i << '\n'` drags two things along on every `<<`:
 
-1. **Synchronization with C stdio** (`sync_with_stdio`, enabled by default). To guarantee that `std::cout` and `std::printf` appear in the correct order, libstdc++ must coordinate with C's `FILE*` buffers on every `<<` operation. This is a very real runtime cost.
-2. **Locale awareness**. Formatting in iostream (numbers, currency, dates) requires checking the locale. Even if you have never set a locale, this check still executes.
+1. **Synchronization with C stdio** (`sync_with_stdio`, on by default). To guarantee that `std::cout` and `std::printf` come out in a consistent order, libstdc++ has to coordinate with C's `FILE*` buffering on every single `<<` — a very real runtime cost.
+2. **Locale awareness**. iostream's formatting (numbers, currency, dates) consults the locale; even if you have never set a locale, that check path is still there.
 
-`std::print` bypasses both of these layers. It calls C's `FILE*` write functions directly (using the `fwrite` path for `stdout`) and uses the compile-time parsing results from `std::format` for formatting, **completely bypassing iostream**. cppreference describes it simply as "equivalent to `std::print(stdout, fmt, args...)`", with the underlying implementation landing on direct stream writing functions like `vprint_unicode` or `vprint_nonunicode`.
+`std::print` skips both layers. It calls C's `FILE*` writing directly (`stdout` goes through the `fwrite` machinery), does its formatting with `std::format`'s compile-time parsing results, and **never touches iostream at all**. cppreference describes it in one line — "equivalent to `std::print(stdout, fmt, args...)`" — with the bottom layer landing on stream-writing functions such as `vprint_unicode` / `vprint_nonunicode`.
 
-In other words, `print` carries none of the baggage that `cout` does: "synchronization + locale + a function call for every operator". This is the literal meaning of its design goal to "decouple from iostream".
+Put differently, of the baggage `cout` carries — "synchronization + locale + one function call per operator" — `print` shoulders none of it. That is the literal meaning of that "decouple from iostream" line in its design goals.
 
-However, there is a **counterintuitive** point we must clarify first: `print` is **not** the "fastest output method forever". Its value lies not in being the absolute fastest in speed, but in "achieving speeds close to `printf` without disabling sync or touching locale, while retaining `format`'s type safety". The benchmark in the next section will make this clear—don't let the slogan "print is fast" mislead you.
+But there is a **counterintuitive** point to puncture first: `print` is **not** "the fastest output method, always". Its value is not being number one in absolute speed; it is "speed close to `printf` without touching sync or locale, while keeping `format`'s type safety". The next section's benchmark will make that clear — don't get carried away by the "print is fast" slogan.
 
-## Real-world test: `print` vs. `cout` vs. `printf`
+## Measured: print vs cout, print vs printf
 
-Simply saying "bypassing overhead" isn't enough; let's go straight to a benchmark. We wrote two million short lines using `cout` (with sync on and off), `printf`, and `print` to `/dev/null` (to exclude terminal I/O noise and measure only the formatting and buffering logic), timing the results down to the microsecond:
+Saying "it skips the overhead" is not enough — let's just run a benchmark. We write 2 million short lines to `/dev/null` using `cout` (with sync on and off), `printf`, and `print` respectively (excluding terminal I/O noise so we measure only the formatting and buffering logic itself), timed to the microsecond:
 
 ```cpp
 // Standard: C++23
@@ -114,7 +113,7 @@ static void report(const char* name, std::chrono::steady_clock::time_point t0,
 
 void bench_cout_sync()
 {
-    std::ios::sync_with_stdio(true);   // 默认
+    std::ios::sync_with_stdio(true);   // the default
     auto t0 = std::chrono::steady_clock::now();
     for (int i = 0; i < kIterations; ++i) {
         std::cout << "i=" << i << " sq=" << i * 2 << '\n';
@@ -124,7 +123,7 @@ void bench_cout_sync()
 
 void bench_cout_nosync()
 {
-    std::ios::sync_with_stdio(false);  // 常见的"加速 cout"写法
+    std::ios::sync_with_stdio(false);  // the usual "speed up cout" move
     auto t0 = std::chrono::steady_clock::now();
     for (int i = 0; i < kIterations; ++i) {
         std::cout << "i=" << i << " sq=" << i * 2 << '\n';
@@ -152,7 +151,7 @@ void bench_print()
 
 int main()
 {
-    std::freopen("/dev/null", "w", stdout);   // 排除终端 I/O 噪声
+    std::freopen("/dev/null", "w", stdout);   // exclude terminal I/O noise
     bench_cout_sync();
     bench_printf();
     bench_print();
@@ -161,7 +160,7 @@ int main()
 }
 ```
 
-Native GCC 16.1.1, `-std=c++23 -O2`, running three times (absolute microsecond values fluctuate with load; we focus on the order of magnitude and relative relationships):
+Local GCC 16.1.1, `-std=c++23 -O2`, three runs in a row (absolute microseconds drift with load; we only look at orders of magnitude and relative positions):
 
 ```text
 cout (sync=true)       180151 us
@@ -178,28 +177,28 @@ print                  176044 us
 cout (sync=false)      171143 us
 ```
 
-Want to run it yourself? Check out this online demo (compiled with `-std=c++23`, timing output sent to stderr):
+Want to run it yourself? Open the online demo below (compiled with `-std=c++23`; timings go to stderr):
 
 <OnlineCompilerDemo
-  title="cout / printf / std::print Formatting Performance Comparison"
+  title="cout / printf / std::print Formatting Performance Face-Off"
   source-path="code/examples/vol3/53_print_benchmark.cpp"
-  description="Writing 2 million short lines to /dev/null, comparing formatting overhead of cout (sync on/off), printf, and std::print—print achieves top-tier speed without touching sync"
+  description="2 million short lines written to /dev/null, comparing formatting time across cout (sync on/off), printf, and std::print — print gets type-safe speed in the printf tier without touching sync at all"
   allow-run
   run-options="-O2 -std=c++23"
 />
 
-Let's clarify the order of magnitude conclusions:
+Let's straighten out the order-of-magnitude conclusions:
 
-- `printf` is the fastest (approx. 130 ms), but the cost is C-style variadic arguments—type unsafe, and mismatched format strings and arguments lead to runtime crashes.
-- `cout(sync=false)` comes next (approx. 155–170 ms), but this requires **manually disabling synchronization**. Once disabled, the standard library no longer guarantees output ordering with `printf`/`print` (a pitfall discussed in the next section).
-- `print` consistently lands at 170–180 ms, achieving this speed **without any sync switches**, while providing type safety via `format`.
-- `cout(sync=true)` (default) is the slowest, around 180–190 ms—this is the actual `cout` performance most people get without changing settings.
+- `printf` is the fastest (around 130 ms), but the price is C-style variadics — not type-safe, and a format string that disagrees with its arguments can only blow up at runtime.
+- `cout(sync=false)` comes next (around 155–170 ms), but that is what you get **by manually turning synchronization off** — and once it is off, the standard library no longer guarantees its output order relative to `printf`/`print` (the trap in the next section).
+- `print` sits steadily at 170–180 ms, reaching that speed **without any sync switch**, and it carries `format`'s type safety.
+- `cout(sync=true)` (the default) is the slowest at around 180–190 ms — this is the `cout` performance most people actually get when they change nothing.
 
-So, the honest conclusion is: `print` **is not the absolute speed champion** (`printf` and `cout` with sync disabled can tie or even be faster). However, it offers the best value when you "don't want to touch sync but want type-safe formatting." If your code is already full of `cout` and you've disabled sync for performance, swapping a few hot path lines to `print` might not yield gains—`print`'s main battleground is new code and scenarios where you want to completely move away from iostreams.
+So the honest conclusion: `print` is **not the absolute speed champion** (`printf` and a sync-disabled `cout` can match or beat it), but when you "don't want to touch sync yet still want type-safe formatting", it is the best value in that tier. If your code is already full of `cout` and you turned sync off for performance, swapping a few hot-path lines over to `print` won't necessarily buy you anything — `print`'s home turf is new code and situations where you want to shake off iostream entirely.
 
-## The Real Pitfall: Mixing `print` and `cout` Causes Ordering Issues
+## The Real Trap: Mixing print and cout Scrambles the Order
 
-Performance is a selling point of `print`, but the biggest daily stumbling block is **synchronization**. `print` writes directly to C's `stdout` buffer, while `cout` (in libstdc++) has its own streambuf. The two are coordinated by default via `sync_with_stdio(true)`, so the order is correct by default:
+Performance is `print`'s selling point, but what trips people up most in day-to-day work is **synchronization**. `print` writes straight into C's `stdout` buffer, while `cout` (in libstdc++) has its own streambuf. The two are coordinated through `sync_with_stdio(true)` by default, so under default settings the order is correct:
 
 ```cpp
 // Standard: C++23
@@ -208,7 +207,7 @@ Performance is a selling point of `print`, but the biggest daily stumbling block
 
 int main()
 {
-    // sync_with_stdio 默认 true,顺序正确
+    // sync_with_stdio defaults to true: the order is correct
     std::cout << "第一行(cout)\n";
     std::print("第二行(print)\n");
     std::cout << "第三行(cout)\n";
@@ -224,7 +223,7 @@ int main()
 第四行(print)
 ```
 
-However, many people write `std::ios::sync_with_stdio(false)` for performance. Once this line is added, the synchronization between `cout` and the C stdio is broken. Both buffers flush independently, and the order immediately becomes garbled:
+But plenty of people write `std::ios::sync_with_stdio(false)` for performance. The moment that line goes in, the coordination between `cout` and C stdio is severed, and the two buffers flush on their own — the order scrambles immediately:
 
 ```cpp
 // Standard: C++23
@@ -233,19 +232,19 @@ However, many people write `std::ios::sync_with_stdio(false)` for performance. O
 
 int main()
 {
-    std::ios::sync_with_stdio(false);   // 常见的"加速 cout"写法
+    std::ios::sync_with_stdio(false);   // the usual "speed up cout" move
 
     std::cout << "第一行(cout)\n";
     std::print("第二行(print)\n");
     std::cout << "第三行(cout)\n";
     std::print("第四行(print)\n");
 
-    std::cout.flush();   // 不 flush,cout 残留可能根本看不到
+    std::cout.flush();   // without the flush, cout's leftovers may never show up at all
     return 0;
 }
 ```
 
-Redirect output to a pipe (block buffered mode) to reliably reproduce:
+Redirect the output to a pipe (block-buffered mode), and it reproduces every time:
 
 ```text
 第一行(cout)
@@ -254,15 +253,15 @@ Redirect output to a pipe (block buffered mode) to reliably reproduce:
 第四行(print)
 ```
 
-The two lines from `cout` rushed to the front, while the two lines from `print` got squeezed at the back—this is clearly not the order in the source code. The reason is exactly as stated above: after disabling sync, `cout`'s streambuf and the C `stdout` buffer used by `print` are no longer coordinated. Whoever fills up first, or gets flushed first, lands first. Here, `cout` is flushed uniformly at program termination, so its content is dumped as a chunk at the end (though its internal relative order remains correct).
+Both `cout` lines jumped to the front while the two `print` lines got squeezed behind — clearly not the order in the source code. The reason is exactly what we described above: with sync off, `cout`'s streambuf and the C `stdout` buffer that `print` writes to have no knowledge of each other; whoever fills up first or gets flushed first lands first. Here `cout` is flushed in one batch when the program ends, so its content got shoved to the back as a whole block (though its internal order is still correct).
 
-::: warning Don't mix print(stdout) and cout after disabling sync
-`sync_with_stdio(false)` acts as a "global switch"—once turned off, it affects the relationship between `cout`/`cin` and C stdio throughout the entire program. If you disable sync in a performance-critical section, but then use both `cout` and `print` (which defaults to stdout) elsewhere, the output order is not guaranteed. This interleaving might coincidentally look fine in a terminal (line buffering), but it will consistently break when redirected to a file or pipe (block buffering). Debugging this kind of bug is excruciating, because "the order is correct on my machine."
+::: warning Once sync is off, stop mixing print(stdout) with cout
+`sync_with_stdio(false)` is a "global switch" — once it is off, it changes the relationship between `cout`/`cin` and C stdio for the entire program. If you turned sync off in some performance hotspot and then use both `cout` and `print` elsewhere (`print` goes to stdout by default), the output order is no longer guaranteed. On a terminal (line-buffered) the interleave may happen to look fine; redirect to a file or a pipe (block-buffered) and it reliably falls apart. Debugging this kind of bug is agonizing, because "the order is correct on my machine".
 :::
 
-### The Fix: Use print(cout, …) to Share the Same Buffer
+### One Move to Rescue It: print(cout, ...) Takes the Same Buffer
 
-There is a very clean solution to this pitfall, provided you know that `print` isn't limited to writing to `FILE*`—C++23 provides an **`ostream` overload**. By switching `print`'s target from the default `stdout` to `cout` itself, the output goes through `cout`'s streambuf and shares the same buffer as `<<`, naturally restoring the correct order:
+This trap has a very clean fix — provided you know that `print` can write to more than a `FILE*`: C++23 gave it an **`ostream` overload**. Switch `print`'s target from the default `stdout` to `cout` itself, and the output goes through `cout`'s streambuf, sharing the same buffer as `<<`; the order falls right back into place:
 
 ```cpp
 // Standard: C++23
@@ -273,7 +272,7 @@ int main()
 {
     std::ios::sync_with_stdio(false);
     std::cout << "A(cout)\n";
-    std::print(std::cout, "B(print→cout)\n");   // 走 cout 自己的缓冲
+    std::print(std::cout, "B(print→cout)\n");   // goes through cout's own buffer
     std::cout << "C(cout)\n";
     std::print(std::cout, "D(print→cout)\n");
 
@@ -289,18 +288,18 @@ C(cout)
 D(print→cout)
 ```
 
-The order is completely correct. Comparing the two groups makes this clear:
+The order is completely correct. Putting the two runs side by side makes it obvious:
 
 ```text
-print(stdout) 与 cout 交错(sync=false):     → A C B D  (错乱)
-print(cout)   与 <<  同缓冲(sync=false):     → A B C D  (正确)
+print(stdout) interleaved with cout (sync=false):  → A C B D  (scrambled)
+print(cout)   sharing one buffer with << (sync=false): → A B C D  (correct)
 ```
 
-**The Mechanism in a Nutshell:** `print(FILE*)` and `cout` use independent buffers. When synchronization is disabled, they flush independently. `print(ostream)`, however, reuses `cout`'s streambuf and shares its fate with the `<<` operator. Therefore, there is a simple rule of thumb for engineering—**if your program disables synchronization, always use `print(std::cout, ...)` when mixing I/O, and avoid bare `print(...)`**. This approach gives us the formatting convenience of `print` without causing conflicts with `cout`.
+The mechanism in one sentence: `print(FILE*)` and `cout` are two independent buffers — with sync off, each flushes on its own; `print(ostream)` reuses `cout`'s streambuf and lives or dies with `<<`. Hence a simple engineering rule: **the moment your program turns sync off, always use `print(std::cout, ...)` when mixing, never bare `print(...)`**. That way you keep `print`'s formatting convenience without picking a fight with `cout`.
 
-## The Two Faces of print: FILE* vs. ostream
+## print's Two Faces: FILE* and ostream
 
-The solution discussed in the previous section relies on the fact that `print` has two overloads for writing to streams. This detail is easily overlooked, but it is worth clarifying on its own, as it directly determines whether we can "take a detour around the pitfall."
+The fix in the previous section works because `print` has two sets of stream-writing overloads. That fact is easy to overlook, and it deserves to be pulled out and made explicit, because it directly determines whether you can "take a different road around the pit".
 
 ```cpp
 // Standard: C++23
@@ -310,17 +309,17 @@ The solution discussed in the previous section relies on the fact that `print` h
 
 int main()
 {
-    // 一副面孔:FILE*(stdout/stderr/自己 fopen 的文件)
+    // One face: FILE* (stdout / stderr / files you fopen yourself)
     std::print(stdout, "写 stdout: {}\n", 1);
-    std::println(stderr, "写 stderr: {}", 2);   // stderr 无缓冲,适合日志/错误
+    std::println(stderr, "写 stderr: {}", 2);   // stderr is unbuffered: a good fit for logs and errors
 
-    // 另一副面孔:ostream(cout/cerr/stringstream/任何 ostream)
+    // The other face: ostream (cout / cerr / stringstream / any ostream)
     std::ostringstream os;
     std::print(os, "写 stringstream: {} = {}\n", "x", 3.14);
     std::println(os, "第二行");
-    std::print("{}", os.str());   // 把攒下来的内容一次性吐到 stdout
+    std::print("{}", os.str());   // dump what was accumulated to stdout in one shot
 
-    // 当然也能直接喂 cout
+    // And of course you can feed it cout directly
     std::print(std::cout, "直接 print 到 cout: {}\n", 7);
     return 0;
 }
@@ -334,22 +333,22 @@ int main()
 直接 print 到 cout: 7
 ```
 
-The two sets of overloads correspond to two different underlying paths:
+The two overload sets correspond to two different underlying paths:
 
-- `print(FILE*, …)` uses C's `fwrite` and goes through the C stdio buffering. `stdout` is block-buffered (when redirected) or line-buffered (when in a terminal), while `stderr` is unbuffered.
-- `print(ostream&, …)` uses the ostream's `streambuf` and shares the buffer with `<<`. Writing to an `ostringstream` allows building strings in memory, while writing to `cout` shares the buffer with `<<` (the solution from the previous section).
+- `print(FILE*, ...)` goes through C's `fwrite` and the C stdio buffer. `stdout` is block-buffered (when redirected) / line-buffered (on a terminal); `stderr` is unbuffered.
+- `print(ostream&, ...)` goes through the ostream's `streambuf`, sharing the buffer with `<<`. Write to an `ostringstream` and you accumulate a string in memory; write to `cout` and you share `<<`'s buffer (the rescue from the previous section).
 
-How do we choose in practice? Here are three guidelines:
+How to choose in practice? Three sentences:
 
-- **Pure new code, performance-first**: Use `print(...)` / `println(...)` directly targeting `stdout`. This is the cleanest and fastest approach.
-- **Mixing with existing `cout` code, with sync disabled**: Use `print(std::cout, ...)` to guarantee ordering.
-- **Accumulating formatted results in memory** (e.g., constructing logs, serialization): Use `print(oss, ...)` to write to an `ostringstream`. This avoids the intermediate string construction required by `oss << std::format(...)`.
+- **Pure new code, performance first**: use `print(...)` / `println(...)` directly; it goes to `stdout` — cleanest and fastest.
+- **Mixing with existing `cout` code while sync is off**: use `print(std::cout, ...)` to keep the order guaranteed.
+- **Accumulating formatted results in memory** (building log entries or serializing, say): write into an `ostringstream` with `print(oss, ...)` — one fewer intermediate string construction than `oss << std::format(...)`.
 
-## Printing to stderr and buffering semantics
+## print to stderr and Buffering Semantics
 
-`print` writes to `stdout` by default, but logs and error messages more commonly target `stderr`. This is directly supported, and it offers a natural convenience: `stderr` is **unbuffered**, so data is written immediately upon each call. Using `println(stderr, ...)` for logging ensures we don't have to worry about logs getting stuck in a buffer if the program crashes.
+`print` writes to `stdout` by default, but logs and error messages more often head for `stderr`. `print` supports that directly, and with a built-in convenience: `stderr` is **unbuffered**, every write lands immediately — so when you log with `println(stderr, ...)`, you never worry about log lines still sitting unflushed in a buffer when the program crashes.
 
-However, note that this "unbuffered" benefit applies only to `stderr`. When `print` writes to `stdout`, it is **block-buffered** (when redirected to a file or pipe), and it **does not flush just because it encounters a `\n`**—this differs from the semantics of `std::endl` (which triggers a flush). A comparison makes this obvious:
+But note that this "unbuffered" benefit holds only on `stderr`. When `print` writes to `stdout` it is **block-buffered** (when redirected to a file or pipe), and it **does not flush just because it ran into a `\n`** — different semantics from `std::endl` (which does flush). A quick comparison makes it vivid:
 
 ```cpp
 // Standard: C++23
@@ -360,28 +359,28 @@ int main()
 {
     std::print("第一行(带换行)\n");
     std::print("第二行没换行就崩了");
-    std::abort();   // 模拟崩溃
+    std::abort();   // simulate a crash
 }
 ```
 
-The results differ when running directly in the terminal versus running inside a pipe:
+Run it directly on a terminal, and through a pipe — the results differ:
 
 ```text
-=== 终端(行缓冲)输出 ===
-[exit=134]                          # 整段都没出来,abort 前缓冲没刷
-=== 重定向到管道(块缓冲)输出 ===
-[done]                              # 同样什么都没有
+=== terminal (line-buffered) output ===
+[exit=134]                          # nothing came out at all: the buffer wasn't flushed before abort
+=== redirected to a pipe (block-buffered) output ===
+[done]                              # likewise, nothing
 ```
 
-In both cases, the content buffered by `print` is lost due to `abort()` (which does not flush user-space buffers and calls `_exit` directly)—including the first line with the `\n`. This indicates that `print` on `stdout` **does not flush on newlines**; it relies on a unified flush when the program exits normally. If your program might exit abnormally (crash, `_exit`, or killed by a signal) and you want to ensure critical logs are persisted, either write to `stderr` (unbuffered) or manually call `std::fflush(stdout)` at critical points.
+In both cases, everything `print` had staged in the buffer was lost to `abort()` (which does not flush user-space buffers — it goes straight to `_exit`) — including that first line with the `\n`. Which goes to show: on `stdout`, `print` **does not flush on newline**; it relies on the program exiting normally for the unified flush. If your program can die abnormally (a crash, `_exit`, killed by a signal) and you need critical logs to land, either write to `stderr` (unbuffered) or call `std::fflush(stdout)` manually at the critical points.
 
-::: warning print does not flush on newline like endl
-The `endl` in `std::cout << ... << std::endl` conveniently flushes the stream, leading many to mistakenly believe that "outputting a newline flushes the buffer." `print` **does not exhibit this behavior**—it writes to `stdout` using block buffering, where `\n` is just a regular character. When a forced flush is necessary, use `std::flush` on the corresponding stream, or simply send critical output to the unbuffered `stderr`. Bugs involving lost logs during crashes are, nine times out of ten, rooted here.
+::: warning print does not flush on newline the way endl does
+The `endl` in `std::cout << ... << std::endl` flushes as a side effect, so many people assume "printing a newline flushes the buffer". `print` **has no such behavior** — its `stdout` writes are block-buffered, and `\n` is just an ordinary character. When you need a forced flush, `std::flush` the stream yourself, or simply toss the critical output onto unbuffered `stderr`. Bugs of the "the crash ate my logs" kind trace back here nine times out of ten.
 :::
 
-## Compiler Support and Feature-testing
+## Compiler Support and Feature-Test Macros
 
-`std::print` and `std::println` are C++23 features found in the `<print>` header. The local GCC 16.1.1 offers full support, which is clearly visible via the feature-test macro:
+`std::print` / `std::println` are C++23 features, living in the header `<print>`. The local GCC 16.1.1 supports them fully — one glance at the feature-test macros says so:
 
 ```cpp
 // Standard: C++23
@@ -395,10 +394,10 @@ int main()
 #ifdef __cpp_lib_format
     std::println("__cpp_lib_format = {}", __cpp_lib_format);
 #endif
-    // println() 无参重载:标准里算 C++26,但 cppreference 注明
-    // "all known implementations make them available in C++23 mode"
+    // The no-argument println() overload officially lands in C++26, but
+    // cppreference notes "all known implementations make them available in C++23 mode"
     std::print("password");
-    std::println();   // 只输出换行
+    std::println();   // prints just a newline
     return 0;
 }
 ```
@@ -409,17 +408,17 @@ __cpp_lib_format = 202304
 password
 ```
 
-Here are a few important notes:
+A few points worth flagging:
 
-- The value of `__cpp_lib_print` is `202406` in GCC 16. This value actually corresponds to a C++23 Defect Report (DR) that backported "unbuffered formatted output" and support for more formattable types into C++23. So, seeing `202406` doesn't mean you have to compile with C++26; `-std=c++23` is sufficient.
-- Parameterless `std::println()` (which only outputs a newline) is technically added in C++26 by the standard, but mainstream implementations (GCC, Clang, and MSVC) already provide it in C++23 mode. I tested locally with `g++ -std=c++23`, and it compiles and runs directly. For strict portability, write `std::print("\n")`, but this detail isn't critical.
-- Older GCC versions (before 13) lack `<print>`. If your code needs to compile on older toolchains, either wrap it in `#ifdef __cpp_lib_print` and fall back to `std::cout << std::format(...)`, or pull in the {fmt} library.
+- `__cpp_lib_print` is `202406` on GCC 16, and that value actually corresponds to a C++23 defect report (DR) that backported "formatted output without intermediate buffering" and support for more formattable types into C++23. So seeing `202406` does not mean you must compile as C++26 — `-std=c++23` already gets you this.
+- The no-argument `std::println()` (prints only a newline) was added by the standard in C++26, but the mainstream implementations (GCC/Clang/MSVC) already provide it in C++23 mode; tested locally, `g++ -std=c++23` compiles and runs it fine. For strict portability, write `std::print("\n")` and don't lean on that detail.
+- Older GCC (before 13) has no `<print>`. If your code must build on old toolchains, either wrap it in `#ifdef __cpp_lib_print` and fall back to `std::cout << std::format(...)`, or bring in the {fmt} library.
 
-## Unicode Output: The Extra Work `print` Does
+## Unicode Output: The Extra Chore print Does
 
-`print` also handles something `printf` ignores: Unicode terminal adaptation. Its equivalent implementation on cppreference splits into two paths: if the ordinary literal encoding is UTF-8, it takes `vprint_unicode`; otherwise, it takes `vprint_nonunicode`. This split isn't just for show. Historically, the Windows console default code page was not UTF-8 (legacy systems used GBK/CP437). `print` handles conversion internally to ensure UTF-8 content displays correctly on Windows terminals, rather than spewing garbage characters. Linux and macOS terminals are natively UTF-8, so this path is essentially a pass-through.
+`print` also takes on a job `printf` wants nothing to do with: Unicode terminal accommodation. Per cppreference, its equivalent implementation splits into two routes — if the ordinary literal encoding is UTF-8, it goes through `vprint_unicode`; otherwise `vprint_nonunicode`. This split is not decorative: the Windows console historically defaulted to a non-UTF-8 code page (GBK/CP437 in the old days), and `print` does the conversion internally so UTF-8 content still displays correctly in a Windows terminal instead of coming out as mojibake. Linux/macOS terminals are natively UTF-8, and that path is essentially a pass-through.
 
-Tested locally (where ordinary literal encoding is UTF-8):
+Tried on this machine (where the ordinary literal encoding is UTF-8):
 
 ```cpp
 // Standard: C++23
@@ -438,25 +437,25 @@ int main()
 emoji: 🚀 ✓ ★
 ```
 
-This is quite important for cross-platform code—while both output Unicode, `printf` on Windows requires you to manually call `SetConsoleOutputCP(CP_UTF8)` and deal with the hassle, whereas `print` encapsulates this for you. However, note that this assumes **your source file literals are actually UTF-8 encoded** (so the compile-time `vprint_unicode` path is active); if your source file is GBK but you want to use the Unicode path, you must ensure encoding consistency yourself—`print` cannot magically "convert" non-UTF-8 literals into UTF-8.
+This matters quite a bit for cross-platform code — to output the same Unicode, `printf` on Windows makes you call `SetConsoleOutputCP(CP_UTF8)` and fiddle around yourself, whereas `print` has that layer wrapped up for you. But note the precondition: **the source file's literals really must be UTF-8-encoded** (only then is the `vprint_unicode` route selected at compile time); if your source file is GBK and you want the Unicode route, keeping the encoding consistent is on you — `print` cannot "turn" non-UTF-8 literals into UTF-8.
 
 ## Summary
 
-Let's wrap up the `print` suite:
+Let's wrap up the whole `print` story:
 
-- **Positioning**: `print`/`println` serves as the "direct output" layer paired with `format` in C++23. It bypasses the `sync_with_stdio` and locale overhead of iostream, writing directly to C streams.
-- **Performance**: In benchmarks writing two million short lines to `/dev/null`, `printf` is the fastest at ~130 ms, `print` is ~175 ms, `cout(sync=false)` is ~155–170 ms, and the default `cout(sync=true)` is the slowest at ~185 ms. `print` isn't the absolute champion, but it offers the best value in the "no sync, type-safe" category.
-- **The Sync Trap**: `print(stdout)` and `cout` coordinate via `sync_with_stdio(true)` by default, ensuring correct order. Once `sync_with_stdio(false)` is used, their buffers are decoupled, causing output order corruption (stably reproducible when redirecting to pipes/files). Solution: when mixing them, use `print(std::cout, ...)` to reuse `cout`'s streambuf, which restores order.
-- **Dual Overloads**: `print(FILE*, …)` uses C stdio buffering, while `print(ostream&, …)` uses the ostream streambuf. Use `stderr` for logs (unbuffered) and `ostringstream` for string building.
-- **Buffering Semantics**: `print` writing to `stdout` is block-buffered and **does not flush on `\n`** (unlike `endl`). Abnormal program termination (abort/_exit/signals) will lose unflushed buffer contents. Critical logs should go to `stderr` or be manually flushed.
-- **Compiler Support**: GCC 16.1.1 with `-std=c++23` offers full support, `__cpp_lib_print = 202406` (C++23 DR). The parameterless `println()` is standard in C++26, but mainstream implementations provide it in C++23 mode. Older toolchains (GCC < 13) lack `<print>`; fall back to `cout << format(...)`.
-- **Unicode**: With UTF-8 literal encoding, it takes the `vprint_unicode` path. It automatically converts on non-UTF-8 Windows terminals, making cross-platform Unicode output less hassle than `printf`.
+- **Positioning**: `print`/`println` are the "direct output" layer C++23 paired with `format` — they skirt iostream's `sync_with_stdio` and locale overhead and write straight to the C streams.
+- **Performance**: measured with 2 million short lines to `/dev/null`, `printf` is fastest at about 130 ms, `print` about 175 ms, `cout(sync=false)` about 155–170 ms, and `cout(sync=true)` — the default — slowest at about 185 ms. `print` is not the absolute champion, but in the "no sync games, with type safety" tier it is the best deal.
+- **The sync trap**: `print(stdout)` and `cout` are coordinated through `sync_with_stdio(true)` by default, so the order is correct; the moment `sync_with_stdio(false)` runs, the two buffers stop talking to each other and the output order scrambles (reliably reproduced when redirected to a pipe or file). The fix: when mixing, switch to `print(std::cout, ...)` — it reuses `cout`'s streambuf and the order comes back.
+- **Two overloads**: `print(FILE*, ...)` rides the C stdio buffer; `print(ostream&, ...)` rides the ostream's streambuf. Logs go to `stderr` (unbuffered); accumulating strings goes to an `ostringstream`.
+- **Buffering semantics**: `print` on `stdout` is block-buffered and **does not flush on `\n`** (unlike `endl`); an abnormal exit (abort/_exit/signal) loses whatever is still unflushed in the buffer. Critical logs belong on `stderr`, or get flushed manually.
+- **Compiler support**: GCC 16.1.1 `-std=c++23` supports it fully, with `__cpp_lib_print = 202406` (a C++23 DR). The no-argument `println()` is C++26 by the letter of the standard, but the mainstream implementations ship it in C++23 mode. Old toolchains (GCC<13) lack `<print>` — fall back to `cout << format(...)`.
+- **Unicode**: with UTF-8 literal encoding it takes the `vprint_unicode` route and converts automatically for non-UTF-8 Windows terminals — cross-platform Unicode output with less heartache than `printf`.
 
-In the next article, we will shift to the other side of text processing and explore deeper features of the `format` library—specializing formatters for custom types, and formatting ranges/pairs/tuples—taking the `print`/`format` ecosystem from "usable" to "customizable".
+In the next article we switch to another thread of text processing and go deeper into the `format` library — formatter specializations for custom types, formatting ranges/pair/tuple — pushing the `print`/`format` toolkit from "usable" to "customizable".
 
 ## References
 
-- [cppreference: std::print (C++23)](https://en.cppreference.com/w/cpp/io/print) — `print` `FILE*` overloads, equivalence with `stdout`/`vprint_unicode`, and feature-test macros
-- [cppreference: std::println (C++23)](https://en.cppreference.com/w/cpp/io/println) — `println` overloads, the parameterless version, and its relationship with C++26
-- [cppreference: std::print(std::ostream) (C++23)](https://en.cppreference.com/w/cpp/io/basic_ostream/print) — `ostream` overload, reusing streambuf, and sharing buffers with `<<`
-- [cppreference: sync_with_stdio](https://en.cppreference.com/w/cpp/io/ios_base/sync_with_stdio) — Semantics and performance impact of the iostream and C stdio synchronization switch
+- [cppreference: std::print (C++23)](https://en.cppreference.com/w/cpp/io/print) — the `FILE*` overloads of `print`, the equivalence with `stdout`/`vprint_unicode`, and the feature-test macro
+- [cppreference: std::println (C++23)](https://en.cppreference.com/w/cpp/io/println) — `println`'s various overloads, and how the no-argument version relates to C++26
+- [cppreference: std::print(std::ostream) (C++23)](https://en.cppreference.com/w/cpp/io/basic_ostream/print) — the `ostream` overload: reuses the streambuf, shares the buffer with `<<`
+- [cppreference: sync_with_stdio](https://en.cppreference.com/w/cpp/io/ios_base/sync_with_stdio) — the semantics and performance impact of the iostream/C stdio synchronization switch
