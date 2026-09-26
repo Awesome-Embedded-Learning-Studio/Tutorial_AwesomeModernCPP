@@ -1,6 +1,6 @@
 ---
 title: "Install the Three Things You Need to Write C++"
-description: "Set up vscode, the MinGW compiler, and CMake on Windows from scratch, with screenshots and verification at every step"
+description: "Install vscode, the MinGW compiler, and CMake on Windows from scratch, with a screenshot slot and a verification step at every step"
 chapter: 14
 order: 2
 platform: host
@@ -13,205 +13,277 @@ tags:
   - beginner
   - 工具链
 reading_time_minutes: 12
+translation:
+  source: documents/getting-started/02-install-toolchain.md
+  source_hash: 5018c9046ff74393ccda94caed489abf4db4a58547fbbcfd847acb199721c00b
+  translated_at: '2026-09-26T14:34:35+00:00'
+  engine: anthropic
+  token_count: 9000
 ---
 
 # Install the Three Things You Need to Write C++
 
 ## Opening
 
-Last time we agreed you need two pieces of software: an editor (vscode) and a compiler. There's actually a third thing you need: a build tool called CMake.
+Last article we settled on two things to install: an editor (vscode) and a compiler. There's actually a third thing to add — a build tool named CMake.
 
-Let me explain what CMake does first. As we write more C++, a project won't be just one .cpp file. It might be five, six, a dozen files, spread across different folders. At that point, typing out the compile commands one by one will drive you crazy. CMake takes care of this stuff for you. You write one config file that tells it which files are in the project and what program to produce, and it handles the rest. We'll actually use it next time; for now we just need to install it.
+First, let's be clear about what CMake is for. As we write more C++, a project won't stay at just one .cpp file — it might be five, six, a dozen of them, sorted into different folders. At that point, compiling them one by one by typing commands by hand would drive anyone mad. CMake exists to manage that for us: you write one configuration file telling it "here are the files in this project, and here's the program to produce", and it takes care of the rest. As for actually using it — that's next article's business; for now we just install it.
 
-This whole article is hands-on, step by step, with a screenshot for every step. Once these three are installed, we can write the first real, runnable program in the next article.
+This article is pure hand-holding, with a screenshot slot at every step. Once the three things are installed, we can write our first runnable program in the next article.
 
-## The Windows Path (Recommended)
+## The Windows Route (Recommended)
 
 If your system is Windows 10 or Windows 11, follow this section. Three steps, in order.
 
 ### Step 1: Install vscode
 
-vscode is a free editor from Microsoft. From here on, this is where we'll type our code.
+vscode is a free editor made by Microsoft, and it's where we'll be typing our code from now on.
 
-Open your browser and go to <https://code.visualstudio.com>.
+Open your browser and head to <https://code.visualstudio.com>.
 
-There's a big blue button in the middle of the page that says "Download for Windows". Click it. If your browser doesn't start downloading automatically, it'll take you to a download picker page. Pick the "Windows" option and you'll get a `.exe` installer.
+Right in the middle of the page there's a big blue button that says "Download for Windows". Click it. If your browser doesn't start downloading automatically, it will take you to a download-picker page — choose the "Windows" entry and you'll get a `.exe` installer.
 
-Once it's downloaded, double-click `VSCodeUserSetup-x64-x.x.x.exe`. The installer looks like any other installer, just keep hitting Next. The screen to watch out for is this one:
+Once it's downloaded, double-click `VSCodeUserSetup-x64-x.x.x.exe`. The installer looks like any ordinary piece of software — keep clicking Next. The screen to watch out for is this one:
 
-Tick all of these (especially "Add to PATH", which you absolutely must check or you'll have headaches later):
+Tick all of these (especially "Add to PATH" — that one is a must, or trouble follows later):
 
 - On the "Select Additional Tasks" screen, tick "Add 'Open with Code' action to Windows Explorer file context menu"
 - Tick "Add 'Open with Code' action to Windows Explorer directory context menu"
 - Tick "Register Code as an editor for supported file types"
-- Tick "Add to PATH" (the most important one)
+- Tick "Add to PATH" (**the most important one**)
 
-The remaining options (whether to put a shortcut on the desktop, some of the right-click menu items) are up to you.
+The remaining options (desktop shortcut or not, some of the extra right-click menu entries) are yours to pick. I ticked them myself anyway, because on some days I'm too lazy to open CMD or PowerShell to get things done.
 
-::: details Click to see: What if I forgot to tick "Add to PATH"?
-Don't panic. The easy way out is to add vscode's install folder to the system PATH by hand. But the even easier way is: uninstall and reinstall, and tick the box this time. Reinstalling takes two minutes, faster than wrestling with PATH.
+::: details Click to see: what if you forgot to tick "Add to PATH" during installation
+Don't panic. The easy way out is to manually add vscode's own install directory to the system PATH — but the even easier way is: uninstall and reinstall, and remember to tick it this time. A reinstall is a two-minute job, which beats fiddling with PATH. One friendly heads-up, though: once you work in computing, editing PATH is such elementary common knowledge that colleagues won't even bother mentioning it. As you learn computing, it's best to get comfortable tinkering right now.
 :::
 
-When it's done, press the Win key on your keyboard (the one with the Windows logo). You should see the vscode icon in the Start menu.
+Once it's installed, press the Win key on your keyboard (the one with the Windows logo) — the vscode icon should show up in the Start menu.
 
-Click it. If you see a welcome page, you're done.
+Open it; if you see a welcome page, it's installed.
 
-### Step 2: Install the Compiler (Going the MinGW-w64 Route)
+### Step 2: Install the Compiler (the MinGW-w64 Route)
 
-The compiler is the program that translates the .cpp you write into a .exe. There are several C++ compilers that work on Windows. We're going with MinGW-w64, which is essentially the famous GCC compiler from Linux, ported to Windows.
+The compiler is the program that translates the .cpp you write into an .exe. Several C++ compilers work on Windows; here we take the MinGW-w64 route — at heart it's the famous GCC compiler from Linux, ported to Windows.
 
-Why pick this one? Two reasons. First, it's the same toolchain as the Linux environments we'll touch later in this series, so the command-line habits you build here carry over everywhere. Second, if you eventually want to go the embedded route (which this series also covers), GCC is the mainstream choice, so getting familiar with it early does no harm.
+Why this one? Two reasons. First, it's the same thing as the Linux environments this tutorial uses later on — the command-line habits carry over exactly, so one round of learning works everywhere. Second, if you later head toward embedded (this tutorial covers that too), GCC is the mainstream there, and getting familiar with it early does no harm.
 
-Microsoft has its own compiler called MSVC (the Visual Studio family), which is also perfectly good. The differences between the two are tucked into a collapsible box below; we won't dig in here, just get MinGW installed first.
+Microsoft has its own compiler called MSVC (the Visual Studio suite), which is also perfectly good. The differences between the two are parked in a collapsible box further down; here we won't expand on them — let's get MinGW installed first.
 
-The least painful way to install MinGW is through a tool called MSYS2. MSYS2 is basically a package manager. Think of it as an app store, like the one on your phone, except it installs command-line tools for programmers, and you operate it from the command line.
+The most painless way to install MinGW is with a tool called MSYS2. MSYS2 is, at heart, a "package manager" — think of it as an app store, much like the one on your phone, except it installs command-line tools for programmers, and you operate it from the command line.
 
 Open your browser and go to <https://www.msys2.org>.
 
-There's a download link on the page pointing to an installer named something like `msys2-x86_64-xxxxxxxx.exe` (the filename contains a date, so it's normal if yours looks different). Download it and double-click to run.
+![Screenshot: the MSYS2 homepage — find the link to the installer](images/download_msys2.png)
 
-The installer asks you to pick an install path. **I strongly recommend leaving it at the default `C:\msys64`**, don't change it. We're going to add things to the system PATH later, and having the path baked in is just easier. If you install somewhere else, every path from here on has to change too, and that's where mistakes creep in.
+On the page there's a download link pointing to an installer named something like `msys2-x86_64-xxxxxxxx.exe` (the filename carries a date, so a different date when you download is perfectly normal). Once it's down, double-click to run it.
 
-Keep hitting Next until it finishes. Once it's done, you'll see a few new MSYS2 entries in the Start menu.
+First, remember to click Next; then it will ask you to pick a path:
 
-::: warning Here's the trap beginners fall into most
-There are several MSYS2 entries in the Start menu: "MSYS2 MINGW64", "MSYS2 UCRT64", "MSYS2 CLANG64", "MSYS2", and so on.
+![The MSYS2 installer asking for the install path, defaulting to C:\msys64](images/msys-install-path-selection.png)
 
-**Open "MSYS2 UCRT64" specifically**, don't open "MSYS2" (the plain one). We're installing the UCRT64 build of GCC, and it only works properly inside the UCRT64 terminal. Open the wrong one and after you install, the commands won't be found.
+The installer will ask you where to install. **We strongly suggest keeping the default path `C:\msys64`** — don't change it. Later we'll be adding things to the system PATH, and having the path hardcoded makes life easy. If you install somewhere else, every path after this has to change accordingly, and that's asking for mistakes.
+
+Keep clicking Next until it finishes. Afterwards, the Start menu will have a few new icons starting with MSYS2.
+
+::: warning Here is the trap beginners step into most
+The Start menu has several MSYS2 entries: "MSYS2 MINGW64", "MSYS2 UCRT64", "MSYS2 CLANG64", "MSYS2", and so on.
+
+**Open the "MSYS2 UCRT64" one specifically** — don't launch plain "MSYS2" (the most bare-bones entry of them all). The GCC we're installing is the UCRT64 build, and it only works properly inside the UCRT64 terminal. Open the wrong one, and after installing you'll find commands not being found.
 :::
 
-After opening the UCRT64 terminal you'll see a command-line window with purple text. Type this line in (get the capitalization, spaces, and hyphens right), then hit Enter:
+Once the UCRT64 terminal is open, you'll see a command-line window with purple text. Type this one line into it (watch that the capitalization, spaces, and hyphens are all exactly right), then press Enter:
 
 ```bash
 pacman -S mingw-w64-ucrt-x86_64-gcc
 ```
 
-GCC compiles C++ source files into object files. CMake also needs a build program to run the generated rules. We'll use Ninja in the next article, so install it too. If you'd also like the Makefiles option, install MinGW's `mingw32-make` alongside it:
+GCC itself only compiles C++ source into object files; CMake also needs a build program to execute the rules it generates. We'll use Ninja later, so install that too; and if you'd like to use Makefiles, you can install MinGW's `mingw32-make` along with it:
 
 ```bash
 pacman -S mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-make
 ```
 
-The executable is named `mingw32-make`, not `make`. Ninja and Make are build programs; CMake generates the build rules and invokes one of them. The next article shows how they fit together. Package names are listed in the [MSYS2 Ninja package](https://packages.msys2.org/packages/mingw-w64-ucrt-x86_64-ninja) and [MinGW Make package](https://packages.msys2.org/packages/mingw-w64-ucrt-x86_64-make).
+Here, `mingw32-make` is the program name — not `make`. Ninja and Make are both build programs, while CMake is the tool that generates build rules and calls them; the next article shows how they cooperate in practice. Package names can be checked at [MSYS2's Ninja package](https://packages.msys2.org/packages/mingw-w64-ucrt-x86_64-ninja) and [the MinGW Make package](https://packages.msys2.org/packages/mingw-w64-ucrt-x86_64-make).
 
-`pacman` is the command that drives the MSYS2 "app store". `-S` means "install (sync)", and that long string after it is the name of the package to install.
+::: details Click to see: what output you might get
 
-The first time you install something, pacman will ask whether to continue and whether the package is the right one. Type `Y` and Enter to confirm. It'll download a few tens of megabytes, give it a moment.
+I have genuinely run into someone asking what that dollar sign below means. I thought for a second and — uh — just treat it as a leading prompt the computer's shell gives you: when you see it, plus the cursor blinking after it, the machine is quietly awaiting your input.
 
-Once it's installed, we have to tell Windows about this new compiler. That means telling the system's PATH variable where it lives. What's PATH? Think of it as the system's "address book of frequently used folders". Any address written in there, the system can find the programs inside directly, without you spelling out the full path every time.
+But it isn't always like that — mine, for instance, is customized, and it looks like this~
 
-Press the Win key, search for "environment variable", and click "Edit the system environment variables".
+![alt text](images/shell_zsh.png)
 
-In the window that pops up, there's an "Environment Variables" button in the bottom right. Click it. In the "System variables" list in the lower half, find the row named `Path` (note: `Path`, not `PATHEXT`), and double-click it.
+```bash
+CharlieChen@DESKTOP-65DBAA7 UCRT64 ~
+$ echo "Hello!" # Just testing that it works; this is a bash command — a must-know if you ever learn Linux
+Hello!
 
-In the list that appears, click "New" and enter this line (assuming you used the default path when installing MSYS2):
+CharlieChen@DESKTOP-65DBAA7 UCRT64 ~
+$ pacman  -S mingw-w64-uart-x86_64-gcc
+error: target not found: mingw-w64-uart-x86_64-gcc
+# The author's finger slipped on the line above: typed uart (a serial port) instead of ucrt (the Windows 10 C runtime)
+# When you see "target not found", first suspect a typo in the package name — this is what pacman says when no package has that name
+
+CharlieChen@DESKTOP-65DBAA7 UCRT64 ~
+$ pacman -S mingw-w64-ucrt-x86_64-gcc
+resolving dependencies...
+looking for conflicting packages...
+
+Packages (17) mingw-w64-ucrt-x86_64-binutils-2.46-4
+              mingw-w64-ucrt-x86_64-crt-14.0.0.r92.g818fa6510-1
+              mingw-w64-ucrt-x86_64-gcc-libs-16.1.0-5  mingw-w64-ucrt-x86_64-gettext-runtime-1.0-1
+              mingw-w64-ucrt-x86_64-gmp-6.3.0-2
+              mingw-w64-ucrt-x86_64-headers-14.0.0.r92.g818fa6510-1
+              mingw-w64-ucrt-x86_64-isl-0.27-1  mingw-w64-ucrt-x86_64-libiconv-1.19-1
+              mingw-w64-ucrt-x86_64-libwinpthread-14.0.0.r92.g818fa6510-1
+              mingw-w64-ucrt-x86_64-mpc-1.4.1-1  mingw-w64-ucrt-x86_64-mpfr-4.2.2-3
+              mingw-w64-ucrt-x86_64-tzdata-2026b-1
+              mingw-w64-ucrt-x86_64-windows-default-manifest-6.4-4
+              mingw-w64-ucrt-x86_64-winpthreads-14.0.0.r92.g818fa6510-1
+              mingw-w64-ucrt-x86_64-zlib-1.3.2-2  mingw-w64-ucrt-x86_64-zstd-1.5.7-2
+              mingw-w64-ucrt-x86_64-gcc-16.1.0-5
+
+Total Download Size:    68.98 MiB
+Total Installed Size:  490.23 MiB
+
+:: Proceed with installation? [Y/n]
+# This means it's asking you to type a y — do you want to download? The answer is yes
+# Type y and press Enter; step away for a bit and the install will be done when you're back
+```
+
+Now we can give it a try!
+
+![alt text](images/msys2_g++.png)
+
+:::
+
+`pacman` is the command you use to operate the MSYS2 "app store"; `-S` means "install (sync)", and the long string after it is the name of the package to install.
+
+The first time you install something, pacman will ask whether to proceed and whether the packages to download are the right ones — just type `Y` and press Enter to confirm. It'll download a few dozen megabytes, so give it a moment.
+
+With the install done, we need to make the Windows system recognize this newly installed compiler — that is, tell the system's PATH variable where it lives. What's PATH? Think of it as the system's "frequently used address book": for any address (a folder path) written in it, the system can find the programs inside directly, without you spelling out the full path every time.
+
+Press the Win key, search for "environment variables", and click "Edit the system environment variables".
+
+In the window that pops up, there's an "Environment Variables" button at the bottom right — click it. In the "System variables" list below, find the row named `Path` (note: `Path`, not `PATHEXT`) and double-click it.
+
+In the list that appears, click "New" and enter this line (if you kept MSYS2's default install path, this is it):
 
 ```text
 C:\msys64\ucrt64\bin
 ```
 
-Hit OK all the way out to close every window and save.
+Click "OK" through all the windows to close them and save.
 
-Now let's verify it worked. **You have to open a brand new command-line window for this.** You just changed PATH, and the old window won't pick up the change automatically, you must open a fresh one.
+Now let's verify it worked. **This step needs a brand-new command-line window** — you just changed PATH, and old windows don't refresh it automatically; a fresh one is mandatory.
 
-Press Win+R, type `cmd`, hit Enter, and a Command Prompt opens (the one with the black background). Type:
+Press Win+R, type `cmd`, hit Enter, and a Command Prompt opens (the black-background one). Type:
 
 ```bash
 g++ --version
 ```
 
-If you see output like this (the exact version number may be newer), you're set:
+If you see output like the following (your exact version number may be newer), it worked:
 
 ```text
-g++ (Rev2, Built by MSYS2 project) 16.1.0
-Copyright (C) 2025 Free Software Foundation, Inc.
+➜  g++ --version
+g++.exe (Rev5, Built by MSYS2 project) 16.1.0
+Copyright (C) 2026 Free Software Foundation, Inc.
 This is free software; see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 ```
 
-If you get something like "'g++' is not recognized as an internal or external command", the PATH isn't set right. Go back and check three things: is the path written as `C:\msys64\ucrt64\bin` (a lot of people miss the `\ucrt64\` in the middle), is anything misspelled, and did you actually open a new cmd window.
+If you see an error like "'g++' is not recognized as an internal or external command", PATH isn't set right. Go back and check three things: whether the path was entered as `C:\msys64\ucrt64\bin` (lots of people drop the middle `\ucrt64\` part), whether it's spelled correctly, and whether you opened a new cmd window.
 
 ### Step 3: Install CMake
 
-Last one. Open your browser and go to <https://cmake.org/download>.
+The last one. Open your browser and go to <https://cmake.org/download>.
 
-The page lists installers for several platforms. Under the Windows section, find `Windows x64 Installer` and download that `.msi` file (the filename looks like `cmake-x.y.z-windows-x86_64.msi`).
+The page lists installers for several platforms. Under the Windows section, find `Windows x64 Installer` and download the `.msi` file (named something like `cmake-x.y.z-windows-x86_64.msi`).
 
-Double-click the `.msi`. Keep hitting Next through the installer, and pay attention on this screen:
+Double-click the `.msi` to run it. Keep clicking Next through the installer, but slow down at this screen:
 
-It asks whether to add CMake to the system PATH. **Pick the second option, "Add CMake to the system PATH for all users"** (add it to the system PATH for everyone). The first option leaves it out by default, the third only adds it for the current user. The middle one is the least hassle.
+It will ask whether CMake should be added to the system PATH. **Pick the second option, "Add CMake to the system PATH for all users"** (add it to the system PATH for every user). The first option defaults to not adding it, and the third adds it only for the current user — the middle one is the least hassle, so that's our pick.
 
-Keep going and finish the install.
+Continue with Next until it finishes installing.
 
-Verify it. **Same rule, open a fresh cmd window** (the old window's PATH hasn't refreshed). Type:
+Let's verify. **Again, open a brand-new cmd window** (the old one's PATH is stale). Type:
 
 ```bash
 cmake --version
 ```
 
-See a version number printed, and you're set:
+Seeing a version number printed means we're set:
 
 ```text
-cmake version 4.4.2
+➜  cmake --version
+cmake version 4.4.1
 
-CMake suite maintained and supported by Kitware (kitware.com/CMake).
+CMake suite maintained and supported by Kitware (kitware.com/cmake).
 ```
 
-::: details Click to see: Installing CMake from the command line works too
-If you prefer the command line, you can also install CMake from inside the MSYS2 UCRT64 terminal with `pacman -S mingw-w64-ucrt-x86_64-cmake`. Done that way, CMake lands under `C:\msys64\ucrt64\bin`, right alongside the GCC you just installed, so you don't need to touch PATH separately. Pick one of the two methods, don't do both.
+::: details Click to see: installing CMake from the command line works too
+If you prefer the command line, you can also install it in the MSYS2 UCRT64 terminal with `pacman -S mingw-w64-ucrt-x86_64-cmake`. CMake installed that way lives under `C:\msys64\ucrt64\bin`, right next to the GCC you just installed, so you don't need to touch PATH separately. Pick one of the two install methods — don't do both.
 :::
 
 ## Install the C++ Extensions for vscode
 
-The three main pieces are in place. Now let's give vscode two "extensions". An extension is basically a plugin for vscode that adds extra features.
+The three main pieces of software are in place; the last job is to install two "extensions" for vscode. An extension is, roughly, a vscode plugin — it bolts extra features onto the editor.
 
-Open vscode. In the column of icons on the far left, find the one made of four little squares (hovering over it shows "Extensions") and click it. Or just press `Ctrl+Shift+X`.
+Open vscode. In the column of icons along the far left of the window, find the one made of four little squares (hovering the mouse over it shows "Extensions") and click it. Or just press the shortcut `Ctrl+Shift+X`.
 
-In the search box at the top, search for each of these two names, find the matching extension, and click "Install":
+In the search box at the top, search for these two names one at a time, find the matching extension, and click "Install" to install it:
 
-The first is C/C++. This is the official extension from Microsoft, and it gives you code completion, go-to-definition, error highlighting, that sort of thing. We won't touch its settings until article 5, but installing it now costs you nothing.
+The first is C/C++. It's the official Microsoft extension, providing code completion, jump-to-definition, error hints, and the like. We won't touch its settings until article 5, but installing it now costs nothing.
 
-The second is CMake Tools. Also official from Microsoft, it's what makes vscode play nicely with CMake. We'll use it in the next article when we write our first program.
+The second is CMake Tools. Also official Microsoft, it exists to make vscode and CMake cooperate. We'll use it in the very next article when we write our first program.
 
-Once both are installed, the blue status bar at the bottom of the vscode window gets a few CMake-related buttons (the current build type, a build button, things like that). Seeing those means the extensions are live.
+Once both are installed, the blue status bar at the very bottom of the vscode window grows a few CMake-related buttons (showing the current build type, a build button, and so on). Seeing those means the extensions are live.
 
-::: details Click to see: How to install on Linux (Ubuntu/Debian family)
-That covers the Windows main line. If you're on a Linux machine, the whole thing installs with one command, far less fuss than Windows.
+::: details Click to see: how to install on Linux (the Ubuntu/Debian family)
+That wraps up the Windows mainline. If you have a Linux machine at hand, the whole set installs with a single command line — far less fuss than Windows. That's exactly why I like working in WSL or on my own Linux laptop. It doesn't slow me down one bit!
 
-Open a terminal and type this (it installs the compiler, CMake, and debugger all at once):
+Open a terminal and type this line (it installs the compiler, CMake, and the debugger all in one go):
 
 ```bash
 sudo apt update && sudo apt install -y build-essential cmake ninja-build gdb
 ```
 
-The `build-essential` package contains the GCC compiler, `cmake` is the build tool, `ninja-build` is a faster build backend that CMake often pairs with, and `gdb` is the debugger we'll need later for tracking down problems. `sudo` means "run with admin privileges" and it'll ask for your password.
+`build-essential` is the package that contains the GCC compiler; `cmake` is the build tool; `ninja-build` is a faster build backend (a common CMake pairing); and `gdb` is the debugger, which will come in handy when troubleshooting later. `sudo` means "run with administrator privileges" and will ask you for your password.
 
-For vscode, go to <https://code.visualstudio.com>, download the `.deb` package, and double-click to install (or from the command line, `sudo apt install ./code_*.deb`).
+For vscode, grab the `.deb` installer from <https://code.visualstudio.com> and double-click to install (or from the command line, `sudo apt install ./code_*.deb`).
 
-Verify the same way as on Windows:
+Verification works the same as on Windows:
 
 ```bash
 g++ --version
 cmake --version
 ```
 
-If you see version numbers, you're set. The C/C++ and CMake Tools extensions still need to be installed inside vscode, that part has nothing to do with the OS.
+Seeing version numbers means you're done. The C/C++ and CMake Tools extensions still need to be installed inside vscode — that part doesn't depend on the OS.
 :::
 
-::: details Click to see: How are MSVC and MinGW really different, and which should you pick?
-There are two main C++ compiler families on Windows: Microsoft's own MSVC (the Visual Studio family), and the MinGW route we're taking here (the Windows port of GCC).
+::: details Click to see: MSVC vs. MinGW — where they really differ, and how to choose
+Windows C++ compilers come down to two main camps: Microsoft's own MSVC (the Visual Studio suite), and the MinGW route we're taking here (the Windows port of GCC).
 
-Short version: both work, both can compile Windows programs, and for day-to-day learning the differences barely matter. But a few points are worth knowing.
+In short: both let you write and compile Windows programs, and for day-to-day learning the difference is small. A few points are worth noting, though.
 
-The debugger differs. MSVC pairs with Microsoft's own debugger; MinGW pairs with GDB. This series uses GDB a lot later on, because the embedded track also uses GDB, so the habits line up.
+Different debuggers. MSVC pairs with Microsoft's own debugger; MinGW pairs with GDB. This tutorial uses GDB a lot later on — the embedded track uses GDB too, so the habits line up.
 
-C++ standard support and pace differ. MSVC ships ahead on some new features, GCC ahead on others, they trade the lead. For the beginner stage it makes no difference.
+Different C++ standard pace. MSVC moves a bit faster on some new features, GCC on others; each leads somewhere. For the beginner stage it makes no difference.
 
-Size differs. The full Visual Studio install is a dozen-plus GB. MinGW plus MSYS2 is one or two GB and you're set. When you're just starting out, lighter is easier.
+Different sizes. A full Visual Studio install runs to a dozen-odd GB (the author's work eats tens of GB, because it spans several versions of VS); MinGW plus MSYS2 fits in one or two GB. We're just starting out, so the lightweight install saves trouble.
 
-Command-line habits differ. MSVC leans toward the Windows-native world (the cl.exe compiler, linker setup that has nothing in common with Linux), while MinGW matches GCC on Linux and macOS. Every command and CMake config later in this series assumes GCC, so MinGW is the smoother path.
+Different command-line habits. MSVC leans toward the native Windows way (the cl.exe compiler, linker configuration completely unlike Linux), while MinGW matches GCC on Linux/macOS. The commands and CMake configuration later in this tutorial all assume GCC, so MinGW is the smoothest path.
 
-If later on you end up doing Windows desktop app development, or you need to call Windows-specific APIs (Direct3D, for instance), that's the time to install Visual Studio and pick up MSVC. The detailed comparison and how to switch between them lives in vol1/ch00, the article dedicated to setting up a Windows environment.
+If you later move into Windows desktop application development and need Windows-exclusive APIs (Direct3D, say), it won't be too late to install Visual Studio and MSVC then. The detailed comparison and the how-to for switching live in the dedicated Windows environment setup article in vol1/ch00.
 :::
 
-Three things are now installed: the vscode editor, the MinGW compiler, and the CMake build tool, plus the two C++ extensions inside vscode. In the next article we'll write our first C++ program inside vscode, actually run it, and see how that line `Hello, World!` turns from code into letters on the screen.
+The three things are installed: the vscode editor, the MinGW compiler, and the CMake build tool — plus the two C++ extensions in vscode. In the next article we'll write our first C++ program inside vscode, get it genuinely running, and watch how that line of `Hello, World!` turns from code into text on the screen.
+
+::: details Click to see: want a more detailed environment setup reference
+
+- [A Super-Detailed VSCode Installation Tutorial (Windows)](https://zhuanlan.zhihu.com/p/678737903) — every step of downloading and installing VSCode, with pictures; check against this if you get stuck installing vscode
+- [MSYS2+VSCode: A Near-Linux C/C++ Programming Environment on Windows](https://zhuanlan.zhihu.com/p/1982834714722194966) — a fuller setup than this article (all the way to clangd, lldb debugging, zsh beautification); read this one if you want to configure everything in a single pass
+:::

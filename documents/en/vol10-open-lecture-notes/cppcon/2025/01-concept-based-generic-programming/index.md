@@ -1,28 +1,27 @@
 ---
-title: Concept-based Generic Programming
-description: 'CppCon 2025 Talk Notes — Bjarne Stroustrup: Concept-Based Generic Programming'
+title: "Concept-based Generic Programming"
+description: "CppCon 2025 talk notes — Bjarne Stroustrup: concept-based generic programming"
 conference: cppcon
 conference_year: 2025
-talk_title: Concept-based Generic Programming
-speaker: Bjarne Stroustrup
-video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW
-video_youtube: https://www.youtube.com/watch?v=VMGB75hsDQo
+talk_title: "Concept-based Generic Programming"
+speaker: "Bjarne Stroustrup"
+video_bilibili: "https://www.bilibili.com/video/BV1ptCCBKEwW"
+video_youtube: "https://www.youtube.com/watch?v=VMGB75hsDQo"
 tags:
-- cpp-modern
-- host
-- intermediate
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 platform: host
-cpp_standard:
-- 20
-- 23
+cpp_standard: [20, 23]
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/01-concept-based-generic-programming/index.md
   source_hash: 190ec91565500db58f035ee3e208fc9c61677e0bc2085b53e7197bfadf733160
-  translated_at: '2026-05-26T11:05:28.516082+00:00'
+  translated_at: '2026-09-26T15:05:40+00:00'
   engine: anthropic
-  token_count: 288
+  token_count: 250
 ---
+
 <TalkInfoCard
   talkTitle="Concept-based Generic Programming"
   speaker="Bjarne Stroustrup"
@@ -32,11 +31,11 @@ translation:
   videoYoutube="https://www.youtube.com/watch?v=VMGB75hsDQo"
 />
 
-## Notes
+## Contents
 
 <ChapterNav variant="sub">
   <ChapterLink href="01-type-safety-and-number-concept">Type Safety, Number Constraints, and Bounds Checking</ChapterLink>
-  <ChapterLink href="02-range-and-concept-composition">Range, Iterators, and Concepts</ChapterLink>
+  <ChapterLink href="02-range-and-concept-composition">Range, Iterators, and Concept Composition</ChapterLink>
   <ChapterLink href="03-syntax-advanced-concepts-and-generic-philosophy">Syntax Consistency, Advanced Concepts, and Generic Philosophy</ChapterLink>
   <ChapterLink href="04-template-compilation-and-future">Template Compilation Model and Future Outlook</ChapterLink>
 </ChapterNav>

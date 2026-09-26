@@ -1,18 +1,18 @@
 ---
 title: CppCon 2025 Talk Notes
-description: CppCon 2025 Conference Talk Reading Notes
+description: Reading notes for talks from CppCon 2025
 conference: cppcon
 conference_year: 2025
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/index.md
-  source_hash: a5b6eec5f54dde5601215c218aa73ef4f3ec87186be4ce7582f6233964b9ef0b
-  translated_at: '2026-06-14T00:18:02.162311+00:00'
+  source_hash: 4e5520868fa19660af799adecac5324177337edf1deeffd9d6bbdf836403da74
+  translated_at: '2026-09-26T14:52:25+00:00'
   engine: anthropic
-  token_count: 411
+  token_count: 500
 ---
 # CppCon 2025 Talk Notes
 
-A collection of notes from CppCon 2025 presentations.
+A collection of talk notes from CppCon 2025.
 
 ## Talk List
 

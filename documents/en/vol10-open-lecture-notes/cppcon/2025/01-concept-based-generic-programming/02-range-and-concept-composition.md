@@ -17,7 +17,7 @@ tags:
 - host
 - intermediate
 talk_title: Concept-based Generic Programming
-title: Range, Iterators, and Concepts
+title: Range, Iterators, and Concept Composition
 video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW
 video_youtube: https://www.youtube.com/watch?v=VMGB75hsDQo
 translation:
