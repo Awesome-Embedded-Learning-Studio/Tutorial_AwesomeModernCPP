@@ -4,78 +4,78 @@ cpp_standard:
 - 11
 - 17
 - 20
-description: Thoroughly explains the iostream stream hierarchy and `streambuf` buffering,
-  the default buffering differences between `cin`/`cout`/`cerr`/`clog`, why `sync_with_stdio`
-  and `cin.tie` slow down real-world benchmarks by an order of magnitude, why streams
-  are slow (locale lookups, virtual functions, sentries, and synchronization with
-  C stdio), and the `failbit`/`badbit`/`eofbit` state machine; and demonstrates the
-  speed gap between `cin`, `scanf`, and `from_chars` by benchmarking reading one million
-  integers.
+description: A thorough walkthrough of the iostream class hierarchy and streambuf buffering,
+  the default buffering differences among cin/cout/cerr/clog, why sync_with_stdio and
+  cin.tie drag real benchmarks down by an order of magnitude, why streams are slow at
+  all (locale lookups, virtual dispatch, sentries, synchronization with C stdio), plus
+  the failbit/badbit/eofbit state machine — benchmarked by reading one million ints
+  to chart the speed gap between cin, scanf, and from_chars
 difficulty: intermediate
 order: 55
 platform: host
 prerequisites:
-- 迭代器适配器：反向、插入与流，把现成迭代器改出新行为
-- charconv：零开销的数字与字符串互转
+- 'Iterator Adapters: Reverse, Insert, and Stream — Repurposing Existing Iterators
+  with New Behaviors'
+- 'charconv: Zero-Overhead Number-String Conversions'
 reading_time_minutes: 16
 related:
-- charconv：零开销的数字与字符串互转
-- print：C++23 的直接输出与 iostream 解耦
-- format：C++20 的类型安全格式化
-- fstream：文件流读写、RAII 与它的可移植性坑
+- 'charconv: Zero-Overhead Number-String Conversions'
+- 'print: Direct Output in C++23 and Decoupling from iostream'
+- 'format: Type-Safe Formatting in C++20'
+- 'fstream: File Stream I/O, RAII, and Its Portability Pitfalls'
 tags:
 - host
 - cpp-modern
 - intermediate
 - 基础
-title: 'iostream: Stream Abstraction and Why It Is So Slow'
+title: 'iostream: Stream Abstraction and Why It''s So Slow'
 translation:
   source: documents/vol3-standard-library/io/55-iostream.md
-  source_hash: 1d2cc3d94d6fcbbbdcb4908dea9978daad288a98d57b914a1fe987ecd12f4202
-  translated_at: '2026-06-24T00:43:10.267351+00:00'
+  source_hash: 6d928b858c8b3e124c02c2932a450c2d80217b59a7ea1e10dd69237a2b547c50
+  translated_at: '2026-09-26T00:41:29+00:00'
   engine: anthropic
-  token_count: 3954
+  token_count: 5700
 ---
-# iostream: Stream Abstraction and Why It Is So Slow
+# iostream: Stream Abstraction and Why It's So Slow
 
-Most C++ developers have likely heard this piece of "advice": `cin` and `cout` are slow, so when solving algorithmic problems, turn off `sync_with_stdio` first, otherwise you won't pass the test cases with large datasets. While this statement is technically correct, it compresses a topic worth explaining thoroughly into a mere mantra—where exactly does `iostream` slow down, why does disabling synchronization make it fast, and what pitfalls remain after that speedup? In this article, we will dissect the `<iostream>` stream abstraction: first, we clarify its hierarchy and buffering design, then we use real benchmarks to measure that "order of magnitude" gap, and finally, we explain exactly when to use it and when to avoid it.
+Anyone who writes C++ has probably heard the "advice": `cin` / `cout` are slow; turn off `sync_with_stdio` before grinding competitive-programming problems, or the big test cases won't pass. The advice itself isn't wrong — but it compresses something genuinely worth understanding into a mnemonic chant: where exactly is `iostream` slow, why does turning off sync make it fast, and what traps are left behind once it's fast. In this article we take `<iostream>`'s stream abstraction apart and run it through its paces: first get a clear view of its layering and buffering design, then use a real benchmark to measure that "order of magnitude" gap, and finally nail down which scenarios should use it and which should route around it.
 
-We will repeatedly return to the same specific task—**reading one million integers from standard input and summing them**. This task is small enough to show the full code, yet substantial enough to expose the overhead of every layer of the stream abstraction. The local environment is GCC 16.1.1, compiled with `g++ -std=c++20 -O2`. The numbers are real results; absolute values may vary by machine, but we only care about the order of magnitude conclusions.
+We'll keep coming back to one concrete task: **read one million integers from standard input and sum them**. It's small enough to paste in full, yet heavy enough to expose the overhead of every layer of the stream abstraction. Local machine, GCC 16.1.1, `g++ -std=c++20 -O2`; every number below was actually measured. Absolute values will drift from machine to machine — we only care about the order-of-magnitude conclusions.
 
-## Clarifying the Hierarchy of Stream Abstraction
+## First, Get the Stream Abstraction's Layers Straight
 
-Many developers' mental model of `iostream` stops at "`cin` is for input, `cout` is for output." However, once you open the `<iostream>` header, you see a complete inheritance hierarchy. Let's lay it out from bottom to top, because when we discuss "why it is slow" later, every layer contributes a portion of the overhead:
+Many people's mental model of `iostream` stops at "`cin` is input, `cout` is output". But the moment you open the `<iostream>` header, you're looking at a whole inheritance hierarchy. Let's lay it out from bottom to top, because when we later ask "why is it slow", every layer contributes a share of the overhead:
 
 ```text
-ios_base          ← 所有流的公共基类：格式标志、locale、状态位
-  └─ ios          ← 加上 streambuf 指针和错误处理
-       ├─ istream ← 输入：operator>>、get、getline
-       └─ ostream ← 输出：operator<<、put、write
-            └─ iostream ← 多继承自 istream 和 ostream
+ios_base          ← common base of all streams: format flags, locale, state bits
+  └─ ios          ← adds the streambuf pointer and error handling
+       ├─ istream ← input: operator>>, get, getline
+       └─ ostream ← output: operator<<, put, write
+            └─ iostream ← multiply inherits from istream and ostream
 ```
 
-The actual work is done by the `streambuf` pointer held within `ios`. The `istream` / `ostream` classes themselves merely handle "formatting and dispatching"—they translate `>>` / `<<` operations into character read/write requests, and then pass these requests to the underlying `streambuf`. It is `streambuf` that manages buffering and interfaces with the actual I/O channels (terminals, files, or memory blocks). You can visualize this relationship as follows:
+The one actually doing the work is the `streambuf` pointer hanging off `ios`. `istream` / `ostream` themselves only do "formatting and dispatch" — they translate `>>` / `<<` into read/write requests for characters, then hand those requests down to the underlying `streambuf`. `streambuf` is the layer that manages buffering and interfaces with the real I/O channel (terminal, file, memory block). You can picture the relationship like this:
 
 ```text
-你的代码  ──>>/<<──►  istream/ostream(格式化 + sentry + locale)
+your code  ──>>/<<──►  istream/ostream(formatting + sentry + locale)
                           │
-                          ▼  把字符请求委托下去
-                      streambuf(缓冲、实际读写)
+                          ▼  delegates character requests downward
+                      streambuf(buffering, actual reads/writes)
                           │
                           ▼
-                    真正的 I/O 通道(stdin / 文件 / string)
+                    real I/O channel(stdin / file / string)
 ```
 
-This chain is the source of `iostream`'s abstraction power—the same `<<` / `>>` code can seamlessly switch between the screen, files, and memory simply by swapping the `streambuf`. However, this is also one of the reasons it is "slow": **every `<<` must traverse the entire dispatch chain**. We will see just how expensive this chain is in our benchmarks later on.
+This chain is where `iostream`'s abstraction power comes from — the same `<<` / `>>` code switches seamlessly between screen, file, and memory just by swapping the `streambuf`. But it's also one of the roots of its "slowness": **every single `<<` walks the entire dispatch chain**. Our measurements later will show just how expensive that chain is.
 
-The `<iostream>` header provides us with four predefined standard stream objects, corresponding to `stdin` / `stdout` / `stderr`:
+The `<iostream>` header predefines four standard stream objects for us, corresponding to `stdin` / `stdout` / `stderr`:
 
-- `std::cin` — bound to `stdin`, an `istream`;
-- `std::cout` — bound to `stdout`, an `ostream`, **buffered**;
-- `std::cerr` — bound to `stderr`, an `ostream`, **unbuffered**, flushing immediately on every `<<`;
-- `std::clog` — also bound to `stderr`, but **buffered**, accumulating writes just like `cout`.
+- `std::cin` — tied to `stdin`, an `istream`;
+- `std::cout` — tied to `stdout`, an `ostream`, **buffered**;
+- `std::cerr` — tied to `stderr`, an `ostream`, **unbuffered** — every `<<` goes out immediately;
+- `std::clog` — also tied to `stderr`, but **buffered**, accumulating writes like `cout` does.
 
-The fact that `cerr` is unbuffered is critical. Let's verify this directly. The code below deliberately inserts a `cerr` output and a `sleep` between two `cout` outputs to observe how the buffering behavior manifests:
+The fact that `cerr` is unbuffered matters a lot, so let's verify it hands-on. The code below deliberately wedges a `cerr` output and a `sleep` between two `cout` outputs, to see exactly how the buffering behavior shows up:
 
 ```cpp
 // Standard: C++20
@@ -86,31 +86,31 @@ The fact that `cerr` is unbuffered is critical. Let's verify this directly. The 
 int main() {
     std::cout << "[cout] 这一串会先在 cout 的缓冲里待着";
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    // cerr 不缓冲：哪怕 cout 还没 flush，cerr 立刻出去
+    // cerr is unbuffered: even though cout hasn't flushed, cerr goes out immediately
     std::cerr << "[cerr] 我不缓冲，立刻打到 stderr\n";
     std::cout << " (cout 这一段补完才一起 flush)\n";
     return 0;
 }
 ```
 
-When we merge stdout and stderr into the same terminal, the output order looks like this:
+With stdout and stderr merged into the same terminal, the output order looks like this:
 
 ```text
 [cout] 这一串会先在 cout 的缓冲里待着[cerr] 我不缓冲，立刻打到 stderr
  (cout 这一段补完才一起 flush)
 ```
 
-Notice the first line—the `[cout]` sequence should have appeared first, yet it is squeezed onto the same line as `[cerr]`; meanwhile, the `cerr` message appears on screen **before** the second half of the `cout` output. This is living proof that "`cerr` is unbuffered, `cout` is buffered": `cout` held `"这一串..."` in its buffer, while `cerr` immediately pierced through to `stderr`. Finally, when the program exited, `cout` flushed everything, including `(cout 这一段...)`. This is why diagnostic messages default to `cerr`—**even if the program crashes on the next line, the error message has already been flushed out**, so it won't be stuck in `cout`'s buffer and go down with the ship.
+Notice the first line — the `[cout]` string should have happened first, yet it ended up squeezed onto the same line as `[cerr]`; and the `cerr` message hit the screen **before** the second half of the `cout` output. This is living proof of "cerr unbuffered, cout buffered": `cout` kept its first string parked in its buffer, while the `cerr` message pierced straight through to `stderr` immediately; only at program exit did `cout` finally flush, bringing its trailing segment along. So there's a solid reason error diagnostics default to `cerr` — **even if the program crashes on the very next line, the error message is already out**, not left trapped in `cout`'s buffer to die with it.
 
-## `sync_with_stdio` and `cin.tie`: Two Switches That Slow Down Real-World I/O
+## sync_with_stdio and cin.tie: Two Switches That Slow Down Real I/O
 
-Now that we've clarified the hierarchy, let's get straight to the most practical part of this article. By default, `iostream` enables two mechanisms that "prioritize safety over speed," and that common competitive programming tip to "turn off `sync_with_stdio`" is referring to these two.
+With the layering straight, let's jump straight into the most hands-on part of this article. `iostream` ships with two "slowed down for safety" mechanisms enabled by default — and the competitive-programming chant "turn off `sync_with_stdio` first" is turning off exactly these two.
 
-The first is `std::ios_base::sync_with_stdio`, which defaults to `true`. It forces `cin` / `cout` / `cerr` to **synchronize** with the C standard library's `stdin` / `stdout` / `stderr`—ensuring that if you mix `std::cin` with `scanf`, or `std::cout` with `printf`, the order of reads and writes remains consistent as if you were using only one set of streams. The cost of this guarantee is that the standard library implementation must make `cin` / `cout` share the same buffers and positions as C's `FILE*`. The most common implementation effectively **degrades `cin` / `cout` to reading character-by-character through C stdio**. Once you go character-by-character, buffering is effectively wasted.
+The first is `std::ios_base::sync_with_stdio`, `true` by default. It keeps `cin` / `cout` / `cerr` **synchronized** with the C standard library's `stdin` / `stdout` / `stderr` — guaranteeing that if you mix `std::cin` with `scanf`, or `std::cout` with `printf`, the order of reads and writes stays consistent with "using only one side". The price of that guarantee: the standard library implementation must let `cin` / `cout` share the same buffering and position state with C's `FILE*`, and the most common way to do that is to **degrade `cin` / `cout` into going through C stdio essentially character by character**. Once you're per-character, half the point of buffering is gone.
 
-The second is `std::cin.tie(&std::cout)`, which binds `cin` to `cout` by default. The semantics of this binding are: **before every read from `cin`, flush the bound `cout` first**. This is another safeguard for interactive program correctness—a typical scenario is `cout << "Enter x: "` to show a prompt, followed by `cin >> x` to read input. With the tie, we don't have to worry that the prompt is still stuck in the buffer while the user is already blocked waiting for input. The cost is: **every read operation incurs an extra, gratuitous flush of `cout`**. When doing heavy I/O, this is pure overhead.
+The second is `std::cin.tie(&std::cout)` — by default, `cin` is tied to `cout`. The semantics of tying: **before every read from `cin`, the `cout` it's tied to gets flushed first**. Again this exists for interactive-program correctness — the classic scene is printing a prompt with `cout << "Enter x: "` and then reading with `cin >> x`; being tied means you never face the prompt still stuck in the buffer while the user is already blocked at the input. The cost: **every read operation comes with a free extra flush of `cout`**, and under heavy reading that's pure waste.
 
-How much do these two switches together impact "reading heavily from `cin`"? Let's measure it directly using the task mentioned at the beginning. The following small program reads one million `int`s from standard input and sums them up. If `argv[1]` is `0`, it takes the default path; if it is `1`, it turns off both switches:
+How much do these two switches combined hurt "reading a lot from `cin`"? Let's measure it directly with the task from the beginning. The little program below reads one million `int`s from standard input and sums them; `argv[1]` of `0` takes the default path, `1` turns both switches off:
 
 ```cpp
 // Standard: C++20
@@ -136,7 +136,7 @@ int main(int argc, char** argv) {
 }
 ```
 
-We fed it the same 7.5 MiB data file containing one million integers, running it three times:
+Feeding it the same 7.5 MiB data file of one million integers, three runs in a row:
 
 ```text
 === default cin (sync on, tied) ===
@@ -149,16 +149,16 @@ mode=fast(sync off)  time=39.8 ms  sum=3499993500000
 mode=fast(sync off)  time=39.8 ms  sum=3499993500000
 ```
 
-**A drop from 177 ms down to 40 ms—over a 4x speedup**—that is the empirical evidence behind that statement. The two curves align perfectly: the default runs consistently hit 176–178 ms, while the fast runs consistently hit 39–42 ms. The conclusion is rock solid.
+**From 177 ms down to 40 ms, more than a 4x speedup** — that's the entire empirical content of that one-line advice. The two groups line up cleanly: the three default runs all land at 176–178 ms, the three fast runs at 39–42 ms. A rock-solid conclusion.
 
-Even more interesting is the number 40 ms itself. Remember the dispatch chain diagram from earlier? By default, `cin` is forced to synchronize with C stdio, compelling it to traverse `FILE*` almost character-by-character, which is why it is slow. Once synchronization is disabled, `cin`'s own `streambuf` layer can finally cut loose and use its own buffer for bulk reading, allowing its speed to catch up immediately—matching, or even slightly beating, the `scanf` we will test shortly. In other words, **disabling `sync_with_stdio` isn't magic; it simply untangles the dispatch chain that was being bogged down by synchronization**.
+What's more interesting is the number 40 ms itself. Remember the dispatch-chain diagram from earlier? In the default state, `cin` — because it must stay synchronized with C stdio — is forced to track the `FILE*` position essentially character by character, hence the slowness. The moment sync is off, `cin`'s own `streambuf` layer can finally stretch out and read in bulk through its own buffer, and the speed catches up immediately — on par with the `scanf` we're about to measure, even slightly ahead. In other words, **turning off `sync_with_stdio` works no magic; it merely unshackles the dispatch chain that synchronization was dragging down**.
 
-### Two Pitfalls Left Behind After Disabling Synchronization
+### The Two Traps Left Behind After Turning Sync Off
 
-The speedup is real, but making this cut severs two connections that can trip you up if you aren't careful. Let's examine them one by one.
+The speedup is real, but the same cut also severs two things, and you'll step on them if you're not watching. Let's take them one by one.
 
-::: warning Don't Mix cin/cout with scanf/printf
-After disabling `sync_with_stdio`, `cin` / `cout` use their own buffers, while `scanf` / `printf` use C's `FILE*` buffers. These two buffering mechanisms **are unaware of each other**, so the order of output is no longer guaranteed. In the code below, the source order is `printf 1`, `cout 2`, `printf 3`, `cout 4`:
+::: warning Stop mixing cin/cout with scanf/printf
+After `sync_with_stdio` is turned off, `cin` / `cout` use their own buffers while `scanf` / `printf` use C's `FILE*` buffers; the two buffer sets **don't know the other exists**, and the ordering of output is no longer guaranteed. In the code below, the source order is `printf 1`, `cout 2`, `printf 3`, `cout 4`:
 
 ```cpp
 // Standard: C++20
@@ -166,7 +166,7 @@ After disabling `sync_with_stdio`, `cin` / `cout` use their own buffers, while `
 #include <iostream>
 
 int main(int argc, char** argv) {
-    if (argc > 1) std::ios_base::sync_with_stdio(false);  // 传参 = 关同步
+    if (argc > 1) std::ios_base::sync_with_stdio(false);  // passing an argument = turn sync off
     std::printf("[printf] 1\n");
     std::cout << "[cout]   2\n";
     std::printf("[printf] 3\n");
@@ -175,7 +175,7 @@ int main(int argc, char** argv) {
 }
 ```
 
-Running with synchronous mode (default), the four lines are printed strictly in source code order:
+With sync on (the default), the four lines come out dutifully in source order:
 
 ```text
 [printf] 1
@@ -184,7 +184,7 @@ Running with synchronous mode (default), the four lines are printed strictly in 
 [cout]   4
 ```
 
-Running with synchronization disabled (consistent results across multiple runs), the order is completely scrambled—the two sets of buffers accumulate and flush independently:
+Turn sync off and run again (multiple runs, same result every time), and the order is completely scrambled — each buffer set accumulates and flushes on its own:
 
 ```text
 [cout]   2
@@ -193,50 +193,50 @@ Running with synchronization disabled (consistent results across multiple runs),
 [printf] 3
 ```
 
-The pattern is straightforward: the two `cout` lines are grouped together by its own buffer, and the two `printf` lines are grouped together by the C buffer. Whichever buffer fills up or is flushed first goes out first. Therefore, the golden rule is—**after disabling `sync_with_stdio`, use either `cin`/`cout` exclusively or `scanf`/`printf` exclusively throughout the program. Do not mix them**. If you really need to mix them and are concerned about ordering, C++23's `std::print(std::cout, ...)` offers a clean solution (see Chapter [53-print](../strings/53-print.md) in this volume).
+The pattern is plain: `cout`'s two lines get batched together by its own buffer, `printf`'s two lines get batched together by the C buffer, and whichever buffer fills first / gets flushed first goes out first. Hence the iron rule — **after turning off `sync_with_stdio`, the whole program uses either `cin` / `cout` exclusively or `scanf` / `printf` exclusively; never mix**. If you genuinely need to mix and fear the scrambling, C++23's `std::print(std::cout, ...)` is a clean way out (see [53-print](../strings/53-print.md) in this volume).
 :::
 
-::: warning Interactive prompts require manual flushing after untying
-`cin.tie(nullptr)` disables the "automatic flush of `cout` before reading." In batch processing scenarios, this is a pure gain—there are no prompts to print, so flushing before every read is a waste. However, if you are writing an interactive program and habitually write code like this:
+::: warning After untying cin, interactive prompts must flush on their own
+What `cin.tie(nullptr)` removes is "automatically flushing `cout` before each read". In batch-processing scenarios that's pure profit — there's no prompt to print, and flushing before every read is nothing but waste. But if you're writing an interactive program and habitually do this:
 
 ```cpp
-std::cout << "Enter x: ";   // 提示没换行，也不手 flush
+std::cout << "Enter x: ";   // prompt has no newline, and no manual flush
 std::cin >> x;
 ```
 
-By default, `tie` causes `cin >> x` to flush `cout` first, ensuring the user sees `Enter x:` before typing. However, if you disable this with `cin.tie(nullptr)` to "speed things up," that automatic flush disappears. The prompt might get stuck in the `cout` buffer, leaving the user staring at a blank screen waiting for input, which ruins the user experience. The conclusion: **whether to disable `tie` depends on whether you actually have a `cout` prompt that needs flushing before reading**. Disable it for pure data throughput, but keep it for interactive sessions.
+Under the default `tie`, `cin >> x` flushes `cout` first, so the user sees `Enter x:` before typing. But the moment you casually add `cin.tie(nullptr)` "for speed", that automatic flush is gone: the prompt may sit in `cout`'s buffer and stubbornly refuse to appear, and the user stares at a blank screen waiting to type — an awful experience. Conclusion: **whether to untie `cin` depends on whether you really have a `cout` prompt that needs flushing before reads**. Pure data throughput — untie; interactive — keep the tie.
 :::
 
-## Seeing the Full Picture: Why iostream is Actually Slow
+## The Full Picture: Why iostream Is Slow in the First Place
 
-So far, we have focused on `sync` and `tie`, but even with both of these switches turned off, `cin` and `cout` are still slower than raw `from_chars`. Let's point out **every expensive step** in this dispatch chain so you understand why `iostream` can't be fast, even when "optimized":
+So far we've been leaning on `sync` / `tie` as the whole story, yet even with both switches off, `cin` / `cout` still trail bare `from_chars` by a solid margin. Let's now point out **every expensive spot** along that dispatch chain — you'll understand why `iostream`, even "optimized", can't get truly fast:
 
-**Locale lookups.** `>>` and `<<` default to formatting based on the current locale—for example, thousands separators in integers, decimal points in floating-point numbers, and the text representation of `bool` values (`true` / `false`) are all locale-dependent. Even if you don't configure anything, it still has to check the C locale every time. We compared this in detail in the [51-charconv](../strings/51-charconv.md) chapter; `charconv` can be several times faster by cutting out locale, and that overhead is hidden right here.
+**Locale lookups.** `>>` / `<<` format according to the current locale by default — the thousands separator in integers, the decimal point of floating-point numbers, the `true` / `false` text for booleans are all locale-dependent. Even if you never configure anything, the C locale still has to be consulted. We compared this in detail in [51-charconv](../strings/51-charconv.md) in this volume: `charconv` gets several times faster after cutting locale out, and this is exactly where that cost was hiding.
 
-**Virtual function dispatch.** `istream` and `ostream` implement `>>` and `<<` as calls to `streambuf` virtual functions (like `sputc`, `sbumpc`, `xsputn`, etc.). Since `streambuf` is an abstract class, the specific implementation is determined at runtime. Compilers struggle to inline this entire chain away, so every `<<` carries the cost of an indirect call.
+**Virtual dispatch.** `istream` / `ostream` implement `>>` / `<<` as calls to `streambuf` virtual functions (`sputc` / `sbumpc` / `xsputn` and friends), and `streambuf` is an abstract class — which concrete implementation runs is decided at runtime. The compiler can rarely inline this chain away entirely, so every `<<` carries a layer of indirect calls on its back.
 
-**The sentry object.** This is a layer many people don't know about. The standard requires that for every call to `>>` or `<<`, a `sentry` object is constructed first. It checks the stream state, locks the `streambuf` (ensuring a single `<<` is atomic in multi-threaded environments), and performs preparation, then wraps things up upon destruction. This means **every `<< x` you see corresponds to a sentry construction and destruction underneath**. Once or twice doesn't matter, but in a loop of a million iterations, this is real overhead. This is also why "combining multiple `<<` into one call" (e.g., using `std::format` to build a string and then outputting it with a single `<<`) is faster than "writing ten `<<` statements in a row"—fewer sentry constructions.
+**The sentry object.** This is a layer many people don't know about. The standard requires that every invocation of `>>` / `<<` construct a `sentry` object on entry — it checks the stream state, locks the `streambuf` (so that one `<<` is atomic under multithreading), and does the upfront preparation, then wraps up in its destructor. In other words, **every `<< x` you see corresponds to one sentry construction + destruction underneath**. Once or twice doesn't matter; across a loop of a million, that's real, honest overhead. It's also why "stitching several `<<` into one call" (say, building the string with `std::format` first and `<<`-ing it once) beats "ten `<<` in a row" — fewer sentry constructions.
 
-**Synchronization with C stdio.** As discussed in the `sync_with_stdio` section, this is enabled by default and forces standard streams to process character-by-character through C `FILE*`, representing the single largest performance gap.
+**Synchronization with C stdio.** That's the `sync_with_stdio` section from earlier: on by default, forcing the standard streams to go through C's `FILE*` character by character — the single biggest cut in magnitude.
 
-**Format parsing.** `>>` and `<<` aren't just moving bytes; they have to perform a full suite of parsing tasks: "skip leading whitespace, identify signs, truncate by width, and assemble integers." `<<` does the reverse, formatting integers into characters. This is necessary work, but `iostream` bundles it with the locale lookups, virtual functions, and sentry objects mentioned above, running the full gamut for every single number read.
+**Format parsing.** `>>` / `<<` doesn't just move bytes; it also runs the whole parsing pipeline of "skip leading whitespace, recognize the sign, cut off at the field width, assemble an integer", and `<<` in turn has to format an integer into characters. That work is inherently necessary — but `iostream` bundles it together with the locale, virtual dispatch, and sentry from above, so every number read pays for the full tour.
 
-When you add all this up, the slowness of `iostream` is no mystery—**it's not that one specific point is slow, but rather that every layer adds a bit of overhead**. The benefits are tangible: type safety (the compiler knows at compile-time that you are `<<`-ing an `int`, avoiding the undefined behavior you get with `printf` type mismatches), automatic extensibility (overload `operator<<` for custom types to feed them into any `ostream`), and seamless integration with the exception and RAII systems. This is why it won't be—and shouldn't be—"optimized away"—it pays the price of abstraction, and the bill for abstraction always comes due.
+Add it all up and the slowness of `iostream` stops being mysterious — **it isn't one slow spot; it's every layer chipping in a little**. What you buy with it is just as tangible: type safety (the compiler knows at compile time that you're `<<`-ing an `int`, unlike `printf` where a mismatched type is undefined behavior), automatic extensibility (overload `operator<<` for your own type and it plugs into any `ostream`), and seamless cooperation with exceptions/RAII. That's why it won't — and shouldn't — be "optimized away": its cost is the cost of abstraction, and someone always has to pay that bill.
 
 ## Putting the Three Approaches Together: cin vs scanf vs from_chars
 
-Now we arrive at the most important question: for a job like "reading one million integers," which method should we use? Let's run all three paths on the same dataset: default `cin`, `cin` with synchronization disabled, C's `scanf`, and `fread` to slurp the entire file into memory followed by `from_chars` for parsing. The latter is the most "brutal" fast path—bypassing all stream abstractions to read bytes and parse directly.
+With all that said, the question that most deserves an answer arrives: for a job like "read one million ints", which one should we actually use? Let's put all the paths on the same data in one go: default `cin`, sync-off `cin`, C's `scanf`, and `fread` slurping the whole file into memory followed by `from_chars` parsing. The last one is the most "brute-force" fast path — it bypasses every stream abstraction, reading raw bytes and parsing them directly.
 
-The core code for the `scanf` and `fread + from_chars` paths looks like this:
+The cores of the `scanf` and `fread + from_chars` paths look like this, respectively:
 
 ```cpp
 // Standard: C++20
-// 路径 A：scanf，直接走 FILE* 缓冲
+// Path A: scanf, going straight through the FILE* buffer
 long acc = 0;
 int x;
 while (std::scanf("%d", &x) == 1) acc += x;
 
-// 路径 B：fread 把 stdin 整块读进内存，再 from_chars 逐个解析
+// Path B: fread slurps all of stdin into memory, then from_chars parses it number by number
 std::vector<char> buf;
 { char chunk[1 << 16]; size_t n;
   while ((n = std::fread(chunk, 1, sizeof(chunk), stdin)) > 0)
@@ -245,7 +245,7 @@ const char* first = buf.data();
 const char* last  = buf.data() + buf.size();
 long acc2 = 0;
 while (first < last) {
-    while (first < last && (*first == ' ' || *first == '\n')) ++first;  // from_chars 不跳前导空白，自己跳
+    while (first < last && (*first == ' ' || *first == '\n')) ++first;  // from_chars doesn't skip leading whitespace, so we do it ourselves
     if (first >= last) break;
     int y;
     auto r = std::from_chars(first, last, y);
@@ -255,38 +255,38 @@ while (first < last) {
 }
 ```
 
-All four paths process the same data file containing one million integers. The time taken represents the minimum value across multiple runs (absolute values vary by machine, so we focus on the order of magnitude):
+All four paths got the same one-million-integer data file; times are the minimum across multiple runs (absolute values drift per machine — look only at the order of magnitude):
 
 ```text
-cin   (sync on,  默认)     ~177 ms
-scanf                      ~59 ms
-cin   (sync off + untie)   ~40 ms
-fread + from_chars         ~18 ms
+cin   (sync on,  default)   ~177 ms
+scanf                       ~59 ms
+cin   (sync off + untie)    ~40 ms
+fread + from_chars          ~18 ms
 ```
 
-Putting these numbers together, the conclusion is clear:
+Put side by side, these numbers make the conclusion crystal clear:
 
-- **Default `cin` is the slowest of the four**—because it synchronizes with C stdio, processes characters via `FILE*`, and is even slower than `scanf`.
-- **`scanf` is approximately 59 ms**, three times faster than default `cin`. It uses C's `FILE*` buffering directly, avoiding the `iostream` dispatch chain and the overhead of sentry objects.
-- **`cin` with synchronization disabled is approximately 40 ms**, slightly beating `scanf`. This shows that the `iostream` dispatch chain itself is **not slower than C stdio**—once the "synchronization" shackle is removed, its own `streambuf` buffering is equally efficient.
-- **`fread + from_chars` is approximately 18 ms**, more than doubling the speed again. This path minimizes overhead for both buffering (`fread` reads a large chunk at once) and parsing (`from_chars` has no locale, no exceptions, and no allocation), making it the correct destination for performance-sensitive scenarios. For a detailed breakdown of why `from_chars` is so fast, see [51-charconv](../strings/51-charconv.md).
+- **Default `cin` is the slowest of the four** — because it must stay synchronized with C stdio and walk the `FILE*` character by character, it can't even keep up with `scanf`.
+- **`scanf` at roughly 59 ms**, 3x faster than default `cin`. It uses C's `FILE*` buffering directly — no `iostream` dispatch chain, and no sentry to pay for.
+- **Sync-off `cin` at roughly 40 ms**, edging just past `scanf`. This shows that `iostream`'s dispatch chain itself **is not slower than C stdio** — once the "synchronization" shackle comes off, its own `streambuf` buffering is every bit as efficient.
+- **`fread + from_chars` at roughly 18 ms**, better than twice as fast again. This path drives both the buffering (`fread` pulling a big chunk at a time) and the parsing (`from_chars`: no locale, no exceptions, no allocation) down to minimal overhead — the rightful destination for performance-sensitive scenarios. For a dedicated breakdown of why `from_chars` can be this fast, see [51-charconv](../strings/51-charconv.md).
 
-::: warning A Misleading Comparison
-Some might compare "`std::stringstream >>` on in-memory strings" with "`sscanf` on in-memory strings" to conclude that `iostream` is faster or slower than `scanf`. Be careful here: **`sscanf` performs extremely poorly on memory strings** (local tests show it can slow down to tens of seconds), because some implementations re-scan the remaining buffer, which is completely different from its behavior when using `FILE*`. Therefore, please treat "reading from standard input" as the fair battleground—that is, the table above—and don't use in-memory `sscanf` as a representative, as that leads to misleading conclusions.
+::: warning A comparison that is easy to misread
+Some people compare "in-memory `std::stringstream >>`" against "in-memory `sscanf`" and conclude that `iostream` is faster/slower than `scanf`. Careful here: **`sscanf` performs terribly on in-memory strings** (on this machine it can degrade to the tens-of-seconds level), because some of its implementations repeatedly rescan the remaining buffer — a completely different behavior from when it goes through `FILE*`. So keep "reading standard input" as the fair battleground — the table above — and don't hold up in-memory `sscanf` as the representative; that leads to misleading conclusions.
 :::
 
-To wrap it up in one sentence: **`sync_with_stdio(false) + cin.tie(nullptr)` allows `cin` / `cout` to match the `scanf` / `printf` tier; but to truly squeeze out performance, the fast path is `from_chars` (for input) and `std::print` / `std::format_to` (for output)—the overhead of the `iostream` layer is always there**.
+One sentence to close it out: **`sync_with_stdio(false) + cin.tie(nullptr)` lets `cin` / `cout` catch up with the `scanf` / `printf` tier; but if you're truly squeezing performance, the fast paths are `from_chars` (input) and `std::print` / `std::format_to` (output) — the overhead of the `iostream` layer never goes away**.
 
-## Stream State Machine: failbit / badbit / eofbit
+## The Stream State Machine: failbit / badbit / eofbit
 
-Having discussed performance, let's thoroughly explain another mechanism in `iostream` that often trips people up—its error states. Internally, every stream has three state bits:
+With performance out of the way, let's thoroughly cover the other `iostream` mechanism that regularly trips people up — its error state. Inside every stream are three state bits:
 
-- `goodbit` (actually 0) — everything is normal;
-- `failbit` — the last operation **failed due to format reasons** (e.g., trying to read an `int` but encountering `"hello"`); the stream itself is not broken, and clearing the state allows it to continue;
-- `badbit` — the stream has **a real problem** (underlying I/O error, buffer corruption, etc.); this is usually unrecoverable;
-- `eofbit` — reached the end of file.
+- `goodbit` (which is really 0) — all is well;
+- `failbit` — the last operation **failed for format reasons** (say you wanted an `int` but ran into `"hello"`); the stream itself isn't broken, and clearing the state lets you keep using it;
+- `badbit` — the stream is **genuinely in trouble** (an underlying I/O error, a corrupted buffer, that kind of thing); usually unrecoverable;
+- `eofbit` — the end was reached.
 
-The most critical thing to understand is: **once `failbit` or `badbit` is set, all subsequent `>>` / `<<` operations become no-ops**—the stream refuses to work until you `clear()` the state. Let's run through this state machine with a code snippet, reading `int`, `int`, `int` from a string stream, but with a `"hello"` sandwiched in the middle:
+The most crucial realization: **once `failbit` or `badbit` is set, all subsequent `>>` / `<<` become no-ops** — the stream refuses to work until you `clear()` the state back. Let's run this state machine live with a piece of code that reads `int`, `int`, `int` in sequence from a string stream, with a `"hello"` wedged in the middle:
 
 ```cpp
 // Standard: C++20
@@ -298,27 +298,27 @@ int main() {
     std::istringstream iss("42  hello  99");
     int x;
 
-    iss >> x;   // 正常读到 42
+    iss >> x;   // reads 42 cleanly
     std::cout << "读到 " << x
               << "  good=" << iss.good() << " fail=" << iss.fail()
               << " eof=" << iss.eof() << " bool(iss)=" << static_cast<bool>(iss) << '\n';
 
-    iss >> x;   // 想读 int，却碰到 hello —— failbit 置位，x 不变
+    iss >> x;   // wants an int but hits hello — failbit gets set, x unchanged
     std::cout << "格式不匹配后: good=" << iss.good()
               << " fail=" << iss.fail()
               << " bool(iss)=" << static_cast<bool>(iss) << '\n';
 
     int y = -999;
-    iss >> y;   // 流处于 fail 状态，这次 >> 是空操作，y 不变
+    iss >> y;   // stream is in fail state, this >> is a no-op, y unchanged
     std::cout << "y 还是 " << y << "，因为流在 fail 状态下 >> 被忽略\n";
 
-    iss.clear();   // 清掉 failbit，"hello" 仍在缓冲里等着
+    iss.clear();   // clears failbit; "hello" is still sitting in the buffer waiting
     std::string s;
-    iss >> s;      // 用 string 把 "hello" 消化掉
-    iss >> x;      // 继续读到 99
+    iss >> s;      // use a string to digest "hello"
+    iss >> x;      // goes on to read 99
     std::cout << "clear() 之后: s=" << s << " x=" << x << '\n';
 
-    // 读到末尾再读：eofbit 和 failbit 一起置位
+    // read past the end: eofbit and failbit get set together
     iss >> x;
     std::cout << "读到末尾后: eof=" << iss.eof()
               << " fail=" << iss.fail() << '\n';
@@ -326,7 +326,7 @@ int main() {
 }
 ```
 
-The observed state changes:
+The state transitions it prints:
 
 ```text
 读到 42  good=1 fail=0 eof=0 bool(iss)=1
@@ -336,59 +336,59 @@ clear() 之后: s=hello x=99
 读到末尾后: eof=1 fail=1
 ```
 
-This state machine has several practical key points:
+A few practical takeaways from this state machine:
 
-**`operator bool` (and `operator!`) is the unified entry point for checking if a stream is usable.** The standard library provides an implicit conversion from a stream to `bool`, which is equivalent to `!fail()`—meaning it evaluates to `true` as long as neither `failbit` nor `badbit` is set. This is the foundation of the idiom often seen in loops:
+**`operator bool` (and `operator!`) is the single entry point for checking whether a stream is usable.** The standard library gives streams an implicit conversion to `bool`, equivalent to `!fail()` — true as long as neither `failbit` nor `badbit` is set. That's precisely the foundation of the classic loop idiom:
 
 ```cpp
-while (iss >> x) sum += x;   // >> 返回流本身，流再转 bool
+while (iss >> x) sum += x;   // >> returns the stream itself, which then converts to bool
 ```
 
-`>> x` returns an `istream&` (the stream itself), which is implicitly converted to `bool`: the loop continues if valid data is read, and exits if it hits the end of the file (`eofbit` is set alongside `failbit`) or encounters a format error. This pattern is much cleaner and safer than "read first with `>>`, then check `eof()`" — **checking `eof()` alone is a classic pitfall**. It is only set after "reading past the end," meaning the last read data might be incomplete.
+`>> x` returns the `istream&` (the stream itself), which then implicitly converts to `bool`: keep looping while valid data arrives, exit on end-of-file (`eofbit` gets set together with `failbit`) or on a format error. This style is far cleaner — and safer — than "first `>>`, then check `eof()`" — **checking `eof()` alone is the classic trap**, because it's only set after you've read past the end, so the last value read may be a half-built one.
 
-::: warning clear() leaves "bad characters" in the buffer
-`clear()` only resets the state flags; **it does not remove the character in the buffer that caused the failure**. So, in the example above, after `clear()`, `"hello"` remains stuck at the stream's read position, and the next `>> int` will fail immediately. The solution is to either consume it with a `std::string` as shown, or use `iss.ignore(...)` to skip a section. Many people find they "still can't read" after `clear()`, and this is almost always the reason.
+::: warning After clear(), the "bad characters" are still in the buffer
+`clear()` only resets the state bits — **it doesn't touch the character in the buffer that caused the failure**. So in the example above, after `clear()`, `"hello"` is still stuck at the stream's read position, and the next `>> int` will fail immediately all over again. The remedies: either read it away with a `std::string` as the example does, or skip a stretch with `iss.ignore(...)`. When people find "it still won't read" after `clear()`, nine times out of ten this is why.
 :::
 
-**Distinguish clearly between `badbit` and `failbit`.** `failbit` means "this read failed to produce an `int`, but you can recover by clearing the state"; `badbit` means "the stream is broken, give up." When encountering bad data during interactive parsing, the correct routine is usually: `clear()` + `ignore()` to skip the bad field and continue reading. Low-level errors like terminal or pipe disconnection trigger `badbit`, in which case you should usually exit directly.
+**Keep `badbit` and `failbit` distinct.** `failbit` says "couldn't read an `int` this time, but clear the state and it's salvageable"; `badbit` says "the stream is broken, stop struggling". When interactive parsing hits bad data, the right routine is usually `clear()` + `ignore()` to skip the bad field and keep reading onward. Only underlying errors like a severed terminal/pipe truly land in `badbit`, and those cases usually call for exiting outright.
 
-## When to use iostream, and when not to use it
+## When to Use iostream, and When Not To
 
-After listing so many criticisms of iostream, let's be fair. It's not a tool that should be eliminated, but rather one that should be used in the right scenarios.
+After all this criticism of iostream, fairness is due. It isn't a tool that should be eradicated; it's a tool that belongs in the right scenarios.
 
-**Scenarios where you SHOULD use `iostream`:**
+**Scenarios where `iostream` is the right choice:**
 
-- **Simple interaction, command-line utilities.** A few lines of `cout << "..." << x` paired with `cin >> x` offer type safety and readability. Overloading `<<` for custom types allows direct printing. In these cases, development efficiency is far more important than I/O overhead.
-- **Debug logging.** Especially using `std::cerr` / `std::clog` — error and diagnostic information need to be "flushed immediately" and "not swallowed by buffering," which is exactly the design intent of `cerr`'s unbuffered nature. Performance is not the primary concern here.
-- **Places needing type safety without the risks of `printf`'s undefined behavior.** If the type of `x` doesn't match in `printf("%d", x)`, it is undefined behavior, and the compiler might not warn you. With `std::cout << x`, a type mismatch results in a direct compilation error.
+- **Simple interaction, small command-line tools.** A few lines of `cout << "..." << x` paired with `cin >> x`: type-safe, readable, and printing your own types is one `<<` overload away. In such settings, development efficiency matters far more than that bit of I/O overhead.
+- **Debug logging.** Especially via `std::cerr` / `std::clog` — error and diagnostic messages want "flushed immediately" and "not swallowed by a buffer", which is exactly the design intent of `cerr` being unbuffered; performance is hardly the concern here.
+- **Places that need type safety but don't want `printf`'s undefined-behavior risk.** In `printf("%d", x)`, a mismatched `x` type is undefined behavior and the compiler won't necessarily flag it; with `std::cout << x`, a type error is a compile failure, period.
 
-**Scenarios where you SHOULD NOT use `iostream`:**
+**Scenarios where `iostream` is the wrong choice:**
 
-- **Performance-sensitive reading/writing of large amounts of numbers.** Protocol parsing, serialization, CSV / JSON parsing, or competitive programming problems with large datasets. The correct destination for this path is `from_chars` / `to_chars` ([51-charconv](../strings/51-charconv.md)). A difference of tens of times is not a trivial optimization.
-- **Output requiring both type safety and the expressiveness of format strings.** Since C++20, there is a better answer for this — `std::format` ([52-format](../strings/52-format.md)) and C++23's `std::print` / `std::println` ([53-print](../strings/53-print.md)). `print` writes directly to the stream, bypassing the `<<` dispatch chain. Volume 53 tested its order-of-magnitude advantage over `cout`.
-- **Binary, random-access, or mmap for large file I/O.** This is the job of file streams, covered in [56-fstream](56-fstream.md). This article focuses on standard streams, but it's worth mentioning: `fstream` is also not a performance tool for large random access file operations; for real speed, switch to `mmap` or C's `stdio`.
+- **Performance-sensitive bulk numeric I/O.** Protocol parsing, serialization, CSV/JSON parsing, the big test cases in competitive programming. The rightful destination on this path is `from_chars` / `to_chars` ([51-charconv](../strings/51-charconv.md)) — a tens-of-times gap is not something you shave a little off.
+- **Output that needs both type safety and format-string expressiveness.** Since C++20 this desire has a better answer — `std::format` ([52-format](../strings/52-format.md)) and C++23's `std::print` / `std::println` ([53-print](../strings/53-print.md)). `print` writes to the stream directly without passing through the `<<` dispatch chain; article 53 in this volume measured its order-of-magnitude advantage over `cout`.
+- **Binary, random-access, mmap-style big-file I/O.** That's file-stream territory and belongs to [56-fstream](56-fstream.md); this article focuses on the standard streams, so one sentence only: `fstream` is no performance tool for random access on large files either — for real speed you switch to `mmap` or C's `stdio`.
 
-A key decision principle: **iostream is the "safe and convenient" default, not the "fast" default.** Once you start writing workarounds for its speed (turning off sync, untying, using `<< '\n'` instead of `endl`), it usually means you should switch tools rather than continue squeezing performance out of this abstraction layer.
+One decision through-line: **iostream is the "safe and convenient" default, not the "fast" default**. The moment you find yourself writing work-arounds for its speed (turning off sync, untying, `<< '\n'` instead of `endl`), that usually means it's time to switch tools — not to keep squeezing performance out of this abstraction layer.
 
 ## Summary
 
-Let's wrap up the key conclusions from our tour of `<iostream>`:
+Let's gather the key conclusions from this trip through `<iostream>`:
 
-- **Hierarchy**: `ios_base` → `ios` → `istream` / `ostream` → `iostream`; the real work and buffering is done by the attached `streambuf`, while `<<` / `>>` only handle formatting and dispatch requests.
-- **Four standard streams**: `cout` / `clog` are buffered, `cerr` is unbuffered (flushes immediately on every `<<`) — so error diagnostics go to `cerr` by default to avoid getting stuck in a buffer.
-- **Two performance switches**: `sync_with_stdio(false)` breaks synchronization with C stdio (default drags `cin` to walk `FILE*` character by character), `cin.tie(nullptr)` saves the `cout` flush before every read. Measured reading one million integers, dropping from 177 ms to 40 ms, **approximately a 4x speedup**.
-- **Cost of turning off sync**: Don't mix `cin` / `cout` with `scanf` / `printf` anymore (order will be chaotic, tested `printf 1 cout 2` outputting `cout 2 / cout 4 / printf 1 / printf 3`); interactive prompts need manual flushing.
-- **Why it's slow**: Locale lookup + virtual function dispatch + sentry construction on every `<<` + synchronization with C stdio + format parsing. Each layer adds a bit; the cost lies in the abstraction, not a single point.
-- **Horizontal comparison (reading 1 million int, local GCC 16.1.1)**: `cin` default ~177 ms, `scanf` ~59 ms, `cin` sync off ~40 ms, `fread + from_chars` ~18 ms. `cin` with sync off ≈ `scanf`, but `from_chars` is more than twice as fast.
-- **State machine**: `goodbit` / `failbit` / `badbit` / `eofbit`; once `fail` or `bad` is set, subsequent `>>` / `<<` are no-ops. You must `clear()` to recover, but `clear()` doesn't remove the bad character in the buffer (must `ignore` or read it away).
-- **Selection**: Simple interaction, debug logs, small tools prioritizing type safety — use `iostream`; large number reading/writing — `charconv`; type-safe output needing format string expressiveness — `format` / `print`; binary large files — `fstream` / `mmap`.
+- **Layering**: `ios_base` → `ios` → `istream` / `ostream` → `iostream`; the one doing the real work and managing buffering is the attached `streambuf`, while `<<` / `>>` only handle formatting and dispatching the requests downward.
+- **The four standard streams**: `cout` / `clog` buffered, `cerr` unbuffered (every `<<` flushes immediately) — hence error diagnostics default to `cerr`, unafraid of dying inside a buffer.
+- **The two performance switches**: `sync_with_stdio(false)` unshackles the C stdio synchronization (which by default drags `cin` into walking the `FILE*` character by character), and `cin.tie(nullptr)` saves the `cout` flush before every read. Measured on reading one million ints: 177 ms down to 40 ms, **roughly a 4x speedup**.
+- **The cost of turning sync off**: stop mixing `cin` / `cout` with `scanf` / `printf` (the order scrambles — in our run, source `printf 1 cout 2` printed as `cout 2 / cout 4 / printf 1 / printf 3`); interactive prompts must be flushed by hand.
+- **Why it's slow**: locale lookups + virtual dispatch + a sentry construction per `<<` + C stdio synchronization + format parsing — every layer contributes a little; the cost lives in the abstraction, not in any single spot.
+- **Head-to-head (reading 1 million ints, local GCC 16.1.1)**: default `cin` ~177 ms, `scanf` ~59 ms, sync-off `cin` ~40 ms, `fread + from_chars` ~18 ms. Sync-off `cin` ≈ `scanf`, but `from_chars` is better than twice as fast again.
+- **State machine**: `goodbit` / `failbit` / `badbit` / `eofbit`; once `fail` or `bad` is set, all subsequent `>>` / `<<` are no-ops and only `clear()` restores operation — but `clear()` leaves the bad characters in the buffer (you must `ignore` them or read them away).
+- **Selection**: simple interaction, debug logging, small tools that prioritize type safety — use `iostream`; bulk numeric I/O — `charconv`; type-safe output wanting format-string expressiveness — `format` / `print`; binary large files — `fstream` / `mmap`.
 
-In the next article, we will dive into file streams — the three types of file streams in `fstream`, `open` modes, the RAII automatic `close` lifecycle pitfalls, and why you should also switch tools for large file reading and writing.
+Next article we move to file streams — `fstream`'s three kinds of file streams, `open` modes, the lifecycle traps of RAII-automatic `close`, and why large-file I/O should also switch tools.
 
 ## References
 
-- [cppreference: iostream](https://en.cppreference.com/w/cpp/header/iostream) — Overview of standard stream objects `cin` / `cout` / `cerr` / `clog` and header files
-- [cppreference: std::ios_base::sync_with_stdio](https://en.cppreference.com/w/cpp/io/ios_base/sync_with_stdio) — Semantics of the synchronization switch and "order not guaranteed after turning off"
-- [cppreference: std::basic_streambuf](https://en.cppreference.com/w/cpp/io/basic_streambuf) — Low-level buffering abstraction
-- [cppreference: std::basic_istream::sentry](https://en.cppreference.com/w/cpp/io/basic_istream/sentry) — The sentry object constructed on every `>>`
-- [cppreference: std::basic_ios](https://en.cppreference.com/w/cpp/io/basic_ios) — `fail` / `bad` / `eof` / `clear` / `operator bool` state machine
+- [cppreference: iostream](https://en.cppreference.com/w/cpp/header/iostream) — the standard stream objects `cin` / `cout` / `cerr` / `clog` and a header overview
+- [cppreference: std::ios_base::sync_with_stdio](https://en.cppreference.com/w/cpp/io/ios_base/sync_with_stdio) — the semantics of the sync switch and "ordering is not guaranteed once it's off"
+- [cppreference: std::basic_streambuf](https://en.cppreference.com/w/cpp/io/basic_streambuf) — the underlying buffering abstraction
+- [cppreference: std::basic_istream::sentry](https://en.cppreference.com/w/cpp/io/basic_istream/sentry) — the sentry object constructed on every `>>`
+- [cppreference: std::basic_ios](https://en.cppreference.com/w/cpp/io/basic_ios) — the `fail` / `bad` / `eof` / `clear` / `operator bool` state machine
