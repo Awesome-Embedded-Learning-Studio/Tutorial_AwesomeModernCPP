@@ -73,6 +73,7 @@ export const navEn: DefaultTheme.NavItem[] = [
       { text: 'Vol.7 Engineering', link: '/en/vol7-engineering/' },
       { text: 'Compilation & Linking', link: '/en/compilation/' },
       { text: 'Crash Lab', link: '/en/crash-lab/' },
+      { text: 'Weekly Problems', link: '/en/weekly-problems/' },
     ],
   },
   {
