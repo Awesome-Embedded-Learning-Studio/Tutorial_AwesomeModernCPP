@@ -1,6 +1,6 @@
 ---
 title: "The Evolution of std::optional: From Boost to C++26"
-description: "CppCon 2025 notes — Steve Downey on how std::optional evolved from Boost to C++26, focused on why optional<T&> (P2988) waited twenty years to enter the standard"
+description: "CppCon 2025 talk notes — Steve Downey on the evolution of std::optional from Boost to C++26, focusing on why the optional reference (P2988) waited twenty years to enter the standard"
 conference: cppcon
 conference_year: 2025
 talk_title: 'The Evolution of std::optional: From Boost to C++26'
@@ -13,6 +13,12 @@ tags:
 difficulty: intermediate
 platform: host
 cpp_standard: [17, 23, 26]
+translation:
+  source: documents/vol10-open-lecture-notes/cppcon/2025/06-evolution-of-std-optional/index.md
+  source_hash: bc5fbee2a5810b568dead3ddd002772e98f4812769d0d02ddd64bb8621c6d320
+  translated_at: '2026-09-26T00:22:39+00:00'
+  engine: anthropic
+  token_count: 700
 ---
 
 <TalkInfoCard
@@ -22,9 +28,9 @@ cpp_standard: [17, 23, 26]
   :year="2025"
 />
 
-These are notes from Steve Downey's CppCon 2025 talk. He is the main author of P2988, the proposal that pushed `std::optional<T&>` into C++26. The talk answers a single question: a feature that looks like "just an optional that holds a reference" — why did it take from its first proposal in 2005 until the Sofia meeting in June 2025 to finally pass? The answer runs through the three identities a reference has in C++, the twenty-year assign-through vs. rebind debate, and the final conclusion that "it is, essentially, a constrained pointer."
+These are notes from Steve Downey's (Bloomberg) CppCon 2025 talk. He is the primary author of P2988, the proposal that carried `std::optional<T&>` into C++26. The heart of the talk is one question: a feature that looks like "just a reference that can also be empty" — why was it first proposed in 2005, then held up all the way until the vote at the Sofia meeting in June 2025? The answer runs through the three identities a reference carries in C++, the twenty-year fight between assign-through and rebind, and the final conclusion: "it's just a constrained pointer."
 
-The notes are split into six parts, moving from the value-version foundation into the reference-version core, then stepping back to look at standardization. All code involving `optional<T&>` was run on GCC 16.1.1 (`-std=c++26`) — this is not paper talk.
+The notes are split into six parts, ordered as "the value-version foundation first, then the reference-version core, then a step back to look at standardization." All the code involving `optional<T&>` was actually run on GCC 16.1.1 (`-std=c++26`) — this is not armchair theory.
 
 ## Contents
 
