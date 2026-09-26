@@ -72,7 +72,7 @@ This document collects core terms appearing in the project tutorials, grouped by
 | mutex | 互斥量 | Mutual exclusion lock, protects shared data |
 | semaphore | 信号量 | Counting synchronization primitive |
 | critical section | 临界区 | Code segment allowing only one thread at a time |
-| dead lock | 死锁 | Threads waiting for each other to release resources |
+| deadlock | 死锁 | Threads waiting for each other to release resources |
 | thread | 线程 | `std::thread`, unit of concurrent execution |
 | span | 视图跨度 | `std::span`, non-owning view of contiguous sequences |
 | EBO (Empty Base Optimization) | 空基类优化 | Empty classes take no space as base classes |
