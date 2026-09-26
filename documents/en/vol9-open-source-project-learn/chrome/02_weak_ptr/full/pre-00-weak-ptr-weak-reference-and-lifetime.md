@@ -12,7 +12,7 @@ prerequisites:
 - 'OnceCallback hands-on (IV): designing the cancellation token'
 reading_time_minutes: 11
 related:
-- 'weak_ptr Design Guide (I): Motivation and API Design'
+- 'WeakPtr hands-on (I): motivation and API design'
 - 'WeakPtr prerequisite (I): intrusive reference counting and scoped_refptr'
 tags:
 - host

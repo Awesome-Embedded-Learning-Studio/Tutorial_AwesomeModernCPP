@@ -13,7 +13,7 @@ prerequisites:
 - 'WeakPtr prerequisite (V): template friend and uintptr_t type erasure'
 reading_time_minutes: 7
 related:
-- 'weak_ptr Design Guide (I): Motivation and API Design'
+- 'WeakPtr hands-on (I): motivation and API design'
 - 'WeakPtr Hands-on (VI): Tests and Performance Comparison'
 tags:
 - host

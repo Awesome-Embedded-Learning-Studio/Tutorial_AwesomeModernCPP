@@ -11,7 +11,7 @@ prerequisites:
 - 'WeakPtr prerequisite (0): weak references and the lifetime puzzle'
 reading_time_minutes: 10
 related:
-- 'weak_ptr Design Guide (I): Motivation and API Design'
+- 'WeakPtr hands-on (I): motivation and API design'
 - 'WeakPtr prerequisite (V): template friend and uintptr_t type erasure'
 tags:
 - host
