@@ -5,68 +5,72 @@ cpp_standard:
 - 17
 - 20
 - 23
-description: "A deep look at mutable lambdas, init capture, C++20 lambda capture pack
-  expansion, and generic lambdas: the core techniques behind bind_once and then() in
-  OnceCallback."
+description: "A deep dive into mutable lambdas, init capture, C++20 lambda capture pack expansion, and generic lambdas — the core implementation techniques behind bind_once and then() in OnceCallback"
 difficulty: intermediate
 order: 3
 platform: host
 prerequisites:
-- OnceCallback prerequisites cheat sheet: a recap of core C++11/14/17 features
+- 'OnceCallback prerequisite cheat sheet: a review of C++11/14/17 core features'
 reading_time_minutes: 8
 related:
-- OnceCallback hands-on (III): implementing bind_once
-- OnceCallback hands-on (V): chaining with then
+- 'OnceCallback hands-on (III): implementing bind_once'
+- 'OnceCallback hands-on (V): chaining with then'
 tags:
 - host
 - cpp-modern
 - intermediate
 - lambda
 - 函数对象
-title: 'OnceCallback Prerequisites (Part 3): Advanced Lambda Features'
+title: 'OnceCallback prerequisite (III): advanced lambda features'
+translation:
+  source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/pre-03-once-callback-lambda-advanced.md
+  source_hash: 402e8de3c2fdec5059c35265c4f4f18dc05f8b2eeba92c2252e914fb6df380db
+  translated_at: '2026-09-26T00:52:10+00:00'
+  engine: anthropic
+  token_count: 4200
 ---
-# OnceCallback Prerequisites (Part 3): Advanced Lambda Features
+# OnceCallback prerequisite (III): advanced lambda features
 
-The last cheat sheet ran through lambda's basic syntax in a hurry. This one digs in. A handful of lambda features do the real heavy lifting in `OnceCallback`'s implementation: `mutable`, init capture, and C++20 capture pack expansion. These are not garnish syntax. If you don't get a handle on them, reading `bind_once` and `then()` later will have you cursing the author for being opaque. Truth is, there's no way around them; without them OnceCallback simply can't be built.
+In the previous cheat sheet we raced through the basics of lambda syntax; this piece digs in. The lambda features that actually pull the real weight in OnceCallback's implementation — `mutable`, init capture, and C++20 capture pack expansion — are anything but nice-to-have syntax sugar. If these three don't click for you, then reading the `bind_once` and `then()` code later will most likely have you cursing the author for being opaque every few lines. The truth is the author can't sidestep them either — sidestep them and OnceCallback simply cannot be built.
 
-Let's take them one at a time, starting with `mutable`, and why it can't be dropped from a single line in this implementation.
+Let's take them apart one at a time, starting with `mutable` — and why this implementation can't spare it anywhere.
 
-## mutable lambda: why OnceCallback can't do without it
+## mutable lambdas: why OnceCallback can't skip them
 
-The `operator()` a lambda generates is `const` by default. In other words, value-captured variables are look-don't-touch inside the body. Add `mutable` and `operator()` becomes non-const, and the captured copies are yours to modify.
+The `operator()` a lambda generates by default is `const`. In other words, for variables captured by value you can look but not touch inside the lambda body. Add `mutable`, and `operator()` becomes non-const — now the captured copies are yours to modify.
 
-Here's the contrast:
+Here's a side-by-side:
 
 ```cpp
 int x = 10;
 
-// const lambda: cannot modify captured variables
+// const lambda: captured variables cannot be modified
 auto f1 = [x]() {
     // x++;  // compile error: operator() is const
     return x;
 };
 
-// mutable lambda: can modify captured variables
+// mutable lambda: captured variables can be modified
 auto f2 = [x]() mutable {
     x++;       // OK: operator() is non-const
     return x;
 };
 
-f2();  // returns 11; x's copy has been modified
-f2();  // returns 12; same lambda object called again, x keeps climbing
+f2();  // returns 11, x's copy has been modified
+f2();  // returns 12, the same lambda object called again, x keeps increasing
 ```
 
-There's a detail that's easy to miss: a `mutable` lambda's state **persists across calls**. `f2` returns 11 the first time, 12 the second. The closure object holds copies of the captured variables, and `mutable` hands `operator()` the right to mutate them. Once changed, the change stays put, and the next call picks up where the last one left off. OnceCallback happens to need exactly this.
+There's a detail that's easy to miss here — a `mutable` lambda's state **persists across calls**. The first call to `f2` returns 11, the second returns 12. The closure object holds copies of the captured variables, `mutable` hands `operator()` the right to modify those copies, and once modified they stay that way — the next call picks up where the last one left off. OnceCallback makes use of exactly this.
 
-### Its role inside OnceCallback
+### The role it plays in OnceCallback
 
-Every lambda inside `bind_once` and `then()` is marked `mutable`. No exceptions. The reason comes down to one line: their capture lists stash a `OnceCallback` object (via `self = std::move(*this)`, which we'll get to in a moment), and once you call `std::move(self).run()` you have to mutate its internal state, flipping `status_` from kValid to kConsumed. If that lambda were const, `self` inside the body would be a const reference, and you'd be trying to run a state-mutating operation on a const object. The compiler is the first thing that won't stand for that.
+Every lambda inside `bind_once` and `then()` must be marked `mutable` — no negotiation. The reason boils down to one sentence: these lambdas' capture lists hold a `OnceCallback` object (via `self = std::move(*this)`, more on that in a moment), and the moment you call `std::move(self).run()` you have to mutate its internal state — flipping `status_` from kValid to kConsumed. If the lambda were const, `self` would be a const reference inside the body, and you'd be trying to run a state-mutating operation on a const object? The compiler would be the first to object.
 
 ```cpp
-// the lambda inside then(): mutable is non-negotiable
+// the lambda inside then() — mutable is not optional
 [self = std::move(*this), cont = std::forward<Next>(next)]
 (FuncArgs... args) mutable -> NextRet {
-    // self has to be mutated here (run() consumes it)
+    // self needs to be modified here (run() consumes it)
     auto mid = std::move(self).run(std::forward<FuncArgs>(args)...);
     return std::invoke(std::move(cont), std::move(mid));
 }
@@ -76,76 +80,76 @@ Every lambda inside `bind_once` and `then()` is marked `mutable`. No exceptions.
 
 ## Init capture: moving objects into the lambda
 
-C++14 handed us a new toy: init capture. The syntax is `name = expression`. You run an expression right there in the capture list and use the result to initialize a fresh capture variable. It sounds minor, but it patches the single biggest pain point C++11 lambdas had.
+C++14 handed us a new toy — init capture. The syntax looks like this: `name = expression`. You run an expression right there in the capture list and use its result to initialize a brand-new captured variable. It sounds unremarkable, but it fixes the single biggest pain point of C++11 lambdas.
 
 ### How it differs from simple capture
 
-A simple capture `[x]` can only grab a variable that already exists, and you choose copy or reference, full stop. An init capture `[name = expr]` adds a layer; it can do three things simple capture flat-out cannot:
+Simple capture `[x]` can only grab variables that already exist, and it's copy-or-reference, pick one. Init capture `[name = expr]` adds a layer and can do three things simple capture flatly cannot:
 
 ```cpp
 auto ptr = std::make_unique<int>(42);
 
-// 1. Move capture: move the unique_ptr into the lambda
+// 1. move capture — moves the unique_ptr into the lambda
 auto f1 = [p = std::move(ptr)]() { return *p; };
-// ptr out here has been emptied
+// ptr out here has already been emptied
 
-// 2. Store a computed result
+// 2. store a computed result
 std::string s = "hello";
-auto f2 = [len = s.size()]() { return len; };  // len has type size_t
+auto f2 = [len = s.size()]() { return len; };  // len is of type size_t
 
-// 3. Capture a variable that doesn't exist outside
+// 3. capture a variable that doesn't exist outside
 auto f3 = [counter = 0]() mutable { return ++counter; };  // counter is the lambda's own variable
 ```
 
-The first one is the killer. C++11 lambdas have no move capture. To get a `unique_ptr` into a lambda you had to take a long detour: stuff it into a `std::function` or hand-roll a function object. Before P0780, Chromium's `base::Bind` carried this gap on its back with manually written functors. Once init capture arrived, those hacks basically belonged in a museum.
+The first one is the killer. C++11 lambdas have no move capture, so if you wanted to stuff a `unique_ptr` into a lambda you had to take the scenic route — park it in a `std::function` or hand-roll a functor. Before P0780, Chromium's `base::Bind` carried this gap on its back with hand-written functors. Once init capture arrived, those hacks were pretty much ready for the museum.
 
 ### How OnceCallback uses it
 
-In `then()`'s implementation, init capture pulls double duty.
+In `then()`'s implementation, init capture shoulders two loads.
 
-The first job is moving the entire OnceCallback object into the lambda:
+The first — moving the entire OnceCallback object into the lambda:
 
 ```cpp
 self = std::move(*this)
 ```
 
-`*this` is the current OnceCallback object. `std::move(*this)` casts it to an rvalue, and the init capture `self = std::move(*this)` fires OnceCallback's move constructor in place, dragging `func_`, `status_`, and `token_` wholesale into the lambda's closure object. After the move, the outer `*this` is a hollowed-out shell: `func_` is empty, `token_` is null, effectively "dead." This is the core action behind OnceCallback's move-only semantics; ownership slides sideways into the lambda.
+`*this` is the current OnceCallback object. `std::move(*this)` turns it into an rvalue, and the init capture `self = std::move(*this)` triggers OnceCallback's move constructor in place, sweeping `func_`, `status_`, and `token_` wholesale into the lambda's closure object. After the move, the outer `*this` is a hollowed-out shell — `func_` is empty, `token_` is null, essentially "dead". This step is the core action of OnceCallback's move-only semantics: ownership slides sideways into the lambda, just like that.
 
-The second job is moving the continuation callback in:
+The second — moving the continuation callback in:
 
 ```cpp
 cont = std::forward<Next>(next)
 ```
 
-`std::forward<Next>(next)` preserves `next`'s value category as-is: if an rvalue came in, it moves; if an lvalue, it copies. In real use of `then()`, what gets passed is usually a temporary lambda (an rvalue), so this generally takes the move path.
+`std::forward<Next>(next)` preserves `next`'s value category as-is — an rvalue coming in gets moved, an lvalue gets copied. In actual use, `then()` mostly receives temporary lambdas (rvalues), so this usually takes the move path.
 
 ### The ownership chain
 
-Looking at both steps together, the new lambda `then()` produces holds the complete ownership of both the original callback and the continuation. That lambda then gets tucked into a fresh `OnceCallback`'s `std::move_only_function`. The whole ownership chain nests layer by layer:
+Look at these two steps together: the new lambda that `then()` builds holds complete ownership of both the original callback and the continuation. That lambda then gets stuffed into a new `OnceCallback`'s `std::move_only_function`. The whole ownership chain nests layer inside layer:
 
 ```mermaid
 graph LR
-    A["New OnceCallback"] --> B["move_only_function"] --> C["lambda closure"] --> D["Original OnceCallback + continuation"]
+    A["new OnceCallback"] --> B["move_only_function"] --> C["lambda closure"] --> D["original OnceCallback + continuation"]
 ```
 
-Every layer hands ownership down through move semantics: no sharing, no copying. OnceCallback's move-only discipline, inside `then()`, threads from the outside all the way in with no gaps.
+Every layer passes ownership along through move semantics — no sharing anywhere, no copies anywhere. OnceCallback's move-only discipline propagates from the outside all the way to the bottom inside `then()`, with no leaks along the way.
 
 ---
 
 ## C++20 lambda capture pack expansion: the secret to bind_once's brevity
 
-This is the one feature in this post that lets `bind_once` come together in a few lines of code. Before C++20, a variadic template's parameter pack could not be expanded directly into a lambda's capture list. You had to bundle the arguments into a `std::tuple` first, then unpack the call inside the lambda with `std::apply`. Roundabout, but there was no other way.
+This is the feature that genuinely lets `bind_once` get away with a few lines of code. Before C++20, a variadic template's parameter pack couldn't be expanded directly into a lambda's capture list — you had to pack the arguments into a `std::tuple` first, then unpack the call with `std::apply` inside the lambda. Roundabout, but there was no alternative.
 
-### The old way (C++17): tuple + apply
+### The old approach (C++17): tuple + apply
 
 ```cpp
 template<typename F, typename... BoundArgs>
 auto bind_old(F&& f, BoundArgs&&... args) {
-    // pack every bound argument into a tuple
+    // pack all bound arguments into a tuple
     return [f = std::forward<F>(f),
             tup = std::make_tuple(std::forward<BoundArgs>(args)...)]
         (auto&&... call_args) mutable -> decltype(auto) {
-        // unpack the tuple with std::apply and call
+        // expand the tuple with std::apply and call
         return std::apply([&](auto&... bound) -> decltype(auto) {
             return f(bound..., std::forward<decltype(call_args)>(call_args)...);
         }, tup);
@@ -153,11 +157,11 @@ auto bind_old(F&& f, BoundArgs&&... args) {
 }
 ```
 
-It works, but the code is bloated to say the least: a tuple in the middle, `std::apply` on the outside, and another nested lambda inside to handle the expansion. The whole three-piece kit.
+It works, but the code is impressively bloated — a tuple wedged in the middle, `std::apply` wrapped around it, and yet another nested lambda inside to handle the expansion. The full three-piece set.
 
-### The new syntax (C++20): expand the pack right in the capture list
+### The new syntax (C++20): expanding the pack right in the capture list
 
-C++20 finally relented and allows pack expansion inside a lambda's init capture. The syntax is `...name = expression`, and the effect is to generate a separate capture variable for each type in the parameter pack.
+C++20 finally relented and allows pack expansion in a lambda's init capture. The syntax is `...name = expression`, and the effect is one separately generated capture variable per type in the parameter pack.
 
 ```cpp
 template<typename F, typename... BoundArgs>
@@ -166,40 +170,40 @@ auto bind_new(F&& f, BoundArgs&&... args) {
             ...bound = std::forward<BoundArgs>(args)]  // ← pack expansion!
         (auto&&... call_args) mutable -> decltype(auto) {
         return std::invoke(std::move(f),
-                          std::move(bound)...,         // ← expand the capture variables
+                          std::move(bound)...,         // ← expand the captured variables
                           std::forward<decltype(call_args)>(call_args)...);
     };
 }
 ```
 
-### Manually expanding a concrete example
+### Hand-expanding a concrete example
 
-Let's take a specific call and watch what the compiler actually does behind the scenes. Suppose we call `bind_new([](int a, std::string b, int c) { ... }, 10, std::string("hello"))`, so `BoundArgs = {int, std::string}`. The compiler expands the pack `...bound = std::forward<BoundArgs>(args)` into:
+Let's take a concrete call and see what the compiler actually does behind the scenes. Suppose we call `bind_new([](int a, std::string b, int c) { ... }, 10, std::string("hello"))`, so `BoundArgs = {int, std::string}`. The compiler expands the pack `...bound = std::forward<BoundArgs>(args)` into:
 
 ```cpp
 [f = std::forward<F>(f),
- b1 = std::forward<int>(arg1),              // int, forwarded directly
- b2 = std::forward<std::string>(arg2)]      // std::string, move-forwarded
+ b1 = std::forward<int>(arg1),              // int forwarded as-is
+ b2 = std::forward<std::string>(arg2)]      // std::string move-forwarded
 (auto&&... call_args) mutable -> decltype(auto) {
     return std::invoke(std::move(f),
-                      std::move(b1), std::move(b2),    // expand the capture variables
+                      std::move(b1), std::move(b2),    // expand the captured variables
                       std::forward<decltype(call_args)>(call_args)...);
 }
 ```
 
-Each bound argument turns into an independent member variable in the lambda closure. When the lambda gets invoked, they all expand together through `std::move(bound)...` and feed into `std::invoke`.
+Each bound argument transforms into an independent member variable inside the lambda's closure. When the lambda gets called, `std::move(bound)...` expands them all in one sweep and hands them to `std::invoke`.
 
-### Why std::move and not std::forward
+### Why std::move instead of std::forward
 
-There's a trap here that nearly tripped me up the first time I read it. Inside the lambda body it's `std::move(bound)...`, not `std::forward<BoundArgs>(bound)...`. Why?
+There's a trap here that nearly got the author on first read. Inside the lambda we use `std::move(bound)...`, not `std::forward<BoundArgs>(bound)...`. Why?
 
-The key is that the lambda is `mutable`, so the captured variable `bound` is an **lvalue** inside the body: a named variable is always an lvalue, no exceptions. We want the bound arguments to go out as rvalues when the callback fires (to trigger a move), so we need `std::move` to cast them to rvalues. If your hand slips and you write `std::forward<BoundArgs>(bound)`, since `bound` is already an lvalue, `std::forward` won't touch its value category at all: it still returns an lvalue reference, and move semantics evaporate on the spot. OnceCallback is move-only, so dropping the move here equals dropping ownership, and everything downstream goes sideways.
+The key is that the lambda is `mutable`, so the captured variable `bound` is an **lvalue** inside the lambda body — a named variable is always an lvalue, no way around it. We want the bound arguments to go out as rvalues when the callback fires (triggering moves), so we need `std::move` to convert them. If your hand slips and you write `std::forward<BoundArgs>(bound)`, since `bound` is already an lvalue, `std::forward` won't touch its value category at all — it still returns an lvalue reference, and the move semantics evaporate on the spot. OnceCallback is move-only; losing the move here means losing ownership, and everything downstream falls apart.
 
 ---
 
-## Generic lambda: auto&& as a forwarding reference
+## Generic lambdas: auto&& as a forwarding reference
 
-One last thing about the signature of the lambda inside `bind_once`: `(auto&&... call_args)`. This form is there to receive the arguments passed in at runtime. Here `auto&&` is a forwarding reference: `auto` in a lambda parameter is equivalent to a template parameter, so `auto&&` gets the exact same deduction rules as `T&&` (when T is a template parameter).
+One last thing: the signature of `bind_once`'s inner lambda, `(auto&&... call_args)`. This spelling exists to receive the arguments passed in at call time. Here `auto&&` is a forwarding reference — `auto` in a lambda parameter is equivalent to a template parameter, so `auto&&` gets exactly the same deduction rules as `T&&` (when T is a template parameter).
 
 ```cpp
 auto f = [](auto&& x) {
@@ -213,11 +217,11 @@ f(v);       // x binds to an lvalue
 f(10);      // x binds to an rvalue
 ```
 
-The `auto&&...` combination opens the lambda up to accept any number of arguments of any type, all while remembering each one's value category (lvalue or rvalue). Paired with `std::forward<decltype(call_args)>(call_args)...`, those arguments get perfectly forwarded to the final callable object, with no information lost along the way.
+The `auto&&...` combination opens the lambda wide open: any number of arguments of any type can be pushed in, and the value category of each one (lvalue or rvalue) is remembered. Pair that with `std::forward<decltype(call_args)>(call_args)...`, and those arguments get perfectly forwarded to the final callable, with not one bit of information lost.
 
 ---
 
-Next we'll look at Concepts and `requires` constraints: the key defense that keeps OnceCallback's template constructor from matching the wrong things.
+Next up we'll look at Concepts and `requires` constraints — the key line of defense protecting OnceCallback's templated constructors from matching the wrong things.
 
 ## References
 
