@@ -29,7 +29,7 @@ translation:
   engine: anthropic
   token_count: 4300
 ---
-# source_location: Compile-Time Code Location, a Type-Safe Alternative to __FILE__
+# source_location: Compile-Time Code Location, a Type-Safe Alternative to `__FILE__`
 
 Anyone who has written logging, assertions, or a test framework has hand-written this kind of macro:
 
