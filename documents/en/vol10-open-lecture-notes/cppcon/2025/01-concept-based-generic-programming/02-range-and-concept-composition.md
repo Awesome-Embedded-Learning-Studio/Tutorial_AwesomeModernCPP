@@ -5,8 +5,7 @@ conference_year: 2025
 cpp_standard:
 - 20
 - 23
-description: CppCon 2025 Talk Notes — From iterator pair problems to Range abstractions,
-  then to Concept composition and requires expressions
+description: CppCon 2025 talk notes — from the pitfalls of iterator pairs to the range abstraction, then on to concept composition and requires expressions
 difficulty: intermediate
 order: 2
 platform: host
@@ -17,62 +16,62 @@ tags:
 - host
 - intermediate
 talk_title: Concept-based Generic Programming
-title: Range, Iterators, and Concept Composition
+title: Ranges, Iterators, and Concept Composition
 video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW
 video_youtube: https://www.youtube.com/watch?v=VMGB75hsDQo
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/01-concept-based-generic-programming/02-range-and-concept-composition.md
   source_hash: 81d63705108f30756d72ebf9d55f4497b516113acdd8ea33ebeb4e89e954b674
-  translated_at: '2026-06-16T06:00:20.188319+00:00'
+  translated_at: '2026-09-26T15:20:50+00:00'
   engine: anthropic
-  token_count: 6359
+  token_count: 7500
 ---
 # Unchecked Pointers and the Boundaries of Generic Programming
 
-When writing C++, I often encountered a typical problem: receiving a pointer and wanting to create a sub-view consisting of the first 10 elements, but the resulting code always felt awkward. For instance, if you have a `double*`, you intend to say "I want the first 10 elements pointed to by this pointer." However, looking strictly at that code, neither you nor the compiler can know how many elements the pointer actually points to, or whether 10 is out of bounds. This is completely unchecked. I used to think there was no solution; pointers are just like that, right? But later, I realized that if your code review doesn't flag this pattern as a potential issue, the review process itself isn't strict enough.
+Back when I was writing C++, I ran into a perfectly typical problem: you get a pointer and want to take its first 10 elements as a sub-view, but the code you write looks awkward no matter how you look at it. Say you have a `double*` and you want to say "I want the first 10 elements this pointer points to" — but from that code alone, neither you nor the compiler can tell how many elements the pointer actually points to, or whether 10 runs past the end. It is completely unchecked. I used to think there was simply nothing to be done — pointers are just like that. But later I realized: if your code review doesn't flag this pattern as a potential problem, then the review itself isn't strict enough.
 
-Of course, in reality, we often receive raw pointers from external systems, C interfaces, or legacy code. We can't simply say "I don't do pointers," so we must support this capability. The key question is: can you wrap that pointer into something that carries boundary information and type safety checks as soon as you receive it? This is what I hadn't figured out previously—I assumed "using pointers" and "type safety" were contradictory, but they aren't; they belong to different stages.
+Of course, in reality we do sometimes get raw pointers from external systems, C interfaces, and legacy code, so you can't just say "I don't touch pointers" — the capability has to exist. The key question is: once you have the pointer, can you wrap it, as quickly as possible, in something that carries bounds information and type-safety checks? That's what I had failed to understand for the longest time. I assumed "using pointers" and "type safety" were contradictory. They aren't — they are two different stages of the same job.
 
-## Solving an Annoying Little Problem First
+## First, an Annoying Little Problem
 
-Before diving into deeper topics, I want to address a problem that frustrated me enough to wear out my keyboard. Previously, when working with type-safe numbers, I had to write things like `number_of<double>`, explicitly specifying `double` every time. It was too tedious. I'm not a fast typist, and honestly, the people who designed C and Unix probably weren't either—which is why names like `int`, `double`, and `ptr` are ridiculously short. But we have type deduction now, so why should we still type it out?
+Before we get into anything deeper, I want to talk about a problem that nearly drove me to keyboard-throwing. When I was working on the type-safe number, I had to write things like `number_of<double>`, spelling out `double` every single time. Far too tedious. I'm not a fast typist, and honestly the people who designed and iterated on C and Unix probably weren't fast typists either — which is why names like `int`, `double`, and `ptr` are ridiculously short. But we have type deduction now; why keep writing it by hand?
 
-My approach is: if `number` has an initializer, we directly deduce the base type of `number` from that initializer. For example, writing `number_of{1}` deduces `number_of<int>`; writing `number_of{3u}` deduces `number_of<unsigned>`; writing `number_of{1.0}` deduces `number_of<double>`. You only need to write `number_of<double>{1}` explicitly when it's strictly necessary—for example, when initializing with an integer but intending to have `double` precision. This way, we rarely need to type extra characters in daily use, without sacrificing any type safety.
+My approach: if `number` has an initializer, take the initializer's type as `number`'s underlying type. I can write `number_of{1}` and get `number_of<int>`; `number_of{3u}` gives `number_of<unsigned>`; `number_of{1.0}` gives `number_of<double>`. Only when you truly need to — say you are initializing with an integer but what you want is `double` precision — do you have to write `number_of<double>{1}` explicitly. Day to day, this costs almost no extra typing, and not one bit of type safety is lost.
 
 ```cpp
 #include <iostream>
 #include <type_traits>
 
-// number 的基础定义：携带一个值，类型由模板参数决定
+// Basic definition of number: holds one value, its type given by the template parameter
 template<typename T>
 struct number {
     T value;
-    // 禁止隐式转换到 T，防止你把它当普通数值用
+    // No implicit conversion to T, so you can't accidentally use it as a plain number
     explicit operator T() const { return value; }
 };
 
-// CTAD（类模板参数推导）指引：从初始化器推导类型
+// CTAD (class template argument deduction) guide: deduce the type from the initializer
 template<typename T>
 number(T) -> number<T>;
 
-// 当你需要显式指定类型时，用这个别名简化书写
+// When you do need to spell the type out, this alias keeps it short
 template<typename T>
 using number_of = number<T>;
 
 int main() {
-    // 自动推导：number_of<int>
+    // Automatic deduction: number_of<int>
     number_of a{42};
     static_assert(std::is_same_v<decltype(a), number<int>>);
 
-    // 自动推导：number_of<unsigned>
+    // Automatic deduction: number_of<unsigned>
     number_of b{3u};
     static_assert(std::is_same_v<decltype(b), number<unsigned int>>);
 
-    // 自动推导：number_of<double>
+    // Automatic deduction: number_of<double>
     number_of c{2.718};
     static_assert(std::is_same_v<decltype(c), number<double>>);
 
-    // 需要显式指定的情况：用整数初始化，但想要 double
+    // When you must be explicit: initializing with an integer but wanting double
     number_of d = number_of<double>{1};
     static_assert(std::is_same_v<decltype(d), number<double>>);
 
@@ -81,37 +80,37 @@ int main() {
     std::cout << c.value << "\n";  // 2.718
     std::cout << d.value << "\n";  // 1
 
-    // 下面这行编译不过，因为 explicit 阻止了隐式转换
+    // The line below wouldn't compile, because explicit blocks implicit conversion
     // int x = a;
-    // 但这样是可以的：
+    // But this is fine:
     int x = static_cast<int>(a);
     std::cout << x << "\n";  // 42
 }
 ```
 
-Look, it compiles and runs, and all `static_assert` checks pass. I used to think Class Template Argument Deduction (CTAD) was just syntactic sugar, but in this scenario, it truly makes writing type-safe code as smooth as writing ordinary code.
+See? It compiles and runs, and every `static_assert` passes. I used to think CTAD was mere syntactic sugar, but in this scenario it genuinely makes type-safe code as smooth to write as ordinary code.
 
-## Does this count as generic programming?
+## Does This Count as Generic Programming
 
-At this point, you might ask: Does this count as generic programming? Isn't it just writing a template class with some CTAD?
+Having read this far, you might ask: does this thing count as generic programming? Isn't it just a template class plus some CTAD?
 
-I hesitated too, but now I believe it is. It uses generic programming techniques to solve a fundamental problem caused by C++'s history: implicit conversions between numeric types lead to subtle, hard-to-detect bugs. You could design a new language without this baggage, but we don't have that option. We have to work within C++ and use a small library to eliminate these issues. Plus, if you look closely, the core logic for the type-safe `number` is only about 37 lines; the bounds-checking `span` is under 100 lines. That's shorter than the specification documents describing the language's behavior. Solving a systemic problem with minimal code—isn't that exactly what generic programming should do? (Broadly speaking, describing what a system should do without worrying about the vast majority of common details is the essence of generic programming.)
+I hesitated over that too, but by this point, I believe it is generic programming. It uses generic-programming techniques to solve a fundamental problem that exists in C++ for historical reasons: numeric types convert to one another implicitly, which breeds all kinds of hard-to-spot bugs. You could design a new language without that historical baggage, but we don't have that option — we can only eliminate these problems inside C++ with a small library. And notice: the core logic of the type-checked `number` is only about 37 lines; a bounds-checked `span` is under 100 lines. That's shorter than the specification documents that describe the language's behavior. Solving a systemic problem with very little code — isn't that exactly what generic programming is supposed to do? (Broadly speaking, describing what a system should do without concerning yourself with the vast majority of common details — that is generic programming.)
 
-## The classic problem that really gave me a headache: `std::sort` error messages
+## The Classic Problem That Really Gave Me a Headache: `std::sort` Error Messages
 
-Alright, warm-up over. Let's talk about a problem I struggled with for a long time and finally started to understand.
+Alright, warm-up over. Let's talk about a problem I wrestled with for a long time and have finally started to understand.
 
-You've definitely used `std::sort`. Its signature looks something like this: it takes two random access iterators, `first` and `last`, plus an optional comparison function. The C++ standard documentation states clearly: these iterators must satisfy the `LegacyRandomAccessIterator` requirements, the iterator's value type must be `MoveAssignable` and `MoveConstructible`, and the comparison function must satisfy `StrictWeakOrdering`...
+You have certainly used `std::sort`. Its signature looks roughly like this: it takes two random access iterators `first` and `last`, plus an optional comparison function. The C++ standard document spells it out clearly: the two iterators must satisfy the requirements of LegacyRandomAccessIterator, the iterator's value type must satisfy MoveAssignable and MoveConstructible, the comparison function must satisfy StrictWeakOrdering...
 
-But here is the problem: these requirements are never directly checked.
+But here is the problem: these requirements have never been checked directly.
 
-They exist only in the documentation and in the minds of the committee members. When the compiler instantiates `std::sort`, it doesn't first verify if your iterator is a random access iterator. It just blindly instantiates. Then, deep in the template expansion process, if your type doesn't meet the requirements, it throws a multi-hundred-line error in a completely unrelated place. You might pass in a `std::list` iterator, and the error tells you some `__move_assign` failed or some `__gap` variable is problematic. When you see that error message, you are just completely lost.
+They exist only in the documentation and in the heads of the committee members. When the compiler instantiates `std::sort`, it does not first verify that your iterator is a random access iterator. It just blindly instantiates, and then, somewhere deep in the template expansion, if your type doesn't meet the requirements, you get a several-hundred-line error in a completely unrelated place. You might pass in a `std::list` iterator, and the error tells you some `__move_assign` failed, or that some `__gap` variable has a problem. When you see that error message, you are completely lost.
 
-### Reproducing the error that made me lose my mind
+### First, Reproduce the Error That Broke Me
 
-First, a quick note on the environment: I'm using GCC 16.1.1 with `-std=c++20` on Arch Linux WSL. The compilation command is the standard `g++ -std=c++20 -Wall -Wextra`.
+Environment first: I'm using GCC 16.1.1 with `-std=c++20`, on Arch Linux WSL. The build command is the plainest possible: `g++ -std=c++20 -Wall -Wextra`.
 
-Let's write some code that looks perfectly fine:
+Start with a piece of code that looks perfectly fine:
 
 ```cpp
 #include <list>
@@ -129,7 +128,7 @@ int main() {
 }
 ```
 
-Guess what? The build blew up immediately. Here is a relatively "readable" snippet from the error log:
+Guess what? The compilation just explodes. Here is the relatively "readable" fragment of the error:
 
 ```text
 /usr/include/c++/16/bits/stl_algo.h: In instantiation of 'void std::sort(_RandomAccessIterator, _RandomAccessIterator, _Compare) [with _RandomAccessIterator = std::_List_iterator<int>; _Compare = __gnu_cxx::__ops::_Iter_less_iter]':
@@ -137,19 +136,19 @@ Guess what? The build blew up immediately. Here is a relatively "readable" snipp
 error: no match for 'operator-' (operand types are: 'std::_List_iterator<int>' and 'std::_List_iterator<int>')
 ```
 
-When I see this error, I know the iterator type is wrong because I know that `list` is a doubly linked list that does not support random access. But what if you are a beginner with less than six months of experience? You will see `no match for 'operator-'` and start wondering: Did I forget to overload some operator? Did I miss an include file? This error message tells you absolutely nothing about the real problem—**you used an iterator that does not support random access with an algorithm that requires it**.
+When I saw that error, I knew the iterator type was wrong, because I had learned that a `list` is a doubly-linked list and doesn't support random access. But what if you are a beginner with less than half a year of experience? You see `no match for 'operator-'` and start wondering: did I forget to overload some operator? Did I miss an include? The error message tells you nothing about the real problem — **you called an algorithm that requires random access with an iterator that doesn't support it**.
 
-I used to think "ugly template errors" were an overrated complaint; I figured you just get used to them after seeing them a few times. But this time, I thought about it seriously, and that's not it. The problem isn't that the error is "long," but that the error message describes the **symptom** (cannot find `operator-`), not the **cause** (iterator category does not satisfy requirements). The gap between these two is a massive chasm for those unfamiliar with template metaprogramming.
+I used to think "template error messages are ugly" was a topic people complained about far too much — read them a few times and you'll get used to them. But this time I thought about it seriously, and no, that's not it. The problem is not that the error is long; it's that the message reports the **symptom** (no `operator-` found) rather than the **cause** (the iterator category doesn't meet the requirements). For anyone not fluent in template metaprogramming, the gap between those two is a chasm.
 
-## What about now?
+## What About Now
 
 Now we have concepts.
 
-Concepts were introduced in C++20, but their intellectual roots can be traced back to Alex Stepanov (the father of the STL) and his original vision for generic programming<RefLink :id="4" preview="Stepanov & Lee, The Standard Template Library, 1995" />. He believed from the very beginning that generic algorithms should have explicit, checkable requirements for their arguments. This isn't an optional cherry on top; it is the infrastructure of generic programming. It just took C++ more than thirty years to build this infrastructure.
+Concepts were introduced in C++20, but their intellectual roots trace back to Alex Stepanov (the father of the STL) and his original vision of generic programming<RefLink :id="4" preview="Stepanov & Lee, The Standard Template Library, 1995" />. From the very beginning he believed that generic algorithms should state explicit, checkable requirements on their parameters. This is not an optional cherry on top — it is the infrastructure of generic programming. It just took C++ more than thirty years to build that infrastructure.
 
-Looking back now, it feels like a room was missing a wall. Everyone got used to the draft, even learned how to live in the wind, until one day someone finally built the wall, and you realize: it can actually be this comfortable.
+Looking back on it now, it feels like a room that was always missing a wall. Everyone got used to the wind blowing in, even learned how to live in the draft, until one day somebody finally bricked up the wall — and only then did you realize: oh, so it can be this comfortable.
 
-Next, I want to write some code to see how concepts actually change the way we write generic code. Not the textbook `template<std::integral T>` examples, but usages that solve real problems. Let's start with the simplest scenario: writing a constraint for our own `sort`, then intentionally passing the wrong type to see just how good the error messages can get.
+Next I want to write some code and see how concepts actually change the way we write generic code. Not the textbook `template<std::integral T>` example, but usage that solves real problems. We'll start with the simplest scenario: write our own constraint for `sort`, then deliberately pass the wrong type, and see just how good the error message can get.
 
 ```cpp
 #include <iostream>
@@ -159,14 +158,14 @@ Next, I want to write some code to see how concepts actually change the way we w
 #include <algorithm>
 #include <iterator>
 
-// 先定义我们自己的 concept：随机访问迭代器范围
-// 注意：这里用标准库的 concept 来组合，不需要从零写
+// First, define our own concept: a random access iterator range
+// Note: it composes standard library concepts — no need to write one from scratch
 template<typename Iter>
 concept RandomAccessRange =
     std::random_access_iterator<Iter> &&
     std::sentinel_for<Iter, Iter>;
 
-// 一个受约束的 sort 包装
+// A constrained sort wrapper
 template<RandomAccessRange Iter, typename Comp = std::less<>>
     requires std::indirect_strict_weak_order<Comp, Iter>
 void safe_sort(Iter first, Iter last, Comp comp = {}) {
@@ -174,31 +173,31 @@ void safe_sort(Iter first, Iter last, Comp comp = {}) {
 }
 
 int main() {
-    // 正确用法：vector 的迭代器是随机访问迭代器
+    // Correct usage: a vector's iterators are random access iterators
     std::vector<int> v = {5, 3, 1, 4, 2};
     safe_sort(v.begin(), v.end());
     for (int x : v) std::cout << x << " ";
     std::cout << "\n";
-    // 输出：1 2 3 4 5
+    // Output: 1 2 3 4 5
 
-    // 错误用法：list 的迭代器不是随机访问迭代器
-    // 取消下面注释会看到非常清晰的错误信息
+    // Wrong usage: a list's iterators are not random access iterators
+    // Uncomment the two lines below for a very clear error message
     // std::list<int> lst = {5, 3, 1, 4, 2};
     // safe_sort(lst.begin(), lst.end());
 }
 ```
 
-Try removing the last two lines of comments. On my machine (GCC 16.1.1, `-std=c++20`), the error message tells you exactly what's wrong: constraints not satisfied, `std::list<int>::iterator` does not satisfy `random_access_iterator`. No 400 lines of template instantiation dumps, no `__gap`, no `__move_assign`, just one sentence: your iterator type is wrong.
+Go ahead and uncomment those last two lines. On my machine (GCC 16.1.1, `-std=c++20`), the error message tells you directly: constraint not satisfied, `std::list<int>::iterator` does not satisfy `random_access_iterator`. No 400 lines of template expansion, no `__gap`, no `__move_assign` — just one sentence: your iterator type is wrong.
 
-Seeing this error message felt incredibly satisfying. I've been tortured by `std::sort` error messages so many times in the past, and it turns out the solution is simple—we don't need extra tools or pretty-print scripts. We just need to write the constraints in the function signature. The compiler has always been capable of checking this; it just lacked the syntax for you to express the constraint.
+Seeing that error message felt glorious. I had been tortured by `std::sort`'s error output so many times, and it turns out the fix was this simple — not adding tools, not running some error-beautifying script, just writing the constraint into the function signature. The compiler always had the ability to check; there was simply no syntax for expressing the constraint before.
 
-### Intercepting Errors at the Door with Concepts
+### Stopping Errors at the Door with Concepts
 
-In the C++20 Standard Library, concepts that previously existed only as textual descriptions in the standard documents have become real code entities. This includes `std::random_access_iterator` and `std::sortable`.
+In the C++20 standard library, the notions that used to exist only as prose in the standard document have become real code entities. Among them are `std::random_access_iterator` and `std::sortable`.
 
-I used to think concepts were just syntactic sugar for template constraints, believing `enable_if` could do the job just as well. But after working through this example, I realized that the true value of concepts isn't about "whether it compiles," but rather **telling you why it failed when it doesn't compile**.
+I used to think concepts were just syntactic sugar for constraining templates, and that `enable_if` could do the same job. But after wrestling with this example, I finally understood: the real value of concepts is not "whether it compiles," but **telling you why it failed when compilation fails**.
 
-Here is a sorting function I wrote with concept constraints:
+Here is a concept-constrained sort function I wrote:
 
 ```cpp
 #include <concepts>
@@ -208,7 +207,7 @@ Here is a sorting function I wrote with concept constraints:
 #include <iostream>
 #include <list>
 
-// 我自己写的排序包装，用 concept 把要求说清楚
+// My own sort wrapper, with a concept spelling out the requirements
 template<std::random_access_iterator It, typename Comp = std::less<>>
     requires std::sortable<It, Comp>
 void my_sort(It first, It last, Comp comp = {}) {
@@ -216,20 +215,20 @@ void my_sort(It first, It last, Comp comp = {}) {
 }
 
 int main() {
-    // 这个能正常编译
+    // This compiles just fine
     std::vector<int> vec = {5, 3, 1, 4, 2};
     my_sort(vec.begin(), vec.end());
     for (int x : vec) std::cout << x << " ";
     std::cout << "\n";
 
-    // 这个会在编译期被拦住
+    // This one gets stopped at compile time
     std::list<int> lst = {5, 3, 1, 4, 2};
-    my_sort(lst.begin(), lst.end());  // 编译错误！
+    my_sort(lst.begin(), lst.end());  // Compile error!
     return 0;
 }
 ```
 
-Now, when compiling the call to `list`, the error has changed to this:
+Now, when the `list` call compiles, the error reads:
 
 ```text
 error: constraint not satisfied
@@ -237,74 +236,74 @@ required: 'std::random_access_iterator<std::_List_iterator<int>>'
 note: no known conversion from 'std::bidirectional_iterator_tag' to 'std::random_access_iterator_tag'
 ```
 
-**This is plain English, folks!** It tells us that the `list` iterator is a bidirectional iterator, while the requirement is a random access iterator, so the types don't match. You don't need to dig into the `stl_algo.h` source code, nor do you need to understand the SFINAE (Substitution Failure Is Not An Error) mechanism; the error message points directly to the constraint itself.
+**Now that is plain human language, my friends!** It tells you the `list` iterator is a bidirectional iterator, that you required a random access iterator, and that the types don't match. No digging through the source of `stl_algo.h`, no understanding the substitution-failure machinery of SFINAE — the error message points straight at the constraint itself.
 
-I specifically checked what `std::sortable` actually requires. The definition chain is roughly: `std::sortable<I>` requires `std::permutable<I>`, and `std::permutable<I>` requires `std::forward_iterator<I>`—note that this only requires a **forward iterator**, not a random access iterator. Additionally, the iterator's value type must satisfy `indirect_strict_weak_order` (meaning it can be compared using a given predicate) and support `swap` operations. Previously, all of this was hidden in the prose of the standard documentation, something only library implementers would look at. Now, it has become a queryable, referenceable code entity; you can even jump to the definition in your IDE.
+I went and checked what `std::sortable` actually requires. Its definition chain goes roughly: `std::sortable<I>` requires `std::permutable<I>`, and `std::permutable<I>` requires `std::forward_iterator<I>` — note, only a **forward iterator** is required here, not a random access iterator. It additionally requires that the iterator's value type satisfy `indirect_strict_weak_order` (that is, be comparable with the given predicate), and that `swap` be possible. These things used to be buried in the prose of the standard, read only by library implementers. Now they are queryable, referenceable code entities — you can even jump to the definition in your IDE.
 
-:::warning Correction from Original Text
-The original draft incorrectly stated that `std::sortable` requires a `random_access_iterator`. This is wrong.
+:::warning Correction to the Original Text
+An early draft of this article stated `std::sortable`'s iterator requirement as `random_access_iterator`. That is wrong.
 
-Authoritative source (cppreference) text:
+From the authoritative source (cppreference):
 > `template<class I, class Comp = ranges::less, class Proj = std::identity> concept sortable = std::permutable<I> && std::indirect_strict_weak_order<Comp, std::projected<I, Proj>>;`
 >
-> Where `permutable<I>` requires `forward_iterator<I>`.
+> where `permutable<I>` requires `forward_iterator<I>`.
 > — cppreference, std::sortable<RefLink :id="1" preview="cppreference, std::sortable" />
 
-Actual verification result (GCC 16.1.1, `-std=c++20`):
+Actual verification (GCC 16.1.1, `-std=c++20`):
 
 ```cpp
-static_assert(std::sortable<std::forward_list<int>::iterator>);  // 通过！
-static_assert(std::sortable<std::list<int>::iterator>);           // 通过！
-static_assert(std::sortable<std::vector<int>::iterator>);         // 通过！
+static_assert(std::sortable<std::forward_list<int>::iterator>);  // passes!
+static_assert(std::sortable<std::list<int>::iterator>);           // passes!
+static_assert(std::sortable<std::vector<int>::iterator>);         // passes!
 ```
 
-`forward_list` only has forward iterators, but it still satisfies `std::sortable`.
+A `forward_list` has only forward iterators, yet it still satisfies `std::sortable`.
 
-It is important to distinguish: the **`std::sort` algorithm** requires random-access iterators, but the **`std::sortable` concept** only requires forward iterators. The former is an implementation constraint of the algorithm, while the latter is the minimal requirement of the concept.
+The distinction to keep straight: the **`std::sort` algorithm** requires random access iterators, but the **concept `std::sortable`** only requires forward iterators. The former is the implementation constraint of the algorithm; the latter is the concept's minimal requirement.
 :::
 
-So, looking back, concepts are not just syntactic sugar to "make template errors look prettier." They are the missing piece of the puzzle that generic programming has lacked for over thirty years. The so-called generic code we wrote before was actually "generic code without declared constraints"—the constraints existed, but only in documentation and in the programmer's mind, invisible to the compiler. Now, concepts make constraints an explicit part of the code, allowing the compiler to finally do what it should have been doing all along.
+So in retrospect: concepts are not syntactic sugar for "making template errors a bit prettier." They are the puzzle piece generic programming had been missing for more than thirty years. The so-called generic code we wrote before was really generic code without declared constraints — the constraints existed, but only in documentation and in programmers' heads, invisible to the compiler. Now concepts make constraints part of the code, and the compiler can finally do what it should have been able to do all along.
 
 ---
 
 # Iterator Pitfalls and the Range Solution
 
-Honestly, for the first two years of learning C++, I took the standard library algorithm calling convention for granted—pass a `begin`, pass an `end`, pass a comparison function, and this trio handles everything. It wasn't until I recently mistakenly called `std::sort` on a `std::list` and stared at the screen full of template error messages for a full twenty minutes that I truly understood what problems C++20 concepts and ranges are actually solving. Today, I want to fully document this journey from "pain to enlightenment."
+Honestly, during my first two years of learning C++, I had long since gotten used to how standard library algorithms are called — pass a begin, pass an end, maybe pass a comparison function; that three-piece toolkit goes everywhere. It wasn't until a few days ago, when my itchy fingers made me call `std::sort` on a `std::list` and I then stared at that blob of template error output on the screen for a solid twenty minutes, that I truly understood what C++20's concepts and ranges are actually solving. Today I'm writing down this whole journey "from pain to epiphany," start to finish.
 
-## But the iterator pair has an even bigger pitfall
+## But Iterator Pairs Hide Bigger Pitfalls
 
-Am I satisfied just because the error messages look better? No. Because I thought of an even more terrifying problem.
+Prettier error messages — am I satisfied now? No. Because I thought of something even scarier.
 
-I've seen code like this in projects before—someone passed `begin` and `end` in the wrong order:
+I've seen code like this in real projects — someone passed `begin` and `end` in reverse:
 
 ```cpp
 std::vector<int> vec = {1, 2, 3, 4, 5};
-std::sort(vec.end(), vec.begin());  // 注意：反了！
+std::sort(vec.end(), vec.begin());  // Note: reversed!
 ```
 
-Do you know what happens here? It won't crash immediately. Internally, `std::sort` calculates `last - first`, resulting in a very large number (since subtracting pointers where `end` precedes `begin` should yield a negative value, but the conversion to an unsigned type turns it into a massive positive value). The algorithm then proceeds to read and write out-of-bounds memory frantically. It might run for a long time before causing a segmentation fault, or it might "silently" corrupt your heap memory and crash in a completely unrelated location. I spent an entire afternoon debugging a bug like this once.
+Do you know what happens then? It doesn't crash right away. Inside `std::sort`, `last - first` gets computed and yields a huge number (pointer subtraction: `end` sits after `begin`, so the result should have been positive, but reversed it's negative, which turns into an enormous unsigned value), and then the algorithm starts frantically reading and writing memory out of bounds. It might run for a long time before segfaulting, or it might "quietly" corrupt your heap and crash somewhere completely unrelated. I debugged one of these once; it ate an entire afternoon.
 
-There is an even more absurd scenario—where two iterators come from different containers:
+And there's an even more absurd case — two iterators from two different containers:
 
 ```cpp
 std::vector<int> a = {1, 2, 3};
 std::vector<int> b = {4, 5, 6};
-std::sort(a.begin(), b.end());  // 两个不同容器的迭代器！
+std::sort(a.begin(), b.end());  // Iterators from two different containers!
 ```
 
-This is undefined behavior (UB) according to the C++ standard, but the compiler won't stop you at all. From the perspective of the type system, the types of `a.begin()` and `b.end()` are identical—both are `std::vector<int>::iterator`. The compiler has no way to know whether they originate from the same container.
+In the C++ standard this is undefined behavior, yet the compiler won't stop you at all. From the type system's point of view, `a.begin()` and `b.end()` have exactly the same type — both are `std::vector<int>::iterator`. The compiler has no way to know whether they came from the same container.
 
-Simply adding concept constraints to iterators won't solve these problems. The issue isn't "what type" the iterators are, but whether the "relationship" between this pair of iterators is valid.
+Adding concept constraints to the iterators cannot solve these problems. Because the problem is not "what type the iterators are," but whether "the relationship between this pair of iterators" is valid.
 
-## Ranges Are the Right Way
+## Why Ranges Are the Right Answer
 
-C++20 introduced ranges not to show off, but to fundamentally address the design flaw of "iterator pairs."
+C++20 did not introduce ranges to show off. It did it to fix, at the root, this design flaw of "iterator pairs."
 
-A range naturally represents "a contiguous sequence of elements from a container." It eliminates the possibility of `begin` and `end` coming from different containers, and it avoids the issue of reversed order (although theoretically you could construct a range with a mismatched sentinel, this won't happen with normal usage).
+A range inherently represents "a contiguous run of elements from one container." You can't end up with a begin and an end from different containers, and getting them backwards is much harder to do (in theory you can construct a range whose sentinel doesn't match, but not in normal usage).
 
-Besides, honestly, writing `xxx.begin(), xxx.end()` every time we call an algorithm is just too verbose. Plus, we've seen bugs like `A.begin(), B.end()` before... Well, ranges, I like you!
+And honestly, writing `xxx.begin(), xxx.end()` at every algorithm call is just too verbose. Plus there was that whole `A.begin(), B.end()` incident before... Yeah — ranges, I like you!
 
-Let's take a look at how clean the range-based syntax is:
+Look at how clean the range version is:
 
 ```cpp
 #include <ranges>
@@ -313,7 +312,7 @@ Let's take a look at how clean the range-based syntax is:
 #include <string>
 #include <iostream>
 
-// 我自己包装的 range 版排序
+// My own range-based sort wrapper
 template<std::ranges::random_access_range R,
          typename Comp = std::ranges::less>
     requires std::sortable<std::ranges::iterator_t<R>, Comp>
@@ -322,13 +321,13 @@ void my_sort(R&& r, Comp comp = {}) {
 }
 
 int main() {
-    // vector of doubles，升序
+    // vector of doubles, ascending
     std::vector<double> vd = {3.14, 1.41, 2.72, 0.58};
     my_sort(vd);
     for (double x : vd) std::cout << x << " ";
     std::cout << "\n";
 
-    // vector of strings，降序
+    // vector of strings, descending
     std::vector<std::string> vs = {"hello", "world", "cpp", "ranges"};
     my_sort(vs, std::ranges::greater{});
     for (const auto& s : vs) std::cout << s << " ";
@@ -338,41 +337,41 @@ int main() {
 }
 ```
 
-Please provide the Chinese Markdown content you would like me to translate. I am ready to apply the specified terminology, style guide, and formatting rules to your embedded systems and modern C++ documentation.
+Output:
 
 ```text
 0.58 1.41 2.72 3.14
 world hello ranges cpp
 ```
 
-See, when we call it, we only need to pass a range object. We don't need `begin()` or `end()`, nor do we need to worry about whether two iterators match. Furthermore, the constraint is written as `std::ranges::random_access_range`, which directly expresses "this thing must support random access," rather than "this thing's iterator must satisfy certain conditions." The semantic level is significantly higher.
+See? At the call site you just pass one range object. No `begin()`, no `end()`, no worrying about whether two iterators match. And the constraint you write is `std::ranges::random_access_range`, which directly expresses "this thing must support random access," rather than "this thing's iterator must satisfy such-and-such." That is one level up, semantically.
 
-If you try to pass a `list` in:
+If you try to pass in a `list`:
 
 ```cpp
 std::list<int> lst = {5, 3, 1, 4, 2};
-my_sort(lst);  // 编译错误
+my_sort(lst);  // Compile error
 ```
 
-The error will directly tell you that `std::list<int>` does not satisfy `random_access_range`. Clean and simple.
+The error will tell you outright that `std::list<int>` does not satisfy `random_access_range`. Clean and decisive.
 
-I used to think that ranges were just syntactic sugar. The pipeline style using `views::transform` and `views::filter` looked cool but unnecessary. Looking back now, I realize the core value of ranges is actually **replacing the error-prone abstraction of "a pair of iterators" with the less error-prone abstraction of "a single range"**. The pipeline syntax is just a bonus.
+I used to think ranges were just syntactic sugar, and that the `views::transform` / `views::filter` pipeline style looked cool but unnecessary. Looking back now, the core value of ranges is actually **replacing the error-prone abstraction of "a pair of iterators" with the hard-to-misuse abstraction of "a range."** The pipeline notation is just a bonus that came along for the ride.
 
-At this point, I have completely grasped the evolution logic from iterators to ranges. But the story isn't over—in the example above, I sorted a `vector<string>` in descending order using `std::ranges::greater{}`. This looks fine, but what if you have more specific requirements for string sorting? For example, sorting by length, or sorting lexicographically while ignoring case? This involves customizing predicates, so let's keep reading.
+At this point, the evolution from iterators to ranges has finally, completely clicked for me. But the story isn't over — in the example above I sorted a `vector<string>` in descending order using `std::ranges::greater{}`. That looks fine, but what if you have more refined needs for string sorting? Sorting by length, or lexicographically ignoring case? That's where predicate customization comes in. Let's keep going.
 
 ---
 
 # Concept Composition and Overload Resolution
 
-My understanding of concepts used to be stuck at the level of "it's just syntactic sugar for SFINAE." I thought it just made compiler errors look better and the code slightly cleaner, but fundamentally, it was still doing the same old template stuff. Is that right? If it were, I wouldn't be writing this note.
+My understanding of concepts stayed at the level of "it's just syntactic sugar for SFINAE" for a long time. I figured it merely made compile errors a bit prettier and the writing a bit cleaner, but underneath you were still doing the same old template thing. Right? If that were right, I'm afraid this note wouldn't exist.
 
-## From sort to forward_sortable_range
+## From `sort` to `forward_sortable_range`
 
-It all started when I needed to sort a `std::forward_list`. I had a habit of writing a generic `sort` function with no constraints, just listing the template parameters and stuffing any type into it. Guess what happened? The compiler didn't complain, of course, but it blew up at runtime because `std::sort` requires random access iterators under the hood, while `forward_list` only has forward iterators. This error is completely invisible during compilation and only exposes itself at runtime, making debugging a nightmare.
+It started because I needed to sort a `std::forward_list`. I had this habit: write a general-purpose `sort` function with no constraints at all — lay out the template parameters and stuff whatever type in. And guess what happened? The compiler naturally raised no error, but at run time it blew up, because `std::sort` needs random access iterators underneath, while `forward_list` only has forward iterators. This kind of error is completely uncatchable at compile time; it only surfaces at run time, and tracking it down is absolutely maddening.
 
-So, can we block this kind of error at the type system level? Not relying on documentation saying "Do not use this function on lists" (let's face it, everyone is busy and no one has time to read docs, unless the compiler has already scolded you!), but making the code itself physically prevent you from doing so. This is the core problem concepts aim to solve—it's not about "prettier error messages," but about "making incorrect usage unwriteable."
+So, can we stop this kind of error at the type-system level? Not by relying on documentation that says "please don't use this function on a list" (mind you, everyone is busy these days — nobody has time to sit with you reading documentation, unless the compiler has just given you a beating!), but by making the code itself forbid you from doing it. That is the core problem concepts solve — not "prettier error messages," but "invalid usage simply cannot be written."
 
-I wrote a constraint for forward sortable ranges and provided an overload of `sort` based on this constraint. First, let's look at the concept I defined:
+I set out and wrote a constraint for forward-sortable ranges, then provided overloads of `sort` based on it. First, here is the concept I defined:
 
 ```cpp
 #include <concepts>
@@ -383,26 +382,26 @@ I wrote a constraint for forward sortable ranges and provided an overload of `so
 #include <iostream>
 #include <iterator>
 
-// 先定义一个"前向可排序范围"的 concept
-// 它说的是：这个范围必须是 forward_range，并且它的元素必须能用给定的谓词进行比较
+// First, define a concept for a "forward sortable range"
+// It says: the range must be a forward_range, and its elements must be comparable with the given predicate
 template<typename R, typename C = std::less<>>
 concept forward_sortable_range =
     std::ranges::forward_range<R> &&
     requires(R& r, C comp) {
-        // 需要能拿到前向迭代器
+        // We need to be able to get a forward iterator
         { std::begin(r) } -> std::forward_iterator;
-        // 元素之间需要能用谓词比较
+        // Elements must be comparable with the predicate
         { *std::begin(r) < *std::begin(r) } -> std::convertible_to<bool>;
     };
 ```
 
-You might ask, why not just use `std::sortable`? Good question. `std::sortable` exists in the standard library, and it actually only requires forward iterators <RefLink :id="1" preview="cppreference, std::sortable" />—yes, even `forward_list` iterators satisfy `std::sortable`. However, I want to express the semantic nuance that "this range is sortable, but not necessarily via random access," so I chose to define a more explicit constraint. Additionally, `forward_sortable_range` explicitly checks the comparison operations between elements, which expresses intent better than using raw `std::sortable` in certain scenarios. This is the power of concepts—we can precisely express the semantics we need, rather than being tied down to a specific standard library concept.
+You might ask: why not just use `std::sortable`? Good question. `std::sortable` does exist in the standard library, and it actually only requires forward iterators<RefLink :id="1" preview="cppreference, std::sortable" /> — yes, `forward_list`'s iterator satisfies `std::sortable` too. What I wanted to express here, though, is the semantic level of "this range can be sorted, but not necessarily by way of random access," so I still chose to define a more explicit constraint myself. Moreover, `forward_sortable_range` additionally checks the comparison between elements, which in some scenarios expresses intent better than using raw `std::sortable`. That is the power of concepts — you can state exactly the semantics you need, instead of being locked into some ready-made standard library concept.
 
-Then, I wrote two `sort` overloads: one for random access ranges, and one for forward ranges:
+Then I wrote two `sort` overloads, one for random access ranges and one for forward ranges:
 
 ```cpp
-// 重载1：给随机访问范围用的（vector、deque 等）
-// 约束更严格，编译器会优先匹配这个
+// Overload 1: for random access ranges (vector, deque, etc.)
+// The stricter constraint; the compiler prefers this one
 template<std::ranges::random_access_range R, typename C = std::less<>>
     requires std::sortable<std::ranges::iterator_t<R>, C>
 void my_sort(R& r, C comp = C{}) {
@@ -410,13 +409,13 @@ void my_sort(R& r, C comp = C{}) {
     std::cout << "  [走随机访问路径]\n";
 }
 
-// 重载2：给前向可排序范围用的（forward_list 等）
-// 关键：用 !random_access_range 显式排除随机访问范围，避免歧义
+// Overload 2: for forward sortable ranges (forward_list, etc.)
+// Key point: explicitly exclude random access ranges with !random_access_range to avoid ambiguity
 template<forward_sortable_range R, typename C = std::less<>>
     requires (!std::ranges::random_access_range<R>)
 void my_sort(R& r, C comp = C{}) {
-    // 简单实现：复制到 vector，排序，再复制回来
-    // 生产环境可以用更高效的 list 排序算法，这里只是为了演示
+    // Simple implementation: copy into a vector, sort, copy back
+    // Production code could use a more efficient list-sorting algorithm; this is just a demo
     std::vector<std::ranges::range_value_t<R>> tmp(
         std::begin(r), std::end(r)
     );
@@ -426,43 +425,43 @@ void my_sort(R& r, C comp = C{}) {
 }
 ```
 
-Here is a particularly important point, and a pitfall I fell into myself: **disambiguation rules for concept overloading**. In the initial draft, I assumed that "the compiler would automatically select the overload with the strictest constraint," but actual testing revealed that when Overload 1's constraint is `std::ranges::random_access_range` and Overload 2's constraint is a custom `forward_sortable_range`, there is no subsumption relationship between the two constraints—the compiler cannot determine which is stricter, resulting in an **ambiguity error**.
+There is a particularly important point here, one I stepped into myself before: **the disambiguation rules for concept overloads**. In my first draft I assumed "the compiler automatically picks the overload with the strictest constraints." Actual testing showed: when overload 1's constraint is `std::ranges::random_access_range` and overload 2's is the custom `forward_sortable_range`, there is no subsumption (containment) relation between the two constraints — the compiler cannot tell which is stricter, so it reports an **ambiguity error**.
 
-:::warning Correction: Disambiguation of Concept Overloading
-The original text claimed that "when multiple overloads match, the compiler will select the one with the strictest constraint." This statement holds true under specific conditions (when a subsumption relationship exists between the two constraints), but it does not necessarily hold for custom concepts.
+:::warning Correction to the Original Text: Concept Overload Disambiguation
+The original text claimed "when multiple overloads all match, the compiler picks the one with the strictest constraints." That statement holds under specific conditions (when a subsumption relation exists between the two constraints), but not necessarily for custom concepts.
 
-The C++20 constraint partial ordering rules ([temp.constr.order]) require that Overload A's constraints must **subsume** Overload B's constraints for the compiler to select A. While `std::ranges::random_access_range` does subsume `std::ranges::forward_range` (since the former is a refinement of the latter), it **does not** subsume the custom `forward_sortable_range` (because the latter's `requires` clause contains different atomic constraints).
+C++20's constraint ordering rules ([temp.constr.order]) require: overload A's constraints must **subsume** overload B's constraints before the compiler will choose A. `std::ranges::random_access_range` does subsume `std::ranges::forward_range` (the former is a refinement of the latter), but it does **not** subsume the custom `forward_sortable_range` (whose `requires` clause contains different atomic constraints).
 
-Actual verification results (GCC 16.1.1, `-std=c++20`):
+Actual verification (GCC 16.1.1, `-std=c++20`):
 
 ```text
 error: call of overloaded 'my_sort(std::vector<int>&)' is ambiguous
 ```
 
-Fix: Add `requires (!std::ranges::random_access_range<R>)` to overload 2 to explicitly exclude random-access ranges, preventing both overloads from matching simultaneously.
+The fix: add `requires (!std::ranges::random_access_range<R>)` to overload 2, explicitly excluding random access ranges so the two overloads can never both match.
 :::
 
-This `!random_access_range` trick is quite useful—essentially telling the compiler, "Only consider overload 2 if the constraints for overload 1 are not met." When passing a `vector`, overload 2 is excluded; when passing a `forward_list`, overload 1 is not satisfied. Each case matches a unique candidate, eliminating ambiguity.
+This `!random_access_range` trick is very practical — it essentially tells the compiler "only consider overload 2 under the condition that overload 1 fails." Pass a `vector` and overload 2 is excluded; pass a `forward_list` and overload 1 doesn't hold; each call matches a single candidate, with no ambiguity.
 
-Let's run this to verify:
+Let's run it to verify:
 
 ```cpp
 int main() {
-    // 测试1：vector 走随机访问路径
+    // Test 1: vector takes the random access path
     std::vector<int> v = {5, 3, 1, 4, 2};
     std::cout << "排序 vector: ";
     my_sort(v);
     for (int x : v) std::cout << x << ' ';
     std::cout << '\n';
 
-    // 测试2：forward_list 走前向迭代器路径
+    // Test 2: forward_list takes the forward iterator path
     std::forward_list<int> fl = {5, 3, 1, 4, 2};
     std::cout << "排序 forward_list: ";
     my_sort(fl);
     for (int x : fl) std::cout << x << ' ';
     std::cout << '\n';
 
-    // 测试3：用 greater 降序排
+    // Test 3: descending order with greater
     std::vector<int> v2 = {1, 2, 3, 4, 5};
     std::cout << "降序排序 vector: ";
     my_sort(v2, std::greater<>{});
@@ -484,41 +483,41 @@ Compile and run (GCC 16.1.1, `-std=c++20`):
 5 4 3 2 1
 ```
 
-Perfect, the two paths go their separate ways without interfering with each other. Notice that I provided a default value for the predicate, `std::less<>`. This covers common cases so we don't have to pass it every time, and if we want descending order, we just pass `std::greater<>{}`. This habit of "providing sensible defaults" is something I learned from the standard library; it significantly reduces the burden on the caller.
+Perfect — the two paths each go their own way and never interfere. Notice that I gave the predicate a default of `std::less<>`, so for the common case you don't have to pass anything, and when you want descending order you just pass `std::greater<>{}`. I picked up this "provide a sensible default" habit from the standard library; it greatly reduces the burden on callers.
 
-## Concepts Aren't New, They've Always Been There
+## Concepts Are Not a New Invention — They Have Always Been Here
 
-After finishing the example above, I looked back and suddenly realized something: concepts weren't invented in C++20.
+After finishing the example above, I looked back and suddenly realized something: concepts were not invented by C++20 at all.
 
-If you look at history, Dennis Ritchie implicitly used concepts in early C—`int` and `float` are two concepts, although they weren't called that back then; they were called "types." When you write a function accepting `int`, you are essentially saying, "I need something that satisfies integer semantics." STL has them too. When Stepanov designed STL, he had concepts like iterator, container, and sequence in mind, but since C++ lacked language-level support at the time, these concepts existed only in documentation and in the designer's mind, existing as implicit contracts. Looking further back, the field of mathematics had abstract concepts like monads, groups, and rings centuries ago, and concepts in graph theory can even be traced back to Euler's 1736 paper on the Seven Bridges of Königsberg.
+Look back into history. Dennis Ritchie implicitly used concepts in early C — `int` and `float` are two concepts; they just weren't called that back then, they were called "types." When you write a function that takes an `int`, you are really saying "I need something that satisfies integer semantics." The STL had them too: when Stepanov designed the STL, he had iterator, container, and sequence in his head — C++ simply had no language-level support at the time, so these notions existed only in documentation and in the designers' minds, as implicit conventions. Look even further back: mathematics has had abstract concepts like monad, group, and ring for hundreds of years, and notions from graph theory can even be traced back to Euler's 1736 paper on the Seven Bridges of Königsberg.
 
-So, what is the essence of concepts? **It is the formal expression of domain knowledge.** Whether you use the C++ `concept` keyword or not, as long as you are doing generic programming, you must have concepts in your head. The only difference is: previously, these concepts were implicit, hidden in the designer's brain and documentation, unknown to the compiler; now you can write them as code, and the compiler can check them for you.
+So what is the essence of concepts? **They are a formal expression of domain knowledge.** Whether or not you use C++'s `concept` keyword, if you do generic programming, you must have concepts in your head. The only difference is: before, these notions were implicit — hidden in designers' heads and in documentation, unknown to the compiler. Now you can write them down as code, and the compiler can check them for you.
 
-I've seen a lot of so-called "generic" C++ code before where template parameters are just written as `typename T` without any constraints, and then a comment says "T must support addition and multiplication." Isn't that just an unformalized concept? Can I skip the comment? Can the compiler check it for you? No to both. So, this code crashes as soon as you pass the wrong type, and the crash location is miles away from the actual error.
+I have seen plenty of so-called "generic" C++ code where the template parameter is just `typename T` with no constraints whatsoever, followed by a comment saying "T must support addition and multiplication." Isn't that a concept without formalization? I wrote it in a comment — can I skip reading it? Can the compiler check it for me? Neither. So this kind of code explodes the moment you pass the wrong type, and it explodes somewhere a hundred thousand miles from the actual mistake.
 
 ## From "Template Programming" to "Concept-Based Generic Programming"
 
-I increasingly feel that we should stop saying "template programming" and instead call it "concept-based generic programming." What's the difference between these two terms?
+I increasingly feel that we should stop saying "template programming" and call it "concept-based generic programming" instead. Where does the difference between the two lie?
 
-"Template programming" focuses on "how to instantiate." You think about type deduction, SFINAE, specialization ordering, and other mechanism-level details. "Concept-based generic programming" focuses on "what I need." You think, "I need a sortable forward range," then you write this requirement as a concept, and finally write the function that satisfies this concept. The mechanism becomes an implementation detail. See, this aligns our programming mindset—focus on "what is needed" rather than "how to implement it."
+"Template programming" puts the attention on "how to instantiate" — your head is full of mechanism-level things: type deduction, SFINAE, the partial ordering of specializations. "Concept-based generic programming" puts the attention on "what I need" — your head holds "I need a sortable forward range," you write that requirement down as a concept, and then you write functions that satisfy the concept. The mechanism becomes an implementation detail. See? Now our thinking as programmers is on the right track — focus on "what is needed," not on "how it is implemented."
 
-This shift in thinking was pivotal for me. Previously, when I wrote template code, I would always write the function body first, find out it wouldn't compile, and then patch it up with SFINAE. The whole process was "bottom-up." Now I've learned to define the concept first, think through the requirements clearly, and then write the implementation. The whole process is "top-down." It's not only smoother to write but also clearer to read—seeing the concept constraints on the function signature tells you immediately what the function expects, without needing to dig into the implementation.
+This shift in thinking was decisive for me. Before, when I wrote template code, I always wrote the function body first, discovered it didn't compile, then patched it up with SFINAE — the whole process was bottom-up. Now I have learned to define the concept first, get the requirements straight, and then write the implementation — the whole process is top-down. It doesn't just write more smoothly; it reads more clearly too: seeing the concept constraint on a function signature, you immediately know what the function expects, without having to dig into the implementation.
 
-Furthermore, concepts are often layered and composed, just like my `forward_sortable_range` above, which is composed of more basic concepts like `forward_range` and `forward_iterator`. The more and finer-grained concepts you define, the more flexible they are to reuse. This is the same principle as function decomposition—good concept design is like good function design; it's all about "correct levels of abstraction."
+Moreover, concepts tend to compose in layers — like my `forward_sortable_range` above, which is composed from more basic concepts such as `forward_range` and `forward_iterator`. The more concepts you define and the finer-grained they are, the more flexibly they can be reused. It's the same principle as factoring functions — good concept design, like good function design, is about "the right level of abstraction."
 
-Seen this way, concepts aren't a new toy created out of thin air by C++20; they are the missing piece of the puzzle in generic programming. Without them, generic programming is still possible, but it's like walking a tightrope blindfolded; with them, you at least have a balance beam. Looking back, it's not that hard, but before you figure it out, it just feels awkward.
+Seen this way, concepts are not a new toy that C++20 conjured out of thin air; they are the puzzle piece generic programming was always missing. Without it, you can still do generic programming, but it's like walking a tightrope blindfolded; with it, you at least have a balancing pole. Looking back, it really wasn't that hard — but before it clicked, it just felt awkward.
 
 ---
 
-# `requires` Expressions and Usage Patterns
+# `requires` Expressions and Use Patterns
 
-When exactly should we use a `requires` expression, and when should we define a named concept? When I saw the quote in a talk saying "If you require requires in your code, you might be doing something wrong" <RefLink :id="3" preview="Stroustrup, Concept-based Generic Programming, CppCon 2025" />, I really resonated with it—turns out I wasn't the only one confused by this; there really is a clear criterion for judgment.
+When exactly should you use a `requires` expression, and when should you define a named concept? When I heard the line in the talk — "if you require requires in your code, you might be doing something wrong"<RefLink :id="3" preview="Stroustrup, Concept-based Generic Programming, CppCon 2025" /> — it resonated strongly. So I wasn't the only one confused by this; it really is a question with a clear criterion for deciding.
 
-Today, let's thoroughly clarify this.
+Today, let's straighten this out once and for all.
 
-## Starting with a Simple Combination
+## Start from the Simplest Composition
 
-I used to think that concept composition was some profound, complex thing. Then one day, I was writing a generic sorting function that needed to require both "this range is forward iterable" and "elements in this range are sortable." I wrote a bunch of messy constraints, only to realize later that it was just connecting two concepts with `&&`. There is no essential difference from writing a logical AND operation in a normal function.
+I used to think concept composition was some profound thing, until one day I wrote a generic sorting function that needed to require both "this range can be traversed forward" and "the elements of this range can be sorted." I wrote a pile of messy constraints before realizing that it's just two concepts joined with `&&` — no essential difference from writing a logical AND in ordinary code.
 
 ```cpp
 #include <concepts>
@@ -527,12 +526,12 @@ I used to think that concept composition was some profound, complex thing. Then 
 #include <algorithm>
 #include <iostream>
 
-// 我自己定义的一个 concept：可排序的范围
-// 本质上就是 forward_range 和 sortable 的"与"操作
+// A concept of my own: a sortable range
+// It is essentially the "AND" of forward_range and sortable
 template<typename R>
 concept sortable_range = std::ranges::forward_range<R> && std::sortable<std::ranges::iterator_t<R>>;
 
-// 用这个组合出来的 concept 去约束函数模板
+// Constrain the function template with this composed concept
 template<sortable_range R>
 void my_sort(R&& r) {
     std::ranges::sort(std::forward<R>(r));
@@ -540,64 +539,64 @@ void my_sort(R&& r) {
 
 int main() {
     std::vector<int> v{3, 1, 4, 1, 5, 9, 2, 6};
-    my_sort(v);  // 编译通过，vector<int> 既满足 forward_range 又满足 sortable
+    my_sort(v);  // Compiles: vector<int> satisfies both forward_range and sortable
 
-    // my_sort("hello");  // 编译错误，字符串不满足 sortable
-    // 报错信息会明确告诉你：约束 'sortable_range<R>' 未满足
+    // my_sort("hello");  // Compile error: a string does not satisfy sortable
+    // The error will tell you plainly: constraint 'sortable_range<R>' not satisfied
 
     for (int x : v) std::cout << x << ' ';
-    // 输出：1 1 2 3 4 5 6 9
+    // Output: 1 1 2 3 4 5 6 9
 }
 ```
 
-You see, although the syntax involves writing `sortable_range R` in the template parameter list instead of the typical `typename R`, the definition of the concept itself is simply an expression that returns a bool. `std::ranges::forward_range<R>` is a bool, `std::sortable<...>` is a bool, and combining two bools with `&&` yields a bool. It is just that simple. I used to overthink it, assuming there was some special syntactic magic involved, but there isn't.
+See: syntactically you are writing `sortable_range R` in the template parameter list instead of plain `typename R`, but the concept's own definition is just an expression that returns bool. `std::ranges::forward_range<R>` is a bool, `std::sortable<...>` is a bool, two bools joined with `&&` give a bool. That's all there is to it. I had been over-thinking it, assuming there was some special syntactic magic inside. There isn't.
 
-## The `requires` expression: The underlying brick of concepts
+## `requires` Expressions: The Building Bricks of Concepts
 
-Once we understand composition, the next question is: how are these standard library concepts actually implemented? The answer is the `requires` expression.
+Once composition clicks, the next question is: how are the concepts in the standard library actually implemented? The answer is the `requires` expression.
 
-I was initially confused when I saw the `requires` keyword appear in two different places—the `requires` clause (placed after the function signature) and the `requires` expression (containing a list of checks inside braces). These two things share the same name but have completely different responsibilities. The `requires` expression is the one that does the actual work by checking whether a specific construct is valid.
+At first I was baffled seeing the `requires` keyword show up in two places — the `requires` clause (the kind placed after a function signature) and the `requires` expression (the kind with a pile of checks inside curly braces). The two share a name but have completely different jobs. The `requires` expression is the one doing the real work: it checks whether some construct is valid.
 
-Let's look at how we might write the classic `equality_comparable` ourselves:
+Let's look at how the classic `equality_comparable` should be written by hand:
 
 ```cpp
 #include <concepts>
 #include <type_traits>
 
-// 自己实现一个简化版的 equality_comparable
-// 检查 T 和 U 之间是否可以进行相等和不相等比较
+// A hand-rolled, simplified equality_comparable
+// Checks whether equality and inequality comparisons are possible between T and U
 template<typename T, typename U>
 concept my_equality_comparable =
     requires(const T& t, const U& u) {
-        // 下面每一行都是一个"使用模式"的检查
-        // 编译器会尝试编译这些表达式，如果都能编译通过，这一项就是 true
+        // Each line below is a check of one "use pattern"
+        // The compiler tries to compile these expressions; if they all compile, the requirement holds
         { t == u } -> std::convertible_to<bool>;
         { u == t } -> std::convertible_to<bool>;
         { t != u } -> std::convertible_to<bool>;
         { u != t } -> std::convertible_to<bool>;
     };
 
-// 验证一下
-static_assert(my_equality_comparable<int, double>);   // int 和 double 可以比较
-static_assert(my_equality_comparable<int, int>);      // 同类型当然可以
-static_assert(!my_equality_comparable<int, std::nullptr_t>);  // int 和 nullptr 不能比较
+// Verify
+static_assert(my_equality_comparable<int, double>);   // int and double compare fine
+static_assert(my_equality_comparable<int, int>);      // same type, of course
+static_assert(!my_equality_comparable<int, std::nullptr_t>);  // int and nullptr don't compare
 ```
 
-I've encountered a few pitfalls regarding these details. First, the parameter list `const T& t, const U& u` inside the `requires` braces introduces some "hypothetical variables" that are used solely for the internal check; they are not actually instantiated. Second, in the syntax `{ t == u } -> std::convertible_to<bool>`, the braces contain the expression to be checked, and the arrow specifies the requirement for the return type. Note that we use `convertible_to<bool>` instead of `same_as<bool>`, because the `==` operator does not necessarily return a strict `bool` type; as long as it can be implicitly converted to `bool`, it is sufficient—this is explicitly defined in the C++ standard.
+There are a few details here I got burned by before. First, the parameter list inside the `requires` braces — `const T& t, const U& u` — introduces "hypothetical variables" used only by the checks inside the braces; they are never actually created. Second, the syntax `{ t == u } -> std::convertible_to<bool>`: inside the braces is the expression to check, and after the arrow is the requirement on its return type. Note that this uses `convertible_to<bool>` rather than `same_as<bool>`, because the `==` operator doesn't necessarily return exactly `bool` — being implicitly convertible to bool is enough. This is explicitly specified in the C++20 standard.
 
-## What does "require a requires" actually mean?
+## What "Requiring requires" Actually Means
 
-The talk mentioned that "if you require a requires in your code, you might be doing something wrong." I didn't grasp this at first, but upon reflection, it refers to situations like this:
+The talk said "if you require requires in your code, you might be doing something wrong." At first I didn't understand that sentence; after thinking it over, I realized it refers to this kind of situation:
 
 ```cpp
-// 反面教材：直接在函数约束里写 requires 表达式
+// Bad example: a requires expression written directly in the function's constraints
 template<typename T>
     requires requires(T t) { t + t; }
 auto add_stuff(T a, T b) {
     return a + b;
 }
 
-// 正确做法：给它起个名字，定义成 concept
+// The right way: give it a name and define a concept
 template<typename T>
 concept addable = requires(T t) { t + t; };
 
@@ -607,39 +606,39 @@ auto add_stuff(T a, T b) {
 }
 ```
 
-Why is the first approach bad? Because when you see the error message, you are greeted with a wall of expanded `requires` expressions, making it impossible to discern the "semantic intent" of the constraint. With the second approach, the compiler will directly tell you that "constraint `addable<T>` not satisfied," which is immediately clear just by looking at the name. This demonstrates the value of "concepts with meaningful names." The `requires` expression is the brick, and the concept is the house built with those bricks; naturally, you should live inside the house, not directly on the bricks.
+Why is the first version bad? Because when the error comes, what you see is an expanded pile of `requires` expression, and you have no idea what the constraint's semantic intent is. With the second version, the compiler's error tells you directly "constraint `addable<T>` not satisfied," and you understand at a glance from the name. That is the value of "concepts with names that carry clear meaning": the `requires` expression is the brick, the concept is the house built from the bricks — and of course you should live in the house, not directly on the bricks.
 
-## Usage Patterns: Why It Changes the Game
+## Use Patterns: Why They Change the Game
 
-What I am about to discuss is, in my opinion, the most ingenious design feature of concepts—usage patterns.
+The next thing I want to talk about is, in my opinion, the single most exquisite design in concepts — use patterns.
 
-I used to assume that if I wanted to constrain a type to support the `+` operator, I needed to specify exactly how that `+` is implemented. Is it a member function `T::operator+`? Is it a free function `operator+(T, T)`? Are the parameters `const`-qualified? What is the exact return type? If I had to spell out all these details in a concept, it would be a nightmare, placing a massive burden on anyone using that concept.
+I used to think that if I wanted to constrain a type to support `+`, I had to specify exactly how that `+` is implemented. Is it the member function `T::operator+`? The free function `operator+(T, T)`? Are the parameters `const` or not? What exactly is the return type? If I had to write all of that into the concept, it would be a nightmare, and it would place an enormous burden on everyone using the concept.
 
-Usage patterns, however, completely flip the script: they don't care how you implement it, only whether "the task can be done."
+But use patterns take a completely different approach: they don't care how you implement it — they care only about one question: "can this thing be done?"
 
 ```cpp
 #include <concepts>
 #include <string>
 
-// 我只要求 A + B 这个表达式能编译通过，并且结果能转成某种公共类型
-// 至于 A + B 是通过成员函数实现还是自由函数实现，我完全不关心
+// I only require that the expression A + B compiles and that the result converts to some common type
+// Whether A + B is implemented as a member function or a free function, I don't care at all
 template<typename A, typename B>
 concept can_add = requires(A a, B b) {
     { a + b } -> std::convertible_to<std::common_type_t<A, B>>;
 };
 
-// 来验证一下使用模式的威力
+// Now let's see the power of use patterns
 
-// 情况1：内置类型的加法
+// Case 1: addition of built-in types
 static_assert(can_add<int, int>);
 
-// 情况2：混合模式算术，int + double
+// Case 2: mixed-mode arithmetic, int + double
 static_assert(can_add<int, double>);
 
-// 情况3：std::string 的加法（通过自由函数 operator+ 实现）
+// Case 3: std::string addition (implemented via a free operator+)
 static_assert(can_add<std::string, std::string>);
 
-// 情况4：自定义类型，用成员函数实现 operator+
+// Case 4: a user-defined type implementing operator+ as a member function
 class MyInt {
     int val;
 public:
@@ -648,7 +647,7 @@ public:
 };
 static_assert(can_add<MyInt, MyInt>);
 
-// 情况5：另一个自定义类型，用自由函数实现 operator+
+// Case 5: another user-defined type implementing operator+ as a free function
 class MyFloat {
     float val;
 public:
@@ -660,31 +659,31 @@ MyFloat operator+(const MyFloat& a, const MyFloat& b) {
 }
 static_assert(can_add<MyFloat, MyFloat>);
 
-// 情况6：int 和 std::string 不能相加
+// Case 6: int and std::string cannot be added
 static_assert(!can_add<int, std::string>);
 ```
 
-:::details Original Code Correction Notes
-In the initial draft, the definition of `can_add` used a default template parameter `typename R = std::remove_cvref_t<decltype(std::declval<A>() + std::declval<B>())>` to deduce the return type. This approach has a pitfall: when `A + B` is invalid (e.g., `int + std::string`), the evaluation of the default parameter fails during the template argument substitution phase, resulting in a **hard compilation error** instead of the concept returning `false`.
+:::details Note on a Code Correction in the Original
+The first draft defined `can_add` with a default template argument `typename R = std::remove_cvref_t<decltype(std::declval<A>() + std::declval<B>())>` to deduce the return type. That formulation has a trap: when `A + B` is ill-formed (for example, `int + std::string`), evaluating the default argument fails already during template argument substitution, producing a **hard compile error** instead of the concept returning `false`.
 
-Actual verification results (GCC 16.1.1, `-std=c++20`):
+Actual verification (GCC 16.1.1, `-std=c++20`):
 
 ```text
 error: no match for 'operator+' (operand types are 'int' and 'std::__cxx11::basic_string<char>')
 ```
 
-This is a hard error—`static_assert(!can_add<int, std::string>)` fails to compile entirely.
+This is a hard error — `static_assert(!can_add<int, std::string>)` doesn't even compile.
 
-The fix: remove the return type deduction from the default template parameter and use `std::common_type_t<A, B>` as the constraint target. This way, when `A + B` is invalid, only the check inside the requires expression fails (in the "immediate context"), and the concept correctly returns `false`.
+The fix: drop the return-type deduction in the default template argument and use `std::common_type_t<A, B>` as the constraint target instead. Now when `A + B` is ill-formed, only the check inside the requires expression fails (in the "immediate context"), and the concept correctly returns `false`.
 :::
 
-This is where things get really exciting. The `can_add` concept works for both `MyInt` (implemented via a member function) and `MyFloat` (implemented via a free function). It doesn't care about the implementation details at all. This means the interface becomes incredibly stable—we can implement `operator+` as a member function today and switch to a free function tomorrow. As long as the `a + b` expression remains valid, none of the code relying on the `can_add` concept needs to change. This level of stability was simply impossible to achieve with SFINAE and tag dispatch in the past.
+I got genuinely excited at this point. The `can_add` concept works for both `MyInt` (member-function implementation) and `MyFloat` (free-function implementation); it doesn't care the least bit about the implementation style. This means the interface becomes extremely stable — you implement `operator+` as a member function today, change it to a free function tomorrow, and as long as the expression `a + b` still works, none of the code depending on the `can_add` concept needs to change. That kind of stability was simply unattainable with SFINAE and tag dispatch.
 
-Furthermore, this checking is implicit. What does "implicit" mean? It means that when we instantiate a template, the compiler automatically verifies the constraints for us, without us needing to write any extra code. However, if we want to be sure, we can explicitly verify that a specific type satisfies a concept as early as possible, just like the `static_assert` examples we wrote above. This flexibility is excellent—the set of types is open; anyone can write a new type, and as long as it fits the usage pattern, it works. At the same time, we can explicitly add guards wherever we need extra protection.
+And the check is implicit. What does implicit mean? When you instantiate the template, the compiler checks it for you automatically — you don't need to write any extra code at all. But if you are cautious and want to confirm early that some type satisfies some concept, you can also check proactively, like the `static_assert`s I wrote above. This flexibility is wonderful — the set of types is open: anyone can write a new type, and as long as it satisfies the use pattern, it works; yet at the same time, wherever you want a guardrail, you can add one explicitly.
 
-## Handling Mixed-Mode Arithmetic and Implicit Conversions
+## Mixed-Mode Arithmetic and Implicit Conversions
 
-Another advantage of the usage pattern is that it naturally handles C++'s complex implicit conversion rules. For example, `int + double` works because `int` is implicitly converted to `double`. The usage pattern doesn't care how this conversion happens; it simply verifies whether the `int + double` expression ultimately compiles.
+Use patterns have one more benefit: they naturally handle C++'s complicated implicit conversion rules. For example, `int + double` works because int implicitly converts to double. The use pattern doesn't care how that conversion happens; it only verifies that the expression `int + double` can ultimately compile.
 
 ```cpp
 #include <concepts>
@@ -694,25 +693,25 @@ concept can_compare = requires(A a, B b) {
     { a == b } -> std::convertible_to<bool>;
 };
 
-// int 和 double 可以比较，因为 int 会隐式转换为 double
+// int and double compare fine, because int implicitly converts to double
 static_assert(can_compare<int, double>);
 
-// int 和 long 可以比较
+// int and long compare fine
 static_assert(can_compare<int, long>);
 
-// int 和 std::string 不行，没有从 string 到 int 的隐式转换
+// int and std::string don't: there is no implicit conversion from string to int
 static_assert(!can_compare<int, std::string>);
 ```
 
-You might ask: what if we want more precise control, disallowing implicit conversions and requiring exact type matches? We can use `std::same_as` instead of `std::convertible_to`, or add more constraints within the `requires` expression. The usage pattern provides the most relaxed default behavior, but we can tighten it up whenever needed. This is a vast improvement over the old approach of "checking nothing by default."
+You might ask: what if I want more precise control — no implicit conversions allowed, only exact type matches? Then you can use `std::same_as` in place of `std::convertible_to`, or add more constraints inside the requires expression. Use patterns give you the loosest default behavior, and you can narrow them at any time. That is vastly better than the old "check nothing by default" approach.
 
-## Why concepts must be part of the language, not an isolated sub-language
+## Why Concepts Must Be Part of the Language, Not an Isolated Sub-Language
 
-Finally, here is a point that I hadn't fully grasped until now. The talk mentioned, "I don't like isolated sub-languages that stand alone," and that really struck a chord with me.
+Finally, one more thing I never quite got before and now do. The talk mentioned "I dislike isolated sub-languages that can only exist as their own little sect" — that line woke me up.
 
-Concepts are not a separate, isolated world within C++. They work alongside `if constexpr`, coexist with SFINAE (although we no longer need to write it manually), and integrate with `constexpr` functions and modules. They simply use C++'s existing language features—any valid C++ expression can be written inside a `requires` expression, and a concept definition is just a standard `template` combined with a `bool` constant expression.
+Concepts are not a separate little world inside C++. They work together with `if constexpr`, coexist with SFINAE (even though you no longer need to hand-write SFINAE), work with constexpr functions, and work with modules. They use C++'s own language features — a `requires` expression can contain any valid C++ expression, and a concept's definition is just an ordinary `template` plus a `bool` constant expression.
 
-This means we don't need to learn a separate "concept-specific syntax" and then a separate "C++ syntax"—we are simply learning C++ itself. Concepts transform generic programming from "using template metaprogramming black magic to simulate constraints" into "using the language itself to express constraints." Once this clicks, looking back, it isn't actually that difficult; the hard part is breaking the old habits of thinking in terms of SFINAE.
+This means you don't have to learn one "concept-specific syntax" and then another separate "C++ syntax" — what you learn is C++ itself. Concepts take generic programming from "simulating constraints with template-metaprogramming black magic" to "expressing constraints in the language itself." At this point it has finally clicked; looking back, it really isn't that hard. The hard part was shaking off the old SFINAE habits of thought.
 
 <ReferenceCard title="References">
   <ReferenceItem
