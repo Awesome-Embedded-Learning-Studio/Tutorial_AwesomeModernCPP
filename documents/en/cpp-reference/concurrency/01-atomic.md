@@ -7,7 +7,7 @@ cpp_standard:
 - 20
 - 23
 description: Lock-free atomic operation types for safe data sharing between threads
-  without data races.
+  without data races
 difficulty: intermediate
 order: 1
 reading_time_minutes: 2
@@ -19,71 +19,59 @@ title: std::atomic
 translation:
   source: documents/cpp-reference/concurrency/01-atomic.md
   source_hash: 59abadaa327489d53b2aad1a01181393ca926fdba9127dd63fe3e0f54fe7fb7c
-  translated_at: '2026-06-16T03:27:43.238039+00:00'
+  translated_at: '2026-09-26T17:08:12+00:00'
   engine: anthropic
-  token_count: 505
+  token_count: 750
 ---
 # std::atomic (C++11)
 
-## In a Nutshell
+## In a nutshell
 
-A template class that guarantees read and write operations are indivisible, preventing data races when multiple threads access the same variable concurrently.
+A template class that guarantees read and write operations are indivisible, so that multiple threads accessing the same variable concurrently never produce a data race.
 
-## Header File
+## Header file
 
-```cpp
-#include <atomic>
-```
+`#include <atomic>`
 
 ## Core API Cheat Sheet
 
 | Operation | Signature | Description |
-|-----------|-----------|-------------|
-| Constructor | `atomic() noexcept` | Default construction (value is uninitialized) |
-| Assignment | `T operator=(T) noexcept` | Atomically write the selected value |
-| Read | `T operator T() const noexcept` | Atomically read and return the current value |
-| Store | `void store(T, order = memory_order::seq_cst) noexcept` | Atomic write |
-| Load | `T load(order = memory_order::seq_cst) const noexcept` | Atomic read |
-| Exchange | `T exchange(T, order = memory_order::seq_cst) noexcept` | Atomically replace the old value and return the old value |
-| Compare Exchange | `bool compare_exchange_weak(T&, T, order, order) noexcept` | Weak CAS, may spuriously fail |
-| Compare Exchange | `bool compare_exchange_strong(T&, T, order, order) noexcept` | Strong CAS, only fails on a true mismatch |
-| Atomic Add | `T fetch_add(T, order = memory_order::seq_cst) noexcept` | Atomically add and return the old value (integer/pointer) |
-| Lock-free Check | `bool is_lock_free() const noexcept` | Check if the current type is implemented in a lock-free manner |
+|------|------|------|
+| Constructor | `atomic() noexcept = default;` | Default construction (value left uninitialized) |
+| Assignment | `T operator=(T desired) noexcept;` | Atomically writes the given value |
+| Read | `operator T() const noexcept;` | Atomically reads and returns the current value |
+| Store | `void store(T desired, memory_order order = memory_order_seq_cst) noexcept;` | Atomic write |
+| Load | `T load(memory_order order = memory_order_seq_cst) const noexcept;` | Atomic read |
+| Exchange | `T exchange(T desired, memory_order order = memory_order_seq_cst) noexcept;` | Atomically replaces the old value and returns it |
+| Compare exchange | `bool compare_exchange_weak(T& expected, T desired, ...) noexcept;` | Weak CAS; may fail spuriously |
+| Compare exchange | `bool compare_exchange_strong(T& expected, T desired, ...) noexcept;` | Strong CAS; fails only on a genuine mismatch |
+| Atomic add | `T fetch_add(T arg, memory_order order = memory_order_seq_cst) noexcept;` | Atomically adds and returns the previous value (integers/pointers) |
+| Lock-free check | `bool is_lock_free() const noexcept;` | Checks whether this type is implemented lock-free |
 
 ## Minimal Example
 
 ```cpp
 #include <atomic>
-#include <thread>
 #include <iostream>
+#include <thread>
+#include <vector>
 
-std::atomic<int> counter{0};
-
-void task() {
-    for (int i = 0; i < 1000; ++i) {
-        // Atomically increment counter by 1
-        counter.fetch_add(1, std::memory_order_relaxed);
-    }
-}
+std::atomic<int> cnt{0};
 
 int main() {
-    std::thread t1(task);
-    std::thread t2(task);
-
-    t1.join();
-    t2.join();
-
-    std::cout << "Final counter value: " << counter << '\n';
-    // Output: Final counter value: 2000
+    std::vector<std::jthread> pool;
+    for (int i = 0; i < 10; ++i)
+        pool.emplace_back([] { for (int n = 0; n < 10000; ++n) cnt++; });
+    std::cout << cnt << '\n'; // outputs 100000
 }
 ```
 
-## Embedded Applicability: High
+## Embedded Suitability: High
 
-- Properly aligned integer and pointer types typically map directly to hardware atomic instructions, resulting in zero overhead.
-- `is_lock_free()` allows us to confirm at runtime if the implementation is truly lock-free, avoiding implicit system calls.
-- Replaces bulky mutexes, making it ideal for lightweight state synchronization between interrupts and the main loop.
-- Excessively large custom structures may fall back to an internal locking implementation, which we must strictly avoid.
+- Properly aligned integer and pointer types usually map straight onto hardware atomic instructions, with zero extra overhead
+- `is_lock_free()` lets us confirm at runtime whether the implementation is truly lock-free, avoiding hidden system calls
+- A lean replacement for heavyweight mutexes, well suited to lightweight state synchronization between an interrupt handler and the main loop
+- Oversized custom structs may fall back to an internally locked implementation — the main pitfall to watch out for
 
 ## Compiler Support
 
@@ -93,9 +81,9 @@ int main() {
 
 ## See Also
 
-- [Tutorial: Corresponding Chapter](../../vol5-concurrency/ch03-atomic-memory-model/01-atomic-operations.md)
+- [Tutorial: the corresponding chapter](../../vol5-concurrency/ch03-atomic-memory-model/01-atomic-operations.md)
 - [cppreference: std::atomic](https://en.cppreference.com/w/cpp/atomic/atomic)
 
 ---
 
-*部分内容参考自 [cppreference.com](https://en.cppreference.com/)，采用 [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) 许可*
+*Part of the content is referenced from [cppreference.com](https://en.cppreference.com/) and is licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*
