@@ -1,44 +1,37 @@
 ---
-title: 'Responsibility Chain Pattern: From a Long Chain of if/else to next_ Pointers,
-  and Finally to Middleware Onions'
-description: We start with the most intuitive approach where the caller hardcodes
-  the handler, and step by step derive the classic `next_` pointer chain. We examine
-  what problem this solves and where it shifts the coupling. Finally, we present two
-  modern C++ alternatives using a `std::vector` scheduler and `std::function` middleware
-  onion.
+title: 'Chain of Responsibility Pattern: From a Long Chain of if/else to `next_` Pointers, and Then to the Middleware Onion'
+description: 'Starting from the most intuitive "the caller hard-codes who handles what" approach, we work our way step by step to the classic `next_` pointer chain, see exactly what it solves and where it relocates the coupling, and finish with two modern C++ alternatives: a `std::vector` dispatcher and a `std::function` middleware onion'
 chapter: 11
 order: 19
 tags:
-- host
-- cpp-modern
-- intermediate
-- 责任链模式
+  - host
+  - cpp-modern
+  - intermediate
+  - 责任链模式
 difficulty: intermediate
 platform: host
-cpp_standard:
-- 11
-- 17
-- 20
+cpp_standard: [11, 17, 20]
 reading_time_minutes: 20
 related:
-- 单例模式:从注释约束到 Meyer's Singleton
-- 策略模式:从一堆 if/else 到编译期可替换的 Policy
+  - 'Singleton Pattern: From Comment-Only Constraints to Meyer''s Singleton'
+  - 'Strategy Pattern: From a Heap of if/else to Compile-Time Swappable Policies'
 prerequisites:
-- 'Chapter 6: 类与对象'
+  - 'Chapter 6: Classes and Object-Oriented Programming'
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/19-chain-of-responsibility.md
   source_hash: 89365238cd48d1cc0e46a2f496ebfcc01e970a484dc84bef12c801e7c16d00e0
-  translated_at: '2026-06-24T01:03:42.962542+00:00'
+  translated_at: '2026-09-26T06:00:13+00:00'
   engine: anthropic
-  token_count: 4787
+  token_count: 8000
 ---
-# Chain of Responsibility: From a Long Chain of if/else to `next_` Pointers, and Finally to the Middleware Onion
 
-## What Problem Are We Actually Solving?
+# Chain of Responsibility Pattern: From a Long Chain of if/else to `next_` Pointers, and Then to the Middleware Onion
 
-Let's hold off on the formal definition for a moment. Consider a concrete scenario: you have written a network service and need to handle incoming requests. When a request arrives, you want it to pass through a series of checkpoints in a specific order—first, verify it has a valid authentication token, and reject it immediately if it doesn't; second, if authenticated, log the access; third, after logging, hand it over to the actual business logic to compute the result. The order of these steps is fixed, and each step determines whether execution should proceed (if authentication fails, we stop there; subsequent steps must not run).
+## What problem are we actually solving
 
-The most intuitive approach is for the caller to hardcode this sequence:
+Let's not rush into a definition. Picture a very concrete scenario: you've written a network service, and now you need to process incoming requests. A request arrives, and you want it to pass through a few gates in a fixed order — first check whether it carries a valid auth token, and reject it outright if it doesn't; once authenticated, write an access log entry; after the log is written, hand it to the real business logic to compute the result. The order of these steps is fixed, and "should we keep going" is each step's own call (if authentication fails, that's the end of the road; the later steps should never run at all).
+
+The most intuitive way to write it is for the caller to hard-code that order itself:
 
 ```cpp
 void handle_request(const Request& req) {
@@ -54,17 +47,17 @@ void handle_request(const Request& req) {
 }
 ```
 
-At first, writing it this way seems fine. But then, things start to get out of hand. Product asks for rate limiting (max 100 requests per minute per IP), so you inject the rate limiter before authentication. Two days later, they want metrics instrumentation (latency tracking for every step), so you inject another layer. Later, it's canary releases (only specific users use the new logic), so yet another layer. Now, when you open `handle_request`, it's a long sequence of ordered steps. Each step "might intercept or might pass," and getting the order slightly wrong leads to a production incident. Every time you add new logic, you have to **open this function and modify its internal structure**.
+At first this is fine. Then things start to spiral. Product wants rate limiting added (at most 100 requests per IP per minute), so you insert it before authentication. Two days later they want metrics instrumentation (per-step timing), so you wedge in another layer. Later still there's a canary rollout to do (only certain users take the new logic) — another layer. Now when you open `handle_request`, you're staring at a long, ordered sequence of steps, each of which "might intercept or might pass", where the slightest ordering mistake is a production incident — and every new layer of logic forces you to **open this function and rework its internal structure**.
 
-The root of the problem is this: **"Who handles the request, in what order, and when it stops" is hardcoded into the caller.** The caller not only knows what the checkpoints are, but also their sequence and who can stop whom. What we want is the reverse—**the caller is only responsible for tossing the request into a chain. Each node on the chain decides for itself: "Do I handle it, or pass it to the next?"** The caller knows nothing about how the chain is assembled, how many layers there are, or the order.
+The root of the problem: **"who handles a request, in what order, and when to stop" is welded into the caller**. The caller doesn't just know which gates exist — it knows their sequence, and it knows which one can halt which. What we want is the reverse: **the caller's only job is to drop the request into a chain, and each node on the chain decides for itself "do I handle this, or toss it to the next one"**. How the chain is assembled, how many layers it has, in what order — the caller knows none of it.
 
-The Chain of Responsibility pattern exists to solve exactly this. The GoF (Gang of Four) sums up its intent in one sentence: **"Give more than one object a chance to handle a request by chaining these objects together and passing the request along the chain until an object handles it."** The goal is to decouple the **sender** of a request from the **receiver**, so the sender doesn't know—and doesn't need to know—who ultimately handled it.
+That is exactly the problem the Chain of Responsibility pattern solves. GoF's intent in one sentence: **"give more than one object a chance to handle a request, chain these objects together, and pass the request along the chain until one of them handles it"** — the goal being to decouple the **sender** of a request from its **receiver**: the sender doesn't know, and doesn't need to know, who ends up handling it.
 
-However, the act of "chaining objects together" has several implementations in C++, each with its own pitfalls. Let's walk through this step-by-step, starting with the dumbest approach, to see how each is driven by the pain points of the previous one.
+But "chaining them together" can be implemented several ways in C++, and each has its own traps. Let's go step by step, starting from the dumbest version, and see how each style is forced into existence by the previous one's pain points.
 
-## Step 1: The Most Primitive Approach — Hardcoded Order in the Caller (The Anti-Pattern)
+## Step 1: The most primitive approach — the caller hard-codes the order (a cautionary example)
 
-We've already seen this beginning. Let's zoom in a bit to see exactly where the pain lies:
+We've already seen this opening; let's zoom in a little and see exactly where the pain sits:
 
 ```cpp
 void handle_request(const Request& req) {
@@ -76,15 +69,15 @@ void handle_request(const Request& req) {
 }
 ```
 
-It works, but it is riddled with issues. **First**, every time we add a new stage, we have to revisit this function—it is "closed for extension," violating the Open-Closed Principle. **Second**, the order of stages is implicit (you only know rate limiting comes before authentication by reading top-to-bottom), and there is no single place to visualize "what this chain looks like." **Third**, and most subtly, these stages are hardcoded function calls. If we want to dynamically assemble a chain at runtime based on configuration (e.g., "no rate limiting for internal testing environments"), it's impossible without adding a bunch of `if` statements.
+It runs, but the defects pile up. **First**, every new gate means going back and editing this function — it is "closed for extension", violating the open-closed principle. **Second**, the ordering between gates is implicit (you only learn that rate limiting comes before authentication by reading top to bottom); there's no single place where you can see at a glance "what this chain looks like". **Third**, and sneakiest — these gates are hard-coded function calls. If you want to assemble a chain dynamically at runtime based on configuration (say, "no rate limiting in the internal test environment"), it's simply impossible without piling on yet another heap of `if`.
 
-The root cause of this failure is that **"what handlers exist" and "how the caller uses them" are mixed together in a single function**. What we really want is to extract the "set of handlers" and "how they are linked" from the caller, turning them into an independently composable structure. Each handler only needs to answer two questions: **"Can I handle this request?"** and **"If not, pass it to the next one."**
+The root reason this road dead-ends: **"which handlers exist" and "how the caller uses these handlers" are kneaded together inside one function**. What we really want is to pull "the set of handlers" and "how they get chained together" out of the caller and turn them into a structure that can be assembled independently. Each handler answers exactly two questions: **"Can I handle this request?" and "If not, hand it to the next one."**
 
-This is exactly what the classic `next_` pointer chain is for.
+That is precisely what the classic `next_` pointer chain does.
 
-## Step 2: The Classic Pointer Chain — `next_` Pointer + Handle or Forward
+## Step 2: The classic pointer chain — a `next_` pointer plus handle-or-forward
 
-Let's jump straight to the code and break down line-by-line why it's written this way. This is the classic GoF (Gang of Four) pointer chain implementation: an abstract `Handler`, where each concrete handler inherits from it and holds a `next_` pointer pointing to the next handler:
+Let's jump straight to the code, then take it apart line by line to see why it's written this way. This is the classic GoF pointer-chain implementation: an abstract `Handler` that every concrete handler inherits from, each holding a `next_` pointer to the next handler:
 
 ```cpp
 #include <iostream>
@@ -99,18 +92,18 @@ public:
         next_ = std::move(next);
     }
 
-    // 模板方法:把"转发"逻辑焊死在基类,子类只管 process
+    // Template method: the "forwarding" logic is welded into the base class; subclasses only implement process
     void handle(const std::string& req) {
         const bool handled = process(req);
         if (!handled && next_) {
-            next_->handle(req);          // 甩给下一个
+            next_->handle(req);          // toss it to the next one
         } else if (!handled && !next_) {
             std::cout << "[chain end] nobody handled: " << req << "\n";
         }
     }
 
 protected:
-    virtual bool process(const std::string& req) = 0;  // 返回 true 表示"我处理了"
+    virtual bool process(const std::string& req) = 0;  // returning true means "I handled it"
 
 private:
     std::shared_ptr<Handler> next_;
@@ -139,7 +132,7 @@ protected:
 };
 ```
 
-Here is how we use it:
+Using it looks like this:
 
 ```cpp
 int main() {
@@ -147,13 +140,13 @@ int main() {
     auto log = std::make_shared<LogHandler>();
     auth->set_next(log);
 
-    auth->handle("log");   // auth 拒收 -> 转给 log -> log 处理
-    auth->handle("auth");  // auth 自己处理
-    auth->handle("xxx");   // 一路没人收,到链尾报"nobody handled"
+    auth->handle("log");   // auth declines -> forwards to log -> log handles it
+    auth->handle("auth");  // auth handles it itself
+    auth->handle("xxx");   // nobody takes it all the way; the chain end reports "nobody handled"
 }
 ```
 
-Let's compile and run it (GCC 16.1.1):
+Compile and run (GCC 16.1.1):
 
 ```sh
 $ g++ -std=c++23 -O2 -Wall chain_verify.cpp -o chain_verify
@@ -164,21 +157,21 @@ AuthHandler handled
 [chain end] nobody handled: xxx
 ```
 
-You see, the caller only knows `auth->handle(req)`. It is **completely unaware** of whether there are subsequent nodes, how many there are, or who they are. This is the core benefit of the Chain of Responsibility—decoupling the sender from the receiver. The request flows along the chain; each node either consumes it (returns `true`) or passes it to `next_`, until someone handles it or the chain ends.
+Notice that the caller knows only `auth->handle(req)` — it has **no idea** whether there are more nodes behind it, how many, or who they are. That's the core payoff of the chain of responsibility: sender and receiver are decoupled. The request flows along the chain; each node either swallows it itself (returns `true`) or tosses it to `next_`, until someone swallows it or the chain runs out.
 
-### The Elegance of This Design: Why Separate `handle` and `process`
+### The clever part of this design: why `handle` and `process` are separate
 
-You might ask: Why do we need to split `handle` and `process` into two functions? Wouldn't it be simpler to just write a virtual function `handle` in the subclass and let it decide whether to forward the request?
+You might ask: why split `handle` and `process` into two functions? Wouldn't it be simpler to write a single virtual `handle` in each subclass and let it decide for itself whether to forward?
 
-You could do that, but then you would burden **every subclass** with the responsibility of "forwarding to `next_`". Every concrete handler would have to remember to write that boilerplate: "If I didn't handle it, and there is a `next_`, call `next_->handle(req)`". Eventually, someone will forget (either forgetting to forward or forwarding incorrectly), and the compiler won't say a word.
+You could, but then the burden of "forwarding to `next_`" is pushed onto **every single subclass** — every concrete handler has to remember to write that lump of "if I didn't handle it and there is a `next_`, call `next_->handle(req)`". Sooner or later somebody gets it wrong (forgets to forward, or forwards wrongly), and the compiler says nothing.
 
-The classic pointer chain uses a particularly elegant technique to solve this problem once and for all: **hoist the "forwarding" logic into the non-virtual `handle` in the base class and lock it down, while subclasses only expose a pure virtual `process` to answer "Did I handle this request?"** Note that `handle` in the base class is **non-virtual**—it is a template method that controls the fixed skeleton of "let the subclass try first, otherwise forward". Subclasses cannot modify this skeleton; they can only fill in the `process` slot. This way, the "forwarding" logic is written only once and can never be missed.
+The classic pointer chain cures this with a particularly elegant move: **hoist the "forwarding" logic into a non-virtual `handle` in the base class and weld it there, while subclasses expose only a pure virtual `process` that answers "did I handle this request"**. Note that `handle` is **non-virtual** in the base — it is a template method, controlling the fixed skeleton of "let the subclass try first; if it can't, forward". Subclasses cannot touch that skeleton; they can only fill in the `process` slot. Written this way, "forwarding" exists exactly once and can never be forgotten.
 
-This pattern is known as a combination of the **Template Method + Chain of Responsibility**. It cleanly separates the **invariant part (the forwarding skeleton)** from the **variable part (the judgment logic of each node)**. When implementing a Chain of Responsibility, if you find yourself writing forwarding logic for every node, it means this separation wasn't done correctly.
+This arrangement has a name: the **template method + Chain of Responsibility** combination. It cleanly separates **what stays fixed (the forwarding skeleton)** from **what varies (each node's decision logic)**. When you write a chain of responsibility and find every node hand-writing its own forwarding logic, that's the sign this split wasn't done right.
 
-## Let's Verify: Does the Forwarding Logic Really Run Only Once?
+## Let's verify first: does the forwarding logic really run only once
 
-Talk is cheap. Let's print the forwarding process to confirm that "a request is either consumed by a node or reaches the end of the chain," without duplicate processing in between. We will add print statements to each node's `handle` to observe the flow trajectory of the request:
+Talk is cheap, so let's print the forwarding process and confirm that "a request is either swallowed by some node or walks all the way to the end of the chain", with no double processing in between. We add prints inside each node's `handle` to watch the request's trajectory:
 
 ```cpp
 #include <iostream>
@@ -253,23 +246,23 @@ $ ./chain_trace
   <- chain end, nobody handled
 ```
 
-The execution flow is clear: the request moves unidirectionally along the chain. It either stops at a specific node (when its `process` returns `true`, terminating the chain immediately) or reaches the end and reports "nobody handled". It **never backtracks or re-enters the same node**. This linear flow property is the most critical invariant of the classic Chain of Responsibility pattern—the "Onion Middleware" and "Retractable Chain of Responsibility" patterns we will discuss later are specifically designed to break and re-examine this invariant.
+The trajectory is clear: the request moves one way along the chain, either stopping at some node (its `process` returns true and the chain terminates immediately) or walking all the way to the end and reporting "nobody handled" — it **never backtracks and never re-enters the same node**. This linear-flow property is the most important invariant of the classic chain of responsibility, and what the later "middleware onion" and the "rollback-capable chain of responsibility" do is precisely to break, and renegotiate, this invariant.
 
-## Pitfall Warning: The `next_` pointer chain is less decoupled than you think
+## Pitfall warning: the `next_` pointer chain is less decoupled than you think
 
-::: warning The `next_` pointer chain moves coupling instead of eliminating it
-The pointer chain does indeed decouple the **caller** from the **concrete handlers**—the caller doesn't know who comes next. However, it shifts the coupling to the **relationships between nodes**. Each node holds a `next_` pointer, which introduces three practical engineering challenges.
+::: warning The next_ pointer chain moves the coupling somewhere else — it doesn't eliminate it
+The pointer chain genuinely decouples the **caller** from the **concrete handlers** — the caller doesn't know who is downstream. But it moves the coupling **between nodes**. Every node clutching its own `next_` pointer brings three very real engineering pains.
 
-**First, inserting a node in the middle requires manual pointer rewiring.** Suppose you have `auth -> log` and want to insert `metrics` in the middle. You cannot simply add `metrics`—you must modify `auth`'s `next_` to point to `metrics`, and then set `metrics`'s `next_` to point to `log`. Let's verify this rewiring cost using the compiler:
+**First, inserting a node in the middle means manually relinking pointers.** Suppose you have `auth -> log` and now want to insert `metrics` in between. You can't just drop `metrics` in — you must change `auth`'s `next_` to point at `metrics`, and point `metrics`'s `next_` at `log`. Let's verify this relinking cost in the compiler:
 
 ```cpp
 auto metric = std::make_shared<MetricsHandler>();
-metric->set_next(log);      // metrics 接上原来的尾巴
-auth->set_next(metric);     // auth 的 next 改指向 metrics
-// 现在:auth -> metric -> log
+metric->set_next(log);      // metrics picks up the original tail
+auth->set_next(metric);     // auth's next is re-pointed at metrics
+// now: auth -> metric -> log
 ```
 
-Run it (the complete code is in the companion project):
+The run (full code in the companion project):
 
 ```sh
 $ ./chain_verify
@@ -278,18 +271,18 @@ MetricsHandler handled
 LogHandler handled
 ```
 
-We successfully reconnected, but look at the cost: **to insert a node, you had to touch the internal state of an unrelated node (`auth`) on the chain.** If `auth` is maintained by someone else and you only have a pointer to it, you can't modify it at all.
+The relink worked, but look at the price: **to insert one node, you touched the internal state of an unrelated node on the chain (`auth`)**. If `auth` is maintained by someone else and all you hold is a pointer, this simply cannot be changed.
 
-**Second, the shape of the chain is scattered across the `next_` member of every node, so there is no single place where you can clearly see "what the entire chain looks like."** When debugging and trying to print this chain, you have to traverse all the way from the head following `next_`. If the link is broken, forms a cycle, or connects incorrectly, the compiler cannot detect any of this; you only find out when the code runs.
+**Second, the chain's shape is scattered across every node's `next_`; there's no single place where you can see "what the whole chain looks like" at a glance.** To print the chain while debugging, you have to follow `next_` from the head all the way down. A break in the middle, an accidental cycle, a wrong link — none of it is detectable at compile time; you find out by crashing into it at runtime.
 
-**Third, the `next_` pointer causes nodes to hold each other**, where every node on the chain holds a `shared_ptr` to the next. A slight slip-up easily creates a cycle (`A->B, B->A`), and once a cycle forms, you have a memory leak—the reference count of the `shared_ptr` will never reach zero. Textbook examples of pointer chains never mention this, but in real engineering, assembling and destroying chains is where things are most likely to go wrong.
+**Third, the `next_` pointer makes nodes hold each other.** Every node on the chain `shared_ptr`s the next one, and it takes one careless moment to create a cycle (`A->B, B->A`) — and once there's a cycle, you have a memory leak, because the `shared_ptr` reference counts can never drop to zero. Textbook examples of the pointer chain never mention this, but in real engineering, assembling and tearing down the chain is exactly where things blow up.
 :::
 
-This is the true ledger of pointer chains: **they solve the problem of "the caller shouldn't know who handles it," but the cost is that the responsibility for assembling the chain is distributed across every node.** In simple scenarios with few nodes and a mostly static chain, this cost is negligible; but once nodes are added or removed dynamically, or the chain is assembled at runtime, pointer chains become woefully inadequate. We need a different approach to "centralize" the chain.
+So here is the pointer chain's honest ledger: **it solves "the caller shouldn't know who handles the request", at the cost of scattering the chain-assembly responsibility across every node**. In simple scenarios with few nodes and a mostly static chain, that cost doesn't matter; but once nodes come and go dynamically and the chain must be assembled at runtime, the pointer chain gets stretched thin. We need a different style that "gathers up" the chain.
 
-## Step 3: Centralize the chain with `std::vector` — turning the chain into a collection
+## Step 3: Gathering the chain into a `std::vector` — turning the chain into a collection
 
-Since the problem with the `next_` pointer is that "the chain is scattered inside every node," the most direct antidote is to—**gather the chain into a collection, managed uniformly by a dedicated scheduler.** The shape of the entire chain is no longer hidden inside the `next_` of nodes, but is clearly laid out in a `std::vector`. This is exactly how the accompanying compilable project is written, so let's follow its approach:
+Since the `next_` pointer's defect is "the chain is scattered across every node", the most direct antidote is: **gather the chain into a collection and let a dedicated dispatcher manage it uniformly**. The shape of the whole chain is no longer hidden inside the nodes' `next_` fields — it sits plainly in a `std::vector`. That's exactly how the companion compilable project does it, so let's follow its approach:
 
 ```cpp
 #pragma once
@@ -345,13 +338,7 @@ private:
 };
 ```
 
-Here is the translation based on the provided context and rules.
-
-**Note:** Since the source text provided ("用起来:") is extremely short and lacks specific context, I have translated it as a standard heading or section title commonly found in tutorials. If this is a link to a specific section, please provide the surrounding text for a more precise translation.
-
-```markdown
-## Let's use it
-```
+Using it:
 
 ```cpp
 #include "OutputHandler.h"
@@ -375,42 +362,42 @@ From Console: Hello, World
 From GUI: Hello, World
 ```
 
-We need to clarify the difference between this version and the pointer chain, because it is **not a simple equivalent replacement; the semantics have changed**.
+We need to be clear about how this version differs from the pointer chain, because it **is not a drop-in equivalent — the semantics changed**.
 
-### The Key Difference: Broadcast vs. First-Match-Wins
+### The key difference here: broadcast vs. first-match-wins
 
-Look closely at the loop in `HandlerChain::dispatch`: it **iterates through all handlers**, calling `process` for every handler where `can_accept` returns true, **without a `break`**. This means that if two handlers can accept the same message, both will be triggered. This is a **broadcast** semantic.
+Look closely at the `HandlerChain::dispatch` loop: it **iterates over all handlers**, calling `process` once for every handler whose `can_accept` returns true — **there is no break**. Which means: if two handlers can both accept the same message, both get triggered. That is **broadcast** semantics.
 
-The classic pointer chain is **first-match-wins**: the first node where `process` returns true consumes the request, and subsequent nodes are never aware that this message arrived.
+The classic pointer chain, by contrast, is **first-match-wins**: the first node whose `process` returns true swallows the request, and the nodes behind it never even learn the message came by.
 
-These two approaches are not the same thing, and choosing the wrong one will lead to issues. A logging framework (where a single log entry might write to a file and send over the network simultaneously) typically uses broadcast; an approval workflow (where if a manager approves an expense report, the director doesn't need to see it) typically uses first-match-wins. If you want the first-match-wins semantic, you need to add a `break` to the loop above:
+These two are not the same thing, and picking the wrong one causes incidents. Logging frameworks (one log entry may write to a file and ship over the network at the same time) are usually broadcast; approval workflows (once the manager signs the expense report, the director doesn't need to see it) are usually first-match-wins. If you want first-match-wins semantics, the loop above needs one extra `break`:
 
 ```cpp
 void dispatch_first_match(const Message& m) {
     for (const auto& h : handlers_) {
         if (h->can_accept(m)) {
             h->process(m);
-            break;   // 第一个吃掉的就把请求终结,后面的不跑
+            break;   // the first taker terminates the request; the rest don't run
         }
     }
 }
 ```
 
-So, take note: the **"vector scheduler"** itself does not mandate whether it broadcasts or stops at the first hit; it delegates that decision back to the implementation of `dispatch`. Whichever you prefer, you simply decide whether to include a `break` in the loop. This is actually an advantage of the vector version over the pointer version: the "stop-at-first-hit" behavior of the pointer chain is hardcoded in the skeleton; changing it to broadcast would require modifying the base class. With the vector version, changing the semantics only requires modifying one loop. Be aware that the accompanying Playground project uses broadcast semantics (iterating through all handlers without breaking).
+So remember this: **the "vector dispatcher" itself doesn't mandate broadcast or first-match-wins — it hands the decision back to how `dispatch` is written**. Whichever you want, it's just a question of whether the loop has a `break`. That's actually one advantage of the vector version over the pointer version: the pointer chain's "first-match-wins" is baked into the skeleton, and changing it to broadcast means modifying the base class, while the vector version changes semantics by changing one loop. The companion Playground project uses broadcast semantics (iterate over all handlers, no break) — be aware of that.
 
-### What the vector version solves and what it lacks
+### What the vector version solves, and what it still lacks
 
-After the vector version consolidates the chain into a collection, **all three pain points of the pointer chain are resolved**: inserting a node in the middle only requires `handlers_.insert(it, new_handler)`, without touching any existing nodes; the shape of the entire chain is visible at a glance (it's just a vector, print it out); nodes no longer hold `next_` pointers to each other, eliminating the risk of circular leaks.
+Once the vector version gathers the chain into a collection, **all three of the pointer chain's pain points from earlier are solved**: inserting a middle node is just `handlers_.insert(it, new_handler)`, touching no existing node; the whole chain's shape is visible at a glance (it's a vector — just print it); and nodes no longer hold `next_` pointers to each other, so the cycle-leak hazard is gone too.
 
-However, the vector version introduces a new limitation: **the node's autonomy for "forwarding" is removed**. In the pointer chain, a node could decide in `process` to "handle part of this, and then actively pass the request to the successor"—it had full control over forwarding. In the vector version, "whether to continue" is decided by the scheduler (the `dispatch` loop), and the node only answers the single Boolean question of "do I accept?". For a simple pipeline where "each step independently judges if it can proceed," this is sufficient; but for more complex orchestration like "after this step is done, I want to decide whether to proceed based on the result," the vector version falls short.
+But the vector version also introduces a new restriction: **the node's autonomy over "forwarding" is taken away**. In the pointer chain, a node can decide inside `process` to "handle half of it, then actively pass the request on down the line" — it has full control over forwarding. In the vector version, "whether to keep going" is the dispatcher's call (the `dispatch` loop), and the node answers only the single boolean question "do I accept or not". For simple pipelines where each step independently judges "can I do this", that's enough; but for more elaborate orchestration like "after this step finishes, I want to decide whether to continue based on the result", the vector version strains.
 
-In the next section, we look at a design pattern specifically created for the latter—the middleware onion.
+In the next section we'll look at a style designed precisely for the latter — the middleware onion.
 
-## Step 4: The Middleware Onion—Nodes Decide "Pre, Post, and Forward"
+## Step 4: The middleware onion — each node decides its own before, after, and whether to forward
 
-In the previous three approaches, nodes only answered one question: "Do I handle this request?". But real middleware (if you've used Express.js, Koa, or ASP.NET pipelines) does much more than this. A middleware might want to do something **before calling the next** (start a timer), do something **after the next returns** (calculate latency, log), or even **not call the next at all** (short-circuit on auth failure). This requirement of "pre-processing, post-processing, and short-circuiting" transforms the chain of responsibility from a straight line into an "onion"—the request passes in layer by layer, and the response passes out layer by layer.
+In the three styles above, a node answers one question only: "do I handle this request or not". But real middleware (you've used the pipelines of Express.js, Koa, or ASP.NET, right?) does far more — a middleware wants to do something **before invoking the next one** (record a start timestamp), do something again **after the next one returns** (compute the elapsed time, write a log), or even **never invoke the next one at all** (short-circuit outright on failed authentication). This demand — every node having a before-phase, an after-phase, and the ability to short-circuit — turns the chain of responsibility from a one-way straight line into an "onion": the request bores in layer by layer, and the response bores back out layer by layer.
 
-The cleanest way to implement this in C++ is: **the node no longer answers a Boolean question, but becomes a function that "takes `next` and decides how to use it"**. A unified scheduler is responsible for feeding the "next" handler to each node in sequence:
+The cleanest way to implement this in C++: **the node no longer answers a boolean question — it becomes a function that "receives next and decides for itself how to use it"**. One unified dispatcher is responsible for feeding "the next one" to each node in order:
 
 ```cpp
 #include <functional>
@@ -419,7 +406,7 @@ The cleanest way to implement this in C++ is: **the node no longer answers a Boo
 
 class MiddlewareChain {
 public:
-    // 每个中间件:拿到"下一个"的引用,自己决定怎么编排
+    // Each middleware: receives a reference to "the next one" and decides how to orchestrate
     using Middleware = std::function<void(MiddlewareChain&)>;
 
     void use(Middleware m) { middlewares_.push_back(std::move(m)); }
@@ -427,7 +414,7 @@ public:
     void next() {
         if (index_ < middlewares_.size()) {
             auto m = middlewares_[index_++];
-            m(*this);   // 把自己(也就是"如何继续")交给中间件
+            m(*this);   // hand itself (that is, "how to continue") to the middleware
         }
     }
 
@@ -437,16 +424,16 @@ private:
 };
 ```
 
-Pay attention to two key design points here. **First, the middleware signature is `void(MiddlewareChain&)`. It receives a reference to the entire chain, not just a "next middleware"**. It advances the chain by calling `chain.next()` itself—this hands complete control over whether to proceed down the chain to the middleware. **Second, there is an `index_` cursor inside `next()`**, which advances one step with each call. This avoids the coupling found in pointer chains where "every node holds a pointer to the other," while retaining the autonomy of "nodes controlling their own forwarding."
+Note the two design points here. **First, the middleware's signature is `void(MiddlewareChain&)`: what it receives is not "the next middleware" but a reference to the entire chain**, and it advances things itself by calling `chain.next()` — this hands the power of "should we go on" entirely to the middleware. **Second, there is an `index_` cursor inside `next()`**, advancing one slot per call; this avoids the pointer chain's "every node holds a pointer to the next" coupling while preserving the node's autonomy over its own forwarding.
 
-Here is how we use it:
+Using it:
 
 ```cpp
 int main() {
     MiddlewareChain chain;
     chain.use([](MiddlewareChain& c) {
         std::cout << "before: auth\n";
-        c.next();                 // 主动放行
+        c.next();                 // proactively pass the request on
         std::cout << "after: auth\n";
     });
     chain.use([](MiddlewareChain& c) {
@@ -456,13 +443,13 @@ int main() {
     });
     chain.use([](MiddlewareChain&) {
         std::cout << "final handler\n";
-        // 不调 c.next(),链自然到此为止
+        // no c.next() call; the chain naturally ends here
     });
     chain.next();
 }
 ```
 
-Let's compile and run it (GCC 16.1.1):
+Compile and run (GCC 16.1.1):
 
 ```sh
 $ g++ -std=c++23 -O2 -Wall chain_proxy.cpp -o chain_proxy
@@ -475,16 +462,16 @@ after: logging
 after: auth done
 ```
 
-Look at the output order—all the `before` messages go in layer by layer, turn at the `final handler`, and then all the `after` messages come out layer by layer. This is the "onion" model: the request goes from the outside in, and the response goes from the inside out. Each middleware naturally handles both "pre-processing" and "post-processing" simultaneously. This is a capability that the previous three approaches lacked.
+Look at the order of this output — all the `before`s go in layer by layer, it turns around at `final handler`, and then all the `after`s come back out layer by layer. That's the "onion": the request travels from the outside in, the response travels from the inside out, and every middleware can naturally do both its "before" and "after" work. None of the three earlier styles could do this.
 
 ### Want to short-circuit? Just don't call `next()`
 
-The most practical feature of the onion model is **short-circuiting**: if an authentication middleware fails, it simply doesn't call `c.next()`. The chain stops right there, and subsequent middleware (business logic) is never triggered. Let's verify this:
+The onion model's most practical feature is **short-circuiting**: a middleware whose authentication failed simply doesn't call `c.next()`, the chain stops right there, and the middlewares behind it (the business logic) are never triggered. Let's verify:
 
 ```cpp
 chain.use([](MiddlewareChain& c) {
     std::cout << "A: 认证失败,不调 next\n";
-    // 故意不调 c.next() -> 链停在这
+    // deliberately not calling c.next() -> the chain stops here
     (void)c;
 });
 chain.use([](MiddlewareChain&) {
@@ -493,49 +480,45 @@ chain.use([](MiddlewareChain&) {
 chain.next();
 ```
 
-It appears you have provided only a fragment of text ("跑出来:", which roughly translates to "Run output:" or "Result:").
-
-To proceed with the translation, **please provide the full Markdown content** (including the code block or text that follows this header).
-
-Once you provide the full text, I will translate it according to your specifications, ensuring code blocks remain unchanged and technical terms are handled correctly.
+The run:
 
 ```sh
 === middleware can SHORT-CIRCUIT by not calling proceed ===
 A: 认证失败,不调 next
 ```
 
-`B` never appears. **Short-circuiting is achieved by "doing nothing" — simply don't call `next()`. There's no `return false`, no `break`, and the control flow is so clean it's almost implicit.** This is the biggest expressiveness advantage of the Onion model over the vector scheduler: middleware can decide the fate of the entire chain based on its own judgment (authenticated or not, rate limit exceeded or not), and this judgment logic is completely encapsulated within the middleware. The scheduler knows nothing about it.
+B never showed up. **The short-circuit is achieved by "doing nothing" — just don't call `next()`. No `return false`, no `break`; the control flow is clean to the point of being almost implicit.** That is the onion model's biggest expressiveness advantage over the vector dispatcher: a middleware can decide the whole chain's fate based on its own judgment (did auth pass, did the rate limit blow), and that judgment lives entirely inside the middleware — the dispatcher knows nothing about it.
 
-::: warning Don't treat the `index_` cursor as a panacea
-There's a hidden pitfall with that `index_` cursor in the Onion model: **it is one-time use only**. After a `MiddlewareChain` runs through once, `index_` has already reached `middlewares_.size()`, so calling `next()` again does nothing. If you want to use the same chain to handle a second request, you must reset `index_` back to 0 (the `MiddlewareChain` above doesn't expose a reset, so you'd have to add it yourself). This is different from the pointer chain — the pointer chain is stateless (every `handle` starts from the beginning), whereas the Onion model is stateful (the cursor advances). In Web frameworks, this is usually solved by "newing a chain per request," but you need to be aware of this statefulness, otherwise you'll be puzzled when reusing a chain: "why isn't the chain running?"
+::: warning Don't treat the index_ cursor as a cure-all
+That `index_` cursor in the onion model hides a trap: **it is one-shot**. After a `MiddlewareChain` has run once, `index_` is already pressed against `middlewares_.size()`, and further calls to `next()` do nothing at all. If you want to use the same chain for a second request, you must first reset `index_` back to 0 (the `MiddlewareChain` above exposes no reset — you'd have to add one yourself). This differs from the pointer chain — the pointer chain is stateless (every `handle` starts from the head), while the onion model is stateful (the cursor advances). Web frameworks usually solve this by "new-ing up a chain per request", but you need to know this statefulness exists, or when you reuse a chain you'll be baffled by "why won't the chain run".
 
-An even subtler pitfall: **if `c.next()` is called twice within the same middleware, `index_` will advance twice**, messing up the order of subsequent middleware. This reentrancy error cannot be caught at compile time; it relies solely on discipline. So while the Onion model is great, you must uphold the discipline: "each middleware calls `next()` appropriately and exactly once."
+The sneakier trap: **if the same middleware calls `c.next()` twice, `index_` advances twice**, and the order of the middlewares behind it falls apart. The compiler cannot catch this kind of reentrancy error; only discipline can. So as good as the onion model is, the rule "each middleware calls next() exactly once, appropriately" must hold.
 :::
 
-## Variants and When to Use Which
+## The variants, and when to use which
 
-By now, we have accumulated three main patterns (pointer chain / vector scheduler / middleware onion), plus a few variants for specific scenarios. Let's clarify their scope:
+At this point we have accumulated three main styles (pointer chain / vector dispatcher / middleware onion), plus a few variants that only pay off in special scenarios. Let's lay out where each fits:
 
-| Pattern | Core Mechanism | Suitable For | Not Suitable For |
+| Style | Core mechanism | Fits | Doesn't fit |
 |---|---|---|---|
-| `next_` pointer chain | Each node holds `next_`, handles or forwards | Few nodes, mostly static chain, textbook CoR | Chains need dynamic assembly, nodes added/removed frequently |
-| `std::vector` scheduler | Centralized scheduling by collection, `can_accept` check | Pipelines, broadcasting, chain shape must be visible | Needs pre/post-logic, needs result-based flow control |
-| Middleware Onion | `std::function` + `index_` cursor, node holds `next` reference | Web middleware, needs pre/post/short-circuit | Simple handle-or-pass scenarios (overkill) |
+| `next_` pointer chain | each node holds `next_`, handle-or-forward | few nodes, mostly static chains, textbook CoR | chains assembled dynamically, nodes added/removed |
+| `std::vector` dispatcher | one collection dispatched uniformly, `can_accept` decides | pipelines, broadcast, chains whose shape must be visible at a glance | needs before/after logic, needs to decide continuation from results |
+| Middleware onion | `std::function` + `index_` cursor, nodes hold a `next` reference | web middleware, needs before/after/short-circuit | scenarios where a simple check suffices (overkill) |
 
-Beyond these three, there are several variants that address more specific needs:
+Beyond these three, several more variants serve narrower demands:
 
-**Strategy Chain**: Nodes are no longer classes, but `std::function<bool(const Request&)>`. The benefit is you don't need to write a class for each node; the downside is the type erasure overhead of `std::function` (potential heap allocation, indirect calls), and readability drops as logic scatters across many lambdas. Suitable for rule engine scenarios with short logic and many nodes.
+**Strategy chain (Chain + Strategy)**: a node is no longer a class but a `std::function<bool(const Request&)>`. The upside is not having to write a class per node; the downside is `std::function`'s type-erasure overhead (possible heap allocation, indirect calls), plus readability dropping as the logic scatters across a pile of lambdas. Fits rule-engine scenarios with many nodes of short logic.
 
-**Tree Chain**: Requests don't just pass in one direction but broadcast to multiple child nodes (typical in GUI event bubbling). It extends the chain from a one-dimensional line into a tree. We won't expand on this here, but when you see "events passing from a root window to child controls," that's a tree chain.
+**Tree-shaped chain**: the request doesn't travel in just one direction but is broadcast to multiple child nodes (GUI event bubbling being the classic case). It extends the chain from a one-dimensional line into a tree. We won't expand on it in this article, but when you see "events traveling from the root window toward the child controls", that's a tree-shaped chain.
 
-**Circular Chain**: The tail connects back to the head, forming a closed loop. Naturally suitable for schedulers, round-robin, and other "keep passing the baton until a condition is met" scenarios. **It must have an artificially set termination condition, otherwise it's an infinite loop** — this is a hard constraint with no room for negotiation.
+**Circular chain**: the tail connects back to the head, forming a closed loop. Naturally suited to schedulers and round-robin polling — scenarios of "keep passing until a condition is met". **It must have a man-made termination condition, or it's an infinite loop** — that's a hard constraint, no negotiating.
 
-**Rewindable Chain of Responsibility**: The chain supports not only forward passing but also **reverse rollback** when a node fails, executing compensation operations on previous nodes. This is the model for database transactions and distributed Saga. It is essentially no longer simple "request passing," but a bidirectional chain of "do forward + undo backward".
+**Rollback-capable chain of responsibility**: the chain supports not only forward passing — when a node fails, it can also **roll back along the chain**, executing the compensation actions of the earlier nodes. This is the model of database transactions and distributed Sagas. In essence it is no longer plain "request passing" but a bidirectional chain of "do forward + undo backward".
 
-## Pitfall Alert: Don't Be Fooled by "Async Chain of Responsibility"
+## Pitfall warning: don't be fooled by "async chain of responsibility" examples
 
 ::: warning A widely circulated "async chain of responsibility" example is actually serial
-In Chinese materials discussing the Chain of Responsibility, you often see an example of an "async chain of responsibility." The gist is to wrap each handler into a function returning `std::future` and run it with `std::async`:
+In Chinese-language material on the chain of responsibility you often run into an "async chain of responsibility" example, which roughly wraps each handler into a function returning `std::future` and runs them with `std::async`:
 
 ```cpp
 class AsyncChain {
@@ -546,7 +529,7 @@ public:
     void run() {
         std::future<void> fut = std::async(std::launch::async, [this] {
             for (auto& h : handlers_) {
-                h().get();   // <-- 关键:这里 .get() 会阻塞等当前完成
+                h().get();   // <-- the key point: .get() here blocks waiting for the current one to finish
             }
         });
         fut.get();
@@ -556,9 +539,9 @@ private:
 };
 ```
 
-This code is labeled "asynchronous," but it does not run the handlers concurrently. The issue lies in `h().get()` inside the loop—`.get()` is **blocking**. It waits for the current handler's future to complete before returning, allowing the loop to proceed to the next iteration. In other words, the handlers execute **serially, one by one**. `std::async` simply launches each handler on a separate thread and immediately blocks, waiting for it to finish. This is effectively no different from calling the handlers sequentially, only with the added overhead of thread switching.
+This code **is called "async", but it never runs the handlers concurrently**. The problem is the `h().get()` inside the loop — `.get()` **blocks**: it waits for the current handler's future to finish before returning, and only then does the loop enter the next round. In other words, the handlers execute **serially, one after another**; `std::async` merely tosses each handler onto another thread and then immediately blocks waiting for it to finish. That's nearly indistinguishable from calling the handlers in sequence directly, except you've added thread-switching overhead on top.
 
-We can verify this in the compiler—two handlers each sleep for 300 ms. If they were truly concurrent, the total time would be approximately 300 ms. If they are serial (as in the code above), the total time should be close to 600 ms:
+Let's verify this judgment in the compiler — two handlers, each sleeping 300 ms. If truly concurrent, total elapsed time should be close to 300 ms; if serial (like the code above), close to 600 ms:
 
 ```sh
 $ g++ -std=c++23 -O2 -Wall chain_async.cpp -o chain_async
@@ -570,37 +553,37 @@ Step 2 done
 --- total elapsed: 600 ms (serial ~600, concurrent ~300)
 ```
 
-600 ms. **In practice, this is serial execution**. So don't be fooled by the name of this example—it's called an "asynchronous chain of responsibility," but it doesn't allow handlers on the chain to execute concurrently. A truly asynchronous chain should allow handlers to progress **simultaneously** on different futures (for example, calling `h()` to get all futures first, then calling `.get()` on all of them), or simply use coroutines (`co_await`) to express "wait for this step to complete." If you see a resource recommending the code above as an "asynchronous version of the chain of responsibility," remember that its actual behavior is serial—don't use it as a concurrency solution.
+600 ms. **Measured: it is serial.** So don't be fooled by the example's name — it's called an "async chain of responsibility", but it does not run the handlers on the chain concurrently. A genuinely async chain should advance handlers **simultaneously** on separate futures (for instance, call `h()` first to collect all the futures, then `.get()` them together), or simply use coroutines (`co_await`) to express "wait for this step to finish". If some resource recommends the code above to you as "the async version of the chain of responsibility", remember its actual behavior is serial — don't adopt it as a concurrency scheme.
 :::
 
 ## Summary
 
-Let's walk through the entire evolution path:
+Let's walk the whole evolution path once more:
 
-| Stage | Approach | Why it's still not enough |
+| Stage | Approach | Why it still isn't enough |
 |---|---|---|
-| Caller hardcodes order | A long string of `if (!step) return;` | Handler set and caller logic are mixed together, violating the Open/Closed Principle, and cannot be reorganized at runtime |
-| `next_` pointer chain | Each node holds `next_`, `process` returns true to stop | Caller is decoupled, but nodes are coupled to each other, inserting nodes requires reconnecting, and it's easy to create cycles |
-| `std::vector` scheduler | Unified collection management, `can_accept` judgment | The chain is consolidated, but nodes lose the autonomy to forward; you must decide between broadcast vs. stop-on-first-match yourself |
-| Onion middleware | `std::function` + `index_`, node holds `next` reference | Most expressive, but the chain has state, the cursor is single-use, and it's overkill for simple tasks |
+| Caller hard-codes the order | a long run of `if (!step) return;` | handler set and caller logic kneaded together, violates open-closed, no runtime reassembly |
+| `next_` pointer chain | each node holds `next_`, stops when `process` returns true | caller decoupled, but nodes are coupled; inserting a node means relinking; cycles come easily |
+| `std::vector` dispatcher | one collection managed uniformly, `can_accept` decides | chain gathered, but nodes lose forwarding autonomy; broadcast vs first-match-wins is your call |
+| Middleware onion | `std::function` + `index_`, nodes hold a `next` reference | most expressive, but the chain is stateful and the cursor is one-shot — overkill for small jobs |
 
-Keep these key conclusions in mind:
+Note down these key conclusions:
 
-- The problem the Chain of Responsibility solves is **"decoupling the sender of a request from its receiver"**: The sender doesn't know who is on the chain or in what order; it simply throws the request to the head of the chain, and the chain decides where to stop. The GoF intent can be summarized as "give multiple objects a chance to handle a request by chaining them until someone handles it."
-- The classic pointer chain uses a combination of **"Template Method + Chain of Responsibility"** to fundamentally fix the pitfall of "every subclass must remember to forward": **The non-virtual `handle` welds the forwarding skeleton in place, while the pure virtual `process` only answers "Did I handle this?"**. This is the easiest part to get wrong when writing a Chain of Responsibility. If you separate them correctly, you only write the forwarding logic once.
-- The pointer chain isn't as decoupled as you think—**it moves the coupling from "caller ↔ handler" to "node ↔ node"**: Inserting a middle node requires reconnecting pointers, the shape of the chain is scattered across every `next_`, and `shared_ptr` circular references easily lead to cyclic leaks. For scenarios where nodes are dynamically added or removed, switch to a vector scheduler.
-- Distinguish the semantic difference between the vector scheduler and the pointer chain: **Broadcast (iterate all matching handlers) vs. Stop-on-first (break on the first handler that consumes it)**. This is simply a matter of adding or not adding a `break` in the `dispatch` loop; the companion project uses broadcast semantics.
-- The onion middleware (`std::function` + cursor) is the most expressive approach, **capable of pre/post-processing and short-circuiting**, but it has state (the cursor is single-use). It is suitable for scenarios like Web pipelines where "every node needs pre/post-processing and the ability to short-circuit," but don't use a cannon to kill a mosquito on a simple pipeline.
-- **That widely circulated "asynchronous chain of responsibility" example is serial**—`h().get()` in the loop blocks waiting for each handler to complete, so the handlers aren't concurrent at all. A real asynchronous chain relies on coroutines or collecting futures first and then calling `.get()`, so don't copy that serial example blindly.
+- The chain of responsibility exists to **decouple the sender of a request from its receiver**: the sender knows nothing about who is on the chain or in what order — it just drops the request at the head, and the chain itself decides where the passing stops. GoF's intent in one line is "give multiple objects a chance to handle the same request, chain them together, until one of them handles it".
+- The classic pointer chain cures the "every subclass must remember to forward" pit with the **"template method + Chain of Responsibility"** combination: **a non-virtual `handle` welds the forwarding skeleton in place, and a pure virtual `process` answers only "did I handle it"**. This is the easiest point to get wrong when writing a chain of responsibility; with the split done right, the forwarding logic is written exactly once.
+- The pointer chain is less decoupled than you think — **it moves the coupling from "caller ↔ handler" to "node ↔ node"**: inserting a middle node requires relinking pointers, the chain's shape is scattered across every `next_`, and mutual `shared_ptr` ownership invites cycle leaks. Where nodes come and go dynamically, switch to the vector dispatcher.
+- Keep the semantic difference between the vector dispatcher and the pointer chain straight: **broadcast (iterate over all matches) vs first-match-wins (break at the first taker)** — it's purely a question of whether the `dispatch` loop has a `break`, and the companion project uses broadcast.
+- The middleware onion (`std::function` + cursor) is the most expressive style — **before/after/short-circuit, it does them all** — but it is stateful (the cursor is one-shot). It fits web-pipeline scenarios where "every node needs both before/after work and the ability to short-circuit"; don't crack a walnut with a sledgehammer on a simple pipeline.
+- **That widely circulated "async chain of responsibility" example is serial** — the loop's `h().get()` blocks waiting for each handler to finish, so the handlers never run concurrently. A real async chain needs coroutines, or collecting all the futures first and then calling `.get()` — don't copy that serial example.
 
-::: tip Companion Compilable Project
-The `Message`, `Handler`, and `HandlerChain` (broadcast-style vector scheduler, `DiskHandler` / `ConsoleHandler` / `GuiHandler`) from this article have a complete CMake project in this repository. Just clone and run: [ResponsibilityChain / OutputHandler](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/ChainOfResponsibility). The version in the repository uses broadcast semantics (iterating all handlers without `break`), so you can easily change it to stop-on-first (`break`) to experience the difference between the two semantics.
+::: tip A companion compilable project
+The `Message` / `Handler` / `HandlerChain` from this article (the broadcast-style vector dispatcher with `DiskHandler` / `ConsoleHandler` / `GuiHandler`) has a complete CMake project in this repository — clone it and it runs in one shot: [ResponsibilityChain / OutputHandler](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/ChainOfResponsibility). The version in the repo uses broadcast semantics (iterate over all handlers, no break); you can casually change it to first-match-wins (`break`) to feel out the difference between the two semantics.
 :::
 
 ## References
 
-- [cppreference: `std::function`](https://en.cppreference.com/w/cpp/utility/function) (Since C++11, the carrier of type erasure in the onion middleware)
-- [cppreference: `std::shared_ptr`](https://en.cppreference.com/w/cpp/memory/shared_ptr) (Since C++11, how the `next_` node is held in the pointer chain)
-- [cppreference: `std::future` / `std::async`](https://en.cppreference.com/w/cpp/thread/async) (Since C++11, concurrency primitives related to asynchronous chains; note that `.get()` is blocking)
-- GoF, *Design Patterns: Elements of Reusable Object-Oriented Software* — Original definition of the Chain of Responsibility pattern (Intent: avoid coupling the sender of a request to its receiver)
-- Companion Compilable Project: [ResponsibilityChain](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/ChainOfResponsibility)
+- [cppreference: `std::function`](https://en.cppreference.com/w/cpp/utility/function) (since C++11, the type-erasure vehicle in the middleware onion)
+- [cppreference: `std::shared_ptr`](https://en.cppreference.com/w/cpp/memory/shared_ptr) (since C++11, how `next_` nodes are held in the pointer chain)
+- [cppreference: `std::future` / `std::async`](https://en.cppreference.com/w/cpp/thread/async) (since C++11, the concurrency primitives involved in async chains; note that `.get()` blocks)
+- GoF, *Design Patterns: Elements of Reusable Object-Oriented Software* — the original definition of the Chain of Responsibility pattern (Intent: avoid coupling the sender of a request to its receiver)
+- Companion compilable project: [ResponsibilityChain](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/ChainOfResponsibility)

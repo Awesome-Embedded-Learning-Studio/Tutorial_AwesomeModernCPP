@@ -1,65 +1,58 @@
 ---
 title: 'Flyweight Pattern: Stop Copying a Glyph for Every Character'
-description: Starting from a text editor stuffed with tens of millions of strings,
-  we will progressively separate the "mutable" from the "immutable" to derive the
-  Flyweight pattern. Along the way, we will verify that the shared pool truly contains
-  only a single instance of each object, demonstrate how a naive factory triggers
-  duplicate construction under concurrency, and explain why `shared_ptr` represents
-  the correct ownership model in modern C++.
+description: 'Starting from a text editor stuffed with tens of millions of strings, we split the "mutable" from the "immutable" step by step until the Flyweight pattern falls out, then prove that the shared pool really holds only one copy of each object, that the original factory constructs duplicates under concurrency, and why shared_ptr is the right ownership model for modern C++'
 chapter: 11
 order: 10
 tags:
-- host
-- cpp-modern
-- intermediate
-- 对象池
-- 享元模式
+  - host
+  - cpp-modern
+  - intermediate
+  - 对象池
+  - 享元模式
 difficulty: intermediate
 platform: host
-cpp_standard:
-- 11
-- 17
-- 20
+cpp_standard: [11, 17, 20]
 reading_time_minutes: 20
 related:
-- 单例模式:从注释约束到 Meyer's Singleton
+  - 'Singleton Pattern: From Comment-Only Constraints to Meyer''s Singleton'
 prerequisites:
-- 'Chapter 6: 类与对象'
-- 单例模式:从注释约束到 Meyer's Singleton
+  - 'Chapter 6: Classes and Object-Oriented Programming'
+  - 'Singleton Pattern: From Comment-Only Constraints to Meyer''s Singleton'
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/10-flyweight.md
   source_hash: b17a11d7d21a448635544e38cb63387b7c8e9e1c92569730efb90ea2822013ae
-  translated_at: '2026-06-24T00:57:31.042652+00:00'
+  translated_at: '2026-09-26T05:33:20+00:00'
   engine: anthropic
-  token_count: 4373
+  token_count: 5000
 ---
-# Flyweight Pattern: Stop Copying Glyph Data for Every Character
 
-## What Problem Are We Actually Solving?
+# Flyweight Pattern: Stop Copying a Glyph for Every Character
 
-Let's set aside the pattern definition for a moment and look at a concrete scenario. Imagine you are writing a text editor that needs to open a massive book containing tens of millions of characters. Our intuitive approach might look like this: every character in the document is an object, and that object carries the character's glyph data (strokes, bitmaps, font metrics):
+## What problem are we actually solving
+
+Let's not talk about the pattern yet — let's talk about a concrete scenario. Imagine you're writing a text editor that has to open a book with tens of millions of characters. The instinctive way to write it goes like this: every character in the document is an object, and that object carries the character's glyph data (strokes, bitmaps, font metrics):
 
 ```cpp
 struct Glyph {
     std::string content;          // "你"
-    std::vector<Stroke> strokes;  // 几十字节的字形笔画数据
+    std::vector<Stroke> strokes;  // glyph stroke data, dozens of bytes
     FontMetrics   metrics;
-    // ... 真正占内存的是后面这一坨,不是 content
+    // ... what really eats memory is this whole tail, not content
 };
-std::vector<Glyph> document;      // 几千万份完整的 Glyph
+std::vector<Glyph> document;      // tens of millions of complete Glyph copies
 ```
 
-It feels intuitive to write and intuitive to read, but if you do the math, you will spot the problem immediately: there are fewer than 4,000 commonly used Chinese characters, yet this book contains tens of millions of `Glyph` objects—**the same character "我" (I) is fully duplicated hundreds of thousands of times in memory**, with the exact same dozens of bytes of stroke data in every copy. This repetitive data is the real memory hog; the overhead of `content` itself is negligible by comparison.
+Intuitive to write, intuitive to read — but do a little arithmetic and the problem shows up: there are fewer than 4,000 commonly used Chinese characters, yet this book holds tens of millions of `Glyph` objects — **the same character "我" gets fully duplicated hundreds of thousands of times in memory**, and the dozens of bytes of stroke data inside every copy are identical. That duplicated data is the real memory killer; the little overhead of `content` itself isn't even worth mentioning by comparison.
 
-The **Flyweight Pattern** is designed to solve performance problems exactly like this: **"a large number of objects where most of the state is repetitive and can be shared"**. The concept is straightforward enough to sum up in one sentence: stop copying the font metrics for every character—extract the font data, put it in a shared pool, and store only a reference to that shared data in the document.
+The Flyweight Pattern exists to solve exactly this class of performance problems: **huge numbers of objects, where most of the state is duplicated and shareable**. Its idea is blunt enough to fit in one sentence: stop copying a glyph for every character — pull the glyph out and put it into a shared pool, and store nothing in the document but a reference to that shared glyph.
 
-However, before we start coding, we need to clarify one thing: if this idea is so good, why don't we usually use a shared pool when writing `std::string` for ASCII text? The answer lies in the **cost**. An ASCII character is only one byte, while a pointer or reference typically takes 8 bytes (on a 64-bit system). To save 1 byte, you introduce an 8-byte pointer, which actually makes the object larger. When you add the overhead of maintaining the pool, the loss outweighs the gain. The Flyweight Pattern has a "sweet spot": **this trade-off is only profitable when the shared state is "heavy enough" and the number of objects is "large enough"**. Font metrics, textures, chess piece configurations, and database connection settings are typical sweet spots. A 1-byte `char` is not.
+Before we start, though, one thing deserves a moment of thought: if the idea is this good, why do we never build any shared pool when handling ASCII text with `std::string`? The answer is **cost**. An ASCII character is a single byte, while a pointer or a reference usually takes 8 bytes (on 64-bit); to save that 1 byte you introduce an 8-byte pointer and actually make the object bigger — and on top of that you pay for maintaining the pool, a losing trade. The Flyweight pattern has its sweet spot: **the deal only pays off when the shared portion of the state is "heavy enough" and the number of objects is "large enough"**. Glyphs, textures, chess piece configurations, database connection settings — these are all classic sweet spots. A 1-byte `char` is not.
 
-Next, we will proceed step-by-step, starting with the most intuitive approach. We will look at why each step falls short, eventually forcing out a modern C++ Flyweight that works, is thread-safe, and has clear ownership semantics.
+So let's proceed step by step: start from the most intuitive version, see exactly why each step still falls short, and squeeze out a modern C++ Flyweight that actually runs, is thread-safe, and has unambiguous ownership.
 
-## Step 1: The Naive Approach — Each Object Carries Its Full State
+## Step 1: The most primitive approach — every object carries its full state
 
-Let's start by exposing the problem using the most straightforward approach. For chess pieces on a board, each piece stores its own color and type:
+Let's lay the problem out with the plainest possible code first. For pieces on a chessboard, every piece stores its own copy of the color and type:
 
 ```cpp
 #include <iostream>
@@ -79,9 +72,9 @@ public:
     }
 
 private:
-    std::string color_;  // 黑 / 红
-    std::string type_;   // 卒 / 兵 / 车 / 马 ...
-    int         x_;      // 棋盘坐标
+    std::string color_;  // black / red
+    std::string type_;   // black pawn / red pawn / chariot / horse ...
+    int         x_;      // board coordinates
     int         y_;
 };
 
@@ -90,37 +83,37 @@ int main() {
     board.emplace_back("黑", "卒", 2, 3);
     board.emplace_back("黑", "卒", 2, 4);
     board.emplace_back("黑", "卒", 2, 5);
-    // ... 棋盘上 16 个黑卒,每个都完整拷了一份 "黑"+"卒"
+    // ... 16 black pawns on the board, each carrying a full copy of "黑"+"卒"
     for (const auto& p : board) p.draw();
 }
 ```
 
-This code is functionally correct, but the problem lies in memory usage: the board is filled with 16 black pawns. Within these 16 objects, `color_` is always `"Black"` and `type_` is always `"Pawn"`. This data is duplicated verbatim 16 times. These 16 copies are identical, yet each one occupies memory dutifully.
+This code is completely correct functionally; the problem hides in memory: the board is covered with 16 black pawns, and across those 16 objects `color_` is always `"黑"` and `type_` is always `"卒"` — this data has been copied verbatim 16 times. The 16 copies differ in no way whatsoever, yet every one of them dutifully occupies its memory.
 
-Where is the issue? It stems from the fact that **we have mixed "mutable state" with "immutable state" in the same object**. The color and type, for a specific "Black Pawn", will not change from the moment it is created until the game ends; the only thing that changes is its position `(x_, y_)` on the board. We stored these two fundamentally different types of state in the same way, forcing the immutable state to bloat alongside the number of objects.
+Where's the problem? In the fact that **we kneaded "the state that changes" and "the state that never changes" into the same object**. For a concrete "black pawn", the color and type never change from the moment it is created until the game ends; the only thing that changes is its current position `(x_, y_)` on the board. We stored these two kinds of state — utterly different in nature — in the same way, so the unchanging state is forced to bloat in lockstep with the number of objects.
 
-## Step 2: Splitting the State — Intrinsic vs. Extrinsic State
+## Step 2: Splitting the state — intrinsic vs. extrinsic state
 
-The core action of the Flyweight pattern is to slice this pile of state into two categories based on whether it changes or not:
+The core move of the Flyweight pattern is to cut this pile of state into two categories with one stroke, along the line of "does it change or not":
 
-**Intrinsic state** is the part of the object that is **immutable, reusable, and can be shared by multiple users**. For a chess piece, this is its identity as a "Black Pawn" — color plus type. For a glyph, it is the glyph data itself. We extract this part, place it in a shared pool, and store only one copy globally.
+**Intrinsic state** is the part of the object that is **immutable, reusable, and shareable by multiple users**. For a chess piece, that's the identity "black pawn" — color plus type. For a glyph, it's the glyph data itself. We extract this part, put it into a shared pool, and store exactly one copy globally.
 
-**Extrinsic state** is the part that **varies with context and is determined only at the time of use**. For a chess piece, this is its current coordinates on the board; for a glyph, it is the line and column where it appears in a document. This part cannot be shared because it varies by time and place, so it **does not enter the Flyweight object**. Instead, the caller passes it in temporarily when using the object.
+**Extrinsic state** is the part that **varies with context and is only pinned down at the moment of use**. For a chess piece, that's its current coordinates on the board; for a glyph, it's the line and column where it appears in the document. This part cannot be shared, because it inherently differs from moment to moment and place to place, so it **never enters the Flyweight object** — the caller passes it in on the fly at use time.
 
-This split is the soul of the Flyweight pattern. Once you clarify which states are intrinsic and which are extrinsic, the rest of the code is simply the engineering implementation of this split. Let's first write this mental model into the most straightforward version: extract the pair `(color, type)` as immutable intrinsic state to create a separate, small, shareable object, and leave the extrinsic state like coordinates with the caller to be passed in during use.
+This split is the soul of the Flyweight pattern. Once you've figured out which state is intrinsic and which is extrinsic, all the remaining code is just the engineering implementation of the split. Let's write this mental model down in its plainest form: carve the immutable `(color, type)` pair out into its own small shareable object, and leave extrinsic state like the coordinates with the caller, to be passed in at use time.
 
 ```cpp
 #include <iostream>
 #include <string>
 
-// 享元对象:只装内部状态(颜色 + 类型)
+// Flyweight object: holds only intrinsic state (color + type)
 class ChessPiece {
 public:
     ChessPiece(std::string color, std::string type)
         : color_(std::move(color))
         , type_(std::move(type)) {}
 
-    // 外部状态(x, y)作为参数传进来,不存进对象
+    // Extrinsic state (x, y) arrives as a parameter, never stored in the object
     void draw(int x, int y) const {
         std::cout << color_ << type_ << " 放在 (" << x << "," << y << ")\n";
     }
@@ -131,13 +124,13 @@ private:
 };
 ```
 
-You see, `ChessPiece` has slimmed down—it only knows its own identity (color + type), and is completely unaware of its position on the board. This external state, the position, is passed in as a parameter only at the exact moment `draw` is called. It is used immediately and then discarded, without occupying a single byte of the object's memory.
+See how `ChessPiece` slimmed down — it only knows who it is (color + type) and has no idea where on the board it stands. The position, an extrinsic state, is passed in as a parameter the instant `draw` is called, used and immediately discarded, costing the object not a single byte of memory.
 
-However, we are missing one piece of the puzzle: we now have a "sharable" object, but nothing guarantees it is actually shared. If the caller wants a "Black Pawn" and carelessly creates a new one with `ChessPiece p("Black", "Pawn")`, how is this any better than what we had before? We need an **entry point** specifically responsible for ensuring that "identical internal state is instantiated only once; subsequent requests simply return that existing instance." This entry point has a specific name: the Flyweight Factory.
+But one link is still missing: we now have an object that *can* be shared, yet nothing guarantees it actually *is* shared. If a caller wanting a "black pawn" casually writes `ChessPiece p("黑", "卒")` to build a new one, how are we any better off than before the split? We need an **entry point** whose sole job is: "identical intrinsic state gets constructed once; anyone asking later just gets that one handed back". This entry point has a proper name: the Flyweight Factory.
 
-## Step 3: Flyweight Factory — The find-or-insert Shared Pool
+## Step 3: The Flyweight factory — a find-or-insert shared pool
 
-The factory's job is simple: you ask for a "Black Pawn", and I first check if it's already in the pool. If it is, I give you the existing one; if not, I create a new one, put it in the pool, and then give it to you. This pattern is known as **find-or-insert**, and its essence is simply caching:
+The factory's job is simple: you ask for a "black pawn", I first check whether the pool already has one; if it does, I hand you the existing copy, and only if not do I build a new one, stuff it into the pool, and hand it over. This routine has a name — **find-or-insert** — and at heart it's just a cache:
 
 ```cpp
 #include <memory>
@@ -151,7 +144,7 @@ public:
         std::string key = color + type;
         auto it = pool_.find(key);
         if (it != pool_.end()) {
-            return it->second;            // 已有,直接复用
+            return it->second;            // already there, reuse directly
         }
         auto piece = std::make_shared<ChessPiece>(color, type);
         pool_[key] = piece;
@@ -163,9 +156,9 @@ private:
 };
 ```
 
-The pool is an `unordered_map`, where the key is a string composed of "color + type", and the value is a `shared_ptr<ChessPiece>`. We use `shared_ptr` for a specific reason, which we will cover in detail later. For now, just remember this one thing: **the pool and the caller can hold references to the same piece simultaneously. The pool is responsible for "ensuring uniqueness," while the caller is responsible for "using it." Each has its own job.**
+The pool is an `unordered_map`: the key is the string concatenated from "color + type", and the value is a `shared_ptr<ChessPiece>`. Using `shared_ptr` here is deliberate — we'll devote a whole section to it later. For now remember one thing: **the pool and the caller can hold the same piece at the same time; the pool is responsible for "guaranteeing uniqueness" and the caller for "actually using it" — each does its own job**.
 
-Now, let's run through this complete version. We place three positions on the board, but there is only one black pawn in memory:
+Now let's run this version end to end. Three positions get placed on the board, but the black pawn exists only once in memory:
 
 ```cpp
 int main() {
@@ -173,7 +166,7 @@ int main() {
     auto black_pawn = factory.get_chess("黑", "卒");
     auto red_pawn   = factory.get_chess("红", "兵");
 
-    // 同一份 black_pawn,被画在三个不同的坐标上
+    // the same black_pawn, drawn at three different coordinates
     black_pawn->draw(2, 3);
     red_pawn->draw(5, 6);
     black_pawn->draw(2, 4);
@@ -188,11 +181,11 @@ $ ./flyweight_chess
 黑卒 放在 (2,4)
 ```
 
-The output is indistinguishable from the "one copy per piece" version—and that is correct. The Flyweight pattern is completely transparent to functionality; it only affects memory, not behavior. The real difference lies in memory: even if there are 16 black pawns on the board, the pool holds only one "Black Pawn" object. The 16 positions store their current extrinsic state (coordinates) and pass them in together when drawing.
+The output is indistinguishable from the "one copy per piece" version — and that's correct: the Flyweight pattern is completely transparent to functionality; it touches memory only, never behavior. The real difference is in memory: even with 16 black pawns on the board, the pool forever holds exactly one "black pawn" object, while the 16 positions each store their own current extrinsic-state coordinates and pass them in together at draw time.
 
-## Let's verify this: Is it really shared?
+## Let's verify first: is the sharing real
 
-Talk is cheap. Let's write a small program to prove that "fetching the same key twice yields the exact same object, not two copies with identical content." The criterion is simple—`shared_ptr::get()` returns the underlying raw pointer. If the pointers obtained from two fetches are equal, it is the same object:
+Talk is cheap, so let's write a small program proving that "fetching the same key twice really yields the same object, not two copies with identical content". The criterion is simple — `shared_ptr::get()` returns the underlying raw pointer; if the pointers from the two fetches are equal, it's the same object:
 
 ```cpp
 #include <iostream>
@@ -225,13 +218,13 @@ private:
 int main() {
     GlyphFactory factory;
     auto a1 = factory.get("你");
-    auto a2 = factory.get("你");   // 同一个字取两次
+    auto a2 = factory.get("你");   // fetch the same character twice
     auto b1 = factory.get("好");
 
     std::cout << "a1.get() == a2.get() : " << std::boolalpha
-              << (a1.get() == a2.get()) << "\n";   // 期待 true:同一份对象
+              << (a1.get() == a2.get()) << "\n";   // expect true: the same object
     std::cout << "a1.get() == b1.get() : " << std::boolalpha
-              << (a1.get() == b1.get()) << "\n";   // 期待 false:不同字
+              << (a1.get() == b1.get()) << "\n";   // expect false: different characters
     std::cout << "pool size : " << factory.size() << "\n";
 }
 ```
@@ -244,9 +237,9 @@ a1.get() == b1.get() : false
 pool size : 2
 ```
 
-Two calls to `get("你")` return the same pointer, and the pool size is two—one instance each for "你" and "好". The sharing is real, not an illusion.
+The two `get("你")` calls yield the same pointer, and the pool size is 2 — one entry each for "你" and "好". The sharing is real, not an illusion.
 
-Let's also do a quick memory calculation. We will store a document containing one million characters using both the "Flyweight" and the "Brute Force" approaches, and see how much memory the pointer array saves compared to the string array (here, the "glyph" is simulated with a single `char`; real glyph data would be much heavier, making the Flyweight advantage even more pronounced):
+While we're at it, let's do the memory math. Store a one-million-character document in both the "Flyweight" and the "brute force" way, and see how much the pointer array saves over the string array (here the "glyph" is simulated by a single `char`; real glyph data would be much heavier, which would only make the Flyweight advantage more pronounced):
 
 ```sh
 $ ./flyweight_mem
@@ -257,13 +250,13 @@ doc_naive string  array 概算   = 31250 KB
 pool 去重后对象数              = 15
 ```
 
-`shared_ptr` is smaller than a `std::string` (16 vs. 32 bytes), but more importantly, across one million positions, the actual glyph data (simulated with `char`) is stored only 15 times in the pool. If we replace `Glyph` with a real heavy object weighing dozens or hundreds of bytes, the savings from the Flyweight pattern aren't just double, but millions of times over. This is the payoff of "replacing values with references."
+A `shared_ptr` is even smaller than a `std::string` (16 vs. 32 bytes), but the more crucial point: across one million positions, the actual glyph data (simulated with `char`) is stored only 15 times in the pool. Swap `Glyph` for a real glyph-style heavy object of dozens or hundreds of bytes, and what Flyweight saves is no longer a factor of two but on the order of millions of times. That's the payoff of "replacing values with references".
 
-## A More Intuitive Example: Characters and Words in Text
+## A more intuitive example: characters and words in text
 
-The chess piece example cleanly separates internal and external state. Let's switch to an example closer to the original book's scenario, and incidentally demonstrate an advanced Flyweight technique—**what is shared doesn't have to be a single object; it can also be common combinations**.
+The chess example splits intrinsic/extrinsic state very cleanly. Let's switch to an example closer to the original book's setting, and along the way demonstrate an advanced Flyweight usage — **what gets shared doesn't have to be a single object; it can also be common combinations**.
 
-Assume we are rendering a large document where high-frequency characters like "you", "hello", and "right" appear repeatedly, and common phrases like "hello" and "thanks" also appear repeatedly. We can throw both characters and words into the same shared pool, storing only a sequence of references in the document, and retrieve them in order during rendering:
+Suppose we're rendering a large document where high-frequency characters like "你", "好", "吧" appear over and over, and common phrases like "你好" and "谢谢" appear over and over too. We can toss both the characters and the phrases into the same shared pool, store only a sequence of references in the document, and fetch them in order at render time:
 
 ```cpp
 #include <iostream>
@@ -293,7 +286,7 @@ private:
     std::unordered_map<std::string, std::shared_ptr<Glyph>> pool_;
 };
 
-// 文档:只持有指向共享字形的引用,不持有字形数据本身
+// Document: holds only references to the shared glyphs, not the glyph data itself
 class Document {
 public:
     void add_word(const std::shared_ptr<Glyph>& glyph) {
@@ -314,7 +307,7 @@ int main() {
     auto hao = factory.get("好");
     auto ba = factory.get("吧");
     doc.add_word(ni); doc.add_word(hao); doc.add_word(ba);
-    doc.add_word(ni); doc.add_word(hao);   // 第二次「你好」,完全复用
+    doc.add_word(ni); doc.add_word(hao);   // the second "你好", fully reused
     doc.render();
 }
 ```
@@ -324,28 +317,28 @@ $ ./flyweight_source_example
 你好吧你好
 ```
 
-The document contains five characters, but the pool only holds three glyph instances. If you want, you can even use the entire string "你好" (Hello) as a Flyweight key and put it into the same pool. The next time you encounter "你好", it's a direct hit, saving you even the two lookups. You can adjust the granularity of the Flyweight based on the scenario: the smaller the object and the more frequent its occurrence, the more obvious the benefits of sharing, and the more worth it is to put it in the pool.
+Five characters appear in the document, yet the pool holds only three glyphs. If you like, you can stuff "你好" as a whole into the same pool as a single Flyweight key — the next time "你好" shows up, it's an instant hit, saving even the two lookups. Flyweight granularity is tunable per scenario: the smaller the objects and the more frequently they appear, the more visible the sharing payoff, and the more worthwhile tossing them into the pool becomes.
 
-## Warning: This Factory is Not Thread-Safe
+## Pitfall warning: this factory is not thread-safe
 
-At this point, we have a functionally correct, memory-saving Flyweight. Don't rush to use it yet—the **original factory has a deeply hidden pitfall: it constructs duplicate objects under concurrency**.
+At this point we have a functionally correct, memory-saving Flyweight. Don't rush to use it — **the original factory hides a deep pitfall: under concurrency it constructs duplicate objects**.
 
-Look at the `get` function: it first `find`s, and only if it fails, does it `make_shared` and then `insert`. There is no synchronization between these three steps. In a single-threaded environment, this is perfectly fine, but once multiple threads request the same key simultaneously, you will hit a classic **TOCTOU (Time-of-Check-to-Time-of-Use) race condition**: Thread A checks and finds "你" (You) is missing, and is about to create it; Thread B also checks and finds it missing, and goes to create it too. Both finish creating and `insert` into the pool, resulting in the object for "你" being created twice. The Flyweight's promise of "global uniqueness" is quietly broken under concurrency.
+Look at `get`: it does `find` first, and only on a miss does it `make_shared` and then `insert`. There is zero synchronization among these three steps. Single-threaded, that's perfectly fine — but the moment multiple threads ask for the same key simultaneously, you crash into a classic **TOCTOU (Time-of-Check-to-Time-of-Use) race**: thread A checks, finds "你" missing, and is about to build it; thread B checks, also finds it missing, and also goes to build it; both finish, both `insert` into the pool, and the object for "你" ends up constructed twice. The Flyweight promise of "globally unique" quietly falls apart under concurrency like this.
 
-We intentionally slow down the constructor to widen this race window and show it to you in action:
+Let's deliberately slow the constructor down a little to widen the race window, and run it for you:
 
 ```cpp
 class Glyph {
 public:
     explicit Glyph(const std::string& content) : content_(content) {
         ++kConstruct;
-        std::this_thread::sleep_for(std::chrono::microseconds(100));  // 放大竞态窗口
+        std::this_thread::sleep_for(std::chrono::microseconds(100));  // widen the race window
     }
     static inline std::atomic<int> kConstruct{0};
     std::string content_;
 };
 
-class NaiveFactory {                          // 笔记原版的工厂,无锁
+class NaiveFactory {                          // the factory from the original notes, no locking
 public:
     std::shared_ptr<Glyph> get(const std::string& content) {
         auto it = pool_.find(content);
@@ -360,7 +353,7 @@ private:
 };
 ```
 
-Let's have 64 threads request the same character "you" simultaneously, and count exactly how many times it is constructed:
+Have 64 threads simultaneously ask for the same character "你", and count how many times it actually gets constructed:
 
 ```sh
 $ g++ -std=c++23 -O2 -pthread flyweight_race2.cpp -o flyweight_race2
@@ -376,15 +369,15 @@ pool 终态大小 = 1 (理想 1)
 pool 终态大小 = 1 (理想 1)
 ```
 
-Ideally, "you" should be constructed only once, but in reality, four or five constructions occur. There is a particularly tricky pitfall here—`pool_.size()` still reads as 1 after execution, making it look like "nothing happened." This is because `operator[]` eventually overwrites the results of the multiple constructions, so the pool's final state converges to a single entry. **Therefore, simply looking at the pool size reveals nothing**: the final state of the object is shared, but the side effects of construction (loading resources, allocating memory, initializing state) have genuinely occurred several times. In real-world scenarios, constructing a flyweight object is often that "heavy" operation—loading a texture, parsing a configuration. If you repeat the construction a few times, the memory you painstakingly saved might not even compensate for the waste caused by this redundant loading.
+Ideally "你" should be constructed exactly once; in reality it was constructed 4 to 5 times. And here's the especially sneaky part — `pool_.size()` still reads 1 after everything finishes, so it *looks* like "nothing happened". That's because `operator[]` ends up overwriting the multiple construction results with one another, and the pool's final state converges to a single entry. **So judging by pool size alone, you'd never spot the problem**: the object's final state is shared, but the side effects of construction (loading resources, allocating memory, initializing state) have genuinely happened several times over. In real scenarios, constructing the flyweight object is often precisely the "heavy" operation — loading a texture, parsing a configuration — and a few duplicate constructions can waste more than all the memory you painstakingly saved.
 
-::: warning The Flyweight Factory Concurrency Trap
-The original find-or-insert factory **is only valid in single-threaded environments**. Once flyweight objects might be accessed concurrently by multiple threads, `unordered_map` is not a thread-safe container, and find-or-insert itself has a TOCTOU race condition, so explicit locking is required. Don't be fooled by "the final pool size looks normal"—that's just an illusion created by `operator[]` overwriting entries; the side effects of construction are still duplicated.
+::: warning The Flyweight factory concurrency trap
+The original find-or-insert factory **holds only in single-threaded code**. Once flyweight objects may be fetched concurrently by multiple threads, you must lock explicitly: `unordered_map` is not a thread-safe container, and find-or-insert itself carries a TOCTOU race. Don't be fooled by "the final pool size looks normal" — that's just an illusion created by `operator[]` overwriting entries; the construction side effects still got duplicated.
 :::
 
-## Fixed: A Thread-Safe Factory with a Lock
+## Fixing it right: a thread-safe factory with one lock
 
-Fixing this is actually straightforward—wrap the entire find-or-insert logic with `std::mutex`. Only one thread can enter the critical section at a time, making `find` and `insert` an atomic unit, so the race condition naturally disappears:
+The fix is actually direct — wrap the whole find-or-insert in a `std::mutex`. Only one thread can be inside the critical section at a time, so `find` and `insert` become one atomic whole, and the race naturally disappears:
 
 ```cpp
 #include <memory>
@@ -409,7 +402,7 @@ private:
 };
 ```
 
-With 64 concurrent threads, the constructor count is now firmly one:
+The same 64 concurrent threads — this time the construction count is a steady 1:
 
 ```sh
 $ g++ -std=c++23 -O2 -pthread flyweight_threadsafe.cpp -o flyweight_threadsafe
@@ -422,15 +415,15 @@ $ for i in 1 2 3; do echo "--- run $i ---"; ./flyweight_threadsafe; done
 构造次数 = 1 (理想 1)
 ```
 
-You might have heard of the "Double-Checked Locking Pattern (DCLP)" approach—performing a lock-free `find` outside the lock first, returning directly on a hit, and only acquiring the lock on a miss. I must warn you that this is extremely difficult to get right in C++. The `unordered_map` itself offers no data race guarantees for concurrent reads and writes. Reading a map outside a lock while another thread might be writing to it is already undefined behavior. To achieve safe "lock-free reading," you would need to switch to a concurrent hash table or use atomic load/store with `std::atomic<std::shared_ptr>` (available since C++20), which immediately increases complexity. For the vast majority of scenarios, **wrapping the entire find-or-insert operation in a single mutex is the most cost-effective and least error-prone choice**. Contention in a flyweight factory is typically low (after a hot key is constructed for the first time, subsequent operations are almost always `find` hits), so the cost of the lock is far less than the bugs introduced by premature optimization.
+You may have heard of the "Double-Checked Locking Pattern (DCLP)" route — do a lock-free `find` outside the lock first, return immediately on a hit, and only take the lock on a miss. I have to warn you: this route is extremely hard to get right in C++. Reads and writes of an `unordered_map` itself come with no data-race guarantees under multithreading; reading a map outside the lock while another thread may be writing it is already undefined behavior. To "read outside the lock" safely, you'd have to switch to a concurrency-safe hash table, or use atomic load/store on `std::atomic<std::shared_ptr>` (since C++20) — and the complexity jumps immediately. For the overwhelming majority of scenarios, **one mutex wrapping the entire find-or-insert is the cheapest and least error-prone choice** — contention on a flyweight factory is usually low (after a hot key's first construction, nearly everything is a `find` hit), so the cost of the lock is far smaller than the bugs your blind optimization introduces.
 
-## Why use shared_ptr instead of raw pointers or weak_ptr?
+## Why shared_ptr, and not raw pointers or weak_ptr
 
-We have been using `shared_ptr` consistently so far, so we need to clarify why. The original Gang of Four (GoF) book on design patterns used raw pointers for the flyweight pattern—a practice that is a trap in modern C++.
+We've been using `shared_ptr` all along; it's time to make clear why, because the GoF book's original Flyweight used raw pointers — and that style is a pitfall in modern C++.
 
-The ownership model of the flyweight pattern is somewhat unique: **the factory "manages" the flyweight objects, while the caller "uses" them. Both sides need to hold a reference, but neither should exclusively own the object.** This aligns perfectly with the semantics of `shared_ptr`—shared ownership, where the object is only reclaimed when the last holder destroys it.
+The Flyweight ownership model is a bit special: **the factory "manages" the flyweight objects, callers "use" them, both sides need to hold them, but neither should own them exclusively**. That's precisely `shared_ptr` semantics — shared ownership, with the object reclaimed only when the last holder destructs.
 
-Let's verify a critical property: **the `shared_ptr` obtained by the caller ensures the object remains alive even if the factory's pool is cleared.** This is the foundation upon which shared ownership is built. Let's run a quick test to confirm:
+Let's first verify a key property: **a `shared_ptr` handed to a caller keeps the object alive even after the factory's pool is cleared**. This is the bedrock on which shared ownership stands; let's run it to confirm:
 
 ```cpp
 int main() {
@@ -439,9 +432,9 @@ int main() {
         std::unordered_map<std::string, std::shared_ptr<Glyph>> pool;
         auto g = std::make_shared<Glyph>("你");
         pool["你"] = g;
-        outer = g;                                  // 调用方也持有一份
+        outer = g;                                  // the caller holds a copy too
         std::cout << "池子活着时 use_count = " << g.use_count() << "\n";
-    }                                               // pool 析构,但 outer 还在
+    }                                               // pool destructed, but outer is still alive
     std::cout << "池子死后   use_count = " << outer.use_count() << "\n";
     std::cout << "outer 还能用吗? content = " << outer->content() << "\n";
 }
@@ -456,15 +449,15 @@ outer 还能用吗? content = 你
 destruct  你
 ```
 
-The `use_count` is three while the pool is alive (one held by the `map`, one by the local variable `g`, and one by `outer`). After the pool is destructed, the count drops to one, but `outer` can still safely access the object. The object is only destroyed when `outer` itself is destructed. **This is the most critical correctness guarantee that `shared_ptr` brings to the Flyweight pattern: the lifetime of the Flyweight object follows the references, not the factory.**
+While the pool is alive, `use_count` is 3 (one for the `map`, one for the local `g`, one for `outer`); after the pool destructs it drops to 1, yet `outer` can still access the object safely, and the object is destroyed only when `outer` itself destructs. **This is the most crucial correctness guarantee `shared_ptr` brings to Flyweight: the flyweight object's lifetime follows its references, not the factory.**
 
-Let's compare this with the original GoF (Gang of Four) raw pointer approach: `pool_[key] = new Glyph(...)` in the factory, returning a `Glyph*`. The caller receives a bare pointer; it neither knows who owns this pointer nor can it prevent the factory from `delete`-ing the object one day. The example code in the original book doesn't even include `delete`, resulting in a genuine memory leak when run. In modern C++, when implementing the Flyweight pattern, **we store `shared_ptr` in the pool and return `shared_ptr`; ownership is coordinated automatically**, resulting in neither leaks nor dangling pointers.
+Compare with the GoF original's raw-pointer scheme: the factory does `pool_[key] = new Glyph(...)` and returns a `Glyph*`. All the caller gets is a raw pointer: it neither knows who owns that pointer nor can it stop the factory from `delete`-ing the object one day. The sample code in the original book doesn't even write the `delete` — run it and you have a genuine memory leak. Write Flyweight in modern C++ and **you put `shared_ptr` in the pool and return `shared_ptr`; ownership coordinates itself** — no leaks, no dangling.
 
-Why not use `weak_ptr`? There is a common argument: "The factory only holds `weak_ptr`, so the object is automatically reclaimed when no one uses it, saving memory in the pool." This sounds appealing, but using `weak_ptr` means we must call `lock()` every time we `get`. If `lock` fails (because the object was actually reclaimed), we have to reconstruct it—yet the core benefit of the Flyweight pattern is "construct once, reuse repeatedly." If you allow Flyweight objects to be reclaimed and reconstructed frequently, the shared pool degrades into a generic cache, losing the significance of "saving construction." **Once constructed, a Flyweight object should persist for the lifetime of the factory**, which is exactly the semantics expressed by the strong reference of `shared_ptr`. `weak_ptr` is suitable for "occasional use, forget after use" caches, not for Flyweights.
+Then why not `weak_ptr`? One argument goes: "the factory holds only `weak_ptr`, so once nobody uses the object it's reclaimed automatically and the pool costs no memory." Sounds lovely, but `weak_ptr` means every `get` has to `lock()` first, and a failed `lock` (the object really was reclaimed) means reconstructing it — yet Flyweight's core payoff is precisely "construct once, reuse over and over". If you let flyweight objects get reclaimed and rebuilt all the time, the shared pool degrades into an ordinary cache and loses the point of "saving construction". **Once a flyweight object is constructed, it should live for the factory's whole lifetime** — exactly the semantics `shared_ptr`'s strong reference expresses. `weak_ptr` suits "used occasionally, forgotten afterward" caches, not flyweights.
 
-## A More Practical Example: Configuration Sharing
+## A closer-to-production example: configuration sharing
 
-Let's consolidate the conclusions we've reached into an example that more closely resembles production code. Suppose there are many places in the program that need to connect to a database. The connection configuration is determined by `(host, port)`. Identical configurations can certainly share the same object, while different locations maintain their own extrinsic states, such as connection count and timeout:
+Let's fold the preceding conclusions into an example that looks more like production code. Suppose a bunch of places in the program connect to databases; the connection configuration is determined by `(host, port)`, identical configurations can perfectly well share one and the same object, and each site keeps its own extrinsic state such as connection counts and timeouts:
 
 ```cpp
 #include <iostream>
@@ -487,7 +480,7 @@ private:
 class DbConfigFactory {
 public:
     std::shared_ptr<DbConfig> get(const std::string& host, int port) {
-        std::lock_guard<std::mutex> lk(mtx_);        // 并发安全
+        std::lock_guard<std::mutex> lk(mtx_);        // concurrency-safe
         std::string key = host + ":" + std::to_string(port);
         auto it = pool_.find(key);
         if (it != pool_.end()) return it->second;
@@ -503,8 +496,8 @@ private:
 int main() {
     DbConfigFactory factory;
     auto c1 = factory.get("127.0.0.1", 3306);
-    auto c2 = factory.get("127.0.0.1", 3306);        // 和 c1 同一份
-    auto c3 = factory.get("192.168.1.10", 5432);     // 另一份
+    auto c2 = factory.get("127.0.0.1", 3306);        // the same object as c1
+    auto c3 = factory.get("192.168.1.10", 5432);     // a different one
     c1->show(); c2->show(); c3->show();
     std::cout << "c1 和 c2 是同一份? " << std::boolalpha
               << (c1.get() == c2.get()) << "\n";
@@ -519,45 +512,45 @@ DbConfig: 192.168.1.10:5432
 c1 和 c2 是同一份? true
 ```
 
-This is a complete Flyweight implementation ready for production. We extract the intrinsic state `(host, port)` for sharing, leave the extrinsic state (connection count, timeout, transaction status) in the connection object, add a mutex to the factory for thread safety, and use `shared_ptr` for clear ownership. For things like connection counts and timeouts that change every time, we don't put them in the Flyweight; we just pass them in when needed. It's the same logic as chess piece coordinates.
+This is a complete Flyweight you can drop straight into production: intrinsic state `(host, port)` is extracted and shared; extrinsic state (connection count, timeout, transaction state) stays over on the connection objects; the factory carries a lock for concurrency safety; `shared_ptr` keeps ownership clear. The "different every time" things you want — connection counts, timeouts — never enter the flyweight; just pass them in at use time. Same routine as the chess coordinates.
 
-## The Downsides of the Flyweight Pattern
+## Why the Flyweight pattern is disliked
 
-At this point, we have a correct, thread-safe Flyweight with clear ownership. Just like with the Singleton, we need to be honest about the costs of the Flyweight pattern and not just sing its praises.
+At this point we have a correct, thread-safe Flyweight with clear ownership. As with the Singleton, we owe the Flyweight an honest account of its costs — no telling only the nice parts.
 
-**First, you have to figure out how to split the state.** This is the biggest hurdle to using Flyweight—dividing an object's fields into "intrinsic state" and "extrinsic state" isn't always obvious. If you split it wrong, you either pass around things that should be shared as extrinsic state (wasting the benefits of sharing), or you shove things that should change into the Flyweight (causing shared objects to interfere with each other, which is an even worse bug). Whether the Flyweight pattern works correctly depends 90% on making the right cut here.
+**First, you have to think through how to split the state.** This is Flyweight's biggest hurdle — dividing an object's fields into "intrinsic state" and "extrinsic state" is not always obvious. Cut it wrong, and either you pass what should have been shared back and forth as extrinsic state, throwing away the sharing payoff for nothing, or you stuff what should have been mutable into the flyweight, letting one shared object interfere across users (a far worse bug). Whether your Flyweight is used correctly is 90% decided by whether this cut lands correctly.
 
-**Second, passing extrinsic state burdens the caller.** The Flyweight removes extrinsic state from the object, but the cost is that you have to pass it back in every time you use it. A `draw(int x, int y)` is fine, but if there is a lot of extrinsic state (position, scale, rotation, color tint), the call site signature becomes bloated. Plus, this state must be stored in the caller's own data structures—you save space inside the Flyweight object, but you end up storing another table of extrinsic state elsewhere. You need to do the math to see if the net benefit is positive.
+**Second, passing extrinsic state is a burden on the caller.** Flyweight carves extrinsic state out of the object, and the price is re-passing it on every use. A single `draw(int x, int y)` is fine; but with a whole pile of extrinsic state (position, scale, rotation, color tint), the call-site signature bloats badly — and that state has to live in the caller's own data structures. You saved space inside the flyweight object, but somewhere else you are now storing a table of extrinsic state. Whether the net gain is positive, you have to tally the whole ledger.
 
-**Third, it introduces a globally visible factory.** Just like the Singleton problem, a Flyweight factory is essentially a stateful shared facility that anyone can insert into or retrieve from. If the factory's key is designed poorly (for example, if mutable state is baked into the key), the behavior of the whole system becomes hard to track. It's also hard to swap out for testing—you can't easily inject a fake Flyweight pool into a module that depends on a global factory.
+**Third, it introduces a globally visible factory.** Exactly the Singleton's problem: a flyweight factory is at bottom a stateful shared facility that anyone can stuff into and fetch from. Once the factory's keys are badly designed (say, mutable state got concatenated into a key), the whole system's behavior becomes hard to trace. It's also hard to swap out in testing — injecting a fake flyweight pool into a module that depends on the global factory is painful.
 
-**Fourth, not all "similar objects" are worth the Flyweight treatment.** We said this at the start: Flyweight has a sweet spot. The shared state must be "heavy enough," and the object count must be "high enough." If you have a bunch of objects with different fields and almost no repetition, the sharing value is low. Or if the object itself is already very light (like a `char`), forcing a Flyweight on it only makes the code more complex and the memory footprint larger. Before applying Flyweight, ask yourself: Is this state worth maintaining a pool for?
+**Fourth, not every batch of "similar objects" deserves Flyweight.** We said it up front: Flyweight has a sweet spot — the shared state must be "heavy enough" and the object count "large enough". If what you hold is a pile of objects with disparate fields and almost no repetition, the sharing value is small; or if the objects are already feather-light (a `char`, say), forcing Flyweight on them only makes the code more complex and the memory larger. Before reaching for Flyweight, ask yourself one question: is this slice of state worth maintaining a pool for?
 
 ## Summary
 
-Let's review the entire evolution path:
+Let's walk the whole evolution path once:
 
-| Stage | Approach | Why it wasn't enough |
+| Stage | Approach | Why it still wasn't enough |
 |---|---|---|
-| Full state per object | All fields mixed in one class | Unchanging intrinsic state is duplicated along with the object count |
-| Split intrinsic/extrinsic state | Extract intrinsic state, pass extrinsic state as args | No one guarantees "same state is created only once" |
-| Flyweight Factory | find-or-insert shared pool | Functionally correct, but **has TOCTOU race under concurrency** |
-| Thread-safe Factory | mutex wrapping find-or-insert | Usable, and `shared_ptr` makes ownership clear |
+| Full state per object | All fields kneaded into one class | Immutable intrinsic state gets copied along with the object count |
+| Split intrinsic/extrinsic state | Intrinsic state extracted, extrinsic state passed as arguments | Nothing yet guarantees "identical state is constructed only once" |
+| Flyweight factory | find-or-insert shared pool | Functionally correct, but **has a TOCTOU race under concurrency** |
+| Thread-safe factory | A mutex wrapping find-or-insert | Good enough, and `shared_ptr` makes ownership clear |
 
-Keep these key conclusions in mind:
+Note down these key conclusions:
 
-- **The core of Flyweight is "intrinsic state sharing + extrinsic state passing."** To judge if an object fits the Flyweight pattern, the first step is always to ask yourself: Which fields are immutable and shareable? Which change every time?
-- **The Flyweight factory is only valid in single-threaded contexts.** The original find-or-insert has a TOCTOU race; under concurrency, you must wrap it with a mutex. Don't be fooled by "the pool's final size looks correct"—the side effects of construction will repeat.
-- **Use `shared_ptr`, not raw pointers.** Flyweight implies shared ownership. `shared_ptr` allows the factory and the caller to each hold a reference, automatically coordinating lifetimes, preventing both leaks and dangling pointers. `weak_ptr` would cause frequent recycling and reconstruction, which actually wipes out the construction-savings benefits of Flyweight.
-- **Flyweight has a sweet spot:** The shared state must be heavy enough, and the object count high enough, for the trade-off to be worth it. For something as light as an ASCII char, using Flyweight costs more than it saves.
+- **The core of Flyweight is "share intrinsic state + pass extrinsic state as arguments"** — to judge whether an object suits Flyweight, step one is always asking yourself: which fields are immutable and shareable, and which change every time?
+- **The flyweight factory holds only in single-threaded code** — the original find-or-insert has a TOCTOU race, and under concurrency it must be wrapped in a mutex. Don't be fooled by "the pool's final size looks normal"; the construction side effects still repeat.
+- **Use `shared_ptr`, not raw pointers** — Flyweight is shared ownership; `shared_ptr` lets the factory and the callers each hold a copy and coordinate lifetimes automatically, leaking nothing and dangling never. `weak_ptr` would have objects constantly reclaimed and rebuilt, wiping out the very construction savings Flyweight exists for.
+- **Flyweight has a sweet spot**: the shared state must be heavy enough and the object count large enough for the trade to pay. Something already as light as an ASCII `char` loses more than it gains from Flyweight.
 
-::: tip Companion Compilable Project
-The examples for this section are in the repository at `code/volumn_codes/vol4/design-patterns/Flyweight/` as a complete compilable project (`.h` + main + `CMakeLists.txt`). Run `cmake -S . -B build && cmake --build build` to see the output shown above.
+::: tip Companion compilable project
+This section's examples live in the repository under `code/volumn_codes/vol4/design-patterns/Flyweight/` as a complete compilable project (`.h` + main + `CMakeLists.txt`); `cmake -S . -B build && cmake --build build` reproduces the outputs above.
 :::
 
 ## References
 
-- [cppreference: `std::shared_ptr`](https://en.cppreference.com/w/cpp/memory/shared_ptr) (Shared ownership and reference counting, since C++11)
-- [cppreference: `std::unordered_map`](https://en.cppreference.com/w/cpp/container/unordered_map) (Common underlying pool for Flyweight factories)
-- [cppreference: `std::mutex` / `std::lock_guard`](https://en.cppreference.com/w/cpp/thread/mutex) (Synchronization primitives for thread-safe factories)
-- Gamma, Helm, Johnson, Vlissides, *Design Patterns* (GoF), Structural Patterns · Flyweight (The classic text; note that its example code uses raw pointers, modern C++ should use `shared_ptr`)
+- [cppreference: `std::shared_ptr`](https://en.cppreference.com/w/cpp/memory/shared_ptr) (shared ownership and reference counting, since C++11)
+- [cppreference: `std::unordered_map`](https://en.cppreference.com/w/cpp/container/unordered_map) (the usual underlying pool for flyweight factories)
+- [cppreference: `std::mutex` / `std::lock_guard`](https://en.cppreference.com/w/cpp/thread/mutex) (synchronization primitives for the thread-safe factory)
+- Gamma, Helm, Johnson, Vlissides, *Design Patterns* (GoF), Structural Patterns · Flyweight (the canonical text; note that its sample code uses raw pointers — modern C++ should use `shared_ptr` instead)

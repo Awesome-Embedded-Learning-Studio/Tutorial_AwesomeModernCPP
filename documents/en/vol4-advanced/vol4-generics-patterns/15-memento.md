@@ -1,49 +1,44 @@
 ---
-title: '**Memento Pattern: Encapsulating ''State'' in an Opaque Black Box**'
-description: Starting with the most intuitive "full copy," we progressively derive
-  snapshot/undo/redo functionality, conveniently using `friend` to tighten the memento
-  into a black box, and then expose the pitfalls of `make_shared` colliding with private
-  constructors.
+title: 'Memento Pattern: Encapsulating State in an Opaque Black Box'
+description: Starting from the most intuitive "full copy", we derive snapshots/undo/redo step by step, tighten the memento into a black box with `friend`, and then expose the pitfall of `make_shared` colliding with a private constructor
 chapter: 11
 order: 15
 tags:
-- host
-- cpp-modern
-- intermediate
-- 备忘录模式
+  - host
+  - cpp-modern
+  - intermediate
+  - 备忘录模式
 difficulty: intermediate
 platform: host
-cpp_standard:
-- 11
-- 17
-- 20
+cpp_standard: [11, 17, 20]
 reading_time_minutes: 20
 related:
-- 命令模式:把「动作」变成能撤销的对象
+  - 'Command Pattern: Turning Actions into Undoable Objects'
 prerequisites:
-- 'Chapter 6: 类与对象'
+  - 'Chapter 6: Classes and Object-Oriented Programming'
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/15-memento.md
   source_hash: d2a5b8ee57ceca1899acaa006a5762b6401a33a6d09c3697654ddd449205a66b
-  translated_at: '2026-06-24T01:00:48.753975+00:00'
+  translated_at: '2026-09-26T05:45:30+00:00'
   engine: anthropic
-  token_count: 3014
+  token_count: 3500
 ---
+
 # Memento Pattern: Encapsulating State in an Opaque Black Box
 
-## What Problem Are We Actually Solving?
+## What problem are we actually solving
 
-Let's skip the formal definition for a moment. Think about a feature you use every day but rarely think about: Ctrl+Z in a text editor. You type a line, type another, move the cursor a few times, and then press undo—the editor seems to travel back in time, reverting to a previous state. Have you ever wondered **how it knows what the past looked like without scattering internal details of your document (buffer pointers, cursor offsets, selection ranges) all over the place?**
+Let's skip the definition for now. Think of a feature you use every single day but have almost never noticed: Ctrl+Z in a text editor. You type a line, type another, move the cursor around a few times, then hit undo — and the editor travels back in time to how things looked a few steps ago. Have you ever wondered **how it knows what "a few steps ago" looked like, without scattering your document's internal details (buffer pointers, cursor offsets, selection endpoints) all over the program?**
 
-The most brute-force approach is to `deep copy` the entire document before every keystroke and store it. Undoing simply means reverting to the previous copy. This logic works, but the cost is obvious: as the document grows and operations accumulate, the history stack quickly devours memory. Furthermore, `deep copy` itself can be expensive (nested structures, handles, and subcomponents must all be handled). A more subtle issue is **once this copy is out in the wild, who guarantees it won't be silently modified?** If the undo system holds a copy of "the past you," and someone casually does `m->content = "hacked"`, your "immutable history" becomes meaningless.
+The most brute-force approach: before every keystroke, `deep copy` the entire document and stash it away. Undo means hopping back to the previous copy. Nothing wrong with the logic — it runs — but the cost is glaring: once the document gets big and the operations pile up, the history stack devours memory in no time, and the `deep copy` itself can be expensive (nested structures, handles, subcomponents — not a single one may be missed). The sneakier trouble is this: **once that copy lands in someone else's hands, who guarantees it won't be quietly tampered with?** The undo system is holding a copy of "the past you"; if it casually writes `m->content = "hacked"`, your "immutable history" exists in name only.
 
-The Memento pattern is designed to solve exactly this class of requirements: **capturing an object's internal state without exposing its implementation details, so that it can be restored later in its original form.** It is a natural counterpart to the Command pattern ([which we covered earlier](./13-command.md))—the Command pattern objectifies "actions," while the Memento pattern objectifies "state." The Command pattern supports undo by "storing reverse operations," which is lightweight but prone to calculation errors in complex scenarios; the Memento pattern supports undo by "storing full snapshots," which is robust but memory-intensive. Choosing between them essentially boils down to a trade-off between **the computational cost of reverse operations** and **the storage cost of full snapshots**.
+This is exactly the class of requirements the Memento pattern addresses: **capture an object's internal state — without exposing the object's internal implementation — and keep it for restoring verbatim later**. It's a natural pair with the Command pattern ([the article we wrote earlier](./13-command.md)): the Command pattern objectifies "actions", the Memento pattern objectifies "state". The Command pattern does undo by "storing the inverse operation" — lightweight, but easy to miscompute on complex operations; the Memento pattern does undo by "storing a full snapshot" — robust, but memory-hungry. Choosing between them is fundamentally a trade-off between **the computational cost of inverse operations** and **the storage cost of a full snapshot**.
 
-Next, we will proceed step-by-step, starting with the most intuitive full copy approach. We will see why each step falls short, eventually forcing us to arrive at a modern C++ approach that is both properly encapsulated and elegantly supports undo and redo.
+From here we'll go step by step, starting from the most intuitive full copy, seeing why each step falls short, and finally squeezing out a modern formulation that is both properly encapsulated and elegantly supports undo and redo.
 
-## Step 1: The Most Intuitive Approach — Public Fields + Full Copy
+## Step 1: The most intuitive approach — public fields + a full copy
 
-Many people's first attempt at a snapshot looks something like this: define a structure identical to the editor's state, make all fields public, and use `make_shared` to stash a copy when saving:
+Many people's first attempt at a snapshot looks something like this: define a struct mirroring the editor's state exactly, make every field public, and `make_shared` one to stash away when saving:
 
 ```cpp
 struct EditorMemento {
@@ -76,26 +71,26 @@ private:
 };
 ```
 
-It certainly works—`create_memento()` takes a snapshot, and `restore()` pastes it back. But if you look closely at `EditorMemento`, you will discover an unsettling fact: **its `content` and `cursor_pos` are all public**. This means anyone holding this `shared_ptr`—the undo stack, the serialization module, or even some intermediate layer passed across modules—can directly read and write the fields inside.
+It does work — `create_memento()` snaps the photo, `restore()` pastes it back. But look closely at `EditorMemento` and an unsettling fact appears: **its `content` and `cursor_pos` are entirely public**. That means anyone holding this `shared_ptr` — the undo stack, the serialization module, even some intermediate layer passed across modules — can read and write those fields directly.
 
-You might think, "We are all colleagues here, who would modify a snapshot?" But the encapsulation requirements of the Memento pattern are actually the opposite: **it must guarantee that modification is "impossible," rather than merely hoping "no one changes it."** A public memento effectively exposes the editor's internal representation to the entire program. One day, someone might write `m->content.clear()` in the undo stack just for debugging, and you will never guess that the crash was caused by a corrupted historical snapshot.
+You might think: we're all colleagues here, who would go and modify a snapshot? But the Memento pattern's demand on encapsulation is precisely the opposite: **it must guarantee "cannot be modified", not "please don't modify"**. A public memento lays the editor's internal representation bare to the entire program. One day somebody, just for debugging, writes `m->content.clear()` on a snapshot in the undo stack — and while you're tracking the crash down, "a historical snapshot got modified" is the last possibility you'd think of.
 
-::: warning A Commonly Overlooked Encapsulation Pitfall
-The approach of making all `EditorMemento` fields public is rampant in online Memento examples, but it actually **violates the core promise of the Memento pattern**: a memento should be a black box that is unreadable and unwritable to the outside world; only the Originator itself should be able to read and write its own state. The original GoF (Gang of Four) description specifically distinguishes between a "wide interface" (full access available only to the Originator) and a "narrow interface" (an opaque handle that the Caretaker can only hold). Our current implementation has only a wide interface and lacks a narrow interface, so encapsulation is non-existent. If we don't fix this, once the undo stack becomes complex, someone will inevitably try to mess with the snapshots.
+::: warning A commonly overlooked encapsulation trap
+The all-public-fields `EditorMemento` is all over the place in Memento examples online, but it actually **violates the core promise of the Memento pattern**: a memento should be a black box to the outside — unreadable and unwritable — with only the Originator allowed to read and write its own state. The original GoF description of this pattern deliberately distinguishes a "wide interface" (full access, available only to the Originator) from a "narrow interface" (the opaque handle the Caretaker gets to hold). Our step-one version has only the wide interface and no narrow one — the encapsulation is a no-op. Leave this unfixed, and once the undo stack grows complicated, sooner or later someone will get bright ideas about those snapshots.
 :::
 
-So, this version works, but the encapsulation is not established. We need to find a way to make the memento "transparent to the Originator, a black box to the outside world."
+So this version works, but the encapsulation isn't standing yet. We need a way to make the memento "transparent to the originator, a black box to the outside world".
 
-## Step 2: Making the Memento a Black Box — Nested Class + friend
+## Step 2: Turning the memento into a black box — nested class + friend
 
-C++ provides a mechanism almost tailor-made for the Memento pattern: **declare the Memento as a nested class of the Originator, make its constructor and fields all private, and then make the Originator its friend**. This way, **only the Originator itself** throughout the entire program can construct the memento and read/write its fields; everyone else (including the undo stack) receives an opaque object that cannot even see `content`.
+C++ hands us a mechanism practically tailor-made for the Memento pattern: **declare the memento as a nested class of the originator, make its constructor and fields all private, and then turn around and make the originator its friend**. This way, across the entire program **only the originator itself** can construct the memento and read or write its fields; everyone else (the undo stack included) gets an opaque object in which even `content` is invisible.
 
 ```cpp
 class TextEditor {
 public:
-    // 备忘录是 Originator 的嵌套类型,对外是个黑盒
+    // The memento is a nested type of the Originator — a black box to the outside
     class Memento {
-        friend class TextEditor;  // 只有 TextEditor 能访问下面这些
+        friend class TextEditor;  // Only TextEditor can access what follows
         std::string content;
         std::size_t cursor_pos = 0;
 
@@ -103,7 +98,7 @@ public:
             : content(std::move(c)), cursor_pos(p) {}
 
     public:
-        // 外部(含 Caretaker)只能拷贝/移动这个不透明句柄,读不到内容
+        // The outside (Caretaker included) can only copy/move this opaque handle; the contents are unreadable
         Memento() = default;
         Memento(const Memento&) = default;
         Memento(Memento&&) = default;
@@ -117,7 +112,7 @@ public:
 
     void restore(const std::shared_ptr<Memento>& m) {
         if (!m) return;
-        content_ = m->content;       // friend 授权:这里能访问私有字段
+        content_ = m->content;       // friend grant: private fields are accessible here
         cursor_pos_ = m->cursor_pos;
     }
 
@@ -132,15 +127,15 @@ private:
 };
 ```
 
-Let's examine the key design decisions in this version. The `Memento` has been moved inside `TextEditor`, becoming `TextEditor::Memento`. Its constructor and two fields are now `private`, with `TextEditor` itself being the only friend. This means that `new Memento(...)` works inside `create_memento` (because the caller is a friend), and `m->content` is readable inside `restore` (also because of the friend relationship). However, external code—even if holding a `shared_ptr<Memento>`—cannot touch a single character of `content`.
+Note the key design moves in this version. The memento has moved inside `TextEditor`, becoming `TextEditor::Memento`; its constructor and two fields are all `private`, and its only friend is `TextEditor` itself. That's why `new Memento(...)` compiles inside `create_memento` (the originator is a friend) and `m->content` is readable inside `restore` (again because of the friend declaration); while outside code, even clutching a `shared_ptr<Memento>`, cannot touch a single character of `content`.
 
-The public section of `Memento` only exposes the default constructor and a set of copy/move special member functions. This allows the undo stack (a `std::vector<shared_ptr<Memento>>`) and `shared_ptr` to handle it correctly, but it never exposes the actual internal state to the outside world. This is the "narrow interface" described by GoF—the Caretaker holds an **opaque handle**: it can be stored, passed, or discarded, but its contents remain invisible.
+The public part of `Memento` keeps only the default constructor and the set of copy/move special member functions — enough for the undo stack (a `std::vector<shared_ptr<Memento>>`) and `shared_ptr` to move it around normally — but it never exposes the real internal state to the outside world. This is what GoF calls the "narrow interface": what the Caretaker holds is an **opaque handle** — it can store it, pass it, drop it, but it cannot see what's inside.
 
 Let's first verify that this encapsulation actually holds.
 
-## Verification: Can the outside world really not read the Memento content?
+## Let's verify first: can the outside world really not read the memento's contents
 
-Talk is cheap. Let's intentionally write a line of code in `main` that "attempts to read snapshot content from the outside" to see if the compiler allows it:
+Talk is cheap, so let's deliberately write a line in `main` that "tries to read the snapshot's contents from the outside" and see whether the compiler goes along:
 
 ```cpp
 int main() {
@@ -148,13 +143,13 @@ int main() {
     editor.insert("Hello");
     auto snap = editor.create_memento();
 
-    // 外部代码试图读取 m->content —— 这一行应当编译失败
+    // Outside code tries to read m->content — this line should fail to compile
     std::cout << snap->content << "\n";   // ERROR
     return 0;
 }
 ```
 
-Compile, and here is the actual output (`g++ 16.1.1`, `-std=c++23 -O2`):
+Compile, and here's the real output (`g++ 16.1.1`, `-std=c++23 -O2`):
 
 ```sh
 $ g++ -std=c++23 -O2 memento_encap_break.cpp -o memento_encap_break
@@ -163,9 +158,9 @@ memento_encap_break.cpp:53:24: error: 'std::string TextEditor::Memento::content'
 memento_encap_break.cpp:10:21: note: declared private here
 ```
 
-The compiler blocks us outright with: `content is private within this context`. This demonstrates how `friend` combined with nested classes locks encapsulation down tight—**enforced by compile-time hard constraints, not by comments or conventions**. The undo stack, serialization module, or any external code can only obtain an opaque `shared_ptr<Memento>`, completely unaware of the internal fields.
+The compiler slams the door in our face: `content is private within this context`. That is friend + nested class nailing the encapsulation shut — **not a reminder in a comment, not a convention, but a hard compile-time constraint**. The undo stack, the serialization module, any external code: all any of them can get is an opaque `shared_ptr<Memento>`, completely unaware that its internal fields even exist.
 
-The standard "save snapshot, then restore" flow works correctly, so let's run through it:
+The normal "save a snapshot, then restore it" flow, on the other hand, goes through just fine. Let's run it:
 
 ```sh
 $ g++ -std=c++23 -O2 memento_verify2.cpp -o memento_verify2
@@ -174,24 +169,22 @@ Content: "Hello, world" | Cursor@12
 Content: "Hello" | Cursor@5
 ```
 
-The first line shows the state before restoration (where `, world` has already been inserted), and the second line shows the result after `restore(snap)`—both the cursor position and the content are precisely restored to the exact moment of `Hello`. The encapsulation holds, and the functionality is intact.
+The first line is before the restore (`, world` already inserted), the second is after `restore(snap)` — both cursor and content return precisely to the moment of `Hello`. The encapsulation stands, and nothing was lost functionally.
 
-## Pitfall Warning: `make_shared` and Private Constructors
+## Pitfall warning: `make_shared` colliding with a private constructor
 
-::: warning Pitfall Warning
-If you follow the inertia from the first step and use `std::make_shared<Memento>(...)` to create a snapshot in the second step, the code will **fail to compile**. The error message is terrifyingly long, and newcomers might easily give up on the spot. We will show you the pitfall first, and then explain why.
+::: warning Pitfall warning
+If you follow the inertia of step one and also create snapshots in step two with `std::make_shared<Memento>(...)`, the code will **fail to compile** — with an error message scary enough that newcomers may give up on the spot. Let's step into the pit first, then explain why.
 
 Change `create_memento` to this line:
 
 ```cpp
 std::shared_ptr<Memento> create_memento() const {
-    return std::make_shared<Memento>(content_, cursor_pos_);  // ⚠️ 编不过
+    return std::make_shared<Memento>(content_, cursor_pos_);  // ⚠️ does not compile
 }
 ```
 
-```text
-Compiling, actual output (key lines excerpted):
-```
+Compile, real output (key lines excerpted):
 
 ```sh
 $ g++ -std=c++23 -O2 memento_verify.cpp -o memento_verify
@@ -200,35 +193,34 @@ $ g++ -std=c++23 -O2 memento_verify.cpp -o memento_verify
 .../memento_verify.cpp:15:9: note: declared private here
 ```
 
-The core of the error is that the constructor `Memento(...)` `is private within this context`—meaning the construction call is happening in **a context that is not authorized to access the private constructor**.
+The heart of the error is that the `Memento(...)` constructor `is private within this context` — that is, the construction call happens in **a context with no right to access the private constructor**.
 
-Where is the problem? `std::make_shared` doesn't just directly `new` the object and call it a day; it needs to allocate the object and the control block within the same contiguous memory block. Internally, it follows the path of `std::allocator_traits<...>::construct` -> `std::construct_at` -> placement `new`. The code along this path **belongs to the standard library internals, not `TextEditor`**. Since you declared `friend class TextEditor`, you only granted access to the `TextEditor` class specifically. The standard library's allocation infrastructure is not on the whitelist. Consequently, when `construct_at` attempts to call the private constructor, access control kicks it out.
-
+Where does the problem come from? `std::make_shared` doesn't just `new` the object and call it a day: it wants to allocate the object and the control block in the same block of memory, so internally it goes down the `std::allocator_traits<...>::construct` -> `std::construct_at` -> placement `new` path. The code along that path **lives inside the standard library, not inside `TextEditor`**; and your `friend class TextEditor` lets through the single class `TextEditor` only — the standard library's allocation infrastructure is nowhere near the whitelist. So when `construct_at` tries to call the private constructor, access control kicks it right back out.
 :::
 
-The solution is very straightforward: **bypass `make_shared` and use `std::shared_ptr<Memento>(new Memento(...))` instead**. This path allows `TextEditor` itself to call the private constructor **directly** within `create_memento` (the initiator is the friend, so it has the right to call it), without going through any standard library allocator infrastructure, so it compiles successfully.
+The fix is dead simple: **bypass `make_shared` and use `std::shared_ptr<Memento>(new Memento(...))` instead**. On this path it is `TextEditor` itself, inside `create_memento`, calling the private constructor **directly** (the originator is the friend, so it has the right to call it), bypassing every bit of standard-library allocator infrastructure — so it compiles.
 
 ```cpp
 std::shared_ptr<Memento> create_memento() const {
-    // TextEditor 是 Memento 的 friend,这里直接调私有构造,合法。
-    // 不走 make_shared,否则 allocator_traits::construct 会撞访问控制。
+    // TextEditor is a friend of Memento: calling the private constructor directly here is legal.
+    // Skip make_shared — otherwise allocator_traits::construct runs into access control.
     return std::shared_ptr<Memento>(new Memento(content_, cursor_pos_));
 }
 ```
 
-The trade-off is one less control block merge and one more independent heap allocation (`make_shared` packs the object and the control block into a single allocation, whereas `shared_ptr(new ...)` performs two). For objects like **mementos**, which are created infrequently and have relatively short lifespans, this overhead is completely acceptable in exchange for truly robust encapsulation. If you are particularly concerned about this extra allocation, there are other approaches (such as equipping `Memento` with `std::enable_shared_from_this` plus a static factory, or simply using value semantics for `Memento` instead of `shared_ptr`), but they all complicate the code significantly and usually aren't worth it in most scenarios.
+The cost is one lost control-block merge and one extra independent heap allocation (`make_shared` packs the object and the control block into a single allocation; `shared_ptr(new ...)` takes two). For an object like a memento — **created infrequently, with a fairly short lifetime** — this overhead is entirely acceptable in exchange for encapsulation that genuinely holds. If you truly care about that one allocation, other routes exist (pairing `Memento` with `std::enable_shared_from_this` plus a static factory, or simply giving `Memento` value semantics instead of using `shared_ptr`), but each complicates the code by a notch; in most scenarios it isn't worth it.
 
-Remember this conclusion: **once you use `friend` + a private constructor to implement memento encapsulation, do not use `make_shared` to create snapshots**; just use `shared_ptr(new ...)`.
+Remember this conclusion: **once you build memento encapsulation on friend + a private constructor, stop creating snapshots with `make_shared`** — `shared_ptr(new ...)` is all you need.
 
-## Practice: History Stack with Undo/Redo
+## In practice: a history stack with undo/redo
 
-A single snapshot only allows us to "return to a specific moment." Real-world editors typically support **continuous undo and redo**: we undo three steps, change our minds and redo two steps, and might even insert a new edit in between that invalidates the entire "redo future." This requires a separate `History` class (the Caretaker in GoF terms) that maintains a linear sequence of snapshots and a "current pointer." Undoing moves the pointer back, and redoing moves it forward.
+A single snapshot only gets you "back to one particular moment". Real editors support **continuous undo and continuous redo**: I undo three steps, change my mind and redo two, and somewhere in between I might insert a new edit that invalidates the entire "redo future". That calls for a separate `History` class (the Caretaker in GoF terms), which maintains a linear sequence of snapshots and a "current pointer" — undo moves the pointer back, redo moves it forward.
 
 ```cpp
 class History {
 public:
     void push(std::shared_ptr<TextEditor::Memento> m) {
-        // 在非末尾处插入新快照时,丢弃之后的 redo 分支
+        // Inserting a new snapshot away from the tail: discard the redo branch after it
         if (cursor_ + 1 < static_cast<int>(stack_.size())) {
             stack_.erase(stack_.begin() + cursor_ + 1, stack_.end());
         }
@@ -255,17 +247,17 @@ public:
 
 private:
     std::vector<std::shared_ptr<TextEditor::Memento>> stack_;
-    int cursor_ = -1;   // -1 表示空历史
+    int cursor_ = -1;   // -1 means empty history
 };
 ```
 
-There are several notable design points in this version. The first `if` block in `push` implements the logic for "discarding the redo branch." The idea is this: **once you insert a new snapshot from a position in the middle of history (after having undone a few steps), you effectively create a new branch in the timeline, and the original "redo future" should no longer exist.** This matches the behavior you are familiar with in text editors: undo two steps, type a new character, and the original redo chain disappears. Without this step, the redo stack would become inconsistent with the actual state, and the undo system would restore a "past that never existed."
+A few design points in this version deserve comment. The first `if` in `push` is the "discard the redo branch" logic — it means: **once you insert a new snapshot from a position in the middle of the history (after having undone a few steps), you have effectively opened a new fork in the timeline, and the old "redo future" should no longer exist**. This is exactly the editor behavior you know: undo twice, type one new character, and the old redo chain is gone. Without this step, the redo stack would drift out of sync with the actual state, and the undo system would restore you to a "past that never existed".
 
-We use `int` for `cursor_` instead of `size_t` to allow `-1` to serve as a natural representation for the "empty history" state. When comparing with `stack_.size()` (which is unsigned), we consistently use `static_cast<int>` for explicit conversion to avoid signed/unsigned comparison warnings. Both `undo` and `redo` follow the pattern of checking `can_undo` or `can_redo` before moving the pointer. They return `nullptr` when the history is empty or out of bounds, so the caller naturally skips the restore operation upon receiving `nullptr`, keeping the semantics consistent.
+`cursor_` is an `int` rather than a `size_t` so that `-1`, the "empty history" state, has a natural representation; whenever it is compared against `stack_.size()` (unsigned), the code consistently goes through `static_cast<int>` for an explicit conversion, dodging signed/unsigned comparison warnings. `undo` / `redo` both follow the route of checking `can_undo` / `can_redo` first, then moving the pointer; on an empty history or out of bounds they return `nullptr`, and the caller, on receiving `nullptr`, naturally skips the restore — the semantics hang together.
 
-You will also notice that `History` holds `std::shared_ptr<TextEditor::Memento>`—a type that **requires the fully qualified name** because `Memento` is a nested class of `TextEditor`. This actually reveals a design trade-off: while defining the Memento as a nested type provides good encapsulation, it forces the manager (Caretaker) to **depend on the Originator** at the type level. In our simple scenario, this is fine. However, if you wanted `History` to become a generic undo framework serving various types of originators, you would need to further abstract the "opaque handle" into a type-erased `std::any` or an interface that only exposes `apply()`. That is a topic for another article, so we won't expand on it here.
+You'll also notice that `History` holds `std::shared_ptr<TextEditor::Memento>` — a type whose **fully qualified name you must spell out**, because `Memento` is a nested class of `TextEditor`. This actually exposes a design trade-off: making the memento a nested type buys good encapsulation, but it forces the manager (Caretaker) to **depend on the Originator** at the type level. In our simple scenario that doesn't matter; but if you want `History` to become a generic undo framework serving any number of originators, you'd have to abstract the "opaque handle" further — into a type-erased `std::any`, or an interface exposing only `apply()`. That's a topic for another article, so we won't unfold it here.
 
-Let's run through it to verify that the undo/redo logic and branch discarding work correctly:
+Let's run it once and see whether undo/redo and branch discarding actually behave:
 
 ```sh
 $ g++ -std=c++23 -O2 memento_history.cpp -o memento_history
@@ -279,46 +271,46 @@ can_redo = 0 (expect 0)
 can_undo = 1 (expect 1)
 ```
 
-Let's trace this execution path. After inserting two pieces of text, the state is `Hello, world`. Undoing twice takes us back to `Hello` and then an empty string. Redoing once advances us to `Hello`. At this point, if we insert `!!!` during a redo, `can_redo` immediately reverts to `0`—the original "redo future" is cleanly discarded. `can_undo` remains `1` because the new `Hello!!!` state is itself undoable. The behavior is exactly as expected.
+Let's untangle this trajectory. After inserting two pieces of text the state is `Hello, world`; undoing twice takes us back to `Hello` and then the empty string; redoing once advances us to `Hello` again. Now, mid-redo, we insert `!!!` — and `can_redo` immediately drops back to `0`: the old "redo future" has been cleanly discarded, while `can_undo` remains `1`, because the new `Hello!!!` state is itself undoable. Behavior matches expectations exactly.
 
 ## When to use the Memento pattern, and when not to
 
-At this point, we have a solidly encapsulated implementation that supports undo and redo. But we aren't done yet—I must be honest with you: the Memento pattern is not a panacea; it has a price to pay.
+By now we have a solidly encapsulated implementation that can undo and redo. But we're not done — I have to be honest with you: the Memento pattern is no cure-all; it has bills of its own to settle.
 
-**First, it consumes memory, and it does so linearly.** Every snapshot saved is a full copy of the state. For a text document of a few hundred kilobytes, undoing a few dozen times is fine. But if the object you are snapshotting is a 3D scene with millions of vertices, or a massive business object packed with cache, the history stack will exhaust memory in no time. There are a few ways to mitigate this: limit history depth (keep only the last N steps), use delta snapshots (store only the changes relative to the previous step), or abandon full snapshots entirely and use the [Command Pattern](./13-command.md) to store only reverse operations. Delta snapshots sound nice, but are error-prone to implement—you have to ensure that "any delta plus the baseline accurately restores the state," and the edge cases are enough to tear your hair out. Therefore, most implementations honestly store full snapshots and rely on depth limits as a safety net.
+**First, it eats memory — linearly.** Every snapshot stored is a full copy of the state. For a text document of a few hundred KB, a few dozen undos are fine; but if the object you are snapshotting is a 3D scene with millions of vertices, or a large business object stuffed with caches, the history stack will exhaust memory in short order. Mitigations come in a few flavors: cap the history depth (keep only the last N steps), make delta snapshots (store only what changed relative to the previous step), or abandon full snapshots altogether and switch to the [Command pattern](./13-command.md) to store only inverse operations. Delta snapshots sound lovely but are error-prone to implement — you must guarantee that "any delta applied to its baseline restores the state exactly", and the boundary cases are numerous enough to bald you; so most implementations honestly keep storing full snapshots and lean on a depth cap as the safety net.
 
-**Second, the cost of encapsulation isn't in writing, but in maintenance.** Whenever the originator adds an internal state field, you must remember to handle it synchronously in `create_memento` and `restore`. Miss one field, and undoing results in a "why didn't this setting revert" metaphysical bug—and these bugs only expose themselves when a user actually undoes that specific field. If test coverage is slightly lacking, it slips right through. A practical discipline is: **the set of fields in the Memento should correspond one-to-one with the set of state fields in the Originator that participate in snapshots**. When adding new fields, treat the Memento as a "mirror" of the Originator and modify them together.
+**Second, the cost of the encapsulation isn't in writing it — it's in maintaining it.** Every time the Originator gains an internal state field, you must remember to handle it in `create_memento` and `restore` in sync. Miss one field and undo starts producing "why didn't this setting revert after my undo" voodoo bugs — bugs that surface only when a user actually undoes that specific field, so slightly thin test coverage lets them slip right through. A practical discipline: **the memento's field set should correspond one-to-one with the set of the Originator's state fields that participate in snapshots**; when adding a field, treat the memento as the Originator's "mirror" and change them together.
 
-**Third, it's not a choice between the Command pattern and Memento pattern; they are often used together.** The Command pattern excels at "objectifying actions, making them replayable, and packaging them into macros," but its undo relies on calculating reverse operations, which is hard to get right for complex tasks. The Memento pattern excels at "reliably returning to a specific state," but eats memory and has coarse granularity. A common combination in real-world engineering is: **use the Command pattern to organize the operation flow, and use the Memento pattern as a safety net for those complex commands where "reverse operations are hard to calculate."** Take a snapshot before the command executes, and restore on undo. This retains the replay and macro capabilities of the Command pattern while swapping absolute correctness for snapshot storage. As mentioned in our previous article on the Command pattern, once operations involve replacement, cursor movement, or multi-buffer linkage, the "pre-execution state" that `undo()` needs to save balloons rapidly. That is often when you need to leverage the Memento pattern—these two articles connect right here.
+**Third, it's not an either-or against the Command pattern — they are frequent collaborators.** The Command pattern excels at "objectifying actions, replaying them, packaging them into macros", but its undo relies on computing inverse operations, which is easy to get wrong on complex ones; the Memento pattern excels at "reliably returning to a definite state", but eats memory and is coarse-grained. The common combination in real engineering: **use the Command pattern to organize the operation flow, and use mementos to backstop those complex commands whose "inverse operations are hard to compute"** — snap a photo before the command executes, and restore on undo; you keep the Command pattern's replay and macro capabilities, and buy absolute undo correctness with a snapshot. As our earlier Command pattern article mentioned, once operations involve replacement, cursor movement, or multi-buffer linkage, the "pre-execution state" that `undo()` has to save balloons quickly — that's when you reach for the memento. The two articles plug into each other right here.
 
-::: tip Command Pattern vs. Memento Pattern, how to choose
-In a nutshell: **Simple operation, large state: use Command pattern** (store reverse operations, save memory); **Complex operation, small state: use Memento pattern** (store full snapshots, safe). When both are complex, use the Command pattern for the skeleton and the Memento pattern to backstop complex commands.
+::: tip Command vs. Memento: how to choose
+In one sentence: **simple operations, large state — use the Command pattern** (store inverse operations, save memory); **complex operations, small state — use the Memento pattern** (store full snapshots, robust). When both are complex, let the Command pattern build the skeleton and let mementos backstop the complex commands.
 :::
 
 ## Summary
 
-Let's review the entire evolution path:
+Let's walk the whole evolution path once:
 
 | Stage | Approach | Why it wasn't enough |
 |---|---|---|
-| Public Field Memento | `struct EditorMemento { public: ... }` | Fields are all public, encapsulation is non-existent, snapshots can be tampered with arbitrarily |
-| Nested Class + friend | Private constructor, private fields, `friend class Originator` | Encapsulation holds, but creation requires `shared_ptr(new ...)`, cannot use `make_shared` |
-| History Stack Caretaker | `vector<shared_ptr<Memento>>` + current pointer | A single memento only allows "return to a specific moment"; continuous undo/redo requires a manager |
-| Command + Memento Hybrid | Commands organize flow, complex commands take snapshots before execution | Pure snapshots eat memory; pure command reverse operations are inaccurate; they complement each other |
+| Public-field memento | `struct EditorMemento { public: ... }` | All fields public, encapsulation in name only, snapshots tamperable at will |
+| Nested class + friend | Private constructor, private fields, `friend class Originator` | Encapsulation holds, but creation must use `shared_ptr(new ...)`; `make_shared` is off the table |
+| History-stack Caretaker | `vector<shared_ptr<Memento>>` + current pointer | A single memento only goes "back to one moment"; continuous undo/redo needs the manager |
+| Command + Memento combined | Commands organize the flow; complex commands snapshot before executing | Pure snapshots eat memory, pure commands miscompute inverses — the two complement each other |
 
-Keep these key conclusions in mind:
+Note down these key conclusions:
 
-- **The core of the Memento is encapsulation, not the snapshot itself**—anyone can take a snapshot, but only a snapshot that is a "black box to the outside and transparent to the originator" deserves to be called the Memento pattern. In C++, the standard way to implement this is a nested class + private constructor + `friend class Originator`.
-- **Create snapshots using `std::shared_ptr<Memento>(new ...)`, not `std::make_shared`**—private constructors trigger access control errors under the `allocator_traits::construct` path used by `make_shared`. This is the pitfall that trips people up the most in this chapter.
-- **The essence of undo/redo is a linear history with a pointer**—`undo` moves the pointer back, `redo` moves it forward. Inserting a new snapshot in the middle discards the subsequent redo branch. This is the behavior model you know from all editors.
-- **Mementos eat memory, and fields must be maintained as a mirror of the originator**—When the state is large and operations are simple, prioritize the Command pattern's reverse operations. When both are complex, use Commands for the skeleton and Mementos to backstop complex commands.
+- **The core of the memento is encapsulation, not the snapshot itself** — anyone can take a snapshot; only a snapshot that is "a black box to the outside, transparent to the originator" deserves the name Memento pattern. The standard C++ way to achieve that is a nested class + private constructor + `friend class Originator`.
+- **Create snapshots with `std::shared_ptr<Memento>(new ...)`, not `std::make_shared`** — a private constructor triggers an access-control error on the `allocator_traits::construct` path that `make_shared` takes. This is the chapter's most trip-prone pitfall.
+- **The essence of undo/redo is a linear history with a pointer** — `undo` moves the pointer back, `redo` moves it forward, and inserting a new snapshot away from the tail discards the redo branch after it. That is the behavior model of every editor you know.
+- **Mementos eat memory, and their fields must be maintained as the Originator's mirror** — with large state and simple operations, prefer the Command pattern's inverse operations; when both are complex, commands build the skeleton and mementos backstop the complex ones.
 
-::: tip Complete Compilable Project
-The example for this section has a complete compilable project in the repository at `code/volumn_codes/vol4/design-patterns/Memento/` (`.h` + main + `CMakeLists.txt`). Run `cmake -S . -B build && cmake --build build` to see the output shown above.
+::: tip Companion compilable project
+The examples in this section have a complete compilable project in the repository under `code/volumn_codes/vol4/design-patterns/Memento/` (`.h` + main + `CMakeLists.txt`); `cmake -S . -B build && cmake --build build` reproduces the outputs above.
 :::
 
 ## References
 
-- [cppreference: `std::shared_ptr` and `std::make_shared`](https://en.cppreference.com/w/cpp/memory/shared_ptr/make_shared) (Allocation differences between `make_shared` and `shared_ptr(new ...)`, since C++11)
-- [cppreference: Nested classes and friends](https://en.cppreference.com/w/cpp/language/nested_type) (Access control semantics for C++ nested classes and `friend`)
-- GoF, *Design Patterns: Elements of Reusable Object-Oriented Software* — Original definition of the Memento pattern, proposing the "wide interface / narrow interface" dichotomy
+- [cppreference: `std::shared_ptr` and `std::make_shared`](https://en.cppreference.com/w/cpp/memory/shared_ptr/make_shared) (the allocation difference between `make_shared` and `shared_ptr(new ...)`, since C++11)
+- [cppreference: nested classes and friends](https://en.cppreference.com/w/cpp/language/nested_type) (access-control semantics of C++ nested classes and `friend`)
+- GoF, *Design Patterns: Elements of Reusable Object-Oriented Software* — the original definition of the Memento pattern, which proposed the "wide interface / narrow interface" dichotomy
