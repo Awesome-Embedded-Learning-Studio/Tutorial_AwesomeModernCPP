@@ -5,13 +5,12 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Master vector's CRUD operations and capacity management, and learn to
-  use C++'s most common dynamic container
+description: Master vector's insert, delete, update and query operations along with capacity management, and learn to use the most frequently used C++ dynamic container
 difficulty: beginner
 order: 1
 platform: host
 prerequisites:
-- Error Handling Approaches Compared
+- 错误处理方式对比
 reading_time_minutes: 12
 tags:
 - cpp-modern
@@ -20,36 +19,45 @@ tags:
 - 入门
 - 基础
 title: std::vector Quick Start
+translation:
+  source: documents/vol1-fundamentals/ch11/01-vector.md
+  source_hash: 1f980193fd6ad5c39c76746205c36cf85c67992571911a892ffd623071e21648
+  translated_at: '2026-09-26T11:57:26+00:00'
+  engine: anthropic
+  token_count: 3000
 ---
-# std::vector Quick Start
 
-In the previous chapters, we covered the core of the C++ language—type systems, control flow, functions, classes, and inheritance. Now we are entering a whole new territory: the Standard Template Library (STL). The STL provides a large collection of ready-made containers, algorithms, and iterators that save us from reinventing the wheel. Among all containers, `std::vector` is by far the most frequently used—a dynamic array that grows automatically, stores elements contiguously, and supports O(1) random access. Honestly, if you are not sure which container to use, just go with `vector`. Other containers only have an advantage in specific scenarios.
+# std::vector: Not Sure Which Container to Use? Just Use It
 
-In this chapter, we will start from scratch and walk through `vector`'s construction, insertion, deletion, access, capacity management, and traversal. We will tie everything together with a hands-on task manager program at the end.
+In the previous few chapters we walked through the core of the C++ language (the type system, control flow, functions, classes and inheritance). From here on, we're stepping into a brand-new territory: the Standard Template Library (STL). The STL ships a whole pile of ready-made containers, algorithms, and iterators, saving us from reinventing a lot of wheels. And among all the containers, `std::vector` is definitely the one that shows up most often: a dynamic array that grows automatically, stores its elements contiguously, and gives O(1) random access. If you're not sure which container to use, `vector` is the right call — the other containers only win in specific scenarios.
 
-## Starting from Scratch — Constructing a vector
+In this chapter we start from zero and walk through `vector`'s construction, insertion/deletion/update/query, capacity management, and ways to iterate over it, and finally tie everything together with a hands-on task-manager program.
 
-`std::vector` has several construction methods. Let's look at them one by one:
+## Starting from Zero — Constructing a vector
+
+`std::vector` has quite a few ways to be constructed; let's go through them one by one:
 
 ```cpp
+
 #include <vector>
+
 #include <string>
 
 std::vector<int> v1;                    // empty vector
-std::vector<int> v2(10);                // 10 elements, each initialized to 0
-std::vector<int> v3(10, 42);            // 10 elements, each initialized to 42
+std::vector<int> v2(10);                // 10 elements, each is 0
+std::vector<int> v3(10, 42);            // 10 elements, each is 42
 std::vector<int> v4 = {1, 2, 3, 4, 5};  // initializer list
-std::vector<int> v5(v4);                // copy constructor
-std::vector<int> v6(std::move(v5));     // move constructor, takes over resources
+std::vector<int> v5(v4);                // copy construction
+std::vector<int> v6(std::move(v5));     // move construction, takes over the resources
 ```
 
-One thing worth noting: `v2(10)` creates 10 elements, each with the value `int()` which is 0. This is not "reserving 10 slots with no elements"—there are actually 10 elements inside. Reserving space and having actual elements are two different concepts, which we will discuss in depth when we cover `reserve` later.
+One thing we should note here: `v2(10)` creates 10 elements, each with the value `int()`, that is, 0. This is not "reserving 10 slots with no elements in them" — there really are 10 elements inside. Reserved space and actual elements are two different concepts, and we'll dig into that when we cover `reserve` later.
 
-> **Pitfall Warning**: `vector<bool>` is a specialization of `vector` that compresses each `bool` into 1 bit to save space. This causes `vector<bool>` to behave differently from a regular `vector<T>` in many ways—for example, `operator[]` returns a proxy object instead of `bool&`. If you need a genuine bool array, use `vector<char>` or `deque<bool>` instead.
+`vector<bool>` is a specialized version of `vector` that compresses each `bool` down to 1 bit to save space. This makes `vector<bool>` behave differently from an ordinary `vector<T>` in many ways — for example, `operator[]` doesn't return a `bool&` but a proxy object. If you need a real array of bools, `vector<char>` or `deque<bool>` is the safer choice.
 
-## Putting Things In — Adding Elements
+## Stuffing Things In — Adding Elements
 
-The most commonly used operation for adding elements to a `vector` is `push_back`, which appends an element to the end. Starting from C++11, we also have `emplace_back`, which is more efficient than `push_back`—the difference is that `push_back` takes an already-constructed object, while `emplace_back` takes constructor arguments and constructs the object in-place within the vector's memory, saving one move or copy:
+The most commonly used add operation on a `vector` is `push_back`, which appends an element at the end. Since C++11 we also have `emplace_back`, which is more efficient than `push_back`: `push_back` takes an already-constructed object, while `emplace_back` takes constructor arguments and constructs the object in place directly in the vector's memory, saving one move or copy.
 
 ```cpp
 struct Task {
@@ -59,53 +67,54 @@ struct Task {
 };
 
 std::vector<Task> tasks;
-tasks.push_back(Task("Write code", 1));   // constructs a temporary, then moves it
-tasks.emplace_back("Test", 2);            // constructs in-place, no temporary needed
+tasks.push_back(Task("写代码", 1));   // constructs a temporary first, then moves it
+tasks.emplace_back("测试", 2);         // constructs in place, no temporary needed
 ```
 
-For simple types like `int` and `double`, there is virtually no performance difference between the two. But for classes with `std::string` or other members that require dynamic memory allocation, `emplace_back` can save an unnecessary construction and move. Make it a habit to prefer `emplace_back`.
+For simple types like `int` and `double`, there's practically no performance difference between the two. But for classes containing `std::string` or other members that need dynamic memory allocation, `emplace_back` can save one unnecessary construction and move. Let's make it a habit: prefer `emplace_back`.
 
-If you need to insert an element at an arbitrary position in the middle, use `insert`:
+If you need to insert an element at some position in the middle, use `insert`:
 
 ```cpp
 std::vector<int> v = {10, 20, 30, 40};
 v.insert(v.begin() + 1, 15);  // v: {10, 15, 20, 30, 40}
 ```
 
-However, note that inserting in the middle requires shifting all subsequent elements, giving an O(n) time complexity. If you find yourself frequently inserting at the front or middle of a vector, you might want to consider using `std::deque` or `std::list` instead.
+But note that inserting in the middle requires shifting all the elements after it backward, so the time complexity is O(n). If we find ourselves frequently inserting elements at the head or in the middle of a vector, maybe we should consider switching to `std::deque` or `std::list`.
 
-> **Pitfall Warning**: Any operation that may cause a vector to reallocate memory (including `push_back`, `emplace_back`, and `insert`) invalidates all previously held iterators, pointers, and references. Consider this code:
+Any operation that may cause the vector to reallocate its memory (including `push_back`, `emplace_back`, and `insert`) invalidates all previously saved iterators, pointers, and references. Let's look at the following piece of code:
 
 ```cpp
 std::vector<int> v = {1, 2, 3};
-int* p = &v[0];       // pointer to the first element
-v.push_back(4);       // may trigger reallocation!
-// *p is now undefined behavior — the memory p points to may have been freed
+int* p = &v[0];       // points to the first element
+v.push_back(4);       // may trigger a reallocation!
+// *p is now undefined behavior — the memory p points to may already have been freed
 ```
 
-If you need to hold a pointer or reference to an element in a vector, either ensure no reallocation-triggering operations will happen afterwards, or use an index for indirect access instead.
+If we need to hold a pointer or reference to an element of a vector, we should either make sure we don't do anything afterward that could trigger a reallocation, or switch to accessing the element indirectly through an index.
 
-## Getting Things Out — Accessing Elements
+## Taking Things Out — Accessing Elements
 
-`vector` provides several ways to access elements. The most commonly used is `operator[]`, which accesses elements by index just like a C array, without bounds checking. If you want bounds checking (throwing `std::out_of_range` on out-of-bounds access), use `at`:
+`vector` provides several ways to access elements. The one we use most is `operator[]`, which accesses by subscript just like a C array and does no bounds checking. If you want bounds checking (throwing a `std::out_of_range` exception when the index is out of range), use `at`:
 
 ```cpp
 std::vector<int> v = {10, 20, 30, 40, 50};
-v[0] = 100;          // no bounds check
+v[0] = 100;          // no bounds checking
 int y = v.at(10);    // throws std::out_of_range
 ```
 
-In everyday development, `operator[]` is used more often, but in scenarios where user input or external data is used as an index, `at` provides a safety net.
+In our day-to-day development we use `operator[]` more often, but in scenarios where the index comes from user input or external data, `at` is a safety net.
 
-There are also a few convenience access functions: `front()` returns a reference to the first element (equivalent to `v[0]`), `back()` returns a reference to the last element (equivalent to `v[v.size() - 1]`), and `data()` returns a pointer to the underlying array—since vector elements are stored contiguously, `v.data()` can be used directly as a C array, which is particularly handy when interfacing with C-style APIs.
+There are also a few convenient accessors: `front()` returns a reference to the first element (equivalent to `v[0]`), `back()` returns a reference to the last element (equivalent to `v[v.size() - 1]`), and `data()` returns a pointer to the underlying array. Because a vector's elements are stored contiguously, we can use `v.data()` directly as a C array, which is especially handy when talking to C-style APIs.
 
-> **Pitfall Warning**: Calling `front()`, `back()`, or `operator[]` on an empty vector is undefined behavior—it won't throw an exception but will plunge straight into UB territory. `at()` is the only method that performs bounds checking on an empty vector. So before calling `front()` or `back()`, either make sure the vector is not empty or check with `empty()` first.
+Calling `front()`, `back()`, or `operator[]` on an empty vector is undefined behavior: it won't throw an exception — instead we fall straight into undefined behavior. `at()` is the only one of these that bounds-checks an empty vector. So before we call `front()` or `back()`, we should either confirm the vector isn't empty or check with `empty()` first.
 
-## Removing What You Don't Need — Deleting Elements
+## Dropping What We Don't Need — Erasing Elements
 
-The simplest operation is `pop_back`, which removes the last element and returns `void`—it does not return the removed value. If you need that value, use `back()` to get it before calling `pop_back`.
+The simplest is `pop_back`, which removes the element at the end. It returns `void` and does not return the removed value. If you need that value, grab it with `back()` before calling `pop_back`.
 
-To remove an element in the middle, use `erase`, which accepts either an iterator or a range:
+To remove elements from the middle we use `erase`, which accepts an iterator or a range:
+
 
 ```cpp
 std::vector<int> v = {10, 20, 30, 40, 50};
@@ -113,13 +122,18 @@ v.erase(v.begin() + 2);                // v: {10, 20, 40, 50}
 v.erase(v.begin() + 1, v.begin() + 3); // v: {10, 50}
 ```
 
-To clear all elements at once, use `clear()`—after this, `size` becomes 0 but `capacity` remains unchanged, meaning the memory is not freed; only the elements are destroyed. If you also want to release the memory, you can use `shrink_to_fit` in combination.
+To remove every element at once, we use `clear()`. Afterward, `size` becomes 0 while
+`capacity` stays unchanged: the elements have been destroyed, but the vector retains its
+allocated storage. If we also want to ask the vector to release that unused storage, we can
+follow it with `shrink_to_fit`.
 
 ### The Remove-Erase Idiom
 
-Now here's the question: what if we want to remove all elements equal to a particular value? The answer is the remove-erase idiom, a classic C++ pattern:
+Now for the next question: what if we want to remove every element in a vector that equals a
+particular value? The answer is the remove-erase idiom, a classic C++ pattern:
 
 ```cpp
+
 #include <algorithm>
 
 std::vector<int> v = {1, 2, 3, 2, 4, 2, 5};
@@ -127,30 +141,36 @@ v.erase(std::remove(v.begin(), v.end(), 2), v.end());
 // v: {1, 3, 4, 5}
 ```
 
-`std::remove` doesn't actually delete elements—it moves all elements not equal to 2 to the front, then returns an iterator pointing to the "new logical end." The elements equal to 2 are pushed to the back. Then `erase` removes everything from the new end to the old end. The reason for this two-step approach is the STL design philosophy: "algorithms should not directly operate on container interfaces." `std::remove` only knows about iterators; it doesn't know about vector's `erase` method.
+Notice that `std::remove` does not actually erase anything. It moves every element that is not
+equal to 2 toward the front, then returns an iterator to the "new logical end." The elements
+beyond that iterator are left in a valid but unspecified state. `erase` then truly removes the
+elements between the new end and the old end. We need these two steps because of the STL's
+design philosophy: algorithms should not operate directly on a container's interface.
+`std::remove` knows only about iterators; it knows nothing about `vector::erase`.
 
-Starting from C++20, we can do this in a single line with `std::erase`: `std::erase(v, 2);`. If you are using a compiler that supports C++20, the new syntax is strongly recommended.
+Since C++20, we can do the same job in one line: `std::erase(v, 2);`. If your compiler supports
+C++20, we strongly recommend this newer spelling.
 
 ## Understanding size and capacity
 
-`vector` has two easily confused concepts: `size` is the number of elements currently stored, while `capacity` is the number of elements the allocated memory can hold. `capacity` is always greater than or equal to `size`. When repeated `push_back` calls cause `size` to be about to exceed `capacity`, the vector automatically reallocates—allocating a larger block of memory, moving all elements over, and then freeing the old memory. Most standard library implementations double the `capacity` on each reallocation, so you will see capacity grow in this sequence: 1, 2, 4, 8, 16, 32 ... Each reallocation involves a full memory allocation and the copy/move of all elements.
+`vector` involves two easily confused concepts: `size` is the number of elements actually stored right now, while `capacity` is the number of elements the allocated memory can hold, and `capacity` is always greater than or equal to `size`. When we keep `push_back`-ing until `size` is about to exceed `capacity`, the `vector` grows automatically: it allocates a bigger block of memory, moves all the elements over, and then frees the old memory. Most standard library implementations double the `capacity` when growing, so we'll see capacity increase in a sequence like this: 1, 2, 4, 8, 16, 32 ... Every growth step involves a full memory allocation plus a copy/move of all the elements.
 
-If you know roughly how many elements you will need in advance, using `reserve` to pre-allocate enough space can avoid the overhead of multiple reallocations:
+If we know roughly how many elements we'll need to store ahead of time, using `reserve` to allocate enough space up front saves us the overhead of repeated reallocations:
 
 ```cpp
 std::vector<int> v;
-v.reserve(1000);  // one-time allocation, capacity becomes 1000, size remains 0
+v.reserve(1000);  // One-shot allocation: capacity becomes 1000, size stays 0
 
 for (int i = 0; i < 1000; ++i) {
-    v.push_back(i);  // no reallocation triggered
+    v.push_back(i);  // Triggers no reallocation at all
 }
 ```
 
-`reserve` only affects `capacity`, not `size`. Conversely, if you want to release excess capacity, use `shrink_to_fit`—though this is a non-binding request, the standard does not guarantee memory will actually be released, but mainstream implementations generally do so.
+`reserve` only affects `capacity`, not `size`. The other way around, if we want to release the spare capacity, we use `shrink_to_fit` — though this is a non-binding request: the standard doesn't guarantee the memory actually gets freed, but mainstream implementations do it anyway.
 
-## Going Through the Elements — Traversing a vector
+## Going Over the Elements — Iterating a vector
 
-There are three common ways to traverse a vector. The most recommended is the range-for loop (introduced in C++11), which is concise and safe:
+We have three common ways to iterate a vector. The most recommended one is the range-for loop (introduced in C++11), which is concise and safe:
 
 ```cpp
 std::vector<int> v = {10, 20, 30, 40, 50};
@@ -160,22 +180,26 @@ for (const auto& elem : v) {
     std::cout << elem << " ";
 }
 
-// When you need to modify elements, drop the const
+// Drop the const when you need to modify the elements
 for (auto& elem : v) {
     elem *= 2;
 }
 ```
 
-Note that we use `const auto&` instead of `auto` here. For `int`, the difference is negligible, but when traversing a `vector<std::string>`, `auto` triggers a copy while `const auto&` is just a reference. If you need the index, use a traditional loop: `for (std::size_t i = 0; i < v.size(); ++i)`. When you need to work with STL algorithms or need finer control, use iterators: `for (auto it = v.begin(); it != v.end(); ++it)`. In everyday development, range-for covers 90% of traversal needs.
+Notice that we use `const auto&` here instead of `auto`. For `int` the difference is minor, but when iterating a `vector<std::string>`, `auto` triggers a copy, whereas `const auto&` is just a reference. If you need the index, use a traditional loop: `for (std::size_t i = 0; i < v.size(); ++i)`. When you need to pair up with STL algorithms or want finer control, use iterators: `for (auto it = v.begin(); it != v.end(); ++it)`. In day-to-day development, range-for covers 90% of iteration needs.
 
-## Hands-On Time — Building a Task Manager with vector
+## Hands-on Time — Writing a Task Manager with vector
 
-Let's combine all the knowledge points we've learned into a hands-on program—a task manager that supports adding tasks, marking them as completed and removing them, listing all tasks, and showing capacity information.
+Alright folks, let's knead everything we've learned so far into one practical program: a task manager that supports adding tasks, marking tasks done and removing them, listing all tasks, and showing capacity info.
 
 ```cpp
+
 #include <algorithm>
+
 #include <iostream>
+
 #include <string>
+
 #include <vector>
 
 struct Task {
@@ -204,7 +228,7 @@ public:
 
     void remove_completed()
     {
-        // remove-erase idiom: remove all tasks where done == true
+        // remove-erase idiom: remove every task with done == true
         auto it = std::remove_if(tasks_.begin(), tasks_.end(),
             [](const Task& t) { return t.done; });
         int removed = static_cast<int>(tasks_.end() - it);
@@ -299,15 +323,15 @@ Expected output:
   size: 2, capacity: 4
 ```
 
-Note that `capacity` is still 4 at the end—`erase` does not release memory. This small detail is often overlooked in practice.
+Note that `capacity` is still 4 at the end — `erase` doesn't release memory. This little detail gets overlooked all the time in real-world development.
 
-> **Pitfall Warning**: Calling `erase` on elements directly inside a range-for loop causes undefined behavior, because `erase` invalidates iterators. If you need to delete elements during traversal, either use an index-based loop iterating backwards, or use an iterator loop combined with the return value of `erase`. However, in most cases, marking first and then doing a unified remove-erase is a clearer approach, as shown in the `remove_completed` method above.
+Calling `erase` on elements directly inside a range-for loop leads to undefined behavior, because `erase` invalidates iterators. If we need to remove elements while iterating, we either use an index-based loop walking backwards, or an iterator loop paired with `erase`'s return value. In most cases, though, marking first and then doing one unified remove-erase pass is the cleaner approach — just like `remove_completed` does in the code above.
 
 ## Try It Yourself — Exercises
 
-### Exercise 1: Frequency Counter
+### Exercise 1: Frequency counter
 
-Given a vector of integers, count how many times each value appears. Hint: you can sort first and then traverse, or use a double loop (a simple implementation is fine; no need to use a map).
+Given a vector of integers, count how many times each value occurs. Hint: you can sort it and then walk through it, or use a double loop (a simple implementation is fine — no need for a map).
 
 ```cpp
 std::vector<int> data = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5};
@@ -316,16 +340,16 @@ std::vector<int> data = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5};
 
 ### Exercise 2: Deduplication
 
-Write a function that takes a sorted vector and returns a new vector with duplicates removed. Do not use `std::unique`; implement it manually.
+Write a function that takes a sorted vector and returns a new vector with duplicates removed. You're not allowed to use `std::unique` — implement it by hand.
 
 ```cpp
 std::vector<int> deduplicate(const std::vector<int>& sorted);
 // deduplicate({1, 1, 2, 3, 3, 3, 4}) -> {1, 2, 3, 4}
 ```
 
-### Exercise 3: Feel the Power of reserve
+### Exercise 3: Feel the power of reserve
 
-Insert 100,000 elements into a vector in two ways—without calling `reserve` and with `reserve(100000)`. Use `<chrono>` to time both approaches and compare the results. Experience the power of pre-allocating memory.
+Insert 100000 elements into a vector twice — once without calling reserve, once with reserve(100000) — and time both versions with `<chrono>` to compare. Get a feel for the power of allocating memory up front.
 
 ---
 
