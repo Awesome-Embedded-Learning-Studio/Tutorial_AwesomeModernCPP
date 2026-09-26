@@ -4,15 +4,15 @@ cpp_standard:
 - 11
 - 17
 - 20
-description: "Get big O straight, tell single-shot from amortized cost, and land it on flat_map: O(log n) lookup, O(n) insert, O(N lgN) range construction, plus real measurements that show what the shift actually costs"
+description: 'Sort out big O and the single-shot vs. amortized distinction, then land it on flat_map: O(lg n) lookup, O(n) insert, O(N lgN) range construction, with real measurements backing up the cost of the shift'
 difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- flat_map prerequisite (I): std::vector internals and growth
+- 'flat_map prerequisite (I): std::vector internals and growth'
 reading_time_minutes: 10
 related:
-- flat_map in practice (III): lookup and insert
+- 'flat_map hands-on (III): lookup and insert'
 tags:
 - host
 - cpp-modern
@@ -20,61 +20,67 @@ tags:
 - 容器
 - map
 - 优化
-title: "flat_map prerequisite (II): complexity and amortized analysis"
+title: 'flat_map prerequisite (II): complexity and amortized analysis'
+translation:
+  source: documents/vol9-open-source-project-learn/chrome/03_flat_map/full/pre-02-flat-map-complexity-and-amortized.md
+  source_hash: 13feb033f429c8d49d81b5e8bff189630d1b23f51056a9a790d550aaf3a6cc37
+  translated_at: '2026-09-26T02:47:43+00:00'
+  engine: anthropic
+  token_count: 5000
 ---
 # flat_map prerequisite (II): complexity and amortized analysis
 
-Back in [pre-00](./pre-00-flat-map-ordered-assoc-container-intro.md) we threw out the line "flat_map is `O(log n)` lookup, `O(n)` insert", and [pre-01](./pre-01-flat-map-vector-internals-and-growth.md) called vector `push_back` amortized `O(1)`. Hiding inside those two sentences is a distinction you can easily skip past, yet it has a real, measurable say in flat_map performance: single-shot cost and amortized cost are not the same thing. This piece takes that tool apart, because every performance conclusion we reach for flat_map downstream roots back in this kind of analysis. Once it clicks, you can judge for yourself when flat_map pays off and when reaching for it is a self-inflicted wound.
+Back in [pre-00](./pre-00-flat-map-ordered-assoc-container-intro.md) we tossed out the line "flat_map is `O(log n)` lookup, `O(n)` insert", and [pre-01](./pre-01-flat-map-vector-internals-and-growth.md) called vector `push_back` amortized `O(1)`. Hidden inside those two sentences is a distinction that is easy for you to miss, yet one that decides flat_map's performance in real, measurable terms: single-shot cost and amortized cost are two different things. In this piece we want to take that tool itself apart, because every performance conclusion about flat_map further down the road is rooted in this style of analysis. Once it clicks, you will naturally be able to judge when flat_map is the right call and when reaching for it is digging a pit for yourself.
 
-## Big-O: asymptotic complexity
+## Big-O notation: asymptotic complexity
 
-Big-O describes how the cost of an operation grows with the input size `n`; constant factors and lower-order terms get dropped. The common buckets: `O(1)` is constant time, independent of `n`, like `vector::size()` reading a field; `O(log n)` is logarithmic, which is what you get when binary search on a sorted array halves the range each step; `O(n)` is linear, proportional to `n`, covering a full sweep or inserting in the middle of an array and shuffling every element after it; `O(n log n)` shows up in sorting, or when you binary-search-insert N elements one at a time; `O(n²)` is the nastier one, like inserting N elements at the head one by one, paying `O(n)` each time across N inserts.
+Big-O notation describes how an operation's cost grows with the input size `n`; constant factors and lower-order terms are ignored across the board. The most common buckets: `O(1)` is constant time, independent of `n`, like `vector::size()` reading a field straight off; `O(log n)` is logarithmic time, the bucket binary search on a sorted array falls into by halving the range every step; `O(n)` is linear, proportional to `n`, covering a full traversal or an insert in the middle of an array that has to shove every element behind it over; `O(n log n)` shows up in sorting, or in binary-search-inserting N elements one at a time; `O(n²)` is the nastier one, inserting N elements at the head one by one, paying `O(n)` each time across N rounds.
 
-Big-O answers "as `n` runs to infinity, who wins?" But as we flagged in [pre-00](./pre-00-flat-map-ordered-assoc-container-intro.md), big-O throws away the constant factor, and in real programs that factor, how many cycles each operation actually burns, can differ by an order of magnitude. This is exactly why flat_map beats std::map for small N: both have `O(log n)` lookup asymptotically, but flat_map lives in contiguous storage where a cache line holds several elements, while std::map's red-black tree nodes scatter across the heap and a single traversal racks up cache misses. So when you read a complexity claim, big-O is only the first half. The second half is the constant factor, and in our setting that mostly means cache behavior.
+Big-O answers "as `n` runs to infinity, who wins?" But as we already warned in [pre-00](./pre-00-flat-map-ordered-assoc-container-intro.md), big-O throws the constant factor away, and in real programs that factor—how many cycles each operation actually burns—can differ by an order of magnitude. This is exactly the root of flat_map beating std::map at small N: both are `O(log n)` lookup asymptotically, but flat_map stores contiguously so one cache line holds several elements, while std::map's red-black tree nodes scatter across the heap, and a single pointer-hopping traversal picks up a pile of cache misses. So when you read a complexity claim, big-O is only the first half; the second half is the constant factor, which in our setting mostly means cache behavior.
 
-## Single-shot vs. amortized: a distinction that matters
+## Single-shot vs. amortized: a key distinction
 
-This is the heart of the piece. The same operation has two complexity lenses: single-shot (single) looks at the worst case for doing it once; amortized looks at the average per operation over N runs in a row, spreading the occasional big spike across all N.
+Here sits the core of this piece. The same operation has two complexity lenses: single-shot (single) asks what the worst case is for doing it once; amortized asks what the per-operation average is over N runs in a row, spreading the occasional big cost that pops up across those N operations.
 
-vector's `push_back` is the textbook example. Single-shot worst case is `O(n)`, because a resize has to move every existing element. Amortized, it is `O(1)`, because growth doubles geometrically: after a resize the next N pushes don't resize again, and that one `O(n)` spike spread over N pushes averages to a constant. The reason `push_back` feels fast day to day is that we cash this amortized check without noticing.
+vector's `push_back` is the textbook example. Single-shot worst case is `O(n)`—it triggers a resize and has to move every existing element; amortized it is `O(1)`, because growth doubles geometrically, and after one resize the next N pushes need no resize, so that lone `O(n)` spread over N pushes averages out to a constant per operation. The everyday feeling that `push_back` is fast is us quietly cashing in this amortized discount.
 
 ### flat_map's single-element insert gets no amortized discount
 
-Here is the catch: flat_map's `insert(key, value)` does not get this deal. Recall from [pre-01](./pre-01-flat-map-vector-internals-and-growth.md) that flat_map must stay sorted, so `insert` runs `lower_bound` to find the slot (usually somewhere in the middle of the array) and then **shifts every element after that slot back by one**. That shift is a real `O(n)`, and it happens on every insert, not just occasionally.
+Here is the rub: flat_map's `insert(key, value)` does not get in on this deal. Recall from [pre-01](./pre-01-flat-map-vector-internals-and-growth.md): flat_map has to stay sorted, so `insert` first runs `lower_bound` to find the slot (usually landing somewhere in the middle of the array), then **shifts every element after that slot back by one**. That shift is a solid `O(n)`, and it happens on every single insert, not just once in a while.
 
-So flat_map's single-element insert is `O(n)` single-shot and `O(n)` amortized, because every insert pays `O(n)` and there is no "occasional big spike" to spread out. Doing N single-element `insert`s in a row piles up to `O(n²)` total. That is the root of why "constructing a big flat_map by inserting one key at a time" is a trap; in 03-5 we cover how batch construction sidesteps it.
+So flat_map's single-element insert is `O(n)` single-shot and still `O(n)` amortized—every insert pays `O(n)`, so there is no "occasional big cost" that can be spread out. Run N single-element `insert`s in a row and the total cost piles up to `O(n²)`. That is the root of why "constructing a big flat_map by inserting one key at a time" is a trap; in 03-5 we will cover in detail how batch construction steers around it.
 
-## O(log n) lookup: binary search
+## O(lg n) lookup: binary search
 
-flat_map's lookup operations, `find`, `contains`, `lower_bound`, `equal_range`, are all `O(log n)`, all riding on binary search over a sorted array. Taking `lower_bound` as the example (flat_tree.h:1027 uses `std::ranges::lower_bound`):
+flat_map's lookups—`find`, `contains`, `lower_bound`, `equal_range`—are all `O(log n)`, all riding on binary search over a sorted array. Take `lower_bound` as the example (flat_tree.h:1027 uses `std::ranges::lower_bound`):
 
 ```cpp
-// In the sorted range [first, last), find the first position not less than key
+// Find, in the sorted array [first, last), the first position not less than key
 auto it = std::ranges::lower_bound(data, key, comp);
 ```
 
-Each step of binary search halves the search range, so `n` elements need at most `log₂(n)` comparisons. A million elements is roughly 20 comparisons, and each comparison hits cache (contiguous storage) in 1 to 2 cycles, so the total lookup cost is tiny. flat_map lookup is fast on two counts: it is `O(log n)`, and each comparison itself is cheap.
+Binary search halves the search range every step, so `n` elements take at most `log₂(n)` comparisons. A million elements is about 20 comparisons, and each comparison hits cache (contiguous storage) in just 1 to 2 cycles, so the total cost of a lookup is tiny. This is precisely why flat_map lookup is fast: not only is it `O(log n)`, but every single comparison is cheap in itself.
 
-`find`, `contains`, `lower_bound`, and `equal_range` share their interface semantics with std::map, all inherited by flat_map from flat_tree. `find(key)` is an exact lookup, equal to `lower_bound` followed by one equality check; `contains(key)` is just `find != end`; `lower_bound(key)` gives the first position `>= key`; `equal_range(key)` gives the `[lower_bound, upper_bound)` range. The only difference is that the underlying layer swaps a tree walk for binary search.
+`find`, `contains`, `lower_bound`, and `equal_range` carry the same interface semantics as std::map, and flat_map inherits all of them from flat_tree—`find(key)` is an exact lookup, equal to `lower_bound` followed by one equality check; `contains(key)` is just `find != end`; `lower_bound(key)` gives the first position `>= key`; `equal_range(key)` gives the `[lower_bound, upper_bound)` range. The only difference is that underneath, the tree walk has been swapped for binary search.
 
 ## O(n) insert: the cost of the shift
 
-flat_map's insert operations (`insert`/`emplace`/`operator[]`/`insert_or_assign`) all walk the same path (flat_tree.h:1060, `unsafe_emplace`): `lower_bound` finds the insertion slot in `O(log n)`, then a `vector::emplace` at that slot shifts every later element back by one, and that shift is `O(n)`. The total is dominated by the shift, landing at `O(n)`. erase works the same way (flat_tree.h:914/921, `body_.erase`): delete one element, shift everything after it forward, `O(n)`.
+flat_map's inserts (`insert`/`emplace`/`operator[]`/`insert_or_assign`) all walk the same path (flat_tree.h:1060, `unsafe_emplace`): first `lower_bound` finds the insertion slot, which is `O(log n)`; then one `vector::emplace` at that slot shoves every element behind it back by one, and that move is `O(n)`. The total complexity is dominated by the shift, landing at `O(n)`. erase works the same way (flat_tree.h:914/921, `body_.erase`): delete one element, and everything behind it shifts forward, `O(n)`.
 
-### Measurement: how expensive is the shift really
+### Measured: how expensive the shift really is
 
-Saying `O(n)` is abstract, so we ran an experiment: insert at the front of a vector 100k times (`emplace(begin)`), shifting every later element on each call:
+Saying `O(n)` is not tangible enough on its own, so we ran an experiment: insert at the head of a vector 100k times (`emplace(begin)`), shifting every element behind it on every single call:
 
 ```text
-100k vector::emplace(begin)  →  264 ms   (O(n²) total)
+100k vector::emplace(begin)  →  264 ms   (O(n²) total cost)
 100k vector::push_back       →  0 ms      (amortized O(1))
 ```
 
-Two orders of magnitude. If you treat flat_map like std::map and keep inserting in the middle, that 264ms curve is what you see. flat_map's `O(n)` insert is not a textbook warning meant to scare you; it is a wall you will actually hit.
+Two orders of magnitude apart. Use flat_map the way you use std::map, frequently inserting in the middle, and that 264ms curve is what you will see. flat_map's `O(n)` insert is not a textbook warning meant to scare you; it is a performance wall you will genuinely slam into.
 
 ## Range construction: O(N lg²N) → O(N lgN)
 
-flat_map does have a cheap construction path. If you can hand it a blob of data in one shot (say, move-constructing from a `vector<pair<K,V>>`), it skips the per-element insert: append everything first, then sort and deduplicate in a single pass (`sort_and_unique`, flat_tree.h:147-149):
+But flat_map does have a cheap construction path. If you can feed it a whole blob of data in one shot (say, move-constructing from a `vector<pair<K,V>>`), it has no need for per-element inserts—instead it appends every element first, then sorts and deduplicates in one pass (`sort_and_unique`, flat_tree.h:147-149):
 
 ```text
 flat_map construction (N elements):
@@ -85,30 +91,30 @@ flat_map construction (N elements):
   total                          O(N log N)  (with spare memory; otherwise O(N log²N))
 ```
 
-`stable_sort` is `O(N log N)` when spare memory is available, because it can grab a scratch buffer and do a merge; when memory is tight it degrades to `O(N log²N)`, since in-place merge pays `O(N log N)` per layer. So flat_map's batch construction is `O(N log N)`, far cheaper than the `O(N²)` of per-element insert. That is the implementation reason flat_map is strictly better for the "write once" pattern.
+`stable_sort` is `O(N log N)` when spare memory is available—it can grab a temporary buffer and do a merge; when memory falls short it degrades to `O(N log²N)`, because an in-place merge pays `O(N log N)` per level. So flat_map's batch construction is `O(N log N)`, far cheaper than the `O(N²)` of inserting one by one. That is the implementation-level reason flat_map is strictly better in the "write once" scenario.
 
 ### sorted_unique: skip the sort
 
-One step further: if you can guarantee the input is already sorted and duplicate-free, you can construct with the `sorted_unique_t` tag (flat_tree.h:606-646), and flat_map skips `sort_and_unique` entirely, taking ownership directly, dropping construction to `O(N)`. This is a clean specimen of zero-cost abstraction, and we save it for pre-04 and 03-4.
+One step further: if you can guarantee the input is already sorted and duplicate-free, you can construct with the `sorted_unique_t` tag (flat_tree.h:606-646), and flat_map skips `sort_and_unique` entirely—it takes over the data directly, and construction drops to `O(N)`. This is a textbook specimen of zero-overhead abstraction, and we save it for pre-04 and 03-4.
 
 ## Complexity summary table
 
-flat_map's complexity story is collected in the table below, every row traceable to comments in flat_tree.h:
+flat_map's complexity conclusions are collected in the table below, every one of them traceable to comments in the flat_tree.h source:
 
 | Operation | Complexity | Notes |
 |---|---|---|
 | Lookup find/contains/lower_bound/equal_range | `O(log n)` | Binary search, cache-friendly |
 | Single insert/emplace | `O(n)` | Includes shift, no amortization |
 | erase(position/range) | `O(n)` | Shift |
-| erase(key) | `O(n) + O(log n)` | Find then remove |
+| erase(key) | `O(n) + O(log n)` | Find first, then remove |
 | operator[]/insert_or_assign/try_emplace | `O(n)` | Same as insert |
 | Range construction (plain) | `O(N log²N)` / `O(N log N)` | Depends on spare memory |
 | Range construction (sorted_unique) | `O(N)` | Skips sort_and_unique |
 | reserve/shrink_to_fit | `O(n)` | Realloc, invalidates iterators |
 
-Compared with std::map (red-black tree): lookup is `O(log n)`, asymptotically a tie with flat_map but losing on the constant factor; insert/erase is `O(log n)`, beating flat_map asymptotically. So on the asymptotic line std::map wins insert, and on the constant-factor line flat_map wins lookup. In plain terms: read-heavy, write-light, reach for flat_map; large and frequently mutated, reach for std::map.
+Compare sideways against std::map (red-black tree): lookup is `O(log n)`, asymptotically a tie with flat_map but losing on the constant factor; insert/erase is `O(log n)`, beating flat_map asymptotically. So on the asymptotic-complexity line, std::map wins insert; on the constant-factor line, flat_map wins lookup. In plain words: read a lot, write a little—go flat_map; big and frequently mutated—go std::map.
 
-In the next piece we look at flat_map's comparator: how it decides element ordering, and how the modern "transparent comparator" skips temporary object construction.
+In the next piece we look at flat_map's comparator: how it decides element ordering, and how the modern "transparent comparator" skips constructing temporary objects.
 
 ## References
 
