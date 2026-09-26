@@ -1,0 +1,43 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="00-learning-route.drawio" name="卷一学习路线">
+    <mxGraphModel dx="800" dy="700" grid="1" gridSize="10" page="1" pageWidth="800" pageHeight="700">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="start" value="起点：先让编译器跑起来&#10;Linux / Windows 任选一条" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#8b96a5;fontColor=#202a35;fontFamily=Noto Sans CJK SC;fontSize=18;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="150" y="20" width="500" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="first" value="第 0 章 · 第一个程序&#10;保存 → 编译 → 运行，看到一行输出" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#8b96a5;fontColor=#202a35;fontFamily=Noto Sans CJK SC;fontSize=18;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="150" y="135" width="500" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="types" value="第 1–2 章 · 类型与控制流&#10;表示数据，写出分支和循环" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#d5e8d4;strokeColor=#8b96a5;fontColor=#202a35;fontFamily=Noto Sans CJK SC;fontSize=18;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="150" y="250" width="500" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="functions" value="第 3–5 章 · 函数、指针、数组与字符串&#10;拆分逻辑，理解参数与数据访问" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#d5e8d4;strokeColor=#8b96a5;fontColor=#202a35;fontFamily=Noto Sans CJK SC;fontSize=18;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="150" y="365" width="500" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="objects" value="第 6–8 章 · 类、运算符重载与多态&#10;组织对象，理解构造与析构" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#fff2cc;strokeColor=#8b96a5;fontColor=#202a35;fontFamily=Noto Sans CJK SC;fontSize=18;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="150" y="480" width="500" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="library" value="第 9–12 章 · 模板、异常、STL、内存基础&#10;走向泛型、资源管理与后续实战" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#fff2cc;strokeColor=#8b96a5;fontColor=#202a35;fontFamily=Noto Sans CJK SC;fontSize=18;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="150" y="595" width="500" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="edge0" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#687787;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="start" target="first">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#687787;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="first" target="types">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#687787;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="types" target="functions">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#687787;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="functions" target="objects">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#687787;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="objects" target="library">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

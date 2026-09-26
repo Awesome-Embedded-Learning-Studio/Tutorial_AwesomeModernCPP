@@ -5,15 +5,15 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Establish the design judgment before the syntax—composition expresses has-a,
-  inheritance expresses is-a, the behavioral-substitutability requirement, the misuse of
-  inheriting for implementation reuse, and a decision order that starts from composition.
+description: Establish the design judgment before entering inheritance syntax—composition
+  expresses has-a, inheritance expresses is-a, the trade-off between behavioral substitutability
+  and implementation reuse, and a decision order that starts from composition.
 difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
-- 类的定义
-- 构造函数
+- Class Definition
+- Constructors
 reading_time_minutes: 11
 tags:
 - cpp-modern
@@ -23,23 +23,24 @@ tags:
 title: Inheritance or Composition
 translation:
   source: documents/vol1-fundamentals/ch08/01-inheritance-vs-composition.md
-  source_hash: f2d09dc9eaa826d78e21bbd6b135ef648a6a7d0a8a9e673fe6e957bcf103339e
-  translated_at: '2026-09-17T00:00:00+00:00'
-  engine: manual
+  source_hash: 2bcec7bc0b72d0adbe2d2253c1756ca140e0ce6019fea46c0d7ee13b51ea165a
+  translated_at: '2026-09-25T11:28:37+00:00'
+  engine: anthropic
+  token_count: 2400
 ---
 # Inheritance or Composition: Settle the Relationship Before Writing the Class
 
-C++ is a language you can use to do object-oriented programming. See! What a plainly honest assertion.
+C++ is a language you can use to do object-oriented programming. See that? What a plainly honest assertion.
 
-Right—so from this chapter on, we are going to look at how C++ implements "inheritance" and "composition".
+Right, then—starting with this chapter, we are going to look at how C++ gets "inheritance" and "composition" implemented.
 
-This chapter is about inheritance. But before touching the syntax, we owe ourselves an answer to a more valuable question: when should inheritance be used at all? A syntax mistake gets stopped by the compiler on the spot; a wrong relationship sails through silently—everything compiles, everything runs, until one day the requirements change and the inheritance hierarchy turns out to be immovable, and only then do you discover the tool was wrong at the root. The compiler cannot help us with this kind of mistake; only design judgment can.
+Hey, hold on! Put VSCode—or your flashy neovim—down for a moment. When we sit down to write code, what we need even more is to think one important question through, and that question is design. Your author has seen plenty of learners—himself squarely included—who fell hard for OOP in the early days of learning. Any task at all, and before the idea is even thought through, out comes an interface. Then when the project gets audited at the end, the utterly superfluous designs turn out to have caused enormous code bloat. Scarier still: once the design goes wrong, the project faces a rewrite. Inheritance skipped exactly where inheritance belonged, composition skipped exactly where composition belonged, and in the end the interfaces come out painful to write; you get to grumble that programming is truly irritating, and there goes the fun.
 
-The good news: of the two relationships this judgment needs, you already own one. Ever since Chapter 6 introduced class definitions, we have been placing one class's objects inside another class as members—that is composition. This chapter adds inheritance to the toolbox, so this article first sets out what each relationship expresses and when to use which; the four articles that follow cover syntax and mechanics, and we can come back here to check our decisions against this table at any time.
+> An LLM chimes in: when should inheritance be used? A syntax slip gets stopped by the compiler on the spot; a wrong relationship gets not a peep out of the compiler—the code compiles as usual and runs as usual, until one day the requirements change, the inheritance hierarchy refuses to budge, and only then do you discover the tool was wrong at the root. The compiler cannot help us with this kind of mistake; only design judgment can. I find this one good, so it gets excerpted and parked here as well.
 
-## Composition: The Way You've Been Using All Along
+## Composition: The Approach You Have Been Using All Along
 
-Take a robot as our example: it has two motors, one per wheel. The motor is a class; the robot holds motors as members:
+Let's take a robot as our example: it has two motors, one for the left wheel and one for the right. The motor is a class; the robot holds motors as members:
 
 ```cpp
 class Motor {
@@ -61,13 +62,13 @@ public:
 };
 ```
 
-The relationship between `Robot` and `Motor` is "a robot **has a** motor"—has-a. The entire mechanism of composition is the member object: the outer class holds the member and calls its public interface whenever it needs the member's capabilities. No new syntax; those two lines of delegation in `move` you have written since Chapter 6 and Chapter 7.
+The relationship between `Robot` and `Motor` is "a robot **has a** motor"—has-a. The entire mechanism of composition is the member object: the outer class holds the member, and calls the member's public interface whenever it needs its capabilities. No new syntax—those two lines of delegation inside `move` are things you already wore smooth back in Chapter 6 and Chapter 7.
 
-Composition's coupling is naturally low. `Robot` uses `Motor` only through its public interface; however `Motor` is implemented internally—even replaced by another model entirely—`Robot`'s code does not change. That looseness is an important chip in the comparison we make with inheritance later.
+Composition's coupling is naturally low. `Robot` uses `Motor` only through its public interface; however `Motor` is implemented internally—even if it gets swapped for another model someday—`Robot`'s code does not have to change. **That looseness is an important bargaining chip for when we pit composition against inheritance later. To stress the point: your author uses composition almost exclusively, reaching for inheritance only in the most necessary scenarios. Why that is, you will come to feel as you keep writing code—that territory belongs to design patterns and software engineering, and we will not wander that far here.**
 
-## Enter Inheritance: A Glimpse of is-a
+## Enter Inheritance: A Glimpse of the is-a Relationship
 
-Let's look at another kind of relationship. A student is a person; a sedan is a vehicle—"is a", that is, is-a. C++ expresses it with inheritance:
+Now let's look at another kind of relationship. A student is a kind of person, a sedan is a kind of vehicle—"is a kind of", that is, is-a. C++ expresses it with inheritance:
 
 ```cpp
 class Person { /* name, age ... */ };
@@ -75,13 +76,13 @@ class Person { /* name, age ... */ };
 class Student : public Person { /* student ID, school ... */ };
 ```
 
-The line `class Student : public Person` means: `Student` is a kind of `Person`. The syntax details (construction order, access control, object slicing) come in the next article; here we keep our eyes on the semantics—what inheritance buys is not "fewer lines of code" but a **type hierarchy**: a `Student` object can be used as a `Person`, and anything that accepts a `Person` can take a `Student`. The polymorphism later in this chapter is built on exactly this, and it is the essential difference from composition: composition reuses an **implementation**; inheritance declares **substitutability**.
+The line `class Student : public Person` means: `Student` is a kind of `Person`. The syntax details (construction order, access control, object slicing) open up in the next article; here we keep our eyes locked on the semantics—what inheritance buys is not "a few lines of code saved", it is a **type hierarchy**: a `Student` object can be used as a `Person`, and anywhere that accepts a `Person` can take in a `Student`. The polymorphism later on is built on exactly this, and it is the most essential difference between inheritance and composition: what composition reuses is an **implementation**; what inheritance declares is **substitutability**.
 
-Precisely because inheritance declares substitutability, its coupling is inherently heavy: change the base class's interface or implementation details, and every derived class changes with it. That is why "should we inherit" matters far more than "how to write inheritance"—and why this article comes before the syntax.
+Precisely because inheritance declares substitutability, its coupling is heavy by birth: the moment the base class's interface or implementation details change, every derived class changes with them. That is why "should this be inheritance" matters far more than "how do I write inheritance"—and it is exactly why we put this discussion in front of the syntax.
 
-## is-a Alone Is Not Enough: Behavior Must Substitute
+## is-a Alone Is Not Enough: Behavior Has to Substitute
 
-You might think the criterion is settled: is-a means inheritance, has-a means composition. But here is a classic counterexample; code first:
+You might feel the criterion is already clear: is-a means inheritance, has-a means composition. But there is a classic counterexample, and we will look at the code first:
 
 ```cpp
 class Ellipse {
@@ -92,17 +93,19 @@ public:
 
 class Circle : public Ellipse {  // "a circle is a kind of ellipse"?
 public:
-    // set_axes is inherited, unchanged
+    // set_axes is inherited as-is
 };
 ```
 
-Mathematically, a circle really is a special case of an ellipse; the is-a looks perfectly natural to us. But `Ellipse` promises the outside world that "the two axes can be set independently", while a circle has exactly one radius: after `circle.set_axes(2, 3)`, the object is no longer a circle, and the ellipse's "independent axes" contract is broken too. The inherited interface and the constraint the derived class must maintain end up fighting each other; any code written against "this is an ellipse" breaks the moment it receives this circle.
+Mathematically, a circle really is a special case of an ellipse, and this is-a looks self-evident to us. But `Ellipse` has promised the outside world that "the two axes can be set independently", while a circle has exactly one radius: after calling `circle.set_axes(2, 3)`, the object is no longer a circle, and the ellipse's "independent axes" contract is broken as well. **The inherited interface and the constraint the derived class must maintain end up fighting each other; any code written against "this is an ellipse" goes wrong the moment it receives this circle.**
 
-This is what the **Liskov Substitution Principle** is about: wherever a base class is accepted, substituting a derived class object must keep the program correct. is-a is a necessary condition; behavioral substitutability is the complete criterion. When judging, we go through every contract of the base class interface and ask: can the derived class honor it? If not, the inheritance is wrong—no matter how true the "is a kind of" sounds semantically.
+That is what the **Liskov Substitution Principle** is talking about, and I badly want to wrap it up in a quotation:
+
+> **Wherever a base class is accepted, swapping in a derived class object must keep the program's behavior correct. is-a is the necessary condition; behavioral substitutability is the complete criterion. When judging, we must go down every contract of the base class interface and ask once: can the derived class hold it? If it cannot, the inheritance is wrong—no matter how semantically true the "really is a kind of" sounds**.
 
 ## Inheriting to Reuse Implementation: The Most Common Misuse
 
-Beginners rarely abuse inheritance because they confuse is-a with has-a; more often the motive itself is off: they covet some piece of the base class's implementation and want to "inherit it instead of rewriting it". Let's lay that pattern out:
+When beginners abuse inheritance, it is mostly not because they cannot tell is-a from has-a—the motive itself is tilted: they have taken a liking to some piece of the base class's implementation and want to "inherit it and spare themselves the rewrite". Let's lay that pattern out:
 
 ```cpp
 class Printer {
@@ -115,18 +118,18 @@ class TicketMachine : public Printer {
 public:
     void issue(const std::string& content)
     {
-        print("ticket: " + content);  // uses the base's implementation directly
+        print("ticket: " + content);  // uses the base class's implementation directly
     }
 };
 ```
 
-Is a ticket machine a kind of printer? No. The only thing this inheritance truly wants is to use this ready-made `print` code. Once the relationship exists, any function accepting `Printer&` can take a ticket machine, and the price paid is being hung on `Printer`'s inheritance tree: the base class changes, this class suffers; it wants a different way of printing, it has to wriggle inside the inheritance relationship.
+Let's ask the question: is a ticket machine a kind of printer? No. The one sentence this inheritance truly wants to express is: use this ready-made `print` code. Once the relationship is established, any function accepting a `Printer&` can take in a ticket machine, and the price it pays for that is hanging itself on `Printer`'s inheritance tree—the base class changes, and it takes the hit along with it; it wants a different way of printing, and it has to wriggle around inside this inheritance relationship to get it.
 
-The same need, written with composition:
+The same need, written with composition, looks like this:
 
 ```cpp
 class TicketMachine {
-    Printer printer_;  // has a printer, rather than "is a kind of" printer
+    Printer printer_;  // has a printer, not "is a kind of" printer
 
 public:
     void issue(const std::string& content)
@@ -136,50 +139,39 @@ public:
 };
 ```
 
-Not a bit of reuse is lost, and the relationship is set straight. That is what we mean, concretely, by "composition over inheritance": **to reuse an implementation, use composition plus delegation; inheritance is reserved for cases that truly are "a kind of" and need to be operated uniformly through the base class**.
+Not a shred of reuse is lost, and the relationship is set right while we are at it. That is the concrete meaning of what we say—"**composition over inheritance**": **to reuse an implementation, use composition plus delegation; inheritance is reserved for scenarios that genuinely are "a kind of" and need to be operated uniformly through the base class**.
 
 ## A Decision Order
 
-String the conclusions into one actionable path. When a new class needs a relationship with an existing one, ask in this order:
+String the preceding conclusions into one actionable decision path. When we want to build a relationship between a new class and an existing one, we ask in this order:
 
-First, **can composition work**: is it only some capability of the other class you want? A member plus delegation suffices, and this step blocks most cases—composition is the default. If you truly need "to be operated through the base class uniformly" (polymorphism, delivered by virtual functions in the next article), then ask **does is-a hold**: is the new class genuinely a kind of the existing one? Even that is not enough; finally ask **is behavior substitutable**: can the new class honor every contract of the base class interface? Only when all three gates pass does public inheritance get its turn.
+First ask **can composition do it**: is all you want some one capability of the other class? A member plus delegation suffices, and this one step blocks out most cases for us—composition is the default option. Only when we truly need "to be operated uniformly through a base class" (polymorphism; the next article's virtual functions supply that layer of capability) do we ask **does is-a hold**: is the new class genuinely a kind of the existing one? Even if it holds, that is still not enough—last, ask **is the behavior substitutable**: every contract of the base class interface, can the new class honor them all? Only when all three gates pass does public inheritance get its turn.
 
-There is also a stability lens to cross-check with: inheritance belongs to essential, stable relationships (a circle is a shape—that fact does not change), while composition handles accidental, changeable relationships (a shape having a color or a border is an attached attribute). The more likely a relationship is to change, the more it should be composition—`ColoredShape` in this chapter's hands-on finale will act this judgment out exactly as written.
+There is also a stability lens that can help us corroborate: inheritance is left to essential, stable relationships (a circle is a kind of shape—that fact does not change), while composition handles incidental, likely-to-change relationships (a shape carrying a color, carrying a border—those are attributes bolted on afterwards). The more likely a relationship is to change, the more it should be composition—in the hands-on finale at the end of this chapter, `ColoredShape` will play this judgment out exactly as written.
 
 | | Inheritance | Composition |
 |---|---|---|
 | Semantics | is-a (is a kind of) | has-a (has a) |
-| Coupling | High—derived classes depend on the base's interface and implementation details | Low—only through the member's public interface |
-| Fits | Essential, stable relationships | Accidental, changeable relationships |
-| What gets reused | Substitutability (type hierarchy) | Implementation (member plus delegation) |
+| Coupling | High—derived classes depend on the base class's interface and implementation details | Low—only through the member's public interface |
+| Relationships it fits | Essential, stable ones | Incidental, likely-to-change ones |
+| What gets reused | Substitutability (the type hierarchy) | The implementation (member plus delegation) |
 
-With the judgment in place, the next article covers inheritance itself: how the syntax is written, in what order construction and destruction execute, and what object slicing is about. Abstract classes, multiple inheritance, and the practice finale later in this chapter all return to this article's judgment again and again.
+With the decision method standing firm, the next article makes inheritance itself clear: how the syntax is written, in what order construction and destruction execute, and what object slicing is about. The abstract classes, multiple inheritance, and hands-on finale later in this chapter all come back to this article's judgment again and again.
 
 ## Try It Yourself
 
 ### Exercise 1: is-a or has-a
 
-Judge the four relationships below—which are is-a (inheritance candidates) and which are has-a (composition candidates):
+Please judge the four relationships below: which are is-a (worth considering inheritance for), and which are has-a (should use composition)? Note that they may well have no standard answer at all~
 
 1. Uav and FlyingMachine
 2. Uav and GpsModule
 3. Rectangle and Polygon
 4. Polygon and a vertex list (`std::vector<Point>`)
 
-::: details Reference answer
+### Exercise 2: Rewrite the Wrong Inheritance as Composition
 
-Let's judge them one by one. 1 is is-a: a UAV is a kind of flying machine.
-2 is has-a: a UAV has a GPS module.
-3 is is-a: a rectangle is a kind of polygon.
-4 is has-a: a polygon has a vertex list.
-
-Note the contrast between 1 and 2: the same class can be on the inheritance side toward one class and the composition side toward another; the two do not interfere. And 3 still has to pass the "behavior substitutable" gate before real inheritance—following this article's circle-and-ellipse reasoning, think about which of a rectangle's contracts other polygons might not honor. Container-as-member relationships like 4 almost always choose composition.
-
-:::
-
-### Exercise 2: Fix the Wrong Inheritance
-
-What is wrong with the code below? Rewrite it correctly:
+What is wrong with the code below? Please rewrite it correctly:
 
 ```cpp
 class UartDriver {
@@ -193,29 +185,3 @@ public:
     // read's implementation calls send directly to fire off a request frame
 };
 ```
-
-::: details Reference answer
-
-The mistake is the motive, and let's name it plainly: a temperature sensor is not a kind of UART driver; this inheritance exists purely to reuse `send`'s implementation. The consequence is that any function accepting `UartDriver&` can take a temperature sensor, and the sensor is chained to `UartDriver`'s inheritance tree. Rewritten with composition:
-
-```cpp
-#include <cstddef>
-#include <cstdint>
-
-class UartDriver {
-public:
-    void send(const std::uint8_t* data, std::size_t n);
-};
-
-class TemperatureSensor {
-    UartDriver uart_;  // has a UART driver
-
-public:
-    double read();
-    // read's implementation sends the request frame via uart_.send(...)
-};
-```
-
-The reuse still arrives through the delegation `uart_.send(...)`, and the type relationship is set straight: the sensor **has a** UART driver. When the transport changes later (to SPI, say), only how the member is swapped and used is affected; `TemperatureSensor`'s outward identity never moves.
-
-:::

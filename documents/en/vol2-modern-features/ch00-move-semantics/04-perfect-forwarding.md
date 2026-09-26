@@ -1,44 +1,40 @@
 ---
-title: 'Perfect Forwarding: Preserving Exact Value Category Propagation'
-description: Understand reference collapsing and universal references, and master
-  the correct use of `std::forward`
+title: "Perfect Forwarding: Preserving Value Categories Exactly"
+description: "Understand reference collapsing and universal references, and master the correct use of std::forward"
 chapter: 0
 order: 4
 tags:
-- host
-- cpp-modern
-- intermediate
-- 移动语义
+  - host
+  - cpp-modern
+  - intermediate
+  - 移动语义
 difficulty: intermediate
 platform: host
-cpp_standard:
-- 11
-- 14
-- 17
+cpp_standard: [11, 14, 17]
 reading_time_minutes: 18
 prerequisites:
-- 'Chapter 0: 右值引用'
-- 'Chapter 0: 移动构造与移动赋值'
+  - "Chapter 0: Rvalue References: From Copy to Move"
+  - "Chapter 0: Move Construction and Move Assignment"
 related:
-- 移动语义实战
+  - "Move Semantics in Practice: From STL to Custom Types"
 translation:
   source: documents/vol2-modern-features/ch00-move-semantics/04-perfect-forwarding.md
-  source_hash: f088cbb899ea3c805d83f68b9a0b1bb7872dcb14c8dbe1f2850172711f6043f3
-  translated_at: '2026-07-16T00:00:00+00:00'
-  engine: manual
-  token_count: 3600
+  source_hash: b4a6fa3e31eb9c4a532eb3e334d60c6dcf4f11942d8bc01a89cfb556f0a4cab6
+  translated_at: '2026-09-25T14:30:57+00:00'
+  engine: anthropic
+  token_count: 9800
 ---
-# Perfect Forwarding: Preserving Exact Value Category Propagation
+# Perfect Forwarding: Preserving Value Categories Exactly
 
-Anyone who has written a template function that takes an argument and hands it off to another function has probably hit this dilemma: when an lvalue goes in, you want the other side to receive an lvalue; when an rvalue goes in, you want it to receive an rvalue. Sounds simple, right? But before C++11 this was nearly impossible. You either wrote two overloads (one taking an lvalue reference, one an rvalue reference), or just took everything by const reference and lost the "this is an rvalue" information along with the performance benefit of move semantics. Ugh, efficiency and performance couldn't both be had, annoying!
+Anyone who has written a template function has probably hit this dilemma: take an argument, then hand it off to another function — when an lvalue goes in, you want the other side to receive an lvalue; when an rvalue goes in, you want it to receive an rvalue. Sounds simple, right? But before C++11 this was nearly impossible: you either wrote two overloads (one taking an lvalue reference, one taking an rvalue reference), or you just took everything by const reference and threw away the "this is an rvalue" information — along with the performance benefits of move semantics. Man, you just couldn't have both efficiency and performance — so annoying!
 
-But don't worry, perfect forwarding, which arrived in the same C++11, is here to solve it. It lets us write a single template that forwards a parameter's value category, untouched, to the target function.
+But don't worry — perfect forwarding, which arrived alongside C++11, is here to solve exactly this problem. It lets us write a single template that forwards a parameter's value category, untouched, to the target function.
 
-In one sentence: you used to always have to write both `const T&` and `T&&` to pass an argument along somewhere, not anymore, use `std::forward` to forward (or pass through) it.
+In one sentence: handing an argument off somewhere else used to mean writing both a `const T&` and a `T&&` overload. Not anymore — use `std::forward` to forward it (or, if you like, pass it through).
 
 ## Starting from a Real Problem
 
-Say we're writing a simple factory function to create `std::string` objects:
+Suppose we're writing a simple factory function that creates `std::string` objects:
 
 ```cpp
 // Version 1: take by const reference
@@ -54,9 +50,9 @@ std::string make_string(std::string&& s)
 }
 ```
 
-Version 1 accepts lvalues, but it also copies when you pass an rvalue, because the const reference reception threw away the "this is an rvalue" information. Version 2 accepts rvalues and moves correctly, but passing an lvalue is a hard compile error, because an rvalue reference won't bind to an lvalue.
+Version 1 accepts lvalues, but it also copies when you pass an rvalue: receiving by const reference throws away the "this is an rvalue" information. Version 2 accepts rvalues and moves correctly, but passing an lvalue is a straight compile error, because an rvalue reference cannot bind to an lvalue.
 
-To support both, you have to write two overloads:
+To support both cases, you have to write two overloads:
 
 ```cpp
 std::string make_string(const std::string& s)
@@ -70,56 +66,56 @@ std::string make_string(std::string&& s)
 }
 ```
 
-Two parameters? Four overloads (const& + const&, const& &&, && const&, && &&, that's 2×2). Three parameters, eight. Doomed. Real projects have a pile of members to handle, writing it this way will absolutely blow up, it obviously doesn't scale.
+Two parameters? Four overloads (const& + const&, const& &&, && const&, && && — that's 2×2). Three parameters, eight. Doomed. Real projects have piles of members to handle; written this way the code will absolutely blow up. Clearly this doesn't scale.
 
 ## Universal References—Not Every T&& Is an Rvalue Reference
 
-Scott Meyers gave this special `T&&` the name "universal reference"; the C++ standard term is "forwarding reference". It looks exactly like an rvalue reference (huh, I can't quite wrap my head around why either, any C++ veteran care to explain why they have to look identical? I'm all ears!), but it behaves completely differently.
+Scott Meyers gave this special `T&&` the name "universal reference"; the C++ standard term is "forwarding reference". It looks exactly like an rvalue reference (honestly, I can't quite figure out why either — if any C++ guru out there can explain why they simply had to look identical, I'm all ears!), but it behaves completely differently.
 
-The key difference is the **type-deduction context**. An ordinary rvalue reference `std::string&&` only binds to rvalues, that's fixed. But a `T&&` in template parameter deduction adjusts itself to the argument: pass an lvalue, and `T` is deduced as an lvalue reference type, with `T&&` collapsing into an lvalue reference; pass an rvalue, and `T` is deduced as a non-reference type, so `T&&` is an rvalue reference.
+The key difference is the **type deduction context**. An ordinary rvalue reference `std::string&&` binds only to rvalues — that's fixed. But a `T&&` undergoing template parameter deduction adjusts itself to the argument: pass an lvalue, and `T` is deduced as an lvalue reference type, with `T&&` collapsing into an lvalue reference; pass an rvalue, and `T` is deduced as a non-reference type, so `T&&` is an rvalue reference.
 
 ```cpp
 template<typename T>
 void identify(T&& arg)
 {
-    // is arg an lvalue reference or an rvalue reference? Depends on the argument at the call
+    // is arg an lvalue reference or an rvalue reference? It depends on the argument passed at the call
 }
 
 std::string name = "Alice";
 
-identify(name);              // lvalue, T = std::string&, T&& = std::string&
-identify(std::string("Bob")); // rvalue, T = std::string, T&& = std::string&&
+identify(name);              // lvalue: T = std::string&, T&& = std::string&
+identify(std::string("Bob")); // rvalue: T = std::string, T&& = std::string&&
 ```
 
-A universal reference has two necessary conditions, both required: first, the type must come through template parameter deduction (the `T` in `template<typename T>`); second, the declared form must be exactly `T&&`, no const or other modifiers. Write `const T&&` and it's an ordinary const rvalue reference, not a universal reference. Write `std::vector<T>&&` and it isn't one either; `T` is deduced, but `std::vector<T>&&` as a whole isn't in the `T&&` form.
+A universal reference has two necessary conditions, and neither can be missing: first, the type must go through template parameter deduction (the `T` in `template<typename T>`); second, the declared form must be exactly `T&&`, with no const or other modifiers. Write `const T&&` and it's an ordinary const rvalue reference, not a universal reference. Write `std::vector<T>&&` and it isn't one either — `T` does get deduced, but `std::vector<T>&&` as a whole isn't in the `T&&` form.
 
 ```cpp
 template<typename T>
 void forwarding(T&& x);      // universal reference ✓
 
 template<typename T>
-void not_forwarding(const T&& x);  // const rvalue reference, not universal ✗
+void not_forwarding(const T&& x);  // const rvalue reference, not a universal reference ✗
 
 template<typename T>
-void also_not(std::vector<T>&& x); // vector rvalue reference, not universal ✗
+void also_not(std::vector<T>&& x); // vector rvalue reference, not a universal reference ✗
 
 // auto&& is also a universal reference (since C++11)
 auto&& universal = some_expression;  // universal reference ✓
 ```
 
-`auto&&` follows the same deduction rules: if `some_expression` is an lvalue, `universal` is an lvalue reference; if it's an rvalue, `universal` is an rvalue reference. This shows up a lot in range-based for loops and lambda captures.
+`auto&&` follows the same deduction rules: if `some_expression` is an lvalue, `universal` is an lvalue reference; if it's an rvalue, `universal` is an rvalue reference. This shows up all the time in range-based for loops and lambda captures.
 
 ## Reference Collapsing—The Final Result of the Four Combinations
 
-This section draws heavily from *Effective Modern C++*:
+This section draws heavily on *Effective Modern C++*:
 
-Universal references work because of **reference collapsing**. When the compiler deduces `T&&`, a "reference to a reference" can show up, for example if `T` is deduced as `std::string&`, then `T&&` becomes `std::string& &&`. C++ doesn't let you write "reference to a reference" directly, but in a template-deduction context the compiler collapses it according to four rules:
+Universal references work because of **reference collapsing**. When the compiler deduces `T&&`, a "reference to a reference" can appear — for example, if `T` is deduced as `std::string&`, then `T&&` becomes `std::string& &&`. C++ doesn't let you write "reference to a reference" directly, but in a template deduction context the compiler collapses it according to four rules:
 
-`T& &` collapses to `T&`, `T& &&` collapses to `T&`, `T&& &` collapses to `T&`, `T&& &&` collapses to `T&&`.
+`T& &` collapses to `T&`, `T& &&` collapses to `T&`, `T&& &` collapses to `T&`, and `T&& &&` collapses to `T&&`.
 
-No need to memorize all four, one compact rule is enough: **if either one is an lvalue reference (`&`), the result is an lvalue reference**. Only when both are rvalue references (`&& &&`) is the result an rvalue reference.
+No need to memorize all four; one compact rule is enough: **if either one is an lvalue reference (`&`), the result is an lvalue reference**. Only when both are rvalue references (`&& &&`) is the result an rvalue reference.
 
-Let's verify with the concrete deduction. Pass the lvalue `name`, and `T` is deduced as `std::string&`, so `T&&` becomes `std::string& &&`, which collapses by the second rule into `std::string&`, an lvalue reference parameter. Pass the rvalue `std::string("Bob")`, and `T` is deduced as `std::string` (a non-reference), so `T&&` is just `std::string&&`, an rvalue reference parameter. No collapsing happens, because there was no "reference to a reference" to begin with.
+Let's verify with the concrete deduction process. Pass the lvalue `name`, and `T` is deduced as `std::string&`, so `T&&` becomes `std::string& &&`, which by the second rule collapses to `std::string&` — the parameter type is an lvalue reference. Pass the rvalue `std::string("Bob")`, and `T` is deduced as `std::string` (a non-reference type), so `T&&` is just `std::string&&` — the parameter type is an rvalue reference. No collapsing happens, because there was never a "reference to a reference" to begin with.
 
 ```cpp
 template<typename T>
@@ -145,16 +141,20 @@ int main()
 }
 ```
 
-Reference collapsing doesn't only show up in function templates. The deduction of `auto&&`, the instantiation of `typedef` and `using` aliases, and some uses of `decltype` all trigger it. But the universal reference in function templates is the most common case.
+Reference collapsing doesn't happen only in function templates. The deduction of `auto&&`, the instantiation of `typedef` and `using` aliases, and certain uses of `decltype` all trigger it. Still, the universal reference in a function template is the most common case.
 
 ## std::forward—A Conditional Cast
 
-Alright, here's the important part (if you only care about how to use it). Once you understand universal references and reference collapsing, `std::forward` is straightforward. Its job: **when the argument was an rvalue, cast the parameter to an rvalue reference; when it was an lvalue, leave the lvalue reference alone**. It's essentially a conditional, smarter `static_cast`. (In one sentence, hey, this little thing remembers whether you passed an lvalue or an rvalue and passes it through unchanged.)
+Alright, here's the part that actually matters (if all you care about is how to use it). Once you understand universal references and reference collapsing, `std::forward` is simple. Its job: **when the argument was an rvalue, cast the parameter to an rvalue reference; when it was an lvalue, keep the lvalue reference unchanged**. It is essentially a conditional, smarter `static_cast`. (In one sentence: hey, this little thing remembers whether you passed an lvalue or an rvalue, and passes it through to somewhere else unchanged.)
 
-We can roll our own simplified version to understand how it works:
+Where exactly the value category gets lost, and how `std::forward` preserves it intact, has been turned into an animation — you can play it, pause it, or step through it one frame at a time, walking both the lvalue path and the rvalue path:
+
+<Anim id="perfect-forwarding" />
+
+We can implement a simplified version ourselves to understand how it works:
 
 ```cpp
-// a simplified std::forward
+// a simplified implementation of std::forward
 template<typename T>
 constexpr T&& my_forward(std::remove_reference_t<T>& t) noexcept
 {
@@ -170,16 +170,16 @@ constexpr T&& my_forward(std::remove_reference_t<T>&& t) noexcept
 }
 ```
 
-These two overloads, together with reference collapsing, carry out the "conditional cast" logic. Pass an lvalue, and `T` is deduced as `U&` (U being the actual type), so `static_cast<T&&>` is `static_cast<U& &&>`, collapsing to `U&`, returning an lvalue reference. Pass an rvalue, and `T` is deduced as `U`, so `static_cast<T&&>` is `static_cast<U&&>`, returning an rvalue reference.
+These two overloads, together with reference collapsing, carry out the "conditional cast" logic. Pass an lvalue, and `T` is deduced as `U&` (where `U` is the actual type), so `static_cast<T&&>` is `static_cast<U& &&>`, which collapses to `U&` — an lvalue reference is returned. Pass an rvalue, and `T` is deduced as `U`, so `static_cast<T&&>` is `static_cast<U&&>` — an rvalue reference is returned.
 
-The key insight: `std::forward`'s "conditionality" comes from **the template parameter `T` carrying the original argument's value-category information**, not from `std::forward`'s own logic. When a universal reference receives an lvalue, `T` is deduced as `U&`, and that `&` is like a stamp that imprints "this is an lvalue" into the type. `std::forward` "unstamps" it via `static_cast<T&&>` and reference collapsing.
+The key insight: `std::forward`'s "conditionality" comes from **the template parameter `T` carrying the original argument's value-category information** — it does not live in `std::forward`'s own logic. When a universal reference receives an lvalue, `T` is deduced as `U&`, and that `&` acts like a stamp imprinting "this is an lvalue" into the type. `std::forward` "unstamps" it through `static_cast<T&&>` and reference collapsing.
 
 ## Perfect Forwarding in the Standard Library
 
-Perfect forwarding is everywhere in the C++ standard library. The classic examples are `std::make_unique` and `std::make_shared`, which take arbitrary arguments and forward them unchanged to the constructor of the object managed by the `unique_ptr`/`shared_ptr`.
+Perfect forwarding is everywhere in the C++ standard library. The classic examples are `std::make_unique` and `std::make_shared`: they accept arbitrary arguments and forward them, unchanged, to the constructor of the object the `unique_ptr`/`shared_ptr` manages.
 
 ```cpp
-// a simplified std::make_unique
+// a simplified implementation of std::make_unique
 template<typename T, typename... Args>
 std::unique_ptr<T> make_unique(Args&&... args)
 {
@@ -187,7 +187,7 @@ std::unique_ptr<T> make_unique(Args&&... args)
 }
 ```
 
-Here `Args&&... args` is a parameter pack of universal references. Each `Args` is deduced independently, so if you pass one lvalue and one rvalue, each one's value category is preserved. `std::forward<Args>(args)...` forwards every parameter to `T`'s constructor according to its original value category.
+Here `Args&&... args` is a parameter pack of universal references. Each `Args` is deduced independently, so if you pass one lvalue and one rvalue, each keeps its own value category. `std::forward<Args>(args)...` forwards every parameter to `T`'s constructor according to its original value category.
 
 ```cpp
 struct User {
@@ -202,7 +202,7 @@ int main()
     std::string name = "Alice";
     auto user = std::make_unique<User>(std::move(name), 42);
     // std::move(name) is an rvalue → name is moved into User's constructor
-    // 42 is an rvalue → int has no "move", it's just pass-by-value
+    // 42 is an rvalue → int has no concept of "moving"; it's just pass-by-value
 
     auto user2 = std::make_unique<User>("Bob", 100);
     // "Bob" is a const char* rvalue → used to construct the std::string parameter
@@ -210,20 +210,20 @@ int main()
 }
 ```
 
-Another classic is `std::vector::emplace_back`. What it takes is constructor arguments, not a ready-made object, and it constructs the new element in place inside the vector's memory, more efficient than `push_back` since even a move is saved.
+Another classic example is `std::vector::emplace_back`. What it takes are constructor arguments, not a ready-made object; it constructs the new element in place in the vector's own memory, which is more efficient than `push_back` — even the move is saved.
 
 ```cpp
 std::vector<std::string> words;
-words.emplace_back("hello");          // construct std::string("hello") directly in the vector
-words.emplace_back(std::string("hi")); // pass an rvalue, move-construct
+words.emplace_back("hello");          // constructs std::string("hello") directly in the vector
+words.emplace_back(std::string("hi")); // an rvalue is passed; move-constructs
 
 std::string word = "world";
-words.emplace_back(std::move(word));   // pass an rvalue, move-construct
+words.emplace_back(std::move(word));   // an rvalue is passed; move-constructs
 ```
 
 ## Common Mistakes—What Not to forward
 
-`std::forward` is powerful, but using it in the wrong place introduces subtle bugs. The most important rule: **only use `std::forward` on universal references**.
+`std::forward` is powerful, but used in the wrong place it introduces subtle bugs. The most important rule: **use `std::forward` only on universal references**.
 
 ```cpp
 // mistake 1: using std::forward on a non-universal reference
@@ -231,13 +231,13 @@ void process(const std::string& s)
 {
     // s is NOT a universal reference! It's a const lvalue reference, a fixed type
     // std::forward<const std::string&>(s) always returns a const lvalue reference
-    // using std::forward here is pointless and misleading
+    // using std::forward here is pointless and misleading to readers
     consume(std::forward<const std::string&>(s));  // don't do this
-    consume(s);  // just pass it
+    consume(s);  // just pass it directly
 }
 ```
 
-In a non-template plain function, the parameter type is fixed, there's no "decide lvalue or rvalue from the argument" going on. Using `std::forward` on a fixed-type parameter just muddies the code's intent.
+In an ordinary non-template function, the parameter type is fixed; there is no "decide lvalue or rvalue from the argument" going on. Using `std::forward` on such a fixed-type parameter just adds noise and blurs the code's intent.
 
 ```cpp
 // mistake 2: forwarding the same parameter twice
@@ -245,14 +245,14 @@ template<typename T>
 void double_forward(T&& x)
 {
     target(std::forward<T>(x));  // first forward
-    target(std::forward<T>(x));  // dangerous! if x is an rvalue, the first one already "stole" it
+    target(std::forward<T>(x));  // dangerous! if x is an rvalue, the first call already "stole" it
 }
 ```
 
-If `x` is an rvalue reference, the first `std::forward<T>(x)` turns `x` into an rvalue and passes it to `target`, which may have already stolen `x`'s resources. On the second forward, `x` is in a "valid but unspecified" state, and you're sending out an rvalue that may already be empty. That's the so-called "use-after-move", the compiler won't complain, but the runtime behavior is unpredictable.
+If `x` is an rvalue reference, the first `std::forward<T>(x)` turns `x` into an rvalue and passes it to `target`, which may well have already stolen `x`'s resources. By the second forward, `x` is in a "valid but unspecified" state, and you're sending out an rvalue that may already be empty. This is the so-called "use-after-move": the compiler won't complain, but the runtime behavior is unpredictable.
 
 ```cpp
-// mistake 3: using std::forward + decltype(auto) in a return statement
+// mistake 3: std::forward + decltype(auto) in a return statement
 template<typename T>
 decltype(auto) bad_return(T&& x)
 {
@@ -260,18 +260,18 @@ decltype(auto) bad_return(T&& x)
 }
 ```
 
-Here `decltype(auto)` deduces the return type from the `return` expression, so the return type depends on the result of `std::forward<T>(x)`. When you pass an rvalue, `T` is deduced as a non-reference type (say `std::string`), `std::forward<std::string>(x)` returns `std::string&&`, and `decltype(auto)` deduces the return type as `std::string&&`. But this rvalue reference points at the function parameter `x`, which is destroyed when the function returns. The caller gets a reference to memory that no longer exists, a classic dangling reference, and GCC's `-Wdangling-reference` will warn about it.
+Here `decltype(auto)` deduces the return type from the `return` expression, so the return type depends on the result of `std::forward<T>(x)`. When you pass an rvalue, `T` is deduced as a non-reference type (say `std::string`), `std::forward<std::string>(x)` returns `std::string&&`, and `decltype(auto)` deduces the return type as `std::string&&`. But that rvalue reference points at the function parameter `x`, which is destroyed the moment the function returns. The caller ends up with a reference to memory that no longer exists — a classic dangling reference, and GCC's `-Wdangling-reference` will warn about it.
 
-When you pass an lvalue, `T` is deduced as `U&` (say `std::string&`), `std::forward<std::string&>(x)` returns `std::string&` via reference collapsing, and the reference chain ultimately points at the caller's original variable, which is still alive, so it's safe. The problem is that this template is safe for lvalues and dangerous for rvalues, while `decltype(auto)` can't express that distinction in the signature, so it's very easy to misuse during maintenance.
+When you pass an lvalue, `T` is deduced as `U&` (say `std::string&`); `std::forward<std::string&>(x)` returns `std::string&` via reference collapsing, and the reference chain ultimately points at the caller's original variable, which is still alive — so it's safe. The problem is that this function template is safe for lvalues and dangerous for rvalues, while `decltype(auto)` cannot express that distinction in the signature, so it is very easy to misuse during maintenance.
 
-If you really do need to forward in a return statement, make sure the return type is a value type (`T`, not `decltype(auto)`), so the rvalue case triggers a move construction instead of returning a reference. The `emplace_get` in the cache wrapper from the previous section is a correct example: it returns `Value&` (a fixed type, not a forwarded one) and only uses `std::forward` on the parameters.
+If you really do need to forward in a return statement, make sure the return type is a value type (`T`, not `decltype(auto)`), so the rvalue case triggers a move construction instead of returning a reference. The `emplace_get` in the cache wrapper in the previous section is a correct example: it returns `Value&` (a fixed type, not something forwarded), and uses `std::forward` only on the parameters.
 
-## Worked Example: A Generic Cache Wrapper
+## A Worked Example: A Generic Cache Wrapper
 
-Let's write a practical example with perfect forwarding: a generic cache wrapper template that caches the result of any function call and perfectly forwards all arguments.
+Let's use perfect forwarding to write a practical example: a generic cache wrapper template that can cache the result of any function call while perfectly forwarding all the arguments.
 
 ```cpp
-// perfect_forwarding.cpp -- 完美转发演示
+// perfect_forwarding.cpp -- a perfect forwarding demo
 // Standard: C++17
 
 #include <iostream>
@@ -280,15 +280,15 @@ Let's write a practical example with perfect forwarding: a generic cache wrapper
 #include <map>
 #include <functional>
 
-/// @brief 一个简单的缓存包装器
-/// 完美转发函数参数，同时保持值类别信息
+/// @brief A simple cache wrapper
+/// that perfectly forwards function arguments while preserving value-category information
 template<typename Key, typename Value>
 class Cache
 {
     std::map<Key, Value> storage_;
 
 public:
-    /// @brief 查找或插入：如果 key 不存在则用 args 构造 Value
+    /// @brief Find or insert: if the key doesn't exist, construct the Value from args
     template<typename... Args>
     Value& emplace_get(const Key& key, Args&&... args)
     {
@@ -310,14 +310,14 @@ public:
     std::size_t size() const { return storage_.size(); }
 };
 
-/// @brief 被包装的"昂贵"操作
+/// @brief The wrapped "expensive" operation
 class ExpensiveData
 {
     std::string label_;
     int value_;
 
 public:
-    /// @brief 从字符串和整数构造
+    /// @brief Construct from a string and an integer
     ExpensiveData(std::string label, int value)
         : label_(std::move(label))
         , value_(value)
@@ -326,7 +326,7 @@ public:
                   << " = " << value_ << "\n";
     }
 
-    /// @brief 从字符串构造（重载）
+    /// @brief Construct from a string (overload)
     explicit ExpensiveData(std::string label)
         : label_(std::move(label))
         , value_(0)
@@ -338,7 +338,7 @@ public:
     int value() const { return value_; }
 };
 
-/// @brief 通用的转发包装器——演示完美转发的核心用法
+/// @brief A generic forwarding wrapper — demonstrating the core use of perfect forwarding
 template<typename Func, typename... Args>
 auto invoke_and_log(Func&& func, Args&&... args)
     -> std::invoke_result_t<Func, Args...>
@@ -357,17 +357,17 @@ int main()
     std::cout << "=== 1. 缓存包装器 ===\n";
     Cache<std::string, ExpensiveData> cache;
 
-    // 第一次调用：缓存未命中，构造新值
-    // 传入右值字符串和整数
+    // first call: cache miss, construct a new value
+    // pass an rvalue string and an integer
     cache.emplace_get("alpha", "first", 100);
 
-    // 第二次调用：同样的 key，缓存命中
+    // second call: same key, cache hit
     cache.emplace_get("alpha", "first", 200);
 
-    // 新 key，传入右值字符串（单参数构造）
+    // new key, pass an rvalue string (single-argument construction)
     std::string label = "beta";
     cache.emplace_get("beta", std::move(label));
-    // label 已被移动，不要再使用
+    // label has been moved from; don't use it again
 
     std::cout << "  缓存大小: " << cache.size() << "\n\n";
 
@@ -381,7 +381,7 @@ int main()
     std::cout << "  结果: " << result << "\n\n";
 
     std::cout << "=== 3. make_unique 风格的工厂 ===\n";
-    // 演示完美转发在构造函数参数传递中的效果
+    // demonstrate the effect of perfect forwarding in constructor argument passing
     auto data = std::make_unique<ExpensiveData>("gamma", 42);
     std::cout << "  data: " << data->label() << " = " << data->value() << "\n\n";
 
@@ -420,16 +420,16 @@ Expected output:
 === 程序结束 ===
 ```
 
-The `Args&&... args` in `emplace_get` is a universal reference parameter pack. When you pass `("first", 100)`, `Args` is deduced as `const char (&)[6]` and `int` (loosely, `const char*` and `int`). `std::forward<Args>(args)...` forwards these parameters unchanged to `ExpensiveData`'s constructor, and the parameter types and value categories the constructor sees are exactly what they'd be if you passed them to it directly.
+The `Args&&... args` in `emplace_get` is a universal reference parameter pack. When you pass `("first", 100)`, `Args` is deduced as `const char (&)[6]` and `int` (loosely, think `const char*` and `int`). `std::forward<Args>(args)...` forwards these arguments untouched to `ExpensiveData`'s constructor, so the parameter types and value categories the constructor sees are exactly what they would be if you passed them to it directly.
 
-When you pass `std::move(label)`, `Args` is deduced as `std::string` (non-reference), and `std::forward` turns it into an rvalue reference. `ExpensiveData`'s `std::string` parameter is then initialized via move construction, avoiding a deep copy of the string. That's the power of perfect forwarding: one template, automatically handling every combination of value categories.
+When you pass `std::move(label)`, `Args` is deduced as `std::string` (non-reference), `std::forward` turns it into an rvalue reference, and `ExpensiveData`'s `std::string` parameter is initialized by move construction, avoiding a deep copy of the string. That's the power of perfect forwarding: one template, automatically handling every combination of value categories.
 
-## Hands-On Experiment: Verifying Reference Collapsing
+## Hands-On Experiment—Verifying Reference Collapsing
 
-To cement the understanding, let's write a small program that uses `std::is_same_v` to verify the result of reference collapsing:
+To deepen our understanding, let's write a small program that uses `std::is_same_v` to verify the results of reference collapsing:
 
 ```cpp
-// ref_collapsing.cpp -- 引用折叠验证
+// ref_collapsing.cpp -- reference collapsing verification
 // Standard: C++17
 
 #include <iostream>
@@ -439,14 +439,14 @@ To cement the understanding, let's write a small program that uses `std::is_same
 template<typename T>
 void show_deduction(T&& /* arg */)
 {
-    // T 的推导结果
+    // the deduction result of T
     if constexpr (std::is_lvalue_reference_v<T>) {
         std::cout << "  T = 左值引用类型\n";
     } else {
         std::cout << "  T = 非引用类型（右值）\n";
     }
 
-    // T&& 的最终类型（经过引用折叠）
+    // the final type of T&& (after reference collapsing)
     using ParamType = T&&;
     if constexpr (std::is_lvalue_reference_v<ParamType>) {
         std::cout << "  T&& = 左值引用\n\n";
@@ -507,15 +507,15 @@ Output:
   T&& = 右值引用
 ```
 
-This output perfectly confirms the reference collapsing rules: when you pass an lvalue (const or not), `T` is deduced as a reference type and `T&&` collapses to an lvalue reference. When you pass an rvalue, `T` is deduced as a non-reference type and `T&&` is an rvalue reference. The const-ness also travels through `T`; even though this simplified program doesn't distinguish const from non-const, `T` really does carry the const modifier, and `std::forward` preserves it correctly.
+This output perfectly confirms the reference collapsing rules: when you pass an lvalue (const or not), `T` is deduced as a reference type and `T&&` collapses to an lvalue reference. When you pass an rvalue, `T` is deduced as a non-reference type and `T&&` is an rvalue reference. The const information also travels through `T`: even though this simplified program doesn't distinguish const from non-const, `T` really does carry the const modifier, and `std::forward` preserves it correctly.
 
-## Run Online
+## Run It Online
 
-Run the reference collapsing example online and verify the deduction rules of universal references:
+Run the reference collapsing example online and verify the type deduction rules of universal references:
 
 <OnlineCompilerDemo
   title="Perfect Forwarding: Universal References and Reference Collapsing"
   source-path="code/examples/vol2/04_perfect_forwarding.cpp"
-  description="Run online and observe the deduced template parameter T when passing lvalues and rvalues."
+  description="Run it online and observe how the template parameter T is deduced when lvalues and rvalues are passed."
   allow-run
 />

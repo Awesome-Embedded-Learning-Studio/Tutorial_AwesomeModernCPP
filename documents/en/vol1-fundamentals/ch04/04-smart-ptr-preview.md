@@ -5,15 +5,14 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Understand why smart pointers are necessary, get a first look at how
-  `unique_ptr` manages memory automatically, and lay the groundwork for deeper learning
-  in Volume Two.
+description: Learn why smart pointers are needed, get a first look at how unique_ptr
+  manages memory automatically, and set the stage for a deeper dive in Volume Two.
 difficulty: beginner
 order: 4
 platform: host
 prerequisites:
-- 引用
-reading_time_minutes: 9
+- References
+reading_time_minutes: 10
 tags:
 - cpp-modern
 - host
@@ -23,20 +22,20 @@ tags:
 title: Smart Pointer Preview
 translation:
   source: documents/vol1-fundamentals/ch04/04-smart-ptr-preview.md
-  source_hash: 12e5e7391f95318586446f851cc376345af38ff59c8db7b329ba3565336b2c1a
-  translated_at: '2026-06-24T00:30:51.875192+00:00'
+  source_hash: 1146842cae17703a4869553547f7cf3190da266ef75747ee9cdb10944b54f398
+  translated_at: '2026-09-25T10:38:42+00:00'
   engine: anthropic
-  token_count: 1702
+  token_count: 5200
 ---
-# A Preview of Smart Pointers
+# Smart Pointer Preview: Stop Keeping Track of delete by Hand
 
-Up to this point, we have been working with raw pointers for several chapters. Pointers are indeed powerful, but they are also dangerous—every time we `new` a block of memory, we must remember to `delete` it. If we miss even a single path, we end up with a memory leak. Modern C++ provides a systematic solution to this: **smart pointers**. In this chapter, we won't go too deep; instead, we will simply introduce the problems they solve and their basic usage. The comprehensive explanation will come in Volume Two, where we will systematically cover them alongside move semantics and RAII.
+By now we have spent several chapters dealing with raw pointers. Pointers are indeed powerful, but indeed dangerous too—every time we `new` a block of memory, we have to keep reminding ourselves to `delete` it, and any path that slips through means a memory leak. Modern C++ offers a systematic solution: **smart pointers**. In this chapter we won't go deep; we'll just walk you through what problems they solve and what their basic usage looks like. The full treatment comes in Volume Two, where we expand on them systematically alongside move semantics and RAII.
 
-## The Three Sins of Raw Pointers
+## The Three Classic Problems of Raw Pointers
 
-Raw pointers suffer from three classic problems in memory management (which sounds a bit like an indictment).
+We need to talk about the three classic problems of raw pointers in memory management (writing them down feels like filing an indictment).
 
-**Memory leaks** are the most common scenario: we `new` memory but forget to `delete` it. Even more dangerous is forgetting it on an exception exit path—`delete[]` might be reached in the normal flow, but once an error condition triggers and the function returns early, the memory is lost forever. (Ugh, this is already giving me a headache.)
+**Memory leaks** are the most common case: we `new` but forget to `delete`. What's even more dangerous is forgetting on an early-exit path—in the normal flow `delete[]` does get executed, but once an error condition triggers and the function returns early, that memory is never coming back. (Ugh, my head already hurts.)
 
 ```cpp
 void process_data()
@@ -44,24 +43,22 @@ void process_data()
     int* data = new int[1000];
 
     if (some_error_condition()) {
-        return;  // 直接 return 了，delete 呢？？？
+        return;  // Returned right here — where's the delete???
     }
 
     delete[] data;
 }
 ```
 
-> The key point is this: **every line of code that might exit early (return, throw) is a potential leak point**. In a function with a dozen exits, we must ensure resources are released correctly before every single exit. If we add a new return later and forget to write delete, we have a leak again.
+> The key point here: **every line of code that can exit early (a return, a throw) is a potential leak point**. In a function with a dozen exits, we need to make sure the resource is properly released before every single one of them. The day someone adds a new return and forgets the delete, it leaks again.
 
-**Double free** causes the program to crash immediately—two pointers point to the same memory, and each calls `delete` once. The runtime usually reports `double free or corruption`, which is particularly common in collaborative projects.
+**Double free** crashes the program outright—two pointers aim at the same memory, and each one `delete`s it once. The runtime usually reports `double free or corruption`, and this is especially easy to run into in a multi-person project.
 
-**Dangling pointers** occur when we continue to access memory through the original pointer after `delete`. This bug is the most nasty: it might not show up at all during development (the content of the just-deleted memory is often not yet overwritten, so `*p` might still read the original value), but in production, after running for a long time, random issues will appear, making troubleshooting extremely painful.
+**Dangling pointers** mean continuing to access memory through the original pointer after `delete`. This is the nastiest bug of the bunch: during development it may not show up at all (the freshly `delete`d memory often hasn't been overwritten yet, so `*p` happens to still read the original value), but once it reaches production and runs long enough, random problems start popping up—and tracking them down is pure misery.
 
-## RAII—One Key for One Lock
+## RAII: Acquire in the Constructor, Release in the Destructor
 
-The root of all three problems is the same: **resource acquisition and release are scattered in different parts of the code**. The core idea to solve this is called **RAII (Resource Acquisition Is Initialization)**—acquire resources in the constructor and release them in the destructor. C++ guarantees that the destructor **will be called** when the object leaves the scope, whether it exits normally or via an exception. This guarantee is provided by the **stack unwinding** mechanism.
-
-We can think of it as an automatically returning key: take the key (acquire on construction), leave the room (leave scope), and the key is automatically returned (release on destruction).
+Look at all three problems together and the root cause is the same: **the acquisition and the release of the resource are scattered across different places in the code**. The core idea that fixes this is called **RAII (Resource Acquisition Is Initialization)**—acquire the resource in the constructor, release it in the destructor. C++ guarantees that when an object leaves its scope, the destructor **will be invoked**, whether the exit is normal or exceptional; this guarantee is provided by **stack unwinding**.
 
 ```cpp
 #include <iostream>
@@ -87,12 +84,12 @@ void demo()
     IntHolder holder(42);
     std::cout << "内部值: " << *holder.ptr << "\n";
     if (true) {
-        return;  // 即使提前 return，holder 的析构函数也会被调用
+        return;  // Even with an early return, holder's destructor still runs
     }
 }
 ```
 
-**Output:**
+Output:
 
 ```text
 分配内存，值 = 42
@@ -100,17 +97,17 @@ void demo()
 释放内存，值 = 42
 ```
 
-Even if the function returns early, the destructor for `holder` is still called. This demonstrates the power of RAII—you do not need to manually write `delete` at every exit point; C++ scope rules handle the resource management automatically.
+Even though the function returned early, `holder`'s destructor was still called. That is the power of RAII: we don't need to hand-write `delete` at every exit; C++'s scope rules manage it for us automatically.
 
-> Note the `explicit` keyword—it prevents implicit conversions like `IntHolder holder = 42;`. For single-argument constructors, adding `explicit` is a best practice.
+> Note the `explicit` keyword: it forbids implicit conversions like `IntHolder holder = 42;`. Adding `explicit` to single-argument constructors is a good habit.
 
-## unique_ptr—A Smart Pointer with Exclusive Ownership
+## unique_ptr: A Smart Pointer with Exclusive Ownership
 
-Once we understand RAII, smart pointers are straightforward—they are simply tool classes that wrap `new` and `delete` into the RAII pattern. The most fundamental and commonly used one is `std::unique_ptr`, with the core semantic of **exclusive ownership**: a block of memory can be held by only one `unique_ptr` at a time. It cannot be copied, but it can be **moved**.
+Once RAII makes sense, smart pointers are easy to understand—they are simply tool classes that wrap `new` and `delete` into RAII for us. The most fundamental and most commonly used one is `std::unique_ptr`, whose core semantic is **exclusive ownership**: a block of memory can be held by exactly one `unique_ptr` at a time. It cannot be copied, but it can be **moved**.
 
 ### Creation and Basic Operations
 
-C++14 introduced `std::make_unique`, which is the recommended way to create a `unique_ptr`. We will use a custom type to demonstrate the complete lifecycle:
+C++14 introduced `std::make_unique`, which is the recommended way to create a `unique_ptr`. Let's use a custom type to walk through the complete lifecycle:
 
 ```cpp
 #include <iostream>
@@ -139,17 +136,17 @@ int main()
 {
     {
         auto hero = std::make_unique<Player>("Alice", 5);
-        hero->show_status();   // -> 访问成员，和裸指针一样
-        std::cout << (*hero).name << "\n";  // * 解引用也行
+        hero->show_status();   // -> accesses members, same as a raw pointer
+        std::cout << (*hero).name << "\n";  // * dereferences too
     }
-    // hero 在这里离开作用域，自动 delete
+    // hero leaves scope here; delete happens automatically
 
     std::cout << "继续执行...\n";
     return 0;
 }
 ```
 
-**Output:**
+Output:
 
 ```text
 Alice 登场！
@@ -159,29 +156,29 @@ Alice 退场。
 继续执行...
 ```
 
-"Alice exits." appears before "Continuing execution..."—the destructor was automatically invoked when the brace scope ended. There are only three basic operations for `unique_ptr`: `*p` for dereferencing, `p->member` for member access, and `p.get()` to obtain the raw pointer (useful when passing to C interfaces).
+We can see that "Alice 退场。" appears before "继续执行..."—the destructor was invoked automatically when the curly-brace scope ended. `unique_ptr` has just three basic operations: `*p` to dereference, `p->member` to access a member, and `p.get()` to grab the raw pointer (useful when passing it to a C interface).
 
-> Why do we recommend `make_unique` over `unique_ptr<int>(new int(42))`? First, it is more concise, as we do not need to write `new`. Second, when composing function arguments, writing `new` directly can lead to memory leaks due to unspecified evaluation order; we will expand on this detail in Volume Two.
+> Why do we recommend `make_unique` over `unique_ptr<int>(new int(42))`? First, it's cleaner—no need to write `new`. Second, writing `new` directly can leak when function arguments are combined, due to unspecified evaluation order; we'll unpack that detail in Volume Two.
 
-### Cannot Copy, Only Move
+### No Copying, Only Moving
 
-`unique_ptr` **cannot be copied**—`auto p2 = p1;` will result in a direct compilation error. This is an intentional design: allowing copying would imply two `unique_ptr` instances pointing to the same memory, leading to a double delete when they go out of scope. If you need to transfer ownership, use `std::move`:
+`unique_ptr` **cannot be copied**—`auto p2 = p1;` is a straight compile error. That is a deliberate design: allowing copies would mean two `unique_ptr`s pointing at the same memory, and both would delete it on leaving scope. If you need to transfer ownership, use `std::move`:
 
 ```cpp
 auto p1 = std::make_unique<int>(42);
-auto p2 = std::move(p1);  // 所有权从 p1 转移到 p2
-// p1 变成 nullptr，p2 持有那块内存
+auto p2 = std::move(p1);  // Ownership moves from p1 to p2
+// p1 becomes nullptr; p2 now owns that memory
 ```
 
-We will cover the detailed mechanism of `std::move` in Volume Two. For now, just remember that it is the standard way to transfer ownership of a `unique_ptr`.
+The detailed mechanics of `std::move` will be covered systematically in Volume Two. For now, we only need to remember that it is the standard way to transfer ownership of a `unique_ptr`.
 
-### Zero Overhead — Safety Without Performance Cost
+### Zero Overhead: Safety at No Performance Cost
 
-At runtime, `unique_ptr` has **zero performance overhead** — it essentially holds a single pointer, has no virtual functions, and the code generated after compiler optimization is nearly identical to manual `new/delete`. Modern C++ has a clear rule: **use `unique_ptr` instead of raw `new/delete` whenever possible**.
+At runtime, `unique_ptr` carries **no extra performance overhead**—it stores exactly one pointer inside, has no virtual functions, and after compiler optimization the generated code is nearly identical to manual `new/delete`. Remember one clear rule: **whenever you can use `unique_ptr`, don't use raw `new/delete`**.
 
-## Practice: Raw Pointers vs unique_ptr
+## In Practice: Raw Pointers vs unique_ptr
 
-Let's implement the memory leak scenario using two approaches. The core contrast is intuitive: the raw pointer version leaks on the error path, while the `unique_ptr` version is automatically immune.
+Let's implement the memory leak scenario both ways. The core contrast is plain to see: the raw-pointer version leaks on the error path, while the `unique_ptr` version releases automatically on every path.
 
 ```cpp
 #include <iostream>
@@ -193,7 +190,7 @@ void raw_version(bool error)
     data[0] = 42;
 
     if (error) {
-        return;  // 泄漏！忘记 delete[]
+        return;  // Leak! Forgot delete[]
     }
 
     delete[] data;
@@ -205,34 +202,34 @@ void smart_version(bool error)
     data[0] = 42;
 
     if (error) {
-        return;  // 不泄漏——析构函数自动调用 delete[]
+        return;  // No leak — the destructor calls delete[] automatically
     }
 }
 
 int main()
 {
     std::cout << "=== 错误场景 ===\n";
-    raw_version(true);    // 泄漏 400 字节
-    smart_version(true);  // 安全
+    raw_version(true);    // Leaks 400 bytes
+    smart_version(true);  // Safe
 
     std::cout << "=== 正常场景 ===\n";
-    raw_version(false);   // 正常释放
-    smart_version(false); // 正常释放
+    raw_version(false);   // Released normally
+    smart_version(false); // Released normally
     return 0;
 }
 ```
 
-Want to verify the leak yourself? Compile with AddressSanitizer: `g++ -Wall -Wextra -std=c++17 -fsanitize=address -g unique_ptr_intro.cpp`. ASan will report the size and allocation location of the memory leaked by the raw pointer version when the program exits. This is a standard tool for diagnosing memory issues in daily development.
+Want to verify the leak yourself? Compile with AddressSanitizer: `g++ -Wall -Wextra -std=c++17 -fsanitize=address -g unique_ptr_intro.cpp`, and ASan will report the size and allocation location of the memory leaked by the raw-pointer version when the program ends. This is also our everyday go-to tool for tracking down memory issues in development.
 
-## More Smart Pointers—Saved for Volume Two
+## More Smart Pointers — Saved for Volume Two
 
-The smart pointer family still has `shared_ptr` (shared ownership, reference counting) and `weak_ptr` (weak reference, breaking circular dependencies) waiting in the wings. `unique_ptr` also has advanced uses like custom deleters. These all require move semantics and rvalue references as a foundation, which are core topics in Volume Two. For now, remember two things: first, **avoid writing `new` and `delete` directly** and prefer `std::make_unique`; second, `unique_ptr` is zero-overhead—it won't slow down your program, but it will protect it from a whole class of memory bugs.
+The smart pointer family still has `shared_ptr` (shared ownership, reference counting) and `weak_ptr` (weak references, breaking circular references) waiting in the wings, and `unique_ptr` itself has advanced uses such as custom deleters. All of these need move semantics and rvalue references as their foundation, and all are core Volume Two material. For now, remembering two things is enough: **avoid writing `new` and `delete` directly**, preferring `std::make_unique`; and `unique_ptr` is zero-overhead—it won't slow your program down, but it will spare it from an entire class of memory bugs.
 
 ## Exercises
 
-### Exercise 1: Refactor a Raw Pointer Program
+### Exercise 1: Refactor the Raw-Pointer Program
 
-The following code leaks when `early_exit` is `true`. Please rewrite it using `unique_ptr` to ensure no leaks occur on any execution path. Hint: Just replace `Sensor* s = new Sensor(1)` with `auto s = std::make_unique<Sensor>(1)`, delete the `delete s` line, and leave everything else untouched.
+The code below leaks when `early_exit` is `true`. Rewrite it as a `unique_ptr` version and make sure no path leaks. Hint: just replace `Sensor* s = new Sensor(1)` with `auto s = std::make_unique<Sensor>(1)`, drop the `delete s`, and leave everything else untouched.
 
 ```cpp
 struct Sensor
@@ -253,9 +250,37 @@ void use_sensor(bool early_exit)
 }
 ```
 
-### Exercise 2: Identifying Memory Leak Patterns
+::: details Reference answer
 
-The code below contains two leak points (one in each of the `choice == 1` and `choice == 2` branches). Consider this: if we wrap `a` and `b` using `unique_ptr`, will early returns and exceptions still be an issue?
+```cpp
+#include <iostream>
+#include <memory>
+
+struct Sensor
+{
+    int id;
+    Sensor(int i) : id(i) { std::cout << "Sensor " << id << " 初始化\n"; }
+    ~Sensor() { std::cout << "Sensor " << id << " 关闭\n"; }
+    void read() { std::cout << "Sensor " << id << " 读取数据\n"; }
+};
+
+void use_sensor(bool early_exit)
+{
+    auto s = std::make_unique<Sensor>(1);
+    s->read();
+    if (early_exit)
+    {
+        return;
+    }
+    s->read();
+}
+```
+
+:::
+
+### Exercise 2: Spot the Memory-Leak Patterns
+
+The code below has two leak points (one in each of the `choice == 1` and `choice == 2` branches). Think it over: once `a` and `b` are wrapped in `unique_ptr`, are early returns and throws still a problem?
 
 ```cpp
 void process(int choice)
@@ -269,6 +294,30 @@ void process(int choice)
 }
 ```
 
+::: details Reference answer
+
+Look at the two leak points in the original code: when `choice == 1`, the function returns immediately, so neither `a` nor `b` gets `delete`d; when `choice == 2`, `a` has already been released, but throwing the exception skips `delete b`, so `b` leaks.
+
+Once `unique_ptr` takes over ownership, early `return` and `throw` are no longer problems. When the function leaves its scope, the local `unique_ptr`s destruct automatically and release the memory they manage; whether the exit is a normal return or a stack unwind caused by an exception, the destructors get called—so we no longer need to write `delete` by hand:
+
+```cpp
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+
+void process(int choice)
+{
+    auto a = std::make_unique<int>(10);
+    auto b = std::make_unique<int>(20);
+    if (choice == 1) { return; }
+    if (choice == 2) { throw std::runtime_error("error"); }
+}
+```
+
+Here both `a` and `b` are managed exclusively by `unique_ptr`. Watch the order at function exit: `b`, created last, is destroyed first, then `a`—both blocks of memory are released correctly.
+
+:::
+
 ---
 
-> **Next Stop**: With this, we conclude the chapter on pointers and references. From the basic concepts of raw pointers, to pointer arithmetic and its relationship with arrays, and finally a preview of references and smart pointers—we have established a comprehensive framework for understanding C++ memory operations. Next, we move on to Chapter Five to explore arrays and strings, examining the safer and more convenient tools that C++ provides compared to C-style arrays.
+> **Next up**: With this, we wrap up the pointers-and-references chapter: from the basic concepts of raw pointers, through pointer arithmetic and its relationship with arrays, to references and this preview of smart pointers. Next we move on to Chapter Five to meet arrays and strings, and see what safer, friendlier tools C++ offers compared to C-style arrays.

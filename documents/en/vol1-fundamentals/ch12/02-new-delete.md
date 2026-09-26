@@ -5,13 +5,12 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Master new/delete usage and pitfalls, and understand the central role
-  of RAII.
+description: Master new/delete usage and its pitfalls, and understand why RAII sits at the core.
 difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- 内存布局
+- Memory Layout
 reading_time_minutes: 13
 tags:
 - cpp-modern
@@ -21,268 +20,353 @@ tags:
 title: Dynamic Memory Management
 translation:
   source: documents/vol1-fundamentals/ch12/02-new-delete.md
-  source_hash: 80e722d6ec632f866386473cc8439a75606e89a81c6d517f92ae03c52024a48f
-  translated_at: '2026-06-16T03:47:49.967356+00:00'
+  source_hash: 3d217029d46ac5838f94b2c488545dbb7ec7002936724c0a1d1e9d29f6416f2b
+  translated_at: '2026-09-25T12:09:48+00:00'
   engine: anthropic
-  token_count: 2535
+  token_count: 2500
 ---
-# Dynamic Memory Management
+# Dynamic Memory Management: What Goes On Behind new and delete
 
-In the previous chapter, we divided the program's memory space into four major areas: stack, heap, static area, and code segment. We clarified where data "lives" and how long it "survives." However, we left one suspense unresolved: How exactly do we manage dynamic memory on the heap? What happens behind the scenes with `new` and `delete`? Why has almost every previous chapter nagged us to "use smart pointers, don't write raw `new`/`delete`"?
+In the previous chapter we split the program's memory space into four major areas—stack, heap, static storage, and the code segment—and worked out where data "lives" and how long it "survives." But we left one thread hanging: how exactly is dynamic memory on the heap managed? What do `new` and `delete` actually do behind the scenes? And why has nearly every earlier chapter kept nagging us to "use smart pointers, don't write bare `delete`s"?
 
-In this chapter, we will answer these questions head-on. Dynamic memory is the greatest freedom C++ grants us—you can request memory of any size on demand at runtime, completely unconstrained by stack space limits. But this freedom brings the heaviest responsibility: every block of memory `new`'d must be properly `delete`'d, or it leaks; every `new` must correspond to the correct `delete`, or it is undefined behavior.
+This chapter answers those questions head-on. Dynamic memory is the greatest freedom C++ grants us: at runtime we can request memory of any size on demand, entirely unconstrained by stack-space limits. But that freedom carries the heaviest responsibility: every block obtained with `new` must be correctly `delete`d, or it leaks; every `delete` must correspond to the right kind of `new`, or it is undefined behavior.
 
 ## Starting with new/delete
 
-C++ uses `new` and `delete` to replace C's `malloc` and `free`. Simply put, `new` is a wrapper around `malloc` plus a constructor call; `delete` calls the destructor first, then reclaims the memory. This distinction is the fundamental watershed between C++ and C dynamic memory management.
+Let's look at how C++ replaces C's `malloc` and `free` with `new` and `delete`. Simply put, `new` wraps `malloc` plus a constructor call, while `delete` first invokes the destructor and then reclaims the memory. That difference is precisely the fundamental watershed between C++ and C dynamic memory management.
 
-When allocating a single object, for class types, `new` automatically calls the constructor, and `delete` automatically calls the destructor:
+When we allocate a single object of a class type, `new` automatically calls the constructor, and `delete` automatically calls the destructor:
 
 ```cpp
-struct Widget {
-    Widget() { std::cout << "Constructed\n"; }
-    ~Widget() { std::cout << "Destructed\n"; }
+class Sensor {
+public:
+    Sensor()  { std::cout << "Sensor 初始化\n"; }
+    ~Sensor() { std::cout << "Sensor 关闭\n"; }
+    void read() { std::cout << "读取数据\n"; }
 };
 
-Widget* ptr = new Widget; // Allocates memory, then calls constructor
-// ... use ptr ...
-delete ptr;               // Calls destructor, then frees memory
+Sensor* s = new Sensor();  // Output: Sensor 初始化
+s->read();                  // Output: 读取数据
+delete s;                   // Output: Sensor 关闭
 ```
 
-When allocating an array, you must use `new[]`, and when freeing it, you must use the corresponding `delete[]`:
+When allocating an array we must use `new[]`, and when releasing it we must use the matching `delete[]`:
 
 ```cpp
-Widget* arr = new Widget[10]; // Constructs 10 Widgets
-// ... use arr ...
-delete[] arr;                 // Destructs all 10, then frees memory
+int* arr = new int[10];
+for (int i = 0; i < 10; ++i) {
+    arr[i] = i * i;
+}
+delete[] arr;  // Note: this is delete[], not delete
 ```
 
-> **Warning**: Mismatching `new`/`delete` and `new[]`/`delete[]` is a classic error. Using `delete` to free an array allocated by `new[]` results in undefined behavior. For basic types like `int`, some platforms might "coincidentally" work without issues; but for class type arrays, `delete` (without the `[]`) will only call the destructor for the first element. The destructors for the remaining elements will never be called—if the destructors were responsible for releasing nested dynamic memory, the consequence is resource leakage. Make this an ironclad rule: `new` matches `delete`, `new[]` matches `delete[]`. It is better to write an extra `[]` than to rely on luck.
+A mismatched `delete`/`delete[]` is the most classic error of all. Releasing an array allocated with `new[]` using plain `delete` is undefined behavior. For fundamental types like `int`, some platforms might "get lucky" and show no problem; but for an array of class types, `delete` (without `[]`) invokes the destructor of only the first element—the destructors of the remaining elements are never called at all—and if those destructors were responsible for releasing nested dynamic memory, the consequence is a resource leak. Burn in an ironclad habit: `new` pairs with `delete`, `new[]` pairs with `delete[]`; better to type one extra `[]` than to gamble on luck.
 
-## Memory Leaks—The Silent Killer
+## Memory Leaks: The Silent Killer
 
-How insidious can a memory leak be? Let's look at a simple scenario:
+Just how insidious is a memory leak? Take the simplest scenario:
 
 ```cpp
-void risky_function() {
-    char* buffer = new char[4]; // Allocate 4 bytes
-    if (some_condition) {
-        return; // Oops! Forgot to delete buffer
+void leak_example()
+{
+    int* p = new int(42);
+    if (some_condition()) {
+        return;  // Early return; the delete never runs
     }
-    delete[] buffer;
+    delete p;
 }
 ```
 
-The function returns early, skipping `delete[]`, and those 4 bytes are lost forever. But even more insidious is exceptions: if code throws an exception between `new` and `delete`, control flow jumps directly to the `catch` block, completely bypassing `delete`. These leaks often don't appear during testing, but in production, a rare condition triggers an exception, and memory starts bleeding away drop by drop.
+The function returns midway, the `delete` is skipped, and those 4 bytes are lost forever. But the more insidious scenario is exceptions: code between the `new` and the `delete` throws, control flow jumps straight to the `catch` block, and the `delete` is bypassed entirely. This kind of leak often stays hidden during testing, but in production, once some rare condition triggers the exception, memory starts draining away bit by bit.
 
 ### Catching Leaks with AddressSanitizer
 
-The good news is that modern compilers provide powerful runtime detection tools. AddressSanitizer (ASan) is a built-in memory error detector in GCC and Clang. Adding the `-fsanitize=address` compiler flag allows it to automatically detect leaks, out-of-bounds accesses, use-after-free, and more.
+The good news is that modern compilers give us powerful runtime detection tools. AddressSanitizer (ASan) is the memory error detector built into GCC and Clang; compile with `-fsanitize=address` and it automatically detects leaks, out-of-bounds accesses, use-after-free, and similar problems.
 
-```bash
-# Compile with ASan enabled
-g++ -fsanitize=address -g leaky.cpp -o leaky
+```cpp
+// leak_demo.cpp
+// Compile: g++ -std=c++17 -O0 -fsanitize=address -g leak_demo.cpp
+#include <iostream>
+
+void create_leak()
+{
+    int* p = new int(42);
+    std::cout << "分配了内存，值为: " << *p << "\n";
+    // Intentionally no delete
+}
+
+int main()
+{
+    create_leak();
+    std::cout << "函数返回了，但内存没有释放\n";
+    return 0;
+}
 ```
 
-After compiling and running, ASan reports upon exit:
+After compiling and running, ASan reports at program exit:
 
 ```text
 =================================================================
 ==12345==ERROR: LeakSanitizer: detected memory leaks
 
-Direct leak of 4 byte(s) object(s)
-    #0 in operator new(unsigned long)
-    #1 in risky_function() leaky.cpp:4
-    #2 in main leaky.cpp:10
+Direct leak of 4 byte(s) in 1 object(s) allocated from:
+    #0 0x401234 in operator new(unsigned long)
+    #1 0x401156 in create_leak() leak_demo.cpp:7
+    #2 0x401178 in main leak_demo.cpp:14
 
-SUMMARY: AddressSanitizer: 4 byte(s) leaked
+SUMMARY: AddressSanitizer: 4 byte(s) leaked in 1 allocation(s).
+=================================================================
 ```
 
-> **Warning**: ASan significantly slows down program execution (usually 2-5x slower) and increases memory usage (about 3-5x more), so it should only be used during debugging and testing. Be sure to remove `-fsanitize=address` in production builds. Additionally, ASan may conflict with some parallel debugging tools; if you encounter strange segmentation faults, try removing ASan to see if the tool itself is the issue.
+ASan noticeably slows programs down (typically 2-5x) and inflates memory usage (roughly 3-5x), so use it only during debugging and testing. Always strip `-fsanitize=address` from production builds. Also, ASan can conflict with some parallel debugging tools; when you run into a strange segmentation fault, try disabling ASan to see whether the tool itself is the culprit.
 
-## RAII: Binding Heap Resources to the Stack
+## RAII: Tying Heap Resources to the Stack
 
-The core problem with raw `new`/`delete` is that you must manually guarantee every block of memory is freed exactly once, whether via normal return, early `return`, or exception exit. C++'s answer is RAII—Resource Acquisition Is Initialization. The core idea is to bind the lifetime of a heap resource to a stack object: `new` in the constructor, `delete` in the destructor, utilizing the mechanism where destructors are automatically called when a stack object leaves scope.
+The core problem with using raw `new`/`delete` is this: by hand, we must guarantee that every block of memory is released exactly once—whether we leave via a normal return, an early `return`, or an exception. C++'s answer is RAII—Resource Acquisition Is Initialization. The core idea is to bind the lifetime of a heap resource to a stack object: `new` in the constructor, `delete` in the destructor, leaning on the fact that a stack object's destructor is invoked automatically when it leaves its scope to guarantee the release.
 
 ```cpp
-class SmartBuffer {
-    char* data_;
+class AutoInt {
 public:
-    explicit SmartBuffer(size_t size) : data_(new char[size]) {}
-    ~SmartBuffer() { delete[] data_; } // Guaranteed to run
+    explicit AutoInt(int value) : ptr_(new int(value)) {}
+    ~AutoInt() {
+        delete ptr_;
+        std::cout << "AutoInt 析构，内存已释放\n";
+    }
+
+    // Copying is disabled (the reason comes later)
+    AutoInt(const AutoInt&) = delete;
+    AutoInt& operator=(const AutoInt&) = delete;
+
+    int& operator*() { return *ptr_; }
+private:
+    int* ptr_;
 };
-```
 
-`SmartBuffer`'s destructor guarantees that `delete[]` will be executed—whether `risky_function` returns normally or exits due to an exception. In reality, we don't hand-write a wrapper class like `SmartBuffer` for every type; the standard library has already done this for us, and more thoroughly. These are smart pointers.
-
-## Smart Pointers—The Standard Answer to RAII
-
-C++11 introduced three smart pointers, all defined in the `<memory>` header, corresponding to different ownership semantics.
-
-### unique_ptr—Exclusive Ownership
-
-`unique_ptr` expresses "unique ownership": a block of memory can only be held by one `unique_ptr` at a time. It is not copyable, but it is movable—ownership can be transferred from one `unique_ptr` to another via `std::move`:
-
-```cpp
-#include <memory>
-
-struct Widget { Widget() {} ~Widget() {} };
-
-void unique_example() {
-    // unique_ptr<Widget> p1 = new Widget; // ERROR! No implicit conversion
-    std::unique_ptr<Widget> p1(new Widget); // OK, explicit
-
-    std::unique_ptr<Widget> p2 = std::move(p1); // Transfer ownership
-    // p1 is now null
-
-    // p2 goes out of scope, Widget is automatically deleted
+void safe_function()
+{
+    AutoInt value(42);
+    std::cout << *value << "\n";
+    risky_operation();  // Even if this throws
+    // the destructor is still invoked automatically during stack unwinding
 }
 ```
 
-`std::make_unique` (C++14) is safer than directly using `new`—it combines allocation and construction in a single uninterruptible step, avoiding leaks in edge cases. C++11 projects can simply write `std::unique_ptr<Widget>(new Widget)`.
+`AutoInt`'s destructor guarantees the `delete` is executed, no matter whether `safe_function` returns normally or exits because of an exception. In practice, though, we don't hand-write an `AutoXxx` wrapper for every type—the standard library has already done it for us, and done it more thoroughly. Those are smart pointers.
 
-`unique_ptr` also supports custom deleters and array versions. A custom deleter allows you to perform custom actions when freeing memory, which is very useful in embedded development—for example, returning memory to a memory pool instead of the standard heap:
+## Smart Pointers: RAII's Standard Answer
 
-```cpp
-// Custom deleter to return memory to a pool
-auto pool_deleter = [](Widget* p) { memory_pool.release(p); };
-std::unique_ptr<Widget, decltype(pool_deleter)> p(new Widget, pool_deleter);
-```
+C++11 introduced three smart pointers, all defined in the `<memory>` header, each matching a different ownership semantics.
 
-The array version replaces `new[]`/`delete[]`: `std::unique_ptr<Widget[]>` automatically provides operator `[]`, and automatically calls `delete[]` when leaving scope.
+### unique_ptr: Exclusive Ownership
 
-### shared_ptr—Shared Ownership
-
-`shared_ptr` allows multiple pointers to share ownership of the same memory block. Internally, it tracks via reference counting—incrementing on copy, decrementing on destruction, and automatically releasing when the count reaches zero.
+`std::unique_ptr` expresses sole ownership: at any given moment, a block of memory can be held by only one `unique_ptr`. It is not copyable, but it is movable—`std::move` transfers ownership from one `unique_ptr` to another:
 
 ```cpp
-#include <memory>
+auto p = std::make_unique<int>(42);   // C++14's make_unique
+std::cout << *p << "\n";              // 42
 
-void shared_example() {
-    std::shared_ptr<Widget> p1 = std::make_shared<Widget>();
-    std::shared_ptr<Widget> p2 = p1; // Both point to same Widget
-    // ref_count == 2
-
-    p1.reset(); // ref_count == 1
-    p2.reset(); // ref_count == 0, Widget destroyed
-}
+// auto p2 = p;                       // Compile error! unique_ptr is not copyable
+auto p2 = std::move(p);              // OK: ownership transferred, p becomes nullptr
+std::cout << *p2 << "\n";            // 42
+// At scope exit, p2 is destroyed and the memory is released automatically
 ```
 
-`std::make_shared` is more efficient than `std::shared_ptr<T>(new T)`—it requires only one allocation to allocate both the control block and the object itself, whereas the latter requires two. Unless you need a custom deleter, you should prefer it.
+`std::make_unique` (C++14) is safer than writing `std::unique_ptr<int>(new int(42))` directly: it folds allocation and construction into one non-interruptible step, avoiding leaks in edge cases. In a C++11 project, `std::unique_ptr<int>(new int(42))` is fine to write directly.
 
-> **Warning**: The reference counting of `shared_ptr` itself is thread-safe (atomic operations), but concurrent access to the pointed-to object is not—multiple threads reading and writing the same `shared_ptr` target is still a data race. Additionally, `shared_ptr` has performance overhead: memory overhead for the control block, atomic operation overhead for reference counting, and potential cache unfriendliness due to the object and control block not being on the same cache line. If your ownership semantics are unique, please use `unique_ptr`; do not abuse `shared_ptr` "just for safety."
+`unique_ptr` also supports custom deleters and an array version. A custom deleter lets us run our own actions when the memory is released—extremely useful in embedded development, for example returning memory to a memory pool instead of the standard heap:
 
-### weak_ptr—Breaking Circular References
+```cpp
+auto pool_deleter = [](int* p) {
+    std::cout << "归还到内存池\n";
+    ::operator delete(p);
+};
+std::unique_ptr<int, decltype(pool_deleter)> p(new int(42), pool_deleter);
+// When p is destroyed, pool_deleter is invoked instead of the default delete
+```
 
-`shared_ptr` has a classic trap: circular references. If object A holds a `shared_ptr` to B, and object B also holds a `shared_ptr` to A, their reference counts will never reach zero, and the memory will never be released.
+The array version, in turn, replaces `new[]`/`delete[]`: `auto arr = std::make_unique<int[]>(10);` automatically provides `operator[]`, and calls `delete[]` automatically when it leaves its scope.
 
-`weak_ptr` is designed to solve this problem. It is an "observer"—it can be constructed from a `shared_ptr` but does not increase the reference count. To access the object pointed to by a `weak_ptr`, you must first call `lock()` to promote it to a `shared_ptr`:
+### shared_ptr: Shared Ownership
+
+`std::shared_ptr` allows multiple pointers to share ownership of the same memory. It tracks this internally with a reference count: each copy increments it, each destruction decrements it, and when the count reaches zero the memory is released automatically.
+
+```cpp
+auto p1 = std::make_shared<int>(42);
+std::cout << p1.use_count() << "\n";  // 1
+
+auto p2 = p1;  // Copy; ownership is shared
+std::cout << p1.use_count() << "\n";  // 2
+
+{
+    auto p3 = p1;
+    std::cout << p1.use_count() << "\n";  // 3
+}  // p3 is destroyed; the count drops to 2
+
+std::cout << p1.use_count() << "\n";  // 2
+// After p1 and p2 leave their scope, the count reaches zero and the memory is released
+```
+
+`std::make_shared` is more efficient than `std::shared_ptr<int>(new int(42))`: a single allocation covers both the control block and the object itself, whereas the latter needs two. Prefer it unless you need a custom deleter.
+
+`shared_ptr`'s reference count is itself thread-safe (atomic operations), but concurrent access to the pointed-to object is not: multiple threads reading and writing `*p` at the same time is still a data race. `shared_ptr` also carries performance costs: the memory overhead of the control block, the cost of atomic reference-count operations, and cache unfriendliness when the object and the control block may not sit on the same cache line. If your ownership semantics are exclusive, use `unique_ptr`—don't reach for `shared_ptr` "just to be safe".
+
+### weak_ptr: Breaking Circular References
+
+`shared_ptr` has one classic trap: circular references. Object A holds a `shared_ptr` to B, object B holds a `shared_ptr` to A, neither reference count ever reaches zero, and the memory is never freed.
+
+`std::weak_ptr` exists to solve exactly this problem. It is an "observer": it can be constructed from a `shared_ptr`, but it does not increment the reference count. To access the object a `weak_ptr` points to, we must first call `lock()` to promote it to a `shared_ptr`:
 
 ```cpp
 struct Node {
     std::shared_ptr<Node> next;
-    std::weak_ptr<Node> prev; // Breaks the cycle
+    std::weak_ptr<Node> prev;  // weak_ptr breaks the cycle
+    int value;
+    explicit Node(int v) : value(v) {}
+    ~Node() { std::cout << "Node(" << value << ") 析构\n"; }
 };
 
-// If prev were also a shared_ptr, p1->next and p2->prev would form a circular reference.
-// Even if external p1 and p2 leave scope, the shared_ptrs they hold mutually keep the ref count at 1.
-// With weak_ptr, the cycle is broken, and both nodes are released normally.
-```
+auto n1 = std::make_shared<Node>(1);
+auto n2 = std::make_shared<Node>(2);
+n1->next = n2;       // n2's reference count becomes 2
+n2->prev = n1;       // n1's reference count is unchanged (weak_ptr doesn't increment it)
 
-If `prev` were also a `shared_ptr`, `p1->next` and `p2->prev` would form a circular reference—even if external `p1` and `p2` leave scope, the `shared_ptr`s they hold mutually keep the reference count at 1, so they never destruct. Switching to `weak_ptr` breaks the cycle, allowing both nodes to be released normally.
-
-## Placement New—Constructing Objects at a Specific Address
-
-Ordinary `new` automatically finds memory on the heap, while `placement new` means "you provide the address, I just call the constructor." You are entirely responsible for allocating the memory.
-
-```cpp
-#include <new>
-
-alignas(Widget) unsigned char buffer[sizeof(Widget)];
-
-void placement_example() {
-    // Construct Widget at the address of buffer
-    Widget* p = new(buffer) Widget;
-
-    // ... use p ...
-
-    // Do NOT call delete p! Memory was not allocated with new.
-    // Explicitly call destructor.
-    p->~Widget();
+// Access the predecessor through the weak_ptr
+if (auto locked = n2->prev.lock()) {
+    std::cout << "前驱节点值: " << locked->value << "\n";  // 1
 }
+// n1 and n2 are destroyed normally; no leak
 ```
 
-`placement new` isn't used much in desktop development, but it's very valuable in embedded systems—it allows you to construct C++ objects in pre-allocated memory pools or shared memory. Note three points: buffer alignment must satisfy the object's requirements (`alignas` ensures this); the memory wasn't allocated with `new`, so you cannot call `delete`, you must explicitly call the destructor; explicitly calling a destructor is very rare in C++ and almost exclusive to this scenario.
+If `prev` were also a `shared_ptr`, `n1` and `n2` would form a circular reference—even after the outer `n1` and `n2` leave their scope, the `shared_ptr`s they hold for each other would keep both reference counts stuck at 1, so they would never be destroyed. Swapping in `weak_ptr` breaks the cycle, and both nodes are released normally.
 
-## Hands-On—Raw Pointers vs. Smart Pointers
+## placement new: Constructing an Object at a Given Address
 
-Let's integrate the previous content into a complete example—comparing raw pointers, smart pointers, and custom deleters.
+Plain `new` automatically finds memory on the heap; `placement new` instead says, "you pick the address, I'll just call the constructor." Allocating the memory is entirely your own responsibility.
 
 ```cpp
+#include <new>  // placement new requires this header
+
+alignas(int) unsigned char buffer[sizeof(int)];
+int* p = new (buffer) int(42);  // Construct an int on buffer
+std::cout << *p << "\n";        // 42
+
+// No delete here! The memory was not allocated by new
+p->~int();  // Explicit destructor call (a no-op for int)
+```
+
+`placement new` sees little use in host-side development, but in embedded systems it is highly valuable: it lets us construct C++ objects inside pre-allocated memory pools or shared memory. Note three things: the buffer's alignment must satisfy the object's requirement (`alignas` guarantees that here); the memory was not allocated by `new`, so no `delete` may be called—only an explicit destructor call; and explicitly calling a destructor is extremely rare in C++, appearing almost exclusively in this scenario.
+
+## Hands-On: Raw Pointers vs Smart Pointers
+
+Let's fold everything above into one complete example: a comparison of raw pointers, smart pointers, and custom deleters.
+
+```cpp
+// dynamic.cpp
+// Compile (with leak detection):
+//   g++ -std=c++17 -O0 -fsanitize=address -g dynamic.cpp -o dynamic
+// Compile (normal):
+//   g++ -std=c++17 -O0 -g dynamic.cpp -o dynamic
+
 #include <iostream>
 #include <memory>
-#include <vector>
 
-// Mock class
-struct Resource {
-    int data;
-    Resource(int d) : data(d) { std::cout << "Acquire " << data << "\n"; }
-    ~Resource() { std::cout << "Release " << data << "\n"; }
-};
+void raw_pointer_demo()
+{
+    std::cout << "=== 裸指针版本 ===\n";
+    int* p = new int(42);
+    std::cout << "值: " << *p << "\n";
 
-void raw_pointer_demo() {
-    std::cout << "--- Raw Pointer ---\n";
-    Resource* r = new Resource(100);
-    // If we return early or throw here, we leak.
-    // return;
-    delete r;
+    int* arr = new int[5];
+    for (int i = 0; i < 5; ++i) { arr[i] = i * 10; }
+
+    // Simulate an early return (uncomment to observe the leak):
+    // if (true) return;
+
+    delete p;
+    delete[] arr;
+    std::cout << "手动释放完成\n";
 }
 
-void smart_pointer_demo() {
-    std::cout << "--- Smart Pointer ---\n";
-    auto r = std::make_unique<Resource>(200);
-    // Even if we return early or throw here, r's destructor handles it.
-    // return;
+void smart_pointer_demo()
+{
+    std::cout << "\n=== 智能指针版本 ===\n";
+    auto p = std::make_unique<int>(42);
+    std::cout << "值: " << *p << "\n";
+    auto arr = std::make_unique<int[]>(5);
+    for (int i = 0; i < 5; ++i) { arr[i] = i * 10; }
+    // No matter how we leave (normal return, early return, exception),
+    // the destructor releases the memory automatically
+    std::cout << "离开作用域时自动释放\n";
 }
 
-int main() {
+void custom_deleter_demo()
+{
+    std::cout << "\n=== 自定义删除器 ===\n";
+    auto deleter = [](int* ptr) {
+        std::cout << "自定义删除器被调用，值为: " << *ptr << "\n";
+        delete ptr;
+    };
+    std::unique_ptr<int, decltype(deleter)> p(new int(99), deleter);
+    std::cout << "值: " << *p << "\n";
+}
+
+int main()
+{
     raw_pointer_demo();
     smart_pointer_demo();
+    custom_deleter_demo();
+    std::cout << "\n程序结束\n";
     return 0;
 }
 ```
 
-Compile and run normally, output is as follows:
+Compiled and run normally, the output is:
 
 ```text
---- Raw Pointer ---
-Acquire 100
-Release 100
---- Smart Pointer ---
-Acquire 200
-Release 200
+=== 裸指针版本 ===
+值: 42
+手动释放完成
+
+=== 智能指针版本 ===
+值: 42
+离开作用域时自动释放
+
+=== 自定义删除器 ===
+值: 99
+自定义删除器被调用，值为: 99
+
+程序结束
 ```
 
-If you uncomment the early `return` in `raw_pointer_demo`, ASan will report two leaks totaling 24 bytes. `smart_pointer_demo`, however, will never leak—this is the security of RAII.
+Uncomment the early return inside `raw_pointer_demo`, and ASan reports two leaks totaling 24 bytes. `smart_pointer_demo`, on the other hand, cannot leak no matter what happens—that is the peace of mind RAII gives you.
 
 ## Exercises
 
 ### Exercise 1: Convert Raw Pointers to Smart Pointers
 
-Rewrite the following code using smart pointers: use `unique_ptr` for single objects, and `shared_ptr` for shared objects.
+Rewrite the following code as a smart-pointer version: `unique_ptr` for the single object, `shared_ptr` for shared ownership.
 
 ```cpp
-struct Device { void ping() {} };
+class Logger {
+public:
+    explicit Logger(const std::string& name) : name_(name) {}
+    ~Logger() { std::cout << "Logger(" << name_ << ") 析构\n"; }
+    void log(const std::string& msg) { std::cout << "[" << name_ << "] " << msg << "\n"; }
+private:
+    std::string name_;
+};
 
-void legacy_code() {
-    Device* d1 = new Device;
-    Device* d2 = new Device;
-    // ... use d1, d2 ...
-    delete d1;
-    delete d2;
+int main()
+{
+    Logger* logger = new Logger("app");
+    logger->log("程序启动");
+    Logger* backup = logger;  // An alias; does not own
+    delete logger;
+    // backup is now a dangling pointer!
+    return 0;
 }
 ```
 
-### Exercise 2: Implement a Simple Memory Pool with Custom Deleter
+### Exercise 2: A Simple Memory Pool with a Custom Deleter
 
-Implement a fixed-size memory pool class. Use `unique_ptr` with a custom deleter to manage objects allocated from the pool. Hint: the deleter doesn't have to `delete`; it can call `pool.free()` to return memory.
+Implement a fixed-size memory pool class that manages objects allocated from the pool using `unique_ptr` combined with a custom deleter. Hint: the deleter does not have to `delete`—it can call `pool.deallocate()` to hand the memory back.

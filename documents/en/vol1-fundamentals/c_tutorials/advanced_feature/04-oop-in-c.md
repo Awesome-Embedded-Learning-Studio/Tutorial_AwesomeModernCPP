@@ -2,16 +2,14 @@
 chapter: 1
 cpp_standard:
 - 11
-description: Simulate classes, encapsulation, inheritance, and polymorphism using
-  structs and function pointers to understand the underlying implementation mechanisms
-  of OOP.
+description: Simulating classes, encapsulation, inheritance, and polymorphism with structs and function pointers to understand the low-level machinery behind OOP
 difficulty: advanced
 order: 104
 platform: host
 prerequisites:
-- 指针进阶：多级指针、指针与 const
-- 结构体、联合体与内存对齐
-- 函数指针与回调机制
+- Advanced Pointers: Multilevel Pointers, Pointers and const
+- Structures, Unions, and Memory Alignment
+- Function Pointers and the Callback Pattern
 reading_time_minutes: 15
 tags:
 - host
@@ -22,38 +20,36 @@ tags:
 title: Implementing Object-Oriented Programming in C
 translation:
   source: documents/vol1-fundamentals/c_tutorials/advanced_feature/04-oop-in-c.md
-  source_hash: cdd226d730bc475970462efb2e3de9dc97776608ed00faad7c0e957cff0fb125
-  translated_at: '2026-06-16T05:53:08.960397+00:00'
+  source_hash: 177ae62d939c91967e1f0246ea4b57a7343fea2b0c9cd8e503353521c677b12f
+  translated_at: '2026-09-25T13:54:33+00:00'
   engine: anthropic
-  token_count: 3510
+  token_count: 3700
 ---
 # Implementing Object-Oriented Programming in C
 
-To be honest, I debated for a long time whether to write this topic. After all, it's 2026—who is still hand-cranking OOP in C? But then I thought about it—embedded development, the Linux kernel, GTK/GLib, the Lua source code—every one of these heavyweight C projects uses structs and function pointers to do object-oriented programming. More importantly, if you don't understand how OOP is pieced together at the C level, your understanding of virtual function tables (vtables), `vptr`, and dynamic binding in C++ will always be built on shaky ground—you might know the syntax, but you won't know what's happening under the hood.
+Honestly, we went back and forth for a long time over whether to write this article. It's 2026 — who still hand-rolls OOP in C? But think about it: embedded development, the Linux kernel, GTK/GLib, the Lua source code — which of these heavyweight C projects isn't doing object orientation with struct + function pointers? And here is the more important part: if you have never seen how OOP is assembled at the C level, then when you learn C++, your understanding of the vtable, vptr, and dynamic binding forever remains a castle in the air — you know how to use the syntax, but not what is happening underneath.
 
-In this article, we will manually implement encapsulation, inheritance, polymorphism, and interface abstraction in pure C, and finally build a working graphics framework. After writing this, looking back at C++ `class`, `virtual`, and `abstract class`, you will have that "aha" moment of clarity.
+In this article we hand-roll encapsulation, inheritance, polymorphism, and interface abstraction in pure C, and finish by assembling a shape framework that actually runs. Once you have written it, looking back at C++'s `class`, `virtual`, and `abstract class` brings that "so that's what it was" moment of clarity.
 
-## Environment Setup
-
-We can use GCC or Clang to compile directly on the host machine; no third-party libraries are required. The code follows the C11 standard, as we will be using anonymous structs and designated initializers. If you are running on an embedded platform, these techniques are equally portable—structs and function pointers do not rely on any specific runtime features.
+All we need is GCC or Clang on the host — no third-party libraries required. The code follows C11, because it uses anonymous structs and designated initializers. If you run it on an embedded platform, these idioms are just as portable — structs and function pointers depend on no runtime features.
 
 ```text
-平台：Linux / macOS / Windows (MSVC/MinGW)
-编译器：GCC >= 9 或 Clang >= 12
-标准：-std=c11
-依赖：无
+Platform: Linux / macOS / Windows (MSVC/MinGW)
+Compiler: GCC >= 9 or Clang >= 12
+Standard: -std=c11
+Dependencies: none
 ```
 
-## Step 1 — Implementing Encapsulation with Opaque Pointers
+## Step 1 — Encapsulation with Opaque Pointers
 
-The core idea of encapsulation is to hide the internal implementation and expose only the operational interface. While C++ uses `private` and `public`, the answer in C is the opaque pointer pattern.
+The core idea of encapsulation is to hide the internal implementation and expose only the operating interface. C++ uses `private` and `public`; C's answer is the opaque pointer pattern.
 
-### Dynamic String Buffer
+### A Dynamic String Buffer
 
-We will create a dynamic string buffer where the caller can only manipulate it through functions, never seeing the internal structure. The header file only exposes the type name and operation functions:
+We will build a dynamic string buffer that callers can manipulate only through functions and whose internal structure they never see. The header file exposes nothing but the type name and the operation functions:
 
 ```c
-// strbuf.h — 公开头文件
+// strbuf.h — public header
 typedef struct StrBuf StrBuf;
 
 StrBuf*     strbuf_create(int capacity);
@@ -63,12 +59,12 @@ int         strbuf_length(const StrBuf* sb);
 const char* strbuf_data(const StrBuf* sb);
 ```
 
-The header file contains only a forward declaration `typedef struct StrBuf StrBuf`. The caller knows that `StrBuf` is a type, but has no idea what it looks like inside—they cannot directly access any fields and must use the functions we provide. Isn't this exactly like C++'s `private`?
+The header contains just one forward declaration, `typedef struct StrBuf StrBuf`. Callers know `StrBuf` is a type, but have no idea what it looks like inside — no field can be accessed directly, and everything must go through the functions we provide. Isn't that exactly C++'s `private`?
 
-The full definition is provided only in the implementation file:
+The complete definition appears only in the implementation file:
 
 ```c
-// strbuf.c — 私有实现
+// strbuf.c — private implementation
 #include "strbuf.h"
 #include <stdlib.h>
 #include <string.h>
@@ -105,7 +101,7 @@ void strbuf_destroy(StrBuf* sb)
 int strbuf_append(StrBuf* sb, const char* data, int len)
 {
     if (sb->length + len >= sb->capacity) {
-        return -1;  // 缓冲区不足
+        return -1;  // insufficient capacity
     }
     memcpy(sb->data + sb->length, data, len);
     sb->length += len;
@@ -117,13 +113,13 @@ int strbuf_length(const StrBuf* sb) { return sb->length; }
 const char* strbuf_data(const StrBuf* sb) { return sb->data; }
 ```
 
-The complete definition of `struct StrBuf` appears only in the `.c` file. If a caller attempts to write `sb->length`, the compiler will immediately report an error: "dereferencing pointer to incomplete type". In C, the `.h` file is equivalent to the `public` section in C++, while the `.c` file corresponds to `private` members and function implementations—the difference is that C relies on the compiler's incomplete type checking, whereas C++ relies on language-level access control keywords.
+The full definition of `struct StrBuf` exists only in the `.c` file. If a caller tries to write `sb->length`, the compiler rejects it on the spot with "dereferencing pointer to incomplete type". The `.h` file plays the role of C++'s `public` part, and the `.c` file the role of the `private` members and function implementations — the difference being that C relies on the compiler's incomplete-type checking, while C++ relies on language-level access-control keywords.
 
-## Step 2 — Simulating Classes with Structs and Function Pointers
+## Step 2 — Simulating Classes with Struct + Function Pointers
 
-With encapsulation settled, we move on to a more fundamental problem: C lacks "methods". In C++, methods are functions bound to a class, invoked via `obj.method()`. C lacks this syntactic sugar, but we can simulate it using a convention: **store function pointers within the struct, with the first parameter always being the `self` pointer**.
+Encapsulation, done. Next comes a more fundamental problem: C has no "methods". In C++, a method is a function bound to a class, callable through `obj.method()`. C lacks that syntactic sugar, but we can simulate it with a convention: **store function pointers inside the struct, with the first parameter always the `self` pointer**.
 
-### Counter "Object"
+### The Counter "Object"
 
 ```c
 typedef struct Counter {
@@ -131,7 +127,7 @@ typedef struct Counter {
     int min;
     int max;
 
-    // 「方法」——函数指针
+    // "methods" — function pointers
     void (*increment)(struct Counter* self);
     void (*decrement)(struct Counter* self);
     int  (*get_value)(const struct Counter* self);
@@ -139,9 +135,9 @@ typedef struct Counter {
 } Counter;
 ```
 
-Structs contain both data members and function pointer members, where function pointers correspond to member functions in C++. However, there is a crucial difference: C function pointers do not automatically bind `this`, so we must manually pass `self`.
+The struct now mixes data members with function pointer members; the function pointers play the role of C++ member functions. But there is one important difference — a C function pointer does not bind `this` automatically, so `self` has to be passed by hand.
 
-Method implementation and "constructor":
+The method implementations and the "constructor":
 
 ```c
 static void counter_increment(Counter* self)
@@ -156,7 +152,7 @@ static int counter_get_value(const Counter* self)
     return self->value;
 }
 
-// 「构造函数」——初始化对象并绑定方法
+// "constructor" — initialize the object and bind the methods
 void counter_init(Counter* self, int min, int max)
 {
     self->value = min;
@@ -164,11 +160,11 @@ void counter_init(Counter* self, int min, int max)
     self->max = max;
     self->increment = counter_increment;
     self->get_value = counter_get_value;
-    // ...其他方法绑定
+    // ... bind the remaining methods
 }
 ```
 
-It becomes very OOP-like when we use it:
+Using it already feels quite OOP:
 
 ```c
 Counter c;
@@ -179,17 +175,16 @@ c.increment(&c);
 printf("value = %d\n", c.get_value(&c));  // value = 2
 ```
 
-> ⚠️ **Warning**
-> Storing the function pointer directly in each instance means that every object holds a copy of that pointer—on a 64-bit system, this `Counter` takes up 32 bytes just for the function pointer. If we create ten thousand objects, we end up with one hundred thousand copies of the exact same pointer. In the next section, we will use a vtable to optimize this issue.
+Stuffing function pointers directly into every instance means every object stores its own copy of them — on a 64-bit system, the function pointers alone make this `Counter` 32 bytes. Create ten thousand objects and you have a hundred thousand identical pointers. The next section optimizes this away with a vtable.
 
-## Step 3 — Implementing Inheritance via Nested Structs
+## Step 3 — Inheritance via Struct Nesting
 
-C lacks language-level inheritance, but we can simulate it using **nested structs**—by placing the "base class" as a member at the first field of the "derived class." Why the first field? Because the C standard guarantees that the address of a struct is the same as the address of its first member. This allows us to safely perform type casts between base class pointers and derived class pointers.
+C has no inheritance at the syntax level, but we can simulate it with **struct nesting** — put the "base class" as the first field of the "derived class". Why the first? Because the C standard guarantees that a struct's address equals the address of its first member, which lets us convert safely between base-class pointers and derived-class pointers.
 
 ### The Animal Family
 
 ```c
-// 「基类」——所有动物共有的属性
+// "base class" — attributes shared by all animals
 typedef struct Animal {
     const char* name;
     int    age;
@@ -205,9 +200,9 @@ void animal_print_info(const Animal* self)
     printf("\n");
 }
 
-// 「派生类」——狗
+// "derived class" — dog
 typedef struct Dog {
-    Animal base;          // 基类放第一个！
+    Animal base;          // base class goes first!
     const char* breed;
 } Dog;
 
@@ -221,7 +216,7 @@ void dog_init(Dog* self, const char* name, int age, const char* breed)
     self->breed = breed;
 }
 
-// 「派生类」——猫
+// "derived class" — cat
 typedef struct Cat {
     Animal base;
     int lives_remaining;
@@ -238,7 +233,7 @@ void cat_init(Cat* self, const char* name, int age, int lives)
 }
 ```
 
-Here is the critical point: since the first member of both `Dog` and `Cat` is `Animal base`, we have `&dog->base == (Animal*)dog`. We can safely cast a `Dog*` to an `Animal*`, and then call it uniformly through the base class pointer:
+Here comes the crucial part — because the first member of both `Dog` and `Cat` is `Animal base`, we have `&dog->base == (Animal*)dog`. We can safely convert a `Dog*` into an `Animal*` and then call uniformly through the base-class pointer:
 
 ```c
 Dog dog;
@@ -252,28 +247,27 @@ for (int i = 0; i < 2; i++) {
 }
 ```
 
-Please provide the Chinese Markdown content you would like me to translate. I am ready to apply the translation rules and terminology reference to generate the English documentation.
+Output:
 
 ```text
 [Buddy, age=3] Woof!
 [Whiskers, age=2] Meow!
 ```
 
-Although we invoke the method through an `Animal*` pointer, `Dog` and `Cat` produce different sounds. This is the prototype of polymorphism—the same interface, different behaviors.
+Even though every call went through an `Animal*` pointer, `Dog` and `Cat` each emitted a different cry. This is polymorphism in embryo — one interface, different behaviors.
 
-> ⚠️ **Warning**
-> The base class **must** be placed as the first member. If you place it in the middle or at the end, `&dog == (Animal*)&dog` will no longer hold true. The type conversion will yield an incorrect offset, leading to data corruption at best or a hard crash at worst.
+The base class **must** sit in the first field. Put it in the middle or at the end, and `&dog == (Animal*)&dog` no longer holds; the cast then applies a wrong offset, and at best the data gets scrambled, at worst the program crashes outright.
 
-## Step 4 — Implementing Polymorphism with a Virtual Table (vtable)
+## Step 4 — Polymorphism with a Virtual Function Table (vtable)
 
-Previously, we stuffed function pointers directly into every object, which wasted a significant amount of memory. Now, let's implement proper polymorphism using a virtual table (vtable). This is the underlying mechanism C++ compilers use to implement virtual functions, and we will manually reproduce it. The core idea is: **all objects of the same type share a single table of function pointers, while each object only stores a pointer to this table**.
+Storing function pointers directly inside every object, as we did before, wastes quite a bit of memory. Now for the real thing — polymorphism through a virtual function table (vtable). This is the low-level mechanism C++ compilers use to implement virtual functions, and we are going to reproduce it by hand. The core idea: **all objects of the same type share one function pointer table, and each object stores only a single pointer to that table**.
 
-### Shape Base Class + vtable
+### A Shape Base Class + vtable
 
 ```c
 typedef struct Shape Shape;
 
-// 虚函数表——所有 Shape「类」共享的函数指针表
+// vtable — the function pointer table shared by all Shape "class" objects
 typedef struct ShapeVtable {
     double (*area)(const Shape* self);
     double (*perimeter)(const Shape* self);
@@ -281,13 +275,13 @@ typedef struct ShapeVtable {
     void   (*destroy)(Shape* self);
 } ShapeVtable;
 
-// 基类结构体
+// base class struct
 typedef struct Shape {
-    const ShapeVtable* vtable;  // 指向虚函数表的指针（就是 C++ 的 vptr）
+    const ShapeVtable* vtable;  // pointer to the vtable (this is C++'s vptr)
     const char* name;
 } Shape;
 
-// 通用虚函数分派
+// generic virtual function dispatch
 double shape_area(const Shape* self)
 {
     return self->vtable->area(self);
@@ -296,21 +290,21 @@ void shape_draw(const Shape* self)
 {
     self->vtable->draw(self);
 }
-// ... shape_perimeter、shape_destroy 同理
+// ... shape_perimeter and shape_destroy follow the same pattern
 ```
 
-`ShapeVtable` is the virtual function table—an array of function pointers. The `const ShapeVtable* vtable` inside `Shape` is the hidden vptr found inside every object with virtual functions in C++. Now we implement concrete shapes:
+`ShapeVtable` is the virtual function table — an array of function pointers. The `const ShapeVtable* vtable` inside `Shape` is precisely the vptr that C++ hides inside every object with virtual functions. Now let's implement a concrete shape:
 
 ```c
-// 圆形
+// circle
 typedef struct Circle {
-    Shape base;     // 基类放第一个
+    Shape base;     // base class first
     double radius;
 } Circle;
 
 static double circle_area(const Shape* self)
 {
-    const Circle* c = (const Circle*)self;  // 向下转型
+    const Circle* c = (const Circle*)self;  // downcast
     return 3.14159265358979 * c->radius * c->radius;
 }
 
@@ -322,7 +316,7 @@ static void circle_draw(const Shape* self)
 
 static void circle_destroy(Shape* self) { free(self); }
 
-// 圆形的 vtable——const，全局唯一
+// the circle vtable — const, globally unique
 static const ShapeVtable kCircleVtable = {
     .area      = circle_area,
     .perimeter = circle_perimeter,
@@ -333,16 +327,16 @@ static const ShapeVtable kCircleVtable = {
 Circle* circle_create(const char* name, double radius)
 {
     Circle* c = (Circle*)malloc(sizeof(Circle));
-    c->base.vtable = &kCircleVtable;  // 绑定 vtable
+    c->base.vtable = &kCircleVtable;  // bind the vtable
     c->base.name = name;
     c->radius = radius;
     return c;
 }
 ```
 
-The implementation for `Rect` follows exactly the same logic: define the `Rect` struct, implement its methods, create `kRectVtable`, and write `rect_create`. We will not repeat the details here.
+The rectangle works exactly the same way — define a `Rect` struct, implement its methods, create a `kRectVtable`, write a `rect_create`. We won't repeat it here.
 
-Now, let's verify that the polymorphism works as expected:
+Let's verify that polymorphism works:
 
 ```c
 Shape* shapes[3];
@@ -356,9 +350,7 @@ for (int i = 0; i < 3; i++) {
 }
 ```
 
-It looks like you haven't provided the Chinese Markdown content yet. Please paste the text you would like me to translate, and I will process it according to the rules and style guide provided.
-
-(You seem to have just sent "输出：" which means "Output:" or "Print:". I am ready for the input!)
+Output:
 
 ```text
 Circle("Sun", r=5.00)
@@ -369,17 +361,17 @@ Circle("Moon", r=2.00)
   area = 12.57
 ```
 
-We call the unified `shape_area()` and `shape_draw()` interfaces, and each call correctly dispatches to the specific implementation. This is runtime polymorphism, and the underlying mechanism is **exactly the same** as C++ virtual functions. The memory layout comparison is shown below:
+Called through the uniform `shape_area()` and `shape_draw()` interfaces, every dispatch landed on the correct concrete implementation — this is runtime polymorphism, **exactly the same** in its underlying mechanism as C++ virtual functions. The memory layout looks like this:
 
-![C Language Vtable Memory Layout](./04-oop-in-c-vtable.drawio)
+![Memory layout of a C vtable](./04-oop-in-c-vtable.drawio)
 
-## Step 5 — Implementing Interfaces with Function Pointer Tables
+## Step 5 — Interfaces via Function Pointer Tables
 
-Inheritance solves code reuse, but sometimes we need a looser coupling relationship—interfaces. C has no concept of interfaces, but we can simulate them using **pure function pointer structs**. The difference from a vtable is that an interface contains no data members; it only defines behavioral contracts.
+Inheritance solves code reuse, but sometimes we need a looser coupling — interfaces. C has no concept of an interface, but we can simulate one with a **pure function-pointer struct**. The difference from a vtable: an interface contains no data members; it defines only a behavioral contract.
 
-### Multiple Interface Implementation and the Offset Trap
+### Implementing Multiple Interfaces and the Offset Trap
 
-A single type can implement multiple interfaces by nesting multiple interface structs. However, there is a major pitfall here:
+One type can implement several interfaces at once — by nesting several interface structs. But there is a big trap lurking here:
 
 ```c
 typedef struct Drawable {
@@ -390,35 +382,34 @@ typedef struct Serializable {
     char* (*to_string)(const struct Serializable* self);
 } Serializable;
 
-// 同时实现两个接口
+// implement both interfaces at once
 typedef struct TextShape {
-    Drawable    drawable;       // 第一个接口——可以直接 cast
-    Serializable serializable;  // 第二个接口——必须用 & 取地址！
+    Drawable    drawable;       // first interface — a direct cast works
+    Serializable serializable;  // second interface — you must take its address with &!
     char* text;
 } TextShape;
 ```
 
 ```c
-// 第一个接口——两种写法等价
-Drawable* d1 = (Drawable*)ts;       // OK，因为是第一个成员
-Drawable* d2 = &ts->drawable;       // 也 OK，更明确
+// first interface — both spellings are equivalent
+Drawable* d1 = (Drawable*)ts;       // OK, because it is the first member
+Drawable* d2 = &ts->drawable;       // also OK, and more explicit
 
-// 第二个接口——直接 cast 是错的！
-// Serializable* s = (Serializable*)ts;  // 危险！偏移不对
-Serializable* s = &ts->serializable;    // 正确
+// second interface — casting directly is wrong!
+// Serializable* s = (Serializable*)ts;  // dangerous! wrong offset
+Serializable* s = &ts->serializable;    // correct
 ```
 
-> ⚠️ **Warning**
-> In C++, the compiler automatically calculates offsets for multiple inheritance. However, when doing OOP manually in C, you must ensure pointer conversions are correct yourself. This is why many C projects (such as the Linux kernel) tend to stick to single inheritance combined with callback functions, rather than implementing multiple interface inheritance. If you must implement multiple interfaces, always use `&obj->interface` to obtain the pointer; do not cast directly.
+In C++, the compiler computes the offsets of multiple inheritance automatically; in hand-rolled C OOP, you must guarantee correct pointer conversions yourself. That is why many C projects (the Linux kernel, for example) prefer single inheritance plus callback functions over multiple interface inheritance. If you really must implement multiple interfaces, always obtain the pointer through `&obj->interface`; never cast directly.
 
-## Step 6 — Practice: Building a Graphics Management Framework
+## Step 6 — Practice: Assembling a Shape Management Framework
 
-Now, let's combine all the techniques we have learned—encapsulation, inheritance, polymorphism, and vtables—to write a graphics management framework. The core of the framework is a `ShapeManager`—encapsulated using an opaque pointer, so the external interface only receives a pointer without knowing how the shapes are stored internally.
+Now we combine everything learned so far — encapsulation, inheritance, polymorphism, vtable — into a shape management framework. At its core is a `ShapeManager`: wrapped behind an opaque pointer, the outside world holds nothing but a handle and has no idea how shapes are stored inside.
 
-### Shape Manager
+### The Shape Manager
 
 ```c
-// shape_manager.h — 不透明指针封装
+// shape_manager.h — opaque pointer encapsulation
 typedef struct ShapeManager ShapeManager;
 
 ShapeManager* shape_manager_create(int max_shapes);
@@ -431,7 +422,7 @@ Shape*        shape_manager_find_by_name(const ShapeManager* mgr,
 ```
 
 ```c
-// shape_manager.c — 私有实现
+// shape_manager.c — private implementation
 struct ShapeManager {
     Shape** shapes;
     int     count;
@@ -523,66 +514,66 @@ Total area: 163.10
 Found: Rectangle("Box", w=3.00, h=4.00) -> area=12.00
 ```
 
-We manage different types of graphic objects through a unified interface, and polymorphic dispatch automatically routes execution to the correct implementation—encapsulation, inheritance, and polymorphism are all in place.
+We managed shape objects of different types through one uniform interface, and polymorphic dispatch automatically reached the correct implementation — encapsulation, inheritance, and polymorphism, all in place.
 
-## C++ Connection: What the Compiler is Actually Doing for You
+## Bridging to C++: What the Compiler Actually Does for You
 
-When you write `class Shape { virtual double area() = 0; }` in C++, the compiler handles all the manual work we did above:
+When you write `class Shape { virtual double area() = 0; }` in C++, the compiler does for you everything we did by hand above:
 
-| Manual C OOP | What the C++ Compiler Does |
+| What you do by hand in C | What the C++ compiler does for you |
 |---|---|
-| Define `ShapeVtable` struct | Compiler automatically generates the vtable (in the `.rodata` section) |
-| Assign `vtable = &kCircleVtable` in constructor | Constructor automatically sets the vptr |
-| Manually write `shape_area()` for virtual dispatch | `s->area()` automatically looks up the table via vptr |
-| Manually downcast `(Circle*)shape` | `dynamic_cast<Circle*>(shape)` for safe casting |
-| Manually call constructor `counter_init(&c, 0, 100)` | `Counter c(0, 100)` automatic construction |
-| Hide fields with opaque pointers | `private:` access control |
-| Nest structs for inheritance | `class Derived : public Base` |
+| Define the `ShapeVtable` struct | The compiler generates the vtable automatically (in the `.rodata` section) |
+| Assign `vtable = &kCircleVtable` in the constructor | The constructor sets the vptr automatically |
+| Write `shape_area()` by hand for virtual dispatch | `s->area()` consults the table through the vptr automatically |
+| Downcast manually with `(Circle*)shape` | `dynamic_cast<Circle*>(shape)` for a safe cast |
+| Call the constructor manually with `counter_init(&c, 0, 100)` | `Counter c(0, 100)` constructs automatically |
+| Hide fields behind opaque pointers | `private:` access control |
+| Inherit through struct nesting | `class Derived : public Base` |
 
-C++ OOP syntax is essentially syntactic sugar for C OOP idioms. The compiler automates all the tedious work of wiring up vtables, passing `this`, and performing type conversions. Once you understand this, you can make sense of seemingly strange C++ designs—like why the `sizeof` an empty class isn't zero (it has a vptr), why virtual destructors are important (otherwise the destructor won't reach the derived class's vtable), and why you can't call virtual functions in constructors (the vptr hasn't been set up yet).
+C++'s OOP syntax is essentially syntactic sugar over C OOP idioms. The compiler automates all the fiddly work — binding the vtable, passing `this`, performing the conversions. Once you understand this, several seemingly odd C++ design choices start to make sense — why the `sizeof` of an empty class is not 0 (it carries a vptr), why virtual destructors matter (otherwise destruction never reaches the derived class's vtable), and why you can't call virtual functions from a constructor (the vptr isn't set up yet).
 
 ### Why Virtual Destructors Matter
 
-In our C implementation, `shape_destroy()` uses the vtable to find the correct `destroy` function to release resources. If `destroy` isn't properly overridden in the vtable, `free()` only releases memory sized for the base class, leaking the extra fields added by the derived class. Virtual destructors in C++ solve the exact same problem—when `delete base_ptr` is called, the vtable must be used to find the derived class's destructor to tear down the derived class before the base class. If the destructor isn't `virtual`, the compiler performs static binding and only calls the base class destructor—leaking the derived class's resources.
+In our C implementation, `shape_destroy()` locates the correct `destroy` function through the vtable to release resources. If `destroy` is not properly overridden in the vtable, `free()` releases only base-class-sized memory, and the derived class's extra fields leak. The C++ virtual destructor solves exactly the same problem — when you `delete base_ptr`, the vtable must be consulted to find the derived class's destructor, destroying the derived class first and the base class second. If the destructor is not `virtual`, the compiler binds statically and calls only the base-class destructor — and the derived class's resources leak.
 
 ## Exercises
 
-### Exercise 1: Triangle Extension
+### Exercise 1: Add a Triangle
 
-**Difficulty: Basic** · add a shape following the vtable
+**Difficulty: beginner** · Add one more shape following the vtable pattern
 
-Add a `Triangle` type to the graphics framework (represented by three side lengths):
+Add a `Triangle` type (represented by its three side lengths) to the shape framework:
 
 ```c
 typedef struct Triangle {
     Shape  base;
-    double a, b, c;  // 三边长度
+    double a, b, c;  // side lengths
 } Triangle;
 
 Triangle* triangle_create(const char* name, int id,
                            double a, double b, double c);
 ```
 
-**Hint:** Use Heron's formula for the triangle area—first calculate the semi-perimeter `s = (a+b+c)/2`, then the area `A = sqrt(s*(s-a)*(s-b)*(s-c))`. Don't forget to fill in the correct function pointers in the vtable.
+Hint: use Heron's formula for the triangle's area — compute the semi-perimeter first, `s = (a+b+c)/2`, then the area, `A = sqrt(s*(s-a)*(s-b)*(s-c))`. Don't forget to fill in the correct function pointers in the vtable.
 
-### Exercise 2: Shape Sorting
+### Exercise 2: Sorting the Shapes
 
-**Difficulty: Intermediate** · qsort plus a function-pointer comparator
+**Difficulty: intermediate** · qsort plus a function-pointer comparator
 
-Add area sorting functionality to `ShapeManager`:
+Add area-based sorting to the `ShapeManager`:
 
 ```c
-/// @brief 按面积从小到大排序所有图形
+/// @brief Sort all shapes by area in ascending order
 void shape_manager_sort_by_area(ShapeManager* mgr);
 ```
 
-> **Tip:** We can use the standard library's `qsort()`. However, the comparison function receives `const void*`, which we need to cast to `Shape**` and then dereference to obtain the `Shape*`. We can then compare sizes using `shape_area()`.
+Hint: you can use the standard library's `qsort()`, but its comparison function receives `const void*` — cast it to `Shape**`, dereference to get the `Shape*`, then compare through `shape_area()`.
 
-### Exercise 3: Opaque Pointer Counter
+### Exercise 3: An Opaque-Pointer Counter
 
-**Difficulty: Intermediate** · redo Counter with an opaque pointer
+**Difficulty: intermediate** · Redo the Counter with opaque pointers
 
-Refactor the `Counter` from step two into an opaque pointer version. The header file should only expose `typedef struct Counter Counter;` and the operation functions, while the implementation file hides the full definition. Please split the header and implementation files yourself, and provide a `counter_create()` function that returns a heap-allocated object.
+Rework the Step 2 `Counter` into an opaque-pointer version — the header file exposes only `typedef struct Counter Counter;` plus the operation functions, while the implementation file hides the full definition. Split the header and implementation files yourself, and provide a `counter_create()` that returns a heap-allocated object.
 
 ## References
 

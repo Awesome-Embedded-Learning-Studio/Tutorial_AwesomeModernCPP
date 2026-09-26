@@ -11,8 +11,8 @@ difficulty: beginner
 order: 2
 platform: host
 prerequisites:
-- 指针基础
-reading_time_minutes: 14
+- Pointer Basics
+reading_time_minutes: 20
 tags:
 - cpp-modern
 - host
@@ -22,28 +22,20 @@ tags:
 title: Pointer Arithmetic and Arrays
 translation:
   source: documents/vol1-fundamentals/ch04/02-pointer-arithmetic.md
-  source_hash: 4fb2bc0de94a7d866fc9b587f3e077ea2c6210a7633f5b131766688d18a9bc47
-  translated_at: '2026-06-24T00:30:25.587504+00:00'
+  source_hash: 26f4cb9285d282a0a299c1635baa3d6e9789f7373207541e35fd2153d3548c18
+  translated_at: '2026-09-25T10:38:05+00:00'
   engine: anthropic
-  token_count: 2578
+  token_count: 4600
 ---
-# Pointer Arithmetic and Arrays
+# Pointer Arithmetic and Arrays: p + 1 Adds More Than Just One Byte
 
-If you have already grasped the fact that "a pointer is an address," then we must now face a deeper truth: in C++, pointers and arrays are, **at their most fundamental level**, practically two sides of the same coin. (I strongly advise against confusing the concepts of pointers and arrays, as doing so will only lead to trouble in engineering logic.)
+If you have already made peace with the idea that "a pointer is an address," then the next fact we have to face runs deeper: in C++, pointers and arrays are tied together extremely tightly at the lowest mechanical level. (I strongly recommend against confusing the concepts of pointers and arrays, because that will only hurt you in engineering logic.)
 
-In this chapter, we will connect pointer arithmetic, array-to-pointer decay, and C-style string pointer operations. If you previously felt that arrays and pointers were "related but somehow indistinct," today we will untie this knot once and for all.
+In this chapter we string together pointer arithmetic, array-to-pointer decay, and pointer operations on C-style strings. If arrays and pointers have always struck you as "clearly related, but you can't quite say how," this chapter will pin it down.
 
-## Environment Setup
+## An Array Name Is Not a Pointer, But It Almost Always Decays Into One
 
-We will conduct all subsequent experiments in the following environment:
-
-- Platform: Linux x86\_64 (WSL2 is also acceptable).
-- Compiler: GCC 13+ or Clang 17+.
-- Compiler flags: `-Wall -Wextra -std=c++17`.
-
-## An Array Name Is Not a Pointer—But It Mostly Pretends to Be One
-
-Let's start with a classic operation. We declare an array and assign its name to a pointer:
+Let's begin with the most classic move of all: declare an array, then assign its name to a pointer:
 
 ```cpp
 #include <iostream>
@@ -51,7 +43,7 @@ Let's start with a classic operation. We declare an array and assign its name to
 int main()
 {
     int arr[5] = {10, 20, 30, 40, 50};
-    int* p = arr;  // 合法！数组名可以直接赋给指针
+    int* p = arr;  // Legal! An array name can be assigned directly to a pointer
 
     std::cout << "arr 的地址:  " << arr << "\n";
     std::cout << "p 的值:      " << p << "\n";
@@ -62,28 +54,26 @@ int main()
 }
 ```
 
-**Output:**
-
-```text
+```output:no-line-numbers
 arr 的地址:  0x7ffd3a2b1c00
 p 的值:      0x7ffd3a2b1c00
 arr[0] 的地址: 0x7ffd3a2b1c00
 *p:          10
 ```
 
-The three addresses are identical. This leads us to a crucial concept in C++: **array-to-pointer decay**. In most contexts, when you write the name `arr`, the compiler doesn't treat it as "the entire array," but rather as "a pointer to the first element of the array," which is `&arr[0]`.
+All three addresses are exactly the same. This brings us to one of the most important concepts in C++: **array-to-pointer decay**. When we write the name `arr`, in the vast majority of contexts the compiler does not treat it as "the entire array," but as "a pointer to the array's first element"—that is, `&arr[0]`.
 
-Strictly speaking, the statement "an array name is a pointer" is incorrect. The type of `arr` is `int[5]`; it is a complete array type containing five `int` values and occupying 20 bytes. However, once you use it in a context requiring a pointer (such as assigning to an `int*`, passing it to a function, or performing arithmetic), the compiler automatically decays it to `int*`. This decay process is irreversible—once decayed, you cannot go back, and the array length information is lost.
+So, strictly speaking, the sentence "an array name is a pointer" is wrong. The type of `arr` is `int[5]`, a complete array type that holds 5 `int`s and occupies 20 bytes. But the moment we use it in a context that wants a pointer (assigning it to an `int*`, passing it to a function, doing arithmetic on it), the compiler automatically decays it into an `int*`. This decay is irreversible: once decayed, there is no way back, and the array's length information is lost along with it.
 
-> I mentioned "most contexts," so when does it *not* decay? There are only three exceptions: `sizeof(arr)` returns the size of the entire array; `&arr` yields a "pointer to the array" (type `int(*)[5]`, not `int*`); and when initializing a character array with a string literal. Apart from these, the array name always decays.
+> Since I said "the vast majority of contexts," when does it not decay? Only three situations hand us the whole array: `sizeof(arr)` returns the size of the entire array; `&arr` yields a "pointer to the array" (of type `int(*)[5]`, not `int*`); and initializing a character array from a string literal. Everywhere else, the array name decays, full stop.
 
-## Pointer Arithmetic—Stepping by Elements, Not Bytes
+## Pointer Addition and Subtraction—Stepping by Elements, Not Bytes
 
-One of the most powerful capabilities of pointers is arithmetic. However, the rules here differ from our typical intuition—adding 1 to a pointer doesn't move it by 1 byte, but by **the size of the type it points to**.
+Arithmetic is one of the pointer's most powerful abilities. But the rules here are not quite what everyday intuition suggests: adding 1 to a pointer moves it by **the size of one element of the pointed-to type**, not by 1 byte.
 
-### The Actual Effect of Pointer Addition
+### What Pointer Addition Actually Does
 
-Let's look at the code directly to compare the stepping of `int*` and `char*`:
+Let's look straight at the code and compare the stepping of `int*` versus `char*`:
 
 ```cpp
 #include <iostream>
@@ -113,9 +103,7 @@ int main()
 }
 ```
 
-Output:
-
-```text
+```output:no-line-numbers
 === int* 步进 ===
 pi:     0x7ffd4e3a1c00 -> *pi = 100
 pi + 1: 0x7ffd4e3a1c04 -> *(pi+1) = 200
@@ -127,29 +115,33 @@ pc + 1: 0x7ffd4e3a1bf1 -> *(pc+1) = B
 pc + 2: 0x7ffd4e3a1bf2 -> *(pc+2) = C
 ```
 
-Notice the difference in the addresses. Adding one to an `int*` increases the address by four (from `...c00` to `...c04`), while adding one to a `char*` increases the address by only one (from `...bf0` to `...bf1`). This is the golden rule of pointer arithmetic: **`p + n` actually moves `n * sizeof(*p)` bytes**. The compiler automatically calculates the byte offset based on the type the pointer points to, so we do not need to manually multiply by `sizeof`.
+Watch the address deltas. Each `+1` on an `int*` bumps the address by 4 (from `...c00` to `...c04`), while each `+1` on a `char*` bumps it by only 1 (from `...bf0` to `...bf1`). This is the core rule of pointer arithmetic: **`p + n` actually moves `n * sizeof(*p)` bytes**. The compiler works out the real byte offset automatically from the type the pointer points to—we never need to multiply by `sizeof` by hand.
 
-> We used `static_cast<void*>` to force the address to print in hexadecimal for the `char*` output. This is because `std::ostream` treats `char*` specially—it assumes it is a C-style string and prints characters until it hits a `'\0'`. We will encounter this pitfall again later.
+This stepping sequence is available as an animation: you can play it, pause it, or single-step through it to see clearly how the address changes each time `pi` gains 1 and which slot the dereference lands on:
 
-### Pointer Subtraction—Calculating Element Distance
+<Anim id="pointer-arithmetic" />
 
-We can subtract two pointers that point to the same array. The result is the number of elements between them (not the number of bytes):
+> For the `char*` output we forced hexadecimal address printing with `static_cast<void*>`, because `std::ostream` gives `char*` special treatment—it assumes it is a C string and keeps printing until it runs into a `'\0'`. We will meet this pit again shortly.
+
+### Pointer Subtraction—Measuring Distance in Elements
+
+Subtract two pointers that point into the same array, and what you get is how many elements apart they sit (not a byte count):
 
 ```cpp
 int arr[5] = {10, 20, 30, 40, 50};
-int* p1 = &arr[1];  // 指向 20
-int* p2 = &arr[4];  // 指向 50
+int* p1 = &arr[1];  // points at 20
+int* p2 = &arr[4];  // points at 50
 
 std::cout << "p2 - p1 = " << (p2 - p1) << "\n";  // 3
 ```
 
-The result of `p2 - p1` is 3, because there are three elements separating `arr[1]` from `arr[4]`. This feature is very useful in many algorithms—for example, to calculate the index of an element within an array, we simply need `ptr - arr`.
+The result of `p2 - p1` is 3, because exactly 3 elements separate `arr[1]` from `arr[4]`. This property is extremely useful in many algorithms—for example, to compute an element's index within an array, all we need is `ptr - arr`.
 
-> Pointer subtraction is only valid for two pointers pointing to the **same array** (or the same contiguous memory block). If we subtract two unrelated pointers, the result is undefined behavior, and the compiler might not even issue a warning.
+> Pointer subtraction is only valid between two pointers that point into the **same array** (or the same contiguous block of memory). Subtract two completely unrelated pointers and the result is undefined behavior—and the compiler may not even warn us.
 
-## Traversing Arrays with Pointers
+## Traversing an Array with Pointers
 
-Since `arr + i` is equivalent to `&arr[i]`, we can traverse the array from start to finish using pointers, without needing subscripts:
+Since `arr + i` is exactly `&arr[i]`, we can perfectly well walk the array from head to tail with a pointer, no subscripts required:
 
 ```cpp
 #include <iostream>
@@ -158,21 +150,21 @@ int main()
 {
     int arr[5] = {10, 20, 30, 40, 50};
 
-    // 指针遍历
+    // Pointer traversal
     std::cout << "指针遍历: ";
     for (int* p = arr; p != arr + 5; ++p) {
         std::cout << *p << " ";
     }
     std::cout << "\n";
 
-    // 下标遍历
+    // Subscript traversal
     std::cout << "下标遍历: ";
     for (int i = 0; i < 5; ++i) {
         std::cout << arr[i] << " ";
     }
     std::cout << "\n";
 
-    // range-for 遍历
+    // range-for traversal
     std::cout << "range-for: ";
     for (int x : arr) {
         std::cout << x << " ";
@@ -183,23 +175,21 @@ int main()
 }
 ```
 
-**Output:**
-
-```text
+```output:no-line-numbers
 指针遍历: 10 20 30 40 50
 下标遍历: 10 20 30 40 50
 range-for: 10 20 30 40 50
 ```
 
-All three approaches yield identical results. So, which one should we use?
+Wow, all three versions look the same! So here comes the question: which one should we use?
 
-Honestly, in daily development, **prioritize range-for**. It is the most concise, the least error-prone, and, after compiler optimization, its performance is identical to that of pointer traversal. The advantage of pointer traversal lies in scenarios requiring finer control—such as when you only need to iterate over a portion of an array (starting from an element meeting a specific condition), or when you need to manipulate multiple positions simultaneously. However, if you simply need to traverse the entire array, range-for is the best choice.
+In day-to-day development, **prefer range-for**. It is the most concise, the least error-prone, and after compiler optimization its performance is exactly the same as pointer traversal. Pointer traversal earns its keep in scenarios that need finer control—for example, when you only want to walk part of the array (starting from the first element that meets some condition), or when you need to manipulate several positions at once. But for one clean pass over the entire array, range-for is the best choice. Let's compress the choice among the three into a single sentence: whole-range traversal goes to range-for; segmented or interleaved manipulation is where pointers come out.
 
-> There is a very common pitfall here: the "past-the-end pointer" `arr + 5` is valid, and you can use it for comparisons, but you **must absolutely never dereference it**. `*(arr + 5)` is undefined behavior because it points to a location outside the bounds of the array. The C++ standard only allows you to calculate this address; it does not permit reading from or writing to the content it points to. This follows the same logic as the `end()` iterator in standard library containers—it marks "one past the last element," and is not a valid element itself.
+> A very common trap sits right here: the "one-past-the-end pointer" `arr + 5` is legal, and we may compare against it, but we must **never dereference it**. `*(arr + 5)` is undefined behavior, because the position it points to already lies outside the array's bounds. The C++ standard only allows computing this address; it does not allow reading or writing what it points to. This is the same idea as the `end()` iterator of standard library containers: it marks "the position after the last element" and is not itself a valid element.
 
 ## Pointers and C-Style Strings
 
-A C-style string is essentially a `char` array that ends with a `'\0'` (null character). Since it is an array, all the relationships between pointers and arrays discussed here apply. When we write a string literal like `"hello"` in C++, its type is `const char[6]` (5 characters plus 1 `'\0'`), and in most contexts, it decays to `const char*`.
+A C-style string is at heart nothing more than a `char` array terminated by `'\0'` (the null character). Since it is an array, everything we said about the relationship between pointers and arrays applies here. A string literal like `"hello"` written in C++ code has type `const char[6]` (5 characters plus 1 `'\0'`) and decays to `const char*` in most contexts.
 
 ```cpp
 #include <iostream>
@@ -212,7 +202,7 @@ int main()
     std::cout << "首字符: " << *s << "\n";
     std::cout << "第3个字符: " << s[2] << "\n";
 
-    // 手动计算字符串长度——模拟 strlen
+    // Compute the string length by hand—emulating strlen
     std::size_t len = 0;
     while (s[len] != '\0') {
         ++len;
@@ -223,16 +213,14 @@ int main()
 }
 ```
 
-**Output:**
-
-```text
+```output:no-line-numbers
 字符串: hello
 首字符: h
 第3个字符: l
 长度: 5
 ```
 
-Now, let's rewrite this length calculation using pure pointers, which means we won't use any subscripts:
+Now let's rewrite this length computation in pure pointer style, without a single subscript:
 
 ```cpp
 const char* str_len_demo(const char* s)
@@ -246,30 +234,30 @@ const char* str_len_demo(const char* s)
 }
 ```
 
-This pattern is ubiquitous in the C standard library implementation. Functions like `strlen`, `strcpy`, and `strchr` all rely on similar pointer traversals at their core—starting from the beginning and walking character by character until `'\0'` is encountered. `s - start` utilizes the pointer arithmetic we discussed earlier to directly calculate the number of elements spanned.
+This pattern is everywhere inside implementations of the C standard library. Functions like `strlen`, `strcpy`, and `strchr` all rest on this kind of pointer traversal at the bottom—start at the beginning, walk one character at a time, and stop when you hit a `'\0'`. The `s - start` step exploits the pointer subtraction we covered earlier and directly yields how many elements were crossed along the way.
 
-> Here is another classic pitfall: `const char* s = "hello";` causes `s` to point to a string literal. String literals are stored in the read-only data segment of the program, so **you must absolutely never modify the content through this pointer**. `s[0] = 'H';` leads to undefined behavior (UB)—on most systems, it will immediately trigger a segmentation fault. If you need a modifiable string, use a character array like `char s[] = "hello";`. This copies the content to an array on the stack, making modifications safe.
+> Here is another classic trap: `const char* s = "hello";` makes `s` point at a string literal. String literals are stored in the program's read-only data segment, so **we must never modify the content through this pointer**. `s[0] = 'H';` causes undefined behavior—on most systems it triggers a segmentation fault right away. If you need a modifiable string, use a character array: `char s[] = "hello";` copies the content into an array on the stack, and modifying it is then safe.
 
 ## The Essence of the Subscript Operator
 
-Now that we have laid the groundwork, we can reveal a fundamental truth: **the `[]` operator is essentially syntactic sugar for pointer arithmetic**.
+Now that the groundwork is in place, we can state one thing plainly: **the `[]` operator is essentially syntactic sugar for pointer arithmetic**.
 
-When the compiler sees `arr[n]`, what it actually does is `*(arr + n)`. It adds the offset `n` to the pointer `arr`, and then dereferences the result. Since an array name decays into a pointer in an expression, the entire process is purely a pointer operation. This also explains why arrays lose their length when passed to a function—the function receives only a pointer, so `sizeof` returns the size of the pointer itself, not the original array size.
+Look at what the compiler actually does with `arr[n]`: `*(arr + n)`—first add the offset `n` to the pointer `arr`, then dereference. Because an array name decays into a pointer inside expressions, the whole process is pure pointer manipulation. This also explains why an array loses its length after being passed to a function: the function receives nothing but a pointer, so `sizeof` can only produce the size of the pointer itself, not of the original array.
 
-Since `arr[n]` is equivalent to `*(arr + n)` and addition is commutative, `n[arr]` is simply `*(n + arr)`—completely equivalent. Yes, the syntax `5[arr]` is valid and works exactly the same as `arr[5]`.
+Since `arr[n]` is `*(arr + n)`, and addition is commutative, we can derive that `n[arr]`—that is, `*(n + arr)`—is completely equivalent. Yes, writing `5[arr]` is legal and behaves exactly the same as `arr[5]`.
 
 ```cpp
 int arr[5] = {10, 20, 30, 40, 50};
 
 std::cout << arr[3] << "\n";  // 40
-std::cout << 3[arr] << "\n";  // 也是 40——但这纯粹是 trivia，别在实际代码里这么写
+std::cout << 3[arr] << "\n";  // Also 40—but this is pure trivia, so never write it in real code
 ```
 
-We mention this trivia not to encourage code golf, but to deepen understanding: **subscripting is never magic; it is simply pointer arithmetic plus dereferencing**. Once you truly grasp this, many previously confusing phenomena become easy to explain—such as why `sizeof` yields incorrect results when an array is passed as a parameter, or why negative indices are valid in certain scenarios (`p[-1]` is simply `*(p - 1)`, provided you ensure that `p - 1` points to valid memory).
+We bring up this bit of trivia to deepen understanding: **subscripting is just pointer addition plus a dereference**—there is no extra mechanism behind it. Once that truly clicks, many things that used to look strange explain themselves—for example, why `sizeof` goes wrong after an array is passed as an argument, and why negative subscripts are legal in certain scenarios (`p[-1]` is simply `*(p - 1)`, provided you guarantee that `p - 1` points at valid memory).
 
-## Multidimensional Arrays and Pointers—A Brief Overview
+## Multidimensional Arrays and Pointers—Just a Taste
 
-Multidimensional arrays are the most headache-inducing part of the relationship between pointers and arrays. We will provide a simple example here, but we will keep it brief and not dive too deep:
+Multidimensional arrays are the most headache-inducing part of the pointer-array relationship. Let's look at one simple example—just a taste, no deep dive:
 
 ```cpp
 int matrix[3][4] = {
@@ -278,18 +266,18 @@ int matrix[3][4] = {
     {9, 10, 11, 12}
 };
 
-int (*row_ptr)[4] = matrix;  // 指向"含4个int的数组"的指针
+int (*row_ptr)[4] = matrix;  // A pointer to "an array of 4 ints"
 
 std::cout << row_ptr[1][2] << "\n";  // 7
 ```
 
-The type of `matrix` is `int[3][4]`. After decay, it becomes a pointer to the first row, with the type `int(*)[4]`—a "pointer to an array of four `int`s". Note that the parentheses around `(*row_ptr)` are mandatory because `[]` has higher precedence than `*`. The declaration `int* row_ptr[4]` declares an "array of four `int*`s", which is completely different.
+The type of `matrix` is `int[3][4]`; after decay it becomes a pointer to the first row, of type `int(*)[4]`—a "pointer to an array of 4 `int`s". Note that the parentheses in `(*row_ptr)` are mandatory: `[]` binds tighter than `*`, and `int* row_ptr[4]` declares an "array of 4 `int*`s"—an entirely different thing.
 
-The pointer relationships in multi-dimensional arrays are indeed a bit convoluted. If you feel a bit dizzy right now, don't worry—scenarios in actual projects where we directly manipulate multi-dimensional arrays with raw pointers are rare. Later, when we learn `std::array` and `std::span`, we will see safer ways to handle such problems.
+The pointer relationships of multidimensional arrays really are a bit twisty, and feeling dizzy right now is perfectly fine: in real projects, directly manipulating multidimensional arrays through raw pointers is rare, and once we get to `std::array` and `std::span` later, safer ways to handle this kind of problem will be available.
 
-## In Practice: Comprehensive Demo `ptr_arith.cpp`
+## In Practice: The Complete ptr_arith.cpp Demo
 
-Let's integrate the content we covered earlier into a complete program, covering pointer traversal, calculating distance via pointer subtraction, and manipulating C-style strings with pointers:
+Let's fold everything covered earlier into one complete program, spanning pointer traversal, distance via pointer subtraction, and C-string manipulation with pointers:
 
 ```cpp
 #include <cstddef>
@@ -297,7 +285,7 @@ Let's integrate the content we covered earlier into a complete program, covering
 
 int main()
 {
-    // --- 1. 多种方式遍历数组 ---
+    // --- 1. Traversing the array in several ways ---
     int data[6] = {5, 12, 7, 23, 18, 9};
 
     std::cout << "=== 指针遍历 ===\n";
@@ -306,14 +294,14 @@ int main()
     }
     std::cout << "\n";
 
-    // --- 2. 指针减法计算元素距离 ---
+    // --- 2. Element distance via pointer subtraction ---
     int* first = &data[0];
     int* last  = &data[5];
     std::cout << "\n=== 指针距离 ===\n";
     std::cout << "first 和 last 之间隔了 "
               << (last - first) << " 个元素\n";
 
-    // 用指针减法找到某个值的下标
+    // Find the index of a value using pointer subtraction
     int target = 23;
     for (int* p = data; p != data + 6; ++p) {
         if (*p == target) {
@@ -323,7 +311,7 @@ int main()
         }
     }
 
-    // --- 3. 用指针实现 strlen ---
+    // --- 3. Implementing strlen with pointers ---
     const char* msg = "pointer";
     const char* scan = msg;
     while (*scan != '\0') {
@@ -333,7 +321,7 @@ int main()
     std::cout << "\"" << msg << "\" 的长度: "
               << (scan - msg) << "\n";
 
-    // --- 4. 用指针反转数组 ---
+    // --- 4. Reversing the array with pointers ---
     std::cout << "\n=== 反转数组 ===\n";
     std::cout << "反转前: ";
     for (int x : data) {
@@ -361,15 +349,13 @@ int main()
 }
 ```
 
-Build and Run:
+Compile and run:
 
 ```bash
 g++ -Wall -Wextra -std=c++17 ptr_arith.cpp -o ptr_arith && ./ptr_arith
 ```
 
-**Output:**
-
-```text
+```output:no-line-numbers
 === 指针遍历 ===
 5 12 7 23 18 9
 
@@ -385,24 +371,203 @@ first 和 last 之间隔了 5 个元素
 反转后: 9 18 23 7 12 5
 ```
 
-This program brings together the core concepts of this chapter: pointer traversal, calculating distance via pointer subtraction, scanning C-style strings with pointers, and in-place array reversal using the two-pointer technique. The "two-pointer" trick for reversing arrays—where one pointer starts at the beginning and the other at the end, moving inward while swapping—is a frequent guest in interview questions and algorithm challenges.
+This program ties together every core point of the chapter: pointer traversal, pointer subtraction for distance, pointer-scanning a C string, and in-place array reversal with the two-pointer technique. That "two-pointer" trick for reversing an array—two pointers starting at the head and the tail, walking toward the middle and swapping as they go—is one we will run into again and again in interviews and algorithm problems.
 
 ## Exercises
 
-### Exercise 1: Implement `strlen` by Hand
+### Exercise 1: Writing strlen by Hand
 
-Calculate string length using pure pointers without any standard library functions. The required function signature is `std::size_t my_strlen(const char* s)`.
+Please implement string-length computation with pure pointers, using no standard library functions. The function signature is `std::size_t my_strlen(const char* s)`.
 
-**Verification:** Compare the result of `my_strlen("hello world")` with `std::strlen("hello world")` to ensure consistency.
+How to verify: we compare whether `my_strlen("hello world")` agrees with the result of `std::strlen("hello world")`.
 
-### Exercise 2: Two-Pointer Array Reversal
+::: details Reference Solution
 
-We demonstrated the two-pointer reversal technique in the practical code above. Now, try encapsulating it into a function `void reverse_array(int* begin, int* end)`, where `end` is a past-the-end pointer. Note: The function does not need to know the array length; it can complete the reversal using only the two pointers.
+```cpp
+#include <iostream>
+#include <cstring>
+
+constexpr std::size_t my_strlen(const char *s)
+{
+    const char *msg = s;
+    while ((*msg) != '\0')
+    {
+        msg++;
+    }
+    return msg - s;
+}
+
+int main()
+{
+    constexpr const char *test = "Hello, World!";
+    constexpr std::size_t length1 = my_strlen(test);
+    std::size_t length2 = std::strlen(test);
+    std::cout << "my_strlen(Hello, World)的长度是: " << length1 << std::endl;
+    std::cout << "std::strlen(Hello, World)的长度是: " << length2 << std::endl;
+    if (length1 == length2)
+    {
+        std::cout << "两个长度相等" << std::endl;
+    }
+    else
+    {
+        std::cout << "两个长度不相等" << std::endl;
+    }
+    return 0;
+}
+```
+
+Compile and run:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+```output:no-line-numbers
+my_strlen(Hello, World)的长度是: 13
+std::strlen(Hello, World)的长度是: 13
+两个长度相等
+```
+
+:::
+
+### Exercise 2: Reversing an Array with Two Pointers
+
+We already demonstrated two-pointer reversal in the practice code above. Now please wrap it into a function `void reverse_array(int* begin, int* end)`, where `end` is the one-past-the-end pointer. Note: the function body has no need to know the array length—two pointers alone are enough to complete the reversal.
+
+::: details Reference Solution
+
+```cpp
+#include <iostream>
+
+void reverse_array(int *begin, int *end)
+{
+    --end;
+    while (begin < end)
+    {
+        int temp = *begin;
+        *begin = *end;
+        *end = temp;
+        begin++;
+        end--;
+    }
+}
+
+int main()
+{
+    int data[6] = {5, 12, 7, 23, 18, 9};
+    std::cout << "反转前的数组: " << std::endl;
+    for (int x : data)
+    {
+        std::cout << x << " ";
+    }
+    reverse_array(data, data + 6);
+    std::cout << "\n反转后的数组: " << std::endl;
+    for (int x : data)
+    {
+        std::cout << x << " ";
+    }
+    std::cout << std::endl;
+    return 0;
+}
+```
+
+Compile and run:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+```output:no-line-numbers
+反转前的数组:
+5 12 7 23 18 9
+反转后的数组:
+9 18 23 7 12 5
+```
+
+:::
 
 ### Exercise 3: String Comparison via Pointers
 
-Implement `int my_strcmp(const char* a, const char* b)`: compare character by character. Return 0 if they are identical, a negative number if the first differing character in `a` is less than the corresponding character in `b`, and a positive number otherwise. This is a slightly more challenging exercise requiring simultaneous traversal of two strings and checking for termination conditions.
+Please implement `int my_strcmp(const char* a, const char* b)`: compare character by character; return 0 if the strings are completely identical; return a negative number if `a`'s first differing character is less than the corresponding character in `b`; otherwise return a positive number. This is a slightly harder exercise—you need to walk two strings at the same time and get the termination condition right.
+
+::: details Reference Solution
+
+```cpp
+#include <iostream>
+
+constexpr int my_strcmp(const char *a, const char *b)
+{
+    // Note: the standard strcmp does not check for null pointers (passing one in is undefined behavior)
+    // The null-pointer check here is an extra safety measure; -2 signals a bad argument
+    if (a == nullptr || b == nullptr)
+    {
+        return -2;
+    }
+
+    while (*a != '\0' && *b != '\0')
+    {
+        // Casting to unsigned char ensures the character comparison is correct
+        // and avoids comparison errors caused by negative values of a signed char
+        const unsigned char byte_a = static_cast<unsigned char>(*a);
+        const unsigned char byte_b = static_cast<unsigned char>(*b);
+        if (byte_a != byte_b)
+        {
+            return byte_a < byte_b ? -1 : 1;
+        }
+        ++a;
+        ++b;
+    }
+
+    const unsigned char byte_a = static_cast<unsigned char>(*a);
+    const unsigned char byte_b = static_cast<unsigned char>(*b);
+    if (byte_a == byte_b)
+    {
+        return 0;
+    }
+
+    return byte_a < byte_b ? -1 : 1;
+}
+
+int main()
+{
+    constexpr char test1[] = "Hello, Worlg!";
+    constexpr char test2[] = "Hello, World!";
+    constexpr int result = my_strcmp(test1, test2);
+    switch (result)
+    {
+    case 0:
+        std::cout << "test1与test2相等" << std::endl;
+        break;
+    case 1:
+        std::cout << "test1>test2" << std::endl;
+        break;
+    case -1:
+        std::cout << "test1<test2" << std::endl;
+        break;
+    case -2:
+        std::cout << "字符串指针不能为空" << std::endl;
+        break;
+    default:
+        break;
+    }
+    return 0;
+}
+```
+
+Compile and run:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+> Just swap the `g` in `Hello, Worlg!` for a different letter and you will see different results
+
+```output:no-line-numbers
+test1>test2
+```
+
+:::
 
 ---
 
-> **Next Stop:** Pointers are powerful, but they are also dangerous. Next, we will explore "references"—a safer alternative provided by C++. In many scenarios, they can replace raw pointers, making code both safer and clearer.
+> **Up next**: Pointers are powerful, but they are dangerous too. Next we meet "references"—a safer alternative provided by C++ that can replace raw pointers in many scenarios and keep the code both safe and clear.

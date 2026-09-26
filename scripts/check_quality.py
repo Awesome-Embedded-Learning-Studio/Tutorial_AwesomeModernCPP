@@ -120,6 +120,32 @@ def extract_links(content: str) -> List[Tuple[int, str, str]]:
     return links
 
 
+def extract_html_asset_refs(content: str) -> List[Tuple[int, str, str]]:
+    """Extract (line_number, tag, src) from HTML media tags, skipping code blocks.
+
+    Catches local assets embedded via HTML (e.g. <video src="./demo.mp4">)
+    that markdown-link checkers never see.
+    """
+    refs = []
+    in_code_block = False
+    pattern = re.compile(
+        r'<(img|video|audio|source|embed|track)\b[^>]*?\bsrc\s*=\s*["\']([^"\']+)["\']',
+        re.IGNORECASE)
+
+    for line_num, line in enumerate(content.split('\n'), 1):
+        stripped = line.strip()
+        if stripped.startswith('```') or stripped.startswith('~~~'):
+            in_code_block = not in_code_block
+            continue
+        if in_code_block:
+            continue
+
+        for m in pattern.finditer(line):
+            refs.append((line_num, m.group(1).lower(), m.group(2)))
+
+    return refs
+
+
 def normalize_link(link_url: str, source_file: Path, root: Path) -> str:
     """Resolve a relative link to a path relative to root."""
     link_url = link_url.split('#')[0]
@@ -346,6 +372,30 @@ class ImageReferenceChecker(QualityChecker):
                 report.warnings.append(Issue(filepath, line, 'warning',
                                              'image_reference',
                                              f"Large image ({size_mb:.1f}MB): {url}"))
+
+        # HTML-embedded assets (<video src>, <img src>, ...) — same blind-spot class
+        for line, tag, src in extract_html_asset_refs(content):
+            if src.startswith(('http://', 'https://', 'data:', '#')):
+                continue
+
+            normalized = normalize_link(src, filepath, self.root)
+            if not normalized:
+                continue
+
+            resolved = self.root / normalized
+            if not resolved.exists():
+                report.errors.append(Issue(filepath, line, 'error',
+                                           'image_reference',
+                                           f"Asset not found (<{tag}>): {src}"))
+                continue
+
+            # Size cap only makes sense for images, not audio/video streams
+            if resolved.suffix.lower() in IMAGE_EXTENSIONS:
+                size_mb = resolved.stat().st_size / (1024 * 1024)
+                if size_mb > MAX_IMAGE_SIZE_MB:
+                    report.warnings.append(Issue(filepath, line, 'warning',
+                                                 'image_reference',
+                                                 f"Large image ({size_mb:.1f}MB): {src}"))
 
 
 class ReadingTimeChecker(QualityChecker):

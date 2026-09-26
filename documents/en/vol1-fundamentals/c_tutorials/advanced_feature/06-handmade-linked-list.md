@@ -2,15 +2,15 @@
 chapter: 1
 cpp_standard:
 - 11
-description: Implement a classic singly linked list from scratch, and master insertion,
-  deletion, search algorithms, and sentinel node techniques.
+description: Implement a classic singly linked list from scratch and master insertion,
+  deletion, and search algorithms along with sentinel node techniques.
 difficulty: advanced
 order: 106
 platform: host
 prerequisites:
-- 手搓动态数组——malloc 与 realloc 实战
-- 指针到底在指什么
-- C 语言陷阱与常见错误
+- Building a Dynamic Array from Scratch — Implementing a Container
+- What Exactly Do Pointers Point To
+- C Pitfalls and Common Errors
 reading_time_minutes: 26
 tags:
 - host
@@ -19,78 +19,74 @@ tags:
 - 实战
 - 内存管理
 - 智能指针
-title: Implementing a Singly Linked List from Scratch — A Practical Guide to Pointers
-  and Memory
+title: Building a Singly Linked List from Scratch — A Practical Guide to Pointers and Memory
 translation:
   source: documents/vol1-fundamentals/c_tutorials/advanced_feature/06-handmade-linked-list.md
-  source_hash: 59bce53120a8f0dde0f2569afa54dd2d415852841779da34c0f07a2865b3be06
-  translated_at: '2026-06-16T05:56:33.291314+00:00'
+  source_hash: 1f1f0ba253c6f4a0da688d79549ccdaba14d4e3ee75048ce3d82881b89ee0a48
+  translated_at: '2026-09-25T13:54:14+00:00'
   engine: anthropic
-  token_count: 4483
+  token_count: 5200
 ---
-# Implementing a Singly Linked List from Scratch — A Practical Guide to Pointers and Memory
+# Building a Singly Linked List from Scratch — A Practical Guide to Pointers and Memory
 
-Up to this point, we have already tinkered with dynamic arrays. In that chapter, we used `malloc` and `realloc` to manage a contiguous block of memory, experiencing the thrill of "manual transmission" memory management. However, contiguous memory has an inherent limitation—when inserting or deleting elements in the middle, you must shift all subsequent data, resulting in an O(n) time complexity. For scenarios involving frequent insertions and deletions, this is clearly not elegant enough.
+We have already tinkered with dynamic arrays: in that chapter we used `malloc` and `realloc` to manage a contiguous block of memory and got a taste of the joys of "manual transmission" memory management. But contiguous memory has a built-in limitation—when you insert or delete an element in the middle, you have to shift every piece of data after it, for a time complexity of O(n). For workloads with frequent insertions and deletions, that is clearly not elegant enough.
 
-The linked list is a classic data structure born to solve this problem. You can imagine it as a train—each car not only carries cargo (data) but is also connected to the next car by a coupler (pointer). We only need to know where the locomotive (head) is to follow the couplers car-by-car to reach any other car. Unlike an array's neatly arranged "lockers," train cars don't need to be on the same track—each car can be parked anywhere, as long as the couplers are connected. This is the core trade-off of a linked list: it sacrifices memory contiguity and random access capabilities for O(1) insertions and deletions (assuming you have already found the position).
+The linked list is the classic data structure invented to solve this problem. Picture a train: each car carries cargo (the data) and is coupled to the next car (the pointer). As long as we know where the head of the train is, we can follow the couplers car by car to reach any car. Unlike an array's neat row of "storage lockers", train cars don't have to sit on one shared track—each car can be parked anywhere, as long as the couplers connect. That is the linked list's core trade-off: it gives up memory contiguity and random access, and in exchange gets O(1) insertion and deletion (provided, of course, that you have already found the position).
 
-To be honest, linked lists are the first hurdle many encounter when learning data structures—not because the concept itself is difficult, but because the various edge cases in pointer operations are extremely error-prone. Null pointers, dangling pointers, broken chains, memory leaks... each one can keep you debugging until midnight. Python and Java programmers rarely need to hand-roll linked lists; the standard library provides `list` or `LinkedList` directly, and garbage collection manages memory safely for you. But C has none of that—no standard linked list container, no garbage collection, no generics. You must rely on pointers and `malloc` to build it yourself. This is actually a perfect training ground, because only by writing every single pointer operation yourself can you truly understand what kind of trouble tools like C++'s `std::forward_list` and `std::unique_ptr` are saving you from.
+Honestly, linked lists are the first real hurdle many people hit when learning data structures—not because the concept itself is hard, but because the edge cases in pointer manipulation are so easy to get wrong. Null pointers, dangling pointers, broken chains, memory leaks... each one can keep you debugging past midnight. Python and Java programmers basically never hand-roll a linked list: the standard library hands you `list` or `LinkedList` directly, and garbage collection keeps memory tidy for you. C gives you nothing—no standard linked-list container, no garbage collection, no generics; all you have are pointers and `malloc` to build it yourself. Which is exactly what makes this a great training exercise: only by writing every pointer operation of a linked list with your own hands will you truly understand what kind of trouble C++ tools like `std::forward_list` and `std::unique_ptr` are sparing you.
 
-So, in this chapter, we won't do anything fancy. We will steadily build a classic singly linked list from scratch, covering core operations like node design, insertion, deletion, searching, traversal, and sentinel nodes, while leveling up our practical skills with pointers and memory management.
+So this chapter won't do anything fancy. We will steadily build a classic singly linked list from scratch, walking through node design, insertion and deletion, search and traversal, and sentinel nodes—the full set of core operations—while leveling up our practical pointer and memory-management skills one more notch.
 
-## Environment Description
-
-All code in this article was written and tested in the following environment:
+All code in this chapter was written and tested in the following environment:
 
 ```text
-平台：Linux (x86_64)，WSL2
-编译器：GCC 13+，编译选项 -Wall -Wextra -std=c17
-构建工具：CMake 3.20+
-调试工具：GDB + Valgrind（用于内存泄漏检测）
+Platform: Linux (x86_64), WSL2
+Compiler: GCC 13+, flags -Wall -Wextra -std=c17
+Build tool: CMake 3.20+
+Debugging tools: GDB + Valgrind (for memory leak detection)
 ```
 
-The code style follows the project conventions: functions in `snake_case`, types in `PascalCase`, constants in `kPascalCase`, 4-space indentation, and left-aligned pointers like `int* p`. We recommend always enabling the `-Wall -Wextra` compiler flags—compiler warnings are often the first to help you catch null pointer dereferences and dangling pointer issues in linked list code.
+Code style follows the project conventions: functions in `snake_case`, types in `PascalCase`, constants in `kPascalCase`, 4-space indentation, and pointer asterisks kept on the left as in `int* p`. Keep `-Wall -Wextra` enabled at all times—when it comes to null-pointer dereferences and dangling pointers in linked-list code, compiler warnings are often the first thing to catch them.
 
-## Step One — Figure Out the Node Design
+## Step 1 — Figuring Out the Node Design
 
-Well begun is half done. Let's start by designing the most basic building block of a linked list—the node. Each node needs to store two things: a data field and a pointer field. The data field holds the actual value, while the pointer field stores the address of the next node. You can think of it like a train—each car has both a cargo hold for carrying goods (the data field) and a coupler for connecting to the next car (the pointer field).
+Everything starts hard, so let's begin by designing the most basic building block of a linked list—the node. Each node stores two things: a data field and a pointer field. The data field holds the actual value; the pointer field holds the address of the next node. Back to the train analogy: every car has a cargo hold for freight (the data field) and a coupler linking it to the next car (the pointer field).
 
 ```c
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
-/// @brief 单链表节点
+/// @brief Singly linked list node
 typedef struct ListNode {
-    int data;                // 数据域
-    struct ListNode* next;   // 指针域：指向下一个节点
+    int data;                // data field
+    struct ListNode* next;   // pointer field: points to the next node
 } ListNode;
 ```
 
-Here is a detail worth noting: inside `struct ListNode* next`, we must write the full `struct ListNode`; we cannot just write `ListNode*`. The reason is that when the `typedef` hasn't taken effect yet, the name `ListNode` doesn't exist yet, so the compiler doesn't recognize it. Self-referential structures are awkward like this, but you'll get used to it.
+One detail deserves attention here: inside `struct ListNode* next` you must write the full `struct ListNode`, not just `ListNode*`. The reason is that the `typedef` has not taken effect yet—the name `ListNode` does not exist at that point, and the compiler doesn't know it. Self-referential structures are this awkward, but you get used to it.
 
-> ⚠️ **Warning**
-> Writing `ListNode* next` instead of `struct ListNode* next` in a self-referencing structure will cause a compilation error. This is because the `typedef` alias doesn't take effect until the entire declaration is finished, so inside the structure, the compiler only recognizes the full `struct ListNode` syntax. Almost every beginner trips over this pitfall once.
+Writing `ListNode* next` instead of `struct ListNode* next` inside the self-referential structure fails to compile outright—because the `typedef` alias only takes effect once the entire declaration ends, inside the structure body the compiler only recognizes the full form `struct ListNode`. Nearly every beginner steps on this landmine once.
 
-Nodes alone aren't enough; we also need a "list" type to manage the metadata for the entire chain. The simplest approach is to maintain just a head pointer:
+Nodes alone aren't enough; we also need a "list" type to manage the metadata of the whole chain. The simplest approach is to keep just a head pointer:
 
 ```c
 typedef struct {
-    ListNode* head;    // 指向链表第一个节点
-    int size;          // 链表长度，方便 O(1) 查询
+    ListNode* head;    // points to the first node of the list
+    int size;          // list length, for O(1) queries
 } LinkedList;
 ```
 
-Placing `size` inside the struct is a practical approach. While we could traverse the list to count the nodes, that is an O(n) operation. Maintaining a `size` field makes retrieving the length O(1), at the cost of updating an integer during additions and deletions. This is a very favorable trade-off.
+Keeping `size` in the structure is a very practical move—sure, you could count nodes by traversal, but that is an O(n) operation. Maintaining a `size` field makes getting the length O(1), at the cost of one extra integer update per insertion or deletion. A real bargain.
 
-## Step 2 — Construct the list and safely tear it down
+## Step 2 — Building the List and Tearing It Down Safely
 
-Managing the lifecycle of a data structure is always the first step. Think of it this way: a linked list is like building with blocks—we start with a base plate (the `LinkedList` struct), then stack the blocks (`ListNode` nodes) one by one. When dismantling it, we must remove the blocks one by one, and finally put away the base plate. The order matters; otherwise, the whole structure comes crashing down.
+Lifecycle management of a data structure always comes first. By analogy: a linked list is like stacking building blocks—start with a base plate (the `LinkedList` structure), then stack blocks on it one at a time (the `ListNode`s). When tearing it down, take the blocks off one by one, and put the base plate away last. Get the order wrong and the whole tower comes clattering down.
 
-Let's implement the creation first:
+First, creation:
 
 ```c
-/// @brief 创建一个空链表
+/// @brief Create an empty linked list
 LinkedList* linked_list_create(void) {
     LinkedList* list = (LinkedList*)malloc(sizeof(LinkedList));
     if (list == NULL) {
@@ -102,14 +98,14 @@ LinkedList* linked_list_create(void) {
 }
 ```
 
-When creating the list, we initialize `head` to `NULL` and `size` to 0, resulting in an empty linked list. We must not skip checking the return value of `malloc`. While we often cut corners and omit this in learning examples, handling memory allocation failures is a mandatory error path in production projects.
+At creation, set `head` to `NULL` and `size` to 0, and an empty linked list is born. Do not skip the `malloc` return-value check—learning code often lazily omits it, but in a real project, allocation failure is an error path you must handle.
 
-Next, we have a small helper function for creating individual nodes, which will be used by the subsequent insertion operations:
+Next comes a small helper that creates a single node; every insertion operation later will use it:
 
 ```c
-/// @brief 创建一个新节点
-/// @param data 节点数据
-/// @return 新节点指针，失败返回 NULL
+/// @brief Create a new node
+/// @param data the node's data
+/// @return pointer to the new node, NULL on failure
 static ListNode* list_node_create(int data) {
     ListNode* node = (ListNode*)malloc(sizeof(ListNode));
     if (node == NULL) {
@@ -121,12 +117,12 @@ static ListNode* list_node_create(int data) {
 }
 ```
 
-We use `static` because this function is for internal use only and is not exposed to external callers. This is a good encapsulation practice—it reduces namespace pollution and signals to the reader that "this is an internal implementation detail."
+The `static` qualifier marks this function as internal-only, not exposed to outside callers. It is a good encapsulation habit—it reduces namespace pollution and also tells the reader "this is an internal implementation detail".
 
-Destroying a linked list is a common source of errors. We need to traverse the nodes one by one, free them, and finally free the linked list structure itself. The problem is that if we directly `free` the current node, we lose the address of the next node, breaking the chain. Therefore, we need a temporary pointer to "save first, delete later":
+Destroying the list is a fairly easy place to go wrong. We need to walk the nodes one by one and free them, then free the list structure itself. The catch: if you `free` the current node directly, you lose the address of the next node—the chain breaks. So we need a temporary pointer to "save first, delete second":
 
 ```c
-/// @brief 销毁链表，释放所有内存
+/// @brief Destroy the list and free all memory
 void linked_list_destroy(LinkedList* list) {
     if (list == NULL) {
         return;
@@ -134,27 +130,26 @@ void linked_list_destroy(LinkedList* list) {
 
     ListNode* current = list->head;
     while (current != NULL) {
-        ListNode* next = current->next;  // 先保存下一个节点的地址
-        free(current);                    // 再释放当前节点
-        current = next;                   // 移动到下一个
+        ListNode* next = current->next;  // save the next node's address first
+        free(current);                    // then free the current node
+        current = next;                   // move to the next one
     }
 
-    free(list);  // 最后释放链表结构体本身
+    free(list);  // finally free the list structure itself
 }
 ```
 
-This "save-then-delete" traversal pattern is crucial—it is one of the most fundamental patterns in linked list operations. We will use the exact same logic later when deleting individual nodes; the only difference is whether we are releasing a single node or the entire list.
+This "save first, delete second" traversal-and-free pattern is critically important—it is one of the most fundamental operation patterns in linked-list work. Deleting nodes later follows exactly the same idea; the only difference is whether you free a single node or all of them.
 
-> ⚠️ **Warning**
-> If we call `free(current)` before reading `current->next` while destroying a list, we create a Use-After-Free bug—accessing memory after it has been reclaimed. Valgrind will catch this immediately, but without it, the code might "accidentally" work (because the memory hasn't been overwritten yet), only to crash randomly after running for hours on an embedded device. So, we must remember this order: save, delete, then move.
+If you `free(current)` first and then read `current->next` while destroying the list, you have a Use-After-Free—accessing memory that has already been reclaimed. Valgrind flags this kind of bug immediately, but without Valgrind it may "happen" to work fine (because that memory hasn't been overwritten yet), and only blow up at random after the embedded device has been running for hours. So burn this order into memory: save, delete, then advance.
 
 ## Step 3 — Inserting a Node at the Head
 
-The simplest and most efficient insertion operation for a linked list is head insertion—placing the new node at the very front and pointing `head` to it. This operation is always O(1) and requires no traversal. Using a train analogy, this is like hooking a new car in front of the locomotive and then moving the "head" marker to the new car.
+The simplest and most efficient insertion in a linked list is head insertion—put the new node at the very front of the list and point `head` at it. This operation is always O(1), no traversal needed. In train terms: couple one more car in front of the locomotive, then move the head-of-train marker onto the new car.
 
 ```c
-/// @brief 在链表头部插入元素
-/// @return 成功返回 true，内存不足返回 false
+/// @brief Insert an element at the head of the list
+/// @return true on success, false when out of memory
 bool linked_list_push_front(LinkedList* list, int data) {
     if (list == NULL) {
         return false;
@@ -165,25 +160,25 @@ bool linked_list_push_front(LinkedList* list, int data) {
         return false;
     }
 
-    node->next = list->head;  // 新节点指向原来的第一个节点
-    list->head = node;        // head 指向新节点
+    node->next = list->head;  // the new node points to the old first node
+    list->head = node;        // head points to the new node
     list->size++;
     return true;
 }
 ```
 
-Let's visualize this process. Assuming the linked list is originally `10 -> 20 -> 30`, we now want to insert `5` at the head:
+Let's draw this out. Suppose the list is `10 -> 20 -> 30` and we insert `5` at the head:
 
 ```mermaid
 graph LR
-    subgraph "插入前"
+    subgraph "Before insertion"
         H0["head"] --> N10a["10"] --> N20a["20"] --> N30a["30"] --> NULL0["NULL"]
     end
 ```
 
 ```mermaid
 graph LR
-    subgraph "Step 1: 创建新节点 node(5)"
+    subgraph "Step 1: create the new node(5)"
         S1["node(5)<br/>next=NULL"]
     end
 ```
@@ -202,14 +197,14 @@ graph LR
     end
 ```
 
-We only modify two pointers without traversing the list, so the complexity is O(1). Note that the order of these two steps cannot be reversed—if we set `list->head = node` first, we lose the address of the original first node, breaking the list. This order is the golden rule for head operations: **connect first, break later**—attach the new node to the chain first, then update the `head` pointer.
+The whole process changes exactly two pointers, with no traversal, hence O(1). Note that this order cannot be reversed—if you did `list->head = node` first, the address of the old first node would be lost and the list would be severed right there. This ordering is the iron law of head operations on a linked list: **connect first, cut second**—first hook the new node onto the chain, then move the `head` pointer.
 
 ## Step 4 — Appending a Node at the Tail
 
-Appending at the tail involves one extra step compared to head insertion—we need to locate the last node first. If the list is empty, appending at the tail is identical to inserting at the head.
+Tail insertion has one extra step over head insertion—you must first find the last node. If the list is empty, appending at the tail is the same as inserting at the head.
 
 ```c
-/// @brief 在链表尾部插入元素
+/// @brief Insert an element at the tail of the list
 bool linked_list_push_back(LinkedList* list, int data) {
     if (list == NULL) {
         return false;
@@ -221,10 +216,10 @@ bool linked_list_push_back(LinkedList* list, int data) {
     }
 
     if (list->head == NULL) {
-        // 空链表：新节点就是第一个节点
+        // empty list: the new node is the first node
         list->head = node;
     } else {
-        // 非空链表：找到最后一个节点
+        // non-empty list: find the last node
         ListNode* tail = list->head;
         while (tail->next != NULL) {
             tail = tail->next;
@@ -237,18 +232,17 @@ bool linked_list_push_back(LinkedList* list, int data) {
 }
 ```
 
-> ⚠️ **Warning**
-> When traversing to find the tail, the termination condition must be `tail->next != NULL` rather than `tail != NULL`. If you use the latter, `tail` becomes `NULL` when the loop ends—you lose the reference to the last node and cannot attach the new node. Executing `tail->next = node` results in a null pointer dereference and a segmentation fault. This is a very frequent bug in linked list code.
+When walking the list to find the tail, the loop condition must be `tail->next != NULL`, not `tail != NULL`. With the latter, the loop ends with `tail` equal to `NULL`—you have lost your reference to the last node, cannot hang the new node onto anything, and `tail->next = node` becomes a null-pointer dereference and an immediate segfault. This is one of the most frequent bugs in linked-list code.
 
-The time complexity of tail insertion is O(n) because we must traverse to the end. If you perform tail insertions frequently, you can maintain a `tail` pointer just like we maintain `size`, making tail insertion O(1). However, maintaining an additional `tail` pointer adds significant complexity to edge cases (such as updating it when deleting the tail node), so we will not introduce it here. This will be resolved naturally later when we implement doubly linked lists.
+Tail insertion is O(n), because of the walk to the end. If you append at the tail frequently, you can maintain a `tail` pointer the same way we maintain `size`, which makes tail insertion O(1) too. But an extra `tail` pointer adds a fair amount of edge-case complexity (deleting the last node has to update it as well), so we won't introduce it here—doubly linked lists, which we will meet later, solve this naturally.
 
 ## Step 5 — Inserting a Node at a Specific Position
 
-Head and tail insertion are not enough; often, we need to insert an element at a specific position. We define the following conventions: `index` 0 means insert at the head, `index` equal to `size` means insert at the tail, and an `index` greater than `size` is considered an illegal operation.
+Head and tail insertion aren't enough; we often need to insert an element at a specific position. Our convention: `index` 0 means insert at the head, `index` equal to `size` means append at the tail, and anything beyond `size` is treated as an illegal operation.
 
 ```c
-/// @brief 在指定位置插入元素
-/// @param index 插入位置（0-based）
+/// @brief Insert an element at a specific position
+/// @param index insertion position (0-based)
 bool linked_list_insert_at(LinkedList* list, int index, int data) {
     if (list == NULL || index < 0 || index > list->size) {
         return false;
@@ -258,7 +252,7 @@ bool linked_list_insert_at(LinkedList* list, int index, int data) {
         return linked_list_push_front(list, data);
     }
 
-    // 找到 index-1 位置的节点（前驱节点）
+    // find the node at index-1 (the predecessor node)
     ListNode* prev = list->head;
     for (int i = 0; i < index - 1; i++) {
         prev = prev->next;
@@ -269,82 +263,82 @@ bool linked_list_insert_at(LinkedList* list, int index, int data) {
         return false;
     }
 
-    node->next = prev->next;  // 新节点指向原来 index 位置的节点
-    prev->next = node;        // 前驱节点指向新节点
+    node->next = prev->next;  // the new node points to the old node at index
+    prev->next = node;        // the predecessor points to the new node
     list->size++;
     return true;
 }
 ```
 
-The core of insertion at a specific location is finding the **predecessor node**—the node at position `index - 1`. Once found, we squeeze the new node between the predecessor and its successor: first, point the new node's `next` to the predecessor's `next`, and then point the predecessor's `next` to the new node. Just like insertion at the head, the order of these two steps cannot be reversed, otherwise, we lose the rest of the list. Here, we stick to that iron rule—**connect first, disconnect later**.
+The heart of insertion at a specific position is finding the **predecessor node**—the node at position `index - 1`. Once found, the new node squeezes in between the predecessor and the predecessor's next node: first point the new node's `next` at the predecessor's `next`, then point the predecessor's `next` at the new node. As with head insertion, this order cannot be reversed, or the chain after the predecessor is lost. Same iron law as before—**connect first, cut second**.
 
-## Step Six — Deleting Nodes Safely
+## Step 6 — Deleting Nodes Safely
 
-Deletion is the mirror operation of insertion, but it is more error-prone because we must not only modify pointers but also free the memory of the deleted node. As mentioned earlier, "save before delete" is the basic pattern for linked list operations, and we will apply it repeatedly here.
+Deletion and insertion are mirror operations, but deletion is more error-prone, because we not only rewire pointers but also free the deleted node's memory. We said "save first, delete second" is the basic linked-list pattern; we will lean on it over and over here.
 
 ### Deleting from the Head
 
 ```c
-/// @brief 删除链表头部元素
-/// @return 成功返回 true
+/// @brief Remove the element at the head of the list
+/// @return true on success
 bool linked_list_pop_front(LinkedList* list) {
     if (list == NULL || list->head == NULL) {
         return false;
     }
 
-    ListNode* old_head = list->head;  // 先保存要删除的节点
-    list->head = old_head->next;      // head 指向第二个节点
-    free(old_head);                   // 释放原来的头节点
+    ListNode* old_head = list->head;  // save the node to delete first
+    list->head = old_head->next;      // head points to the second node
+    free(old_head);                   // free the old head node
     list->size--;
     return true;
 }
 ```
 
-This follows the "save before delete" pattern—we must save `old_head` first. Otherwise, once we modify `head`, we can no longer `free` the original head node. If we reversed the order to `free(list->head)` first and then `list->head = list->head->next`, the second step would read `list->head->next`, resulting in a Use-After-Free.
+The "save first, delete second" pattern again—we must save `old_head` beforehand, otherwise after changing `head` there is no way to `free` the old head node. If you wrote it as `free(list->head)` first and then `list->head = list->head->next`, the second step's read of `list->head->next` would be a Use-After-Free.
 
-### Deletion by Value
+### Deleting by Value
 
-Deleting by value is one of the trickiest linked list operations because we must handle several edge cases: an empty list, the target node being the head, or the target node not existing...
+Deleting by value is one of the linked-list operations that demands the most care, because there are quite a few edge cases to handle: an empty list, the node to delete being the head, the node to delete not existing at all...
 
 ```c
-/// @brief 删除第一个值为 target 的节点
-/// @return 找到并删除返回 true，未找到返回 false
+/// @brief Remove the first node whose value is target
+/// @return true if found and removed, false if not found
 bool linked_list_remove(LinkedList* list, int target) {
     if (list == NULL || list->head == NULL) {
         return false;
     }
 
-    // 特殊情况：要删除的是头节点
+    // special case: the node to delete is the head
     if (list->head->data == target) {
         return linked_list_pop_front(list);
     }
 
-    // 一般情况：找到目标节点的前驱
+    // general case: find the predecessor of the target node
     ListNode* prev = list->head;
     while (prev->next != NULL && prev->next->data != target) {
         prev = prev->next;
     }
 
     if (prev->next == NULL) {
-        // 遍历完了也没找到
+        // walked to the end without finding it
         return false;
     }
 
-    // prev->next 就是要删除的节点
+    // prev->next is the node to delete
     ListNode* to_delete = prev->next;
-    prev->next = to_delete->next;  // 前驱跳过被删节点
-    free(to_delete);               // 释放被删节点
+    prev->next = to_delete->next;  // the predecessor skips over the deleted node
+    free(to_delete);               // free the deleted node
     list->size--;
     return true;
 }
 ```
 
-Here is a critical design decision—we maintain the **predecessor node** `prev` during traversal, rather than the current node `current`. Since a singly linked list only moves forward, if we stand on the node to be deleted, we cannot go back to modify the predecessor's `next` pointer. Therefore, we must always operate from the predecessor's position, inspecting and manipulating the target node via `prev->next`. This pattern appears repeatedly in linked list operations, so we recommend understanding it thoroughly—in the section on sentinel nodes, we will see an elegant solution that eliminates the "head node special case."
+There is a crucial design decision here—while traversing we maintain the **predecessor node** `prev`, not the current node `current`. A singly linked list only moves forward; if you are standing on the node to delete, there is no way to go back and modify the predecessor's `next` pointer. So we must always operate from the predecessor's position, inspecting and manipulating the target node through `prev->next`. This idea recurs throughout linked-list operations—make sure you understand it thoroughly. In the sentinel node section later we will see an elegant scheme that eliminates the "head node special case".
 
 ### Deleting at a Specific Position
 
 ```c
-/// @brief 删除指定位置的节点
+/// @brief Remove the node at a specific position
 bool linked_list_remove_at(LinkedList* list, int index) {
     if (list == NULL || index < 0 || index >= list->size) {
         return false;
@@ -354,7 +348,7 @@ bool linked_list_remove_at(LinkedList* list, int index) {
         return linked_list_pop_front(list);
     }
 
-    // 找到 index-1 位置的节点（前驱）
+    // find the node at index-1 (the predecessor)
     ListNode* prev = list->head;
     for (int i = 0; i < index - 1; i++) {
         prev = prev->next;
@@ -368,15 +362,15 @@ bool linked_list_remove_at(LinkedList* list, int index) {
 }
 ```
 
-Just like insertion at a specified position, the core logic is to locate the predecessor node and then bypass the node being deleted.
+As with insertion at a specific position, the core is finding the predecessor node, then routing around the deleted node.
 
-## Step 7 — Search and Traversal, Let's Run and See the Results
+## Step 7 — Search and Traversal, Then a Test Run
 
-Searching and traversal are the most basic read-only operations for linked lists, and they serve as the means for us to verify that all previous insertions and deletions were implemented correctly.
+Search and traversal are the most basic read-only operations on a linked list, and they are also our means of verifying that all the insertions and deletions above are correct.
 
 ```c
-/// @brief 查找值为 target 的第一个节点的位置
-/// @return 找到返回索引（0-based），未找到返回 -1
+/// @brief Find the position of the first node whose value is target
+/// @return the index (0-based) if found, -1 if not found
 int linked_list_find(const LinkedList* list, int target) {
     if (list == NULL) {
         return -1;
@@ -396,7 +390,7 @@ int linked_list_find(const LinkedList* list, int target) {
 ```
 
 ```c
-/// @brief 打印链表内容
+/// @brief Print the list contents
 void linked_list_print(const LinkedList* list) {
     if (list == NULL) {
         printf("[NULL list]\n");
@@ -417,13 +411,13 @@ void linked_list_print(const LinkedList* list) {
 ```
 
 ```c
-/// @brief 获取链表长度
+/// @brief Get the list length
 int linked_list_size(const LinkedList* list) {
     return (list != NULL) ? list->size : 0;
 }
 ```
 
-At this point, we have implemented a fully functional singly linked list. Let's run it to verify the results:
+At this point we have implemented a fully functional singly linked list. Let's run it and see the results:
 
 ```c
 int main(void) {
@@ -462,7 +456,7 @@ $ gcc -Wall -Wextra -std=c17 linked_list.c -o linked_list_test && ./linked_list_
 Found 20 at index 2
 ```
 
-Let's check for memory leaks using Valgrind:
+Now check with Valgrind for memory leaks:
 
 ```text
 $ valgrind --leak-check=full ./linked_list_test
@@ -473,47 +467,47 @@ $ valgrind --leak-check=full ./linked_list_test
 ==12345== All heap blocks were freed -- no leaks are possible
 ```
 
-Excellent! We have eight `malloc` calls matching eight `free` calls, leaving the memory spotless. Memory issues in linked lists often don't cause immediate crashes; instead, they leak silently, only triggering an OOM (Out of Memory) failure after running for hours on an embedded device. Troubleshooting at that stage is painful, so do not skip this verification step.
+Nice: 8 `malloc`s matched by 8 `free`s, memory squeaky clean. Linked-list memory problems often don't crash at runtime—they leak quietly, and only after the embedded device has been running for hours do they blow up with an OOM, by which point tracking them down is painful. So never skip this verification step.
 
-## Step 8 — Eliminate Head Node Special Cases with a Sentinel Node
+## Step 8 — Eliminating Head-Node Special Cases with a Sentinel Node
 
-The linked list we implemented earlier has a somewhat inelegant aspect: operations involving the head node always require special handling. When inserting, if `index == 0`, we need special logic. When deleting, if the target is the head node, we also need special logic. These "head node special cases" not only bloat the code but are also easily missed during modifications.
+The list we implemented above has one inelegant aspect—operations involving the head node always need special handling. Insertion needs a special path when `index == 0`; deletion needs one when the node to delete is the head. This "head node special-casing" not only makes the code longer, it is also easy to miss a spot when modifying it.
 
-The sentinel node (dummy head) is a classic technique for eliminating these special cases. The idea is to place a "dummy" node at the very front of the list that does not store valid data but simply occupies a position. You can think of it as an empty car attached to the front of a train—it carries no passengers, but it ensures that all "insert before a car" operations become a unified "insert after predecessor" operation. Consequently, all real data nodes have a predecessor node—even the first data node's predecessor is the sentinel node. All operations targeting the "predecessor" can be handled uniformly without any special cases.
+The sentinel node (dummy head / sentinel node) is the classic trick for eliminating these special cases. The idea is to place a "fake" node at the very front of the list: it stores no real data, it just occupies a slot. You can picture it as an empty car coupled to the front of the train—it carries no passengers, but it turns every "insert in front of some car" operation into a uniform "insert after the predecessor" operation. That way, every real data node has a predecessor—even the first data node's predecessor is the sentinel node. Every operation expressed against "the predecessor" can be handled uniformly, with no special-casing at all.
 
 ```c
-/// @brief 带哨兵节点的单链表
+/// @brief Singly linked list with a sentinel node
 typedef struct {
-    ListNode sentinel;   // 哨兵节点（直接嵌入，不是指针）
+    ListNode sentinel;   // sentinel node (embedded directly, not a pointer)
     int size;
 } SentinelList;
 ```
 
-Here, we embed the sentinel node directly into the structure instead of using a pointer to it. This approach saves one `malloc` call, and naturally binds the lifetime of the sentinel to that of the list structure. The `data` field of the sentinel node is meaningless; only the `next` field is useful.
+Here we embed the sentinel node directly in the structure instead of pointing to it—the benefit is one less `malloc`, and the sentinel's lifetime is naturally bound to the list structure's. The sentinel node's `data` field is meaningless; only the `next` field is useful.
 
 ```c
-/// @brief 创建带哨兵节点的链表
+/// @brief Create a list with a sentinel node
 SentinelList* sentinel_list_create(void) {
     SentinelList* list = (SentinelList*)malloc(sizeof(SentinelList));
     if (list == NULL) {
         return NULL;
     }
-    list->sentinel.next = NULL;  // 哨兵的 next 指向第一个真实节点（空链表时为 NULL）
+    list->sentinel.next = NULL;  // the sentinel's next points to the first real node (NULL when the list is empty)
     list->size = 0;
     return list;
 }
 ```
 
-Now let's see how concise erase-by-value becomes with the sentinel version:
+Now let's see how concise deletion by value becomes in the sentinel version:
 
 ```c
-/// @brief 按值删除（哨兵版本）
+/// @brief Remove by value (sentinel version)
 bool sentinel_list_remove(SentinelList* list, int target) {
     if (list == NULL) {
         return false;
     }
 
-    // prev 从哨兵开始，不需要特判头节点
+    // prev starts at the sentinel; no head-node special case needed
     ListNode* prev = &list->sentinel;
     while (prev->next != NULL && prev->next->data != target) {
         prev = prev->next;
@@ -531,124 +525,124 @@ bool sentinel_list_remove(SentinelList* list, int target) {
 }
 ```
 
-Notice anything? There's no special case for `if (list->head->data == target)`, and no separate branch for head deletion—all scenarios follow a single unified logic. `prev` iterates starting from the sentinel, because the sentinel itself is a valid predecessor node. This demonstrates the power of a sentinel node—it uses a single node that doesn't store data to ensure consistent operational logic, eliminating all special cases for the head node. Many advanced variants of linked lists use sentinel nodes; for example, the Linux kernel's `list_head` is a classic implementation of a doubly circular linked list with a sentinel.
+Notice? The `if (list->head->data == target)` special case is gone, and so is the delete-the-head branch—every case flows through one set of logic. `prev` starts its walk at the sentinel, because the sentinel itself is a perfectly legal predecessor node. That is the power of the sentinel node: one data-less node buys uniform operation logic and eliminates every head-node special case. Many advanced linked-list variants use sentinel nodes—for example, the Linux kernel's `list_head` is a classic doubly linked circular list built around a sentinel.
 
-## Boundary Condition Checklist—Where Bugs Most Often Occur
+## Boundary Condition Checklist — Where Things Most Easily Go Wrong
 
-The most bug-prone areas in linked list operations are boundary conditions. Let's summarize the scenarios we must cover:
+The most bug-prone spots in linked-list operations are the boundary conditions. Let's line up the cases we must cover:
 
-**Empty list operations**—Deleting from or searching an empty list should safely return an error code without crashing. **Single-node list**—After deleting the only node, the list becomes empty, and `head` should become `NULL`. **Tail operations**—After deleting the last node, the predecessor's `next` should become `NULL`. **`NULL` parameter checks**—The first parameter of any public API might be `NULL`, so defensive checks are mandatory. **Index out of bounds**—An `index` that is negative or exceeds `size` should return an error.
+Operations on an empty list—deleting from an empty list or searching an empty list must return an error code safely, never crash. Single-node lists—after deleting the only node, the list becomes empty and `head` should become `NULL`. Tail operations—after deleting the last node, the predecessor's `next` should become `NULL`. `NULL` argument checks—the first argument of every public API can be `NULL`; check defensively. Index out of range—a negative `index`, or one beyond `size`, should return an error.
 
-When writing tests, make sure to cover these cases, especially empty lists and single-node lists. Many people only test on "normal length" linked lists, which causes them to crash as soon as they hit a boundary condition.
+When writing tests, make sure all of these cases are covered—especially the empty list and the single-node list. Plenty of people only test on "normal-length" lists, and the moment a boundary condition shows up, everything blows up.
 
-## Memory Ownership—Who Is Responsible for Releasing
+## Memory Ownership — Who Is Responsible for Freeing
 
-When implementing data structures manually, memory ownership is a question that must be clearly thought out. In our implementation, the ownership relationship is clear: the `LinkedList` owns all `ListNode` objects—creator destroys. `linked_list_create` creates the list, and `linked_list_destroy` destroys the list and all nodes. Each node belongs to only one list, and there is no sharing.
+When you hand-roll a data structure, memory ownership is a question you must think through. In our implementation the ownership relationship is crisp: `LinkedList` owns every `ListNode`; whoever creates, destroys—`linked_list_create` creates the list, `linked_list_destroy` destroys the list along with all its nodes. Each node belongs to exactly one list; there is no sharing.
 
-This clear, single-ownership model makes memory management simple—we only need to free all nodes in `destroy`. However, if the `data` we store is also dynamically allocated (like a `char*` string), ownership becomes more complex. Is the list responsible for freeing the data, or is the caller? Generally, there are two strategies: one is where the list owns the data and releases it when destroyed; the other is where the list only stores pointers and ignores the data's lifetime, leaving management to the caller. The former is simple but inflexible, while the latter is flexible but prone to forgetting to release memory. In C, there is no universal answer; you need to think it through when designing the API and document it clearly.
+This clean single-ownership model makes memory management simple—all `destroy` has to do is free every node. But if the stored `data` is itself dynamically allocated (a `char*` string, for example), ownership gets more complicated—does the list free the data, or does the caller? Broadly speaking there are two strategies: one is that the list owns the data and frees it along with itself on destruction; the other is that the list merely stores pointers and stays out of the data's lifetime, leaving the caller to manage it. The former is simple but not flexible enough; the latter is flexible but easy to forget to free. In C there is no universal answer—you need to decide while designing the API and state it clearly in the documentation.
 
-## Transitioning to C++
+## Bridging to C++
 
-Now that we understand the full details of implementing a singly linked list from scratch, let's see what the C++ standard library offers in this regard.
+With every detail of the hand-rolled singly linked list understood, let's take a look at what the C++ standard library offers here.
 
 ### `std::forward_list` and `std::list`
 
-The C++ STL provides two linked list containers—`std::forward_list` and `std::list`. `std::forward_list` is a singly linked list introduced in C++11, corresponding to the classic singly linked list we implemented in this article. `std::list` is a doubly linked list, where each node stores an additional `prev` pointer.
+The C++ STL provides two linked-list containers—`std::forward_list` and `std::list`. `std::forward_list` is the singly linked list introduced in C++11, corresponding to the classic singly linked list we implemented in this chapter. `std::list` is a doubly linked list; each node additionally stores a `prev` pointer.
 
-An interesting design trade-off is that `std::forward_list` doesn't even have a `size()` member function. The C++ Standards Committee's reasoning is that if `size()` is provided, certain operations (like `splice`, which transfers nodes from one list to another) must maintain the consistency of `size`, which incurs additional overhead. Since the design goal of `forward_list` is "singly linked list with minimal overhead," they decided not to provide `size()` at all, letting those who need it maintain it themselves. This forms an interesting contrast with our approach of maintaining a `size` field—the standard library chose flexibility over convenience.
+An interesting design trade-off: `std::forward_list` doesn't even have a `size()` member function. The C++ standards committee's reasoning is that if `size()` were provided, certain operations (such as `splice`, which transfers nodes from one list to another) would have to maintain the consistency of `size`, and that would bring extra overhead. Since `forward_list`'s design goal is the "minimum-overhead singly linked list", it simply omits `size()` and lets those who need it maintain it themselves. This makes for an interesting contrast with our approach of maintaining a `size` field—the standard library chose flexibility over convenience.
 
 ### Smart Pointers and Linked Lists
 
-In C++, while implementing a linked list with raw pointers is feasible, smart pointers allow for a safer approach. The most natural way is to use `std::unique_ptr` to manage node ownership:
+In C++, hand-rolling a linked list with raw pointers is doable, but with smart pointers there is a safer way to write it. The most natural approach is to manage node ownership with `std::unique_ptr`:
 
 ```cpp
 #include <memory>
 
 struct ListNode {
     int data;
-    std::unique_ptr<ListNode> next;  // 独占下一个节点的所有权
+    std::unique_ptr<ListNode> next;  // exclusive ownership of the next node
 };
 ```
 
-The benefit of this approach is that the list's destruction becomes automatic. When the head node's `unique_ptr` is destroyed, it recursively destroys the next node, which in turn destroys the following one, continuing until the end of the list. We no longer need to write a manual `destroy` function. However, we must note a potential issue: for very long lists (e.g., tens of thousands of nodes), this recursive destruction might cause a stack overflow. In such cases, we still need to manually iterate and release memory.
+The benefit is that destroying the list becomes automatic—when the head node's `unique_ptr` is destroyed, it recursively destroys the next node, which destroys the one after that, all the way to the tail. No hand-written `destroy` function needed. One potential problem to note, though: for very long lists (tens of thousands of nodes, say), this recursive destruction can overflow the stack. In that case you still need a manual traversal to free the nodes.
 
-Insertion and deletion operations in a `unique_ptr`-based list also involve subtle changes—we cannot simply assign pointers. Instead, we use `std::move` to transfer ownership:
+A list built on `unique_ptr` also changes subtly on insertion and deletion—you can't simply assign pointers; you need `std::move` to transfer ownership:
 
 ```cpp
-// 头部插入
+// head insertion
 void push_front(std::unique_ptr<ListNode>& head, int data) {
     auto new_node = std::make_unique<ListNode>();
     new_node->data = data;
-    new_node->next = std::move(head);  // 转移所有权
+    new_node->next = std::move(head);  // transfer ownership
     head = std::move(new_node);
 }
 ```
 
-Compared to the C version `node->next = list->head; list->head = node;`, the C++ version using `std::move` makes the ownership transfer explicit—every pointer transfer is clearly marked as a "move," rather than silently copying an address value. This is exactly how C++ move semantics manifest in pointer-intensive data structures like linked lists.
+Compared with the C version's `node->next = list->head; list->head = node;`, the C++ version's `std::move` makes the ownership transfer explicit—every pointer handoff is clearly marked as a "move", rather than silently copying an address value. This is precisely C++ move semantics at work in a pointer-dense data structure like the linked list.
 
-### Iterator Pattern
+### The Iterator Pattern
 
-When we wrote linked list traversals earlier, we always used `ListNode* current = list->head; while (current != NULL) { ... current = current->next; }`. This traversal logic is tightly coupled to the specific linked list implementation—if we wanted to switch to a different container (like an array), we would have to rewrite all the traversal code.
+Every time we wrote a list traversal earlier, it was `ListNode* current = list->head; while (current != NULL) { ... current = current->next; }`. That traversal logic is coupled to the concrete list implementation—swap in a different container (an array, say) and the traversal code has to be rewritten.
 
-The C++ iterator pattern abstracts the "traversal" operation. Whether it's a linked list, an array, or a tree, as long as it provides an iterator, we can traverse it using a unified `for (auto it = container.begin(); it != container.end(); ++it)`, or even a range-based for loop `for (auto& elem : container)`. The underlying implementation of an iterator is still pointer manipulation—for a linked list, `++it` is essentially `it = it->next`, and for an array, it's just pointer arithmetic. But the caller doesn't need to worry about these details.
+C++'s iterator pattern abstracts the operation of "traversing". Linked list, array, or tree—whatever the container, as long as it provides iterators, you can traverse with the uniform `for (auto it = container.begin(); it != container.end(); ++it)`, or even with a range-based for loop `for (auto& elem : container)`. Under the hood, iterators are of course still pointer operations—for a linked list, `++it` is `it = it->next`; for an array, it is bumping the pointer by one. But the caller doesn't need to care about these details.
 
-Implementing iterators in pure C is quite troublesome—without operator overloading or templates, achieving generic programming requires function pointers or macros. However, once we understand the design intent behind C++ iterators, we can achieve a similar level of abstraction in C—by defining a traversal function that accepts a callback function pointer and invokes it for each element. This pattern is also used in the C standard library (such as the comparison function in `qsort` or the callback in `bsearch`).
+Doing iterators in plain C is more troublesome—no operator overloading, no templates; the only routes to genericity are function pointers or macros. But once you understand the design intent of C++ iterators, we can achieve a similar abstraction in C—define a traversal function that accepts a callback function pointer and invokes it for each element. This pattern is also used in the C standard library (the comparison function of `qsort`, the callback of `bsearch`, and so on).
 
 ## Exercises
 
-### Exercise 1: Reverse Linked List
+### Exercise 1: Reversing the List
 
-**Difficulty: Basic** · three pointers, O(1) space
+**Difficulty: basic** · three pointers, O(1) space
 
-Implement a function to reverse a singly linked list in place. The space complexity must be O(1), and you cannot allocate new nodes.
+Implement a function that reverses a singly linked list in place. The space complexity must be O(1); allocating new nodes is not allowed.
 
 ```c
-/// @brief 原地反转链表
-/// @param list 链表指针
+/// @brief Reverse the list in place
+/// @param list pointer to the list
 void linked_list_reverse(LinkedList* list);
 ```
 
-**Hint:** Maintain three pointers—`prev`, `current`, and `next`, and reverse the `next` direction of each node one by one.
+Hint: maintain three pointers—`prev`, `current`, `next`—and reverse each node's `next` direction one at a time.
 
-### Exercise 2: Merge Two Sorted Linked Lists
+### Exercise 2: Merging Two Sorted Lists
 
-**Difficulty: Basic** · two-pointer merge
+**Difficulty: basic** · two-pointer merge
 
-Given two linked lists sorted in ascending order, merge them into a new sorted linked list.
+Given two lists sorted in ascending order, merge them into one new sorted list.
 
 ```c
-/// @brief 合并两个升序链表
-/// @param a 第一个有序链表
-/// @param b 第二个有序链表
-/// @return 合并后的新链表
+/// @brief Merge two ascending sorted lists
+/// @param a the first sorted list
+/// @param b the second sorted list
+/// @return the new merged list
 LinkedList* linked_list_merge_sorted(const LinkedList* a, const LinkedList* b);
 ```
 
-**Hint:** Iterate through both lists simultaneously. Each time, take the smaller node value and append it to the tail of the result list.
+Hint: walk both lists at the same time, each time taking the smaller of the two node values and appending it to the tail of the result list.
 
-### Exercise 3: Detect List Cycle
+### Exercise 3: Detecting a Cycle in the List
 
-**Difficulty: Intermediate** · Floyd's tortoise and hare
+**Difficulty: intermediate** · Floyd's fast and slow pointers
 
-Determine if a linked list contains a cycle (where a node's `next` pointer points to a node that has already appeared).
+Determine whether a list has a cycle (some node's `next` points back to a node that has already appeared earlier).
 
 ```c
-/// @brief 检测链表是否有环
-/// @return 有环返回 true
+/// @brief Detect whether the list has a cycle
+/// @return true if a cycle exists
 bool linked_list_has_cycle(const LinkedList* list);
 ```
 
-**Hint:** The classic solution is Floyd's Tortoise and Hare algorithm—use two pointers, one moving one step at a time, and the other moving two steps. If a cycle exists, the fast pointer will eventually catch up to the slow pointer.
+Hint: the classic solution is Floyd's tortoise-and-hare algorithm—two pointers, one advancing one step at a time, the other two steps at a time. If there is a cycle, the fast pointer eventually catches up with the slow one.
 
-### Exercise 4: Full API with Sentinel
+### Exercise 4: A Complete Sentinel-Based API
 
-**Difficulty: Intermediate** · full API with a sentinel node
+**Difficulty: intermediate** · a complete list with a sentinel node
 
-Re-implement the full linked list API (`push_front`, `push_back`, `insert_at`, `remove`, `find`) using a sentinel node, and observe which special-case checks are eliminated by the sentinel node.
+Reimplement the complete list API (`push_front`, `push_back`, `insert_at`, `remove`, `find`) with a sentinel node, and get a feel for which special-case code the sentinel node eliminates.
 
-## Resources
+## References
 
-- [C struct - cppreference](https://en.cppreference.com/w/c/language/struct)
+- [C structures - cppreference](https://en.cppreference.com/w/c/language/struct)
 - [std::forward_list - cppreference](https://en.cppreference.com/w/cpp/container/forward_list)
 - [std::list - cppreference](https://en.cppreference.com/w/cpp/container/list)
 - [std::unique_ptr - cppreference](https://en.cppreference.com/w/cpp/memory/unique_ptr)

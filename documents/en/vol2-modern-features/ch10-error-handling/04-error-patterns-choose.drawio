@@ -1,0 +1,106 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Error Handling Decision Tree" id="error-patterns-choose">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="错误处理方案选型决策树" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=21;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="20" width="600" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- 主干：四个问题（对应正文「第一步」~「第四步」） -->
+        <mxCell id="q1" value="&lt;b&gt;① 错误是「可恢复」的吗？&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;fontSize=15;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="60" y="76" width="330" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="q2" value="&lt;b&gt;② 环境允许异常，&lt;br&gt;而且错误发生频率很低？&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;fontSize=15;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="60" y="192" width="330" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="q3" value="&lt;b&gt;③ 调用方需要知道失败原因吗？&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;fontSize=15;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="60" y="308" width="330" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="q4" value="&lt;b&gt;④ 编译器支持 C++23 吗？&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;fontSize=15;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="60" y="424" width="330" height="64" as="geometry" />
+        </mxCell>
+
+        <!-- 出口：推荐方案 -->
+        <mxCell id="o1" value="&lt;b&gt;assert / 直接终止程序&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#c00000&quot;&gt;严重 bug 或不可恢复：空指针、越界、内存耗尽&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=14;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="470" y="72" width="300" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="o2" value="&lt;b&gt;异常&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#666666&quot;&gt;RAII 自动清理，不会忘记处理；&lt;br&gt;构造函数失败也走这里（没有返回值）&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=14;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="470" y="188" width="300" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="o3" value="&lt;b&gt;optional&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#666666&quot;&gt;查找 / 缓存命中：只关心「有没有」，&lt;br&gt;不需要失败原因&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=14;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="470" y="304" width="300" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="o4" value="&lt;b&gt;std::expected&lt;T, E&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#666666&quot;&gt;文件 IO / 网络 / 输入验证等，&lt;br&gt;享受原生的 monadic 操作&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=14;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="470" y="396" width="300" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="o5" value="&lt;b&gt;自实现简化版 expected&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#666666&quot;&gt;或者 枚举 + 结构体（C++17 过渡）&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#f2f2f2;fontSize=14;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="470" y="482" width="300" height="72" as="geometry" />
+        </mxCell>
+
+        <!-- 主干纵向边 -->
+        <mxCell id="e_q1_q2" value="是" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;fontSize=13;fontStyle=1;labelBackgroundColor=#FFFFFF;align=center;verticalAlign=middle;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="225" y="140" as="sourcePoint" />
+            <mxPoint x="225" y="192" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_q2_q3" value="否（禁用异常 / 失败频繁）" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;fontSize=12;fontStyle=1;labelBackgroundColor=#FFFFFF;align=center;verticalAlign=middle;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="225" y="256" as="sourcePoint" />
+            <mxPoint x="225" y="308" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_q3_q4" value="是" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;fontSize=13;fontStyle=1;labelBackgroundColor=#FFFFFF;align=center;verticalAlign=middle;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="225" y="372" as="sourcePoint" />
+            <mxPoint x="225" y="424" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 横向出口边 -->
+        <mxCell id="e_q1_o1" value="否" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;fontSize=13;fontStyle=1;labelBackgroundColor=#FFFFFF;align=center;verticalAlign=middle;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="108" as="sourcePoint" />
+            <mxPoint x="470" y="108" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_q2_o2" value="是" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;fontSize=13;fontStyle=1;labelBackgroundColor=#FFFFFF;align=center;verticalAlign=middle;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="224" as="sourcePoint" />
+            <mxPoint x="470" y="224" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_q3_o3" value="否" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;fontSize=13;fontStyle=1;labelBackgroundColor=#FFFFFF;align=center;verticalAlign=middle;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="340" as="sourcePoint" />
+            <mxPoint x="470" y="340" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_q4_o4" value="是" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;fontSize=13;fontStyle=1;labelBackgroundColor=#FFFFFF;align=center;verticalAlign=middle;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="456" as="sourcePoint" />
+            <mxPoint x="470" y="432" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_q4_o5" value="否" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;fontSize=13;fontStyle=1;labelBackgroundColor=#FFFFFF;align=center;verticalAlign=middle;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="456" as="sourcePoint" />
+            <mxPoint x="470" y="518" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 底部旁注：场景表中不进决策树的错误码特例 -->
+        <mxCell id="side_note" value="&lt;b&gt;两个不进树的特例，都归错误码：&lt;/b&gt;高频中断 / 信号处理（极低开销、确定性执行时间）；跨 C/C++ 边界（C 不认识 C++ 类型，边界处做一次性转换，内部全用 C++ 风格）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#888888;strokeWidth=1;dashed=1;fillColor=#f2f2f2;fontSize=13;align=left;verticalAlign=middle;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="60" y="590" width="710" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="source_note" value="判据与结论均出自本文「选择指南」四步决策与「场景化推荐」清单" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="113" y="662" width="600" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

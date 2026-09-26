@@ -4,58 +4,50 @@ cpp_standard:
 - 11
 - 14
 - 17
-description: Master how the C preprocessor works, learn to use macros, conditional
-  compilation, and header guards, build modular multi-file C projects, and compare
-  them with C++ alternatives like const, inline, constexpr, and templates.
+description: Master how the C preprocessor works, learn to use macros, conditional compilation, and include
+  guards, build a modular multi-file C project, and compare the const/inline/constexpr/template
+  alternatives C++ offers
 difficulty: beginner
 order: 19
 platform: host
 prerequisites:
-- 动态内存管理
-reading_time_minutes: 6
+- Dynamic Memory Management
+reading_time_minutes: 12
 tags:
 - host
 - cpp-modern
 - beginner
 - 入门
 - CMake
-title: Preprocessor and Multi-file Projects
+title: The Preprocessor and Multi-File Projects
 translation:
   source: documents/vol1-fundamentals/c_tutorials/15-preprocessor-and-multifile.md
-  source_hash: 8cf6998b6006211e44d63a45a5be41d4cf14f6d0a2b8a405cbd693c349e4bc29
-  translated_at: '2026-06-16T05:51:05.048081+00:00'
+  source_hash: 9cc0f4d2fee03b50270f437eab007c84e153ef3d8b36bc156030da6f429ba48d
+  translated_at: '2026-09-25T13:23:09+00:00'
   engine: anthropic
-  token_count: 1128
+  token_count: 2600
 ---
 # The Preprocessor and Multi-File Projects
 
-If you have been writing all your C code in a single `.c` file up to this point, you will eventually hit a wall. In real-world projects, we split code into multiple `.c` and `.h` files, where each module handles its specific responsibilities. We then compile and link them to assemble the complete program.
+If every C program you have written so far lives in a single `.c` file, sooner or later that file will collapse under its own weight. In real projects, we split the code across multiple `.c` and `.h` files, let each module handle its own responsibilities, and then assemble them into a complete program through compilation and linking.
 
-However, multi-file projects bring more than just organizational challenges; they introduce a frequently misunderstood role in C—the **preprocessor**. Understanding the nature of the preprocessor is the first step in avoiding baffling compilation errors, strange macro expansion behaviors, and circular header inclusions.
+But a multi-file project brings more than an organizational challenge—it also drags onto the stage one of the most frequently misunderstood characters in the C language: the **preprocessor**. Understanding the preprocessor's true nature is the first step toward avoiding those baffling compile errors, bizarre macro-expansion behavior, and circular header includes.
 
-## Environment Setup
+## Step 1 — Understand What the Preprocessor Does
 
-We will conduct all subsequent experiments in the following environment:
+A C program goes through four stages on its way from source code to executable: preprocessing, compilation, assembly, and linking. The preprocessor is the first station on that line, and what it does to the source file is **pure text transformation**—every line starting with `#` is a preprocessing directive.
 
-- Platform: Linux x86\_64 (WSL2 is also acceptable)
-- Compiler: GCC 13+ or Clang 17+
-- Compiler flags: `-Wall -Wextra -std=c17`
+The preprocessor does not understand C. It has no idea what a type is or what a scope is; it just mechanically performs substitution, deletion, and conditional selection. You can run `gcc -E -P demo.c` to look at the preprocessed output and get a feel for just how "brutal" the preprocessor is.
 
-## Step One — Understanding What the Preprocessor Does
+## #include: Text Pasting at Its Most Brutal
 
-Transforming a C program from source code into an executable file involves four stages: preprocessing, compilation, assembly, and linking. The preprocessor is the first station; it performs **pure text transformation** on the source file—all lines starting with `#` are preprocessor directives.
+`#include` behaves in the most direct way possible: it inserts the entire content of the specified file, untouched, at the current position. That is exactly why we call it text pasting rather than module importing.
 
-The preprocessor does not understand the C language. It knows nothing about types or scopes; it mechanically performs replacements, deletions, and conditional selections. You can use `gcc -E -P demo.c` to inspect the preprocessor output and see how "brutal" it is.
+Angle brackets `<>` search the system header directories; double quotes `""` search the current directory first, then the system directories. Nested includes can cause serious code bloat.
 
-## #include: The Most Brutal Text Pasting
+## Step 2 — Master the Techniques and Pitfalls of Writing Macros
 
-The behavior of `#include` is very direct—it inserts the entire content of the specified file exactly where it is located. This is why we say it is text pasting, not module importing.
-
-Angle brackets `<>` search within the system header directories, while double quotes `""` search the current directory first, then the system directories. Nested includes can lead to significant code bloat.
-
-## Step Two — Mastering Macro Writing Techniques and Pitfalls
-
-### Object-like Macros: Constant Definitions
+### Object Macros: Constant Definitions
 
 ```c
 #define kMaxBufferSize 1024
@@ -64,34 +56,34 @@ Angle brackets `<>` search within the system header directories, while double qu
 char buffer[kMaxBufferSize];
 ```
 
-⚠️ **Do not add a semicolon** at the end of a macro definition. `#define kMaxBufferSize 1024;` includes the semicolon as part of the replacement text.
+**Do not add a semicolon** at the end of a macro definition. `#define kMaxBufferSize 1024;` would drag the semicolon into the replacement text as well.
 
-### Function-like Macros: Text Replacement with Parameters
+### Function Macros: Parameterized Text Substitution
 
-Parentheses are the summary of lessons learned the hard way:
+Every one of those parentheses is a scar earned the hard way:
 
 ```c
 #define SQUARE(x) ((x) * (x))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 ```
 
-# Consequences of omitting parentheses
+What happens without the parentheses:
 
 ```c
 #define BAD_SQUARE(x) x * x
-int r = BAD_SQUARE(2 + 3);   // 展开为 2 + 3 * 2 + 3 = 11，而不是 25
+int r = BAD_SQUARE(2 + 3);   // Expands to 2 + 3 * 2 + 3 = 11, not 25
 ```
 
-However, parentheses cannot solve the **repeated evaluation** problem:
+But parentheses cannot fix the **double evaluation** problem:
 
 ```c
 int x = 5;
 int r = MAX(x++, 10);
-// 展开为 ((x++) > (10) ? (x++) : (10))
-// x++ 被求值了两次！x 最终变成了 7 而不是 6
+// Expands to ((x++) > (10) ? (x++) : (10))
+// x++ is evaluated twice! x ends up as 7, not 6
 ```
 
-### Multiline Macros and the do-while(0) Idiom
+### Multi-Line Macros and the do-while(0) Idiom
 
 ```c
 #define SAFE_FREE(ptr)         \
@@ -103,24 +95,24 @@ int r = MAX(x++, 10);
     } while (0)
 ```
 
-The `do { ... } while(0)` construct forms a single statement, preventing dangling `else` issues within `if-else` branches. This technique is ubiquitous throughout the Linux kernel codebase.
+`do { ... } while(0)` forms a single statement as a whole, so it never dangles in an `if-else` branch. You will find this trick all over the Linux kernel codebase.
 
-## # and ## Operators
+## The # and ## Operators
 
-`#` converts a macro parameter into a string, while `##` concatenates two tokens into a new token:
+`#` turns a macro parameter into a string, and `##` glues two tokens into one new token:
 
 ```c
 #define STRINGIFY(x) #x
 #define MAKE_VAR(prefix, num) prefix ## num
 
-int MAKE_VAR(value, 1) = 10;  // 展开为 int value1 = 10;
+int MAKE_VAR(value, 1) = 10;  // Expands to int value1 = 10;
 ```
 
 ## Conditional Compilation
 
-### Header Guards
+### Include Guards
 
-The traditional approach uses a combination of `#ifndef` and `#define`, while modern compilers support the more concise `#pragma once`:
+The traditional approach pairs `#ifndef` with `#define`; modern compilers also support the simpler `#pragma once`:
 
 ```c
 // math_utils.h
@@ -130,17 +122,17 @@ int add(int a, int b);
 int multiply(int a, int b);
 ```
 
-`#pragma once` is not part of the C standard, but GCC, Clang, and MSVC all support it. It has become the de facto standard practice in C++ projects.
+`#pragma once` is not part of the C standard, but GCC, Clang, and MSVC all support it. It has long been the de facto standard practice in C++ projects.
 
-### Typical Use Cases
+### Typical Uses
 
-Debug/Release switching, platform adaptation, and feature toggles all rely on conditional compilation.
+Debug/Release switching, platform adaptation, feature toggles—conditional compilation is what makes all of these possible.
 
-## Step 3 — Learn to Organize Header Files and Multi-file Projects
+## Step 3 — Learn to Organize Headers and Multi-File Projects
 
-Place **declarations** in header files, and **definitions** in source files.
+Headers hold **declarations**; source files hold **definitions**.
 
-Correct usage of `extern`: declare with `extern` in the header file, and define in **one** `.c` file:
+The correct use of `extern`: declare it with `extern` in the header, then define it in exactly **one** `.c` file:
 
 ```c
 // config.h
@@ -151,75 +143,282 @@ extern int kConfigMaxRetryCount;
 int kConfigMaxRetryCount = 3;
 ```
 
-⚠️ Writing `int kConfigMaxRetryCount = 3;` (without `extern`) in a header file and including it in multiple `.c` files will cause a `multiple definition` error.
+Writing `int kConfigMaxRetryCount = 3;` (without `extern`) in a header that gets included by multiple `.c` files will land you a `multiple definition` error.
 
-## Multi-file Compilation and Linking
+## Multi-File Compilation and Linking
 
-Each `.c` file, together with all the header files it `#include`s, constitutes a **compilation unit**. The compiler processes each compilation unit independently, and the linker is responsible for combining all the `.o` files.
+Each `.c` file together with all the headers it `#include`s forms a **translation unit**. The compiler processes each translation unit independently, and the linker is what stitches all the `.o` files together.
 
-The `static` keyword limits symbol visibility to the current compilation unit—the linker cannot see it, and other `.c` files cannot reference it.
+The `static` keyword confines a symbol's visibility to the current translation unit—the linker never sees it, and no other `.c` file can reference it.
 
-## Introduction to Static Libraries
+## A First Look at Static Libraries
 
 ```bash
-# 编译为目标文件
+# Compile to an object file
 gcc -c math_utils.c
-# 创建静态库
+# Create a static library
 ar rcs libmath_utils.a math_utils.o
-# 使用静态库
+# Use the static library
 gcc -o demo main.c -L. -lmath_utils
 ```
 
-## C++ Interoperability
+## Bridging to C++
 
-- `const`/`constexpr` instead of macro constants—typed, scoped, and debuggable
-- `inline` functions instead of function macros—parameters evaluated once, type-safe
-- `template` instead of generic macros—full type checking and compile-time validation
-- `namespace` instead of file-level `static`—clearer namespace organization
-- `using` instead of `typedef`—more intuitive syntax, supports alias templates
-- C++20 Modules—using `export`/`import` instead of the textual paste of `#include`
+- `const`/`constexpr` replace macro constants—typed, scoped, and debuggable
+- `inline` functions replace function macros—arguments are evaluated exactly once, with type checking
+- `template` replaces generic macros—full type checking and compile-time verification
+- `namespace` replaces file-level `static`—a cleaner way to organize names
+- `using` replaces `typedef`—more intuitive syntax, and it supports alias templates
+- C++20 Modules—`export`/`import` replace the text-pasting `#include`
 
 ## Exercises
 
-### Exercise 1: Build a Multi-File Modular Project
+### Exercise 1: Build a Modular Multi-File Project
 
-**Difficulty: Basic** · .h/.c split plus packing a static library
+**Difficulty: Basic** · .h/.c separation plus packaging a static library
 
 ```c
 // math_utils.h
 #pragma once
-// 练习： 声明 clamp_int 和 count_digits
+// Exercise: declare clamp_int and count_digits
 
 // math_utils.c
 #include "math_utils.h"
-// 练习： 实现 clamp_int（将 value 限制在 [min_val, max_val] 范围内）
-// 练习： 实现 count_digits（计算整数的十进制位数）
+// Exercise: implement clamp_int (clamp value into the [min_val, max_val] range)
+// Exercise: implement count_digits (count the decimal digits of an integer)
 
 // main.c
 #include <stdio.h>
 #include "math_utils.h"
 int main(void) {
-    // 练习： 调用两个函数，验证结果
+    // Exercise: call both functions and verify the results
     return 0;
 }
 ```
 
-> **Tip:** The compilation steps are `gcc -c math_utils.c`, `gcc -c main.c`, and `gcc -o demo main.o math_utils.o`. To package a static library, use `ar rcs libmath_utils.a math_utils.o`.
+::: details Reference solution
 
-### Exercise 2: Zero-Overhead DEBUG_LOG Macro
+**math_utils.h**
 
-**Difficulty: Intermediate** · conditional compilation plus variadic macros
+```c
+#pragma once
+/**
+ * @brief Return the larger of two values
+ *
+ * @param a The first value in the comparison
+ * @param b The second value in the comparison
+ * @return The larger of a and b
+ */
+#define MAX(a, b)           \
+  ({                        \
+    __typeof__(a) _a = (a); \
+    __typeof__(b) _b = (b); \
+    _a > _b ? _a : _b;      \
+  })
+
+/**
+ * @brief Return the smaller of two values
+ *
+ * @param a The first value in the comparison
+ * @param b The second value in the comparison
+ * @return The smaller of a and b
+ */
+#define MIN(a, b)           \
+  ({                        \
+    __typeof__(a) _a = (a); \
+    __typeof__(b) _b = (b); \
+    _a < _b ? _a : _b;      \
+  })
+
+void clamp_int(int *value, int min_val, int max_val);
+
+/**
+ * @brief Return the number of decimal digits in an integer
+ *
+ * The sign is not counted; 0 has 1 digit.
+ */
+int count_digits(int value);
+```
+
+**math_utils.c**
+
+```c
+#include "math_utils.h"
+
+void clamp_int(int *value, int min_val, int max_val)
+{
+    *value = MAX(min_val, MIN(*value, max_val));
+}
+
+int count_digits(int value)
+{
+    int digits = 0;
+
+    do {
+        ++digits;
+        value /= 10;
+    } while (value != 0);
+
+    return digits;
+}
+```
+
+**main.c**
+
+```c
+#include <stdio.h>
+
+#include "math_utils.h"
+
+int main(void)
+{
+    int value;
+
+    value = 5;
+    clamp_int(&value, 0, 10);
+    printf("clamp_int(5, 0, 10) = %d\n", value);
+
+    value = 100;
+    clamp_int(&value, 0, 10);
+    printf("clamp_int(100, 0, 10) = %d\n", value);
+
+    printf("count_digits(42) = %d\n", count_digits(42));
+    printf("count_digits(-12345) = %d\n", count_digits(-12345));
+
+    puts("All tests passed.");
+    return 0;
+}
+```
+
+Compile and run:
+
+```bash
+gcc -std=c17 -Wall -Wextra main.c math_utils.c -o main
+```
+
+Or:
+
+```bash
+gcc -std=c17 -Wall -Wextra  -c math_utils.c  # Compile only, no linking; produces math_utils.o
+gcc -std=c17 -Wall -Wextra  -c main.c        # Produces main.o
+ar rcs libmath_utils.a math_utils.o            # Pack the .o into a static library
+gcc -std=c17 -Wall -Wextra  -o demo main.o -L. -lmath_utils  # Link
+
+./demo
+```
+
+Note: the macros in `math_utils.h` use GCC extensions (statement expressions and `__typeof__`), so `-Wpedantic` is left out of the compile commands; enabling it would produce extension-related warnings.
+
+Output:
+
+```text
+clamp_int(5, 0, 10) = 5
+clamp_int(100, 0, 10) = 10
+count_digits(42) = 2
+count_digits(-12345) = 5
+All tests passed.
+```
+
+:::
+
+Tip: the compile steps are `gcc -std=c17 -Wall -Wextra -c math_utils.c`, `gcc -std=c17 -Wall -Wextra  -c main.c`, and `gcc -std=c17 -Wall -Wextra  -o demo main.o math_utils.o`. Package the static library with `ar rcs libmath_utils.a math_utils.o`.
+
+### Exercise 2: A Zero-Overhead DEBUG_LOG Macro
+
+**Difficulty: Intermediate** · Conditional compilation plus variadic macros
 
 ```c
 // debug_log.h
 #pragma once
 
 #ifdef NDEBUG
-// 练习： Release 模式——DEBUG_LOG 展开为空
+// Exercise: Release mode—DEBUG_LOG expands to nothing
 #else
-// 练习： Debug 模式——输出 [DEBUG] 文件名:行号: 格式化消息
-// 提示：使用 __FILE__、__LINE__、__VA_ARGS__
+// Exercise: Debug mode—output [DEBUG] file:line: formatted message
+// Hint: use __FILE__, __LINE__, __VA_ARGS__
 #endif
 ```
 
-**Tip:** The syntax for variadic macros is `#define DEBUG_LOG(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)`. GCC provides the `##__VA_ARGS__` extension to handle the trailing comma when there are no additional arguments.
+::: details Reference solution
+
+**debug_log.h**
+
+```c
+#pragma once
+
+#include <stdio.h>
+
+/* Logging is on by default; compile with -DNDEBUG to turn it off */
+#ifdef NDEBUG
+#define DEBUG_LOG(fmt, ...) ((void)(0))
+#else
+#define DEBUG_LOG(fmt, ...) \
+    fprintf(stderr, "[%s:%d] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#endif
+```
+
+**main.c**
+
+```c
+#include <stdio.h>
+
+#include "debug_log.h"
+
+int main(void)
+{
+    int count = 0;
+
+    DEBUG_LOG("开始运行，初始值 count = %d", count);
+
+    for (int i = 0; i < 3; ++i) {
+        DEBUG_LOG("第 %d 次循环", i);
+        count += i;
+    }
+
+    DEBUG_LOG("结束，最终 count = %d", count);
+    DEBUG_LOG("这是不带额外参数的中文消息");
+
+    printf("完成，count = %d\n", count);
+    return 0;
+}
+```
+
+Compile and run:
+
+`Debug mode`
+
+```bash
+gcc -std=c17 -Wall -Wextra main.c -o main && ./main
+```
+
+`Release mode`
+
+```bash
+gcc -std=c17 -Wall -Wextra -DNDEBUG main.c -o main && ./main
+```
+
+Output:
+
+Debug mode: the line numbers depend on where those calls actually sit in `main.c`, so `<line>` stands in for them below.
+
+```text
+[main.c:<line>] 开始运行，初始值 count = 0
+[main.c:<line>] 第 0 次循环
+[main.c:<line>] 第 1 次循环
+[main.c:<line>] 第 2 次循环
+[main.c:<line>] 结束，最终 count = 3
+[main.c:<line>] 这是不带额外参数的中文消息
+完成，count = 3
+```
+
+Release mode: `DEBUG_LOG` expands to `((void)(0))`, prints nothing, and only the `printf` line remains:
+
+```text
+完成，count = 3
+```
+
+> **Note**: `__VA_ARGS__` is the variadic-macro mechanism standardized in C99, but the `##__VA_ARGS__` in this solution is a GCC extension: it removes the extra comma when a call such as `DEBUG_LOG("a message")` passes no additional format arguments. That is why the compile commands here do not enable `-Wpedantic`; the construct works in GCC's C17 mode but is not the portable, strict ISO C17 way to write it.
+
+:::
+
+Tip: the standard form of a variadic macro is `#define DEBUG_LOG(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)`. To also support calls without extra format arguments, this solution uses GCC's `##__VA_ARGS__` extension.

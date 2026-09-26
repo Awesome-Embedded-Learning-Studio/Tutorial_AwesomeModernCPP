@@ -4,7 +4,7 @@ import {
   readdirSync, readFileSync, existsSync,
   symlinkSync, statSync,
 } from 'fs'
-import { join, resolve, relative, basename } from 'path'
+import { join, resolve, relative, basename, dirname, extname } from 'path'
 import { createHash } from 'crypto'
 import { createRequire } from 'module'
 const require = createRequire(import.meta.url)
@@ -110,6 +110,32 @@ function countMdFiles(dir: string): number {
     }
   } catch { /* ignore */ }
   return count
+}
+
+// 图片类资产扩展名:en 正文以卷内相对路径引图,但资产往往只存在中文侧
+const ASSET_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico', '.drawio'])
+
+/**
+ * 把中文卷目录下的图片资产回拷进 en 暂存树(en 侧已有同名文件则跳过)。
+ * compilation 卷的 compilation-linking-2-reuse-concept 整目录回拷是更早的特例,
+ * 本函数把同样的做法推广到全部卷,供 en 卷构建时调用。
+ */
+function copyZhAssets(srcDir: string, enDestRoot: string): void {
+  const zhRoot = join(DOCUMENTS, srcDir)
+  if (!existsSync(zhRoot)) return
+  function walk(dir: string) {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, e.name)
+      if (e.isDirectory()) walk(full)
+      else if (ASSET_EXTENSIONS.has(extname(e.name).toLowerCase())) {
+        const dest = join(enDestRoot, relative(zhRoot, full))
+        if (existsSync(dest)) continue
+        mkdirSync(dirname(dest), { recursive: true })
+        cpSync(full, dest)
+      }
+    }
+  }
+  walk(zhRoot)
 }
 
 /** Compute a stable content hash for change detection across fresh checkouts. */
@@ -343,6 +369,8 @@ async function buildVolume(task: BuildTask): Promise<string> {
         cpSync(sharedAssets, assetDest, { recursive: true })
       }
     }
+    // 中文侧图片资产回拷(en 正文卷内相对路径引图,资产不在 en 源码树)
+    copyZhAssets(vol.srcDir, join(volSrcDir, 'en', vol.srcDir))
   } else {
     mkdirSync(volSrcDir, { recursive: true })
     cpSync(volDocDir, join(volSrcDir, vol.srcDir), { recursive: true })

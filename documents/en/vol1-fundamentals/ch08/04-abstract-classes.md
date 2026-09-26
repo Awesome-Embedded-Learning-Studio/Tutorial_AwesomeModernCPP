@@ -1,60 +1,56 @@
 ---
-title: Abstract Classes and Interfaces
-description: Master the design of pure virtual functions and abstract classes, and
-  learn to organize type hierarchies using the interface segregation principle.
+title: "Abstract Classes and Interfaces"
+description: "Master the design of pure virtual functions and abstract classes, and learn to organize type hierarchies with the Interface Segregation Principle"
 chapter: 8
 order: 4
 difficulty: intermediate
 reading_time_minutes: 12
 platform: host
 prerequisites:
-- 虚函数与多态
+  - "Virtual Functions and Polymorphism"
 tags:
-- cpp-modern
-- host
-- intermediate
-- 进阶
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+  - cpp-modern
+  - host
+  - intermediate
+  - 进阶
+cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/vol1-fundamentals/ch08/04-abstract-classes.md
-  source_hash: 84024ca39ba3d7140e2edd9a9e59c171b4845b54a36bd079cfd3bb322066b64e
-  translated_at: '2026-05-26T10:54:11.683879+00:00'
+  source_hash: dfcb0eebe4c7a05db7c6b2153cad09b156e3ba16abd1d948e4793a1daa5f4390
+  translated_at: '2026-09-25T11:28:42+00:00'
   engine: anthropic
-  token_count: 2388
+  token_count: 2450
 ---
-# Abstract Classes and Interfaces
 
-In the previous chapter, we thoroughly broke down the mechanics of virtual functions and polymorphism. We saw how the compiler looks up the vtable and finds the real function address at runtime when we call a virtual function through a base class pointer. But we deliberately sidestepped one question—what if the base class itself shouldn't be instantiated? For example, if we define a `Shape` class to represent "shapes," "shape" itself is an abstract concept. No `Shape` object exists in the real world that "isn't a circle, a rectangle, or any specific shape." It's simply a common interface; the truly meaningful entities are its derived classes.
+# Abstract Classes and Interfaces: Pin Down the "What", Leave the "How" Open
 
-This is the problem that abstract classes solve. In this chapter, we start with pure virtual functions, clarify the abstract class mechanism in C++, and then discuss interface design—specifically, how to handle the fact that C++ lacks an `interface` keyword, and how to put the Interface Segregation Principle into practice in real-world engineering.
+In the previous chapter we walked through the full mechanism of virtual functions and polymorphism—how, when we call `speak()` through a base class pointer, the compiler looks up the vtable and finds the real function address at runtime. But there is one question we deliberately sidestepped: what if the base class itself should never be instantiated? Say we define a `Shape` class to represent "shapes"—but "shape" is itself an abstract concept. There is no such thing in the world as a Shape object that is "neither a circle, nor a rectangle, nor any specific shape". It is just a common interface; everything truly meaningful lives in its derived classes.
 
-> **Pitfall Warning**: If you're coming from Java or C#, you might instinctively assume that C++ abstract classes are completely equivalent to Java's `abstract class`. That's mostly true, but C++ pure virtual functions have one feature that Java lacks—a pure virtual function can have a default implementation. We'll cover this difference in detail later, so don't rush ahead.
+That is exactly the problem abstract classes solve. In this chapter we start from pure virtual functions, get the abstract class mechanism in C++ straight, and then move on to interface design—in particular how to handle the fact that C++ has no `interface` keyword, and how the Interface Segregation Principle plays out in real projects.
 
-## Step One — Pure Virtual Functions and the Birth of Abstract Classes
+If you are coming from Java or C#, you might instinctively assume that C++ abstract classes are fully equivalent to Java's `abstract class`. Most of the time that is indeed the case, but C++ pure virtual functions have a property Java does not offer: a pure virtual function may have a default implementation. We will cover that difference in detail later—no rush.
 
-To make a class an "uninstantiable" abstract class, we simply declare at least one **pure virtual function** in it. The syntax is straightforward: append `= 0` to the end of the virtual function declaration:
+## The Birth of Pure Virtual Functions and Abstract Classes
+
+To turn a class into an "uninstantiable" abstract class, we only need to declare at least one **pure virtual function** in it. The syntax is simple: append `= 0` to the end of the virtual function declaration:
 
 ```cpp
 class Shape {
 public:
     virtual ~Shape() = default;
-    virtual double area() const = 0;       // 纯虚函数
-    virtual const char* name() const = 0;   // 纯虚函数
+    virtual double area() const = 0;       // pure virtual function
+    virtual const char* name() const = 0;   // pure virtual function
 };
 ```
 
-`= 0` This syntax might look a bit odd, but its semantics are clear: this function has no implementation in the base class, and derived classes **must** provide their own versions. A class containing at least one pure virtual function is an **abstract class**, and the compiler will prevent you from directly creating objects of that type:
+The `= 0` notation looks a bit odd, but its semantics are crystal clear: this function has no implementation in the base class, and derived classes **must** provide their own version. A class containing at least one pure virtual function is an **abstract class**, and the compiler stops us from creating its objects directly:
 
 ```cpp
-Shape s;            // 编译错误！不能实例化抽象类
-Shape* p = nullptr; // OK，指针和引用是可以的
+Shape s;            // Compile error! Cannot instantiate an abstract class
+Shape* p = nullptr; // OK, pointers and references are fine
 ```
 
-Operating on derived class objects through pointers or references works perfectly fine—this is the very prerequisite for polymorphism to work. For a derived class to become a "concrete class" (one that can be instantiated), it must implement every single pure virtual function from the base class, without exception:
+Manipulating derived class objects through pointers or references is perfectly fine—that is precisely the precondition for polymorphism to do its job. For a derived class to become a "concrete class" (one that can be instantiated), it must implement every pure virtual function of the base class, leaving none out:
 
 ```cpp
 class Circle : public Shape {
@@ -73,7 +69,7 @@ public:
     const char* name() const override { return "Rectangle"; }
 };
 
-// 通过基类引用统一操作
+// Operate on everything uniformly through a base class reference
 void print_area(const Shape& shape) {
     std::cout << shape.name() << ": " << shape.area() << std::endl;
 }
@@ -84,15 +80,15 @@ print_area(c);  // Circle: 12.5664
 print_area(r);  // Rectangle: 12
 ```
 
-> **Pitfall Warning**: If a derived class forgets to implement a pure virtual function, the derived class itself becomes abstract. If you then try to instantiate it, the compiler will error with "cannot instantiate abstract class." Beginners are often baffled by this error, and the root cause is usually a missed `override` on a pure virtual function. The good news is that the compiler's error message typically lists which pure virtual functions are still unimplemented—just fill them in accordingly.
+If a derived class forgets to implement one of the pure virtual functions, the derived class itself becomes abstract as well. When we then try to instantiate it, the compiler reports "cannot instantiate abstract class". Beginners are often left completely baffled by this error, and the cause is usually a single pure virtual function left without an override. The good news is that the compiler's error message usually lists which pure virtual functions are still unimplemented—just fill them in accordingly.
 
-## Design Philosophy of Abstract Classes
+## The Design Philosophy of Abstract Classes
 
-The design philosophy of abstract classes can be summed up in one sentence: **the base class defines "what to do," and the derived class decides "how to do it."**
+We can boil the design philosophy of abstract classes down to one sentence: **the base class defines "what can be done", and the derived classes decide "how to do it"**.
 
-In our `Shape` example above, `Shape` says "every shape can calculate its area and has a name," but exactly how to calculate it and what the name is are left for `Circle` and `Rectangle` to decide. This division of labor is very clear—the base class is a **contract**, and the derived class is the **signatory**. Any derived class that wants to be a "usable concrete type" must fulfill all obligations stipulated in the contract.
+In our `Shape` example above, `Shape` says "every shape can compute its area and has a name", but how exactly to compute it, and what that name is, is left for `Circle` and `Rectangle` to decide. This division of labor is very clean: the base class is a **contract**, and the derived classes are the **signatories**. Any derived class that wants to become a "usable concrete type" must fulfill every obligation the contract spells out.
 
-Let's look at a more practical engineering example. Suppose we're developing a logging system that needs to support multiple output targets—console, file, and network. We can define an abstract `ILogger` to unify the interface, then have `ConsoleLogger` output directly to `std::cout`, and `FileLogger` append to a specified file. Upper-layer business code only depends on the `ILogger` interface and doesn't need to know at all whether the underlying output goes to the console or a file:
+Here is an example closer to real engineering. Suppose we are building a logging system that must support multiple output targets—console, file, network. We can define an abstract `ILogger` to unify the interface, then let `ConsoleLogger` write straight to `std::cout` and `FileLogger` append to a specified file. Upper-layer business code depends only on the `ILogger` interface and never needs to know whether the underlying sink is the console or a file:
 
 ```cpp
 class ILogger {
@@ -117,14 +113,14 @@ public:
 };
 ```
 
-**Decoupling!** This is the decoupling we always talk about, folks! This is the core value of abstract classes. Abstract classes completely separate "interface definition" from "concrete implementation," allowing us to modify one end independently without affecting the other. In the future, adding a `NetworkLogger` only requires inheriting from `ILogger` and implementing three methods—the upper-layer code doesn't need to change a single line.
+**Decoupling!** Yes folks, this is the decoupling we are always talking about! This is the core value of abstract classes. An abstract class completely separates "interface definition" from "concrete implementation", so we can modify either side independently without affecting the other. When a `NetworkLogger` is added in the future, it just inherits from `ILogger` and implements the three methods—not a single line of upper-layer code changes.
 
-## C++ Interfaces — A World Without the `interface` Keyword
+## Interfaces in C++: A World Without the interface Keyword
 
-If you've written Java or C#, you might find it strange: how does C++ not even have an `interface` keyword? It truly doesn't, but C++'s abstract class mechanism fully covers the semantics of interfaces. The C++ community convention is: when all of a class's member functions are pure virtual and it has no non-static data members, we call it an **interface class**.
+If you have written Java or C#, you might find it strange: how come C++ does not even have an `interface` keyword? Indeed it does not, but C++'s abstract class mechanism fully covers the semantics of interfaces. The C++ community convention is this: when all of a class's member functions are pure virtual and it has no non-static data members, we call it an **interface class**.
 
 ```cpp
-// 标准的 C++ 接口类
+// A standard C++ interface class
 class ISerializable {
 public:
     virtual ~ISerializable() = default;
@@ -133,16 +129,16 @@ public:
 };
 ```
 
-Notice a few details. Interface class names conventionally start with a capital `I` (such as `ISerializable`, `IComparable`, `ILogger`), which is a widely used naming convention that lets readers recognize at a glance that "this is a pure interface." A virtual destructor is mandatory—as long as your class might be `delete`d through a base class pointer, a virtual destructor is a non-negotiable baseline. `= default` is a C++11 feature that's more concise than hand-writing an empty destructor body, and it expresses the semantic intent of "use the compiler-generated default implementation."
+A few details deserve attention. Interface classes are conventionally named with a leading `I` (as in `ISerializable`, `IComparable`, `ILogger`)—a widely used naming convention that lets us recognize "this is a pure interface" at a glance. The virtual destructor is mandatory—as long as our class might be `delete`d through a base class pointer, a virtual destructor is a non-negotiable bottom line. `= default` is the C++11 spelling: more concise than hand-writing an empty destructor body, and it also expresses the intent of "use the compiler-generated default implementation".
 
-## Interface Segregation Principle — Don't Force Derived Classes to Implement Methods They Don't Need
+## The Interface Segregation Principle—Don't Make Derived Classes Implement Methods They Don't Need
 
-When discussing interface design, we have to mention **I — the Interface Segregation Principle (ISP)** from the SOLID principles. Its core idea is: don't force a class to implement methods it doesn't use.
+Whenever interface design comes up, we have to mention the **I in SOLID—the Interface Segregation Principle (ISP)**. Its core idea: never force a class to implement methods it will never use.
 
-Let's look at a counterexample. Suppose we define an "all-powerful" device interface that mixes connection management, data read/write, and serial port configuration all together:
+Let's look at a counterexample. Suppose we define an "all-powerful" device interface that lumps connection management, data reading and writing, and serial-port configuration all together:
 
 ```cpp
-// 反面教材：臃肿的"胖接口"
+// Anti-pattern: a bloated "fat interface"
 class IDevice {
 public:
     virtual ~IDevice() = default;
@@ -155,9 +151,9 @@ public:
 };
 ```
 
-If we want to implement a read-only temperature sensor, it doesn't need `write()`, `setBaudRate()`, or `setDataBits()` at all. But because it inherits from `IDevice`, it still has to implement all of them—even if it's just writing an empty function or throwing an exception directly. A more serious problem is that it blurs the semantic boundaries between types: a sensor that can only read is forced to declare that it "can write," which can easily mislead callers.
+If we implement a read-only temperature sensor, it has no use whatsoever for `write()`, `flush()`, or `set_baudrate()`—yet because it inherits from `IDevice`, it still has to implement all of them, even if only as empty stubs or functions that just throw. The more serious problem is that it blurs the semantic boundary between types: a sensor that can only read is forced to claim that it "can write", which easily misleads callers.
 
-The correct approach is to split the large interface into several **small, focused** interfaces, each describing a single capability:
+The right move is to split the big interface into several **small, focused** interfaces, each describing exactly one capability:
 
 ```cpp
 class IConnectable {
@@ -181,50 +177,50 @@ public:
 };
 ```
 
-Now each device only needs to inherit the interfaces it truly requires. A read-only temperature sensor only needs to implement `IReadable` and `IConnectable`, and doesn't need to touch `IWritable` at all. A full-duplex serial driver, on the other hand, can implement all three interfaces. This is exactly the effect the Interface Segregation Principle aims to achieve: **each class exposes only the capabilities it truly supports, no more and no less.**
+Now each device inherits only the interfaces it genuinely needs. A read-only temperature sensor implements `IConnectable` and `IReadable` and is done—it never touches `IWritable`; meanwhile a full-duplex serial driver can implement all three interfaces. That is precisely the effect the Interface Segregation Principle aims for: **every class exposes exactly the capabilities it truly supports—no more, no less.**
 
-## Default Implementations for Pure Virtual Functions — An Easily Overlooked Advanced Technique
+## Default Implementations for Pure Virtual Functions—An Easily Overlooked Advanced Technique
 
-Next, let's discuss a feature that's rarely mentioned but very useful in certain scenarios: **pure virtual functions can have function bodies**.
+Next let's talk about a feature that is rarely mentioned but very useful in certain scenarios: **a pure virtual function may have a function body**.
 
-That's right, you read that correctly. A function declared as a pure virtual function with `= 0` can still provide a default implementation outside the class:
+That's right, you read that correctly. A pure virtual function declared `= 0` can still be given a default implementation outside the class:
 
 ```cpp
 class Base {
 public:
     virtual ~Base() = default;
-    virtual void on_error(const std::string& msg) = 0;  // 纯虚函数
+    virtual void on_error(const std::string& msg) = 0;  // pure virtual function
 };
 
-// 纯虚函数的默认实现——类外部定义
+// Default implementation of the pure virtual function — defined outside the class
 void Base::on_error(const std::string& msg) {
     std::cerr << "[ERROR] " << msg << std::endl;
 }
 ```
 
-This seems contradictory—if it's "pure virtual," how can it have an implementation? The key is: `= 0` affects the **abstract nature of the class** (whether the function has a body or not doesn't change whether the class is abstract), while the function body provides an **optional default behavior**. Derived classes still must override this function, but they can choose to explicitly call the base class version within their override to reuse common logic:
+This looks contradictory—if it is "pure virtual", how can it also have an implementation? The key: `= 0` affects **whether the class is abstract** (whether this implementation exists does not change whether the class is abstract), while the function body provides an **optional default behavior**. Derived classes must still override the function, but we can choose to explicitly call the base class version inside our override to reuse the common logic:
 
 ```cpp
 class Derived : public Base {
 public:
     void on_error(const std::string& msg) override {
-        Base::on_error(msg);    // 先复用基类的默认行为
-        write_to_log_file(msg); // 再追加自己的处理
+        Base::on_error(msg);    // First reuse the base class default behavior
+        write_to_log_file(msg); // Then append our own handling
     }
 };
 ```
 
-This technique is commonly used in framework design—the base class uses a pure virtual function to force derived classes to "handle this event," while simultaneously providing a common default behavior for on-demand reuse. To be honest, though, this usage isn't common in day-to-day business code. We'll just touch on it here—know that it exists and leave it at that.
+We often run into this technique in framework design: the base class uses a pure virtual function to force derived classes to "handle this event", while at the same time offering a common default behavior to reuse as needed. This usage is not common in day-to-day business code, though, so we will just touch on it here—knowing that it exists is enough.
 
-## Hands-On Practice — A Serializer Framework
+## Hands-On Practice—A Serializer Framework
 
-Now let's tie together what we've learned and build a complete mini-framework. The scenario is this: we need a serialization framework that supports converting data into JSON or XML format. By defining an `ISerializer` interface, the upper-layer code doesn't care at all about the underlying format.
+Now let's tie together everything we have learned and build a small but complete framework. The scenario: we need a serialization framework that supports converting data into JSON or XML format. By defining an `ISerializer` interface, the upper-layer code stops caring entirely about which format sits underneath.
 
 ```cpp
 #include <iostream>
 #include <string>
 
-/// @brief 序列化器接口——支持不同格式的数据输出
+/// @brief Serializer interface — outputs data in different formats
 class ISerializer {
 public:
     virtual ~ISerializer() = default;
@@ -236,7 +232,7 @@ public:
 };
 ```
 
-Then we implement JSON and XML serializers. Their internal structures are quite different—JSON needs to handle curly braces and quotes, while XML needs to handle tag pairs—but the interfaces they expose are completely identical:
+Then we implement the two serializers, JSON and XML. Their internal structure is quite different (JSON has to deal with braces and quotes, XML with tag pairs), but the interfaces they expose are completely identical:
 
 ```cpp
 class JSONSerializer : public ISerializer {
@@ -273,7 +269,7 @@ public:
 };
 ```
 
-Upper-layer functions use the serializer through an interface reference—they know nothing about JSON or XML details:
+In the upper-layer function we use the serializer through an interface reference, and it knows nothing about the details of JSON or XML:
 
 ```cpp
 void serialize_sensor_data(ISerializer& serializer) {
@@ -295,7 +291,7 @@ int main() {
 }
 ```
 
-Compile and run, and check the output:
+Compile and run, and look at the output:
 
 ```text
 === JSON ===
@@ -313,24 +309,24 @@ Compile and run, and check the output:
 </sensor>
 ```
 
-The `serializePerson` function only knows that "there's a serializer thing, and I can write fields to it." In the future, if we need to support YAML, Protobuf, or any new format, we just need to add a new implementation class that inherits from `ISerializer`, and the upper-layer code doesn't need to change a single line. This is the extensibility that abstract classes and interfaces bring.
+The `serialize_sensor_data` function knows only that "there is a thing called a serializer, and I can write fields into it". When YAML, Protobuf, or any new format needs to be supported in the future, we just add a new class implementing `ISerializer`—not a single line of upper-layer code changes. This is exactly the extensibility that abstract classes and interfaces bring.
 
 ## Practice Time
 
-### Exercise 1: Design an `IComparable` Interface
+### Exercise 1: Design an IComparable Interface
 
-Define an `IComparable<T>` interface template containing a pure virtual function `compareTo`. Then implement a `Student` class that sorts by student ID.
+Define an `IComparable<T>` interface template containing one pure virtual function, `compare_to`. Then implement a `Student` class that sorts by student ID.
 
 ```cpp
 template <typename T>
 class IComparable {
 public:
     virtual ~IComparable() = default;
-    /// @returns <0 表示 this < other, 0 表示相等, >0 表示 this > other
+    /// @returns <0 means this < other, 0 means equal, >0 means this > other
     virtual int compare_to(const T& other) const = 0;
 };
 ```
 
-### Exercise 2: Plugin System Framework
+### Exercise 2: A Plugin System Framework
 
-Design a simple plugin framework: define an `IPlugin` interface (containing four pure virtual functions: `getName`, `initialize`, `execute`, and `shutdown`), and then implement two or three concrete plugin classes. Write a `PluginManager` that uses a `std::vector` to manage all plugins, and provides `loadAll` and `executeAll` methods. This exercise will help you combine abstract classes, interfaces, and runtime polymorphism in one go.
+Design a simple plugin framework: define an `IPlugin` interface (containing four pure virtual functions: `name()`, `version()`, `initialize()`, and `shutdown()`), then implement two or three concrete plugin classes. Write a `PluginManager` that manages all plugins with a `std::vector<IPlugin*>` and provides `load_all()` and `unload_all()` methods. This exercise runs abstract classes, interfaces, and runtime polymorphism all together in one pass.

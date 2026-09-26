@@ -1,0 +1,104 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Modern Attributes Effects" id="modern-attributes-effects">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="C++20-23 性能属性效果卡：干什么、省什么、坑在哪" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="26" width="600" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="C++11-17 的属性帮编译器找 bug，C++20-23 的属性帮编译器优化代码；效果好不好，实测说了算" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="64" y="60" width="700" height="22" as="geometry" />
+        </mxCell>
+
+        <!-- 第一行：C++20 两个属性 -->
+        <mxCell id="row1_header" value="C++20：一个引导分支布局，一个压缩空成员；提示错了，最坏只是性能略差" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#2E7D32;" vertex="1" parent="1">
+          <mxGeometry x="64" y="92" width="700" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- 卡片 1：[[likely]] / [[unlikely]] -->
+        <mxCell id="card1_outer" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="64" y="122" width="345" height="272" as="geometry" />
+        </mxCell>
+        <mxCell id="card1_header" value="[[likely]] / [[unlikely]]（C++20）：引导分支布局" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="72" y="130" width="329" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="card1_a" value="&lt;b&gt;干什么：&lt;/b&gt;告诉编译器哪个分支更可能执行，让它调整代码布局：热路径放在一起，提高指令缓存命中率" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=13;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="72" y="166" width="329" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="card1_b" value="&lt;b&gt;实测（GCC 15，-O2）：&lt;/b&gt;简单分支早被 &lt;font face=&quot;Courier New&quot;&gt;cmovg&lt;/font&gt; 优化成无分支，加不加 &lt;font face=&quot;Courier New&quot;&gt;[[likely]]&lt;/font&gt; 汇编完全一样；分支体长、含函数调用、cmov 替代不了时才真正改变布局" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="72" y="242" width="329" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="card1_c" value="&lt;b&gt;用法守则：&lt;/b&gt;先用 &lt;font face=&quot;Courier New&quot;&gt;perf stat -e branch-misses&lt;/font&gt; 确认分支预测失败率高，再对比汇编；&lt;font color=&quot;#c00000&quot;&gt;汇编没变，属性就是信息噪声&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="72" y="320" width="329" height="66" as="geometry" />
+        </mxCell>
+
+        <!-- 卡片 2：[[no_unique_address]] -->
+        <mxCell id="card2_outer" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="419" y="122" width="345" height="272" as="geometry" />
+        </mxCell>
+        <mxCell id="card2_header" value="[[no_unique_address]]（C++20）：空成员不占空间" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="427" y="130" width="329" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="card2_a" value="&lt;b&gt;干什么：&lt;/b&gt;让空类成员不占空间：不必为了 EBO 去私有继承，普通成员就能把空对象优化掉" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=13;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="427" y="166" width="329" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="card2_b" value="&lt;b&gt;省什么：&lt;/b&gt;&lt;font face=&quot;Courier New&quot;&gt;struct { Empty e; int x; }&lt;/font&gt; 从 8 字节（1 数据 + 3 padding + 4）降到 4 字节；策略模式里 &lt;font face=&quot;Courier New&quot;&gt;NullMutex&lt;/font&gt; 单线程版本零字节开销" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="427" y="242" width="329" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="card2_c" value="&lt;b&gt;坑：&lt;/b&gt;只对空类有效；多个空成员地址可能相同，取地址、引用要小心；MSVC 某些版本不优化，跨平台要验证 &lt;font face=&quot;Courier New&quot;&gt;sizeof&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="427" y="320" width="329" height="66" as="geometry" />
+        </mxCell>
+
+        <!-- 第二行：[[assume]] 与验收守则 -->
+        <mxCell id="row2_header" value="C++23 [[assume]] 与验收守则：假设错了是未定义行为，其余属性没有这个风险" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#c00000;" vertex="1" parent="1">
+          <mxGeometry x="64" y="406" width="700" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- 卡片 3：[[assume]] -->
+        <mxCell id="card3_outer" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="64" y="436" width="345" height="272" as="geometry" />
+        </mxCell>
+        <mxCell id="card3_header" value="[[assume(expr)]]（C++23）：编译器假设" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="72" y="444" width="329" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="card3_a" value="&lt;b&gt;干什么：&lt;/b&gt;告诉编译器“假设表达式恒真”，省掉 null 检查、越界检查等防御代码，做更激进的优化" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=13;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="72" y="480" width="329" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="card3_b" value="&lt;b&gt;与 &lt;font face=&quot;Courier New&quot;&gt;assert&lt;/font&gt; 不同：&lt;/b&gt;assert 运行时检查、失败就终止；[[assume]] 完全不检查。&lt;b&gt;实测（GCC 15，-O2）：&lt;/b&gt;简单除法加不加汇编一样，价值在编译器推不出的复杂不变量" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="72" y="556" width="329" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="card3_c" value="&lt;b&gt;&lt;font color=&quot;#c00000&quot;&gt;风险最高的属性：&lt;/font&gt;&lt;/b&gt;假设错了就是未定义行为：可能崩溃、返回垃圾值。上它之前：profiling 确认瓶颈、100% 保证条件成立；99% 的代码不需要它" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="72" y="634" width="329" height="66" as="geometry" />
+        </mxCell>
+
+        <!-- 卡片 4：验收守则 -->
+        <mxCell id="card4_outer" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="419" y="436" width="345" height="272" as="geometry" />
+        </mxCell>
+        <mxCell id="card4_header" value="验收守则：加了就要实测" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="427" y="444" width="329" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="card4_a" value="&lt;b&gt;[[likely]] / [[assume]]：&lt;/b&gt;用 &lt;font face=&quot;Courier New&quot;&gt;perf stat&lt;/font&gt;、&lt;font face=&quot;Courier New&quot;&gt;valgrind --tool=cachegrind&lt;/font&gt; 对比加前后的指令数、分支预测失败率、缓存命中率" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=13;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="427" y="480" width="329" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="card4_b" value="&lt;b&gt;[[no_unique_address]]：&lt;/b&gt;验证最直接，看 &lt;font face=&quot;Courier New&quot;&gt;sizeof&lt;/font&gt;：空策略类不占空间，属性就生效了" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="427" y="556" width="329" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="card4_c" value="&lt;b&gt;风险底线：&lt;/b&gt;除 [[assume]] 外，属性提示错了最坏是性能略差；&lt;font color=&quot;#c00000&quot;&gt;[[assume]] 错了是未定义行为&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="427" y="634" width="329" height="66" as="geometry" />
+        </mxCell>
+
+        <!-- 脚注 -->
+        <mxCell id="footer1" value="优化效果高度依赖硬件、编译器与代码上下文：先 profiling 确认瓶颈，加完对比汇编与实测数据，无改善就撤掉。" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="64" y="720" width="700" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="footer2" value="C++20 [[nodiscard]] 增强（自定义消息、标准库 empty()）属正确性范畴，上一章的图已覆盖，未入图。" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="64" y="742" width="700" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

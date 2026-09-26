@@ -4,311 +4,389 @@ cpp_standard:
 - 11
 - 14
 - 17
-description: Master the weak reference mechanism of `weak_ptr` to solve circular reference
-  problems with `shared_ptr`.
+description: Master the weak reference mechanism of weak_ptr and solve shared_ptr's
+  circular reference problem
 difficulty: intermediate
 order: 4
 platform: host
 prerequisites:
-- 'Chapter 1: shared_ptr 详解'
+- 'Deep Dive into shared_ptr: Shared Ownership and Reference Counting'
 reading_time_minutes: 14
 related:
-- 自定义删除器
+- 'Custom Deleters and Intrusive Reference Counting'
 tags:
 - host
 - cpp-modern
 - intermediate
 - weak_ptr
 - 智能指针
-title: '`weak_ptr` and Circular References: Breaking Ownership Deadlocks'
+title: 'weak_ptr and Circular References: Breaking the Ownership Deadlock'
 translation:
   source: documents/vol2-modern-features/ch01-smart-pointers/04-weak-ptr.md
-  source_hash: 3dc5082a69010e403c7380b487f3dc0b09613f04ad686da470a594310514c3a7
-  translated_at: '2026-06-16T03:55:30.840018+00:00'
+  source_hash: 3dd6ad5cfbdb0fd5a06d64de25b02d965c817f7c7ae5c4f10b70a06a18c30a8a
+  translated_at: '2026-09-25T14:42:14+00:00'
   engine: anthropic
-  token_count: 2894
+  token_count: 6900
 ---
 # weak_ptr and Circular References: Breaking the Ownership Deadlock
 
-In the previous post, we discussed `shared_ptr`—implementing shared ownership via reference counting. `shared_ptr` seems ideal: as soon as the last owner leaves, the object is automatically destroyed. But in reality, this "automatic destruction" has a fatal enemy: **circular references**. When two objects hold each other's `shared_ptr`, their reference counts never reach zero—two "owners" mistakenly believe the other still holds the key, so neither dares to lock up, resulting in a memory leak.
+Last time we talked about `shared_ptr` — shared ownership through reference counting. `shared_ptr` looks lovely: as soon as the last owner leaves, the object destroys itself. But in reality, this "automatic destruction" has one mortal enemy: **circular references**. When two objects each hold a `shared_ptr` to the other, their reference counts never drop back to zero — the two "butlers" each assume the other still holds the key, and neither dares to lock the door. The result is a memory leak.
 
-`weak_ptr` was born to solve this problem. It is an observer pointer that "does not participate in reference counting"—you can use it to check if an object is still alive, and if so, temporarily acquire a `shared_ptr` to access it, but it does not extend the object's lifecycle itself.
+`std::weak_ptr` was born to solve exactly this problem. It is an observer pointer that "does not participate in reference counting" — you can use it to see whether the object is still alive, and if so, temporarily obtain a `shared_ptr` to access it, but it never extends the object's lifetime by itself.
 
 ## Demonstrating the Circular Reference Problem
 
-Before diving into `weak_ptr`, let's intuitively experience the problem of circular references. A classic example is a doubly linked list: each node holds a `shared_ptr` to the next node, and if it's a doubly linked list, it also holds a `shared_ptr` to the previous node. Consequently, every node is referenced by its neighbors' `shared_ptr`, forming a ring—the reference count never reaches zero.
+Before diving into `weak_ptr`, let's first get an intuitive feel for the circular reference problem. The classic example is a linked list: each node holds a `shared_ptr` to the next node, and in a doubly linked list, also to the previous node. Now every node is referenced by its neighbors' `shared_ptr`s, forming a ring — the reference counts never reach zero.
 
 ```cpp
-#include <iostream>
 #include <memory>
+#include <iostream>
+#include <string>
 
 struct Node {
-    int value;
+    std::string name;
     std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev; // Problematic: strong reference to previous node
+    std::shared_ptr<Node> prev;  // the shared_ptr here causes the circular reference
 
-    Node(int v) : value(v) { std::cout << "Node " << value << " created\n"; }
-    ~Node() { std::cout << "Node " << value << " destroyed\n"; }
+    explicit Node(const std::string& n) : name(n) {
+        std::cout << "Node(" << name << ") 构造\n";
+    }
+    ~Node() {
+        std::cout << "~Node(" << name << ") 析构\n";
+    }
 };
 
-int main() {
-    // Create two nodes
-    auto node1 = std::make_shared<Node>(1);
-    auto node2 = std::make_shared<Node>(2);
+void circular_reference_bug() {
+    auto a = std::make_shared<Node>("A");
+    auto b = std::make_shared<Node>("B");
 
-    // Link them together
-    node1->next = node2; // node2 ref count = 2
-    node2->prev = node1; // node1 ref count = 2
+    a->next = b;  // A → B (B's reference count: 1 → 2)
+    b->prev = a;  // B → A (A's reference count: 1 → 2)
 
-    // When main() returns, node1 and node2 go out of scope.
-    // ref count drops to 1, but not 0.
-    // Memory leak!
+    std::cout << "准备离开函数...\n";
+    // When the function ends:
+    // a leaves scope, A's reference count: 2 → 1 (B->prev still holds A)
+    // b leaves scope, B's reference count: 2 → 1 (A->next still holds B)
+    // Result: A and B both end with a reference count of 1 that never reaches zero — a memory leak!
 }
 ```
 
-When you run this code, you will find that the destructor output **never appears**—neither `Node 1` nor `Node 2` is printed. The two nodes hold each other's `shared_ptr`, forming a "deadlock ring," so neither is released. This is the memory leak caused by circular references.
+Run this code and you will find that the destructor output of `~Node()` **never appears** — neither `Node("A") 析构` nor `~Node("B") 析构` is ever printed. The two nodes hold `shared_ptr`s to each other, forming a "deadlock ring" where neither ever gets released. That is the memory leak caused by circular references.
 
-This problem is not rare in actual engineering. In the Observer pattern, a Subject holds observers' `shared_ptr`, and observers also hold the Subject's `shared_ptr`; in tree structures, parent nodes hold children's `shared_ptr`, and children also hold parents' `shared_ptr`; in graph structures, any two adjacent nodes might reference each other. Once a ring is formed, the `shared_ptr` reference counting mechanism fails.
+This deadlock ring has been animated: you can play it, pause it, or single-step through it to watch how the two `shared_ptr`s interlock and how a `weak_ptr` breaks the ring open:
 
-## weak_ptr API: lock(), expired(), use_count()
+<Anim id="weak-ptr-cycle" />
 
-`weak_ptr` is `shared_ptr`'s partner—it points to the object managed by `shared_ptr` but does not increase the strong reference count. You can think of it as a "visitor pass": you can use it to see if the object is still there, but you cannot use the pass to prevent the object from being destroyed.
+This kind of problem is far from rare in real projects. In the observer pattern, the subject holds `shared_ptr`s to its observers while the observers hold `shared_ptr`s back to the subject; in tree structures, the parent holds `shared_ptr`s to the children while the children hold `shared_ptr`s to the parent; in graphs, any two adjacent nodes may reference each other. Once a ring forms, `shared_ptr`'s reference counting mechanism stops working.
+
+## The weak_ptr API: lock(), expired(), use_count()
+
+`weak_ptr` is `shared_ptr`'s partner — it points to the object managed by a `shared_ptr` without incrementing the strong reference count. Think of it as a "visitor pass": you can use it to go see whether the object is still there, but you cannot use it to stop the object from being destroyed.
 
 `weak_ptr` provides three core APIs:
 
-`lock()` is the most important method. It attempts to acquire a `shared_ptr` pointing to the object. If the object still exists (strong reference count > 0), it returns a valid `shared_ptr`; if the object has already been destroyed (strong reference count = 0), it returns an empty `shared_ptr` (i.e., `nullptr`). `lock()` is thread-safe—in a multithreaded environment, multiple threads can call `lock()` simultaneously, and the standard guarantees that the returned `shared_ptr` either points to a valid object or is empty, avoiding the dangling scenario where "a pointer is obtained but the object is already deleted." See the verification code in [cppreference: std::weak_ptr::lock](https://en.cppreference.com/w/cpp/memory/weak_ptr/lock).
+`lock()` is the most important method. It attempts to obtain a `shared_ptr` pointing to the object. If the object still exists (strong reference count > 0), it returns a valid `shared_ptr`; if the object has already been destroyed (strong reference count = 0), it returns an empty `shared_ptr` (that is, `nullptr`). `lock()` is thread-safe — in a multi-threaded environment, multiple threads can call `lock()` simultaneously, and the standard guarantees that the returned `shared_ptr` either points to a valid object or is empty. There is no dangling scenario of "got the pointer, but the object was already deleted".
 
-`expired()` returns a bool indicating whether the object has been destroyed (i.e., if the strong reference count is 0). However, in practice, we usually recommend using `lock()` directly instead of checking `expired()` first and then calling `lock()`—because in a multithreaded environment, after `expired()` returns `false` and before calling `lock()`, the object might have been destroyed by another thread, leading to a race condition. `lock()` atomically completes the two operations of "checking if the object exists" and "incrementing the reference count," avoiding this issue. See the race condition test in [C++ Smart Pointers: weak_ptr and cyclic reference](https://www.nextptr.com/tutorial/ta1382183122/using-weak_ptr-for-circular-references).
+`expired()` returns a bool indicating whether the object has already been destroyed (that is, whether the strong reference count is 0). In practice, though, it is generally recommended to just call `lock()` directly rather than checking `expired()` first and calling `lock()` afterward — in a multi-threaded environment, between the moment `expired()` returns `false` and the moment you call `lock()`, another thread may already have destroyed the object, which is a race condition. `lock()` performs "check whether the object exists" and "increment the reference count" as a single operation, avoiding this problem.
 
-`use_count()` returns the current number of `shared_ptr` instances pointing to the object (i.e., the strong reference count). Like `expired()`, the return value may be stale by the time you use it, so it is generally only used for debugging and logging.
+`use_count()` returns the number of `shared_ptr`s currently pointing at the object (that is, the strong reference count). Like `expired()`, its return value may already be stale by the time you use it, so it is generally only good for debugging and logging.
 
 ```cpp
-#include <iostream>
 #include <memory>
+#include <iostream>
 
-int main() {
-    auto sp = std::make_shared<int>(42);
-    std::weak_ptr<int> wp = sp;
+void weak_ptr_api_demo() {
+    std::weak_ptr<int> weak;
 
-    std::cout << "use_count: " << wp.use_count() << "\n"; // 1
+    {
+        auto shared = std::make_shared<int>(42);
+        weak = shared;  // weak does not increment the reference count
 
-    if (auto locked = wp.lock()) { // Try to acquire ownership
-        std::cout << "Value: " << *locked << "\n";
-    } else {
-        std::cout << "Object has been destroyed\n";
+        std::cout << "use_count: " << weak.use_count() << "\n";  // 1
+        std::cout << "expired: " << weak.expired() << "\n";      // 0 (false)
+
+        // Obtain a shared_ptr via lock()
+        if (auto locked = weak.lock()) {
+            std::cout << "value: " << *locked << "\n";  // 42
+            std::cout << "use_count after lock: "
+                      << weak.use_count() << "\n";  // 2
+        }
+        // locked leaves scope, the reference count drops back to 1
     }
 
-    sp.reset(); // Destroy the shared object
+    // shared has been destroyed
+    std::cout << "expired after scope: " << weak.expired() << "\n";  // 1 (true)
 
-    if (wp.expired()) {
-        std::cout << "wp is expired (use_count: " << wp.use_count() << ")\n";
-    }
+    // lock() returns an empty shared_ptr
+    auto locked = weak.lock();
+    std::cout << "locked is nullptr: " << (locked == nullptr) << "\n";  // 1 (true)
 }
 ```
 
-⚠️ `weak_ptr` cannot be dereferenced directly—you cannot write `*wp` or `wp->`. You must first acquire a `shared_ptr` via `lock()`, and then access the object through that `shared_ptr`. This design is intentional: `weak_ptr` is a reference where "it is uncertain whether the object still exists," so direct access is too dangerous. `lock()`'s atomic check guarantees that the `shared_ptr` you acquire either points to a living object or is empty—avoiding the dangling pointer problem where "you get a pointer but the object is already deleted."
+A `weak_ptr` cannot be dereferenced directly — you cannot write `*weak` or `weak->member`. You must first obtain a `shared_ptr` through `lock()`, and then access the object through that `shared_ptr`. This design is deliberate: a `weak_ptr` is a reference that "is not sure whether the object still exists", and accessing it directly would be far too dangerous. `lock()`'s atomic check guarantees that the `shared_ptr` you obtain either points to a living object or is empty — the dangling-pointer scenario of "got the pointer, but the object was already deleted" cannot happen.
 
 ## How weak_ptr Breaks the Cycle
 
-Returning to the previous doubly linked list example, we only need to change the `prev` member from `shared_ptr` to `weak_ptr`, and the circular reference is broken:
+Back to the doubly linked list example: we only need to change `prev` from `shared_ptr` to `weak_ptr`, and the circular reference is broken:
 
 ```cpp
-#include <iostream>
-#include <memory>
+struct NodeFixed {
+    std::string name;
+    std::shared_ptr<NodeFixed> next;
+    std::weak_ptr<NodeFixed> prev;  // changed to weak_ptr
 
-struct Node {
-    int value;
-    std::shared_ptr<Node> next;
-    std::weak_ptr<Node> prev; // Changed to weak_ptr: breaks the cycle
-
-    Node(int v) : value(v) { std::cout << "Node " << value << " created\n"; }
-    ~Node() { std::cout << "Node " << value << " destroyed\n"; }
+    explicit NodeFixed(const std::string& n) : name(n) {
+        std::cout << "Node(" << name << ") 构造\n";
+    }
+    ~NodeFixed() {
+        std::cout << "~Node(" << name << ") 析构\n";
+    }
 };
 
-int main() {
-    auto node1 = std::make_shared<Node>(1);
-    auto node2 = std::make_shared<Node>(2);
+void fixed_circular_reference() {
+    auto a = std::make_shared<NodeFixed>("A");
+    auto b = std::make_shared<NodeFixed>("B");
 
-    node1->next = node2; // node2 ref count = 2
-    node2->prev = node1; // node1 ref count = 1 (weak_ptr doesn't increase count)
+    a->next = b;  // A → B (B's strong reference count: 1 → 2)
+    b->prev = a;  // B ⇢ A (a weak reference; A's strong reference count stays at 1)
 
-    // When main() returns:
-    // node2 goes out of scope -> node2 ref count 2->1
-    // node1 goes out of scope -> node1 ref count 1->0 -> Node 1 destroyed
-    // Node 1's destruction releases next (node2) -> node2 ref count 1->0 -> Node 2 destroyed
+    std::cout << "准备离开函数...\n";
+    // When the function ends:
+    // a leaves scope, A's strong reference count: 1 → 0, A is destroyed
+    //   Destroying A destroys A->next, so B's strong reference count: 2 → 1
+    // b leaves scope, B's strong reference count: 1 → 0, B is destroyed
+    // Every node is correctly released!
 }
 ```
 
 Output:
 
 ```text
-Node 1 created
-Node 2 created
-Node 1 destroyed
-Node 2 destroyed
+Node(A) 构造
+Node(B) 构造
+准备离开函数...
+~Node(A) 析构
+~Node(B) 析构
 ```
 
-The key lies in the line `node2->prev = node1`—`weak_ptr` does not increase the strong reference count of `node1`. Therefore, when the local variable `node1` goes out of scope, `node1`'s strong reference count drops directly from 1 to 0, triggering destruction. The design philosophy of `weak_ptr` can be summed up in one sentence: **"I know you exist, but I will not stop you from leaving."**
+The key is the line `b->prev = a` — the `weak_ptr` does not increment `a`'s strong reference count. So when the local variable `a` leaves its scope, `a`'s strong reference count drops from 1 straight to 0, triggering the destructor. The design philosophy of `weak_ptr` can be summed up in one sentence: **"I know you exist, but I will not stop you from leaving"**.
 
-This pattern can be extended to any data structure with "parent-child relationships" or "upstream-downstream relationships": use `shared_ptr` for the strong reference direction (holding ownership), and `weak_ptr` for the weak reference direction (observing only, not holding ownership). As long as there is no ring consisting entirely of strong references in the graph, reference counting works normally.
+This pattern generalizes to any data structure with a "parent-child" or "upstream-downstream" relationship: use `shared_ptr` for the strong-reference direction (holding ownership), and `weak_ptr` for the weak-reference direction (observing only, not holding ownership). As long as the graph contains no ring made entirely of strong references, reference counting works just fine.
 
 ## weak_ptr in the Observer Pattern
 
-The Observer pattern is one of the most important application scenarios for `weak_ptr`. In this pattern, a Subject maintains a list of observers and notifies all observers when the state changes. If the observer list stores `shared_ptr`, then as long as the Subject is alive, no observer will be destroyed—even if external code no longer needs these observers. Even worse, if observers also hold a `shared_ptr` to the Subject, a circular reference is formed.
+The observer pattern is one of the most important use cases for `weak_ptr`. In this pattern, the subject maintains a list of observers and notifies them all when the state changes. If that observer list stores `shared_ptr<Observer>`, then as long as the subject is alive, none of the observers can be destroyed — even when the outside world no longer needs them. Worse still, if the observers also hold `shared_ptr`s back to the subject, a circular reference forms.
 
-The correct approach is: the Subject references observers with `weak_ptr` (does not extend the observers' lifecycle), and observers can choose to reference the Subject with `weak_ptr` or `shared_ptr`.
+The correct approach: the subject references its observers with `weak_ptr`s (without extending their lifetimes), while each observer may reference the subject with either a `shared_ptr` or a `weak_ptr`.
 
 ```cpp
-#include <iostream>
 #include <memory>
 #include <vector>
-#include <functional>
-
-// Observer Interface
-struct Observer {
-    virtual void update(int data) = 0;
-    virtual ~Observer() = default;
-};
-
-// Concrete Observer
-struct ConcreteObserver : Observer {
-    std::string name;
-    explicit ConcreteObserver(std::string n) : name(std::move(n)) {}
-    void update(int data) override {
-        std::cout << name << " received: " << data << "\n";
-    }
-};
-
-// Subject
-struct Subject {
-    std::vector<std::weak_ptr<Observer>> observers; // Use weak_ptr
-
-    void attach(std::shared_ptr<Observer> obs) {
-        observers.push_back(obs);
-    }
-
-    void notify(int data) {
-        for (auto it = observers.begin(); it != observers.end(); ) {
-            if (auto obs = it->lock()) { // Try to acquire strong reference
-                obs->update(data);
-                ++it;
-            } else {
-                // Observer has been destroyed, remove from list
-                it = observers.erase(it);
-            }
-        }
-    }
-};
-
-int main() {
-    auto subject = std::make_shared<Subject>();
-    auto obs1 = std::make_shared<ConcreteObserver>("Obs1");
-    auto obs2 = std::make_shared<ConcreteObserver>("Obs2");
-
-    subject->attach(obs1);
-    subject->attach(obs2);
-
-    subject->notify(100); // Both observers receive the notification
-
-    obs1.reset(); // Manually release obs1
-    std::cout << "Obs1 released\n";
-
-    subject->notify(200); // Only Obs2 receives the notification; Obs1 is automatically removed
-}
-```
-
-Output:
-
-```text
-Obs1 received: 100
-Obs2 received: 100
-Obs1 released
-Obs2 received: 200
-```
-
-This pattern is very common in actual engineering. GUI frameworks (Qt's signal-slot mechanism in certain configurations), game engine event systems, and network library callback mechanisms all face similar problems—the event source should not prevent the destruction of the event consumer. `weak_ptr` provides exactly this "loosely coupled" observation semantics.
-
-## weak_ptr in Cache Implementation
-
-Another classic application scenario for `weak_ptr` is caching. The core semantic of a cache is: entries in the cache can be reclaimed at any time—if no one is using them, delete them to free memory. `weak_ptr` is naturally suited to express this semantics: the cache stores `weak_ptr`, and users temporarily acquire a `shared_ptr` via `lock()` when accessing.
-
-```cpp
-#include <iostream>
-#include <memory>
 #include <string>
-#include <unordered_map>
-#include <mutex>
+#include <iostream>
+#include <algorithm>
 
-class ResourceCache {
+class EventListener {
 public:
-    std::shared_ptr<std::string> get(const std::string& key) {
-        std::lock_guard<std::mutex> lock(mutex_);
+    virtual ~EventListener() = default;
+    virtual void on_event(const std::string& msg) = 0;
+};
 
-        auto it = cache_.find(key);
-        if (it != cache_.end()) {
-            // Try to upgrade weak_ptr to shared_ptr
-            if (auto sp = it->second.lock()) {
-                std::cout << "[Cache Hit] " << key << "\n";
-                return sp; // Resource still exists, return it
-            } else {
-                // Resource has been destroyed, remove stale entry
-                cache_.erase(it);
+class ConsoleListener : public EventListener {
+public:
+    explicit ConsoleListener(const std::string& name) : name_(name) {
+        std::cout << "Listener(" << name_ << ") 创建\n";
+    }
+    ~ConsoleListener() override {
+        std::cout << "~Listener(" << name_ << ") 销毁\n";
+    }
+    void on_event(const std::string& msg) override {
+        std::cout << "[" << name_ << "] 收到事件: " << msg << "\n";
+    }
+private:
+    std::string name_;
+};
+
+class EventBus {
+public:
+    void subscribe(std::shared_ptr<EventListener> listener) {
+        listeners_.push_back(listener);  // stored as a weak_ptr
+    }
+
+    void publish(const std::string& msg) {
+        // Clean up destroyed observers
+        listeners_.erase(
+            std::remove_if(listeners_.begin(), listeners_.end(),
+                [](const std::weak_ptr<EventListener>& w) {
+                    return w.expired();
+                }),
+            listeners_.end()
+        );
+
+        // Notify all live observers
+        for (const auto& weak : listeners_) {
+            if (auto listener = weak.lock()) {
+                listener->on_event(msg);
             }
         }
-
-        // Cache miss or expired, load resource
-        std::cout << "[Cache Miss] Loading " << key << "...\n";
-        auto sp = std::make_shared<std::string>("Resource for " + key);
-        cache_[key] = sp; // Store weak_ptr
-        return sp;
     }
 
 private:
-    std::unordered_map<std::string, std::weak_ptr<std::string>> cache_;
-    std::mutex mutex_;
+    std::vector<std::weak_ptr<EventListener>> listeners_;
 };
 
-int main() {
-    ResourceCache cache;
+void observer_demo() {
+    EventBus bus;
 
     {
-        auto res1 = cache.get("image.png"); // Load
-        std::cout << "Using: " << *res1 << "\n";
-    } // res1 goes out of scope, strong reference count drops to 0, resource destroyed
+        auto l1 = std::make_shared<ConsoleListener>("L1");
+        auto l2 = std::make_shared<ConsoleListener>("L2");
 
-    std::cout << "--- After res1 released ---\n";
-    auto res2 = cache.get("image.png"); // Reload (expired)
-    std::cout << "Using: " << *res2 << "\n";
+        bus.subscribe(l1);
+        bus.subscribe(l2);
+
+        bus.publish("第一条消息");
+        // Both L1 and L2 receive it
+
+        std::cout << "--- L2 离开作用域 ---\n";
+    }
+    // L1 and L2 have both left scope
+    // but the EventBus holds weak_ptrs, so it cannot keep them alive
+
+    bus.publish("第二条消息");
+    // No observer receives it — they are already destroyed
 }
 ```
 
 Output:
 
 ```text
-[Cache Miss] Loading image.png...
-Using: Resource for image.png
---- After res1 released ---
-[Cache Miss] Loading image.png...
-Using: Resource for image.png
+Listener(L1) 创建
+Listener(L2) 创建
+[L1] 收到事件: 第一条消息
+[L2] 收到事件: 第一条消息
+--- L2 离开作用域 ---
+~Listener(L2) 销毁
+~Listener(L1) 销毁
 ```
 
-The design of this cache is very natural: the cache itself does not hold a strong reference to the resource (using `weak_ptr`), so when all users release the resource, it is automatically reclaimed. The next time it is accessed, the cache discovers the `weak_ptr` has expired and reloads the resource. No manual "reference count check" or "scheduled cleanup" is needed—the expiration mechanism of `weak_ptr` handles these tasks automatically.
+This pattern is extremely common in real projects. GUI frameworks (Qt's signal-slot mechanism under certain configurations), game engines' event systems, and networking libraries' callback mechanisms all face a similar issue — an event source should not prevent the destruction of its event consumers. `weak_ptr` provides exactly this kind of "loosely coupled" observation semantics.
 
-## Common Misuse: Overusing weak_ptr
+## weak_ptr in a Cache Implementation
 
-Although `weak_ptr` is a powerful tool for solving circular references, overusing it can actually increase code complexity and the probability of errors. I have seen some codebases replace almost all pointers with `weak_ptr` for fear of circular references—this is overcorrecting.
+Another classic use case for `weak_ptr` is caching. The core semantic of a cache: entries may be reclaimed at any time — if nobody is using one, drop it to free memory. `weak_ptr` is a natural fit for expressing this: the cache stores `weak_ptr`s, and users obtain a temporary `shared_ptr` through `lock()` when they need an entry.
 
-First is the performance issue. Every time you access an object via `weak_ptr`, you need to call `lock()`, which involves atomic operations (checking and incrementing the reference count). Frequent `lock()` calls in hot paths can bring measurable performance overhead. In a quick benchmark (GCC 16.1.1 -O2, 10 million iterations), accessing via `weak_ptr::lock()` is about 30 times slower than directly accessing `shared_ptr` (direct access ~2ms, `lock()` access ~68ms) — `lock()` has to do an atomic operation to grab the reference count. Although this absolute time difference might not be significant in practical applications, if called frequently in performance-sensitive code paths, the overhead accumulates.
+```cpp
+#include <memory>
+#include <unordered_map>
+#include <string>
+#include <iostream>
 
-Second is semantic ambiguity. If your code is full of `weak_ptr` everywhere, it is hard for readers to determine which objects have true ownership relationships. Ownership relationships should be clarified as much as possible during the design phase, rather than using `weak_ptr` to avoid ownership design.
+class ExpensiveResource {
+public:
+    explicit ExpensiveResource(const std::string& key)
+        : key_(key)
+    {
+        std::cout << "加载资源: " << key_ << "\n";
+    }
+    ~ExpensiveResource() {
+        std::cout << "释放资源: " << key_ << "\n";
+    }
+    const std::string& key() const { return key_; }
+private:
+    std::string key_;
+};
 
-My suggestion is: in most cases, use `unique_ptr` to express exclusive ownership, and use raw pointers or references for non-owning access. Only use `weak_ptr` to break cycles when shared ownership is truly needed and there is a risk of circular references. `weak_ptr` is a precision tool, not a "sprinkle everywhere" panacea.
+class ResourceCache {
+public:
+    std::shared_ptr<ExpensiveResource> get(const std::string& key) {
+        // First try to fetch it from the cache
+        auto it = cache_.find(key);
+        if (it != cache_.end()) {
+            if (auto cached = it->second.lock()) {
+                std::cout << "缓存命中: " << key << "\n";
+                return cached;
+            }
+            // The weak_ptr has expired; remove it from the cache
+            cache_.erase(it);
+        }
 
-Another common error is using `weak_ptr` to "observe" objects on the stack or objects managed by `unique_ptr`—this is impossible because `weak_ptr` can only be used in conjunction with `shared_ptr`. If you want to observe the lifecycle of a non-shared object, you need other mechanisms (such as callbacks, manual implementation of the Observer pattern, or changing the object to be managed by `shared_ptr`).
+        // Cache miss; load the resource
+        auto resource = std::make_shared<ExpensiveResource>(key);
+        cache_[key] = resource;  // stored as a weak_ptr
+        return resource;
+    }
 
-The next chapter covers custom deleters and intrusive reference counting—how to make smart pointers manage resources that "weren't created with new."
+    void cleanup() {
+        for (auto it = cache_.begin(); it != cache_.end();) {
+            if (it->second.expired()) {
+                it = cache_.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
 
-## Reference Resources
+    size_t size() const {
+        size_t count = 0;
+        for (const auto& [k, v] : cache_) {
+            if (!v.expired()) ++count;
+        }
+        return count;
+    }
+
+private:
+    std::unordered_map<std::string, std::weak_ptr<ExpensiveResource>> cache_;
+};
+
+void cache_demo() {
+    ResourceCache cache;
+
+    {
+        auto r1 = cache.get("texture/player.png");  // cache miss, loads it
+        auto r2 = cache.get("texture/player.png");  // cache hit
+
+        std::cout << "缓存中的条目数: " << cache.size() << "\n";  // 1
+
+        // r1 and r2 leave scope
+    }
+
+    std::cout << "资源已无人使用\n";
+    std::cout << "缓存中的条目数: " << cache.size() << "\n";  // 0 (the weak_ptr has expired)
+
+    auto r3 = cache.get("texture/player.png");  // needs a reload
+}
+```
+
+Output:
+
+```text
+加载资源: texture/player.png
+缓存命中: texture/player.png
+缓存中的条目数: 1
+释放资源: texture/player.png
+资源已无人使用
+缓存中的条目数: 0
+加载资源: texture/player.png
+```
+
+This cache design is very natural: the cache itself holds no strong reference to the resource (it uses `weak_ptr`), so once all users have released the resource, it is reclaimed automatically. On the next access, the cache finds the `weak_ptr` expired and loads the resource again. No manual "reference count checks" or "scheduled cleanup" needed — `weak_ptr`'s expiration mechanism handles all of that automatically.
+
+## A Common Misuse: Overusing weak_ptr
+
+Although `weak_ptr` is a powerful tool for breaking circular references, overusing it actually increases code complexity and the chance of mistakes. We have seen codebases that replace nearly every pointer with a `weak_ptr` out of fear of circular references — that is overcorrection.
+
+First, performance. Every access to an object through a `weak_ptr` requires calling `lock()`, which involves an atomic operation (checking the reference count and incrementing it). Frequent `lock()` calls on a hot path bring measurable overhead. In measured tests, `weak_ptr::lock()` is about 30x slower than accessing a `shared_ptr` directly (`lock()` has to grab the reference count with an atomic operation; over 10 million iterations, direct access takes about 2 ms versus about 68 ms for `lock()`, GCC 16.1.1 -O2). While the absolute difference may not be large in a real application, if the call is made frequently on a performance-sensitive code path, the overhead accumulates.
+
+Second, muddied semantics. If `weak_ptr`s are scattered everywhere in your code, readers can hardly tell which objects stand in a genuine ownership relationship. Ownership relationships should be worked out as early as the design stage, not dodged by using `weak_ptr` to avoid ownership design.
+
+Our recommendation: in most cases, express exclusive ownership with `unique_ptr`, and non-owning access with raw pointers or references. Only when shared ownership is genuinely needed and a circular reference risk exists should you use `weak_ptr` to break the cycle. `weak_ptr` is a precision tool, not a cure-all to scatter everywhere.
+
+Another common mistake is trying to use a `weak_ptr` to "observe" an object on the stack or an object managed by a `unique_ptr` — that is impossible, because `weak_ptr` only works together with `shared_ptr`. If you want to observe the lifetime of a non-shared object, you need some other mechanism (for example, callback functions, a hand-rolled observer pattern, or switching the object to `shared_ptr` management).
+
+The next article covers custom deleters and intrusive reference counting — how to make smart pointers manage resources that did not come from `new`.
+
+## References
 
 - [cppreference: std::weak_ptr](https://en.cppreference.com/w/cpp/memory/weak_ptr)
 - [cppreference: std::weak_ptr::lock](https://en.cppreference.com/w/cpp/memory/weak_ptr/lock)

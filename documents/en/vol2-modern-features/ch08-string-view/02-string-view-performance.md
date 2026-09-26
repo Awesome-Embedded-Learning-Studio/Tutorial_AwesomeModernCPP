@@ -2,16 +2,16 @@
 chapter: 8
 cpp_standard:
 - 17
-description: Benchmarking the performance benefits of replacing `const string&` with
-  `string_view`
+description: Benchmarking the performance gains of replacing const string& with
+  string_view
 difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- 'Chapter 8: string_view 内部原理'
+- 'Chapter 8: string_view Internals: A Non-Owning String View'
 reading_time_minutes: 13
 related:
-- string_view 陷阱与最佳实践
+- string_view Pitfalls and Best Practices
 tags:
 - host
 - cpp-modern
@@ -19,305 +19,348 @@ tags:
 title: string_view Performance Analysis
 translation:
   source: documents/vol2-modern-features/ch08-string-view/02-string-view-performance.md
-  source_hash: 8a5d7df3bb15f8f2865703e8bafade7ff4fb002f6ff3bd1715f88464b6a90235
-  translated_at: '2026-06-16T03:58:49.217853+00:00'
+  source_hash: ae9ab072ab585447c07a77d6e1ba33bdb8fc023b97c49b68e2aae577c205fccc
+  translated_at: '2026-09-25T16:17:40+00:00'
   engine: anthropic
-  token_count: 2916
+  token_count: 6800
 ---
-# string_view Performance Analysis
+# string_view Performance Analysis: How Much Faster Is It Really? Let the Data Speak
 
-In the previous article, we dove into the internal mechanics of `std::string_view`, understanding that it is a non-owning view consisting of a "pointer + length". In this article, let the data do the talking—how much faster is `std::string_view` than `std::string` really? In which scenarios does it yield the greatest benefits? Are there cases where it is actually slower?
+In the previous article we dug into the internals of `string_view` and learned that it is a non-owning view built from "pointer + length". This time we let the data do the talking — exactly how much faster is `string_view` than `const std::string&`? Where are the gains largest? Can it ever actually be slower?
 
-To write this article, the author ran quite a few benchmarks. Honestly, some results aligned with intuition (e.g., `substr` is indeed much faster), while others were unexpected (e.g., under certain ABIs, passing `std::string_view` by value isn't always faster than passing `const std::string&`). Let's examine them one by one.
+I ran quite a few benchmarks to write this article. Honestly, some results matched my intuition (`substr` really is much faster), and some caught me off guard (under certain ABIs, passing `string_view` by value is not always faster than `const string&`). Let's take them one by one.
 
-## Environment Setup
+Here is the environment for all of today's benchmarks: Linux 6.x (x86_64), GCC 13.2, compile flags `-std=c++17 -O2 -march=native`. The test machine is an ordinary x86 development board. All timing uses `std::chrono::high_resolution_clock`, and each test case is looped enough times to keep measurement error small.
 
-The environment for all benchmarks today is as follows: Linux 6.x (x86_64), GCC 13.2, compiler flags `-O3 -march=native`. The test machine is a standard x86 development board. All time measurements use `std::chrono::high_resolution_clock`, and each test case loops enough times to minimize error.
+## substr: O(1) vs O(n), a World of Difference
 
-## substr: The Difference Between O(1) and O(n)
+The most visible showcase of `string_view`'s performance advantage is the `substr` operation. We already analyzed the theory in the previous article: `string_view::substr` is just a pointer offset plus a length truncation, while `std::string::substr` needs a heap allocation plus a character copy. Now let's verify it with data.
 
-The most intuitive demonstration of `std::string_view`'s performance advantage is the `substr` operation. We analyzed this theoretically in the last article: `std::string_view::substr` involves only pointer arithmetic and length truncation, while `std::string::substr` requires heap allocation and character copying. Now let's verify this with data.
-
-First, let's write a simple benchmark framework:
+First, a simple benchmark framework:
 
 ```cpp
 #include <string>
 #include <string_view>
 #include <chrono>
 #include <iostream>
-#include <random>
+#include <vector>
 
-// Simple timer wrapper
 class Timer {
-    std::string title;
-    std::chrono::high_resolution_clock::time_point start;
 public:
-    Timer(const std::string& t) : title(t), start(std::chrono::high_resolution_clock::now()) {}
-    ~Timer() {
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double, std::milli> ms = end - start;
-        std::cout << title << ": " << ms.count() << " ms\n";
-    }
-};
+    Timer() : start_(std::chrono::high_resolution_clock::now()) {}
 
-// Generate a random string of length n
-std::string gen_random_string(size_t n) {
-    static const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    std::string str;
-    str.reserve(n);
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, sizeof(charset) - 2);
-    for (size_t i = 0; i < n; ++i)
-        str += charset[dis(gen)];
-    return str;
-}
+    double elapsed_ms() const {
+        auto end = std::chrono::high_resolution_clock::now();
+        return std::chrono::duration<double, std::milli>(end - start_).count();
+    }
+
+private:
+    std::chrono::high_resolution_clock::time_point start_;
+};
 ```
 
-Then, we test the performance of `std::string::substr` and `std::string_view::substr` respectively. The test method involves: given a long string of 10,000 characters, perform 100,000 `substr` operations, each time extracting a 50-character substring starting from a random position.
+Then we benchmark `std::string::substr` and `string_view::substr` separately. The method: given a long string of 10000 characters, run 100000 substr operations on it, each taking a 50-character substring from a random starting position.
 
 ```cpp
-void bench_string_substr() {
-    Timer t("std::string::substr");
-    std::string long_str = gen_random_string(10000);
-    std::mt19937 rng(std::random_device{}());
-    std::uniform_int_distribution<size_t> dist(0, 9950); // Ensure room for 50 chars
+#include <random>
 
-    for (int i = 0; i < 100000; ++i) {
-        size_t pos = dist(rng);
-        // This triggers heap allocation and copy
-        std::string sub = long_str.substr(pos, 50);
-        // Prevent compiler from optimizing away the call
-        if (!sub.empty() && sub[0] == 'a') {
-            // Dummy branch
-        }
+constexpr int kStringLength = 10000;
+constexpr int kSubstrLen = 50;
+constexpr int kIterations = 100000;
+
+// Generate a random string
+std::string make_long_string(int len) {
+    std::string s(len, 'a');
+    for (int i = 0; i < len; ++i) {
+        s[i] = static_cast<char>('a' + (i % 26));
     }
+    return s;
 }
 
-void bench_string_view_substr() {
-    Timer t("std::string_view::substr");
-    std::string long_str = gen_random_string(10000);
-    std::string_view sv(long_str);
-    std::mt19937 rng(std::random_device{}());
-    std::uniform_int_distribution<size_t> dist(0, 9950);
-
-    for (int i = 0; i < 100000; ++i) {
-        size_t pos = dist(rng);
-        // No heap allocation, just pointer + size update
-        std::string_view sub = sv.substr(pos, 50);
-        if (!sub.empty() && sub[0] == 'a') {
-            // Dummy branch
-        }
+void bench_string_substr(const std::string& s) {
+    Timer t;
+    volatile std::size_t sink = 0;  // prevent this from being optimized away
+    for (int i = 0; i < kIterations; ++i) {
+        auto sub = s.substr(i % (s.size() - kSubstrLen), kSubstrLen);
+        sink += sub.size();
     }
+    std::cout << "std::string::substr:   "
+              << t.elapsed_ms() << " ms (sink=" << sink << ")\n";
+}
+
+void bench_string_view_substr(std::string_view sv) {
+    Timer t;
+    volatile std::size_t sink = 0;
+    for (int i = 0; i < kIterations; ++i) {
+        auto sub = sv.substr(i % (sv.size() - kSubstrLen), kSubstrLen);
+        sink += sub.size();
+    }
+    std::cout << "string_view::substr:   "
+              << t.elapsed_ms() << " ms (sink=" << sink << ")\n";
 }
 
 int main() {
-    bench_string_substr();
-    bench_string_view_substr();
+    auto long_str = make_long_string(kStringLength);
+    bench_string_substr(long_str);
+    bench_string_view_substr(long_str);
     return 0;
 }
 ```
 
-The results the author obtained:
+The results I got:
 
 ```text
-std::string::substr: 94.231 ms
-std::string_view::substr: 0.985 ms
+std::string::substr:   38.7 ms (sink=5000000)
+string_view::substr:    0.4 ms (sink=5000000)
 ```
 
-A difference of nearly 100 times. The reason is simple: `std::string::substr` performed 100,000 heap allocations and character copies (50 bytes each time), while `std::string_view::substr` only performed 100,000 pointer additions and length adjustments. This gap becomes even more pronounced when strings are longer and calls are more frequent.
+A gap of nearly 100x. The reason is simple: `std::string::substr` performed 100000 heap allocations and character copies (50 bytes each), while `string_view::substr` performed 100000 pointer additions and length adjustments. The gap grows even wider with longer strings and more frequent calls.
 
-Of course, this test is an extreme scenario constructed deliberately. In actual projects, if you only perform `substr` occasionally, you might not perceive this difference at all. However, if you are writing a parser that needs to frequently perform splitting, extraction, and skipping operations on input strings, the advantage of `std::string_view` becomes very significant.
+Of course, this test is a deliberately constructed extreme case. In a real project, if you only do a substr once in a while, you will never notice this difference. But if you are writing a parser that constantly splits, extracts, and skips over the input string, the `string_view` advantage becomes very pronounced.
 
 ## Function Parameters: string_view vs const string&
 
-This is the scenario everyone cares about most: how much faster is it to change function parameters from `const std::string&` to `std::string_view`?
+This is the scenario everyone cares about most: changing a function parameter from `const std::string&` to `std::string_view` — how much faster does that actually make it?
 
-Let's analyze this from a theoretical standpoint first. When the function signature is `void func(const std::string&)`, if the caller passes a `const char*` (like a string literal or a string returned by a C API), the compiler needs to implicitly construct a temporary `std::string` first, then pass the reference. This temporary construction involves calculating the length (O(n)) plus potential heap allocation. After the function returns, the temporary object is destructed, and heap memory is released.
+Let's analyze the theory first. When the signature is `const std::string&`, if the caller passes a `const char*` (say, a string literal or a string returned by a C API), the compiler has to implicitly construct a temporary `std::string` first, then pass the reference in. That temporary construction involves a `strlen` to compute the length plus a possible heap allocation. After the function returns, the temporary is destroyed and the heap memory is released.
 
-When the function signature is `void func(std::string_view)`, regardless of whether the caller passes a `std::string`, `const char*`, or a string literal, it only constructs a 16-byte view object. When constructing from `const char*`, a `strlen` call (O(n) traversal) is still needed, but no heap allocation is required. When constructing from `std::string`, even `strlen` is not needed; it directly takes the data pointer and size.
+When the signature is `std::string_view`, whether the argument is a `std::string`, a `const char*`, or a string literal, all that gets constructed is a 16-byte view object. Constructing from a `const char*` still requires one `strlen` (an O(n) walk), but no heap allocation. Constructing from a `std::string` skips even the `strlen` — it just takes `data()` and `size()` directly.
 
-Let's write a benchmark to verify this. Test scenario: a function receives a string parameter and performs simple processing (counts character occurrences), using both signatures, and is called by passing `std::string` and `const char*` respectively.
+Let's write a benchmark to verify. Test scenario: a function takes a string parameter and does some simple processing with it (counting character occurrences), written with both signatures, then called by passing in a `std::string` and a `const char*` respectively.
 
 ```cpp
-#include <string>
-#include <string_view>
-#include <chrono>
+#include <cctype>
 
-// Count occurrences of 'c' in str
-size_t count_c_str(const std::string& str) {
-    size_t count = 0;
-    for (char ch : str) if (ch == 'c') ++count;
+// Version 1: const string& parameter
+int count_digits_v1(const std::string& s) {
+    int count = 0;
+    for (char c : s) {
+        if (std::isdigit(static_cast<unsigned char>(c))) {
+            ++count;
+        }
+    }
     return count;
 }
 
-size_t count_c_view(std::string_view sv) {
-    size_t count = 0;
-    for (char ch : sv) if (ch == 'c') ++count;
+// Version 2: string_view parameter
+int count_digits_v2(std::string_view sv) {
+    int count = 0;
+    for (char c : sv) {
+        if (std::isdigit(static_cast<unsigned char>(c))) {
+            ++count;
+        }
+    }
     return count;
 }
 
-int main() {
-    std::string long_str = gen_random_string(10000);
-    const char* c_str = long_str.c_str();
+void bench_param_passing() {
+    constexpr int kCalls = 1000000;
+    std::string str_data = "abc123def456ghi789jkl012mno345";
+    const char* c_data = "abc123def456ghi789jkl012mno345";
 
-    const int iterations = 1000000;
-
-    // Test 1: Pass std::string to const string&
+    // Test 1: pass std::string to a const string& parameter
     {
-        Timer t("Pass std::string to const std::string&");
-        for (int i = 0; i < iterations; ++i) {
-            count_c_str(long_str);
+        Timer t;
+        volatile int sink = 0;
+        for (int i = 0; i < kCalls; ++i) {
+            sink += count_digits_v1(str_data);
         }
+        std::cout << "const string& + string arg: "
+                  << t.elapsed_ms() << " ms\n";
     }
 
-    // Test 2: Pass std::string to string_view
+    // Test 2: pass const char* to a const string& parameter (requires constructing a temporary)
     {
-        Timer t("Pass std::string to std::string_view");
-        for (int i = 0; i < iterations; ++i) {
-            count_c_view(long_str);
+        Timer t;
+        volatile int sink = 0;
+        for (int i = 0; i < kCalls; ++i) {
+            sink += count_digits_v1(c_data);  // implicitly constructs a temporary string
         }
+        std::cout << "const string& + char* arg:  "
+                  << t.elapsed_ms() << " ms\n";
     }
 
-    // Test 3: Pass const char* to const string&
+    // Test 3: pass std::string to a string_view parameter
     {
-        Timer t("Pass const char* to const std::string&");
-        for (int i = 0; i < iterations; ++i) {
-            count_c_str(c_str);
+        Timer t;
+        volatile int sink = 0;
+        for (int i = 0; i < kCalls; ++i) {
+            sink += count_digits_v2(str_data);
         }
+        std::cout << "string_view   + string arg: "
+                  << t.elapsed_ms() << " ms\n";
     }
 
-    // Test 4: Pass const char* to string_view
+    // Test 4: pass const char* to a string_view parameter
     {
-        Timer t("Pass const char* to std::string_view");
-        for (int i = 0; i < iterations; ++i) {
-            count_c_view(c_str);
+        Timer t;
+        volatile int sink = 0;
+        for (int i = 0; i < kCalls; ++i) {
+            sink += count_digits_v2(c_data);
         }
+        std::cout << "string_view   + char* arg:  "
+                  << t.elapsed_ms() << " ms\n";
     }
-
-    return 0;
 }
 ```
 
-The results the author obtained:
+The results I got:
 
 ```text
-Pass std::string to const std::string&: 12.4 ms
-Pass std::string to std::string_view: 13.1 ms
-Pass const char* to const std::string&: 95.2 ms
-Pass const char* to std::string_view: 35.8 ms
+const string& + string arg:  12.3 ms
+const string& + char* arg:   95.7 ms   ← 8x slower!
+string_view   + string arg:  12.1 ms
+string_view   + char* arg:   35.2 ms   ← 3x faster
 ```
 
-The key data lies in the comparison between the second and fourth rows. When the caller passes `const char*`, the `const std::string&` version explodes in time to 95ms because it must implicitly construct 1 million temporary `std::string` objects. The `std::string_view` version, while still needing to perform `strlen` on the `const char*`, requires no heap allocation, so it only took 35ms. As for passing `std::string`, the performance of both is basically flat—`const std::string&` passes a reference directly, and `std::string_view` constructs a 16-byte view; both are a matter of a few clock cycles, and the difference is within the noise range.
+Let's put the parameter-passing mechanics of the three signatures and the four numbers above into one diagram:
 
-This test tells us a very practical conclusion: if your function might be called with a mix of `const char*`, string literals, or `std::string`, using `std::string_view` as the parameter type is the superior choice. If your function only accepts `std::string`, there isn't much difference.
+![String passing cost comparison: by value, const reference, and string_view](./02-sv-passing-cost.drawio)
+
+The key data sits in the contrast between the second and fourth rows. When the caller passes a `const char*`, the `const string&` version balloons to 95 ms because it implicitly constructs a million temporary `std::string` objects. The `string_view` version still needs one `strlen` on the `const char*`, but with no heap allocation it only took 35 ms. As for passing in a `std::string`, the two are basically on par — `const string&` passes the reference directly, `string_view` constructs a 16-byte view; both are a matter of a few clock cycles, and the difference is within noise.
+
+This test hands us a very practical conclusion: if your function might be called with a mix of `const char*`, string literals, and `std::string`, `string_view` is the better parameter type. If your function only ever receives `std::string`, there is little difference between the two.
 
 ## Reducing Temporary string Allocations
 
-Beyond explicit function calls, `std::string_view` helps us reduce implicit temporary `std::string` allocations. A typical scenario is string comparison:
+Beyond explicit function calls, `string_view` also helps us cut down on implicit temporary `std::string` allocations. A typical scenario is string comparison:
 
 ```cpp
-std::string s = get_input();
-// Old way: s == "reset" might construct a temporary string
-if (s == "reset") { ... }
+// Old style: every comparison may construct a temporary string
+bool is_http_method(const std::string& method) {
+    return method == "GET" || method == "POST" || method == "PUT"
+        || method == "DELETE" || method == "PATCH";
+}
 
-// New way: "reset" is converted to string_view (no alloc)
-if (std::string_view(s) == "reset") { ... }
+// New style: zero-allocation comparison
+bool is_http_method_sv(std::string_view method) {
+    return method == "GET" || method == "POST" || method == "PUT"
+        || method == "DELETE" || method == "PATCH";
+}
 ```
 
-The comparison operator (`operator==`) between `std::string_view` and a string literal constructs a lightweight `std::string_view` temporary object (16 bytes, no heap allocation) and then compares character by character. When `std::string` is compared with a string literal, the literal is implicitly converted to a temporary `std::string` (involving heap allocation, although some compilers optimize this conversion away, the standard does not guarantee it).
+The comparison operator (`==`) between `string_view` and a string literal constructs a lightweight temporary `string_view` object (16 bytes, no heap allocation) and then compares character by character. When a `const std::string&` is compared against a string literal, the literal is implicitly converted to a temporary `std::string` (which may involve a heap allocation — some compilers optimize that conversion away, but the standard does not guarantee it).
 
 Another common source of "temporary strings" is function return values. Consider this pattern:
 
 ```cpp
-// Old way: Return std::string, involves heap allocation
-std::string get_env(const std::string& name) {
-    return getenv(name.c_str()); // getenv returns const char*, constructs std::string
+// A C API that returns const char*
+const char* get_env_var(const char* name);
+
+// Wrapper function: the old version returns string
+std::string get_env_string(const char* name) {
+    const char* val = get_env_var(name);
+    return val ? std::string(val) : std::string("");
 }
 
-// New way: Return string_view, zero allocation
-std::string_view get_env_view(std::string_view name) {
-    // getenv returns a pointer to static env memory
-    // Note: This is only safe if the underlying data persists!
-    const char* val = getenv(std::string(name).c_str());
+// Wrapper function: the new version returns string_view
+std::string_view get_env_view(const char* name) {
+    const char* val = get_env_var(name);
     return val ? std::string_view(val) : std::string_view();
 }
 ```
 
-⚠️ The second version has a prerequisite: the pointer returned by `getenv` must be long-lived. In the scenario of environment variables, this premise usually holds (environment variables do not disappear during the process lifecycle). However, if the C API returns an internal static buffer (like `asctime`), the next call will overwrite it, so using `std::string_view` is risky. Again: before using `std::string_view`, you must confirm the lifetime of the underlying data.
+The second version comes with a precondition: the pointer returned by `get_env_var` must remain valid for the long term. In the environment-variable scenario this usually holds (environment variables do not disappear over the process's lifetime). But if the C API returns an internal static buffer (`inet_ntoa`, for example) that gets overwritten on the next call, then `string_view` is risky. Once again: before using `string_view`, you must confirm the lifetime of the underlying data.
 
 ## Avoiding Unnecessary string Construction
 
-Sometimes we only need to read string data but accidentally trigger the construction of `std::string`. Let's look at a practical example—string hash table lookup:
+Sometimes all we want is to read string data, yet we accidentally trigger a `std::string` construction. Take a practical example — string hash table lookup:
 
 ```cpp
-std::unordered_set<std::string> keywords = {"func", "var", "if"};
+#include <unordered_map>
+#include <string_view>
 
-// Old way: "func" constructs a temporary std::string to search
-if (keywords.find("func") != keywords.end()) { ... }
+// Old style: lookup requires constructing a string
+std::unordered_map<std::string, int> old_map;
+old_map["apple"] = 1;
+old_map["banana"] = 2;
 
-// New way: Use string_view to avoid construction (C++20 heterogeneous lookup)
-// Note: Requires C++20 transparent comparator support
-// std::unordered_set<std::string, std::hash<std::string_view>, std::equal_to<>> keywords;
-// if (keywords.find(std::string_view("func")) != keywords.end()) { ... }
+int lookup_old(const char* key) {
+    auto it = old_map.find(key);  // implicitly constructs a temporary string
+    return (it != old_map.end()) ? it->second : -1;
+}
+
+// New style: use a transparent comparator for zero-construction lookup
+// C++20's unordered_map supports heterogeneous lookup
+// C++17's map/set support it; unordered_map has to wait for C++20
+// Here we use string_view as the key to demonstrate a similar idea
+std::unordered_map<std::string_view, int> sv_map;
+// Note: the external data that sv_map's keys point to must outlive the map
+
+int lookup_sv(std::string_view key) {
+    auto it = sv_map.find(key);
+    return (it != sv_map.end()) ? it->second : -1;
+}
 ```
 
-Strictly speaking, C++17's `std::unordered_set` does not yet support heterogeneous lookup (this was added in C++20 with `find(const T&)` overload), so `keywords.find("func")` in C++17 will still implicitly construct `std::string`. However, in C++20, you can enable heterogeneous lookup for `std::unordered_set` (by providing a transparent hash and equality comparator), allowing the lookup to completely skip temporary construction. `std::string_view` is a key part of this scenario.
+Strictly speaking, C++17's `std::unordered_map` does not support heterogeneous lookup yet (that was added in C++20 as the `std::unordered_map::find(K)` overload), so in `old_map.find(key)` the `const char*` still gets implicitly constructed into a `std::string`. But in C++20, you can enable the `is_transparent` feature on an `unordered_map` so that lookup skips the temporary construction entirely. `string_view` is a key link in that chain.
 
-## Embedded Practice: Command Parsing and Protocol Processing
+## Embedded in Practice: Command Parsing and Protocol Handling
 
-In embedded development, the "zero-allocation" characteristic of `std::string_view` is extremely valuable. An MCU's RAM is typically only a few dozen to a few hundred KB, and heap space is extremely limited. Frequent `std::string` allocation is not only slow but can also lead to memory fragmentation, eventually crashing the system.
+In embedded development, `string_view`'s "zero-allocation" property is extremely valuable. An MCU's RAM is usually only a few dozen KB to a few hundred KB, and heap space is severely limited; frequent `std::string` allocation is not only slow, it can also fragment memory and eventually crash the system.
 
-Let's look at a practical serial protocol parsing scenario. Suppose our embedded device receives JSON-RPC style commands via serial port, formatted as `{"method":"set_led", "params":"on"}`. We need to extract the `method` and `params` fields.
+Let's look at a real serial-protocol parsing scenario. Suppose our embedded device receives JSON-RPC style commands over the serial port, in the format `{"method":"xxx","params":"yyy"}`. We need to extract the method and params fields.
 
 ```cpp
 #include <string_view>
-#include <array>
+#include <cstring>
 
-// Simple non-allocating JSON parser
-void parse_command(std::string_view cmd) {
-    // Find "method" field
-    size_t method_pos = cmd.find("\"method\":");
-    if (method_pos == std::string_view::npos) return;
+// Simulated UART receive buffer
+constexpr int kBufSize = 256;
+static char uart_buf[kBufSize];
+static int uart_len = 0;
 
-    // Skip to the value
-    method_pos += 10; // len of "\"method\":"
-    if (method_pos >= cmd.size()) return;
-    if (cmd[method_pos] == '"') method_pos++; // Skip opening quote
-
-    size_t method_end = cmd.find("\"", method_pos);
-    if (method_end == std::string_view::npos) return;
-
-    std::string_view method = cmd.substr(method_pos, method_end - method_pos);
-
-    // Find "params" field
-    size_t params_pos = cmd.find("\"params\":");
-    if (params_pos == std::string_view::npos) return;
-
-    params_pos += 10;
-    if (params_pos >= cmd.size()) return;
-    if (cmd[params_pos] == '"') params_pos++;
-
-    size_t params_end = cmd.find("\"", params_pos);
-    if (params_end == std::string_view::npos) return;
-
-    std::string_view params = cmd.substr(params_pos, params_end - params_pos);
-
-    // Now we have method and params as views, no allocation happened
-    if (method == "set_led") {
-        // Process params...
+/// @brief Find the value of a JSON field in the buffer
+/// @param json the JSON string view
+/// @param key the key to search for
+/// @return the value as a string_view, or an empty view if not found
+std::string_view find_json_field(std::string_view json,
+                                  std::string_view key) {
+    // Build the search pattern: "key":"
+    // This uses the simplest linear search; production code should use a real JSON parser
+    auto key_pattern = key;
+    auto pos = json.find(key_pattern);
+    if (pos == std::string_view::npos) {
+        return {};
     }
+    // Skip past the key and the ":" part
+    auto rest = json.substr(pos + key_pattern.size());
+    // Skip whitespace and colons
+    while (!rest.empty() && (rest.front() == ' ' || rest.front() == ':'
+           || rest.front() == '"')) {
+        rest.remove_prefix(1);
+    }
+    // Find the value's closing quote
+    auto end = rest.find('"');
+    if (end == std::string_view::npos) {
+        return rest;
+    }
+    return rest.substr(0, end);
 }
 
-// Usage
-std::array<char, 256> rx_buffer; // Static buffer
-// ... receive data into rx_buffer ...
-parse_command(std::string_view(rx_buffer.data(), received_len));
+void process_uart_command() {
+    std::string_view input(uart_buf, static_cast<std::size_t>(uart_len));
+
+    auto method = find_json_field(input, "method");
+    auto params = find_json_field(input, "params");
+
+    if (method == "led_set") {
+        int brightness = 0;
+        for (char c : params) {
+            if (c >= '0' && c <= '9') {
+                brightness = brightness * 10 + (c - '0');
+            }
+        }
+        hal_pwm_set_duty(brightness);
+    } else if (method == "reboot") {
+        hal_system_reset();
+    }
+}
 ```
 
-This parser requires absolutely no heap allocation—all operations are completed between `std::string_view` objects on the stack. `rx_buffer` is a static array, and `std::string_view` just "peeks" at it. On an STM32F103 with only 20KB of RAM, this zero-allocation string processing method means you can use it freely without worrying about running out of memory or fragmentation.
+This parser needs no heap allocation at all — every operation happens between `string_view` objects on the stack. `uart_buf` is a static array, and the `string_view` merely "glances" at it. On an STM32F103 with only 20KB of RAM, this zero-allocation way of handling strings means you can use it with confidence, without worrying about running out of memory or fragmenting it.
 
-Of course, this JSON parser is toy-grade—it doesn't handle escaping, nesting, arrays, or other complex situations. But it demonstrates the core value of `std::string_view` in resource-constrained environments: providing string manipulation capabilities at minimal cost. If you need a complete JSON parser, consider libraries like ArduinoJson, which also heavily use non-owning reference techniques similar to `std::string_view` internally.
+Of course, this JSON parser is toy-grade — it does not handle escaping, nesting, arrays, or other complex cases. But it shows the core value of `string_view` in resource-constrained environments: string manipulation capability at minimal cost. If you need a complete JSON parser, consider libraries such as ArduinoJson, which also make heavy internal use of `string_view`-like non-owning reference techniques.
 
 ## Reference Resources
 

@@ -1,0 +1,81 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="UDL Unit System" id="udl-units">
+    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="类型安全单位系统：字面量折算成强类型，运算由编译器检查" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="26" width="600" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- 第一层：字面量家族 -->
+        <mxCell id="caption1" value="字面量家族：不同前缀在构造时统一折算到基准单位" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=13;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="74" y="68" width="680" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="box_len" value="&lt;b&gt;长度：_m、_km、_cm、_mm&lt;/b&gt;（基准：米）&lt;br&gt;2.0_km → 2000 米　100.0_cm → 1 米&lt;br&gt;500.0_mm → 0.5 米" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#f2f2f2;fontSize=14;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="74" y="94" width="330" height="96" as="geometry" />
+        </mxCell>
+        <mxCell id="box_time" value="&lt;b&gt;时间：_s、_ms、_min、_h&lt;/b&gt;（基准：秒）&lt;br&gt;1.0_min → 60 秒　1.0_h → 3600 秒&lt;br&gt;500.0_ms → 0.5 秒" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#f2f2f2;fontSize=14;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="424" y="94" width="330" height="96" as="geometry" />
+        </mxCell>
+
+        <!-- 折算箭头 -->
+        <mxCell id="edge_len" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="239" y="190" as="sourcePoint" />
+            <mxPoint x="181" y="238" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_time" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="589" y="190" as="sourcePoint" />
+            <mxPoint x="414" y="238" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 第二层：强类型值 -->
+        <mxCell id="card_length" value="&lt;b&gt;Length&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Quantity&amp;lt;long double, MeterTag&amp;gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#e8f0fe;fontSize=14;align=center;verticalAlign=middle;spacing=4;" vertex="1" parent="1">
+          <mxGeometry x="74" y="238" width="213" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="card_time" value="&lt;b&gt;TimeDuration&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Quantity&amp;lt;long double, SecondTag&amp;gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#e8f0fe;fontSize=14;align=center;verticalAlign=middle;spacing=4;" vertex="1" parent="1">
+          <mxGeometry x="307" y="238" width="213" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="card_speed" value="&lt;b&gt;Speed&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Quantity&amp;lt;long double, SpeedTag&amp;gt;&lt;/font&gt;&lt;br&gt;Length ÷ TimeDuration 的结果" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#fff2cc;fontSize=14;align=center;verticalAlign=middle;spacing=4;" vertex="1" parent="1">
+          <mxGeometry x="541" y="238" width="213" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="note_tags" value="MeterTag、SecondTag、SpeedTag 是互不相关的空标签类型：标签不同，Quantity 就是完全不同的类型，不能互相赋值" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12.5;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="74" y="322" width="680" height="34" as="geometry" />
+        </mxCell>
+
+        <!-- 第三层：编译期运算检查 -->
+        <mxCell id="hdr_ok" value="类型匹配：放行" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#2E7D32;" vertex="1" parent="1">
+          <mxGeometry x="74" y="372" width="330" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="hdr_bad" value="单位对不上：编译错误" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#c00000;" vertex="1" parent="1">
+          <mxGeometry x="424" y="372" width="330" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="ok1" value="✓ &lt;b&gt;1.0_km + 500.0_m = 1500.0 米&lt;/b&gt;&lt;br&gt;同单位相加，结果仍是 Length" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=center;verticalAlign=middle;spacing=4;" vertex="1" parent="1">
+          <mxGeometry x="74" y="402" width="330" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="ok2" value="✓ &lt;b&gt;36.0_km / 1.0_h = 10 米/秒&lt;/b&gt;&lt;br&gt;km、h 先各自折算，再相除得 Speed" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=center;verticalAlign=middle;spacing=4;" vertex="1" parent="1">
+          <mxGeometry x="74" y="460" width="330" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="ok3" value="✓ &lt;b&gt;speed * 60.0_s = 600 米&lt;/b&gt;&lt;br&gt;速度 × 时间，又回到 Length" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=center;verticalAlign=middle;spacing=4;" vertex="1" parent="1">
+          <mxGeometry x="74" y="518" width="330" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="bad1" value="&lt;b&gt;✗ 100_m + 50_s&lt;/b&gt;&lt;br&gt;长度与时间是不同的类型，&lt;br&gt;没有能同时匹配两者的 operator+" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=center;verticalAlign=middle;spacing=4;" vertex="1" parent="1">
+          <mxGeometry x="424" y="402" width="330" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="bad2" value="&lt;b&gt;✗ 100_m * 10_s&lt;/b&gt;&lt;br&gt;长度 × 时间没有对应的运算符重载，&lt;br&gt;同样是编译错误" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=center;verticalAlign=middle;spacing=4;" vertex="1" parent="1">
+          <mxGeometry x="424" y="486" width="330" height="82" as="geometry" />
+        </mxCell>
+
+        <mxCell id="bottom_note" value="所有折算与检查都在编译期完成（constexpr / static_assert），运行时零开销" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11.5;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="74" y="590" width="680" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

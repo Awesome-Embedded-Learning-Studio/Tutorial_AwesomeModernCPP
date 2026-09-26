@@ -2,14 +2,14 @@
 chapter: 1
 cpp_standard:
 - 11
-description: Dive deep into the four fundamental bitwise operations, shift precautions,
-  operator precedence pitfalls, evaluation order and sequence points, and understand
+description: A deep dive into the four classic bitwise operations, the caveats of
+  shifting, operator precedence traps, evaluation order and sequence points, and
   the nature of undefined behavior.
 difficulty: beginner
 order: 5
 platform: host
 prerequisites:
-- 运算符基础：让数据动起来
+- 'Operator Basics: Making Data Move'
 reading_time_minutes: 10
 tags:
 - host
@@ -19,133 +19,141 @@ tags:
 title: Bitwise Operations and Evaluation Order
 translation:
   source: documents/vol1-fundamentals/c_tutorials/03B-bitwise-and-evaluation.md
-  source_hash: b1eb16f10c755774685a3ff1c6af887e935d9981d867224eaaf0883bf55d9647
-  translated_at: '2026-06-16T03:33:39.762676+00:00'
+  source_hash: 252a3c9888c9a92c618e21f41242e799b9f22ad0311a28d5bfa47c26cacc102e
+  translated_at: '2026-09-25T12:58:25+00:00'
   engine: anthropic
-  token_count: 1965
+  token_count: 7500
 ---
 # Bitwise Operations and Evaluation Order
 
-In the previous chapter, we covered common operators like arithmetic, relational, and logical ones. Now, let's tackle two tougher topics: bitwise operations and evaluation order. Bitwise operations are less common in application-layer programming, but if you plan to work with embedded systems or low-level system programming, they will be your daily tools—configuring hardware registers, parsing bit fields in communication protocols, and implementing flag sets all rely on them. Evaluation order and sequence points are the keys to understanding "why some code produces different results on different compilers."
+In the previous post we walked through the everyday operators—arithmetic, relational, logical. Now we come to two tougher bones to chew on: bitwise operations and evaluation order. Bitwise operations don't come up much in ordinary application-level programming, but if you ever move into embedded development or low-level systems programming, they become your daily tools—configuring hardware registers, parsing bit fields out of communication protocols, implementing sets of flag bits, all of it rests on them. Evaluation order and sequence points, in turn, are the key to understanding why some code produces different results on different compilers.
 
-Admittedly, these topics can feel a bit confusing when you're starting out. But don't worry, we'll take it step by step, starting with the most intuitive part: bitwise operations.
+Honestly, both topics feel a bit twisty the first time you meet them. But don't worry—we'll take it one step at a time, starting with the more intuitive of the two: bitwise operations.
 
-## Environment Setup
+## Step 1 — Meet the Bitwise Operators
 
-We will conduct all subsequent experiments in the following environment:
+### What Is a Bit
 
-- Platform: Linux x86_64 (WSL2 is also acceptable)
-- Compiler: GCC 13+ or Clang 17+
-- Compiler flags: `-std=c17 -Wall -Wextra -pedantic`
-
-## Step 1 — Understanding Bitwise Operators
-
-### What is a "Bit"?
-
-In the previous chapter on data types, we mentioned that a variable's value is stored in memory as 0s and 1s. One `byte` consists of 8 binary bits, and one `uint32_t` consists of 32 binary bits. Bitwise operations manipulate these binary bits directly—you stop treating data as "numbers" and start treating it as "a row of switches."
+When we covered data types, we mentioned that a variable's value is stored in memory as 0s and 1s. A `uint8_t` has 8 binary digits; a `uint32_t` has 32. Bitwise operations manipulate those binary digits directly—you stop treating data as "numbers" and start treating it as "a row of switches".
 
 C provides six bitwise operators:
 
-| Operator | Meaning | Simple Explanation |
-|----------|---------|-------------------|
-| `&` | Bitwise AND | Results in 1 only if both are 1 |
-| `\|` | Bitwise OR | Results in 1 if either is 1 |
-| `^` | Bitwise XOR | Results in 1 if different, 0 if same |
-| `~` | Bitwise NOT | 0 becomes 1, 1 becomes 0 |
-| `<<` | Left Shift | All bits shift left, low bits filled with 0 |
-| `>>` | Right Shift | All bits shift right, high bits filled with 0 (for unsigned) |
+| Operator | Meaning | Intuition |
+|----------|---------|-----------|
+| `&` | bitwise AND | 1 only if both are 1 |
+| `\|` | bitwise OR | 1 if either is 1 |
+| `^` | bitwise XOR | 1 if different, 0 if same |
+| `~` | bitwise NOT | 0 becomes 1, 1 becomes 0 |
+| `<<` | left shift | all bits move left, 0s fill the low end |
+| `>>` | right shift | all bits move right, 0s fill the high end (unsigned) |
 
-Let's use an 8-bit unsigned number for demonstration, as it's more intuitive:
+Let's demonstrate with 8-bit unsigned values—that's the most intuitive way to see it:
 
-```cpp
-#include <stdio.h>
-#include <stdint.h>
+```text
+  0b11001100  (204)
+& 0b10101010  (170)
+-----------
+  0b10001000  (136)
 
-int main(void) {
-    uint8_t a = 0b00001100; // 12
-    uint8_t b = 0b10101010; // 170
+  0b11001100  (204)
+| 0b10101010  (170)
+-----------
+  0b11101110  (238)
 
-    printf("a & b = 0b%08X\n", a & b); // 0b00001000 (8)
-    printf("a | b = 0b%08X\n", a | b); // 0b10101110 (174)
-    printf("a ^ b = 0b%08X\n", a ^ b); // 0b10100110 (166)
-    printf("~a    = 0b%08X\n", (uint8_t)~a); // 0b11110011 (243)
-    printf("a << 2 = %d\n", a << 2); // 48
-    printf("b >> 2 = %d\n", b >> 2); // 42
+  0b11001100  (204)
+^ 0b10101010  (170)
+-----------
+  0b01100110  (102)
 
-    return 0;
+~ 0b11001100  (204)
+-----------
+  0b00110011  (51)    (8-bit NOT)
+```
+
+## Step 2 — The Four Classic Moves: Set, Clear, Toggle, Check
+
+Four operation patterns dominate bitwise work in embedded development—you need to know them by heart.
+
+### Set — Forcing a Bit to 1
+
+To set a bit to 1, combine OR with a left shift. The reasoning: `0 | 1 = 1` and `1 | 1 = 1`—OR anything with 1 and the result is guaranteed to be 1; OR the other bits with 0 and they stay unchanged.
+
+```c
+uint8_t reg = 0x00;       // 00000000
+reg |= (1 << 3);          // set bit 3 to 1 → 00001000 = 0x08
+reg |= (1 << 0);          // set bit 0 to 1 → 00001001 = 0x09
+
+// set several bits at once
+reg |= 0x07;              // set bits 0, 1, and 2 → 00001111 = 0x0F
+```
+
+### Clear — Forcing a Bit to 0
+
+To clear a bit to 0, combine AND with NOT. The reasoning: `x & 1 = x` and `x & 0 = 0`—AND anything with 0 and it becomes 0; AND with 1 and it stays the same.
+
+```c
+uint8_t reg = 0x0F;       // 00001111
+reg &= ~(1 << 3);         // clear bit 3 → 00000111 = 0x07
+```
+
+`~(1 << 3)` evaluates to `0xF7` (`11110111`); AND it with `0x0F` and bit 3 becomes 0 while every other bit is untouched.
+
+### Toggle — Flipping a Bit
+
+To toggle a bit, use XOR. The reasoning: `x ^ 1 = ~x` (flipped) and `x ^ 0 = x` (unchanged).
+
+```c
+uint8_t reg = 0x07;       // 00000111
+reg ^= (1 << 0);          // toggle bit 0 → 00000110 = 0x06
+```
+
+### Check — Reading Whether a Bit Is 0 or 1
+
+To check a bit's value, AND with a left-shifted 1 and see whether the result is non-zero:
+
+```c
+uint8_t reg = 0x06;       // 00000110
+if (reg & (1 << 1)) {
+    // bit 1 is 1 (and indeed it is: bit 1 of 00000110 is 1)
+}
+if (reg & (1 << 0)) {
+    // bit 0 is 0 (this branch is never taken)
 }
 ```
 
-## Step 2 — The Four Classic Operations: Set, Clear, Toggle, Check
+To verify, let's chain all four operations together and run them:
 
-There are four most common operation patterns in embedded development that you must memorize.
-
-### Set — Set a specific bit to 1
-
-To set a specific bit to 1, we use the OR operation combined with a left shift. The principle is: `x | 1 = 1`, `x | 0 = x`—as long as you OR with 1, the result is 1; ORing with 0 leaves the bit unchanged.
-
-```cpp
-uint8_t flags = 0b00000000;
-flags |= (1 << 3); // Set the 3rd bit (0-indexed)
-// Result: 0b00001000
-```
-
-### Clear — Set a specific bit to 0
-
-To clear a specific bit, we use the AND operation combined with NOT. The principle is: `x & 0 = 0`, `x & 1 = x`—ANDing with 0 forces the result to 0, while ANDing with 1 preserves the original value.
-
-```cpp
-uint8_t flags = 0b00011100;
-flags &= ~(1 << 3); // Clear the 3rd bit
-// ~(1 << 3) is 0b11110111
-// Result: 0b00011000
-```
-
-The value of `~(1 << 3)` is `0b11110111` (`~0b00001000`). When ANDed with `0b00011100`, the 3rd bit becomes 0 while the others remain unchanged.
-
-### Toggle — Flip a specific bit
-
-To flip a specific bit, use the XOR operation. The principle is: `x ^ 1 = ~x` (flip), `x ^ 0 = x` (unchanged).
-
-```cpp
-uint8_t flags = 0b00001000;
-flags ^= (1 << 3); // Toggle the 3rd bit
-// Result: 0b00000000
-```
-
-### Check — See if a bit is 0 or 1
-
-To check the value of a specific bit, use the AND operation combined with a left shift, then check if the result is non-zero:
-
-```cpp
-bool is_set = (flags & (1 << 3)) != 0;
-```
-
-Let's verify this by chaining all four operations together:
-
-```cpp
+```c
 #include <stdio.h>
 #include <stdint.h>
-#include <stdbool.h>
 
-int main(void) {
-    uint8_t flags = 0;
+/// @brief Print a uint8_t in binary
+void print_binary(uint8_t val)
+{
+    for (int i = 7; i >= 0; i--) {
+        printf("%d", (val >> i) & 1);
+    }
+    printf(" (0x%02X)\n", val);
+}
 
-    // 1. Set bit 3
-    flags |= (1 << 3);
-    printf("After set:   %d (expected 8)\n", flags);
+int main(void)
+{
+    uint8_t reg = 0x00;
+    printf("初始值:       "); print_binary(reg);
 
-    // 2. Check bit 3
-    bool check = (flags & (1 << 3)) != 0;
-    printf("Bit 3 is %s\n", check ? "set" : "clear");
+    reg |= (1 << 3);       // set bit 3
+    printf("置位第3位:    "); print_binary(reg);
 
-    // 3. Toggle bit 3
-    flags ^= (1 << 3);
-    printf("After toggle: %d (expected 0)\n", flags);
+    reg |= 0x07;           // set bits 0, 1, and 2
+    printf("置位0,1,2位:  "); print_binary(reg);
 
-    // 4. Clear bit 3 (idempotent)
-    flags &= ~(1 << 3);
-    printf("After clear:  %d (expected 0)\n", flags);
+    reg &= ~(1 << 3);      // clear bit 3
+    printf("清零第3位:    "); print_binary(reg);
+
+    reg ^= (1 << 0);       // toggle bit 0
+    printf("翻转第0位:    "); print_binary(reg);
+
+    printf("第1位是: %d\n", (reg >> 1) & 1);
 
     return 0;
 }
@@ -154,179 +162,235 @@ int main(void) {
 Compile and run:
 
 ```bash
-gcc -std=c17 main.c -o main && ./main
+gcc -Wall -Wextra -std=c17 bitwise_demo.c -o bitwise_demo && ./bitwise_demo
 ```
 
 Output:
 
 ```text
-After set:   8 (expected 8)
-Bit 3 is set
-After toggle: 0 (expected 0)
-After clear:  0 (expected 0)
+初始值:       00000000 (0x00)
+置位第3位:    00001000 (0x08)
+置位0,1,2位:  00001011 (0x0B)
+清零第3位:    00000011 (0x03)
+翻转第0位:    00000010 (0x02)
+第1位是: 1
 ```
 
-The results match our expectations exactly. If you find the `(flags & (1 << 3)) != 0` syntax unintuitive, you can wrap it in a macro:
+A perfect match with what we expected. If you find the `(1 << n)` spelling less than intuitive, you can wrap it up in macros:
 
 ```c
-#define CHECK_BIT(val, bit) (((val) & (1 << (bit))) != 0)
+#define BIT(n)              (1U << (n))
+#define SET_BIT(x, n)       ((x) |= BIT(n))
+#define CLEAR_BIT(x, n)     ((x) &= ~BIT(n))
+#define TOGGLE_BIT(x, n)    ((x) ^= BIT(n))
+#define CHECK_BIT(x, n)     (((x) & BIT(n)) != 0)
 ```
 
-> ⚠️ **Pitfall Warning**
-> We added parentheses around every parameter and the entire expression in the macro definition. This isn't redundant. Without them, `CHECK_BIT(flags, 3 + 1)` would expand to `flags & 1 << 3 + 1 != 0`. Because `+` has higher precedence than `<<` and `&`, the meaning changes completely. Parentheses in macros are the cheapest insurance.
+Every parameter and the overall expression in those macro definitions is wrapped in parentheses—and that is not busywork. Without the parentheses, `CLEAR_BIT(x | y, 3)` would expand to `x | y &= ~(1 << 3)`, and since `&=` binds looser than `|`, the meaning changes completely. Parentheses inside macros are the cheapest insurance you can buy.
 
-## Step 3 — Shift Precautions
+## Step 3 — What to Watch Out for When Shifting
 
-### Behavior of Left and Right Shifts
+### How Left and Right Shifts Behave
 
-Left shift `<<` has well-defined behavior on unsigned numbers—low bits are filled with 0, and high bits are discarded. Right shift `>>` is also well-defined for unsigned numbers (high bits filled with 0).
+Left shift `<<` on unsigned values is well-defined—0s enter at the low end, the high bits fall off. Right shift `>>` on unsigned values is well-defined too (0s enter at the high end).
 
-However, right shift on **signed** integers is **implementation-defined**—the compiler can choose arithmetic right shift (high bits filled with the sign bit to preserve negativity) or logical right shift (high bits filled with 0). Most platforms use arithmetic right shift, but this is not guaranteed by the standard:
+Right shift of **signed** values, however, is **implementation-defined**—the compiler may choose arithmetic shift (fill the high end with the sign bit, keeping negatives negative) or logical shift (fill with 0s). Most platforms use arithmetic shift, but the standard does not guarantee it:
 
-```cpp
-#include <stdio.h>
-#include <stdint.h>
-
-int main(void) {
-    int8_t signed_val = -8; // 0b11111000
-    uint8_t unsigned_val = 248; // 0b11111000
-
-    printf("Signed >> 1:   %d\n", signed_val >> 1); // Usually -4 (0b11111100)
-    printf("Unsigned >> 1: %d\n", unsigned_val >> 1); // 124 (0b01111100)
-
-    return 0;
-}
+```c
+int8_t x = -4;         // binary: 11111100
+int8_t y = x >> 1;     // could be -2 (arithmetic shift, 1s fill the high end)
+                        // could be 126 (logical shift, 0s fill the high end)
+                        // most platforms give the former, but it is not guaranteed
 ```
 
-> ⚠️ **Pitfall Warning**
-> If the shift amount is negative, or equal to/greater than the bit width of the type (e.g., shifting a 32-bit integer by 32 bits), the behavior is **undefined**. Intuitively, you might think `1 << 32` results in 0, but the standard dictates this is UB—in practice, you might get 1 (because the CPU only takes the lower 5 bits of the shift amount, so 32 becomes 0).
+If the shift count is negative, or equal to or beyond the type's width (say, shifting an `int32_t` by 32), the behavior is **undefined**. Intuitively you might expect `1 << 32` to be 0, but the standard says this is UB—in practice you may well get 1 (because the CPU looks only at the low 5 bits of the shift count, turning 32 into 0).
 
-### Bitwise Operator Precedence Traps
+### The Precedence Trap in Bitwise Operations
 
-This is the most common pitfall for beginners—**bitwise operators have lower precedence than relational operators**. This means `&`, `^`, `|` all have lower precedence than `==`, `!=`, `<`, `>`.
+This is the pit beginners most reliably fall into—**every bitwise operator has lower precedence than the relational operators**. In other words, `&`, `|`, and `^` all bind looser than `==`, `!=`, `<`, and `>`.
 
-```cpp
-// Wrong: Checks if (flags & 1) is non-zero, then compares result to 0
-if (flags & 1 == 0) { ... }
-
-// Correct: Explicitly groups the bitwise operation
-if ((flags & 1) == 0) { ... }
+```c
+if (flags & 0x0F == 0) { }    // actually parsed as flags & (0x0F == 0)
+                                // that is, flags & 0 — always false!
+if ((flags & 0x0F) == 0) { }  // this is what you meant
 ```
 
-The problem with the first version is that `1` is combined with `== 0` first (because `==` has higher precedence than `&`), resulting in 0 (since `1 == 0` is false). Then `flags & 0` is always 0, so the condition is always false.
+The problem with the first version is that `==` grabs `0x0F` and `0` first (because `==` outranks `&`), the comparison yields 0 (because `0x0F != 0`), and then `flags & 0` is always false.
 
-Core principle: **Whenever bitwise operations and comparisons are mixed, use parentheses**. Parentheses don't slow down your code, but they save you from these precedence traps.
+The core rule: **whenever bitwise operations mix with comparisons, add parentheses**. Parentheses don't make code slower, and they save you from this kind of precedence trap.
 
-A practical precedence mnemonic, from high to low:
+A practical precedence mnemonic, from highest to lowest:
 
-1. Parentheses `()` > Subscript `[]` > Member access `.` `->`
-2. Unary operators (`!` `~` `++` `--` `+` `-` `*` `&` `sizeof`)
+1. Parentheses `()` > subscript `[]` > member access `.` `->`
+2. Unary operators (`!` `~` `++` `--` `*` `&` `sizeof`)
 3. Arithmetic (`*` `/` `%` > `+` `-`)
-4. Shift (`<<` `>>`)
-5. Relational (`<` `<=` `>` `>=` > `==` `!=`)
+4. Shifts (`<<` `>>`)
+5. Relational (`<` `>` `<=` `>=` > `==` `!=`)
 6. Bitwise (`&` > `^` > `|`)
 7. Logical (`&&` > `||`)
-8. Ternary `?` > Assignment `=` > Comma `,`
+8. Conditional `?:` > assignment `=` > comma `,`
 
 ## Step 4 — Evaluation Order and Sequence Points
 
-This is one of the most confusing concepts in C. Let's understand it by distinguishing two things: **precedence** and **evaluation order**. These are independent—precedence determines how operators bind operands, while evaluation order determines when operands are calculated.
+This is one of the most confusing corners of C. Let's separate two things: **precedence** and **evaluation order**. They are independent—precedence decides how operators bind to their operands; evaluation order decides when those operands get computed.
 
-### Evaluation Order is Unspecified
+### Evaluation Order Is Unspecified
 
-In most expressions, the order in which operands are evaluated is decided by the compiler. For example, in `func_a() + func_b()`, the standard does not specify whether `func_a()` or `func_b()` is called first—the compiler can choose any order. If the functions have no side effects (don't modify global variables or read/write files), the order doesn't matter; but if they do, results may vary by compiler.
+In most expressions, the order in which operands are evaluated is the compiler's call. Take `f() + g()`: the standard doesn't say whether `f` or `g` runs first—the compiler may pick either order. If neither function has side effects (no global variables modified, no files read or written), the order doesn't matter; but if there are side effects, the result can differ from compiler to compiler.
 
 ### Sequence Points — The Safety Boundary for Side Effects
 
-A **sequence point** is a specific point in program execution where all previous operations are guaranteed to be complete, and subsequent operations haven't started yet. Sequence points in C include:
+A **sequence point** is a specific point in a program's execution where everything before it has finished and nothing after it has started. C's sequence points include:
 
-- After the left operand of `&&` (this is the basis of short-circuit evaluation).
-- After the left operand of `||`.
-- After the first operand of `? :`.
-- After the left operand of the comma operator.
-- At the end of a full expression (the semicolon at the end of a statement).
-- After all arguments are evaluated but before the function body executes.
+- after the left operand of `&&` is evaluated (that's what makes short-circuit evaluation work)
+- after the left operand of `||` is evaluated
+- after the first operand of `?:` is evaluated
+- after the left operand of the comma operator is evaluated
+- at the end of a full expression (the semicolon at the end of a statement)
+- in a function call, after all arguments have been evaluated and before execution of the function body begins
 
-### Undefined Behavior: No Sequence Point Between Two Modifications
+### Undefined Behavior: Two Modifications Without a Sequence Point Between Them
 
-If a variable is modified twice within one sequence point, or is modified while being read (where the read isn't used to compute the new value), it is **undefined behavior**:
+If the same variable is modified twice between sequence points, or is modified and read at the same time (where the read isn't part of computing the new value), that's **undefined behavior**:
 
 ```c
-int i = 0;
-i = i++; // UB: Modified twice without sequence point
-arr[i++] = i; // UB: i is modified and read in different sub-expressions
+int i = 3;
+
+i = i++;                  // UB: i is assigned and incremented at the same time
+a[i] = i++;               // UB: i is read and modified at the same time
+printf("%d %d", i++, i++); // UB: i is modified twice, no sequence point between the arguments
+
+// correct versions
+i = i + 1;    // OK: modified only once
+i++;          // OK: used on its own
 ```
 
-> ⚠️ **Pitfall Warning**
-> These bugs are particularly insidious because code might "look fine" on one compiler, but break when switching compilers or enabling optimizations. In an interview, if you see `i = i++`, the correct answer is "This is UB, there is no standard answer," rather than guessing what the compiler will do.
+These bugs are particularly sneaky because they can "look fine" on one compiler and then break when you switch compilers or turn on optimization. If an interview throws `i = i++` at you, the correct answer is "this is UB, there is no standard answer"—not an attempt to guess how the compiler handles it.
 
-If you want to understand UB deeply, think of it like traffic rules: the standard says "don't run a red light." If you do, the consequences are unpredictable—you might be fine, you might get a ticket, or you might crash. UB is "running a red light" in the programming world.
+If you want a deeper feel for what UB is, compare it to traffic rules: the standard says "don't run a red light"; if you run one, the consequences are unpredictable—you might get away clean, might get caught on camera and fined, might cause a crash. UB is the programming world's equivalent of running a red light.
 
-## C++ Connection
+## C++ Transition
 
-C++ has done several useful things regarding bitwise operations. `std::bitset` allows direct access to individual bits using the `[]` operator, and provides `set`, `reset`, `flip`, `test` operations with clear semantics—safer and more readable than manual bitwise operations. In C++, prefer `std::bitset` unless you need extreme performance or direct hardware manipulation.
+C++ does a few useful things on the bitwise front. `std::bitset<N>` from `<bitset>` lets you access individual bits directly with the `[]` operator, and it offers operations with unambiguous semantics such as `test()`, `set()`, `reset()`, and `flip()`—safer and more readable than hand-rolled bitwise code. In C++, prefer `std::bitset` unless you genuinely need the last drop of performance or direct hardware access.
 
-Regarding evaluation order, C++17 strengthened the rules—function expressions are guaranteed to be evaluated before arguments, making it more deterministic than C's "unspecified." Additionally, `constexpr` functions trigger a compiler error if they cause UB at compile time—effectively a free UB detector.
+On evaluation order, C++17 tightened the rules—the function expression is now evaluated before the arguments, which is more deterministic than C's "unspecified". And if evaluating a `constexpr` function at compile time runs into UB, the compiler rejects it outright—a free UB detector.
 
 ## Exercises
 
-### Exercise 1: Bit Manipulation Toolkit
+### Exercise 1: A Bit-Manipulation Toolkit
 
-**Difficulty: Intermediate** · set / clear / toggle / extract a bit field
+**Difficulty: Intermediate** · set, clear, toggle, and extract a bit field
 
-Implement the following bit manipulation functions:
+Implement the following bit-manipulation functions:
+
+```c
+/// @brief Set bit n of value to 1
+uint32_t bit_set(uint32_t value, int n);
+
+/// @brief Clear bit n of value to 0
+uint32_t bit_clear(uint32_t value, int n);
+
+/// @brief Toggle bit n of value
+uint32_t bit_toggle(uint32_t value, int n);
+
+/// @brief Extract the [high:low] bit field of value (both ends inclusive)
+uint32_t bit_extract(uint32_t value, int high, int low);
+```
+
+::: details Reference Solution
+
+```c
+/// @brief Set bit n of value to 1
+uint32_t bit_set(uint32_t value, int n) {
+    return value | (1U << n);
+}
+
+/// @brief Clear bit n of value to 0
+uint32_t bit_clear(uint32_t value, int n) {
+    return value & ~(1U << n);
+}
+
+/// @brief Toggle bit n of value
+uint32_t bit_toggle(uint32_t value, int n) {
+    return value ^ (1U << n);
+}
+
+/// @brief Extract the [high:low] bit field of value (both ends inclusive)
+uint32_t bit_extract(uint32_t value, int high, int low) {
+    uint32_t width = high - low + 1;
+    value = value >> low;
+    uint64_t mask = (1ULL << width) - 1;
+    return value & mask;
+}
+```
+
+In `bit_extract`, the mask uses `1ULL` to dodge the shift overflow of `1U << 32` when `width == 32`—this kind of detail shows up constantly in bit-field work.
+
+:::
+
+### Exercise 2: Safe Shifting
+
+**Difficulty: Basic** · bounds checks that block shift UB
+
+Write a function that performs a left shift safely, handling every edge case:
+
+```c
+/// @brief A safe left shift
+/// @param val the value to shift
+/// @param n the shift count
+/// @param bits the width of the type (e.g., 32)
+/// @return the shift result, or 0 for an illegal shift count
+uint32_t safe_shift_left(uint32_t val, int n, int bits);
+```
+
+::: details Reference Solution
 
 ```c
 #include <stdint.h>
-#include <stdbool.h>
 
-// Set the nth bit of val (0-indexed)
-void bit_set(uint32_t *val, uint8_t n);
-
-// Clear the nth bit of val
-void bit_clear(uint32_t *val, uint8_t n);
-
-// Toggle the nth bit of val
-void bit_toggle(uint32_t *val, uint8_t n);
-
-// Return true if the nth bit is set
-bool bit_check(uint32_t val, uint8_t n);
+uint32_t safe_shift_left(uint32_t val, int n, int bits) {
+    // bits must be a valid width, and n must fall within [0, bits)
+    if (bits <= 0 || bits > 32 || n < 0 || n >= bits) {
+        return 0;
+    }
+    return val << n;
+}
 ```
 
-### Exercise 2: Safe Shift
+As long as `n < bits` and `bits <= 32` hold, `val << n` never triggers shift-overflow UB of this kind.
 
-**Difficulty: Basic** · boundary checks that fend off shift UB
+:::
 
-Write a function to safely perform a left shift, handling all boundary cases:
+### Exercise 3: Analyzing Expressions
+
+**Difficulty: Basic** · identifying sequence points and undefined behavior
+
+Analyze the evaluation behavior of the following expressions (without actually running them), and label each one as "well-defined", "unspecified behavior", or "undefined behavior":
 
 ```c
-#include <stdint.h>
-#include <stdbool.h>
-
-// Safely left shift val by n bits.
-// Returns false if n is too large or negative, true on success.
-bool safe_shift_left(uint32_t *result, uint32_t val, int n);
+int a = 5, b = 3;
+int r1 = a++ + b;            // ?
+int r2 = a++ + ++a;          // ?
+int r3 = (a > b) ? a-- : b--; // ?
+printf("%d %d\n", a++, a++);  // ?
 ```
 
-### Exercise 3: Expression Analysis
-
-**Difficulty: Basic** · spot sequence points and undefined behavior
-
-Analyze the evaluation behavior of the following expressions (without running them), marking each as "well-defined", "unspecified behavior", or "undefined behavior":
+::: details Reference Solution
 
 ```c
-int a = 1, b = 2, c = 3;
-int arr[10] = {0};
-
-1. a + b
-2. a++ + b
-3. arr[a++] = a
-4. (a = b) + (b = a)
-5. a = b + c
+int a = 5, b = 3;
+int r1 = a++ + b;             // well-defined: a is modified only once, b is only read
+int r2 = a++ + ++a;           // undefined behavior: a is modified twice between sequence points
+int r3 = (a > b) ? a-- : b--; // well-defined: there is a sequence point after ?:'s first operand, and only one branch is evaluated
+printf("%d %d\n", a++, a++);  // undefined behavior: no sequence point between function arguments, a is modified twice
 ```
+
+The easy one to trip on is `r3`: it looks like both sides decrement, but the conditional operator evaluates only the branch that holds, and there is a sequence point after `?:`'s first operand, so it is safe. The `printf` line does contain commas—but the comma between function arguments is not the comma operator, there is no sequence point there, and the two `a++` sit with no sequence point between them → UB.
+
+:::
 
 ## References
 
-- [cppreference: C Operator Precedence](https://en.cppreference.com/w/c/language/operator_precedence)
-- [cppreference: Sequence Points](https://en.cppreference.com/w/c/language/eval_order)
-- [CERT: EXP30-C - Do not depend on the order of of evaluation for side effects](https://wiki.sei.cmu.edu/confluence/display/c/EXP30-C.+Do+not+depend+on+the+order+of+evaluation+for+side+effects)
+- [cppreference: C operator precedence](https://en.cppreference.com/w/c/language/operator_precedence)
+- [cppreference: sequence points](https://en.cppreference.com/w/c/language/eval_order)
+- [CERT: EXP30-C - Do not depend on the order of evaluation for side effects](https://wiki.sei.cmu.edu/confluence/display/c/EXP30-C.+Do+not+depend+on+the+order+of+evaluation+for+side+effects)

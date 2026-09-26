@@ -1,0 +1,156 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Iteration Order" id="iteration-order">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="单层与递归遍历的访问顺序（目录树取自文中示例）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="26" width="600" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- 目录树外框 -->
+        <mxCell id="treebox" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="70" y="88" width="400" height="384" as="geometry" />
+        </mxCell>
+
+        <!-- 单层遍历不进入的子树（虚线框） -->
+        <mxCell id="skipzone" value="单层遍历不进入的子树" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;dashed=1;fillColor=none;fontSize=11;fontColor=#888888;align=right;verticalAlign=bottom;spacingRight=6;spacingBottom=2;" vertex="1" parent="1">
+          <mxGeometry x="216" y="198" width="228" height="214" as="geometry" />
+        </mxCell>
+
+        <!-- 树节点 -->
+        <mxCell id="n_root" value="project/" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#f2f2f2;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="104" width="110" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="note_root" value="起始目录本身不产出条目" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="210" y="104" width="200" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="n_src" value="src/" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="170" y="156" width="90" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="n_main" value="main.cpp" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#FFFFFF;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="230" y="208" width="120" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="n_utils" value="utils/" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="230" y="260" width="100" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="n_hcpp" value="helper.cpp" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#FFFFFF;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="290" y="312" width="130" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="n_hh" value="helper.h" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#FFFFFF;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="290" y="364" width="120" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="n_cmake" value="CMakeLists.txt" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#FFFFFF;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="170" y="416" width="150" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- 递归遍历序号（蓝圈 1~6） -->
+        <mxCell id="b1" value="1" style="ellipse;whiteSpace=wrap;html=1;strokeColor=none;fillColor=#1f4e9c;fontColor=#FFFFFF;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="42" y="161" width="22" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="b2" value="2" style="ellipse;whiteSpace=wrap;html=1;strokeColor=none;fillColor=#1f4e9c;fontColor=#FFFFFF;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="42" y="213" width="22" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="b3" value="3" style="ellipse;whiteSpace=wrap;html=1;strokeColor=none;fillColor=#1f4e9c;fontColor=#FFFFFF;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="42" y="265" width="22" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="b4" value="4" style="ellipse;whiteSpace=wrap;html=1;strokeColor=none;fillColor=#1f4e9c;fontColor=#FFFFFF;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="42" y="317" width="22" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="b5" value="5" style="ellipse;whiteSpace=wrap;html=1;strokeColor=none;fillColor=#1f4e9c;fontColor=#FFFFFF;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="42" y="369" width="22" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="b6" value="6" style="ellipse;whiteSpace=wrap;html=1;strokeColor=none;fillColor=#1f4e9c;fontColor=#FFFFFF;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="42" y="421" width="22" height="22" as="geometry" />
+        </mxCell>
+
+        <!-- 单层遍历会访问的直接子项（黄圈 ①②，标在节点左上角） -->
+        <mxCell id="y1" value="①" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#FFD966;fontColor=#7f6000;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="158" y="144" width="26" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="y2" value="②" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#FFD966;fontColor=#7f6000;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="158" y="404" width="26" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- 树连线：根 -->
+        <mxCell id="e_root_src" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#666666;strokeWidth=1.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="110" y="136" as="sourcePoint" />
+            <mxPoint x="170" y="172" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="110" y="172" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_root_cmake" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#666666;strokeWidth=1.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="110" y="136" as="sourcePoint" />
+            <mxPoint x="170" y="432" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="110" y="432" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <!-- 树连线：src/ -->
+        <mxCell id="e_src_main" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#666666;strokeWidth=1.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="190" y="188" as="sourcePoint" />
+            <mxPoint x="230" y="224" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="190" y="224" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_src_utils" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#666666;strokeWidth=1.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="190" y="188" as="sourcePoint" />
+            <mxPoint x="230" y="276" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="190" y="276" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <!-- 树连线：utils/ -->
+        <mxCell id="e_utils_hcpp" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#666666;strokeWidth=1.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="250" y="292" as="sourcePoint" />
+            <mxPoint x="290" y="328" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="250" y="328" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_utils_hh" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#666666;strokeWidth=1.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="250" y="292" as="sourcePoint" />
+            <mxPoint x="290" y="380" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="250" y="380" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 右侧说明卡片 -->
+        <mxCell id="c_single" value="&lt;b&gt;&lt;font color=&quot;#1f4e9c&quot;&gt;directory_iterator：单层遍历&lt;/font&gt;&lt;/b&gt;&lt;br&gt;只访问起始目录的直接子项：① src/、② CMakeLists.txt，子目录里的内容一律不碰（图中虚线框住的子树）&lt;br&gt;顺序&lt;b&gt;未指定&lt;/b&gt;：不保证字母序，要排序就先收进 vector 再 std::sort" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="486" y="104" width="270" height="118" as="geometry" />
+        </mxCell>
+        <mxCell id="c_rec" value="&lt;b&gt;&lt;font color=&quot;#2E7D32&quot;&gt;recursive_directory_iterator：深度优先&lt;/font&gt;&lt;/b&gt;&lt;br&gt;产出 src/ 后立刻深入，utils/ 子树走完才轮到 CMakeLists.txt，正好是文中那 6 行输出&lt;br&gt;depth()：直接子项深度为 0，逐层加一（helper.cpp 深度 2）&lt;br&gt;disable_recursion_pending()：跳过不想进去的子目录" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="486" y="234" width="270" height="132" as="geometry" />
+        </mxCell>
+        <mxCell id="c_opts" value="&lt;b&gt;&lt;font color=&quot;#7f6000&quot;&gt;directory_options：构造选项&lt;/font&gt;&lt;/b&gt;&lt;br&gt;skip_permission_denied：无权限的目录（如 /proc、/sys）跳过而不抛异常&lt;br&gt;follow_directory_symlink：跟随指向目录的符号链接；默认不跟随，防止 A 指向 B、B 又指回 A 的死循环" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="486" y="378" width="270" height="122" as="geometry" />
+        </mxCell>
+        <mxCell id="c_entry" value="&lt;b&gt;directory_entry：带状态缓存的 path 加强版&lt;/b&gt;&lt;br&gt;is_directory() / file_size() 直接读缓存，少打 stat()（缓存行为是实现定义）&lt;br&gt;遍历中文件被改动后缓存可能过期，用 entry.refresh() 强制刷新" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#f2f2f2;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="486" y="512" width="270" height="112" as="geometry" />
+        </mxCell>
+
+        <!-- 图例 -->
+        <mxCell id="legend" value="蓝圈 1~6 = 递归遍历的一种可能产出顺序（同一层内的先后未指定）；黄圈 ①② = 单层遍历会访问到的直接子项；绿底 = 目录，白底 = 文件；目录树与顺序均取自文中 /home/user/project 示例" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="70" y="648" width="686" height="30" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
