@@ -3,79 +3,79 @@ chapter: 7
 cpp_standard:
 - 17
 - 20
-description: Understand the CSP (Communicating Sequential Processes) concurrency model
-  and implement Go-like channels in C++.
+description: 'Understand the CSP (Communicating Sequential Processes) concurrency model and implement Go-like channel communication pipelines in C++'
 difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- Actor 模型与消息传递
-- 线程安全队列
+- 'Actor Model and Message Passing'
+- 'Thread-Safe Queue'
 reading_time_minutes: 24
 related:
-- 协程 Echo Server 实战
+- 'Hands-on: Coroutine Echo Server'
 tags:
 - host
 - cpp-modern
 - intermediate
 - 异步编程
 - 进阶
-title: Channel and CSP Model
+title: 'Channels and the CSP Model'
 translation:
   source: documents/vol5-concurrency/ch07-actor-channel/02-channel-and-csp.md
   source_hash: c362874de4f213c18c18aa225c44615d9709dd414f3db5c1f0a5dbf1323fef42
-  translated_at: '2026-06-16T04:06:40.661745+00:00'
+  translated_at: '2026-09-26T07:59:44+00:00'
   engine: anthropic
-  token_count: 5695
+  token_count: 6800
 ---
 # Channels and the CSP Model
 
-In the previous article, we discussed the Actor model—organizing concurrency using stateful Actors and asynchronous message passing. In this article, we will look at another school of thought that also advocates "don't share memory": CSP (Communicating Sequential Processes).
+In the previous article we talked about the Actor model—organizing concurrency with identifiable Actors plus asynchronous message passing. In this article we meet another school that makes the same "don't share memory" bet: CSP (Communicating Sequential Processes).
 
-CSP was first proposed by Tony Hoare in his 1978 paper *"Communicating Sequential Processes"* (published in *Communications of the ACM*). Like the Actor model, the core idea of CSP is to replace shared memory with message passing, but it takes a different path: Actors have identities and mailboxes, and messages are sent to specific Actor addresses; CSP uses anonymous channels for communication, and processes do not need to know who the other party is. This difference may seem subtle, but it creates significant differences in programming style and expressive power. Go's goroutine + channel is the most successful industrial practice of CSP. Rob Pike's famous quote—"Don't communicate by sharing memory; share memory by communicating"—is Go's summary of the CSP philosophy.
+CSP was first proposed by Tony Hoare in his 1978 paper *"Communicating Sequential Processes"* (published in Communications of the ACM). Like the Actor model, CSP's core idea is to replace shared memory with message passing, but it takes a different route: Actors have identity and mailboxes, and messages are sent to a specific Actor's address; CSP communicates through anonymous channels, and processes never need to know who is on the other end. The difference looks subtle, but it produces big differences in programming style and expressive power. Go's goroutine + channel is CSP's most successful industrial practice, and Rob Pike's famous line—"Don't communicate by sharing memory; share memory by communicating"—is Go's summary of the CSP philosophy.
 
-In this article, we will start with the theoretical foundations of CSP, then implement a Go-like communication pipeline in C++, including buffered/unbuffered channels, close semantics, and the select pattern. Finally, we will discuss when to use channels and when to use locks directly.
+In this article we start from CSP's theoretical foundations, then implement a Go-like channel communication pipeline in C++—covering buffered and unbuffered channels, close semantics, and the select pattern—and finish by discussing when to use a channel and when to reach for a lock directly.
 
-## Environment Setup
+## Environment Notes
 
-Just like the previous article, all our code is based on C++17 and compiles successfully under GCC 12+ / Clang 15+ / MSVC 2022+ with the compiler flag `-std=c++17 -pthread`. It runs on Linux, macOS, and Windows, provided your standard library supports `std::mutex`, `std::condition_variable`, and `std::queue`. The code in this article does not depend on any third-party libraries.
+As in the previous article, all of our code is based on C++17, compiles under GCC 12+ / Clang 15+ / MSVC 2022+, and is built with `-std=c++17 -pthread -O2`. Linux, macOS, and Windows all work, as long as your standard library supports `<thread>`, `<mutex>`, and `<condition_variable>`. Nothing in this article depends on any third-party library.
 
-## Theoretical Foundations of CSP
+## The Theoretical Foundations of CSP
 
-The original CSP paper was published five years later than the Actor model (1978 vs. 1973), but its influence is equally profound. Hoare's initial design was a concurrent programming language (rather than the formal calculus it became later), with syntax that looked like this:
+CSP's original paper came five years after the Actor model (1978 vs 1973), but its influence is just as deep. Hoare's original design was a concurrent programming language (not the formal calculus it later became), and its syntax looked like this:
 
 ```text
-*[c ? character -> west ! character]
+COPY = *[c:character; west?c -> east!c]
 ```
 
-The meaning of this code is: repeatedly receive a character `c` from a process named `west`, and then send it to a process named `east`. Communication in the original CSP was synchronous message passing based on process names—both the sender and the receiver must be ready at the same time for communication to occur.
+This code means: repeatedly receive a character `c` from the process named `west`, then send it to the process named `east`. Communication in original CSP was synchronous message passing based on process names—the sender and the receiver must both be ready before communication can happen.
 
-Later (1984-1985), Hoare, Stephen Brookes, and A. W. Roscoe developed CSP into a complete process algebra. In this version, communication is no longer based on process names, but on anonymous channels—this is also the version adopted by Go.
+Later (1984-1985), Hoare, Stephen Brookes, and A. W. Roscoe developed CSP into a full process algebra. In that version, communication is no longer based on process names but on anonymous channels—and this is the version the Go language adopted.
 
-CSP has had a far-reaching influence on programming languages. It directly influenced the occam language (designed for the INMOS Transputer processor), the Limbo language (the programming language of Plan 9), and most importantly—Go's concurrency model. Go is not a complete implementation of CSP, but it borrows the core idea: goroutines correspond to CSP processes, and channels correspond to CSP communication channels.
+CSP's influence on programming languages has been profound. It directly shaped the occam language (designed for the INMOS Transputer processor), the Limbo language (the programming language of Plan 9), and most importantly of all, Go's concurrency model. Go is not a complete implementation of CSP, but it borrowed the core ideas: a goroutine corresponds to a CSP process, and a channel corresponds to CSP's communication channel.
 
-### Fundamental Differences Between CSP and Actor
+### The Fundamental Differences Between CSP and the Actor Model
 
-The Wikipedia entry for CSP has a very clear comparison. Let's see exactly where they differ.
+Wikipedia's CSP article contains a very crisp comparison; let's look at where the two models actually differ.
 
-The first difference is identity. CSP processes are anonymous—you don't need to know who the other party is, only which channel to send data to. Actors are different; each Actor has an address (pid in Erlang, ActorRef in Akka), and messages must be sent to a specific address. This means the CSP channel is a decoupling layer: the sender and receiver are indirectly associated through the channel, and either end can be replaced at any time. The Actor model is more tightly coupled—the sender must know the receiver's address.
+The first difference is identity. CSP processes are anonymous—you don't need to know who the other party is, only which channel to send data to. Actors are different: every Actor has an address (a pid in Erlang, an ActorRef in Akka), and messages must be sent to a specific address. This makes the CSP channel a decoupling layer: sender and receiver are connected only indirectly through the channel, and either end can be swapped at any time, whereas the Actor model is more tightly coupled—the sender must know the receiver's address.
 
-The second difference lies in the synchronicity of communication. CSP communication is synchronous (rendezvous) in its basic semantics—both the sender and the receiver must be ready at the same time for communication to occur. Actor model communication is asynchronous—the sender returns immediately after sending the message, without waiting for the receiver to be ready. Interestingly, these two semantics are duals of each other: synchronous communication plus a buffer queue becomes asynchronous communication, and asynchronous communication plus an acknowledgment/response protocol becomes synchronous communication.
+The second difference lies in the synchrony of communication. CSP communication is synchronous in its base semantics (a rendezvous)—sender and receiver must both be ready before communication happens. Communication in the Actor model is asynchronous—the sender returns immediately after sending and does not wait for the receiver to be ready. Interestingly, these two semantics are duals of each other: synchronous communication plus a buffer queue becomes asynchronous communication, and asynchronous communication plus an acknowledgment/reply protocol becomes synchronous communication.
 
-The third difference is compositionality. CSP provides rich algebraic operators to combine processes—sequential composition, choice (internal/external), parallel, hiding, etc. These operators have formal semantics and can be used with tools (like the FDR refinement checker) for automated deadlock and liveness checking. Actor model composition relies mainly on message protocols—two Actors agree on message formats and interaction sequences. The former is more formal, the latter more flexible.
+The third difference is compositionality. CSP provides a rich set of algebraic operators for composing processes—sequential composition, choice (internal/external), parallelism, hiding, and so on. These operators have formal semantics, so tools (such as the FDR refinement checker) can perform automated deadlock and liveness checks. Composition in the Actor model mostly comes down to message protocols—two Actors agree on a message format and an interaction sequence. The former is more formal; the latter is more flexible.
 
-> Honestly, there is no absolute superiority or inferiority between these two models. In actual engineering, the choice often depends on the team's familiarity and specific system characteristics. Go chose CSP, Erlang chose Actor, and both have achieved huge success.
+> Honestly, neither model is absolutely better than the other. In real-world engineering, which one fits depends more on the team's familiarity and the specific characteristics of the system. Go chose CSP, Erlang chose Actors, and both have been enormously successful.
 
-## Basic Channel Implementation
+## A Basic Channel Implementation
 
-Let's implement a Go-like communication pipeline. Go's channels have two basic forms: unbuffered channels and buffered channels. In an unbuffered channel, the sender blocks until a receiver is ready, and the receiver blocks until a sender is ready—this is synchronous communication, where sending and receiving happen at the same moment. A buffered channel has a queue internally; the sender does not block when the buffer is not full, but blocks when the buffer is full; the receiver blocks when the buffer is empty. Both types of channels support the `close` operation—after closing, no more sending is allowed, but remaining data can still be received.
+Let's implement a Go-like communication channel. Go's channels come in two basic forms: the unbuffered channel and the buffered channel. With an unbuffered channel, the sender blocks until a receiver is ready, and the receiver blocks until a sender is ready—this is synchronous communication: send and receive happen at the same instant. A buffered channel holds an internal queue: while the buffer is not full, the sender does not block; when the buffer is full, the sender blocks waiting for a free slot; when the buffer is empty, the receiver blocks waiting. Both kinds of channel support a `close` operation—after closing, no more sends are allowed, but the remaining data can still be received.
 
 ### Unbuffered Channel
 
-The unbuffered channel is the purest form. Sending and receiving must happen simultaneously—like two people shaking hands; both must reach out for the handshake to happen.
+The unbuffered channel is the purest form. Send and receive must happen at the same moment—like a handshake between two people: both must extend a hand before the handshake can happen.
 
 ```cpp
-// ch07/channel-csp/unbuffered_channel.cpp
+#pragma once
+
 #include <mutex>
 #include <condition_variable>
 #include <optional>
@@ -83,355 +83,726 @@ The unbuffered channel is the purest form. Sending and receiving must happen sim
 template <typename T>
 class UnbufferedChannel {
 public:
-    void send(T value) {
-        std::unique_lock<std::mutex> lock(mtx_);
-        // Wait for a receiver to be ready (rendezvous)
-        recv_ready_.wait(lock, [this] {
-            return recv_waiting_ || closed_;
+    UnbufferedChannel() = default;
+    ~UnbufferedChannel()
+    {
+        close();
+    }
+
+    /// Send a value (blocks until a receiver takes it)
+    /// Returns true if the send succeeded, false if the channel is closed
+    bool send(const T& value)
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+
+        // Wait for a receiver to be ready, or for the channel to close
+        sender_cv_.wait(lock, [this] {
+            return receiver_waiting_ || closed_;
         });
 
         if (closed_) {
-            throw std::runtime_error("send on closed channel");
+            return false;
         }
 
-        // Transfer data
-        data_ = std::move(value);
-        // Notify receiver that data is ready
-        recv_waiting_ = false;
-        send_done_.notify_one();
+        // Hand the value over to the receiver
+        transfer_buffer_ = value;
+        data_ready_ = true;
 
-        // Wait for receiver to take the data
-        recv_done_.wait(lock);
-    }
+        // Wake the receiver to come take the data
+        receiver_cv_.notify_one();
 
-    std::optional<T> receive() {
-        std::unique_lock<std::mutex> lock(mtx_);
-        recv_waiting_ = true;
-        recv_ready_.notify_one(); // Notify sender that we are waiting
-
-        // Wait for sender to put data
-        send_done_.wait(lock, [this] {
-            return data_.has_value() || closed_;
+        // Wait for the receiver to confirm it has taken the data
+        sender_cv_.wait(lock, [this] {
+            return !data_ready_ || closed_;
         });
 
-        if (closed_ && !data_.has_value()) {
-            return std::nullopt;
-        }
-
-        T result = std::move(*data_);
-        data_.reset();
-        recv_done_.notify_one(); // Notify sender that we took the data
-        return result;
+        return !closed_;
     }
 
-    void close() {
-        std::lock_guard<std::mutex> lock(mtx_);
-        closed_ = true;
-        recv_ready_.notify_all();
-        send_done_.notify_all();
-        recv_done_.notify_all();
+    /// Receive a value (blocks until a sender delivers data)
+    std::optional<T> receive()
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+
+        // Mark that a receiver is waiting
+        receiver_waiting_ = true;
+        sender_cv_.notify_one();
+
+        // Wait for data to arrive, or for the channel to close with no data left
+        receiver_cv_.wait(lock, [this] {
+            return data_ready_ || closed_;
+        });
+
+        receiver_waiting_ = false;
+
+        if (data_ready_) {
+            T value = std::move(transfer_buffer_);
+            data_ready_ = false;
+
+            // Notify the sender: the data has been taken
+            sender_cv_.notify_one();
+            return value;
+        }
+
+        // Channel is closed and there is no data
+        return std::nullopt;
+    }
+
+    /// Close the channel
+    void close()
+    {
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            if (closed_) return;
+            closed_ = true;
+        }
+        sender_cv_.notify_all();
+        receiver_cv_.notify_all();
+    }
+
+    bool is_closed() const
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return closed_;
     }
 
 private:
-    std::mutex mtx_;
-    std::condition_variable recv_ready_;  // Signals "I am ready to receive"
-    std::condition_variable send_done_;   // Signals "Data is ready to be read"
-    std::condition_variable recv_done_;   // Signals "Data has been taken"
-    std::optional<T> data_;
-    bool recv_waiting_ = false;
-    bool closed_ = false;
+    mutable std::mutex mutex_;
+    std::condition_variable sender_cv_;
+    std::condition_variable receiver_cv_;
+
+    T transfer_buffer_;          // Data handoff buffer
+    bool data_ready_{false};     // Whether data is waiting to be taken
+    bool receiver_waiting_{false}; // Whether a receiver is waiting
+    bool closed_{false};
 };
 ```
 
-The core of the unbuffered channel implementation is "rendezvous"—the sender and receiver complete the data exchange at the same moment. `send` puts the data into `data_`, wakes up the receiver, and waits for the receiver to confirm it has taken the data. `receive` marks itself as waiting and then waits for data to arrive. Both parties coordinate through two condition variables (`recv_ready_` and `send_done_`).
+The core of the unbuffered channel implementation is the "rendezvous"—sender and receiver complete the data exchange at the same instant. `send()` puts the data into `transfer_buffer_`, wakes the receiver, then waits for the receiver to confirm it has taken the data. `receive()` marks itself as waiting, then waits for data to arrive. The two sides coordinate through a pair of condition variables (`sender_cv_` and `receiver_cv_`).
 
-There is a subtle point in this implementation: the `recv_waiting_` flag. It tells the sender "someone is waiting to receive now," so the sender knows it's safe to start the transfer. Without this flag, the sender might wake up without any receiver present—this is like shouting "Is anyone here for this package?" in an empty room and never getting a response.
+One subtle spot in this implementation is the `receiver_waiting_` flag. It tells the sender "someone is waiting to receive right now," so the sender knows it can safely start the transfer. Without this flag, the sender could wake up with no receiver around—like shouting "anyone want this package?" into an empty room and waiting forever for an answer.
 
-> ⚠️ **Note**: `send` on an unbuffered channel is synchronous—it blocks until the receiver takes the data. If you have a sender but no receiver in your code, `send` will block forever. This is a direct reflection of the CSP philosophy: communication is synchronous, and both parties must participate simultaneously. If this doesn't suit your needs, use a buffered channel.
+> ⚠️ **Note**: send on an unbuffered channel is synchronous—it blocks until a receiver takes the data. If your code has a sender but no receiver, send blocks forever. This is the CSP philosophy made concrete: communication is synchronous, and both sides must participate at the same time. If that doesn't suit you, use a buffered channel.
 
 ### Buffered Channel
 
-A buffered channel is essentially a thread-safe queue—we are very familiar with this from ch04. When the buffer is not full, the sender enqueues and returns immediately; when the buffer is full, the sender blocks and waits for a slot. After closing, the receiver can continue consuming remaining data in the queue, and returns `std::nullopt` only when the queue is empty.
+A buffered channel is internally just a thread-safe queue—something we already know very well from ch04. While the buffer is not full, the sender enqueues and returns immediately; when the buffer is full, the sender blocks waiting for a free slot. After close, receivers can keep consuming the data left in the queue; only when the queue is empty do they get `std::nullopt`.
 
 ```cpp
-// ch07/channel-csp/buffered_channel.cpp
-#include <mutex>
-#include <condition_variable>
-#include <queue>
-#include <optional>
-
 template <typename T>
 class BufferedChannel {
 public:
-    explicit BufferedChannel(size_t capacity) : capacity_(capacity) {}
+    explicit BufferedChannel(size_t capacity)
+        : capacity_(capacity)
+    {
+    }
 
-    bool send(T value) {
-        std::unique_lock<std::mutex> lock(mtx_);
-        // Wait for buffer not full or closed
-        not_full_.wait(lock, [this] {
+    ~BufferedChannel()
+    {
+        close();
+    }
+
+    /// Send a value (blocks when the buffer is full)
+    bool send(const T& value)
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+
+        // Wait for a free slot in the buffer, or for the channel to close
+        not_full_cv_.wait(lock, [this] {
             return buffer_.size() < capacity_ || closed_;
         });
 
-        if (closed_) return false;
+        if (closed_) {
+            return false;
+        }
 
-        buffer_.push(std::move(value));
-        not_empty_.notify_one();
+        buffer_.push(value);
+        not_empty_cv_.notify_one();
         return true;
     }
 
-    std::optional<T> receive() {
-        std::unique_lock<std::mutex> lock(mtx_);
-        // Wait for buffer not empty or closed
-        not_empty_.wait(lock, [this] {
+    /// Try to send (non-blocking)
+    /// Returns true if the send succeeded
+    bool try_send(const T& value)
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+
+        if (closed_ || buffer_.size() >= capacity_) {
+            return false;
+        }
+
+        buffer_.push(value);
+        not_empty_cv_.notify_one();
+        return true;
+    }
+
+    /// Receive a value (blocks when the buffer is empty)
+    std::optional<T> receive()
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+
+        not_empty_cv_.wait(lock, [this] {
             return !buffer_.empty() || closed_;
         });
 
-        if (buffer_.empty() && closed_) {
+        if (buffer_.empty()) {
+            // closed_ must be true here, and the buffer is already empty
             return std::nullopt;
         }
 
-        T result = std::move(buffer_.front());
+        T value = std::move(buffer_.front());
         buffer_.pop();
-        not_full_.notify_one();
-        return result;
+        not_full_cv_.notify_one();
+        return value;
     }
 
-    void close() {
-        std::lock_guard<std::mutex> lock(mtx_);
-        closed_ = true;
-        not_empty_.notify_all();
-        not_full_.notify_all();
+    /// Try to receive (non-blocking)
+    std::optional<T> try_receive()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+
+        if (buffer_.empty()) {
+            return std::nullopt;
+        }
+
+        T value = std::move(buffer_.front());
+        buffer_.pop();
+        not_full_cv_.notify_one();
+        return value;
+    }
+
+    /// Close the channel
+    /// After closing, send is no longer allowed, but the remaining data in the buffer can still be received
+    void close()
+    {
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            closed_ = true;
+        }
+        not_full_cv_.notify_all();
+        not_empty_cv_.notify_all();
+    }
+
+    bool is_closed() const
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return closed_;
+    }
+
+    /// Number of elements currently in the buffer
+    size_t size() const
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return buffer_.size();
     }
 
 private:
-    std::mutex mtx_;
-    std::condition_variable not_full_;
-    std::condition_variable not_empty_;
+    mutable std::mutex mutex_;
+    std::condition_variable not_full_cv_;
+    std::condition_variable not_empty_cv_;
     std::queue<T> buffer_;
     size_t capacity_;
-    bool closed_ = false;
+    bool closed_{false};
 };
 ```
 
-The implementation of a buffered channel is the classic producer-consumer model. Two condition variables manage the "buffer not full" and "buffer not empty" conditions respectively. When closing, all waiting threads are woken up—senders find `closed` is true and return false, receivers continue consuming remaining data and then return `std::nullopt`.
+The buffered channel implementation is the classic producer-consumer model. Two condition variables manage the two conditions "buffer not full" and "buffer not empty". On close, every waiting thread is woken—senders see closed and return false, while receivers drain the remaining data and then return `std::nullopt`.
 
-This close semantics is basically consistent with Go's channel closing behavior: after closing, no more sending is allowed (our implementation returns false in `send`, Go panics), and receivers can continue reading data from the buffer until it is exhausted (after which Go returns zero values, we return `std::nullopt`).
+These close semantics essentially match Go's channel-closing behavior: after closing you cannot send anymore (in our implementation send returns false; in Go it panics), and receivers can keep reading the buffered data until it runs out (Go then returns the zero value; we return `std::nullopt`).
 
-### Unified Channel Interface
+### A Unified Channel Interface
 
-In actual use, we often don't want to care whether a channel is buffered or unbuffered—the API should be consistent. So we unify the two implementations into one template class, using the `N` parameter to distinguish: 0 means unbuffered, greater than 0 means buffered.
+In practice, we usually don't want to care whether a channel is buffered or unbuffered—the API should be identical. So we merge the two implementations into one template class, distinguished by a `capacity` parameter: 0 means unbuffered, anything greater than 0 means buffered.
 
 ```cpp
-// ch07/channel-csp/channel.hpp
-#pragma once
-#include <optional>
-#include "unbuffered_channel.cpp"
-#include "buffered_channel.cpp"
-
-template <typename T, size_t N = 0>
+template <typename T>
 class Channel {
-    using Impl = std::conditional_t<N == 0,
-                                     UnbufferedChannel<T>,
-                                     BufferedChannel<T>>;
 public:
-    Channel() : impl_(N) {} // N is capacity for BufferedChannel
+    /// capacity = 0 means an unbuffered channel
+    explicit Channel(size_t capacity = 0)
+        : capacity_(capacity)
+    {
+    }
 
-    void send(T value) { impl_.send(std::move(value)); }
-    std::optional<T> receive() { return impl_.receive(); }
-    void close() { impl_.close(); }
+    ~Channel() { close(); }
+
+    // Non-copyable
+    Channel(const Channel&) = delete;
+    Channel& operator=(const Channel&) = delete;
+
+    /// Send (blocking)
+    bool send(const T& value)
+    {
+        if (capacity_ == 0) {
+            return unbuffered_send(value);
+        }
+        return buffered_send(value);
+    }
+
+    /// Receive (blocking)
+    std::optional<T> receive()
+    {
+        if (capacity_ == 0) {
+            return unbuffered_receive();
+        }
+        return buffered_receive();
+    }
+
+    /// Try to send (non-blocking)
+    bool try_send(const T& value)
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        if (closed_) return false;
+
+        if (capacity_ == 0) {
+            // Unbuffered channel: fail if no receiver is waiting, or if the previous transfer has not been consumed yet
+            if (!receiver_waiting_ || data_ready_) return false;
+            transfer_buffer_ = value;
+            data_ready_ = true;
+            receiver_cv_.notify_one();
+            return true;
+        }
+
+        if (buffer_.size() >= capacity_) return false;
+        buffer_.push(value);
+        not_empty_cv_.notify_one();
+        return true;
+    }
+
+    /// Try to receive (non-blocking)
+    std::optional<T> try_receive()
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+
+        if (capacity_ == 0) {
+            if (!data_ready_) return std::nullopt;
+            T value = std::move(transfer_buffer_);
+            data_ready_ = false;
+            sender_cv_.notify_one();
+            return value;
+        }
+
+        if (buffer_.empty()) return std::nullopt;
+        T value = std::move(buffer_.front());
+        buffer_.pop();
+        not_full_cv_.notify_one();
+        return value;
+    }
+
+    void close()
+    {
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            closed_ = true;
+        }
+        sender_cv_.notify_all();
+        receiver_cv_.notify_all();
+        not_full_cv_.notify_all();
+        not_empty_cv_.notify_all();
+    }
+
+    bool is_closed() const
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return closed_;
+    }
 
 private:
-    Impl impl_;
+    // --- Unbuffered channel implementation ---
+    bool unbuffered_send(const T& value)
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        sender_cv_.wait(lock, [this] {
+            return receiver_waiting_ || closed_;
+        });
+        if (closed_) return false;
+
+        transfer_buffer_ = value;
+        data_ready_ = true;
+        receiver_cv_.notify_one();
+
+        sender_cv_.wait(lock, [this] {
+            return !data_ready_ || closed_;
+        });
+        return !closed_;
+    }
+
+    std::optional<T> unbuffered_receive()
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        receiver_waiting_ = true;
+        sender_cv_.notify_one();
+
+        receiver_cv_.wait(lock, [this] {
+            return data_ready_ || closed_;
+        });
+        receiver_waiting_ = false;
+
+        if (data_ready_) {
+            T value = std::move(transfer_buffer_);
+            data_ready_ = false;
+            sender_cv_.notify_one();
+            return value;
+        }
+        return std::nullopt;
+    }
+
+    // --- Buffered channel implementation ---
+    bool buffered_send(const T& value)
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        not_full_cv_.wait(lock, [this] {
+            return buffer_.size() < capacity_ || closed_;
+        });
+        if (closed_) return false;
+
+        buffer_.push(value);
+        not_empty_cv_.notify_one();
+        return true;
+    }
+
+    std::optional<T> buffered_receive()
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        not_empty_cv_.wait(lock, [this] {
+            return !buffer_.empty() || closed_;
+        });
+        if (buffer_.empty()) return std::nullopt;
+
+        T value = std::move(buffer_.front());
+        buffer_.pop();
+        not_full_cv_.notify_one();
+        return value;
+    }
+
+    mutable std::mutex mutex_;
+
+    // Members used by the unbuffered channel
+    std::condition_variable sender_cv_;
+    std::condition_variable receiver_cv_;
+    T transfer_buffer_;
+    bool data_ready_{false};
+    bool receiver_waiting_{false};
+
+    // Members used by the buffered channel
+    std::condition_variable not_full_cv_;
+    std::condition_variable not_empty_cv_;
+    std::queue<T> buffer_;
+    size_t capacity_;
+
+    bool closed_{false};
 };
 ```
 
-This unified interface packages both channel implementations together. The behavior is determined by specifying `N` at construction time—0 is unbuffered, greater than 0 is buffered. The externally exposed `send` and `receive` are completely identical, and the user doesn't need to care whether the internal mechanism is direct handoff or a queue. This design is the same in Go—`make(chan int)` creates an unbuffered channel, `make(chan int, 5)` creates a channel with a buffer size of 5, and there is no difference in usage.
+This unified interface packs both channel implementations together: the `capacity` chosen at construction decides the behavior—0 is unbuffered, greater than 0 is buffered. The exposed `send` and `receive` are completely identical, so users never need to care whether data changes hands directly or travels through a queue underneath. Go works the same way—`make(chan int)` creates an unbuffered channel, `make(chan int, 5)` creates a channel with a buffer of 5, and the two are used identically.
 
 ## The Select Pattern
 
-Go's `select` statement is one of the most powerful composition primitives in the CSP model. It allows you to wait for multiple channel operations at the same time, executing whichever one becomes ready first:
+Go's `select` statement is one of the most powerful composition primitives in the CSP model. It lets you wait on several channel operations at once and execute whichever becomes ready first:
 
 ```go
+// Go code example
 select {
-case v := <-ch1:
-    fmt.Println("Got from ch1:", v)
-case v := <-ch2:
-    fmt.Println("Got from ch2:", v)
-case ch3 <- x:
-    fmt.Println("Sent to ch3")
+case msg := <-ch1:
+    fmt.Println("收到 from ch1:", msg)
+case msg := <-ch2:
+    fmt.Println("收到 from ch2:", msg)
+case ch3 <- 42:
+    fmt.Println("发送 42 到 ch3 成功")
+case <-time.After(time.Second):
+    fmt.Println("超时")
 }
 ```
 
-C++ doesn't have language-level select, but we can simulate the core idea using polling + condition variables. A complete select implementation is quite complex (requiring fair scheduling, random selection, avoiding starvation, etc.), so here we implement a simplified version to demonstrate the core mechanism.
+C++ has no language-level select, but we can imitate the core idea with polling plus condition variables. A complete select implementation is genuinely complicated (fair scheduling, random choice, starvation avoidance, and more), so here we implement a simplified version that demonstrates the core mechanism.
 
-### Simplified Select
+### A Simplified Select
 
 ```cpp
-// ch07/channel-csp/select_demo.cpp
-#include <thread>
-#include <chrono>
-#include <iostream>
-#include <vector>
-#include "channel.hpp"
+/// Channel operation type
+enum class ChannelOpType {
+    kSend,
+    kReceive
+};
 
-// Simplified Select: Polls all channels in a busy-wait loop
+/// A description of one channel operation
 template <typename T>
-std::optional<T> select_receive(std::vector<Channel<T, 1>&> channels) {
+struct ChannelOp {
+    Channel<T>* channel;
+    ChannelOpType type;
+    T send_value;            // Used only for kSend
+    std::optional<T> result; // Filled only for kReceive
+    bool completed{false};
+};
+
+/// A simplified select: wait on multiple channel operations at once
+/// Returns the index of the first operation to complete; blocks if no operation can complete
+///
+/// Usage example:
+///   Channel<int> ch1, ch2;
+///   auto ops = make_receive_ops(ch1, ch2);
+///   size_t idx = channel_select(ops);
+///   if (idx == 0) { /* ch1 has data */ auto val = ops[0].result; }
+///   if (idx == 1) { /* ch2 has data */ auto val = ops[1].result; }
+template <typename T>
+size_t channel_select(std::vector<ChannelOp<T>>& ops)
+{
+    // Poll repeatedly, trying to complete some operation
     while (true) {
-        for (auto& ch : channels) {
-            if (auto val = ch.try_receive()) { // Assuming try_receive exists
-                return val;
+        for (size_t i = 0; i < ops.size(); ++i) {
+            auto& op = ops[i];
+            if (op.completed) {
+                return i;
+            }
+
+            if (op.type == ChannelOpType::kReceive) {
+                auto result = op.channel->try_receive();
+                if (result.has_value()) {
+                    op.result = std::move(result);
+                    op.completed = true;
+                    return i;
+                }
+            }
+            else {
+                if (op.channel->try_send(op.send_value)) {
+                    op.completed = true;
+                    return i;
+                }
             }
         }
-        std::this_thread::yield(); // Avoid busy-waiting too aggressively
+
+        // No operation can complete immediately; briefly yield the timeslice and retry
+        // A real implementation should wait on a condition variable instead of busy-waiting
+        std::this_thread::yield();
     }
-    return std::nullopt;
 }
 
-// Note: This is a conceptual demonstration.
-// A real implementation would need a way to wait on multiple condition variables simultaneously.
+/// Helper: create a set of receive operations
+template <typename T, typename... Channels>
+std::vector<ChannelOp<T>> make_receive_ops(Channels&... channels)
+{
+    std::vector<ChannelOp<T>> ops;
+    (ops.push_back(ChannelOp<T>{
+        &channels, ChannelOpType::kReceive, T{}, std::nullopt, false
+    }), ...);
+    return ops;
+}
 ```
 
-> ⚠️ **Note**: This select implementation is highly simplified. It uses busy-waiting (`yield`) to poll all channels, which wastes CPU in high-frequency scenarios. Go's select uses complex runtime mechanisms internally; it puts goroutines to sleep while waiting and wakes them up precisely when channels are ready, and it guarantees random selection when multiple cases are ready at the same time to avoid starvation. To implement efficient select in C++, you would need to maintain a global poller or use system-level I/O multiplexing mechanisms like epoll/kqueue. But for understanding the semantics of select, this simplified version is sufficient.
+> ⚠️ **Note**: this select implementation is heavily simplified. It busy-waits (via `yield`) polling all the channels, which wastes CPU in high-frequency scenarios. Go's select uses a sophisticated runtime mechanism (`selectgo`) that puts goroutines to sleep while waiting and wakes them precisely when a channel is ready, and it guarantees a random choice among simultaneously ready cases to avoid starvation. An efficient select in C++ would require maintaining a global poller, or using system-level I/O multiplexing such as epoll/kqueue. But for understanding select's semantics, this simplified version is enough.
 
-## Practice 1: Producer-Consumer Pattern
+## Hands-On 1: The Producer-Consumer Pattern
 
-The producer-consumer pattern is the most classic application scenario for channels. We use a buffered channel to implement a multi-producer, multi-consumer pipeline.
+Producer-consumer is the most classic use case for channels. Let's use a buffered channel to build a pipeline with multiple producers and multiple consumers.
 
 ```cpp
-// ch07/channel-csp/producer_consumer.cpp
 #include "channel.hpp"
 #include <thread>
 #include <vector>
 #include <iostream>
+#include <chrono>
 
-void producer(Channel<int, 10>& ch, int id, int count) {
+void producer(Channel<int>& ch, int id, int count)
+{
     for (int i = 0; i < count; ++i) {
-        ch.send(id * 100 + i);
-        std::cout << "Producer " << id << " sent " << (id * 100 + i) << std::endl;
+        int value = id * 1000 + i;
+        ch.send(value);
+        std::cout << "[Producer " << id << "] 发送: "
+                  << value << "\n";
+
+        // Simulate production time
+        std::this_thread::sleep_for(
+            std::chrono::milliseconds(10 + id * 5)
+        );
     }
-    ch.close(); // Signal completion
 }
 
-void consumer(Channel<int, 10>& ch, int id) {
+void consumer(Channel<int>& ch, int id)
+{
     while (true) {
-        auto val = ch.receive();
-        if (!val) break; // Channel closed and empty
-        std::cout << "Consumer " << id << " got " << *val << std::endl;
+        auto value = ch.receive();
+        if (!value.has_value()) {
+            // Channel is closed and the buffer is empty
+            std::cout << "[Consumer " << id << "] 退出\n";
+            break;
+        }
+        std::cout << "[Consumer " << id << "] 接收: "
+                  << *value << "\n";
     }
 }
 
-int main() {
-    Channel<int, 10> ch;
-    std::thread p1(producer, std::ref(ch), 1, 5);
-    std::thread c1(consumer, std::ref(ch), 1);
+int main()
+{
+    // Create a channel with a buffer of capacity 5
+    Channel<int> ch(5);
 
-    p1.join();
-    c1.join();
+    // Start 2 producers and 3 consumers
+    std::vector<std::thread> threads;
+
+    threads.emplace_back(producer, std::ref(ch), 0, 10);
+    threads.emplace_back(producer, std::ref(ch), 1, 10);
+
+    threads.emplace_back(consumer, std::ref(ch), 0);
+    threads.emplace_back(consumer, std::ref(ch), 1);
+    threads.emplace_back(consumer, std::ref(ch), 2);
+
+    // Wait for the producers to finish
+    // Note: simplified here; a real scenario needs a better coordination mechanism
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    // Close the channel, telling the consumers to exit
+    ch.close();
+
+    for (auto& t : threads) {
+        if (t.joinable()) {
+            t.join();
+        }
+    }
+
     return 0;
 }
 ```
 
-This example is very straightforward: producers put data into the channel, consumers take data from the channel, and the channel's buffer acts as an elastic adjustment—when the producer is temporarily fast, data is stored in the buffer; when the consumer is temporarily fast, the buffer is consumed. When the buffer is full, the producer automatically blocks; when the buffer is empty, the consumer automatically blocks. No explicit locks or condition variables are needed—the channel manages it all for you.
+This example is completely straightforward: producers push data into the channel, consumers pull data out, and the channel's buffer acts as an elastic regulator—when producers run temporarily ahead, data piles up in the buffer; when consumers run temporarily ahead, the buffer drains. When the buffer is full, producers block automatically; when it is empty, consumers block automatically. No explicit locks or condition variables anywhere—the channel takes care of all of it for you.
 
-## Practice 2: Pipeline Pattern
+## Hands-On 2: The Pipeline Pattern
 
-Pipelines are another classic use of channels. The core idea of a pipeline is to split a complex data processing flow into multiple stages, where each stage is an independent goroutine (thread in C++), and stages are connected by channels.
+The pipeline is the other classic use of channels. The core idea is to split a complex data-processing flow into multiple stages, each stage an independent goroutine (a thread, in C++), with the stages connected by channels.
 
 ```cpp
-// ch07/channel-csp/pipeline.cpp
 #include "channel.hpp"
 #include <thread>
+#include <vector>
 #include <iostream>
+#include <chrono>
 
-// Stage 1: Generator
-void generator(Channel<int, 10>& out) {
-    for (int i = 1; i <= 5; ++i) {
-        out.send(i);
+/// Stage one: generate data
+void generator(Channel<int>& output, int count)
+{
+    for (int i = 1; i <= count; ++i) {
+        output.send(i);
+        std::cout << "[Generator] 产生: " << i << "\n";
     }
-    out.close();
+    output.close();
+    std::cout << "[Generator] 完成\n";
 }
 
-// Stage 2: Doubler
-void doubler(Channel<int, 10>& in, Channel<int, 10>& out) {
-    while (auto val = in.receive()) {
-        out.send(*val * 2);
+/// Stage two: square the values
+void squarer(Channel<int>& input, Channel<int>& output)
+{
+    while (true) {
+        auto value = input.receive();
+        if (!value.has_value()) {
+            break;
+        }
+        int squared = (*value) * (*value);
+        output.send(squared);
+        std::cout << "[Squarer] " << *value
+                  << " -> " << squared << "\n";
     }
-    out.close();
+    output.close();
+    std::cout << "[Squarer] 完成\n";
 }
 
-// Stage 3: Printer
-void printer(Channel<int, 10>& in) {
-    while (auto val = in.receive()) {
-        std::cout << "Result: " << *val << std::endl;
+/// Stage three: print the results
+void printer(Channel<int>& input)
+{
+    while (true) {
+        auto value = input.receive();
+        if (!value.has_value()) {
+            break;
+        }
+        std::cout << "[Printer] 结果: " << *value << "\n";
     }
+    std::cout << "[Printer] 完成\n";
 }
 
-int main() {
-    Channel<int, 10> ch1, ch2;
+int main()
+{
+    // Create the channels connecting the stages
+    Channel<int> gen_to_square(3);   // generator -> squarer
+    Channel<int> square_to_print(3); // squarer -> printer
 
-    std::thread t1(generator, std::ref(ch1));
-    std::thread t2(doubler, std::ref(ch1), std::ref(ch2));
-    std::thread t3(printer, std::ref(ch2));
+    // Start the stages of the pipeline
+    std::thread t1(generator, std::ref(gen_to_square), 8);
+    std::thread t2(squarer,
+                   std::ref(gen_to_square),
+                   std::ref(square_to_print));
+    std::thread t3(printer, std::ref(square_to_print));
 
-    t1.join(); t2.join(); t3.join();
+    t1.join();
+    t2.join();
+    t3.join();
+
+    // Expected output:
+    // [Generator] 产生: 1
+    // [Squarer] 1 -> 1
+    // [Printer] 结果: 1
+    // [Generator] 产生: 2
+    // [Squarer] 2 -> 4
+    // [Printer] 结果: 4
+    // ...
+    // [Generator] 产生: 8
+    // [Squarer] 8 -> 64
+    // [Printer] 结果: 64
+
     return 0;
 }
 ```
 
-The beauty of the pipeline pattern is that each stage is independent—it only needs to care about reading data from the input channel and writing data to the output channel, without knowing the source or destination of the data. This means you can freely insert, delete, or reorder stages without affecting the code of other stages.
+The beauty of the pipeline pattern is that every stage is independent—it only cares about reading from its input channel and writing to its output channel, never about where the data came from or where it is going. That means you can freely insert, remove, or reorder stages without affecting the code of the other stages.
 
-The Go blog has a classic example of implementing concurrent MD5 hash calculation using pipelines—each file goes through three stages: read, compute, summarize, and all stages run in parallel. If you have written shell pipelines (like `ps aux | grep nginx | wc -l`), you already understand the core idea of a pipeline—except here we apply it to concurrent programming in C++.
+A classic example from the Go blog implements concurrent MD5 hashing with a pipeline—each file flows through three stages (read, hash, summarize), all running in parallel. If you have ever written a shell pipeline (say `cat file | grep pattern | sort | uniq -c`), you already understand the core idea of pipelines—we are just applying it to concurrent programming in C++.
 
-## The Relationship Between Channels and mutex/condition_variable
+## How Channels Relate to mutex/condition_variable
 
-Now that we have implemented and used channels, let's answer a question you may have wanted to ask for a while: what exactly is at the bottom of a channel?
+Now that we have implemented and used channels, let's answer a question you may have been itching to ask: what is a channel, underneath?
 
-The answer is simple: **the bottom of a channel is just mutex + condition_variable + queue**. There is no magic.
+The answer is simple: **under the hood, a channel is just mutex + condition_variable + a queue**. There is no magic.
 
-In our `BufferedChannel`, `mtx_` protects the `buffer_` queue, and `not_full_` and `not_empty_` notify "slot available" and "data available" respectively. This is exactly the same as the producer-consumer pattern discussed in ch02. `UnbufferedChannel` is slightly more complex, but the core is still mutex + condition_variable, only the transmission model changes from "put in queue" to "direct handoff".
+In our `BufferedChannel`, `mutex_` protects the `buffer_` queue, while `not_full_cv_` and `not_empty_cv_` announce "there is a free slot" and "there is data" respectively. This is exactly the producer-consumer model we covered in ch02. `UnbufferedChannel` is a bit more complicated, but its core is still mutex + condition_variable—only the transfer model changes from "put it in a queue" to "hand it over directly".
 
-So the question arises: since channels are just locks at the bottom, why use channels?
+So the question arises: since a channel is a lock underneath, why use channels at all?
 
-The answer is **abstraction level**. `mutex` and `condition_variable` are low-level primitives, while channels are high-level abstractions. Low-level primitives are flexible but error-prone—you need to manage lock acquisition and release, condition variable waiting and notification, and state checking and protection yourself. High-level abstractions limit your freedom but guarantee correctness—the channel interface design ensures you won't forget to unlock, won't forget to notify, and won't write the wrong wait condition.
+The answer is **the level of abstraction**. mutex and condition_variable are low-level primitives; a channel is a high-level abstraction. Low-level primitives are flexible but error-prone—you have to manage lock acquisition and release yourself, condition-variable waits and notifications yourself, and state checks and protection yourself. A high-level abstraction limits your freedom in exchange for correctness guarantees—a channel's interface design ensures you cannot forget to unlock, forget to notify, or write the wrong wait condition.
 
-### Selection Guide
+### A Selection Guide
 
-When to use channels, and when to use mutex/condition_variable directly? Honestly, there is no standard answer to this question, but there is a rough criterion you can refer to.
+When should you use a channel, and when should you go straight to mutex/condition_variable? Honestly, there is no standard answer, but there is a rough criterion you can consult.
 
-If your concurrency model is essentially "data flowing between producers and consumers"—such as pipelines, work queues, event dispatch, log collection—then the semantics of channel (send, receive, close) match these scenarios perfectly. Additionally, when your system needs a large number of concurrent entities (goroutines/threads) and their interaction is mainly point-to-point message passing, channels are more suitable than locks.
+If your concurrency model is fundamentally about "data flowing between producers and consumers"—pipelines, work queues, event dispatch, log collection—then channel semantics (send, receive, close) match those scenarios exactly. Also, when your system needs many concurrent entities (goroutines/threads) whose interactions are mostly point-to-point message passing, a channel fits better than a lock.
 
-Conversely, if what you need to protect is a small piece of shared data, rather than "passing data between entities"—such as a shared counter, a cache table, a configuration object—using a channel is clumsy. To update a counter, you would have to create a channel, a handler thread, and a set of message protocols, which is completely not worth the gain. Also, when you need very fine-grained performance control (e.g., on a hot path), using atomics or spinlocks directly may have much lower overhead than channels.
+Conversely, if what you need is to protect a small piece of shared data rather than "passing data between entities"—say a shared counter, a cache table, or a configuration object—then a channel is simply clumsy. To update a counter you would have to create a channel, a handler thread, and a message protocol—nowhere near worth it. Furthermore, when you need very fine-grained performance control (on a hot path, say), using an atomic or a spinlock directly can be far cheaper than a channel.
 
-A practical rule of thumb: if you find yourself using a channel to simulate a lock (e.g., using a channel to serialize access to a resource), you should just use a lock. Channels solve the problem of "data flowing between entities," not "protecting shared state." With the right tool, the code will be clean.
+A practical rule of thumb: if you catch yourself using a channel to imitate a lock (for example, serializing access to some resource through a channel), you should just use a lock. Channels solve the "data flows between entities" problem, not the "protect shared state" problem. The right tool makes for clean code.
 
 ## The CSP Ecosystem in C++
 
-Although there is no channel in the C++ standard library, there are some mature libraries in the community that provide similar functionality:
+Although the C++ standard library has no channel, the community offers several mature libraries with comparable functionality:
 
-- **Boost.Asio**'s `experimental::channel`: Boost is experimentally introducing channels with an API style close to Go's channels, but integrated with Asio's executor model.
-- **cppcoro** (Lewis Baker): Although mainly a coroutine library, it provides `generator` and `async_generator` which can be used to build channel semantics.
-- **Folly** (Facebook/Meta): `folly::ProducerConsumerQueue` provides high-performance single-producer single-consumer lock-free queues, which can be used as the underlying layer for channels.
-- **moodycamel::ConcurrentQueue**: A high-performance multi-producer multi-consumer lock-free queue, used as the underlying layer for many high-performance channel implementations.
+- **Boost.Asio**'s `experimental::channel`: Boost is experimentally introducing channels; the API style is close to Go's channel but integrated with Asio's executor model.
+- **cppcoro** (Lewis Baker): primarily a coroutine library, but its `single_consumer_async_queue` and `static_thread_pool` can be used to build channel semantics.
+- **Folly** (Facebook/Meta): `folly/ProducerConsumerQueue.h` provides a high-performance single-producer single-consumer lock-free queue that can serve as the foundation of a channel.
+- **moodycamel::ConcurrentQueue**: a high-performance multi-producer multi-consumer lock-free queue that underlies many high-performance channel implementations.
 
-If you need channels in a serious project, it is recommended to prioritize Boost.Asio's experimental channel or a wrapper based on moodycamel, rather than implementing from scratch like we did—our implementation focuses on educational purposes, and there is still a lot of room for optimization in terms of performance and fairness in high-concurrency scenarios.
+If you need channels in a serious project, prefer Boost.Asio's experimental channels or a wrapper based on moodycamel rather than building your own from scratch like we did—our implementation is geared toward teaching, and there is plenty left to optimize for performance and fairness under high concurrency.
 
-## Our Position
+## Where We Are
 
-In this article, starting from the theory of CSP, we learned about its core differences from the Actor model—anonymous channels vs. stateful Actors, synchronous communication vs. asynchronous communication, algebraic composition vs. message protocols. We then implemented a complete channel class in C++, including unbuffered and buffered modes, close semantics, try_send/try_receive, and a simplified version of select. Finally, through two practical cases of producer-consumer and pipeline, we demonstrated the use of channels and discussed the selection criteria between channels and mutex/condition_variable.
+In this article we started from CSP's theory and examined its core differences from the Actor model—anonymous channels versus identifiable Actors, synchronous versus asynchronous communication, algebraic composition versus message protocols. Then we implemented a complete channel class in C++, covering unbuffered and buffered modes, close semantics, try_send/try_receive, and a simplified select. Finally, two hands-on examples—producer-consumer and pipeline—showed channels in action, and we worked out criteria for choosing between channels and mutex/condition_variable.
 
-This concludes the two articles on ch07. We spent two articles exploring the "don't share memory" concurrency paradigm—the Actor model and the CSP model. They both pursue the same goal: eliminating the complexity brought by shared state, but they take different paths. Actor uses identity and mailboxes to decouple, CSP uses anonymous channels to decouple. In actual engineering, these two models are often mixed—for example, within an Actor system, communication between Actors might be implemented through channels.
+With this, the two articles of ch07 are complete. We spent two articles exploring concurrency paradigms that refuse to share memory—the Actor model and the CSP model. Both pursue the same goal: eliminating the complexity that shared state brings, but by different roads. Actors decouple through identity and mailboxes; CSP decouples through anonymous channels. In real-world engineering, the two models are often mixed—for example, inside an Actor system, communication between Actors may well be implemented over channels.
 
-In the next article, we will enter the last major topic of Volume 5: debugging, testing, and performance optimization—when your concurrent program has problems, how to locate and fix them. From theory to practice, from implementation to troubleshooting, this is the closed loop of our entire concurrency journey.
+From the next article on, we enter the final big topic of Volume 5: debugging, testing, and performance optimization—when your concurrent program goes wrong, how do you locate and fix the problem? From theory to practice, from implementation to troubleshooting—this closes the loop of our entire concurrency journey.
 
-> 💡 Complete example code is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), visit `ch07/channel-csp`.
+> 💡 The complete example code is in [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP); see `code/volumn_codes/vol5/ch07-actor-channel/`.
 
 ## References
 
-- [Communicating Sequential Processes — Hoare, 1978 (CACM)](https://dl.acm.org/doi/10.1145/359576.359585) — The original CSP paper
-- [Communicating Sequential Processes — Hoare, 1985 (Book)](https://usingcsp.com/cspbook.pdf) — The complete CSP monograph, free online version
-- [CSP — Wikipedia](https://en.wikipedia.org/wiki/Communicating_sequential_processes) — Detailed history and theoretical introduction of CSP
-- [Go Channel Types Specification](https://go.dev/ref/spec#Channel_types) — Official semantic definition of Go channels
-- [Go Concurrency Patterns: Pipelines and cancellation (Go Blog)](https://go.dev/blog/pipelines) — Pipeline pattern tutorial from the official Go blog
+- [Communicating Sequential Processes — Hoare, 1978 (CACM)](https://dl.acm.org/doi/10.1145/359576.359585) — the original CSP paper
+- [Communicating Sequential Processes — Hoare, 1985 (Book)](https://usingcsp.com/cspbook.pdf) — the complete CSP monograph, free online
+- [CSP — Wikipedia](https://en.wikipedia.org/wiki/Communicating_sequential_processes) — a detailed history and theoretical introduction to CSP
+- [Go Channel Types Specification](https://go.dev/ref/spec#Channel_types) — the official semantics of Go's channels
+- [Go Concurrency Patterns: Pipelines and cancellation (Go Blog)](https://go.dev/blog/pipelines) — the Go blog's tutorial on the pipeline pattern
 - [Share Memory By Communicating (Go Blog)](https://go.dev/blog/codelab-share) — Go's exposition of the CSP philosophy
-- [Boost.Asio Experimental Channel](https://www.boost.org/doc/libs/release/doc/html/boost_asio/overview/composition/channel.html) — Channel implementation in the C++ ecosystem that is being standardized
+- [Boost.Asio Experimental Channel](https://www.boost.org/doc/libs/release/doc/html/boost_asio/overview/composition/channel.html) — a channel implementation on its way to standardization in the C++ ecosystem

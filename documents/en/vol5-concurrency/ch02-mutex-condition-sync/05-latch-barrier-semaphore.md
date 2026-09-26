@@ -2,17 +2,17 @@
 chapter: 2
 cpp_standard:
 - 20
-description: 'C++20 Synchronization Primitives: Single/Multi-use Barriers and Counting
-  Semaphores, Scenario Selection, and Engineering Patterns'
+description: 'C++20 synchronization primitives: single-use and reusable barriers plus
+  counting semaphores—scenario selection and engineering patterns'
 difficulty: advanced
 order: 5
 platform: host
 prerequisites:
-- condition_variable 与等待语义
+- condition_variable and Wait Semantics
 reading_time_minutes: 19
 related:
-- atomic 操作
-- 线程池设计
+- Atomic Operations
+- Thread Pool Design
 tags:
 - host
 - cpp-modern
@@ -22,191 +22,25 @@ title: latch, barrier, and semaphore
 translation:
   source: documents/vol5-concurrency/ch02-mutex-condition-sync/05-latch-barrier-semaphore.md
   source_hash: 38d2d56a4511e46d56c4fc5e7ea62990b6d857e05d540fa67159069b40481b5c
-  translated_at: '2026-06-24T01:07:31.745667+00:00'
+  translated_at: '2026-09-26T07:15:55+00:00'
   engine: anthropic
-  token_count: 3929
+  token_count: 12500
 ---
-# Latches, Barriers, and Semaphores
+# latch, barrier, and semaphore
 
-In the previous post, we dissected the wait-notify mechanism of `condition_variable`—spurious wakeups, lost wakeups, and predicate-based `wait`. With this foundation, we can now tackle a more practical problem: often, we don't need the generic "wait until a condition is met" semantics. Instead, we just need "wait until everyone arrives" or "limit the number of threads accessing a resource simultaneously." These two requirements correspond to **barrier** and **semaphore** synchronization patterns, respectively. C++20 finally brought these concepts into the standard library as `std::latch`, `std::barrier`, and `std::counting_semaphore`.
+In the previous article we took apart the wait-notify machinery of `condition_variable`—spurious wakeups, lost wakeups, and the predicate-taking `wait`. With that foundation in place, we can now face a more practical question: very often we don't need the general-purpose wait semantics of "continue only once some condition holds"; we just need "wait until everyone has arrived, then continue" or "limit how many threads can access a resource at the same time". These two needs correspond to the **barrier** and the **semaphore** synchronization patterns, and C++20 finally brought both concepts into the standard library as `std::latch`, `std::barrier`, and `std::counting_semaphore`.
 
-Honestly, before this, we could only simulate these patterns using mutex + condition_variable + a manual counter—code that was verbose, error-prone, and required rewriting every time. The introduction of these three primitives in C++20 essentially standardizes these high-frequency patterns. However, to use them effectively, we need to understand the semantic boundaries and applicable scenarios of each primitive, rather than using a hammer to hit every nail.
+To be honest, before this our only option was to emulate these patterns with a mutex plus a condition_variable plus a hand-rolled counter—verbose code, easy to get wrong, and something you had to rewrite from scratch every time. The introduction of these three primitives in C++20 is, in essence, the standardization of these high-frequency patterns. But to use them well, we need to be clear about each primitive's semantic boundaries and the scenarios it fits, rather than grabbing a hammer and pounding every nail with it.
 
-## `std::latch`: One-Use Countdown Barrier
+## std::latch: A Single-Use Countdown Barrier
 
-`std::latch` is defined in the `<latch>` header. It is a **single-directional decrementing counter**. You can imagine it as a door with a latch bolt; the bolt's strength is determined by the initial count. Each time a thread executes `count_down()`, the bolt loosens by one notch; when the count reaches zero, the door opens, and all threads blocked on `wait()` may proceed. The key characteristic is: **a latch is single-use**—once the count reaches zero, it remains "open" forever and cannot be reset.
+`std::latch` is defined in the `<latch>` header; it is a **one-way decrementing counter**. You can picture it as a door with a latch on it, and the strength of that latch is set by the initial count. Every time a thread calls `count_down()`, the latch loosens by one notch; when the count reaches zero, the door opens and every thread blocked on `wait()` may pass through. The key property: **a latch is single-use**—once the count hits zero, it stays "open" forever and cannot be reset.
 
-The API for `std::latch` is very concise: the constructor takes an initial count value `expected` (of type `std::ptrdiff_t`); `count_down(n = 1)` decrements the count by n (non-blocking); `wait()` blocks the current thread until the count reaches zero; `arrive_and_wait(n = 1)` is an atomic combination of `count_down(n)` and `wait()`—the current thread contributes a decrement and then waits for the count to reach zero; `try_wait()` is a non-blocking check that returns `true` when the counter reaches zero (note: it allows for a very low probability of spuriously returning `false`). Let's understand its usage through a concrete scenario.
+The `std::latch` API is remarkably lean: the constructor takes the initial count `expected` (of type `std::ptrdiff_t`); `count_down(n = 1)` subtracts n from the count (without blocking); `wait()` blocks the calling thread until the count reaches zero; `arrive_and_wait(n = 1)` is the atomic combination of `count_down(n)` and `wait()`—the calling thread both contributes a decrement and waits for the count to hit zero; and `try_wait()` is the non-blocking check—it returns `true` when the counter has reached zero (note: it is permitted to spuriously return `false` with very low probability). Let's work through a concrete scenario to understand how it is used.
 
 ### Pattern: One-Time Initialization
 
-Suppose our program needs to initialize three subsystems at startup—logging, configuration, and network connection. Each subsystem is handled by an independent thread, and the main thread must wait until all subsystems are ready before starting the business logic. This is a typical one-time synchronization scenario:
-
-```cpp
-#include <latch>
-#include <thread>
-#include <vector>
-#include <iostream>
-
-int main() {
-    // We have 3 subsystems to initialize, plus the main thread needs to wait.
-    // So the initial count is 3.
-    std::latch init_done{3};
-
-    // Lambda to simulate subsystem initialization
-    auto init_task = [&](const std::string& name) {
-        std::cout << "[" << name << "] Initializing..." << std::endl;
-        // ... Perform initialization work ...
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        std::cout << "[" << name << "] Ready." << std::endl;
-
-        // Signal completion
-        init_done.count_down();
-    };
-
-    std::vector<std::jthread> threads;
-    threads.emplace_back(init_task, "Logger");
-    threads.emplace_back(init_task, "Config");
-    threads.emplace_back(init_task, "Network");
-
-    // Main thread waits here.
-    // Even if main finishes "instantly", it will block until count reaches 0.
-    init_done.wait();
-
-    std::cout << "All subsystems initialized. Starting main logic..." << std::endl;
-
-    // Threads are joined automatically by std::jthread destructor
-    return 0;
-}
-```
-
-In this example, the `std::latch` acts as a synchronization point. The main thread calls `wait()` to enter a waiting state. The three worker threads call `count_down()` after completing their tasks. Once the counter hits zero, the main thread wakes up and proceeds. Note that `std::latch` is not a "gate" that closes again; if we tried to wait on it a second time, we would return immediately because the counter is already zero.
-
-## `std::barrier`: Reusable Synchronization Point
-
-If `std::latch` is a disposable gate, then `std::barrier` is a turnstile that can be used repeatedly. It is defined in `<barrier>`. Its core use case is **iterative parallel computation**: multiple threads perform a task in stages, and they must all finish stage N before any thread can start stage N+1.
-
-Unlike a latch, a barrier has a **phase completion phase**. When the expected number of threads arrive (i.e., the counter reaches zero), the "completion phase" is executed. By default, this does nothing, but we can customize it. Crucially, **the counter is automatically reset** after completion, ready for the next round.
-
-The API is slightly more complex: the constructor takes `expected` (count) and an optional `CompletionFunction` object. `arrive_and_wait()` decrements the count and blocks until the phase completes (resetting the counter for the next phase).
-
-Let's look at a classic example: iterative data processing.
-
-### Pattern: Iterative Parallel Processing
-
-Imagine we have a large dataset. We split it into chunks, each processed by a thread. However, each iteration depends on the results of the previous iteration (for example, a specific smoothing algorithm). We need to ensure all threads finish the current iteration before anyone starts the next one.
-
-```cpp
-#include <barrier>
-#include <vector>
-#include <thread>
-#include <iostream>
-#include <numeric>
-
-// Data to be processed
-std::vector<int> data(1000, 0);
-
-int main() {
-    const int num_threads = 4;
-    const int iterations = 5;
-
-    // Define a completion function: runs when all threads arrive for each iteration
-    auto on_barrier_completion = []() noexcept {
-        // This runs exactly once per iteration, by one of the threads
-        std::cout << "Iteration complete. Swapping buffers..." << std::endl;
-        // In a real app, we might swap double buffers here or update global stats
-    };
-
-    // The barrier expects 4 threads
-    std::barrier sync_point(num_threads, on_barrier_completion);
-
-    std::vector<std::jthread> workers;
-
-    auto worker = [&](int id) {
-        for (int i = 0; i < iterations; ++i) {
-            // 1. Do the work for this iteration
-            // (Simulated: just increment some values)
-            std::cout << "Thread " << id << " working on iteration " << i << std::endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(10 * id));
-
-            // 2. Wait for everyone to finish this iteration
-            // This decrements the counter. If we are the last to arrive,
-            // on_barrier_completion runs, counter resets, and everyone wakes up.
-            sync_point.arrive_and_wait();
-        }
-    };
-
-    for (int i = 0; i < num_threads; ++i) {
-        workers.emplace_back(worker, i);
-    }
-}
-```
-
-**Key Difference:** `std::latch` is for "one-shot" events (like startup or shutdown). `std::barrier` is for "looping" or "phased" collaboration. If you try to reuse a `std::latch`, it won't work because it stays open. `std::barrier` automatically resets.
-
-## `std::counting_semaphore`: Resource Limiter
-
-`std::counting_semaphore` (defined in `<semaphore>`) is the most flexible of the three, but also the most prone to misuse if you don't understand its model. It maintains an internal counter (initially non-negative). Unlike `latch` and `barrier`, its counter can go up and down.
-
-- **`acquire()` (or `wait()` in older terms):** Decrements the counter. If the counter is zero, it blocks until it becomes positive.
-- **`release(n = 1)`:** Increments the counter by n. If threads are waiting, this wakes them up.
-
-This is essentially the classic **Dijkstra semaphore**. In C++, we use it primarily to **limit concurrency** (e.g., "Only 3 threads can access this database connection at a time").
-
-### Pattern: Bounded Concurrency (Pool)
-
-Let's say we have a task queue with 100 tasks, but we only want 5 threads executing them simultaneously to avoid exhausting memory or CPU.
-
-```cpp
-#include <semaphore>
-#include <thread>
-#include <vector>
-#include <iostream>
-#include <chrono>
-
-// Limit concurrency to 3 threads
-std::counting_semaphore<3> signal(3); // Max count is 3 (template parameter), initial value 3
-
-void worker(int id) {
-    // Attempt to acquire a "slot". If 3 threads are already here, we block.
-    signal.acquire();
-
-    std::cout << "Thread " << id << " is running." << std::endl;
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    std::cout << "Thread " << id << " is done." << std::endl;
-
-    // Release the slot for the next thread
-    signal.release();
-}
-
-int main() {
-    std::vector<std::jthread> threads;
-    // Launch 10 threads, but only 3 will run at a time
-    for (int i = 0; i < 10; ++i) {
-        threads.emplace_back(worker, i);
-    }
-}
-```
-
-### Why not just use `std::mutex`?
-
-A mutex allows **only one** thread at a time (binary semaphore). A `counting_semaphore` allows **N** threads. If you have a pool of 5 database connections, you initialize a semaphore with 5. `acquire()` takes a connection, `release()` puts it back.
-
-## Summary: Which One to Use?
-
-| Primitive | Counter Behavior | Reusable? | Primary Use Case |
-| :--- | :--- | :--- | :--- |
-| **`std::latch`** | Decrements only | No | One-time coordination (e.g., startup, shutdown). |
-| **`std::barrier`** | Decrements, then auto-resets | Yes | Repeated phased synchronization (e.g., time-step simulations). |
-| **`std::counting_semaphore`** | Increments & Decrements | Yes | Managing limited resources (e.g., thread pools, connection pools). |
-
-### Common Pitfalls
-
-1. **Don't forget to `release()`:** If you use a semaphore and an exception occurs before `release()`, you have a "leaked" semaphore slot, effectively reducing your pool size (similar to a mutex leak). Use RAII wrappers or `try/finally` logic (or C++ code flow control) to ensure this doesn't happen.
-2. **Barrier Completion Function:** The completion function in `std::barrier` runs in the context of the thread that caused the counter to reach zero. Make sure this function is thread-safe and fast, as it blocks all other threads waiting on the barrier.
-3. **Spurious Wakeups:** While `latch` and `barrier` are less prone to the classic spurious wakeups of condition variables (in terms of logic), `try_wait()` on a latch can still return false spuriously, and semaphores deal with OS-level scheduling which can have its own quirks. Always use the blocking `wait()`/`acquire()` methods for logic correctness unless you have a specific polling loop.
-
-By using these C++20 primitives, we avoid the "reinvent the wheel" syndrome of manual counters and condition variables, leading to cleaner, more declarative, and less error-prone multithreaded code.
+Suppose our program needs to initialize three subsystems at startup—logging, configuration, and network connectivity—each handled by a dedicated thread, while the main thread must wait until all subsystems are ready before starting the business logic. This is a classic one-shot synchronization scenario:
 
 ```cpp
 #include <latch>
@@ -262,32 +96,32 @@ int main()
 }
 ```
 
-Here, each initialization thread calls `init_done.count_down()` after completing its task, while the main thread calls `init_done.wait()` to block and wait. Once all three `count_down` calls have finished, the main thread wakes up and continues execution. Note that the worker threads call `count_down()` instead of `arrive_and_wait()`—because they don't need to wait for the others; they can exit once their work is done. Only the main thread needs to wait.
+Here each initialization thread calls `init_done.count_down()` after finishing its own task, and the main thread calls `init_done.wait()` to block. Once all three `count_down`s have executed, the main thread wakes up and continues. Note that the worker threads call `count_down()`, not `arrive_and_wait()`—the workers have no one to wait for; once they finish their own work they can exit, and only the main thread needs to wait.
 
-If the worker threads also want to "finish their part and then wait for everyone to continue together," we use `arrive_and_wait()`:
+If a worker thread also wants to "finish my part, then have everyone continue together", that's what `arrive_and_wait()` is for:
 
 ```cpp
 void worker(int id, std::latch& sync)
 {
     std::cout << "Worker " << id << " phase 1 done\n";
-    sync.arrive_and_wait();  // 贡献一个递减，同时等待计数归零
+    sync.arrive_and_wait();  // contribute one decrement and wait for the count to reach zero
     std::cout << "Worker " << id << " phase 2 starts\n";
 }
 ```
 
-The semantics of `arrive_and_wait()` constitute an atomic "decrement + wait"—the calling thread blocks itself until the count reaches zero. Internally, this is equivalent to `count_down(); wait();`, but the standard guarantees the atomicity of these two steps. This means that no other thread can reduce the count to zero between the "decrement" and "wait" operations, causing a waiter to miss the wake-up signal.
+The semantics of `arrive_and_wait()` are an atomic "decrement + wait"—the thread that calls it gets blocked too, until the count reaches zero. Internally it is equivalent to `count_down(); wait();`, but the standard guarantees the atomicity of these two steps. That means no other thread can sneak in between the "decrement" and the "wait", drive the count to zero, and cause the waiter to miss a wakeup.
 
-There is an easily overlooked detail: the parameter for `count_down` can be greater than one. For example, if a thread is responsible for completing three tasks, it can call `count_down(3)` in one go. If the passed value causes the count to become negative, the behavior is undefined—so the caller must ensure the count is not decremented too far.
+There is an easily overlooked detail: the argument to `count_down` can be greater than 1. For instance, a thread in charge of three tasks can call `count_down(3)` once. If the value passed would drive the count negative, the behavior is undefined—so the caller must guarantee the count is never over-decremented.
 
 ## std::barrier: Reusable Phase Synchronization
 
-`std::latch` solves the problem of "waiting for everyone to arrive" exactly once, but many parallel algorithms require **repeated synchronization**—for example, in iterative computations, every round of iteration requires all threads to complete the current step before proceeding to the next. Using a latch would mean creating a new latch object for every iteration, which is both wasteful and inelegant. `std::barrier` is designed for this: it is a **reusable** synchronization barrier. Once all participating threads arrive at the barrier point, the barrier automatically resets and can be used for the next round of synchronization.
+`std::latch` solves the "one-shot wait for everyone to arrive" problem, but many parallel algorithms need to **synchronize repeatedly**—in an iterative computation, for example, every round requires all threads to finish the current step before moving on to the next. With a latch, you would have to create a fresh latch object for every round, which is both wasteful and inelegant. `std::barrier` was designed for exactly this: it is a **reusable** synchronization barrier—every time all participating threads reach the barrier point, the barrier resets itself automatically and is ready for the next round.
 
-`std::barrier` is defined in the `<barrier>` header file. It is a class template `std::barrier<CompletionFunction>`, where `CompletionFunction` defaults to an empty function. The constructor takes the number of participating threads (and an optional completion function). The core API consists of three functions: `arrive()` notifies the barrier "I'm here" without blocking; `arrive_and_wait()` notifies and blocks until all threads have arrived; `arrive_and_drop()` notifies and permanently reduces the number of participating threads (useful for scenarios where participants are dynamically removed).
+`std::barrier` is defined in the `<barrier>` header. It is a class template, `std::barrier<CompletionFunction>`, where `CompletionFunction` defaults to an empty function. The constructor takes the number of participating threads (plus an optional completion function). There are three core API calls: `arrive()` tells the barrier "I'm here" without blocking; `arrive_and_wait()` notifies and blocks until all threads have arrived; `arrive_and_drop()` notifies and permanently reduces the participant count (for scenarios where participants shrink dynamically).
 
 ### Basic Usage: Multi-Phase Parallel Computation
 
-Let's look at a simple multi-phase parallel computation scenario. Suppose we have four worker threads, and each thread needs to execute three phases sequentially, requiring synchronization among all threads between each phase:
+Let's start with a simple multi-phase parallel computation. Suppose we have 4 worker threads, each of which must execute three phases in sequence, with every phase boundary requiring all threads to synchronize:
 
 ```cpp
 #include <barrier>
@@ -303,11 +137,11 @@ int main()
 
     auto worker = [&sync_point](int id) {
         for (int phase = 1; phase <= 3; ++phase) {
-            // 每个线程独立完成当前阶段的工作
+            // each thread independently finishes the current phase's work
             std::osyncstream(std::cout)
                 << "Thread " << id << " phase " << phase << " working\n";
 
-            // 到达屏障，等待其他线程
+            // arrive at the barrier and wait for the other threads
             sync_point.arrive_and_wait();
 
             std::osyncstream(std::cout)
@@ -326,11 +160,11 @@ int main()
 }
 ```
 
-The key to this code lies in each thread calling `arrive_and_wait()` after completing a phase. When all four threads have invoked `arrive_and_wait()`, the barrier "opens"—releasing all threads simultaneously to proceed to the next phase. The barrier automatically resets to its initial count, ready for the next round. We can see that the entire process requires no extra `mutex` or `condition_variable`; the barrier handles all waiting and wake-up logic internally.
+The key to this code: each thread calls `arrive_and_wait()` after finishing a phase. When all 4 threads have called `arrive_and_wait()`, the barrier "opens"—all threads are released simultaneously and move on to the next phase. The barrier automatically resets to the initial count and waits for the next round. Notice that the whole process needs no extra mutex or condition_variable—the barrier internally handles all the waiting and wakeup logic.
 
-### Completion Function: Centralized Processing Between Phases
+### The Completion Function: Centralized Processing Between Phases
 
-`std::barrier` possesses a powerful but lesser-known feature—the **completion function**. When all participating threads arrive at the barrier, it executes this completion function within the context of one of the arriving threads before releasing them. This mechanism is ideal for "reduction" operations: each thread calculates a partial result independently, and when all threads arrive, the completion function aggregates these partial results.
+`std::barrier` has a powerful but little-known feature—the **completion function**. When all participating threads have arrived at the barrier, the barrier runs this completion function, in the context of one of the arriving threads, before releasing them. This mechanism is a perfect fit for reductions: each thread computes a partial result independently, and when all threads arrive at the barrier, the completion function aggregates those partial results.
 
 ```cpp
 #include <barrier>
@@ -351,11 +185,11 @@ int main()
         data[i] = i + 1;
     }
 
-    // 每个线程的部分和
+    // each thread's partial sum
     std::array<long long, kNumThreads> partial_sums{};
     long long total_sum = 0;
 
-    // 完成函数：在所有线程到达后，汇总部分和
+    // completion function: after all threads arrive, aggregate the partial sums
     auto on_completion = [&]() noexcept {
         total_sum = std::accumulate(partial_sums.begin(),
                                      partial_sums.end(), 0LL);
@@ -367,17 +201,17 @@ int main()
         int start = id * kChunkSize;
         int end = start + kChunkSize;
 
-        // 阶段 1：每个线程计算自己那部分的和
+        // phase 1: each thread computes the sum of its own chunk
         long long local_sum = 0;
         for (int i = start; i < end; ++i) {
             local_sum += data[i];
         }
         partial_sums[id] = local_sum;
 
-        // 同步并触发完成函数汇总
+        // synchronize and trigger the completion function's aggregation
         sync_point.arrive_and_wait();
 
-        // 阶段 2：所有线程都能看到 total_sum
+        // phase 2: every thread can see total_sum
         std::osyncstream(std::cout)
             << "Thread " << id << ": total_sum = " << total_sum << "\n";
     };
@@ -393,27 +227,27 @@ int main()
 }
 ```
 
-Here, we define an `on_completion` lambda as the completion function for the barrier. Once all threads arrive at the barrier, the barrier invokes this function to accumulate the partial sums from `partial_sums` into `total_sum`. The threads are only released after the completion function finishes executing. This means that threads can safely read `total_sum` after `arrive_and_wait()` returns, as the completion function has already completed.
+Here we defined an `on_completion` lambda as the barrier's completion function. Once all threads have arrived at the barrier, the barrier calls this function, accumulating the partial sums from `partial_sums` into `total_sum`. Only after the completion function finishes are all threads released—which means a thread can safely read `total_sum` after `arrive_and_wait()` returns, because the completion function has already run.
 
-There are several constraints to keep in mind for the completion function. First, it must be `noexcept`. Since the barrier executes it before releasing threads, if it throws an exception, the entire program will call `std::terminate()`. Second, the completion function executes in the context of "one of the arriving threads" (specifically which thread is implementation-defined), so it should not perform blocking or time-consuming operations. Finally, accessing shared state within the completion function does not require additional locking, because other threads remain blocked on the barrier while the completion function runs, preventing concurrent access.
+A few constraints on the completion function deserve attention. First, it must be `noexcept`—the barrier runs it before releasing the threads, and if it throws, the whole program calls `std::terminate()`. Second, the completion function runs in the context of "one of the arriving threads" (exactly which one is implementation-defined), so it should not perform blocking or time-consuming operations. Finally, accesses to shared state inside the completion function need no extra locking—while the completion function runs, every other thread is still blocked on the barrier, so there is no concurrent access.
 
 ### arrive() and arrive_and_drop()
 
-`arrive()` is the "check-in without waiting" version—a thread notifies the barrier "I'm here" and returns immediately without blocking. This fits scenarios where "producers simply arrive, and consumers handle the waiting." Note that `arrive()` returns an `arrival_token`. Currently, this token has no practical use in the standard (it is reserved for future extensions), but you must still ensure that every `arrive()` call corresponds to a participating thread.
+`arrive()` is the "check in without waiting" variant—the thread tells the barrier "I'm here" and immediately returns, without blocking. This fits scenarios shaped like "producers just arrive, consumers do the waiting". Note, though, that `arrive()` returns an `arrival_token`, and this token currently has no practical use in the standard (it is reserved for future extensions), but you still need to make sure every `arrive()` call corresponds to one participating thread.
 
-`arrive_and_drop()` is a more specialized operation—it notifies the barrier "I'm here, but I won't participate in the future." Each call to `arrive_and_drop()` permanently decrements the barrier's participation count. This is useful for scenarios like "dynamic worker thread exit" in a thread pool: a thread calls `arrive_and_drop()` after finishing its last round of work, so subsequent synchronization rounds won't wait for it.
+`arrive_and_drop()` is an even more special operation—it tells the barrier "I've arrived, but I won't participate anymore". Every call to `arrive_and_drop()` permanently decrements the barrier's participant count by 1. This suits the "worker threads leaving dynamically" scenario in a thread pool: after a thread finishes its last round of work, it calls `arrive_and_drop()`, and subsequent synchronization rounds simply stop waiting for it.
 
-## std::counting_semaphore: General Counting Semaphore
+## std::counting_semaphore: A General-Purpose Counting Semaphore
 
-`std::latch` and `std::barrier` solve "inter-thread synchronization" problems—everyone arrives and proceeds together. `std::counting_semaphore`, on the other hand, solves "resource counting" problems—limiting the number of threads accessing a specific resource simultaneously. It is defined in the `<semaphore>` header file as a class template `std::counting_semaphore<LeastMaxValue>`, where `LeastMaxValue` is the maximum value of the semaphore (defaulting to an implementation-defined value, at least as large as the maximum value of `ptrdiff_t`).
+`std::latch` and `std::barrier` solve the problem of synchronization between threads—everyone arrives, everyone moves on together. `std::counting_semaphore`, by contrast, solves the problem of resource counting—limiting how many threads may access some resource simultaneously. It is defined in the `<semaphore>` header as the class template `std::counting_semaphore<LeastMaxValue>`, where `LeastMaxValue` is the semaphore's maximum value (the default is an implementation-defined value, at least as large as the maximum of `ptrdiff_t`).
 
-The core concept of a semaphore is simple: it maintains an internal counter. `acquire()` attempts to decrement the counter by one; if the counter is already zero, it blocks and waits. `release(n = 1)` increments the counter by *n* and wakes up waiting threads. This "acquire-release" semantics can model many real-world problems.
+The core idea of a semaphore is simple: it maintains an internal counter. `acquire()` tries to decrement the counter by 1, and blocks if the counter is already 0; `release(n = 1)` increments the counter by n and wakes up waiting threads. This "acquire-release" semantics can model a great many real problems.
 
-`std::counting_semaphore<1>` has a type alias `std::binary_semaphore`. When the maximum value is 1, the semaphore degenerates into a simple binary semaphore, where the counter has only two states: 0 and 1.
+`std::counting_semaphore<1>` has the type alias `std::binary_semaphore`—when the maximum is 1, the semaphore degenerates into a simple binary semaphore whose counter has only the two states 0 and 1.
 
-### Pattern: Resource Pool
+### Pattern: A Resource Pool
 
-Suppose we have a database connection pool that allows a maximum of three threads to hold connections simultaneously. Using `counting_semaphore` to control this is very natural:
+Suppose we have a database connection pool that allows at most 3 threads to hold a connection at the same time. Using `counting_semaphore` to control this is very natural:
 
 ```cpp
 #include <semaphore>
@@ -431,16 +265,16 @@ public:
 
     void use_connection(int thread_id)
     {
-        semaphore_.acquire();  // 获取一个连接名额
+        semaphore_.acquire();  // acquire one connection slot
         std::osyncstream(std::cout)
             << "Thread " << thread_id << " acquired connection\n";
 
-        // 模拟使用连接
+        // simulate using the connection
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         std::osyncstream(std::cout)
             << "Thread " << thread_id << " releasing connection\n";
-        semaphore_.release();  // 释放连接名额
+        semaphore_.release();  // release the connection slot
     }
 
 private:
@@ -449,7 +283,7 @@ private:
 
 int main()
 {
-    DatabaseConnectionPool pool(3);  // 最多 3 个并发连接
+    DatabaseConnectionPool pool(3);  // at most 3 concurrent connections
 
     std::vector<std::thread> threads;
     for (int i = 0; i < 8; ++i) {
@@ -463,11 +297,11 @@ int main()
 }
 ```
 
-Eight threads compete for three connection slots. The first three threads acquire connections immediately, while the next five threads block on `acquire()`. Whenever a thread calls `release()`, one waiting thread wakes up and obtains a connection. The entire process is controlled entirely by the semaphore's counter, requiring no mutex or condition_variable.
+Eight threads compete for 3 connection slots. The first 3 threads get connections immediately; the next 5 block on `acquire()`. Each time a thread calls `release()`, one waiting thread is woken and gets a connection. The whole process is governed purely by the semaphore's count—no mutex or condition_variable needed anywhere.
 
-### std::binary_semaphore: A Mutex in Semaphore's Clothing
+### std::binary_semaphore: A Mutex in Semaphore Shape
 
-`std::binary_semaphore` is an alias for `std::counting_semaphore<1>`, where the counter has only two states: 0 and 1. It is useful in scenarios requiring simple mutual exclusion, such as one-time signal notification between threads:
+`std::binary_semaphore` is an alias for `std::counting_semaphore<1>`; its counter has only the two states 0 and 1. It can be used wherever simple mutual exclusion is needed—for example, a one-shot signal between threads:
 
 ```cpp
 #include <semaphore>
@@ -500,25 +334,25 @@ int main()
 }
 ```
 
-The semaphore's initial value is 0 (the constructor argument), so `waiting_thread` blocks on `acquire()`; `signaling_thread` calls `release()` to increment the counter from 0 to 1, waking the waiting thread.
+The semaphore's initial value is 0 (the constructor argument); `waiting_thread` blocks on `acquire()`; `signaling_thread` calls `release()` to take the counter from 0 to 1, waking the waiting thread.
 
-You might ask: what is the difference between a `binary_semaphore` and a `mutex`? Functionally, they are quite similar—both can achieve mutual exclusion and wait-notify mechanisms. However, there is a key semantic difference: a `mutex` emphasizes **ownership** (who locks must unlock), whereas a semaphore has no concept of ownership—Thread A can `acquire()`, and Thread B can `release()`. This decoupling is useful in certain scenarios (for example, in producer-consumer patterns where the producer releases the semaphore to signal the consumer), but it also implies that a semaphore cannot replace a `mutex` to protect a critical section—because you cannot guarantee that only the locking thread holds the right to unlock.
+You might ask: what's the difference between `binary_semaphore` and a `mutex`? In terms of raw capability they are very similar—both can do mutual exclusion and wait-notify. But semantically there is a key difference: a mutex emphasizes **ownership** (whoever locks it unlocks it), while a semaphore has no notion of ownership—thread A can `acquire()` and thread B can be the one to `release()`. This decoupling is extremely useful in some scenarios (in producer-consumer setups, for instance, the producer releases the semaphore to notify the consumer), but it also means a semaphore cannot replace a mutex for protecting a critical section—because you cannot guarantee that only the lock-holding thread can unlock it.
 
-### Comparing Semaphores and Condition Variables
+### Semaphores vs. Condition Variables
 
-Since semaphores can handle wait-notify logic, why do we still need `condition_variable`? Conversely, since `condition_variable` is more general, why did C++20 introduce semaphores? The core of this issue lies in their **semantic complexity** and **performance characteristics**.
+Since a semaphore can do wait-notify too, why do we still need condition_variable? And conversely, since condition_variable is more general, why did C++20 introduce semaphores at all? The heart of the answer lies in the two mechanisms' **semantic complexity** and **performance characteristics**.
 
-The advantage of semaphores is their lightweight nature. They do not need to be paired with a `mutex` (they maintain state internally), do not require handling spurious wakeups, and have an API consisting of only two core operations: `acquire` and `release`. For simple resource counting or one-shot notification scenarios, code using semaphores is much more concise than `condition_variable`. Performance-wise, semaphores are usually implemented based on platform-native primitives (like `sem_t` on Linux or `Semaphore` objects on Windows), which may be faster than `condition_variable` in simple wait-notify scenarios—because `condition_variable` requires working with a `mutex`, involving lock acquisition and release on every `wait` or `notify`.
+A semaphore's advantage is lightness. It doesn't need to be paired with a mutex (it maintains its own state internally), it doesn't have to deal with spurious wakeups, and its API has just two core operations, `acquire` and `release`. For simple resource counting or one-shot notification, semaphore code is far tidier than the condition_variable equivalent. Performance-wise, semaphores are typically built on the platform's native semaphore (the `sem_t` on Linux, the `Semaphore` object on Windows), and in simple wait-notify scenarios they may be faster than condition_variable—because condition_variable has to work with a mutex, and every wait/notify involves acquiring and releasing that mutex.
 
-The advantage of condition variables lies in **expressiveness**. When the wait condition is not simply "is the counter zero," but a complex condition like "is the queue empty AND is the shutdown flag not set," `condition_variable` combined with a `mutex` and a predicate can express this logic precisely. Condition variables also support timed waits (`wait_for`/`wait_until`). While semaphore `acquire()` does not natively support timeouts, C++20 provides `try_acquire_for()` and `try_acquire_until()` for timed acquisition. However, if you need more fine-grained timeout control or complex condition evaluation, `condition_variable` remains the better choice.
+A condition variable's advantage is **expressive power**. When the wait condition isn't a simple "is the counter zero" but a compound condition like "the queue is non-empty AND the shutdown flag is not set", condition_variable together with a mutex and a predicate can express the logic precisely. Condition variables also support timed waits (`wait_for`/`wait_until`). Semaphore's `acquire()` itself has no timeout support, but C++20 also provides `try_acquire_for()` and `try_acquire_until()` for acquiring with a timeout—if you need finer-grained timeout control or compound condition checks, condition_variable is still the better choice.
 
-To summarize the selection strategy in one sentence: if your synchronization logic can be expressed as "counting," prefer semaphores; if your logic involves complex condition checking or requires timeouts, use `condition_variable`.
+A one-sentence selection strategy: if your synchronization logic can be expressed as counting, prefer a semaphore; if it involves complex condition checks or needs timeouts, use condition_variable.
 
-## What If I Don't Have C++20: Simulating with Mutex + CV
+## Without C++20: Simulating with mutex + CV
 
-If your project is still using C++17 or earlier, don't worry—the semantics of these three primitives can be simulated using a `mutex`, `condition_variable`, and a counter. Although the code is more verbose, understanding these simulations helps you deeply understand the underlying mechanisms of C++20 primitives.
+If your project is still on C++17 or an earlier standard, don't lose heart—the semantics of all three primitives can be emulated with a mutex plus a condition_variable plus a counter. The code is more verbose, but understanding these emulations helps you understand what lies underneath the C++20 primitives.
 
-### Simulating a Latch
+### Emulating a latch
 
 ```cpp
 #include <mutex>
@@ -558,9 +392,9 @@ private:
 };
 ```
 
-We can see that this simulated implementation is a standard application of the "wait with predicate + notify_all" pattern covered in the previous chapter. `count_down` decrements the counter while holding the lock, and calls `notify_all` to wake all waiting threads when the counter reaches zero. `wait` uses the predicate version of `wait` to guard against spurious wakeups and missed wakeups. `arrive_and_wait` combines `count_down` and `wait`—note that there is no atomicity guarantee here (another thread might decrement the count to zero after `count_down` releases the lock but before `wait` acquires it), but because `wait` uses a predicate, the notification will not be missed even if it occurs early.
+As we can see, this emulation is precisely the standard application of the "predicate wait + notify_all" pattern we learned in the previous article. `count_down` decrements the counter while holding the lock, and calls `notify_all` to wake every waiter when the count hits zero. `wait` uses a predicate-taking `wait` to guard against spurious wakeups and lost wakeups. `arrive_and_wait` combines `count_down` and `wait`—note that there is no atomicity guarantee here (after `count_down` releases the lock and before `wait` acquires it, another thread could drive the count to zero), but because `wait` carries a predicate, even a notification that has already happened cannot be lost.
 
-### Simulating a barrier
+### Emulating a barrier
 
 ```cpp
 #include <mutex>
@@ -577,7 +411,7 @@ public:
         std::unique_lock<std::mutex> lock(mutex_);
         std::ptrdiff_t gen = generation_;
         if (--count_ == 0) {
-            // 所有线程到齐，重置屏障
+            // all threads have arrived; reset the barrier
             generation_++;
             count_ = initial_count_;
             cv_.notify_all();
@@ -595,35 +429,35 @@ private:
 };
 ```
 
-The simulation of a `barrier` is more complex than a `latch` due to "reusability." We cannot simply reset when the count reaches zero—because threads from the previous round might not have returned from `wait` yet, while threads from the new round have already started `arrive_and_wait`. The solution is to introduce a **generation** counter: we increment the generation each time the barrier resets. Waiting threads check "has the generation for my round changed?"—if it has, it means the barrier has opened, and they can proceed.
+What makes emulating a barrier harder than a latch is reusability. We cannot simply reset when the count hits zero—threads from the previous round may not yet have returned from `wait`, while threads of the new round have already started `arrive_and_wait`. The solution is to introduce a **generation** counter: every time the barrier resets, the generation is incremented, and what waiting threads check is "has my generation changed yet"—if it has, the barrier has opened and they may continue.
 
-This generation trick is the core technique for implementing reusable barriers and is the mechanism used internally by C++20's `std::barrier`. Once you understand this technique, you won't be surprised by generation counters when reading standard library implementations or third-party concurrency libraries.
+This generation trick is the core technique for implementing reusable barriers, and it is also the mechanism used inside C++20's `std::barrier`. Once you understand it, a generation counter will never look alien to you when reading standard library implementations or third-party concurrency libraries.
 
-## Scenario Selection Guide
+## A Scenario Selection Guide
 
-We now have five main synchronization primitives (mutex, condition_variable, latch, barrier, counting_semaphore). How do we choose when facing a specific synchronization requirement? I have summarized a simple decision path based on my experience.
+We now have five major synchronization primitives (mutex, condition_variable, latch, barrier, counting_semaphore). Facing a concrete synchronization need, how do we choose? Based on my own experience, here is a simple decision path.
 
-If your requirement is "protect a critical section, allowing only one thread to enter at a time," use a mutex (along with `lock_guard` or `unique_lock`). If your requirement is "wait for a condition to become true," use a condition_variable with a mutex and a predicate. If your requirement is "wait for N threads to complete something once before proceeding together," use a latch. If your requirement is "repeated synchronization—waiting for everyone to arrive at every iteration or stage," use a barrier. If your requirement is "limit the number of threads accessing a resource simultaneously" or "simple inter-thread signaling," use a counting_semaphore.
+If your need is "protect a critical section so only one thread enters at a time", use a mutex (paired with `lock_guard` or `unique_lock`). If your need is "wait until some condition holds", use condition_variable paired with a mutex and a predicate. If your need is "wait for N threads to each finish something and then continue together, synchronizing only once", use a latch. If your need is "synchronize repeatedly—every round, every phase, everyone must arrive", use a barrier. If your need is "limit how many threads access some resource simultaneously" or "simple signal notification between threads", use counting_semaphore.
 
-Sometimes a scenario might fit multiple conditions—for example, a barrier can be simulated internally using a condition_variable, and a counting_semaphore can also be used for one-shot notification (degrading to a binary_semaphore). The key to selection is which primitive's semantics best match your problem—the higher the semantic match, the less error-prone the code.
+Sometimes a single scenario fits several of these at once—a barrier can be emulated internally with a condition_variable, and a counting_semaphore can do one-shot notification too (degenerating into a binary_semaphore). The key to choosing is which primitive's semantics best match your problem—the closer the semantic match, the less error-prone the code.
 
-> 💡 Complete example code is available in [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), under `code/volumn_codes/vol5/ch02-mutex-condition-sync/`.
+> 💡 The complete example code lives in [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP); see `code/volumn_codes/vol5/ch02-mutex-condition-sync/`.
 
 ## Exercises
 
-### Exercise 1: Multi-Stage Parallel Matrix Computation
+### Exercise 1: Multi-Phase Parallel Matrix Computation
 
-Given an N x N integer matrix, use four threads to compute the transpose of the matrix and the sum of all elements in parallel. Divide the computation into three stages: Stage one, each thread computes the sum of a portion of the matrix elements; Stage two, aggregate all partial sums to get the total sum; Stage three, each thread is responsible for transposing a portion of the matrix. Synchronization points are needed between Stage one and Stage three, and after Stage three.
+Given an N x N integer matrix, use 4 threads to compute the matrix's transpose and the sum of all its elements in parallel. Split the computation into three phases: in phase one, each thread computes the sum of a slice of the elements; in phase two, all partial sums are aggregated into the total; in phase three, each thread transposes a slice of the matrix. You need one synchronization point between phases one and three, and another one after phase three.
 
-Hint: Use `std::barrier` to complete the function. The completion function for Stage one is responsible for aggregating the partial sums. After Stage three, the main thread needs to wait for all worker threads to finish. Think about this: Stage two involves only one aggregation operation; should it be executed in the worker threads or as the completion function?
+Hint: use `std::barrier` together with a completion function. The phase-one completion function aggregates the partial sums, and after phase three the main thread must wait for all worker threads to finish. Think about this: phase two is a single aggregation step—should it run in a worker thread, or as the completion function?
 
-### Exercise 2: Implement a Bounded Blocking Queue with counting_semaphore
+### Exercise 2: A Bounded Blocking Queue with counting_semaphore
 
-Re-implement the `BoundedQueue` from the previous article using `std::counting_semaphore` (instead of condition_variable). Hint: You need two semaphores—`items_available` initialized to 0 (tracking the number of elements in the queue), and `spaces_available` initialized to the queue capacity (tracking the remaining empty slots). For `push`, first `spaces_available.acquire()`, then lock and insert the element, then `items_available.release()`. For `pop`, first `items_available.acquire()`, then lock and remove the element, then `spaces_available.release()`. Note: You still need a mutex to protect the queue container itself—the semaphore only controls "permission to operate," not the consistency of the data structure.
+Re-implement the `BoundedQueue` from the previous article using `std::counting_semaphore` (instead of a condition_variable). Hint: you will need two semaphores—`items_available`, initialized to 0 (tracking the number of elements in the queue), and `spaces_available`, initialized to the queue's capacity (tracking the free slots left). On `push`, first `spaces_available.acquire()`, then lock, insert the element, and `items_available.release()`; on `pop`, first `items_available.acquire()`, then lock, remove the element, and `spaces_available.release()`. Note: you still need a mutex to protect the queue container itself—the semaphore only decides "may I operate", it does not protect the consistency of the data structure.
 
-### Exercise 3: Simulate counting_semaphore with mutex + condition_variable
+### Exercise 3: Emulating counting_semaphore with mutex + condition_variable
 
-Implement a simple counting semaphore class using `std::mutex`, `std::condition_variable`, and an internal counter. Provide `acquire()`, `release()`, and `try_acquire()` methods. `try_acquire()` attempts to acquire a resource, returning `true` on success, or `false` if the counter is zero (without blocking). Write a simple test program to verify your implementation: create five threads competing for a semaphore with an initial count of two, and observe that the number of threads holding the resource simultaneously never exceeds two.
+Implement a simple counting semaphore class using `std::mutex`, `std::condition_variable`, and an internal counter, providing `acquire()`, `release()`, and `try_acquire()` methods. `try_acquire()` attempts to take one resource, returning `true` on success and `false` when the counter is zero (without blocking). Write a simple test program to verify your implementation: create 5 threads competing for a semaphore with an initial count of 2, and observe whether the number of threads holding the resource at the same time ever exceeds 2.
 
 ## References
 
@@ -633,5 +467,5 @@ Implement a simple counting semaphore class using `std::mutex`, `std::condition_
 - [Synchronization Primitives in C++20 -- KDAB](https://www.kdab.com/synchronization-primitives-in-c20/)
 - [Latches and Barriers -- Modernes C++](https://www.modernescpp.com/index.php/latches-and-barriers/)
 - [Semaphores in C++20 -- Modernes C++](https://www.modernescpp.com/index.php/semaphores-in-c-20/)
-- [P0666R2: Revised Latches and Barriers for C++20 (Proposal Paper)](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0666r2.pdf)
+- [P0666R2: Revised Latches and Barriers for C++20 (the proposal)](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0666r2.pdf)
 - [C++ Concurrency in Action (2nd Edition) -- Anthony Williams, Chapter 4](https://www.oreilly.com/library/view/c-concurrency-in/9781617294643/)
