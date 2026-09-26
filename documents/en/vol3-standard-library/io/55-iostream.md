@@ -14,8 +14,8 @@ difficulty: intermediate
 order: 55
 platform: host
 prerequisites:
-- 'Iterator Adapters: Reverse, Insert, and Stream — Repurposing Existing Iterators
-  with New Behaviors'
+- 'Iterator Adapters: Reverse, Insertion, and Stream — Teaching Old Iterators New
+  Tricks'
 - 'charconv: Zero-Overhead Number-String Conversions'
 reading_time_minutes: 16
 related:

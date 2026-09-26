@@ -3,54 +3,54 @@ chapter: 7
 cpp_standard:
 - 11
 - 20
-description: 'Deep dive into the three categories of STL iterator adapters—how `back_inserter`
-  turns assignment into `push_back`, why `front_inserter` cannot be used with `vector`,
-  why `reverse_iterator`''s `base()` is off by one, and the fundamental nature of
-  adapters: "if it looks like an iterator, it fits into an algorithm.'
+description: 'A thorough walkthrough of the three kinds of STL iterator adapters — how
+  `back_inserter` turns assignment into `push_back`, why `front_inserter` cannot be
+  used with `vector`, why `reverse_iterator`''s `base()` is off by one, and the essence
+  of adapters: "if it looks like an iterator, it fits into an algorithm"'
 difficulty: intermediate
 order: 41
 platform: host
 prerequisites:
-- 迭代器基础与 category
-- vector 深入：三指针、扩容与迭代器失效
+- 'Iterator Basics and Categories: The Glue Between Containers and Algorithms'
+- 'Deep Dive into std::vector: Three Pointers, Reallocation, and Iterator Invalidation'
 reading_time_minutes: 12
 related:
-- 容器选择指南：按操作、内存与失效规则挑对容器
+- 'Container Selection Guide: Choosing the Right Container Based on Operations, Memory, and Invalidation Rules'
 tags:
 - host
 - cpp-modern
 - intermediate
 - Ranges
-title: 'Iterator Adapters: Reverse, Insert, and Stream — Repurposing Existing Iterators
-  with New Behaviors'
+title: 'Iterator Adapters: Reverse, Insertion, and Stream — Teaching Old Iterators
+  New Tricks'
 translation:
   source: documents/vol3-standard-library/iterators-algorithms/41-iterator-adapters.md
   source_hash: acd4594db78684370784bc140e71a489393159c7be525419b5356ed850bf1887
-  translated_at: '2026-06-24T00:44:25.182644+00:00'
+  translated_at: '2026-09-26T01:33:35+00:00'
   engine: anthropic
-  token_count: 2133
+  token_count: 2500
 ---
-# Iterator Adapters: Reverse, Insert, and Stream — Adapting Existing Iterators for New Behaviors
+# Iterator Adapters: Reverse, Insertion, and Stream — Teaching Old Iterators New Tricks
 
-In the previous post, we reviewed iterators and their categories: iterators serve as a unified interface between containers and algorithms, categorized by their strength and capabilities. In this post, we will address a practical pain point you are bound to encounter.
+In the previous article we walked through iterators and their categories: iterators are the unified interface layer between containers and algorithms, graded by how strong they are. This article picks up from there to solve a practical pain point you are guaranteed to run into.
 
-Suppose we want to append elements from one `deque` to the end of another. The first instinct might be to use `std::copy`:
+Suppose you want to append the elements of one `deque` to the end of another. Your first instinct is probably `std::copy`:
 
 ```cpp
 std::deque<int> d1{1, 2, 3, 4, 5};
-std::deque<int> d2;   // 空的
-std::copy(d1.begin(), d1.end(), d2.end());   // 想追加到末尾？
+std::deque<int> d2;   // empty
+std::copy(d1.begin(), d1.end(), d2.end());   // want to append to the end?
 ```
 
-This line is straight-up **undefined behavior**. `d2.end()` is a "past-the-end" position. `copy` will dutifully write elements to this out-of-bounds location—it only handles "assigning elements to the location pointed to by the destination iterator," completely disregarding whether the destination container actually has that space. Algorithms do not resize containers; this is the iron law of the STL.
+That line is flat-out **undefined behavior**. `d2.end()` is a "past-the-end" position, and `copy` will dutifully write elements to that out-of-bounds spot — its job is strictly "assign the element to the position the destination iterator points to," and whether the destination container has room for that is none of its business. Algorithms don't grow containers; that is the iron law of the STL.
 
-So, what do we do? Should we write a manual loop with `for` and `push_back`? It works, but it isn't elegant—we are using algorithms, yet we are forced back to manual loops because "the destination won't grow." The standard library offers a smarter solution: **don't change the algorithm, change the iterator**. Give it an iterator that "automatically pushes into the container upon assignment," and `copy` remains `copy`, but the pain point is gone.
+So what now — hand-write a `for` loop doing `push_back`? It works, but it isn't elegant: we were using algorithms, yet just because "the destination won't grow" we get shoved back into hand-written loops. The standard library has a smarter answer: **don't swap the algorithm, swap the iterator**. Give it an iterator that "pushes into the container the moment it receives an assignment," and `copy` stays the same old `copy` — the pain point is gone.
 
-This is exactly what **iterator adapters** do: without creating new containers, they wrap existing iterators (or containers) to modify their behavior. The STL comes with three built-in types—reverse, insert, and stream. In this post, we will break down all three and explain the essence of "how adapters pull this off."
+That is precisely what **iterator adapters** do: no new containers get built — they wrap an existing iterator (or container) in a layer and reshape it into new behavior. The STL ships three ready-made kinds: reverse, insertion, and stream. In this article we will take all three apart and run them, and along the way pin down the essence of "what lets adapters get away with this."
 
 ## Reverse Iterators: Turning `++` into `--`
 
-This is the most intuitive category. `rbegin()` and `rend()` return a `reverse_iterator`, which completely inverts the `++` and `--` semantics of the underlying iterator: `++` moves backward, and `--` moves forward. Thus, a reverse traversal from beginning to end requires just one line of code:
+The most intuitive kind. `rbegin()` / `rend()` return a `reverse_iterator`, which flips the underlying iterator's `++` / `--` semantics completely: `++` steps toward the front, `--` moves toward the back. So a full end-to-start traversal falls out of a one-line loop:
 
 ```cpp
 std::vector<int> v{1, 2, 3, 4, 5};
@@ -59,68 +59,68 @@ for (auto it = v.rbegin(); it != v.rend(); ++it) std::cout << *it << ' ';
 std::cout << '\n';
 ```
 
-Here are the results from running `g++ -std=c++20 -O2` (local GCC 16.1.1):
+Running it with `g++ -std=c++20 -O2` (local GCC 16.1.1) gives:
 
 ```text
 rbegin/rend 反向遍历: 5 4 3 2 1
 ```
 
-The most practical use for reverse iterators is sorting. `std::sort` sorts in ascending order by default, but if we feed it reverse iterators, the sorted elements are written back in "reverse", effectively achieving a descending sort—no need for a custom comparator:
+The most practical pairing for reverse iterators is sorting. `std::sort` defaults to ascending order, but feed it reverse iterators and the ascending-sorted elements get "written back in reverse" — the net effect is descending order, with no custom comparator required:
 
 ```cpp
 std::vector<int> s{3, 1, 4, 1, 5, 9, 2, 6};
 std::sort(s.rbegin(), s.rend());
-// s 现在: 9 6 5 4 3 2 1 1
+// s is now: 9 6 5 4 3 2 1 1
 ```
 
-Let's plant a seed here: a `reverse_iterator` actually stores a "forward position" internally, but when it dereferences, it doesn't access that position—it accesses the **previous** one. This design directly dictates the `base()` off-by-one pitfall we will discuss later. Let's keep this in mind and verify it with actual tests shortly.
+Here is a piece of foreshadowing to plant: a `reverse_iterator` internally stores a "forward position," but when you dereference it, what gets accessed is not that position — it is the **previous** one. That design is exactly what produces the `base()` off-by-one trap we will cover later. Note it for now; we will verify it with a real run shortly.
 
-## Insert Iterators: Turning "Assignment" into "Insertion"
+## Insertion Iterators: Turning "Assignment" into "Insertion"
 
-Let's return to the pain point of the `copy` out-of-bounds error at the beginning. If we swap the destination from `d2.end()` to `std::back_inserter(d2)`, the problem disappears:
+Back to the out-of-bounds `copy` pain from the opening. Swap the destination from `d2.end()` to `std::back_inserter(d2)` and the problem vanishes:
 
 ```cpp
 std::deque<int> d1{1, 2, 3, 4, 5};
-std::deque<int> d3;   // 空的
+std::deque<int> d3;   // empty
 std::copy(d1.begin(), d1.end(), std::back_inserter(d3));
-// d3 现在: 1 2 3 4 5
+// d3 is now: 1 2 3 4 5
 ```
 
-`back_inserter` returns an "insert iterator" that translates the "assign to it" action into the container's `push_back`. It works with empty containers because each assignment grows the container by one element. If we `copy` again, it **appends** to the existing content rather than overwriting it:
+What `back_inserter` returns is an "insertion iterator": it translates the act of "assigning to it" into the container's `push_back`. An empty container can receive it too, because every assignment grows the container by one slot. `copy` through it again and you are **appending** on top of what is already there, not overwriting:
 
 ```text
 back_inserter 追加到空 d3: 1 2 3 4 5
 再 back_inserter 一次: 1 2 3 4 5 1 2 3 4 5
 ```
 
-There are three types of insert iterators, differing only in "where to insert":
+Insertion iterators come as three siblings, differing only in "where the element gets stuffed":
 
-- `back_inserter(c)` — calls `push_back`, inserting at the end;
-- `front_inserter(c)` — calls `push_front`, inserting at the beginning;
-- `inserter(c, it)` — calls `insert`, inserting **before** `it`.
+- `back_inserter(c)` — calls `push_back`, stuffing at the end;
+- `front_inserter(c)` — calls `push_front`, stuffing at the beginning;
+- `inserter(c, it)` — calls `insert`, stuffing in **before** `it`.
 
-`front_inserter` behaves counter-intuitively: because each new element is inserted at the very front, later elements appear before earlier ones, reversing the overall order:
+`front_inserter` has a counterintuitive side: because every new element is inserted at the very front, the ones inserted later end up ordered earlier, so the whole sequence comes out reversed:
 
 ```cpp
 std::deque<int> d4;
 std::copy(d1.begin(), d1.end(), std::front_inserter(d4));
-// d4 现在: 5 4 3 2 1（d1 是 1 2 3 4 5，反过来了）
+// d4 is now: 5 4 3 2 1 (d1 is 1 2 3 4 5 — reversed)
 ```
 
-`inserter` inserts elements *before* the specified position. Note the emphasis on "before"—if `it` points to 20, the new element is placed in front of 20:
+`inserter`, meanwhile, inserts before the position you hand it. Note "before": if `it` points at 20, the new element lines up in front of that 20:
 
 ```cpp
 std::deque<int> d5{10, 20, 30};
-auto pos = d5.begin() + 1;   // 指向 20
+auto pos = d5.begin() + 1;   // points at 20
 std::copy(d1.begin(), d1.end(), std::inserter(d5, pos));
-// d5 现在: 10 1 2 3 4 5 20 30
+// d5 is now: 10 1 2 3 4 5 20 30
 ```
 
-### Container Requirements for the Three Brothers
+### Each Sibling's Container Requirements
 
-Here is a real pitfall. `back_inserter` calls `push_back`, and `front_inserter` calls `push_front`—but not every container has these members. `push_back` is nearly universal (available on `vector`, `deque`, and `list`), but `push_front` is only available on `deque` and `list`, not `vector`.
+Here is a real trap. `back_inserter` calls `push_back` and `front_inserter` calls `push_front` — but not every container has those members. `push_back` is nearly universal (`vector`, `deque`, and `list` all qualify), while `push_front` exists only on `deque` and `list`; `vector` doesn't get one.
 
-Therefore, applying `front_inserter` to a `vector` will fail to compile:
+So wrap `front_inserter` around a `vector` and it won't even compile:
 
 ```cpp
 std::vector<int> v;
@@ -133,29 +133,29 @@ std::copy(std::begin(src), std::end(src), std::front_inserter(v));
   error: ‘class std::vector<int>’ has no member named ‘push_front’
 ```
 
-The error is straightforward: `vector` simply doesn't have `push_front`. This aligns with the logic discussed in the previous post—since `vector` uses contiguous storage, inserting at the head requires moving all subsequent elements. This O(n) operation is too expensive, so the standard library simply doesn't provide this interface. If you need front insertion, switch to `deque` or `list`.
+The error says it plainly: `vector` has no `push_front`, period. This actually follows from what the previous article explained — `vector` is contiguous storage, inserting at the head means shuffling every element behind it, an O(n) operation too expensive to justify, so the standard library simply withholds the interface. If you want head insertion, switch to `deque` or `list`.
 
-`inserter` doesn't have this limitation; it works with any container that has an `insert` method (basically all sequence containers). The trade-off is that the complexity of insertion in the middle is determined by the container (O(n) for `vector`, O(1) for `list`).
+`inserter` has no such restriction: any container with `insert` will do (which is essentially all sequence containers), with the trade-off that the cost of a middle insertion is set by the container (`vector` is O(n), `list` is O(1)).
 
-### Mini-Application: Order-Preserving Insertion
+### A Small Application: Order-Preserving Insertion
 
-Combining insert iterators with algorithms allows for very clean code. A common requirement is "insert a new element into a sorted `vector` while keeping it sorted." The approach is to use `std::lower_bound` to find the first position that is "not less than the new value," and then use `inserter` (or directly call `insert`) to place it there:
+Insertion iterators plus algorithms make for very clean code. A common requirement: "insert a new element into a sorted `vector` so it stays sorted afterward." The idea is to use `std::lower_bound` to find the first position "not less than the new value," then insert there with `inserter` (or plain `insert`):
 
 ```cpp
 std::vector<int> sorted{1, 3, 5, 7, 9};
 int new_val = 4;
 auto it = std::lower_bound(sorted.begin(), sorted.end(), new_val);
 sorted.insert(it, new_val);
-// sorted 现在: 1 3 4 5 7 9
+// sorted is now: 1 3 4 5 7 9
 ```
 
-This is a classic technique for collaboration between `<algorithm>` and containers—compressing the O(n) "sequential search for position" into an O(log n) binary search (the O(n) move is unavoidable because of contiguous storage). We will cover a full algorithm overview in the next post, but for now, let's use this to feel how "algorithms + adapters + containers" mesh together.
+This is a classic little technique of `<algorithm>` and containers working together — it compresses the O(n) "walk and compare to find the position" into an O(log n) binary search (the O(n) element-shoveling you can't dodge, because the storage is contiguous). We will unfold the full algorithm survey in the next article; for now, borrow it to get a feel for how "algorithm + adapter + container" mesh.
 
-## Stream Iterators: Treating Streams as Sequences
+## Stream Iterators: Walking a Stream as a Sequence
 
-The third category involves wrapping I/O streams as iterators.
+The third kind wraps I/O streams into iterators as well.
 
-`ostream_iterator` translates "assigning to it" into "writing a value to the stream + a delimiter". This allows us to print container contents to `cout` with just one line of `copy`:
+`ostream_iterator` translates "assigning to it" into "write one value to the stream, plus a delimiter." So printing a container's contents to `cout` is one line of `copy`:
 
 ```cpp
 std::cout << "ostream_iterator 打印: ";
@@ -167,31 +167,31 @@ std::cout << '\n';
 ostream_iterator 打印: 1, 2, 3, 4, 5,
 ```
 
-Note the extra delimiter at the end—the delimiter is appended **after every write**, so it follows the last element as well. To get a clean ending, we need to handle the tail manually, or use `std::format` or a range-based `for` loop instead.
+Notice the extra delimiter at the end — the delimiter is appended **after each write**, so the last element gets one trailing it too. For a clean ending you have to deal with the tail yourself, or use `std::format` / a range `for` loop instead.
 
-The reverse `istream_iterator` treats an input stream as a "readable sequence." Its beauty lies in pairing it with a **default-constructed sentinel** to represent the end of the stream (EOF): we don't need to know the element count in advance; reading stops automatically when the EOF sentinel is reached. The following code reads a bunch of `int`s from a string stream into a `vector`:
+In the other direction, `istream_iterator` treats an input stream as a "readable sequence." Its neat trick is pairing with a **default-constructed sentinel** that stands for end-of-stream (EOF): you don't need to know up front how many elements the stream holds — when reading hits EOF, the sentinel terminates things automatically. Below, we read a bunch of `int`s out of a string stream into a `vector`:
 
 ```cpp
 std::istringstream iss("10 20 30 40 50");
 std::vector<int> from_stream{
     std::istream_iterator<int>(iss),
-    std::istream_iterator<int>()};   // 默认构造 = EOF 哨兵
+    std::istream_iterator<int>()};   // default-constructed = EOF sentinel
 // from_stream: 10 20 30 40 50
 ```
 
-::: warning Don't be misled by outdated resources
-Some tutorials and notes mistakenly write the input stream iterator as `istream_adapter`—there is **no** such name in the standard library; the correct name is `istream_iterator`. This typo is common in reposted articles online, and copying it verbatim will result in compilation errors.
+::: warning Don't get led astray by outdated material
+Some tutorials and notes write the input stream iterator as `istream_adapter` — **no** such name exists in the standard library; the correct one is `istream_iterator`. This particular typo is common in copy-pasted articles online, and copying it along verbatim will fail to compile.
 :::
 
-This "iterator + sentinel" pattern is exactly what we discussed in the previous article regarding categories: `istream_iterator` is a typical **input_iterator**, which can only be read once in a single pass. The sentinel mechanism allows algorithms to handle sequences of "indeterminate length"—the length of a stream is only known when the end is reached, and this relies on the EOF sentinel.
+This "iterator + sentinel" pattern is exactly what the previous article touched on when discussing categories: `istream_iterator` is the textbook **input_iterator**, single-pass and forward-only. The sentinel mechanism is what lets algorithms handle sequences "whose length isn't known in advance" — a stream's length is known only once you read to the end, and that is precisely what the EOF sentinel is for.
 
-## How Adapters Work: A Look Under the Hood
+## How Adapters Get Away With It: Peeling Back the Layer
 
-By now, you might be curious: why can the object returned by `back_inserter` be used as the destination for `std::copy`? `copy` doesn't know anything about "insert iterators."
+By now you might be wondering: what entitles the object `back_inserter` returns to be stuffed into `std::copy` as the destination? `copy` doesn't know anything about "insertion iterators."
 
-The answer is an extension of the core point from the last article—**algorithms only recognize iterator interfaces, not concrete types**. The only requirement `copy` has for a destination iterator is that it "supports dereference assignment and `++`" (i.e., satisfies the semantics of an output_iterator). As long as an object supports these two operations, `copy` will treat it as an iterator. Whether the object is actually a real memory location or secretly calls `push_back` is of no concern to `copy`.
+The answer extends the core claim from the previous article — **algorithms recognize only the iterator interface, not concrete types**. Everything `copy` demands of a destination iterator is "you can dereference-assign, and you can `++`" (that is, it satisfies output_iterator semantics). Any object supporting those two operations is an iterator as far as `copy` is concerned; whether that object is backed by a real memory location or is secretly calling `push_back`, `copy` could not care less.
 
-If we peel away the standard library's wrapper, the entire "magic" of `back_insert_iterator` boils down to this:
+Peel the standard library's wrapper off, and the whole of `back_insert_iterator`'s "magic" amounts to this:
 
 ```cpp
 // Standard: C++20
@@ -200,36 +200,36 @@ class BackInsertIterDemo {
     Container* c_;
 public:
     explicit BackInsertIterDemo(Container& c) : c_{&c} {}
-    // 赋值 = push_back：这就是"赋值即插入"的全部秘密
+    // Assignment = push_back: that is the entire secret of "to assign is to insert"
     BackInsertIterDemo& operator=(const typename Container::value_type& v) {
         c_->push_back(v);
         return *this;
     }
-    BackInsertIterDemo& operator*() { return *this; }      // 解引用返回自己
-    BackInsertIterDemo& operator++() { return *this; }     // ++ 是空操作
+    BackInsertIterDemo& operator*() { return *this; }      // dereference returns itself
+    BackInsertIterDemo& operator++() { return *this; }     // ++ is a no-op
     BackInsertIterDemo operator++(int) { return *this; }
 };
 ```
 
-We overloaded `operator=` to act as `push_back`, while `*` and `++` are no-ops that simply return `*this`. This satisfies the trio of requirements for an `output_iterator`. Consequently, it can be used directly by any algorithm requiring an `output_iterator`, **without modifying a single line of the algorithm code**:
+`operator=` is overloaded into `push_back`, while `*` and `++` are no-ops that return themselves — together they assemble the three-piece kit an output_iterator demands. So any algorithm that wants an output_iterator can use it directly, **without the algorithm changing a single word**:
 
 ```cpp
 std::vector<int> v;
 int src[]{1, 2, 3, 4, 5};
 std::copy(std::begin(src), std::end(src), BackInsertIterDemo(v));
-// v 现在: 1 2 3 4 5
+// v is now: 1 2 3 4 5
 ```
 
-The output is exactly `1 2 3 4 5`. This captures the essence of an adapter: **an object that "looks like an iterator but delegates to a different behavior."** The STL's original design decision to "decouple containers and algorithms via iterators" truly shines here—not only can container iterators be used with algorithms, but even these "iterator impersonators" work as well.
+Run it and out comes exactly `1 2 3 4 5`. That is the essence of an adapter: **an object that "looks like an iterator while hanging a different behavior behind it."** This is where the STL's original design decision — decoupling containers and algorithms through iterators — really starts to show its power: not only do containers' own iterators slot into algorithms, so do little objects "masquerading as iterators."
 
-Following this logic, the standard library also provides `move_iterator` (introduced in C++11, improved in C++20 with ranges): it transforms "dereferencing to an lvalue reference" into "dereferencing to an rvalue reference". When wrapped around a source range, `copy` effectively becomes `move`—elements are moved rather than copied. The underlying mechanism is exactly the same as above: wrap a layer and swap the dereference behavior. We will cover this in detail in the chapter on move semantics; for now, just know that it belongs to the same family.
+Following the same thread, the standard library also has `move_iterator` (introduced in C++11, reworked with ranges in C++20): it turns "dereference yields an lvalue reference" into "dereference yields an rvalue reference," so wrapped over a source range, `copy` becomes `move` — elements get carried off instead of copied. The mechanism underneath is identical to what we just saw: wrap a layer, swap in a different dereference behavior. We will give it a dedicated treatment in the move-semantics volume; for now, just know this relative exists.
 
-## Common Pitfalls
+## A Few Pitfalls You Will Actually Hit
 
-Let's consolidate the common places where things can go wrong; each of these has been verified through testing:
+Let's gather up the crash sites along this route — each one verified by a real run above:
 
-::: warning reverse_iterator's base() is Off-by-One
-`reverse_iterator` has a `base()` member that returns the underlying forward iterator it wraps. However, `*rit` accesses **not** `rit.base()`, but `rit.base() - 1`:
+::: warning A reverse iterator's base() is off by one
+`reverse_iterator` has a `base()` member that returns the forward iterator it wraps. But `*rit` accesses **not** `rit.base()` — it accesses `rit.base() - 1`:
 
 ```text
 *rit            = 40
@@ -237,35 +237,35 @@ Let's consolidate the common places where things can go wrong; each of these has
 *(rit.base()-1) = 40
 ```
 
-This brings us back to the foreshadowing at the beginning. The consequence is this: when you want to `erase` a range defined by reverse iterators using a forward iterator, the endpoint must be written as `(rit+1).base()` instead of `rit.base()`, otherwise you will be off by one. If you can't remember this, just keep in mind that "dereferencing a reverse iterator accesses the element *before* its `base`," and you won't go wrong.
+That is the foreshadowing we planted at the start. The consequence: when you want to erase a range bounded by reverse iterators using forward iterators, the endpoint has to be written `(rit+1).base()` rather than `rit.base()`, or you are off by one slot. No worries if you can't memorize that — remember "a reverse dereference accesses the position one before base" and you can't go wrong.
 :::
 
-::: warning front_inserter is picky about containers
-`front_inserter` can only be used on containers that have `push_front`, namely `deque` and `list`. `vector`, `array`, and `string` do not have `push_front`, so using it on them will result in a compilation failure (see the real error message above). If you need to insert at the front, switch containers.
+::: warning front_inserter is picky about its container
+`front_inserter` only works on containers that have `push_front` — that means `deque` and `list`. `vector`, `array`, and `string` all lack `push_front`; wrapping one fails to compile on the spot (see the real error above). If you want head insertion, change containers.
 :::
 
 ::: warning inserter inserts "before"
-`inserter(c, it)` inserts elements **before** `it`, it does not replace the element pointed to by `it`. Furthermore, during consecutive insertions with `inserter`, the insertion point moves forward (because stuff was inserted in front), so its behavior differs from `back_inserter`'s "append" mode. Keep this in mind when using it.
+`inserter(c, it)` inserts the element **before** `it`; it does not replace the element `it` points to. And under consecutive `inserter` insertions the insertion point drifts along afterward (things were inserted in front of it), so the behavior differs from `back_inserter`'s "append" — keep that straight when you use it.
 :::
 
-::: warning ostream_iterator trailing delimiter
-The delimiter is appended after every write, so the output will have an extra one at the end. If you want clean comma separation, don't use this; use `std::format` or handle the boundaries manually in a loop.
+::: warning ostream_iterator leaves an extra delimiter at the end
+The delimiter is appended after each write, so the output ends with one extra. For cleanly comma-separated output, skip it — use `std::format` or handle the boundary by hand in a loop.
 :::
 
 ## Summary
 
-The core idea behind iterator adapters can be summed up in one sentence—**don't change the algorithm, don't create new containers, just swap in an iterator that "shapeshifts."** Let's wrap up with a few key takeaways:
+The idea behind iterator adapters really comes down to one sentence — **don't change the algorithm, don't build a new container; swap in an iterator that can "shape-shift."** The key takeaways:
 
-- Three categories of ready-made adapters: `reverse_iterator` (`rbegin`/`rend`, for reverse traversal or descending order with `sort`), insert iterators (`back_inserter`/`front_inserter`/`inserter`, turning assignment into insertion), and stream iterators (`ostream_iterator`/`istream_iterator`, converting between streams and sequences).
-- Insert iterators have specific requirements: `back_inserter` requires `push_back` (almost everyone has it), `front_inserter` requires `push_front` (only `deque`/`list`), and `inserter` requires `insert` (all sequence containers have it).
-- The essence of an adapter is "looks like an iterator, different behavior under the hood"—as long as it satisfies the semantics of an `output_iterator` (dereference assignment + `++`), it can be plugged into any algorithm without changing a single line of algorithm code.
-- Four common pitfalls: `reverse_iterator::base()` is off-by-one, `front_inserter` doesn't work with `vector`, `inserter` inserts *before* the position, and `ostream_iterator` adds a trailing delimiter.
+- Three ready-made kinds: `reverse_iterator` (`rbegin`/`rend` — reverse traversal, or descending order when paired with `sort`), insertion iterators (`back_inserter`/`front_inserter`/`inserter` — assignment becomes insertion), and stream iterators (`ostream_iterator`/`istream_iterator` — converting between streams and sequences).
+- Each insertion iterator wants something different: `back_inserter` needs `push_back` (nearly universal), `front_inserter` needs `push_front` (only `deque`/`list`), `inserter` needs `insert` (every sequence container has it).
+- An adapter's essence is "looks like an iterator, hangs a different behavior behind it" — satisfy output_iterator semantics (dereference-assign + `++`) and it plugs into any algorithm, which needs not a single character changed.
+- Four high-frequency traps: `reverse_iterator::base()` off by one, `front_inserter` refusing `vector`, `inserter` inserting before the position, and `ostream_iterator`'s trailing delimiter.
 
-In the next section, we will officially dive into algorithms—we'll organize the massive `<algorithm>` library into categories like "Non-modifying / Modifying / Sorting / Finding," and see how to pick the right tool for a specific problem.
+In the next article we formally move into algorithms — we will organize the whole `<algorithm>` family by "non-modifying / modifying / sorting / searching" and look at how to pick the right tool when a concrete problem stares back.
 
 ## References
 
-- [cppreference: Iterator adaptors](https://en.cppreference.com/w/cpp/iterator#Iterator_adaptors) — Overview of the three adapter categories
-- [cppreference: std::back_insert_iterator](https://en.cppreference.com/w/cpp/iterator/back_insert_iterator) — Return type of `back_inserter` and the "assignment is push_back" mechanism
-- [cppreference: std::reverse_iterator](https://en.cppreference.com/w/cpp/iterator/reverse_iterator) — The off-by-one relationship between `base()` and dereferencing
-- [cppreference: std::istream_iterator](https://en.cppreference.com/w/cpp/iterator/istream_iterator) — Stream iterators and the EOF sentinel
+- [cppreference: Iterator adaptors](https://en.cppreference.com/w/cpp/iterator#Iterator_adaptors) — an overview of the three adapter kinds
+- [cppreference: std::back_insert_iterator](https://en.cppreference.com/w/cpp/iterator/back_insert_iterator) — `back_inserter`'s return type and its "assignment is push_back" mechanism
+- [cppreference: std::reverse_iterator](https://en.cppreference.com/w/cpp/iterator/reverse_iterator) — the off-by-one relationship between `base()` and dereferencing
+- [cppreference: std::istream_iterator](https://en.cppreference.com/w/cpp/iterator/istream_iterator) — stream iterators and the EOF sentinel

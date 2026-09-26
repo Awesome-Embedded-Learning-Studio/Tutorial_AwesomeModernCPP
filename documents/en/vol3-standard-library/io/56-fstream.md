@@ -14,7 +14,7 @@ platform: host
 prerequisites:
 - 'Deep Dive into std::string: SSO, COW, and resize_and_overwrite'
 - 'charconv: Zero-Overhead Number-String Conversions'
-- 'Iterator Adapters: Reverse, Insert, and Stream — Repurposing Existing Iterators with New Behaviors'
+- 'Iterator Adapters: Reverse, Insertion, and Stream — Teaching Old Iterators New Tricks'
 reading_time_minutes: 16
 related:
 - 'charconv: Zero-Overhead Number-String Conversions'

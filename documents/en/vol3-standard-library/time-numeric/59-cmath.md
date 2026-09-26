@@ -14,8 +14,8 @@ order: 59
 platform: host
 prerequisites:
 - 'numeric: Accumulate, Fill, Inner Product, and Adjacent Difference'
-- 'Iterator Adapters: Reverse, Insert, and Stream — Repurposing Existing Iterators
-  with New Behaviors'
+- 'Iterator Adapters: Reverse, Insertion, and Stream — Teaching Old Iterators New
+  Tricks'
 reading_time_minutes: 16
 related:
 - 'numeric: Accumulate, Fill, Inner Product, and Adjacent Difference'

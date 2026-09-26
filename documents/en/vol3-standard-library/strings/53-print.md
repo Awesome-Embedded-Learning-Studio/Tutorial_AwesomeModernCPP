@@ -13,7 +13,7 @@ difficulty: intermediate
 platform: host
 reading_time_minutes: 14
 prerequisites:
-  - 'Iterator Adapters: Reverse, Insert, and Stream — Repurposing Existing Iterators with New Behaviors'
+  - 'Iterator Adapters: Reverse, Insertion, and Stream — Teaching Old Iterators New Tricks'
   - 'char8_t and UTF-8 Strings'
 related:
   - 'Container Selection Guide: Choosing the Right Container Based on Operations, Memory, and Invalidation Rules'
