@@ -174,4 +174,4 @@ cmake -B build . && cmake --build build
 - Companion code: `code/volumn_codes/vol8-labs/ministl/stage1_rawbuf_vector/`
 - [cppreference: `std::move_if_noexcept`](https://en.cppreference.com/w/cpp/utility/move_if_noexcept)
 - [Move Semantics in Practice: From STL to Custom Types](../../vol2-modern-features/ch00-move-semantics/05-move-in-practice.md) (vol2 covers the language-feature layer; this part is the implementation layer)
-- [Comprehensive Project: A mini-STL Algorithm Library with Concepts](../../vol4-advanced/vol3-metaprogramming-cpp20-23/09-mini-stl-with-concepts.md) (vol4; the other face of concepts)
+- [Capstone Project: A mini-STL Algorithm Library Constrained by Concepts](../../vol4-advanced/vol3-metaprogramming-cpp20-23/09-mini-stl-with-concepts.md) (vol4; the other face of concepts)

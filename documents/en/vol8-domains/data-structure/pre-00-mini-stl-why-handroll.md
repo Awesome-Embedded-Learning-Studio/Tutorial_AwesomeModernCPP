@@ -18,7 +18,7 @@ prerequisites:
   - "Deep Dive into std::vector: Three Pointers, Reallocation, and Iterator Invalidation"
 related:
   - "mini STL in Practice (Part 1): RawBuffer — Capacity, Not Objects"
-  - "Comprehensive Project: A mini-STL Algorithm Library with Concepts"
+  - "Capstone Project: A mini-STL Algorithm Library Constrained by Concepts"
 translation:
   source: documents/vol8-domains/data-structure/pre-00-mini-stl-why-handroll.md
   source_hash: e82419bd7e2b8fdabda80673f154c2441720a654cd3b5aaa4246d62e0e2c8f5a
@@ -89,5 +89,5 @@ The first piece is `RawBuffer`, a buffer that manages capacity and nothing about
 - `base/containers/vector_buffer.h` (2017, this series' first mirror)
 - The local libstdc++ `bits/stl_list.h` and `bits/forward_list.h` (mirrors for the linked-list pieces); [the absl swiss table design doc](https://abseil.io/about/design/swisstables) (mirror for the hashing piece)
 - [stl1weekend (Xiao Peng's hand-written STL series)](https://github.com/parallel101/stl1weekend) (a fellow traveler on the "implement the STL yourself" route; the source of the red-black-tree blood-and-tears quote)
-- [Comprehensive Project: A mini-STL Algorithm Library with Concepts](../../vol4-advanced/vol3-metaprogramming-cpp20-23/09-mini-stl-with-concepts.md) (vol4, the algorithms half)
+- [Capstone Project: A mini-STL Algorithm Library Constrained by Concepts](../../vol4-advanced/vol3-metaprogramming-cpp20-23/09-mini-stl-with-concepts.md) (vol4, the algorithms half)
 - [Container Selection Guide](../../vol3-standard-library/containers/01-container-selection-guide.md) (vol3, the conceptual-layer entry point)
