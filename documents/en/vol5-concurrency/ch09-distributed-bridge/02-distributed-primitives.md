@@ -14,7 +14,7 @@ prerequisites:
 - promise_type and awaitable
 reading_time_minutes: 31
 related:
-- 'Hands-on: Coroutine Echo Server'
+- 'Coroutine Echo Server in Practice'
 tags:
 - host
 - cpp-modern

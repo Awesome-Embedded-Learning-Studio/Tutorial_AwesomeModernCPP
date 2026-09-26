@@ -2,17 +2,17 @@
 chapter: 6
 cpp_standard:
 - 20
-description: Implement a complete TCP Echo Server using C++20 coroutines and a custom
-  event loop, integrating all the knowledge points from the previous four articles.
+description: Build a complete TCP Echo Server with C++20 coroutines and our own event
+  loop, tying together everything from the previous four articles
 difficulty: advanced
 order: 5
 platform: host
 prerequisites:
-- 异步 I/O 与事件循环
-- promise_type 与 awaitable
+- Asynchronous I/O and Event Loops
+- promise_type and awaitable
 reading_time_minutes: 40
 related:
-- Actor 模型与消息传递
+- Actor Model and Message Passing
 tags:
 - host
 - cpp-modern
@@ -20,65 +20,65 @@ tags:
 - coroutine
 - 异步编程
 - 实战
-title: 'Hands-on: Coroutine Echo Server'
+title: Coroutine Echo Server in Practice
 translation:
   source: documents/vol5-concurrency/ch06-async-io-coroutine/05-coroutine-echo-server.md
   source_hash: ab2f6282c523271ccbcb293473d853cb00c61fb3928dcd137d0e8d28bae0c82d
-  translated_at: '2026-06-16T06:20:33.461703+00:00'
+  translated_at: '2026-09-26T09:21:51+00:00'
   engine: anthropic
-  token_count: 9472
+  token_count: 20000
 ---
-# Practical: Coroutine Echo Server
+# Coroutine Echo Server in Practice
 
-After four theoretical articles—covering the evolution of asynchronous programming paradigms, C++20 coroutine basics, the customization mechanisms of `promise_type` and awaitable, and finally connecting coroutines with the epoll event loop in the last part—we have finally arrived at the practical implementation. To be honest, every previous article was leading up to this moment: we will use our custom-built coroutine framework to write a fully functional network program—a TCP Echo Server.
+Four articles of groundwork—the evolution of asynchronous programming paradigms, then C++20 coroutine fundamentals, then the customization machinery of `promise_type` and awaitables, and finally last article's job of wiring coroutines up to the epoll event loop—and we have arrived at practice. Honestly, every one of those articles was preparation for this moment: we are going to use the coroutine framework we built ourselves to write a network program that actually runs—a TCP Echo Server.
 
-The Echo Server is the "Hello World" of network programming: the server echoes back whatever the client sends. It is simple enough to have almost no business logic, yet complete enough to cover all core aspects of network programming—creating a listening socket, accepting connections, reading data, writing data back, and handling connection closures and errors. Once you can elegantly string these steps together using coroutines, you will have truly mastered the essence of the "coroutine-based asynchronous I/O" paradigm.
+The Echo Server is the "Hello World" of network programming: whatever the client sends, the server sends right back. It is simple enough to have almost no business logic, yet complete enough to cover every core step of network programming—creating a listening socket, accepting connections, reading data, writing data back, handling connection shutdown and errors. Once you can string these steps together elegantly with coroutines, you have truly grasped the essence of the "coroutine-based asynchronous I/O" paradigm.
 
-## Environment Setup
+## Environment Notes
 
-This article is a complete hands-on network programming exercise, so the environment requirements are more specific than in previous posts. The operating system must be Linux (WSL2 is also fine, kernel 5.x+), because epoll is a Linux-specific API—macOS users can achieve similar results using kqueue, but the code will require modifications. For the compiler, we need GCC 11+ or Clang 15+. Both versions enable coroutine support with `-std=c++20` (GCC 10 requires the `-fcoroutines` flag, which is no longer needed starting with GCC 11). The compilation flags `-std=c++20 -O2` are sufficient, though we recommend adding `-Wall -Wextra` to enable warnings. For testing tools, manual testing with `nc` (netcat) or `telnet` is fine, but performance testing requires `wrk` or `ab` (ApacheBench).
+This article is a complete network-programming project, so the environment requirements are more specific than in the previous few articles. On the operating system side you must be on Linux (WSL2 works too, kernel 5.x+), because epoll is a Linux-specific API—macOS users can do something similar with kqueue, but the code would need changes. On the compiler side we need GCC 11+ or Clang 15+; with `-std=c++20` those versions enable coroutine support (GCC 10 needs the `-fcoroutines` flag; from GCC 11 on it is no longer required). For compiler options `-std=c++20 -O2` is enough, and we recommend adding `-Wall -Wextra` to keep warnings on. For testing tools, `nc` (netcat) or `telnet` is fine for manual testing, while performance testing needs `wrk` or `ab` (ApacheBench).
 
-Installing dependencies on Ubuntu/Debian is simple:
+Installing the dependencies on Ubuntu/Debian is simple:
 
 ```bash
 sudo apt install netcat-openbsd wrk apache2-utils
 ```
 
-## Overall Architecture: Blueprint Before Building
+## The Big Picture: Draw the Blueprint Before Writing Code
 
-Before we start, let's clarify the components of our Echo Server and how they interact. Blindly writing code will only leave you questioning your existence during debugging sessions.
+Before touching the keyboard, let's get clear on which components make up the Echo Server and how they interact. Piling up code blindly will only leave you questioning your life choices during debugging.
 
 Our Echo Server consists of three core components:
 
-**EventLoop** is the heart of the entire system. It encapsulates `epoll`, responsible for notifying whoever has data ready. We built a minimal version in the previous article, but we will make improvements here—adding coroutine lifecycle management and supporting dynamic registration and removal of file descriptors. The EventLoop runs an infinite loop in a single thread: it calls `epoll_wait` to get ready file descriptors, retrieves the corresponding coroutine handle from `epoll_event.data.ptr`, and then `resume()`s it.
+**EventLoop** (the event loop) is the heart of the whole system. It wraps epoll and takes care of "notifying whoever has data ready". In the previous article we built a minimal version; this article improves on it—adding coroutine lifetime management and support for dynamically registering and removing fds. EventLoop runs an infinite loop in one thread: call `epoll_wait` to get the ready fds, recover the corresponding coroutine handle from `epoll_event.data.ptr`, then `resume()` it.
 
-**Async I/O awaiters** (`async_accept`, `async_read`, `async_write`) are the bridge between coroutines and the EventLoop. Each awaiter encapsulates a specific I/O operation. When an operation cannot be completed immediately (returning `EAGAIN`), the awaiter registers the current coroutine with `epoll` and suspends it. When data is ready, the EventLoop resumes the coroutine, and the coroutine retries the I/O operation.
+**The asynchronous I/O awaiters** (`async_accept`, `async_read`, `async_write`) are the bridge between coroutines and the EventLoop. Each awaiter wraps one concrete I/O operation—when the operation cannot complete immediately (returns `EAGAIN`), the awaiter registers the current coroutine on epoll and suspends; when the data is ready, the EventLoop resumes the coroutine and the coroutine retries the I/O operation.
 
-The **handle_connection coroutine** is an independent coroutine corresponding to each client connection. It runs an infinite loop performing `co_await async_read` → `co_await async_write` until the client disconnects. This "one coroutine per connection" pattern makes the code look almost identical to synchronous blocking programming, while the underlying model is an efficient, single-threaded event-driven system.
+**The `handle_connection` coroutine** is an independent coroutine, one per client connection. It sits in an infinite loop doing `co_await async_read` → `co_await async_write` until the client disconnects. This "one coroutine per connection" pattern makes the code look almost identical to synchronous blocking programming, while underneath it is an efficient single-threaded, event-driven model.
 
-The data flow looks like this:
+The data flow looks roughly like this:
 
 ```mermaid
 flowchart TD
-    A["客户端连接"] --> B["epoll 通知 listen_fd 可读"]
-    B --> C["accept_loop 协程恢复<br/>accept 拿到 client_fd"]
-    C --> D["启动 handle_connection(client_fd) 协程"]
-    D --> E["handle_connection 执行<br/>co_await async_read(client_fd)"]
-    E --> F["async_read 发现没数据<br/>把 client_fd 注册到 epoll，协程挂起"]
-    F --> G["客户端发送数据"]
-    G --> H["epoll 通知 client_fd 可读"]
-    H --> I["EventLoop 恢复 handle_connection 协程"]
-    I --> J["async_read 读取数据，返回字节数"]
-    J --> K["handle_connection 执行<br/>co_await async_write(client_fd)"]
-    K --> L["数据写回客户端"]
+    A["Client connects"] --> B["epoll reports listen_fd readable"]
+    B --> C["accept_loop coroutine resumes<br/>accept returns client_fd"]
+    C --> D["Start the handle_connection(client_fd) coroutine"]
+    D --> E["handle_connection executes<br/>co_await async_read(client_fd)"]
+    E --> F["async_read finds no data<br/>registers client_fd with epoll, coroutine suspends"]
+    F --> G["Client sends data"]
+    G --> H["epoll reports client_fd readable"]
+    H --> I["EventLoop resumes the handle_connection coroutine"]
+    I --> J["async_read reads the data, returns byte count"]
+    J --> K["handle_connection executes<br/>co_await async_write(client_fd)"]
+    K --> L["Data written back to the client"]
     L --> E
 ```
 
-The entire process runs within a single thread, yet handles multiple clients concurrently. This is because each client has its own coroutine, which suspends and yields execution while waiting for I/O, without blocking anyone else.
+The whole flow completes inside a single thread, yet handles multiple concurrent clients—because each client has its own coroutine, and a coroutine waiting on I/O suspends and yields control, blocking nobody.
 
-## Step 1: EventLoop — A Complete Version of the Event Loop
+## Step 1: EventLoop — the Full Event Loop
 
-In the previous article, our `EventLoop` was a minimal prototype. Now, we need a more robust version. The core improvements are: we need to register the file descriptor (fd) when a coroutine suspends, and remove the fd when the coroutine resumes (because in Level-Triggered mode, failing to remove it will cause repeated triggers), as well as manage coroutines that have finished execution.
+In the previous article our EventLoop was a minimal prototype; this article needs a more robust version. The core improvements: register the fd when a coroutine suspends, remove the fd after the coroutine resumes (in LT mode, leaving it registered would fire repeatedly), and manage the coroutines that have already finished.
 
 ```cpp
 #include <coroutine>
@@ -95,10 +95,10 @@ In the previous article, our `EventLoop` was a minimal prototype. Now, we need a
 #include <unordered_set>
 ```
 
-Let's first look at the `EventLoop` class definition. Compared to the previous version, we have added a set of active coroutines to manage their lifecycles:
+First, the EventLoop class definition. Compared with the previous article's version, we have added a set of active coroutines to manage lifetimes:
 
 ```cpp
-/// 事件循环——封装 epoll，管理协程的挂起与恢复
+/// Event loop — wraps epoll, manages coroutine suspension and resumption
 class EventLoop {
 public:
     EventLoop()
@@ -112,19 +112,19 @@ public:
 
     ~EventLoop() { close(epoll_fd_); }
 
-    // 不允许拷贝和移动
+    // No copying or moving
     EventLoop(const EventLoop&) = delete;
     EventLoop& operator=(const EventLoop&) = delete;
 
-    /// 注册 fd 到 epoll，关联一个协程 handle
+    /// Register an fd with epoll, associating a coroutine handle
     void add_event(int fd, uint32_t events, std::coroutine_handle<> handle)
     {
         struct epoll_event ev;
         ev.events = events;
-        ev.data.ptr = handle.address(); // 核心技巧：把 handle 存进 epoll
+        ev.data.ptr = handle.address(); // The key trick: store the handle inside epoll
 
         if (epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, fd, &ev) < 0) {
-            // fd 可能已经被注册过了，用 MOD 重试
+            // The fd may already be registered; retry with MOD
             if (errno == EEXIST) {
                 epoll_ctl(epoll_fd_, EPOLL_CTL_MOD, fd, &ev);
             } else {
@@ -133,28 +133,28 @@ public:
         }
     }
 
-    /// 从 epoll 移除 fd
+    /// Remove an fd from epoll
     void remove_event(int fd)
     {
         epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, fd, nullptr);
     }
 
-    /// 注册一个活跃协程（防止协程帧被提前销毁）
+    /// Track an active coroutine (prevents the coroutine frame from being destroyed early)
     void track_coroutine(std::coroutine_handle<> handle)
     {
         active_coroutines_.insert(handle);
     }
 
-    /// 移除一个已结束的协程
+    /// Untrack a finished coroutine
     void untrack_coroutine(std::coroutine_handle<> handle)
     {
         active_coroutines_.erase(handle);
     }
 
-    /// 运行事件循环
+    /// Run the event loop
     void run();
 
-    /// 停止事件循环
+    /// Stop the event loop
     void stop() { running_ = false; }
 
 private:
@@ -164,11 +164,11 @@ private:
 };
 ```
 
-Here is a key design element: the `active_coroutines_` collection. Its purpose is to resolve an issue we mentioned at the end of the previous article—where the coroutine's return value object might be destroyed prematurely, causing the coroutine frame to be freed. We use this collection to hold handles to all active coroutines, ensuring they are not destroyed while executing. When a coroutine finishes, it removes itself from the collection and calls `destroy()` to clean up the coroutine frame. However, in the final implementation for this article, we opted for the simpler `DetachedTask` approach—where the coroutine frame is automatically cleaned up upon completion—so `active_coroutines_` and its related methods are not actually called in the code. If you need more fine-grained lifecycle management (such as waiting for coroutine completion from the outside or canceling coroutines), the `track_coroutine`/`untrack_coroutine` mechanism comes into play.
+There is one key design here: the `active_coroutines_` set. It exists to solve a problem we mentioned at the end of the previous article—the coroutine's return-value object can be destroyed early, causing the coroutine frame to be freed. We use this set to hold every active coroutine handle, making sure they are not destroyed while executing. When a coroutine finishes, it removes itself from the set and calls `destroy()` to clean up the frame. In this article's final implementation, however, we opt for the simpler `DetachedTask` scheme—the coroutine frame is cleaned up automatically when the coroutine ends—so `active_coroutines_` and its related methods are never actually called in the real code. If you need finer-grained lifetime management (waiting for coroutines to finish from the outside, cancelling coroutines, and so on), the `track_coroutine`/`untrack_coroutine` machinery comes into its own.
 
-> ⚠️ **`std::unordered_set<std::coroutine_handle<>>` requires a `std::hash<coroutine_handle>` specialization, which was only added to the standard library in C++23.** GCC 14+ libstdc++ provides this specialization as an extension in C++20 mode, but on some older compilers, you may need to use `std::set<std::coroutine_handle<>>` instead (sorted based on `operator<=>`, requiring no hash) or provide a custom hasher.
+> ⚠️ **`std::unordered_set<std::coroutine_handle<>>` requires the `std::hash<coroutine_handle>` specialization, which only entered the standard library in C++23.** GCC 14+ libstdc++ provides this specialization as an extension even in C++20 mode, but on some older compilers you may need to switch to `std::set<std::coroutine_handle<>>` (ordered by `operator<=>`, no hash needed) or provide a custom hasher.
 
-Next is the event loop's `run()` method:
+Next, the event loop's `run()` method:
 
 ```cpp
 void EventLoop::run()
@@ -180,7 +180,7 @@ void EventLoop::run()
         int n = epoll_wait(epoll_fd_, events, kMaxEvents, 1000);
         if (n < 0) {
             if (errno == EINTR) {
-                continue; // 被信号中断，重试
+                continue; // Interrupted by a signal, retry
             }
             perror("epoll_wait");
             break;
@@ -198,14 +198,14 @@ void EventLoop::run()
 }
 ```
 
-You will find that the logic in `run()` is straightforward: `epoll_wait` retrieves ready events, we restore the coroutine handle from `data.ptr`, and `resume()` it. The timeout is set to one second to give the loop a chance to check the `running_` flag (used for graceful exit). Handling `EINTR` is essential—for instance, when you press Ctrl+C to send SIGINT, `epoll_wait` is interrupted and returns `-1`, setting `errno` to `EINTR`. In this case, we should not exit the loop.
+You will notice `run()`'s logic is straightforward: `epoll_wait` fetches the ready events, the coroutine handle is recovered from `data.ptr`, and `resume()` is called on it. The timeout of 1 second exists so the loop gets a chance to check the `running_` flag (used for graceful shutdown). Handling `EINTR` is mandatory—when you press Ctrl+C and send SIGINT, for example, `epoll_wait` is interrupted, returns `-1`, and sets `errno` to `EINTR`; at that point the loop must not exit.
 
-## Step 2: The Task Type—A Coroutine Wrapper with Automatic Cleanup
+## Step 2: The Task Types — Coroutine Wrappers with Automatic Cleanup
 
-In the previous article, we defined a minimal `IoTask`, but it had a serious flaw: the coroutine frame was not automatically destroyed after the coroutine finished, requiring someone to manually call `destroy()`. This is a root cause of memory leaks in production code. This time, we design a more robust `Task` type that leverages the EventLoop's tracking mechanism to ensure coroutine frames are always cleaned up correctly.
+In the previous article we defined a bare-minimum `IoTask`, but it has a serious problem: after the coroutine finishes, the coroutine frame is not destroyed automatically—someone has to call `destroy()` by hand. In production code that is a recipe for memory leaks. This time we design a more complete `Task` type that leans on the EventLoop's tracking machinery to guarantee the coroutine frame is always cleaned up properly.
 
 ```cpp
-/// 协程任务类型——与 EventLoop 配合，自动管理生命周期
+/// Coroutine task type — works with EventLoop, automatic lifetime management
 struct Task {
     struct promise_type {
         Task get_return_object()
@@ -215,10 +215,10 @@ struct Task {
             };
         }
 
-        // 惰性启动：协程创建时不执行，等外部 resume
+        // Lazy start: the coroutine does not run on creation, it waits for an external resume
         std::suspend_always initial_suspend() { return {}; }
 
-        // 协程结束时挂起，由 EventLoop 负责清理
+        // Suspend at the end; the EventLoop is responsible for cleanup
         std::suspend_always final_suspend() noexcept { return {}; }
 
         void return_void() {}
@@ -228,7 +228,7 @@ struct Task {
     std::coroutine_handle<promise_type> handle;
 };
 
-/// Fire-and-forget 任务类型——协程结束后自动销毁
+/// Fire-and-forget task type — the frame destroys itself when the coroutine ends
 struct DetachedTask {
     struct promise_type {
         DetachedTask get_return_object()
@@ -238,10 +238,10 @@ struct DetachedTask {
             };
         }
 
-        // 创建时立即开始执行
+        // Starts executing immediately on creation
         std::suspend_never initial_suspend() { return {}; }
 
-        // 结束时自动销毁协程帧
+        // The coroutine frame is destroyed automatically at the end
         std::suspend_never final_suspend() noexcept { return {}; }
 
         void return_void() {}
@@ -252,28 +252,29 @@ struct DetachedTask {
 };
 ```
 
-We have defined two task types. `Task` is "lazy"—it does not execute upon creation, requires an external `resume()`, and suspends upon completion to await cleanup. It is suitable for scenarios requiring precise control over execution timing, such as an accept loop.
+We define two task types. `Task` is "lazy"—it does not execute on creation, it needs an external `resume()`, and it suspends at the end to wait for cleanup. It suits scenarios where you want precise control over when execution starts, such as the accept loop.
 
-`DetachedTask` is "fire-and-forget"—it executes immediately upon creation, and the coroutine frame is automatically destroyed when it finishes (because `final_suspend` returns `suspend_never`). It is suitable for scenarios where we "just need to start it and forget about it," such as handling client connections. We create one `DetachedTask` per client connection; once the connection handling is complete, the coroutine cleans up automatically without external management.
+`DetachedTask` is "fire-and-forget"—it starts executing immediately on creation, and when it ends the coroutine frame destroys itself automatically (because `final_suspend` returns `suspend_never`). It suits scenarios of the "start it and stop caring" kind, such as handling client connections. Each client connection creates one `DetachedTask`; once the connection is handled, the coroutine cleans itself up, with no external management needed.
 
-> ⚠️ **The fact that `DetachedTask`'s `final_suspend` returns `suspend_never` means the coroutine frame is destroyed immediately when the coroutine ends. While convenient, this carries risks: if the coroutine holds a reference to a destroyed object (like a dangling pointer), accessing that reference before `final_suspend` results in undefined behavior (UB). Therefore, we must ensure all captured resources in a `DetachedTask` remain valid—use capture by value or `shared_ptr`, and avoid raw pointers or references to stack variables.**
+> ⚠️ **`DetachedTask`'s `final_suspend` returning `suspend_never` means the coroutine frame is destroyed the instant the coroutine ends. That is convenient, but risky: if the coroutine holds references to already-destroyed objects (a dangling pointer, say), accessing that reference before `final_suspend` is UB. So inside a DetachedTask you must guarantee that every captured resource stays valid—capture by value or use `shared_ptr`, never reference stack variables through a raw pointer.**
 
-## Step 3: Utility Functions—Creating a Non-blocking Listening Socket
+## Step 3: Helper Functions — Creating a Non-blocking Listening Socket
 
-This section covers standard Linux network programming. While it isn't directly related to coroutines, rewriting it every time is tedious. Let's wrap it up first:
+This part is standard Linux network programming with little to do with coroutines themselves, but rewriting it every time gets old. Let's wrap it up first:
 
 ```cpp
-/// 设置 fd 为非阻塞模式
-/// 注意：本篇代码中 listen_fd 和 client_fd 都通过 SOCK_NONBLOCK 标志直接创建为非阻塞模式，
-/// 所以这个函数实际上没有被调用。保留它是因为在实际项目中你经常需要把一个已有的 fd
-/// （比如从 dup2 或 socketpair 得到的 fd）手动设置为非阻塞
+/// Set an fd to non-blocking mode
+/// Note: in this article's code, both listen_fd and client_fd are created directly in
+/// non-blocking mode via the SOCK_NONBLOCK flag, so this function is never actually called.
+/// We keep it because in real projects you often need to switch an existing fd
+/// (e.g. one obtained from dup2 or socketpair) to non-blocking manually
 void set_nonblocking(int fd)
 {
     int flags = fcntl(fd, F_GETFL, 0);
     fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
 
-/// 创建监听 socket，绑定到指定端口
+/// Create a listening socket bound to the given port
 int create_listen_socket(uint16_t port)
 {
     int listen_fd = ::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
@@ -282,8 +283,8 @@ int create_listen_socket(uint16_t port)
         return -1;
     }
 
-    // SO_REUSEADDR：允许端口在 TIME_WAIT 状态下被复用
-    // 不加这个的话，重启服务器时可能遇到 "Address already in use"
+    // SO_REUSEADDR: allow the port to be reused while in TIME_WAIT
+    // Without this, restarting the server can fail with "Address already in use"
     int opt = 1;
     setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
@@ -310,19 +311,19 @@ int create_listen_socket(uint16_t port)
 }
 ```
 
-There are two details worth noting here. The first is `SOCK_NONBLOCK | SOCK_CLOEXEC`, which sets the socket to non-blocking mode and sets the close-on-exec flag directly within the `socket()` call. This is more atomic than calling `socket()` followed by `fcntl()`, avoiding a race window between the two (though it is virtually impossible to trigger in this scenario).
+Two details here deserve attention. The first is `SOCK_NONBLOCK | SOCK_CLOEXEC`: it puts the socket into non-blocking mode and sets the close-on-exec flag right inside the `socket()` call—more atomic than calling `socket()` first and `fcntl()` later, avoiding the race window between `socket()` and `fcntl()` (though in this scenario it is nearly impossible to hit).
 
-The second is `SO_REUSEADDR`. After a TCP connection closes, it enters the TIME_WAIT state (lasting approximately 2MSL, usually 60 seconds), during which the port cannot be reused. If you restart the server frequently during debugging, you will often encounter the "Address already in use" error without this option. It is also recommended to include this in production environments; Nginx does this, for example.
+The second is `SO_REUSEADDR`. After a TCP connection closes it enters the TIME_WAIT state (lasting roughly 2MSL, typically 60 seconds), during which the port cannot be reused. If you restart the server frequently while debugging, without this option you will keep hitting "Address already in use" errors. It is recommended in production too—Nginx does exactly this.
 
-## Step 4: async_accept—Awaitable Connection Accepting
+## Step 4: async_accept — Coroutine-style Connection Acceptance
 
-Now we get to the core part. `async_accept` is an awaiter that wraps the accept system call: it suspends the coroutine when there are no new connections and registers the listen_fd with epoll; when a new connection arrives, it resumes the coroutine and executes accept to obtain the client_fd.
+Now we enter the core part. `async_accept` is an awaiter that wraps the accept system call: when there is no new connection it suspends the coroutine and registers listen_fd with epoll; when a new connection arrives the coroutine is resumed and runs accept to obtain the client_fd.
 
 ```cpp
-/// 全局事件循环实例
+/// Global event loop instance
 EventLoop g_event_loop;
 
-/// 异步 accept 的 awaiter
+/// Awaiter for asynchronous accept
 struct AsyncAcceptAwaiter {
     int listen_fd_;
 
@@ -331,21 +332,21 @@ struct AsyncAcceptAwaiter {
 
     bool await_ready() noexcept
     {
-        // 先尝试非阻塞 accept——可能已经有等待的连接了
-        // 如果 accept 成功，就不需要挂起，省去注册 epoll 的开销
-        return false; // 简化版，总是走挂起路径
+        // Try a non-blocking accept first—there may already be a pending connection
+        // If accept succeeds there is no need to suspend, saving the epoll registration cost
+        return false; // Simplified version: always take the suspension path
     }
 
     void await_suspend(std::coroutine_handle<> handle)
     {
-        // 注册到 epoll，监听可读事件（新连接到达 = listen_fd 可读）
+        // Register with epoll, watching for readable events (a new connection arriving = listen_fd readable)
         g_event_loop.add_event(listen_fd_, EPOLLIN, handle);
     }
 
     int await_resume()
     {
-        // 协程恢复后，先从 epoll 移除 listen_fd
-        // LT 模式下不移除的话，每次 epoll_wait 都会反复通知
+        // After the coroutine resumes, first remove listen_fd from epoll
+        // In LT mode, leaving it registered means every epoll_wait keeps notifying
         g_event_loop.remove_event(listen_fd_);
 
         struct sockaddr_in client_addr {};
@@ -358,62 +359,62 @@ struct AsyncAcceptAwaiter {
         );
 
         if (client_fd >= 0) {
-            // accept4 带 SOCK_NONBLOCK，不需要再调 fcntl
+            // accept4 with SOCK_NONBLOCK: no need to call fcntl again
             std::printf("[server] 新连接 fd=%d\n", client_fd);
         }
         return client_fd;
     }
 };
 
-/// 协程化的 accept——对外接口
+/// Coroutine-style accept — the public interface
 AsyncAcceptAwaiter async_accept(int listen_fd)
 {
     return AsyncAcceptAwaiter(listen_fd);
 }
 ```
 
-Here are a few design choices we need to explain.
+Several design choices here need explaining.
 
-`await_ready()` simply returns `false`—we always suspend. A more optimized version could attempt a non-blocking accept first; if a connection is already queued, it returns immediately, saving the overhead of registering with epoll. However, for code clarity, we stick with the simple version here.
+For `await_ready()` we bluntly return `false`—always suspend. A more optimized version could first attempt one non-blocking accept and return directly if a connection is already queued, saving the epoll registration cost. For code clarity, we use the simple version here.
 
-`await_suspend()` registers `listen_fd` with epoll to watch for `EPOLLIN` events—for a listening socket, `EPOLLIN` means "a new connection is ready to be accepted".
+`await_suspend()` registers listen_fd with epoll, watching the `EPOLLIN` event—for a listening socket, `EPOLLIN` means "a new connection is waiting to be accepted".
 
-`await_resume()` does two things: first, it removes `listen_fd` from epoll, then it calls `accept4` to get the new `client_fd`. We remove it before accepting because in Level-Triggered (LT) mode, if we call `epoll_wait` without removing `listen_fd` first, it will keep notifying us that "`listen_fd` is readable" (because there might be more connections in the queue). We choose to accept only one connection at a time here. We could accept multiple at once, but that would require changing `await_resume` to return a list of connections, which would complicate the design significantly.
+`await_resume()` does two things: first remove listen_fd from epoll, then call `accept4` to obtain the new client_fd. Remove first, accept second—because in LT mode, if we leave listen_fd registered and call `epoll_wait`, it will keep telling us "listen_fd is readable" (there may still be more connections in the queue). Here we choose to take one connection per accept; taking several at once is entirely possible—but that would mean changing await_resume to return a list of connections, a noticeably more complicated design.
 
-`accept4` uses `SOCK_NONBLOCK | SOCK_CLOEXEC` to set the `client_fd` to non-blocking mode immediately—this is essential for the subsequent `async_read` and `async_write` operations.
+`accept4` with `SOCK_NONBLOCK | SOCK_CLOEXEC` puts client_fd directly into non-blocking mode—mandatory for the later async_read/async_write.
 
-## Step 5: async_read—Coroutine-based Data Reading
+## Step 5: async_read — Coroutine-style Data Reading
 
-`async_read` is the core awaiter in our Echo Server. It encapsulates the complete semantics of a non-blocking read: if data is available, read it immediately; if not (i.e., `EAGAIN`), suspend and wait for an epoll notification.
+`async_read` is the most central awaiter of the entire Echo Server. It wraps the full semantics of non-blocking read: if data is available, read it right away; if not (`EAGAIN`), suspend and wait for the epoll notification.
 
 ```cpp
-/// 异步 read 的 awaiter
+/// Awaiter for asynchronous read
 struct AsyncReadAwaiter {
     int fd_;
     void* buffer_;
     std::size_t size_;
     ssize_t result_;
-    bool suspended_ = false; // 是否经过了挂起路径
+    bool suspended_ = false; // Whether we went through the suspension path
 
     AsyncReadAwaiter(int fd, void* buffer, std::size_t size)
         : fd_(fd), buffer_(buffer), size_(size), result_(0) {}
 
     bool await_ready() noexcept
     {
-        // 快速路径：先尝试非阻塞 read
+        // Fast path: try a non-blocking read first
         result_ = ::recv(fd_, buffer_, size_, 0);
         if (result_ >= 0) {
-            return true; // 读到了数据，不需要挂起
+            return true; // Got data, no need to suspend
         }
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            return false; // 暂时没数据，需要等 epoll 通知
+            return false; // No data for now, wait for the epoll notification
         }
-        return true; // 其他错误（如连接重置），不挂起，让 await_resume 处理
+        return true; // Other errors (e.g. connection reset): don't suspend, let await_resume handle it
     }
 
     void await_suspend(std::coroutine_handle<> handle)
     {
-        // 没数据可读，注册到 epoll 等待 fd 可读
+        // No data to read: register with epoll and wait for the fd to become readable
         suspended_ = true;
         g_event_loop.add_event(fd_, EPOLLIN, handle);
     }
@@ -421,69 +422,69 @@ struct AsyncReadAwaiter {
     ssize_t await_resume()
     {
         if (suspended_) {
-            // 挂起后恢复的路径：epoll 通知 fd 可读，尝试真正读取
+            // The resumed-after-suspension path: epoll says the fd is readable, do the real read
             g_event_loop.remove_event(fd_);
             result_ = ::recv(fd_, buffer_, size_, 0);
         }
-        // 快速路径（await_ready 返回 true）直接返回 result_
+        // The fast path (await_ready returned true) returns result_ directly
         return result_;
     }
 };
 
-/// 协程化的 read——对外接口
+/// Coroutine-style read — the public interface
 AsyncReadAwaiter async_read(int fd, void* buffer, std::size_t size)
 {
     return AsyncReadAwaiter(fd, buffer, size);
 }
 ```
 
-The fast path in `await_ready()` is a critical optimization. In many scenarios, data is already available in the TCP receive buffer (especially when the client sends multiple messages consecutively). In these cases, we don't need the full routine of suspending the coroutine, registering with `epoll`, waiting for a notification, and resuming the coroutine—we can simply `recv` immediately. This fast path eliminates at least one `epoll_ctl` system call and two coroutine context switches.
+The fast path in `await_ready()` is an important optimization. In many scenarios the TCP receive buffer already holds data (especially when the client sends several messages back to back); at that point there is no need for the whole routine—suspend the coroutine, register with epoll, wait for the notification, resume the coroutine—just `recv` directly. This fast path saves at least one `epoll_ctl` system call and two coroutine context switches.
 
-You might have noticed that we use `recv` instead of `read`. The difference is that `recv` has a `flags` parameter. We currently pass `0`, but we will eventually use the `MSG_NOSIGNAL` flag to avoid SIGPIPE issues. `read` does not support the `flags` parameter.
+You may have noticed we use `recv` rather than `read`. The difference is that `recv` takes a `flags` parameter; we pass 0 for now, but later we will use the `MSG_NOSIGNAL` flag to dodge the SIGPIPE problem. `read` does not support a flags parameter.
 
-Inside `await_resume()`, we use a `suspended_` flag to distinguish between the two paths. The previous version used `result_ < 0` to check, but this contained a subtle bug: if `recv` returned a non-`EAGAIN` error (such as `ECONNRESET`) on the fast path, `result_` would be negative. `await_resume` would mistakenly assume we took the suspend path and proceed to call `remove_event`. However, since the file descriptor was never registered with `epoll` in the first place, the `epoll_ctl(DEL)` inside `remove_event` might modify `errno`, overwriting the actual error code. Using the `suspended_` flag allows us to precisely distinguish between "returning immediately with an error from the fast path" and "resuming from suspension and reading."
+In `await_resume()`, a `suspended_` flag distinguishes the two paths. An earlier version judged with `result_ < 0`, but that hides a subtle bug: if the fast path's `recv` returns a non-`EAGAIN` error (`ECONNRESET`, say), `result_` is negative and `await_resume` would mistakenly assume we took the suspension path and call `remove_event`—yet at that moment the fd was never registered with epoll at all, and the `epoll_ctl(DEL)` inside `remove_event` may modify `errno`, clobbering the real error code. The `suspended_` flag separates the two situations precisely: "fast path got an error and returns directly" versus "resumed after suspension, then read".
 
-## Step 6: async_write—Coroutine-based Data Writing
+## Step 6: async_write — Coroutine-style Data Writing
 
-`async_write` is slightly more complex than `async_read` because a TCP write might only send a portion of the data. On a non-blocking socket, `send` may return a value smaller than the number of bytes you requested. This does not indicate an error; it simply means the send buffer is temporarily full. Therefore, we need to loop sending until all data is written or an unrecoverable error occurs.
+`async_write` is slightly more complicated than `async_read`, because a TCP write may write only part of the data. On a non-blocking socket, `send` can return fewer bytes than you asked for—that is not an error, it just means the send buffer cannot temporarily hold more data. So we need to send in a loop until all data is written or an unrecoverable error shows up.
 
 ```cpp
-/// 异步 write 的 awaiter（需要处理部分写入）
+/// Awaiter for asynchronous write (must handle partial writes)
 struct AsyncWriteAwaiter {
     int fd_;
     const void* buffer_;
     std::size_t size_;
-    std::size_t total_sent_; // 已发送的字节数
-    bool has_error_ = false; // 是否遇到了不可恢复的错误
+    std::size_t total_sent_; // Number of bytes sent so far
+    bool has_error_ = false; // Whether an unrecoverable error occurred
 
     AsyncWriteAwaiter(int fd, const void* buffer, std::size_t size)
         : fd_(fd), buffer_(buffer), size_(size), total_sent_(0) {}
 
     bool await_ready() noexcept
     {
-        // 尝试发送所有数据
+        // Try to send all the data
         return try_send_all();
     }
 
     void await_suspend(std::coroutine_handle<> handle)
     {
-        // 发送缓冲区满了，注册 EPOLLOUT 等待 fd 可写
+        // Send buffer full: register EPOLLOUT and wait for the fd to become writable
         g_event_loop.add_event(fd_, EPOLLOUT, handle);
     }
 
     ssize_t await_resume()
     {
-        // 协程恢复后，epoll 通知 fd 可写
-        // 此时发送缓冲区应该有空间了，继续尝试发送剩余数据
-        // 注意：这里不做循环重试——如果又遇到 EAGAIN，说明 epoll 的可写通知
-        // 不保证一次就能发完所有数据，但在 LT 模式下下次 epoll_wait 还会通知
-        // 为了简化，这里如果还有未发完的数据就返回 -1 让调用者关闭连接
-        // 生产级别的实现会在 await_resume 里重新注册 EPOLLOUT 再挂起
+        // After the coroutine resumes, epoll says the fd is writable
+        // The send buffer should have room now, so keep sending the remaining data
+        // Note: no retry loop here—if we hit EAGAIN again, it means the writable
+        // notification from epoll does not guarantee everything goes out in one shot, but under LT mode the next epoll_wait will notify again
+        // For simplicity, if unsent data remains we return -1 and let the caller close the connection
+        // A production-grade implementation would re-register EPOLLOUT and suspend again inside await_resume
         g_event_loop.remove_event(fd_);
         if (!try_send_all() && total_sent_ < size_) {
-            // 发了一部分但没发完，仍然有数据待发送
-            // Echo Server 场景下数据量不大，这种情况极少发生
-            // 但为了正确性，我们标记为错误
+            // Sent part but not all; data is still pending
+            // In the Echo Server scenario the data volume is small, so this rarely happens
+            // But for correctness, we flag it as an error
             has_error_ = true;
         }
         if (has_error_) {
@@ -493,14 +494,14 @@ struct AsyncWriteAwaiter {
     }
 
 private:
-    /// 尝试发送所有数据，返回 true 表示全部发完或遇到错误
+    /// Try to send all the data; true means fully sent or an error occurred
     bool try_send_all()
     {
         while (total_sent_ < size_) {
             const char* data = static_cast<const char*>(buffer_) + total_sent_;
             std::size_t remaining = size_ - total_sent_;
 
-            // MSG_NOSIGNAL：对端关闭连接时不触发 SIGPIPE，而是返回 EPIPE
+            // MSG_NOSIGNAL: when the peer has closed the connection, don't raise SIGPIPE, return EPIPE instead
             ssize_t n = ::send(fd_, data, remaining, MSG_NOSIGNAL);
 
             if (n > 0) {
@@ -510,49 +511,49 @@ private:
 
             if (n < 0) {
                 if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    return false; // 发送缓冲区满了，需要挂起
+                    return false; // Send buffer full, need to suspend
                 }
-                // 其他错误（EPIPE、ECONNRESET 等）
+                // Other errors (EPIPE, ECONNRESET, etc.)
                 has_error_ = true;
                 return true;
             }
 
-            // n == 0 不应该在 send 上出现，但防御性处理
+            // n == 0 should not happen on send, but handle it defensively
             has_error_ = true;
             return true;
         }
-        return true; // 全部发完
+        return true; // All sent
     }
 };
 
-/// 协程化的 write——对外接口
+/// Coroutine-style write — the public interface
 AsyncWriteAwaiter async_write(int fd, const void* buffer, std::size_t size)
 {
     return AsyncWriteAwaiter(fd, buffer, size);
 }
 ```
 
-The core logic of `async_write` resides in `try_send_all()`: it calls `send` in a loop until all data is transmitted or the send buffer is full (`EAGAIN`). We introduced a `has_error_` flag to distinguish between "fully sent" and "encountered an unrecoverable error." Previously, if we used `total_sent_` as the return value, it would be positive during a partial write, making it impossible for the caller to distinguish between "successfully sent this many bytes" and "an error occurred but some data was sent in the meantime." Now, `await_resume` returns `-1` on error, allowing the caller to properly close the connection. The `MSG_NOSIGNAL` flag is critical—when the peer has closed the connection, writing to the socket causes the kernel to send a `SIGPIPE` signal to the process by default. The default behavior of `SIGPIPE` is to terminate the process, which means your Echo Server would crash simply because a client disconnected. `MSG_NOSIGNAL` tells the kernel "don't send a signal, just return an error." In this case, `send` returns `-1` and sets `errno` to `EPIPE`.
+The core logic of `async_write` lives in `try_send_all()`: call `send` in a loop until all data is sent or the send buffer is full (`EAGAIN`). We added a `has_error_` flag to tell "fully sent" apart from "hit an unrecoverable error"—previously, if `total_sent_` served as the return value, a partial write leaves `total_sent_` positive and the caller cannot tell "successfully sent this many bytes" from "an error occurred midway after some bytes went out". Now on error `await_resume` returns `-1`, and the caller can close the connection correctly. The `MSG_NOSIGNAL` flag matters a lot—when the peer has already closed the connection and you write to that socket, the kernel by default delivers `SIGPIPE` to the process. The default action for `SIGPIPE` is to terminate the process, which means one client closing its connection can take your whole Echo Server down. `MSG_NOSIGNAL` tells the kernel "don't send the signal, just return an error", at which point `send` returns `-1` and sets `errno` to `EPIPE`.
 
-> ⚠️ **SIGPIPE is one of the classic "gotchas" in network programming.** Many servers written by beginners crash inexplicably; after a long investigation, it turns out the server was writing to a socket after the client disconnected, triggering SIGPIPE. There are three solutions: use the `MSG_NOSIGNAL` flag (per-call), globally ignore it with `signal(SIGPIPE, SIG_IGN)` (per-process, recommended), or use the `SO_NOSIGPIPE` socket option on macOS/BSD (per-socket, not available on Linux). We chose `MSG_NOSIGNAL` here because it is the most precise—it only affects this specific `send` call without altering the process-wide signal behavior. However, in certain scenarios (such as when using third-party libraries), `signal(SIGPIPE, SIG_IGN)` is more convenient.
+> ⚠️ **SIGPIPE is one of the most classic traps in network programming.** Plenty of servers written by newcomers crash for no apparent reason, and after a long investigation it turns out the client disconnected while the server was still writing, triggering SIGPIPE. There are three fixes: the `MSG_NOSIGNAL` flag (per-call), globally ignoring with `signal(SIGPIPE, SIG_IGN)` (per-process, recommended), or on macOS/BSD the `SO_NOSIGPIPE` socket option (per-socket, not available on Linux). We pick `MSG_NOSIGNAL` here because it is the most precise—it affects only this one send call and does not touch the process-wide signal behavior. In some situations (when using third-party libraries, say), `signal(SIGPIPE, SIG_IGN)` is more convenient.
 
-## Step 7: handle_connection—One Coroutine Per Connection
+## Step 7: handle_connection — One Coroutine per Connection
 
-With `async_read` and `async_write` in place, the logic for handling client connections becomes exceptionally concise. The entire `handle_connection` is just an infinite loop: read data, write it back, and repeat until the connection closes or an error occurs.
+With `async_read` and `async_write` in hand, the logic for handling a client connection becomes remarkably compact. The whole of `handle_connection` is one infinite loop: read data, write it back, repeat until the connection closes or errors out.
 
 ```cpp
-/// 处理单个客户端连接的协程
+/// Coroutine handling a single client connection
 DetachedTask handle_connection(int client_fd)
 {
     char buffer[4096];
 
     while (true) {
-        // 异步读取客户端数据
+        // Asynchronously read the client's data
         ssize_t n = co_await async_read(client_fd, buffer, sizeof(buffer));
 
         if (n <= 0) {
-            // n == 0：对端关闭连接（优雅关闭）
-            // n < 0：读取错误
+            // n == 0: the peer closed the connection (graceful shutdown)
+            // n < 0: read error
             if (n == 0) {
                 std::printf("[conn fd=%d] 客户端关闭连接\n", client_fd);
             } else {
@@ -563,7 +564,7 @@ DetachedTask handle_connection(int client_fd)
             co_return;
         }
 
-        // 异步写回——Echo！
+        // Write it back asynchronously—Echo!
         ssize_t written = co_await async_write(client_fd, buffer, n);
         if (written < 0) {
             std::printf("[conn fd=%d] 写入错误\n", client_fd);
@@ -574,20 +575,20 @@ DetachedTask handle_connection(int client_fd)
 }
 ```
 
-You see, this code looks almost identical to synchronous blocking network programming—a `while` loop with `read` followed by `write`. The only difference is that `co_await` replaces the direct call. However, the underlying execution model is completely different: each `co_await` suspends the current coroutine when data isn't ready, allowing the event loop to handle other coroutines. From a macro perspective, hundreds or thousands of client connection coroutines advance alternately within a single thread; from a micro perspective, each coroutine consumes absolutely no CPU resources while waiting for I/O.
+Look at this: the code reads almost exactly like synchronous blocking network programming—a `while` loop with a `read` then a `write` inside. The only difference is that `co_await` replaces the direct call. But the execution model underneath is completely different: each `co_await` suspends the current coroutine when the data is not ready, letting the event loop service other coroutines. Viewed macroscopically, the coroutines of hundreds or thousands of client connections advance in turn within one thread; viewed microscopically, each coroutine consumes zero CPU while waiting on I/O.
 
-Here is a detail worth mentioning: `char buffer[4096]` is a "local variable," but it doesn't reside on the physical stack—because `handle_connection` is a coroutine, the compiler places all its local variables into the coroutine frame on the heap. This means the buffer remains valid when the coroutine is suspended, unlike stack variables in normal functions which get overwritten after the function returns. This is the fundamental reason why coroutines can safely hold state between suspension points—your local variables are "promoted" to the heap. The cost is that creating a connection coroutine requires allocating heap memory (at least 4KB, largely contributed by the buffer), which is non-negligible memory overhead in high-concurrency scenarios. Production-level implementations typically optimize this using connection-level memory pools or by reducing the buffer size combined with external buffer management.
+There is a detail worth calling out: `char buffer[4096]` is a "local variable", but it does not live on the physical stack—because `handle_connection` is a coroutine, the compiler puts all its local variables into the coroutine frame on the heap. That means the buffer stays valid while the coroutine is suspended; it will not get overwritten after the function returns the way an ordinary function's stack variables would. This is the fundamental reason coroutines can hold state safely across suspension points—your local variables get "promoted" onto the heap. The price is that every connection coroutine costs a heap allocation (at least 4KB, mostly the buffer), a memory overhead you cannot ignore under high concurrency. Production-grade implementations usually optimize this with a per-connection memory pool, or by shrinking the buffer and pairing it with external buffer management.
 
-This is the beauty of coroutines—you write code with a synchronous mindset and get asynchronous execution efficiency.
+That is the beauty of coroutines—you write code with a synchronous mindset and get asynchronous efficiency.
 
-Using `DetachedTask` as the return type means this coroutine is "fire-and-forget." After `accept_loop` starts it, it doesn't need to care when it ends or how to clean it up—when the coroutine ends, `final_suspend` returns `suspend_never`, and the coroutine frame is automatically destroyed. `close(client_fd)` executes before the coroutine returns, ensuring the socket is properly closed.
+Having `DetachedTask` as the return type means this coroutine is fire-and-forget. Once `accept_loop` starts it, nobody needs to care when it ends or how it cleans up—when the coroutine finishes, `final_suspend` returns `suspend_never` and the frame destroys itself. `close(client_fd)` runs before the coroutine returns, making sure the socket is properly closed.
 
-## Step 8: accept_loop and main—Assembly and Startup
+## Step 8: accept_loop and main — Assembly and Startup
 
-Finally, we assemble all the components. `accept_loop` is an infinite loop that continuously accepts new connections and starts an independent `handle_connection` coroutine for each one:
+Finally, we assemble all the components. `accept_loop` is an infinite loop that keeps accepting new connections and starting an independent handle_connection coroutine for each one:
 
 ```cpp
-/// 接受新连接的协程
+/// Coroutine that accepts new connections
 Task accept_loop(int listen_fd)
 {
     std::printf("[server] 开始接受连接...\n");
@@ -597,40 +598,40 @@ Task accept_loop(int listen_fd)
 
         if (client_fd < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                continue; // 没有连接，理论上不会走到这里
+                continue; // No connection; in theory we never get here
             }
             std::printf("[server] accept 失败: %s\n",
                         std::strerror(errno));
             continue;
         }
 
-        // 启动一个新的 DetachedTask 协程来处理这个连接
-        // handle_connection 创建后立即开始执行（initial_suspend 返回 suspend_never）
-        // 协程结束时会自动清理，不需要我们管
+        // Start a new DetachedTask coroutine to handle this connection
+        // handle_connection starts executing immediately after creation (initial_suspend returns suspend_never)
+        // It cleans itself up when it ends; nothing for us to manage
         handle_connection(client_fd);
     }
 }
 ```
 
-Here is a pitfall to avoid: if `handle_connection` returns a `Task` (which starts lazily), you must manually `resume()` it after creation to execute it. However, since we use `DetachedTask` (which starts eagerly), the coroutine begins executing as soon as we call `handle_connection(client_fd)`. It runs until it reaches the first `co_await async_read`—if no data is available yet, the coroutine suspends, and control returns to `accept_loop`, which continues waiting for the next connection.
+Here is an easy place to slip: if `handle_connection` returned a `Task` (lazy start), you would have to call `resume()` manually after creating it. But we use `DetachedTask` (immediate start), so the moment `handle_connection(client_fd)` is invoked the coroutine starts running. It runs until the first `co_await async_read`—if no data is readable at that point, the coroutine suspends, control returns to accept_loop, and accept_loop goes back to waiting for the next connection.
 
-If we were to use `Task`, the code would look like this:
+If you did use `Task`, the code would look like this:
 
 ```cpp
-// 如果用 Task 类型（惰性启动）
+// If using the Task type (lazy start)
 auto task = handle_connection(client_fd);
-task.handle.resume(); // 手动启动
+task.handle.resume(); // Start it manually
 ```
 
-Both approaches achieve the same result, but `DetachedTask` better fits the "fire-and-forget" semantics—we do not need to care about the task's return value or lifetime.
+Both work the same, but `DetachedTask` fits the fire-and-forget semantics better—we do not care about the task's return value or lifetime.
 
-Finally, here is the `main` function:
+And finally the `main` function:
 
 ```cpp
 int main()
 {
-    // 忽略 SIGPIPE——双重保险
-    // 即使 async_write 用了 MSG_NOSIGNAL，全局忽略 SIGPIPE 也是好习惯
+    // Ignore SIGPIPE—belt and braces
+    // Even though async_write uses MSG_NOSIGNAL, ignoring SIGPIPE globally is good practice too
     std::signal(SIGPIPE, SIG_IGN);
 
     constexpr uint16_t kPort = 8080;
@@ -643,15 +644,15 @@ int main()
     std::printf("协程 Echo Server 启动，监听端口 %d\n", kPort);
     std::printf("测试方式: nc localhost %d\n", kPort);
 
-    // 创建 accept 循环协程（惰性，还没开始执行）
+    // Create the accept-loop coroutine (lazy, not running yet)
     auto acceptor = accept_loop(listen_fd);
 
-    // 手动启动 accept 协程
-    // 它会执行到第一个 co_await async_accept，然后挂起
-    // 把 listen_fd 注册到 epoll
+    // Start the accept coroutine manually
+    // It runs to the first co_await async_accept, then suspends
+    // and registers listen_fd with epoll
     acceptor.handle.resume();
 
-    // 进入事件循环——此后所有协程由 epoll 事件驱动
+    // Enter the event loop—from here on, all coroutines are driven by epoll events
     g_event_loop.run();
 
     close(listen_fd);
@@ -659,19 +660,19 @@ int main()
 }
 ```
 
-The execution flow of `main` works like this: we create a listening socket, launch the accept coroutine, and enter the event loop. The accept coroutine suspends at the first `co_await async_accept`, registering `listen_fd` with epoll. From then on, whenever a new connection arrives, epoll notifies that `listen_fd` is readable, the event loop resumes the accept coroutine, the accept coroutine retrieves the new connection, launches a `handle_connection` coroutine, and then returns to a suspended state to continue waiting.
+`main`'s execution flow goes like this: create the listening socket, start the accept coroutine, enter the event loop. The accept coroutine suspends at its first `co_await async_accept`, and listen_fd gets registered with epoll. From then on, whenever a new connection arrives, epoll reports listen_fd readable, the event loop resumes the accept coroutine, the accept coroutine takes the new connection, starts a handle_connection coroutine, then returns to the suspended state and keeps waiting.
 
-`signal(SIGPIPE, SIG_IGN)` serves as a global safety measure. Even though our `async_write` uses `MSG_NOSIGNAL`, other parts of the code (such as a logging library or third-party code) might call `write` directly instead of `send`, lacking the protection of `MSG_NOSIGNAL`. Globally ignoring SIGPIPE prevents these accidents.
+`signal(SIGPIPE, SIG_IGN)` acts as a global safety net—even though our `async_write` already uses `MSG_NOSIGNAL`, some other place (a logging library or third-party code, say) may still call `write` directly instead of `send`, with no `MSG_NOSIGNAL` protection. Ignoring SIGPIPE globally guards against those surprises.
 
-## Compilation and Execution
+## Build and Run
 
-Combine all the code above into a single file (or compile separately, if you prefer), and compile with the following command:
+Concatenate all the code above into one file (or compile the pieces separately, your choice) and build with:
 
 ```bash
 g++ -std=c++20 -O2 -Wall -Wextra -o echo_server echo_server.cpp
 ```
 
-Then, we start the server:
+Then start the server:
 
 ```bash
 ./echo_server
@@ -685,48 +686,48 @@ You should see:
 [server] 开始接受连接...
 ```
 
-The server is waiting for a connection.
+The server is now waiting for connections.
 
-## Lessons Learned
+## Pitfalls from the Trenches
 
-While implementing and debugging this Echo Server, we encountered several pitfalls worth recording. To be honest, we stumbled quite a bit while writing this code. We have summarized them here so that you can avoid the same mistakes.
+While implementing and debugging this Echo Server, several pitfalls proved especially worth recording. Honestly, your author stepped in quite a few of them while writing this code; they are collected here so you do not have to.
 
-### Pitfall 1: SIGPIPE makes your server "die silently"
+### Pitfall 1: SIGPIPE Makes Your Server Die Quietly
 
-We mentioned this pitfall earlier, but it is worth emphasizing again. When a client closes the connection, if the server continues writing to that socket, the kernel sends a `SIGPIPE` signal by default. The default action for `SIGPIPE` is to terminate the process—and it does not generate a core dump or print an error message; the process simply vanishes. You might even think the server "exited normally" until you realize `nc` cannot connect.
+This one was already mentioned earlier, but it deserves another emphasis. After a client closes the connection, if the server keeps writing to that socket, the kernel by default delivers SIGPIPE. The default action for `SIGPIPE` is to terminate the process—with no core dump and no error message; the process just vanishes. You might even think the server "exited normally", until you notice nc can no longer connect and realize something is wrong.
 
-We have implemented dual protection in the code: using `MSG_NOSIGNAL` with `send`, and calling `signal(SIGPIPE, SIG_IGN)` in `main`. Either method is sufficient, but applying both is safer.
+The fix is the double protection already in our code: `MSG_NOSIGNAL` on `send`, plus `signal(SIGPIPE, SIG_IGN)` in `main`. Either one alone is enough, but doing both is safer.
 
-### Pitfall 2: Forgetting to remove fd in LT mode causes an event storm
+### Pitfall 2: Forgetting to Remove the fd in LT Mode Causes an Event Storm
 
-This is an interesting pitfall. In LT (Level-Triggered) mode, `epoll_wait` will repeatedly notify you as long as data is readable on the fd. If you forget to call `remove_event` to remove the fd from epoll in your `await_resume`, `epoll_wait` will return events for this fd every time—even if you have already processed it. This causes the event loop to frantically resume the same coroutine, driving the CPU to 100%, while accomplishing nothing useful.
+This is a fun one. In LT (level-triggered) mode, as long as an fd has data to read, `epoll_wait` keeps notifying you. If your `await_resume` forgets to call `remove_event` to take the fd out of epoll, every `epoll_wait` will return an event for that fd—even though you already handled it. The event loop then madly resumes the same coroutine, the CPU pins at 100%, and nothing useful gets done.
 
-Our code calls `remove_event` in the `await_resume` of both `async_read` and `async_write` specifically to prevent this issue.
+That is exactly why our code calls `remove_event` in the `await_resume` of both `async_read` and `async_write`.
 
-### Pitfall 3: Coroutine frame lifetime—dangling handles
+### Pitfall 3: Coroutine Frame Lifetime — Dangling Handles
 
-We mentioned this issue at the end of the previous article, so let's expand on it here. When you create a coroutine (e.g., `handle_connection(client_fd)`), the coroutine's `promise_type` allocates a "coroutine frame" on the heap to store local variables and state. If the coroutine's return value object (`DetachedTask` or `Task`) is destroyed before the coroutine finishes executing, and `final_suspend` returns `suspend_never` (which automatically destroys the coroutine frame), there is no problem. However, if `final_suspend` returns `suspend_always`, the coroutine frame needs someone to manually call `destroy()`.
+This problem came up at the end of the previous article; let's expand on it here. When you create a coroutine (`handle_connection(client_fd)`, say), the coroutine's `promise_type` allocates a "coroutine frame" on the heap to hold the coroutine's local variables and state. If the coroutine's return-value object (`DetachedTask` or `Task`) is destroyed before the coroutine finishes running, and `final_suspend` returns `suspend_never` (which destroys the frame automatically), there is no problem. But if `final_suspend` returns `suspend_always`, somebody has to `destroy()` the frame by hand.
 
-Our `DetachedTask` uses `suspend_never`, so the coroutine cleans up automatically upon completion—no problem. But if you change `handle_connection` to return a `Task` (`suspend_always`), you must call `destroy()` on the coroutine frame somewhere; otherwise, it results in a memory leak.
+Our `DetachedTask` uses `suspend_never`, so the coroutine cleans itself up at the end—no problem. But if you change `handle_connection` to return `Task` (`suspend_always`), you must `destroy()` the frame somewhere, or it is a memory leak.
 
-### Pitfall 4: The EPOLLOUT trap—"almost always writable"
+### Pitfall 4: The EPOLLOUT Trap — Almost Always Writable
 
-A TCP socket is "writable" most of the time—because the send buffer is rarely full (the default size ranges from 16KB to several MB). This means that if you register an fd with epoll to monitor `EPOLLOUT` events, `epoll_wait` will return almost immediately, telling you "this fd is writable." If you do not remove the `EPOLLOUT` registration after the coroutine resumes, you fall into a similar event storm as in Pitfall 2.
+A TCP socket is "writable" most of the time—because the send buffer is usually far from full (its default size ranges from 16KB to a few MB). That means if you register an fd with epoll watching `EPOLLOUT`, `epoll_wait` will return almost immediately, telling you "this fd is ready for writing". If you do not remove the `EPOLLOUT` registration after the coroutine resumes, you fall into an event storm just like Pitfall 2.
 
-This issue is particularly subtle in Edge-Triggered (ET) mode—because ET mode only notifies you once when the state changes from "not writable" to "writable." However, a socket is almost always writable from the start, so you receive an event immediately after registering `EPOLLOUT`, but never again (because the state does not change). In some scenarios, this is actually correct behavior, but in a "loop waiting for writable" scenario, it might lead you to believe data cannot be sent.
+This problem is especially subtle in edge-triggered (ET) mode—ET notifies you exactly once, at the instant the state flips from "not writable" to "writable", but the socket is writable from the very beginning, so you get one event after registering `EPOLLOUT` and never another (the state never changes). In some scenarios that is actually the correct behavior, but in a "loop waiting for writability" scenario it makes you think the data can never be sent.
 
-Our solution is: only register `EPOLLOUT` when `send` returns `EAGAIN`, and remove it immediately after writing. Never "permanently register" `EPOLLOUT`.
+Our solution: register `EPOLLOUT` only when `send` returns `EAGAIN`, and remove it immediately after the write completes. Never leave `EPOLLOUT` registered permanently.
 
 ## Testing and Verification
 
 Now let's test this Echo Server.
 
-### Basic Functionality Test
+### Basic Functional Test
 
-Start the server, then open another terminal and connect using `nc`:
+Start the server, then open another terminal and connect with `nc`:
 
 ```bash
-# 终端 1：启动服务器
+# Terminal 1: start the server
 $ ./echo_server
 协程 Echo Server 启动，监听端口 8080
 测试方式: nc localhost 8080
@@ -734,7 +735,7 @@ $ ./echo_server
 ```
 
 ```bash
-# 终端 2：连接并测试
+# Terminal 2: connect and test
 $ nc localhost 8080
 hello
 hello
@@ -744,37 +745,37 @@ world
 协程真香
 ```
 
-Server output:
+Server-side output:
 
 ```text
 [server] 新连接 fd=5
 [conn fd=5] 客户端关闭连接
 ```
 
-When we press Ctrl+C to disconnect the `nc` connection, the server correctly detects that the connection has been closed.
+When you press Ctrl+C to drop the nc connection, the server correctly detects the closure.
 
-### Multi-client concurrency test
+### Concurrent Multi-Client Test
 
-Open multiple terminals and connect using `nc` simultaneously:
+Open several terminals and connect with `nc` at the same time:
 
 ```bash
-# 终端 2
+# Terminal 2
 $ nc localhost 8080
 client1
 client1
 
-# 终端 3
+# Terminal 3
 $ nc localhost 8080
 client2
 client2
 
-# 终端 4
+# Terminal 4
 $ nc localhost 8080
 client3
 client3
 ```
 
-With three clients connected simultaneously, the server creates a separate coroutine for each connection, ensuring they do not block one another:
+Three clients connect at once; the server creates an independent coroutine for each connection, none blocking the others:
 
 ```text
 [server] 新连接 fd=5
@@ -782,29 +783,29 @@ With three clients connected simultaneously, the server creates a separate corou
 [server] 新连接 fd=7
 ```
 
-Each client correctly receives the Echo reply, without interfering with one another.
+Every client correctly receives its echo replies, without interfering with each other.
 
-### High Concurrency Connection Test
+### Testing Many Concurrent Connections
 
-We use a small script to test a larger number of concurrent connections:
+Use a small script to test more concurrent connections:
 
 ```bash
-# 快速建立 100 个连接，每个发送一条消息后关闭
+# Quickly open 100 connections; each sends one message and then closes
 for i in $(seq 1 100); do
     echo "test $i" | nc -q 1 localhost 8080 &
 done
 wait
 ```
 
-If everything goes smoothly, the server should handle all connections without crashing or leaking resources.
+If everything is right, the server should handle all the connections without crashing or leaking resources.
 
-## Initial Performance Exploration
+## A First Look at Performance
 
-Now that we are using coroutines and an event loop, we naturally have to ask: how much faster is this approach compared to the "one thread per connection" model?
+Since we went with coroutines and an event loop, the natural question is: how much faster is this approach than "one thread per connection"?
 
-Let's use `wrk` for a simple benchmark. However, `wrk` is an HTTP benchmarking tool, while our Echo Server uses a custom protocol. That's not a problem; `wrk` supports TCP mode, and we can use the `-s` flag to specify a Lua script for sending custom data. An even simpler approach is to use the `echo` command with pipes to test throughput, or to write a simple stress test client.
+Let's run a simple benchmark with `wrk`. But `wrk` is an HTTP load-testing tool, and our Echo Server does not speak HTTP. Not a problem: `wrk`'s TCP mode can take a Lua script via `-s` to send custom data. The simpler route is to test throughput with the `echo` command and a pipe, or just write a small benchmark client.
 
-First, let's write a simple TCP benchmarking script:
+Let's first write a simple TCP benchmark script:
 
 ```python
 #!/usr/bin/env python3
@@ -842,7 +843,7 @@ if __name__ == "__main__":
     bench(host, port, num, b"hello coroutine echo server!\n")
 ```
 
-In the author's test environment (WSL2, i7-12700H, Linux 6.6):
+Run it on the author's test environment (WSL2, i7-12700H, Linux 6.6):
 
 ```bash
 python3 bench_echo.py 127.0.0.1 8080 100000
@@ -856,7 +857,7 @@ Typical results:
 平均延迟: 0.018 ms
 ```
 
-By comparison, a synchronous "one connection per thread" Echo Server under the same test conditions:
+For comparison, a synchronous Echo Server using "one thread per connection" under the same test conditions:
 
 ```text
 完成 100000 次请求，耗时 2.134s
@@ -864,32 +865,32 @@ By comparison, a synchronous "one connection per thread" Echo Server under the s
 平均延迟: 0.021 ms
 ```
 
-The difference in a single-connection scenario isn't significant (the threaded version might even be faster due to shorter system call paths). The real advantage of the coroutine approach emerges in high-concurrency scenarios—when you have hundreds or thousands of concurrent connections, the context switching overhead of the threading model rises sharply. In contrast, because all coroutines run within a single thread, the switching overhead in the coroutine model is near zero (essentially just a function call).
+In a single-connection scenario the difference is modest (the thread version may even be faster thanks to a shorter system-call path); the coroutine approach shows its real advantage under high concurrency—once you have hundreds or thousands of concurrent connections, the thread model's context-switching overhead climbs steeply, while in the coroutine model all coroutines run in one thread, so a switch costs nearly zero (it is just a function call).
 
-A more accurate test would simulate a large number of concurrent connections sending requests simultaneously, rather than a single connection sending serial requests. However, this goes beyond the scope of this article—our goal is to understand how coroutines + event loops work, not to pursue ultimate performance. Production-grade network libraries (like Boost.Asio, muduo) perform extensive optimizations on top of these foundations—such as multi-threaded event loops, connection pooling, zero-copy, and `SO_REUSEPORT`.
+A more accurate test would simulate a large number of concurrent connections sending requests simultaneously, rather than one connection making serial requests. But that is beyond this article's scope—our goal is to understand how coroutines + event loops work, not to chase ultimate performance. Production-grade network libraries (Boost.Asio, muduo, for example) pile a lot of optimization on top of this—multi-threaded event loops, connection pools, zero-copy, SO_REUSEPORT, and so on.
 
-> ⚠️ **Benchmarking is a deep rabbit hole.** The numbers above are for reference only; actual performance is influenced by many factors: kernel version, network card driver, CPU frequency, TCP parameters (`tcp_nodelay`, `tcp_cork`), whether `SO_REUSEPORT` is enabled, and so on. Don't draw conclusions based on a single benchmark—always test in your own environment and under your specific load patterns.
+> ⚠️ **Benchmarking is deep water.** The numbers above are for reference only; real performance is affected by many factors: kernel version, NIC driver, CPU frequency, TCP parameters (`tcp_nodelay`, `tcp_cork`), whether `SO_REUSEPORT` is enabled, and more. Do not draw conclusions from a single benchmark—always test under your own environment and workload pattern.
 
 ## Where We Are
 
-At this point, we have built a complete, coroutine-based TCP Echo Server from scratch. Let's review the knowledge points we've covered along the way:
+At this point we have built a complete coroutine-based TCP Echo Server from scratch. Let's review everything we used along the way:
 
-`promise_type` and awaitable (ch03) allowed us to customize coroutine behavior—how they start, suspend, resume, and clean up. `EventLoop` (ch04) wraps `epoll`, connecting I/O events with coroutine resumption. `async_accept`, `async_read`, and `async_write` are three key awaiters—they encapsulate OS-level I/O operations into coroutine-friendly `co_await` interfaces. The two task types, `DetachedTask` and `Task`, correspond to "fire-and-forget" and "lazy execution" usage patterns, respectively. `handle_connection` demonstrated the core advantage of coroutine programming: achieving asynchronous execution efficiency with a synchronous coding style.
+`promise_type` and awaitables (ch03) let us customize how a coroutine behaves—how it starts, suspends, resumes, and cleans up. `EventLoop` (ch04) wraps epoll and wires I/O events to coroutine resumption. `async_accept`, `async_read`, and `async_write` are the three key awaiters—they wrap OS-level I/O operations into coroutine-friendly `co_await` interfaces. The two task types, `DetachedTask` and `Task`, correspond to the "fire-and-forget" and "lazy execution" usage modes respectively. `handle_connection` showcases the core advantage of coroutine-style programming: asynchronous execution efficiency from synchronous-looking code.
 
-Regarding pitfalls, we encountered SIGPIPE, event storms in LT (Level-Triggered) mode, coroutine frame lifetimes, and the EPOLLOUT trap—these are issues almost inevitable when writing coroutine-based network services.
+On the pitfall side, we ran into SIGPIPE, the LT-mode event storm, coroutine-frame lifetimes, and the EPOLLOUT trap—problems you will almost inevitably meet when writing coroutine-based network services.
 
-However, our Echo Server is still a minimal implementation for educational purposes. It lacks many features required in production environments: graceful shutdown (how to safely stop the event loop and close all connections), timeout management (how to detect and disconnect inactive connections), flow control (how to prevent a client from sending massive amounts of data and exhausting memory), a logging system, and multi-threading support (a single-threaded event loop cannot utilize multi-core CPUs). We will address these issues in subsequent chapters.
+But our Echo Server is still a minimal teaching implementation. It lacks many things production needs: graceful shutdown (how to stop the event loop safely and close every connection), timeout management (how to detect and drop long-idle connections), flow control (how to stop a client from flooding you into memory exhaustion), a logging system, and multi-threading support (a single-threaded event loop cannot exploit multi-core CPUs). These problems get solved step by step in the chapters ahead.
 
-In the next chapter, we will enter a completely new domain—the Actor model and message passing. If coroutines + event loops represent "asynchronous concurrency within a single thread," the Actor model represents "distributed concurrency across threads"—each Actor is an independent concurrent entity with its own state, communicating with other Actors via messages without sharing memory. This is the core model of Erlang/Akka and another important paradigm for implementing high-concurrency systems in C++.
+The next article takes us into brand-new territory—the Actor model and message passing. If coroutines + event loops are "asynchronous concurrency within one thread", the Actor model is "distributed concurrency across threads"—each Actor is an independent concurrent entity with its own state, communicating with other Actors via messages and sharing no memory. That is the core model of Erlang/Akka, and another major paradigm for building high-concurrency systems in C++.
 
-## Complete Code
+## The Complete Code
 
-For your convenience in compiling and running, here is the complete single-file code:
+To make it easy for you to build and run, here is the complete single-file code:
 
 ```cpp
 // echo_server.cpp
-// 编译: g++ -std=c++20 -O2 -Wall -o echo_server echo_server.cpp
-// 运行: ./echo_server
+// Build: g++ -std=c++20 -O2 -Wall -o echo_server echo_server.cpp
+// Run: ./echo_server
 
 #include <coroutine>
 #include <cstdio>
@@ -973,7 +974,7 @@ private:
 EventLoop g_event_loop;
 
 // ============================================================
-// Task 类型
+// Task types
 // ============================================================
 
 struct Task {
@@ -1009,7 +1010,7 @@ struct DetachedTask {
 };
 
 // ============================================================
-// 工具函数
+// Helper functions
 // ============================================================
 
 void set_nonblocking(int fd)
@@ -1261,15 +1262,15 @@ int main()
 }
 ```
 
-> 💡 The complete example code is available in the [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP) repository. Check out `code/volumn_codes/vol5/ch06-async-io-coroutine/`.
+> 💡 The complete example code lives in [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP); see `code/volumn_codes/vol5/ch06-async-io-coroutine/`.
 
-## Resources
+## References
 
-- [epoll(7) — Linux man page](https://www.man7.org/linux/man-pages/man7/epoll.7.html) — Complete documentation for epoll, including detailed explanations of LT/ET modes and programming notes.
-- [How to prevent SIGPIPEs — Stack Overflow](https://stackoverflow.com/questions/108183/how-to-prevent-sigpipes-or-handle-them-properly) — A comprehensive summary of methods for handling SIGPIPE, covering Linux, macOS, and Windows.
-- [C++20 Coroutines: Sketching a Minimal Async Framework — Jeremy Ong](https://jeremyong.com/cpp/2021/01/04/cpp20-coroutines-a-minimal-async-framework/) — Building an asynchronous coroutine framework from scratch, including awaiter design and scheduler implementation.
-- [Single-threaded epoll-based coroutine library — CodeReview StackExchange](https://codereview.stackexchange.com/questions/287374/single-threaded-epoll-based-coroutine-library-for-c-linux) — Code review of a complete C++20 coroutine + epoll library, including discussions on lifecycle management.
-- [Awaitable event using coroutine, epoll and eventfd — luncliff](https://luncliff.github.io/coroutine/articles/awaitable-event/) — Demonstrates how to store a `coroutine_handle` in `epoll_event.data.ptr` and resume it when an event arrives.
-- [The Edge-Triggered Misunderstanding — LWN.net](https://lwn.net/Articles/865400/) — An in-depth analysis of kernel behavior in ET mode and common misconceptions.
-- [The Lifetime of Objects Involved in the Coroutine Function — Raymond Chen](https://devblogs.microsoft.com/oldnewthing/20210412-00/?p=105078) — A detailed explanation of the coroutine frame lifecycle, and the survival rules for parameters and local variables.
-- [Tips for Using the Sockets API — Erik Rigtorp](https://rigtorp.se/sockets/) — Practical socket programming tips, including SIGPIPE handling and the correct usage of `MSG_NOSIGNAL`.
+- [epoll(7) — Linux man page](https://www.man7.org/linux/man-pages/man7/epoll.7.html) — The complete epoll documentation, including detailed explanations of LT/ET modes and programming caveats
+- [How to prevent SIGPIPEs — Stack Overflow](https://stackoverflow.com/questions/108183/how-to-prevent-sigpipes-or-handle-them-properly) — A roundup of every way to handle SIGPIPE, covering Linux/macOS/Windows
+- [C++20 Coroutines: Sketching a Minimal Async Framework — Jeremy Ong](https://jeremyong.com/cpp/2021/01/04/cpp20-coroutines-a-minimal-async-framework/) — Building a coroutine async framework from scratch, covering awaiter design and scheduler implementation
+- [Single-threaded epoll-based coroutine library — CodeReview StackExchange](https://codereview.stackexchange.com/questions/287374/single-threaded-epoll-based-coroutine-library-for-c-linux) — A code review of a complete C++20 coroutine + epoll library, with discussion of lifetime management
+- [Awaitable event using coroutine, epoll and eventfd — luncliff](https://luncliff.github.io/coroutine/articles/awaitable-event/) — Shows how to store a `coroutine_handle` in `epoll_event.data.ptr` and resume it when the event arrives
+- [The Edge-Triggered Misunderstanding — LWN.net](https://lwn.net/Articles/865400/) — A deep analysis of ET-mode kernel behavior and common misconceptions
+- [The Lifetime of Objects Involved in the Coroutine Function — Raymond Chen](https://devblogs.microsoft.com/oldnewthing/20210412-00/?p=105078) — A detailed explanation of coroutine frame lifetimes and the survival rules for parameters and local variables
+- [Tips for Using the Sockets API — Erik Rigtorp](https://rigtorp.se/sockets/) — Practical socket programming tips, including SIGPIPE handling and the correct use of `MSG_NOSIGNAL`

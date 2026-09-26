@@ -2,18 +2,16 @@
 chapter: 6
 cpp_standard:
 - 20
-description: Deep dive into C++20 coroutine syntax, state machine models, and lifecycle
-  management; understand compiler transformations for `co_await`, `co_yield`, and
-  `co_return`.
+description: A deep dive into C++20 coroutine syntax, the state-machine model, and lifecycle management, and how the compiler transforms co_await/co_yield/co_return
 difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- 异步编程演进：从回调地狱到协程
+- 'The Evolution of Asynchronous Programming: From Callback Hell to Coroutines'
 reading_time_minutes: 25
 related:
-- promise_type 与 awaitable
-- 异步 I/O 与事件循环
+- promise_type and awaitable
+- Asynchronous I/O and Event Loops
 tags:
 - host
 - cpp-modern
@@ -24,154 +22,39 @@ title: C++20 Coroutine Fundamentals
 translation:
   source: documents/vol5-concurrency/ch06-async-io-coroutine/02-coroutine-basics.md
   source_hash: a4c8e7dee4f251189089eb5dd85d18b5aab1ffa352d893298f584ed140f2730c
-  translated_at: '2026-06-16T04:06:16.479699+00:00'
+  translated_at: '2026-09-26T09:01:09+00:00'
   engine: anthropic
-  token_count: 5410
+  token_count: 14000
 ---
-# C++20 Coroutine Basics
+# C++20 Coroutine Fundamentals
 
-In the previous article, we saw how coroutines make asynchronous code look synchronous—linear flow, no nesting, and no callback pyramids. That article focused on "why we need coroutines" and "what coroutines look like." We showed the final result but didn't explain what actually happens behind the scenes. In this article, we will dissect coroutines inside and out: What transformation does the compiler perform on a coroutine function? What is stored in the coroutine frame? How does `coroutine_handle` manage the coroutine's lifecycle? The answers to these questions form the foundation of understanding C++20 coroutines.
+In the previous article we saw how coroutines make asynchronous code look like synchronous code—a linear flow, no nesting, no pyramid of callbacks. That article focused on "why we need coroutines" and "what a coroutine looks like"; we showed the end result but never explained what actually goes on behind it. This time we take coroutines apart from the inside out: what transform does the compiler apply to a coroutine function? What lives in the coroutine frame? How does `coroutine_handle` manage the coroutine's lifetime? The answers to these questions form the foundation for understanding C++20 coroutines.
 
-To be honest: the learning curve for C++20 coroutines is quite steep. It is not a feature you can "learn and use immediately"—you need to understand how `promise_type`, `coroutine_handle`, `awaitable`, and `awaiter` work together to write correct coroutine code. The good news is that the relationships between these concepts are fixed. Once you understand this model, all coroutine code is a variation of the same pattern. Our goal here is to explain this model thoroughly.
+Let's be honest up front: the learning curve of C++20 coroutines is fairly steep. This is not a "learn `co_await` and you're done" feature—you need to understand how promise_type, coroutine_handle, awaitable, and awaiter cooperate before you can actually write correct coroutine code. The good news is that the relationships between these concepts are fixed: once you understand this model, every piece of coroutine code is a variation on the same pattern. Our goal in this article is to explain the model thoroughly.
 
 ## Environment
 
-All code in this article compiles successfully on GCC 12+, Clang 15+, and MSVC 19.34+. These three compilers provide complete C++20 coroutine support. There are no special platform dependencies; Linux, macOS, and Windows all work—we only use the pure standard library. Regarding compiler flags, `-std=c++20` is mandatory. Versions of GCC prior to GCC 12 might require an additional `-fcoroutines` flag, but GCC 12+ has it enabled by default. One note upfront: this article makes extensive use of the `<coroutine>` header, which is the library support part of C++20 coroutines, providing infrastructure like `coroutine_handle`, `suspend_always`, and `suspend_never`.
+All code in this article compiles with GCC 12+, Clang 15+, and MSVC 19.34+; all three compilers provide complete C++20 coroutine support. There are no special platform dependencies—Linux, macOS, and Windows all work, because we use only the pure standard library. As for compiler options, `-std=c++20` is mandatory; versions before GCC 12 may additionally need the `-fcoroutines` flag, but GCC 12+ enables it by default. One thing to note in advance: this article leans heavily on the `<coroutine>` header, the library side of C++20 coroutine support, which provides infrastructure pieces such as `std::coroutine_handle`, `std::suspend_always`, and `std::suspend_never`.
 
-## Three Keywords: `co_await`, `co_yield`, `co_return`
+## The Three Keywords: co_await, co_yield, co_return
 
-C++20 introduces three keywords for coroutines. Each has its specific role, but they share a common effect: if any of these three keywords appears in a function body, the compiler treats that function as a coroutine. No extra declarations, attributes, or modifiers are needed—the keywords themselves are the signal.
+C++20 introduces three keywords for coroutines. Each has its own job, but they share one effect: the moment any one of them appears in a function body, the compiler treats that function as a coroutine. No extra declaration, attribute, or specifier is needed—the keyword itself is the signal.
 
-`co_await` is the most central one. It appears where you need to "wait"—suspending the current coroutine, yielding execution, and resuming when an asynchronous operation completes. The semantics of `co_await` are: treat the expression following it as an **awaitable**, use it to determine whether suspension is needed, how to suspend, and what value to return upon resumption. Let's look at a simplest example:
-
-```cpp
-#include <coroutine>
-#include <iostream>
-
-struct SimpleAwaiter {
-    bool await_ready() const noexcept { return false; } // Always suspend
-    bool await_suspend(std::coroutine_handle<> h) noexcept { return false; } // Resume immediately
-    void await_resume() const noexcept {}
-};
-
-SimpleAwaiter operator co_await(...) { return SimpleAwaiter{}; } // Dummy for demo
-
-void my_coro() {
-    std::cout << "Step 1\n";
-    co_await SimpleAwaiter{};
-    std::cout << "Step 2\n";
-    co_await SimpleAwaiter{};
-    std::cout << "Step 3\n";
-}
-
-int main() {
-    // This is a simplified demo to show keyword usage
-    // In real code, we need a proper return type and promise type
-    std::cout << "Coroutine concepts demo\n";
-}
-```
-
-Running the output looks like this:
-
-```text
-Step 1
-Step 2
-Step 3
-```
-
-You will find that after `my_coro` is called, it does not execute all at once—every time it encounters a `co_await`, the coroutine suspends, and control returns to the caller. When we call `resume`, the coroutine continues from the last suspension point. `std::suspend_always` is the simplest awaitable provided by the standard library; its `await_ready` always returns `false`, meaning "always suspend." Conversely, `std::suspend_never`'s `await_ready` always returns `true`, meaning "never suspend."
-
-`co_yield` is used to yield a value and suspend the coroutine. It is equivalent to `co_await promise.yield_value(value)`. `co_yield` is the foundation for building generators—each time a value is yielded, the coroutine suspends, and the consumer retrieves the value before resuming. We will implement a generator from scratch later.
-
-`co_return` is used to end a coroutine. It has two forms: `co_return` (no return value) and `co_return value` (with a return value). The former is equivalent to calling `promise.return_void()`, while the latter, if the `promise`'s return type is non-void, is equivalent to `promise.return_value(value)`. If the `promise`'s return type is void, it calls `promise.return_void()`. `co_return` differs from a normal `return`—a normal `return` statement cannot appear in a coroutine; a coroutine must use `co_return` to end (or let the function body end naturally, at which point the compiler implicitly inserts a `co_return`).
-
-> ⚠️ Note, `co_return` and normal `return` cannot be mixed. If a function contains any of `co_await`, `co_yield`, or `co_return`, it is a coroutine, and a normal `return` statement inside that function is illegal—the compiler will error directly. Conversely, if the function body contains no coroutine keywords, even if the return type defines `promise_type`, it is just a normal function.
-
-## What the Compiler Does — The Coroutine State Machine
-
-This is the core of understanding C++20 coroutines. When you write a coroutine function, the compiler does not generate a linear block of code like it does for a normal function. It transforms the entire coroutine function **into a state machine**—each `co_await` (including the initial and final suspension points) is a state, and when the coroutine resumes, it jumps to the corresponding code location based on the current state.
-
-Let's use a simplified example to trace this transformation process. Suppose you wrote this coroutine:
-
-```cpp
-struct Task; // Defined elsewhere
-
-Task my_async_func() {
-    int local_var = 10;
-    co_await some_async_op(local_var);
-    // ... more code ...
-}
-```
-
-The compiler roughly transforms it into pseudo-code similar to this (simplifying many details, but the core logic is correct):
-
-```cpp
-struct __my_async_func_frame {
-    int local_var;
-    __some_async_op_awaiter temp_awaiter;
-    int __state = 0; // 0: start, 1: after first await, ...
-    // ... promise, etc.
-};
-
-void __my_async_func_resume(__my_async_func_frame* frame) {
-    switch (frame->__state) {
-        case 0: goto __start;
-        case 1: goto __after_await;
-    }
-
-__start:
-    frame->local_var = 10;
-    frame->temp_awaiter = some_async_op(frame->local_var);
-
-    // Check if we need to suspend
-    if (!frame->temp_awaiter.await_ready()) {
-        frame->__state = 1;
-        if (frame->temp_awaiter.await_suspend(...)) {
-            return; // Suspended
-        }
-    }
-
-__after_await:
-    // Get result
-    auto result = frame->temp_awaiter.await_resume();
-    // ... rest of the function ...
-}
-```
-
-Let's understand this transformation line by line.
-
-**Step one, allocate the coroutine frame.** The coroutine frame is a block of heap memory (usually), used to store all data needed to resume the coroutine. It contains several parts: copies of function arguments (because the coroutine might outlive the caller's stack, so arguments must be copied into the frame to avoid dangling references), local variables (those whose lifetimes span suspension points—if a local variable is created before `co_await` and used after, it must exist in the coroutine frame), the promise object (part of the coroutine state), and the current suspension point index (so the resume knows where to jump).
-
-> ⚠️ Only local variables whose lifetimes span suspension points are stored in the coroutine frame. If a local variable's lifetime ends between two suspensions, the compiler can optimize it to a register or the normal stack. This optimization is up to the compiler.
-
-**Step two, copy arguments.** All pass-by-value arguments are moved or copied into the coroutine frame. Pass-by-reference arguments only store the reference itself—this means if you pass a reference to a local variable to a coroutine, and that variable goes out of scope before the coroutine resumes, you get a dangling reference. This is a classic pitfall of C++20 coroutines: **capturing coroutine parameters by reference is dangerous**, because you cannot guarantee the referenced object is still alive when the coroutine resumes.
-
-**Step three, construct the promise object.** `promise_type` is the coroutine's "introspection interface"—the compiler calls the promise's methods at various key nodes of coroutine execution. It is not a normal concept, but rather deduced by the compiler via `std::coroutine_traits` from the coroutine's return type. If your return type is `Task`, the compiler looks for `Task::promise_type`.
-
-**Step four, call `get_return_object`.** The return value of this method is the object the coroutine function returns to the caller (the `Task` in our example). This call happens before the coroutine body starts executing—that is, when the caller gets the return value, the first line of the coroutine body hasn't executed yet.
-
-**Step five, call `initial_suspend`.** This method decides whether the coroutine suspends before the function body starts executing. If it returns `std::suspend_always` (eager start), the coroutine suspends immediately before executing the first line of code, and the caller must manually `resume` it to get it to work. If it returns `std::suspend_never` (lazy start), the coroutine immediately starts executing the body until it hits the first `co_await`.
-
-**Step six, execute the function body and handle suspension points.** The coroutine executes the body. When it encounters `co_await`, it first calls the awaitable's `await_ready`. If it returns `true`, no suspension is needed, continue directly. If it returns `false`, save the current state (suspension point index, active local variables), call `await_suspend`, and then suspend—control is returned to the caller or resumer. When the coroutine is `resume`d, it resumes from the saved suspension point, calls `await_resume` to get the return value of the `co_await` expression, and continues execution.
-
-**Final state: `final_suspend`.** When the coroutine reaches `co_return` (or the end of the body), it calls `promise.return_void` or `promise.return_value`, destroys all active local variables, and then calls `final_suspend` and `await`s its result. This `final_suspend` is the coroutine's "terminal station"—if it returns `std::suspend_always`, the coroutine suspends at the final state, waiting for the external world to destroy the coroutine frame via `destroy`. If it returns `std::suspend_never`, the coroutine frame is automatically destroyed—but you must ensure no one still holds a `coroutine_handle` to this coroutine, otherwise it is use-after-free.
-
-## `coroutine_handle`: Handle to the Coroutine Frame
-
-`std::coroutine_handle` (or its specialized version `std::coroutine_handle<promise_type>`) is a non-owning handle to the coroutine frame. You can think of it as a "raw pointer"—it points to the coroutine frame but does not manage its lifetime.
-
-The most common operation is `resume`, which resumes coroutine execution from the last suspension point. But there is a prerequisite: the coroutine must not have reached the final suspension state. If `final_suspend` has already returned `std::suspend_always`, calling `resume` again is undefined behavior—it might not crash on some compilers, but changing the optimization level might cause a segmentation fault. `destroy` destroys the coroutine frame: it calls the promise's destructor, parameter destructors, and then frees the coroutine frame's memory. `done` is used to check if the coroutine has reached the final suspension point—that is, whether the function body has finished executing and is in the `final_suspend` state. There is also a static method `from_promise`, which can reverse-engineer the corresponding `coroutine_handle` from a reference to the promise object. This is very common in `promise_type` methods, because you often need to get your own handle inside the promise's methods to pass to the outside.
-
-Let's use a complete example to demonstrate the basic operations of `coroutine_handle`:
+`co_await` is the most central of the three. It shows up wherever you need to "wait a moment"—suspend the current coroutine, yield control, and resume once some asynchronous operation completes. The semantics of `co_await expr` are: treat `expr` as an awaitable, and use it to decide whether to suspend, how to suspend, and what value comes back when execution resumes. Let's look at the simplest possible example:
 
 ```cpp
 #include <coroutine>
 #include <iostream>
 
-struct SimpleTask {
-    struct promise_type {
-        SimpleTask get_return_object() {
-            return SimpleTask{std::coroutine_handle<promise_type>::from_promise(*this)};
+// The minimal coroutine return type
+struct SimpleTask
+{
+    struct promise_type
+    {
+        SimpleTask get_return_object()
+        {
+            return SimpleTask{
+                std::coroutine_handle<promise_type>::from_promise(*this)};
         }
         std::suspend_never initial_suspend() { return {}; }
         std::suspend_always final_suspend() noexcept { return {}; }
@@ -179,327 +62,668 @@ struct SimpleTask {
         void unhandled_exception() { std::terminate(); }
     };
 
-    std::coroutine_handle<promise_type> h;
-    SimpleTask(std::coroutine_handle<promise_type> handle) : h(handle) {}
-    ~SimpleTask() { if (h && !h.done()) h.destroy(); }
-
-    // Disallow copy
-    SimpleTask(const SimpleTask&) = delete;
-    SimpleTask& operator=(const SimpleTask&) = delete;
-
-    // Allow move
-    SimpleTask(SimpleTask&& other) noexcept : h(other.h) { other.h = nullptr; }
-    SimpleTask& operator=(SimpleTask&& other) noexcept {
-        if (this != &other) { if (h) h.destroy(); h = other.h; other.h = nullptr; }
-        return *this;
-    }
-
-    bool resume() {
-        if (!h || h.done()) return false;
-        h.resume();
-        return !h.done();
-    }
+    std::coroutine_handle<promise_type> handle;
 };
 
-SimpleTask counter() {
-    for (int i = 0; i < 3; ++i) {
-        std::cout << "Counter: " << i << "\n";
-        co_await std::suspend_always{};
-    }
+// A simple coroutine
+SimpleTask demo_coroutine()
+{
+    std::cout << "第一步：协程开始执行\n";
+
+    // co_await std::suspend_always{} suspends the coroutine
+    co_await std::suspend_always{};
+
+    std::cout << "第二步：协程恢复后继续执行\n";
+
+    co_await std::suspend_always{};
+
+    std::cout << "第三步：协程再次恢复\n";
 }
 
-int main() {
-    auto task = counter();
-    while (task.resume()) {
-        std::cout << "Resumed...\n";
-    }
-    std::cout << "Done.\n";
+int main()
+{
+    std::cout << "主线程: 启动协程\n";
+
+    // Call the coroutine function; it returns a SimpleTask
+    SimpleTask task = demo_coroutine();
+
+    // Because initial_suspend returns suspend_never,
+    // the coroutine runs immediately up to the first co_await
+    std::cout << "主线程: 协程已挂起，手动恢复\n";
+    task.handle.resume();
+
+    std::cout << "主线程: 再次恢复\n";
+    task.handle.resume();
+
+    std::cout << "主线程: 协程执行完毕\n";
+    task.handle.destroy();
     return 0;
 }
 ```
 
-Running output:
+The output looks like this:
 
 ```text
-Counter: 0
-Resumed...
-Counter: 1
-Resumed...
-Counter: 2
-Done.
+主线程: 启动协程
+第一步：协程开始执行
+主线程: 协程已挂起，手动恢复
+第二步：协程恢复后继续执行
+主线程: 再次恢复
+第三步：协程再次恢复
+主线程: 协程执行完毕
 ```
 
-You see, every time the coroutine loops to `co_await`, it suspends and returns to `main`. `main` can check `done` to see if the coroutine is finished, then decide whether to continue `resume` or do something else. This is the fundamental difference between a coroutine and a normal function: a normal function is either executing or has returned; a coroutine can "pause"—after suspension, it doesn't disappear, but its state is completely preserved in the coroutine frame, ready to be resumed at any time.
+Notice that once `demo_coroutine()` is called, it does not run to completion in one go—each time it hits a `co_await std::suspend_always{}`, the coroutine suspends and control returns to `main()`. When we call `task.handle.resume()`, the coroutine picks up where it last suspended and carries on. `std::suspend_always` is the simplest awaitable the standard library provides: its `await_ready()` always returns `false`, meaning "always suspend". Its counterpart `std::suspend_never` has an `await_ready()` that always returns `true`, meaning "never suspend".
 
-Here is a very important detail: `coroutine_handle` is non-owning. It does not automatically destroy the coroutine frame upon destruction. If you get a `coroutine_handle` but never call `destroy`, the coroutine frame leaks—that heap memory is never freed. So you almost always want to wrap a `coroutine_handle` in a RAII class (like our `SimpleTask` above), letting the destructor automatically handle cleanup.
+`co_yield expr` produces a value and suspends the coroutine. It is equivalent to `co_await promise.yield_value(expr)`. `co_yield` is the foundation for building generators—each time a value is produced, the coroutine suspends, and it resumes only after the consumer has taken the value. Later in this article we will build a generator from scratch.
 
-> ⚠️ Neither `resume` nor `destroy` of `coroutine_handle` should be called after the coroutine is `done`. Calling `resume` on a completed coroutine is undefined behavior—it might "not crash" in your code, but under another compiler or optimization level, it might segfault immediately.
+`co_return` ends the coroutine. It comes in two forms: `co_return;` (no return value) and `co_return expr;` (with a return value). The former is equivalent to calling `promise.return_void()`; for the latter, if the type of `expr` is not void it is equivalent to `promise.return_value(expr)`, and if the type of `expr` is void it also calls `promise.return_void()`. `co_return` is different from an ordinary `return`—plain `return` statements cannot appear in a coroutine; a coroutine must end with `co_return` (or simply let the function body run to its end, in which case the compiler implicitly inserts a `co_return;` at the closing brace).
 
-## Coroutine Lifecycle
+> ⚠️ Note that `co_return` and plain `return` cannot be mixed. If a function contains any of `co_await`, `co_yield`, or `co_return`, it is a coroutine, and plain `return` statements inside its body are illegal—the compiler rejects them outright. Conversely, if the function body contains no `co_*` keyword at all, then even if the return type defines a `promise_type`, it is just an ordinary function.
 
-The lifecycle of a coroutine starts the moment it is called and ends when its coroutine frame is destroyed. Let's walk through this process completely.
+## What the Compiler Does — The Coroutine State Machine
 
-**Creation phase.** When you call a coroutine function, the compiler-generated code first allocates the coroutine frame, then copies arguments, constructs the promise, and calls `get_return_object`. At this point, the coroutine body hasn't started executing yet—the caller has the return object (which contains the `coroutine_handle`), but the "actual execution" of the coroutine waits for the result of `initial_suspend`.
+This is the core of understanding C++20 coroutines. When you write a coroutine function, the compiler does not simply emit a stretch of linear code the way it does for an ordinary function. Instead it **transforms the entire coroutine function into a state machine**—every `co_await` (including the initial suspend point and the final one) is a state, and each time the coroutine resumes, it jumps to the code position corresponding to its current state and continues from there.
 
-**Execution phase.** If `initial_suspend` returns `std::suspend_never`, the coroutine immediately starts executing the body until it hits the first real `co_await` (the one where `await_ready` returns `false`). If it returns `std::suspend_always`, the coroutine suspends before the function body starts, waiting for an external call to `resume`. During execution, every time it encounters `co_await` and needs to suspend, the coroutine saves the current state and returns control to the caller or resumer.
+Let's trace this transform with a simplified example. Suppose you write this coroutine:
 
-**Termination phase.** When the coroutine reaches `co_return` (or the end of the body, provided the promise has `return_void`), it calls `promise.return_void` or `promise.return_value`, destroys local variables, and then calls `final_suspend`. This is a key design point: **`final_suspend` should return `std::suspend_always`**.
+```cpp
+SimpleTask example(int x)
+{
+    int a = x + 1;
+    co_await std::suspend_always{};
+    int b = a + 2;
+    co_await std::suspend_always{};
+    co_return;
+}
+```
 
-Why should `final_suspend` return `std::suspend_always`? Because if it returns `std::suspend_never`, the coroutine frame is automatically destroyed immediately after `final_suspend` returns—at that point, the coroutine body has ended, local variables are destroyed, but the outside might still hold a `coroutine_handle`. If the outside doesn't know the coroutine was auto-destroyed and calls `resume` or `destroy` again, it is use-after-free. Returning `std::suspend_always` suspends the coroutine at the final state, leaving the coroutine frame alive, so the outside can detect completion via `done` and safely call `destroy` to destroy the coroutine frame.
+The compiler roughly transforms it into pseudocode like the following (many details simplified, but the core logic is accurate):
 
-> ⚠️ The dangling coroutine problem is one of the most common bugs in coroutines. A typical scenario: you return an object containing a `coroutine_handle`, but the caller doesn't manage its lifecycle properly—either forgetting to call `destroy` causing a memory leak, or continuing to use the `coroutine_handle` after the coroutine frame has been destroyed. Best practice is to always wrap `coroutine_handle` with RAII; don't let it leak across API boundaries.
+```text
+1. Allocate the coroutine frame
+2. Copy the parameter x into the coroutine frame
+3. Construct the promise_type object inside the coroutine frame
+4. Call promise.get_return_object() to obtain the return value
+5. co_await promise.initial_suspend()
+6. Enter the state machine:
 
-## Implementing a Generator from Scratch
+   State 0: (initial state)
+     a = x + 1
+     Save the current suspend point as "state 1"
+     co_await std::suspend_always{}
+     → suspend, return to the caller
 
-Great, now we have a basic understanding of how coroutines work. Next, we will do something very practical: implement a generator from scratch that can yield integers using `co_yield`. This implementation involves the full cooperation of `promise_type`, `coroutine_handle`, and `awaitable`, making it an excellent exercise for understanding C++20 coroutines.
+   State 1: (resumed from the first co_await)
+     b = a + 2
+     Save the current suspend point as "state 2"
+     co_await std::suspend_always{}
+     → suspend, return to the caller
 
-We will build this generator in three steps. First, the skeleton—let the generator yield values with `co_yield` and allow external iteration to retrieve values. Then add exception handling—let exceptions in the coroutine propagate correctly to the outside. Finally, add RAII—ensure the coroutine frame is properly destroyed when the generator is destructed.
+   State 2: (resumed from the second co_await)
+     Call promise.return_void()
+     Destroy the local variables b and a
+     co_await promise.final_suspend()
+     → final suspend
+```
 
-### Step One: Skeleton — Yield and Retrieve
+Let's walk through this transform step by step.
+
+**Step one: allocate the coroutine frame.** The coroutine frame is a block of heap memory (usually) that stores everything the coroutine needs in order to resume execution. It holds several parts: copies of the function's parameters (a coroutine can outlive its caller's stack, so the parameters must be copied into the frame to avoid dangling references), local variables (the ones whose lifetimes span a suspend point—if a local variable is created before a `co_await` and still used afterward, it has to live in the coroutine frame), the promise object (part of the coroutine's state), and the current suspend-point index (so a resume knows which state it should jump to).
+
+> ⚠️ Only local variables whose lifetimes span a suspend point get stored in the coroutine frame. If a local variable's lifetime begins and ends between two suspends, the compiler is free to optimize it into a register or onto the ordinary stack. That optimization is entirely the compiler's call.
+
+**Step two: copy the parameters.** Every parameter passed by value is moved or copied into the coroutine frame. Parameters passed by reference keep only the reference itself—which means if you pass a reference to a local variable into a coroutine and that variable dies before the coroutine resumes, you are left with a dangling reference. This is a classic pitfall of C++20 coroutines: **capturing parameters by reference in a coroutine is dangerous**, because you cannot guarantee that the referenced object is still alive when the coroutine resumes.
+
+**Step three: construct the promise object.** `promise_type` is the coroutine's "introspection interface"—the compiler calls promise methods at every key point of the coroutine's execution. It is not some vague notion: the compiler deduces it from the coroutine's return type via `std::coroutine_traits`. If your return type is `Task`, the compiler goes looking for `Task::promise_type`.
+
+**Step four: call `get_return_object()`.** The return value of this method is the object the coroutine function hands back to the caller (the `SimpleTask` in our example). This call happens before the coroutine body starts executing—in other words, when the caller receives the return value, not a single line of the coroutine body has run yet.
+
+**Step five: call `initial_suspend()`.** This method decides whether the coroutine suspends before the function body starts executing. If it returns `std::suspend_always` (lazy start), the coroutine suspends before running its first line of code, and the caller must call `resume()` manually to set it to work. If it returns `std::suspend_never` (eager start), the coroutine charges straight into the function body and runs until it hits the first `co_await`.
+
+**Step six: run the body and handle the suspend points.** The coroutine executes its body; when it encounters a `co_await`, it first calls the awaitable's `await_ready()`. If that returns `true`, no suspension is needed and execution simply continues. If it returns `false`, the current state is saved (the suspend-point index and the live local variables), `await_suspend(handle)` is called, and then the coroutine suspends—control goes back to the caller or the resumer. When the coroutine is `resume()`d, it picks up from the saved suspend point, calls `await_resume()` to obtain the result of the `co_await` expression, and continues from there.
+
+**The final state: `final_suspend()`.** When the coroutine reaches `co_return` (or the end of the body), it calls `promise.return_void()` or `promise.return_value()`, destroys all live local variables, then calls `promise.final_suspend()` and `co_await`s its result. This `final_suspend` is the coroutine's final stop—if it returns `std::suspend_always`, the coroutine suspends in its final state and waits for the outside world to destroy the coroutine frame via `coroutine_handle::destroy()`. If it returns `std::suspend_never`, the coroutine frame destroys itself automatically—but you must then guarantee that nobody still holds a `coroutine_handle` to this coroutine, otherwise it is use-after-free.
+
+## coroutine_handle: A Handle to the Coroutine Frame
+
+`std::coroutine_handle<>` (or its specialization `std::coroutine_handle<Promise>`) is a non-owning handle to the coroutine frame. You can think of it as a "raw pointer"—it points at the coroutine frame but takes no responsibility for its life or death.
+
+The most used operation is `resume()`, which resumes the coroutine so it continues from its last suspend point. But there is one precondition: the coroutine must not have reached the final suspend state yet. If `done()` has already returned `true`, calling `resume()` again is undefined behavior—on some compilers it may happen not to crash, while at a different optimization level it may segfault on the spot. `destroy()` destroys the coroutine frame: it invokes the promise's destructor, then the parameters' destructors, and finally releases the coroutine frame's memory. `done()` checks whether the coroutine has already reached its final suspend point—that is, whether the function body has finished executing and the coroutine sits in the `final_suspend` state. There is also a static method `from_promise(promise)`, which recovers the corresponding `coroutine_handle` from a reference to the promise object. It is used all the time inside promise_type's methods, because you often need to grab your own handle inside a promise method and hand it to the outside world.
+
+Let's use a complete example to demonstrate the basic operations of `coroutine_handle`:
 
 ```cpp
 #include <coroutine>
-#include <optional>
 #include <iostream>
 
-template <typename T>
-struct Generator {
-    struct promise_type {
-        T value;
+struct Resumable
+{
+    struct promise_type
+    {
+        Resumable get_return_object()
+        {
+            return Resumable{
+                std::coroutine_handle<promise_type>::from_promise(*this)};
+        }
+        // Lazy start: the coroutine suspends immediately after creation, without running the body
+        std::suspend_always initial_suspend() { return {}; }
+        std::suspend_always final_suspend() noexcept { return {}; }
+        void return_void() {}
+        void unhandled_exception() { std::terminate(); }
+    };
 
-        Generator get_return_object() {
-            return Generator{std::coroutine_handle<promise_type>::from_promise(*this)};
+    std::coroutine_handle<promise_type> handle;
+
+    // RAII: destroy the coroutine frame automatically on destruction
+    ~Resumable()
+    {
+        if (handle) {
+            handle.destroy();
+        }
+    }
+};
+
+Resumable countdown(int from)
+{
+    while (from > 0) {
+        std::cout << "  countdown: " << from << "\n";
+        --from;
+        co_await std::suspend_always{};   // Suspend after each loop iteration
+    }
+    std::cout << "  countdown: 发射!\n";
+}
+
+int main()
+{
+    std::cout << "创建协程...\n";
+    Resumable task = countdown(5);
+
+    // Because initial_suspend returns suspend_always,
+    // the coroutine has not started executing yet
+
+    std::cout << "开始恢复协程:\n";
+    while (!task.handle.done()) {
+        task.handle.resume();
+        if (!task.handle.done()) {
+            std::cout << "  (协程已挂起，可以干别的事)\n";
+        }
+    }
+
+    std::cout << "协程已完成\n";
+    // Resumable's destructor calls handle.destroy()
+    return 0;
+}
+```
+
+Output:
+
+```text
+创建协程...
+开始恢复协程:
+  countdown: 5
+  (协程已挂起，可以干别的事)
+  countdown: 4
+  (协程已挂起，可以干别的事)
+  countdown: 3
+  (协程已挂起，可以干别的事)
+  countdown: 2
+  (协程已挂起，可以干别的事)
+  countdown: 1
+  countdown: 发射!
+协程已完成
+```
+
+Watch how the coroutine suspends every time the loop reaches `co_await std::suspend_always{}`, returning control to `main()`. `main()` can check `done()` to see whether the coroutine has finished, then decide whether to `resume()` again or go do something else. This is the fundamental difference between a coroutine and an ordinary function: an ordinary function is either executing or has already returned; a coroutine can "pause"—after suspending it does not vanish, but rests with its full state preserved in the coroutine frame, ready to resume at any moment.
+
+Here is a vitally important detail: `coroutine_handle` is non-owning. It does not destroy the coroutine frame when it is destructed. If you obtain a `coroutine_handle` and never call `destroy()`, the coroutine frame leaks—that heap block is never released. So you should almost always wrap the `coroutine_handle` in an RAII class (like the `Resumable` above) and let the destructor handle cleanup automatically.
+
+> ⚠️ Neither `resume()` nor `destroy()` on a `coroutine_handle` should be called after the coroutine is already `done()`. Calling `resume()` on a finished coroutine is undefined behavior—it may happen "not to crash" in your build, but under another compiler or optimization level it may segfault immediately.
+
+## The Coroutine Lifecycle
+
+A coroutine's lifetime begins the moment it is called and ends the moment its coroutine frame is destroyed. Let's walk through the whole process.
+
+**Creation**. When you call a coroutine function, the compiler-generated code first allocates the coroutine frame, then copies the parameters, constructs the promise, and calls `get_return_object()`. At this point the coroutine body has not started executing—the caller already holds the return object (which contains the `coroutine_handle`), but the coroutine's "actual execution" still waits on the result of `initial_suspend()`.
+
+**Execution**. If `initial_suspend()` returns `suspend_never`, the coroutine starts executing the body immediately and runs until it hits the first genuine `co_await` (the one whose `await_ready()` returns `false`). If it returns `suspend_always`, the coroutine suspends before the body even begins and waits for an external `resume()`. During execution, each time the coroutine encounters a `co_await` that requires suspension, it saves its current state and then returns control to the caller or the resumer.
+
+**Completion**. When the coroutine reaches `co_return` (or the end of the body, provided the promise has `return_void()`), it calls `promise.return_void()` or `promise.return_value()`, destroys the local variables, and then calls `promise.final_suspend()`. Here lies a key design point: **`final_suspend()` should return `std::suspend_always`**.
+
+Why should `final_suspend` return `suspend_always`? Because if it returns `suspend_never`, the coroutine frame is destroyed automatically right after `final_suspend` returns—at that moment the coroutine body has ended and the local variables are gone, but the outside world may still be holding a `coroutine_handle`. If the outside does not know the coroutine has already destroyed itself, calling `resume()` or `destroy()` afterwards is use-after-free. Returning `suspend_always` keeps the coroutine suspended in its final state with the frame still alive, so external code can detect completion through `done()` and then safely call `destroy()` to tear the coroutine frame down.
+
+> ⚠️ Dangling coroutines are among the most common coroutine bugs. The typical scenario: you return an object containing a `coroutine_handle`, but the caller fails to manage its lifetime properly—either forgetting to call `destroy()` and leaking memory, or continuing to use the `coroutine_handle` after the coroutine frame has been destroyed. The best practice is to always wrap `coroutine_handle` in RAII and never let it wander bare outside an API boundary.
+
+## Building a Generator from Scratch
+
+Good—by now we have a handle on the basic mechanics of coroutines. Next we will do something very practical: build, from scratch, a generator that produces integer values with `co_yield`. This implementation exercises `promise_type`, `coroutine_handle`, and `co_yield` working in full concert, and it is a superb exercise for understanding C++20 coroutines.
+
+We build the generator in three steps. First the skeleton—get the generator producing values with `co_yield` and get the outside iterating to fetch them. Then exception handling—make exceptions thrown inside the coroutine propagate correctly to the outside. Finally RAII—make sure the coroutine frame is properly destroyed when the generator is destructed.
+
+### Step 1: The Skeleton — Producing and Consuming Values
+
+```cpp
+#include <coroutine>
+#include <iostream>
+#include <memory>
+
+template<typename T>
+class Generator
+{
+public:
+    // ---- promise_type: how the compiler customizes coroutine behavior ----
+    struct promise_type
+    {
+        T current_value;    // Stores the value produced by co_yield
+
+        Generator get_return_object()
+        {
+            // Create a coroutine_handle from the promise, wrap it in a Generator, and return it
+            return Generator{
+                std::coroutine_handle<promise_type>::from_promise(*this)};
+        }
+
+        // Initial suspend: the coroutine suspends immediately after creation (lazy start)
+        // The caller must resume it manually before values are produced
+        std::suspend_always initial_suspend() { return {}; }
+
+        // Final suspend: the coroutine suspends after finishing, waiting for an external destroy()
+        // Must not return suspend_never, or the coroutine frame destroys itself
+        // and the external handle becomes a dangling pointer
+        std::suspend_always final_suspend() noexcept { return {}; }
+
+        // co_yield expr is equivalent to co_await promise.yield_value(expr)
+        // We store the value in current_value, then suspend
+        std::suspend_always yield_value(T value)
+        {
+            current_value = value;
+            return {};   // Return suspend_always to suspend the coroutine
+        }
+
+        // Called when the coroutine has no co_return, or co_return;
+        void return_void() {}
+
+        // Unhandled exception — just terminate for now
+        void unhandled_exception() { std::terminate(); }
+    };
+
+    // ---- Iterator interface ----
+
+    // Resume the coroutine, advancing to the next yield point
+    bool next()
+    {
+        handle_.resume();
+        return !handle_.done();
+    }
+
+    // Get the value at the current yield point
+    T value() const
+    {
+        return handle_.promise().current_value;
+    }
+
+    // ---- Construction / destruction / moving ----
+
+    explicit Generator(std::coroutine_handle<promise_type> handle)
+        : handle_(handle)
+    {
+    }
+
+    ~Generator()
+    {
+        if (handle_) {
+            handle_.destroy();
+        }
+    }
+
+    // Copying is forbidden — a coroutine_handle cannot share ownership
+    Generator(const Generator&) = delete;
+    Generator& operator=(const Generator&) = delete;
+
+    // Moving is allowed
+    Generator(Generator&& other) noexcept : handle_(other.handle_)
+    {
+        other.handle_ = nullptr;    // Prevent other's destructor from destroying
+    }
+
+    Generator& operator=(Generator&& other) noexcept
+    {
+        if (this != &other) {
+            if (handle_) {
+                handle_.destroy();
+            }
+            handle_ = other.handle_;
+            other.handle_ = nullptr;
+        }
+        return *this;
+    }
+
+private:
+    std::coroutine_handle<promise_type> handle_;
+};
+```
+
+First let's sort out the logic of this code. `promise_type` is the bridge between the compiler and the coroutine. When the compiler sees your coroutine function returning `Generator<int>`, it goes looking for `Generator<int>::promise_type`, and then calls the promise's methods at every key point of the coroutine's execution.
+
+`get_return_object()` is the first to be called—it creates the `coroutine_handle`, wraps it in a `Generator`, and returns it to the caller. `initial_suspend()` returns `suspend_always`, which means the coroutine suspends before executing its body—after receiving the Generator, the caller must call `next()` (which calls `resume()` internally) before any values are produced. This is the standard generator design: **lazy start**, because a generator's consumer may only need the first few values, so there is no reason to produce them all at creation time.
+
+`yield_value(T value)` is the actual operation behind `co_yield`. When the coroutine reaches `co_yield 42`, the compiler transforms it into `co_await promise.yield_value(42)`. Our implementation stores the value in `current_value` and then returns `suspend_always`—the coroutine suspends, and control returns to whoever called `next()`. The caller reads `current_value` through `value()`, then calls `next()` again to produce the next value.
+
+`final_suspend()` returns `suspend_always` for the reason we explained earlier—after the coroutine finishes, it stays suspended, waiting for the outside Generator's destructor to call `destroy()`.
+
+The Generator itself is an RAII wrapper around `coroutine_handle`. The destructor calls `destroy()` to tear down the coroutine frame; the move constructor/assignment use a `nullptr` marker to prevent double destruction; and copying is forbidden because a `coroutine_handle` does not support shared ownership.
+
+Now let's use it to produce the Fibonacci sequence:
+
+```cpp
+Generator<int> fibonacci()
+{
+    int a = 0, b = 1;
+    while (true) {
+        co_yield a;         // Produce the current value, then suspend
+        int temp = a + b;
+        a = b;
+        b = temp;
+    }
+    // This coroutine never co_returns — an infinite sequence
+}
+
+int main()
+{
+    auto gen = fibonacci();
+
+    std::cout << "斐波那契数列前 15 项:\n";
+    for (int i = 0; i < 15 && gen.next(); ++i) {
+        std::cout << "  fib(" << i << ") = " << gen.value() << "\n";
+    }
+
+    // gen's destructor destroys the coroutine frame automatically
+    return 0;
+}
+```
+
+Output:
+
+```text
+斐波那契数列前 15 项:
+  fib(0) = 0
+  fib(1) = 1
+  fib(2) = 1
+  fib(3) = 2
+  fib(4) = 3
+  fib(5) = 5
+  fib(6) = 8
+  fib(7) = 13
+  fib(8) = 21
+  fib(9) = 34
+  fib(10) = 55
+  fib(11) = 89
+  fib(12) = 144
+  fib(13) = 233
+  fib(14) = 377
+```
+
+Notice that the `fibonacci()` function looks like an utterly ordinary loop generating Fibonacci numbers—the only difference is that `co_yield` replaces `return` or `push_back`. Yet this function does not run to completion in one shot: each `co_yield` produces one value and then suspends, and the loop continues only when `next()` is called. This is lazy evaluation—values are produced on demand, with no need to compute and store all results up front. For infinite sequences or very large data sets, this property is extremely valuable.
+
+### Step 2: Adding Exception Handling
+
+The generator above has a problem: what if the coroutine body throws an exception? Right now our `unhandled_exception()` just calls `std::terminate()`, which is far too blunt. A better approach is to catch and store the exception, then rethrow it when the outside calls `next()` or `value()`:
+
+```cpp
+template<typename T>
+class SafeGenerator
+{
+public:
+    struct promise_type
+    {
+        T current_value;
+        std::exception_ptr exception;   // Stores the exception
+
+        SafeGenerator get_return_object()
+        {
+            return SafeGenerator{
+                std::coroutine_handle<promise_type>::from_promise(*this)};
         }
 
         std::suspend_always initial_suspend() { return {}; }
-
         std::suspend_always final_suspend() noexcept { return {}; }
 
-        std::suspend_always yield_value(T val) {
-            value = val;
+        std::suspend_always yield_value(T value)
+        {
+            current_value = value;
             return {};
         }
 
         void return_void() {}
 
-        void unhandled_exception() { std::terminate(); }
-    };
-
-    std::coroutine_handle<promise_type> h;
-
-    Generator(std::coroutine_handle<promise_type> handle) : h(handle) {}
-
-    ~Generator() {
-        if (h) h.destroy();
-    }
-
-    // No copy
-    Generator(const Generator&) = delete;
-    Generator& operator=(const Generator&) = delete;
-
-    // Move
-    Generator(Generator&& other) noexcept : h(other.h) { other.h = nullptr; }
-    Generator& operator=(Generator&& other) noexcept {
-        if (this != &other) { if (h) h.destroy(); h = other.h; other.h = nullptr; }
-        return *this;
-    }
-
-    bool next() {
-        if (!h || h.done()) return false;
-        h.resume();
-        return !h.done();
-    }
-
-    T get_value() {
-        return h.promise().value;
-    }
-};
-```
-
-Let's walk through the logic of this code. `promise_type` is the bridge between the compiler and the coroutine. When the compiler sees your coroutine function returning `Generator`, it looks for `Generator::promise_type` and calls the promise's methods at various key nodes during coroutine execution.
-
-`get_return_object` is called first—it creates the `Generator` and wraps the `coroutine_handle` to return to the caller. `initial_suspend` returns `std::suspend_always`, meaning the coroutine suspends before executing the function body—the caller gets the `Generator` but must call `next` (which internally calls `resume`) to start yielding values. This is the standard design for generators: **lazy start**, because the consumer might only need the first few values, so there is no need to generate all values at creation time.
-
-`yield_value` is the actual operation behind `co_yield`. When the coroutine executes `co_yield value`, the compiler transforms it into `co_await promise.yield_value(value)`. Our implementation stores the value in `value` and returns `std::suspend_always`—the coroutine suspends, and control returns to the caller of `next`. The caller reads the value via `get_value`, then calls `next` again to yield the next value.
-
-`final_suspend` returns `std::suspend_always`, which we explained earlier—the coroutine remains suspended after completion, waiting for the external `Generator` destructor to call `destroy`.
-
-The `Generator` itself is a RAII wrapper for `coroutine_handle`. The destructor calls `destroy` to free the coroutine frame. Move construction/assignment use the `nullptr` check to prevent double destruction, and copying is disabled because `coroutine_handle` does not support shared ownership.
-
-Now let's use it to generate a Fibonacci sequence:
-
-```cpp
-Generator<int> fibonacci() {
-    int a = 0, b = 1;
-    while (true) {
-        co_yield a;
-        int tmp = a + b;
-        a = b;
-        b = tmp;
-    }
-}
-
-int main() {
-    auto gen = fibonacci();
-    for (int i = 0; i < 10; ++i) {
-        if (gen.next()) {
-            std::cout << gen.get_value() << " ";
-        }
-    }
-    std::cout << "\n";
-    return 0;
-}
-```
-
-Running output:
-
-```text
-0 1 1 2 3 5 8 13 21 34
-```
-
-You will find that the `fibonacci` function looks just like a normal loop for generating a Fibonacci sequence—the only difference is `co_yield` replaces `return` or `cout`. But this function doesn't run all at once: every time `co_yield` produces a value, it suspends, and waits for the next call to `next` to continue the loop. This is lazy evaluation—values are produced on demand, without pre-calculating and storing all results. For infinite sequences or large datasets, this feature is very valuable.
-
-### Step Two: Add Exception Handling
-
-The generator above has a problem: what if an exception is thrown inside the coroutine body? Currently, our `unhandled_exception` just calls `std::terminate`, which is too crude. A better approach is to catch and store the exception, then rethrow it when the outside calls `next` or `get_value`:
-
-```cpp
-#include <exception>
-
-template <typename T>
-struct Generator {
-    struct promise_type {
-        T value;
-        std::exception_ptr exception;
-
-        // ... (get_return_object, initial_suspend, final_suspend, yield_value, return_void same as before)
-
-        void unhandled_exception() {
+        // Capture the exception and store it in the exception_ptr
+        void unhandled_exception()
+        {
             exception = std::current_exception();
         }
     };
 
-    // ... (handle, RAII, move, next same as before)
+    bool next()
+    {
+        handle_.resume();
 
-    T get_value() {
-        if (h.promise().exception) {
-            std::rethrow_exception(h.promise().exception);
+        // After resume, check whether there is an exception
+        if (handle_.promise().exception) {
+            std::rethrow_exception(handle_.promise().exception);
         }
-        return h.promise().value;
+
+        return !handle_.done();
     }
+
+    T value() const
+    {
+        return handle_.promise().current_value;
+    }
+
+    explicit SafeGenerator(std::coroutine_handle<promise_type> handle)
+        : handle_(handle)
+    {
+    }
+
+    ~SafeGenerator()
+    {
+        if (handle_) {
+            handle_.destroy();
+        }
+    }
+
+    SafeGenerator(const SafeGenerator&) = delete;
+    SafeGenerator& operator=(const SafeGenerator&) = delete;
+
+    SafeGenerator(SafeGenerator&& other) noexcept : handle_(other.handle_)
+    {
+        other.handle_ = nullptr;
+    }
+
+    SafeGenerator& operator=(SafeGenerator&& other) noexcept
+    {
+        if (this != &other) {
+            if (handle_) {
+                handle_.destroy();
+            }
+            handle_ = other.handle_;
+            other.handle_ = nullptr;
+        }
+        return *this;
+    }
+
+private:
+    std::coroutine_handle<promise_type> handle_;
 };
 ```
 
-`unhandled_exception` now captures the exception into `exception`. `get_value` checks `exception` after `resume`—if there is one, it rethrows via `std::rethrow_exception`. This allows external code to handle exceptions in the coroutine using `try-catch`:
+`unhandled_exception()` now captures the exception into a `std::exception_ptr`. After `resume()`, `next()` checks `exception`—if there is one, it rethrows it via `std::rethrow_exception`. External code can now handle exceptions from the coroutine with `try/catch`:
 
 ```cpp
-Generator<int> faulty_generator() {
-    co_yield 1;
-    throw std::runtime_error("Oops!");
-    co_yield 2; // Never reached
+#include <iostream>
+#include <stdexcept>
+#include <string>
+
+SafeGenerator<int> risky_range(int max)
+{
+    for (int i = 0; i < max; ++i) {
+        if (i == 7) {
+            throw std::runtime_error("7 是不吉利的数字!");
+        }
+        co_yield i;
+    }
 }
 
-int main() {
-    auto gen = faulty_generator();
+int main()
+{
+    auto gen = risky_range(15);
+
     try {
         while (gen.next()) {
-            std::cout << "Got: " << gen.get_value() << "\n";
+            std::cout << "  值: " << gen.value() << "\n";
         }
-    } catch (const std::runtime_error& e) {
-        std::cout << "Caught exception: " << e.what() << "\n";
+    } catch (const std::exception& e) {
+        std::cout << "  捕获异常: " << e.what() << "\n";
     }
+
     return 0;
 }
 ```
 
-Running output:
+Output:
 
 ```text
-Got: 1
-Caught exception: Oops!
+  值: 0
+  值: 1
+  值: 2
+  值: 3
+  值: 4
+  值: 5
+  值: 6
+  捕获异常: 7 是不吉利的数字!
 ```
 
-The exception propagates from inside the coroutine to the outside `catch` block—completely consistent with synchronous code exception behavior. This is the elegance of coroutines: asynchronous code is not only written like synchronous code, but error handling is also the same as synchronous code.
+The exception traveled from inside the coroutine to the outside `catch` block—exactly the exception behavior of synchronous code. This is the elegance of coroutines: asynchronous code not only reads like synchronous code, even its error handling works the same way as synchronous code.
 
-### Step Three: Support Range-For Loops
+### Step 3: Supporting range-for Loops
 
-A real generator should support range-for loops. This requires us to provide an iterator type and `begin`/`end` methods. Let's add this to `Generator`:
+A real generator should support range-for loops. That requires providing an iterator type plus `begin()`/`end()` methods. Let's add this to `SafeGenerator`:
 
 ```cpp
-template <typename T>
-struct Generator {
-    // ... (previous implementation)
+// Add inside the SafeGenerator class:
 
-    struct iterator {
-        std::coroutine_handle<promise_type> h;
+class Iterator
+{
+public:
+    // Type aliases such as iterator_category and value_type must be provided
+    using iterator_category = std::input_iterator_tag;
+    using value_type = T;
+    using difference_type = std::ptrdiff_t;
+    using pointer = T*;
+    using reference = T&;
 
-        iterator(std::coroutine_handle<promise_type> handle) : h(handle) {}
+    Iterator() : generator_(nullptr) {}
 
-        iterator& operator++() {
-            h.resume();
-            if (h.done()) {
-                h = nullptr; // Mark as end
-            }
-            return *this;
-        }
-
-        T operator*() {
-            return h.promise().value;
-        }
-
-        bool operator!=(const iterator& other) const {
-            return h != other.h;
-        }
-    };
-
-    iterator begin() {
-        if (h) {
-            h.resume(); // Start the coroutine
-            if (h.done()) return iterator{nullptr};
-        }
-        return iterator{h};
+    explicit Iterator(SafeGenerator* gen) : generator_(gen)
+    {
+        // Initially, advance to the first value
+        advance();
     }
 
-    iterator end() {
-        return iterator{nullptr};
+    T operator*() const
+    {
+        return generator_->value();
+    }
+
+    Iterator& operator++()
+    {
+        advance();
+        return *this;
+    }
+
+    void operator++(int) { advance(); }
+
+    bool operator==(const Iterator& other) const
+    {
+        return generator_ == other.generator_;
+    }
+
+    bool operator!=(const Iterator& other) const
+    {
+        return !(*this == other);
+    }
+
+private:
+    SafeGenerator* generator_;
+    bool exhausted_ = false;
+
+    void advance()
+    {
+        if (!generator_->next()) {
+            exhausted_ = true;
+            generator_ = nullptr;   // Iteration is over; become end()
+        }
     }
 };
+
+Iterator begin()
+{
+    return Iterator(this);
+}
+
+Iterator end()
+{
+    return Iterator();
+}
 ```
 
-Now you can use range-for to traverse the generator:
+Now you can iterate over the generator with a range-for:
 
 ```cpp
-int main() {
-    auto gen = fibonacci();
-    int count = 0;
-    for (auto val : gen) {
-        if (count++ > 10) break;
-        std::cout << val << " ";
+SafeGenerator<int> squares(int n)
+{
+    for (int i = 1; i <= n; ++i) {
+        co_yield i * i;
     }
-    std::cout << "\n";
+}
+
+int main()
+{
+    std::cout << "前 8 个完全平方数:\n";
+    for (int val : squares(8)) {
+        std::cout << "  " << val << "\n";
+    }
     return 0;
 }
 ```
 
-Running output:
+Output:
 
 ```text
-0 1 1 2 3 5 8 13 21 34 55 89
+前 8 个完全平方数:
+  1
+  4
+  9
+  16
+  25
+  36
+  49
+  64
 ```
 
-`range-for` expands to calling `begin` to get an iterator, each loop calls `operator++` (which internally calls `resume`), uses `operator*` to get the value, until `operator!=` returns `false` (coroutine complete, iterator becomes `end`). The whole thing looks exactly like traversing a normal container, but the underlying mechanism is a lazily evaluated coroutine.
+Once `for (int val : squares(8))` is expanded, it amounts to calling `begin()` to obtain the iterator, calling `operator++()` on each loop iteration (which calls `next()` internally), fetching values with `operator*()`, and repeating until `operator==()` returns `true` (the coroutine has finished and the iterator has become end). The whole thing reads exactly like iterating over a `std::vector`, yet underneath it is a lazily evaluating coroutine.
 
-> ⚠️ This iterator is **single-pass** (input iterator)—you cannot go back after iterating once. This is because `coroutine_handle` can only move forward, not backward. If you need multiple traversals, you must recreate the generator. This also means this iterator does not meet ForwardIterator requirements—do not perform operations requiring multiple passes like `std::sort` on it.
+> ⚠️ This iterator is **single-pass** (an input iterator)—once you have iterated through it, there is no going back, because a `coroutine_handle` can only move forward, never backward. If you need to iterate multiple times, you have to create a new generator. It also means `Iterator` does not meet the requirements of a ForwardIterator—do not run multi-pass operations such as `std::sort` on it.
 
 ## Where We Are
 
-In this article, we have dissected the internal mechanisms of C++20 coroutines quite thoroughly. Three keywords—`co_await` to suspend and wait, `co_yield` to yield a value and suspend, `co_return` to return and end—their presence tells the compiler this function is a coroutine and triggers a series of transformations. The compiler transforms the coroutine function into a state machine: allocating a coroutine frame to store arguments, local variables, and the promise object; each `co_await` is a state switch point; when suspended, the current state is saved, and when resumed, it jumps to the corresponding position to continue execution. `coroutine_handle` is a non-owning handle to the coroutine frame, providing `resume`, `destroy`, and `done` operations—it doesn't manage the frame's lifecycle, so you must wrap it with RAII. `final_suspend` should return `std::suspend_always`, so the coroutine stays suspended after completion, allowing the outside to safely detect `done` and call `destroy`. We implemented a complete generator from scratch, gradually adding exception handling and range-for support—this implementation covers the full collaboration of `promise_type`, `coroutine_handle`, and `co_yield`.
+In this article we took C++20 coroutines apart down to their internals, more or less completely. The three keywords—`co_await` suspends and waits, `co_yield` produces a value and suspends, `co_return` returns and finishes—tell the compiler that a function is a coroutine and trigger a whole series of transforms. The compiler turns the coroutine function into a state machine: it allocates a coroutine frame storing the parameters, the local variables, and the promise object; every `co_await` is a state transition point; when suspending, the coroutine saves its current state, and when resuming, it jumps to the matching position and continues. `coroutine_handle` is the non-owning handle to the coroutine frame, providing the `resume()`, `destroy()`, and `done()` operations—it takes no responsibility for the frame's life and death, so you must wrap it in RAII. `final_suspend()` should return `suspend_always`, so that after the coroutine finishes it stays suspended and external code can safely detect `done()` and call `destroy()`. We also built a complete generator from scratch, step by step adding exception handling and range-for support—an implementation that exercises the full cooperation of promise_type, coroutine_handle, and co_yield.
 
-But so far, the awaitables we use are either `std::suspend_always` and `std::suspend_never` from the standard library, or simple structs we wrote ourselves. Real asynchronous programming requires more flexible awaitables—such as waiting for an I/O operation to complete, waiting for a timer to expire, or waiting for the result of another coroutine. This involves the customization mechanism of awaitable/awaiter: the semantics and return types of the three methods `await_ready`, `await_suspend`, and `await_resume`, and the different behaviors when `await_suspend` returns `bool`, `coroutine_handle`, or `void`. We will expand on these contents in the next article—that is the key step from "understanding mechanisms" to "practical use" of coroutines.
+So far, however, every awaitable we have used was either the standard library's `std::suspend_always` and `std::suspend_never`, or a simple struct we wrote ourselves. Real asynchronous programming needs far more flexible awaitables—waiting for an I/O operation to complete, for a timer to expire, or for another coroutine's result. That is where the customization machinery of awaitable/awaiter comes in: the semantics and return types of the three methods `await_ready()`, `await_suspend()`, and `await_resume()`, and how `await_suspend` behaves differently when it returns `bool`, `void`, or `coroutine_handle`. We will unpack all of that in the next article—it is the crucial step that takes coroutines from "understanding the machinery" to "actually using it".
 
-> 💡 Complete example code is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), visit `coroutine_generator.cpp`.
+> 💡 The complete example code is in [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP); visit `code/volumn_codes/vol5/ch06-async-io-coroutine/`.
 
-## Reference Resources
+## References
 
 - [Coroutines (C++20) — cppreference](https://en.cppreference.com/cpp/language/coroutines)
 - [Coroutine support library — cppreference](https://en.cppreference.com/w/cpp/coroutine)

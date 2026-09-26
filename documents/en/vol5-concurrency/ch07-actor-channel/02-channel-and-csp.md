@@ -12,7 +12,7 @@ prerequisites:
 - 'Thread-Safe Queue'
 reading_time_minutes: 24
 related:
-- 'Hands-on: Coroutine Echo Server'
+- 'Coroutine Echo Server in Practice'
 tags:
 - host
 - cpp-modern
