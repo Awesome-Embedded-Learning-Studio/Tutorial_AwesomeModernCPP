@@ -11,7 +11,7 @@ difficulty: advanced
 order: 3
 platform: host
 prerequisites:
-- 'LTO, ThinLTO, and the engineering rollout of PGO'
+- 'LTO, ThinLTO, and PGO: engineering them into your build'
 - '-O levels and optimization blockers: what the compiler can and can''t do'
 reading_time_minutes: 5
 related:

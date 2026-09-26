@@ -11,7 +11,7 @@ prerequisites:
 - 'Linking performance, multi-compiler comparison, and compile-time metaprogramming'
 reading_time_minutes: 6
 related:
-- 'LTO, ThinLTO, and the engineering rollout of PGO'
+- 'LTO, ThinLTO, and PGO: engineering them into your build'
 - 'Frontend optimization: code layout, PGO, and BOLT'
 tags:
 - host

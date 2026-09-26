@@ -28,7 +28,7 @@ The spirit running through this chapter matches ch04: **the compiler is your per
 
 <ChapterNav variant="sub">
   <ChapterLink href="07-01-opt-levels-and-blockers">-O levels and optimization blockers</ChapterLink>
-  <ChapterLink href="07-02-lto-pgo">LTO, ThinLTO, and PGO: wiring them into your build</ChapterLink>
+  <ChapterLink href="07-02-lto-pgo">LTO, ThinLTO, and PGO: engineering them into your build</ChapterLink>
   <ChapterLink href="07-03-linking-and-compilers">Linking performance, multi-compiler comparison, and compile-time metaprogramming</ChapterLink>
   <ChapterLink href="07-04-size-optimization">Binary size optimization: -Os, --gc-sections, and template bloat control</ChapterLink>
 </ChapterNav>

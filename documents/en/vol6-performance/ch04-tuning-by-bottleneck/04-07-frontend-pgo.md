@@ -17,7 +17,7 @@ prerequisites:
 reading_time_minutes: 6
 related:
 - 'Branches: branchless, predication, and "don''t go branchless blindly"'
-- 'LTO, ThinLTO, and the engineering rollout of PGO'
+- 'LTO, ThinLTO, and PGO: engineering them into your build'
 tags:
 - host
 - cpp-modern
@@ -112,5 +112,5 @@ With this article, ch04's tuning-by-bottleneck-site tour is complete. Each of th
 - Bakhvalov, *Performance Analysis and Tuning on Modern CPUs*, Chapter 7, *CPU Front-End Optimizations*
 - LLVM BOLT documentation (github.com/llvm/llvm-project/blob/main/bolt)
 - GCC PGO documentation for `-fprofile-generate` / `-fprofile-use`
-- ch07-02 LTO, ThinLTO, and the engineering rollout of PGO (this volume)
+- ch07-02 LTO, ThinLTO, and PGO: engineering them into your build (this volume)
 - Measured code for this article: `code/volumn_codes/vol6-performance/ch04/pgo_demo.cpp` (the three-stage PGO script is in the README)
