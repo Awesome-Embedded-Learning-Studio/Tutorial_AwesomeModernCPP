@@ -2,7 +2,7 @@
 chapter: 2
 cpp_standard:
 - 17
-description: 'The first two articles covered data movement. This one steps into the CPU''s execution core: how the instruction pipeline overlaps instructions, how out-of-order execution mines instruction-level parallelism (ILP) from your code, and why a branch misprediction flushes the pipeline. Two measurements — dot1 vs dot4 at 2.9x and sorted vs shuffled arrays at 4.2x — make it concrete, and we introduce the three pipeline hazards (data, control, structural).'
+description: 'The previous two articles settled data movement; this one steps inside the CPU''s execution core: how the instruction pipeline overlaps instructions in flight, how out-of-order execution mines instruction-level parallelism (ILP) out of your code, and why a mispredicted branch has to flush the pipeline. Two measured experiments make it concrete — dot1 vs dot4 at 2.9x, sorted vs shuffled arrays at 4.2x — and we close by introducing the data / control / structural pipeline hazards.'
 difficulty: advanced
 order: 3
 platform: host
@@ -11,55 +11,55 @@ prerequisites:
 - 'Cachelines and locality: the 64-byte minimum unit of transfer'
 reading_time_minutes: 11
 related:
-- 'Loops and compute optimization: code motion, unrolling, and multiple accumulators'
-- 'Branches: branchless and predication'
+- 'Loop and compute optimization: code motion, eliminating memory references, and multiple accumulators'
+- 'Branches: branchless, predication, and "don''t go branchless blindly"'
 tags:
 - host
 - cpp-modern
 - advanced
 - 优化
 - atomic
-title: 'Pipeline, ILP, and branch prediction: same data, several times the execution speed'
+title: 'Pipeline, ILP, and branch prediction: same data, several-fold differences depending on how you execute it'
 translation:
   source: documents/vol6-performance/ch02-cpu-microarchitecture/02-03-pipeline-ilp-branch.md
   source_hash: ff71a74f8f884866fff5246e94238587c8a284ac1319cdf25076c3a34e34caa7
-  translated_at: '2026-07-06T00:00:00+00:00'
-  engine: manual
-  token_count: 3300
+  translated_at: '2026-09-26T05:57:33+00:00'
+  engine: anthropic
+  token_count: 8600
 ---
-# Pipeline, ILP, and branch prediction: same data, several times the execution speed
+# Pipeline, ILP, and branch prediction: same data, several-fold differences depending on how you execute it
 
-## Data can be moved — but can it be computed
+## The data moves now — can the CPU chew through it fast enough
 
-The previous two articles took the memory hierarchy apart end to end: contiguous data, row-major traversal, controlling the hot working set. Those solve "can data reach the CPU's mouth in time." But in ch04 you'll see some counterintuitive phenomena: sometimes the data layout is unchanged, and just writing a few extra accumulators in a loop, or rewriting a branch a different way, costs another several times in performance. That tells you the other half of what decides performance is **how the CPU executes instructions**, independent of data movement.
+The previous two articles took the memory hierarchy apart end to end: contiguous data layout, row-major traversal, keeping the hot data set under control — all of that solves "can data be delivered to the CPU's mouth in time". But ch04 will show you some counterintuitive phenomena: sometimes the data layout has not changed at all, and just writing a few extra accumulators into a loop, or rephrasing a single branch, makes performance differ several-fold again. That tells us the other half of what decides performance is **how the CPU executes instructions** — it has nothing to do with data movement.
 
-This article walks into the CPU's execution core and covers three interrelated mechanisms: **the pipeline** overlaps instructions, **instruction-level parallelism (ILP)** makes independent instructions genuinely run at the same time, and **branch prediction** gambles on a direction when an `if` shows up. Together they decide "how fast your instruction sequence can run." We stop at the depth "enough to support judgment"; the deeper water (register renaming, the reorder buffer ROB, execution-port scheduling) we leave to Agner's microarchitecture manual, with pointers.
+So this article steps into the CPU's execution core and covers three interlocking mechanisms: the **pipeline** overlaps instructions in flight, **instruction-level parallelism (ILP)** makes independent instructions genuinely run at the same time, and **branch prediction** bets on a direction whenever an `if` shows up. Together the three decide "how fast your instruction stream can run". We stop at the depth that is "enough to ground your judgments"; the deeper water (register renaming, the reorder buffer ROB, execution-port scheduling) is left to Agner's microarchitecture manuals — we hand you the pointers.
 
 ## The pipeline: an assembly line for instructions
 
-Executing one CPU instruction isn't "done in one cycle" the way you might think. It's split into stages like a factory assembly line, typically: fetch → decode → execute → memory → write-back. Each instruction flows through these stages in turn, and **different stages of different instructions advance in parallel within the same cycle**: while instruction N is executing, N+1 is decoding, N+2 is being fetched. That's the **pipeline**.
+Executing one instruction is not the "one cycle and done" story; it is split into stages like a factory assembly line, typically: fetch → decode → execute → memory → write-back. Each instruction flows through those stages in turn, and **different stages of different instructions advance in parallel within the same cycle**: while instruction N is executing, instruction N+1 is decoding, and instruction N+2 is being fetched. That is the **pipeline**.
 
-Ideally the pipeline retires one instruction per cycle (a classic scalar pipeline); contemporary CPUs go further with **superscalar** designs, where each stage handles multiple instructions, so multiple instructions retire per cycle. In the AMD Zen chapter, Agner gives Zen's retire width as **8 µops/cycle** (a µop is a micro-operation internal to the CPU; one x86 instruction may split into several µops). That's the concrete meaning of "the CPU computes blazingly fast": 8 micro-operations per cycle.
+In the ideal case a pipeline retires one instruction per cycle (the classic scalar pipeline); modern CPUs go one step further with **superscalar** designs, where each stage handles several instructions, so several instructions can retire per cycle. In the AMD Zen chapter, Agner gives Zen's retirement width as **8 µops per cycle** (a µop is a micro-operation internal to the CPU; one x86 instruction may decompose into several µops). That is the concrete meaning of "the CPU computes blazingly fast": eight micro-operations completed in a single cycle.
 
-But this "8/cycle" is an **upper bound**. Whether you hit it depends on two things: whether the pipeline is **fed enough** (no hazard blocking it), and whether the code has **enough independent instructions for it to parallelize** (ILP).
+But that "8 per cycle" is an **upper bound**. Whether you reach it depends on two things: whether the pipeline **stays fed** (no hazard blocking it), and whether the code **offers enough independent instructions to run in parallel** (ILP).
 
 ## ILP: out-of-order execution mines parallelism from your code
 
-For that "8 µops/cycle" throughput to hold, the 8 µops must have **no data dependencies among them**. Contemporary CPUs achieve this with **out-of-order execution**: instead of running instructions one by one in the order you wrote them, the CPU dynamically scans the instruction window and simultaneously issues independent instructions to multiple execution units. The fewer the data dependencies in your code, the more instructions can run in parallel, the higher the **instruction-level parallelism (ILP)**, and the faster it goes.
+For that "8 µops per cycle" throughput to hold, the prerequisite is that the 8 µops have **no data dependencies among them**. Modern CPUs achieve this with **out-of-order execution**: instead of running instructions one by one in the order you wrote them, the core dynamically scans its instruction window and simultaneously issues mutually independent instructions to multiple execution units. The fewer data dependencies in your code, the more instructions can run in parallel, the higher the **instruction-level parallelism (ILP)**, and the faster it goes.
 
-Conversely, if you write a **long dependency chain** where every instruction depends on the previous one's result, it doesn't matter how wide the CPU is, it just waits. The most common example is a "single-accumulator reduction":
+Flip that around: if you write one long **dependency chain**, where every instruction depends on the previous one's result, no amount of CPU width helps — it can only sit and wait. The most common example is the single-accumulator reduction:
 
 ```cpp
 float dot1(const float* a, const float* b) {
     float acc = 0.0f;
-    for (int i = 0; i < N; ++i) acc += a[i] * b[i]; // each iteration depends on the previous acc
+    for (int i = 0; i < N; ++i) acc += a[i] * b[i]; // every iteration depends on the previous acc
     return acc;
 }
 ```
 
-`acc += a[i]*b[i]` is a **true dependency**: this iteration's add needs the previous `acc`, and the CPU can't parallelize adjacent multiply-adds. That's a long chain, ILP is essentially zero, and the execution units sit idle most of the time waiting for the next add to finish.
+`acc += a[i]*b[i]` is a **true dependency**: this iteration's addition needs the previous value of `acc`, so the CPU cannot overlap adjacent multiply-adds. That is one long chain: ILP is nearly zero, and the execution units spend most of their time idle, waiting for the next addition to finish.
 
-The classic way to break this chain is **multiple accumulators**: use several independent accumulators, each maintaining a short chain:
+The classic way to break this chain is **multiple accumulators**: use several independent accumulators, each maintaining its own short chain:
 
 ```cpp
 float dot4(const float* a, const float* b) {
@@ -74,21 +74,21 @@ float dot4(const float* a, const float* b) {
 }
 ```
 
-Four accumulators are four independent chains, and the CPU dispatches them to different execution ports to run genuinely in parallel. Let's measure (to demonstrate scalar ILP, we **deliberately disable auto-vectorization** when compiling; otherwise SIMD would do this even faster and mask the ILP effect, which itself is a foreshadowing we'll get to):
+Four accumulators are four independent chains, and the CPU dispatches them to different execution ports to genuinely run in parallel. Let's measure it (to demonstrate scalar ILP, we **deliberately disable auto-vectorization** when compiling; otherwise SIMD would do this job even faster and bury the ILP effect — which is itself foreshadowing, more on it below):
 
 ```text
-===== B. ILP (dot product of 32768 floats, scalar, no vectorization) =====
-   single accumulator dot1:   23.7 us/run  (one long dependency chain, CPU waits for each add)
-   4 accumulators   dot4:    8.1 us/run  (4 independent chains, CPU fills the execution ports in parallel)
-   2.92x difference
+===== B. ILP(点积 32768 float,标量无向量化)=====
+   单累加器 dot1:   23.7 us/次  (一条长依赖链,CPU 只能等上次加完)
+   4 累加器 dot4:    8.1 us/次  (4 条独立链,CPU 并行填满执行端口)
+   差 2.92x
 ```
 
-**Same number of multiply-adds, 4 accumulators is nearly 3x faster than 1.** That's direct evidence of ILP. The assembly gives it away too:
+**Same multiply-add count, and 4 accumulators run nearly 3x faster than 1.** That is ILP caught in the act. The assembly gives it away too:
 
 ```text
 ; dot1: one serial chain
-    mulss  (%rsi,%rax), %xmm0      ; compute a[i]*b[i] → xmm0
-    addss  %xmm0, %xmm1            ; acc += xmm0; next iteration's add depends on xmm1 here
+    mulss  (%rsi,%rax), %xmm0      ; computes a[i]*b[i] → xmm0
+    addss  %xmm0, %xmm1            ; acc += xmm0; the next iteration's add depends on this xmm1
 
 ; dot4: four independent chains (accumulators xmm1/xmm4/xmm3/xmm2 are mutually independent)
     mulss  (%rsi),       %xmm0 ; addss %xmm0, %xmm1
@@ -97,15 +97,15 @@ Four accumulators are four independent chains, and the CPU dispatches them to di
     mulss  -4(%rsi),     %xmm0 ; addss %xmm0, %xmm2   ← independent of the three above
 ```
 
-Each `addss` in dot1 waits for the previous writeback to `%xmm1`; in dot4 the four adds write to four different registers, and the out-of-order engine fires them all at once. This lesson gets a full treatment in ch04-02 "loops and compute optimization," where it's called the **multiple-accumulator transform** / **breaking the dependency chain**, one of the easiest performance dividends to pick up in scientific computing, reductions, and dot-product-style code.
+Every `addss` in dot1 must wait for the previous write-back to `%xmm1`; in dot4 the four additions write to four different registers, and the out-of-order engine issues the whole batch at once. This lesson gets a dedicated treatment in ch04-02, *Loop and compute optimization*, under the names **multiple accumulators** / **breaking the dependency chain** — one of the easiest performance dividends to pick up in scientific computing, reductions, and dot-product-style code.
 
-> A note from me: you might think "I don't have to write dot4 myself, won't the compiler unroll automatically?" It will, but usually needs `-O3 -funroll-loops`, and it can't violate floating-point associativity (`-ffast-math` is required for that), so under default `-O2` an FP reduction often stays a single chain. That's why we hand-write dot4 above to reliably capture ILP. The "what the compiler *can* do vs what it *will* do, separated by optimization level and language semantics" topic gets a systematic treatment in ch04.
+> One aside from me: you might be thinking, "I don't need to write dot4 myself — won't the compiler unroll the loop automatically?" It will, but usually only at `-O3 -funroll-loops`, and it cannot violate floating-point associativity (that takes `-ffast-math`), so under default `-O2` an FP reduction often stays a single chain. That is why the dot4 above has to be written by hand to reliably harvest the ILP. The topic of "what the compiler *can* do versus what it *will* do, separated by optimization levels and language semantics" gets the systematic treatment in ch04.
 
 ## Branch prediction: guess right and it's free, guess wrong and the pipeline flushes
 
-The second mechanism is **branch prediction**. To keep throughput high, the pipeline doesn't stop and wait when it hits an `if`. It **guesses** which way to go and then speculatively keeps executing. If it guesses right, the speculative work is all kept, almost free; if it guesses wrong, every instruction the speculative phase stuffed into the pipeline must be **flushed**, and fetch restarts from the correct direction. The cost of a flush is having executed a dozen to twenty-some cycles of work for nothing; the deeper the pipeline, the more a wrong guess hurts.
+The second mechanism is **branch prediction**. To keep throughput high, the pipeline does not stop and wait when it hits an `if` — it **guesses** which way to go, then speculatively keeps executing down that path. Guess right, and all the speculative work is kept, nearly free; guess wrong, and every instruction speculation stuffed into the pipeline must be **flushed**, and fetching restarts from the correct direction. The cost of a flush is a dozen to twenty-some cycles of work executed for nothing — the deeper the pipeline, the more a wrong guess hurts.
 
-That leads to a counterintuitive but extremely important conclusion: **the cost of a branch doesn't depend on the branch itself, but on whether it's "easy to predict."** A branch that always goes the same way (like a loop-exit condition) has a 100% predictor hit rate and is almost free; a 50/50 random branch can only be guessed half right, and every wrong guess pays the flush cost. The classic experiment, on the same array, "if it's ≥ 128, add it up":
+Which brings us to a counterintuitive but hugely important conclusion: **a branch's cost is determined not by the branch itself, but by how predictable it is.** A branch that always goes the same direction (a loop-exit condition, say) hits 100% in the predictor and is nearly free; a 50/50 random branch can only be guessed half right, and every miss pays the flush cost. Let's watch this with the most classic experiment there is — over one array, do "if it's above 128, accumulate it":
 
 ```cpp
 uint64_t sum_gt128(const std::vector<uint8_t>& d) {
@@ -117,43 +117,43 @@ uint64_t sum_gt128(const std::vector<uint8_t>& d) {
 }
 ```
 
-Prepare two datasets: a **shuffled array** (each element ≥128 or not is roughly random, branch is 50/50 unpredictable) and a **sorted array** (first half all <128, second half all ≥128, branch pattern is very clear). Same code, same amount of data, only the order differs:
+Prepare two datasets: a **shuffled array** (whether each element is ≥128 is near-random, so the branch is an unpredictable 50/50) and a **sorted array** (the first half all <128, the second half all ≥128 — a crystal-clear branch pattern). Same code, same amount of data; only the order differs:
 
 ```text
-===== A. Branch prediction (conditional sum over 32768 elements, 3000-run average) =====
-   shuffled (random branch, predictor can't hit): 0.053 ms/run
-   sorted   (clear pattern, almost no mispredictions): 0.013 ms/run
-   4.2x difference
+===== A. 分支预测(条件累加 32768 元素,3000 次平均)=====
+   打乱(随机分支,预测器猜不中): 0.053 ms/次
+   排序(模式清晰,几乎不预测失败): 0.013 ms/次
+   差 4.2x
 ```
 
-**4.2x.** Same accumulation, same data-movement cost, the gap comes entirely from branch-prediction-miss flushes. The sorted array's branch is "first consecutive not-taken, then consecutive taken"; the predictor learns it in two or three tries and the hit rate approaches 100%. The shuffled array can't be guessed right, flushing the pipeline nearly every other iteration. That's the answer to the famous Stack Overflow question "why is processing a sorted array faster" — the root cause isn't the data, it's the **predictability of the branch**.
+**4.2x.** Same accumulation, same data-movement cost — the entire gap comes from the flushes after branch mispredictions. The sorted array's branch is "a long run of not-taken, then a long run of taken"; the predictor learns it in two or three rounds and its hit rate approaches 100%. The shuffled array can never be guessed right, flushing the pipeline nearly once every two branches. This is the answer to the famous "why is processing a sorted array faster" question on Stack Overflow — and the root cause is not the data, it is the **predictability of the branch**.
 
-This conclusion has two corollaries that run through later chapters:
+Two corollaries of this conclusion run through the chapters that follow:
 
-1. **A predictable branch is almost free.** If an `if` inside a loop almost always goes the same way, don't bother eliminating it. What's worth eliminating is the **data-dependent, random branch**.
-2. **A data-dependent random branch can be removed with a branchless rewrite.** Rewriting the `if` as a `cmov` (conditional move) or an arithmetic trick means the CPU doesn't have to gamble, no speculation, no flush. ch04-06 "branches: branchless and predication" covers this in depth; here we just plant the motivation.
+1. **A predictable branch is nearly free.** If an `if` inside a loop overwhelmingly goes the same direction, don't spend effort eliminating it. What deserves the effort is the **data-dependent, random branch**.
+2. **A data-dependent random branch can be eliminated with a branchless rewrite.** Turn the `if` into a `cmov` (conditional move) or an arithmetic trick, so the CPU has nothing to guess — no speculation, no flush. ch04-06, *Branches: branchless, predication*, covers this in a dedicated article; here we just plant the motivation.
 
-> A trap in this experiment has to be spelled out: if the code above is compiled at **default `-O2`**, GCC will **auto-vectorize** the `if`-sum into a SIMD compare-add, or turn it into a `cmov`. Either way the "branch" is gone, and shuffled and sorted end up equally fast (I stepped in this exact pit the first time around, 1.0x). So I deliberately add `-fno-tree-vectorize -fno-tree-slp-vectorize -fno-if-conversion` here to keep the scalar branch alive (those three flags block loop vectorization, SLP vectorization, and if-conversion respectively), and only then does the 4.2x show up. The teaching point here: **the "branch cost" you see actually depends on what the compiler turned your code into**, it may have already made it branchless, or it may not have. Read the assembly and confirm, don't assume.
+> One trap in this experiment must be spelled out: compiled at **default `-O2`**, GCC will **auto-vectorize** the `if`-accumulation into a SIMD compare-add, or convert it into a `cmov` — either way the "branch" is gone, and shuffled and sorted end up equally fast (that is exactly how I faceplanted on my first run: 1.0x). So here I deliberately add `-fno-tree-vectorize -fno-tree-slp-vectorize -fno-if-conversion` to keep the scalar branch in place (blocking loop-level vectorization, SLP vectorization, and if-conversion, the three routes respectively), and only then does the 4.2x show up. The teaching point: **the "branch cost" you observe depends on what the compiler actually turned your code into** — it may already have made it branchless, or it may not have. Read the assembly to confirm; don't assume.
 
 ## Pipeline hazards: three kinds of stalls, matching the previous two sections
 
-Stringing the pipeline, ILP, and branch prediction together, CSAPP Chapter 4 uses the word "**hazard**" to unify them: under certain conditions the pipeline is forced to stall. They come in three kinds, matching exactly what was covered above:
+String the pipeline, ILP, and branch prediction together, and CSAPP Chapter 4 gives them the unifying name "**hazard**": under certain conditions the pipeline is forced to stall. Hazards come in three kinds, mapping neatly onto what we covered above:
 
-- **Data hazard**: adjacent instructions have a true data dependency (this one needs the previous one's result), and the pipeline must wait. That's the plight of dot1 in the ILP section, the long `acc +=` dependency chain is a string of RAW (read-after-write) hazards. The fix is to break the chain and raise ILP.
-- **Control hazard**: a branch makes the fetch direction uncertain. That's the subject of the branch-prediction section, and the fix is either to make the branch predictable or to use branchless to eliminate it outright.
-- **Structural hazard**: multiple instructions simultaneously compete for the same execution resource. For example, Zen's integer unit has 4 ALUs but only one divider, so multiple integer divides in the same cycle have to queue; FP divide is even scarcer and has longer latency (tens of cycles). That's why ch04-03 "data types and arithmetic" will specifically cover "division is a bottleneck, replace it with multiplication or bit ops when you can." It's not that division is slow, it's that dividers are few and high-latency, easy to hit a structural hazard.
+- **Data hazard**: adjacent instructions have a true data dependency (this one needs the previous one's result), and the pipeline must wait. That is dot1's plight from the ILP section — the long `acc +=` dependency chain is a string of RAW (read-after-write) hazards. The fix is to break the dependency chain and raise ILP.
+- **Control hazard**: a branch makes the fetch direction uncertain. That is the subject of the branch-prediction section; the fix is either to make the branch predictable, or to go branchless and remove the branch outright.
+- **Structural hazard**: several instructions fight over the same execution resource at the same time. Zen's integer side, for example, has 4 ALUs but only one divider, so multiple integer divisions in the same cycle have to queue; FP division is scarcer still and has long latency (tens of cycles). That is why ch04-03, *Data types and arithmetic*, devotes space to "division is the bottleneck — replace it with multiplication or bit tricks when you can": it is not that division is slow as a computation, it is that dividers are few and high-latency, so structural hazards come easily.
 
-Remember those three names and you're set. CSAPP Chapter 4 has the full hazard-detection and forwarding machinery, which belongs to a computer-architecture course and vol6 won't reproduce. What we care about is "how these three stalls translate into C++-level performance pits," and that's ch04's job.
+Remember those three names and you're set. CSAPP Chapter 4 works out the full hazard-detection and forwarding machinery — that belongs to a computer-architecture course, and vol6 will not re-derive it. What we care about is "how these three kinds of stalls translate into C++-level performance pits", and that is ch04's business.
 
-## A thread for the next article
+## Loose threads for the next article
 
-This article covered three mechanisms on the CPU's execution side: **the pipeline** overlaps instructions (a Zen-class CPU has a theoretical retire width of 8 µops/cycle, but that's an upper bound), **ILP** decides whether you can approach that bound (the long dependency chain of dot1 crushes ILP to zero, multiple accumulators in dot4 pull it back up, 2.9x measured gap), and **branch prediction** penalizes unpredictable branches hard (sorted vs shuffled, 4.2x; predictable ones are almost free; the branchless rewrite for random branches is saved for ch04-06). Add the **three hazards** (data / control / structural), and you have the hardware foundation for ch04's "optimize by bottleneck site."
+This article laid out the three mechanisms on the CPU's execution side: the **pipeline** overlaps instructions in flight (a Zen-class CPU has a theoretical retirement width of 8 µops per cycle, but that is an upper bound); **ILP** decides whether you can approach that bound (dot1's long dependency chain crushes ILP to zero, dot4's multiple accumulators pull it back up — a measured 2.9x apart); and **branch prediction** penalizes unpredictable branches hard (sorted vs shuffled, 4.2x; predictable ones are nearly free; the branchless rewrite for random branches is saved for ch04-06). Add the **three hazards** (data / control / structural), and you have the hardware foundation for ch04's "optimize by bottleneck site".
 
-That wraps up ch02's single-core hardware foundation: the memory hierarchy (02-01), cachelines and locality (02-02), and pipeline / ILP / branches (this article). The next article adds the last piece of the puzzle, virtual-address translation and the TLB, plus a cheat sheet of microarchitecture differences across CPU families, as a desk reference for anyone tuning across platforms.
+With this article, ch02's single-core hardware groundwork is complete: the memory hierarchy (02-01), cachelines and locality (02-02), and pipeline / ILP / branches (this article). In the next one we add the last piece of the puzzle — virtual address translation and the TLB — plus a cheat sheet of microarchitecture differences across CPU families, a desk-side reference for anyone who needs to tune across platforms.
 
 ## References
 
-- Agner Fog, *The microarchitecture of Intel, AMD and VIA CPUs*, §22 *AMD Ryzen*: Zen-family pipeline widths (4-wide decode, 6 µop/clock dispatch, 8 µop/clock retire), branch throughput (taken 1/2 clock, not-taken 2/clock), µop cache, execution-unit counts. Local copy: `.claude/drafts/books/optimazation_in_cpp/microarchitecture.md`
-- Bryant & O'Hallaron, *CSAPP*, Chapter 4 *Processor Architecture* (concept-level definitions of pipeline and hazards) and Chapter 5 *Optimizing Program Performance* (the classic derivations of loop unrolling, multiple accumulators, and reassociation)
-- The legendary Stack Overflow question *Why is processing a sorted array faster than processing an unsorted array?* (the source of the branch-prediction experiment, muffinista / Mysticial's classic answer)
-- Source for this article's measurements: `code/volumn_codes/vol6-performance/ch02/pipeline_branch_ilp.cpp`
+- Agner Fog, *The microarchitecture of Intel, AMD and VIA CPUs*, §22 *AMD Ryzen*: Zen-family pipeline widths (4-wide decode, 6 µops/clock dispatch, 8 µops/clock retire), branch throughput (taken 1/2 clock, not-taken 2/clock), the µop cache, execution-unit counts. Local copy: `.claude/drafts/books/optimazation_in_cpp/microarchitecture.md`
+- Bryant & O'Hallaron, *CSAPP*, Chapter 4 *Processor Architecture* (concept-level definitions of the pipeline and hazards) and Chapter 5 *Optimizing Program Performance* (the classic derivations of loop unrolling, multiple accumulators, and reassociation)
+- The legendary Stack Overflow question *Why is processing a sorted array faster than processing an unsorted array?* (the origin of the branch-prediction experiment; muffinista / Mysticial's classic answer)
+- The measurement code for this article: `code/volumn_codes/vol6-performance/ch02/pipeline_branch_ilp.cpp`

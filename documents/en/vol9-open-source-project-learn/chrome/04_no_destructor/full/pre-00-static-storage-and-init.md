@@ -4,12 +4,12 @@ cpp_standard:
 - 11
 - 17
 - 20
-description: "Static storage duration, the three phases of static initialization, the Static Initialization Order Fiasco (SIOF), destruction-order problems, magic statics, and constinit. The groundwork for NoDestructor."
+description: Cover static storage duration, the three kinds of static initialization, the static initialization order fiasco (SIOF), destruction-order problems, magic statics, and constinit — laying the groundwork for NoDestructor
 difficulty: intermediate
 order: 0
 platform: host
 prerequisites:
-- WeakPtr prerequisite (0): weak references and the lifetime puzzle
+- 'WeakPtr prerequisite (0): weak references and the lifetime puzzle'
 reading_time_minutes: 11
 related:
 - 'NoDestructor hands-on (I): motivation and API design'
@@ -21,64 +21,70 @@ tags:
 - 内存管理
 - RAII
 title: "NoDestructor prerequisite (0): static storage duration, initialization, and destruction"
+translation:
+  source: documents/vol9-open-source-project-learn/chrome/04_no_destructor/full/pre-00-static-storage-and-init.md
+  source_hash: d71d1ed1c432fa9afd0c44d974a5b74e7147e91b52d17178ef9443035753331c
+  translated_at: '2026-09-26T03:16:26+00:00'
+  engine: anthropic
+  token_count: 6400
 ---
 # NoDestructor prerequisite (0): static storage duration, initialization, and destruction
 
-You write `std::map<int, Config> global_table = load();` at file scope and probably think nothing of it. The map gets constructed at startup, destructed at exit, end of story. Yet Chromium's `//base` style guide flatly bans global constructors and destructors. The first time we hit that rule we stopped cold: such a natural thing to write, why on earth is it forbidden?
+You toss off a line like `std::map<int, Config> global_table = load();` in your program and think nothing of it — the map constructs at startup, destructs at exit, as natural as breathing. But Chromium's `//base` style guide flat-out bans global constructors and destructors. The first time we saw that rule we did a double take too: such a natural way to write it — on what grounds is it forbidden?
 
-The answer only shows up once you go read the standard. Behind that one ban sits a whole chain of old C++ traps: static-storage objects have a weird three-phase initialization, the order of initialization across translation units is completely out of your hands (that's SIOF), and destruction order is just as out of control (shutdown races). This piece drags all of that foundation out into the light and walks through each piece. Once these are clear, why Chromium issues this ban and what the next few `NoDestructor` articles are actually solving falls into place on its own.
+Once the surprise wore off we went digging through the standard, and it turns out this one ban is sitting on a whole pile of old C++ traps: static-storage-duration objects have a curious three-stage initialization, the initialization order across translation units is entirely out of your hands (that's SIOF), and the destruction order is just as unruly (the shutdown race). This piece drags those foundations out into the daylight and works through every one of them. Once you truly understand all this, why Chromium imposes the ban — and what problem the upcoming `NoDestructor` articles are actually solving — falls into place on its own.
 
 ---
 
 ## Static storage duration
 
-C++ groups objects by **storage duration**, and storage duration decides when an object is born and when it dies. The three we deal with every day: automatic storage duration for locals (created on function entry, destroyed on function exit, the usual stack citizen); dynamic storage duration for `new`'d objects (you manage them by hand, creation and destruction happen on your say-so); and the protagonist of this piece, static storage duration, which covers both globals and `static` variables. These are created at program startup and destroyed at program exit, living exactly as long as the program itself.
+C++ classifies objects by **storage duration**, and storage duration decides when an object is born and when it dies. Day to day we mostly deal with three kinds. Local variables are created on function entry and destroyed on exit — that's automatic storage duration, the regulars on the stack. Objects born from `new` are yours to manage by hand, created and destroyed at your say-so — that's dynamic storage duration. And then there's the protagonist of this piece: static storage duration. Global variables and `static` variables all belong to this class — created when the program starts, destroyed when it exits, living exactly as long as the program itself.
 
-`NoDestructor` exists to serve that last category. When you write `static std::string s = "...";` or a global `std::map g_table;`, the `std::string` or `std::map` inside has static storage duration and lives as long as the program. The catch is that static-storage objects play by their own initialization and destruction rules, different from ordinary locals, and every problem we're about to talk about grows out of those rules.
+`NoDestructor` exists to serve exactly this class. Write `static std::string s = "...";` or a global `std::map g_table;`, and that `std::string`, that `std::map`, are both static storage duration, living as long as the program. The catch is that static-storage-duration objects follow their own set of initialization and destruction rules, different from ordinary local variables — and every bit of the trouble we're about to wade through grows out of that rulebook.
 
 ---
 
-## The three phases of static initialization
+## Three-stage static initialization
 
-The standard splits the initialization of a static-storage object into three phases. The first two are the well-behaved ones, they don't make trouble.
+For objects of static storage duration, the standard splits initialization into three stages. Take the first two first — they're the well-behaved kids who cause no trouble.
 
-Phase one is zero initialization: the memory gets wiped to all zeros. For builtin types, and for classes with zero-initialization semantics, this is where initialization ends. Phase two is constant initialization: if the initializer is a compile-time constant (a `constexpr`, say), the compiler resolves it during compilation. Both of these count as "static initialization" and produce no runtime code. Together they're "the static part": done at compile time, zero cost.
+Stage one is zero initialization: the object's memory is simply zeroed out wholesale. For built-in types and classes with zero-initialization semantics, initialization is finished once this step completes. Stage two is constant initialization: if the initializer is a compile-time constant — say you wrote a `constexpr` — the compiler finishes the job during compilation. This stage also counts as "static initialization" and produces no runtime code at all. Together these two form the "static" part: done at compile time, zero overhead.
 
-The real trouble is phase three, dynamic initialization. When the initializer has to be computed to be known, `static std::string s = "x";` (which has to call `std::string`'s constructor) or `static int n = rand();` (which has to call `rand()` at runtime), the compiler has to defer the work to runtime. This is "the dynamic part" and it costs real cycles. Every pitfall we cover below has its roots here.
+The real trouble lives in stage three — dynamic initialization. When the initializer has to be computed before the result is known — `static std::string s = "x";` needs the `std::string` constructor called, `static int n = rand();` needs `rand()` called at runtime — the compiler has no choice but to defer the work to runtime. This is the "dynamic" part, and it carries runtime cost. Every trap we walk through below has its roots in this stage.
 
 ```cpp
 // Static initialization (compile time, no cost):
 constexpr int kMax = 100;            // constant initialization
 static int zero;                      // zero initialization
 
-// Dynamic initialization (runtime, code has to run):
-std::string g_name = "chromium";      // calls std::string's constructor
-static int g_seed = rand();           // calls rand()
-std::map<int,int> g_table;            // calls std::map's constructor
+// Dynamic initialization (runtime, code has to execute):
+std::string g_name = "chromium";      // must call the std::string constructor
+static int g_seed = rand();           // must call rand()
+std::map<int,int> g_table;            // must call the std::map constructor
 ```
 
-For every global or static that goes through dynamic initialization, the compiler emits a tiny "call its constructor at program startup" stub and drops it into the `.init_array` section. That stub has a name: the global constructor, and the runtime walks every entry before `main` even starts.
+For every global or static variable that goes through dynamic initialization, the compiler must additionally emit a snippet of "call its constructor at program startup" code and tuck it into the `.init_array` section. This snippet has a name — the global constructor — and before `main` the runtime walks the whole list and runs it once.
 
 ---
 
-## The Static Initialization Order Fiasco (SIOF)
+## The static initialization order fiasco (SIOF)
 
-Inside one translation unit (one .cpp), global constructors run in declaration order. That much you control. The moment you cross translation units, the order becomes unspecified: the compiler is free to line them up however it likes.
+Within a single translation unit (a single .cpp), global constructors run in declaration order — that much you control. But the moment you cross translation units, the order becomes unspecified, and the compiler arranges things however it pleases.
 
-That single fact is what surfaces the oldest C++ trap in the book, the Static Initialization Order Fiasco, SIOF for short. A plain example:
+And with that we've dug up the mustiest trap in all of C++ — the Static Initialization Order Fiasco, SIOF for short. Here's the most bare-bones example:
 
 ```cpp
 // a.cpp
 extern int b_value;
-int a_value = b_value + 1;     // dynamic init, depends on b_value
+int a_value = b_value + 1;     // dynamic initialization, depends on b_value
 
 // b.cpp
-int b_value = std::rand();     // dynamic init (rand isn't constexpr, evaluated at runtime)
+int b_value = std::rand();     // dynamic initialization (rand is not constexpr, evaluated at runtime)
 ```
 
-The first time we saw this we didn't think much of it. Run it, and the trap shows itself. If `a.cpp`'s `a_value` gets initialized first, it reads `b_value` before `b_value` has had its turn, and at that point `b_value` only has its zero-initialized 0. So `a_value` comes out as 1, not whatever `b_value` was actually supposed to evaluate to. One nuance is worth memorizing: only dynamic initialization is exposed to SIOF. Constant initialization (something like `int b = 42;`) is finished at compile time and always precedes any dynamic initialization, so it's immune. But once two cross-.cpp globals depend on each other and both are dynamically initialized, the order is out of your hands and the result is undefined behavior. The thing that makes this bug so miserable is that it barely reproduces. Change machines, change compiler flags, and the order shifts. Runs clean on your laptop, flakes out on CI.
+When we first saw this example it looked innocent; running it was what revealed the trick. If `a.cpp`'s `a_value` gets initialized first, it reads `b_value` before `b_value` has had its turn at dynamic initialization — all that's there is the zero-initialized 0 — so `a_value` works out to 1, not the value it should have gotten after `b_value` was truly evaluated. One nuance to lock in: only dynamic initialization can collide with SIOF — constant initialization (something like `int b = 42;`) is finished at compile time and always precedes dynamic initialization, so it never meets SIOF. But the moment two globals across .cpp files depend on each other and both are dynamically initialized, the order is completely out of control, and the result is undefined behavior. What makes this bug so agonizing is how hard it is to reproduce — switch machines, switch compiler flags, and the order changes; runs perfectly locally, flakes out on CI.
 
-The standard-blessed workaround is "construct on first use": tuck that global inside a function as a local static, so its initialization only happens the first time the function is called.
+The standard's prescribed remedy for SIOF is called "construct on first use": tuck that global variable inside a function as a local static, and don't lift a finger to initialize it until the function is called for the very first time.
 
 ```cpp
 int& a_value() {
@@ -86,73 +92,73 @@ int& a_value() {
     return v;
 }
 int& b_value() {
-    static int v = std::rand();     // b_value also becomes a function-local static
+    static int v = std::rand();     // b_value becomes a function-local static too
     return v;
 }
 ```
 
-Rewritten this way, the first time `a_value()` is called it goes and calls `b_value()` itself, and that call is what triggers `b_value()`'s construction. The order is now decided by the code you wrote, not by the compiler. This is the fundamental reason NoDestructor recommends function-local statics: it sidesteps SIOF at the root.
+With this change, the first time `a_value()` is called, it actively goes and calls `b_value()` — and that call is what triggers `b_value()`'s construction. The order is now decided by the code you wrote, no longer by the compiler's say-so. This is the fundamental reason NoDestructor's recommended pattern is the function-local static: it routes around SIOF at the root.
 
 ---
 
-## Destruction order (the shutdown race)
+## The destruction-order problem (the shutdown race)
 
-Initialization has its order mess; destruction has one too. Static-storage objects get destructed when the program exits (after `main` returns, during `exit`), in the reverse of initialization order. It sounds elegant. The problem hides inside "reverse": if initialization order was never under your control, reverse order isn't either.
+Initialization has its order mess, and destruction has one of its own. Static-storage-duration objects are destroyed when the program exits (after `main` returns, or at `exit`), in the reverse of their initialization order. It sounds elegant — until you notice the problem hiding behind the word "reverse": you never controlled the initialization order in the first place, so the reverse goes out of control right along with it.
 
-A common shape: some global object's destructor happens to depend on another global that's already been destroyed. A global logger holds a reference to a global string; at shutdown the string destructs first, the logger's destructor then touches the dead reference, instant UAF. Worse landmines live inside destructors themselves. Calling `exit` from inside one skips the destruction of every remaining static object, and is UB under cross-thread or nested calls. Throwing from one during stack unwinding trips `std::terminate`. Every step of the shutdown path can cost you a week.
+Take the most common scenario: one global object's destructor happens to depend on another object that has already been destroyed. Say a global logger holds a reference to a global string; at shutdown the string destructs first, and when the logger's turn comes and it touches that reference — instant use-after-free. There are sneakier mines buried inside destructors themselves: calling `exit` there skips the destruction of the remaining static objects, and in cross-thread or nested-call scenarios it's UB; throwing an exception there triggers `std::terminate` if stack unwinding is already in progress. Every one of these on the shutdown path is enough to cost you a week of debugging.
 
-Collectively this is the shutdown race. Chromium is a browser, so its shutdown path is messy to begin with: multiple processes, multiple threads, task queues possibly still draining. Global-object destruction races are repeat offenders in its bug tracker.
+This whole family of ailments goes by the collective name shutdown race. Chromium is a browser, and its shutdown path is messy to begin with: multiple processes, multiple threads, task queues possibly still draining. Races between global objects' destructors are repeat customers in its bug tracker.
 
-Chromium's answer is blunt: don't let global objects destruct at all. That's the core idea behind `NoDestructor`. The object lives as long as the program, but at program exit nothing destructs it. The cost is that the OS reclaims the memory when the process exits, which the OS was going to do anyway, so it's free. Trading one manual "skip the destructor" for the entire class of destruction-order problems is a deal Chromium is happy to take.
+Chromium's solution is blunt to the point of brutality: just don't let global objects destruct. That is the core idea of `NoDestructor`. It lets the object live as long as the program, but when the program ends, nobody destructs it; the cost is that the operating system reclaims the memory wholesale when the process exits — something the OS was going to do anyway, so it comes free. One manually waived destructor in exchange for an entire class of destruction-order trouble — Chromium reckons that trade is worth it.
 
 ---
 
-## Magic statics: the C++11 thread-safety guarantee
+## magic statics: the C++11 thread-safety guarantee
 
-That "function-local static" workaround rests on a premise you might not have scrutinized: if several threads hit the function for the first time at once, the initialization has to be safe, right? Before C++11 this wasn't actually guaranteed. From C++11 on, the standard backs it up directly. It's known as magic statics. Paraphrased, the standard says roughly:
+That "function-local static" remedy rests on a premise you may not have thought through: if several threads call into the function for the first time simultaneously, the initialization had better be safe, right? Before C++11 nothing actually guaranteed this; it was C++11 that put the standard's weight behind it, a guarantee known in the trade as magic statics. The standard's wording, roughly:
 
-> If control flow passes concurrently through the declaration of an uninitialized function-local static, other threads **wait** for the in-flight initialization to finish.
+> If control flow passes concurrently through the declaration of an uninitialized function-local static variable, other threads will **wait** for the in-progress initialization to complete.
 
-In code, that means this pattern is safe to use:
+Translated into code, this is a pattern you can use with confidence:
 
 ```cpp
 const std::string& GetDefault() {
-    static const std::string s = "default";   // thread-safe: concurrent first calls still initialize exactly once
+    static const std::string s = "default";   // thread-safe: on concurrent first calls from multiple threads, only one performs the initialization
     return s;
 }
 ```
 
-Any number of threads can pile into `GetDefault()` and `s` is constructed exactly once, with no data race in between. That's a black-and-white guarantee from C++11 (GCC and Clang implement it underneath via `__cxa_guard_acquire`). One thing we want to flag here: NoDestructor can sit there calmly as a singleton precisely because it stands on magic statics. It doesn't add any lock of its own, the language does the work underneath. Get that straight and the NoDestructor implementation later won't trip you up with "why doesn't it lock?"
+Any number of threads can call `GetDefault()` together; `s` gets constructed exactly once, with no data race in between. That is a guarantee C++11 gives in black and white (GCC/Clang implement it for you underneath via `__cxa_guard_acquire`). One point we want to flag here: the reason NoDestructor can serve so reliably as a singleton is that its roots are planted in magic statics — it doesn't add any lock for you; it's the language providing the safety net down below. Get that straight, and when you read NoDestructor's implementation later you won't be tripped up by "why doesn't it lock anything".
 
 ---
 
-## constinit (C++20): guaranteeing zero-cost initialization
+## constinit (C++20): guaranteed zero runtime initialization
 
-C++20 hands us a new tool: `constinit`. What it does fits in one sentence. It promises both you and the compiler that this variable's initialization will be constant initialization, finished at compile time, and that **no dynamic initialization code will ever be generated** for it.
+C++20 handed us a new tool: `constinit`. What it does fits in one sentence: it promises you and the compiler that this variable's initialization is guaranteed to be constant initialization, finished at compile time — **it will absolutely never generate dynamic initialization code**.
 
 ```cpp
 constinit int x = 42;             // OK: constant initialization
-constinit int y = compute();      // compile error: compute() isn't a constant expression → rejected
+constinit int y = compute();      // compile error: compute() is not a constant expression → rejected
 ```
 
-We think the keyword is designed cleanly. It isn't advice, it's an assertion: if you can write it, you pass; if the initializer isn't constant, the compiler rejects it on the spot instead of leaving a grenade for runtime. Its value is exactly "force this global to not emit a global constructor." For a constinit-constructible type (a POD with a `constexpr` constructor, say), you can write `constinit T x` and have it both ways: you skip the global constructor and you keep using the bare type, no need to bother NoDestructor at all. That's precisely the "trivial case" in NoDestructor's static_assert recommendations: if T is trivially constructible and trivially destructible, just use constinit directly, and wrapping it in NoDestructor on top would be pointless.
+We find this keyword refreshingly decisive in its design — it isn't a suggestion, it's an assertion: if you can write it, you pass; if the initializer isn't a constant, the compiler rejects it on the spot instead of leaving a mine behind to blow up at runtime. Its value is precisely "a hard guarantee that this global variable generates no global constructor." For types that are constinit-constructible (a POD constructed via `constexpr`, say), a plain `constinit T x` gives you the best of both worlds — you dodge the global constructor and keep working with the bare type, with no need to summon NoDestructor at all. That is exactly the "trivial case" in NoDestructor's static_assert recommendation: T trivially constructible plus trivially destructible means constinit walks in and does the job, and wrapping another layer of NoDestructor around it would just be doing work twice.
 
 ---
 
-## Why Chromium bans global ctors/dtors
+## Why Chromium bans global ctor/dtor
 
-Stack those pieces up and Chromium's ban on global constructors and destructors stops looking arbitrary. The most direct reason is startup performance: before `main`, the runtime has to walk the entire `.init_array`, and in a large project with thousands upon thousands of globals queued up, the startup delay is visible. Add SIOF and destruction races on top (the cross-translation-unit old traps), plus the fact that a browser's shutdown path is complex to begin with (multi-process, multi-thread tangled together), and destruction races in particular are vicious. Three reasons combined, and Chromium just cuts the whole thing off.
+Assemble the pieces above and Chromium's motive for banning global construction and destruction is plain to see. The most straightforward one is startup performance — everything in `.init_array` has to run before `main`, and in a large project thousands upon thousands of global objects queue up to construct, so the startup delay is visible to the naked eye. Stack on top of that SIOF and the destruction race, the two classic cross-translation-unit traps, plus a browser shutdown path that is complicated to begin with (multiple processes and threads tangled together) — the destruction race is especially lethal. Add the three together, and Chromium simply cuts the knot with one stroke.
 
-A ban alone is useless without a way to make people obey it. Chromium reaches for clang's `-Wglobal-constructors` and `-Wexit-time-destructors` warnings and locks them down with `-Werror`. Write a global that would emit a global ctor or dtor, and the build fails on the spot, no negotiation. `NoDestructor` is the official escape hatch Chromium shipped alongside the rule, purpose-built to slip past it.
+But a ban alone accomplishes nothing; you need machinery to make people follow the rules. What Chromium wheels out are the two clang warnings `-Wglobal-constructors` and `-Wexit-time-destructors`, locked down with `-Werror` — write one global object that generates a global ctor/dtor and the build fails on the spot, no discussion entertained. `NoDestructor` is the official escape hatch Chromium shipped alongside this rule, purpose-built to slip past it:
 
-Use a function-local static to dodge the global constructor (construct on first use, with magic statics guaranteeing thread safety); use `NoDestructor` to dodge the global destructor (don't register one at all). With both "dodges" in hand, you keep the rule and still get a globally visible object.
+Use a function-local static to dodge the global constructor (construct on first use, with magic statics guaranteeing thread safety); then use `NoDestructor` to dodge the global destructor (no destructor registered, period). Put the two "avoids" together and you've kept the rule while still getting a globally visible object.
 
-The pieces are on the bench. Next up is how NoDestructor turns those two dodges into actual code, and the mechanism it leans on is placement new with aligned storage.
+The parts are on the table; next we get to see exactly how NoDestructor implements those two "avoids" in code. The next part to stock is placement new and aligned storage — the core mechanism holding up NoDestructor's implementation rests on it.
 
 ## References
 
 - [cppreference: storage duration](https://en.cppreference.com/w/cpp/language/storage_duration)
 - [cppreference: static initialization](https://en.cppreference.com/w/cpp/language/initialization)
 - [cppreference: constinit (C++20)](https://en.cppreference.com/w/cpp/language/constinit)
-- [SIOF, explained (isocpp FAQ)](https://isocpp.org/wiki/faq/ctors#static-init-order)
-- [Chromium `base/no_destructor.h` design notes](https://source.chromium.org/chromium/chromium/src/+/main:base/no_destructor.h)
+- [The classic SIOF explainer — isocpp FAQ](https://isocpp.org/wiki/faq/ctors#static-init-order)
+- [Design notes on Chromium's `base/no_destructor.h`](https://source.chromium.org/chromium/chromium/src/+/main:base/no_destructor.h)

@@ -3,16 +3,16 @@ chapter: 1
 cpp_standard:
 - 17
 - 20
-description: "flat_map's test strategy: design cases around invariants, then measure per-item overhead, lookup/insert performance, and lay out the selection criteria for flat_map vs std::map/absl::btree_map."
+description: "flat_map's test strategy — design cases around the invariants, measure per-item overhead and lookup/insert performance for real, and distill the selection criteria for flat_map vs std::map/absl::btree_map"
 difficulty: advanced
 order: 3
 platform: host
 prerequisites:
-- 'flat_map design guide (II): step-by-step implementation'
+- "flat_map Design Guide (II): step-by-step implementation"
 reading_time_minutes: 6
 related:
-- 'flat_map design guide (I): motivation, API, and the flat_tree architecture'
-- 'flat_map hands-on (VI): testing and performance comparison'
+- "flat_map Design Guide (I): motivation, API, and the flat_tree architecture"
+- "flat_map hands-on (VI): testing and performance comparison"
 tags:
 - host
 - cpp-modern
@@ -21,26 +21,32 @@ tags:
 - map
 - 测试
 - 优化
-title: "flat_map Design Guide (III): Test Strategy and Performance Comparison"
+title: "flat_map Design Guide (III): test strategy and performance comparison"
+translation:
+  source: documents/vol9-open-source-project-learn/chrome/03_flat_map/hands_on/03-flat-map-testing.md
+  source_hash: 0cd9f5031d4c424cad8d4b6cc513fdb00dada32f251e78360f705f2e8f25cf46
+  translated_at: '2026-09-26T03:08:37+00:00'
+  engine: anthropic
+  token_count: 1500
 ---
-# flat_map Design Guide (III): Test Strategy and Performance Comparison
+# flat_map Design Guide (III): test strategy and performance comparison
 
-The implementation piece is done, and honestly we weren't fully at ease with it. `flat_tree`'s tangle of `lower_bound + emplace + shift` compiling is one thing; whether the semantics actually hold is another. Containers are at their most dangerous when they "look like they run": you throw in a few numbers, iterate them back in order, tests go green, and you ship. Duplicate-key dedup, `insert_or_assign` overwrite, a lying `sorted_unique`, iterator invalidation, all of those land on the boundary. In this piece we press each of the six invariants promised in part one back into tests, then put flat_map on the bench against `std::map` and `absl::btree_map` to see where it actually saves and where it pays. The playbook mirrors the [WeakPtr design guide (III)](../../02_weak_ptr/hands_on/03-weak-ptr-testing.md): invariants drive the tests, numbers settle the rest, no hand-waving.
+The implementation piece is behind us, and honestly we weren't all that reassured — `flat_tree`'s tangle of `lower_bound + emplace + shift` compiling is one thing; whether the semantics hold is another. A container is exactly the kind of thing that fears "looks like it runs" the most: you throw a few numbers in, iterate them back in order, green. But duplicate-key dedup, the `insert_or_assign` overwrite, a lying `sorted_unique`, iterator invalidation — all of those traps sit piled on the boundaries. In this piece we press the six invariants promised in part one back into tests, one by one, then set real measurements against `std::map` and `absl::btree_map` to see exactly where flat_map saves and where it pays. The playbook runs straight through [WeakPtr Design Guide (III)](../../02_weak_ptr/hands_on/03-weak-ptr-testing.md): invariants drive the cases, the data does the talking, no hand-waving.
 
-## Invariants into a test matrix
+## Six invariants → a test matrix
 
 | # | Invariant | Assertion |
 |---|---|---|
 | 1 | Ordered | Iteration yields strictly ascending keys |
-| 2 | Unique | Duplicate keys are deduped |
-| 3 | Lookup semantics | find/contains/operator[]/at agree; out-of-range at CHECK/asserts |
-| 4 | insert_or_assign/try_emplace | Existing is overwritten, new is inserted |
-| 5 | sorted_unique | Skips the sort; lying input aborts in debug |
-| 6 | Iterator invalidation | Old iterators are dead after mutation (coarse rule) |
+| 2 | Unique | Duplicate keys get deduplicated |
+| 3 | Lookup semantics | find/contains/operator[]/at correct; at out of range CHECK/assert |
+| 4 | insert_or_assign/try_emplace | For an existing key, one overwrites and one leaves it alone |
+| 5 | sorted_unique | Skips the sort; lying input debug-aborts |
+| 6 | Iterator invalidation | Old iterators invalidated after mutation (coarse rule) |
 
-## Key test cases (Catch2-style sketch)
+## Key test cases (Catch2-style sketches)
 
-The six invariants sound abstract, but once you sit down to test them you're really just picking the boundaries that blow up if you got them wrong. We picked three that pin the semantics hardest: sort+dedup at construction, `insert_or_assign` overwrite, and `sorted_unique` lying to abort in debug. The supporting demos live as `19` through `22` `.cpp` files under `code/volumn_codes/vol9/full_tutorial_codes/chrome_design/`; wiring them into a Catch2 test target is left as an extension. Here is what the cases look like:
+Six invariants sound abstract; on the ground, testing them means picking the boundaries that are guaranteed to blow up if the code is wrong. We pick the three that lock down the semantics hardest — sorted dedup at construction, the `insert_or_assign` overwrite, and `sorted_unique` lying into a debug abort. The companion project holds the demo .cpp files numbered `19` through `22` under `code/volumn_codes/vol9/full_tutorial_codes/chrome_design/`; wiring up the Catch2 test target is left as an extension. First, here is what the cases look like:
 
 ```cpp
 TEST_CASE("flat_map sorts+uniques on construction", "[flat_map]") {
@@ -57,14 +63,14 @@ TEST_CASE("insert_or_assign overwrites existing", "[flat_map]") {
 }
 
 TEST_CASE("sorted_unique aborts on lying input", "[flat_map][.death]") {
-    // Invariant 5: pass unsorted data but swear sorted_unique → debug abort
+    // Invariant 5: passing unsorted data while swearing sorted_unique → debug abort
     // flat_map<int,int> m(sorted_unique, std::vector<std::pair<int,int>>{{3,3},{1,1}});
 }
 ```
 
-All three stare at semantic boundaries, not API surface. The construction case checks invariants 1 and 2 at once: `{3,30}` is dropped in twice and out of order, so iteration had better come back as exactly `1,2,3`. Off by one and `sort_and_unique` is wrong. The `insert_or_assign` case is finer; we deliberately contrast `ins` being false against `it->second == 99`, because conflating "inserted a new one" with "overwrote an old one" is the classic mistake. The `sorted_unique` lying case stands on its own because it aborts.
+All three stare at semantic boundaries, not API surface. The construction case verifies invariants 1 and 2 together — the `{3,30}` you throw in is duplicated and out of order, and iteration must come out exactly `1,2,3`; one element off means `sort_and_unique` is written wrong. The `insert_or_assign` case is finer-grained: we deliberately cross-check `ins` being false against `it->second==99`, precisely because conflating "inserted a new one" with "overwrote the old one" is the mistake to avoid. The `sorted_unique` lying case gets pulled out on its own because it aborts.
 
-A case that aborts has a headache attached: drop it into a plain TEST_CASE and the whole binary goes down with it. You have to isolate it as a death test and let it crash in a subprocess. This is the same routine 01-6 uses for the OnceCallback single-consume assertion, and the same one WeakPtr uses for CHECK-on-deref. We already walked it in those two pieces.
+A case that aborts carries a headache: dropped into a plain TEST_CASE, the whole binary goes down with it. It has to be isolated as a death test and allowed to crash in a subprocess — the same routine 01-6 uses for the OnceCallback single-consume assertion, and the same one WeakPtr uses for CHECK-on-deref; we already walked that road in those two pieces.
 
 ## Performance: per-item overhead
 
@@ -72,55 +78,55 @@ A case that aborts has a headache attached: drop it into a plain TEST_CASE and t
 sizeof(flat_map<int,int>)  ≈ 24 bytes (three pointers)
 sizeof(std::map<int,int>)  ≈ 48 bytes (tree root + sentinel + comparator)
 
-Per-item overhead for a 1M-entry map<int,int> (the 8MB payload not counted):
-  flat_map:  ~0 extra (data is contiguous)
-  std::map:  ~32MB (32B/element × 1M + 1M malloc calls)
+Extra overhead of a 1M-element map<int,int> (the 8MB of data not counted):
+  flat_map:  ~0 extra (data contiguous)
+  std::map:  ~32MB (32B/element × 1M + 1M mallocs)
 ```
 
-flat_map carries zero per-item metadata; one contiguous allocation and it's done. std::map lugs 32B of metadata per element plus one heap allocation each. That is where the "constant factor off by an order of magnitude" line in part one comes from. Both are `O(log n)` lookup asymptotically, but std::map quietly books 32MB of metadata plus a million mallocs behind your back.
+flat_map carries zero per-item metadata — one contiguous allocation and it's done; every std::map element hauls 32B of metadata and needs a heap allocation of its own on top. This is exactly where part one's "constant factor an order of magnitude apart" comes from — both do `O(log n)` lookup asymptotically, but std::map has already quietly booked 32MB of metadata plus a million mallocs where we can't see it.
 
-## Performance: lookup vs insert
+## Performance: lookup vs insertion
 
-Just reading `sizeof` and allocation counts isn't satisfying enough, so we ran it on the machine. GCC 16 -O2, the `20_lookup_vs_shift_perf` demo, a 100k-element `map<int,int>`:
+`sizeof` and allocation counts alone aren't satisfying enough, so we ran it on the machine for real. This machine, GCC 16 -O2, companion `20_lookup_vs_shift_perf`, a 100k-element `map<int,int>`:
 
 ```text
-Lookup, 100k calls (100k elements):
+100k lookups (100k elements):
   flat_map:  31 ms
-  std::map:  34 ms     (int key + 100k: roughly tied)
+  std::map:  34 ms     (int key + 100k: nearly tied)
 
-Insert, 1000 calls into a 100k-element container:
+1000 inserts into a 100k-element container:
   flat_map:   2 ms     (O(n) shift each time)
-  std::map:   0 ms     (O(log n) node relink)
+  std::map:   0 ms     (O(log n) node relinking)
 ```
 
-One number here surprised us the first time we saw it. On lookup, flat_map does not grind std::map into the dirt; they're roughly tied. Think about it for a second and it makes sense: at 100k entries with an int key, the data itself fits in cache, std::map's pointer chasing hasn't started missing in bulk yet, so flat_map's contiguity dividend has nothing to show. To actually see the gap you have to push N higher, or swap the key for something heavy like `std::string`. In independent large-N runs flat_map coming out several times faster is common, but don't take that as dogma. Small N with a light key, the advantage just isn't there, and that's normal.
+One number here stopped us cold the first time we saw it — on lookup, flat_map didn't grind std::map into the dirt; the two are nearly tied. A moment's thought clears it up: at the 100k + int-key scale, the data itself fits in cache, std::map's pointer chasing hasn't started missing en masse yet, and flat_map's contiguity dividend naturally can't show. To see a real gap you have to push N higher still, or switch the key to something heavy like `std::string`. In standalone large-N tests flat_map coming out several times faster is common — but don't take that as dogma: at small N with light keys the edge just isn't visible, and that's normal.
 
-Insert flips the picture, and with no suspense. Every flat_map insert has to `O(n)` shift a slab of elements, 2 ms against std::map's 0 ms, and the bigger N gets the wider that gap opens. It's a real wall. That's why flat_map's contract states it plainly: this is a read-heavy, write-light home, not a container for high-frequency writes.
+Insertion flips the picture, with no suspense. flat_map has to `O(n)`-shift a whole stretch on every single insert — 2 ms against std::map's 0 ms — and the bigger N gets, the wider that gap tears. It is a wall, plain and solid. That's why flat_map's contract is spelled out plainly: home turf is read-many-write-few; don't press it into service as a high-frequency-write container.
 
 ## Selection criteria
 
 | Workload | Recommendation | Reason |
 |---|---|---|
-| Write once, read many (config table, command dispatch) | flat_map | One-shot write, cache-friendly lookup |
-| Always small (~4 elements) | flat_map | Constant factor dominates, zero allocation |
-| Large and frequently mutated | std::map | O(n) insert is a wall |
-| Needs stable refs/pointers | std::map | flat_map invalidates all iterators |
-| Large N + frequent mutation + ordered | absl::btree_map | B-tree middle ground (Chromium bans it for code bloat) |
+| Write once, read many (config tables / command dispatch) | flat_map | Writes are one-shot; lookups are cache-friendly |
+| Always tiny (~4 elements) | flat_map | Constant factors dominate; zero allocations |
+| Large and frequently modified | std::map | O(n) insertion is a wall |
+| Needs stable references/pointers | std::map | flat_map invalidates all iterators |
+| Large N + frequent changes + ordered | absl::btree_map | The B-tree middle ground (disabled in Chromium over code bloat) |
 
-This table really boils down to one line: read-heavy or always-small, pick flat_map; write-heavy or needing stable references, pick std::map; large, frequently mutated, and ordered, that's absl::btree_map's middle ground, but Chromium itself blocked that path over code bloat. Chromium's `//base/containers/README.md` just writes this table out in prose.
+This table is really a one-sentence matter: read-many-write-few, or a container that stays small — flat_map; write-heavy, or stable references and pointers required — std::map; large, frequently modified, and still insisting on order — that's absl::btree_map's middle-ground solution, though Chromium itself blocked that road off over code bloat. Chromium `//base/containers/README.md`'s way of slicing it is just this table set down in prose.
 
 ## vs std::flat_map (C++23) / absl::btree_map
 
-Two relatives are unavoidable here. C++23's `std::flat_map` (P0429) and Chromium flat_map share an origin and the same idea, but the standard version went with split storage, keys and values in two separate arrays. Chromium declines the split and sticks with a single `vector<pair<K,V>>`. We get Chromium's tradeoff: split genuinely saves cache when you iterate only keys or only values, but the implementation complexity climbs, and flat_map's main arena is read-heavy small containers where split's payoff never cashes in. Not worth it.
+Having talked this far, we can't dodge two relatives. C++23's `std::flat_map` (P0429) shares its ancestry with Chromium's flat_map — one line of thinking — but the standard version chose split storage: keys and values are kept in two separate arrays. Chromium pointedly refuses to split and stays honest with a single `vector<pair<K,V>>`. We read Chromium's tradeoff like this: split genuinely saves cache when you "iterate keys only" or "iterate values only", but it buys that with added implementation complexity — and flat_map's main battlefield is small read-mostly containers, where split's payoff simply cannot be cashed in. Not worth it.
 
-The other is `absl::btree_map`, a 256B B-tree node holding a handful of keys, sitting between red-black tree and sorted vector. It's the right fit for large N plus frequent mutation plus ordering. But Chromium bans btree inside `//base`, and the stated reason is code bloat. Each key/value type you instantiate pulls in another fat slab of template, and B-tree node split/merge logic is far heavier than sorted vector's `lower_bound + shift`. This is a textbook engineering tradeoff: a technically better option exists, the project-level cost is too high, so they decline.
+The other one is `absl::btree_map`: a handful of keys packed into each 256B B-tree node, sitting between a red-black tree and a sorted vector — the best fit for large N + frequent modification + ordering. But Chromium disables btree in `//base`, on grounds of code bloat: every key/value type you instantiate means yet another huge pile of generated templates, and a B-tree node's split-and-merge logic weighs far more than the sorted vector's `lower_bound + shift` routine. It's a textbook specimen of engineering tradeoff: a technically better solution exists, but when the project-level cost is more than you can pay, you'd rather go without.
 
-That closes the flat_map design, implementation, and verification pieces. Looking back, it slots in as the third tile in vol9/chrome alongside OnceCallback and WeakPtr. The first two cover "how to keep callbacks in line" and "how to keep lifetimes in line," and this one covers "how to store data both cheaply and fast." All three are the industrial-grade C++ fundamentals you find in Chromium `//base`.
+With that, the three flat_map pieces — design, implementation, verification — are complete. Looking back, it slots in with OnceCallback and WeakPtr as the third tile of the vol9/chrome puzzle: the first two covered "how to keep callbacks in line" and "how to keep lifetimes in line", and this one covers "how to store data both cheaply and fast" — all fundamentals of industrial-grade C++ from Chromium `//base`.
 
 ## References
 
-- [Chromium `base/containers/README.md` — container selection guide](https://source.chromium.org/chromium/chromium/src/+/main:base/containers/README.md)
+- [Chromium `base/containers/README.md` — the container-selection guide](https://source.chromium.org/chromium/chromium/src/+/main:base/containers/README.md)
 - [Catch2 documentation](https://github.com/catchorg/Catch2/tree/devel/docs)
 - [P0429 — the std::flat_map proposal](https://wg21.link/p0429)
 - [absl::btree_map](https://abseil.io/docs/cpp/guides/btree)
-- [flat_map design guide (I): motivation, API, and the flat_tree architecture](./01-flat-map-design.md)
+- [flat_map Design Guide (I): motivation, API, and the flat_tree architecture](./01-flat-map-design.md)

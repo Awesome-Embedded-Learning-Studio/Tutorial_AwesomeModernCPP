@@ -8,20 +8,26 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: "A Deep Dive into C/C++ Compilation and Linking, Part 2: An Introduction to Static and Dynamic Libraries"
-description: 'From source reuse to binary distribution: what problems static and dynamic libraries actually solve, and what really happens at build time and runtime for a dynamic library'
+title: "Deep Dive into C/C++ Compilation and Linking · Part 2: An Introduction to Static and Dynamic Libraries"
+description: 'From source-level reuse to binary distribution: what problems static and dynamic libraries actually solve, and what happens with a dynamic library at build time and at runtime'
 cpp_standard: [11, 14, 17, 20]
+translation:
+  source: documents/compilation/02-reuse-concept.md
+  source_hash: a8899b6a0a1bbec6c15bcce72f61030a597e3c63bd5e4ecaa02d35de5e016452
+  translated_at: '2026-09-25T23:45:20+00:00'
+  engine: anthropic
+  token_count: 8200
 ---
-# A Deep Dive into C/C++ Compilation and Linking, Part 2: An Introduction to Static and Dynamic Libraries
+# Deep Dive into C/C++ Compilation and Linking · Part 2: An Introduction to Static and Dynamic Libraries
 
-## What reuse even is, and what it has to do with compilation and linking
+## What the Reuse Concept Is, and What It Has to Do with Compilation and Linking
 
-Reuse is everywhere, and I'd like to believe nobody seriously disagrees. The reuse we're talking about here is just reusing code. You can already catch a glimpse of this in plain C++:
+Reuse is everywhere, and we believe nobody would disagree with that. The reuse we're discussing is simply putting code to use again. You can already catch a little glimpse of this at work in C++:
 
 ```cpp
 template<typename AddType>
 auto add(const AddType& a, const AddType& b){
-    return a + b; // 没有任何技巧的相加
+    return a + b; // an addition with no tricks whatsoever
 }
 
 std::string
@@ -43,112 +49,112 @@ int main()
 
 ```
 
-Take the template and the plain function above: thanks to them, we don't have to copy-paste the same add and string-trimming logic every time we call them. So in that sense, code reuse has been around since the era when C ruled the world. But I'd argue this level of reuse still isn't all that high-level, because it's source-level distribution. In other words, if you want to reuse a piece of your own past work, or somebody else's masterpiece, you have to dig up their source files in a sweaty scramble, make sure every dependency is in place, and then pull it all into your own project to compile. And here, I'm sure you've already spotted the problem: in plenty of cases, you simply can't get the source code at all. (Trade secrets — you know how it is.) When that happens, we naturally start thinking about a lower-level kind of reuse. That's binary-level distribution. That's what static and dynamic libraries are for, and it's also the prerequisite for the next few chapters where we'll dig into machine-code-level reuse techniques.
+For instance, the template code and the function code above mean we don't have to copy code all over again every time we call an addition or a whitespace squeeze on a string. So looked at this way, code reuse was already around long ago, back in the era when C reigned supreme. Still, we'd say code reuse at this level doesn't count as very advanced—because this kind of reuse is source-distribution reuse. In other words, to use a code masterpiece of our own from the past, or someone else's, we have to scramble to dig out their source files, make sure every dependency is present, and then add them to our own project for compiling. we trust you've spotted the problem—in many cases we simply cannot get the source code at all. (Trade secrets—you know the drill.) In that situation, we naturally start thinking about code reuse at a lower level: distribution at the binary level. That is what static and dynamic libraries are for, and it's also the prerequisite for the several reuse mechanisms at the machine-code distribution level that the upcoming parts are specifically devoted to.
 
-## So what is a static library?
+## So What Exactly Is a Static Library
 
-A static library is probably way simpler than you think. We know that after the compiler finishes preprocessing and compiling a source file, you get a relocatable object file. Previously, those relocatable files would just be packed straight into an executable. Now we can flip the idea around: these generic relocatable files can be bundled up into a library of their own, and next time we need a symbol, we just link against that library. Now we've hidden the source away and we're distributing at the binary level. But there's a catch: how do we actually use it? We always need some kind of available symbol to tell us the real entry point. It's like knowing there's a function in the library that trims whitespace off a string, but if we don't know what it's called, we can't call it. So the conclusion is pretty obvious: just having those binary files is nowhere near enough. We still need one more thing — an exported header file we can program against.
+A static library is probably far simpler than you think. We know that after the compiler finishes preprocessing and compiling a source file, we get a relocatable file. Previously, these relocatable files would be taken directly and combined into an executable; now we can take a different angle: these general-purpose relocatable files can perfectly well be collected into a library of their own, so that next time we go looking for a symbol we simply link against that library—and just like that, we've hidden the source code away and can distribute at the binary level. But there is one problem—how do we use it? We always need usable symbols to tell us the exact entry point. It's like knowing the library has a function that can squeeze the whitespace out of a string: if we don't know what it's called, we can't use it. So it's obvious. Having just these binary files is nowhere near enough; one more condition must be met, namely—exported header files for us to program against.
 
-The two figures below do a decent job of showing what a static library does.
+The two figures below give a pretty good illustration of what a static library does.
 
 ![static_library](./compilation-linking-2-reuse-concept/static_library.png)
 
-But this introduces a new problem. In reality, libfoo's code is exactly the same in two places, and there are now two copies of it. Sometimes we really don't want this kind of hard copy. If libfoo is small it's fine, and disk space isn't all that expensive anymore, so we can sort of call it redundancy-as-an-advantage. But more often, if libfoo ships an important security update and we want every piece of software to pick it up on its next launch, the static library looks pretty helpless. All it really did was shift distribution from the harder source-distribution model over to binary distribution. It does absolutely nothing about the much more important "load it when you use it" problem. So it's just not that elegant. In practice, static libraries aren't used all that widely (I barely use them myself, either).
+But there is a new problem here. In effect, the libfoo code is completely identical, and yet two copies of it exist. Sometimes we don't want this kind of hard copy. If libfoo is on the small side, fine—disk capacity is relatively cheap these days, and we can even call the redundancy an advantage. But more often, when libfoo receives a fairly important security update and we want every piece of software to reload it on its next launch, static libraries look helpless. All they did was shift distribution from the more difficult source distribution over to binary distribution; they don't solve the more important load-when-use problem in the slightest. So it doesn't look elegant. Which is why, in practice, static libraries aren't used all that widely (we rarely use them ourselves).
 
-## Dynamic libraries
+## Dynamic Libraries
 
-So the real problem is that we deep-copied every binary chunk instead of doing a reference-level shallow copy. If we let some symbols in an executable be lazily resolved at load time (which means we need a loader that can dynamically load and patch those undefined-symbol addresses to point at the real, shared symbol addresses), then the natural thought is: we've already gone to the trouble of making a library, let's go all the way and just turn this code into purely shareable code. When it's needed, load it, and then every executable that depends on this library can calmly use the shared code segment directly, without having to awkwardly keep its own copy. That saves a ton of memory. This shared nature is also why people call dynamic libraries "shared libraries" (shared code inherently has to be loaded dynamically and have the shared symbol addresses patched, so in this sense shared library and dynamic library are completely interchangeable terms; nobody really splits hairs today).
+So the problem is that we made a deep copy of all the binary code rather than a shallow copy at the reference level. If we allow some of the symbols in the executable code to be determined via lazy loading (which requires that we have a loader able to dynamically load these things and modify the addresses of those undefined symbols into the addresses of the genuinely shared symbols), a natural thought follows—since we've already gone as far as the library level, let's be thorough and simply turn this code into purely shareable code. When it needs to be available, we load it, and afterwards every executable program that needs this library can steadily use this shared code segment directly, instead of clumsily copying its own. This saves us a tremendous amount of memory space. This sharing character is also why we can say a dynamic library is likewise a shared library (shared code is necessarily loaded dynamically so that the shared symbols' addresses can be modified again, so in this sense "shared library" and "dynamic library" are perfectly interchangeable—nobody deliberately distinguishes them today).
 
-Of course, there's a deeper property of dynamic libraries. So that any executable needing this library can smoothly load its symbols, we compile all the symbols with `-fPIC` (Position Independent Code), which makes life a lot easier for the loader when it does relocations.
+Of course, dynamic libraries have deeper characteristics—for example, so that any executable program needing this library can smoothly load the symbols inside it, we compile all of it the -fPIC way (Position Independent Code), and the loader can then perform relocation very conveniently.
 
-## Overview: so how do dynamic libraries actually pull this off?
+## Overview: So How Do Dynamic Libraries Actually Pull This Off
 
-### Building a dynamic library (from source to `libfoo.so` / a versioned `libfoo.so.1.0`)
+### Building a Dynamic Library (from Source to `libfoo.so` / the Versioned `libfoo.so.1.0`)
 
-Goal: produce a `.so` that clients can dynamically load and that multiple processes can share, with a well-defined ABI (managed through SONAME/versioning).
+Goal: produce a `.so` that can be dynamically loaded by clients and shared by multiple processes, while keeping ABI management explicit (through SONAME/versioning).
 
-It's actually almost identical to building an executable, just without the startup header. Beyond that, we need to nail down a few essentials:
+It is in fact almost identical to building an executable, except that the startup header is not added. Beyond that, we still need to guarantee a few most basic key points:
 
-- **Must use position-independent code (PIC)**: `-fPIC` (or `-fpic`) generates code that can run at any address (function memory accesses use relative addresses or go through the GOT). Skipping PIC will cause the linker / runtime to hit relocation conflicts or non-relocatable segments.
-- **Use `-shared` to produce a shared object**: the linker marks the type as a dynamic library (ELF type = DYN).
-- **Set the SONAME**: the linker option `-Wl,-soname,libfoo.so.1` declares the ABI name (the client records this SONAME in DT_NEEDED). The actual file is usually `libfoo.so.1.0`, with symlinks `libfoo.so.1 -> libfoo.so.1.0` and `libfoo.so -> libfoo.so.1` (handy for `-lfoo` during development).
-- **Control exported symbols (visibility / version script)**: by default every global symbol is exported. You can use GCC `-fvisibility=hidden` plus `__attribute__((visibility("default")))` to mark the interfaces you actually want to export, or use a linker version script to control the symbol table, which cuts down on API pollution and lowers the risk of symbol clashes.
-- **Optional: symbol versioning**: lets you support multiple versions of a symbol within the same SONAME, handy for compatibility management (requires a linker version script).
+- **Position-independent code (PIC) is mandatory**: `-fPIC` (or `-fpic`) is used to generate code that can run at any address (function memory accesses use relative addresses or go through the GOT). Not using PIC causes the linker/runtime to produce relocation conflicts or non-relocatable sections.
+- **Use `-shared` to generate the shared object**: the linker marks the type as a dynamic library (ELF type = DYN).
+- **Set the SONAME**: the linker option `-Wl,-soname,libfoo.so.1` indicates the ABI name (the client records the SONAME in DT_NEEDED). The actual file is usually `libfoo.so.1.0`, with symlinks provided: `libfoo.so.1 -> libfoo.so.1.0`, and `libfoo.so -> libfoo.so.1` (convenient for `-lfoo` during development)
+- **Control exported symbols (visibility / version script)**: global symbols are exported by default; you can use GCC `-fvisibility=hidden` + `__attribute__((visibility("default")))` to mark out the interfaces to export, or use a linker version script to control the symbol table, reducing API pollution and lowering the risk of symbol conflicts.
+- **Optional: symbol versioning**: used to support different versions of symbols within the same SONAME, easing compatibility management (requires a linker version script).
 
-### Building the client executable (on the basis of "trusting the library's ABI/SONAME")
+### Building the Client Executable (Based on "Trusting the Library's ABI/SONAME")
 
-"Trusting" here means the client believes, at build time, that the dynamic library's ABI/interface (headers, SONAME, symbol semantics) won't break what it expects. The relationship between the build phase and runtime, and which ELF fields get produced, is critical.
+Here "trusting" means the client believes, at build time, that the dynamic library's ABI/interface (header files, SONAME, symbol semantics) will not break its expectations. The relationship between the build stage and runtime, and the ELF fields that get generated, are absolutely critical.
 
-#### What happens at link time (building the client)
+#### What Happens at Link Time (Building the Client)
 
-- The client uses the header declaration (`foo.h`) and links against the corresponding shared library with `-lfoo` (or the library's dev symlink `libfoo.so`).
+- The client uses the header file declarations (`foo.h`) and links the corresponding shared library with `-lfoo` (or the library's development symlink `libfoo.so`).
 - The linker will:
   1. Merge the client's own code with the object files into an executable (ELF type = EXEC, or DYN for a position-independent executable).
-  2. **Verify**: try to resolve undefined references (for dynamic linking, the linker usually satisfies these against the dynamic symbol table of the specified shared libraries; if it can't find them, you get an undefined reference error).
-  3. **Not copy the library code**: unlike static linking, the linker does not copy the `.o` code into the executable; instead it records the dependency in `DT_NEEDED` (recording the library's SONAME) and generates the necessary relocations / PLT stubs.
-- Result: the executable contains dynamic-segment entries like `DT_NEEDED: libfoo.so.1`, but no actual library implementation code.
+  2. **Verify**: attempt to resolve undefined references (in the dynamic-linking case, the linker will usually satisfy these references using the dynamic symbol table of the shared libraries specified; if a reference cannot be found, it reports an undefined reference error).
+  3. **Copy no library code**: unlike static linking, the linker does not copy the `.o` code into the executable; instead it records the dependency into `DT_NEEDED` (what gets recorded is the library's SONAME) and generates the necessary relocations/PLT placeholders.
+- Result: the executable contains dynamic-section entries such as `DT_NEEDED: libfoo.so.1`, but it does not contain the library's implementation code.
 
-### Runtime loading and symbol resolution (what the dynamic linker / loader actually does)
+### Runtime Loading and Symbol Resolution (What the Dynamic Linker / Loader Concretely Does)
 
-This is the most complex and most critical part: at runtime `ld.so` (or the platform's loader) stitches everything together into a runnable process address space and resolves symbol references. Step by step and mechanism by mechanism:
+This is the most complex and most critical part — at runtime, `ld.so` (or the loader of the platform in question) assembles everything into a runnable process address space and resolves the symbol references. Below is a detailed walkthrough, step by step and mechanism by mechanism.
 
-#### Startup phase — from the kernel to the dynamic linker
+#### Startup Phase — From the Kernel to the Dynamic Linker
 
-1. **The kernel loads the executable**: the kernel reads the ELF header -> if the `INTERP` segment exists in the ELF (almost every dynamic executable has one, with a value like `/lib64/ld-linux-x86-64.so.2`), the kernel first maps the dynamic linker into the process address space, then maps the executable's PT_LOAD segments, but does not directly run the executable's `_start`.
-2. **The dynamic linker (ld.so) takes over**: it's responsible for parsing `DT_NEEDED`, locating the actual library files, recursively loading dependencies, performing relocations, running initializers (constructors), and finally handing control over to the executable's entry point (`_start` -> `main`).
+1. **The kernel loads the executable**: the kernel reads the ELF header -> if the `INTERP` segment exists in the ELF (the vast majority of dynamic executables have one, with a value like `/lib64/ld-linux-x86-64.so.2`), the kernel first maps the dynamic linker into the process address space, then maps the executable's PT_LOAD segments too, but does not directly run the executable's `_start`.
+2. **The dynamic linker (ld.so) starts executing**: it is responsible for parsing `DT_NEEDED`, finding the actual library files, recursively loading dependencies and performing relocations, running initialization (constructors), and finally handing control to the executable's entry point (`_start` -> `main`).
 
-#### Mapping (mmap) the library files
+#### Mapping (mmap) the Library Files
 
-- The loader reads each dependency `.so`'s ELF Program Headers (PT_LOAD), mapping the executable segment (text) as executable-and-read-only and the data segment as read-write, etc.; it also handles page alignment and segment protection (mmap + mprotect).
-- Each library is generally mapped only once (multiple processes can share the same physical pages, as long as those pages are read-only / shared).
+- The loader reads the ELF Program Headers (PT_LOAD) of each dependency `.so`, mapping the executable segment (text) as executable-and-read-only and the data segment as read-write, and so on; it also handles page alignment and segment protections (mmap + mprotect).
+- Each library is generally mapped only once (multiple processes can share the same physical pages, as long as the pages are read-only/shared).
 
 #### Relocations
 
-There are several relocation types, falling into two important categories:
+Relocations come in a variety of types, which fall into two important conceptual categories:
 
-- **Relocations that don't need a symbol lookup** (e.g. the RELATIVE type): these can be adjusted directly by the base address (for position-independent code, at runtime the library base address is added to the relative offset), usually processed in a batch during startup, which is fast.
-- **Relocations that need a symbol lookup** (e.g. R_X86_64_JUMP_SLOT / R_*_GLOB_DAT, etc.): these need to search by symbol name for the corresponding definition location (which may be in the executable or in another library).
+- **Relocations that require no symbol lookup** (e.g. the RELATIVE type): these can be adjusted directly against the base address (for position-independent code, at runtime the library base is added to the relative offset); they are usually processed in bulk during the startup phase, which is fast.
+- **Relocations that require a symbol lookup** (e.g. R_X86_64_JUMP_SLOT / R_*_GLOB_DAT and the like): these require searching for the corresponding defining location by symbol name (possibly in the executable or in another library).
 
-#### Symbol lookup order (the default ELF search rules, roughly)
+#### Symbol Lookup Order (the Default ELF Search Rules, in Broad Strokes)
 
-To resolve a given symbol (say the function `foo`), the loader's lookup order is usually:
+For resolving a particular symbol (say, the function `foo`), the loader's lookup order is usually:
 
-1. The executable's global symbol table (executable overrides).
-2. Walk each loaded library's dynamic symbol table in DT_NEEDED order, looking for the first matching global/weak symbol (note: the actual rules are affected by ELF version, runtime flags, RTLD_LOCAL/RTLD_GLOBAL, symbol visibility, etc.).
-3. If symbol versioning is in play, the version tag has to match as well.
-4. If a library was loaded via `dlopen` with `RTLD_GLOBAL`, its symbols can participate in resolving later libraries; with `RTLD_LOCAL`, they don't participate in any subsequent resolution.
+1. The executable's global symbol table (the executable overrides).
+2. Walk each loaded library's dynamic symbol table in DT_NEEDED list order, looking for the first matching global/weak symbol (note: the actual rules are affected by the ELF version, runtime flags, RTLD_LOCAL/RTLD_GLOBAL, symbol visibility, and so on).
+3. If symbol versioning is present, the version tags must be matched.
+4. If loading with `dlopen` and `RTLD_GLOBAL`, the symbols of these libraries may take part in the resolution of subsequent libraries; with `RTLD_LOCAL` they do not join other later resolutions.
 
-> Important: **symbols in the executable take priority** over those in shared libraries (this is what's called symbol interposition), so an executable can "override" functions in a library (this is also the foundation of how `LD_PRELOAD` can swap out a function's implementation).
+> Important: **symbols in the executable take precedence** over those in shared libraries (this is the so-called symbol interposition), so an executable can "override" functions from a library (this is also the foundation on which `LD_PRELOAD` can swap out function implementations).
 
 ![dynamic_library](./compilation-linking-2-reuse-concept/dynamic_library.png)
 
-That figure above lays the whole flow out clearly.
+The figure above lays the concrete flow out clearly.
 
-## Some comparisons
+## Some Comparisons
 
-Let me tidy this into a comparison table you can reference:
+We've put together a comparison table here for reference:
 
-| Aspect | Static library | Dynamic library (Shared / .so/.dll/.dylib) |
-| --- | --- | --- |
-| Nature of the binary file | `.a` / `.lib`: a bundle of several `.o` object files in archive form; at link time the object code is copied into the executable. | `.so` / `.dll` / `.dylib`: a shared object that can be loaded at runtime, usually position-independent code (PIC), carrying SONAME/version info. |
-| Integration with the executable (linking and running) | Resolved at link time and the needed object code is copied into the executable (static binding); at runtime it no longer depends on the library file. | At link time `DT_NEEDED` (or equivalent) is recorded; at runtime the dynamic linker maps it and relocates / resolves symbols in the process address space (dynamic binding, can be replaced/loaded on the fly). |
-| Effect on executable size | The executable gets bigger (it contains an actual copy of the library code); multiple executables will carry the same code redundantly. | The executable stays small (only the dependency is recorded); multiple processes share the same library's read-only/shared pages; at runtime extra memory is used for the mapping and for GOT/PLT. |
-| Portability | Simple deployment: the executable is usually self-contained (easier to port within the same arch/ABI), but still affected by the system/kernel/CRT. | Deployment depends on the runtime environment: you need the right library version, loader, and search path (rpath/LD_LIBRARY_PATH/ldconfig); cross-distro/platform compatibility is more sensitive. |
-| How easy it is to integrate | Link configuration is simple (a direct `-l` / `-L`, or just merge the `.o` files), no need to worry about runtime loading; but a version bump means recompiling every client. | Build and deployment are more involved (you need `-fPIC`, SONAME, rpath, symbol visibility, version scripts, etc.); but it supports runtime replacement, plugins, and dlopen, and an upgrade can just swap the library file. |
-| How easy the binary is to manipulate/convert | Packaging/inspecting/merging is fairly straightforward (`ar`, `nm`, `objdump`); reverse-replacing or swapping out individual symbols is harder (needs a re-link). | Generating and controlling exported symbols is more complex (symbol versioning, visibility), and the runtime relocation & symbol-resolution mechanism is complex; but `dlopen/dlsym` at runtime gives you flexible extension. |
-| Suitability for development work | Good fit: small tools, embedded / single-file releases, runtime-dependency-free scenarios; handy for offline / restricted environments. | Good fit: large projects, modular designs, plugin systems, anything needing hot updates or reduced duplicated memory/disk footprint; good for team collaboration and independent library releases. |
-| Other things worth noting | - A security/bug fix requires rebuilding and re-releasing every executable. - Licensing (e.g. GPL) may carry stricter obligations under static linking. - Usually no PLT overhead on calls at runtime. | - You can patch/replace the library alone (fast hotfixes). - There's a runtime hijacking risk (LD_PRELOAD, RPATH injection) and a delay on first call (lazy binding). - Demands more from the platform ABI/SONAME management and the deployment process. |
+| Aspect | Static Library | Dynamic Library (Shared / .so/.dll/.dylib) |
+| ------ | -------------- | ------------------------------------------- |
+| Nature of the binary file | `.a` / `.lib`: several `.o` object files packaged together, an archive form; at link time the object code is copied into the executable. | `.so` / `.dll` / `.dylib`: a shared object that can be loaded at runtime, usually position-independent code (PIC), carrying SONAME/version information. |
+| Integration into the executable (linking and running) | Resolved at link time, with the needed object code copied into the executable (static binding); at runtime the executable no longer depends on the library file. | `DT_NEEDED` (or the equivalent) recorded at link time; at runtime the dynamic linker maps it and relocates/resolves symbols in the process address space (dynamic binding, with live replacement/loading). |
+| Effect on executable size | The executable grows in size (it contains actual copies of the library code), and multiple executables repeatedly include the same code. | The executable stays small (only the dependency is recorded); multiple processes share the same copy of the library's read-only/shared pages; at runtime, extra memory is used for the mapping and the GOT/PLT. |
+| Portability | Simple deployment: the executable is usually self-contained (easier to port within the same architecture and ABI), though still affected by the system/kernel/CRT. | Deployment depends on the runtime environment: appropriate shared library versions, a loader, and search paths are required (rpath/LD_LIBRARY_PATH/ldconfig); cross-distribution/platform compatibility is more sensitive. |
+| Ease of integration | Simple link configuration (plain `-l` / -L, or merging the .o files), with no runtime loading to worry about; but a version upgrade means recompiling every client. | More complex building and deploying (needs `-fPIC`, SONAME, rpath, symbol visibility, version scripts, etc.); but it supports runtime replacement, plugins, and dlopen, and an upgrade can replace just the library file. |
+| Ease of processing/converting the binary | Packaging/inspecting/merging is fairly intuitive (`ar`, `nm`, `objdump`); reverse replacement / replacing local symbols is harder (relinking required). | Generating and controlling exported symbols is more complex (symbol versioning, visibility), and the runtime relocation & symbol resolution machinery is complicated; but runtime `dlopen/dlsym` offers flexible extensibility. |
+| Whether it suits development work | Suits: small tools, embedded/single-file distribution, scenarios with no runtime dependencies; convenient for offline/restricted-environment deployment. | Suits: large projects, modular design, plugin systems, scenarios needing hot updates or reduced duplicate memory/disk usage; good for team collaboration and independent library releases. |
+| Other points worth mentioning | - Security/bug fixes require rebuilding and republishing every executable. - Copyright/licenses (e.g. the GPL) may bring stricter obligations under static linking. - Runtime performance (calls) usually carries no PLT cost. | - The library can be fixed/replaced on its own (quick patching). - There is a runtime hijacking risk (LD_PRELOAD, RPATH injection) and first-call latency (lazy binding). - Demands more of platform ABI/SONAME management and the deployment process. |
 
-## The modern CMake perspective
+## A Modern CMake Perspective
 
-All those `-fPIC`, `-shared`, `-Wl,-soname`, `-fvisibility=hidden` flags — back in the days of hand-typing command lines, you really did have to spell each one out yourself. In modern projects this stuff has basically all been taken over by CMake, and when we write CMakeLists we rarely write these flags raw anymore.
+All those `-fPIC`, `-shared`, `-Wl,-soname`, `-fvisibility=hidden` flags really did have to be pieced together one at a time in the era of hand-typed command lines. In modern projects this whole set has basically been taken over by CMake; when we write CMakeLists we rarely write these flags out raw anymore.
 
-`add_library(foo SHARED ${FOO_SOURCES})` produces a `.so` directly, and CMake adds `-fPIC` to SHARED targets by default, saving you the hand-copying; `add_library(foo STATIC ...)` calls `ar` to pack up a `.a` for you, basically scripting the whole archive flow from the previous section. On the client side, `target_link_libraries(myapp PRIVATE foo)` takes over `-lfoo` / `-L<dir>` in one line, and CMake will even string together the library's interface include directories and transitive dependencies for you.
+`add_library(foo SHARED ${FOO_SOURCES})` directly produces the `.so`—CMake adds `-fPIC` to SHARED targets by default, sparing us the hand-copying; `add_library(foo STATIC ...)` automatically calls `ar` to pack the `.a`, which amounts to scripting the archiving workflow from the previous section. On the client side, a single line of `target_link_libraries(myapp PRIVATE foo)` takes over all of `-lfoo`/`-L<dir>`, and CMake also automatically strings together the library's interface include directories and its transitive dependencies.
 
-`-fvisibility=hidden` shows up in CMake as `set_target_properties(foo PROPERTIES CXX_VISIBILITY_PRESET hidden)`, paired with `VISIBILITY_INLINES_HIDDEN ON`. The effect is that only the symbols you explicitly tagged `visibility("default")` get exported — the "reduce API pollution and symbol clashes" idea from the previous section, now landed through attributes.
+`-fvisibility=hidden` is set in CMake via `set_target_properties(foo PROPERTIES CXX_VISIBILITY_PRESET hidden)`, paired with `VISIBILITY_INLINES_HIDDEN ON`; the effect is that only the symbols you explicitly marked `visibility("default")` are exported—the "reduce API pollution and symbol conflicts" advice from the previous section, landed as properties.
 
-As for the runtime `LD_LIBRARY_PATH` grunt work, CMake takes that over with `CMAKE_INSTALL_RPATH` and `$ORIGIN`: when installing to a non-standard directory, you set `INSTALL_RPATH "$ORIGIN/../lib"`, the executable carries its own rpath, and the loader just follows it, no need for the user to go exporting environment variables. SONAME/versioning is on the thinner side, usually paired with `set_target_properties(... VERSION 1.0 SOVERSION 1)` to generate `libfoo.so.1.0` plus the symlinks, with CMake setting up the soft links for you. One sentence: none of these underlying mechanisms went away, they just got tucked away behind declarative target properties by the build system.
+As for the runtime `LD_LIBRARY_PATH` dirty work, CMake takes it over with `CMAKE_INSTALL_RPATH` and `$ORIGIN`: when installing into a non-standard directory, set `INSTALL_RPATH "$ORIGIN/../lib"`, and the executable carries its own rpath—the loader simply follows it, with no need for the user to export environment variables. ABI management such as SONAME/versioning is comparatively thin; it's usually combined with `set_target_properties(... VERSION 1.0 SOVERSION 1)` to generate `libfoo.so.1.0` + a symlink, with CMake building the symlink for you. In one sentence: these low-level mechanisms haven't disappeared; the build system has simply sealed them behind declarative target properties.
 
 # Reference
 
-Most of this is drawn from the book: *Advanced C/C++ Compilation Techniques* (《高级C/C++编译技术》)
+It basically all comes from this book: *Advanced C and C++ Compiling*

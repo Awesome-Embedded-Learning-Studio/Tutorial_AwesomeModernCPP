@@ -5,16 +5,16 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: "Against std::shared_ptr's non-intrusive control block, this piece walks through Chromium's scoped_refptr + RefCountedThreadSafe intrusive refcount, and why WeakPtr::Flag has to be the cross-sequence version."
+description: "Against the yardstick of std::shared_ptr's non-intrusive control block, this piece explains Chromium's intrusive reference counting built from scoped_refptr + RefCountedThreadSafe, and why WeakPtr::Flag has to use the cross-sequence version."
 difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
-- WeakPtr prerequisite (0): weak references and the lifetime puzzle
+- 'WeakPtr prerequisite (0): weak references and the lifetime puzzle'
 reading_time_minutes: 12
 related:
-- WeakPtr hands-on (II): the core skeleton and control block
-- WeakPtr prerequisite (II): std::atomic and memory_order
+- 'WeakPtr Hands-on (II): The Core Skeleton and Control Block'
+- 'WeakPtr prerequisite (II): std::atomic and memory_order'
 tags:
 - host
 - cpp-modern
@@ -24,27 +24,33 @@ tags:
 - RAII
 - weak_ptr
 - 引用计数
-title: "WeakPtr prerequisite (I): intrusive refcount and scoped_refptr"
+title: "WeakPtr prerequisite (I): intrusive reference counting and scoped_refptr"
+translation:
+  source: documents/vol9-open-source-project-learn/chrome/02_weak_ptr/full/pre-01-weak-ptr-intrusive-refcount-and-scoped-refptr.md
+  source_hash: 0c54c6c28e803d12a4f2f5bbe2ad660bf8a149e2d3bc1bb63c45d1258dd35c7d
+  translated_at: '2026-09-26T01:23:38+00:00'
+  engine: anthropic
+  token_count: 2500
 ---
-# WeakPtr prerequisite (I): intrusive refcount and scoped_refptr
+# WeakPtr prerequisite (I): intrusive reference counting and scoped_refptr
 
-In the previous piece we left a thread hanging: Chromium's `WeakPtr` parks the "is the object still alive?" state inside a small thing called `Flag`, and that Flag gets shared between the object's owner and every callback holding a WeakPtr, which often run on different sequences. A small object, shared by several parties, that still has to be freed safely. That is exactly the job refcounting was built for.
+In the previous piece we planted a seed: Chromium's `WeakPtr` parks the "is the object dead yet?" state inside a small object called `Flag`, and that Flag gets shared by the object's owner and by every callback holding a WeakPtr — parties that may well run on different sequences. A small object shared by several parties that still has to be freed safely: that is exactly the job reference counting was built for.
 
-Yet Chromium does not use `std::shared_ptr`. It rolls its own intrusive refcount, with a shell called `scoped_refptr` and a base class `RefCountedThreadSafe`. The first time I hit this in the source I was honestly puzzled: the standard library already ships this, so why reinvent it? This piece works through that puzzle. Three things, laid out plainly: how `std::shared_ptr`'s non-intrusive control block differs from an intrusive counter, what the `scoped_refptr` shell actually looks like, and why WeakPtr's Flag has to be the cross-sequence-safe version.
+And yet Chromium deliberately does not use `std::shared_ptr`. It rolled its own intrusive reference counting, with a shell called `scoped_refptr` and a base class `RefCountedThreadSafe`. The first time I hit this spot in the source I was genuinely puzzled: the standard library ships a ready-made solution, so why reinvent the wheel? This piece takes that puzzle apart. Three things, laid out thoroughly: how `std::shared_ptr`'s non-intrusive control block really differs from an intrusive count, what the `scoped_refptr` shell looks like, and why WeakPtr's Flag has to use the cross-sequence-safe version.
 
 ---
 
 ## Refcounting: letting several owners share one object
 
-Set the smart-pointer syntax aside for a second and look at the essence. Refcounting answers one question: an object is held by several owners, so how do we make sure it only gets destructed when the last owner leaves? The mechanism is almost embarrassingly simple, two steps. Pick up a new reference, bump the counter. Drop a reference, decrement; if it hits zero, you were the last one out, so turn off the lights and destruct the object.
+Set the smart-pointer syntax aside for a moment and look at the essence. Reference counting solves exactly one problem: an object is shared by several holders — how do we guarantee it only gets destructed when the last holder leaves? The mechanism is two steps, no more: pick up a new reference, and the counter goes up by one; drop a reference, and it goes down by one — if it hits zero, you were the last one out, so switch off the lights on your way, which is to say, destruct the object.
 
-The mechanism itself does not care where the counter lives. But "where the counter lives" is exactly the fork that splits `std::shared_ptr` and Chromium's `scoped_refptr` into two roads, one called non-intrusive, the other intrusive.
+The mechanism itself does not care where the counter is stored. But it is precisely that "where does it live" question that splits `std::shared_ptr` and Chromium's `scoped_refptr` onto two different roads — one called non-intrusive, the other intrusive.
 
 ---
 
 ## Non-intrusive: how std::shared_ptr does it
 
-`std::shared_ptr` puts the counter outside the object, in its own heap allocation called the control block. The smart pointer stores two pointers internally: one to the object, one to the control block.
+`std::shared_ptr` puts the counter outside the object — a separate chunk of heap memory, called the control block. The smart pointer internally stores two pointers: one to the object, one to the control block.
 
 ```mermaid
 flowchart LR
@@ -52,17 +58,17 @@ flowchart LR
     CB --> Foo["Foo (heap)"]
 ```
 
-The upside is direct: the object has no idea it is being refcounted. Take any type `T`, drop it into a `shared_ptr<T>`, and `T` does not change a single line. That is the great strength of non-intrusive, it is universal, anything fits.
+The most direct benefit of doing it this way: the object itself has no idea it is being reference counted. Take any type `T`, drop it into a `shared_ptr<T>`, and not a single line of `T` needs to change. That is non-intrusive's biggest advantage — universality; anything fits.
 
-The cost lands on allocation. You write `std::shared_ptr<Foo>(new Foo)` and under the hood there are two heap allocations, one for Foo, one for the control block. `std::make_shared<Foo>()` folds them into one and saves a malloc, but we covered its side effect in [prerequisite (0)](./pre-00-weak-ptr-weak-reference-and-lifetime.md): hang a long-lived `weak_ptr` off it and the entire object's memory sticks around unreleased.
+The cost lands on allocation. You write `std::shared_ptr<Foo>(new Foo)`, and under the hood two heap allocations actually happen: one for the Foo, one for the control block. `std::make_shared<Foo>()` merges the two into one and saves you that extra cut, but we talked about its side effect in [prerequisite (0)](./pre-00-weak-ptr-weak-reference-and-lifetime.md): hang a long-lived `weak_ptr` off it, and the entire object's memory lingers around, unreleased.
 
-There is a sneakier cost. The control block gets attached at runtime, so when all you have is a `T*` there is no way to backtrack to its refcount. That sounds harmless until you hit a question like "am I the sole owner right now?", and then it forces you to detour.
+There is a sneakier cost: the control block is only attached at runtime, so when all you hold is a `T*`, there is no way to go back and find its reference count. That sounds harmless, but the moment you face a judgment like "am I the sole holder right now?", it forces you to take the long way around.
 
 ---
 
 ## Intrusive: the counter is a member of the object
 
-Intrusive refcounting flips it around, the counter becomes part of the object itself. The usual move is to have `T` inherit a base class that carries the counter:
+Intrusive reference counting flips it around — the counter directly becomes part of the object. The most common approach is to have `T` inherit from a base class that carries its own counter:
 
 ```mermaid
 flowchart LR
@@ -70,38 +76,38 @@ flowchart LR
     subgraph T["T (on the heap)"]
         direction LR
         M["...members..."]
-        RC["ref_count_ = 2<br/>← the counter lives in the object"]
+        RC["ref_count_ = 2<br/>← the counter lives inside the object"]
     end
 ```
 
-Now the pros and cons swap places compared to non-intrusive. The win is one allocation: object and counter are the same chunk, one `new` does it, no extra control block. The more valuable win is that any code holding a `T*` can reach the counter, because the counter is a member; `shared_ptr` given a raw pointer is helpless. The cost is the "intrusion" itself, `T` has to inherit a base class, change a line of code, and not just any type walks in.
+With that, the pros and cons swap places compared to non-intrusive. The benefit is one allocation — object and counter form a single body, one `new` handles everything, no extra control block. More valuable still: any code holding a `T*` can trace its way straight to the count, because the count is a member in the first place; `shared_ptr` is powerless given a raw pointer. The cost, of course, is the "intrusion" itself — `T` must inherit a base class, a line of code has to change, and not just any type can be dropped in.
 
 ### Comparison table
 
 | Axis | Non-intrusive (`shared_ptr`) | Intrusive (`scoped_refptr`) |
 |---|---|---|
 | Counter location | Standalone control block (heap) | Member of the object itself |
-| Heap allocations | 2 (or 1 with `make_shared`, but memory is fused) | **1** |
-| Object modification needed | None | Must inherit a base class |
-| Can a `T*` read the count | No | Yes (`HasOneRef()` etc.) |
-| Weak reference | Built-in `weak_ptr` | Must build separately (that is what WeakPtr is for) |
+| Heap allocations | 2 (or 1 with `make_shared`, but the memory is fused together) | **1** |
+| Does the object need modifying | No | Must inherit a base class |
+| Can a `T*` query the count | No | Yes (`HasOneRef()` etc.) |
+| Weak reference | Built-in `weak_ptr` | Must be built separately (that is exactly what WeakPtr is for) |
 
-Chromium picks intrusive fundamentally to crush overhead and to keep one uniform convention. `//base` has a flood of small objects all going through refcounting; shaving one allocation and one pointer indirection per object, at browser scale, is real money. And the uniform intrusive convention makes "read the count straight off a raw pointer" a legitimate operation, which is exactly the capability that `WeakPtr::Flag::Invalidate` needs for its cross-thread destruction exemption.
+Chromium chose intrusive, at the root, to squeeze out overhead and to standardize on one convention. `//base` has a flood of small objects all going through reference counting; saving one allocation and one pointer indirection at each spot adds up to real money at browser scale. And standardizing on one intrusive convention makes operations like "query the count straight from a raw pointer" feasible — which is exactly the capability that the cross-thread destruction exemption in `WeakPtr::Flag::Invalidate` needs.
 
 ---
 
-## Hand-rolling a minimal intrusive refcount
+## Hand-rolling a minimal intrusive reference count
 
-Theory is fine, but it is more fun to build one ourselves and let Chromium's design decisions fall out of it step by step. First the counting base class:
+Theory alone is not satisfying enough, so let's hand-roll one ourselves and squeeze Chromium's design decisions out step by step. First, write the counting base class:
 
 ```cpp
 // Platform: host | C++ Standard: C++17
 #include <atomic>
 #include <cstddef>
 
-// Atomic intrusive refcount base (this is Chromium's RefCountedThreadSafe,
-// not the non-atomic RefCounted (that one is for single-sequence objects;
-// here we go cross-sequence, so atomics)
+// Atomic intrusive refcount base class (corresponds to Chromium's
+// RefCountedThreadSafe, not the non-atomic RefCounted — the latter is for
+// single-sequence objects; here we go cross-sequence, so atomics it is)
 class RefCountedThreadSafe {
 public:
     void add_ref() const noexcept {
@@ -109,10 +115,10 @@ public:
     }
 
     bool release() const noexcept {
-        // release semantics: writes before destruction stay visible to the
-        // thread that then observes count == 0
+        // release semantics: writes before destruction are visible to the
+        // thread that subsequently observes count == 0
         if (ref_count_.fetch_sub(1, std::memory_order_acq_rel) == 1) {
-            return true;   // caller is responsible for delete this
+            return true;   // the caller is responsible for delete this
         }
         return false;
     }
@@ -130,9 +136,9 @@ private:
 };
 ```
 
-A few things deserve a tap. The counter is `mutable`, because `add_ref` / `release` do not, logically, change the observable state of the object, so they have to be callable on a `const` object. The `acq_rel` on `release` is deliberate: the acquire side synchronizes correctly with other threads' `add_ref` / `release` (it establishes happens-before; "always read the freshest value" is a different claim and would need `seq_cst`), and the release side, when the count drops to zero, publishes every write on this object to whichever thread picks up the `delete`.
+A few points deserve calling out. The counter is `mutable` — `add_ref` / `release` do not, logically, change the object's observable state, so they must be callable on a `const` object. The `acq_rel` on `release` is deliberate: the acquire side lets it synchronize correctly with other threads' `add_ref` / `release` (establishing happens-before — not "reading the freshest value"; that would take `seq_cst`), and the release side, when the count drops to zero, publishes every write made on this object to whichever thread takes over the `delete`.
 
-Now have the target type inherit it:
+Next, have the target type inherit from it:
 
 ```cpp
 class Flag : public RefCountedThreadSafe {
@@ -142,13 +148,13 @@ public:
 };
 ```
 
-At this point `Flag` carries its own counter. But a counter alone is not enough, we still need a smart pointer that calls `add_ref` / `release` automatically on copy, move, and destruct. That thing is `scoped_refptr`.
+At this point `Flag` carries its own counter. But a counter alone is not enough — we still need a smart pointer that automatically calls `add_ref` / `release` on copy, move, and destruction. That thing is `scoped_refptr`.
 
 ---
 
-## scoped_refptr: the smart-pointer shell for intrusive refcount
+## scoped_refptr: the smart-pointer shell for intrusive reference counting
 
-`scoped_refptr<T>` does the same job as `std::shared_ptr<T>`: copy bumps the count, destruct decrements, hit zero and delete the object. The difference is that it does not keep a separate control block; it just calls the `add_ref` / `release` that `T` inherited. A minimal implementation looks like this:
+`scoped_refptr<T>` does the same job as `std::shared_ptr<T>` cut from the same mold — copy bumps the count, destruction decrements it, and hitting zero deletes the object. The difference is that it does not keep a separate control block; it directly calls the `add_ref` / `release` that `T` inherited. A minimal implementation looks like this:
 
 ```cpp
 // Platform: host | C++ Standard: C++17
@@ -166,7 +172,7 @@ public:
         if (ptr_) ptr_->add_ref();
     }
 
-    // move: no bump, just empty the source
+    // move: no bump, no drop — just empty the source
     scoped_refptr(scoped_refptr&& other) noexcept : ptr_(other.ptr_) {
         other.ptr_ = nullptr;
     }
@@ -199,35 +205,35 @@ private:
 };
 ```
 
-The `operator=` here has a point to it: it uses copy-and-swap. The by-value parameter `r` already performs one copy and bumps the count; inside the body it swaps with `this`, and when `r` destructs it releases the old reference `this` was holding. One move handles self-assignment and exception safety in the same stroke. Chromium's `scoped_refptr` is roughly this shape, with more details (inter-type conversions, `raw_ptr` integration, that sort of thing), but the core skeleton matches what we have here.
+The `operator=` here has a trick to it: it uses copy-and-swap. The by-value parameter `r` already performs one copy and bumps the count; inside the body it swaps with `this`, and when `r` is destroyed it releases the old reference `this` was holding. This one stroke handles self-assignment and exception safety. Chromium's `scoped_refptr` is roughly this shape, with more details (inter-type conversions, `raw_ptr` integration, that kind of thing), but the core skeleton matches ours.
 
-Usage is almost identical to `shared_ptr`:
+Usage is nearly identical to `shared_ptr`:
 
 ```cpp
 auto p = scoped_refptr<Flag>(new Flag);   // ref_count = 1
 {
     auto p2 = p;                           // ref_count = 2
 }                                          // p2 destructs, ref_count = 1
-// p is still around, Flag is alive
+// p is still around; Flag stays alive
 ```
 
-But in memory it only allocated once, the `Flag` object itself, with the counter embedded inside.
+But in memory it only allocated once — the `Flag` object itself, with the counter embedded inside it.
 
 ---
 
 ## RefCounted vs RefCountedThreadSafe
 
-Chromium actually keeps two versions of the refcount base class, and the difference comes down to "atomics or not."
+Chromium actually keeps two versions of the refcount base class, and the difference comes down to one question: atomics or not.
 
-One is `RefCounted<T>`, the non-atomic version. The counter is a plain integer doing plain add/sub, so it can only be used on a single sequence. It carries a `SequenceChecker` internally that, in debug builds, catches violations like "refcount touched from another sequence." If the count stays at 1 and never gets copied, the object can in fact be moved to another sequence; but the moment `add_ref` / `release` get called concurrently, that is a real data race. The upside is the lowest overhead.
+One is `RefCounted<T>`, the non-atomic version. Counting goes through plain integer add/sub, so it can only be used on a single sequence. It carries a `SequenceChecker` internally that, in debug builds, exists specifically to catch violations like "refcount touched from another sequence." If the count stays at 1 and is never copied, the object can in fact be moved to another sequence; but the moment `add_ref` / `release` get called concurrently, that is a genuine data race. The benefit is minimal overhead.
 
-The other is `RefCountedThreadSafe<T>`, the atomic version. The counter uses atomic instructions (`fetch_add` / `fetch_sub` with `acq_rel`), so multiple sequences and threads can bump and drop concurrently and safely. The cost is higher than the non-atomic version, one atomic op is not the same as one plain add/sub, but for an object shared across sequences it is a hard requirement.
+The other is `RefCountedThreadSafe<T>`, the atomic version. Counting uses atomic instructions (`fetch_add` / `fetch_sub` with `acq_rel`), so multiple sequences and threads can bump and drop concurrently and safely. The cost is of course higher than the non-atomic version — one atomic operation is not the same thing as one plain add/sub — but for an object shared across sequences, it is a hard requirement.
 
-The tradeoff is plain: stay single-sequence when you can, save the atomic cost; reach for the atomic version only when cross-sequence is unavoidable. Chromium does not just slap `ThreadSafe` on everything. In a browser the vast majority of objects are single-sequence by nature, and stacking atomics on hot paths adds up to real cost.
+The tradeoff logic is actually simple: stay single-sequence when you can, and bank the atomic overhead; only reach for the atomic version when going cross-sequence is unavoidable. Chromium does not blindly use `ThreadSafe` everywhere — inside a browser the vast majority of objects are single-sequence by nature, and atomics piled onto hot paths accumulate a cost that is not to be underestimated.
 
-### HasOneRef(): the privilege of reading the count off a raw pointer
+### HasOneRef(): the privilege of querying the count from a raw pointer
 
-Intrusive has one capability non-intrusive cannot match. With nothing but a `T*` in hand, you can ask directly "am I the only reference right now":
+Intrusive has one capability non-intrusive cannot pull off — with nothing but the object's `T*` in hand, you can directly ask "am I the only one holding a reference right now":
 
 ```cpp
 bool has_one_ref() const noexcept {
@@ -235,45 +241,45 @@ bool has_one_ref() const noexcept {
 }
 ```
 
-`shared_ptr` cannot do this, because it needs a `shared_ptr` first before it can reach the control block; hand it a bare `T*` and it has no idea where the control block is. But an intrusive counter grows right out of the object, so a `T*` is enough.
+`shared_ptr` cannot do this, because you need a `shared_ptr` first before you can reach the control block; hand it a bare `T*`, and it has no idea where the control block is. But an intrusive counter grows right on the object, so a `T*` alone is enough.
 
-WeakPtr uses this trick cleverly. As we will see in [02-2 hands-on], `Flag::Invalidate` has this line:
+WeakPtr uses this capability cleverly — as we will see in [02-2, the hands-on series], `Flag::Invalidate` contains this line:
 
 ```cpp
 DCHECK(sequence_checker_.CalledOnValidSequence() || HasOneRef());
 ```
 
-Read it out loud: Invalidate must be called on the bound sequence; but if `HasOneRef()` is true, meaning no WeakPtr is holding this Flag anymore, then it does not matter which sequence destructs it, let it through. That cross-thread destruction opening only exists when two things line up: intrusive refcount, and the ability to read the count off `this`. It is the most concrete, most valuable payoff of intrusive refcounting inside WeakPtr.
+Translated into words: Invalidate must be called on the bound sequence; but if `HasOneRef()` — meaning no WeakPtr is holding this Flag anymore — then it does not matter which sequence destructs it, so let it through. This opening for cross-thread destruction can only be written when two things come together: "intrusive" plus "the count is queryable from `this`". It is the most concrete, and most valuable, payoff of intrusive reference counting inside WeakPtr.
 
 ---
 
-## A pit you must plug: never let users new/delete directly
+## A pit that must be plugged: never let users new/delete directly
 
-Intrusive refcounting has one iron invariant, the object may only be `delete`d by `release()` at the exact moment the count hits zero, and never directly by outside code. Think it through: a user grabs a `scoped_refptr`, then turns around and `delete p.get()`s it; the counter is still being referenced by other `scoped_refptr`s, but the object is already destroyed. Instant dangling.
+Intrusive reference counting has one iron invariant — the object may only be `delete`d by `release()` at the exact moment the count reaches zero, never directly by outside code. Think it through: a user grabs a `scoped_refptr`, turns around, and calls `delete p.get()`; the counter is still being referenced inside other `scoped_refptr`s, yet the object is already destroyed. Instant dangling.
 
-`std::shared_ptr` does not have to worry about this, because the control block holds the object in its grip. Intrusive cannot lean on that; it has to get the object to cooperate. Hide the destructor as `private` or `protected` and leave only the refcount `release` path as the way in. That is exactly what Chromium's `RefCountedThreadSafe` does: through a `friend`-protected `Destroy()` it actually runs `delete this`, and outside code cannot touch the destructor, so mistaken deletes are cut off at the source.
+`std::shared_ptr` does not have to worry about this, because the control block keeps the object firmly in its grip. Intrusive cannot lean on that; it needs the object's own cooperation: hide the destructor as `private` or `protected`, and leave only the refcount `release` path as the way in. That is exactly what Chromium's `RefCountedThreadSafe` does — through a `friend`-protected `Destroy()` it actually performs `delete this`, outside code can never touch the destructor, and mistaken deletes are plugged at the source.
 
 ```cpp
-// Teaching version: non-template base (matches RefCountedThreadSafe above at line 123)
-// Real Chromium is the template form RefCountedThreadSafe<Flag>; see note below
+// Teaching version: non-template base (matches RefCountedThreadSafe at line 123 above)
+// Real Chromium is the template form RefCountedThreadSafe<Flag>; see the note below
 class Flag : public RefCountedThreadSafe {
 public:
     Flag() = default;
 
 private:
-    template <typename> friend class scoped_refptr;   // teaching: scoped_refptr does the delete
+    template <typename> friend class scoped_refptr;   // teaching version: scoped_refptr does the delete
     ~Flag() = default;          // private: outside code cannot delete directly
     // ...
 };
 ```
 
-When we hand-roll the teaching version we follow the same principle, a private destructor plus a controlled release path, but one detail has to be said plainly. In real Chromium, `release()` calls a `Destroy()` static method that `RefCountedThreadSafe<T>` befriends, and that runs `delete this`; our simplified version writes `delete ptr_` straight inside `scoped_refptr<T>::~scoped_refptr()`. So in the teaching version Flag's friend is `scoped_refptr`, not `RefCountedThreadSafe`. The companion code `12_intrusive_refcount.cpp` and `weak_ptr.hpp` is written exactly this way and compiles directly. This approach is a twin sibling of RAII: resource acquisition is initialization, and release goes through exactly one controlled path.
+When we hand-roll the teaching version we follow the same principle — a private destructor plus a controlled release path — but one detail must be spelled out: in real Chromium, `release()` calls a `Destroy()` static method that `RefCountedThreadSafe<T>` befriends, and that performs `delete this`; in our simplified version, `delete ptr_` is written directly inside `scoped_refptr<T>::~scoped_refptr()`. So in the teaching version, Flag's friend is `scoped_refptr`, not `RefCountedThreadSafe` — the companion code `12_intrusive_refcount.cpp` and `weak_ptr.hpp` is written exactly this way and compiles directly. This approach and RAII are twin siblings: resource acquisition is initialization, and release may only travel the one controlled road.
 
 ---
 
-The two forms of refcounting are now unwound. Non-intrusive `std::shared_ptr` parks the counter in a standalone control block, universal, at the price of one extra allocation; intrusive `scoped_refptr` embeds the counter in the object, one allocation, and hands you "read the count off a `T*`" as a bonus, at the price of the object having to inherit a base class. Chromium bets on intrusive across `//base` to crush overhead and keep one uniform convention. The choice between the two bases, `RefCounted` (non-atomic, single-sequence) and `RefCountedThreadSafe` (atomic, cross-sequence), comes down to "save where you can."
+The two forms of refcounting are now fully taken apart. Non-intrusive `std::shared_ptr` puts the count in a standalone control block — universal, at the price of one extra allocation; intrusive `scoped_refptr` embeds the counter in the object — one allocation, and as a bonus it hands you the ability to query the count straight from a `T*`, at the price of the object having to inherit a base class. To squeeze overhead and standardize on one convention, Chromium bets on intrusive across `//base`. The tradeoff between the two base classes, `RefCounted` (non-atomic, single-sequence) and `RefCountedThreadSafe` (atomic, cross-sequence), comes down at the end of the day to: save wherever you can.
 
-For WeakPtr specifically, the Flag is shared by WeakPtrs on several sequences, so it has to be `RefCountedThreadSafe`; and the "read the count off `this`" trick in `HasOneRef()` is the premise that lets `Flag::Invalidate` write its cross-thread destruction exemption. The next building block is atomics and memory order, so we can actually understand the `acq_rel` sitting inside `RefCountedThreadSafe`.
+For WeakPtr specifically, the Flag is shared by WeakPtrs living on several sequences, so it absolutely must use `RefCountedThreadSafe`; and the "query the count from `this`" capability of `HasOneRef()` is precisely the premise that lets `Flag::Invalidate` write its cross-thread destruction exemption. The next building block is atomic operations and memory order — we are going to truly understand that `acq_rel` sitting inside `RefCountedThreadSafe`.
 
 ## References
 

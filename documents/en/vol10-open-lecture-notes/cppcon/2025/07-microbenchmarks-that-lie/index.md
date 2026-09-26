@@ -1,6 +1,6 @@
 ---
 title: "Why 99% of C++ Microbenchmarks Lie"
-description: "CppCon 2025 notes — Kris Jusiak on the compiler-optimization, noise, bias, branch-prediction and correlation traps in microbenchmarking, with GCC 16.1.1 measurements run locally"
+description: "CppCon 2025 talk notes — Kris Jusiak on the compiler optimization, noise, bias, branch prediction, and correlation traps hiding inside microbenchmarks, with local GCC 16.1.1 measurements"
 conference: cppcon
 conference_year: 2025
 talk_title: 'Why 99% of C++ Microbenchmarks Lie – and How to Write the 1% that Matter!'
@@ -13,6 +13,12 @@ tags:
 difficulty: intermediate
 platform: host
 cpp_standard: [20]
+translation:
+  source: documents/vol10-open-lecture-notes/cppcon/2025/07-microbenchmarks-that-lie/index.md
+  source_hash: ea04ecb86940f395ce24b8e5f423494a6d2d07a80417e57a7485761710a54c44
+  translated_at: '2026-09-26T00:23:26+00:00'
+  engine: anthropic
+  token_count: 1000
 ---
 
 <TalkInfoCard
@@ -23,12 +29,12 @@ cpp_standard: [20]
   videoYoutube="https://www.youtube.com/watch?v=s_cWIeo9r4I"
 />
 
-These are notes from Kris Jusiak's CppCon 2025 talk. Kris is the author of [Boost].UT and has long worked on compile-time computation and testing frameworks. The talk zeroes in on a frustrating question: you write a benchmark, get a beautiful nanosecond number, optimize against it, ship — and production is unchanged, or even slower. Kris's answer is blunt: your benchmark is almost certainly lying, and not in one place — several lies chained together.
+These are notes from Kris Jusiak's CppCon 2025 talk. Kris is the author of [Boost].UT and has spent years tinkering with compile-time computation and testing frameworks. This time he locks onto a question that sends your blood pressure through the roof: you write a benchmark, it prints a beautiful nanosecond number, you optimize against it, merge the code, ship — and in production nothing moves, or things even get slower. Kris's answer stings: that benchmark of yours is, with high probability, lying — and not in just one place, but in several spots chained together.
 
-The notes are split into five parts, peeling liars off layer by layer: first the compiler deleting your loop entirely, then noise and bias as two fundamentally different kinds of error, then the branch predictor and cache conspiring to flatter your numbers, then latency vs. throughput as two dimensions people conflate, and finally the cruelest one — a faster microbenchmark is not the same as a faster program.
+The notes are split into five parts, in the order of exposing the liar layer by layer: first how the compiler optimizes the very loop you wanted to measure out of existence; then noise and bias, two kinds of error with completely different natures; next how the branch predictor and the cache conspire to hand you a fake number; then latency versus throughput, two dimensions that constantly get conflated; and finally the deadliest one of all — a faster microbenchmark and a faster whole program are simply not the same thing.
 
 ::: warning About the local environment
-All experiments in this series were run on the same machine: **Arch Linux / WSL2, AMD Ryzen 7 9700X (Zen 5), GCC 16.1.1, `-std=c++20`**. This box has no CPU pinning, no locked frequency, no quieted background — it is a plain WSL2 setup, which means noise is larger than on a properly tuned machine. That happens to make "what does noise look like" easier to see. Your numbers will differ; the direction of the conclusions will not.
+Every experiment in this series was run on the same machine: **Arch Linux / WSL2, AMD Ryzen 7 9700X (Zen 5 architecture), GCC 16.1.1, `-std=c++20`**. Nothing is pinned, no clocks are locked, no background is silenced — it is just a WSL2 environment running loose. That means the noise is larger than on a properly tuned setup, but it happens to make "what noise looks like" easier to see. The numbers on your machine will differ; the direction of the conclusions will not.
 :::
 
 ## Contents

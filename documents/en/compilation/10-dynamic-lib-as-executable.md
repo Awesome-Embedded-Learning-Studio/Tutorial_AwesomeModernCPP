@@ -8,15 +8,22 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: 'Deep Dive into C/C++ Compilation and Linking (Side Note): Can a Dynamic Library Be Executed Like an Executable?'
-description: 'Why running a .so directly segfaults, while libc happily prints its version info — a full walkthrough from ELF entry points to hand-rolled syscalls'
+title: 'Deep Dive into C/C++ Compilation and Linking · Side Story: How a Dynamic Library Can Run Like an Executable'
+description: 'Why directly executing a .so ends in a segfault while libc manages to politely print its version info — a complete teardown from ELF entry points to hand-rolled syscalls'
 cpp_standard: [11, 14, 17, 20]
+translation:
+  source: documents/compilation/10-dynamic-lib-as-executable.md
+  source_hash: c6ee0127bd343e190182b6825fa9c4890e7e45c0e06a365db3514060df3c683a
+  translated_at: '2026-09-26T00:01:53+00:00'
+  engine: anthropic
+  token_count: 3200
 ---
-# Deep Dive into C/C++ Compilation and Linking (Side Note): Can a Dynamic Library Be Executed Like an Executable?
+# Deep Dive into C/C++ Compilation and Linking · Side Story: How a Dynamic Library Can Run Like an Executable
 
-I know some of you reading this will laugh out loud and think I've lost my mind. Honestly, the very first time I came across this, I laughed it off too — it just sounded absurd. But the truth is, a dynamic library **can be executed like an executable.**
+I know some readers will chuckle the moment they see this topic and conclude that I am talking nonsense. To be honest, at the very very beginning I laughed this off too — it simply sounded absurd. But the truth is, a dynamic library **can be executed just like an executable.**
 
-Someone is going to throw a Segmentation Fault in my face and tell me I'm full of it. You can `cd` into `/lib` yourself, pick a library you like — I went with libcurl and libcrypt — and just try running it.
+Someone is bound to throw a Segmentation Fault straight in my face and tell me I am indeed talking nonsense. You can switch to the /lib directory yourself, pick whichever library you fancy — my own eye fell on libcurl and libcrypt — and we can simply try executing them.
+
 
 ```cpp
 
@@ -29,13 +36,14 @@ Segmentation fault         (core dumped) /lib/libcrypt.so.2.0.0
 
 ```
 
-Our first thought is — why? Why does it end up like this? The answer is simple. In a later post I'll stress that, generally, anything ending in `.so` is a dynamic library (or shared library — as I've said before, on modern operating systems you don't really need to distinguish between "shared" and "dynamic" anymore).
+Our first thought is — why? Why did things turn out this way? The answer is simple. In later posts I will stress that, generally speaking, anything ending in .so is a dynamic library (or shared library — as I have already noted, on today's operating systems there is no longer any need to deliberately distinguish between shared libraries and dynamic libraries)
 
-> [深入理解C/C++的编译与链接技术2：动态库静态库导论-CSDN博客](https://blog.csdn.net/charliechen114514191/article/details/154828385)
+> [Deep Dive into C/C++ Compilation and Linking · Part 2: An Introduction to Static and Dynamic Libraries — CSDN blog](https://blog.csdn.net/charliechen114514191/article/details/154828385)
 
-Clearly, when you hand bash an absolute path like that, it tries to treat the file as a standalone program. That clashes with what a dynamic library actually is: a **dynamically shared component** bundling a set of functions and data. A shared library isn't designed with a standard main entry point ($\text{main}$) the way a regular program is, so when you run it directly, the execution flow can easily jump to an invalid memory address. When the OS detects this kind of **illegal memory access** — an attempt to read memory the program has no right to touch — it triggers a **segmentation fault**. I imagine a lot of you reading this have already made up your minds: my claim that "a dynamic library **can be executed like an executable**" must be wrong.
+Clearly, when we type in a file's absolute path directly, the operating system's bash will try to treat it as a program that can run on its own. That, however, clashes with our definition of a dynamic library: a **dynamically shared component** bundling a set of functions and data. Because a shared library is not designed with a standard main entry point the way an ordinary program is (the $\text{main}$ function), running one directly will very likely send the execution flow jumping to an invalid memory address. When the operating system detects this kind of **illegal memory access** (an attempt to touch memory regions the program has no right to access), it triggers a **segmentation fault**. I imagine that by this point many readers have already made up their minds that the claim made in this post — that a dynamic library **can be executed like an executable** — is simply wrong.
 
-Except it isn't. Let's try running the C library again:
+Except it is not. Let's try executing the C library once more:
+
 
 ```cpp
 
@@ -53,13 +61,14 @@ For bug reporting instructions, please see:
 
 ```
 
-Huh? That's nothing like what we expected. This time the C library didn't segfault — it printed a very recognizable string and exited gracefully. Pretty mysterious, right? Don't worry, I'll walk you through exactly what happened, step by step.
+Huh? That is nothing like what we expected. This time, not only did the C library avoid a segmentation fault, it even printed out a highly identifiable string and exited gracefully! Pretty mysterious, isn't it? No matter — I will walk you through, step by step, exactly what happened.
 
-## So, What's Actually Going On?
+## So, What Exactly Is Going On Here
 
-Simple. Let's start here — since this whole thing is about where program execution begins, anyone who knows the ELF format is going to point out that the trick must be hiding in the address the ELF Header points to. It's almost too easy to guess: libc's ELF Header must point to an entry point that's **different** from a component-purpose library like libcurl. And the tool for peeking at ELF headers is the famous `readelf`.
+Simple. Let's start like this — since the whole affair concerns where a program's execution begins, friends familiar with the ELF file format will readily point out that the trick probably hides in the address the ELF Header points to. It is almost too easy to guess: the Entry Point that libc's ELF Header points to must be **different** from that of an ordinary component-purpose library such as libcurl. And the tool for inspecting ELF header information is none other than the famous `readelf`.
 
-Quick ELF refresher — every ELF file (executable or shared library) has an "entry point," which is where the CPU starts executing instructions. Put another way, it gives the CPU's instruction pointer (EIP or RIP on x86-64) a concrete starting value.
+One piece of ELF fundamentals deserves emphasis here — every ELF file (executable or shared library) has an "entry point", which is where the CPU starts executing instructions. Put differently, it gives the CPU's execution flow (the value of EIP or RIP on x86-64) a definite initial value.
+
 
 ```cpp
 
@@ -87,9 +96,10 @@ ELF Header:
 
 ```
 
-Ha, mystery solved, right? If we try to treat `/lib/libcurl.so` as an executable, the OS loader reads it, runs its usual checks, and then sets the jump address to `0x0`. And there you go — that's a null pointer dereference.
+Well, would you look at that — mystery solved, no? If we try to treat `/lib/libcurl.so` as an executable, then at this point the operating system's loader reads `/lib/libcurl.so`, gets through the usual checks, and sets the jump address to `0x0`. Aha — isn't that exactly a null pointer access?
 
-This is exactly the same thing as doing this:
+This is exactly the same in nature as doing something like this!
+
 
 ```cpp
 
@@ -103,7 +113,8 @@ int main() {
 
 ```
 
-Compile and run it, and you get exactly:
+Compile and run it, and what you get is precisely:
+
 
 ```cpp
 
@@ -115,6 +126,7 @@ Segmentation fault         (core dumped) ./dump
 ```
 
 So how about our libc?
+
 
 ```cpp
 
@@ -142,9 +154,10 @@ ELF Header:
 
 ```
 
-Huh, so it really is different. Hold your horses, though — all we've got is `0x27830`, which tells us nothing on its own. Next step: bring out the big gun, `objdump`, and look at the details.
+Huh? So it really is different. Don't rush — all we have is a lone `0x27830`, which tells us nothing on its own. The next step is to bring out our mighty objdump technique and look at the details:
 
-> Someone might ask, why not `nm`? Well, for dynamic libraries, `nm` only shows you the addresses of exported symbols — you generally won't find what the entry point actually maps to. Don't worry, we've got another trick up our sleeve: disassemble with `objdump`.
+> Some readers will ask me: why not nm? Well, for dynamic libraries, what nm exposes are the addresses of the symbols exported to the outside; generally speaking, you won't find out what the EntryPoint actually corresponds to. But don't worry — we have one more trick up our sleeve, and that is reading the disassembly with objdump.
+
 
 ```cpp
 
@@ -170,19 +183,20 @@ Disassembly of section .text:
 
 ```
 
-No need to rush. Let's dig into our memory now. Starting from `0x27834`, here's what the code is trying to do:
+No need to hurry. Let's fire up our memory powers now: starting from 0x27834, here is what the code is trying to do:
 
-> [x64.syscall.sh](https://x64.syscall.sh/) — the syscall table reference, dropping it here for you.
+> [x64.syscall.sh](https://x64.syscall.sh/) — the syscall table reference, which I am leaving right here
 
-- Put `0x01` into `edi` — that's the first argument the syscall needs.
+- Put 0x01 into edi — this is where the first parameter the syscall needs is placed.
 
-- Then the third argument goes into `edx`. Come on, that's just the string length — decimal **483**.
+- Then the third parameter goes into edx. Come on — isn't that just the length of the string? Decimal **483**.
 
-- Hold on, we still need to put the string address into `rsi`, which is the second argument. Notice the instruction is `lea` (Load Effective Address), which adds the offset to the address right after the current instruction. So you can't just go look up `0x18d85a` directly — you have to add the current instruction's offset.
+- Hold on, what we still need to place, a bit later, is the string address in rsi, which is the second parameter. Note this: the instruction is `lea` (Load Effective Address), which adds the offset to the address right after the current instruction. So you can't go looking for 0x18d85a directly — you have to add the current instruction's offset.
 
-  Quick refresher: how does objdump arrive at `1b50a0`? The current instruction's base address is `0x2783f`, and the instruction itself is `48 8d 35 5a d8 18 00`, which is 7 bytes long. So the next instruction is at `0x2783f + 7 = 0x27846`. Add the given offset, and you get `0x27846 + 0x18d85a = 0x1b50a0`. OK, we've confirmed objdump isn't lying to us (not that it probably ever would!).
+  As a refresher: how did objdump work out 1b50a0? First, the current instruction's base address sits at `0x2783f`, and the instruction itself, `48 8d 35 5a d8 18 00`, is 7 bytes long. So the next instruction is at `0x2783f + 7 = 0x27846`. Add the given offset address, and that gives — 0x27846 + 0x18d85a = 0x1b50a0. OK, we are now confident objdump did not lie to us (not that it ever would, most likely!)
 
-Want to verify the bytes are really there?
+Want to check whether it was really placed there?
+
 
 ```cpp
 
@@ -222,13 +236,14 @@ Want to verify the bytes are really there?
 
 ```
 
-That's enough! The rest of the analysis is obvious: put `0` into `edi` as the argument to `exit`, and exit gracefully.
+That's enough! The rest of the analysis is plain to see: 0 is placed into edi as the argument for exit, and the library bows out gracefully.
 
-## Can We Pull Off the Same Trick?
+## Can We Pull Off the Same Trick Ourselves
 
-Come on, of course we can! Let me walk you through doing it ourselves. It's going to be a little tricky, though, because we can't lean on libc this time. A dynamic library's initialization differs from a normal executable's — for instance, it won't initialize the C runtime for you, and you can't just link against the C library (I did try specifying a dynamic linker earlier, to no avail — the code blew up on a stack function jump, and after banging on it for ages I just couldn't get it working), and so on.
+Come on — of course we can! Let me pull off this heist together with you right now! It will be a little hard, though, because this time we cannot lean on the libc library: a dynamic library's initialization differs from that of our ordinary executables — for instance, it does not proactively initialize the C Runtime, and there is no way to proactively link against the C library (I did previously try specifying a dynamic linker, and it turned out useless — the code crashed on a stack function jump, which left me a bit helpless; I fiddled with it forever and never got it working), and so on.
 
-So here's what we can cobble together:
+So, here is something we can cobble together now:
+
 
 ```cpp
 
@@ -281,14 +296,14 @@ int NOT_API direct_load_helper_main() {
 
 ```
 
-Compile it with:
+Compile this code:
 
 ```bash
 gcc -shared -fPIC -o libcclib.so cclib.c -Wl,-e,direct_load_helper_main
 
 ```
 
-Run it, and there's your result:
+Run it, and there is your result!
 
 ```bash
 [charliechen@Charliechen runaable_dynamic_library]$ ./libcclib.so
@@ -298,9 +313,10 @@ You can process add by using the library!
 
 ```
 
-If you're curious, you can walk through the same analysis I did above on this library yourself.
+Interested readers can retrace the whole flow following my earlier analysis.
 
-So here's the question: can our other executables use this code the way they'd use any other library? Yep. Let's pull the visible `add` symbol out into a header, `cclib.h`:
+Then the question arises: can our other executable programs use this code the way they would use a library? Yes, they can. Let's lift the visible add symbol out into a header: cclib.h
+
 
 ```cpp
 
@@ -310,7 +326,8 @@ int add(int a, int b);
 
 ```
 
-And in `main.c`, do the usual library-style thing:
+And in main.c, do the deed just as we do in our ordinary library programming:
+
 
 ```cpp
 
@@ -325,7 +342,8 @@ int main() {
 
 ```
 
-No sweat at all!
+No pressure at all!
+
 
 ```cpp
 
@@ -335,6 +353,6 @@ Result of 1 + 2 = 3
 
 ```
 
-## Through the Lens of Modern CMake
+## The Modern CMake Perspective
 
-That `gcc -shared -fPIC -Wl,-e,direct_load_helper_main` line from this post is something you basically never hand-type in a modern project — you hand it to CMake instead. `add_library(cclib SHARED cclib.c)` automatically adds `-fPIC` and produces the `.so`; the `visibility("hidden")` symbol-visibility trick maps to `set_target_properties(cclib PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)`, which CMake turns into `-fvisibility=hidden` for you. Overriding the entry point (`-Wl,-e`) is a pretty unusual need, and CMake has no built-in target property to set it directly — you typically feed it to the linker explicitly via `target_link_options(cclib PRIVATE "-Wl,-e,direct_load_helper_main")`. On the other side, the executable `gcc main.c -o main ./libcclib.so` becomes `add_executable(main main.c)` plus `target_link_libraries(main PRIVATE cclib)`, where CMake works out the link paths and `-lcclib` from the target dependency graph — no more hand-picking `-L` and `-l`. Once you understand the underlying ELF entry-point and symbol-visibility mechanics, looking back at these CMake commands, you can see exactly which chunk of the linker's job each one takes off your hands.
+That `gcc -shared -fPIC -Wl,-e,direct_load_helper_main` line demonstrated in this post is essentially never hand-typed in a modern project; it gets handed over to CMake instead. `add_library(cclib SHARED cclib.c)` automatically adds `-fPIC` to the shared library and produces the `.so`; the `visibility("hidden")` move for symbol-visibility control corresponds to `set_target_properties(cclib PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)`, which CMake converts into `-fvisibility=hidden` for you. Changing the entry point (`-Wl,-e`) is a fairly rare special need — CMake has no built-in target property to cover it directly, so you normally shove it at the linker explicitly via `target_link_options(cclib PRIVATE "-Wl,-e,direct_load_helper_main")`. And on the other end, the executable `gcc main.c -o main ./libcclib.so` corresponds to `add_executable(main main.c)` plus `target_link_libraries(main PRIVATE cclib)`, where the link paths and `-lcclib` are all worked out automatically by CMake from the target dependency graph — no more hand-picking `-L`/`-l`. Once you understand the underlying mechanics of ELF entry points and symbol visibility, looking back at these CMake commands, you can see exactly which stretch of the linker's originally hand-written work each of them has taken over.

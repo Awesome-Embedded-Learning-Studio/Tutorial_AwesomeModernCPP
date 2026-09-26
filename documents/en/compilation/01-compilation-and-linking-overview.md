@@ -8,19 +8,25 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: "A Deep Dive Into C/C++ Compilation and Linking: Introduction"
-description: 'Start from the undefined reference error that makes you jump, and work out the underlying mechanics of compilation and linking — how symbols get produced, how the linker makes its calls, and where exactly static and dynamic libraries differ.'
+title: "Deep Dive into C/C++ Compilation and Linking · Part 1: Introduction"
+description: 'Starting from the undefined reference error that never fails to make you jump, this article works out the underlying mechanics of compilation and linking: how symbols come into being, how the linker arbitrates, and where static and dynamic libraries really differ.'
 cpp_standard: [11, 14, 17, 20]
+translation:
+  source: documents/compilation/01-compilation-and-linking-overview.md
+  source_hash: 21c5722b678e29c83ea22a0e4148df61f2a25c261d51782e8d6bf91e7615e18f
+  translated_at: '2026-09-25T23:50:36+00:00'
+  engine: anthropic
+  token_count: 9700
 ---
-# A Deep Dive Into C/C++ Compilation and Linking: Introduction
+# Deep Dive into C/C++ Compilation and Linking · Part 1: Introduction
 
-## Foreword
+## Preface
 
-This is a new series! It is a topic I plan to dig into systematically and in depth this week. Concretely, we are going to talk through and summarize a set of C/C++ topics that most of us gloss right over but that absolutely torture us along the way — compilation and linking. I believe every one of you has run into the headache that is `undefined reference`, and I bet a fair number of you flinch a little the moment you see it (I, for one, was just recently tortured by an `undefined reference` thrown during template instantiation).
+This is a brand-new series — a topic I plan to research systematically and in depth this week. Concretely, we will discuss and work through a set of C/C++ topics that most of us breeze right past yet are invariably tortured by: compilation and linking. I believe every one of you has run into headaches like `undefined reference`, and I suspect quite a few of you flinch the moment that error appears on screen (not long ago, I myself was tormented by an `undefined reference` during template instantiation).
 
-When this kind of error shows up, I think most people, at least in the beginning, panic-ask an AI, panic-search the web, but very few actually stop to think — why do we even get errors like `undefined reference` in the first place? Setting aside the cases where we genuinely forgot to hand the source file to the build system (I know many of you have done this; I have too), a lot of the time we really do have it — at least we believe we have it — we did provide the source file, you even watched it link, and yet it just fails.
+When this kind of error strikes, most people's first move, I suspect, is to scramble — asking an AI, searching the web — but few ever stop to think: why do errors like `undefined reference` exist in the first place? Setting aside the cases where we genuinely forgot to feed a source file to the build system (I'm sure many of you have been there; so have I), there are plenty of situations where we really did provide the source file — or at least honestly believed we did — watched it get linked, and the link still failed.
 
-For example, say you wrote this in a `lib.c` file and turned it into a static library `libutils`.
+For example, suppose you write the following in a lib.c file and pack it into a static library, libutils.
 
 ```c
 int int_max(int a, int b) {
@@ -29,7 +35,7 @@ int int_max(int a, int b) {
 
 ```
 
-Then, right away, we use `int_max` in a C++ file:
+Then we immediately go and use `int_max` in a C++ file:
 
 ```cpp
 // in usage usage.cpp
@@ -44,8 +50,7 @@ int main() {
 
 ```
 
-Then we hammer out that command, expecting our program to compile cleanly, and we get a very strange error —
-
+Then, we type the command below, fully expecting our program to build, and we get a very strange error:
 
 ```cpp
 
@@ -57,33 +62,33 @@ collect2: error: ld returned 1 exit status
 
 ```
 
-This looks downright bizarre. We clearly linked `libutils` — it even found our `libutils` (no complaint about `/usr/sbin/ld: cannot find -lutils: No such file or directory`, which means it found it), so why the error? And even if the symbol really is missing, why didn't it complain at compile time? Look, if you are the kind of reader who, like the author of [`Beginner's Guide to Linkers`](https://www.lurklurk.org/linkers/linkers.html), spots the problem instantly, then this introductory "Deep Dive Into C/C++ Compilation and Linking: Introduction" has nothing new for you. We will get into the real fine details later, not here.
+This looks downright bizarre. We did link libutils — the linker even found our libutils (no complaint of `/usr/sbin/ld: cannot find -lutils: No such file or directory`, which means it was found) — so why the error? And if the symbol was missing, why didn't the compiler complain back at compile time? If, as the author of [`Beginner's Guide to Linkers`](https://www.lurklurk.org/linkers/linkers.html) puts it, you can spot the problem immediately, then this introductory "Deep Dive into C/C++ Compilation and Linking · Part 1: Introduction" holds nothing new for you; we will only get truly detailed about every little bit later — not here.
 
-**This post assumes you have at least written some C (the problem above touches C++ but C++ is not the core of this article). If you have hit an `undefined reference` before and had no idea how to fix it, even better.**
+**This article assumes you have written at least some C programs (the problem above involves C++, but the core of this article is not C++). If you have run into errors like `undefined reference` and had no idea how to fix them — even better.**
 
-## So what do the variables and functions we write actually mean?
+## So, What Do the Variables and Functions We Write Actually Mean
 
-This question is not aimed at *you* — this question is aimed at the *computer*. To answer that whole string of questions you might never have thought to ask, we first have to answer one question: "The things we find and fail to find — how does the computer even know about them?" Put more formally: how does the compiler toolchain collect and look up symbols? How does it then turn them into something easier to process? (For instance, we map a function to an address the machine can find, and at that point anyone who knows assembly immediately sees how a function works — once the function name becomes an address, you just `call` that address, and the CPU's instruction pointer jumps there, fetches the instruction, and starts running the code.) At the end of the day, our first step is this: the variables and functions we understand, the ones that carry business meaning — how do they get turned into addresses, into "this is where that thing lives" from the machine's point of view? What happens in the middle? **What do the variables and functions we write actually mean to a computer?**
+This question is not aimed at **you** — we are asking the **computer**. To answer that chain of questions you may never have thought about, we must first answer one thing: "How does the computer know about the things we find and fail to find?" More formally: how does the compiler toolchain collect and look up symbols, and how does it convert them into something easier to process? (For example, we map functions to addresses the computer can locate — readers who know assembly will instantly see how functions work from there: once the function name becomes an address, you simply call that address, and the computer's processing flow jumps to it, fetches instructions, and starts executing the code.) All told, our first step is this: how do the variables and functions we understand — the ones carrying business meaning — become the addresses that tell the machine what lives where? What does the processing in between look like? **What do the variables and functions we write actually mean to a computer?**
 
-Any computer science student can rattle off the four classic steps a program goes through from source file to running on the OS — preprocessing, compilation, linking, and **execution**. (Someone is bound to ask: isn't that obvious? Why call out execution separately? Good question! Dynamic loading and load-time linking of dynamic libraries is something we will talk about carefully.)
+Any computer-science student can rattle off, without hesitation, the four classic stages between a source file and a program running on an operating system: preprocessing, compilation, linking, and **execution**. (Someone will ask: isn't that last one trivial? Why single out execution? Good question! Dynamic loading and load-at-startup of dynamic libraries is something we will talk about properly.)
 
-To answer the question above well, we need to focus on the last three (preprocessing is **a source-code-to-source-code transformation** — for example expanding `#define`s or selecting code via `#if` conditional compilation — and we are not going to discuss it here).
+To answer the questions above well, we focus on the last three (preprocessing is a **source-code-to-source-code transformation** — think `#define` expansion, or selecting what to compile with `#if` — and we won't discuss it here).
 
-When we write C files — whether it is the Bilibili course UP-zhus, the notes of senior bloggers, or your college professor sleepily reading off his years-old slides — they all tell you the same thing. Writing a C file, we are really only ever doing two things: declaring, and defining. The thing we are talking about is **global variables and functions**, and I have to stress that up front.
+When we write C files — whether following the instructors uploading courses on Bilibili, notes from some guru's blog, or your university professor drowsily reading off his years-old slides — the message is always the same: writing a C file comes down to two things, declarations and definitions. And the objects under discussion are **global variables and functions** — I must stress that here.
 
-- Local variables? Yeah, no point discussing them. Once the program is on the CPU, the OS backend serves them dynamically for your code — maybe a **specific register, maybe a chunk of memory, but they never sit on disk inside the executable!**
-- One thing worth calling out specifically — a definition includes a declaration. Not clear? Example: once you have told me what A is, have you not also told me, at the same time, that an A exists here?
+- What about local variables? Ah, there is no point discussing those: they exist only once the program is on the CPU, serviced dynamically by the operating system's backend for your code — they may be **assigned to a specific register, or allocated in memory, but they absolutely do not sit in the executable file on disk!**
+- Especially worth noting: a definition includes the declaration. Not following? An example: if I've already told you what A is, haven't I simultaneously told you that an A exists right here?
 
-A declaration is simple. We are just loudly shouting that something exists here (). You ask me, what is it? What is its value? Sorry, I have no idea, all I can tell you is that this thing definitely exists — where it is, you, compiler, go find it yourself.
+A declaration is simple: we just loudly proclaim that something exists here. You ask, what is it? What's its value? Sorry, no idea — all I can tell you is that it does exist; where exactly, compiler, you go find out yourself.
 
-A definition is not hard either. We take a declaration (maybe one someone else shouted elsewhere, maybe an inline one like `int a = 2`) and we attach the actual stuff to that declaration. That act is a **definition**. For a global variable, that stuff is data. For a function, it is our executable code. A global variable's definition will make the compiler, when it later produces the executable, allocate concrete space for your variable. And of course, the value you assigned has to come along — otherwise what did you define it for?
+A definition is not hard either: we take a declaration (either one loudly made elsewhere as above, or one made on the spot, like `int a = 2`) and connect it to the substance behind that declaration. That act is the **definition**. For a global variable, that substance is data; for a function, it is our executable code. Defining a global variable makes the compiler allocate concrete space for it in the executable it later generates — plus, of course, the value you assigned it; otherwise, what would you be defining it for, right?
 
-We know that the relocatable object file produced after compilation (Locatable Objects) will expose function names and variables. When we write programs, we just take for granted that they can be found (a sharp reader immediately interrupts me — found when, at compile time, or at link/run time? Hold on, getting to it). In serious academic discussion this is called **symbol visibility**. **Visible symbols are accessible!** And this **accessibility of visible symbols** needs to be split into two cases:
+We know that the relocatable files produced after compilation (relocatable objects) expose function names and variables. As we write our programs, we subconsciously assume they can be found (sharp readers will interrupt me at once — found when? During compilation, or during linking and runtime? Patience, we're almost there) — in serious academic discussion this is called **symbol visibility**. **Visible symbols are accessible!** And this **accessibility of visible symbols** needs to be discussed in two parts:
 
-- Compile-time accessibility — for example, in a C program, **any symbol not modified by `static`, including global variables and functions**. You have written C, so you obviously know that after writing global `static int a = 1;` and `static int max(int a, int b){return a > b ? a : b;}` in `a.c`, `b.c` cannot reach them at all. Try it yourself.
-- Runtime accessibility — here I mean all global variables and functions, whether or not they are decorated with `static`. Because they are all stored in the executable, once on the CPU the OS has to allocate program-lifetime memory storage for every global variable and function whether it is `static` or not. So as far as the CPU is concerned, they are with the program for its whole life. They are still global; it is just that some globals can **only be accessed by specific code** (this is exactly where `static` does its work).
+- Accessibility during compilation — for example, symbols in a C program **not decorated with `static`, global variables and functions included**. Having written C, you obviously know that after you write the file-scope `static int a = 1;` and `static int max(int a, int b){return a > b ? a : b;}` in `a.c`, `b.c` cannot reach them at all! Try it yourself.
+- Accessibility at runtime — here we mean global variables and functions as a whole, with or without `static`. They all live in the executable file, and once the program is on the CPU, the operating system must allocate memory storage lasting the whole lifetime of the program for every global variable and function, `static` or not. So in practice, as far as the CPU is concerned, they accompany the program for life. They are therefore still global — it's just that some globals must be **accessible only from specific code** (and that is exactly where `static` does its work)
 
-In other words, anything that is an **accessible global variable or function** must live alongside the program for its whole life and be placed into the program's executable, taking up some space (which is exactly why I said only global variables and functions are worth discussing). Everything else is completely unrelated to our question. I wrote a small program here:
+In other words, anything that is an **accessible global variable or function** necessarily accompanies the program for its whole life, must be placed into the program's executable file, and takes up some space there (which is why I said discussing only global variables and functions makes sense). Everything else is entirely beside the point. I wrote a program for this:
 
 ```c
 // demo.c
@@ -111,49 +116,47 @@ int main() {
 
 ```
 
-| Symbol              | Category    | Storage Class                | Linkage               | Typical Segment at Runtime                    | Function                                              |
-| ------------------- | ----------- | ---------------------------- | --------------------- | --------------------------------------------- | ----------------------------------------------------- |
-| `un_g_initialized_var` | Variable definition | **Global** (`static` duration) | **External** (`External`) | **BSS** (Block Started by Symbol)             | Uninitialized global variable, zero-initialized at runtime. |
-| `g_initialized_var`    | Variable definition | **Global** (`static` duration) | **External** (`External`) | **Data** (Initialized Data)                   | Initialized global variable.                          |
-| `extern_var`           | Variable declaration | N/A (reference)               | **External** (`External`) | N/A (expected to be defined in another file)  | References a global variable defined in another translation unit. |
-| `un_init_local_var`    | Variable definition | **Global** (`static` duration) | **Internal** (`Internal`) | **BSS**                                       | File-scope static variable, uninitialized, zero-initialized at runtime. |
-| `init_local_var`       | Variable definition | **Global** (`static` duration) | **Internal** (`Internal`) | **Data**                                      | File-scope static variable, initialized.              |
-| `local_func`           | Function definition | **Function**                  | **Internal** (`Internal`) | **Code** (.text)                              | Static function, only callable within the current file. |
-| `func`                 | Function definition | **Function**                  | **External** (`External`) | **Code** (.text)                              | Ordinary function, callable from other files.        |
-| `extern_func`          | Function declaration | **Function**                  | **External** (`External`) | N/A (expected to be defined in another file)  | References a function defined in another translation unit. |
+| Symbol | Category | Storage Class | Linkage | Runtime Memory Region (Typical Segment) | Function |
+| ------ | -------- | ------------- | ------- | --------------------------------------- | -------- |
+| `un_g_initialized_var` | Variable definition | **Global** (`static` duration) | **External** | **BSS** (Block Started by Symbol) | Uninitialized global variable, zero-initialized at runtime. |
+| `g_initialized_var` | Variable definition | **Global** (`static` duration) | **External** | **Data** (initialized data) | Initialized global variable. |
+| `extern_var` | Variable declaration | N/A (reference) | **External** | N/A (expected to be defined in another file) | References a global variable defined in another translation unit. |
+| `un_init_local_var` | Variable definition | **Global** (`static` duration) | **Internal** | **BSS** | File-scope static variable, uninitialized, zero-initialized at runtime. |
+| `init_local_var` | Variable definition | **Global** (`static` duration) | **Internal** | **Data** | File-scope static variable, initialized. |
+| `local_func` | Function definition | **Function** | **Internal** | **Code** (.text) | Static function, callable only within the current file. |
+| `func` | Function definition | **Function** | **External** | **Code** (.text) | Ordinary function, callable from other files. |
+| `extern_func` | Function declaration | **Function** | **External** | N/A (expected to be defined in another file) | References a function defined in another translation unit. |
 
-Have a think about the table above. If anything trips you up, go look it up yourself to make sense of it.
+Think the table above over; if anything in it puzzles you, search the terms yourself to make sense of it.
 
-## How the C compiler sees our files
+## How the C Compiler Sees Our Files
 
-Let's get the C compiler moving. Note that your compile command must be
-
+Let's get the C compiler moving. Note that your compile command must be:
 
 ```cpp
 
-gcc -c demo.c -o demo.o # hey, do not drop the -c, that flag means compile only
+gcc -c demo.c -o demo.o # careful not to drop the -c; it means "compile only"
 
 ```
 
-The compiler quietly chugs along for a bit and hands us the `demo.o` we wanted. So what is the compiler actually doing while it compiles this one C unit?
+The compiler quietly chews for a moment and hands us the demo.o we wanted. So what is the compiler doing while it compiles a whole unit of C source?
 
-Whether you are on Apple clang, GNU gcc, or Microsoft's MSVC, they are all **compilers**, and the main job, as you can see, is to turn a C file from human-readable text (mountain of trash code aside) into something the machine can understand. The compiler produces the result as an object file. On UNIX platforms these usually carry a `.o` suffix; on Windows they carry a `.obj` suffix.
+Whether you're using Apple clang, GNU gcc, or Microsoft's MSVC, they are all **compilers**, and their main job, as you can see, is converting C files from text humans can understand (mountains of legacy code excepted) into something a computer can understand. The compiler's output is an object file: on UNIX platforms these usually carry the .o suffix; on Windows, .obj.
 
-Interestingly, our object file — tying back to the topic above — at minimum ends up containing these two parts:
+Interestingly — tying back to our theme above — our object files end up containing at least the following two parts:
 
-- Machine code: the specific instructions, the 0s and 1s the machine can read.
-- Data evolved from global variables: this corresponds to the definitions of global variables in the C file (for initialized globals, the initial value of the variable also has to be stored in the object file).
+- Machine code: specific instructions built from the 0s and 1s a computer can read.
+- Data evolved from global variables: this corresponds to the definitions of the global variables in the C file (for initialized global variables, the variable's initial value must also be stored in the object file).
 
-Now here is the thing. Look carefully at `extern int extern_var;` and `extern int extern_func();`. Anyone familiar with the `extern` keyword immediately flags something wrong — wait, your `extern_var` and `extern_func` have no definition at all, did the compiler not notice?
+Right, so here's the question: look carefully at `extern int extern_var;` and `extern int extern_func();`. Anyone familiar with the `extern` keyword will immediately flag something wrong — hmm? Your `extern_var` and `extern_func` have no definitions at all. Did the compiler not notice?
 
-Here is what I am telling you: it knows. But **C/C++, as a compiled language, lets you get away with only declarations at compile time, no definitions required!** I have to stress this **handy but annoying** trait one more time: **C/C++, as a compiled language, lets you get away with only declarations at compile time, no definitions required!** So when does someone finally decide whether you are intentionally parking the definitions elsewhere, or you just carelessly forgot to write them? The answer is the next stage: linking. We will get to that. For now keep your eyes on the compile stage.
+What I'm telling you is: it knows, but **C/C++, being compiled languages, allow declarations to appear at compile time without their definitions!** I must stress this **handy yet troublesome** property one more time: **C/C++, being compiled languages, allow declarations to appear at compile time without their definitions!** So when does the ruling happen — was it that you deliberately placed those definitions somewhere else, or that you carelessly left them out? The answer is the next stage: linking. We'll discuss that later; for now, keep your eyes on the compilation stage.
 
-## nm, a handy command
+## nm, a Wonderfully Handy Tool
 
-Windows MSVC folks, do not bother. What you should be using is not `nm`, it is `dumpbin` (assuming you actually installed MSVC — what I mean is, you are writing code in Visual Studio). But here, I am going to discuss using `nm` with SystemV output format.
+Windows MSVC users, don't fight it: the tool you should be using is not nm but dumpbin (if what you installed is MSVC — my other point being that you write code with Visual Studio). Here, though, I'm going to discuss things with nm in its System V output format.
 
-How do we verify, on the executable we just got, the stuff we have been talking about? Simple — we pull out our `nm` tool and analyze it. Come on, let's try:
-
+How do we verify what we discussed above on the executable file we just produced? Simple — pull out our nm tool and analyze it. Come on, try:
 
 ```cpp
 
@@ -175,15 +178,14 @@ un_init_local_var   |0000000000000004|   b  |            OBJECT|0000000000000004
 
 ```
 
-All right, let's look at this table carefully. What you want to focus on is the Class column — it tells us what each entry is.
+Alright, let's pore over this table. What you need to do is watch the Class column — it tells you what each entry in our table is.
 
-- The U class marks an undefined reference, one of the "blanks" mentioned earlier. This object has two such entries: "fn_a" and "z_global".
-- The t or T class marks the location of a code definition; the case of the letter tells you whether the function is local (t) or non-local (T) — i.e. whether it was originally declared `static`. Likewise, some systems may also show a section, e.g. `.text`.
-- The d or D class marks an initialized global variable; again, the case tells you whether the variable is local (d) or non-local (D). If there is a section, it looks something like `.data`.
-- For uninitialized global variables, you get b if it is static/local, or B or C if it is not. In this example the section might look like `.bss` or `*COM*`.
+- Class U means an undefined reference, one of the "blanks" mentioned earlier. This object has two of them: "fn_a" and "z_global".
+- Class t or T marks where code is defined; the particular class tells you whether the function is local (t) or non-local (T) — that is, whether it was originally declared `static`. Some systems may also show a section, such as .text.
+- Class d or D marks an initialized global variable; likewise, the particular class says whether the variable is local (d) or non-local (D). If a section is shown, it will be something like .data.
+- For uninitialized global variables you get b if it is static/local, and B, or C, if not. In this case the section may look like .bss or *COM*.
 
-Windows friends: you need to open the `x86 Native Tools Command Prompt for VS Insiders`, navigate to your target C file, and type `cl /c <SourceFile>.c`. That tells MSVC to only compile our source file, and the resulting `<SourceFile>.obj` is our relocatable object file. At that point we can use the `dumpbin` utility:
-
+Windows folks, you need to open the `x86 Native Tools Command Prompt for VS Insiders`, navigate to your target C file, and type `cl /c <SourceFile>.c`. MSVC will then compile only our source file, and the resulting `<SourceFile>.obj` is our relocatable object file. At that point, we can use the little dumpbin tool:
 
 ```cpp
 
@@ -191,8 +193,7 @@ dumpbin /symbols <SourceFile>.obj
 
 ```
 
-to view the symbols. Let me list out what I got (default toolchain under VS2026):
-
+to look at the symbols. Let me list what I got (the default toolchain under VS2026):
 
 ```cpp
 
@@ -237,19 +238,19 @@ Summary
 
 ```
 
-Kicking aside all the other noisy output, what it actually boils down to is this table:
+Kick away all the noisy output, and what it actually amounts to is this table:
 
-| `dumpbin` output                                     | Meaning                          | Analogous Linux `nm`      |
-| ---------------------------------------------------- | -------------------------------- | ------------------------- |
-| `SECT4  notype () External \| _func`                 | External function defined in .text | `T _func`                 |
-| `SECT3  notype External    \| _g_initialized_var`    | External variable defined in .data | `D _g_initialized_var`    |
-| `UNDEF  notype External    \| _extern_func`          | Undefined external function reference | `U _extern_func`          |
-| `UNDEF  notype External    \| _extern_var`           | Undefined external variable reference | `U _extern_var`           |
+| `dumpbin` output | Meaning | Linux `nm` equivalent |
+| ---------------- | ------- | --------------------- |
+| `SECT4  notype () External \| _func` | An external function defined in .text | `T _func` |
+| `SECT3  notype External    \| _g_initialized_var` | An external variable defined in .data | `D _g_initialized_var` |
+| `UNDEF  notype External    \| _extern_func` | Undefined external function reference | `U _extern_func` |
+| `UNDEF  notype External    \| _extern_var` | Undefined external variable reference | `U _extern_var` |
 | `UNDEF  notype External    \| _un_g_initialized_var` | Undefined external variable reference | `U _un_g_initialized_var` |
 
-## Resolving the symbols we do not know about: linking
+## Resolving the Symbols We Don't Know: Linking
 
-Now let's push the topic one step further. This step is exactly where we resolve the question we left hanging back in "How the C compiler sees our files". Let us assume that, in some other file, those external symbols really are defined:
+Now we push the topic one step further. This step resolves the question the section "How the C Compiler Sees Our Files" left behind. Let's assume those external symbols really are defined in another file:
 
 ```c
 // demo_extern.c
@@ -260,10 +261,9 @@ int extern_func() {
 
 ```
 
-These symbols likewise get compiled into a relocatable object file. What is left then is to take this mix — definitions here, undefined symbols there — and combine them, **resolving the indeterminate (name-only, definition-unknown) parts in every file** (our compiler compiled these source files fine, which means we declared these symbols, but we have not yet found their definitions). **That is what linking does.**
+These symbols likewise get compiled into relocatable object files. What remains is to take this mixture of defined and undefined symbols, combine it all, and **resolve, for every file, the parts whose symbols are indeterminate (names only) and whose definitions are unknown** (the fact that our compiler accepted these source files means we declared these symbols but have not yet found their definitions). **That is what we do at link time.**
 
-Now, after compiling `demo_extern.c` into `demo_extern.o`, we use it to finish the last step of producing our executable:
-
+Now, after compiling demo_extern.c into demo_extern.o, we use it to complete the final step toward our executable:
 
 ```cpp
 
@@ -271,8 +271,7 @@ gcc demo_extern.o demo.o -o demo_exe
 
 ```
 
-Compilation goes through cleanly, no surprises.
-
+Of course the build goes through cleanly. No doubt about it.
 
 ```cpp
 
@@ -314,8 +313,7 @@ un_init_local_var   |0000000000004024|   b  |            OBJECT|0000000000000004
 
 ```
 
-Now look — the table got a lot more complicated, but no worries, the bits we care about are:
-
+Now look: the table has become far more complicated, but that's fine — what we care about here is:
 
 ```cpp
 
@@ -324,8 +322,7 @@ extern_var          |0000000000004010|   D  |            OBJECT|0000000000000004
 
 ```
 
-We have finally found what we were after. They are no longer indeterminate UNDEF entries — they are now properly defined functions and global variables. We can totally try removing the definition of `extern_func`.
-
+We have finally found what we were looking for: they are no longer indeterminate UNDEFs, but a function and a global variable with solid definitions. We can absolutely try removing the definition of extern_func.
 
 ```cpp
 
@@ -336,8 +333,7 @@ collect2: error: ld returned 1 exit status
 
 ```
 
-There is our old friend! `undefined reference` — it means the linker is complaining that it could not find the definition of `extern_func`. Let's look carefully:
-
+There's the error we know so well! `undefined reference` — the linker complaining that it cannot find the definition of `extern_func`. Let's look closely:
 
 ```cpp
 
@@ -350,22 +346,22 @@ extern_var          |0000000000000000|   D  |            OBJECT|0000000000000004
 
 ```
 
-As you can see, `demo_extern` provides the definition of `extern_var`, but the definition of `extern_func` is nowhere to be found, and we only handed the linker those two files. Naturally the linker has no idea where to go look for your `extern_func`, and so it throws this error.
+As you can see, demo_extern settles the definition of extern_var, but the definition of `extern_func` is nowhere to be found. Since we handed over only these two files, the linker naturally has no idea where to go find your `extern_func` — and so, naturally, it blows up with this error.
 
-We now understand the linker's key job — resolving the undefined-symbol problem of the minimum executable (why minimum? we will get to that later). Any link where **you failed to provide the concrete content of a definition** (you forgot to write the source code for some function you used) will fail! In the end, after the linker has searched around, as long as there is one undefined symbol left (i.e. any symbol whose Class is U in `nm` or `dumpbin`), the linker will throw an error and list every one of those undefined symbols for you. **At that point the fix is dead simple — find the relocatable file that contains those symbols (in most build systems the source file name and the relocatable file name match, only the suffix differs), and hand it to the linker at link time!** This is the **only** way to fix `undefined reference` in any non-dynamic-library compilation scenario.
+We now know the linker's essential function: resolving undefined symbols for the minimal executable (why "minimal"? We'll keep discussing that later). Any link where **you have not provided the information specifying the actual content of a definition** (source code for a used function that went missing) will fail! In the end, once the linker has made its rounds, as long as undefined symbols remain (that is, symbols whose Class is U in nm or dumpbin), the linker raises an error telling you every one of the undefined symbols. **At that point your fix is dead simple — find the relocatable files that define those symbols (in typical build systems the relocatable file has the same name as the source file, differing only in the extension), and supply them at link time**! In every dynamic-library-free compilation scenario, this is the **only way** to resolve `undefined reference`.
 
-Now that we have looked at the `nm` output, we can answer the whole question:
+Now that we've seen nm's output, we can answer the whole question:
 
-- Q1: How does the compiler toolchain collect and look up symbols? How does it then turn them into something easier to process?
-- A: The compiler compiles symbols into machine-readable instructions, and **maps each function symbol to an address**. For global variables, it maps each one to a concrete access location in the data section.
+- Q1: How does the compiler toolchain collect and find symbols, and how does it convert them into something easier to process?
+- A: The answer is that the compiler compiles symbols into instructions the computer can read, **mapping each function symbol to an address**. For global variables, it maps each one to a specific access location in the data section.
 - Q2: **What do the variables and functions we write actually mean to a computer?**
-- A: It just associates our addresses with our meaningfully-named variables — what you call them does not matter at all. After the compiler and linker are done with them, by the time they reach the computer, only a string of addresses is left. You ask me what that is — beats me! Go ask `nm`!
+- A: Just addresses tied to the variables we gave meaning to — the names you choose simply don't matter. After the compiler and the linker are done, all that reaches the computer is a string of addresses. You ask me what that one is? Beats me — ask nm!
 
-## Side topic: what if we define the same thing twice?
+## A Side Topic: What If We Define Something Twice
 
-The last section said that if the linker cannot find a definition for a symbol to bind its references to, it gives an error. So what happens if, at link time, a symbol has two definitions?
+The previous section mentioned that the linker issues an error message when it cannot find a symbol's definition to connect with the references to that symbol. So what happens when a symbol has two definitions at link time?
 
-I am not going to give you the answer right away. Try it yourself first. For instance, restore the definition of `extern_func` in `demo_extern`, and at the same time modify our `demo.c` like so:
+I won't rush to give the answer — try it yourself first. For example, restore the definition of `extern_func` in demo_extern and, at the same time, modify our `demo.c` like this:
 
 ```c
 int un_g_initialized_var;
@@ -380,7 +376,7 @@ static int local_func() {
  return 1;
 }
 
-int extern_func() { // copy a definition in here, return whatever you like, it does not affect the conclusion
+int extern_func() { // copy a definition in here; the return value is up to you, it won't affect our conclusion
  return 3;
 }
 
@@ -388,7 +384,7 @@ int func() {
  return 2;
 }
 
-// extern int extern_func(); <- comment out the extern that emphasizes external lookup
+// extern int extern_func(); <- comment out extern, the keyword emphasizing external lookup
 
 int main() {
  return extern_var + extern_func();
@@ -396,8 +392,7 @@ int main() {
 
 ```
 
-We repeat the same separate-compile-then-link steps. Very quickly we get another error you have probably seen before:
-
+We repeat the separate compile-and-link steps from above. Very quickly, we get another error you have probably seen before:
 
 ```cpp
 
@@ -410,22 +405,21 @@ collect2: error: ld returned 1 exit status
 
 ```
 
-Notice — same as before, because the compiler trusts that **the linker can correctly handle any symbol relationship** (it can only compile files one at a time! It cannot see the rest of the source files! **The symbol adjudication for the entire result unit — executable, dynamic library, static library — is decided by the linker!** I have to stress this one more time.)
+You noticed it — same as before, because the compiler believes **the linker can correctly handle the relationships of any symbols** (it can only compile files one piece at a time! It has no control over the other source files! **The symbol arbitration of the entire resulting unit — executable, dynamic library, or static library — is decided by the linker**! That is something I must stress once more!)
 
-So at link time the linker finds that two files contain an identical symbol definition. Naturally, the definitions disagree — it is as if you said A is 1 and also said A is 2. Uniqueness is broken, and picking one arbitrarily would just make the program's behavior uncontrollable. So the linker slaps you right back and refuses to let it through. At least under the GNU toolchain's default behavior today, doing this gets you a `multiple definition`.
+So, at link time, the linker finds that two files contain the very same symbol definition. Naturally, two differing definitions are impossible to keep — it's like asserting that A is 1 while also asserting that A is 2; uniqueness is broken, and deciding rashly would only make the program uncontrollable. So the linker slaps it straight back: not approved! At least under the default behavior of today's GNU toolchain, doing this only earns you a `multiple definition`.
 
-## And that is all the linker does?
+## Is That Really All the Linker Does
 
-I asked it like that, so obviously that is not all — right? When you see me hammering on this point over and over, do you feel the question forming:
+With a lead like that, how could it be — right? Watching me stress that sentence over and over, did anything occur to you:
 
-- Why is it that **C/C++, as a compiled language, lets you get away with only declarations at compile time, no definitions required**? Why not force you to know everything right away? What a pain.
+- Why is it that **C/C++, being compiled languages, allow declarations to appear at compile time without their definitions**! Why not demand the answer right away? What a hassle.
 
-Think about it calmly for a second. Say I ask you to drop a letter off at the post office. You obviously would not interrupt me with "shut up buddy, first carry the post office over here so I can see the letter and then I will deliver it for you." Far more likely, you would picture an imaginary post office in your head — "all right, I need to go to a place called the post office to drop off a letter." You would then naturally go look for it somewhere else. It is the exact same idea here. We carve out the unresolved symbols and we manage and promise them ourselves — they will show up where they are supposed to. **That is your responsibility, not the compiler's.** With that, we can keep digging:
+Think about it calmly, with an example. I ask you to deliver a letter at the post office. You certainly wouldn't interrupt me with "Shut up, buddy — first carry the post office over here so I can see the mail, then I'll deliver it for you." Rather, you would draw an imagined post office in your head: "Right, I need to go to a place called the post office and get a letter delivered." You would naturally go looking for it elsewhere. It is exactly the same reasoning. We leave the pending symbols hanging, managing them ourselves and promising that they will appear in the right places — **that responsibility is yours, not the compiler's**. Very well, then we can continue our questioning:
 
-- So, besides handing over source code, can we hand over other forms of information?
+- So, besides providing source code, could we also provide information in some other form?
 
-Ooh, nice catch. If you looked carefully at what I did just now:
-
+Hey! Sharp observation. If you looked closely at this sequence of mine:
 
 ```cpp
 
@@ -435,84 +429,84 @@ Ooh, nice catch. If you looked carefully at what I did just now:
 
 ```
 
-Did you notice that the linking step has, basically, nothing to do with the source files anymore? After all, we look for undefined symbols in the relocatable files (`*.o`). So could we, ahead of time, prepare a whole bunch of relocatable files plus a set of symbol declaration files, and then when we program we would not have to keep reinventing the wheel — we could just **at programming time use those declaration files to tell the compiler "I promise these symbols exist,"** at compile time **produce our own relocatable files by compiling,** and then **at link time combine those pre-prepared relocatable files with our own relocatable files into an executable?**
+Have you noticed that our linking step seems to have nothing to do with source files at all? After all, we search for undefined symbols in relocatable files (*.o). So could we prepare, well in advance, a whole set of relocatable files plus a set of symbol declaration files, and then stop reinventing the wheel when we program — directly **using those declaration files while coding to tell the compiler "I vouch that these symbols exist"**, **compiling to produce our own relocatable files**, and then **combining those long-prepared relocatable files with our own at link time to form an executable**?
 
-Congratulations! You just reinvented the concepts of libraries and interface-based programming! Now you know what header files are for! They are a set of symbol declaration files! And those thousands of relocatable files — instead of leaving them scattered around, let's **bundle them up into a library**, shall we? Of course! And with that you have invented history's **famous static library**. I am a little excited, but I need to lay the concepts out cleanly:
+Congratulations! You have just reinvented the concepts of libraries and interface programming! Now you know what headers are for! They are exactly that set of symbol declaration files! And those thousands upon thousands of relocatable files — instead of leaving them scattered about, shall we **gather them up into a library**? Of course we can! What you have just invented is the historically **famous static library**. Slightly excited here, but I need to tidy up the concepts we have put forward:
 
-- Header files: i.e. symbol declaration files, **containing the declarations of symbols whose existence we vouch for.**
-- Static library: the concrete definitions of those symbols (all of them, or some of them — the unresolved ones might depend on other libraries, fun, right?)
+- Headers: the symbol declaration files, **holding the declarations for symbols whose existence we vouch for**
+- Static libraries: the actual definitions of these symbols (all of them, or only some — the symbols left unresolved may depend on other libraries, fun, right?)
 
-So what I am saying is — the linker can also link libraries. I did not say static library specifically. There are dynamic libraries too. Let's do static first.
+So here is my point — the linker can also link libraries. And no, I didn't say static libraries only; there are dynamic ones too. Let's do static ones first.
 
-## Static libraries: our symbol library
+## Static Libraries: Our Symbol Library
 
-We can use `ar` (on Linux or UNIX systems) or the `LIB` tool to gather all the relocatable files into a static library.
+We can use ar (on Linux or UNIX systems) or the LIB tool to gather all our relocatable files into a static library.
 
-> A quick word on the details:
+> Some details, quickly:
 >
-> - On **UNIX** systems, the command used to produce a static library is usually **`ar`**, and the resulting library file usually carries the **`.a`** extension. These library files typically also take **"lib"** as a prefix, and when handed to the linker you use the **`-l`** option followed by the name of the library (without the prefix and the extension). For example, **`-lfred`** would select the **`libfred.a`** file. (Historically, static libraries also needed a program called **`ranlib`** to build a symbol index at the start of the library. These days, **`ar`** usually does this work itself.)
-> - On **Windows**, static libraries carry the **`.LIB`** extension and are produced by the **`LIB`** tool. This can get confusing though, because "**import libraries**" use the same extension, and an import library only contains a list of what is available in a given DLL.
+> - On **UNIX** systems, the command used to produce a static library is usually **`ar`**, and the library files it produces usually carry the **`.a`** extension. These library files usually also take **"lib"** as a prefix and are passed to the linker with the **`"-l"`** option followed by the library's name (without the prefix or extension). For example, **`"-lfred"`** selects the file **`libfred.a`**. (Historically, static libraries also needed a program called **`ranlib`** to build a symbol index at the head of the library. These days, the **`ar`** tool usually does that job itself.)
+> - On **Windows** systems, static libraries have the **`.LIB`** extension and are produced by the **`LIB`** tool. But this can be confusing, because an "**import library**" also uses the same extension — an import library contains only a list of what is available inside some DLL
 
-For the link stage, when we hand the linker a static library, the linker at that point holds a table of not-yet-resolved symbols, dives into the static library, and pulls those symbols out one by one (for example, symbol A is missing, and it lives in `Obj1.o`, so we pull in all of `Obj1.o`), until we have resolved all the undefined-symbol problems.
+For the linking stage: when we hand the linker a static library, the linker holds a table of not-yet-adjudicated symbols, immerses itself in the static library, and picks those symbols out one by one (for example, symbol A is missing and it lives in Obj1.o — we then link all of Obj1.o in), until we have settled every undefined-symbol problem.
 
-Pay attention to the **granularity** of what gets pulled out of the library: if a definition for a particular symbol is needed, the **entire object file** that contains that symbol's definition gets pulled in. This means the process can be "one step forward, one step back" — a newly pulled-in object file might resolve an undefined reference, but it will very likely also bring a whole new set of its own undefined references for the linker to then resolve.
+Pay attention to the **granularity** of what gets extracted from the library: if the definition of one particular symbol is needed, the **entire object file** containing that definition gets included. This means the process can be "one step forward, one step back" — a newly added object file may resolve an undefined reference, but it may well also drag in a whole new set of undefined references of its own, left for the linker to resolve.
 
-[`Beginner's Guide to Linkers`](https://www.lurklurk.org/linkers/linkers.html) has an excellent example, which I will reproduce below for you to read.
+[`Beginner's Guide to Linkers`](https://www.lurklurk.org/linkers/linkers.html) has an excellent example; I'll place it below for you to read:
 
 Suppose we have the following object files, and the link line contains **`a.o`**, **`b.o`**, **`-lx`**, and **`-ly`**.
 
-| File               | **a.o**    | **b.o** | **libx.a**                             | **liby.a**                   |
-| ------------------ | ---------- | ------- | -------------------------------------- | ---------------------------- |
-| **Objects**        | a.o        | b.o     | x1.o, x2.o, x3.o                       | y1.o, y2.o, y3.o             |
-| **Definitions**    | a1, a2, a3 | b1, b2  | x11, x12, x13; x21, x22, x23; x31, x32 | y11, y12; y21, y22; y31, y32 |
-| **Undefined refs** | b2, x12    | a3, y22 | x23, y12; y11; y21                     | x31                          |
+| File | **a.o** | **b.o** | **libx.a** | **liby.a** |
+| ---- | ------- | ------- | ---------- | ---------- |
+| **Objects** | a.o | b.o | x1.o, x2.o, x3.o | y1.o, y2.o, y3.o |
+| **Definitions** | a1, a2, a3 | b1, b2 | x11, x12, x13; x21, x22, x23; x31, x32 | y11, y12; y21, y22; y31, y32 |
+| **Undefined references** | b2, x12 | a3, y22 | x23, y12; y11; y21 | x31 |
 
 1. **Processing `a.o` and `b.o`:**
    - The linker resolves the references to `b2` and `a3`.
-   - At this point, the undefined references left are **`x12`** and **`y22`**.
+   - At this point, the undefined references remaining are **`x12`** and **`y22`**.
 2. **Processing `libx.a`:**
-   - The linker checks the first library, `libx.a`, and finds it can pull in **`x1.o`** to satisfy the `x12` reference.
-   - However, pulling in `x1.o` also brings new undefined references `x23` and `y12`. (The undefined list is now: `y22`, `x23`, and `y12`.)
-   - The linker is still working through `libx.a`, so the `x23` reference is easily satisfied by pulling in **`x2.o`**.
-   - But that also adds `y11` to the undefined list. (The undefined list is now: `y22`, `y12`, and `y11`.)
+   - The linker examines the first library, `libx.a`, and finds it can pull in **`x1.o`** to satisfy the `x12` reference.
+   - Pulling in `x1.o`, however, also brings new undefined references `x23` and `y12`. (The undefined list is now `y22`, `x23`, and `y12`.)
+   - The linker is still working on `libx.a`, so the `x23` reference is easily satisfied by pulling in **`x2.o`**.
+   - But that also adds `y11` to the undefined list. (The undefined list is now `y22`, `y12`, and `y11`.)
    - No other object file in `libx.a` can resolve these remaining symbols, so the linker moves on to `liby.a`.
 3. **Processing `liby.a`:**
-   - Same flow — the linker will pull in **`y1.o`** and **`y2.o`**.
-   - Pulling in `y1.o` adds a reference to `y21`, but since `y2.o` is being pulled in anyway, that reference is easily resolved.
-   - The end result: all undefined references have been resolved, and some (not all) of the object files in the libraries have been included in the final executable.
+   - By a similar process, the linker pulls in **`y1.o`** and **`y2.o`**.
+   - Pulling in `y1.o` adds a reference to `y21`, but since `y2.o` was going to be pulled in anyway, that reference is easily resolved.
+   - The end result: all undefined references are resolved, and some — not all — of the object files in the libraries are included in the final executable.
 
-#### The importance of link order
+#### The Importance of Link Order
 
-Note that if (say) `b.o` also had a reference to `y32`, things would go differently.
+Note how the situation would differ if (for example) `b.o` also had a reference to `y32`.
 
-- The way `libx.a` links would stay the same.
-- When processing `liby.a`, the linker would also pull in **`y3.o`** to resolve `y32`.
-- Pulling in `y3.o` adds **`x31`** to the unresolved list.
-- By that point the linker has already **finished** processing `libx.a`, so it cannot find that symbol's definition (which lives in `x3.o`), and the **link fails**. This example cleanly shows why link order matters (`libx.a` before `liby.a`). In other words, the linker does not backtrack. When you link, you must lay out a clear, layered dependency among your symbols — strictly forward dependencies, no circular ones. Do not make trouble for yourself!
+- The linking of `libx.a` would work exactly as before.
+- While processing `liby.a`, the linker would also pull in **`y3.o`** to resolve `y32`.
+- Pulling in `y3.o` would add **`x31`** to the unresolved-symbol list.
+- At this point the linker has already **finished** processing `libx.a`, so it cannot find the definition of that symbol (which lives in `x3.o`), and the **link fails**. This example shows clearly how much link order (`libx.a` before `liby.a`) matters. In other words, the linker does not go back on its tracks; when you link, you must clearly arrange things so that the dependencies your symbols live in form strictly layered, progressively deeper dependencies rather than circular ones — don't make trouble for yourself!
 
-## Dynamic libraries / shared libraries
+## Dynamic Libraries / Shared Libraries
 
-For now you can simply think of it as a dynamic library. Strictly speaking, the two are slightly different, but in an introduction being that rigorous right out of the gate would just scare people off.
+For now, just read them as "dynamic libraries"; to be perfectly rigorous, the two terms differ slightly, but in an introduction, piling on that much strictness at once would only scare people away.
 
-Dynamic libraries exist mostly to fix one obvious flaw of static libraries — every executable carries its own copy of the same code. If every executable contained a copy of functions like `printf` and `fopen`, that would eat a huge amount of disk space for no good reason.
+Dynamic libraries exist mostly to fix an obvious defect of static libraries — every executable owning a copy of the same code. If every executable contained copies of functions like printf and fopen, that would occupy heaps of unnecessary disk space.
 
-> You can run a fun experiment: statically link the C library and see how big it gets. Look up the exact command yourself; on my machine the result was several hundred MB.
+> You can run a fun experiment: statically link the C library and see how big it gets. Please look up the exact command yourself — my result was several hundred MB.
 
-Of course, you might say — I have money, I can just throw SSDs at it. That is not the worst part. The worst part is this: if the provider's code has a bug, you are cooked — all of that code is hard-baked into the executable, and you cannot use that executable at all — not until somebody else waits a few months, finishes recompiling, and hands you a new one!
+Of course, you say — I've got money, SSDs are trivial to add, so that's not the worst of it. The worst part is: if the provider's code has a bug, you are done for — all of that code is hard-baked into the executable, and you simply cannot use this executable — until someone else has spent months building a fixed one for you!
 
-To solve these painful problems, shared libraries / dynamic libraries showed up (usually denoted with the `.so` extension, `.dll` on Windows, `.dylib` on Mac OS X). At this point the linker takes an "IOU" approach and defers payment of the IOU to the moment the program actually runs. The bottom line: if the linker sees that a symbol's definition lives in a shared library, it will not include that symbol's definition in the final executable. Instead, the linker records, inside the executable, the name of the symbol and which library it is supposed to come from.
+To solve these troublesome problems, shared libraries / dynamic libraries appeared (usually indicated by the .so extension; .dll on Windows machines, .dylib on Mac OS X). At this point, the linker takes an "IOU" approach and defers payment of those IOUs to the moment the program actually runs. Fundamentally: if the linker finds that a symbol's definition lives in a shared library, it will not include that symbol's definition in the final executable. Instead, the linker records in the executable the symbol's name and which library it should come from.
 
-When the program runs, the OS arranges for the remaining linking work to be done "just in time" so the program can run. Before `main` runs, a smaller version of the linker (usually called `ld.so`) checks those "IOUs" and immediately finishes the last phase of linking — pulling in the library code and wiring everything together. That means none of the executables has a copy of the `printf` code. If a new, fixed version of `printf` becomes available, you just swap in the new `libc.so` — and the next time any program runs, it gets picked up.
+When the program runs, the operating system arranges for this remaining linking to be finished "just in time" for the program to run. Before the main function runs, a smaller version of the linker (usually called ld.so) inspects those "IOUs" and immediately completes the final stage of linking — pulling in library code and connecting all the code together. This means no executable has a copy of the printf code. If a new, fixed version of printf is available, changing libc.so is all it takes to plug it in — the next time any program runs, it will be picked up.
 
-There is one more major way shared libraries differ from static libraries, and it shows up in the granularity of linking. If you pull a particular symbol (say `printf` from `libc.so`) out of a particular shared library, the **entire** shared library gets mapped into the program's address space. This is drastically different from the static library behavior, where only the specific object that contains the undefined symbol gets pulled out.
+Shared libraries also behave in one other major way differently from static libraries, and it shows in the granularity of linking. If a specific symbol is taken from a specific shared library (printf from libc.so, say), the entire shared library gets mapped into the program's address space. This is drastically different from the behavior of static libraries, where only the specific objects containing the undefined symbols are extracted.
 
-We will leave shared libraries at that for now. I have on hand a nearly-300-page book, *Advanced C/C++ Compiling Techniques*, that is dedicated entirely to dynamic / shared library technology. That alone tells you how complicated this topic is. We will get into it carefully in later posts. For the introduction, that is enough.
+That's all we'll say about shared libraries for now. I have on hand a nearly-300-page book, *Advanced C/C++ Compiling*, devoted entirely to dynamic/shared library technology — enough to show how complicated the topic is. We'll talk it over carefully in later articles. For the introduction, we stop here.
 
-## Other topics: what about C++?
+## One More Topic: What About C++
 
-#### C++ name mangling
+#### Name Mangling in C++
 
-Back to this `usage.cpp`:
+Back to this usage.cpp:
 
 ```cpp
 // in usage usage.cpp
@@ -527,8 +521,7 @@ int main() {
 
 ```
 
-When you use the `int_max(int a, int b)` function inside the C++ file **`usage.cpp`**, the C++ compiler (`g++`) does not simply map the function name to `int_max` the way a C compiler would. To support features C does not have — **function overloading**, **namespaces**, **class member functions**, and so on — the C++ compiler performs a complex encoding of the function name from the source code. This process is called **name mangling**.
-
+When you use the `int_max(int a, int b)` function in the C++ file **`usage.cpp`**, the C++ compiler (`g++`) will not simply map the function name to `int_max` the way a C compiler does. To support features C lacks — **function overloading**, **namespaces**, **class member functions**, and so on — the C++ compiler performs elaborate encoding of the function names in the source code, a process called **name mangling**.
 
 ```cpp
 
@@ -536,14 +529,13 @@ int int_max(int a, int b);
 
 ```
 
-When the `g++` compiler produces the **`usage.o`** object file, it expects the linker to find a mangled symbol — for example, in a GCC/Linux environment it might look for something like **`_Z7int_maxii`** (the exact mangling varies by compiler and platform, but it is **definitely not** a plain `int_max`).
+When the `g++` compiler generates the object file **`usage.o`**, it expects the linker to find a mangled symbol — for example, under GCC/Linux it may look for a symbol like **`_Z7int_maxii`** (the exact mangling varies by compiler and platform, but it is **definitely not** the plain `int_max`).
 
-#### The symbol name in a C library
+#### Symbol Names in C Libraries
 
-The catch is that the static library **`libutils.a`** was produced by a **C compiler** (usually `gcc` or `cc`) compiling **`lib.c`**. The C compiler **does not perform name mangling**. So inside **`libutils.a`**, the symbol name for the `int_max` function is simply **`int_max`** (or with an underscore prefix, like `_int_max`).
+The problem is that the static library **`libutils.a`** was produced by the **C compiler** (usually `gcc` or `cc`) compiling the **`lib.c`** file. The C compiler **does not perform name mangling**. So in **`libutils.a`**, the symbol name of the `int_max` function is simply **`int_max`** (or with an underscore prefix, like `_int_max`).
 
-You can already see the problem coming:
-
+You can already see what the problem below will be:
 
 ```cpp
 
@@ -551,34 +543,34 @@ g++ usage.cpp -L. -lutils -o usage
 
 ```
 
-1. **`g++`** compiles `usage.cpp` and produces `usage.o`, which contains an **undefined reference** to the **mangled name** (e.g. `_Z7int_maxii`).
-2. The linker (`ld`) gets to work, looks in `usage.o` for `int_max`, but only finds a need for `_Z7int_maxii`.
-3. The linker looks inside **`libutils.a`** for `_Z7int_maxii`, but the symbol in the library is **`int_max`**.
-4. The linker cannot find a matching symbol, so it reports the error: `undefined reference to 'int_max(int, int)'` (note: the error message shows the C++-style function signature, but what the linker is actually hunting for is its mangled version).
+1. **`g++`** compiles `usage.cpp`, producing `usage.o`, which contains an **undefined reference** to the **mangled name** (for example `_Z7int_maxii`).
+2. The linker (`ld`) gets to work, searching `usage.o` for `int_max`, but finds only the need for `_Z7int_maxii`.
+3. The linker searches **`libutils.a`** for `_Z7int_maxii`, but the symbol that exists in the library is **`int_max`**.
+4. The linker cannot find a matching symbol, so it reports the error: `undefined reference to 'int_max(int, int)'` (note: the error message shows the C++-style function signature, but what the linker actually searched for is its mangled version).
 
-#### The fix: use `extern "C"`
+#### The Fix: Using `extern "C"`
 
-To fix this you need to tell the C++ compiler: **"Hey, this function was compiled by a C compiler, do not mangle its name!"** All you have to do is wrap the **function declaration** in the C++ file with the **`extern "C"`** linkage specifier:
+To solve this problem, you need to tell the C++ compiler: **"Hey, this function was compiled by a C compiler — don't mangle its name!"** You only need to apply the **`extern "C"`** linkage specifier around the **function declaration** in your C++ file:
 
 ```cpp
 // in usage usage.cpp
 
 #include <iostream>
 
-// Use extern "C" to tell the C++ compiler that this function's symbol name
-// should follow C rules — no mangling, look up plain 'int_max' directly.
+// Use extern "C" to tell the C++ compiler to treat this function's symbol name the C way
+// i.e., no name mangling — look up 'int_max' directly
 extern "C" int int_max(int a, int b);
 
 int main() {
     int a = 1, b = 2;
     std::cout << "max in (" << a << ", " << b << "): " << int_max(a, b) << "\n";
-    return 0; // added the return statement
+    return 0; // add the return statement
 }
 
 ```
 
-Recompile and link, and the program runs successfully, because now the symbol referenced in `usage.o` is the plain `int_max`, which matches what `libutils.a` provides.
+Recompile and link, and the program will run successfully, because the symbol referenced in `usage.o` is now the plain `int_max`, matching the symbol provided in `libutils.a`.
 
-## A modern CMake perspective
+## The Modern CMake Perspective
 
-All this hand-rolled `gcc -c`, `ar rcs`, `-l`/`-L`, `extern "C"`, `-fvisibility` work has, in today's projects, basically been taken over by CMake. You write `add_library(utils STATIC lib.c)` and CMake automatically calls `ar` to pack it into `libutils.a`; `target_link_libraries(myapp PRIVATE utils)` takes over the assembly of `-lutils` and `-L`, and it also works out the correct link order from the dependency topology — that "the linker does not backtrack" rule from earlier, CMake has lined it up for you. Mixing C and C++ is no problem either: set `set_target_properties(utils PROPERTIES POSITION_INDEPENDENT_CODE ON)` on the C target, or just `add_library(utils SHARED ...)` and let CMake turn on `-fPIC` by default, and the C++ side can link against it. Symbol visibility goes to `CXX_VISIBILITY_PRESET hidden` (equivalent to a global `-fvisibility=hidden`), and you only let the interfaces you genuinely want to export out with `__attribute__((visibility("default")))`. The runtime lookup path for dynamic libraries graduates from a hand-written `LD_LIBRARY_PATH` to `CMAKE_INSTALL_RPATH` paired with `$ORIGIN`, so the `.so` travels along with the executable and deployment no longer leans on tweaking environment variables. In other words, not one of the underlying mechanisms this post talks about has gone away — they have just been wrapped by the build system into a single line of declarative config.
+All this handiwork — `gcc -c`, `ar rcs`, `-l`/`-L`, `extern "C"`, `-fvisibility` — has in today's projects largely been taken over by CMake. You write `add_library(utils STATIC lib.c)`, and CMake automatically invokes `ar` to pack `libutils.a`; `target_link_libraries(myapp PRIVATE utils)` takes over assembling `-lutils` and `-L`, and works out the correct link order from the dependency topology — the "linker never backtracks" iron law from earlier, CMake has it sorted for you. Mixing C and C++ is no problem either: set `set_target_properties(utils PROPERTIES POSITION_INDEPENDENT_CODE ON)` on the C target, or simply use `add_library(utils SHARED ...)` and let CMake turn on `-fPIC` by default, and the C++ side can link against it. Symbol visibility goes to `CXX_VISIBILITY_PRESET hidden` (equivalent to a global `-fvisibility=hidden`), with only the interfaces you genuinely want to export exposed via `__attribute__((visibility("default")))`. The runtime search path for dynamic libraries upgrades from a hand-written `LD_LIBRARY_PATH` to `CMAKE_INSTALL_RPATH` combined with `$ORIGIN`, so the `.so` travels with the executable and deployment no longer relies on tweaking environment variables. In other words, none of the underlying mechanics in this article has disappeared — the build system has simply wrapped them into a line of declarative configuration.

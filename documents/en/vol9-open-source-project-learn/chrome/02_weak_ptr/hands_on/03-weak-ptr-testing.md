@@ -3,17 +3,17 @@ chapter: 1
 cpp_standard:
 - 17
 - 20
-description: "WeakPtr's test strategy: design cases around six invariants, then quantify object size, allocation, and call cost against std::weak_ptr and real Chromium to see where the teaching version saves and what it gives up"
+description: "WeakPtr's test strategy: design cases around the six invariants, quantify object size, allocation, and call overhead, and weigh the trade-offs against std::weak_ptr and real Chromium"
 difficulty: advanced
 order: 3
 platform: host
 prerequisites:
-- weak_ptr design guide (II): step-by-step implementation
-- OnceCallback design guide (III): test strategy and performance
+- 'weak_ptr Design Guide (II): Step-by-Step Implementation'
+- 'once_callback Design Guide (III): test strategy and performance comparison'
 reading_time_minutes: 7
 related:
-- weak_ptr design guide (I): motivation, API, and the control block
-- WeakPtr hands-on (VI): tests and performance
+- 'weak_ptr Design Guide (I): motivation, API, and the control block'
+- 'WeakPtr hands-on (VI): tests and performance comparison'
 tags:
 - host
 - cpp-modern
@@ -22,26 +22,32 @@ tags:
 - weak_ptr
 - 测试
 - 优化
-title: "weak_ptr Design Guide (III): Test Strategy and Performance"
+title: "weak_ptr Design Guide (III): test strategy and performance comparison"
+translation:
+  source: documents/vol9-open-source-project-learn/chrome/02_weak_ptr/hands_on/03-weak-ptr-testing.md
+  source_hash: 9a647a5bd9efa338e1f76ced6d07e8164df0cb9d0bc1eed40050c7acfe7b3321
+  translated_at: '2026-09-26T01:58:06+00:00'
+  engine: anthropic
+  token_count: 3900
 ---
-# weak_ptr Design Guide (III): Test Strategy and Performance
+# weak_ptr Design Guide (III): test strategy and performance comparison
 
-We finished the implementation in the last piece, and honestly we weren't entirely at ease with it. Code that compiles is one thing; correct semantics is another. WeakPtr is exactly the kind of thing that "looks like it runs": you test a happy path, it goes green, and the real traps hide on the boundaries. UAF, destruction races, the source-object state after a move. This piece pins the six invariants we promised last time back into actual test cases, and then puts real numbers next to `std::weak_ptr` and real Chromium to see where the teaching version saves and what it sacrifices. The approach is the same one we took in [OnceCallback design guide (III)](../../01_once_callback/hands_on/03-once-callback-testing.md): invariants drive the cases, numbers do the talking, no hand-waving.
+We knocked out the implementation in the last piece, and honestly we did not feel all that reassured — code that compiles is one thing, whether the semantics are right is quite another. WeakPtr is exactly the kind of thing whose scariest failure mode is "looks like it runs": you test one happy path, it goes green, while the traps — UAF, destruction races, the moved-from state of the source object — all lurk on the boundaries. So in this piece we nail the six invariants promised last time back into tests, one by one, and while we are at it we line up real numbers against `std::weak_ptr` and real Chromium to see exactly where the teaching version saves and what it gives up. The approach runs straight through [once_callback Design Guide (III)](../../01_once_callback/hands_on/03-once-callback-testing.md): invariants drive the cases, the data does the talking, no hand-waving.
 
-## Six invariants into a test matrix
+## Six invariants → a test matrix
 
 | # | Invariant | Assertion that must hold |
 |---|---|---|
-| 1 | Basic usability | While the object is alive, `wp` is truthy and `get()` returns the real address |
-| 2 | Move semantics | After move, the source is empty (`operator bool == false`) |
-| 3 | Invalidated on demand | After `invalidate_weak_ptrs()`, every minted `wp.get()==nullptr` |
+| 1 | Basic usability | While the object is alive, `wp` tests live and `get()` returns the true address |
+| 2 | Move semantics | After the move, the source object is empty (`operator bool == false`) |
+| 3 | Invalidated after invalidate | After `invalidate_weak_ptrs()`, every minted `wp.get()==nullptr` |
 | 4 | CHECK-on-deref | Dereferencing an invalidated `wp` trips an assertion (debug assert / release CHECK) |
-| 5 | maybe_valid asymmetry | Negative is trusted (false ⇒ definitely invalidated), positive is not |
-| 6 | Factory destruction invalidates | After the factory destructs, all wp are invalid; the last member guards during member destruction |
+| 5 | maybe_valid asymmetry | Negative is trustworthy (false ⇒ certainly invalidated), positive is not |
+| 6 | Factory destruction invalidates | After the factory destructs, every wp is invalid; the last member guards the member-destruction window |
 
-## Key cases (Catch2 style)
+## Key test cases (Catch2 style)
 
-Six invariants sound abstract. On the ground they collapse to the boundaries that blow up the moment you get them wrong. We pick three that lock down the semantics hardest: collective invalidation through the shared Flag, `was_invalidated` separating invalidated from manually reset, and the destruction order of the last member. The runnable demos in `code/volumn_codes/vol9/full_tutorial_codes/chrome_design/` are `12` through `18`; wiring the Catch2 test target is left as an extension. For now, here is what the cases look like:
+Six invariants sound abstract; on the ground, testing them comes down to picking the boundaries that are guaranteed to blow up the moment you get them wrong. Here we pick the three that lock the semantics down hardest — collective invalidation through the shared Flag, `was_invalidated` telling invalidation apart from a manual reset, and the destruction order of the last member. What is currently runnable in the project is the handful of demo .cpp files numbered `12` through `18` under `code/volumn_codes/vol9/full_tutorial_codes/chrome_design/`; wiring in the Catch2 test target is left as an extension, so for now let us just look at what the cases look like:
 
 ```cpp
 // Platform: host | C++ Standard: C++20
@@ -64,36 +70,35 @@ TEST_CASE("was_invalidated vs reset", "[weak_ptr]") {
     Foo foo;  WeakPtrFactory<Foo> fac(&foo);
     auto wp_a = fac.get_weak_ptr();
     fac.invalidate_weak_ptrs();
-    REQUIRE(wp_a.was_invalidated());        // invalidated
+    REQUIRE(wp_a.was_invalidated());        // was invalidated
     auto wp_b = fac.get_weak_ptr();
     wp_b.reset();
-    REQUIRE_FALSE(wp_b.was_invalidated());  // manual reset is not invalidation
+    REQUIRE_FALSE(wp_b.was_invalidated());  // a manual reset does not count as invalidated
 }
 
-// invariant 6: last member guards during member destruction
+// invariant 6: the last member guards the member-destruction window
 struct Good {                                  // ✓ factory declared last
     std::vector<int> buf_;
     WeakPtrFactory<Good> fac_{this};
 };
-struct Bad {                                   // ✗ factory declared first → destructs last
+struct Bad {                                   // ✗ factory declared first → destructed last
     WeakPtrFactory<Bad> fac_{this};
     std::vector<int> buf_;
 };
 TEST_CASE("last-member idiom: destruction order", "[weak_ptr][.death]") {
-    // Good: fac_ destructs first → WeakPtr invalidates → buf_ destructs
-    // Bad: buf_ destructs first → fac_ destructs after → window where WeakPtr is still
-    //      valid (a dangling deref is possible)
-    // Verify with TSan/AddressSanitizer in an isolated death test that Good does not UAF
+    // Good: fac_ destructs first → WeakPtr goes invalid → only then does buf_ destruct
+    // Bad: buf_ destructs first → fac_ destructs later → in that window WeakPtr is still valid (dangling deref possible)
+    // Verify in an isolated death test with TSan/AddressSanitizer that Good has no UAF
 }
 ```
 
-All three stare at semantic boundaries, not API surface. The shared-Flag case checks whether "one invalidate, everyone drops" actually holds. The `was_invalidated` case is finer: a manual `reset()` should not count as invalidation, and we deliberately contrast `wp_b` with `wp_a` so the two flavors of "became empty" don't blur together. The last-member case is the destruction-order crux, and we treat it on its own.
+All three keep their eyes on semantic boundaries, not on the API surface. The shared Flag's collective invalidation tests whether the promise "one invalidate and everybody dies together" actually holds. The `was_invalidated` case is finer still — a manual `reset()` must not count as having been invalidated, which is why, when writing it, we deliberately set `wp_b` against `wp_a`: we did not want the two flavors of "becoming empty" blurred into one. The last-member case is the vital point of destruction order, and we pull it out for its own discussion.
 
-Invariants 4 (CHECK-on-deref) and 6 (destruction order) have a snag: they abort. Drop them into an ordinary TESTCASE and the whole binary goes down with them. So they have to be isolated as death tests that crash in a child process. This is the same trick 01-6 used for OnceCallback's single-consumption assertion; we already walked through it there.
+Invariants 4 (CHECK-on-deref) and 6 (destruction order) share one nuisance: they abort. Run them straight inside an ordinary TEST_CASE and the whole binary goes down with them. So they have to be isolated as death tests that crash in a subprocess — the same routine 01-6 used for OnceCallback's consume-once assertion, and we already walked that road in that piece.
 
 ## Performance: object size
 
-Start with the most direct question: how many bytes does a `WeakPtr<T>` actually cost? We pin it with `static_assert`; if it doesn't compile, it's wrong:
+Start with the most tangible number — how many bytes does a `WeakPtr<T>` actually eat? We pin it down with a `static_assert`: if it does not compile, it is wrong:
 
 ```cpp
 static_assert(sizeof(WeakPtr<Foo>) == sizeof(void*) * 2);   // 16 bytes (x86-64)
@@ -104,24 +109,24 @@ static_assert(sizeof(WeakPtr<Foo>) == sizeof(void*) * 2);   // 16 bytes (x86-64)
 | `WeakPtr<T>` | 16 | `WeakReference` (scoped_refptr, 1 ptr) + `T*` (1 ptr) |
 | `std::weak_ptr<T>` | 16 | object pointer + control block pointer |
 
-The sizeof comes out equal, and we were a little surprised at first. `std::weak_ptr` has a reputation; we expected it to be tighter. But once you think about it the symmetry is obvious: both are two pointers, one to the object and one to the control block or Flag, structurally identical. The real gap is in allocation behavior (table below), not size.
+When the sizeofs printed out the same we were mildly surprised at first — `std::weak_ptr` has a famous name, and we had expected it to be tighter. But think it through once more and it lines up: both sides carry two pointers, one to the object and one to the control block / Flag, so structurally they are symmetric. The real difference is in allocation behavior (see the table below), not in size.
 
-There's also a gain `sizeof` can't show. `TRIVIAL_ABI` lets WeakPtr travel entirely in registers when passed by value (two registers is enough), which `std::weak_ptr` cannot do. That's an ABI-layer effect a benchmark won't necessarily catch, but on a hot path it saves real stack traffic.
+And there is one gain `sizeof` cannot show: `TRIVIAL_ABI` lets a WeakPtr passed by value ride entirely in registers (two registers are enough), which `std::weak_ptr` cannot do. This is an ABI-level affair that a benchmark will not necessarily capture, but on hot paths it genuinely saves stack traffic.
 
 ## Performance: allocation and calls
 
-Same size, and the real gap opens up in allocation count and liveness-check cost. We lined the two up side by side:
+With size tied, what really pulls the two apart is allocation count and liveness-check overhead. We lined the two up item by item:
 
 | Dimension | `std::weak_ptr` | `WeakPtr` |
 |---|---|---|
-| Pointed-at object allocation | `shared_ptr(new T)` 2 allocs; `make_shared` 1 but fuses the memory | Not forced: Flag is 1 intrusive alloc + the object allocates its own way |
-| Liveness check cost | `lock()`: atomic read of strong count + if alive, inc + build a temporary shared_ptr | `get()`: 1 atomic acquire-load, returns a raw pointer |
-| Cross-sequence deref | `lock()` is thread-safe | Same-sequence only (contract + DCHECK) |
-| Batch invalidation | None | **One invalidate drops all** (shared Flag) |
+| Pointee allocation | `shared_ptr(new T)`: 2 allocations; `make_shared`: 1, but object and control block are fused into one allocation | Not imposed: 1 intrusive allocation for the Flag + the object allocated its own way |
+| Liveness-check overhead | `lock()`: atomic read of the strong count + inc if alive + construct a temporary shared_ptr | `get()`: 1 atomic acquire-load, returns a raw pointer |
+| Cross-sequence deref | `lock()` is thread-safe | Same sequence required (contract + DCHECK) |
+| Bulk invalidation | None | **one invalidate invalidates them all** (shared Flag) |
 
-The row worth sitting with is the liveness-check cost. `get()` is lighter than `lock()` for a real reason, not by luck. `lock()` has to atomically read the strong count, increment it if the object is alive, and then hand you back a temporary `shared_ptr` (which has to decrement again on the way out). That's several atomic round trips. `get()` is a single acquire-load that returns a raw pointer and is done. The price is real too: what you get back is a raw pointer, nobody synchronizes for you, and the "same sequence" contract is what backs it up. We think the trade is worth it. The contract is enforced by a DCHECK in debug, so a real violation blows up during development instead of leaking to production.
+The row most worth chewing on in that table is the liveness-check overhead. That `get()` is lighter than `lock()` is no coincidence — `lock()` must first atomically read the strong count, inc it once more after confirming the object is alive, and finally hand you a temporary `shared_ptr` (which then has to dec back down on the way out): several back-and-forth trips of atomic traffic. `get()` is one acquire-load returning a raw pointer, done. Of course there is a price: what comes back is a raw pointer, nobody manages synchronization for you, and the "same sequence" contract is what catches the fallout. We consider that a good bargain — the contract is what DCHECKs enforce in debug builds, so a genuine violation detonates during development instead of riding into production.
 
-## vs real Chromium: teaching-version tradeoffs
+## vs real Chromium: the teaching version's trade-offs
 
 | Dimension | Chromium | Teaching version |
 |---|---|---|
@@ -133,13 +138,13 @@ The row worth sitting with is the liveness-check cost. `get()` is lighter than `
 | `InvalidateAndDoom` | Full | Kept |
 | `BindToCurrentSequence` | Full | Omitted |
 
-The tradeoff logic for the teaching version goes like this. Trim what's peripheral: `SafeRef`, `BindToCurrentSequence`, and friends get cut; sequence checking stands in with a thread id. But the core mechanism stays untouched. Refcounted Flag, the acquire/release pairing, the sequence contract, compile-time weak dispatch stay exactly as they should be. The reasoning is simple. The periphery is engineering convenience; the core is the correctness load-bearing wall. Cutting the periphery makes the thing awkward to use. Cutting the core means it isn't WeakPtr anymore.
+Our trade-off logic for the teaching version went like this: save whatever is peripheral — `SafeRef`, `BindToCurrentSequence`, and the like got cut, and sequence checking is faked with a thread id — but the core mechanisms did not move an inch: the refcounted Flag, the acquire/release pairing, the sequence contract, and compile-time weak dispatch stay exactly what they should be. The reasoning is simple: the periphery is engineering convenience, while the core is where correctness lives. Cut the periphery and at worst the thing is awkward to use; cut the core and it is no longer WeakPtr.
 
-That closes the design, implementation, and verification trilogy for the WeakPtr component. Looking back, it's a sibling piece to OnceCallback: the cancellation token we threw in for convenience back in 01-4 has its industrial-strength answer in this WeakPtr system, and the loop is now closed.
+With this, the three pieces on the WeakPtr component — design, implementation, and verification — are complete. Looking back, it and OnceCallback form a pair of sister series: the cancellation token we tossed out for convenience back in 01-4 finds its industrial-grade answer in this WeakPtr system, and the loop has now closed.
 
 ## References
 
 - [Chromium `base/memory/weak_ptr_unittest.cc`](https://source.chromium.org/chromium/chromium/src/+/main:base/memory/weak_ptr_unittest.cc)
 - [Catch2 documentation](https://github.com/catchorg/Catch2/tree/devel/docs)
-- [weak_ptr design guide (I): motivation, API, and the control block](./01-weak-ptr-design.md)
-- [OnceCallback design guide (III): test strategy and performance](../../01_once_callback/hands_on/03-once-callback-testing.md)
+- [weak_ptr Design Guide (I): motivation, API, and the control block](./01-weak-ptr-design.md)
+- [once_callback Design Guide (III): test strategy and performance comparison](../../01_once_callback/hands_on/03-once-callback-testing.md)

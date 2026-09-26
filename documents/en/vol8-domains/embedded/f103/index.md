@@ -1,22 +1,28 @@
 ---
 title: "STM32F103 + Renode"
-description: "Each station puts modern C++ to work on one peripheral, simulator first — a Blue Pill is nice to have, never required"
+description: "Each station puts modern C++ to work on one peripheral, with the Renode simulator going first so you can follow along without a board; disassembly is in charge of proving zero overhead"
 platform: stm32f1
 tags:
   - cpp-modern
   - intermediate
   - stm32f1
+translation:
+  source: documents/vol8-domains/embedded/f103/index.md
+  source_hash: 4da9532e584344d04389a707519032a99a57cc64cff17cdf910c617bce8a69fe
+  translated_at: '2026-09-26T04:23:24+00:00'
+  engine: anthropic
+  token_count: 600
 ---
 
 # STM32F103 + Renode
 
-Everything in this tutorial runs inside the Renode simulator. You don't need to buy any hardware — a computer with the toolchain installed is enough. If you happen to have a Blue Pill (STM32F103C8T6), the verification on an actual board at the end of each station is there for you to follow; it's a bonus, never a gate.
+This entire tutorial runs inside the Renode simulator. You don't need to buy any hardware — a computer with the toolchain installed is enough. If you have a Blue Pill (STM32F103C8T6) on hand, even better: the end-of-station verification on a real board is there for you to follow along. It's a nice bonus, and not having one won't block your way.
 
-Every station centers on one peripheral, and the core of it is modern C++ above the HAL: wheels already in the official library are used and explained, never rebuilt, while what the library lacks (debounce state machines, ring buffers, command parsing) gets written by hand. The LED station also takes you under the floor tiles for a look at the bare registers. The simulator verifies the behavior; disassembly verifies the zero cost.
+Each station centers on one peripheral, and the main storyline is writing the modern C++ application layer above the HAL: for wheels the library already provides, we only explain, never reinvent; for what the library lacks (debounce state machines, ring buffers, command parsing, and the like), we write it ourselves. The LED station also takes us down under the floor tiles to see what the bare registers and the official library are actually doing. The simulator is in charge of verifying functionality; disassembly is in charge of verifying zero overhead.
 
 ## Chapter Navigation
 
-Content is being published progressively in this order:
+Content is coming online progressively in this order — the Getting Started station is already up, and the rest will follow:
 
 <ChapterNav>
   <ChapterLink num="0" href="00-env-setup/">Getting Started: Why C++, and by what right?</ChapterLink>
