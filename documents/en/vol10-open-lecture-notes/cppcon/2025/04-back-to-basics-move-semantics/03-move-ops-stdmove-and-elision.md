@@ -245,7 +245,7 @@ The idea behind NRVO is very clever: when generating code, the compiler construc
 
 Starting with C++17, this optimization became **mandatory** in certain scenarios<RefLink :id="4" preview="C++ Standard, [class.copy.elision] — mandatory elision in certain contexts" />—the compiler must elide the copy, rather than "can elide but might choose not to." This is not an optional optimization, but a defined behavior of the language. Historical reasons keep the name "optimization," but in reality, it is a guarantee.
 
-For the complete technical details regarding NRVO and RVO, we have a dedicated article in Volume 2: [RVO and NRVO: Compiler Return Value Optimization](../../../../vol2-modern-features/ch00-move-semantics/03-rvo-nrvo.md).
+For the complete technical details regarding NRVO and RVO, we have a dedicated article in Volume 2: [RVO and NRVO: The Compiler's Return Value Optimization](../../../../vol2-modern-features/ch00-move-semantics/03-rvo-nrvo.md).
 
 ## Never Use std::move on Return Values
 
@@ -537,7 +537,7 @@ Across three articles, we started with the three copies involved in `swap`, navi
 
 The core of the move constructor is "destructive copy"—stealing the source object's resource pointer and then leaving the source object in a harmless state. Overload resolution automatically selects between copy and move; you don't need to make extra judgments at the call site. `std::move` doesn't move anything; it is just a cast to an rvalue reference that enables overload resolution to select the move version. An rvalue reference parameter is an lvalue inside a function—because it has a name—so you still need `std::move` to move from it. The `return` statement is an exception to the "named is lvalue" rule; the compiler automatically recognizes implicitly movable return expressions. NRVO (Named Return Value Optimization) allows the return value to reach the caller at zero cost—whereas `return std::move(temp)` inhibits NRVO, so never write it that way. A moved-from object is in a "valid but unspecified" state; the only safe operations are assigning a new value or destruction. Move constructors must be marked `noexcept`—otherwise `std::vector` will fall back to copying during reallocation, which can cause a massive performance difference.
 
-If you want to dive deeper into more applications of move semantics—perfect forwarding, universal references, reference collapsing—check out vol2's [Perfect Forwarding: Preserving Value Categories](../../../../vol2-modern-features/ch00-move-semantics/04-perfect-forwarding.md). Move semantics combined with perfect forwarding form the complete foundation of modern C++ template programming.
+If you want to dive deeper into more applications of move semantics—perfect forwarding, universal references, reference collapsing—check out vol2's [Perfect Forwarding: Preserving Value Categories Exactly](../../../../vol2-modern-features/ch00-move-semantics/04-perfect-forwarding.md). Move semantics combined with perfect forwarding form the complete foundation of modern C++ template programming.
 
 <ReferenceCard title="References">
   <ReferenceItem

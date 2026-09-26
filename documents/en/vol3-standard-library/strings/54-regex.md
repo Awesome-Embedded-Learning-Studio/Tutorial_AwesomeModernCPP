@@ -11,13 +11,11 @@ difficulty: intermediate
 order: 54
 platform: host
 prerequisites:
-- 'Deep Dive into std::string: SSO, COW, and resize_and_overwrite'
-- 'Algorithm Overview (Part 1): Non-modifying, Modifying, and Searching Operations,
-  and How to Choose the Right Algorithm for a Problem'
+- 'Deep Dive into string: SSO, COW, and resize_and_overwrite'
+- 'Algorithm Overview (Part 1): Non-Modifying, Modifying, and Searching — How to Pick the Right Algorithm for a Problem'
 reading_time_minutes: 16
 related:
-- 'Container Selection Guide: Choosing the Right Container Based on Operations, Memory,
-  and Invalidation Rules'
+- 'Container Selection Guide: Picking the Right One by Operations, Memory, and Invalidation Rules'
 - 'Iterator Adapters: Reverse, Insertion, and Stream — Teaching Old Iterators New
   Tricks'
 tags:

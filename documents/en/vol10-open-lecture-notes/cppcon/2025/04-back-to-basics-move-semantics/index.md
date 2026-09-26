@@ -37,7 +37,7 @@ translation:
 ## Notes
 
 <ChapterNav variant="sub">
-  <ChapterLink href="01-copy-cost-and-motivation">The Cost of Copying and the Motivation for Moving: From swap to MyString</ChapterLink>
-  <ChapterLink href="02-lvalue-rvalue-and-references">Lvalues, Rvalues, and References: The Type System Foundation of Move Semantics</ChapterLink>
+  <ChapterLink href="01-copy-cost-and-motivation">The Cost of Copying and the Motivation for Moving: From `swap` to `MyString`</ChapterLink>
+  <ChapterLink href="02-lvalue-rvalue-and-references">Lvalues, Rvalues, and References: The Type System Foundations of Move Semantics</ChapterLink>
   <ChapterLink href="03-move-ops-stdmove-and-elision">Move Operations, std::move, and Copy Elision</ChapterLink>
 </ChapterNav>

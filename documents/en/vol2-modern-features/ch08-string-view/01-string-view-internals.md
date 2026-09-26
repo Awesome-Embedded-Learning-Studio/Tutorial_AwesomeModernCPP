@@ -8,7 +8,7 @@ difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
-- 'Chapter 0: Rvalue References: From Copy to Move'
+- 'Rvalue References: From Copy to Move'
 reading_time_minutes: 18
 related:
 - string_view Performance Analysis

@@ -14,7 +14,7 @@ prerequisites:
 reading_time_minutes: 7
 related:
 - 'WeakPtr hands-on (I): motivation and API design'
-- 'WeakPtr Hands-on (VI): Tests and Performance Comparison'
+- 'WeakPtr hands-on (VI): tests and performance comparison'
 tags:
 - host
 - cpp-modern

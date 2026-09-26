@@ -13,7 +13,7 @@ prerequisites:
 - 'OnceCallback hands-on (I): motivation and API design'
 reading_time_minutes: 15
 related:
-- 'WeakPtr Hands-on (VI): Tests and Performance Comparison'
+- 'WeakPtr hands-on (VI): tests and performance comparison'
 - 'WeakPtr hands-on (I): motivation and API design'
 tags:
 - host

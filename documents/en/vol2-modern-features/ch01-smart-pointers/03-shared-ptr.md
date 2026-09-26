@@ -10,8 +10,8 @@ difficulty: intermediate
 order: 3
 platform: host
 prerequisites:
-- 'Chapter 1: Deep Dive into RAII: The Cornerstone of Resource Management'
-- 'Chapter 1: Deep Dive into unique_ptr: A Zero-Overhead Smart Pointer with Exclusive Ownership'
+- 'Deep Dive into RAII: The Cornerstone of Resource Management'
+- 'Deep Dive into unique_ptr: A Zero-Overhead Smart Pointer with Exclusive Ownership'
 reading_time_minutes: 25
 related:
 - 'weak_ptr and Circular References: Breaking the Ownership Deadlock'

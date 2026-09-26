@@ -11,11 +11,11 @@ order: 3
 platform: host
 prerequisites:
 - Dynamic Memory Management (new/delete and smart pointers)
-- Debugging Techniques for Concurrent Programs (ThreadSanitizer)
+- Debugging Techniques for Concurrent Programs
 reading_time_minutes: 24
 related:
 - Dynamic Memory Management (new/delete and smart pointers)
-- Debugging Techniques for Concurrent Programs (ThreadSanitizer)
+- Debugging Techniques for Concurrent Programs
 - C Dynamic Memory Management (malloc/free and valgrind)
 tags:
 - host

@@ -15,7 +15,7 @@ prerequisites:
 reading_time_minutes: 27
 related:
 - 'The ASan tool family and memory safety: shadow memory, Heartbleed, and sanitizer selection'
-- Debugging Techniques for Concurrent Programs (TSan / Helgrind in depth)
+- Debugging Techniques for Concurrent Programs
 - Dynamic Memory Management
 tags:
 - host

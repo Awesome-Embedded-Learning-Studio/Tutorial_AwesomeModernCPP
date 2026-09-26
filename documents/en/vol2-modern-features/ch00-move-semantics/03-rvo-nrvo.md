@@ -10,7 +10,7 @@ difficulty: intermediate
 order: 3
 platform: host
 prerequisites:
-- 'Chapter 0: Move Construction and Move Assignment'
+- Move Construction and Move Assignment
 reading_time_minutes: 19
 related:
 - 'Move Semantics in Practice: From STL to Custom Types'

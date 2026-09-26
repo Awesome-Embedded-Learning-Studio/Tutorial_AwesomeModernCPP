@@ -13,8 +13,8 @@ platform: host
 cpp_standard: [17, 20]
 reading_time_minutes: 16
 prerequisites:
-  - "vol7 ch00 01: What is CMake — the two-stage pipeline of a build system generator"
-  - "vol7 ch00 02: The target mental model — treat a target as an object, PUBLIC/PRIVATE/INTERFACE are usage requirements"
+  - What is CMake — the two-stage pipeline of a build system generator
+  - The target mental model — treat a target as an object, PUBLIC/PRIVATE/INTERFACE are usage requirements
 related:
   - "Cross-compilation and a Simple Guide to CMake"
   - "Guide to Common Compiler Options"

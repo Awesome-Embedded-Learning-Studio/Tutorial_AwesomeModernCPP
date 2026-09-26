@@ -18,10 +18,10 @@ In this topic, we build various non-owning pointer types from scratch. As we imp
 ## Chapter Contents
 
 <ChapterNav variant="sub">
-  <ChapterLink href="01-non-owning-pointer-overview">Non-owning pointer panorama: from T* to Borrowed to ObserverPtr</ChapterLink>
-  <ChapterLink href="02-unsafe-weakptr-ub">WeakPtr anti-pattern: the fatal trap of T* + raw Flag*</ChapterLink>
+  <ChapterLink href="01-non-owning-pointer-overview">Non-owning pointers panorama: From T* to Borrowed to ObserverPtr</ChapterLink>
+  <ChapterLink href="02-unsafe-weakptr-ub">WeakPtr Anti-pattern: The Fatal Trap of T* + raw Flag*</ChapterLink>
   <ChapterLink href="03-simple-weakptr">SimpleWeakPtr: safe improvements with T* + shared_ptr&lt;Flag&gt;</ChapterLink>
-  <ChapterLink href="04-chrome-weakptr">Chrome-like WeakPtr: reference-counted control blocks and WeakPtrFactory</ChapterLink>
-  <ChapterLink href="05-weakptr-comparison-and-async">std::weak_ptr comparison and async callback practice</ChapterLink>
-  <ChapterLink href="06-design-principles">Cross-thread safety, performance trade-offs, and design principles summary</ChapterLink>
+  <ChapterLink href="04-chrome-weakptr">Chrome-like WeakPtr: Reference Counting Control Block and WeakPtrFactory</ChapterLink>
+  <ChapterLink href="05-weakptr-comparison-and-async">`std::weak_ptr` Comparison and Asynchronous Callback Practice</ChapterLink>
+  <ChapterLink href="06-design-principles">Cross-Thread Safety, Performance Trade-offs, and Design Principles Summary</ChapterLink>
 </ChapterNav>

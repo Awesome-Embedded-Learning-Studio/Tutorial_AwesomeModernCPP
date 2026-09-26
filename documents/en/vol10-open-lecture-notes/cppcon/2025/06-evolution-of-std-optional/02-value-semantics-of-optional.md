@@ -19,7 +19,7 @@ tags:
 prerequisites:
   - "Why the optional reference took twenty years"
 related:
-  - 'optional: Making "Possibly None" a Type'
+  - 'optional: Making "Maybe Nothing" a Type'
   - "Why the optional reference took twenty years"
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/06-evolution-of-std-optional/02-value-semantics-of-optional.md

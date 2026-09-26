@@ -14,9 +14,9 @@ difficulty: intermediate
 platform: host
 reading_time_minutes: 7
 prerequisites:
-- std::weak_ptr 对比与异步回调实战
+- '`std::weak_ptr` Comparison and Asynchronous Callback Practice'
 related:
-- 卷二 · 第一章：智能指针与 RAII
+- Smart Pointers and RAII
 cpp_standard:
 - 17
 - 20

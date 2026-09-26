@@ -13,7 +13,7 @@ order: 44
 platform: host
 prerequisites:
 - 'Iterator Basics and Categories: The Glue Between Containers and Algorithms'
-- 'Deep Dive into std::vector: Three Pointers, Reallocation, and Iterator Invalidation'
+- 'Deep Dive into vector: Three Pointers, Reallocation, and Iterator Invalidation'
 reading_time_minutes: 14
 related:
 - 'Iterator Adapters: Reverse, Insertion, and Stream — Teaching Old Iterators New Tricks'

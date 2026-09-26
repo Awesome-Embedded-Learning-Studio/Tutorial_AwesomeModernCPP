@@ -7,7 +7,7 @@ description: 'Build a minimal coroutine scheduler and master the complete C++20 
 difficulty: advanced
 order: 5
 prerequisites:
-- 'Volume 5 ch06: Asynchronous I/O and Coroutines'
+- Asynchronous I/O and Coroutines
 - 'Lab 3: Production-style Thread Pool'
 reading_time_minutes: 14
 tags:

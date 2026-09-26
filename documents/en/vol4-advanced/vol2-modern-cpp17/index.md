@@ -25,7 +25,7 @@ The companion runnable examples live at [code/examples/vol4/vol2-modern-cpp17/](
   <ChapterLink href="05-type-safe-any">Capstone Project: A Type-Safe any</ChapterLink>
   <ChapterLink href="06-designated-initializers">Designated Initializers</ChapterLink>
   <ChapterLink href="07-ranges-basics-and-views">C++20 Ranges: Ranges and Views</ChapterLink>
-  <ChapterLink href="08-ranges-pipeline-in-practice">Pipeline Operations and Ranges in Practice</ChapterLink>
+  <ChapterLink href="08-ranges-pipeline-in-practice">C++20 Ranges: Pipelines in Practice</ChapterLink>
 </ChapterNav>
 
 Pieces 01 through 05 are the spine of the C++17 template line: 01 opens with `if constexpr`, making clear why compile-time branching can replace a stack of overloads; 02 takes the parameter-pack expansion mechanism apart (recursion, `if constexpr` termination, and fold expressions, three styles compared side by side); 03 covers perfect forwarding and reference collapsing — machinery no generic factory can dodge; 04 is CTAD, how the compiler back-deduces template arguments from constructor arguments; 05 ties the previous four together with a hand-written type-safe `any`. Pieces 06 through 08 are a few other modern features in this volume (designated initializers and Ranges); they are earlier in style and don't fully match how 01 through 05 are written — a cleanup left for later.

@@ -13,8 +13,8 @@ platform: host
 reading_time_minutes: 25
 cpp_standard: [17]
 prerequisites:
-  - 'Volume 5 ch00: Concurrent Thinking and Fundamentals'
-  - 'Volume 5 ch01: Thread Lifecycle and RAII'
+  - Concurrent Thinking and Fundamentals
+  - Thread Lifecycle and RAII
 related:
   - "Fundamental Concurrency Problems"
   - "std::thread Basics"

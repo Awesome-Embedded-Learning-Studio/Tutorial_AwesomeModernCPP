@@ -15,7 +15,7 @@ reading_time_minutes: 18
 prerequisites:
   - "The target mental model — treat a target as an object, PUBLIC/PRIVATE/INTERFACE are usage requirements"
 related:
-  - "CMakePresets.json — from the old cmake -D way to reproducible --preset"
+  - CMakePresets.json — from the old cmake -D way to reproducible --preset builds
   - "Cross-compilation and a Simple Guide to CMake"
 translation:
   source: documents/vol7-engineering/ch00-cmake-fundamentals/03-find-package-and-cxx-standard.md

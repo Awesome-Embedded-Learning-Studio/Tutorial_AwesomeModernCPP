@@ -19,8 +19,8 @@ related:
 - 'Deep Dive into vector: Three Pointers, Reallocation, and Iterator Invalidation'
 - 'deque, list, and forward_list: Three Alternatives to vector'
 - 'Deep Dive into map and set: Red-Black Trees, Heterogeneous Lookup, and Node Handles'
-- 'unordered_map and unordered_set Deep Dive: Hash Tables, Buckets, and Custom Hash'
-- 'span: Non-owning Contiguous View'
+- 'Deep Dive into unordered_map and unordered_set: Hash Tables, Buckets, and Custom Hashing'
+- 'span: A Non-owning Contiguous View'
 tags:
 - host
 - cpp-modern

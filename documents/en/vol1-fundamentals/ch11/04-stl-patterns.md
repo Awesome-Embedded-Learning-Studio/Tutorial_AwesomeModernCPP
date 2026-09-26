@@ -10,7 +10,7 @@ difficulty: beginner
 order: 4
 platform: host
 prerequisites:
-- First Look at the Algorithms Library
+- A First Look at the Algorithms Library
 reading_time_minutes: 19
 tags:
 - cpp-modern

@@ -14,8 +14,8 @@ platform: host
 reading_time_minutes: 9
 cpp_standard: [17, 20, 23]
 prerequisites:
-  - "Container Selection Guide: Choosing the Right Container Based on Operations, Memory, and Invalidation Rules"
-  - "Deep Dive into std::vector: Three Pointers, Reallocation, and Iterator Invalidation"
+  - 'Container Selection Guide: Picking the Right One by Operations, Memory, and Invalidation Rules'
+  - 'Deep Dive into vector: Three Pointers, Reallocation, and Iterator Invalidation'
 related:
   - "mini STL in Practice (Part 1): RawBuffer — Capacity, Not Objects"
   - "Capstone Project: A mini-STL Algorithm Library Constrained by Concepts"

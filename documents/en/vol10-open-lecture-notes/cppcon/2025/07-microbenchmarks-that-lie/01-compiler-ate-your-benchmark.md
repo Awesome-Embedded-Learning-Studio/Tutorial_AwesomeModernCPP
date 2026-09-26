@@ -17,7 +17,7 @@ tags:
   - intermediate
   - 优化
 related:
-  - "Noise You Can Tame, Bias Is the Nightmare"
+  - Noise You Can Suppress — Bias Is the Nightmare
   - "The Branch Predictor Is Helping You Cheat"
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/07-microbenchmarks-that-lie/01-compiler-ate-your-benchmark.md

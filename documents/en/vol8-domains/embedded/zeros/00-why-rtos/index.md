@@ -30,8 +30,8 @@ If you are arriving from the F103 series, you can already write bare-metal code 
 ## Articles in This Station
 
 <ChapterNav variant="sub">
-  <ChapterLink href="01-rtos-concept-map">From the Super Loop to an RTOS: why you need one, how to verify it</ChapterLink>
-  <ChapterLink href="02-bringup-and-linker-bans">Project Bring-up: from an empty repository to the first line of Renode output</ChapterLink>
+  <ChapterLink href="01-rtos-concept-map">From the Super Loop to an RTOS: Why We Need One, and How to Verify It</ChapterLink>
+  <ChapterLink href="02-bringup-and-linker-bans">Project Bring-up: From an Empty Repo to the First Line of Renode Output</ChapterLink>
 </ChapterNav>
 
 The first station, *The World Without a Heap*, is already live: head into [01-heapless-memory/](../01-heapless-memory/) and let's hand-roll the memory pool.

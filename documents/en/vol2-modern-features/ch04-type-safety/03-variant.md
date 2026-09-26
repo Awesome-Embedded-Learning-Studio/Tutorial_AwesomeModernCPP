@@ -8,8 +8,8 @@ difficulty: intermediate
 order: 3
 platform: host
 prerequisites:
-- 'Chapter 3: Lambda Basics: The Elegant Expression of Anonymous Functions'
-- 'Chapter 4: enum class and Scoped Enums'
+- 'Lambda Basics: The Elegant Expression of Anonymous Functions'
+- enum class and Scoped Enums
 reading_time_minutes: 13
 related:
 - "std::optional: Elegantly Expressing 'A Value May Be Absent'"

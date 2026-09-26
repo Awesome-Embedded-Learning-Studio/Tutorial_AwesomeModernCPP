@@ -10,7 +10,7 @@ order: 1
 platform: host
 prerequisites:
 - 'NoDestructor prerequisite (0): static storage duration, initialization, and destruction'
-- 'NoDestructor Prerequisite (I): placement new and aligned storage'
+- 'NoDestructor prerequisite (I): placement new and aligned storage'
 reading_time_minutes: 10
 related:
 - 'NoDestructor hands-on (II): the core implementation'

@@ -163,4 +163,4 @@ cmake -B build . && cmake --build build
 - Chromium `base/containers/vector_buffer.h` (this article's mirror, 179 lines)
 - [cppreference: placement new](https://en.cppreference.com/w/cpp/language/new)
 - [cppreference: `std::source_location`](https://en.cppreference.com/w/cpp/utility/source_location)
-- [Custom Allocators & PMR: Managing Memory Yourself](../../vol3-standard-library/containers/13-custom-allocators.md) (vol3, the conceptual layer of memory management)
+- [Custom Allocators and PMR: Managing Memory Yourself](../../vol3-standard-library/containers/13-custom-allocators.md) (vol3, the conceptual layer of memory management)

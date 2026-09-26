@@ -13,7 +13,7 @@ tags:
   - optional
   - 类型安全
 prerequisites:
-  - "Vol.1 ch04: Pointer Basics"
+  - Pointer Basics
 related:
   - "Use-After-Free: The Pointer Outlives the Memory"
 cpp_standard: [11, 17]

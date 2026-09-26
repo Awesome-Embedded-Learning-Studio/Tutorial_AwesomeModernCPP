@@ -8,8 +8,8 @@ difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- 'Chapter 10: Evolution of Error Handling: From Error Codes to Type Safety'
-- 'Chapter 4: std::optional: Elegantly Expressing ''A Value May Be Absent'''
+- 'Evolution of Error Handling: From Error Codes to Type Safety'
+- 'std::optional: Elegantly Expressing ''A Value May Be Absent'''
 reading_time_minutes: 10
 related:
 - 'std::expected<T, E>: Type-Safe Error Propagation'

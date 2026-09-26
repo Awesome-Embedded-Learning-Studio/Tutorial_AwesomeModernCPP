@@ -20,7 +20,7 @@ Error handling and runtime utilities: optional/variant/expected turn "maybe noth
   <ChapterLink href="63-any">any: Holds Any Type</ChapterLink>
   <ChapterLink href="64-expected">expected: Value or Error (C++23)</ChapterLink>
   <ChapterLink href="65-functional">functional: The Cost of std::function</ChapterLink>
-  <ChapterLink href="66-error-code">error_code: The Error Code System and Custom category</ChapterLink>
+  <ChapterLink href="66-error-code">error_code: The Error Code System and Custom Categories</ChapterLink>
   <ChapterLink href="67-stacktrace">stacktrace: C++23 Call Stack Capture</ChapterLink>
   <ChapterLink href="68-source-location">source_location: Compile-Time Code Location</ChapterLink>
 </ChapterNav>

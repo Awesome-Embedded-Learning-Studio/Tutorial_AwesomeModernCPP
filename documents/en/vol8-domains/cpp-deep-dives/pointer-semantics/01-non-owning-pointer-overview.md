@@ -10,11 +10,11 @@ difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
-- 卷二 · 第一章：RAII 深入理解
-- 卷二 · 第一章：weak_ptr 与循环引用
+- 'Deep Dive into RAII: The Cornerstone of Resource Management'
+- 'weak_ptr and Circular References: Breaking the Ownership Deadlock'
 reading_time_minutes: 13
 related:
-- WeakPtr 反模式：T* + raw Flag* 的致命陷阱
+- 'WeakPtr Anti-pattern: The Fatal Trap of T* + raw Flag*'
 tags:
 - host
 - cpp-modern

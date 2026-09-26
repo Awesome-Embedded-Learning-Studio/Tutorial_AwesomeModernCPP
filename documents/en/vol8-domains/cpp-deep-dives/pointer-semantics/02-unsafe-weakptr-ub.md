@@ -9,10 +9,10 @@ difficulty: advanced
 order: 2
 platform: host
 prerequisites:
-- 非拥有指针全景：从 T* 到 Borrowed 到 ObserverPtr
+- 'Non-owning pointers panorama: From T* to Borrowed to ObserverPtr'
 reading_time_minutes: 8
 related:
-- SimpleWeakPtr：T* + shared_ptr<Flag> 的安全改进
+- 'SimpleWeakPtr: A Safety Improvement over T* + shared_ptr<Flag>'
 tags:
 - host
 - cpp-modern

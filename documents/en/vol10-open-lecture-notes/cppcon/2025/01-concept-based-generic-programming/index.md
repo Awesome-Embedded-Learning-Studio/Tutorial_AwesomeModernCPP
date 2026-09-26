@@ -36,7 +36,7 @@ translation:
 
 <ChapterNav variant="sub">
   <ChapterLink href="01-type-safety-and-number-concept">Type Safety, Number Constraints, and Bounds Checking</ChapterLink>
-  <ChapterLink href="02-range-and-concept-composition">Ranges, Iterators, and Concept Composition</ChapterLink>
-  <ChapterLink href="03-syntax-advanced-concepts-and-generic-philosophy">Syntax Unification, Advanced Concepts, and Generic Philosophy</ChapterLink>
+  <ChapterLink href="02-range-and-concept-composition">Range, Iterators, and Concepts</ChapterLink>
+  <ChapterLink href="03-syntax-advanced-concepts-and-generic-philosophy">Syntax Consistency, Advanced Concepts, and Generic Philosophy</ChapterLink>
   <ChapterLink href="04-template-compilation-and-future">Template Compilation Model and Future Outlook</ChapterLink>
 </ChapterNav>

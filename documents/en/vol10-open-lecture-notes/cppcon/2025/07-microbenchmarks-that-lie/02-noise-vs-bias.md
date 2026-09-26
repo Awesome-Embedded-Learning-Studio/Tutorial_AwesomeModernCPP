@@ -17,7 +17,7 @@ tags:
   - intermediate
   - 优化
 related:
-  - "The Compiler Lied to You: The Number-One Microbenchmark Lie"
+  - 'The Compiler Lied to You: The #1 Microbenchmark Lie'
   - "The Branch Predictor Is Helping You Cheat"
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/07-microbenchmarks-that-lie/02-noise-vs-bias.md

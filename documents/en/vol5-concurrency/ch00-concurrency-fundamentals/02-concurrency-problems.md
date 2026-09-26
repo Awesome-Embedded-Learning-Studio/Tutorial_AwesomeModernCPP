@@ -12,8 +12,8 @@ prerequisites:
 - Why We Need Concurrency
 reading_time_minutes: 15
 related:
-- mutex and RAII Lock
-- atomic operation
+- mutex and RAII Locks
+- Atomic Operations
 tags:
 - host
 - cpp-modern

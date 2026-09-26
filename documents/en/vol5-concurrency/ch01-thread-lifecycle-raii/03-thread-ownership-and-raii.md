@@ -13,8 +13,8 @@ prerequisites:
 - Thread Arguments and Lifetime
 reading_time_minutes: 18
 related:
-- mutex and RAII Lock
-- jthread and Stop Token
+- mutex and RAII Locks
+- jthread and Stop Tokens
 tags:
 - host
 - cpp-modern

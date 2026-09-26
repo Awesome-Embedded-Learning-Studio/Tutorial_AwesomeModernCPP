@@ -16,7 +16,7 @@ related:
   - 'Singleton Pattern: From Comment-Only Constraints to Meyer''s Singleton'
   - 'Strategy Pattern: From a Heap of if/else to Compile-Time Swappable Policies'
 prerequisites:
-  - 'Chapter 6: Classes and Object-Oriented Programming'
+  - Classes and Object-Oriented Programming
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/19-chain-of-responsibility.md
   source_hash: 89365238cd48d1cc0e46a2f496ebfcc01e970a484dc84bef12c801e7c16d00e0

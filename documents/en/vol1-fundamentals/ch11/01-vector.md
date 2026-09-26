@@ -10,7 +10,7 @@ difficulty: beginner
 order: 1
 platform: host
 prerequisites:
-- 错误处理方式对比
+- Comparing Error Handling Approaches
 reading_time_minutes: 12
 tags:
 - cpp-modern

@@ -8,11 +8,11 @@ difficulty: intermediate
 order: 40
 platform: host
 prerequisites:
-- 'Deep Dive into std::vector: Three Pointers, Reallocation, and Iterator Invalidation'
-- 'array: A fixed-size aggregate container determined at compile time'
+- 'Deep Dive into vector: Three Pointers, Reallocation, and Iterator Invalidation'
+- 'array: An Aggregate Container with a Compile-Time Fixed Size'
 reading_time_minutes: 10
 related:
-- 'Container Selection Guide: Choosing the Right Container Based on Operations, Memory, and Invalidation Rules'
+- 'Container Selection Guide: Picking the Right One by Operations, Memory, and Invalidation Rules'
 tags:
 - host
 - cpp-modern

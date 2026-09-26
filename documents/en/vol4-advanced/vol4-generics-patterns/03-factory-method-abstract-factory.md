@@ -15,7 +15,7 @@ reading_time_minutes: 24
 related:
   - 'Singleton Pattern: From Comment-Only Constraints to Meyer''s Singleton'
 prerequisites:
-  - 'Chapter 6: Classes and Object-Oriented Programming'
+  - Classes and Object-Oriented Programming
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/03-factory-method-abstract-factory.md
   source_hash: 795e3cee99e366cfbb01b154001c32709243628fc8526e52fdc03f49181648d7

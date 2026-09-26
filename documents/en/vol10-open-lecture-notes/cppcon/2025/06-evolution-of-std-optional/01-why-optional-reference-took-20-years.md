@@ -17,9 +17,9 @@ tags:
   - intermediate
   - optional
 prerequisites:
-  - 'optional: Making "Possibly None" a Type'
+  - 'optional: Making "Maybe Nothing" a Type'
 related:
-  - 'optional: Making "Possibly None" a Type'
+  - 'optional: Making "Maybe Nothing" a Type'
   - "The Value-Semantics Foundation of std::optional"
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/06-evolution-of-std-optional/01-why-optional-reference-took-20-years.md

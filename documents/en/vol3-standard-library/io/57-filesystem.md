@@ -12,11 +12,11 @@ difficulty: intermediate
 order: 57
 platform: host
 prerequisites:
-- 'Deep Dive into std::string: SSO, COW, and resize_and_overwrite'
-- 'Iterator Basics and Categories: How Containers and Algorithms Interact'
+- 'Deep Dive into string: SSO, COW, and resize_and_overwrite'
+- 'Iterator Basics and Categories: The Glue Between Containers and Algorithms'
 reading_time_minutes: 16
 related:
-- 'Container Selection Guide: Choosing the Right Container Based on Operations, Memory, and Invalidation Rules'
+- 'Container Selection Guide: Picking the Right One by Operations, Memory, and Invalidation Rules'
 tags:
 - host
 - cpp-modern

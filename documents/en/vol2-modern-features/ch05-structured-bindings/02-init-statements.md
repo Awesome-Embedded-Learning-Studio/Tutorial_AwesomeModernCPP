@@ -7,7 +7,7 @@ difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- 'Chapter 5: Structured Bindings: Unpacking Multiple Values in One Line'
+- 'Structured Bindings: Unpacking Multiple Values in One Line'
 reading_time_minutes: 9
 related:
 - 'Deep Dive into RAII: The Cornerstone of Resource Management'

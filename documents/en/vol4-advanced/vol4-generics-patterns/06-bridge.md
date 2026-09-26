@@ -15,7 +15,7 @@ reading_time_minutes: 22
 related:
   - "Singleton Pattern: From Comment-Only Constraints to Meyer's Singleton"
 prerequisites:
-  - "Chapter 6: Classes and Object-Oriented Programming"
+  - Classes and Object-Oriented Programming
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/06-bridge.md
   source_hash: 9e5a5119662fddcb5a6df642968e8463ed36e5addc43602b3188f01d6b07e55e

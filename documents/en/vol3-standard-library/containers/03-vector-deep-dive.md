@@ -10,7 +10,7 @@ difficulty: intermediate
 order: 3
 platform: host
 prerequisites:
-- 'Volume One: std::vector Quick Start (size / capacity / push_back)'
+- std::vector Quick Start
 reading_time_minutes: 14
 tags:
 - host

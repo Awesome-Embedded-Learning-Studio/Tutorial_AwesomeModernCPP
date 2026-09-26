@@ -12,12 +12,12 @@ difficulty: intermediate
 order: 50
 platform: host
 prerequisites:
-- 'Deep Dive into std::string: SSO, COW, and resize_and_overwrite'
-- 'span: Non-owning Contiguous View'
+- 'Deep Dive into string: SSO, COW, and resize_and_overwrite'
+- 'span: A Non-owning Contiguous View'
 reading_time_minutes: 12
 related:
-- 'span: Non-owning Contiguous View'
-- 'Deep Dive into std::string: SSO, COW, and resize_and_overwrite'
+- 'span: A Non-owning Contiguous View'
+- 'Deep Dive into string: SSO, COW, and resize_and_overwrite'
 tags:
 - host
 - cpp-modern
@@ -401,4 +401,4 @@ One sentence to tell it from its sibling `span`: use `span<T>` for arbitrary, po
 - [cppreference: std::basic_string_view::contains (C++23)](https://en.cppreference.com/w/cpp/string/basic_string_view/contains) — `contains` and the `__cpp_lib_string_contains` feature-test macro
 - [P0123 `string_view` proposal family](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/n4618.pdf) — design motivations from before the C++17 landing
 - [P1989R2: Range constructor for `string_view`](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2020/p1989r2.html) — C++23 construction of `string_view` from a contiguous range
-- In this volume: [span: Non-owning Contiguous View](../containers/08-span.md) — the sibling piece on the same "non-owning view" mechanism, one for bytes and one for characters
+- In this volume: [span: A Non-owning Contiguous View](../containers/08-span.md) — the sibling piece on the same "non-owning view" mechanism, one for bytes and one for characters

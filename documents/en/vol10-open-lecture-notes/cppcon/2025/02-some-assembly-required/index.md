@@ -39,7 +39,7 @@ translation:
   <ChapterLink href="02-reading-assembly-and-registers-abi">Reading Assembly Across Architectures and Register ABI</ChapterLink>
   <ChapterLink href="03-compiler-explorer-and-ai-assisted">Compiler Explorer and AI Assistance</ChapterLink>
   <ChapterLink href="04-stl-and-generic-programming">The Essence of STL and Generic Programming</ChapterLink>
-  <ChapterLink href="05-boost-beman-and-standardization">Boost, Beman, and the C++ Standardization Path</ChapterLink>
+  <ChapterLink href="05-boost-beman-and-standardization">Boost, Beman, and the Path to C++ Standardization</ChapterLink>
   <ChapterLink href="06-toolchain-and-project-design">Compilers, Toolchains, and Project Design Baselines</ChapterLink>
   <ChapterLink href="07-wg21-standardization-and-assembly-philosophy">WG21 Standardization and Assembly Philosophy</ChapterLink>
 </ChapterNav>

@@ -6,7 +6,7 @@ description: Practice message-passing concurrency with the Channel or Actor mode
 difficulty: advanced
 order: 6
 prerequisites:
-- 'Volume 5 ch07: Actor Model and CSP'
+- Actor Model and CSP
 - 'Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives'
 - 'Lab 4: Coroutine Scheduler and Event Loop'
 reading_time_minutes: 10

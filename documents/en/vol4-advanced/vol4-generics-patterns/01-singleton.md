@@ -15,7 +15,7 @@ reading_time_minutes: 18
 related:
   - 'Factory Method and Abstract Factory: From a Single Switch to Creating a Family of Products'
 prerequisites:
-  - 'Chapter 6: Classes and Object-Oriented Programming'
+  - Classes and Object-Oriented Programming
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/01-singleton.md
   source_hash: 138f2f4f5f33eaa47850b552e5dd2ee87dbf4fb3bbf3b41ab9bbc1b85df46459

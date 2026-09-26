@@ -15,7 +15,7 @@ prerequisites:
 reading_time_minutes: 27
 related:
 - std::thread Basics
-- Atomic Operation Modes
+- Atomic Operation Patterns
 tags:
 - host
 - cpp-modern

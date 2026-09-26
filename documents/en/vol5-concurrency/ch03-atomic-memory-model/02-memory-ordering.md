@@ -15,7 +15,7 @@ prerequisites:
 reading_time_minutes: 16
 related:
 - Fences and Compiler Barriers
-- Atomic Operation Modes
+- Atomic Operation Patterns
 tags:
 - host
 - cpp-modern

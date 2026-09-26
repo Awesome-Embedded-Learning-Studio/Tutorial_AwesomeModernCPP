@@ -9,11 +9,11 @@ difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
-- 'Chapter 0: Move Construction and Move Assignment'
+- Move Construction and Move Assignment
 reading_time_minutes: 17
 related:
 - 'Deep Dive into unique_ptr: A Zero-Overhead Smart Pointer with Exclusive Ownership'
-- 'scope_guard and defer: Generic Scope Guard'
+- 'scope_guard and defer: A General-Purpose Scope Guard'
 tags:
 - host
 - cpp-modern

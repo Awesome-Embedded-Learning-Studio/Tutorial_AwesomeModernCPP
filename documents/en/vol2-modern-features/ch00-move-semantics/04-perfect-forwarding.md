@@ -13,8 +13,8 @@ platform: host
 cpp_standard: [11, 14, 17]
 reading_time_minutes: 18
 prerequisites:
-  - "Chapter 0: Rvalue References: From Copy to Move"
-  - "Chapter 0: Move Construction and Move Assignment"
+  - 'Rvalue References: From Copy to Move'
+  - Move Construction and Move Assignment
 related:
   - "Move Semantics in Practice: From STL to Custom Types"
 translation:

@@ -17,8 +17,8 @@ tags:
   - intermediate
   - 优化
 related:
-  - "Data Type Is Also a Cache Variable: Shrinking Types Isn't Always Faster"
-  - "A Faster Microbenchmark Doesn't Mean a Faster Program"
+  - 'Data Types Are a Cache Variable Too: Shrinking the Type Isn''t Always Faster'
+  - A Faster Microbenchmark Is Not a Faster Program
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/08-cache-friendly-cpp/04-writing-cache-friendly-code.md
   source_hash: 9cb280be5e89071e613a4693b8d588900ad7dde725365981029ebc6ff1ef811e

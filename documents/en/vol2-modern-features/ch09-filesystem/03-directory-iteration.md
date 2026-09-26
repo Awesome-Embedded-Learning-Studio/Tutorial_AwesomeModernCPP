@@ -7,8 +7,8 @@ difficulty: intermediate
 order: 3
 platform: host
 prerequisites:
-- 'Chapter 9: Path Operations: Cross-Platform Path Handling'
-- 'Chapter 9: File and Directory Operations'
+- 'Path Operations: Cross-Platform Path Handling'
+- File and Directory Operations
 reading_time_minutes: 13
 related:
 - 'Lambda Basics: The Elegant Expression of Anonymous Functions'

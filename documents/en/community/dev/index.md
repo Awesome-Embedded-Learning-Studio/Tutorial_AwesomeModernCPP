@@ -31,7 +31,7 @@ Want to know what's next for the project or what has been released? Here are two
 
 <ChapterNav variant="main">
   <ChapterLink num="1" href="01-iteration-cadence">Website Iteration Cadence</ChapterLink>
-  <ChapterLink num="2" href="02-repo-slimdown">Repo Slimdown & Branch Cleanup</ChapterLink>
+  <ChapterLink num="2" href="02-repo-slimdown">Repository Cleanup and Branch Management</ChapterLink>
 </ChapterNav>
 
 ## Usage Principles

@@ -12,7 +12,7 @@ prerequisites:
 - 'WeakPtr prerequisite (II): std::atomic and memory_order'
 reading_time_minutes: 11
 related:
-- 'WeakPtr Hands-on (IV): Sequence Affinity and Lazy Binding'
+- 'WeakPtr hands-on (IV): sequence affinity and lazy binding'
 tags:
 - host
 - cpp-modern

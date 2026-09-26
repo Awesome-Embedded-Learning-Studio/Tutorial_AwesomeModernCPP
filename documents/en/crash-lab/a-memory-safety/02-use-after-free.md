@@ -14,7 +14,7 @@ tags:
   - unique_ptr
   - shared_ptr
 prerequisites:
-  - "Vol.1 ch04: Pointer Basics"
+  - Pointer Basics
 related:
   - "Heap Buffer Overflow"
 cpp_standard: [11, 14]

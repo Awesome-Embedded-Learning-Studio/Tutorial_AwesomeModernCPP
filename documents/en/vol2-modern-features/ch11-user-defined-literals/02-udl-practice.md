@@ -8,8 +8,8 @@ difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- 'Chapter 11: User-Defined Literals: The Basics'
-- 'Chapter 4: Strong Typedefs: Type Safety That Prevents Mix-Ups'
+- 'User-Defined Literals: The Basics'
+- 'Strong Typedefs: Type Safety That Prevents Mix-Ups'
 reading_time_minutes: 11
 related:
 - 'constexpr Basics: The Art of Compile-Time Evaluation'

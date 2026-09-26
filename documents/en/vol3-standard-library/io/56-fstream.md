@@ -12,13 +12,13 @@ difficulty: intermediate
 order: 56
 platform: host
 prerequisites:
-- 'Deep Dive into std::string: SSO, COW, and resize_and_overwrite'
+- 'Deep Dive into string: SSO, COW, and resize_and_overwrite'
 - 'charconv: Zero-Overhead Number-String Conversions'
 - 'Iterator Adapters: Reverse, Insertion, and Stream — Teaching Old Iterators New Tricks'
 reading_time_minutes: 16
 related:
 - 'charconv: Zero-Overhead Number-String Conversions'
-- 'Deep Dive into std::string: SSO, COW, and resize_and_overwrite'
+- 'Deep Dive into string: SSO, COW, and resize_and_overwrite'
 tags:
 - host
 - cpp-modern

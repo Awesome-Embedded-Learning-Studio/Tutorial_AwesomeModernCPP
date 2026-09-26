@@ -9,10 +9,10 @@ difficulty: advanced
 order: 4
 platform: host
 prerequisites:
-- SimpleWeakPtr：T* + shared_ptr<Flag> 的安全改进
+- 'SimpleWeakPtr: A Safety Improvement over T* + shared_ptr<Flag>'
 reading_time_minutes: 9
 related:
-- std::weak_ptr 对比与异步回调实战
+- '`std::weak_ptr` Comparison and Asynchronous Callback Practice'
 tags:
 - host
 - cpp-modern

@@ -10,8 +10,8 @@ difficulty: intermediate
 order: 5
 platform: host
 prerequisites:
-- 'Chapter 0: Move Construction and Move Assignment'
-- "Chapter 0: RVO and NRVO: The Compiler's Return Value Optimization"
+- Move Construction and Move Assignment
+- 'RVO and NRVO: The Compiler''s Return Value Optimization'
 reading_time_minutes: 23
 related:
 - 'Perfect Forwarding: Preserving Value Categories Exactly'

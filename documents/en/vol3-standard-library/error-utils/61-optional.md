@@ -14,7 +14,7 @@ order: 61
 platform: host
 prerequisites:
 - 'variant: Type-Safe Unions and visit'
-- 'Deep Dive into std::vector: Three Pointers, Reallocation, and Iterator Invalidation'
+- 'Deep Dive into vector: Three Pointers, Reallocation, and Iterator Invalidation'
 reading_time_minutes: 16
 related:
 - 'expected: Value or Error, C++23''s New Error Handling Paradigm'

@@ -16,7 +16,7 @@ prerequisites:
   - 'Iterator Adapters: Reverse, Insertion, and Stream — Teaching Old Iterators New Tricks'
   - 'char8_t and UTF-8 Strings'
 related:
-  - 'Container Selection Guide: Choosing the Right Container Based on Operations, Memory, and Invalidation Rules'
+  - 'Container Selection Guide: Picking the Right One by Operations, Memory, and Invalidation Rules'
 tags:
   - host
   - cpp-modern

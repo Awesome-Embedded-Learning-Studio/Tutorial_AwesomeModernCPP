@@ -8,7 +8,7 @@ difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- 'Chapter 7: Deep Dive into Standard Attributes: Making the Compiler Your Code Reviewer'
+- 'Deep Dive into Standard Attributes: Making the Compiler Your Code Reviewer'
 reading_time_minutes: 14
 related:
 - constexpr Constructors and Literal Types

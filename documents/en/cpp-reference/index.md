@@ -71,7 +71,7 @@ C++11 is the starting point of modern C++, bringing revolutionary features like 
 | [std::unique_ptr](memory/01-unique-ptr.md) | `<memory>` | Unique pointer | **High** |
 | [std::shared_ptr](memory/02-shared-ptr.md) | `<memory>` | Shared pointer | **Medium** |
 | std::weak_ptr | `<memory>` | Breaking shared_ptr cyclic references | **Medium** |
-| [lambda expression](core-language/02-lambda.md) | Language feature | Anonymous function object | **High** |
+| [Lambda expression](core-language/02-lambda.md) | Language feature | Anonymous function object | **High** |
 | [auto](core-language/03-auto-decltype.md) | Language feature | Automatic type deduction | **High** |
 | [decltype](core-language/03-auto-decltype.md) | Language feature | Expression type query | **High** |
 | [constexpr](core-language/01-constexpr.md) | Language feature | Compile-time constants and functions | **High** |
@@ -82,7 +82,7 @@ C++11 is the starting point of modern C++, bringing revolutionary features like 
 | [enum class](core-language/05-enum-class.md) | Language feature | Scoped strongly-typed enumeration | **High** |
 | [override / final](core-language/06-override-final.md) | Language feature | Explicit virtual function annotations | **High** |
 | static_assert | Language feature | Compile-time assertion | **High** |
-| [Variadic templates](templates/02-variadic-templates.md) | Language feature | Arbitrary number of template parameters | **High** |
+| [Variadic Templates](templates/02-variadic-templates.md) | Language feature | Arbitrary number of template parameters | **High** |
 | [std::initializer_list](containers/05-initializer-list.md) | `<initializer_list>` | Unified initializer list | **High** |
 | [std::array](containers/04-array.md) | `<array>` | Compile-time fixed-size array | **High** |
 | std::tuple | `<tuple>` | Heterogeneous fixed-size container | **Medium** |
@@ -105,7 +105,7 @@ C++14 refines and polishes C++11—relaxing constexpr restrictions, introducing 
 | Feature | Header | Summary | Applicability |
 |---------|--------|---------|---------------|
 | [std::make_unique](memory/04-make-unique.md) | `<memory>` | Exception-safe unique_ptr creation | **High** |
-| [Generic lambda](core-language/09-generic-lambda.md) | Language feature | Lambda parameters using auto | **High** |
+| [Generic Lambda](core-language/09-generic-lambda.md) | Language feature | Lambda parameters using auto | **High** |
 | Return type deduction (auto return) | Language feature | Function return value auto deduction | **Medium** |
 | constexpr extensions | Language feature | Relaxed constexpr restrictions (loops/local variables) | **High** |
 | decltype(auto) | Language feature | Perfect forwarding return type deduction | **Medium** |
@@ -126,14 +126,14 @@ C++17 introduces high-frequency features like structured bindings, if constexpr,
 | [std::string_view](containers/02-string-view.md) | `<string_view>` | Zero-copy string view | **High** |
 | std::any | `<any>` | Type-safe any value container | **Low** |
 | [std::filesystem](containers/06-filesystem.md) | `<filesystem>` | File system operations | **Medium** |
-| [Structured binding](core-language/11-structured-binding.md) | Language feature | Multiple return value destructuring | **High** |
+| [Structured Binding](core-language/11-structured-binding.md) | Language feature | Multiple return value destructuring | **High** |
 | [if constexpr](core-language/13-if-constexpr.md) | Language feature | Compile-time conditional branching | **High** |
-| [Fold expressions](templates/03-fold-expressions.md) | Language feature | Parameter pack expansion operations | **High** |
+| [Fold Expression](templates/03-fold-expressions.md) | Language feature | Parameter pack expansion operations | **High** |
 | CTAD | Language feature | Class template argument deduction | **High** |
 | Guaranteed copy elision | Language feature | Mandatory elimination of temporary object copies | **High** |
 | std::invoke | `<functional>` | Unified invocation interface | **Medium** |
 | std::apply | `<tuple>` | Tuple expansion as function arguments | **Medium** |
-| [Inline variables](core-language/14-inline-variables.md) | Language feature | Defining global variables in headers | **Medium** |
+| [inline variable](core-language/14-inline-variables.md) | Language feature | Defining global variables in headers | **Medium** |
 | std::byte | `<cstddef>` | Standalone byte type | **Medium** |
 | std::pmr memory resources | `<memory_resource>` | Polymorphic allocator memory resources | **Medium** |
 | std::shared_mutex | `<shared_mutex>` | Read-write lock | **Medium** |
@@ -177,7 +177,7 @@ C++23 polishes and fills gaps in C++20: practical library components like std::e
 | [std::flat_map / flat_set](containers/08-flat-map.md) | `<flat_map>` | Sorted containers based on contiguous storage | **Medium** |
 | std::mdspan | `<mdspan>` | Non-owning multidimensional array view | **Medium** |
 | std::stacktrace | `<stacktrace>` | Backtrace capture and printing | **Medium** |
-| [deducing this](core-language/18-deducing-this.md) | Language feature | Explicit object parameter deduction | **Medium** |
+| [Deducing this](core-language/18-deducing-this.md) | Language feature | Explicit object parameter deduction | **Medium** |
 | std::to_underlying | `<utility>` | Enum to underlying type conversion | **Medium** |
 | std::out_ptr / inout_ptr | `<memory>` | Smart pointer and C pointer interoperation | **Medium** |
 | Optional monadic operations | `<optional>` | and_then / or_else / transform | **Medium** |
@@ -272,7 +272,7 @@ Keywords, syntactic sugar, type system, compile-time mechanisms, and other core 
 | Namespaces | C++98 | Language feature | Preventing name collisions | **High** |
 | Operator overloading | C++98 | Language feature | Custom type operation behavior | **Medium** |
 | iostream | C++98 | `<iostream>` | Type-safe I/O streams | **Medium** |
-| [lambda expression](core-language/02-lambda.md) | C++11 | Language feature | Anonymous function object | **High** |
+| [Lambda expression](core-language/02-lambda.md) | C++11 | Language feature | Anonymous function object | **High** |
 | [auto](core-language/03-auto-decltype.md) | C++11 | Language feature | Automatic type deduction | **High** |
 | [decltype](core-language/03-auto-decltype.md) | C++11 | Language feature | Expression type query | **High** |
 | [constexpr](core-language/01-constexpr.md) | C++11 | Language feature | Compile-time constants and functions | **High** |
@@ -286,18 +286,18 @@ Keywords, syntactic sugar, type system, compile-time mechanisms, and other core 
 | User-defined literal | C++11 | Language feature | Custom literal suffixes | **Medium** |
 | Delegating/inheriting constructors | C++11 | Language feature | Constructor reuse | **Medium** |
 | alignas / alignof | C++11 | Language feature | Alignment control and query | **Medium** |
-| [Generic lambda](core-language/09-generic-lambda.md) | C++14 | Language feature | Lambda parameters using auto | **High** |
+| [Generic Lambda](core-language/09-generic-lambda.md) | C++14 | Language feature | Lambda parameters using auto | **High** |
 | Return type deduction | C++14 | Language feature | Function return value auto | **Medium** |
 | constexpr extensions | C++14 | Language feature | Relaxed constexpr restrictions | **High** |
 | decltype(auto) | C++14 | Language feature | Perfect forwarding return type deduction | **Medium** |
 | Binary literals | C++14 | Language feature | 0b-prefixed binary integers | **Medium** |
-| [Structured binding](core-language/11-structured-binding.md) | C++17 | Language feature | Multiple return value destructuring | **High** |
+| [Structured Binding](core-language/11-structured-binding.md) | C++17 | Language feature | Multiple return value destructuring | **High** |
 | [if constexpr](core-language/13-if-constexpr.md) | C++17 | Language feature | Compile-time conditional branching | **High** |
 | CTAD | C++17 | Language feature | Class template argument deduction | **High** |
 | Guaranteed copy elision | C++17 | Language feature | Mandatory elimination of temporary object copies | **High** |
-| [Inline variables](core-language/14-inline-variables.md) | C++17 | Language feature | Defining global variables in headers | **Medium** |
+| [inline variable](core-language/14-inline-variables.md) | C++17 | Language feature | Defining global variables in headers | **Medium** |
 | std::byte | C++17 | `<cstddef>` | Standalone byte type | **Medium** |
-| [Nested namespaces](core-language/15-nested-namespace.md) | C++17 | Language feature | A::B::C shorthand | **Low** |
+| [Nested Namespaces](core-language/15-nested-namespace.md) | C++17 | Language feature | A::B::C shorthand | **Low** |
 | if/switch initializer statements | C++17 | Language feature | Variable declarations inside conditional statements | **Medium** |
 | [Three-way comparison (<=>)](core-language/12-spaceship-operator.md) | C++20 | `<compare>` | Unified comparison operator | **High** |
 | [Coroutines](core-language/16-coroutines.md) | C++20 | `<coroutine>` | Stackless coroutines | **High** |
@@ -306,7 +306,7 @@ Keywords, syntactic sugar, type system, compile-time mechanisms, and other core 
 | constinit | C++20 | Language feature | Compile-time static initialization | **Medium** |
 | std::source_location | C++20 | `<source_location>` | Compile-time source code location | **Medium** |
 | Designated initializer | C++20 | Language feature | Aggregate initialization by member name | **Medium** |
-| [deducing this](core-language/18-deducing-this.md) | C++23 | Language feature | Explicit object parameter deduction | **Medium** |
+| [Deducing this](core-language/18-deducing-this.md) | C++23 | Language feature | Explicit object parameter deduction | **Medium** |
 | std::to_underlying | C++23 | `<utility>` | Enum to underlying type conversion | **Medium** |
 | std::unreachable | C++23 | `<utility>` | Mark unreachable code | **Low** |
 | if consteval | C++23 | Language feature | Compile-time evaluation conditional check | **Low** |
@@ -323,10 +323,10 @@ Templates, constraints, type traits, compile-time computation, and other generic
 | Feature | Version | Header | Summary | Applicability |
 |---------|---------|--------|---------|---------------|
 | Class templates / function templates | C++98 | Language feature | Foundation of generic programming | **High** |
-| [Variadic templates](templates/02-variadic-templates.md) | C++11 | Language feature | Arbitrary number of template parameters | **High** |
+| [Variadic Templates](templates/02-variadic-templates.md) | C++11 | Language feature | Arbitrary number of template parameters | **High** |
 | [std::initializer_list](containers/05-initializer-list.md) | C++11 | `<initializer_list>` | Unified initializer list | **High** |
 | std::integer_sequence | C++14 | `<utility>` | Compile-time integer sequence | **Medium** |
-| [Fold expressions](templates/03-fold-expressions.md) | C++17 | Language feature | Parameter pack expansion operations | **High** |
+| [Fold Expression](templates/03-fold-expressions.md) | C++17 | Language feature | Parameter pack expansion operations | **High** |
 | std::invoke | C++17 | `<functional>` | Unified invocation interface | **Medium** |
 | std::apply | C++17 | `<tuple>` | Tuple expansion as function arguments | **Medium** |
 | [Concepts](templates/01-concepts.md) | C++20 | `<concepts>` | Compile-time template parameter constraints | **High** |

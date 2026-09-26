@@ -25,5 +25,5 @@ translation:
 <ChapterNav variant="sub">
   <ChapterLink href="01-concepts">Concepts</ChapterLink>
   <ChapterLink href="02-variadic-templates">Variadic Templates</ChapterLink>
-  <ChapterLink href="03-fold-expressions">Fold Expressions</ChapterLink>
+  <ChapterLink href="03-fold-expressions">Fold Expression</ChapterLink>
 </ChapterNav>

@@ -17,8 +17,8 @@ tags:
   - intermediate
   - 优化
 related:
-  - "Complexity Isn't Everything: How O(1) Lost to O(n)"
-  - "Data Type Is a Cache Variable Too: Smaller Isn't Always Faster"
+  - 'Complexity Is Not Everything: How O(1) Lost to O(n)'
+  - 'Data Types Are a Cache Variable Too: Shrinking the Type Isn''t Always Faster'
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/08-cache-friendly-cpp/02-memory-is-100x-slower.md
   source_hash: c883b92da3f978b8b9ae760ac284aa789bf128728e1870a4e809de237c1cae0c

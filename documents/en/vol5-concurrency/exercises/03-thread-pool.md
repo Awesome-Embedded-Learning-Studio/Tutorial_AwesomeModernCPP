@@ -7,7 +7,7 @@ description: 'Implement a fixed-size thread pool and master future, packaged_tas
 difficulty: advanced
 order: 4
 prerequisites:
-- 'Volume 5 ch05: Futures, Tasks, and Thread Pools'
+- Futures, Tasks, and Thread Pools
 - 'Lab 0: Thread Lifecycle'
 - 'Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives'
 reading_time_minutes: 12

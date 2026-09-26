@@ -9,10 +9,10 @@ difficulty: intermediate
 order: 3
 platform: host
 prerequisites:
-- WeakPtr 反模式：T* + raw Flag* 的致命陷阱
+- 'WeakPtr Anti-pattern: The Fatal Trap of T* + raw Flag*'
 reading_time_minutes: 6
 related:
-- Chrome-like WeakPtr：引用计数控制块与 WeakPtrFactory
+- 'Chrome-like WeakPtr: Reference Counting Control Block and WeakPtrFactory'
 tags:
 - host
 - cpp-modern
@@ -219,4 +219,4 @@ This is the key step from "unsafe weak reference" to "safe weak reference". Howe
 
 - [std::shared_ptr - cppreference](https://en.cppreference.com/w/cpp/memory/shared_ptr)
 - [std::atomic - cppreference](https://en.cppreference.com/w/cpp/atomic/atomic)
-- [C++ Memory Order 详解](../../../vol5-concurrency/ch03-atomic-memory-model/02-memory-ordering.md) — Volume 5 of this tutorial discusses memory order in depth
+- [A Deep Dive into Memory Ordering](../../../vol5-concurrency/ch03-atomic-memory-model/02-memory-ordering.md) — Volume 5 of this tutorial discusses memory order in depth

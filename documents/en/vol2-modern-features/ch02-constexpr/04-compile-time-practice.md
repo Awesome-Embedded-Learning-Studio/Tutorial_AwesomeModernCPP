@@ -11,8 +11,8 @@ difficulty: intermediate
 order: 4
 platform: host
 prerequisites:
-- 'Chapter 2: constexpr Basics: The Art of Compile-Time Evaluation'
-- 'Chapter 2: constexpr Constructors and Literal Types'
+- 'constexpr Basics: The Art of Compile-Time Evaluation'
+- constexpr Constructors and Literal Types
 reading_time_minutes: 17
 related:
 - 'Volume IV: Advanced Topics'

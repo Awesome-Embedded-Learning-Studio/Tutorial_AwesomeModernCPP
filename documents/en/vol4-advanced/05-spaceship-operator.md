@@ -7,8 +7,8 @@ difficulty: intermediate
 order: 5
 platform: host
 prerequisites:
-- 'Chapter 11.1: auto'
-- 'Chapter 11.2: Structured Binding'
+- auto
+- Structured Binding
 reading_time_minutes: 23
 tags:
 - cpp-modern

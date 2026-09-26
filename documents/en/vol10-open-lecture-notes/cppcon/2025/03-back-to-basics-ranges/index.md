@@ -33,7 +33,7 @@ translation:
 ## Notes
 
 <ChapterNav variant="sub">
-  <ChapterLink href="01-from-loops-to-iterators">From Loops to Iterators: The Abstraction Path for Traversing Data</ChapterLink>
+  <ChapterLink href="01-from-loops-to-iterators">From Loops to Iterators: The Path to Data Traversal Abstraction</ChapterLink>
   <ChapterLink href="02-stl-algorithms-and-iterator-pitfalls">STL Algorithms in Practice and Iterator Pitfalls</ChapterLink>
-  <ChapterLink href="03-ranges-views-and-composition">Ranges, Views, and Pipeline Composition: The Power of Lazy Evaluation</ChapterLink>
+  <ChapterLink href="03-ranges-views-and-composition">Ranges, Views, and Pipelining: The Power of Lazy Evaluation</ChapterLink>
 </ChapterNav>

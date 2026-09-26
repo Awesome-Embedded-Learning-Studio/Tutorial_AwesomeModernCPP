@@ -14,7 +14,7 @@ order: 58
 platform: host
 prerequisites:
 - 'format: Type-Safe Formatting in C++20'
-- 'Deep Dive into std::vector: Three Pointers, Reallocation, and Iterator Invalidation'
+- 'Deep Dive into vector: Three Pointers, Reallocation, and Iterator Invalidation'
 reading_time_minutes: 22
 related:
 - 'format: Type-Safe Formatting in C++20'

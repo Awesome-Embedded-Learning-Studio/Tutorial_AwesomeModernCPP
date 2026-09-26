@@ -14,7 +14,7 @@ reading_time_minutes: 14
 prerequisites:
 - 'optional: Making "Maybe Nothing" a Type'
 - 'variant: Type-Safe Unions and visit'
-- 'Ranges Algorithms and C++23 Additions: fold, contains, and New Adapters'
+- 'Ranges Algorithms and the C++23 Newcomers: fold, contains, and New Adapters'
 related:
 - 'expected: Value or Error, C++23''s New Error Handling Paradigm'
 tags:

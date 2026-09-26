@@ -17,7 +17,7 @@ prerequisites:
   - "A Deep Dive into Memory Ordering"
 related:
   - "atomic_wait and atomic_ref"
-  - "Atomic Operation Modes"
+  - Atomic Operation Patterns
 translation:
   source: documents/vol5-concurrency/ch03-atomic-memory-model/03-fence-and-barrier.md
   source_hash: f8513d92b724cbb63b4b0d04d040faa5214329c954a6bf36912f18db8c6d938c

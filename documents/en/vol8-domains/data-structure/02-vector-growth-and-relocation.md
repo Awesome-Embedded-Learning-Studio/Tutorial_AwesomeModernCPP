@@ -152,5 +152,5 @@ cmake -B build . && cmake --build build
 
 - Companion code: `code/volumn_codes/vol8-labs/ministl/stage1_rawbuf_vector/`
 - libstdc++ `bits/stl_vector.h:98-102` (the three-pointer layout)
-- [Deep Dive into std::vector: Three Pointers, Reallocation, and Iterator Invalidation](../../vol3-standard-library/containers/03-vector-deep-dive.md) (vol3 covers the concept level; this article is the implementation level)
+- [Deep Dive into vector: Three Pointers, Reallocation, and Iterator Invalidation](../../vol3-standard-library/containers/03-vector-deep-dive.md) (vol3 covers the concept level; this article is the implementation level)
 - [cppreference: `std::vector` complexity](https://en.cppreference.com/w/cpp/container/vector)

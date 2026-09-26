@@ -11,7 +11,7 @@ difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- 'Chapter 3: Lambda Basics: The Elegant Expression of Anonymous Functions'
+- 'Lambda Basics: The Elegant Expression of Anonymous Functions'
 reading_time_minutes: 15
 related:
 - Generic Lambdas and Template Lambdas

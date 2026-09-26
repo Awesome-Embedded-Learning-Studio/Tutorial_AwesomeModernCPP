@@ -15,9 +15,9 @@ tags:
   - 类型安全
 prerequisites:
   - "Object Size, Alignment, and Trivial Types"
-  - "Deep Dive into std::vector: Three Pointers, Reallocation, and Iterator Invalidation"
+  - 'Deep Dive into vector: Three Pointers, Reallocation, and Iterator Invalidation'
 related:
-  - "Container Selection Guide: Choosing the Right Container Based on Operations, Memory, and Invalidation Rules"
+  - 'Container Selection Guide: Picking the Right One by Operations, Memory, and Invalidation Rules'
 reading_time_minutes: 16
 translation:
   source: documents/vol3-standard-library/error-utils/62-variant.md

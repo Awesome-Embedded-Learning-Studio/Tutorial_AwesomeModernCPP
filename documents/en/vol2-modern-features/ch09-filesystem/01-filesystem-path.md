@@ -7,7 +7,7 @@ difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
-- 'Chapter 1: Deep Dive into RAII: The Cornerstone of Resource Management'
+- 'Deep Dive into RAII: The Cornerstone of Resource Management'
 reading_time_minutes: 14
 related:
 - File and Directory Operations

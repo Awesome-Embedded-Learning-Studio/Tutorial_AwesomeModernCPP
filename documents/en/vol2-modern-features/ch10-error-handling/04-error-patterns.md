@@ -12,9 +12,9 @@ difficulty: intermediate
 order: 4
 platform: host
 prerequisites:
-- 'Chapter 10: Evolution of Error Handling: From Error Codes to Type Safety'
-- 'Chapter 10: optional for Error Handling'
-- 'Chapter 10: std::expected<T, E>: Type-Safe Error Propagation'
+- 'Evolution of Error Handling: From Error Codes to Type Safety'
+- optional for Error Handling
+- 'std::expected<T, E>: Type-Safe Error Propagation'
 reading_time_minutes: 13
 related:
 - 'Deep Dive into RAII: The Cornerstone of Resource Management'

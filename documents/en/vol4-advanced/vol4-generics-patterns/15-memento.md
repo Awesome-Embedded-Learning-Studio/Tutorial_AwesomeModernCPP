@@ -15,7 +15,7 @@ reading_time_minutes: 20
 related:
   - 'Command Pattern: Turning Actions into Undoable Objects'
 prerequisites:
-  - 'Chapter 6: Classes and Object-Oriented Programming'
+  - Classes and Object-Oriented Programming
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/15-memento.md
   source_hash: d2a5b8ee57ceca1899acaa006a5762b6401a33a6d09c3697654ddd449205a66b

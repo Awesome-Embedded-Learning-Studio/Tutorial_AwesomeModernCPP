@@ -17,8 +17,8 @@ tags:
   - intermediate
   - 优化
 related:
-  - "Memory Access Being 100x Slower Is Real: Cache Hierarchy and Cache Lines"
-  - "The Branch Predictor Is Cheating for You"
+  - 'Memory Is 100x Slower — For Real: The Cache Hierarchy and Cache Lines'
+  - The Branch Predictor Is Helping You Cheat
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/08-cache-friendly-cpp/01-complexity-is-not-everything.md
   source_hash: 02c4ec7896ed911cd66fbe24c70520a41fe1b97ef8a741a35beb5b021d74ae37

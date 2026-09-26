@@ -20,7 +20,7 @@ prerequisites:
   - "The Value-Semantics Foundation of std::optional"
 related:
   - "The Value-Semantics Foundation of std::optional"
-  - "Shallow traps of optional references"
+  - 'Shallow traps of optional references: const, value_or, and dangling'
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/06-evolution-of-std-optional/03-optional-reference-and-assignment.md
   source_hash: af0e543d7e0ec86e29e94731eb9b66996bc0175ea990a87436a3808944a0a3d8

@@ -14,7 +14,7 @@ prerequisites:
 - 'WeakPtr prerequisite (I): intrusive reference counting and scoped_refptr'
 reading_time_minutes: 13
 related:
-- 'WeakPtr Hands-on (II): The Core Skeleton and Control Block'
+- 'WeakPtr hands-on (II): the core skeleton and control block'
 - 'WeakPtr prerequisite (III): sequences, SEQUENCE_CHECKER, and DCHECK/CHECK'
 tags:
 - host

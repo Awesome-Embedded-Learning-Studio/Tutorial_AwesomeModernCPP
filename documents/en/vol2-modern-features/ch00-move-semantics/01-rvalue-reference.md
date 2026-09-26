@@ -9,7 +9,7 @@ difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
-- Volume One: C++ Fundamentals
+- 'Volume 1: C++ Fundamentals'
 reading_time_minutes: 24
 related:
 - Move Construction and Move Assignment

@@ -13,7 +13,7 @@ platform: stm32f1
 cpp_standard: [23]
 reading_time_minutes: 20
 prerequisites:
-  - "A World Without a Heap · Part 1: How Memory Gets Handed Out, and What a Bitmap Is"
+  - 'A World Without a Heap: How Memory Gets Handed Out, and What a Bitmap Is'
 related:
   - "A World Without a Heap: How Memory Gets Handed Out, and What a Bitmap Is"
 translation:

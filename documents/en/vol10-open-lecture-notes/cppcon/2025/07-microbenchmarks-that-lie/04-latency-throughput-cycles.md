@@ -18,7 +18,7 @@ tags:
   - 优化
 related:
   - "The Branch Predictor Is Helping You Cheat"
-  - "A Faster Microbenchmark Doesn't Mean a Faster Program"
+  - A Faster Microbenchmark Is Not a Faster Program
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/07-microbenchmarks-that-lie/04-latency-throughput-cycles.md
   source_hash: 10c0f1a03693b6d428c16794b4ad01d1897c6bf9dd9632cea62ecb7e17e1e9f8

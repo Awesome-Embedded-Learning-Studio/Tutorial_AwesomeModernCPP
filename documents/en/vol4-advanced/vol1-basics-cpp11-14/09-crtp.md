@@ -20,7 +20,7 @@ prerequisites:
 - 'Alias Templates and using Declarations: Short Names for Types'
 reading_time_minutes: 9
 related:
-- 'Project: fixed_vector<T, N>'
+- 'Capstone Project: fixed_vector<T, N>'
 - 'Template Friends and Barton-Nackman: The Hidden Friends Trick'
 tags:
 - host

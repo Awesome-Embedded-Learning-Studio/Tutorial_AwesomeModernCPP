@@ -10,7 +10,7 @@ difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
-- 'Chapter 0: Move Construction and Move Assignment'
+- Move Construction and Move Assignment
 reading_time_minutes: 13
 related:
 - Deep Dive into Lambda Capture

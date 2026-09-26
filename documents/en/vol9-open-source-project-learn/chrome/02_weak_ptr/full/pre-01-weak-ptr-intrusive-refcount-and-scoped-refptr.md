@@ -13,7 +13,7 @@ prerequisites:
 - 'WeakPtr prerequisite (0): weak references and the lifetime puzzle'
 reading_time_minutes: 12
 related:
-- 'WeakPtr Hands-on (II): The Core Skeleton and Control Block'
+- 'WeakPtr hands-on (II): the core skeleton and control block'
 - 'WeakPtr prerequisite (II): std::atomic and memory_order'
 tags:
 - host

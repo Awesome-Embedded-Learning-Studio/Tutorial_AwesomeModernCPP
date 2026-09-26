@@ -14,7 +14,7 @@ prerequisites:
 reading_time_minutes: 20
 related:
 - A Deep Dive into Memory Ordering
-- Atomic Operation Modes
+- Atomic Operation Patterns
 tags:
 - host
 - cpp-modern

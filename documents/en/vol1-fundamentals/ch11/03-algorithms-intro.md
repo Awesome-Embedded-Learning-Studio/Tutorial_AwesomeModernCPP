@@ -10,7 +10,7 @@ difficulty: beginner
 order: 3
 platform: host
 prerequisites:
-- 关联容器快速上手
+- Associative Containers Quick Start
 reading_time_minutes: 12
 tags:
 - cpp-modern

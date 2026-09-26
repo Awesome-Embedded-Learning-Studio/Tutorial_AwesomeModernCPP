@@ -14,7 +14,7 @@ platform: stm32f1
 cpp_standard: [23]
 reading_time_minutes: 25
 prerequisites:
-  - "A World Without a Heap · Part 2: Writing the Bitmap"
+  - 'Writing the Bitmap: A Fixed-Capacity Bitmap'
 related:
   - "Writing the Bitmap: A Fixed-Capacity Bitmap"
 translation:

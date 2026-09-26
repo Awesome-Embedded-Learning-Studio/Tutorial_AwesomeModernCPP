@@ -10,8 +10,8 @@ difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
-- mutex and RAII Lock
-- Atomic Operation Modes
+- mutex and RAII Locks
+- Atomic Operations
 - Thread-Safe Queue
 reading_time_minutes: 26
 related:

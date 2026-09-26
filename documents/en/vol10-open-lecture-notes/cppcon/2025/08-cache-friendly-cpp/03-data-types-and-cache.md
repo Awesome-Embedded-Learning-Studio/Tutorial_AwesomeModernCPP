@@ -17,7 +17,7 @@ tags:
   - intermediate
   - 优化
 related:
-  - "Memory Access Being 100x Slower Is Real: Cache Hierarchy and Cache Lines"
+  - 'Memory Is 100x Slower — For Real: The Cache Hierarchy and Cache Lines'
   - "Writing Cache-Friendly Code: Layout, Alignment, and Decisions"
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/08-cache-friendly-cpp/03-data-types-and-cache.md

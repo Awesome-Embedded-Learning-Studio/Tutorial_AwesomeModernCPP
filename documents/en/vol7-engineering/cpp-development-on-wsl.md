@@ -16,7 +16,7 @@ prerequisites:
   - "Making vscode Understand Your Code: Install clangd, Watch the Red Lines Vanish"
 related:
   - "What is CMake — the two-stage pipeline of a build system generator"
-  - "CMakePresets.json — from the old cmake -D way to reproducible --preset"
+  - CMakePresets.json — from the old cmake -D way to reproducible --preset builds
 translation:
   source: documents/vol7-engineering/cpp-development-on-wsl.md
   source_hash: 3772ab37f7f578896f0b5d99ae70294a2857e8f96b006d42e704ad592ad3f0a7

@@ -13,7 +13,7 @@ platform: host
 reading_time_minutes: 20
 cpp_standard: [17, 20]
 prerequisites:
-  - 'Volume 5 ch02: Mutexes, Condition Variables, and Synchronization Primitives'
+  - Mutexes, Condition Variables, and Synchronization Primitives
   - 'Lab 0: Thread Lifecycle'
 related:
   - 'mutex and RAII Locks'

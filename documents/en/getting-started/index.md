@@ -21,9 +21,9 @@ By the end, you'll have a working C++ setup on Windows (vscode, a compiler, CMak
 
 <ChapterNav>
   <ChapterLink num="1" href="01-editor-and-compiler">What Is an Editor, What Is a Compiler</ChapterLink>
-  <ChapterLink num="2" href="02-install-toolchain">Installing the Three Things You Need to Write C++</ChapterLink>
-  <ChapterLink num="3" href="03-first-program">Your First C++ Program — Getting Hello to Run in vscode</ChapterLink>
-  <ChapterLink num="4" href="04-multi-file-cmake">When the Project Grows — Multiple Files, and CMake Shows Up</ChapterLink>
-  <ChapterLink num="5" href="05-vscode-clangd">Making vscode Understand Your Code — Install clangd, Watch the Red Lines Vanish</ChapterLink>
-  <ChapterLink num="6" href="06-where-next">It Runs — Where Next</ChapterLink>
+  <ChapterLink num="2" href="02-install-toolchain">Install the Three Things You Need to Write C++</ChapterLink>
+  <ChapterLink num="3" href="03-first-program">Your First C++ Program: Getting Hello to Run in vscode</ChapterLink>
+  <ChapterLink num="4" href="04-multi-file-cmake">The Project Grows — Multiple Files, and Why CMake Shows Up</ChapterLink>
+  <ChapterLink num="5" href="05-vscode-clangd">Making vscode Understand Your Code: Install clangd, Watch the Red Lines Vanish</ChapterLink>
+  <ChapterLink num="6" href="06-where-next">It Works — So Where Next</ChapterLink>
 </ChapterNav>

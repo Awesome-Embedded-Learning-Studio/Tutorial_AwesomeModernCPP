@@ -11,8 +11,8 @@ order: 1
 platform: host
 prerequisites:
 - Move semantics and perfect forwarding
-- std::atomic and memory_order
-- C++20 concepts and requires
+- 'WeakPtr prerequisite (II): std::atomic and memory_order'
+- 'WeakPtr prerequisite (IV): applying concepts and requires'
 - 'OnceCallback hands-on (IV): designing the cancellation token'
 reading_time_minutes: 8
 related:

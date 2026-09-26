@@ -18,7 +18,7 @@ tags:
   - 优化
 related:
   - "Latency, Throughput, Cycles: What Are You Actually Measuring"
-  - "The Compiler Lied to You: The Number-One Microbenchmark Deception"
+  - 'The Compiler Lied to You: The #1 Microbenchmark Lie'
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/07-microbenchmarks-that-lie/05-correlation-and-discipline.md
   source_hash: f8726d4e79e645a2fb08f593c489c3022d475e878c5c586c6dda5afeca2f3bde

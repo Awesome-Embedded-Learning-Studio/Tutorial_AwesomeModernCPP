@@ -14,9 +14,9 @@ platform: stm32f1
 cpp_standard: [23]
 reading_time_minutes: 15
 prerequisites:
-  - "Why an RTOS · Part 2: Project Bring-up, from an Empty Repository to the First Line of Renode Output"
+  - 'Project Bring-up: From an Empty Repo to the First Line of Renode Output'
 related:
-  - "Project Bring-up: From an Empty Repository to the First Line of Renode Output"
+  - 'Project Bring-up: From an Empty Repo to the First Line of Renode Output'
 translation:
   source: documents/vol8-domains/embedded/zeros/01-heapless-memory/01-why-pool-and-bitmap.md
   source_hash: 52b88c326a27641437ca942edcda2b7882a093e100f247054faf4cc86910caa1

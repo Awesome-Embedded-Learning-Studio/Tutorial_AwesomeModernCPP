@@ -15,7 +15,7 @@ reading_time_minutes: 18
 related:
   - 'Singleton Pattern: From Comment-Only Constraints to Meyer''s Singleton'
 prerequisites:
-  - 'Chapter 6: Classes and Object-Oriented Programming'
+  - Classes and Object-Oriented Programming
   - 'Chapter 9: Smart Pointers and Ownership'
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/09-facade.md

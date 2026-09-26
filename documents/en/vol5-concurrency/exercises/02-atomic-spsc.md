@@ -8,7 +8,7 @@ description: Master atomics, memory_order, false sharing, and benchmarking metho
 difficulty: intermediate
 order: 2
 prerequisites:
-- 'Volume 5 ch03: Atomic Operations and the Memory Model'
+- Atomic Operations and the Memory Model
 - 'Lab 0: Thread Lifecycle'
 reading_time_minutes: 14
 tags:

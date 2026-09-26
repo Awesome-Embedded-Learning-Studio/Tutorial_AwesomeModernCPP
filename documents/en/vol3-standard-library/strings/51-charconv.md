@@ -11,7 +11,7 @@ difficulty: intermediate
 order: 51
 platform: host
 prerequisites:
-- 'Deep Dive into std::string: SSO, COW, and resize_and_overwrite'
+- 'Deep Dive into string: SSO, COW, and resize_and_overwrite'
 - 'Iterator Adapters: Reverse, Insertion, and Stream — Teaching Old Iterators New
   Tricks'
 reading_time_minutes: 14

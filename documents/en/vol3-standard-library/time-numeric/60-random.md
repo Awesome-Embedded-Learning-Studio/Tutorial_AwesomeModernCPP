@@ -14,9 +14,8 @@ difficulty: intermediate
 order: 60
 platform: host
 prerequisites:
-- 'Algorithm Overview (Part 1): Non-modifying, Modifying, and Searching Operations,
-  and How to Choose the Right Algorithm for a Problem'
-- 'Deep Dive into std::vector: Three Pointers, Reallocation, and Iterator Invalidation'
+- 'Algorithm Overview (Part 1): Non-Modifying, Modifying, and Searching — How to Pick the Right Algorithm for a Problem'
+- 'Deep Dive into vector: Three Pointers, Reallocation, and Iterator Invalidation'
 reading_time_minutes: 15
 related:
 - 'numeric: Accumulate, Fill, Inner Product, and Adjacent Difference'

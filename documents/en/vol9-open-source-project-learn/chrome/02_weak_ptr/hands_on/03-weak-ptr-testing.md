@@ -8,7 +8,7 @@ difficulty: advanced
 order: 3
 platform: host
 prerequisites:
-- 'weak_ptr Design Guide (II): Step-by-Step Implementation'
+- 'weak_ptr Design Guide (II): step-by-step implementation'
 - 'once_callback Design Guide (III): test strategy and performance comparison'
 reading_time_minutes: 7
 related:

@@ -9,11 +9,11 @@ difficulty: advanced
 order: 5
 platform: host
 prerequisites:
-- Chrome-like WeakPtr：引用计数控制块与 WeakPtrFactory
-- 卷二 · 第一章：weak_ptr 与循环引用
+- 'Chrome-like WeakPtr: Reference Counting Control Block and WeakPtrFactory'
+- 'weak_ptr and Circular References: Breaking the Ownership Deadlock'
 reading_time_minutes: 7
 related:
-- 跨线程安全、性能取舍与设计原则总结
+- Cross-Thread Safety, Performance Trade-offs, and Design Principles Summary
 tags:
 - host
 - cpp-modern

@@ -15,7 +15,7 @@ platform: stm32f1
 cpp_standard: [23]
 reading_time_minutes: 25
 prerequisites:
-  - "A World Without a Heap · Part 3: The Fixed-Size Block Pool"
+  - 'Fixed-Size Block Pool: An Allocator with One Bit per Block'
 related:
   - "Fixed-Size Block Pool: An Allocator with One Bit per Block"
 translation:
