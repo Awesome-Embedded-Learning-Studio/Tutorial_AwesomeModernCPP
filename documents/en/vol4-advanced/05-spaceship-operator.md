@@ -14,7 +14,7 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: Three-Way Comparison: The C++20 Spaceship Operator
+title: 'Three-Way Comparison: The C++20 Spaceship Operator'
 translation:
   source: documents/vol4-advanced/05-spaceship-operator.md
   source_hash: d6702e83beab1812ff3000a15e492a8e5648295685ace59c65e6f9e5136d6f43

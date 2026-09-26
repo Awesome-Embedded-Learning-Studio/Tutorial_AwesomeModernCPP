@@ -6,17 +6,18 @@ cpp_standard:
 - 17
 - 20
 description: 'Strip templates back to what they really are: a code recipe with placeholders.
-  How they differ from macros and virtual dispatch, and the four kinds of template
-  entities in C++ (functions, classes, variables, aliases).'
+  Sorts out how they differ from macros and from virtual-function polymorphism, and
+  what each of the four kinds of template entities in C++—function, class, variable,
+  alias—is for.'
 difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
-- Volume 1 · Function Templates
+- Function Templates
 reading_time_minutes: 11
 related:
-- 'Function Templates, In Depth: Compilation Model and extern template'
-- 'Class Templates: Members, Dependent Names, Lazy Instantiation'
+- 'Function Templates, In Depth: Compilation Model and the No-Partial-Specialization Trap'
+- 'Class Templates: Members, Dependent Names, and Lazy Instantiation'
 tags:
 - host
 - cpp-modern
@@ -24,14 +25,20 @@ tags:
 - 模板
 - 泛型
 title: 'Templates, From Scratch: A Code Recipe with Placeholders'
+translation:
+  source: documents/vol4-advanced/vol1-basics-cpp11-14/01-templates-introduction.md
+  source_hash: 9490d4a03a987e2b3c3a7ffa6e76091cfaef5bdfdcf4948a001276b4cb26d0c8
+  translated_at: '2026-09-26T03:58:20+00:00'
+  engine: anthropic
+  token_count: 6500
 ---
 # Templates, From Scratch: A Code Recipe with Placeholders
 
-We already wrote function templates back in Volume 1. We know that `template <typename T> T max_value(T a, T b)` lets the compiler stamp out a version for `int`, for `double`, for `std::string`. This volume stops at "how to use them" and asks different questions. What is a template, really? How does it pull off "write once, fit any type"? And what does that mechanism cost? Get the under-the-hood details straight, and reading the STL source, reading template-heavy industrial code like Chromium, or writing a library of your own stops feeling intimidating.
+We already wrote function templates back in Volume 1: once you write `template <typename T> T max_value(T a, T b)`, the compiler can generate one copy of the code for `int`, another for `double`, and another for `std::string`. This volume no longer lingers on "how to use them"—we want to work out a few other things: what a template actually is, how it pulls off "write once, fit many types", and what this mechanism costs. With those low-level details properly digested, you won't feel shaky later, whether you are reading the STL sources, reading template-heavy industrial code like Chromium, or writing a library of your own.
 
 ## What a Template Actually Is: A Code Recipe with Placeholders
 
-I like to think of a template as a **code recipe**. The template itself is not code; it is a description of how the code should be written. `T` is a placeholder in the recipe. It says "leave this blank for now, fill it in when the recipe is actually used."
+We like to think of a template as a **code recipe**. The template itself is not code; it is a description of "how the code should be written". `T` is a placeholder in the recipe, meaning "leave this spot blank for now; fill it in when the recipe is actually used".
 
 ```cpp
 template <typename T>
@@ -40,43 +47,43 @@ T max_value(T a, T b) {
 }
 ```
 
-These lines produce no machine code on their own. The compiler just records the recipe. What actually produces machine code is **instantiation**. When we write `max_value(3, 5)`, the compiler sees that `3` and `5` are both `int`, copies the recipe with `T` replaced by `int`, and gets a real `int max_value(int, int)` function. That copy is what gets compiled.
+For these few lines the compiler generates no machine code. It simply writes the recipe down. What actually brings machine code into existence is **instantiation**. When we write `max_value(3, 5)`, the compiler sees that both `3` and `5` are `int`, copies the recipe out with every `T` replaced by `int`, and ends up with a real `int max_value(int, int)` function—only that copy gets compiled into machine code.
 
 ```cpp
-int x = max_value(3, 5);        // T=int, compiler stamps out an int version
-double y = max_value(1.0, 2.0); // T=double, stamps out a double version
+int x = max_value(3, 5);        // T=int: the compiler copies out an int version
+double y = max_value(1.0, 2.0); // T=double: another copy, the double version
 ```
 
-These two calls produce two completely independent functions, each compiled separately. The effect is the same as if you had written two overloads by hand.
+From these two calls the compiler produces two completely independent functions, each compiled separately. The effect is indistinguishable from handwriting two overloads ourselves.
 
-Here is a counterintuitive point worth pausing on. Many people assume a template picks a version at runtime based on type. It does not. It generates a separate version at compile time for every type you use. So a template call has **no runtime overhead**: you are calling an ordinary function, with no vtable dispatch. The cost comes later, and we will get to it.
+One counterintuitive point deserves a pause. Many people assume a template "picks a version at runtime based on the type", when in fact it "generates one copy per type used, at compile time". That is why calling a template has **no runtime overhead**: you are calling an ordinary function, with none of that virtual-table dispatch machinery. As for the price—we'll get to it shortly.
 
-::: warning A placeholder is not a macro substitution
-Some people read templates as "a fancier macro substitution," and that is half right. A macro (`#define`) is pure text replacement at the preprocessing stage. It ignores types, ignores scope, and trips you up the moment you stop paying attention. Template substitution happens during compilation. The compiler knows `T` is a type, and it runs type checking, overload resolution, and name lookup on it. When we get to two-phase lookup later, you will see that this mechanism is far more precise than a macro. Treating templates as "a macro with type checking" is fine as a first impression, but do not stop there.
+::: warning Placeholders are not macro substitution
+Some people understand templates as "a slightly fancier macro substitution". That is only half right. A macro (`#define`) is pure text replacement at the preprocessing stage: it recognizes neither types nor scopes, and one careless step wrecks everything. A template's substitution happens at the compilation stage, where the compiler knows `T` is a type and performs type checking, overload resolution, and name lookup. When we get to two-phase lookup later, we will see that this machinery is far more refined than a macro. Keeping "a macro with type checking" as a first impression is fine—just don't stop there.
 :::
 
-## Why Not a Macro, and Why Not a Virtual Function
+## Why Not Macros, and Why Not Virtual Functions
 
-"Same logic, different types" is a need C++ answers in several ways. Let us line up the three most often compared.
+The "same logic, different types" need can be met down several roads in C++. Let's line up the three that get compared most often.
 
-Macros. `#define max(a, b) ((a) > (b) ? (a) : (b))` works, but it is pure text replacement at preprocessing. Arguments get evaluated twice, types are ignored, there is no scope, and the debugger never sees it. Back in Volume 1 we mentioned the `max` macro from `<windows.h>` on Windows, the one that sends your blood pressure through the roof. Anything a macro can do, a template does better.
+The macro route: `#define max(a, b) ((a) > (b) ? (a) : (b))` does work, but it is pure text replacement during preprocessing. Arguments get evaluated twice, types are ignored, there is no scope, and the debugger never sees it. As Volume 1 mentioned when introducing function templates, the `max` macro from `<windows.h>` on Windows can send your blood pressure through the roof. Nearly everything a macro can do, a template does better.
 
-Virtual dispatch. Write `max` as a virtual function, and the right implementation is picked at runtime based on the actual type of the object. This forces every participating type into one inheritance hierarchy, and every call goes through a vtable lookup, which costs runtime. Worse, builtin types like `int` and `double` cannot enter your hierarchy at all.
+The virtual-function-polymorphism route: write `max` as a virtual function, and dispatch to the matching implementation at runtime based on the object's actual type. It requires every participating type to live in one inheritance hierarchy, and every call pays a virtual-table lookup—runtime overhead. Worse still, built-in types like `int` and `double` can never enter your inheritance hierarchy.
 
-Templates. The compiler generates a separate copy for every type used, and the call goes to an ordinary, inlineable function. No inheritance hierarchy required. Builtin types and user-defined types are treated the same. No runtime dispatch.
+The template route: generate one copy of the code per type used at compile time, so every call lands on an ordinary, inlineable function. No inheritance-hierarchy constraint—built-in types and user-defined types are treated exactly alike—and no runtime dispatch overhead.
 
-None of these replaces the others. Virtual dispatch fits "one interface, implementation decided at runtime" cases like plugin systems or GUI event dispatch. Templates fit "one piece of logic, type known at compile time" cases like containers and algorithms. As for macros, mostly avoid them when you can.
+None of these three routes replaces another. Virtual functions suit "same interface, concrete implementation known only at runtime"—plugin systems, GUI event dispatch; templates suit "same logic, types known at compile time"—containers and algorithms. As for macros, the rule is basically: if you can avoid them, do.
 
 ## C++ Has Four Kinds of Template Entities
 
-A lot of people think templates come in two flavors, function templates and class templates. The C++ standard actually defines four kinds of entities a template can produce. cppreference puts it plainly: a template is a C++ entity that defines a family of entities.
+Many people assume templates are just function templates and class templates, but in the C++ standard a template can define four kinds of entities. cppreference gives the definition: a template is a C++ entity that defines a family of entities.
 
-A function template defines a family of functions; `std::max` and `std::sort` are examples. A class template defines a family of classes; `std::vector` and `std::map` are examples. Both have been around since C++98, and these are the two you know best. There are two newer ones. A variable template (since C++14) defines a family of variables or static members. An alias template (since C++11) defines a family of type aliases.
+A function template defines a family of functions—`std::max` and `std::sort` are both function templates. A class template defines a family of classes—`std::vector` and `std::map` are both class templates. These two have existed since C++98 and are the ones we know best. On top of them come two newer kinds: variable templates (since C++14), which define a family of variables or static members, and alias templates (since C++11), which define a family of type aliases.
 
-Variable templates answer a plain need: attach a constant to "each type." Before C++14, people simulated this with a static member of a class template.
+Variable templates answer a very plain need: give "each type" its own constant. Before C++14, people emulated that with a class template's static member:
 
 ```cpp
-// The old way, before C++14: simulate "a parameterized constant" with a class template static member
+// The old pre-C++14 way: emulate a "parameterized constant" with a class template's static member
 template <typename T>
 struct pi_trait {
     static constexpr T value = T(3.1415926535897932385L);
@@ -84,7 +91,7 @@ struct pi_trait {
 double r = pi_trait<double>::value * 2.0;
 ```
 
-C++14 gave us variable templates, and you can write it as a single parameterized variable, much cleaner.
+C++14 brought variable templates: write it directly as one parameterized variable, much cleaner:
 
 ```cpp
 template <typename T>
@@ -93,29 +100,29 @@ constexpr T pi = T(3.1415926535897932385L);  // variable template
 double r = pi<double> * 2.0;  // reads like an ordinary constant, just with a <T>
 ```
 
-Part of the reason `std::numeric_limits<T>::max()` is a function rather than a variable is that variable templates did not exist when it was born. `std::tuple_size` and `std::extent` later grew matching `_v` variable-template versions (things like `std::extent_v<T>`, introduced in C++17), precisely so you could stop writing `::value`. The feature-test macro on cppreference is `__cpp_variable_templates = 201304L`, tied to C++14.
+Part of the reason `std::numeric_limits<T>::max()` in the standard library is a function rather than a variable is that variable templates did not exist when it was born. `std::tuple_size`, `std::extent`, and their kin later all gained matching `_v` variable-template versions (`std::extent_v<T>`, since C++17), precisely so that everyone writes one less `::value`. On cppreference, the feature-test macro for variable templates is `__cpp_variable_templates = 201304L`, corresponding to C++14.
 
-Alias templates answer the need to give a family of types a short name.
+Alias templates answer "give a family of types one short name":
 
 ```cpp
-// Before alias templates, naming vector<T> meant borrowing a nested using inside a class template
+// Before alias templates, naming vector<T> meant going through a class template's nested using
 template <typename T>
 struct vec_alias { using type = std::vector<T>; };
-typename vec_alias<int>::type v;  // typename, then ::type, noisy
+typename vec_alias<int>::type v;  // typename and ::type all over again—verbose
 
-// C++11 alias template, one line
+// C++11 alias template: one line and done
 template <typename T>
 using vec = std::vector<T>;
 vec<int> v;  // clean
 ```
 
-This volume has a whole piece on alias templates later. For now, just hold this impression: **in C++, it is not only functions and classes that can be parameterized**.
+A later part of this volume is dedicated to alias templates; for now, just keep the impression: **in C++, it is not only functions and classes that can be parameterized**.
 
 ## Three Kinds of Template Parameters
 
-The "placeholder" in a template comes in three forms.
+A template's "placeholders" come in three kinds, one per kind of parameter.
 
-A type parameter, written `typename T` or `class T`, stands in for a type. This is the most common. A non-type parameter, written like `template <int N>`, stands in for a compile-time **value**: an integer, a pointer, a reference, and since C++20 a floating-point value or a class type that meets certain conditions. A template template parameter stands in for a template itself.
+The type parameter, written `typename T` or `class T`, stands for a type—the most common kind. The non-type parameter, written in forms like `template <int N>`, stands for a **value** already known at compile time: an integer, a pointer, a reference, plus—since C++20—floating-point numbers and class types satisfying certain conditions. The template template parameter stands for a template itself.
 
 ```cpp
 template <typename T, std::size_t N>   // T is a type parameter, N is a non-type parameter
@@ -129,13 +136,13 @@ struct wrapper {
 };
 ```
 
-`std::array<T, N>` is the classic pairing of the first two: `T` is the element type, `N` is the size, and `N` must be known at compile time. Template template parameters are rare in day-to-day code, but they show up when you write higher-order generic libraries (say, a policy that swaps out the underlying container). All three get their own treatment later in this volume, and the non-type parameter piece spends time on how much C++20 loosened the rules.
+`std::array<T, N>` is the classic example of the first two cooperating: `T` is the element type, `N` is the array size, and `N` must be known at compile time. Template template parameters rarely show up in daily work, but you will run into them when writing higher-order generic libraries (say, a strategy to "swap in a different underlying container"). All three kinds get their own chapter later in this volume, and the chapter on non-type parameters covers in detail the great loosening C++20 gave them.
 
-## Templates Are Compile-Time Turing Complete
+## Templates Are Compile-Time Turing-Complete
 
-This deserves a section of its own, because it determines how far templates can go. **The C++ template mechanism is Turing complete.** Given the patience, you can do arbitrary computation at compile time with templates: branching, looping (faked with recursion), any logic, all finished before the program runs. What you get at runtime is a precomputed result.
+This deserves a section of its own, because it decides how far templates can go. **C++'s template mechanism is Turing-complete**—that is, if we are willing, we can carry out arbitrarily complex computation with templates at compile time. Branches, loops (simulated with recursion), any logic at all: everything completes during compilation, and the runtime receives results that are already computed.
 
-A minimal example, computing factorials at compile time.
+A minimal example—computing factorials at compile time:
 
 ```cpp
 template <unsigned N>
@@ -144,15 +151,15 @@ struct Factorial {
 };
 
 template <>
-struct Factorial<0> {              // recursion base: 0! = 1
+struct Factorial<0> {              // recursion terminates: 0! = 1
     static constexpr unsigned value = 1;
 };
 
 template <unsigned N>
-constexpr unsigned factorial_v = Factorial<N>::value;  // C++14 variable template, convenient
+constexpr unsigned factorial_v = Factorial<N>::value;  // C++14 variable template, put to use while we're here
 ```
 
-Run it, and all the multiplication happened at compile time.
+Run it, and every multiplication happens at compile time:
 
 ```bash
 $ g++ -std=c++14 factorial.cpp -o factorial && ./factorial
@@ -161,52 +168,51 @@ $ g++ -std=c++14 factorial.cpp -o factorial && ./factorial
 ```
 
 ```cpp
-static_assert(Factorial<5>::value == 120, "");      // checked at compile time
+static_assert(Factorial<5>::value == 120, "");      // already verified at compile time
 static_assert(factorial_v<10> == 3628800, "");
 ```
 
-`Factorial<5>::value` is already `120` before the program starts. This is the root of template metaprogramming (TMP): push computation into compile time. It powers impressive things, expression templates, compile-time strings, `constexpr` parsing all build on it, at the cost of slow builds, unreadable errors, and code that is hard to follow. Part three of this volume (C++20/23 metaprogramming) is about how C++ uses `concepts`, `consteval`, and `if constexpr` to drag TMP out of "dark arts" and into "code a person can write." For this piece, remember one thing: **a template does not only generate code, it can compute at compile time**.
+`Factorial<5>::value` is already `120` before the program ever runs. This is the root of template metaprogramming (TMP): stuff the computation into compile time. It enables remarkable things—expression templates, compile-time strings, and `constexpr` compile-time parsing are all built on it—at the cost of slow compiles, hard-to-read error messages, and poor code readability. Part 3 of this volume (C++20/23 metaprogramming) covers how C++ uses `concepts`, `consteval`, and `if constexpr` to pull TMP back from "black magic" to "code a human can write". For this chapter, just remember one thing: **a template does not only generate code; it can itself compute things at compile time**.
 
-## The Cost: Instantiation, Code Bloat, Header-Only
+## The Cost: Instantiation, Code Bloat, and Header-Only
 
-Templates are not free. There are three costs.
+Templates are not free; there are three bills to pay.
 
-The first is **lazy instantiation**. Only the member functions of a class template that are actually used get instantiated. Writing `std::vector<Heavy>` does not instantiate every member function of `vector`, only the ones you call. This is why the STL dares to pack so much into one template. You do not pay for what you do not use.
+The first is **lazy instantiation**. Of a class template's member functions, only the ones actually used get instantiated. Writing a `std::vector<Heavy>` does not instantiate every member function of `vector`—only the ones you actually call. This is also why the STL dares to pack that much functionality into one template: what you don't use, you don't pay for.
 
 ```cpp
 template <typename T>
 struct Demo {
     void used_function() { T t{}; /* ... */ }
     void unused_function() {
-        // Even if this body refers to a member that does not exist on T,
-        // it will not error. This function is never called, so it is never instantiated.
+        // Even code using members that don't exist on T at all wouldn't error here
+        // This function is never called, so it is never instantiated
     }
 };
 
 int main() {
     Demo<int> d;
     d.used_function();   // only this one gets instantiated
-    // unused_function() is never called, so it is never instantiated,
-    // and the compiler never sees the nonsense inside it
+    // unused_function() is never called, so it is never instantiated and the compiler never sees the garbage inside
 }
 ```
 
-This cuts both ways. The upside is faster builds and smaller binaries. The downside is that some errors stay hidden until you actually use the thing.
+This cuts both ways. The upside: faster compiles and a smaller binary. The downside: some errors stay well hidden and surface only once you actually use them.
 
-The second is **code bloat**. Every type you use gets its own copy. `max_value` used with `int`, `double`, and `std::string` is three functions. For a small function this is nothing. For large templates (say, the full specialization of some STL algorithm), it piles up and the binary grows noticeably. The function-template-in-depth piece in this volume covers `extern template`, the tool for keeping this bloat under control.
+The second is **code bloat**. Every type used gets its own copy of the code. Using `max_value` once each for `int`, `double`, and `std::string` means three functions. For small functions, no big deal; for large templates (full specializations of certain STL algorithms, say), the accumulation visibly fattens the binary. The function-templates-in-depth chapter later in this volume covers `extern template`, precisely the tool for keeping this bloat in check.
 
-The third is **header-only**. A template definition has to be visible at the point where it is instantiated, so almost every template library is a header-only library. boost is the canonical example. You cannot do what ordinary functions do, put the declaration in a header and the implementation in a `.cpp`. This is a direct cause of the old "C++ builds slowly" complaint: every translation unit re-parses the template definitions. C++20 modules exist to treat this disease, but that is a separate, large topic.
+The third is **header-only**. A template's definition must be visible at the point where it is instantiated, so the overwhelming majority of template libraries are pure header-only libraries—boost is the classic example. You cannot do what you do with ordinary functions: declaration in the header, implementation in a `.cpp`. This feeds directly into C++'s old "slow compiles" problem: every translation unit re-parses the template definitions. C++20 modules exist to cure exactly this disease, but that is another big topic.
 
 ## export template: An Abandoned Attempt
 
-On the subject of "the definition must be visible," the C++98 committee did offer a way out, called `export template`. The idea was beautiful: a template marked `export` could be instantiated by users who only saw the declaration, no need to include the definition, and you would get separate compilation for templates.
+Speaking of "the definition must be visible": the committee actually did offer a way out in the C++98 standard, called `export template`. The idea was lovely: a template marked `export` could be instantiated from its declaration alone, without including the definition—separate compilation for templates.
 
-Reality was unkind. Across the entire C++98 standard, only the Edison Design Group (EDG) front end and the Comeau compiler built on it ever implemented `export template`. GCC, Clang, and MSVC never did. The mechanism was enormously complex to implement, and the payoff was unclear. C++11 removed it from the standard entirely. cppreference marks it `(until C++11)`.
+Reality was less kind. In the entire C++98 standard, only the Edison Design Group (EDG) front end and the Comeau compiler built on it ever truly implemented `export template`; GCC, Clang, and MSVC never did. The mechanism was extraordinarily complex to implement, while the benefit was hard to see. Come C++11, the committee simply removed it from the standard; cppreference marks it `(until C++11)`.
 
-The lesson here is that **separate compilation for templates is still an unsolved problem**. `extern template` cuts down redundant instantiation, but it does not truly separate declaration from definition. C++20 modules are a different, new answer, and their ecosystem is still being built. For now, template code still basically has to live in headers. That is the reality C++ programmers work in.
+The lesson this history leaves us: **separate compilation of templates remains an unsolved problem to this day**. `extern template` cuts down redundant instantiations but cannot truly separate declaration from definition; C++20 modules are a fresh, completely different answer, and their ecosystem is still being built. So for now, template code basically still has to live in headers—that is a reality C++ programmers accept.
 
 ## The Road This Volume Takes
 
-This piece stripped templates back to what they are: a code recipe with placeholders, stamped into real code at compile time, with no runtime overhead, paid for in code bloat and the need to live in headers. From here we move from "can use" to "can write libraries with." The next piece breaks open the compilation model of function templates, `extern template`, and the classic trap that function templates cannot be partially specialized. After that comes class templates, specialization and partial specialization, non-type parameters, two-phase name lookup, friend injection, and alias templates, closing with CRTP for static polymorphism and a `fixed_vector` project that strings everything together.
+In this chapter we stripped templates back to what they really are: a code recipe with placeholders; at compile time, real code is generated from the recipe, with zero runtime overhead, at the cost of code bloat and mandatory headers. From here on, we push from "can use" toward "can write libraries". The next chapter takes function templates apart: the compilation model, `extern template`, and the classic trap that function templates cannot be partially specialized. After that come class templates, specialization and partial specialization, non-type parameters, two-phase name lookup, friend injection, and alias templates; CRTP then closes out static polymorphism, and finally a `fixed_vector` capstone project strings everything you learned together.
 
-Read this far, and you should feel grounded on "what a template is." The rest of the volume takes the "why" apart, piece by piece.
+Reading to here, you should feel confident about what a template *is*. In the pages ahead, we work through the *why*, one piece at a time.

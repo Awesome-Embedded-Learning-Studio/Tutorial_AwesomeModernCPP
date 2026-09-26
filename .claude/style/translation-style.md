@@ -18,6 +18,7 @@
 | `tags` | **原样保留中文标签**（VALID_TAGS 即中文体系，合法） |
 | `prerequisites` / `related` | 引用的是文章标题 → **译成对应英文文章的英文标题** |
 | 键顺序 | 与中文源保持一致，不重排 |
+| **YAML 引号** | 任何值含 `: `（冒号+空格）必须加引号（单引号优先,内部单引号双写）——`title: 'Three-Way Comparison: ...'`;否则整块 frontmatter 解析失败 |
 
 正文若以 H1 开头，H1 随 title 一并译英。
 
