@@ -2,17 +2,17 @@
 chapter: 1
 cpp_standard:
 - 23
-description: "A line-by-line teardown of bind_once's parameter binding, from the motivation through the lambda capture pack expansion, finishing with a complete template instantiation example unfolded by hand."
+description: "A line-by-line teardown of the bind_once parameter-binding implementation — from the motivation through the lambda capture pack expansion, ending with a complete template instantiation example unfolded by hand"
 difficulty: beginner
 order: 3
 platform: host
 prerequisites:
-- OnceCallback hands-on (II): the core skeleton
-- OnceCallback prerequisites (II): std::invoke and the uniform call protocol
-- OnceCallback prerequisites (III): advanced lambda features
+- 'OnceCallback hands-on (II): building the core skeleton'
+- 'OnceCallback prerequisite (II): std::invoke and the uniform calling protocol'
+- 'OnceCallback prerequisite (III): advanced lambda features'
 reading_time_minutes: 7
 related:
-- OnceCallback hands-on (IV): the cancellation token
+- 'OnceCallback hands-on (IV): designing the cancellation token'
 tags:
 - host
 - cpp-modern
@@ -21,14 +21,20 @@ tags:
 - 函数对象
 - 模板
 title: "OnceCallback hands-on (III): implementing bind_once"
+translation:
+  source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/01-3-once-callback-bind-once.md
+  source_hash: 0038fe2a0717889372b29e8d4a56b562c78052172fb0a155352130e171cdbbea
+  translated_at: '2026-09-26T00:28:59+00:00'
+  engine: anthropic
+  token_count: 2900
 ---
 # OnceCallback hands-on (III): implementing bind_once
 
-The skeleton is in place and `run()` can consume callbacks. But there's a familiar friction you hit pretty quickly: every time you build a `OnceCallback` you have to feed it a callable with the full signature, every argument handed over at the call site. The real world is rarely that tidy. More often a couple of arguments are pinned down when the callback is created, and only the remaining one or two have to wait until the call.
+The skeleton stands, and `run()` can consume callbacks. But as we kept writing, we bumped into a very common bit of friction: every time you construct a OnceCallback you have to stuff a callable with the complete signature into it, and every argument has to be handed over at the moment of the call. Reality is rarely that tidy — nine times out of ten, a few arguments are already nailed down when the callback is created, and only the remaining one or two have to wait for the call site.
 
-That's what `bind_once` is for. It bakes the "already decided" arguments into the callback ahead of time, so the caller only has to supply the rest. In this piece we'll walk through its implementation line by line, then unfold a full template instantiation by hand so you can see exactly what the compiler is doing behind your back.
+That is exactly what `bind_once` is for. It stuffs the already-decided arguments into the callback ahead of time, and the caller only has to supply the rest. In this piece we pick its implementation apart line by line, then unfold a complete template instantiation by hand, so you can see exactly what moves the compiler makes behind the curtain.
 
-Let's start with the no-`bind_once` version. Say there's a three-parameter function, and the first two arguments are already known at bind time:
+First, the picture without `bind_once`. Say we have a three-parameter function whose first two arguments can be settled at bind time:
 
 ```cpp
 int compute(int x, int y, int z) {
@@ -40,9 +46,9 @@ auto cb = OnceCallback<int(int, int, int)>(compute);
 int r = std::move(cb).run(10, 20, 30);  // r == 60
 ```
 
-If `x = 10` and `y = 20` are settled at bind time and only `z` has to come in at call time, what we really want is a `OnceCallback<int(int)>` that takes a single argument.
+If `x = 10` and `y = 20` are fixed at bind time and only `z` has to come in at call time, what we really want is a `OnceCallback<int(int)>` that accepts a single argument.
 
-Without `bind_once`, the only option is to wrap it in a hand-written lambda:
+Without `bind_once`, your only option is to hand-write a lambda wrapper:
 
 ```cpp
 auto wrapped = OnceCallback<int(int)>(
@@ -51,16 +57,16 @@ auto wrapped = OnceCallback<int(int)>(
 int r = std::move(wrapped).run(30);  // r == 60
 ```
 
-It works. But once the parameter list grows or the types get awkward (say, binding a move-only `unique_ptr`), writing that lambda by hand gets old fast. What `bind_once` does is automate the "wrap it in a lambda" step.
+It runs. But once the parameters pile up and the types get complicated (binding a move-only `unique_ptr`, say), the hand-written lambda starts to grate. What `bind_once` does is automate that wrap-it-in-a-lambda step.
 
 ```cpp
 auto bound = bind_once<int(int)>(compute, 10, 20);
 int r = std::move(bound).run(30);  // r == 60
 ```
 
-## A line-by-line teardown of the bind_once implementation
+## A line-by-line teardown of the full bind_once implementation
 
-Let's lay the full source out, then chew through it piece by piece.
+Let's put the whole source on the table first, and chew through it one segment at a time.
 
 ```cpp
 template<typename Signature, typename F, typename... BoundArgs>
@@ -79,11 +85,11 @@ auto bind_once(F&& funtor, BoundArgs&&... args) {
 }
 ```
 
-## From the template parameters down into the lambda body
+## From the template parameters to the lambda body
 
-The template parameters are the entry point, so look there first. `bind_once` carries three. `Signature` is the target callback's signature (something like `int(int)`), and it has to be written by hand; the compiler can't deduce it. `F` is the type of the callable object (a lambda closure type, a function pointer, and so on), deduced from the first argument. `BoundArgs...` is the type pack of the bound arguments, following along with the trailing arguments. The last two are CTAD's job; only the first one has to come from you.
+The template parameters come first — they are the entrance. `bind_once` carries three of them at the top: `Signature` is the target callback's signature (`int(int)`, say) — you must write it yourself, the compiler cannot deduce it; `F` is the type of the callable (a lambda closure, a function pointer, that sort of thing), deduced from the first argument; `BoundArgs...` is the pack of bound-argument types, following the trailing arguments. The latter two are CTAD's work; only the first one falls to you personally.
 
-Next is the capture list, the most intricate part of the whole implementation. `f = std::forward<F>(funtor)` uses an init capture to perfectly forward the callable into the closure: if an rvalue came in, it gets moved in; if an lvalue, it gets copied in, and the value category is preserved the whole way. The line below it, `...bound = std::forward<BoundArgs>(args)`, is the lambda init capture pack expansion that C++20 brought in. It hands each type in `BoundArgs...` its own capture variable, each initialized through `std::forward`. If `BoundArgs = {int, std::string}`, the expansion comes out equivalent to:
+Next comes the capture list, the most delicate piece of the whole implementation. `f = std::forward<F>(funtor)` uses an init capture to perfectly forward the callable into the closure: an rvalue coming in gets moved in, an lvalue coming in gets copied in, and the value category is preserved the whole way down. The next line, `...bound = std::forward<BoundArgs>(args)`, is the lambda init-capture pack expansion that C++20 brought in: it hands one capture variable to every type in `BoundArgs...`, each initialized through `std::forward`. If `BoundArgs = {int, std::string}`, the finished expansion is equivalent to:
 
 ```cpp
 [f = std::forward<F>(funtor),
@@ -91,9 +97,9 @@ Next is the capture list, the most intricate part of the whole implementation. `
  b2 = std::forward<std::string>(arg2)]
 ```
 
-The parameter list `(auto&&... call_args)` is what receives the arguments handed in at runtime. `auto&&` here is equivalent to `T&&` for a template parameter, that is, a forwarding reference, not an rvalue reference. Beginners read past that distinction all the time.
+The parameter list `(auto&&... call_args)` takes in the ones that are passed in only at run time. Here `auto&&` is the same thing as `T&&` for a template parameter — a forwarding reference, not an rvalue reference. Newcomers misread that all the time.
 
-The `mutable` keyword is not something you can drop. Inside the lambda body we call `std::move(f)` and `std::move(bound)...`, and both of those need to modify the captured variables. A lambda without `mutable` is const, and the captures inside are const along with it. You can't move out of a const object, and the compiler will throw it right back at you.
+Whatever you do, do not drop the `mutable` keyword. The lambda body calls `std::move(f)` and `std::move(bound)...`, and both of those operations modify the captured variables. A lambda without `mutable` is const, and the captures inside it are const along with it — you cannot move from a const object, and the compiler will shoot you down on the spot.
 
 The last layer is the lambda body:
 
@@ -105,13 +111,13 @@ return std::invoke(
 );
 ```
 
-`std::invoke` was covered in prerequisites (II); it's the catch-all that handles every shape of callable object, member function pointers included. `std::move(f)` and `std::move(bound)...` fling the captured values out as rvalues. Captured variables inside a `mutable` lambda are lvalues in their own right, so turning them into rvalues on the way out takes an explicit `std::move`. The `call_args...` line just perfect-forwards the runtime arguments as they came.
+`std::invoke` was covered in Prerequisite (II): it uniformly catches every shape of callable, member function pointers included. `std::move(f)` and `std::move(bound)...` fling the captured objects out as rvalues — because captured variables inside a `mutable` lambda are themselves lvalues, shipping them out as rvalues takes an explicit `std::move` — while the `call_args...` line perfect-forwards the run-time arguments as they came.
 
-There's an ordering here worth watching: bound arguments first, runtime arguments after. It isn't arbitrary. It directly decides which arguments are "pre-bound" and which are held back for the call. Get it backwards and the signature won't line up with the arguments.
+There is one ordering detail to keep an eye on: bound arguments first, run-time arguments after. That is not an arbitrary arrangement — it directly decides which parameters get "pre-bound" and which ones wait for the moment of the call. Get it backwards, and the signature and the arguments no longer line up.
 
 ## Unfolding a concrete example by hand
 
-Reading the source only gets you so far. Let's take one concrete call and lay out what the template turns into once it's instantiated, so we can see exactly what the compiler generated. Suppose:
+Staring at the source still leaves a layer between you and the machinery. So let's take one concrete call, spread out what the template instantiation looks like by hand, and see what the compiler actually generates. Suppose:
 
 ```cpp
 struct Calc {
@@ -123,11 +129,11 @@ auto bound = bind_once<int(int)>(&Calc::multiply, &calc, 5);
 int r = std::move(bound).run(8);  // r == 40
 ```
 
-## Stepping through the template expansion
+## Laying the template out step by step
 
-First, the parameter deduction. `Signature = int(int)` is what you wrote; no argument there. `F = int (Calc::*)(int, int)`, the member function pointer type the compiler reads off `&Calc::multiply`. `BoundArgs = {Calc*, int}`, an object pointer plus the first argument.
+Deduce the parameters first. `Signature = int(int)` is what you wrote, no arguing there; `F = int (Calc::*)(int, int)` — the member-function-pointer type the compiler deduced from `&Calc::multiply`; `BoundArgs = {Calc*, int}`, an object pointer plus the first argument.
 
-The capture list expands into:
+The capture list expands to this:
 
 ```cpp
 [f = std::forward<int (Calc::*)(int, int)>(&Calc::multiply),
@@ -135,46 +141,46 @@ The capture list expands into:
  b2 = std::forward<int>(5)]
 ```
 
-`f` grips the member function pointer, `b1` grips the object pointer, `b2` grips the bound integer 5.
+`f` clamps onto the member function pointer, `b1` onto the object pointer, and `b2` onto the bound integer 5.
 
-Now look at what happens when `bound.run(8)` is actually called. At that moment `call_args = {8}`, and the `std::invoke` inside the lambda body receives:
+Then let's watch what happens when `bound.run(8)` actually gets called. At that moment `call_args = {8}`, and the `std::invoke` in the lambda body receives the arguments:
 
 ```cpp
 std::invoke(std::move(f), std::move(b1), std::move(b2), 8)
 ```
 
-Which is:
+That is:
 
 ```cpp
 std::invoke(&Calc::multiply, &calc, 5, 8)
 ```
 
-`std::invoke` sees that the first argument is a member function pointer and the second is a pointer to an object, and it applies the member-call rule:
+`std::invoke` sees a member function pointer in the first slot and a pointer to the object in the second, and expands it automatically under the member-invocation rules:
 
 ```cpp
 ((*(&calc)).*(&Calc::multiply))(5, 8)
 ```
 
-That's equivalent to `calc.multiply(5, 8)`, which gives `40`. The whole trick is just `std::invoke`'s member-function-pointer overload doing its job.
+which is equivalent to `calc.multiply(5, 8)`, giving `40`. The whole magic is just `std::invoke`'s member-function-pointer overload catching the fall.
 
-## A lifetime trap hiding here
+## There is a lifetime trap here
 
-`b1 = std::forward<Calc*>(&calc)` captures a raw pointer, `&calc`. `bind_once` doesn't manage `calc`'s lifetime for you at all. If `calc` gets destroyed before the callback runs, the lambda is left holding a dangling pointer, and `std::invoke` reaches through it into freed memory. That's undefined behavior, a textbook use-after-free.
+`b1 = std::forward<Calc*>(&calc)` captures the raw pointer `&calc`. `bind_once` does not manage `calc`'s life and death for you at all. If `calc` gets destroyed before the callback runs, what sits inside the lambda is a dangling pointer, and `std::invoke` follows it into freed memory — undefined behavior, a textbook use-after-free.
 
-Chromium patches this three ways: `base::Unretained` to mark "I vouch for it being alive" explicitly, `base::Owned` to take ownership outright, and `base::WeakPtr` so the callback invalidates itself the moment the object destructs. Our stripped-down version takes the easy road and pushes the responsibility onto the caller. In real production code you'd want one of those three in place.
+Chromium applies three patches to this spot: `base::Unretained` explicitly marks "I vouch that it is alive", `base::Owned` takes ownership over outright, and `base::WeakPtr` invalidates the callback automatically the moment the object is destroyed. Our simplified edition takes the easy road for now and dumps the burden on the caller — but once you head for production, you really should bolt on one of the three.
 
-## Why the signature has to be spelled out
+## Why the signature must be specified explicitly
 
-You've probably noticed that the `int(int)` in `bind_once<int(int)>(...)` has to be written by hand. Ideally the compiler would take the callable's signature and the bound argument count and figure out the remaining signature on its own. In C++ that turns out to be a great deal harder than it looks.
+You have probably noticed that the `int(int)` in `bind_once<int(int)>(...)` has to be written in by hand. Ideally, the compiler would deduce the remaining signature automatically from the callable's signature and the number of bound arguments. In C++, though, that job turns out to be far more troublesome than it sounds.
 
-A function pointer `R(*)(Args...)` is the easy case: a template partial specialization can dig out the parameter list, and a compile-time "type list slice" chops off the first N. A functor with a fixed call signature is also fine, `decltype(&T::operator())` cracks it in one shot. The real wall is the generic lambda (`[](auto x) { ... }`). Its `operator()` is itself a template, so it has no single determined signature, and at the type level there's no way to ask "what arguments does this lambda take."
+A function pointer `R(*)(Args...)` is still the easy case: template partial specialization digs the parameter list out, and a compile-time "type-list slice" chops off the first N. Functors with a fixed signature work too — `decltype(&T::operator())` and you are done in one shot. The real hard nut is the generic lambda (`[](auto x) { ... }`): its `operator()` is itself a template, so no single determined signature exists at all, and at the type level the compiler cannot obtain the piece of information "what arguments does this lambda actually take".
 
-Chromium wrote hundreds of lines of template metaprogramming to paper over those edge cases. There's no point in following it down that road for a teaching version. Making the caller type one extra `int(int)` is the best value for the effort.
+To catch all these edge cases, Chromium wrote a solid few hundred lines of template metaprogramming. A teaching edition has no reason to compete in that arms race — letting the caller type one extra `int(int)` is the best value-for-effort arrangement.
 
-In the next piece we look at how to build the cancellation token, a lightweight cancellation mechanism stitched together from `shared_ptr` and `atomic<bool>`.
+In the next piece we will look at how to build the cancellation token — a lightweight cancellation mechanism stitched together from a `shared_ptr` and an `atomic<bool>`.
 
 ## References
 
-- [Chromium bind_internal.h source](https://chromium.googlesource.com/chromium/src/+/HEAD/base/functional/bind_internal.h)
+- [The Chromium bind_internal.h source](https://chromium.googlesource.com/chromium/src/+/HEAD/base/functional/bind_internal.h)
 - [cppreference: std::invoke](https://en.cppreference.com/w/cpp/utility/functional/invoke)
 - [P0780R2 - Pack Expansion in Lambda Capture](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0780r2.html)

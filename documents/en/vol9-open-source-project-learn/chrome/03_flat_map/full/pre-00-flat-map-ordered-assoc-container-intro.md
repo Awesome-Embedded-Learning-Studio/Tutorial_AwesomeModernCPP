@@ -4,7 +4,7 @@ cpp_standard:
 - 11
 - 17
 - 20
-description: "Starting from std::map's red-black tree: the per-node malloc and cache misses that hurt at small N, and how flat_map trades the tree for a sorted vector plus binary search"
+description: "Starting from std::map's red-black tree implementation: the per-node malloc plus cache-miss pain at small N, and how flat_map takes a different road with a sorted vector plus binary search"
 difficulty: intermediate
 order: 0
 platform: host
@@ -22,22 +22,28 @@ tags:
 - map
 - 优化
 title: "flat_map prerequisite (0): ordered associative containers and std::map's red-black tree"
+translation:
+  source: documents/vol9-open-source-project-learn/chrome/03_flat_map/full/pre-00-flat-map-ordered-assoc-container-intro.md
+  source_hash: 242e32fde7eb5461223b35335366ca3a824b60988184434b28a5ba02322b7375
+  translated_at: '2026-09-26T02:46:39+00:00'
+  engine: anthropic
+  token_count: 2000
 ---
 # flat_map prerequisite (0): ordered associative containers and std::map's red-black tree
 
-You write `std::map<std::string, Config>` for a config table and probably don't give the internals a second thought. `O(log n)` lookup, textbook says it's fine, it's fine. But if that table has a dozen entries, gets built once at startup, and never moves again, go profile it. It's slower than you'd guess. Not because of the `O(log n)` term, but in the place asymptotic complexity can't hide: every key-value pair costs its own `malloc`, and a lookup hops across the heap from node to node, eating cache misses the whole way.
+You toss off a `std::map<std::string, Config>` for a config table and most likely never give its internals a second thought — `O(log n)` lookup, and if the textbook says that's reasonable, it's reasonable. But if this table holds just a dozen entries, gets built once at startup and never moves again, and you actually go profile it, you'll find it's a good deal slower than you'd expect. The slowness isn't in the `O(log n)` term; it lives where asymptotic complexity can't hide: every key-value you store costs its own `malloc` for a node, and a lookup hops around the heap, stepping on cache misses nearly the whole way.
 
-Chromium ships its own ordered associative containers in `//base`, `flat_map` and `flat_set`, and takes the exact opposite approach. Pack every element into one contiguous sorted array, look things up by binary search. The asymptotic complexity is still `O(log n)`, but because the data sits together, a single cache line drags a dozen elements into L1 for free, and the constant factor drops by a lot. There's a cost, of course: insert and erase degrade to `O(n)` because the array has to shift. This piece opens up std::map's red-black tree and walks through why flat_map picks the other road.
+Chromium stands up its own family of ordered associative containers in `//base` — `flat_map`, `flat_set` — with the approach flipped completely around: one contiguous sorted array holds all the elements, and lookup is a binary search. The asymptotic complexity is still `O(log n)`, but the data sits together, so a single CPU cache line carries a dozen-odd elements into L1 as a freebie, and the constant factor shrinks by a large chunk. There's a price, of course: insert and erase degrade to `O(n)` (the array has to shift). In this piece we crack open std::map's red-black tree and spell out exactly why flat_map takes this other road.
 
 ## Pinning down "associative container" first
 
-The line between an associative container and a sequence container is one sentence: a sequence container is accessed by position, you want element 0, element 1; an associative container is accessed by key, you call `m.find("timeout")` and want the value tied to that key. The standard library gives you two flavors, the unordered `std::unordered_map` (a hash table, `O(1)` average lookup) and the ordered `std::map` (a red-black tree, `O(log n)` lookup).
+The dividing line between an associative container and a sequence container, stripped to a single sentence: a sequence container is accessed by position — you want the 0th one, the 1st one; an associative container is accessed by key — you call `m.find("timeout")` and want the value tied to that key. The standard library gives you two families here, the unordered `std::unordered_map` (a hash table, `O(1)` lookup on average) and the ordered `std::map` (a red-black tree, `O(log n)` lookup).
 
-We're only looking at the ordered kind here. For one thing flat_map itself is ordered. For another, "ordered" is a non-trivial invariant: you can iterate keys in sorted order, carve out a range with `lower_bound`, ask for a predecessor or successor, none of which a hash table can do. Unordered is unordered. So the question "how should an ordered associative container be implemented" deserves a real answer. The standard library's answer is a red-black tree; Chromium's is a sorted array. Let's lay both out.
+We're only staring at the ordered kind in this piece. For one thing, flat_map itself is ordered; for another, "ordered" is an invariant with real weight: you can iterate in key order, frame out a range with `lower_bound`, run predecessor and successor queries — none of which a hash table can do; unordered is unordered. So the question "how exactly should an ordered associative container be implemented" deserves real thought: the standard library's answer is a red-black tree, Chromium's is a sorted array. Let's lay both roads out and look.
 
-## How std::map is built: the red-black tree
+## std::map's red-black tree implementation
 
-All three major implementations (libstdc++, libc++, MSVC) build `std::map` on a red-black tree, a self-balancing binary search tree. Each key-value pair lives in its own tree node, which on a 64-bit box looks roughly like this:
+Under the hood, `std::map` in all three major implementations (libstdc++, libc++, MSVC) is a red-black tree, a self-balancing binary search tree. Every key-value pair occupies one tree node, which on 64-bit looks like this:
 
 ```text
 struct Node {
@@ -49,53 +55,53 @@ struct Node {
 };
 ```
 
-The pointers and the color alone already put you at 25 bytes (with alignment padding, usually 32 in practice), and that's before your key-value. In other words, for every element you store, on top of the data itself you pay 32 bytes of node metadata.
+The pointers plus the color alone already put you at 25 bytes (with alignment padding, usually 32 in practice), and that's before counting your key-value. In other words, for every element you store, on top of the data itself you pay another 32 bytes of node metadata for it.
 
-Lookup is the textbook binary search: start at the root, compare keys, go left if smaller, right if larger. The red-black tree keeps itself balanced, so the height stays `O(log n)`, so lookup is `O(log n)` comparisons. By asymptotic complexity, reasonable.
+Lookup is the textbook binary search: start at the root, compare keys, smaller goes left, larger goes right. The red-black tree keeps itself balanced, tree height stays `O(log n)`, so a lookup is `O(log n)` comparisons. Judged by asymptotic complexity alone: reasonable.
 
-Reasonable, except for the part nobody draws on the slide: every comparison has to get the node into cache first. Red-black tree nodes are allocated one at a time on the heap. Each `insert` does a `new Node` underneath. A million-element `std::map<int,int>` means a million heap allocations, and the addresses come back scattered all over the heap. Lookup is worse. The hop `node = node->left_` dereferences an address nobody has touched before. The CPU pipeline can't prefetch it (the target address isn't known until the previous load finishes), L1 and L2 don't have it, so that hop is a cache miss, and tens to hundreds of cycles are gone. `O(log n)` comparisons, each one a likely miss, is the actual price `std::map::find` pays.
+Reasonable, sure — but the pit hides in the step "get the node into cache before every comparison". Red-black tree nodes are heap-allocated one by one: you `insert` once, and underneath a Node gets `new`ed. A `std::map<int,int>` with a million elements means a million heap allocations for the nodes alone, with the returned addresses scattered all over the heap. Lookup is where it bites harder: the hop `node = node->left_` from the root has to dereference an address nobody has ever touched. The CPU pipeline can't prefetch it (the target address isn't known until the previous load completes), and it isn't sitting in L1/L2 either — that hop is a cache miss, and tens to hundreds of cycles are gone just like that. `O(log n)` comparisons, each one a possible miss: that is what `std::map::find` actually pays.
 
 ## The real disease: the constant factor
 
-Let's stop here and nail this down, because it's the root of the entire flat_map story.
+Let's stop here and pick this apart, because it is the root of the whole flat_map story.
 
-`std::map::find` is `O(log n)`. `flat_map::find` is also `O(log n)`. The asymptotic complexity is identical. But "same asymptotically" has never meant "same speed". Big-O deliberately throws the constant factor away, and the constant factor is set by how much each comparison actually costs.
+`std::map::find` is `O(log n)`, `flat_map::find` is also `O(log n)`, and the asymptotic complexity is identical. But "asymptotically the same" has never meant "equally fast" — big-O notation deliberately erases the constant factor, and the constant factor is decided by how much each comparison actually costs.
 
-For std::map, every comparison is preceded by dragging the node out of memory and into cache. Nodes are scattered across the heap, so each hop is a probable miss. The comparison itself, two ints compared, is one cycle, give or take. Waiting for the node to arrive from memory is a hundred-plus cycles. The cost of the comparison is almost entirely the cache-miss wait; the one cycle spent actually comparing is noise.
+For std::map, before every comparison the node first has to be dragged from memory into cache. Nodes are scattered across the heap, so every hop is most likely a miss. The comparison itself (two ints compared, say) is finished in 1 cycle, but waiting for the node to come over from the far side of memory takes 100+ cycles — nearly the whole "cost" of the comparison is burned waiting out the cache miss; the 1 cycle that actually does the comparing is negligible.
 
-flat_map goes the other way: every element sits next to its neighbors. The CPU pulls data from memory in cache lines (64 bytes on x86), so when you touch `data[0]`, `data[1]`, `data[2]`, and friends come along into L1 for free. Binary search does jump around (`mid = n/2`), but some contiguous stretch is always hot, so each comparison almost always hits cache and finishes in one cycle.
+flat_map goes the other way: all the elements sit next to each other. The CPU scoops data out of memory by the cache line (64 bytes each on x86); when you touch `data[0]`, the neighbors `data[1]`, `data[2]`, … ride along into L1 for free. Binary search does jump around as it accesses (`mid = n/2`), but some contiguous stretch is always hot, so every comparison basically hits cache and is done in 1 cycle.
 
-Same `O(log n)`, then, but in the small-to-medium data range flat_map's constant factor can be an order of magnitude smaller than std::map's. Chromium didn't build this wheel to win on asymptotic complexity. It built it to win on the constant factor.
+So with the same `O(log n)`, in the "small to medium data volume" bracket, flat_map's constant factor can be an order of magnitude smaller than std::map's. What Chromium won by building this wheel isn't the asymptotic complexity — it's the constant factor.
 
-## The other road: a sorted array plus binary search
+## A different road: sorted array + binary search
 
-flat_map's whole idea is one sentence: drop the tree, use a contiguous sorted array, look things up with binary search.
+flat_map's core idea fits in one sentence: don't use a tree — use one contiguous sorted array, and binary search for lookups.
 
 ```text
 flat_map<int,std::string>:
   data_:  [ (1,"a") | (3,"c") | (7,"g") | (9,"i") | ... ]   ← one contiguous sorted vector
-                    lookup uses std::lower_bound (binary search, O(log n))
+                    lookup via std::lower_bound (binary search, O(log n))
 ```
 
-Lookup goes through `std::lower_bound`, a binary search over a sorted array, `O(log n)`, same asymptotics as std::map, but far more cache-friendly because the data is contiguous. The cost moves to insert and erase: push something into the middle and the whole tail shifts back by one, `O(n)`, against std::map's `O(log n)` insert. Storage is just one vector, zero extra node metadata, one contiguous allocation. That's the entire skeleton of flat_map, and it puts the classic "red-black tree vs sorted array" tradeoff on the table without dressing it up: the tree trades spatial locality for `O(log n)` insert, the array trades insert complexity for spatial locality.
+Lookup runs through `std::lower_bound`, a binary search over the sorted array, `O(log n)` — the same asymptotics as std::map, but far more cache-friendly because the data is contiguous. The price sits with insert and erase: wedge one into the middle and the whole tail has to shift back one slot, `O(n)`; that's against std::map's `O(log n)` insert. On the storage side there is just one vector, 0 extra node metadata, one contiguous allocation. That is the entire skeleton of flat_map, and it puts the classic "red-black tree vs sorted array" trade-off on the table exactly as it is: the tree trades spatial locality for `O(log n)` insert; the array trades insert complexity for spatial locality.
 
-So when does the array win? When reads dominate writes.
+So when does the array win? When reads are many and writes are few.
 
-The canonical cases are config tables, lookup tables, command dispatch tables: built once at startup, then almost entirely read, with the occasional insert or erase. For a write-once-read-many workload like that, flat_map's `O(n)` insert happens exactly once, during construction (and even that can be batched into a single `O(N log N)` sort, see 03-4); after that, everything is `O(log n)` cache-friendly lookup. std::map, on the other hand, pays the cache-miss constant factor on every single lookup. Writes are a wash on both sides, one-time, but reads on flat_map are far faster. In this setting it's almost free.
+The most typical cases are exactly config tables, lookup tables, and command dispatch tables: constructed once at startup, then basically only read from, with rare inserts or erases afterwards. Under a "write once, read many" workload like that, flat_map's `O(n)` insert happens exactly once, during construction (and even that can be batch-optimized into a single `O(N log N)` sort-and-done, see 03-4); after that it's all `O(log n)` cache-friendly lookups. std::map? Every lookup pays that cache-miss constant factor. The writes are one-shot on both sides, so it's a tie there, but the reads on flat_map are far faster — in this corner of the world it's almost pure profit.
 
-Flip it around: if your set is large and churns constantly (a live index that keeps growing and shrinking), flat_map's `O(n)` insert starts to hurt, and that's std::map's home turf. Chromium's own container-choosing guide draws the line just that bluntly: write-once-read-many, reach for flat_map; write-many and large, stay with std::map.
+Flip it around: if your set is large and changes constantly (say, an index that never stops growing and shrinking), flat_map's `O(n)` insert starts to hurt, and that is std::map's home turf. Chromium's own container-choosing guide draws the line just that bluntly: write once and read many, use flat_map; write many and in large volume, use std::map.
 
-## Chromium's call, the standard library's follow-on
+## Chromium's trade-off, and the standard library's follow-up
 
-flat_map isn't something Chromium invented out of thin air. The sorted-vector map has been around a while. Alexandrescu published `Loki::AssociationVector` back in 2001 in *Modern C++ Design*, and Boost.Container has carried `boost::flat_map` for years. Chromium moved the idea into `//base` in 2017 and gave it the Chromium-style treatment (`DCHECK`/`CHECK` validation, `raw_ptr_exclusion`, a transparent comparator by default).
+flat_map isn't something Chromium dreamed up out of thin air. The sorted-vector map has a decent history — Alexandrescu already gave us `Loki::AssociationVector` back in 2001 in *Modern C++ Design*, and Boost.Container has long carried `boost::flat_map`. Chromium moved the idea into `//base` in 2017 and, along the way, gave it the Chromium-style special treatment (`DCHECK`/`CHECK` validation, `raw_ptr_exclusion`, a transparent comparator by default).
 
-One detail is worth pulling out. Chromium's flat_map packs keys and values together in one array (`vector<pair<K,V>>`), while the C++23 `std::flat_map` (proposal P0429) goes with split storage: keys live in one contiguous array, values in another. Split storage buys you a denser cache footprint when you only walk the keys, the values aren't tagging along; the cost is implementation complexity, you now keep two containers in sync. Chromium took the non-split, simpler path. The "looks better on paper" split design got set aside by an industrial user, because the implementation complexity it buys back doesn't pay for itself. We'll dig into that trade in 03-6's performance comparison.
+There's one detail we think is worth pulling out. Chromium's flat_map squeezes keys and values into one array (`vector<pair<K,V>>`), while `std::flat_map`, which landed in C++23 (proposal P0429), goes with key-value separation (split storage) — keys and values each get their own contiguous array. Separation buys a denser cache footprint when you only walk the keys, since the values don't come along for the ride; the cost is implementation complexity, keeping two sets of containers in sync. Chromium chose the simple non-split road — the "looks better" split scheme got set aside by a heavyweight industrial user, because the small gain it buys back doesn't pay for the implementation complexity. We'll pick that disagreement apart in 03-6's performance comparison.
 
-That's the foundation layer. flat_map stores its data in a vector by default, so the next step is to get a firm grip on `std::vector`'s three pointers, its growth strategy, and its iterator invalidation rules. That's the prerequisite for understanding flat_map's behavior.
+That's it for the foundation layer. flat_map stores its data in a vector by default, so the next step is to get a solid grip on `std::vector`'s three pointers, its growth, and its iterator invalidation — that's the prerequisite for understanding flat_map's behavior.
 
 ## References
 
 - [Chromium `base/containers/flat_map.h`](https://source.chromium.org/chromium/chromium/src/+/main:base/containers/flat_map.h)
-- [Chromium `base/containers/README.md`, the container-choosing guide](https://source.chromium.org/chromium/chromium/src/+/main:base/containers/README.md)
+- [Chromium `base/containers/README.md` — the container-choosing guide](https://source.chromium.org/chromium/chromium/src/+/main:base/containers/README.md)
 - [cppreference: std::map (red-black tree implementation note)](https://en.cppreference.com/w/cpp/container/map)
-- [P0429, the std::flat_map proposal (C++23)](https://wg21.link/p0429)
+- [P0429 — the std::flat_map proposal (C++23)](https://wg21.link/p0429)

@@ -10,8 +10,8 @@ difficulty: intermediate
 order: 5
 platform: host
 prerequisites:
-- 'Chapter 3: Lambda Basics: The Elegant Expression of Anonymous Functions'
-- 'Chapter 3: std::function, std::invoke, and Callable Objects'
+- 'Lambda Basics: The Elegant Expression of Anonymous Functions'
+- std::function, std::invoke, and Callable Objects
 reading_time_minutes: 15
 related:
 - 'Volume 4: Deep Dive into the Ranges Library'

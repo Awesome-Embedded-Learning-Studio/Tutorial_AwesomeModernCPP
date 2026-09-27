@@ -1,76 +1,71 @@
 ---
-title: 'Proxy Pattern: You''ve Been Using It All Along Without Realizing It'
-description: 'Starting with smart pointers, the "proxies you use every day without
-  realizing it," we progressively derive six proxy patterns: virtual, protection,
-  remote, cache, synchronization, and copy-on-write (COW). Along the way, we debunk
-  the old practice of using `shared_ptr::unique()` in COW code.'
+title: 'Proxy Pattern: You''re Already Using It Without Realizing It'
+description: 'Starting from smart pointers—the proxies you use every day without realizing it—we derive six kinds of proxies step by step (virtual, protection, remote, caching, synchronization, COW), and along the way debunk the dated `shared_ptr::unique()` practice in COW code'
 chapter: 11
 order: 11
 tags:
-- host
-- cpp-modern
-- intermediate
-- 代理模式
+  - host
+  - cpp-modern
+  - intermediate
+  - 代理模式
 difficulty: intermediate
 platform: host
-cpp_standard:
-- 11
-- 17
-- 20
+cpp_standard: [11, 17, 20]
 reading_time_minutes: 22
 related:
-- 单例模式:从注释约束到 Meyer's Singleton
+  - 'Singleton Pattern: From Comment-Only Constraints to Meyer''s Singleton'
 prerequisites:
-- 'Chapter 6: 类与对象'
+  - Classes and Object-Oriented Programming
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/11-proxy.md
   source_hash: c442a2df8ae0ca2b6d2bc0121f2c8e46a14cb8d564d386847f416fc290fcfdcc
-  translated_at: '2026-06-24T00:58:38.997567+00:00'
+  translated_at: '2026-09-26T05:29:21+00:00'
   engine: anthropic
-  token_count: 5158
+  token_count: 14000
 ---
+
 # Proxy Pattern: You're Already Using It Without Realizing It
 
-## What Problem Are We Actually Solving?
+## What Problem Are We Actually Solving
 
-Let's set the name "Proxy Pattern" aside for a moment and look at a scenario you likely write every day. Suppose we have a working object `Source` that performs some actual work:
+Let's set the name "Proxy Pattern" aside for a moment and look at a scenario you write almost every single day. Suppose we have a working object `Source` that does some real work:
 
 ```cpp
 class Source {
 public:
-    void do_work() { /* 真正的活儿 */ }
+    void do_work() { /* the real work */ }
 };
 
 int main() {
     Source* src = new Source;
-    src->do_work();      // 用得好好的
-    delete src;          // 但你得记得手动释放
+    src->do_work();      // works just fine
+    delete src;          // but you have to remember to release it manually
 }
 ```
 
-Sure, this code runs, but we both know where it's fragile—you're holding a raw pointer. When to `delete`, whether you might `delete` twice, or if you'll use the memory after `delete`—it all relies on your brain keeping track. The standard solution C++ provides is to wrap this manual management:
+This code runs, of course, but you already know where it's fragile—you're holding a bare pointer, and who calls `delete`, whether `delete` gets called twice, whether the pointer gets used again after `delete`, all of that rides on your brain keeping watch. The standard answer C++ has prepared for us is to wrap this layer of manual management up:
 
 ```cpp
 int main() {
     auto src = std::make_unique<Source>();
-    src->do_work();      // 该咋用咋用,语法完全没变
-    // 离开作用域自动释放,不用 delete
+    src->do_work();      // use it exactly as before—the syntax hasn't changed at all
+    // released automatically on scope exit, no delete needed
 }
 ```
 
-You will notice something interesting: once we wrap it with `std::unique_ptr<Source>`, the call `src->do_work()` looks **exactly the same** as before. The proxied object is used exactly as it was before; the external interface is completely transparent, yet we gain RAII for free—we no longer need to worry about heap memory destruction and release.
+You'll notice something interesting: once `std::unique_ptr<Source>` is wrapped around it, the call `src->do_work()` looks **exactly** like it did before. The proxied object keeps being used the way it always was, the outward interface is fully transparent, yet you picked up RAII for free—destruction and release of the heap memory are no longer your problem.
 
-To be honest, this is the Proxy Pattern. **The core of the Proxy Pattern is: using a proxy object to stand in for the real object, providing the same (or compatible) interface to the outside. The caller uses it just like the real object, while the proxy secretly does other work in the background.** In the case of `unique_ptr`, the work the proxy is doing secretly is "managing the lifecycle".
+Honestly, that is the Proxy pattern. **The core of the Proxy pattern: a proxy object stands in where the real object would be, exposes the same (or a compatible) interface to the outside, the caller uses it just as it would use the real object, and the proxy quietly does some other work in between.** In the `unique_ptr` example, that secret work is "managing the lifetime."
 
-Why do we need this layer? Because in the real world, handing an object directly to the caller often comes with a bunch of **chores that are unrelated to the business logic but are mandatory**: loading an image takes two seconds, calling a remote service goes over the network, modifying a field requires logging, reading a sensitive resource requires checking permissions, calculating a result requires avoiding duplicate computation... If we stuff all these chores into the business object, the business class becomes bloated and brittle; if we scatter them across every call site, we end up with code duplication everywhere. The Proxy Pattern extracts this layer of "access control + cross-cutting behavior" and hands it to an intermediary. The business class focuses solely on business logic, and the caller focuses solely on using the interface.
+Why do we need such a layer? Because in the real world, handing an object directly to callers usually comes with a pile of chores that are **unrelated to the business but must be done**: loading an image takes two seconds, calling a remote service means crossing the network, modifying a field needs to be logged, reading a sensitive resource requires a permission check, computing a result should avoid redundant computation... If all these chores get stuffed into the business object, the business class turns dirty and brittle; if they scatter across every call site, you get duplicate code all over the floor. The Proxy pattern pulls this layer of "access control + cross-cutting behavior" out and hands it to a middleman—the business class only does business, and callers only use the interface.
 
-Next, we will look one by one at how many different types of work this "intermediary" can actually do for us, and the pitfalls behind each one.
+Next we'll look, one by one, at just how many kinds of work this "middleman" can do for us, and where the pitfall hides behind each kind.
 
-## Step one: Property Proxy—Turning field read/write into interceptable operations
+## Step 1: Property Proxy—Turning Field Reads and Writes into Interceptable Operations
 
-Let's start with an example close to our daily work. You have a class with a field, say, a port configuration. The normal way to write this is just `int port;`, where anyone can read or write it, and the field itself has no "attitude." But one day, Product says: when assigning to this `port`, we must validate the range; when reading it, we must send a notification. You could, of course, wrap `port` with `get_port()` / `set_port()`—but that breaks the natural syntax of "direct field access," forcing every user to change to function calls.
+Let's start with the example closest to everyday code. You have a class with a field in it, say a port configuration. The normal way to write it is just `int port;`—whoever wants to read it reads, whoever wants to write it writes, the field itself has no opinions. But one day product says: when `port` is assigned, the range must be validated; when it's read, a notification must go out. You could of course wrap `port` in a pair of `get_port()` / `set_port()`—but that breaks the natural "read and write the field directly" style, and every user has to switch to function calls.
 
-The answer given by the Proxy Pattern is: write a `property<T>` template. It looks like a value on the outside (supports implicit conversion to `T`, supports `operator=`), but secretly hooks custom getters/setters onto the read and write actions:
+The Proxy pattern's answer: write a `property<T>` template that outwardly looks like a value (supports implicit conversion to `T`, supports `operator=`), but secretly hangs a custom getter/setter onto those two actions, reading and writing:
 
 ```cpp
 template <typename T>
@@ -79,42 +74,42 @@ public:
     using Getter = std::function<T()>;
     using Setter = std::function<void(const T&)>;
 
-    // 默认走「直接存值」的实现
+    // default: the "store the value directly" implementation
     Property()
         : getter_([this] { return value_; }),
           setter_([this](const T& v) { value_ = v; }) {}
 
     explicit Property(const T& v) : Property() { value_ = v; }
 
-    // 注入自定义的 getter/setter —— 校验、通知、日志都挂在这里
+    // inject custom getter/setter — validation, notifications, logging all hook in here
     Property(Getter g, Setter s) : getter_(std::move(g)), setter_(std::move(s)) {}
 
-    operator T() const { return getter_(); }  // 读:走 getter
-    Property& operator=(const T& v) {         // 写:走 setter
+    operator T() const { return getter_(); }  // read: goes through the getter
+    Property& operator=(const T& v) {         // write: goes through the setter
         setter_(v);
         return *this;
     }
 
 private:
-    mutable T value_{};   // mutable:getter_ 在 const 方法里也能改它
+    mutable T value_{};   // mutable: lets the getter modify it even inside const methods
     Getter getter_;
     Setter setter_;
 };
 ```
 
-The key to this code is that it transforms the normally uninterceptable actions of "reading" and "writing" into two `std::function` objects. The two lambdas in the default constructor simply pass read and write operations through to the internal `value_`, behaving exactly like a normal field. However, as long as you provide custom `Getter`/`Setter` functions, you can attach whatever logic you need—validation, notifications, logging, rate limiting, you name it.
+The key to this code is that it turns "read" and "write"—two actions that normally cannot be intercepted—into two `std::function`s. The two lambdas in the default constructor simply route reads and writes straight onto the internal `value_`, behaving exactly like an ordinary field; but the moment you pass in custom `Getter`/`Setter`s, you can hook up whatever you want: validation, notifications, logging, rate limiting.
 
-Note the `mutable` keyword—the getter is a `const` method, so it shouldn't modify members by default. However, since `value_` is declared `mutable`, it allows for modification. This is because the getter needs to read from and write to `value_` in "direct storage" mode, while semantically, reading a property should be a `const` operation. `mutable` helps us reconcile this contradiction.
+Note that `mutable`—the getter is a `const` method, which by the rules cannot modify members, but once `value_` is declared `mutable` it can. That's because in the "store the value directly" mode the getter genuinely needs to read and write `value_`, while semantically reading a property should be `const`; `mutable` reconciles that contradiction for us here.
 
-What does it look like in practice? You will find that fields wrapped in `Property` behave almost indistinguishably from real fields—reading them implicitly converts to `T` (invoking the getter), and writing to them triggers `operator=` (invoking the setter):
+What does it look like in use? You'll find that a field wrapped in a `Property` behaves outwardly almost no differently from a real field—reading it implicitly converts to `T` (through the getter), writing it triggers `operator=` (through the setter):
 
 ```cpp
 Property<int> port(8080);
-int v = port;     // 隐式转 T,触发 getter
-port = 9090;      // operator=,触发 setter
+int v = port;     // implicit conversion to T, triggers the getter
+port = 9090;      // operator=, triggers the setter
 ```
 
-Let's first verify that the chain of implicit conversions and assignments works exactly as we described.
+Let's verify that this chain of implicit conversion and assignment really behaves the way we described:
 
 ```cpp
 #include <iostream>
@@ -137,14 +132,14 @@ private:
 
 int main() {
     Property<int> port(8080);
-    int v = port;          // 隐式转 T -> getter
+    int v = port;          // implicit conversion to T -> getter
     std::cout << "read = " << v << "\n";
     port = 9090;           // operator= -> setter
     std::cout << "after assign = " << port.raw() << "\n";
 }
 ```
 
-Let's compile and run it:
+Compile and run:
 
 ```sh
 $ g++ -std=c++20 -O2 -Wall property_verify.cpp -o property_verify
@@ -153,17 +148,17 @@ read = 8080
 after assign = 9090
 ```
 
-Read and write operations both obediently followed the lambda we hung up. This is the essence of a property proxy—**intercepting read and write actions as hooks without changing the syntax used to access the field**.
+Both reading and writing dutifully went through the lambdas we hung on them. That is the essence of the property proxy—**without changing the syntax of field usage, turning the two actions of read and write into interceptable hooks**.
 
-However, there is a pitfall we need to point out immediately: `operator T()` performs an implicit conversion. This means that whenever the context requires a `T`, the compiler will secretly call the getter. While this is usually the desired behavior, it can easily trigger unexpected conversions in certain overload resolution scenarios. Therefore, in practice, property proxies are better suited for fields where "global interception of reads and writes" is truly necessary. Don't go replacing every `int` with `Property<int>`, or implicit conversions will dig you a bunch of inexplicable holes.
+But there's a pitfall to name in advance: `operator T()` is an implicit conversion, meaning whenever the context needs a `T`, the compiler will silently call the getter. Most of the time that's the behavior you want, but in certain overload-resolution scenarios it can easily fire conversions you didn't anticipate. So in practice, the property proxy is better reserved for fields where you genuinely need to globally intercept reads and writes—don't go replacing every `int` in sight with `Property<int>`, or implicit conversions will dig you a pile of baffling pits.
 
-## Step 2: Virtual Proxy—Deferring expensive creation to the last moment
+## Step 2: Virtual Proxy—Deferring Expensive Construction to the Last Possible Moment
 
-The next type is the most classic use case for the proxy pattern. Some objects are expensive to create: loading a high-resolution image, establishing a database connection, parsing a large configuration file... The common denominator for these objects is—**you don't necessarily need them every time**. If the program eagerly constructs all such objects upon startup, it will start slowly and consume memory, yet some objects might never be accessed during the entire program run.
+This next one is the most classic use in the whole Proxy family. Some objects are expensive to create: loading a high-resolution image, establishing a database connection, parsing a large configuration... These objects share a common trait—**you won't necessarily use every one of them**. If the program eagerly constructs all such objects the moment it starts, startup is slow and memory fills up, yet some of those objects may never be touched for the entire run of the program.
 
-The Virtual Proxy (or Lazy Proxy) offers a solution: first create a **cheap proxy** that only remembers "what the real object looks like" (such as a filename or connection string) without actually loading it. When the first real access is needed (e.g., when `display()` is called), the proxy swings into action to construct the real object, and all subsequent accesses are forwarded to it. This is lazy loading.
+The virtual proxy (Virtual Proxy / Lazy Proxy) approach: first build a **cheap proxy** that merely remembers "what the real object looks like" (a filename, a connection string) without actually loading anything; only when it's truly needed for the first time (say `display()` gets called) does the proxy go ahead and construct the real object, and every subsequent access is forwarded to it. That is lazy loading.
 
-Let's use a classic example—displaying an image. Loading a real image from disk is slow, and we don't want to load it when constructing the proxy:
+We'll reuse a classic example—displaying images. Real images load slowly from disk, and we don't want to load at proxy-construction time:
 
 ```cpp
 #include <iostream>
@@ -175,7 +170,7 @@ struct Image {
     virtual ~Image() = default;
 };
 
-// 真实图片:构造时就要从磁盘加载,很慢
+// the real image: loads from disk right in the constructor, slow
 class RealImage : public Image {
 public:
     explicit RealImage(const std::string& f) : filename_(f) { load_from_disk(); }
@@ -189,15 +184,15 @@ private:
 };
 ```
 
-The `RealImage` constructor calls `load_from_disk()`—this is the root of its "expense". The proxy's task is to defer this expensive construction until the first `display()` call:
+`RealImage`'s constructor already calls `load_from_disk()`—that's the root of its "expensiveness". The proxy's job is to defer this expensive construction to the first `display()`:
 
 ```cpp
 class ImageProxy : public Image {
 public:
     explicit ImageProxy(const std::string& f) : filename_(f) {}
     void display() override {
-        ensure_real();     // 第一次调用时才构造 RealImage
-        real_->display();  // 转发给真实对象
+        ensure_real();     // construct RealImage on the first call only
+        real_->display();  // forward to the real object
     }
 
 private:
@@ -209,13 +204,13 @@ private:
 };
 ```
 
-You can see that the proxy's interface is identical to the real object (both inherit from `Image` and have `display()`), so the caller cannot even tell they are using a proxy. However, the real object is not constructed until `display()` is called for the first time. Before that, you only hold a lightweight `ImageProxy`, paying zero cost for loading.
+Look: the proxy's interface is **identical** to the real object's (both inherit `Image`, both have `display()`), and the caller can't tell at all that it's holding a proxy. But the real object isn't constructed until `display()` is called for the first time; before that, all you hold is a featherweight `ImageProxy` that hasn't spent a cent of loading cost.
 
-Here is a completely correct implementation for **single-threaded** environments, which is the `if (!real_)` logic shown above. But we are not done yet—the real pitfall lies ahead.
+That `if (!real_)` above is a formulation that is perfectly correct **in a single thread**. But the story doesn't end here—the real pitfall is still ahead.
 
-## Let's verify: Lazy loading works in single-threaded contexts
+## Let's Verify First: Lazy Loading Holds Up in a Single Thread
 
-First, let's confirm in a single-threaded environment that the proxy indeed achieves "load on first access, do not reload on subsequent accesses." We attach an atomic counter to `RealImage` to see how many times it is constructed during multiple `display()` calls:
+First let's confirm, in a single thread, that the proxy really achieves "load on first access, and don't load again on subsequent accesses". Hang an atomic counter on `RealImage` and see how many times it gets constructed across multiple `display()` calls:
 
 ```cpp
 #include <atomic>
@@ -267,26 +262,26 @@ int main() {
 }
 ```
 
-Let's compile and run it:
+Compile and run:
 
 ```sh
 $ g++ -std=c++23 -O2 -Wall proxy_lazy_verify.cpp -o proxy_lazy_verify
 $ ./proxy_lazy_verify
 before display, load_count = 0
-Loading cat.png from disk (expensive)   # 注意:第一次 display 才加载
+Loading cat.png from disk (expensive)   # note: loading happens on the first display only
 Displaying cat.png
 Displaying cat.png
 after 2 displays, load_count = 1 (expect 1)
 ```
 
-`load_count` is solidly 1. The proxy defers the expensive load until the first access, and subsequent accesses reuse the same real object. This is the entire value of a virtual proxy.
+`load_count` sits firmly at 1: the proxy deferred the expensive loading to the first access, and subsequent accesses reused the same real object. That is the whole value of the virtual proxy.
 
-## Warning: Lazy Loading Under Concurrency, `if (!real_)` is a Data Race
+## Pitfall Warning: Concurrent Lazy Loading with `if (!real_)` Is a Data Race
 
-::: warning Warning
-The `if (!real_) real_ = std::make_unique<...>` pattern shown above **should only be used in single-threaded contexts**. Once multiple threads access this proxy for the first time simultaneously, this code becomes a blatant **data race**—multiple threads might read `real_` as null at the same time and attempt to construct the real object concurrently. The last write wins, overwriting previous ones. The real object might be constructed multiple times, the pointer might be overwritten, and previously constructed objects might leak. All of this is possible.
+::: warning Pitfall ahead
+That `if (!real_) real_ = std::make_unique<...>` pattern **is for single-threaded use only**. The moment multiple threads first access this proxy at the same time, the code becomes a bare-faced **data race**—several threads may simultaneously read `real_` as empty, simultaneously construct the real object, and whoever writes back later overwrites the others; the real object constructed multiple times, the pointer overwritten, the previously constructed objects leaking—all of it can happen.
 
-Let's not just talk about it; let's run ThreadSanitizer to verify and let the tools do the talking:
+Let's not just assert that with words—run it under ThreadSanitizer and let the tool speak for us:
 
 ```cpp
 #include <memory>
@@ -304,7 +299,7 @@ class NaiveProxy : public Image {
 public:
     explicit NaiveProxy(int id) : id_(id) {}
     void display() override {
-        if (!real_) real_ = std::make_unique<RealImage>(id_);  // 数据竞争!
+        if (!real_) real_ = std::make_unique<RealImage>(id_);  // data race!
         real_->display();
     }
 private:
@@ -325,16 +320,16 @@ $ g++ -std=c++23 -O1 -pthread -fsanitize=thread proxy_lazy_tsan.cpp -o proxy_laz
 $ ./proxy_lazy_tsan 2>&1 | head -5
 ==================
 WARNING: ThreadSanitizer: data race (pid 69560)
-    #0 NaiveProxy::display() ...   # 读 real_
+    #0 NaiveProxy::display() ...   # reads real_
     ...
     Previous write of size 8 by thread T1:
-    #0 NaiveProxy::display() ...   # 写 real_
+    #0 NaiveProxy::display() ...   # writes real_
 ```
 
-TSan spotted it immediately: one thread is writing to `real_`, while another is reading from `real_`. There is no synchronization between them, so according to the standard, this is undefined behavior. Never simply port a single-threaded `if (!real_)` check directly to a multi-threaded environment; if you don't fix this, it will crash.
+TSan caught it at a glance: one thread is writing `real_` while another reads it, the two have no synchronization relationship whatsoever, and per the standard that is undefined behavior. Never carry the single-threaded `if (!real_)` straight into a multithreaded environment—skip this fix and it will blow up, guaranteed.
 :::
 
-There are two correct approaches. If you want "construct-once" semantics, C++ provides a clean answer—`std::call_once`. This belongs to the same class of mechanisms as the magic statics behind Meyer's Singleton; the language guarantees that only one thread will execute the initialization:
+There are two correct approaches. If you want "construct exactly once" semantics, C++ hands us a clean answer—`std::call_once`, the same family of machinery as the magic statics behind Meyer's Singleton: the language guarantees on your behalf that only one thread performs the initialization:
 
 ```cpp
 #include <mutex>
@@ -356,13 +351,13 @@ private:
 };
 ```
 
-`call_once` uses lightweight atomic synchronization internally rather than a simple lock. Its semantics are precisely: "exactly one thread executes the initialization, while the remaining threads block and wait." Another approach is to manually implement Double-Checked Locking Pattern (DCLP) with `std::atomic` acquire/release semantics, which we deconstructed in detail in the singleton chapter, so we won't repeat it here. The conclusion is the same: **for lazy initialization under concurrency, a synchronization mechanism is mandatory; a raw `if` is insufficient.**
+Internally, `call_once` uses atomic synchronization lighter than a simple lock, and its semantics are precisely "exactly one thread performs the initialization, the remaining threads block and wait". The other approach is hand-writing double-checked locking (DCLP) plus acquire/release on `std::atomic`, which we dismantled in detail in the singleton chapter, so we won't repeat it here. The conclusion is the same: **for lazy loading under concurrency you must bring in a real synchronization mechanism—a naked `if` won't do.**
 
-## Step 3: Protection Proxy — Extracting "Who Can Do What" from Business Logic
+## Step 3: Protection Proxy—Peeling "Who Can Do What" Out of the Business Logic
 
-The next approach delegates this cross-cutting concern of permission checking to a proxy. Imagine a sensitive object with a `secret()` method that should only be accessible to specific identities. You might instinctively want to write `if (!has_permission) throw ...` inside `secret()`, but this welds the permission logic directly to the business logic, making changes ripple through the entire codebase.
+This next one hands the cross-cutting concern of permission checking to a proxy. Imagine a sensitive object with a `secret()` method that only specific identities may call. Your first instinct might be to write `if (!has_permission) throw ...` inside `secret()`, but that welds permission logic to business logic—touch one spot and the whole thing ripples.
 
-The Protection Proxy approach works like this: both the proxy and the real object implement the same interface. The proxy performs permission checks before forwarding the request; it only forwards if the check passes, otherwise it denies access. This way, the real object `Sensitive` contains only pure business logic, while the proxy handles all permissions:
+The protection proxy (Protection Proxy) works like this: the proxy and the real object implement the same interface, and the proxy performs a permission check before forwarding—forward on pass, refuse on failure. That way the real object `Sensitive` contains nothing but pure business, and permissions are entirely the proxy's business:
 
 ```cpp
 #include <stdexcept>
@@ -387,17 +382,17 @@ private:
 };
 ```
 
-You can see that the proxy does just two things: first, it checks `allowed_`, throwing an exception if it fails; second, if it passes, it forwards the request verbatim to the real object. This check was originally part of the business logic, but now it's extracted to the access entry point. The real object remains completely unaware of permissions.
+Look at what the proxy does—two steps: first check `allowed_` and throw on failure; on pass, forward the request untouched to the real object. This check used to be part of the business; now it has been extracted to the access entry point, and the real object knows nothing about permissions at all.
 
-The benefit of this approach isn't just "cleanliness." Permission checks themselves are significant audit events—who accessed what, when, the result (success or denial), and the reason—are all core content of an audit log. A protection proxy always triggers at the access entry point, allowing it to record both successes and denials with attached reasons (missing permissions, expired credentials, untrusted source). It acts as a natural audit point. By putting authentication and auditing into the proxy, the business class focuses solely on business logic. If the permission policy changes, we only need to modify the proxy in one place.
+The benefit isn't just "cleanliness". A permission check is itself an important audit event—who tried to access what, when, whether it succeeded or was refused, and why: these are the core contents of an audit log. A protection proxy always fires at the access entry point; it can record successes as well as refusals with their reasons (missing permission, expired credential, untrusted origin), making it a natural audit point. Put authorization and auditing into the proxy, and the business class sticks to business; when the permission policy changes, you edit the proxy in one place and you're done.
 
-There is a design trade-off to note here: `ProtectionProxy` in this example does not inherit from `Sensitive`'s abstract base class, but rather replicates the signature of `secret()`. This is because `Sensitive` itself has no abstract interface to inherit (it is a concrete class). In real-world engineering, we would typically first extract a pure virtual interface like `ISensitive`, and have both `Sensitive` and `ProtectionProxy` implement it. This way, the caller receives an `ISensitive&`, allowing for seamless replacement—this is the benefit of "interface equivalence" and the prerequisite for the transparent substitution capability of the Proxy pattern.
+One design trade-off to flag here: `ProtectionProxy` in this example does not inherit an abstract base class of `Sensitive`; it copies the `secret()` signature instead. That's because `Sensitive` itself has no abstract interface to inherit (it's a concrete class). In real projects, we'd usually first extract a pure-virtual interface like `ISensitive` and have both `Sensitive` and `ProtectionProxy` implement it, so callers hold an `ISensitive&` and the swap is seamless—that is the benefit of "interface conformability", and it is the precondition for the Proxy pattern's transparent substitution.
 
-## Step 4: Remote Proxy — Hiding Network Details Locally
+## Step 4: Remote Proxy—Hiding the Network Details Behind a Local Object
 
-The Remote Proxy (also known as Communication Proxy) addresses a different scenario: the real object resides on another machine (or in another process), so calling it requires network communication. However, we don't want the caller code to be cluttered with details like "serialization, send request, wait for response, parse, retry, timeout"—these communication details are completely irrelevant to the business logic, yet extremely verbose.
+The remote proxy (Remote Proxy / Communication Proxy) targets another scenario: the real object lives on another machine (or in another process), and calling it means crossing the network. But you don't want caller code littered with "serialize, send request, wait for response, parse, retry, timeout"—those communication details have nothing to do with the business, yet they are extremely verbose.
 
-The proxy solution is to create a local object that implements the same interface as the remote service, but internally translates every method call **into a network request**. To the caller, it looks just like a local object call; behind the scenes, the proxy handles parameter packing, sending, receiving, and unpacking:
+The proxy's solution: build a local object that implements the same interface as the remote service, but internally **translates every method call into a network request**. To the caller, it looks like calling a local object; behind the scenes, the proxy packs the parameters for it, sends them out, receives the reply, and unpacks it:
 
 ```cpp
 #include <chrono>
@@ -405,25 +400,25 @@ The proxy solution is to create a local object that implements the same interfac
 #include <string>
 #include <thread>
 
-// 模拟一个传输层(真实场景是 socket / HTTP / gRPC)
+// a simulated transport layer (in real life: socket / HTTP / gRPC)
 class Transport {
 public:
     std::string send_request(const std::string& req) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));  // 模拟网络延迟
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));  // simulate network latency
         if (req == "get_time") return "2025-09-29T12:00:00Z";
         if (req.rfind("compute:", 0) == 0) return "result:" + req.substr(8);
         throw std::runtime_error("unknown request");
     }
 };
 
-// 远程服务的本地抽象
+// local abstraction of the remote service
 struct RemoteService {
     virtual std::string get_time() = 0;
     virtual int remote_compute(int x, int y) = 0;
     virtual ~RemoteService() = default;
 };
 
-// 远程代理:把方法调用翻译成 transport 请求
+// the remote proxy: translates method calls into transport requests
 class RemoteServiceProxy : public RemoteService {
 public:
     explicit RemoteServiceProxy(Transport* t) : transport_(t) {}
@@ -434,7 +429,7 @@ public:
 
     int remote_compute(int x, int y) override {
         std::string req = "compute:" + std::to_string(x) + "," + std::to_string(y);
-        transport_->send_request(req);              // 真实场景会解析 "result:..."
+        transport_->send_request(req);              // a real implementation would parse "result:..."
         return x + y;
     }
 
@@ -443,15 +438,15 @@ private:
 };
 ```
 
-You see, what the proxy does is translate `get_time()` into the string `"get_time"` to send out, and translate `remote_compute(x, y)` into `"compute:x,y"` to send out. The caller still writes `service.remote_compute(3, 4)`, completely unaware that this call traversed a network.
+All the proxy does is translate `get_time()` into the string `"get_time"` and send it, and `remote_compute(x, y)` into `"compute:x,y"` and send that. The caller still writes `service.remote_compute(3, 4)`, with no idea that this call crossed a network.
 
-The expression `req.rfind("compute:", 0) == 0` deserves a quick mention—this is the idiomatic way in C++ to check if a string starts with a specific prefix (`rfind` searches starting at position 0; if found, it returns 0; otherwise, it returns `npos`). In C++20, we can directly use `req.starts_with("compute:")`, which is more straightforward. Here, we use `rfind` so the code compiles under C++17 as well.
+The `req.rfind("compute:", 0) == 0` idiom deserves a word—it's the classic C++ way to test "does this string start with this prefix" (`rfind` searches from position 0, returns 0 on a hit, `npos` otherwise). Since C++20 you can write `req.starts_with("compute:")` directly, which is more straightforward; `rfind` is used here so the code also compiles under C++17.
 
-The real difficulty with a remote proxy isn't this translation, but **fault handling**: network calls can time out, partially fail, retry halfway through, or return with incorrect content. These failure modes are much more complex than local calls. Therefore, remote proxies in production engineering often incorporate retry strategies, timeout controls, circuit breaking, and fallback mechanisms. This is also why RPC frameworks like gRPC and Thrift help you automatically generate proxy classes—they stuff all that complex fault handling into the generated proxy, so you just focus on calling the interface.
+The genuinely hard part of a remote proxy isn't this translation, it's **failure handling**: a network call can time out, can partially fail, can die halfway through a retry, can return successfully but with wrong content. These failure modes are far more complicated than a local call, so remote proxies in real projects usually also build in retry strategies, timeout control, circuit breaking, and degradation. That's also why RPC frameworks like gRPC and Thrift generate proxy classes for you—they stuff all that complicated failure handling into the generated proxy, and you just call the interface.
 
-## Step 5: Caching Proxy — Storing Results of Repeated Computations
+## Step 5: Caching Proxy—Storing the Results of Repeated Computations
 
-A caching proxy (also known as a memoization proxy) addresses the issue where "repeating the same calculation is wasteful." Some computations are inherently expensive (parsing a large expression, querying a database, running a complex model), yet the same inputs often appear repeatedly. If we cache the results at the proxy layer, the second identical request hits the cache directly, saving us the trouble of bothering the real object:
+The caching proxy (Caching / Memoization Proxy) solves the problem of "computing the same thing over and over is wasteful". Some computations are expensive by nature (parsing a big expression, querying a database, running a complex model), yet the same inputs tend to recur. If the proxy layer caches results, the second identical request hits the cache directly and never bothers the real object again:
 
 ```cpp
 #include <optional>
@@ -469,9 +464,9 @@ public:
 
     int compute(int x) override {
         if (auto it = cache_.find(x); it != cache_.end()) {
-            return it->second;          // 命中缓存,直接返回
+            return it->second;          // cache hit, return directly
         }
-        int result = real_->compute(x); // 没命中,才算
+        int result = real_->compute(x); // miss: only now do we compute
         cache_[x] = result;
         return result;
     }
@@ -482,15 +477,15 @@ private:
 };
 ```
 
-The proxy checks the cache in `compute` first; if it hits, it returns immediately. If it misses, it calculates. The real object, `Expensive`, is completely unaware of the caching layer—it just focuses on the calculation.
+Inside `compute`, the proxy checks the cache first—return on hit, compute on miss. The real object `Expensive` knows nothing about any cache; it just computes.
 
-While the caching proxy looks simple, the real difficulty lies in the **caching strategy**. First is thread safety: the `cache_` above is a standard `unordered_map`, so concurrent access from multiple threads causes data races. In production code, we would either add a lock or switch to a concurrent hash table. Next is the consistency model: can your application tolerate temporary inconsistency with the backend? If yes, a cache-aside pattern with a TTL (Time-To-Live) is sufficient. If not (for example, with account balances), caching might not be the right choice. Then there is the eviction policy: a cache cannot grow indefinitely; it needs an LRU (Least Recently Used) mechanism or a capacity limit. Finally, we must prevent cache stampedes (where massive concurrent requests miss the same key and hammer the backend) and cache avalanches (where large numbers of keys expire simultaneously). Each of these topics could easily be its own discussion, but they share one common trait—**they can all be encapsulated within the proxy without modifying a single line of the business logic class**. This is the value of the Proxy Pattern: "centralizing cross-cutting concerns."
+The caching proxy looks simple, but the real difficulty is all in the **cache policy**. First, thread safety: the `cache_` above is a plain `unordered_map`, concurrent access from multiple threads is a data race, and real projects either add a lock or switch to a concurrent hash map. Second, the consistency model: can your cache tolerate brief divergence from the backend? If yes, cache-aside plus a TTL is enough; if not (account balances, say), caching isn't the right first choice at all. Then eviction: a cache can't grow forever, it needs LRU or a capacity cap. Finally, you must guard against cache breakdown (a stampede of concurrent misses on the same key, all hammering the backend) and avalanche (masses of keys expiring at once). Each of these unfolds into a topic of its own, but they share one trait—**they can all be encapsulated inside the proxy, without touching a single line of the business class**. That is the value of the Proxy pattern's "centralize cross-cutting concerns".
 
-## Step 6: Synchronization Proxy—Wrapping a Non-Thread-Safe Object with a Lock
+## Step 6: Synchronization Proxy—Wrapping a Lock Around a Non-Thread-Safe Object
 
-The Synchronization Proxy addresses this scenario: you have an object that is not thread-safe (it might be from a third-party library, legacy code, or designed without locks for performance), but you now need to use it in a multithreaded context. You do not want to (or cannot) modify the source code of that object to add locking.
+The synchronization proxy (Synchronization Proxy) targets this situation: you're handed an object that isn't thread-safe itself (it may come from a third-party library, may be legacy code, or may deliberately skip locking for performance), but now you need to use it from multiple threads—and you don't want to (or can't) modify its source to add locks.
 
-The proxy approach is to wrap it, automatically acquiring and releasing a lock around every method call:
+The proxy's approach: wrap it in a layer that automatically acquires and releases a lock around every method call:
 
 ```cpp
 #include <mutex>
@@ -505,9 +500,9 @@ class SyncProxy : public SomeInterface {
 public:
     explicit SyncProxy(SomeInterface* r) : real_(r) {}
     void op() override {
-        std::lock_guard<std::mutex> lk(mtx_);   // 进方法先锁
-        real_->op();                            // 真正干活
-    }                                           // 离开自动解锁
+        std::lock_guard<std::mutex> lk(mtx_);   // lock on entering the method
+        real_->op();                            // the real work
+    }                                           // unlock automatically on exit
 
 private:
     SomeInterface* real_;
@@ -515,17 +510,17 @@ private:
 };
 ```
 
-The appeal of this approach is that we don't need to touch the actual object's code. We simply wrap a layer around it, and it becomes thread-safe immediately. For third-party libraries or legacy code that cannot be modified, this is a lifesaver.
+The appeal of this style: you don't touch the real object's code—you just wrap a layer around it, and it's instantly thread-safe. For third-party libraries and untouchable legacy code, it's a lifeline.
 
-However, I must offer a reality check. **A synchronization proxy is not a silver bullet for thread safety; coarse-grained locks will effectively revert you to single-core performance.** Look at the `mtx_` above: it is shared by the entire proxy. This means that at any given moment, only one thread can call `op()`. If `op()` takes a long time, all other threads must queue up, instantly negating the advantages of multi-core processing. Even more troublesome is deadlocking: if a call chain enters proxy A holding A's lock, then calls proxy B to acquire B's lock, while another thread does the reverse (holding B then acquiring A), a classic circular wait condition forms.
+But here I have to pour cold water on it. **The synchronization proxy is not a thread-safety silver bullet—a coarse-grained lock will drag you back down to a single core.** Look at that `mtx_` above: it's shared by the entire proxy, meaning only one thread can call `op()` at any moment—if `op()` takes long, every other thread has to queue up and the multi-core advantage instantly drops to zero. Worse is deadlock: if a call chain can enter proxy A, hold A's lock, then call into proxy B and grab B's lock, while another thread does the reverse—holding B first and then coming for A—you get the classic circular wait.
 
-Therefore, the practical points for synchronization proxies are: keep lock granularity as fine as possible (shard by resource, or use a read-write lock like `std::shared_mutex` to allow concurrent reads in read-heavy scenarios); keep lock holding times as short as possible (do everything possible before entering the critical section); and establish a consistent locking order across multiple proxies. If the scenario allows, using optimistic concurrency (versioning + CAS) to replace pessimistic locking often yields better scalability. A synchronization proxy is just a starting point, not the finish line.
+So the practical points for a synchronization proxy: make the lock granularity as fine as possible (shard by resource; use the reader-writer lock `std::shared_mutex` so read-heavy, write-light workloads can read concurrently); hold the lock for as short a time as possible (finish everything you can before entering the critical section); and agree on a consistent locking order across multiple proxies. Where the scenario allows, replacing pessimistic locking with optimistic concurrency (version numbers + CAS) often scales better. The synchronization proxy gives you a starting point, not a destination.
 
-## Step 7: Copy-On-Write (COW) — The Old Days of `shared_ptr::unique()`
+## Step 7: Copy-On-Write (COW)—The `shared_ptr::unique()` Relic
 
-The final variant is the most technically dense and error-prone within the proxy pattern. A Copy-On-Write (COW) proxy addresses a specific scenario: an object is shared across multiple locations where reads far outnumber writes. We want them to share the same underlying data to save memory; however, when one location needs to modify the data, it must first copy the data and modify its own private copy, ensuring it does not affect other sharers.
+This last one is the most technically dense and the easiest to get wrong in the whole Proxy family. The COW (Copy-On-Write) proxy addresses this: an object is shared in many places, reads vastly outnumber writes, and you want everyone sharing the same underlying data to save memory; but the moment one of them wants to modify, it must first copy the data and change its own copy—not pollute the other sharers.
 
-Historically, `std::string` utilized COW (later removed in C++11 because the synchronization cost of reference counting in multi-threaded environments actually hindered performance). Let's demonstrate this with a `CowString`:
+Historically, `std::string` itself used COW (it was removed later in C++11, because under multithreading the synchronization cost of COW's reference counting actually dragged performance down). Let's demonstrate with a `CowString`:
 
 ```cpp
 #include <memory>
@@ -536,10 +531,10 @@ public:
     CowString() : data_(std::make_shared<std::string>()) {}
     CowString(const std::string& s) : data_(std::make_shared<std::string>(s)) {}
 
-    // 读:直接返回 const 引用,多个 CowString 共享同一份
+    // read: return a const reference directly; many CowStrings share the same copy
     const std::string& str() const { return *data_; }
 
-    // 写:先确保独占(必要时复制),再改
+    // write: first ensure exclusive ownership (copying if necessary), then modify
     void append(const std::string& s) {
         ensure_unique();
         data_->append(s);
@@ -547,35 +542,35 @@ public:
 
 private:
     void ensure_unique() {
-        if (data_.use_count() > 1) {                         // 不独占
-            data_ = std::make_shared<std::string>(*data_);   // 复制一份
+        if (data_.use_count() > 1) {                         // not exclusive
+            data_ = std::make_shared<std::string>(*data_);   // make a copy
         }
     }
     std::shared_ptr<std::string> data_;
 };
 ```
 
-The core of COW is the `ensure_unique()` trick—check "Am I the sole owner?" before writing, and copy if not. When multiple `CowString` objects are copy-constructed, they share the same `shared_ptr`. They read from the same memory, and only create separate copies when modifying. In scenarios where reads far outnumber writes, this saves significant copying overhead.
+The heart of COW is the `ensure_unique()` move—before writing, ask "am I the sole owner?", and if not, copy first. Multiple `CowString`s copy-constructed from one another share the same `shared_ptr`; when reading, everyone reads the same memory, and only when modifying does each go off and edit its own copy. In read-mostly scenarios, this saves a great deal of copying overhead.
 
-However—this code hides a **legacy pitfall**, which is also the bad practice found in the source material.
+But—this code hides a **relic of the past**, and it's precisely the spot where that formulation from the original notes would teach people the wrong thing.
 
-::: warning Pitfall Ahead
-You might see `ensure_unique()` written like this in older resources:
+::: warning Pitfall ahead
+You may have seen `ensure_unique()` written like this in some older material:
 
 ```cpp
 void ensure_unique() {
-    if (!data_.unique()) {        // ⚠️ shared_ptr::unique() —— C++20 起已从标准移除
+    if (!data_.unique()) {        // ⚠️ shared_ptr::unique() — removed from the standard as of C++20
         data_ = std::make_shared<std::string>(*data_);
     }
 }
 ```
 
-The member function `std::shared_ptr::unique()` was marked as **deprecated** in C++17 and was **officially removed from the standard in C++20**. This means that, according to the ISO standard, `shared_ptr` no longer has the `unique()` member starting from C++20. The fact that it still compiles in libstdc++ or libc++ today is purely because mainstream standard library implementations have retained it as an extension for compatibility reasons—but this doesn't make it correct. If you switch to a stricter implementation or a future version, your code will fail to compile. **Do not write `shared_ptr::unique()` in modern C++.**
+The member function `std::shared_ptr::unique()` was marked **deprecated** starting in C++17 and **formally removed from the standard** as of C++20. In other words, per the ISO standard, from C++20 onward `shared_ptr` no longer has a `unique()` member. The reason it still compiles in libstdc++ / libc++ today is purely that the mainstream standard library implementations kept it as an extension for compatibility—but that doesn't make it right; switch to a stricter implementation or some future version, and your code will fail to compile. **Modern C++ should not write `shared_ptr::unique()` anymore.**
 :::
 
-The more critical pitfall isn't actually the "function removal," but rather that **the criterion of `unique()` (and `use_count() == 1`) is inherently unreliable under concurrency**. The `ensure_unique` logic in COW (Copy-On-Write) is: "I glance at the reference count; if it's one, I modify in-place; otherwise, I copy." However, the reference count is a changing value—you might just read it as 1 and are about to modify in-place, but another thread恰好 happens to copy a `shared_ptr` at that exact moment, causing the reference count to jump to 2. Meanwhile, you are still foolishly modifying the shared data in-place, directly corrupting the other thread's copy.
+The more crucial pitfall isn't actually "the function was removed", it's that **the criterion itself—`unique()` (and likewise `use_count() == 1`)—is simply unreliable under concurrency**. The COW `ensure_unique` logic is "glance at the reference count; if it's 1, modify in place, otherwise copy". But the reference count is a quantity that changes—you just read a 1, you're about to modify in place, and right at that moment another thread happens to copy the `shared_ptr`, the count jumps to 2, and your side is still naively modifying the shared data in place, polluting the other thread's copy right along with it.
 
-This is a classic TOCTOU (Time-Of-Check-To-Time-Of-Use) race condition. The atomic reference counting of `shared_ptr` alone cannot prevent this, because the synchronization of the reference count itself only guarantees the count is correct; it does not guarantee that "no one else will immediately copy when the count is 1." Let's verify this—we will have one thread repeatedly copy and release a `shared_ptr` (creating reference count jitter), while another thread repeatedly observes `use_count()`:
+This is a classic TOCTOU (time-of-check-to-time-of-use) race, and `shared_ptr`'s own atomic reference count cannot plug it, because the synchronization of the reference count only guarantees the count is correct—it does not guarantee "nobody will come copy right away while the count is 1". Let's verify—one thread repeatedly copies and releases a `shared_ptr` (manufacturing reference-count jitter), while another thread repeatedly observes `use_count()`:
 
 ```cpp
 #include <atomic>
@@ -589,13 +584,13 @@ int main() {
     std::thread t1([&] {
         for (int i = 0; i < 100000; ++i) {
             auto copy = shared;   // use_count: 1 -> 2
-            (void)copy;           // 析构: 2 -> 1
+            (void)copy;           // destruction: 2 -> 1
         }
     });
     std::atomic<long> saw_two{0};
     std::thread t2([&] {
         for (int i = 0; i < 100000; ++i) {
-            if (shared.use_count() > 1) ++saw_two;   // 会观察到引用计数跳变
+            if (shared.use_count() > 1) ++saw_two;   // the reference count will be observed jumping
         }
     });
     t1.join();
@@ -604,7 +599,7 @@ int main() {
 }
 ```
 
-Let's compile and run it:
+Compile and run:
 
 ```sh
 $ g++ -std=c++23 -O2 -pthread proxy_cow_race.cpp -o proxy_cow_race
@@ -612,47 +607,47 @@ $ ./proxy_cow_race
 saw use_count > 1 about 31234 times
 ```
 
-With the same `shared_ptr`, under concurrency, `use_count()` jumped frantically between one and two over thirty thousand times. What does this mean? It means that inside your `ensure_unique`, the check for `use_count() == 1` is completely vulnerable. In the few clock cycles between when you check and when you actually modify the data, another thread could easily bump the reference count from one to two. You would remain unaware of this change and proceed to modify shared data in place. This is the fatal flaw of COW in multithreaded environments.
+The same `shared_ptr` had `use_count()` bouncing madly between 1 and 2 more than thirty thousand times under concurrency. What does that mean? It means that between your `use_count() == 1` check inside `ensure_unique` and the moment you start modifying, in those few clock cycles, another thread can perfectly well push the reference count from 1 up to 2—and you, oblivious to the change, keep modifying the shared data in place. That is COW's fatal wound under multithreading.
 
-Therefore, correct multithreaded COW requires an additional lock. You must place the "check reference count" and "modify data" steps within the same critical section (just like the `ensure_unique`配合 external `std::mutex` in step seven of this article's code). Alternatively, simply admit this: in modern C++, **move semantics are cheap enough that the benefits of COW often fail to outweigh the concurrency complexity it introduces**. This is exactly why the standard library removed COW from `std::string`, replacing it with move semantics + SSO. COW isn't wrong, but it is a technique that "looks clever but is full of pitfalls in practice." If you use it, make sure you have a solid plan for concurrency first.
+So correct multithreaded COW must add an extra lock, putting "check the reference count" and "modify the data" into the same critical section (the way `ensure_unique` pairs with an external `std::mutex` in that Step 7 code earlier in this article), or simply admit: in modern C++, **move semantics are already cheap enough that COW's payoff often can't cover the concurrency complexity it introduces**. The standard library's decision back then to cut COW from `std::string` in favor of move semantics + SSO was exactly for this reason. COW isn't wrong—it's a technique that "looks ingenious but is riddled with pits", and if you must use it, think the concurrency part through first.
 
-## Proxy vs. Decorator: What is the Real Difference?
+## Proxy vs. Decorator: Where Do They Really Differ
 
-At this point, you might ask: the Proxy pattern sounds very similar to the Decorator pattern—both "wrap a layer, keep the interface the same, and do some extra work in the middle." Indeed, their structures are almost identical (both use composition + conforming interfaces). The difference lies in **intent**, not code structure:
+At this point you might ask: the Proxy pattern sounds an awful lot like the Decorator pattern—both are "wrap a layer, keep the interface unchanged, do a little extra work in the middle". Structurally, the two really are nearly identical (both are composition + interface conformability); what separates them is **intent**, not what the code looks like:
 
-The intent of a **Decorator** is to "**add** new behavior to an object," and it usually **can be stacked in multiple layers** (e.g., a `Coffee` wrapped with `Milk`, wrapped with `Sugar`, wrapped with `Whip`—each layer adds something). Decorators and the objects they decorate are often peers, and the caller explicitly knows they are composing features. The intent of a **Proxy**, however, is to "**control** access to an object." It handles lazy loading, authentication, caching, remote forwarding, or synchronization control—none of which are "adding business functionality," but rather "managing the access path." Proxies are usually not stacked (you rarely see an authentication proxy wrapped by a caching proxy, which is then wrapped by a synchronization proxy), and the caller often **doesn't even know** they are using a proxy. This "transparent replacement" is precisely the goal of a proxy.
+The Decorator's intent is "**adding** new behavior to an object", and it usually **can stack multiple layers** (wrap `Milk` around a `Coffee`, then `Sugar`, then `Whip`, each layer adding something); decorator and decoratee are typically peers, and the caller knows full well it is composing functionality. The Proxy's intent, by contrast, is "**controlling** access to an object": what it does is lazy loading, authorization, caching, remote forwarding, synchronization control—none of which is "adding business features", it's "exercising control along the access path". Proxies usually don't stack (you rarely see an authorization proxy wrapped in a caching proxy wrapped in a synchronization proxy), and the caller usually **has no idea at all** that it's using a proxy—which is precisely the proxy's goal of "transparent substitution".
 
-It doesn't matter if the code looks similar; as long as you clearly distinguish in your mind whether "I am adding functionality to an object" or "I am controlling access to an object," you are set. Use the Decorator for the former, and the Proxy for the latter.
+Similar-looking code is fine; just keep one question straight in your head: "am I adding functionality to the object, or controlling access to it?" The former goes to Decorator, the latter to Proxy.
 
 ## Summary
 
-Let's review the path of the Proxy pattern:
+Let's walk back through the whole Proxy journey:
 
-| Proxy Type | Responsibilities Managed on Behalf of the Caller | Key Pitfalls |
+| Proxy type | What it handles for the caller | Key pitfall |
 |---|---|---|
-| Property Proxy | Intercept field reads/writes, hook up getter/setter | `operator T()` implicit conversion may trigger unintentionally |
-| Virtual Proxy | Lazy construction of expensive objects | Bare `if (!real_)` under concurrency is a data race; use `call_once` |
-| Protection Proxy | Authentication + Auditing | Real objects need an abstract interface for transparent replacement |
-| Remote Proxy | Network communication, retry, timeout | Failure modes are complex (timeout/partial failure); don't let the caller be oblivious to latency |
-| Caching Proxy | Memoization, avoid repeated calculation | Thread safety, consistency, eviction, and breakdown/avalanche are all pitfalls |
-| Synchronization Proxy | Add external locks to non-thread-safe objects | Coarse-grained locks = single core; combining multiple proxies easily leads to deadlocks |
-| COW Proxy | Shared read, copy-on-write | `shared_ptr::unique()` removed in C++20; `use_count()` is unreliable under concurrency |
+| Property proxy | Intercepts field reads/writes, hangs getter/setter on them | `operator T()` implicit conversion can fire unexpectedly |
+| Virtual proxy | Defers construction of expensive objects | A naked `if (!real_)` under concurrency is a data race—use `call_once` |
+| Protection proxy | Authorization + auditing | The real object needs an abstract interface for transparent substitution |
+| Remote proxy | Network communication, retries, timeouts | Complex failure modes (timeouts/partial failures); don't let callers stay blind to latency |
+| Caching proxy | Memoization, avoiding repeated computation | Thread safety, consistency, eviction, breakdown/avalanche—all pits |
+| Synchronization proxy | Adds an external lock to a non-thread-safe object | Coarse-grained lock = single core; multi-proxy compositions deadlock easily |
+| COW proxy | Shared reads, copy on write | `shared_ptr::unique()` removed in C++20; `use_count()` unreliable under concurrency |
 
-Keep these key conclusions in mind:
+Note down these key conclusions:
 
-- The **essence of a proxy** is "interface conformance + access control." Business classes handle business logic, while cross-cutting concerns (lifecycle, lazy loading, authentication, caching, network, locking) belong to the proxy.
-- **Concurrent lazy loading in a Virtual Proxy must use synchronization**. Single-threaded `if (!real_)` is a data race in multithreaded contexts; `std::call_once` is the clean answer in modern C++.
-- **`shared_ptr::unique()` was deprecated in C++17 and removed in C++20**; don't use it in modern code. Furthermore, using `use_count() == 1` as a criterion for COW is inherently unreliable under concurrency due to TOCTOU races.
-- **Proxies and Decorators share the same structure**, differing only in intent: Decorators "add business behavior," are stackable, and the caller is aware; Proxies "control access," are usually not stacked, and the caller is unaware.
+- **The essence of a proxy** is "interface conformability + access control": the business class does only business, and cross-cutting concerns (lifetime, lazy loading, authorization, caching, network, locks) all belong to the proxy.
+- **Concurrent lazy loading in a virtual proxy must be synchronized**: the single-threaded `if (!real_)` is a data race under multithreading, and `std::call_once` is modern C++'s clean answer.
+- **`shared_ptr::unique()` was deprecated starting in C++17 and removed from the standard in C++20**—stop writing it in modern code; and `use_count() == 1` as a COW criterion was always an unreliable TOCTOU race under concurrency.
+- **Proxy and Decorator share the same structure**; the difference is intent: Decorator "adds business behavior", stacks, and the caller is aware; Proxy "controls access", usually doesn't stack, and the caller is unaware.
 
-::: tip Accompanying Compilable Project
-The examples for this section are available as a complete, compilable project in the repository at `code/volumn_codes/vol4/design-patterns/Proxy/` (`.h` + main + `CMakeLists.txt`). Run `cmake -S . -B build && cmake --build build` to reproduce the outputs shown above.
+::: tip Companion compilable project
+The examples in this section ship as a complete compilable project under `code/volumn_codes/vol4/design-patterns/Proxy/` in the repository (`.h` + main + `CMakeLists.txt`); `cmake -S . -B build && cmake --build build` reproduces the outputs above.
 :::
 
 ## References
 
-- [cppreference: `std::shared_ptr<T>::unique`](https://en.cppreference.com/w/cpp/memory/shared_ptr/unique) (Deprecated in C++17, removed in C++20)
-- [cppreference: `std::call_once`](https://en.cppreference.com/w/cpp/thread/call_once) (Standard tool for "construct once" under concurrency, since C++11)
-- [cppreference: `std::memory_order`](https://en.cppreference.com/w/cpp/atomic/memory_order) (If writing DCLP manually, acquire/release is needed)
-- GoF, *Design Patterns: Elements of Reusable Object-Oriented Software* — Proxy intent classification (Virtual / Remote / Protection)
-- Sister article in this series: [Singleton Pattern: From Comment Constraints to Meyer's Singleton](./01-singleton.md) (Full breakdown of magic statics / DCLP)
+- [cppreference: `std::shared_ptr<T>::unique`](https://en.cppreference.com/w/cpp/memory/shared_ptr/unique) (deprecated in C++17, removed in C++20)
+- [cppreference: `std::call_once`](https://en.cppreference.com/w/cpp/thread/call_once) (the standard tool for "construct exactly once" under concurrency, since C++11)
+- [cppreference: `std::memory_order`](https://en.cppreference.com/w/cpp/atomic/memory_order) (acquire/release needed if you hand-write DCLP)
+- GoF, *Design Patterns: Elements of Reusable Object-Oriented Software* — the Proxy intent taxonomy (Virtual / Remote / Protection)
+- The companion piece in this series: [Singleton Pattern: From Comment-Only Constraints to Meyer's Singleton](./01-singleton.md) (a full teardown of magic statics / DCLP)

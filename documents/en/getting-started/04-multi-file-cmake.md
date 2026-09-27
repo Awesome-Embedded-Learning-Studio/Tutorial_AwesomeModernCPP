@@ -1,6 +1,6 @@
 ---
 title: "The Project Grows — Multiple Files, and Why CMake Shows Up"
-description: "Grow the single-file hello from part 3 into three files, and use CMake for real on a multi-file project for the first time"
+description: "Grow the single-file hello from article 3 into three files, and put CMake in charge of a multi-file project for real for the first time"
 chapter: 14
 order: 4
 platform: host
@@ -13,39 +13,45 @@ tags:
   - beginner
   - CMake
 reading_time_minutes: 15
+translation:
+  source: documents/getting-started/04-multi-file-cmake.md
+  source_hash: 9563c563ffa0d337548471f37cb24d260c8dc9cc0e16401067031e22604be1da
+  translated_at: '2026-09-26T14:33:34+00:00'
+  engine: anthropic
+  token_count: 2400
 ---
 
 # The Project Grows — Multiple Files, and Why CMake Shows Up
 
 ## Opening
 
-Last time we got the first C++ program running inside vscode, and the terminal dutifully printed `Hello, C++!`. But that whole project was just one `main.cpp` with every line of code crammed into a single file. Real projects are never that small. The moment you try to write something serious, the line count climbs, and keeping it all in one file turns into a mess even you can't read.
+Last time we got your first C++ program running in vscode, and the terminal dutifully printed `Hello, C++!`. But that project was one single `main.cpp`, all the code squeezed into a single file. Real projects are never that small. Write anything half-serious and the line count piles up — keep stuffing everything into one file and the mess gets bad enough that even you can't stand to look at it.
 
-This time we'll grow the project from "one file" to "three files", and we'll put CMake to real use instead of just dropping its name like we did in part 3. Once a three-file project builds, you'll see exactly what CMake is buying you.
+This time we'll grow the project from one file to three, and put CMake — which last time got nothing more than a name-drop — to actual work. Once the three-file project builds and runs, you'll see exactly what CMake does for you.
 
-## Why split into files at all
+## Why Split Into Files
 
-Let's settle the question first: do we have to split files, or is it optional?
+First, let's settle why we even need to split files. Is it really not optional?
 
-It's optional, but try stuffing everything into `main.cpp` and once you're past two or three hundred lines you'll feel the chaos. Hunting for a function means scrolling forever. You change one thing and worry about breaking another. Functions pile on top of each other until you can't see the shape of the code anymore. As the file grows, your blood pressure tends to climb first when debugging.
+Not splitting works, but try cramming all your code into `main.cpp`: by two or three hundred lines you'll feel the chaos — finding one function means scrolling all over the screen, changing one spot makes you afraid of dragging another down with it, functions squash together into one undifferentiated blob, and your eyes can't pick out any structure. Once a file gets long, your blood pressure climbs before debugging even starts.
 
-The common way to split is one file per "kind of feature". For this part we'll build the simplest possible "say hello" feature and put it in its own two files, `greet.cpp` and `greet.h`. `main.cpp` only handles the main flow. Each file minds its own job, and the borders stay clean.
+The common way to split is one file per kind of functionality. In this article we'll build the simplest possible "greeting" feature, give it two files of its own — `greet.cpp` and `greet.h` — and let `main.cpp` handle only the main flow. Everyone does their own job, in plain view.
 
-::: details Click to open: what's the deal with .cpp and .h
-In C++, one feature usually gets split into two files: a `.h` (header file) and a `.cpp` (implementation file).
+::: details Click to see: what .cpp and .h are about
+In C++, one feature is usually split across two files: a `.h` (a header file), and a `.cpp` (the implementation file).
 
-The `.h` holds the "declaration". It tells the other files "I have this thing, and here's what it looks like". The `.cpp` holds the "definition", meaning how that thing actually does its work.
+The `.h` holds the "declarations", telling other files "I've got this thing here, and this is what it looks like". The `.cpp` holds the "definitions" — how exactly that thing does its work.
 
-When another file wants to use this feature, it `#include`s that `.h`, basically grabbing the "promise note" so it knows what it's allowed to call. How the `.cpp` implements things? The caller doesn't care. The compiler wires it up at link time (we'll get to that below).
+When another file wants to use the feature, it `#include`s that `.h` — the equivalent of picking up the "promise note" for a look, to see what it's allowed to call. As for how the `.cpp` implements things, the caller doesn't care one bit; at link time (we'll get to that below) the compiler wires it all up itself.
 
-It looks fussy, but the payoff is real: change how a feature is implemented, and as long as the "promise note" (the `.h`) didn't change, the other files that call it don't need to be recompiled at all. Once you have a lot of files, the time saved adds up fast.
+The machinery looks fussy, but the payoff is real: change how a feature is implemented, and as long as the promise note (the `.h`) hasn't changed, the other files calling it need no recompiling at all. Once the file count grows, the time saved is considerable.
 :::
 
-## Here's what the three files look like
+## What the Three Files Look Like
 
-Let's make a new project folder called `greeter` (a little "say hello" program) and put three files inside. You can close the hello project from part 3 if you like, and start fresh in a clean directory.
+Make a new project folder called `greeter` (a little program that says hi), and put three files in it. You can close the hello project from article 3 and start fresh in a clean directory.
 
-Create three files with these names and contents. First, `greet.h`. This is the header file, and it declares what the `greet` function looks like:
+Create the three files with these names and contents. First, `greet.h` — this is the header file, declaring what the `greet` function looks like:
 
 ```cpp
 #pragma once
@@ -54,13 +60,13 @@ Create three files with these names and contents. First, `greet.h`. This is the 
 std::string greet(const std::string& name);
 ```
 
-The `#pragma once` line is the header file's "don't include me twice" switch. It tells the compiler "count this file only once during the whole build. If somebody includes it a second time, skip it". Without this line, if two files both included `greet.h`, the compiler would copy its contents in twice and then throw a "duplicate definition" error at you.
+The `#pragma once` line is the header's "no double-including" switch. It means "this file counts only once in the whole compile — anyone including it a second time gets skipped". Without that line, if two files both include `greet.h`, the compiler copies the contents twice and then throws a "duplicate definition" error at you.
 
-The middle line, `#include <string>`, pulls in the standard library's string type. The `greet` function uses `std::string`, so we have to tell the compiler what that is first.
+The middle line, `#include <string>`, pulls in the standard library's string type. The `greet` function uses `std::string`, so the compiler has to be told what that is first.
 
-The last line is the function declaration: there's a function called `greet` that takes a `std::string` (named name) and returns a `std::string`. Note the semicolon at the end and the absence of curly braces. This is the "promise note". It says the function exists but says nothing about how it works.
+The last line is the function declaration: there is a function called `greet` that takes in a `std::string` (the name) and returns a `std::string`. Note that it ends with a semicolon, no braces — this is the "promise note", saying only that the function exists, not how it works.
 
-Now `greet.cpp`. This file does the implementation:
+Next, `greet.cpp` — this file does the implementing:
 
 ```cpp
 #include "greet.h"
@@ -70,11 +76,11 @@ std::string greet(const std::string& name) {
 }
 ```
 
-The first line, `#include "greet.h"`, pulls in that promise note we just wrote. Note the double quotes `""` instead of angle brackets `<>`: double quotes mean "a header you wrote yourself in this project", angle brackets mean "a system or standard library header". It's a convention, don't mix them up.
+The first line, `#include "greet.h"`, picks up that promise note we just wrote. Note the double quotes `""` instead of angle brackets `<>`: double quotes mean "a header you wrote yourself in this project", angle brackets mean "a system / standard library header". It's a convention — don't write them backwards.
 
-Below that is the function definition: it concatenates `"Hello, "`, the name passed in, and `"!"` and returns the result. This is "making good on the promise", telling the compiler exactly how this function does its work. Now we get the curly braces, and inside them is the code that actually does the job.
+Below is the function definition: it glues `"Hello, "`, the passed-in name, and `"!"` into one string and returns it. This is "making good on the promise", telling the compiler exactly how the function works. Now the braces appear, and inside them is the code that actually does the work.
 
-Finally, edit `main.cpp` to call this function:
+Finally, edit `main.cpp` to call the function:
 
 ```cpp
 #include <iostream>
@@ -86,27 +92,27 @@ int main() {
 }
 ```
 
-`main.cpp` also includes `greet.h`. It wants to use the `greet` function, so it has to grab the promise note first and learn what the function takes in and spits out. Then it calls `greet("world")` and hands the returned string to `std::cout` to print.
+`main.cpp` includes `greet.h` too — it wants to use `greet`, so it first grabs the promise note and learns what the function takes in and spits out. Then it calls `greet("world")` and hands the returned string to `std::cout` to print.
 
-Here's a metaphor to help it stick. `greet.h` is a promise note ("there's a function called `greet`, it takes a name, it returns a sentence"). `greet.cpp` is the promise being kept (exactly how the string gets assembled). `main.cpp` is the person using it (grabs it and goes, doesn't care about the details). Three files, each with its own job.
+One analogy to help it stick: `greet.h` is the promise note ("there is a function called `greet` that takes in a name and returns a sentence"), `greet.cpp` is the promise kept (how exactly the string gets glued together), and `main.cpp` is the one who just uses it (grabs it and goes, details be damned). Three files, each minding its own duty.
 
-## Hand-compiling gets old fast, enter CMake
+## Compiling by Hand Gets Old — Enter CMake
 
-The three files are ready. Now the question: how do we compile them into one `.exe`?
+Three files, ready to go. Now the question: how do we compile them into one `.exe`?
 
-Back in the single-file project, the one line that mattered in our `CMakeLists.txt` was:
+Back in the single-file project, the key line in our `CMakeLists.txt` was just this:
 
 ```cmake
 add_executable(hello main.cpp)
 ```
 
-This line means "produce an executable program called `hello`, with source file `main.cpp`". Now we have three files. Just list them all on this line:
+That line means "produce an executable called `hello`, with `main.cpp` as the source file". Now with three files, we only need to list all the sources on that line:
 
 ```cmake
 add_executable(greeter main.cpp greet.cpp)
 ```
 
-That pulls `greet.cpp` in too. Changing this one line is enough, nothing else needs to move. The full `CMakeLists.txt` looks like this:
+and `greet.cpp` is in. Changing this one line is enough; nothing else moves. The complete `CMakeLists.txt` looks like this:
 
 ```cmake
 cmake_minimum_required(VERSION 3.20)
@@ -118,31 +124,31 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(greeter main.cpp greet.cpp)
 ```
 
-Save those four lines (plus one blank line) as `CMakeLists.txt`, in the project root, sitting next to the three `.cpp` and `.h` files.
+Save these lines (plus a blank line) as `CMakeLists.txt`, in the project root, sitting alongside the three `.cpp` / `.h` files.
 
-Watch the file name capitalization: it's `CMakeLists.txt`, with capital C and capital L, ending in `.txt` not `.cmake`. CMake looks for that exact name by default. Get one letter wrong and it won't find it.
+Mind the filename's capitalization: it is `CMakeLists.txt`, capital C and capital L, ending in `.txt`, not `.cmake`. CMake looks for exactly that name by default — get one letter wrong and it won't recognize the file.
 
-## Run it
+## Getting It to Run
 
-Four files ready, let's run it. The flow is exactly the same as last time.
+Four files in place, let's run it. The procedure is exactly the same as last time:
 
-Step one, save all your files. In vscode hit `Ctrl+K` then `S` (or menu File → Save All) and save everything you changed. The trap every beginner falls into is editing a file, not saving it, and then watching the build compile the old contents and wondering why nothing changed.
+Step one, save all files. In vscode, press `Ctrl+K` then `S` (or menu File → Save All) and save every file you've touched. The trap beginners step on most is editing a file without saving, so the build still compiles the old contents — and then you question your sanity over "why didn't it take effect".
 
-Step two, configure. Click the "Configure" button in vscode's bottom status bar (or search `CMake: Configure` in the command palette). CMake will scan `CMakeLists.txt` and prepare the build files. If this step passes, a `build` folder shows up in your project directory.
+Step two, configure. Click the "Configure" button in vscode's bottom status bar (or search `CMake: Configure` in the command palette). CMake scans through `CMakeLists.txt` and prepares the build files. Once this step passes, a `build` folder pops up in the project directory.
 
-Step three, build. Click "Build" in the status bar (or `CMake: Build`, shortcut `F7`). This is the actual compile. You'll see a stream of output in the terminal. When you spot `[100%]` and `greeter.exe`, it's done.
+Step three, build. Click "Build" in the status bar (or `CMake: Build`, shortcut `F7`). This is the actual compiling — you'll see a stream of output scroll by in the terminal. When the words `[100%]` and `greeter.exe` show up, the build is done.
 
 Step four, run. Click "Run" in the status bar (or `CMake: Run Without Debugging`, shortcut `Shift+F5`).
 
-The terminal prints:
+The terminal will print:
 
 ```text
 Hello, world!
 ```
 
-At this point the three-file project runs. `main.cpp` calls the `greet` function implemented in `greet.cpp`, the function assembles the string and returns it, and `main` prints it. The simplest possible multi-file collaboration.
+At this point the three-file project runs. `main.cpp` called the `greet` function implemented in `greet.cpp`, the function glued the string together and returned it, and `main` printed it. Multi-file cooperation in its simplest form.
 
-## What CMake actually does for you
+## What CMake Actually Does for You
 
 ```mermaid
 flowchart LR
@@ -151,60 +157,59 @@ flowchart LR
     C --> D["greeter.exe"]
 ```
 
-
-Let's stop and think. Without CMake, how would we turn these three files into an `.exe`? You'd have to type something like this on the command line (don't actually run it, this is just so you can see it):
+Let's pause and think: without CMake, how would these three files become an `.exe`? You'd have to type a command like this yourself on the command line (no need to actually type it — this is just to show you):
 
 ```text
 g++ main.cpp greet.cpp -o greeter
 ```
 
-Three files, you can still about remember that. But say the project has ten or twenty `.cpp` files. That command becomes a long string of file names, and forgetting one means a link error. And every time you change one file, you'd have to rerun the whole command, recompiling the files you didn't even touch, wasting time for no reason.
+With three files, that's still memorizable. But if the project has ten or twenty `.cpp` files, that command becomes a long list of filenames — leave one out and linking errors; change one file, and you have to rerun the whole command, recompiling every file you didn't touch and wasting the time.
 
-The two headaches CMake takes off your plate are exactly these:
+CMake takes exactly these two headaches off our hands:
 
-Which files to compile, and who depends on whom. As long as you list the file names on the `add_executable` line, CMake lines everything else up. `main.cpp` includes `greet.h`, so CMake figures out on its own that `main.cpp` depends on `greet.cpp`, and it wires them together at link time. You don't have to lift a finger.
+Which files get compiled, and who depends on whom — you just list the filenames clearly on the `add_executable` line, and CMake handles the queueing. `main.cpp` includes `greet.h`, and CMake works out by itself that `main.cpp` depends on `greet.cpp`, wiring them together automatically at link time. Nothing for you to manage.
 
-Whether a change means rebuilding everything. CMake works out "you only changed `greet.cpp` this time, so only recompile that one, reuse the previously built versions of the others". Once the file count grows, this saves you a real chunk of time.
+Whether changing one file means rebuilding everything — CMake computes "only `greet.cpp` changed this time, so recompile just it, and reuse last build's output for the rest". As the file count grows, this saves a whole lot of time.
 
-Adding files to the project later comes down to one move: append a file name to the end of the `add_executable` line. Say you add `farewell.cpp`. Change it to `add_executable(greeter main.cpp greet.cpp farewell.cpp)`, click Configure + Build again, and the new file is in. You never have to memorize a single compile command. CMake handles it all.
+From here on, adding files to the project is one move: append a filename to the end of the `add_executable` line. Say you add a `farewell.cpp` — change it to `add_executable(greeter main.cpp greet.cpp farewell.cpp)`, click Configure + Build again, and the new file is in. You don't have to memorize a single compile command; CMake covers it all.
 
-## What each line of CMakeLists means
+## What Each Line of CMakeLists Means
 
-Let's translate it line by line, so you have a mental model.
+A line-by-line walkthrough, so you know where you stand:
 
 ```cmake
 cmake_minimum_required(VERSION 3.20)
 ```
 
-States "the minimum CMake version this project needs is 3.20". CMake itself is old (it's been around since 2000), but a few of the things this tutorial uses need at least 3.20. Set the version too high and an old CMake will refuse to run and tell you straight up. Set it too low and you might be fine for half the build and then crash on some specific command. Setting a floor is the safe move.
+Declares "this project requires CMake 3.20 at minimum". CMake itself is quite old (it dates back to 2000), but a few of the idioms used in this tutorial series need at least 3.20. Set the version too high, and an older CMake that can't run it errors out and tells you directly; set it too low, and things may only blow up on some command halfway through. Drawing a baseline is the safest.
 
 ```cmake
 project(greeter LANGUAGES CXX)
 ```
 
-States "this project is called `greeter`, and the language is C++". The `CXX` in `LANGUAGES CXX` is CMake's code name for C++ (C is `C`, C++ is `CXX`, because a plus sign isn't legal in a variable name). Once you declare the language, CMake goes off to find a matching compiler (in our case, the g++ we installed).
+Declares "this project is called `greeter`, and the language used is C++". The `CXX` in `LANGUAGES CXX` is CMake's codename for C++ (C is `C`, C++ is `CXX`, because plus signs aren't legal in variable names). Only once a language is declared will CMake go looking for the matching compiler (the g++ we installed).
 
 ```cmake
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 ```
 
-Read these two together. They control "which version of the C++ standard to use". `CMAKE_CXX_STANDARD 17` sets it to C++17. `CMAKE_CXX_STANDARD_REQUIRED ON` means "this standard is a hard requirement". If your compiler is too old and doesn't support C++17, the build fails outright instead of quietly dropping back to an older standard and compiling along (that quiet downgrade is the worst kind, the build passes but the behavior is off, and you only find out after debugging for ages).
+Read these two lines together; they govern "which version of the C++ standard to use". `CMAKE_CXX_STANDARD 17` sets C++17. `CMAKE_CXX_STANDARD_REQUIRED ON` means "this standard is a hard requirement" — if your installed compiler is too old to support C++17, you get an error right away, instead of a silent downgrade to some older standard that quietly keeps compiling (that "silent downgrade" is the nastiest trap: it builds, but behaves wrong, and you only find out after debugging forever).
 
 ```cmake
 add_executable(greeter main.cpp greet.cpp)
 ```
 
-This last line is the one that matters most. It tells CMake "produce an executable program called `greeter`, with source files `main.cpp` and `greet.cpp`". The executable name (`greeter`) and the file names (`main.cpp greet.cpp`) don't have to match. Call it `greeter` if you want, it's your call. The resulting `.exe` will be `greeter.exe`. The `.h` header doesn't belong on this line, it gets pulled into the `.cpp` files through `#include`, and CMake finds it on its own.
+The last line is the most crucial one: it tells CMake "produce an executable called `greeter`, with `main.cpp` and `greet.cpp` as the source files". The executable's name (`greeter`) and the filenames (`main.cpp greet.cpp`) don't have to match — if you feel like calling it `greeter`, call it `greeter`. The resulting `.exe` is `greeter.exe`. The `.h` header doesn't need to be listed here; it enters the `.cpp` files through `#include`, and CMake can find it on its own.
 
-## How to do it from the command line
+## Doing It from the Command Line
 
-If you'd rather skip the mouse clicks, the command line works too. Open a terminal in the project root (the folder that holds `CMakeLists.txt`):
+If clicking buttons isn't your thing, going all-command-line works too. Open a terminal in the project root (the level where `CMakeLists.txt` lives):
 
-::: details Click to open: how to do it from the command line
-First, open a terminal. On Windows, hit Win+R and type `cmd`. Or, the smoother way: in vscode go to menu Terminal → New Terminal, which opens one right in the project directory. Make sure it's the "MSYS2 UCRT64" terminal (the one we set up in part 2), not a plain cmd. The plain cmd can't find `cmake` or `g++`.
+::: details Click to see: doing it from the command line
+First, open a terminal. On Windows, press Win+R and type `cmd` — or the handier way: in vscode, menu Terminal → New Terminal opens one right in the project directory. Please make sure it is the "MSYS2 UCRT64" terminal (the one article 2 installed), not a plain cmd — plain cmd can't find `cmake` or `g++`.
 
-First command, configure (`-B build` means "put the build files in the `build` subdirectory", so the project root stays clean):
+First command, configure (`-B build` means "put the build files in the `build` subdirectory", keeping the project root from getting messy):
 
 ```bash
 cmake -B build -S . -G Ninja
@@ -213,22 +218,28 @@ cmake -B build -S . -G Ninja
 Second command, build:
 
 ```bash
-cmake --build build
+cmake --build build -j
 ```
 
-After it finishes, the executable lives at `build/greeter.exe` (Windows) or `build/greeter` (Linux/macOS). Run it directly:
+After the build, the executable lives at `build/greeter.exe` (Windows) or `build/greeter` (Linux/macOS). Run it directly:
 
 ```bash
 ./build/greeter
 ```
 
-The terminal still prints `Hello, world!`. Clicking buttons and typing commands run the same CMake underneath, the result is identical.
+The terminal prints `Hello, world!` just the same. Clicking buttons or typing commands — it's the same CMake running underneath, same results.
 
-`-G Ninja` selects the Ninja generator; CMake writes the build files Ninja needs into the `build` directory. `cmake --build build` then invokes Ninja for you, so you don't have to type `ninja` directly. To use MinGW Makefiles instead, run `cmake -B build -S . -G "MinGW Makefiles"` from Windows `cmd` where `mingw32-make` is available. Don't reuse the same `build` directory with different generators; remove the old directory before reconfiguring. See the [CMake generator reference](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html) for generator requirements.
+`-G Ninja` selects the Ninja generator; CMake writes the build files Ninja needs into the `build` directory. `cmake --build build -j` then calls Ninja to carry out the build — you never have to type `ninja` yourself. If you switch to MinGW Makefiles instead, run `cmake -B build -S . -G "MinGW Makefiles"` in a Windows `cmd` where `mingw32-make` can be found; the two generators should not share the same `build` directory — when switching, delete the old directory and reconfigure. For more on generator requirements, see the [CMake official documentation](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html).
 
-On the first configure, CMake detects the compiler and shows the selected generator. When you see `Generating done` at the end, configuration is complete and you can build.
+The first time you configure, CMake detects the compiler and shows the generator. When you see `Generating done` at the end, configuration succeeded and you can go on to build.
 :::
 
-The three-file project runs, and CMake has taken over the annoying chores of "which files to compile, who depends on whom, whether a change needs a rebuild". From here on, no matter how big the project gets, you just keep adding names to the `add_executable` line.
+The three-file project runs, and CMake has taken over the headaches of "which files to compile, who depends on whom, whether a change forces a rebuild". However much bigger the project gets later, growing it is just adding names to the `add_executable` line.
 
-But you may have already noticed an annoyance. In `main.cpp`, click on the `greet` function name wanting to jump to its definition and look at the implementation, and nothing happens. Sometimes `#include "greet.h"` in your code has a red squiggly line under it, even though it compiles fine and the line just won't go away. That's vscode still not knowing where `greet.h` lives or what the `greet` function looks like. We'll fix that in the next part and make the editor catch up.
+But you may have already spotted an annoyance: click the `greet` function name in `main.cpp`, wanting to jump to its definition and peek at the implementation — the jump doesn't happen; and the `#include "greet.h"` line sometimes wears a red squiggly that just won't go away, even though the build clearly passes. That's vscode still not knowing where `greet.h` is or what the `greet` function looks like — the next article fixes exactly that, and brings the editor up to speed too.
+
+
+::: details Click to see: want a bit more CMake
+
+- [runoob · CMake Tutorial](https://www.runoob.com/cmake/cmake-tutorial.html) — Don't turn your nose up at it just because of the "rookie" in its name; it is genuinely friendly to absolute beginners, and it explains clearly what CMake is and how CMakeLists are written
+:::

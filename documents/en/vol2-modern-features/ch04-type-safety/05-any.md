@@ -8,8 +8,8 @@ difficulty: intermediate
 order: 5
 platform: host
 prerequisites:
-- 'Chapter 4: std::variant: A Type-Safe Union'
-- 'Chapter 4: std::optional: Elegantly Expressing ''A Value May Be Absent'''
+- 'std::variant: A Type-Safe Union'
+- 'std::optional: Elegantly Expressing ''A Value May Be Absent'''
 reading_time_minutes: 15
 related:
 - 'std::function, std::invoke, and Callable Objects'

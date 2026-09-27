@@ -4,8 +4,8 @@ cpp_standard:
 - 17
 - 20
 - 23
-description: Define global variables in header files without violating the one definition
-  rule (ODR); the compiler guarantees a single instance.
+description: Define global variables in a header without violating the ODR; the compiler
+  guarantees a single instance.
 difficulty: beginner
 order: 14
 reading_time_minutes: 2
@@ -13,13 +13,13 @@ tags:
 - host
 - cpp-modern
 - beginner
-title: inline variable
+title: inline variables
 translation:
   source: documents/cpp-reference/core-language/14-inline-variables.md
   source_hash: 8505b0782a87f65c4971bb685b5330692137d6b2f0fff6a648ce1f2cf183b203
-  translated_at: '2026-06-16T04:37:32.538757+00:00'
+  translated_at: '2026-09-27T01:45:58+00:00'
   engine: anthropic
-  token_count: 426
+  token_count: 480
 ---
 <!--
 Reference Card Template
@@ -27,17 +27,17 @@ Used for feature cheat sheets under documents/cpp-reference/.
 Unlike article-template.md, reference cards use a refined structured format and do not require a narrative style.
 
 Tag usage rules:
-1. Must include 1 platform tag (use 'host' for reference cards)
+1. Must include 1 platform tag (reference cards uniformly use host)
 2. Must include 1 difficulty tag
 3. Must include at least 1 topic tag
 4. Select from the VALID_TAGS set in scripts/validate_frontmatter.py
 -->
 
-# Inline Variables (C++17)
+# inline variables (C++17)
 
 ## In a Nutshell
 
-Use `inline` to modify namespace-scope variables, allowing global variable definitions in header files without causing multiple-definition linker errors—the compiler guarantees a single instance across the program.
+Apply `inline` to a namespace-scope variable, and you can define a global variable in a header file without triggering multiple-definition linker errors—the compiler guarantees exactly one instance across the entire program.
 
 ## Header
 
@@ -47,50 +47,43 @@ None (language feature)
 
 | Syntax | Description |
 |------|------|
-| `inline Type var = value;` | Inline variable definition at namespace scope |
-| `const inline` | `const` variables are implicitly `inline`, no need to repeat the specifier |
-| `static inline Type var = value;` | In-class static member variables; C++17 allows in-class initialization |
-| `thread_local inline` | Used with thread-local storage |
+| `inline T var = val;` | Inline variable definition at namespace scope |
+| `inline constexpr T var = val;` | `constexpr` variables are implicitly `inline`; no need to repeat the specifier |
+| `inline static T var = val;` | In-class static data members; since C++17 they can be initialized directly inside the class |
+| `inline thread_local T var = val;` | Combines with thread-local storage |
 
 ## Minimal Example
 
 ```cpp
-// config.h
+// Standard: C++17
+// header.h
 #pragma once
-#include <cstdint>
+#include <string>
 
-// Define a global configuration in the header
-// No need for a separate config.cpp file
-inline std::uint32_t system_tick_rate_hz = 1000;
+inline const std::string kVersion = "1.0.0";
+inline int kMaxRetries = 3;
 
-// const variables are implicitly inline
-inline constexpr std::size_t buffer_size = 512;
-
-// Class static members can be initialized in-class
-class SystemState {
-public:
-    static inline bool is_initialized = false;
-};
+// Multiple translation units include this header;
+// the linker guarantees a single instance of kVersion and kMaxRetries
 ```
 
 ```cpp
 // main.cpp
-#include "config.h"
 #include <iostream>
+#include "header.h"
 
 int main() {
-    // Access the inline variable
-    std::cout << "Tick Rate: " << system_tick_rate_hz << std::endl;
-    system_tick_rate_hz = 2000; // Modifies the single shared instance
+    std::cout << kVersion << "\n";     // 1.0.0
+    std::cout << kMaxRetries << "\n";  // 3
 }
 ```
 
 ## Embedded Applicability: High
 
-- An ideal partner for header-only libraries, replacing the `extern` global variable pattern.
-- `const` variables are implicitly `inline`, so compile-time constant tables commonly used in embedded systems benefit naturally.
-- Eliminates boilerplate code for "declare in header + define in source file".
-- Zero runtime overhead; only affects symbol merging during the linking phase.
+- An ideal companion for header-only libraries, replacing the `extern` global variable pattern.
+- `constexpr` variables are implicitly `inline`, so the compile-time constant tables common in embedded code benefit naturally.
+- Eliminates the boilerplate of "declare in a header + define in a source file".
+- Zero runtime overhead; it only affects symbol merging during linking.
 
 ## Compiler Support
 
@@ -104,4 +97,4 @@ int main() {
 
 ---
 
-*Part of the content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*
+*Part of the content is referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*

@@ -8,7 +8,7 @@ difficulty: intermediate
 order: 3
 platform: host
 prerequisites:
-- 'Chapter 8: string_view Internals: A Non-Owning String View'
+- 'string_view Internals: A Non-Owning String View'
 reading_time_minutes: 14
 related:
 - string_view Performance Analysis

@@ -3,15 +3,13 @@ chapter: 1
 cpp_standard:
 - 17
 - 20
-description: "Build WeakPtr's three-layer skeleton by hand: the refcounted Flag control
-  block, the WeakReference wrapper, and the WeakPtr user handle, landing on std::atomic
-  + memory_order."
+description: "Build WeakPtr's three-layer skeleton hands-on — the refcounted Flag control block, the WeakReference reference wrapper, and the WeakPtr user handle, landing on std::atomic + memory_order"
 difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- 'WeakPtr hands-on (II): the core skeleton and control block'
-- 'WeakPtr prerequisite (I): intrusive refcounting and scoped_refptr'
+- 'WeakPtr hands-on (I): motivation and API design'
+- 'WeakPtr prerequisite (I): intrusive reference counting and scoped_refptr'
 - 'WeakPtr prerequisite (II): std::atomic and memory_order'
 reading_time_minutes: 14
 related:
@@ -25,34 +23,40 @@ tags:
 - weak_ptr
 - atomic
 - 内存管理
-title: "WeakPtr Hands-on (II): The Core Skeleton and Control Block"
+title: "WeakPtr hands-on (II): the core skeleton and control block"
+translation:
+  source: documents/vol9-open-source-project-learn/chrome/02_weak_ptr/full/02-2-weak-ptr-core-skeleton-and-control-block.md
+  source_hash: 4839f9100f86b12db7459ecafddd0e24668c11baf8d696746c9ab4b502915c5f
+  translated_at: '2026-09-26T01:43:59+00:00'
+  engine: anthropic
+  token_count: 4800
 ---
-# WeakPtr Hands-on (II): The Core Skeleton and Control Block
+# WeakPtr hands-on (II): the core skeleton and control block
 
-## Recap of the three layers
+## Recap of the three-layer structure
 
-WeakPtr is a three-layer structure: `Flag` (the control block), `WeakReference` (the reference side), and `WeakPtr<T>` (the user handle). The seven prerequisite pieces gathered all the parts. Intrusive refcounting, acquire/release, CHECK/DCHECK. In this piece we weld them together and watch how they mesh as real code. We build bottom-up, starting with the lowest and most heavily loaded layer, `Flag`. It's the carrier for the "is the object dead yet?" state from [prerequisite (0)](./pre-00-weak-ptr-weak-reference-and-lifetime.md), and the industrial-grade version of the hand-rolled flag in [01-4 cancellation token](../../01_once_callback/full/01-4-once-callback-cancellation-token.md).
+WeakPtr is a three-layer structure: `Flag` (the control block), `WeakReference` (the reference side), and `WeakPtr<T>` (the user-facing handle). The seven prerequisite pieces have gathered all the parts — intrusive reference counting, acquire/release, CHECK/DCHECK — and in this piece we weld them together and watch how they mesh into real code. We will build bottom-up, starting with the lowest layer and the one carrying the most weight, `Flag`. It is the carrier of the "is the object dead yet?" state from [prerequisite (0)](./pre-00-weak-ptr-weak-reference-and-lifetime.md), and the industrial-grade true form of the hand-rolled flag in [01-4's cancellation token](../../01_once_callback/full/01-4-once-callback-cancellation-token.md).
 
-Following the diagram from [02-1](./02-1-weak-ptr-motivation-and-api-design.md), let's put it in front of us again before we fill in the code:
+Following the diagram from [02-1](./02-1-weak-ptr-motivation-and-api-design.md), let's fill in the code — here is that diagram one more time:
 
 ```mermaid
 flowchart TB
     subgraph WP["WeakPtr&lt;T&gt; — the handle users pass around / dereference"]
-        subgraph WR["WeakReference — ref side, holds scoped_refptr&lt;Flag&gt;"]
+        subgraph WR["WeakReference — the reference side, holds scoped_refptr&lt;Flag&gt;"]
             Flag["Flag — refcounted + atomic liveness"]
         end
     end
 ```
 
-Each layer's job is straightforward. `Flag` owns the "is the object dead yet?" state: one atomic flag bit plus a refcount. `WeakReference` is a thin wrapper around `scoped_refptr<const Flag>`, nothing more. `WeakPtr<T>` takes a `WeakReference` and adds a `T*`, becoming the handle you actually hold.
+Each layer's job is not complicated. `Flag` owns the "is the object dead yet?" state — one atomic flag bit plus a reference count; `WeakReference` is a lightweight reference to the Flag — plainly a thin wrapper around `scoped_refptr<const Flag>`; `WeakPtr<T>` adds a `T*` on top of the `WeakReference`, assembling the handle the user holds.
 
 ---
 
-## Layer one: Flag, a refcounted atomic state
+## Layer one: Flag — a refcounted atomic state
 
-Before designing `Flag`, let's lay out the situation it's in. The factory side holds it, every WeakPtr side holds it, a crowd shares it. That settles it: it needs a refcount. The state it carries is a single boolean bit, "invalidated or not", and that bit gets read and written from different sequences, so it has to be atomic. On top of that, the refcount governs who deletes it, and the last sequence to let go might be the one doing the delete at any moment, so the count itself must be cross-thread safe.
+Before designing `Flag`, let's straighten out its situation first. The factory side has to hold it, and every WeakPtr side has to hold it too — a whole crowd sharing one thing — which destines it to carry a reference count. The state it keeps in hand is a single boolean bit, "invalidated or not", and that bit has to be read and written from different sequences, so atomic it must be. On top of that, it is governed by reference counting, so whichever sequence lets go last may at any moment be the one responsible for deleting it — which in turn forces the count itself to be safe across threads.
 
-Stack those three together and you get [prerequisite (I)](./pre-01-weak-ptr-intrusive-refcount-and-scoped-refptr.md)'s `RefCountedThreadSafe` meeting [prerequisite (II)](./pre-02-weak-ptr-atomic-and-memory-order.md)'s acquire/release. We reuse the minimal `RefCounted` from pre-01, give it the atomic counting semantics of `RefCountedThreadSafe`, then build Flag on top.
+Stack those three requirements together and you get exactly [prerequisite (I)](./pre-01-weak-ptr-intrusive-refcount-and-scoped-refptr.md)'s `RefCountedThreadSafe` colliding with [prerequisite (II)](./pre-02-weak-ptr-atomic-and-memory-order.md)'s acquire/release. We will reuse the minimal `RefCounted` from pre-01, upgrade it with `RefCountedThreadSafe`'s atomic-counting semantics, and build the Flag on top.
 
 ```cpp
 // Platform: host | C++ Standard: C++17
@@ -63,7 +67,7 @@ Stack those three together and you get [prerequisite (I)](./pre-01-weak-ptr-intr
 
 namespace tamcpp::chrome::internal {
 
-// Sequence-safe intrusive refcount base (simplified RefCountedThreadSafe)
+// Cross-sequence-safe intrusive reference-counting base class (a simplified RefCountedThreadSafe)
 class RefCountedThreadSafe {
 public:
     void add_ref() const noexcept {
@@ -71,7 +75,7 @@ public:
     }
     bool release() const noexcept {
         if (ref_count_.fetch_sub(1, std::memory_order_acq_rel) == 1) {
-            return true;    // caller is responsible for delete this
+            return true;    // the caller is responsible for delete this
         }
         return false;
     }
@@ -85,7 +89,7 @@ private:
     mutable std::atomic<int> ref_count_{0};
 };
 
-// Matches Chromium's base::AtomicFlag: one-shot, release/acquire boolean flag
+// Mirrors Chromium's base::AtomicFlag: a one-shot, release/acquire boolean flag
 class AtomicFlag {
 public:
     void Set() noexcept {
@@ -101,7 +105,7 @@ private:
 }  // namespace tamcpp::chrome::internal
 ```
 
-With both parts in place, `Flag` itself is thin:
+With those two parts in place, `Flag` itself turns out very thin:
 
 ```cpp
 // Platform: host | C++ Standard: C++17
@@ -111,43 +115,40 @@ class Flag : public RefCountedThreadSafe {
 public:
     Flag() = default;
 
-    // Invalidate: release-store publishes "object entered invalidated state"
-    // along with all prior writes.
+    // Invalidation: the release-store publishes the "object has entered the invalidated state" message together with all prior writes
     void Invalidate() noexcept {
-        // Teaching version omits the sequence check; Chromium DCHECKs
-        // seq.CalledOnValidSequence() || HasOneRef() here.
+        // The teaching version omits the sequence check; Chromium DCHECKs (seq || HasOneRef()) here
         invalidated_.Set();
     }
 
-    // Liveness (same-sequence contract): acquire-load.
+    // Liveness check (same-sequence contract): an acquire-load
     bool IsValid() const noexcept {
         return !invalidated_.IsSet();
     }
 
-    // Liveness (cross-sequence hint): also acquire-load, but the caller
-    // owns the risk that a positive result is not to be trusted.
+    // Liveness check (cross-sequence hint): also an acquire-load, but the caller owns the risk that a positive answer may not be trustworthy
     bool MaybeValid() const noexcept {
         return !invalidated_.IsSet();
     }
 
 private:
-    template <typename> friend class scoped_refptr;   // allow delete when count hits zero
-    ~Flag() = default;                   // private: outsiders can't delete directly
+    template <typename> friend class scoped_refptr;   // allows delete once the count hits zero
+    ~Flag() = default;                   // private: outsiders cannot delete directly
     AtomicFlag invalidated_;
 };
 
 }  // namespace tamcpp::chrome::internal
 ```
 
-A few points in this code deserve a separate callout. `Flag` inherits `RefCountedThreadSafe`, so the atomic refcount comes for free. The destructor is deliberately `private`, narrowing the delete path to `release` and friends. That's the "block outsiders from deleting directly" trick from the end of [prerequisite (I)](./pre-01-weak-ptr-intrusive-refcount-and-scoped-refptr.md), saving us from careless hands.
+A few spots in this code deserve their own callout. `Flag` inherits `RefCountedThreadSafe`, so the atomic reference count comes for free; the destructor is deliberately `private`, tightening the delete opening down to the `release` path and friends — exactly the "block outsiders from deleting directly" trick from the end of [prerequisite (I)](./pre-01-weak-ptr-intrusive-refcount-and-scoped-refptr.md), keeping itchy fingers away.
 
-`Invalidate` pairs with `IsValid`: one release-store, one acquire-load. We worked through the happens-before of this pair in [prerequisite (II)](./pre-02-weak-ptr-atomic-and-memory-order.md). As long as you read "invalidated", every write the object made before entering that state is visible to you, no extra locking needed. The teaching version drops the sequence checks (Chromium hangs `DCHECK(seq.CalledOnValidSequence() || HasOneRef())` in `Invalidate` and `DCHECK_CALLED_ON_VALID_SEQUENCE` in `IsValid`); we pick those back up in 02-4 when we cover lazy binding. The acquire/release core semantics, though, are not discounted by a single word here.
+`Invalidate` pairs with `IsValid`, one release-store against one acquire-load; we already derived this pair's happens-before in [prerequisite (II)](./pre-02-weak-ptr-atomic-and-memory-order.md): once you read "invalidated", none of the object's earlier writes can escape you. The teaching version cuts the sequence checks (Chromium hangs `DCHECK(seq.CalledOnValidSequence() || HasOneRef())` inside `Invalidate` and `DCHECK_CALLED_ON_VALID_SEQUENCE` inside `IsValid`), leaving them for 02-4's discussion of lazy binding; but on the core acquire/release semantics, not a single word is discounted here.
 
 ---
 
-## Layer two: WeakReference, a wrapper around Flag
+## Layer two: WeakReference — a reference wrapper around Flag
 
-One level up is `WeakReference`. Plainly put, it's a shell around `scoped_refptr<const Flag>`, and it doesn't do much: hold a refcounted handle to Flag, and forward `IsValid` / `MaybeValid` / `Reset` straight through.
+One layer up sits `WeakReference`. Frankly it is `scoped_refptr<const Flag>` wearing a shell, and it does not do much: it holds a reference-counted handle pointing at the Flag and forwards the three operations `IsValid`/`MaybeValid`/`Reset` straight through.
 
 ```cpp
 // Platform: host | C++ Standard: C++17
@@ -185,15 +186,15 @@ private:
 }  // namespace tamcpp::chrome::internal
 ```
 
-`flag_` holds a refcounted handle, so multiple WeakReferences sharing one Flag won't step on each other. Once a Flag is constructed, its identity (which Flag `flag_` points at) never moves again. The only thing that changes is the single bit in `AtomicFlag invalidated_`, and `Set()` / `IsSet()` are thread-safe atomic operations in their own right, so cross-sequence reads and writes need no extra lock. (The real Chromium version at `weak_ptr.h:153` uses `scoped_refptr<const Flag>` here, letting the type itself shout "Flag identity is immutable". The teaching version drops that const to stay consistent with the matching `weak_ptr.hpp`.)
+`flag_` holds a reference-counted handle, so several WeakReferences can share the same Flag without fighting over it. Once a Flag is constructed, its identity — which Flag `flag_` actually points to — never moves again; the only thing that can change is the `AtomicFlag invalidated_` bit, and `Set()` / `IsSet()` are thread-safe atomic operations to begin with, so cross-sequence reads and writes need no extra locking at all. (The real Chromium uses `scoped_refptr<const Flag>` here, at `weak_ptr.h:153`, wanting "Flag identity is immutable" shouted from the type level; our teaching version skips that const, and the companion `weak_ptr.hpp` stays consistent with the text.)
 
-`Reset()` nulls `flag_`, and `IsValid()` / `MaybeValid()` immediately flip to false. That's letting go on purpose.
+`Reset()` nulls `flag_` out, and `IsValid()` and `MaybeValid()` both flip to false immediately — an active letting-go.
 
 ---
 
-## Layer three: WeakPtr\<T\>, the user handle
+## Layer three: WeakPtr\<T\> — the user-facing handle
 
-At the top sits `WeakPtr<T>`, which takes a `WeakReference` and adds a `T*`. The semantics of that pointer are a little counterintuitive. While the object lives it points at it; once the object destructs, it's allowed to dangle, hanging there in plain sight but off-limits. [Prerequisite (V)](./pre-05-weak-ptr-template-friend-and-uintptr-t.md) explains why this deliberately avoids `raw_ptr`: allowing the dangle is part of the design, and `WeakReference` does the gating.
+At the top layer, `WeakPtr<T>` adds one more piece on top of `WeakReference`: a `T*`. This pointer's semantics are a bit counterintuitive: while the object lives it points at the object; once the object destructs, dangling is allowed — hanging there in broad daylight, but off-limits to the touch. [Prerequisite (V)](./pre-05-weak-ptr-template-friend-and-uintptr-t.md) explained why `raw_ptr` is deliberately not used here: permitting the dangle is itself part of the design, and gatekeeping is left to the `WeakReference`.
 
 ```cpp
 // Platform: host | C++ Standard: C++20
@@ -209,7 +210,7 @@ public:
     WeakPtr() = default;
     WeakPtr(std::nullptr_t) noexcept {}    // NOLINT(google-explicit-constructor)
 
-    // Upcast conversion constructor (see pre-04)
+    // Upcast converting constructor (see pre-04)
     template <typename U>
         requires(std::convertible_to<U*, T*>)
     WeakPtr(const WeakPtr<U>& other) noexcept
@@ -220,10 +221,10 @@ public:
     WeakPtr(WeakPtr<U>&& other) noexcept
         : ref_(std::move(other.ref_)), ptr_(other.ptr_) {}
 
-    // Two postures: liveness check and dereference
+    // Liveness check + dereference, in two postures
     T* get() const noexcept { return ref_.IsValid() ? ptr_ : nullptr; }
 
-    T& operator*() const { assert(ref_.IsValid()); return *ptr_; }   // teaching version uses assert; Chromium uses CHECK
+    T& operator*() const { assert(ref_.IsValid()); return *ptr_; }   // the teaching version uses assert; Chromium uses CHECK
     T* operator->() const { assert(ref_.IsValid()); return ptr_; }
 
     explicit operator bool() const noexcept { return get() != nullptr; }
@@ -240,51 +241,51 @@ private:
     template <typename U> friend class WeakPtr;
     friend class WeakPtrFactory<T>;
 
-    // Only the factory can call this: used at mint time
+    // Only the factory can call this: used at minting time
     WeakPtr(internal::WeakReference&& ref, T* ptr) noexcept
         : ref_(std::move(ref)), ptr_(ptr) {
         assert(ptr);
     }
 
     internal::WeakReference ref_;
-    T* ptr_ = nullptr;     // RAW_PTR_EXCLUSION: dangling allowed, ref_ gates before deref
+    T* ptr_ = nullptr;     // RAW_PTR_EXCLUSION: dangling is allowed; ref_ gates the deref
 };
 
 }  // namespace tamcpp::chrome
 ```
 
-Nothing here is casual. Every line maps back to some prerequisite piece. Let's go through them.
+Nothing in this code was written offhand — every piece maps back to one of the earlier prerequisites. Let's walk them one by one.
 
-The `[[clang::trivial_abi]]` at the top of the class comes from pre-06. Its job is to let a type with a non-trivial destructor still pass through registers like a trivial type. Pre-06 worked through the safety preconditions: `ptr_` is a raw pointer and trivial already, and the `scoped_refptr` inside `ref_` is trivially relocatable. Both hold, so the annotation doesn't flip over.
+The `[[clang::trivial_abi]]` at the top of the class comes from pre-06; its job is to let this type — which clearly has a non-trivial destructor — pass in registers the way a trivial type would. pre-06 already argued the safety preconditions: `ptr_` is a raw pointer, trivial to begin with; the `scoped_refptr` inside `ref_` is trivial and still relocatable; both conditions hold, so the annotation will not tip over.
 
-The `requires` on the conversion constructors (pre-04's product) gates the cast direction. `WeakPtr<Derived>` can go to `WeakPtr<Base>`; the reverse and unrelated types get stopped at compile time. The `template <typename U> friend class WeakPtr` right after (pre-05) isn't decoration. The conversion constructors need to read `other.ref_` and `other.ptr_`, and without that friend declaration they couldn't reach them.
+The `requires` clauses hanging on the converting constructors (pre-04's product) police the direction of conversion: `WeakPtr<Derived>` can convert toward `WeakPtr<Base>`, while the reverse direction and unrelated types get blocked at compile time. The `template <typename U> friend class WeakPtr` right after them (pre-05) is not decoration: the converting constructors need to read `other.ref_` / `other.ptr_`, and without that friend declaration they simply cannot reach them.
 
-`operator*` and `operator->` use `assert` in the teaching version, catching trouble in debug. Chromium's real version uses `CHECK`, which crashes in release too. Dereferencing after invalidation is a flat-out logic error; in production it has to blow up on the spot. In 02-6 we'll switch the release behavior with a macro, so keep that in mind.
+The teaching version uses `assert` in `operator*` and `operator->` — a debug-time catch; the real Chromium uses `CHECK`, which crashes just the same in release. Dereferencing something already invalidated is a flat-out logic error, and in production it must blow up on the spot; in 02-6 we will use a macro to switch the release behavior — file that away for now.
 
-The private constructor plus `friend WeakPtrFactory<T>` at the end is the minting slot reserved for the factory. Through it the factory can write directly into `ref_` and `ptr_`, while nobody outside can touch them. That upholds the contract: only the factory makes WeakPtrs.
+Finally, that private constructor paired with `friend WeakPtrFactory<T>` is the minting slot reserved for the factory. Through it the factory can write values straight into `ref_` and `ptr_`, where nobody outside can reach — securing the contract that "only the factory can mint a WeakPtr".
 
-### The gating chain inside get()
+### The gatekeeping chain inside get()
 
-The most important line is `get()`:
+The most critical line is `get()`:
 
 ```cpp
 T* get() const noexcept { return ref_.IsValid() ? ptr_ : nullptr; }
 ```
 
-Expanded, the whole gating chain is:
+Unrolled, the whole gatekeeping chain is:
 
 ```text
 get() → ref_.IsValid() → (flag_ && flag_->IsValid()) → !invalidated_.IsSet()
                                                           ↑ acquire-load
 ```
 
-One `get()` call boils down to a single atomic acquire-load underneath. Read "not invalidated", return `ptr_`, and the caller derefs with confidence. Read "invalidated", hand back `nullptr` honestly. Every bit of WeakPtr's safety hangs on this gate, and every dereference goes through, and only through, `get()`. `operator*` and `operator->` look like they touch `ptr_` directly, but each one `CHECK`s `ref_.IsValid()` first, which amounts to confirming `get()` won't return null.
+Beneath a single `get()` call there is exactly one atomic acquire-load. If it reads "not invalidated", return `ptr_`, and the caller can deref with a clear conscience; if it reads "invalidated", hand back `nullptr` obediently. All of WeakPtr's safety is tied to this gate: every dereference must, and can only, pass through `get()`. `operator*` / `operator->` look like they lay hands on `ptr_` directly, but both `CHECK` `ref_.IsValid()` before going in — equivalent to having confirmed that `get()` would not return null.
 
 ---
 
-## Stringing it together: a minimal runnable example
+## Wiring it together: a minimal working example
 
-The factory isn't written yet (that's the next piece's job), but we can hand-assemble a Flag and a WeakReference to verify the three layers run end to end. The snippet below is pseudocode for exposition. It calls WeakPtr's private constructor directly, which in normal use only `WeakPtrFactory` can reach through friendship. The real compilable version sits in the matching `code/.../chrome_design/16_weak_ptr_skeleton.cpp`, and it goes through the factory's proper minting path.
+The factory is not written yet (that is the next piece's job), but we can hand-assemble a Flag + WeakReference and first verify the three layers run through. The snippet below is pseudocode for exposition — it calls `WeakPtr`'s private constructor directly, which normally only `WeakPtrFactory` can reach through friendship; the real, compilable version lives in the companion `code/.../chrome_design/16_weak_ptr_skeleton.cpp`, which takes the proper road of factory minting.
 
 ```cpp
 // Platform: host | C++ Standard: C++20
@@ -298,7 +299,7 @@ int main() {
 
     Foo foo;
 
-    // Hand-assemble a Flag + WeakReference (simulating the factory mint; 02-3 wraps it)
+    // Hand-assemble a Flag + WeakReference (simulating the factory's minting; 02-3 will wrap it up)
     auto* flag = new Flag();
     scoped_refptr<Flag> flag_ref(flag);                 // ref_count = 1
     WeakReference ref(flag_ref);                        // ref_count = 2
@@ -307,21 +308,21 @@ int main() {
     std::cout << (wp ? "alive" : "dead") << '\n';       // alive
     std::cout << wp->x << '\n';                         // 42
 
-    flag->Invalidate();                                 // simulate the invalidation before object destructs
+    flag->Invalidate();                                 // simulate the invalidation before the object destructs
     std::cout << (wp ? "alive" : "dead") << '\n';       // dead
-    std::cout << wp.get() << '\n';                      // 0 (nullptr)
+    std::cout << wp.get() << '\n';                      // 0(nullptr)
 
     return 0;
 }
 ```
 
-Run it and the terminal prints `alive` / `42` / `dead` / `0`. Once `Invalidate` is called, `wp`'s `operator bool` (which goes through `get()` under the hood) flips to false, and `get()` honestly hands back nullptr. The promise [02-1](./02-1-weak-ptr-motivation-and-api-design.md) made back then, that when the object dies the callback gets nullptr rather than a dangling pointer, is now made good in code.
+Run it, and the terminal spits out `alive` / `42` / `dead` / `0`. The moment `Invalidate` is called, `wp`'s `operator bool` (backed by `get()`) flips to false, and `get()` honestly hands back `nullptr`. The promise made back in [02-1](./02-1-weak-ptr-motivation-and-api-design.md) — when the object dies, the callback receives a nullptr rather than a dangling pointer — is honored in code right here.
 
-Our Flag here is still hand-assembled, though. Who mints it, and who calls `Invalidate` the moment the object destructs? That's where `WeakPtrFactory` steps in. Implementing the factory, plus the famous "last member" idiom, is the next piece.
+Still, our Flag at this point is hand-assembled. Who does the minting, and who is responsible for shouting `Invalidate` at the very moment the object destructs? That is where `WeakPtrFactory` enters the stage. Implementing the factory, plus that famous "last member" idiom, is what we take apart in the next piece.
 
 ## References
 
 - [Chromium `base/memory/weak_ptr.h`](https://source.chromium.org/chromium/chromium/src/+/main:base/memory/weak_ptr.h)
 - [Chromium `base/memory/weak_ptr.cc`](https://source.chromium.org/chromium/chromium/src/+/main:base/memory/weak_ptr.cc)
-- [WeakPtr prerequisite (I): intrusive refcounting and scoped_refptr](./pre-01-weak-ptr-intrusive-refcount-and-scoped-refptr.md)
+- [WeakPtr prerequisite (I): intrusive reference counting and scoped_refptr](./pre-01-weak-ptr-intrusive-refcount-and-scoped-refptr.md)
 - [WeakPtr prerequisite (II): std::atomic and memory_order](./pre-02-weak-ptr-atomic-and-memory-order.md)

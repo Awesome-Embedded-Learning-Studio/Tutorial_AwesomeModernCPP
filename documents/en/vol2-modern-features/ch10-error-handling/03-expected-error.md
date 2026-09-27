@@ -8,8 +8,8 @@ difficulty: intermediate
 order: 3
 platform: host
 prerequisites:
-- 'Chapter 10: Evolution of Error Handling: From Error Codes to Type Safety'
-- 'Chapter 10: optional for Error Handling'
+- 'Evolution of Error Handling: From Error Codes to Type Safety'
+- optional for Error Handling
 reading_time_minutes: 11
 related:
 - 'Error Handling Patterns: A Selection Guide and Best Practices'

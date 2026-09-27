@@ -1,49 +1,44 @@
 ---
-title: 'Command Pattern: Turning Actions into Reversible Objects'
-description: Starting from the most intuitive "direct function calls," we will gradually
-  derive the Command interface, build a text editor with undo/redo functionality along
-  the way, and finally wrap things up with `std::move_only_function`.
+title: 'Command Pattern: Turning Actions into Undoable Objects'
+description: 'Starting from the most intuitive "just call the function directly" approach, we derive the Command interface step by step, build a text editor with undo/redo along the way, and wrap up with `std::move_only_function`'
 chapter: 11
 order: 13
 tags:
-- host
-- cpp-modern
-- intermediate
-- 命令模式
+  - host
+  - cpp-modern
+  - intermediate
+  - 命令模式
 difficulty: intermediate
 platform: host
-cpp_standard:
-- 11
-- 17
-- 20
-- 23
+cpp_standard: [11, 17, 20, 23]
 reading_time_minutes: 20
 related:
-- 单例模式:从注释约束到 Meyer's Singleton
+  - 'Singleton Pattern: From Comment-Only Constraints to Meyer''s Singleton'
 prerequisites:
-- 'Chapter 6: 类与对象'
+  - Classes and Object-Oriented Programming
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/13-command.md
   source_hash: a188fc4959e344434c1f602a173343a066b544f1bc6428793b8a526867cb9536
-  translated_at: '2026-06-24T00:59:38.597937+00:00'
+  translated_at: '2026-09-26T05:32:48+00:00'
   engine: anthropic
-  token_count: 3155
+  token_count: 4900
 ---
+
 # Command Pattern: Turning Actions into Undoable Objects
 
-## What problem are we actually solving?
+## What problem are we actually solving
 
-Let's skip the formal definition for a moment. Consider a common scenario: you are writing a text editor. The user clicks "Insert Line," so you write `editor.append("hello")` and call it a day—the action happens instantly and then vanishes. This sounds fine until the product manager comes back the next day asking for Ctrl+Z undo support, an operation history, and the ability to batch operations into "macros" for one-click replay. You look at your code and see it's full of naked function calls with no trace of "what happened"—undo? Undo what? The functions have returned, and you have nothing to roll back.
+Let's skip the definition for now. Think of the most common scenario: you're writing a text editor, the user clicks "Insert Line", and you toss in an `editor.append("hello")` and call it done — the action happens on the spot and vanishes on the spot. Sounds fine, until the product folks come find you the next day saying we also need Ctrl+Z undo, an operation history, and the ability to bundle a group of operations into a "macro" for one-click replay. You go back and look at the code: the screen is full of bare function calls, with no trace of "what happened" left anywhere — undo? Fat chance. The functions have already returned; what exactly are you going to roll back with?
 
-The Command pattern solves exactly this class of requirements: **transforming a "to-do" from a fleeting function call into an object with identity, state, and the ability to be stored and moved**. Once an action becomes an object, you can push it into a queue for delayed execution, save it to a log for later replay, combine it into a macro, or—most commonly—remember it so you can reverse it when the user presses Ctrl+Z.
+The Command pattern exists for exactly this kind of requirement: **turning a "thing to be done" from a fleeting function call into an object with identity, with state, one that can be stored and moved around**. Once an action becomes an object, you can push it into a queue for deferred execution, stuff it into a log for later replay, compose it into macros, or — most common of all — remember it, so that when the user presses Ctrl+Z you run its inverse.
 
-However, "encapsulating an action in an object" isn't as simple as "writing a wrapper class" in C++. There is a very common pitfall here: many people implementing the Command pattern for the first time instinctively declare `execute()` as `const`, thinking "executing a command doesn't change the command object itself." Then, when they get to the undo part, they are stuck—you have nowhere to store the pre-execution state because you promised not to modify members inside a `const` function. So, the real question we need to answer in this post is—**how do we cleanly encapsulate an action into an object so it can execute, be reversed, without polluting the receiver or relying on fragile runtime type identification**?
+But "wrap the action in an object" is not, in C++, as simple as "write a class around it". There's a trap here that is remarkably easy to step on: the first time many people write the Command pattern, they casually declare `execute()` as `const`, reasoning that "executing a command doesn't change the command object itself" — and then they reach undo and freeze: you have nowhere to record the pre-execution state, because inside a `const` function you promised not to touch members. So the question this article really sets out to answer is — **how do we encapsulate an action into an object cleanly, so that it can both execute and undo, without polluting the receiver and without leaning on fragile runtime type identification**.
 
-Let's walk through this step-by-step, starting with the most intuitive approach, seeing why it falls short, and finally deriving a modern C++ solution.
+From here we'll go step by step, starting from the most intuitive way of writing it, seeing why each step falls short, and finally squeezing out a modern-C++ canonical answer.
 
-## Step 1: The Most Intuitive Approach—Direct Function Calls (The Anti-Pattern)
+## Step 1: The most intuitive approach — calling the function directly (an anti-example)
 
-Many people, when first encountering "an editor needs to support insert and delete," subconsciously write code like this:
+When most people first face "the editor needs to support insert and delete", the code they write by reflex looks like this:
 
 ```cpp
 class TextEditor {
@@ -58,7 +53,7 @@ private:
 };
 ```
 
-It is also very convenient to use; we can call it wherever needed:
+It's pleasant to use too — call it wherever you need it:
 
 ```cpp
 TextEditor editor;
@@ -66,25 +61,25 @@ editor.append_text("Hello, World");
 editor.pop_text_once();
 ```
 
-Honestly, this approach works perfectly fine in scenarios where "the action happens immediately and we never need to look back." Don't reflexively slap on a design pattern just because you see one. The problem arises the moment **the requirements require us to "look back"**—when the product manager asks for "undo," you realize that `append_text` finishes execution and forgets everything. It doesn't remember what was inserted or how long the text was. Undo requires "memory," but raw function calls lack memory by nature.
+Honestly, in scenarios where "the action happens on the spot and nothing ever looks back", there is nothing wrong with this style — don't reflexively slap a pattern onto everything you see. The trouble arrives **the moment the requirements start to "look back"** — when the product folks ask for undo, you suddenly realize that once `append_text` returns, it's over: nobody remembers what was inserted, or how long it was. Undo needs "memory", and a bare function call is born without one.
 
-So, why not just add "memory"? We can package the "action to be done" together with the "action required to undo it" into a single object—this is the prototype of the Command pattern.
+So why not just add the "memory"? We can bundle "the action to perform" together with "what to do when undoing" into a single object — and that is the embryo of the Command pattern.
 
-## Step 2: Encapsulate Actions into Objects — Abstract Command
+## Step 2: Encapsulating an action in an object — the abstract Command
 
-First, we define a unified interface that all "actions to be done" must satisfy. The most critical step is to declare both `execute()` and `undo()` simultaneously. This makes "undoability" a built-in capability of the command from the start, rather than a patch applied later.
+We start by defining a uniform interface that every "thing to be done" satisfies. The most crucial step is declaring `execute()` and `undo()` together, making "undoability" a built-in capability of commands from day one rather than a patch bolted on afterwards:
 
 ```cpp
 struct Command {
     virtual ~Command() = default;
     virtual void execute() = 0;
-    virtual void undo() = 0;   // 从第一天起就要想好怎么撤销
+    virtual void undo() = 0;   // Think through how to undo, from day one
 };
 ```
 
-Here is a detail worth pausing to consider: why isn't `execute()` `const`? Because most reversible commands store the "information needed for undo" (such as the length inserted or the old value being replaced) in their own members at the moment of execution, to be used later by `undo()`. If you declare it `const`, you are essentially blocking your own path to storing state—when you actually need to write `undo()`, you will be tied down by `const` and forced to resort to hacks like `mutable`. **So the rule here is: do not make `execute()` `const`. The command object itself carries state; it is not a pure function.**
+There's a detail here worth pausing on: why isn't `execute()` `const`? Because the vast majority of undoable commands, at the moment they execute, tuck the "information needed to undo" (say, the length that was inserted, or the old value that got replaced) into their own members, saving it for the later `undo()`. Declare it `const` and you've sealed off your own path to recording state — when the time comes to actually write `undo()`, `const` will have you tied up, and the only way out is hacks like `mutable`. **So the rule here is: `execute()` should not be `const`. The command object carries state; it is not a pure function.**
 
-Next, let's implement a concrete command for "inserting a block of text". It needs to hold a reference to the receiver (`TextEditor`) and its own parameters (the text to insert), while `undo()` simply removes the inserted content by length:
+Next, let's turn "append a piece of text" into a concrete command. It needs to hold a reference to the receiver (`TextEditor`) plus its own parameter (the text to insert), and its `undo()` chops off exactly as much as was inserted:
 
 ```cpp
 class AppendCommand : public Command {
@@ -96,16 +91,16 @@ public:
     void undo() override    { editor_.erase_tail(text_.size()); }
 
 private:
-    TextEditor& editor_;   // 接收者:真正干活的家伙
-    std::string text_;     // 参数:这个命令要插的文本
+    TextEditor& editor_;   // The receiver: the one doing the real work
+    std::string text_;     // The parameter: the text this command inserts
 };
 ```
 
-You will notice that a command object is simply a package of three things: a reference to a **receiver**, the **parameters** required for execution, and a pair of `execute()`/`undo()` methods. The interface exposed by the receiver (`TextEditor`) (e.g., `append_text` / `erase_tail`) remains stable. We can wrap a layer of "undo" capability around it without touching a single line of `TextEditor` code. This is the core benefit of the Command pattern: **the "undoability" of an action no longer pollutes the receiver; the receiver only cares about "what can be done," while "whether it can be undone" is the responsibility of the command layer**.
+You'll notice a command object is just a package of three things — a reference to the **receiver**, the **parameters** needed to execute, and a pair of `execute()`/`undo()` methods. The interface the receiver (`TextEditor`) exposes (`append_text` / `erase_tail`) is stable; without touching a single line of `TextEditor`'s code, we can wrap an "undoable" capability around it. That is the core dividend of the Command pattern: **the "undoability" of an action no longer pollutes the receiver — the receiver only cares about "what it can do", while "whether it can be undone" is the command layer's business**.
 
-## Let's verify this: Can the undo queue really retrace its steps?
+## Let's verify first: can the undo queue really retrace its steps
 
-Talk is cheap. Let's write a minimal undo stack, execute a few commands, and then `undo` them one by one to see if the buffer can truly return to its initial state. First, let's equip `TextEditor` with an interface that can trim the tail by length (to support undo):
+Talk is cheap, so let's write a minimal undo stack, have it execute a few commands and then undo them one by one, and see whether the buffer really returns to its starting point. First, give `TextEditor` an interface that can chop the tail by length (to support undo):
 
 ```cpp
 #include <memory>
@@ -126,14 +121,14 @@ private:
 };
 ```
 
-The logic for the undo stack is deceptively simple: during `execute`, we perform the action first and then push it onto the stack; during `undo`, we pop the top of the stack and call its `undo()`. The LIFO nature fits perfectly with "undoing the most recent step":
+The undo stack's logic is insultingly simple: on `execute`, execute first and then push onto the stack; on `undo`, pop the top and call its `undo()`. LIFO is a natural fit for "undo the most recent step":
 
 ```cpp
 class UndoStack {
 public:
     void execute(std::unique_ptr<Command> c) {
         c->execute();
-        history_.push_back(std::move(c));   // 执行成功才入栈
+        history_.push_back(std::move(c));   // Onto the stack only after successful execution
     }
     void undo() {
         if (history_.empty()) return;
@@ -145,7 +140,7 @@ private:
 };
 ```
 
-Let's run it. First, insert two segments, then undo them one by one, and finally test the macro commands while we're at it:
+Run it: append two chunks, undo them one after another, and finally give the macro command a quick test:
 
 ```sh
 $ g++ -std=c++23 -O2 command_verify.cpp -o command_verify
@@ -157,11 +152,11 @@ after macro ABC : 'ABC'
 after macro undo: ''
 ```
 
-After two `append` operations, the buffer is `Hello, World`. Undoing once reverts it to the first half, `Hello,` (the trailing comma and space remain), and undoing again brings us back to an empty string—the state has completely retraced its path. This is the undoability promised by the Command pattern, delivered in full.
+After two appends the buffer is `Hello, World`; one undo steps it back to just the first half, `Hello,` (that trailing comma and space are still there), and one more undo takes it back to the empty string — the state retraced its path in full. That is the undoability the Command pattern promises, delivered in the flesh.
 
-## Step 3: Packaging multiple actions — Macro commands
+## Step 3: Bundling several actions together — the macro command
 
-How did we get that `macro ABC` earlier? The answer is to combine commands. The Command pattern is naturally suited for the Composite pattern: since "a single action" is a command, why can't "a sequence of actions" be a command as well? We write a `MacroCommand` that holds a group of sub-commands internally, while itself being a `Command`:
+Where did that earlier `macro ABC` come from? From composing commands. The Command pattern is a natural fit for the composite pattern: if "one action" is a command, why can't "a whole sequence of actions" be a command too? Let's write a `MacroCommand` that internally holds a group of sub-commands and is itself a `Command`:
 
 ```cpp
 class MacroCommand : public Command {
@@ -169,28 +164,28 @@ public:
     void add(std::unique_ptr<Command> c) { subs_.push_back(std::move(c)); }
 
     void execute() override {
-        for (auto& c : subs_) c->execute();        // 正序执行
+        for (auto& c : subs_) c->execute();        // Execute in order
     }
     void undo() override {
         for (auto it = subs_.rbegin(); it != subs_.rend(); ++it)
-            (*it)->undo();                          // 逆序撤销
+            (*it)->undo();                          // Undo in reverse order
     }
 private:
     std::vector<std::unique_ptr<Command>> subs_;
 };
 ```
 
-Here lies a real pitfall that trips up many newcomers. `execute()` iterates in forward order, so why on earth must `undo()` iterate in **reverse**? Just think about the stack's Last-In-First-Out (LIFO) nature: the last sub-command executed modified the newest state. To revert to the state before execution, we must undo it first before we can get to the previous sub-command. Taking `ABC` as an example, the execution order is `A→B→C`, so the undo order must be `C→B→A`. If you mistakenly write a forward `undo`, the buffer won't have enough content to trim, `erase_tail` will go out of bounds, or the state will be mismatched. You'll end up with a program that seems to run but is actually in a corrupted state.
+Now here's a genuine trap, one newcomers fall into with particular ease. `execute()` iterates forward — so on what grounds does `undo()` go in **reverse**? Think about the stack's last-in-first-out nature and it clicks: the last sub-command to execute touched the freshest state, so to get back to the pre-execution picture you must undo it first, and only then can the previous sub-command have its turn. Take `ABC`: the execution order is `A→B→C`, so the undo order must be `C→B→A`; if your hand slips and you write a forward undo, there simply isn't that much left in the buffer to chop — `erase_tail` goes out of range, or the state stops matching, and you end up with a program that still looks like it runs but whose state has quietly gone haywire.
 
-::: warning Real Pitfall: `undo` Must Be in Reverse
-The `undo()` method of a macro command **must** iterate through sub-commands in **reverse order**, strictly corresponding to the forward order of `execute()`. The intuition that "since it's ABC forward, it should be ABC backward" is wrong—forward execution accumulates state sequentially, while the reverse must peel back layer by layer in stack order. Writing a forward `undo` is the most common subtle bug in this type of code. It often doesn't crash immediately but reveals state errors only under specific operation sequences.
+::: warning The real trap: undo must go in reverse
+A macro command's `undo()` must iterate its sub-commands in **reverse**, in strict correspondence with `execute()`'s forward order. The intuition that "forward is ABC, so backward is ABC too" is wrong — going forward piles up state layer by layer, so going backward must peel it back off layer by layer in the order it was stacked. A forward-written undo is the most common hidden bug in this kind of code, and it usually doesn't crash right away: the state errors only surface under particular sequences of operations.
 :::
 
-A macro command packages a group of actions into a single atomic unit. To an undo stack, a macro is just "one step"—pushed once, undone once, with all three internal sub-commands reverted together. This is the most primitive implementation of "transactional operations."
+A macro command bundles a group of actions into one atomic unit; to an undo stack, the macro is "one step" — one push, one undo, and the three sub-commands inside roll back together. This is precisely the most bare-bones way to implement "transactional operations".
 
-## Pitfall Alert: Don't Use `dynamic_cast` for Parameters
+## Pitfall warning: don't use dynamic_cast to extract parameters
 
-At this point, I need to mention a common implementation style because it appears in the companion project and has tripped up many people. Some implementations design it the other way around: they let the abstract command carry a "type" tag. Upon execution, the receiver determines "Is this an Append command?" based on the tag, and then uses `dynamic_cast` to down-cast the command pointer to the derived class to extract the parameters:
+Having gotten this far, there's a common implementation style I have to call out specially, because it shows up in the companion project and has tripped plenty of people. Some implementations flip the design around: the abstract command carries a "type" tag, and at execution time the receiver judges from the tag "is this an Append command", then uses `dynamic_cast` to down-cast the command pointer to the derived class so it can dig out the parameters:
 
 ```cpp
 struct TextEditorCommand {
@@ -206,7 +201,7 @@ struct TextEditor {
             if (command->get_type() == Type::REMOVE) {
                 pop_text_once();
             } else {
-                // 用 dynamic_cast 取回 AppendCommand 里的 text
+                // Use dynamic_cast to get back the text inside AppendCommand
                 AddCommand* adder = dynamic_cast<AddCommand*>(command.get());
                 if (adder) append_text(adder->append);
             }
@@ -215,9 +210,9 @@ struct TextEditor {
 };
 ```
 
-This approach works, and the accompanying project uses it too, but it **smells heavily of an anti-pattern**. The problem is that the Command pattern carefully encapsulates the "execution logic" within each command's own `execute()` method, so the receiver doesn't need to know the specific command type. However, by using `dynamic_cast`, you leak the execution logic back to the receiver. The receiver once again bears the burden of "knowing all command types," meaning you must modify this switch statement every time a new command is added—precisely the kind of coupling the Command pattern is meant to avoid.
+This style runs, and the companion project does write it this way, but it **reeks of anti-pattern**. The problem: the Command pattern worked hard to encapsulate the "execution logic" inside each command's own `execute()`, so the receiver never needs to know which kind of command it is holding; the moment you reach for `dynamic_cast`, the execution logic leaks right back into the receiver, which once again shoulders the burden of "knowing every command type" — every new command means coming back to modify this switch. That is exactly the coupling the Command pattern exists to avoid.
 
-A more practical concern is that `dynamic_cast` relies on RTTI (Run-Time Type Information). In embedded systems and game engines, RTTI is often disabled with `-fno-rtti` to save `.rodata` space and reduce binary size. Let's verify what happens when we turn off RTTI:
+The more practical problem: `dynamic_cast` depends on RTTI (runtime type information), and in embedded work and game engines RTTI is often switched off with `-fno-rtti`, to save whatever `.rodata` and binary size it can. Let's verify what happens when RTTI is turned off:
 
 ```sh
 $ g++ -std=c++23 -O2 -fno-rtti command_cast.cpp
@@ -227,19 +222,19 @@ command_cast.cpp:33:30: error: cannot use 'typeid' with '-fno-rtti'
    33 |                      typeid(*c).name(),
 ```
 
-Compiling directly fails. This means that once we use `dynamic_cast`, our code can no longer be used in projects with RTTI disabled, effectively cutting portability in half.
+A straight compile failure. In other words, once you've used `dynamic_cast`, your code can never enter those RTTI-disabled projects — portability cut in half on the spot.
 
 ::: warning Don't make the receiver recognize commands
-The correct approach is to let each command handle the work inside its own `execute()` method. The receiver only sees the abstract interface `Command&` and doesn't need to know if it is specifically an `AppendCommand` or an `EraseCommand`. As long as the receiver's underlying interface (`append_text` / `erase_tail`) remains stable, adding a new command simply means adding a derived class; the receiver doesn't need a single line of changes. The `dynamic_cast` plus type tag approach essentially degrades the Command pattern back into a switch-case. Don't write it this way.
+The correct approach is to let each command do its own work in its `execute()`; the receiver sees only the abstract interface `Command&` and never needs to know whether it's an `AppendCommand` or an `EraseCommand`. As long as the receiver's underlying interface (`append_text` / `erase_tail`) is stable, adding a new command means adding one derived class — not a single line of the receiver changes. The `dynamic_cast` + type-tag style is, in essence, the Command pattern degenerating back into switch-case. Don't write it that way.
 :::
 
-## Step 4: Functional Commands — Closures are Commands
+## Step 4: Functional commands — a closure is a command
 
-A command object is, at its core, just an "execute" closure plus an "undo" closure. Since C++ has lambdas and `std::function`, can we skip handwriting a bunch of derived classes and directly construct a command using two closures? We sure can, and it's very satisfying to write.
+When you get down to it, a command object is just an "execute" closure plus an "undo" closure. C++ has lambdas and `std::function`, so can we skip hand-writing a pile of derived classes and just slap a command together out of two closures? Yes — and it feels great to write.
 
-Let's use C++23's `std::move_only_function` here. You might ask: why not use the older `std::function`? Because command objects often need to own resources exclusively (for example, capturing a `unique_ptr` or a file handle), whereas `std::function` requires the wrapped target to be copyable—it needs to copy the closure internally, so it simply cannot hold a move-only closure. `std::move_only_function` (available since C++23 in the `<functional>` header) was made for this: it only requires movability, which perfectly matches the exclusive ownership semantics of "a command object is executed once and undone once."
+Here we go straight to C++23's `std::move_only_function`. Why not the old `std::function`, you ask? Because command objects often need to own resources exclusively (capturing a `unique_ptr`, say, or a file handle), and `std::function` requires its wrapped target to be copyable — it copies the closure internally, so a move-only closure simply doesn't fit. `std::move_only_function` (C++23 onward, header `<functional>`) was born for exactly this: it requires only movability, a perfect match for the exclusive semantics of "one command object gets executed once and undone once".
 
-We modify the undo stack to accept two parameters: an "execute closure" and an "undo closure," storing this pair as an entry:
+We rework the undo stack to take two arguments — an "execute closure" and an "undo closure" — and store the pair as one entry:
 
 ```cpp
 #include <functional>
@@ -250,7 +245,7 @@ class FunctionalUndoStack {
 public:
     void execute(std::move_only_function<void()> do_it,
                  std::move_only_function<void()> undo_it) {
-        do_it();                                   // 先执行
+        do_it();                                   // Execute first
         history_.push_back({std::move(do_it), std::move(undo_it)});
     }
     void undo() {
@@ -267,7 +262,7 @@ private:
 };
 ```
 
-Here is how we use it: we simply pass the action and its inverse together. The lambda expression handles all the capturing and execution, so we don't need to write any derived classes:
+Usage looks like this: the action and its inverse are packed up and passed in together, the lambdas take care of capturing everything and executing everything, and you never write a single derived class:
 
 ```cpp
 TextBuffer buf;
@@ -275,12 +270,12 @@ FunctionalUndoStack stack;
 std::string chunk = "World";
 
 stack.execute(
-    [&buf, chunk] { buf.append(chunk); },          // 执行:插入
-    [&buf, chunk] { buf.erase_tail(chunk.size()); } // 撤销:砍掉等长尾部
+    [&buf, chunk] { buf.append(chunk); },          // Execute: insert
+    [&buf, chunk] { buf.erase_tail(chunk.size()); } // Undo: chop off the equal-length tail
 );
 ```
 
-Let's also verify this to ensure that the closure approach works completely:
+Let's verify this path as well, to confirm the closure route runs perfectly well:
 
 ```sh
 $ g++ -std=c++23 -O2 command_lambda.cpp -o command_lambda
@@ -289,13 +284,13 @@ after execute: 'World'
 after undo   : ''
 ```
 
-Clean and concise. But what is the cost of this functional approach? The trade-off is that **type boundaries are not visible at compile time**. In the OOP approach, `AppendCommand` is a named type; a simple grep search reveals which commands exist in the project and what their respective `undo()` methods look like. In the functional approach, commands are scattered across various lambdas, and the type system treats them uniformly, which reduces readability and discoverability. Therefore, the choice between the two paths is clear: if the command types are limited, type clarity is desired, or you want to uniformly add macros and logging, go with OOP derived classes; if the actions are one-off, closures can be written inline, and you don't want to define a class just for a single action, go with functional closures. The two styles do not conflict, and they can easily coexist within the same project.
+Clean and crisp. So what's the price of this functional style? The price is that **the type boundary is invisible at compile time**: in the OOP style, `AppendCommand` is a named type — one grep and you know which commands exist in the project and what each one's `undo()` looks like; in the functional style, commands are scattered across lambdas everywhere, the type system treats them all alike, and readability and discoverability drop a notch. So the trade-off between the two roads is clear — if the set of commands is small, you want clear types, and you plan to add macros and logging uniformly, go with OOP derived classes; if actions are one-shot, the closure can be written in place, and you don't want to define a class for a single action, go with functional closures. The two styles don't conflict; they coexist happily within the same project.
 
-## Practice: An "Optimizing" Command Queue
+## In practice: a command queue that can "optimize execution"
 
-The undo queue discussed earlier is the most classic application of the Command pattern, but its capabilities go beyond that. The accompanying project features an interesting approach: instead of executing commands one by one as they arrive, it batches a group of commands within the `Invoker` and performs a **simplification** step before actual execution. If an "insert" is immediately followed by a "delete", the two cancel each other out and don't need to be executed at all. This is analogous to dead code elimination in a compiler, but happening at the command layer.
+The undo queue above is the Command pattern's most classic application, but the pattern's powers don't stop there. The companion project has a rather clever trick: instead of "execute each command as it arrives", it first accumulates a batch of commands in an `Invoker` and runs a **simplification** pass before actually executing — if an "insert" is immediately followed by a "delete", the two cancel out and never need to run at all. It's the command-layer cousin of dead-code elimination in a compiler.
 
-Let's first look at the simplification logic itself. It involves a single traversal that maintains a result stack: when an "insert" is encountered, it is pushed onto the stack; when a "delete" is encountered, the top "insert" is popped off the stack (cancellation); otherwise, it is copied as-is:
+First look at the simplification logic itself: it's a single pass maintaining a result stack — an "insert" gets pushed; a "delete" pops the "insert" off the top (cancellation); everything else is copied over as-is:
 
 ```cpp
 void simplify() {
@@ -304,7 +299,7 @@ void simplify() {
         if (!result.empty()
             && result.back()->get_type() == Type::APPEND
             && cmd->get_type() == Type::REMOVE) {
-            result.pop_back();        // 插入 + 删除 = 啥也没干,抵消
+            result.pop_back();        // insert + delete = did nothing; they cancel
         } else {
             result.push_back(cmd);
         }
@@ -313,7 +308,7 @@ void simplify() {
 }
 ```
 
-Let's run the input from the companion project directly through the four commands: `ADD("Hello, World")`, `ADD("Hello, World")`, `ERASE`, `ADD("Hello, World")`. The simplifier watches the queue closely: the first two `ADD` commands each push their results onto the stack. When the third `ERASE` arrives, it sees that the top of the stack is exactly an `ADD`, so it cancels out the top entry (the second `ADD` is gone). The fourth `ADD` then pushes onto the stack. Ultimately, two `ADD` commands remain in the queue, and after execution, the buffer contains two lines of `Hello, World`:
+Let's run the companion project's input straight through: four commands, `ADD("Hello, World")`, `ADD("Hello, World")`, `ERASE`, `ADD("Hello, World")`. The simplifier's eye stays on the queue: the first two ADDs each get pushed onto the result; when the third command, ERASE, arrives, the top of the stack is exactly an ADD, so the top cancels (the second ADD is gone); the fourth ADD gets pushed again. The final queue holds two ADDs, and after execution the buffer contains two lines of `Hello, World`:
 
 ```sh
 $ g++ -std=c++23 -O2 TextEditorMain.cpp -o TextEditor
@@ -322,47 +317,47 @@ Hello, World
 Hello, World
 ```
 
-Two lines, which is exactly the simplified result. This is where the Command pattern outperforms raw function calls—because actions are objects, we can statically analyze, optimize, batch, or replay them **before** execution, without touching a single line of the receiver's code. The accompanying project also demonstrates another capability of the `Invoker`: `append_command` adds commands, while `remove_command` removes a specific command from the queue. Since commands are objects, they can be added, deleted, referenced, or cancelled—something that is impossible in the world of raw function calls.
+Two lines — exactly the simplified result. This is where the Command pattern beats bare function calls: because actions are objects, you can statically analyze them, optimize them, batch them, and replay them **before** execution, without touching a line of the receiver. The companion project also demonstrates another capability of the `Invoker` in passing: `append_command` adds commands to it, and `remove_command` can pull a specified command out of the queue — commands are objects, so they can be added, removed, referenced, canceled; none of that exists in a world of bare function calls.
 
-::: tip Accompanying Compilable Project
-The complete code for this section (including command queues, simplified cancellation, and a counter-example of using `dynamic_cast` to retrieve parameters) is in this repository. Clone it and run CMake to build it: [Command/TextEditor](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Command/TextEditor).
+::: tip The companion compilable project
+The complete code for this section (the command queue, simplification-by-cancellation, and the `dynamic_cast`-parameter-extraction anti-example) lives in this repository — clone it, run cmake once, and it just works: [Command/TextEditor](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Command/TextEditor).
 :::
 
-## When NOT to use the Command pattern
+## When you shouldn't use the Command pattern
 
-At this point, we have a command system that can undo, compose, and optimize. But we aren't done yet—I must be honest with you: **the Command pattern is not a silver bullet. In many scenarios, you simply don't need it, and forcing it will only make your code more convoluted.**
+At this point we have a command system that can undo, compose, and optimize. But we're not done — I have to be honest with you: **the Command pattern is not a panacea. In many scenarios you simply don't need it, and forcing it on makes the code more convoluted, not less**.
 
-First, if your action **will never be undone, delayed, or queued**, don't use the Command pattern. If a simple `editor.append_text("x")` solves the problem, but you insist on wrapping it in an `AppendCommand`, pushing it into a queue, and finding an `Invoker` to trigger it, you gain nothing but an extra level of indirection and an extra heap allocation. Patterns exist to accommodate changing requirements; when requirements are stable, a direct function call is always the optimal solution.
+First, if your actions will **never be undone, never be delayed, never be queued**, don't apply the Command pattern. For something a single `editor.append_text("x")` solves, insisting on wrapping an `AppendCommand`, stuffing it into a queue, and then finding an Invoker to trigger it earns you nothing beyond one extra hop of indirection and one extra heap allocation. Patterns exist for changing requirements; when the requirements aren't changing, calling the function directly is always the optimal answer.
 
-Second, the implementation cost of "undo" is easily underestimated. The "undo by truncating length" approach we used earlier only works for the simplest append operations. Once your operations involve replacement, cursor movement, or interaction across multiple buffers, the "pre-execution state" that `undo()` needs to save will balloon rapidly. At that point, you often need to rely on the Memento pattern to snapshot the entire receiver state, causing memory overhead and complexity to skyrocket. The "undoability" promised by the Command pattern is not free; the cost of state preservation is its most tangible expense.
+Second, the cost of implementing undo is easily underestimated. Our earlier "chop off as much as was inserted" undo holds only for the simplest append operations; the moment your operations involve replacement, cursor movement, or several buffers moving in concert, the "pre-execution state" that `undo()` must save balloons quickly, and at that point you usually need the Memento pattern to snapshot the receiver's entire state — memory cost and complexity both step up a level. The "undoability" the Command pattern promises is not free; the cost of saving state is its most tangible price.
 
-Third, **lifetime management** of command objects is a hidden pitfall. Commands hold references to the receiver, so the receiver must outlive the command. If the receiver is destroyed before the command, the reference inside `execute()` or `undo()` becomes a dangling reference—a classic use-after-free. In the accompanying project, you will see that it uses `std::shared_ptr<TextEditorCommand>` to manage the command itself, but the lifetime of the receiver `TextEditor` is manually guaranteed. If a queue accumulates a pile of commands but the receiver is destroyed prematurely, the entire queue becomes useless. This is particularly fatal in asynchronous or multi-threaded scenarios.
+Third, the **lifetime management** of command objects is an invisible pit. Commands hold references to the receiver, so the receiver must outlive them; the instant the receiver is destroyed before the commands, the references inside `execute()` / `undo()` become dangling references — the classic use-after-free. In the companion project you can see that it manages the commands themselves with `std::shared_ptr<TextEditorCommand>`, but the lifetime of the receiver `TextEditor` is guaranteed by hand — once the queue has accumulated a pile of commands while the receiver dies early, the whole queue is wrecked. This one is especially lethal in asynchronous, cross-thread scenarios.
 
 ## Summary
 
-Let's review the entire evolution path:
+Let's trace the whole evolutionary path once through:
 
-| Stage | Approach | Why it falls short |
+| Stage | Approach | Why it's still not enough |
 |---|---|---|
-| Direct function call | `editor.append_text(...)` | No memory, cannot undo/queue/replay |
-| Abstract Command | `execute()` + `undo()` derived classes | Receiver is clean, but adding an action requires writing a new class |
-| Macro Command | Combine multiple commands, undo in reverse | Solved, but beware of the reverse-order undo pitfall |
-| `dynamic_cast` for parameters | Receiver down-casts commands by type tag | **Anti-pattern**, leaks coupling, relies on RTTI, won't compile if RTTI is disabled |
-| Functional closure | `std::move_only_function` wrapping two closures | Solved, but type boundaries weaken and discoverability decreases |
+| Direct function calls | `editor.append_text(...)` | No memory: no undo, queuing, or replay |
+| Abstract Command | `execute()` + `undo()` derived classes | Receiver stays clean, but every new action needs a new class |
+| Macro command | Compose several commands, undo in reverse | Solved — but watch the reverse-order undo trap |
+| `dynamic_cast` for parameters | Receiver down-casts commands by tag | **Anti-pattern**: leaks coupling, depends on RTTI, fails to compile once RTTI is off |
+| Functional closures | Two closures packed into `std::move_only_function` | Solved — but the type boundary weakens and discoverability drops |
 
-Keep these key conclusions in mind:
+Note down these key takeaways:
 
-- The essence of the Command pattern is elevating an "action" from a fleeting function call to an **object with identity, state, and storability**, making undo, queuing, replay, and composition possible.
-- Do not mark `execute()` as `const`—command objects need to store state for undoing, so they are not pure functions.
-- A Macro Command's `undo()` must traverse child commands in reverse order; this is the most common subtle bug in this type of code.
-- Don't use `dynamic_cast` + type tags to "identify" command types. This degrades the Command pattern back to a switch-case, and it won't compile without RTTI. The correct approach is to let the command do the work inside its own `execute()`.
-- C++23's `std::move_only_function` makes "packing two closures into one command" natural, suitable for one-off, move-only actions. However, the cost is weaker type boundaries; whether to use it depends on your requirements for discoverability.
-- Commands hold references to the receiver. Ensure the receiver outlives the command, otherwise undoing results in use-after-free.
+- The essence of the Command pattern is lifting an "action" from a fleeting function call to an **object with identity, with state, one that can be stored** — which is what makes undo, queuing, replay, and composition possible.
+- Don't mark `execute()` `const` — the command object must record the state undo will need; it is not a pure function.
+- A macro command's `undo()` must iterate its sub-commands in reverse; that is the most common hidden bug in this kind of code.
+- Don't use `dynamic_cast` + type tags to "recognize" command types — it degenerates the Command pattern back into switch-case, and it won't even compile with RTTI disabled. The right way is to let each command do its own work in `execute()`.
+- C++23's `std::move_only_function` makes "packing two closures into one command" natural, a good fit for one-shot, move-only actions; the price is a weaker type boundary, so whether to use it depends on how much you value discoverability.
+- Commands hold references to the receiver — make sure the receiver outlives the commands, or undo time becomes use-after-free time.
 
 ## References
 
-- [cppreference: `std::move_only_function`](https://en.cppreference.com/w/cpp/utility/functional/move_only_function) (C++23, move-only callable wrapper)
-- [cppreference: `std::function`](https://en.cppreference.com/w/cpp/utility/functional/function) (For comparison, requires copyability)
-- [cppreference: `dynamic_cast`](https://en.cppreference.com/w/cpp/language/dynamic_cast) (Run-time type identification, relies on RTTI)
-- Gamma, Helm, Johnson, Vlissides, *Design Patterns*: Elements of Reusable Object-Oriented Software (Chapter on Command); Klaus Iglberger, *C++ Software Design* (Discussion of Command and type erasure)
-- Accompanying compilable project: [Command/TextEditor](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Command/TextEditor)
+- [cppreference: `std::move_only_function`](https://en.cppreference.com/w/cpp/utility/functional/move_only_function) (C++23, a move-only callable wrapper)
+- [cppreference: `std::function`](https://en.cppreference.com/w/cpp/utility/functional/function) (for comparison; requires copyability)
+- [cppreference: `dynamic_cast`](https://en.cppreference.com/w/cpp/language/dynamic_cast) (runtime type identification; depends on RTTI)
+- Gamma, Helm, Johnson, and Vlissides, *Design Patterns*, the Command chapter; Klaus Iglberger, *C++ Software Design*, the discussion of Command and type erasure
+- The companion compilable project: [Command/TextEditor](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Command/TextEditor)

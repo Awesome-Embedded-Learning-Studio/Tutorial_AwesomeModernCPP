@@ -1,135 +1,145 @@
 ---
 layout: home
 title: "Welcome to the Modern C++ Tutorial"
-description: "A systematic modern C++ tutorial — from fundamentals to domain practice"
+description: "A systematic modern C++ tutorial, always working to improve"
 
 hero:
   name: ""
   text: "Modern C++ Tutorial"
-  tagline: "More than a syntax cheat-sheet — a complete path from fundamentals to engineering practice."
+  tagline: "More than syntax — taking on the challenge of a complete modern C++ path: from fundamentals, to reading production code, to hands-on domain practice"
   actions:
     - theme: brand
-      text: Start from Zero
+      text: Total beginner? Start here!
       link: /en/getting-started/
     - theme: alt
-      text: GitHub
+      text: Come visit us on GitHub and leave a ⭐!
       link: https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP
     - theme: alt
-      text: Start Learning
+      text: C++ Syntax, Level One — Start!
       link: /en/vol1-fundamentals/
     - theme: alt
-      text: C++ Reference
-      link: /en/cpp-reference/
-    - theme: alt
-      text: View Roadmap
+      text: Our Roadmap!
       link: /en/roadmap/
     - theme: alt
-      text: Contributors
+      text: Thank Our Contributors
       link: /en/team/
     - theme: alt
-      text: Join QQ Group
+      text: Join Our QQ Group
       link: /en/community/join
 
 features:
   - title: "Getting Started"
-    details: "Never written code before? Install a toolchain, get your first C++ program running, and teach vscode to understand it — six hands-on articles, mouse-first with commands tucked into fold-out boxes."
+    details: "Never written code before? You can still keep up: set up the environment, get your first C++ program running, and teach VS Code to understand your code. Six hands-on articles — everything is mouse-click driven, with command lines tucked into fold-out boxes."
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>'
     link: /en/getting-started/
     linkText: Start Reading
 
-  - title: "Vol.1 · Fundamentals"
-    details: "Learn C++ fundamentals systematically from scratch. Suitable for absolute beginners."
+  - title: "Volume 1 · Fundamentals"
+    details: "Learn C++ fundamentals systematically from scratch. Suited for absolute beginners."
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>'
     link: /en/vol1-fundamentals/
     linkText: Start Reading
 
-  - title: "Vol.2 · Modern Features"
-    details: "In-depth exploration of core C++11/14/17 features. The key volume that distinguishes modern C++ from legacy C++."
+  - title: "Volume 2 · Modern Features"
+    details: 'Deep dives into the core C++11/14/17 features — the key volume that separates "modern C++" from "old C++".'
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>'
     link: /en/vol2-modern-features/
     linkText: Start Reading
 
-  - title: "Vol.3 · Standard Library In Depth"
-    details: "Deep dives into STL containers, iterators, and algorithms with source code analysis."
+  - title: "Volume 3 · Standard Library In Depth"
+    details: "Deep dives into STL containers, iterators, and algorithms, with source-code analysis."
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>'
     link: /en/vol3-standard-library/
     linkText: Start Reading
 
-  - title: "Vol.4 · Advanced Topics"
-    details: "C++20/23/26 advanced features: Concepts, Ranges, Coroutines, Modules, Template Metaprogramming."
+  - title: "Volume 4 · Advanced Topics"
+    details: "Advanced C++20/23/26 features: Concepts, Ranges, coroutines, modules, and template metaprogramming."
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>'
     link: /en/vol4-advanced/
     linkText: Start Reading
 
-  - title: "Vol.5 · Concurrency"
-    details: "From thread primitives to coroutine-based async — master C++ concurrent programming comprehensively."
+  - title: "Volume 5 · Concurrent Programming"
+    details: "From thread primitives to coroutine asynchrony — master C++ concurrent programming in full."
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
     link: /en/vol5-concurrency/
     linkText: Start Reading
 
-  - title: "Vol.6 · Performance Optimization"
-    details: "CPU cache, SIMD, reading assembly, optimization patterns, and benchmarking."
+  - title: "Volume 6 · Performance Optimization"
+    details: "CPU caches, SIMD, reading assembly, optimization patterns, and benchmarking."
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>'
     link: /en/vol6-performance/
     linkText: Start Reading
 
-  - title: "Vol.7 · Engineering Practices"
+  - title: "Volume 7 · Engineering Practices"
     details: "CMake, package management, testing, static analysis, and DevOps."
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>'
     link: /en/vol7-engineering/
     linkText: Start Reading
 
-  - title: "Vol.8 · Domain Applications"
-    details: "Practical applications of modern C++ across domains: embedded systems, TinyML inference, networking, and C++ deep dives."
+  - title: "Volume 8 · Domain Applications"
+    details: "Modern C++ put to work across domains: embedded systems, TinyML inference, network programming, and deep C++ special topics."
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'
     link: /en/vol8-domains/
     linkText: Start Reading
 
-  - title: "Vol.9 · Open Source Project Study"
-    details: "Analyze real open source project source code (e.g., Chromium) to learn industrial-grade C++ design and implementation."
+  - title: "Volume 9 · Open Source Project Study"
+    details: "Analyze real open-source project source code (such as Chromium) to learn industrial-grade C++ design and implementation."
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>'
     link: /en/vol9-open-source-project-learn/
     linkText: Start Reading
 
-  - title: "Vol.10 · Lecture & Talk Notes"
-    details: "Study notes and re-creations from tech conferences like CppCon and open-source courses."
+  - title: "Volume 10 · Course & Talk Notes"
+    details: "Study notes and derivative write-ups of talks from CppCon and other tech conferences, plus open-source courses."
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>'
     link: /en/vol10-open-lecture-notes/
     linkText: Start Reading
 
   - title: "Compilation & Linking In Depth"
-    details: "Core concepts of compilation, linking, static libraries, dynamic libraries, and symbol visibility. 10 articles in total."
+    details: "Core concepts: compilation, linking, static libraries, dynamic libraries, symbol visibility, and more. Ten articles in total."
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>'
     link: /en/compilation/
     linkText: Start Reading
 
   - title: "Crash Lab"
-    details: "A casebook of classic crashes: each case ships a deliberately broken file, a fixed one, and debugging logs from real runs."
+    details: "A casebook of classic crashes: each case ships deliberately broken code, a fixed version, and debugging records captured from real runs."
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="13" r="9"/><path d="M14.35 4.65 16.3 2.7a2.41 2.41 0 0 1 3.4 0l1.6 1.6a2.4 2.4 0 0 1 0 3.4l-1.95 1.95"/><path d="m22 2-1.5 1.5"/></svg>'
     link: /en/crash-lab/
     linkText: Enter the Lab
 
-  - title: "Capstone Projects"
-    details: "Tie the volumes together into full projects: a coroutine echo server, a mini runtime, and an INI parser are ready to build on; hand-written STL components and a mini HTTP server are on the roadmap."
+  - title: "Weekly Problems"
+    details: "One problem pack per week, written and graded right in the browser: implementation problems compile online with per-case red/green verdicts, guess-the-output answers come back in seconds, and bug hunts ship with self-assessment."
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>'
+    link: /en/weekly-problems/
+    linkText: Go Solve
+
+  - title: "Cross-Volume Capstone Projects"
+    details: "String the knowledge from every volume into complete projects: a coroutine server, a mini runtime, and an INI parser are ready, with a hand-written STL and a mini HTTP server on the roadmap."
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>'
     link: /en/projects/
     linkText: Start Reading
 
   - title: "Community Articles"
-    details: "Initial community submissions, reviewed & accepted articles, and the entry point for later main-line integration."
+    details: "Community submissions making their debut, reviewed and accepted articles, and the gateway for folding them into the main line later."
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
     link: /en/community/
     linkText: View Submissions
 
   - title: "Tag Index"
-    details: "Browse all tutorial articles by tag — easily find related content by topic."
+    details: "Browse every tutorial article by tag — an easy way to find related content by topic."
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>'
     link: /en/tags
     linkText: Browse Tags
 
-  - title: "With Gratitude"
-    details: "Warm feedback and contributions have carried this tutorial to today."
+  - title: "Thanks to These Friends"
+    details: "Warm feedback and contributions have carried this tutorial to where it is today."
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>'
     link: /en/team/
-    linkText: Meet the Team
+    linkText: Visit the Credits
+
+translation:
+  source: documents/index.md
+  source_hash: 2e771e87ba6955c455ffb88648e2de8737e494b7d5714a7101314774bdbb61c4
+  translated_at: '2026-09-26T09:57:00+00:00'
+  engine: anthropic
+  token_count: 700
 ---

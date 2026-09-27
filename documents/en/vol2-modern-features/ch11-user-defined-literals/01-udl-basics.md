@@ -9,7 +9,7 @@ difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
-- 'Chapter 2: constexpr Basics: The Art of Compile-Time Evaluation'
+- 'constexpr Basics: The Art of Compile-Time Evaluation'
 reading_time_minutes: 10
 related:
 - 'UDL in Practice: A Type-Safe Unit System'

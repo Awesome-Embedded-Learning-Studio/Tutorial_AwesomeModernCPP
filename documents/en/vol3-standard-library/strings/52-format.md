@@ -3,21 +3,21 @@ chapter: 7
 cpp_standard:
 - 20
 - 23
-description: 'A deep dive into std::format: compile-time type-safe formatting in the
-  style of Python f-strings. We cover format string syntax, compile-time validation
-  of `format_string`, why it is safer than `printf`, writing to buffers with `format_to`,
-  and a dual-dimension benchmark comparing performance and type safety against `printf`
-  and `iostream`. We also explore C++23''s `print` and runtime `width`/`precision`
-  parameters.'
+description: A thorough walkthrough of std::format—Python f-string-style formatting with
+  compile-time type safety, covering format-string syntax, why format_string's compile-time
+  validation is safer than printf, writing into buffers with format_to, benchmarked
+  performance and type-safety comparisons against printf/iostream, plus C++23's print
+  and runtime width/precision arguments
 difficulty: intermediate
 order: 52
 platform: host
 prerequisites:
-- string 深入：SSO、COW 与 resize_and_overwrite
-- 迭代器适配器：反向、插入与流，把现成迭代器改出新行为
+- 'Deep Dive into string: SSO, COW, and resize_and_overwrite'
+- 'Iterator Adapters: Reverse, Insertion, and Stream — Teaching Old Iterators New
+  Tricks'
 reading_time_minutes: 16
 related:
-- print 与 println：直接消费 format 的快捷输出
+- 'print: Direct Output in C++23 and Decoupling from iostream'
 tags:
 - host
 - cpp-modern
@@ -27,43 +27,44 @@ title: 'format: Type-Safe Formatting in C++20'
 translation:
   source: documents/vol3-standard-library/strings/52-format.md
   source_hash: 79e59ca94b1cf62b33e51126f6e588bfb8e207e667afbc13af17f4f4418b619a
-  translated_at: '2026-06-24T00:49:15.915438+00:00'
+  translated_at: '2026-09-26T00:00:05+00:00'
   engine: anthropic
-  token_count: 3914
+  token_count: 9800
 ---
+
 # format: Type-Safe Formatting in C++20
 
-Combining an `int`, a string, and a floating-point number into a single line of readable text is a task every C++ program must perform. The standard library has historically offered two paths for this, but both have significant drawbacks: `printf` is fast but not type-safe, while `iostream` is safe but slow and verbose. `std::format` (C++20) fills this gap by using Python f-string style placeholder syntax to move type checking to compile time. It retains the expressiveness of `printf` format strings without falling into the pit of runtime undefined behavior.
+Turning an `int`, a string, and a floating-point number into one line of readable text is a chore every C++ program has to do. The standard library has offered two routes for it, and both sting: `printf` is fast but not type-safe; `iostream` is safe but slow and verbose. `std::format` (C++20) exists to fill that gap—with Python f-string-style placeholder syntax, it moves the type checking to compile time, keeping `printf`'s format-string expressiveness without falling into the pit of runtime undefined behavior.
 
-In this article, we will dissect `std::format` thoroughly: how to write format strings, how it blocks incorrect types at compile time, how to write to buffers, how its performance compares to `printf` and `iostream`, and finally, what features C++23 added. We will leave the deep dive into C++23's `std::print` and `std::println` for the next article, treating them here merely as direct consumers of `std::format`.
+In this article we take `std::format` apart and run it all the way through: how exactly to write a format string, how it manages to reject wrong types at compile time, how to write straight into a buffer, how it really stacks up against `printf` and `iostream` in speed, and finally what C++23 added on top. `std::print` / `std::println` from C++23 is a story of its own that we save for the next article; here it only gets a passing mention as a direct consumer of `std::format`.
 
-## The Problem: Why printf and iostream Fall Short
+## First, the Pain Points: Where printf and iostream Fall Short
 
-Using `printf` to assemble a log line is almost muscle memory for all projects, but it has two chronic issues.
+Assembling a log line with `printf` is practically muscle memory in every project, but it has two chronic flaws.
 
-The first is a lack of type safety. The compiler **does not enforce alignment** between `printf`'s format string (`%d`, `%s`, `%f`) and the subsequent arguments. If you write `%s` but pass an `int`, it still compiles. Let's try a snippet:
+The first is type unsafety. Between `printf`'s format string (`%d` / `%s` / `%f`) and the arguments that follow, the compiler **enforces no correspondence**—write `%s` and pass an `int`, and it still compiles. Let's try a snippet:
 
 ```cpp
 // Standard: C++20
 #include <cstdio>
 
 int main() {
-    // %s 期望 char*，却传了 int —— 编译通过，运行期 UB
+    // %s expects char*, but we pass an int — compiles fine, runtime UB
     std::printf("value = %s\n", 42);
     return 0;
 }
 ```
 
-When compiling with GCC 16.1.1 using `-Wall -Wextra`, it **only gives one warning** (`format '%s' expects ... but argument has type 'int'`), not an error. However, when we actually run it:
+Compiled with GCC 16.1.1 under `-Wall -Wextra`, it produces **only a warning** (`format '%s' expects ... but argument has type 'int'`), not an error. And when you actually run it:
 
 ```text
 $ ./printf_ub
 Segmentation fault (core dumped)   # exit code 139 = SIGSEGV
 ```
 
-`42` is treated as a pointer and dereferenced, causing an immediate segmentation fault. This is runtime undefined behavior (UB)—the compiler took a look, warned you about it, but if you ignore it, it will compile anyway.
+`42` gets treated as a pointer and dereferenced—instant segfault. This is runtime UB: the compiler glanced at your code, dropped a reminder, and if you ignore it, it compiles anyway.
 
-Furthermore, this `-Wformat` warning **only applies to string literals**. Once the format string is constructed at runtime, the compiler cannot even see it, and the warning disappears:
+What's more, this `-Wformat` reminder **only fires for string literals**. Once the format string is assembled at runtime, the compiler never even sees it, and the warning vanishes:
 
 ```cpp
 // Standard: C++20
@@ -72,14 +73,14 @@ Furthermore, this `-Wformat` warning **only applies to string literals**. Once t
 
 int main(int argc, char**) {
     std::string fmt = (argc > 0) ? "value = %s\n" : "value = %d\n";
-    std::printf(fmt.c_str(), 42);   // 同样是 UB，这次连 warning 都没有
+    std::printf(fmt.c_str(), 42);   // still UB, and this time not even a warning
     return 0;
 }
 ```
 
-Compiling this code with `-Wall -Wextra` yields **a clean slate**, without a single warning. However, if just one log entry in the project concatenates user input into the format string, type checking is completely compromised.
+Under `-Wall -Wextra` this snippet is **squeaky clean**—not a single diagnostic. As soon as one log call site anywhere in the project splices user input into a format string, type checking has completely lost the gate.
 
-`iostream` is type-safe, but it is both verbose and slow. To construct the string `"id=1 name=alice score=3.14"`:
+`iostream`, for its part, is type-safe, but pays for it with verbosity and slowness. Assembling that same `"id=1 name=alice score=3.14"` line:
 
 ```cpp
 std::ostringstream oss;
@@ -87,13 +88,13 @@ oss << "id=" << 1 << " name=" << "alice" << " score=" << 3.14;
 std::string s = oss.str();
 ```
 
-Each value requires a separate `<<` call, operator overloading involves jumping through multiple layers, and `ostringstream` must maintain internal formatting state—this mechanism comes at a cost. We will measure this with a real benchmark later, but for now, keep in mind that it is "widely considered slow."
+Every value needs its own `<<`, each one hops through layers of operator overloads, and `ostringstream` internally keeps formatting state alive—we'll put a real number on this machinery's cost with a benchmark later; for now just file away the "commonly known to be slow" verdict.
 
-The goal of `std::format` is to combine the advantages of both approaches: it uses a compact format string like `printf` to express the output intent, but moves the validation of "whether placeholders and argument types match" to compile time. If it doesn't compile, it won't run.
+`std::format`'s founding idea is to fuse the strengths of both sides: express output intent through a compact format string the way `printf` does, but move the "do the placeholder and argument types match" check to compile time—if it doesn't compile, it doesn't get to run.
 
-## Getting Started: What Does a Format String Look Like?
+## Getting Started: What the Format String Looks Like
 
-Let's start with a minimal example to get a feel for the syntax:
+Let's run a minimal one first to get a feel for the syntax:
 
 ```cpp
 // Standard: C++20
@@ -110,11 +111,11 @@ int main() {
 Hello world 42 3.14
 ```
 
-`{}` acts as a placeholder, consuming arguments in order. We don't need to worry about types; `std::format` already knows what each argument is at compile time, so at runtime it formats them directly in the correct way.
+`{}` is a placeholder that consumes the following arguments in order. You don't have to think about types—`std::format` already knows at compile time what each argument is, and at runtime it simply formats each one the correct way.
 
 ### Positional Arguments: Using the Same Argument Multiple Times
 
-By default, `{}` consumes arguments sequentially. To reorder the output or reuse an argument, we add a number to the placeholder—`{0}` is the first argument, and `{{1}}` is the second:
+By default `{}` consumes arguments in order. To reorder them, or to use one argument several times, give the placeholder a number—`{0}` is the first argument, `{1}` the second:
 
 ```cpp
 std::cout << std::format("{1} before {0}\n", "B", "A");
@@ -124,13 +125,13 @@ std::cout << std::format("{1} before {0}\n", "B", "A");
 A before B
 ```
 
-The most practical use of positional arguments is internationalization—since word order varies across languages, "{0}'s {1}" and "{1} of {0}" might need to reuse the same set of arguments. With positional arguments, we only need to modify the format string for translation, without touching the call code. Once we use positional arguments, **all** placeholders in the same string must carry an index; we cannot mix automatic and manual indexing.
+The most practical use of positional arguments is internationalization—word order differs between languages, a Chinese "{0} 的 {1}" and an English "{1} of {0}" may need to reuse the same set of arguments, and translators can then touch only the format string, never the call site. Once you use positional arguments, **every** placeholder in that string must carry a number; you can't mix positional and automatic numbering.
 
-### Format Specifiers: The stuff following `{:`
+### Format Specifiers: That Chunk After `{:`
 
-What truly brings `std::format` close to the expressiveness of `printf` is the **format specifiers** that can follow `{:`. The complete syntax is `{:fill align width .prec type}`. It looks intimidating, but it becomes clear when we break it down layer by layer.
+What truly brings `std::format` close to `printf`'s expressiveness is the **format specifier** that can follow the `{:`. The full syntax is `{:fill align width .prec type}`—intimidating at a glance, but clear once you peel it apart layer by layer.
 
-**Alignment and Fill**: `<` for left alignment, `>` for right alignment, `^` for center alignment. We can also specify a fill character before the `{}`. These are used in conjunction with the width:
+**Alignment and fill**: `<` left-aligns, `>` right-aligns, `^` centers, and a fill character may sit in front of the alignment. Combined with a width:
 
 ```cpp
 std::cout << std::format("[{:>10}]\n", "right");
@@ -146,14 +147,14 @@ std::cout << std::format("[{:*^10}]\n", "x");
 [****x*****]
 ```
 
-**Precision and Types**: Use `.N` to specify the number of decimal places for floating-point numbers, and use the type characters `b`/`o`/`x` to specify the integer base:
+**Precision and type**: `.N` sets how many decimal places a floating-point value keeps, and type characters `b`/`o`/`x` set the base of an integer:
 
 ```cpp
-std::cout << std::format("{:.3f}\n", 3.14159);   // 浮点保留 3 位
-std::cout << std::format("{:b}\n", 42);          // 二进制
-std::cout << std::format("{:#x}\n", 255);        // 带 0x 前缀的十六进制
-std::cout << std::format("{:#o}\n", 8);          // 带 0 前缀的八进制
-std::cout << std::format("{:c}\n", 65);          // 当字符输出
+std::cout << std::format("{:.3f}\n", 3.14159);   // 3 decimal places for the float
+std::cout << std::format("{:b}\n", 42);          // binary
+std::cout << std::format("{:#x}\n", 255);        // hexadecimal with the 0x prefix
+std::cout << std::format("{:#o}\n", 8);          // octal with the 0 prefix
+std::cout << std::format("{:c}\n", 65);          // printed as a character
 ```
 
 ```text
@@ -164,11 +165,11 @@ std::cout << std::format("{:c}\n", 65);          // 当字符输出
 A
 ```
 
-We can also combine these format specifiers. The combination order must follow `fill align width .prec type`. The two combinations below are commonly used: left-aligned with `-` padding, and signed with zero padding:
+These specifiers also compose, in the order `fill align width .prec type`. Two common combos: left-aligned padded with `-`, and signed with zero padding:
 
 ```cpp
-std::cout << std::format("[{:-<8}]\n", 42);    // 左对齐，填 '-'
-std::cout << std::format("[{:+08}]\n", 42);    // 强制正号 + 零填充
+std::cout << std::format("[{:-<8}]\n", 42);    // left-aligned, padded with '-'
+std::cout << std::format("[{:+08}]\n", 42);    // forced plus sign + zero padding
 ```
 
 ```text
@@ -176,11 +177,11 @@ std::cout << std::format("[{:+08}]\n", 42);    // 强制正号 + 零填充
 [+0000042]
 ```
 
-There are still quite a few formatting specifiers (for example, `{:.5}` truncates strings, `{:e}` uses scientific notation, etc.). We don't need to memorize the entire table—the key is to remember the skeleton of `fill align width .prec type`, and we can look up the rest on cppreference. The crucial part is understanding that **all of these are bound to the argument type; if the type is incorrect, it will be blocked at compile time**. Let's look at how this is achieved.
+The specifier grammar has plenty more corners (`{:.5}` applied to a string truncates its length, `{:e}` gives scientific notation, and so on), but there's no need to memorize the whole table—keep the `fill align width .prec type` skeleton in mind and look the rest up on cppreference. The key thing to understand: **every one of these is bound to the argument's type, and a mismatch is rejected outright at compile time**. Let's see right now how that works.
 
-## Compile-Time Type Checking: How `format_string` Blocks Errors
+## Compile-Time Type Checking: How format_string Blocks Mistakes
 
-This is the core difference between `std::format` and `printf`. Going back to the example at the beginning where we used `%s` with an `int`, let's switch to `std::format`:
+This is the part of `std::format` that most sets it apart from `printf`. Back to the opening example of `%s` paired with an `int`, now written with `std::format`:
 
 ```cpp
 // Standard: C++20
@@ -193,7 +194,7 @@ int main() {
 }
 ```
 
-This time, GCC 16.1.1 **compilation results in a direct error**, not a warning:
+This time GCC 16.1.1 **fails to compile outright**—no warning:
 
 ```text
 t2_compile.cpp:7:30: error: call to consteval function
@@ -204,12 +205,12 @@ format:1609:48: error: call to non-'constexpr' function
   'void std::__format::__failed_to_parse_format_spec()'
 ```
 
-The error message looks intimidating, but the meaning is clear: the format specifier `d` (integer) does not match the argument type `const char[13]` (string), so the format string parsing failed, and **compilation failed**.
+The error message looks frightening, but its meaning is crisp: the specifier `d` (integers) doesn't fit the argument type `const char[13]` (a string), the format string fails to parse, and **compilation stops right there**.
 
-The same logic applies if the number of arguments is incorrect. Providing only one argument for two placeholders:
+A wrong argument count fails the same way. Two placeholders, one argument:
 
 ```cpp
-std::cout << std::format("{} {}", 1);   // 2 个占位符，1 个参数
+std::cout << std::format("{} {}", 1);   // 2 placeholders, 1 argument
 ```
 
 ```text
@@ -219,45 +220,45 @@ format:322:56: error: call to non-'constexpr' function
   'void std::__format::__invalid_arg_id_in_format_string()'
 ```
 
-It still fails to compile. We should take a closer look at the mechanism here, as it explains why it must be a literal.
+Compilation fails again. The mechanism here deserves a closer look, because it explains "why must it be a literal".
 
 ### format_string: A consteval Gatekeeper
 
-The type of the first parameter of `std::format` is not `const char*`, but `std::format_string<Args...>`. This type has a key design feature: its constructor is `consteval`—which means **the construction itself must be completed at compile time**.
+The first parameter of `std::format` is not a `const char*`; it is a `std::format_string<Args...>`. This type carries one key design decision: its constructor is `consteval`—which means **constructing it at all must be doable at compile time**.
 
 ```cpp
-// 大致是这个意思（简化伪码，不是标准库真身）
+// Roughly the idea (simplified pseudo-code, not the real standard library)
 template <typename... Args>
 struct basic_format_string {
     const char* str;
 
-    // consteval 构造函数：编译期就跑格式串解析
+    // consteval constructor: format-string parsing runs at compile time
     template <typename T>
     consteval basic_format_string(const T& s) : str{s} {
-        // 编译期扫描格式串，对每个占位符校验：
-        //  - 参数下标越界？报错
-        //  - 格式说明对这个参数类型合法吗？不合法报错
+        // Scan the format string at compile time; for each placeholder, check:
+        //  - Argument index out of range? Error.
+        //  - Is the specifier legal for this argument's type? If not, error.
         constant_expression_check(s, std::make_format_checker<Args...>());
     }
 };
 ```
 
-The "scan and verify" process inside the constructor acts as a checker that compares the format string against the argument types one by one. Since the entire construction is `consteval`, it can only occur in a compile-time constant context—and string literals happen to be compile-time constants. This effectively forces a runtime bug—a mismatch between the format string and argument types—into a compile-time error.
+That "scan + validate" process inside the constructor is precisely the checker that compares the format string against the argument types one by one. Because the whole construction is `consteval`, it can only happen in a compile-time constant context—and string literals happen to be compile-time constants. So a "format string doesn't match argument types" runtime bug gets forcibly turned into a compile-time error.
 
 ::: warning The format string must be a literal
-The `consteval` constructor of `format_string` dictates that the format string **must be a compile-time constant**. The following code will not compile because `runtime_fmt` is not a constant:
+The `consteval` construction of `format_string` dictates that the format string **must be a compile-time constant**. The following won't compile, because `runtime_fmt` is not a constant:
 
 ```cpp
 std::string runtime_fmt = read_from_config();
-std::format(runtime_fmt, 42);   // error: 不是常量表达式
+std::format(runtime_fmt, 42);   // error: not a constant expression
 ```
 
-True runtime format strings take a different path (via `std::vformat` below), which **has no compile-time checks**. You are responsible for ensuring the types match. This is an intentional trade-off: the standard library provides compile-time checks for the common "fast and safe" path, while reserving a separate "escape hatch" for cases where you genuinely need a runtime string and accept the risk, ensuring the former isn't weighed down by the latter.
+A genuinely runtime format string has to take a different route (`std::vformat`, below), and that route **has no compile-time validation**—you are on your own to keep the types matching. This is a deliberate trade-off: the standard library builds the "fast and safe" everyday path with compile-time validation, and reserves a separate escape hatch for "I truly need a runtime string and accept the risk", so the former isn't dragged down by the latter.
 :::
 
-### Runtime Format Strings: The `vformat` Escape Hatch
+### Runtime Format Strings: The vformat Escape Hatch
 
-When you truly read a format string from a configuration file or user input, `std::format` cannot be used; you must use `std::vformat`. It skips compile-time checks and parses at runtime:
+When you really do read a format string from a config file or from user input, `std::format` is off the table and you turn to `std::vformat`. It skips compile-time validation and parses at runtime:
 
 ```cpp
 // Standard: C++20
@@ -268,7 +269,7 @@ When you truly read a format string from a configuration file or user input, `st
 int main() {
     std::string runtime_fmt = "x={}, y={}";
     int a = 1, b = 2;
-    // vformat：运行期格式串 + make_format_args 打包的参数；没有编译期校验
+    // vformat: runtime format string + arguments packed by make_format_args; no compile-time validation
     std::string s = std::vformat(runtime_fmt, std::make_format_args(a, b));
     std::cout << s << '\n';
     return 0;
@@ -279,15 +280,15 @@ int main() {
 x=1, y=2
 ```
 
-Note that in C++20, `make_format_args` requires **lvalues** (like `a` and `b`, not literals `1` or `2`). This is a well-known pitfall in the standard—LWG 3631 changed it to `const&` in C++23 to allow rvalues. However, our local tests with GCC 16.1.1 (libstdc++) show that passing rvalues in C++23 mode **still fails to compile**, indicating that this defect report hasn't landed in libstdc++ yet. Therefore, it is safest to stick with passing lvalues for now, and don't be misled by older resources claiming that "C++23 allows passing rvalues."
+Note that in C++20, `make_format_args` must be passed **lvalues** (`a`, `b`—you can't write `1`, `2` directly). This is a widely criticized pothole in the standard—LWG 3631 already changed it to `const&` in C++23, allowing rvalues. But when we tested on our local GCC 16.1.1 (libstdc++), passing rvalues in C++23 mode **still fails to compile**, which means this defect report has not landed in the current libstdc++. So for now the safest move is to keep passing lvalues honestly; don't get led astray by older articles claiming "C++23 accepts rvalues now".
 
-The `vformat` approach is typically only needed when writing your own internationalized logging framework or a `fmt::runtime`-style interface. For 99% of daily use cases, using a literal format string with `std::format` is sufficient, and type safety comes for free.
+The `vformat` route is something you only touch when writing your own internationalized logging framework or a `fmt::runtime`-style interface. For the everyday 99% of cases, a literal format string through `std::format` is enough, and the type safety comes free.
 
-## format_to: Writing directly to a buffer
+## format_to: Writing Straight into a Buffer
 
-`std::format` returns a `std::string` every time, which implies a heap allocation. If you want to write into an existing buffer and avoid allocation, use `std::format_to`. It writes the result to an output iterator, similar to how `snprintf` works in `printf` ("write to this block of memory").
+Each call to `std::format` returns a `std::string`, which means a heap allocation. If you want to write into an existing buffer and dodge the allocation, use `std::format_to`—it writes the result to an output iterator, much closer to `printf`-world's `snprintf` style of "write into this memory".
 
-The most natural pairing is `std::back_inserter`, which we discussed in the previous chapter, to append to a `std::string`:
+The most natural pairing is the `std::back_inserter` from the previous article, appending into a `std::string`:
 
 ```cpp
 // Standard: C++20
@@ -309,9 +310,9 @@ int main() {
 buf = [a=1 b=2 ]
 ```
 
-This is another example of the "adapter + algorithm" collaboration in action: `format_to` only recognizes the output iterator interface, while `back_inserter` translates "assignment" into `push_back`. When these two click together, writing to a `string` feels as smooth as writing to a stream.
+This is yet another example of the "adapter + algorithm" cooperation: `format_to` only knows the output-iterator interface, `back_inserter` translates "assignment" into `push_back`, and once the two mesh, writing a `string` flows as smoothly as writing a stream.
 
-If the target is a fixed-size `char` array (common in embedded systems where we want to avoid any heap allocation), we can simply pass the array's starting address as an iterator. However, arrays don't automatically expand, so writing past the end leads to an out-of-bounds error. In this case, we use `std::format_to_n`. It accepts an additional maximum character count to guarantee we stay within bounds, and it also tells us if the output was truncated:
+If the destination is a fixed-size `char` array (common in embedded, when you want to avoid any heap allocation), just pass the array's base address in as the iterator. But arrays don't grow on their own, and writing past the end is an overrun—that's when you reach for `std::format_to_n`, which additionally takes a maximum character count, guarantees it stays in bounds, and tells you whether the output was truncated:
 
 ```cpp
 // Standard: C++20
@@ -321,7 +322,7 @@ If the target is a fixed-size `char` array (common in embedded systems where we 
 int main() {
     char cbuf[8];
     auto res = std::format_to_n(cbuf, sizeof(cbuf) - 1, "long number {}", 123456789);
-    *res.out = '\0';   // res.out 指向写入的末尾，手动补 '\0'
+    *res.out = '\0';   // res.out points at the end of the written output; append the '\0' by hand
     std::cout << "cbuf = [" << cbuf << "]\n";
     std::cout << "total size = " << res.size
               << ", truncated = " << std::boolalpha
@@ -335,19 +336,19 @@ cbuf = [long nu]
 total size = 21, truncated = true
 ```
 
-`res.size` is the length of the **complete** formatted output (21), while `res.out` is the end position of the actual data written into the buffer. By comparing these two, we can determine if truncation occurred—in this case, 21 is far greater than the buffer capacity of 7, so the result was truncated to `long nu`. When implementing fixed-buffer logging or protocol frame assembly, this `format_to_n_result` serves as the basis for determining whether "this log entry will fit."
+`res.size` is the length of the **fully** formatted output (21), and `res.out` is the end position of what actually landed in the buffer. Comparing the two tells you whether truncation happened—here 21 far exceeds the buffer capacity of 7, and the result got cut down to `long nu`. When building fixed-buffer logging or protocol-frame assembly, this `format_to_n_result` is what you consult to decide "does this log line fit".
 
-By the way, if we only want to know the formatted length without actually writing anything, we can use `std::formatted_size`:
+Incidentally, if you only want to know how long the formatted output would be, without actually writing it, there's `std::formatted_size`:
 
 ```cpp
 std::cout << std::formatted_size("{}-{}\n", 100, 200);   // 7
 ```
 
-When pre-allocating a buffer, we calculate the capacity once and then write to it using `format_to`. This helps avoid a second internal reallocation in `std::string`.
+When pre-allocating a buffer, use it to compute the capacity once and then `format_to` into it—this spares `std::string` a second round of internal growth.
 
-## Benchmark: `format` vs `printf` vs `iostream`
+## Measured: format vs printf vs iostream
 
-Talk is cheap. Let's actually run the code. We loop one million times for the same log line (`id=N name=alice score=3.14`), measuring the total time taken by `printf`, `std::format`, `std::format_to` (writing to a fixed `char` buffer), and `iostream` (`ostringstream`). The full benchmark is available at `/tmp/fmt/bench.cpp`, compiled with `g++ -std=c++23 -O2` (local GCC 16.1.1).
+Talk is cheap, so let's actually run it. The same log line (`id=N name=alice score=3.14`) looped one million times, using `printf` / `std::format` / `std::format_to` (writing into a fixed-size `char` buffer) / `iostream` (`ostringstream`) respectively, measuring total time. The full benchmark lives in `/tmp/fmt/bench.cpp`, compiled with `g++ -std=c++23 -O2` (local GCC 16.1.1).
 
 ```text
 --- run 1 ---
@@ -364,23 +365,23 @@ iostream  : 442312 us   (0.44 us/iter)
 (sink=0)
 ```
 
-Here are a few robust conclusions (absolute microsecond values will vary by machine, so we focus only on orders of magnitude and relative relationships):
+A few robust conclusions (absolute microsecond values jitter from machine to machine—look only at the orders of magnitude and the relative relationships):
 
-- **`printf` is the fastest**, because its format string parsing is a hand-written state machine and it uses varargs for arguments, resulting in the lowest overhead. The trade-off is the lack of type safety mentioned earlier.
-- **`std::format` / `format_to` follow closely**, at roughly 1.1–1.4 times the cost of `printf`. `format_to` writes to a `char` buffer without heap allocation, making it slightly faster than `std::format`, which returns a `std::string`. In the dimension of "type safety + performance close to printf," `std::format` has a clear advantage.
-- **`iostream` is significantly the slowest**, at roughly 2–3 times the cost of `printf`, with high variance (repeated construction and destruction of `ostringstream`, layered jumps through `<<` operators, and maintaining formatting state all drag it down). Using `ostringstream` for string concatenation in a hot logging path is a genuine loss.
+- **`printf` is the fastest**, because its format-string parsing is a hand-written state machine and the arguments travel through varargs—minimal overhead, at the price of exactly the type unsafety described above.
+- **`std::format` / `format_to` follow close behind**, at roughly 1.1–1.4x of `printf`. `format_to` writes into a `char` buffer with no heap allocation, making it even slightly faster than `std::format`, which returns a `std::string`. On the "type-safe + near-printf performance" axis, `std::format` holds a clear advantage.
+- **`iostream` is clearly the slowest**, roughly 2–3x of `printf`, and with heavy jitter (the repeated construction and destruction of `ostringstream`, layer upon layer of `<<` operator hops, and the maintained formatting state all drag it down). Assembling strings with `ostringstream` on a logging hot path is a genuine loss.
 
-The conclusion is clear: **for safety without sacrificing speed, use `std::format`**. `printf` retains value only in corners where type checking is impossible and extreme performance is critical (e.g., ultra-high-frequency compact logging), though in such scenarios, it is usually better to simply eliminate the logging. `iostream` for formatting strings should be phased out in performance-sensitive areas.
+So the conclusion is clear: **if you want safety without the slowdown, use `std::format`**. Only in corners already walled in by type checking and obsessively concerned with that last sliver of performance (say, ultra-high-frequency compact logging) does `printf` still earn its keep—and those scenarios usually deserve the harder question of whether to cut the logging entirely. `iostream` for assembling formatted strings should be retired from performance-sensitive code.
 
-## What C++23 Added to `format`
+## What C++23 Added to format
 
-C++23 did two noteworthy things around formatting, both making `std::format` more convenient.
+Around formatting, C++23 did two things worth mentioning, and both make `std::format` smoother to use.
 
-### First: Runtime Width/Precision as Arguments (P2636)
+### First: Runtime width / precision as Arguments (P2636)
 
-In C++20, width and precision had to be hardcoded in the format string: `{:>10}`, `{:.3f}`. However, in practice, we often need to "align to a specific column width" or "derive precision from configuration," where the width is only known at runtime. The C++20 workaround involved `std::vformat` + manual string concatenation, which was ugly and lost compile-time checks.
+In C++20, width and precision must be hard-coded into the format string: `{:>10}`, `{:.3f}`. In practice, though, you constantly want to "align to some column width" or "take the precision from configuration"—the width is only known at runtime. The C++20 workaround is `std::vformat` plus building the string yourself, which is ugly and throws away compile-time checking.
 
-P2636 introduced "nested placeholders" to format specs: width and precision positions can now contain another `{}` to take values from subsequent arguments. GCC 16.1.1 already supports this:
+P2636 opened up "nested placeholders" in format specifiers: at the width and precision positions you can write another `{}` that pulls its value from the following arguments. GCC 16.1.1 already supports it:
 
 ```cpp
 // Standard: C++23
@@ -390,8 +391,8 @@ P2636 introduced "nested placeholders" to format specs: width and precision posi
 int main() {
     int width = 8;
     int prec = 2;
-    std::println("[{:>{}}]", 42, width);          // 宽度从参数取
-    std::println("[{:.{}}]", 3.14159265, prec);    // 精度从参数取
+    std::println("[{:>{}}]", 42, width);          // width comes from an argument
+    std::println("[{:.{}}]", 3.14159265, prec);    // precision comes from an argument
     return 0;
 }
 ```
@@ -401,18 +402,18 @@ int main() {
 [3.1]
 ```
 
-`{:>{}}` Here, the first `{}` is the placeholder subject, and the second `{}` is the width—`width=8` is filled in, which is equivalent to `{:>8}`. Similarly, `{:.{}}` takes the precision from `prec`. Note that compile-time checking is still preserved: the nested parameter is required to be an integer type; if the types don't match, the code won't compile.
+In `{:>{}}`, the first `{}` is the placeholder proper and the second `{}` is the width—`width=8` gets filled in, equivalent to `{:>8}`. `{:.{}}` works the same way, taking precision from `prec`. Note that compile-time checking is still intact: the nested-in argument is required to be an integer type, and a mismatch won't compile.
 
-### Item Two: `print` / `println` Directly Consume `format` (The Star of the Next Post)
+### Second: print / println Consuming format Directly (Star of the Next Article)
 
-`std::format` returns a `std::string`, so to output to the terminal, we still need to wrap it with `std::cout << ...`, resulting in an extra copy. C++23's `std::print` / `std::println` (from the `<print>` header) directly accept the format string and arguments of `std::format` and stream them out internally, eliminating the intermediate `std::string`:
+`std::format` returns a `std::string`, and getting it to the terminal means another layer of `std::cout << ...`—one extra copy. C++23's `std::print` / `std::println` (the `<print>` header) directly accept `std::format`'s format string and arguments and stream the output internally, eliminating the intermediate `std::string`:
 
 ```cpp
 // Standard: C++23
 #include <print>
 
 int main() {
-    std::println("Hello {} = {}", "x", 42);   // 自动带换行
+    std::println("Hello {} = {}", "x", 42);   // newline included automatically
     std::print("[no newline]");
     return 0;
 }
@@ -423,17 +424,17 @@ Hello x = 42
 [no newline]
 ```
 
-`println` automatically appends a newline at the end, while `print` does not. Their syntax is fully consistent with `std::format`—they use the same format strings and the same compile-time type checking—only the output destination changes from "returning a string" to "writing directly to a stream." Topics like how `print` selects the target stream, how it interacts with `sync_with_stdio(false)`, and its performance advantages over `cout` will be covered in the next post (dedicated to `std::print`), so we won't expand on them here.
+`println` appends a trailing newline, `print` doesn't, and the syntax is identical to `std::format`—same format strings, same compile-time type checking; only the output target changes from "return a string" to "write the stream directly". How `print` picks its target stream, how it cooperates with `sync_with_stdio(false)`, and where it beats `cout` in performance are all material for the next article (the `std::print` special), so we won't expand on them here.
 
-::: warning `print` may be unavailable on older GCC versions
-`std::print` and `std::println` require the `<print>` header and a relatively recent libstdc++. They are basically unavailable before GCC 13, and become gradually available starting with GCC 14. On my local machine with GCC 16.1.1, `<print>` is fully functional (including `println`, `print`, and `vprint`). If your project needs to support older toolchains, `std::format` itself (available since GCC 13) has much wider coverage than `std::print` and is more stable across different toolchains. When targeting older environments, the `fmt` library is commonly used as a polyfill—it is the prototype for `std::format` and has an almost identical API.
+::: warning print may be missing on older GCC
+`std::print` / `std::println` need the `<print>` header and a reasonably new libstdc++. Before GCC 13 they are essentially absent; from GCC 14 on they become gradually usable. On our local GCC 16.1.1, `<print>` is fully available in practice (`println`, `print`, `vprint` are all there). If your project has to support older toolchains, `std::format` itself (available since GCC 13) has far broader coverage than `std::print` and is more stable across toolchains. When targeting legacy environments, the `fmt` library is the usual polyfill—it is literally the prototype of `std::format`, with a nearly identical API.
 :::
 
-## Custom formatter: Adding format support for custom types
+## Custom formatters: Adding Format Support to Your Own Types
 
-`std::format` supports built-in types (integers, floating-point numbers, strings, pointers) out of the box. However, it fails to compile by default for custom types—`std::format("{}", my_point)` will error with "no matching formatter." To make your own types compatible with `std::format`, you simply need to write a specialization for `std::formatter`.
+Out of the box, `std::format` supports the built-in types (integers, floating point, strings, pointers). Custom types, by default, don't compile—`std::format("{}", my_point)` reports "no matching formatter". To let your own types slot into `std::format`, just write a specialization of `std::formatter`.
 
-Here, we will only touch upon the minimal usage—adding the ability to format a `Point` as `(x, y)`—without expanding on the full implementation of the formatter parser (that topic alone could warrant a separate article). The minimal specialization requires implementing two functions:
+Here we only point at a minimal usage—giving a `Point` the ability to "format as `(x, y)`"—without unfolding the full formatter-parser implementation (that alone could be its own article). The minimal specialization only needs two functions:
 
 ```cpp
 // Standard: C++20
@@ -446,15 +447,15 @@ struct Point {
     int y{};
 };
 
-// 给 Point 加格式化支持：特化 std::formatter<Point>
+// Give Point formatting support: specialize std::formatter<Point>
 template <>
 struct std::formatter<Point> {
-    // 解析格式串里 {} 之间的说明部分；这里不认任何说明，直接接受
+    // Parse the spec part between {} in the format string; we recognize none here, so accept as-is
     constexpr auto parse(std::format_parse_context& ctx) {
         return ctx.begin();
     }
 
-    // 真正输出：把 Point 写成 "(x, y)"
+    // The real output: write the Point as "(x, y)"
     auto format(const Point& p, std::format_context& ctx) const {
         return std::format_to(ctx.out(), "({}, {})", p.x, p.y);
     }
@@ -475,50 +476,50 @@ two points: (1, 1) and (9, 9)
 
 The division of labor between the two functions is clear:
 
-- `parse` is responsible for consuming the format specifiers between `{}` (such as `:>10` in `{:>10}`). Since we don't support any specifiers here, we simply return `ctx.begin()` to indicate "nothing consumed." Once you want `Point` to support alignment like `{:>10}`, you will need to parse it in `parse` and apply it in `format`—this is how all standard library formatters are implemented.
-- `format` is responsible for writing the value out. It receives `ctx.out()`, which is an output iterator. We can simply reuse `std::format_to` to write `(x, y)`. Note that we can nest `{}` inside `format_to` because `int` is supported out of the box.
+- `parse` consumes the format specifier between the `{}` (for example, the `:>10` in `{:>10}`). Here we support no specifiers and simply return `ctx.begin()` to say "nothing consumed". The moment you want `Point` to honor an alignment like `{:>10}`, you have to parse it in `parse` and apply it in `format`—that is exactly how the standard library's built-in formatters are implemented.
+- `format` writes the value out. The `ctx.out()` it receives is an output iterator, so we just reuse `std::format_to` to write `(x, y)` into it. Note that `{}` still works nested inside `format_to` here, because `int` is supported out of the box.
 
-The beauty of this pattern is: **once you write a formatter for your own type, it works anywhere that accepts `std::formattable`**—not just `std::format`, but also C++23's `std::print`, `std::format_to`, logging frameworks, and range formatting (`std::formatter<std::range>` in C++23) can all use it directly without changing a single line of code in those components. This is the benefit of a "standardized extension point." Compared to the "every container for itself" approach of implementing `operator<<`, this is much more consistent.
+The beauty of this pattern: **once you write a formatter for your own type, it works anywhere that accepts `std::formattable`**—not just `std::format`, but C++23's `std::print`, `std::format_to`, logging frameworks, and the formatting of ranges (C++23's `std::formatter<std::range>`) can all consume it directly, without changing a single line of those components. That is the dividend of a standardized extension point—far more convergent than the everyone-for-themselves approach of "writing `operator<<` for your containers".
 
-## Common Pitfalls
+## A Few Pitfalls You'll Actually Hit
 
-Let's round up the places where it's easy to crash and burn, each corresponding to the tests above:
+Let's gather in one place the spots where this journey tends to flip over, each mapping back to what we tested above:
 
-::: warning Format strings must be literals
-The format string for `std::format` must be a compile-time constant. Strings only known at runtime (from config files or user input) will fail to compile with `std::format`. You must use `std::vformat` for those, but that path **lacks compile-time type checking**—if the types don't match, it's on you.
+::: warning The format string must be a literal
+A `std::format` format string must be a compile-time constant. Strings known only at runtime (config files, user input) fail to compile through `std::format`; you have to use `std::vformat`, but that route **has no compile-time type checking**—the blame for mismatched types lands back on your own head.
 :::
 
-::: warning make_format_args requires lvalues (C++20)
-When using `std::vformat` with `std::make_format_args`, parameters must be lvalues under the C++20 standard. Passing rvalues (like the literal `1` or `"str"`) won't compile. LWG 3631 changed this to `const&` in C++23 to allow rvalues, but testing on GCC 16.1.1 (libstdc++) shows this **is not yet implemented**; passing rvalues in C++23 mode still errors. For now, always pass lvalues to be safe.
+::: warning make_format_args takes lvalues (C++20)
+When pairing `std::vformat` with `std::make_format_args`, under the C++20 standard the arguments must be lvalues; passing rvalues (literals like `1`, `"str"`) fails to compile. LWG 3631 changed this to `const&` in C++23 to allow rvalues, but on our local GCC 16.1.1 (libstdc++) the fix **has not landed yet**—passing rvalues in C++23 mode still errors out. For now, passing lvalues across the board is the safest bet.
 :::
 
 ::: warning format_to_n's res.size is the full length
-The `result.size` returned by `std::format_to_n` is "how long it would be if not truncated," not "how much was actually written." To determine if truncation occurred, use `size > capacity`. Do not use `size` as the written length—if you need the actual write position, look at `result.out`.
+The `result.size` returned by `std::format_to_n` is "how long the output would be if not truncated", not "how much was actually written". To decide whether truncation happened, compare `size > capacity`; never use `size` as the written length—and if you truly need the actual write position, look at `result.out`.
 :::
 
-::: warning Number thousands separator not implemented in libstdc++
-The `,` (thousands separator) in format specs is standardized in C++26 via P2931. libstdc++ 16.1.1 hasn't implemented it yet, so `std::format("{:,}", 1234567)` will **cause a compilation error** (parse failure). If you need localized number grouping, you currently have to post-process yourself or wait for the `L` option in C++26. Don't be misled by old resources suggesting `{:,}` works.
+::: warning The digit-grouping separator is not implemented in libstdc++ yet
+The `,` in format specifiers (the thousands separator) was only standardized by P2931 in C++26, and libstdc++ 16.1.1 has not implemented it—`std::format("{:,}", 1234567)` **fails to compile** (a parse failure). If you need localized digit grouping, your current options are post-processing the string yourself or waiting for C++26's `L` option to land. Don't be misled by older articles claiming `{:,}` works.
 :::
 
 ## Summary
 
-The intent of `std::format` can be summed up in one sentence: **combining the expressiveness of printf format strings, the type safety of iostreams, and the concise syntax of Python f-strings.** Here are the key takeaways:
+`std::format`'s founding idea fits in one sentence: **printf's format-string expressiveness, iostream's type safety, and Python f-string's concise syntax, fused into one**. The key conclusions, collected:
 
-- **Format string syntax:** `{}` placeholders take arguments by order or index `{0}{1}`. After `{:`, comes `fill align width .prec type` to control alignment, width, precision, and radix.
-- **Compile-time type checking is the core value:** The `consteval` constructor of `format_string` blocks mismatches between "format spec vs. argument type" and "placeholder count vs. argument count" as compile-time errors, whereas the same errors in `printf` are just UB.
-- **Format strings must be literals.** For runtime strings, use `std::vformat` + `make_format_args`, at the cost of losing compile-time checks (and you must pass lvalues in C++20).
-- **Writing to buffers:** Use `format_to` (with `back_inserter` for `string` or raw pointers for `char` buffers). Use `format_to_n` for fixed-length buffers to prevent overruns, and `formatted_size` if you only need to know the length.
-- **Performance:** `format` / `format_to` closely trail `printf` (about 1.1–1.4x slower), while `iostream` is significantly slower (2–3x). If you want safety without the slowness, choose `format`.
-- **New in C++23:** P2636 allows width/precision to be taken from arguments (`{:>{}}`). `std::print` / `std::println` consume format strings and output directly, saving the intermediate `std::string`—the latter is the star of the next post.
-- **Custom types:** Specialize `std::formatter` (implement `parse` + `format`), and your type fits into all formattable interfaces without changing the consumer.
+- Format-string syntax: `{}` placeholders, consuming arguments in order or by position via `{0}{1}`; after `{:` comes the `fill align width .prec type` specifier, controlling alignment, width, precision, and base.
+- Compile-time type checking is the core value: `format_string`'s `consteval` construction turns every mismatch—"specifier vs argument type", "placeholder count vs argument count"—into a compile-time error, while the same mistakes in `printf` are merely runtime UB.
+- The format string must be a literal; when you truly need a runtime string, go through `std::vformat` + `make_format_args`, at the cost of no compile-time checking (and in C++20 you must also pass lvalues).
+- For buffer writing use `format_to` (with `back_inserter` into a `string`, or a bare pointer into a `char` buffer), use `format_to_n` for fixed lengths with overrun protection, and `formatted_size` when you only want the length.
+- Performance: `format` / `format_to` stay right behind `printf` (roughly 1.1–1.4x), while `iostream` is clearly the slowest (2–3x). If you want safety without the slowdown, pick `format`.
+- New in C++23: P2636 lets width/precision come from arguments (`{:>{}}`); and `std::print` / `std::println` consume the format string and output directly, skipping the intermediate `std::string`—the latter being the star of the next article.
+- Custom types: specialize `std::formatter` (implement `parse` + `format`), and the type enters every formattable interface, with no changes needed on the consumer side.
 
-In the next post, we will focus on `std::print` / `std::println`—how it consumes `std::format` strings directly, how to choose output targets, and why it outperforms `std::cout`, wrapping up our deep dive into formatting.
+In the next article we cover `std::print` / `std::println` specifically—how it directly consumes `std::format`'s format strings, how to choose the output target, and where it beats `std::cout` in performance—wrapping up the formatting thread.
 
 ## References
 
-- [cppreference: std::format](https://en.cppreference.com/w/cpp/utility/format/format) — Main interface and format string syntax
-- [cppreference: std::format_string](https://en.cppreference.com/w/cpp/utility/format/basic_format_string) — Compile-time validation mechanism (consteval constructor)
-- [cppreference: std::formatter](https://en.cppreference.com/w/cpp/utility/format/formatter) — Extension point for custom types
-- [cppreference: std::format_to_n](https://en.cppreference.com/w/cpp/utility/format/format_to_n) — Fixed-length buffer writing and truncation logic
-- [P2636R4](https://wg21.link/p2636) — C++23 runtime width/precision as arguments
-- [{fmt} library](https://github.com/fmtlib/fmt) — The prototype of `std::format`, a cross-toolchain polyfill
+- [cppreference: std::format](https://en.cppreference.com/w/cpp/utility/format/format) — the main interface and format-string syntax
+- [cppreference: std::format_string](https://en.cppreference.com/w/cpp/utility/format/basic_format_string) — the compile-time validation mechanism (consteval construction)
+- [cppreference: std::formatter](https://en.cppreference.com/w/cpp/utility/format/formatter) — the extension point for custom types
+- [cppreference: std::format_to_n](https://en.cppreference.com/w/cpp/utility/format/format_to_n) — writing into fixed-size buffers and detecting truncation
+- [P2636R4](https://wg21.link/p2636) — C++23's runtime width/precision as arguments
+- [The {fmt} library](https://github.com/fmtlib/fmt) — the prototype of `std::format`, and a cross-toolchain polyfill

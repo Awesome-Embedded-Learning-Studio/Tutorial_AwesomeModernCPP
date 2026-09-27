@@ -6,8 +6,8 @@ cpp_standard:
 - 17
 - 20
 - 23
-description: Template mechanism that accepts zero or more template parameters or function
-  parameters
+description: A template mechanism that accepts zero or more template parameters or
+  function arguments
 difficulty: intermediate
 order: 2
 reading_time_minutes: 2
@@ -19,9 +19,9 @@ title: Variadic Templates
 translation:
   source: documents/cpp-reference/templates/02-variadic-templates.md
   source_hash: 026a457e68bebaedb8178ad0b62daab959454588c00b2e29168773526d5b942f
-  translated_at: '2026-06-16T03:29:53.115556+00:00'
+  translated_at: '2026-09-27T02:18:03+00:00'
   engine: anthropic
-  token_count: 407
+  token_count: 600
 ---
 <!--
 Reference Card Template
@@ -29,7 +29,7 @@ Used for feature cheat sheets under documents/cpp-reference/.
 Unlike article-template.md, reference cards use a concise, structured format and do not require a narrative style.
 
 Tag usage rules:
-1. Must include 1 platform tag (use 'host' for reference cards)
+1. Must include 1 platform tag (reference cards uniformly use host)
 2. Must include 1 difficulty tag
 3. Must include at least 1 topic tag
 4. Select from the VALID_TAGS set in scripts/validate_frontmatter.py
@@ -39,44 +39,46 @@ Tag usage rules:
 
 ## One-Liner
 
-Allows templates to accept an arbitrary number of arguments of arbitrary types, serving as a type-safe modern alternative to C-style variadic functions (`...`).
+Lets templates accept any number of arguments of any type — the modern, type-safe replacement for C-style variadics (`va_list`).
 
 ## Header
 
-None required (language feature)
+No header required (language feature)
 
 ## Core API Cheat Sheet
 
-| Operation | Syntax | Description |
+| Operation | Signature | Description |
 |------|------|------|
-| Type parameter pack | `typename... Ts` | Accepts zero or more type arguments |
-| Non-type parameter pack | `int... Is` | Accepts zero or more non-type arguments |
-| Template template parameter pack | `template<typename> class... Templates` | Accepts zero or more templates |
-| Parameter pack expansion | `Ts...` | Expands the parameter pack into multiple expressions |
-| Parameter pack size | `sizeof...(Ts)` | Returns the number of elements in the parameter pack |
-| Fold expression (unary) | `(expr op ...)` | C++17, performs per-element operation on the pack |
-| Fold expression (binary) | `(init op ... op expr)` | C++17, performs per-element operation on the pack |
+| Type parameter pack | `typename... Ts` | Accepts zero or more type parameters |
+| Non-type parameter pack | `Ts... args` | Accepts zero or more non-type parameters |
+| Template template parameter pack | `template<typename> class... Ts` | Accepts zero or more templates |
+| Parameter pack expansion | `args...` | Expands the parameter pack into multiple expressions |
+| Parameter pack size | `sizeof...(args)` | Returns the number of elements in the parameter pack |
+| Fold expression | `(args op ...)` / `(... op args)` | C++17, applies an element-wise operation to the pack |
 
 ## Minimal Example
 
 ```cpp
-// 打印所有参数的函数
-// Function to print all arguments
-template <typename... Ts>
-void print_all(Ts... args) {
-    ((std::cout << args << " "), ...); // C++17 折叠表达式 (Fold expression)
+// Standard: C++11
+#include <iostream>
+
+template<typename... Ts>
+void print(Ts... args) {
+    // Use an initializer list to print the arguments one by one, in order
+    int dummy[] = {(std::cout << args << " ", 0)...};
+    (void)dummy;
 }
 
 int main() {
-    print_all(1, "Hello", 3.14); // 输出: 1 Hello 3.14
+    print(1, "hello", 3.14);
 }
 ```
 
 ## Embedded Applicability: Medium
 
-- Can completely replace unsafe `va_list`, improving type safety and code maintainability.
-- Template instantiation causes code bloat (increased binary size), so monitor Flash usage.
-- Suitable for resource-rich scenarios (e.g., application processors with Linux); careful evaluation is needed on bare-metal low-end MCUs.
+- Can fully replace the unsafe `va_list`, improving type safety and code maintainability
+- Template instantiation causes code bloat (larger binary size), so keep an eye on Flash usage
+- A good fit for resource-richer settings (e.g., application processors running Linux); needs careful evaluation on low-end bare-metal MCUs
 
 ## Compiler Support
 
@@ -90,4 +92,4 @@ int main() {
 
 ---
 
-*Part of the content references [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*
+*Some content is adapted from [cppreference.com](https://en.cppreference.com/), used under the [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license*

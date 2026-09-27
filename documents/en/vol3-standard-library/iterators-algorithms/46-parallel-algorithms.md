@@ -3,49 +3,44 @@ chapter: 7
 cpp_standard:
 - 17
 - 20
-description: We dive deep into the four `<execution>` policies (`seq`/`par`/`par_unseq`/`unseq`),
-  explaining the parallel and vectorization semantics each permits, why `reduce` requires
-  associativity, and the engineering judgment behind when parallel algorithms truly
-  speed things up versus when they actually slow them down—accompanied by real-world
-  timing benchmarks on a local setup using GCC 16.1.1 with libstdc++/TBB, no fake
-  speedup numbers.
+description: 'A close look at the four <execution> policies (seq/par/par_unseq/unseq) and the parallelism and vectorization semantics each permits, why reduce demands associativity, and the engineering judgment of when parallel algorithms truly get faster versus when they get slower instead — with real timings measured on this machine under GCC 16.1.1 + libstdc++/TBB, no fabricated speedup numbers'
 difficulty: advanced
 order: 46
 platform: host
 prerequisites:
-- 迭代器基础与 category
-- 迭代器适配器：反向、插入与流，把现成迭代器改出新行为
+- 'Iterator Basics and Categories: The Glue Between Containers and Algorithms'
+- 'Iterator Adapters: Reverse, Insertion, and Stream — Teaching Old Iterators New Tricks'
 reading_time_minutes: 16
 related:
-- 容器选择指南：按操作、内存与失效规则挑对容器
+- 'Container Selection Guide: Picking the Right One by Operations, Memory, and Invalidation Rules'
 tags:
 - host
 - cpp-modern
 - advanced
 - 容器
-title: 'Parallel Algorithms: execution Policies and When They Are Actually Faster'
+title: 'Parallel Algorithms: execution Policies and When They Actually Get Faster'
 translation:
   source: documents/vol3-standard-library/iterators-algorithms/46-parallel-algorithms.md
-  source_hash: 2dae5b73522199fd6cf6c14f2594ef469c7024c4e0e50db7c405fc83a385f784
-  translated_at: '2026-06-24T02:43:29.195444+00:00'
+  source_hash: 63d96d55feb218a2d87b0708ea60cc1b106a3bec7fa5fab3921da8b78e642c8c
+  translated_at: '2026-09-26T01:47:47+00:00'
   engine: anthropic
-  token_count: 3902
+  token_count: 4200
 ---
-# Parallel Algorithms: `<execution>` Policies and When They Are Actually Faster
+# Parallel Algorithms: `<execution>` Policies and When They Actually Get Faster
 
-In previous articles on algorithms, `std::sort`, `std::accumulate`, and `std::copy` all ran on a single thread—handling one job from start to finish. However, modern machines often have dozens of cores. Shouldn't it be理所当然 that running `sort` across eight cores would be faster?
+In the earlier algorithm articles, `std::sort`, `std::accumulate`, and `std::copy` all ran on a single thread — one chunk of work from head to tail. But modern machines casually ship with a dozen or twenty cores; isn't it self-evident that letting `sort` sort on eight cores at once should be faster?
 
-C++17 provides this mechanism: add an "execution policy" parameter to standard library algorithms to declare the degree of parallelism you allow, while the library decides how to partition and schedule the work. With a single line like `std::sort(std::execution::par, v.begin(), v.end())`, the work is theoretically spread across multiple cores. This sounds great, but there are two real-world engineering problems here, which are exactly what this article will dissect:
+C++17 delivered exactly this mechanism: standard library algorithms accept one extra "execution policy" parameter declaring how much parallelism you permit, and the library decides how to split and schedule the work. One line — `std::sort(std::execution::par, v.begin(), v.end())` — in theory spreads the job across cores. Sounds lovely, but two real engineering questions hide here, and they are exactly what this article will take apart:
 
-First, **parallel does not equal faster**. Thread creation, task partitioning, and result aggregation come with overhead that isn't free. If the data volume is too small, or if the algorithm is bottlenecked by memory bandwidth (for example, a `reduce` operation that just accumulates values), parallel execution can actually be slower. We won't just chant the slogan "parallel is good"; instead, we will use real timing data from our local machine to see exactly when it is worth adding that `par`.
+First, **parallel does not mean faster**. Thread creation, task splitting, and result merging are not free; when the data volume is too small, or the algorithm itself is strangled by memory bandwidth (say a `reduce` hammering away at additions), parallel can actually be slower. We will not chant the "parallel is good" slogan — instead we will pull up real timing data from this machine and see clearly when that `par` is actually worth adding.
 
-Second, **parallelism changes the requirements for function objects**. In single-threaded mode, passing a lambda to `std::transform` that is commutative but not associative might work fine; but once you switch to `par`, the standard allows it to run in any order of association. If the algorithm is not associative, the results will be wrong. This article will clarify "which algorithms can use `par` and which cannot," rather than blindly stuffing `par` into every algorithm.
+Second, **parallelism changes what the algorithm demands of the function object**. In single-threaded `std::transform`, passing a lambda whose calls can be exchanged even though the operation does not satisfy the commutative law is harmless; the moment you switch to `par`, the standard allows it to run in an arbitrary order of combination, so an algorithm that does not satisfy associativity produces wrong results. This article will spell out which algorithms can take `par` and which cannot, instead of blindly shoving `par` into every algorithm.
 
-## Four Execution Policies: How Aggressive You Allow the Library to Be
+## The Four Execution Policies: How Aggressive You Let the Library Get
 
-The `<execution>` header defines four policy objects, ranging from conservative to aggressive: `seq`, `par`, `par_unseq`, plus the C++20 addition `unseq`. They are not switches to "specify which thread to use"—you can't control that finely—but rather declarations that "allow the library to schedule element access functions in more flexible ways." Only with this authorization does the library decide whether to spawn threads or vectorize.
+The `<execution>` header defines four policy objects: from conservative to aggressive they are `seq`, `par`, and `par_unseq`, plus `unseq`, newly added in C++20. They are not "use thread number N" switches — you cannot get control that fine-grained — they are declarations of how freely the library may schedule the element access functions. Only with that authorization in hand does the library go decide whether to spin up threads, whether to vectorize.
 
-Let's look at a minimal example that compiles successfully with all four policies (tested on local GCC 16.1.1):
+First a minimal example — all four policies compile (on this machine's GCC 16.1.1):
 
 ```cpp
 // Standard: C++20
@@ -70,38 +65,38 @@ int main() {
 all four policies compiled and ran
 ```
 
-All four strategies compile successfully. So, what exactly is the difference between them? The key lies in the **allowed overlapping behavior** between calls to the element access function. cppreference describes the semantics of the four strategies precisely, which we have summarized in the table below:
+All four compile. So where do they actually differ? The crux is what kind of overlap is permitted between calls of the element access function. cppreference states the semantics of the four policies precisely; we distill them into this table:
 
-| Strategy | Multi-threaded? | Vectorized? | Relationship between calls within the same thread | Can it lock? |
-|----------|-----------------|-------------|---------------------------------------------------|--------------|
-| `seq` (C++17) | No | No | Indeterminately sequenced (no overlap, indeterminate order) | Yes |
-| `par` (C++17) | Yes | No | Indeterminately sequenced (no overlap within the same thread) | Yes (Parallel forward progress guarantees that the thread holding the lock will be scheduled again) |
-| `par_unseq` (C++17) | Yes | Yes | Unsequenced (interleaving and vectorization allowed within the same thread) | **No** (Weakly parallel progress; threads are not guaranteed to be scheduled again) |
-| `unseq` (C++20) | No | Yes | Unsequenced (vectorization and interleaving allowed within a single thread) | **No** |
+| Policy | Multi-threaded? | Vectorized? | Relationship between calls in the same thread | Can you lock? |
+|------|---------|---------|--------------------------|---------|
+| `seq` (C++17) | No | No | indeterminately sequenced (no overlap, order unspecified) | Yes |
+| `par` (C++17) | Yes | No | indeterminately sequenced (no overlap within a thread) | Yes (parallel forward progress guarantees a thread holding a lock will be scheduled again) |
+| `par_unseq` (C++17) | Yes | Yes | unsequenced (calls may interleave within a thread; vectorizable) | **No** (weakly parallel progress — a thread is not guaranteed to be scheduled again) |
+| `unseq` (C++20) | No | Yes | unsequenced (vectorized and interleavable within a single thread) | **No** |
 
-The easiest ways to shoot yourself in the foot are the last two rows—`par_unseq` and `unseq`. Because these strategies allow interleaving multiple calls within a single thread (unsequenced), your function object **must not call any vectorization-unsafe operations**: locking (`std::mutex::lock`), non-lock-free `std::atomic`, or even `new`/`delete` all count. cppreference provides a direct counter-example:
+The last two rows are the easiest to crash on — because `par_unseq` and `unseq` allow multiple calls to interleave within a single thread (unsequenced), your function object **must not call anything vectorization-unsafe**: locking (`std::mutex::lock`), non-lock-free `std::atomic` operations, even `new`/`delete` all count. cppreference gives a direct counterexample:
 
 ```cpp
 int x = 0;
 std::mutex m;
 int a[] = {1, 2};
 std::for_each(std::execution::par_unseq, std::begin(a), std::end(a), [&](int) {
-    std::lock_guard<std::mutex> guard(m);   // 错误：构造里调 m.lock()，vectorization-unsafe
+    std::lock_guard<std::mutex> guard(m);   // wrong: the constructor calls m.lock(), which is vectorization-unsafe
     ++x;
 });
 ```
 
-Why doesn't `par_unseq` allow locking? Because "unsequenced" means that two element accesses within the same thread can be interleaved—the instruction pipeline might jump from function A to function B and back at any time. Once this interleaving is allowed, lock/unlock operations can no longer be guaranteed to be paired, and mutex semantics collapse immediately. Therefore, the standard simply stipulates: if you use an unsequenced policy, forget about synchronization. For parallel scenarios requiring locks, the most you can use is `par` (it guarantees that calls within the same thread are not interleaved, and threads holding locks will be rescheduled).
+Why does `par_unseq` forbid locking? Because "unsequenced" means two element accesses inside the same thread may interleave — the instruction pipeline can jump from function A to function B and back at any moment. Once such interleaving is allowed, lock/unlock can no longer be guaranteed to pair up, and mutex semantics collapse on the spot. So the standard simply rules: with an unsequenced policy, forget about synchronization. Parallel scenarios that need locking should go at most to `par` (it guarantees calls within a thread do not interleave, and that a thread holding a lock will be scheduled again).
 
-The difference between `seq` and `par` is much more intuitive: `seq` is always single-threaded, and the library is not allowed to switch contexts; `par` allows the library to spawn threads, but multiple calls on the same thread remain "sequentially non-overlapping," so you can still use locks—this is also why `par` is the most commonly used in practice; it's fast enough and not so picky.
+As for the difference between `seq` and `par`, that is far more intuitive: `seq` is always single-threaded and the library may not split the work; `par` lets the library open threads, but multiple calls on the same thread remain sequenced and non-overlapping, so you can still lock — which is also why `par` is the most used policy in practice: fast enough, and not so picky about what you feed it.
 
-::: warning Don't treat policies as "specifying thread count"
-None of these four policies allow you to write "give me 8 threads." Whether to parallelize and how many threads to spawn is decided by the library (in libstdc++, it's the underlying TBB); you are merely granting permission. For fine-grained control over concurrency, you need to go straight to `std::thread`/`std::async`/thread pools as discussed in Volume 5: Concurrency, rather than relying on execution policies.
+::: warning Don't treat policies as a thread count
+None of these four policies lets you write "open 8 threads for me". Whether to parallelize, and how many threads to open, is decided by the library (under libstdc++, that means TBB underneath) — you are only granting authorization. For fine-grained control over concurrency, go straight to the `std::thread`/`std::async`/thread pools covered in the vol5 concurrency volume, not to execution policies.
 :::
 
-## How to use: Pass a policy argument to the algorithm
+## How to Use It: Slip the Algorithm a Policy Argument
 
-The usage itself is quite straightforward—almost all `<algorithm>` algorithms have an overload with an execution policy. The policy is the **first parameter**, inserted before the iterators. Several algorithms added to `<numeric>` in C++17 (`reduce`, `transform_reduce`, and the various `scan` algorithms) also have parallel versions.
+The usage itself is painless — almost every `<algorithm>` algorithm has an overload taking an execution policy, and the policy is the **first argument**, inserted before the iterators. The C++17 newcomers in `<numeric>` (`reduce`, `transform_reduce`, the various scans) have parallel versions too.
 
 ```cpp
 // Standard: C++20
@@ -111,33 +106,33 @@ The usage itself is quite straightforward—almost all `<algorithm>` algorithms 
 #include <vector>
 
 void demo(std::vector<int>& v) {
-    // 排序：允许并行
+    // sort: parallelism allowed
     std::sort(std::execution::par, v.begin(), v.end());
 
-    // 累加：reduce 是 accumulate 的并行友好版（要求结合律，后面详谈）
+    // sum: reduce is the parallel-friendly version of accumulate (requires associativity, more on that later)
     long sum = std::reduce(std::execution::par, v.begin(), v.end(), 0L);
 
-    // 逐元素改写
+    // rewrite element by element
     std::transform(std::execution::par, v.begin(), v.end(), v.begin(),
                    [](int x) { return x * 2; });
 
-    // 对每个元素执行一个操作（注意：不保证顺序）
+    // run one operation per element (note: order not guaranteed)
     std::for_each(std::execution::par, v.begin(), v.end(),
-                  [](int x) { /* 用 x */ });
+                  [](int x) { /* use x */ });
 }
 ```
 
-The key takeaway is simple: **The execution policy is an additional parameter. By including it, you authorize the library to schedule the work accordingly. If you omit it (using the legacy `std::sort(beg, end)` form), it defaults to `seq`**. Therefore, the minimal change to migrate legacy code to the parallel version is to prepend `std::execution::par` to the function call.
+The key point fits in one sentence: **the policy is an extra argument — pass it and you authorize the library to schedule accordingly; omit it (the old `std::sort(beg, end)` form) and you get the equivalent of `seq`**. So migrating old code to the parallel version takes a minimal change: stuff a `std::execution::par` at the very front of the call.
 
-However, just because we *can* add it doesn't mean we *should*. In this section, we get down to brass tacks—**using real-world data to see if the overhead is actually worth it**.
+But "can add" does not mean "should add". The next section is where this article gets most rigorous — **we pull real data to see whether adding it actually pays off**.
 
-## Benchmarking: When Parallelism Truly Speeds Things Up, and When It Slows Them Down
+## Measured: When Parallel Truly Speeds Up, and When It Slows Down Instead
 
-All figures in this section were obtained from local testing on an AMD Ryzen 7 5800H (8 cores, 16 threads), using GCC 16.1.1. The libstdc++ parallel backend is TBB (Intel Threading Building Blocks)—we will cover this specific detail later, as it can be a real pitfall. The compilation command was consistently `g++ -std=c++20 -O2 bench.cpp -ltbb`, and each program was run twice to obtain a representative result.
+Every number in this section was run on this machine: AMD Ryzen 7 5800H (8 cores, 16 threads), GCC 16.1.1, and libstdc++ with TBB as the parallel backend (more on that later — it is a genuine trap). The compile command was uniformly `g++ -std=c++20 -O2 bench.cpp -ltbb`; each program was run twice and one representative run taken.
 
-### First, Large Data Volumes: `par` is Significantly Faster
+### Large Data First: par Really Is Markedly Faster
 
-We test two typical algorithms: `reduce` (pure arithmetic, memory bandwidth bound) and `sort` (compute intensive, requiring extensive comparisons and data movement). The data volume is set sufficiently large for both tests.
+We test with two representative algorithms — `reduce` (pure arithmetic, limited by memory bandwidth) and `sort` (compute-intensive, lots of comparisons and data movement). Data volumes are turned up high enough.
 
 ```cpp
 // Standard: C++20
@@ -206,17 +201,17 @@ seq: 341.455 ms
 par: 62.773 ms  (speedup 5.43952x)
 ```
 
-The speedup difference between the two algorithms is massive, which perfectly illustrates a core principle: **the effectiveness of parallelization depends entirely on what bottlenecks the algorithm in a single-threaded context**.
+The speedup gap between the two algorithms is huge, and that illustrates one core principle: **how well parallel acceleration works depends on what the algorithm is bottlenecked by when single-threaded**.
 
-`sort` speeds up by over 5x because sorting is compute-intensive— involving massive amounts of comparisons, data movement, and random memory accesses. The CPU's computing power is the bottleneck. When we distribute the workload across 8 cores, each core can max out its compute capabilities, so the speedup ratio naturally approaches the core count (falling short of 8x here only due to the overhead of task splitting and merging).
+`sort` speeds up more than 5x because sorting is compute-intensive — masses of comparisons, moves, and random memory access, with raw CPU horsepower as the bottleneck. Split the work across 8 cores and every core can run its horsepower at full tilt, so the speedup naturally approaches the core count (it lands under 8 here because task splitting and merging still cost something).
 
-`reduce` only speeds up by 1.5x, which seems "lackluster." The reason is that it is bottlenecked by **memory bandwidth**. The computation in `reduce` is just a single addition; a single core can perform calculations much faster than memory can supply data. The bottleneck lies in "moving 50 million `long`s from memory to the CPU." Since this step relies on a memory bus data path shared by all 8 cores, spawning more cores doesn't move data any faster. This is a classic memory-bound scenario where the potential gains from parallelization are inherently limited.
+`reduce` speeds up only 1.5x, which looks like neither here nor there, and the reason is that it is choked by **memory bandwidth**. A reduce does one addition per element — a single core computes faster than memory can feed it long before you run out of cores. The bottleneck is the step that hauls 50 million longs from memory to the CPU, and that data path runs over the same memory bus shared by all 8 cores, so opening more cores cannot move more data. This is the classic memory-bound scenario: the payoff parallelism can wring out is inherently limited.
 
-In other words: **to determine if parallelizing an algorithm is worthwhile, first ask if it is compute-bound or memory-bound in a single-threaded state**. Compute-intensive tasks (like `sort` or `transform` with heavy computation) are worthwhile, while memory bandwidth-intensive tasks (like lightweight element-wise `reduce`) have a very low ceiling. This judgment is far more critical than blindly adding `par`.
+Put differently: **to judge whether an algorithm parallelizes profitably, first ask whether it is compute-bound or memory-bound when single-threaded**. Compute-intensive cases (sort, or transform paired with heavy computation) pay off; memory-bandwidth-heavy cases (lightweight element-wise reduction like reduce) hit a very low ceiling. This judgment matters far more than blindly adding `par`.
 
-### Looking at Small Data Volumes: `par` is 60x Slower
+### Small Data Next: par Is 60 Times Slower Instead
 
-When we reduce the data size to 1,000 elements and run the same `reduce`, let's compare the execution time of `seq` versus `par` (taking the best result out of 5 runs):
+Shrink the data to 1000 elements and compare the timing of `seq` versus `par` for the same `reduce` (best of 5 runs):
 
 ```cpp
 // Standard: C++20
@@ -258,26 +253,26 @@ par: 0.008376 ms
 par/seq ratio: 59.8286  (>1 means par slower)
 ```
 
-`par` is nearly **60 times slower**. The reason is straightforward: adding 1,000 elements takes only a few microseconds in a single thread. However, `par` must initialize the TBB scheduler, split tasks, dispatch threads, and aggregate results for this call. This **fixed overhead** alone costs more than the entire sequential computation. The smaller the data volume, the larger the proportion of fixed overhead, and the more "loss" you incur from parallelization.
+`par` is nearly **60 times slower**. The reason could not be plainer: adding 1000 elements takes a single thread a few microseconds; but `par` has to start up the TBB scheduler for this one call, split tasks, dispatch threads, and gather results — and that **fixed overhead** by itself costs more than the entire sequential computation. The smaller the data volume, the bigger the fixed overhead's share, and the more parallelism loses.
 
-Let's summarize this conclusion: **Parallel fixed overhead is not zero; there is a break-even point**. For lightweight operations like `reduce`, this point might be in the hundreds of thousands or millions; for compute-intensive operations like `sort`, the threshold is lower. In practice, don't blindly add `par`. If you aren't sure about the data volume, either measure it yourself or just don't add it—sequential algorithms are always optimal for small data.
+To bottle this conclusion up: **the fixed overhead of parallelism is not zero; a break-even point exists**. For a lightweight operation like reduce, that point may sit somewhere around a hundred thousand or a million elements; for a compute-intensive operation like sort, the point is lower. In practice, do not add `par` brainlessly — for data volumes you are unsure about, either measure yourself or simply don't add it: the sequential algorithm is always optimal on small data.
 
-::: warning Don't add `par` just to look "modern"
-A common misconception is seeing that the standard library supports parallel versions and blindly changing every `std::sort` to `std::sort(std::execution::par, ...)`. For containers with a few hundred or thousand elements, this change will likely slow down the code by dozens of times, while needlessly occupying the thread pool. `par` is for scenarios where the **data volume is large enough to warrant parallelization**, not a decoration.
+::: warning Don't add par just to look modern
+A common pitfall: seeing that the standard library supports parallel versions, people brainlessly rewrite every `std::sort` into `std::sort(std::execution::par, ...)`. For containers of a few hundred or a few thousand elements, that change most likely slows the code down by tens of times, while squatting on the thread pool for nothing. `par` is for scenarios where the data volume is large enough to be worth parallelizing — it is not a decoration.
 :::
 
-## The Cost of Parallelism: Stricter Requirements on Function Objects
+## The Price of Parallelism: What Algorithms Demand from Function Objects Changes
 
-Parallelization offers speed, but the cost is that its requirements for function objects are much **stricter** than the sequential version. The two core requirements are: **associativity** and (for unsequenced policies) **vectorization-safety**. Algorithms that don't meet these requirements will either produce incorrect results or cause compilation/runtime errors.
+Parallelism buys speed, and the price is that its demands on function objects are far **stricter** than the sequential versions. Two core requirements: **associativity**, and (for the unsequenced policies) **vectorization safety**. Algorithms that fail either produce wrong results, or run into compile/run problems outright.
 
-### `reduce` Requires Associativity: `accumulate` Doesn't, `reduce` Does
+### reduce Demands Associativity: accumulate Doesn't, reduce Does
 
-The most typical comparison is between `std::accumulate` and `std::reduce`. Both "merge a sequence of elements into a single value" and look almost identical, but their semantic requirements differ vastly:
+The most classic contrast is `std::accumulate` versus `std::reduce`. Both "collapse a sequence of elements into one value" and look nearly identical, but their semantic requirements are worlds apart:
 
-- `std::accumulate` is a strict **left fold**—it calculates one by one from left to right, with a fixed evaluation order. Therefore, it **does not require** the binary operation to be associative.
-- `std::reduce` allows the library to calculate in **any associative order** (this is the only way to split the work across multiple cores), so it **requires** the binary operation to be associative. The default `+` satisfies this, but for custom operations, you must guarantee it yourself.
+- `std::accumulate` is a strict **left fold** — computed one by one from left to right, with the order of combination fixed. So it **does not require** the binary operation to be associative.
+- `std::reduce` allows the library to compute in **an arbitrary order of combination** (that is what lets it split the work onto multiple cores, each computing its own share), so it **does require** the binary operation to be associative; the default `+` qualifies, but for a custom operation you have to guarantee it yourself.
 
-This difference shows up immediately with floating-point numbers—floating-point addition **does not satisfy associativity**: `(a+b)+c` and `a+(b+c)` can yield different results in floating-point arithmetic. Therefore, feeding the same group of floats to `accumulate`, `reduce(seq)`, and `reduce(par)` will yield three different results:
+This difference shows up immediately on floating-point — floating-point addition **does not satisfy associativity**: `(a+b)+c` and `a+(b+c)` can differ under floating point. Feed the same bunch of floats to `accumulate`, `reduce(seq)`, and `reduce(par)`, and the three results will differ:
 
 ```cpp
 // Standard: C++20
@@ -308,19 +303,19 @@ reduce seq           : 10000.3525391
 reduce par           : 10000.3349609
 ```
 
-All three results differ. Mathematically, the "correct answer" is 10,000 (adding 0.1 one hundred thousand times), but floating-point errors cause it to deviate. The extent of this deviation depends on the order of association. `accumulate` continuously adds small decimals to an increasingly large accumulated value, causing the error to accumulate most severely (a difference of 1.4). `reduce` splits the sequence into chunks, sums within the chunks, and then merges them. Since the values within the chunks are smaller, the error is smaller, resulting in a value closer to the true value. `reduce seq` and `reduce par` also differ because the splitting methods are different.
+All three results differ. Mathematically the "correct answer" is 10000 (0.1 added a hundred thousand times), but floating-point error pulls it off course, and by how much depends on the order of combination — `accumulate` keeps adding small numbers onto an ever-growing accumulator, so error piles up hardest (off by 1.4); `reduce` splits the sequence into chunks, sums within each chunk, then merges, and since the values inside chunks stay small the error stays small, landing it closer to the true value instead. `reduce seq` and `reduce par` also differ, because the splitting differs.
 
-The essence of this issue is: **floating-point addition is not associative, so mathematically, it should not be parallelized**. The standard library allows you to do this (without raising an error), but the cost is that the result differs from the sequential version, and may even differ between runs (depending on thread scheduling). If your program requires **reproducibility** in floating-point results (e.g., bit-for-bit consistency in finance or scientific computing), using `reduce(par)` is a ticking time bomb. You must either sacrifice parallelism with `accumulate` or use compensated algorithms like Kahan summation.
+The essence of the matter: **floating-point addition does not satisfy associativity, so mathematically it should not be parallelized at all**. The standard library lets you do it anyway (no error reported), at the price of results that differ from the sequential version — and can even differ from run to run (depending on thread scheduling). If your program demands **reproducibility** of floating-point results (finance and scientific computing often need bit-for-bit agreement), `reduce(par)` is a landmine. Either sacrifice parallelism with `accumulate`, or reach for a compensated algorithm such as Kahan summation.
 
-Conversely, integer addition, bitwise operations, and logical AND/OR naturally satisfy associativity, making `reduce` safe for parallelization. Therefore, when determining "can I parallelize this reduce?", ask **whether your binary operation satisfies associativity**—not just about the data type.
+Conversely, integer addition, bitwise operations, and logical and/or are all naturally associative, so `reduce` parallelizes safely. When judging "can my reduce go par", first ask **whether your binary operation satisfies associativity** — not what the data type is.
 
-::: warning The reduce(init, op) form also requires op to be commutative with init
-For the `std::reduce(first, last, init, op)` four-parameter overload, besides requiring `op` to be associative, it also requires that both `op(init, x)` and `op(x, init)` are valid and produce the same result. This means `init` and the elements must be commutative under `op`. The reason is again parallel splitting: the library might combine `init` with any arbitrary chunk. When defining a custom `op`, if `init` is a special "identity element" type, ensure `op` behaves correctly in both positions.
+::: warning The reduce(init, op) form additionally requires op to commute with init
+The four-argument overload `std::reduce(first, last, init, op)` requires more than `op` being associative: both `op(init, x)` and `op(x, init)` must be valid and give consistent results — in other words, init and the elements must be commutative under op. The reason is parallel splitting again: the library may combine init with any chunk. When you customize op and init is some special "identity element" type, make sure op behaves correctly in both argument positions.
 :::
 
-### Exceptions under `par` result in `std::terminate`
+### Under par, an Exception Means std::terminate
 
-In sequential algorithms (including the `seq` policy), if a function object throws an exception, it propagates up normally, and you can `catch` it. However, under all parallel policies—`par`, `par_unseq`, and `unseq`—if an element access function throws an uncaught exception, the standard mandates a direct call to `std::terminate`, crashing the program. We verified this with a practical test:
+In sequential algorithms (including the `seq` policy), an exception thrown from the function object propagates up normally and you can `catch` it. But under all parallel policies — `par`, `par_unseq`, `unseq` — the moment the element access function throws an uncaught exception, the standard mandates a direct call to `std::terminate`, and the program dies. We verified this live:
 
 ```cpp
 // Standard: C++20
@@ -346,7 +341,7 @@ int main() {
             x = 2;
         });
     } catch (const std::exception& e) {
-        std::cout << "caught: " << e.what() << "\n";   // 这行不会被走到
+        std::cout << "caught: " << e.what() << "\n";   // this line is never reached
     }
     return 0;
 }
@@ -356,67 +351,67 @@ int main() {
 std::terminate called (exception escaped par algorithm)
 ```
 
-Notice that the outer `try/catch` block did not catch the exception—the exception never propagated out, and `terminate` was called immediately, terminating the process. This is a counter-intuitive difference between parallel and sequential algorithms: **under `par`, function objects must effectively not throw exceptions**. They must either be logically exception-free or marked `noexcept` and handle errors internally. Algorithms requiring error handling paths should either remain on `seq` or use mechanisms like `std::expected` or return values that do not rely on exceptions.
+Look closely: the outer `try/catch` never received the exception — the exception never propagated out at all; `terminate` was called directly and the process exited. This is a deeply unintuitive gap between parallel and sequential algorithms: **under `par`, the function object must be effectively non-throwing** — either guarantee the logic cannot throw, or mark it `noexcept` and digest errors internally. Algorithms that need an error-handling path should either stay on `seq`, or use a channel that does not rely on exceptions, such as `std::expected`/return values.
 
-Why does this happen? Imagine an exception being thrown simultaneously across eight threads. Who aggregates them? Which exception should be propagated? The standard simply dictates no propagation and immediate termination to avoid this complexity. This is why function objects for parallel algorithms should be kept as simple and `noexcept` as possible.
+Why is it this way? Picture exceptions flying from eight threads at once: who gathers them? Which exception should propagate out? The standard simply rules no propagation, straight termination, cutting the complexity away in one stroke. That is also why function objects for parallel algorithms should stay as simple and `noexcept` as possible.
 
-## An unavoidable pitfall: libstdc++'s parallel backend is TBB, so you must link it manually
+## A Trap You Cannot Dodge: libstdc++'s Parallel Backend Is TBB and Must Be Linked Manually
 
-All previous examples included `-ltbb` during compilation. This is not optional—it is the key to successfully linking libstdc++ parallel algorithms, and it is the wall most beginners hit first.
+Every earlier example was compiled with `-ltbb`. That is not an optional extra — it is the key to whether libstdc++ parallel algorithms link at all, and the wall beginners run into most easily.
 
-libstdc++'s parallel algorithms (PSTL) rely on Intel TBB for thread scheduling. Therefore, as long as your code **uses** `std::execution::par` (even if it is just `reduce(par, ...)`), compilation will succeed, but linking will fail, reporting a long list of `undefined reference to tbb::...` errors. Try compiling the minimal `par` example from the beginning without `-ltbb`:
+libstdc++'s parallel algorithms (the PSTL) rely on Intel TBB underneath for thread scheduling. So the moment your code **uses** `std::execution::par` (even just `reduce(par, ...)`), compilation passes, but linking fails with a long string of `undefined reference to tbb::...`. Compile that minimal par example from the top without `-ltbb`:
 
 ```text
 /usr/bin/ld: ... undefined reference to `tbb::detail::r1::initialize(tbb::detail::d1::task_group_context&)'
-... (几十行 TBB 符号未定义)
+... (dozens of lines of undefined TBB symbols)
 collect2: error: ld returned 1 exit status
 ```
 
-Want to see why `par` depends on TBB? If we compile (without linking) and check the assembly, the `par` version (`sum_par`) is a string of `call __gnu_parallel`/`tbb` runtime symbols, while the `seq` version (`sum_seq`) is just a normal scalar loop:
+Want to see why `par` depends on TBB? Compile only (no linking) and look at the assembly — the `par` version (`sum_par`) is a string of `call __gnu_parallel`/`tbb` runtime symbols, while the `seq` version (`sum_seq`) is just a plain scalar loop:
 
 <OnlineCompilerDemo
   title="Assembly of reduce seq vs par: TBB runtime calls"
   source-path="code/examples/vol3/46_parallel_asm.cpp"
-  description="Compile only to view assembly (no run, so no -ltbb needed): seq version is a scalar accumulation loop, par version is a series of call __gnu_parallel/tbb — this is the evidence at the assembly level that the 'parallel backend is TBB'"
+  description="Compile only and read the assembly (no running, so no -ltbb needed): the seq version is a scalar accumulation loop, the par version a string of call __gnu_parallel/tbb — this is the assembly-level evidence that the parallel backend is TBB"
   allow-x86-asm
 />
 
-The solution is just one line: add `-ltbb` to the compile command (assuming the system has TBB installed, locally `libtbb.so.12`). In a CMake project, this corresponds to `find_package(TBB REQUIRED)` followed by `target_link_libraries(... TBB::tbb)`.
+The fix is one line: add `-ltbb` to the compile command (TBB must be installed on the system; this machine has `libtbb.so.12`). In a CMake project the equivalent is `find_package(TBB REQUIRED)` followed by `target_link_libraries(... TBB::tbb)`.
 
-::: warning Linking fails without -ltbb
-As long as we use `par`/`par_unseq`, libstdc++ must link against TBB. `seq` and `unseq` do not use TBB (sequential and pure vectorization don't need a thread pool), so using just these two works without `-ltbb`. However, in practice, strategies are often swapped around, so it's easiest to just statically link `-ltbb` in the project. This is why all examples in this article containing `par` use the compile command `g++ -std=c++20 -O2 xxx.cpp -ltbb`.
+::: warning Without -ltbb, linking fails
+As long as you use `par`/`par_unseq`, libstdc++ must link TBB. `seq` and `unseq` do not go through TBB (sequential and purely vectorized execution need no thread pool), so using only these two links fine without `-ltbb`. But in practice policies get swapped around a lot, and pinning `-ltbb` in the project is the least hassle. That is also why every `par`-bearing example in this article uses the compile command `g++ -std=c++20 -O2 xxx.cpp -ltbb`.
 :::
 
-A quick comparison: another mainstream standard library implementation, libc++ (the Clang suite), uses a different default parallel backend and does not depend on TBB; MSVC's parallel algorithms are also plug-and-play and require no extra linking. So "whether to link TBB" is a libstdc++-specific issue to watch out for when migrating code.
+One comparison to add: libc++ (the Clang stack), the other major standard library implementation, has a different default parallel backend and does not depend on TBB; MSVC's parallel algorithms work out of the box with no extra linking. So "whether to link TBB" is a libstdc++-specific problem — watch out for it when porting code.
 
-## C++17 Background and C++20's `unseq`
+## The C++17 Backdrop and C++20's unseq
 
-Parallel algorithms only entered the standard in C++17 (originating from the earlier Parallelism TS). Before that, parallel sorting meant hand-rolling threads or using third-party libraries (TBB, OpenMP). C++17 added execution policy overloads to over 60 algorithms in `<algorithm>` and merge/scan algorithms in `<numeric>` in one go, plus a batch of new algorithms designed for parallelism like `reduce`, `transform_reduce`, and `inclusive_scan` (the old `accumulate` doesn't require associativity and cannot be safely parallelized, hence the separate addition).
+Parallel algorithms entered the standard with C++17 (descended from the earlier Parallelism TS). Before that, parallel sorting meant hand-rolling threads or going through a third-party library (TBB, OpenMP). C++17 in one sweep added execution-policy overloads to more than 60 `<algorithm>` algorithms and the reduce/scan algorithms of `<numeric>`, plus a batch of new algorithms born for parallelism — `reduce`, `transform_reduce`, `inclusive_scan` and friends (the old `accumulate` does not require associativity and cannot be safely parallelized, hence the fresh start).
 
-C++20 added a fourth policy, `unseq` — single-threaded vectorization (pure SIMD). The design motivation is: sometimes we don't want to start multiple threads (e.g., single-core embedded systems, or data volumes too small to justify threading overhead), but we still want the compiler to vectorize the loop and use SIMD instructions. `par_unseq` can also vectorize, but it spawns threads; `unseq` extracts "vectorization" to give us a "no threads, just SIMD" option.
+C++20 then added the fourth policy `unseq` — single-threaded vectorization (pure SIMD). Its design motivation: some scenarios do not want multiple threads (an embedded single-core chip, say, or data too small for threads to pay off), but still want the compiler to vectorize the loop and use SIMD instructions. `par_unseq` can vectorize too, but it also opens threads; `unseq` splits "vectorization" out on its own, giving you a "no threads, SIMD only" option.
 
-However, the actual effect of `unseq` in libstdc++ is often disappointing. Running cppreference's own example (g++ -std=c++23 -O3 -ltbb) to sort 1 million elements with four policies yields: seq 165ms, unseq 163ms, par_unseq 30ms, par 27ms. See that? **`unseq` is barely faster than `seq`** — 163 vs 165, basically within the margin of error. The reason is that vectorization offers limited gains for operations like integer comparison; the SIMD channels aren't fed efficiently. `unseq` truly shines in highly regular, branch-free, compute-intensive element-wise operations (e.g., per-element math on floating-point arrays), so in practice, we must test per scenario.
+But `unseq`'s actual effect on libstdc++ often disappoints. cppreference's own example (g++ -std=c++23 -O3 -ltbb) sorting 1 million elements reports, for the four policies: seq 165ms, unseq 163ms, par_unseq 30ms, par 27ms. See it clearly? **`unseq` is barely faster than `seq`** — 163 vs 165, essentially within error. The reason, again, is that vectorization buys limited gains for operations like integer comparisons; the SIMD lanes go underfed. Where `unseq` can genuinely pull ahead is highly regular, branch-free, compute-intensive element-wise operations (say element-wise math over float arrays) — in practice you have to measure per scenario to know.
 
-So, the correct expectation for `unseq` is: **it is a hint to "request vectorization" and does not guarantee a speedup**. Just like `par`, whether it's worth it depends on measurement — don't be superstitious.
+So the right expectation for `unseq` is: **it is a "request vectorization" hint, not a guarantee of speedup**. As with `par`, measure whether it pays — no blind faith.
 
 ## Summary
 
-For parallel algorithms, the easiest part to learn is "how to add policy parameters," and the easiest pitfall is "thinking adding `par` guarantees speed." Let's wrap up the key conclusions:
+In the parallel algorithms game, the easiest part to learn is "how to add the policy argument", and the easiest way to get burned is "assuming `par` is automatically faster". Let us gather the key conclusions:
 
-- The four policies, from conservative to aggressive: `seq` (single-threaded sequential), `par` (multi-threaded, no interleaving within a thread, can lock), `par_unseq` (multi-threaded + vectorization, interleaving allowed within a thread, **cannot lock**), `unseq` (C++20, single-threaded vectorization, also cannot lock).
-- Because `par_unseq` and `unseq` allow interleaving within a single thread, function objects prohibit any vectorization-unsafe operations: locking, non-lock-free atomics, or even `new`/`delete`. For parallel scenarios requiring locks, stick to `par`.
-- **When parallelization actually speeds things up**: Significant speedup for compute-bound algorithms (e.g., sort, 5x+ locally); limited speedup for memory-bound algorithms (e.g., reduce, 1.5x locally) due to memory bandwidth limits; for small data sizes where fixed overhead dominates, `par` can be dozens of times slower.
-- **`reduce` requires associativity, `accumulate` does not**. Floating-point addition is not associative, so floating-point `reduce(par)` results differ from the sequential version and may even vary between runs — avoid this if reproducibility is required.
-- In `par` and below policies, if a function object throws an exception, it calls `std::terminate` directly and won't be caught by outer `try/catch` — function objects for parallel algorithms should be effectively `noexcept`.
-- **libstdc++'s parallel backend is TBB**: As long as `par`/`par_unseq` is used, `-ltbb` must be added to the compile command, or linking fails; libc++ and MSVC have no such requirement.
-- `unseq` is a hint to "request vectorization" and often shows almost no speedup for operations like integer comparison — don't be superstitious.
+- The four policies from conservative to aggressive: `seq` (single-threaded sequential), `par` (may multi-thread; no interleaving within a thread; locking allowed), `par_unseq` (may multi-thread plus vectorize; calls may interleave within a thread; **no locking**), `unseq` (C++20; single-threaded vectorization; likewise no locking).
+- Because `par_unseq` and `unseq` allow calls to interleave within a single thread, function objects must not perform any vectorization-unsafe operation: locking, non-lock-free atomics, even `new`/`delete`. Parallel scenarios that need locking should use `par` at most.
+- **When parallel truly gets faster**: with compute-bound algorithms (like sort) the speedup is significant (5x+ on this machine); with memory-bound ones (like reduce) memory bandwidth caps the gain (1.5x on this machine); and when the data volume is so small that fixed overhead dominates, `par` is tens of times slower instead.
+- **reduce requires associativity, accumulate does not**. Floating-point addition does not satisfy associativity, so a float `reduce(par)` differs from the sequential version and even from run to run — forbidden wherever reproducibility is required.
+- A function object that throws under `par` and the policies beyond it triggers `std::terminate` directly, never caught by the outer `try/catch` — function objects for parallel algorithms should be effectively `noexcept`.
+- **libstdc++'s parallel backend is TBB**: as soon as you use `par`/`par_unseq`, the compile command needs `-ltbb`, or linking fails; libc++ and MSVC have no such requirement.
+- `unseq` is a "request vectorization" hint; for operations like integer comparisons it often buys almost no speedup — no blind faith.
 
-In the next article, we'll look at the standard library from another angle — `<chrono>` and time handling, which is another facility that "looks simple but is full of pitfalls."
+In the next article we look at the standard library from another angle — `<chrono>` and time handling, yet another facility that looks simple and hides plenty of traps.
 
 ## References
 
-- [cppreference: Execution policy tags](https://en.cppreference.com/w/cpp/algorithm/execution_policy_tag) — Definitions of the four policy objects `seq`/`par`/`par_unseq`/`unseq`
-- [cppreference: Execution policy types](https://en.cppreference.com/w/cpp/algorithm/execution_policy_tag_t) — Precise semantics of how each policy type schedules element access functions (indeterminately sequenced vs unsequenced, locking permissions, exception behavior)
-- [cppreference: std::reduce](https://en.cppreference.com/w/cpp/numeric/reduce) — Associativity requirements of `reduce` and its relationship with `accumulate`
-- [cppreference: Parallel algorithms](https://en.cppreference.com/w/cpp/algorithm) — Overview of all algorithms with execution policy overloads since C++17
-- [GCC libstdc++ manual: Parallel algorithms](https://gcc.gnu.org/onlinedocs/libstdc++/manual/parallel.html) — Documentation that libstdc++ parallel backend depends on TBB
+- [cppreference: Execution policy tags](https://en.cppreference.com/w/cpp/algorithm/execution_policy_tag) — definitions of the four policy objects `seq`/`par`/`par_unseq`/`unseq`
+- [cppreference: Execution policy types](https://en.cppreference.com/w/cpp/algorithm/execution_policy_tag_t) — the precise semantics of how each policy type may schedule element access functions (indeterminately sequenced vs unsequenced, whether locking is allowed, exception behavior)
+- [cppreference: std::reduce](https://en.cppreference.com/w/cpp/numeric/reduce) — reduce's associativity requirement and its relation to accumulate
+- [cppreference: Parallel algorithms](https://en.cppreference.com/w/cpp/algorithm) — overview of all algorithms with execution-policy overloads since C++17
+- [GCC libstdc++ manual: Parallel algorithms](https://gcc.gnu.org/onlinedocs/libstdc++/manual/parallel.html) — notes that libstdc++'s parallel backend depends on TBB

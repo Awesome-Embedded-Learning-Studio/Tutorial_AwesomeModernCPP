@@ -7,7 +7,7 @@ difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- 'Chapter 9: Path Operations: Cross-Platform Path Handling'
+- 'Path Operations: Cross-Platform Path Handling'
 reading_time_minutes: 16
 related:
 - Directory Traversal and Search

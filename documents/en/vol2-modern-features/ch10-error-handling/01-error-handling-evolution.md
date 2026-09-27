@@ -12,8 +12,8 @@ difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
-- 'Chapter 4: std::optional: Elegantly Expressing ''A Value May Be Absent'''
-- 'Chapter 4: std::variant: A Type-Safe Union'
+- 'std::optional: Elegantly Expressing ''A Value May Be Absent'''
+- 'std::variant: A Type-Safe Union'
 reading_time_minutes: 13
 related:
 - optional for Error Handling

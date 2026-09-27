@@ -6,8 +6,8 @@ cpp_standard:
 - 17
 - 20
 - 23
-description: A class representing a single execution thread, allowing concurrent execution
-  of multiple functions.
+description: A class representing a single execution thread, allowing multiple functions
+  to run concurrently.
 difficulty: beginner
 order: 2
 reading_time_minutes: 2
@@ -19,15 +19,15 @@ title: std::thread
 translation:
   source: documents/cpp-reference/concurrency/02-thread.md
   source_hash: 596c4d1b8b7efabc62972cee475f92ead74fcf9b57734494369ae9f392c8f3b9
-  translated_at: '2026-06-16T03:27:54.437506+00:00'
+  translated_at: '2026-09-26T17:09:14+00:00'
   engine: anthropic
-  token_count: 443
+  token_count: 1050
 ---
 # std::thread (C++11)
 
 ## In a Nutshell
 
-A native thread wrapper provided by the C++ Standard Library. Creating an object immediately launches the underlying OS thread, enabling true multi-task concurrency.
+The C++ Standard Library's native thread wrapper: constructing an object starts the underlying OS thread right away, giving you true multi-task concurrency.
 
 ## Header
 
@@ -37,13 +37,13 @@ A native thread wrapper provided by the C++ Standard Library. Creating an object
 
 | Operation | Signature | Description |
 |-----------|-----------|-------------|
-| Constructor | `thread() noexcept;` | Default constructor, does not associate with any thread |
-| Constructor | `template< class Function, class... Args > explicit thread( Function&& f, Args&&... args );` | Constructs and immediately starts the thread |
-| Destructor | `~thread();` | Must be joined or detached before destruction, otherwise calls std::terminate |
+| Constructor | `thread() noexcept;` | Default construction; not associated with any thread |
+| Constructor | `template< class Function, class... Args > explicit thread( Function&& f, Args&&... args );` | Constructs and immediately starts a thread |
+| Destructor | `~thread();` | Must already be joined or detached before destruction, otherwise std::terminate is called |
 | Assignment | `thread& operator=( thread&& other ) noexcept;` | Move assignment |
-| Joinable | `bool joinable() const noexcept;` | Checks if the thread is joinable (i.e., associated with an active thread) |
-| Join | `void join();` | Blocks the current thread until the target thread finishes execution |
-| Detach | `void detach();` | Detaches the thread from the thread object, allowing it to run independently in the background |
+| Joinable | `bool joinable() const noexcept;` | Checks whether the thread can be joined (i.e., whether it is associated with an active thread) |
+| Join | `void join();` | Blocks the current thread and waits for the target thread to finish |
+| Detach | `void detach();` | Separates the thread from the thread object so it runs independently in the background |
 | Get ID | `id get_id() const noexcept;` | Returns the thread identifier |
 | Hardware Concurrency | `static unsigned int hardware_concurrency() noexcept;` | Returns the number of concurrent threads supported by the implementation |
 
@@ -60,7 +60,7 @@ void task(int n) {
 
 int main() {
     std::thread t(task, 3);
-    t.join(); // 阻塞等待线程 t 执行完毕
+    t.join(); // Block until thread t finishes executing
     std::cout << "done\n";
 }
 // Standard: C++11
@@ -68,10 +68,10 @@ int main() {
 
 ## Embedded Applicability: High
 
-- Zero abstraction overhead; `std::thread` maps directly to underlying OS threads (such as RTOS tasks or POSIX pthreads)
-- `hardware_concurrency()` can be used to probe available core count at runtime to dynamically determine thread pool size
-- Combined with `std::mutex` and `std::atomic`, it can safely protect shared peripheral registers or global buffers
-- Note the OS thread stack overhead (typically several KB to tens of KB). On MCUs with extremely limited memory, we must precisely control the number of threads and stack size
+- Zero abstraction overhead: `std::thread` maps directly onto the underlying OS thread (an RTOS task or a POSIX pthread, for example)
+- `hardware_concurrency()` can probe the available core count at runtime to size a thread pool dynamically
+- Combined with `std::mutex` and `std::atomic`, it can safely guard shared peripheral registers or global buffers
+- Watch out for OS thread stack overhead (typically a few KB to a few tens of KB); on very small-memory MCUs we need to tightly control thread count and stack size
 
 ## Compiler Support
 
@@ -85,4 +85,4 @@ int main() {
 
 ---
 
-*Part of the content references [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*
+*Some content is adapted from [cppreference.com](https://en.cppreference.com/), used under the [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license*

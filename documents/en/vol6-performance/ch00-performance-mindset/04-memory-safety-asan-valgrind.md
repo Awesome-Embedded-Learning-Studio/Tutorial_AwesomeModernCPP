@@ -5,20 +5,18 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Pull apart the responsibilities of the Valgrind quintet (memcheck/callgrind/cachegrind/helgrind+drd/massif),
-  compile and run six classic memory errors under ASan for real, and explain the essential difference between
-  the "dynamic binary translation" and "compile-time shadow-memory instrumentation" routes.
+description: Pull apart the responsibilities of the Valgrind quintet (memcheck/callgrind/cachegrind/helgrind+drd/massif), compile and run six classic memory errors under ASan for real, and nail down the essential difference between the two routes of dynamic binary translation and compile-time shadow-memory instrumentation.
 difficulty: advanced
 order: 4
 platform: host
 prerequisites:
-- Dynamic memory management (new/delete and smart pointers)
-- C dynamic memory management (malloc/free and valgrind)
+- Dynamic Memory Management (new/delete and smart pointers)
+- Dynamic Memory Management in C (malloc/free and a quick valgrind tour)
 reading_time_minutes: 27
 related:
-- The ASan tool family and memory safety (shadow memory, Heartbleed, and sanitizer selection)
-- Concurrency debugging techniques (TSan / Helgrind in depth)
-- Dynamic memory management
+- 'The ASan tool family and memory safety: shadow memory, Heartbleed, and sanitizer selection'
+- Debugging Techniques for Concurrent Programs
+- Dynamic Memory Management
 tags:
 - host
 - cpp-modern
@@ -30,94 +28,94 @@ title: 'Valgrind vs ASan: JIT interpretation vs compile-time instrumentation'
 translation:
   source: documents/vol6-performance/ch00-performance-mindset/04-memory-safety-asan-valgrind.md
   source_hash: 4a96815f8c688c7e6e9aa1058760e641068a3bf284de6778723c5c2652cafcfe
-  translated_at: '2026-07-06T14:30:00+00:00'
-  engine: manual
-  token_count: 6200
+  translated_at: '2026-09-26T05:24:02+00:00'
+  engine: anthropic
+  token_count: 13000
 ---
 # Valgrind vs ASan: JIT interpretation vs compile-time instrumentation
 
-> PS: This part is migrated from my college notes, and every key conclusion has been re-verified by actually compiling and running on this machine with GCC 16.1.1 + valgrind 3.25.1. If anything is still off, an Issue or PR is welcome.
+> PS: this part was migrated from notes I took back in college; every key conclusion has since been re-verified by actually compiling and running on this machine with GCC 16.1.1 + valgrind 3.25.1. If anything is still off, an Issue or PR is welcome.
 
-Let's start with something we've probably all done: a piece of C++ code runs fine locally, goes to production, and either crashes intermittently or has its RSS climb until the OOM Killer takes it out. You go back and read the code, the `new`/`delete` pairs all look right, the overflow is only off by a byte or two, and reading the code tells you nothing. This kind of bug has no hope of being caught by eye; you need a tool to "see" every memory access.
+Let's start with something most of us have done: a piece of C++ code runs perfectly locally, goes to production, and either crashes intermittently or has its memory RSS climb until the OOM Killer takes it out. You go back and read the code — the `new`/`delete` pairing all looks right, the overflow is off by maybe a byte or two — and reading alone tells you nothing. Bugs like this are hopeless to debug by eye; you need a tool to "see" every memory access.
 
-What this article does is split the memory-error-catching tools into two camps by their implementation route, and run them both. One camp is **Valgrind**: the old-school JIT scheme that wraps a "virtual CPU" around your program and interprets it. The other is **AddressSanitizer (ASan)**: a scheme that inserts checking code into your program at compile time and accounts for memory with "shadow memory". The original notes only covered Valgrind and didn't mention ASan at all, which is exactly the route more commonly used in engineering today. This article fills that gap and puts the two routes side by side.
+What this article does is split the memory-error-catching tools into two camps by implementation route, and take both apart for a run. One camp is **Valgrind**: the veteran JIT scheme that wraps a "virtual CPU" around your program and interprets it. The other is **AddressSanitizer (ASan)**: a scheme that inserts checking code into your program at compile time and does its bookkeeping with "shadow memory". The original old notes covered only Valgrind and said nothing about ASan — yet that is precisely the route more commonly used in engineering today. This article fills that gap and puts the two routes side by side.
 
-## 1. Two classes of memory errors, and "why reading the code doesn't help"
+## 1. Two classes of memory errors, and why reading the code never shows them
 
-Before we reach for tools, let's sort out the "enemies" we're hunting. Memory errors fall roughly into two classes, and catching them is wildly different in difficulty.
+Before we reach for the tools, let's sort out the "enemies" we're hunting. Memory errors fall roughly into two classes, and catching them differs wildly in difficulty.
 
-**Class one: deterministic overflow / use-after-free / double-free.** The signature of these errors is "accessed an address that shouldn't be accessed". They're dangerous, but relatively easy to catch: as long as the tool can mark "which memory is legal and which isn't", the overflow is reported the moment it happens. An off-by-one like `char buf[8]; buf[8] = 'x';`, a dangling pointer like `free(p); return *p;`, all belong here.
+**Class one: deterministic out-of-bounds / use-after-free / double-free.** The signature of these errors is "an address was touched that shouldn't have been". Dangerous, but comparatively easy to catch: as long as the tool can mark "which memory is legal and which isn't", the overflow gets reported the moment it happens. An off-by-one like `char buf[8]; buf[8] = 'x';`, a dangling pointer like `free(p); return *p;` — both belong here.
 
-**Class two: uninitialized reads / memory leaks.** These are sneakier. An uninitialized read is "the address is legal but the value is garbage"; the program doesn't crash, it just silently computes wrong. A memory leak is "the address stays legal, it just never gets returned"; the program doesn't crash either, RSS just climbs slowly. You can't catch these two with a "legal address table", you need another mechanism: Valgrind maintains a "has this value been initialized" flag for every byte, and ASan's leak detection (LSan) sweeps the heap at program exit looking for blocks that are "allocated but pointed to by no one".
+**Class two: uninitialized reads / memory leaks.** These are sneakier. An uninitialized read means "the address is legal, but the value is garbage" — the program doesn't crash, it just quietly computes wrong. A memory leak means "the address stays legal, it just never gets given back" — no crash either, RSS just slowly climbs. You can't catch either of these with a "legal-address table"; you need another mechanism: Valgrind keeps a per-byte "has this value been initialized yet" flag, and ASan's leak detection (LSan) sweeps the heap at program exit to look for blocks that are "allocated but pointed to by no one".
 
-The fundamental reason reading the code doesn't work is that both classes of errors **depend on runtime memory state**, not on the literal text of the code. Looking at `*p` alone, you have no idea whether the memory `p` points to at this moment is live or dead, initialized or garbage. That's exactly why we need tools to "record" every allocation, every free, every read/write, turning runtime memory state into an auditable ledger.
+The root reason reading the code doesn't work is that both classes of errors **depend on the runtime memory state**, not on the literal text of the code. Look at `*p` alone and you have no idea whether, at this instant, the memory `p` points to is live or dead, initialized or garbage. That's exactly why we need tools to "record" every allocation, every free, every read and write — turning the runtime memory state into a ledger you can audit after the fact.
 
-"Recording" is something Valgrind and ASan do via two completely different implementation routes. Let's put the conclusion up front and take them apart one by one.
+And on "recording", Valgrind and ASan take two completely different implementation routes. Conclusion first, teardown after.
 
 | Dimension | Valgrind (memcheck) | AddressSanitizer |
 |------|---------------------|------------------|
-| How it records | Dynamic binary translation: at runtime, translates each machine instruction into a checked version | Compile-time instrumentation: at compile time, inserts checking code before and after every memory access |
-| Recompile needed? | **No**, runs on a stock binary | **Yes**, must recompile with `-fsanitize=address` |
-| Runtime overhead | 20-50x slower, 2x+ memory (official wording) | ~2x slower, ~3x memory |
+| How it records | Dynamic binary translation: at runtime, each machine instruction is translated into a checked version | Compile-time instrumentation: at compile time, checking code is inserted around every memory access |
+| Recompile needed? | **No** — a stock binary runs as-is | **Yes** — must recompile with `-fsanitize=address` |
+| Runtime overhead | 20-50x slower, 2x+ memory (the official wording) | ~2x slower, ~3x memory |
 | Platforms | Linux/macOS (FreeBSD/Solaris), x86/ARM, etc. | GCC/Clang/MSVC, all platforms, including Windows |
-| Who catches uninitialized reads | memcheck natively (V-bit) | ASan **cannot**, needs separate `-fsanitize=memory` (MSan, Clang only) |
-| Catches stack overflow | Yes (needs full `-tool=memcheck`) | Catches stack/global redzones by default, `detect_stack_use_after_return` catches stack-return-then-access |
+| Who catches uninitialized reads | memcheck, natively (V-bit) | ASan **cannot** — you additionally need `-fsanitize=memory` (MSan, Clang-only) |
+| Catches stack out-of-bounds | Yes (but needs the full `--tool=memcheck` setup) | Stack/global redzones by default; `detect_stack_use_after_return` catches access after the frame returns |
 
-Keep this table in mind. Next we start from "the source pain" and see how the Valgrind route works.
+Keep this table in mind for now. Starting from "the pain at the source", let's first see how the Valgrind route works.
 
-## 2. Valgrind: wrap a "virtual CPU" to JIT-interpret your program
+## 2. Valgrind: wrap a "virtual CPU" around your program and JIT-interpret it
 
-### 2.1 What it's actually doing
+### 2.1 What it actually does
 
-Valgrind is essentially a **dynamic binary translation (DBT) framework**. It's not an ordinary detection library; it stuffs your entire program into a "virtual CPU" and runs it there. When you type `valgrind ./myprog`, what really happens is: Valgrind intercepts every one of your machine instructions, **just-in-time translates** it into a new sequence that "does the original work + incidentally records memory state", and only then executes. So your program isn't running directly on the CPU; it's being "interpreted" inside Valgrind's core.
+Valgrind is in essence a **dynamic binary translation (DBT) framework**. It isn't an ordinary detection library — it stuffs your entire program into a "virtual CPU" and runs it there. When you type `valgrind ./myprog`, what really happens is: Valgrind intercepts each of your machine instructions, **just-in-time translates** it into a new sequence of instructions that "does the original work + incidentally records memory state", and only then executes it. So your program isn't running on the CPU directly; it's being "interpreted" inside Valgrind's core.
 
-That's the source of its famous side effect: **20 to 50 times slower**, and memory usage more than doubled. The official Valgrind manual says it outright:
+That's where its famous side effect comes from: **20 to 50 times slower**, with memory usage more than doubled. The official Valgrind manual says it outright:
 
 > Programs running under Valgrind run significantly more slowly, and use much more memory -- e.g. more than twice as much as normal under the Memcheck tool.
 
-Put it in perspective: a program that runs in 1 second might take half a minute under memcheck. So Valgrind isn't something you keep running during daily development; it's for "this program really has a memory bug, I'm setting aside time specifically to hunt it down".
+Put it in perspective: a program that runs in 1 second might take half a minute inside memcheck. So Valgrind isn't something you keep attached during everyday development; it's for "this program really does have a memory bug, and I'm carving out time specifically to hunt it down".
 
-This JIT-interpretation architecture has one huge advantage, and it's the fundamental reason Valgrind hasn't been obsoleted yet: **no recompilation needed**. You've got a binary from ten years ago whose source you can't even find all of, you suspect it leaks, `valgrind ./old_relic` and you're running. ASan can't do this; ASan must recompile from source. That's the hardest difference between the two routes.
+This JIT-interpreting architecture has one huge advantage, and it's the fundamental reason Valgrind hasn't been obsoleted yet: **no recompilation needed**. You have a ten-year-old binary whose source you can't even fully find, you suspect it leaks — type `valgrind ./old_relic` and it just runs. ASan can't do that; ASan must be recompiled from source. This is the hardest difference between the two routes.
 
 ### 2.2 The quintet: one framework, five tools
 
-The essence of Valgrind is "framework + tools". The core handles translation and scheduling; the specifics of "what to record, what to report" go to a pluggable tool. `--tool=<name>` picks one, which is to say you pick a pair of "checking glasses". Let's have a look; the manual lists these core tools:
+The essence of Valgrind is "framework + tools". The core handles translation and scheduling; the specifics of "what to record, what to report" go to a pluggable tool. Which one `--tool=<name>` selects is which pair of "checking glasses" you put on. Let's have a look — the manual lists these core tools:
 
-**Memcheck**: the memory error detector, Valgrind's default tool, and the one most people actually mean when they say "use Valgrind to check memory". Its full catch list (quoted from manual section 4.1) is: accessing memory you shouldn't (heap overflow, stack-top overflow, use-after-free), using uninitialized values, wrong frees (double-free, mismatched `malloc` with `delete`), `memcpy` source/dest overlap, passing "suspicious" negative sizes to allocation functions, `realloc` with 0, alignment not a power of two, and memory leaks. In one sentence: memcheck nets nearly all the commonest memory errors in C/C++ programs.
+**Memcheck**: the memory error detector, Valgrind's default tool, and the one most people actually run when they say "check memory with Valgrind". Its full catch list (quoted from manual section 4.1): accessing memory you shouldn't (heap block overflow, top-of-stack overflow, access after free), using uninitialized values, invalid frees (double-free, mismatches like `malloc` with `delete`), `memcpy` with overlapping source and destination, "suspicious" negative sizes passed to allocation functions, `realloc` passed 0, alignment values that aren't powers of two, and memory leaks. In one sentence: memcheck nets nearly all the most common memory errors in C/C++ programs.
 
-**Callgrind**: call graph + cache/branch prediction profiler. It doesn't need special compile-time options (but `-g` is recommended); at the end of the run it writes analysis data to a file, then you turn it into human-readable form with `callgrind_annotate`. Use it to find "which function gets called how many times, what the call relationships look like".
+**Callgrind**: a call-graph + cache/branch-prediction profiler. It needs no special compile-time options from you (though `-g` is recommended); at the end of the run it writes the profile data to a file, which you then convert into human-readable form with `callgrind_annotate`. Use it to pin down "which function gets called how many times, and what the call relationships look like".
 
-**Cachegrind**: cache profiler. It simulates the CPU's I1/D1/L2 caches, pinpoints exactly where cache hits and misses happen in your program, and can tell you how many misses and how many instructions each line, each function, each module produced. Use it when you want to press cache performance.
+**Cachegrind**: a cache profiler. It simulates the CPU's I1/D1/L2 caches, pinpoints exactly where in your program cache misses and hits happen, and can tell you how many misses and how many instructions each line of code, each function, each module produced. Use it when you want to squeeze cache performance.
 
-**Helgrind and DRD**: these two are both **thread error detectors**, catching data races, lock-order inconsistencies, and POSIX thread API misuse. The original notes called Helgrind "still experimental", and that claim **has been outdated for a long time**: in the 2026 official manual both Helgrind and DRD are formally listed stable tools, each with its own chapter (manual chapters 7 and 8), not experimental. Worth mentioning too: the notes only mentioned Helgrind and **missed DRD**: the two have the same goal (catching thread bugs) but different algorithms, and DRD is usually faster and handles some scenarios (lots of small objects, Boost.Thread, OpenMP) better. Thread-error hunting is covered in depth with TSan/Helgrind in vol5's [Concurrency debugging techniques](../../vol5-concurrency/ch08-debug-testing-perf/01-debugging-concurrency.md); this article won't repeat it, just remember "for thread bugs reach for helgrind/drd, or the more modern TSan".
+**Helgrind and DRD**: these two are both **thread error detectors**, catching data races, inconsistent lock ordering, and misuse of the POSIX thread APIs. The original notes described Helgrind as "still experimental" — a claim **long outdated**: in the 2026 official manual, both Helgrind and DRD are formally listed stable tools, each with its own chapter (manual chapters 7 and 8), not experimental features. A side note while we're here: the notes mentioned only Helgrind and **missed DRD** — the two share a goal (catching thread bugs) but use different algorithms, and DRD is usually faster and supports some scenarios better (lots of small objects, Boost.Thread, OpenMP, for instance). I covered hands-on TSan/Helgrind work for thread errors in volume 5's [Debugging Techniques for Concurrent Programs](../../vol5-concurrency/ch08-debug-testing-perf/01-debugging-concurrency.md); this article won't repeat it — just remember "for thread-class bugs reach for helgrind/drd, or the more modern TSan".
 
-**Massif**: heap profiler. It measures how much memory your program actually eats on the heap, giving you the growth curve of heap blocks, heap management structures, and the stack. Use it to "slim down" a program or find the big RSS consumers.
+**Massif**: a heap profiler. It measures how much memory your program actually eats on the heap, giving you the growth curves of heap blocks, heap management structures, and the stack. Use it to "slim down" a program or find the big RSS consumers.
 
-> **An easily missed division of labor**: memcheck catches "right or wrong" (can this memory be accessed, is it initialized), callgrind/cachegrind/massif catch "fast or slow / much or little" (performance and usage). Newcomers often conflate them and think Valgrind is for finding memory leaks, when that's only one tool's job (memcheck's). The performance-analysis tools (callgrind/cachegrind/massif) and ASan aren't even in the same race; ASan doesn't touch performance profiling.
+> **A division of labor that's easy to miss**: memcheck catches "right or wrong" (may this memory be accessed, is it initialized), callgrind/cachegrind/massif catch "fast or slow / much or little" (performance and usage). Newcomers often conflate them and assume Valgrind is a memory-leak checker — but that's just one tool's job, memcheck's. The performance-analysis tools (callgrind/cachegrind/massif) and ASan aren't even in the same race; ASan doesn't touch performance profiling.
 
-### 2.3 memcheck's dual-table principle: A-bit and V-bit
+### 2.3 memcheck's two-table principle: A-bit and V-bit
 
-How does memcheck catch so many kinds of memory errors? The key is that it maintains two "shadow tables" covering the entire process address space. Manual section 4.5 lays this out clearly.
+How does memcheck earn its grip on so many kinds of memory errors? The key is the two "shadow tables" it maintains, covering the entire process address space. Manual section 4.5 spells it out:
 
-**Valid-Address table (A-bit).** Every byte of the process address space has 1 bit recording "can this address currently be read or written". When you `malloc` a block, A-bit marks those bytes "valid"; when you `free`, it flips back to "invalid". When an instruction is about to read or write a byte, it first checks that byte's A-bit; if it says invalid, that's an illegal access and memcheck reports it on the spot. This layer catches: overflow, use-after-free, accessing unallocated regions.
+**The Valid-Address table (A-bit).** Every byte of the process address space gets 1 bit recording "may this address currently be read or written". `malloc` a block, and the A-bit marks those bytes "valid"; `free` it, and the mark flips back to "invalid". When an instruction is about to read or write some byte, its A-bit is consulted first; if it says invalid, that's an illegal access and memcheck reports it on the spot. This layer catches: out-of-bounds, use-after-free, and access to unallocated regions.
 
-**Valid-Value table (V-bit).** Every byte of the process address space has 8 bits; every CPU register also has a corresponding bit vector. They record "whether this value has been initialized yet". Freshly `malloc`'d memory has all V-bits "uninitialized"; once an instruction writes a defined value into it, the corresponding bytes' V-bits flip to "initialized". The key design is that **V-bits propagate with the value**: read an uninitialized value from memory into a register and the V-bit moves into the register too; do arithmetic on it and the result's V-bit is "uninitialized" as well. But memcheck doesn't report the moment it reads an uninitialized value; it only reports when that value is "used to affect program output, or used to compute an address". This delay is deliberate, to avoid a screen full of false positives.
+**The Valid-Value table (V-bit).** Every byte of the process address space gets 8 bits; every CPU register also gets a corresponding bit vector. They record "whether this value has been initialized yet". Freshly `malloc`'d memory has all V-bits "uninitialized"; once an instruction writes a defined value into it, the corresponding bytes' V-bits flip to "initialized". The key design point: **V-bits propagate along with the value**. Read an uninitialized value from memory into a register, and the V-bit moves into the register with it; do arithmetic on it, and the result's V-bit is "uninitialized" too. But memcheck doesn't report the moment it reads an uninitialized value — it reports only at the instant that value "gets used to influence program output, or to compute an address". The delay is deliberate, to avoid a screen full of false positives.
 
-Putting the two tables together: A-bit governs "is the address legal", V-bit governs "is the value clean". The former catches overflow/UAF, the latter catches uninitialized reads. Double-free and alloc-dealloc mismatch are caught via a ledger memcheck itself maintains, recording "which allocator was this memory requested from".
+Put the two tables together and it clicks: A-bit governs "is the address legal", V-bit governs "is the value clean". The former catches out-of-bounds/UAF, the latter uninitialized reads. Double-free and alloc-dealloc mismatches are caught by yet another ledger memcheck keeps itself — "which allocator was this memory requested from" — checked at free time.
 
-The cost of this "every byte accounted for" mechanism is the memory doubling mentioned earlier; A-bit and V-bit themselves take up space.
+The cost of this "every byte accounted for" mechanism is the memory doubling mentioned earlier: A-bits and V-bits themselves take up space.
 
 ## 3. ASan: compile-time instrumentation + shadow memory
 
 ### 3.1 The idea is exactly reversed
 
-ASan's implementation route is the reverse of Valgrind's. It does **not** wrap a virtual CPU around your program; instead, **at compile time** it inserts checking code into your program. You add `-fsanitize=address`, and the compiler inserts a small piece of code before and after every memory read/write: that code consults a "shadow memory" table, decides whether this access is legal, and if not, reports an error and aborts.
+ASan's implementation route is exactly the reverse of Valgrind's. It does **not** wrap a virtual CPU around your program; instead, **at compile time** it inserts the checking code into your program. You add `-fsanitize=address`, and the compiler puts a small piece of code around every memory read/write: that code consults a "shadow memory" table, decides whether this access is legal, and if not, reports the error and aborts.
 
-So ASan's checking is "the program checks itself", not "an outside virtual CPU checks for it". That explains the huge gap in overhead between the two routes: ASan only spends a few extra instructions on the instrumented accesses, with no "translate the whole instruction stream" cost, so it's **only about 2x slower** (Valgrind is 20-50x); the price is that you must recompile, and the checking covers only the instrumented code. Dynamically loaded third-party `.so` files not built with ASan are out of its reach (Valgrind can, because it intercepts at the instruction level across the board).
+So ASan's checking is "the program checks itself", not "an outside virtual CPU checks on its behalf". That explains the huge gap in overhead between the two routes: ASan spends only a few extra instructions on the instrumented accesses, with no "translate the whole instruction stream" cost, hence only **~2x slower** (Valgrind is 20-50x); the price is a mandatory recompile, and checking that covers only instrumented code — a dynamically loaded third-party .so not built with ASan is out of its reach (Valgrind can handle it, because it intercepts wholesale at the instruction level).
 
 ### 3.2 Shadow memory: the 8-byte to 1-byte encoding
 
-ASan's core mechanism is shadow memory (a full teardown of shadow memory is in this volume's [ASan tool family](./03-asan-family-and-memory-safety.md), which also covers how it plugged Heartbleed-style over-read holes). It maps the process's entire address space into a shadow table in 8-byte groups, with every 8 application bytes corresponding to 1 shadow byte. The value of that shadow byte has a precise meaning; I'll paste the legend straight from a real run on my machine (the output that follows is real):
+ASan's core mechanism is shadow memory (for a full teardown of shadow memory see this volume's [ASan tool family](./03-asan-family-and-memory-safety.md), which also covers how it plugged over-read holes like Heartbleed back in the day). It maps the process's entire address space into a shadow table in 8-byte groups, with every 8 application bytes corresponding to 1 shadow byte. The value of that shadow byte has a precise meaning — here's the legend pasted straight from a run on my machine (the output below is real):
 
 ```text
 Shadow byte legend (one shadow byte represents 8 application bytes):
@@ -141,30 +139,30 @@ Shadow byte legend (one shadow byte represents 8 application bytes):
   Right alloca redzone:    cb
 ```
 
-Translating the elegance of this encoding:
+Let me unpack what makes this encoding clever:
 
-- Shadow byte `00`: all 8 bytes are addressable;
-- `01`-`07`: only the first N bytes are addressable, the rest is overflow redzone. This is exactly how ASan catches off-by-one: it paves a "redzone" around every heap block, stack frame, and global variable, and the redzone's shadow bytes are marked `fa`/`f9` and friends. Step into the redzone, the instrumentation checks the shadow byte, sees it's not "addressable", and reports on the spot;
-- `fd`: this memory has been `free`'d; any further access is use-after-free, caught red-handed.
+- Shadow byte `00`: all 8 bytes are accessible;
+- `01` through `07`: only the first N bytes are accessible, the rest is out-of-bounds redzone. This is exactly how ASan catches off-by-one: it paves a "redzone" ring around every heap block, stack frame, and global variable, and the redzone's shadow bytes are marked `fa`/`f9` and the like. Step into the redzone, the instrumented code checks the shadow byte, finds it isn't "accessible", and reports immediately;
+- `fd`: this memory has been freed; any further access is use-after-free, caught on the spot.
 
-In other words, ASan takes a different path from memcheck's "byte-by-byte address legality accounting": it paves redzones around legal regions and uses redzones to define boundaries. This mechanism is extremely effective for overflow and UAF, but **it has no V-bit**, so ASan cannot catch uninitialized reads. That gap has to be filled by MSan (MemorySanitizer, `-fsanitize=memory`), and MSan is Clang-only; **GCC still doesn't support `-fsanitize=memory` as of 16.1.1** (verified on this machine: `unrecognized argument`). That's a real shortcoming of the ASan route versus memcheck.
+In other words, ASan takes a different path: where memcheck accounts for address legality byte by byte, ASan paves redzones around the legal regions and lets the redzones define the boundaries. This mechanism is extremely effective for out-of-bounds and UAF, but **it has no V-bit**, so ASan cannot catch uninitialized reads. That gap has to be filled by MSan (MemorySanitizer, `-fsanitize=memory`), and MSan exists only in Clang — **GCC as of 16.1.1 still doesn't support `-fsanitize=memory`** (verified on this machine: `unrecognized argument`). That's a genuine shortcoming of the ASan route relative to memcheck.
 
-> **Pitfall warning**: ASan and the other sanitizers are in a "one class at a time" relationship. `-fsanitize=address` and `-fsanitize=thread` (TSan) **cannot be turned on together**: their assumptions about shadow-memory layout differ, and mixing them either errors out or behaves erratically. So turn on ASan when hunting memory errors, turn on TSan separately when hunting concurrency data races, and don't try to "one-shot" it. For how to hunt thread errors, see [vol5's concurrency debugging article](../../vol5-concurrency/ch08-debug-testing-perf/01-debugging-concurrency.md).
+> **Pitfall warning**: ASan and the other sanitizers are in a "one class at a time" relationship. `-fsanitize=address` and `-fsanitize=thread` (TSan) **cannot be enabled at the same time**: their assumptions about shadow-memory layout differ, and mixing them either errors out outright or behaves erratically. So enable ASan when hunting memory errors, enable TSan separately when hunting concurrency data races — don't try to "all-in-one" it. For how to hunt thread errors, see [the concurrency debugging chapter in volume 5](../../vol5-concurrency/ch08-debug-testing-perf/01-debugging-concurrency.md).
 
-## 4. Run it: six classic errors, real ASan output
+## 4. Hands-on: six classic errors, real ASan output
 
-Theory alone isn't satisfying. We take the six classes of "screenshots only, no source" classic errors from the original notes, write them all out as real code, and compile and run them on this machine (GCC 16.1.1) with `g++ -std=c++20 -O0 -g -fsanitize=address,undefined`. Every output chunk below is something I **really ran**, not hand-fabricated.
+Theory alone isn't satisfying. Let's write out, as real code, all six classes of classic errors that the original notes presented as "screenshots only, no source", and compile and run them on this machine (GCC 16.1.1) with `g++ -std=c++20 -O0 -g -fsanitize=address,undefined`. Every output chunk below is something I **actually ran** — not hand-crafted.
 
-First, pack all six errors into one program:
+First, pack all six error classes into one program:
 
 ```cpp
 // cases.cpp — six classic memory errors, each reproduced with ASan
 // Build: g++ -std=c++20 -O0 -g -fsanitize=address,undefined cases.cpp -o cases
-// Run:   ./cases <1..6>   no arg runs only the leak
+// Run:   ./cases <1..6>   with no argument, only the leak runs
 #include <cstdio>
 #include <cstdlib>
 
-// 1. Using uninitialized memory (ASan can't catch this, needs MSan)
+// 1. Using uninitialized memory (ASan can't catch this; needs MSan)
 int case_uninit() {
     int* p = (int*)malloc(sizeof(int));   // contents are garbage
     int v = *p;                            // reads a garbage value, but the address is legal
@@ -177,13 +175,13 @@ int case_uaf() {
     int* p = (int*)malloc(sizeof(int));
     *p = 42;
     free(p);
-    return *p;                             // reading freed memory
+    return *p;                             // reads freed memory
 }
 
 // 3. Heap buffer overflow (tail read/write)
 int case_oob() {
     int* a = (int*)malloc(4 * sizeof(int)); // only a[0..3]
-    a[4] = 99;                              // 5th element, out of bounds
+    a[4] = 99;                              // the 5th element is out of bounds
     int r = a[4];
     free(a);
     return r;
@@ -192,7 +190,7 @@ int case_oob() {
 // 4. Memory leak (forgot to free)
 void case_leak() {
     int* p = (int*)malloc(sizeof(int));
-    *p = 7;                                 // deliberately don't free
+    *p = 7;                                 // deliberately not freed
 }
 
 // 5. malloc paired with delete (alloc/dealloc mismatch)
@@ -206,7 +204,7 @@ void case_mismatch() {
 void case_double_free() {
     int* p = (int*)malloc(sizeof(int));
     free(p);
-    free(p);                                // second free
+    free(p);                                // the second free
 }
 
 int main(int argc, char** argv) {
@@ -224,18 +222,18 @@ int main(int argc, char** argv) {
 }
 ```
 
-Note this build line, every case below uses it: `g++ -std=c++20 -O0 -g -fsanitize=address,undefined cases.cpp -o cases`. `-g` makes ASan reports carry line numbers; `-O0` keeps the optimizer from folding away our overflow access (at higher optimization levels, a "write-then-immediately-read" like `a[4]` may get folded; ASan still catches it, but `-O0` is cleanest for debugging).
+Memorize this build line; every case below uses it: `g++ -std=c++20 -O0 -g -fsanitize=address,undefined cases.cpp -o cases`. `-g` is there so the ASan report carries line numbers; `-O0` keeps the optimizer from optimizing our out-of-bounds access away (at high optimization levels, a "write then immediately read" like `a[4]` may get folded — ASan still catches it, but `-O0` is cleanest while debugging).
 
 ### 4.1 Using uninitialized memory — ASan's blind spot
 
-Run case 1 and watch ASan's reaction:
+First run case 1 and watch ASan's reaction:
 
 ```text
 $ ./cases 1
 uninit=-1094795586
 ```
 
-**ASan says nothing**, and the program returns a garbage value (`-1094795586`) normally. That's the shortcoming mentioned earlier: this memory address is legal (it came from `malloc`), ASan's shadow memory marks it "addressable", and there's no V-bit to judge "has this value been initialized". memcheck catches this error (via V-bit), ASan doesn't; to catch it you have to switch to MSan (`-fsanitize=memory`, Clang only). That's a **substantive capability gap** between the two routes; it's not about which is stronger, it's that each minds its own patch.
+**ASan says nothing**, and the program returns a garbage value (`-1094795586`) normally. This is the shortcoming mentioned earlier: the memory address is legal (it came from `malloc`), ASan's shadow memory has it marked "accessible", and there is no V-bit to judge "has this value been initialized". memcheck catches this error (via V-bit), ASan doesn't; catching it means switching to MSan (`-fsanitize=memory`, Clang-only). This is a **substantive capability difference** between the two routes — not about which is stronger, but about each minding its own patch.
 
 ### 4.2 use-after-free — the redzone bites on the spot
 
@@ -264,11 +262,11 @@ previously allocated by thread T0 here:
 SUMMARY: AddressSanitizer: heap-use-after-free /tmp/asand/cases.cpp:20 in case_uaf()
 ```
 
-(I trimmed the build-id and other irrelevant lines above; all the key info is there.) ASan gives you three pieces: **where this illegal read happened** (line 20 of `case_uaf()`, the `return *p`), **where this memory was freed** (line 19), and **where it was originally `malloc`'d** (line 17). Put together, the whole causal chain of "allocate -> free -> access again" is in full view. That's the credit of the redzone mechanism plus "after `free` the shadow byte flips to `fd`": once freed, that memory is no longer "addressable" to ASan, and any further touch trips a report.
+(I trimmed the build-id and other irrelevant lines above; every key piece is still there.) Look at the three chunks of information ASan hands you: **where this illegal read happened** (line 20 of `case_uaf()`, the `return *p`), **where this memory was freed** (line 19), and **where it was originally malloc'd** (line 17). Put the three together and the whole "allocate -> free -> access again" causal chain is in full view. That's the credit of the redzone mechanism plus "after `free` the shadow byte flips to `fd`": once freed, that memory is no longer "accessible" as far as ASan is concerned, and the next touch trips a report.
 
 ### 4.3 Heap buffer overflow — the tail redzone
 
-Run case 3 (`a[4]` overflows; `a` only holds 4 ints):
+Run case 3 (`a[4]` is out of bounds; `a` only holds 4 ints):
 
 ```text
 $ ./cases 3
@@ -285,9 +283,9 @@ allocated by thread T0 here:
     ...
 ```
 
-`located 0 bytes after 16-byte region`: this memory is 16 bytes (4 ints), and the access lands exactly on the **first byte after its end**, i.e., the start of the tail redzone. That's how ASan catches off-by-one: right behind the block returned by `malloc` is a ring of redzone, whose shadow bytes are `fa` (heap left redzone, really poison around the heap block); `a[4]` falls into the redzone, the instrumentation checks the shadow byte, sees it isn't `00`, and reports on the spot.
+`located 0 bytes after 16-byte region`: this block is 16 bytes (4 ints), and the access lands exactly on the **first byte past its end** — that is, the start of the tail redzone. That's the principle behind ASan catching off-by-one: immediately behind the block `malloc` returns is a ring of redzone, whose shadow bytes are `fa` (heap left redzone — really, poison laid around the heap block); `a[4]` falls into the redzone, the instrumented code checks the shadow byte, sees it isn't `00`, and reports on the spot.
 
-> **A point the notes raise but is easy to misread**: the notes say "Valgrind doesn't check statically-allocated arrays". That's true for old memcheck (stack/global array overflow was historically a memcheck weak spot), but **ASan is different**: ASan paves redzones around stack arrays and global variables too (shadow bytes `f1`-`f3` are stack redzones, `f9` is the global redzone), and it catches stack array overflow cleanly. So "static array overflow can't be caught" holds for Valgrind, not for ASan. Don't conflate the two tools' limitations.
+> **A point the original notes raise but that's easy to misread**: the notes say "Valgrind doesn't check statically allocated arrays". That's true for old memcheck (stack/global array overflow was historically a memcheck weak spot), but **ASan is not like that**: ASan paves redzones around stack arrays and global variables too (shadow bytes `f1`~`f3` are stack redzones, `f9` is the global redzone), and it catches stack array overflow crisply. So the conclusion "static array overflow can't be caught" holds for Valgrind only, not for ASan. Don't conflate the two tools' limitations.
 
 ### 4.4 Memory leak — LSan sweeps the heap at program exit
 
@@ -308,9 +306,9 @@ Direct leak of 4 byte(s) in 1 object(s) allocated from:
 SUMMARY: AddressSanitizer: 4 byte(s) leaked in 1 allocation(s).
 ```
 
-Note that the error is from **`LeakSanitizer`**, not ASan proper: LSan is the leak detector bundled with ASan by default, and it sweeps the entire heap **when the program exits normally**, pulling out blocks that are "allocated but pointed to by no one". What it reports is the "definitely lost" entry in the "still reachable / definitely lost" classification. This is the same leak-detection idea as memcheck (both sweep the heap at exit); LSan just happens to be part of the ASan toolchain.
+Note that this error comes from **`LeakSanitizer`**, not ASan proper: LSan is the leak detector bundled with ASan by default, and it sweeps the entire heap **when the program exits normally**, pulling out the blocks that are "allocated but pointed to by no pointer at all". What it reports is the "definitely lost" entry in the "still reachable / definitely lost" classification. This is the same leak-detection idea as memcheck's (both sweep the heap at exit); LSan just happens to be part of the ASan toolchain.
 
-> **What about daemons?** LSan by default only sweeps when the program `exit`s; a long-running daemon/service doesn't exit on its own. You can signal it to dump mid-run: `ASAN_OPTIONS=abort_on_error=0:detect_leaks=1` combined with `kill`, or use LSan's `__lsan_do_leak_check()` API to trigger a scan from inside the code. On the Valgrind side the equivalent move is to `kill` the memcheck process from another terminal so it prints its output (the notes mentioned this trick).
+> **What about daemons?** LSan by default sweeps only when the program `exit`s, and a long-running daemon/service process doesn't exit on its own. In that case you can signal it to dump mid-run: `ASAN_OPTIONS=abort_on_error=0:detect_leaks=1` combined with `kill`, or use LSan's `__lsan_do_leak_check()` API to trigger a scan actively from inside the code. On the Valgrind side, the corresponding move is to `kill` the memcheck process from another terminal so it prints its output (the original notes mentioned this trick).
 
 ### 4.5 malloc paired with delete — alloc/dealloc mismatch
 
@@ -331,9 +329,9 @@ allocated by thread T0 here:
     ...
 ```
 
-`alloc-dealloc-mismatch (malloc vs operator delete)`: ASan records for every allocation "who requested it", and at deallocation time compares; `malloc` paired with `delete` doesn't match, reported on the spot. memcheck catches the same class (manual 4.2.5 "freed with an inappropriate deallocation function"); the two sides are aligned.
+`alloc-dealloc-mismatch (malloc vs operator delete)`: ASan records for every allocation "which function requested it"; at deallocation it compares, `malloc` paired with `delete` doesn't match, reported on the spot. memcheck catches the same class (manual 4.2.5, "freed with an inappropriate deallocation function"); the two sides' capabilities are aligned here.
 
-> **Platform difference note**: this `alloc-dealloc-mismatch` check is **off by default on Windows** (MSVC's ASan, because on Windows `delete` and `free` are often effectively equivalent). Linux/macOS turn it on by default. If you're on Windows and notice this class of error isn't caught, check `ASAN_OPTIONS=alloc_dealloc_mismatch=1`.
+> **Platform difference note**: this `alloc-dealloc-mismatch` check is **off by default on Windows** (MSVC's ASan, because on Windows `delete` and `free` are often effectively equivalent). On Linux/macOS it's on by default. If you're on Windows and notice this class of error isn't being caught, try `ASAN_OPTIONS=alloc_dealloc_mismatch=1`.
 
 ### 4.6 Double free
 
@@ -354,17 +352,17 @@ freed by thread T0 here:
     ...
 ```
 
-`attempting double-free`: after the first `free`, the shadow byte flips to `fd`; on the second `free` of the same address, ASan sees it's already in `fd` state (freed) and rules it a double-free. It even helpfully tells you "the previous free was on line 48".
+`attempting double-free`: after the first `free`, the shadow byte flips to `fd`; when the same address is `free`'d a second time, ASan sees it's already in the `fd` state (freed) and rules it a double-free outright. It even thoughtfully tells you "the previous free was on line 48".
 
 ### 4.7 Bonus: stack use-after-return
 
-ASan can also catch something memcheck historically had great trouble with: **a stack frame being accessed after it returns** (the function has returned, but the caller still holds a pointer to a local inside it). This has to be turned on explicitly:
+ASan can also catch something memcheck historically had great trouble with: **a stack frame being accessed after it returns** (the function has returned, but the caller still holds a pointer to one of its locals). This one has to be enabled explicitly:
 
 ```cpp
 // suar2.cpp
 #include <cstdio>
 static int* g = nullptr;
-void stash() { int local = 0xc0ffee; g = &local; }  // store a local's address outward
+void stash() { int local = 0xc0ffee; g = &local; }  // stash the local's address outward
 int main() { stash(); return *g; }                   // local died when stash returned
 ```
 
@@ -386,13 +384,13 @@ HINT: this may be a false positive if your program uses some custom stack unwind
 SUMMARY: AddressSanitizer: stack-use-after-return /tmp/asand/suar2.cpp:4 in main
 ```
 
-Note the address `0x6da50b8f0020`: it sits **very far forward** in the process address space (not the normal stack region), because with `detect_stack_use_after_return` on, ASan moves "locals that might be pointed to by escaping pointers" onto a dedicated "fake stack"; when the function returns, that fake-stack region is poisoned, and any further access reports `stack-use-after-return` (shadow byte `f5`). It's off by default because of some overhead and a few false positives (see that HINT). But this kind of "still using stack memory after the function returned" bug is extremely hard to track down, and it's worth knowing the trick exists.
+Notice the address `0x6da50b8f0020`: it sits **far forward** in the process address space (not the normal stack region), because with `detect_stack_use_after_return` on, ASan moves the "locals that might be pointed to by escaping pointers" onto a dedicated "fake stack"; when the function returns, that fake-stack region is poisoned, and any further access reports `stack-use-after-return` (shadow byte `f5`). It's off by default because of some overhead and a few false positives (see that HINT). But this kind of "still using stack memory after the function returned" bug is brutally hard to track down, so it's worth knowing the trick exists.
 
-## 5. Using Valgrind: feed the above errors to memcheck
+## 5. Using Valgrind: feed those errors to memcheck
 
-With theory covered, let's feed the same `cases.cpp` from section 4 (this time built without `-fsanitize=`, plain compile) into valgrind and see how memcheck reports the same batch of errors, the two dialects face to face; only side-by-side comparison reads clearly. This machine uses valgrind 3.25.1.
+With the theory covered, let's stuff the very same `cases.cpp` from section 4 (this time built plainly, without `-fsanitize=`) into valgrind and see how memcheck reports the same batch of errors — the two dialects face to face, since only a side-by-side reads clearly. This machine uses valgrind 3.25.1.
 
-First, build a clean version with `-g` (valgrind doesn't need ASan's instrumentation, but it does need `-g` to give line numbers in the report):
+First build a clean version with `-g` (valgrind doesn't need ASan's instrumentation, but it does need `-g` to put line numbers in the report):
 
 ```bash
 g++ -std=c++20 -g -O0 cases.cpp -o cases_plain
@@ -400,15 +398,15 @@ g++ -std=c++20 -g -O0 cases.cpp -o cases_plain
 # Most common: full memcheck leak check
 valgrind --tool=memcheck --leak-check=full ./cases_plain 4
 
-# Go harder: list still-reachable too + follow child processes
+# Go harder: also list still-reachable blocks + follow child processes
 valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all --trace-children=yes ./cases_plain
 ```
 
-A few key parameters: `--leak-check=full` does a full leak check (with line numbers); `--show-leak-kinds=all` lists even the "still reachable" blocks (blocks that still have a pointer pointing at them, that in theory could still be freed) (the older `--show-reachable=yes` is an alias, still works but is no longer recommended); `--trace-children=yes` follows child processes from `fork`/`exec`. To switch tools, change `--tool=`: `callgrind`, `cachegrind`, `helgrind`, `drd`, `massif`.
+A few key parameters: `--leak-check=full` does the full leak check (with line numbers); `--show-leak-kinds=all` lists even the "still reachable" blocks (blocks that still have a pointer to them, that in theory could still be freed — the older `--show-reachable=yes` is an alias for it, still works but is no longer recommended); `--trace-children=yes` follows child processes spawned via `fork`/`exec`. To switch tools, change `--tool=`: `callgrind`, `cachegrind`, `helgrind`, `drd`, `massif`.
 
 ### 5.1 The same UAF, memcheck's report
 
-Run case 2 (the same use-after-free from section 4):
+Run case 2 (the very use-after-free from section 4):
 
 ```text
 $ valgrind --tool=memcheck --leak-check=full ./cases_plain 2
@@ -428,14 +426,14 @@ uaf=42
 ==453796== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 0 from 0)
 ```
 
-Notice the line numbers: `cases.cpp:20` read, `:19` free, `:17` malloc, **exactly the same** as ASan reported in section 4 (ASan's side also had :20/:19/:17). The same bug, both tools locate it to the same lines; only the dialect differs:
+Watch the line numbers: `cases.cpp:20` read, `:19` free, `:17` malloc — **exactly the same** as ASan reported in section 4 (ASan's side also said :20/:19/:17). One bug, both tools locate it to the same lines; only the dialect differs:
 
 - ASan says `heap-use-after-free` + `located 0 bytes inside of 4-byte region`;
 - memcheck says `Invalid read of size 4` + `Address ... is 0 bytes inside a block of size 4 free'd`.
 
-memcheck also adds `Block was alloc'd at ... :17`: its A-bit ledger records this memory's "life" (where it was allocated, where freed, now being read again), giving you the whole causal chain at once, the same idea as ASan's "allocated by / freed by" three-part report in two different wordings.
+memcheck adds one more line, `Block was alloc'd at ... :17`: its A-bit ledger has recorded this memory's entire "life" (where it was requested, where it was freed, and now being read again), handing you the whole causal chain at once — the same idea as ASan's "allocated by / freed by" three-parter, in two different wordings.
 
-### 5.2 Leaks: LEAK SUMMARY vs LSan
+### 5.2 Leaks: LEAK SUMMARY lined up against LSan
 
 Run case 4 (deliberately not freed):
 
@@ -456,38 +454,38 @@ $ valgrind --tool=memcheck --leak-check=full ./cases_plain 4
 ==453446== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 0 from 0)
 ```
 
-`definitely lost: 4 bytes`, matching section 4's LSan `Direct leak of 4 byte(s)` on the ASan side. Both "sweep the heap at program exit"; memcheck just splits leaks into four tiers (`definitely lost / indirectly lost / possibly lost / still reachable`, finer-grained), while LSan by default reports only the `Direct` and `Indirect` tiers. The line number is again `:34`, matching ASan.
+`definitely lost: 4 bytes`, lining up against section 4's `Direct leak of 4 byte(s)` from LSan on the ASan side. Both "sweep the heap at program exit"; memcheck just splits leaks into four tiers (`definitely lost / indirectly lost / possibly lost / still reachable` — finer-grained), while LSan by default reports only the `Direct` and `Indirect` tiers. The line number is again `:34`, matching ASan.
 
-> **Don't go download the source tarball and compile it by hand.** The install flow the notes give is `tar -jxvf valgrind-3.12.0.tar.bz2 && ./configure && make && sudo make install`; `3.12.0` is from 2016, **ten years ago**, and it handles modern kernels/new CPU instructions (like recent AVX) poorly, so freshly built programs tend to throw all kinds of errors. These days just use the distro package: Debian/Ubuntu `apt install valgrind`, Fedora/RHEL `dnf install valgrind`, Arch `pacman -S valgrind`; what you get is a 3.2x version (this machine has 3.25.1).
+> **Stop downloading the source tarball to build by hand.** The install flow the original notes give is `tar -jxvf valgrind-3.12.0.tar.bz2 && ./configure && make && sudo make install`. `3.12.0` is the 2016 release — **ten years ago** — and it handles modern kernels and newer CPU instructions (recent AVX, for instance) poorly, so freshly built programs tend to throw all kinds of errors. These days just use the distro package: Debian/Ubuntu `apt install valgrind`, Fedora/RHEL `dnf install valgrind`, Arch `pacman -S valgrind` — what you get is a 3.2x version (this machine has 3.25.1).
 
-## 6. How to choose between the two routes
+## 6. Choosing between the two routes
 
-With all that said, when do you use which? Here's a field-tested decision:
+After all that: when exactly do you use which? Here's a field-tested decision:
 
-**Default to ASan.** For daily development and the memory-error detector hung in CI, ASan is the first choice: it's fast (2x slower vs 20-50x, CI can live with that), cross-platform (Windows/macOS/Linux all work, MSVC supports it too), and the reports are clean. In modern C++ projects, `-fsanitize=address,undefined` is almost the standard debug-build config. vol1's [Dynamic memory management](../../vol1-fundamentals/ch12/02-new-delete.md) covers ASan for leak hunting, and vol5's concurrency debugging covers TSan; both are tools on this same route.
+**Default to ASan.** For daily development and the memory-error detector you keep hooked into CI, ASan is the first choice: it's fast (2x slower vs 20-50x, which CI can live with), cross-platform (Windows/macOS/Linux all covered, MSVC included), and its reports are clean. In modern C++ projects, `-fsanitize=address,undefined` is practically the standard debug-build configuration. Volume 1's [Dynamic Memory Management](../../vol1-fundamentals/ch12/02-new-delete.md) covers ASan for catching leaks, and volume 5's concurrency debugging covers TSan — both are tools on this same route.
 
 **These scenarios demand Valgrind:**
 
-1. **Binary only, no source**, or recompilation is too costly (a huge legacy project, say). ASan must recompile; Valgrind runs on a stock binary.
-2. **You need to catch uninitialized reads, but you only have GCC**. ASan has no V-bit, and MSan is Clang-only; for a GCC-built project to catch uninitialized reads, memcheck is right there.
-3. **You need performance profiling** (callgrind/cachegrind/massif). These tools have no ASan equivalent at all; cache misses, heap growth curves, and call graphs only come from the Valgrind suite.
-4. **You need full coverage, including third-party libraries not built with ASan**. Valgrind intercepts at the instruction level and catches memory errors even in a sourceless `.so`; ASan only covers instrumented code.
+1. **Binary only, no source**, or recompilation is too costly (a huge legacy project, say). ASan must recompile; Valgrind runs the stock binary as-is.
+2. **You need to catch uninitialized reads but only have GCC**. ASan has no V-bit, and MSan is Clang-only; for a GCC-built project that needs to catch uninitialized reads, memcheck is right there.
+3. **You need performance profiling** (callgrind/cachegrind/massif). These tools have no ASan counterpart at all; if you want cache misses, heap growth curves, and call graphs, the Valgrind suite is the only place to get them.
+4. **You need wholesale coverage, including third-party libraries not built with ASan**. Valgrind intercepts at the instruction level, catching memory errors even inside a .so with no source; ASan covers only instrumented code.
 
-Conversely, **these are things Valgrind can't do, or does poorly, and need ASan**: catching stack/global array overflow (ASan's stack/global redzones are a strength), running fast (CI-friendly), the Windows platform (Valgrind basically doesn't support Windows), catching stack-use-after-return (ASan has a dedicated fake-stack mechanism).
+Conversely, **these are the jobs Valgrind can't do, or does poorly, where you need ASan**: catching stack-array/global-array overflow (ASan's stack/global redzones are a strength), running fast (CI-friendly), the Windows platform (Valgrind basically doesn't support Windows), and catching stack-use-after-return (ASan has a dedicated fake-stack mechanism).
 
-One-sentence summary: **ASan is the "development-phase" standard, Valgrind is the "weird bugs / performance / legacy binary" specialist.** They aren't a replacement relationship, they're complementary: many teams hang ASan in CI for daily gatekeeping, and turn to Valgrind for a second look when ASan can't pin down a weird problem.
+One-sentence summary: **ASan is the "development-phase" standard; Valgrind is the specialist clinic for "weird bugs / performance / legacy binaries".** They aren't a replacement relationship, they're complementary: plenty of teams hang ASan in CI for daily gatekeeping, and turn to Valgrind for a second look when a weird problem ASan can't catch shows up.
 
 ## 7. Back to C++: tools are the safety net, RAII is the cure
 
-After a whole article on tools, we have to pull the thread back: **no matter how strong these tools are, they "catch bugs after the fact", they don't "eliminate bugs".** What actually makes memory errors vanish at the root is C++'s RAII and smart pointers.
+A whole article on tools, and at the end we must pull the thread back: **however strong these tools are, they "catch bugs after the fact" — they don't "eliminate bugs".** What actually makes memory errors vanish at the root is C++'s RAII and smart pointers.
 
-Looking back at those six errors, you'll see they're **all built on "raw malloc/free, raw pointers"**:
+Look back at those six error classes and you'll find them **all, without exception, built on "raw malloc/free, raw pointers"**:
 
-- Leaks? With `std::unique_ptr` / `std::vector`, the object frees itself when it leaves scope; there's simply no chance to forget `free`;
-- use-after-free? Smart-pointer ownership semantics turn "can this memory still be used" into something the compiler can enforce;
-- double-free? `unique_ptr` can't be copied, and after a move the source is nulled out, so a double is physically impossible;
-- Overflow? `std::vector` with `.at()` throws an exception, `std::span` carries a bound; don't use raw `[]` with a hand-managed length.
+- Leaks? With `std::unique_ptr` / `std::vector`, the object frees itself when it leaves scope — there's simply no chance to forget the `free`;
+- use-after-free? Smart-pointer ownership semantics turn "may this memory still be used" into something the compiler can constrain;
+- double-free? `unique_ptr` can't be copied, and a move nulls out the source pointer — a double is physically impossible;
+- out-of-bounds? `std::vector` with `.at()` throws, and `std::span` carries its bounds; don't use raw `[]` with a hand-managed length.
 
-C-style `malloc`/`free`/raw pointers throw "when memory gets freed, who can access it" entirely onto the programmer to remember, and the human brain inevitably gets this wrong, which is exactly why "accounting tools" like Valgrind and ASan exist as a safety net. Modern C++ moves this accounting **into the type system**: a resource's lifetime is bound to an object, and the compiler guarantees release for you. That's the fundamental leap from "tools catch bugs" to "the language eliminates bugs", which vol1's [Dynamic memory management](../../vol1-fundamentals/ch12/02-new-delete.md) is entirely about.
+C-style `malloc`/`free`/raw pointers throw "when does memory get freed, who may access it" entirely onto the programmer to remember, and the human brain inevitably gets this wrong — which is exactly why "bookkeeping tools" like Valgrind and ASan exist as the safety net. Modern C++'s idea is to **move that bookkeeping into the type system**: a resource's lifetime is bound tightly to an object, and the compiler guarantees the release for you. This is the fundamental leap from "tools catch bugs" to "the language eliminates bugs" — the entire subject of volume 1's [Dynamic Memory Management](../../vol1-fundamentals/ch12/02-new-delete.md).
 
-But this **does not** mean a Modern C++ project can do without ASan/Valgrind. As long as your code still calls C libraries, still uses `new`/`delete`, still touches third-party interfaces without RAII wrappers, memory errors still have a seam to slip through. So the right posture is: **first use RAII to eliminate 99% of memory errors at write time, then use ASan to surface the 1% that slips through during testing, and finally keep Valgrind as the safety net for the weirdest cases.** Three layers of defense, none optional.
+But this does **not** mean a Modern C++ project can do without ASan/Valgrind. As long as your code still calls C libraries, still uses `new`/`delete`, still touches third-party interfaces without RAII wrappers, memory errors still have a seam to slip through. So the right posture is: **first use RAII to eliminate 99% of memory errors at the moment you write the code; then use ASan to catch the escaped 1% during testing; and finally keep Valgrind as the fallback for the strangest, hardest cases.** Three lines of defense — not one of them optional.

@@ -1,6 +1,6 @@
 ---
 title: "Why C++, and by what right?"
-description: "Four firmwares that differ only in how they blink an LED, on one simulator and at one optimization level — we put C++'s supposed bloat on the scale and weigh its true worth: the template version matches the HAL version instruction for instruction, not one byte off; the old 'C++ equals OOP' impression gets verified on the spot too — the money for virtual functions is only spent where the scenario calls for it, and sometimes the compiler even waives the fee"
+description: "Four firmwares that differ only in how they blink an LED, on the same simulator and at the same optimization level, put on the scale to weigh C++'s supposed heaviness and find its true weight: the template version matches the HAL version instruction for instruction, not one byte off; the old 'C++ equals OOP' impression gets verified on the spot too — the money for virtual functions is only spent where the scenario calls for it, and sometimes the compiler even waives the fee"
 chapter: 0
 order: 0
 tags:
@@ -16,10 +16,10 @@ related:
   - "When to use C++"
 translation:
   source: documents/vol8-domains/embedded/f103/00-env-setup/00-why-cpp.md
-  source_hash: 07012d9430a9ff57ad0ed882bda4450a7efd95eaf0c617104db0f7e1c4b70990
-  translated_at: '2026-09-25T08:26:47+00:00'
+  source_hash: e4cc5e5973ff600956f60095fad16ff28f089a9d1bc64e361c6fb7949db957a2
+  translated_at: '2026-09-27T05:27:24+00:00'
   engine: anthropic
-  token_count: 12000
+  token_count: 11700
 ---
 
 # Why C++, and by what right?
@@ -28,7 +28,7 @@ To be clear up front: I am not a C++ pyramid-scheme evangelist, and I don't want
 
 > "Why C++, and by what right? Everybody writes C, you know — will something this fancy actually work?"
 
-That was my inner monologue back when I got roped into building a fun little project to train the junior cohort one year below us, and my good friend @Dessera started chewing this topic over with me. At the time I was a traditionalist (sadly, a traditionalist with lousy skills), thoroughly steeped in the stereotype-driven talking points:
+That was what went through my head back when I got roped into building a fun little project to train the junior students one year below us, and my good friend @Dessera started chewing this topic over with me. At the time I was a traditionalist (sadly, a traditionalist with lousy skills), thoroughly steeped in the stereotype-driven talking points:
 
 Let me stand at attention and recite the litany:
 
@@ -38,7 +38,7 @@ Let me stand at attention and recite the litany:
 
 What I heard were variations on all of these, and some of you on the other side of the screen may have charged in precisely to mock me with them. That's fine — it's normal. For the record: Jacob Beningo's embedded consulting team, citing industry surveys, says C still drives more than sixty percent of embedded projects worldwide<RefLink :id="1" preview="Beningo, The Best Embedded Programming Languages for Engineers Now, 2024" />; and Amar Mahmutbegović's 2025 Packt book *C++ in Embedded Systems* devotes its entire first chapter to Debunking Common Myths — the myth being busted is precisely the thirty-year-old line that "C++ bloats code and costs you at runtime"<RefLink :id="2" preview="Mahmutbegović, C++ in Embedded Systems, Packt, 2025, Ch.1" />. When people write whole books dedicated to busting a myth, you know how far and wide it has traveled.
 
-But folks, this tutorial refuses to stop at "hey, you're not smarter than your ancestors" — that is not learning in the spirit of verification. What we are going to do is put a real side-by-side comparison on the table, and walk all the way through a complete, typical embedded device-driver development flow. Walk it end to end, measure with code, let the data do the talking — that, I believe, is the attitude of someone who does engineering.
+But folks, this tutorial flatly refuses to stop at "hey, you think you're cleverer than your ancestors" — that is not learning in the spirit of verification. What we are going to do is put a real side-by-side comparison on the table, and walk all the way through a complete, typical embedded device-driver development flow. Walk it end to end, measure with code, let the data do the talking — that, I believe, is the attitude of someone who does engineering.
 
 ## A quick smoke test
 
@@ -81,11 +81,11 @@ Ahem — show the project! We are all outstanding engineers here; we don't trust
 The heart of the skeleton is `clock.hpp` — the name says it, it initializes the clock. All four firmwares share it letter for letter; here it is in full:
 
 ```cpp
-// clock.hpp — clock configuration: pull the chip from the power-on default internal 8 MHz up to PLL 64 MHz
+// clock.hpp —— clock configuration: pull the chip from the power-on default internal 8 MHz up to PLL 64 MHz
 #pragma once
 #include "stm32f1xx_hal.h"
 
-// HSI 8M ÷2 ×16 = 64M PLL, APB1 ÷2, flash latency 2
+// HSI 8M ÷2 ×16 = 64M PLL,APB1 ÷2,flash latency 2
 static void SystemClock_Config() {
     RCC_OscInitTypeDef osc{};
     osc.OscillatorType = RCC_OSCILLATORTYPE_HSI;
@@ -157,7 +157,7 @@ void _fini(void) {}
 
 Two empty functions; for their story, just read the comment: the link option `-nostartfiles` discards the C runtime's default `_init`/`_fini`, while newlib's `__libc_init_array` — the initiator of global constructors — insists on calling them. Without these two empty stubs, the link fails outright.
 
-Our build criteria are unified too: the same CMake toolchain file (which explicitly carries `-fno-exceptions -fno-rtti` — a detail the third weigh-in will need), the same linker script (the C8T6's 64K Flash / 20K SRAM memory layout), and uniformly Release (`-O3 -DNDEBUG`).
+Our build conditions are unified too: the same CMake toolchain file (which explicitly carries `-fno-exceptions -fno-rtti` — a detail the third weigh-in will need), the same linker script (the C8T6's 64K Flash / 20K SRAM memory layout), and uniformly Release (`-O3 -DNDEBUG`).
 
 **Alright! Everyone sit up!** I shall now, humbly, present the differences. Bachelor No. 1 chose to go straight all-in on bare registers! Ribbit! A true embedded hotshot, yes sir!
 
@@ -252,7 +252,7 @@ Um, this may look a bit slapdash. I am currently developing micro-forge, an open
 
 I verified all four in the simulator by sampling on virtual time; the output register read back alternates in pairs between `0x00002000` and `0x00000000`.
 
-## Oh, and then? Where's your argument? Hurry up
+## Oh, and then what? Where is your argument? Out with it
 
 You scared the "think" tags right out of me. No rush: the four firmwares are built inside a separate comparison project I set up (the library ships no ready-made bare-register or OOP versions); we just point it at the path of the cloned library:
 
@@ -285,7 +285,7 @@ OOP                5520      12       4
 
 The template version and the HAL version are **identical to the byte** — the row in this whole table that deserves our extra glance. That template wrapping — "the port is a type parameter, the pin is a type parameter, the direction is a type parameter, and the polarity is still a type parameter" — costs zero size in the final firmware. The bare-register version saves 28 bytes; that difference comes from it not calling `HAL_GPIO_Init` and `HAL_GPIO_WritePin`, so the linker simply strips those two unreferenced functions out of the firmware. A 5.4 KB Flash footprint (text 5520 + data 12) may sound like a lot, but the C8T6 has 64 KB, and the bulk of that 5.4 KB is the shared skeleton — clock configuration, `HAL_Delay`, the serial stubs — none of which has anything to do with how you blink an LED.
 
-## Oho, what an amateur — judging by size alone?
+## Oh-ho, what an amateur — judging by size alone
 
 No, no, that's not it — we still have to profile by viewing Assembly, right? An unchanged size can be hand-waved as coincidence, so let's drill one layer down and dig the machine code out for a face-off. The machine-code digger is `arm-none-eabi-objdump`: add `-d` to expand all instructions, and `--disassemble=main` to make it spit out only the `main` function:
 
@@ -325,7 +325,7 @@ So how much more expensive is the HAL path than bare registers? We `bl` over the
 
 One call plus four instructions — and what we buy with it is not having to memorize details like "PC13's configuration bits sit at bits 20 through 23 of CRH". Whether that price is worth paying is every team's own trade-off, but a trade-off should at least be weighed with real numbers: the impression that "C++ is big" mostly comes from mistaking the worst way of writing it for the whole of the language.
 
-## Is C++'s OOP just plain bloated? Not necessarily! But stay careful
+## Is C++'s OOP just plain bloated? Not necessarily — but stay careful
 
 There is a fourth row in the size table worth stopping on: the OOP version is also 5520, identical to the HAL version to the byte. A little counterintuitive, no? Don't virtual functions have to go through indirect calls and drag a vtable along? Let's check the vtable in the fourth firmware:
 
@@ -347,7 +347,7 @@ So when do virtual functions actually charge you RAM? Let's build a fifth firmwa
 80001a2: 4798        blx  r3             ; indirect call
 ```
 
-This time the vtable really is in the firmware (`_ZTV7GpioPin`, lying in Flash); every object grows an extra 4-byte vptr at its head, and every call costs two extra memory reads plus an indirect jump. This firmware's text climbs to 5964, and data from 12 to 96 — those extra bytes we pay are the true cost of virtual functions.
+This time the vtable really is in the firmware (`_ZTV7GpioPin`, sitting right there in Flash); every object grows an extra 4-byte vptr at its head, and every call costs two extra memory reads plus an indirect jump. This firmware's text climbs to 5964, and data from 12 to 96 — those extra bytes we pay are the true cost of virtual functions.
 
 So the sentence "C++ means OOP" is wrong in two places in an embedded context — and in my opinion, spectacularly so!
 
@@ -355,7 +355,7 @@ First: when modern C++ writes embedded code, its main force is simply not inheri
 
 Second: even if one day you genuinely need runtime polymorphism (say, a plugin-style protocol stack), the money paid for virtual functions is the price of the requirement "we don't know who gets called until runtime" — not a toll the language forcibly collects. And that requirement itself, in C, you would pay for too, with a struct of function pointers — that is a hand-written vtable in C. That cost, I am afraid, genuinely cannot be saved — unless the optimization level is cranked absurdly high.
 
-## When do errors get caught
+## When errors get caught
 
 "What you C++ folks cook up is a bowl of soggy porridge — so what? Can't C do all this too?"
 
@@ -388,9 +388,9 @@ Compilation is refused on the spot, and the error message answers all three ques
 
 If this is not enough to win you over, what will be! So — come with me, and let's find out together what embedded development under real modern C++ is actually like!
 
-## Hey hey! A few words before you go — don't skip to the next article yet~
+## Hey hey, a few parting words before you race off to the next article
 
-Finally, two notes on methodology. Every number in the main text comes from Release builds (`-O3 -DNDEBUG`); if you manually specify another level or skip optimization entirely, the numbers will change — **the "zero" in zero-overhead abstraction presupposes optimization being on** — and we will tackle that head-on in the later performance-related stations. As for the bare-register and OOP versions, the library's `examples/` does not ship them ready-made: following the skeleton and difference snippets pasted in the main text, add two targets to your own project and you can reproduce them — a perfect hands-on exercise for this station.
+Finally, two premises to state up front. Every number in the main text comes from Release builds (`-O3 -DNDEBUG`); if you manually specify another level or skip optimization entirely, the numbers will change — **the "zero" in zero-overhead abstraction presupposes optimization being on** — and we will tackle that head-on in the later performance-related stations. As for the bare-register and OOP versions, the library's `examples/` does not ship them ready-made: following the skeleton and difference snippets pasted in the main text, add two targets to your own project and you can reproduce them — a perfect hands-on exercise for this station.
 
 <ReferenceCard title="References">
   <ReferenceItem
@@ -399,7 +399,7 @@ Finally, two notes on methodology. Every number in the main text comes from Rele
     title="The Best Embedded Programming Languages for Engineers Now"
     :year="2024"
     url="https://www.beningo.com/the-best-embedded-programming-languages-for-engineers-now/"
-    chapter="Industry survey figure: C drives over 60% of embedded projects worldwide"
+    chapter="Survey data: C drives over 60% of embedded projects worldwide"
   />
   <ReferenceItem
     :id="2"

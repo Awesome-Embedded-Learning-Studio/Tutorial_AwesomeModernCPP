@@ -5,17 +5,16 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Wrap `std::thread` using RAII to implement an exception-safe `joining_thread`
-  guard and scope-exit cleanup.
+description: 'Wrap std::thread with RAII: an exception-safe joining_thread guard and scope-exit cleanup'
 difficulty: intermediate
 order: 3
 platform: host
 prerequisites:
-- 线程参数与生命周期
+- Thread Arguments and Lifetime
 reading_time_minutes: 18
 related:
-- mutex 与 RAII 锁
-- jthread 与停止令牌
+- mutex and RAII Locks
+- jthread and Stop Tokens
 tags:
 - host
 - cpp-modern
@@ -25,376 +24,489 @@ title: Thread Ownership and RAII
 translation:
   source: documents/vol5-concurrency/ch01-thread-lifecycle-raii/03-thread-ownership-and-raii.md
   source_hash: 706a89b2a62ad0156e29fedfdb57dc1c52a1c0be4725a6a67ab6fb41e15ccb1a
-  translated_at: '2026-06-16T04:03:18.472569+00:00'
+  translated_at: '2026-09-26T06:31:40+00:00'
   engine: anthropic
-  token_count: 3752
+  token_count: 5400
 ---
 # Thread Ownership and RAII
 
-In the previous post, we clarified parameter passing and lifetime management for `std::thread`. We learned that a `std::thread` object must be either `join()`ed or `detach()`ed before destruction, or the program will immediately `std::terminate`. Frankly, manually calling `join()` every time is tedious—not because it's difficult, but because it's so easy to forget. This is especially true in code paths where exceptions might be thrown; you might jump out of a function in the middle, and the `join()` at the end never gets reached. Even worse, if your function has multiple `return` paths, you have to remember to `join()` in every single one. Missing one is a ticking time bomb.
+In the previous article we sorted out `std::thread` argument passing and lifetime management, and learned that a `std::thread` object must be `join()`ed or `detach()`ed before it is destroyed—otherwise the program calls `std::terminate()` outright. But honestly, calling `join()` manually every time is a chore. Not because it's hard, but because it is far too easy to forget. Especially on code paths where exceptions get thrown, you might leave a function somewhere in the middle and never reach the `join()` at the end. Worse yet, if your function has multiple `return` paths, every single one of them has to remember to `join()`—miss one, and you're sitting on a time bomb.
 
-In this post, our goal is simple: wrap `std::thread` using RAII to automate resource management. We will start with the move semantics of `std::thread` to understand what "thread ownership" really means. Then, we will implement `thread_guard` and `joining_thread` step-by-step—the latter is essentially the predecessor to C++20's `std::jthread`. Finally, we will discuss exception safety, managing threads in containers, and a practical exercise.
+What we do in this article is simple: wrap `std::thread` in RAII and make resource management automatic. We'll start from the move semantics of `std::thread` and pin down what "thread ownership" actually means, then implement `thread_guard` and `joining_thread` step by step—the latter being essentially the forerunner of C++20 `std::jthread`. Finally we'll discuss exception safety, managing threads in containers, and a set of practical exercises.
 
-## `std::thread` is Move-Only
+## std::thread Is Move-Only
 
-First, let's establish a basic fact: `std::thread` is non-copyable. You cannot assign a thread object to another, nor pass it around by value. The reason is simple: an operating system thread can only be managed by one `std::thread` object at any given moment. If copying were allowed, two objects would attempt to manage the same underlying thread, creating a semantic ambiguity.
+First, get one basic fact straight: `std::thread` is not copyable. You cannot assign one thread object to another, and you cannot transfer it by passing it by value. The reason is simple—an operating system thread can be managed by only one `std::thread` object at a time. If copying were allowed, you could end up with two objects trying to `join()` the same underlying thread, which is semantically impossible to define.
 
-Therefore, `std::thread` only supports move semantics. When you move a `std::thread` object to another object, ownership of the underlying thread transfers from the source to the target, leaving the source "empty" (as if it were default constructed). We can verify this with a simple example:
+So `std::thread` supports move semantics only. When you move a `std::thread` object into another object, ownership of the underlying thread transfers from the source object to the destination, and the source becomes "empty" (`joinable() == false`). The simplest example is enough to verify this:
 
 ```cpp
-std::thread t1([]{
-    std::cout << "Thread 1 running\n";
-});
+#include <thread>
+#include <iostream>
 
-std::thread t2 = std::move(t1);
-
-// t1 is no longer associated with any thread
-if (t1.joinable()) {
-    // This will not execute
-    t1.join();
+void worker()
+{
+    std::cout << "Worker thread running\n";
 }
 
-t2.join();
+int main()
+{
+    std::thread t1(worker);
+    std::cout << "t1 joinable: " << t1.joinable() << "\n";  // true
+
+    std::thread t2 = std::move(t1);  // Ownership transfer
+    std::cout << "t1 joinable after move: " << t1.joinable() << "\n";  // false
+    std::cout << "t2 joinable after move: " << t2.joinable() << "\n";  // true
+
+    t2.join();  // t2 is now the one managing the thread
+    return 0;
+}
 ```
 
-You will notice that after the move, `t1` no longer manages any thread—it becomes a "shell." All operations on this thread (`join`, `detach`) must now go through `t2`. This move-only design ensures that there is always only one owner with control over the underlying thread, fundamentally eliminating the chaos of "two objects joining the same thread."
+You will find that after the move, `t1` no longer manages any thread—it has become an "empty shell". Every operation on that thread (`join()`, `detach()`) must now go through `t2`. This move-only design guarantees that at any moment exactly one object holds control of the underlying thread, rooting out the chaos of "two objects joining the same thread" once and for all.
 
-This "unique owner" semantics is very similar to `std::unique_ptr`—`std::unique_ptr` is also non-copyable and move-only, leaving the source as a `nullptr` after the move. In fact, many resource management types in the C++ standard library adopt this pattern: `std::unique_ptr`, `std::fstream`, `std::unique_lock`. This is no coincidence; it is a direct reflection of RAII philosophy—the resource lifecycle is managed by a unique owner, and the resource is automatically released when the owner is destroyed.
+This "sole owner" semantics is very similar to `std::unique_ptr`—a `unique_ptr` is likewise non-copyable and movable only, and after a move the source pointer becomes `nullptr`. In fact, quite a few resource-managing types in the C++ standard library follow this pattern: `std::fstream`, `std::unique_lock`, and `std::future` are all move-only. That is no coincidence but the direct expression of the RAII design philosophy—the lifetime of a resource is managed by a single unique owner, and the resource is released automatically when that owner is destroyed.
 
-### Returning `std::thread` from Functions
+### Returning a std::thread from a Function
 
-A very practical scenario for move semantics is returning `std::thread` objects from functions. Because return values in C++ are optimized (RVO/NRVO), returning a `std::thread` is perfectly legal even though it is not copyable:
+One very practical use case for move semantics is returning a `std::thread` object from a function. Because return values in C++ are optimized (RVO/NRVO), returning a `std::thread` is perfectly legal even though `std::thread` is not copyable:
 
 ```cpp
-std::thread create_worker() {
-    return std::thread([]{
-        std::cout << "Worker thread running\n";
-    });
+#include <thread>
+#include <iostream>
+
+void background_task(int id)
+{
+    std::cout << "Background task " << id << " running\n";
 }
 
-int main() {
-    std::thread t = create_worker();
+std::thread make_worker(int id)
+{
+    return std::thread(background_task, id);
+    // Or, written more explicitly:
+    // std::thread t(background_task, id);
+    // return t;  // Implicit move or NRVO
+}
+
+int main()
+{
+    std::thread t = make_worker(42);
     t.join();
+    return 0;
 }
 ```
 
-Here, the `std::thread` object returned by `create_worker` is passed to `t` in `main` via a move (or constructed directly on the caller's stack via NRVO). The thread ownership transfers from inside the function to the caller. This pattern is common in scenarios like thread pools and task schedulers—factory functions create threads, and callers manage their lifecycles.
+Here the `std::thread` object returned by `make_worker` is passed to `t` in `main` via a move (or, with the NRVO optimization, constructed directly on the caller's stack), so ownership of the thread moves from inside the function to the caller. This pattern is very common when building thread pools, task schedulers, and the like—the factory function is responsible for creating the thread, and the caller is responsible for managing its lifetime.
 
-## Thread Ownership Semantics: Who is Responsible for join/detach
+## Thread Ownership Semantics: Who Is Responsible for join/detach
 
-In the last post, we mentioned that the destructor of `std::thread` calls `std::terminate()`—if the thread is still `joinable()`. This design is intentional. The standard committee reasoned that if a thread object is destroyed without being joined or detached, it is almost certainly a programmer error (forgotten or logic hole). Silently joining could lead to hard-to-debug hangs, and silently detaching could lead to accessing destroyed variables. So, the standard chose the most "jarring" approach—terminate the program immediately to force you to face the issue.
+As we said in the previous article, the destructor of `std::thread` calls `std::terminate()`—if the thread is still `joinable()`. This design is intentional: the standards committee's reasoning was that if a thread object is destroyed without having been joined or detached, that is almost certainly a programmer error (a forgotten call or a logic hole); silently joining could cause hard-to-debug hangs, and silently detaching could lead to accesses to already-destroyed variables. So the standard chose the harshest-sounding option—terminate the program on the spot and force you to face the problem.
 
-But this presents a practical problem: in complex code paths, how do you ensure every path handles the thread correctly? Consider this function:
+But that creates a very real question: in complex code paths, how do you guarantee that every path handles the thread correctly? Consider this function:
 
 ```cpp
-void risky_operation() {
-    std::thread t([]{
-        std::cout << "Doing work\n";
+void process_with_thread()
+{
+    std::thread t([]() {
+        // Some background work...
     });
 
-    // ... some code that might throw an exception ...
+    do_something();        // What if this throws?
+    do_something_else();   // What if this throws?
 
-    t.join(); // If exception thrown above, this is skipped!
+    t.join();              // join happens only if execution reaches here
 }
 ```
 
-If an exception is thrown in `// ... some code ...`, `t.join()` is never executed. The exception propagates up the call stack, `t`'s destructor is called, finds the thread is still `joinable()`, and the program ends in `std::terminate`. The program crashes, potentially leaving you confused.
+If `do_something()` throws an exception, `t.join()` never executes. The exception propagates up the call stack, `t`'s destructor runs, finds the thread still `joinable()`, and it all ends in `std::terminate()`. The program crashes, and you may still be completely puzzled about why.
 
-You might think: just add a `try-catch`? You can, but the code becomes ugly, and you have to do it everywhere `std::thread` is used. The real solution is to automate resource management—this is exactly what RAII excels at.
+You might think: just add a `try-catch` and be done with it? That does work, but the code gets ugly, and you would have to do it everywhere a `std::thread` is used. The real solution is to make resource management automatic—which is precisely what RAII is good at.
 
-## `thread_guard`: Automatic Join in Destructor
+## thread_guard: Automatic Join in the Destructor
 
-Anthony Williams, in *C++ Concurrency in Action*, presents a classic RAII wrapper—`thread_guard`. The idea is straightforward: take a reference to a `std::thread` upon construction, and ensure the thread is joined upon destruction. This way, no matter how the function exits (normal return, exception thrown, early return), the thread is cleaned up correctly.
+Anthony Williams gives a classic RAII wrapper in *C++ Concurrency in Action*—`thread_guard`. The idea is plain: take a reference to a `std::thread` in the constructor, and make sure the thread is joined in the destructor. That way, no matter how the function exits (normal return, thrown exception, early return), the thread is cleaned up correctly.
 
-Let's implement a basic version:
+Let's first implement a basic version:
 
 ```cpp
-class thread_guard {
-    std::thread& t;
-public:
-    explicit thread_guard(std::thread& t_) : t(t_) {}
+#include <thread>
 
-    ~thread_guard() {
-        if (t.joinable()) {
-            t.join();
+class ThreadGuard {
+public:
+    enum class Action { kJoin, kDetach };
+
+    explicit ThreadGuard(std::thread& t, Action action = Action::kJoin)
+        : thread_(t), action_(action)
+    {}
+
+    ~ThreadGuard()
+    {
+        if (thread_.joinable()) {
+            if (action_ == Action::kJoin) {
+                thread_.join();
+            }
+            else {
+                thread_.detach();
+            }
         }
     }
 
-    // Delete copy operations to prevent copying the reference
-    thread_guard(const thread_guard&) = delete;
-    thread_guard& operator=(const thread_guard&) = delete;
+    // Copying and moving are forbidden—a guard must not be moved around
+    ThreadGuard(const ThreadGuard&) = delete;
+    ThreadGuard& operator=(const ThreadGuard&) = delete;
+
+private:
+    std::thread& thread_;  // Note: holds a reference, does not own the thread
+    Action action_;
 };
 ```
 
 Usage looks like this:
 
 ```cpp
-void guarded_operation() {
-    std::thread t([]{
-        std::cout << "Work in thread\n";
-    });
+#include <iostream>
 
-    thread_guard g(t);
+void background_work()
+{
+    std::cout << "Working in background...\n";
+}
 
-    // ... code that might throw ...
+void process()
+{
+    std::thread t(background_work);
+    ThreadGuard guard(t);  // The guard is bound to t
 
-    // No need to manually join, 'g' handles it
+    // Now, no matter what happens here, guard's destructor will join t
+    do_something();        // Even if this throws
+    do_something_else();   // Even if this throws too
+
+    // No manual t.join() needed—the guard takes care of it
 }
 ```
 
-This design has a slightly inelegant aspect: `thread_guard` holds a reference to `std::thread`. This means the `std::thread` object must exist externally and must outlive the `thread_guard`. If the guard is destroyed first, that's fine; it joins the thread. But if the `std::thread` object is destroyed first (e.g., created in a nested scope), the guard's destructor will access a non-existent object—dangling reference, UB.
+This design has one inelegant aspect: `ThreadGuard` holds a reference to the `std::thread`, which means the `std::thread` object must exist on the outside, and its lifetime must be longer than the `ThreadGuard`'s. The other way around is fine—if the guard is destroyed first, no problem, the guard joins the thread. But if the `std::thread` object is destroyed first (say it was created in a more deeply nested scope), the guard's destructor would access an object that no longer exists—a dangling reference, UB.
 
-Another issue is that after `thread_guard` joins, the original `std::thread` object still exists but is now "empty" (non-joinable). This state of "guard and thread separation" can cause confusion in complex code—who actually owns this thread? Who is responsible for its lifecycle?
+Another issue is that after the join, the original `std::thread` object is still there, but it is now `joinable() == false`. This "guard and thread separated" state can breed confusion in complex code—who exactly owns this thread? Who is responsible for its lifetime?
 
-## `joining_thread`: An RAII Wrapper that Takes Ownership
+## joining_thread: An RAII Wrapper That Takes Over Ownership
 
-A cleaner design is to let the wrapper directly **own** the `std::thread`—not hold a reference, but move the thread object into it. This makes ownership crystal clear: the wrapper owns the thread, and the wrapper automatically joins upon destruction. This implementation is `joining_thread`, which is essentially the C++20 `std::jthread` written in C++11:
+A cleaner design is to let the wrapper directly **own** the `std::thread`—not hold a reference to it, but move the thread object in. That makes ownership completely unambiguous: the wrapper owns the thread, and the wrapper joins it automatically on destruction. The implementation of this idea is `joining_thread`, which is essentially the version of C++20 `std::jthread` you could already write in C++11:
 
 ```cpp
-class joining_thread {
-    std::thread t;
+#include <thread>
+#include <utility>
+
+class JoiningThread {
 public:
-    joining_thread() noexcept = default;
+    JoiningThread() noexcept = default;
 
-    // Constructor that takes a std::thread
-    explicit joining_thread(std::thread t_) noexcept : t(std::move(t_)) {}
+    // Accepts any callable and arguments, constructing the thread directly
+    template <typename Callable, typename... Args>
+    explicit JoiningThread(Callable&& func, Args&&... args)
+        : thread_(std::forward<Callable>(func), std::forward<Args>(args)...)
+    {}
 
-    // Constructor for forwarding arguments directly to std::thread
-    template<typename... Args>
-    explicit joining_thread(Args&&... args) : t(std::forward<Args>(args)...) {}
+    // Move-construct from a std::thread—takes over ownership
+    explicit JoiningThread(std::thread t) noexcept
+        : thread_(std::move(t))
+    {}
 
-    ~joining_thread() {
-        if (t.joinable()) {
-            t.join();
+    // Supports moving from another JoiningThread
+    JoiningThread(JoiningThread&& other) noexcept
+        : thread_(std::move(other.thread_))
+    {}
+
+    JoiningThread& operator=(JoiningThread&& other) noexcept
+    {
+        if (this != &other) {
+            // Deal with the currently held thread first
+            if (joinable()) {
+                join();
+            }
+            thread_ = std::move(other.thread_);
         }
-    }
-
-    // Delete copy
-    joining_thread(const joining_thread&) = delete;
-    joining_thread& operator=(const joining_thread&) = delete;
-
-    // Support move
-    joining_thread(joining_thread&& other) noexcept : t(std::move(other.t)) {}
-
-    joining_thread& operator=(joining_thread&& other) noexcept {
-        // First check if we currently hold a thread that needs joining
-        if (t.joinable()) {
-            t.join();
-        }
-        t = std::move(other.t);
         return *this;
     }
 
-    // Expose the underlying thread interface if needed
-    std::thread& get_thread() { return t; }
-    const std::thread& get_thread() const { return t; }
+    // Can also be assigned a brand-new std::thread
+    JoiningThread& operator=(std::thread other) noexcept
+    {
+        if (joinable()) {
+            join();
+        }
+        thread_ = std::move(other);
+        return *this;
+    }
 
-    bool joinable() const noexcept { return t.joinable(); }
-    void join() { t.join(); }
-    void detach() { t.detach(); }
+    ~JoiningThread()
+    {
+        if (joinable()) {
+            join();
+        }
+    }
+
+    void join()
+    {
+        thread_.join();
+    }
+
+    void detach()
+    {
+        thread_.detach();
+    }
+
+    bool joinable() const noexcept
+    {
+        return thread_.joinable();
+    }
+
+    // Access the underlying std::thread (for native_handle, etc.)
+    std::thread& get() noexcept { return thread_; }
+    const std::thread& get() const noexcept { return thread_; }
+
+    // Copying is forbidden
+    JoiningThread(const JoiningThread&) = delete;
+    JoiningThread& operator=(const JoiningThread&) = delete;
+
+private:
+    std::thread thread_;
 };
 ```
 
-You'll find this class interface is almost identical to `std::thread`, with the only addition being the automatic `join` in the destructor. This is the essence of RAII—without changing the interface usage, we add automation to the resource cleanup phase. Usage is nearly identical to raw `std::thread`:
+You will notice this class has almost exactly the same interface as `std::thread`; the only thing added is the automatic `join()` in the destructor. This is precisely the essence of RAII—do not change how the interface is used, just add automation at the resource-cleanup step. Usage is nearly identical to a bare `std::thread`:
 
 ```cpp
-void auto_join_demo() {
-    joining_thread jt([]{
-        std::cout << "Task running\n";
+#include <iostream>
+
+void task(int id)
+{
+    std::cout << "Task " << id << " running\n";
+}
+
+int main()
+{
+    JoiningThread t1(task, 1);  // Joins automatically
+    JoiningThread t2([]() {
+        std::cout << "Lambda task running\n";
     });
 
-    // No need to call jt.join() manually
+    // Construct from a std::thread
+    JoiningThread t3(std::thread(task, 3));
+
+    // No manual join needed—it happens automatically at destruction
+    return 0;
 }
 ```
 
-There is a detail in the move assignment operator worth noting: before taking ownership of the new thread, we must handle the currently held thread. If the current thread is still `joinable()`, we must join it first; otherwise, it becomes an orphaned thread—no one handles it during destruction, and the program will `std::terminate`. This "clean up old before taking new" pattern is common in RAII classes; `std::unique_ptr`'s assignment operator does the same (delete the old pointer before taking ownership of the new one).
+One detail in the move assignment operator is worth noting: before accepting the new thread, you must deal with the thread currently held. If the current thread is still `joinable()`, it must be joined first; otherwise it becomes an ownerless thread—nobody handles it at destruction time, and the program calls `terminate()`. This "clean up the old before taking over the new" pattern is common in RAII classes; `std::unique_ptr`'s assignment operator does the same thing (delete the old pointer first, then take over the new one).
 
-### C++20's `std::jthread`
+### C++20 std::jthread
 
-C++20 finally introduced `std::jthread`. Its behavior is very similar to our `joining_thread`—it automatically joins upon destruction. However, `std::jthread` adds an important feature: **cooperative cancellation**. It internally holds a `std::stop_token`, allowing the thread to be requested to stop execution via `std::stop_source`. We will cover this feature in detail in the later chapter "jthread and Stop Tokens".
+The C++20 standard finally introduced `std::jthread`. Its behavior closely matches our `JoiningThread`—automatic join on destruction. But `std::jthread` comes with one more important capability: **cooperative cancellation**. It holds a `std::stop_source` internally, and you can request that the thread stop executing via `request_stop()`. We will expand on this in detail in the later "jthread and Stop Token" chapter.
 
-If you are already using C++20, just use `std::jthread`. If you are on C++11/14/17, the `joining_thread` above is a perfectly viable alternative. The core idea is the same: use RAII to automate thread lifecycle management and let the compiler guarantee no resource leaks.
+If you are already on C++20, just use `std::jthread`. If you are still on C++11/14/17, the `JoiningThread` above is a perfectly workable substitute. The core idea of the two is the same: automate thread lifetime management with RAII and let the compiler guarantee that resources do not leak.
 
-## Exception Safety: What Happens if `join()` Throws?
+## Exception Safety: What Happens When join() Throws
 
-Now we have an RAII wrapper that auto-joins, so it seems the problem is solved. But the real trap lies ahead—`join()` itself can throw exceptions.
+Now we have an RAII wrapper with automatic join, and the problem looks solved. But the real trap is still ahead—`join()` itself can throw.
 
-When can `join()` throw? The most direct example is if the underlying OS call fails—though this almost never happens in a normal program, the standard does not guarantee `join()` is `noexcept`. If your program calls `join()` in the destructor of `joining_thread`, and `join()` throws an exception, what happens?
+When can `join()` throw? The most direct example is the underlying `pthread_join` call failing—though this almost never happens in a healthy program, the standard does not guarantee that `join()` is `noexcept`. If your program calls `join()` in `JoiningThread`'s destructor and `join()` throws an exception, what happens?
 
-The answer is: throwing an exception in a destructor triggers `std::terminate`. C++ dictates that if a destructor is executing (whether during normal destruction or stack unwinding) and a new exception is thrown and not caught, the program terminates. So if your `joining_thread` throws while `join()`ing during destruction, the program will still crash.
+The answer: an exception thrown during the destructor triggers `std::terminate()`. C++ dictates that if a destructor is executing (whether during normal destruction or stack unwinding) and a new exception is thrown and not caught, the program terminates. So if your `JoiningThread` hits a throwing `join()` during destruction, the program still crashes.
 
-This is an unpleasant reality. In fact, *C++ Concurrency in Action* (2nd Edition) discusses this issue, concluding that joining a thread in a destructor is a "reasonable but not perfect" strategy—if `join()` fails, there isn't much you can do because destructors shouldn't throw. A pragmatic approach is to wrap `join()` in a `try-catch` block inside the destructor, log the exception, but not rethrow it:
+That is not a pleasant reality. In fact, the second edition of *C++ Concurrency in Action* discusses this issue too, and the final conclusion is that joining a thread in the destructor is a "reasonable but imperfect" strategy—if `join()` fails, there really is no good way to handle it, because destructors should not throw. A pragmatic approach is to wrap `join()` in a `try-catch` inside the destructor, log the caught exception, and do not rethrow:
 
 ```cpp
-~joining_thread() {
-    if (t.joinable()) {
+~JoiningThread()
+{
+    if (joinable()) {
         try {
-            t.join();
-        } catch (const std::exception& e) {
-            // Log the error, but do not rethrow
-            std::cerr << "Thread join failed: " << e.what() << std::endl;
-        } catch (...) {
-            std::cerr << "Thread join failed with unknown exception" << std::endl;
+            join();
+        }
+        catch (const std::system_error& e) {
+            // join failed—log it, but do not throw
+            // In a real project, use a proper logging system
+            std::fprintf(stderr,
+                         "JoiningThread: join() failed: %s\n", e.what());
         }
     }
 }
 ```
 
-This approach isn't elegant, but it is the only safe way to handle exceptions in a destructor—swallow the exception, log it, and continue. If your scenario has zero tolerance for `join()` failure, you might need a different strategy: don't join in the destructor, require the caller to explicitly join, and if they forget, let the program terminate (just like raw `std::thread`). This is a trade-off between "safety" and "reliability"—auto-join eliminates the problem of forgetting to join, but introduces exception safety issues if `join()` fails.
+This approach is not elegant, but it is the only safe way to handle exceptions in a destructor—swallow the exception, log it, and carry on. If your use case has zero tolerance for `join()` failures, you may need a different strategy: do not join in the destructor; instead require the caller to join explicitly, and let the program terminate if they forget (just like a bare `std::thread`). This is a trade-off between "safety" and "reliability"—automatic join makes the forgotten-join problem disappear, but introduces an exception-safety problem when `join()` fails.
 
 ## Using Threads in Containers
 
-`std::thread` is move-only, and `std::vector` has supported move-only types since C++11. Therefore, `std::vector<std::thread>` is perfectly legal and can be used to manage a group of worker threads. This is very practical for implementing thread pools or parallel processing.
+`std::thread` is move-only, and `std::vector` has supported move-only types since C++11. So `std::vector<JoiningThread>` is perfectly legal and can be used to manage a group of worker threads. This is very practical when implementing thread pools, parallel processing, and the like.
 
 Let's look at a concrete example—processing a set of data in parallel:
 
 ```cpp
-void parallel_process(std::vector<int>& data) {
-    std::vector<std::thread> threads;
+#include <iostream>
+#include <vector>
+#include <numeric>
+#include <algorithm>
 
-    const size_t hardware_threads = std::thread::hardware_concurrency();
-    const size_t block_size = data.size() / hardware_threads;
+// Distribute the range across multiple threads for parallel processing
+template <typename Iterator, typename Func>
+void parallel_for_each(Iterator first, Iterator last, Func func,
+                       unsigned thread_count)
+{
+    std::size_t length = std::distance(first, last);
+    if (length == 0) return;
 
-    for (unsigned int i = 0; i < (hardware_threads - 1); ++i) {
-        // emplace_back constructs the thread in place
-        threads.emplace_back([&, i]{
-            size_t start = i * block_size;
-            size_t end = start + block_size;
-            // Process data[start...end]
-            for (size_t j = start; j < end; ++j) {
-                data[j] *= 2;
-            }
+    if (thread_count == 0) {
+        thread_count = std::thread::hardware_concurrency();
+    }
+
+    std::size_t block_size = length / thread_count;
+    std::vector<JoiningThread> threads;
+    threads.reserve(thread_count);
+
+    Iterator block_start = first;
+    for (unsigned i = 0; i < thread_count - 1; ++i) {
+        Iterator block_end = block_start;
+        std::advance(block_end, block_size);
+        threads.emplace_back([block_start, block_end, &func]() {
+            std::for_each(block_start, block_end, func);
         });
+        block_start = block_end;
     }
 
-    // Main thread processes the last block
-    size_t start = (hardware_threads - 1) * block_size;
-    for (size_t j = start; j < data.size(); ++j) {
-        data[j] *= 2;
-    }
+    // The last block is handled by the current thread itself
+    std::for_each(block_start, last, func);
 
-    // Loop implicitly calls join() for each thread in vector
-    for (auto& t : threads) {
-        t.join();
-    }
+    // All threads join automatically on destruction
 }
 ```
 
-There are details worth noting here. First is `emplace_back`—since `std::thread`'s constructor accepts a callable, we can construct the thread object in place inside `emplace_back` without needing to construct then move. Then there is the handling of the last block—we let the current thread (the caller) handle the last chunk of data instead of spawning an extra thread. This is a common optimization: the caller thread is already working, no need to sit idle waiting for worker threads.
+There are several details worth noting here. First, `emplace_back`—because `JoiningThread`'s constructor accepts a callable, we can construct the thread objects in place inside the `vector`, with no need to construct first and move afterwards. Then there is the handling of the last block—we let the current thread (the caller) process the final chunk of data itself, rather than spawning one extra thread. This is a common optimization: the calling thread is working too, so it doesn't have to sit idle waiting for all the worker threads to finish.
 
-When the `parallel_process` function returns, the `std::vector<std::thread>` named `threads` is destroyed, and each `std::thread` destructor is called in sequence, joining all threads. The whole process requires no manual lifecycle management.
+When the `parallel_for_each` function returns, the `threads` vector is destroyed, each `JoiningThread`'s destructor is called in turn, and every thread gets joined. Throughout the whole process, no thread's lifetime is managed by hand.
 
-However, note that when `std::vector` resizes, it moves elements to new memory. For `std::thread`, this is safe (because we have defined move constructors), but if you store raw `std::thread` directly, the source becomes empty after the move, which is also safe—as long as you don't forget to join at the new location. Using `reserve()` on the vector can avoid extra move operations caused by resizing.
+One caveat, though: when a `std::vector` grows, it moves elements to a new memory region. For `JoiningThread` this is safe (because we defined a move constructor), and it is equally safe if you store bare `std::thread` objects directly—after the move, the original object becomes empty—as long as you do not forget to join at the new location. Using `reserve()` to preallocate space avoids the extra moves that reallocation would cause.
 
-## Applying the Scope Guard Pattern to Thread Cleanup
+## Applying the scope(guard) Pattern to Thread Cleanup
 
-`joining_thread` is a generic RAII thread wrapper suitable for most scenarios. But sometimes you might want more flexible control—for example, joining under certain conditions, detaching under others, or doing cleanup work before the thread ends. In such cases, you can use a more generic tool: scope guard.
+`JoiningThread` is a general-purpose RAII thread wrapper that suits most scenarios. But sometimes you may want more flexible control—join under some conditions, detach under others, or do some cleanup work before the thread ends. For that, there is a more general tool: the scope guard.
 
-The core idea of scope guard is "execute a piece of code when the scope exits," regardless of the reason (normal return, exception, or `break`/`continue`). C++ doesn't have a language-level scope guard (unlike Go's `defer` or Rust's RAII destructors), but we can easily implement one using C++ destructors:
+The core idea of the scope guard is "execute a piece of code when the scope exits", regardless of whether the exit is caused by a normal return, an exception, or `break`/`continue`. C++ has no language-level scope guard (unlike Go with `defer`, or Rust with RAII destructors), but using C++ destructors, implementing one is quite easy:
 
 ```cpp
-template<typename F>
-class scope_guard {
-    F func;
-    bool active;
+#include <functional>
+#include <utility>
+
+class ScopeGuard {
 public:
-    explicit scope_guard(F f) : func(std::move(f)), active(true) {}
+    template <typename Func>
+    explicit ScopeGuard(Func&& func)
+        : callback_(std::forward<Func>(func))
+    {}
 
-    ~scope_guard() {
-        if (active) {
-            func();
+    ~ScopeGuard()
+    {
+        if (callback_) {
+            callback_();
         }
     }
 
-    // Disallow copying
-    scope_guard(const scope_guard&) = delete;
-    scope_guard& operator=(const scope_guard&) = delete;
-
-    // Allow move
-    scope_guard(scope_guard&& other) noexcept : func(std::move(other.func)), active(other.active) {
-        other.active = false;
+    void dismiss() noexcept
+    {
+        callback_ = nullptr;
     }
 
-    scope_guard& operator=(scope_guard&& other) noexcept {
-        if (this != &other) {
-            // If we currently hold a func, execute it before replacing
-            if (active) {
-                func();
-            }
-            func = std::move(other.func);
-            active = other.active;
-            other.active = false;
-        }
-        return *this;
+    ScopeGuard(ScopeGuard&& other) noexcept
+        : callback_(std::move(other.callback_))
+    {
+        other.dismiss();
     }
 
-    void dismiss() {
-        active = false;
-    }
+    ScopeGuard(const ScopeGuard&) = delete;
+    ScopeGuard& operator=(const ScopeGuard&) = delete;
+
+private:
+    std::function<void()> callback_;
 };
-
-// Deduction guide (C++17)
-template<typename F>
-scope_guard(F) -> scope_guard<F>;
 ```
 
-Using scope guard to manage thread join:
+Using a scope guard to manage a thread's join:
 
 ```cpp
-void flexible_cleanup() {
-    std::thread t([]{
-        std::cout << "Working...\n";
-    });
+#include <thread>
+#include <iostream>
 
-    scope_guard cleanup([&]{
+void worker(int id)
+{
+    std::cout << "Worker " << id << " done\n";
+}
+
+void process()
+{
+    std::thread t(worker, 1);
+
+    // Join automatically when the scope exits
+    ScopeGuard join_guard([&t]() {
         if (t.joinable()) {
             t.join();
         }
     });
 
-    // ... logic that might throw or return early ...
+    // Some operations that might throw
+    do_something();
+
+    // If all goes well, you can also dismiss it manually and join yourself
+    // join_guard.dismiss();
+    // t.join();
 }
 ```
 
-Scope guard is more flexible than `joining_thread`—you can do anything in the guard's callback (join, detach, log, update state, etc.), not limited to join. But it is also more primitive—no type safety guarantees, and the overhead of `std::function` (if used) is small but non-zero. In general scenarios, `joining_thread` is the better choice; when more flexible control is needed, scope guard is a valuable tool.
+The scope guard is more flexible than `JoiningThread`—you can do anything in the guard's callback (join, detach, log, update state, and so on), not just join. But it is also more primitive—there is no type-safety guarantee, and while the overhead of `std::function` is small, it is not zero after all. In typical scenarios, `JoiningThread` is the better choice; when more flexible control is needed, the scope guard is a valuable tool.
 
-It is worth mentioning that the C++ standard committee has discussed standardizing scope guard several times (proposals like P0052), but as of C++23, it has not been officially adopted. The latest proposal is P3610 (targeting C++29), planning to provide `std::scope_exit`, `std::scope_fail`, and `std::scope_success` in the `<scope>` header. Before that, some compilers provide it as `std::experimental::scope_guard` in the Library Fundamentals TS, or you can use Boost.ScopeExit or implement it yourself (just like we did above).
+Worth a mention: the C++ standards committee has discussed standardizing the scope guard several times (P0052 and similar proposals), but as of C++23 it has not officially made it into the standard. The latest proposal is P3610 (targeting C++29), which plans to provide `std::scope_exit`, `std::scope_fail`, and `std::scope_success` in the `<scope>` header. Before that happens, some compilers provide `std::experimental::scope_exit` as part of the Library Fundamentals TS; you can also use Boost.ScopeExit or implement your own (as we did above).
 
 ## Summary
 
-In this post, starting from `std::thread`'s move-only nature, we established the concept of "thread ownership"—a `std::thread` object is the unique owner of the underlying OS thread. Ownership can only be transferred via move, not copy. This design aligns with `std::unique_ptr`, ensuring clarity in resource management.
+In this article we started from the move-only nature of `std::thread` and built up the concept of "thread ownership"—a `std::thread` object is the sole owner of the underlying operating system thread; ownership can only be transferred via move, never copied. This design follows the same lineage as `std::unique_ptr`, ensuring clarity of resource management.
 
-We then used the RAII pattern to solve the most common thread management error: "forgetting to join/detach." `thread_guard` is a basic implementation (holds a reference, joins on destruction), while `joining_thread` is a more robust implementation (owns the thread directly, auto-joins on destruction). The latter is essentially a manual implementation of C++20's `std::jthread` in C++11. We also discussed the tricky issue of `join()` potentially throwing exceptions and how to safely handle it in a destructor.
+Then we used the RAII pattern to solve "forgetting to join/detach", the most common thread-management mistake. `ThreadGuard` is a basic implementation (holds a reference, joins on destruction), and `JoiningThread` is a more complete one (owns the thread outright, joins automatically on destruction). The latter is essentially a hand-written C++11 version of C++20 `std::jthread`. We also discussed the thorny problem of `join()` potentially throwing, and the safe way to handle it in a destructor.
 
-Finally, we looked at `std::thread` in parallel processing applications and the more generic scope guard pattern. RAII is not just a programming trick—it is the core philosophy of C++ resource management. When you start using it to manage threads, locks, and file handles, you will find your code becomes cleaner, safer, and less prone to bugs.
+Finally, we looked at `std::vector<JoiningThread>` in parallel processing, plus the more general scope guard pattern. RAII is not merely a programming trick—it is the core philosophy of resource management in C++. Once you start using it to manage threads, locks, file handles, and the like, you will find your code becoming cleaner, safer, and less prone to bugs.
 
-> 💡 Complete example code is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), visit `demos/threads`.
+> 💡 The complete example code is in [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)—browse to `code/volumn_codes/vol5/ch01-thread-lifecycle-raii/`.
 
 ## Exercises
 
-### Exercise 1: Implement a Cancellable `JoiningThread`
+### Exercise 1: Implement a JoiningThread with a Cancellable Join
 
-Add a `cancel_join()` method to the `JoiningThread` class above—after calling it, the destructor no longer automatically joins the thread, but detaches it. Consider: under what conditions should `cancel_join()` be called? If the thread has already finished execution but hasn't been joined yet, what happens after `cancel_join()`? Write a test case to verify your implementation.
+Add a `cancel_join()` method to the `JoiningThread` above—after it is called, the destructor no longer joins the thread automatically, but detaches it instead. Think it over: under what conditions should `cancel_join()` be called? If the thread has already finished executing but has not been joined yet, what happens after `cancel_join()`? Write a test case to verify your implementation.
 
 ```cpp
-// Add this to the joining_thread class
-void cancel_join() {
-    // Your implementation
-}
+// Hint: you need to add a bool flag to the class
+class JoiningThread {
+    // ...
+    void cancel_join() noexcept
+    {
+        should_join_ = false;
+    }
+
+private:
+    std::thread thread_;
+    bool should_join_{true};
+};
 ```
 
-### Exercise 2: Parallel Accumulation with `JoiningThread`
+### Exercise 2: Parallel Accumulation with JoiningThread
 
-Implement a function `parallel_accumulate`, accepting an iterator range and an initial value. Split the range into N blocks, accumulate each block with a `JoiningThread`, and finally sum all partial results. Be careful to handle the case where the last block might be smaller than the others. Compare your results with `std::accumulate` to ensure consistency.
+Implement a function `parallel_accumulate` that takes an iterator range and an initial value, splits the range into N chunks, accumulates each chunk with its own `JoiningThread`, and finally combines all the partial sums. Be careful to handle the case where the last chunk may be smaller than the others. Compare your result with `std::accumulate` to check that they agree.
 
-### Exercise 3: Scope Guard and Multi-thread Cleanup
+### Exercise 3: scope guard and Multithreaded Cleanup
 
-Write a program that starts 3 threads, each executing a simulated long task (like `std::this_thread::sleep_for`). Use `scope_guard` at different points in the function to ensure all threads are joined when the function exits. Then, simulate an exception at a "possible failure" checkpoint to verify that threads are still correctly cleaned up.
+Write a program that starts 3 threads, each running a simulated long task (for example, `std::this_thread::sleep_for`). Use `ScopeGuard` at different places in the function to make sure all threads are joined when the function exits. Then simulate an exception at a "may fail" checkpoint, and verify that the threads are still cleaned up correctly.
 
 ## References
 
 - [std::thread — cppreference](https://en.cppreference.com/w/cpp/thread/thread)
 - [std::jthread (C++20) — cppreference](https://en.cppreference.com/w/cpp/thread/jthread)
-- [C++ Concurrency in Action, 2nd Edition — Anthony Williams (Manning)](https://www.manning.com/books/c-plus-plus-concurrency-in-action-second-edition) — Inspiration for the `thread_guard` and `joining_thread` designs in this chapter
+- [C++ Concurrency in Action, 2nd Edition — Anthony Williams (Manning)](https://www.manning.com/books/c-plus-plus-concurrency-in-action-second-edition) — the design inspiration for this chapter's `thread_guard` and `joining_thread`
 - [P0052: Generic Scope Guard and RAII Wrapper for the C++ Standard Library](https://wg21.link/p0052)
 - [RAII and the Rule of Zero — CppCon 2021](https://www.youtube.com/watch?v=7Qgd9B1KuMQ)

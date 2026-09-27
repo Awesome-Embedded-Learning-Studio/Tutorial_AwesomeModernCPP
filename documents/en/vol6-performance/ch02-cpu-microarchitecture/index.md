@@ -1,20 +1,26 @@
 ---
 title: "CPU microarchitecture and the memory hierarchy"
-description: "ch02 lays out the full single-core hardware foundation: the memory-hierarchy latency ladder, cachelines and locality, the pipeline / ILP / branch-prediction trio, and the TLB with huge pages. Each piece is backed by measurements run on the author's own machine, providing the hardware base for ch04's optimize-by-bottleneck-site advice."
+description: "ch02 lays down the full single-core hardware foundation: the memory hierarchy's latency ladder, cachelines and locality, the pipeline with ILP and branch prediction, and the TLB with huge pages — every piece backed by measurements run on our own machine, providing the hardware base for ch04's optimize-by-bottleneck-site advice"
+translation:
+  source: documents/vol6-performance/ch02-cpu-microarchitecture/index.md
+  source_hash: 40d4632d4791ec76b3e2fe3701b94417ff678ae2e03aedbbcd0492c534c90fd9
+  translated_at: '2026-09-26T05:54:25+00:00'
+  engine: anthropic
+  token_count: 600
 ---
 
 # CPU microarchitecture and the memory hierarchy
 
-ch00 established "correctness first, then speed" and "measure first, then optimize." ch01 turned "measure first" into a complete methodology. But between "measure first" and "actually optimize," there's one piece of knowledge still missing: which kind of cost are you actually optimizing away? If unrolling a loop makes it 3x faster, is that because of cache, instruction-level parallelism, or branch prediction? Without the root cause, optimization is just guessing.
+ch00 laid down "correct first, then fast" and "measure first, then optimize", and ch01 built "measure first" into a complete methodology. But between "measure first" and "actually optimizing" there is still one missing piece of knowledge: which kind of cost are you actually optimizing away? If unrolling a loop made it 3x faster, was that because of the cache, instruction-level parallelism, or branch prediction? Without the root cause in hand, optimization is blind guesswork.
 
-This chapter splits the single core into four layers, and for each layer uses on-machine measurements to explain "what happens on the hardware that makes this fast or slow":
+This chapter breaks the single-core hardware into four layers, and for each layer uses measurements run on our own machine to spell out "what happens on the hardware that makes it fast or slow":
 
-- **Memory hierarchy**: the L1/L2/L3/DRAM latency ladder falls off by 100x at each step; sequential access can approach L1 throughput thanks to the prefetcher.
-- **Cachelines and locality**: 64 bytes is the minimum unit of cache transfer, spatial locality is why contiguous layout is fast, and row-major vs column-major traversal differs by 6x.
-- **Pipeline / ILP / branch prediction**: instruction-level parallelism decides whether execution units are fed (multiple accumulators are 3x faster), and unpredictable branches get penalized hard (sorted vs shuffled is a 4x gap).
-- **TLB and huge pages**: virtual-address translation is another gate, huge pages cut TLB pressure, but you have to confirm the environment actually delivered them first.
+- **Memory hierarchy**: the L1/L2/L3/DRAM latency ladder opens up a 100x gap level by level, and sequential access can approach L1 throughput thanks to the prefetcher.
+- **Cachelines and locality**: 64 bytes is the cache's minimum unit of transfer, spatial locality is why contiguous layouts are fast, and row-major vs column-major traversal differs by 6x.
+- **Pipeline and ILP / branch prediction**: instruction-level parallelism decides whether the execution units stay fed (multiple accumulators are 3x faster), and unpredictable branches get punished hard (sorted vs shuffled differs by 4x).
+- **TLB and huge pages**: virtual-address translation is another gate to pass; huge pages lower TLB pressure, but you first have to confirm the environment actually delivered them.
 
-The numbers in this chapter (100x, 6x, 3x, 4x) are the physical basis for every recommendation in ch04's "optimize by bottleneck site" — why use contiguous containers, why control the hot working set, why multiple accumulators, why branchless, why division is a bottleneck, why front-end PGO helps. Every one of them traces back to here. On depth we stop at "enough to support judgment"; ROB / register renaming / execution-port scheduling and the deeper content get pointers to Agner's microarchitecture manual and Wikichip.
+The numbers in this chapter (100x, 6x, 3x, 4x) are the physical basis for every recommendation in ch04's "optimize by bottleneck site" — why use contiguous containers, why control the hot data set, why multiple accumulators, why branchless, why division is the bottleneck, why front-end PGO helps... every one of them traces back to here. On depth, we stop at "enough to support a judgment"; for the deeper material — ROB / register renaming / execution-port scheduling — we point you to Agner's microarchitecture manual and Wikichip.
 
 ## In this chapter
 

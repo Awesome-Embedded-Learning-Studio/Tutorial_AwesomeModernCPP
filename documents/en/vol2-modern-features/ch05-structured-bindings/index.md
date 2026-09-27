@@ -15,6 +15,6 @@ C++17 structured bindings let you unpack pairs, tuples, arrays, and structs in a
 ## Chapter Contents
 
 <ChapterNav variant="sub">
-  <ChapterLink href="01-structured-bindings">Structured Binding: Unpacking Multiple Values in One Line</ChapterLink>
+  <ChapterLink href="01-structured-bindings">Structured Bindings: Unpacking Multiple Values in One Line</ChapterLink>
   <ChapterLink href="02-init-statements">if/switch Initializers: Narrowing Variable Scope</ChapterLink>
 </ChapterNav>

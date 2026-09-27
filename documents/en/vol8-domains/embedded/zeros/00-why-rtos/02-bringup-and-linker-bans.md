@@ -16,7 +16,7 @@ platform: stm32f1
 cpp_standard: [23]
 reading_time_minutes: 25
 prerequisites:
-  - "Why an RTOS, Part 1: From Superloop to RTOS"
+  - 'From the Super Loop to an RTOS: Why We Need One, and How to Verify It'
   - "Embedded: STM32F103 + Renode Getting Started: Toolchain Installed, Renode Running"
 related:
   - "From the Super Loop to an RTOS: Why We Need One, and How to Verify It"

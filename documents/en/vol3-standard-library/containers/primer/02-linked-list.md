@@ -19,7 +19,7 @@ prerequisites:
   - "Pointer Basics"
 related:
   - "deque, list, and forward_list: Three Alternatives to vector"
-  - "Deep Dive into std::vector: Three Pointers, Reallocation, and Iterator Invalidation"
+  - 'Deep Dive into vector: Three Pointers, Reallocation, and Iterator Invalidation'
 cpp_standard: [11]
 translation:
   source: documents/vol3-standard-library/containers/primer/02-linked-list.md

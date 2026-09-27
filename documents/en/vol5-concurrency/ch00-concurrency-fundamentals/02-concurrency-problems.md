@@ -4,307 +4,358 @@ cpp_standard:
 - 11
 - 17
 - 20
-description: 'Identify the most common bugs in concurrent programming: data races,
-  race conditions, deadlocks, livelocks, starvation, and priority inversion.'
+description: 'Recognize the most common concurrency bugs: data races, race conditions, deadlock, livelock, starvation, and priority inversion'
 difficulty: beginner
 order: 2
 platform: host
 prerequisites:
-- 为什么需要并发
+- Why We Need Concurrency
 reading_time_minutes: 15
 related:
-- mutex 与 RAII 守卫
-- std::atomic 原子操作
+- mutex and RAII Locks
+- Atomic Operations
 tags:
 - host
 - cpp-modern
 - beginner
 - atomic
 - mutex
-title: Concurrency Fundamentals
+title: Fundamental Concurrency Problems
 translation:
   source: documents/vol5-concurrency/ch00-concurrency-fundamentals/02-concurrency-problems.md
   source_hash: 84a7ab0e56750f1ae181056343577374fe728cc961d122f21acb75ad1073b2ca
-  translated_at: '2026-06-16T04:03:01.395769+00:00'
+  translated_at: '2026-09-26T06:17:17+00:00'
   engine: anthropic
-  token_count: 2610
+  token_count: 3600
 ---
-# Fundamental Concurrency Issues
+# Fundamental Concurrency Problems
 
-In the previous post, we discussed "why we need concurrency" and established a basic framework for judgment. But knowing *why* isn't enough; we also need to know exactly what goes wrong in concurrent code. Frankly speaking, the headache of concurrency bugs isn't about how complex they are—it's that they are **unpredictable**. A multi-threaded program might run perfectly on your machine a hundred thousand times, only to crash in a customer's environment at 3 AM. You look at the dump, and it makes absolutely no sense!
+In the previous article we talked about "Why We Need Concurrency" and built up some basic judgment. But knowing why isn't enough — we also need to know what actually goes wrong in concurrent code. Honestly, the maddening thing about concurrency bugs isn't that they're complicated — it's that they're **unpredictable**. A multithreaded program runs fine a hundred thousand times on your own machine, then ships, and at three in the morning it crashes in a customer's environment — you pull the dump, look at it, and it matches nothing you expected!
 
-These issues actually have well-defined concepts. Let's list them simply: data race, race condition, dead lock, live lock, starvation, and priority inversion. For each issue, we will provide code examples—both broken and fixed versions. Our goal is not to memorize definitions, but to cultivate an intuition: when you see a piece of multi-threaded code, you can quickly identify where the potential problems lie.
+The nice thing is that each of these problems does have a crisp, well-defined concept behind it, so we can simply list them up front: data races, race conditions, deadlock, livelock, starvation, and priority inversion. For each one we'll show code — a buggy version and a fixed version. The goal is not to memorize definitions but to build an intuition: look at a piece of multithreaded code, and you can quickly judge where it might go wrong.
 
-## Data Race: Undefined Behavior per the C++ Standard
+## data race: Undefined Behavior According to the C++ Standard
 
-This is the most important section of the entire volume. If you remember only one thing from this article, make it this: **a data race is Undefined Behavior (UB) in the C++ standard**. Not "might go wrong," not "result is indeterminate," but full-blown UB—meaning the compiler has the right to do *anything* when a data race occurs, including but not limited to returning incorrect results, crashing, or appearing to function normally while harboring hidden dangers.
+This is the most important section in the entire volume. If you take away just one point from this article, take this one: **a data race is undefined behavior (Undefined Behavior, UB) under the C++ standard**. Not "might go wrong", not "the result is indeterminate" — full-blown UB. It means the compiler is entitled to do literally anything when a data race occurs, including but not limited to returning wrong results, crashing, or looking fine on the surface while quietly burying a hidden hazard.
 
 ### What the C++ Standard Says
 
-The C++ standard ([intro.races]) defines a data race as: when two threads access the same memory location, at least one access is a write, and there is no happens-before relationship between them, it constitutes a data race. Any data race results in undefined behavior.
+The C++ standard ([intro.races]) defines a data race as follows: when two threads access the same memory location, at least one of the accesses is a write, and there is no happens-before relationship between them, a data race occurs. Any data race results in undefined behavior.
 
-Why does the standard have to be so strict? Hans Boehm (one of the main designers of the C++ memory model) explained the reason in an article: if data races were allowed to have any defined semantics (like "might read an old value"), many compiler optimizations would have to be prohibited. Because compilers need to perform instruction reordering, loop transformations, constant propagation, and other optimizations on single-threaded code, and these optimizations can change the results of data races in a multi-threaded environment. The standard chose to define data races as UB specifically to not limit compiler optimization capabilities—the price is that programmers must ensure their programs are data-race-free.
+Why does the standard come down so hard? Hans Boehm (one of the principal designers of the C++ memory model) explained the reasoning in an article: if data races were allowed any well-defined semantics (say, "you might read a stale value"), a great many compiler optimizations would have to be outlawed. Compilers want to reorder instructions, transform loops, and propagate constants for single-threaded code — and in a multithreaded setting those optimizations can change the outcome of a data race. The standard chose to define data races as UB precisely so it would not have to constrain the compiler's ability to optimize — the price being that we programmers must guarantee our programs are free of data races.
 
-### A Minimal Data Race Example
+### A Minimal data race Example
 
 ```cpp
 #include <thread>
 #include <iostream>
 
-int counter = 0;
+// For any friends here learning microcontrollers: the author has noticed that a lot of people love to just drop a global variable right here
+// Of course, being comfortable with a habit is no crime, but in the code below, programming this way is exactly where the trouble starts...
+int counter = 0;  // global variable, not atomic
 
-void increment() {
-    for (int i = 0; i < 1000000; ++i) {
-        counter++;  // Data race here!
+void increment(int times)
+{
+    for (int i = 0; i < times; ++i) {
+        ++counter;  // non-atomic write
     }
 }
 
-int main() {
-    std::thread t1(increment);
-    std::thread t2(increment);
+int main()
+{
+    std::thread t1(increment, 1000000);
+    std::thread t2(increment, 1000000);
 
     t1.join();
     t2.join();
 
-    std::cout << "Final counter: " << counter << "\n"; // Expect 2000000, but often less
+    std::cout << "counter = " << counter << "\n";
+    // expected 2000000; the actual value can be anything: 1345687, 1789234, ...
     return 0;
 }
 ```
 
-`counter++` looks like a single statement, but at the machine level, it is a three-step operation: "read → add → write". When two threads execute this sequence simultaneously, this can happen: Thread A reads `counter=100`, Thread B also reads `counter=100`, Thread A writes `101`, Thread B also writes `101`—an increment is lost. In a loop of a million iterations, this loss happens frequently, and the final result is far less than the expected 2,000,000.
+`++counter` looks like one statement, but at the machine level it is a three-step sequence: read → add → write. When two threads execute that sequence at the same time, this can happen: thread A reads counter=100, thread B also reads counter=100, thread A writes 101, thread B also writes 101 — one increment is lost. In a loop of a million iterations those losses pile up, and the final result lands far below the expected 2000000.
 
-### Fix: Use `std::atomic`
+### The Fix: Use std::atomic
 
-The most direct fix is to change `int counter` to `std::atomic<int> counter`:
+The most direct fix is to change `counter` to `std::atomic<int>`:
 
 ```cpp
 #include <thread>
 #include <iostream>
 #include <atomic>
 
-std::atomic<int> counter = 0;
+std::atomic<int> counter{0};
 
-void increment() {
-    for (int i = 0; i < 1000000; ++i) {
-        counter++;  // Atomic operation
+void increment(int times)
+{
+    for (int i = 0; i < times; ++i) {
+        counter.fetch_add(1, std::memory_order_relaxed);
+        // or simply ++counter;
     }
 }
 
-int main() {
-    std::thread t1(increment);
-    std::thread t2(increment);
+int main()
+{
+    std::thread t1(increment, 1000000);
+    std::thread t2(increment, 1000000);
 
     t1.join();
     t2.join();
 
-    std::cout << "Final counter: " << counter << "\n"; // Always 2000000
+    std::cout << "counter = " << counter.load() << "\n";
+    // now reliably prints 2000000
     return 0;
 }
 ```
 
-`std::atomic` guarantees that `counter++` is atomic—no intermediate state will be visible to other threads. We will dive deeper into `memory_order` and other memory ordering options in the chapter on atomic operations. For now, just know: `std::atomic` eliminates data races.
+`std::atomic` guarantees that `fetch_add` is atomic — no intermediate state is ever visible to another thread. We'll go deep into `memory_order_relaxed` and the other memory-ordering options in the atomic-operations chapter later on. For now, all you need to know is: `std::atomic` eliminates data races.
 
-Additionally, using a `mutex` to protect the critical section can also eliminate data races. For more complex critical section logic, a mutex is often more appropriate. Choosing between atomic and mutex depends on how complex your critical section is—if it's just a simple counter, atomic is lighter; if the critical section involves coordinated modification of multiple variables, a mutex is safer and clearer.
+Alternatively, protecting the critical section with a `std::mutex` also eliminates the data race, and for more involved critical-section logic a mutex is often the better fit. Atomic or mutex comes down to how complex your critical section is — for a plain counter, atomic is lighter; when the critical section involves coordinated changes to several variables, a mutex is both safer and clearer.
 
-## Race Condition: Logic-Level Competition
+## race condition: Racing at the Logic Level
 
-Race condition and data race are often used interchangeably, but they are not the same concept. A data race is a definition at the C++ standard level (two unsynchronized conflicting accesses), while a race condition is a broader concept: **the program's output depends on the execution order of threads**, and that order is nondeterministic.
+"race condition" and "data race" get used interchangeably all the time, but they are not the same concept. A data race is a definition at the level of the C++ standard (two conflicting accesses without synchronization), while a race condition is the broader notion: **the program's output depends on the order in which threads execute**, and that order is not determined.
 
-A classic example of a race condition is the "check-then-act" pattern:
+A classic race condition is the "check-then-act" pattern:
 
 ```cpp
-std::vector<int> vec;
-std::mutex vec_mutex;
+#include <thread>
+#include <iostream>
+#include <vector>
 
-void safe_push(int value) {
-    std::lock_guard<std::mutex> lock(vec_mutex);
+std::vector<int> data;
 
-    if (vec.size() < 100) {          // Check
-        vec.push_back(value);        // Act
+void add_if_not_full(int value)
+{
+    if (data.size() < 100) {     // check
+        data.push_back(value);   // act
     }
 }
 ```
 
-Even if we use `std::mutex` to protect `vec` (thus avoiding data race), this function still has a race condition: two threads might simultaneously pass the `vec.size() < 100` check, and then both execute `vec.push_back(value)`, causing the vector to actually hold more than 100 elements. The problem isn't conflicting memory accesses, but rather a time window between "check" and "act" where another thread can step in and change state.
+Even if we protect `push_back` with a `std::mutex` (and thereby have no data race), this function still has a race condition: two threads can pass the `size() < 100` check at the same moment and then both execute `push_back`, leaving the vector holding more than 100 elements. The problem is not whether the memory accesses conflict — it's that a window of time sits between "check" and "act", and other threads can slip in during that window and change the state.
 
-The key to the fix is to make "check" and "act" an indivisible atomic operation—we will detail how to achieve this in the mutex chapter.
+The key to the fix is to make "check" and "act" one indivisible atomic operation — the mutex chapter works out in detail how to accomplish that.
 
-We can summarize the relationship between the two like this: a data race is always a race condition (because the result depends on the interleaving order), but a race condition is not necessarily a data race (even with correct synchronization primitives, logic can still race). Eliminating data races is a baseline requirement; eliminating race conditions requires more careful interface design.
+The relationship between the two can be summed up like this: a data race is always a race condition (because the result depends on the interleaving order), but a race condition is not necessarily a data race (even with the right synchronization primitives, the logic can still race). Eliminating data races is the baseline requirement; eliminating race conditions calls for more careful interface design.
 
-## Deadlock: The Eternal Wait
+## Deadlock: Waiting Forever
 
-Deadlock is likely the most well-known concurrency bug. Its definition is: two or more threads wait for resources held by each other, causing all threads to be unable to proceed. (When I was writing about operating systems, I encountered this every day—move it! just move a bit!)
+Deadlock is probably the most famous concurrency bug of all. The definition: two or more threads each wait for resources held by the others, so that none of them can make any progress. (Back in the author's operating-system-writing days this was a daily sighting — come on, one of you move already!)
 
-For a deadlock to occur, four conditions must be met simultaneously (known as the Coffman conditions):
+For a deadlock to happen, four conditions must hold simultaneously (known as the four Coffman conditions):
 
-1. Mutual Exclusion (a resource can only be held by one thread at a time)
-2. Hold and Wait (a thread holds at least one resource while waiting for others)
-3. No Preemption (resources cannot be forcibly taken)
-4. Circular Wait (there exists a cycle of threads waiting for each other).
+1. Mutual exclusion (a resource can be held by only one thread at a time)
+2. Hold and wait (a thread holds at least one resource while waiting for others)
+3. No preemption (a resource cannot be forcibly taken away)
+4. Circular wait (a cycle of threads exists, each waiting on the next)
 
-As long as one of these conditions is broken, a deadlock cannot occur. Unfortunately, in actual code, these four conditions are often very easily satisfied simultaneously.
+Break any one of these conditions and deadlock cannot occur. Unfortunately, in real-world code all four are often satisfied together with remarkable ease.
 
-Let's reproduce a minimal deadlock!
+Let's have a minimal deadlock reproduction!
 
 ```cpp
 #include <thread>
 #include <mutex>
+#include <iostream>
 
 std::mutex mtx_a;
 std::mutex mtx_b;
 
-void thread1_func() {
-    std::lock_guard<std::mutex> lock1(mtx_a);
-    // Simulate some work
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
-    std::lock_guard<std::mutex> lock2(mtx_b); // Deadlock might happen here
+void thread1()
+{
+    std::lock_guard<std::mutex> lock_a(mtx_a);  // lock A first
+    std::cout << "thread1: locked A, waiting for B\n";
+    std::lock_guard<std::mutex> lock_b(mtx_b);  // then lock B
+    std::cout << "thread1: locked A and B\n";
 }
 
-void thread2_func() {
-    std::lock_guard<std::mutex> lock1(mtx_b);
-    // Simulate some work
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
-    std::lock_guard<std::mutex> lock2(mtx_a); // Deadlock might happen here
+void thread2()
+{
+    std::lock_guard<std::mutex> lock_b(mtx_b);  // lock B first
+    std::cout << "thread2: locked B, waiting for A\n";
+    std::lock_guard<std::mutex> lock_a(mtx_a);  // then lock A
+    std::cout << "thread2: locked A and B\n";
 }
 
-int main() {
-    std::thread t1(thread1_func);
-    std::thread t2(thread2_func);
-
+int main()
+{
+    std::thread t1(thread1);
+    std::thread t2(thread2);
     t1.join();
     t2.join();
     return 0;
 }
 ```
 
-If thread1 acquires `mtx_a` while thread2 acquires `mtx_b`, both get stuck—thread1 waits for `mtx_b` (held by thread2), thread2 waits for `mtx_a` (held by thread1), and neither lets go.
+If thread1 grabs mtx_a at the same instant thread2 grabs mtx_b, both sides are wedged — thread1 waits for mtx_b (held by thread2), thread2 waits for mtx_a (held by thread1), and neither will ever let go.
 
-### Fix: Unified Locking Order
+### The Fix: Consistent Lock Ordering
 
-The most practical deadlock prevention strategy is **unified locking order**: all code that needs to acquire multiple locks must acquire them in the same order. If both thread1 and thread2 lock A first and then B, a deadlock is impossible—because only one thread can acquire A first, and the other will wait on A, preventing it from waiting for A while holding B.
+The most practical deadlock-prevention strategy is **consistent lock ordering**: all code that needs to acquire several locks at once must acquire them in the same order. If both thread1 and thread2 lock A first and then B, deadlock becomes impossible — only one thread can get A first, and the other waits on A; it never waits for A while holding B.
 
-C++17 provides `std::scoped_lock`, which can acquire multiple mutexes at once using a deadlock-avoidance algorithm (internally trying different acquisition orders):
-
-```cpp
-void thread1_func() {
-    std::scoped_lock lock(mtx_a, mtx_b); // Acquires both without deadlock
-    // ...
-}
-
-void thread2_func() {
-    std::scoped_lock lock(mtx_b, mtx_a); // Order doesn't matter for scoped_lock
-    // ...
-}
-```
-
-`std::scoped_lock` uses a strategy similar to "try and back off": it attempts to acquire all locks in some order; if an acquisition fails, it releases acquired locks and retries. This is a way to avoid deadlock but doesn't guarantee fairness. We will discuss various deadlock prevention strategies in more depth in the mutex chapter.
-
-## Livelock: Busy Waiting
-
-Livelock is the opposite of deadlock: threads aren't stuck, the CPU is spinning, but the program just isn't making progress.
-
-A typical scenario is "polite yielding"—two threads meet on a narrow bridge, each backs up to let the other pass, then they move forward simultaneously, meet again, back up again... In code, this often happens in retry-based locking strategies: after a conflict, both sides back off and retry, but the rhythm of backing off is too synchronized, causing every retry to collide again.
-
-Let's look at a simplified code snippet:
+C++17 provides `std::scoped_lock`, which acquires multiple mutexes in one shot and uses a deadlock-avoidance algorithm (internally trying different acquisition orders):
 
 ```cpp
 #include <thread>
 #include <mutex>
-#include <atomic>
+#include <iostream>
 
-std::mutex mtx;
-std::atomic<bool> conflict_detected(false);
+std::mutex mtx_a;
+std::mutex mtx_b;
 
-void worker() {
-    for (int attempts = 0; attempts < 100; ++attempts) {
-        if (mtx.try_lock()) {
-            // Do work
-            mtx.unlock();
-            return;
-        }
-    }
-    // If we are here, we failed too many times (Livelock symptom)
+void worker(int id)
+{
+    // scoped_lock acquires mtx_a and mtx_b together, avoiding deadlock internally
+    std::scoped_lock lock(mtx_a, mtx_b);
+    std::cout << "thread" << id << ": locked both mutexes\n";
 }
 
-int main() {
-    std::thread t1(worker);
-    std::thread t2(worker);
+int main()
+{
+    std::thread t1(worker, 1);
+    std::thread t2(worker, 2);
     t1.join();
     t2.join();
     return 0;
 }
 ```
 
-The problem with this code is: if the execution rhythm of two threads happens to align, they will constantly yield to each other. Of course, in actual execution, due to scheduling uncertainty, they will likely eventually enter the critical section (hence the code uses a limited retry as a fallback), but the risk of livelock is real.
+Under the hood, `scoped_lock` follows a `std::try_lock`-style strategy: try to acquire all the locks in some order, and if any acquisition fails, release the ones already held and retry. It avoids deadlock but guarantees nothing about fairness. We'll discuss the various deadlock-prevention strategies in more depth in the mutex chapter later.
 
-How to solve it? The idea is to introduce **random backoff**—don't retry immediately after a conflict, but wait for a random time before trying again. This makes it hard for the threads' rhythms to stay synchronized. This idea is also common in network protocols; for example, Ethernet's CSMA/CD relies on random backoff to resolve channel conflicts.
+## Livelock: Busy but Going Nowhere
 
-## Starvation: Never Getting a Turn
+A livelock is the exact opposite of a deadlock: the threads aren't stuck, the CPU is spinning, but the program just won't move forward.
 
-Starvation is different from deadlock: deadlock is where all threads are stuck, starvation is where some threads are "starved"—it wants the resource, but never gets a turn, while other threads run and eat as they please.
+The classic scene is "polite yielding" — two threads meet on a narrow bridge, each steps back to let the other cross first, then both advance at the same time, meet again, step back again... In code this shows up constantly in retry-based locking strategies: after a collision both sides back off and retry, but their backoff rhythm is so synchronized that every retry collides again.
 
-The most common scenario is unfair scheduling policies. For example, if a read-write lock always prioritizes read locks, then under continuous read requests, a writer thread might wait forever for an opportunity—this is "writer starvation". Similarly, if a thread pool's task queue uses priority scheduling, low-priority tasks might never get scheduled.
+Let's look at some simplified code:
 
-The core idea for solving starvation is to introduce **fairness**. The specific method depends on the scenario: a read-write lock can use a write-priority strategy, a task queue can use round-robin or priority aging, and lock implementations can use fair locks like ticket locks. Fairness usually sacrifices some throughput—after all, fair scheduling strategies are more conservative than greedy ones—but it is a necessary price to guarantee stable system operation.
+```cpp
+#include <thread>
+#include <atomic>
+#include <iostream>
+#include <chrono>
 
-## Priority Inversion: When High Priority Is Blocked by Low Priority
+std::atomic<bool> flag1{false};
+std::atomic<bool> flag2{false};
 
-Priority inversion is a subtle but hugely impactful problem. Any embedded folks here? You've all used RTOS, right? I bet you've all memorized the standard answers better than anyone else! The most classic case is the 1997 NASA **Mars Pathfinder** Mars probe—the real-time system on the probe would reset as it ran. The ground team investigated for a good while before discovering that priority inversion was the culprit: a high-priority bus management task was indirectly blocked by a low-priority meteorology task, causing the system to reboot repeatedly.
+void thread1()
+{
+    for (int attempt = 0; attempt < 100; ++attempt) {
+        flag1.store(true);
+        if (flag2.load()) {
+            // the other side wants in too; I yield
+            flag1.store(false);
+            continue;
+        }
+        // enter the critical section
+        std::cout << "thread1 in critical section\n";
+        flag1.store(false);
+        return;
+    }
+    std::cout << "thread1: gave up after 100 attempts\n";
+}
 
-Let's break down this process. Suppose there are three tasks: `High`, `Medium`, `Low`, with priorities decreasing in that order. `Low` first acquires a lock and is using it. At this point, `Medium` becomes ready; it has higher priority, so it preempts `Low`. Immediately after, `High` also becomes ready—it has the highest priority, but it needs the lock held by `Low`, so it has to block and wait. The problem is, `Low` has already been preempted by `Medium`, so it doesn't get a chance to run, and naturally can't release the lock. The result is: `High`, the highest priority task, is indirectly blocked by `Low`, which has a lower priority. This isn't a code error, but a structural flaw in the scheduling mechanism itself.
+void thread2()
+{
+    for (int attempt = 0; attempt < 100; ++attempt) {
+        flag2.store(true);
+        if (flag1.load()) {
+            // the other side wants in too; I yield
+            flag2.store(false);
+            continue;
+        }
+        // enter the critical section
+        std::cout << "thread2 in critical section\n";
+        flag2.store(false);
+        return;
+    }
+    std::cout << "thread2: gave up after 100 attempts\n";
+}
 
-Back to the C++ side, `std::mutex` has no concept of priority, and the standard library doesn't manage scheduling policies, so on general platforms you usually don't need to worry about this. But if you run C++ on an RTOS (like FreeRTOS, ThreadX), priority inversion is an unavoidable issue. The most common solution is **priority inheritance**—when `Low` holds a lock needed by `High`, temporarily boost `Low`'s priority to match `High`'s. This way `Medium` can't preempt it, `Low` can release the lock as soon as possible, and `High` doesn't have to wait indefinitely. The POSIX thread library provides `pthread_mutexattr_setprotocol` with `PTHREAD_PRIO_INHERIT` to enable this mechanism, and mainstream RTOSes basically all support similar operations.
+int main()
+{
+    std::thread t1(thread1);
+    std::thread t2(thread2);
+    t1.join();
+    t2.join();
+    return 0;
+}
+```
 
-## Categorizing Problems: Our Roadmap
+The problem with this code: if the two threads' execution rhythms happen to line up, they will keep yielding to each other over and over. In practice, scheduling nondeterminism means they will most likely reach the critical section eventually (which is why the code caps things with a finite number of retries as a safety net), but the livelock risk is real.
 
-At this point, we have met the most common family of issues in concurrent programming. To facilitate future learning, we divide them into three categories:
+How do we fix it? The idea is to introduce **random backoff** — after a collision, don't retry immediately; wait a random interval before trying again, and the two threads' rhythms will have a hard time staying in sync. The same idea is all over networking protocols: Ethernet's CSMA/CD, for instance, relies on random backoff to resolve channel collisions.
 
-**Correctness issues** are the baseline and must be eliminated. Data races lead to UB, and race conditions lead to logic errors—these are "program behavior is incorrect" issues. Tools to eliminate data races are atomic and mutex; eliminating race conditions also requires careful interface design (making check and act indivisible). This is the core content of chapters 1 through 3.
+## Starvation: Never Your Turn
 
-**Liveness issues** are more subtle and require analysis and testing to discover. Deadlock is "all threads stuck", livelock is "threads running but no progress", starvation is "some threads are starved". Solving them requires specific strategies: unified lock order prevents deadlock, random backoff prevents livelock, fair scheduling prevents starvation. This is covered in chapters 2 and 4.
+Starvation differs from deadlock: in deadlock every thread is stuck; under starvation, certain threads are left "hungry" — they want the resource but it is never their turn, while the other threads keep running and feeding as usual.
 
-**Real-time issues** are less prominent in general applications, but are crucial in embedded and real-time systems. Priority inversion is the most typical example, requiring operating system support (priority inheritance protocol). If your target platform is an RTOS environment like STM32, chapters 1 through 4 will include discussions of embedded scenarios.
+The most common scenario is an unfair scheduling policy. Say a read-write lock always grants read locks preferentially: under a steady stream of read requests, the writer thread may never get its chance — that's "writer starvation". Likewise, if a thread pool's task queue uses priority scheduling, low-priority tasks may never make it to the front of the line.
 
-Correctness first, then performance. Eliminate data races and race conditions first, then consider liveness and real-time issues. This order is important—if your program can't even guarantee correctness, discussing deadlock prevention or priority inheritance is meaningless.
+The core idea for solving starvation is to introduce **fairness**, with the concrete technique depending on the scenario: the read-write lock can switch to a writer-preference policy, the task queue can use round-robin or priority aging, and the lock implementation can use a fair lock such as the ticket lock. Fairness usually costs some throughput — a fair scheduling policy is more conservative than a greedy one, after all — but it's the necessary price of keeping a system running stably.
+
+## Priority Inversion: When High Priority Gets Blocked by Low Priority
+
+Priority inversion is a sneaky problem with outsized impact. Any embedded folks in the room? You've all played with RTOSes, and I trust everyone here can recite the interview-script answer better than the next person! The most famous case is NASA's 1997 **Mars Pathfinder** probe — the real-time system on the probe would reset itself mid-run, and the ground team spent quite a while tracking it down before they found priority inversion pulling the strings: a high-priority bus-management task was indirectly wedged by a low-priority meteorological task, and the system kept rebooting.
+
+Let's take the process apart. Suppose there are three tasks — `high_prio_task`, `mid_prio_task`, and `low_prio_task` — with strictly decreasing priority. `low_prio_task` takes a lock first and is busy using it; then `mid_prio_task` becomes ready, has higher priority, and preempts `low_prio_task`. Right after that, `high_prio_task` also becomes ready — it has the highest priority, but it needs the very lock `low_prio_task` holds, so it has no choice but to block and wait. The trouble is that `low_prio_task`, freshly preempted by `mid_prio_task`, never gets to run at all — and so has no way to release the lock. The upshot: `high_prio_task`, the highest-priority task in the system, is indirectly stuck behind `mid_prio_task`, whose priority is lower than its own. No particular line of code is wrong — this is a structural flaw of the scheduling mechanism itself.
+
+Back on the C++ side: `std::mutex` itself has no notion of priority, and the standard library stays out of scheduling policy, so on general-purpose platforms you usually don't have to worry about this. But if you run C++ on an RTOS (FreeRTOS or ThreadX, say), priority inversion is a problem you cannot dodge. The most common remedy is **priority inheritance**: when `low_prio_task` holds the lock `high_prio_task` needs, temporarily raise `low_prio_task`'s priority to match `high_prio_task`'s. Now `mid_prio_task` can no longer outmuscle it, `low_prio_task` can release the lock as quickly as possible, and `high_prio_task` doesn't sit waiting indefinitely. The POSIX thread library offers `pthread_mutexattr_setprotocol` together with `PTHREAD_PRIO_INHERIT` to enable the mechanism, and mainstream RTOSes broadly support something similar.
+
+## Classifying the Problems: Our Roadmap
+
+At this point we've met the most common family of concurrency problems. To make what follows easier to study, let's sort them into three categories:
+
+**Correctness problems** are the baseline and must be eliminated. Data races lead to UB; race conditions lead to logic errors — these are all "the program behaves wrongly" problems. The tools for eliminating data races are atomic and mutex; eliminating race conditions additionally takes careful interface design (making check and act indivisible). That is the core subject of ch01-ch03.
+
+**Liveness problems** are sneakier and have to be ferreted out through analysis and testing. Deadlock is "every thread is stuck"; livelock is "threads are running but making no progress"; starvation is "some threads go hungry". Each calls for its own strategy: consistent lock ordering against deadlock, random backoff against livelock, fair scheduling against starvation. That is the subject of ch02 and ch04.
+
+**Real-time problems** rarely stand out in ordinary applications, but they are critical in embedded and real-time systems. Priority inversion is the most typical example, and it needs operating-system support (the priority inheritance protocol). If your target platform is an RTOS environment such as STM32, ch01-ch04 weave in discussions of embedded scenarios along the way.
+
+Correctness first, performance second. First eliminate data races and race conditions, then worry about liveness and real-time issues. The order matters — if your program can't even guarantee correctness, debating deadlock prevention or priority inheritance is pointless.
 
 ## Exercises
 
-### Exercise 1: Reproduce a Data Race
+### Exercise 1: Reproduce a data race
 
-Compile and run the data race example above. Run it multiple times and observe the results. Then switch to `std::atomic<int>` and confirm the result stabilizes at 2,000,000. Try increasing the number of threads (4, 8) and observe if the deviation in the non-atomic version is larger.
+Compile and run the data race example above and run it several times, watching the results. Then switch to `std::atomic<int>` and confirm that the result settles at 2000000. Try raising the number of threads (4, 8) and see whether the non-atomic version drifts even further off.
 
 ### Exercise 2: Reproduce a Deadlock
 
-Run the deadlock example above. The program will most likely get stuck (if it doesn't, try a few more times—deadlock triggering depends on scheduling timing). Then replace the two `std::lock_guard`s with `std::scoped_lock` and confirm the program exits normally.
+Run the deadlock example above. The program will most likely hang (if it doesn't, try a few more times — triggering a deadlock depends on scheduling timing). Then replace the two `lock_guard`s with `std::scoped_lock` and confirm that the program exits normally.
 
-### Exercise 3: Identify a Race Condition
+### Exercise 3: Spot the race condition
 
 Does the following code have a race condition? If so, where is the problem?
 
 ```cpp
-std::mutex map_mutex;
-std::map<int, int> cache;
+std::map<std::string, int> cache;
+std::mutex cache_mutex;
 
-int get_value(int key) {
+int get_or_compute(const std::string& key)
+{
     {
-        std::lock_guard<std::mutex> lock(map_mutex);
-        if (cache.count(key)) return cache[key];
+        std::lock_guard<std::mutex> lock(cache_mutex);
+        auto it = cache.find(key);
+        if (it != cache.end()) {
+            return it->second;
+        }
     }
-
-    // Expensive calculation outside the lock
-    int value = expensive_calculation(key);
-
+    // compute outside the lock
+    int value = expensive_computation(key);
     {
-        std::lock_guard<std::mutex> lock(map_mutex);
+        std::lock_guard<std::mutex> lock(cache_mutex);
         cache[key] = value;
-        return value;
     }
+    return value;
 }
 ```
 
-Hint: If two threads enter the "calculation outside lock" phase for the same key simultaneously, what happens? The result might not be a bug (the final written value is the same), but what if `expensive_calculation` has side effects or is very time-consuming? This is a reflection of "check-then-act" in a more hidden form.
+Hint: what happens if two threads enter the "compute outside the lock" phase for the same key at the same time? The outcome may not be a bug (both threads end up writing the same value), but what if `expensive_computation` has side effects, or is expensive to run? That's "check-then-act" showing up in a sneakier form.
 
 ## References
 
@@ -312,4 +363,4 @@ Hint: If two threads enter the "calculation outside lock" phase for the same key
 - [Why Undefined Semantics for C++ Data Races? — Hans Boehm](https://www.hboehm.info/c++mm/why_undef.html)
 - [Multi-threaded executions and data races — cppreference](https://en.cppreference.com/cpp/language/multithread)
 - [Dealing with Benign Data Races the C++ Way — Bartosz Milewski](https://bartoszmilewski.com/2014/10/25/dealing-with-benign-data-races-the-c-way/)
-- [What Really Happened on Mars? — Mike Jones (Mars Pathfinder Priority Inversion Case)](https://research.microsoft.com/en-us/um/people/mbj/mars_pathfinder/what_really_happened_on_mars.html)
+- [What Really Happened on Mars? — Mike Jones (the Mars Pathfinder priority inversion case)](https://research.microsoft.com/en-us/um/people/mbj/mars_pathfinder/what_really_happened_on_mars.html)

@@ -8,23 +8,29 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: "Deep Dive into C/C++ Compilation — Dynamic Libraries A3: Let's Talk Symbol Visibility"
-description: 'A chat about symbol visibility at the ABI layer: inspecting exported symbols with nm/dumpbin, and the four ways to control it — GCC''s -fvisibility, __attribute__((visibility)), #pragma visibility, and MSVC''s __declspec(dllexport/dllimport).'
+title: "Deep Dive into C/C++ Compilation and Linking · Part 6: Dynamic Libraries A3 — Let's Talk About Symbol Visibility"
+description: 'A chat about symbol visibility at the ABI layer: inspecting exported symbols with nm/dumpbin, plus four ways to control them — GCC -fvisibility, __attribute__((visibility)), #pragma visibility, and MSVC __declspec(dllexport/dllimport)'
 cpp_standard: [11, 14, 17, 20]
+translation:
+  source: documents/compilation/06-symbol-visibility.md
+  source_hash: 160f79976569720f69e451c8cabf92b707c4b807537e5c89f5a7101e213ec989
+  translated_at: '2026-09-26T00:01:57+00:00'
+  engine: anthropic
+  token_count: 2000
 ---
-# Deep Dive into C/C++ Compilation — Dynamic Libraries A3: Let's Talk Symbol Visibility
+# Deep Dive into C/C++ Compilation and Linking · Part 6: Dynamic Libraries A3 — Let's Talk About Symbol Visibility
 
-Some of you reading along might be wondering — what exactly *is* symbol visibility? Is it the same as those C++ keywords, `public` or `private`? Worth pointing out: no, it isn't. Those two are a baseline feature handed to you as a package deal by the language syntax and the compiler's checks. What we're discussing here, symbol visibility, is something more aggressive — it refers to visibility at the ABI layer of a symbol.
+Some friends of mine might find this odd — what on earth is symbol visibility? Is it those C++ keywords of ours, `public` or `private`? Worth pointing out: no, it is not. Those are a baseline feature that the language grammar and the compiler's checks hand to you as a package deal. The symbol visibility we are discussing here is a more aggressive beast: it refers to visibility at the ABI layer of the symbol.
 
 #### Tips: How to Inspect ABI Symbols
 
-> Veterans can skip this one.
+> Veterans can skip this one
 
-Since some of you might be landing on this article for the first time and may not yet be clear on how to pull off "inspect the visible symbols contained in a given relocatable object file, or in an executable / library file built from relocatable files", I'm planning to take a moment here and fill in how to do this basic operation on the major Windows and Linux platforms.
+Since some of you may be reading this article for the first time and may not yet know how to carry out "inspect the visible symbols contained in a given relocatable file, or in an executable or library file assembled from relocatable files", I plan to set aside a moment here and cover how this basic operation is done on the two major platforms, Windows and Linux.
 
 ##### GNU/Linux
 
-Simple enough, we just reach for the `nm` tool. Say we have a library file `libsome_helpers.so` ready to inspect — punch in the command below and you're done.
+Simple enough — we just reach for the nm tool. Say we have a library file `libsome_helpers.so` ready for inspection; entering the command below gets it done.
 
 
 ```cpp
@@ -41,7 +47,7 @@ Simple enough, we just reach for the `nm` tool. Say we have a library file `libs
 
 ##### Windows
 
-This one's easy too. Say I want to inspect `CCWidget.dll` — to see its exported symbols, it's `dumpbin /EXPORTS CCWidgets.dll`
+This one is easy too. Say the file I want to inspect is CCWidgets.dll — to view its exported symbols, run `dumpbin /EXPORTS CCWidgets.dll`
 
 
 ```cpp
@@ -67,7 +73,7 @@ File Type: DLL
 
           1    0 00002F50 ??0AnimationConfig@animation@CCWidgetLibrary@@QEAA@$$QEAU012@@Z
           2    1 00002F80 ??0AnimationConfig@animation@CCWidgetLibrary@@QEAA@AEBU012@@Z
-          3    2 00002F50 ??0AnimationConfig@animation@CCWidgetLibrary@@QEAA@XZ
+          3    2 00002FB0 ??0AnimationConfig@animation@CCWidgetLibrary@@QEAA@XZ
           4    3 00002FD0 ??0AnimationSession@animation@CCWidgetLibrary@@QEAA@$$QEAU012@@Z
           5    4 00003010 ??0AnimationSession@animation@CCWidgetLibrary@@QEAA@AEBU012@@Z
           6    5 00003050 ??0AnimationSession@animation@CCWidgetLibrary@@QEAA@XZ
@@ -79,19 +85,19 @@ File Type: DLL
 
 ```
 
-## How Do the Mainstream Toolchains Control Symbol Visibility?
+## How the Mainstream Toolchains Control Symbol Visibility
 
-So back on topic — how do the mainstream toolchains control symbol visibility? Let's split it up and take them one at a time.
+So, back to the main topic: how do the mainstream toolchains control symbol visibility? We will take them one at a time.
 
-#### How to Control Symbol Visibility Under GNU Linux
+#### Controlling Symbol Visibility Under GNU/Linux
 
-##### Way 1: Pass -fvisibility Straight to the Compiler to Control Export of All Symbols
+##### Option 1: Pass -fvisibility Straight to the Compiler to Control the Export of All Symbols
 
-The first way is the bluntest. Say we have a private dependency project that we absolutely don't want to expose any symbols from — at compile time we can hand `-fvisibility` to gcc/g++. By default, the GNU C/C++ toolchain treats **any symbol that hasn't been given any visibility decoration or an explicit visibility** as public. That is, `-fvisibility=default`. If we want to hide them, then in the step that builds the dynamic library we need to set it to `-fvisibility=hidden`, and all the symbols will go un-exported. I haven't actually used this one myself, for what it's worth — just dug up that the usage exists.
+The first approach is the bluntest of the bunch. Say we have a private dependency project whose symbols we do not want to expose at all — in that case, we can pass -fvisibility to gcc/g++ at compile time. By default, the GNU C/C++ toolchain treats **any symbol that carries no visibility decoration and no explicitly specified visibility** as public — that is `-fvisibility=default`. If we want things hidden, then in the step that produces the dynamic library we need to specify `-fvisibility=hidden`, and none of the symbols get exported. I have never actually used this one myself, mind you — I merely looked up that the usage exists.
 
-##### Way 2: The Most Common Approach — Using `__attribute__((visibility(< "default" | "hidden" >)))`
+##### Option 2: The Most Common Approach — `__attribute__((visibility(< "default" | "hidden" >)))`
 
-I really like specifying it this way. Taking a simple logging library I threw together as a toy project as the example: for every API I plan to make public at the ABI layer, I force `__attribute__((visibility("default")))` on it; conversely, any symbol that shouldn't be used gets slapped with `__attribute__((visibility("hidden")))`.
+I am quite fond of specifying it this way. Take the simple logging library I once wrote as a toy: for every API that is planned to be public at the ABI layer, I forcibly attach `__attribute__((visibility("default")))`; conversely, any symbol that is not supposed to be used gets `__attribute__((visibility("hidden")))` stamped on it.
 
 
 ```cpp
@@ -106,9 +112,9 @@ I really like specifying it this way. Taking a simple logging library I threw to
 
 ```
 
-##### Way 3: Decorating a Cluster of Aggregated Symbols with `#pragma visibility push/pop`
+##### Option 3: Decorating a Whole Group of Symbols with `#pragma visibility push/pop`
 
-Say you've genuinely got a huge pile of symbols on your hands whose visibility you need to flip, and you don't want to glue the macro I used as an example above onto them one symbol at a time — you can reach for the compiler's preprocessing directive.
+Now, suppose you really do have an enormous pile of symbols on hand whose visibility needs changing, and you do not want to glue the macro from my example above onto them one symbol at a time — you can turn to the compiler's preprocessing directives.
 
 ```cpp
 #pragma visibility push("hidden")
@@ -121,13 +127,13 @@ int api_minus(int a, int b);
 
 ```
 
-#### How Windows MSVC Does It
+#### How It Is Done on Windows with MSVC
 
-Bad news here — exporting symbols from a Windows DLL dynamic library comes with a comparatively fussy decoration mechanism. That is, every symbol you plan to export needs to be decorated with `__declspec(dllexport)` to be exported; and then when we go to use those symbols, we still have to tag them with `__declspec(dllimport)`.
+Unfortunately, exporting symbols from a Windows DLL dynamic library comes with a comparatively convoluted decoration mechanism. That is, a symbol you plan to export must be decorated with `__declspec(dllexport)` to be exported; and when it comes time to use those symbols, we in turn need to mark them `__declspec(dllimport)`.
 
 ```cpp
 #ifdef CCLOG_BUILD_SHARED
-/* If we plan to exports symbols to DLL, we need to decorate symbols by this */
+/* If we plan to export symbols to DLL, we need to decorate symbols by this */
 /* Others in case can use the symbols */
 #define CCLOG_API __declspec(dllexport)
 #else
@@ -137,6 +143,6 @@ Bad news here — exporting symbols from a Windows DLL dynamic library comes wit
 
 ```
 
-## From a Modern CMake Perspective
+## A Modern CMake Perspective
 
-All that hand-rolled `-fvisibility=hidden`, `__attribute__((visibility))`, `-fPIC` legwork — in a project managed by CMake, the build system has basically taken it off your hands. `add_library(foo SHARED ...)` slaps `-fPIC` onto the target for you by default (static libraries don't get it by default; reach for `set(CMAKE_POSITION_INDEPENDENT_CODE ON)` when you need it). Want to hide symbols across the board? Set `set_target_properties(foo PROPERTIES CXX_VISIBILITY_PRESET hidden)` on the target and CMake will feed `-fvisibility=hidden` to the compiler for you; pair it with `VISIBILITY_INLINES_HIDDEN ON` and the inline functions get tucked away too. As for that whole `dllexport` / `dllimport` back-and-forth on Windows, CMake ships `GenerateExportHeader` — one macro generates a cross-platform `FOO_API` for you: on Linux it expands to the `visibility` attribute, and on Windows it auto-expands into `dllexport` or `dllimport` depending on whether, at compile time, you're building the library or using it, saving you from hand-writing the `#ifdef` plumbing yourself. So if you're writing a library today, most of this low-level decoration is something you don't have to type by hand — a line or two in the CMake target's property panel and you're all set.
+All that hands-on work with `-fvisibility=hidden`, `__attribute__((visibility))`, and `-fPIC` above is, in projects managed with CMake, mostly taken over by the build system. `add_library(foo SHARED ...)` adds `-fPIC` to the target by default (static libraries do not get it by default — turn on `set(CMAKE_POSITION_INDEPENDENT_CODE ON)` when you need it). To hide symbols across the board, set `set_target_properties(foo PROPERTIES CXX_VISIBILITY_PRESET hidden)` on the target, and CMake will feed `-fvisibility=hidden` to the compiler for you; pair it with `VISIBILITY_INLINES_HIDDEN ON` and the inline functions get tucked away too. As for the `dllexport`/`dllimport` toggling dance on Windows, CMake provides `GenerateExportHeader`: one macro generates a cross-platform `FOO_API` macro for you — on Linux it expands to the `visibility` attribute, while on Windows it automatically expands into `dllexport` or `dllimport` depending on whether, at compile time, you are building the library or using it, sparing you the hand-written `#ifdef` plumbing. So if you are writing a library today, most of these low-level decorations no longer need to be typed out by hand — a line or two in the CMake target's property panel sets it all up.

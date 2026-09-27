@@ -16,7 +16,7 @@ Functions are the basic unit for organizing code, and they're also our first ste
 
 <ChapterNav variant="sub">
   <ChapterLink href="01-function-basics">Function Basics</ChapterLink>
-  <ChapterLink href="02-pass-by-value-ref">Parameter Passing Methods</ChapterLink>
+  <ChapterLink href="02-pass-by-value-ref">Parameter Passing</ChapterLink>
   <ChapterLink href="03-overloading-default">Overloading and Default Parameters</ChapterLink>
   <ChapterLink href="04-inline-constexpr">inline and constexpr Functions</ChapterLink>
 </ChapterNav>

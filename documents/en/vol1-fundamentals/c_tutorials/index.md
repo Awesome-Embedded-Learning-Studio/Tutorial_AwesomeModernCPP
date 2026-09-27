@@ -45,10 +45,10 @@ The C tutorials here are geared toward people who once learned C but have since 
 The advanced topics live in the [advanced_feature/](advanced_feature/) subdirectory and cover more in-depth subjects:
 
 <ChapterNav variant="sub">
-  <ChapterLink num="01" href="advanced_feature/01-arm-architecture-fundamentals" desc="The ARM Cortex-M instruction set, registers, the exception vector table, and processor modes">ARM Architecture and Fundamentals</ChapterLink>
+  <ChapterLink num="01" href="advanced_feature/01-arm-architecture-fundamentals" desc="The ARM Cortex-M instruction set, registers, the exception vector table, and processor modes">ARM Architecture and System Fundamentals</ChapterLink>
   <ChapterLink num="02" href="advanced_feature/02-cache-and-memory-hierarchy" desc="Cache lines, mapping strategies, the MESI protocol, and cache-friendly programming">Cache Mechanisms and Memory Hierarchy</ChapterLink>
-  <ChapterLink num="03" href="advanced_feature/03-c-traps-and-pitfalls" desc="Syntax and semantic traps, compiler behavior, and analysis against the standard">C Traps and Common Pitfalls</ChapterLink>
-  <ChapterLink num="04" href="advanced_feature/04-oop-in-c" desc="Simulating classes with structs plus function pointers, encapsulation, inheritance, and polymorphism">Object-Oriented Programming in C</ChapterLink>
+  <ChapterLink num="03" href="advanced_feature/03-c-traps-and-pitfalls" desc="Syntax and semantic traps, compiler behavior, and analysis against the standard">C Pitfalls and Common Errors</ChapterLink>
+  <ChapterLink num="04" href="advanced_feature/04-oop-in-c" desc="Simulating classes with structs plus function pointers, encapsulation, inheritance, and polymorphism">Implementing Object-Oriented Programming in C</ChapterLink>
   <ChapterLink num="05" href="advanced_feature/05-handmade-dynamic-array" desc="A type-safe dynamic array library, growing and shrinking memory, and API design">Building a Dynamic Array from Scratch</ChapterLink>
   <ChapterLink num="06" href="advanced_feature/06-handmade-linked-list" desc="Insertion, deletion, and search algorithms, plus sentinel node tricks">Building a Singly Linked List</ChapterLink>
   <ChapterLink num="07" href="advanced_feature/07-embedded-c-patterns" desc="Register access, volatile, interrupt safety, and peripheral abstraction layers">Embedded C Programming Patterns</ChapterLink>

@@ -6,7 +6,7 @@ cpp_standard:
 - 17
 - 20
 - 23
-description: Iterate over all elements in a container or array using more concise
+description: Iterate over all elements in a container or array with more concise
   syntax
 difficulty: beginner
 order: 7
@@ -15,74 +15,55 @@ tags:
 - host
 - cpp-modern
 - beginner
-title: Range-based for loop
+title: Range-Based for Loop
 translation:
   source: documents/cpp-reference/core-language/07-range-for.md
   source_hash: 7da4ee12b4ec2364d3813b54c9f41abddd7080d87b219bcd9ec56228fa562f92
-  translated_at: '2026-06-16T03:28:58.111263+00:00'
+  translated_at: '2026-09-27T01:38:09+00:00'
   engine: anthropic
-  token_count: 325
+  token_count: 300
 ---
-# Range-based for Loop (C++11)
+# Range-Based for Loop (C++11)
 
-## In a Nutshell
+## In a nutshell
 
-Syntactic sugar that allows us to traverse all elements of a container or array without manually writing iterators, making loop code more concise and less error-prone.
+Syntactic sugar that lets us iterate over every element of a container or array without hand-writing iterators, making loop code more concise and less error-prone.
 
-## Header
+## Header file
 
 None (language feature)
 
-## Core API Quick Reference
+## Core API Cheat Sheet
 
 | Operation | Signature | Description |
-|-----------|-----------|-------------|
-| Read-only traversal | `for (auto item : container)` | Copies each element to `item` |
-| Reference traversal | `for (auto& item : container)` | Accesses elements via lvalue reference (mutable) |
-| Const reference traversal | `for (const auto& item : container)` | Avoids copying and prevents modification |
-| Initialization statement | `for (init; auto& item : container)` | Executes initialization before the loop (since C++20) |
-| Array traversal | `for (auto& item : array)` | Supports native arrays of known size |
+|------|------|------|
+| Read-only traversal | `for (auto item : range)` | Copies each element into `item` |
+| Reference traversal | `for (auto& item : range)` | Accesses elements via lvalue reference (modifiable) |
+| Const reference traversal | `for (const auto& item : range)` | Avoids copies and prevents modification |
+| Init statement | `for (init; auto& item : range)` | Runs initialization before the loop starts (since C++20) |
+| Array traversal | `for (auto item : arr)` | Works with native arrays of known size |
 
 ## Minimal Example
 
 ```cpp
 #include <vector>
 #include <iostream>
-
+// Standard: C++11
 int main() {
-    std::vector<int> data = {1, 2, 3, 4, 5};
-
-    // Read-only traversal (copies elements)
-    for (auto val : data) {
-        std::cout << val << " ";
+    std::vector<int> v = {1, 2, 3};
+    for (const auto& x : v) {
+        std::cout << x << ' ';
     }
-    // Output: 1 2 3 4 5
-
-    // Reference traversal (modifies elements)
-    for (auto& val : data) {
-        val *= 2;
-    }
-
-    // Const reference traversal (avoids copying)
-    for (const auto& val : data) {
-        std::cout << val << " ";
-    }
-    // Output: 2 4 6 8 10
-
-    // C++20: Initialization statement
-    for (auto idx = 0; const auto& val : data) {
-        std::cout << idx << ": " << val << "\n";
-        ++idx;
-    }
+    return 0;
 }
 ```
 
 ## Embedded Applicability: High
 
-- Zero-overhead abstraction: Compiles to code equivalent to hand-written iterator or index loops, with no extra runtime cost.
-- Concise syntax reduces errors caused by out-of-bounds indices or invalid iterators.
-- Very practical for compile-time traversal of `std::array` when combined with `constexpr`.
-- Note: Be cautious of lifetime issues when traversing member functions that return temporary objects (this is UB prior to C++23).
+- Zero-overhead abstraction: compiles to code fully equivalent to a hand-written iterator or index loop, with no extra runtime cost
+- The concise syntax cuts down on bugs caused by out-of-bounds indices or invalidated iterators
+- Also very practical for compile-time traversal of `constexpr` arrays
+- Caution: when the range comes from a member function returning a temporary, watch out for lifetime issues (UB before C++23)
 
 ## Compiler Support
 
@@ -96,4 +77,4 @@ int main() {
 
 ---
 
-*Part of the content references [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*
+*Part of the content is referenced from [cppreference.com](https://en.cppreference.com/) and is licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*

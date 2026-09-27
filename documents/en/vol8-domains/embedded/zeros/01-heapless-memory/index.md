@@ -33,8 +33,8 @@ In a kernel with no heap, no exceptions, and no RTTI, where do the task control 
 <ChapterNav variant="sub">
   <ChapterLink href="01-why-pool-and-bitmap">A World Without a Heap: How Memory Gets Handed Out, and What a Bitmap Is</ChapterLink>
   <ChapterLink href="02-write-the-bitmap">Writing the Bitmap: A Fixed-Capacity Bitmap</ChapterLink>
-  <ChapterLink href="03-block-pool">The Fixed-Size Block Pool: An Allocator with One Bit per Block</ChapterLink>
-  <ChapterLink href="04-make-destroy-and-guards">Make/Destroy: Typed Birth and Death, and Compile-Time Defenses</ChapterLink>
+  <ChapterLink href="03-block-pool">Fixed-Size Block Pool: An Allocator with One Bit per Block</ChapterLink>
+  <ChapterLink href="04-make-destroy-and-guards">Make/Destroy: Typed Birth and Death, and the Compile-Time Line of Defense</ChapterLink>
 </ChapterNav>
 
 The next article hits the -nostdlib wall: memset goes missing, nobody picks up the bill for global constructors, and `__cxa_guard_*` has nowhere to call home — three gates, taken one at a time. Rolling out progressively.

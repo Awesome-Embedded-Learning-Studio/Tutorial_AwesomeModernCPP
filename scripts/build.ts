@@ -113,7 +113,8 @@ function countMdFiles(dir: string): number {
 }
 
 // 图片类资产扩展名:en 正文以卷内相对路径引图,但资产往往只存在中文侧
-const ASSET_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico', '.drawio'])
+// (含音视频:HTML <video>/<audio> 标签的相对 src 也走同样的回拷路径)
+const ASSET_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico', '.drawio', '.mp4', '.webm', '.mov', '.mp3', '.wav', '.ogg'])
 
 /**
  * 把中文卷目录下的图片资产回拷进 en 暂存树(en 侧已有同名文件则跳过)。

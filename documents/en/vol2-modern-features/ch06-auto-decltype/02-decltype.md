@@ -10,7 +10,7 @@ difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- 'Chapter 6: Deep Dive into auto Deduction: More Than Just Laziness'
+- 'Deep Dive into auto Deduction: More Than Just Laziness'
 reading_time_minutes: 10
 related:
 - 'Class Template Argument Deduction (CTAD)'

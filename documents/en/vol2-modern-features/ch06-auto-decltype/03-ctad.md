@@ -8,7 +8,7 @@ difficulty: intermediate
 order: 3
 platform: host
 prerequisites:
-- 'Chapter 6: Deep Dive into auto Deduction: More Than Just Laziness'
+- 'Deep Dive into auto Deduction: More Than Just Laziness'
 reading_time_minutes: 13
 related:
 - decltype and Return Type Deduction

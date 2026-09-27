@@ -19,6 +19,12 @@ tags:
   - intermediate
   - 内存管理
   - 基础
+translation:
+  source: documents/vol8-domains/ai/tiny_ml/stage1/03-why-not-built-in.md
+  source_hash: 8af3962c5c2578a9fbe4952a54d4cddc54a71314f80b6339eb4c1a3088a3902e
+  translated_at: '2026-09-26T03:56:55+00:00'
+  engine: anthropic
+  token_count: 1500
 ---
 
 # Why not use what's already there — three suspects on trial
@@ -71,7 +77,7 @@ Do the math: rather than use nested array and then spend another lap bolting on 
 
 ## None of the three works — a design gets forced out
 
-Lay the fates of the three candidates side by side and a common thread shows: **what we need is, in essence, a fixed-size contiguous float storage plus a usable 2D access on top.** The three candidates either get the storage wrong (vector on the heap, and dynamically sized) or leave the access layer too rough (native arrays and nested array neither give you `(i, j)`, `flat()`, `at()`).
+Lay the fates of the three candidates side by side and a common thread shows: **what we need is, in essence, a fixed-size contiguous float storage plus a usable 2D access on top.** The three candidates either get the storage wrong (vector on the heap, and dynamically sized) or leave the access layer too rough (neither native arrays nor nested array gives you `(i, j)`, `flat()`, `at()`).
 
 So go straight for the essence. Storage is `std::array<float, Rows * Cols>` — a fixed-size contiguous memory, compile-time sized, no heap allocation, naturally matching `inline constexpr std::array` weights. Access wraps a layer on top: `operator()(i, j)` turns the 2D coordinate into a 1D index, and for the cases that need checking, a separate `at()` goes through `std::expected`. Dimensions Rows and Cols go straight into the template parameters — baked into the type, visible at compile time, and as a bonus the type system catches shape errors for you.
 

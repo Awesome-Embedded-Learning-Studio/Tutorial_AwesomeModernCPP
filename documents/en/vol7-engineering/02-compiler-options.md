@@ -5,30 +5,30 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Detailed introduction to common GCC/Clang compiler options, including
-  language standards, optimization levels, warning control, and C++ runtime trimming.
+description: A detailed guide to common GCC/Clang compiler options, including language
+  standards, optimization levels, warning control, and C++ runtime trimming
 difficulty: beginner
 order: 2
 platform: host
 prerequisites:
-- 'Chapter 0: 前言与基础'
+- 'Chapter 0: Preface and Fundamentals'
 reading_time_minutes: 8
 related: []
 tags:
 - cpp-modern
 - host
 - intermediate
-title: Guide to Common Compiler Options
+title: A Guide to Common Compiler Options
 translation:
   source: documents/vol7-engineering/02-compiler-options.md
   source_hash: 0727003c8586c60045636cc22aa1d24ac2d36ec380e0974e040a71c9a5eaf078
-  translated_at: '2026-06-16T04:42:10.835464+00:00'
+  translated_at: '2026-09-27T02:28:47+00:00'
   engine: anthropic
-  token_count: 1542
+  token_count: 2500
 ---
-# Modern Embedded C++ Tutorial: Common Compiler Flags Guide
+# Modern Embedded C++ Tutorial: A Guide to Common Compiler Parameters
 
-In real-world embedded development, every single byte of Flash and RAM is truly saved by the developer. Although C++ carries the bias of being a "heavyweight language," by configuring compiler flags appropriately, we can precisely trim runtime overhead, achieving performance and code size that even surpass hand-written C code. (I believe you have already seen this in Chapter 0).
+In real-world embedded development, every single byte of Flash and RAM is genuinely something the developer has to save. C++ may carry the reputation of being a "heavyweight language", but with the compiler options configured sensibly, we can trim the runtime overhead so precisely that performance and code size can even beat hand-written C. (I trust you all saw this for yourselves back in Chapter 0.)
 
 ------
 
@@ -36,185 +36,200 @@ In real-world embedded development, every single byte of Flash and RAM is truly 
 
 #### Language Standard Control: `-std=`
 
-This is the most direct way to define the "modernity" of a project.
+This is the most direct way to define how "modern" your project is.
 
-- **Parameter Format**: `-std=c++11`, `-std=c++14`, `-std=c++17`, `-std=c++23`.
-- **GNU Extension Version**: `-std=gnu++17`. Compared to the standard `-std=c++17`, it allows the use of some GCC-specific non-standard extensions (such as special inline assembly syntax). In low-level embedded development, we sometimes have to use the `gnu++` version.
+- **Flag format**: `-std=c++11`, `-std=c++14`, `-std=c++17`, `-std=c++20`.
+- **The GNU extended variant**: `gnu++17`. Compared with the standard `c++17`, it allows a number of GCC-specific non-standard extensions (such as special inline assembly syntax). In low-level embedded development, you sometimes have no choice but to use the `gnu++` variant.
 
-#### Why choose C++17 or above in embedded?
+#### Why Choose `-std=c++17` or Above for Embedded Work
 
-- **The Power of `constexpr`**: In C++17, a significant amount of logic can be moved to compile-time calculation, directly reducing runtime CPU load and Flash footprint.
-- **`std::span` (C++20)**: It is the perfect replacement for passing buffers in embedded development, safer than traditional raw pointers with no extra overhead.
-- **Structured Binding**: Makes parsing complex sensor data structures extremely elegant.
+- **The power of `constexpr`**: in C++17, a large amount of logic can be moved to compile-time evaluation, directly cutting the runtime CPU load and Flash footprint.
+- **`std::span` (C++20)**: the perfect replacement for passing buffers around in embedded development — safer than the traditional `uint8_t* ptr, size_t len` pair, with zero extra overhead.
+- **Structured bindings**: they make parsing complex sensor data structures remarkably elegant.
 
 ------
 
-#### Preprocessor and Macros: `-D` and `-U`
+#### Preprocessor and Macro Definitions: `-D` and `-U`
 
-In embedded development, due to hardware differences, we often need "conditional compilation."
+In embedded work, hardware differences mean we constantly need "conditional compilation".
 
-- **`-D`**: Define a macro.
-  - Example: `-DDEBUG` or `-DSTM32F407xx`.
-  - **Modern Practice**: Try to control this via `target_compile_definitions` in CMake, rather than filling your code with `#ifdef`.
-- **`-U`**: Undefine a defined macro.
+- **`-D<macro>=<value>`**: defines a macro.
+  - For example: `-DSTM32F407xx` or `-DDEBUG_LEVEL=2`.
+  - **The modern approach**: control these through CMake with `target_compile_definitions(target PRIVATE STM32F407xx)` wherever possible, instead of filling your code with `#define`s.
+- **`-U<macro>`**: undefines an already-defined macro.
 
-> **Warning**: Over-reliance on macros makes code paths difficult to test (Code Coverage cannot cover branches where macros are disabled). In modern C++, it is recommended to prioritize `if constexpr` combined with constant objects.
+> **Warning**: leaning on macros too heavily makes code paths hard to test (code coverage cannot reach the branches where the macro is switched off). In modern C++, prefer `if constexpr` combined with constant objects.
 
 ------
 
 #### Path Search and Library Linking: `-I`, `-isystem`, `-L`, `-l`
 
-This is where beginners are most prone to configuration errors in CMake.
+This is where beginners most easily get their CMake configuration wrong.
 
-- **`-I` (Include)**: Specify header file search paths.
-- **`-isystem`**: Specify "system" header file paths.
-  - **The Nuance**: If a third-party library (like ST's HAL library) generates a lot of meaningless warnings, use `-isystem` to include them. The compiler will **automatically suppress all warnings in that directory**, keeping your console clean.
-- **`-L`**: Specify the search directory for static libraries (`.a` files).
-- **`-l`**: Link the specified library.
-  - Note: If the library name is `libfoo.a`, the parameter is `-lfoo` (remove the `lib` prefix and extension).
+- **`-I <dir>` (include)**: specifies header file search paths.
+- **`-isystem <dir>`**: specifies paths for "system" header files.
+  - **The elegant part**: when a third-party library (ST's HAL library, say) produces mountains of meaningless warnings, include it with `-isystem` and the compiler will **automatically suppress all warnings from that directory**, keeping your console clean.
+- **`-L <dir>`**: specifies the search directory for static libraries (`.a`).
+- **`-l<name>`**: links the given library.
+  - Note: if the library file is named `libmath.a`, the flag is `-lmath` (drop the `lib` prefix and the extension).
 
 ------
 
-#### Output Management and Debug Info: `-o` and `-g`
+#### Output Management and Debug Information: `-o` and `-g`
 
-- **`-o`**: Specify the output filename. In cross-compilation, we usually generate an ELF file, and then use `objcopy` to convert it to HEX or BIN.
+- **`-o <file>`**: specifies the output file name. In cross-compilation we usually generate an `.elf` file first, then convert it to `.bin` or `.hex` with `objcopy`.
 - **`-g` and `-g3`**:
-  - `-g` generates standard debugging symbols for GDB debugging.
-  - **`-g3`**: Even includes debugging information for macro definitions. If you need to inspect the value of a certain `#define` during debugging, turn this on.
-  - **Misconception Correction**: Enabling `-g` **does not** increase the code size running on the board. Debugging information only exists in the ELF file on your computer and is not flashed into the MCU's Flash.
+  - `-g` produces standard debug symbols for GDB debugging.
+  - **`-g3`**: even includes debug information for macro definitions. Turn it on if you need to inspect the value of some `#define` while debugging.
+  - **Misconception corrected**: enabling `-g` does **not** increase the size of the code running on the board. Debug information lives only in the `.elf` file on your computer; none of it is flashed into the MCU's Flash.
 
 ------
 
 #### Warning Governance: The `-W` Series (Code Quality)
 
-In safety-sensitive fields like embedded systems, warnings are hidden bugs.
+In a safety-sensitive field like embedded, warnings are bugs in hiding.
 
-- **`-Wall`**: The standard for most developers, enabling most valuable warnings.
-- **`-Werror`**: **Treats all warnings as errors**.
-  - *Recommended Practice*: Force enable `-Werror` in CI/CD (Continuous Integration) environments to ensure committed code has no hidden dangers.
-- **`-Wshadow`**: Warns when a local variable name shadows a global variable name, which is extremely useful during embedded logic switching.
-- **`-Wdouble-promotion`**: **Embedded Essential!** Warns when you unintentionally promote a `float` to a `double`. On MCUs without double-precision hardware floating-point units, this leads to a catastrophic drop in performance.
+- **`-Wall -Wextra`**: the standard kit for the vast majority of developers, turning on most of the warnings that matter.
+- **`-Werror`**: **treats all warnings as errors**.
+  - *Recommended practice*: force `-Werror` on in CI/CD (continuous integration) environments, so that no committed code slips through with hidden problems.
+- **`-Wshadow`**: warns when a local variable name shadows a global one — extremely useful when toggling embedded logic.
+- **`-Wdouble-promotion`**: **a must-have for embedded!** It warns when you inadvertently promote a `float` to a `double`. On MCUs without a double-precision hardware floating-point unit, this causes performance to plummet.
 
 ------
 
-#### Dependency Generation: `-M`, `-MD`
+#### Dependency Generation: `-M`, `-MMD`
 
-Have you ever wondered how CMake knows "because you modified a header file, these 10 source files need to be recompiled"?
+Have you ever wondered how CMake knows that "because you changed one header, these 10 source files need to be recompiled"?
 
-- **`-MD`**: Generates a dependency relationship file with a `.d` suffix during compilation.
-- **Automation**: Modern build systems (CMake/Ninja) handle these options automatically. Understanding this helps you troubleshoot incremental compilation issues like "Why didn't the compiler react after I changed my code?"
+- **`-MMD`**: while compiling, also generates a dependency file with a `.d` extension.
+- **Automation**: modern build systems (CMake/Ninja) handle these flags for you automatically. Understanding them helps you troubleshoot incremental-build puzzles like "why did nothing recompile after I changed the code".
 
-```text
-g++ -c main.cpp -MD -MF main.d
+```cmake
+
+# Compile options
+target_compile_options(${PROJECT_NAME} PRIVATE
+    -std=c++17             # Core: defines the language standard
+    -g3                    # Debug: rich debug information
+    -Wall -Wextra          # Quality: strict warnings
+    -Werror                # Quality: zero tolerance for warnings
+    -Wdouble-promotion     # Performance: prevents implicit double-precision math
+    -ffunction-sections    # Size: one section per function
+    -fdata-sections        # Size: one section per data object
+    -fno-exceptions        # Trimming: disables exceptions
+    -fno-rtti              # Trimming: disables RTTI
+)
+
+# Link options
+target_link_options(${PROJECT_NAME} PRIVATE
+    -Wl,--gc-sections      # Size: garbage-collects dead code
+    -Wl,-Map=${PROJECT_NAME}.map  # Diagnostics: generates the memory map file
+)
+
 ```
 
 ------
 
 ## 1. Optimization Levels: Balancing Speed, Size, and Debugging
 
-GCC and Clang provide multi-level optimization switches. Understanding their differences is a fundamental skill for embedded developers.
+GCC and Clang provide several tiers of optimization switches. Understanding their differences is a fundamental skill for embedded developers.
 
-| **Option** | **Name** | **Core Behavior** | **Applicable Scenarios** |
+| **Option**     | **Name** | **Core Behavior**                        | **Use Cases**                            |
 | ------------ | -------- | -------------------------------------- | ---------------------------------------- |
-| **`-O0`** | No Optimization | Maintains a one-to-one correspondence between code and assembly. | Only for tracking down extremely difficult logic bugs. |
-| **`-Og`** | Debug Optimization | Enables optimizations that do not affect debugging observation. | **First choice for development phase**, balancing performance with single-stepping. |
-| **`-O2`** | Performance Optimization | Enables almost all optimizations that do not trade space for time. | High-performance computing, RTOS task logic. |
-| **`-Os`** | Size Optimization | Enables options in `-O2` that do not increase code size. | **Default choice for embedded release**. |
-| **`-Ofast`** | Fast Optimization | Breaks IEEE 754 standard (does not guarantee floating-point precision). | Pure mathematical calculations where minor precision differences are acceptable. |
+| **`-O0`**    | No optimization | Keeps a one-to-one mapping between code and assembly. | Only for tracking down extremely elusive logic bugs. |
+| **`-Og`**    | Debug optimization | Enables optimizations that do not interfere with debugging observation. | **The first choice during development**, balancing performance with single-stepping. |
+| **`-O2`**    | Performance optimization | Enables almost every optimization that does not trade space for time. | High-performance computing, RTOS task logic. |
+| **`-Os`**    | Size optimization | Enables the `-O2` options that do not increase code size. | **The default choice for embedded releases**. |
+| **`-Ofast`** | Maximum-speed optimization | Breaks the IEEE 754 standard (no floating-point precision guarantees). | Pure mathematical computation where slight precision deviations are acceptable. |
 
-### 💡 Deep Dive: Why not use `-O3` in embedded?
+### 💡 Deep Advice: Why You Should Avoid `-O3` in Embedded Work
 
-`-O3` performs extensive loop unrolling and function inlining. While speed might increase, on MCUs with tight Flash space, it leads to code bloat. It might even degrade performance due to instruction cache (I-Cache) misses.
-
-------
-
-## 2. Trimming C++ Runtime: Shedding Heavy "Armor"
-
-Modern C++ carries some features by default that come at a high cost in embedded systems. With the following two options, we can "slim down" C++ to have overhead similar to C.
-
-### 2.1 `-fno-exceptions` (Disable Exceptions)
-
-- **Cost**: C++ exceptions require massive "unwind table" support, increasing Flash footprint by about 10%~20%.
-- **Consequence**: Cannot use `try`/`catch` or `throw`. If the program errors, it will directly call `std::terminate`.
-- **Embedded Guideline**: In resource-constrained systems (like Cortex-M), **strongly recommended to disable**.
-
-### 2.2 `-fno-rtti` (Disable Runtime Type Information)
-
-- **Cost**: To support `dynamic_cast` and `typeid`, the compiler generates extra metadata (information beyond the vtable) for every class with virtual functions.
-- **Consequence**: Cannot determine the real type of an object at runtime.
-- **Embedded Guideline**: Modern embedded design favors compile-time polymorphism (templates/CRTP), so RTTI is usually redundant.
+`-O3` performs massive amounts of loop unrolling and function inlining. The speed may well improve, but on an MCU where Flash space is already stretched thin, it bloats the code — and may even reduce performance through instruction cache (I-Cache) misses.
 
 ------
 
-## 3. Garbage Collecting Unused Code
+## 2. Trimming the C++ Runtime: Taking Off the Heavy "Armor"
 
-By default, the compiler compiles the entire source file into one massive binary block. Even if you only use one function from a library, the linker will stuff the entire library's code into Flash.
+Modern C++ carries a few features by default that come at a very high cost in embedded contexts. With the following two options, we can slim C++ back down to C-like overhead.
+
+### 2.1 `-fno-exceptions` (Disabling Exceptions)
+
+- **Cost**: C++ exceptions require heavy-duty unwind table support, which adds roughly 10% to 20% to the Flash footprint.
+- **Consequence**: you cannot use `try-catch` or `throw`. If the program fails, it goes straight to `std::terminate`.
+- **Embedded guideline**: on resource-constrained systems (such as Cortex-M), **disabling exceptions is strongly recommended**.
+
+### 2.2 `-fno-rtti` (Disabling Runtime Type Information)
+
+- **Cost**: to support `dynamic_cast` and `typeid`, the compiler generates extra metadata for every class with virtual functions (information beyond the vtable).
+- **Consequence**: you can no longer determine an object's real type at runtime.
+- **Embedded guideline**: modern embedded design leans toward compile-time polymorphism (templates/CRTP), so RTTI is usually redundant.
+
+------
+
+## 3. Garbage-Collecting Unused Code
+
+By default, the compiler compiles each source file into one giant binary blob. Even if you use only a single function from a library, the linker stuffs the entire library's code into Flash.
 
 ### 3.1 Compiler Side: Sectioning
 
-- **`-ffunction-sections`**: Packages each function independently into a section.
-- **`-fdata-sections`**: Packages each global/static variable independently.
+- **`-ffunction-sections`**: packs each function into its own section.
+- **`-fdata-sections`**: packs each global/static variable into its own section.
 
 ### 3.2 Linker Side: Garbage Collection
 
-- **`-Wl,--gc-sections`**: Tells the linker (`ld`) to scan all sections and thoroughly remove "dead code" that is not referenced from the final ELF file.
+- **`-Wl,--gc-sections`**: tells the linker (`ld`) to scan all sections and completely strip the unreferenced "dead code" out of the final `.elf` file.
 
 ------
 
-## 4. Best Practice Configuration in CMake
+## 4. Best-Practice Configuration in CMake
 
-Translating the above theory into code. In your top-level `CMakeLists.txt`, we recommend managing these options like this:
+Turning the theory above into code. In your top-level `CMakeLists.txt`, it is a good idea to manage these options like this:
 
 ```cmake
-# 1. Language Standard: Require C++17
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF) # Use standard C++, not GNU extensions
 
-# 2. Optimization & Debug Symbols
-# Release mode: Size optimization (-Os)
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Os")
-# Debug mode: Debug optimization (-Og)
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Og -g3")
+# Create a dedicated INTERFACE library for compile options so every target can reuse it
+add_library(project_warnings INTERFACE)
 
-# 3. Warning Settings
-add_compile_options(-Wall)
-add_compile_options(-Wextra) # Enable extra warnings
-add_compile_options(-Werror) # Treat warnings as errors (Optional for CI)
-add_compile_options(-Wshadow)
-add_compile_options(-Wdouble-promotion)
+target_compile_options(project_warnings INTERFACE
+    $<$<CONFIG:Release>:-Os>                 # Release mode: optimize for size
+    $<$<CONFIG:Debug>:-Og -g3>               # Debug mode: friendly to debugging
+    -fno-exceptions                          # Disables exceptions
+    -fno-rtti                                # Disables RTTI
+    -ffunction-sections                      # One section per function
+    -fdata-sections                          # One section per data object
+    -Wall -Wextra -Wpedantic                 # Strict warnings on (trouble caught early)
+)
 
-# 4. Embedded Runtime Trimming
-add_compile_options(-fno-exceptions)
-add_compile_options(-fno-rtti)
+# Linker options
+target_link_options(project_warnings INTERFACE
+    "-Wl,--gc-sections"                      # Removes dead code at link time
+    "--specs=nano.specs"                     # Uses the stripped-down C library (Newlib-nano)
+)
 
-# 5. Link Time Optimization (LTO) & Dead Code Elimination
-add_compile_options(-ffunction-sections -fdata-sections)
-add_link_options(-Wl,--gc-sections)
-# Optional: Enable LTO for further optimization
-# add_link_options(-flto)
+# To use it, simply link against this interface
+target_link_libraries(my_firmware PRIVATE project_warnings)
+
 ```
 
 ------
 
-## 5. Dangerous `-Ofast` and Floating-Point Traps
+## 5. The Dangerous `-Ofast` and Floating-Point Traps
 
-In embedded systems, `-Ofast` enables `-ffast-math`. This can lead to:
+In embedded work, `-Ofast` enables `-ffast-math`. This can lead to:
 
-1. **Loss of Precision**: To speed up execution, the compiler might ignore tiny floating-point errors.
-2. **NaN/Inf Failure**: It assumes your program will never produce illegal floating-point numbers.
-3. **Reordering Operations**: This can lead to unstable results in some algorithms.
+1. **Precision loss**: to gain speed, the compiler may ignore tiny floating-point errors.
+2. **NaN/Inf handling breaking down**: it assumes your program will never produce invalid floating-point numbers.
+3. **Reordered operations**: this can make some algorithms produce unstable results.
 
-**Recommendation**: Unless you are doing pure digital signal processing (DSP) and have full control over precision, always stick to `-O2` or `-Os`.
+**Recommendation**: unless you are doing pure digital signal processing (DSP) with complete control over precision, always stick with `-Os` or `-O2`.
 
-## Online Run
+## Run It Online
 
-Compare the assembly code generated by the compiler under different optimization levels (`-O0` / `-Os` / `-O2`) online to observe the effects of inlining and constant folding:
+Compare online the assembly code the compiler generates at different optimization levels (-O0 / -Os / -O2), and observe the effects of inlining and constant folding:
 
 <OnlineCompilerDemo
   title="Common Compiler Options"
   source-path="code/examples/vol7/14_compiler_options.cpp"
-  description="Compare assembly generated under -O0 / -Os / -O2, observe inlining and constant folding"
+  description="Compare the assembly generated under -O0 / -Os / -O2 and observe inlining and constant folding"
   allow-x86-asm
   arm-source-path="code/examples/compiler_explorer/compiler_opts_arm.cpp"
   allow-arm-asm

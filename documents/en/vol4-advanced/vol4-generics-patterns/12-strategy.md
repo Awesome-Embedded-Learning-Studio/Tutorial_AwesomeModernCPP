@@ -1,48 +1,41 @@
 ---
 title: 'Strategy Pattern: From a Heap of if/else to Compile-Time Swappable Policies'
-description: Starting from the most intuitive approach of "writing a bunch of if/else
-  branches," we progressively derive dynamic virtual function strategies, template-based
-  static strategies, and `std::function` type erasure. We clarify the trade-offs of
-  each method, and finally apply C++20 concepts to enforce compile-time constraints
-  on strategies.
+description: 'Starting from the most intuitive "write a pile of if/else branches" approach, we work our way step by step toward dynamic virtual-function strategies, static template policies, and `std::function` type erasure, spell out the cost of each of the three styles, and finish by putting compile-time constraints on policies with C++20 concepts'
 chapter: 11
 order: 12
 tags:
-- host
-- cpp-modern
-- intermediate
-- 策略模式
+  - host
+  - cpp-modern
+  - intermediate
+  - 策略模式
 difficulty: intermediate
 platform: host
-cpp_standard:
-- 11
-- 17
-- 20
+cpp_standard: [11, 17, 20]
 reading_time_minutes: 20
 related:
-- 单例模式:从注释约束到 Meyer's Singleton
+  - 'Singleton Pattern: From Comment-Only Constraints to Meyer''s Singleton'
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/12-strategy.md
   source_hash: 846240b6ab631e0c07ae784ae0c9ab5d441357ecc6d6603048d1c902110fb101
-  translated_at: '2026-06-24T00:58:45.088852+00:00'
+  translated_at: '2026-09-26T05:31:56+00:00'
   engine: anthropic
-  token_count: 4696
+  token_count: 6900
 ---
-# Strategy Pattern: From a Pile of if/else to Compile-Time Swappable Policies
+# Strategy Pattern: From a Heap of if/else to Compile-Time Swappable Policies
 
-## What problem are we actually solving?
+## What Problem Are We Actually Solving
 
-Let's skip the formal definition for a moment. Consider a very common scenario: you are writing a text processor that needs to "format" a string according to certain rules. Initially, there is only a requirement to convert text to uppercase, so you quickly write a `toupper` and call it a day. Two days later, product management asks for lowercase support, so you add an `if (mode == LOWER)`. A week later, the requirements expand to "camel case, snake case, and kebab case"—and suddenly your `format` function is stuffed with `if` and `switch` statements. Every time you add a new rule, the function gets fatter, and the rules start to interfere with each other; fixing one bug might accidentally break another.
+Let's hold off on definitions. Think of a scenario you've absolutely hit before: you're writing a text processor that has to "format" a string according to some rule. At first there's exactly one requirement—uppercase it—so you dash off a `toupper` and call it done. Two days later, product wants lowercase too, so you add an `if (mode == LOWER)`. Another week goes by, and the requirement becomes "camel case, snake case, kebab case—do them all"—and now your `format` function is stuffed with `if` and `switch`. Every new rule makes the function fatter still, and the rules start interfering with each other: touch one carelessly and you break another.
 
-The root cause is this: **"Which algorithm to use" and "Who calls the algorithm" are tangled together in the same function.** If you want to swap algorithms, you have to modify the calling logic that should have remained stable.
+The root of it all: **"which algorithm to use" and "who invokes that algorithm" are tangled together inside one function.** If you want to swap the algorithm, you have to touch the calling flow that should have stayed stable.
 
-The Strategy Pattern addresses precisely this entanglement. Its core idea can be summarized in one sentence: **extract a family of interchangeable algorithms from the caller, encapsulate each into an independent "strategy" object or type, and have the caller (Context) rely solely on a unified interface. The specific strategy used can be deferred until runtime, or even until compile time.** This way, adding a new algorithm simply means adding a new strategy, without changing a single line of the caller's code. In fact, you likely use this pattern every day without realizing it: the standard library algorithms (`std::sort`, `std::transform`) are designed as typical strategy patterns—they extract "comparison strategies" and "transformation strategies" into swappable parameters (function objects, lambdas, or callables constrained by concepts).
+The Strategy Pattern exists to untangle exactly this. Its core idea fits in one sentence: **pull a family of interchangeable algorithms out of the caller, encapsulate each one as an independent "strategy" object or type, and have the caller (the Context) depend on nothing but a single unified interface—which strategy is actually used can be deferred until runtime, or even until compile time.** From then on, adding a new algorithm means adding a new strategy, and the caller doesn't move a line. You've been using this pattern every day without knowing it: the standard library algorithms (`std::sort`, `std::transform`) are designed as textbook strategy patterns—they factor "comparison strategy" and "transformation strategy" out into swappable parameters (function objects, lambdas, callables constrained by concepts).
 
-However, the word "swappable" implies two distinct implementation levels in C++ with very different costs. One is the **dynamic strategy**, swappable at runtime via virtual functions or `std::function`; the other is the **static strategy**, swappable at compile time via template parameters (and C++20 concepts constraints). These are not a matter of "which is more advanced," but rather **two paths addressing different trade-offs between performance and flexibility.** Let's walk through this step-by-step, starting with the crudest approach, to see why each step falls short.
+But "swappable" lands on two entirely different implementation levels in C++, with entirely different costs. One is the **dynamic strategy, swappable at runtime**, built on virtual functions or `std::function`; the other is the **static strategy, swappable at compile time**, built on template parameters (plus C++20 concepts constraints). The two are not a "which one is more advanced" relationship—they are **two paths resolving different performance/flexibility trade-offs**. So let's go step by step, starting from the dumbest version, and see why each step still isn't enough.
 
-## Step 1: The most primitive approach—a pile of if/else (The Anti-Pattern)
+## Step One: The Most Primitive Version—A Pile of if/else (A Cautionary Example)
 
-When many people first encounter "multiple implementations of the same operation," the code they subconsciously write looks like this:
+The first time many people face "one operation, several implementations", the code their fingers produce on autopilot looks like this:
 
 ```cpp
 enum class FormatMode { Upper, Lower, Snake };
@@ -60,19 +53,19 @@ std::string format_text(const std::string& s, FormatMode mode) {
             return out;
         }
         case FormatMode::Snake:
-            return to_snake(s);  // 假设已有
+            return to_snake(s);  // assume this already exists
     }
     return s;
 }
 ```
 
-It runs, but the problems are lurking beneath the surface. First, **for every new algorithm added, we must add another `case` to this `switch`**; as the number of algorithms grows, this function becomes longer and more brittle. Second, **these code branches are physically squeezed together**; the probability of accidentally breaking the `Upper` branch while modifying the `Lower` branch rises linearly with the function's size. Third, and most critically—**the algorithm and the calling logic cannot vary independently**. When the day comes that you want to "decide the formatting method based on a configuration file," you will find this `switch` hardcoded inside `format_text`. There is no mechanism to "swap strategies in and out."
+It runs, but the problems are hiding behind it. First, **every new algorithm forces another branch into this `switch`**—the more algorithms, the longer and more brittle the function gets. Second, **the branches' code is physically squeezed together**; as the function grows, the odds of nicking the Upper branch while editing the Lower branch climb linearly with its size. Third, the fatal one—**the algorithm and the flow that calls it cannot vary independently**. The day you want "the config file decides which formatting to use", you'll discover this `switch` is hard-coded inside `format_text`: there is simply no "swap the strategy in and out" action available to operate on.
 
-The root of the problem is that the algorithm is not encapsulated as an independent, replaceable entity; it is merely a branch within the caller's internal logic. We must first "extract" the algorithm, allowing the caller to hold an abstract "strategy" rather than deciding which branch to take itself.
+The essence of the problem: the algorithm isn't encapsulated as an independent, replaceable thing—it's just a branch inside the caller. We first have to "extract" the algorithm, so that the caller gets hold of an abstract "strategy" instead of judging itself which branch to take.
 
-## Step 2: Extract the Strategy Interface — Using Virtual Functions for Dynamic Strategies
+## Step Two: Extract a Strategy Interface—Virtual Functions for Dynamic Strategies
 
-The most intuitive way to "extract" something is the classic object-oriented approach: define an abstract base class as the strategy interface, make each algorithm a derived class, and have the caller hold a pointer to the base class. To switch algorithms, we simply swap in a different derived object.
+The most intuitive way to "extract" is the classic object-oriented move: define an abstract base class as the strategy interface, make each algorithm a derived class, and have the caller hold a pointer to the base; to swap algorithms, plug a different derived object in.
 
 ```cpp
 struct IFormatter {
@@ -99,7 +92,7 @@ struct LowerCaseFormatter : IFormatter {
 };
 ```
 
-Then the caller (Context) depends only on that abstract interface, and does not care which specific derived class is used:
+Then the caller (the Context) depends only on that abstract interface and doesn't care which derived class is behind it:
 
 ```cpp
 #include <memory>
@@ -109,7 +102,7 @@ public:
     explicit TextProcessor(std::unique_ptr<IFormatter> f)
         : formatter_(std::move(f)) {}
 
-    void set_formatter(std::unique_ptr<IFormatter> f) {  // 运行时可替换
+    void set_formatter(std::unique_ptr<IFormatter> f) {  // replaceable at runtime
         formatter_ = std::move(f);
     }
 
@@ -122,9 +115,9 @@ private:
 };
 ```
 
-You see, `TextProcessor` itself is now completely free of conditional logic; it only recognizes the `IFormatter` interface. The decision of "which formatter to use" is deferred until construction—whatever derived class we pass in `main` is what it uses. Furthermore, `set_formatter` allows us to swap strategies at runtime. This is the true meaning of "dynamic" in "dynamic strategy": **the strategy selection happens at runtime, can be replaced at any time, and can even be determined by configuration files, user input, or plugins**.
+See—`TextProcessor` no longer contains a single branch of its own; all it knows is the `IFormatter` interface. "Which formatting to use" is deferred until construction: whichever derived class gets stuffed in over in `main` is the one it uses. And `set_formatter` lets us swap strategies while the program is running. That's what the "dynamic" in "dynamic strategy" really means: **the choice of strategy happens at runtime, can be replaced at any moment, and can even be decided by a config file, user input, or a plugin**.
 
-Let's first verify that it actually runs and allows runtime switching:
+Let's first verify that it really runs and really switches at runtime:
 
 ```cpp
 #include <iostream>
@@ -145,15 +138,15 @@ HELLO
 hello
 ```
 
-That feels good. But we aren't done yet—this approach comes with a cost, and that cost is hidden right there in the `->`.
+Satisfying. But we're not done here—this style has a cost, and the cost hides inside that `->`.
 
-## Cost One: Indirect Jump of Virtual Calls
+## Cost One: The Indirect Jump of a Virtual Call
 
-The line `formatter_->format(s)` does not compile into a direct function call. Instead, the CPU must: first retrieve the **vptr (virtual table pointer)** from the object pointed to by `formatter_`, then look up the slot for `format` in the virtual table, and finally jump to the address stored in that slot. This is an **indirect call**—the CPU cannot know where the next instruction is ahead of time and must look it up and jump on the spot.
+The line `formatter_->format(s)` does not compile into a direct function call. What it does is: first fetch the **vtable pointer (vptr)** from the object `formatter_` points to, then look up the `format` slot in the vtable, and finally jump to whatever address that slot holds. That is an **indirect call**—the CPU can't know ahead of time where the next instruction lives; it has to look it up and jump on the spot.
 
-The real problem with indirect calls isn't the "extra memory fetch" itself, but rather that **it breaks the compiler's inline optimization**. With a direct call, the compiler sees the function body and can flatten the entire call into the caller, eliminating the overhead of pushing arguments, saving return addresses, and preserving registers. However, the true target of a virtual function is only known at runtime, so the compiler cannot safely inline its body. On a hot path, this difference is very noticeable.
+The real problem with an indirect call isn't "one extra memory fetch" per se, but that **it punches through the compiler's inlining**. With a direct call, the compiler sees the function body and can flatten the whole call into the caller, saving the entire rigmarole of pushing arguments, return addresses, and register saves; but a virtual function's true target is known only at runtime, so the compiler doesn't dare inline its body in. On a hot path, this gap gets very visible.
 
-So, how big is the difference? Talk is cheap. Let's write a micro-benchmark to run the same `x + 1` operation one hundred million times using three methods: "virtual function", "template", and "`std::function`", and see the actual time taken:
+So how big is it, exactly? Talk is cheap, so let's write a micro-benchmark: run the same `x + 1` operation one hundred million times each via "virtual function", "template", and "`std::function`", and look at the real timings:
 
 ```cpp
 #include <chrono>
@@ -216,7 +209,7 @@ int main() {
                   << std::chrono::duration<double, std::milli>(t1 - t0).count()
                   << " ms\n";
     }
-    volatile int sink = acc;  // 防止整个循环被优化掉
+    volatile int sink = acc;  // keep the whole loop from being optimized away
     (void)sink;
 }
 ```
@@ -229,9 +222,9 @@ template:      36.1899 ms
 std::function: 150.557 ms
 ```
 
-Take a close look at these numbers. The template version is barely faster than "no operation"—because the compiler inlined `AddOnePolicy::transform` directly into the loop. The compiler optimized `x + 1` into a single arithmetic instruction via loop induction, eliminating function calls entirely. The virtual function approach is nearly twice as slow, which is the cost of indirection and the inability to inline. `std::function` is the slowest by far; we will cover that later in this section.
+Look closely at these numbers. The template entry barely does better than "doing nothing"—the compiler inlined `AddOnePolicy::transform` wholesale into the loop, and `x + 1` got folded by loop induction into a single arithmetic instruction; the function call no longer exists at all. The virtual function is nearly twice as slow—that's the price of the indirect call plus no inlining. And `std::function` is the most absurdly slow of all; it gets its own dedicated discussion later in this section.
 
-Looking at execution time alone isn't intuitive enough. Let's pull up the assembly generated for the template strategy to see exactly what it was inlined into:
+Timings alone aren't intuitive enough, so let's drag out the assembly compiled from the template strategy and confirm what it actually got inlined into:
 
 ```sh
 $ cat > strategy_asm.cpp << 'EOF'
@@ -249,17 +242,17 @@ _Z3hot3CtxI12AddOnePolicyEi:
     .cfi_endproc
 ```
 
-The entire `hot` function has been compiled into just three instructions — `leal 1(%rdi), %eax` (which stores `x + 1` into the return value register) and `ret`. There is no `call` instruction and no virtual table lookup; the strategy's function body has completely melted into the caller. **This is the most hardcore advantage of "compile-time replaceability" over "runtime replaceability": it optimizes a strategy call down to zero overhead.** Virtual functions can never achieve this, because their target is determined only at runtime.
+The entire `hot` function compiled down to three instructions—`leal 1(%rdi), %eax` (that's `x + 1` stored into the return register) plus `ret`. No `call`, no vtable lookup: the strategy's function body has thoroughly melted into the caller. **This is the most hardcore advantage of "compile-time swappable" over "runtime swappable": it optimizes a strategy call down to zero overhead.** A virtual function can never reach that point, because its target is settled only at runtime.
 
 ## Cost Two: Object Lifetime and Pointer Management
 
-Dynamic strategies introduce another layer of complexity — `formatter_` is a `unique_ptr<IFormatter>`, which means the object it points to lives on the heap. This implies the strategy object must be `new`-ed and eventually `delete`-d. Furthermore, every time `set_formatter` swaps the strategy, it potentially releases the old object and allocates a new one. Heap allocation isn't cheap (the overhead of a single `new` is far greater than a virtual call), and in embedded, real-time, or hot loop scenarios, "swapping a strategy triggers heap allocation" is a terrible characteristic.
+Dynamic strategies carry one more layer of hassle—`formatter_` is a `unique_ptr<IFormatter>`, and the object it points to lives on the heap. That means the strategy object has to be `new`ed, then `delete`d when done, and every `set_formatter` may release the old object and allocate a new one. Heap allocation itself isn't cheap (a single `new` costs far more than a single virtual call), and in embedded, real-time, or hot-loop settings, "swapping a strategy triggers a heap allocation" is a rotten property to have.
 
-Even more subtle is the semantics of ownership. If a strategy is **stateful** (it has internal members, like a counter or a cache), we must be clear: `unique_ptr` implies "Context exclusively owns this strategy." However, if we want **multiple Contexts to share the same strategy instance** (for example, a global caching strategy reused in multiple places), we must switch to `shared_ptr`. We will see an example using `shared_ptr` in the practical code later in this section. For now, let's note this down: managing the lifetime of dynamic strategies is the second price you pay for "runtime replaceability."
+Subtler still is ownership semantics. If the strategy is **stateful** (it has internal members—say a counter or a cache), you have to think it through: `unique_ptr` says "this Context owns the strategy exclusively", whereas if you want **multiple Contexts to share one strategy instance** (say, a global caching strategy reused in many places), you have to switch to `shared_ptr`. You'll see a `shared_ptr` example in the practical code later in this section; for now, just file it away: lifetime management for dynamic strategies is the second bill you pay for "swappable at runtime".
 
-## Step Three: Moving the Strategy to Compile Time — Templates for Static Strategies
+## Step Three: Move the Strategy into Compile Time—Templates for Static Policies
 
-If our requirements dictate that **the strategy is determined at compile time and absolutely does not need to switch at runtime**, then we actually don't have to pay either of the costs mentioned in the previous section. We can simply pass the strategy as a template parameter to the Context, allowing the compiler to nail down "which strategy to use" the moment the template is instantiated:
+If, in our requirements, **the strategy is settled at compile time and never needs to switch at runtime**, then neither of the two bills from the previous section has to be paid at all. We can simply pass the strategy in as a template parameter of the Context and let the compiler nail down "which strategy to use" at the moment it instantiates the template:
 
 ```cpp
 struct UpperCasePolicy {
@@ -287,7 +280,7 @@ public:
 };
 ```
 
-Here is how we use it; the strategy is fixed at compile time within the type:
+Usage looks like this—the strategy is fixed inside the type:
 
 ```cpp
 TextProcessor<UpperCasePolicy> up;
@@ -297,19 +290,19 @@ std::cout << up.process("Hello") << '\n';   // HELLO
 std::cout << low.process("Hello") << '\n';  // hello
 ```
 
-Notice that we haven't written any inheritance or `virtual` keywords here. `Policy` is purely a type parameter. To the compiler, `TextProcessor<UpperCasePolicy>` and `TextProcessor<LowerCasePolicy>` are **two completely distinct types**. Each one instantiates its own chunk of code, and each inlines its own `Policy::format` directly into its `process` method. This is exactly why the template approach in the earlier benchmark managed to run in mere milliseconds—no vtables, no indirect calls, and no heap allocation. The strategy call is completely flattened out at compile time.
+Notice we wrote no inheritance and no `virtual` here. `Policy` is a pure type parameter: in the compiler's eyes, `TextProcessor<UpperCasePolicy>` and `TextProcessor<LowerCasePolicy>` are **two completely different types**, each instantiated with its own copy of the code, each inlining `Policy::format` into its own `process`. That's why the template entry in the earlier benchmark could run in a handful of milliseconds—no vtable, no indirect call, no heap allocation; the strategy call is flattened out entirely at compile time.
 
-This approach has a name: **Policy-Based Design** (systematically covered by Andrei Alexandrescu in *Modern C++ Design*). Its essence is: **reducing "strategy" from a runtime object to a compile-time type**. You no longer "hold a strategy object"; instead, you are "parameterized by a strategy type". Combined with `static` member functions, the strategy doesn't even need to be instantiated—it's just a collection of free functions hanging in a namespace, gathered up by a template parameter.
+This style has a name: **Policy-Based Design** (Andrei Alexandrescu covered it systematically in *Modern C++ Design*). Its essence: **demote "strategy" from a runtime object down to a compile-time type**. You no longer "hold a strategy object"—you are "parameterized by a strategy type". Combined with `static` member functions, the strategy doesn't even need an instance: it's just a bunch of free functions hanging off a namespace, gathered up by a template parameter.
 
-But this path has its own hard limits. **The most fatal one: once a strategy is fixed at compile time, it cannot be changed at runtime.** `TextProcessor<UpperCasePolicy>` will *always* uppercase. Want to switch it to lowercase halfway through? You can't. You have to swap to a `TextProcessor<LowerCasePolicy>` object. These two are fundamentally different types; they cannot be assigned to each other, stuffed into the same container, or held by the same variable. If your strategy needs to be "selected by the user at runtime" or "determined by a configuration file," static strategies are completely useless.
+But this road has its own hard flaws. **The most fatal one: once a strategy is nailed down at compile time, it can never be swapped again at runtime.** `TextProcessor<UpperCasePolicy>` uppercases forever; want it to switch to lowercase halfway through? Can't be done—you'd have to grab an object of type `TextProcessor<LowerCasePolicy>` instead. The two aren't the same type at all: they can't be assigned to each other, can't sit in the same container, can't be received by the same variable. If your strategy has to be "picked by the user at runtime" or "decided by a config file", static strategies are simply no help.
 
-The second, more hidden cost is: **templates expand code into every instantiation**. You give it five strategies, and the compiler generates five copies of `TextProcessor::process`, so binary size grows. For scenarios like Strategy Pattern where "function bodies are small," this usually doesn't matter, but if you have dozens of strategies and every `process` is heavy, you need to weigh this code bloat.
+The second, sneakier cost: **templates expand code into every instantiation**. Hand it five strategies and the compiler generates five copies of `TextProcessor::process`, and the binary grows. For a pattern like this one, whose function bodies are tiny, that usually doesn't matter—but if you have dozens of strategies and every `process` is heavy, that code bloat deserves a moment on the scales.
 
-## Let's verify here: How to use concepts to impose compile-time constraints on policies
+## A Quick Verification: How a Concept Puts Compile-Time Constraints on a Policy
 
-There is another pitfall with template strategies that beginners often overlook: **the template parameter `Policy` is completely unconstrained**. You write `TextProcessor<Foo>`, and as long as `Foo` makes that function body compile, it passes. Once `Foo` lacks the `format` member, or if `format`'s signature is wrong, the compiler gives you a long string of template instantiation "gibberish." The error location often points to a line deep inside the template, rather than the line where you wrote `TextProcessor<BadFoo>`. This is exactly the problem C++20 concepts were invented to solve—**giving the strategy type a clear, readable contract**.
+Template policies hide one more pitfall that newcomers overlook: **the template parameter `Policy` is completely unconstrained**. Write `TextProcessor<Foo>`, and as long as `Foo` gets that function body to compile, it passes; the moment `Foo` has no `format` member, or `format`'s signature is wrong, the compiler hands you a long scroll of template-instantiation "gibberish", with the error location usually pointing at some line inside the template rather than the line where you wrote `TextProcessor<BadFoo>`. This is exactly the problem C++20 concepts were invented to solve—**giving the strategy type an explicit, readable contract**.
 
-Let's first define a concept to clarify "what a qualified Formatter strategy should look like": it must have a `static format(std::string) -> std::string`:
+Let's first define a concept that spells out "what a qualified Formatter strategy looks like": it must have a `static format(std::string) -> std::string`:
 
 ```cpp
 #include <concepts>
@@ -321,7 +314,7 @@ concept Formatter = requires(F f, std::string s) {
 };
 ```
 
-This `requires` expression asks the compiler a question: "Given an object `f` of type `F` and a `std::string s`, can we call `F::format(std::move(s))` and does it return exactly `std::string`?" If yes, then `F` satisfies `Formatter`; if no, it does not. Then, we add this constraint to the template parameter:
+This `requires` expression asks the compiler a question: "Given an object `f` of type `F` and a `std::string s`, can `F::format(std::move(s))` be called, and does it return exactly `std::string`?" If yes, `F` satisfies `Formatter`; if no, it doesn't. Now attach the constraint to the template parameter:
 
 ```cpp
 template <Formatter F>
@@ -331,7 +324,7 @@ public:
 };
 ```
 
-Good strategy (signature matches), everything is normal:
+A good strategy (signature matches) works as usual:
 
 ```sh
 $ g++ -std=c++20 -O2 strategy_concept.cpp -o strategy_concept
@@ -339,15 +332,15 @@ $ ./strategy_concept
 HELLO
 ```
 
-Now let's intentionally write a **bad** policy—one where the return type is `const char*` instead of `std::string`—and plug it into the `TextProcessor` constrained by the concept, to see how the compiler complains:
+Now we deliberately write a **bad** strategy—one whose return type is `const char*` instead of `std::string`—plug it into the concept-constrained `TextProcessor`, and see how the compiler complains:
 
 ```cpp
 struct BadFormatter {
-    static const char* format(std::string s) { return s.c_str(); }  // 返回类型不对
+    static const char* format(std::string s) { return s.c_str(); }  // wrong return type
 };
 
 int main() {
-    TextProcessor<BadFormatter> tp;   // 应该在这里就报
+    TextProcessor<BadFormatter> tp;   // should fail right here
 }
 ```
 
@@ -363,13 +356,13 @@ strategy_concept_bad.cpp:22:31: note: constraints not satisfied
   • 'F::format(std::move<...>(s))' does not satisfy return-type-requirement
 ```
 
-Do you see the difference? The error points precisely to the line where you wrote `TextProcessor<BadFormatter>`, explicitly stating that "`F::format(...)` does not meet the return type requirement." This is the value of concepts compared to bare templates—**they elevate "what the strategy should look like" from "exploding deep within template instantiation errors" to "a contract violation visible right at the call site."** When implementing Policy-Based Design in modern C++, adding concept constraints to policies is almost a free lunch; there is no reason not to do it.
+See the difference? The error location points precisely at the line where you wrote `TextProcessor<BadFormatter>`, and it tells you outright that "`F::format(...)` does not satisfy the return-type requirement". That's the value of a concept over a bare template—**it lifts "what a strategy should look like" from "a detonation deep inside the template" up to "a contract violation visible at a glance at the call site"**. Writing Policy-Based Design in modern C++, adding a concept constraint to your policy is pretty much a free lunch; there's no reason to skip it.
 
-## Step 4: Type Erasure — Lightweight Dynamic Polymorphism with `std::function`
+## Step Four: Type Erasure—`std::function` as a Lightweight Dynamic Strategy
 
-Now we have two paths: virtual functions allow runtime switching but incur the cost of heap allocation plus indirection, while templates have zero overhead but are fixed at compile time. Is there a middle ground—**one that allows runtime switching without requiring us to manually write an inheritance hierarchy**? Yes, and it is `std::function`.
+At this point we're holding two paths: virtual functions switch at runtime but cost heap allocation plus indirect calls, while templates are zero-overhead but frozen at compile time. So is there a middle ground—**runtime switching, without hand-rolling an inheritance hierarchy ourselves**? Yes: `std::function`.
 
-The essence of `std::function` is **type erasure**: it can hold any callable object with a "matching signature"—lambdas, function pointers, functors, `bind` expressions—hiding them all behind a uniform type. You don't need to define a derived class for each strategy; just write a lambda and throw it in:
+The essence of `std::function` is **type erasure**: it can hold any callable whose "signature matches"—lambda, function pointer, functor, bind expression—all hidden behind one uniform type. You don't define a derived class per strategy; just write a lambda and drop it in:
 
 ```cpp
 #include <functional>
@@ -396,9 +389,9 @@ int main() {
 }
 ```
 
-It is indeed concise to write—no need to declare abstract base classes, no `virtual`, no `unique_ptr`, and lambdas serve directly as strategies. This is the biggest selling point of `std::function`: **low mental encoding cost, a unified interface, and runtime swappability**.
+It genuinely is shorter to write—no abstract base class, no `virtual`, no `unique_ptr`; a lambda straight-up serves as the strategy. That's `std::function`'s biggest selling point: **low coding effort, a unified interface, swappable at runtime**.
 
-However, we must address a common misconception here. Many resources claim that `std::function` is "lighter than virtual inheritance." In small strategy scenarios, this is only true in the sense that "you don't have to hand-write an inheritance hierarchy," and **not** that "it runs faster." Let's look back at our previous benchmark:
+But there's a misconception here that must be punctured. Plenty of material claims `std::function` is "lighter than virtual inheritance"; the part of that claim that holds in small-strategy scenarios is "you don't hand-write an inheritance hierarchy"—and **not** "it runs faster". Look back at the benchmark from before:
 
 ```sh
 virtual:       28.8597 ms
@@ -406,24 +399,24 @@ template:      36.1899 ms
 std::function: 150.557 ms
 ```
 
-`std::function` runs more than five times slower than a virtual function. **Here is the truth: `std::function` is usually more expensive than a direct virtual call, not cheaper**. The reason lies in its implementation mechanism—internally, `std::function` does three things: First, it uses a small buffer (Small Buffer Optimization, SBO) to try to store small callable objects directly within the object body, avoiding heap allocation; however, as soon as your lambda captures exceed the size of that internal buffer, it degrades into allocating memory on the heap via `new`. Second, every call involves an indirect jump through type erasure, just like virtual functions, which breaks inlining. Third, in some standard library implementations, the call path of `std::function` involves an extra layer of function pointer trampoline compared to a single-level virtual function.
+`std::function` came in more than five times slower than the virtual function. **That's the truth: at the call level, `std::function` is usually more expensive than a direct virtual call, not cheaper.** The reason lies in its implementation—internally, `std::function` does three things. First, it uses a small buffer (small buffer optimization, SBO) to try storing small callables directly inside the object body and dodge the heap; but the moment your lambda's captures exceed that internal buffer's size, it degrades into `new`ing a block on the heap to hold it. Second, every call goes through a type-erased indirect jump, which breaks inlining just like a virtual function does. Third, in some standard library implementations, the `std::function` call path carries one more function-pointer trampoline than a single-level virtual call.
 
-Therefore, the correct mental model is: **`std::function` is the "easiest to write" dynamic strategy, suitable for scenarios where the strategy implementation is small and the call is not in a super-high-frequency hotspot**; once your strategy runs in an inner hot loop, its overhead becomes very obvious. In such places, you should use virtual functions (more predictable indirect calls) or simply go for static templates (zero overhead).
+So the correct mental model is: **`std::function` is the "cheapest to write" dynamic strategy, fitting scenarios where the strategy implementation is small and the call site isn't a super-high-frequency hotspot**; once your strategy runs inside an inner hot loop, its overhead becomes glaring, and that's where you should reach for virtual functions (a more predictable indirect call) or simply go static with templates (zero overhead).
 
-::: warning Don't be misled by "std::function is lighter than virtual functions"
-Many online articles describe `std::function` as a "lighter dynamic strategy than virtual inheritance." This statement holds true only in terms of "coding mental cost" and "not having to hand-write an inheritance hierarchy," **but is the exact opposite regarding runtime performance**: the type-erased call path is usually more expensive than a single-level virtual call and may additionally trigger heap allocation. When a strategy is on a hot path, `std::function` is the slowest of the three. If you need runtime switching and care about performance, prioritize virtual functions; if it can be determined at compile time, go straight to templates.
+::: warning Don't Be Misled by the Claim That `std::function` Is Lighter Than a Virtual Function
+Plenty of articles online describe `std::function` as "a dynamic strategy lighter than virtual inheritance". That claim holds only in the senses of "coding effort" and "no hand-written inheritance hierarchy"; **on runtime performance it's exactly the opposite**: the type-erased call path is usually more expensive than a single-level virtual call, and it may additionally trigger heap allocation. With a strategy on a hot path, `std::function` is the slowest of the three. Need runtime switching and care about performance? Look at virtual functions first; if the strategy can be fixed at compile time, go straight to templates.
 :::
 
-## In Practice: An Animal Model That Can Change Sounds at Runtime
+## In Practice: An Animal Model That Swaps Its Sound at Runtime
 
-Abstract theory is boring, so let's build something that actually runs. The example below is a practical application of the Strategy Pattern: every animal has a "sound," and this sound can be swapped at runtime (imagine changing a pet's skin or sound effects in a game). We use `std::function` to type-erase the "sound" into a replaceable strategy, and `shared_ptr` to allow multiple animals to share the same sound object.
+Abstract talk is hollow, so let's do something that actually runs. The example below is a very down-to-earth landing of the Strategy Pattern: every animal has a "sound", and that sound can be swapped at runtime (picture swapping skins/sound effects for a pet in a game). We use `std::function` to type-erase "sound" into a replaceable strategy, and `shared_ptr` so several animals can share one sound object.
 
 ```cpp
 #include <functional>
 #include <memory>
 #include <print>
 
-// 策略载体:把任意「无参无返回的叫声」擦除成一个可调用对象
+// Strategy carrier: type-erases any "zero-argument, zero-return sound" into one callable
 struct AnimalSound {
     ~AnimalSound() = default;
 
@@ -436,7 +429,7 @@ private:
     std::function<void()> sound_;
 };
 
-// Context:动物,持有一个共享的叫声策略,可在运行时替换
+// Context: the animal, holding a shared sound strategy, replaceable at runtime
 struct AnimalType {
     virtual ~AnimalType() = default;
 
@@ -456,9 +449,9 @@ private:
 };
 ```
 
-There are two design decisions here that are worth expanding upon. **Why does `AnimalSound` use `std::function` instead of virtual functions?** Because implementations of "sounds" vary wildly—it might be a print statement, playing an audio buffer, or triggering an event. Using `std::function` saves us from creating a derived class for every sound type; we can just feed in a lambda expression. This is where type erasure shines. **Why does `AnimalType` hold a `shared_ptr<AnimalSound>` instead of a `unique_ptr`?** Because we want to allow "multiple animals to share the same sound object" (for example, when "swapping skins," we could pass the dog's sound object directly to the cat, so both share the same `catSound`). The reference counting of `shared_ptr` perfectly expresses this "shared ownership" semantic. If you determine that a strategy is exclusively owned by one Context, you can switch back to `unique_ptr`—this aligns with the earlier point about "stateful strategies requiring explicit shared/exclusive semantics."
+Two design decisions here deserve elaboration. **Why does `AnimalSound` use `std::function` instead of virtual functions?** Because implementations of a "sound" come in every shape—it might be a printout, playing an audio buffer, or firing an event—and `std::function` spares us one derived class per sound: just feed a lambda in. That's type erasure's home turf. **Why does `AnimalType` hold `shared_ptr<AnimalSound>` instead of `unique_ptr`?** Because we want "one sound object shared by several animals" to be possible (when "swapping skins", say, hand dog's sound object straight to cat so both share the same `catSound`), and `shared_ptr`'s reference counting expresses exactly that "shared ownership" semantics. If you're certain a strategy belongs to exactly one Context, switch back to `unique_ptr`—this is the earlier point about "stateful strategies demanding explicit shared/exclusive semantics".
 
-Here is what it looks like when running:
+Running it looks like this:
 
 ```cpp
 int main() {
@@ -475,7 +468,7 @@ int main() {
     AnimalType cat(cat_sound);
     cat.play_sound();                 // Mewo!Mewo!Mewo!
 
-    dog.install_new_sound(cat_sound); // 运行时换策略:dog 也开始喵喵叫
+    dog.install_new_sound(cat_sound); // swap the strategy at runtime: dog starts meowing too
     std::println("What the fuck!");
     dog.play_sound();                 // Mewo!Mewo!Mewo!
 }
@@ -490,53 +483,53 @@ What the fuck!
 Mewo!Mewo!Mewo!
 ```
 
-The line `dog.install_new_sound(cat_sound)` is the core action of the Strategy Pattern: **at runtime, we replace the Context's strategy object entirely. The caller's code (`AnimalType`) remains unchanged, yet the behavior changes.** Furthermore, because we use `shared_ptr`, `dog` and `cat` now share the same `cat_sound` object; it is only destroyed when its last reference is released—this is the combined effect of "shared ownership + replaceable strategy."
+The line `dog.install_new_sound(cat_sound)` is the Strategy Pattern's signature move: **at runtime, replace the Context's strategy object wholesale—the caller's (`AnimalType`'s) code doesn't change a single line, yet the behavior changes.** And because `shared_ptr` is what's used, `dog` and `cat` now share the same `cat_sound`; that object destructs only when its last reference is released. That's the effect you get by stacking "shared ownership + replaceable strategy" on top of each other.
 
 ::: tip Companion Buildable Project
-The complete project for this section (`AnimalSound.h` + `AnimalSoundMain.cpp` + `CMakeLists.txt`, C++23, ready to run with cmake) is available in this repository: [Strategy / AnimalSound](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Strategy/AnimalSound).
+The complete project for this section (`AnimalSound.h` + `AnimalSoundMain.cpp` + `CMakeLists.txt`, C++23, runs with a single cmake invocation) is in this repository: [Strategy / AnimalSound](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Strategy/AnimalSound).
 :::
 
-## Choosing the Right Path
+## Choosing Among the Three Paths
 
-We have now walked through all three implementations. The real pitfall is that **many people get stuck on "which is the modern way," but this is a false dichotomy**—these three approaches address different trade-offs in flexibility and performance, not a progression from old to new. Let's lay out the decision criteria in a table:
+At this point we've walked all three implementations. The real trap is that **many people agonize over "which one is the modern style", when that's a false question**—the three styles resolve different flexibility/performance trade-offs; there's no old-versus-new between them. Let's spread the decision criteria out in a table:
 
-| Dimension | Virtual Function (Dynamic) | Template + Concept (Static) | `std::function` (Type Erasure) |
+| Dimension | Virtual function (dynamic) | Template + concept (static) | `std::function` (type erasure) |
 |---|---|---|---|
-| When to switch strategy | Runtime | Compile time | Runtime |
-| Call overhead | Indirect call (cannot inline) | Zero overhead (fully inlined) | Indirect call + potential heap allocation, slowest |
-| Cognitive load | Medium (inheritance hierarchy) | Low (concept constraints + lambda-free) | Lowest (pass lambdas directly) |
-| Can strategy hold state? | Yes (member variables) | Yes (but independent per Context instance) | Yes (lambda captures) |
-| Binary size | One vtable + few derived classes | Code instantiated per strategy | One `std::function` object |
-| Best scenario | Strategy changes at runtime, determined by config/plugins | Strategy fixed at compile time, in hot loops | Strategies are small and mixed, not in ultra-high-frequency paths |
+| When the strategy switches | Runtime | Compile time | Runtime |
+| Call overhead | Indirect call (no inlining) | Zero overhead (fully inlined) | Indirect call + possible heap allocation, slowest |
+| Coding effort | Medium (must write an inheritance hierarchy) | Low (concept constraints + lambda-free) | Lowest (feed a lambda directly) |
+| Can the strategy hold state | Yes (member variables) | Yes (but independent per Context instance) | Yes (lambda captures) |
+| Binary size | One vtable + a few derived classes | One code instantiation per strategy | One `std::function` object |
+| Fitting scenarios | Strategy varies, decided at runtime by config/plugins | Strategy known at compile time, running in hot loops | Strategies small and miscellaneous, off the ultra-high-frequency path |
 
-To put it plainly: ask yourself two questions—**"Does the strategy need to change at runtime?"** and **"Is this call on a critical path?"**. If it needs runtime changes and isn't critical, `std::function` is the most pleasant to write; if it needs runtime changes and is critical, use virtual functions instead of `std::function` to save that layer of overhead and potential heap allocation; if it doesn't need runtime changes (fixed at compile time), go straight to static templates with concepts for constraints—zero overhead and friendly error messages.
+Put plainly, you ask yourself two questions—**"does the strategy need to swap at runtime?"** and **"is this call on a hot path?"**. Runtime swapping and not on a hot path: `std::function` is the most comfortable to write. Runtime swapping and on a hot path: swap `std::function` out for a virtual function and drop that extra layer of overhead and the potential heap allocation. No runtime swapping needed (it can be fixed at compile time): go straight to static templates—and while you're at it, give it a concept contract: zero overhead, friendly errors.
 
-There is also an easily overlooked common benefit: **all three approaches turn the strategy into a "replaceable independent unit," making them naturally friendly to unit testing.** If we want to test the `process` flow of `TextProcessor` but don't want to trigger real formatting logic (e.g., reading files or network access), we can inject a fake strategy—pass a `MockFormatter` for virtual functions, a lambda that just logs calls for `std::function`, or a `DummyPolicy` for templates. The caller's code doesn't change a bit, yet the strategy is swapped out. This is the most underestimated advantage of the Strategy Pattern compared to "a pile of if/else": it doesn't just make code cleaner, it conveniently solves "testability" as well.
+There's also one easily missed benefit shared by all three: **each style turns the strategy into "a replaceable independent unit", so all three are naturally unit-test friendly**. Suppose you want to test `TextProcessor`'s `process` flow without actually triggering the real formatting logic (say it reads files or goes over the network)—stuff in a fake strategy: a `MockFormatter` for the virtual version, a call-logging-only lambda for `std::function`, a `DummyPolicy` for the template. The caller's code doesn't move a line, and the strategy is swapped out. That's the most underrated advantage the Strategy Pattern has over "a pile of if/else": it doesn't just make the code tidier—it solves testability along the way.
 
 ## Summary
 
-Let's review the entire evolution path:
+Let's trace the whole evolutionary path once more:
 
-| Stage | Approach | Why it falls short |
+| Stage | Approach | Why it still isn't enough |
 |---|---|---|
-| if/else branches | `switch` algorithms inside the caller | Algorithm and call flow are tangled; adding one requires modifying the caller; cannot vary independently |
-| Virtual function strategy | Abstract base class + derived classes + `unique_ptr` | Changeable at runtime, but virtual calls break inlining; heap allocation + ownership must be managed manually |
-| Template strategy | Strategy as template parameter, Policy-Based Design | Zero overhead, fully inlined, but fixed at compile time; cannot change at runtime; code bloat |
-| Concept-constrained template | Add compile-time contract to strategy type | Errors change from "deep template gibberish" to "visible at the call site," almost free |
-| `std::function` | Type erasure, lambdas as strategies | Easiest to code, but call overhead is more expensive than virtual functions; don't use on critical paths |
+| if/else branches | `switch` on the algorithm inside the caller | Algorithm and call flow tangled together; one addition means one edit; no independent variation |
+| Virtual-function strategy | Abstract base class + derived classes + `unique_ptr` | Swappable at runtime, but virtual calls break inlining, and heap allocation + ownership are yours to manage |
+| Template strategy | Strategy as a template parameter, Policy-Based Design | Zero overhead, fully inlined, but frozen at compile time, unswappable at runtime, code bloat |
+| Concept-constrained template | Compile-time contract on the strategy type | Errors go from "gibberish deep inside the template" to "visible at a glance at the call site"; nearly free |
+| `std::function` | Type erasure, lambda directly as the strategy | Cheapest to write, but call overhead is higher than a virtual function; keep it off hot paths |
 
-Keep these key conclusions in mind:
+Note down these key conclusions:
 
-- **The essence of the Strategy Pattern is extracting "replaceable algorithms" from the caller**, and standard library algorithms (like `std::sort`) are typical applications.
-- **The cost of dynamic strategies (virtual functions / `std::function`) is indirect calls + potential heap allocation**; `std::function` is usually slower than a single virtual call at the call site; the idea that it's "lighter than virtual functions" only holds true regarding cognitive load.
-- **Static strategies (templates) are zero-overhead**; strategy calls are inlined into a few instructions (empirically demonstrated in this article with `leal 1(%rdi), %eax`), at the cost of being fixed at compile time.
-- **C++20 concepts add compile-time contracts to strategies**, offering far better error location and readability than bare templates; Policy-Based Design should almost always be paired with concepts.
-- Selection depends on only two questions: **Does it need to change at runtime?** + **Is it on a critical path?**. There is no answer to "which is the most modern."
+- **The essence of the Strategy Pattern is pulling "replaceable algorithms" out of the caller**; the standard library algorithms (`std::sort` and friends) are its classic application.
+- **The cost of dynamic strategies (virtual functions / `std::function`) is indirect calls + possible heap allocation**; `std::function` is usually slower than a single-level virtual call at the call level—"lighter than a virtual function" holds only in the coding-effort sense.
+- **Static strategies (templates) are zero-overhead**; the strategy call gets inlined down to a few instructions (this article proved it with `leal 1(%rdi), %eax`), at the cost of being frozen at compile time, unswappable at runtime.
+- **C++20 concepts give strategies a compile-time contract**; error location and readability are far better than bare templates—writing Policy-Based Design almost always calls for pairing it with a concept.
+- Selection comes down to just two questions: **runtime swapping or not** + **hot path or not**. There is no answer of the form "whichever is most modern".
 
 ## References
 
-- [cppreference: `std::function`](https://en.cppreference.com/w/cpp/utility/functional/function) (Type-erased invocation semantics, since C++11)
+- [cppreference: `std::function`](https://en.cppreference.com/w/cpp/utility/functional/function) (type-erased call semantics, since C++11)
 - [cppreference: Concepts](https://en.cppreference.com/w/cpp/concepts) (`requires` expressions and constrained templates, since C++20)
-- [cppreference: `std::shared_ptr` / `std::unique_ptr`](https://en.cppreference.com/w/cpp/memory/shared_ptr) (Ownership semantics for strategy objects)
-- Andrei Alexandrescu, *Modern C++ Design*, Chapter 1 (Systematic discussion of Policy-Based Design)
+- [cppreference: `std::shared_ptr` / `std::unique_ptr`](https://en.cppreference.com/w/cpp/memory/shared_ptr) (ownership semantics of strategy objects)
+- Andrei Alexandrescu, *Modern C++ Design*, Chapter 1 (the systematic treatment of Policy-Based Design)
 - Companion buildable project: [Strategy / AnimalSound](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Strategy/AnimalSound)

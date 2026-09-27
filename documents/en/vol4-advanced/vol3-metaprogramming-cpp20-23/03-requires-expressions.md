@@ -2,7 +2,7 @@
 chapter: 13
 cpp_standard:
 - 20
-description: 'The word requires in C++20 is both a clause and an expression, and they are easy to confuse. Taking requires expressions apart. The four kinds of requirements, how to define a concept with one, and the two traps of unevaluated context and hard errors on concrete types.'
+description: 'In C++20 the word requires is both a clause and an expression, and the pair is easy to confuse. This piece takes requires expressions apart: the four kinds of requirements (simple, type, compound, nested), how to define a concept with one, and the two traps of unevaluated context and hard errors on concrete types.'
 difficulty: intermediate
 order: 3
 platform: host
@@ -21,28 +21,34 @@ tags:
 - 泛型
 - concepts
 - 类型安全
-title: 'Requires Expressions, In Depth: The Four Kinds'
+title: 'Requires Expressions, In Depth: The Four Kinds of Requirements'
+translation:
+  source: documents/vol4-advanced/vol3-metaprogramming-cpp20-23/03-requires-expressions.md
+  source_hash: 148e4f3fb9ed20c9cff89c289d697a4385c37c6d023dce4e7974478b2fcb5b91
+  translated_at: '2026-09-26T04:31:57+00:00'
+  engine: anthropic
+  token_count: 2000
 ---
-# Requires Expressions, In Depth: The Four Kinds
+# Requires Expressions, In Depth: The Four Kinds of Requirements
 
-In the last two pieces, the word `requires` kept showing up, sometimes as a clause, sometimes as an expression. They look the same but do different jobs. This piece takes them fully apart: what a requires expression is, what kinds of requirements it can state, how to use it to describe "what operations a type must provide" on the spot, and two traps that trip people up most. After this piece, every `requires(T t){ ... }` you see will have a clear origin.
+In the last two pieces the word `requires` kept showing up — sometimes as a clause, sometimes as an expression. The two look identical but do different jobs. This piece takes them fully apart: what a requires expression is, what kinds of requirements it can contain, how to use one to describe on the spot "what operations a type must provide," and the two traps that confuse people most. Once you finish it, all those `requires(T t){ ... }` snippets from earlier will make sense — you will know exactly where each form comes from.
 
-## Two kinds of requires: clause and expression
+## Two kinds of `requires`: clause and expression
 
-Before going further, put the two same-named things side by side. Everything below builds on this.
+First, put the two same-named things side by side in one table. Everything below builds on it.
 
 | | requires clause (requires-clause) | requires expression (requires-expression) |
 |---|---|---|
-| **What it is** | a syntactic slot that adds a constraint to a template | an expression that evaluates to bool at compile time |
+| **What it is** | a syntactic slot that attaches a constraint to a template | an expression that evaluates to a bool at compile time |
 | **What it looks like** | `requires Numeric<T>` | `requires(T t) { t.size(); }` |
-| **Value** | not a value, it's a constraint declaration | a bool (true / false) |
-| **Where it appears** | after the template parameter list | almost anywhere a bool is needed: in a clause, in a concept definition, in a `static_assert` |
+| **Value** | not a value; it is a constraint declaration | a bool (true / false) |
+| **Where it appears** | after the template parameter list | almost anywhere a bool is needed: inside a clause, inside a concept definition, inside a `static_assert` |
 
-The star of the last piece, subsumption and overload dispatch, was the **clause**. The star of this piece is the **expression**. They often pair up: a clause that contains an expression is `requires requires(T t){ t+t; }`, the double-`requires` you've seen. The outer one is a clause, the inner one is an expression.
+The star of the last piece — subsumption, overload dispatch — was the **clause**. The star of this piece is the **expression**. The two often work as a pair: put an expression inside a clause and you get the `requires requires(T t){ t+t; }` look, `requires` written twice in a row — the outer one is the clause, the inner one is the expression.
 
-## The four kinds of requirements in a requires expression
+## The four kinds of requirements in a `requires` expression
 
-Inside the braces of a requires expression `requires(params) { ... }`, you can write four different kinds of "requirements." Let's define a `Container` concept and use all four at once:
+Inside the braces of a requires expression `requires(params) { ... }` you can write four different kinds of "requirements." Let's define a `Container` concept that uses all four at once:
 
 ```cpp
 #include <concepts>
@@ -50,17 +56,17 @@ Inside the braces of a requires expression `requires(params) { ... }`, you can w
 
 template <typename T>
 concept Container = requires(T t) {
-    // 1. simple requirement: the expression must be valid, it just has to compile
+    // ① simple requirement: the expression must be valid, it just has to compile
     t.begin();
     t.end();
 
-    // 2. type requirement: this nested type must exist
+    // ② type requirement: this nested type must exist
     typename T::value_type;
 
-    // 3. compound requirement: the expression is valid, and the return satisfies a constraint
+    // ③ compound requirement: the expression is valid, and the return value satisfies a constraint
     { t.size() } -> std::convertible_to<std::size_t>;
 
-    // 4. nested requirement: another compile-time bool judgment inside
+    // ④ nested requirement: one more compile-time bool check nested inside
     requires std::integral<typename T::value_type>;
 };
 
@@ -68,20 +74,20 @@ static_assert(Container<std::vector<int>>);   // vector<int> meets all four
 static_assert(!Container<int>);               // int has no begin/end, fails the first one
 ```
 
-These two `static_assert`s are compile-time assertions. If the code compiles, `vector<int>` satisfies `Container` and `int` doesn't. No need to run anything.
+These two `static_assert`s are compile-time assertions: if the code compiles, it shows `vector<int>` satisfies `Container` and `int` does not. Nothing needs to run.
 
-Each kind has its use. The simple requirement is the most common. `t.begin();` just asks "can an object of type `T` call `begin()`, and if it compiles, it passes." The type requirement `typename T::value_type;` checks that a nested type exists. It shows up constantly in trait checks on containers and iterators. The compound requirement `{ t.size() } -> std::convertible_to<std::size_t>;` binds "the expression is valid" and "the return type satisfies the constraint" together. It's tighter than checking the call separately and then querying the return type with `decltype`. A compound requirement can also add `noexcept`: `{ t.size() } noexcept -> std::convertible_to<std::size_t>;`, which requires the call to not throw. The nested requirement `requires std::integral<...>;` lets you tuck another concept judgment inside the expression. It fits "once the main requirements hold, also satisfy this extra one."
+Each of the four has its use. The simple requirement is the most common: `t.begin();` merely asks "can an object of type `T` call `begin()`?" — if it compiles, it passes. The type requirement `typename T::value_type;` checks whether a nested type exists, and it shows up constantly in trait checks on containers and iterators. The compound requirement `{ t.size() } -> std::convertible_to<std::size_t>;` binds "the expression is valid" and "the return type satisfies a constraint" into a single step — tighter than first checking whether the call compiles and then querying the return type with `decltype` in two separate steps. A compound requirement can also carry `noexcept`: `{ t.size() } noexcept -> std::convertible_to<std::size_t>;`, which additionally requires that the call not throw. The nested requirement `requires std::integral<...>;` lets you tuck one more concept judgment inside the expression — a good fit for "once the main requirements hold, this extra one must hold too."
 
-A side note that's easy to miss: the fourth requirement on `Container` says `value_type` is an integer type, and `std::integral<char>` is **true** (char is in the integer family, same as `integral<bool>` being true in the last piece). So `Container<std::string>` actually satisfies it, because string's `value_type` is char and passes the fourth requirement. If you only want containers whose `value_type` is exactly `int`, swap the fourth line for `std::same_as<typename T::value_type, int>`.
+One detail that is easy to miss: the fourth requirement of `Container` says `value_type` must be an integer type, and `std::integral<char>` is **true** (char belongs to the integer family — the same reason `integral<bool>` was true in the last piece). So `Container<std::string>` actually satisfies the concept: string's `value_type` is char, which clears the fourth requirement. If you only want containers whose `value_type` is exactly `int`, swap the fourth requirement for `std::same_as<typename T::value_type, int>`.
 
-## A requires expression is a bool: it doesn't have to be a named concept
+## A `requires` expression is a bool: no concept name needed
 
-A requires expression evaluates to a bool, so it doesn't only live inside a concept definition. Anywhere you need a compile-time judgment, you can use it directly.
+A requires expression evaluates to a bool, so it does not have to live inside a concept definition — anywhere you need a compile-time decision, you can use one directly.
 
 ```cpp
 #include <string>
 
-// Drop it straight into a static_assert, no concept needed
+// Drop it straight into a static_assert, no concept defined first
 static_assert(requires(std::string s) { s.size(); });   // string has size()
 
 // Use it directly in if constexpr for a compile-time branch
@@ -96,23 +102,23 @@ void process(T t) {
 ```
 
 <OnlineCompilerDemo allow-run
-  title="A requires expression as a bool"
+  title="Using a requires expression as a bool"
   source-path="code/examples/vol4/vol3-metaprogramming-cpp20-23/requires_expression.cpp"
-  description="An inline requires expression dropped straight into if constexpr to judge at compile time whether a type has empty(), without defining a concept first."
+  description="An inline requires expression dropped straight into if constexpr, deciding at compile time whether a type has empty(), with no concept defined first."
 />
 
-Run it:
+Output:
 
 ```text
 has empty()
 no empty()
 ```
 
-For a quick check of "does this type have this operation," an inline requires expression is the lightest tool. But note the tradeoff: an inline expression has no name, so it doesn't form a reusable atomic constraint. In the last piece we said overload dispatch relies on named concepts to build entailment. If you want two overloads to dispatch by constraint, you need named concepts (`concept C = requires(...){...}`). Inline expressions can't subsume. So for a check you only use once, an inline expression is fine. For a requirement that has to dispatch or be reused, lift it into a concept.
+For a one-off check of "does this type have that operation," an inline requires expression is the cheapest tool. But note the tradeoff: an inline expression has no name, so it does not form a reusable atomic constraint. When we covered subsumption in the last piece, we said overload dispatch relies on named concepts to build entailment relations. If you want two overloads to dispatch by constraints, you need named concepts (`concept C = requires(...){...}`); inline expressions cannot subsume. So a check you use exactly once, in exactly one place, fits an inline expression; a requirement that must take part in overloading or be reused again and again should be lifted into a concept.
 
-## Trap one: a requires expression is not evaluated
+## Trap one: a `requires` expression is never evaluated
 
-This is the most counterintuitive trap. The calls written inside a requires expression only **check whether they compile**. They never actually run. Let's run one for proof.
+This is the most counterintuitive trap of all. The calls written inside a requires expression only **check whether they compile** — they are never actually executed. Let's run one and watch the evidence.
 
 ```cpp
 #include <iostream>
@@ -120,47 +126,47 @@ This is the most counterintuitive trap. The calls written inside a requires expr
 int counter = 0;
 int increment() {
     ++counter;
-    std::cout << "[side effect] increment called\n";
+    std::cout << "[副作用] increment 被调用了\n";
     return 1;
 }
 
 template <typename T>
 concept MentionsIncrement = requires(T t) {
-    increment();   // only checks "is this call legal", does not evaluate, does not run
+    increment();   // only checks "is this call legal"; not evaluated, not executed
 };
 
 int main() {
     static_assert(MentionsIncrement<int>);   // satisfied: the increment() call is legal
-    std::cout << "concept evaluated, counter = " << counter << "\n";
+    std::cout << "concept 求值完毕,counter = " << counter << "\n";
     increment();                              // this is the real call
-    std::cout << "after the real call, counter = " << counter << "\n";
+    std::cout << "真正调用后,counter = " << counter << "\n";
 }
 ```
 
 <OnlineCompilerDemo allow-run
-  title="A requires expression is unevaluated, counter proof"
+  title="A requires expression is not evaluated: the counter proof"
   source-path="code/examples/vol4/vol3-metaprogramming-cpp20-23/unevaluated.cpp"
-  description="The increment() call inside requires only checks legality, it never runs. After the concept evaluates, counter is still 0, until the real call in main."
+  description="The increment() call inside requires only checks legality without executing; after the concept evaluates, counter is still 0, until the real call in main."
 />
 
-Run it:
+Output:
 
 ```text
-concept evaluated, counter = 0
-[side effect] increment called
-after the real call, counter = 1
+concept 求值完毕,counter = 0
+[副作用] increment 被调用了
+真正调用后,counter = 1
 ```
 
-Look at the `counter = 0` line. When `MentionsIncrement<int>` gets evaluated, the `increment()` call inside the requires expression **never ran**. Counter is still 0, and the side-effect line didn't print. Only when `main` actually writes `increment()` does counter become 1.
+Look closely at the `counter = 0` line. When `MentionsIncrement<int>` was evaluated, the `increment()` call inside the requires expression **never executed at all** — counter stays 0, and the side-effect line never printed. Only when `main` contains a real `increment();` statement does counter become 1.
 
-A requires expression belongs to an **unevaluated context**, like `decltype` and `sizeof`. The compiler only cares whether the expressions inside are "type-legal." It generates no call, and it triggers no side effects. Beginners trip on this a lot: they write something inside a requires expression that "looks like it initializes" or "looks like it computes," assume it ran, and nothing happened. Use requires expressions to judge type capability. To actually make code run, you still have to write it in an ordinary function body.
+A requires expression lives in an **unevaluated context**, same as `decltype` and `sizeof`. The compiler only cares whether the expressions inside are "type-legal": it generates no call code, let alone triggers any side effect. Beginners trip over this constantly — they write something inside a requires expression that "looks like it initializes" or "looks like it computes," assume it ran, when in fact nothing happened. Use requires expressions to probe a type's capabilities; to actually make code run, you still have to write it in an ordinary function body.
 
 ## Trap two: writing a concrete type directly gives a hard error
 
-The second trap is sneakier, and it's the flip side of the first. Suppose we want to test "string doesn't have some method." The intuitive way is to put string into the requires expression as the parameter:
+The second trap is sneakier, and it grows out of the first. Suppose we want to test "string does not have some method." The intuitive move is to make string the parameter of the requires expression:
 
 ```cpp
-// Intuitive: test the negative case with a concrete string type
+// The intuitive way: test the negative case with the concrete type string
 static_assert(!requires(std::string s) { s.nope(); });   // string has no nope
 ```
 
@@ -168,28 +174,28 @@ static_assert(!requires(std::string s) { s.nope(); });   // string has no nope
 four_requirements2.cpp:17:44: error: 'std::string' has no member named 'nope'
 ```
 
-That's a hard error, not an elegant false. Why? Because a requires expression is "immediately evaluated" for a **concrete type**. The compiler sees the concrete type `std::string s`, goes straight into string to look for `nope`, doesn't find it, and errors hard. It doesn't go through the SFINAE path of "substitution failure returns false." To make it sting more, `requires(int x) { x.foo(); }` reports `request for member 'foo' in 'x', which is of non-class type 'int'`, because a basic type like `int` can't take `.foo()` syntax at all, and parsing fails on the spot.
+What comes out is a hard error, not a graceful false. Why? Because for a **concrete type**, a requires expression is "evaluated immediately" — the compiler sees the concrete type `std::string s`, goes straight into string to look for `nope`, and errors out hard when it isn't found, never reaching the SFINAE machinery of "substitution failure yields false." To make it sting even more, `requires(int x) { x.foo(); }` reports `request for member 'foo' in 'x', which is of non-class type 'int'`, because a fundamental type like `int` cannot carry `.foo()` syntax at all — it fails at the parsing stage.
 
-The fix is to keep the requires expression in a **template context**. The usual move is to wrap it in a concept:
+The fix is to keep the requires expression in a **template context**; the most common move is to wrap it in a concept:
 
 ```cpp
 template <typename T> concept HasSize = requires(T t) { t.size(); };
 template <typename T> concept HasNope = requires(T t) { t.nope(); };
 
 static_assert(HasSize<std::string>);    // string has size -> true
-static_assert(!HasNope<std::string>);   // string has no nope -> false, elegant this time
+static_assert(!HasNope<std::string>);   // string has no nope -> false, graceful this time
 static_assert(!HasSize<int>);           // int has no size -> false
 ```
 
 ```bash
-$ g++ -std=c++20 -Wall -Wextra neg_via_concept.cpp -o nvc && echo "all assertions passed"
-all assertions passed
+$ g++ -std=c++20 -Wall -Wextra neg_via_concept.cpp -o nvc && echo "全部断言通过"
+全部断言通过
 ```
 
-Once it's wrapped in a concept, `T` is a template parameter. Evaluating the requires expression takes the SFINAE-friendly path: a missing member comes out as false, not a hard error. So for negative test cases, wrap them in a named concept. Don't shove concrete types straight into a requires expression.
+Once wrapped in a concept, `T` is a template parameter, and evaluating the requires expression takes the SFINAE-friendly path: a missing member simply comes out as false, not a hard error. So when you write test assertions, wrap negative cases in a named concept as a rule, and don't shove concrete types straight into a requires expression.
 
 ::: warning The two traps are two sides of one coin
-"Unevaluated" and "hard error on concrete type" both root in when a requires expression gets evaluated. A requires expression is "deferred and SFINAE-friendly" for a template parameter, so it doesn't execute (not evaluated) and returns false on failure. It's "immediate" for a concrete type, so it also doesn't execute, but a failure errors hard. Remember one line: a requires expression only checks "can this compile," it never runs. To make it return false gracefully, keep it in a template context (usually, wrap it as a concept).
+"Not evaluated" and "hard error on concrete types" both trace back to when a requires expression gets evaluated. For a template parameter it is "deferred and SFINAE-friendly," so it executes nothing (it is not evaluated) and returns false on failure. For a concrete type it is "immediate," so it likewise executes nothing, but a failure turns into a hard error on the spot. Remember one rule: a requires expression only checks "would this compile," never executes; to make it return false gracefully, keep it in a template context (usually, wrapped as a concept).
 :::
 
-Three things together, the four kinds of requirements, unevaluated, and template context, and you've taken apart the most easily confused word in C++20. In the next piece we look at the template's compile-time power from another direction: before concepts existed, how did template metaprogramming (TMP) do compile-time computation and type deduction with specialization and SFINAE, and how do we migrate those old techniques onto concepts now.
+Put the three things together — the four kinds of requirements, the unevaluated context, the template context — and the most confusable word in C++20 is fully unpacked. The next piece looks at the compile-time power of templates from another direction: before concepts existed, how template metaprogramming (TMP) did compile-time computation and type deduction with specialization and SFINAE, and how to migrate those old techniques onto concepts today.

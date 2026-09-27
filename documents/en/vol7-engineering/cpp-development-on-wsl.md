@@ -1,6 +1,6 @@
 ---
-title: "C++ Engineering on WSL — vscode + clangd in depth, with full debugging"
-description: "The deeper follow-up to the getting-started clangd piece: install the full WSL2 toolchain, push .clangd to full power, wire up launch.json/tasks.json for debugging, and explain Remote-WSL's client/server architecture and how clangd finds compile_commands.json"
+title: "C++ engineering on WSL — vscode + clangd in depth, with full debugging"
+description: "The deep follow-up to the getting-started piece that installed clangd: fill out the WSL2 toolchain, push .clangd to full power, wire up the launch.json/tasks.json debug chain, and explain Remote-WSL's client/server architecture plus how clangd finds compile_commands.json"
 chapter: 1
 order: 6
 platform: host
@@ -13,70 +13,76 @@ tags:
   - clangd
 reading_time_minutes: 20
 prerequisites:
-  - "起步卷篇 5: 让 vscode 看懂您的代码——装 clangd"
+  - "Making vscode Understand Your Code: Install clangd, Watch the Red Lines Vanish"
 related:
-  - "CMake 是什么——构建系统生成器的两段式流水线"
-  - "CMakePresets.json——从 cmake -D 老式到 --preset 可复现"
+  - "What is CMake — the two-stage pipeline of a build system generator"
+  - CMakePresets.json — from the old cmake -D way to reproducible --preset builds
+translation:
+  source: documents/vol7-engineering/cpp-development-on-wsl.md
+  source_hash: 3772ab37f7f578896f0b5d99ae70294a2857e8f96b006d42e704ad592ad3f0a7
+  translated_at: '2026-09-26T05:01:55+00:00'
+  engine: anthropic
+  token_count: 4500
 ---
 
-# C++ Engineering on WSL — vscode + clangd in depth, with full debugging
+# C++ engineering on WSL — vscode + clangd in depth, with full debugging
 
-For serious C++ work on Windows, the smoothest combo today is **WSL2 + vscode + clangd**. This piece sets the whole stack up in one pass: a full Linux toolchain, clangd pushed to full power, and a working `launch.json` + `tasks.json` debug pipeline. If you came over from [getting-started piece 5](/getting-started/05-vscode-clangd), where three steps installed clangd and killed the red squiggles, this is the deeper dig: what every field in `.clangd` actually does, how clang-tidy plugs into clangd, what to do when background indexing crawls on a big project, and how gdb shows a `std::vector` once your breakpoint hits.
+For serious C++ engineering on Windows, the smoothest combo right now is **WSL2 + vscode + clangd**. This piece configures the whole stack in one pass: install the full Linux toolchain, push clangd to full power, and wire up the `launch.json` + `tasks.json` debug pipeline. If you're coming straight from [getting-started piece 5](/getting-started/05-vscode-clangd), where three steps installed clangd and killed the red squiggles, this piece digs further — what every entry in the `.clangd` config file actually does, how clang-tidy hooks into clangd, what to do about slow background indexing on a big project, and how gdb displays a `std::vector` once your breakpoint lands.
 
 ## Why WSL
 
-Windows does ship C++ toolchains. MSVC and MinGW both work. But read this tutorial through volume 7 and you'll notice every command-line example, every `CMakeLists.txt` snippet, every bit of terminal output assumes Linux. Run it natively on Windows and the tools still work, but every step goes through a "translation" layer: `g++` becomes `g++.exe`, path separators flip, the sysroot path for `arm-none-eabi-g++` has to be reset. WSL2 wipes out that translation entirely.
+Windows does ship its own C++ toolchains; MSVC and MinGW both run. But if you've followed this tutorial into volume 7, you'll have noticed that every command-line example, every `CMakeLists.txt` snippet, and every bit of terminal output assumes a Linux environment. Run things directly on Windows and the tools still work, but every step passes through a "translation" layer: `g++` becomes `g++.exe`, path separators change, and the sysroot path for `arm-none-eabi-g++` has to be reset. WSL2 wipes out that translation entirely.
 
-WSL2 is Microsoft's real Linux kernel running inside Windows (not an emulator). For our C++ engineering use case it gives three direct wins.
+WSL2 is Microsoft's real Linux kernel running inside Windows (not an emulator). For those of us doing C++ engineering, it brings three direct benefits.
 
-The Linux toolchain is the most complete. `gcc`, `gdb`, `make`, `cmake`, `ninja-build`, `clangd`, `clang-tidy`, `valgrind`, `binutils` all land in one `apt` command, and the versions stay current. Volume 6 covers AddressSanitizer, volume 7 covers cross-compilation, and on native Windows those tools either need a detour through MSYS2 or just don't exist.
+The Linux toolchain is the most complete. `gcc`, `gdb`, `make`, `cmake`, `ninja-build`, `clangd`, `clang-tidy`, `valgrind`, `binutils` — one `apt` command installs them all, and the versions stay current. Volume 6 of this tutorial covers AddressSanitizer and volume 7 covers cross-compilation; on native Windows those tools either require a detour through MSYS2 or simply don't exist.
 
-It matches production. The C++ projects we write will mostly run on Linux servers. Having the dev environment be Linux too means the "works on my machine, crashes on the server" class of environment-mismatch bugs simply never gets a chance to exist.
+It matches production. The C++ projects we write will mostly run on Linux servers later. Having the dev environment be Linux too means the whole "works on my machine, crashes on the server" class of environment-mismatch problems never gets a chance to exist.
 
-WSL2 performance is close to native. WSL2 uses a real Linux kernel in a lightweight VM, totally different from WSL1's syscall translation. Filesystem IO and process scheduling are close to native Linux speed, and compile times aren't far off a real Linux box. That's the key upgrade from WSL1, and the reason everyone doing C++ now defaults to WSL2.
+WSL2 performance is close to native. WSL2 takes the real-Linux-kernel-in-a-lightweight-VM route, completely different from WSL1's syscall translation. Filesystem IO and process scheduling are close to native Linux performance, and compile speed isn't far off a real Linux box. That's the key upgrade of WSL2 over WSL1, and the reason C++ development today defaults to WSL2.
 
 ::: warning Don't put the project under `/mnt/c`
-WSL2 reaches the Windows filesystem (`/mnt/c/...`) over the 9P protocol, which is about an order of magnitude slower on IO. Put the project in WSL's own filesystem (under `~/projects/`) and both configure and build get noticeably faster. I missed this the first time and a mid-sized project took 40 seconds to configure; after moving it under `~/` it dropped to 4.
+WSL2 reaches the Windows filesystem (`/mnt/c/...`) over the 9P protocol, which is an order of magnitude slower on IO. Keep the project in WSL's own filesystem (under `~/projects/`) and both configure and build get much faster. I missed this the first time: a mid-sized project took 40 seconds to configure, and after moving it under `~/` it dropped to 4.
 :::
 
 ## Installing WSL2 and the C++ toolchain
 
-WSL2 installs in one PowerShell (admin) command:
+Installing WSL2 is one command in PowerShell (as administrator):
 
 ```powershell
 wsl --install
 ```
 
-That enables the required Windows feature (Virtual Machine Platform), downloads the default Ubuntu distribution, and installs it. Reboot once after it finishes, launch Ubuntu, and the first run asks for a username and password. If you want a different distro (Debian, Fedora), `wsl --list --online` shows the options and `wsl --install -d <name>` installs a specific one.
+That command enables the required Windows feature (Virtual Machine Platform), downloads the default Ubuntu distribution, and installs it. Reboot once afterwards, launch Ubuntu, and the first start asks you to set a username and password. If you'd rather use another distribution (Debian, Fedora), `wsl --list --online` shows the available list and `wsl --install -d <name>` installs the one you pick.
 
-Once inside Ubuntu, refresh the system packages and pull in the full C++ toolchain in one shot:
+Inside Ubuntu, first refresh the system packages, then install the complete C++ engineering toolset in one shot:
 
 ```bash
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y build-essential cmake ninja-build gdb clangd clang-tidy clang-format
 ```
 
-`build-essential` is Debian/Ubuntu's C/C++ meta-package, and pulling it in brings `gcc`/`g++`/`make`. `cmake` is the build-system generator (covered in volume 7 ch00/01), `ninja-build` provides `ninja` (faster than `make`, the default generator in this tutorial), `gdb` is the debugger. The last three are the LLVM toolchain: `clangd` is clang's LSP server (what lets vscode understand your code), `clang-tidy` is the static analyzer, `clang-format` is the formatter.
+`build-essential` is the Debian/Ubuntu metapackage for C/C++; installing it brings `gcc`/`g++`/`make`. `cmake` is the build system generator (covered in detail in volume 7 ch00 01), `ninja-build` provides `ninja` (faster than `make`, and this tutorial's default generator), and `gdb` is the debugger. The last three belong to the LLVM toolchain: `clangd` is the LSP server from the clang project (it's what makes vscode understand your code), `clang-tidy` is static analysis, and `clang-format` is the formatter.
 
-::: details A few useful extras to grab while you're at it
+::: details A few useful extras to install along the way
 
 ```bash
-# valgrind memory checking (used in volume 6's memory-safety chapter)
+# valgrind memory checking (used in volume 6, the memory-safety volume)
 sudo apt install -y valgrind
 
 # ccache to speed up rebuilds (especially worth it on CI and large projects)
 sudo apt install -y ccache
 
-# Several build tools that go with cmake
+# Several build tools that pair with cmake
 sudo apt install -y ninja-build
 
-# Inspect what symbols live in a build artifact and which shared libs it depends on
+# See what symbols live in a build artifact and which shared libraries it depends on
 sudo apt install -y binutils
 ```
 
 :::
 
-After installing, check the versions to confirm everything landed. Here's the output on my machine:
+After installing, verify the versions to confirm everything is there. Below is the output from my machine:
 
 ```text
 $ gcc --version | head -1
@@ -97,40 +103,40 @@ Features: linux
 Platform: x86_64-pc-linux-gnu
 ```
 
-::: tip Always install clangd alongside the toolchain
-A common newbie mistake is to install only the vscode clangd extension and forget the `clangd` binary. The extension is just a remote control; the `clangd` binary is what actually does the work. Extension without binary means a remote with no TV. `clangd --version` printing a version number is the only proof it's actually installed.
+::: tip clangd must be installed together with the toolchain
+Newcomers often forget to install the `clangd` program itself and only install the vscode clangd extension. The extension is just the "remote control"; the `clangd` binary does the actual work. Installing the extension without the program is like having a remote control with no TV. Only when `clangd --version` prints a version number is it actually installed.
 :::
 
-Ubuntu 24.04's apt ships clangd 18.x, which is plenty (InlayHints, include-cleaner, External index, all there). If you insist on chasing the latest, adding LLVM's official apt source gets you 19/20, but for this tutorial it's unnecessary.
+Ubuntu 24.04's apt repositories carry clangd 18.x, which is already plenty (inline hints, include-cleaner, external indexing — the feature set is all there). If you insist on chasing the newest version, adding LLVM's official apt repository gets you 19/20, but that's unnecessary for this tutorial.
 
 ## vscode Remote-WSL: editor on Windows, work in WSL
 
-The way vscode does C++ is a client/server architecture: the vscode UI runs on Windows, the processes doing the real work run in WSL, and the Remote-WSL extension bridges the two. Get this architecture straight, or you won't be able to diagnose any later problem.
+vscode running C++ is, under the hood, a client/server architecture: the vscode UI runs on Windows, the processes doing the real work run inside WSL, and the Remote-WSL extension connects the two. Without a clear picture of this architecture, none of the problems that come later can be located.
 
-On the Windows side, do two things:
+Two things to do on the Windows side:
 
-- Install vscode (download from [code.visualstudio.com](https://code.visualstudio.com), normal next-next-next)
-- In the vscode extension marketplace, search `WSL` (publisher Microsoft) and install it
+- Install vscode (download from [code.visualstudio.com](https://code.visualstudio.com), plain next-next-next)
+- Search the vscode extension marketplace for `WSL` (publisher Microsoft) and install it
 
-With that done, there are two ways to open a project that lives in WSL:
+With that done, there are two ways to open a project living in WSL:
 
-First way, in the command palette (`F1` or `Ctrl+Shift+P`) type `Remote-WSL: New Window`, which spins up a new vscode window connected to WSL.
+First, open the command palette (`F1` or `Ctrl+Shift+P`), type `Remote-WSL: New Window`, and a fresh vscode window connected to WSL opens up.
 
-Second way, in a WSL terminal, `cd` into the project directory and type:
+Second, in a WSL terminal, cd into the project directory and type:
 
 ```bash
 code .
 ```
 
-The `code` command is injected into WSL's PATH automatically once the Remote-WSL extension is installed. It launches the Windows-side vscode and treats the current directory as the workspace.
+The `code` command is injected into WSL's PATH automatically once the Remote-WSL extension is installed. It opens vscode on the Windows side and treats the current directory as the workspace.
 
-::: details Why `code .` works at all
-Remote-WSL drops a `code` shell script into WSL (usually at `/usr/bin/code`). That script talks to the Windows-side vscode and tells it to launch and connect back. The first run pulls a vscode server component from Windows into WSL (`~/.vscode-server/`), and that server is the process that actually runs extensions, terminals, and language servers. Subsequent opens are instant.
+::: details Why `code .` works
+Remote-WSL drops a `code` shell script into WSL (usually at `/usr/bin/code`). What it does is communicate with vscode on the Windows side and have vscode start up and connect over. The first run pulls a vscode server component from Windows into WSL (`~/.vscode-server/`); that server is the process that actually runs extensions, terminals, and language servers. Subsequent opens are instant.
 :::
 
-Once connected, look at the bottom-left corner of the vscode window. You should see a green or blue badge reading `WSL: Ubuntu`. That means every file operation, terminal, and extension in this window is running in WSL.
+Once connected, look at the bottom-left corner of the vscode window: there should be a green or blue badge reading `WSL: Ubuntu`. It means every file operation, terminal, and extension in this window runs inside WSL.
 
-Now the biggest trap for newcomers: **vscode extensions install on both sides**. Windows-side extensions handle UI (themes, icons, keybindings); WSL-side extensions handle the Linux work (code understanding, debugging, building). Once Remote-WSL connects, the extensions panel splits into "LOCAL - INSTALLED" (Windows side) and "WSL: UBUNTU - INSTALLED" (WSL side). The clangd, C/C++, and CMake Tools extensions you want all have to go into the WSL column (click "Install in WSL: Ubuntu" next to each).
+Next comes the biggest trap for newcomers: **vscode extensions are installed on both sides**. Extensions on the Windows side handle UI (themes, icons, keybindings); extensions on the WSL side handle the Linux work (code understanding, debugging, building). After Remote-WSL connects, the extensions panel splits into two groups: "LOCAL - INSTALLED" (the Windows side) and "WSL: UBUNTU - INSTALLED" (the WSL side). The clangd, C/C++, and CMake Tools extensions you need must go into the WSL group (click "Install in WSL: Ubuntu" next to the extension).
 
 ```text
 Extensions panel (after connecting to WSL)
@@ -139,34 +145,34 @@ Extensions panel (after connecting to WSL)
 │   ├── Material Icon Theme
 │   └── ...
 └── WSL: UBUNTU - INSTALLED  ← WSL side: install clangd / C/C++ / CMake Tools here
-    ├── clangd           ← code understanding (completion / jump-to-def / errors)
-    ├── C/C++            ← debugging (keep cppdbg, turn IntelliSense off)
-    └── CMake Tools      ← CMake configure / build / kit selection (optional)
+    ├── clangd           ← code understanding (completion/jump-to-definition/diagnostics)
+    ├── C/C++            ← debugging (keep cppdbg, disable IntelliSense)
+    └── CMake Tools      ← CMake configure/build/kit selection (optional)
 ```
 
-The clangd extension has to go on the WSL side. It calls the `clangd` binary inside WSL, it reads `compile_commands.json` from inside WSL, all of it is on the Linux side. Install it on the Windows side by mistake and it'll go looking for `clangd.exe` on Windows, which it absolutely will not find.
+The clangd extension must be installed on the WSL side. It needs to invoke the `clangd` binary inside WSL and read the `compile_commands.json` inside WSL — everything lives on the Linux side. Install it on the Windows side by mistake and it goes looking for `clangd.exe` on Windows, which it will certainly never find.
 
 ## clangd configuration in depth
 
-[Getting-started piece 5](/getting-started/05-vscode-clangd) installed clangd and killed the red squiggles, but covered only three steps: turn on `CMAKE_EXPORT_COMPILE_COMMANDS`, install the extension, switch off the C/C++ extension's IntelliSense. This piece fills in the rest: how clangd finds compile_commands, what every field in `.clangd` does, how clang-tidy plugs in, how to turn on include-cleaner.
+[getting-started piece 5](/getting-started/05-vscode-clangd) installed clangd and killed the red squiggles, but it covered only three steps: turn on `CMAKE_EXPORT_COMPILE_COMMANDS`, install the extension, and disable the C/C++ extension's IntelliSense. This piece fills in the rest — how clangd finds compile_commands, what every entry in the `.clangd` config file does, how clang-tidy hooks in, and how to turn on include-cleaner.
 
 ### Where compile_commands.json comes from
 
-clangd's work depends on a file called `compile_commands.json`. This is the Compilation Database format defined by the Clang community: one record per `.cpp` in the project, recording the full command used to compile it, the compiler path, the `-std=` standard, all the `-I` header search paths. With that file, clangd can "stand where the compiler stands" and look at the code, knowing which header `std::vector` comes from and which features are available under `-std=c++17`.
+clangd does its work on the back of a file called `compile_commands.json`. It's the Compilation Database format defined by the Clang community: one record per `.cpp` in the project, recording the complete command used to compile it — the compiler path, the `-std=` standard, every `-I` header search path. With this file in hand, clangd can "stand where the compiler stands" when reading the code, knowing which header `std::vector` lives in and which features are available under `-std=c++17`.
 
-CMake makes this trivial, one line. After `project()` in `CMakeLists.txt`, add:
+CMake makes this particularly smooth — one line does it. After `project()` in your `CMakeLists.txt`, add:
 
 ```cmake
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 ```
 
-Or, if you'd rather not touch `CMakeLists.txt`, pass `-DCMAKE_EXPORT_COMPILE_COMMANDS=ON` on the configure command line. After configure, `build/compile_commands.json` is generated.
+Or, if you'd rather not touch `CMakeLists.txt`, adding `-DCMAKE_EXPORT_COMPILE_COMMANDS=ON` on the configure command line works too. Once configure finishes, `build/compile_commands.json` is generated.
 
-::: warning This switch only works for Makefile / Ninja generators
-`CMAKE_EXPORT_COMPILE_COMMANDS` only emits `compile_commands.json` when you're using a Makefile or Ninja generator. The Visual Studio generator (`-G "Visual Studio 17 2022"`) and the Xcode generator don't support it. In WSL we default to Ninja, so this is a non-issue.
+::: warning This switch only takes effect for Makefile / Ninja generators
+`CMAKE_EXPORT_COMPILE_COMMANDS` only emits `compile_commands.json` under the Makefile or Ninja generators. The Visual Studio generator (`-G "Visual Studio 17 2022"`) and the Xcode generator don't support it. Inside WSL we default to Ninja, so this is a non-issue.
 :::
 
-After configure, `build/compile_commands.json` looks like this (real output from my machine):
+With configure done, `build/compile_commands.json` looks like this (real output from my machine):
 
 ```json
 [
@@ -179,11 +185,11 @@ After configure, `build/compile_commands.json` looks like this (real output from
 ]
 ```
 
-One entry per `.cpp`. The `command` field is the load-bearing one: clangd parses it to get the compiler, the standard, the header paths, then understands the code from that viewpoint. So if you change `CMakeLists.txt` (say, adding a new `target_include_directories`), you have to reconfigure to refresh `compile_commands.json`, or clangd keeps using the old viewpoint, never learns the new header path, and the red squiggles come back.
+One entry per `.cpp`. The `command` field is the critical one: clangd parses it to get the compiler, the standard, and the header paths, then understands the code from that vantage point. So after you change `CMakeLists.txt` (adding a `target_include_directories`, say), you must re-configure so `compile_commands.json` refreshes — otherwise clangd keeps using the old vantage point, doesn't know about the new header path, and the red squiggles come back.
 
 ### How clangd finds compile_commands.json
 
-The official behavior is: clangd takes the source file you're editing, walks up its directory chain looking for `compile_commands.json`, and uses the first one it finds. So if your source is at `~/proj/src/foo.cpp`, clangd checks in this order:
+The official behavior is this: clangd takes the source file you're editing and walks up the directory chain from its location looking for `compile_commands.json`, using the first one it finds. So if your source file is `~/proj/src/foo.cpp`, clangd looks, in order:
 
 ```text
 ~/proj/src/compile_commands.json
@@ -192,37 +198,37 @@ The official behavior is: clangd takes the source file you're editing, walks up 
 ~/.../compile_commands.json
 ```
 
-clangd 16 added one more rule: at each directory along the way, it also peeks at that directory's `build/` subdirectory for a `compile_commands.json`. This was added specifically as a convenience for CMake projects, since CMake writes the file into `build/` by default and clangd knows to look there.
+Since clangd 16 there's one extra rule: at each directory along the way, it also glances into that directory's `build/` subdirectory to see whether a `compile_commands.json` is there. This convenience was added specifically for CMake projects — CMake writes the file into `build/` by default, clangd knows this, and goes digging on its own.
 
-I tested on clangd 22 with the source in `src/` and `compile_commands.json` in `build/`, no symlink at the project root, and clangd still found it:
+I tested this on clangd 22: with source files under `src/` and `compile_commands.json` under `build/`, and no symlink of any kind at the project root, clangd still finds it:
 
 ```text
 I[11:23:59.322] Loading compilation database...
 I[11:23:59.323] Loaded compilation database from /tmp/clangd-search-test/build/compile_commands.json
 ```
 
-So in the default case you don't need to do anything. But two situations still call for pointing at it manually.
+So by default you don't need to lift a finger. But two scenarios still call for pointing at it manually.
 
-First situation: you use multiple build directories (say `build-debug/` and `build-release/`), and clangd can't tell which to pick and may bounce between them. Pin it down in `.clangd`:
+First scenario: you use multiple build directories (say `build-debug/` and `build-release/`), clangd doesn't know which to pick and may flip-flop between the two. Point at one directly in `.clangd`:
 
 ```yaml
 CompileFlags:
   CompilationDatabase: build-debug
 ```
 
-The `CompilationDatabase` field takes a directory path (relative to the project root), or `Ancestors` (the default behavior, walk up + peek into `build/`), or `None` (turn it off, fall back only).
+The `CompilationDatabase` field can be a directory path (relative to the project root), or `Ancestors` (the default behavior: walk up + dig through `build/`), or `None` (turn it off, fall back to fallback flags only).
 
-Second situation: an old clangd (15 or earlier) doesn't have the "peek into `build/`" rule and really only walks parent directories looking for `compile_commands.json` at the root. In that case the project root needs a symlink:
+Second scenario: old clangd (15 and earlier) lacks the "dig through `build/` subdirectories" rule and genuinely only walks parent directories looking for `compile_commands.json` at their roots. In that case the project root needs a symlink:
 
 ```bash
 ln -sf build/compile_commands.json compile_commands.json
 ```
 
-When clangd walks up, it hits the symlink at the root and follows it to the real file in `build/`. New clangd doesn't need this, but it does no harm and keeps old clangd happy.
+Walking upward, clangd then hits this symlink at the project root and follows it to the real file inside `build/`. New clangd doesn't need this step, but keeping it does no harm and stays compatible with old clangd.
 
 ### The .clangd config file, field by field
 
-`.clangd` is clangd's project-level config, YAML format, placed at the project root. clangd walks up the source file's directory chain looking for `.clangd`, merges every hit in order, and the one closest to the source file wins. The config below is what I use in practice (also in the repo at `code/examples/vol7/wsl-clangd/.clangd`); I'll walk through each section and what it does:
+`.clangd` is clangd's project-level configuration, YAML format, placed at the project root. clangd walks up the source file's directory chain looking for `.clangd` files; all the fragments it hits are merged in order, and the closer to the source file, the higher the priority. The one below is the config I use in practice (it also lives in the repo at `code/examples/vol7/wsl-clangd/.clangd`); let's go through it segment by segment, what each entry does:
 
 ```yaml
 CompileFlags:
@@ -232,7 +238,7 @@ CompileFlags:
   CompilationDatabase: build
 ```
 
-The `CompileFlags` section post-processes the compile command out of `compile_commands.json`. `Add` appends flags to every command: `-Wall -Wextra` makes clangd's diagnostics as strict as a real compile, and `-Wno-unused-parameter` lets it ignore the kind of parameter that has to exist but doesn't get used (typical in callbacks). `Remove` wipes flags via wildcard; the canonical case is `-fsanitize=thread` showing up in `compile_commands.json` (TSan, covered in volume 5), which clangd doesn't need to re-run and re-running it produces bizarre diagnostics. `Compiler` swaps the compiler executable name for a specified value; writing `clang++` makes clangd use Clang's own driver to probe system headers and ABI, which is especially handy in cross-compilation (when the original compiler is `arm-none-eabi-g++` and clangd can't find the sysroot, swapping in `clang++` with `--query-driver` fixes it). `CompilationDatabase` was covered above, the directory holding compile_commands.
+The `CompileFlags` section post-processes the compile commands from `compile_commands.json`. `Add` appends flags to every command — `-Wall -Wextra` makes clangd flag things as strictly as a real compile, and `-Wno-unused-parameter` lets it forgive parameters that must exist but go unused, like the callback kind in this project. `Remove` kills flags by wildcard; the classic case is a `-fsanitize=thread` sitting in `compile_commands.json` (TSan was covered in volume 5) — clangd doesn't need to rerun it, and rerunning it produces strange diagnostics anyway. `Compiler` swaps the compiler executable name for a value you choose; writing `clang++` makes clangd use Clang's own driver to probe system headers and the ABI, which is especially useful in cross-compilation scenarios (when the original compiler is `arm-none-eabi-g++` and clangd can't probe the sysroot, switching to `clang++` paired with `--query-driver` solves it). `CompilationDatabase` was covered above: the directory where compile_commands lives.
 
 ```yaml
 Index:
@@ -240,7 +246,7 @@ Index:
   StandardLibrary: Yes
 ```
 
-The `Index` section governs clangd's index. `Background: Build` turns on the background index (the thing grinding away the first time you open a project), and the index lands on disk under `~/.cache/clangd/index/` and gets reused next time you open the same project, so it doesn't start from scratch. `StandardLibrary: Yes` folds the standard library symbols into the index, so typing `std::` actually completes `vector`, `cout`, and friends. Both are on by default; spelling them out is just for explicitness.
+The `Index` section governs clangd's indexing. `Background: Build` turns on background indexing (that's what's working when a project opens slowly the first time); the index is persisted under `~/.cache/clangd/index/` and reused the next time you open the same project — no starting over from scratch. `StandardLibrary: Yes` pulls standard library symbols into the index, so typing `std::` completes `vector`, `cout`, and friends. Both of these default to on; writing them out just makes it explicit.
 
 ```yaml
 InlayHints:
@@ -251,7 +257,7 @@ InlayHints:
   BlockEnd: Yes
 ```
 
-`InlayHints` is clangd 18+'s inline hints, gray dashed text rendered right inside the code line. `ParameterNames: Yes` shows the parameter name at call sites, `greet(/*name=*/"WSL")`, so you don't have to keep flipping back to the declaration to check what a parameter is called. `DeducedTypes: Yes` shows the type `auto` deduced, `auto /*= int*/ sum`. `Designators: Yes` shows field names in aggregate initialization, `Point{/*.x=*/1, /*.y=*/2}`. `BlockEnd: Yes` shows what a closing `}` belongs to (which function, which namespace), so the `}` at the end of a multi-thousand-line function is no longer a mystery. The vscode clangd extension doesn't enable this group by default; turning it on lifts code readability a noticeable step.
+`InlayHints` is clangd 18+'s inline hints: gray ghost text rendered directly inside the code line. `ParameterNames: Yes` shows parameter names at call sites — `greet(/*name=*/"WSL")` — saving you the round trip to the declaration to see what a parameter is called. `DeducedTypes: Yes` shows the type `auto` deduced — `auto /*= int*/ sum`. `Designators: Yes` shows field names in aggregate initialization — `Point{/*.x=*/1, /*.y=*/2}`. `BlockEnd: Yes` shows what a big `}` belongs to — which function or namespace — so the closing brace at the end of a several-thousand-line function is no longer a mystery. This group is off by default in the vscode clangd extension; turning it on steps code readability up a whole level.
 
 ```yaml
 Diagnostics:
@@ -263,18 +269,18 @@ Diagnostics:
   Suppress: [unused-includes]
 ```
 
-The `Diagnostics` section governs the red/yellow squiggles. `ClangTidy.Add/Remove` makes clangd run clang-tidy checks right in the editor, no terminal needed. With `modernize-*` on, writing `NULL` prompts a suggestion to use `nullptr`, writing `for (int i = 0; i < v.size(); ++i)` prompts a suggestion to use a range-based for. `Remove` silences noisy checks: `modernize-use-trailing-return-type` forces the `auto foo() -> int` style, the community has argued about it for years, and most projects don't want it. `UnusedIncludes: Strict` and `MissingIncludes: Strict` turn on clangd's built-in include-cleaner, flagging both "included but unused" and "used but not included". **When you're new to a project, leave these two off first**, or one toggle lights the screen up with yellow squiggles and makes you want to uninstall clangd outright. `Suppress` silences a specific diagnostic code, more precise than toggling a check.
+The `Diagnostics` section governs the red and yellow squiggles. `ClangTidy.Add/Remove` has clangd run clang-tidy checks right in the editor, no manual terminal needed. With `modernize-*` on, write `NULL` and it suggests `nullptr`; write `for (int i = 0; i < v.size(); ++i)` and it suggests switching to a range-based for. `Remove` turns off the noisy checks — `modernize-use-trailing-return-type` mandates the `auto foo() -> int` style, which the community has fought over for years and most projects reject. `UnusedIncludes: Strict` and `MissingIncludes: Strict` enable clangd's built-in include-cleaner, flagging both "included but unused" and "used but not included". **Turn these two off when first picking up a project** — switch them on in an old codebase and the screen floods with yellow squiggles, enough to make you want to uninstall clangd on the spot. `Suppress` silences specific diagnostic codes, more surgical than disabling a check.
 
 ```yaml
 Hover:
   ShowAKA: Yes
 ```
 
-The `Hover` section governs the mouse-hover tooltip. `ShowAKA: Yes` makes typedef/using aliases show the underlying type on hover, so hovering over `size_type` reveals `std::size_t` underneath.
+The `Hover` section governs mouse-hover tooltips. `ShowAKA: Yes` makes typedef/using aliases show the underlying type on hover as well — hover `size_type` and you can see `std::size_t` underneath.
 
 ### Key items in the clangd extension's settings.json
 
-The `.clangd` file controls the clangd program's behavior. The vscode clangd extension has its own set of options in `settings.json`. Below are the key items that pair with `.clangd` (the full version is at `code/examples/vol7/wsl-clangd/.vscode/settings.json`):
+The `.clangd` file governs the behavior of the clangd program itself; the vscode clangd extension additionally has a set of its own settings in `settings.json`. Below are the key items that pair with `.clangd` (the full version is in the repo at `code/examples/vol7/wsl-clangd/.vscode/settings.json`):
 
 ```json
 {
@@ -293,15 +299,15 @@ The `.clangd` file controls the clangd program's behavior. The vscode clangd ext
 }
 ```
 
-`C_Cpp.intelliSenseEngine: disabled` is the core step from piece 5, switching off the C/C++ extension's code understanding so clangd owns it. `clangd.arguments` is the command-line args clangd starts with. `--background-index` explicitly turns on the background index, `--clang-tidy` turns on the clang-tidy integration (paired with `.clangd`'s `Diagnostics.ClangTidy` and the `.clang-tidy` file), `--header-insertion=iwyu` makes completion auto-add the `#include`, `--all-scopes-completion` lets completion cross namespace boundaries (you can complete global symbols from inside a namespace), `--function-arg-placeholders` makes function completion carry parameter placeholders, `--pch-storage=disk` writes PCH to disk to save memory, `--inlay-hints` enables the inline hints (clangd 18+), `--j=4` is the background parallelism.
+`C_Cpp.intelliSenseEngine: disabled` is the core of that step from piece 5 — turning off the C/C++ extension's code understanding so clangd has the field to itself. `clangd.arguments` holds clangd's command-line arguments at startup. `--background-index` explicitly enables the background index; `--clang-tidy` enables the clang-tidy integration (pairing with `.clangd`'s `Diagnostics.ClangTidy` and the `.clang-tidy` file); `--header-insertion=iwyu` auto-adds the `#include` when you accept a completion; `--all-scopes-completion` lets completions cross the current namespace (inside some namespace, you can still complete global symbols); `--function-arg-placeholders` makes function completions carry parameter placeholders; `--pch-storage=disk` persists PCHs to disk to save memory; `--inlay-hints` enables the inline hints (clangd 18+); `--j=4` sets background parallelism.
 
-`clangd.onConfigChanged: restart` is the load-bearing one: when you change `.clangd`, clangd restarts itself and picks up the new config. Without it, every `.clangd` edit needs a manual `Ctrl+Shift+P` → `clangd: Restart language server` to take effect.
+`clangd.onConfigChanged: restart` is a critical one: after you edit `.clangd`, clangd restarts itself and loads the new config. Without it, every `.clangd` edit needs a manual `Ctrl+Shift+P` run of `clangd: Restart language server` before it takes effect.
 
 ### Background Index: a slow first open on a big project is normal
 
-Open a project with tens of thousands of lines and clangd will pin the status bar spinning for several minutes after startup. That's the background index running: it's parsing every source file, extracting symbols and reference relationships, and writing them to `~/.cache/clangd/index/`. After the first run, the index gets reused and the second open is fast.
+Open a project with tens of thousands of lines, and after startup clangd keeps the status bar spinning for a few minutes, even ten-plus minutes. That's the background index at work: it parses every source file, extracts symbols and reference relations, and writes them to disk under `~/.cache/clangd/index/`. Once the first pass is done, the index gets reused and the second open is fast.
 
-To verify it's actually doing work, look at the clangd output panel (`View → Output → clangd`); you'll see logs like this:
+To verify it's actually working, open clangd's output panel (`View → Output → clangd`) and you'll see logs like these:
 
 ```text
 I[15:32:11.456] Indexing xxx.cpp
@@ -309,13 +315,13 @@ I[15:32:11.612] Indexed preamble symbols: 1240
 I[15:32:11.738] Background: 1450 indexed, 0 dirty
 ```
 
-If the project is genuinely huge (something like Chromium), the index can eat several GB of memory. If your machine can't take it, turn off the background index with `Background: Skip` or `--background-index=0`. The cost is slower cross-file jumps and completion, since no cross-file index gets built. For most projects, leaving it on is fine.
+If the project is truly enormous (Chromium, say), the index can eat several gigabytes of memory. If your machine can't take it, disable background indexing with `Background: Skip` or `--background-index=0`. The price is slower cross-file navigation and completion, since no cross-file index exists. For most projects, leaving it on is fine.
 
 ### clang-tidy integration
 
-clangd's built-in clang-tidy integration puts static checks directly in the editor, no terminal switching. The way it works:
+clangd's built-in clang-tidy integration moves static checking directly into the editor, no terminal switching. It works like this:
 
-Drop a `.clang-tidy` file (YAML) at the project root listing which checks to enable:
+Put a `.clang-tidy` file (YAML format) at the project root listing which checks to enable:
 
 ```yaml
 Checks: >
@@ -332,9 +338,9 @@ HeaderFilterRegex: '.*'
 FormatStyle: file
 ```
 
-The first item in `Checks`, `-*`, turns off all default checks; after that, globs like `modernize-*` turn groups on. The `-` prefix means off. `HeaderFilterRegex` decides which headers clang-tidy inspects; `.*` means all of them, and you'd narrow it to a regex matching only your own headers if third-party libraries generate too much noise.
+The first entry of `Checks`, `-*`, turns off every default check; the following `modernize-*`-style globs then turn groups back on one by one. A `-` prefix means off. `HeaderFilterRegex` decides which headers clang-tidy checks — `.*` is all of them; if third-party libraries generate too much noise, change it to a regex matching only your own project's headers.
 
-clangd reads this file automatically at startup. With `--clang-tidy` on in `settings.json`, every line you edit, clangd runs the relevant clang-tidy checks alongside, and problems get drawn as yellow/red squiggles in the editor.
+clangd reads this file automatically at startup. With `--clang-tidy` on in `settings.json`, every line you edit has clangd run the relevant clang-tidy checks on the spot, painting the problems as yellow or red squiggles right in the editor.
 
 I tested a snippet that triggers `readability-identifier-length`:
 
@@ -344,7 +350,7 @@ $ cat tidy_demo.cpp
 int main() {
     int big = 1000000000;
     long narrowed = big;
-    int* p = nullptr;   // ← name too short, under 3 chars gets flagged by the check
+    int* p = nullptr;   // ← name too short; the check flags anything under 3 characters
     return 0;
 }
 
@@ -355,43 +361,43 @@ $ clang-tidy -p build tidy_demo.cpp
       |          ^
 ```
 
-The same diagnostic shows up in vscode as a yellow squiggle under the variable name `p`, with `[readability-identifier-length]` on hover. With the clangd integration, you don't open a terminal; you write the code and the problem just appears.
+The same diagnostic in vscode is simply a yellow squiggle under the variable name `p`, with `[readability-identifier-length]` shown on hover. With the clangd integration you never open a terminal — the problems appear as you write.
 
 ### include-cleaner
 
-clangd's built-in include-cleaner (no external clang-tidy needed) targets exactly two include pathologies: included but unused, and used but not included. The switches live in the `Diagnostics` section of `.clangd`:
+The include-cleaner built into clangd (no external clang-tidy dependency) exists to cure exactly the two include diseases: included but unused, and used but not included. The switches live in the `Diagnostics` section of `.clangd`:
 
 ```yaml
 Diagnostics:
-  UnusedIncludes: Strict   # None = off, Strict = strict on
+  UnusedIncludes: Strict   # None = off, Strict = strictly on
   MissingIncludes: Strict
 ```
 
-My advice: **for new projects, turn it on from day one** so include hygiene is clean from the source; **for taking over an old project, start with `None`**, since legacy code carries heavy include baggage and flipping to Strict lights up the screen with yellow and robs you of judgment. Tidy the code first, then turn it on.
+My recommendation: **enable it from day one on new projects**, so include hygiene is clean at the source; **start with `None` when taking over an old project** — old code carries heavy include baggage, and switching Strict on immediately floods the screen with yellow squiggles until you lose all judgment. Straighten out the code first, then switch it on.
 
-include-cleaner also supports IWYU pragmas, written in headers to instruct the tool:
+include-cleaner also supports IWYU pragmas, written inside headers to give the tool instructions:
 
 ```cpp
 #include <vector>  // IWYU pragma: export
 #include "detail_helpers.h"  // IWYU pragma: keep  ← don't flag this even if unused
 ```
 
-`export` says "this header includes `<vector>` on behalf of users, so users don't need to include it themselves"; `keep` says "don't mark this include as unused". Both pragmas see heavy use in large libraries to suppress false positives from include-cleaner.
+`export` says "this header includes `<vector>` on behalf of its users, so users don't need to include it again"; `keep` says "never flag this include as unused". Both pragmas see heavy use in large libraries, keeping include-cleaner from false positives.
 
 ### clangd or the C/C++ extension (aligned with the getting-started piece)
 
-At this point you might ask: should I uninstall the C/C++ extension? No. Consistent with [getting-started piece 5](/getting-started/05-vscode-clangd):
+At this point you might ask: should the C/C++ extension be uninstalled? No. Consistent with [getting-started piece 5](/getting-started/05-vscode-clangd):
 
-- clangd handles "understanding the code": completion, jump-to-def, errors, hover, inlay hints, clang-tidy. Accurate.
-- The C/C++ extension stays for "debugging": breakpoints, stepping, variable inspection, call stack. Its `cppdbg` debugger is the most mature gdb/lldb solution in vscode.
+- clangd handles "understanding the code" — completion, navigation, diagnostics, hover, inline hints, clang-tidy. Accurate.
+- The C/C++ extension stays for "debugging" — breakpoints, stepping, watching variables, the call stack. Its `cppdbg` debugger is the most mature way to drive gdb/lldb from vscode.
 
-So `C_Cpp.intelliSenseEngine: disabled` switches off the C/C++ extension's code understanding; the extension itself stays installed. The two divide labor and don't fight. The debugging below uses the C/C++ extension's `cppdbg`.
+So `C_Cpp.intelliSenseEngine: disabled` disables the C/C++ extension's code understanding; the extension itself stays installed. The two split the labor and don't fight. What we debug below is the C/C++ extension's `cppdbg`.
 
 ## Debug configuration: launch.json
 
-Once the project builds and clangd can jump around, the last link is debugging: set breakpoints, step, inspect variables. This section finishes the spot where the original draft cut off at "switch to the debug panel and click".
+Once the project builds and clangd jumps around the code, the last link in the chain is debugging: breakpoints, single-stepping, inspecting variables. This section of the piece finishes what the original draft abandoned — it broke off abruptly at the sentence "switch to the debug panel and click".
 
-Debugging C++ in vscode goes through `.vscode/launch.json`. Here's a complete, working config (also in the repo at `code/examples/vol7/wsl-clangd/.vscode/launch.json`), using the C/C++ extension's `cppdbg` + gdb:
+Debugging C++ in vscode goes through `.vscode/launch.json`. Here's a complete working configuration (the repo has the same one at `code/examples/vol7/wsl-clangd/.vscode/launch.json`), using the C/C++ extension's `cppdbg` + gdb:
 
 ```json
 {
@@ -422,28 +428,28 @@ Debugging C++ in vscode goes through `.vscode/launch.json`. Here's a complete, w
 }
 ```
 
-Field by field. `type: cppdbg` is the debugger type the C/C++ extension provides, driving gdb over gdb's MI protocol. `program` is the full path to the executable you're debugging; `${workspaceFolder}` is the project root vscode currently has open. `MIMode: gdb` paired with `miDebuggerPath: /usr/bin/gdb` tells it to use the gdb inside WSL. `preLaunchTask: build` runs a task named `build` (defined in tasks.json below) before F5 fires; if the build fails, debugging doesn't start, saving you from debugging a stale binary.
+Field by field. `type: cppdbg` is the debugger type provided by the C/C++ extension, driving gdb through gdb's MI protocol. `program` is the full path to the executable being debugged; `${workspaceFolder}` is the root of the project vscode currently has open. `MIMode: gdb` paired with `miDebuggerPath: /usr/bin/gdb` tells it to use the gdb inside WSL. `preLaunchTask: build` runs a task named `build` (defined in tasks.json below) before F5 launches; if the build fails, the debug session doesn't start — sparing you from debugging a stale binary.
 
-The `-enable-pretty-printing` in `setupCommands` is the key item. Without it, when you break on a `std::vector<int> v{1,2,3,4,5}`, the variables panel shows a pile of raw members (`_M_start`, `_M_finish`, `_M_end_of_storage`, those libstdc++ internal pointers) and you have no way to tell the vector actually holds `{1,2,3,4,5}`. With it on, gdb uses its Python pretty-printers to format it into something readable. Here's the real gdb output comparison on my machine:
+The `-enable-pretty-printing` inside `setupCommands` is the key one. Without it, when you break on a `std::vector<int> v{1,2,3,4,5}`, the variables panel shows a pile of raw members (`_M_start`, `_M_finish`, `_M_end_of_storage` — libstdc++ internal pointers like that), with no way to tell the vector holds `{1,2,3,4,5}`. With it on, gdb uses its Python pretty-printers to format it into readable form. Below is the real gdb output comparison from my machine:
 
 ```text
 (gdb) print nums        # nums is std::vector<int>{1,2,3,4,5}
 
-Without pretty-printing:   $1 = {_M_impl = {_M_start = 0x555..., _M_finish = ..., _M_end_of_storage = ...}}
-With pretty-printing:      $1 = std::vector of length 5, capacity 5 = {1, 2, 3, 4, 5}
+without pretty-printing: $1 = {_M_impl = {_M_start = 0x555..., _M_finish = ..., _M_end_of_storage = ...}}
+with pretty-printing:    $1 = std::vector of length 5, capacity 5 = {1, 2, 3, 4, 5}
 ```
 
-Once `setupCommands` is wired up, the variables panel shows the readable second form. This is the step newbies miss most often: debugging works but variables are unreadable, so the breakpoint might as well not be there.
+In vscode, once `setupCommands` is configured, the variables panel shows the readable form like the second line. This is the step newcomers miss most easily: you can debug, but the variables are unreadable — breakpoints might as well not be there.
 
 ::: tip CodeLLDB as an alternative
-If you prefer lldb, install the CodeLLDB extension (`vadimcn.vscode-lldb`) plus `sudo apt install lldb` in WSL, and switch launch.json to `"type": "lldb"`. CodeLLDB doesn't go through the MI protocol; it drives lldb directly, starts faster, and renders C++ types more nicely (no pretty-printing config needed, it's built in). This tutorial standardizes on gdb, though, so the examples below all assume gdb.
+If you prefer lldb, install the CodeLLDB extension (`vadimcn.vscode-lldb`) plus `sudo apt install lldb` inside WSL, and switch launch.json to `"type": "lldb"`. CodeLLDB skips the MI protocol and drives lldb directly — faster startup, and friendlier display of C++ types (pretty-printing built in, no configuration). But this tutorial standardizes on gdb, and the examples below are all gdb-based.
 :::
 
-With that configured, click in the gutter to the left of `main.cpp` line 14 (the `for (int x : nums)` line) to set a red breakpoint, then press `F5`. vscode first runs the `build` task to recompile, then launches gdb to load `build/greeter`, and stops at the breakpoint. The Run and Debug panel on the left shows the call stack, variables, breakpoints, and watch. Expand `nums` in the variables panel and you get `std::vector of length 5, capacity 5 = {1, 2, 3, 4, 5}`, and `sum` is the current accumulated value. `F10` steps over, `F11` steps into, `F5` continues.
+With everything configured, click in the gutter to the left of line 14 of `main.cpp` (the `for (int x : nums)` line) to drop a red breakpoint dot, then press `F5`. vscode first runs the `build` task to recompile; once the build finishes it starts gdb loading `build/greeter` and runs until the breakpoint stops it. The Run and Debug panel on the left shows the call stack, variables, breakpoints, and watches. In the variables panel, `nums` expands to `std::vector of length 5, capacity 5 = {1, 2, 3, 4, 5}`, and `sum` is the running total. `F10` steps over, `F11` steps into, `F5` continues.
 
 ## tasks.json build tasks
 
-The `preLaunchTask: build` in launch.json needs a matching task. Tasks live in `.vscode/tasks.json`:
+That `preLaunchTask: build` in launch.json needs a matching task. Tasks are defined in `.vscode/tasks.json`:
 
 ```json
 {
@@ -493,14 +499,14 @@ The `preLaunchTask: build` in launch.json needs a matching task. Tasks live in `
 }
 ```
 
-Three tasks, each with a job. `build` runs the incremental build (`cmake --build build`, with Ninja underneath); it's the default build task (`isDefault: true`), so `Ctrl+Shift+B` triggers it directly. `configure` runs on first build or after you've changed `CMakeLists.txt`, reconfiguring once to refresh `compile_commands.json`. `rebuild` uses `dependsOrder: sequence` to run configure then build in order, all in one shot.
+The three tasks split the work. `build` runs the incremental build (`cmake --build build`, Ninja underneath); it's the default build task (`isDefault: true`), so `Ctrl+Shift+B` triggers it directly. `configure` runs the first time or after `CMakeLists.txt` changes, re-configuring once to refresh `compile_commands.json`. `rebuild` uses `dependsOrder: sequence` to run configure then build in order — one command for the whole thing.
 
-`problemMatcher: ["$gcc"]` makes vscode parse the compiler output, turning errors/warnings into clickable items in the Problems panel, where a click jumps to the corresponding line. This is vscode's built-in `$gcc` matcher, which matches the gcc/clang error format.
+`problemMatcher: ["$gcc"]` has vscode parse the compiler output, turning errors and warnings into clickable entries in the Problems panel — one click jumps to the offending line. It's vscode's built-in `$gcc` pattern, matching the gcc/clang error format.
 
-The chain triggered by F5 in launch.json is: run the `build` task → build succeeds → launch gdb to load `build/greeter` → run to the breakpoint and stop. The whole debug loop closes up, with no need to flip over to a terminal and type `cmake --build` each time.
+The chain triggered by F5 from launch.json is: run the `build` task → build succeeds → gdb starts and loads `build/greeter` → run to the breakpoint and stop. The debug loop closes on itself — no more manually switching to a terminal to type `cmake --build` every time.
 
 ## Where this leaves you
 
-With WSL2 + vscode + clangd + cppdbg all wired up, your C++ engineering environment is barely distinguishable from what a seasoned Linux developer uses: accurate completion, fast jumps, strict errors, and debugging that can actually show a vector. From here, reading volume 7 ch00's CMake series (the target mental model, CMakePresets.json) and volume 6's memory safety (AddressSanitizer + valgrind), all the commands go straight into the WSL terminal and the output matches what's in the articles.
+With WSL2 + vscode + clangd + cppdbg all configured, the C++ engineering environment in your hands is nearly indistinguishable from what a seasoned Linux developer uses: accurate completion, fast navigation, strict diagnostics, and a debugger that can show a vector. Reading on to volume 7 ch00's CMake series (the target mental model, CMakePresets.json) and volume 6's memory safety (AddressSanitizer + valgrind), the commands all go straight into the WSL terminal and match the outputs in those articles.
 
-Every config file that goes with this piece (`.clangd`, `.clang-tidy`, `.vscode/settings.json`, `launch.json`, `tasks.json`) lives in the repo at `code/examples/vol7/wsl-clangd/`. Clone it and it runs out of the box. The CMake project is minimal and reproducible: `cmake -B build -G Ninja && cmake --build build` produces `build/greeter`, and F5 drops you into the debugger.
+All the companion configuration files (`.clangd`, `.clang-tidy`, `.vscode/settings.json`, `launch.json`, `tasks.json`) live in the repo under `code/examples/vol7/wsl-clangd/` — clone it and they run as-is. The CMake project is minimally reproducible: `cmake -B build -G Ninja && cmake --build build` produces `build/greeter`, and F5 drops you into the debugger.

@@ -4,7 +4,7 @@ cpp_standard:
 - 11
 - 14
 - 17
-description: 'Templates instantiate implicitly by default, and every translation unit generates its own copy of the same code. How explicit instantiation definitions and extern template declarations concentrate instantiation in one place, with an honest look at the real compile-time payoff, which small projects cannot measure but large ones accumulate.'
+description: 'Templates are instantiated implicitly by default, and every translation unit generates its own copy of the same code. How an explicit instantiation definition plus an extern template declaration concentrates instantiation in one place, with an honest assessment of the real compile-time payoff (unmeasurable in small projects; the savings only accumulate in large ones).'
 difficulty: intermediate
 order: 7
 platform: host
@@ -13,7 +13,7 @@ prerequisites:
 - 'Concepts: Putting Constraints in the Signature'
 reading_time_minutes: 11
 related:
-- 'Static Reflection Basics: The Reflection Operator and Splice'
+- 'Static Reflection Basics: The Reflection Operator and Splice Recomposition'
 - 'Templates and Exception Safety: move_if_noexcept and Reallocation'
 tags:
 - host
@@ -22,47 +22,53 @@ tags:
 - 模板
 - 编译期计算
 - 工具链
-title: 'Template Instantiation Control: extern template and Compile Time'
+title: 'Template Instantiation Control: extern template and Compile Times'
+translation:
+  source: documents/vol4-advanced/vol3-metaprogramming-cpp20-23/07-template-instantiation-control.md
+  source_hash: 5babe3d0f51e25c4a61a2659bf42972eb04fe25739827f08eee002ac44ab0e5f
+  translated_at: '2026-09-26T04:52:14+00:00'
+  engine: anthropic
+  token_count: 1800
 ---
-# Template Instantiation Control: extern template and Compile Time
+# Template Instantiation Control: extern template and Compile Times
 
-The last piece ended by saying we'd come back to something you can use today. Templates gave C++ zero-cost abstraction, but they brought a less glamorous side effect: compile time. If a template gets used with the same type argument in a dozen translation units, the compiler may faithfully instantiate it in all dozen. C++11 gave us a tool to manage this: `extern template`. This piece explains the two ways to control template instantiation (explicit instantiation definitions and extern template declarations), and gives an honest look at how much they actually help compile time.
+The last piece closed by promising that this one would come back to something you can use today. Templates gave C++ zero-cost abstraction, but they also brought along a less glamorous side effect: compile time. If a template gets used with the same type arguments in a dozen-plus translation units, the compiler may dutifully instantiate it once in each and every one of them. C++11 handed us a tool for exactly this: `extern template`. This piece works through the two mechanisms that control template instantiation (the explicit instantiation definition and the extern template declaration), then honestly assesses how much they really help compile time.
 
-## Implicit instantiation: generated on use, once per translation unit
+## Implicit instantiation: generated on demand, once per translation unit
 
-Templates default to **implicit instantiation**. You use `Heavy<int>` somewhere, and the compiler generates the members of `Heavy<int>` you used, right there in that translation unit. The mechanism is "on demand," and unused members aren't generated. So far so good. The problem is that it happens **once per translation unit**.
+Templates default to **implicit instantiation**: you use `Heavy<int>` somewhere, and the compiler generates exactly the members of `Heavy<int>` that you used, right there in that translation unit. The mechanism is on demand — members you never touch never get generated, which is nice. The problem is that it runs **once per translation unit**.
 
-Picture a project with `use_a.cpp` and `use_b.cpp`, both using `Heavy<int>`. Compiling `use_a.cpp` instantiates a copy of `Heavy<int>` into `use_a.o`. Compiling `use_b.cpp` instantiates another copy into `use_b.o`. At link time, the linker sees `Heavy<int>::compute` defined in both `.o` files. It relies on the ODR (one definition rule) and the "weak symbol" status of templates to merge them into one. At runtime there's only one copy, no problem. But **the compile work was done twice**. That's the itch `extern template` wants to scratch.
+Picture a project with `use_a.cpp` and `use_b.cpp`, both using `Heavy<int>`. When `use_a.cpp` compiles, the compiler instantiates a copy of the `Heavy<int>` code and drops it into `use_a.o`; when `use_b.cpp` compiles, another copy lands in `use_b.o`. At link time, the linker sees `Heavy<int>::compute` defined in both `.o` files, and leans on the ODR (one definition rule) plus templates' "weak symbol" status to merge them back into one. At runtime only a single copy of the code exists — no problem — but **the compile-phase work was done twice**. That is exactly the ailment `extern template` is meant to treat.
 
-## Explicit instantiation definition: concentrate instantiation in one place
+## Explicit instantiation definition: concentrating instantiation in one place
 
-To manage this, you first need an **explicit instantiation definition**. The syntax starts with `template`, followed by a concrete template instance:
-
-```cpp
-#include "heavy_template.h"
-
-template struct Heavy<int>;   // instantiate every member of Heavy<int> in this translation unit
-```
-
-This line says: "in this `.cpp`, please instantiate all of `Heavy<int>`'s member functions, properly." It usually lives in a file like `explicit_inst.cpp`, dedicated to "centralized instantiation."
-
-## extern template: tell other translation units "don't generate"
-
-Centralized instantiation alone isn't enough. Other translation units don't know about it and keep instantiating on their own. So you pair it with an **explicit instantiation declaration**, which is `extern template`:
+To bring this under control, you first reach for the **explicit instantiation definition**. The syntax starts with `template`, followed by a concrete instance of the template:
 
 ```cpp
 #include "heavy_template.h"
 
-extern template struct Heavy<int>;   // Heavy<int> is instantiated elsewhere, don't generate here
+template struct Heavy<int>;   // Instantiate every member of Heavy<int> in this translation unit
 ```
 
-This line tells the compiler: "`Heavy<int>` is already instantiated in another translation unit. Don't generate code here, just use it." That translation unit skips the instantiation work, and at link time it finds the definition in `explicit_inst.o`.
+This one line says: "in this `.cpp`, please instantiate all of `Heavy<int>`'s member functions, properly and completely." It usually lives in a file of its own, something like `explicit_inst.cpp`, whose sole job is "centralized instantiation."
 
-Used together, "instantiate in every TU" collapses into "instantiate in one TU, everyone else references it." Let's verify this mechanism by running it.
+## extern template: telling the other translation units to stop generating
 
-## In practice: how the mechanism runs
+Centralized instantiation alone is not enough: the other translation units know nothing about it and will still implicitly instantiate their own copies. So you pair it with the **explicit instantiation declaration**, better known as `extern template`:
 
-A minimal multi-file project. `heavy_template.h` defines the template. `use_a.cpp` does it the old way, implicit instantiation. `use_b.cpp` uses `extern template`. `explicit_inst.cpp` provides the explicit instantiation definition. `main.cpp` ties it together:
+```cpp
+#include "heavy_template.h"
+
+extern template struct Heavy<int>;   // Heavy<int> is instantiated elsewhere; don't generate it here
+```
+
+This line tells the compiler: "`Heavy<int>` has already been instantiated in some other translation unit — don't generate code here, just use it." The translation unit is spared the instantiation work; at link time it simply picks up the definitions from `explicit_inst.o`.
+
+With the two working as a pair, "every TU instantiates its own copy" collapses into "only one TU instantiates, the rest just reference it." Let's put the mechanism through a real run and see.
+
+## Hands-on: how the mechanism runs
+
+A minimal multi-file project: `heavy_template.h` defines the template, `use_a.cpp` goes the old route of implicit instantiation, `use_b.cpp` uses extern template, `explicit_inst.cpp` supplies the explicit instantiation definition, and `main.cpp` ties everything together:
 
 ```cpp
 // heavy_template.h
@@ -80,10 +86,10 @@ struct Heavy {
 ```
 
 ```cpp
-// use_b.cpp: extern template suppresses instantiation
+// use_b.cpp — extern template suppresses instantiation
 #include "heavy_template.h"
 #include <iostream>
-extern template struct Heavy<int>;   // instantiated elsewhere, don't generate here
+extern template struct Heavy<int>;   // Instantiated elsewhere; don't generate here
 void use_b() {
     Heavy<int> h{99};
     std::cout << "use_b: " << h.compute(3) << "\n";
@@ -91,12 +97,12 @@ void use_b() {
 ```
 
 ```cpp
-// explicit_inst.cpp: centralized explicit instantiation
+// explicit_inst.cpp — centralized explicit instantiation
 #include "heavy_template.h"
 template struct Heavy<int>;
 ```
 
-Compile, link, run (`use_a.cpp` is structured the same as `use_b.cpp` but without the extern line):
+Compile, link, and run (`use_a.cpp` has the same structure as `use_b.cpp`, minus the extern line):
 
 ```bash
 $ g++ -std=c++20 -Wall -Wextra -c use_a.cpp use_b.cpp explicit_inst.cpp main.cpp
@@ -105,9 +111,9 @@ use_a: 85974
 use_b: 8768727
 ```
 
-Four object files compile cleanly, the link passes, the program runs. The mechanism works.
+All four object files compile without complaint, the link passes, and the program runs normally. The mechanism itself is sound.
 
-More interesting is "what happens if you don't provide the explicit instantiation definition." Drop `explicit_inst.cpp`, leaving only `use_b.cpp` (with its extern declaration) and `main.cpp`:
+The more interesting question is what happens when you don't provide the explicit instantiation definition. Drop `explicit_inst.cpp`, leaving only `use_b.cpp` (which carries the extern declaration) and `main.cpp`:
 
 ```text
 /usr/bin/ld: use_b.o: in function `use_b()':
@@ -115,37 +121,37 @@ undefined reference to `Heavy<int>::Heavy(int)'
 undefined reference to `Heavy<int>::compute(int) const'
 ```
 
-The linker can't find the constructor or `compute` for `Heavy<int>` and reports undefined reference. This error states the `extern template` contract plainly. You declared "the definition is elsewhere," so you'd better actually instantiate that definition in some translation unit, or it's an empty promise. One more thing to remember when using them together: any translation unit that doesn't carry the extern declaration (like `use_a.cpp` here) still implicitly instantiates its own copy. `extern template` means "this TU doesn't generate," not "generate only once globally."
+The linker cannot find the definitions of `Heavy<int>`'s constructor and `compute`, and reports undefined reference errors. That error message lays out the extern template contract quite bluntly: if you declare "the definition lives elsewhere," you had better actually instantiate that definition in some translation unit — otherwise the declaration is a bounced check. And while using the pair, don't forget: any translation unit that doesn't carry the extern declaration (like `use_a.cpp` here) will still implicitly instantiate its own copy — `extern template` means "this TU of mine won't generate it," not "generate it once globally."
 
-## The compile-time payoff: don't buy the "optimizes compile time" slogan without checking
+## Compile-time payoff: don't be fooled by the "optimizes compile time" slogan
 
-Whenever `extern template` comes up, almost everyone says it "reduces compile time." True in principle. But how much it actually saves is worth measuring. GCC has a `-ftime-report` flag that prints per-phase timings after compiling, including a dedicated `template instantiation` line. First, a small file:
+Bring up extern template, and almost everyone will say it "reduces compile time." In principle that holds, but how much it actually saves is worth measuring yourself. GCC has a `-ftime-report` flag that prints per-phase timings after compilation, including a dedicated `template instantiation` line. Start with a small file:
 
 ```text
-$ g++ -std=c++20 -c -ftime-report use_b_noextern.cpp   # implicit instantiation version
+$ g++ -std=c++20 -c -ftime-report use_b_noextern.cpp   # implicit-instantiation version
  template instantiation             :   0.08 ( 26%)    14M ( 23%)
 ```
 
-Template instantiation eats about a quarter of total compile time. Sounds like `extern template` should help. Let's compare: the same `use_b.cpp`, one version with the extern declaration (no instantiation of `Heavy<int>`), one without (implicit), three runs each, looking at the `template instantiation` line.
+Template instantiation eats roughly a quarter of the total compile time — sounds like a job for extern template. Let's compare: the same `use_b.cpp`, in one version carrying the extern declaration (no instantiation of `Heavy<int>`) and in the other not (implicit instantiation), three runs each, watching the `template instantiation` line.
 
-| File | 3 runs of template instantiation |
+| File | template instantiation, 3 runs |
 |---|---|
 | `use_b.cpp` (extern, no instantiation) | 0.08 / 0.07 / 0.05 |
 | `use_b_noextern.cpp` (implicit instantiation) | 0.07 / 0.05 / 0.05 |
 
-The difference is entirely inside the noise. Nothing to measure. To rule out "the template is too light," let's make it heavier. Three groups of 80-deep recursive metafunctions (Fibonacci, triangular, Lucas) inside the template. Instantiating `Big<int>` drags in about 240 template specializations. Three runs each again:
+The differences sit entirely inside the noise; nothing measurable comes out. To rule out the "template too lightweight" suspicion, we made the template heavier — inside it are three groups of recursive metafunctions, 80 levels each (Fibonacci, triangular numbers, Lucas numbers), so instantiating `Big<int>` cascades into roughly 240 template specializations. Three runs each again:
 
-| File | 3 runs of template instantiation |
+| File | template instantiation, 3 runs |
 |---|---|
 | `big_b.cpp` (extern) | 0.08 / 0.07 / 0.05 |
-| `big_b_noextern.cpp` (240 specializations dragged in) | 0.07 / 0.05 / 0.05 |
+| `big_b_noextern.cpp` (240 specializations cascading) | 0.07 / 0.05 / 0.05 |
 
-Still can't measure it. Modern compilers instantiate this kind of "pure type computation" template so fast that the work, in the tens of microseconds, drowns in the noise of parsing and optimization.
+Still unmeasurable. Modern compilers instantiate this kind of "pure type computation" template absurdly fast — a job of a few tens of nanoseconds — and the noise from the parsing and optimization phases swallows it whole.
 
-So when does `extern template` actually save time? In **large projects, where dozens of translation units repeatedly instantiate the same heavy template**. Heavy here doesn't mean the pure TMP recursion in our example. It means templates whose instantiation drags in a big slice of the standard library, say a generic component that uses `std::variant` and a pile of algorithms, used with the same type argument across twenty `.cpp` files. Twenty repeated instantiations add up to something visible. There, `extern template` compresses twenty into one and the payoff is real. So the decision to use `extern template` hinges on "absolute cost of one instantiation" times "number of repeating translation units." Both have to be large for it to matter. Adding `extern template` to a light template that gets used two or three times in a small project is pure boilerplate. Call it off.
+So when does extern template genuinely save time? The answer: **in large projects, where dozens of translation units repeatedly instantiate the same "heavy" template**. Heavy does not mean the pure TMP recursion we built here; it means templates whose instantiation drags in a large swath of standard library code — say a generic component built on `std::variant` plus a pile of algorithms, used with the same arguments across twenty `.cpp` files. Only then do twenty duplicate instantiations accumulate into something visible to the naked eye. In that scenario, extern template compresses twenty passes into one, and the payoff is real and solid. So the decision of whether to reach for extern template comes down to "absolute cost of one instantiation" multiplied by "number of duplicate translation units" — both have to be large for it to matter. Slapping extern on a lightweight template that gets used two or three times in a small project is pure boilerplate bloat; call a stop to it.
 
-## One word on other ways to treat compile time
+## A side note: other ways to tackle compile time
 
-If your goal is "make builds faster," `extern template` is rarely the highest-leverage move. The tactics that pay off more often: use forward declarations instead of unnecessary `#include`s, split a template's declaration and definition into separate headers to shrink the instantiation surface, use precompiled headers (PCH), and C++20 modules. Modules redefine "how translation units share code" from the ground up. They're the root fix, though toolchain support is still being polished. `extern template` is a small wrench in this toolkit. It has its place, but it isn't the main tool.
+If your goal is "make compilation faster," extern template is usually not the biggest lever in the toolbox. The moves that pay off more often: replacing unnecessary `#include`s with forward declarations, splitting a template's declaration and definition into separate headers to shrink the number of instantiation entry points, precompiled headers (PCH), and C++20 modules — modules redefine, at the mechanism level, "how translation units share code," so they treat the root cause, though toolchain support is still being polished even today. extern template is a small wrench in that toolbox: it has its moments, but it is not the main tool.
 
-In the next piece we see how templates and exceptions get tangled up: why `vector` cares about the element type's `noexcept` during reallocation, and how `move_if_noexcept` mediates between "performance" and "exception safety."
+In the next piece we'll watch templates and exceptions get tangled together: why `vector` has to care about its element type's `noexcept` during reallocation, and how the `move_if_noexcept` machinery brokers a compromise between "performance" and "exception safety."

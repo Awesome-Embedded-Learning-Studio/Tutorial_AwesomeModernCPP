@@ -9,7 +9,7 @@ difficulty: intermediate
 order: 4
 platform: host
 prerequisites:
-- 'Chapter 4: std::variant: A Type-Safe Union'
+- 'std::variant: A Type-Safe Union'
 reading_time_minutes: 13
 related:
 - Modern Approaches to Error Handling

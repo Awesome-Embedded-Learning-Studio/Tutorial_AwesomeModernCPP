@@ -1,16 +1,17 @@
 ---
-title: C++ In-Depth Topics
-description: An in-depth exploration of C++ language mechanisms and design patterns
+title: "C++ Deep Dives"
+description: "An in-depth exploration of C++ language mechanisms and design patterns"
 translation:
   source: documents/vol8-domains/cpp-deep-dives/index.md
   source_hash: 883663fd42361fb9913566dba00e4735a549c72d3dd079913894fb437532fba5
-  translated_at: '2026-05-26T11:53:41.263243+00:00'
+  translated_at: '2026-09-27T02:39:02+00:00'
   engine: anthropic
-  token_count: 68
+  token_count: 110
 ---
-# In-Depth C++ Topics
 
-This section collects C++ topics that don't fit neatly into a single volume but warrant a systematic, in-depth exploration. They typically span multiple knowledge domains—from language mechanisms to engineering practices, from memory models to asynchronous design—and require a holistic perspective to fully understand.
+# C++ Deep Dives
+
+This is where we collect C++ topics that don't fit neatly into any single volume yet deserve systematic, in-depth treatment. They usually cut across multiple knowledge areas—from language mechanisms to engineering practice, from the memory model to asynchronous design—and you only get the full picture when you look at them end to end.
 
 ## Topic Navigation
 

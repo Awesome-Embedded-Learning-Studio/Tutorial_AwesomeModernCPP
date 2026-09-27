@@ -15,10 +15,10 @@ difficulty: beginner
 platform: host
 reading_time_minutes: 15
 prerequisites:
-  - "Volume 1, Chapter 12: Memory Layout (stack and heap)"
-  - "Volume 1: Pointer Basics (address-of, dereference)"
+  - Memory Layout
+  - Pointer Basics
 related:
-  - "Deep Dive into std::vector: Three Pointers, Reallocation, and Iterator Invalidation"
+  - 'Deep Dive into vector: Three Pointers, Reallocation, and Iterator Invalidation'
   - "mini STL in Practice (Part 2): Vector — Growth and Relocation"
 cpp_standard: [11]
 translation:
@@ -250,7 +250,7 @@ This accident also has an online copy prepared — run it once and it will stick
 
 ## Add RAII, Templates, and Exception Safety to the Embryo, and You Get std::vector
 
-Looking back at what we built along the way: one contiguous block of memory on the heap, the two numbers `size` and `cap`, doubling and moving when full. That is the skeleton of `std::vector`; on top of it go three pieces of tooling: RAII lets the destructor return the memory automatically, walling shut the leak route; templates generalize the cells from `int` to any type; exception safety handles "what if it breaks halfway through the move," and whether an element's move constructor qualifies as `noexcept` determines whether relocation gets slowed down. Each of the three has its home in this project: for the full implementation-level view, read [`Deep Dive into std::vector: Three Pointers, Reallocation, and Iterator Invalidation`](../03-vector-deep-dive.md) in this volume; to hand-knead the embryo into a real container yourself, head to vol8's [mini STL in practice](../../../vol8-domains/data-structure/index.md) and start from a raw buffer, one step at a time.
+Looking back at what we built along the way: one contiguous block of memory on the heap, the two numbers `size` and `cap`, doubling and moving when full. That is the skeleton of `std::vector`; on top of it go three pieces of tooling: RAII lets the destructor return the memory automatically, walling shut the leak route; templates generalize the cells from `int` to any type; exception safety handles "what if it breaks halfway through the move," and whether an element's move constructor qualifies as `noexcept` determines whether relocation gets slowed down. Each of the three has its home in this project: for the full implementation-level view, read [Deep Dive into vector: Three Pointers, Reallocation, and Iterator Invalidation](../03-vector-deep-dive.md) in this volume; to hand-knead the embryo into a real container yourself, head to vol8's [mini STL in practice](../../../vol8-domains/data-structure/index.md) and start from a raw buffer, one step at a time.
 
 The primer's next stop is the linked list: a structure that never moves house, where the price of finding an element is asking for directions along the way. Contiguous versus scattered, random access versus sequential access — this one trade-off frames most of the questions you face when choosing a data structure. See you in the next piece.
 
@@ -258,4 +258,4 @@ The primer's next stop is the linked list: a structure that never moves house, w
 
 - [cppreference: std::vector](https://en.cppreference.com/w/cpp/container/vector) — the authoritative source for complexity promises and iterator invalidation rules
 - [`Vector Deep Dive`](../03-vector-deep-dive.md) in this volume — the three-pointer derivation, the math behind the three libraries' growth strategies, the complete invalidation table
-- vol8 [`mini STL in Practice (Part 2): Vector — Growth and Relocation`](../../../vol8-domains/data-structure/02-vector-growth-and-relocation.md) — the hand-rolled implementation, with the complete care around relocating objects
+- vol8 [mini STL in Practice (Part 2): Vector — Growth and Relocation](../../../vol8-domains/data-structure/02-vector-growth-and-relocation.md) — the hand-rolled implementation, with the complete care around relocating objects

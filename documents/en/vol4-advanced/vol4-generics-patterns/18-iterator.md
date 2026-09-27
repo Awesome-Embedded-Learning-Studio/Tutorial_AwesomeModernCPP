@@ -1,39 +1,34 @@
 ---
-title: 'Iterator Pattern: From Manual Traversal to C++20 Ranges'
-description: Starting from the most primitive approach of "writing iteration logic
-  directly into the caller," we will progressively derive an iterator that works with
-  range-for loops, algorithms, and ranges adapters, while effortlessly clearing the
-  hidden hurdle of C++20 iterator concepts.
+title: 'Iterator Pattern: From Manual Traversal to Generic Element Sequences with C++20 Ranges'
+description: 'Starting from the most primitive style of hardcoding traversal logic into the caller, we squeeze out step by step an iterator that pairs with range-for, algorithms, and ranges adapters, and dismantle the hidden gate of the C++20 iterator concepts along the way'
 chapter: 11
 order: 18
 tags:
-- host
-- cpp-modern
-- intermediate
-- 迭代器模式
+  - host
+  - cpp-modern
+  - intermediate
+  - 迭代器模式
 difficulty: intermediate
 platform: host
-cpp_standard:
-- 11
-- 17
-- 20
+cpp_standard: [11, 17, 20]
 reading_time_minutes: 22
 related:
-- 单例模式:从注释约束到 Meyer's Singleton
+  - 'Singleton Pattern: From Comment-Only Constraints to Meyer''s Singleton'
 prerequisites:
-- 'Chapter 6: 类与对象'
+  - Classes and Object-Oriented Programming
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/18-iterator.md
   source_hash: c96fcb06dae43aeffc2c69bfdaddd606331fa31c7c610c432b1d9354f445e227
-  translated_at: '2026-06-24T01:03:42.724614+00:00'
+  translated_at: '2026-09-26T05:42:50+00:00'
   engine: anthropic
-  token_count: 5446
+  token_count: 12500
 ---
-# Iterator Pattern: From Manual Traversal to C++20 Ranges for Generic Element Sequences
 
-## What problem are we actually solving?
+# Iterator Pattern: From Manual Traversal to Generic Element Sequences with C++20 Ranges
 
-Let's skip the formal definition for a moment. Consider a common scenario: you have a binary tree, and you want to print it in-order, or copy its elements into a `std::vector` for sorting and deduplication. What is the most intuitive way to write this? Most likely, it looks like this—write a recursive function directly, passing the target container as an argument:
+## What problem are we actually solving
+
+Let's skip the definition for now. Picture a very common scenario: you have a binary tree and want to print it out in in-order, or copy it into a `std::vector` for sorting and deduplication. What's the most intuitive way to write it? Most likely something like this — a recursive function that also takes the target container as a parameter:
 
 ```cpp
 void inorder_collect(TreeNode* node, std::vector<int>& out) {
@@ -47,17 +42,17 @@ std::vector<int> result;
 inorder_collect(root, result);
 ```
 
-It works, and it's not hard to write. But things aren't that simple. Let's change the requirement: instead of copying to a `vector`, I want to iterate and filter out even numbers on the fly; or change it again: I want to stop at the first value equal to 5 during an in-order traversal; or yet another: I want to feed it to `std::count_if` to count nodes satisfying a predicate. With every new requirement, you have to write a new recursive function for this tree, copying and pasting the logic of "traversing this tree" over and over again, when the only real difference is "what to do after getting a value." **The traversal strategy and the action performed after traversal are tightly coupled.**
+It runs, and it takes no effort to write. But it's not that simple. Swap in a new requirement: I don't want to copy into a vector, I want to filter out the even numbers while traversing; another one: I want to stop the in-order traversal at the first value equal to 5; yet another: I want to feed it to `std::count_if` to count the nodes satisfying some predicate. Every new requirement means writing yet another recursive function for this tree, copy-pasting the logic of "traverse this tree" over and over, when the only thing that actually differs is "what to do once you have a value". **The traversal strategy and the action taken after traversal are welded together for good**.
 
-Even more painful is replacement. One day you decide "in-order isn't enough, I want pre-order, post-order, and level-order," and you will find that every order requires writing a completely separate set of `xxx_collect`, `xxx_find`, and `xxx_count`. The caller receives a specific function name, not a "traversable object"—it cannot use generic tools to process this tree.
+Replacement is even more painful. The day you decide "in-order isn't enough, I also want pre-order, post-order, level-order", you discover that each order needs its own complete set of `xxx_collect`, `xxx_find`, `xxx_count`. What the caller gets hold of is a concrete function name, not a "traversable thing" — it has no way to process this tree with generic tools.
 
-The iterator pattern solves exactly this entanglement. Its core idea can be summed up in one sentence: **decouple "how to traverse a collection" from the collection itself and the caller, encapsulating it into an independent "iterator" object. The caller only relies on the unified interface provided by the iterator (dereference, advance, equality check), regardless of whether it's traversing an array, linked list, tree, or database cursor.** In fact, you use this pattern every day without realizing it: `std::vector::iterator`, `std::map::iterator`, range-for loops, `std::sort`/`std::find`/`std::transform`—they are all backed by the iterator pattern. The reason the standard library can apply a single set of algorithms to dozens of containers is precisely because of this abstraction.
+This entanglement is exactly what the Iterator pattern solves. Its core idea fits in one sentence: **extract "how to traverse a collection" out of both the collection itself and the caller, encapsulate it into a standalone "iterator" object, and let the caller depend only on the uniform interface the iterator provides (dereference, advance, equality); whether what's being traversed is an array, a linked list, a tree, or a database cursor, the caller doesn't care at all**. In fact, you use this pattern every day without realizing it: `std::vector::iterator`, `std::map::iterator`, the range-based for loop, `std::sort`/`std::find`/`std::transform` — the Iterator pattern is behind all of them. The reason the standard library can apply one set of algorithms to dozens of containers at once is precisely this abstraction.
 
-However, "writing an iterator" in C++ has a commonly overlooked pitfall: **you think you wrote it correctly and it works with range-for, but it doesn't actually satisfy C++20 iterator concepts, so ranges adapters and concept constraints are completely unusable.** Next, we will proceed step-by-step, starting with the dumbest approach, seeing why each step isn't enough, and finally forcing out a truly ranges-compatible iterator.
+But "writing an iterator" in C++ has a commonly overlooked trap: **you think you got it right, it passes range-for, yet it doesn't satisfy the C++20 iterator concepts at all — so the ranges adapters and concept constraints are all unusable**. So let's proceed step by step: start from the dumbest way of writing it, see why each step falls short, and finally squeeze out an iterator that genuinely fits into the ranges ecosystem.
 
-## Step 1: The most primitive approach — putting traversal logic in the caller (the anti-pattern)
+## Step 1: The most primitive approach — baking traversal into the caller (an anti-example)
 
-Let's take the previous approach a step further. Suppose you want to traverse a binary tree but don't want to recurse until you puke every time; you might just flatten the tree into a `std::vector` and iterate over that:
+Let's push the earlier approach one step further. Suppose you want to traverse a binary tree but don't want to recurse yourself sick every single time; you might just flatten the tree into a `std::vector` and traverse that:
 
 ```cpp
 std::vector<int> flatten(const BinaryTree& tree) {
@@ -66,20 +61,20 @@ std::vector<int> flatten(const BinaryTree& tree) {
     return out;
 }
 
-for (int v : flatten(tree)) {  // 先整棵树压平,再逐个读
+for (int v : flatten(tree)) {  // Flatten the whole tree first, then read element by element
     if (v == target) break;
 }
 ```
 
-This "flatten first, traverse later" pattern is extremely common in production code. It was once the standard way to handle tree-like data structures. It works, and it looks clean enough. However, the cost is well hidden: **to traverse just a few elements, you materialize the entire tree into a `std::vector`**. If the tree has millions of nodes, and you only want to find the first element that meets a condition before breaking, the allocation, copying, and destruction of the remaining millions of elements are all wasted effort. Even worse, if the tree itself is generated on demand (e.g., pruning in a search tree, infinite sequences), you can't "calculate all elements first" at all—this approach completely kills the possibility of "laziness."
+This "flatten first, then traverse" style is very common in production code — for a while it was even the standard way of handling tree-shaped data. It runs, and it looks quite clean. But the cost is buried deep — **to traverse a few elements, you materialize the entire tree into a `std::vector`**. If the tree has millions of nodes and you only want to find the first one satisfying a condition and break, then all the allocation, copying, and destruction for the remaining millions of elements are wasted work. Worse, if the tree itself is generated on demand (pruning in a search tree, infinite sequences), you fundamentally cannot "compute all the elements first" — this style strangles the very possibility of laziness.
 
-The root of the problem is: **the traversal logic is not decoupled from the "materialization logic."** The caller receives not an iterator that can "fetch the next element on command," but a chunk of memory where everything has already been calculated. What we need is a "calculate only when I ask, save resources when I don't" mechanism—advancing on demand and fetching values on demand. This is the core contract of an iterator.
+The essence of the problem: **the traversal logic is not decoupled from the "materialization logic"**. What the caller receives is not an iterator that can "fetch the next element at any time", but a blob of memory whose contents are already fully computed. What we want is something in the spirit of "compute only when you ask me, save the effort when you don't" — advance on demand, dereference on demand, and that is the iterator's core contract.
 
-## Step 2: External Iterator—Using an Object to Remember "Where We Are"
+## Step 2: The external iterator — one object that remembers "where the traversal has gotten to"
 
-The external iterator is the approach favored by the standard library: **encapsulate the traversal state in a separate object that knows "who to return next," while the caller is responsible for driving it forward**. For an in-order traversal of a binary tree, a classic implementation uses a stack to remember the "chain of ancestors not yet fully visited."
+The external iterator is the school of thought the standard library follows: **stuff the traversal state into a standalone object, an object that knows "who should be returned next", while the caller is responsible for pushing it forward**. For an in-order traversal of a binary tree, the classic implementation uses a stack to remember "the chain of ancestors not yet fully visited".
 
-Let's first build the tree node and the iterator, and then explain how it moves:
+Let's build the tree node and the iterator first, then explain how it moves:
 
 ```cpp
 template<typename T>
@@ -95,22 +90,22 @@ class InorderIterator {
 public:
     using Node = TreeNode<T>;
 
-    InorderIterator() = default;              // 默认构造出来的就是 end()
+    InorderIterator() = default;              // A default-constructed one is end()
     explicit InorderIterator(Node* root) {
-        push_left(root);                       // 一路把左子树压栈,停在最左叶
+        push_left(root);                       // Push the left subtree onto the stack all the way, stopping at the leftmost leaf
     }
 
     T& operator*() const { return stack_.top()->val; }
 
     InorderIterator& operator++() {
         Node* node = stack_.top();
-        stack_.pop();                           // 访问完当前节点,弹出
-        if (node->right) push_left(node->right); // 转向右子树,继续压左链
+        stack_.pop();                           // Current node fully visited, pop it
+        if (node->right) push_left(node->right); // Turn to the right subtree, keep pushing the left chain
         return *this;
     }
 
     bool operator==(const InorderIterator& other) const {
-        // 两个都空(都到 end)就算相等;否则比较栈顶指针
+        // Equal if both stacks are empty (both at end); otherwise compare top pointers
         if (stack_.empty() && other.stack_.empty()) return true;
         if (stack_.empty() != other.stack_.empty()) return false;
         return stack_.top() == other.stack_.top();
@@ -127,13 +122,13 @@ private:
 };
 ```
 
-This short snippet represents the classic iterator pattern. Let's break down the key lines. What does the `push_left(root)` call during construction actually do? The rule for in-order traversal is "Left, Root, Right", so the first node visited in any subtree must be its leftmost descendant. Starting from `root`, we execute `stack_.push(node); node = node->left;` until we hit `nullptr`. At this point, the node at the top of the stack is the smallest node in the entire tree—that is, the starting point of the in-order traversal. This step completes the task of "finding the starting point."
+This little snippet is the Iterator pattern in its most classic form. Let's take the key lines apart. What is the `push_left(root)` call in the constructor doing? The rule of in-order traversal is "left, root, right", so the first node visited in any subtree is always its leftmost descendant. Starting from `root`, we keep executing `stack_.push(node); node = node->left;` until we run into `nullptr`; at this point the top of the stack is the smallest node in the whole tree — the starting point of the in-order sequence. This step finishes the entire job of "finding the starting point".
 
-How does `operator++` advance the iterator? In in-order traversal, after a node has been visited (dereferenced), the next node to visit is the smallest one in its right subtree. Therefore, the code first `pop`s the current node (it has been processed) and then checks if it has a right child. If it does, it runs `push_left` on the right subtree, effectively jumping to the leftmost descendant of the right subtree. If not, the top of the stack naturally becomes one of its ancestors. This logic of "pop then check right subtree" is the standard technique for simulating recursive in-order traversal using a stack.
+And how does one step of `operator++` move? In in-order, after a node has been visited (that is, dereferenced), the next one to visit is the smallest node in its right subtree. So the code first `pop`s the current node (it's done), then checks whether it has a right child: if yes, run `push_left` on the right subtree too, effectively jumping to the leftmost descendant of the right subtree; if not, the stack top simply becomes one of its ancestors. This "pop, then look at the right subtree" logic is precisely the standard technique for simulating in-order recursion with a stack.
 
-`operator==` is used for comparison with `end()`. We define a "default-constructed iterator" as `end()`, which has an empty stack. Consequently, when a working iterator reaches the end (its stack has been popped empty), it becomes equal to a default-constructed `end()` based on the condition that "both stacks are empty." This serves as the basis for the loop termination condition.
+`operator==` is there to compare against `end()`. We define "a default-constructed iterator" as `end()`, and its stack is empty; so when a working iterator reaches the end (its stack has been popped empty), it equals a default-constructed `end()` on the "both stacks empty" condition. That is the basis for the loop-termination test.
 
-Now, let's wrap the tree with a thin shell to provide `begin()` and `end()`, allowing range-based for loops to work with it directly:
+Now let's wrap the tree in a thin shell providing `begin()` / `end()`, so that range-for can recognize it directly:
 
 ```cpp
 template<typename T>
@@ -144,14 +139,14 @@ public:
 
     void set_root(Node* r) { root_ = r; }
     iterator begin() { return iterator(root_); }
-    iterator end()   { return iterator(); }    // 默认构造 = end()
+    iterator end()   { return iterator(); }    // Default-constructed = end()
 
 private:
     Node* root_ = nullptr;
 };
 ```
 
-Using it is just a range-for loop, so clean that it's almost impossible to tell we wrote anything by hand:
+Using it is a single range-for, so clean you can hardly tell we hand-wrote anything:
 
 ```cpp
 //      4
@@ -160,13 +155,13 @@ Using it is just a range-for loop, so clean that it's almost impossible to tell 
 //   / \ / \
 //  1  3 5  7
 BinaryTree<int> tree;
-// ... 建树 ...
+// ... build the tree ...
 for (int v : tree) {
     std::cout << v << " ";   // 1 2 3 4 5 6 7
 }
 ```
 
-Let's write a complete, runnable version to verify this. To eliminate the boilerplate of manual `new`/`delete`, we will manage the tree nodes using `std::unique_ptr` this time, which is the recommended approach for production code:
+Let's write a complete, runnable version to verify. To spare ourselves the manual `new`/`delete` boilerplate, this time the tree nodes are owned by `std::unique_ptr` — also the more recommended style in production code:
 
 ```cpp
 #include <iostream>
@@ -234,7 +229,7 @@ int main() {
 }
 ```
 
-Let's compile and run it:
+Compile and run:
 
 ```sh
 $ g++ -std=c++23 -O2 -Wall -Wextra iterator_verify.cpp -o iterator_verify
@@ -242,19 +237,19 @@ $ ./iterator_verify
 1 2 3 4 5 6 7
 ```
 
-The inorder output is correct, and range-for accepts it. At this point, you might think, "the iterator is done." But we're not finished yet—**the real trap lies ahead**.
+The in-order output is correct, and range-for accepts it. At this point you probably feel "this iterator has made it". But it doesn't end here — **the real trap is still ahead**.
 
-## Let's verify first: can it actually enter ranges?
+## Let's verify first: can it really get into ranges
 
-Just because range-for works doesn't mean much. The compiler mechanically expands `for (int v : tree)` into `for (auto it = tree.begin(); it != tree.end(); ++it)`. It simply calls the member functions `begin`, `end`, `operator++`, `operator*`, and `operator!=`. It only checks the syntax, not the concepts. In other words, **range-for is syntactic sugar, not a concept check**. Just because the syntax passes doesn't prove your iterator is a "valid iterator."
+range-for works only because the compiler mechanically expands `for (int v : tree)` into `for (auto it = tree.begin(); it != tree.end(); ++it)`; it invokes exactly those member functions — `begin`, `end`, `operator++`, `operator*`, `operator!=` — recognizing syntax only, never checking concepts. In other words, **range-for is syntactic sugar, not a concept check**. Passing this syntax doesn't mean your iterator is a "qualified iterator".
 
-C++20 introduced a concept-based iterator hierarchy (`std::input_iterator`, `std::forward_iterator`, etc.). Standard library ranges adapters (like `std::views::filter` and `std::views::transform`) are constrained by concepts. If your iterator doesn't satisfy `std::input_iterator`, the adapters will reject it, often with error messages spanning hundreds of lines, which is incredibly frustrating. Let's take the iterator above—the one that "works with range-for"—and see if it actually satisfies the C++20 iterator concepts:
+C++20 introduced a concept-based iterator hierarchy (`std::input_iterator`, `std::forward_iterator`, ...), and the standard library's ranges adapters (`std::views::filter`, `std::views::transform`, and friends) are all constrained with concepts — if your iterator doesn't satisfy `std::input_iterator`, the adapters reject you, and the error messages routinely run to hundreds of lines, sending your blood pressure through the roof. Let's take the iterator above that "passes range-for" and see whether it actually satisfies the C++20 iterator concepts:
 
 ```cpp
 #include <iterator>
 #include <iostream>
 
-// 假设 InorderIterator / BinaryTree 就用上面的定义
+// Assume InorderIterator / BinaryTree are the definitions from above
 int main() {
     using It = InorderIterator<int>;
     std::cout << std::boolalpha;
@@ -264,7 +259,7 @@ int main() {
 }
 ```
 
-Let's compile and run it:
+Compile and run:
 
 ```sh
 $ g++ -std=c++23 -O2 -Wall -Wextra concept_check.cpp -o concept_check
@@ -274,27 +269,27 @@ weakly_incrementable: false
 indirectly_readable:  true
 ```
 
-`input_iterator` evaluates to `false`. This means that our iterator, which works in range-based for loops, is not considered a valid iterator by C++20 Ranges. We cannot use `views::filter`, `views::transform`, or `ranges::count_if` with it. Where is the problem? Digging one level deeper, `weakly_incrementable` is also `false`. Since `weakly_incrementable` is a subconcept of `input_iterator`, it blocks us right there.
+`input_iterator` is `false`. In other words, this iterator that "gets into range-for" simply isn't an iterator in the eyes of C++20 ranges. `views::filter`, `views::transform`, `ranges::count_if` — none of them work. Where's the problem? Drill one level down: `weakly_incrementable` is also `false`, and `weakly_incrementable` is a subconcept of `input_iterator` — it blocked you first.
 
-## The Real Pitfall: Missing the Postfix `operator++`
+## The real trap: the missing postfix `operator++`
 
-Let's dig deeper to see what the `weakly_incrementable` concept actually requires. Checking cppreference for [std::weakly_incrementable](https://en.cppreference.com/w/cpp/iterator/weakly_incrementable) (since C++20), the requirements for a type `I` include `iter_difference_t<I>` being a signed integer-like type, but there are also two requirements regarding increment expressions—**both `++i` and `i++` must be valid expressions**. Note: it requires not just `++i` (prefix), but `i++` (postfix) as well.
+Let's keep drilling: what does the `weakly_incrementable` concept actually require? Looking up [std::weakly_incrementable](https://en.cppreference.com/w/cpp/iterator/weakly_incrementable) on cppreference (since C++20), among its requirements on a type `I`, besides `iter_difference_t<I>` having to be a signed integer-class type, there are two requirements about increment expressions — **both `++i` and `i++` must be valid expressions**. Note: it doesn't ask for only `++i` (prefix); `i++` (postfix) must exist too.
 
-This is where it is easiest to trip up. Our iterator only implemented the prefix `operator++()`, but not the postfix `operator++(int)`, so it failed the concept check. The standard library isn't being intentionally difficult—the internal implementation of the ranges system (code using various `it++` forms) is written with the premise that "postfix must exist," and it does not fall back to other syntaxes. Once we add the postfix operator, the concept is satisfied:
+This is the easiest place to faceplant. Our iterator only defined the prefix `operator++()`, not the postfix `operator++(int)`, so it got filtered out right at the concept-check step. This isn't the standard library being deliberately difficult — the internal implementation of the ranges machinery (all that `it++`-style code) is written under the premise "the postfix must exist too", with no syntactic fallback. Add the postfix, and the whole concept goes through:
 
 ```cpp
-void operator++(int) { ++(*this); }   // 后缀 ++:转发给前缀,丢掉返回值
+void operator++(int) { ++(*this); }   // Postfix ++: forwards to the prefix, discards the return value
 ```
 
-Let's take this opportunity to complete the picture by adding two other C++20 iterator "staples." C++20 recommends declaring the iterator category via the nested `iterator_concept` (note that it is `iterator_concept`, not the legacy `iterator_category`), along with the two associated types `value_type` and `difference_type`. The legacy aliases `pointer` and `reference` are actually optional in modern code, but including them is harmless and keeps some older algorithms quiet:
+While we're at it, let's add it together with two other "standard kit" pieces of C++20 iterators and look at the whole thing. C++20 recommends declaring the iterator category through the nested `iterator_concept` (note: `iterator_concept`, not the old standard's `iterator_category`), together with the two associated types `value_type` and `difference_type`. The two old-standard aliases `pointer`/`reference` are actually omittable in modern code, but carrying them is harmless and keeps some old algorithms quiet:
 
 ```cpp
 template<typename T>
 class InorderIterator {
 public:
     using Node = TreeNode<T>;
-    using iterator_concept  = std::input_iterator_tag;  // C++20:用 iterator_concept
-    using iterator_category = std::input_iterator_tag;  // 兼容老算法
+    using iterator_concept  = std::input_iterator_tag;  // C++20: use iterator_concept
+    using iterator_category = std::input_iterator_tag;  // Compatibility with old algorithms
     using value_type        = T;
     using difference_type   = std::ptrdiff_t;
     using pointer           = T*;
@@ -305,13 +300,13 @@ public:
 
     reference operator*() const { return stack_.top()->val; }
 
-    InorderIterator& operator++() {                       // 前缀
+    InorderIterator& operator++() {                       // Prefix
         Node* node = stack_.top();
         stack_.pop();
         if (node->right) push_left(node->right);
         return *this;
     }
-    void operator++(int) { ++(*this); }                   // 后缀(关键!)
+    void operator++(int) { ++(*this); }                   // Postfix (the key part!)
 
     bool operator==(const InorderIterator& other) const {
         if (stack_.empty() && other.stack_.empty()) return true;
@@ -327,7 +322,7 @@ private:
 };
 ```
 
-That's just one extra `void operator++(int)`. Let's run the concept check again, this time testing the ranges views as well:
+That's all it took — one extra `void operator++(int)`. Let's rerun the concept check, this time testing the ranges views along with it:
 
 ```cpp
 #include <ranges>
@@ -340,7 +335,7 @@ int main() {
     std::cout << "input_range:    " << std::ranges::input_range<BinaryTree<int>> << "\n";
 
     BinaryTree<int> tree;
-    // ... 建树 ...
+    // ... build the tree ...
 
     std::cout << "filter even: ";
     for (int v : tree | std::views::filter([](int x) { return x % 2 == 0; })) {
@@ -356,7 +351,7 @@ int main() {
 }
 ```
 
-Let's compile and run it:
+Compile and run:
 
 ```sh
 $ g++ -std=c++23 -O2 -Wall -Wextra iterator_full_verify.cpp -o iterator_full_verify
@@ -367,33 +362,33 @@ filter even: 2 4 6
 transform x10: 10 20 30 40 50 60 70
 ```
 
-It all works now. `std::input_iterator` is `true`, `std::ranges::input_range<BinaryTree<int>>` is also `true`, and `views::filter` and `views::transform` can be applied directly. Moreover—and this is exactly what we wanted from the start—**the entire pipeline is lazy**. Neither `filter` nor `transform` materialize the tree into a `vector`; computation happens on demand, and if we `break`, iteration stops. By adding the postfix `++`, our iterator is upgraded from "syntactically functional" to "semantically compatible with ranges".
+This time everything passes. `std::input_iterator` is `true`, `std::ranges::input_range<BinaryTree<int>>` is also `true`, both `views::filter` and `views::transform` can be bolted directly on, and — this is exactly what we wanted at the start — **the entire pipeline is lazy**: neither filter nor transform materializes the tree into a vector; it computes as far as you've walked, and once you break, it stops advancing. With one postfix `++` added, our iterator graduated from "syntactically limps along" to "semantically fits into ranges".
 
-::: warning Pitfall Alert: Don't Just Write Prefix ++
-The C++20 iterator concepts (`weakly_incrementable`, `input_iterator`, `forward_iterator`, etc.) implicitly require the existence of the postfix `operator++(int)`. An iterator with only a prefix `++` will work with range-for (since range-for only uses prefix) and many legacy algorithms (which call prefix directly), but it **will not pass ranges adapters**—`views::filter`, `views::transform`, and `ranges::sort` will all reject it, with ridiculously long error messages. The muscle memory for writing iterators should be:**provide both prefix and postfix**. The postfix is usually just a one-liner: `void operator++(int) { ++(*this); }`. There is no reason to skip it.
+::: warning Pitfall alert: don't write only the prefix ++
+The C++20 iterator concepts (`weakly_incrementable`, `input_iterator`, `forward_iterator` — all of them) implicitly require the postfix `operator++(int)` to exist as well. An iterator that defines only the prefix `++` can pass range-for (because range-for uses only the prefix) and many old algorithms (they call the prefix directly), but **it cannot pass the ranges adapters** — `views::filter`, `views::transform`, `ranges::sort` all reject you, and the error messages are absurdly long on top. Your muscle memory for writing iterators should be: **provide the prefix and the postfix together**. The postfix is usually just the single line `void operator++(int) { ++(*this); }` — there's no reason to skimp on it.
 :::
 
-## Let's Verify Again: Why It Isn't `forward_iterator`
+## One more check: why it isn't a forward_iterator
 
-You may have noticed that we have been talking about `input_iterator`, not `forward_iterator`. There is a specific point worth highlighting here:**this stack iterator will never be promoted to `forward_iterator`, no matter how diligently you add the postfix `++`**. Let's verify this:
+You may have noticed that we keep saying `input_iterator`, never `forward_iterator`. There's something worth calling out explicitly here: **this stack iterator can never be promoted to forward_iterator, no matter how diligently you add the postfix `++`**. Let's verify:
 
 ```sh
-$ # 接着上面的 concept_check 扩展
+$ # Extending the concept_check from above
 forward_iterator: false
 forward_range:    false
 ```
 
-Why? Because `forward_iterator` imposes a much stricter requirement than `input_iterator`—the **multi-pass guarantee**. It requires that if you copy an iterator and advance the copy, the sequence you observe from the original iterator must remain consistent with the copy. In other words, multiple iterators starting from the same point must each be able to traverse the complete sequence independently. In the standard library, `std::forward_list::iterator` and `std::vector::iterator` are all forward iterators or higher—they point to a definite position. After copying, they advance independently without interference, and you can restart the traversal from the beginning at any time.
+Why? `forward_iterator` adds one very hard requirement on top of `input_iterator` — the **multi-pass guarantee**. It demands: if you copy an iterator, advance the copy, and then continue walking from the original, the sequence you see must be consistent with the copy's; in other words, multiple iterators starting from the same point, each walking independently to the end, must all yield the same complete sequence. In the standard library, `std::forward_list::iterator` and `std::vector::iterator` are forward or above — they point to definite positions, advance independently after copying without interfering with each other, and you can start over from the beginning at any time.
 
-Our stack iterator cannot do this. Its "position" is not uniquely determined by a single pointer, but by the entire contents of `stack_`, which is computed by pushing the entire left chain into the stack at construction time. Two iterators have independent `stack_` instances. After copying, they each `pop`. Although the sequences match, **you cannot "restart" and traverse a second time from one iterator**—to restart, you would need to `push_left(root)` again, effectively reconstructing it. The multi-pass guarantee rule that "the original iterator is unaffected by the advancement of the copy" is fundamentally impossible for a stack iterator to achieve without side effects. Therefore, its ceiling is `input_iterator`: **single-pass, forward-only, and disposable.**
+Our stack iterator can't do this. Its "position" is not uniquely determined by a pointer but by the entire contents of that `stack_`, and `stack_` is computed once at construction by pushing the whole left chain in; two iterators each hold an independent `stack_`, and after copying they pop separately — the sequences match up, but **you have no way to "restart" an iterator for a second pass** — to restart, you must `push_left(root)` again, which means reconstructing. The multi-pass clause "the original iterator is unaffected by advancing the copy" is, for the stack iterator, essentially impossible to satisfy without a side-effect-free rebuild. So its ceiling is exactly `input_iterator`: **single-pass, forward-only, use-and-discard**.
 
-This is actually not a defect, but a design choice. The semantics of in-order traversal, which "requires maintaining a chain of ancestors along the way," are inherently single-pass. To truly support multi-pass, you would need a different iterator implementation (for example, storing an "in-order predecessor/successor" pointer in each node, like in a threaded binary tree), or simply flattening the tree into a contiguous container and using a random access iterator. **The hierarchy of iterator concepts is not "the higher the better," but rather "the better it fits your data structure."** Forcing an input iterator to become a forward iterator is either impossible or requires extra storage costs.
+This is actually not a defect but a design choice. The semantics of in-order traversal — "maintaining the ancestor chain the whole way" — are single-pass by nature; for true multi-pass, you'd have to switch to a different iterator implementation (for example, storing an extra "in-order predecessor/successor" pointer in each node, like a threaded binary tree), or simply pack the tree into a contiguous container and use random-access iterators. **The iterator category (concept) is not "the higher the better" but "the closer it fits your data structure, the better"** — forcibly upgrading input to forward either can't be done, or costs extra storage.
 
-## Plugging in Algorithms: The Real Value of Iterators
+## Bolting algorithms on: where the iterator truly pays off
 
-Once we have satisfied the concept, the best part of this iterator arrives: **you can now delete all those custom functions you wrote for this tree and replace them with standard library algorithms.** Let's look at a few common scenarios.
+With the concepts completed, the most satisfying part arrives: **every specialized function you previously wrote for this tree can now be deleted and replaced with standard library algorithms**. Let's look at a few of the most common scenarios.
 
-To find the first node that meets a condition, you used to have to write a separate recursive function. Now, you can just apply `std::find_if`. The semantics are "find the first element in the input iterator range that satisfies the predicate." It stops when found, or returns `end()` if not found:
+Finding the first node satisfying a condition used to require its own recursion; now `std::find_if` bolts straight on, with the semantics "find the first element satisfying the predicate within a range of input iterators", stopping as soon as it finds one and returning `end()` otherwise:
 
 ```cpp
 auto it = std::find_if(tree.begin(), tree.end(),
@@ -403,7 +398,7 @@ if (it != tree.end()) {
 }
 ```
 
-To count the number of nodes satisfying a condition, we previously had to write another recursive function. Now, we can directly apply `std::count_if`. Internally, it advances while counting, which is exactly what a single-pass input iterator can do:
+Counting the nodes satisfying a condition used to need yet another recursion; now `std::count_if` bolts straight on — internally it just advances while counting, exactly the kind of work a single-pass input iterator can do:
 
 ```cpp
 auto cnt = std::count_if(tree.begin(), tree.end(),
@@ -411,7 +406,7 @@ auto cnt = std::count_if(tree.begin(), tree.end(),
 std::cout << "odd count: " << cnt << "\n";        // odd count: 4
 ```
 
-We copy to a `std::vector` for further processing. Previously, we had to flatten it first; now, one line of `std::copy` does the job, and it truly copies "on the fly" rather than materializing first and then copying:
+Copying into a `std::vector` for further processing used to require flattening first; now one line of `std::copy`, and it genuinely "copies while walking" rather than materializing first and copying afterwards:
 
 ```cpp
 std::vector<int> sorted_by_inorder;
@@ -419,7 +414,7 @@ std::copy(tree.begin(), tree.end(),
           std::back_inserter(sorted_by_inorder));
 ```
 
-Feeding the entire tree output into a ranges pipeline is the biggest benefit C++20 brings. We chain them one `|` after another, composing them like Unix pipes, and the whole process is lazy and zero intermediate container:
+Feeding the whole tree's output into a ranges pipeline is the biggest dividend C++20 pays out. One `|` after another, composed like Unix pipes, lazy throughout, with zero intermediate containers:
 
 ```cpp
 auto view = tree
@@ -427,17 +422,17 @@ auto view = tree
     | std::views::transform([](int v) { return v * v; });
 
 for (int v : view) {
-    std::cout << v << " ";   // 4 16 36(偶数 2/4/6 平方)
+    std::cout << v << " ";   // 4 16 36 (squares of the even values 2/4/6)
 }
 ```
 
-This is the true goal of the iterator pattern—**as long as your collection provides a pair of valid iterators, the entire Standard Library algorithm suite and ranges adapter library are yours for free**. There is no need to write specialized code for "filtering," "transforming," "searching," or "counting"; simply reuse everything.
+This is what the Iterator pattern is really after — **once your collection provides a pair of qualified iterators, the entire standard library algorithm collection plus the ranges adapter collection is yours for free**. No bespoke code for "filter", "transform", "find", "count" — all of it reused.
 
-## Internal vs. External Iterators: Two Approaches
+## Internal vs external iterators: two orientations
 
-External iterators (the kind we wrote above) hand the initiative for "advancing," "fetching values," and "checking equality" to the caller. The caller decides when to advance and when to stop. The Standard Library follows this path exclusively because it **aligns naturally with algorithms**—`std::find_if` needs to stop immediately upon finding a target. This kind of "interruptible" control can only be provided to the caller via an external iterator.
+The external iterator (the kind we wrote above) hands the initiative of "advance", "dereference", and "equality" to the caller; the caller decides when to move forward and when to stop. The standard library takes this road exclusively, because it **aligns naturally with algorithms** — `std::find_if` must stop the moment it finds the target, and this "interrupt at any moment" control can only be handed to the caller by an external iterator.
 
-However, there is another path, known as an **internal iterator**: the collection manages the traversal itself, and the caller only provides a callback for "what to do with the element." The collection then applies this callback to each element. The most typical example is the `forEach` found in various languages:
+But there is another road, called the **internal iterator**: the collection manages the traversal itself, and the caller merely supplies a "what to do once you have an element" callback; the collection applies that callback to every element. The most typical example is `forEach` in various languages:
 
 ```cpp
 template<typename F>
@@ -448,21 +443,21 @@ void for_each_inorder(TreeNode* node, F&& fn) {
     for_each_inorder(node->right, fn);
 }
 
-// 调用方:不用管怎么遍历,只写「拿到一个值干什么」
+// Caller: no need to care how the traversal works, just write "what to do with each value"
 for_each_inorder(root, [](int v) {
     if (v % 2 == 0) std::cout << v << " ";
 });
 ```
 
-The main advantage of internal iterators is that the caller code is extremely concise, as the collection handles all the traversal details. However, the disadvantage stems from this exact trait: **control lies with the collection, so the caller cannot "stop halfway"**. Want to "break on finding the first even number"? Sorry, `forEach` doesn't give you that ability; you have to let the callback be invoked from start to finish, even if you stopped caring long ago. This is why the standard library firmly chose external iterators: **algorithms need interruption, composition, and laziness, and only external iterators can provide these**.
+The internal iterator's advantage is minimal caller code — the collection wraps up all the traversal details; the disadvantage lives exactly there too — **control sits in the collection's hands, and the caller cannot "stop midway"**. You want to "break at the first even number"? Sorry, `forEach` doesn't give you that ability; the callback gets invoked from start to finish, even if you stopped caring long ago. That's why the standard library firmly chose external iterators: **algorithms need interruption, need composition, need laziness, and only external iterators can provide these**.
 
-Neither approach is inherently superior; they simply have different use cases. For simple traversals and pure side-effect operations (printing, logging, firing events), internal iterators are more convenient. But once "early termination," "multi-step composition," or "interfacing with algorithm libraries" are involved, external iterators are the only choice. The entire C++ ecosystem leans toward the latter, so this article focuses exclusively on the modern implementation of external iterators.
+Neither orientation is the more advanced one; they each have their use cases. For simple traversal and pure side-effect operations (printing, logging, emitting events), internal iterators are more comfortable to write; the moment "early termination", "multi-step composition", or "interfacing with the algorithm library" is involved, the external iterator is the only choice. The entire C++ ecosystem leans toward the latter, which is why this article only elaborated the modern form of the external iterator.
 
-## Going Further: Using Coroutines to Make Traversal "Look Like Recursion"
+## Going further: writing the traversal "as if it were recursion" with coroutines
 
-Our stack-based iterator has a somewhat unappealing characteristic: the logic involving `push_left` + `pop` + `check right subtree` is far less intuitive to read than a direct recursive inorder function. Actually, C++20 coroutines offer a more elegant path—**using a generator to write the recursive inorder traversal directly as a coroutine. It still exposes a "get next element on demand" interface, which is essentially equivalent to an iterator**. The beauty of coroutines lies here: you write normal recursive code, and the compiler transforms it behind the scenes into a "suspendable and resumable" state machine. Every time you need a value, it resumes, yields a value, and then suspends.
+Our stack iterator has one rough edge: that `push_left` + `pop` + `check the right subtree` logic reads far less intuitively than directly writing a recursive in-order function. In fact, C++20 coroutines offer us a more elegant road — **write the recursive in-order traversal directly as a coroutine with a generator, which still exposes a "fetch the next element on demand" interface to the outside, essentially equivalent to an iterator**. The beauty of coroutines: you write ordinary recursive code, and the compiler turns it into a "pausable, resumable" state machine behind your back; each time you ask for a value, it resumes once, yields a value out, and suspends again.
 
-Let's first write a minimal `Generator<T>`—it holds a coroutine handle internally and provides the ability to "get the next value":
+Let's first write a minimal `Generator<T>` — internally it holds a coroutine handle, and externally it offers the ability to "fetch the next value":
 
 ```cpp
 template<typename T>
@@ -476,7 +471,7 @@ public:
         std::suspend_always initial_suspend() noexcept { return {}; }
         std::suspend_always final_suspend() noexcept { return {}; }
         std::suspend_always yield_value(T value) {
-            current_value = std::move(value);   // 暂停在这里,把值交给调用方
+            current_value = std::move(value);   // Suspend here, handing the value to the caller
             return {};
         }
         void return_void() {}
@@ -492,7 +487,7 @@ public:
     Generator& operator=(Generator&&) = delete;
     ~Generator() { if (handle_) handle_.destroy(); }
 
-    bool next() {                                // 推进一步,返回是否还有值
+    bool next() {                                // Advance one step, return whether a value remains
         if (!handle_ || handle_.done()) return false;
         handle_.resume();
         return !handle_.done();
@@ -504,19 +499,19 @@ private:
 };
 ```
 
-This `promise_type` acts as the interface contract between the coroutine and the outside world. Let's examine a few key members. `initial_suspend` returns `suspend_always`, meaning the coroutine suspends immediately upon creation and does not execute automatically. This guarantees that "without a call to `next()`, it executes nothing," which is true laziness. `yield_value` is the function invoked behind the scenes by `co_yield`: each time `co_yield v` is called, the coroutine stores `v` in `current_value`, suspends, and yields control back to the caller. When the caller invokes `next()` again, the coroutine resumes execution from this point. `final_suspend` also returns `suspend_always`, ensuring the coroutine frame is not automatically destroyed after completion. This allows us to manually call `destroy()` in the destructor later; otherwise, the coroutine frame would be released prematurely, resulting in a classic use-after-free bug.
+This `promise_type` is the contract between the coroutine and the outside world; let's pick out a few key members. `initial_suspend` returns `suspend_always`, meaning the coroutine suspends immediately upon creation and doesn't run automatically — this guarantees "if you don't call `next()`, not a single line executes", which is precisely laziness. `yield_value` is the function invoked behind `co_yield`: on every `co_yield v`, the coroutine stores `v` into `current_value`, then suspends and hands control back to the caller; on the caller's next `next()`, the coroutine resumes from this point and keeps running. `final_suspend` also returns `suspend_always`, guaranteeing the coroutine isn't automatically destroyed after finishing, but kept around for us to `destroy()` in the destructor at the end — otherwise premature release of the coroutine frame is the classic use-after-free.
 
-With this `Generator`, the inorder traversal can be written almost verbatim, exactly like the recursive version you have in mind:
+With this `Generator`, the in-order traversal can be written almost verbatim, identical to the recursive version in your head:
 
 ```cpp
 template<typename T>
 Generator<T> inorder_generator(TreeNode<T>* node) {
     if (!node) co_return;
     if (node->left) {
-        Generator<T> left = inorder_generator(node->left);  // 递归左子树
-        while (left.next()) co_yield left.value();          // 把左子树的值逐个 yield 出去
+        Generator<T> left = inorder_generator(node->left);  // Recurse into the left subtree
+        while (left.next()) co_yield left.value();          // Yield the left subtree's values one by one
     }
-    co_yield node->val;                                      // 再 yield 根
+    co_yield node->val;                                      // Then yield the root
     if (node->right) {
         Generator<T> right = inorder_generator(node->right);
         while (right.next()) co_yield right.value();
@@ -524,11 +519,11 @@ Generator<T> inorder_generator(TreeNode<T>* node) {
 }
 ```
 
-Look, this code has no stack, no `push_left`, and no `pop`. It is just recursion, line by line, except where we need to hand back a value, we write `co_yield`. The coroutine mechanism generates the entire state machine for "pause here and resume here later" for us. Let's use it to see if it really produces an in-order sequence lazily:
+Look: this code has no stack, no `push_left`, no `pop` — just plain recursion line by line, except that the places where "a value should be handed out" are written as `co_yield`. The coroutine machinery generates, on your behalf, the full state machine of "pause here, resume from here later". Let's use it and see whether it truly produces the in-order sequence lazily:
 
 ```cpp
 int main() {
-    // ... 同样的 1..7 建树 ...
+    // ... build the same 1..7 tree ...
     auto gen = inorder_generator(root);
     while (gen.next()) {
         std::cout << gen.value() << " ";
@@ -537,7 +532,7 @@ int main() {
 }
 ```
 
-Let's compile and run it:
+Compile and run:
 
 ```sh
 $ g++ -std=c++23 -O2 -Wall -Wextra coro_generator_verify.cpp -o coro_generator_verify
@@ -545,54 +540,54 @@ $ ./coro_generator_verify
 1 2 3 4 5 6 7
 ```
 
-The output is identical to the in-order stack iterator, and it is just as lazy—it only calculates when you call `next()`, and stays idle otherwise. The real sweet spot for coroutines lies here: **for complex traversals (especially recursively defined ones like various tree traversals, graph DFS, or infinite sequences expanded on demand), writing them with coroutines yields far better readability than hand-rolling a stack.** The cost is that you must understand the lifecycle of the coroutine frame, the contract around `promise_type`, and the overhead of the generator itself (every `co_yield` is a suspend/resume). Whether to use coroutines to replace hand-written iterators in production code depends on your trade-off between readability and overhead—but the fact that "coroutines can be used to implement the iterator pattern" is worth keeping in your toolbox.
+The output is identical to the stack-based in-order iterator, and it's equally lazy — one `next()` call computes one step; don't call it and it doesn't budge. The real sweet spot of the coroutine road: **complex traversals (especially recursively defined ones — the many traversal orders of trees, graph DFS, on-demand infinite sequences) written with coroutines read far better than hand-rolled stacks**. The price is that you must understand the coroutine frame's lifetime, that whole `promise_type` contract, and the generator's own overhead (every `co_yield` is a suspend/resume). Whether to replace hand-written iterators with coroutines in production code depends on your readability-versus-overhead tradeoff — but the mere fact that "coroutines can be used to implement the Iterator pattern" deserves a slot in your toolbox.
 
-::: tip Difference between coroutine iterators and concept iterators
-Coroutine generators expose a member function API like `next()`/`value()`. Unlike our previous `operator*`/`operator++` setup, they don't directly satisfy the `std::input_iterator` concept, so they can't be used with ranges adapters out of the box. To make them work with ranges, you need to wrap `Generator` with `begin()`/`end()`, returning a lightweight wrapper that satisfies `input_iterator` (mapping `next()` to `operator++` and `value()` to `operator*`). The standard library doesn't do this for you; C++23's `std::generator` is the official "batteries-included, concept-satisfying" generator—if your toolchain supports C++23, prioritize `std::generator` instead of hand-rolling `promise_type`.
+::: tip Coroutine iterators vs concept iterators
+A coroutine generator exposes a member-function API like `next()`/`value()`; unlike our earlier `operator*`/`operator++` set, it doesn't directly satisfy the `std::input_iterator` concept, so by default it can't be piped into the ranges adapters. To get it into ranges, you must wrap `Generator` with another layer of `begin()`/`end()`, returning a lightweight wrapper that satisfies `input_iterator` (mapping `next()` to `operator++` and `value()` to `operator*`). The standard library doesn't do this for you — C++23's `std::generator` is the official "works out of the box, satisfies the iterator concepts" generator. If your toolchain supports C++23, prefer `std::generator` and don't hand-roll `promise_type` yourself.
 :::
 
-## The Cost of the Iterator Pattern
+## The costs of the Iterator pattern
 
-At this point, we have an iterator that works with range-for, algorithms, and ranges adapters, and we've also seen the coroutine approach. But we can't just look at the bright side—I need to be honest about the costs of the iterator pattern so you don't apply it blindly.
+At this point we have an iterator that pairs with range-for, with algorithms, and with ranges adapters, plus a bonus look at the coroutine road. But we can't look only at the shiny side — I owe you an honest account of the Iterator pattern's own costs, so you don't slap it on everywhere.
 
-**First, the implementation cost is not low.** A "qualified" external iterator (especially one that needs to work with ranges) requires getting the whole set of `operator*`, prefix `++`, postfix `++`, `operator==`, and associated type aliases correct. You also have to think clearly about which concept layer it stops at (input, forward, bidirectional, random_access), and there are many edge cases. Stack iterators, doubly linked list iterators, hash table iterators—each has its own state management pitfalls. If your collection has only one traversal need and one or two call sites, writing a `for_each` member function is often more cost-effective than wrestling with iterators.
+**First, the implementation cost is not low.** A "qualified" external iterator (especially one heading into ranges) requires getting that whole set right — `operator*`, prefix `++`, postfix `++`, `operator==`, associated type aliases — plus deciding clearly which concept level it stops at (input, forward, bidirectional, random_access); there are a great many edge conditions. Stack iterators, doubly-linked-list iterators, hash-table iterators — each kind has its own state-management pitfalls. If your collection has exactly one traversal need and only one or two call sites, writing a `for_each` member function directly is usually far more economical than fiddling with iterators.
 
-**Second, iterator invalidation is a classic minefield in C++.** Iterators essentially hold a "reference to a position inside the collection." Once the collection is modified during iteration (e.g., `std::vector` reallocation, `std::map` insertion), previously obtained iterators can instantly become dangling pointers; continuing to use them is undefined behavior. The standard library explicitly specifies "which operations invalidate which iterators" for every container, but the standard library can't manage your custom collections—you have to document it yourself, guarantee it yourself, and the caller has to read it.
+**Second, iterator invalidation is C++'s classic minefield.** An iterator essentially holds "a reference to some position inside the collection"; once the collection is modified while you're iterating (a `std::vector` growing its capacity, a `std::map` insertion), previously obtained iterators can instantly turn into dangling pointers, and continuing to use them is undefined behavior. The standard library explicitly specifies "which operations invalidate which iterators" for every container, but the standard library has no reach over your custom collections — you must write the documentation and provide the guarantees yourself, and callers still have to read it themselves.
 
-**Third, abstraction has runtime costs, although modern compilers can eliminate much of it.** A hand-written iterator that satisfies forward or higher concepts can usually be inlined to be as fast as a hand-written loop. However, input iterators (like our stack iterator) have stack state and indirect jumps outside the virtual table, which often can't be completely eliminated. For performance-sensitive scenarios on hot paths, "writing a specialized loop directly" might be slightly faster than "using a generic iterator + algorithms." This is the cost of abstraction; whether it's worth it is for the profiler to decide.
+**Third, abstraction has a runtime cost, even though modern compilers can erase a lot of it.** A hand-written iterator satisfying the forward-or-above concepts can usually be inlined down to hand-written-loop speed; but input iterators (like our stack iterator here), with their stack state and their indirect jumps outside of vtables, often can't be fully erased. For performance-sensitive hot paths, "just write a dedicated loop" may well be that tiny bit faster than "generic iterator + algorithm". That's the price of abstraction; whether it's worth it is the profiler's call.
 
-**Fourth, there is tension between concept hierarchy and performance.** To make an iterator satisfy a higher-level concept (forward, bidirectional, random_access), you often have to add extra information to the data structure (threaded pointers, random access indices). These storage costs are real money. Don't upgrade mindlessly just for the sake of "higher concepts are prettier"—our stack iterator should honestly stay at `input_iterator`, which is where it belongs.
+**Fourth, there is tension between concept level and performance.** To make an iterator satisfy a higher-level concept (forward, bidirectional, random_access), you often have to add extra information to the data structure (threading pointers, random-access indexes), and this storage overhead is real money. Don't upgrade mindlessly for "the higher the concept, the prettier" — our stack iterator earlier stays honestly at `input_iterator`, and that is exactly where it belongs.
 
 ## Summary
 
-Let's review the entire evolution path:
+Let's straighten out the whole evolution path:
 
-| Stage | Approach | Why it wasn't enough |
+| Stage | Approach | Why it's still not enough |
 |---|---|---|
-| Write traversal in caller | Recursion + target container param | Traversal strategy and action are welded together; rewrite on requirement change |
-| Flatten then traverse | `flatten` to vector then range-for | Materializes a full copy, not lazy, can't handle infinite sequences |
-| External iterator (stack) | `operator*`/`++`/`==` + `begin`/`end` | Works with range-for, but can't enter ranges |
-| Complete concept support | Postfix `++` + `iterator_concept` + associated types | **Sufficient** (`input_iterator` works, ranges adapters usable) |
-| Coroutine generator | `co_yield` recursive traversal, fetch on demand | High readability, naturally lazy, but requires understanding coroutine frame lifecycle |
+| Traversal baked into the caller | Recursion + target container parameter | Traversal strategy and action welded together; every new requirement means a rewrite |
+| Flatten first, then traverse | `flatten` into a vector, then range-for | Materializes a full copy, not lazy, can't handle infinite sequences |
+| External iterator (stack) | `operator*`/`++`/`==` + `begin`/`end` | Passes range-for, but can't get into ranges |
+| Concept kit completed | Postfix `++` + `iterator_concept` + associated types | **Good enough** (`input_iterator` passes, ranges adapters usable) |
+| Coroutine generator | Recursive traversal written with `co_yield`, on-demand value fetch externally | Highly readable, naturally lazy, but requires understanding coroutine frame lifetimes |
 
-Keep these key conclusions in mind:
+Note down these key conclusions:
 
-- **When writing external iterators, you must provide both prefix and postfix `operator++`**, otherwise `weakly_incrementable`/`input_iterator` is not satisfied, and ranges adapters won't work. Passing range-for doesn't mean the concept is qualified.
-- Starting with C++20, use the nested `iterator_concept` (not the old `iterator_category`) to declare the iterator kind, along with `value_type`/`difference_type`; old aliases can be kept for compatibility with older algorithms.
-- **The iterator concept hierarchy is not "the higher the better"**; it should fit the natural ability of the data structure. The ceiling for an in-order stack iterator is `input_iterator` (single-pass, not multi-pass); forcing it to forward incurs extra storage costs.
-- Standard library algorithms and ranges adapters are the real dividend of the iterator pattern—as long as the collection provides a pair of qualified iterators, `find_if`/`count_if`/`copy`/`views::filter`/`views::transform` are all freely reusable, and fully lazy.
-- External iterators (the standard library style, control in caller) and internal iterators (the `forEach` style, control in collection) aren't about who is more advanced, but about different use cases: if you need interruption, composition, or interfacing with algorithms, you must choose external.
-- Complex recursive traversals can be implemented using C++20 coroutine generators, with readability far superior to hand-rolled stacks; in production, if C++23 is supported, prioritize `std::generator`, which satisfies iterator concepts out of the box.
+- **When writing an external iterator, the prefix and postfix `operator++` must be provided together**; otherwise `weakly_incrementable`/`input_iterator` doesn't hold and none of the ranges adapters are usable. Passing range-for does not mean passing the concepts.
+- Since C++20, declare the iterator category with the nested `iterator_concept` (not the old `iterator_category`), together with `value_type`/`difference_type`; the old aliases may be kept for compatibility with old algorithms.
+- **An iterator's concept level is not "the higher the better"** — it should fit the data structure's natural capabilities. The ceiling of a stack-based in-order iterator is exactly `input_iterator` (single-pass, no multi-pass); forcibly upgrading to forward costs extra storage.
+- The standard library algorithms and ranges adapters are the Iterator pattern's real dividend — once a collection provides a pair of qualified iterators, `find_if`/`count_if`/`copy`/`views::filter`/`views::transform` are all reused for free, lazy throughout.
+- External iterators (the standard library's school, control in the caller's hands) and internal iterators (the `forEach` school, control in the collection) — neither is the more advanced; they suit different scenarios: when interruption, composition, or interfacing with algorithms is needed, external is the only choice.
+- Complex recursive traversals can be implemented with C++20 coroutine generators, with readability far above hand-rolled stacks; in production, if C++23 is supported, prefer `std::generator` — it satisfies the iterator concepts out of the box.
 
-::: tip Companion Compilable Project
-The examples for this section are in the repository `code/volumn_codes/vol4/design-patterns/Iterator/` as a complete compilable project (`.h` + main + `CMakeLists.txt`). Run `cmake -S . -B build && cmake --build build` to see the outputs shown above.
+::: tip A companion compilable project
+The examples in this section have a complete compilable project under `code/volumn_codes/vol4/design-patterns/Iterator/` in the repository (`.h` + main + `CMakeLists.txt`); `cmake -S . -B build && cmake --build build` reproduces the outputs above.
 :::
 
 ## References
 
-- [cppreference: Iterator library](https://en.cppreference.com/w/cpp/iterator) (Since C++20)
-- [cppreference: `std::weakly_incrementable`](https://en.cppreference.com/w/cpp/iterator/weakly_incrementable) (Concept requirements for postfix `++`, since C++20)
-- [cppreference: `std::input_iterator`](https://en.cppreference.com/w/cpp/iterator/input_iterator) (Since C++20)
+- [cppreference: Iterator library](https://en.cppreference.com/w/cpp/iterator) (since C++20)
+- [cppreference: `std::weakly_incrementable`](https://en.cppreference.com/w/cpp/iterator/weakly_incrementable) (the concept requirement on the postfix `++`, since C++20)
+- [cppreference: `std::input_iterator`](https://en.cppreference.com/w/cpp/iterator/input_iterator) (since C++20)
 - [cppreference: Ranges library](https://en.cppreference.com/w/cpp/ranges) (`views::filter` / `views::transform`, since C++20)
 - [cppreference: Coroutines](https://en.cppreference.com/w/cpp/language/coroutines) (`co_yield` / `promise_type`, since C++20)
-- [cppreference: `std::generator`](https://en.cppreference.com/w/cpp/coroutine/generator) (Coroutine iterator that works out of the box in C++23)
+- [cppreference: `std::generator`](https://en.cppreference.com/w/cpp/coroutine/generator) (C++23's ready-to-use coroutine iterator)

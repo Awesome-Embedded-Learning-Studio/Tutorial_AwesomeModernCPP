@@ -1,21 +1,23 @@
 ---
-title: Community Articles
-description: Community contributions, inaugural articles, and reviewed content
+title: "Community Articles"
+description: "Community submissions, first-issue articles, and reviewed long-term content"
 translation:
   source: documents/community/index.md
-  source_hash: 3c9be490f0e16a42fbfd01b94c61566887f0716d70586e2b7fc1bc5743b63d12
-  translated_at: '2026-08-29T00:00:00+00:00'
-  engine: manual
+  source_hash: b49ea9b450b0617d662b447add7afad6f2f579045f0f2a31f87893df0d241d66
+  translated_at: '2026-09-26T17:02:59+00:00'
+  engine: anthropic
+  token_count: 1600
 ---
+
 # Community Articles
 
-This section hosts articles, notes, source code readings, engineering experiences, and high-quality Q&A summaries contributed by the Tutorial_AwesomeModernCPP community.
+This section hosts articles, notes, source-reading write-ups, engineering experience, and high-quality Q&A digests contributed by the Tutorial_AwesomeModernCPP community.
 
-Community articles are not automatically merged into the main tutorial volumes. This section provides a more open entry point: contributors can submit Markdown files, maintainers will perform a basic review before publishing them for display, and then decide whether to include them permanently or integrate them into main chapters based on discussion and feedback.
+Community articles are not forced into the main tutorial volumes. This section is a more open entry point: contributors submit Markdown first, maintainers run a basic check and put the piece online, and the decision on long-term inclusion — or on further polishing it into a mainline chapter — comes afterwards, based on discussion and review.
 
-## Latest Submission
+## Latest Submissions
 
-The newest community submission — a thorough take on why C++ still has no unified, smooth package manager, walking from downloading, ABI, and build-system fragmentation all the way to C++20 modules. By CharlieChen114514.
+The newest community submission takes a thorough look at "why C++ still has no unified, smooth package manager" — from downloading, ABI, and build-system fragmentation all the way to C++20 modules. By CharlieChen114514.
 
 <ChapterNav variant="main">
   <ChapterLink num="1" href="incoming/why-cpp-package-manager-hard">Why Is C++ Package Management So Hard?</ChapterLink>
@@ -24,50 +26,51 @@ The newest community submission — a thorough take on why C++ still has no unif
 ## Content Status
 
 <ChapterNav variant="main">
-  <ChapterLink num="1" href="join">Join the Chat Group</ChapterLink>
-  <ChapterLink num="2" href="incoming/">Community Submissions (First Issue)</ChapterLink>
-  <ChapterLink num="3" href="articles/">Reviewed & Included</ChapterLink>
+  <ChapterLink num="1" href="join">Join the Conversation</ChapterLink>
+  <ChapterLink num="2" href="incoming/">Community Contributions: First Issue</ChapterLink>
+  <ChapterLink num="3" href="articles/">Reviewed and Included</ChapterLink>
   <ChapterLink num="4" href="dev/">Project Development</ChapterLink>
+  <ChapterLink num="5" href="weekly-guide/">The Weekly Problems Handbook — Setting Problems and Writing Solutions</ChapterLink>
 </ChapterNav>
 
-## Workflow
+## How Articles Flow
 
 1. The contributor submits a Markdown file.
-2. Maintainers check for basic quality, copyright sources, and obvious technical errors.
-3. After passing the basic check, the article enters `community/incoming/` and can be displayed on the documentation site and in the TAMCPP weekly newsletter.
-4. After community discussion, grammatical revisions, and technical review, the article is moved to `community/articles/`.
-5. If the article is a great fit for the main tutorial, maintainers may further integrate it into the corresponding volume or chapter.
+2. Maintainers check basic quality, copyright provenance, and obvious technical errors.
+3. After passing the basic check, the article enters `community/incoming/` and can be featured on the documentation site and in the TAMCPP weekly newsletter.
+4. After community discussion, wording revisions, and technical review, the article moves to `community/articles/`.
+5. If the article fits the main tutorial particularly well, maintainers can further work it into the corresponding volume or chapter.
 
 ## Submission Scope
 
-Contributors can focus on the main content and do not need to understand the complete site structure from the start.
+Contributors can be responsible for the body content alone — no need to understand the full site structure up front.
 
-It is recommended to provide:
+Recommended to provide:
 
-- Article title and author attribution.
-- Body text in Markdown.
+- The article title and author attribution.
+- The body text in Markdown.
 - Source attribution for images, code, and referenced materials.
-- Target audience or applicable context.
-- Permission for maintainers to adjust titles, formatting, placement, and wording.
+- The target audience or applicable context.
+- Whether maintainers may adjust the title, formatting, placement, and some of the wording.
 
-Maintainers are responsible for:
+Maintainers take care of:
 
-- Determining whether to place the article in the submissions section, the included section, or the main tutorial.
-- Completing necessary frontmatter, navigation, indices, and links.
-- Performing basic formatting, terminology standardization, and technical review.
-- Determining if an English translation or further thematic organization is needed.
+- Deciding whether the article goes into the first-issue area, the reviewed collection, or the main tutorial.
+- Filling in the necessary frontmatter, navigation, indices, and links.
+- Basic formatting cleanup, terminology alignment, and technical review.
+- Deciding whether an English translation or later topical restructuring is warranted.
 
 ## Minimum Inclusion Requirements
 
-While community submissions are not final drafts, they must meet basic requirements before going online:
+The community first issue is not a final draft, but a few basics still have to hold before an article goes online:
 
-- Content renders correctly.
-- No obvious technical errors.
-- Original content or explicitly authorized.
-- Sources provided when citing external materials.
-- Clear sources for images, code, and extensive materials.
-- The author agrees to public display and allows maintainers to make necessary edits.
+- The content renders correctly.
+- No glaring technical blunders.
+- Original work, or clearly authorized.
+- Sources given wherever external material is cited.
+- Clear provenance for images, code, and long quoted passages.
+- The author agrees to public display and to necessary edits by maintainers.
 
-Quick questions and casual chat are welcome in the QQ group; for open-ended discussions, please use GitHub Discussions first, and for specific content proposals or submission topics, please use GitHub Issues.
+Quick questions and day-to-day chat are welcome in the QQ group; for open-ended discussion, please prefer GitHub Discussions, and for concrete content proposals or submission topics, use a GitHub Issue.
 
-The project's maintenance rhythm, site iterations, and release metrics are recorded in [Project Development](dev/).
+The project's own maintenance cadence, site iterations, and release metrics are recorded in [Project Development](dev/).

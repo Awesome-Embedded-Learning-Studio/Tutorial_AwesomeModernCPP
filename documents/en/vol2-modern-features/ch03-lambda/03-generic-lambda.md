@@ -10,8 +10,8 @@ difficulty: intermediate
 order: 3
 platform: host
 prerequisites:
-- 'Chapter 3: Lambda Basics: The Elegant Expression of Anonymous Functions'
-- 'Chapter 3: Deep Dive into Lambda Capture'
+- 'Lambda Basics: The Elegant Expression of Anonymous Functions'
+- Deep Dive into Lambda Capture
 reading_time_minutes: 13
 related:
 - Functional Programming Patterns

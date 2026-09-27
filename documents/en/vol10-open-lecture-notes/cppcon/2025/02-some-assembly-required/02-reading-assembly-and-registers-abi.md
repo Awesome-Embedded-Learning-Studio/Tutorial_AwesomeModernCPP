@@ -5,7 +5,7 @@ conference_year: 2025
 cpp_standard:
 - 17
 - 20
-description: 'CppCon 2025 Talk Notes — C++: Some Assembly Required by Matt Godbolt'
+description: 'CppCon 2025 talk notes — C++: Some Assembly Required by Matt Godbolt'
 difficulty: intermediate
 order: 2
 platform: host
@@ -16,27 +16,27 @@ tags:
 - host
 - intermediate
 talk_title: 'C++: Some Assembly Required'
-title: Reading Assembly and Register ABI
+title: Reading Assembly and the Register ABI
 video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
 video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/02-some-assembly-required/02-reading-assembly-and-registers-abi.md
-  source_hash: bd631e7708036415f7513b79a3d2d35c85e670ebacbfc5864e57a0382bf59701
-  translated_at: '2026-06-16T06:09:23.412143+00:00'
+  source_hash: 6ced5414af699993bbf643bbbe0d2f11aaca5bc7c94e42dc6172f2400685efb2
+  translated_at: '2026-09-26T15:37:27+00:00'
   engine: anthropic
-  token_count: 5567
+  token_count: 8500
 ---
 # Reading Assembly: Building Intuition from Scratch
 
-Faced with a screen full of `mov`, `add`, and `jmp` mixed with indecipherable register names, a beginner's first reaction is often to close the tab. When a template error occurs, we can at least search Stack Overflow, but assembly output looks like gibberish, leaving us unsure where to start. However, by conducting targeted experiments using Compiler Explorer<RefLink :id="1" preview="Matt Godbolt, Compiler Explorer, godbolt.org, 2012" />, we discover that assembly can actually be understood by "reading and guessing"—without truly needing to know how to write it.
+Faced with a screen full of `mov`, `add`, and `jmp` mixed with a pile of unreadable register names, a beginner's first reaction is often to close the tab. When a template error fires, at least we can go search Stack Overflow; assembly output, by contrast, looks like scripture in an alien alphabet, with no obvious place to start reading. And yet, with a few targeted experiments on Compiler Explorer<RefLink :id="1" preview="Matt Godbolt, Compiler Explorer, godbolt.org, 2012" />, it turns out that assembly can be understood "half reading, half guessing" — we never actually need to know how to write it.
 
-## Clarifying the Environment First
+## First, the Environment
 
-All experiments below are performed on Compiler Explorer (godbolt.org). Regarding compilers, we use GCC 16.1.1 for x86-64, the aarch64 version of GCC 16.1.1 for ARM64, and the riscv64 version of GCC 16.1.1 for RISC-V. The operating system is uniformly set to Linux, as calling conventions differ under Windows, leading to variations in assembly output—something we will discuss in detail later. We primarily focus on the `-O2` optimization level, occasionally switching to `-O0` for comparison, for reasons we will explain later.
+Every experiment below was done on Compiler Explorer (godbolt.org). On the compiler side, x86-64 uses GCC 16.1.1, ARM64 uses the aarch64 build of GCC 16.1.1, and RISC-V uses the riscv64 build of GCC 16.1.1. The operating system is set to Linux across the board, because the calling convention under Windows differs and so does the assembly output — we will come back to that in detail later. For optimization we mostly look at `-O2`, occasionally dropping to `-O0` for comparison; the reason comes up shortly.
 
-## Let's Start with the Simplest Function
+## Start with the Simplest Possible Function
 
-To understand what assembly actually looks like under different architectures, we start with the simplest `square` function—multiplying an input integer by itself and returning the result. The more plain the function, the better it is for observing compiler behavior, because the logic is simple and the assembly is concise, making the role of every instruction clear at a glance.
+To see what assembly actually looks like across architectures, we start with the simplest possible `square` function — take an integer input, multiply it by itself, and return it. The plainer the function, the better it is for observing compiler behavior: the logic is simple, the assembly is short, and every instruction's job is visible at a glance.
 
 ```cpp
 int square(int x) {
@@ -44,11 +44,11 @@ int square(int x) {
 }
 ```
 
-Intuitively, regardless of the CPU architecture, since the task is identical, the resulting assembly code should be roughly the same. However, when we place the three architectures side-by-side in Compiler Explorer, we find that they look completely different—the instruction formats, register naming, and even the implementation of multiplication vary. But upon closer inspection, a key pattern emerges: while the "appearance" differs, the skeleton is actually the same—they all retrieve parameters from specific locations, perform operations, and then place the results in agreed-upon locations for return. Once we understand this skeleton, reading assembly code is no longer intimidating.
+Intuitively, whatever the CPU architecture, the job is the same, so the compiled assembly should come out more or less alike. Yet when we line the three architectures up side by side in Compiler Explorer, they look completely different — instruction formats, register names, even the way multiplication is implemented. But look closer and a key pattern surfaces: different as they look, the skeleton is the same — take the argument from some agreed place, do the arithmetic, then put the result in some other agreed place and return. Once that skeleton clicks, reading assembly stops being intimidating.
 
 ## The x86-64 Version
 
-Let's start with x86-64, as most development machines run on this architecture. With `-O2` optimization, GCC generates the following code:
+x86-64 first, since most development machines run this architecture. Under `-O2`, GCC generates the following code:
 
 ```asm
 square(int):
@@ -57,15 +57,15 @@ square(int):
         ret
 ```
 
-You might be puzzled when seeing this code for the first time: shouldn't arguments be on the stack? Why are we reading directly from `edi`? This is mandated by the System V AMD64 ABI<RefLink :id="2" preview="System V Application Binary Interface, AMD64 Architecture, x86-64 psABI" /> (the calling convention for x86-64 on Linux)—the first few integer arguments are passed via registers, with the first argument in `edi` and the return value in `eax`. So, the meaning of these three instructions is clear: `imul edi, edi` is the two-operand multiplication form in x86—where the left operand acts as both source and destination. It squares the value in `edi`, writes the result back to `edi`, moves it to `eax` for the return value, and finally returns with `ret`.
+A first look at this code raises a puzzle: shouldn't arguments live on the stack? Why is the code reading straight from `edi`? That is what the System V AMD64 ABI<RefLink :id="2" preview="System V Application Binary Interface, AMD64 Architecture, x86-64 psABI" /> — the calling convention for x86-64 on Linux — prescribes: the first few integer arguments are passed in registers, with the first argument in `edi` and the return value in `eax`. So the three instructions read plainly: `imul edi, edi` is x86's two-operand multiply form — the left operand is both source and destination; it multiplies the value in `edi` by itself and writes the result back to `edi`; then that value is moved into `eax` as the return value, and finally `ret` returns.
 
-A natural question arises: why not let the `imul` result land directly in `eax` and avoid the extra `mov`? In reality, the two-operand form of `imul` writes the result back to the first operand (which is `edi`), and the calling convention requires the return value to be in `eax`, so this `mov` is unavoidable. If the compiler used `imul eax, edi` (multiplying `edi` into `eax`), we could save the `mov`, but that would require moving `edi` to `eax` first before doing the multiplication. The instruction count would be the same, so GCC chose the former strategy.
+A natural follow-up question: why not let the `imul` result land directly in `eax` and skip the extra `mov`? As it happens, the two-operand form of `imul` writes its result to the first operand (`edi`), while the calling convention demands the return value sit in `eax` — so that `mov` is unavoidable. GCC could have emitted `imul eax, edi` (multiplying `edi` into `eax`), which would drop the `mov`, but then `edi` would first have to be moved into `eax` before the multiply — the instruction count comes out the same, and GCC picked the former strategy.
 
-Another common pitfall: if we compile the same code on Windows, the argument will be in `ecx` instead of `edi`, though the return value remains in `eax`. This is one of the biggest differences between Windows x64<RefLink :id="3" preview="Microsoft, x64 Calling Convention, RCX/RDX/R8/R9" /> and Linux x86-64—the calling conventions differ. You might understand a snippet of assembly on Linux, then compile it with MSVC on Windows and find that all the registers have changed. This isn't a mistake; it's a difference in calling conventions. Therefore, when reading assembly, the first step is to confirm the platform and calling convention. This will save a lot of confusion.
+Another easy trap: compile the same code on Windows and the argument arrives in `ecx` instead of `edi`, though the return value still lands in `eax`. This is one of the biggest differences between Windows x64<RefLink :id="3" preview="Microsoft, x64 Calling Convention, RCX/RDX/R8/R9" /> and Linux x86-64 — a different calling convention. Read a piece of assembly fluently on Linux, then compile the same code with MSVC on Windows, and every register seems to have moved — that is not misreading; it is the ABI difference. So step one when reading assembly: confirm the platform and calling convention first. It saves a lot of confusion.
 
 ## The ARM64 Version
 
-Next, let's look at ARM64, also known as AArch64<RefLink :id="4" preview="ARM, AArch64 Architecture Reference Manual, ARMv8" />. For the same function, GCC aarch64 with `-O2` produces the following output:
+Next up, ARM64, also known as AArch64<RefLink :id="4" preview="ARM, AArch64 Architecture Reference Manual, ARMv8" />. For the same function, GCC aarch64 at `-O2` produces this output:
 
 ```asm
 square(int):
@@ -73,13 +73,13 @@ square(int):
         ret
 ```
 
-This code consists of only two instructions, making it even cleaner than x86-64. `w0` is the register in ARM64 that holds the first integer argument and the return value (the 32-bit version; the 64-bit version is called `x0`). Since the parameter is an `int`, 32 bits are sufficient, so the compiler used the `w` register instead of the `x` register. The `mul` instruction directly places the result of `w0` multiplied by `w0` back into `w0` and then returns, with no redundant `mov`—ARM64 instruction design allows the result to be flexibly placed in the position of any operand.
+Two instructions — even cleaner than x86-64. `w0` is the ARM64 register that carries the first integer argument and the return value (the 32-bit view; the 64-bit one is called `x0`). Because the argument is an `int`, 32 bits are enough, so the compiler used a `w` register rather than an `x` register. `mul` puts the product of `w0` times `w0` right back into `w0`, then the function returns — no leftover `mov`, because ARM64's instruction design lets the result land flexibly in any operand slot.
 
-It is worth noting that ARM64 register naming is much more regular than x86-64. In x86-64, `eax`, `edi`, and `rsi` are all distinct, requiring rote memorization of each register's specific purpose; whereas ARM64 simply uses `x0` through `x30` plus a stack pointer `sp`, with the 32-bit versions uniformly adding a `w` prefix, which is very neat. This regular naming convention lowers the barrier to reading—you don't need to memorize a bunch of legacy names, just knowing that `x0`/`w0` is for arguments and return values is enough.
+Worth noting: ARM64's register naming is far more regular than x86-64's. Over there, `eax`, `edi`, and `rsi` are all distinct names with no system behind them — each register's special role has to be memorized. ARM64 is simply `x0` through `x30` plus a stack pointer `sp`, and the 32-bit views uniformly take a `w` prefix. Very tidy. That regular naming lowers the barrier — no pile of historically accreted names to memorize; knowing that `x0`/`w0` handles arguments and return values is enough to get started.
 
 ## The RISC-V Version
 
-Finally, we have RISC-V<RefLink :id="5" preview="RISC-V International, RISC-V ISA Specification, 2019" /> (where V represents the Roman numeral five, so it is pronounced "risk-five"). Its assembly looks like this:
+Finally, RISC-V<RefLink :id="5" preview="RISC-V International, RISC-V ISA Specification, 2019" /> (the V is the Roman numeral five, so it is pronounced "risk-five"). Its assembly looks like this:
 
 ```asm
 square(int):
@@ -87,39 +87,39 @@ square(int):
         ret
 ```
 
-Wait, this looks almost exactly like ARM64? It certainly is. In RISC-V, `a0` is the register designated for the first argument and the return value (the `a` stands for argument). The `mul` instruction performs the multiplication, places the result back into `a0`, and then returns. Two instructions, clean and efficient.
+Wait — isn't this nearly identical to ARM64? It is. In RISC-V, `a0` is the register that holds the first argument and the return value (`a` stands for argument), `mul` does the multiplication, the result lands back in `a0`, and the function returns. Two instructions, crisp and clean.
 
-As the youngest instruction set architecture, RISC-V incorporates lessons learned from its predecessors. Its integer registers are simply named `x0` through `x31`, with aliases assigned by the ABI convention: `a0`-`a7` are argument/return registers, `t0`-`t6` are temporary registers, and `s0`-`s11` are callee-saved registers. In assembly, we see the aliases, but fundamentally they are just `x` indices. This design of "unified underlying numbering + semantic upper-layer aliases" is much easier to understand than the x86-64 approach where every register has a unique name.
+As the youngest instruction set architecture, RISC-V was designed with everyone else's lessons baked in. Its integer registers are simply `x0` through `x31`, and the ABI assigns them aliases: `a0`-`a7` are the argument/return-value registers, `t0`-`t6` are temporaries, and `s0`-`s11` are callee-saved registers. What we see in disassembly is the aliases, but underneath they are just numbered `x` registers. This "uniform numbering underneath, semantic aliases on top" design is far easier to grasp than x86-64's every-register-has-a-unique-name scheme.
 
-## Looking Back: They Are Actually Saying the Same Thing
+## Looking Back: They Are All Saying the Same Thing
 
-Placing the three architectures side by side reveals an interesting phenomenon: although the instruction names, register names, and instruction counts differ, the "semantics" they express are identical—"fetch argument → multiply → store return value → return." Reading assembly doesn't require recognizing every single instruction; as long as we grasp which registers the data flows between and what operations are performed, we can roughly deduce what the code is doing.
+Put the three architectures side by side and an interesting phenomenon emerges: different instruction names, different register names, different instruction counts — and yet the "semantics" they express are exactly the same: fetch the argument → multiply → place the return value → return. Reading assembly does not require recognizing every single instruction; just grab the thread of which register the data flows through and what arithmetic gets done, and we can roughly guess what it is up to.
 
-It is like reading a poem written in an unfamiliar language. We don't need to look up every word; we can feel its rhythm and gist through the position of words and repetitive patterns. Assembly is similar: seeing `mul` or `imul` tells us a multiplication is happening; seeing `ret` tells us the function is about to return; seeing data moved from one register to another tells us something is being passed. This ability to "half-read, half-guess" is far more practical than rote memorization of the precise semantics of every instruction.
+It is like reading a poem in a language we half-know: we do not need to look up every word — word placement and repeated patterns carry the rhythm and the gist. Assembly is the same: see `mul` or `imul` and we know it is multiplying; see `ret` and we know the function is about to return; see data moving from one register to another and we know something is being passed along. This "half reading, half guessing" ability is far more practical than rote-memorizing the exact semantics of every instruction.
 
-## A Key Reminder: Optimization Levels Radically Change What You See
+## A Key Reminder: the Optimization Level Radically Changes What You See
 
-The examples above all show output under `-O2`. If optimization is turned off (`-O0`), the picture is completely different—massive amounts of `push`, `pop`, and memory read/write instructions. Parameters are stored to the stack and then read back, and intermediate results are repeatedly written to memory. The assembly at `-O0` is so verbose because its purpose is to allow the debugger to map every C++ statement precisely to assembly instructions. Therefore, it performs no optimizations and keeps all variables strictly in memory. `-O2` represents the code the compiler "truly" wants to generate. If the goal is to understand the compiler's optimization behavior and the actual performance of the code, we must look at `-O2` or higher optimization levels. `-O0` will only lead you astray.
+Everything shown above is `-O2` output. Turn optimization off (`-O0`) and the picture changes completely — a flood of `push`, `pop`, and memory traffic; arguments get stored to the stack and read back, and intermediate results get written to memory over and over. `-O0` assembly is so verbose because the purpose of `-O0` is to let the debugger map every C++ statement precisely onto machine instructions, so it performs no optimization at all and dutifully keeps every variable in memory. `-O2` is what the compiler "really" wants to generate. If the goal is to understand the compiler's optimization behavior and the code's actual performance, always look at `-O2` or higher; `-O0` only leads us astray.
 
-At this point, we have reviewed the assembly of the simplest functions across the three mainstream architectures. Although it is just a `square` function, it establishes an important cognitive framework: knowing where parameters come from, where results go, and in which instruction the core computation is performed. With this framework, we won't be completely lost when looking at more complex function assembly later. Next, equipped with this foundation, we will look at some more realistic scenarios.
+That wraps up the assembly of the simplest possible function on three mainstream architectures. It is only a `square` function, but it established an important mental frame: where arguments come from, where results go, and in which instruction the core computation happens. With that frame in hand, the assembly of more complex functions later on will not feel like a dead end. Next, we carry this foundation into some more realistic scenarios.
 
 ---
 
-# What is the Relationship Between Machine Code and Assembly?
+# Machine Code and Assembly: What the Relationship Actually Is
 
-Many people use the terms "machine code" and "assembly code" interchangeably, thinking they are just unintelligible gibberish. But if we look closely at the output of objdump, the left column `0f af ff` and the right column `imul edi, edi` actually have a very straightforward one-to-one mapping relationship, though we rarely think about it seriously.
+Plenty of people use "machine code" and "assembly code" interchangeably — both are just unreadable stuff, right? But look carefully at objdump's output and the left-hand column of `0f af ff` and the right-hand column of `imul edi, edi` turn out to have a perfectly straightforward one-to-one mapping — it is just that nobody usually stops to think about it.
 
-## Clarifying Concepts: Machine Code is for Machines, Assembly is for Humans
+## Getting the Concepts Straight: Machine Code Is for Machines, Assembly Is for Humans
 
-That pile of hexadecimal numbers on the left—`0f`, `af`, `ff`, etc.—is machine code. Essentially, it is a string of bytes in memory. The CPU reads these bytes directly and interprets them according to rules hardcoded into the hardware: reading `0f af` tells it this is a multiplication instruction, and subsequent bytes tell it where the operands are. The CPU doesn't know what `imul` is; it only recognizes numbers.
+That left-hand column of hexadecimal digits — `0f`, `af`, `ff` and friends — is machine code. It is fundamentally a string of bytes in memory; the CPU reads those bytes and interprets them according to rules fixed in hardware: see `0f af` and it knows this is a multiply instruction, and the bytes that follow tell it where the operands are. The CPU has never heard of `imul` — it only understands numbers.
 
-The column on the right, `imul edi, edi`, is assembly code, the version for humans. It has a basically one-to-one mapping relationship with machine code—one assembly instruction corresponds to a fixed-format sequence of machine code bytes. Therefore, we can "assemble" assembly code into machine code (what an assembler does), and we can "disassemble" machine code back into assembly code (what tools like objdump and IDA do). Of course, when disassembling back, comments are lost, variable names are lost, and semantic information like `int x = n * n` is completely gone. All that remains is cold, hard instructions.
+The right-hand column, `imul edi, edi`, is assembly code — the edition for humans. It maps to machine code essentially one to one: one assembly instruction corresponds to one fixed-format run of machine-code bytes. That is why assembly can be "assembled" into machine code (which is what the assembler does), and machine code can be "disassembled" back into assembly (which is what objdump, IDA, and friends do). Of course, on the way back the comments are gone, the variable names are gone, and all the semantic information from something like `int x = n * n` is gone too — nothing left but bare instructions.
 
-However, this bidirectional conversion path exists and is very direct. Assembly is not a "high-level language" requiring a compiler to perform complex translation—it is essentially just another way to write machine code.
+But this two-way road exists, and it is remarkably direct. Assembly is not a "high-level language" that needs a compiler's heavy translation — it is practically another spelling of machine code.
 
-## Writing a Simple Square Function to See What Assembly Looks Like
+## Hands On: the Simplest Square Function, and What Its Assembly Looks Like
 
-To clarify the register situation, let's start with the most naive square function:
+To sort out the whole register question, start from the plainest square function possible:
 
 ```cpp
 // square.cpp
@@ -128,17 +128,17 @@ int square(int n) {
 }
 ```
 
-Then we use GCC to compile into an object file without linking, to inspect the assembly:
+Then compile it with gcc into an object file — no linking — and look at just the assembly:
 
 ```bash
-# 我的环境：Arch Linux WSL, x86-64, gcc 16.1.1
+# My environment: Arch Linux WSL, x86-64, gcc 16.1.1
 g++ -c -O0 square.cpp -o square.o
 objdump -d -M intel square.o
 ```
 
-We add `-M intel` because AT&T syntax (where operands come after the instruction and use the `%` prefix) is not very intuitive. Intel syntax, at the very least, keeps the operand order consistent with our intuition. We use `-O0` to disable all optimizations, ensuring the compiler does not rewrite the code, so we can see the raw translation results.
+`-M intel` is there because AT&T syntax (operands after the mnemonic, `%` prefixes everywhere) is unintuitive; with Intel syntax at least the operand order matches intuition. `-O0` turns off every optimization, so the compiler rewrites nothing and we get to see the most literal translation.
 
-The output looks something like this (GCC 16, -O0):
+The output looks roughly like this (GCC 16, -O0):
 
 ```asm
 0000000000000000 <_Z6squarei>:
@@ -151,58 +151,58 @@ The output looks something like this (GCC 16, -O0):
    e:   c3                      ret
 ```
 
-Your first reaction might be: wait, shouldn't input parameters be "passed in" from somewhere? C++ functions have parameter lists, but assembly has no such thing. So, where exactly do the parameters go?
+The first reaction on seeing this might be: wait, isn't the input argument supposed to be "passed in" from somewhere? C++ functions have parameter lists, but there is no such thing as a parameter list in assembly. So where did the argument go?
 
-## Registers are the CPU's built-in "global variables," but there are rules for using them
+## Registers Are the CPU's Built-in "Global Variables", but Their Use Has Rules
 
-Inside a CPU, there is a small batch of extremely fast storage units called registers. You can think of them as a kind of "ultra-fast global variable"—located directly inside the CPU, requiring no memory access, with read and write speeds that are virtually zero-latency. However, unlike global variables, registers are extremely limited in quantity. On x86-64, there are only a dozen or so general-purpose registers (RAX, RBX, RCX, RDX, RSI, RDI, R8-R15), making it impossible to stuff all data into them.
+Inside the CPU sits a small batch of extremely fast storage cells called registers. Think of them as a kind of "ultra-fast global variable" — right inside the CPU, no memory access involved, reads and writes at practically zero latency. Unlike global variables, though, their number is severely limited: under x86-64 there are only a dozen-odd general-purpose registers (RAX, RBX, RCX, RDX, RSI, RDI, R8-R15 and the rest). There is no way to cram all data into them.
 
-The key question is: who dictates which register does what job? If Compiler A decides to put parameters in RAX, and Compiler B decides to put them in RDI, the code they generate cannot call each other. You write a library, someone else writes a program, and because register usage differs, the call fails.
+The crux is: who decides which register does which job? If compiler A decided arguments go in RAX while compiler B decided they go in RDI, code compiled by the two could never call each other. Ship a library, have someone else write a program against it, and a mismatched register convention breaks the call outright.
 
-Therefore, there must be a set of "traffic rules" that everyone follows so that code can interoperate. This set of rules is the ABI (Application Binary Interface). The ABI specifies many things, the most basic of which is: during a function call, which register holds parameters, which register holds the return value, which registers can be freely modified after the call, and which must be returned to their original state.
+So there has to be a set of "traffic rules" that everyone follows, or code cannot interoperate. That rulebook is the ABI (Application Binary Interface). The ABI specifies a great deal, and the most basic clause is this: on a function call, which register carries which argument, which register returns the value, which registers may be freely clobbered after the call, and which must be handed back untouched.
 
-Linux uses the System V AMD64 ABI, while Windows uses its own Microsoft x64 ABI. The two sets of rules are different. This is one of the reasons why binaries for Linux and Windows cannot be directly mixed (of course, there are more reasons, but different register conventions are the most immediate layer).
+Linux uses the System V AMD64 ABI; Windows uses Microsoft's own x64 ABI — two different rulebooks. This is one of the reasons Linux and Windows binaries cannot be mixed directly (there are more reasons, of course, but differing register conventions are the most visible layer).
 
-## Parameters enter via EDI, results must exit via EAX
+## Arguments Come In Through EDI, and Results Must Leave Through EAX
 
-Let's return to our square function. Under the System V ABI rules, the first integer parameter is placed in the RDI register. Note that I wrote RDI (64-bit), but our parameter is `int`, which is only 32 bits, so we actually use the lower 32 bits of RDI, which is EDI. The same applies to RAX/EAX: RAX is the 64-bit version, and EAX is the 32-bit version.
+Back to our square function. Under System V ABI rules, the first integer argument sits in the RDI register. Note that I wrote RDI (64-bit), but our argument is an `int` — only 32 bits — so what actually gets used is the low 32 bits of RDI, namely EDI. Same story for RAX/EAX: RAX is the 64-bit version, EAX the 32-bit version.
 
-So, when the function starts, the value of `n` is already in EDI. You don't need to "fetch" it from anywhere; it's already there.
+So the moment execution enters the function, the value of `n` is already in EDI — there is nothing to "fetch" from anywhere; it is simply there.
 
-Then look at the instruction sequence: `push rbp; mov rbp, rsp` is the standard stack frame setup process. `mov DWORD PTR [rbp-0x4], edi` stores the parameter from EDI onto the stack—this is typical behavior for `-O0`. The compiler performs no optimization and dutifully places all variables in memory. Next, `mov eax, DWORD PTR [rbp-0x4]` reads it back from the stack into EAX, `imul eax, eax` performs the squaring, `pop rbp` restores the stack frame, and finally `ret` returns. The verbosity of `-O0` precisely explains why the previous section recommended looking at `-O2` output—three extra stack frame instructions drown out the core logic.
+Now walk the instruction sequence: `push rbp; mov rbp, rsp` is the standard stack-frame setup; `mov DWORD PTR [rbp-0x4], edi` stores the argument from EDI onto the stack — classic `-O0` behavior, no optimization, every variable dutifully placed in memory. Then `mov eax, DWORD PTR [rbp-0x4]` reads it back into EAX, `imul eax, eax` squares it, `pop rbp` restores the frame, and `ret` returns. All this `-O0` verbosity is exactly why we recommended looking at `-O2` output earlier — three extra stack-frame instructions that drown the core logic.
 
-Next, `imul eax, eax` multiplies EAX by EAX and stores the result back in EAX. This is a distinctive design feature of x86: most instructions only accept two operands, and the left operand is both the source and the destination. This is equivalent to `a *= a` in C++—read the value on the left, calculate with the value on the right, and write the result back to the left. It is a "destructive" operation; once done, the original value on the left is overwritten. If you need the original value later, you must save it beforehand.
+Then `imul eax, eax` multiplies EAX by EAX and stores the product back into EAX. This is a characteristically x86 design: most instructions take only two operands, and the left operand is both source and destination. It is the same idea as `a *= a` in C++ — read the value on the left, combine it with the value on the right, and write the result back to the left. It is a "destructive" operation: once it completes, the original left-hand value is overwritten. If that value is still needed later, it must be saved beforehand.
 
-Finally, `ret` returns, handing control back to the caller. At this point, EAX holds the squared result, and the caller knows to fetch it from EAX—because the ABI mandates it.
+Finally, `ret` returns and hands control back to the caller. At that point EAX holds the squared result, and the caller knows to pick it up from EAX — because the ABI says so.
 
-## Register names are not arbitrary
+## Register Names Are Not Arbitrary
 
-Beginners seeing RAX, EAX, AX, and AL often assume they are different registers. In reality, they are different "views" of the same physical register: RAX is the full 64 bits, EAX is the lower 32 bits, AX is the lower 16 bits, and AL is the lowest 8 bits. Writing to EAX overwrites the high 32 bits of RAX (zeroing them), while writing to AL only changes the lowest byte, leaving the rest unaffected.
+Beginners seeing the pile of names RAX, EAX, AX, and AL easily assume they are different registers. In fact, they are different "views" of one and the same physical register: RAX is the full 64 bits, EAX the low 32, AX the low 16, and AL the lowest 8. Writing to EAX overwrites (zeroes out) the upper 32 bits of RAX; writing to AL changes only the lowest byte, leaving the rest untouched.
 
-This characteristic can cause confusion during debugging. When staring at a register window, you might notice that the value of RAX doesn't match EAX and suspect the debugger is glitching. Actually, it's because a previous instruction only modified the lower 32 bits, and the high 32 bits are "dirty data" left over from an earlier operation. So, when viewing registers, be sure to clarify which "view" you are looking at.
+This property causes no end of confusion during debugging. Staring at the register window, we might notice RAX and EAX disagreeing and suspect the debugger is broken — when in truth some instruction touched only the low 32 bits, and the upper 32 hold dirty data left over from an earlier operation. So whenever reading registers, always be clear about which "view" is currently on screen.
 
-At this point, the assembly face of a simple C++ function on x86-64 is clear: parameters are passed in via registers (not the stack, at least for the first few), calculations happen between registers, and results are returned via registers. The whole process involves no memory access and is extremely fast. Of course, this is the simplest case; with more parameters, local variables, and optimizations enabled, things get much more complex, but the basic framework remains the same.
+At this point, the assembly face of the simplest C++ function under x86-64 is clear: arguments arrive through registers (not the stack — at least the first several do), the computation happens between registers, and the result returns through a register. The whole process touches no memory and is blazingly fast. Granted, this is the simplest case — more arguments, local variables, or optimization will complicate things a great deal — but this is the basic frame.
 
 ---
 
-# Understanding Register Passing via a Single MOV Instruction: Calling Conventions in ARM and RISC-V
+# Reading Register Argument Passing from a Single MOV Instruction: the ARM and RISC-V Calling Conventions
 
-The previous section discussed a function that calculates a square. After compilation, the core is a single multiplication instruction. When the function returns, control goes back to the caller. The caller previously stuffed the parameter into the EDI register (the x86-64 calling convention) and now expects to retrieve the return value from the EAX register—this is the rule for x86-64: integer return values go via EAX (or RAX). So, that `imul edi, edi` does something very straightforward: multiply the value in EDI by itself, write the result back to EDI, then `mov` it to EAX, and finally `ret`. The caller grabs it from EAX, and we're done.
+In the previous section, our squaring function compiled down to a single multiply instruction at its core. When the function returns, control goes back to the caller. The caller had stuffed the argument into the EDI register (that is the x86-64 calling convention), and now it expects to find the return value in the EAX register — that is the x86-64 rule: integer return values travel in EAX (or RAX). So what that `imul edi, edi` does is completely plain: multiply the value in EDI by itself, write the result back to EDI, then mov it into EAX, and finally ret. The caller picks it up from EAX. Done.
 
-So the question arises: how big is the "perceptual" difference for the same task across different architectures? Compiling the same function under three architectures and comparing the assembly line by line reveals very distinct differences.
+So here is the question: across different architectures, how big is the "felt" difference when doing the same thing? Compile the same function for all three architectures and compare the assembly line by line — the differences are striking.
 
 ## The Simplicity of ARM64
 
-Let's look at ARM64 (AArch64) first. Some might assume ARM assembly is similar to x86, just with different instruction names. But actually opening objdump reveals differences far beyond expectations.
+ARM64 (AArch64) first. One might assume ARM assembly is roughly x86 with different instruction names and nothing more. Actually open objdump, and the differences far exceed expectations.
 
 ```cpp
-// square.cpp —— 就这么个简单函数
+// square.cpp — just this trivial function
 int square(int value) {
     return value * value;
 }
 ```
 
-Let's run this using the cross-compilation toolchain:
+Run it through a cross-compilation toolchain:
 
 ```bash
 # ARM64
@@ -218,26 +218,26 @@ square:
     ret
 ```
 
-That's it. Two instructions, clean and simple. One particularly elegant aspect is that W0 serves as both the input and the output. In the ARM calling convention, W0 (32-bit) or X0 (64-bit) acts as the carrier for both the first argument and the return value. Therefore, `mul w0, w0, w0` reads as "multiply w0 by w0 and put the result back in w0." Since all three operands are the same register, it is visually very consistent.
+That is it. Two instructions, spotless. One especially pleasant property: W0 is both the input and the output. Under ARM's calling convention, W0 (32-bit) or X0 (64-bit) is both the carrier of the first argument and the carrier of the return value. So `mul w0, w0, w0` reads as "multiply w0 by w0, put the result back in w0" — all three operands are the same register, visually perfectly uniform.
 
-Next, let's examine the machine code for these instructions, which reveals a key design difference.
+Next, take a look at the machine code of these instructions; it reveals an important design difference.
 
 ```bash
 aarch64-linux-gnu-objdump -d -j .text square_arm64.o | grep mul
 # 0:   1b007c00    mul w0, w0, w0
 ```
 
-`1b007c00`, four bytes. Now, let's look at that `ret`:
+`1b007c00` — four bytes. Now that `ret`:
 
 ```asm
 # 4:   d65f03c0    ret
 ```
 
-`d65f03c0`, which is also four bytes. Both instructions are exactly four bytes in length. This means the instruction decoder's job is particularly simple; the fetch stage simply fetches a fixed four bytes at a time, without needing to perform any length checks. The elegance of this design becomes even more apparent when we compare it to x86.
+`d65f03c0`, also four bytes. Two instructions, both exactly four bytes. This means the instruction decoder's job is dead simple: the fetch stage grabs a fixed four bytes every time, with no length judgment at all. Why this design is elegant becomes even clearer after the comparison with x86.
 
-## Variable-Length Instructions in x86
+## x86's Variable-Length Instructions
 
-Compiling the same function for x86-64:
+The same function, compiled for x86-64:
 
 ```bash
 g++ -O2 -c square.cpp -o square_x64.o
@@ -251,19 +251,19 @@ square(int):
     6:   c3                      ret
 ```
 
-The key point here is the byte length of the instructions:
+The interesting part is the byte length of each instruction:
 
-- `imul` instruction: `0f af ff`, three bytes
-- `mov` instruction: `89 f8`, two bytes
-- `ret` instruction: `c3`, one byte
+- the `imul` instruction: `0f af ff`, three bytes
+- the `mov` instruction: `89 f8`, two bytes
+- the `ret` instruction: `c3`, one byte
 
-Three instructions, three different lengths: 3, 2, and 1. If we change the multiplication syntax, for example to `imul eax, edi`, the machine code becomes `0f af c7`. It is still three bytes long, but the suffix differs from the previous `imul` instruction (`ff` vs `c7`) due to different operand encoding. If we switch to another scenario, such as using an immediate number as the multiplier, the instruction length changes again.
+Three instructions, three lengths: 3, 2, 1. Swap in a different spelling of the multiply, say `imul eax, edi`, and its machine code is `0f af c7` — still three bytes, but with a different suffix from the imul above (`ff` vs `c7`), because the operands encode differently. Change the scenario again — say the multiplier is an immediate — and the length changes once more.
 
-"Variable-length instructions" are not just a textbook concept. If we count bytes in a hex dump, we discover that the CPU's front-end must read the first few bytes of every instruction to determine its actual length before it can decide where the next instruction begins. The x86 decoder is notoriously complex. To solve this problem, Intel packed the CPU with extensive pre-decoding logic and a micro-op cache, essentially using brute-force hardware to compensate for the historical baggage of the instruction set design.
+"Variable-length instructions" is not just some textbook concept. Count bytes against the hex dump and it becomes obvious: every time the CPU front end fetches an instruction, it has to read the first few bytes to figure out how long this instruction even is before it can decide where the next one starts. x86's decoder is famously complicated; Intel has stuffed enormous amounts of pre-decode logic and micro-op caches into the CPU — essentially using hardware brute force to compensate for the instruction set's historical baggage.
 
-## RISC-V Fixed-Length Instructions
+## RISC-V's Fixed-Length Instructions
 
-Let's look at RISC-V (rv64gc):
+Now take a look at RISC-V (rv64gc):
 
 ```bash
 riscv64-linux-gnu-g++ -O2 -c square.cpp -o square_rv64.o
@@ -276,51 +276,51 @@ square:
     4:   8082        ret
 ```
 
-Just like with ARM, `a0` serves as both the first parameter and the return value, so the semantics of `mul a0, a0, a0` are identical. However, there is a detail here: the `mul` instruction is four bytes (`02b50533`), whereas the `ret` instruction is only two bytes (`8082`). The base RISC-V instructions are fixed-length four bytes, but the architecture supports the 16-bit Compressed Extension (RVC), so common instructions like `ret` are compressed into two bytes. This represents a compromise between fixed-length and variable-length encoding, making it much more predictable than the "totally unpredictable" variable length of x86.
+Just like ARM, a0 is both the first argument and the return value, and `mul a0, a0, a0` means exactly the same thing. One detail, though: the `mul` instruction is four bytes (`02b50533`), but the `ret` instruction is only two (`8082`). RISC-V's base instructions are fixed-length four-byte, but it supports a 16-bit compressed-instruction extension (RVC), so common instructions like `ret` get squeezed down to two bytes. It is a compromise between fixed and variable length — still far more orderly than x86's "completely unpredictable" variability.
 
-## Number of Operands: Not All Instructions Are So Regular
+## Operand Counts: Not Every Instruction Is That Tidy
 
-At this point, you might think that instructions are just "opcode + a few operands," which seems quite neat. However, looking at more assembly reveals that reality is far less beautiful.
+At this point one might think an instruction is just "opcode + a few operands" — nice and uniform. Read more assembly, though, and reality turns out far less pretty.
 
-The `mul` and `imul` instructions we saw earlier are typical three-operand instructions (destination + source1 + source2), or two-operand instructions (where the destination is also source1). But many instructions don't follow this pattern at all. Zero-operand instructions are the simplest, like `ret` and `nop`, which require no extra information. Single-operand instructions are also common, such as various jump instructions. We just looked at double and triple-operand instructions.
+The `mul` and `imul` seen above are classic three-operand instructions (destination + source1 + source2), or two-operand (destination doubling as source1). But plenty of instructions simply refuse to follow the template. Zero-operand instructions are the simplest — `ret`, `nop` — needing no extra information at all. One-operand instructions are common too, all the jump instructions for instance. Two-operand and three-operand ones we just saw.
 
-What is truly confusing, however, is "implicit operands." For example, in x86 there is a `rep stosb` instruction. Its function is to "repeatedly write the value in the AL register to the memory pointed to by RDI (or EDI), incrementing RDI/EDI automatically after each write, with the repeat count controlled by RCX (or ECX)." AL, RDI/EDI, RCX/ECX—you don't see any of these three operands in the instruction text; they are all implicit, hardcoded into the instruction definition. Anyone reading the assembly must remember which registers this instruction uses by default. The "number of operands" for such instructions is actually quite hard to define.
+What genuinely confuses people are "implicit operands". x86 has an instruction `rep stosb`, whose job is "repeatedly write the value of the AL register to the memory pointed to by RDI (or EDI); after each write RDI/EDI increments automatically; the repeat count is controlled by RCX (or ECX)". AL, RDI/EDI, RCX/ECX — not one of these three operands appears anywhere in the instruction text; all of them are implicit, hard-coded into the instruction's definition. Whoever reads the assembly has to remember which registers that instruction uses by default. The "operand count" of such an instruction is genuinely hard to define.
 
 ## Intel's Historical Baggage
 
-The problem of implicit operands makes x86 a "heavyweight" zone. The reason isn't complicated: the x86 instruction set evolved from the 8086 in 1978 to today's x86-64, spanning over 40 years. Each generation of new CPUs had to add new features on top of the old instruction set while maintaining backward compatibility—machine code written for an 8086 in 1985 will still run on a CPU in 2026. This constraint sounds wonderful, but the cost is that the instruction set has become increasingly bloated and irregular. The encoding space for new instructions is occupied by old instructions, so various prefix bytes must be used for expansion, making decoding logic increasingly complex.
+When it comes to implicit operands, x86 is the "hardest-hit zone". The reason is not complicated: this instruction set started with the 8086 in 1978 and has evolved all the way to today's x86-64, through more than forty years. Each new CPU generation has to add new things on top of the old instruction set while staying backward compatible — 8086 machine code written in 1985 still runs on a 2026 CPU. That constraint sounds wonderful, but the price is an instruction set that grows ever more bloated and irregular. With the encoding space crowded out by old instructions, new ones can only extend through various prefix bytes, and the decoding logic grows ever more complicated.
 
-Does this situation sound familiar? C++'s backward compatibility issues are practically identical—when we write C++26 code today, the compiler still has to handle C89-style declarations, C-style casts, and various legacy features. Whenever someone suggests "let's delete this old feature," the answer is always "no, it will break existing code." So, we carry this baggage and move forward.
+Sound familiar? C++'s backward-compatibility trouble is a carbon copy of this: writing C++26 code today, the compiler still has to digest C89-style declarations, C-style casts, and all manner of historical remains. Every time someone proposes "let's finally delete such-and-such old feature", the answer is forever "no — it would break existing code". And so the load gets carried forward.
 
-By comparison, ARM and RISC-V are much cleaner. ARM64 was designed around 2011 (AArch64) and can be considered a "clean room implementation"—it doesn't carry the historical baggage of 32-bit ARM and redesigned a set of instruction encodings. RISC-V is even more of an academic project started from scratch in 2010, with excellent orthogonality in its instructions: the same opcode format can be used by simply changing the register number. There are no maddening rules like "this instruction implicitly uses EAX, that one implicitly uses EDX."
+By contrast, ARM and RISC-V are refreshingly unburdened. ARM64 was designed around 2011 (AArch64), effectively a "clean-room" implementation — a freshly designed instruction encoding that does not carry 32-bit ARM's historical baggage. RISC-V, even more so, started from zero as an academic project in 2010, and the orthogonality of its instructions is superb: the same opcode format serves everywhere — change the register numbers and off you go. None of those maddening "this instruction implicitly uses EAX, that one implicitly uses EDX" rules.
 
-## Register Naming: The Origin of the A Register
+## Register Naming: Where the A Register Came From
 
-We've been talking about names like EAX, W0, and a0, but have you ever thought about why x86 registers have these strange names? There is historical meaning behind these names.
+We have been tossing around EAX, W0, and a0 all along — but has it ever occurred to you why x86's registers carry these strange names? There is history behind those names.
 
-There is a register in x86 called A (Accumulator). In the era of the 8080 or even the earlier 8008, the A register was "the default register"—many operations targeted A by default without needing to specify it in the instruction. For example, an addition instruction encoding for "add a value to A" is shorter than "add a value to B," because A is the "default target," saving the bits needed to specify the destination register.
+One x86 register is named A (Accumulator). Back in the 8080 era, and even earlier on the 8008, the A register was "the default register" — many operations targeted A implicitly, with no need to spell it out in the instruction. For addition, the encoding of "add some value onto A" was shorter than the encoding of "add some value onto B", because A was the "default destination" — the few bits that would name the destination register were saved.
 
-This design philosophy has continued into x86. Today, writing `imul edi, edi` versus `imul ebx, ebx` might result in longer machine code for the latter (depending on the specific encoding), because EAX (or RAX) remains a "privileged register" in many instructions—it is the implicit default target for many instructions and a fixed participant in certain special operations (for example, the high bits of the double-precision result of `mul` are placed in EDX).
+That design idea carries straight through into x86 today. Write `imul edi, edi` now, swap it to `imul ebx, ebx`, and the machine code may come out longer (depending on the exact encoding), because EAX (or rather RAX) remains the "privileged register" in many instructions — the default destination of implicit instructions and a fixed participant in certain special operations (for one-operand `mul`, for instance, the high half of the double-precision result lands in EDX).
 
-Many tutorials say "try to use EAX." This isn't a mysterious optimization trick; it's a "privilege" granted at the instruction set encoding level—using the A register can make instructions shorter and decoding faster. Of course, on modern CPUs, this difference has been largely smoothed out by various microarchitectural optimizations, but understanding this background makes those implicit operand instructions seem less baffling.
+Tutorials love to say "prefer EAX whenever possible". That is not some mystical optimization trick — it is a favor granted at the instruction-encoding level: using the A register can mean a shorter instruction and potentially a faster decode. Of course, on modern CPUs microarchitectural optimizations have flattened most of this difference, but with this background in mind, those implicit-operand instructions stop looking inexplicable.
 
-At this point, we have thoroughly gone through "what a simple function call looks like at the assembly level": from how parameters are passed and return values are placed, to instruction encoding differences across architectures, and finally the historical origins of register naming. Each step isn't complicated, but when viewed together, the entire system connects.
-
----
+At this point, "what a simple function call actually looks like at the assembly level" has been traced end to end: how arguments travel, where return values sit, how instruction encodings differ across architectures, and where register names come from. No single step is hard; but pieced together and viewed as a whole, the entire system connects.
 
 ---
 
-# Understanding Where Function Parameters Go—From Register Naming to ABI
+---
 
-When looking at assembly code generated by Compiler Explorer, the biggest psychological barrier is often not the instructions themselves, but the messy register names. RAX, EAX, AX, AL, AH—are these one thing or four things? Once you understand the x86 register layout, this problem is easily solved.
+# Figuring Out Where Function Arguments Actually Go: from Register Naming to the ABI
 
-## First, Clarify the Relationship Between RAX, EAX, and AX
+When reading the assembly code that Compiler Explorer generates, the biggest psychological barrier is often not the instructions themselves but the chaotic register names. RAX, EAX, AX, AL, AH — is that one thing, or four? Once x86's register layout is sorted out, the question dissolves on its own.
 
-Let's go back to the most fundamental question: What is a register? You can think of it as a small row of ultra-high-speed storage slots inside the CPU, very limited in quantity. In the 8-bit era, the most core register was the A register, or Accumulator, around which most arithmetic operations revolved. Later, CPUs evolved from 8-bit to 16-bit, 32-bit, and 64-bit. The width of this register increased, but its "status" remained unchanged—it is always the general-purpose register bearing the brunt of computational tasks.
+## First, Sort Out What RAX, EAX, and AX Actually Are
 
-The key point is: When you see RAX, you are looking at a 64-bit value. But when you see EAX, you are not looking at another register, but at the **lower 32 bits of the same register**. Similarly, AX is the lower 16 bits, AL is the lowest 8 bits, and AH is the second lowest 8 bits (bits 8-15). They all point to the same physical storage, just "sliced" using different names.
+Back to the most fundamental question: what is a register? Think of it as a small row of ultra-fast storage slots inside the CPU, very limited in number. In the 8-bit era, the most central one was the A register — the Accumulator — around which most arithmetic revolved. As CPUs evolved from 8 to 16, 32, and 64 bits, this register's width grew along with them, but its "status" never changed — always that general-purpose workhorse carrying the main computation.
 
-A simple diagram illustrates this:
+The key point: when we see RAX, we are seeing a 64-bit value. But when we see EAX, we are not seeing a different register — we are seeing **the low 32 bits of the same register**. Likewise, AX is the low 16 bits, AL the lowest 8, and AH the second-lowest 8 (that is, bits 8-15). They all point at the same physical storage, just "sliced" under different names.
+
+A simple diagram to illustrate:
 
 ```text
 63                              31        15  7    0
@@ -331,69 +331,69 @@ A simple diagram illustrates this:
 +--------------------------------+----------+----+----+
 ```
 
-So, when we see code like this in assembly, there is no need to panic:
+So when we see code like this in assembly, there is no need to panic:
 
 ```asm
-mov rax, rdi      ; 把 64 位参数放进 rax 做计算
-shr rax, 32       ; 右移 32 位
-mov eax, eax      ; 只保留低 32 位作为返回值
+mov rax, rdi      ; put the 64-bit argument into rax for computation
+shr rax, 32       ; shift right by 32 bits
+mov eax, eax      ; keep only the low 32 bits as the return value
 ```
 
-Here, we switch from `rax` to `eax`. This isn't about shuffling data between two registers; rather, the compiler is saying, "The calculation is done, and now we only care about the lower 32 bits." Type information from the C++ source code (for example, a parameter being `int64_t` but the return value being `int32_t`) is directly reflected in the assembly by using different names for the same register. Once the high-level type information is stripped away, it "lingers" in the assembly in this manner.
+Switching from rax to eax here is not data being shuffled between two registers — it is the compiler saying "the computation is done, only the low 32 bits matter now". The type information in the C++ source (say, an `int64_t` parameter but an `int32_t` return value) maps directly onto which name of the same register the assembly uses. Once type information disappears, this is how it "survives" in the assembly.
 
-## Those oddly named registers, and some easy-to-remember new friends
+## The Oddly Named Registers, and the Easy-to-Remember Newcomers
 
-Once we understand the naming convention of `RAX`, we might wonder: what about the others? `RAX`, `RCX`, `RDX`, `RSP`, `RBP`, `RSI`, `RDI`... these names seem completely arbitrary. They are all legacy names inherited from ancient times: A for Accumulator, C for Counter, D for Data, SP for Stack Pointer, BP for Base Pointer, and SI/DI for Source and Destination Index. Knowing the historical background makes them slightly easier to remember, but mostly, it relies on muscle memory built through repeated use.
+With RAX's naming pattern decoded, the natural next question is: what about all the others? RAX, RCX, RDX, RSP, RBP, RSI, RDI... There is no pattern whatsoever. They are all historical names inherited from antiquity: A is the accumulator, C is the counter, D is data, SP is the stack pointer, BP is the base pointer, and SI and DI are the source index and destination index respectively. Knowing the history makes them a little easier to remember, but to a large extent it still comes down to muscle memory built through repeated use.
 
-However, there is good news: when AMD extended the architecture from 32-bit to 64-bit, the eight new general-purpose registers were simply named `R8` through `R15`. Clean and simple. So, x86-64 now has a total of 16 general-purpose registers: eight with historically quirky names, and eight with clean numeric designations.
+There is one piece of good news, though: when AMD widened the architecture from 32 to 64 bits, the eight new general-purpose registers were simply named R8 through R15. Clean and done. So x86-64 now has sixteen general-purpose registers in total: eight with weird legacy names, eight with tidy numeric labels.
 
-Of course, there are also SIMD/multimedia registers (like `XMM`/`YMM`/`ZMM`), but those are a whole different topic. For now, let's focus on general-purpose registers and function calls.
+There are also the SIMD/multimedia registers (XMM/YMM/ZMM and the like), but those are a whole other topic — today we stay focused on general-purpose registers and function calls.
 
-## Which register holds function arguments?
+## Which Register Holds Which Function Argument
 
-One of the biggest confusions when reading assembly is this: we write a function and pass three arguments, but the assembly shows a bunch of `mov` instructions shuffling data between registers. Where do these arguments actually come from? This brings us to the ABI (Application Binary Interface).
+One of the biggest confusions in reading assembly: we write a function, pass three arguments into it, and in the assembly it turns into a pile of mov instructions shuffling things between registers. Where do the arguments come from? That is where the ABI (Application Binary Interface) comes in.
 
-The ABI specifies many things, but from the perspective of reading assembly, we care most about one thing: **which registers hold the first few function arguments**. Once we know this, we can trace how C++ variables manifest in the assembly.
+The ABI specifies a great deal, but from a reading-assembly standpoint, exactly one thing matters: **which register holds each of the first few arguments**. Know that, and we can trace what any C++ variable turned into in the assembly.
 
-Take Linux (System V AMD64 ABI) as an example. The first six integer arguments (including pointers) are placed in these registers, in order:
+Take Linux (the System V AMD64 ABI). The first six integer arguments (pointers included) go, in order, into these registers:
 
 ```text
-第 1 个参数 → RDI
-第 2 个参数 → RSI
-第 3 个参数 → RDX
-第 4 个参数 → RCX
-第 5 个参数 → R8
-第 6 个参数 → R9
+1st argument → RDI
+2nd argument → RSI
+3rd argument → RDX
+4th argument → RCX
+5th argument → R8
+6th argument → R9
 ```
 
-Any parameters beyond the first six must be pushed onto the stack and accessed via stack pointer offsets. When we use `std::forward` for perfect forwarding, if there are many parameters, we will see extensive stack manipulation in the assembly. This is because forwarding may "unroll" the parameters, causing the count to suddenly exceed the capacity of the six registers.
+Arguments beyond six can only be pushed onto the stack, accessed through stack-pointer offsets. When using `std::forward` for perfect forwarding with a particularly large number of arguments, the assembly will show heavy stack traffic, because forwarding can "expand" the arguments — and the count instantly exceeds what six registers can hold.
 
-Return values are simpler: they are uniformly placed in RAX (for 128-bit return values, RDX and RAX are combined).
+Return values are simpler: uniformly placed in RAX (a 128-bit return value uses RDX:RAX stitched together).
 
-Floating-point parameters are slightly more complex; they use a separate set of registers (XMM0 through XMM7), but the basic logic is the same—the first few go in registers, and the rest go on the stack.
+Floating-point arguments are slightly more involved — they go through a separate register set (XMM0 through XMM7) — but the basic idea is the same: the first several travel in registers, the overflow goes on the stack.
 
-## Windows Rules Are Different
+## Windows Plays by Different Rules
 
-If we use MSVC on Windows, the situation is different. The Windows x64 ABI provides only four registers for passing parameters:
+On Windows with MSVC, things look different. The Windows x64 ABI allots only four registers for passing arguments:
 
 ```text
-第 1 个参数 → RCX
-第 2 个参数 → RDX
-第 3 个参数 → R8
-第 4 个参数 → R9
+1st argument → RCX
+2nd argument → RDX
+3rd argument → R8
+4th argument → R9
 ```
 
-Note that the order and naming differ from Linux. This means that for the same function, the first six arguments are passed entirely in registers on Linux, whereas on Windows, the fifth and sixth arguments are already pushed onto the stack. When debugging performance issues across platforms, the same C++ code generates completely different assembly on both sides, which is often caused by ABI differences.
+Note that both the order and the names differ from Linux. This means that the very same function keeps all six arguments in registers on Linux, while on Windows the fifth and sixth are already being pushed onto the stack. When debugging performance issues across platforms, the same C++ code producing completely different assembly on each side is often exactly this ABI divergence at work.
 
-This difference actually has a subtle impact on API design. Knowing that only four registers are available on Windows, we tend to be more conservative with the number of parameters when designing high-frequency interfaces. However, we will expand on this topic when we encounter specific scenarios later.
+This difference actually has a subtle influence on API design, too: knowing that only four registers are available on Windows nudges us toward keeping parameter counts tight on frequently called interfaces. But let's expand on that when a concrete scenario shows up.
 
-## Let's Verify
+## Verify It Yourself
 
-Theory without practice is empty. Let's write a simple function and throw it into Compiler Explorer to see:
+All talk and no action gets us nowhere — drop the simplest function into Compiler Explorer and see:
 
 ```cpp
-// 编译选项：-O1 -m64
-// 平台：x86-64 Linux (GCC)
+// Compile options: -O1 -m64
+// Platform: x86-64 Linux (GCC)
 
 long add_three(long a, long b, long c) {
     return a + b + c;
@@ -409,9 +409,9 @@ add_three(long, long, long):
     ret
 ```
 
-Look, `a` is in `RDI`, `b` is in `RSI`, and `c` is in `RDX`. This perfectly matches the rules we discussed. The return value is in `RAX`. Clean and simple.
+See? a is in RDI, b in RSI, c in RDX — exactly matching the rules we described. The return value is in RAX. Clean.
 
-Let's try another example with more than six arguments:
+Now try one with more than six arguments:
 
 ```cpp
 long sum_seven(long a, long b, long c, long d,
@@ -420,7 +420,7 @@ long sum_seven(long a, long b, long c, long d,
 }
 ```
 
-The assembly turns out like this:
+The assembly becomes:
 
 ```asm
 sum_seven(long, long, long, long, long, long, long):
@@ -429,37 +429,37 @@ sum_seven(long, long, long, long, long, long, long):
     add rax, rcx               ; + d
     add rax, r8                ; + e
     add rax, r9                ; + f
-    add rax, QWORD PTR [rsp+8] ; + g，从栈上取！注意偏移 +8，因为 [rsp] 是 call 压入的返回地址
+    add rax, QWORD PTR [rsp+8] ; + g, fetched from the stack! Note the +8 offset: [rsp] holds the return address pushed by call
     ret
 ```
 
-The first six parameters are in RDI, RSI, RDX, RCX, R8, and R9, while the seventh parameter, `g`, ends up on the stack, accessed via `[rsp+8]` (the `call` instruction pushed the return address onto `[rsp]`, so the first stack parameter requires an offset of 8 bytes). Once we understand the ABI rules, reading assembly feels like having a map; it's no longer a page full of gibberish.
+The first six arguments sit in RDI, RSI, RDX, RCX, R8, and R9 respectively, while the seventh argument, g, has gone to the stack, accessed through `[rsp+8]` (the `call` instruction pushed the return address at `[rsp]`, so the first stack argument is offset by 8 bytes). With the ABI rules known, reading assembly is like having a map — no more wall of gibberish.
 
-## A Quick Note on ARM64
+## A Word on ARM64
 
-If you have used ARM64 (such as Apple Silicon or in embedded development), things are much cleaner over there. The general-purpose registers are simply named X0 through X30, without any historical baggage. Function parameters are just X0, X1, X2, and so on, with the return value in X0. If you want to look at the 32-bit version, just replace X with W; for example, W0 is the low 32 bits of X0. The naming logic follows the same思路 as x86's RAX/EAX, but the names are much easier to remember.
+If you have touched ARM64 (on Apple Silicon or in embedded work), that side is far cleaner. The general-purpose registers are simply called X0 through X30 — no historical baggage. Function arguments just march down X0, X1, X2..., with the return value in X0. Want the 32-bit view? Swap X for W: W0 is the low 32 bits of X0. The naming logic is the same idea as x86's RAX/EAX, but the names are far easier to remember.
 
-At this point, we have thoroughly clarified register naming and parameter passing rules. If you feel confused seeing `rax` one moment and `eax` the next in assembly code, it is simply because you didn't realize they are just accessing different widths of the same register. Once you understand this, things feel much more settled. Next, with this foundation in place, we can look at more complex assembly patterns.
+At this point, register naming and the argument-passing rules are fully untangled. Feeling dizzy at the alternating rax and eax in assembly came from not knowing that it is the same register being sliced at different widths. Understanding that brings real peace of mind. Next, we take this foundation into more complex assembly patterns.
 
 ---
 
-# RISC-V Register Naming — From Numbers to Semantics
+# RISC-V Register Naming: from Numbers to Semantics
 
-When reading RISC-V assembly, opening the disassembly window reveals a screen full of `t0`, `a7`, `s1`, and `ra`. It looks similar to the x86 set of `rax`, `rbx`, and `rcx`, appearing to be a bunch of letter abbreviations that require rote memorization. However, once you truly understand it, you will find that RISC-V register naming is not arbitrary abbreviation at all—it directly tells you what the register **is supposed to do**. Once you understand the calling convention semantics behind the naming, you can derive these names yourself.
+When reading RISC-V assembly, opening the disassembly pane reveals a screen full of `t0`, `a7`, `s1`, `ra` — which looks just like x86's `rax`, `rbx`, `rcx`: apparently a heap of letter abbreviations to rote-memorize. But once it truly clicks, RISC-V's register naming turns out to be anything but arbitrary abbreviation — it tells us outright what the register **is for**. Understand the calling-convention semantics behind the names, and the names can be derived on the spot.
 
-## Start with the Most Basic Numbering
+## Start from the Basic Numbering
 
-RISC-V has a total of 32 general-purpose registers, numbered from `x0` to `x31`. Note that there are 32, not 31—`x0` is indeed a register that exists, except it is hardwired to 0. Writing anything to it results in 0, and reading from it always yields 0. This design may seem superfluous at first glance, but when writing inline assembly, you will find that having the constant zero directly available as an operand saves many `mov` instructions.
+RISC-V has thirty-two general-purpose registers in total, numbered `x0` through `x31`. Note: thirty-two, not thirty-one — `x0` really is an existing register; it is just hard-wired to zero. Write anything into it and the result is zero; read it and it is always zero. This design looks superfluous at first glance, but when writing inline assembly, having a constant zero directly usable as an operand saves quite a few `mov` instructions.
 
-Then there is the issue of bit width. RISC-V registers are 64-bit (under the RV64G standard), and the numbers `x0` through `x31` correspond to the full 64-bit values. If you only need to operate on the low 16 bits, you can simply use a mask like `0xFFFF` to perform an AND operation; there is no need for separate 16-bit register aliases as in some architectures. This is quite clean, as there is no need to switch back and forth between register names of different widths.
+Then there is the question of width. RISC-V registers are 64-bit (the RV64G standard), and the numbers `x0` through `x31` correspond to full 64-bit values. If only the low 16 bits are needed, just mask with `0xFFFF` — no separate 16-bit register aliases like some architectures have. Quite refreshing: no hopping back and forth between register names of different widths.
 
-The previous discussion covered `x0` to `x30`, but actually, all 32 registers from `x0` to `x31` must be discussed. Among them, `x1` is special; it is `ra` (Return Address), which will be discussed in detail later. In any case, with 32 registers laid out, it is much more intuitive than the heavily burdened naming scheme of x86-64—x86 general-purpose register names are inherited from the 16-bit era, `rax` is an extension of `a`, and `r8` to `r15` were hard-added later; the entire system lacks any rhyme or reason.
+The text above said `x0` through `x30`, but really all 32 registers, `x0` through `x31`, deserve mention. Among them `x1` is special — it is `ra` (Return Address), which we will cover in detail later. Either way, thirty-two registers laid out plainly beat x86-64's baggage-laden naming — x86's general-purpose register names were inherited all the way from the 16-bit era, `rax` grew out of `a`, `r8` through `r15` were bolted on later, and the whole scheme has no pattern to speak of.
 
-## What Exactly Are Those Aliases?
+## So What Exactly Are Those Aliases
 
-Here is the key. When actually writing assembly or viewing disassembly output, you will almost never see pure numeric identifiers like `x0` to `x31`. Compilers and disassemblers rename every register, replacing them with semantic names. Seeing a bunch of things starting with `t`, `s`, and `a` might feel like a set of conventions requiring rote memorization, but as long as you understand the calling convention, you can derive these names yourself.
+Here comes the key. When actually writing assembly or reading disassembly output, the pure numeric names `x0` through `x31` almost never appear. Compilers and disassemblers have renamed every register, swapping in names with semantics. A wall of things starting with `t`, `s`, and `a` feels like a convention to memorize, but once the calling convention is understood, these names derive themselves.
 
-Let's look at a simple example, a RISC-V 64-bit target compiled with GCC 16.1.1:
+Take a simple example, a RISC-V 64-bit target compiled with GCC 16.1.1:
 
 ```cpp
 // test.cpp
@@ -469,13 +469,13 @@ long add(long a, long b, long c, long d,
 }
 ```
 
-Build command:
+The compile command:
 
 ```bash
 riscv64-linux-gnu-g++ -O1 -S test.cpp -o test.s
 ```
 
-Let's look at the generated assembly:
+The assembly output:
 
 ```asm
 add:
@@ -486,22 +486,22 @@ add:
     add a0, a0, a5    # a0 += a5
     add a0, a0, a6    # a0 += a6
     add a0, a0, a7    # a0 += a7
-    ld  a1, 0(sp)     # 第9个参数在栈上，加载到 a1
-    add a0, a0, a1    # a0 += 栈上的参数
+    ld  a1, 0(sp)     # the 9th argument is on the stack; load it into a1
+    add a0, a0, a1    # a0 += the stack-passed argument
     ret
 ```
 
-See? The first eight arguments are placed in `a0` through `a7`, and the return value is also placed in `a0`. The `a` stands for Argument, so `a0` through `a7` are argument registers, while `a0` doubles as the return value register. This is much easier to memorize than the x86 convention of "RDI for the first argument, RSI for the second, RDX for the third."
+See it? The first eight arguments sit in `a0` through `a7`, and the return value also goes in `a0`. `a` stands for Argument: `a0` through `a7` are the argument registers, and `a0` doubles as the return-value register. Far friendlier than x86's scattered "RDI holds the first argument, RSI the second, RDX the third" naming.
 
-## T Registers and S Registers — The Core of the Calling Convention
+## T and S Registers: the Heart of the Calling Convention
 
-Once we understand the `a` registers, the rest follows logically. Registers starting with `t` are **Temporary** registers, totaling seven from `t0` to `t6` (specific mappings are listed later). Registers starting with `s` are **Saved** (callee-saved) registers, totaling 12 from `s0` to `s11`.
+With the `a` registers sorted, the rest falls into place naturally. The `t`-prefixed ones are Temporary registers, `t0` through `t6`, seven in total (the exact mapping gets a table shortly). The `s`-prefixed ones are Saved (callee-saved) registers, `s0` through `s11`, twelve in total.
 
-These two concepts are easily confused. A common pitfall is storing an intermediate value in `t0`, calling another function, and finding the value in `t0` has changed upon return, causing the program to crash. This is because `t` registers are caller-saved—**if you store something in `t0` and then call another function, you must save it to the stack beforehand**. The called function is free to use `t0` and makes no guarantees about preserving its value.
+These two concepts are easily mixed up. A classic pitfall: store an intermediate value in `t0`, call another function, come back to find `t0` changed and the program flying off the rails. That is because `t` registers are caller-saved — **if we store something in `t0` and then call another function, we must save it to the stack ourselves beforehand**, because the callee is free to use `t0` however it likes and guarantees nothing about its value.
 
-`s` registers work the opposite way; they are callee-saved. If a function uses `s1`, it must restore `s1` to the value the caller expects before returning. In other words, the caller can safely store data in `s1`, call other functions, and the value in `s1` is guaranteed to remain when execution returns.
+The `s` registers are precisely the reverse: callee-saved. If a function uses `s1`, it must restore `s1` to the value the caller expects before returning. In other words, the caller may confidently keep something in `s1` across a call, and the value will still be there when it comes back.
 
-Let's verify this with an intuitive code example:
+Here is a concrete code example to verify:
 
 ```cpp
 // caller.cpp
@@ -511,8 +511,8 @@ long caller() {
     register long temp __asm__("t0") = 42;
     register long saved __asm__("s1") = 99;
     long result = callee();
-    // temp 可能已经被 callee 破坏了
-    // saved 一定还是 99
+    // temp may already have been clobbered by callee
+    // saved is guaranteed to still be 99
     return temp + saved + result;
 }
 ```
@@ -520,9 +520,9 @@ long caller() {
 ```cpp
 // callee.cpp
 extern "C" long callee() {
-    // 故意写 t0，这是合法的
+    // deliberately writes t0 — this is perfectly legal
     register long t0_val __asm__("t0") = 0;
-    // 故意写 s1，但必须恢复
+    // deliberately writes s1 — but it must be restored
     register long s1_val __asm__("s1") = 0;
     __asm__ volatile("" : "=r"(t0_val) : "0"(t0_val));
     __asm__ volatile("" : "=r"(s1_val) : "0"(s1_val));
@@ -530,37 +530,37 @@ extern "C" long callee() {
 }
 ```
 
-After compiling and running this, we will see that the value of `temp` indeed changes upon return in `caller`, while `saved` remains 99. This demonstrates the power of the calling convention.
+Compile and run, and it turns out exactly as promised: back inside `caller`, the value of `temp` has indeed changed, while `saved` is still 99. Such is the power of the calling convention.
 
-## Complete Mapping Table
+## The Full Mapping Table
 
-The speaker mentioned he puts a sticky note in the bottom-left corner of his monitor, and many people do the same. However, once we understand the naming logic, there is actually no need to memorize this table—we can derive it if we understand the principles. For convenience, the complete mapping is listed below as a cheat sheet:
+The speaker says he keeps sticky notes in the bottom-left corner of his monitor, and plenty of people do the same. But once the naming logic clicks, this table actually does not need memorizing — understand it and it derives itself. For convenience, though, here is the complete mapping as a cheat sheet:
 
 | Number | ABI Name | Meaning | Calling Convention |
-|--------|----------|---------|--------------------|
-| x0   | zero   | Hardwired to zero | — |
-| x1   | ra     | Return address | Caller-saved |
-| x2   | sp     | Stack pointer | Callee-saved |
-| x3   | gp     | Global pointer | — |
-| x4   | tp     | Thread pointer | — |
-| x5-x7 | t0-t2 | Temporaries | Caller-saved |
-| x8   | s0/fp  | Saved register / Frame pointer | Callee-saved |
-| x9   | s1     | Saved register | Callee-saved |
-| x10-x17 | a0-a7 | Arguments / Return values | Caller-saved |
-| x18-x27 | s2-s11 | Saved registers | Callee-saved |
-| x28-x31 | t3-t6 | Temporaries | Caller-saved |
+|------|--------|------|----------|
+| x0   | zero   | hard-wired to zero | — |
+| x1   | ra     | return address | caller-saved |
+| x2   | sp     | stack pointer | callee-saved |
+| x3   | gp     | global pointer | — |
+| x4   | tp     | thread pointer | — |
+| x5-x7 | t0-t2 | temporaries | caller-saved |
+| x8   | s0/fp  | saved register / frame pointer | callee-saved |
+| x9   | s1     | saved register | callee-saved |
+| x10-x17 | a0-a7 | arguments / return values | caller-saved |
+| x18-x27 | s2-s11 | saved registers | callee-saved |
+| x28-x31 | t3-t6 | temporaries | caller-saved |
 
-`t` stands for temporary—use and discard; `s` stands for saved—must be preserved; `a` stands for arguments; `ra` remembers where we came from; and `sp` manages the stack. Every name tells you its responsibility.
+`t` is use-and-toss scratch, `s` is keep-it-safe, `a` is carry-the-arguments, `ra` is remember-where-we-came-from, and `sp` is mind-the-stack. Every name is telling us its duty.
 
-By the way, if we have used 32-bit ARM before, we will notice that ARM only has 16 general-purpose registers (R0-R15), and arguments can only be placed in four registers (R0-R3); any excess goes entirely on the stack. RISC-V has 32 registers, including 8 argument registers, 7 temporary registers, and 12 callee-saved registers. With more registers, the number of push and pop operations during function calls is reduced, resulting in tangible performance benefits.
+As an aside: anyone who has used 32-bit ARM before will recall that ARM has only sixteen general-purpose registers (R0-R15), with arguments fitting into just R0-R3 and everything else going through the stack. RISC-V has thirty-two registers — eight argument registers alone, plus seven temporaries and twelve callee-saved ones. More registers means fewer pushes and pops around function calls, and the performance benefit is rock solid.
 
-## Implicit Arguments — The `this` Pointer and Return Value Optimization
+## Implicit Arguments: the this Pointer and Return Value Optimization
 
-At this point, we might think parameter passing is just `a0` through `a7`, which is simple. But there is one easily overlooked issue: for C++ member functions, where is the `this` pointer stored?
+At this point, argument passing may look solved — `a0` through `a7`, simple. But there is one easily overlooked question left: for C++ member functions, where does the `this` pointer go?
 
-The `this` pointer is simply an implicit first parameter. On RISC-V Linux, it is placed in `a0`, the first declared "real" parameter is placed in `a1`, and so on. This is consistent with the convention on x86-64 Linux (where `this` goes in RDI and the first argument goes in RSI).
+The `this` pointer is simply an implicit first argument. On RISC-V Linux, it travels in `a0`; the first declared "real" argument then goes in `a1`, and so on down the line. This is the same arrangement as on x86-64 Linux (where `this` takes RDI and the first argument takes RSI).
 
-A simple verification code:
+A simple piece of verification code:
 
 ```cpp
 struct Foo {
@@ -568,21 +568,21 @@ struct Foo {
     long bar(long y) { return x + y; }
 };
 
-// 编译后看汇编，bar 的签名等价于：
+// Looking at the assembly after compiling, bar's signature is equivalent to:
 // long Foo_bar(Foo* this, long y)
 // a0 = this, a1 = y
 ```
 
 ```asm
 _ZN3Foo3barEl:
-    ld    a0, 0(a0)     # 从 this->x 加载值到 a0
+    ld    a0, 0(a0)     # load the value from this->x into a0
     add   a0, a0, a1    # a0 += y
     ret
 ```
 
-It is crystal clear that `a0` initially holds the `this` pointer, which is then immediately overwritten by the value of `this->x`, and finally, `y` from `a1` is added before returning.
+Crystal clear: `a0` starts out holding the `this` pointer, is immediately overwritten with the value of `this->x`, and finally the `y` from `a1` is added before returning.
 
-However, there are even more complex scenarios. If you write code like this:
+But there are trickier cases. Suppose we write this:
 
 ```cpp
 struct Big {
@@ -597,11 +597,11 @@ Big make_big(long a, long b) {
 }
 ```
 
-`Big` is 32 bytes and cannot fit into a single register. When the compiler performs return value optimization (RVO/NRVO), it does not actually construct a `Big` object inside the function and then copy it out. Instead, it reserves space in the **caller's stack frame**, and passes the address of this space as an implicit parameter to the callee. On RISC-V, this implicit parameter is placed in `a0`, while the declared first parameter `a` is shifted to `a1`, and the second parameter `b` is in `a2`.
+`Big` is 32 bytes — it does not fit in a single register. When the compiler performs return value optimization (RVO/NRVO), it does not actually construct a `Big` inside the function and copy it out; instead, it reserves the space **in the caller's stack frame** and passes the address of that space to the callee as a hidden argument. On RISC-V, this hidden argument rides in `a0`; the declared first parameter `a` gets pushed over to `a1`, and the second parameter `b` to `a2`.
 
 ```asm
 _Z9make_bigll:
-    # a0 = 隐式的返回值缓冲区地址
+    # a0 = the hidden return-buffer address
     # a1 = a, a2 = b
     sd    a1, 0(a0)     # result.data[0] = a
     sd    a2, 8(a0)     # result.data[1] = b
@@ -613,18 +613,18 @@ _Z9make_bigll:
 The assembly at the call site looks roughly like this:
 
 ```asm
-    # 调用者在栈上预留 32 字节
+    # the caller reserves 32 bytes on the stack
     addi  sp, sp, -32
-    mv    a0, sp        # 把缓冲区地址作为第一个参数
-    mv    a1, ...       # 真正的参数 a
-    mv    a2, ...       # 真正的参数 b
+    mv    a0, sp        # pass the buffer address as the first argument
+    mv    a1, ...       # the real argument a
+    mv    a2, ...       # the real argument b
     call  _Z9make_bigll
-    # 现在 sp 指向的位置就是构造好的 Big 对象
+    # where sp now points is the constructed Big object
 ```
 
-It can be confusing the first time we see this—why are all the arguments in the wrong positions? The reason is that an implicit pointer parameter is inserted at the very beginning. This is something we would never notice without looking at the assembly, but once we encounter it, not understanding it can lead to a full day of debugging.
+Seeing this for the first time is easily confusing — why is every argument shifted over by one slot? The reason is that a hidden pointer argument was inserted at the very front. This is the kind of thing nobody ever notices without reading the assembly — but once it shows up, not understanding it can eat an entire day of debugging.
 
-At this point, we have completely mastered the RISC-V register naming system. Looking back, it wasn't actually that difficult. The key is to understand the calling convention semantics behind each name, rather than rote-memorizing them as meaningless symbols.
+At this point, RISC-V's register naming system is fully untangled. Looking back, it really was not that hard — the key is to understand the calling-convention semantics behind each name, rather than treating them as meaningless symbols to rote-memorize.
 
 ---
 
@@ -678,5 +678,5 @@ At this point, we have completely mastered the RISC-V register naming system. Lo
 
 ## Further Reading
 
-- To understand what assembly the compiler actually spits out at different optimization levels (`-O0` / `-O2` / `-O3`), see [Volume 7: Compiler Options](../../../../vol7-engineering/02-compiler-options.md).
+- To understand what assembly the compiler actually emits at different optimization levels (`-O0` / `-O2` / `-O3`), see [Volume 7: Compiler Options](../../../../vol7-engineering/02-compiler-options.md).
 - To dive deeper into how SIMD/AVX reshapes assembly output, see [Volume 6: AVX/AVX2 Deep Dive](../../../../vol6-performance/ch04-tuning-by-bottleneck/04-05-simd.md).

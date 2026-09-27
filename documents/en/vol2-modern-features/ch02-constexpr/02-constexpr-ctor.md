@@ -14,7 +14,7 @@ platform: host
 cpp_standard: [11, 14, 17, 20]
 reading_time_minutes: 15
 prerequisites:
-  - 'Chapter 2: constexpr Basics: The Art of Compile-Time Evaluation'
+  - 'constexpr Basics: The Art of Compile-Time Evaluation'
 related:
   - 'consteval and constinit: New Tools for Compile-Time Guarantees'
   - 'Compile-Time Computation in Practice: From Lookup Tables to Compile-Time Strings'

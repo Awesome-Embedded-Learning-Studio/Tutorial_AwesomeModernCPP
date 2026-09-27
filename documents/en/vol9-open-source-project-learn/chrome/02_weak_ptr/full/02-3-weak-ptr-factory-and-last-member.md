@@ -3,17 +3,17 @@ chapter: 1
 cpp_standard:
 - 17
 - 20
-description: "Implementing WeakPtrFactory: the mint, the difference between InvalidateWeakPtrs and AndDoom, and why it must be the last member (a destruction-order argument), plus the composition-vs-inheritance tradeoff."
+description: "Implementing WeakPtrFactory — minting, the difference between InvalidateWeakPtrs and AndDoom, and why it must be the last member (a reverse-destruction-order argument), plus the composition-vs-inheritance tradeoff"
 difficulty: intermediate
 order: 3
 platform: host
 prerequisites:
-- 'weak_ptr hands-on (II): the core skeleton and control block'
-- 'weak_ptr prerequisite (V): template friends and uintptr_t type erasure'
+- 'WeakPtr hands-on (II): the core skeleton and control block'
+- 'WeakPtr prerequisite (V): template friend and uintptr_t type erasure'
 reading_time_minutes: 13
 related:
-- 'weak_ptr hands-on (IV): sequence affinity and lazy binding'
-- 'weak_ptr hands-on (I): motivation and API design'
+- 'WeakPtr hands-on (IV): sequence affinity and lazy binding'
+- 'WeakPtr hands-on (I): motivation and API design'
 tags:
 - host
 - cpp-modern
@@ -21,36 +21,42 @@ tags:
 - 智能指针
 - weak_ptr
 - 内存管理
-title: "weak_ptr hands-on (III): WeakPtrFactory and the last-member idiom"
+title: "WeakPtr hands-on (III): WeakPtrFactory and the last-member idiom"
+translation:
+  source: documents/vol9-open-source-project-learn/chrome/02_weak_ptr/full/02-3-weak-ptr-factory-and-last-member.md
+  source_hash: 1684758694fa21aa6b5bd257d57570eb77af0e56523ff878a03f7e61088b5ec7
+  translated_at: '2026-09-26T02:20:12+00:00'
+  engine: anthropic
+  token_count: 3000
 ---
-# weak_ptr hands-on (III): WeakPtrFactory and the last-member idiom
+# WeakPtr hands-on (III): WeakPtrFactory and the last-member idiom
 
-In [02-2](./02-2-weak-ptr-core-skeleton-and-control-block.md) we hand-rolled a Flag as the raw material for the mint. But honestly, you can't be expected to `new` a Flag yourself every time you want a WeakPtr and then babysit the refcount. That gets old fast. Chromium bundles all that bookkeeping into `WeakPtrFactory<T>`, a small mint that hangs on the observed object: you ask it for WeakPtrs, and when the object is done living, it invalidates every WeakPtr it ever minted in one shot.
+In [02-2](./02-2-weak-ptr-core-skeleton-and-control-block.md) we hand-rolled a Flag as the raw material for minting. But honestly, you can't be expected to `new` a Flag every time you want to hand out a WeakPtr and then babysit the reference count yourself — that would be exhausting. Chromium bundles all that drudgery into `WeakPtrFactory<T>`, a mint attached to the observed object: you want WeakPtrs, it mints them; when the object's time is up, it invalidates every WeakPtr it ever minted in one shot.
 
-This piece builds the factory and then takes on its most famous usage rule, that `WeakPtrFactory<T> weak_factory_{this}` has to be the last member of the class. The idiom looks pedantic on first read. It isn't. It is the line between correct and broken code. The first time I saw it I wondered whether member ordering could really matter for correctness, and it was only after a real bug that I understood why Chromium puts it at the top of the header in an EXAMPLE block. We will work through it with a destruction-order argument.
+In this piece we build the factory, and along the way chew through its most famous rule of use: `WeakPtrFactory<T> weak_factory_{this}` must be declared as the last member of the class. The idiom looks like nitpicking at first glance, but it is in fact the line between using this right and using it wrong. The first time we saw it we wondered whether it really had to be this fussy; only after stepping into the pit ourselves did we understand why they made a point of writing it into the EXAMPLE at the top of the header. We will use reverse destruction order to explain it thoroughly.
 
 ## The Flag inside WeakPtrFactory
 
-The factory holds exactly one thing: a Flag, shared by every WeakPtr minted from it. So internally it wraps a `WeakReferenceOwner`, the issuer and holder of that Flag (`weak_ptr.cc:82-89`):
+The factory holds exactly one thing: a single Flag, shared by every WeakPtr minted from it. So internally the factory wraps a `WeakReferenceOwner` — the Flag's issuer and holder (`weak_ptr.cc:82-89`):
 
 ```cpp
 // Issuer: holds one Flag, responsible for invalidation
 class WeakReferenceOwner {
 public:
-    WeakReferenceOwner() : flag_(make_ref<Flag>()) {}   // mint a fresh Flag on construction
+    WeakReferenceOwner() : flag_(make_ref<Flag>()) {}   // construction mints a fresh Flag
     ~WeakReferenceOwner() {
-        if (flag_) flag_->Invalidate();                 // invalidate all WeakPtrs on destruction
+        if (flag_) flag_->Invalidate();                 // on destruction, invalidates all WeakPtrs
     }
-    WeakReference GetRef() const { return WeakReference(flag_); }   // the mint
+    WeakReference GetRef() const { return WeakReference(flag_); }   // minting
     // ...
 private:
     scoped_refptr<Flag> flag_;
 };
 ```
 
-This reads plainly, but every line is doing work. Construction mints a fresh Flag. `GetRef()` hands back a `WeakReference` pointing at that same Flag each time. The destructor's `flag_->Invalidate()` is the actual detonator. It turns "factory died, all WeakPtrs drop now" into an automatic side effect of the factory's destructor, so you never have to remember to call `invalidate` yourself. My reaction the first time I read this was: that is a genuinely considerate design. It stuffs the step you are most likely to forget into the destruction chain.
+This passage reads plain, but every line has a role to play. The constructor mints a fresh Flag; `GetRef()` spits out a `WeakReference` pointing at that same Flag every time; and the destructor's `flag_->Invalidate()` is the real detonator buried here — it turns "the factory died, so all WeakPtrs go invalid immediately" into an automatic side effect of the factory's destructor, so you never have to remember to call `invalidate` by hand. Our reaction on first reading was: what a worry-free design — it tucks the most easily forgotten step into the destruction chain.
 
-On top of `WeakReferenceOwner`, `WeakPtrFactory<T>` adds exactly one thing: a raw pointer back to the observed object.
+On top of `WeakReferenceOwner`, `WeakPtrFactory<T>` adds exactly one thing — a raw pointer to the observed object:
 
 ```cpp
 // Platform: host | C++ Standard: C++20
@@ -66,13 +72,13 @@ public:
     WeakPtrFactory(const WeakPtrFactory&) = delete;
     WeakPtrFactory& operator=(const WeakPtrFactory&) = delete;
 
-    // Mint: const factory hands out WeakPtr<const T>
+    // Minting: a const factory hands out WeakPtr<const T>
     WeakPtr<const T> get_weak_ptr() const {
         return WeakPtr<const T>(weak_reference_owner_.GetRef(),
                                 reinterpret_cast<const T*>(ptr_));
     }
 
-    // Non-const overload: hands out WeakPtr<T> (pre-04 requires)
+    // Non-const overload: hands out WeakPtr<T> (pre-04's requires)
     WeakPtr<T> get_weak_ptr()
         requires(!std::is_const_v<T>)
     {
@@ -80,7 +86,7 @@ public:
                           reinterpret_cast<T*>(ptr_));
     }
 
-    // Active batch invalidation (object still alive, but you want all WeakPtrs gone)
+    // Active batch invalidation (object still alive, but you want all WeakPtrs invalid)
     void invalidate_weak_ptrs() {
         assert(ptr_);
         weak_reference_owner_.Invalidate();   // invalidate the old Flag + mint a fresh one
@@ -88,7 +94,7 @@ public:
 
     void invalidate_weak_ptrs_and_doom() {
         assert(ptr_);
-        weak_reference_owner_.InvalidateAndDoom();   // invalidate + never mint again
+        weak_reference_owner_.InvalidateAndDoom();   // invalidate + mint no new Flag ever again
         ptr_ = 0;
     }
 
@@ -96,62 +102,62 @@ public:
 
 private:
     internal::WeakReferenceOwner weak_reference_owner_;
-    // ptr_ lives in the non-template base WeakPtrFactoryBase (see pre-05)
+    // ptr_ lives in the non-template base WeakPtrFactoryBase, as uintptr_t (see pre-05)
 };
 
 }  // namespace tamcpp::chrome
 ```
 
-A few spots here are worth calling out, all techniques from the [pre-05](./pre-05-weak-ptr-template-friend-and-uintptr-t.md) piece. `reinterpret_cast<uintptr_t>(ptr)` stores the `T*` as an integer so the member can sink into the non-template base `WeakPtrFactoryBase`, which saves you from regenerating the template body for every `T`. Inside `get_weak_ptr` the reverse `reinterpret_cast<T*>(ptr_)` brings it back. The two `get_weak_ptr` overloads use a member function `requires(!std::is_const_v<T>)` from [pre-04](./pre-04-weak-ptr-concepts-and-requires.md), so const-correctness sits directly on the signature: a const factory produces `WeakPtr<const T>`, a non-const one produces `WeakPtr<T>`, and the split is settled at compile time.
+There are a few spots in this code we specifically want to point out — all of them tricks covered in the [pre-05](./pre-05-weak-ptr-template-friend-and-uintptr-t.md) piece. `reinterpret_cast<uintptr_t>(ptr)` stores the `T*` as an integer so it can sink into the non-template base `WeakPtrFactoryBase`, sparing us from regenerating a copy of the template code for every `T`; inside `get_weak_ptr`, `reinterpret_cast<T*>(ptr_)` converts it back. Then there are the two `get_weak_ptr` overloads, which use the member-function `requires(!std::is_const_v<T>)` from [pre-04](./pre-04-weak-ptr-concepts-and-requires.md) — const correctness hangs right on the signature: a const factory produces `WeakPtr<const T>`, a non-const one produces `WeakPtr<T>`, and the split is crystal clear at compile time.
 
-## invalidate_weak_ptrs vs invalidate_weak_ptrs_and_doom, what's the difference
+## The difference between invalidate_weak_ptrs and invalidate_weak_ptrs_and_doom
 
-The factory exposes two invalidation methods, and from the names alone you may be as puzzled as I was. Aren't both of them just invalidation? The difference hides in one question: after invalidating, can the factory keep minting? Look at the two `WeakReferenceOwner` implementations side by side (`weak_ptr.cc:103-113`):
+The factory offers two invalidation methods, and from the names alone you may be as baffled as we were back then — aren't they both just invalidation? The difference hides in one question: after invalidating, can the factory keep minting? Let's look at the two `WeakReferenceOwner` implementations (`weak_ptr.cc:103-113`):
 
 ```cpp
 void WeakReferenceOwner::Invalidate() {
     assert(flag_);
     flag_->Invalidate();                 // invalidate the old Flag
-    flag_ = make_ref<Flag>();            // mint a fresh one, factory can keep minting
+    flag_ = make_ref<Flag>();            // mint a fresh Flag, the factory can keep minting
 }
 
 void WeakReferenceOwner::InvalidateAndDoom() {
     assert(flag_);
     flag_->Invalidate();                 // invalidate the old Flag
-    flag_.reset();                       // hold no new Flag, factory enters the "doomed" state
+    flag_.reset();                       // hold no new Flag, the factory enters its "dead" state
 }
 ```
 
-The entire difference is the line after invalidating the old Flag. `invalidate_weak_ptrs()` invalidates the old Flag, then immediately `flag_ = make_ref<Flag>()` mints a fresh one. All existing WeakPtrs drop together, but the factory itself is still breathing, and you can call `get_weak_ptr()` again. The new WeakPtrs share the new Flag. This is the right call when an object is entering a new phase and the old observers should clear out, but new observers still need to attach later.
+The whole difference is the single line after the old Flag is invalidated. In `invalidate_weak_ptrs()`, right after invalidating the old Flag, `flag_ = make_ref<Flag>()` mints a fresh one — every existing WeakPtr expires together, but the factory itself is still breathing: you can keep calling `get_weak_ptr()` to mint new ones, and the newly minted WeakPtrs share that new Flag. This fits the scenario of "the object is entering a new phase, the old observers should be retired, but new observers will still attach later".
 
-`invalidate_weak_ptrs_and_doom()` is the meaner sibling. After invalidating the old Flag it does not mint a new one, and it zeroes `ptr_` for good measure. The factory enters a doomed state, and any `get_weak_ptr()` you call after that hands back an invalid result. It is cheaper than the first option by exactly one Flag allocation. The name says it: doom is for the "this object is being retired" cleanup path.
+`invalidate_weak_ptrs_and_doom()` is the harsher one: after invalidating the old Flag it mints no new one, and while at it zeroes out `ptr_` — the factory goes straight into its "dead" state, and any `get_weak_ptr()` call you make afterwards gets an invalid result. It is even cheaper than the previous option, saving even the single Flag allocation. As the name doom suggests, this is for the wrap-up scenario of "this object is thoroughly done being used".
 
-These two show up again in the [02-6](./02-6-weak-ptr-testing-and-perf.md) performance comparison. Truth is, in nine out of ten day-to-day cases you never call either one explicitly. The factory's destructor-time auto-invalidation we are about to cover is enough on its own.
+The difference between these two will make another appearance in the [02-6](./02-6-weak-ptr-testing-and-perf.md) performance comparison. But to tell the truth, in nine out of ten everyday scenarios you will never call either of them explicitly — the factory's automatic destructor-time invalidation we are about to cover is enough on its own.
 
 ---
 
 ## The main event: the last-member idiom
 
-This is the part the piece is really here for. The EXAMPLE block at the top of Chromium's `weak_ptr.h` puts the rule in the most visible spot it can (`weak_ptr.h:22-26`):
+What comes next is the thing this piece truly wants to teach. The EXAMPLE block at the top of Chromium's `weak_ptr.h` puts this rule in the most prominent spot on purpose (`weak_ptr.h:22-26`):
 
 > Member variables should appear before the WeakPtrFactory, to ensure that any WeakPtrs to Controller are invalidated before its members variable's destructors are executed.
 
-In one sentence: declare member variables before `WeakPtrFactory`, and put the factory last. My first thought reading this was, really? Member order affecting correctness? It does. Let's take it apart one piece at a time.
+Translated into one sentence: member variables must be declared before `WeakPtrFactory`, with the factory placed last. When we first read this rule we muttered to ourselves — really? Can member order actually affect correctness? It truly can. Let's take it apart one piece at a time.
 
-### First, a foundation: C++ destroys members in reverse order
+### First, the groundwork: C++ destroys in reverse order
 
-This is a basic C++ rule, but it is easy to lose track of when you are working with WeakPtr. When an object is destroyed, its members are destroyed in the reverse of declaration order. The first declared dies last; the last declared dies first. So if `WeakPtrFactory` is declared last, it is destroyed first. Put it at the front and it becomes the last thing destroyed. Hold onto that word, reverse. The whole argument below rides on it.
+This is a basic C++ rule, but one that is easy to forget when working with WeakPtr: when an object is destroyed, its members are destroyed in the **reverse** of declaration order — the first declared dies last, the last declared dies first. So if `WeakPtrFactory` is the last-declared member, it is destroyed **first**; conversely, if you put it at the very front, it becomes the one destroyed **last**. Keep this "reverse order" in mind — the whole argument below rides on it.
 
-### Another foundation: factory destruction = invalidate all WeakPtrs
+### Another piece of groundwork: factory destruction = invalidating all WeakPtrs
 
-That `flag_->Invalidate()` inside `WeakReferenceOwner::~WeakReferenceOwner()` is the key. The moment the factory is destroyed, every WeakPtr it ever minted drops. In other words, when the factory dies determines when all its WeakPtrs become invalid.
+That `flag_->Invalidate()` line inside `WeakReferenceOwner::~WeakReferenceOwner()` from earlier is the key — the moment the factory is destroyed, every WeakPtr it minted expires along with it. Put differently, "when the factory dies" directly determines "when all the WeakPtrs become invalid".
 
-### Stack the two: why the factory has to go last
+### Stack the two: why the factory must go last
 
-Put those two facts together and the conclusion writes itself. Say `Controller` has a few ordinary members plus a factory. Let's write both declaration orders and compare:
+Put those two facts together and the conclusion pops out on its own. Suppose `Controller` has a few ordinary members plus a factory, and let's deliberately write out both declaration orders for comparison:
 
 ```cpp
-// ✗ Wrong order: factory first
+// ✗ Wrong order: factory at the front
 class BadController {
 public:
     void on_work_done() { /* uses buf_ */ }
@@ -170,39 +176,39 @@ private:
 };
 ```
 
-Take `BadController` first. Destruction walks in reverse: `buf_` dies, then `weak_factory_` gets its turn, and only then does it remember to invalidate the WeakPtrs. The problem is the window between those two events. `buf_` is already gone, but every WeakPtr is still cheerfully "valid". If an async task holding one of those WeakPtrs dereferences the `Controller` right then, it sails into `on_work_done()` and slams into a destroyed `buf_`. UAF, clean and inevitable. I once chased an intermittent ASAN red on a setup exactly like this, and member order was the root cause.
+Look at the `BadController` counterexample first. Destruction walks in reverse: `buf_` dies first, and only then is it `weak_factory_`'s turn — only then does anyone remember to invalidate all the WeakPtrs. The problem lives in the window between those two events: `buf_` is already destroyed, yet every WeakPtr is still cheerfully "valid". And if, precisely in that window, some async task holding a WeakPtr dereferences the `Controller`, it strolls straight into `on_work_done()` and slams headfirst into the already-destroyed `buf_`. A use-after-free, guaranteed. Back in the day we chased an intermittent ASAN report in a similar scenario, and the root cause was exactly this ordering.
 
-`GoodController` flips the order. `weak_factory_` is declared last, so it is destroyed first, and the moment it dies it invalidates every WeakPtr. Only after that does `buf_` get destroyed. By the time `buf_`'s destructor runs, no "valid" WeakPtr can reach it from outside. A late dereference gets a `nullptr` at worst. Safe.
+`GoodController` flips the order: `weak_factory_` is declared last, so it is destroyed first, and the instant it is destroyed every WeakPtr is invalidated; only after that does `buf_` get its turn to die. By the time `buf_` actually begins its destruction, no "valid" WeakPtr on the outside can reach it anymore — a later dereference gets at most a `nullptr`. Safe.
 
-The last-member idiom, in one line: let the factory die before the other members, and lean on its destructor-time invalidation to cover the rest of the members through their own destruction.
+The last-member idiom boils down to this one sentence: let the factory be destroyed before the other members, and borrow that one automatic invalidation at its destruction to shield the other members through their own destruction windows.
 
-### One edge worth pinning down: it guards the member destruction window, not the destructor body
+### One easy-to-trip boundary: it guards the member destruction window, not the destructor body
 
-There is a detail I want to nail down here because it trips people up the most. We confirmed it specifically when we were doing the verification pass. Putting the factory last guards the member destruction window. It does not stop you from using WeakPtrs inside the object's own destructor body. Spread the timeline out:
+There is a detail we specifically want to make clear here, because it is the easiest one to misjudge — we confirmed it deliberately during our verification pass. Putting the factory last shields the **member destruction window**; it does **not** stop you from using WeakPtrs inside the object's own destructor body. Let's spread the timeline out:
 
 ```text
 GoodController destruction:
-  ① destructor body runs (all members still alive, WeakPtrs still valid)
+  ① destructor body runs (all members still alive at this point, WeakPtrs still valid)
   ② members destroyed in reverse order:
        weak_factory_ destroyed first → all WeakPtrs invalidated  ← the gate fires here
        buf_        destroyed after
 ```
 
-So during ①, while the destructor body is running, WeakPtrs are still valid. This is the intuitive behavior. Inside the destructor body you often want to touch sibling members (notifying observers "I'm on my way out", say), and having WeakPtrs still valid there is the convenient choice. The actual invalidation happens once member destruction begins at ②. The point is to guarantee that any dereference after this point cannot reach a half-destroyed member. Chromium's source comments do not spell this boundary out. I read it off the code, and you should keep it in mind so you do not later assume "WeakPtrs invalidate the instant the object enters destruction". That misread will cost you.
+In other words, during ①, while the destructor body is executing, the WeakPtrs are still valid. That actually matches intuition — inside the destructor body you often still want to reference the object's other members (to notify observers "I'm on my way out", say), and having WeakPtrs valid at that point is convenient. The real invalidation happens after ② begins member destruction, and its purpose is precisely to ensure that any later deref can never touch a half-destroyed member. Chromium's source comments do not spell this boundary out; we derived it ourselves while reading the code. Note it down, so that you don't someday misjudge by assuming "the moment an object enters destruction, its WeakPtrs immediately go invalid".
 
 ---
 
 ## Why Chromium kept only the composition path
 
-If you grep current `//base`, there is exactly one blessed way to get a WeakPtr: stuff a `WeakPtrFactory<Controller> weak_factory_{this}` member into `Controller`. That is the carrier of the last-member idiom, and Chromium picked it for a reason. You control the invalidation timing, it works on types you do not own (you can go as far as `WeakPtrFactory<bool>`), and it does not pollute the inheritance chain.
+Search all of Chromium's current `//base` and you will find exactly one official way to obtain a WeakPtr: stuff a `WeakPtrFactory<Controller> weak_factory_{this}` member into `Controller`. That is the carrier of the last-member idiom, and Chromium chose it for good reasons — you decide when invalidation happens, it can target types other than the class itself (at the extreme, even `WeakPtrFactory<bool>` is fine), and it doesn't pollute the inheritance chain.
 
-There used to be an inheritance-based variant, `SupportsWeakPtr<T>`. Inherit from it and you got a `GetWeakPtr()` for free. Sounds more convenient, right? It nudged people toward unsafe patterns, and Chromium eventually pulled it out of `//base`. Today `grep SupportsWeakPtr weak_ptr.h` comes back empty. I bring it up only because you will run into the name in old code and old docs and it helps to know what it was. New code uses composition. Once you understand the composition form, the old mechanism is just the factory hidden in a base class. Same idea underneath.
+Historically there was also an inheritance-based `SupportsWeakPtr<T>` — inherit from it and you got a `GetWeakPtr()` for free. Sounds more convenient, right? But it led people toward unsafe usage, and Chromium eventually moved it out of `//base` altogether; today grepping `SupportsWeakPtr` in `weak_ptr.h` comes up empty. We mention it for one reason only: so that you don't freeze up when you bump into the name in old code or old docs. New code always goes the composition route, and once you understand composition, that old mechanism is nothing more than the factory hidden inside a base class — no difference in essence.
 
 ---
 
-## Rewriting the 02-1 hazard with the factory
+## Rewriting the 02-1 pitfall with the factory
 
-Talk is cheap. Let's rewrite the dangling-callback scenario from [02-1](./02-1-weak-ptr-motivation-and-api-design.md) with the factory we just built, and watch it close the UAF hole:
+All talk and no practice gets us nowhere, so let's rewrite the dangling-callback scenario from [02-1](./02-1-weak-ptr-motivation-and-api-design.md) with the factory we just built, and watch how it plugs the UAF hole dead:
 
 ```cpp
 // Platform: host | C++ Standard: C++20
@@ -221,7 +227,7 @@ public:
     ~Controller() = default;
 private:
     std::vector<int> buf_;                                  // declared first
-    WeakPtrFactory<Controller> weak_factory_{this};         // last member!
+    WeakPtrFactory<Controller> weak_factory_{this};         // the last member!
 };
 
 int main() {
@@ -233,25 +239,25 @@ int main() {
         wp = c.get_weak();
         std::cout << (wp ? "alive" : "dead") << '\n';       // alive
         if (wp) wp->on_work_done(7);                        // got 7, buf size=1
-    }   // c leaves scope: weak_factory_ destroyed first → wp invalidates → buf_ destroyed after
+    }   // c leaves scope: weak_factory_ destroyed first → wp invalidated → only then is buf_ destroyed
 
     std::cout << (wp ? "alive" : "dead") << '\n';           // dead
     if (wp) {
-        wp->on_work_done(8);                                // does not enter here
+        wp->on_work_done(8);                                // never gets in here
     } else {
-        std::cout << "controller gone, skip\n";             // takes this branch
+        std::cout << "controller gone, skip\n";             // this branch runs
     }
     return 0;
 }
 ```
 
-Run it and the output lands in order: `alive`, then `got 7, buf size=1`, then `dead`, then `controller gone, skip`. The line to watch is the last one. After `Controller` is destroyed, `wp` has already auto-invalidated, and the `if (wp)` gate turns away the access to the destroyed object. The dangling callback from 02-1, the one that gave us headaches, is closed off entirely by the factory's destructor-time invalidation. You did not write a single line of defensive code.
+Let's run it and see. The output pops out in order: `alive` → `got 7, buf size=1` → `dead` → `controller gone, skip`. Keep your eyes on the last line — after `Controller` is destroyed, `wp` has already auto-invalidated, and the `if (wp)` gate turns away any access to the destroyed object. The dangling callback that gave us such a headache in 02-1 is plugged for good right here by the factory's destructor-time automatic invalidation, without you writing a single line of defensive code.
 
-That gathers the core WeakPtr mechanisms into one place: the mint, invalidation, and the dereference gate. There is one usage contract we have been circling around without stating directly: dereferencing and invalidating a WeakPtr must happen on the same sequence it was bound on. That contract deserves a straight treatment, and we will also cover the factory's lazy sequence binding along the way. Next piece.
+At this point WeakPtr's core mechanisms — minting, invalidation, and the dereference gate — are all in place. But there is one usage contract we have kept circling without stating head-on: **dereferencing and invalidating a WeakPtr must happen on the same sequence it was bound on**. That contract deserves a straight-up treatment, and we will cover the factory's lazy sequence binding along the way. See you in the next piece.
 
 ## References
 
 - [Chromium `base/memory/weak_ptr.h` — WeakPtrFactory and the top-of-file EXAMPLE](https://source.chromium.org/chromium/chromium/src/+/main:base/memory/weak_ptr.h)
 - [Chromium `base/memory/weak_ptr.cc` — WeakReferenceOwner](https://source.chromium.org/chromium/chromium/src/+/main:base/memory/weak_ptr.cc)
-- [weak_ptr hands-on (II): the core skeleton and control block](./02-2-weak-ptr-core-skeleton-and-control-block.md)
-- [weak_ptr prerequisite (V): template friends and uintptr_t type erasure](./pre-05-weak-ptr-template-friend-and-uintptr-t.md)
+- [WeakPtr hands-on (II): the core skeleton and control block](./02-2-weak-ptr-core-skeleton-and-control-block.md)
+- [WeakPtr prerequisite (V): template friend and uintptr_t type erasure](./pre-05-weak-ptr-template-friend-and-uintptr-t.md)

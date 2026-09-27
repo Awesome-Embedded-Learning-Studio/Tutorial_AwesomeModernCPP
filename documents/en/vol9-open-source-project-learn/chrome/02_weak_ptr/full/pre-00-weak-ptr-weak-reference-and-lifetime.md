@@ -4,16 +4,16 @@ cpp_standard:
 - 11
 - 14
 - 17
-description: "From the ownership-vs-lifetime dilemma to what weak references actually solve: how std::weak_ptr works, its four limits, and what Chromium's WeakPtr wants to be"
+description: "Starting from the ownership-versus-lifetime dilemma: what problem weak references actually solve, how std::weak_ptr works and its four limits, and what Chromium's WeakPtr wants to be"
 difficulty: intermediate
 order: 0
 platform: host
 prerequisites:
-- 'OnceCallback hands-on (IV): the cancellation token'
+- 'OnceCallback hands-on (IV): designing the cancellation token'
 reading_time_minutes: 11
 related:
 - 'WeakPtr hands-on (I): motivation and API design'
-- 'WeakPtr prerequisite (I): intrusive refcounting and scoped_refptr'
+- 'WeakPtr prerequisite (I): intrusive reference counting and scoped_refptr'
 tags:
 - host
 - cpp-modern
@@ -22,188 +22,193 @@ tags:
 - 内存管理
 - weak_ptr
 title: "WeakPtr prerequisite (0): weak references and the lifetime puzzle"
+translation:
+  source: documents/vol9-open-source-project-learn/chrome/02_weak_ptr/full/pre-00-weak-ptr-weak-reference-and-lifetime.md
+  source_hash: 794aca9bc62695b2587fdbbd0eaa9cbd82486f4e0d1d823dbc721d4d2f5b2e4c
+  translated_at: '2026-09-26T01:21:37+00:00'
+  engine: anthropic
+  token_count: 6400
 ---
 # WeakPtr prerequisite (0): weak references and the lifetime puzzle
 
-In [OnceCallback hands-on (IV): the cancellation token](../../01_once_callback/full/01-4-once-callback-cancellation-token.md) we hand-rolled an atomic flag. Zero while the object is alive, flipped to 1 right before destruction, glanced at before the callback runs, no-op if set. The dangling problem went away. But the more we sat with it, the more something else bugged us: who owns that flag? How long does it live? How does the callback actually get hold of it? The tail we waved off back then is the most stubborn kind of problem in C++, lifetime and ownership.
+In [OnceCallback hands-on (IV): designing the cancellation token](../../01_once_callback/full/01-4-once-callback-cancellation-token.md) we hand-rolled an atomic flag: 0 while the object was alive, flipped to 1 right before destruction, glanced at before the callback ran, and a well-behaved no-op once set. The dangling problem was gone, but the more we turned it over afterwards, the less it sat right: who exactly owns that flag? How long does it live? And how does the callback get a firm grip on it? The tail we waved off in one sentence back then is precisely the most stubborn class of problems in C++ — lifetime and ownership.
 
-Object A wants to reference object B without extending B's life, and still be able to ask at any moment whether B is still around. This piece unpacks that: how the standard library's `std::weak_ptr` handles it, why it falls short for async callbacks, and why Chromium rolled its own `WeakPtr` from scratch.
+Object A wants to reference object B without extending B's life, and still wants to know at any moment whether B is alive. This piece takes that apart: how the standard library's `std::weak_ptr` copes, why it comes up short in async callbacks, and why Chromium saw fit to roll its own `WeakPtr` from scratch.
 
 ---
 
-## Lifetime: two ends of an ownership spectrum
+## Lifetime: the two ends of the ownership spectrum
 
-Zoom all the way out first. "A references B" in C++ sits on an ownership spectrum with two clean extremes and a whole lot of empty space in between. What we're hunting for is a foothold somewhere in that middle.
+Let's pull the camera all the way back first. In C++, "A references B" sits at two extremes on the ownership spectrum, with a wide empty stretch in between — what we're hunting for is some foothold in the middle.
 
-### Strong reference: to reference is to keep alive
+### Strong references: holding one extends the life
 
-`std::shared_ptr<T>` is the canonical strong reference. It expresses shared ownership: as long as one `shared_ptr` points at B, B cannot die; when the last one leaves, B gets destructed.
+`std::shared_ptr<T>` is the canonical strong reference. It expresses shared ownership: as long as one `shared_ptr` still points at B, B is not allowed to die; only when the last one leaves is B destroyed.
 
 ```cpp
-auto sp = std::make_shared<Foo>();  // refcount = 1
+auto sp = std::make_shared<Foo>();  // reference count = 1
 {
-    std::shared_ptr<Foo> sp2 = sp;  // refcount = 2
-}   // sp2 leaves, refcount back to 1, Foo survives
-// sp still around, Foo still alive
+    std::shared_ptr<Foo> sp2 = sp;  // reference count = 2
+}   // sp2 leaves, the count drops back to 1, Foo lives on
+// sp is still here, Foo is still alive
 ```
 
-The rule is safe. The cost is real, too: anyone who takes a `shared_ptr` gets a hand in B's lifespan. Say A is a timer and B is the business object A holds a reference to so it can call B's method when the timer fires. What happens if A takes a `shared_ptr<B>`? As long as the timer hangs around, B can never be destructed, even when business logic says B should be gone. A meant to borrow B for a moment and ended up co-owning it. The ownership graph gets muddy, and everyone who later reasons about lifetimes has to squint.
+The rules are safe, but the price is honest: whoever takes a `shared_ptr` gets a hand in B's lifespan. Picture A as a timer and B as a business object, with A holding a reference to B so it can call B's method when the timer fires. What happens if A holds a `shared_ptr<B>`? As long as the timer stays scheduled, B can never be destroyed — even when business semantics say B should have left long ago. A only meant to "borrow it for a bit", and ended up "co-owning" it. The ownership graph is muddied, and everyone who later has to reason about lifetimes pays for it with a frown.
 
-### Raw pointer: owns nothing, and doesn't notice when the other side is gone
+### Raw pointers: no ownership, and no warning when the target dies
 
-At the other end is the raw pointer `T*`. It stays entirely out of ownership; B's fate is none of A's business, use it if you want it. Light, yes. Dangerous, also yes:
+On the other end sits the raw pointer `T*`. It stays entirely out of ownership: whether B lives or dies is none of A's business — use it whenever you like. Feather-light, and just as hair-raising:
 
 ```cpp
 Foo* p = obj;
-obj = nullptr;       // somewhere else destructed the object
-p->do_something();   // dangling pointer, undefined behavior, likely a segfault
+obj = nullptr;       // someone elsewhere destroyed the object
+p->do_something();   // dangling pointer, undefined behavior, most likely a segfault
 ```
 
-Note the real problem with raw pointers is not "doesn't extend lifetime", which is exactly what we want. The problem is that it has no way to express "and I still want to check whether the other side is alive." A pointer is an address, and an address doesn't go blank when the object is destroyed. `p` is still `p`, pointing at memory that may already be occupied by some other object. Access it and you get a use-after-free.
+Note that the raw pointer's sin is not "doesn't extend the lifetime" — that is exactly what we asked for. The sin is that it has no way whatsoever to express "but I'd still like to confirm the other side is alive". A pointer is just an address, and an address doesn't turn null because the object was destroyed. `p` is still the same `p`, while the memory it aims at may long since have been taken over by some other object — one touch and it's a use-after-free.
 
 ### What we actually want
 
-Lay the two extremes side by side and what we want becomes clear, somewhere in the middle of the spectrum:
+Put the two extremes on the table, and what we want comes into focus — somewhere in the middle of the spectrum:
 
-> Doesn't own, so it doesn't extend lifetime; but the slip of paper in your hand can still tell you whether the other side is gone.
+> No ownership, so no extended lifetime; but the slip in hand can still tell whether the other side has left.
 
-That is a weak reference: it observes liveness without taking part in the ownership count. The standard library ships `std::weak_ptr`, but it carries nontrivial baggage; Chromium wrote its own `WeakPtr` in `//base`. The job of this series is to take both apart, understand them, and finally hand-build a teaching version ourselves.
+That is a weak reference: it only observes liveness and takes no part in the ownership count. The standard library ships `std::weak_ptr`, but it carries no small amount of baggage; Chromium wrote a separate `WeakPtr` in `//base`. This series takes both apart until they make sense, and then we hand-roll a teaching version of our own.
 
 ---
 
 ## std::weak_ptr: the standard library's weak reference
 
-`std::weak_ptr` entered the standard library in C++11. It has a hard rule: you can only construct it from a `shared_ptr`. You cannot conjure up a `weak_ptr` that points at a stack object or a bare `new`'d object.
+`std::weak_ptr` entered the standard library with C++11. It has one hard rule: it can only be constructed from a `shared_ptr`; you cannot conjure a `weak_ptr` out of thin air pointing at a stack object or a bare object from `new`.
 
-The rule grows out of its mechanism. A `shared_ptr` internally points not only at a raw pointer but also at a separate heap block called the control block, which holds the reference counts. A `weak_ptr` shares that same control block but increments a separate counter, the weak reference count.
+The rule grows out of its mechanism. Inside a `shared_ptr` there is more than a bare pointer: it also points at a piece of heap memory called the control block, where the reference counts live. A `weak_ptr` shares that same control block, but travels on its own separate counter, the weak count.
 
 ```mermaid
 flowchart TB
     SP["shared_ptr"]
     WP["weak_ptr"]
-    CB["control block (on heap)<br/>strong count = 1<br/>weak count = 1<br/>ptr to Foo"]
-    Foo["Foo (on heap)"]
+    CB["control block (on the heap)<br/>strong count = 1<br/>weak count = 1<br/>ptr to Foo"]
+    Foo["Foo (on the heap)"]
     SP --> CB
     WP --> CB
     CB --> Foo
 ```
 
-Here's the crux: `weak_ptr` doesn't bump the strong count, so it has no say in when Foo destructs. But it does bump the weak count, and that keeps the control block itself alive. That's where the weak reference picks up its distinctive trick: even after the object destructs, it can still answer "is the object gone yet."
+Here is the crux: a `weak_ptr` doesn't increase the strong count, so it has no hand in when Foo is destroyed; but it does increase the weak count, and that keeps the control block itself lingering alive. This earns the weak reference one trick nobody else has: after the object is destroyed, it can still answer "is the object gone yet?"
 
-### Three core operations
+### The three core operations
 
 ```cpp
 auto sp = std::make_shared<Foo>();
-std::weak_ptr<Foo> wp = sp;   // constructed from shared_ptr, doesn't bump strong count
+std::weak_ptr<Foo> wp = sp;   // constructed from the shared_ptr, does not increase the strong count
 
-wp.use_count();   // how many strong refs are left
-wp.expired();     // equivalent to use_count() == 0, has the object destructed?
+wp.use_count();   // how many strong references are left
+wp.expired();     // equivalent to use_count() == 0, has the object been destroyed
 auto locked = wp.lock();  // try to upgrade back to a shared_ptr
 ```
 
-`expired()` tells you whether the object is dead; `lock()` tries to promote the weak reference into a strong one. If the object is still alive it hands you a valid `shared_ptr`; if it's already gone it hands you a null one.
+`expired()` tells you whether the object is dead; `lock()` nudges the weak reference toward a strong one — if the object is alive it hands you a valid `shared_ptr`, and if it's already gone you get an empty one.
 
 ### Why you must use lock(), not expired() plus construction
 
-The most natural way for a newcomer to write it is also the easiest way to crash:
+The most natural way for a newcomer to write it is this — and it is also the easiest way to end up in a ditch:
 
 ```cpp
 std::weak_ptr<Foo> wp = sp;
-// ... somewhere else might release sp ...
+// ... someone else may have released sp ...
 
 if (!wp.expired()) {
-    // wp isn't expired here?
-    sp->do_something();   // wrong! sp may have been released between expired() and this line
+    // wp hasn't expired here?
+    sp->do_something();   // wrong! sp may have been released after expired() but before this line
 }
 ```
 
-The instant `expired()` returns `false` the object is genuinely alive. But between you getting that `false` and actually dereferencing, another thread may release the last `shared_ptr` and trigger destruction. This is the textbook TOCTOU (time-of-check-to-time-of-use) race: the moment you check and the moment you use are separated by an open window.
+The instant `expired()` returns `false`, the object really is alive; but between your getting that `false` and actually dereferencing, another thread may drop the last `shared_ptr` and trigger the destructor. This is the textbook TOCTOU (time-of-check-to-time-of-use) race: a window stands open between the moment you check and the moment you use.
 
-The fix is `lock()`. It packs "is it alive" and "promote to a strong reference" into a single atomic operation. Either you get a `shared_ptr` that guarantees the object is alive, or you get a null one. No gap in between:
+The correct fix is `lock()`: it packs "check liveness" and "upgrade to a strong reference" into a single atomic operation. Either you get a `shared_ptr` that guarantees the object is alive, or you get an empty one — no seam in between:
 
 ```cpp
 if (auto locked = wp.lock()) {
-    locked->do_something();   // locked holds a strong count, object guaranteed alive
+    locked->do_something();   // locked now holds a strong count, the object is guaranteed alive
 }
 ```
 
-This step is the lifeline of safe `weak_ptr` use, and it's worth digesting: `lock()` folds the liveness check and the lifetime extension into one atomic op. Chromium's `WeakPtr` takes a different route. It doesn't extend lifetime at all, it only checks liveness, so it doesn't lean on `lock()`'s "check-plus-extend atomicity" to close the TOCTOU window. Instead it throws down a sequence contract: deref and invalidate must land on the same sequence, and within a sequence tasks run serially, so the window is gone at the root. We unpack that contract in 02-4 (sequence affinity); for now just plant the impression.
+This step is the lifeblood of using `weak_ptr` safely, so digest it well: `lock()` squeezes the liveness check and the lifetime extension into the same atomic operation. Chromium's `WeakPtr` takes another road: it never extends lifetime at all, it only checks liveness, so it doesn't count on lock()'s "check-and-extend atomically" trick to plug TOCTOU. Instead it throws down a sequence contract — deref and invalidate must land on the same sequence, tasks within a sequence run serially, and the window is gone at the root. We'll unfold that contract in 02-4 (sequence affinity); for now, just carry the impression.
 
 ---
 
 ## make_shared and the control block: a counterintuitive memory detail
 
-There's a detail worth stopping on here, because it leads straight into the "intrusive vs non-intrusive refcounting" question that motivates the next piece. We'll just plant the seed now.
+At this point one detail deserves a pause, because it leads straight into "intrusive vs non-intrusive reference counting" — the core motivation of the next piece — so let's plant the seed here.
 
-`std::shared_ptr`'s control block is non-intrusive: a separate heap allocation, living apart from the object. So a single `std::shared_ptr<Foo>(new Foo)` is really two heap allocations under the hood, one for Foo and one for the control block.
+`std::shared_ptr`'s control block is non-intrusive: a separate block of heap memory living apart from the object. So behind the single statement `std::shared_ptr<Foo>(new Foo)` there are actually two heap allocations — one for Foo, one for the control block.
 
 ```cpp
 std::shared_ptr<Foo> sp1(new Foo);   // two heap allocations: Foo + control block
-auto sp2 = std::make_shared<Foo>();   // one heap allocation: Foo and control block packed together
+auto sp2 = std::make_shared<Foo>();   // one heap allocation: Foo and the control block packed together
 ```
 
-`std::make_shared` fuses the object and the control block into a single heap allocation, which is the main reason it's faster than `shared_ptr(new)`. But that optimization drags out a counterintuitive side effect: as long as one `weak_ptr` points at it, the entire block (including the chunk the object occupied) is never released, even after the object has long since destructed.
+`std::make_shared` squeezes the object and the control block into the same heap allocation, done in one shot — the main reason it beats `shared_ptr(new)` on speed. But this optimization drags out a counterintuitive side effect: as long as one `weak_ptr` still points at it, the whole block of memory (the part the object occupied included) is never returned, even long after the object has been destroyed.
 
 ```cpp
 std::weak_ptr<Foo> wp;
 {
     auto sp = std::make_shared<Foo>();   // one allocation: control block + Foo
     wp = sp;
-}   // sp leaves, Foo destructs, but the control block survives because wp is still around
-// Foo's destructor has run, but the memory it occupied is still pinned, because the control
-// block is packed together with it
-auto sp2 = wp.lock();   // returns an empty shared_ptr, the object is indeed gone
-// but that make_shared block only gets released once wp itself is destroyed
+}   // sp leaves, Foo is destroyed, but the control block stays because wp is still around
+// Foo's destruction has already run, yet the memory it occupied still hangs there, because the control block is packed with it
+auto sp2 = wp.lock();   // returns an empty shared_ptr — the object is truly gone
+// but the make_shared allocation is only truly returned once wp is destroyed too
 ```
 
-Why? The control block has to outlive every `weak_ptr` (otherwise `weak_ptr` couldn't safely query `expired()`), and `make_shared` chose to bundle the control block and the object into one allocation. Object destruction is not the same as memory release. In a scenario where the `weak_ptr` lives long, you end up dragging along a chunk of "dead but still occupied" memory.
+Why? The control block has to outlive every `weak_ptr` (otherwise a `weak_ptr` couldn't safely query `expired()`), and `make_shared` insists on tying the control block and the object into one household. Object destroyed does not mean memory returned; in scenarios where the `weak_ptr` lives long, you end up dragging around a chunk of memory that is dead through and through yet still squatting there.
 
-This isn't a `weak_ptr` bug. It's the fallout of two design choices stacked together: a non-intrusive control block plus `make_shared`'s fused allocation. But it is a real cost, and Chromium's `WeakPtr` sidesteps it with intrusive refcounting. More on that in the next piece.
-
----
-
-## Four limits of std::weak_ptr in async / callback scenarios
-
-Zoom back in, to the scenario this series actually cares about: async callbacks and task posting. `std::weak_ptr` is a general, correct design; nobody is disputing that. But drop it into a system built on "post tasks + don't take ownership + serialized execution" and it bumps into you in four places, and each one is a reason Chromium started over.
-
-### Limit one: must pair with shared_ptr, forcing ownership involvement
-
-This one stings the most. `weak_ptr` can only come from a `shared_ptr`, which means: you want a weak reference? First rewrite the object to live behind a `shared_ptr`. But plenty of objects have a natural ownership that isn't shared at all. The object belongs to one owner, and when the owner goes it should go; it doesn't need the whole reference-counting apparatus.
-
-Slap a `shared_ptr` onto an object that has no business being shared and the ownership graph distorts on the spot. What used to be a clean "single owner" becomes "in principle anyone could grab one." Every maintainer who later sees a `shared_ptr` has to stop and wonder: is this a genuine share, or a `shared_ptr` bolted on just to fabricate a `weak_ptr`? That hesitation has a cost you can't see but can definitely feel.
-
-### Limit two: non-intrusive control block brings allocation overhead
-
-Covered in the previous section: `shared_ptr` means either two allocations, or `make_shared`'s single allocation that pins memory. For a weakly referenced object created at high frequency (and callback targets are often exactly that), the overhead is not friendly. Chromium went intrusive: the refcount is baked into the object as a member, one allocation and done. More on that in the next piece.
-
-### Limit three: can't invalidate a batch at once
-
-Say an object is referenced by a dozen callbacks or timers, each clutching a `weak_ptr`. When the object destructs, those dozen `weak_ptr`s should expire together. But `weak_ptr` has no "actively batch-invalidate" move; they expire simply because the object's last `shared_ptr` went away. In other words, invalidation is a side effect driven by the refcount, not an action you can explicitly call.
-
-In pure lifetime management that's fine. But the moment you want to express "the object is still alive, but it has entered a state where it must not be called back anymore," `weak_ptr` has nothing to say. In Chromium that kind of need is mundane; `WeakPtr` handles it (`InvalidateWeakPtrs()`, covered in 02-3).
-
-### Limit four: no sequence affinity
-
-`std::weak_ptr`'s threading model is "atomic operations are themselves safe; whether a dereference needs synchronization is your problem." In generic code that's a reasonable default. But drop it into a Chromium-style engineering discipline where "tasks run on a sequence, and almost every object recognizes exactly one sequence," and that freedom turns into a footgun. It won't remind you that "this object should only be deref'd on a particular sequence." Sooner or later you forget which dereference needed a lock.
-
-Chromium wants the inverse. A weak reference can flow between sequences, but dereference and invalidation must land on the bound sequence, and violations get caught at least in debug builds. That's what `WeakPtr`'s `SEQUENCE_CHECKER` is for, expanded in 02-4.
+This isn't a `weak_ptr` bug — it is what you get when the non-intrusive control block and make_shared's merged allocation stack on top of each other. But it is a real cost, and Chromium's `WeakPtr` sidesteps it with intrusive reference counting; we unfold that in the next piece.
 
 ---
 
-## Chromium's trade: the weak reference it wanted
+## Four limits of std::weak_ptr in async/callback scenarios
 
-Stack the four limits together and Chromium's requirements become about as clear as they can get:
+Zoom back in now, to the scenario this series truly cares about: async callbacks and task posting. `std::weak_ptr` is a general-purpose, correct design — that needs no whitewashing. But stuffed into a system of "task posting + no ownership entanglement + sequenced execution", it pushes back at you in four places, and each one is a reason for Chromium to roll its own.
 
-| Limit of `std::weak_ptr` | What Chromium's `WeakPtr` wants |
+### Limit 1: it must pair with shared_ptr, forcing ownership into the picture
+
+This one is the killer. A `weak_ptr` can only come from a `shared_ptr`, which means: to use weak references at all, first convert the object into `shared_ptr` management. But for many objects the natural ownership is not shared at all — the object belongs to some owner, and when the owner goes it should go; it needs none of the reference-counting sprawl.
+
+Forcing a `shared_ptr` onto an object that was never meant to be shared warps the ownership graph on the spot: a clean-cut "single owner" becomes, in theory, a share anyone could grab. Every maintainer who later glances at that `shared_ptr` has to go on alert — is this genuinely shared ownership, or just pasted on to get a `weak_ptr`? The cost of that hesitation is invisible, but it is real.
+
+### Limit 2: the non-intrusive control block costs an allocation
+
+The previous section already laid this out: `shared_ptr` either costs two allocations, or one with `make_shared` at the price of tying the memory down. For a weakly referenced object created at high frequency (callback targets are often exactly this kind), the overhead is far from friendly. Chromium takes the intrusive route — the reference count is made a member of the object itself, one allocation and done; details in the next piece.
+
+### Limit 3: no way to invalidate a whole batch at once
+
+Picture an object referenced by a dozen-plus callbacks or timers, each clutching its own `weak_ptr`. When the object is destroyed, those `weak_ptr`s should expire as a group — yet `weak_ptr` has no "actively invalidate a batch" move. They do expire, but only because the object's last `shared_ptr` dissolved. In other words, invalidation is a side effect driven by the reference count, not an action you can explicitly call off.
+
+For pure lifetime management there is nothing wrong here. But the moment you want to express "the object is still alive, but it has entered a state where it must not be called back anymore", `weak_ptr` is out of words. In Chromium this need is everyday routine, and `WeakPtr` can do it (`InvalidateWeakPtrs()`, covered in 02-3).
+
+### Limit 4: no sequence affinity
+
+`std::weak_ptr`'s threading model is "the atomic operations themselves are safe; whether the dereference needs synchronization is your call". In general-purpose code that is a sensible default. But dropped into an engineering system like Chromium's — tasks run on sequences, and the overwhelming majority of objects answer to exactly one sequence — that freedom turns into a pit: nothing reminds you "this object may only be deref'd on a certain sequence", and sooner or later you will forget which dereference needed a lock.
+
+Chromium wants it the other way around: weak references may flow between sequences, but dereference and invalidation must land on the bound sequence, and offenders get caught — at least in debug builds. That is precisely the job of `WeakPtr`'s `SEQUENCE_CHECKER`, expanded in 02-4.
+
+---
+
+## Chromium's trade-offs: what kind of weak reference it wants
+
+Stack the four limits together, and Chromium's requirements could not be clearer:
+
+| `std::weak_ptr` limit | What Chromium's `WeakPtr` wants |
 |---|---|
-| Must pair with `shared_ptr` | **Doesn't take ownership**, the object is managed however it was managed, WeakPtr is only an observer |
-| Non-intrusive control block | **Intrusive refcount**, the count is an object member, one allocation |
-| Can't batch-invalidate | **Shared flag**, one factory invalidate drops every WeakPtr together |
-| No sequence affinity | **Sequence-bound**, deref and invalidation must hit the bound sequence, DCHECK in debug |
+| Must pair with `shared_ptr` | **No ownership entanglement** — the object is managed however it was; WeakPtr is only an observer |
+| Non-intrusive control block | **Intrusive reference counting** — the count is an object member, one allocation |
+| No batch invalidation | **Shared flag** — one factory invalidate and every WeakPtr expires together |
+| No sequence affinity | **Sequence binding** — deref/invalidation must happen on the bound sequence, DCHECK'd in debug |
 
-That table is the roadmap for the six hands-on pieces that follow. What we're doing is dropping those four requirements into code, line by line: a `RefCountedThreadSafe` flag (intrusive plus cross-sequence safe), a release/acquire atomic pair (safe visibility across sequences), a `WeakPtrFactory` that carries batch invalidation, and a set of `SEQUENCE_CHECKER` macros standing guard over the sequence contract.
+That table is the roadmap for the six hands-on pieces that follow. What we'll do is land those four things in code, row by row: a `RefCountedThreadSafe` flag (intrusive + safe across sequences), a release/acquire pair of atomic operations (safe visibility between sequences), a `WeakPtrFactory` shouldering batch invalidation, and a set of `SEQUENCE_CHECKER` macros standing guard over the sequence contract.
 
-But before that, a few prerequisites need laying down first: how intrusive refcounting actually works (`scoped_refptr` / `RefCountedThreadSafe`, next piece), atomics and memory order (pre-02), sequences and thread affinity (pre-03), and the concepts plus `TRIVIAL_ABI` that WeakPtr leans on (pre-04 through pre-06). This piece is the "why." Get the requirements straight in your head and every implementation step that follows will clearly show which hole it's filling.
+But before that, several blocks of prerequisite knowledge must be filled in first: what intrusive reference counting really is (`scoped_refptr` / `RefCountedThreadSafe`, next piece), atomic operations and memory order (pre-02), sequences and thread affinity (pre-03), plus the concepts and `TRIVIAL_ABI` that WeakPtr uses (pre-04 through 06). This piece covers the "why": absorb the requirements thoroughly, and in every implementation step that follows you will know which hole it is patching.
 
 ## References
 

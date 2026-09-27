@@ -7,8 +7,8 @@ difficulty: intermediate
 order: 3
 platform: host
 prerequisites:
-- 'Chapter 9: Path Operations: Cross-Platform Path Handling'
-- 'Chapter 9: File and Directory Operations'
+- 'Path Operations: Cross-Platform Path Handling'
+- File and Directory Operations
 reading_time_minutes: 13
 related:
 - 'Lambda Basics: The Elegant Expression of Anonymous Functions'
@@ -19,24 +19,24 @@ tags:
 title: Directory Traversal and Search
 translation:
   source: documents/vol2-modern-features/ch09-filesystem/03-directory-iteration.md
-  source_hash: c693225e24648ad0f731b0f7c9d3dfd2f980b93405825049c04b704163642113
-  translated_at: '2026-09-25T16:30:30+00:00'
+  source_hash: bced9a015615d7a372159667284def1377bd35bf9a1854ef8412e0e5ea2a3b9b
+  translated_at: '2026-09-27T05:19:47+00:00'
   engine: anthropic
-  token_count: 3200
+  token_count: 6800
 ---
-# Directory Traversal and Search: Walking the Directory Tree Recursively
+# Directory Traversal and Search: Recursively Sweeping the Whole Directory Tree
 
-In the previous two articles we learned to handle paths with `path` and to manage files and directories with the file operation functions. In real projects, though, the most common need is actually "find the files I want under this directory." For example: collect all `.cpp` files and hand them to the compiler, find every texture image in an assets directory, or count the total lines of code in a project.
+In the previous two articles we learned how to handle paths with `path` and manage files and directories with the file-operation functions. But in real projects, the most common need is actually "find the files I want under this directory". For example: collect every `.cpp` file and feed them to the compiler, find all the texture images in an assets directory, or count the total lines of code in a project.
 
-C++17 provides two iterators for directory traversal: `directory_iterator` for single-level traversal, and `recursive_directory_iterator` for recursive traversal. In this article we go from basic usage through performance optimization to error handling, until directory traversal holds no more secrets.
+C++17 provides two iterators for directory traversal: `directory_iterator` for single-level traversal, and `recursive_directory_iterator` for recursive traversal. In this article we go from basic usage to performance tuning to error handling, and get directory traversal thoroughly sorted out.
 
-As in the previous two articles: C++17, GCC 13+ / Clang 15+ / MSVC 2022. Header `<filesystem>`, namespace `namespace fs = std::filesystem;`.
+As in the previous two articles: the C++17 standard, GCC 13+ / Clang 15+ / MSVC 2022. Header `<filesystem>`, namespace alias `namespace fs = std::filesystem;`.
 
 ## directory_iterator: Single-Level Traversal
 
-`fs::directory_iterator` is an input iterator that walks the **direct children** of a given directory (it does not recurse into subdirectories). Each dereference returns an `fs::directory_entry` object, which carries the filename and basic status information.
+`fs::directory_iterator` is an input iterator that walks the **direct children** of a given directory (it does not recurse into subdirectories). Each dereference returns an `fs::directory_entry` object, which carries the filename plus basic status information.
 
-The most basic usage is to drop it straight into a range-based for loop:
+The most basic usage is directly in a range-based for loop:
 
 ```cpp
 #include <filesystem>
@@ -58,23 +58,23 @@ int main() {
 }
 ```
 
-Possible output (excerpt):
+This very program is embedded below—click "Try It Yourself" and run it. What gets listed is the actual content of `/usr/local/bin` in the execution environment, which won't be exactly what you have on your machine:
 
-```text
-gcc
-g++
-cmake
-python3/
-pip
-```
+<OnlineCompilerDemo
+  title="Hands-On: Single-Level Traversal with directory_iterator"
+  source-path="code/examples/vol2/47_directory_listing.cpp"
+  description="Iterate over /usr/local/bin online: one entry per line, with an extra / after directory names. Traversal order is unspecified—don't count on alphabetical order."
+  run-options="-std=c++17"
+  allow-run
+/>
 
-It is that simple — one range-based for loop walks every entry in the directory and prints the filename. If the directory is empty, the loop body never executes. If the directory does not exist or you lack read permission, constructing the iterator throws a `filesystem_error` exception.
+That's all it takes—a range-based for loop walks everything under the directory and prints the filenames. If the directory is empty, the loop body never executes. If the directory doesn't exist or you don't have read permission, constructing the iterator throws a `filesystem_error` exception.
 
-The order in which `directory_iterator` visits entries is **unspecified** — no alphabetical order guaranteed, no creation-time order guaranteed, no particular order of any kind guaranteed. If you need a specific order, collect the results into a `vector` and run `std::sort`.
+The order `directory_iterator` traverses in is **unspecified**—no guarantee of alphabetical order, no guarantee of creation-time order, no guarantee of any particular order at all. If you need sorting, collect the results into a `vector` and `std::sort` them.
 
 ### Filtering Files
 
-In real projects we usually care only about files of certain types. The simplest way to filter is to add a condition inside the loop body:
+In real projects, we usually care only about files of certain types. The simplest way to filter is a conditional check inside the loop body:
 
 ```cpp
 void find_cpp_files(const fs::path& dir) {
@@ -87,7 +87,7 @@ void find_cpp_files(const fs::path& dir) {
 }
 ```
 
-If you are familiar with C++20 ranges, you can build a more functional style of filtering with views (but that requires C++20 support). In C++17, lambda + `std::copy_if` is a decent alternative:
+If you are familiar with C++20 ranges, you can combine them with views for a more functional style of filtering (but that requires C++20 support). In C++17, a lambda plus `std::copy_if` is a decent alternative:
 
 ```cpp
 #include <vector>
@@ -109,7 +109,7 @@ std::vector<fs::path> collect_files(const fs::path& dir,
 
 ## recursive_directory_iterator: Recursive Traversal
 
-When you need to walk every file in a directory tree (subdirectories, subdirectories of subdirectories, ...), you need `fs::recursive_directory_iterator`. It works much like the `find` command — starting from the initial directory, it recurses into every subdirectory, depth-first.
+When you need to walk every file in a directory tree (subdirectories, subdirectories of subdirectories, ...), you want `fs::recursive_directory_iterator`. It works much like the `find` command—starting from the starting directory, it recurses depth-first into every subdirectory.
 
 ```cpp
 void list_all_files(const fs::path& dir) {
@@ -134,13 +134,13 @@ Possible output:
 /home/user/project/CMakeLists.txt
 ```
 
-Here is the visit order of the two iterators marked on the same directory tree:
+Both iterators' visiting order, marked on the same directory tree:
 
 ![Visit order of single-level vs. recursive traversal](./03-iteration-order.drawio)
 
 ### Depth Control
 
-`recursive_directory_iterator` provides a `depth()` method that returns the current recursion depth (starting from 0). You can use it to limit the traversal depth:
+`recursive_directory_iterator` provides a `depth()` method that returns the current recursion depth (starting from 0). You can use it to cap the traversal depth:
 
 ```cpp
 void list_with_depth_limit(const fs::path& dir, int max_depth) {
@@ -165,17 +165,17 @@ src/
 CMakeLists.txt
 ```
 
-Note that `depth()` returns the current entry's depth relative to the starting directory, not to the filesystem root. Direct children of the starting directory are at depth 0, entries inside those subdirectories are at depth 1, and so on. If, during traversal, you want to skip a particular subdirectory (not recurse into it), call the iterator's `disable_recursion_pending()` method — we will show concrete uses in the next article.
+Note that `depth()` returns the current entry's depth relative to the starting directory, not relative to the root directory. Direct children of the starting directory have depth 0, children inside a subdirectory have depth 1, and so on. If you need to skip a particular subdirectory during the traversal (you don't want to recurse into it), call the iterator's `disable_recursion_pending()` method—the next article will show it in concrete use.
 
 ### directory_options: Controlling Traversal Behavior
 
-When constructing a `recursive_directory_iterator`, you can pass in `directory_options` to control traversal behavior. The commonly used options are:
+When constructing a `recursive_directory_iterator`, you can pass `directory_options` to control how the traversal behaves. The commonly used options:
 
-`fs::directory_options::none` (the default) — throws an exception when it hits a directory that denies permission.
+`fs::directory_options::none` (the default)—throws an exception when it runs into a permission-denied directory.
 
-`fs::directory_options::skip_permission_denied` — skips directories that deny permission instead of throwing. This option is extremely useful in real projects, because you constantly run into system directories (such as `/proc` and `/sys`) that you have no read permission for.
+`fs::directory_options::skip_permission_denied`—skips permission-denied directories instead of throwing. This option is extremely useful in real projects, because you will constantly run into system directories (such as `/proc` and `/sys`) that you have no read permission for.
 
-`fs::directory_options::follow_directory_symlink` — when it encounters a symbolic link pointing to a directory, it follows the link and recurses into it. The default is not to follow (because that can lead to infinite loops).
+`fs::directory_options::follow_directory_symlink`—when it meets a symbolic link pointing to a directory, it follows the link and recurses into it. By default it does not follow (because that can lead to infinite loops).
 
 ```cpp
 // Safe recursive traversal: skip directories we lack permission for
@@ -185,15 +185,15 @@ for (const auto& entry : fs::recursive_directory_iterator(
 }
 ```
 
-We strongly recommend always adding `skip_permission_denied` when traversing a user filesystem (especially when starting from the root directory or the home directory). Otherwise, the moment you hit one subdirectory you cannot access, the whole traversal aborts — and the half-finished results you already collected are lost too.
+Our strong recommendation: when traversing a user filesystem (especially when starting from the root or home directory), always add `skip_permission_denied`. Otherwise, the moment you hit one subdirectory you have no permission for, the whole traversal aborts—and the results you already collected half-way through are thrown away with it.
 
 ## directory_entry: More Than Just a path
 
-Each time you dereference a directory iterator, what you get is not a `path` object but a `directory_entry` object. `directory_entry` is a `path` with upgrades — it stores the path and also caches file status information.
+Each time you dereference a directory iterator, what you get is not a `path` object but a `directory_entry` object. `directory_entry` is the "beefed-up" version of `path`—it stores the path and also caches file status information.
 
 ### The Advantage of Caching
 
-A `directory_entry` may cache file status information (type, size, and so on) to cut down on the number of system calls. When you call `is_regular_file()`, `is_directory()`, `file_size()`, and similar methods repeatedly during traversal, they can read straight from the cache and avoid duplicate `stat()` calls. Note: caching behavior is **implementation-defined** — the standard guarantees neither that anything is cached nor when a cached entry goes stale.
+A `directory_entry` may cache file status information (type, size, and so on) to cut down on the number of system calls. When you call methods such as `is_regular_file()`, `is_directory()`, or `file_size()` multiple times during a traversal, they can read straight from the cache and avoid repeated `stat()` calls. Note: the caching behavior is **implementation-defined**—the standard guarantees neither that caching happens at all nor when a cached value goes stale.
 
 ```cpp
 for (const auto& entry : fs::directory_iterator(dir)) {
@@ -209,11 +209,11 @@ for (const auto& entry : fs::directory_iterator(dir)) {
 }
 ```
 
-A `directory_entry`'s cache is populated when the iterator is constructed. If a file is modified or deleted during traversal, the cache may already be stale. If you need the live status, call `entry.refresh()` to force a refresh, or query the latest state directly with `fs::status(entry.path())`. In practice this is rare — for most traversal scenarios the cached data is accurate enough.
+The cache inside a `directory_entry` is populated when the iterator is constructed. If a file is modified or deleted during the traversal, the cache may already be stale. If you need up-to-the-moment status, call `entry.refresh()` to force a refresh, or go straight to `fs::status(entry.path())` for the latest state. That said, this situation is rare—for most traversal scenarios, the cached data is accurate enough.
 
 ## Filtering While Traversing: By Extension, Size, and Time
 
-Let's combine what we covered above into a file-search function that supports multi-dimensional filtering. It can filter results by extension, minimum file size, and maximum file size:
+Let's combine what we've covered so far and write a file-search function that supports multi-dimensional filtering. It can filter results by extension, minimum file size, and maximum file size:
 
 ```cpp
 #include <filesystem>
@@ -247,7 +247,7 @@ std::vector<fs::path> search_files(const fs::path& root,
             continue;
         }
 
-        // depth filtering
+        // depth filter
         if (filter.max_depth >= 0 &&
             it.depth() > filter.max_depth) {
             it.disable_recursion_pending();
@@ -261,14 +261,14 @@ std::vector<fs::path> search_files(const fs::path& root,
             continue;
         }
 
-        // extension filtering
+        // extension filter
         if (!filter.extension.empty()) {
             if (entry.path().extension() != filter.extension) {
                 continue;
             }
         }
 
-        // file size filtering
+        // file size filter
         auto size = entry.file_size();
         if (size < filter.min_size || size > filter.max_size) {
             continue;
@@ -289,7 +289,7 @@ int main() {
     SearchFilter filter;
     filter.extension = ".cpp";
     filter.min_size = 100;      // at least 100 bytes
-    filter.max_size = 1000000;  // at most 1MB
+    filter.max_size = 1000000;  // no more than 1MB
 
     auto files = search_files("/home/user/project", filter);
     std::cout << "找到 " << files.size() << " 个文件:\n";
@@ -300,27 +300,27 @@ int main() {
 }
 ```
 
-This search function demonstrates the typical usage pattern of `recursive_directory_iterator`: add `skip_permission_denied` at construction, filter inside the loop body with `directory_entry`'s cached methods, and collect the results at the end. This "traverse + filter + collect" pattern is extremely common in real projects.
+This search function shows the typical usage pattern of `recursive_directory_iterator`: add `skip_permission_denied` at construction, do the filtering inside the loop body with `directory_entry`'s cached methods, and collect the results at the end. This "traverse + filter + collect" pattern shows up constantly in real projects.
 
 ## Performance Considerations
 
-The performance of directory traversal depends on two factors: the size of the directory and the number of system calls. `directory_entry`'s caching already saves us many unnecessary `stat()` calls, but there are a few other factors to watch.
+Directory traversal performance comes down to two factors: the size of the directory and the number of system calls. The `directory_entry` cache already saves us from a lot of unnecessary `stat()` calls, but a few other factors deserve attention.
 
 ### Symlink Handling
 
-By default, `recursive_directory_iterator` does not follow symbolic links. This is the correct default behavior — following links can lead to infinite loops (A points to B, B points to A), and it can also cause the same file to be visited multiple times. If you really do need to follow symbolic links, add the `follow_directory_symlink` option, but make absolutely sure there are no cyclic links.
+By default, `recursive_directory_iterator` does not follow symbolic links. That is the right default—following links can cause infinite loops (A points to B, B points to A), and it can also make the same file get visited multiple times. If you genuinely need to follow symbolic links, add the `follow_directory_symlink` option, but make absolutely sure there are no cyclic links.
 
 ### Depth Control
 
-Recursively traversing a deeply nested directory structure can consume a lot of time and memory. If your goal is only a shallow search, limiting the recursion depth with `depth()` is well worth it. In our tests, traversing the entire `/usr` directory tree took about 5 seconds, but with the depth limited to 2 it took only 0.3 seconds.
+Recursively traversing a deeply nested directory structure can consume a lot of time and memory. If your goal is only a shallow search, capping the recursion depth with `depth()` is well worth it. In our tests, traversing the entire `/usr` directory tree took about 5 seconds, but with the depth limited to 2 it took only 0.3 seconds.
 
-### Performance Comparison with Manual Recursion
+### Performance Compared to Manual Recursion
 
-Sometimes you will see people hand-write recursion to traverse directories (recursively calling `directory_iterator` inside every subdirectory). This approach usually performs worse than `recursive_directory_iterator` — because `recursive_directory_iterator` applies internal optimizations (such as reading directory entries in batches), while manual recursion has to construct a new iterator every time. So prefer `recursive_directory_iterator`.
+Sometimes you will see people hand-write recursion to traverse directories (recursing with `directory_iterator` inside every subdirectory). This approach usually performs worse than `recursive_directory_iterator`—because `recursive_directory_iterator` applies internal optimizations (such as batch-reading directory entries), while manual recursion has to construct a new iterator every time. So prefer `recursive_directory_iterator`.
 
 ## In Practice: A Code Statistics Tool
 
-To wrap up this article, let's write a practical code statistics tool. It recursively traverses a given directory and tallies, for each kind of source code file, the file count and the total line count:
+To wrap up this article, let's write a practical code statistics tool. It recursively traverses a given directory and tallies the file count and total line count for each kind of source file:
 
 ```cpp
 #include <filesystem>
@@ -338,7 +338,7 @@ struct FileStats {
     int total_lines = 0;
 };
 
-/// @brief Count the lines of a single file
+/// @brief Count the lines in a single file
 /// @param path File path
 /// @return Line count (0 on failure)
 int count_lines(const fs::path& path) {
@@ -371,14 +371,14 @@ void code_stats(const fs::path& root) {
         if (!entry.is_regular_file()) continue;
 
         auto ext = entry.path().extension().string();
-        // only count common source code files
+        // Only count common source file types
         if (ext != ".cpp" && ext != ".h" && ext != ".hpp" &&
             ext != ".c" && ext != ".py" && ext != ".java" &&
             ext != ".rs" && ext != ".go") {
             continue;
         }
 
-        // skip hidden directories and build directories
+        // Skip hidden directories and build directories
         bool skip = false;
         for (const auto& component : entry.path()) {
             auto s = component.string();
@@ -387,7 +387,7 @@ void code_stats(const fs::path& root) {
                 // simple skip logic
             }
         }
-        // a complete version should handle this with disable_recursion_pending()
+        // The full version should handle this with disable_recursion_pending()
         // simplified here
 
         auto lines = count_lines(entry.path());
@@ -395,7 +395,7 @@ void code_stats(const fs::path& root) {
         stats[ext].total_lines += lines;
     }
 
-    // print the results
+    // Print the results
     int total_files = 0;
     int total_lines = 0;
 
@@ -424,20 +424,17 @@ int main() {
 }
 ```
 
-Possible output:
+This tool is embedded below—click "Try It Yourself" and run it. It tallies the code files in the working directory, and the numbers vary with the environment (in the online environment there is usually only this source file itself). You will also get a first-hand look at a small pitfall: when the table headers are Chinese, `setw` aligns by byte count rather than display width, so the columns don't line up:
 
-```text
-扩展名    文件数    总行数
-------------------------------
-.cpp     12        4856
-.h       15        2340
-.hpp     3         892
-.py      2         340
-------------------------------
-合计     32        8428
-```
+<OnlineCompilerDemo
+  title="Hands-On: Recursively Counting Lines of Code"
+  source-path="code/examples/vol2/48_code_stats.cpp"
+  description="Count source files in the current directory online: file counts and total lines grouped by extension. It's even more interesting to run it against your own project directory locally."
+  run-options="-std=c++17"
+  allow-run
+/>
 
-This tool combines everything from this article and the previous two: `recursive_directory_iterator` for recursive traversal, `directory_entry::is_regular_file()` for type filtering, `path::extension()` for extension filtering, and `path`'s iterator for directory-name filtering. In a real project, you can extend it to finer-grained metrics such as counts of blank lines, comment lines, and code lines.
+This tool pulls together everything from this article and the previous two: `recursive_directory_iterator` for recursive traversal, `directory_entry::is_regular_file()` for type filtering, `path::extension()` for extension filtering, and `path`'s iterator for directory-name filtering. In a real project, you could extend it to track finer-grained metrics such as blank-line count, comment-line count, and code-line count.
 
 ## References
 

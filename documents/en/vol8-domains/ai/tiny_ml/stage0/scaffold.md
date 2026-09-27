@@ -1,6 +1,6 @@
 ---
 title: "Project scaffold — pour the toolchain foundation"
-description: "Stand up a standalone CMake23 project, pull Catch2 via FetchContent, and get a smoke test passing. Stage 0 writes zero lines of inference code — it only confirms the toolchain + build + test pipeline is wired up."
+description: "Stand up a standalone CMake23 project, pull Catch2 with FetchContent, and get a smoke test passing. Stage 0 writes not a single line of inference code — it only confirms that the toolchain + build + test foundation is wired up"
 chapter: 8
 order: 6
 platform: host
@@ -8,7 +8,7 @@ difficulty: intermediate
 cpp_standard: [23]
 reading_time_minutes: 8
 prerequisites:
-  - "CMake basics"
+  - "CMake Fundamentals"
 tags:
   - host
   - cpp-modern
@@ -16,31 +16,37 @@ tags:
   - CMake
   - 工具链
   - 基础
+translation:
+  source: documents/vol8-domains/ai/tiny_ml/stage0/scaffold.md
+  source_hash: acb2721f3283507f790d74021f4870b862a60ccb9c6cc5855c860274436cb656
+  translated_at: '2026-09-26T03:50:25+00:00'
+  engine: anthropic
+  token_count: 2900
 ---
 
 # Project scaffold — pour the toolchain foundation
 
-Stage 0 of TinyInferCpp-Lab does exactly one thing: stand up a standalone CMake project with a Catch2 smoke test that compiles and runs, plus a `.gitignore` that keeps build artifacts out. Not a single line of inference code — this stage only confirms the toolchain, the build system, and the test framework are wired up, so that every time you write code later, `cmake --build` gives you feedback. Companion project at `code/volumn_codes/vol8-labs/ai/tiny_ml/stage0/`.
+With any project, the first order of business is putting up the scaffolding — no rushing straight into hands-on work. Stage 0 of TinyInferCpp-Lab does exactly one thing: stand up a standalone CMake project containing a Catch2 smoke test that compiles and runs, with `.gitignore` keeping build artifacts out. Not a single line of inference code gets written — this stage only confirms that the toolchain + build + test foundation actually holds, so that every time you finish writing code from here on, `cmake --build` hands you feedback. The companion project lives in `code/volumn_codes/vol8-labs/ai/tiny_ml/stage0/`.
 
-## Why not just start writing inference code
+## Why not just write the inference code directly
 
-Getting stuck in week one on "it won't compile / Catch2 won't pull / clangd isn't working" is what kills the project far more often than not knowing how to write some algorithm. Stage 0 clears those prerequisites up front, and forces you to confirm your toolchain actually supports C++23 right now — so you don't get to Stage 5 and discover your compiler is too old, when rolling back is expensive.
+Getting stuck in week one on "won't compile / Catch2 won't pull down / clangd doesn't work" drives people to abandon the whole thing far more surely than some algorithm they can't figure out. Stage 0 clears these obstacles up front, and as a bonus it forces you to confirm right now that your toolchain supports C++23 — better than discovering at Stage 5 that your compiler version falls short, when the cost of backing out is far higher.
 
 ## What the project looks like
 
-A standalone CMake project. The directory is just this:
+A standalone CMake project — the directory holds just these few things:
 
 ```text
 stage0/
 ├── CMakeLists.txt          # standalone, FetchContent Catch2 v3.5.0
 ├── .gitignore              # build/ + .cache/
 ├── tests/smoke.cpp         # toolchain smoke test
-└── logs/                   # pitfall ledger (real evidence, see common pitfalls below)
+└── logs/                   # pitfall ledger (evidence; see common pitfalls below)
 ```
 
-## CMake skeleton
+## The CMake skeleton
 
-The actual `CMakeLists.txt` looks like this, broken down in functional order:
+The actual `CMakeLists.txt` looks like this; let's take it apart in functional order:
 
 ```cmake
 cmake_minimum_required(VERSION 3.20)
@@ -51,7 +57,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 ```
 
-The first three lines lock the standard. `CMAKE_CXX_STANDARD 23` with `STANDARD_REQUIRED ON` pins C++23 down so the compiler can't silently downgrade. Write `STANDARD` without `STANDARD_REQUIRED` and some compilers quietly drop to the highest standard they support — then you hit C++23 features later and get a baffling error you'd never trace back to the standard. `CMAKE_EXPORT_COMPILE_COMMANDS ON` makes CMake emit `compile_commands.json` for clangd; IDE jump-to-definition, completion, and diagnostics all depend on it. Leave it off and writing code hurts.
+The first three lines lock down the standard. `CMAKE_CXX_STANDARD 23` paired with `STANDARD_REQUIRED ON` nails C++23 in place so the compiler can't quietly downgrade. Set `STANDARD` without `STANDARD_REQUIRED` and some compilers silently fall back to the highest standard they support; later, when you use a C++23 feature, you get a baffling error that nobody would think to trace back to the standard. `CMAKE_EXPORT_COMPILE_COMMANDS ON` generates `compile_commands.json` for clangd — the IDE's go-to-definition, completion, and diagnostics all live off it. Leave this line off and writing code becomes genuinely painful.
 
 ```cmake
 include(FetchContent)
@@ -66,11 +72,11 @@ FetchContent_MakeAvailable(Catch2)
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 ```
 
-This pulls Catch2 from Git at configure time and compiles it into the project via `add_subdirectory` — no preinstall, no submodule. The version is pinned by `GIT_TAG v3.5.0`.
+This section pulls Catch2 from Git at configure time and compiles it into the project directly through `add_subdirectory` — built as part of the same build, no reliance on a preinstalled copy or a submodule — with the version pinned hard by `GIT_TAG v3.5.0`.
 
-Each of the three steps does its own job. `FetchContent_Declare` only registers the name, source, and tag — it doesn't trigger a download. `FetchContent_MakeAvailable` is what clones on first configure, runs `add_subdirectory`, and defines the `Catch2::Catch2WithMain` target, along with a `<depname>_SOURCE_DIR` variable you can reference (the rule is depname lowercased, hence `catch2_SOURCE_DIR`). The last `list(APPEND CMAKE_MODULE_PATH .../extras)` line puts Catch2's helper `.cmake` files (`Catch.cmake` etc., which provide `catch_discover_tests`) onto CMake's module search path, so `include(Catch)` can find them later.
+Each of the three steps does its own job. `FetchContent_Declare` only registers the name, the source, and the tag — it triggers no download. `FetchContent_MakeAvailable` is what, on first configure, clones, runs `add_subdirectory`, and defines the `Catch2::Catch2WithMain` target; it also sets a `<depname>_SOURCE_DIR` variable for you to reference, with the naming rule being the depname in all lowercase — hence `catch2_SOURCE_DIR` here. The final line, `list(APPEND CMAKE_MODULE_PATH .../extras)`, hooks Catch2's bundled helper `.cmake` files (`Catch.cmake` and friends, home of `catch_discover_tests`) into CMake's module search path, so a later `include(Catch)` can actually find them.
 
-Downloaded sources land in `build/_deps/catch2-src/`, intermediate products in `-build/`; a second configure doesn't re-pull, and your source tree stays clean. Real evidence for this mechanism — including how to rescue it when the pull fails — is in `logs/002-fetchcontent-catch2.md`.
+The downloaded source lands in `build/_deps/catch2-src/`, intermediate artifacts in the matching `-build/` directory; a second configure doesn't re-pull anything, and the source tree stays spotless. The evidence for this mechanism — including how to rescue a pull that won't go through — is recorded in `logs/002-fetchcontent-catch2.md`.
 
 ```cmake
 add_executable(smoke_catch2 tests/smoke.cpp)
@@ -82,17 +88,17 @@ target_compile_options(smoke_catch2 PRIVATE
 )
 ```
 
-`target_compile_options` is modern CMake's target-based way: options hang off a specific target rather than polluting everything, unlike the old global `add_compile_options()`. `PRIVATE` means it only applies to compiling this target and doesn't propagate downstream. Warning flags are almost always PRIVATE — downstream doesn't care how you compile this, and warning flags are compiler-specific; make them `PUBLIC` and they explode the moment someone swaps compilers.
+`target_compile_options` is modern CMake's target-based way of doing things: the options hang off one specific target instead of polluting every target, unlike the old-school global `add_compile_options()`. `PRIVATE` means it applies only to compiling this target and is not passed down. Warning flags should almost always be PRIVATE — downstream consumers don't care how you compile your code, and warning flags are tightly coupled to the compiler: make them PUBLIC and pass them down, and the first compiler switch blows up immediately.
 
-The last two generator expressions deserve a breakdown. Conclusion first: `-Wall -Wextra -Wpedantic -g` are all GCC/Clang dialect — MSVC recognizes none of them. MSVC has its own set: warning level via `/W4` (the practical high setting; `/Wall` spams so hard it's unusable), strict conformance via `/permissive-` (disables non-standard extensions), debug info via `/Zi` (into a PDB). So the project splits by compiler ID: MSVC takes one line, non-MSVC takes the other.
+The two generator expressions at the end deserve an unpacking. Conclusion up front: `-Wall -Wextra -Wpedantic -g` are all private GCC/Clang dialect — MSVC doesn't recognize a single one. MSVC has its own set: warning level via `/W4` (the highest practical setting; `/Wall` floods the output beyond usability), strict standards conformance via `/permissive-` (turns off non-standard extensions), and debug info via `/Zi` (written into the PDB). So the project hangs them separately by compiler ID: MSVC takes one branch, non-MSVC takes the other.
 
-The second line is deliberately written as `$<NOT:$<CXX_COMPILER_ID:MSVC>>` rather than enumerating `$<CXX_COMPILER_ID:GNU,Clang>`. The former means "anything that isn't MSVC takes the GCC/Clang set", automatically covering Intel, LLVM, and whatever else understands `-Wall`, without you having to edit the list every time a new compiler shows up. The full flag comparison is in `logs/003-target-compile-options.md`.
+The second line is deliberately written as `$<NOT:$<CXX_COMPILER_ID:MSVC>>` instead of enumerating `$<CXX_COMPILER_ID:GNU,Clang>`. The former means anything that isn't MSVC takes the GCC/Clang set — automatically covering Intel, LLVM, and other compilers that equally understand `-Wall`, with no list to edit every time a new compiler is added. The full flag-by-flag comparison is in `logs/003-target-compile-options.md`.
 
 ## Why C++23 and not C++20
 
-Stage 0 itself doesn't depend on any C++23 feature — you could run this stage on C++20. But from Stage 1 on you'll want `consteval`, fuller `constexpr`, and `std::expected`, so set the standard to 23 now and save yourself a backport later.
+Stage 0 itself depends on no C++23 feature — you could get this stage running on C++20 too. But from Stage 1 onward we'll need `consteval`, more complete `constexpr`, and `std::expected`, so we set the standard to 23 now and spare ourselves a retroactive change later.
 
-## Smoke test: pick a meaner probe
+## Smoke test: pick a sharper probe
 
 ```cpp
 #include <catch2/catch_test_macros.hpp>
@@ -103,46 +109,46 @@ TEST_CASE("Smoke up the labs") {
 }
 ```
 
-The point of a smoke test is to prove the chain works, so picking a meaner probe pays off. Using `std::print` here is deliberate — it needs the C++23 `<print>` header to be reachable, so a single line simultaneously stresses the toolchain, Catch2, CMake, and the C++23 standard library. It probes deeper than an honest `REQUIRE(1 + 1 == 2)`.
+A smoke test's whole purpose is proving the chain is connected, so it pays to pick a sharper probe. `std::print` is used here deliberately: it requires the C++23 `<print>` header to be reachable, so one single line puts four things under load at once — toolchain, Catch2, CMake, and the C++23 standard library — probing far deeper than a dutiful `REQUIRE(1 + 1 == 2)` ever would.
 
 ## Verification
 
 ```bash
-cmake -S . -B build           # first-time FetchContent pulls Catch2, needs network
+cmake -S . -B build           # first configure: FetchContent pulls Catch2, network needed
 cmake --build build -j
 ./build/smoke_catch2
 ```
 
-Step 3 prints `Our smoke Test` and reports `All tests passed`. Then manually confirm in the IDE that clangd can jump into `smoke.cpp` and autocomplete Catch2 macros — that's how you know `compile_commands.json` actually took effect.
+Step 3 prints `Our smoke Test` and reports `All tests passed`. Then confirm by hand: if clangd in the IDE can jump into `smoke.cpp` and complete Catch2's macros, `compile_commands.json` is genuinely in effect.
 
 ## Common pitfalls
 
 ::: warning FetchContent can't pull Catch2
-WSL's access to GitHub is flaky; the failure log usually reads `Failed to connect to github.com port 443`. The rescue is a manual shallow clone, swapped in as a pre-placed directory to replace the automatic download:
+WSL's access to GitHub is unstable; the failure log typically reads `Failed to connect to github.com port 443`. The emergency fix is to shallow-clone a copy by hand and substitute that pre-placed directory for the automatic download:
 
 ```bash
 git clone --depth 1 -b v3.5.0 https://github.com/catchorg/Catch2.git /tmp/catch2
 cmake -S . -B build -DFETCHCONTENT_SOURCE_DIR_CATCH2=/tmp/catch2
 ```
 
-The variable name rule is `FETCHCONTENT_SOURCE_DIR_<UPPER_DEPNAME>` — it essentially replaces the `GIT_REPOSITORY` download source. Evidence in `logs/002`.
+The variable naming rule is `FETCHCONTENT_SOURCE_DIR_<UPPERCASE_DEPNAME>` — in essence it swaps out the download source declared by `GIT_REPOSITORY`. Evidence in `logs/002`.
 :::
 
 ::: warning Compiler doesn't support C++23
-`set(CMAKE_CXX_STANDARD 23)` needs GCC 13+ / Clang 16+ / MSVC VS2022 17.6+. Self-test before you start work:
+`set(CMAKE_CXX_STANDARD 23)` requires GCC 13+ / Clang 16+ / MSVC VS2022 17.6+. Run a self-check before starting work:
 
 ```bash
 g++ --version
 echo 'int main(){return 0;}' | g++ -std=c++23 -x c++ - -o /tmp/cxx23_smoke && echo "C++23 OK"
 ```
 
-Locally tested with g++ 16.1.1 and clang++ 22.1.6 (see `logs/003`). If it errors, upgrade the compiler — don't downgrade the standard; from Stage 1 on, the lower standard won't hold up.
+Measured locally: g++ 16.1.1 and clang++ 22.1.6 (see `logs/003`). If the check errors out, upgrade the compiler — don't lower the standard; from Stage 1 onward, a lowered standard won't hold up.
 :::
 
 ::: warning clangd reports "header not found"
-Nine times out of ten `compile_commands.json` wasn't generated, or clangd isn't pointed at `build/`. Confirm `CMAKE_EXPORT_COMPILE_COMMANDS ON` is set. `.cache/clangd` is clangd's index storage — don't delete it by accident and don't commit it; it's already in `.gitignore`.
+Nine times out of ten, `compile_commands.json` wasn't generated, or clangd isn't pointed at `build/`. Confirm `CMAKE_EXPORT_COMPILE_COMMANDS ON` is configured. `.cache/clangd` is where clangd builds its index — don't delete it by mistake and don't commit it; it's already in `.gitignore`.
 :::
 
-::: warning Running cmake at the repo root
-Don't run cmake at the repo root. This project builds inside its own `stage0/` directory; `build/` artifacts stay right there and are already `.gitignore`d.
+::: warning Running cmake at the repository root
+Don't run cmake at the repository root. This project builds tucked inside its own `stage0/` directory: `build/` artifacts stay right there, and they're already ignored by `.gitignore`.
 :::

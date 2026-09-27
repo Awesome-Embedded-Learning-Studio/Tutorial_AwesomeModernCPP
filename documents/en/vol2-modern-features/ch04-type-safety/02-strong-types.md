@@ -9,10 +9,10 @@ difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- 'Chapter 4: enum class and Scoped Enums'
+- enum class and Scoped Enums
 reading_time_minutes: 11
 related:
-- user-defined literal
+- User-Defined Literals
 tags:
 - host
 - cpp-modern

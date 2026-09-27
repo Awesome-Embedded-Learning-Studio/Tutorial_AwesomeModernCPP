@@ -9,11 +9,11 @@ difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
-- Volume One: C++ Fundamentals
+- 'Volume 1: C++ Fundamentals'
 reading_time_minutes: 24
 related:
 - Move Construction and Move Assignment
-- 'Perfect Forwarding: Preserving Value Categories Exactly'
+- 'Perfect Forwarding: Keeping Value Categories Intact'
 tags:
 - host
 - cpp-modern
@@ -22,24 +22,24 @@ tags:
 title: 'Rvalue References: From Copy to Move'
 translation:
   source: documents/vol2-modern-features/ch00-move-semantics/01-rvalue-reference.md
-  source_hash: e69fb2afda1c34dad7d8189930e7e508a1d87d94d765a02c2f6382fbcbae8517
-  translated_at: '2026-09-25T14:15:17+00:00'
+  source_hash: 74e3d0b1100124fb369e44ab63c20f08ccc8eb1eb01a42537f4453dddebdcbb9
+  translated_at: '2026-09-27T04:34:42+00:00'
   engine: anthropic
-  token_count: 6500
+  token_count: 17000
 ---
 # Rvalue References: From Copy to Move
 
-Welcome to modern C++! The term "modern C++" generally refers to C++11 and everything after it—and the feature changes since then are more than worth a proper deep dive.
+Welcome to modern C++! When this tutorial series says "modern C++", we generally mean C++11 and everything that came after it.
 
-> Some folks will take issue with this. I've been flamed in conversation myself for asking whether C++11 even counts as "modern." Well... fair point. From 2026, when I'm writing this, these features have already been around for over a decade—chronologically speaking, they really aren't modern anymore. But compared with relics like C++98, the feature changes are substantial. And that is exactly why this volume gets its own separate treatment!
+> Some readers will push back on this — I've been grilled about it in person: "C++11 still counts as modern?" Hmm... fair enough, actually. Counting from 2026, when I'm writing this, these features have been with us for over a decade, so chronologically speaking they aren't exactly new. But compared with the C++98 relics, they represent a dramatic change in the language's feature set. That's exactly why this volume gets its own slot!
 
-When I first got into C++ and read that book, *Effective Modern C++*, I never quite understood the concept of "rvalue references." The very phrase "rvalue reference" exuded an indescribably academic odor—what is `T&&`? How do you actually tell lvalues from rvalues? Does `std::move` really "move" anything? Every time I saw `std::move` in other people's code, I would copy it over with half an understanding, praying it would compile. Now that I'm the one doing the writing, I want to get these things straight—or at the very least, avoid embarrassingly basic mistakes!
+When I first learned C++, I ground my way through *Effective Modern C++*<RefLink :id="1" preview="Scott Meyers, Effective Modern C++, 2014 — Items 23-25: rvalue references, universal references, std::move" /> and never felt I truly understood "rvalue references". And no wonder — the name alone gives off an indescribable academic vibe. What exactly is `T&&`? Where is the line between lvalues and rvalues? Does `std::move` actually *move* anything? Every time `std::move` showed up in someone else's code, I copied it over with half an understanding and left the rest to the compiler's mercy. Now that it's my turn to write the tutorial, I owe it to you to work through these topics together — at minimum, without embarrassing myself or making rookie mistakes!
 
-> Still rambling: I'm honestly a bit scared of C++ language lawyers. Every time I pick up the pen to write something, I'm afraid these big shots will mock me. But rigor is always a good thing—write C++ without rigor, and beware being shaken awake at night by a memory explosion and then getting thoroughly worked over by your linker. That said, for teaching purposes there is no need to obsess over every detail right from the start. Otherwise you risk missing the forest for the trees.
+> Same old aside: I'm rather afraid of C++ language lawyers — every time I sit down to write, I worry these folks will dig faults out of my text. Rigor is always a good thing, though. Write C++ without rigor and, best case, you stare blankly at a screenful of compiler errors; worst case, a memory error shakes you out of bed at midnight. Teaching, though, is a different matter: there's no need to nitpick every detail up front, and we shouldn't miss the forest for the trees.
 
-## Starting from a Problem That Spikes Your Blood Pressure
+## Starting with a Problem That Spikes Your Blood Pressure
 
-Consider a scenario everyone knows: string processing. Quite a few people feel that std::string is sometimes too heavy and wish for a read-only view of a string. const char* isn't a bad fit, but NULL termination is a mess (designating a `\0` as the boundary constraint is sometimes unreliable). Fine then—let's build our own StringWrapper!
+The scenario we have in mind is string processing — everyone knows that one, right? Plenty of people feel that std::string is sometimes too heavy and want a read-only view of a string instead. const char* looks like a decent fit, but C strings rely on a trailing \0 terminator, and that's sometimes shaky: the content can't contain a \0, and the length can only be found by counting from the front. So let's build our own StringWrapper!
 
 ```cpp
 class StringWrapper {
@@ -85,28 +85,28 @@ int main()
 }
 ```
 
-Without move semantics and with the compiler not applying NRVO (named return value optimization), returning `result` from `build_greeting` triggers the copy constructor—a fresh block of memory is allocated, and the string inside `result` is copied over byte by byte. Then `result` itself is destroyed, releasing its original block of memory. (Think about it—doesn't that make your scalp tingle?)
+Let's assume the worst case: no move semantics, and let's also assume the compiler does no NRVO (named return value optimization). Following that assumption through, when `build_greeting` returns `result`, a copy construction has to fire: we allocate a new block of memory and copy the string inside `result` over byte by byte. Then look at `result` itself — its destructor frees the original block too. (Think about it: doesn't that waste make you wince?)
 
-> Of course, in reality the GCC and MSVC of the C++03 era already shipped NRVO widely as a compiler extension, so this analysis is discussing the worst case where NRVO doesn't kick in.
+> To be fair, we should complete the picture. GCC and MSVC back in the C++03 era already supported NRVO widely. The standard has always allowed the compiler to elide this copy — it just never required it — so the analysis above discusses the worst case where NRVO doesn't kick in.
 
-We spend one memory allocation plus one byte-by-byte copy just to "relocate" the data of an object that is about to be destroyed anyway. If the string is long—say, a JSON payload of several KB—this copy looks downright wasteful: **the source object is dying anyway; the data sitting in that memory will simply go to waste—why not just take over control of that memory directly?**
+We spent one memory allocation plus one byte-by-byte copy, all to "relocate" the data of an object that is about to be destroyed anyway. If the string is long — say a JSON payload of several KB — the waste becomes glaring: **the source object is about to die regardless; the data sitting in that memory will do no one any good, so why not simply take over control of that memory?**
 
-This is the core problem move semantics set out to solve. And to understand move semantics, we must first understand how C++ classifies expressions—the so-called **value category**.
+Move semantics exists precisely to eliminate the waste we just saw. And to understand move semantics, we have to go back to a more fundamental question: how does C++ classify expressions? The standard's answer is what we call **value categories**<RefLink :id="2" preview="cppreference Value categories — lvalue / xvalue / prvalue taxonomy since C++11" />.
 
-## A Panorama of Value Categories
+## Value Categories: From a Two-Way Split to a Three-Way Split
 
-Before C++11, things were fairly simple: **an expression was either an lvalue or an rvalue.** That's it. Then C++11 arrived, and once ownership of resources could be moved, the classification became more elaborate.
+Before C++11, we sorted expressions into just two buckets: **lvalues and rvalues** — a simple two-way split. Once C++11 brought "an object's resources can be safely transferred" into the language, the left/right distinction alone was no longer enough, and the taxonomy grew more complex accordingly. The system we have now looks like this: every expression belongs to exactly one of three categories. As for the three-way split, **lvalue** is the has-identity class, **xvalue** is the about-to-expire class, and **prvalue** is the pure-temporary class. Merge them upward and you get two broader categories. The one governing the lvalue half we call **glvalue** (generalized lvalue), which subsumes lvalue plus xvalue. The one governing the rvalue half we call **rvalue**, which subsumes xvalue plus prvalue.
 
-- Every expression belongs to exactly one of **lvalue**, **xvalue**, or **prvalue**.
-- These three can in turn be pairwise combined into broader categories: **glvalue** (generalized lvalue) = lvalue + xvalue, and **rvalue** = xvalue + prvalue.
+If this taxonomy feels a bit convoluted, don't worry — I went around in circles with it for quite a while at first too. We can understand it through two properties. The first we call **has identity**: the expression has a name and you can take its address. The other we call **can be moved from**: the expression is temporary, and its resources can be safely "stolen" by us. Cross the two properties, and the three expression classes fall right into place:
 
-If this taxonomy feels a bit convoluted, don't worry—it took me a long time to untangle it at first, too. We can approach it through two properties: **has identity** (the expression has a name and you can take its address) and **can be moved from** (the expression is temporary and its resources can be safely "stolen").
+|              | Not movable | Movable                 |
+| ------------ | ----------- | ----------------------- |
+| **Has identity**   | lvalue   | xvalue (expiring value) |
+| **No identity** | ——       | prvalue (pure rvalue)   |
 
-Something with identity that cannot be moved from is an **lvalue**.
+Take an ordinary example: in the variable `int x = 10;`, `x` has a name, has an address, and its lifetime isn't over yet, so it lands in the "has identity, not movable" cell — an lvalue. Later code will still use it, so of course you can't just steal its resources. The result of `std::move(x)` still refers to that same object `x`; it has merely been flagged as "expiring soon, resources free to take", landing on the "has identity, movable" crossing as an xvalue. The literal `42`, or a temporary returned by value from a function, has no name to begin with, so it falls into the prvalue cell — after moving it, you don't have to worry about anyone still accessing it. As for the "no identity and not movable" combination, the standard simply reserves no slot for such an expression; the three classes cover every expression there is.
 
-For example, take `x` in the ordinary variable `int x = 10;`—it has a name, has an address, and its lifetime hasn't ended yet, so of course you can't just steal its resources. Something with identity that can be moved from is an **xvalue** (expiring value)—for instance, the result of `std::move(x)`, which tells you "this object has identity, but it's about to die, and you can safely steal its resources." Something without identity that can be moved from is a **prvalue** (pure rvalue)—for instance, the literal `42` or a temporary object returned by a function; it never had a name in the first place, so you don't need to worry about who might access it after the theft.
-
-Let's look at a concrete set of examples to sort the three categories out clearly.
+Let's look at a concrete set of examples to draw the boundaries between the three classes.
 
 ```cpp
 int x = 10;            // x is an lvalue
@@ -115,21 +115,20 @@ int y = x + 1;         // x + 1 is a prvalue
 int z = 42;            // 42 is a prvalue
 ```
 
-Here `x` is the most typical lvalue—it has a name, has an address, and `&x` is a valid expression (of course you can grab this variable's address on the stack!). `std::move(x)` produces an xvalue: it points to the same memory as `x`, but it is semantically marked as "about to expire." `x + 1` and `42` are both prvalues—temporary, unnamed values.
+Here `x` is the most typical lvalue — it has a name and an address, and `&x` is a legal expression (of course you can take this variable's address on the stack!). `std::move(x)` produces an xvalue that still points to the same memory as `x`; semantically it has merely been marked in its "about to expire" form. `x + 1` and `42` are both prvalues — temporary, unnamed values.
 
-A classic misconception is that "lvalues can appear on the left of the assignment sign, while rvalues can only appear on the right." That claim was roughly true in the C era, but in C++ it is neither sufficient nor necessary. In `const int cx = 10;`, `cx` is an lvalue, yet `cx = 20;` won't compile—const restricts modification but doesn't change the value category. Conversely, `std::string("hello")` is a prvalue, yet after C++11 it can appear on the left of the assignment sign in certain situations (for example, when calling a member function on it).
+We also need to dismantle a classic misconception — that old line passed around forever: "lvalues can appear on the left of the assignment sign, rvalues must stay on the right". Back in the C era that was roughly true, but in the C++ era it is neither sufficient nor necessary. Two counterexamples. For the first, take `const int cx = 10;`: `cx` is an lvalue, yet `cx = 20;` won't compile — const restricts modification, it doesn't change the value category. In the other direction, construct a `std::string("hello")`: it's a temporary prvalue, and it really can sit on the left of an assignment — `std::string("hello") = "world";` is perfectly legal. The reason isn't complicated: the assignment operator of a class type is a member function, and that line of ours is, in essence, calling a member function on a temporary object, which has held since C++98. What genuinely can't be written on the left of an assignment is a built-in type — write `42 = x;` and no standard will compile it.
 
-### Giving Any Expression a Value Category Checkup
+### Determining the Value Category of Any Expression with decltype
 
-So the rules are clear now—but when you're handed an unfamiliar expression, how do you actually confirm whether it's an lvalue, an xvalue, or a prvalue? You can't just wing it every time. Here's a ready-made trick: `decltype` deduces different types for an **identifier** than for a **parenthesized expression**.
+We basically understand the rules, but when we meet an unfamiliar expression, how do we actually confirm its identity — lvalue, xvalue, or prvalue? We can't just wing it every time. There's a ready-made trick here: `decltype` deduces different types for an **identifier** than for a **parenthesized expression**.
 
-- `decltype(x)` (the unparenthesized identifier) yields the **declared type** of `x`;
-- `decltype((x))` (the parenthesized expression) goes by value category: an lvalue yields `T&`, an xvalue yields `T&&`, and a prvalue yields `T` itself.
+Put `x` itself and `(x)` side by side: `decltype(x)` is an unparenthesized identifier, and it yields `x`'s **declared type**. With `decltype((x))`, once you add the parentheses, the deduction rule switches to judging by value category: an lvalue yields `T&`, an xvalue yields `T&&`, and a prvalue yields `T` itself.
 
-Plug this difference into `is_lvalue_reference_v` / `is_rvalue_reference_v`, and you can give any expression a "value category checkup":
+Plug this difference into `is_lvalue_reference_v` / `is_rvalue_reference_v`, and we can determine the value category of any expression:
 
 ```cpp
-// value_category_probe.cpp -- use decltype to give any expression a value category checkup
+// value_category_probe.cpp -- determine the value category of any expression with decltype
 // Standard: C++17
 
 #include <iostream>
@@ -148,7 +147,7 @@ constexpr const char* value_category()
     }
 }
 
-// decltype((expr)) deduces the type by the expression's value category: lvalue gets T&, xvalue gets T&&, prvalue gets T
+// decltype((expr)) deduces the type by the expression's value category: lvalue gives T&, xvalue gives T&&, prvalue gives T
 #define SHOW(expr) \
     std::cout << "  " #expr "  ->  " << value_category<decltype((expr))>() << "\n"
 
@@ -168,7 +167,7 @@ int main()
     std::cout << "\n--- 字面量与运算 ---\n";
     SHOW(42);
     SHOW(x + 1);
-    SHOW(std::move(x));  // the product of std::move is an xvalue
+    SHOW(std::move(x));  // the result of std::move is an xvalue
 
     std::cout << "\n--- 解引用与成员 ---\n";
     SHOW(*(&x));         // dereferencing yields an lvalue
@@ -178,36 +177,23 @@ int main()
 }
 ```
 
-Compile and run:
+The complete probe code is right below — click "Try It Out" and it runs on the spot; we even save you the terminal:
 
-```bash
-g++ -std=c++17 -O0 -Wall -o value_category_probe value_category_probe.cpp
-./value_category_probe
-```
+<OnlineCompilerDemo
+  title="Hands-On: value_category_probe.cpp"
+  source-path="code/examples/vol2/14_value_category_probe.cpp"
+  description="Determine the value category of a batch of expressions online. The rref line deserves your full attention: a variable declared as int&& has a name that is itself an lvalue."
+  run-options="-O0 -std=c++17"
+  allow-run
+/>
 
-```text
---- 变量与引用 ---
-  x  ->  lvalue
-  lref  ->  lvalue
-  rref  ->  lvalue
+Go over every line of the output; the one most worth understanding is the `rref` line — it is clearly declared as an rvalue reference `int&& rref`, yet the verdict is `lvalue`. This is not a bug: `rref` is a variable **with a name**, and C++'s rule is "a named expression is an lvalue". The xvalue produced by `std::move(x)`, once you give it a name (assign it to a `T&&` variable, or pass it in as a function parameter), gets "demoted" back to the lvalue side, and moves no longer fire automatically. Perfect forwarding is what solves this — our fourth article will take it apart in detail.
 
---- 字面量与运算 ---
-  42  ->  prvalue
-  x + 1  ->  prvalue
-  std::move(x)  ->  xvalue
-
---- 解引用与成员 ---
-  *(&x)  ->  lvalue
-  g  ->  lvalue
-```
-
-The line to stare at is the `rref` one—it is declared as an rvalue reference `int&& rref`, yet the checkup says `lvalue`. This is not a bug: `rref` is a variable **with a name**, and C++'s rule is "an expression with a name is an lvalue." The xvalue produced by `std::move(x)`, once you give it a name (assign it to a `T&&` variable, or pass it through as a function parameter), "demotes" back to an lvalue and will never automatically trigger a move again. Perfect forwarding is what solves this—we'll take it apart in the fourth article.
-
-With this probe in hand, any expression you're unsure about can be confirmed by running code. No more guessing.
+With this ready-made tool, any time you meet an expression you're unsure about, you can let the code confirm it for us — no more guessing on gut feeling.
 
 ## The Binding Rules of Rvalue References
 
-With value categories under our belt, let's see what an rvalue reference—`T&&`—can actually bind to. The rule is really simple: **an rvalue reference can only bind to rvalues (prvalues or xvalues), never to lvalues**.
+With value categories understood, let's see what an rvalue reference — `T&&` — can actually bind to. The rule is quite simple: **an rvalue reference binds only to rvalues, namely prvalues or xvalues, never to lvalues**.
 
 ```cpp
 int x = 10;
@@ -219,46 +205,46 @@ int&& r3 = std::move(x); // OK: std::move(x) is an xvalue
 // int&& r4 = x;         // compile error: x is an lvalue and cannot bind to an rvalue reference
 ```
 
-If you uncomment the last line, GCC will hand you a rather blunt error message:
+If you uncomment the last line, GCC hands you a rather blunt error message:
 
 ```text
 error: cannot bind rvalue reference of type 'int&&' to lvalue of type 'int'
 ```
 
-The value category taxonomy and the rvalue reference binding rules have been turned into an animation—you can play it, pause it, or single-step through it with the step controls:
+The value category taxonomy and the rvalue reference binding rules are animated below — you can play, pause, or step through frame by frame:
 
 <Anim id="lvalue-rvalue" />
 
-The intuition behind this binding rule: rvalue references are designed to let you "take over" a temporary object's resources. If an object is an lvalue (it has a name, has an address, and someone is still using it), how could you safely steal from it? The compiler stopping you here is entirely for safety's sake.
+Why was the rule designed this way? The intent isn't hard to guess: the purpose of rvalue references is to let you "take over" a temporary object's resources. If you ask why they aren't allowed to bind lvalues as well — we'll come back to that after comparing them with const lvalue references.
 
-But let's put a pin in something: this "T&& binds only to rvalues" rule refers to rvalue references with a **hard-coded type**, such as `int&&` or `std::string&&`. When we get to perfect forwarding in the fourth article, we'll meet `T&&` inside templates—called a **forwarding reference**—which binds to both lvalues and rvalues and plays by a different set of rules entirely. Don't take this article's conclusions and apply them to `T&&` in templates; you'll hit a wall.
+Here's a heads-up from me: the rule "`T&&` binds only rvalues" refers to rvalue references with a **fixed, concrete type**, such as `int&&` or `std::string&&`. When we get to perfect forwarding in the fourth article, we'll meet `T&&` in a template, which we call a **forwarding reference** — it binds both lvalues and rvalues, under a completely different set of rules. If you apply this article's rules to a templated `T&&`, the compiler will throw the error right back in your face.
 
-Now let's compare the binding behavior of rvalue references versus const lvalue references—this is crucial for understanding the move constructor coming up later.
+Now let's put rvalue references and const lvalue references side by side — this comparison directly determines what the move constructor's signature will look like later.
 
-The const lvalue reference `const T&` is C++'s "universal receiver"—it binds to anything: lvalues, rvalues, const, non-const, no questions asked. The rvalue reference `T&&` is the "picky receiver"—it accepts rvalues only. The difference looks simple, but it leads to a very important practical distinction: when you receive an rvalue through `const T&`, you have promised not to modify it, so there is no way to steal its resources; when you receive an rvalue through `T&&`, you hold the permission to modify it, so you can safely transfer the resources away.
+The const lvalue reference `const T&` binds to everything: lvalues, rvalues, const, non-const — nothing is turned away. The rvalue reference `T&&`, by contrast, binds only rvalues. The difference looks simple, but it leads to a critically important practical distinction: when you receive an rvalue through `const T&`, you have promised not to modify it, so you cannot steal its resources. Switch to receiving it through `T&&`, and you now have the right to modify it — which is what makes transferring its resources safe.
 
 ```cpp
 void process_const_ref(const std::string& s)
 {
-    // s can be read, but not modified
-    // so there is no way to "steal" s's internal buffer
+    // we can read s, but not modify it
+    // so we cannot "steal" s's internal buffer
     std::cout << s.size() << "\n";
 }
 
 void process_rvalue_ref(std::string&& s)
 {
-    // s is a non-const rvalue reference and can be modified
-    // so s's internal resources can be safely transferred away
+    // s is a non-const rvalue reference, so we can modify it
+    // so we can safely transfer s's internal resources
     std::string stolen = std::move(s);
-    // at this point s is in a "valid but unspecified" state
+    // s is now in a "valid but unspecified" state
 }
 ```
 
-You might ask: why not let rvalue references bind to lvalues too? Good question. We know move semantics is all about expressing a transfer of ownership. An lvalue is a variable with its own independent address, in charge of its own resources—it inherently conflicts with the semantics of "not intended to be moved from." So deep down you never wanted `T&&` to bind to everything in the first place! If it did, there would be no way to distinguish "this object is safe to steal from" from "this object is still in use"—and that distinction is precisely the fundamental reason move semantics exists.
+Now let's circle back to the question we set aside: why not let rvalue references bind lvalues too? Reason backward from the intent of move semantics and it becomes clear. Move semantics expresses a transfer of resource ownership, while an lvalue is an object with its own address that is actively managing its own resources — nobody ever said it planned to be hollowed out. If `T&&` could bind anything, you could no longer tell apart "this object is safe to move" from "this object is still in use". Lose that distinction, and move semantics stops being meaningful.
 
-## The Essence of std::move—A Carefully Wrapped Type Conversion
+## The Essence of std::move: A Type Conversion
 
-The name `std::move` is probably one of the most misleading names in the history of C++. It sounds like it "moves" something, but in fact it **moves nothing at all**. `std::move` does exactly one thing: **convert its argument to an rvalue reference**, that is, `static_cast<T&&>`. That's it—no more, no less.
+The name `std::move` is, I'd say, one of the most misleading names in the history of C++. Hearing it, you'd probably assume it actually *moves* something — but in reality it moves nothing at all. `std::move` does exactly one thing: **it converts its argument to an rvalue reference** — it is just a `static_cast<T&&>`<RefLink :id="3" preview="cppreference std::move — equivalent to static_cast to rvalue reference; moves nothing" />. Really, that's all there is.
 
 We can implement an equivalent `move` ourselves:
 
@@ -271,23 +257,25 @@ my_move(T&& t) noexcept
 }
 ```
 
-What this code does is very direct: whatever type `T` comes in as, first strip off any reference it might carry with `remove_reference`, then `static_cast` it to an rvalue reference. Throughout the whole process, no data is moved, copied, or modified—it is purely a type conversion.
+What this code does is completely straightforward: whatever type `T` comes in, we strip off any reference it might carry with `remove_reference`, then use `static_cast` to turn it into an rvalue reference. That's the entire function body — these few lines are doing precisely the standard library `std::move`'s job.
 
-So what good is it? The key lies in **the signatures of the move constructor and the move assignment operator**. When you write `std::string a = std::move(b);`, `std::move(b)` converts `b` into a `std::string&&`, and that rvalue reference goes on to match `std::string`'s move constructor `std::string(std::string&& other)`. The move constructor is the one that actually performs the "resource transfer"—it steals `other`'s internal buffer pointer and nulls out `other`'s own pointer. `std::move` merely hands over the key from the sidelines.
+So where's the payoff? The payoff lands in **the signatures of the move constructor and the move assignment operator**. When you write `std::string a = std::move(b);`, it is `std::move(b)` that converts `b` into a `std::string&&`, so the match lands on the move constructor. What does that look like? Its signature is `std::string(std::string&& other)`. The one actually performing the "resource transfer" is the move constructor: it takes over `other`'s internal buffer pointer and then empties `other` — that's what a typical implementation does<RefLink :id="4" preview="cppreference Move constructor — transfer resources, leave source valid but unspecified" />. `std::move`'s entire contribution here is marking `b` as an rvalue that "may be carted away", so the compiler picks the latter of the two constructors — copy and move — on our behalf.
+
+> Short strings are the one exception: they live directly in a small buffer inside the object itself (SSO, Short String Optimization), so there is no separate heap buffer for us to take over, and the move degrades into an ordinary copy.
 
 ```cpp
 std::string a = "Hello";
 std::string b = std::move(a);  // std::move only converts the type
                                   // the move constructor does the actual resource transfer
-// at this moment a is in a "valid but unspecified" state
-// in most implementations a becomes an empty string, but you should not rely on this behavior
+// a is now in a "valid but unspecified" state
+// in most implementations a becomes an empty string, but you should not rely on that
 ```
 
-Here's a pitfall that is remarkably easy to step into: **using `std::move` on fundamental types yields no performance gain in logical terms** (out of fear of compiler optimizations, I dare not issue a verdict). `std::move(42)` merely converts an `int` into an `int&&`, but for an `int`, "moving" and "copying" are the same thing—both come down to copying four bytes. The power of move semantics only shows in **classes that manage resources**—classes holding dynamic memory, file handles, network connections, and the like.
+Here is another misconception worth staying alert to: **using `std::move` on fundamental types brings zero performance gain**. Look at `std::move(42)` again — it merely converts the `int` into an `int&&`, but for an `int`, "moving" and "copying" were always the same thing: copying four bytes. That is a fact at the level of the language definition, and it has nothing to do with whether the compiler optimizes anything. The power of move semantics shows up only in **classes that manage resources** — classes holding dynamic memory, file handles, network connections, and the like.
 
-## The Lifetime of Temporary Objects—What Rvalue References Extend
+## The Lifetime of Temporary Objects: What Rvalue References Extend
 
-In C++, the lifetime of a temporary object (a prvalue) normally ends when the full expression containing it finishes. But rvalue references and const lvalue references have a special ability: when bound to a temporary object, they extend that temporary's lifetime, letting it live until the end of the reference's scope.
+In C++, a temporary object (a prvalue) lives by default only until the end of the full expression containing it: the moment the expression ends, it destructs. But rvalue references and const lvalue references give us a special privilege: when they bind to a temporary object, they extend that temporary's lifetime so it lives until the reference's scope ends<RefLink :id="5" preview="cppreference Reference initialization — temporary lifetime extension applies only to direct binding" />.
 
 ```cpp
 const int& cr = 42;       // the const reference extends the lifetime of 42
@@ -297,29 +285,29 @@ int&& rr = 100;            // the rvalue reference also extends the lifetime of 
 std::cout << rr << "\n";   // OK: 100 is still alive
 ```
 
-The two behave identically when it comes to lifetime extension; the difference is that `rr` is non-const—you can modify it. This looks a bit strange: how can the literal `100` be modified? In reality, behind the scenes the compiler puts this temporary value into a piece of storage, and `rr` points at exactly that storage.
+The two behave identically as far as lifetime extension goes; the difference is that `rr` is non-const — you can modify it. That may look a little odd: a literal `100`, and we can modify it? In fact, behind the scenes the compiler has placed that temporary value into a piece of storage, and `rr` points at exactly that storage.
 
 ```cpp
 int&& rr = 100;
-rr = 200;                  // legal! The storage rr points to has been modified
+rr = 200;                  // legal! the storage rr points to is modified
 std::cout << rr << "\n";   // prints 200
 ```
 
-This feature rarely comes up in practice, but understanding it helps you shake off the fear of "does an rvalue reference dangle right away?" When you write `std::string&& ref = std::move(name);`, the object `ref` points to won't vanish on the next line—it lives all the way to the end of `ref`'s scope.
+This feature doesn't come up much in real code, but understanding it helps you shake off the fear that "an rvalue reference dangles right away". When you write `std::string&& ref` to catch `std::move(name)`, the object `ref` points to will not vanish on the next line — it lives until `ref`'s scope ends.
 
-But there's a boundary here to watch closely—**lifetime extension only applies to "direct binding" and does not cross function boundaries**. Once a temporary is relayed through a function, the extension rule no longer applies. The classic way to faceplant is this:
+But let's push one step further: both const lvalue references and rvalue references can extend a temporary's lifetime to the end of the reference's own scope — does the privilege survive if the binding passes through a function? Let the code answer. The classic way to trip over this looks like the following:
 
 ```cpp
-// lifetime_dangle.cpp -- the boundary of temporary object lifetime extension
+// lifetime_dangle.cpp -- the limits of temporary lifetime extension
 // Standard: C++17
-// To compile (enable ASan's use-after-scope to catch the dangling read):
+// Compile (ASan, short for AddressSanitizer, is a memory-error detection tool; enable its use-after-scope detection to catch the dangling read):
 //   g++ -std=c++17 -O0 -g -fsanitize=address -fsanitize-address-use-after-scope \
 //       -o lifetime_dangle lifetime_dangle.cpp
 
 #include <iostream>
 #include <string>
 
-// returns the parameter reference as-is
+// return the parameter's reference unchanged
 const std::string& pass_through(const std::string& s)
 {
     return s;
@@ -341,9 +329,9 @@ int main()
 }
 ```
 
-Case 1 is fine: the `const&` catches the temporary directly, and the temporary lives until `safe` leaves scope. Case 2 is where it goes wrong—the temporary `"I am passed"` is bound to the function parameter `s`, and per the standard it only lives until **the end of this full expression**; meanwhile `dead` receives the reference returned by `pass_through`, and this kind of "relayed through a function" binding triggers no extension. So the moment the expression ends, the temporary is destroyed, and what the next line reads out of `dead` is a "corpse."
+Case 1 is fine: the `const&` catches the temporary securely, and its lifetime extends all the way until `safe` leaves scope. Case 2 goes wrong — the temporary `"I am passed"` binds to the function parameter `s`, and per the standard it lives only until **the end of the full expression that contains it**. What `dead` receives is the reference returned by `pass_through`, and a binding "relayed through a function" does not trigger extension. So the instant the expression ends, the temporary destructs. When we read `dead` on the next line, we are reading an already-destroyed object, and that step's result is undefined.
 
-It's hard to see with the naked eye—without sanitizers it might "happen to" still print the old contents, because that memory hasn't been overwritten yet, and that is exactly what makes dangling references so insidious. Turn on ASan's use-after-scope, and the truth shows itself instantly:
+Errors like this are very hard to spot by eye — without ASan it might "happen" to still print the old contents, because that memory still holds what was there before, and that's exactly what makes dangling references so insidious. Run it again with ASan's use-after-scope detection on, and the truth reveals itself at once:
 
 ```text
 1) 直接绑定临时对象: "I am a temp"
@@ -353,11 +341,11 @@ It's hard to see with the naked eye—without sanitizers it might "happen to" st
 SUMMARY: AddressSanitizer: stack-use-after-scope ... in std::__ostream_insert
 ```
 
-(The process ID `PID` and the address `0x...` differ on every run, so they're elided here; the error type, the line numbers, and the SUMMARY are fixed.) Case 1 prints normally; Case 2 gets caught red-handed by ASan the instant it tries to read `dead`. Boil the rule down to one sentence: **a temporary's lifetime extension recognizes "direct binding" only—a reference returned from a function is never extended.**
+(The process id `PID` and the address `0x...` differ from run to run; I've omitted everything that can be omitted — the error type, the line number, and the SUMMARY are fixed.) Case 1 prints normally; Case 2 is caught red-handed by ASan the moment we try to read `dead`. With the evidence in hand, we can formally answer the question we asked earlier: **lifetime extension applies only to "direct binding" and does not cross function boundaries** — once a temporary passes through a function relay, the extension rule stops applying with it.
 
-## A Worked Example—Copy and Move in String Concatenation
+## In Practice: Copies and Moves in String Concatenation
 
-Let's put what we've learned together and look at a realistic example. Suppose we are building a log message:
+Let's put what we've learned together and look at a real example. Suppose we are building a log message:
 
 ```cpp
 #include <iostream>
@@ -381,11 +369,15 @@ int main()
 }
 ```
 
-The expression `"[" + level + "] " + module + ": " + detail` produces a whole pile of temporary `std::string` objects—every `+` creates a new temporary string. In the C++03 world, every `+` meant one memory allocation plus one data copy. After C++11, things improved: if `operator+` takes its parameter by value and returns a named local variable, the compiler automatically triggers an **implicit move** on the return, so the subsequent concatenation stages pass around the moved temporary, transferring internal pointers instead of copying character data. And of course, C++17's guaranteed copy elision goes one step further: when `operator+` returns a prvalue, even the move construction can be omitted.
+That `"[" + level + "] " + module + ": " + detail` is a chain of `+` operations. In the C++03 world, every `+` we perform yields a brand-new temporary string! Each link in the chain costs a fresh memory allocation plus copying the entire accumulated left-hand content over, so the further along we concatenate, the more it costs — think about how wasteful that is!
 
-The more direct payoff comes from returning from a function. `build_log_message` returns `msg`, and the compiler has two optimization tools here: NRVO (named return value optimization) can eliminate the copy outright; and failing that, even if NRVO doesn't apply, C++11 automatically treats `msg` as an rvalue (implicit move), invoking `std::string`'s move constructor—transferring the internal pointer only, without copying character data.
+From C++11 on, the standard library added a batch of `operator+` overloads that take rvalue references (for example `operator+(std::string&&, const std::string&)`). With them, we can keep using the temporary in the middle of the chain: append the next segment directly into its buffer and hand it on, instead of starting a fresh string at every link and re-copying all the preceding characters. Counting it up, only the first link creates a new temporary string; everything after that appends into its buffer, and it only reallocates when capacity runs out. The cost of reallocation amortizes across every append, and the total number of characters copied along the whole chain is proportional only to the final message's length.
 
-Now for an example of transferring elements into a container:
+By C++17, guaranteed copy elision arrives and turns "returning a prvalue" into a hard guarantee: the result `operator+` spits out is constructed directly in the final receiver's location, saving even the single move at reception. Back in the C++11 era, compilers would generally save that move for us too, but that was always convention, never obligation. C++17 wrote it into the language's rules, so what we get now is a guarantee.
+
+The more direct payoff comes from returning from functions: look again at `build_log_message`, which returns `msg` — the compiler has two ready-made optimization tools in hand. NRVO can elide this copy outright. And failing that, in settings where NRVO doesn't apply, C++11 also automatically treats `msg` as an rvalue (implicit move), invoking `std::string`'s move constructor. That step transfers only the internal pointers and copies no character data — see how much lighter the cost suddenly is.
+
+Let's look at another example, moving elements into a container:
 
 ```cpp
 std::vector<std::string> names;
@@ -397,9 +389,9 @@ names.push_back(std::move(name));  // move: name's internal data is transferred 
 names.push_back("Bob");   // first constructs a temporary from const char*, then moves it into the vector
 ```
 
-The first `push_back` uses move semantics: `std::move(name)` turns `name` into an rvalue reference, and the vector calls `std::string`'s move constructor to build the new element—the cost is transferring one pointer and two `size_t`s, instead of copying the entire string's content. The second `push_back("Bob")` looks like "direct construction," but what actually happens is: `"Bob"` first creates a temporary via `std::string`'s `const char*` constructor, and then that temporary, as an rvalue, goes into the `push_back(T&&)` overload and is move-constructed into the vector's storage. In other words, compared with `push_back(std::move(name))` it has one extra step—the temporary's construction—but it still performs exactly one move and no deep copy. If you truly want to skip the temporary's construction and achieve genuine in-place construction, use `emplace_back("Bob")`—it calls `std::string`'s constructor directly in the vector's storage.
+Look at the first `push_back`: it uses move semantics. `std::move(name)` turns `name` into an rvalue reference, and the vector invokes `std::string`'s move constructor to build the new element. Its cost is transferring one pointer plus two `size_t`s — not copying the entire string contents. The second one, `push_back("Bob")`, looks like it constructs directly, but it actually has one step more than `push_back(std::move(name))`. Which step is the extra one, and what exactly did the move save us? Let's run it with a tracked class and let the output tell you.
 
-We can verify this with a tracing class:
+We'll wire the `TrackedString` below with tracking: every construction, copy, move, and destruction leaves a line of its own on the screen:
 
 ```cpp
 // push_back_vs_emplace.cpp -- construction/move/destruction tracing for push_back vs emplace_back
@@ -456,32 +448,23 @@ int main()
 }
 ```
 
-Compile and run:
+The tracking program is in the demo below — click "Try It Out" to run it, and let's count the lines of output:
 
-```bash
-g++ -std=c++17 -O0 -Wall -o push_back_vs_emplace push_back_vs_emplace.cpp
-./push_back_vs_emplace
-```
+<OnlineCompilerDemo
+  title="Hands-On: push_back_vs_emplace.cpp"
+  source-path="code/examples/vol2/15_push_back_vs_emplace.cpp"
+  description="Compare the construction chains of push_back and emplace_back online. Count the lines each section prints before === done ===: three for push_back, one for emplace_back."
+  run-options="-O0 -std=c++17"
+  allow-run
+/>
 
-```text
-=== push_back(TrackedString("Bob")) ===
-  [ctor from const char*] "Bob"
-  [move ctor] "Bob"
-  [dtor] ""
-=== done ===
-  [dtor] "Bob"
+Look at the `push_back(TrackedString("Bob"))` section: before `=== done ===` you can count three lines. The first constructs the temporary, the second moves it into the vector, and the third is the temporary's own destruction. Counting it up, the construction chain actually took two steps. The `[dtor] "Bob"` line appearing after `=== done ===` is the vector destroying its held element when it leaves the `{ }` scope — not part of the construction process.
 
-=== emplace_back("Alice") ===
-  [ctor from const char*] "Alice"
-=== done ===
-  [dtor] "Alice"
-```
+The answer to which step the earlier `push_back("Bob")` added is hidden in those three lines of output: `"Bob"` first goes through the `const char*` constructor, implicitly converting into a temporary `std::string`, then lands in the `push_back(T&&)` overload as an rvalue, and finally gets moved into the vector. The extra step is precisely the creation of the temporary. The move happened exactly once in the whole process — note that `[move ctor]` appears exactly once — and a deep copy never happened at any point. Meanwhile `emplace_back("Alice")` shows only one `ctor` line before `=== done ===`: it constructs in place, directly in the vector's storage, saving both the temporary and the move in one stroke. If you truly want to avoid creating even the temporary, switch to `emplace_back`.
 
-The output is crystal clear: `push_back(TrackedString("Bob"))` has three lines before `=== done ===`—first the temporary is constructed, then it is moved into the vector, and then the temporary is destroyed: a two-step construction. The `[dtor] "Bob"` line after `=== done ===` is the vector destroying the element it holds when it leaves the `{ }` scope—it has nothing to do with the construction process. Meanwhile, `emplace_back("Alice")` has only one `ctor` line before `=== done ===`: it constructs in place, directly in the vector's storage, skipping even the move. Back in the article's `std::string` scenario, `push_back("Bob")` goes through the same process: `"Bob"` first implicitly converts to a temporary `std::string`, then gets moved into the vector. If you are after the ultimate zero overhead, `emplace_back` is the right choice.
+## Hands-On Lab: rvalue_demo.cpp
 
-## Hands-On Experiment—rvalue_demo.cpp
-
-Let's write a complete program that exercises the rvalue reference binding rules, the behavior of `std::move`, and the lifetimes of temporary objects, all in one go.
+In the `emplace_back` output just now, we only watched one action at a time. This time let's go bigger: write a complete program that puts everything this article has covered into a single `main`, and run it start to finish.
 
 ```cpp
 // rvalue_demo.cpp -- rvalue references and value categories demo
@@ -538,7 +521,7 @@ public:
     const std::string& name() const { return name_; }
 };
 
-/// @brief returns a temporary object (prvalue)
+/// @brief Returns a temporary object (prvalue)
 Tracker make_tracker(std::string name)
 {
     return Tracker(std::move(name));
@@ -574,60 +557,59 @@ int main()
 }
 ```
 
-Compile and run:
-
-```bash
-g++ -std=c++17 -Wall -Wextra -o rvalue_demo rvalue_demo.cpp
-./rvalue_demo
-```
-
-The expected output looks like this:
-
-```text
-=== 1. 基本构造 ===
-  [A] 构造
-
-=== 2. 拷贝构造 ===
-  [A_copy] 拷贝构造
-  a.name = A
-  b.name = A_copy
-
-=== 3. 移动构造（显式 std::move）===
-  [A] 移动构造
-  a.name = (moved-from)
-  c.name = A
-
-=== 4. 返回临时对象 ===
-  [D] 构造
-  d.name = D
-
-=== 5. 移动赋值 ===
-  [A_copy] 移动赋值
-  b.name = (moved-from)
-  d.name = A_copy
-
-=== 6. 程序结束，析构顺序 ===
-  [A_copy] 析构
-  [A] 析构
-  [(moved-from)] 析构
-  [(moved-from)] 析构
-```
-
-Let's analyze this output step by step. In step 2, `Tracker b = a;` triggers the copy constructor—`a` is an lvalue, so it can only match the copy constructor, and `b`'s name becomes `"A_copy"`. In step 3, `std::move(a)` converts `a` into an rvalue reference, matching the move constructor—`c`'s name becomes `"A"` (stolen from `a`), while `a`'s name becomes `"(moved-from)"`.
-
-Step 4 is the most interesting one. `make_tracker("D")` constructs a `Tracker("D")` inside the function and then returns it. Notice there is exactly one construction in the output—no copy, and no move. This is C++17's **guaranteed copy elision**: when returning a prvalue, the compiler constructs the object directly in the caller's space, skipping even the move. That is exactly why the next article is dedicated to RVO and NRVO.
-
-The move assignment in step 5 is worth a look too. `d = std::move(b);` transfers `b`'s resources to `d`—`d`'s original name `"D"` gets overwritten with `"A_copy"`, and `b` becomes `"(moved-from)"`. During this process, `d`'s original resource (the memory holding `"D"`) is properly released, because the move assignment operator must ensure the old resources are cleaned up before overwriting.
-
-## Run It Online
-
-Run the rvalue reference example online and trace the full sequence of construction, copy, move, and destruction:
+The complete program is in the demo below — click "Try It Out" and run it. This time we skip nothing, checking even the end-of-program destructions against the output:
 
 <OnlineCompilerDemo
-  title="Rvalue References and Value Categories: Tracing Construction, Copy, Move, and Destruction"
+  title="Hands-On Lab: rvalue_demo.cpp"
   source-path="code/examples/vol2/01_rvalue_reference.cpp"
-  description="Run online and observe the order in which Tracker objects are constructed, copy-constructed, move-constructed, and destroyed."
+  description="Run online and observe the construction, copy construction, move construction, and destruction order of Tracker objects."
+  run-options="-O0 -std=c++17"
   allow-run
 />
 
-The next article puts these rules into code—equipping `StringWrapper` with move construction and move assignment, so that `build_greeting`'s return goes from a copy to a zero-cost transfer.
+Step 1 we can dispatch in one sentence: `Tracker a("A");` is an ordinary construction. In step 2's output, `Tracker b = a;` triggers the copy constructor — `a` is an lvalue, and the only constructor it can match is the copy constructor, so `b`'s name becomes `"A_copy"`. In step 3, `std::move(a)` converts `a` into an rvalue reference to match the move constructor — `c`'s name becomes `"A"` (stolen from `a`), while `a`'s name becomes `"(moved-from)"`.
+
+Step 4 is the most interesting one, so let's linger on it. `make_tracker("D")` constructs a `Tracker("D")` inside the function, then performs the return. Notice the output shows exactly one construction — no copy, no move. That's C++17's **guaranteed elision**: when returning a prvalue, the compiler constructs the object directly in the caller's space, saving even that move. And that's only the returning-a-prvalue case. How much more the compiler can save when returning a named local variable is exactly what the third article, on RVO and NRVO, will take apart.
+
+Step 5 is move assignment's turn. `d = std::move(b);` transfers `b`'s resources to `d` — `d`'s original name `"D"` is overwritten with `"A_copy"`, and `b` is left with nothing but the name `"(moved-from)"`. Notice also that `d`'s original resources (the memory holding `"D"`) were properly released, because the move assignment operator we wrote must ensure the old resources get cleaned up before overwriting.
+
+In step 6 we watch the program wrap up: these objects destruct in reverse order of construction when leaving `main` — `d` first, then `c`, `b`, `a`; that order is guaranteed by the language. Also note `a` and `b` along the way: they were gutted long ago, their names already read `"(moved-from)"`, yet their destructors still ran. The "valid" in "valid but unspecified", made concrete here, is that even the destruction runs to completion — we can't pretend a moved-from object doesn't exist.
+
+The next article turns these rules into code — we'll write move constructors and move assignment for a resource-owning class with our own hands, make the "take the pointer, empty the source" moves rock solid, and round things out with the so-called Rule of Five (the five special members: destructor, copy constructor, copy assignment, move constructor, move assignment — either we declare none of the five, or if we declare any, we have to consider all five together).
+
+<ReferenceCard title="References">
+  <ReferenceItem
+    :id="1"
+    author="Scott Meyers"
+    title="Effective Modern C++: 42 Specific Ways to Improve Your Use of C++11 and C++14"
+    publisher="O'Reilly Media"
+    :year="2014"
+    chapter="Items 23-25: rvalue references, universal references, std::move"
+  />
+  <ReferenceItem
+    :id="2"
+    author="cppreference.com"
+    title="Value Categories"
+    url="https://en.cppreference.com/w/cpp/language/value_category"
+  />
+  <ReferenceItem
+    :id="3"
+    author="cppreference.com"
+    title="std::move"
+    chapter="Notes: moved-from objects stay valid but unspecified"
+    url="https://en.cppreference.com/w/cpp/utility/move"
+  />
+  <ReferenceItem
+    :id="4"
+    author="cppreference.com"
+    title="Move Constructor"
+    url="https://en.cppreference.com/w/cpp/language/move_constructor"
+  />
+  <ReferenceItem
+    :id="5"
+    author="cppreference.com"
+    title="Reference Initialization"
+    chapter="Temporary lifetime extension"
+    url="https://en.cppreference.com/w/cpp/language/reference_initialization"
+  />
+</ReferenceCard>

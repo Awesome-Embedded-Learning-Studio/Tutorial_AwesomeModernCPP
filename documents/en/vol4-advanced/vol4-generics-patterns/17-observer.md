@@ -1,52 +1,47 @@
 ---
-title: 'Observer Pattern: From Dangling Pointers to weak_ptr for Dangling Prevention'
-description: We start with the most intuitive approach where the observable holds
-  a set of raw pointers, encounter the dangling crash when the observer dies first,
-  and then use `weak_ptr` to cleanly manage lifetimes. Along the way, we implement
-  RAII subscription, snapshot notification, and a reentrant, thread-safe event source.
+title: 'Observer Pattern: From Dangling Pointers to Dangle-Proofing with `weak_ptr`'
+description: 'Starting from the most intuitive "observable holds a bunch of raw pointers" design, we run headlong into the dangling crash when an observer dies first, then clean up lifetime management with `weak_ptr` — and along the way build an event source with RAII subscription, snapshot notification, and reentrant thread safety.'
 chapter: 11
 order: 17
 tags:
-- host
-- cpp-modern
-- intermediate
-- 观察者模式
-- weak_ptr
-- 回调机制
+  - host
+  - cpp-modern
+  - intermediate
+  - 观察者模式
+  - weak_ptr
+  - 回调机制
 difficulty: intermediate
 platform: host
-cpp_standard:
-- 11
-- 17
-- 20
+cpp_standard: [11, 17, 20]
 reading_time_minutes: 22
 related:
-- 单例模式:从注释约束到 Meyer's Singleton
+  - 'Singleton Pattern: From Comment-Only Constraints to Meyer''s Singleton'
 prerequisites:
-- 'Chapter 6: 类与对象'
-- 智能指针与所有权
+  - Classes and Object-Oriented Programming
+  - 'Smart Pointers and Ownership'
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/17-observer.md
   source_hash: 314206f7881fdc071a9103fc20074a09b893fdb876b4d2bc942e5fc837c45301
-  translated_at: '2026-06-24T01:02:25.158190+00:00'
+  translated_at: '2026-09-26T05:43:40+00:00'
   engine: anthropic
-  token_count: 5605
+  token_count: 12000
 ---
-# Observer Pattern: From Dangling Pointers to `weak_ptr` Safety
 
-## What problem are we actually solving?
+# Observer Pattern: From Dangling Pointers to Dangle-Proofing with `weak_ptr`
 
-Let's skip the formal definition for a moment. Consider a common scenario: you are building a weather station. A background `WeatherForecast` component periodically obtains new temperature and humidity readings from sensors and needs to distribute this data to several different display endpoints—a console monitor, a mobile app push notification service, and a large TV wall display. These three interfaces are completely different and evolve on different schedules. You could hardcode them inside `WeatherForecast`, having the station directly call `phone.show(...)`, `tv.show(...)`, and so on, but this quickly becomes unmanageable: every time you add a new endpoint (like a web dashboard), you have to modify the weather station's source code; every time you remove one, you have to remove the corresponding calls. The weather station should only care about "new data arrived," but instead, it is forced to know about every display device in existence.
+## What Problem Are We Actually Solving
 
-The Observer pattern solves exactly this requirement: **it completely decouples the "data source" from the "set of components interested in data changes." The source is only responsible for broadcasting a signal when the state changes. Anyone who wants to listen can subscribe, and they can leave whenever they want. The source doesn't know any of them personally.** Weather stations, UI event buses, stock tickers, button state change notifications—they all share the natural requirement of "one change needs to notify a bunch of unknown listeners."
+Let's skip the formal definition for now. Think of the most common scenario: you're building a weather station. A background `WeatherForecast` periodically pulls new temperature and humidity readings from sensors, then needs to distribute the data to several different display endpoints — a default console display, a mobile app push endpoint, and a big TV-wall screen. These three endpoints look nothing alike and iterate on completely different schedules. Sure, you could hardcode all of them inside `WeatherForecast` and have the station call `phone.show(...)`, `tv.show(...)`, and so on one by one — but you'd fall apart fast: every new endpoint (say, a web dashboard) means going back to edit the weather station's source; every removed endpoint means another round of deleting calls. The weather station should care about exactly one thing — "new data arrived" — yet it ends up being forced to know every display device in the world.
 
-However, "broadcasting a signal" is **absolutely not as simple as writing a loop and calling functions one by one** in C++. There is a pitfall unique to C++ that is far more dangerous than in other languages: **a listener might be destroyed while the weather station is still broadcasting.** Java has the Garbage Collector (GC); Python has reference counting as a safety net; but in C++, object lifetimes are managed manually. Once a listener dies first, the weather station holds a pointer to a ghost. The next broadcast becomes a use-after-free, causing the program to crash, output garbage, or crash immediately under AddressSanitizer (ASan). Therefore, the real question we need to answer in this post is—**how can an observable broadcast changes while ensuring that no dangling pointers appear, regardless of when an observer is destroyed?**
+This is exactly the class of requirement the Observer pattern addresses: **fully decouple the "data source" from "a crowd of components that care about data changes" — the data source only fires one broadcast when its state changes; whoever wants to listen subscribes, stops listening whenever they like, and the data source knows none of them**. Weather stations, UI event buses, stock quote pushes, keypress state-change notifications — they all share the same natural demand: "one change must be announced to a crowd of listeners whose identities we don't know."
 
-Next, we will proceed step-by-step, starting with the most intuitive approach. We will examine why each step falls short, eventually forcing us to arrive at a standard modern C++ solution.
+But "fire one broadcast" is **absolutely not as simple as writing a loop that calls functions one by one** in C++. There's a pitfall unique to C++, nastier than in any other language: **a listener may be destroyed while the weather station is still mid-broadcast**. Java has GC, Python has reference counting as a safety net, but object lifetimes in C++ are managed by hand — once a listener dies first, what the weather station holds is a pointer to a ghost; the next broadcast accesses freed memory, and the program either crashes, spews garbage, or flips over on the spot under ASan. So the question this article really answers is: **how do we let the observable broadcast changes such that no matter when an observer is destroyed, no dangling pointer ever appears**.
 
-## Step 1: The most intuitive approach—the observable holds a list of raw pointers
+So let's proceed step by step: start from the most intuitive approach, see why each step falls short, and squeeze out the modern C++ standard answer at the end.
 
-Many people's first attempt at the Observer pattern results in a structure like this: an abstract observer interface, and an observable that maintains a list of observers internally, traversing the list to trigger callbacks when the state changes. Let's use the weather station from the playground as a blueprint and extract its skeleton:
+## Step 1: The Most Intuitive Approach — The Observable Holds a Set of Raw Pointers
+
+The structure most people sketch subconsciously the first time they write the Observer pattern looks like this: an abstract observer interface, an observable that internally maintains a list of observers, and on state change, a loop over the list invoking each callback. Let's take the weather station from the playground as our blueprint and extract its skeleton first:
 
 ```cpp
 struct MessagePackage {
@@ -54,13 +49,13 @@ struct MessagePackage {
     double humidity;
 };
 
-// 观察者抽象接口:所有「想被通知的端」实现它
+// Abstract observer interface: every "endpoint that wants notifications" implements it
 struct Sender {
     virtual ~Sender() = default;
     virtual void receiving_message(const MessagePackage& message) = 0;
 };
 
-// 几个具体的端
+// A few concrete endpoints
 struct DefaultSender : Sender {
     void receiving_message(const MessagePackage& message) override {
         std::println("Receiving Message: Temperature: {}, Humidity: {}",
@@ -83,7 +78,7 @@ struct TVSender : Sender {
 };
 ```
 
-There are no pitfalls here. Polymorphic interfaces are standard for the Observer pattern. `virtual ~Sender() = default` ensures that the derived class destructor is called correctly when destructing via a base class pointer. Do not omit this line—as long as your observer is destroyed via a `Sender*`, missing a virtual destructor results in undefined behavior (UB). Next is the observed subject. Let's look at the most intuitive approach using raw pointers first:
+Nothing treacherous in this part. A polymorphic interface is standard equipment for the Observer pattern, and `virtual ~Sender() = default` guarantees that destruction through a base-class pointer correctly reaches the derived destructor — never omit this line: as long as your observers can be destroyed through a `Sender*`, a missing virtual destructor is undefined behavior. Next comes the observable; here is the most intuitive, raw-pointer version first:
 
 ```cpp
 class WeatherForecast {
@@ -105,27 +100,27 @@ private:
 };
 ```
 
-You see, this is the minimal skeleton of the Observer pattern: `register_observer` is responsible for adding an observer's address to the list, and `notify_once` traverses the list to call each one when the state changes. Logically, this is completely correct. As long as the observers stay alive, this code runs beautifully.
+See, this is the minimal skeleton of the Observer pattern: `register_observer` stuffs an observer's address into the list, and `notify_once` walks the list and calls each one on state change. Logically it's completely correct; as long as the observers stay alive, this code runs beautifully.
 
-But the problem lies precisely with the premise "as long as the observers stay alive." Let's write a minimal usage scenario where we register the address of a stack object to the weather station, and then let that object go out of scope before the weather station broadcasts:
+But the problem lies precisely in that precondition — "as long as the observers stay alive." Let's write a minimal usage scenario: register the address of a stack object with the weather station, then let that object leave scope before the station broadcasts:
 
 ```cpp
 int main() {
     WeatherForecast forecast;
     {
-        DefaultSender obs;          // 栈上对象
+        DefaultSender obs;          // stack object
         forecast.register_observer(&obs);
-        forecast.notify_once();     // 此时 obs 还活着,正常
-    }                              // obs 离开作用域,栈帧回收
-    forecast.notify_once();        // obs 里的指针悬空了 -> use-after-free
+        forecast.notify_once();     // obs is still alive here; fine
+    }                              // obs leaves scope, stack frame reclaimed
+    forecast.notify_once();        // the pointer to obs now dangles -> use-after-free
 }
 ```
 
-When the second `notify_once()` is entered, `&obs` is still sitting safely in `observers_`, but `obs` has already been reclaimed. This line accesses stack memory that has already been freed. Talk is cheap, so let's compile and run this with AddressSanitizer to see what actually happens.
+When the second `notify_once()` runs, `observers_` still confidently holds that `&obs` — but `obs` was reclaimed long ago. That line is an access to already-freed stack memory. Claims need proof, so let's compile it with AddressSanitizer and see what actually happens.
 
-## First, let's verify: will a dangling pointer really crash?
+## Let's Verify First: Do Dangling Pointers Really Blow Up
 
-We write a minimal reproduction case, intentionally allowing the observer to go out of scope before the notification:
+Let's write a minimal reproducer that deliberately lets the observer leave scope before the notification:
 
 ```cpp
 #include <iostream>
@@ -158,8 +153,8 @@ int main() {
     {
         Loud obs(1);
         s.subscribe(&obs);
-        s.notify(10);              // 此时 obs 活着,正常
-    }                              // obs 离开作用域 -> 指针悬空
+        s.notify(10);              // obs is alive here; fine
+    }                              // obs leaves scope -> pointer dangles
     s.notify(20);                  // use-after-free
 }
 ```
@@ -177,13 +172,13 @@ READ of size 8 at 0x...030 thread T0
 SUMMARY: AddressSanitizer: stack-use-after-scope observer_dangle.cpp:16
 ```
 
-ASan immediately caught a `stack-use-after-scope`—`notify` dereferences `observers_[i]` at line 16, which has already left scope, accessing reclaimed stack memory. This is the real cost of dangling pointers: in a production environment without ASan, it might manifest as "reading garbage values," "occasional segmentation faults," or "works on my machine but breaks on CI"—a classic, notoriously difficult-to-reproduce bug. **Using raw pointers for observers is a trap you will eventually fall into if object lifetimes are not perfectly aligned.**
+ASan catches a `stack-use-after-scope` on the spot — `notify` at line 16 dereferences an `observers_[i]` that has already left scope, accessing reclaimed stack memory. That's the real price of a dangling pointer: in production builds without ASan, it might show up as "reading a pile of garbage values", as "an occasional segfault", or as "works fine on my machine, crashes on CI" — the classic, hardest-to-reproduce kind of bug. **With raw pointers as observers, whenever lifetimes don't line up, you will step into this pit sooner or later.**
 
-The problem is clear: what we lack is not the ability to broadcast, but the governance of "what the observable should do with its pointers after the observers die." Let's fix this step by step.
+The problem is now clear: what we lack isn't the ability to broadcast, but governance of "**what should happen to the pointer the observable holds once the observer dies**". Let's tame it step by step.
 
-## Step 2: Make the observable hold a `shared_ptr`—plugging the dangling pointer leak, but creating zombies
+## Step 2: Let the Observable Hold a `shared_ptr` — Plugs the Dangle, but Breeds Zombies
 
-Since the pitfall lies in "the observer dies first, leaving a dangling pointer," the most intuitive solution is to transfer ownership as well—have the observable hold a `shared_ptr<Observer>`. This way, as long as the observable is alive, the observer stays alive, and the pointer never dangles. This is exactly the approach used in the `WeatherForecast` example in the playground:
+Since the pit is "observer dies first, pointer dangles", the most intuitive fix is to hand over ownership too — let the observable hold a `shared_ptr<Observer>`, so that as long as the observable lives, the observer lives with it and the pointer never dangles. This is exactly how the playground blueprint's `WeatherForecast` does it:
 
 ```cpp
 class WeatherForecast {
@@ -209,7 +204,7 @@ private:
 };
 ```
 
-With this change, the dangling pointer is indeed gone—the reference counting in `shared_ptr` guarantees that the object will not be destructed as long as a copy remains in the vector. However, a new conflict has emerged, and it is more insidious than a dangling pointer: **the observed object has quietly taken ownership of the observer**, resulting in "zombie observers." Let's see how `main` is used in the playground:
+After this change, the dangling pointer is indeed gone — `shared_ptr`'s reference count guarantees that as long as the vector still stores a copy, the object won't be destructed. But a new contradiction appears here, and it's sneakier than the dangle: **the observable quietly takes over ownership of the observer**, and "zombie observers" are born. Let's look at how the playground's `main` uses it:
 
 ```cpp
 int main() {
@@ -221,20 +216,20 @@ int main() {
 }
 ```
 
-Note that `std::make_shared<DefaultSender>()` creates a **temporary object**. After it is passed into `register_observer`, the reference count is taken over by the copy stored in the vector. At this point, the reference count is one—held only by the observer. Sounds fine? Let's verify what actually happens:
+Note that `std::make_shared<DefaultSender>()` creates a **temporary object**; after it's passed into `register_observer`, the reference count is taken over by the copy in the vector, and the count is 1 — held by the observable alone. Sounds fine? Let's verify what it leads to:
 
 ```cpp
-// 假设我们在某个函数里这样用
+// Suppose we use it like this inside some function
 void run(WeatherForecast& forecast) {
     auto phone = std::make_shared<PhoneSender>();
     forecast.register_observer(phone);
     std::cout << "phone 还在,引用计数 = " << phone.use_count() << "\n";
-}   // phone 离开作用域,外部引用没了
-// 但 forecast 里的 shared_ptr 还在 -> PhoneSender 没死,成了"僵尸"
-// 之后 forecast.notify_once() 仍会调用它
+}   // phone leaves scope, the outside reference is gone
+// But forecast's shared_ptr remains -> PhoneSender isn't dead; it's a "zombie" now
+// Later forecast.notify_once() will still call it
 ```
 
-Let's test this zombie behavior in practice:
+Let's actually run this zombie behavior:
 
 ```sh
 $ g++ -std=c++23 -O2 -pthread observer_verify.cpp -o observer_verify && ./observer_verify
@@ -245,17 +240,13 @@ notify after outside dropped its ref:
 (observer 3 was meant to die but subject kept it alive)
 ```
 
-Look, Observer 3 has already released its reference externally. It should have died, but because the Subject holds a `shared_ptr` to it, it clings to life and continues to receive notifications. This leads to two serious consequences:
+Look: the outside world dropped its reference to observer 3 long ago, so it should be dead — but because the observable holds a `shared_ptr`, it lingers on and keeps getting notified. There are two serious consequences. **First, the lifetime has been hijacked** — when the observer dies is no longer decided by its creator but held hostage by the observable. This is especially deadly in UI scenarios (a view that should be destroyed when its window closes gets pinned alive by the event source: memory leak plus logic corruption). **Second, the ownership semantics are polluted** — `shared_ptr` means "shared ownership, destruct when the last owner lets go", but in the Observer pattern the observable doesn't want to own the observer at all; it merely wants to "be able to notify the observer while it's alive". Those are two completely different demands.
 
-**First, the lifetime is hijacked.** When the observer dies is no longer decided by its creator, but is held hostage by the Subject. This is particularly fatal in UI scenarios (a view that should be destroyed when a window closes is kept alive by the event source, leading to memory leaks and logic errors).
+Worse, this line of thinking pushes the lifetime problem from one extreme to the other: with raw pointers, "the observable manages nothing at all — observers may die whenever they like, and it never knows"; with `shared_ptr`, "the observable forcibly takes over — observers can't die even if they want to". What we want is neither extreme but the delicate balance point in between — **the observable knows whether an observer is still around, but doesn't prevent it from dying**.
 
-**Second, ownership semantics are polluted.** The intent of `shared_ptr` is "shared ownership; destroy when the last owner lets go," but in the Observer pattern, the Subject has no desire to own the Observer. It only wants to "notify it if it is still alive." These are two completely different requirements.
+## Step 3: Dangle-Proofing with `weak_ptr` — Observe Without Owning, and Know When It Died
 
-Worse still, this approach pushes the lifetime management problem from one extreme to the other. Raw pointers mean "the Subject doesn't care at all; the Observer can die whenever, and I won't know." `shared_ptr` means "the Subject forcibly takes over; the Observer can't die even if it wants to." What we need is not these two extremes, but the delicate balance in between: **the Subject knows if the Observer is present, but does not prevent it from dying.**
-
-## Step 3: `weak_ptr` Prevents Dangling References — Observing Without Ownership, Knowing When It's Gone
-
-`weak_ptr` is tailor-made for this balance point. Its semantics are exactly what we want: **it does not increase the reference count or extend the object's lifetime, but it allows us to check "is the object still there?" at any time. If it is, we borrow a temporary `shared_ptr` to use; if not, we gracefully report that it's gone.** By switching the reference held by the Subject from `shared_ptr` to `weak_ptr`, the entire lifetime management becomes clear:
+`weak_ptr` is tailor-made for exactly this balance point. Its semantics are precisely what we want: **it doesn't bump the reference count or extend the object's lifetime, yet at any moment it can check "is the object still there" — if yes, borrow a temporary `shared_ptr` to work with; if no, honestly report that it's gone**. Swap the observable's stored reference from `shared_ptr` to `weak_ptr`, and the whole lifetime governance suddenly becomes tractable:
 
 ```cpp
 #include <memory>
@@ -263,18 +254,18 @@ Worse still, this approach pushes the lifetime management problem from one extre
 
 class WeatherForecast {
 public:
-    // 接受 shared_ptr,但只存 weak_ptr —— 不延长观察者寿命
+    // Accept a shared_ptr, but store only a weak_ptr — doesn't extend the observer's lifetime
     void register_observer(const std::shared_ptr<Sender>& sender) {
-        observers_.push_back(sender);   // shared_ptr -> weak_ptr 隐式构造
+        observers_.push_back(sender);   // shared_ptr -> weak_ptr implicit conversion
     }
     void notify_once() {
         MessagePackage pack = WeatherSensor::get_message_pack();
         for (auto it = observers_.begin(); it != observers_.end(); ) {
-            if (auto live = it->lock()) {        // 关键:试着把 weak 升级回 shared
-                live->receiving_message(pack);   // 升级成功 -> 对象活着,通知它
+            if (auto live = it->lock()) {        // The key: try upgrading the weak ref back to shared
+                live->receiving_message(pack);   // Upgrade succeeded -> object alive, notify it
                 ++it;
             } else {
-                it = observers_.erase(it);       // 升级失败 -> 对象已死,顺手清理
+                it = observers_.erase(it);       // Upgrade failed -> object dead, clean up while we're at it
             }
         }
     }
@@ -286,11 +277,11 @@ private:
 };
 ```
 
-The core logic boils down to a single line: `it->lock()`. `weak_ptr::lock()` is an atomic operation ([util.smartptr.weak.obs]) that returns a new `shared_ptr`: if the managed object is still alive, this new `shared_ptr` points to it and increments the reference count; if the object has already been destroyed, it returns an empty `shared_ptr`. We need to verify that the behavior of `lock` meets our expectations, as the safety of the entire pattern hinges on this specific semantic.
+The core is the single line `it->lock()`. `weak_ptr::lock()` is an atomic operation ([util.smartptr.weak.obs]) that returns a new `shared_ptr`: if the managed object is still alive, the new `shared_ptr` points to it and the reference count goes up by one; if the object has already been destructed, it returns an empty `shared_ptr`. Before going further we should verify that `lock` behaves the way we expect, because the safety of this entire pattern rests on that one semantic.
 
-## Let's Verify: How Does `weak_ptr::lock()` Actually Behave?
+## Let's Verify First: How `weak_ptr::lock()` Actually Behaves
 
-We will write a minimal example that binds a `weak_ptr` to a `shared_ptr`, and then calls `lock()` in two scenarios: when the object is alive, and when it has been destroyed.
+Let's write a minimal example: bind a `weak_ptr` to a `shared_ptr` and call `lock()` in both situations — object alive and object destroyed:
 
 ```cpp
 #include <iostream>
@@ -301,12 +292,12 @@ static void verify_weak_lock() {
     {
         auto sp = std::make_shared<int>(42);
         w = sp;
-        auto locked = w.lock();                 // 对象存活
+        auto locked = w.lock();                 // object alive
         std::cout << "alive: use_count=" << locked.use_count()
                   << " value=" << (locked ? *locked : 0) << "\n";
         std::cout << "expired()=" << std::boolalpha << w.expired() << "\n";
-    }                                           // sp 离开作用域,对象析构
-    auto locked = w.lock();                     // 对象已销毁
+    }                                           // sp leaves scope, object destructed
+    auto locked = w.lock();                     // object already destroyed
     std::cout << "after destroy: locked.empty=" << (locked == nullptr)
               << " expired=" << w.expired() << "\n";
     if (auto p = w.lock()) {
@@ -319,7 +310,7 @@ static void verify_weak_lock() {
 int main() { verify_weak_lock(); }
 ```
 
-Let's compile and run it:
+Compile and run:
 
 ```sh
 $ g++ -std=c++23 -O2 -pthread observer_verify.cpp -o observer_verify
@@ -331,9 +322,9 @@ after destroy: locked.empty=true expired=true
 lock failed -> skip callback (no crash)
 ```
 
-Look, when the object is alive, the `shared_ptr` returned by `lock()` increments the reference count to two (the original `sp` plus this new one), and `expired()` returns false. After the object is destructed, `lock()` returns a null pointer, `expired()` returns true, and we skip the callback based on this, so nothing crashes. This is the cornerstone of the entire anti-dangling pattern—**temporarily upgrading the `weak_ptr` to a `shared_ptr` at the moment of notification ensures that as long as this temporary reference exists, the object will absolutely not be destructed during the callback execution**. This is the hard guarantee provided by `weak_ptr`.
+Look: while the object is alive, the `shared_ptr` returned by `lock()` pushes the reference count to 2 (the original sp plus the one from lock), and `expired()` is false; after the object is destructed, `lock()` returns a null pointer and `expired()` is true, so we skip the callback accordingly — nothing crashes. This is the cornerstone of the entire dangle-proof pattern — **at the moment of notification, temporarily upgrade the `weak_ptr` into a `shared_ptr`; as long as that temporary reference exists, the object absolutely cannot be destructed mid-callback**. That's a hard guarantee `weak_ptr` gives us.
 
-Let's run through the complete scenario where the "observer dies first, but notification remains safe" one more time to confirm that the anti-dangling mechanism truly holds:
+Now let's run the complete "observer dies first, notification stays safe" scenario once more to confirm dangle-proofing really holds:
 
 ```sh
 $ ./observer_verify
@@ -344,13 +335,13 @@ notify after observer 2 destroyed:
 (no crash: dead observers were skipped by lock)
 ```
 
-`observer 1` is a temporary object and is destroyed immediately after registration; `observer 2` is destroyed at the end of the inner scope. Subsequent notifications fail all their `lock()` attempts on them and automatically skip over them, so the program continues safely. Compare this to the earlier `stack-use-after-scope` crash with ASan; similarly, "the observer dies first," yet the `weak_ptr` version doesn't even hiccup. **This is the standard answer in modern C++ for managing observer lifecycles: own nothing, but know everything.**
+observer 1 is a temporary destructed right after registration, and observer 2 is destructed at the end of the inner scope — every later notification fails `lock()` on them, skips them automatically, and the program marches on undisturbed. Compare that with the earlier `stack-use-after-scope` crash under ASan: same "observer dies first" situation, and the weak_ptr version doesn't so much as sneeze. **This is the modern C++ standard answer for governing observer lifetimes: don't own, but know.**
 
-## Step 4: RAII Subscription — Destruction is Unsubscription
+## Step 4: RAII Subscription — Destruction Is Unsubscription
 
-At this stage, we have solved the dangling pointer problem, but there is a lingering issue: after an observer is destroyed, its `weak_ptr` remains in `observers_`. Although every notification identifies and cleans these up, the list gradually accumulates a pile of dead weak references, wasting memory and causing every notification to perform a batch of failed `lock()` calls in vain. A more elegant approach is to have the observer actively unsubscribe **at the exact moment of its destruction**. However, this presents a chicken-and-egg problem: when the observer is being destroyed, its own `this` pointer is about to become invalid, so how can it unsubscribe?
+At this point the dangling pointer is solved, but one tail remains: after an observer is destructed, its `weak_ptr` stays in `observers_`. Each notification can still recognize and clean these up, but the list gradually accumulates a pile of dead weak references — they waste memory and force every notification through a batch of doomed `lock()` calls. A more elegant approach is to have the observer unsubscribe proactively **at the very moment of its own destruction** — but here's a chicken-and-egg problem: when the observer is being destructed, its own `this` is about to become invalid, so how does it unsubscribe?
 
-The answer is to use an **RAII subscription token**. Instead of returning void, the subscription returns an object. This object holds the "information required to unsubscribe" (a pointer to the observable plus a subscription ID), and its destructor performs the unsubscription. The observer stores this token as a member variable. Consequently, when the observer is destroyed, its members are destroyed first—the token is destroyed—unsubscription completes—and then finally the observer itself is destroyed. The order is naturally correct:
+The answer is an **RAII subscription token**. Subscribing doesn't return void; it returns an object that holds "the information needed to unsubscribe" (a pointer to the observable plus a subscription id), and its destructor performs the unsubscription. The observer stores this token as a member, so when the observer is destructed, its members get destructed first — the token destructs — the unsubscribe completes — and only then does the observer's own body destruct. The ordering is naturally correct:
 
 ```cpp
 #include <cstddef>
@@ -363,7 +354,7 @@ class WeatherForecast {
 public:
     using Callback = std::function<void(const MessagePackage&)>;
 
-    // RAII 订阅令牌:析构时自动退订
+    // RAII subscription token: unsubscribes automatically on destruction
     class Subscription {
     public:
         Subscription() = default;
@@ -387,7 +378,7 @@ public:
         WeatherForecast* owner_ = nullptr;
     };
 
-    // 订阅:把回调和 weak_ptr 一起登记,返回 RAII 令牌
+    // Subscribe: register the callback together with the weak_ptr, return the RAII token
     Subscription subscribe(Callback cb) {
         std::lock_guard<std::mutex> lk(mtx_);
         std::size_t id = next_id_++;
@@ -407,19 +398,19 @@ private:
 };
 ```
 
-This design transforms "unsubscribing" from a task programmers must remember to perform into something the destructor guarantees automatically: as long as the token is destroyed, unsubscription is certain to occur. This aligns with the spirit of RAII discussed in the Singleton chapter: **delegate constraints to language mechanisms, not human conventions**. The observer holds a `Subscription` member; when it dies, the token dies with it, the unsubscription completes, and no corpses of weak references are left behind in the observable's list.
+This design turns "unsubscribing" from something the programmer must remember to do into something a destructor guarantees automatically — as long as the token destructs, the unsubscribe will happen. It's the same spirit of RAII we discussed in the Singleton chapter: **hand the constraint to a language mechanism instead of a human-memory convention**. The observer holds a `Subscription` member; when it dies, the token dies with it, the unsubscribe completes with it, and the observable's list is never littered with the corpses of dead weak references.
 
-However, I must honestly share a trade-off here: the RAII subscription token uses an "id + callback" model rather than an "id + `weak_ptr` to the observer object" model. This is because a `std::function` callback can capture arbitrary state (including `weak_ptr<Observer>`), making it more flexible than hard-binding a specific observer interface. You can write object-oriented code like `subscribe([this](auto& p){ view_.on_change(p); })`, or completely object-less pure functional callbacks. The cost is that `std::function` incurs a heap allocation (and potential missed inlining due to type erasure). In performance-critical scenarios with extremely high notification frequencies, reverting to the raw `Observer*` interface + `weak_ptr` approach is more efficient. For most business logic, this overhead is negligible.
+But let me honestly point out a trade-off here: the RAII subscription token uses an "id + callback" model rather than an "id + weak_ptr to the observer object" model. The reason is that a `std::function` callback can capture arbitrary state (including a `weak_ptr<Observer>`), which is more flexible than hard-wiring an observer interface — you can write object-oriented code like `subscribe([this](auto& p){ view_.on_change(p); })`, or a fully object-free purely functional callback. The cost is that `std::function` performs a heap allocation (plus the potential missed inlining from type erasure); in extremely performance-sensitive, extremely high-frequency-notification scenarios, going back to the bare `Observer*` interface + `weak_ptr` set is cheaper. For most business scenarios this overhead is entirely negligible.
 
-## Pitfall Warning: Modifying the Subscription List During Notification
+## Pitfall Warning: Mutating the Subscription List Inside notify
 
-::: warning Pitfall Warning
-You will eventually encounter this scenario: an observer, inside its own callback, decides "I don't need to listen anymore, I want to unsubscribe," or "I want to register a new observer." This sounds reasonable, but if you directly `erase` or `push_back` to `observers_` while iterating through it in `notify`, you will trigger iterator invalidation—resulting in crashes, missed observers, or duplicate calls.
+::: warning Pitfall warning
+Sooner or later you will hit this scenario: inside its own callback, an observer decides, based on what it received, "I don't need to listen anymore, I'm unsubscribing", or "I want to register another new observer". Sounds perfectly reasonable — but if you call `erase` or `push_back` while `notify` is mid-iteration over `observers_`, you trigger iterator invalidation: a crash, a few observers getting skipped, or some getting called twice.
 
-The root of the problem is: **the notification path and the modification path operate on the same container**. Iterating on one side while modifying the structure on the other; STL containers do not guarantee correct behavior under such concurrent modification. The correct approach is **snapshot notification**: upon entering `notify`, first copy all current callbacks to a local vector inside a lock, then **release the lock**, and iterate over this copy outside the lock to call them one by one. This way, callbacks are free to modify `observers_` however they like—they modify the original list, while the notification iterates over the copy, so the two do not interfere. After the notification finishes, apply any accumulated additions or removals from this round (usually placed in `pending_add_` / `pending_remove_` buffers and processed in bulk when the outermost `notify` exits).
+The root cause: **the notification path and the add/remove path operate on the same container**. One side iterates while the other mutates the structure — STL containers make no promise of working correctly under such concurrent modification. The correct approach is **snapshot notification**: on entering `notify`, first copy all current callbacks into a local vector under the lock, then **release the lock** and iterate over that copy outside the lock, calling each one. Now a callback may mutate `observers_` however it likes — it modifies the original table while the notification walks the copy, and the two never interfere. After the notification finishes, apply the adds and removes accumulated during the round all at once (typically stashed in two buffers, `pending_add_` / `pending_remove_`, processed together when the outermost `notify` exits).
 :::
 
-Let's verify that this snapshot approach works:
+Let's verify the snapshot path actually works:
 
 ```cpp
 #include <iostream>
@@ -431,10 +422,10 @@ public:
     using Cb = std::function<void(int)>;
     void subscribe(Cb cb) { observers_.push_back(std::move(cb)); }
 
-    // snapshot 版:先拷一份再调用,回调里随便改原表
+    // snapshot version: copy first, then invoke; callbacks may mutate the original table freely
     void notify_good(int v) {
-        std::vector<Cb> snap(observers_);     // 拷一份
-        for (auto& cb : snap) cb(v);          // 遍历拷贝
+        std::vector<Cb> snap(observers_);     // take a copy
+        for (auto& cb : snap) cb(v);          // iterate the copy
     }
 private:
     std::vector<Cb> observers_;
@@ -458,22 +449,22 @@ B got 1
 total hits = 2 (expect 2)
 ```
 
-Both observers are invoked exactly once. The cost of `snapshot` is copying the callback list on every notification (copying a `std::function` involves a heap allocation), so this approach is suitable for scenarios with "moderate notification frequency and a manageable number of observers." If the notification frequency is extremely high, we can switch to an immutable `shared_ptr<vector<Cb>>` for copy-on-write, or simply go for a lock-free RCU approach—but those go beyond the scope of the Observer pattern itself.
+Both observers were called exactly once. The price of snapshot is copying the callback list on every notification (copying a `std::function` is a heap allocation), so this scheme suits scenarios with "moderate notification frequency and a manageable observer count"; if notification frequency is extremely high, you can switch to copy-on-write with an immutable `shared_ptr<vector<Cb>>`, or go all the way down the lock-free RCU route — but those already step outside the Observer pattern itself.
 
-## Pitfall Warning: Circular Dependencies and Infinite Recursion
+## Pitfall Warning: Circular Dependencies and Infinite Notification Recursion
 
-::: warning Pitfall Warning
-There is an even more insidious trap: **A observes B, and B observes A**. When A changes, it notifies B; B's callback modifies A, which notifies B again; B modifies A again... This creates a dead loop. In the program, this manifests as a stack overflow (`StackOverflow`) or the CPU being permanently occupied by an infinite event chain.
+::: warning Pitfall warning
+There's an even sneakier pit: **A observes B, and B observes A**. A changes and notifies B; B's callback modifies A; A notifies B again; B modifies A again... That's an infinite loop, which manifests as a stack overflow (`StackOverflow`) or a CPU permanently hogged by a single event chain.
 
-The preferred way to handle this is not to implement complex detection mechanisms, but to block it at the source—**compare the old and new values before `setX()`, and only notify if the value has actually changed**. This is the simplest yet most effective trick, because it cuts off "meaningless self-triggering" at the root:
+The first-choice remedy isn't some elaborate detection mechanism but blocking the problem at the source — **compare the old and new values before `setX()`, and notify only when something actually changed**. This is the plainest and most effective move, because it strangles "meaningless self-triggering" at the root:
 
 ```cpp
 class Person {
 public:
     void set_age(int new_age) {
-        if (age_ == new_age) return;   // 值没变,不通知,直接打断环路
+        if (age_ == new_age) return;   // value unchanged: don't notify; breaks the loop outright
         age_ = new_age;
-        forecast_.notify_once();       // 真变了才广播
+        forecast_.notify_once();       // broadcast only when it really changed
     }
 private:
     int age_ = 0;
@@ -481,12 +472,12 @@ private:
 };
 ```
 
-In addition, there are several auxiliary strategies: batching multiple consecutive changes into a single notification (a `begin_update()` / `end_update()` transaction model that broadcasts only upon completion); placing a "notification suppression switch" on the callback path (using an RAII guard like `ScopedNotificationDisable`) to temporarily disable notifications during update segments known to trigger loops; and avoiding bidirectional observation at the design level. If bidirectional observation is absolutely necessary, clearly define which side is the primary data source and which is the passive side—the passive side must never modify the primary side within a callback. **If a loop does occur, implement change detection first; this is the most cost-effective step.**
+Beyond that there are a few auxiliary measures: merge several consecutive changes into one notification (the `begin_update()` / `end_update()` transaction pattern, broadcasting only when the transaction ends); hang a "notification suppression switch" on the callback path (an RAII guard like `ScopedNotificationDisable`) to temporarily silence notifications inside update sections known to trigger the loop; and avoid bidirectional observation at the design level in the first place — if it must be bidirectional, make it explicit who is the master data source and who is the passive end, and the passive end must never modify the master inside a callback. **When you really do hit a loop, do change detection first — that's the highest-value move.**
 :::
 
-## Practice: A Working Weather Station Event Source
+## In Practice: A Working Weather Station Event Source
 
-Let's combine all the governance techniques we discussed—`weak_ptr` for dangling prevention, RAII subscriptions, snapshot notifications, and change detection—to build a fully functional `WeatherForecast`. It periodically fetches data from sensors and notifies all subscribers whenever the temperature or humidity changes. Subscribers can be destroyed at any time without crashing the weather station, and subscribers can safely add or remove subscriptions within callbacks without causing notification crashes:
+Let's knead all the governance techniques from before — `weak_ptr` dangle-proofing, RAII subscription, snapshot notification, change detection — into one genuinely usable `WeatherForecast`. It periodically fetches data from the sensor and notifies all subscribers whenever temperature or humidity changes; subscribers may be destroyed at any time without crashing the station, and subscribers may add or remove subscriptions from inside callbacks without crashing the notification:
 
 ```cpp
 #pragma once
@@ -526,13 +517,13 @@ public:
 
     Subscription subscribe(Callback cb);
 
-    // 取一次数据并广播;温度或湿度之一变化才通知(变更检测)
+    // Fetch once and broadcast; notify only if temperature or humidity changed (change detection)
     void poll_once();
 
 private:
     void detach_by_id(std::size_t id);
 
-    // 模拟传感器:实际项目里这里是硬件读取或网络拉取
+    // Simulated sensor: in a real project this is a hardware read or a network fetch
     struct WeatherSensor {
         static MessagePackage get_message_pack();
     };
@@ -540,7 +531,7 @@ private:
     std::mutex mtx_;
     std::unordered_map<std::size_t, Callback> callbacks_;
     std::size_t next_id_ = 1;
-    MessagePackage last_{};          // 上一次的快照,用于变更检测
+    MessagePackage last_{};          // previous snapshot, used for change detection
 };
 ```
 
@@ -576,13 +567,13 @@ WeatherForecast::Subscription& WeatherForecast::Subscription::operator=(Subscrip
 void WeatherForecast::poll_once() {
     MessagePackage pack = WeatherSensor::get_message_pack();
 
-    // 变更检测:温度湿度都没变,不通知(打断潜在的事件环路)
+    // Change detection: neither temperature nor humidity changed, don't notify (breaks potential event loops)
     bool changed = pack.temperature != last_.temperature
                 || pack.humidity    != last_.humidity;
     last_ = pack;
     if (!changed) return;
 
-    // snapshot:锁内拷一份回调,锁外调用
+    // snapshot: copy the callbacks under the lock, invoke outside it
     std::vector<Callback> snapshot;
     {
         std::lock_guard<std::mutex> lk(mtx_);
@@ -590,12 +581,12 @@ void WeatherForecast::poll_once() {
         for (auto& kv : callbacks_) snapshot.push_back(kv.second);
     }
     for (auto& cb : snapshot) {
-        try { cb(pack); } catch (...) { /* 单个观察者崩不波及整体 */ }
+        try { cb(pack); } catch (...) { /* one observer's failure doesn't take down the rest */ }
     }
 }
 ```
 
-This is how it works: endpoints can join or leave whenever they want, and the weather station doesn't care who they are or when they die:
+Usage looks like this — endpoints come to listen whenever they want and leave whenever they want, and the weather station doesn't care in the slightest who they are or when they die:
 
 ```cpp
 int main() {
@@ -613,55 +604,55 @@ int main() {
             [wtv = std::weak_ptr(tv)](const MessagePackage& m) {
                 if (auto p = wtv.lock()) p->receiving_message(m);
             });
-        forecast.poll_once();   // phone 和 tv 都收到
-    }                           // sub2 析构 -> 自动退订
+        forecast.poll_once();   // both phone and tv receive it
+    }                           // sub2 destructs -> automatic unsubscribe
 
-    forecast.poll_once();       // 只有 phone 收到,没有悬空、没有僵尸
+    forecast.poll_once();       // only phone receives it — no dangle, no zombies
 }
 ```
 
-Note that we use `weak_ptr` in the callback again—this acts as a "double insurance": even if someone forgets to store the `Subscription` as a member, or if the unsubscribe fails to take effect due to some race condition, a failed `lock()` in the callback will cause it to be silently skipped rather than accessing a destructed object. **Here, `weak_ptr` assumes the dual role of "preventing dangling pointers" and "fault tolerance."**
+Notice we use `weak_ptr` again inside the callback — that's a "double insurance": even if someone forgets to store the `Subscription` as a member, and even if the unsubscribe hasn't taken effect in time because of some race, a failed `lock()` inside the callback makes it skip silently instead of touching an already-destructed object. **Here `weak_ptr` plays the dual roles of "dangle-proofing" and "fault tolerance".**
 
-::: tip Companion Compilable Project
-The complete project for this section is available in this repository. It includes three types of `Sender` (default, mobile, TV), sensor data retrieval, and a full pipeline of registration and notification. Just clone it and run CMake: [Observer / WeatherForecast](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Observer/WeatherForecast).
+::: tip Companion compilable project
+The complete project for this section lives in this repository: three kinds of `Sender` (default/phone/TV), sensor fetching, registration and notification in one pipeline — clone it, run cmake once, and it works: [Observer / WeatherForecast](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Observer/WeatherForecast).
 :::
 
-## Why the Observer Pattern is Unpopular
+## Why the Observer Pattern Gets a Bad Rap
 
-At this point, we have a correct Observer implementation with clean lifetime management and thread safety. But the story doesn't end here—I must honestly tell you that the Observer pattern comes with its own engineering costs, so you should be aware of them before using it.
+At this point we have a correct, lifetime-clean, and thread-safe observer implementation. But the story doesn't end here — I have to be honest with you: the Observer pattern carries its own engineering costs, and you'd best know them before using it.
 
-**First, it is "implicit invocation."** Who the subject calls and when it calls them is not visible in the source code—you only see `notify()`, but you don't see who will respond. This means that during debugging, if an observer's callback is triggered inexplicably, you have to inspect the subscription list at runtime to know who registered it. This "implicit jump of control flow" is the biggest readability cost of the Observer pattern; large-scale use can make the code difficult to trace.
+**First, it's implicit invocation.** Who the observable calls, and when, is invisible in the source — you only see `notify()`, not who will respond. That means when debugging, if some observer's callback fires inexplicably, you have to dig through the subscription list at runtime to find out who registered it. This kind of "implicit jump in control flow" is the Observer pattern's biggest readability cost; at scale it makes code hard to trace.
 
-**Second, notification order is unpredictable.** If your logic depends on "who receives the notification first" (for example, Observer A must update before B because B depends on A's intermediate result), an Observer implementation using `unordered_map` to store callbacks will bite you hard—the traversal order of a hash table is non-deterministic. Even if you switch to `vector`, you must explicitly document in your docs that "order is registration order," and pray that no one changes this assumption later.
+**Second, notification order is unpredictable.** If your logic depends on "who gets notified first" (say observer A must update before B, because B depends on A's intermediate result), an observer implementation that stores callbacks in an `unordered_map` will bite you hard — hash table iteration order is unspecified. Even if you switch to a `vector`, you must document explicitly that "the order is registration order", and pray nobody quietly changes that assumption later.
 
-**Third, exception swallowing.** You saw the `try { cb(pack); } catch (...) {}` above—to prevent one observer's exception from crashing the entire notification process, we swallowed it. However, this means that bugs in observers might be silently swallowed, and you won't even know an error occurred when troubleshooting. A more responsible approach is to log the error, or provide a configurable exception strategy hook, but in any case, **"swallowing exceptions" is a compromise we have to make**.
+**Third, exception swallowing.** You saw the `try { cb(pack); } catch (...) {}` above — to keep one observer's exception from blowing up the entire notification flow, we swallowed it. But that means a bug inside an observer may be silently eaten, leaving no trace during troubleshooting. A more responsible approach is logging, or providing a configurable exception-policy hook — but either way, **"swallowing exceptions" is itself a compromise we can't avoid making**.
 
-**Fourth, no matter how clean the lifetime management is, it can't stop "the observer is alive but its state is invalid."** `weak_ptr` only tells you if the object exists, not what state it is in. An object might still be alive, but its internal resources are invalid (e.g., network disconnected, file closed), yet the observer will still be notified and will still attempt to use that invalid state. `weak_ptr` fixes dangling pointers, not logical correctness.
+**Fourth, however clean the lifetime governance, it cannot stop "the observer is alive but in a bad state".** A `weak_ptr` can only tell you whether the object exists, not what state it's in. An object may still be alive while its internal resources have gone invalid (the network dropped, the file closed) — the observer still gets notified and still uses that stale state. `weak_ptr` cures dangling, not logical correctness.
 
 ## Summary
 
-Let's review the entire evolution path:
+Let's walk the whole evolution path once:
 
 | Stage | Approach | Why it's still not enough |
 |---|---|---|
-| Raw Pointer | Subject holds `vector<Observer*>` | Observer dies first -> dangling pointer -> use-after-free |
-| `shared_ptr` | Subject holds `vector<shared_ptr<Observer>>` | Takes ownership -> zombie observers, things that should die won't |
-| `weak_ptr` Dangling Prevention | Holds `vector<weak_ptr<Observer>>`, `lock()` in `notify` | **Sufficient** (skips if dead, no dangling, no ownership hijacking) |
-| RAII Subscription Token | Destructor unsubscribes | Observer destructor automatically clears its own weak reference |
-| Snapshot Notification | `notify` copies first, then calls | Fixes iterator invalidation caused by add/remove inside callbacks |
+| Raw pointers | Observable holds a `vector<Observer*>` | Observer dies first -> dangling pointer -> use-after-free |
+| `shared_ptr` | Observable holds a `vector<shared_ptr<Observer>>` | Takes over ownership -> zombie observers that can't die when they should |
+| `weak_ptr` dangle-proofing | Holds a `vector<weak_ptr<Observer>>`, `lock()` inside `notify` | **Good enough** (dead ones are skipped — no dangle, no zombies) |
+| RAII subscription token | Destruction is unsubscription | Observer's destruction auto-removes its own weak reference |
+| Snapshot notification | `notify` copies first, then invokes | Tames iterator invalidation caused by adds/removes inside callbacks |
 
-Keep these key conclusions in mind:
+Note down these key conclusions:
 
-- **For modern C++ Observers, the preferred choice for lifetime management is `weak_ptr`**—the subject holds a weak reference, `lock()` upgrades it to a temporary `shared_ptr` during `notify`, and if the object is dead, it skips. This avoids dangling pointers without hijacking ownership.
-- **Never let the subject hold a `shared_ptr<Observer>`**, as that forcibly takes ownership of the observer, creating "zombie observers" that refuse to die and polluting ownership semantics.
-- **Subscriptions must be paired with an RAII token**, allowing unsubscribe to happen automatically when the observer destructs, rather than relying on a human remembering to call `unsubscribe()`.
-- **`notify` must use a snapshot**, otherwise add/remove operations in callbacks will trigger iterator invalidation; if you encounter circular dependencies, perform change detection at the source first.
-- `weak_ptr` fixes dangling pointers, not logical correctness—it doesn't care if the observer's state is correct.
+- **For observers in modern C++, `weak_ptr` is the first choice for lifetime governance** — the observable holds weak references and upgrades them to a temporary `shared_ptr` via `lock()` at `notify` time; dead objects are skipped, with neither dangling nor ownership hijacking.
+- **Never let the observable hold a `shared_ptr<Observer>`** — that forcibly takes over the observer's ownership, breeds "zombie observers that can't die when they should", and pollutes ownership semantics.
+- **Always pair subscriptions with an RAII token**, so unsubscription happens automatically when the observer destructs, rather than relying on human memory to call `unsubscribe()`.
+- **`notify` must go through a snapshot**, otherwise adds/removes inside callbacks trigger iterator invalidation; on circular dependencies, do change detection at the source first.
+- `weak_ptr` cures dangling pointers, not logical correctness — whether an observer's state is valid is beyond its jurisdiction.
 
 ## References
 
-- [cppreference: `std::weak_ptr`](https://en.cppreference.com/w/cpp/memory/weak_ptr) (C++11, `lock()` / `expired()` / `use_count` semantics)
-- [cppreference: `std::shared_ptr`](https://en.cppreference.com/w/cpp/memory/shared_ptr) (Reference counting and control blocks)
-- [cppreference: `std::enable_shared_from_this`](https://en.cppreference.com/w/cpp/memory/enable_shared_from_this) (Safely obtaining an object's own `shared_ptr`)
-- *Design Patterns* (GoF), Observer section; Andrei Alexandrescu, *Modern C++ Design*, Chapter 5 (Generic Observer)
+- [cppreference: `std::weak_ptr`](https://en.cppreference.com/w/cpp/memory/weak_ptr) (C++11; semantics of `lock()` / `expired()` / `use_count`)
+- [cppreference: `std::shared_ptr`](https://en.cppreference.com/w/cpp/memory/shared_ptr) (reference counting and the control block)
+- [cppreference: `std::enable_shared_from_this`](https://en.cppreference.com/w/cpp/memory/enable_shared_from_this) (safely obtaining a `shared_ptr` to itself from inside the object)
+- *Design Patterns* (GoF), the Observer chapter; Andrei Alexandrescu, *Modern C++ Design*, Chapter 5 (generalized observers)
 - Companion compilable project: [Observer / WeatherForecast](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Observer/WeatherForecast)

@@ -3,77 +3,77 @@ chapter: 7
 cpp_standard:
 - 17
 - 20
-description: 'Deep dive into `std::span`: a non-owning view of pointer plus length,
-  memory differences between dynamic and static extent, unified acceptance of `array`/`vector`/C
-  arrays, zero-copy `subspan` slicing, byte views via `as_bytes`, and lifetime pitfalls
-  of dangling views.'
+description: 'std::span laid bare: a non-owning view of one pointer plus one length,
+  the sizeof difference between dynamic and static extents, uniformly accepting
+  array/vector/C arrays, zero-copy subspan slicing, byte views via as_bytes, and
+  the lifetime traps of dangling views'
 difficulty: intermediate
 order: 8
 platform: host
 reading_time_minutes: 7
 related:
-- array：编译期固定大小的聚合容器
-- vector 深入：三指针、扩容与迭代器失效
+- 'array: An Aggregate Container with a Compile-Time Fixed Size'
+- 'Deep Dive into vector: Three Pointers, Reallocation, and Iterator Invalidation'
 tags:
 - host
 - cpp-modern
 - intermediate
 - span
 - 容器
-title: 'span: Non-owning Contiguous View'
+title: 'span: A Non-owning Contiguous View'
 translation:
   source: documents/vol3-standard-library/containers/08-span.md
   source_hash: a47d4d2cce1ffad567eddb40f82d56fb2ee0c7a8fc99c9681b3bf988f7f99a3b
-  translated_at: '2026-06-24T00:35:49.457773+00:00'
+  translated_at: '2026-09-26T02:30:34+00:00'
   engine: anthropic
-  token_count: 1435
+  token_count: 4000
 ---
 # span: A Non-owning Contiguous View
 
-## What is a span: A pointer plus a size, that's it
+## What span Is: A Pointer Plus a Length, Nothing More
 
-`std::span` is the standard view provided by C++20 for "a contiguous sequence of data". It does not own the memory; it only holds two things: a pointer and a size. It's that simple—you can think of it as a "pointer with boundary information," or a formal wrapper for the C-style `(ptr, len)` argument pair. It doesn't allocate, deallocate, or copy the underlying data. Copying a span just means copying those two words (the pointer and the size), which is extremely cheap.
+`std::span` is C++20's standardized view over "a stretch of contiguous data". It does not own that memory; it holds exactly two things: a pointer and a length. It's that simple — you can think of it as "a pointer with boundary information attached", or as the official packaging of the C `(ptr, len)` parameter pair. It never allocates, frees, or copies the underlying data; copying a span copies just those two words (pointer and size), which is extremely cheap.
 
 ```cpp
 std::vector<int> v = {1, 2, 3, 4};
-std::span<int> s(v);       // s 指向 v 的数据，但不拥有
+std::span<int> s(v);       // s points to v's data, but does not own it
 s.size();                  // 4
 s[0];                      // 1
 s.data() == v.data();      // true
 ```
 
-Its core value lies in "passing parameters": when a function needs to accept "a contiguous sequence of `T`," using `std::span<const T>` allows it to uniformly accept C arrays, `std::array`, `std::vector`, and `(pointer, length)` pairs, among other contiguous sources. It neither copies data nor requires the function to be implemented as a template.
+Its core value is parameter passing: when a function wants to accept "a run of T data", `std::span<const T>` uniformly takes C arrays, `std::array`, `std::vector`, `(pointer, length)` pairs — every contiguous source — without copying the data and without writing the function as a template.
 
-## Why we need it: The pitfalls of the pointer-plus-length approach
+## Why We Need It: The Old Ailments of Pointer-Plus-Length Parameters
 
-In C/C++, the traditional way to pass "a chunk of memory" to a function is `void f(T* ptr, std::size_t n)`. This works, but it has several drawbacks: the unit of the length `n` (elements vs. bytes) relies on comments or guesswork; whether the function modifies data depends on spotting `T*` vs. `const T*`, which is easy to miss; there is no compile-time protection if the caller passes the wrong length; and these two parameters must always be passed and remembered together. `span` bundles the pointer and length into a single object, where the type (`span<const T>` vs. `span<T>`) directly expresses read-only or read-write intent, and the length stays with the object, so it cannot be lost.
+In C/C++, the old way to hand "a chunk of memory" to a function is `void f(T* ptr, std::size_t n)`. It runs, but the ailments pile up: whether the length `n` counts elements or bytes, you have to learn from a comment or guess; whether the function modifies the data hinges on `T*` versus `const T*`, which is easy to miss; a caller passing the wrong length gets no compile-time protection whatsoever; and the two parameters have to be passed as a pair and remembered as a pair. span packs the pointer and the length into one object; the type (`span<const T>` vs `span<T>`) states the read-only/read-write intent directly, and the length travels with the object — it cannot get lost.
 
 ```cpp
-// 老办法：长度单位、只读与否全靠注释
+// The old way: the length unit and read-only-ness live in comments
 void process_old(const uint8_t* buf, std::size_t n);
 
-// span 办法：类型即语义
-void process(std::span<const uint8_t> buf);   // 明确：只读，长度内建
-void mutate(std::span<uint8_t> buf);          // 明确：会改，长度内建
+// The span way: the type is the semantics
+void process(std::span<const uint8_t> buf);   // clear: read-only, length built in
+void mutate(std::span<uint8_t> buf);          // clear: will modify, length built in
 ```
 
-This is also less hassle than writing `template<class C> void process(const C& c)`—we don't need to instantiate a version for every container, which avoids code bloat.
+This is also less hassle than writing `template<class C> void process(const C& c)` — no per-container instantiation, so no compile-time bloat.
 
-## Dynamic Extent vs. Static Extent
+## Dynamic Extent and Static Extent
 
-`span` comes in two forms, differing in whether the "length is stored at runtime or fixed at compile time". `std::span<T>` (fully written as `std::span<T, std::dynamic_extent>`) has **dynamic extent**: the length is stored as a member and is determined at runtime. `std::span<T, N>` has **static extent**: the length `N` is fixed at compile time and is not stored in the object.
+span comes in two shapes, differing in "is the length stored at run time or fixed at compile time". `std::span<T>` (fully written `std::span<T, std::dynamic_extent>`) is the **dynamic extent**: the length is stored as a member and can be anything at run time; `std::span<T, N>` is the **static extent**: the length `N` is nailed down at compile time and not stored in the object.
 
-This difference is directly reflected in `sizeof`—we will test this in a moment. Dynamic extent stores a pointer + size (two words), while static extent only stores a pointer (the size is known at compile time, so it is omitted). In practice, dynamic extent is more common (since data length is often only known at runtime), while static extent is suitable for cases where "we know it is exactly N elements", saving a word of storage and gaining some compile-time checks.
+This difference shows up directly in `sizeof` — we'll run and see in a moment. Dynamic extent stores pointer + size (two words); static extent stores only the pointer (the size is known at compile time, so it is dropped). In daily use, dynamic extent is the more common one (data length is usually decided at run time); static extent suits the "I know it's exactly N" situations, saving one word of storage and buying a bit of compile-time checking.
 
 ```cpp
 int arr[4];
-std::span<int, 4> s_fixed(arr);     // 只能绑长度 4 的数据
-std::span<int>    s_dyn(arr);       // 任意长度，运行时记 4
+std::span<int, 4> s_fixed(arr);     // can only bind data of length 4
+std::span<int>    s_dyn(arr);       // any length, remembers 4 at run time
 ```
 
-## Accepting any contiguous source: array / vector / C array / pointer+length
+## Accepting Any Contiguous Source: array / vector / C Array / Pointer Plus Length
 
-`span` constructors cover almost all contiguous data sources, allowing us to unify function parameters with `span`:
+span's constructors cover essentially every source of contiguous data, which is what lets a `span` parameter rule them all:
 
 ```cpp
 void print(std::span<const int> s);
@@ -83,17 +83,17 @@ std::array<int, 3> a = {1, 2, 3};
 std::vector<int>   v = {4, 5, 6, 7};
 int* p = v.data();
 
-print(buf);                 // C 数组（自动推 N）
+print(buf);                 // C array (N deduced automatically)
 print(a);                   // std::array
 print(v);                   // std::vector
-print({p, 2});              // 指针 + 长度
+print({p, 2});              // pointer + length
 ```
 
-The caller does not need to copy data, and the function does not need to write overloads or templates for every container type. Note that `span<const T>` represents a read-only view—if the function needs to modify data, use `span<T>` (non-const).
+The caller copies no data, and inside the function you need neither per-container overloads nor templates. Note that `span<const T>` means a read-only view — if the function is going to modify the data, use `span<T>` (non-const).
 
 ## subspan, first, last: Zero-Copy Slicing
 
-`span` provides a trio of tools: `subspan(offset, count)`, `first(n)`, and `last(n)`. These return a new `span` (still a non-owning view) without copying any data. This is particularly handy for protocol parsing and buffer handling—splitting a large buffer into header and payload, and passing them on as `span`s:
+span offers the trio `subspan(offset, count)`, `first(n)`, `last(n)`; they return a new span (still a non-owning view) and copy no data at all. This is especially handy in protocol parsing and buffer handling — slice one big buffer into header / payload and pass each down as a span:
 
 ```cpp
 void recv_packet(std::span<uint8_t> buffer)
@@ -101,47 +101,47 @@ void recv_packet(std::span<uint8_t> buffer)
     if (buffer.size() < 4) {
         return;
     }
-    auto header  = buffer.first(4);          // 前 4 字节视图
+    auto header  = buffer.first(4);          // view of the first 4 bytes
     uint16_t len = static_cast<uint16_t>(header[2] | (header[3] << 8));
     if (buffer.size() < 4 + len) {
         return;
     }
-    auto payload = buffer.subspan(4, len);   // 跳过 header 取 payload 视图
-    // payload 仍是非拥有视图，零拷贝
+    auto payload = buffer.subspan(4, len);   // skip the header, take a payload view
+    // payload is still a non-owning view, zero copies
 }
 ```
 
-Throughout this process, no bytes are copied; the sliced `header` and `payload` point directly into the original `buffer`.
+Not a single byte is copied along the way; the sliced-out header / payload both point inside the original buffer.
 
-## Byte View: as_bytes / as_writable_bytes
+## Byte Views: as_bytes / as_writable_bytes
 
-When handling binary data, we often need to treat a `span<T>` as raw bytes. `std::as_bytes(s)` returns a `span<const std::byte>`, while `std::as_writable_bytes(s)` returns a `span<std::byte>` (only available when `T` is not const). This is ideal for scenarios like CRC calculation, serialization, and memory dumps, where we need to "treat a structure as a byte stream":
+When handling binary data, you often want to look at a `span<T>` as raw bytes. `std::as_bytes(s)` returns `span<const std::byte>`, and `std::as_writable_bytes(s)` returns `span<std::byte>` (available only when T is non-const). This fits CRC, serialization, memory dumps — all those "treat the struct as a byte stream" scenarios:
 
 ```cpp
 std::span<int> data = /* ... */;
-auto bytes = std::as_bytes(data);          // span<const std::byte>，只读字节
+auto bytes = std::as_bytes(data);          // span<const std::byte>, read-only bytes
 // crc(bytes.data(), bytes.size());
 ```
 
-Distinguish between read-only and writable access: use `as_bytes` for reading, and use `as_writable_bytes` for in-place byte modification (and the underlying span must be non-const).
+Keep read-only and writable straight: read with `as_bytes`; to modify bytes in place, use `as_writable_bytes` (and the underlying span must be non-const).
 
-## Lifetime: A span does not own data, so dangling references will bite
+## Lifetime: span Does Not Own — Dangling Bites
 
-The biggest pitfall of `span`, and the inevitable cost of its "non-owning" nature, is that **it does not manage the lifetime of the underlying memory**. The span can only live as long as the underlying data; once the underlying data is gone, the span becomes a dangling view, and accessing it results in undefined behavior. The classic mistake is binding a span to a temporary object and then returning it:
+span's biggest trap, and the inevitable price of its non-owning nature: **it does not manage the underlying memory's lifetime**. The span lives at most as long as the underlying data; once that is gone, the span is a dangling view, and accessing it is undefined behavior. The classic mistake is binding a span to a temporary and then returning it:
 
 ```cpp
 std::span<int> bad()
 {
     std::vector<int> v = {1, 2, 3};
-    return v;   // v 在函数结束时销毁，返回的 span 立刻悬垂
+    return v;   // v is destroyed when the function ends; the returned span dangles immediately
 }
 ```
 
-If the caller holds onto this `span` and accesses it later, they are accessing freed memory. Remember this golden rule: **the lifetime of a `span` must not exceed the lifetime of the data it points to**. As long as you don't bind a `span` to a temporary, or store it longer than the underlying data, it is safe.
+When the caller takes that span and accesses it, that is access to freed memory. Remember the iron rule: **a span's lifetime must not exceed the data it points to**. As long as you don't bind spans to temporaries or store them longer than the underlying data, they are safe.
 
-## Let's Run It: `sizeof` Dynamic vs. Static Extents
+## Run It: sizeof of Dynamic vs Static Extent
 
-Earlier, we mentioned that a dynamic extent stores two words, while a static extent stores only a pointer. Let's verify this by running the code:
+We said dynamic extent stores two words and static extent only the pointer — let's run it and see:
 
 ```cpp
 #include <span>
@@ -150,8 +150,8 @@ Earlier, we mentioned that a dynamic extent stores two words, while a static ext
 int main()
 {
     int arr[4] = {};
-    std::span<int>        dyn;            // 动态 extent：可默认构造（空 span）
-    std::span<int, 4>     fixed(arr);     // 静态 extent：必须绑定数据
+    std::span<int>        dyn;            // dynamic extent: default-constructible (empty span)
+    std::span<int, 4>     fixed(arr);     // static extent: must bind to data
     std::cout << "sizeof(span<int>)    = " << sizeof(dyn) << '\n';
     std::cout << "sizeof(span<int,4>)  = " << sizeof(fixed) << '\n';
     std::cout << "sizeof(void*)        = " << sizeof(void*) << '\n';
@@ -169,27 +169,27 @@ sizeof(span<int,4>)  = 8
 sizeof(void*)        = 8
 ```
 
-(64-bit platform, GCC 16.1.1.) The dynamic extent is 16 bytes (one 8-byte pointer + one 8-byte size), while the static extent is only 8 bytes (just a pointer, as the size is known at compile time and omitted). This is the storage advantage of static extent—in scenarios where we pass a large number of spans (such as buffer views, which are everywhere in embedded systems), saving half the bytes is significant.
+(64-bit platform, GCC 16.1.1.) Dynamic extent is 16 bytes (an 8-byte pointer + an 8-byte size); static extent is only 8 bytes (just a pointer — the size is known at compile time, so it is dropped). That is the storage advantage of static extent — in code that passes spans around heavily (buffer views, which embedded code is littered with), saving half the words matters.
 
-## Extension: span in Embedded Systems (DMA / Protocol Parsing)
+## Beyond the Main Line: span in Embedded (DMA / Protocol Parsing)
 
-Because `span` is lightweight, zero-copy, and consistent across containers, it is essentially the "modern buffer pointer" in embedded development. Here are a few practical usage patterns (supplementary to the main thread, use as needed). After a DMA callback places data into a fixed buffer, we use `span` slicing to parse the header and payload without copying; when reading data from Flash into a buffer, we use `span` to chunk the processing; when passing small pieces of data in interrupts or real-time paths, copying a `span` is cheap (just two words). As long as we adhere to the rule that "a span does not own the data and must not outlive the underlying lifetime," it serves as a safe replacement for raw pointers.
+Because span is lightweight, zero-copy, and uniform across containers, in embedded work it is practically "the modern buffer pointer"; here are a few field uses (beyond the main line, take them as needed). After a DMA callback drops data into a fixed buffer, slice it with spans to parse the header / payload, no copying required; read data from Flash into a buffer, then carve it up with spans; pass small chunks of data on interrupt / real-time paths, where copying a span is cheap (just two words). As long as you hold the line "span does not own, never outlives the underlying data", it is a safe replacement for bare pointers.
 
-## Wrapping Up: How to Distinguish Between span and string_view
+## A Few Closing Words: span vs string_view
 
-Both `span` and `string_view` are "non-owning views," and the distinction lies in the element type: `span<T>` is generic for any element type (including writable ones and `std::byte`), whereas `string_view` is specifically for character sequences (read-only, with string semantics). We use `span` for binary buffers or arbitrary data, and `string_view` for text. To remember `span` in one sentence: it is the formal encapsulation of a pointer plus a length, offering unified parameter passing and zero-copy slicing, but we must manage the lifetimes ourselves.
+span and string_view are both "non-owning views"; the dividing line is the element type: `span<T>` works for any element type (writable ones included, `std::byte` included), while `string_view` is dedicated to character sequences (read-only, with string semantics). Use span for binary buffers / arbitrary data, string_view for text. One sentence to remember span by: it is the official packaging of pointer-plus-length — unified parameter passing, zero-copy slicing — but you have to manage the lifetime yourself.
 
-Want to try it out right now and see the results? Open the online example below (you can run it and view the assembly):
+Want to get your hands on it right away? Open the online demo below (it runs, and you can view the assembly too):
 
 <OnlineCompilerDemo
-  title="span: Non-owning Contiguous View"
+  title="span: A Non-owning Contiguous View"
   source-path="code/examples/vol3/08_span.cpp"
-  description="Uniformly accept C arrays/vector/array, dynamic vs. static extent, subspan slicing"
+  description="Uniformly accepting C arrays/vector/array, dynamic and static extents, subspan slicing"
   allow-run
 />
 
-## Reference Resources
+## References
 
 - [std::span — cppreference](https://en.cppreference.com/w/cpp/container/span)
 - [std::byte — cppreference](https://en.cppreference.com/w/cpp/types/byte)
-- [P0122 span Proposal — open-std](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0122r7.pdf)
+- [P0122 span proposal — open-std](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0122r7.pdf)
