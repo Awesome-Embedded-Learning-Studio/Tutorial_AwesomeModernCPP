@@ -2,14 +2,14 @@
 chapter: 1
 cpp_standard:
 - 11
-description: Master C arithmetic operators, increment and decrement, relational and
-  logical operators, the conditional operator, and the comma operator, and understand
-  short-circuit evaluation and the use of assignment operators.
+description: Master C's arithmetic operators, increment and decrement, relational
+  and logical operators, the conditional operator, and the comma operator, and understand
+  short-circuit evaluation and how assignment operators are used.
 difficulty: beginner
 order: 4
 platform: host
 prerequisites:
-- 浮点、字符、const 与类型转换
+- Floating Point, Characters, const, and Type Conversion
 reading_time_minutes: 9
 tags:
 - host
@@ -20,360 +20,295 @@ tags:
 title: 'Operator Basics: Making Data Move'
 translation:
   source: documents/vol1-fundamentals/c_tutorials/03A-operators-basics.md
-  source_hash: 76114a11ede805c609f8b153ceb4bc7fb9f640499cc513d845ec21c50bf072bd
-  translated_at: '2026-06-16T03:33:08.086193+00:00'
+  source_hash: dbf8b30611f1b0a36ac4fcae88057af4bf2cd28c58bc98bfa713a6a100defca0
+  translated_at: '2026-09-25T12:41:22+00:00'
   engine: anthropic
-  token_count: 1503
+  token_count: 5400
 ---
 # Operator Basics: Making Data Move
 
-In the previous post, we dissected C data types from the inside out—how integers are stored, how floating-point numbers work, and how characters are handled. But just having data isn't enough; we need to make it "move": performing addition, subtraction, multiplication, division, comparisons, and boolean logic. These operations in C are handled by **operators**.
+In the previous post we took C's data types apart from the inside out—how integers are stored, how decimals are stored, how characters are stored. But data alone isn't enough; we also need to make the data "move": do arithmetic, compare sizes, test truth. In C, these operations are carried out by **operators**.
 
-You can think of operators as the "verbs" of C—variables and constants are nouns, operators connect them to form expressions, expressions combine into statements, and statements build programs. We only use a handful of operators in daily programming, but each has its own quirks. In this post, we will go through the most common arithmetic, relational, and logical operators, focusing on the pitfalls that are easy to stumble into. We'll leave bitwise operations and deeper evaluation order issues for the next post.
-
-## Environment Setup
-
-We will conduct all subsequent experiments in the following environment:
-
-- Platform: Linux x86\_64 (WSL2 is also acceptable)
-- Compiler: GCC 13+ or Clang 17+
-- Compiler flags: `-std=c17 -Wall -Wextra -pedantic`
+You can think of operators as the "verbs" of C—variables and constants are the nouns, operators connect them into expressions, expressions combine into statements, and statements make up a program. Day to day, we really only use a handful of operators, but every one of them has its own little temperament. In this post we'll walk through the most common arithmetic, relational, and logical operators, with a sharp eye on the spots where it's easy to step into a pit. Bitwise operations and the deeper question of evaluation order get a post of their own next time.
 
 ## Step 1 — Add, Subtract, Multiply, Divide: Arithmetic Operators
 
 ### The Five Basic Operators
 
-C provides five basic arithmetic operators: `+` (addition), `-` (subtraction), `*` (multiplication), `/` (division), and `%` (modulo). The first four apply to all numeric types, while the modulo operator `%` applies only to integers.
+C provides five basic arithmetic operators: `+` (addition), `-` (subtraction), `*` (multiplication), `/` (division), and `%` (modulo). The first four work on all numeric types; the modulo operator `%` works only on integers.
 
 ```c
-#include <stdio.h>
-
-int main(void) {
-    int a = 10, b = 3;
-
-    printf("%d + %d = %d\n", a, b, a + b); // 13
-    printf("%d - %d = %d\n", a, b, a - b); // 7
-    printf("%d * %d = %d\n", a, b, a * b); // 30
-    printf("%d / %d = %d\n", a, b, a / b); // 3 (Integer division)
-    printf("%d %% %d = %d\n", a, b, a % b); // 1 (Remainder)
-
-    return 0;
-}
+int a = 10 + 3;    // 13
+int b = 10 - 3;    // 7
+int c = 10 * 3;    // 30
+int d = 10 / 3;    // 3 (integer division; the fractional part is simply discarded)
+int e = 10 % 3;    // 1 (the remainder of 10 divided by 3)
 ```
 
-Here is a pitfall that beginners often step into: **Dividing two integers results in an integer**. `7 / 2` is not `3.5`, but `3`. The decimal part is discarded directly; it is not rounded.
+Here is a trap beginners fall into very easily: **when two integers are divided, the result is still an integer**. `10 / 3` is not `3.333...`—it is `3`. The fractional part is discarded outright, not rounded.
 
-> ⚠️ **Pitfall Warning**
-> If you want a division result with decimals, at least one operand must be a floating-point number. `7 / 2` yields `3`, but `7.0 / 2` or `7 / 2.0` yields `3.5`.
+If you want a division result that keeps its decimals, at least one operand must be a floating-point number. `10 / 3` gives `3`, but `10.0 / 3` or `10 / 3.0` gives `3.333...`.
 
-### Negative Number Division: Round Towards Zero
+### Dividing Negatives: Truncation Toward Zero
 
-The C99 standard explicitly states: integer division rounds towards zero. This means that after the fractional part is discarded, the result approaches zero. `-7 / 2` is `-3`, and `7 / -2` is `-3` (not `-4`). The sign of the remainder in a modulo operation matches the dividend: `-7 % 2` is `-1`.
+The C99 standard states it explicitly: integer division truncates toward zero. In other words, once the fractional part is discarded, the result moves toward zero. `7 / 2` is `3`, and `-7 / 2` is `-3` (not `-4`). With modulo, the remainder takes the sign of the dividend: `-7 % 2` is `-1`.
 
 ```c
-#include <stdio.h>
-
-int main(void) {
-    printf("Integer division rounds towards zero:\n");
-    printf("  7 / 2  = %d\n", 7 / 2);   // 3
-    printf(" -7 / 2  = %d\n", -7 / 2);  // -3 (not -4)
-    printf("  7 / -2 = %d\n", 7 / -2);  // -3
-
-    printf("\nModulo sign matches dividend:\n");
-    printf(" -7 %% 2 = %d\n", -7 % 2);  // -1
-    printf("  7 %% -2 = %d\n", 7 % -2); // 1
-
-    return 0;
-}
+int a = 7 / 2;    // 3
+int b = -7 / 2;   // -3 (truncation toward zero)
+int c = -7 % 2;   // -1 (the remainder takes the dividend's sign)
 ```
 
-Let's verify this:
+Let's verify:
 
 ```bash
-gcc -std=c17 -Wall -Wextra -pedantic main.c -o main
-./main
+gcc -Wall -Wextra -std=c17 div_demo.c -o div_demo && ./div_demo
 ```
 
-Execution result:
+Output:
 
 ```text
-Integer division rounds towards zero:
-  7 / 2  = 3
- -7 / 2  = -3
-  7 / -2 = -3
-
-Modulo sign matches dividend:
- -7 % 2 = -1
-  7 % -2 = 1
+7 / 2 = 3
+-7 / 2 = -3
+-7 %% 2 = -1
 ```
 
 ## Step 2 — Increment and Decrement: Two Special Operators
 
-### Difference Between Prefix and Postfix
+### Prefix vs. Postfix
 
-`++` (increment) and `--` (decrement) are special operators in C—they can be placed before a variable (prefix) or after a variable (postfix). When used alone, they have the same effect, but their behavior differs when mixed within expressions.
+`++` (increment) and `--` (decrement) are two rather special operators in C—they can go in front of a variable (prefix) or after it (postfix). Used on their own, the two forms have exactly the same effect; their behavior differs when they are mixed inside an expression.
 
-Here is an analogy to understand this: prefix `++` is like "raise the price, then check out"—add 1 to the value first, then return the new value. Postfix `++` is like "check out, then raise the price"—return the current value first, then add 1.
+Here's an analogy: prefix `++x` is like "raise the price first, then check out"—add 1 to the value first, then hand back the new value; postfix `x++` is like "check out first, then raise the price"—hand back the current value first, and then add 1.
 
 ```c
-#include <stdio.h>
-
-int main(void) {
-    int i = 10;
-
-    // Prefix: Increment first, then use the value
-    printf("Prefix ++i: %d\n", ++i); // i becomes 11, prints 11
-
-    // Postfix: Use the value first, then increment
-    printf("Postfix i++: %d\n", i++); // prints 11, then i becomes 12
-    printf("After i++: %d\n", i);     // prints 12
-
-    return 0;
-}
+int x = 5;
+int a = ++x;  // x becomes 6 first, and a gets 6
+int b = x++;  // b gets 6 first, then x becomes 7
+printf("a=%d, b=%d, x=%d\n", a, b, x);
 ```
 
-Execution result:
+Output:
 
 ```text
-Prefix ++i: 11
-Postfix i++: 11
-After i++: 12
+a=6, b=6, x=7
 ```
 
 ### Never Write It Like This
 
-Here is something very important to keep in mind—**never use `++` or `--` on the same variable multiple times within the same expression**:
+There is something very important we need to remind you of—**do not apply `++`/`--` to the same variable multiple times within the same expression**:
 
 ```c
-int i = 5;
-int a = i++ + ++i; // Undefined Behavior!
+int i = 3;
+int a = i++ + ++i;  // undefined behavior!
 ```
 
-This kind of writing is **Undefined Behavior (UB)** in the C standard. Simply put, the standard says "don't do this," and compilers can handle it in any way—different compilers might give completely different results. As for why this is UB, we will explain it in detail in the next post when we discuss sequence points. For now, just remember: **do not use `++` or `--` on the same variable twice in one expression**.
+The C standard classifies this kind of code as **undefined behavior** (UB for short). Simply put, the standard says "you may not write this," and the compiler is free to handle it in any way it likes—different compilers may give completely different results. As for why it is UB, we will explain in detail in the next post when we discuss sequence points. For now, just remember: **do not use `++` or `--` twice on the same variable in one expression**.
 
-> ⚠️ **Pitfall Warning**
-> `a = i++ + i++`, `a = ++i + ++i`, `a = i++ + ++i`—all of these are undefined behavior. If you see this in an interview question, just know it's UB; don't try to guess "what the answer is"—because there is no correct answer.
+`i = i++`, `a[i] = i++`, `printf("%d %d", i++, i++)`—all of these are undefined behavior. When you see something like this in an interview question, knowing it is UB is enough; don't try to guess "what the answer is"—because there is no correct answer.
 
-## Step 3 — Comparison and Judgment: Relational and Logical Operators
+## Step 3 — Comparing and Judging: Relational and Logical Operators
 
 ### Relational Operators
 
-Relational operators are used to compare the magnitude relationship between two values, resulting in "true" or "false". In C, "true" is represented by the integer `1`, and "false" by the integer `0`.
+Relational operators compare the magnitude relationship between two values, and the result is "true" or "false". In C, "true" is represented by the integer `1`, and "false" by the integer `0`.
 
 ```c
-#include <stdio.h>
-
-int main(void) {
-    int a = 5, b = 10;
-
-    printf("%d < %d is %d\n", a, b, a < b);  // 1 (true)
-    printf("%d > %d is %d\n", a, b, a > b);  // 0 (false)
-    printf("%d == %d is %d\n", a, a, a == a); // 1 (true)
-    printf("%d != %d is %d\n", a, b, a != b); // 1 (true)
-
-    return 0;
-}
+int a = (5 > 3);    // 1 (true)
+int b = (5 < 3);    // 0 (false)
+int c = (5 == 5);   // 1 (equal)
+int d = (5 != 5);   // 0 (not equal)
 ```
 
-A common typo is writing `==` (equality comparison) as `=` (assignment). `if (a = 5)` is always true (because the value of the assignment expression is 5, and non-zero is true), and `a` is accidentally modified. Good compilers will warn about this, so it is recommended to enable `-Wextra` to let the compiler watch out for you.
+One common typo is writing `==` (equality comparison) as `=` (assignment). `if (x = 5)` is always true (because the value of the assignment expression is 5, and non-zero counts as true), and `x` gets accidentally modified along the way. Good compilers will warn about this pattern, so it is a good idea to enable `-Wall` and let the compiler keep watch for you.
 
 ### Logical Operators
 
-There are three logical operators: `&&` (logical AND), `||` (logical OR), and `!` (logical NOT). They operate on "truth values"—treating operands as boolean values, where zero is false and non-zero is true.
+There are three logical operators: `&&` (logical AND), `||` (logical OR), and `!` (logical NOT). They operate on truth values—treating their operands as boolean values, where zero is false and non-zero is true.
 
 ```c
-#include <stdio.h>
-
-int main(void) {
-    int a = 5, b = 0;
-
-    printf("%d && %d = %d\n", a, b, a && b); // 0 (false)
-    printf("%d || %d = %d\n", a, b, a || b); // 1 (true)
-    printf("!%d = %d\n", a, !a);             // 0 (false)
-
-    return 0;
+if (age >= 18 && age <= 65) {
+    // age is between 18 and 65
+}
+if (score < 0 || score > 100) {
+    // score is outside the valid range
+}
+if (!is_valid) {
+    // runs when is_valid is false
 }
 ```
 
-### Short-Circuit Evaluation — A Very Practical Feature
+### Short-Circuit Evaluation: A Very Practical Feature
 
-`&&` and `||` have a very important feature called **short-circuit evaluation**. For `&&`, if the left operand is false, the right operand is not evaluated at all—because the entire expression is already false, and the right side doesn't affect the result. `||` is the opposite: if the left operand is true, the right side is not evaluated.
+`&&` and `||` have a very important property called **short-circuit evaluation**. For `&&`, if the left operand is false, the right operand is not evaluated at all—because the whole expression is already false, and nothing on the right can affect the result. `||` is exactly the opposite: when the left operand is true, the right side is not evaluated.
 
-This feature is incredibly useful in actual programming. The most classic scenario is checking if a pointer is null before accessing the content it points to:
+This property is extremely useful in real programming. The most classic scenario is checking whether a pointer is null before accessing what it points to:
 
 ```c
-#include <stdio.h>
-#include <stdbool.h>
-
-struct Node {
-    int value;
-    // ... other fields
-};
-
-bool is_positive(const struct Node* node) {
-    // If node is NULL, the right side (node->value) is not evaluated
-    return (node != NULL) && (node->value > 0);
-}
-
-int main(void) {
-    struct Node n = {5};
-    printf("is_positive(&n) = %d\n", is_positive(&n)); // 1
-
-    printf("is_positive(NULL) = %d\n", is_positive(NULL)); // 0
-
-    return 0;
+// Dereference the pointer safely
+if (ptr != NULL && ptr->value > 0) {
+    // If ptr is NULL, ptr->value is never accessed
+    // This avoids the crash a null-pointer dereference would cause
 }
 ```
 
-If `node` is a null pointer, `node != NULL` is false. Due to short-circuit evaluation, `node->value` is not evaluated, and the program is safe. Without short-circuit evaluation, even if `node` is null, it would attempt to access `node->value`, causing an immediate crash.
+If `ptr` is a null pointer, `ptr != NULL` is false, and thanks to short-circuit evaluation `ptr->value` is never evaluated—the program stays safe. Without short-circuit evaluation, the code would try to access `ptr->value` even when `ptr` is null, and the program would crash on the spot.
 
 Let's verify the effect of short-circuit evaluation:
 
 ```c
 #include <stdio.h>
 
-int dangerous_call(void) {
-    printf("Dangerous function called!\n");
-    return 1;
+int counter = 0;
+
+int increment(void)
+{
+    counter++;
+    printf("increment() 被调用了，counter = %d\n", counter);
+    return counter;
 }
 
-int main(void) {
-    int a = 0;
+int main(void)
+{
+    int result = (0 && increment());  // the left side is 0 (false); the right side never runs
+    printf("result = %d, counter = %d\n", result, counter);
 
-    // Because a is 0 (false), dangerous_call() is never executed
-    if (a && dangerous_call()) {
-        // This block won't run
-    }
+    result = (1 || increment());      // the left side is 1 (true); the right side never runs
+    printf("result = %d, counter = %d\n", result, counter);
 
-    printf("Program finished safely.\n");
     return 0;
 }
 ```
 
-Execution result:
+Output:
 
 ```text
-Program finished safely.
+result = 0, counter = 0
+result = 1, counter = 0
 ```
 
-Great, `dangerous_call` was never called—short-circuit evaluation took effect.
+Nice—`increment()` was never called even once. Short-circuit evaluation did its job.
 
-## Step 4 — Conditional Operator and Comma Operator
+## Step 4 — The Conditional Operator and the Comma Operator
 
-### Conditional Operator `? :`
+### The Conditional Operator `?:`
 
-The conditional operator is the only ternary operator in C, with the syntax `condition ? expr1 : expr2`. If `condition` is true, the value of the entire expression is `expr1`; otherwise, it is `expr2`.
+The conditional operator is the only ternary operator in C, with the syntax `condition ? expr1 : expr2`. If `condition` is true, the value of the whole expression is `expr1`; otherwise it is `expr2`.
 
-You can think of it as a "condensed if-else"—it is particularly convenient when you need to select a value based on a condition but don't want to write a full if-else statement:
+You can think of it as a "condensed if-else"—especially handy when you need to pick a value based on a condition but don't want to write a full if-else statement:
 
 ```c
-#include <stdio.h>
-
-int main(void) {
-    int age = 17;
-
-    // Determine if an adult
-    const char* status = (age >= 18) ? "Adult" : "Minor";
-    printf("Status: %s\n", status);
-
-    // Calculate absolute value
-    int x = -10;
-    int abs_x = (x < 0) ? -x : x;
-    printf("Absolute value of %d is %d\n", x, abs_x);
-
-    return 0;
-}
+int max = (a > b) ? a : b;                  // pick the larger value
+const char* label = (count == 1) ? "item" : "items";  // singular vs. plural
 ```
 
-Conditional operators can be nested, but readability starts to suffer after more than two levels:
+The conditional operator can be nested, but past two levels readability starts to suffer:
 
 ```c
-// Not recommended: deeply nested ternary
-int score = 85;
 const char* grade = (score >= 90) ? "A" :
-                    (score >= 80) ? "B" :
-                    (score >= 70) ? "C" : "F";
+                   (score >= 80) ? "B" :
+                   (score >= 60) ? "C" : "F";
 ```
 
-### Comma Operator
+### The Comma Operator
 
-The comma operator `,` is the lowest precedence operator in C. It evaluates two operands from left to right, and the value of the entire expression is the value of the right operand:
+The comma operator `,` has the lowest precedence of any operator in C. It evaluates its two operands from left to right, and the value of the whole expression is the value of the right operand:
 
 ```c
-#include <stdio.h>
+int a = (1, 2, 3);  // evaluate 1, then 2, then 3; a = 3
+```
 
-int main(void) {
-    int a = 10, b = 20;
+You will rarely use this operator on its own; its most common use is maintaining multiple variables at once in a `for` loop:
 
-    // The comma operator causes a to be incremented first,
-    // then the expression takes the value of b
-    int c = (a++, b);
-
-    printf("a: %d, b: %d, c: %d\n", a, b, c); // a=11, b=20, c=20
-
-    return 0;
+```c
+for (int i = 0, j = n - 1; i < j; i++, j--) {
+    int tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
 }
 ```
 
-This operator is rarely used alone. The most common usage is to maintain multiple variables simultaneously in a `for` loop:
-
-```c
-#include <stdio.h>
-
-int main(void) {
-    // Using the comma operator in a for loop
-    for (int i = 0, j = 10; i < 10; i++, j--) {
-        printf("i: %d, j: %d\n", i, j);
-    }
-
-    return 0;
-}
-```
-
-Note that the comma in `int i = 0, j = 10` is a declaration separator (not the comma operator), but the comma in `i++, j--` is indeed the comma operator.
+Note that the comma in `int i = 0, j = n - 1` is a declaration separator (not the comma operator), but the comma in `i++, j--` really is the comma operator.
 
 ## C++ Transition
 
-C++ does two important things regarding operators. First, it introduces C++ versions of `<stdbool.h>`—`true`, `false`, and `bool` are built-in keywords in C++, unlike macros in C. Second is operator overloading—you can define behaviors for operators like `+`, `==`, etc., for custom types, making custom types feel as natural to use as built-in types.
+C++ does two important things with operators. The first is introducing the C++ version of `<stdbool.h>`—`bool`, `true`, and `false` are built-in language keywords in C++, unlike the macros they are in C. The second is operator overloading—you can define the behavior of operators such as `+` and `==` for your own types, so custom types feel as natural to use as the built-in ones.
 
-However, there is an important limitation: although C++ allows overloading `&&` and `||`, **overloading them loses the short-circuit evaluation property**. Because overloaded operators are essentially function calls, both parameters will be evaluated, and the short-circuit characteristic is gone. Therefore, in practice, never overload `&&` and `||`.
+But there is one important restriction: although C++ allows overloading `&&` and `||`, **overloading them throws away the short-circuit evaluation property**. Because an overloaded operator is essentially a function call, both arguments get evaluated, and the short-circuit behavior is gone. So in practice, never overload `&&` and `||`.
 
 ## Exercises
 
-### Exercise 1: Integer Division Prediction
+### Exercise 1: Predicting Integer Division
 
 **Difficulty: Basic** · truncation toward zero and the sign of the remainder
 
-Without actually running it, predict the value of the following expressions, then write a program to verify:
+Without actually running it, predict the value of each expression below, then write a program to verify:
 
 ```c
-int a = 7, b = -4;
-// Predict the values of:
-// 1. a / b
-// 2. a % b
-// 3. -a / b
-// 4. b / a
+printf("%d\n", 7 / 2);
+printf("%d\n", -7 / 2);
+printf("%d\n", 7 / -2);
+printf("%d\n", 7 % 2);
+printf("%d\n", -7 % 2);
 ```
 
-### Exercise 2: Short-Circuit Evaluation in Action
+::: details Reference solution
 
-**Difficulty: Intermediate** · guard an array bound with short-circuit evaluation
+```text
+ 3    //  7 / 2 = 3.5; integer division truncates toward zero, chopping off the fractional part → 3
+-3    // -7 / 2 = -3.5; same truncation toward zero → -3 (not -4)
+-3    //  7 / -2 = -3.5; truncation toward zero → -3
+ 1    //  7 % 2 = 1: 7 = 3×2 + 1
+-1    // -7 % 2 = -1: the remainder follows the dividend's sign; -7 = (-3)×2 + (-1)
+```
 
-Write a function that safely finds the first element in an array greater than a specified value. Use short-circuit evaluation to ensure no out-of-bounds access occurs:
+Key point: since C99, both `/` and `%` truncate toward zero (truncation toward zero)—the rule is the same for positive and negative numbers, and the fractional part is simply dropped. That is why `-7 / 2` gives `-3` rather than `-4`, and why the sign of `-7 % 2` turns negative along with the dividend.
+
+:::
+
+### Exercise 2: Short-Circuit Evaluation in Practice
+
+**Difficulty: Intermediate** · guard against out-of-bounds array access with short-circuit evaluation
+
+Write a function that safely finds the first element in an array greater than a given value. Use short-circuit evaluation to make sure it never goes out of bounds:
 
 ```c
-#include <stdio.h>
-#include <stdbool.h>
+/// @brief Find the first element in the array greater than threshold
+/// @param arr the array
+/// @param len the array length
+/// @param threshold the threshold value
+/// @return the index of the element found, or -1 if not found
+int find_first_above(const int* arr, size_t len, int threshold);
+```
 
-// Returns true if found, and stores the index in *out_index
-bool find_first_greater_than(const int* arr, size_t size, int threshold, size_t* out_index) {
-    // TODO: Use short-circuit evaluation to check bounds first
-    // if (arr != NULL && size > 0 && ...) { ... }
-    return false;
+::: details Reference solution
+
+```c
+#include <stddef.h>
+
+int find_first_above(const int* arr, size_t len, int threshold) {
+    // If the array is NULL or the length is 0, return -1 right away
+    if (arr == NULL || len == 0) {
+        return -1;
+    }
+
+    size_t i = 0;
+
+    // Short-circuit evaluation guards the bound: check i < len first, and only then access arr[i]
+    while (i < len && arr[i] <= threshold) {
+        i++;
+    }
+
+    // After the loop, i < len means we found one; otherwise we scanned the whole array without a hit
+    return (i < len) ? (int)i : -1;
 }
 ```
 
+The heart of it is the line `while (i < len && arr[i] <= threshold)`: `&&` short-circuits, so when `i < len` is false the code never even reads `arr[i]`—the out-of-bounds access is stopped at the door.
+
+:::
+
 ## References
 
-- [cppreference: C Operator Precedence](https://en.cppreference.com/w/c/language/operator_precedence)
-- [cppreference: Arithmetic Operators](https://en.cppreference.com/w/c/language/operator_arithmetic)
+- [cppreference: C operator precedence](https://en.cppreference.com/w/c/language/operator_precedence)
+- [cppreference: arithmetic operators](https://en.cppreference.com/w/c/language/operator_arithmetic)

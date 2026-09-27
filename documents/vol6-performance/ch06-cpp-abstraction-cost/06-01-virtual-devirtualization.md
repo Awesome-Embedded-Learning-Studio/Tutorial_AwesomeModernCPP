@@ -84,5 +84,5 @@ Carruth 在 *There Are No Zero-Cost Abstractions* 里拎出来的命题「没有
 
 - Piotr Padlewski *C++ devirtualization in clang*(CppCon 2015 Lightning)——去虚拟化机制,vol10 复用
 - ch04-04 inline、去虚拟化与编译器优化全景(本篇的虚函数数据出处)
-- Agner Fog《Optimizing software in C++》§7 *Virtual functions》。本地
+- Agner Fog《Optimizing software in C++》§7 *Virtual functions》
 - 本篇实测代码:`code/volumn_codes/vol6-performance/ch04/virtual_devirt.cpp`(与 ch04-04 共用)

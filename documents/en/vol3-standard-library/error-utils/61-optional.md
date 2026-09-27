@@ -4,63 +4,62 @@ cpp_standard:
 - 17
 - 20
 - 23
-description: A deep dive into `std::optional`—why we shouldn't use raw pointers, sentinel
-  values, or `pair<bool, T>` to represent emptiness; construction and access (how
-  `has_value`, `value`, `value_or`, and `operator*` result in UB when empty); the
-  value semantics lifecycle of `emplace`/`reset`; and how C++23 monadic operations
-  (`and_then`, `or_else`, `transform`) flatten a three-layer `if` chain into a single
-  chain for "possibly empty" queries.
+description: A deep dive into std::optional—why raw pointers, sentinel values, and
+  pair<bool, T> are the wrong way to represent emptiness; construction and access
+  (has_value/value/value_or, and operator* being UB when empty); the value-semantics
+  lifecycle of emplace/reset; and how C++23 monadic operations (and_then/or_else/transform)
+  compress a three-layer if chain of "possibly empty" lookups into a single chain
 difficulty: intermediate
 order: 61
 platform: host
 prerequisites:
-- variant：类型安全的联合体
-- vector 深入：三指针、扩容与迭代器失效
+- 'variant: Type-Safe Unions and visit'
+- 'Deep Dive into vector: Three Pointers, Reallocation, and Iterator Invalidation'
 reading_time_minutes: 16
 related:
-- std::expected<T, E>：类型安全的错误传播
+- 'expected: Value or Error, C++23''s New Error Handling Paradigm'
 tags:
 - host
 - cpp-modern
 - intermediate
 - 类型安全
 - optional
-title: 'optional: Making "Possibly None" a Type'
+title: 'optional: Making "Maybe Nothing" a Type'
 translation:
   source: documents/vol3-standard-library/error-utils/61-optional.md
   source_hash: dde681d0aab852fd783542c8ab351904c2352cc882e479531c64c7c0ed3d5969
-  translated_at: '2026-06-24T04:10:22.285719+00:00'
+  translated_at: '2026-09-26T00:54:03+00:00'
   engine: anthropic
-  token_count: 4273
+  token_count: 11000
 ---
-# optional: Making "Possibly Empty" a Type
+# optional: Making "Maybe Nothing" a Type
 
-Anyone who has written a search function is familiar with this kind of return value: return `-1` if not found, or the index if found. If we search for `10` in an array and get `-1`, we know it wasn't found. But what if the value we are looking for can legitimately be `-1`? Is that `-1` "found, value is -1" or "not found"? Looking at the return value alone, the type system offers no help; we must rely on comments and conventions. This "convention-based" approach is a ticking time bomb if someone unfamiliar with the conventions takes over the code.
+Anyone who has written a lookup function knows this kind of return value all too well: return `-1` when nothing is found, the index when something is. Search an array for `10` and get `-1`, and you know it wasn't found. But what if the value you're looking for is itself allowed to be `-1`? Now is that `-1` "found, and the value is -1", or "not found"? Judging from the return value alone, the type system can't help you at all; all you have left is comments and conventions. And this "convention-based" style is a ticking time bomb the moment someone who doesn't know the convention takes over the code.
 
-`std::optional<T>` (available since C++17 in the `<optional>` header) solves exactly this pain point. It elevates "possibly having no value" from a comment or verbal agreement to a **fact enforced by the type system**: an `optional<int>` either contains an `int` or is empty. This "has value" state is part of the value itself, and you must confront it before accessing the data. In this post, we will cover the design motivation, construction and access, the undefined behavior caused by dereferencing an empty optional (a common pitfall), and the new monadic chain operations added in C++23. We will see clearly why it is worth using and how to use it correctly.
+`std::optional<T>` (in the standard library since C++17, defined in `<optional>`) solves exactly this pain point. It promotes "possibly no value" from comments and verbal agreements to a **fact in the type system**: an `optional<int>` either holds an `int` or is empty, and that "present or not" is part of the value itself—you are forced to face it before taking the value out. In this article we'll run through optional's design motivation, construction and access, the undefined behavior of dereferencing an empty optional (the easiest trap to step into), and the monadic chaining operations new in C++23, so we can see clearly why it's worth using and how to use it correctly.
 
-## First, a question: What is wrong with existing "empty" representations?
+## First, a Question: Where the Existing "Empty" Representations Fall Short
 
-You might think, "I already have a bunch of ways to represent 'nothing', why do I need a specific `optional`?" Let's look at three common "homegrown" approaches and their flaws.
+You might think: I already have plenty of ways to represent "nothing", why bother with a dedicated `optional`? Let's lay out the three most common homegrown approaches and look at what's wrong with each.
 
-**First approach: Sentinel values.** Return `-1`, `nullptr`, or an empty string to indicate "not found". We already touched on the problem earlier—a sentinel is a **value within the valid range** that you have commandeered. If that value becomes meaningful in the business logic (e.g., index `-1` or an empty string as valid input), the convention contradicts itself. Furthermore, it relies entirely on human memory; the compiler will not check it for you.
+**First: sentinel values.** Return `-1`, `nullptr`, or an empty string when nothing is found. The problem was already pointed out above—a sentinel is a **value from the legitimate value range** that you've commandeered. The moment that value itself becomes meaningful in the business domain (index `-1`, empty string as legal input), the convention contradicts itself. And it lives entirely in human memory; the compiler won't check it for you.
 
-**Second approach: Return a raw pointer `T*`.** Return a pointer to the result if found, or `nullptr` if not found. This looks clean, but it has two major issues. First is **ownership ambiguity**: when the caller receives a `T*`, they don't know who owns the object, whether they can delete it, or when it becomes invalid—does it point to an element inside a container (which becomes dangling if deleted) or to a heap object requiring `delete`? You cannot tell from the signature alone. Second is **incompatibility with value semantics**: a "box holding a value" is clearly a value type (copying, moving, and lifetime should behave like normal variables), but using a pointer forces it into reference semantics.
+**Second: returning a raw pointer `T*`.** Return a pointer to the result if found, `nullptr` if not. This looks clean, but it has two headaches. One is **ownership ambiguity**: the caller receives a `T*` and has no idea who owns the pointee, whether it may be deleted, or when it goes stale—does it point at an element inside a container (deleting it leaves a dangling pointer), or at a heap object you're supposed to `delete` yourself? You can't tell from the signature alone. The other is that it **clashes with value semantics**: a "box holding a value" is clearly a value type (copying, moving, and lifetime should all behave like an ordinary variable), yet using a pointer turns it into reference semantics.
 
-**Third approach: `pair<bool, T>` or `struct { bool ok; T value; }`.** This looks reasonable—it includes a flag to indicate presence. But the trap lies in "what is `value` upon failure?". Look at this actual test:
+**Third: `pair<bool, T>` or `struct { bool ok; T value; }`.** Looks reasonable—a flag bit says whether there's a value. But the trap lies in "what is `value` on failure?". Look at this actual test:
 
 ```cpp
 // Standard: C++17
 struct Result { bool ok; int value; };
 Result find_pair(int needle, const int* a, int n) {
     for (int i = 0; i < n; ++i) if (a[i] == needle) return {true, i};
-    return {false, 0};   // 失败时 value=0 是凑数的, 不是真结果
+    return {false, 0};   // value=0 on failure is filler, not a real result
 }
 ```
 
-When the value is not found, we provide a `0` as a placeholder—but no one can guarantee that this `0` isn't a false positive. Even worse, the caller can directly access `.value` to use this placeholder `0`, potentially forgetting to check `.ok` first, and the compiler won't utter a word. `pair<bool, T>` also incurs a hidden cost: when `T` is a non-trivial type (like `string`), it must be default-constructed to fill the slot even on failure, resulting in wasted construction.
+When nothing is found, `value` gets a `0` as filler—and nothing guarantees that `0` isn't a false result. Worse, the caller can go straight to `.value` and use that filler `0`, forgetting to check `.ok` first, and the compiler won't utter a word. `pair<bool, T>` also carries a hidden cost: when `T` is a non-trivial type (say, `string`), even a failure has to default-construct an empty `T` to fill in—one construction spent for nothing.
 
-`optional` solves all these problems at once: "whether there is a value" is part of the type, not a detached `bool`; it is a **value type**, following value semantics for copy, move, and destruction without ownership ambiguity; when empty, `T` is not constructed at all, eliminating the waste of "fabricating a `T` on failure." Let's look at a `sizeof` comparison to get an intuitive impression:
+`optional` fixes all of these in one stroke: "present or not" is part of the type, not a free-floating `bool`; it is a **value type**, with copy, move, and destruction all following value semantics, no ownership ambiguity; and when empty, no `T` is constructed inside at all, so there's none of that "must fabricate a `T` even on failure" waste. Let's look at a `sizeof` comparison for a first impression:
 
 ```cpp
 std::cout << "sizeof(int):                   " << sizeof(int) << "\n";
@@ -70,7 +69,7 @@ std::cout << "sizeof(string):                " << sizeof(std::string) << "\n";
 std::cout << "sizeof(optional<string>):      " << sizeof(std::optional<std::string>) << "\n";
 ```
 
-Here is the output from GCC 16.1.1:
+Here's what it prints on GCC 16.1.1:
 
 ```text
 sizeof(int):                   4
@@ -81,11 +80,11 @@ sizeof(string):                32
 sizeof(optional<string>):      40
 ```
 
-`optional<int>` is eight bytes—four bytes for the `int`, one byte for the "has value" flag, and three bytes for alignment padding. The overhead is the same as `pair<bool,int>`, but in exchange, you get type protection that forces you to handle emptiness before accessing the value, value semantics, and the laziness of not constructing `T` when empty. It's a good trade-off.
+`optional<int>` is 8 bytes—4 bytes hold the `int`, 1 byte is the "present or not" flag, and the remaining 3 bytes are alignment padding. That's the same size as `pair<bool,int>`, but in exchange you get type-level protection that forces you to face emptiness before taking the value, value semantics, and the laziness of not constructing `T` when empty. That's a bargain.
 
 ## Construction and Access: Four Ways to Get the Value
 
-The `optional` API isn't huge, but retrieving the value involves several interfaces that look similar but behave very differently, so we need to distinguish them clearly. Let's walk through construction and access using a simple example:
+optional's API surface is small, but the value-access step has several interfaces that look alike yet behave very differently, and we need to tell them apart one by one. Let's walk through construction and access with one minimal example:
 
 ```cpp
 // Standard: C++17
@@ -95,24 +94,24 @@ The `optional` API isn't huge, but retrieving the value involves several interfa
 
 std::optional<int> find_first_even(const std::vector<int>& v) {
     for (int x : v) if (x % 2 == 0) return x;
-    return std::nullopt;   // 显式返回"空"
+    return std::nullopt;   // explicitly return "empty"
 }
 
 int main() {
-    std::optional<int> empty;           // 默认构造: 空
-    std::optional<int> a = 42;          // 从值构造
-    std::optional<int> b{a};            // 拷贝构造
+    std::optional<int> empty;           // default construction: empty
+    std::optional<int> a = 42;          // construct from a value
+    std::optional<int> b{a};            // copy construction
 
-    // 访问的四种方式
-    a.has_value();     // true:  显式问"有没有"
-    (bool)a;           // true:  operator bool, 等价于 has_value()
-    a.value();         // 42:    空时抛 std::bad_optional_access
-    *a;                // 42:    空时是未定义行为(下面单独讲)
-    a.value_or(0);     // 42:    空时返回参数里的默认值
+    // the four ways to access
+    a.has_value();     // true:  explicitly ask "is there a value"
+    (bool)a;           // true:  operator bool, equivalent to has_value()
+    a.value();         // 42:    throws std::bad_optional_access when empty
+    *a;                // 42:    undefined behavior when empty (covered separately below)
+    a.value_or(0);     // 42:    returns the argument's default when empty
 }
 ```
 
-Let's run through the whole process and check the actual output:
+Run the whole thing and look at the real output:
 
 ```text
 empty.has_value(): 0
@@ -126,14 +125,14 @@ find {1,3,5,8,9}: 8
 find {1,3,5,7}:   none
 ```
 
-The difference between these four access methods boils down to one sentence: **How they handle the empty state determines which one you should use.**
+The difference between the four access methods really boils down to one sentence: **how each behaves when empty decides which one you should use.**
 
-- `has_value()` / `operator bool()` — Pure query, the safest option. Whether empty or not, nothing bad happens.
-- `value()` — **Throws a `std::bad_optional_access` exception if empty**. Suitable for scenarios where "I'm too lazy to check for emptiness at the call site; if it's empty, the program logic is wrong, so throw it up for the upper layer to handle."
-- `value_or(default)` — **Returns your provided default value if empty**. Best for fallback logic where "if it's empty, use the default value." It handles this in one line without needing `if`.
-- `operator*` and `operator->` — **Undefined behavior if empty**. The fastest, but only if you have confirmed it is not empty.
+- `has_value()` / `operator bool()`—pure queries, the safest; nothing goes wrong whether empty or not.
+- `value()`—**throws `std::bad_optional_access` when empty**. Fits the "I can't be bothered to check for empty at the call site; empty means the program logic is broken, so let it throw and let a higher layer handle it" scenario.
+- `value_or(default)`—**returns the default you supply when empty**. Best for the "if it's empty, patch it with a default" fallback logic—one line, no `if` needed.
+- `operator*` and `operator->`—**undefined behavior when empty**. Fastest, but only once you've already confirmed it's non-empty.
 
-Let's verify the behavior of `value()` throwing an exception, rather than just making empty claims:
+Since `value()` throws, let's actually test it rather than assert it on thin air:
 
 ```cpp
 // Standard: C++17
@@ -149,54 +148,54 @@ try {
 caught: bad optional access
 ```
 
-The exception object's `what()` returns the string `"bad optional access"`. Note that `bad_optional_access` is derived from `std::logic_error`—meaning the standard library classifies it as a "program logic error" (failure to check for emptiness when one should have), rather than a "runtime sporadic error". In other words, relying on `value()` to handle exceptions is equivalent to admitting that "an empty value here is a bug"; do not use it for normal control flow.
+The exception object's `what()` returns exactly the string `"bad optional access"`. Note that `bad_optional_access` derives from `std::logic_error`—meaning the standard library classifies it as a "program logic error" (an empty-check that should have been there but wasn't), not a "sporadic runtime error". In other words, leaning on `value()`'s exception as your safety net amounts to admitting "an empty here is a bug"—don't use it as normal control flow.
 
-## The Real Trap: Dereferencing an Empty Optional is Undefined Behavior
+## The Real Trap: Dereferencing an Empty optional Is Undefined Behavior
 
-`value()` throws an exception if empty, but what about `*empty`? The standard is very clear: **dereferencing an empty optional is undefined behavior (UB)**. It won't check for emptiness for you, nor will it throw an exception—it is straight-up UB. The insidious thing about this is that it **usually doesn't crash**; you just carry on using a wrong result, until it explodes one day when you change compiler options or platforms.
+`value()` throws when empty—so what about `*empty`? The standard is quite clear: **dereferencing an empty optional is undefined behavior (UB)**. It won't check emptiness for you, and it won't throw—it's just straight-up UB. The insidious part is that it **usually doesn't crash**: you keep using a wrong result, until one day a different compiler flag or platform makes it blow up.
 
-We tested this with GCC 16.1.1. First, let's see what happens with the default compilation:
+We tested on GCC 16.1.1; first, what happens under a default build:
 
 ```cpp
 // Standard: C++17
 std::optional<int> empty;
-std::cout << *empty << '\n';   // 空的解引用: UB
+std::cout << *empty << '\n';   // dereferencing an empty optional: UB
 ```
 
-Compile and run directly using `g++ -std=c++23 -O2`:
+Compile and run directly with `g++ -std=c++23 -O2`:
 
 ```text
 0
 ```
 
-It didn't crash, and it printed a `0`. But don't be fooled by this `0`—it **is not the `optional` telling you "I am empty"**; it just happened to read the default zero value from that uninitialized memory. In a different scenario, with a different optimization level, or a different type, it could easily be any garbage value, or cause a segmentation fault directly. This is the terrifying nature of UB: the fact that it "runs" today is precisely the most dangerous signal.
+No crash—it printed a `0`. But don't let that `0` fool you: it is **not the optional telling you "I'm empty"**; it just happened to read the default zeros in that uninitialized memory. Change the scenario, the optimization level, or the type, and it could just as well be any garbage value, or a straight segfault. That's what makes UB scary: the fact that it "works" today is precisely the most dangerous sign.
 
-::: warning ASan can't catch this UB
-Many people's first reaction is "turn on AddressSanitizer to catch it." But in practice, ASan is **powerless** against this UB:
+::: warning ASan cannot catch this UB
+Many people's first instinct is "throw AddressSanitizer at it". But in actual tests, ASan is **powerless** against this UB:
 
 ```text
-O2 -fsanitize=address: 打印 0, 不报错, 正常退出
-O2 -fsanitize=undefined: 打印 0, 不报错
+O2 -fsanitize=address: prints 0, no error, exits normally
+O2 -fsanitize=undefined: prints 0, no error
 ```
 
-The reason is that `optional` uses a **legally allocated union memory block** internally to hold the value. Dereferencing an empty `optional` reads from this memory—which is neither use-after-free (the memory is still alive) nor an out-of-bounds access (the size hasn't been exceeded)—so ASan/UBSan simply do not treat it as an error. This access of "read but never constructed" memory falls into the gray area of "live but uninitialized," which is invisible to runtime sanitizers.
+The reason is that optional internally uses a **legitimately allocated chunk of union memory** to hold the value, and dereferencing an empty optional reads that memory—it's neither use-after-free (the memory is alive) nor out-of-bounds (the size isn't exceeded), so ASan/UBSan never treats it as an error. This access to "memory that was read but never constructed" lives in a gray zone of "active but uninitialized", invisible to runtime sanitizers.
 
-To catch it, we rely on the built-in assertions in libstdc++. Compile the same program with `-D_GLIBCXX_ASSERTIONS`:
+To catch it, you need the assertions that ship with libstdc++. Compile the same program with `-D_GLIBCXX_ASSERTIONS`:
 
 ```text
 /usr/include/c++/16.1.1/optional:1249: constexpr _Tp& std::optional<_Tp>::operator*() &
   [with _Tp = int]: Assertion 'this->_M_is_engaged()' failed.
-退出码 134 (SIGABRT)
+exit code 134 (SIGABRT)
 ```
 
-Inside `libstdc++`'s `operator*`, there is a hidden `__glibcxx_assert(this->_M_is_engaged())`. With `_GLIBCXX_ASSERTIONS` enabled, it checks for null at runtime and aborts if the value is empty. Whether to enable this macro in production builds (which incurs a minor performance cost) is a team decision, but **we strongly recommend enabling it during debugging**—it catches a large number of "seems to run" undefined behavior (UB) cases for you.
+Hidden inside libstdc++'s `operator*` is a `__glibcxx_assert(this->_M_is_engaged())`; with `_GLIBCXX_ASSERTIONS` enabled it checks emptiness for you at runtime and aborts on the spot when empty. Whether to enable this macro in production builds (it costs a little performance) is a team trade-off, but **during debugging we strongly recommend turning it on**—it blocks a whole class of "looks like it works" UB for you.
 
-That said, relying on assertions is a safety net, not a basis for writing code. The correct mindset is: **use `operator*` only in contexts where you have confirmed it is not empty**—for example, right after an `if (opt)` check, or when `opt.has_value()` returns true. Otherwise, use `value()` (let exceptions signal the error) or `value_or()` (let a default value serve as the fallback). Entrusting null checks to UB is a debt that will eventually come due.
+That said, relying on assertions is a safety net, not a basis for writing code. The right mindset: **use `operator*` only in contexts where you've already confirmed non-emptiness**—say, right after an `if (opt)` check, or once `opt.has_value()` has come back true. Otherwise use `value()` (let the exception shout for you) or `value_or()` (let the default catch it). Handing the empty-check duty over to UB always comes due sooner or later.
 :::
 
-## `emplace`, `reset`, and the Value Semantic Lifecycle
+## emplace, reset, and the Value-Semantics Lifecycle
 
-`optional` is a value type, which means it **manages the lifecycle of the contained `T` itself**: when you construct a non-empty `optional`, `T` is constructed; when the `optional` is destroyed, `T` is destroyed along with it; when you reassign or clear it, the old `T` is destroyed first. This automatic management is the core reason why `optional` is less error-prone than raw pointers. We will use a type with logging to make this lifecycle transparent:
+optional is a value type, which means it **manages the lifetime of the `T` inside all by itself**: construct a non-empty optional and the `T` gets constructed; destroy the optional and the `T` is destroyed with it; reassign or clear it, and the old `T` is destroyed first. This automatic management is the core of what makes optional less hassle than raw pointers. Let's make the lifecycle plain to see with a logging type:
 
 ```cpp
 // Standard: C++17
@@ -211,15 +210,15 @@ struct User {
 };
 
 int main() {
-    std::optional<User> opt;          // 空, 还没构造 User
-    opt.emplace("alice", 30);         // 就地构造, 不产生临时对象
-    opt->greet();                     // operator-> 访问成员
+    std::optional<User> opt;          // empty: no User constructed yet
+    opt.emplace("alice", 30);         // construct in place, no temporary created
+    opt->greet();                     // operator-> member access
 
-    opt.emplace("bob", 25);           // 再次 emplace: 先析构旧的, 再构造新的
+    opt.emplace("bob", 25);           // emplace again: destroy the old one first, then construct the new
     opt->greet();
 
-    opt.reset();                      // 主动清空, 调用析构
-    opt = std::nullopt;               // 赋值 nullopt, 等价于清空
+    opt.reset();                      // actively clear: invokes the destructor
+    opt = std::nullopt;               // assign nullopt, equivalent to clearing
 }
 ```
 
@@ -236,30 +235,30 @@ int main() {
 4. 赋值 nullopt: 同样会析构当前值
 ```
 
-A few details are worth noting. `emplace(args...)` performs "in-place construction"—it directly invokes `T`'s constructor on the storage inside the optional using `args`, without first generating a temporary `T` and then moving or copying it in. This is more efficient for non-trivial types (like this `User`) and expresses intent more clearly than `opt = User{...}`. `operator->` allows you to access members as if you were using a pointer (`opt->greet()`), but the prerequisite is the same: "non-empty"—using `operator->` on an empty optional is just as much undefined behavior (UB) as dereferencing one. `reset()` and `= nullopt` are two equivalent ways to clear the value; both destruct the currently held value and turn the optional into an empty state.
+A few details deserve attention. `emplace(args...)` means "construct in place"—it calls `T`'s constructor with `args` directly on the optional's internal storage, instead of first creating a temporary `T` and then moving/copying it in. That's more efficient for non-trivial types (like this `User`), and it reads more clearly than `opt = User{...}`. `operator->` lets you access members as if through a pointer (`opt->greet()`), with the same precondition—non-empty: using `operator->` on an empty optional is UB, just like dereferencing. `reset()` and `= nullopt` are two equivalent ways to clear; both destroy the currently held value and leave the optional empty.
 
-This semantic where "optional manages the lifecycle" stands in stark contrast to returning raw pointers. With a function returning a pointer, once the caller receives it, the lifecycle is **dangling**—it might point inside a container, to the heap, or to a static region. The behavior varies completely, and the signature reveals nothing. In contrast, returning `optional<T>` (by value) means the value resides inside the optional object itself. When the optional is destructed, the value is gone. The boundaries are clear, leaving no ambiguity regarding ownership.
+This "optional manages the lifecycle" semantics contrasts sharply with returning raw pointers. With a function that returns a pointer, once the caller holds it, the lifetime is **up in the air**—pointing into a container's internals, to the heap, or to static storage, each behaving completely differently and none of it visible in the signature. Returning an `optional<T>` (a value) instead means the value lives inside the optional object itself: when the optional is destroyed, the value is gone with it. The boundary is crystal clear, with no ownership ambiguity whatsoever.
 
-## The Headline Feature of C++23: Monadic Operations
+## The C++23 Headliner: Monadic Operations
 
-Everything up to this point has been available since C++17. C++23 adds three monadic interfaces to optional—`and_then`, `or_else`, and `transform`. These are the new features this article really wants to discuss, and they represent the most anticipated capabilities of optional.
+Everything up to here has been C++17 material. C++23 adds three monadic interfaces to optional—`and_then`, `or_else`, `transform`. These are the genuinely new material this article wants to cover, and optional's most anticipated capability.
 
-Why do we need them? Consider a real-world scenario: given a username, we need to "look up user ID → look up email → extract email domain." Each of these three steps might fail (user doesn't exist, user didn't provide an email, or the email format is invalid so we can't get the domain). Writing this with C++17 optional looks like this:
+Why do we need them? Consider a real scenario: given a username, we want to "look up the user id → look up the email → extract the email domain". Each of the three steps can come up empty (user doesn't exist, user left no email, malformed email with no domain to extract). Written with C++17 optionals, it looks like this:
 
 ```cpp
 // Standard: C++17
 std::string classic(const std::string& name) {
     auto uid = get_user_id(name);
-    if (!uid) return "(no user)";          // 第一层判空
+    if (!uid) return "(no user)";          // first emptiness check
     auto email = get_email(*uid);
-    if (!email) return "(no email)";       // 第二层判空
+    if (!email) return "(no email)";       // second emptiness check
     auto dom = domain_of(*email);
-    if (!dom) return "(no domain)";        // 第三层判空
+    if (!dom) return "(no domain)";        // third emptiness check
     return *dom;
 }
 ```
 
-Three levels of nested `if`, each layer performing a "null check + value retrieval," fragments the logic completely. This "sequence of potentially failing steps" is extremely common in business logic. The traditional approach involves stacking layer upon layer of `if`, resulting in long code that is prone to missing checks. `and_then` is designed to eliminate these `if` statements—it accepts a function, **feeding the value to this function when the optional is non-empty, and propagating the empty state directly when it is empty.** Thus, the code above transforms into a single chain:
+Three nested layers of `if`, each doing "check empty + take the value", with the logic shredded to pieces. "A sequence of steps that can each fail" is extremely common in business code, and the traditional way to write it is piling `if` on `if`—long, and easy to miss a check. `and_then` exists to eliminate those `if`s—it takes a function and, **when the optional is non-empty, feeds the value to that function; when empty, it just passes the emptiness straight through**. So the code above becomes a single chain:
 
 ```cpp
 // Standard: C++23
@@ -267,11 +266,11 @@ std::string monadic(const std::string& name) {
     return get_user_id(name)
         .and_then(get_email)          // optional<int>    -> optional<string>
         .and_then(domain_of)          // optional<string> -> optional<string>
-        .value_or("(missing)");       // 链尾兜底
+        .value_or("(missing)");       // fallback at the end of the chain
 }
 ```
 
-If any step in the chain returns an empty value, the rest of the chain automatically short-circuits to empty, and finally `value_or` provides a default value. Let's first verify that it runs correctly on GCC 16.1.1, and then compare the results with the traditional approach:
+If any step in the chain returns empty, the entire rest of the chain automatically short-circuits to empty, and `value_or` supplies a default at the end. Let's first confirm it runs on GCC 16.1.1, then compare against the classic version's results:
 
 ```text
 name   classic         monadic
@@ -280,25 +279,25 @@ bob      '(no email)'   '(missing)'
 carol      '(no user)'   '(missing)'
 ```
 
-`alice` successfully retrieves the domain `example.com` all the way through; `bob` fails at the "check email" step (no email provided), the traditional approach returns `(no email)`, while the monadic approach short-circuits to `(missing)`; `carol` fails at the very first step because the username doesn't exist, also short-circuiting. Both approaches have identical semantics, but the **control flow in the monadic version is linear and reads from left to right**, uninterrupted by `if` statements.
+`alice` sails all the way through and gets the domain `example.com`; `bob` comes up empty at the "look up email" step (no email on file)—the classic version returns `(no email)`, the monadic version short-circuits to `(missing)`; `carol`'s username doesn't exist in the first place, likewise short-circuiting. The two versions mean the same thing, but the monadic one's **control flow is linear, read left to right**, uninterrupted by `if`s.
 
-Memorize the differences between these three interfaces carefully; they look very similar, and mixing them up will result in a slew of concepts errors:
+Keep the distinctions between the three interfaces firmly in mind—they look so alike that mixing them up earns you a pile of concepts errors:
 
-- **`and_then(f)`** — `f` takes a **value type `T`** and returns a **new `optional<U>`**. Its semantics are "potentially turning something into nothing" (`f` decides whether to return empty or not), making it suitable for chaining "queries where each step might fail". This is the workhorse of monadic chains.
-- **`transform(f)`** — `f` takes a **value type `T`** and returns a **plain value `U` (not optional)**. It performs a pure "something to something" mapping, and **does not introduce new emptiness** (as long as the optional was non-empty, the result is non-empty). Suitable for "transforming a value without involving failure".
-- **`or_else(f)`** — The inverse of the previous two: **`f` is not called if the optional is non-empty**, and it returns as-is; if empty, `f()` is called (note that `f` **takes no arguments**), and `f` must return an **`optional<T>` of the same type** as a fallback. Suitable for "providing a default or logging when empty".
+- **`and_then(f)`**—`f` receives the **value type `T`** and returns a **new `optional<U>`**. Semantically it "may turn something into nothing" (`f` itself decides whether to return empty or not), which suits chaining "lookups where every step can fail". This is the workhorse of the monadic chain.
+- **`transform(f)`**—`f` receives the **value type `T`** and returns a **plain value `U` (not an optional)**. It only does the "something to something" pure mapping and **never introduces new emptiness** (as long as the optional was non-empty, the result is non-empty). Suits "transform the value once, no failure involved" situations.
+- **`or_else(f)`**—the reverse of the other two: **when the optional is non-empty, `f` is not called and the optional is returned as-is; when empty, `f()` is invoked** (note that `f` **takes no parameters**), and `f` must return an **optional of the same type, `optional<T>`**, as the fallback. Suits "if empty, supply a default / log something".
 
-Let's run through an example with `transform` and `or_else` respectively to nail down the semantics. First, look at `transform`: performing an "uppercase" mapping on a potentially existing username. This operation itself cannot fail, so we use `transform` instead of `and_then`:
+Let's pin the semantics down with one example each for `transform` and `or_else`. First, `transform`: uppercase-ify a username that may not exist—an operation that cannot itself fail—so `transform` rather than `and_then`:
 
 ```cpp
 // Standard: C++23
-std::string to_upper(std::string s) { /* 转大写 */ return s; }
+std::string to_upper(std::string s) { /* convert to uppercase */ return s; }
 
 std::optional<std::string> name{"alice"};
 std::optional<std::string> empty;
 
-auto big = name.transform(to_upper);         // 有值 -> 映射 -> 仍有值: ALICE
-auto big_empty = empty.transform(to_upper);  // 空 -> 透传 -> 仍空
+auto big = name.transform(to_upper);         // has value -> map -> still has value: ALICE
+auto big_empty = empty.transform(to_upper);  // empty -> pass through -> still empty
 ```
 
 ```text
@@ -306,7 +305,7 @@ name.transform(upper): ALICE
 empty.transform(upper): (none)
 ```
 
-Note that `empty.transform(to_upper)` is empty — `transform` does nothing on an empty `optional`, simply propagating the empty state without calling `to_upper`. Now let's look at `or_else`: when empty, it falls back to a default value and logs a message:
+Note that `empty.transform(to_upper)` is empty—`transform` does nothing to an empty optional, it just passes the emptiness along without ever calling `to_upper`. Now `or_else`: fall back to a default when empty, logging along the way:
 
 ```cpp
 // Standard: C++23
@@ -314,8 +313,8 @@ auto fallback = empty.or_else([] {
     std::cout << "  [or_else] 没值, 回退到 GUEST\n";
     return std::optional<std::string>{"GUEST"};
 });
-// empty 时: 打日志, 返回装着 "GUEST" 的 optional
-// 非空时: 不调用, 原样返回
+// when empty: logs and returns an optional holding "GUEST"
+// when non-empty: not called, returned as-is
 ```
 
 ```text
@@ -324,29 +323,29 @@ empty.or_else(GUEST): GUEST
 name.or_else(GUEST): alice  (or_else 没被调用)
 ```
 
-Since `name` is not empty, `or_else` is not called at all, and `alice` is returned as is. This reflects its semantics of "keep it if you have it, or fall back if you don't."
+`name` is non-empty, so `or_else` is never called at all and `alice` is returned untouched. That's its "keep it if present, fall back if not" semantics.
 
-::: warning Signature differences between the three interfaces — don't mix them up
-These three interfaces最容易在**参数和返回值**上踩坑，混了就是一堆 concepts 报错：
+::: warning Signature differences among the three interfaces—don't mix them up
+These three interfaces bite most easily on **parameters and return values**—mix them up and you get a pile of concepts errors:
 
-- `and_then` and `transform` functions receive the **value `T`** (or a reference), not `optional<T>` — don't write `[](std::optional<int> o){...}`.
-- `and_then` and `or_else` functions return an **`optional`**; `transform` functions return a **plain value**.
-- The `or_else` function **takes no arguments** (there is no value to pass when it is empty), and the returned optional must be the **same type** as the original `optional<T>`. You cannot change the type.
+- For `and_then` and `transform`, the function receives the **value `T`** (or a reference), not an `optional<T>`—don't write `[](std::optional<int> o){...}`.
+- For `and_then` and `or_else`, the function returns an **optional**; for `transform`, it returns a **plain value**.
+- `or_else`'s function **takes no parameters** (when empty there's no value to pass in the first place), and the optional it returns must be the **same type** `optional<T>` as the original—no type changes allowed.
 
-To remember it in one sentence: `and_then`/`or_else` manipulate the optional itself (potentially changing whether it "has a value"), while `transform` performs a pure transformation on the contained value (without changing whether it "has a value").
+One-sentence mnemonic: `and_then`/`or_else` manipulate the optional itself (they may change "present or not"), while `transform` only applies one pure transformation to the contained value ("present or not" stays put).
 :::
 
-The value of these monadic interfaces is best demonstrated in "a sequence of steps that might fail." More importantly, this shares the **same philosophy** as C++23's `std::expected<T, E>` — `expected` is essentially "optional + error information." Its `and_then`/`or_else`/`transform` signatures are almost identical, with the only difference being that "empty" is replaced by "an unexpected value with an error cause." Once you master optional's monadic chain, you are halfway there with expected. We will expand on the comparison between the two in the article on expected.
+The value of this monadic interface set shows best in "a sequence of steps that can each fail". More importantly, it shares **the same design** with C++23's `std::expected<T, E>`—`expected` is "optional + error information", and its `and_then`/`or_else`/`transform` signatures are nearly identical; the only difference is that "empty" is replaced by "an unexpected value carrying the failure reason". Learn optional's monadic chain and you already know half of expected's. We'll unpack the comparison between the two in the expected article.
 
 ## Move Semantics and C++20 constexpr
 
-optional has complete support for move semantics: moving the value out of an optional, and moving one optional to another, both work exactly as you expect. However, there is a detail you need to watch out for — **after you `std::move(*opt)` the value away, the optional itself is unaware of this; it still reports `has_value()` as true**. Let's test this with a type that logs move operations:
+optional's support for move semantics is complete: "moving out" the value inside an optional, or moving one optional into another, both work the way you'd expect. But one detail needs a close look—**after you haul the value away with `std::move(*opt)`, the optional itself has no idea; it still reports `has_value()` as true**. Let's test with a type that prints move logs:
 
 ```cpp
 // Standard: C++17
-auto o = make_box();              // optional<Box>, 装着 tag="payload"
-Box taken = std::move(*o);        // 把值搬出来
-// o 仍然 has_value()=true, 但里面的 Box 已是 moved-from 状态
+auto o = make_box();              // optional<Box> holding tag="payload"
+Box taken = std::move(*o);        // move the value out
+// o still has has_value()=true, but the Box inside is now in a moved-from state
 ```
 
 ```text
@@ -360,9 +359,9 @@ Box taken = std::move(*o);        // 把值搬出来
   o->tag = (moved-from)  (moved-from 状态, 别用)
 ```
 
-After the move, `taken` now holds the `payload`, while the object inside `o` is in a moved-from state (the tag shows `(moved-from)`). Crucially, `o.has_value()` is still `true`—the "has a value" flag in `optional` remains untouched, so it is unaware that you have emptied the contents. Therefore, **do not access the value via `*o` after moving out** (a moved-from object is only guaranteed to be destructible or re-assignable). If you intend to make the `optional` empty, explicitly call `o.reset()` or assign `o = std::nullopt`.
+After the move, `taken` holds `payload`, while the object inside `o` is in a moved-from state (the tag reads `(moved-from)`). The key point: `o.has_value()` is still `true`—optional's "present or not" flag never moved; it doesn't know you hollowed the value out. So **after moving out, don't access that value through `*o` again** (a moved-from object only guarantees destruction and reassignment). If you really do want the optional empty, say so explicitly: `o.reset()` or `o = std::nullopt`.
 
-Finally, let's cover a C++20 feature: **most `optional` operations are `constexpr`**, including construction, `emplace`, `reset`, `value_or`, and `operator*`. This means `optional` can be evaluated at **compile time** and used within `static_assert`:
+Finally, a C++20 capability: **the overwhelming majority of optional's operations are `constexpr`**, including construction, `emplace`, `reset`, `value_or`, and `operator*`. That means optional can be evaluated at **compile time** and stuffed into a `static_assert`:
 
 ```cpp
 // Standard: C++20
@@ -375,9 +374,9 @@ constexpr int compute() {
 }
 
 int main() {
-    static_assert(compute() == 42);                // 编译期就定下来
+    static_assert(compute() == 42);                // settled at compile time
     constexpr std::optional<int> empty;
-    static_assert(empty.value_or(99) == 99);       // value_or 也 constexpr
+    static_assert(empty.value_or(99) == 99);       // value_or is constexpr too
 }
 ```
 
@@ -387,20 +386,20 @@ empty.value_or(99) = 99
 C++20 constexpr optional: OK
 ```
 
-Want to see `optional` compile-time evaluation in action? Check out this online demo:
+Want to run it and watch optional get evaluated at compile time? Open this live example:
 
 <OnlineCompilerDemo
-  title="C++20 constexpr optional: Compile-time Evaluation"
+  title="C++20 constexpr optional: compile-time evaluation"
   source-path="code/examples/vol3/61_optional_constexpr.cpp"
-  description="emplace, reset, and value_or in optional are all constexpr: compute() and empty.value_or(99) fit into static_assert for compile-time verification, and runtime prints the same result"
+  description="emplace/reset/value_or on optional are all constexpr: compute() and empty.value_or(99) can go straight into a static_assert for compile-time verification, and running it prints the same results"
   allow-run
 />
 
-This is extremely useful for template metaprogramming, compile-time lookup tables, and `consteval` functions—whenever you need a "box that might be empty," you can use `optional` at compile time starting with C++20, no need to roll your own `union`.
+This is extremely useful in template metaprogramming, compile-time table lookups, and `consteval` functions—whenever you need a "possibly empty" box, optional works at compile time too from C++20 on, no more hand-rolling your own union.
 
-## Performance Intuition: How Much Overhead Does `optional` Add on a Hot Path?
+## A Dose of Performance Intuition: How Much optional Costs on a Hot Path
 
-Many developers worry about `optional` performance. Intuitively, "an extra flag and an extra branch" seems like it would slow things down. Let's compare `optional<int>` + `value_or` against returning a raw `int` (using `-1` as a sentinel) in a hot path loop of 500 million iterations:
+Plenty of people worry about optional's performance. Intuitively, "one extra flag bit and one extra branch" sounds like it would slow things down. So on a hot path of 500 million loop iterations, let's compare `optional<int>` + `value_or` against returning a plain `int` directly (with `-1` as the sentinel):
 
 ```cpp
 // Standard: C++17
@@ -410,7 +409,7 @@ int                lookup_raw(int i) { return i & 1 ? i : -1; }
 for (long i = 0; i < 500'000'000L; ++i) acc += lookup_opt(i).value_or(0);
 ```
 
-Actual measurements (`g++ -std=c++23 -O2`, taking the median value from multiple runs):
+Measured (`g++ -std=c++23 -O2`, representative values from multiple runs):
 
 ```text
 optional<int>.value_or(0): 132 ms
@@ -422,47 +421,47 @@ optional<int>.value_or(0): 192 ms
 raw int:                   403 ms
 ```
 
-The absolute values fluctuate significantly across runs (machine load has a major impact), but one robust conclusion remains: **`optional<int>.value_or` is on the same order of magnitude as directly returning an `int` on this hot path, and is often even faster**. It certainly does not suffer from being "an order of magnitude slower." This is due to the small size of `optional` at `-O2` (just an `int` plus a flag), the inlining of `value_or`, and modern CPU branch prediction, which optimize this overhead to near invisibility. **The conclusion is: do not avoid `optional` for performance reasons**—the type safety benefits it provides far outweigh the negligible, immeasurable cost. Of course, if your value type is large (e.g., a 1KB struct), `optional` will add storage for a flag and alignment padding, and copy overhead becomes a factor. In those cases, whether to pass an `optional` depends on the specific scenario.
+The absolute numbers wobble quite a bit between runs (machine load dominates), but one robust conclusion holds: **`optional<int>.value_or` is in the same ballpark as returning a raw int on this hot path—often even faster**—and it never turns in "an order of magnitude slower". The reason is that under `-O2`, optional's small footprint (just an `int` plus a flag bit), the inlining of `value_or`, and modern CPUs' branch prediction render this bit of overhead nearly invisible. **The takeaway: don't avoid optional for performance reasons**—the type safety it buys is worth far more than overhead you can't even measure. Of course, if your value type is itself large (say, a 1 KB struct), optional stores an extra flag byte plus alignment padding and copy costs enter the picture; whether to pass an optional around then depends on the concrete scenario.
 
-## Common Real-World Pitfalls
+## A Few Pitfalls People Actually Hit
 
-Let's consolidate the places where it's easy to crash and burn; every point below has been verified through the tests above:
+Let's collect the spots where this journey tends to flip over—every item below was verified by the tests above:
 
-::: warning operator* / operator-> on Empty is UB
-`*empty` and `empty->member` result in **undefined behavior**, not an exception. Under default compilation, they will likely "appear to work" (printing a `0`), trapping you in the deepest pit of despair. ASan/UBSan cannot catch this; you need `-D_GLIBCXX_ASSERTIONS` to trigger an abort at runtime. The rule: **Only use `*` and `->` in contexts where you have already checked for emptiness**. Otherwise, use `value()` (throws) or `value_or()` (fallback).
+::: warning operator* / operator-> on an empty optional is UB
+`*empty` and `empty->member` are **undefined behavior**, not an exception. Under a default build they most likely "look fine" (printing some `0`), which buries the trap at its deepest. ASan/UBSan can't catch it; you need `-D_GLIBCXX_ASSERTIONS` to get a runtime abort. The rule: **use `*` and `->` only in contexts where you've already checked for emptiness**; otherwise use `value()` (throws) or `value_or()` (fallback).
 
-**`value()` or `operator*`?** The trade-off comes down to one question: Is "empty" here a "normal possibility I must handle," or "something that shouldn't happen and indicates a bug"? For the former, use `value_or` or check for emptiness before using `*`. For the latter, use `value()` to let the exception expose the bug. Don't use `value()` for normal control flow—the overhead and semantics are ill-suited for it.
+**`value()` or `operator*`?** The trade-off is a single question: is emptiness here "a normal occurrence that I must handle", or "something that shouldn't happen, and happening means a bug"? For the former, use `value_or` or check-then-`*`; for the latter, use `value()` and let the exception expose the bug for you. Don't use `value()` as normal control flow—neither the cost nor the semantics of exceptions fit.
 :::
 
-::: warning optional Remains Engaged After Move
-`std::move(*opt)` moves the value out, but the optional's "has value" flag remains untouched, so `has_value()` is still `true`. Accessing `*opt` at this point yields a moved-from object (valid but with an unspecified state); you can only destroy it or reassign it. To make the optional truly empty, explicitly call `reset()` or assign `= nullopt`.
+::: warning After moving out, the optional is still engaged
+`std::move(*opt)` hauls the value away, but the optional's "present or not" flag doesn't move, and `has_value()` still returns `true`. Accessing `*opt` at that point yields a moved-from object (legal but in an unspecified state), good only for destruction or reassignment. To truly empty the optional, explicitly `reset()` or `= nullopt`.
 :::
 
-::: warning Null Checks Are Not Free, But Cheap
-`optional` adds a flag, so accessing the value always implicitly involves a "null check." In scenarios where you have already checked `if (opt)` and repeatedly use `*opt` in a loop, you can hoist the check out of the loop to save redundant checks. However, don't sacrifice readability for this micro-optimization—in the vast majority of cases, the compiler can optimize it away. Write correct code first.
+::: warning optional's emptiness check isn't free, but it's cheap
+optional carries one extra flag bit, and every value access implies an emptiness check. In scenarios where you've already done `if (opt)` and then use `*opt` repeatedly inside a loop, you can hoist the check outside the loop and save the repeated tests. But don't sacrifice readability for that micro-optimization—in the vast majority of cases the compiler optimizes it away on its own; get the code right first.
 :::
 
-::: warning or_else Functions Take No Args and Must Match Return Type
-The function passed to `or_else` is `f()` (no arguments), not `f(value)`—when empty, there is no value to pass. Furthermore, it must return **the exact same `optional<T>`**; you cannot use this to change types (use `and_then` for that). Mixing this up results in a cascade of concepts errors.
+::: warning or_else's function takes no parameters, and the return type must match
+`or_else`'s function is `f()` (no parameters), not `f(value)`—when empty there's simply no value to pass. And it must return the **same `optional<T>`**; no sneaking in a type change (for that, use `and_then`). Mix them up and you get a string of concepts errors.
 :::
 
 ## Summary
 
-The core value of `std::optional` is elevating "possibly having no value" from comments and conventions into a **fact of the type system**. Here are the key takeaways:
+`std::optional`'s core value is promoting "possibly no value" from comments and conventions into **a fact of the type system**. Let's collect the key conclusions:
 
-- **Replaces Three "Hacks"**: Safer than sentinel values (no conflict with legitimate values), clearer than raw pointers (value semantics, no ownership ambiguity), and cleaner than `pair<bool, T>` (doesn't construct `T` when empty, couples flag and value tightly).
-- **Four Ways to Access Values**: `has_value()`/`operator bool()` (query), `value()` (throws `bad_optional_access` if empty), `value_or(default)` (fallback if empty), `operator*`/`operator->` (UB if empty, use with extreme caution).
-- **The Biggest Pitfall is Dereferencing an Empty Optional**: It is UB. Under default compilation, it likely won't crash (printing some garbage value), ASan misses it, and you need `-D_GLIBCXX_ASSERTIONS` to abort at runtime. The rule is to only use `*`/`->` after an explicit check.
-- **Value Semantics Lifecycle**: `optional` manages the construction and destruction of `T`. `emplace` constructs in-place, `reset()`/`= nullopt` clears and destroys. After a move, the optional remains engaged; accessing it yields a moved-from object.
-- **C++23 Monadic Operations are the Highlight**: `and_then` (chain operations that might fail, function returns optional), `transform` (pure mapping of the value, function returns plain value), `or_else` (fallback on empty, function takes no args and returns same optional). Together, they flatten nested "if-check" logic into a linear chain. This shares the same philosophy as `expected`.
-- **Performance is Not an Issue**: On a hot path, `optional<int>` is on par with returning a raw `int`, so don't avoid it for performance. Since C++20, `optional` is also `constexpr`, making it usable at compile time.
+- **Replaces the three homegrown approaches**: safer than sentinel values (no collision with legitimate values), clearer than raw pointers (value semantics, no ownership ambiguity), cleaner than `pair<bool, T>` (no `T` constructed when empty; the flag and the value are bound together).
+- **Four ways to get the value**: `has_value()`/`operator bool()` (query), `value()` (throws `bad_optional_access` when empty), `value_or(default)` (fallback when empty), `operator*`/`operator->` (UB when empty—use with care).
+- **The biggest pitfall is dereferencing an empty optional**: UB that usually doesn't crash under default builds (it prints some filler value); ASan can't catch it, and only `-D_GLIBCXX_ASSERTIONS` aborts at runtime. The rule: use `*`/`->` only after checking for emptiness.
+- **A value-semantics lifecycle**: optional manages `T`'s construction and destruction itself; `emplace` constructs in place, `reset()`/`= nullopt` clears and invokes the destructor; after a move-out the optional is still engaged, and access yields a moved-from object.
+- **The C++23 monadic operations are the headliner**: `and_then` (chains steps that can fail; the function returns an optional), `transform` (pure mapping over the value; the function returns a plain value), `or_else` (fallback when empty; the function takes no parameters and returns the same optional type). Working together, they compress "layer upon layer of if-based emptiness checks" into one linear chain—and they share the same design with `expected`.
+- **Performance is a non-issue**: on hot paths `optional<int>` is in the same class as returning `int` directly, so don't avoid it for performance; and since C++20 optional is `constexpr`, usable at compile time too.
 
-In the next post, we will look at `std::expected<T, E>`—it's "optional plus a reason for error." When you need to know not just "that it failed," but "why it failed," this is its time to shine. Once you are proficient with `optional`'s monadic chains, you will pick up `expected` very quickly.
+Next up is `std::expected<T, E>`—it is "optional + failure reason". When you need to know not just "it failed" but "why it failed", that's its cue. Once you're fluent in optional's monadic chains, expected's will come quickly.
 
 ## References
 
-- [cppreference: std::optional](https://en.cppreference.com/w/cpp/utility/optional) — Interface overview, `bad_optional_access`, C++20 constexpr notes
-- [cppreference: std::optional::and_then, or_else, transform](https://en.cppreference.com/w/cpp/utility/optional/and_then) — Signatures and semantics of C++23 monadic interfaces
-- [P0798R8 Monadic operations for std::optional](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p0798r8.html) — Proposal introducing `and_then`/`or_else`/`transform` in C++23, including design rationale
-- [cppreference: std::bad_optional_access](https://en.cppreference.com/w/cpp/utility/optional/bad_optional_access) — Exception type thrown by `value()` when empty
-- libstdc++ source `/usr/include/c++/16.1.1/optional` — `__glibcxx_assert` and `_M_is_engaged` checks for `operator*` (GCC 16.1.1)
+- [cppreference: std::optional](https://en.cppreference.com/w/cpp/utility/optional) — interface overview, `bad_optional_access`, notes on C++20 constexpr
+- [cppreference: std::optional::and_then, or_else, transform](https://en.cppreference.com/w/cpp/utility/optional/and_then) — signatures and semantics of the C++23 monadic interfaces
+- [P0798R8 Monadic operations for std::optional](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p0798r8.html) — the proposal that introduced `and_then`/`or_else`/`transform` in C++23, including the design motivation
+- [cppreference: std::bad_optional_access](https://en.cppreference.com/w/cpp/utility/optional/bad_optional_access) — the exception type thrown by `value()` on an empty optional
+- libstdc++ source `/usr/include/c++/16.1.1/optional` — the `__glibcxx_assert` and `_M_is_engaged` check inside `operator*` (GCC 16.1.1)

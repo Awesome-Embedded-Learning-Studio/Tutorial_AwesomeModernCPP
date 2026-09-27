@@ -47,7 +47,7 @@ title: std::flat_map
 | 清空 | `void clear()` | 清除所有元素 |
 | 迭代 | `iterator begin()` / `end()` | 按键序遍历 |
 | 下界/上界 | `iterator lower_bound(const K&)` | 有序查找边界 |
-| 是否包含 | `bool contains(const K& key) const` | (C++20 起可用) 检查键是否存在 |
+| 是否包含 | `bool contains(const K& key) const` | (C++23 起可用) 检查键是否存在 |
 
 ## 最小示例
 
@@ -76,7 +76,7 @@ int main() {
 - 连续存储对 CPU 缓存友好，小数据集的查找性能远优于 `std::map`
 - 无节点分配器开销，内存碎片更少，适合堆空间受限的嵌入式环境
 - 插入/删除 O(n)，不适合频繁修改的大数据集
-- 编译器支持尚在推进中（GCC 15+、Clang 20+、MSVC 19.51+），生产环境需评估工具链
+- 编译器支持尚在推进中（GCC 15+、Clang 20+,MSVC STL 尚未提供），生产环境需评估工具链
 
 ## 编译器支持
 

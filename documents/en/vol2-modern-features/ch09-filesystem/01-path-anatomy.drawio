@@ -1,0 +1,122 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="path Anatomy" id="path-anatomy">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="fs::path 的解剖：/home/user/report.pdf（Linux 上）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="24" width="600" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rootname_note" value="root_name() = &quot;&quot;：Linux 上没有驱动器号，永远为空（Windows 上如 &quot;C:&quot;）&lt;br&gt;root_path() = root_name + root_directory，这里就是开头那个 &quot;/&quot;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="180" y="54" width="480" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- 路径字符串本体：按字符分段着色 -->
+        <mxCell id="p_label" value="fs::path p =" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=14;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="64" y="98" width="108" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="seg_rootdir" value="/" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="98" width="44" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="seg_home" value="home" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="224" y="98" width="92" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="seg_sep1" value="/" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#f2f2f2;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="316" y="98" width="28" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="seg_user" value="user" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="344" y="98" width="84" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="seg_sep2" value="/" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#f2f2f2;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="428" y="98" width="28" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="seg_stem" value="report" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="456" y="98" width="110" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="seg_ext" value=".pdf" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="566" y="98" width="80" height="46" as="geometry" />
+        </mxCell>
+
+        <!-- 分解第一刀：root_directory + relative_path 恰好铺满整条路径 -->
+        <mxCell id="bar_rootdir" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;" vertex="1" parent="1">
+          <mxGeometry x="180" y="150" width="44" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="bar_relative" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;" vertex="1" parent="1">
+          <mxGeometry x="224" y="150" width="422" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_rootdir" value="root_directory()" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="142" y="162" width="120" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_relative" value="relative_path()" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="375" y="162" width="120" height="18" as="geometry" />
+        </mxCell>
+
+        <!-- 分解第二刀：parent_path 与 filename，中间的分隔符谁也不属于 -->
+        <mxCell id="bar_parent" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="180" y="186" width="248" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="bar_filename" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="456" y="186" width="190" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_parent" value="parent_path()" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="244" y="198" width="120" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_filename" value="filename()" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="491" y="198" width="120" height="18" as="geometry" />
+        </mxCell>
+
+        <!-- 各访问器取值，颜色与上方分段一一对应 -->
+        <mxCell id="tbl_header" value="各访问器的取值" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="228" width="600" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="cell_rootname" value="root_name() = &lt;b&gt;&quot;&quot;&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#f2f2f2;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="113" y="254" width="298" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="cell_rootdir" value="root_directory() = &lt;b&gt;&quot;/&quot;&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="415" y="254" width="298" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="cell_rootpath" value="root_path() = &lt;b&gt;&quot;/&quot;&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="113" y="288" width="298" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="cell_relative" value="relative_path() = &lt;b&gt;&quot;home/user/report.pdf&quot;&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="415" y="288" width="298" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="cell_parent" value="parent_path() = &lt;b&gt;&quot;/home/user&quot;&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffffff;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="113" y="322" width="298" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="cell_filename" value="filename() = &lt;b&gt;&quot;report.pdf&quot;&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffffff;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="415" y="322" width="298" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="cell_stem" value="stem() = &lt;b&gt;&quot;report&quot;&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="113" y="356" width="298" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="cell_ext" value="extension() = &lt;b&gt;&quot;.pdf&quot;&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="415" y="356" width="298" height="34" as="geometry" />
+        </mxCell>
+
+        <!-- 文章强调的坑：多段扩展名 -->
+        <mxCell id="tar_note" value="&lt;b&gt;换成 /tmp/archive.tar.gz：extension() 只取最后一个 &quot;.&quot; 之后的部分&lt;/b&gt;&lt;br&gt;filename() = &quot;archive.tar.gz&quot;，stem() = &quot;archive.tar&quot;，extension() = &quot;.gz&quot;（&lt;font color=&quot;#c00000&quot;&gt;不是 &quot;.tar.gz&quot;&lt;/font&gt;）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=13;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="113" y="406" width="600" height="72" as="geometry" />
+        </mxCell>
+
+        <!-- 原生格式 vs 通用格式 -->
+        <mxCell id="fmt_header" value="输出的两种格式：generic_string() 与 string()/native()" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="494" width="600" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="fmt_generic" value="&lt;b&gt;generic_string()&lt;/b&gt;&lt;br&gt;通用格式，总是正斜杠 /&lt;br&gt;&quot;dir/subdir/file.txt&quot;" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="113" y="520" width="294" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="fmt_native" value="&lt;b&gt;string() / native()&lt;/b&gt;&lt;br&gt;平台原生格式&lt;br&gt;Linux/macOS：&quot;dir/subdir/file.txt&quot;&lt;br&gt;Windows：&quot;dir\subdir\file.txt&quot;" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="419" y="520" width="294" height="92" as="geometry" />
+        </mxCell>
+
+        <mxCell id="source_note" value="取值来自文章在 Linux（GCC 13+）上的实测输出" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="113" y="624" width="600" height="18" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

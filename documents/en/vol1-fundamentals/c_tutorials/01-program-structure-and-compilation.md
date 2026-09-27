@@ -2,57 +2,64 @@
 chapter: 1
 cpp_standard:
 - 11
-description: Understand the basic structure of C programs, the four-stage compilation
-  process, the header file mechanism, and basic I/O, laying the foundation for the
-  compilation model in subsequent C++ studies.
+description: Understand the basic structure of a C program, the four-stage compilation pipeline, the header-file mechanism, and basic I/O — laying the compilation-model groundwork for everything that follows in C++
 difficulty: beginner
 order: 1
 platform: host
 prerequisites:
-- 无（本系列第一篇）
+- None (first article in this series)
 reading_time_minutes: 13
 tags:
 - host
 - cpp-modern
 - beginner
 - 入门
-title: Program Structure and Compilation Fundamentals
+title: Program Structure and Compilation Basics
 translation:
   source: documents/vol1-fundamentals/c_tutorials/01-program-structure-and-compilation.md
-  source_hash: 3f043e00dff8972ab89649fe7f150595f7c398c5b04f5f0724ec4b12cace1859
-  translated_at: '2026-06-16T03:32:30.084585+00:00'
+  source_hash: c0e8c188bdfeffe7095b3f67707aceb8740f38f6e7350a92a71c59a9474ff7c6
+  translated_at: '2026-09-25T12:38:24+00:00'
   engine: anthropic
-  token_count: 2330
+  token_count: 7200
 ---
 # Program Structure and Compilation Basics
 
-If you have written some C code before, you likely just hit "Run" in an IDE and called it a day—you might never have cared about the intermediate process of how code in a `.c` file becomes a runnable binary. However, understanding the compilation model becomes crucial when learning C++ later: template instantiation, header file strategies, and the ODR (One Definition Rule) are basically black magic if you don't understand the basic compilation workflow. So, let's clarify this from the very beginning.
+If you've written some C code before, chances are you just clicked "Run" in an IDE and called it a day — how the code in a `.c` file turns into a runnable binary is probably a middle step you never had to care about. But honestly, understanding the compilation model becomes critical once you move on to C++: template instantiation, header-file strategy, the ODR (One Definition Rule) — without a grasp of the basic compilation pipeline, you're basically working with a black box. So let's get this sorted out from the very beginning.
 
-## Environment Setup
+## Environment Notes
 
 All commands and code in this article have been verified in the following environment:
 
-- **Operating System**: Linux (Ubuntu 22.04+) / WSL2 / macOS
-- **Compiler**: GCC 11+ (Confirm version via `gcc --version`)
-- **Compiler Flags**: `-Wall -std=c11` (Enable warnings, specify C11 standard)
-- **Auxiliary Tools**: `objdump`, `nm` (Included with GCC, used to inspect object files)
+- **Operating system**: Linux (Ubuntu 22.04+) / WSL2 / macOS
+- **Compiler**: GCC 11+ (confirm the version with `gcc --version`)
+- **Compile flags**: `gcc -Wall -Wextra -std=c11` (warnings on, C11 standard pinned)
+- **Companion tools**: `objdump`, `nm` (bundled with GCC, for inspecting object files)
 
-If you are using Windows without WSL, MinGW-w64 or MSVC can also compile and run the code, but the output format of some tool commands (like `objdump`, `nm`) will differ.
+If you're on Windows without WSL, MinGW-w64 or MSVC can compile and run everything too, but the output format of some tool commands (such as `nm`, `objdump`) will differ.
 
-## Step 1 — Understanding the Skeleton of a C Program
+## Step 1 — Meet the Skeleton of a C Program
 
-The entry point of a C program is always the `main` function—this isn't just a convention; it is mandated by the C standard. The C standard defines two valid signatures for `main`:
+The entry point of a C program is always the `main` function — that's not just convention, it's what the C standard mandates. The C standard defines two legal signatures for `main`:
 
 ```c
-int main(void);
-int main(int argc, char *argv[]);
+// Version without command-line arguments
+int main(void) {
+    return 0;
+}
+
+// Version with command-line arguments
+int main(int argc, char *argv[]) {
+    // argc: the number of arguments (at least 1, namely the program itself)
+    // argv: the array of argument strings; argv[0] is the program name
+    return 0;
+}
 ```
 
-The return type of `main` must be `int`—while some older compilers might accept `void`, that is non-standard behavior. A return value of `0` indicates normal exit, while a non-zero value indicates an anomaly; the shell retrieves this value via `$?` to determine if the program executed successfully.
+The return type of `main` must be `int` — `void main()` may happen to run on certain ancient compilers, but that's non-standard behavior. `return 0` signals a normal exit, a non-zero value signals an abnormal one, and the shell picks the value up through `$?` to judge whether the program ran cleanly.
 
-> ⚠️ **Pitfall Warning**: Do not use `void main`. Although some older compilers accept it, the C standard only recognizes `int main`. On Linux, shell scripts and CI/CD pipelines often obtain the program's return value via `$?`—if your `main` does not return a meaningful value, upstream logic may fail.
+Don't use `void main()`. Some old compilers accept it, but the C standard recognizes only `int main`. On Linux, shell scripts and CI/CD pipelines routinely fetch a program's return value via `$?` — if your `main` doesn't return a meaningful value, the upstream logic doing the checking can go wrong.
 
-`argc` and `argv` allow the program to receive external parameters at startup. For example, when executing `git commit -m "fix"`, `argc` is 3, `argv[0]` is `git`, `argv[1]` is `commit`, and `argv[2]` is `-m "fix"`.
+`argc` and `argv` let a program receive external arguments at startup. For example, given `./myprogram hello world`, `argc` is 3, `argv[0]` is `"./myprogram"`, `argv[1]` is `"hello"`, and `argv[2]` is `"world"`.
 
 A minimal, complete C program:
 
@@ -60,7 +67,7 @@ A minimal, complete C program:
 #include <stdio.h>
 
 int main(void) {
-    printf("Hello, Embedded World!\n");
+    printf("Hello, World!\n");
     return 0;
 }
 ```
@@ -68,142 +75,160 @@ int main(void) {
 Output:
 
 ```text
-Hello, Embedded World!
+Hello, World!
 ```
 
-The `#include <stdio.h>` in the first line is a preprocessor directive. It inserts the contents of the standard I/O library header verbatim into the current location. Without this header, the compiler doesn't know what `printf` is and will issue a warning or error.
+The `#include <stdio.h>` on the first line is a preprocessor directive: it splices the contents of the standard I/O library's header verbatim into that position. Without that header included, the compiler has no idea what `printf` is and will warn or even error out.
 
 ## Step 2 — Breaking Down the Four Stages of Compilation
 
-Now let's break down how a `.c` file is transformed into an executable. The entire process is divided into four stages: Preprocessing → Compilation → Assembly → Linking. We can use GCC options to manually trigger each stage and observe the intermediate products.
+Now let's take apart how a `.c` file becomes an executable. The whole process splits into four stages — preprocessing → compilation → assembly → linking — and we can use gcc's options to trigger each stage by hand and inspect the intermediate artifacts.
 
 ### Stage 1: Preprocessing
 
-The preprocessor handles all directives starting with `#`—expanding macros, inserting header file contents, and processing conditional compilation:
+The preprocessor handles every directive that starts with `#` — expanding macros, splicing in header contents, and processing conditional compilation:
 
 ```bash
+# Run preprocessing only; write to a file so it's easy to inspect
 gcc -E hello.c -o hello.i
 ```
 
-The preprocessed `.i` file will be very large—a single `#include` will expand the entire standard I/O header and all headers it indirectly includes. You can open `hello.i` to see that the first few lines are comments, followed by hundreds or thousands of lines of header content, and finally, the few lines of code you wrote.
+The preprocessed `.i` file gets enormous — a single `#include <stdio.h>` pulls in the entire standard I/O header plus every header it transitively includes. Open `hello.i` and take a look: the first few lines are comments, followed by hundreds or thousands of lines of header content, and only at the very end do your own few lines of code appear.
 
-What the preprocessor does is simple in theory—pure text replacement—but this mechanism is a significant source of C's flexibility and the foundation for understanding C++ templates and header file organization.
+What the preprocessor does is simple to describe — plain textual substitution — but this mechanism is a major source of C's flexibility, and it's the foundation for understanding C++ templates and header organization.
 
 ### Stage 2: Compilation
 
-The compiler translates the preprocessed C code into assembly code, undergoing lexical analysis, syntax analysis, semantic analysis, intermediate code generation, and optimization:
+The compiler translates the preprocessed C code into assembly, running through lexical analysis, syntax analysis, semantic analysis, intermediate code generation, and optimization:
 
 ```bash
-gcc -S hello.i -o hello.s
+gcc -S hello.c -o hello.s
 ```
 
-Opening `hello.s`, you will see x86-64 assembly similar to this (output varies by platform):
+Open `hello.s` and you'll see x86-64 assembly that looks roughly like this (output differs across platforms):
 
 ```asm
-... (omitted) ...
-    lea     rdi, [rip + str.LC0]
-    call    puts
-... (omitted) ...
+    .file   "hello.c"
+    .section .rodata
+.LC0:
+    .string "Hello, World!"
+    .text
+    .globl  main
+main:
+    pushq   %rbp
+    movq    %rsp, %rbp
+    leaq    .LC0(%rip), %rdi
+    call    puts@PLT
+    movl    $0, %eax
+    popq    %rbp
+    ret
 ```
 
-An interesting detail: the `printf` we wrote was optimized by the compiler into a `puts` call—because the format string contains only a string constant ending in `\n` with no format placeholders, the compiler knows `puts` is more efficient and substitutes it directly.
+One fun detail: the `printf("Hello, World!\n")` we wrote got optimized by the compiler into a call to `puts` — the format string is a lone string ending in `\n` with no format specifiers at all, so the compiler knows `puts` is more efficient and just swaps it in.
 
 ### Stage 3: Assembly
 
-The assembler translates assembly code into machine code, generating an object file:
+The assembler translates the assembly code into machine code, producing an object file:
 
 ```bash
-gcc -c hello.s -o hello.o
+gcc -c hello.c -o hello.o
 ```
 
-The `hello.o` file is in binary format (ELF on Linux), containing machine instructions, a symbol table, and relocation information. You can use `objdump -d hello.o` to view the disassembly and `nm hello.o` to view the symbol table:
+The `.o` file is a binary format (ELF on Linux) containing machine instructions, a symbol table, and relocation information. You can view the disassembly with `objdump` and the symbol table with `nm`:
 
-```text
-... (omitted) ...
-0000000000000000 T main
-                 U puts
-... (omitted) ...
+```bash
+objdump -d hello.o    # inspect the disassembly
+nm hello.o            # inspect the symbol table
 ```
 
-Function calls within the object file (such as the call to `puts`) have placeholder addresses at this stage, waiting for the linking stage to fill them in.
+Inside the object file, the addresses of function calls (such as the call to `printf`) are still left blank at this point, waiting for the link stage to fill them in.
 
 ### Stage 4: Linking
 
-The linker combines one or more object files and required library files into the final executable, resolving all external symbol references:
+The linker combines one or more object files together with whatever libraries they need into the final executable, resolving all references to external symbols:
 
 ```bash
+# Full compilation (all four stages in one go)
+gcc hello.c -o hello
+
+# Or step by step
+gcc -c hello.c -o hello.o
 gcc hello.o -o hello
 ```
 
-This stage is key to understanding multi-file programming. Each `.c` file is compiled independently into a `.o` file, and then the linker assembles them. This separate compilation model is a core design of C/C++—it allows us to recompile only modified files without rebuilding the entire project.
+This stage is the key to understanding multi-file programming. Each `.c` file is compiled independently into a `.o`, and the linker then assembles them together. This separate-compilation model is a core design of C/C++ — it lets us recompile only the files we changed instead of recompiling the entire project.
 
-### Compilation Pipeline Summary
+### The Compilation Pipeline at a Glance
 
-```mermaid
-graph LR
-    A[Source Code .c] --> B(Preprocessing<br/>gcc -E)
-    B --> C[Preprocessed File .i]
-    C --> D(Compilation<br/>gcc -S)
-    D --> E[Assembly Code .s]
-    E --> F(Assembly<br/>gcc -c)
-    F --> G[Object File .o]
-    G --> H(Linking<br/>gcc)
-    H --> I[Executable]
+```text
+hello.c → [preprocess] → hello.i → [compile] → hello.s → [assemble] → hello.o → [link] → hello
+              ↑                                                  ↑
+         #include expansion                             merge .o files + libraries
+         #define substitution                          resolve external symbols
+         conditional compilation                        emit the executable
 ```
 
 ## Step 3 — Figuring Out How Headers Work
 
-`#include` has two syntax forms with different search paths:
+`#include` comes in two syntactic forms, with different search paths:
 
 ```c
-#include <stdio.h>   // System headers
-#include "myheader.h" // User-defined headers
+#include <stdio.h>    // Angle brackets: search only system/standard-library directories
+#include "myheader.h" // Quotes: search the current file's directory first, then system directories if not found
 ```
 
-The logic is straightforward—angle brackets are for "system-provided items", while quotes are for "items you wrote yourself". The compiler has a set of default search paths (viewable with `gcc -v`), and the `-I` option can add additional search paths.
+The logic is intuitive — angle brackets are for "stuff the system provides", quotes are for "stuff you wrote yourself". The compiler carries a set of default search paths (view them with `gcc -E -Wp,-v - < /dev/null`), and the `-I` option adds extra search paths.
 
-Headers typically contain function declarations (prototypes), type definitions (`struct`/`enum`), macro definitions, and external variable declarations (`extern`). The header is the "contract" between modules—it tells the caller "what this module provides" without exposing implementation details. This concept is implemented more elegantly in C++ by the `class` public/private mechanism.
+A header typically holds function declarations (prototypes), type definitions (`typedef`/`struct`), macro definitions, and external variable declarations (`extern`). A header is the "contract" modules use to talk to each other — it tells callers "what this module offers" without exposing implementation details. C++ later realizes this idea more elegantly through the public/private mechanism of `class`.
 
-Every header should have an include guard to prevent multiple inclusions:
+Every header should carry an include guard to prevent being included multiple times:
 
 ```c
-#ifndef MATH_OPS_H
-#define MATH_OPS_H
+#ifndef MYHEADER_H
+#define MYHEADER_H
 
-// ... declarations ...
+// header file contents
 
-#endif
+#endif /* MYHEADER_H */
 ```
 
 Or use `#pragma once`:
 
 ```c
 #pragma once
-// ... declarations ...
+
+// header file contents
 ```
 
-> ⚠️ **Pitfall Warning**: While `#pragma once` is concise, it may have compatibility issues in certain edge cases (symbolic link files, network path mappings). Choosing one strategy and keeping consistent is fine—if unsure, use the traditional `#ifndef` scheme, as it is guaranteed by the standard.
+`#pragma once` is terser, but it can hit compatibility issues in certain edge cases (symlinked files, network path mappings). Just pick one scheme and stay consistent across the project — and if you're unsure, go with the traditional `#ifndef` scheme, which the standard guarantees.
 
 ## Step 4 — Getting Hands-On with Basic I/O
 
-### Formatted Output with `printf`
+### Formatted Output with printf
 
-`printf` is the most commonly used output function in the C standard library, supporting rich format specifiers:
+`printf` is the most-used output function in the C standard library, and its format string supports a rich set of format specifiers:
 
 ```c
 #include <stdio.h>
 
 int main(void) {
-    int    integer_val = 42;
-    float  float_val   = 3.14f;
-    char   char_val    = 'A';
-    char  *str_val     = "Embedded";
+    int i = 42;
+    unsigned int u = 0xDEAD;
+    double f = 3.14159265359;
+    const char* s = "Hello";
+    int* p = &i;
 
-    printf("Integer: %d\n", integer_val);
-    printf("Float  : %.2f\n", float_val);
-    printf("Char   : %c\n", char_val);
-    printf("String : %s\n", str_val);
+    printf("整数: %d\n", i);             // Decimal: 42
+    printf("十六进制: %x / %X\n", u, u); // Lowercase dead / uppercase DEAD
+    printf("浮点: %f\n", f);             // 6 decimal places by default: 3.141593
+    printf("浮点精度: %.2f\n", f);       // 2 decimal places: 3.14
+    printf("字符串: %s\n", s);           // Hello
+    printf("指针: %p\n", (void*)p);      // Pointer address
 
+    // Width and alignment
+    printf("[%10d]\n", i);    // Right-aligned, width 10: [        42]
+    printf("[%-10d]\n", i);   // Left-aligned, width 10: [42        ]
+    printf("[%010d]\n", i);   // Zero-padded: [0000000042]
     return 0;
 }
 ```
@@ -211,162 +236,177 @@ int main(void) {
 Output:
 
 ```text
-Integer: 42
-Float  : 3.14
-Char   : A
-String : Embedded
+整数: 42
+十六进制: dead / DEAD
+浮点: 3.141593
+浮点精度: 3.14
+字符串: Hello
+指针: 0x7ffd12345678
+[        42]
+[42        ]
+[0000000042]
 ```
 
-An often overlooked detail: the return value of `printf` is the number of characters successfully output, with a negative value indicating an error. In embedded development, using the return value for simple error checking can sometimes be useful.
+One often-ignored detail: `printf` returns the number of characters it successfully wrote, and a negative value means an error occurred. In embedded development, using that return value for a quick error check is sometimes quite handy.
 
-### Reading User Input with `scanf`
+### Reading User Input with scanf
 
-`scanf` reads data from standard input. Format specifiers are similar to `printf` but have subtle differences:
+`scanf` reads data from standard input; its format specifiers mirror `printf`'s but come with a few subtle differences:
 
 ```c
-#include <stdio.h>
+int age;
+float weight;
+char name[32];
 
-int main(void) {
-    int age;
-    char name[32];
+printf("请输入姓名 年龄 体重: ");
+scanf("%31s %d %f", name, &age, &weight);
 
-    printf("Enter age: ");
-    scanf("%d", &age); // Note the & operator
-
-    printf("Enter name: ");
-    scanf("%31s", name); // Limit length to prevent overflow
-
-    printf("User: %s, %d years old\n", name, age);
-    return 0;
-}
+// name is an array, so no & needed (the array name is already an address)
+// age and weight are ordinary variables, so you must pass their addresses
 ```
 
-> ⚠️ **Pitfall Warning**: `scanf`'s `%s` stops when it encounters whitespace and does not check buffer size. If input exceeds the buffer length, it directly causes a buffer overflow. The safe approach is to specify a maximum length (`%31s`), or use `fgets` + `sscanf` instead. While `scanf` is rarely used in production projects, understanding its mechanism is still important during the learning phase.
+`scanf`'s `%s` stops at the first whitespace character and performs no buffer-size checking. If the input exceeds the buffer's length, you get a buffer overflow, plain and simple. The safe approach is to specify a maximum width (`%63s`), or replace it with an `fgets` + `sscanf` combination. Real-world projects rarely use `scanf`, but understanding how it works still matters at the learning stage.
 
-## Step 5 — Building a Multi-File Project
+## Step 5 — Build a Multi-File Project by Hand
 
-Let's build a simple multi-file project to experience the benefits of separate compilation. The project structure is as follows:
+Let's build a small multi-file project and get a feel for the payoff of separate compilation. The project layout:
 
 ```text
-.
-├── math_ops.h
-├── math_ops.c
-└── main.c
+calc/
+├── main.c      // main program
+├── math_ops.h  // declarations of the math operation functions
+└── math_ops.c  // implementations of the math operation functions
 ```
 
-**math_ops.h** — Header file, the "public interface" of the module:
+**math_ops.h** — the header, the module's "public interface":
 
 ```c
-#pragma once
+#ifndef MATH_OPS_H
+#define MATH_OPS_H
 
 int add(int a, int b);
+int subtract(int a, int b);
 int multiply(int a, int b);
+float divide(int a, int b);
+
+#endif /* MATH_OPS_H */
 ```
 
-**math_ops.c** — Implementation file:
+**math_ops.c** — the implementation file:
 
 ```c
 #include "math_ops.h"
 
-int add(int a, int b) {
-    return a + b;
-}
+int add(int a, int b) { return a + b; }
+int subtract(int a, int b) { return a - b; }
+int multiply(int a, int b) { return a * b; }
 
-int multiply(int a, int b) {
-    return a * b;
+float divide(int a, int b) {
+    if (b == 0) {
+        return 0.0f;
+    }
+    return (float)a / (float)b;
 }
 ```
 
-**main.c** — Main program:
+**main.c** — the main program:
 
 ```c
 #include <stdio.h>
 #include "math_ops.h"
 
 int main(void) {
-    int x = 5, y = 10;
+    int x = 10, y = 3;
     printf("%d + %d = %d\n", x, y, add(x, y));
+    printf("%d - %d = %d\n", x, y, subtract(x, y));
     printf("%d * %d = %d\n", x, y, multiply(x, y));
+    printf("%d / %d = %.2f\n", x, y, divide(x, y));
     return 0;
 }
 ```
 
-Compiling and running:
+Compile and run:
 
 ```bash
-gcc -c math_ops.c -o math_ops.o
+# Compile each source file into an object file, then link
 gcc -c main.c -o main.o
-gcc math_ops.o main.o -o myapp
-./myapp
+gcc -c math_ops.c -o math_ops.o
+gcc main.o math_ops.o -o calc
+./calc
 ```
 
 Output:
 
 ```text
-5 + 10 = 15
-5 * 10 = 50
+10 + 3 = 13
+10 - 3 = 7
+10 * 3 = 30
+10 / 3 = 3.33
 ```
 
-This step-by-step compilation mode is very useful. When you modify `math_ops.c` but haven't touched the header or `main.c`, you only need to recompile `math_ops.c` and link—build tools like `Make` or `CMake` essentially automate this process.
+This step-by-step compilation pattern is enormously useful. When you modify `math_ops.c` but leave the header and `main.c` untouched, you only need to recompile `math_ops.o` and link again — build tools like `Makefile` and `CMake` are, at their core, automating exactly this process.
 
-## C++ Transition
+## Bridging to C++
 
-C++ retains the same separate compilation model but adds more complex mechanisms. Header files remain C++'s primary modularization tool (until C++20 Modules arrived), but C++ templates introduce a new issue—template code usually must be placed in header files because the compiler needs to see the complete definition to instantiate. Understanding the compilation model is important because template instantiation happens at the compilation stage, and the linker only sees the already instantiated symbols.
+C++ keeps the same separate-compilation model but layers more elaborate machinery on top. Headers remain C++'s primary modularization tool (up until Modules arrived in C++20), yet C++ templates bring a new problem — template code usually has to live in headers, because the compiler needs to see the complete definition before it can instantiate it. This is exactly why understanding the compilation model matters: template instantiation happens during the compilation stage, and the linker only ever sees symbols that were already instantiated.
 
-C++ recommends using header names without the `.h` suffix (such as `<cstdio>` rather than `<stdio.h>`), which place C library functions into the `std` namespace. C++ iostreams provide type-safe I/O, but performance-wise `printf` is usually faster—because it lacks the overhead of locale, virtual function calls, and formatting object construction found in `iostream`. In performance-sensitive embedded scenarios, C-style `printf`/`scanf` remain the better choice.
+C++ recommends the `<cxxx>` form of headers (e.g. `<cstdio>` instead of `<stdio.h>`); these headers place the C library functions into the `std` namespace. `<iostream>` provides type-safe I/O, but `printf` is usually faster in practice — it skips `iostream`'s locale handling, virtual function calls, and formatter-object construction overhead. In performance-sensitive embedded scenarios, C-style `printf`/`snprintf` remains the better choice.
 
-The ODR (One Definition Rule) is the core rule of the C++ linking model: an entity can have only one definition throughout the program. Violating ODR causes problems in C as well, but C++ templates, inline functions, and `inline` variables make this issue more prominent—we will discuss this in detail in later C++ chapters.
+The ODR (One Definition Rule) is the core rule of C++'s linkage model: an entity may have exactly one definition in the entire program. Violating the ODR causes trouble in C as well, but C++'s templates, inline functions, and `constexpr` push the issue to the forefront — we'll dig into it in detail in the C++ chapters.
 
-## Common Compilation Errors Quick Reference
+## Common Compilation Errors — Quick Reference
 
-| Error Message | Cause | Solution |
-|---|---|---|
-| `undefined reference to ...` | Function definition not found during linking | Check if you forgot to link the `.o` file or library |
-| `implicit declaration of function` | Used an undeclared function | Add the corresponding `#include` or function declaration |
-| `multiple definition of ...` | The same symbol defined more than once | Check if the header file is missing an include guard |
-| `No such file or directory` | Incorrect header file path | Check filename spelling and `-I` path |
-| `multiple definition of global variable` | Global variables/functions defined in headers | Place only declarations in headers, definitions in `.c` files |
+| Error message | Cause | Fix |
+|----------|------|----------|
+| `undefined reference to 'xxx'` | No function definition found at the link stage | Check whether you forgot to link a `.o` file or a library |
+| `implicit declaration of function` | An undeclared function was used | Add the matching `#include` or a function declaration |
+| `redefinition of 'xxx'` | The same symbol got defined multiple times | Check whether the header is missing an include guard |
+| `No such file or directory` | Wrong header path | Check the filename spelling and the `-I` path |
+| `multiple definition of 'xxx'` | A global variable/function defined in a header | Put only declarations in headers; definitions belong in `.c` files |
 
 ## Exercises
 
-### Exercise 1: Multi-File Compilation Practice
+### Exercise 1: Multi-File Compilation in Practice
 
-**Difficulty: Basic** · multi-file staged compile and the symbol table
+**Difficulty: Basic** · step-by-step multi-file compilation and the symbol table
 
 Build a multi-file project containing the following files:
 
 **utils.h**:
 
 ```c
-#pragma once
+#ifndef UTILS_H
+#define UTILS_H
 
 int add(int a, int b);
-int sub(int a, int b);
+void print_result(const char* label, int value);
+
+#endif /* UTILS_H */
 ```
 
-Please complete the following:
+Complete these on your own:
 
-1. **utils.c** — Implement the `add` and `sub` functions.
-2. **main.c** — Call functions from utils and test various operations.
-3. Manually compile and link using the gcc command line, recording the intermediate products of each step (`.i`, `.o`, executable files).
-4. Use `nm` or `objdump` to view the symbol table of the object files.
+1. **utils.c** — implement the `add` and `print_result` functions
+2. **main.c** — call the functions from utils and test various operations
+3. Compile and link manually from the gcc command line, recording each step's intermediate artifacts (the `.i`, `.s`, `.o` files)
+4. Inspect the object file's symbol table with `nm` or `objdump`
 
-### Exercise 2: `printf` Formatting Practice
+### Exercise 2: printf Formatting Practice
 
-**Difficulty: Basic** · practice printf width, precision, alignment
+**Difficulty: Basic** · practicing width, precision, and alignment in printf
 
-Without looking up resources, write the expected output of the following `printf` statements (then compile and run to verify):
+Without looking anything up, write down the expected output of these `printf` statements (then compile and run to verify):
 
 ```c
-int x = 10;
-printf("%d\n", x);      // Output: ?
-printf("%5d\n", x);     // Output: ?
-printf("%05d\n", x);    // Output: ?
-printf("%-5d\n", x);    // Output: ?
+printf("[%5d]\n", 42);
+printf("[%-5d]\n", 42);
+printf("[%05d]\n", 42);
+printf("[%.3f]\n", 3.14159);
+printf("[%10.2f]\n", 3.14159);
 ```
 
 ## References
 
-- [C Language Compilation Model - cppreference](https://en.cppreference.com/w/c/language/translation_phases)
-- [GCC Compiler Options Documentation](https://gcc.gnu.org/onlinedocs/gcc/Invoking-GCC.html)
-- [printf Format Specifiers - cppreference](https://en.cppreference.com/w/c/io/fprintf)
+- [The C compilation model — cppreference](https://en.cppreference.com/w/c/language/translation_phases)
+- [GCC compiler options documentation](https://gcc.gnu.org/onlinedocs/gcc/Invoking-GCC.html)
+- [printf format specifiers — cppreference](https://en.cppreference.com/w/c/io/fprintf)

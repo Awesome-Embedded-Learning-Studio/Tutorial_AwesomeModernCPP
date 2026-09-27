@@ -24,6 +24,8 @@ import FontSizeSwitcher from './components/FontSizeSwitcher.vue'
 import ResizableSidebar from './components/ResizableSidebar.vue'
 import { setupMermaid } from './mermaid-client'
 import MermaidLightbox from './components/MermaidLightbox.vue'
+import { setupDocImageZoom } from './image-client'
+import ImageLightbox from './components/ImageLightbox.vue'
 import NavSpinner from './components/NavSpinner.vue'
 import QQGroupCard from './components/QQGroupCard.vue'
 import Anim from './components/Anim.vue'
@@ -33,6 +35,8 @@ import { setupDevFakeLag } from './dev-fake-lag'
 import './custom.css'
 import './article-code.css'
 import './article-quote.css'
+import './article-table.css'
+import './article-list.css'
 import './weekly.css'
 import './tags.css'
 
@@ -40,7 +44,7 @@ export default {
   extends: DefaultTheme,
   Layout() {
     return h(WeeklyPracticeProvider, null, { default: () => h(DefaultTheme.Layout, null, {
-      'layout-top': () => [h(NavSpinner), h(ReadingProgress), h(ResizableSidebar), h(MermaidLightbox)],
+      'layout-top': () => [h(NavSpinner), h(ReadingProgress), h(ResizableSidebar), h(MermaidLightbox), h(ImageLightbox)],
       'doc-before': () => h(WeeklyPageHeader),
       'doc-footer-before': () => h(DocTags),
       'home-hero-image': () => h(HomeHeroVisual),
@@ -55,6 +59,7 @@ export default {
   },
   setup() {
     setupMermaid()
+    setupDocImageZoom()
     setupDevFakeLag()
   },
   enhanceApp({ app }) {

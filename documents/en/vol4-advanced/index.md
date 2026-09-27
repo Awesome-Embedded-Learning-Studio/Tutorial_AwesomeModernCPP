@@ -1,27 +1,28 @@
 ---
-title: 'Volume IV: Advanced Topics'
-description: C++20-26 Advanced Features
+title: "Volume IV: Advanced Topics"
+description: "C++20-26 advanced features"
 platform: host
 tags:
-- cpp-modern
-- host
-- intermediate
+  - cpp-modern
+  - host
+  - intermediate
 translation:
   source: documents/vol4-advanced/index.md
   source_hash: 21a295bd53bf6707d4e09b90f2b8835d7f0333a5e305a5f04fde9337a0cb79c0
-  translated_at: '2026-06-24T00:52:04.100956+00:00'
+  translated_at: '2026-09-26T02:52:46+00:00'
   engine: anthropic
-  token_count: 246
+  token_count: 250
 ---
+
 # Volume IV: Advanced Topics
 
-> Status: Partial content available (to be rewritten)
+> Status: some content already exists (pending rewrite)
 
 ## Overview
 
 This volume covers advanced C++20/23/26 features.
 
-## Existing Articles (To be rewritten as generic content)
+## Existing Articles (To Be Rewritten as General-Purpose Content)
 
 ### Template Programming (Categorized by C++ Standard)
 

@@ -189,7 +189,7 @@ struct Good {
 
 ## 参考资源
 
-- Agner Fog《The microarchitecture of Intel, AMD and VIA CPUs》§22.16 *Cache and memory access*:Zen 族的缓存参数(64 B 行、各级路数/组数)、硬件预取行为。本地:`.claude/drafts/books/optimazation_in_cpp/microarchitecture.md`
+- Agner Fog《The microarchitecture of Intel, AMD and VIA CPUs》§22.16 *Cache and memory access*:Zen 族的缓存参数(64 B 行、各级路数/组数)、硬件预取行为:`.claude/drafts/books/optimazation_in_cpp/microarchitecture.md`
 - Bryant & O'Hallaron《CSAPP》第 6 章 *The Memory Hierarchy*:缓存行、空间/时间局部性的形式化定义与 memory mountain
 - Drepper, U.《What Every Programmer Should Know About Memory》:缓存行、对齐、预取的工程细节(经典长文)
 - 本篇实测代码:`code/volumn_codes/vol6-performance/ch02/cacheline_locality.cpp`

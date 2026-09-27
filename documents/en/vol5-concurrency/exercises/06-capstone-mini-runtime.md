@@ -2,15 +2,14 @@
 chapter: 10
 cpp_standard:
 - 20
-description: Combine components from all labs in Volume 5 to build a mini concurrent
-  runtime, training system design, component composition, and observability.
+description: Combine components from every Volume 5 lab into a mini concurrent runtime, practicing system design, component composition, and observability
 difficulty: advanced
 order: 7
 prerequisites:
-- 'Lab 0: Thread Lifecycle Lab'
+- 'Lab 0: Thread Lifecycle'
 - 'Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives'
 - 'Lab 2: Atomic Metrics and SPSC Ring Buffer'
-- 'Lab 2.5: Concurrency Debugging Lab'
+- 'Lab 2.5: Concurrency Debugging'
 - 'Lab 3: Production-style Thread Pool'
 - 'Lab 4: Coroutine Scheduler and Event Loop'
 - 'Lab 5: Channel or Actor Runtime'
@@ -24,21 +23,22 @@ title: 'Capstone: Mini Concurrent Runtime'
 translation:
   source: documents/vol5-concurrency/exercises/06-capstone-mini-runtime.md
   source_hash: 25bfcfb9e71e32a2c7e54c2fd0a87a4a22b56f4aaef109cc19e7e450af1025ec
-  translated_at: '2026-06-16T04:07:46.131384+00:00'
+  translated_at: '2026-09-26T09:30:49+00:00'
   engine: anthropic
-  token_count: 1671
+  token_count: 1400
+  notes: '原文一处明显笔误按正确形式译出：第 153 行 Milestone 2 验证代码块的闭合围栏误作 ```cpp，原文疑为 ```（CommonMark 闭合围栏不得带 info string，否则该代码块会一直吞到 Milestone 3 之后的裸 ```，把「## Milestone 3: 失败路径测试」标题一并吞入代码块）。译文以规范 ``` 闭合，en 侧渲染为 5 个独立代码块、结构恢复本意；zh 源第 153 行仍待修复。'
 ---
 # Capstone: Mini Concurrent Runtime
 
 ## Objectives
 
-Volume 5 moves from "learning many concurrency tools" to "being able to compose concurrent systems." This Capstone does not pursue production-grade completeness, but rather requires you to combine the finished components from the previous 7 Labs to build a runnable mini-system—a mini concurrent runtime or network service framework.
+Volume 5 has taken us from "we've learned a lot of concurrency tools" to the point where it all converges into "we can compose concurrent systems". This Capstone doesn't chase production-grade completeness — it asks you to combine the finished components from the previous 7 labs into a small system that actually runs: a mini concurrent runtime or a network service framework.
 
-The focus is not on implementing new components from scratch, but on answering three engineering questions: How do components connect? How does the system stop? How are errors propagated and handled?
+The point is not to implement new components from scratch, but to answer three engineering questions: how do the components connect? How does the system stop? When something goes wrong, how do errors propagate and get handled?
 
 ## Prerequisites
 
-Complete all Labs 0–5. This Capstone directly reuses components from previous Labs.
+Complete all of Labs 0–5 first. This Capstone reuses those components directly.
 
 ## Environment Setup
 
@@ -46,62 +46,62 @@ Same as Lab 4 (C++20, Linux/WSL2 for epoll, Catch2 v3, TSan).
 
 ## Recommended Components
 
-Below is a list of recommended components for the mini runtime. Each component comes from a previous Lab:
+Here is the recommended component list for the mini runtime. Each component comes from one of the earlier labs:
 
 | Component | Source Lab | Responsibility |
-|-----------|------------|----------------|
+|------|----------|------|
 | `JoiningThread` | Lab 0 | Thread lifecycle management |
-| `BoundedBlockingQueue` | Lab 1 | Task queue / channel bottom layer |
+| `BoundedBlockingQueue` | Lab 1 | Task queue / channel foundation |
 | `ConcurrentCache` | Lab 1 | Config cache / connection pool |
 | `AtomicCounter` / `AtomicMaxTracker` | Lab 2 | Runtime metrics |
-| `StopFlag` | Lab 2 | Graceful shutdown signal |
+| `StopFlag` | Lab 2 | Graceful stop signal |
 | `ThreadPool` | Lab 3 | CPU-bound task scheduling |
-| `Scheduler` + `EventLoop` | Lab 4 | Coroutine scheduler + I/O event loop |
+| `Scheduler` + `EventLoop` | Lab 4 | Coroutine scheduling + I/O event loop |
 | `Channel` | Lab 5 | Inter-component communication / pipeline |
 
 ## Milestone 1: Architecture Design and Interface Definition
 
 ### Objectives
 
-Draw a component diagram of the mini runtime and define the interaction interfaces between components. Do not write any implementation code—this milestone is purely about design.
+Draw a component diagram of the mini runtime and define the interaction interfaces between components. Don't write any implementation code — this milestone is pure design.
 
 ### Why
 
-The first step of system design is not writing code, but clarifying the relationships and responsibility boundaries between components. Specifically, the three questions: "Who creates whom?", "Who owns whom?", and "Who can shut down whom?". In concurrent systems, these issues are much more important than in single-threaded systems—an incorrect ownership relationship can lead to deadlocks, resource leaks, or crashes during shutdown.
+The first step of system design isn't writing code; it's working out the relationships and responsibility boundaries between components. In particular, three questions: who creates whom, who owns whom, and who is allowed to shut whom down. In concurrent systems these questions matter far more than in single-threaded ones — a wrong ownership relationship can deadlock you, leak resources, or crash the whole thing during shutdown.
 
 ### Implementation Guide
 
-Use text or a diagram to describe your runtime's architecture. It is recommended to start with "the complete path of a request from entry to exit":
+Describe your runtime's architecture in a paragraph or a diagram. A good starting point is "the complete path of a request from entry to exit":
 
 ```cpp
-客户端请求 → epoll accept → 协程 handle_connection
-    → Channel 传递给 worker pipeline
-    → ThreadPool 处理 CPU-bound 任务
-    → 结果通过 future 返回
-    → 协程 write response → 客户端
+Client request → epoll accept → coroutine handle_connection
+    → Channel passes it to the worker pipeline
+    → ThreadPool processes CPU-bound tasks
+    → result returned via future
+    → coroutine write response → client
 ```
 
-On this path, mark the responsibility and lifecycle relationship of each component. For example: `EventLoop` owns the epoll fd and the coroutine scheduler; `ThreadPool` owns worker threads and the task queue; `Channel` connects the coroutine layer and the thread pool layer.
+Annotate each component's responsibilities and lifecycle relationships along this path. For example: `EventLoop` owns the epoll fd and the coroutine scheduler; `ThreadPool` owns the worker threads and the task queue; `Channel` bridges the coroutine layer and the thread pool layer.
 
 You need to answer the following design questions:
 
-1. Between `EventLoop` and `ThreadPool`, which is created first and shut down first?
-2. Who is responsible for closing `Channel`—the producer or the consumer?
-3. How are exceptions in one component propagated to other components?
+1. Between `EventLoop` and `ThreadPool`, which is created first and which shuts down first?
+2. Who is responsible for closing a `Channel` — the producer or the consumer?
+3. How does an exception in one component propagate to the other components?
 
-### Validation
+### Verification
 
-Discuss your design plan with peers or AI to ensure no missing edge cases. No code is needed, but you must be able to answer the three design questions above.
+Discuss your design with a peer or an AI and confirm no edge cases have been missed. No code is needed, but you must be able to answer the three design questions above.
 
 ## Milestone 2: Component Assembly and Startup
 
 ### Objectives
 
-Combine components from all Labs to implement the runtime's startup process. No need to handle network requests—just confirm that all components are initialized and running correctly.
+Put the components from all the labs together and implement the runtime's startup sequence. No need to handle network requests — just confirm that every component initializes and runs correctly.
 
 ### Why
 
-The startup order of components is crucial. `ThreadPool` needs to be created before `Channel` (because worker threads need to fetch tasks from the channel), and `EventLoop` needs to be created before `ThreadPool` (because coroutine scheduling happens before I/O events). The goal of this milestone is to confirm the startup order is correct and there are no circular dependencies between components.
+The startup order of components matters. `ThreadPool` must be created before `Channel` (because worker threads pull tasks from the channel), and `EventLoop` must be created before `ThreadPool` (because coroutine scheduling comes before I/O events). The goal of this milestone is to confirm the startup order is correct and that the dependencies between components contain no cycles.
 
 ### Implementation Guide
 
@@ -118,8 +118,8 @@ public:
         , event_loop_()
         , stop_flag_()
     {
-        // 注册 metrics 回调
-        // 启动 event loop 线程（如果需要独立线程）
+        // Register metrics callbacks
+        // Start the event loop thread (if it needs a dedicated thread)
     }
 
     void start();
@@ -135,9 +135,9 @@ private:
 };
 ```
 
-Pitfall warning: The order of member declaration is the order of initialization, and destruction is in reverse order. Ensure `ThreadPool` is destroyed before `BoundedBlockingQueue` (because worker threads need to fetch data from the queue until the queue is closed), and `EventLoop` is destroyed before all channels.
+Pitfall warning: members initialize in declaration order and are destroyed in reverse order. Make sure `ThreadPool` is destroyed before `BoundedBlockingQueue` (because worker threads keep pulling data from the queue until it closes), and that `EventLoop` is destroyed before all channels.
 
-### Validation
+### Verification
 
 ```cpp
 TEST_CASE("Milestone 2: runtime starts and stops cleanly",
@@ -146,7 +146,7 @@ TEST_CASE("Milestone 2: runtime starts and stops cleanly",
     MiniRuntime runtime;
     runtime.start();
 
-    // 提交一些测试任务
+    // Submit a few test tasks
     auto f1 = runtime.thread_pool().submit([]() {
         return 42;
     });
@@ -154,31 +154,31 @@ TEST_CASE("Milestone 2: runtime starts and stops cleanly",
 
     runtime.stop();
 
-    // stop 后不应该崩溃
-    // 所有 worker 线程应该已经退出
+    // Should not crash after stop
+    // All worker threads should have exited
 }
-```cpp
+```
 
 ## Milestone 3: Failure Path Testing
 
 ### Objectives
 
-Test the runtime's behavior under various failure scenarios: tasks throwing exceptions, client disconnections, queue closures, and component exceptions.
+Test the runtime's behavior under various failure scenarios: tasks throwing exceptions, clients disconnecting, queues closing, components raising exceptions.
 
 ### Why
 
-The correctness of a concurrent system is not only reflected in the "happy path." A production-grade system must handle various failures gracefully—task execution failures should not crash the entire runtime, client disconnections should not leak resources, and component exceptions should be caught and reported rather than silently lost.
+The correctness of a concurrent system doesn't show only on the happy path. A production-grade system must handle failures gracefully — a failed task shouldn't crash the entire runtime, a disconnected client shouldn't leak resources, and a component's exception should be caught and reported rather than silently lost.
 
 ### Implementation Guide
 
 Test the following scenarios:
 
-1. **Task Exception**: Submit a task that throws an exception, confirm that `future::get()` can re-throw it, and the runtime continues running normally.
-2. **Client Disconnect**: Simulate a client disconnecting during coroutine processing, confirm the coroutine exits correctly without leaking resources.
-3. **Queue Closure**: Close an intermediate channel while the pipeline is running, confirm upstream and downstream handle it correctly.
-4. **Repeated Shutdown**: Call `stop()` multiple times to confirm idempotency.
+1. **Task exception**: submit a task that throws, and confirm that `future::get()` re-throws it while the runtime keeps running normally
+2. **Client disconnect**: simulate a client disconnecting while a coroutine is processing it, and confirm the coroutine exits correctly without leaking resources
+3. **Queue closure**: close an intermediate channel while the pipeline is running, and confirm both upstream and downstream handle it correctly
+4. **Repeated stop**: call `stop()` multiple times and confirm it is idempotent
 
-### Validation
+### Verification
 
 ```cpp
 TEST_CASE("Milestone 3: task exception doesn't crash runtime",
@@ -195,7 +195,7 @@ TEST_CASE("Milestone 3: task exception doesn't crash runtime",
     });
 
     REQUIRE_THROWS_AS(f1.get(), std::runtime_error);
-    REQUIRE(f2.get() == 42);  // 其他任务不受影响
+    REQUIRE(f2.get() == 42);  // Other tasks are unaffected
 
     runtime.stop();
 }
@@ -206,7 +206,7 @@ TEST_CASE("Milestone 3: double stop is safe",
     MiniRuntime runtime;
     runtime.start();
     runtime.stop();
-    REQUIRE_NOTHROW(runtime.stop());  // 幂等
+    REQUIRE_NOTHROW(runtime.stop());  // Idempotent
 }
 
 TEST_CASE("Milestone 3: channel close propagates through pipeline",
@@ -224,7 +224,7 @@ TEST_CASE("Milestone 3: channel close propagates through pipeline",
 
     input.send(1);
     input.send(2);
-    input.close();  // 关闭触发 pipeline 关闭
+    input.close();  // Closing triggers the pipeline shutdown
 
     REQUIRE(output.receive() == 2);
     REQUIRE(output.receive() == 4);
@@ -236,26 +236,26 @@ TEST_CASE("Milestone 3: channel close propagates through pipeline",
 
 ### Objectives
 
-Add metrics collection (`AtomicCounter`, `AtomicMaxTracker`) to the runtime, implement at least one end-to-end benchmark, and verify correctness with TSan.
+Add metrics collection to the runtime (`AtomicCounter`, `AtomicMaxTracker`), implement at least one end-to-end benchmark, and verify correctness with TSan.
 
 ### Why
 
-A concurrent system without observability is like a black box—you don't know what it's doing, how it performs, or if there are problems. The atomic metrics component from Lab 2 comes into play here: count completed tasks, current queue length, and maximum concurrent connections. These metrics don't need millisecond precision—their value lies in letting you see "the system is running" and "the system is degrading."
+A concurrent system without observability is a black box — you can't tell what it is doing, how it performs, or whether something is wrong. This is where Lab 2's atomic metrics components come into play: counting completed tasks, current queue length, and the maximum number of concurrent connections. These metrics don't need millisecond precision — their value is letting you see "the system is running" and "the system is degrading".
 
 ### Implementation Guide
 
 Insert metrics collection points on the runtime's critical paths:
 
-- When a task is submitted `active_tasks_.increment()`
-- When a task is completed `active_tasks_.decrement()`
-- When a new connection is established `max_connections_.update(current_connections)`
-- Periodic sampling of queue length (optional)
+- On task submission, `active_tasks_.increment()`
+- On task completion, `active_tasks_.decrement()`
+- On new connection establishment, `max_connections_.update(current_connections)`
+- Sample the queue length periodically (optional)
 
-Write an end-to-end benchmark: start the runtime, submit N tasks, wait for all futures to complete, and report total time and throughput. Follow Lab 2's benchmark methodology—warm up, take the median of multiple rounds, fix CPU affinity, report the test environment and boundaries, and don't just look at single runs or fluctuations within 5%.
+Write an end-to-end benchmark: start the runtime, submit N tasks, wait for all futures to complete, and report total time and throughput. Reuse Lab 2's benchmark methodology — warm up first and take the median over multiple rounds, pin CPU affinity, report the test environment and its limits, and don't trust a single run or fluctuations within 5%.
 
-Finally, run the complete test suite with TSan to confirm there are no data races.
+Finally, run the complete test suite with TSan and confirm there are no data races.
 
-### Validation
+### Verification
 
 ```cpp
 TEST_CASE("Milestone 4: metrics track runtime behavior",
@@ -282,17 +282,17 @@ TEST_CASE("Milestone 4: metrics track runtime behavior",
 }
 ```
 
-## Checklist
+## Self-Check List
 
-- [ ] Components from all Labs 0–5 are correctly combined.
-- [ ] Component creation and destruction order is correct (no circular dependencies, no dangling references).
-- [ ] `stop()` is idempotent, does not deadlock or leak.
-- [ ] There is a clear shutdown sequence: stop accepting new requests → drain queues → join all threads.
-- [ ] Task exceptions do not cause the runtime to crash.
-- [ ] Channel closure is correctly propagated to all stages of the pipeline.
-- [ ] Metrics collection does not affect correctness (use `relaxed` atomic).
-- [ ] At least one end-to-end benchmark reports throughput.
-- [ ] The complete test suite shows no data race reports under TSan.
-- [ ] Can answer: Where to use locks, where to use atomics, and where to avoid shared state through message passing.
-- [ ] Can explain what the benchmark results do not prove (e.g., "standalone tests do not represent performance in a networked environment").
-- [ ] Can explain which component you would prioritize improving if you had more time.
+- [ ] Components from all Labs 0–5 are combined correctly
+- [ ] Component creation and destruction order is correct (no circular dependencies, no dangling references)
+- [ ] `stop()` is idempotent — no deadlock, no leaks
+- [ ] There is a clear shutdown sequence: stop accepting new requests → drain the queue → join all threads
+- [ ] Task exceptions do not crash the runtime
+- [ ] Channel closure propagates correctly to every stage of the pipeline
+- [ ] Metrics collection doesn't affect correctness (use `relaxed` atomics)
+- [ ] At least one end-to-end benchmark, reporting throughput
+- [ ] The complete test suite shows no data race reports under TSan
+- [ ] You can answer: where locks are used, where atomics are used, and where shared state is avoided through message passing
+- [ ] You can explain what the benchmark results cannot prove (for example, "a single-machine test doesn't represent behavior under real network conditions")
+- [ ] You can say which component you would improve first if you had more time

@@ -1,0 +1,102 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="any Storage Layout" id="any-storage-layout">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="std::any 的存储布局：小对象内联（SBO）vs 大对象堆分配" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="26" width="600" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- 左列：小对象，SBO 生效 -->
+        <mxCell id="left_header" value="小对象：SBO 生效，值内联" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#2E7D32;" vertex="1" parent="1">
+          <mxGeometry x="70" y="70" width="310" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="left_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="70" y="104" width="310" height="152" as="geometry" />
+        </mxCell>
+        <mxCell id="left_label" value="std::any 对象" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="110" width="290" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="left_ctrl" value="控制信息：type_info + 管理操作&lt;br&gt;（销毁 / 复制，经函数指针或虚函数分派）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="90" y="140" width="270" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="left_sbo" value="&lt;b&gt;SBO 内联缓冲区&lt;/b&gt;&lt;br&gt;值直接存在对象内部（如 int 42）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="90" y="188" width="270" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="left_result" value="&lt;b&gt;无堆分配&lt;/b&gt;&lt;br&gt;构造 = 一次值拷贝 + 少量元数据设置" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="70" y="272" width="310" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="left_note" value="std::any small = 42;&lt;br&gt;int、double、小型结构体都在此列（SBO 范围内的类型通常不超过 32 字节左右）" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;fontColor=#555555;spacing=2;" vertex="1" parent="1">
+          <mxGeometry x="70" y="348" width="310" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- 右列：大对象，堆分配 -->
+        <mxCell id="right_header" value="大对象：超过 SBO 阈值" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#c00000;" vertex="1" parent="1">
+          <mxGeometry x="447" y="70" width="310" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="right_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="447" y="104" width="310" height="152" as="geometry" />
+        </mxCell>
+        <mxCell id="right_label" value="std::any 对象" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="457" y="110" width="290" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="right_ctrl" value="控制信息：type_info + 管理操作&lt;br&gt;（销毁 / 复制，经函数指针或虚函数分派）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="467" y="140" width="270" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="right_ptr" value="&lt;b&gt;指针&lt;/b&gt;&lt;br&gt;指向堆上的包装器" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="467" y="188" width="270" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="right_arrow" value="堆分配" style="endArrow=classic;html=1;rounded=0;strokeColor=#c00000;strokeWidth=2;fontColor=#c00000;fontSize=12;align=center;verticalAlign=middle;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="602" y="256" as="sourcePoint" />
+            <mxPoint x="602" y="292" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="right_heap" value="&lt;b&gt;堆：包装器持有值本体&lt;/b&gt;&lt;br&gt;（大 vector、大 string 等）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="447" y="292" width="310" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="right_note" value="std::any large = std::vector&lt;int&gt;(1000000, 0);&lt;br&gt;每次拷贝 any 都会触发一次堆分配和一次深拷贝" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;fontColor=#555555;spacing=2;" vertex="1" parent="1">
+          <mxGeometry x="447" y="348" width="310" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- 共用尺寸说明 -->
+        <mxCell id="size_strip" value="&lt;b&gt;sizeof(std::any)：典型 16 或 32 字节（取决于实现）&lt;/b&gt;&lt;br&gt;包括 SBO 缓冲区 + 类型信息指针 + 管理数据" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="70" y="414" width="687" height="44" as="geometry" />
+        </mxCell>
+
+        <!-- any_cast 类型检查 -->
+        <mxCell id="ac_header" value="取值：any_cast 的类型检查" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="472" width="600" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="ac_q" value="&lt;b&gt;any_cast&lt;T&gt;(a)&lt;/b&gt;&lt;br&gt;比较存储的 typeid 与请求的 T&lt;br&gt;（一次指针比较 + 一次类型信息查找）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="130" y="506" width="230" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="ac_match" value="&lt;b&gt;类型匹配&lt;/b&gt;&lt;br&gt;static_cast 取回值（默认返回拷贝）&lt;br&gt;any_cast&lt;T&amp;&gt;(a) 才拿到引用" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="430" y="502" width="260" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="ac_mismatch" value="&lt;b&gt;类型不匹配&lt;/b&gt;&lt;br&gt;引用版：抛 std::bad_any_cast&lt;br&gt;指针版：返回 nullptr" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="430" y="584" width="260" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow_match" value="匹配" style="endArrow=classic;html=1;rounded=0;strokeColor=#2E7D32;strokeWidth=2;fontColor=#2E7D32;fontSize=12;align=center;verticalAlign=middle;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="360" y="550" as="sourcePoint" />
+            <mxPoint x="430" y="535" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow_mismatch" value="不匹配" style="endArrow=classic;html=1;rounded=0;strokeColor=#c00000;strokeWidth=2;fontColor=#c00000;fontSize=12;align=center;verticalAlign=middle;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="360" y="550" as="sourcePoint" />
+            <mxPoint x="430" y="617" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="source_note" value="图中数值均为文中给出的典型值（实现相关）：sizeof(std::any) 典型 16 或 32 字节；SBO 范围内的类型通常不超过 32 字节左右" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="113" y="668" width="600" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

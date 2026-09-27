@@ -1,0 +1,79 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Literal Type Checklist" id="constexpr-ctor-literal-type-checklist">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="字面类型（LiteralType）的达标清单" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="26" width="600" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="编译器要能在编译期完整地构造、操作并销毁一个对象，类类型需满足以下约束" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="113" y="60" width="600" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="scalar_banner" value="&lt;b&gt;标量类型（算术、指针、引用、枚举）天然就是字面类型&lt;/b&gt;，无需任何改造" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="75" y="92" width="677" height="34" as="geometry" />
+        </mxCell>
+
+        <!-- 左列：达标四条 -->
+        <mxCell id="left_header" value="达标：四条约束全过" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#2E7D32;" vertex="1" parent="1">
+          <mxGeometry x="75" y="140" width="330" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="left_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="75" y="170" width="330" height="214" as="geometry" />
+        </mxCell>
+        <mxCell id="l_item1" value="① &lt;b&gt;构造&lt;/b&gt;：至少一个 constexpr 构造函数&lt;br&gt;（拷贝或移动构造也算）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="85" y="180" width="310" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="l_item2" value="② &lt;b&gt;成员&lt;/b&gt;：所有非静态数据成员是字面类型&lt;br&gt;（或字面类型的数组）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="85" y="230" width="310" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="l_item3" value="③ &lt;b&gt;析构&lt;/b&gt;：平凡析构；C++20 起也允许 constexpr 析构" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="85" y="280" width="310" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="l_item4" value="④ &lt;b&gt;虚机制&lt;/b&gt;：不能有虚函数，也不能有虚基类" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="85" y="330" width="310" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="left_result" value="&lt;b&gt;四条全过 = 字面类型&lt;/b&gt;&lt;br&gt;constexpr Point kOrigin{0.0f, 0.0f} 编译期构造&lt;br&gt;BCD 值直接进 .rodata，访问只剩一条 mov" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="75" y="398" width="330" height="62" as="geometry" />
+        </mxCell>
+
+        <!-- 右列：不达标 -->
+        <mxCell id="right_header" value="不达标：任一条破坏即出局" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#c00000;" vertex="1" parent="1">
+          <mxGeometry x="422" y="140" width="330" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="right_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="422" y="170" width="330" height="214" as="geometry" />
+        </mxCell>
+        <mxCell id="r_item1" value="&lt;b&gt;std::string 成员&lt;/b&gt;：动态内存 + 非平凡析构&lt;br&gt;（C++20 之前），文中的 NotLiteral" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="432" y="180" width="310" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="r_item2" value="&lt;b&gt;手动管理资源的析构&lt;/b&gt;：C++20 前直接出局&lt;br&gt;确实无需清理逻辑，写 = default 换回平凡析构" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="432" y="230" width="310" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="r_item3" value="&lt;b&gt;虚函数 / 虚基类&lt;/b&gt;：任何标准下都不可能是字面类型&lt;br&gt;要编译期多态，用 CRTP 替代" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="432" y="280" width="310" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="r_item4" value="&lt;b&gt;mutable 成员&lt;/b&gt;：破坏「编译期完全确定」的假设&lt;br&gt;某些上下文的编译期求值会失败" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="432" y="330" width="310" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="right_result" value="&lt;b&gt;光有 constexpr 构造函数还不够&lt;/b&gt;&lt;br&gt;析构不是平凡的或 constexpr，或带虚函数&lt;br&gt;类型就不是字面类型，进不了编译期" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="422" y="398" width="330" height="62" as="geometry" />
+        </mxCell>
+
+        <!-- 底部：C++20 放宽与出处 -->
+        <mxCell id="cxx20_banner" value="&lt;b&gt;C++20 放宽&lt;/b&gt;：constexpr 中允许 new/delete，但编译期分配的内存&lt;br&gt;必须在求值结束前释放：能在编译期操作 std::string，不能带回运行时" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="75" y="474" width="677" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="sample_note" value="文中达标样本：Point、Color、Complex、Date、ConstString、UartConfig（都是标量成员 + constexpr 构造 + 平凡析构）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="75" y="526" width="677" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="source_note" value="汇编结论出自文中 BCD 例子的实测：GCC 15.2.1，-std=c++20 -O2" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="113" y="556" width="600" height="18" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

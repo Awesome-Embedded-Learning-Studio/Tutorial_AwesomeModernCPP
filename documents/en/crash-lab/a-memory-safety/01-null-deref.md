@@ -1,5 +1,6 @@
 ---
-title: "Null Pointer Dereference: The Crash That Hides Nothing"
+title: 'Null Pointer Dereference: The Crash That Hides Nothing'
+description: 'find_value returns nullptr when nothing matches, and the caller dereferences *result on the spot — exit 139 (SIGSEGV) on Linux, GDB stopping right on the crashing line, print showing (int*)0x0, ASan reporting SEGV on the zero page. The null pointer is one of the few flavors of UB that "always crashes": the OS maps the zero page inaccessible and the MMU intercepts on the spot; yet a member function called through this==nullptr, or a machine without an MMU, can still play innocent. Fixes run from plain null checks all the way to std::optional bringing "might be absent" into the type system.'
 chapter: 15
 order: 1
 difficulty: beginner
@@ -13,29 +14,29 @@ tags:
   - optional
   - 类型安全
 prerequisites:
-  - "Vol.1 ch04: Pointer Basics"
+  - Pointer Basics
 related:
-  - "Use-After-Free: The Pointer Outlives the Memory"
+  - 'Use-After-Free: The Pointer Outlives the Memory'
 cpp_standard: [11, 17]
-description: "find_value returns nullptr when nothing matches, and the caller dereferences *result right away—exit 139 (SIGSEGV) on Linux, GDB stops on the crashing line and prints (int*)0x0, ASan reports SEGV on zero page. The null pointer is one of the few 'guaranteed to crash' UBs: the OS maps the zero page inaccessible and the MMU intercepts on the spot; yet a member-function call on this==nullptr, or a machine without an MMU, can still play innocent. Fixes range from plain null checks to std::optional bringing 'might be absent' into the type system."
 translation:
   source: documents/crash-lab/a-memory-safety/01-null-deref.md
   source_hash: cdc694429bc131b283a3a3973c9e8312280f55975c8215c77db7145071d28726
-  translated_at: '2026-08-28T00:00:00+00:00'
-  engine: manual
+  translated_at: '2026-09-27T03:03:24+00:00'
+  engine: anthropic
+  token_count: 3400
 ---
 
 # Every Endeavor Has a Bootstrap — Good News, We Have One Too: Null Pointer Dereference
 
-If you ask me which damn crash is the easiest to hunt down and the fastest to fix, I'll say null pointer dereference. The project I work on has quite a few users, so crash dumps fly in every day. When I see a low-address dereference in a Windows dump, I go straight to reverse-mapping the PDB to find which function was being cute. Add a null check, done... ish? Wait, come back—of course that's not the whole story, but it does at least keep your software from dying on the spot.
+If you ask me which damn crash is the easiest to investigate and the quickest to fix, I vote for the null pointer dereference. The project I work on has quite a few users, so crash dumps fly in every single day. When I open one of those Windows dmp files and see a low-address dereference, I go straight to reverse-mapping the pdb to see which function was up to no good. Usually adding a null check settles it... right? Come back — of course it is not necessarily so, but it really can keep your software from dying on the spot.
 
-> On whether it should crash at all, everyone has opinions. Some say crashing is fine—at least it doesn't hide the problem. Others say don't crash, at least it looks better. I'm not joining that fight here; pick by your scenario. When production software goes down, you'll be busy enough either way—two rounds of getting chewed out by your boss, or users quietly leaving. Both are great.
+> On whether software should crash at all, everyone has their own view. Some say crashing is fine — at least it does not hide the problem; others say do not crash — at least it looks better. We are not joining that debate here; it depends on your scenario. If production software crashes, you are in for some busy days (getting chewed out by the boss a couple of times, or your users abandoning the software outright — both are delightful).
 
-Digressed. Back on track. A null pointer access—**or rather, a low-address access**—is quietly hinting at the real problem behind it: you just touched an object you **deliberately** never initialized. Alright, let's go.
+Digressed — back on track. A null pointer access — **or rather, a low-address access** — is quietly hinting at the real problem behind it: you have just touched an object you **deliberately** did not initialize. Alright, let us go.
 
-## First, Let's Manufacture One
+## First, Let Us Manufacture One
 
-Let's not start with anything fancy—fancy would just drag up your own crash-debugging nightmares. Say you're the developer of module A, and the owner of module B comes to you—hey big bro, got a little feature here, let's align on the interface and use your code. You shake hands happily, and you say you'll provide a `find_value`:
+Let us not start with anything complicated — complicated cases would probably drag up your own nightmare memories of hunting crashes. Picture this: you are the developer behind module A, and the owner of module B comes to you — hey big bro, we have a bit of business here, let us align on the interface and use your code. The two of you happily settle the interface, and you say you will provide a `find_value`:
 
 ```cpp
 int* find_value(int* arr, int size, int target) {
@@ -43,44 +44,44 @@ int* find_value(int* arr, int size, int target) {
         if (arr[i] == target)
             return &arr[i];
     }
-    return nullptr;  // not found, return null
+    return nullptr;  // not found, return a null pointer
 }
 ```
 
-Too bad nobody's habits were any good: nobody ever said what happens when the value isn't found. Your integration colleague, presumably dizzy from overtime, used it like this:
+Unfortunately, the habits were not great: nobody ever said what to do if the value is not found. Your integration colleague, presumably dizzy from overtime, just went ahead and used it like this:
 
 ```cpp
 
 int main() {
     int check_value = ... // your good colleague reads the user's input
-    int data[] = {10, 20, 30, 40, 50}; // your backend buddy says these come back
-    int* result = find_value(data, 5, 999);   // shit, the user's cute little input: 999, sorry, doesn't exist — congrats on the nullptr
+    int data[] = {10, 20, 30, 40, 50}; // your backend buddy tells you these come back
+    int* result = find_value(data, 5, 999);   // shit, the user's cute little trick input: 999, sorry, does not exist — enjoy your nullptr
     printf("*result = %d\n", *result);        // ← Boom! dereferenced without checking
 }
 ```
 
-The reviewer was presumably dizzy from overtime too (guess why I keep saying overtime), and it slipped through. Things ran fine after launch—for a while. Then the online alerts fired: crash rate spiking. Congrats, you're about to get roasted.
+The reviewer was presumably also dizzy from overtime (guess why I keep mentioning overtime), and it muddled through review like that. Things looked fine at launch — then the production alerts suddenly fired: crash rate spiking. Congratulations, you are about to get roasted.
 
-The code above is contrived, but most of us have genuinely written something like it. In my case the report thankfully came from QA, not from users. On my Linux box (GCC 16.1.1), it dies very cleanly:
+The code above is a bit contrived, but plenty of us have genuinely written something like it ourselves — thankfully, in my case the feedback came from QA, not from users. On my Linux box (GCC 16.1.1), it dies very cleanly:
 
 ```text
 find_value returned: (nil)
 exit code: 139
 ```
 
-139 = 128 + 11; signal 11 is SIGSEGV (segmentation fault). The same code on Windows / MSVC meets the same end with different paperwork: `exit code: -1073741819(0xC0000005 = STATUS_ACCESS_VIOLATION)`. Different platforms, different signal names, but it's the same event: **the CPU went for address 0 and got stopped.** A low address is obviously not a legitimate object in any sense. Your MMU: heh, little buddy, what exactly are you touching? Get out! And the process gets put down.
+139 = 128 + 11, and signal 11 is SIGSEGV (segmentation fault). The same code on Windows / MSVC reaches the same ending with different wording: `exit code: -1073741819(0xC0000005 = STATUS_ACCESS_VIOLATION)`. Different platforms, different signal names, but it is all the same event: **the CPU went for address 0 and got stopped.** A low address is clearly not a legitimate object in any sense; your MMU goes "heh, little buddy, what exactly are you trying to access? Get lost!" — and the process gets killed.
 
 ## Why It Crashes So Honestly
 
-`nullptr` is address 0. If you come from C, knowing it's the same as NULL is enough.
+`nullptr` is simply address 0. If you come from the C world, knowing it is the same idea as NULL is enough.
 
-When laying out a process's address space, modern operating systems deliberately mark the entire page around 0 (often called the "zero page") as inaccessible—precisely to guard against this slip. That's why the chain from dereference to death is laughably short: the moment `*result` gets evaluated, the CPU goes for address 0; the MMU checks the page table, finds no permission for that page, and a hardware exception fires on the spot; the OS catches it and hands it back as a signal—SIGSEGV on Linux, 0xC0000005 on Windows—and the process dies right there.
+When modern operating systems lay out a process's address space, they deliberately mark the entire page around 0 (commonly called the "zero page") as inaccessible — precisely to guard against this kind of slip. That is why the chain from a null dereference to death is pitifully short: the moment `*result` is evaluated, the CPU goes for address 0; the MMU checks the page table, the page has no permissions, and a hardware exception fires on the spot; the OS converts it into a signal and sends it back — SIGSEGV on Linux, 0xC0000005 on Windows — and the process terminates right away.
 
-No Schrödinger, no delayed detonation. Whichever line is wrong is the line it dies on.
+No Schrödinger, no delayed detonation. Whichever line holds the error is the line that crashes.
 
-## Catching It: Three Tools, One Story
+## Catching It: Three Tools, One Verdict
 
-So—let's get GDB up and running! It stops right at the crime scene, and you can verify on the spot that the "weapon" really is a null pointer:
+Let us get GDB up and running! It stops right at the scene of the crime, and while we are there we can confirm that the "weapon" really was a null pointer:
 
 ```text
 (gdb) run
@@ -93,7 +94,7 @@ $1 = (int *) 0x0
 #0  0x0000555555555245 in main () at crash.cpp:27
 ```
 
-`print result` gives `(int *) 0x0`. Hard evidence. Run it under ASan, and the report adds one line of plain human speech:
+`print result` gives `(int *) 0x0` — hard evidence. Run it with ASan on, and the report adds one extra line in plain human words:
 
 ```text
 ==28078==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000
@@ -101,17 +102,17 @@ $1 = (int *) 0x0
 ==28078==Hint: address points to the zero page.
 ```
 
-`Hint: address points to the zero page`—ASan is telling you outright: this is a null pointer. Honestly, the null-pointer case hardly needs heavy weaponry like this. It dies clearly; read the stack and you're done. But when we get to the dangling-pointer case, you'll understand: same SIGSEGV, worlds apart in how hard it is to hunt down.
+`Hint: address points to the zero page` — ASan is telling you outright: this is a null pointer. Truth be told, the null pointer case hardly needs these heavy weapons; it crashes clearly, and reading the stack is enough. But when we reach the dangling pointer case, you will understand: the very same SIGSEGV can be worlds apart in how hard it is to hunt down.
 
-## And of Course, the Embedded Angle, Where Things Get Weird
+## And of Course, We Have Embedded Content Too — With Some Special Cases
 
-| Scenario                                           | Behavior        | Why                                                                  |
-| -------------------------------------------------- | --------------- | -------------------------------------------------------------------- |
-| Dereferencing `nullptr` directly                   | Crashes, basically always | The zero page is inaccessible                              |
-| `p->func()` with `p == nullptr`, member touches no data | Very likely survives | The member function never dereferences `this`; it's just a plain call |
-| Bare metal without an MMU (MCU)                    | No crash; reads zeros | Address 0 is real, existing Flash/ROM (on the STM32F103 memory map: the interrupt vector table and Reset_Handler) |
+| Scenario                                           | Behavior                | Why                                                                 |
+| -------------------------------------------------- | ----------------------- | ------------------------------------------------------------------- |
+| Dereferencing `nullptr` directly                   | Crashes, basically always | The zero page is inaccessible                                     |
+| `p->func()` with `p == nullptr`, member function touches no member data | Very likely survives | The member function never dereferences `this`; it is just a plain call |
+| Bare metal without an MMU (MCU)                    | No crash; reads all zeros | Address 0 is real, physically present Flash/ROM (in the STM32F103 memory map: the interrupt vectors, Reset_Handler) |
 
-Row two deserves a closer look. I wrote a two-function minimal verification for it (call a member function that touches nothing on a null pointer, then one that touches a member):
+The second row is worth unpacking. I wrote a minimal two-function verification for it (call, through a null pointer, a function that touches no members, then one that does):
 
 ```text
 safe_func called, this=(nil) (no member access)
@@ -119,11 +120,11 @@ survived safe_func
 exit: 139
 ```
 
-To the compiler, `p->member_func()` is `member_func(p)`: `this=(nil)` walks in as an argument, and as long as the body never touches a member, the null pointer slips right through—until the next line performs a member access and the mine goes off. Row three is directly relevant to this site's embedded readers: on a Cortex-M, address 0 is the vector table, so "dereferencing a null pointer" reads the value of the initial stack pointer. The program doesn't crash; it's just silently wrong—a classic source of "it runs, but with weird bugs" in embedded work.
+To the compiler, `p->member_func()` is really `member_func(p)`: `this=(nil)` gets passed in, and as long as the function body never touches a member, the null pointer slips through just like that — until the next line performs a member access and the landmine finally goes off. The third row matters directly to this site's embedded readers: on a Cortex-M, address 0 is the vector table, so dereferencing a "null pointer" reads the value of the initial stack pointer. The program does not crash; it is silently wrong — a classic source of "it runs, but the bugs are eerie" in embedded work.
 
-## The Real Fix: Write "Might Be Absent" Into the Type
+## Curing the Root: Writing "Possibly Absent" into the Type
 
-The most basic fix is a null check, but null checks run on discipline—you remember this time, you forget next time. The real cure encodes "there may or may not be a value" into the type system, and C++17's answer is `std::optional`:
+The most rudimentary fix is a null check, but null checks run on self-discipline — you remember this time and forget the next. The road that truly cures the root is encoding "there may be a value, or there may not" into the type system, and C++17's answer is `std::optional`:
 
 ```cpp
 // Returning a pointer: the caller may forget to check, and it blows up at runtime
@@ -133,13 +134,13 @@ int* find_value(int* arr, int size, int target);
 std::optional<int> find_value(const int* arr, int size, int target);
 
 auto result = find_value(data, 5, 999);
-if (result.has_value()) {          // checking becomes part of the flow
+if (result.has_value()) {          // checking is part of the flow
     printf("%d\n", *result);
 }
-int val = result.value_or(-1);     // or just provide a default
+int val = result.value_or(-1);     // or just give a default value
 ```
 
-See? Put the hint into the type system and everything gets better. The culprit in the next case won't be nearly this polite: **the memory is freed, but the pointer lives on.** And I suspect you've already guessed it—it's the big-name one that's made my scalp numb more times than I can count: Use-After-Free!
+See that? Write the hint into the type system, and everything gets better! The culprit in the next case will not be nearly this polite: **after the free, the pointer is still alive**. And if you have accidentally guessed it already — yes, it is the big-name one that has made my scalp tingle countless times: Use After Free!
 
 ## References
 

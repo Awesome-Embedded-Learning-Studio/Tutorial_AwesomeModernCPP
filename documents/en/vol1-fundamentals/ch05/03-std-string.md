@@ -5,14 +5,13 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Master `std::string` construction, concatenation, lookup, and substring
-  operations, and learn to handle strings safely and efficiently in C++.
+description: Master std::string construction, concatenation, searching, and substring operations, and learn to handle strings safely and efficiently in C++
 difficulty: beginner
 order: 3
 platform: host
 prerequisites:
 - std::array
-reading_time_minutes: 14
+reading_time_minutes: 15
 tags:
 - cpp-modern
 - host
@@ -22,367 +21,493 @@ tags:
 title: std::string
 translation:
   source: documents/vol1-fundamentals/ch05/03-std-string.md
-  source_hash: 59a3d0fd0f508d5c74aefe6e6c0ed300bc7374a995cd006e6e881c67ebae0c55
-  translated_at: '2026-06-16T03:44:10.156091+00:00'
+  source_hash: d6861e58d0e90bdbbea19c1cb1b11d8f26dfcb98e8a29c5d81150338859c5b57
+  translated_at: '2026-09-25T10:53:18+00:00'
   engine: anthropic
-  token_count: 2721
+  token_count: 8200
 ---
-# std::string
+# std::string: Finally, No More Babysitting \0
 
-In the previous tutorial, we spent a lot of effort wrestling with C-style strings—manually managing null terminators, carefully guarding against buffer overflows, and operating on every character array with `strcpy` and `strcat` as if walking on thin ice. If you are as fed up with this as I am, here is some news that will make you breathe a sigh of relief: the C++ Standard Library provides a real string type called `std::string`. It manages memory automatically, handles length automatically, supports intuitive concatenation and comparison, and basically fills all the pits we fell into with C strings.
+In the previous tutorial we spent page after page wrestling with C-style strings: managing the `\0` terminator by hand, tiptoeing around buffer overflows, and edging through every character array with `strncpy` and `snprintf` as if walking on thin ice. If all that has worn you out as much as it wore me out, here is some news that will let you breathe a huge sigh of relief: the C++ standard library hands us a genuine string type called `std::string`. It manages memory automatically, tracks its own length, supports intuitive concatenation and comparison, and pretty much fills in every pit we fell into back in C.
 
-In this chapter, we start with the construction methods of `std::string`, move through concatenation, searching, substring extraction, and interoperability with C strings, and finally tie all the knowledge together with a comprehensive string processing program. After finishing this, you will find that those blood-pressure-raising string operations (I've been there—after learning `std::string`, I sometimes couldn't figure out how to use C strings properly) can be written safely and elegantly in C++.
+In this chapter we start with the ways to construct a `std::string`, walk through concatenation, searching, substring extraction, and interoperability with C strings, and finally tie all of that knowledge together in one comprehensive string-processing program. By the end you will find that the string operations that used to send your blood pressure through the roof (mine included—after I first learned `std::string`, I sometimes got worse at using C strings) can be written in C++ both safely and effortlessly.
 
-## Environment Setup
+## The Many Ways to Construct a String
 
-We will conduct all subsequent experiments in the following environment:
-
-- Platform: Linux x86_64 (WSL2 is acceptable)
-- Compiler: GCC 13+ or Clang 17+
-- Compiler flags: `-std=c++17 -Wall -Wextra`
-
-## Step 1 — Constructing a String in Various Ways
-
-`std::string` provides a rich set of constructors covering almost every scenario you can imagine:
+`std::string` offers a generous set of constructors that cover almost every scenario you can think of:
 
 ```cpp
+// string_construct.cpp
 #include <iostream>
 #include <string>
 
-int main() {
-    // 1. Default construction (empty string)
-    std::string s1;
+int main()
+{
+    // Construct from a literal
+    std::string s1 = "hello";
+    // Repeated characters: 10 'x's
+    std::string s2(10, 'x');
+    // Copy construction
+    std::string s3(s1);
+    // Construct from part of another string (start position, length)
+    std::string s4(s1, 1, 3);  // "ell"
+    // Construct by concatenating directly with +
+    std::string s5 = s1 + " world";
+    // Empty string
+    std::string s6;
+    // Move construction (C++11)
+    std::string s7 = std::move(s5);
 
-    // 2. Construct from a C-string literal
-    std::string s2 = "Hello";
-
-    // 3. Construct from a count and a single character
-    std::string s3(5, 'A'); // "AAAAA"
-
-    // 4. Copy construction
-    std::string s4(s2);
-
-    // 5. Construct from a substring (pos, count)
-    std::string s5("World", 1, 3); // "orl"
-
-    // 6. Move construction (C++11)
-    std::string s6(std::move(s4));
-
-    std::cout << "s1: [" << s1 << "]\n";
-    std::cout << "s2: [" << s2 << "]\n";
-    std::cout << "s3: [" << s3 << "]\n";
-    std::cout << "s4: [" << s4 << "]\n"; // s4 is now empty (moved-from)
-    std::cout << "s5: [" << s5 << "]\n";
-    std::cout << "s6: [" << s6 << "]\n";
+    std::cout << s1 << "\n" << s2 << "\n" << s3 << "\n"
+              << s4 << "\n" << s7 << "\n"
+              << "s6 empty: " << std::boolalpha << s6.empty() << "\n";
+    return 0;
 }
 ```
 
 Output:
 
 ```text
-s1: []
-s2: [Hello]
-s3: [AAAAA]
-s4: []
-s5: [orl]
-s6: [Hello]
+hello
+xxxxxxxxxx
+hello
+ell
+hello world
+s6 empty: true
 ```
 
-The first and fifth methods look like assignments, but the compiler is actually performing construction—this is C++ copy-initialization syntax, which has the same effect as `std::string s2("Hello")`. `s5` extracts 3 characters starting from index 1 of `"World"`, resulting in `"orl"`. This "partial construction" is very useful when parsing strings. We don't need to dive deep into move construction right now; just know that it is faster than copying because it "steals" the internal resources rather than duplicating them.
+The first and fifth forms look like assignment, but what the compiler actually performs is construction—this is C++'s copy-initialization syntax, and it has exactly the same effect as `std::string s1("hello")`. `std::string s4(s1, 1, 3)` takes 3 characters starting at index 1 of `s1`, giving `"ell"`; this kind of "partial construction" is extremely handy when parsing strings. We don't need to dig into move construction just yet—all we need to know is that it is faster than copying, because it "steals" the internal resources instead of making a duplicate of them.
 
-> ⚠️ **Warning**
-> The source object after a move (`s4` above) is in a "valid but unspecified" state—you can assign to it or destroy it, but do not read its value for any meaningful logic. This is the basic contract of C++ move semantics, which we will cover in detail when we discuss move semantics in a later chapter.
+After being moved from, the source object (`s5` above) is left in a "valid but unspecified" state—we may assign to it and destroy it, but we must not read its value and draw any meaningful conclusion from it. This is the fundamental contract of C++ move semantics, and we will expand on it in detail when later chapters get to move semantics.
 
-## Step 2 — Basic Operations: Size, Access, and Empty Checks
+## Basic Operations: Size, Access, and Emptiness
 
 ```cpp
-#include <iostream>
-#include <string>
-
-int main() {
-    std::string s = "Hello";
-
-    // Size
-    std::cout << "Length: " << s.length() << "\n"; // 5
-    std::cout << "Size: " << s.size() << "\n";     // 5
-
-    // Access
-    char c1 = s[1]; // 'e'
-    char c2 = s.at(2); // 'l'
-
-    // Empty check
-    if (s.empty()) {
-        std::cout << "String is empty\n";
-    } else {
-        std::cout << "String is not empty\n";
-    }
-}
+std::string s = "Hello, C++";
+s.size();       // 10
+s.length();     // 10 (equivalent to size)
+s.empty();      // false
+s[0];           // 'H'
+s.at(1);        // 'e' (throws std::out_of_range when out of range)
+s.front();      // 'H'
+s.back();       // '+'
 ```
 
-`s.length()` and `s.size()` are completely equivalent. Most C++ developers prefer `size()` because it is consistent with other standard library containers.
+`size()` and `length()` are completely equivalent. Most C++ developers lean toward `size()` because it stays consistent with the other standard library containers, so that is the convention we will follow too.
 
-Both `operator[]` and `at()` can access characters via index, but they differ in out-of-bounds behavior: `operator[]` performs no checking and results in undefined behavior on violation; `at()` throws an `std::out_of_range` exception. If you aren't 100% sure about the boundaries, using `at()` is safer—this minor performance cost is nothing compared to spending two hours hunting down a memory corruption bug.
+Both `operator[]` and `at()` access a character by index; the difference lies in out-of-bounds behavior: `s[100]` performs no check at all and the behavior is completely undefined, while `s.at(100)` throws a `std::out_of_range` exception. Unless you are one hundred percent certain, `at()` is the safer choice—compared with spending two hours hunting down an out-of-bounds memory bug, that little bit of overhead costs nothing.
 
-> ⚠️ **Warning**
-> `std::string`'s `size()` returns the count of underlying `char` bytes, not the "number of visible characters" (glyphs). For pure ASCII strings they are the same, but if the string contains UTF-8 encoded Chinese characters, `size()` for "你好" is 6, not 2, because each Chinese character occupies 3 bytes. Correctly handling Unicode strings requires specialized libraries (like ICU), but you must be aware of this pitfall early on.
+The `size()` of a `std::string` returns the number of underlying `char`s, not the number of characters your eyes see. For pure ASCII strings the two agree, but if the string contains Chinese text in UTF-8 encoding, the `s.size()` of `std::string s = "你好";` is 6 rather than 2, because each Chinese character occupies 3 bytes. Handling Unicode strings properly takes a dedicated library (ICU, for example), but this is a pit we absolutely need to know about ahead of time.
 
-## Step 3 — Concatenation, Insertion, Deletion, and Replacement
-
-```cpp
-#include <iostream>
-#include <string>
-
-int main() {
-    std::string s = "Hello";
-
-    // Concatenation
-    s += " World"; // "Hello World"
-    s.push_back('!'); // "Hello World!"
-
-    // Insertion
-    s.insert(5, ","); // "Hello, World!"
-
-    // Deletion
-    s.erase(5, 1); // "Hello World!" (removes the comma)
-
-    // Replacement
-    s.replace(6, 5, "C++"); // "Hello C++!" (replaces "World" with "C++")
-
-    std::cout << s << "\n";
-}
-```
-
-`operator+=` and `append` have similar functions; `operator+=` is more concise, while `append` provides more overloaded versions (such as appending only a specific segment of another string). `push_back` can only append a single character, consistent with the `push_back` interface of other containers like `std::vector`. `insert` inserts content at a specific position, `erase` removes a specified number of characters starting from a position, and `replace` substitutes a specified range with new content. The new string's length can differ from the replaced section.
-
-These operations are safe because `std::string` manages memory automatically—space is expanded automatically when insertion runs out of room, and manual character shifting isn't required during deletion. Compared to the old days of manually calculating offsets and cautiously calling `memmove` in C, this is paradise.
-
-## Step 4 — Searching and Substrings
-
-```cpp
-#include <iostream>
-#include <string>
-
-int main() {
-    std::string s = "Hello World";
-
-    // Find substring
-    size_t pos = s.find("World");
-    if (pos != std::string::npos) {
-        std::cout << "Found at: " << pos << "\n"; // 6
-    }
-
-    // Find character (find_first_of)
-    size_t vowels = s.find_first_of("aeiou");
-    if (vowels != std::string::npos) {
-        std::cout << "First vowel at: " << vowels << "\n"; // 1 ('e')
-    }
-
-    // Substring
-    std::string sub = s.substr(0, 5); // "Hello"
-    std::cout << "Substring: " << sub << "\n";
-}
-```
-
-The most critical concept here is `std::string::npos`. It is a constant with the value `std::numeric_limits<size_t>::max()`. When a search operation fails to find the target, it returns `npos`. Therefore, after every call to `find`, you must check if the return value equals `npos`, rather than using it directly as a boolean—because `npos` converts to `true` as a boolean. Writing `if (s.find(...))` enters the branch when not found, which is another classic trap for beginners.
-
-`find_first_of` and `find_last_of` behave somewhat specially: they don't look for an entire substring, but look for **any one character** from the parameter string. `find_first_of("aeiou")` returns 1, because `'e'` is the first character in `"Hello World"` that matches any character in `"aeiou"`.
-
-Substring extraction uses `substr`, which returns a new `std::string` containing a specified number of characters starting from a position. Omitting the count extracts to the end:
+## Concatenation, Insertion, Deletion, and Replacement
 
 ```cpp
 std::string s = "Hello";
-std::string sub = s.substr(1); // "ello"
+s += " World";          // "Hello World"
+s.append("!!!");        // "Hello World!!!"
+s.push_back('?');       // "Hello World!!!?"
+s.insert(5, ",");       // "Hello, World!!!?"
+s.erase(5, 1);          // "Hello World!!!?"  removes the comma we just inserted
+s.replace(6, 5, "C++"); // "Hello C++!!!?"    World -> C++
+s.clear();              // becomes an empty string
 ```
 
-`substr` returns a new object, allocating memory and copying characters. If you only need to iterate over a range without an independent copy, using `std::string_view` (C++17) is more efficient—we will expand on this in later chapters.
+`+=` and `append()` do similar jobs; day to day we reach for `+=` more often, while `append()` provides additional overloaded versions (appending only a slice of another string, for example). `push_back()` can only append a single character, matching the `push_back()` interface of `vector`. `insert(pos, str)` inserts `str` at `pos`; `erase(pos, len)` deletes `len` characters starting at `pos`; `replace(pos, len, new_str)` swaps the `len` characters starting at `pos` for `new_str`, and the new string's length may differ from the segment being replaced.
 
-## Step 5 — Comparing Strings
+The reason these operations are safe is that `std::string` manages memory internally: when an insert runs out of space it grows automatically, and after an erase we never have to shuffle the trailing characters by hand. Compared with computing offsets manually and calling `memmove` with utmost care in C, we can use these operations with far more peace of mind.
 
-In C, comparing two strings requires `strcmp`. C++'s `std::string` overloads comparison operators, which is much more intuitive:
+## Searching and Substrings
 
 ```cpp
-#include <iostream>
-#include <string>
+std::string s = "Hello, hello, HELLO!";
 
-int main() {
-    std::string s1 = "Apple";
-    std::string s2 = "Banana";
-
-    if (s1 == s2) {
-        std::cout << "Equal\n";
-    } else if (s1 < s2) {
-        std::cout << "s1 < s2\n"; // Output: s1 < s2
-    }
-
-    // Member function compare
-    int result = s1.compare(s2); // < 0
-    if (result == 0) std::cout << "Same";
-    else if (result < 0) std::cout << "s1 smaller";
-    else std::cout << "s1 larger";
-}
+s.find("hello");                    // 7 (case-sensitive)
+s.find("Hello");                    // 0
+s.find("xyz");                      // std::string::npos
+s.find("hello", 2);                 // 7 (searching from position 2)
+s.rfind("hello");                   // 7 (reverse search)
+s.find_first_of("aeiou");          // 1 (the first vowel, 'e')
+s.find_last_of("aeiou");           // 11 (case-sensitive; the last hit is the 'o' in the second hello)
 ```
 
-The advantage of the `compare` member function is that it supports partial comparison, for example `s1.compare(0, 3, "App")` compares the 3 characters starting at index 0 of `s1` with `"App"`. This capability is useful when parsing protocols or handling fixed-format text.
+The most crucial concept here is `std::string::npos`. It is a constant whose value is the maximum value of `std::size_t`. When a search operation fails to find the target, it returns `npos`. That is why, after every call to `find`, we must check whether the return value equals `npos` instead of using it as a bool—since `npos` converts to bool as `true`, writing `if (s.find("x"))` actually enters the branch when nothing was found. Another classic beginner trap.
 
-## Step 6 — Interoperability with C Strings
+Note that `find_first_of` and `find_last_of` behave rather unusually: they do not search for an entire substring, but for **any single character** of the argument string. `find_first_of("aeiou")` returns 1, because `s[1]` is `'e'`, the first character that matches anything in `"aeiou"`.
 
-No matter how good `std::string` is, many third-party libraries, OS APIs, and embedded SDKs still accept `const char*`. Getting a C-style string from `std::string` requires two key functions:
+| Form | What the function looks for | What it returns on a hit |
+| --- | --- | --- |
+| `s.find("abc")` | The full `"abc"`, contiguous and in the same order | The starting index of that substring |
+| `s.find('a')` | The character `'a'` | The index of the first `'a'` |
+| `s.find_first_of("abc")` | Any one of `a`/`b`/`c` | The index of the first character belonging to this set |
+| `s.find_first_not_of("abc")` | The first character that is not `a`/`b`/`c` | The index of the first character outside this set |
+
+As we can see, all of these forms search from left to right, starting at index `0` by default, and **return only the first position that satisfies the condition**. They do not modify the original string.
+
+For substring extraction we use `substr(pos, len)`, which takes `len` characters starting at position `pos` and returns a new `std::string`. Omit `len` and it takes everything through the end:
 
 ```cpp
-#include <iostream>
-#include <string>
-#include <cstring>
-
-int main() {
-    std::string s = "Hello";
-
-    // c_str
-    const char* cstr = s.c_str();
-    std::cout << std::strlen(cstr) << "\n";
-
-    // data (C++17 and later)
-    const char* data = s.data();
-    std::cout << data << "\n";
-}
+std::string t = "Hello, World!";
+t.substr(7, 5);  // "World"
+t.substr(7);     // "World!"
 ```
 
-`c_str()` guarantees returning a `const char*` terminated by a null character (`\0`), which can be passed directly to `printf`, `fopen`, or any function expecting a C string. `data()` behaves identically to `c_str()` starting from C++17.
+`substr()` returns a brand-new object: it allocates memory and copies the characters. If you only need to iterate over a range rather than own an independent copy, `std::string_view` (C++17) is more efficient—we will come back to it in a later chapter.
 
-Here is a rule you must remember: the pointers returned by `c_str()` and `data()` are **owned by the string object**. Once the string is modified or destroyed, the pointers become invalid. Therefore, never store the return value of `c_str()` and then perform operations that might change the string—complete all modifications first, then call `c_str()` to pass to the C API.
+## Comparing Strings
 
-## Step 7 — Numeric Conversion and Line Input
+In C, comparing two strings means calling `strcmp`; C++'s `std::string` overloads the comparison operators, which is far more intuitive:
 
 ```cpp
-#include <iostream>
-#include <string>
-
-int main() {
-    // Number to String
-    std::string s1 = std::to_string(123);
-    std::string s2 = std::to_string(3.14);
-
-    // String to Number
-    int i = std::stoi("42");
-    double d = std::stod("3.14");
-
-    std::cout << s1 << ", " << s2 << "\n";
-    std::cout << i << ", " << d << "\n";
-}
+std::string a = "apple", b = "banana", c = "apple";
+a == c;      // true
+a != b;      // true
+a < b;       // true (lexicographic order)
+a.compare(b);  // a negative value (equivalent to strcmp's return-value semantics)
 ```
 
-`std::to_string` results for floating-point numbers might not be "pretty"—`std::to_string(3.14)` outputs `3.140000`, because it uses `%f` formatting. If you need precise control over floating-point output format, you still need to use `std::format` (C++20) or `std::stringstream` from the `<iomanip>` library.
+The strength of the `compare()` member function is that it supports partial comparison: `s.compare(7, 5, "World")` takes the 5 characters of `s` starting at index 7 and compares them with `"World"` for equality. We will lean on this ability when parsing protocols or processing fixed-format text.
 
-## Practical Exercise — Comprehensive String Processing
+## Interoperating with C Strings
 
-Now let's synthesize all the knowledge we've learned and write a slightly practical string processing program. This program demonstrates several common text processing patterns: splitting by a delimiter, counting character frequency, finding and replacing, and simple CSV parsing.
+No matter how pleasant `std::string` is to use, plenty of third-party libraries, operating-system APIs, and embedded SDKs still accept `const char*`. Two key functions get us from a `std::string` to a C-style string:
 
 ```cpp
+std::string s = "Hello, C API!";
+const char* p = s.c_str();   // returns a \0-terminated const char*
+const char* q = s.data();    // fully equivalent to c_str() since C++17
+```
+
+`c_str()` guarantees a `\0`-terminated `const char*` that we can pass directly to `fopen`, `printf`, or any other function expecting a C string. Since C++17, `data()` behaves exactly like `c_str()`.
+
+There is one rule to burn into memory here: the pointers returned by `c_str()` and `data()` are **owned by the string object**—the moment the string is modified or destroyed, the pointers dangle. So we never stash the return value of `c_str()` and then perform operations that might change the string—finish all modifications first, and call `c_str()` as the last step before handing it to the C API.
+
+## Numeric Conversions and Line Input
+
+```cpp
+// number -> string
+std::to_string(42);      // "42"
+std::to_string(3.14);    // "3.140000" (note: formatted with %f)
+
+// string -> number
+std::stoi("42");         // int: 42
+std::stol("1234567890"); // long: 1234567890
+std::stod("3.14159");    // double: 3.14159
+std::stoi("  123abc");   // 123 (skips leading whitespace, stops at a non-digit)
+
+// Reading a whole line (cin >> s stops at whitespace; getline reads up to the newline)
+std::string line;
+std::getline(std::cin, line);
+```
+
+The results `std::to_string` produces for floating-point numbers may not look very "pretty": `to_string(3.14)` outputs `3.140000`, because it formats with `%f`. When you need precise control over the output format of floating-point numbers, you still want `std::setprecision` from `<iomanip>` or `std::snprintf`.
+
+## Hands-On: Comprehensive String Processing
+
+Let's combine everything we have learned so far and write a string-processing program with a bit of practical value. It demonstrates several common text-processing patterns: splitting on a delimiter, counting character frequency, find-and-replace, and simple CSV parsing.
+
+```cpp
+// string_demo.cpp
 #include <iostream>
-#include <string>
-#include <vector>
 #include <map>
+#include <string>
 
-// Split string by delimiter
-std::vector<std::string> split(const std::string& s, char delimiter) {
-    std::vector<std::string> tokens;
-    size_t start = 0;
-    size_t end = s.find(delimiter);
+/// @brief Split a sentence into words by spaces and print each word
+void split_into_words(const std::string& sentence)
+{
+    std::cout << "--- 拆分单词 ---" << std::endl;
+    std::size_t start = 0;
+    std::size_t end = 0;
 
-    while (end != std::string::npos) {
-        tokens.push_back(s.substr(start, end - start));
+    while (start < sentence.size()) {
+        start = sentence.find_first_not_of(' ', start);
+        if (start == std::string::npos) {
+            break;
+        }
+        end = sentence.find(' ', start);
+        if (end == std::string::npos) {
+            end = sentence.size();
+        }
+        std::cout << "  [" << sentence.substr(start, end - start) << "]\n";
         start = end + 1;
-        end = s.find(delimiter, start);
     }
-
-    tokens.push_back(s.substr(start)); // Last part
-    return tokens;
 }
 
-// Count character frequency
-std::map<char, int> count_chars(const std::string& s) {
-    std::map<char, int> counts;
-    for (char c : s) {
-        counts[c]++;
+/// @brief Count how many times each character occurs (case-sensitive)
+void count_char_frequency(const std::string& text)
+{
+    std::cout << "\n--- 字符频率统计 ---" << std::endl;
+    std::map<char, int> freq;
+    for (char c : text) {
+        freq[c]++;
     }
-    return counts;
+    for (const auto& [ch, count] : freq) {
+        std::cout << "  '" << ch << "': " << count << "\n";
+    }
 }
 
-// Find and replace all
-std::string replace_all(std::string s, const std::string& from, const std::string& to) {
-    size_t pos = 0;
-    while ((pos = s.find(from, pos)) != std::string::npos) {
-        s.replace(pos, from.length(), to);
-        pos += to.length();
+/// @brief Find every occurrence of target in text and replace it with replacement
+std::string find_and_replace(std::string text,
+                             const std::string& target,
+                             const std::string& replacement)
+{
+    std::cout << "\n--- 查找替换 ---\n  原文: " << text << std::endl;
+    std::size_t pos = 0;
+    while ((pos = text.find(target, pos)) != std::string::npos) {
+        text.replace(pos, target.size(), replacement);
+        pos += replacement.size();  // skip past the replacement to avoid an infinite loop
     }
-    return s;
+    std::cout << "  结果: " << text << std::endl;
+    return text;
 }
 
-int main() {
-    // 1. Split
-    std::string text = "one,two,three";
-    auto parts = split(text, ',');
-    std::cout << "Split result:\n";
-    for (const auto& p : parts) {
-        std::cout << " - " << p << "\n";
+/// @brief Parse a simple CSV line (no quote escaping handled)
+void parse_csv_line(const std::string& line)
+{
+    std::cout << "\n--- CSV 解析 ---\n  输入: " << line << std::endl;
+    std::size_t start = 0;
+    int idx = 0;
+    while (true) {
+        std::size_t comma = line.find(',', start);
+        if (comma == std::string::npos) {
+            std::cout << "  字段 " << idx << ": [" << line.substr(start)
+                      << "]\n";
+            break;
+        }
+        std::cout << "  字段 " << idx << ": ["
+                  << line.substr(start, comma - start) << "]\n";
+        start = comma + 1;
+        idx++;
     }
+}
 
-    // 2. Count
-    std::string sample = "hello";
-    auto counts = count_chars(sample);
-    std::cout << "\nChar counts:\n";
-    for (const auto& [c, n] : counts) {
-        std::cout << " '" << c << "': " << n << "\n";
-    }
-
-    // 3. Replace
-    std::string data = "color: red, color: green";
-    std::string fixed = replace_all(data, "color", "colour");
-    std::cout << "\nReplace result: " << fixed << "\n";
+int main()
+{
+    split_into_words("C++ is a powerful and efficient language");
+    count_char_frequency("hello world");
+    find_and_replace("the cat sat on the mat", "the", "a");
+    parse_csv_line("Alice,30,Engineer,New York");
+    return 0;
 }
 ```
 
 Compile and run:
 
 ```bash
-g++ -std=c++17 -Wall -Wextra main.cpp -o string_demo
+g++ -std=c++17 -Wall -Wextra -o string_demo string_demo.cpp
 ./string_demo
 ```
 
 Output:
 
 ```text
-Split result:
- - one
- - two
- - three
+--- 拆分单词 ---
+  [C++]
+  [is]
+  [a]
+  [powerful]
+  [and]
+  [efficient]
+  [language]
 
-Char counts:
- 'e': 1
- 'h': 1
- 'l': 2
- 'o': 1
+--- 字符频率统计 ---
+  ' ': 1
+  'd': 1
+  'e': 1
+  'h': 1
+  'l': 3
+  'o': 2
+  'r': 1
+  'w': 1
 
-Replace result: colour: red, colour: green
+--- 查找替换 ---
+  原文: the cat sat on the mat
+  结果: a cat sat on a mat
+
+--- CSV 解析 ---
+  输入: Alice,30,Engineer,New York
+  字段 0: [Alice]
+  字段 1: [30]
+  字段 2: [Engineer]
+  字段 3: [New York]
 ```
 
-Let's look at the logic of these functions one by one. The core of `split` is repeatedly calling `find` to skip delimiters, then using `substr` to extract the segment. The pattern of "skip whitespace, find delimiter, extract, loop" is very common in text processing and is worth remembering as a standard idiom.
+Let's look at the thinking behind each of these functions. The heart of `split_into_words` is calling `find_first_not_of` repeatedly to skip whitespace, then using `find` to locate the next delimiter, and finally `substr` to cut out the word. This "skip whitespace, find the delimiter, extract, loop" pattern is extremely common in text processing—we suggest you memorize it as a fixed recipe.
 
-`count_chars` uses `std::map` to count frequency. `std::map` is internally sorted, so the output is arranged in lexicographical order by character. Here we use an associative container for the first time; you don't need to understand all the details, just know it's a collection of "key-value" pairs, and `operator[]` access creates a default value (0 for integers) if the key doesn't exist.
+`count_char_frequency` uses a `std::map` to tally frequencies. A `std::map` is sorted internally, so the output comes out in lexicographic order by character. This is our first encounter with an associative container; there is no need to understand every detail yet—just know that it is a collection of key-value pairs, and that accessing with `[]` auto-creates a default value when the key does not exist (0 for `int`).
 
-`replace_all` demonstrates an important pattern: when doing `find` + `replace` in a loop, move the search start position to after the replacement result each time; otherwise, if the `to` string contains the `from` content, it will create an infinite loop. The logic for CSV parsing is similar to splitting words, just with a comma as the delimiter.
+`find_and_replace` showcases an important pattern: when we write a loop doing `find` + `replace`, after each replacement we must move the search start position past the replacement result; otherwise, if `replacement` contains the content of `target`, we get stuck in an infinite loop. The logic of `parse_csv_line` is similar to splitting words, only with the delimiter swapped for a comma.
 
 ## Exercises
 
-These three exercises cover the most core operations of `std::string`. I recommend writing them yourself before checking the logic.
+These three exercises cover the most essential operations of `std::string`. We suggest you write them yourself first, then check your approach against the solutions.
 
 ### Exercise 1: Word Counter
 
-Write a function `int count_words(const std::string& s)` that counts how many words are in a string (separated by spaces, ignoring consecutive spaces and leading/trailing spaces). Hint: You can use a loop with `find` and `substr`, or count "transitions from whitespace to non-whitespace".
+Write a function `count_words(const std::string& s)` that counts how many words the string contains (separated by spaces, ignoring consecutive spaces and leading/trailing spaces). Hint: you can use a loop with `find` and `find_first_not_of`, or count the number of "transitions from whitespace to non-whitespace".
 
-### Exercise 2: Simple Find and Replace Tool
+::: details Reference Solution
 
-Write a function `std::string replace(std::string s, const std::string& from, const std::string& to)` that replaces all occurrences of `from` in `s` with `to`. Requirement: Handle the case where `from` is an empty string (return the original text, otherwise `find` will return 0 causing an infinite loop).
+```cpp
+#include <iostream>
+#include <string>
 
-### Exercise 3: trim Function
+int count_words(const std::string& str)
+{
+    std::cout << "--- 拆分单词并统计单词数量 ---" << std::endl;
+    std::size_t start = 0;
+    std::size_t end = 0;
+    std::size_t count = 0;
+    while (true) {
+        start = str.find_first_not_of(" ,.", end);
+        if (start == std::string::npos) {
+            break;
+        }
+        end = str.find_first_of(" ,.", start);
+        if (end == std::string::npos) {
+            end = str.size();
+        }
+        count++;
+        std::cout << "  [" << str.substr(start, end - start) << "]\n";
+    }
+    return count;
+}
 
-Write two functions, `ltrim` and `rtrim`, to remove whitespace characters (spaces, `\t`, `\n`) from the beginning and end of a string respectively, then combine them into a `trim` function. Hint: `ltrim` uses `find_first_not_of` to locate the first non-whitespace character and then `substr`; `rtrim` is similar, using `find_last_not_of`.
+int main()
+{
+    std::string str = "Hello, this is a sample string for counting words.";
+    int word_count = count_words(str);
+    std::cout << "单词总数: " << word_count << std::endl;
+    return 0;
+}
+```
+
+Compile and run:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+Result:
+
+```text
+--- 拆分单词并统计单词数量 ---
+  [Hello]
+  [this]
+  [is]
+  [a]
+  [sample]
+  [string]
+  [for]
+  [counting]
+  [words]
+单词总数: 9
+```
+
+> Note that when splitting words, this sample code ignores not only spaces but also punctuation such as `,` and `.` on our behalf
+
+:::
+
+### Exercise 2: A Simple Find-and-Replace Tool
+
+Write a function `replace_all(std::string& text, const std::string& from, const std::string& to)` that replaces every occurrence of `from` in `text` with `to`. It must handle the case where `from` is an empty string (return the text unchanged; otherwise `find("")` returns 0 and the loop never ends).
+
+::: details Reference Solution
+
+```cpp
+#include <iostream>
+#include <string>
+
+void replace_all(std::string& str, const std::string& from, const std::string& to)
+{
+    std::size_t start_pos = 0;
+    if (from.empty()) {
+        return;
+    }
+    while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length();
+    }
+}
+
+int main()
+{
+    const std::string original = "Hello, World! World is beautiful.";
+    std::string modified = original;
+    replace_all(modified, "World", "Universe");
+    std::cout << "Original: " << original << std::endl;
+    std::cout << "Modified: " << modified << std::endl;
+    return 0;
+}
+```
+
+Compile and run:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+Result:
+
+```text
+Original: Hello, World! World is beautiful.
+Modified: Hello, Universe! Universe is beautiful.
+```
+
+:::
+
+### Exercise 3: A trim Function
+
+Write two functions, `ltrim` and `rtrim`, that strip whitespace characters (spaces, `\t`, `\n`) from the beginning and the end of a string respectively, and then combine them into a `trim` function. Hint: `ltrim` uses `find_first_not_of(" \t\n")` to find the first non-whitespace character and then `substr`; `rtrim` is similar, using `find_last_not_of`.
+
+::: details Reference Solution
+
+```cpp
+#include <iostream>
+#include <string>
+
+void ltrim(std::string& s)
+{
+    std::size_t pos = s.find_first_not_of(" ");
+    if (pos != std::string::npos) {
+        s = s.substr(pos);
+    }
+}
+
+void rtrim(std::string& s)
+{
+    std::size_t pos = s.find_last_not_of(" ");
+    if (pos != std::string::npos) {
+        s = s.substr(0, pos + 1);
+    }
+}
+
+void trim(std::string& s)
+{
+    ltrim(s);
+    rtrim(s);
+}
+
+int main()
+{
+    std::string str = "   Hello, World!   ";
+    std::cout << "原始的: '" << str << "'" << std::endl;
+    trim(str);
+    std::cout << "修剪后的: '" << str << "'" << std::endl;
+    return 0;
+}
+```
+
+Compile and run:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+Result:
+
+```text
+原始的: '   Hello, World!   '
+修剪后的: 'Hello, World!'
+```
+
+:::

@@ -78,7 +78,7 @@ Chrome 的回调体系立在一条原则上:消息传递优于锁,序列化优�
 
 开工前先确认工具链。`OnceCallback` 这一系列吃的几口 C++23 饭是:`std::move_only_function`(`<functional>` 里头,C++23 引入的 move-only 类型擦除可调用包装器,咱们的核心积木)、deducing this(显式对象参数 `this auto&& self`,让成员函数能推导 `this` 的值类别),偶尔还会碰到 `if consteval` 做编译期条件判断。
 
-编译器这块,GCC 12+ 或 Clang 16+ 能完整支持上述特性,编译时挂 `-std=c++23` 就行。下面这段代码可以快速验环境:
+编译器这块,GCC 14+ 或 Clang 18+ 能完整支持上述特性,编译时挂 `-std=c++23` 就行。下面这段代码可以快速验环境:
 
 ```cpp
 #include <functional>
@@ -98,7 +98,7 @@ int main() {
 }
 ```
 
-这段能编过,环境就绑了。不过说句实在话,笔者写这篇文章时,部分编译器的 `std::move_only_function` 实现还有 bug(GCC 12 早期版本在某些 SFINAE 场景下会编不过),保险起见用 GCC 13+ 或 Clang 17+ 的稳定版。
+这段能编过,环境就绑了。不过说句实在话,笔者写这篇文章时,部分编译器的 `std::move_only_function` 实现还有 bug(GCC 12 早期版本在某些 SFINAE 场景下会编不过),保险起见用 GCC 14+ 或 Clang 18+ 的稳定版。
 
 前置知识这边,咱们假设您已经熟这几样(卷二都覆盖过):移动语义和完美转发——`OnceCallback` 的核心就是 move-only,`std::move` 和 `std::forward` 的原理不熟的话,实现过程会很难受(卷二 ch00 移动语义系列);`std::function` 的类型擦除和 SBO——咱们直接在 `std::move_only_function` 上头盖,得明白类型擦除是怎么回事、小对象优化为什么重要(卷二 ch03);`std::invoke` 和统一调用协议——`bind_once` 里头用它统一处理函数指针、成员函数指针、仿函数这些不同的可调用对象(同卷二 ch03);还有可变参数模板和参数包展开——`OnceCallback<R(Args...)>` 的模板特化、`bind_once` 的参数绑定都离不开参数包语法(卷二 ch00 完美转发、卷四模板基础)。
 

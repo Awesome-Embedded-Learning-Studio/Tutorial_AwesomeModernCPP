@@ -52,15 +52,15 @@ int main() {
 }
 ```
 
-可能的输出（截取部分）：
+这份程序就在下面，点「动手试一试」直接跑——列出来的是运行环境里 `/usr/local/bin` 的真实内容，和您机器上的不完全一样：
 
-```text
-gcc
-g++
-cmake
-python3/
-pip
-```
+<OnlineCompilerDemo
+  title="动手验证：directory_iterator 单层遍历"
+  source-path="code/examples/vol2/47_directory_listing.cpp"
+  description="在线遍历 /usr/local/bin：每行一个条目，目录名后面多一个 /。遍历顺序未指定，别指望字母序。"
+  run-options="-std=c++17"
+  allow-run
+/>
 
 就这么简单——一个 range-based for 循环，遍历目录下所有项，输出文件名。如果目录是空的，循环体不会执行。如果目录不存在或没有读取权限，构造迭代器时就会抛出 `filesystem_error` 异常。
 
@@ -418,18 +418,15 @@ int main() {
 }
 ```
 
-可能的输出：
+这个工具就在下面，点「动手试一试」直接跑——统计的是运行目录下的代码文件，数字随环境而变（在线环境里通常只有这份源文件自己）。顺带见识一个小坑：表头是中文时 `setw` 按字节数而不是显示宽度对齐，列会对不齐：
 
-```text
-扩展名    文件数    总行数
-------------------------------
-.cpp     12        4856
-.h       15        2340
-.hpp     3         892
-.py      2         340
-------------------------------
-合计     32        8428
-```
+<OnlineCompilerDemo
+  title="动手验证：递归统计代码行数"
+  source-path="code/examples/vol2/48_code_stats.cpp"
+  description="在线统计当前目录下的源码文件：按扩展名汇总文件数和总行数。在本地对着您自己的项目目录跑更有意思。"
+  run-options="-std=c++17"
+  allow-run
+/>
 
 这个工具综合运用了本篇和前两篇的所有知识：`recursive_directory_iterator` 做递归遍历，`directory_entry::is_regular_file()` 做类型过滤，`path::extension()` 做扩展名过滤，`path` 的迭代器做目录名过滤。在实际项目中，你可以扩展它来统计空行数、注释行数、代码行数等更细粒度的指标。
 

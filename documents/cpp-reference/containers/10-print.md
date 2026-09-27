@@ -43,7 +43,7 @@ title: std::print
 | 空行 | `void println()` | 仅输出一个换行符 |
 | 输出到文件 | `void print(FILE* f, format_string, args...)` | 输出到指定 C 文件流 |
 | 输出到文件并换行 | `void println(FILE* f, format_string, args...)` | 换行版 |
-| 输出到流 | `void vprint_unicode(std::ostream&, ...)` | 输出到 C++ 流 |
+| 输出到流 | `void vprint_unicode(std::ostream&, std::format_args)` | 输出到 C++ 流 |
 
 ## 最小示例
 

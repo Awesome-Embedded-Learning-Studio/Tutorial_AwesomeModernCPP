@@ -3,84 +3,80 @@ chapter: 1
 cpp_standard:
 - 17
 - 20
-description: Understanding the semantic boundaries of borrowing, observation, and
-  non-owning pointers in C++, and implementing `Borrowed<T>` and `ObserverPtr<T>`
-  from scratch
+description: Understand the semantic boundaries of borrowing, observation, and non-owning pointers in C++, and hand-roll Borrowed<T> and ObserverPtr<T>
 difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
-- 卷二 · 第一章：RAII 深入理解
-- 卷二 · 第一章：weak_ptr 与循环引用
+- 'Volume 2 · Chapter 1: Deep Dive into RAII: The Cornerstone of Resource Management'
+- 'Volume 2 · Chapter 1: weak_ptr and Circular References: Breaking the Ownership Deadlock'
 reading_time_minutes: 13
 related:
-- WeakPtr 反模式：T* + raw Flag* 的致命陷阱
+- 'WeakPtr Anti-Pattern: The Fatal Trap of T* + raw Flag*'
 tags:
 - host
 - cpp-modern
 - intermediate
 - 智能指针
 - 内存管理
-title: 'Non-owning pointers panorama: From T* to Borrowed to ObserverPtr'
+title: 'Non-Owning Pointers: A Panorama from T* to Borrowed to ObserverPtr'
 translation:
   source: documents/vol8-domains/cpp-deep-dives/pointer-semantics/01-non-owning-pointer-overview.md
-  source_hash: bfc5024ee5a944b12488b05dc846b6e79b2abe5f47f8f404f5e5aa6465fd1d62
-  translated_at: '2026-06-16T04:08:25.629721+00:00'
+  source_hash: 03111f3329d1f66c018ac3f0b937826d767efb2f816966e09316f6c7edc12d0d
+  translated_at: '2026-09-27T02:43:50+00:00'
   engine: anthropic
-  token_count: 2425
+  token_count: 6900
 ---
-# Non-Owning Pointers Panorama: From T* to Borrowed to ObserverPtr
+# Non-Owning Pointers: A Panorama from T* to Borrowed to ObserverPtr
 
-## Introduction
+I'm curious — has anyone else been through this? You pick up a project, open whichever function you happen to need, and there in the parameter list sits `T* ptr`, and you start muttering to yourself: does this pointer *own* the object, or is it just *borrowing* it? Is the caller supposed to check for nullptr? Will the object still be alive after the function returns?
 
-I wonder if anyone has had this experience: you pick up a project, open a function as needed, and see ``T* ptr`` prominently written in the parameter list. Then, you start muttering—does this pointer actually "own" the object, or is it just "borrowing" it? Does the caller need to check for `nullptr`? Is the object still alive after the function returns?
+A raw pointer `T*` could be anything and promises nothing. It might be the owner (say, in that instant after `new` but before the object is handed off to a smart pointer), a borrower (passed into a function for a quick use), or a dangling pointer (the object is long gone while the pointer lingers on). The compiler won't help you tell them apart, and comments aren't necessarily reliable either (for all you know, the comments were written by an AI).
 
-A raw pointer ``T*`` can be anything and promises nothing. It might be an owner (like that split second after ``new`` before it is handed to a smart pointer), a borrower (passed to a function for a quick use), or a dangling pointer (the object is long gone, but the pointer remains). The compiler won't help you distinguish, and comments aren't necessarily reliable (maybe the comment was written by an AI, after all).
+R.3 in the C++ Core Guidelines puts it bluntly: **a raw pointer (a `T*` that is not an `owner<T>`) should be used only to express non-owning observation or borrowing**. Yet in real code, when we're handed a `T*`, we simply cannot tell which semantics it is meant to convey.
 
-There is a rule, R.3, in the C++ Core Guidelines that puts it very bluntly: **A raw pointer (a `T*` that is not ``owner<T>``) should only be used to indicate non-owning observation or borrowing**. However, in actual code, when we get a ``T*``, we simply cannot distinguish what semantics it is supposed to express.
+So today's task is clear: survey the various ways C++ can express "does not own the object," then hand-roll two semantically explicit types — `Borrowed<T>` and `ObserverPtr<T>` — and let the code speak for itself.
 
-So, our goal today is clear: we will sort out the various ways to express "not owning an object" in C++, and then hand-roll two types with clear semantics—``Borrowed<T>`` and ``ObserverPtr<T>``—to let the code speak for itself.
+Conclusion first: non-owning does not mean safe, and nullable does not mean able to test for liveness. Each of these types has its own niche, and using the wrong one digs you into a deeper hole than a raw pointer would.
 
-Let's put the conclusion first: non-owning does not equal safety, nullable does not mean you can determine if it's alive. Each type has its own use cases, and using them incorrectly is worse than using raw pointers.
+## Core Concept: A Four-Layer Semantic Model
 
-## Core Concepts: The Four-Layer Semantic Model
+Before writing any code, we need to sort one thing out — how many distinct semantics "not owning" actually covers in C++. We'll split it into four layers:
 
-Before writing code, we need to clarify one thing—how many semantics does "not owning" actually have in C++? Here, we divide it into four layers:
+**Layer 1: Borrowing.** `T*` and `T&` are the most primitive form of borrowing. You take a pointer or reference, use it, hand it back, and neither manage the object's lifetime nor care when it gets destroyed. This suits "brief, synchronous use" scenarios such as function parameters — but whatever you do, don't store it away for later. After all, the resource is under no obligation to inform you, "our resource here has just blown up; please seek employment elsewhere."
 
-**Layer 1: Borrowing.** ``T*`` and ``T&`` are the most primitive forms of borrowing. You get a pointer or reference, use it, and give it back. You don't manage the object's lifecycle, nor do you care when it is destroyed. This is suitable for scenarios like function parameters where usage is "brief and synchronous," but never save it for later use. After all, the resource is under no obligation to tell you when it blows up—please look elsewhere.
+**Layer 2: Explicit Observation.** From here on, we get more semantic clarity. What I mean is — when we hold an `ObserverPtr<T>`, all we're trying to say is: yes, it's persisted, but we don't own it in the slightest, and we have no way of knowing whether it has expired. "I'm just observing it. I acknowledge the thing exists. But I don't own it, and I can offer zero guarantees about whether it's still usable." The difference from a raw pointer is **readability** (which sounds a bit underwhelming, haha): when you see `ObserverPtr<T>`, you know this is a pure observation relationship. But just like `T*`, it cannot test for liveness — if the object is destroyed while you're still holding the ObserverPtr, dereferencing it is UB.
 
-**Layer 2: Explicit Observation.** Starting here, we have more semantic clarity. What I mean is—when we hold a ``ObserverPtr<T>``, we are simply saying—although it is persisted, we don't own it at all, and we may not even know if it has become invalid. "I am just observing it; I know it exists. But I don't own it, or rather, I can't guarantee whether it is usable." The difference from a raw pointer lies in **readability** (sounds a bit useless, haha): seeing ``ObserverPtr<T>`` tells you this is a pure observation relationship. However, like ``T*``, it cannot determine liveness—if the object is destroyed and you are still holding an ObserverPtr, dereferencing it is UB.
+**Layer 3: Non-owning weak reference.** This is the layer where `WeakPtr<T>` enters the stage. Its core difference from ObserverPtr: after the object is destroyed, you can safely detect the expiration. For that, it needs a control block, independent of the object, that records "is the object still alive." But — you say — I also want to lock it and extend its lifetime. Er, no can do.
 
-**Layer 3: Non-owning Weak Reference.** This is where ``WeakPtr<T>`` comes in. Its core difference from ObserverPtr is: after the object is destroyed, you can safely detect the failure. To do this, it needs a control block independent of the object to record "whether the object is still alive." However, if you want to `lock` it and extend its lifecycle, well, you can't.
+**Layer 4: Weak reference into shared ownership.** That's `std::weak_ptr<T>`. It differs from layer 3 in that it relies on the control block of `std::shared_ptr<T>`, and calling `lock()` temporarily extends the object's lifetime.
 
-**Layer 4: Shared Ownership Weak Reference.** This is ``std::weak_ptr<T>``. The difference from the third layer is that it relies on the ``std::shared_ptr<T>`` control block, and calling ``lock()`` temporarily extends the object's lifecycle.
-
-Now, let's use a table to compare these four layers:
+Now let's compare the four layers in a table:
 
 | Feature | T* | T& | Borrowed\<T\> | ObserverPtr\<T\> | WeakPtr\<T\> | std::weak_ptr\<T\> |
 |---------|----|----|---------------|-----------------|-------------|-------------------|
 | Nullable | Yes | No | No (by design) | Yes | Yes | Yes |
-| Owns Object | No | No | No | No | No | No |
-| Extend Lifecycle | No | No | No | No | No | lock() temporarily extends |
-| Safe Null Check After Destruction | No | No | No | No | **Yes** | **Yes** |
-| Suitable for Function Parameters | Yes | Yes | **Recommended** | Okay | Too Heavy | Too Heavy |
-| Suitable for Class Members | Okay but ambiguous | Okay | Not Recommended | **Recommended** | Recommended | Recommended |
-| Suitable for Async Callbacks | **Dangerous** | **Dangerous** | **Dangerous** | **Dangerous** | Yes | Yes |
+| Owns the object | No | No | No | No | No | No |
+| Extends lifetime | No | No | No | No | No | Temporarily via lock() |
+| Safe null-check after object destruction | No | No | No | No | **Yes** | **Yes** |
+| Suited to function parameters | Yes | Yes | **Recommended** | Acceptable | Too heavyweight | Too heavyweight |
+| Suited to class members | Possible, but unclear | Possible | Not recommended | **Recommended** | Recommended | Recommended |
+| Suited to async callbacks | **Dangerous** | **Dangerous** | **Dangerous** | **Dangerous** | Yes | Yes |
 
-⚠️ Note this row—"Safe Null Check After Destruction". The first four types (T*, T&, Borrowed, ObserverPtr) cannot do this. Only a WeakPtr with a truly independent control block can. We will expand on this in the second article; for now, just remember this conclusion.
+⚠️ Look closely at that row — "safe null-check after object destruction." The first four types (T*, T&, Borrowed, ObserverPtr) all fail it. Only a WeakPtr that truly owns an independent control block can do it. We'll unpack this in part 2; for now, just remember the conclusion.
 
-## Hand-rolling Borrowed\<T\>: Making Borrowing Semantics Explicit
+## Hand-Rolling Borrowed\<T\>: Making Borrow Semantics Explicit
 
-The problem ``Borrowed<T>`` wants to solve is simple: when ``const T&`` or ``T*`` appears in function parameters, the caller and the reader cannot immediately tell that "this is just a borrow." We need a type to nail the semantics of "non-null, non-owning, short-term use" into the type system.
+The problem `Borrowed<T>` wants to solve is simple: when a function parameter is `const T&` or `T*`, neither the caller nor the reader can see at a glance that "this is merely a borrow." We need a type that nails "non-null, non-owning, short-term use" down in the type system.
 
-The ``gsl::not_null<T>`` in C++ Core Guidelines does something similar—it constrains the pointer to be non-null but doesn't express borrowing semantics. Our ``Borrowed<T>`` goes a step further: it is non-null, it is non-owning, and it **prohibits construction from temporary objects**—because you cannot "borrow" something that is about to be destroyed.
+The C++ Core Guidelines' `gsl::not_null<T>` does something similar — it constrains the pointer to be non-null, but expresses no borrowing semantics. Our `Borrowed<T>` goes one step further: it is non-null, it is non-owning, and it **forbids construction from temporaries** — because you cannot "borrow" something that is about to be destroyed.
 
-Let's look at the core implementation first:
+First, the core implementation:
 
 ```cpp
 // borrowed.h
-// 教学版 Borrowed<T>：显式非空借用语义
-// 注意：这不是生产级实现，用于教学演示
+// Teaching-version Borrowed<T>: explicit non-null borrowing semantics
+// Note: this is not a production-grade implementation; it is for teaching
 
 #pragma once
 
@@ -90,28 +86,28 @@ Let's look at the core implementation first:
 template <typename T>
 class Borrowed {
 public:
-    // 从左值引用构造——这是最正常的用法
+    // Construct from an lvalue reference — the most ordinary usage
     explicit Borrowed(T& ref) noexcept : ptr_(&ref) {}
 
-    // 禁止从临时对象构造
+    // Forbid construction from temporaries
     Borrowed(T&&) = delete;
 
-    // 禁止从 nullptr 构造（T* 重载只接受非空指针）
+    // Forbid construction from nullptr (the T* overload accepts only non-null pointers)
     Borrowed(std::nullptr_t) = delete;
 
-    // 从裸指针构造，但调用者需保证非空
+    // Construct from a raw pointer; the caller must guarantee non-null
     explicit Borrowed(T* ptr) noexcept : ptr_(ptr)
     {
         assert(ptr != nullptr && "Borrowed<T> requires a non-null pointer");
     }
 
-    // 默认拷贝和移动——借用是可以传递的
+    // Default copy and move — a borrow is transferable
     Borrowed(const Borrowed&) = default;
     Borrowed& operator=(const Borrowed&) = default;
     Borrowed(Borrowed&&) = default;
     Borrowed& operator=(Borrowed&&) = default;
 
-    // 访问接口
+    // Access interface
     T& get() const noexcept { return *ptr_; }
     T* operator->() const noexcept { return ptr_; }
     T& operator*() const noexcept { return *ptr_; }
@@ -120,7 +116,7 @@ private:
     T* ptr_;
 };
 
-// 辅助函数：从引用创建 Borrowed，省去写 explicit 构造
+// Helper: create a Borrowed from a reference, sparing you the explicit constructor
 template <typename T>
 Borrowed<T> borrow(T& ref) noexcept
 {
@@ -128,33 +124,34 @@ Borrowed<T> borrow(T& ref) noexcept
 }
 ```
 
-Obviously, we will have these questions:
+Obviously, a few questions come up:
 
-**Why prohibit construction from temporary objects?** This is the most critical difference between ``T&&`` and a raw reference. Look at this scenario:
+**Why forbid construction from temporaries?** This is the most crucial difference between `Borrowed<T>` and a raw reference. Consider this scenario:
 
 ```cpp
 std::string get_name();
 
-// 如果允许从临时对象构造，就会出这种事：
-// Borrowed<std::string> b(get_name());  // 临时对象在表达式结束时销毁
-// 到这里，get_name返回的对象就被销毁掉了，这个时候访问持有的引用就是踩到地雷了
-// b.get();  // 悬垂引用！
+// If construction from temporaries were allowed, this would happen:
+// Borrowed<std::string> b(get_name());  // the temporary is destroyed at the end of the expression
+// By this point the object returned by get_name has been destroyed,
+// and accessing the held reference here means stepping on a landmine
+// b.get();  // dangling reference!
 ```
 
-After ``T&&`` is marked as ``= delete``, the compiler will refuse this usage at compile time. This is the closest simulation we can get in C++ to Rust's borrow checker—although not as comprehensive as Rust, it at least blocks the most common pitfall.
+With `T&&` marked `= delete`, the compiler rejects this usage outright at compile time. This is the closest imitation of Rust's borrow checker that C++ can offer — not as comprehensive as Rust's, but it at least plugs the most common pitfall.
 
-**Why is the constructor explicit?** To prevent implicit conversion. You wouldn't want a function accepting ``Borrowed<Foo>`` to be called implicitly from ``Foo&``—the act of borrowing should be conscious.
+**Why are the constructors explicit?** To prevent implicit conversions. You don't want a function taking `Borrowed<Foo>` to be implicitly callable from a `Foo&` — the act of borrowing should be deliberate.
 
-**Why is there a ``borrow()`` helper function?** Purely for convenience. Since the constructor is `explicit`, writing ``Borrowed<Foo>(foo)`` every time is a bit verbose, and ``borrow(foo)`` is cleaner. The standard library has similar designs, such as ``std::make_pair`` and ``std::make_shared``.
+**Why is there a `borrow()` helper?** Purely for convenience. Since the constructor is explicit, writing `Borrowed<Foo>(foo)` every time is a bit of a mouthful; `borrow(foo)` is cleaner. The standard library has similar designs, such as `std::make_pair` and `std::make_shared`.
 
-**Why not prohibit it as a class member?** Technically it can be done (e.g., via ``static_assert`` plus SFINAE), but practically it is over-engineering. It is sufficient for us to agree in documentation and convention that "Borrowed should not be saved as a class member." Between compiler enforcement and team norms, we choose the latter—because C++'s type system is not good at expressing lifetime constraints anyway (otherwise, why would we sit here and talk about this, using clumsy ways to express our meaning?), and forcing it tends to introduce unnecessary complexity.
+**Why not forbid it as a class member?** Technically it's doable (say, via `static_assert` plus SFINAE), but in practice that's over-engineering. Agreeing in documentation and convention that "Borrowed should not be stored as a class member" is enough. Between compiler enforcement and team convention, we choose the latter — because C++'s type system was never good at expressing lifetime constraints in the first place (otherwise, why would we be sitting down to have this conversation, expressing ourselves in such clumsy ways?), and forcing it tends to introduce unnecessary complexity.
 
 A typical correct usage:
 
 ```cpp
 void process_data(Borrowed<const std::vector<int>> data)
 {
-    // 调用者保证 data 非空，我们直接用
+    // The caller guarantees data is non-null; use it directly
     for (const auto& item : data.get()) {
         // ...
     }
@@ -163,26 +160,26 @@ void process_data(Borrowed<const std::vector<int>> data)
 int main()
 {
     std::vector<int> v{1, 2, 3};
-    process_data(borrow(v));  // 清晰：我在借用 v
+    process_data(borrow(v));  // Clear: I'm borrowing v
 }
 ```
 
-Compared to directly using ``const std::vector<int>&``, the advantage of the ``Borrowed`` version lies not in runtime behavior (they generate almost identical code), but in **readability**—the function signature tells you directly "this is a borrow."
+Compared with using `const std::vector<int>&` directly, the `Borrowed` version's advantage is not in runtime behavior (the generated code is nearly identical) but in **readability** — the function signature tells you outright, "this is a borrow."
 
-## Hand-rolling ObserverPtr\<T\>: A Nullable Non-Owning Observer
+## Hand-Rolling ObserverPtr\<T\>: A Nullable Non-Owning Observer
 
-If ``Borrowed<T>`` is for function parameters, then ``ObserverPtr<T>`` is for class members. Its semantics are "I am observing this object, but I don't own it, and I am not responsible for its lifecycle."
+If `Borrowed<T>` is meant for function parameters, then `ObserverPtr<T>` is meant for class members. Its semantics are "I observe this object, but I don't own it, and I'm not responsible for its lifetime."
 
-In fact, the C++ Standard Committee once proposed a very similar type: ``std::experimental::observer_ptr<W>``, included in Library Fundamentals TS v2. Its definition is:
+In fact, the C++ standards committee once proposed a remarkably similar type: `std::experimental::observer_ptr<W>`, included in Library Fundamentals TS v2. Its definition:
 
 > A non-owning pointer, or observer. The observer stores a pointer to a second object, known as the watched object. An observer_ptr may also have no watched object.
 
-Unfortunately, as of C++26 (seems to be 26, I haven't found new news, if I got it wrong, feel free to roast me), ``observer_ptr`` has not yet been officially incorporated into the standard and remains at the TS stage. However, its design is very clear and worth referencing. Our teaching version will be a simplification based on it:
+Unfortunately, as of C++26 (26, I believe — I haven't found any newer news, and if I've got it wrong again, feel free to flame me), `observer_ptr` still has not been formally adopted into the standard and remains at the TS stage. But its design is very clean and worth studying. Our teaching version simplifies on top of it:
 
 ```cpp
 // observer_ptr.h
-// 教学版 ObserverPtr<T>：可空非拥有观察指针
-// 参考了 std::experimental::observer_ptr (Library Fundamentals TS v2)
+// Teaching-version ObserverPtr<T>: a nullable, non-owning observation pointer
+// Modeled on std::experimental::observer_ptr (Library Fundamentals TS v2)
 
 #pragma once
 
@@ -191,25 +188,25 @@ Unfortunately, as of C++26 (seems to be 26, I haven't found new news, if I got i
 template <typename T>
 class ObserverPtr {
 public:
-    // 默认构造：空观察
+    // Default construction: observing nothing
     ObserverPtr() noexcept : ptr_(nullptr) {}
 
-    // 从 nullptr 构造：空观察
+    // Construct from nullptr: observing nothing
     ObserverPtr(std::nullptr_t) noexcept : ptr_(nullptr) {}
 
-    // 从裸指针构造：开始观察
+    // Construct from a raw pointer: start observing
     explicit ObserverPtr(T* ptr) noexcept : ptr_(ptr) {}
 
-    // 拷贝和移动
+    // Copy and move
     ObserverPtr(const ObserverPtr&) = default;
     ObserverPtr& operator=(const ObserverPtr&) = default;
     ObserverPtr(ObserverPtr&&) = default;
     ObserverPtr& operator=(ObserverPtr&&) = default;
 
-    // 重新绑定观察对象
+    // Rebind the watched object
     void reset(T* ptr = nullptr) noexcept { ptr_ = ptr; }
 
-    // 释放观察关系，返回原指针
+    // Release the observation relationship, returning the original pointer
     T* release() noexcept
     {
         T* old = ptr_;
@@ -217,15 +214,15 @@ public:
         return old;
     }
 
-    // 访问
+    // Access
     T* get() const noexcept { return ptr_; }
     T& operator*() const noexcept { return *ptr_; }
     T* operator->() const noexcept { return ptr_; }
 
-    // 检查是否有观察对象
+    // Check whether there is a watched object
     explicit operator bool() const noexcept { return ptr_ != nullptr; }
 
-    // 交换
+    // Swap
     void swap(ObserverPtr& other) noexcept
     {
         T* tmp = ptr_;
@@ -237,7 +234,7 @@ private:
     T* ptr_;
 };
 
-// 相等比较
+// Equality comparison
 template <typename T, typename U>
 bool operator==(const ObserverPtr<T>& a, const ObserverPtr<U>& b) noexcept
 {
@@ -250,7 +247,7 @@ bool operator==(const ObserverPtr<T>& a, std::nullptr_t) noexcept
     return !a;
 }
 
-// 辅助函数
+// Helper function
 template <typename T>
 ObserverPtr<T> make_observer(T* ptr) noexcept
 {
@@ -258,11 +255,11 @@ ObserverPtr<T> make_observer(T* ptr) noexcept
 }
 ```
 
-**What is the difference between ObserverPtr and Borrowed?** The core difference lies in two words: **nullable**. Borrowed expresses "I guarantee a non-null borrow," while ObserverPtr expresses "I might be a nullable observation." The former is suitable for function parameters (the caller guarantees non-null), while the latter is suitable for persisted class members or storage members (the observed object might not be set yet, or might be set to null).
+**What separates ObserverPtr from Borrowed?** The core difference comes down to one word: **nullability**. Borrowed expresses "a borrow I guarantee to be non-null"; ObserverPtr expresses "an observation that may be null." The former suits function parameters (the caller guarantees non-null); the latter suits persisted class members or storage members (the watched object may not have been set yet, or may have been set to null).
 
-**Why isn't ObserverPtr a WeakPtr?** This is the most common misunderstanding. The difference between ObserverPtr and WeakPtr is not what the API looks like (they both have `get()`, `reset()`, `operator->`), but **what happens after the object is destroyed**. Inside ObserverPtr is just a raw pointer; when the object is destroyed, it knows nothing, and dereferencing is UB. A true WeakPtr needs a control block independent of the object to record the liveness state—this is something the author plans to submit to other questions and columns in future articles!
+**Why isn't ObserverPtr a WeakPtr?** That's the most common misconception. The difference between ObserverPtr and WeakPtr is not what the API looks like (both have `get()`, `operator->`, `operator bool()`) but **what happens after the object is destroyed**. Inside, ObserverPtr is just a raw pointer; when the object is destroyed it knows nothing about it, and dereferencing is UB. A true WeakPtr needs a control block independent of the object to record liveness — and that's a topic for articles I plan to submit to other Q&As and columns later.
 
-Typical correct usage—class member observation relationship:
+A typical correct usage — a class-member observation relationship:
 
 ```cpp
 class Logger;
@@ -274,62 +271,62 @@ public:
     void do_work()
     {
         if (logger_) {
-            // 有 Logger 才记录，没有就算了
+            // Log only if there is a Logger; otherwise skip it
             // ...
         }
     }
 
 private:
-    ObserverPtr<Logger> logger_;  // 我观察 Logger，但不拥有它
+    ObserverPtr<Logger> logger_;  // I observe the Logger, but I don't own it
 };
 ```
 
-Typical incorrect usage—asynchronous callback:
+A typical wrong usage — async callbacks:
 
 ```cpp
-// 错误！ObserverPtr 不能保证对象还活着
+// Wrong! ObserverPtr cannot guarantee the object is still alive
 void Service::async_task()
 {
-    // 如果 Service 在回调执行前被销毁，logger_ 就是悬垂的
-    // 这个 callback 捕获了 logger_，执行时可能 UB
+    // If Service is destroyed before the callback executes, logger_ is dangling
+    // This callback captures logger_; running it may be UB
     auto callback = [this]() {
-        if (logger_) { // 孩子们，这种东西很危险
-            // logger_ 的 ptr_ 指向的 Logger 可能已经不存在了
-            // operator bool 只检查 ptr_ 是否为 nullptr
-            // 如果 Logger 被销毁但 ptr_ 没被 reset，这里就是 UB
+        if (logger_) { // Folks, this kind of thing is dangerous
+            // The Logger that logger_'s ptr_ points to may no longer exist
+            // operator bool only checks whether ptr_ is nullptr
+            // If Logger was destroyed but ptr_ was never reset, this is UB
         }
     };
-    // post_callback(callback);  // 别这么做
+    // post_callback(callback);  // Don't do this
 }
 ```
 
-## The Relationship Between Borrowed, ObserverPtr, and Raw Pointers
+## How Borrowed, ObserverPtr, and Raw Pointers Relate
 
-Now, looking back, let's clarify the relationship between these three types and raw pointers.
+Now let's look back and spell out how these three types relate to raw pointers.
 
-``Borrowed<T>`` is essentially a type-safe wrapper for ``T&``. It adds the constraint of "prohibiting construction from temporary objects" compared to ``T&``, and adds the guarantee of "non-null" compared to ``T*``. Its overhead is zero—after compiler optimization, it is exactly the same as a raw reference. Its limitations are also the same as a raw reference: **it cannot determine liveness**.
+`Borrowed<T>` is essentially a type-safe wrapper around `T&`. Over `T&`, it adds the constraint "no construction from temporaries"; over `T*`, it adds the "non-null" guarantee. Its overhead is zero — after compiler optimization it is identical to a raw reference. And its limitation is the same as a raw reference's: **it cannot test for liveness**.
 
-``ObserverPtr<T>`` is essentially a semantic label for ``T*``. Its runtime behavior is identical to a raw pointer; the difference is only readability—when you see a member variable of type ``ObserverPtr<Logger>``, you don't need to guess whether it owns that Logger; the type name has already answered for you. But similarly, **it cannot determine liveness**.
+`ObserverPtr<T>` is essentially a semantic annotation on `T*`. Its runtime behavior is identical to a raw pointer's; the only difference is readability — when you see a member variable of type `ObserverPtr<Logger>`, you don't need to guess whether it owns that Logger; the type name has already answered for you. But likewise, **it cannot test for liveness**.
 
-The problem with the raw pointer ``T*`` is not that it is "unsafe," but that it is "non-committal"—when you get a ``T*``, you don't know if it is owning or non-owning, nullable or guaranteed non-null, short-term or long-term. ``Borrowed`` and ``ObserverPtr`` solve this "non-committal" problem.
+The problem with a raw pointer `T*` is not that it is "unsafe" but that it "takes no position" — handed a `T*`, you don't know whether it is owning or non-owning, nullable or guaranteed non-null, short-lived or long-lived. What `Borrowed` and `ObserverPtr` fix is precisely this refusal to commit.
 
 ## Summary
 
-Let's summarize the key points of this article:
+Let's sum up the key points of this installment:
 
-- **T\*** and **T&** are C++'s most primitive borrowing mechanisms and do not express ownership semantics themselves.
-- **Borrowed\<T\>** expresses non-null borrowing, is suitable for function parameters, prohibits construction from temporary objects, and does not extend the object's lifecycle.
-- **ObserverPtr\<T\>** expresses nullable non-owning observation, is suitable for class members, and does not provide the ability to check for liveness.
-- **Non-owning does not equal safety**—Borrowed and ObserverPtr cannot safely detect failure after the object is destroyed.
-- Their core value is **semantic expression**, not runtime safety—let the code speak for itself and reduce ambiguity.
+- **T\*** and **T&** are C++'s most primitive borrowing mechanisms; by themselves they express no ownership semantics
+- **Borrowed\<T\>** expresses a non-null borrow; suited to function parameters, forbids construction from temporaries, and does not extend lifetime
+- **ObserverPtr\<T\>** expresses a nullable, non-owning observation; suited to class members, and provides no ability to test for liveness
+- **Non-owning does not mean safe** — neither Borrowed nor ObserverPtr can safely detect expiration after the object is destroyed
+- Their core value is **semantic expression**, not runtime safety — let the code speak for itself and cut down ambiguity
 
-Here, we have only solved the two semantic layers of "borrowing" and "observation." The real trouble is "weak reference"—when you need to safely hold a reference to an object that might be destroyed at any time, relying solely on Borrowed and ObserverPtr is not enough.
+At this point we have only covered two semantic layers: "borrowing" and "observation." The real trouble is "weak references" — when you need to safely hold a reference to an object in a world where it may be destroyed at any moment, Borrowed and ObserverPtr alone won't cut it.
 
-In the next article, we will dissect something that looks like WeakPtr but actually isn't: ``T* + raw Flag*``.
+In the next installment, we'll dissect something that looks a lot like a WeakPtr but isn't: `T* + raw Flag*`.
 
-## Reference Resources
+## References
 
 - [C++ Core Guidelines - R.3: A raw pointer (a T\*) is non-owning](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rr-ptr)
 - [std::experimental::observer_ptr - cppreference](https://en.cppreference.com/cpp/experimental/observer_ptr)
-- [GSL: Guidelines Support Library (Microsoft)](https://github.com/microsoft/GSL) — ``gsl::not_null`` and ``gsl::span``
+- [GSL: Guidelines Support Library (Microsoft)](https://github.com/microsoft/GSL) — `gsl::not_null` and `gsl::span`
 - [C++ Core Guidelines - F.7: For general use, take T\* or T\& arguments rather than smart pointers](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rf-smartptrref)

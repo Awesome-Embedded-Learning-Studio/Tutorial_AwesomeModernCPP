@@ -1,0 +1,151 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Push-Pull Two States" id="push-pull-states">
+    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="440" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="推挽输出：ODR 写 1 推出去，写 0 挽回来" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=17;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="170" y="14" width="480" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== Left: ODR = 1 ===================== -->
+        <mxCell id="lvdd" value="" style="html=1;strokeColor=#C62828;strokeWidth=2.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="70" y="80" as="sourcePoint" />
+            <mxPoint x="330" y="80" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lvdd_l" value="VDD 3.3V" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#C62828;" vertex="1" parent="1">
+          <mxGeometry x="70" y="54" width="90" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="l_vdd_p" value="" style="html=1;strokeColor=#1B5E20;strokeWidth=2.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="200" y="80" as="sourcePoint" />
+            <mxPoint x="200" y="118" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lpmos" value="&lt;b&gt;P-MOS 上管&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#1B5E20&quot;&gt;导通 ✓&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1B5E20;strokeWidth=2.5;fillColor=#C8E6C9;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="140" y="118" width="120" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="l_p_pin" value="" style="html=1;strokeColor=#1B5E20;strokeWidth=2.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="200" y="164" as="sourcePoint" />
+            <mxPoint x="200" y="252" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="l_pin" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#37474F;strokeColor=#37474F;" vertex="1" parent="1">
+          <mxGeometry x="189" y="241" width="22" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="l_pin_l" value="引脚" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#37474F;" vertex="1" parent="1">
+          <mxGeometry x="125" y="242" width="55" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="l_current" value="" style="html=1;strokeColor=#1B5E20;strokeWidth=3;endArrow=block;endFill=1;endSize=8;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="211" y="252" as="sourcePoint" />
+            <mxPoint x="330" y="252" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="l_current_l" value="&lt;b&gt;推（push）&lt;/b&gt;&lt;br&gt;电流从 VDD 流出" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontColor=#1B5E20;" vertex="1" parent="1">
+          <mxGeometry x="270" y="266" width="120" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="l_p_n" value="" style="html=1;strokeColor=#90A4AE;strokeWidth=1.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="200" y="263" as="sourcePoint" />
+            <mxPoint x="200" y="300" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lnmos" value="&lt;b&gt;N-MOS 下管&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#90A4AE&quot;&gt;关断 ✗&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#90A4AE;strokeWidth=1.5;dashed=1;fillColor=#ECEFF1;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="140" y="300" width="120" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="l_n_vss" value="" style="html=1;strokeColor=#90A4AE;strokeWidth=1.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="200" y="346" as="sourcePoint" />
+            <mxPoint x="200" y="384" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lvss" value="" style="html=1;strokeColor=#455A64;strokeWidth=2.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="70" y="384" as="sourcePoint" />
+            <mxPoint x="330" y="384" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lvss_l" value="VSS (GND)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#455A64;" vertex="1" parent="1">
+          <mxGeometry x="70" y="394" width="100" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="l_state" value="&lt;b&gt;ODR = 1&lt;/b&gt;：引脚被推到 ≈ 3.3V" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontStyle=0;fontColor=#1B5E20;" vertex="1" parent="1">
+          <mxGeometry x="60" y="418" width="280" height="22" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== Right: ODR = 0 ===================== -->
+        <mxCell id="rvdd" value="" style="html=1;strokeColor=#C62828;strokeWidth=2.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="500" y="80" as="sourcePoint" />
+            <mxPoint x="760" y="80" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rvdd_l" value="VDD 3.3V" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#C62828;" vertex="1" parent="1">
+          <mxGeometry x="500" y="54" width="90" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vdd_p" value="" style="html=1;strokeColor=#90A4AE;strokeWidth=1.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="630" y="80" as="sourcePoint" />
+            <mxPoint x="630" y="118" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rpmos" value="&lt;b&gt;P-MOS 上管&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#90A4AE&quot;&gt;关断 ✗&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#90A4AE;strokeWidth=1.5;dashed=1;fillColor=#ECEFF1;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="570" y="118" width="120" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="r_p_pin" value="" style="html=1;strokeColor=#90A4AE;strokeWidth=1.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="630" y="164" as="sourcePoint" />
+            <mxPoint x="630" y="252" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_pin" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#37474F;strokeColor=#37474F;" vertex="1" parent="1">
+          <mxGeometry x="619" y="241" width="22" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="r_pin_l" value="引脚" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#37474F;" vertex="1" parent="1">
+          <mxGeometry x="650" y="242" width="55" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="r_current" value="" style="html=1;strokeColor=#1565C0;strokeWidth=3;endArrow=block;endFill=1;endSize=8;startArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="500" y="252" as="sourcePoint" />
+            <mxPoint x="619" y="252" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_current_l" value="&lt;b&gt;挽（pull）&lt;/b&gt;&lt;br&gt;电流被拉回 VSS" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=11;fontColor=#1565C0;" vertex="1" parent="1">
+          <mxGeometry x="440" y="266" width="120" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="r_p_n" value="" style="html=1;strokeColor=#1565C0;strokeWidth=2.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="630" y="263" as="sourcePoint" />
+            <mxPoint x="630" y="300" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rnmos" value="&lt;b&gt;N-MOS 下管&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#1565C0&quot;&gt;导通 ✓&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=2.5;fillColor=#BBDEFB;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="570" y="300" width="120" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="r_n_vss" value="" style="html=1;strokeColor=#1565C0;strokeWidth=2.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="630" y="346" as="sourcePoint" />
+            <mxPoint x="630" y="384" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rvss" value="" style="html=1;strokeColor=#455A64;strokeWidth=2.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="500" y="384" as="sourcePoint" />
+            <mxPoint x="760" y="384" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rvss_l" value="VSS (GND)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#455A64;" vertex="1" parent="1">
+          <mxGeometry x="500" y="394" width="100" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="r_state" value="&lt;b&gt;ODR = 0&lt;/b&gt;：引脚被压到 ≈ 0V" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontStyle=0;fontColor=#1565C0;" vertex="1" parent="1">
+          <mxGeometry x="490" y="418" width="280" height="22" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

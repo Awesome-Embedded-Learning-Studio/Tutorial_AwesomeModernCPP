@@ -178,10 +178,20 @@ class LinkChecker:
             link_ext = Path(link_url.split('#')[0]).suffix.lower()
             if link_ext in self.IMAGE_EXTENSIONS:
                 candidates = self.candidate_paths(link_url, filepath)
-                if candidates and not any(self.path_exists(self.tutorial_dir / candidate) for candidate in candidates):
-                    self.errors.append(
-                        f"{rel_path}:{line_num} - Broken image: [{link_text}]({link_url})"
-                    )
+                if candidates:
+                    exists = any(self.path_exists(self.tutorial_dir / candidate) for candidate in candidates)
+                    # English articles reference zh-side image assets by the mirror rule:
+                    # the build copies them into the en tree (copyZhAssets in scripts/build.ts),
+                    # so a zh-side existence is equally valid for en files.
+                    if not exists and Path(candidates[0]).parts[0] == 'en':
+                        exists = any(
+                            self.path_exists(self.tutorial_dir / Path(*Path(candidate).parts[1:]))
+                            for candidate in candidates
+                        )
+                    if not exists:
+                        self.errors.append(
+                            f"{rel_path}:{line_num} - Broken image: [{link_text}]({link_url})"
+                        )
                 continue
 
             candidates = self.candidate_paths(link_url, filepath)

@@ -4,7 +4,7 @@ import { onMounted, onBeforeUnmount, ref } from 'vue'
 // 可拖拽侧栏宽度:左导航树 + 右大纲栏(TOC)。
 // 左栏 --vp-sidebar-width 由 VitePress 全链路消费(sidebar 自身 / 正文 padding-left / 顶栏对齐),
 //   改这一个变量即全联动。但 handle 的定位与拖动计算必须读 .VPSidebar 的实际几何 —— 宽屏
-//   (≥1440px)布局居中,sidebar 左缘非 0、右缘带 (vw-maxW)/2 偏移,且受滚动条宽度影响,
+//   浮动 panel 左缘带 (vw-maxW)/2 偏移,且受滚动条宽度影响,
 //   CSS 公式推算总有小偏差。故 left 一律用 JS 读 getBoundingClientRect 精确设定(与右 handle 同策略)。
 // 右栏 --vp-aside-width 自定义变量(在 custom.css 覆盖 aside max-width);右 handle absolute
 //   注入 aside 内,MutationObserver 在路由切换重建 aside 时重新注入。
@@ -14,7 +14,8 @@ type Side = 'left' | 'right'
 interface Dim { min: number; max: number; def: number; key: string; cssVar: string }
 
 const CONF: Record<Side, Dim> = {
-  left: { min: 200, max: 480, def: 240, key: 'vp-sidebar-width', cssVar: '--vp-sidebar-width' },
+  // 280px 是可用下限；420px 可完整显示绝大多数文章标题，仅整句式超长标题省略。
+  left: { min: 280, max: 480, def: 420, key: 'vp-sidebar-width', cssVar: '--vp-sidebar-width' },
   right: { min: 180, max: 360, def: 256, key: 'vp-aside-width', cssVar: '--vp-aside-width' },
 }
 
@@ -45,9 +46,8 @@ function startDrag(side: Side, e: MouseEvent) {
   handle.classList.add('is-active')
   document.body.classList.add('rs-resizing')
 
-  // 用「位移」而非「绝对坐标」算新宽度。居中布局(≥1440px)下 sidebar 容器 left:0 但视觉
-  // nav 树因居中留白偏右,getBoundingClientRect/offsetLeft 都是容器几何、不代表 nav 树视觉
-  // 位置,按绝对坐标算会多算居中偏移导致宽度暴涨(线上曾遮挡正文)。位移法与布局无关,恒正确。
+  // 用「位移」而非「绝对坐标」算新宽度。超宽屏浮动 panel 带居中偏移，按绝对坐标
+  // 反推宽度会把偏移也算进去，导致宽度暴涨。位移法与布局无关，恒正确。
   const startX = e.clientX
   const startWidth =
     parseInt(getComputedStyle(document.documentElement).getPropertyValue(dim.cssVar)) || dim.def
@@ -92,6 +92,14 @@ function updateLeftVisibility() {
   leftHandle.value.style.display = document.querySelector('.VPSidebar') ? '' : 'none'
 }
 
+// 单行省略是导航树在有限宽度内的必要退化；给完整标题补原生 tooltip，避免信息丢失。
+function updateSidebarTitles() {
+  document.querySelectorAll<HTMLElement>('.VPSidebar .text').forEach((el) => {
+    const label = el.textContent?.trim()
+    if (label) el.title = label
+  })
+}
+
 // 左 handle 精确定位:用 offsetLeft + offsetWidth(不含 transform),避开 sidebar 入场过渡
 // (translateX(-100%)→0)对 getBoundingClientRect 的干扰 —— 首屏即读到最终右边缘,无需等动画结束。
 function updateLeftPosition() {
@@ -120,6 +128,7 @@ let leftTimer = 0
 const onMutate = () => {
   updateLeftVisibility()
   updateLeftPosition()
+  updateSidebarTitles()
   injectRightHandle()
 }
 
@@ -129,7 +138,13 @@ onMounted(() => {
     const dim = CONF[side]
     try {
       const v = parseInt(localStorage.getItem(dim.key) || '')
-      if (v >= dim.min && v <= dim.max) applyVar(side, v)
+      // 320px 是上一版过窄的默认值，自动迁移；其他手动拖拽宽度保持不变。
+      if (v >= dim.min && v <= dim.max && !(side === 'left' && v === 320)) {
+        applyVar(side, v)
+      } else {
+        applyVar(side, dim.def)
+        persist(side, dim.def)
+      }
     } catch {}
   })
   onMutate()

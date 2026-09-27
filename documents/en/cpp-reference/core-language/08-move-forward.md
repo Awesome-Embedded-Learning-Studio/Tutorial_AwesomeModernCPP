@@ -7,7 +7,7 @@ cpp_standard:
 - 20
 - 23
 description: Converts an lvalue to an rvalue reference, triggering move semantics
-  to enable efficient resource transfer.
+  for efficient resource transfer
 difficulty: intermediate
 order: 8
 reading_time_minutes: 2
@@ -19,67 +19,52 @@ title: std::move
 translation:
   source: documents/cpp-reference/core-language/08-move-forward.md
   source_hash: 7e16d37c12fb3e02f7179844902934715a0d4e3ca007953775110f4590fa6345
-  translated_at: '2026-06-16T03:29:03.189591+00:00'
+  translated_at: '2026-09-27T01:36:19+00:00'
   engine: anthropic
-  token_count: 420
+  token_count: 1050
 ---
 # std::move (C++11)
 
 ## In a Nutshell
 
-Casts an lvalue to an rvalue reference, signaling to the compiler that "this object's resources can be stolen," thereby triggering move construction or move assignment to avoid deep copies.
+It force-casts an lvalue to an rvalue reference, telling the compiler "this object's resources are up for grabs" — which triggers move construction or move assignment and avoids a deep copy.
 
-## Header File
+## Header
 
-<utility>
+`#include <utility>`
 
-## Core API Cheat Sheet
+## Core API Quick Reference
 
 | Operation | Signature | Description |
-|-----------|-----------|-------------|
-| Move cast (Since C++14) | `remove_reference_t<T>&& move(T&& t) noexcept;` | Casts object `t` to an rvalue reference (xvalue) |
-| Perfect forwarding | `T&& forward(T&& t) noexcept;` | Preserves value category in forwarding reference scenarios, must be used with `T&&` |
-| Conditional move | `T&& move_if_noexcept(T& t) noexcept;` | Casts to rvalue if move constructor is non-throwing; otherwise returns lvalue |
+|------|------|------|
+| Move cast (since C++14) | `template<class T> constexpr std::remove_reference_t<T>&& move(T&& t) noexcept;` | Converts the object `t` to an rvalue reference (xvalue) |
+| Perfect forwarding | `template<class T> T&& forward(typename std::remove_reference<T>::type& t) noexcept;` | Preserves the value category in forwarding-reference scenarios; equivalent to `std::move` for rvalue arguments and to pass-by-reference for lvalues |
+| Conditional move | `template<class T> typename std::conditional<...>::type move_if_noexcept(T& t) noexcept;` | Converts to an rvalue if the move constructor is non-throwing; otherwise returns an lvalue |
 
 ## Minimal Example
 
 ```cpp
-#include <utility>
 #include <iostream>
+#include <string>
+#include <utility>
 #include <vector>
-
-class Buffer {
-    std::vector<int> data_;
-public:
-    Buffer(size_t size) : data_(size) {}
-    // Move constructor
-    Buffer(Buffer&& other) noexcept : data_(std::move(other.data_)) {
-        std::cout << "Move constructor called\n";
-    }
-    // Move assignment
-    Buffer& operator=(Buffer&& other) noexcept {
-        if (this != &other) {
-            data_ = std::move(other.data_);
-        }
-        return *this;
-    }
-};
-
+// Standard: C++11
 int main() {
-    Buffer a(1000);
-    // Explicitly cast lvalue 'a' to rvalue to trigger move
-    Buffer b = std::move(a);
-    // 'a' is now in a valid but unspecified state
-    return 0;
+    std::string str = "Hello";
+    std::vector<std::string> v;
+    v.push_back(str);              // copy
+    v.push_back(std::move(str));   // move; str is left in a valid but unspecified state
+    std::cout << v[0] << " " << v[1] << "\n";
+    std::cout << "str empty: " << str.empty() << "\n";
 }
 ```
 
-## Embedded Applicability: High
+## Embedded Suitability: High
 
-- **Zero-overhead abstraction**: `std::move` is essentially a `static_cast<T&&>`, completed at compile time with no runtime cost.
-- **Avoid deep copies**: Significantly reduces RAM usage and CPU overhead when passing large buffers (like `std::vector`, `std::string`).
-- **Works with custom resource classes**: Can be used to transfer ownership of raw pointers (requires RAII), replacing manual resource handover.
-- **Note**: The moved-from object is in a "valid but unspecified" state; do not read its value, only assign to it or destroy it.
+- Zero-overhead abstraction: `std::move` is essentially a `static_cast`, done at compile time with no runtime cost
+- Avoids deep copies: when passing large buffers (such as `std::vector<uint8_t>` or `std::string`), it significantly cuts both RAM usage and CPU overhead
+- Pairs with custom resource classes: can be used to transfer ownership of raw pointers (in combination with RAII), replacing manual resource handover
+- Note that a moved-from object is in a "valid but unspecified" state: you can no longer read its value — you can only assign to it or destroy it
 
 ## Compiler Support
 
@@ -93,4 +78,4 @@ int main() {
 
 ---
 
-*Part of the content references [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*
+*Some content is adapted from [cppreference.com](https://en.cppreference.com/), used under the [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license*

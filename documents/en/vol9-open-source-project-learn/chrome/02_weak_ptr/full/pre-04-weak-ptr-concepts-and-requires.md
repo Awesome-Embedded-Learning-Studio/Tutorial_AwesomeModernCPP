@@ -2,17 +2,17 @@
 chapter: 0
 cpp_standard:
 - 20
-description: "Builds on the 01 series concepts foundation and zooms in on how WeakPtr uses std::convertible_to and a member-function requires clause to weld const correctness and upcast legality into the type signature"
+description: "Builds on the 01 series' concepts groundwork and zooms in on how WeakPtr uses std::convertible_to and a member-function requires clause to weld const correctness and upcast constraints into the type signature"
 difficulty: intermediate
 order: 4
 platform: host
 prerequisites:
-- OnceCallback prerequisites (IV): Concepts and requires constraints
-- WeakPtr prerequisite (0): weak references and the lifetime puzzle
+- 'OnceCallback prerequisite (IV): Concepts and requires constraints'
+- 'WeakPtr prerequisite (0): weak references and the lifetime puzzle'
 reading_time_minutes: 10
 related:
-- WeakPtr hands-on (I): motivation and API design
-- WeakPtr prerequisite (V): template friend and uintptr_t type erasure
+- 'WeakPtr hands-on (I): motivation and API design'
+- 'WeakPtr prerequisite (V): template friend and uintptr_t type erasure'
 tags:
 - host
 - cpp-modern
@@ -20,25 +20,31 @@ tags:
 - concepts
 - 类型安全
 - weak_ptr
-title: "WeakPtr prerequisite (IV): concepts and requires inside WeakPtr"
+title: "WeakPtr prerequisite (IV): applying concepts and requires"
+translation:
+  source: documents/vol9-open-source-project-learn/chrome/02_weak_ptr/full/pre-04-weak-ptr-concepts-and-requires.md
+  source_hash: c5f666b4b4f2f4beb7491001830b1100c10401575b4be208cbbe31d4ea1147f4
+  translated_at: '2026-09-26T01:24:07+00:00'
+  engine: anthropic
+  token_count: 2200
 ---
-# WeakPtr prerequisite (IV): concepts and requires inside WeakPtr
+# WeakPtr prerequisite (IV): applying concepts and requires
 
-## Lay the tools on the table first
+## First, lay the tools on the table
 
-The [previous piece](../../01_once_callback/full/pre-04-once-callback-concepts-and-requires.md) already covered the basics of concepts: how a `requires` clause attaches, how constraints short-circuit. We won't repeat that here. Instead we go straight to the two real jobs WeakPtr delegates to concepts: policing whether an upcast is legal (can a `WeakPtr<Derived>` feed a `WeakPtr<Base>`), and enforcing const correctness (a const factory is not allowed to hand out a mutable weak pointer).
+The [previous piece](../../01_once_callback/full/pre-04-once-callback-concepts-and-requires.md) covered the fundamentals of concepts — how a `requires` clause attaches, how constraints short-circuit. We won't repeat any of that here; instead we go straight to the two real jobs WeakPtr puts concepts to: policing the legality of upcasts (can a `WeakPtr<Derived>` be handed to a `WeakPtr<Base>`?), and const correctness (a const factory is not allowed to hand out a mutable weak pointer).
 
-Both spots are only a handful of lines in Chromium's `weak_ptr.h`, and we nearly slid past them on the first read. They are the most typical engineering use of concepts. The reader glances at the `requires(...)` on the signature and immediately knows under what type relationships that constructor exists, with no comment-chasing or implementation-diving. We recap the idea briefly, then take each in turn.
+Both spots amount to a mere handful of lines in Chromium's `weak_ptr.h`, and we nearly slid right past them on the first read. Yet they are precisely the most typical engineering use of concepts: a reader glances at the `requires(...)` on the signature and knows under which type relationships the constructor exists — no digging through comments, no chasing implementations. Let's recap the idea first, then take the two in turn and see where each lands.
 
-One-line recap (details back in the 01 piece): a concept is a compile-time predicate, and `requires(expr)` hangs it on a template parameter or member function, meaning "this template / overload only exists when the predicate is true." WeakPtr leans on two predicates here. `std::convertible_to<U*, T*>` asks whether `U*` can implicitly convert to `T*`. Same type and derived-to-public-base both count, which is exactly the upcast case. `std::is_const_v<T>` asks whether `T` has a top-level const, and paired with `!` it separates `WeakPtrFactory<T>` from `WeakPtrFactory<const T>`.
+A one-line recap (details are back in the 01 piece): a concept is a compile-time predicate, and `requires(expr)` hangs it on a template parameter or a member function, meaning "this template / overload exists only when the predicate is true." WeakPtr leans on two predicates this time. `std::convertible_to<U*, T*>` asks whether `U*` can implicitly convert to `T*` — same type and derived-to-public-base both count, which covers exactly the upcast business. `std::is_const_v<T>` asks whether `T` carries a top-level const; paired with a `!`, it separates `WeakPtrFactory<T>` from `WeakPtrFactory<const T>`.
 
 ---
 
-## The converting constructor: WeakPtr\<U\> to WeakPtr\<T\> upcast
+## The converting constructor: upcasting WeakPtr\<U\> to WeakPtr\<T\>
 
-Start with the plainest need. You hold a `WeakPtr<Derived>` and need a `WeakPtr<Base>`. The instinct is that it should just work. `Derived*` already converts to `Base*`. The reverse does not (`Base*` cannot stretch into `Derived*`), and nonsense like `WeakPtr<int>` to `WeakPtr<Foo>` is even less thinkable.
+Start with the plainest requirement. You hold a `WeakPtr<Derived>` and need a `WeakPtr<Base>`; instinct says you should just be able to pass it over — `Derived*` converts to `Base*` anyway. The reverse does not work (`Base*` cannot be stretched into `Derived*`), and nonsense like converting `WeakPtr<int>` to `WeakPtr<Foo>` is not even worth thinking about.
 
-Chromium carves that rule into the signature with one `requires` clause (`weak_ptr.h:211-214`):
+Chromium carves that rule into the signature with a single `requires` clause (`weak_ptr.h:211-214`):
 
 ```cpp
 template <typename T>
@@ -57,7 +63,7 @@ public:
 };
 ```
 
-A few details to catch. First, this is a member template, not an ordinary constructor. The outer `WeakPtr<T>` already fixed `T`; the inner layer templates out a fresh `U`, meaning "construct me from any `WeakPtr<U>`." Then `requires(std::convertible_to<U*, T*>)` hangs on that member template, and the overload only participates when the pointers convert. One more spot that's easy to miss: this is a separate path from the default copy and move constructors (the comment spells out "separate from the (implicit) copy and move constructors"). Don't tangle them together.
+A few details to catch. First, this is a member template, not an ordinary constructor — the outer `WeakPtr<T>` has already pinned `T` down, and the inner layer templates out a fresh `U`, meaning "construct me from any `WeakPtr<U>`." Then `requires(std::convertible_to<U*, T*>)` hangs on that member template, and it participates in overload resolution only when the pointers convert. One more spot that is easy to miss: this is a separate path from the default copy and move constructors (the comment spells it out: "separate from the (implicit) copy and move constructors") — don't tangle the two together.
 
 The effect looks like this:
 
@@ -66,45 +72,45 @@ struct Base { virtual ~Base() = default; };
 struct Derived : Base {};
 
 WeakPtr<Derived> wd = factory_derived.get_weak_ptr();
-WeakPtr<Base> wb = wd;           // OK: Derived* -> Base* is legal
+WeakPtr<Base> wb = wd;           // ✓ Derived* → Base* is legal
 
-WeakPtr<Base> wb2 = wb;          // OK: same type, also passes convertible_to (B* -> B*)
-WeakPtr<Derived> wd2 = wb;       // FAIL: Base* -> Derived* is illegal, this constructor drops out, compile error
-WeakPtr<int> wi = wb;            // FAIL: Base* -> int* is illegal, compile error
+WeakPtr<Base> wb2 = wb;          // ✓ same type, also goes through convertible_to (B* → B*)
+WeakPtr<Derived> wd2 = wb;       // ✗ Base* → Derived* is illegal, this constructor drops out, compile error
+WeakPtr<int> wi = wb;            // ✗ Base* → int* is illegal, compile error
 ```
 
-The last two errors die at compile time. Because this uses concepts rather than SFINAE, the compiler points straight at "constraints not satisfied" instead of dumping a template-substitution stack on you. Move the type contract onto the signature, and whether a conversion is allowed is readable right there.
+The last two errors are stopped right at compile time. Because this is concepts rather than SFINAE, the compiler's diagnostic points bluntly at "constraints not satisfied" instead of dumping a faceful of template-substitution stack on you. With the type contract moved onto the signature, whether a conversion should happen and whether it can happen are readable right off the signature.
 
 ### Why not SFINAE
 
 The old way looked like this:
 
 ```cpp
-// Old-style SFINAE: poor readability, awful error messages
+// Old-style SFINAE: poor readability, terrible error messages
 template <typename U,
           typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
 WeakPtr(const WeakPtr<U>& other) : ref_(other.ref_), ptr_(other.ptr_) {}
 ```
 
-Functionally equivalent. But the `typename = std::enable_if_t<...>` trick of jamming a fake default template parameter in reads far worse than `requires(...)`, and on a constraint failure the compiler can only dig through substitution-failure details for you. Once Chromium moved to C++20, new code went concepts across the board, and these few lines in WeakPtr are the migrated product.
+It is functionally equivalent, but the `typename = std::enable_if_t<...>` trick — jamming a made-up default template argument in out of thin air — reads far more awkwardly than `requires(...)`, and when the constraint fails, the compiler can only grind through the details of the substitution failure for you. Once Chromium migrated to C++20, new code went with concepts across the board; these few lines in WeakPtr are a product of that migration.
 
 ---
 
 ## Member-function requires: const correctness and the mutable overload
 
-WeakPtrFactory has a more interesting move. It hangs `requires` directly on a member function and picks the overload based on whether `T` is const. Look at `GetWeakPtr` (`weak_ptr.h:374-384`):
+Over on the WeakPtrFactory side there is a more interesting move: hanging `requires` directly on a member function and choosing the overload based on whether `T` is const. Look at `GetWeakPtr` (`weak_ptr.h:374-384`):
 
 ```cpp
 template <class T>
 class WeakPtrFactory : public internal::WeakPtrFactoryBase {
 public:
-    // const overload: factory is const, can only hand out WeakPtr<const T>
+    // const version: the factory is const, can only hand out WeakPtr<const T>
     WeakPtr<const T> GetWeakPtr() const {
         return WeakPtr<const T>(weak_reference_owner_.GetRef(),
                                 reinterpret_cast<const T*>(ptr_));
     }
 
-    // non-const overload: factory is not const, hands out WeakPtr<T> (mutable)
+    // non-const version: the factory is not const, hands out WeakPtr<T> (mutable)
     WeakPtr<T> GetWeakPtr()
         requires(!std::is_const_v<T>)
     {
@@ -115,15 +121,15 @@ public:
 };
 ```
 
-There's a small trick here we did not catch on the first pass. `WeakPtrFactory<T>` carries two `GetWeakPtr` overloads at once. One is a `const` member function returning `WeakPtr<const T>`; the other is a non-`const` member function returning `WeakPtr<T>`, and that second one carries `requires(!std::is_const_v<T>)`.
+There is a small piece of cleverness tucked in here that we did not catch on the first read either. `WeakPtrFactory<T>` carries two `GetWeakPtr` overloads at once: a `const` member function returning `WeakPtr<const T>`, and a non-`const` member function returning `WeakPtr<T>` — and the latter insists on carrying `requires(!std::is_const_v<T>)`.
 
-Why does it need that `requires`? Think about `WeakPtrFactory<const Foo>`. Now `T = const Foo`, so `std::is_const_v<T>` is true. Without the constraint, the non-const `GetWeakPtr()` would instantiate as `WeakPtr<const Foo> GetWeakPtr()` (a non-const member) with the same return type as the const version but different constness, and overload resolution either goes ambiguous or picks wrong. `requires(!std::is_const_v<T>)` cuts this non-const overload out when `T` is itself const, leaving only the const version. The semantics clean up: if the factory is const, or `T` is const, you only ever get `WeakPtr<const T>`; only when the factory is non-const and `T` is non-const do you get a mutable `WeakPtr<T>`.
+Why does that `requires` deserve to be there? Think about `WeakPtrFactory<const Foo>` — now `T = const Foo`, and `std::is_const_v<T>` is true. If the non-const `GetWeakPtr()` were unconstrained, it would be instantiated as `WeakPtr<const Foo> GetWeakPtr()` (a non-const member), with a return type identical to the const version's but different constness — overload resolution either goes ambiguous or picks wrong. `requires(!std::is_const_v<T>)` chokes this non-const overload off when `T` itself is const, leaving only the const version, and the semantics turn clean: if the factory is const, or `T` is const, you can only get `WeakPtr<const T>`; only when the factory is non-const and `T` is non-const do you get a mutable `WeakPtr<T>`.
 
-This constraint shoves const correctness deep into the type system. From a const object, you cannot obtain a `WeakPtr<T>` that points at its mutable state at the type level. No runtime discipline needed, the compiler minds it for you. `GetMutableWeakPtr()` (`weak_ptr.h:386-391`) uses the same `requires(!std::is_const_v<T>)` to guarantee the "mutable" path exists only when the type allows it.
+This set of constraints shoves const correctness into the type system, and deep. From a const object, at the type level, you simply cannot obtain a `WeakPtr<T>` that points at its mutable state — no runtime discipline required, the compiler watches it for you. `GetMutableWeakPtr()` (`weak_ptr.h:386-391`) uses the same `requires(!std::is_const_v<T>)`, guaranteeing that the "mutable" path exists only when the type allows it.
 
 ### A minimal reproduction
 
-Let's roll our own minimal version and verify the constraint really bites at compile time:
+Let's roll our own minimal version and verify that the constraint really bites at compile time:
 
 ```cpp
 // Platform: host | C++ Standard: C++20
@@ -145,33 +151,33 @@ public:
 
 int main() {
     MiniWeakPtr<Derived> wd;
-    MiniWeakPtr<Base> wb = wd;          // OK
-    // MiniWeakPtr<Derived> wd2 = wb;   // FAIL: Base* -> Derived* does not satisfy convertible_to
+    MiniWeakPtr<Base> wb = wd;          // ✓
+    // MiniWeakPtr<Derived> wd2 = wb;   // ✗ compile error: Base* → Derived* does not satisfy convertible_to
     return 0;
 }
 ```
 
-Uncomment that line and the compiler jumps on it (Clang reports `constraints not satisfied`, GCC reports `conversion from ... to non-scalar type ... requested`; the wording differs, the meaning is the same: "constraint not satisfied"). Which type relationships are legal and which are not has moved out of comments and into the compiler's checklist.
+Uncomment that line and the compiler jumps on the spot (Clang reports `constraints not satisfied`, GCC reports `conversion from ... to non-scalar type ... requested`; the wording differs, but the meaning is the same: "constraint not satisfied"). Which type relationships are legal and which are not has moved out of comments and into the compiler's checklist.
 
 ---
 
 ## Why this deserves its own piece
 
-You might be muttering: it's two lines of `requires`, does it really need a whole piece? It does. These two spots are the safety net sitting on WeakPtr's type signature, and they carry more weight than they look.
+You might mutter: it's just two lines of `requires`, does it really need a whole piece? It does. These two spots are the safety net on WeakPtr's type signature, and they carry more weight than they look.
 
-The converting-constructor constraint blocks "doing an unsafe downcast through WeakPtr." This is an overlooked UAF entry point. Downcast to the wrong type and one dereference is an out-of-bounds access or UB, and at runtime you won't catch it. Hang `requires(std::convertible_to<U*, T*>)` on it and that class of error dies at compile time. The const-overload constraint minds the other end: it makes the rule "a const object cannot be mutated through its weak reference" something the type system holds up for us, with nobody standing guard.
+The converting-constructor constraint blocks "doing an unsafe downcast through WeakPtr." That is a commonly overlooked UAF entry point — downcast to a pointer of the wrong type, and the first access is out-of-bounds or UB, something you cannot catch at runtime. Hang `requires(std::convertible_to<U*, T*>)` on it, and that class of error dies at compile time. The const-overload constraint minds the other end: the rule that "a const object cannot have its state mutated through its weak reference" no longer needs a human standing guard — the type system backs us up.
 
-The deeper value is that they model the engineering use of concepts. Not a parlor trick. Semantic constraints written out in the type system so the interface explains itself. When we build the skeleton in 02-2 we copy these two `requires` clauses almost verbatim from the Chromium source.
+One level deeper, their value is as a model of the engineering use of concepts — not a showy flourish, but semantic constraints written out in the type system so the interface explains itself. When we build the skeleton in 02-2, we will copy these two `requires` clauses, and you will find they match the Chromium source almost word for word.
 
 ---
 
-That covers both uses of concepts inside WeakPtr. The converting constructor carries `requires(std::convertible_to<U*, T*>)`, making `WeakPtr<Derived> -> WeakPtr<Base>` legal and rejecting the reverse and unrelated conversions at compile time. The member functions `GetWeakPtr` / `GetMutableWeakPtr` carry `requires(!std::is_const_v<T>)`, pushing const correctness into the type system so a const object cannot obtain a mutable weak pointer. Both demonstrate the same point: the real payoff of concepts is moving semantic contracts onto the signature, so the compiler minds the rules a human used to have to.
+That wraps up the two uses of concepts inside WeakPtr. The converting constructor carries `requires(std::convertible_to<U*, T*>)`, making `WeakPtr<Derived> → WeakPtr<Base>` legal and rejecting the reverse and unrelated conversions at compile time; the member functions `GetWeakPtr` / `GetMutableWeakPtr` carry `requires(!std::is_const_v<T>)`, pushing const correctness into the type system so a const object cannot obtain a mutable weak pointer. Both demonstrate the same thing — the real value of concepts is moving the semantic contract onto the signature and letting the compiler enforce the rules a human used to have to watch.
 
-WeakPtr has one more template trick up its sleeve, using `template friend` to solve cross-type private access, and there's the question of why `WeakPtrFactory` stores its pointer as a `uintptr_t`. That's in the piece right after this one.
+WeakPtr holds one more template trick — using `template friend` to solve cross-type private access, plus why `WeakPtrFactory` stores its pointer as a `uintptr_t`. Both are taken apart in the piece right after this one.
 
 ## References
 
 - [cppreference: std::convertible_to](https://en.cppreference.com/w/cpp/concepts/convertible_to)
 - [cppreference: requires clause](https://en.cppreference.com/w/cpp/language/constraints)
-- [OnceCallback prerequisites (IV): Concepts and requires constraints](../../01_once_callback/full/pre-04-once-callback-concepts-and-requires.md)
+- [OnceCallback prerequisite (IV): Concepts and requires constraints](../../01_once_callback/full/pre-04-once-callback-concepts-and-requires.md)
 - [Chromium `base/memory/weak_ptr.h`](https://source.chromium.org/chromium/chromium/src/+/main:base/memory/weak_ptr.h)

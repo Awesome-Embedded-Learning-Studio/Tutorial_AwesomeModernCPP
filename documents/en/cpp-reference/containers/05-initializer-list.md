@@ -6,8 +6,7 @@ cpp_standard:
 - 17
 - 20
 - 23
-description: Lightweight proxy type used when initializing objects or passing arguments
-  with curly braces `{}`
+description: A lightweight proxy type used when initializing objects or passing arguments with curly braces `{}`
 difficulty: beginner
 order: 5
 reading_time_minutes: 2
@@ -19,17 +18,17 @@ title: std::initializer_list
 translation:
   source: documents/cpp-reference/containers/05-initializer-list.md
   source_hash: a3a6f1b6714ab57986aa909b0ca030e142f8f852c35db28a7e3149bbe1246e6c
-  translated_at: '2026-06-24T00:25:58.133697+00:00'
+  translated_at: '2026-09-26T17:12:49+00:00'
   engine: anthropic
-  token_count: 515
+  token_count: 850
 ---
 <!--
 Reference Card Template
 For feature cheat sheets under documents/cpp-reference/.
-Unlike article-template.md, reference cards use a concise, structured format and do not require a narrative style.
+Unlike article-template.md, reference cards use a concise, structured format with no narrative style required.
 
 Tag usage rules:
-1. Must include 1 platform tag (use 'host' for reference cards)
+1. Must include 1 platform tag (reference cards consistently use host)
 2. Must include 1 difficulty tag
 3. Must include at least 1 topic tag
 4. Select from the VALID_TAGS set in scripts/validate_frontmatter.py
@@ -39,7 +38,7 @@ Tag usage rules:
 
 ## In a Nutshell
 
-A lightweight, read-only proxy object that allows us to conveniently pass an arbitrary number of homogeneous initial values to containers or custom classes using braces `{}`.
+A lightweight, read-only proxy object that lets you conveniently pass any number of same-typed initial values to containers or custom classes using curly braces `{}`.
 
 ## Header
 
@@ -73,7 +72,7 @@ struct Container {
 };
 
 int main() {
-    Container c = {1, 2, 3}; // 隐式构造 initializer_list
+    Container c = {1, 2, 3}; // implicitly constructs the initializer_list
     c.append({4, 5});
     for (int x : c.v) std::cout << x << ' ';
 }
@@ -81,9 +80,9 @@ int main() {
 
 ## Embedded Applicability: High
 
-- The underlying implementation typically contains only a pointer and a size (or two pointers), resulting in minimal memory overhead.
-- Copying a `std::initializer_list` does not copy the underlying array; it only copies the proxy object itself, incurring no additional allocation overhead.
-- The underlying array may reside in read-only memory, making it suitable for initializing static configuration tables stored in ROM.
+- The underlying implementation usually holds just a pointer and a length (or two pointers), so the memory overhead is minimal
+- Copying a `std::initializer_list` does not copy the underlying array — only the proxy object itself is copied, with no extra allocation cost
+- The underlying array may live in read-only memory, which makes it a good fit for initializing static configuration tables placed in ROM
 
 ## Compiler Support
 
@@ -98,4 +97,4 @@ int main() {
 
 ---
 
-*Part of the content references [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*
+*Some content references [cppreference.com](https://en.cppreference.com/), used under the [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license*

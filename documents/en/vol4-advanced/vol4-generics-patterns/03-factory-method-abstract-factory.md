@@ -1,43 +1,35 @@
 ---
-title: 'Factory Method and Abstract Factory: From a Single Switch to Creating a Family
-  of Products'
-description: Starting from the most intuitive approach of "writing a switch statement
-  at the call site to new different objects", we progressively derive the simple factory
-  and factory method patterns, leading to the abstract factory. We clarify the specific
-  problems each pattern solves, and finally, we present a lightweight, modern alternative
-  using functional factories.
+title: 'Factory Method and Abstract Factory: From a Single Switch to Creating a Family of Products'
+description: 'Starting from the most intuitive version — a switch at the call site that news up different objects — we squeeze out the simple factory and the factory method step by step, then reach the abstract factory, get clear on what problem each one actually solves, and finish with the functional factory as a lighter, modern alternative'
 chapter: 11
 order: 3
 tags:
-- host
-- cpp-modern
-- intermediate
-- 工厂模式
+  - host
+  - cpp-modern
+  - intermediate
+  - 工厂模式
 difficulty: intermediate
 platform: host
-cpp_standard:
-- 11
-- 17
-- 20
+cpp_standard: [11, 17, 20]
 reading_time_minutes: 24
 related:
-- 单例模式:从注释约束到 Meyer's Singleton
+  - 'Singleton Pattern: From Comment-Only Constraints to Meyer''s Singleton'
 prerequisites:
-- 'Chapter 6: 类与对象'
+  - Classes and Object-Oriented Programming
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/03-factory-method-abstract-factory.md
   source_hash: 795e3cee99e366cfbb01b154001c32709243628fc8526e52fdc03f49181648d7
-  translated_at: '2026-06-24T00:54:00.475527+00:00'
+  translated_at: '2026-09-26T05:04:02+00:00'
   engine: anthropic
-  token_count: 5476
+  token_count: 7000
 ---
-# Factory Method and Abstract Factory: From a Switch Statement to Creating Families of Products
+# Factory Method and Abstract Factory: From a Single Switch to Creating a Family of Products
 
-## What problem are we actually solving?
+## What Problem Are We Actually Solving
 
-Let's hold off on the class diagrams for a moment. Imagine a scenario you have likely written before. Since the author is a bit hungry, let's use burgers as an example:
+Let's not rush into class diagrams. Picture a scenario you have almost certainly written something like — your author is a bit hungry, so let's use burgers as the example:
 
-In the program, there is an abstract base class `Burger`, with several concrete subclasses derived from it—`CheeseBurger`, `BeefBurger`, and `ChickenBurger`. Now, the business layer needs to create a specific burger based on some preference (selected by the user, read from a configuration file, or retrieved from a database), and then consume it. The most intuitive implementation looks like this:
+There is an abstract base class `Burger` in the program, with several concrete subclasses hanging under it — `CheeseBurger`, `BeefBurger`, `ChickenBurger`. Now the business layer has to produce a concrete burger based on some preference (chosen by the user, read from a config file, looked up in a database) and then eat it. The most intuitive way to write this looks like:
 
 ```cpp
 void enjoy_our_meals(std::vector<Person>& crowds) {
@@ -47,8 +39,8 @@ void enjoy_our_meals(std::vector<Person>& crowds) {
             case BurgerType::Cheese:  p = new CheeseBurger;  break;
             case BurgerType::Beef:    p = new BeefBurger;    break;
             case BurgerType::Chicken: p = new ChickenBurger; break;
-            // oh shit, 还有几十种汉堡要加
-            // 有人会问我缺的智能指针这块谁给我补啊，我说别急，讲设计模式呢。
+            // oh shit, there are still dozens of burgers to add
+            // someone will ask who patches the missing smart-pointer part for me — hold on, we're doing design patterns.
         }
         each_person.enjoy_burger(p);
         delete p;
@@ -56,15 +48,15 @@ void enjoy_our_meals(std::vector<Person>& crowds) {
 }
 ```
 
-It runs, but one look tells you something is wrong—**the decision of "which concrete subclass to `new`" is hardcoded into the `eat` function, which has absolutely nothing to do with that decision**. The `eat` function should only care about "getting a burger and eating it," but now it has to know about every type of burger, maintain a `switch` statement, and manage `new` and `delete`. Every time a product is added, this `switch` statement must change; if the construction method changes (e.g., suddenly requiring a parameter), this `switch` statement must change; and if one day you want to insert logging into the creation process, that logic will have to be copied into every place where a `switch` is written.
+It runs, but one glance tells you something is off — **the decision of "which concrete subclass to `new`" has been welded into the "eat a meal" function, which has nothing whatsoever to do with that decision**. The meal-eating function should only care about "get a burger, eat it"; instead it now has to know that every kind of burger exists, maintain a `switch`, and manage `new` and `delete`. Add one product and this `switch` has to change; change how a product gets constructed (say it suddenly needs a parameter) and this `switch` has to change again; and the day you want to insert a logging step into the creation process, that logging logic gets copied into every single place that wrote a `switch`.
 
-The fundamental contradiction lies here: **"using an object" and "creating an object" are two things with completely opposite coupling directions**. The consumer only wants to depend on a stable abstraction (`Burger`) and prefers concrete types to appear as little as possible in its scope; however, the creator must know every concrete type because "which one to `new`" is precisely its job. Mixing these two things forces the consumer to inherit all the volatility of the creator—the more products there are, the more bloated the consumer becomes.
+The essential tension is this: **using an object and creating an object are two jobs whose coupling directions are diametrically opposed**. The user side wants to depend on a stable abstraction (`Burger`) and wants concrete types to appear in its field of view as little as possible; the creating side must know every concrete type, because "which one to `new`" is precisely its job description. Mix the two together, and the user side is forced to inherit all of the creator's volatility — the more products there are, the more bloated the user side gets.
 
-The Factory Pattern aims to solve exactly this. Its core principle is simple: **extract the decision of "which concrete object to create" from the consumer and delegate it to a dedicated object or function, allowing the consumer to interact only with the abstraction**. Next, we will walk through this step-by-step, starting with the dumbest approach, seeing why each step isn't enough, and finally deriving the GoF classic "Factory Method" and "Abstract Factory," as well as a lighter functional alternative in modern C++.
+That is exactly what the factory pattern family solves. The core idea in one sentence: **strip the decision of "which concrete object to create" out of the user's code and hand it to a dedicated object/function, so the user side only ever faces the abstraction**. From here we walk forward step by step, starting from the dumbest version, seeing why each step is still not enough, until we finally force out the classic GoF Factory Method and Abstract Factory — plus a lighter functional alternative from modern C++.
 
-## Step 1: The Most Primitive Extraction — Simple Factory (Static `switch`)
+## Step One: The Crudest Extraction — the Simple Factory (a Static switch)
 
-We quickly spotted the quirk in the code above: the `switch` logic has nothing to do with "eating," so why not just extract it?
+We quickly spot the sleight of hand in that code: the `switch` logic has nothing to do with eating a meal, so why not just pull it out?
 
 ```cpp
 struct SimpleBurgerFactory {
@@ -86,9 +78,9 @@ void enjoy_our_meals(std::vector<Person>& crowds) {
 }
 ```
 
-Look, `enjoy_our_meals` is instantly cleaner: it simply calls `create`, retrieves a `Burger`, and eats it. **The code for "eating" no longer cares which specific subclass is involved.** If we need to add a new burger later, we only modify the `switch` statement inside the factory. If we need to inject logging into all creation steps, we only modify the factory itself. We also conveniently replaced the bare `new` with `std::unique_ptr`, making ownership crystal clear—once created, it is handed to the caller, and the factory holds no reference to it.
+Look at that: `enjoy_our_meals` is instantly cleaner. It just calls `create`, gets a `Burger`, and eats. **Which concrete subclass it is, the "eating" code never cares about again**. Add a new kind of burger later and the only thing that changes is that one `switch` inside the factory; insert a logging step into every creation and the only thing that changes is that one spot in the factory. While we're at it, we also swapped the raw `new` for `std::unique_ptr`, so ownership is crystal clear — the object is handed to the caller the moment it is created, and the factory does not hold onto it.
 
-This is the **Simple Factory**. It solves the painful problem of "coupling between usage and creation," and in most scenarios, it is sufficient. Let's compile and run this behavior to verify that this step actually works:
+That is the **Simple Factory (also called a static factory)**. It fixes the most painful problem — the use/creation coupling — and for the vast majority of scenarios it is enough. Let's first run its behavior through the compiler and confirm this step actually works:
 
 ```cpp
 #include <iostream>
@@ -128,7 +120,7 @@ int main() {
 }
 ```
 
-Let's compile and run it (GCC 16.1.1, C++23):
+Compile and run it (GCC 16.1.1, C++23):
 
 ```sh
 $ g++ -std=c++23 -O2 -Wall simple_factory.cpp -o simple_factory
@@ -138,20 +130,20 @@ got CheeseBurger, price=25
 got ChickenBurger, price=28
 ```
 
-The behavior is completely correct. However, the Simple Factory has an unavoidable drawback—**it violates the Open/Closed Principle (OCP)**. That `switch` statement is hardcoded inside the factory; the factory has full knowledge of the "existence of specific products." Every time we add a new burger (like `FishBurger`), we have to **open the factory class and modify its source code**. The more the factory knows and the more frequently we change it, the more fragile it becomes. What we want is this: when adding a new product, we shouldn't have to touch the factory at all; we should only add new code without modifying existing code. This is what we will solve next.
+The behavior is exactly right. But the simple factory has a flaw it cannot dodge — **it violates the Open-Closed Principle (OCP)**. That `switch` lives inside the factory, and the factory is omniscient about which concrete products exist; every time you add a new burger (`FishBurger`) you have to **open up the factory class and modify its source code**. The more the factory knows and the more often it gets edited, the more fragile it becomes. What we want is this: adding a new product should ideally not touch the factory at all — only new code gets added, no existing code gets modified. That is the next step's job.
 
-## Step 2: Delegate "Which to Create" to Subclasses — Factory Method
+## Step Two: Handing "Which One to Create" Down to Subclasses — the Factory Method
 
-How do we achieve "add products without modifying the factory"? The answer is to **make the factory itself an abstraction, where each product is paired with its own specific concrete factory**. This is exactly how the GoF (Gang of Four) Factory Method pattern comes about:
+How do we manage "add a product without touching the factory"? The answer: **make the factory itself an abstraction too, and give each product its own concrete factory**. That is where GoF's Factory Method pattern comes from:
 
 ```cpp
-// 工厂接口:只定义「能造一个 Burger」,不规定造哪种
+// Factory interface: only defines "can make a Burger", without dictating which kind
 struct BurgerCreator {
     virtual ~BurgerCreator() = default;
     virtual std::unique_ptr<Burger> create() const = 0;
 };
 
-// 每种产品配一个具体工厂
+// Each product gets its own concrete factory
 struct CheeseBurgerCreator : BurgerCreator {
     std::unique_ptr<Burger> create() const override { return std::make_unique<CheeseBurger>(); }
 };
@@ -163,7 +155,7 @@ struct ChickenBurgerCreator : BurgerCreator {
 };
 ```
 
-Here is how we use it. The client holds a `BurgerCreator&`, and has no idea what specific type of burger is being created:
+Used like this — the client holds a `BurgerCreator&` and has no idea which concrete burger gets made:
 
 ```cpp
 void enjoy(const std::vector<std::unique_ptr<BurgerCreator>>& creators) {
@@ -174,7 +166,7 @@ void enjoy(const std::vector<std::unique_ptr<BurgerCreator>>& creators) {
 }
 ```
 
-Let's first verify that it actually works, and that the client receives only the `Burger` abstraction:
+Let's verify here that it really works, and that everything the client gets its hands on is the `Burger` abstraction:
 
 ```cpp
 int main() {
@@ -185,7 +177,7 @@ int main() {
 
     int total = 0;
     for (auto& creator : creators) {
-        auto burger = creator->create();   // 返回 unique_ptr<Burger>,具体类型被擦除
+        auto burger = creator->create();   // returns unique_ptr<Burger>; the concrete type is erased
         std::cout << "got " << burger->name()
                   << ", price=" << burger->price() << "\n";
         total += burger->price();
@@ -194,9 +186,7 @@ int main() {
 }
 ```
 
-It appears you have provided only the phrase "跑出来:" (Run out / Output:), but the actual content to be translated is missing.
-
-Please provide the Markdown text or code output you would like me to translate. I am ready to apply the technical translation rules and terminology guide as soon as you share the content.
+Run it:
 
 ```sh
 $ g++ -std=c++23 -O2 -Wall factory_method.cpp -o factory_method
@@ -207,19 +197,19 @@ got ChickenBurger, price=28
 total = 85
 ```
 
-### The Real Benefit of the Factory Method: The Extensibility Ledger
+### What Exactly Makes the Factory Method Good: the Extensibility Ledger
 
-Let's calculate its extensibility ledger. **To add a new burger type `FishBurger`**: you add the `FishBurger` class + the `FishBurgerCreator` class, and then insert `FishBurgerCreator` into that `vector` at the usage point — **you don't need to change a single line of the `BurgerCreator` interface, nor any existing `Creator` subclass**. This is exactly what the Open/Closed Principle (OCP) envisions: "open for extension, closed for modification." The Simple Factory cannot achieve this because its `switch` logic is centralized inside the factory; the Factory Method delegates the decision of "which to create" to individual factory subclasses. Thus, adding a product simply means adding a subclass, without touching any existing code.
+Let's do its extensibility ledger. **Add a new burger, `FishBurger`**: you add a `FishBurger` class plus a `FishBurgerCreator` class, then at the point of use you stuff the `FishBurgerCreator` into that `vector` — **not a single line of the `BurgerCreator` interface changes, not a single line of any existing `Creator` subclass changes**. That is exactly the "open for extension, closed for modification" that OCP asks for. The simple factory cannot do this, because its `switch` is concentrated inside the factory; the factory method pushes the "which one to create" decision down into independent factory subclasses, so adding a product is just adding a subclass, and no existing code is ever touched again.
 
-This is the essential difference between the Factory Method and the Simple Factory, and it is worth remembering: **The Simple Factory is "one factory knows all products," while the Factory Method is "each product has its own factory, and no one needs to know everything."** The former requires modifying one place to add a product (violating OCP), while the latter requires adding one class to add a product (conforming to OCP). The cost is that the Factory Method involves more classes — each product requires a matching `Creator` subclass, doubling the number of files and types. So, it isn't a free lunch; rather, it trades class quantity for OCP compliance to address the specific pain point of "products will continuously increase, and we don't want to frequently modify existing factories."
+This is the essential difference between the factory method and the simple factory, and it is worth burning into memory: **the simple factory is "one factory that knows all the products"; the factory method is "every product has its own factory, and nobody has to be omniscient"**. The former adds a product by editing one place (violating OCP); the latter adds a product by adding a class (satisfying OCP). The price is more classes — one `Creator` subclass per product, so the number of files and types doubles. It is not a free lunch: it trades class count for OCP, specifically on the pain point of "products will keep coming, and we don't want to keep editing the existing factory".
 
-### Companion Compilable Project: The Real Face of the Factory Method
+### Compilable Companion Project: What the Factory Method Really Looks Like
 
-::: tip Companion Compilable Project
-The Factory Method logic discussed above is available as a complete, runnable CMake project in this repository. It uses an even more fitting example than burgers — **`BurgerProvider` is the abstract factory interface, while `McBurgerProvider` and `BurgerKingProvider` are concrete factories for two chains**, each responsible for making their own brand of burgers (sharing the same `create_specifiedBurger("normal"/"cheese")` interface, but producing completely different branded products in different shops). Clone it and run it with CMake: [FactoryBaseMethod / BurgerCreator](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Factory/BurgerCreator).
+::: tip Compilable Companion Project
+The factory method above ships as a complete, runnable CMake project in this repository. It uses an example even more fitting than burgers — **`BurgerProvider` is the abstract factory interface, while `McBurgerProvider` and `BurgerKingProvider` are the concrete factories of two burger chains**, each responsible for making its own brand of burgers (the same `create_specifiedBurger("normal"/"cheese")` interface produces completely different branded products in different stores). Clone it, run cmake once, and it just works: [FactoryBaseMethod / BurgerCreator](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Factory/BurgerCreator).
 :::
 
-Let's look at its output. Notice that while `McBurgerProvider` and `BurgerKingProvider` have identical interfaces, the objects they create are completely different:
+Here is an excerpt of its output. Notice how `McBurgerProvider` and `BurgerKingProvider`, despite having byte-for-byte identical interfaces, produce completely different things:
 
 ```sh
 $ ./BurgerCreator
@@ -235,13 +225,13 @@ Grilling Burger King Burger...
 Wrapping Burger King Burger in a paper wrapper...
 ```
 
-The highlight of the `BurgerProvider` design lies here: the client (`process_burger_session`) only calls three abstract methods: `grill()`, `prepare()`, and `wrap()`. It is completely unaware of whether the burger in hand is a `McBurger` or a `BurgerKingBurger`. **The brand differences are completely absorbed by the factory, and the client didn't write a single `if` statement.** This is the value of the Factory Method in real-world business logic—hiding the "same operations, different concrete implementations" layer of variation inside the factory.
+The design masterstroke of `BurgerProvider` here: the client (`process_burger_session`) calls only the three abstract methods `grill()/prepare()/wrap()`, and it has absolutely no idea whether the burger in its hands is a `McBurger` or a `BurgerKingBurger`; **the brand differences are completely absorbed by the factories, and the client never writes a single `if`**. That is the factory method's value in real business code — the "same set of operations, different concrete implementations" layer of variance gets hidden inside the factory.
 
-## Step 3: Creating a Whole Set at Once — Abstract Factory
+## Step Three: Making a Whole Set at Once — the Abstract Factory
 
-We aren't done yet. A burger shop never sells just burgers; it sells meals—a burger plus a drink—and these two products must **share a consistent style**: a classic meal is "beef burger + cola", while a healthy meal is "chicken burger + juice". You can't have cola popping up in a healthy meal, nor can you pair juice with a classic meal—**products within a meal must belong to the same family**.
+The story is not over yet. A burger shop never sells just burgers — it sells combo meals: one burger plus one drink, and those two products must be **style-consistent**: the classic combo is "beef burger + cola", the healthy combo is "chicken burger + juice". You cannot have cola popping up in the healthy combo, and you cannot pair juice with the classic one — **the products inside a combo must belong to the same family**.
 
-If you assign a separate factory method to each product (`BurgerCreator` + `DrinkCreator`), the client becomes responsible for "putting a set together". The assembly logic is then scattered across the client, and no one is explicitly "guarding" family consistency. The Abstract Factory pattern exists to plug this hole—**it bundles the creation interfaces for a whole family of related products, where one concrete factory is responsible for the entire family**:
+If you give each product its own factory method (`BurgerCreator` + `DrinkCreator`), the client has to "assemble a full set" itself, and the assembly logic ends up scattered across the client, with nobody left guarding family consistency. The Abstract Factory pattern plugs exactly that hole — **it bundles the creation interfaces of a family of related products together, with one concrete factory responsible for the whole family**:
 
 ```cpp
 struct Drink {
@@ -251,27 +241,27 @@ struct Drink {
 struct Cola  : Drink { std::string name() const override { return "Cola"; } };
 struct Juice : Drink { std::string name() const override { return "Juice"; } };
 
-// 抽象工厂:一族产品的创建接口打包在一起
+// Abstract factory: the creation interfaces for a family of products, bundled together
 struct MealFactory {
     virtual ~MealFactory() = default;
     virtual std::unique_ptr<Burger> create_burger() const = 0;
     virtual std::unique_ptr<Drink>  create_drink()  const = 0;
 };
 
-// 经典套餐工厂:整套家族保持「经典」风格
+// Classic combo factory: keeps the whole family in the "classic" style
 struct ClassicMealFactory : MealFactory {
     std::unique_ptr<Burger> create_burger() const override { return std::make_unique<CheeseBurger>(); }
     std::unique_ptr<Drink>  create_drink()  const override { return std::make_unique<Cola>(); }
 };
 
-// 健康套餐工厂:整套家族保持「健康」风格
+// Healthy combo factory: keeps the whole family in the "healthy" style
 struct HealthyMealFactory : MealFactory {
     std::unique_ptr<Burger> create_burger() const override { return std::make_unique<ChickenBurger>(); }
     std::unique_ptr<Drink>  create_drink()  const override { return std::make_unique<Juice>(); }
 };
 ```
 
-Once the client obtains a `MealFactory`, it can assemble a complete meal with a **guaranteed consistent style** in one go, without needing to verify the details manually.
+Hand the client a `MealFactory` and it can assemble, in one shot, a combo meal whose **style is guaranteed consistent** — no manual cross-checking needed:
 
 ```cpp
 void serve_meal(const MealFactory& factory) {
@@ -297,24 +287,24 @@ serving CheeseBurger + Cola
 serving ChickenBurger + Juice
 ```
 
-Notice two things. First, **"family consistency" is a strong constraint that the Abstract Factory gives you for free**: as long as you use `ClassicMealFactory`, the result is guaranteed to be the "`CheeseBurger` + `Cola`" set. The client has no chance to mix and match incorrectly. This is something the Factory Method cannot achieve—it only ensures that individual product creation is hidden from the client, but it lacks the structure to express the constraint that "this group of products belongs to the same style."
+Two things to notice. First, **family consistency is a strong constraint the abstract factory hands you for free**: as long as you go through `ClassicMealFactory`, what comes out is necessarily the "`CheeseBurger` + `Cola`" set — the client never even gets a chance to assemble it wrong. The factory method cannot do this: it can only hide a single product from the client, but it has no structure for expressing the constraint "this group of products shares one style".
 
-Second, the cost of this mechanism is immediately apparent: **adding a new product family (like a "Luxury Meal") is easy; just add a new `LuxuryMealFactory`. However, adding a new product type (like suddenly needing to add a "Dessert" to the meal) is troublesome**—you have to go back and modify the abstract factory interface `MealFactory` to add a `create_dessert()`, and then **every existing concrete factory** must be updated to implement it. This trade-off is the exact opposite of the Factory Method: the Abstract Factory is open to "adding families" but closed to "adding product types."
+Second, the cost of this mechanism shows up immediately: **adding a new product family (say, a "luxury combo") is easy — just add a `LuxuryMealFactory`; but adding a new kind of product (say, combos suddenly need a "dessert" too) is painful** — you have to go back and modify the abstract factory interface `MealFactory` to add a `create_dessert()`, and then **every existing concrete factory** has to go back and supply an implementation. This ledger runs exactly opposite to the factory method's: the abstract factory is open for "add a family" and closed for "add a product kind".
 
-### Factory Method vs. Abstract Factory: Don't Let the Names Fool You
+### Factory Method vs Abstract Factory: Don't Be Fooled by the Names
 
-Many resources discuss these two patterns together, but their distinction is actually very clean and can be summarized in one sentence:
+Plenty of material lumps the two together, but the difference between them is actually crisp — one sentence settles it:
 
-- **Factory Method** focuses on **creating "one" product**. The abstract interface contains only one `create()`, and the concrete factory decides which specific product to build. It solves "decoupling creation from use + OCP."
-- **Abstract Factory** focuses on **creating "a family" of products**. The abstract interface contains multiple `create_xxx()` methods, and the concrete factory decides which family to build. It additionally solves the problem of "consistent style across this family of products."
+- The **Factory Method** cares about making **one** product. The abstract interface has a single `create()`, and the concrete factory decides which concrete product gets made. What it solves is "decoupling creation from use + OCP".
+- The **Abstract Factory** cares about making **a family** of products. The abstract interface has multiple `create_xxx()` methods, and the concrete factory decides which family gets made. What it additionally solves is "this family of products is style-consistent".
 
-There is also a small structural fact that, once understood, helps you completely distinguish them: **the Abstract Factory interface is usually implemented using Factory Methods**—`create_burger()` and `create_drink()` inside `MealFactory`, if viewed individually, are each Factory Methods. The Abstract Factory is not the opposite of the Factory Method; rather, it is the result of "packaging several Factory Methods into a single interface." They are applications of the same concept at different scales.
+There is also a small structural fact that, once understood, separates them cleanly for good: **the abstract factory's interface is usually implemented with factory methods** — each of `create_burger()` and `create_drink()` in `MealFactory`, viewed on its own, is a factory method. The abstract factory is not the opposite of the factory method; it is the result of "packing several factory methods into one interface". They are the same idea applied at different scales.
 
-## Step 4: Don't Write So Many Classes—Functional Factories
+## Step Four: Stop Writing So Many Classes — the Functional Factory
 
-At this point, you might frown: Factory Method/Abstract Factory requires adding a new class for every product/family addition, causing serious file bloat. Honestly, most of these `Creator` subclasses contain only one line: `return std::make_unique<...>()`. Building an entire inheritance hierarchy just for that one line is a bit heavy.
+By this point you may be frowning: with the factory method / abstract factory, every new product or family means a new class, and the file count balloons badly. Honestly, most of these `Creator` subclasses contain a single line, `return std::make_unique<...>()` — building a whole inheritance hierarchy for that one line is a bit heavy.
 
-Modern C++ offers a lighter path: **a factory is essentially a "function that creates objects," so don't use a class; use `std::function`/lambdas directly**. We maintain a registry (table) where we map "key → object creation function":
+Modern C++ offers a lighter path: **a factory is at heart just "a function that can make an object", so drop the class and use `std::function`/lambdas directly**. We maintain a table, registering "key → object-making function" entries into it:
 
 ```cpp
 #include <functional>
@@ -331,36 +321,36 @@ struct FunctionalBurgerFactory {
 
     static std::unique_ptr<Burger> create(const std::string& key) {
         auto it = registry().find(key);
-        if (it == registry().end()) return nullptr;   // key 不存在,安全地返回空
+        if (it == registry().end()) return nullptr;   // key doesn't exist; safely return empty
         return (it->second)();
     }
 
 private:
     static std::unordered_map<std::string, Creator>& registry() {
-        static std::unordered_map<std::string, Creator> r;  // Meyer's Singleton 持有注册表
+        static std::unordered_map<std::string, Creator> r;  // a Meyer's Singleton holds the registry
         return r;
     }
 };
 ```
 
-We write lambdas directly for both registration and usage, avoiding inheritance and class explosion:
+Registration and use are both plain lambdas — no inheritance, no class explosion:
 
 ```cpp
-// 注册阶段:每加一种汉堡,这里登记一条 lambda
+// Registration phase: each new burger registers one lambda here
 FunctionalBurgerFactory::register_creator("cheese",  [] { return std::make_unique<CheeseBurger>(); });
 FunctionalBurgerFactory::register_creator("beef",    [] { return std::make_unique<BeefBurger>(); });
 FunctionalBurgerFactory::register_creator("chicken", [] { return std::make_unique<ChickenBurger>(); });
 
-// 使用阶段:按 key 拿产品
+// Usage phase: fetch a product by key
 auto b  = FunctionalBurgerFactory::create("beef");
-auto mx = FunctionalBurgerFactory::create("nope");   // 不存在的 key
+auto mx = FunctionalBurgerFactory::create("nope");   // a nonexistent key
 ```
 
-Let's verify this here, focusing on what happens with a non-existent key:
+Let's verify it here, with special attention to what happens on a nonexistent key:
 
 ```cpp
 #include <iostream>
-// ... FunctionalBurgerFactory 定义 + 三个产品的注册 ...
+// ... FunctionalBurgerFactory definition + registration of the three products ...
 
 int main() {
     FunctionalBurgerFactory::register_creator("cheese",  [] { return std::make_unique<CheeseBurger>(); });
@@ -374,9 +364,7 @@ int main() {
 }
 ```
 
-It appears you have provided only the phrase "跑出来:" (Run out / Output:), but the actual content or code output is missing.
-
-Please provide the text, code, or documentation you would like me to translate. I am ready to apply the translation rules and terminology reference as soon as you share the content.
+Run it:
 
 ```sh
 $ g++ -std=c++23 -O2 -Wall functional_factory.cpp -o functional_factory
@@ -385,12 +373,12 @@ $ ./functional_factory
 'nope' -> null
 ```
 
-For the non-existent key `'nope'`, `create` returned `nullptr` without crashing. This aligns with the standard behavior of `std::unordered_map::find`, which returns `end()` when a key is not found, allowing us to return a null pointer accordingly. **This check happens at runtime, not at compile time**. This represents a tangible cost of the functional factory compared to the factory method, a topic we will discuss in detail shortly.
+For the nonexistent key `'nope'`, `create` returned `nullptr` instead of crashing — that is the standard behavior of `std::unordered_map::find` returning `end()` on a miss, and we chose to return a null pointer on that basis. **This happens at runtime, not compile time**, and it is a very real cost of the functional factory compared to the factory method; we'll come back to it specifically below.
 
-### Accompanying Compilable Project: A Cleaner Notification System
+### Compilable Companion Project: a Tidier Notification System
 
-::: tip Accompanying Compilable Project
-In this repository, there is a notification system implemented using a functional factory that is worth a look. Its registry is a member `unordered_map<string, std::function<unique_ptr<AbstractNocification>()>>` of `NocificationCreator`. During initialization, lambdas for the three notifier types—`Email`, `SMS`, and `Push`—are registered. A simple lookup like `notification_creator("Email")` retrieves the corresponding implementation. You can clone it and run it immediately: [FactoryBaseMethod / NotificationSystem](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Factory/NotificationSystem).
+::: tip Compilable Companion Project
+This repository contains a notification system built on the functional factory, worth a look on its own. Its registry is the member `unordered_map<string, std::function<unique_ptr<AbstractNocification>()>>` of `NocificationCreator`; at initialization it registers one lambda per notifier — `Email/SMS/Push` — and a `notification_creator("Email")` lookup pulls out the corresponding implementation. Clone it and it runs in one shot: [FactoryBaseMethod / NotificationSystem](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Factory/NotificationSystem).
 :::
 
 Its output is:
@@ -400,11 +388,11 @@ $ ./NotificationSystem
 [Email]: Welcome to our platform![SMS]: Welcome to our platform![Push]: Hey, New Message here!
 ```
 
-Look, the client is completely unaware of the existence of the concrete classes `Email`, `SMS`, or `Push`—it only interacts with `send_message` from `AbstractNotification`. To add a new notifier (`Webhook`), we simply add a lambda to the registry. **Neither the `NotificationCreator` class itself nor the invocation style in `main` requires a single line of change.** This demonstrates how a functional factory implements the Open/Closed Principle (OCP) with the least overhead.
+See how the client has no idea the three concrete classes `Email`, `SMS`, `Push` even exist — it only talks to `AbstractNocification`'s `send_message`. Add a new notifier (`Webhook`), and all it takes is one more lambda in the registry — **the `NocificationCreator` class itself and the way `main` calls it change not one line**. That is the functional factory taking OCP to its lightest form.
 
-## Let's verify this: the extensibility differences of the three factories are not just theoretical
+## Let's Verify: the Extensibility Gaps Among the Three Factories Are Not Just Talk
 
-Talk is cheap. Let's map out the scope of changes required for the three factory patterns when "adding a new product" to demonstrate the difference. This is a structural fact, but to make it concrete, we will write a minimal comparison: when using the Factory Method pattern, how many places in the existing code must we touch to add a `FishBurger`?
+Talk is cheap, so let's lay the three factories side by side and compare the blast radius of "adding one new product". This is a structural fact, but to make it concrete we write a minimal contrast: with the factory method, how many places of existing code does adding `FishBurger` need to touch?
 
 ```cpp
 #include <iostream>
@@ -417,7 +405,7 @@ struct Burger {
 };
 struct CheeseBurger : Burger { std::string name() const override { return "CheeseBurger"; } };
 struct BeefBurger   : Burger { std::string name() const override { return "BeefBurger"; } };
-// 关键:新增 FishBurger 时,下面这行是「新增」,不是「修改既有」
+// Key point: when adding FishBurger, this line is an addition, not a modification of existing code
 struct FishBurger   : Burger { std::string name() const override { return "FishBurger"; } };
 
 struct BurgerCreator {
@@ -426,19 +414,19 @@ struct BurgerCreator {
 };
 struct CheeseBurgerCreator : BurgerCreator { std::unique_ptr<Burger> create() const override { return std::make_unique<CheeseBurger>(); } };
 struct BeefBurgerCreator   : BurgerCreator { std::unique_ptr<Burger> create() const override { return std::make_unique<BeefBurger>(); } };
-// 新增 FishBurgerCreator:依然是「新增」,既有的 Creator 子类和 BurgerCreator 接口都没动
+// New FishBurgerCreator: still an addition — the existing Creator subclasses and the BurgerCreator interface stay untouched
 struct FishBurgerCreator   : BurgerCreator { std::unique_ptr<Burger> create() const override { return std::make_unique<FishBurger>(); } };
 
 int main() {
     std::vector<std::unique_ptr<BurgerCreator>> creators;
     creators.emplace_back(std::make_unique<CheeseBurgerCreator>());
     creators.emplace_back(std::make_unique<BeefBurgerCreator>());
-    creators.emplace_back(std::make_unique<FishBurgerCreator>());   // 装配点加一行
+    creators.emplace_back(std::make_unique<FishBurgerCreator>());   // one more line at the assembly point
     for (auto& c : creators) std::cout << c->create()->name() << "\n";
 }
 ```
 
-Let's compile and run it:
+Compile and run it:
 
 ```sh
 $ g++ -std=c++23 -O2 -Wall ocp_check.cpp -o ocp_check
@@ -448,17 +436,17 @@ BeefBurger
 FishBurger
 ```
 
-This short section confirms the Open/Closed Principle (OCP) ledger for the Factory Method: **during the process of adding `FishBurger`, the `BurgerCreator` abstract interface remained unchanged, and the two existing factories, `CheeseBurgerCreator` and `BeefBurgerCreator`, remained unchanged**—we only added two new classes, `FishBurger` and `FishBurgerCreator`, and added one line at the assembly point in `main`. Compared to the Simple Factory, adding `FishBurger` would require modifying the `switch` statement inside the factory class; compared to the Abstract Factory, if `FishBurger` is a new "product kind" rather than a new "family," the Abstract Factory would require changing the interface and all concrete factories. The differences in the scope of changes for "adding products" are just that concrete and quantifiable.
+This little snippet nails down the factory method's OCP ledger: **across the whole process of adding `FishBurger`, the `BurgerCreator` abstract interface did not change, and neither did the two existing factories `CheeseBurgerCreator` and `BeefBurgerCreator`** — we only added the two classes `FishBurger` and `FishBurgerCreator`, plus one line at the assembly point in `main`. Contrast the simple factory, where adding `FishBurger` forces you to edit the `switch` inside the factory class; contrast the abstract factory, where if `FishBurger` were a new product kind rather than a new family, you would still have to change the interface and all the concrete factories. That is how concrete and how quantifiable the differences in blast radius are across the three when it comes to "adding a product".
 
-## The Other Side of the Factory Pattern: Centralized Creation Tracking
+## The Other Face of the Factory Pattern: Centralized Tracking of Creation
 
-So far, we have focused on "decoupling." However, the Factory Pattern has another often-overlooked benefit: **since all creation is centralized within the factory, the factory serves as a natural object audit point**. Adding logging, counting, or timing to creation requires changing only one place in the factory, rather than scattering changes across every `switch` statement:
+Everything so far has been about decoupling. But the factory pattern has another frequently overlooked benefit: **since all creation is concentrated in the factory, the factory is a natural auditing point for objects**. Logging, counting, or timing the creation process only requires changing the factory in one place, instead of scattering into every `switch`:
 
 ```cpp
 struct TracingBurgerFactory {
     static std::unique_ptr<Burger> create(BurgerType t) {
         auto start = std::chrono::steady_clock::now();
-        auto burger = SimpleBurgerFactory::create(t);   // 委托真实工厂
+        auto burger = SimpleBurgerFactory::create(t);   // delegate to the real factory
         auto end   = std::chrono::steady_clock::now();
         auto us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
         std::cerr << "[factory] created " << burger->name()
@@ -468,80 +456,80 @@ struct TracingBurgerFactory {
 };
 ```
 
-This approach of "wrapping a layer around the factory for cross-cutting concerns" is essentially applying the Decorator or Proxy pattern on top of a factory. Its prerequisite is precisely that "creation has already been centralized"—if you are still writing `switch` statements all over the call sites, there is no way to implement this unified tracking. Therefore, the Factory pattern is not just about "saving the client from writing `switch` statements"; it also provides a **chokepoint that every object must pass through at birth**. Permission checks, monitoring, caching, and object pools can all be hooked here.
+This "wrap another layer around the factory for cross-cutting concerns" idiom is, in essence, the decorator/proxy pattern stacked on top of a factory. Its precondition is precisely that "creation has already been centralized" — if you are still writing `switch` statements all over the call sites, this kind of unified tracking has nowhere to start. So the factory pattern is not merely about "letting the client write fewer `switch` statements"; it also hands you a **choke point that every object passes through at birth**, where permission checks, monitoring, caching, and object pools can all be hooked in.
 
-## Which One to Choose: A Decision Table
+## Which One to Choose: a Decision Table
 
-We have worked our way from simple factories to functional factories. Now, let's put them side-by-side to see where each excels:
+We have walked all the way from the simple factory to the functional factory; now let's lay them side by side and see clearly what each is good for:
 
-| Dimension | Simple Factory | Factory Method | Abstract Factory | Functional Factory |
+| Dimension | Simple factory | Factory method | Abstract factory | Functional factory |
 |---|---|---|---|---|
-| Products created | Single product | Single product | **Family of products** | Single product (by key) |
-| Adding new product | Modify `switch` in factory (violates OCP) | Add a `Creator` subclass (follows OCP) | Modify interface + all concrete factories (high cost) | Add one lambda to registry |
-| Adding new family | — | — | Add a concrete factory class (follows OCP) | — |
-| Enforce family consistency | No | No | **Yes (Strong structural constraint)** | No |
-| Type safety | Compile-time (`switch` missing case warns) | Compile-time (pure virtual forces impl) | Compile-time (pure virtual forces impl) | **Runtime** (typos in key crash at runtime) |
-| Class burden | One factory class | One factory subclass per product | One factory subclass per family | Almost no new classes |
+| What it makes | a single product | a single product | **a family of products** | a single product (by key) |
+| Adding a new product | edit the factory's `switch` (violates OCP) | add a `Creator` subclass (satisfies OCP) | change the interface + all concrete factories (costly) | add one lambda to the registry |
+| Adding a new family | — | — | add a concrete factory class (satisfies OCP) | — |
+| Guarantees family consistency | No | No | **Yes (a structural hard constraint)** | No |
+| Type safety | compile time (a missed `switch` case warns) | compile time (pure virtual forces implementation) | compile time (pure virtual forces implementation) | **runtime** (a mistyped key only blows up at runtime) |
+| Class overhead | one factory class | one factory subclass per product | one factory subclass per family | almost no new classes |
 
-How do we choose? I have distilled the logic into a few sentences. **For the vast majority of needs to "conditionally `new` different subclasses," a Simple Factory is sufficient**—don't over-engineer. **When products will be continuously added and you don't want to modify factory source code every time, use Factory Method**, trading class quantity for OCP. **When you are creating a family of products that must share a consistent style (meal combos, cross-platform UI controls, multi-database dialects), use Abstract Factory**; its killer feature is the structural constraint of "family consistency." **When your creation logic is lightweight, you want OCP, but don't want to maintain a bunch of one-line subclasses, use Functional Factory**, reducing the factory to a `key → lambda` registry. However, you must accept its downgrade in type safety—key errors are only discovered at runtime.
+How to choose? I'll compress the decision logic into a few sentences. **For the vast majority of "new different subclasses by condition" needs, the simple factory is enough** — don't over-engineer. **When products will keep arriving and you don't want to revisit the factory's source every time one is added, go factory method**, trading class count for OCP. **When what you are making is a family of products that must be style-consistent (combo meals, cross-platform UI widgets, multiple database dialects), go abstract factory** — its killer feature is the structural constraint of family consistency. **When your creation logic is light, you want OCP, and you don't want to raise a brood of one-line subclasses, go functional factory**, reducing the factory to a `key → lambda` registry — but stay clear-eyed about its demoted type safety: a wrong key is only discovered at runtime.
 
-::: warning Functional factories downgrade type safety
-The type safety of Factory Method and Abstract Factory is compile-time: `BurgerCreator::create()` is a pure virtual function. If you forget to implement it in a concrete factory, that factory becomes abstract and cannot be instantiated, so the compiler stops you immediately. Functional factories don't work this way—its key is a string. If you typo `create("beef")` as `create("beed")`, the compiler can't catch it. It waits until runtime `find` fails and returns `nullptr`, and then crashes when you try to dereference it. Therefore, Functional Factory takes a **tangible step down** in "type safety." If you use it, the calling side must honestly handle "key might not exist" (check if the returned `unique_ptr` is empty, or throw an exception). If your key source is external input (config files, network requests), this check is mandatory.
+::: warning The functional factory's type safety is demoted
+The factory method / abstract factory are type-safe at compile time: `BurgerCreator::create()` is a pure virtual function — forget to implement it in some concrete factory, and that factory becomes abstract, impossible to instantiate, and the compiler stops you on the spot. The functional factory does not work that way — its key is a string. Type `create("beed")` instead of `create("beef")`, and nothing is caught at compile time; it waits until runtime, when `find` misses and returns `nullptr`, and then it crashes on you the moment you dereference it. So on the "type safety" line the functional factory **genuinely drops one tier**; if you use it, the calling side has to honestly handle "the key may not exist" (check whether the returned `unique_ptr` is null, or simply throw). If your keys come from external input (config files, network requests), this check is absolutely not optional.
 :::
 
-## Pitfall Warning: Specific Implementation Details
+## Pitfall Warnings: a Few Small Traps in the Details
 
-::: warning Factories must return `unique_ptr<base>`, not raw pointers or `unique_ptr<derived>`
-A factory method returning `std::unique_ptr<Burger>` (base class) is deliberate. First, **don't return a raw `Burger*`**—the caller gets a raw pointer and must remember to `delete` it. Forgetting this causes a memory leak, and returning a raw pointer blurs ownership semantics (who owns this object?). `std::make_unique` + `unique_ptr<Burger>` cleanly transfers ownership to the caller, with RAII handling reclamation. Second, **`std::make_unique<CheeseBurger>()` implicitly converts to `unique_ptr<Burger>`** because `unique_ptr` has a constructor template for compatible pointer types—but the reverse (`unique_ptr<Burger>` to `unique_ptr<CheeseBurger>`) won't work, so the factory must return a base class pointer. Third, **the base class `Burger` must have a `virtual` destructor** (`virtual ~Burger() = default;`). Otherwise, `delete`ing a derived object via a base class pointer is undefined behavior—we emphasized this in the Singleton and Visitor sections, and it applies here too, because `unique_ptr<Burger>` destroys the object through the base class pointer.
+::: warning The factory must return `unique_ptr<base class>`, not a raw pointer or `unique_ptr<derived class>`
+Having the factory method return `std::unique_ptr<Burger>` (the base class) is deliberate. First, **don't return a raw `Burger*`** — the caller has to remember to `delete` it themselves; one slip and it's a memory leak, and returning a raw pointer blurs the ownership semantics (who owns this object?). `std::make_unique` + `unique_ptr<Burger>` cleanly transfers ownership to the caller, with RAII doing the recycling. Second, **`std::make_unique<CheeseBurger>()` can implicitly convert into `unique_ptr<Burger>`** because `unique_ptr` has a converting constructor template for compatible pointer types — but the reverse (`unique_ptr<Burger>` into `unique_ptr<CheeseBurger>`) does not work, so what the factory returns must be the base-class pointer. Third, **the base class `Burger` must have a `virtual` destructor** (`virtual ~Burger() = default;`), otherwise deleting a derived object through a base-class pointer is undefined behavior — we hammered on this repeatedly in the singleton and visitor pieces, and it holds just as much under factory patterns, because a `unique_ptr<Burger>` destroys its object through the base-class pointer at destruction time.
 :::
 
-::: warning Abstract Factory "family consistency" is not "free product combination"
-Abstract Factory bundles the creation of a family of products. The benefit is "get one concrete factory, and the whole set is guaranteed to be the same style," but the cost is **it locks down the freedom of product combinations**. Suppose you want a mix like "Classic Meal Burger + Healthy Meal Drink." The Abstract Factory structure doesn't support this—you can only pick one factory and take its whole set. If your business requires product-level free combination, Abstract Factory is not the right choice. You should revert to "one factory method per product" and let the client compose them. The cost is that you lose the structural guarantee of "family consistency" and must rely on discipline instead. Don't jump to Abstract Factory as soon as you see "family of products"—ask yourself first: do I want "consistent sets" or "free mixing"?
+::: warning The abstract factory's "family consistency" is not "freedom to combine products"
+The abstract factory bundles the creation of a family of products together; the benefit is "hand me a concrete factory, and whatever comes out is guaranteed to be one coherent style", but the cost is **it locks down your freedom to combine products**. Suppose you want a mix-and-match like "the classic combo's burger + the healthy combo's drink" — the abstract factory's structure does not support it: you can only pick one factory and take its whole set. If your business needs product-level free combination, the abstract factory is not the right choice; you should go back to "one factory method per product" and let the client do the assembling, at the price that the family-consistency constraint is now guaranteed by discipline instead of by structure. Don't reach for the abstract factory the moment you see "a family of products" — first ask yourself: do I want "the whole set consistent" or "free mix-and-match"?
 :::
 
-::: tip Combining factory registries with static local variables ensures thread-safe initialization
-For the Functional Factory registry, we used the `static std::unordered_map<...>& registry()` approach with a Meyer's Singleton (function-local `static` variable). This means the registry's initialization itself is thread-safe—C++11 magic statics guarantee that "if multiple threads enter this declaration for the first time simultaneously, only one performs the initialization." However, note: **thread-safe initialization of the registry does not mean thread-safe read/write of the registry's contents**. If registration happens after program startup and multiple threads concurrently call `register_creator`, you still need to lock the registry (`std::shared_mutex` fits "read-many, write-few" scenarios). Most factory registrations happen during the `main` startup phase (single-threaded), so you don't need to worry about locks; once registration is delayed to runtime, locks must be added. This point and the one about magic statics in the Singleton article are two sides of the same coin.
+::: tip Combine the factory registry with a function-local static, and initialization is thread-safe
+For the functional factory's registry we used the `static std::unordered_map<...>& registry()` paired with a Meyer's Singleton (a `static` local inside the function). That means the registry's own initialization is thread-safe — C++11 magic statics guarantee that "if several threads first hit this declaration simultaneously, only one of them runs the initializer". But note: **thread-safe initialization of the registry is not the same as thread-safe reads and writes of its contents**. If registration happens after program startup, with multiple threads calling `register_creator` concurrently, you still need to lock the registry (`std::shared_mutex` suits the read-heavy, write-rare scenario). The vast majority of factory registrations happen during `main`'s startup phase (single-threaded), where no lock is needed; the moment registration is deferred to runtime, the lock has to be added. This and the magic statics discussed in the singleton piece are two faces of the same coin.
 :::
 
-## Factory vs. Builder: Don't Pick the Wrong One
+## Factory vs Builder: Don't Pick the Wrong One
 
-We will also cover the Builder pattern later in this volume. Both Factory and Builder solve "object creation" problems, and beginners often choose the wrong one. Let's clarify the difference:
+This sub-volume of ours also covers the Builder pattern. Factories and builders both attack the "object creation" problem, beginners easily pick the wrong one, so let's nail the difference down here:
 
-- **Factory** focuses on **"which one to build"**—returning a **different** concrete subclass based on conditions. The object itself is relatively simple and created in one step.
-- **Builder** focuses on **"how to build it"**—spreading out the construction of a **complex** object into steps (a bunch of `set_xxx()` chained calls, ending with `build()`). The object type is fixed, but it has numerous configuration options.
+- The **factory** cares about **which one to make** — return a **different** concrete subclass depending on a condition; the object itself is relatively simple and gets made in one step.
+- The **builder** cares about **how to make it** — unroll the construction of a **complex** object into steps (a pile of chained `set_xxx()` calls, then `build()` at the end); the object's type is fixed, but the configuration options are legion.
 
-A simple heuristic: if your struggle is "which subclass should I `new`?", use Factory. If your struggle is "this object has over a dozen optional parameters, how do I configure it clearly?", use Builder. They can also be combined—an Abstract Factory can return a Builder, allowing the client to decouple the specific type while configuring it step-by-step.
+A simple test: if your agony is "which subclass should I `new`", use a factory; if your agony is "this object has a dozen optional parameters, how do I configure them legibly", use a builder. The two also combine — an abstract factory can return a builder, giving the client both decoupling from the concrete type and step-by-step configuration.
 
 ## Summary
 
-Let's review the entire evolution path:
+Let's trace the whole evolutionary path once more:
 
-| Stage | Approach | Why it wasn't enough |
+| Stage | Approach | Why it's still not enough |
 |---|---|---|
-| `switch new` at call site | Directly `switch` at usage to decide which to `new` | Creation coupled with usage; user knows all concrete types |
-| Simple Factory | Extract `switch` to a static factory method | Adding products requires modifying factory internals (violates OCP) |
-| Factory Method | Abstract factory interface + one concrete factory per product | Decouples single products well, but cannot create families |
-| Abstract Factory | Bundle creation of a family of products into one interface | Adding families is easy, but adding product types requires changing the interface and all concrete factories |
-| Functional Factory | `key → lambda` registry | Type safety downgraded (runtime lookup) |
+| `switch` + `new` at the call site | the user directly `switch`es to decide which one to `new` | creation and use are coupled; the user knows every concrete type |
+| Simple factory | pull the `switch` into a static factory method | adding a product means editing the factory's internals (violates OCP) |
+| Factory method | abstract factory interface + one concrete factory per product | good enough decoupling for a single product, but it cannot make a family |
+| Abstract factory | bundle a family's creation into one interface | adding a family is easy, but adding a product kind means changing the interface and all concrete factories |
+| Functional factory | a `key → lambda` registry | type safety demoted (runtime table lookup) |
 
-Remember these key conclusions:
+Note down these key conclusions:
 
-- The Factory pattern solves the problem of coupling between **"creating objects"** and **"using objects"**—it strips "which concrete subclass to `new`" from the user and delegates it to a dedicated factory, so the user only faces the abstract base class.
-- **Simple Factory** (a `switch` inside a static method) solves the most painful coupling but violates OCP—adding products requires changing factory internals.
-- **Factory Method** (abstract `Creator` + one concrete `Creator` per product) trades class quantity for OCP—adding products only adds new classes without modifying existing code.
-- **Abstract Factory** bundles the creation of related products. Its killer feature is the **structural constraint of "family consistency"** (a whole set from one factory is guaranteed to be uniform); the cost is that adding product types requires changing the interface and all concrete factories.
-- In modern C++, prioritize **Functional Factory**: a `key → lambda` registry. It achieves OCP with the lightest weight and almost no new classes; however, type safety is downgraded to runtime (typos in keys crash at runtime), so the calling side must handle "key does not exist."
-- Don't forget the other benefit of a factory: **it is a chokepoint for the birth of all objects**. Logging, metrics, permissions, caching, and object pools—these cross-cutting concerns only need to be hooked in one place here.
+- The factory pattern solves the coupling between **creating an object and using an object** — peel "which concrete subclass to `new`" away from the user, hand it to a dedicated factory, and the user faces only the abstract base class.
+- The **simple factory** (a `switch` inside one static method) fixes the most painful coupling, but violates OCP — adding a product means editing the factory's internals.
+- The **factory method** (abstract `Creator` + one concrete `Creator` per product) trades class count for OCP — adding a product only adds classes, never modifies existing code.
+- The **abstract factory** bundles the creation of a family of related products; its killer feature is **the structural hard constraint of family consistency** (everything one factory produces is necessarily one coherent style); the cost is that adding a product kind means changing the interface and all concrete factories.
+- In modern code, reach first for the **functional factory**: a `key → lambda` registry that makes OCP nearly weightless and adds almost no classes; but its type safety is demoted to runtime (a mistyped key only blows up then), so the calling side must handle "key not found".
+- And don't forget the factory's other dividend: **it is the choke point every object passes through at birth** — logging, counting, permissions, caching, object pools, all these cross-cutting concerns need hooking in only once, right here.
 
-::: tip Companion compilable projects
-The two complete CMake projects for this section are in this repository. Clone and run `cmake` to try them: the Factory Method implementation [BurgerCreator](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Factory/BurgerCreator) (concrete factories for two chains making their brand's burgers) and the Functional Factory implementation [NotificationSystem](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Factory/NotificationSystem) (`key → lambda` registry dispatching Email/SMS/Push).
+::: tip Compilable Companion Project
+The two complete CMake projects for this section live in this repository — clone, run cmake once, and they go: [BurgerCreator](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Factory/BurgerCreator) built on the factory method (two chains' concrete factories, each making its own brand of burgers), and [NotificationSystem](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Factory/NotificationSystem) built on the functional factory (a `key → lambda` registry dispatching Email/SMS/Push).
 :::
 
 ## References
 
-- [cppreference: `std::unique_ptr`](https://en.cppreference.com/w/cpp/memory/unique_ptr) (Since C++11, the standard vehicle for transferring ownership from factory return values)
-- [cppreference: `std::function`](https://en.cppreference.com/w/cpp/utility/functional/function) (Since C++11, the value type for functional factory registries)
-- [cppreference: Virtual destructors](https://en.cppreference.com/w/cpp/language/destructor#Virtual_destructor) (When a factory returns a base class pointer, the base destructor must be `virtual`)
-- [refactoring.guru: Factory Method](https://refactoring.guru/design-patterns/factory-method) / [Abstract Factory](https://refactoring.guru/design-patterns/abstract-factory) (Illustrated GoF factory patterns)
-- GoF, *Design Patterns: Elements of Reusable Object-Oriented Software* — Original definitions of Factory Method and Abstract Factory
-- Companion compilable project: [FactoryBaseMethod](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Factory)
+- [cppreference: `std::unique_ptr`](https://en.cppreference.com/w/cpp/memory/unique_ptr) — since C++11, the standard vehicle for transferring ownership of a factory's return value
+- [cppreference: `std::function`](https://en.cppreference.com/w/cpp/utility/functional/function) — since C++11, the value type of a functional factory's registry
+- [cppreference: Virtual destructors](https://en.cppreference.com/w/cpp/language/destructor#Virtual_destructor) — when the factory returns base-class pointers, the base destructor must be `virtual`
+- [refactoring.guru: Factory Method](https://refactoring.guru/design-patterns/factory-method) / [Abstract Factory](https://refactoring.guru/design-patterns/abstract-factory) — illustrated walkthroughs of the GoF factory patterns
+- GoF, *Design Patterns: Elements of Reusable Object-Oriented Software* — the original definitions of Factory Method and Abstract Factory
+- Compilable companion projects: [FactoryBaseMethod](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Factory)

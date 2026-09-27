@@ -44,7 +44,7 @@ for (;;) {
 }
 ```
 
-问题在两处:**① 每次都得把全部 fd 拷进内核**(1 万个 `pollfd`,每个 8 字节,8 万元素的拷贝);**② 返回的就绪信息是"揉在数组里的",你得自己 O(n) 遍历**。连接数一上万,光这两步每次循环就耗掉可观 CPU——而且**连接数越多越慢**(O(n) 的 n 在涨)。
+问题在两处:**① 每次都得把全部 fd 拷进内核**(1 万个 `pollfd`,每个 8 字节,8 万字节的拷贝(10k×8B));**② 返回的就绪信息是"揉在数组里的",你得自己 O(n) 遍历**。连接数一上万,光这两步每次循环就耗掉可观 CPU——而且**连接数越多越慢**(O(n) 的 n 在涨)。
 
 `select` 更糟:它用一个 `fd_set` 位图,且有 `FD_SETSIZE`(默认 1024)的硬上限。`poll` 去掉了位图改用数组,没了 1024 上限,但 O(n) 的本质没变。
 
@@ -169,9 +169,9 @@ ET 模式下,收到 `EPOLLIN` 后**必须 `for(;;)` 循环 `read` 直到返回 `
 ## 参考资源
 
 - [man 2 epoll_create1](https://man7.org/linux/man-pages/man2/epoll_create1.2.html) / [man 2 epoll_ctl](https://man7.org/linux/man-pages/man2/epoll_ctl.2.html) / [man 2 epoll_wait](https://man7.org/linux/man-pages/man2/epoll_wait.2.html) —— 三个 API 的权威定义
-- [man 7 epoll](https://man7.org/linux/man-pages/man7/epoll.7.html) —— "epoll semantics",含 LT/ET 的 `O(O)` 就绪通知与"avoid starvation"等官方表述
+- [man 7 epoll](https://man7.org/linux/man-pages/man7/epoll.7.html) —— "epoll semantics",含 LT/ET 的 `O(1)` 就绪通知与"avoid starvation"等官方表述
 - [man 2 poll](https://man7.org/linux/man-pages/man2/poll.2.html) —— poll 的 O(n) 模型,对照 epoll
-- [The C10K problem (Dan Kegel)](https://kea.dev/notes/the-c10k-problem) —— epoll 诞生的直接动机
+- [The C10K problem (Dan Kegel)](http://kegel.com/c10k.html) —— epoll 诞生的直接动机
 - [epoll 内核实现:fs/eventpoll.c](https://github.com/torvalds/linux/blob/master/fs/eventpoll.c) —— 兴趣表(红黑树 `ep_insert`)+ 就绪队列(`ep_poll_callback` 入队)的源头
 - [现代 socket 封装:RAII 与 C10K 实测(本系列上一篇 01)](./01-modern-socket-wrapping.md) —— 每连接一线程扛不住并发的实测,本篇 epoll 的动机起点
 - [传统 socket 编程:服务器五步与 TCP 建链(本系列 00)](./00-traditional-socket-basics.md) —— socket 五步地基

@@ -5,14 +5,12 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Gathers the reference rules already used across Chapters 1-3, compares references
-  with pointers point by point to give a clear selection rule, and adds returning references
-  for chained calls plus the exact boundary of const-reference lifetime extension.
+description: Consolidates the reference rules used across the previous three chapters, compares references with pointers item by item to derive a selection criterion, and adds chained calls that return references plus the boundary conditions under which a const reference extends a temporary's lifetime.
 difficulty: beginner
 order: 3
 platform: host
 prerequisites:
-- 指针运算与数组
+- Pointer Arithmetic and Arrays
 reading_time_minutes: 14
 tags:
 - cpp-modern
@@ -23,46 +21,47 @@ tags:
 title: References
 translation:
   source: documents/vol1-fundamentals/ch04/03-references.md
-  source_hash: 3f31cc1c1040c63ef2403f9cd649634a723e3757ada2231867ab92e0a219d933
-  translated_at: '2026-09-17T00:00:00+00:00'
-  engine: manual
+  source_hash: d0a29a3bed69e2dec9388efca6987ead652180a5e9fd9622a5e447489f6adec7
+  translated_at: '2026-09-25T10:38:02+00:00'
+  engine: anthropic
+  token_count: 7500
 ---
-# References: An Alias That Spares You the Pointer Pain
+# References: Give a Variable an Alias, Suffer Less Pointer Pain
 
-The two pointer articles are behind us, and by now we can handle dereferencing, address-of, and pointer arithmetic. Before moving on, though, one thing deserves to be said out loud: you have been using references all along. In Chapter 1, the binding rules of references were how we told acceptable initializers from rejected ones. In Chapter 2, `auto&` in a range-for handed us a reference to the original element. In Chapter 3, `swap` and `const std::string&` were on stage the whole time. References have been in the room from the start; they just never sat down face to face with pointers.
+With the two pointer chapters behind us, we've gotten hands-on with dereferencing, address-of, and pointer arithmetic. But before we turn to references, one thing is worth calling out: you've been using them all along. In Chapter 1, covering value categories, we leaned on reference binding rules to decide what can be accepted and what can't. In Chapter 2's range-for, what `auto&` hands you is a reference to the original element. In Chapter 3's parameter passing, `swap` and `const std::string&` were the stars of every scene. References have been on stage the whole time—they just never went face to face with pointers.
 
-That is this article's job: gather the rules scattered across three chapters, then put references and pointers side by side. By the end you will hold one clear selection rule: which situations call for a reference, and which ones leave no alternative to a pointer.
+That's this article's job: gather the rules scattered across those three chapters, then put references and pointers side by side, item by item. By the end you'll hold a clear selection criterion for when to use a reference and when nothing but a pointer will do.
 
-## Gathering the Rules
+## Pulling It Together: Three Rules of References
 
-A reference is an **alias** for an existing variable. After `int& ref = value;`, the names `ref` and `value` denote the same object, and every operation on `ref` acts on `value`. Under the hood a reference is usually implemented through a pointer, but the language takes the dangerous pointer operations away and leaves a clean "other name". You saw a prototype of this in the value-categories article of Chapter 1; here it becomes official.
+A reference is an **alias** for an already-existing variable. After `int& ref = value;`, `ref` and `value` name the same object—anything you do to `ref` happens to `value`. Under the hood a reference usually goes through a pointer, but at the language level all of the pointer's dangerous operations are taken away, leaving a clean "another name". You saw the prototype of this account back in the Chapter 1 article on value categories; here it takes its final form.
 
-Three rules, each already stepped on in earlier chapters, stated together. A reference **must be initialized at declaration**—`int& ref;` does not compile; there is no "leave it empty, bind later" option, which is the first contrast with a pointer's `nullptr`. A reference **cannot be rebound once bound**—C++ has no syntax for "re-pointing" a reference at all. And strictly speaking, **a null reference does not exist**: the language requires a reference to bind to a valid object. These three are at once the source of reference safety and the source of its limits, and the comparison with pointers below keeps returning to them.
+Three rules—we've touched on each of them in earlier chapters, and now we state them together. A reference **must be initialized at declaration**: `int& ref;` doesn't compile, because there is no "leave it empty now, bind it later" option; that's the first contrast with pointers and their `nullptr`. Once bound, a reference **can never retarget**—C++ simply has no syntax for "rebinding a reference". And one more: strictly speaking, **null references do not exist**; the language requires a reference to be bound to a valid object. These three rules are the source of both the reference's safety and the limits of its capabilities, and we'll lean on them again and again when we compare with pointers.
 
-The "cannot rebind" rule is the one that trips people most often, so it gets its own look:
+The "can never retarget" point is a particularly easy trap, so let's pull it out and look at it on its own:
 
 ```cpp
 int value = 42;
 int& ref = value;
 
 int other = 200;
-ref = other;  // this is NOT "making ref point to other"!
+ref = other;  // This is NOT "making ref point to other"!
 ```
 
-What `ref = other;` actually does is assign the value 200 of `other` to the object referenced by `ref`, which is `value`. After it runs, `value` holds 200, `ref` is still a reference to `value`, and `other` is out of the picture. The binding is one-shot; every later assignment through `ref` only modifies the referenced object's value. When you need "re-pointable" semantics, the tool for the job is a pointer.
+What `ref = other;` actually does is assign `other`'s value, 200, to the object `ref` refers to—namely `value`. After it runs, `value` holds 200, `ref` is still a reference to `value`, and `other` is out of the picture. A reference's binding is a one-time deal: every later assignment to `ref` merely modifies the value of the referred-to object. If you need "re-pointing" semantics, the tool for the job is a pointer.
 
-## References vs. Pointers: Which One?
+## References vs. Pointers: Which to Choose
 
-Since both provide indirect access to objects, let's lay the differences out item by item.
+Since both achieve "indirect access to an object", let's lay the differences out item by item.
 
-A reference must bind to an object at declaration, so from birth it is "valid" (assuming you haven't pulled off the advanced bug of creating a dangling one). A pointer can sit at `nullptr` first and be assigned later—flexible, at the cost of weighing "could it be null?" before every use. Can the target change after binding? A reference is bound for life; a pointer can be re-pointed at any time, and iterating memory "iterator-style" or expressing "no object right now" can only be done with pointers. Syntax burden differs too: a reference is used like a plain variable, just write the name; pointers need `*ptr` or `ptr->member`, visibly more wordy. Add the no-null-reference rule, and a pointer's ability to be `nullptr` is at once its flexibility and the origin of a large class of bugs.
+A reference must bind to an object at declaration, so a reference is "valid" from the moment it's born (assuming you haven't pulled off the advanced bug of creating a dangling one); a pointer can start life as `nullptr` and figure things out later—flexible, at the price of weighing whether it's null before every single use. Can the target change after binding? A reference stays bound for life; a pointer can point elsewhere at any time, so walking memory in an "iterator-style" sweep, or expressing "there is no object right now", is pointer-only territory. The syntactic burden differs too: a reference is used like an ordinary variable—just write the name—while a pointer needs `*ptr` or `ptr->member`, visibly more clutter. Add the no-null-references rule on top, and "a pointer can be `nullptr`" turns out to be both its flexibility and the source of a great many bugs.
 
-One practical limit is easy to miss: references cannot be stored in containers. `std::vector<int&>` does not compile—standard containers require elements to be objects, and a reference is an alias, not an object. To manage "a batch of re-pointable handles", pointers are still the tool (or `std::reference_wrapper`, which we will meet later).
+There's one practical restriction you might overlook: references can't be stored in containers. Something like `std::vector<int&>` won't compile—standard containers require their elements to be objects, and a reference is merely an alias, not an object. To gather "a bundle of re-pointable handles" in one place and manage them together, you still want pointers (or `std::reference_wrapper`, which we'll meet later).
 
-The difference shows up most clearly at function calls. Take the old task "swap two variables" and write it both ways. C style has to pass pointers:
+The differences show up most clearly in function calls. Take the old task of "swapping two variables" and write it once with pointers, once with references. C-style code can only pass pointers:
 
 ```cpp
-// C style: pointer version
+// C-style: the pointer version
 void swap_by_pointer(int* a, int* b)
 {
     int temp = *a;
@@ -71,13 +70,13 @@ void swap_by_pointer(int* a, int* b)
 }
 
 int x = 10, y = 20;
-swap_by_pointer(&x, &y);  // caller must take addresses
+swap_by_pointer(&x, &y);  // The caller must take addresses
 ```
 
-Rewritten with references, the world quiets down:
+Rewritten with references, the world goes quiet:
 
 ```cpp
-// C++ style: reference version
+// C++-style: the reference version
 void swap_by_reference(int& a, int& b)
 {
     int temp = a;
@@ -86,42 +85,16 @@ void swap_by_reference(int& a, int& b)
 }
 
 int x = 10, y = 20;
-swap_by_reference(x, y);  // pass the variables directly, no &
+swap_by_reference(x, y);  // The caller passes variables directly; no & needed
 ```
 
-No `*` dereferencing inside the function, no `&` address-taking at the call site. The standard library's `std::swap` is implemented with references too, on exactly the same principle. In Chapter 3, when we wrote it, references were still "a tool whose usage you memorize first"; now the full explanation fits: `a` and `b` are aliases of the caller's two variables.
+No `*` dereferencing inside the function body, no `&` address-taking at the call site. The standard library's `std::swap` is implemented with references too, on exactly the same principle as `swap_by_reference`. Back in Chapter 3 when we wrote it, references were still a "memorize-how-to-use-it tool"; now we can supply the full explanation: `a` and `b` are simply aliases for the caller's two variables.
 
-One more example, modifying a member:
+> PS: Reference or pointer—when all is said and done, it's your call. My own habit: if what I'm expressing is "I'm using this object", I use a reference; if what I'm expressing leans more toward "here is where the object is stored" (go look there!), I use a pointer. It's a semantic split. And don't let anyone tell you references can't dangle—that's flat-out wrong.
 
-```cpp
-struct SensorData {
-    float temperature;
-    float humidity;
-    float pressure;
-};
+## Returning References: Chained Calls and a Precise Dangling Rule
 
-// Pointer version: null check required, -> for member access
-void fix_temperature(SensorData* data)
-{
-    if (data != nullptr) {      // check every single time
-        data->temperature += 0.5f;
-    }
-}
-
-// Reference version: clean, no extra check
-void fix_temperature(SensorData& data)
-{
-    data.temperature += 0.5f;   // plain . access
-}
-```
-
-So when should you use a pointer? My advice: **default to references, unless you need something references cannot do**. Expressing "possibly no object" (that's `std::optional`, coming later), re-pointing at runtime, doing pointer arithmetic over memory, storing handles in a container—those want pointers; everywhere else, a reference is the safer choice.
-
-Strictly speaking, through some "unconventional means" we can create a reference bound to a null address, for example `int& ref = *static_cast<int*>(nullptr);`. It compiles, but using `ref` is undefined behavior. Never write this—if someone claims "references can be null too", they are exploiting a loophole in the language rules, and such code has no place in real engineering.
-
-## Returning References: Chaining, and One Old Warning Made Precise
-
-You have written reference parameters plenty by now; the return-value side has two patterns worth seeing. The first is returning a reference to a class member, letting outside code read and write internal data directly:
+You've written references as function parameters until they're second nature; on the return-value side there are two more patterns worth a look. The first is returning a reference to a class member, letting outside code read and write internal data directly:
 
 ```cpp
 class Sensor {
@@ -131,7 +104,8 @@ class Sensor {
 public:
     Sensor(float t, float h) : temperature_(t), humidity_(h) {}
 
-    // returns a member reference: external read and write access
+    // Returns a reference to the member, allowing external code
+    // to read and modify it directly
     float& temperature() { return temperature_; }
 
     // const version: read-only access
@@ -139,47 +113,47 @@ public:
 };
 
 Sensor s(25.0f, 60.0f);
-s.temperature() = 26.5f;  // modify the internal member through the reference
+s.temperature() = 26.5f;  // Modify the internal member directly through the reference
 ```
 
-The second is **chained calls**: a member function returns a reference to `*this`, so a caller can string several operations into one line. `std::cout << a << b << c;` outputs continuously precisely because every `<<` returns a reference to `std::cout`—we use this mechanism daily.
+The other is **chained calls**: have the member function return a reference to `*this`, and the caller can string several operations into a single line. `std::cout << a << b << c;` prints in sequence precisely because every `<<` returns a reference to `std::cout`—a mechanism we use every day.
 
-As for returning a reference to a local variable, Chapter 1 and Chapter 3 each warned once and we fixed a case with our own hands, so the example will not be repeated here—just one precise rule to keep:
+As for returning references to local variables, Chapter 1 and Chapter 3 each warned about it once, and we fixed such a case with our own hands, so we won't rehash it here—just one precise decision rule:
 
-::: warning Judging whether returning a reference is safe
-The referenced object must outlive the function call itself. Member variables, global variables, static variables, and objects passed in through parameters are all safe; local variables defined in the function body are never safe. Compilers usually warn about the simple "return a local directly" shape, but they cannot cover every path—this rule has to live in our own heads.
+::: warning The safety rule for returning references
+The referred-to object's lifetime must outlast the function call itself. Member variables, global variables, static variables, and objects passed in through parameters are all safe; local variables defined inside the function body are absolutely not. Compilers usually warn on the simple shape of "directly returning a local variable", but they can't cover every path—this rule has to live in our own heads.
 :::
 
-## const References and Temporaries: Extension Only on Direct Binding
+## const References and Temporaries: Extension Only Honors Direct Binding
 
-A const reference can bind to a temporary object and **extend its lifetime**—we used this rule back in Chapter 1's value categories: `const int& ref = 42;` is legal, and `ref` stays valid for its whole scope. A function returning by value, caught directly by a const reference outside, also counts as direct binding:
+A const reference can bind to a temporary object and **extend its lifetime**—a rule we already used in Chapter 1 when discussing value categories: `const int& ref = 42;` is legal, and `ref` stays valid for the whole scope. A function returning by value, with the result caught outside directly by a const reference, likewise counts as direct binding:
 
 ```cpp
 std::string get_name();
 
 const std::string& name = get_name();
-// the temporary string returned by value is caught directly by name
-// its lifetime extends to the end of name's scope: safe
+// The by-value temporary string is caught directly by name;
+// its lifetime extends to the end of name's scope—safe
 ```
 
-But "direct" is the operative word; once the binding changes hands, nobody manages the temporary. Here is an example that compiles, runs, and is already dangling:
+But "directly" is the load-bearing word: once the reference changes hands, nobody's minding the store. Here's an example that compiles, runs, and is already dangling:
 
 ```cpp
 const std::string& pick(const std::string& a, const std::string& b)
 {
-    return a.size() > b.size() ? a : b;  // hands a reference parameter straight back
+    return a.size() > b.size() ? a : b;  // Returns one of the reference parameters as-is
 }
 
-const std::string& best = pick("hello", "hi");  // dangling!
+const std::string& best = pick("hello", "hi");  // Dangling!
 ```
 
-When `"hello"` and `"hi"` are passed as arguments to `pick`'s reference parameters, those two temporaries live only until the end of the full expression; `pick` returns a reference to one of them, and by the time `best` catches it they are already destroyed. We actually ran this code: GCC 16.2 with `-Wall` emits a `-Wdangling-reference` warning, Clang 22.1 with `-Wall -Wextra` says nothing at all; and even carrying the warning, the program compiles and prints `hello` all the same. A correct-looking result does not make the behavior defined—this is what makes dangling references nasty: they don't crash for you on cue.
+When `"hello"` and `"hi"` are passed as arguments to `pick`'s reference parameters, those two temporaries live only until the end of the full expression; `pick` returns a reference to one of them, and by the time `best` catches it they are already destroyed. We actually ran this code: GCC 16.2 with `-Wall` emits a `-Wdangling-reference` warning, while Clang 22.1 with `-Wall -Wextra` says nothing at all; and even carrying that warning, the program still compiles and still prints `hello`. A coincidentally correct result doesn't make the behavior defined—that's exactly what makes dangling references scary: they don't crash for your viewing pleasure.
 
-Non-const references cannot bind to temporaries (`int& ref = 42;` does not compile), for the reason Chapter 3 gave: if it were allowed, you could modify through the reference an object that is about to vanish, which is pointless. Checks like `-Wdangling-reference` are heuristic and can miss the moment the shape changes slightly, so the rule itself has to be memorized; the return-value optimization and move semantics behind it wait for later chapters.
+A non-const reference cannot bind to a temporary (`int& ref = 42;` doesn't compile), for the reason we gave in Chapter 3: if it were allowed, what you'd modify through the reference is an object about to vanish, and the modification would mean nothing. Checks like `-Wdangling-reference` are heuristic—change the shape slightly and they can miss it—so the rule itself is what must be memorized; the return-value optimization and move semantics behind it are reserved for later chapters.
 
-## Hands-On: references.cpp
+## Hands-On Practice — references.cpp
 
-Let's pack what this article gathered into one complete program, watching the difference in shape between references and pointers:
+Let's fold what this article has collected into one complete program, focusing on how references and pointers differ in their shape of use:
 
 ```cpp
 // references.cpp
@@ -195,7 +169,7 @@ struct SensorData {
     float pressure;
 };
 
-/// @brief Swap two variables through references
+/// @brief Swap the values of two variables via references
 void swap_by_ref(int& a, int& b)
 {
     int temp = a;
@@ -203,16 +177,16 @@ void swap_by_ref(int& a, int& b)
     b = temp;
 }
 
-/// @brief Print SensorData via const reference (no copy, no modification)
+/// @brief Print a SensorData via const reference (no copy, no modification)
 void print_sensor(const SensorData& data)
 {
-    std::cout << "temperature: " << data.temperature << "C, "
-              << "humidity: " << data.humidity << "%, "
-              << "pressure: " << data.pressure << " hPa"
+    std::cout << "温度: " << data.temperature << "°C, "
+              << "湿度: " << data.humidity << "%, "
+              << "气压: " << data.pressure << " hPa"
               << std::endl;
 }
 
-/// @brief Returns member references, allowing external modification
+/// @brief Return a member reference, allowing external modification
 class Sensor {
     SensorData data_;
 
@@ -228,29 +202,29 @@ public:
 
 int main()
 {
-    // --- swapping variables ---
+    // --- Swapping variables ---
     int x = 10, y = 20;
-    std::cout << "before: x=" << x << ", y=" << y << std::endl;
+    std::cout << "交换前: x=" << x << ", y=" << y << std::endl;
     swap_by_ref(x, y);
-    std::cout << "after: x=" << x << ", y=" << y << std::endl;
+    std::cout << "交换后: x=" << x << ", y=" << y << std::endl;
 
-    // --- passing a large object by const reference ---
+    // --- Passing a big object by const reference ---
     SensorData reading{25.5f, 60.0f, 1013.25f};
-    std::cout << "\nsensor reading: ";
+    std::cout << "\n传感器读数: ";
     print_sensor(reading);
 
-    // --- returning a member reference ---
+    // --- Returning a member reference ---
     Sensor s(22.0f, 55.0f, 1000.0f);
-    std::cout << "\nbefore: ";
+    std::cout << "\n修改前: ";
     print_sensor(s.reading());
 
     s.temperature() = 30.0f;
-    std::cout << "after: ";
+    std::cout << "修改后: ";
     print_sensor(s.reading());
 
-    // --- const reference bound to a temporary ---
-    const std::string& label = std::string("temperature sensor #1");
-    std::cout << "\nlabel: " << label << std::endl;
+    // --- A const reference binding a temporary ---
+    const std::string& label = std::string("温度传感器 #1");
+    std::cout << "\n标签: " << label << std::endl;
 
     return 0;
 }
@@ -266,24 +240,24 @@ g++ -std=c++17 -Wall -Wextra -o references references.cpp
 Output:
 
 ```text
-before: x=10, y=20
-after: x=20, y=10
+交换前: x=10, y=20
+交换后: x=20, y=10
 
-sensor reading: temperature: 25.5C, humidity: 60%, pressure: 1013.25 hPa
+传感器读数: 温度: 25.5°C, 湿度: 60%, 气压: 1013.25 hPa
 
-before: temperature: 22C, humidity: 55%, pressure: 1000 hPa
-after: temperature: 30C, humidity: 55%, pressure: 1000 hPa
+修改前: 温度: 22°C, 湿度: 55%, 气压: 1000 hPa
+修改后: 温度: 30°C, 湿度: 55%, 气压: 1000 hPa
 
-label: temperature sensor #1
+标签: 温度传感器 #1
 ```
 
-Let's walk through what this program does. `swap_by_ref` swaps variables through reference parameters, passing variable names at the call site with no address-of operator. `print_sensor` takes `const SensorData&`: no struct copy, plus a type-level guarantee that the function won't modify the input—a caller can relax just by reading the signature. `Sensor::temperature()` returns a reference to a member, so outside code can assign through it directly: controlled access to internal data. The final `const std::string& label` shows lifetime extension under direct binding: `std::string("temperature sensor #1")` was a temporary about to vanish, but caught by a const reference, it lives until the end of `main`.
+Let's walk through what this program does, section by section. `swap_by_ref` swaps variables through reference parameters; at the call site you pass variable names directly, with no address-of operator. `print_sensor` takes its argument as `const SensorData&`, which both avoids the cost of copying the struct and guarantees at the type-system level that the function won't modify the incoming data—callers can relax the moment they see the signature. `Sensor::temperature()` returns a reference to a member variable, so external code holding that reference can assign straight to it: controlled access to internal data. Finally, `const std::string& label` demonstrates lifetime extension of a temporary under direct binding: `std::string("温度传感器 #1")` was a temporary about to evaporate, but caught by the const reference, it stayed alive until the end of `main`.
 
 ## Try It Yourself
 
-### Exercise 1: Convert a pointer function
+### Exercise 1: Rework the Pointer Function
 
-The function below uses a pointer to "double every element of an array". Convert it to a reference version:
+The function below uses a pointer to implement a simple "double every element of the array" job. Please convert it to the reference version:
 
 ```cpp
 void double_values(int* arr, int n)
@@ -294,9 +268,9 @@ void double_values(int* arr, int n)
 }
 ```
 
-Hint: passing a C-style array by reference requires the "reference to array" syntax `int (&arr)[5]`—the length becomes part of the type, so the function no longer works for arbitrary lengths; the easier replacement is `std::array<int, N>`.
+Hint: passing a C-style array by reference has to be written as a "reference to an array" like `int (&arr)[5]`—the length is part of the type, so the function can't be generic over arbitrary lengths. The easier alternative for us is `std::array<int, N>`.
 
-::: details Reference answer
+::: details Reference Solution
 
 ```cpp
 #include <iostream>
@@ -313,13 +287,13 @@ int main()
 {
     std::array<int, 5> values{1, 2, 3, 4, 5};
 
-    std::cout << "before: ";
+    std::cout << "修改前: ";
     for (const auto& value : values) {
         std::cout << value << " ";
     }
     std::cout << std::endl;
     double_values(values);
-    std::cout << "after: ";
+    std::cout << "修改后: ";
     for (const auto& value : values) {
         std::cout << value << " ";
     }
@@ -337,15 +311,15 @@ g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
 Output:
 
 ```text
-before: 1 2 3 4 5
-after: 2 4 6 8 10
+修改前: 1 2 3 4 5
+修改后: 2 4 6 8 10
 ```
 
 :::
 
-### Exercise 2: Find the bugs
+### Exercise 2: Spot the Bugs
 
-The code below has several reference-related problems. Find them all:
+The code below has several reference-related problems. Please find them all:
 
 ```cpp
 int& get_value()
@@ -358,39 +332,39 @@ void process(int& ref) { ref += 10; }
 
 int main()
 {
-    int& r = get_value(); // line A
-    int& uninit;          // line B
+    int& r = get_value(); // Line A
+    int& uninit;          // Line B
     int a = 10;
     int& ref = a;
     int b = 20;
-    ref = &b;             // line C
-    process(5);           // line D
+    ref = &b;             // Line C
+    process(5);           // Line D
 }
 ```
 
-Analyze it line by line: which lines are compile errors? Which are undefined behavior at runtime?
+Please analyze it line by line: which lines are compile errors? Which lines are runtime undefined behavior?
 
-::: details Reference answer
+::: details Reference Solution
 
-The verdict first: **lines B, C, and D are compile errors; by the exercise's binary sorting, the runtime hazard is line A.** More precisely, the `return` statement inside `get_value()` and line A compile, but they leave behind a dangling reference; it is reading or writing through `r` afterwards that triggers undefined behavior.
+Our verdict up front: **Lines B, C, and D are compile errors; under the problem's binary split, the runtime hazard is recorded as Line A.** More precisely, `get_value()`'s return statement and Line A compile, but they leave behind a dangling reference; reading or writing through `r` is what triggers runtime undefined behavior.
 
-| Location | Result | Reason |
+| Location | Outcome | Reason |
 | --- | --- | --- |
-| `return x;` | Compiles; compilers usually warn | `x` is a local of automatic storage duration; its lifetime ends when the function returns, and returning `int&` does not extend it. |
-| Line A: `int &r = get_value();` | Compiles, but `r` is a dangling reference | `r` binds to `x`, whose lifetime has ended. This step merely creates the dangling reference; a later read or write through `r` (e.g. `std::cout << r`) is the undefined behavior. |
-| Line B: `int &uninit;` | **Compile error** | A reference must be initialized at declaration; you cannot declare it first and bind later like a pointer. |
-| `int a = 10;`, `int &ref = a;`, `int b = 20;` | Correct | `ref` binds at declaration to `a`, which is alive. |
-| Line C: `ref = &b;` | **Compile error** | The expression `ref` has type `int` while `&b` has type `int*`; and assignment never rebinds a reference. To assign `b`'s value into `a`, write `ref = b`; to change the target you must declare a new reference or use a pointer. |
-| Line D: `process(5);` | **Compile error** | `process` demands a modifiable `int&`, and the literal `5` is an rvalue, which cannot bind to a non-const lvalue reference. Pass a named `int` lvalue instead. |
+| `return x;` | Compiles; compilers usually warn | `x` is a local variable of automatic storage duration whose lifetime ends when the function returns; the returned `int&` does not extend `x`'s lifetime. |
+| Line A: `int &r = get_value();` | Compiles, but `r` is a dangling reference | `r` binds to `x`, whose lifetime has already ended. This step by itself merely creates the dangling reference; subsequent reads or writes through `r` (for example `std::cout << r`) are the undefined behavior. |
+| Line B: `int &uninit;` | **Compile error** | A reference declaration must be initialized at declaration; you can't declare it first and bind later the way you can with a pointer. |
+| `int a = 10;`, `int &ref = a;`, `int b = 20;` | Correct | `ref` binds, at its declaration, to `a`, which is still alive. |
+| Line C: `ref = &b;` | **Compile error** | The `ref` expression has type `int`, while `&b` has type `int*`; and assignment never rebinds a reference to a different object. To give `a` the value of `b`, write `ref = b`; to change the target you must declare a new reference or switch to a pointer. |
+| Line D: `process(5);` | **Compile error** | `process` requires a modifiable `int&`, but the literal `5` is an rvalue and cannot bind to a non-`const` lvalue reference. Pass a named `int` lvalue instead. |
 
-The easiest to confuse is line A: strictly speaking, **a dangling reference is the broken state; accessing it is what constitutes undefined behavior**. For example, with B, C, D commented out, this read triggers UB:
+Line A is the one we most easily get confused about: strictly speaking, **a dangling reference is an erroneous state, and accessing the dangling reference is what constitutes runtime undefined behavior**. For example, with B, C, and D temporarily commented out, the following read triggers UB:
 
 ```cpp
 int &r = get_value();
-std::cout << r;  // undefined behavior: the x that r refers to has ended its lifetime
+std::cout << r;  // Undefined behavior: the x that r points to has already ended its lifetime
 ```
 
-Here is one safe fix: have `get_value` return by value, and initialize every reference at declaration; if a reference must be returned, return only an object that lives long enough (a static object, or one handed in by the caller):
+Here is one safe corrected version: have `get_value` return by value, and give each reference an initial object at declaration; if you genuinely must return a reference, it may only be to an object whose lifetime is long enough (for example a static object, or one handed in by the caller):
 
 ```cpp
 int get_value()
@@ -422,16 +396,16 @@ int main()
 
 :::
 
-### Exercise 3: A tiny chained configurator
+### Exercise 3: Build a Simple Chained Configurator
 
-Design a class `Config` with two `int` members, `width_` and `height_`, providing `set_width(int)` and `set_height(int)` methods that return `Config&` to support chaining:
+Please design a class `Config` with two `int` members, `width_` and `height_`, providing two methods, `set_width(int)` and `set_height(int)`, and have them return `Config&` to support chained calls:
 
 ```cpp
 Config c;
 c.set_width(800).set_height(600);
 ```
 
-::: details Reference answer
+::: details Reference Solution
 
 ```cpp
 #include <iostream>

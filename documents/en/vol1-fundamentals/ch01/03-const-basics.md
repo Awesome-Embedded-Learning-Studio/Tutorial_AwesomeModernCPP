@@ -6,13 +6,13 @@ cpp_standard:
 - 17
 - 20
 description: Master the various uses of `const` with variables and pointers, and get
-  a preliminary understanding of `constexpr` compile-time constants.
+  a first taste of `constexpr` compile-time constants.
 difficulty: beginner
 order: 3
 platform: host
 prerequisites:
-- 类型转换
-reading_time_minutes: 14
+- Type Conversion
+reading_time_minutes: 16
 tags:
 - cpp-modern
 - host
@@ -22,233 +22,243 @@ tags:
 title: A First Look at const
 translation:
   source: documents/vol1-fundamentals/ch01/03-const-basics.md
-  source_hash: ef0fa70e3e44914ca4ae7bf8a5dc18e4c95fa31e128a015f507df996185f3b2f
-  translated_at: '2026-06-16T03:40:40.890129+00:00'
+  source_hash: 40684fabacdf7a729bbc8236ce50fa035797a3af780e842eba676ae0873c84f9
+  translated_at: '2026-09-25T09:59:29+00:00'
   engine: anthropic
-  token_count: 2256
+  token_count: 3400
 ---
-# An Introduction to `const`
+# Long Time No See, `const` — Look How Immutable You've Become
 
-When writing code, some things simply shouldn't be changed—configuration parameters shouldn't be accidentally overwritten once set, array capacities shouldn't fluctuate after declaration, and physical constants like Pi are non-negotiable. If we rely solely on "discipline" to ensure these values remain intact, we might as well be walking blindfolded at night. Sooner or later, a slip of the hand will modify a critical value, leading to hours spent debugging a mysterious bug.
+When we write code, **some things simply should not be changed**—a configuration parameter, once set, should not be accidentally overwritten; an array's capacity, once declared, should not change again; and physical constants like pi go without saying. **If we rely purely on "self-discipline" to keep these values untouched, that is no different from walking down a dark road with our eyes closed. Sooner or later someone's hand slips, a critical value gets modified, and half a day goes into chasing down a baffling bug. In other words, a guarantee built into the mechanism beats whatever you keep in your head!**
 
-C++ provides us with a safety lock: `const`. The core concept is simple—if something shouldn't change, explicitly tell the compiler so it can watch over it. Any code attempting to modify a `const` value is blocked right at the compilation stage. Killing the problem during compilation is far more reliable than discovering data corruption in production. (Rust actually flips this paradigm: unless you say a variable is mutable, it is immutable! So variables are `const` by default!)
+C++ hands us a safety lock: `const`. The core idea is dead simple—if something should not change, say so explicitly and let the compiler keep watch for us. Any code that tries to modify a `const` value **gets stopped dead at the compilation stage**. Compared with discovering in production that some data was accidentally tampered with, strangling the problem at compile time is clearly the more dependable option. (This is why Rust simply flips the whole thing around: unless you say a variable is mutable, it is immutable! So variables are effectively declared `const` by default!)
 
-## Locking Down Variables — Basic `const` Usage
+## Putting a Lock on Variables — Basic `const` Usage
 
-Let's start with the simplest scenario. Suppose we have a maximum buffer capacity that should remain unchanged throughout the program's execution:
-
-```cpp
-const int MAX_BUFFER_SIZE = 1024;
-```
-
-Once we add `const`, this variable becomes "read-only"—we must provide an initial value at declaration, and any subsequent attempt to modify it will be rejected by the compiler. Let's try it:
+Suppose we have the maximum capacity of a buffer (a simple way to think about it: a spot where we put things away for use in a moment), a value that should never change for as long as the program runs:
 
 ```cpp
-MAX_BUFFER_SIZE = 2048; // Error!
+const int kMaxBufferSize = 1024;
 ```
 
-The compiler will give a very clear error message:
+Once `const` is attached, the variable becomes "read-only"—we must give it an initial value at declaration, and from then on any operation that tries to modify it will be rejected by the compiler. Let's give it a try:
+
+```cpp
+const int kMaxBufferSize = 1024;
+kMaxBufferSize = 2048;  // Compile error!
+```
+
+The compiler will produce a very explicit error message:
 
 ```text
-error: assignment of read-only variable 'MAX_BUFFER_SIZE'
+error: assignment of read-only variable 'kMaxBufferSize'
 ```
 
-This is the core value of `const`—it elevates "I shouldn't change this" from a gentleman's agreement to a compiler-enforced rule. You might ask, isn't this just using the compiler as a bodyguard? Exactly, and this bodyguard never falls asleep on the job.
+This is the core value of `const`—it turns "I shouldn't modify this value" from a convention based on self-discipline into a rule enforced by the compiler. **You might ask: isn't this just using the compiler as a bodyguard? Exactly, that is precisely the idea—and this bodyguard never dozes off.**
 
-### `const` vs `#define`: What's the Difference?
+### What Exactly Is the Difference Between `const` and `#define`
 
-If you've used C, you might say, "I can do this with `#define`." True, the effect looks similar, but there are key differences.
+If you have some C under your belt, you might say, "I can do this with `#define` too." True, `#define MAX_SIZE 1024` looks roughly the same in effect, but there are several key differences between the two.
 
-First, `const` variables have explicit types. The `int` in `const int` tells the compiler this is an integer. If you accidentally assign it to a `float`, the compiler can perform type checking or issue a warning. `#define` is just simple text replacement; the preprocessor doesn't care about types—it dutifully replaces all `MAX_BUFFER_SIZE` with `1024`, regardless of whether 1024 is an integer or a float.
+First, a `const` variable **has an explicit type (much cleaner semantics!)**. The `int` in `const int kMaxBufferSize = 1024;` tells the compiler this is an integer; if you later accidentally assign it to a `double`, the compiler can perform type checking and even issue a warning. `#define`, on the other hand, is plain text substitution—the preprocessor does not care about types at all. **It just dutifully replaces every `MAX_SIZE` with `1024`; whether that `1024` is an integer or a floating-point number is none of its business. Whose business is it? Yours!**
 
-Second, `const` variables follow normal scoping rules. A `const` variable declared inside a function is visible only within that function, while a global `const` variable has internal linkage by default (meaning other `.cpp` files can't see it). `#define` takes effect from the point of definition to the end of the file with no scope restrictions—this easily triggers naming conflicts in large projects.
+Second, `const` variables follow normal scoping rules. A `const` variable declared inside a function is visible only within that function, and a `const` variable declared at global scope has internal linkage by default (in other words, other `.cpp` files cannot see it). A `#define`, once expanded, is in effect from its point of definition all the way to the end of the file, with no scope restriction whatsoever—**which easily breeds name collisions in large projects.**
 
-Finally, when debugging, a `const` variable is just a normal variable; you can see its name and value in the debugger. A `#define` macro is replaced during preprocessing, so the debugger only sees a bare number `1024`, leaving you clueless about where it came from.
+That is why, in C++, I prefer `const`—or `constexpr`, which we will meet later—for defining constants, **and keep `#define` for the scenarios that genuinely need conditional compilation. That is where `#define` truly earns its place in C++, and especially in modern C++!**
 
-Our conclusion: in C++, prefer `const` or `constexpr` (discussed later) to define constants, leaving `#define` for scenarios that truly require conditional compilation.
+> Sharp-eyed readers may notice that my `const` constants look rather distinctive—why do they start with `k`? The answer is the `kPascalCase` style, as in `kMaxBufferSize`, `kDefaultBaudRate`, `kPi`. This `k` prefix is a fairly common constant-naming convention in the C++ community; you can tell at a glance that this is a value not meant to be modified. In truth, I lifted it from Google Chrome's constant-naming guidelines.
 
-Regarding naming conventions, constants in this tutorial use the `kCamelCase` style, like `kMaxBufferSize`, `kPi`, `kTimeoutMs`. The `k` prefix is a common convention in the C++ community to signal that a value is constant and shouldn't be modified.
+## When `const` Meets Pointers — Not That Commonly Used, but Worth Mentioning
 
-## `const` and Pointers — The Most Confusing Part
+As for `const`, our advice is: if there is a need, add it.
 
-Using `const` to modify a simple variable is straightforward, but when `const` meets pointers, things get interesting. Many folks get confused here—I certainly struggled with this when starting out. Don't worry, let's break it down step by step.
+Using `const` to modify a plain variable by itself is simple, but once `const` meets pointers, things start getting interesting. Plenty of people get thoroughly turned around by this part—including the author himself, who got stuck here for a long time when first learning. Don't panic; let's take it apart step by step.
 
-The core question is: does `const` modify the pointer itself, or the data the pointer points to? The answer depends on where `const` appears. C++ has three `const` and pointer combinations. Let's look at them one by one.
+The core question is: does `const` apply to the pointer itself, or to the data the pointer points to? The answer **depends on where the `const` appears**. There are three ways to combine `const` with a pointer declaration in C++, and we will look at them one by one.
 
-### Pointer to Constant: `const int* p`
+### Pointer to a Constant: `const int* p`
 
 ```cpp
-int a = 10;
-const int* p = &a; // p points to a, but the data is read-only via p
+int value = 42;
+const int* p = &value;
 ```
 
-Here, `const` modifies `int`, meaning modifying the data pointed to by `p` is forbidden. However, the pointer `p` itself can change—it can point to a different address. Think of it as "this pointer is well-behaved; it promises not to modify the target data through itself."
+Here `const` applies to the `int` (let me add the parentheses this way: (const int)* p—does that click now?). In other words, modifying the data `p` points to through `p` is not allowed. But the pointer `p` itself can change—it may point to a different address. You can understand it as "this pointer is well-behaved: it promises not to modify the target data through itself."
 
 ```cpp
-*p = 20; // Error: cannot modify data through p
-p = nullptr; // OK: can change where p points
+int x = 10;
+int y = 20;
+const int* p = &x;
+
+*p = 100;   // Compile error! Cannot modify data through a const int*
+p = &y;     // Fine, the pointer itself can point elsewhere
 ```
 
-Note a detail: although you can't modify `a`'s value through `p`, `a` itself is not `const`. Modifying `a` directly is perfectly legal—`const` just means "I won't modify it through this pointer," not that the target data is truly immutable.
+Note one detail: although you cannot modify `x` through `p`, `x` itself is not `const`. Modifying it directly with `x = 100;` is perfectly legal—`const int*` only says "I won't modify through this pointer"; it does not mean the target data is actually immutable.
 
 ### Constant Pointer: `int* const p`
 
 ```cpp
-int a = 10;
-int* const p = &a; // p is constant, but the data is modifiable
+int value = 42;
+int* const p = &value;
 ```
 
-This time, `const` modifies the pointer variable `p` itself. Once initialized, the pointer is locked to that address and cannot point elsewhere. However, modifying the target data through `p` is fully allowed.
+Here, let me parenthesize it this way: int* (const p)—`p` itself is the pointer, and it is the `const` one. **So just look to the right and see what it binds to first.** This time `const` applies to the pointer variable `p` itself. That is, once the pointer is initialized, it is glued to that one address and cannot point anywhere else. Modifying the target data through `p`, however, is completely allowed.
 
 ```cpp
-*p = 20; // OK: can modify data
-p = nullptr; // Error: cannot change where p points
+int x = 10;
+int y = 20;
+int* const p = &x;
+
+*p = 100;   // Fine, the data can be modified
+p = &y;     // Compile error! The pointer itself is const and cannot be repointed
 ```
 
-Think of this as a "stubborn pointer"—it fixates on an address and won't budge, but it can change the contents at that address freely.
+You can think of it as a "one-track-minded pointer"—once it has settled on an address it will not budge, but the contents at that address are fair game for it to modify.
 
-### Both `const`: `const int* const p`
+### Both const: `const int* const p`
 
 ```cpp
-int a = 10;
-const int* const p = &a; // Neither p nor *p can be modified
+int value = 42;
+const int* const p = &value;
 ```
 
-This combines the two constraints: the pointer itself cannot change where it points, and the data cannot be modified through the pointer. This is quite common in function parameters—when passing a pointer to a function, if you don't want the function to change the pointer's target or the data itself, you write it this way.
-
-### Read Right-to-Left — A Practical Reading Trick
-
-Many find these three combinations hard to remember. Here is a classic reading method: **read the declaration from right to left**. Let's take `const int* const p` as an example:
-
-- Start with the variable name `p`, read left
-- `const` → p is a constant
-- `*` → pointer
-- `int` → to int type
-- `const` → this int is constant
-
-Put together: `p` is a constant pointer to a constant int.
-
-Look at `const int* p` again: `p` is a pointer (`*`) to a constant int (`const int`)—data immutable, pointer mutable.
-
-`int* const p`: `p` is a constant (`const`) pointer (`*`) to int—pointer immutable, data mutable.
-
-Practice with a few more examples, and you'll build intuition quickly.
-
-> **Pitfall Warning**: Interviews and exams love to test the differences between these three declarations. If you can't tell them apart, don't guess—use the right-to-left method and break it down step by step; it's much more reliable than rote memory. Also, `const int* p` and `int const* p` are completely equivalent; `const` can go before or after `int`. But `int* const p` is different; `const` is to the right of `*`, modifying the pointer. This positional difference is key.
-
-The pitfalls don't stop there. Many beginners think `const int* p` means `a` itself becomes constant—it doesn't. `a` is still a normal variable; you can modify `a` directly. `const` means "I won't modify through this pointer," an access constraint, not a constraint on the target data itself.
+**This form stacks the two constraints above: the pointer itself cannot be repointed, and the data cannot be modified through the pointer. You actually see this quite often in function parameters—when you pass a pointer to a function and want neither the pointer's target changed inside the function nor the data modified, this is how you write it.**
 
 ## `const` and References
 
-Done with pointers, let's look at references. `const` with references is much simpler than with pointers, because references themselves cannot be rebound—they are bound to a variable from birth. So there is only one `const` and reference combination:
+With pointers done, let's look at references. Pairing `const` with references is much simpler than with pointers, because references themselves are not allowed to rebind—from the moment it is born, a reference is welded to some variable. So there is only one case for combining `const` with a reference:
 
 ```cpp
-int a = 10;
-const int& ref = a; // ref is a read-only alias for a
+int x = 42;
+const int& ref = x;
 ```
 
-`ref` is an alias for `a`, but you cannot modify `a`'s value through `ref`. Similar to `const int* p`, this just means "I won't modify through `ref`"; `a` itself can still be freely modified.
+`ref` is an alias for `x`, but you cannot modify `x`'s value through `ref`. Similar to `const int*`, this only says "I won't modify through `ref`"—`x` itself can still be freely modified.
 
-This "const reference" has an extremely important use in practical development—function parameters. Imagine a function that needs to receive a `std::string` parameter:
+This kind of "reference to a constant" has one hugely important use in real-world development—function parameters. Imagine you have a function that needs to take a `std::string` parameter:
 
 ```cpp
-void printString(std::string str) {
-    // ...
+void print(std::string s)
+{
+    std::cout << s << std::endl;
 }
 ```
 
-Every time `printString` is called, a copy of the string occurs. If the string is long, or the function is called frequently, this copy overhead is non-negligible. Changing it to a `const` reference solves this:
+Every call to `print("hello")` triggers a copy of the string. If the string is long, or the function is called frequently, that copying overhead becomes impossible to ignore. Switching to a `const` reference solves it:
+
+> We have not yet covered the move mechanism in modern C++. In the C++98 era, we almost never wrote pass-by-value parameters; it was not until C++11, when `std::move` and rvalues arrived, that we finally had better semantics for this.
 
 ```cpp
-void printString(const std::string& str) {
-    // ...
+void print(const std::string& s)
+{
+    std::cout << s << std::endl;
 }
 ```
 
-`const std::string&` means: receive a reference (no copy), but promise not to modify it. This avoids copy overhead while guaranteeing safety to the caller. This `const T&` parameter pattern appears extremely frequently in C++; we will encounter it repeatedly in later chapters. For now, just be aware of it.
+`const std::string& s` means: take a reference (no copy), but promise not to modify it. This avoids the copying overhead while assuring the caller of safety. The `const T&` parameter pattern appears at an extremely high frequency in C++; later chapters will run into it again and again, so for now just carry the impression with you.
 
-## `constexpr` — Let the Compiler Calculate for You
+## `constexpr` — Letting the Compiler Do the Math for You
 
-So far, our `const` just means "this value won't change at runtime." But some constants have values determined at compile time—like `3.14 * 2` definitely equals `6.28`, no need to wait for the program to run. C++11 introduced `constexpr` to explicitly tell the compiler: "You can calculate this value during compilation."
+So far, the `const` we have been talking about only means "this value will not change during execution." But some constants have values that are already settled at the compile stage—`5 * 5` is definitely `25`, so there is no need to wait for the program to run to compute it. C++11 introduced `constexpr` to tell the compiler explicitly: "this is a value you can work out at compile time." If you are familiar with assembly, the meaning becomes plain—it gets computed into an immediate for you, with nothing left to process at runtime.
 
 ```cpp
-constexpr double PI = 3.14159;
-constexpr double DIAMETER = 2.0 * PI; // Calculated at compile time
+constexpr int kSquare = 5 * 5;           // Computed at compile time, value is 25
+constexpr int kBufferSize = 1024 * 64;   // Also computed at compile time
+
+// Under some very low optimization levels, the compiler really will direct the CPU at runtime to do two
+// register loads and one register multiply. Far slower than directly stuffing the precomputed number into
+// a register; in other words, at this granularity the program runs several or even tens of times slower
+const int kSquare = 5 * 5;           // Computed at compile time, value is 25
+const int kBufferSize = 1024 * 64;   // Also computed at compile time
 ```
 
-The relationship between `constexpr` and `const` can be summarized in one sentence: `constexpr` implies `const` (compile-time constants certainly can't change), but `const` doesn't imply `constexpr` (read-only values determined at runtime also count as `const`). For example:
+"Hold on? Charliechen114514, let me ask you: isn't `const` also unmodifiable? Why does C++ bother with something so redundant?"
+
+It is not redundant. `const` merely reminds the compiler that this thing must not be modified, but it does not tell the compiler that it can simply compute the result out directly. So with low optimization turned on, you can actually catch the CPU earnestly computing that 5 x 5 is 25! And everyone knows that when you write the literal 5 x 5, you might as well just write 25 directly.
 
 ```cpp
-int runtimeInput;
-std::cin >> runtimeInput;
-const int c = runtimeInput; // OK: const, but not constexpr
+int x = 10;
+const int cx = x;          // const but not constexpr, because x's value is only known at runtime
+constexpr int kVal = 42;   // constexpr, which is at the same time const
 ```
 
-`constexpr` is more powerful because it can be used on functions. A `constexpr` function means: if the arguments passed are compile-time determinable, the return value can also be calculated at compile time:
+Where `constexpr` gets more powerful is that it can be applied to functions. A `constexpr` function means: if the arguments passed in are all values determinable at compile time, then the function's return value can also be computed at compile time:
 
 ```cpp
-constexpr int square(int x) {
+constexpr int square(int x)
+{
     return x * x;
 }
 
-constexpr int result = square(5); // Calculated at compile time, result is 25
+constexpr int kResult = square(5);  // Computed at compile time, kResult = 25; if you don't believe it, have an AI show you how to objdump or dumpbin the assembly—we won't teach that here
 ```
 
-Values calculated at compile time have a major benefit: they can be used where constant expressions are required, like array sizes:
+Values computed at compile time come with a big benefit: they can be used in the places that require a constant expression, such as an array's size:
 
 ```cpp
-int arr[square(5)]; // OK: square(5) is a constant expression
+constexpr int kArraySize = square(3);  // 9
+int data[kArraySize];                   // Legal, because kArraySize is a compile-time constant
 ```
 
-If `square` were just a normal `const` function, this line might fail on some compilers (depending on whether the variable is treated as a constant expression). Using `constexpr` leaves no ambiguity.
+If `kArraySize` were merely an ordinary `const`, this line might not pass on some compilers (depending on whether the `const` variable is treated as a constant expression). With `constexpr`, there is no ambiguity whatsoever.
 
-Here we just touch briefly on `constexpr`. It is one of the most important features of modern C++—C++14 allowed more complex logic in functions, C++17 further relaxed restrictions, and C++20 introduced `consteval` (must execute at compile time) and `constinit`. Later, we will have a dedicated chapter to dive deep into compile-time computation. For now, just know: if your constant value can be determined at compile time, prefer `constexpr`.
+Here we are only getting a first touch of `constexpr`. It is one of the most important features of modern C++—by C++14 it allowed more complex logic inside such functions, C++17 relaxed the restrictions further, and C++20 went on to introduce `consteval` (must execute at compile time) and `constinit`. In embedded C++ we will use these critically important features over and over—**at the language level, they help us lock in both runtime efficiency and binary-size savings.**
 
-> **Pitfall Warning**: `constexpr` functions don't guarantee execution at compile time. The compiler forces compile-time calculation only when a "compile-time constant" is needed (like array size, template parameters). Otherwise, the compiler might choose to calculate at compile time or runtime—depending on optimization strategy and function complexity. If you need to force compile-time execution, C++20's `consteval` is the correct choice.
+## Putting It All Together — const_demo.cpp
 
-## Comprehensive Practice — const_demo.cpp
-
-Theory is shallow. Let's string together all the `const` usage discussed above into a complete example program. This program won't have complex logic, but it will cover every `const` combination and verify the compiler's behavior.
+Book knowledge only goes so far. Let's now string together every `const` usage discussed above into one complete example program. The logic will not be anything complex, but it covers each `const` combination and verifies the compiler's behavior.
 
 ```cpp
+// const_demo.cpp — Demonstrates various uses of const variables, pointers, references, and constexpr
+
 #include <iostream>
-#include <string>
 
-// 1. Basic const variable
-const int kMaxSize = 100;
-
-// 2. constexpr variable
-constexpr int kSquare(int x) {
+/// @brief constexpr function: computes a square
+/// @param x the value to be squared
+/// @return the square of x
+constexpr int square(int x)
+{
     return x * x;
 }
 
-int main() {
-    // 3. const pointer (pointer cannot change, data can)
+int main()
+{
+    // --- const variable ---
+    const int kMaxSize = 100;
+    // kMaxSize = 200;  // Uncommenting this causes a compile error
+    std::cout << "kMaxSize = " << kMaxSize << std::endl;
+
+    // --- constexpr ---
+    constexpr int kArraySize = square(5);  // Computed at compile time, result is 25
+    std::cout << "kArraySize = " << kArraySize << std::endl;
+
+    // --- pointer to a constant ---
     int a = 10;
-    int* const p1 = &a;
-    *p1 = 20; // OK
-    // p1 = nullptr; // Error: assignment of read-only variable 'p1'
+    int b = 20;
+    const int* p_to_const = &a;
+    // *p_to_const = 100;  // Uncommenting this causes a compile error
+    p_to_const = &b;       // Fine, the pointer can be repointed
+    std::cout << "*p_to_const = " << *p_to_const << std::endl;
 
-    // 4. Pointer to const (data cannot change, pointer can)
-    const int* p2 = &a;
-    // *p2 = 30; // Error: assignment of read-only location '* p2'
-    p2 = nullptr; // OK
+    // --- constant pointer ---
+    int* const const_p = &a;
+    *const_p = 100;        // Fine, the data can be modified
+    // const_p = &b;       // Uncommenting this causes a compile error
+    std::cout << "*const_p = " << *const_p << std::endl;
 
-    // 5. Pointer to const pointer (both cannot change)
-    const int* const p3 = &a;
-    // *p3 = 40; // Error
-    // p3 = nullptr; // Error
+    // --- both const ---
+    const int* const double_const = &a;
+    // *double_const = 1;  // Compile error
+    // double_const = &b;  // Compile error
+    std::cout << "*double_const = " << *double_const << std::endl;
 
-    // 6. const reference
-    const int& ref = a;
-    // ref = 50; // Error: assignment of read-only reference 'ref'
-
-    // 7. constexpr function usage
-    constexpr int size = kSquare(5);
-    int arr[size]; // OK: array size is a constant expression
-
-    std::cout << "a = " << a << std::endl;
-    std::cout << "Array size: " << size << std::endl;
+    // --- const reference ---
+    int x = 42;
+    const int& ref = x;
+    // ref = 100;           // Compile error
+    x = 100;               // Modifying x directly is fine
+    std::cout << "ref = " << ref << std::endl;  // Prints 100
 
     return 0;
 }
@@ -257,25 +267,29 @@ int main() {
 Compile and run:
 
 ```bash
-g++ -std=c++20 const_demo.cpp -o const_demo
+g++ -std=c++17 -Wall -Wextra -o const_demo const_demo.cpp
 ./const_demo
 ```
 
 Expected output:
 
 ```text
-a = 20
-Array size: 25
+kMaxSize = 100
+kArraySize = 25
+*p_to_const = 20
+*const_p = 100
+*double_const = 100
+ref = 100
 ```
 
-You can uncomment the "compilation error" lines one by one to see what error messages the compiler produces. Experiencing how the compiler blocks these operations firsthand is much more memorable than just reading text.
+You can uncomment those "compile error" lines one at a time and see what error messages the compiler produces. Getting a hands-on feel for how the compiler intercepts these operations leaves a far deeper impression than reading text alone.
 
 ## Run Online
 
-Run `const_demo.cpp` online and observe the actual output of various `const` usages:
+Run const_demo.cpp online and observe the actual output of the various `const` usages:
 
 <OnlineCompilerDemo
-  title="First Look at const: Variables, Pointers, References, and constexpr"
+  title="A First Look at const: Variables, Pointers, References, and constexpr"
   source-path="code/examples/vol1/04_const_demo.cpp"
   description="Run online and observe the actual behavior of const pointers, const references, and constexpr."
   allow-run
@@ -283,35 +297,169 @@ Run `const_demo.cpp` online and observe the actual output of various `const` usa
 
 ## Try It Yourself
 
-Done with theory, now it's your turn. The following three exercises help verify your understanding of `const`. I suggest writing, compiling, and running each one completely.
+That's the theory covered—now it is your turn to get hands-on. The three exercises below help you gauge your understanding of `const`; I suggest writing each one out in full, compiling, and running it.
 
-### Exercise 1: Declare `const` Pointers and Predict Behavior
+### Exercise 1: Declare const Pointers and Predict the Behavior
 
-Write the following declarations, then for each pointer try (1) modifying the data the pointer points to, (2) modifying the pointer's target itself. Before compiling, predict which operations the compiler will reject, then verify your prediction.
+Write out the following declarations, then for each pointer attempt (1) modifying the data the pointer points to and (2) modifying what the pointer itself points to. Before compiling, first predict which operations the compiler will reject, then verify your predictions.
 
 - `const int* p1`
 - `int* const p2`
 - `const int* const p3`
 
-### Exercise 2: Transform `#define` into `constexpr`
+::: details Reference answer
 
-Here is a snippet of C-style code using `#define`. Replace all macro constants with `constexpr` variables, and write a `constexpr` function `calculateArea` to calculate the area of a circle.
+**main.cpp**
 
 ```cpp
 #include <iostream>
-#include <cmath>
+int main()
+{
+    int a1 = 0;
+    int a2 = 0;
+    int a3 = 0;
 
-#define PI 3.14159
-#define MAX_RADIUS 100
+    const int* p1 = &a1;
+    // *p1 = 5;   // Compile error! Cannot modify data through a const int*
+    p1 = &a2;     // Fine, the pointer itself can point elsewhere
+    std::cout << "*p1 = " << *p1 << std::endl;
 
-int main() {
-    double r = 5.0;
-    double area = PI * r * r;
-    std::cout << "Area: " << area << std::endl;
+    int* const p2 = &a2;
+    *p2 = 5;      // Fine, the data pointed to by int* const can be modified
+    // p2 = &a3;  // Compile error! An int* const pointer itself cannot be repointed
+    std::cout << "*p2 = " << *p2 << std::endl;
+
+    p1 = &a3;     // Fine, a const int* pointer itself can point elsewhere
+
+    const int* const p3 = &a3;
+    // *p3 = 5;   // Compile error! const int* const can neither modify the data nor change what it points to
+    // p3 = &a1;  // Compile error! A const int* const pointer itself cannot be repointed
+    std::cout << "*p3 = " << *p3 << std::endl;
+
     return 0;
 }
 ```
 
-### Exercise 3: Write a Function Using `const` Reference Parameters
+Compile and run:
 
-Write a function `printSum` that accepts two `int` parameters and outputs their sum. Then call it in `main`. Think about it: for a small type like `int`, is there a performance difference between using `const int&` and passing `int` directly? What types of parameters are best suited for `const T&` passing?
+```bash
+g++ -std=c++20 -Wall -Wextra main.cpp -o main && ./main
+```
+
+Output:
+
+```text
+*p1 = 0
+*p2 = 5
+*p3 = 0
+```
+
+:::
+
+### Exercise 2: Convert #define into constexpr
+
+Below is some C-style code using `#define`. Replace all the macro constants with `constexpr` variables, and write a `constexpr` function `circle_area(double radius)` that computes the area of a circle.
+
+```cpp
+#define PI 3.14159265
+#define MAX_RADIUS 100.0
+#define MIN_RADIUS 0.1
+```
+
+::: details Reference answer
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+
+constexpr double PI = 3.14159265;
+constexpr double MAX_RADIUS = 100.0;
+constexpr double MIN_RADIUS = 0.1;
+
+constexpr double clamp_radius(double radius)
+{
+    return radius < MIN_RADIUS
+        ? MIN_RADIUS
+        : (radius > MAX_RADIUS ? MAX_RADIUS : radius);
+}
+
+constexpr double circle_area(double radius)
+{
+    const double r = clamp_radius(radius);
+    return PI * r * r;
+}
+
+int main()
+{
+    double r = 0;
+    std::cout << "请你输入所求圆的半径 : ";
+    std::cin >> r;
+    std::cout << "半径为" << r << "的面积是: " << circle_area(r) << std::endl;
+    return 0;
+}
+```
+
+The exercise only hands you three macros and does not prescribe how `MAX_RADIUS` / `MIN_RADIUS` should be used; converted verbatim to `constexpr`, they would sit idle. So here a fellow `constexpr` function `clamp_radius` is added, clamping the input radius back into the `[0.1, 100]` range so that both constants genuinely take part in the computation—a `constexpr` function may also call another `constexpr` function, and with a constant-expression initialization such as `constexpr double area = circle_area(2.0);`, the entire call chain gets computed at compile time.
+
+Compile and run:
+
+```bash
+g++ -std=c++20 -Wall -Wextra main.cpp -o main && ./main
+```
+
+Output:
+
+```text
+请你输入所求圆的半径 : 2
+半径为2的面积是: 12.5664
+```
+
+:::
+
+### Exercise 3: Write a Function That Takes const Reference Parameters
+
+Write a function `print_sum` that takes two `const int&` parameters and prints their sum. Then call it inside `main`. Think it over: for a small type like `int`, is there a performance difference between using `const int&` versus plain `int` as the parameter? What kind of arguments is `const T&` best suited for?
+
+::: details Reference answer
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+
+void print_sum(const int& a, const int& b)
+{
+    std::cout << a << " + " << b << " 的值是: " << a + b << std::endl;
+}
+
+int main()
+{
+    int a = 0;
+    int b = 0;
+    std::cout << "请输入a的值是 :";
+    std::cin >> a;
+    std::cout << "请输入b的值是 :";
+    std::cin >> b;
+    print_sum(a, b);
+    return 0;
+}
+```
+
+Compile and run:
+
+```bash
+g++ -std=c++20 -Wall -Wextra main.cpp -o main && ./main
+```
+
+Output:
+
+```text
+请输入a的值是 :1
+请输入b的值是 :3
+1 + 3 的值是: 4
+```
+
+For a small type like `int`, pass-by-value is usually the more appropriate choice: copying a machine-word-sized value costs very little, and the compiler can often pass it directly in a register; using `const int&` is not necessarily faster, and any real difference should be settled by measurement. `const T&` is better suited to larger, read-only objects that do not need to be copied—for example `std::string` or containers; small scalar types can generally just be passed by value.
+
+:::

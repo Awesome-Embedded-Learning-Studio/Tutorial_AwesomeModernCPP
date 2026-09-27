@@ -2,33 +2,39 @@
 chapter: 1
 cpp_standard:
 - 23
-description: "Systematically design six categories of test cases to verify every core behavior of OnceCallback, then measure how our version compares with the original Chromium implementation and a std::function baseline"
+description: "Six categories of systematically designed test cases verifying every core behavior of OnceCallback, plus a performance comparison against the original Chromium implementation and standard-library options"
 difficulty: beginner
 order: 6
 platform: host
 prerequisites:
-- 'OnceCallback hands-on (II): the core skeleton'
-- 'OnceCallback hands-on (III): bind_once'
-- 'OnceCallback hands-on (IV): the cancellation token'
-- 'OnceCallback hands-on (V): then chaining'
+- 'OnceCallback hands-on (II): building the core skeleton'
+- 'OnceCallback hands-on (III): implementing bind_once'
+- 'OnceCallback hands-on (IV): designing the cancellation token'
+- 'OnceCallback hands-on (V): chaining with then'
 reading_time_minutes: 8
 related:
-- 'OnceCallback prerequisite (V): std::move_only_function'
+- 'OnceCallback prerequisite (V): std::move_only_function (C++23)'
 tags:
 - host
 - cpp-modern
 - beginner
 - 回调机制
 - 函数对象
-title: 'OnceCallback Hands-On (VI): Tests and Performance'
+title: 'OnceCallback hands-on (VI): tests and performance comparison'
+translation:
+  source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/01-6-once-callback-testing-and-perf.md
+  source_hash: e00cd9b22a6ded35cf41b1f001be03d31d638cce098a63521c5c1f91c97cfbac
+  translated_at: '2026-09-26T00:39:05+00:00'
+  engine: anthropic
+  token_count: 3200
 ---
-# OnceCallback Hands-On (VI): Tests and Performance
+# OnceCallback hands-on (VI): tests and performance comparison
 
-The core skeleton, `bind_once`, the cancellation token, the `then()` chaining, four pieces all assembled. It compiles, and it runs. We did not let out a breath at that point, because "it runs" and "it is correct in every corner case" are separated by a full test suite. This piece fills in that suite, and it also opens up the one question we have been most curious about: how much heavier and slower is the thing we built on `std::move_only_function` compared with the two-thousand-plus lines Chromium hand-rolled? Where did that weight come from, and what did it buy?
+The core skeleton, `bind_once`, the cancellation token, the `then()` chaining — all four pieces are in place, the code compiles, and it runs correctly. But we didn't dare breathe easy after writing it, because a whole suite of tests still stands between "it runs" and "it's right in every corner case". This piece fills those tests in, and while we're at it, we lay out and measure the one thing we care about most: this thing we cobbled together on top of `std::move_only_function` — set against Chromium's two-thousand-plus lines of hand-written original, exactly how much fatter is it, how much slower, and what did we get in exchange for all that extra weight.
 
-## Building the test framework
+## Setting up the test framework
 
-We use Catch2 v3, and pull it through CPM (CMake Package Manager).
+We use Catch2 v3 as the test framework, with dependencies pulled automatically through CPM (CMake Package Manager).
 
 ```cmake
 # test/CMakeLists.txt
@@ -41,15 +47,15 @@ target_compile_options(test_once_callback PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME test_once_callback COMMAND test_once_callback)
 ```
 
-We moved off `assert()` to Catch2 mostly for two things. `REQUIRE` prints the failed expression, the file, and the line, and the rest of the checks inside the same `TEST_CASE` still run (unlike `assert`, which halts on the first failure). `REQUIRE_THROWS_AS` pins down the exact exception type, which matters a lot for the cancellation paths further down.
+Our original move from `assert()` to Catch2 came down to two things: `REQUIRE` spits out the failed expression together with the file name and line number, and subsequent checks inside the same `TEST_CASE` keep running afterward (unlike `assert`, which detonates once and stops everything); and `REQUIRE_THROWS_AS` keeps a dedicated eye on exception types. That exception-watching one is especially useful for our cancellation machinery — you'll see it later on.
 
-Running the tests is the usual drill: from `build/`, `cmake --build . && ctest`.
+Running the tests is the same old routine: from `build/`, `cmake --build . && ctest`.
 
 ---
 
 ## Six categories of test cases
 
-We split the tests into six categories, each one guarding a single design invariant. Why group by invariant instead of by feature? A feature list feels reassuring, you tick boxes and think you covered everything, while the corners slip through. An invariant is a hard contract that must hold in every situation, and if you build tests around it, the edges surface on their own.
+We split the tests into six categories, each one staring down a single design invariant. Why sort by invariants rather than by features? Because once you finish a feature list, it's easy to feel touched by your own thoroughness — "everything that needed testing is tested" — while the corner cases quietly leak out the back. An invariant is a hard constraint of the form "this must hold no matter what"; orbit around it, and the boundaries surface on their own.
 
 ### Category A: basic invocation and return values
 
@@ -68,7 +74,7 @@ TEST_CASE("void return", "[once_callback]") {
 }
 ```
 
-The two most basic cases. A non-void callback must carry its return value out, and a void callback must run to completion. The void case takes the other branch of `if constexpr (std::is_void_v<ReturnType>)`, and we keep it explicitly because that two-path template split is exactly where it is easy to test one and forget the other.
+The two plainest cases: a non-void callback has to carry its return value out, and a void callback has to run to completion. The void one walks the other branch of `if constexpr (std::is_void_v<ReturnType>)` — we kept it there on purpose, because that is exactly the spot where a template's two paths most easily end up with only one of them tested.
 
 ### Category B: move semantics
 
@@ -90,13 +96,13 @@ TEST_CASE("move semantics: source becomes null", "[once_callback]") {
 }
 ```
 
-The first case, move-only capture, is a hard line for us. It is direct proof that the storage really is `std::move_only_function` and not a `std::function` we reached for out of laziness; with `std::function`, that line would not compile. The second case checks that the source is hollowed out after a move, which is the "move means empty" contract OnceCallback leans on.
+The move-only capture case is our non-negotiable bar: it directly proves that what sits underneath really is `std::move_only_function` and not a corner-cutting `std::function` — with the latter, that line wouldn't even compile. The second case checks that the source object goes null after move construction, which is OnceCallback's "a move guts the source" contract.
 
-One distinction tripped us up at first. Moving is a relocation, not a consumption. Only `run()` actually consumes the callback. After `OnceCallback cb2 = std::move(cb1)`, the callback is alive and well, it just lives at a new address, and it is not consumed until `cb2.run()`. Confuse those two and the cancellation token work later turns into a headache.
+There's a distinction here that took us a while to straighten out at first: moving is just relocating, not consuming. The only thing that actually runs the callback off is `run()`. After `OnceCallback cb2 = std::move(cb1)`, the callback is alive and well — it merely changed address — and only at `cb2.run()` is it consumed. Confuse those two things and you'll be thoroughly lost when writing the cancellation token later on.
 
-### Category C: the single-invocation constraint
+### Category C: the call-once constraint
 
-This category has no runtime test, because the constraint is enforced at compile time. Deducing this plus `static_assert` rejects `cb.run()` (no move) outright, and only `std::move(cb).run()` gets through. The fact that it compiles is the verification. We considered writing a `TEST_CASE` for it, then dropped the idea; the invariant is essentially "wrong code fails to compile", and forcing it through `static_assert(!std::is_invocable_v<...>)` is more contorted than letting the compiler referee.
+This category has no runtime test, because the constraint is stopped at compile time — deducing this working with `static_assert` makes `cb.run()` (no move) fail to compile outright, and only `std::move(cb).run()` gets through. The fact that it compiles is itself the verification passing. We first thought about adding a `TEST_CASE` for this one, then decided to drop it: this invariant is, in essence, "wrong code fails to compile", and forcing a test through the `static_assert(!std::is_invocable_v<...>)` machinery would be the roundabout way — better to let the compiler serve as the referee.
 
 ### Category D: argument binding
 
@@ -118,7 +124,7 @@ TEST_CASE("bind_once with member function", "[bind_once]") {
 }
 ```
 
-Both binding flavors go through. A partial bind on a plain lambda, plus a member-function bind. We left the raw `&calc` form in the member test on purpose, as a standing reminder: lifetime responsibility rests entirely on the caller. The trap was unpacked in an earlier piece, so we do not repeat it here.
+Both kinds of binding get a pass: partial argument binding on an ordinary lambda, plus member-function binding. In the member-function case we deliberately left the bare-pointer spelling `&calc` in the test — it's there to hammer one point home: lifetime responsibility rests entirely on the caller's shoulders. The traps in that area were taken apart in an earlier piece, so we won't rehash them here.
 
 ### Category E: the cancellation mechanism
 
@@ -154,7 +160,7 @@ TEST_CASE("cancelled non-void callback throws", "[once_callback]") {
 }
 ```
 
-We spent the most time here, because cancellation has three branches that each need their own test. The token is alive, so no cancellation. The token is dead and the callback is void, so the run is silently skipped. The token is dead and the callback is non-void, so the run throws `std::bad_function_call`. Why must the third one throw? The caller is waiting for a return value, and silently returning a default would push the bug into runtime where it hides. Three cases, three branches pinned down.
+We spent the most time on the cancellation machinery, because it has three branches that each need their own test: a token still alive — no cancellation; a token invalidated with a void callback — silent non-execution; a token invalidated with a non-void callback — throws `std::bad_function_call`. Why must the third one throw? Because the caller is waiting on a return value, and you can't just swallow it silently and hand back a default — that would bury the bug down in runtime territory. The three cases pin exactly those three branches down.
 
 ### Category F: then composition
 
@@ -183,13 +189,13 @@ TEST_CASE("then with void first callback", "[then]") {
 }
 ```
 
-All three composition shapes get exercised. A two-stage non-void pipeline is the common case. The multi-stage pipeline crosses a type boundary on purpose (int into string), to confirm that `then`'s type deduction holds up when the return type changes. The void-prefix case we added later: when `then` is chained after a void callback, the next stage receives no "return value" from the previous step and has to relay through external state. That edge slipped past the first version of the tests.
+All three compositions get walked through: the two-level non-void pipeline is the most common usage; the multi-level pipeline deliberately crosses a type boundary (int walking into string) to verify that `then`'s type deduction doesn't drop the ball when the return type changes; and the void-prefix callback case is one we added later — when `then` hangs off a void callback, the next stage gets no "return value" from the previous step and has to relay through external state. That boundary slipped past us in the first version.
 
 ---
 
-## Performance: versus the original Chromium
+## Performance comparison: versus the original Chromium implementation
 
-All tests green. Now for the part we were most curious about. How much do we lose by putting our OnceCallback next to the original Chromium version, with its hand-written reference counting and function-pointer tables? The gap is real, and we are not going to dress it up.
+With the tests all green, we arrive at the part we've been most curious about: our hand-assembled OnceCallback set beside Chromium's original — the one with hand-written reference counting and function-pointer tables — and how far apart do they actually land. Let's say it up front: the gap is real, and we have no intention of sugarcoating it.
 
 ### Object size
 
@@ -203,35 +209,35 @@ std::cout << "sizeof(std::move_only_function<void()>): "
 std::cout << "sizeof(OnceCallback<void()>): "
           << sizeof(OnceCallback<void()>) << " bytes\n";
 // ours: move_only_function (32) + status (1) + token ptr (16) + padding
-// estimate 56-64 bytes
+// estimated 56-64 bytes
 ```
 
-The typical numbers on GCC: `std::function` is around 32 bytes, `std::move_only_function` is also around 32 bytes, and our `OnceCallback`, after stacking on the status and token pointer, lands at 56 to 64 bytes. Chromium's? 8 bytes. The price of a single pointer.
+On GCC the typical numbers look like this: `std::function` is about 32 bytes, `std::move_only_function` is also around 32 bytes, and our `OnceCallback`, with the status and the token pointer stacked on top, stretches to 56 to 64 bytes. And Chromium's? 8 bytes. The price of a single pointer.
 
-Seven times larger gave us a pause at first, but it makes sense once you trace the storage strategy. Chromium stuffs the bound arguments, the function pointer, and the reference count into a heap-allocated `BindState`, and the callback object itself holds a single pointer. We go the SBO route of `std::move_only_function`: small lambdas inline directly into the object, which saves a heap allocation, at the cost of a fatter object.
+A sevenfold gap like that made us blink at first, but it straightens out once you follow the storage strategy through. Chromium stuffs the bound arguments, the function pointers, the reference count — all of that state — into a heap-allocated `BindState`, and the callback object proper holds nothing but one pointer. We went down `std::move_only_function`'s SBO route: small lambdas sit inline in the object itself, saving one heap allocation, at the cost of an object that is plumper all around.
 
 ### Allocation behavior
 
-This is the one place where our design comes out ahead. The SBO threshold of `std::move_only_function` usually sits at two or three pointers (16 to 24 bytes), and a lambda that captures a few arguments fits inside without hitting the heap. Only a lambda with a large capture goes to the heap at construction.
+This section is in fact the only place where our approach comes out ahead. `std::move_only_function`'s SBO threshold usually lands at two or three pointers' worth (16 to 24 bytes); a lambda capturing a few arguments fits inside just about every time, so no heap allocation is triggered. Only a big lambda capturing a whole pile goes to the heap for memory at construction.
 
-Chromium flips this. It always heap-allocates (`new BindState`), but only once, and every move of the OnceCallback after that copies a single 8-byte pointer, which is almost free. Our side avoids allocation for small objects, but once a move happens, it copies a 32-plus-byte inline buffer. One side saves on allocations, the other saves on moves, and each takes one end of the trade.
+Chromium is the other way around: it heap-allocates unconditionally (`new BindState`), but allocates exactly once, and from then on moving a OnceCallback is copying a single 8-byte pointer — cheap to the point of embarrassment. On our side, small objects don't allocate, but once a move happens, an inline buffer of 32 bytes and up has to be copied. One side saves on allocation, the other on moving — each takes one end.
 
 ### Indirect-call overhead
 
-Once you reach the actual call, the two designs tie. Both do one indirect function call. `std::move_only_function::operator()` and Chromium's `polymorphic_invoke_` dispatch the same way. Under `-O2`, neither side can erase that indirect call: a function pointer that crosses translation units is something the compiler will not inline.
+When it comes down to the actual call, the two sides tie — both pay one indirect function call. `std::move_only_function::operator()` and Chromium's `polymorphic_invoke_` go through the same style of dispatch. Under `-O2`, neither side can eliminate that indirect call: a function pointer crossing translation units is something the compiler dares not inline.
 
-### The trade-off, summed up
+### Trade-off summary
 
-| Metric | Ours | Chromium |
-|------|-----------|--------------|
+| Metric | Our approach | Chromium's approach |
+|---------|-----------|--------------|
 | Callback object size | 56-64 bytes | 8 bytes |
-| Heap alloc for a small lambda | None (SBO) | Always |
-| Move cost | Copy 32+ bytes | Copy 1 pointer |
-| Implementation size | ~200 lines | ~2000+ lines |
+| Heap allocation for small lambdas | None (SBO) | Always |
+| Move cost | Copies 32+ bytes | Copies 1 pointer |
+| Implementation code size | ~200 lines | ~2000+ lines |
 
-We read those four rows more than once, and the most valuable one is the last. A full order of magnitude less code. We do not hand-write reference counting, we do not maintain a function-pointer table, we do not haggle with the compiler over `TRIVIAL_ABI` annotations; `std::move_only_function` absorbs all of that. What we get back is an object seven times larger and moves several times more expensive. The zero-allocation property for small lambdas is an accidental bonus in scenarios where callbacks are not posted at high frequency.
+We've gone back over those four rows several times, and the most valuable one is the last: the code size differs by an order of magnitude. We don't hand-write reference counting, we don't maintain a function-pointer table, and we don't hang `TRIVIAL_ABI` annotations off the class to haggle with the compiler — `std::move_only_function` carries all of that. The price of that exchange: an object seven times fatter and a move several times dearer. And the zero-heap-allocation line for small lambdas turns out to be an unexpected bonus in scenarios where the posting frequency isn't high.
 
-Whether that trade pays off depends on what you are doing with it. For teaching, for prototypes, for most business-logic callbacks, we would take it. If you are dropping callbacks into Chromium's hot paths, where a single process hangs tens of thousands of callbacks and `[[clang::trivial_abi]]` is pushing them into registers, go copy the two thousand lines. The positioning of our version was always clear: explain the mechanism, lay the trade-off out on the table, and let you weigh which side matters.
+Whether that ledger balances depends on what you're doing with it. For teaching, for prototypes, and for most ordinary business callbacks, we think it's worth it; but if you're wedging this into a Chromium-style hot path — one process with tens of thousands of callbacks hanging off it, callbacks that `[[clang::trivial_abi]]` pushes into registers for argument passing — then go copy their two thousand lines, honestly. This version's positioning has been clear from the start: explain the machinery thoroughly, lay the trade-offs out on the table, and as for which end weighs heavier — that's your call.
 
 ## References
 

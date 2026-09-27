@@ -42,7 +42,7 @@ Linux下的动态库是存在命名规范的，如果您注意的话，是可以
 
 1. `LD_PRELOAD` 指定的库（优先加载，用于符号覆盖／注入）。
 2. 如果可执行文件包含 `DT_RPATH` 并且没有 `DT_RUNPATH`，则使用 `DT_RPATH` 路径（注意：`DT_RPATH` 已被弃用，但仍被支持）。
-3. 环境变量 `LD_LIBRARY_PATH`（**非 setuid/setgid 可执行文件会被忽略**）。
+3. 环境变量 `LD_LIBRARY_PATH`（**setuid/setgid 可执行文件会忽略此变量**）。
 4. 如果可执行文件包含 `DT_RUNPATH`，使用 `DT_RUNPATH`（并且当存在 `DT_RUNPATH` 时，`DT_RPATH` 一般被忽略）。
 5. ldconfig 维护的缓存 `/etc/ld.so.cache`，以及 `/lib`、`/usr/lib`（以及架构相关的 `/lib64`、`/usr/lib64`）这些"trusted directories"。
 6. （如果前面都没找到）最终会失败并报错（如 `ld.so: cannot find ...`）。

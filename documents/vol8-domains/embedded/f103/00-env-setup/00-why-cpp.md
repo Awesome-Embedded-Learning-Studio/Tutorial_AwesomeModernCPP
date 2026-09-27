@@ -48,7 +48,7 @@ related:
 
 ![孩子们看到这个Alternative Text的时候请想一下我的可爱的STM32F103C8T6，他很可爱](mylovelystm32.jpg)
 
-笔者使用的编译器不是armcc，额，不考虑闭源的编译器，只是不喜欢用。所以我用的是 arm-none-eabi-gcc 16.1.0，统一 Release 构建（`-O3 -DNDEBUG`）。四份固件共用同一份骨架：`HAL_Init`、把时钟从内置 8 MHz 拉到 PLL 64 MHz、主循环里亮 500 毫秒灭 500 毫秒，延时都用 `HAL_Delay`。骨架一样，差异就只剩"怎么把引脚配成输出"和"怎么翻转它"。
+笔者使用的编译器不是armcc，额，不考虑闭源的编译器，只是不喜欢用。所以我用的是 arm-none-eabi-gcc 16.2.0，统一 Release 构建（`-O3 -DNDEBUG`）。四份固件共用同一份骨架：`HAL_Init`、把时钟从内置 8 MHz 拉到 PLL 64 MHz、主循环里亮 500 毫秒灭 500 毫秒，延时都用 `HAL_Delay`。骨架一样，差异就只剩"怎么把引脚配成输出"和"怎么翻转它"。
 
 > 如果您发现一些涉及到工具描述的内容，实在有一些令人费解，可以移步到起步站的[《工作环境》](03-toolchain-anatomy)补课，随时回来。
 
@@ -151,7 +151,7 @@ void _fini(void) {}
 
 两个空函数，来历咱们直接读注释：链接选项 `-nostartfiles` 把 C 运行时默认的 `_init`/`_fini` 丢了，而 newlib 里负责发起全局构造的 `__libc_init_array` 偏要调用它们，不给这两个空桩，链接直接失败。
 
-咱们构建的口径也统一：同一份 CMake 工具链文件（里面明写着 `-fno-exceptions -fno-rtti`，第三秤要用到这个细节）、同一个链接脚本（C8T6 的 64K Flash / 20K SRAM 内存布局）、统一 Release（`-O3 -DNDEBUG`）。
+咱们构建的条件也统一：同一份 CMake 工具链文件（里面明写着 `-fno-exceptions -fno-rtti`，第三秤要用到这个细节）、同一个链接脚本（C8T6 的 64K Flash / 20K SRAM 内存布局）、统一 Release（`-O3 -DNDEBUG`）。
 
 **好了！各位坐起来！** 我要开始，卑微的说差异了。一号男嘉宾选择了直接梭哈寄存器！呱！是嵌入式高手口也！
 
@@ -195,11 +195,11 @@ for (;;) {
 第三位男嘉宾是这套教程的主角 libestdx，现代 C++ 模板写法，咱们后面每一站都拿它当工具箱：
 
 ```cpp
-using LedPin =
-    estdx::stm32f1::Gpio<estdx::stm32f1::GpioPort::C, GPIO_PIN_13, estdx::GpioDirection::Output>;
-using Led = estdx::LED<LedPin, estdx::GpioPolarity::ActiveLow>; // 板载灯低电平亮
+using LedPin = estdx::stm32f1::Gpio<estdx::stm32f1::GpioPort::C, GPIO_PIN_13,
+                                    estdx::gpio::GpioDirection::Output>;
+using Led = estdx::device::LED<LedPin, estdx::gpio::GpioPolarity::ActiveLow>; // 板载灯低电平亮
 
-static_assert(estdx::GPIOOutputPin<LedPin>); // 编译器:🤔嗯。。。这确实是个输出引脚，放你过去！
+static_assert(estdx::gpio::GPIOOutputPin<LedPin>); // 编译器:🤔嗯。。。这确实是个输出引脚，放你过去！
 
 int main() {
     HAL_Init();
@@ -330,18 +330,18 @@ arm-none-eabi-nm build/virtual | grep _ZTV    # _ZTV = vtable 符号前缀
 
 没有 vtable。因为 `pc13` 这个对象在 `main` 里就地构造，编译器看得见它的完整类型，看得见就没有"运行期才知道调谁"这回事：GCC 直接把虚调用改写成了对 `GpioPin::reset` 的直接调用，随后照常内联成 HAL 调用；vtable 没人引用，被链接器的 `--gc-sections` 回收了。这个优化叫去虚化（devirtualization），不是什么新招，但笔者身边写了多年 C++ 的朋友，亲眼见过它的不多。
 
-> 啊哈，这就是TAMCPP群友说的——开销足够激进的时候，连虚表都丢掉咯！
+> 啊哈，这就是TAMCPP群友说的——优化足够激进的时候，连虚表都丢掉咯！
 
 那虚函数到底什么时候真的收您RAM的空间呢？咱们把第五份固件造出来看：**运行期才知道对象是谁**的时候。两个引脚对象藏在**另一个编译单元（也就是其他的C++文件）**里，`main` 只拿到一个基类引用，选哪个引脚由运行期的条件决定：
 
 ```text
-8000182: f000 f81d  bl   _Z4pickb        ; 运行期选出对象,返回 IGpio&
-8000186: 6803        ldr  r3, [r0, #0]   ; 从对象头部读出 vptr
-800018a: 681b        ldr  r3, [r3, #0]   ; 从 vtable 取目标函数的槽位
-800018c: 4798        blx  r3             ; 间接调用
+8000198: f000 f848  bl   _Z4pickb        ; 运行期选出对象,返回 IGpio&
+800019c: 6803        ldr  r3, [r0, #0]   ; 从对象头部读出 vptr
+80001a0: 681b        ldr  r3, [r3, #0]   ; 从 vtable 取目标函数的槽位
+80001a2: 4798        blx  r3             ; 间接调用
 ```
 
-这次 vtable 真的进固件了（`_ZTV7GpioPin`，躺在 Flash 里），每个对象头部多出 4 字节的 vptr，每次调用多两次内存读外加间接跳转。这份固件 text 涨到 5904，data 从 12 涨到 96，咱们多付的这些字节，就是虚函数真实的开销。
+这次 vtable 真的进固件了（`_ZTV7GpioPin`，就在 Flash 里），每个对象头部多出 4 字节的 vptr，每次调用多两次内存读外加间接跳转。这份固件 text 涨到 5964，data 从 12 涨到 96，咱们多付的这些字节，就是虚函数真实的开销。
 
 所以"C++ 就是 OOP"这句话在嵌入式语境下有两处错了，而且笔者认为错的很离谱！
 
@@ -353,7 +353,7 @@ arm-none-eabi-nm build/virtual | grep _ZTV    # _ZTV = vtable 符号前缀
 
 “你们C++搞的真是一坨稀饭啊，这有什么？C不也能做到？”
 
-是的，体积和指令证明"写您的抽象代码。咱们不付RAM和运行时的CPU节拍，那只有这样的话，我也没底气说——C++的确还算不错的选择。
+是的，体积和指令证明写您的抽象代码、咱们不付RAM和运行时的CPU节拍，只有这样，我才有底气说——C++的确还算不错的选择。
 
 但是C++还有另外的好处，这个好处在我编写ZerOS，也就是一个C++23 OS的时候体会到的。C++额外的抽象，会极大的削弱运行时才能查验出来的错误。依旧空口无凭，咱们走起！故意犯一个新手最常见的错——把 LED 引脚配成输入方向，然后点亮它。
 
@@ -372,10 +372,10 @@ echo $?
 ```text
 arm-none-eabi-g++ ... -c estdx_broken.cpp
 error: template constraint failure for 'template<class Pin, ...>
-       requires GPIOOutputPin<Pin>' struct estdx::LED'
+       requires GPIOOutputPin<Pin>' struct estdx::device::LED'
 note: constraints not satisfied
   • required for the satisfaction of 'GPIOOutputPin<Pin>'
-    [with Pin = estdx::stm32f1::Gpio<..., estdx::GpioDirection::Input, ...>]
+    [with Pin = estdx::stm32f1::Gpio<..., estdx::gpio::GpioDirection::Input, ...>]
 ```
 
 编译当场拒绝，报错把三个问题全替咱们答了：哪个约束没满足（`GPIOOutputPin`）、哪个类型不达标（那个 `Gpio<...>`）、它实际配成了什么方向（`Input`）。错误从"上板后某天晚上"提前到了"敲下回车的这一秒"，而抓错的家伙是 `LED` 模板参数上那个 `GPIOOutputPin` 约束，加上 `main` 前面那行 `static_assert` 的双保险。这就是抽象赚回来的东西：**运行时的参数检查，变成了编译期的类型检查**。
@@ -384,7 +384,7 @@ note: constraints not satisfied
 
 ## 欸欸！我几句话要说哈，别下一篇~
 
-最后交代两点口径。正文所有数字出自 Release 构建（`-O3 -DNDEBUG`）；要是您手动指定别的级别或干脆不开优化，数字会变——**零开销抽象的"零"以开优化为前提**，这条咱们在后面性能相关的站里正面展开。裸寄存器版和 OOP 版这两份，库里的 `examples/` 没有现成的，您照着正文贴的骨架和差异片段，往自己的工程里加两个 target 就能复原，正好当这站的动手题。
+最后交代两点前提。正文所有数字出自 Release 构建（`-O3 -DNDEBUG`）；要是您手动指定别的级别或干脆不开优化，数字会变——**零开销抽象的"零"以开优化为前提**，这条咱们在后面性能相关的站里正面展开。裸寄存器版和 OOP 版这两份，库里的 `examples/` 没有现成的，您照着正文贴的骨架和差异片段，往自己的工程里加两个 target 就能复原，正好当这站的动手题。
 
 <ReferenceCard title="参考文献">
   <ReferenceItem
@@ -393,7 +393,7 @@ note: constraints not satisfied
     title="The Best Embedded Programming Languages for Engineers Now"
     :year="2024"
     url="https://www.beningo.com/the-best-embedded-programming-languages-for-engineers-now/"
-    chapter="行业调查口径:C 驱动全球超过 60% 的嵌入式项目"
+    chapter="调查数据:C 驱动全球超过 60% 的嵌入式项目"
   />
   <ReferenceItem
     :id="2"

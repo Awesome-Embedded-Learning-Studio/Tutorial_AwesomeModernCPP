@@ -82,7 +82,7 @@ vscode 自带的那个运行按钮（或者按 `F5`）不知道您要用哪个�
 
 （有人会问：那篇 1 不是说编译器直接编译就行吗？对，命令行里直接调 `g++ main.cpp` 是能编出来。但 vscode 那套图形化按钮走的是 CMake 这条线，咱们既然要在 vscode 里点按钮，就照 CMake 的规矩来。CMake 还能管多文件项目，篇 4 咱们就知道了。）
 
-在 `main.cpp` 旁边，用步骤 2 那个「新建文件」图标，再建一个文件，名字叫 `CMakeLists.txt`（注意大小写，`C` `M` `a` `k` `e` 都大写，`Lists` 的 `L` 大写，剩下小写，后缀 `.txt`）。这个名字是 CMake 规定死的，差一个字母它都不认。
+在 `main.cpp` 旁边，用步骤 2 那个「新建文件」图标，再建一个文件，名字叫 `CMakeLists.txt`（注意大小写：`C` 和 `M` 大写，`Lists` 的 `L` 大写，其余小写，后缀 `.txt`）。这个名字是 CMake 规定死的，差一个字母它都不认。
 
 把下面这段粘进去：
 
@@ -107,6 +107,10 @@ add_executable(hello main.cpp)
 第五行 `set(CMAKE_CXX_STANDARD_REQUIRED ON)` 说「上面那个标准不是建议，是硬要求」。如果编译器不支持 C++17，直接报错，不让它悄悄降级到老标准——降级了您还不知道，后面踩坑踩不明白。
 
 最后一行 `add_executable(hello main.cpp)` 是最关键的一行。`add_executable` 是「生成一个可执行程序」的意思，括号里第一个 `hello` 是生成的程序名字，第二个 `main.cpp` 是要编译的源文件。这行整体的意思就是：把 `main.cpp` 编译成一个叫 `hello` 的可执行程序（Windows 上就是 `hello.exe`）。
+
+> 注意：
+> CMake 项目不要放在中文路径下，否则会出现各种奇怪的问题（部分工具链的路径处理只支持 ASCII）。
+> 同时确认已安装 `mingw32-make`；如果没有自动选中编译器（状态栏显示 `No Kit Selected`），按 `Ctrl+Shift+P` 打开命令面板，输入 `CMake: Select a Kit` 回车选择。
 
 ## 步骤 5·选试剂盒（kit）
 

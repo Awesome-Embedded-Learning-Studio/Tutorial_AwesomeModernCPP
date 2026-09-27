@@ -3,16 +3,16 @@ chapter: 1
 cpp_standard:
 - 17
 - 20
-description: "Build flat_tree/flat_map layer by layer: signatures, key extractor, sort_and_unique, lookup and insert, sorted_unique construction, and the flat_map-specific API. Code-dense, little filler."
+description: "Implement flat_tree/flat_map layer by layer: signatures, the key extractor, sort_and_unique, lookup and insert, sorted_unique construction, and the flat_map-specific APIs. Code-dense, minimal filler."
 difficulty: advanced
 order: 2
 platform: host
 prerequisites:
-- flat_map design guide (I): motivation, API, and the flat_tree architecture
+- flat_map Design Guide (I): motivation, API, and the flat_tree architecture
 - flat_map prerequisite (IV): tag dispatch and sorted_unique_t
 reading_time_minutes: 13
 related:
-- flat_map design guide (III): test strategy and performance comparison
+- flat_map Design Guide (III): test strategy and performance comparison
 tags:
 - host
 - cpp-modern
@@ -20,15 +20,21 @@ tags:
 - 容器
 - map
 - 优化
-title: "flat_map Design Guide (II): Step-by-Step Implementation"
+title: "flat_map Design Guide (II): step-by-step implementation"
+translation:
+  source: documents/vol9-open-source-project-learn/chrome/03_flat_map/hands_on/02-flat-map-implementation.md
+  source_hash: e768f89509917ac74b64c331811468914da54f9670b4f1ac3bbdd5d892aa42a3
+  translated_at: '2026-09-26T03:43:13+00:00'
+  engine: anthropic
+  token_count: 6400
 ---
-# flat_map Design Guide (II): Step-by-Step Implementation
+# flat_map Design Guide (II): step-by-step implementation
 
-The previous piece walked through the motivation and the interface. This time we stop arguing on paper and just write `flat_tree` and `flat_map` line by line. We'll stack layers from the bottom up, starting with the class signature and data members, climbing all the way to the few APIs that belong to `flat_map` itself. Code is dense, explanations only point at the load-bearing parts; for the full reasoning behind each choice, see [full/03-2~03-4](../full/03-2-flat-map-flattree-skeleton.md). The companion project lives in `code/volumn_codes/vol9/full_tutorial_codes/chrome_design/` (`19` through `22`); we kept the tests running next to the editor the whole time.
+In the previous piece we talked the motivation and the interface through; this time we want a different approach: no more armchair strategizing, let's write `flat_tree` / `flat_map` out line by line. We'll stack it up layer by layer — starting from the class signature and data members at the very bottom, piling all the way up to the handful of APIs specific to `flat_map` itself. Code-dense, with explanations kept to the point; for the detailed reasoning, go read [full/03-2~03-4](../full/03-2-flat-map-flattree-skeleton.md). The companion project lives in `code/volumn_codes/vol9/full_tutorial_codes/chrome_design/` (`19` through `22`); we ran its tests the whole time we were writing.
 
-## Layer 1: stand the skeleton up
+## Layer 1: stand the skeleton up first
 
-The first thing to nail down is the `flat_tree` class signature and its data members. Get the foundation wrong and everything above it leaks.
+When we first sat down to build, we laid out the `flat_tree` class signature and its data members before anything else — with an unsteady foundation, everything above it is a pitfall.
 
 ```cpp
 // Platform: host | C++ Standard: C++20
@@ -58,7 +64,7 @@ public:
 
 protected:
     Container body_;
-    [[no_unique_address]] KeyCompare comp_;   // EBO: stateless comparator is zero bytes
+    [[no_unique_address]] KeyCompare comp_;   // EBO: a stateless comparator costs zero bytes
 
     flat_tree() = default;
     explicit flat_tree(const KeyCompare& c) : comp_(c) {}
@@ -79,20 +85,20 @@ protected:
 }  // namespace tamcpp::chrome::internal
 ```
 
-`[[no_unique_address]]` makes an empty comparator (the default `std::less<>`) cost zero bytes. The first time we saw that trick it genuinely felt elegant: an empty object just evaporates. `extract_if_value` is the hinge of heterogeneous comparison. A value goes through the extractor; a bare key passes through untouched, so you can query a `pair<int, string>` table with a plain `int` without wrapping it first.
+`[[no_unique_address]]` makes an empty comparator (the default `std::less<>`) cost zero bytes — the first time we saw that it genuinely felt elegant: an empty object just evaporates into nothing. `extract_if_value` is the linchpin of heterogeneous comparison: values go through the extractor, bare keys pass through untouched, so you can query a `pair<int,string>` table with a plain `int` without wrapping it first.
 
-## Layer 2: construction, and the sort_and_unique you can't avoid
+## Layer 2: construction, and the sort_and_unique you can't dodge
 
-With the skeleton up, the next problem is "a pile of unordered stuff comes in, how do we turn it into a sorted, deduped table." That's `sort_and_unique`.
+With the skeleton up, the next thing to solve is "a pile of unordered stuff comes in — how does it become a sorted, deduplicated table". That is `sort_and_unique`.
 
 ```cpp
-// Range constructor: append, then sort + dedupe
+// Plain range constructor: append + sort and dedupe
 template <class InputIt>
 flat_tree(InputIt first, InputIt last, const KeyCompare& c = KeyCompare())
     : body_(first, last), comp_(c) {
     sort_and_unique();
 }
-// Container move constructor: bulk build (the recommended posture)
+// Container move constructor: bulk construction (the recommended posture)
 flat_tree(Container&& body, const KeyCompare& c = KeyCompare())
     : body_(std::move(body)), comp_(c) {
     sort_and_unique();
@@ -109,11 +115,11 @@ void sort_and_unique() {
 }
 ```
 
-`stable_sort` plus `unique` plus `erase`, O(N log N). One point we initially glossed over: why `stable_sort` and not `sort`? Because `stable_sort` preserves the relative order of equal elements and `sort` does not. If data you later `replace` back in depends on that order, `sort` may have already shuffled it. The equality lambda inside `unique` uses `!less(a,b) && !less(b,a)`, meaning "neither less nor less-than," which is the definition of equivalence. It's more robust under heterogeneous comparison than a plain `==`.
+`stable_sort` + `unique` + `erase`, O(N log N). Here's a point we didn't pay much attention to at first: why `stable_sort` rather than `sort`? Because the relative order of equivalent elements — `stable_sort` keeps it for you, `sort` guarantees nothing. If data you later `replace` back in depends on that order, `sort` may well have shuffled it away for you. The equality test inside `unique`'s lambda is `!less(a,b) && !less(b,a)`, meaning "neither less than, nor less-than'd by the other" — which is exactly the definition of equivalence, and it holds up better under heterogeneous comparison than a plain `==`.
 
-## Layer 3: the sorted_unique constructor, a back door for data already in order
+## Layer 3: the sorted_unique constructor — a back door for data already in order
 
-Here it gets interesting. If your data is already sorted and deduped (poured out of another `flat_map`, say), running `sort_and_unique` again is pure waste. Chromium leaves a back door for exactly this case: the `sorted_unique` tag.
+This is where it gets interesting. If the data in your hands is already sorted and deduplicated (poured out of another `flat_map`, say), running `sort_and_unique` over it again is pure waste. Chromium leaves a back door open for exactly this scenario: the `sorted_unique` tag.
 
 ```cpp
 struct sorted_unique_t {};
@@ -122,7 +128,7 @@ inline constexpr sorted_unique_t sorted_unique{};
 template <class InputIt>
 flat_tree(sorted_unique_t, InputIt first, InputIt last, const KeyCompare& c = KeyCompare())
     : body_(first, last), comp_(c) {
-    assert(is_sorted_unique());   // debug check, no sort
+    assert(is_sorted_unique());   // debug-only verification, no sorting
 }
 
 bool is_sorted_unique() const {
@@ -132,11 +138,11 @@ bool is_sorted_unique() const {
 }
 ```
 
-The tag makes overload resolution skip `sort_and_unique` and only DCHECK. O(N) copy, and in release even that `assert` is gone. The first time through, this gave us a small jolt: it's pushing the contract onto you, isn't it. It is. If you feed unsorted data into a `sorted_unique` constructor, debug builds catch it; release builds go to silent corruption. It's an honest contract. You're expected to know what you're doing.
+The tag steers overload resolution past `sort_and_unique`; all that remains is a DCHECK. An O(N) copy construction, and in release builds even that `assert` is gone. The first time we read this, our heart skipped a beat — isn't this pushing the contract onto you? It is. If you stuff a pile of unsorted data into the `sorted_unique` constructor, a debug build can still catch it; a release build goes straight to silent corruption. It's an honest contract: you're expected to know what you're doing.
 
-## Layer 4: lookup, the binary search
+## Layer 4: lookup, binary search's business
 
-Lookup on a sorted array has no suspense: `std::lower_bound`, O(log n). One detail is worth stopping on, though.
+Lookup in a sorted array holds no suspense: `std::lower_bound`, binary search, O(log n). But one detail here is worth stopping for a look.
 
 ```cpp
 const_iterator find(const Key& key) const {
@@ -149,13 +155,13 @@ bool contains(const Key& key) const { return find(key) != body_.end(); }
 size_type count(const Key& key) const { return contains(key) ? 1 : 0; }
 ```
 
-`std::lower_bound` does the binary search in O(log n) and takes only **one** binary comparator `(value, key) -> bool`. With a transparent comparator the `key` can be a heterogeneous type, so querying a `std::string` table with a `std::string_view` needs no conversion. The `!less(key, *it)` line in `find` is the equality trick: `lower_bound` gives you "the first position not less than key," and if that position is not less than key and key is not less than it either, they're equivalent, so return it; otherwise return `end()`.
+`std::lower_bound` binary-searches in O(log n) and takes only **one** binary comparator `(value, key)→bool` — with a transparent comparator, `key` can be a heterogeneous type, so you can query a `std::string` table with a `std::string_view` without converting first. That `!less(key, *it)` line in `find` is the equality trick: `lower_bound` hands you "the first position not less than key"; if that position is neither less than key nor is key less than it, they're equal — return it; otherwise return `end()`.
 
-A small pitfall we hit while writing this: Chromium's flat_tree uses `std::ranges::lower_bound(*this, key, KeyValueCompare(comp_))`. That `KeyValueCompare` is a comparator class with **two `operator()` overloads** (one for `v < k`, one for `k < v`), not two parallel lambdas; `ranges::lower_bound` also accepts a single comparator object. The "one lambda plus `extract_if_value`" form above is a teaching simplification, behaviorally equivalent, but the Chromium version handles more corners of heterogeneous lookup.
+One small pitfall from our own writing, worth flagging for you: Chromium's flat_tree uses `std::ranges::lower_bound(*this, key, KeyValueCompare(comp_))`. That `KeyValueCompare` is a comparator class with **two `operator()` overloads** (one each for `v<k` and `k<v`), not two parallel lambdas; `ranges::lower_bound` likewise accepts only a single comparator object. Our "one lambda + `extract_if_value`" form above is a teaching simplification — behaviorally equivalent, but the Chromium version shoulders the corner cases of heterogeneous queries better.
 
-## Layer 5: insert, the O(n) shift you can't dodge
+## Layer 5: insert — that O(n) shift, no escaping it
 
-Insert is the powder keg of flat_map performance debates. The design piece covered the argument; here we land it.
+Insert is the powder keg at the center of the flat_map performance debate. The design piece argued this out earlier; here we land it.
 
 ```cpp
 std::pair<iterator, bool> insert(value_type v) {
@@ -166,28 +172,28 @@ std::pair<iterator, bool> insert(value_type v) {
 }
 ```
 
-`lower_bound` finds the spot in O(log n); `emplace` shifts every element after it, O(n). That's the cost of a flat_map insert: a vector insertion in the middle, the tail moves down. The unique-key semantics are baked in too: if the key already exists, return `{it, false}` and don't insert. One thing we want to underline: look at the `bool` that comes back. We got lazy early on and ignored it, then spent half a day debugging a silent duplicate insert that had been swallowed.
+`lower_bound` finds the position in O(log n); `emplace` shifts every element after that position, O(n). That is the price of a flat_map insert — drop one into the middle of a vector and everything behind it has to move. The unique-key semantics are baked in too: if the key already exists, return `{it, false}` and don't insert. One thing we want to stress at this step: do look at the `bool` that comes back. We were lazy and ignored it when we first wrote this, then spent ages debugging before realizing duplicate inserts had been silently swallowed.
 
-## Layer 6: extract and replace, the two wrenches for bulk rebuild
+## Layer 6: extract and replace — the two wrenches of bulk rebuild
 
-Insert is single-element surgery. Sometimes you want to pour a whole batch in, or swap the entire container out. That's what `extract` and `replace` are for.
+Insert is single-element fine work, but sometimes you want to pour a whole batch in at once, or swap the entire container out. That's what `extract` and `replace` are for.
 
 ```cpp
 container_type extract() && {
-    return std::exchange(body_, container_type{});   // hand the whole thing out
+    return std::exchange(body_, container_type{});   // hand the whole thing over
 }
 void replace(container_type&& body) {
     body_ = std::move(body);
-    assert(is_sorted_unique());   // the sorted_unique honest contract
+    assert(is_sorted_unique());   // the sorted_unique-style honest contract
 }
 iterator erase(const_iterator pos) { return body_.erase(pos); }   // O(n)
 ```
 
-`extract` is qualified `&&`, so it only applies to rvalues: the container empties itself out, you take the contents, it's left a shell. `replace` follows the same honest-contract line as `sorted_unique`: it trusts that the data you pass in is sorted and deduped, `assert`s it only in debug, and takes over directly in release. The two wrenches compose well. If you want to bulk-update a flat_map, you can `extract` it, mutate the contents in whatever order you like outside, sort and dedupe, then `replace` it back, far faster than calling `insert` over and over.
+`extract` is `&&`-qualified — it only applies to rvalues. The meaning is "the container empties itself out; you take the contents and keep them; it's left a hollow shell". `replace` walks the same honest-contract line as `sorted_unique`: it trusts that the data you pass in is sorted and deduplicated, `assert`s it only in debug, and in release simply takes it over. These two wrenches compose nicely — if you want to bulk-update a flat_map, you can `extract` it first, mutate things outside in whatever order you like, sort and dedupe, then `replace` it back. Far faster than calling `insert` over and over.
 
-## Layer 7: the few APIs that actually belong to flat_map
+## Layer 7: the few APIs flat_map calls its own
 
-The first six layers are all `flat_tree`'s business, indifferent to map versus set. What truly belongs to `flat_map` is just the following: `operator[]`, `at`, `insert_or_assign`. This is the point of splitting `flat_tree` and `flat_map`. One core engine, and map wears a thin shell on top.
+The first six layers are all `flat_tree`'s business, indifferent to map versus set. What truly belongs to `flat_map` is just what follows: operator[], at, insert_or_assign. That's also the point of the `flat_tree` / `flat_map` layering — one core engine, with map wearing a thin shell on top.
 
 ```cpp
 namespace tamcpp::chrome {
@@ -203,7 +209,7 @@ class flat_map : public internal::flat_tree<Key, GetFirst, Compare, Container> {
     using base = internal::flat_tree<Key, GetFirst, Compare, Container>;
 public:
     using mapped_type = Mapped;
-    using base::base;   // inherit flat_tree's constructors / lookup / insert
+    using base::base;   // inherit flat_tree's constructors/lookup/insert
 
     mapped_type& operator[](const Key& key) {
         auto it = std::lower_bound(this->body_.begin(), this->body_.end(), key,
@@ -211,7 +217,7 @@ public:
         if (it == this->body_.end() || this->less(key, *it))
             it = this->body_.emplace(it, std::piecewise_construct,
                                      std::forward_as_tuple(key),
-                                     std::forward_as_tuple());   // default-construct mapped
+                                     std::forward_as_tuple());   // default-construct the mapped
         return it->second;
     }
 
@@ -239,11 +245,11 @@ using flat_set = internal::flat_tree<Key, std::identity, Compare, Container>;
 }  // namespace tamcpp::chrome
 ```
 
-`operator[]` inserts a default-constructed mapped when the key is missing, and that's exactly why flat_map uses `vector<pair<Key, Mapped>>` rather than `vector<pair<const Key, Mapped>>`: it has to default-construct in place, and `const Key` can't do that. `at` on a missing key hits an `assert`, which is fine for a teaching build; Chromium uses `CHECK` because release builds must crash too. `insert_or_assign` is the interesting one: if the key is present it overwrites `.second`, if not it inserts, and the returned `bool` tells you which path ran. The `flat_set` line at the bottom is one we're particularly fond of: a `using` alias plus a `std::identity` extractor, no extra code. That's the dividend of sinking the core into `flat_tree`.
+`operator[]` inserts a default-constructed mapped when the key is missing — and that is exactly why flat_map uses `vector<pair<Key, Mapped>>` rather than `vector<pair<const Key, Mapped>>`: it has to be able to default-construct into place, and `const Key` can't do that job. A missing key in `at` hits an assert, which keeps the teaching build simple; Chromium uses CHECK, because release builds must crash too. `insert_or_assign` is an interesting API — if the key is there it overwrites `.second`, if not it inserts, and the returned bool tells you which of the two actually happened. And the last line, `flat_set`, is one we're especially fond of: a `using` alias + a `std::identity` extractor, zero extra code. That's the dividend of sinking the core into `flat_tree`.
 
-## Run it, see it move
+## Run it, and see whether it moves
 
-Writing it and not running it feels unsafe. Here's a minimum slice: construct, look up, mutate, and a set on the side.
+Writing it without running it leaves us uneasy. Here's a minimal slice — construct, look up, mutate, plus a set on the side.
 
 ```cpp
 #include <iostream>
@@ -254,17 +260,17 @@ int main() {
     m.insert_or_assign(2, "B");                              // overwrite 2
     std::cout << m[2] << "\n";                               // B
 
-    flat_set<int> s{{3,1,2,1}};                              // sort + dedupe
+    flat_set<int> s{{3,1,2,1}};                              // sort and dedupe
     std::cout << s.size() << "\n";                           // 3
     return 0;
 }
 ```
 
-That's all seven layers. `flat_tree` is the real implementation core; `flat_map` (subclass plus `GetFirst`) and `flat_set` (alias plus `std::identity`) are both thin shells over it. The points we hit along the way, `sort_and_unique` maintaining the sorted invariant, `lower_bound` for binary search, the O(n) shift inside `emplace`, `sorted_unique` skipping the sort, `extract`/`replace` for bulk rebuild, `[[no_unique_address]]` evaporating the empty comparator, that's the entire internal mechanics of flat_map. The code itself isn't much, but every choice behind it has a story, which is what made this piece fun to write. Next time we add the tests and the performance comparison, and see how it actually stacks up against `std::map`.
+And with that, all seven layers are done. The `flat_tree` layer is the real implementation core; `flat_map` (subclass + `GetFirst`) and `flat_set` (alias + `std::identity`) are both thin shells wrapped around it. The points we stumbled into along the way — `sort_and_unique` maintaining the sorted invariant, `lower_bound` for binary search, that O(n) shift inside `emplace`, `sorted_unique` skipping the sort, `extract`/`replace` for bulk rebuild, `[[no_unique_address]]` evaporating the empty comparator — that's the entire internal strength of flat_map. The code itself isn't much, but there's a story behind every trade-off, which is exactly what made this piece more and more fun to write. In the next piece we add the tests and the performance comparison, and see how much it really differs from `std::map` in a fair, sharp-edged fight.
 
 ## References
 
 - [Chromium `base/containers/flat_tree.h`](https://source.chromium.org/chromium/chromium/src/+/main:base/containers/flat_tree.h)
 - [Chromium `base/containers/flat_map.h`](https://source.chromium.org/chromium/chromium/src/+/main:base/containers/flat_map.h)
-- [flat_map design guide (III): test strategy and performance comparison](./03-flat-map-testing.md)
+- [flat_map Design Guide (III): test strategy and performance comparison](./03-flat-map-testing.md)
 - [flat_map hands-on (II): the flat_tree core skeleton](../full/03-2-flat-map-flattree-skeleton.md)

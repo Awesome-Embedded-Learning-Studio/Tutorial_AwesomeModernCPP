@@ -2,17 +2,16 @@
 chapter: 6
 cpp_standard:
 - 20
-description: 'Master the two key customization points of C++20 coroutines: `promise_type`
-  controls coroutine behavior, while `awaitable` controls suspension and resumption.'
+description: 'Master the two customization extension points of C++20 coroutines: promise_type controls coroutine behavior, and awaitable controls suspension and resumption'
 difficulty: advanced
 order: 3
 platform: host
 prerequisites:
-- C++20 协程基础
+- C++20 Coroutine Fundamentals
 reading_time_minutes: 28
 related:
-- 异步 I/O 与事件循环
-- 协程 Echo Server 实战
+- Asynchronous I/O and Event Loops
+- 'Coroutine Echo Server in Practice'
 tags:
 - host
 - cpp-modern
@@ -23,608 +22,738 @@ title: promise_type and awaitable
 translation:
   source: documents/vol5-concurrency/ch06-async-io-coroutine/03-promise-type-and-awaitable.md
   source_hash: 0003fd3e2253999e0879eb282322f1f782e2a8260b9dfc6f4d74158ea7ded190
-  translated_at: '2026-06-16T04:06:33.615944+00:00'
+  translated_at: '2026-09-26T09:12:30+00:00'
   engine: anthropic
-  token_count: 5936
+  token_count: 8000
 ---
 # promise_type and awaitable
 
-In the previous post, we looked at the basic syntax of C++20 coroutines—`co_await`, `co_yield`, and `co_return`—and the state machine the compiler generates for us. But honestly, just knowing those keywords is only scratching the surface. The true power of C++20 coroutines—or rather, the real "pitfall"—lies in the fact that it delegates almost all behavioral decisions to two customization points: `promise_type` and `awaitable` (more accurately, the awaiter). This turns coroutines into a "framework" rather than a "feature": the language standard only specifies *when* the compiler calls which methods; how you implement those methods is entirely up to you.
+In the previous article we saw the basic syntax of C++20 coroutines—what `co_await`, `co_yield`, and `co_return` look like, and what kind of state machine the compiler generates for us. But honestly, just knowing how to use those keywords is the surface layer. The real power of C++20 coroutines—or rather, the real "trap"—is that it hands almost every behavioral decision over to two customization points: `promise_type` and `awaitable` (more precisely, the awaiter). This turns coroutines into a "framework" rather than a "feature": the language standard only specifies which methods the compiler calls and when; how those methods are implemented is entirely up to you.
 
-The benefit of this design philosophy is extreme flexibility—you can use coroutines to implement generators, async tasks, lazy evaluation, cooperative scheduling, or even state machines. The downside is that the C++20 standard library provides almost no ready-made coroutine types (`std::generator` doesn't arrive until C++23), so you have to build the entire infrastructure from scratch. In this post and the next, we will dissect these two customization points so that you can write a usable coroutine framework yourself.
+The upside of this design philosophy is extreme flexibility—you can use coroutines to implement generators, asynchronous tasks, lazy evaluation, cooperative scheduling, even state machines. The downside is that the C++20 standard library provides almost no ready-made coroutine types (`std::generator` doesn't arrive until C++23), so you have no choice but to build the entire infrastructure yourself from scratch. What this article and the next one will do is take these two customization points apart thoroughly, so that by the time you finish reading, you can write a usable coroutine framework of your own.
 
-## Environment Setup
+## Environment Notes
 
-All code in this post has been tested in the following environment:
+All code in this article was tested and passes in the following environment:
 
-- **Operating System**: Linux (WSL2, kernel 6.6+)
-- **Compiler**: GCC 13+ or Clang 17+ (both have fairly complete support for C++20 coroutines)
-- **Compiler Flags**: `-std=c++20 -fcoroutines-ts` (GCC might need `-fcoroutines-ts`, Clang usually supports it by default)
-- **Platform**: This post covers platform-independent pure C++20 only, with no OS-specific APIs (we will introduce epoll in the next post)
+- **Operating system**: Linux (WSL2, kernel 6.6+)
+- **Compiler**: GCC 13+ or Clang 17+ (both already have quite complete C++20 coroutine support)
+- **Compiler flags**: `-std=c++20 -fcoroutines` (GCC may need `-fcoroutines`; Clang usually supports coroutines by default)
+- **Platform**: everything in this article is platform-independent pure C++20 and involves no OS-specific APIs (epoll only shows up in the next article)
 
 ## The Full Picture of promise_type
 
-If you read the last post, you should remember: whenever the compiler encounters a function containing `co_await`, `co_yield`, or `co_return`, it transforms that function into a coroutine. The "behavior" of the coroutine—how its return value is constructed, whether it suspends at startup, what happens when it ends—is entirely controlled by a nested type called `promise_type`.
+If you read the previous article, you should remember: whenever the compiler encounters a function containing `co_await`, `co_yield`, or `co_return`, it turns that function into a coroutine. And the coroutine's "behavior"—how its return value is constructed, whether it suspends at startup, what it does when it finishes—is controlled entirely by a nested type called `promise_type`.
 
-This `promise_type` isn't anything mysterious; it's simply a nested class of the coroutine's return type (or a type specified via `std::coroutine_traits`). The compiler constructs a `promise_type` object for you within the coroutine's "coroutine frame," and then calls methods on this object at various nodes of the coroutine's lifecycle.
+This `promise_type` is nothing mysterious; it is simply a nested class of the coroutine's return type (or a type designated via `std::coroutine_traits`). The compiler constructs a `promise_type` object for you inside the coroutine's "coroutine frame", and then calls this object's methods at each milestone of the coroutine's lifecycle.
 
-What we're going to do now is walk through the lifecycle of a coroutine and break down every hook of `promise_type`.
+What we are going to do now is walk along the coroutine's lifecycle and take every hook of `promise_type` apart for a look.
 
 ### Lifecycle Overview
 
-From the moment a coroutine is called until it is finally destroyed, it roughly goes through several stages. First, the compiler allocates a block of memory on the heap to save the coroutine state—local variables, suspension points, the promise object, etc.—this is the so-called "coroutine frame." You can customize the allocation strategy via `operator new` in `promise_type`, but in most cases, the default heap allocation is sufficient. Once the coroutine frame is allocated, the compiler constructs a `promise_type` instance inside it and immediately calls `get_return_object`. The return value of this method is the object returned to the caller by the coroutine function—usually, it grabs the coroutine's handle and wraps it inside the return type.
+From being called to finally being destroyed, a coroutine goes through several broad phases. First, the compiler allocates a chunk of memory on the heap to hold the coroutine's state—local variables, suspension points, the promise object, and so on—this is the so-called "coroutine frame". You can customize the allocation strategy via `promise_type`'s `operator new`, but in most cases the default heap allocation is good enough. Once the coroutine frame is allocated, the compiler constructs a `promise_type` instance inside it, and immediately afterwards calls `get_return_object()`. The return value of that method is the object the coroutine function hands back to the caller—usually it grabs the coroutine's handle and wraps it into the return type.
 
-Next, before the first statement of the coroutine body executes, `initial_suspend` is called. It returns an awaitable that decides whether the coroutine "starts executing immediately" or "suspends first." After that, your code runs. During this time, `co_await` (suspend), `co_yield` (yield value and suspend), or `co_return` (return and end) may occur. When `co_return` is executed, it triggers `return_value` or `return_void`—the former if there is a return value, the latter if not. After the coroutine body finishes (or exits via exception), `final_suspend` is called, which decides whether the coroutine suspends upon ending. If `final_suspend` returns `std::suspend_never`, the coroutine frame is automatically destroyed; if it returns `std::suspend_always`, the frame remains suspended until someone manually calls `destroy`. If an uncaught exception is thrown during execution, `unhandled_exception` is called, and then it jumps directly to `final_suspend`.
+Next, before the coroutine body executes its first statement, `initial_suspend()` is called. It returns an awaitable that decides whether the coroutine "starts executing immediately" or "suspends first". After that comes the stretch where your code actually runs, and along the way `co_await` (suspend), `co_yield` (produce a value and suspend), and `co_return` (return and finish) may happen. When `co_return` executes, it triggers `return_value()` or `return_void()`—the former if there is a return value, the latter if there isn't. After the coroutine body finishes executing (or exits via an exception), `final_suspend() noexcept` is called; it decides whether the coroutine suspends at the end. If `final_suspend` returns `suspend_never`, the coroutine frame is destroyed automatically; if it returns `suspend_always`, the coroutine frame stays suspended until someone manually calls `handle.destroy()`. If an uncaught exception is thrown during execution, `unhandled_exception()` is called, and then control jumps straight to `final_suspend`.
 
-Here is a minimal `promise_type` implementation containing all necessary hooks:
+Here is the simplest possible `promise_type` implementation, containing all the required hooks:
 
 ```cpp
 #include <coroutine>
-#include <iostream>
+#include <cstdio>
 
-// 1. Define the return type of the coroutine
-struct Task {
+/// The simplest possible coroutine return type—it does nothing useful,
+/// it just fully demonstrates every hook of promise_type
+struct SimpleTask {
     struct promise_type {
-        Task get_return_object() {
-            // 2. Create the return object, usually holding the handle
-            return Task{std::coroutine_handle<promise_type>::from_promise(*this)};
+        // ① Construct the object returned to the caller
+        SimpleTask get_return_object()
+        {
+            // Wrap the coroutine handle into the return object
+            return SimpleTask{
+                std::coroutine_handle<promise_type>::from_promise(*this)
+            };
         }
 
-        std::suspend_never initial_suspend() noexcept { return {}; } // 3. Start immediately
-        std::suspend_always final_suspend() noexcept { return {}; }  // 4. Suspend at end (manual lifecycle)
+        // ② Before the coroutine starts—here we choose not to suspend, so execution begins immediately
+        std::suspend_never initial_suspend() { return {}; }
 
-        void return_void() {} // 5. Handle co_return with no value
-        void unhandled_exception() { std::terminate(); } // 6. Handle exceptions
+        // ③ When the coroutine ends—suspend, to prevent the coroutine frame from being destroyed automatically
+        //    Note: noexcept is mandatory
+        std::suspend_always final_suspend() noexcept { return {}; }
 
-        // Optional: co_yield support
-        std::suspend_always yield_value(int value) {
-            current_value = value;
-            return {};
+        // ④ Called when co_return carries no return value
+        void return_void() {}
+
+        // ⑤ Exception handling
+        void unhandled_exception()
+        {
+            // Simplest approach: rethrow directly
+            // You could also store the exception and throw it later
+            throw;
         }
-
-        int current_value;
     };
 
+    // The coroutine handle—holds a reference to the coroutine frame
     std::coroutine_handle<promise_type> handle;
-    Task(std::coroutine_handle<promise_type> h) : handle(h) {}
-    ~Task() { if (handle) handle.destroy(); }
-
-    // Prevent copying, allow moving
-    Task(const Task&) = delete;
-    Task& operator=(const Task&) = delete;
-    Task(Task&& other) noexcept : handle(other.handle) { other.handle = nullptr; }
-    Task& operator=(Task&& other) noexcept {
-        if (this != &other) {
-            if (handle) handle.destroy();
-            handle = other.handle;
-            other.handle = nullptr;
-        }
-        return *this;
-    }
 };
 
-// 7. Example usage
-Task my_coroutine() {
-    std::cout << "Start\n";
-    co_yield 42;
-    std::cout << "End\n";
-    co_return;
+// A coroutine function that uses SimpleTask
+SimpleTask hello_coroutine()
+{
+    std::puts("你好，协程世界！");
+    co_return; // triggers return_void()
 }
 
-int main() {
-    Task t = my_coroutine();
-    // ... do something else ...
-    if (t.handle.done()) {
-        t.handle.destroy();
-    }
+int main()
+{
+    auto task = hello_coroutine();   // the coroutine has already finished here (because initial_suspend returns suspend_never)
+    task.handle.destroy();           // manual destruction is required (because final_suspend returns suspend_always)
     return 0;
 }
 ```
 
-You will notice that while this example is simple, it already covers the core responsibilities of `promise_type`. Let's break down each hook one by one.
+You will notice that although this example is simple, it already covers all the core responsibilities of `promise_type`. Next, let's expand on each hook one by one.
 
 ### get_return_object(): Creating the Return Object
 
-This hook is called immediately after the coroutine frame is allocated and the promise object is constructed. Its return value is the object returned to the caller by the coroutine function. There is a critical detail here: when `get_return_object` executes, the coroutine body has not yet started, but the coroutine frame already exists. Therefore, you can obtain the coroutine's handle via `std::coroutine_handle::from_promise` and stuff it into the return object, allowing the caller to control the coroutine's execution through this handle.
+This hook is called immediately after the coroutine frame is allocated and the promise object constructed. Its return value is the object the coroutine function returns to the caller. There is one crucial detail here: when `get_return_object()` executes, the coroutine body has not started executing yet, but the coroutine frame already exists. So you can obtain the coroutine's handle via `std::coroutine_handle<promise_type>::from_promise(*this)`, stuff it into the return object, and the caller can then control the coroutine's execution through that handle.
 
-This design is essentially a "handshake" between the coroutine and the caller: the coroutine says, "I'm ready, here is my handle," and the caller, upon receiving the handle, can choose to immediately `resume` it or store it for later.
+This design is essentially a "handshake" between the coroutine and its caller: the coroutine says "I'm ready, here is my handle", and the caller, once it holds the handle, can either `resume()` immediately or stash it away and resume later.
 
-### initial_suspend(): Startup Suspension Decision
+### initial_suspend(): The Startup Suspension Decision
 
-This hook decides whether the coroutine suspends before executing its first statement. It returns an awaitable object, and the usual choices are two: `std::suspend_never` (do not suspend, execute immediately) or `std::suspend_always` (suspend, wait for the caller to manually `resume`).
+This hook decides whether the coroutine suspends before executing its first statement. It returns an awaitable object, and in practice there are just two common choices: `std::suspend_never` (don't suspend—execute the coroutine body immediately) and `std::suspend_always` (suspend and wait for the caller to `resume()` manually).
 
-When should you use `std::suspend_never` versus `std::suspend_always`? It depends on your use case. If you want a "fire-and-forget" style coroutine, use `std::suspend_never`. If you want "lazy evaluation," where the caller needs to explicitly start it, use `std::suspend_always`. The latter is very common when implementing generators—you create a generator, but the coroutine body doesn't start executing until you call `next()` or `resume()` for the first time.
+So when should you use `suspend_never`, and when `suspend_always`? It depends on your use case. If you want the coroutine to "start running the moment it is created" (fire-and-forget style), use `suspend_never`. If you want the coroutine to be lazy (lazy evaluation), started explicitly by the caller, use `suspend_always`. The latter is extremely common when implementing generators—you create a generator, and the coroutine body does not start running until you call `begin()` or `next()` for the first time.
 
-### final_suspend() noexcept: The Critical Decision at the End
+### final_suspend() noexcept: The Critical Final Decision
 
-This hook is likely the most error-prone part of the entire `promise_type`.
+This hook is probably the easiest place in the whole `promise_type` to get wrong.
 
-`final_suspend` is called after the coroutine body has finished (either via a normal `co_return` or after `unhandled_exception` has dealt with an exception). It also returns an awaitable, deciding whether the coroutine suspends upon completion.
+`final_suspend` is called after the coroutine body finishes executing (either returning normally via `co_return`, or after `unhandled_exception` has dealt with the exception). It likewise returns an awaitable that decides whether the coroutine suspends at the end.
 
-The key question is: why do most implementations choose to return `std::suspend_always`?
+The key question is: why do most implementations choose to return `suspend_always`?
 
-> ⚠️ **If you return `std::suspend_never`, the coroutine frame will be destroyed immediately after `final_suspend` returns. This means any operation on the coroutine handle at that point is dangling—your program could crash at any time.**
+> ⚠️ **If you return `suspend_never`, the coroutine frame is destroyed immediately after `final_suspend` returns. This means any operation on the coroutine handle at that point is dangling—your program can crash at any moment.**
 >
-> Returning `std::suspend_always` keeps the coroutine suspended in a completed state, keeping the coroutine frame valid. The caller can safely check the coroutine state, retrieve the return value, and then manually call `destroy` to clean up. This is a safer "manual lifecycle management" pattern.
+> Returning `suspend_always` keeps the coroutine suspended in its finished state, with the coroutine frame still valid, so the caller can safely inspect the coroutine's state, fetch the return value, and then manually call `handle.destroy()` to clean up. This is the safer "manual lifetime management" pattern.
 
-Also, `final_suspend` is not optional—the standard mandates that `final_suspend` must be `noexcept`. The reason is straightforward: if the `await_suspend` of the awaitable returned by `final_suspend` throws an exception, the coroutine is already finished. Who should the exception be thrown to? There is no reasonable receiver, so the standard simply forbids this possibility at compile time.
+Also, `noexcept` is not optional—the standard requires `final_suspend` to be `noexcept`. The reason is plain: if the awaitable operations of `final_suspend` threw an exception, the coroutine has already finished running—who should the exception be thrown to at that point? There is no sensible receiver, so the standard simply forbids this possibility at compile time.
 
 ### return_value() / return_void(): Handling co_return
 
-When the coroutine executes `co_return`, `return_value` is called. If `co_return` has no return value (or the coroutine body implicitly `returns` at the end), `return_void` is called.
+When the coroutine executes `co_return expr;`, `promise_type::return_value(expr)` is called. If `co_return;` carries no return value (or the coroutine body ends with an implicit `co_return`), then `promise_type::return_void()` is called.
 
-Note that the choice between `return_value` and `return_void` depends on your coroutine design: if your coroutine always returns a value via `co_return`, define `return_value`; if your coroutine exits via `co_return` without a value (or executes to the end of the function), define `return_void`. Technically you can define both—`co_return value` calls `return_value`, `co_return;` calls `return_void`—but in practice, a well-designed coroutine type usually uses only one to avoid confusing the caller.
+Note that choosing between `return_value` and `return_void` depends on your coroutine design: if your coroutine always returns a value via `co_return expr;`, define `return_value()`; if your coroutine exits via `co_return;` (or runs to the end of the function and returns implicitly), define `return_void()`. Technically you can define both—`co_return;` would call `return_void()`, `co_return expr;` would call `return_value(expr)`—but in practice, a well-designed coroutine type uses only one of them, to avoid confusing callers.
 
-A typical `return_value` implementation stores the value in the promise object, to be retrieved later via the handle:
+A typical `return_value` implementation stores the value in the promise object, to be fetched later through the handle:
 
 ```cpp
-struct Task {
+struct TaskWithValue {
     struct promise_type {
-        int result;
+        int kResultValue; // stores the return value
 
-        Task get_return_object() {
-            return Task{std::coroutine_handle<promise_type>::from_promise(*this)};
+        TaskWithValue get_return_object()
+        {
+            return TaskWithValue{
+                std::coroutine_handle<promise_type>::from_promise(*this)
+            };
         }
-        std::suspend_never initial_suspend() noexcept { return {}; }
+
+        std::suspend_never initial_suspend() { return {}; }
         std::suspend_always final_suspend() noexcept { return {}; }
 
-        void return_void() = delete; // Disable return_void
+        // called on co_return value;
+        void return_value(int value) { kResultValue = value; }
 
-        void return_value(int v) {
-            result = v;
-        }
-
-        void unhandled_exception() { std::terminate(); }
+        void unhandled_exception() { throw; }
     };
 
     std::coroutine_handle<promise_type> handle;
-    // ... (constructors/destructors omitted for brevity) ...
 
-    int get_result() {
-        if (handle.done()) {
-            return handle.promise().result;
-        }
-        throw std::runtime_error("Coroutine not finished");
-    }
+    int get_result() const { return handle.promise().kResultValue; }
 };
 
-Task compute_value() {
+TaskWithValue compute_something()
+{
     co_return 42;
 }
 ```
 
 ### yield_value(): Handling co_yield
 
-`co_yield` is essentially equivalent to `co_await promise.yield_value(value)`. That is, the return value of `yield_value` must be an awaitable. The most common practice is to return `std::suspend_always`, indicating that the coroutine suspends after every yield, handing control back to the caller.
+`co_yield expr;` is actually equivalent to `co_await promise.yield_value(expr);`. In other words, the return value of `yield_value` must be an awaitable. The most common approach is to return `std::suspend_always`, meaning that after every yield the coroutine suspends and hands control back to the caller.
 
-`yield_value` is core to implementing generators. Each time the caller fetches a value from the generator, the generator executes until the next `co_yield`, yields the value, suspends, and waits for the next fetch.
-
-```cpp
-template<typename T>
-struct Generator {
-    struct promise_type {
-        T current_value;
-
-        Generator get_return_object() {
-            return Generator{std::coroutine_handle<promise_type>::from_promise(*this)};
-        }
-        std::suspend_always initial_suspend() noexcept { return {}; } // Lazy start
-        std::suspend_always final_suspend() noexcept { return {}; }  // Keep frame for cleanup
-
-        void return_void() {}
-
-        std::suspend_always yield_value(T value) {
-            current_value = value;
-            return {}; // Suspend
-        }
-
-        void unhandled_exception() { std::terminate(); }
-    };
-
-    std::coroutine_handle<promise_type> handle;
-    Generator(std::coroutine_handle<promise_type> h) : handle(h) {}
-    ~Generator() { if (handle) handle.destroy(); }
-
-    // Prevent copying
-    Generator(const Generator&) = delete;
-    Generator& operator=(const Generator&) = delete;
-
-    // Move semantics
-    Generator(Generator&& other) noexcept : handle(other.handle) { other.handle = nullptr; }
-    Generator& operator=(Generator&& other) noexcept {
-        if (this != &other) {
-            if (handle) handle.destroy();
-            handle = other.handle;
-            other.handle = nullptr;
-        }
-        return *this;
-    }
-
-    // Iterator interface
-    struct Iter {
-        std::coroutine_handle<promise_type> handle;
-        bool operator!=(const Iter&) const { return !handle.done(); }
-        void operator++() { handle.resume(); }
-        T operator*() const { return handle.promise().current_value; }
-    };
-
-    Iter begin() {
-        if (handle) handle.resume(); // Start the coroutine
-        return Iter{handle};
-    }
-    Iter end() { return Iter{nullptr}; }
-};
-
-Generator<int> range(int start, int end) {
-    for (int i = start; i < end; ++i) {
-        co_yield i;
-    }
-}
-```
-
-While simple, this generator demonstrates the core usage of `yield_value`: each `co_yield` outputs a value and suspends, and the caller advances to the next value via `resume` (hidden in the iterator's `++`). This is the mechanism behind Python's `yield` keyword, except in C++, you have to build the framework yourself.
-
-### unhandled_exception(): The Last Line of Defense
-
-If an exception is thrown within the coroutine body and is not caught, `unhandled_exception` is called. You can do a few things in this hook:
-
-The simplest approach is to do nothing (the implicit call of `return_void`), or simply `std::terminate` to re-throw the exception to the caller. However, both approaches are rather crude. A more refined approach is to store the `std::exception_ptr` in the promise object and re-throw it later when the caller retrieves the result via the handle. This turns exception propagation into "on-demand" rather than "immediate explosion."
-
-```cpp
-struct Task {
-    struct promise_type {
-        int result;
-        std::exception_ptr e_ptr;
-
-        // ... (other methods omitted) ...
-
-        void return_value(int v) { result = v; }
-
-        void unhandled_exception() {
-            e_ptr = std::current_exception();
-        }
-    };
-
-    // ... (Task wrapper omitted) ...
-
-    int get_result() {
-        if (handle.promise().e_ptr) {
-            std::rethrow_exception(handle.promise().e_ptr);
-        }
-        return handle.promise().result;
-    }
-};
-```
-
-Great, we have now gone through all the major hooks of `promise_type`. Looking back, you'll realize that `promise_type` is essentially a "coroutine behavior controller": it controls how the coroutine starts, ends, and handles return values and exceptions. The "suspension and resumption" within the coroutine body—controlled by `co_await`—is managed by another mechanism, which is the awaiter/awaitable protocol we will discuss next.
-
-## The awaiter/awaitable Protocol
-
-If `promise_type` controls the "macroscopic lifecycle" of a coroutine, then awaiter/awaitable controls the "microscopic suspension and resumption." Every time you write `co_await expr` in a coroutine, the compiler executes a fixed protocol on the expression: first asking "are you ready?", then "what to do after suspending?", and finally "what result to give me after resuming?".
-
-### The Expansion of co_await expr
-
-Let's look step-by-step at what the compiler does when processing `co_await expr`.
-
-First, the compiler needs to obtain an awaiter object from `expr`, a process that happens in two steps.
-
-The first step is to get the awaitable. If `expr` defines an `operator co_await` member function, the compiler calls `operator co_await` first to get an intermediate result; this intermediate result is the awaitable. If there is no `operator co_await`, the original `expr` itself is the awaitable. (Note that expressions produced by `co_await`, `co_yield`, and `co_return` skip `operator co_await` and are used directly as awaitables.)
-
-The second step is to get the awaiter from the awaitable. The compiler performs overload resolution on `await_transform` (if available in `promise_type`), then `operator co_await`. Both member functions and non-member functions participate in the candidates together—it's not a "find member then ADL" sequential search, but a unified overload resolution. If there is exactly one best match, its return value is used as the awaiter. If `operator co_await` is completely missing, the awaitable itself is treated as the awaiter—provided it has `await_ready`, `await_suspend`, and `await_resume` methods. If overload resolution is ambiguous (e.g., both member and non-member match), the program is ill-formed, and the compiler will error.
-
-Once the awaiter is obtained, the compiler executes the following steps:
-
-```text
-1. Call awaiter.await_ready():
-   - If returns true: skip suspension, go directly to step 3.
-   - If returns false: proceed to step 2.
-
-2. Call awaiter.await_suspend(handle):
-   - If returns void: suspend coroutine, return to caller/resumer.
-   - If returns true: suspend coroutine.
-   - If returns false: do not suspend, resume immediately (go to step 3).
-   - If returns coroutine_handle: suspend current coroutine, resume the returned handle (symmetric transfer).
-
-3. Call awaiter.await_resume():
-   - Return value is the result of the co_await expr.
-```
-
-You will notice that these three methods form a precise "query-suspend-resume" protocol:
-
-**`await_ready`** returns a `bool`. If it returns `true`, it means "no need to suspend, I'm ready," and it jumps directly to `await_resume`. If it returns `false`, it means "I'm not ready, need to suspend." This method is a fast-path optimization—if you know the operation is already complete (e.g., a cached result), returning `true` avoids the overhead of suspension/resumption.
-
-**`await_suspend`** is called after confirming the need to suspend and receives the current coroutine's `std::coroutine_handle`. This is the most flexible part of the protocol—it has three legal return types. Returning `void` means the coroutine unconditionally suspends, returning control to the caller or resumer. Returning `bool` allows you to change your mind at the last minute—`true` means suspend, `false` means don't suspend (resume immediately). Returning a `std::coroutine_handle` is what's known as symmetric transfer—the coroutine suspends but doesn't return to the caller; instead, it immediately resumes the coroutine corresponding to the returned handle. This mechanism is crucial in coroutine chain calls to avoid stack overflow. We will dedicate a section later to breaking down these three forms.
-
-One more easily overlooked point: if `await_suspend` throws an exception, the coroutine is automatically resumed, and the exception is immediately re-thrown into the coroutine body. That is, the exception doesn't escape to the caller; it stays inside the coroutine—you can catch it with `try-catch` in the coroutine body, or let it bubble up to `unhandled_exception`.
-
-> ⚠️ **The bool semantics of `await_ready` and `await_suspend` are inverted!** `await_ready` returning `true` means "don't suspend," while `await_suspend` returning `true` means "suspend." This design trips many people up when they first encounter it. You can remember it this way: `await_ready` asks "are you ready?", if ready, no need to suspend; `await_suspend` asks "should I suspend?", `true` means "yes, suspend."
-
-**`await_resume`** is called when the coroutine resumes execution (or immediately if `await_suspend` returns `false`). Its return value becomes the value of the entire `co_await expr`. If you don't need to return any value, returning `void` is fine.
-
-### An Async Timer Awaiter
-
-Enough theory. Let's use a concrete example to tie these concepts together. We want to implement an `AsyncTimer`—an awaiter that makes a coroutine "sleep" for a specified number of milliseconds.
-
-Of course, real async sleep requires an event loop and timers, but for now, we'll use a simplified synchronous version to demonstrate the complete structure of an awaiter:
+`yield_value` is at the heart of implementing generators. Each time the caller pulls a value from the generator, the generator runs to the next `co_yield`, produces the value, suspends, and waits for the next pull.
 
 ```cpp
 #include <coroutine>
-#include <chrono>
-#include <thread>
+#include <cstdio>
 
-struct AsyncTimer {
-    int milliseconds;
+// A simple integer generator
+struct IntGenerator {
+    struct promise_type {
+        int kCurrentValue; // the current produced value
+
+        IntGenerator get_return_object()
+        {
+            return IntGenerator{
+                std::coroutine_handle<promise_type>::from_promise(*this)
+            };
+        }
+
+        std::suspend_always initial_suspend() { return {}; }
+        std::suspend_always final_suspend() noexcept { return {}; }
+
+        // co_yield value; → produce the value and suspend
+        std::suspend_always yield_value(int value)
+        {
+            kCurrentValue = value;
+            return {}; // returns suspend_always: suspend the coroutine
+        }
+
+        void return_void() {}
+        void unhandled_exception() { throw; }
+    };
+
+    std::coroutine_handle<promise_type> handle;
+
+    // fetch the current value
+    int current_value() const { return handle.promise().kCurrentValue; }
+
+    // advance to the next value; returns false when the generator is done
+    bool next()
+    {
+        handle.resume();
+        return !handle.done();
+    }
+
+    ~IntGenerator()
+    {
+        if (handle) {
+            handle.destroy();
+        }
+    }
 };
 
-// Awaiter object
-struct TimerAwaiter {
-    int milliseconds;
+// Use the generator to produce the Fibonacci sequence
+IntGenerator fibonacci()
+{
+    int a = 0, b = 1;
+    while (true) {
+        co_yield a;
+        int kTemp = a + b;
+        a = b;
+        b = kTemp;
+    }
+}
 
-    bool await_ready() const noexcept { return false; } // Always need to wait
+int main()
+{
+    auto gen = fibonacci();
+    for (int i = 0; i < 10 && gen.next(); ++i) {
+        std::printf("%d ", gen.current_value());
+    }
+    std::puts("");
+    // Output: 0 1 1 2 3 5 8 13 21 34
+    return 0;
+}
+```
 
-    void await_suspend(std::coroutine_handle<> handle) const {
-        // Simulate async wait (in reality, this would register with an event loop)
-        std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
-        // After "sleep", we resume. Note: this blocks the thread!
+Simple as it is, this generator demonstrates the core usage of `yield_value`: every `co_yield` produces a value and suspends, and the caller advances to the next value via `resume()`. This is exactly the machinery behind Python's `yield` keyword—except that in C++, you have to build the framework yourself.
+
+### unhandled_exception(): The Last Line of Defense for Exceptions
+
+If an exception is thrown inside the coroutine body and not caught, `unhandled_exception()` gets called. There are a few things you can do in this hook:
+
+The simplest approach is to do nothing (the implicit call to `std::terminate()`), or just `throw;` to rethrow the exception out to the caller. But both approaches are rather blunt. A more refined approach stores `std::current_exception()` in the promise object, and calls `std::rethrow_exception()` later, when the caller fetches the result through the handle. That way exception propagation becomes "on demand" instead of "blow up immediately".
+
+```cpp
+struct SafeTask {
+    struct promise_type {
+        std::exception_ptr kException;
+
+        SafeTask get_return_object()
+        {
+            return SafeTask{
+                std::coroutine_handle<promise_type>::from_promise(*this)
+            };
+        }
+
+        std::suspend_never initial_suspend() { return {}; }
+        std::suspend_always final_suspend() noexcept { return {}; }
+        void return_void() {}
+
+        void unhandled_exception()
+        {
+            // capture the exception and store it for later handling
+            kException = std::current_exception();
+        }
+    };
+
+    std::coroutine_handle<promise_type> handle;
+
+    void rethrow_if_failed()
+    {
+        if (handle.promise().kException) {
+            std::rethrow_exception(handle.promise().kException);
+        }
+    }
+
+    ~SafeTask()
+    {
+        if (handle) {
+            handle.destroy();
+        }
+    }
+};
+```
+
+Great—by this point we have walked through all the major hooks of `promise_type`. Looking back now, you will see that `promise_type` is essentially a "coroutine behavior controller": it controls how the coroutine starts, how it ends, and how return values and exceptions are handled. The `co_await` inside the coroutine body—the "suspend and resume" part—is governed by a separate mechanism, and that is the awaiter/awaitable protocol we are about to cover.
+
+## The awaiter/awaitable Protocol
+
+If `promise_type` controls the coroutine's "macro lifecycle", then the awaiter/awaitable controls the "micro suspend-and-resume". Every time you write `co_await expr;` inside a coroutine, the compiler runs a fixed protocol on `expr`: first it asks "are you ready yet", then "what should happen after suspending", and finally "what result do you give me upon resumption".
+
+### How co_await expr Expands
+
+Let's step through what exactly the compiler does when processing `co_await expr;`.
+
+First, the compiler needs to obtain an awaiter object from `expr`, and this happens in two steps.
+
+Step one is obtaining the awaitable. If `promise_type` defines an `await_transform` member function, the compiler first calls `promise.await_transform(expr)` to get an intermediate result, and this intermediate result is the awaitable. If there is no `await_transform`, then the original `expr` itself is the awaitable. (Note that the expressions produced by `initial_suspend`, `final_suspend`, and `yield_value` skip `await_transform` and are used directly as awaitables.)
+
+Step two is obtaining the awaiter from the awaitable. The compiler performs overload resolution on `operator co_await`, with the member function `awaitable.operator co_await()` and the non-member function `operator co_await(awaitable)` participating as candidates together—not a sequential "look for members first, then ADL" lookup, but one unified overload resolution. If there happens to be exactly one best match, its return value is used as the awaiter; if no `operator co_await` can be found at all, then the awaitable itself is treated as the awaiter—provided it has the three methods `await_ready`, `await_suspend`, and `await_resume`; if the overload resolution is ambiguous (for example, both the member and the non-member match), the program is outright ill-formed and the compiler reports an error.
+
+Once it has the awaiter, the compiler executes the following steps:
+
+```cpp
+if (!awaiter.await_ready()) {
+    // Case A: suspension is needed
+    // Save the current coroutine state, then:
+    awaiter.await_suspend(handle);
+    // The coroutine is now suspended; control returns to the caller/resumer
+}
+// Case B: no suspension needed (await_ready returned true), or upon resumption:
+auto result = awaiter.await_resume();
+// result is the value of the whole co_await expression
+```
+
+You will find that these three methods form a precise "query–suspend–resume" protocol:
+
+**`await_ready()`** returns a `bool`. If it returns `true`, it means "no need to suspend, I am already ready", and execution jumps straight to `await_resume()`. If it returns `false`, it means "I'm not ready yet, we need to suspend". This method is a fast-path optimization—if you know the operation has already completed (a cached result, for example), returning `true` outright avoids the suspend/resume overhead.
+
+**`await_suspend(handle)`** is called after suspension is confirmed to be necessary, and receives the current coroutine's `std::coroutine_handle`. This is the most flexible part of the whole protocol—it has three legal return types. When it returns `void`, the coroutine suspends unconditionally and control returns to the caller or resumer; when it returns `bool`, `true` means suspend and `false` means don't suspend (resume directly), giving you a chance to change your mind at the last moment; when it returns `std::coroutine_handle<>`, that is the so-called symmetric transfer—the coroutine suspends but does not return to the caller; instead, the coroutine corresponding to the returned handle is resumed directly. This mechanism is very important when coroutines call each other in chains, because it avoids stack overflow. Later we will devote a whole section to unpacking these three forms.
+
+One more easily overlooked point: if `await_suspend` throws an exception, the coroutine is resumed automatically, and then the exception is immediately rethrown inside the coroutine body. In other words, the exception does not escape to the caller—it stays inside the coroutine, where you can catch it with `try/catch` in the body, or let it bubble up to `unhandled_exception()`.
+
+> ⚠️ **The bool semantics of `await_ready()` and `await_suspend()` are inverted!** `await_ready()` returning `true` means "don't suspend"; `await_suspend()` returning `true` means "suspend". This design has tripped up many people on first contact. Here's a way to remember it: `await_ready` asks "are you ready?"—if you're ready, of course there's no need to suspend; `await_suspend` asks "should we suspend?"—and `true` means "yes, suspend".
+
+**`await_resume()`** is called when the coroutine resumes execution (or immediately when `await_ready()` returns `true`). Its return value is the value of the entire `co_await` expression. If you don't need to return anything, just return `void`.
+
+### An Asynchronous Timer Awaiter
+
+Having said all this theory, next let's tie it together with a concrete example. We are going to implement a `SleepAwaiter`—an awaiter that puts the coroutine to "sleep" for a specified number of milliseconds.
+
+Of course, truly asynchronous sleeping needs the cooperation of an event loop and timers, so here we first use a simplified synchronous version to show the complete structure of an awaiter:
+
+```cpp
+#include <chrono>
+#include <coroutine>
+#include <cstdio>
+#include <thread>
+
+/// An async-sleep awaiter (synchronous blocking version, demo only)
+struct SleepAwaiter {
+    int kMilliSeconds; // how long to sleep
+
+    explicit SleepAwaiter(int ms) : kMilliSeconds(ms) {}
+
+    // ① Always needs to suspend—because we genuinely have to wait
+    bool await_ready() const noexcept { return false; }
+
+    // ② Do the sleeping upon suspension
+    //    returning void = unconditional suspension, control returns to the caller
+    void await_suspend(std::coroutine_handle<> handle) const noexcept
+    {
+        // In a real event loop, this would be "register a timer and store the handle"
+        // Here we simplify: sleep directly, then resume
+        std::this_thread::sleep_for(
+            std::chrono::milliseconds(kMilliSeconds)
+        );
+        // Resume the coroutine as soon as the sleep ends
+        handle.resume();
+    }
+
+    // ③ Nothing to return upon resumption
+    void await_resume() const noexcept {}
+};
+
+/// We'd like co_await to accept a plain integer (milliseconds) directly.
+/// Looks intuitive—but this version is actually problematic; see the analysis below.
+SleepAwaiter operator co_await(int ms)
+{
+    return SleepAwaiter(ms);
+}
+```
+
+Wait—there is a problem with the version above: `operator co_await(int ms)` is a free function, and ADL lookup needs to consider namespaces. For the built-in type `int`, ADL does nothing—`int` has no associated namespaces. So the more correct approach is to intercept it via `promise_type`'s `await_transform`:
+
+```cpp
+#include <chrono>
+#include <coroutine>
+#include <cstdio>
+#include <thread>
+
+/// An async-sleep awaiter
+struct SleepAwaiter {
+    int kMilliSeconds;
+
+    explicit SleepAwaiter(int ms) : kMilliSeconds(ms) {}
+
+    bool await_ready() const noexcept { return false; }
+
+    void await_suspend(std::coroutine_handle<> handle) const noexcept
+    {
+        std::this_thread::sleep_for(
+            std::chrono::milliseconds(kMilliSeconds)
+        );
         handle.resume();
     }
 
     void await_resume() const noexcept {}
 };
 
-// operator co_await overload
-TimerAwaiter operator co_await(AsyncTimer timer) {
-    return TimerAwaiter{timer.milliseconds};
-}
-
-// Usage
-struct Task {
+/// The coroutine task type
+struct TimerTask {
     struct promise_type {
-        Task get_return_object() {
-            return Task{std::coroutine_handle<promise_type>::from_promise(*this)};
+        TimerTask get_return_object()
+        {
+            return TimerTask{
+                std::coroutine_handle<promise_type>::from_promise(*this)
+            };
         }
-        std::suspend_never initial_suspend() noexcept { return {}; }
+
+        std::suspend_never initial_suspend() { return {}; }
         std::suspend_always final_suspend() noexcept { return {}; }
         void return_void() {}
-        void unhandled_exception() { std::terminate(); }
+        void unhandled_exception() { throw; }
+
+        // ④ await_transform: intercept the co_await expression
+        //    When you write co_await 100;, the compiler calls this method
+        SleepAwaiter await_transform(int ms)
+        {
+            return SleepAwaiter(ms);
+        }
     };
 
     std::coroutine_handle<promise_type> handle;
-    Task(std::coroutine_handle<promise_type> h) : handle(h) {}
-    ~Task() { if (handle) handle.destroy(); }
+
+    ~TimerTask()
+    {
+        if (handle) {
+            handle.destroy();
+        }
+    }
 };
 
-Task example() {
-    std::cout << "Start\n";
-    co_await AsyncTimer{1000}; // "Sleep" for 1 second
-    std::cout << "End\n";
+// Usage example
+TimerTask countdown()
+{
+    for (int i = 5; i > 0; --i) {
+        std::printf("倒计时: %d\n", i);
+        co_await 1000; // wait 1 second (converted into a SleepAwaiter via await_transform)
+    }
+    std::puts("发射！");
+}
+
+int main()
+{
+    auto task = countdown(); // the coroutine starts executing immediately (initial_suspend returns suspend_never)
+    // The coroutine has already finished, because SleepAwaiter resumed itself synchronously in await_suspend
+    return 0;
 }
 ```
 
-Wait, there's a problem with the code above: `operator co_await` is a free function, so ADL (Argument-Dependent Lookup) needs to consider namespaces. For the built-in type `int` (if we were to use it directly), ADL doesn't work—`int` has no associated namespace. A more correct approach is to intercept via `promise_type`'s `await_transform`:
-
-```cpp
-struct Task {
-    struct promise_type {
-        // ... (other members) ...
-
-        // 1. Intercepts co_await in the coroutine
-        TimerAwaiter await_transform(AsyncTimer timer) {
-            return TimerAwaiter{timer.milliseconds};
-        }
-    };
-    // ... (Task wrapper) ...
-};
-```
-
-In this example, `await_transform` acts as a "middleman"—it converts `AsyncTimer` into `TimerAwaiter`. This pattern is very common in real projects: you can perform type checks, logging, cancellation checks, etc., inside `await_transform`.
+In this example, `await_transform` plays the role of a "middleman"—it converts the `int` into a `SleepAwaiter`. This pattern is very common in real projects: inside `await_transform` you can do type checking, logging, cancellation checks, and so on.
 
 ### The Three Return Forms of await_suspend
 
-Now the question arises: why does `await_suspend` have three return forms? Isn't this just making things more complicated?
+Now here comes the question: why does `await_suspend` need three return forms? Isn't this just making things more complicated?
 
-Actually, each form has its use case. Let's break them down one by one.
+In fact, every form has its place. Let's take them apart one by one.
 
-**Returning `void`** is the simplest—the coroutine suspends, and control returns to the caller or the initiator of the most recent `co_await`. This applies to scenarios where "suspension is entirely managed externally," such as storing the handle in a queue for an event loop to resume later.
+**Returning `void`** is the simplest—the coroutine suspends, and control returns to the caller or to whoever initiated the most recent `resume()`. This suits scenarios where suspension is "handed over entirely to external management"—storing the handle into a queue, for instance, and letting the event loop resume it later.
 
-**Returning `bool`** gives you a chance to make a final decision between suspending and not suspending. For example, you check and find that the I/O operation is actually already complete, so you return `false` to let the coroutine continue executing, avoiding the overhead of unnecessary suspension/resumption.
+**Returning `bool`** gives you a chance to make a final decision between suspending and not suspending. For example, you do a check and find the I/O operation has actually already completed, so you return `false` to let the coroutine keep executing and avoid a pointless suspend/resume cost.
 
-**Returning `std::coroutine_handle`** is the most powerful but also the most error-prone form. This is the so-called symmetric transfer. When your `await_suspend` returns a handle, the compiler suspends the current coroutine and **immediately** resumes the coroutine corresponding to the returned handle—it does not return to the caller. The standard design intent is to allow the compiler to perform tail call optimization, thereby not increasing call stack depth—mainstream compilers (GCC, Clang, MSVC) do indeed do this at higher optimization levels. But strictly speaking, tail call optimization is a "quality of implementation" issue, not a "standard guarantee": both GCC and Clang have had bugs where symmetric transfer still caused stack overflows (GCC #100897, LLVM #42853). In practice, this mechanism reliably avoids stack overflow, but don't rely on it at `-O0`.
+**Returning `std::coroutine_handle<>`** is the most powerful but also the most error-prone form. This is the so-called symmetric transfer. When your `await_suspend` returns a handle, the compiler suspends the current coroutine and then **immediately** resumes the coroutine corresponding to the returned handle—control does not go back to the caller. The standard's design intent is to let the compiler perform tail-call optimization so that the call stack depth doesn't grow—and the mainstream compilers (GCC, Clang, MSVC) really do this at higher optimization levels. Strictly speaking, though, tail-call optimization is a "quality of implementation" matter rather than a "standard guarantee": both GCC and Clang have had bugs where symmetric transfer still caused stack overflow (GCC #100897, LLVM #42853). In practice, this mechanism reliably avoids stack overflow, but don't rely on it under `-O0`.
 
-Here is an example demonstrating symmetric transfer:
-
-```cpp
-struct SymmetricTransferAwaiter {
-    std::coroutine_handle<> next;
-
-    bool await_ready() const noexcept { return false; }
-
-    // Return the handle of the next coroutine
-    std::coroutine_handle<> await_suspend(std::coroutine_handle<> current) noexcept {
-        return next; // Transfer execution to 'next'
-    }
-
-    void await_resume() const noexcept {}
-};
-```
-
-> ⚠️ **Symmetric transfer is a key mechanism for avoiding coroutine stack overflow.** If your coroutine A calls B, B calls C, C calls D... and every layer is "suspend A → resume B → suspend B → resume C," the call stack gets deeper and deeper without symmetric transfer. Symmetric transfer gives the compiler a chance to avoid stack growth via tail call optimization—this is crucial in scenarios with long coroutine chains (e.g., deep recursive coroutine chains). Note that tail call optimization is "quality of implementation," not a "standard guarantee," so stack overflow is still possible at low optimization levels.
-
-## operator co_await and ADL
-
-Earlier we discussed how the compiler obtains an awaiter from an awaitable via `operator co_await` overload resolution. There is a problem often encountered in real engineering: if you have a type from a third-party library and cannot modify its source code, how do you add `operator co_await` to it?
-
-The answer is to use ADL (Argument-Dependent Lookup). When overload resolution looks for candidate functions for `operator co_await`, in addition to looking for member functions in the scope of the awaitable's class, it also looks for free functions in the associated namespaces of the awaitable type via ADL. This gives us a backdoor to extend a type's await capability without modifying the original type. Here is a concrete example:
-
-```cpp
-namespace third_party {
-    struct Socket {
-        int fd;
-        // ... no coroutine support here ...
-    };
-}
-
-// 1. Extend Socket via ADL
-namespace third_party {
-    struct SocketAwaiter {
-        Socket& socket;
-        bool await_ready() const noexcept;
-        void await_suspend(std::coroutine_handle<> handle) const;
-        void await_resume() const;
-    };
-
-    SocketAwaiter operator co_await(Socket& socket) {
-        return SocketAwaiter{socket};
-    }
-}
-
-// 2. Now you can co_await a Socket
-Task network_task(third_party::Socket& sock) {
-    co_await sock; // Finds operator co_await via ADL
-}
-```
-
-This is the power of ADL—you don't need to modify the original type, just provide a free function `operator co_await` overload in its namespace. Of course, if you can modify the type itself, adding a member `operator co_await` is simpler. However, note that if both a member and a non-member `operator co_await` exist for the same type and both match, overload resolution will be ambiguous, and the compiler will error. So don't provide both methods for the same type.
-
-## From awaitable to Scheduler
-
-So far, all our awaiters have been doing "immediate" things in `await_suspend`—either synchronous blocking or immediate resumption. But in a real async framework, what `await_suspend` does is usually submit the coroutine handle to a scheduler (event loop, thread pool, etc.), and then let the scheduler resume the coroutine at the appropriate time.
-
-This is the bridge between awaitable and the scheduler: **`await_suspend` is the key integration point for the scheduler**. When a coroutine suspends, `await_suspend` gets the coroutine's handle. It can store this handle anywhere—a queue, a timer list, the data field of an epoll event—and then let the scheduler `resume` it later.
-
-Next, let's look at a minimal scheduler framework that shows how a complete "coroutine + scheduler" works.
+Here's an example demonstrating symmetric transfer:
 
 ```cpp
 #include <coroutine>
-#include <queue>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <iostream>
+#include <cstdio>
 
-// Minimal Scheduler
-class Scheduler {
-public:
-    void enqueue(std::coroutine_handle<> handle) {
-        std::lock_guard lock(mutex);
-        ready_queue.push(handle);
-        cv.notify_one();
+/// A simple task type that supports chained execution
+struct ChainTask {
+    struct promise_type {
+        // Stores the caller coroutine's handle, to resume it once we finish
+        std::coroutine_handle<> kCaller;
+
+        ChainTask get_return_object()
+        {
+            return ChainTask{
+                std::coroutine_handle<promise_type>::from_promise(*this)
+            };
+        }
+
+        std::suspend_always initial_suspend() { return {}; }
+
+        // On completion, resume the caller via symmetric transfer
+        std::coroutine_handle<> final_suspend() noexcept
+        {
+            return kCaller; // if kCaller is null, the behavior is undefined
+        }
+
+        void return_void() {}
+        void unhandled_exception() { throw; }
+    };
+
+    std::coroutine_handle<promise_type> handle;
+
+    /// When co_awaiting a ChainTask, suspend the current coroutine and start the awaited coroutine
+    bool await_ready() noexcept { return false; }
+
+    // symmetric transfer: suspend ourselves, resume the other side
+    std::coroutine_handle<> await_suspend(
+        std::coroutine_handle<> caller) noexcept
+    {
+        // Store the caller so we can resume it once we finish
+        handle.promise().kCaller = caller;
+        // Return our own handle—the scheduler will resume this coroutine directly
+        return handle;
     }
 
-    void run() {
-        while (true) {
-            std::unique_lock lock(mutex);
-            cv.wait(lock, [this] { return !ready_queue.empty(); });
+    void await_resume() noexcept {}
+};
+```
 
-            auto handle = ready_queue.front();
-            ready_queue.pop();
-            lock.unlock();
+> ⚠️ **Symmetric transfer is the key mechanism for avoiding coroutine stack overflow.** If your coroutine A calls coroutine B, B calls C, C calls D... and every level goes "suspend A → resume B → suspend B → resume C", then without symmetric transfer the call stack grows deeper and deeper. Symmetric transfer gives the compiler the opportunity to avoid stack growth through tail-call optimization—which is crucial when coroutine chains are fairly long (deep recursive coroutine chains, for example). Note that tail-call optimization is a "quality of implementation" matter rather than a "standard guarantee"; at low optimization levels, stack overflow can still occur.
 
-            if (!handle.done()) {
-                handle.resume();
-            } else {
-                handle.destroy();
-            }
+## operator co_await and ADL
+
+Earlier we covered how the compiler gets an awaiter from an awaitable through overload resolution on `operator co_await`. Here is a problem you run into all the time in real-world engineering: you have a type from a third-party library and you cannot modify its source code—how do you add `operator co_await` to it?
+
+The answer is to exploit ADL (Argument-Dependent Lookup). When overload resolution searches for `operator co_await` candidate functions, besides looking for member functions in the scope of the awaitable's class, it also searches for free functions in the namespaces associated with the awaitable's type via ADL. This gives us a back door for extending a type's await capability without modifying the original type. Here's a concrete example:
+
+```cpp
+namespace third_party {
+    // A third-party type you cannot modify
+    struct Future {
+        // ... internal implementation
+    };
+}
+
+// Add operator co_await inside the third_party namespace
+// ADL will find this overload
+namespace third_party {
+    struct FutureAwaiter {
+        third_party::Future& kFuture;
+
+        bool await_ready();
+        void await_suspend(std::coroutine_handle<> handle);
+        int await_resume();
+    };
+
+    FutureAwaiter operator co_await(third_party::Future& f)
+    {
+        return FutureAwaiter{f};
+    }
+}
+
+// Now you can write:
+third_party::Future fut;
+auto result = co_await fut; // ADL finds operator co_await
+```
+
+That is the power of ADL—you don't need to modify the original type; you only need to provide a free-function `operator co_await` overload in its namespace. Of course, if you can modify the type itself, directly adding a member `operator co_await()` is simpler. One thing to watch out for, though: if the same type has both a member and a non-member `operator co_await`, and both match, overload resolution becomes ambiguous and the compiler reports an error outright. So don't provide both on the same type.
+
+## From awaitable to Scheduler
+
+So far, all of our awaiters have done something "immediate" inside `await_suspend`—either blocking synchronously or resuming right away. But in a real asynchronous framework, what `await_suspend` usually does is submit the coroutine handle to some scheduler (an event loop, a thread pool, and so on), and let the scheduler resume the coroutine at an appropriate time.
+
+This is the bridge between awaitables and schedulers: **`await_suspend` is the key integration point for schedulers**. When the coroutine suspends, `await_suspend` holds the coroutine's handle, and it can store that handle anywhere—a queue, a timer list, the data field of an epoll event—and then let the scheduler come back and `resume()` it later.
+
+Next, let's look at a minimal scheduler framework that shows how a complete "coroutines + scheduler" setup runs.
+
+```cpp
+#include <chrono>
+#include <coroutine>
+#include <cstdio>
+#include <deque>
+#include <functional>
+
+/// A minimal scheduler—maintains a ready queue and runs it in a loop
+class Scheduler {
+public:
+    static Scheduler& instance()
+    {
+        static Scheduler kScheduler;
+        return kScheduler;
+    }
+
+    /// Put a coroutine handle into the ready queue
+    void schedule(std::coroutine_handle<> handle)
+    {
+        kReadyQueue.push_back(handle);
+    }
+
+    /// Run the scheduling loop until the queue is empty
+    void run()
+    {
+        while (!kReadyQueue.empty()) {
+            auto handle = kReadyQueue.front();
+            kReadyQueue.pop_front();
+            handle.resume();
         }
     }
 
 private:
-    std::queue<std::coroutine_handle<>> ready_queue;
-    std::mutex mutex;
-    std::condition_variable cv;
+    std::deque<std::coroutine_handle<>> kReadyQueue;
 };
 
-// Global scheduler instance (for demo purposes)
-Scheduler global_scheduler;
-
-// Awaiter for yielding execution
-struct YieldAwaiter {
-    bool await_ready() const noexcept { return false; }
-
-    void await_suspend(std::coroutine_handle<> handle) const {
-        // Put current coroutine back into the ready queue
-        global_scheduler.enqueue(handle);
-    }
-
-    void await_resume() const noexcept {}
-};
-
-// Awaiter for async sleep
-struct SleepAwaiter {
-    int seconds;
-    bool await_ready() const noexcept { return false; }
-
-    void await_suspend(std::coroutine_handle<> handle) const {
-        // Launch a thread to simulate async timer
-        std::thread([handle, seconds = this->seconds]() {
-            std::this_thread::sleep_for(std::chrono::seconds(seconds));
-            global_scheduler.enqueue(handle);
-        }).detach();
-    }
-
-    void await_resume() const noexcept {}
-};
-
-// Task wrapper
-struct Task {
+/// A scheduler-friendly task type
+struct ScheduledTask {
     struct promise_type {
-        Task get_return_object() {
-            return Task{std::coroutine_handle<promise_type>::from_promise(*this)};
+        ScheduledTask get_return_object()
+        {
+            return ScheduledTask{
+                std::coroutine_handle<promise_type>::from_promise(*this)
+            };
         }
-        std::suspend_never initial_suspend() noexcept { return {}; }
+
+        // Lazy start: the coroutine doesn't run on creation; it waits for the scheduler to schedule it
+        std::suspend_always initial_suspend() { return {}; }
+
         std::suspend_always final_suspend() noexcept { return {}; }
         void return_void() {}
-        void unhandled_exception() { std::terminate(); }
+        void unhandled_exception() { throw; }
     };
 
     std::coroutine_handle<promise_type> handle;
-    Task(std::coroutine_handle<promise_type> h) : handle(h) {}
-    ~Task() { if (handle) handle.destroy(); }
 };
 
-// Helper functions
-YieldAwaiter yield() { return {}; }
-SleepAwaiter sleep(int seconds) { return {seconds}; }
+/// Yield a time slice—suspend and put ourselves back into the ready queue
+struct YieldAwaiter {
+    bool await_ready() noexcept { return false; }
 
-// Example usage
-Task producer() {
-    for (int i = 0; i < 5; ++i) {
-        std::cout << "Producing " << i << "\n";
-        co_await yield(); // Yield to next task
+    void await_suspend(std::coroutine_handle<> handle)
+    {
+        // The core trick: put the current coroutine back into the ready queue so other coroutines run first
+        Scheduler::instance().schedule(handle);
     }
-}
 
-Task consumer() {
+    void await_resume() noexcept {}
+};
+
+/// Async sleep—suspend, then re-enqueue after the delay
+/// (sleep simulates the timer here; a real implementation would use epoll + timerfd)
+struct AsyncSleepAwaiter {
+    int kMilliSeconds;
+
+    explicit AsyncSleepAwaiter(int ms) : kMilliSeconds(ms) {}
+
+    bool await_ready() noexcept { return false; }
+
+    void await_suspend(std::coroutine_handle<> handle)
+    {
+        // In a real scheduler you would register a timer here
+        // Simplified version: spawn a thread to simulate an async timer
+        std::thread([handle, this]() {
+            std::this_thread::sleep_for(
+                std::chrono::milliseconds(kMilliSeconds)
+            );
+            // Once the timer expires, put the coroutine back into the ready queue
+            Scheduler::instance().schedule(handle);
+        }).detach();
+    }
+
+    void await_resume() noexcept {}
+};
+
+/// Coroutine functions—alternating execution
+ScheduledTask producer()
+{
     for (int i = 0; i < 3; ++i) {
-        std::cout << "Consuming...\n";
-        co_await sleep(1); // Async sleep
+        std::printf("  [producer] 生产第 %d 个消息\n", i + 1);
+        co_await YieldAwaiter{}; // yield execution
     }
+    std::puts("  [producer] 完成！");
 }
 
-int main() {
-    producer();
-    consumer();
-    global_scheduler.run();
+ScheduledTask consumer()
+{
+    for (int i = 0; i < 3; ++i) {
+        std::printf("  [consumer] 消费第 %d 个消息\n", i + 1);
+        co_await YieldAwaiter{}; // yield execution
+    }
+    std::puts("  [consumer] 完成！");
+}
+
+int main()
+{
+    auto& sched = Scheduler::instance();
+
+    // Create two coroutines (neither runs at this point, because initial_suspend returns suspend_always)
+    auto prod = producer();
+    auto cons = consumer();
+
+    // Put both into the ready queue
+    sched.schedule(prod.handle);
+    sched.schedule(cons.handle);
+
+    std::puts("=== 调度器开始运行 ===");
+
+    // Start the scheduling loop
+    // The two coroutines will execute in turns:
+    // [producer] produces message 1 → yield
+    // [consumer] consumes message 1 → yield
+    // [producer] produces message 2 → yield
+    // [consumer] consumes message 2 → yield
+    // [producer] produces message 3 → yield
+    // [consumer] consumes message 3 → yield
+    // [producer] done!
+    // [consumer] done!
+    sched.run();
+
+    std::puts("=== 调度器运行结束 ===");
+
+    // Clean up
+    prod.handle.destroy();
+    cons.handle.destroy();
+
+    return 0;
 }
 ```
 
-While rudimentary, this scheduler demonstrates the core model of coroutine scheduling. `YieldAwaiter` shows the most basic cooperative scheduling: the coroutine voluntarily yields execution, puts itself back in the ready queue, and lets other coroutines run. `SleepAwaiter` shows the basic pattern of an async timer: suspend the coroutine, set a timer (simulated here with a thread), and when the timer expires, put the coroutine back in the ready queue.
+Crude as it is, this scheduler shows the core model of coroutine scheduling. `YieldAwaiter` demonstrates the most basic cooperative scheduling: a coroutine voluntarily yields execution, puts itself back into the ready queue, and lets other coroutines run. `AsyncSleepAwaiter` shows the basic pattern of an asynchronous timer: suspend the coroutine, set a timer (simulated with a thread here), and when the timer expires, put the coroutine back into the ready queue.
 
-The real challenges come later—when we combine this scheduler with I/O multiplexing (epoll), things get more complex, but the basic model remains unchanged: **the awaiter's `await_suspend` is responsible for submitting the coroutine handle to the scheduler, and the scheduler resumes the coroutine at the appropriate time**.
+The real traps are still ahead—when we combine this scheduler with I/O multiplexing (epoll), things get considerably more complicated, but the basic model never changes: **the awaiter's `await_suspend` is responsible for submitting the coroutine handle to the scheduler, and the scheduler `resume()`s the coroutine at the appropriate time**.
 
 ## Where We Are
 
-In this post, we dissected the two main customization points of C++20 coroutines. `promise_type` controls the macroscopic lifecycle of the coroutine—how to create the return object, whether to suspend at startup, what to do at the end, and how to handle return values and exceptions. The awaiter/awaitable protocol controls the microscopic suspension and resumption—`await_ready` asks "are you ready?", `await_suspend` does the work upon suspension, and `await_resume` gets the result upon resumption. The three return forms of `await_suspend` (void / bool / coroutine_handle) provide progressive flexibility from simple suspension to symmetric transfer. Finally, we saw that `await_suspend` is the key integration point for schedulers—it submits the coroutine handle to the scheduler, letting the scheduler decide when to resume the coroutine.
+In this article we took apart the two big customization extension points of C++20 coroutines. `promise_type` controls the coroutine's macro lifecycle—how to create the return object, whether to suspend at startup, what to do at the end, and how return values and exceptions are handled. The awaiter/awaitable protocol controls the coroutine's micro-level suspension and resumption—`await_ready` asks "are you ready yet", `await_suspend` does its work at suspension time, and `await_resume` fetches the result at resumption time. The three return forms of `await_suspend` (void / bool / coroutine_handle) provide a progressive ramp of flexibility from simple suspension up to symmetric transfer. Finally, we saw that `await_suspend` is the key integration point for schedulers—it submits the coroutine handle to the scheduler and lets the scheduler decide when to resume the coroutine.
 
-But so far, our scheduler is just a toy consisting of a "ready queue + sequential execution." Real async I/O needs to interface with the OS's I/O multiplexing mechanisms. In the next post, we will combine coroutines with epoll (Linux's I/O multiplexing) to build an event loop capable of handling real network I/O. That is where coroutines truly shine.
+But so far, our scheduler is still a toy of "ready queue + sequential execution". Real asynchronous I/O needs to connect to the operating system's I/O multiplexing machinery. What the next article will do is combine coroutines with epoll (Linux's I/O multiplexing) and build an event loop that can handle real network I/O. That is where coroutines truly shine.
 
-> 💡 Complete example code is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), visit `src/coroutines`.
+> 💡 The complete example code is in [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP); visit `code/volumn_codes/vol5/ch06-async-io-coroutine/`.
 
 ## References
 
-- [Coroutines (C++20) — cppreference](https://en.cppreference.com/cpp/language/coroutines) — The authoritative reference for C++20 coroutines, including complete language specifications
-- [C++20 Coroutines: Sketching a Minimal Async Framework — Jeremy Ong](https://jeremyong.com/cpp/2021/01/04/cpp20-coroutines-a-minimal-async-framework/) — A practical article on building a coroutine async framework from scratch
-- [My Tutorial and Take on C++20 Coroutines — David Mazieres (Stanford)](https://www.scs.stanford.edu/~dm/blog/c++-coroutines.html) — A coroutine tutorial by a Stanford professor, deep and practical
-- [C++ Coroutines: Defining the co_await operator — Raymond Chen (Microsoft)](https://devblogs.microsoft.com/oldnewthing/20191218-00/?p=103221) — Explains `operator co_await` member vs. free function overloading and overload resolution rules
-- [Writing custom C++20 coroutine systems — Simon Tatham](https://www.chiark.greenend.org.uk/~sgtatham/quasiblog/coroutines-c++20/) — A practical guide, including a reminder about the bool semantic difference between `await_ready` and `await_suspend`
-- [C++20 Coroutines — Complete Guide — Simon Toth (ITNEXT)](https://itnext.io/c-20-coroutines-complete-guide-7c3fc08db89d) — A comprehensive guide covering the coroutine mechanism
+- [Coroutines (C++20) — cppreference](https://en.cppreference.com/cpp/language/coroutines) — The authoritative reference for C++20 coroutines, including the complete language specification
+- [C++20 Coroutines: Sketching a Minimal Async Framework — Jeremy Ong](https://jeremyong.com/cpp/2021/01/04/cpp20-coroutines-a-minimal-async-framework/) — A hands-on article on building a coroutine async framework from scratch
+- [My Tutorial and Take on C++20 Coroutines — David Mazieres (Stanford)](https://www.scs.stanford.edu/~dm/blog/c++-coroutines.html) — A Stanford professor's coroutine tutorial, deep and practical
+- [C++ Coroutines: Defining the co_await operator — Raymond Chen (Microsoft)](https://devblogs.microsoft.com/oldnewthing/20191218-00/?p=103221) — Explains the member and free-function overloads of `operator co_await` and the overload resolution rules
+- [Writing custom C++20 coroutine systems — Simon Tatham](https://www.chiark.greenend.org.uk/~sgtatham/quasiblog/coroutines-c++20/) — A practical guide, including a reminder about the differing bool semantics of `await_ready` and `await_suspend`
+- [C++20 Coroutines — Complete Guide — Simon Toth (ITNEXT)](https://itnext.io/c-20-coroutines-complete-guide-7c3fc08db89d) — A comprehensive guide that covers the whole coroutine machinery

@@ -1,48 +1,44 @@
 ---
-title: 'Singleton Pattern: From Comment Constraints to Meyer''s Singleton'
-description: Starting from the most primitive "reminder comments," we will progressively
-  derive a thread-safe Meyer's Singleton, debunk the obsolete Double-Checked Locking
-  Pattern (DCLP), and wrap up with dependency injection.
+title: 'Singleton Pattern: From Comment-Only Constraints to Meyer''s Singleton'
+description: 'Starting from the most primitive "just write a comment" constraint, we work our way step by step toward a thread-safe Meyer''s Singleton, call out DCLP for the obsolete folklore it is, and close with dependency injection'
 chapter: 11
 order: 1
 tags:
-- host
-- cpp-modern
-- intermediate
-- 单例模式
+  - host
+  - cpp-modern
+  - intermediate
+  - 单例模式
 difficulty: intermediate
 platform: host
-cpp_standard:
-- 11
-- 17
-- 20
+cpp_standard: [11, 17, 20]
 reading_time_minutes: 18
 related:
-- 工厂方法与抽象工厂
+  - 'Factory Method and Abstract Factory: From a Single Switch to Creating a Family of Products'
 prerequisites:
-- 'Chapter 6: 类与对象'
+  - Classes and Object-Oriented Programming
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/01-singleton.md
   source_hash: 138f2f4f5f33eaa47850b552e5dd2ee87dbf4fb3bbf3b41ab9bbc1b85df46459
-  translated_at: '2026-06-24T00:52:47.485102+00:00'
+  translated_at: '2026-09-26T05:02:57+00:00'
   engine: anthropic
-  token_count: 2777
+  token_count: 7900
 ---
-# Singleton Pattern: From Comment Constraints to Meyer's Singleton
 
-## What problem are we actually solving?
+# Singleton Pattern: From Comment-Only Constraints to Meyer's Singleton
 
-Let's hold off on the definitions for a moment. Consider a common scenario: a program needs to read a global configuration (`host`, `port`, `username`, etc.). This configuration remains unchanged from startup to shutdown, and any part of the program might need to access it. You could, of course, wrap the configuration in an object and pass it around everywhere—but you will quickly get annoyed: every function signature gains an extra `Config&` parameter, threaded through layers of calls, just so some low-level utility function can read a `port`.
+## What problem are we actually solving
 
-The Singleton pattern addresses exactly this kind of requirement: **ensuring that an object has only one instance during the program's lifetime and providing a global access point**. Loggers, configuration managers, database connection pools, and device driver interfaces all have a natural requirement for "global uniqueness."
+Let's not rush to a definition. Think of the most common scenario: the program needs to read a global configuration (`host`, `port`, `username`...), that config never changes from startup to shutdown, and any corner of the program might want to read it. Sure, you can stuff the config into an object and pass that object all over the place — but you'll tire of it fast: every function signature grows one more `Config&` parameter, threaded down layer after layer, just so some low-level utility function can read a single `port`.
 
-However, in C++, "global uniqueness" is **not automatically guaranteed just because you declared it**. C++ is a language that loves implicit operations: unless you explicitly forbid it, copy construction, assignment, move semantics, or even an accidental pass-by-value can silently create a second instance behind your back. So, the real question we need to answer is—**how to use language mechanisms, rather than human conventions, to strictly enforce "only one"**.
+This is exactly the kind of need the Singleton pattern addresses: **guarantee that an object has only one instance for the entire run of the program, and provide a global access point to it**. Loggers, configuration managers, database connection pools, device driver interfaces — all of them carry a natural "globally unique" requirement.
 
-In the following sections, we will proceed step-by-step, starting with the crudest approach, examining why each step falls short, and finally deriving the standard answer in modern C++.
+But "globally unique" is **not something that holds just because you declared it so** in C++. C++ is a language that loves implicit operations: unless you explicitly seal them off, copy construction, assignment, moves — even an accidental pass-by-value — can quietly manufacture a second instance behind your back. So the question we really need to answer is: **how do we nail down "there can be only one" with language mechanics, rather than with human discipline**.
 
-## Step 1: The most primitive approach—writing comments (incorrect example)
+So let's take it step by step, starting from the silliest version, seeing exactly why each step falls short, until we corner the standard modern C++ answer.
 
-Many developers, when encountering a "create only once" requirement for the first time, instinctively react like this:
+## Step 1: The most primitive approach — a comment (an anti-example)
+
+The first time many people meet a "create this only once" requirement, the knee-jerk reaction looks like this:
 
 ```cpp
 struct GlobalOled {
@@ -51,15 +47,15 @@ struct GlobalOled {
 };
 ```
 
-Throwing in a bunch of exclamation marks and writing constraints into comments. Honestly, this isn't an exaggeration; I have genuinely seen this style in production code. The problem is that these constraints are written for humans, while the **compiler doesn't check them at all**.
+A pile of exclamation marks, with the constraint written into a comment. Honestly, this is not an exaggeration — I have genuinely seen this style in production code. The problem is that this kind of constraint is written for humans, and **the compiler takes no part in enforcing it**.
 
-Let's assume that everyone reads comments carefully during development—but C++ can pull tricks behind your back. For instance, someone might write `GlobalOled another = oled;` for convenience in some function. This is a perfectly normal copy construction, yet in that single line, your "globally unique" guarantee is broken. Or perhaps they stuff it into a container by value or capture it in a `std::function`. During RAII initialization, a copy or move can be triggered at any moment. Comments won't stop any of these.
+Let's assume everyone reads comments carefully during development — but C++ does things behind your back where you can't see. Say somebody, for convenience inside some function, casually writes `GlobalOled another = oled;`. That is a perfectly ordinary copy construction, yet in that one line your "globally unique" guarantee is gone. Or someone tucks it by value into a container, or into a `std::function` capture — copy or move operations can fire at any point along an RAII initialization path. A comment blocks none of these.
 
-So, this path doesn't work. We need to make the compiler enforce the rules for us.
+So this road is a dead end. We need the compiler to stand guard for us.
 
-## Step Two: Block All Copying Paths — `= delete`
+## Step 2: Sealing off every copy path — `= delete`
 
-Since the pitfall lies in "being secretly copied," the most direct solution is to **disable all copying and moving paths** that break uniqueness:
+Since the pitfall is "it can get copied behind your back", the most direct fix is to **disable every copy and move path that could break uniqueness**:
 
 ```cpp
 struct GlobalOled {
@@ -75,19 +71,19 @@ private:
 };
 ```
 
-`= delete` is a powerful tool introduced in C++11: a deleted function still participates in overload resolution, and if anyone attempts to call it, the compiler issues an error directly. This is far superior to comments—now "non-copyable" is a compile-time hard constraint.
+`= delete` is a weapon C++11 handed us: deleted functions still participate in overload resolution, so the moment anyone tries to call one, the compiler rejects it outright. This is a huge step up from comments — "no copying" is now a hard compile-time constraint.
 
-However, a new conflict arises here: we also placed the constructor in `private` to prevent arbitrary external construction. But now, **no one can create it**, not even that "single instance" itself. We are missing a controlled entry point: we must prevent external arbitrary `new` calls, while still providing a way for the outside world to get the instance.
+But a new contradiction appears here: we moved the constructor into `private` so that outsiders can't just construct one — except now **nobody can construct it at all**, not even that "single instance" itself. What we're missing is a controlled entry point: one that doesn't let the outside world `new` freely, yet still gives it a way to obtain the instance.
 
-## Step 3: Private Constructor + Static Access Point — Meyer's Singleton
+## Step 3: Private constructor + static access point — Meyer's Singleton
 
-Let's consolidate the problem: we entrust the uniqueness of construction to an entry function we control. If external code wants to use the instance, it must go through this entry. As for "how to guarantee it is constructed only once inside the entry," C++11 provides a solution so clean it's practically free—**`static` local variables inside a function**:
+Let's narrow the problem down: hand the uniqueness of construction to one entry function we control, and anyone who wants the instance must go through that entry. As for "how the entry guarantees construction happens only once", C++11 gives an answer so clean it is practically free — **a `static` local variable inside a function**:
 
 ```cpp
 class GlobalOled {
 public:
     static GlobalOled& get_instance() {
-        static GlobalOled oled;  // 只在首次经过时初始化一次
+        static GlobalOled oled;  // initialized once, on first pass through
         return oled;
     }
 
@@ -100,13 +96,13 @@ private:
 };
 ```
 
-This code pattern has a name: **Meyer's Singleton** (named after Scott Meyers). The core of it is just one line: `static GlobalOled oled;`. However, the guarantee behind this line is robust: since C++11, the standard explicitly states that **if multiple threads enter this declaration for the first time concurrently, only one thread will execute the initialization, while the remaining threads will block waiting until initialization completes** ([stmt.dcl], commonly known as *magic statics*).
+This shape of code has a name: **Meyer's Singleton** (named after Scott Meyers). Its core is the single line `static GlobalOled oled;`, but the guarantee behind that line is rock solid: since C++11, the standard explicitly states that **if multiple threads first enter this declaration at the same time, exactly one of them performs the initialization, and all the others block and wait until it completes** ([stmt.dcl], colloquially *magic statics*).
 
-What does this mean? **The language guarantees thread-safe initialization of the singleton for us, so we don't have to write a single lock.** Before taking this for granted, let's verify this behavior.
+What does that mean? **Thread-safe initialization of the singleton is already guaranteed by the language — we don't have to write a single line of locking.** Don't take my word for it yet; let's verify first.
 
-## Verification: Are magic statics really thread-safe?
+## Let's verify first: are magic statics really thread-safe
 
-Talk is cheap. Let's write a small program where 500 threads race to call `get_instance()`. We will place an atomic counter in the constructor to see exactly how many times it is constructed:
+Claims need proof. Let's write a small program where 500 threads race for `get_instance()` at the same time, hang an atomic counter in the constructor, and see how many times it actually gets constructed:
 
 ```cpp
 #include <atomic>
@@ -117,7 +113,7 @@ Talk is cheap. Let's write a small program where 500 threads race to call `get_i
 class MeyersSingleton {
 public:
     static MeyersSingleton& instance() {
-        static MeyersSingleton s;  // C++11 [stmt.dcl]: 线程安全地初始化一次
+        static MeyersSingleton s;  // C++11 [stmt.dcl]: thread-safe one-time initialization
         return s;
     }
     static inline std::atomic<int> construct_count{0};
@@ -141,7 +137,7 @@ int main() {
 }
 ```
 
-Let's compile and run this (with `-O2` optimization enabled to intentionally intensify the race condition):
+Compile and run (with `-O2` on, deliberately making the race hotter):
 
 ```sh
 $ g++ -std=c++23 -O2 -pthread singleton_verify.cpp -o singleton_verify
@@ -153,15 +149,15 @@ construct_count = 1 (expect 1)
 construct_count = 1 (expect 1)
 ```
 
-Running five consecutive times with 500 threads racing concurrently, `construct_count` stays rock-solid at 1. This is the promise of magic statics—you don't need to write locks, use `call_once`, or worry about race conditions. The language guarantees "initialize once" for you. **In modern C++, Meyer's Singleton is the definitive choice for singletons; there is absolutely no reason to hand-roll anything more complex.**
+Five runs in a row, 500 concurrent threads racing each time, and `construct_count` sits firmly at 1. That is the magic statics promise: no locks, no `call_once`, no anxiety — the language has taken "initialize exactly once" off your hands. **In modern C++, the first choice for writing a singleton is Meyer's Singleton; there is no reason whatsoever to hand-write anything more complicated.**
 
-## Pitfall Warning: The Old Days of DCLP
+## Pitfall warning: the DCLP relic
 
-::: warning Pitfall Warning
-If you are looking at pre-C++11 resources, you will likely encounter something called **DCLP (Double-Checked Locking Pattern)**. Many online blogs still circulate it, sometimes even like the example below—**this implementation is flawed, do not copy it**:
+::: warning Pitfall ahead
+If you're digging through older, pre-C++11 material, odds are you'll run into something called **DCLP (Double-Checked Locking Pattern)**. Plenty of blog posts still circulate it, and some even write it like this — **this version is broken; do not copy it**:
 
 ```cpp
-// ⚠️ 反面教材:memory_order_consume 在这里不靠谱
+// ⚠️ Anti-example: memory_order_consume is unreliable here
 static GlobalOled& get_instance() {
     GlobalOled* p = oled.load(std::memory_order_consume);
     if (p) return *p;
@@ -175,22 +171,22 @@ static GlobalOled& get_instance() {
 }
 ```
 
-The issue lies with `memory_order_consume`. The original intent of *consume* is to "only protect accesses with dependencies," which sounds sufficient for DCLP. However, the standard significantly weakened its semantics after C++17. In practice, almost all mainstream compilers **directly downgrade it to acquire**—meaning, while you think you are writing the weak guarantee of *consume*, you get the strong guarantee of *acquire* at runtime. The semantics do not match what you wrote, and portability is abysmal. Manually writing *consume* remains a minefield to this day.
+The problem sits with `memory_order_consume`. The intent of consume is "only order accesses that carry a data dependency", which sounds sufficient for DCLP — but after C++17 the standard weakened it substantially, and in practice **essentially every mainstream compiler just demotes it to acquire**. In other words, you thought you wrote the weak consume guarantee, but what runs is the strong acquire guarantee; the semantics don't match what you wrote, and portability is dreadful. Hand-writing consume is still a minefield today.
 :::
 
-If you absolutely must write DCLP manually (and I will emphasize this again: **in modern C++, `magic statics` are sufficient, so manual writing is unnecessary**), the correct memory order is **acquire / release**:
+If you absolutely must hand-write DCLP (and let me stress once more, **modern C++ needs nothing beyond magic statics — no hand-rolling required**), the correct memory orders are **acquire / release**:
 
 ```cpp
 class DclpSingleton {
 public:
     static DclpSingleton* instance() {
-        auto* p = ptr_.load(std::memory_order_acquire);  // 第一次检查(无锁)
+        auto* p = ptr_.load(std::memory_order_acquire);  // first check (lock-free)
         if (!p) {
             std::lock_guard<std::mutex> lk(mtx_);
-            p = ptr_.load(std::memory_order_relaxed);    // 第二次检查(持锁)
+            p = ptr_.load(std::memory_order_relaxed);    // second check (holding the lock)
             if (!p) {
                 p = new DclpSingleton();
-                ptr_.store(p, std::memory_order_release);  // 发布
+                ptr_.store(p, std::memory_order_release);  // publish
             }
         }
         return p;
@@ -205,7 +201,7 @@ private:
 };
 ```
 
-`acquire` guarantees that when a non-null pointer is read, the object it points to is fully constructed. `release` guarantees that when the pointer is written back, the object's construction is visible to other threads. Let's verify this again: when two threads race to acquire the lock, do they get the same instance?
+acquire guarantees that when a non-null pointer is read, the object it points to has been fully constructed; release guarantees that when the pointer is stored back, the object's construction is visible to other threads. Let's verify this one too — two threads racing, and do they end up with the same instance:
 
 ```sh
 $ ./singleton_verify
@@ -213,11 +209,11 @@ Meyers:  construct_count = 1 (expect 1)
 DCLP:    same instance = true (expect true)
 ```
 
-The conclusion is sound. However, I must reiterate one thing: **this DCLP code is just here to show you what the "old way" looked like when done correctly; it is not meant for you to use.** Meyer's Singleton replaces that entire mess of DCLP with a single `static`, and it involves no heap allocation (`new`), no raw pointers, and no destruction order issues. DCLP is a legacy from pre-C++11 times; it is only useful now for recognizing it when reading old code.
+The result looks good. But I'll nag one more time: **this DCLP code exists only so you can see what a correct version of the old approach looks like — it is not for you to use**. One `static` line in Meyer's Singleton replaces that entire DCLP blob, with no heap allocation (`new`), no raw pointers, and no destruction-order headaches. DCLP is a pre-C++11 legacy; the only reason to keep it in your head today is to recognize it when reading old code.
 
-## Real-World Example: A Working Global Configuration Reader
+## In practice: a working global config reader
 
-Discussing `GlobalOled` is too abstract, so let's build something practical. The following `ConfigManager` is a typical singleton configuration reader: it reads a configuration file in `key=value` format, provides an interface to query by key, and returns `std::optional` to indicate that "the key might not exist":
+GlobalOled alone is a bit abstract, so let's build something genuinely usable. This `ConfigManager` is a typical singleton config reader: it loads a `key=value` config file and offers a key-based lookup that returns `std::optional` to say "this key might not exist":
 
 ```cpp
 #pragma once
@@ -249,14 +245,14 @@ private:
 };
 ```
 
-You see, the pattern is exactly the same as before: a `static` local variable inside `instance()`, all four special member functions deleted, and a private constructor. The `std::optional` return value forces the caller to handle the "key not found" scenario, which is more elegant than returning an empty string or throwing an exception. `std::filesystem::path` naturally provides cross-platform path support.
+Same recipe as before: one `static` local inside `instance()`, all four special member functions deleted, constructor private. The `std::optional` return value forces the caller to deal with "the key doesn't exist", which is far more graceful than returning an empty string or throwing. And `std::filesystem::path` gives you cross-platform paths for free.
 
 ```cpp
 void ConfigManager::parse_line(const std::string& line) {
-    if (line.empty() || line[0] == '#') return;  // 空行 / 注释跳过
+    if (line.empty() || line[0] == '#') return;  // skip empty lines / comments
 
     const auto eq = line.find_first_of('=');
-    if (eq == std::string::npos) return;          // 不是合法 kv,跳过
+    if (eq == std::string::npos) return;          // not a valid kv pair, skip
 
     std::string key = line.substr(0, eq);
     std::string val = line.substr(eq + 1);
@@ -266,48 +262,48 @@ void ConfigManager::parse_line(const std::string& line) {
 }
 ```
 
-Here is how we use it; we can access that unique instance from anywhere:
+Using it looks like this — anywhere in the program can grab that one and only instance:
 
 ```cpp
 auto& config = ConfigManager::instance();
 config.read_from_file("app.conf");
 if (auto host = config.get_value("host")) {
-    connect(*host);  // 只有真的拿到值才进入
+    connect(*host);  // only proceed if we actually got a value
 }
 ```
 
-::: tip Compilable Companion Project
-The complete code for this section (including handling of `#` comments, blank lines, a 500-thread concurrent read test, and a minimal `Logger` singleton) is available in this repository. Just clone it and run CMake: [Singleton](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Singleton). A quick note: the `GlobalConfig` reads `test_config.txt` from the same directory (CMake automatically copies it to `build/`), so run it via `cd build && ./ConfigManager`; for `Logger`, simply run `./build/Logger`.
+::: tip Companion compilable project
+The complete code for this section (including `#` comment handling, blank-line handling, a 500-thread concurrent-read test, and a minimal `Logger` singleton) lives in this repo — clone it, run cmake once, and it just works: [Singleton](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Singleton). One heads-up: the `GlobalConfig` demo reads `test_config.txt` from its own directory (CMake copies it into `build/` automatically), so run it with `cd build && ./ConfigManager`; for `Logger`, just `./build/Logger`.
 :::
 
-## Why Singletons Are Unpopular
+## Why singletons are disliked
 
-At this point, we have a correct, thread-safe, and very simple-to-write singleton. But the story doesn't end here—I must be honest with you: **the singleton pattern actually has a rather poor reputation in software engineering**. Many engineers consider it a pattern to be used with caution, or even an anti-pattern. Why?
+At this point we have a singleton that is correct, thread-safe, and dead simple to write. But we're not done — I have to be honest with you: **the Singleton pattern actually has a rather poor reputation in software engineering**, and quite a few engineers treat it as a pattern to use sparingly, or even as an anti-pattern. Why?
 
-**First, it overrides single responsibility.** A `ConfigManager` acts as both "configuration manager" and "global access". As soon as you write `ConfigManager::instance().get_value(...)` anywhere, this global object pierces your module's interface boundary. Originally, your function should only depend on the abstraction of "being able to get a certain configuration value," but now it is directly coupled to a specific global implementation.
+**First, it tramples single responsibility.** A `ConfigManager` is both "configuration management" and "global access" at once; the moment you write `ConfigManager::instance().get_value(...)` anywhere, that global object punches through your module's interface boundary — your function used to depend on the abstraction "I can obtain a certain config value", and now it is hard-coupled to one concrete global implementation.
 
-**Second, it makes unit testing extremely painful.**
+**Second, it makes unit testing miserable.**
 
 ```cpp
 void do_work() {
-    ConfigManager::instance().get_value("timeout");  // 写死成全局
+    ConfigManager::instance().get_value("timeout");  // hard-wired to the global
 }
 
 void test_do_work() {
-    // 想换个假的 ConfigManager 来测边界条件?抱歉,改不了。
+    // Want to swap in a fake ConfigManager to test edge cases? Sorry, no can do.
     do_work();
 }
 ```
 
-Since the instance is globally unique and hardcoded within `instance()`, you cannot swap it out for a mock during testing. The Singleton forces every module that uses it to be tested alongside the real singleton, thereby violating the premise of "unit independence" in unit testing.
+Because the instance is globally unique and hard-coded inside `instance()`, you simply cannot replace it with a mock at test time. The singleton forces every module that uses it to be tested together with the real singleton, and the premise of unit testing — "units are independent" — is broken.
 
-**Third, it violates the Open-Closed Principle (OCP).** If you eventually need to switch from "one global configuration" to "one configuration per tenant," you will find that the moment `ConfigManager` was designed as a Singleton, extending it to support multiple instances requires a massive refactor.
+**Third, it violates the Open-Closed Principle (OCP).** The day you want to go from "one global config" to "one config per tenant", you'll find that from the moment `ConfigManager` was designed as a singleton, extending it to multiple instances means refactoring a huge swath of code.
 
-**Fourth, static Singletons have their own lifecycle pitfalls.** If a Singleton holds heavyweight resources (large buffers, file handles), it will persist until the program ends, even if you only used it briefly. Even more insidious is that **the destruction order of static objects is uncontrollable**—if Singleton A depends on another static object B, and B is destroyed before A, then A accessing B during its own destruction results in undefined behavior (the notorious *static deinitialization order* problem).
+**Fourth, static singletons have lifecycle traps of their own.** If the singleton holds heavyweight resources (a large cache, file handles), it stays resident until the program ends even if you only used it briefly. More insidiously, **the destruction order of static objects is uncontrollable** — if singleton A depends on another static object B, and B is destroyed before A, then A touching B during its own destruction is undefined behavior (the famous *static deinitialization order* problem).
 
-## Improvement: Contain the Singleton within a Subsystem — Dependency Injection
+## Improvement: locking the singleton inside a subsystem — dependency injection
 
-The root cause of all these flaws is the same: **the Singleton "pierces" through the interface, forcing global state onto every caller.** A healthier approach is to invert the dependency relationship—**instead of letting the caller reach for the global, the upper layer should actively inject the required objects:**
+All of the ailments above share one root: **the singleton "leaks through" interfaces, forcing global state onto every caller**. A healthier approach flips the dependency around — **don't let callers reach out for the global; let the upper layer actively inject the objects they need**:
 
 ```cpp
 class OledUpdater {
@@ -322,40 +318,40 @@ private:
     GlobalOled& oled_;
 };
 
-// 使用时手动注入
+// inject manually at the use site
 int main() {
-    auto& oled = GlobalOled::get_instance();   // 单例被关在 main 这一层
-    OledUpdater updater(oled);                 // updater 只依赖引用,不知道全局
+    auto& oled = GlobalOled::get_instance();   // the singleton is confined to the main layer
+    OledUpdater updater(oled);                 // updater depends only on a reference; it knows nothing global
     updater.do_work();
 }
 ```
 
-This inversion brings three immediate benefits: `OledUpdater` no longer relies on global state; it depends only on a `GlobalOled&`, so during testing we can easily pass in a fake implementation. The scope of the singleton is compressed to the `main` subsystem layer, rather than having `::get_instance()` scattered throughout the program. If we need to extend this to multiple instances later, we only need to modify the assembly code in `main`; `OledUpdater` doesn't need to change a single line.
+This flip brings three immediate benefits. `OledUpdater` no longer depends on global state — it depends on a plain `GlobalOled&`, so at test time you can casually pass in a fake implementation. The singleton's scope is squeezed down into the `main`-layer subsystem, instead of `::get_instance()` being smeared across the whole program. And when you later want multiple instances, changing the wiring code in `main` is enough — `OledUpdater` doesn't change a single line.
 
-This is the mindset of **Dependency Injection (DI)**. True singletons—the kind where "there is only one in the program and you can't avoid it"—are actually very rare. Most of the time, when we think we need a singleton, what we actually need is "uniqueness within a specific subsystem," and that requirement is easily solved by injecting a reference.
+That is the idea of **dependency injection (DI)**. True singletons — the "exactly one in the program, no way around it" kind — are actually very rare. Most of the time, when you think you need a singleton, what you actually need is "unique within a certain subsystem", and that need is solved by injecting a reference.
 
 ## Summary
 
-Let's review the entire evolution path:
+Let's trace the whole evolution path once more:
 
-| Stage | Approach | Why it falls short |
+| Stage | Approach | Why it still isn't enough |
 |---|---|---|
-| Comment constraints | Write `// only once` | The compiler doesn't check it, can't stop implicit copies |
-| `= delete` | Disable copy/move | Can't construct instances anymore |
-| Meyer's Singleton | Private ctor + `static` local variable | **Sufficient** (C++11 magic statics guarantee thread safety) |
-| Hand-written DCLP | Double-checked lock + acquire/release | Historical legacy, not needed in modern C++ |
-| Dependency Injection | Confine singleton to subsystem, inject reference | Solves global state pollution and testability |
+| Comment constraint | Write `// only once` | The compiler doesn't check; implicit copies slip through |
+| `= delete` | Delete copy/move | Now nothing can construct the instance |
+| Meyer's Singleton | Private constructor + `static` local variable | **Good enough** (C++11 magic statics guarantees thread safety) |
+| Hand-written DCLP | Double-checked locking + acquire/release | Historical legacy; modern C++ doesn't need it |
+| Dependency injection | Confine the singleton to a subsystem, inject references | Solves global-state pollution and testability |
 
-Keep these key conclusions in mind:
+Note down these key conclusions:
 
-- **For singletons in modern C++, the first choice is Meyer's Singleton** (private constructor + `static` local variable + deleted copy/move). We don't need to write a single line of locking code.
-- **Don't hand-write DCLP**, especially avoid using `memory_order_consume`—magic statics have already taken care of thread-safe initialization.
-- The real cost of a singleton isn't in its implementation, but in **global state pollution, difficulty in testing, violating OCP, and static destruction order**.
-- In most "I need a singleton" scenarios, what is actually needed is **Dependency Injection**—constraining uniqueness to a subsystem rather than letting it run wild globally.
+- **In modern C++, the first choice for writing a singleton is Meyer's Singleton** (private constructor + `static` local variable + deleted copy/move), and not one line of locking to write.
+- **Do not hand-write DCLP**, and in particular do not use `memory_order_consume` — magic statics already takes care of initialization thread safety.
+- The real cost of a singleton is not the implementation, but **global-state pollution, test pain, OCP violation, and static destruction order**.
+- In most "I need a singleton" scenarios, what's really needed is **dependency injection** — constrain uniqueness inside one subsystem instead of letting it roam the whole program.
 
 ## References
 
 - [cppreference: Static local variables](https://en.cppreference.com/w/cpp/language/storage_duration#Static_local_variables) (magic statics, since C++11)
-- [cppreference: `std::memory_order`](https://en.cppreference.com/w/cpp/atomic/memory_order) (semantics of acquire/release/consume)
-- Scott Meyers, *Effective C++* Item 4 / Andrei Alexandrescu, *Modern C++ Design* Chapter 6 (Singletons and Multithreading)
+- [cppreference: `std::memory_order`](https://en.cppreference.com/w/cpp/atomic/memory_order) (the semantics of acquire/release/consume)
+- Scott Meyers, *Effective C++* Item 4 / Andrei Alexandrescu, *Modern C++ Design* Chapter 6 (singletons and multithreading)
 - Companion compilable project: [Singleton](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns/Singleton)

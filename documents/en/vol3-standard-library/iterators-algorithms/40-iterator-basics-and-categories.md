@@ -3,75 +3,71 @@ chapter: 7
 cpp_standard:
 - 11
 - 20
-description: 'Deep Dive into Iterators: Iterators are a generalization of pointers,
-  serving as the common interface between containers and algorithms. We explore the
-  five hierarchy levels (including C++20 contiguous iterators) to determine which
-  algorithms are applicable, how compile-time tag dispatching affects `std::distance`
-  performance, and why `std::sort` cannot be used with `std::list`.'
+description: 'A thorough look at iterator categories: iterators are the generalization of pointer usage and the common interface between containers and algorithms; how the five strength tiers (including the C++20 contiguous tier) decide which algorithms work, how compile-time tag dispatch affects std::distance performance, and why std::sort cannot be used on std::list'
 difficulty: intermediate
 order: 40
 platform: host
 prerequisites:
-- vector 深入：三指针、扩容与迭代器失效
-- array：编译期固定大小的聚合容器
+- 'Deep Dive into vector: Three Pointers, Reallocation, and Iterator Invalidation'
+- 'array: An Aggregate Container with a Compile-Time Fixed Size'
 reading_time_minutes: 10
 related:
-- 容器选择指南：按操作、内存与失效规则挑对容器
+- 'Container Selection Guide: Picking the Right One by Operations, Memory, and Invalidation Rules'
 tags:
 - host
 - cpp-modern
 - intermediate
 - Ranges
-title: 'Iterator Basics and Categories: How Containers and Algorithms Interact'
+title: 'Iterator Basics and Categories: The Glue Between Containers and Algorithms'
 translation:
   source: documents/vol3-standard-library/iterators-algorithms/40-iterator-basics-and-categories.md
   source_hash: 46e17c556293a15a8b119b95339678f6b32e1497875d81f49cf0dd70c0ba1339
-  translated_at: '2026-06-23T15:38:42.060207+00:00'
+  translated_at: '2026-09-26T01:34:31+00:00'
   engine: anthropic
-  token_count: 1387
+  token_count: 4900
 ---
-# Iterator Basics and Categories: How Containers and Algorithms Connect
+# Iterator Basics and Categories: The Glue Between Containers and Algorithms
 
-We have covered the container journey—`array`, `vector`, `list`, `map`—the data storage crew is basically here. But once we try to hand them over to algorithms like `std::sort`, `std::find`, and `std::transform`, an interesting question pops up: Why does `std::sort` work on both `vector` and `array`, but fails to compile for `list`? The algorithm code doesn't hardcode specific containers.
+We have now walked the container track to its end — `array`, `vector`, `list`, `map` — the data-holding crew has basically all reported in. But the moment you want to hand them over to algorithms like `std::sort`, `std::find`, and `std::transform`, an interesting question pops up: why does `std::sort` work on both `vector` and `array`, yet fail to even compile for `list`? No algorithm hard-codes which container it recognizes.
 
-The answer lies in that thin layer of generic interface between containers and algorithms—the iterator. In this post, we will dissect the iterator: what it actually is, why there are "strength levels" (categories), and how this level determines at compile-time whether code runs and how fast it runs.
+The answer hides in the thin layer of common interface sitting between containers and algorithms — the iterator. In this article we take the iterator apart: what it actually is, why it has "strength levels" (that is, categories), and how that level decides at compile time whether a piece of code can run at all, and how fast it runs.
 
-## What is an Iterator: Generalizing Pointer Usage
+## What Is an Iterator: Generalizing Pointer Usage
 
-Let's go back to the most familiar concept: the pointer. Given an array, we can use `*p` to get the value, `++p` to move forward, and `p != end` to check if we have reached the end—these three moves are enough to traverse from start to finish. What an iterator does is abstract this "set of pointer usages": as long as a type supports dereferencing, incrementing, and comparison, it can act as an iterator. The algorithm doesn't care whether it's backed by a contiguous array, a linked list node, or some other structure.
+Start from the tool we know best: the pointer. Given an array, we can read a value with `*p`, step forward with `++p`, and test whether we have reached the end with `p != end` — those three moves are enough to walk from head to tail. What the iterator does is abstract "this set of pointer usages" away: as long as a type supports dereference, increment, and comparison, it can serve as an iterator; whether it is backed by a contiguous array, a linked-list node, or some other structure is none of the algorithm's business.
 
-In other words, a raw pointer is a "native iterator," while `vector::iterator`, `list::iterator`, and others are "objects that look like pointers but are attached to their respective containers." Algorithms only recognize this unified interface, so a single `std::find` works across all containers. This was one of the most critical design decisions of the STL: **decoupling containers from algorithms and connecting them via the iterator interface**.
+In other words, a raw pointer is a kind of "native iterator", while `vector::iterator` and `list::iterator` are iterators that "look like pointers but carry their own container on their back". Algorithms recognize only this unified interface, which is why a single `std::find` serves every container. This was the most crucial design decision of the STL in its day: **decouple containers from algorithms, and let the iterator layer be where they meet**.
 
-## Categories: Iterators Have Strength Levels
+## category: Iterators Have Strength Levels
 
-"Supporting dereference and increment" is just the minimum bar. Different iterators can do vastly different things: some can only move forward and can only be read once; others can jump to arbitrary positions. The more operations available, the higher the "rank" of the iterator, which the standard calls the iterator category.
+"Supports dereference and increment" is only the lowest bar. What different iterators can do differs a lot: some can only move forward and be read once; others can jump at random to any position. The more operations an iterator supports, the higher its "level" — the standard calls this the iterator category.
 
-From weak to strong, the classic layers are as follows (the old five categories pre-C++20, plus the strongest category added in C++20):
+From weakest to strongest, the classic lineup looks like this, each tier always adding capabilities on top of the one before (these are the old five from before C++20, plus the strongest tier newly added in C++20):
 
-- **input**: Can read, `++`, and compare equality, but only moves forward in a single pass (typical: `istream_iterator`).
-- **forward**: Adds multi-pass traversal on top of input (typical: `forward_list`).
-- **bidirectional**: Adds `--`, allowing backward movement (typical: `list`, `set`, `map`).
-- **random_access**: Adds `+n`, `[]`, and comparison, allowing random jumps (typical: `vector`, `deque`, raw pointers).
-- **contiguous** (Added in C++20): On top of random_access, guarantees elements are stored contiguously in memory (typical: `vector`, `array`, `string`, raw pointers).
+- **input**: can read, can `++`, can compare for equality, but can only make a single forward pass (typical example: `istream_iterator`).
+- **forward**: on top of input, allows multi-pass traversal (typical example: `forward_list`).
+- **bidirectional**: adds `--`, can step backward (typical examples: `list`, `set`, `map`).
+- **random_access**: adds `+n`, `[]`, and ordering comparison, can jump around at random (typical examples: `vector`, `deque`, raw pointers).
+- **contiguous** (new in C++20): on top of random_access, additionally guarantees that elements are stored contiguously in memory (typical examples: `vector`, `array`, `string`, raw pointers).
 
-There is also **output**, which is write-only and read-only, listed separately.
+There is also **output**, dedicated to writing and never reading, listed off to the side.
 
-Describing layers is a bit abstract. Let's directly use C++20 concepts to check at compile-time which category various container iterators fall into. A concept is a compile-time predicate provided by C++20; if `std::random_access_iterator<T>` is true, it means `T` meets all requirements of a random access iterator. The approach is straightforward: write a `print_row` template that checks five predicates—`input_iterator`, `forward_iterator`, `bidirectional_iterator`, `random_access_iterator`, `contiguous_iterator`—for each container's iterator, and prints a row of Yes/No. Click the online demo below to run it and see the actual results:
+Ranking tiers in words is a bit airy, so let us take C++20 concepts and judge at compile time which tier each container's iterator actually lands in. A concept is a compile-time predicate handed to us by C++20: if `std::random_access_iterator<T>` is true, then `T` satisfies every requirement of a random access iterator — there is no dodging it. The idea is plain: write a `print_row` template that checks, for each container's iterator, the five predicates `input_iterator` / `forward_iterator` / `bidirectional_iterator` / `random_access_iterator` / `contiguous_iterator` in turn and prints each yes/no verdict as one row — open the online demo below and run it right there to see the real judgment:
 
 <OnlineCompilerDemo
-  title="Measuring Iterator Levels with C++20 Concepts"
+  title="Sizing Up Iterator Categories with C++20 concepts"
   source-path="code/examples/vol3/40_iterator_categories.cpp"
-  description="print_row checks five concept predicates for iterators of vector/array/string/raw pointer/list/set/forward_list, printing a table of Yes/No to show strength levels clearly"
+  description="print_row checks the five concept predicates one by one for the iterators of vector/array/string/raw pointers/list/set/forward_list and prints a yes/no table — strong versus weak at a glance"
   allow-run
 />
 
-The result makes the hierarchy very clear: `vector`, `array`, `string`, and raw pointers light up all five, making them the strongest class (contiguous) that can jump randomly in memory and are stored contiguously; `list` and `set` stop at bidirectional—they can move back and forth but cannot `it + 5` to jump; `forward_list` is the weakest, moving only forward. The strength isn't about "who wrote it better," but is determined by the data structure itself: linked list nodes are scattered all over memory, so you simply cannot calculate the address of the nth node with `it + n`.
+The run results lay the hierarchy out plainly: `vector`, `array`, `string`, and raw pointers light up all five — the strongest tier, able to jump around memory at random and stored contiguously (contiguous); `list` and `set` stop at bidirectional — they can walk forward and back but cannot leap over with `it + 5`; `forward_list` is the weakest, single-direction forward only. Strength is not about "who wrote it better" — it is decided by the data structure itself: a linked list's nodes sit all over memory, one here and one there, so you simply cannot compute the address of the n-th node directly with `it + n`.
 
-## Why Category Matters: It Determines Which Algorithms Are Available
+## Why category Matters: It Decides Which Algorithms You Can Use
 
-Back to the opening question. The standard specifies the iterator category requirements for algorithms: `std::find` only needs input (just scan forward), `std::reverse` needs bidirectional (must go backward), and `std::sort` needs random_access (quicksort needs random jumps to pick a pivot and partition). These requirements aren't just documentation notes—if the passed iterator doesn't meet them, compilation fails directly.
+Back to the question from the opening. The standard spells out each algorithm's requirement on the iterator category: `std::find` needs only input (scanning ahead is enough), `std::reverse` needs bidirectional (it must walk backward), `std::sort` needs random_access (quicksort has to jump around at random to grab a pivot and partition). These requirements are not just words in a document — hand the algorithm an iterator that falls short and compilation fails on the spot.
 
-So, applying `std::sort` to `std::list` will hit a wall:
+So throwing `std::sort` at a `std::list` hits a wall:
 
 ```text
 === std::sort 要求 random_access_iterator ===
@@ -79,18 +75,18 @@ So, applying `std::sort` to `std::list` will hit a wall:
   list::iterator   是 random-access? 否
 ```
 
-`std::list` iterators are only bidirectional, not random access, so we cannot use `std::sort`. Does this mean linked lists cannot be sorted? They can, but they take a different approach—the member function `list::sort()`. Internally, it uses merge sort, which is naturally suited for linked lists (merge sort does not require random access, only the ability to traverse forward and backward and split the list). The complexity remains O(n log n):
+A `list` iterator tops out at bidirectional, never reaches random_access, so `std::sort` is out of the question. Does that mean a linked list cannot be sorted at all? It can — it just goes its own way: the member function `list::sort()`, which runs a merge sort internally and fits linked lists naturally (merging needs no random access, only walking both ways and splitting), with the same O(n log n) complexity:
 
 ```text
   vector 用 std::sort 后: 1 1 2 3 4 5 6 9
   list 用 list::sort() 后: 1 1 2 3 4 5 6 9
 ```
 
-This is actually a common pitfall: beginners are used to calling `std::sort(c.begin(), c.end())` on any container, but it fails to compile on a `list`. Remember this rule—**algorithms choose iterators, not containers; the category of iterator a container provides determines which generic algorithms it can use**.
+This is in fact a fairly common trap: beginners get into the habit of calling `std::sort(c.begin(), c.end())` on whatever container they hold, and on a `list` it does not compile. Remember one line — **algorithms pick iterators, not containers; whichever level of iterator a container provides decides which generic algorithms it can use**.
 
-## Category also secretly affects performance: compile-time tag dispatching
+## category Also Quietly Affects Performance: Compile-Time Tag Dispatch
 
-Category doesn't just dictate "usability," it also dictates "speed." Consider `std::distance`. It returns the distance between two iterators, yielding the same result for all, but the complexity varies:
+category governs not only "whether it can be used" but also "how fast it runs". Look at `std::distance`, which returns the distance between two iterators: the answer is the same for everyone, but the complexity is not:
 
 ```text
 === std::distance(begin, end)（值相同，复杂度不同）===
@@ -98,34 +94,34 @@ Category doesn't just dictate "usability," it also dictates "speed." Consider `s
   list(10):   10   [bidirectional -> O(n)]
 ```
 
-With ten elements, the `vector` version is O(1), while the `list` version is O(n). What accounts for the difference? The `vector` iterator is a `random_access` iterator, so `std::distance` simply calculates `last - first` in a single step. The `list` iterator is merely `bidirectional`, so it must honestly increment from start to finish, stepping once for every element.
+Both lines hold 10 elements, yet the `vector` line is O(1) and the `list` line is O(n). Where is the difference? `vector`'s iterator is random_access, so `std::distance` simply computes `last - first`, done in one step; `list` only reaches bidirectional, so all it can do is dutifully `++` from head to tail — one step per element.
 
-How is this achieved in a way that is completely transparent to the caller and incurs zero runtime overhead? It relies on a classic C++ template technique—**tag dispatch**. Every iterator type carries a "category tag," accessible via `std::iterator_traits<It>::iterator_category`. Internally, `std::distance` selects different function overloads based on this tag: the `random_access` version uses subtraction, while the others use a loop. This selection happens at **compile time**; at runtime, the overhead of "checking the category first" does not exist. Facilities like `std::advance` and `std::iter_swap` all work this way.
+How is this kept completely transparent to the caller while costing zero runtime overhead? Through a classic template technique in C++ — tag dispatch. Every iterator type carries a "category tag", which you can retrieve through `std::iterator_traits<It>::iterator_category`; internally, `std::distance` picks different function overloads by that tag: the random_access version does subtraction, the other versions loop. This choice happens at **compile time**; at runtime, the step "first check the category" simply does not exist. `std::advance`, `std::iter_swap`, and a whole pile of facilities work this way.
 
-::: warning Common Pitfall
-On non-random access containers like `list` or `set`, any operation that relies on "calculating distance" or "jumping n steps" (such as `std::distance` or `std::advance(it, n)`) is O(n). Don't treat them as constant-time operations and use them carelessly, or their true nature will be revealed as data volume grows.
+::: warning A common pitfall
+On non-random-access containers such as `list` and `set`, any operation that internally leans on "computing a distance" or "jumping n steps" (for instance `std::distance`, `std::advance(it, n)`) is O(n). Do not toss these around as constant-time conveniences; once the data volume grows, the true cost shows its face.
 :::
 
-## The C++20 Perspective: Moving Requirements from Docs to the Type System
+## The C++20 Perspective: Moving Requirements from Documentation into the Type System
 
-Finally, a word on the changes brought by C++20. Before concepts arrived, algorithm requirements on iterators could only be written in documentation (e.g., "requires ForwardIterator"). The compiler didn't check them—if you passed an iterator that didn't meet the requirements, you'd get a long string of template instantiation errors that made it hard to see what went wrong.
+Finally, a word about what C++20 changed. Before concepts existed, an algorithm's requirements on iterators could only be written in documentation ("requires ForwardIterator"), and the compiler did not check them — pass in an iterator that falls short, and what came back was a long string of template instantiation errors, from which it was hard to tell what exactly went wrong.
 
-C++20 uses concepts to move these requirements into the type system: `std::forward_iterator`, `std::random_access_iterator`, and others are compile-time predicates themselves. The reason we could generate that table earlier with code is precisely because concepts turn "documentation requirements" into "facts checkable at compile time." We can even use `static_assert(std::random_access_iterator<It>);` in our own code to constrain template parameters. If the wrong type is passed, the error occurs at the call site with a clear message—the `print_row` template in the online example above essentially uses concepts to "grade" the iterator.
+C++20 moves these requirements into the type system with concepts: `std::forward_iterator`, `std::random_access_iterator`, and the rest are themselves compile-time-checkable predicates. The reason the table above could be printed by code is precisely that concepts turned "requirements in the documentation" into "facts you can check at compile time". We can even pin down template parameters directly in our own code with `static_assert(std::random_access_iterator<It>);` — pass the wrong type and the error fires at the call site, with far clearer information. That `print_row` template in the online demo above is, in effect, using concepts to "measure the level" of iterators.
 
 ## Summary
 
-We've walked through iterators and their categories from start to finish. Let's recap the key takeaways:
+We have followed iterators and their categories from end to end; let us gather the key conclusions:
 
-- Iterators are a generalization of pointer usage and serve as the unified interface between containers and algorithms. Algorithms recognize iterators, not specific containers.
-- Iterators are categorized by strength (category): input → forward → bidirectional → random_access → contiguous (the strongest in C++20), determined by the underlying data structure.
-- The category determines two things: which generic algorithms can be used (compilation fails if requirements aren't met) and the complexity of certain operations (achieved via compile-time tag dispatch with zero runtime overhead).
-- Two common pitfalls: `std::sort` requires `random_access`, so it can't be used with `list` (use `list::sort()` instead); `std::distance` / `std::advance` are O(n) on non-random access containers.
+- Iterators are the generalization of pointer usage, the unified interface layer between containers and algorithms; algorithms recognize iterators, not specific containers.
+- Iterators come in strength tiers (categories): input → forward → bidirectional → random_access → contiguous (the strongest, from C++20), decided by the data structure itself.
+- category determines two things: which generic algorithms can be used (falling short means a compile failure), and the complexity of certain operations (via compile-time tag dispatch, with zero runtime overhead).
+- Two high-frequency traps: `std::sort` requires random_access, so `list` cannot use it (switch to `list::sort()`); `std::distance` / `std::advance` are O(n) on non-random-access containers.
 
-In the next post, we will continue with **iterator adapters** (like `reverse_iterator` and `insert_iterator`) and see how to use existing tools to "modify" iterator behavior.
+In the next article we go on to iterator adapters (`reverse_iterator`, `insert_iterator`, and the like) — how to use ready-made tools to "retrofit" iterators with new behavior.
 
 ## References
 
-- [cppreference: Iterator library](https://en.cppreference.com/w/cpp/iterator) — Iterator overview and category definitions
-- [cppreference: std::iterator_traits](https://en.cppreference.com/w/cpp/iterator/iterator_traits) — The cornerstone of `iterator_category` and tag dispatch
-- [cppreference: std::distance](https://en.cppreference.com/w/cpp/iterator/distance) — Official documentation on complexity varying by category
-- [cppreference: std::contiguous_iterator (C++20)](https://en.cppreference.com/w/cpp/iterator#Iterator_concepts) — C++20 iterator concepts and the strongest category, contiguous
+- [cppreference: Iterator library](https://en.cppreference.com/w/cpp/iterator) — the overview of iterators and the category definitions
+- [cppreference: std::iterator_traits](https://en.cppreference.com/w/cpp/iterator/iterator_traits) — the foundation of `iterator_category` and tag dispatch
+- [cppreference: std::distance](https://en.cppreference.com/w/cpp/iterator/distance) — the official statement of how complexity varies with category
+- [cppreference: std::contiguous_iterator (C++20)](https://en.cppreference.com/w/cpp/iterator#Iterator_concepts) — C++20 iterator concepts and contiguous, the strongest tier

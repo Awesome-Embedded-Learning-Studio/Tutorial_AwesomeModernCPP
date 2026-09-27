@@ -1,6 +1,6 @@
 ---
 title: "Shape baked into the type — why dimensions are template parameters"
-description: "Why dimensions are template parameters Tensor<Rows,Cols,StorageType> rather than constructor arguments: compile-time fixed size comes with no heap allocation, the type system acts as a free shape-checker moving shape errors to compile time, and dimensions are visible at compile time. The cost: every dimension combination is a distinct type."
+description: "Why dimensions belong in the template parameters Tensor<Rows, Cols, StorageType> rather than constructor arguments: compile-time fixed size comes with no heap allocation, the type system doubles as a free shape checker that moves shape errors to compile time, and dimensions stay visible at compile time. The cost: every dimension combination is a distinct type."
 chapter: 8
 order: 11
 platform: host
@@ -18,17 +18,23 @@ tags:
   - intermediate
   - 模板
   - 类型安全
+translation:
+  source: documents/vol8-domains/ai/tiny_ml/stage1/05-shape-in-type.md
+  source_hash: 631e5122deb9baaa0b3c44bbf3d0dce229b692b0d240b434f1b0e840057a1d5b
+  translated_at: '2026-09-26T03:56:53+00:00'
+  engine: anthropic
+  token_count: 2500
 ---
 
 # Shape baked into the type — why dimensions are template parameters
 
-[The previous piece](./04-row-major.md) covered "how the numbers are laid out" (row-major). This piece covers the last piece: **why do those two numbers, Rows and Cols, have to be written into the template parameters `Tensor<Rows, Cols, StorageType>`, instead of being passed in at construction like a normal object?**
+The [previous piece](./04-row-major.md) covered "how the numbers are laid out" (row-major). This one settles the last piece of the puzzle: **why must those two numbers, Rows and Cols, be written into the template parameters `Tensor<Rows, Cols, StorageType>`, rather than passed in at construction time the way an ordinary object does it?**
 
-You might think, dimensions, just pass rows and cols at construction and be done with it — why bake them into the template parameters and sprout a pile of types. This step is the one most easily skipped by beginners, and yet the most valuable — it moves a whole category of "shape wrong" bugs from runtime to compile time.
+You might be thinking: dimensions? Just pass rows and cols to the constructor and call it a day — why go out of your way to cram them into template parameters and breed a whole pile of types? This is the step beginners skip most easily in Tensor design, and also the most valuable one — it moves an entire class of "shape mismatch" bugs from runtime to compile time.
 
-## The two ways, side by side
+## The two approaches, side by side
 
-First look at how it'd be written if dimensions didn't go into the type. Roughly this beginner-friendly form:
+First, look at how it would be written if the dimensions didn't go into the type. Roughly this beginner-friendly form:
 
 ```cpp
 class Tensor {
@@ -40,50 +46,50 @@ public:
 };
 ```
 
-Size is a runtime `int` member, passed in at construction. This is how the vast majority of "dynamic array" classes are written; PyTorch's `torch::Tensor` is like this — shape known only at runtime.
+The size is a runtime `int` member, passed in at construction. This is how the vast majority of "dynamic array" classes are written — PyTorch's `torch::Tensor` is exactly this: the shape is known only at runtime.
 
-Our way is:
+Our version:
 
 ```cpp
 template <std::size_t Rows, std::size_t Cols, typename StorageType = float>
 class Tensor {
     std::array<StorageType, Rows * Cols> internals_{};
-    // rows_/cols_ don't exist; they ARE the template parameters Rows, Cols
+    // no rows_/cols_ members — they are the template parameters Rows and Cols themselves
 };
 ```
 
-Size isn't a member — it's part of the type. `Tensor<4, 3>` and `Tensor<2, 2>` are two completely different types, fixed at compile time, unchangeable at runtime.
+The size is not a member; it is part of the type. `Tensor<4, 3>` and `Tensor<2, 2>` are two entirely different types, nailed down at compile time and impossible to change at runtime.
 
-## Benefit one: compile-time fixed size, and no heap allocation along with it
+## Benefit 1: compile-time fixed size — and no heap allocation along with it
 
-Since Rows and Cols are compile-time constants, `Rows * Cols` is a compile-time constant too, and the size of `std::array<StorageType, Rows*Cols>` is fixed at compile time. The compiler knows how big this object is and lays it out directly on the stack or in static storage — no `new`, no `malloc`. The "compile-time fixed size" and "no heap allocation" constraints are both satisfied in one step.
+Since Rows and Cols are compile-time constants, `Rows * Cols` is a compile-time constant too, so the size of `std::array<StorageType, Rows*Cols>` is settled at compile time. The compiler knows exactly how big this object is and carves it out directly on the stack or in static storage — no new, no malloc. Two items from the hard constraints, "compile-time fixed size" and "no heap allocation", are satisfied in one stroke.
 
-Conversely, that `float* data_` in the runtime version — where does data point? Either at a heap block from `new` (violates "no heap allocation"), or at an externally-passed buffer (lifetime is on you, dangling references waiting to happen). Both roads have pits.
+Flip it around and look at the runtime version's `float* data_`: where does data point? Either at a heap block allocated with new (running straight into "no heap allocation"), or at a buffer handed in from outside (whose lifetime you now have to manage yourself — an easy way to end up with dangling references). Both roads are lined with potholes.
 
-## Benefit two: the type system catches shape errors for you (the most valuable part)
+## Benefit 2: the type system catches shape errors for you (the most valuable part)
 
-This is where dimensions-in-the-type truly pays off. A huge class of errors in neural networks is, at root, shape errors: the weight matrix's column count doesn't match the input vector's length, two matrices have mismatched dimensions for multiplication, and so on. If shape is runtime, these can only be checked at runtime — you find out when it crashes or returns an error code. But if shape is part of the type, **the compiler can hold off a whole swath of them at compile time.**
+Here is the real power of putting dimensions in the type. A great many neural network errors are, at bottom, shape errors: the weight matrix's column count doesn't match the input vector's length, two matrices get multiplied with mismatched dimensions, and so on. When shape is a runtime property, these can only be checked at runtime — you find out when the program crashes or hands you an error code. But when shape is part of the type, **the compiler blocks out a whole swath of them for you at compile time**.
 
-Example. A Dense layer requires the weight matrix's column count to equal the input's length: weights W are `Tensor<4, 3>`, input x must be `Tensor<1, 3>` (that 3 has to match). If one day you slip and pass in a `Tensor<1, 5>` input, the compiler rejects it at compile time — the program never even gets to run.
+A concrete example. A Dense layer demands that the weight matrix's column count equal the input's length: if the weight W is `Tensor<4, 3>`, the input x must be `Tensor<1, 3>` (that 3 has to line up). The day your hand slips and you pass in a `Tensor<1, 5>` input, the compiler rejects it during compilation — the program never even gets the chance to run.
 
-This is something dynamic-shape frameworks can't give you. PyTorch's runtime shape means a dimension mismatch has to wait until that line of code runs and throws a RuntimeError. Baking the dimensions into the type turns the type system into a free shape-checker.
+This is a capability dynamically-shaped frameworks cannot offer. With PyTorch's runtime shapes, a dimension mismatch stays hidden until execution reaches that line of code and throws a RuntimeError. Stuffing the dimensions into the type, as we do, is effectively hiring the type system as a free shape checker.
 
-The specific "how to bake it" — Stage 2 will use `static_assert` and template constraints to pin down dimension relationships when writing Dense, and you'll see it block errors at compile time. For this piece you only need to accept the conclusion: **dimensions in the type, and a whole category of shape errors moves from runtime to compile time.**
+As for how exactly we "stuff" them — when we write the Dense layer in Stage 2, we'll pin the dimension relationships down with `static_assert` and template constraints, and you'll see then how it blocks errors at compile time. From this piece you only need to accept one conclusion for now: **with dimensions in the type, an entire class of shape errors moves from runtime to compile time**.
 
-## Benefit three: dimensions visible at compile time
+## Benefit 3: dimensions visible at compile time
 
-A less flashy but quite real side benefit. Since Rows and Cols are compile-time constants, the query functions `row()`, `col()`, `size()` can evaluate at compile time — we mark them `constexpr`, which is enough; writing `static_assert(tensor.size() == 12)` just works. If you really want to force "compile-time only", reach for `consteval` — Stage 1 has no such need.
+There's also a less showy but very real benefit along the way. Since Rows and Cols are compile-time constants, query functions like `row()`, `col()`, and `size()` can be evaluated at compile time — we mark them `constexpr`, which does the job: writing `static_assert(tensor.size() == 12)` simply passes. If you genuinely want to restrict them to "compile-time evaluation only", you'd reach for `consteval` — Stage 1 has no hard need for that.
 
-This also pays off in Stage 5: weights live as `inline constexpr std::array`, and their shape has to be a compile-time-known constant — which lines up exactly with the Tensor's "dimensions in the type" design. The two sides mesh naturally.
+This also feeds Stage 5: the weights have to be stored as `inline constexpr std::array`, and their shape must be a compile-time-known constant — a perfect match for this "dimensions in the type" design of Tensor. The two sides mesh naturally.
 
 ## The cost: dimension combinations are type combinations
 
-Honest about the cost. Dimensions in the type means **every dimension combination is a distinct type.** `Tensor<4, 3>`, `Tensor<3, 4>`, `Tensor<2, 2>` are three mutually distinct types; when writing function templates they're different instantiations.
+Now for an honest account of the cost. Dimensions in the type means **every dimension combination is an independent type**. `Tensor<4, 3>`, `Tensor<3, 4>`, and `Tensor<2, 2>` are three mutually distinct types; when you write a function template, they are separate instantiations.
 
-For our Lab this isn't a problem: the MLP's shapes are a fixed few (input 1×3, weights 4×3 and 3×4, biases 1×4 and 1×3), countable, type bloat contained. But if you were writing a general framework that accepts arbitrary shapes and even reshapes dynamically, this "dimensions in the type" wouldn't be enough — you'd have to go back to runtime shape, which is what PyTorch chose. We trade "fixed shape" for "compile-time shape safety"; the deal is worth it for a teaching Lab, not worth it for a general framework. Horses for courses.
+For our Lab this is not a problem: the MLP's shapes are a fixed, countable handful (input 1×3, weights 4×3 and 3×4, biases 1×4 and 1×3), so type bloat stays under control. But if you're writing a general-purpose framework that accepts arbitrary shapes and supports dynamic reshaping, this "dimensions in the type" scheme stops being enough — you'd have to go back down the old runtime-shape road, which is exactly the choice PyTorch made. We're trading "fixed shapes" for "compile-time shape safety": a bargain for a teaching Lab, not a bargain for a general framework. Horses for courses.
 
-## The five-piece intro, complete
+## Five pieces of groundwork, and the set is complete
 
-Looking back at these five pieces: [01](./01-what-is-tensor.md) demystifies a Tensor into a 2D table, [02](./02-tensor-in-neural-network.md) sees it hold input/weights/bias/output, [03](./03-why-not-built-in.md) rejects three ready-made suspects and forces out a design, [04](./04-row-major.md) nails down the row-major layout, and this piece bakes the dimensions into the type. What a Tensor is, what it holds, why it's built this way — the five pieces of the puzzle are complete.
+Look back over the five pieces: [01](./01-what-is-tensor.md) demystified the Tensor into a 2D table of numbers, [02](./02-tensor-in-neural-network.md) watched it hold four kinds of data — inputs/weights/biases/outputs, [03](./03-why-not-built-in.md) voted down three ready-made candidates and squeezed out our own design, [04](./04-row-major.md) settled the row-major layout, and this piece baked the dimensions into the type. What a Tensor is, what it holds, why it's built this way — the five puzzle pieces are now all in place.
 
-Next is [06-tensor.md](./06-tensor.md): lay out the full interface, cover the three remaining small decisions (at returns a value not a reference, fixed 2D without variadic templates, how to add the library in CMake), then write it following the interface sketch. All the groundwork from these five pieces is so that the design trade-offs in 06-tensor.md don't read like they're hanging in mid-air.
+The next step is [06-tensor.md](./06-tensor.md): lay out the complete interface, walk through the three remaining small decisions (at returning values instead of references, staying fixed at 2D rather than becoming a variadic template, and how to add the library in CMake), then roll up your sleeves and write it following the interface sketch. The whole point of the groundwork in these five pieces is that when you read the design trade-offs in 06-tensor.md, they won't be left hanging in mid-air.

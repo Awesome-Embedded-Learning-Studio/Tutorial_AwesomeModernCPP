@@ -1,10 +1,6 @@
 ---
-title: 'variant: Type-Safe Unions and visit'
-description: Explains why `std::variant` supersedes tagged unions—automatic destruction
-  and indexing, trade-offs between `get`/`get_if`/`holds_alternative`, pattern matching
-  with `std::visit` and the `overloaded` lambda pattern, and the pathological `valueless_by_exception`
-  state. Also covers why `variant` offers better value semantics and memory efficiency
-  than inheritance polymorphism for closed type sets.
+title: "variant: Type-Safe Unions and visit"
+description: "A thorough account of why std::variant replaces the tag-toting bare union—automatic destruction and index tracking, how to choose among get/get_if/holds_alternative, overloaded lambdas paired with std::visit for pattern matching, the pathological valueless_by_exception state, and why variant is more value-semantic and more memory-efficient than inheritance polymorphism for closed type sets"
 chapter: 7
 order: 62
 cpp_standard:
@@ -13,62 +9,63 @@ cpp_standard:
 difficulty: intermediate
 platform: host
 tags:
-- host
-- cpp-modern
-- intermediate
-- 类型安全
+  - host
+  - cpp-modern
+  - intermediate
+  - 类型安全
 prerequisites:
-- 对象大小、对齐与平凡类型
-- vector 深入：三指针、扩容与迭代器失效
+  - "Object Size, Alignment, and Trivial Types"
+  - 'Deep Dive into vector: Three Pointers, Reallocation, and Iterator Invalidation'
 related:
-- 容器选择指南：按操作、内存与失效规则挑对容器
+  - 'Container Selection Guide: Picking the Right One by Operations, Memory, and Invalidation Rules'
 reading_time_minutes: 16
 translation:
   source: documents/vol3-standard-library/error-utils/62-variant.md
   source_hash: 6ef559cb6c1f778803507e58d9e75246e644a9d909b6a5a128076dd331094323
-  translated_at: '2026-06-24T00:38:23.052145+00:00'
+  translated_at: '2026-09-26T00:54:57+00:00'
   engine: anthropic
-  token_count: 3869
+  token_count: 11000
 ---
-# variant: Type-safe Unions and visit
 
-We often write code where "one variable is sometimes A, and sometimes B." In a state machine, a connection might be `Connecting`, `Connected`, or `Error`; in a parser, a token might be a number, a string, or a symbol; a configuration item might be a scalar or a list. Traditionally, there are two approaches: either use an `enum` with a `union` and manually track "which one is active now," or build an inheritance hierarchy with `class Shape` holding `Circle`, `Square`, and `Triangle`, relying on virtual function dispatch.
+# variant: Type-Safe Unions and visit
 
-Both paths have their drawbacks. A `union` doesn't track the current type—if you stuff an `int` in but read it out as a `string`, the compiler stays silent, leading to undefined behavior at runtime. Destruction is even murkier (if the `string` destructor isn't called, memory leaks). Inheritance polymorphism is type-safe, but every object must be `new`-ed onto the heap, carrying a virtual table pointer. Just to "store a value," you pay for a heap allocation and an indirect jump, plus you have to manage the object lifecycle.
+We've all written plenty of code where "one and the same variable is sometimes A, sometimes B." In a state machine, a connection might be `Connecting`, `Connected`, or `Error`; in a parser, a token might be a number, a string, or a symbol; a config entry might be a scalar, or a list. Traditionally there have been two routes: either rig up an `enum` plus a `union` and keep track of "which one is in there right now" yourself, or set up an inheritance hierarchy—`class Shape` with `Circle`, `Square`, and `Triangle` hanging underneath—and dispatch through virtual functions.
 
-C++17 offers a third path: `std::variant<Ts...>`, a **type-safe union**. Building on the `union` concept of "sharing a memory block," it adds an index tracking "which type is currently active" and handles destruction automatically. In this article, we will cover everything from "why not use a raw union" to pattern matching with `std::visit`, the strange `valueless_by_exception` state, and finally, a direct performance comparison with inheritance polymorphism.
+Both routes hurt in their own way. A `union` doesn't remember which type it currently holds—stuff an `int` in, read it back out as a `string`, and the compiler doesn't make a sound while the runtime sails straight into undefined behavior; destruction is an even murkier account (the `string` destructor that should have run doesn't, and the memory leaks). Inheritance polymorphism, for its part, is type-safe, but every object has to be `new`-ed onto the heap and lug around a vtable pointer—just to "store one value" you've spent a heap allocation and an indirect jump, and now you also have to babysit lifetimes.
 
-## Why not use a raw union
+C++17 opened a third route: `std::variant<Ts...>`, a **type-safe union**. On top of the union's "everyone shares one block of memory," it additionally records an index of "which alternative is currently active," and it manages destruction automatically. In this article we walk from "why not a bare union" all the way through pattern matching with `std::visit` and the weird `valueless_by_exception` state, then close with a head-to-head performance comparison against inheritance polymorphism.
 
-Let's look at exactly where a raw `union` falls short. The code below compiles without a single warning, but it is fundamentally wrong:
+## Why Not a Bare union
+
+First, let's see exactly where a bare `union` rots. The following code won't draw a single warning out of the compiler, and it is simply wrong:
 
 ```cpp
 // Standard: C++98
 union BadUnion {
     int i;
-    std::string s;   // 带 non-trivial 成员的 union
+    std::string s;   // a union with a non-trivial member
 };
 
 void misuse() {
     BadUnion u;
-    u.s = std::string("hello");   // 当 string 存
-    int x = u.i;                  // 当 int 读 —— 未定义行为
-    // 函数结束: 没人调 string 析构, 内存泄漏
+    u.s = std::string("hello");   // store as string
+    int x = u.i;                  // read as int — undefined behavior
+    // function ends: nobody calls the string destructor; memory leaks
 }
 ```
 
-A `union` does not **know** whether it currently holds an `int` or a `string`. Reading from a `string` as if it were an `int` is undefined behavior (UB). Since the destructor for the `string` is never called, it results in a leak. To use it correctly, the programmer must attach an external tag, manually check the type, and manually destroy the object—this entire set of boilerplate code relies entirely on human discipline for correctness. I have seen too much code where developers "thought a `union` saved memory, but ended up with a pile of memory leaks."
+The `union` itself **does not know** whether it currently holds an `int` or a `string`. Reading a `string` as an `int` is UB; the `string` destructor that should run never runs—that's a leak. To use one correctly, the programmer has to hang a tag on the outside, check it by hand, destroy by hand—an entire apparatus of boilerplate whose correctness rests entirely on human discipline. We've seen far too much code that "figured a union would save memory" and left a pile of memory leaks behind.
 
-`std::variant` automates this entire process. It handles two things:
+`std::variant` automates the whole apparatus. It does two things:
 
-1. **Track the index**: It stores an index internally indicating "which alternative type is currently active." We can retrieve this via `index()` or check directly with `holds_alternative<T>()`.
-2. **Automatic destruction**: Every time the type changes (via assignment or `emplace`), it destroys the old object before constructing the new one. When its lifetime ends, it destroys the currently held object.
+1. **Record the index**: internally it stores a subscript for "which of the alternative types is current." `index()` reads it out, and `holds_alternative<T>()` asks about it directly.
+2. **Automatic destruction**: every time the type changes (assignment, `emplace`), it destroys the old alternative first and then constructs the new one. When its own lifetime ends, it destroys whichever alternative it currently holds.
 
-The cost is that it consumes a small amount of extra space to store that index (usually just a few bytes), but in return, we get "reading the wrong type throws an exception instead of triggering UB, and destruction is always correct."
+The price is a little extra storage for that index (usually just a few bytes); what you buy back is "reading the wrong type throws an exception instead of being UB, and destruction is always right."
 
-## Construction and Access: The Four Essentials
+## Construction and Access: The Four Tools
 
-Let's walk through the most basic usage:
+For the most basic usage, let's just run it straight through:
 
 ```cpp
 // Standard: C++17
@@ -78,41 +75,41 @@ Let's walk through the most basic usage:
 
 int main()
 {
-    std::variant<int, double, std::string> v;  // 默认构造 -> 持第一个类型(int)
+    std::variant<int, double, std::string> v;  // default-constructed -> holds the first type (int)
     std::cout << "默认构造 index=" << v.index() << " (int)\n";
 
-    v = 3.14;                                  // 赋 double
+    v = 3.14;                                  // assign a double
     std::cout << "赋值 3.14 index=" << v.index() << " (double)\n";
 
-    v = std::string("hello");                  // 赋 string
+    v = std::string("hello");                  // assign a string
     std::cout << "赋值 hello index=" << v.index() << " (string)\n";
 
-    // 1. holds_alternative<T>: 当前是不是 T?
+    // 1. holds_alternative<T>: is the current alternative a T?
     std::cout << "holds<string>=" << std::holds_alternative<std::string>(v) << "\n";
     std::cout << "holds<int>="    << std::holds_alternative<int>(v) << "\n";
 
-    // 2. get<T>: 取值, 类型不符抛 bad_variant_access
+    // 2. get<T>: fetch the value; throws bad_variant_access on type mismatch
     std::cout << "get<string>=" << std::get<std::string>(v) << "\n";
     try {
-        std::cout << std::get<int>(v) << "\n";   // 当前是 string, 取 int
+        std::cout << std::get<int>(v) << "\n";   // currently string, fetching int
     } catch (const std::bad_variant_access& e) {
         std::cout << "异常: " << e.what() << "\n";
     }
 
-    // 3. get_if<T>: 取指针, 不符返 nullptr (不抛)
+    // 3. get_if<T>: fetch a pointer; returns nullptr on mismatch (no throw)
     if (auto* p = std::get_if<double>(&v)) {
         std::cout << "double: " << *p << "\n";
     } else {
         std::cout << "不是 double, get_if 返回 nullptr\n";
     }
 
-    // 4. get<I>: 按索引取(0=int, 1=double, 2=string)
+    // 4. get<I>: fetch by index (0=int, 1=double, 2=string)
     std::cout << "get<2>=" << std::get<2>(v) << "\n";
     return 0;
 }
 ```
 
-Here are the results from running `g++ -std=c++23 -O2` (local GCC 16.1.1):
+Running it with `g++ -std=c++23 -O2` (local GCC 16.1.1):
 
 ```text
 默认构造 index=0 (int)
@@ -126,24 +123,24 @@ get<string>=hello
 get<2>=hello
 ```
 
-How to choose among the four methods depends on "what you want to do when the types don't match":
+How to pick among the four comes down to one question: "what do you want to happen when the type doesn't match?"
 
-- **Want to throw an exception**: Use `get<T>()`. It is clean, but incurs a branch and potential exception overhead on every access.
-- **Don't want to throw, handle it yourself**: Use `get_if<T>()`. If it returns `nullptr`, the type is incorrect. In performance-sensitive code or where exceptions are disabled, this is the more robust choice.
-- **Only want to check, without retrieving the value**: `holds_alternative<T>()` returns a `bool` and is the most readable approach.
-- **By index instead of by type**: `get<I>()`. Occasionally useful, such as when iterating over a sequence of indices known at compile time.
+- **You want an exception thrown**: use `get<T>()`. Clean, but every access pays a branch plus possible exception overhead.
+- **No throw, you handle it**: use `get_if<T>()`—a returned `nullptr` tells you the type is wrong. In performance-sensitive or exception-disabled code, this is the sturdier choice.
+- **Check only, don't fetch**: `holds_alternative<T>()` returns a `bool` and reads the clearest.
+- **By position rather than by type**: `get<I>()`. Occasionally useful—for instance, when walking a sequence of indices known at compile time.
 
-::: warning The "type" used by `get` and `get_if` must be one of the alternative types
-`std::get<long>(v)` on a `variant<int, double, string>` is a **compile-time error**—`long` is not in the set of alternatives. The type safety of `variant` comes precisely from the fact that "you can only retrieve the types declared," unlike a raw `union` where you can read whatever you want.
+::: warning The "type" given to get and get_if must be one of the alternatives
+`std::get<long>(v)` on a `variant<int, double, string>` is a **compile error**—`long` is not in the alternative set. `variant`'s type safety comes precisely from "you can only fetch the types it declared," unlike a bare `union`, which you can read as whatever you please.
 :::
 
 ## std::visit: Turning if-else Chains into Pattern Matching
 
-At this point, you might say: the four methods are enough, so why not just write a bunch of `if (holds_alternative<A>) ... else if (holds_alternative<B>) ...`? It works, but there are a few issues. First, it's ugly—every time you add a type, you have to come back and modify this chain, and if you forget, you miss a case. Second, it's slow—every access involves a `holds_alternative` branch. Third, the compiler doesn't check "whether every type is handled."
+At this point you might object: the four tools are enough—just write a pile of `if (holds_alternative<A>) ... else if (holds_alternative<B>) ...` and call it a day? It runs, but there are problems. First, it's ugly—every new type means coming back to edit that chain, and forgetting means a missed case. Second, it's slow—every access is a `holds_alternative` branch. Third, the compiler won't help you check "has every type been handled."
 
-`std::visit` solves all three of these problems. It feeds a "visitor" function object to a `variant`, requiring that this visitor can handle **every** alternative type—miss one, and compilation fails. Before we run a minimal example, let's introduce the key technique that makes it truly useful: the **overloaded lambda**.
+`std::visit` solves exactly those three. It feeds a "visitor" function object to the `variant` and requires that this visitor be able to handle **every single** alternative—miss one and compilation fails. Before we run a minimal example, let's first introduce the key technique that makes it genuinely pleasant: the **overloaded lambda**.
 
-The visitor must be an object that can call `operator()` for all alternative types. The most direct way is to hand-write a `struct`:
+The visitor has to be an object whose `operator()` can be invoked for every alternative type. The most direct way to write one is a hand-rolled `struct`:
 
 ```cpp
 // Standard: C++17
@@ -154,7 +151,7 @@ struct Describe {
 };
 ```
 
-It works, but it's verbose. Every time we add a branch, we have to go back to this `struct` and add a member function. C++17 offers a much cleaner approach—we can inherit a group of lambda expressions together to form a function object that matches all types:
+It works, but every new branch means trudging back into that `struct` to add another member function—verbose. C++17 has a much cleaner spelling: inherit a bunch of lambdas together so they add up to one function object that can match all the types:
 
 ```cpp
 // Standard: C++17
@@ -164,7 +161,7 @@ template <class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 ```
 
-These three lines are the "common incantation" of the C++ community (`using Ts::operator()...` is a C++17 pack-using declaration, and the deduction guide deduces `overloaded<L1, L2, ...>` directly from a set of lambdas). Combined with `std::visit`, the `Describe` function above can be written as a set of local lambdas:
+These three lines are the C++ community's "common incantation" (`using Ts::operator()...` is C++17's pack-using declaration, and the deduction guide lets a set of lambdas deduce straight to `overloaded<L1, L2, ...>`). Teamed up with `std::visit`, that `Describe` above turns into a set of in-place lambdas:
 
 ```cpp
 // Standard: C++17
@@ -204,15 +201,15 @@ string:"hello"
 int:7
 ```
 
-The power of this snippet lies in the fact that `std::visit` knows exactly which types are in the `variant` at compile time. The set of `operator()` overloads is also known at compile time, allowing it to **compile the entire dispatch into a jump table** (typically a single indirect jump based on `index()`). This eliminates runtime chains of `holds_alternative` checks and avoids the virtual table indirection associated with inheritance. Furthermore, if you add a fourth type to `Value` but forget to handle it in `overloaded`, the code **will fail to compile directly**. The compiler is checking for completeness here, which is much safer than hand-writing a chain of `if-else` statements.
+The power of this section: `std::visit` knows at compile time exactly which types the `variant` can hold, and the visitor's `operator()` overload set is likewise fully known at compile time, so it can **compile the entire dispatch into one jump table** (usually a single indirect jump on `index()`)—no runtime `holds_alternative` chain, and none of inheritance's vtable indirection either. Better still: the moment `Value` grows a fourth type and you forget to handle it in `overloaded`, **compilation fails outright**. That's the compiler auditing your coverage for you—far safer than a hand-written `if-else` chain.
 
-::: warning Don't misremember the three-line spell for `overloaded`
-Do not omit the `...` at the end of `using Ts::operator()...;`. It signifies "bring `operator()` from *every* base class into scope"; without it, you only introduce one, resulting in incomplete dispatch. Also, don't forget the deduction guide `overloaded(Ts...) -> overloaded<Ts...>;`. Without it, you cannot construct `overloaded` in-place using `overloaded{...}`. This pattern remains valid in C++20 and is the most robust idiom in the community.
+::: warning Don't misremember the three-line overloaded incantation
+The trailing `...` in `using Ts::operator()...;` must not be dropped—it means "bring every base class's `operator()` into scope," and without it you've imported just one, leaving the dispatch incomplete. Don't forget the deduction guide `overloaded(Ts...) -> overloaded<Ts...>;` either—without it you can't construct `overloaded{...}` in place. This spelling still holds after C++20; it's the community's most battle-tested idiom.
 :::
 
-## Two new tools in C++20: in-place lambdas + `visit<R>`
+## C++20's Two New Tools: In-Place Lambdas + visit\<R\>
 
-In C++20, we can actually skip that `overloaded` incantation—we can just use a generic lambda with `if constexpr` to write "do X when we see type Y" right on the spot:
+By C++20, the `overloaded` incantation above can actually be skipped—just take a single generic lambda with `if constexpr` and write "see a type, do the thing" in place:
 
 ```cpp
 // Standard: C++20
@@ -256,25 +253,25 @@ data 3 bytes
 disconnect
 ```
 
-The advantage of generic lambdas combined with `if constexpr` is that "they do not require every branch to have the same return type." The downside is that we must write `is_same_v` checks for each branch, which isn't as tidy as `overloaded`. Both approaches work; we should choose based on the scenario. For fewer branches with similar return types, use `overloaded`. For branches with complex logic or different return types, use generic lambdas.
+The generic-lambda-plus-`if constexpr` approach has the advantage that "branches need not share a return type"; the disadvantage is that each branch has to spell out `is_same_v` itself, so it's less tidy than `overloaded`. Both spellings work—pick by scenario: few branches with roughly similar return types, use `overloaded`; complex per-branch logic or differing return types, use the generic lambda.
 
-C++20 also added an explicit return type form for `std::visit`: `std::visit<R>(...)`. This is used to "force the return value of all branches to convert to a common type `R`." This is very handy when the branches naturally return different types, but we want a common type (for example, converting everything to `double`):
+C++20 also gave `std::visit` an explicit-return-type form, `std::visit<R>(...)`, which "forces every branch's return value to convert to one common type `R`." It's handy when the branches naturally return different types but you want a common one (everything as `double`, say):
 
 ```cpp
 // Standard: C++20
 std::variant<int, double> v = 2;
-double r = std::visit<double>([](auto x){ return x; }, v);  // int 分支也转成 double
+double r = std::visit<double>([](auto x){ return x; }, v);  // the int branch converts to double too
 ```
 
-Both C++20 implementations work correctly in GCC 16.1.1. Note: C++23 **does not** add the monadic interface (`.and_then`, `.transform`, `.or_else`) to `variant` like it does for `optional`/`expected`. Unlike `optional`, `variant` does not have an "empty" semantic—it always holds a value (except for the pathological state we are about to discuss), so the design does not include a monadic chain. If you want that feature, check out the dedicated articles for `optional` and `expected`.
+Both C++20 spellings verified working on GCC 16.1.1. Note: C++23 did **not** give `variant` the monadic interface that `optional`/`expected` got (`.and_then` / `.transform` / `.or_else`). `variant` is not like `optional`, which has "empty" semantics—it always holds a value (apart from the pathological state covered below), so by design no monadic chain was crammed in. For that machinery, go read the dedicated `optional` and `expected` articles.
 
-## `valueless_by_exception`: The Only Pathological State of `variant`
+## valueless_by_exception: variant's Only Pathological State
 
-We have been saying "a `variant` always holds a value," which is mostly true, but there is one exception. `variant` has a state called `valueless_by_exception()`, which literally means "the variant has no value because of an exception." This sounds weird—how can a type that claims to always have a value suddenly not have one?
+We've been saying all along that "a variant always holds a value," and that's nearly true—with one exception. `variant` has a state called `valueless_by_exception()`, literally "the variant lost its value because of an exception." Sounds bizarre: how does a type that claims to always have a value end up with none?
 
-This stems from the exception guarantees of assignment/`emplace`. When you execute `v = new_value`, the `variant` needs to do two things: destroy the old value, then construct the new value. If the "construct new value" step throws an exception, and the implementation cannot restore the old value, the `variant` enters an awkward intermediate state—the old one is gone, and the new one failed. At this point, it is `valueless`.
+It goes back to the exception guarantees of assignment/`emplace`. When you execute `v = new_value`, the `variant` must do two things: destroy the old value, then construct the new one. If the "construct the new value" step throws, and the implementation cannot bring the old value back, the `variant` is stranded in an awkward in-between state—the old one is gone, the new one never came to be. At that moment it is `valueless`.
 
-Let's artificially create one:
+Let's manufacture one on purpose:
 
 ```cpp
 // Standard: C++17
@@ -284,18 +281,18 @@ Let's artificially create one:
 
 struct S {
     S() = default;
-    S(const S&) { throw std::runtime_error("copy throw"); }  // 拷贝构造必抛
+    S(const S&) { throw std::runtime_error("copy throw"); }  // the copy constructor always throws
 };
 
 int main()
 {
-    std::variant<double, S> v = 1.5;   // 当前持 double
+    std::variant<double, S> v = 1.5;   // currently holds double
     std::cout << "before index=" << v.index()
               << " valueless=" << v.valueless_by_exception() << "\n";
 
-    S src;                              // 默认构造 OK
+    S src;                              // default construction is fine
     try {
-        v = src;                        // 拷贝构造 S -> 抛
+        v = src;                        // copy-construct S -> throws
     } catch (const std::runtime_error& e) {
         std::cout << "caught: " << e.what() << "\n";
     }
@@ -304,7 +301,7 @@ int main()
 
     if (v.valueless_by_exception()) {
         try {
-            (void)std::get<double>(v);   // 连原本的 double 都取不到了
+            (void)std::get<double>(v);   // even the original double is no longer retrievable
         } catch (const std::bad_variant_access& e) {
             std::cout << "get<double> 也抛: " << e.what() << "\n";
         }
@@ -320,24 +317,24 @@ after index=18446744073709551615 valueless=1
 get<double> 也抛: std::get: variant is valueless
 ```
 
-That intimidating `18446744073709551615` is actually `variant::npos` (which is `(size_t)-1`, or $2^{64}-1$). It serves as a marker value for `index()` when the `variant` is `valueless`. Once in this state, we cannot even retrieve the original `double`—`get<double>` throws a `bad_variant_access` with the error message explicitly stating "variant is valueless".
+That intimidating `18446744073709551615` is `variant::npos` (`(size_t)-1`, i.e., 2^64-1), the sentinel value `index()` reports in the `valueless` state. Once you're in this state, not even the original `double` comes back—`get<double>` throws `bad_variant_access` too, and the error message says outright: `variant is valueless`.
 
-How easy is it to stumble into this state? Honestly, it is quite difficult. It requires "constructing a new value throws an exception + the implementation cannot roll back". In the standard library, scenarios where the implementation can roll back (for instance, when the new value is `nothrow` copyable) will not result in a valueless state. What actually triggers it is usually when you write a custom type with a throwing copy or move constructor. In practice, we should treat this state as "should never occur; if it does, your type's exception guarantee has a bug." `valueless_by_exception()` is primarily an introspection interface for library authors. If you encounter it in business logic, fixing the throwing constructor is the correct approach rather than trying to handle the valueless state.
+How likely are you to run into this state? Honestly: rarely. It takes "constructing the new value throws + the implementation cannot roll back," and the cases where the standard library lets an implementation roll back (when the new value is nothrow-copyable, for instance) never go valueless. What actually triggers it is usually a hand-written type of your own whose copy/move constructor throws. In engineering practice you can treat this state as "shouldn't happen; if it shows up, your type's exception guarantee has a bug"—`valueless_by_exception()` is mainly a self-check hook left for people writing libraries. If business code ever sees it, fixing the throwing constructor is more right than handling valueless.
 
-## variant vs. Inheritance Polymorphism: Choosing for Closed Sets
+## variant vs Inheritance Polymorphism: Which One for a Closed Set
 
-Now that we have covered the mechanism, let's answer a practical question: when should we use `variant`, and when should we use inheritance polymorphism? The key distinction comes down to one concept—**whether the set of types is closed or open**.
+Mechanics done; now for the most practical question of all: when do you use `variant`, and when do you use inheritance polymorphism? It comes down to one phrase—**is the set of types closed or open**.
 
-Inheritance polymorphism excels when the set is **open**: the base class defines the interface, and anyone can add a new derived class without modifying existing code. If you have a `Shape*` array, you can add a `Hexagon` tomorrow without changing a single line of old code. The trade-off is that every object incurs virtual table indirection, objects usually must be allocated on the heap (adding an allocation step), and cache locality is poor.
+Inheritance polymorphism is strong at **openness**: the base class fixes the interface, and anyone can add a new derived class without touching existing code. You hold an array of `Shape*`; tomorrow a `Hexagon` joins, and not one line of the old code changes. The cost: every call goes through vtable indirection, objects usually live on the heap (one extra allocation), and cache locality suffers.
 
-`variant` excels when the set is **closed**: all possible types are frozen at compile time (e.g., `variant<A, B, C>`), and adding a new type requires modifying the declaration and updating all visitors to handle the new branch. However, this is actually a **benefit**: the compiler forces you to handle the new type, ensuring nothing is missed. Furthermore, `variant` uses value semantics, stores data on the stack, and has no virtual function overhead. The visitor dispatch results in a compact jump table, which is cache-friendly.
+`variant` is strong at **closedness**: every possible type is nailed down at compile time (`variant<A, B, C>`); adding a new type means editing that declaration, and every visitor has to grow a matching branch—which, flipped around, is a **benefit**: the compiler forces you to handle the new type; nothing slips through. On top of that, `variant` is value-semantic, stored on the stack, free of virtual-function overhead, and visitor dispatch compiles down to a compact jump table—cache friendly.
 
-Let's compare these approaches directly using a closed "shape set" example. We have three shapes—`Circle`, `Square`, and `Triangle`—and we need to calculate their areas. We will implement one version using inheritance + virtual functions, and another using `variant` + `visit`, running a benchmark of 4 million objects over three rounds:
+Let's do a head-to-head comparison on a closed "set of shapes." Three shapes—`Circle`/`Square`/`Triangle`—compute the area: one version with inheritance + virtual functions, one with `variant` + `visit`, 4 million objects, three rounds each:
 
 ```cpp
 // Standard: C++17
-// 继承: ShapeBase 虚函数 area(); variant: visit + AreaVisitor
-// (完整代码见 /tmp/variant_lab/perf.cpp, 这里给关键骨架)
+// Inheritance: ShapeBase virtual function area(); variant: visit + AreaVisitor
+// (full code at /tmp/variant_lab/perf.cpp; key skeleton shown here)
 struct CircleV { double r; };
 struct SquareV { double s; };
 struct TriangleV { double b, h; };
@@ -349,11 +346,11 @@ struct AreaVisitor {
     double operator()(const TriangleV& t)  const { return 0.5 * t.b * t.h; }
 };
 
-// 继承版: for (auto& p : poly) acc += p->area();
-// variant 版: for (auto& v : vars) acc += std::visit(AreaVisitor{}, v);
+// Inheritance version: for (auto& p : poly) acc += p->area();
+// variant version: for (auto& v : vars) acc += std::visit(AreaVisitor{}, v);
 ```
 
-Native GCC 16.1.1, `-O2`, running twice:
+Local GCC 16.1.1, `-O2`, two full runs:
 
 ```text
 shapes: 4000000 x3 iters
@@ -364,26 +361,26 @@ inheritance (virtual): 78 ms
 variant + visit:       55 ms
 ```
 
-The `variant` + `visit` approach is approximately 30% to 40% faster. This performance gap stems from three main factors: the shapes in the `variant` version are stored contiguously within the `vector` (whereas the inheritance version uses `vector<unique_ptr>`, scattering pointers across the heap and causing cache misses); `visit` dispatches via a jump table based on the `index`, avoiding the level of indirection associated with virtual tables; and it avoids 4 million heap allocations. While absolute timings vary by machine, the magnitude of "variant is faster" remains robust.
+`variant + visit` comes out roughly 30%–40% faster. The gap comes mainly from three places: in the `variant` version the shapes sit packed shoulder to shoulder in a `vector` (the inheritance version is a `vector<unique_ptr>`, with pointers scattered all over the heap—cache misses); `visit` dispatch is a single jump-table hop on `index`, without the vtable's layer of indirection; and there are no 4-million heap allocations. Absolute times will wobble from machine to machine, but the order of magnitude of "variant is faster" is robust.
 
-Of course, this scenario was designed for comparison—a closed set of shapes with dense traversal. If we switch to a "plugin-style extension where external modules add new types dynamically," inheritance polymorphism is still the way to go. The criterion is simple: **Can you list all types upfront? If yes, use variant; if not, use inheritance.**
+Of course, this scenario was designed for the comparison—a closed set of shapes, objects traversed densely. Swap in "plugin-style extension, external modules adding new types at any moment," and inheritance polymorphism is still the right tool for the job. The criterion is a single line: **can you list every type up front? If you can, use variant; if you can't, use inheritance.**
 
-A quick note on memory. The size of a `variant` equals the size of the largest alternative plus the index, aligned appropriately. Just like a `union`, you pay the memory cost for the largest member:
+A word on memory while we're at it. A `variant`'s size is "largest alternative + the index" after alignment—same as a `union`, you foot the bill for the biggest one:
 
 ```text
-sizeof(variant<int,double,string>) = 40   // 被 string(32) 主导 + 索引
-sizeof(variant<int,int,int>)        = 8    // 三个 int 共用空间 + 索引
-sizeof(variant<int>)                = 8    // 单个 int 也要带索引
+sizeof(variant<int,double,string>) = 40   // dominated by string (32) + the index
+sizeof(variant<int,int,int>)        = 8    // three ints share the space + the index
+sizeof(variant<int>)                = 8    // even a single int carries the index
 sizeof(string)                      = 32
 sizeof(int)                         = 4
-sizeof(variant<char,char>)          = 2    // char + 1 字节索引
+sizeof(variant<char,char>)          = 2    // char + 1-byte index
 ```
 
-Note that `variant<int>` is not equivalent to `int`—even with a single alternative, the space for the index cannot be omitted. Similarly, `variant<int, int, int>` is 8 bytes, not 4: the three `int` types share the same memory, but the index must still record "which one is currently active."
+Note that `variant<int>` is not an `int`—even with only one alternative, that little bit of index storage cannot be shaved off. `variant<int, int, int>` is likewise 8 bytes, not 4: the three `int`s share the same memory, but the index still has to record "which one is alive right now."
 
-## variant wants to "start empty": monostate
+## When variant Needs to Start "Empty": monostate
 
-A common requirement is that the default constructor of a `variant` initializes the **first** alternative. However, if the first type lacks a default constructor (for example, if it requires arguments), the entire `variant` cannot be default constructed. In this case, we use a placeholder type, `std::monostate`, at the beginning:
+Here's a common need: a default-constructed `variant` holds the **first** alternative. But if that first type has no default constructor (it insists on arguments, say), the entire `variant` can no longer be default-constructed. The fix: put a placeholder type, `std::monostate`, at the head:
 
 ```cpp
 // Standard: C++17
@@ -392,7 +389,7 @@ struct NoDefault {
     NoDefault(int) {}
 };
 
-std::variant<std::monostate, NoDefault, int> v;  // 默认持 monostate, 可默认构造
+std::variant<std::monostate, NoDefault, int> v;  // holds monostate by default; default-constructible
 std::cout << "default index=" << v.index() << " (0=monostate)\n";
 v.emplace<2>(42);
 std::cout << "emplace<2>(42) index=" << v.index() << "\n";
@@ -403,49 +400,49 @@ default index=0 (0=monostate)
 emplace<2>(42) index=2
 ```
 
-`monostate` is an empty, default-constructible type whose sole purpose is to serve as an "empty state placeholder" for a `variant`. Note that this is different from `valueless_by_exception`—when holding a `monostate`, the `variant` is still considered to "have a value," and that value is `monostate`. `valueless` is the pathological state of "truly having no value." If you want "possibly no value" semantics, you should use `std::optional<T>` instead of cobbling together a `variant<monostate, T>`—`optional` has clearer semantics and a more convenient API (see the dedicated chapter on `optional`).
+`monostate` is an empty, default-constructible type whose sole reason to exist is to serve as the `variant`'s "empty-state placeholder." Note that it is not the same thing as `valueless_by_exception`—while holding `monostate`, the `variant` "has a value," and that value is `monostate`; `valueless` is the pathological "truly no value." If what you're after is "maybe nothing" semantics, you should really reach for `std::optional<T>` instead of jury-rigging `variant<monostate, T>`—`optional` has more direct semantics and a handier API (see the dedicated `optional` article).
 
-## Common Pitfalls
+## A Few Pitfalls You'll Actually Hit
 
-Let's round up the places where it's easy to run into trouble:
+Let's gather up, in one place, the spots where this whole route tends to go off the road:
 
-::: warning variant needs at least one alternative
-`std::variant<>` (empty parameter pack) is illegal and will fail to compile. A `variant` must list at least one type—its guarantee of "always having a value" is built upon the premise of "having at least one alternative."
+::: warning variant requires at least one alternative
+`std::variant<>` (an empty parameter pack) is ill-formed and fails to compile. A `variant` must list at least one type—its "always holds a value" guarantee is built precisely on "there is at least one alternative."
 :::
 
-::: warning get type must be in the alternative set
-`std::get<long>(variant<int, double, string>)` is a **compile-time error**, not a runtime exception. `variant`'s type safety is achieved by ensuring "you can only retrieve declared types." To get by runtime index, use `get<I>()`; an out-of-bounds `I` is also a compile-time error.
+::: warning get's type must be in the alternative set
+`std::get<long>(variant<int, double, string>)` is a **compile error**, not a runtime exception. `variant`'s type safety is implemented as "only declared types can be fetched." To fetch by the current index, use `get<I>()`—an out-of-range `I` is likewise a compile error.
 :::
 
-::: warning Don't use variant<monostate, T> to replace optional
-It compiles and runs, but the semantics are convoluted. `optional<T>` expresses "has value or not" more directly, and the API (`has_value()`/`value()`/`value_or()`) is more ergonomic. `variant` means "one of these types"; using `monostate` to simulate "nothing" is overkill and harder to read.
+::: warning Don't use variant<monostate, T> in place of optional
+It compiles and runs, but the semantics are roundabout. `optional<T>` says "present or absent" more directly, and its API (`has_value()`/`value()`/`value_or()`) is more convenient. A `variant` is "one of these types"; swapping one of them out for `monostate` to fake "absent" is a sledgehammer for a walnut—and harder to read.
 :::
 
-::: warning Memorize the overloaded incantation completely
-Don't miss the `...` at the end of `using Ts::operator()...;`, and don't miss the deduction guide `overloaded(Ts...) -> overloaded<Ts...>;`. Missing them will either cause compilation failure or incomplete dispatch. These three lines are a boilerplate pattern; just copy them as-is.
+::: warning Memorize the overloaded incantation in full
+The trailing `...` in `using Ts::operator()...;` must not be dropped, and the deduction guide `overloaded(Ts...) -> overloaded<Ts...>;` must not be dropped either. Miss either and you get a compile failure or an incomplete dispatch. These three lines are a fixed form—copy them as they are.
 :::
 
-::: warning valueless appearing means your type's exception guarantee has a bug
-Normal code should almost never see `valueless_by_exception() == true`. It only appears when "constructing a new value throws an exception and cannot roll back," which usually means one of your type's copy/move constructors threw an exception. Fix that constructor, don't write defensive code like `if (v.valueless_by_exception())` everywhere.
+::: warning Seeing valueless means your type's exception guarantee has a bug
+Healthy code should almost never see `valueless_by_exception() == true`. It appears only when "constructing the new value throws and there is no rollback," which usually means one of your types throws in its copy/move constructor. Fix that constructor; don't go writing piles of `if (v.valueless_by_exception())` defensive code.
 :::
 
 ## Summary
 
-`std::variant` has a clear purpose—**a type-safe union providing value-semantics polymorphism for a closed set of types**. Let's wrap up with the key conclusions:
+`std::variant`'s position is clear: a **type-safe union that brings value-semantic polymorphism to closed type sets**. The key conclusions, collected:
 
-- Compared to a raw `union`: `variant` stores an extra index and manages destruction automatically. Reading the wrong type throws an exception instead of causing UB, at the cost of a few extra bytes for the index.
-- Access quartet: `holds_alternative<T>()` to check, `get<T>()` to retrieve (throws on mismatch), `get_if<T>()` to get a pointer (returns `nullptr` on mismatch, no throw), and `index()` to see the current position. The type in `get` must be in the alternative set, or it is a compile error.
-- `std::visit` + `overloaded` lambda is C++'s pattern matching: missing a type in the visitor results in a compile error, dispatch compiles to a jump table, avoiding `if-else` chains and virtual table indirection. In C++20, we can omit `overloaded` and use generic lambdas + `if constexpr`, as well as `visit<R>` to enforce a common return type.
-- `valueless_by_exception()` is the only pathological state for a variant: triggered when constructing a new value throws and cannot roll back, causing `index()` to become `variant::npos`. Normal code shouldn't see this; if you do, your type's exception guarantees are flawed.
-- `variant` vs. inheritance: Choose `variant` for a **closed** type set (value semantics, stack-based, no virtual function overhead, cache-friendly; benchmarks show traversing is 30-40% faster than virtual functions). Choose inheritance for an **open** set (add derived classes anytime without changing old code).
-- For "possibly no value" semantics, use `optional`. Don't use `variant<monostate, T>` as a substitute.
+- Versus a bare `union`: `variant` records an index and manages destruction automatically; reading the wrong type throws an exception instead of being UB, and the cost is a few extra bytes of index storage.
+- The four access tools: `holds_alternative<T>()` to check, `get<T>()` to fetch the value (throws on mismatch), `get_if<T>()` to fetch a pointer (returns `nullptr` on mismatch, no throw), `index()` to see the current position. The type in `get` must be in the alternative set, or it's a compile error.
+- `std::visit` + the `overloaded` lambda is C++'s pattern matching: a visitor that leaves one type unhandled fails to compile, dispatch compiles into a jump table, and there is no `if-else` chain or vtable indirection. C++20 further lets you skip `overloaded` and go straight to a generic lambda + `if constexpr`, and adds `visit<R>` to force a common return type.
+- `valueless_by_exception()` is variant's only pathological state: triggered when constructing the new value throws with no rollback possible, at which point `index()` becomes `variant::npos`. Healthy code shouldn't see it; if you do, your type's exception guarantees are suspect.
+- `variant` vs inheritance: **closed** type set, pick `variant` (value semantics, on the stack, no virtual-function overhead, cache friendly—measured traversal 30%–40% faster than virtual dispatch); **open**, pick inheritance (add derived classes at any time, old code untouched).
+- For "maybe no value," use `optional`; don't jury-rig `variant<monostate, T>`.
 
-Next, we will look at `std::any`—another way to "hold any type," and the fundamental difference between it and `variant` regarding "known vs. unknown type sets."
+Next up we go look at `std::any`—the other way to "hold an arbitrary type"—and the fundamental divide between it and `variant`: whether the set of types is known or unknown.
 
 ## References
 
-- [cppreference: std::variant](https://en.cppreference.com/w/cpp/utility/variant) — Overview of constructors, access, `index`, and exception guarantees
-- [cppreference: std::visit](https://en.cppreference.com/w/cpp/utility/variant/visit) — Visitor dispatch and the C++20 `visit<R>` form
-- [cppreference: std::bad_variant_access](https://en.cppreference.com/w/cpp/utility/variant/bad_variant_access) — Exception thrown on `get` type mismatch or when `valueless`
-- [cppreference: std::variant::valueless_by_exception](https://en.cppreference.com/w/cpp/utility/variant/valueless) — Causes of the pathological state and `variant::npos`
-- [cppreference: std::monostate](https://en.cppreference.com/w/cpp/utility/monostate) — Placeholder type allowing default construction of variants with non-default-constructible alternatives
+- [cppreference: std::variant](https://en.cppreference.com/w/cpp/utility/variant) — construction, access, `index`, and an overview of the exception guarantees
+- [cppreference: std::visit](https://en.cppreference.com/w/cpp/utility/variant/visit) — visitor dispatch and the C++20 `visit<R>` form
+- [cppreference: std::bad_variant_access](https://en.cppreference.com/w/cpp/utility/variant/bad_variant_access) — the exception thrown when `get` type-mismatches or the variant is `valueless`
+- [cppreference: std::variant::valueless_by_exception](https://en.cppreference.com/w/cpp/utility/variant/valueless) — how the pathological state arises, and `variant::npos`
+- [cppreference: std::monostate](https://en.cppreference.com/w/cpp/utility/monostate) — the placeholder type that lets a variant with non-default-constructible alternatives still be default-constructed

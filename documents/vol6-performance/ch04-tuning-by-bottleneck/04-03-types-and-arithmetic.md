@@ -86,7 +86,7 @@ ch04-02 讲循环优化时,你会发现一大半是「编译器 -O2 替你做了
 
 ## 参考资源
 
-- Agner Fog《Optimizing software in C++》§14 *Optimizing arithmetic》(整数/浮点、乘除、跳转表的指令级成本)。本地
-- Agner Fog《Instruction tables》——各指令的延迟/吞吐/µop 分解,案头查证用。本地
+- Agner Fog《Optimizing software in C++》§14 *Optimizing arithmetic》(整数/浮点、乘除、跳转表的指令级成本)
+- Agner Fog《Instruction tables》——各指令的延迟/吞吐/µop 分解,案头查证用
 - ch02-03 流水线、ILP 与分支预测(本卷,结构冒险与分支预测器)
 - 本篇实测代码:`code/volumn_codes/vol6-performance/ch04/arithmetic_cost.cpp`

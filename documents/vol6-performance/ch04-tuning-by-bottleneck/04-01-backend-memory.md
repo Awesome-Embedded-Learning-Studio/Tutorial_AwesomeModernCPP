@@ -131,6 +131,6 @@ for (int i = 0; i < N; ++i) {
 ## 参考资源
 
 - Fabian, R.《Data-Oriented Design》——DOD 思想源头,本地 `.claude/drafts/books/`
-- Agner Fog《Optimizing software in C++》§7 *Making containers/objects efficient*——AoS/SoA、对齐、padding 的工程讲法。本地
+- Agner Fog《Optimizing software in C++》§7 *Making containers/objects efficient*——AoS/SoA、对齐、padding 的工程讲法
 - Bakhvalov《Performance Analysis and Tuning on Modern CPUs》第 9 章 *Memory Optimizations》
 - 本篇实测代码:`code/volumn_codes/vol6-performance/ch04/backend_memory.cpp`

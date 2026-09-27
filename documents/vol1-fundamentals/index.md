@@ -25,8 +25,8 @@ tags:
   <ChapterLink num="7" href="ch07/">运算符重载</ChapterLink>
   <ChapterLink num="8" href="ch08/">继承与多态</ChapterLink>
   <ChapterLink num="9" href="ch09/">模板初步</ChapterLink>
-  <ChapterLink num="10" href="ch10/">异常处理</ChapterLink>
-  <ChapterLink num="11" href="ch11/">STL 初见</ChapterLink>
+  <ChapterLink num="10" href="ch10/">STL 初见</ChapterLink>
+  <ChapterLink num="11" href="ch11/">异常处理</ChapterLink>
   <ChapterLink num="12" href="ch12/">内存模型基础</ChapterLink>
 </ChapterNav>
 

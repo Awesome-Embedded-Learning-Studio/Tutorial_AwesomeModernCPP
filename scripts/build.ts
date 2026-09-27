@@ -4,7 +4,7 @@ import {
   readdirSync, readFileSync, existsSync,
   symlinkSync, statSync,
 } from 'fs'
-import { join, resolve, relative, basename } from 'path'
+import { join, resolve, relative, basename, dirname, extname } from 'path'
 import { createHash } from 'crypto'
 import { createRequire } from 'module'
 const require = createRequire(import.meta.url)
@@ -112,8 +112,35 @@ function countMdFiles(dir: string): number {
   return count
 }
 
+// 图片类资产扩展名:en 正文以卷内相对路径引图,但资产往往只存在中文侧
+// (含音视频:HTML <video>/<audio> 标签的相对 src 也走同样的回拷路径)
+const ASSET_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico', '.drawio', '.mp4', '.webm', '.mov', '.mp3', '.wav', '.ogg'])
+
+/**
+ * 把中文卷目录下的图片资产回拷进 en 暂存树(en 侧已有同名文件则跳过)。
+ * compilation 卷的 compilation-linking-2-reuse-concept 整目录回拷是更早的特例,
+ * 本函数把同样的做法推广到全部卷,供 en 卷构建时调用。
+ */
+function copyZhAssets(srcDir: string, enDestRoot: string): void {
+  const zhRoot = join(DOCUMENTS, srcDir)
+  if (!existsSync(zhRoot)) return
+  function walk(dir: string) {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, e.name)
+      if (e.isDirectory()) walk(full)
+      else if (ASSET_EXTENSIONS.has(extname(e.name).toLowerCase())) {
+        const dest = join(enDestRoot, relative(zhRoot, full))
+        if (existsSync(dest)) continue
+        mkdirSync(dirname(dest), { recursive: true })
+        cpSync(full, dest)
+      }
+    }
+  }
+  walk(zhRoot)
+}
+
 /** Compute a stable content hash for change detection across fresh checkouts. */
-function hashDir(dir: string): string {
+function hashDir(dir: string, ignoreFile?: (relativePath: string) => boolean): string {
   const h = createHash('sha256')
   function walk(d: string) {
     try {
@@ -122,7 +149,9 @@ function hashDir(dir: string): string {
         if (e.name.startsWith('.')) continue
         const full = join(d, e.name)
         if (e.isDirectory()) { walk(full); continue }
-        h.update(`file:${relative(dir, full)}\n`)
+        const filePath = relative(dir, full)
+        if (ignoreFile?.(filePath)) continue
+        h.update(`file:${filePath}\n`)
         h.update(readFileSync(full))
         h.update('\n')
       }
@@ -130,6 +159,11 @@ function hashDir(dir: string): string {
   }
   walk(dir)
   return h.digest('hex').substring(0, 16)
+}
+
+function isNonBuildSiteFile(filePath: string): boolean {
+  const name = basename(filePath)
+  return name === 'README.md' || name.endsWith('.test.ts')
 }
 
 function hashFile(path: string): string {
@@ -142,10 +176,11 @@ function hashFile(path: string): string {
 function hashBuildInputs(): string {
   const h = createHash('sha256')
   for (const [label, value] of [
-    ['site', hashDir(MAIN_VP)],
+    ['site', hashDir(MAIN_VP, isNonBuildSiteFile)],
     ['package', hashFile(join(PROJECT_ROOT, 'package.json'))],
     ['lockfile', hashFile(join(PROJECT_ROOT, 'pnpm-lock.yaml'))],
     ['build-script', hashFile(join(PROJECT_ROOT, 'scripts', 'build.ts'))],
+    ['tags', hashFile(join(PROJECT_ROOT, 'scripts', 'tags.json'))],
   ]) {
     h.update(`${label}:${value}\n`)
   }
@@ -268,7 +303,7 @@ interface BuildTask {
   id: string                // e.g. "vol1-zh", "vol1-en"
   vol: Volume
   lang: 'zh' | 'en'
-  cacheKey: string          // hash of source dir
+  cacheKey: string          // hash of shared inputs and this volume's inputs
   cached: boolean           // can skip build?
 }
 
@@ -281,7 +316,14 @@ function prepareVolume(vol: Volume, lang: 'zh' | 'en', manifest: Manifest, build
   const volDocDir = lang === 'en' ? join(DOCUMENTS, 'en', vol.srcDir) : join(DOCUMENTS, vol.srcDir)
   const id = lang === 'en' ? `${vol.name}-en` : vol.name
   const docHash = existsSync(volDocDir) ? hashDir(volDocDir) : ''
-  const cacheKey = `${buildInputsHash}-${docHash}`
+  // Weekly pages embed quiz metadata and the set of available solutions.
+  const weeklyCodeHash = vol.name === 'weekly-problems' && lang === 'zh'
+    ? `-${hashDir(WEEKLY_PROBLEMS_CODE, filePath => {
+        const name = basename(filePath)
+        return name !== 'quiz.json' && name !== 'answer.md'
+      })}`
+    : ''
+  const cacheKey = `${buildInputsHash}-${docHash}${weeklyCodeHash}`
   const prev = manifest[id]
   const cached = !FORCE_REBUILD && prev && prev.hash === cacheKey && existsSync(join(CACHE_DIR, 'output', id))
   return { id, vol, lang, cacheKey, cached }
@@ -328,6 +370,8 @@ async function buildVolume(task: BuildTask): Promise<string> {
         cpSync(sharedAssets, assetDest, { recursive: true })
       }
     }
+    // 中文侧图片资产回拷(en 正文卷内相对路径引图,资产不在 en 源码树)
+    copyZhAssets(vol.srcDir, join(volSrcDir, 'en', vol.srcDir))
   } else {
     mkdirSync(volSrcDir, { recursive: true })
     cpSync(volDocDir, join(volSrcDir, vol.srcDir), { recursive: true })

@@ -24,7 +24,7 @@ title: RAII 深入理解：资源管理的基石
 ---
 # RAII 深入理解：资源管理的基石
 
-笔者最早学 C++ 的时候，对"资源管理"这件事完全没有概念——new 了一个对象就忘了 delete，打开了一个文件就忘了 fclose，锁住了 mutex 就忘了 unlock。后来项目越来越大，这种"手抖忘释放"的 bug 开始像蟑螂一样，发现一只就意味着角落里还有十只(嗯，事实证明发现的时候我可能还要同时写项目复盘报告咯，哭)。直到有一天笔者认真读了 Bjarne Stroustrup 的书，才明白 C++ 早就为咱们准备了一套优雅的解决方案：RAII。
+笔者最早学 C++ 的时候，对"资源管理"这件事完全没有概念——new 了一个对象就忘了 delete，打开了一个文件就忘了 fclose，锁住了 mutex 就忘了 unlock。后来项目越来越大，这种"手抖忘释放"的 bug 开始像蟑螂一样，发现一只就意味着角落里还有十只(嗯，事实证明发现的时候我可能还要同时写项目复盘报告咯，哭)。直到有一天笔者认真读了 Bjarne Stroustrup 的书，才明白 C++ 早就为咱们准备了一套优雅的解决方案：RAII<RefLink :id="1" preview="Bjarne Stroustrup, The C++ Programming Language, 4th ed., ch.13 Exception Handling" />。
 
 RAII（Resource Acquisition Is Initialization）是 C++ 最核心的资源管理思想，也是现代 C++ 智能指针、锁守卫、文件句柄封装等一切"自动清理"机制的根基。理解了 RAII，您就不只是在"用工具"，而是在理解工具背后的设计哲学。今天这篇文章，咱们就从机制到实战，把 RAII 彻底搞透。
 
@@ -94,7 +94,7 @@ void write_log(const char* msg) {
 }
 ```
 
-如果您熟悉 C 语言，对比一下就能感受到差距：在 C 里，每个可能提前返回的分支都要手动 `fclose`，漏了一个就是文件描述符泄漏。而 RAII 把这种"别忘了"的负担交给了编译器——析构函数一定会被调用（只要程序是通过正常控制流退出的，而非直接调用 `std::exit()` 或 `std::abort()`），这不是约定，而是 C++ 语言规范的保证。
+如果您熟悉 C 语言，对比一下就能感受到差距：在 C 里，每个可能提前返回的分支都要手动 `fclose`，漏了一个就是文件描述符泄漏。而 RAII 把这种"别忘了"的负担交给了编译器——析构函数一定会被调用（只要程序是通过正常控制流退出的，而非直接调用 `std::exit()` 或 `std::abort()`），这不是约定，而是 C++ 语言规范的保证<RefLink :id="2" preview="cppreference RAII — lifetime-based resource management" />。
 
 把手动 `fclose` 和 `FileHandle` 的对比做成了动画，您可以播放、暂停，也可以按步进键单步看，把提前 return 和抛异常两条退出路径上资源的下场看个清楚：
 
@@ -139,15 +139,15 @@ int main() {
 }
 ```
 
-运行结果：
+这份演示程序就在下面，点“动手试一试”直接跑：
 
-```text
-Tracer(a) 构造
-Tracer(b) 构造
-~Tracer(b) 析构
-~Tracer(a) 析构
-捕获异常: boom!
-```
+<OnlineCompilerDemo
+  title="动手验证：栈展开的析构顺序"
+  source-path="code/examples/vol2/21_raii_tracer.cpp"
+  description="在线观察异常抛出后的栈展开。注意析构顺序：后构造的 b 先析构（LIFO），未构造到的 c 不出现在输出里。"
+  run-options="-O2 -std=c++11"
+  allow-run
+/>
 
 注意看：异常抛出后，`b` 和 `a` 依然被正确析构了——而且顺序是**后构造的先析构**（LIFO）。`c` 没有构造所以也不需要析构。这就是栈展开的全部秘密：不管控制流如何离开作用域，所有已构造的局部对象都会被依次销毁。
 
@@ -188,17 +188,17 @@ int main() {
 }
 ```
 
-运行输出：
+这份验证程序就在下面，点“动手试一试”直接跑：
 
-```text
-Tracer(t1) constructed
-Tracer(t2) constructed
-~Tracer(t2) destroyed
-~Tracer(t1) destroyed
-Caught: Exception thrown
-```
+<OnlineCompilerDemo
+  title="动手验证：跨函数的栈展开"
+  source-path="code/examples/vol2/22_raii_unwinding_verify.cpp"
+  description="在线验证异常跨函数传播时的栈展开：may_throw 抛出后，t2、t1 依次析构，最后 main 捕获异常。"
+  run-options="-O2 -std=c++11"
+  allow-run
+/>
 
-析构函数应保证不抛异常。在异常传播（栈展开）期间若析构函数抛出新异常，程序会调用 `std::terminate()`。C++11 起，用户声明的析构函数默认为 `noexcept(true)`（即使没有显式指定），抛出异常即终止。因此析构函数中应捕获并处理所有异常，或将可能失败的操作移出析构函数，提供显式接口处理错误。
+析构函数应保证不抛异常。在异常传播（栈展开）期间若析构函数抛出新异常，程序会调用 `std::terminate()`。C++11 起，用户声明的析构函数默认为 `noexcept(true)`（即使没有显式指定），抛出异常即终止。因此析构函数中应捕获并处理所有异常，或将可能失败的操作移出析构函数，提供显式接口处理错误<RefLink :id="3" preview="cppreference Exceptions — stack unwinding; std::terminate if a destructor throws during unwinding" />。
 
 咱们可以验证这个行为：
 
@@ -226,7 +226,7 @@ int main() {
 
 ## 异常安全保证：RAII 的实战价值
 
-异常安全是衡量代码在异常发生时行为是否"正确"的标准。C++ 社区定义了三个级别的异常安全保证，从弱到强分别是：
+异常安全是衡量代码在异常发生时行为是否"正确"的标准。C++ 社区定义了三个级别的异常安全保证<RefLink :id="4" preview="Herb Sutter, Exceptional C++, 1999 — Exception-Safety Issues and Techniques" />，从弱到强分别是：
 
 **基本保证（Basic Guarantee）**：异常发生后，程序仍然处于合法状态——没有资源泄漏，所有对象的不变量（invariant）仍然成立。但程序的具体状态可能已经发生了变化（比如一个容器可能丢失了部分元素）。RAII 本身就能帮您自动达到这个级别：只要所有资源都由 RAII 对象管理，栈展开会自动释放它们。
 
@@ -358,7 +358,7 @@ void good_increment(std::mutex& m, int& counter) {
 }
 ```
 
-`std::lock_guard` 的实现原理非常简单——构造时调用 `mutex.lock()`，析构时调用 `mutex.unlock()`。但它带来的可靠性提升是巨大的。笔者建议：在任何需要加锁的地方，永远使用 RAII 包装器（`lock_guard`、`unique_lock` 或 `scoped_lock`），不要手动管理锁的状态。
+`std::lock_guard` 的实现原理非常简单——构造时调用 `mutex.lock()`，析构时调用 `mutex.unlock()`。但它带来的可靠性提升是巨大的。笔者建议：在任何需要加锁的地方，永远使用 RAII 包装器（`lock_guard`、`unique_lock` 或 `scoped_lock`），不要手动管理锁的状态<RefLink :id="5" preview="C++ Core Guidelines, Section R: Resource Management" />。
 
 ## 嵌入式实战：GPIO 引脚管理与 SPI 片选控制
 
@@ -575,27 +575,58 @@ int main() {
 }
 ```
 
-运行结果：
+这份边界验证程序就在下面，点“动手试一试”直接跑：
 
-```text
-Normal case:
-Tracer(normal) constructed
-~Tracer(normal) destroyed
-
-std::exit() case:
-Tracer(exit) constructed
-```
+<OnlineCompilerDemo
+  title="动手验证：std::exit() 不会触发析构"
+  source-path="code/examples/vol2/23_raii_exit_boundary.cpp"
+  description="在线验证 std::exit() 的边界：normal 分支有构造有析构，exit 分支只有构造——进程直接终止，析构函数没机会执行。"
+  run-options="-O2 -std=c++11"
+  allow-run
+/>
 
 `std::exit()` 之后没有任何 `~Tracer(exit) destroyed`——进程在 `test_exit` 里直接终止，`Tracer("exit")` 的析构函数根本没机会执行。
 
 这个验证告诉咱们：RAII 的保证仅适用于**正常控制流**（包括异常处理）。如果程序通过 `std::exit()`、`std::abort()`、`_exit()` 或信号处理等方式非正常退出，析构函数不会执行。这也是为什么现代 C++ 推荐使用异常而非 `std::exit()` 的原因之一——异常能保证栈展开和资源清理，而 `std::exit()` 不能。
 
-下一篇聊的 `unique_ptr`，就是 RAII 思想在智能指针上最直接的落地：零开销的独占所有权。RAII 这套底子打好了，`unique_ptr` 看起来会非常自然。
+下一篇咱们不急着进工具，把“所有权”这个概念立起来——独占、共享、借用各自意味着什么，函数签名怎么把所有权意图写明白。这个模型立住了，后面的 `unique_ptr` 和 `shared_ptr` 就不是两件零散的工具，而是同一套思想的两种落地。
 
-## 参考资源
-
-- [cppreference: RAII](https://en.cppreference.com/w/cpp/language/raii)
-- [cppreference: Exception safety](https://en.cppreference.com/w/cpp/language/exceptions)
-- Bjarne Stroustrup, *The C++ Programming Language*, Chapter 13: Exception Handling
-- Herb Sutter, *Exceptional C++*, Items 10-18: Exception Safety
-- [C++ Core Guidelines: Resource Management](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#S-resource)
+<ReferenceCard title="参考文献">
+  <ReferenceItem
+    :id="1"
+    author="Bjarne Stroustrup"
+    title="The C++ Programming Language (4th Edition)"
+    publisher="Addison-Wesley"
+    :year="2013"
+    chapter="Chapter 13: Exception Handling"
+  />
+  <ReferenceItem
+    :id="2"
+    author="cppreference.com"
+    title="RAII"
+    url="https://en.cppreference.com/w/cpp/language/raii"
+  />
+  <ReferenceItem
+    :id="3"
+    author="cppreference.com"
+    title="Exceptions"
+    chapter="Stack unwinding; std::terminate"
+    url="https://en.cppreference.com/w/cpp/language/exceptions"
+  />
+  <ReferenceItem
+    :id="4"
+    author="Herb Sutter"
+    title="Exceptional C++: 47 Engineering Puzzles, Programming Problems, and Solutions"
+    publisher="Addison-Wesley"
+    :year="1999"
+    chapter="Section: Exception-Safety Issues and Techniques"
+    url="http://www.gotw.ca/publications/xc++.htm"
+  />
+  <ReferenceItem
+    :id="5"
+    author="Bjarne Stroustrup / Herb Sutter (eds.)"
+    title="C++ Core Guidelines — R: Resource Management"
+    publisher="isocpp.org"
+    url="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#r-resource-management"
+  />
+</ReferenceCard>

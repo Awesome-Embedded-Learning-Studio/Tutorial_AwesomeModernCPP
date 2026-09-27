@@ -9,8 +9,6 @@ description: 详细介绍GCC/Clang编译器的常用选项，包括语言标准�
 difficulty: beginner
 order: 2
 platform: host
-prerequisites:
-- 'Chapter 0: 前言与基础'
 reading_time_minutes: 8
 related: []
 tags:

@@ -11,7 +11,7 @@ order: 2
 platform: host
 prerequisites:
 - 算术与比较运算符
-reading_time_minutes: 10
+reading_time_minutes: 21
 tags:
 - cpp-modern
 - host
@@ -141,27 +141,9 @@ public:
 
 ### 边界检查：operator[] vs at()
 
-`operator[]` 传统的做法是**不做边界检查**，这和原生数组的行为一致，追求最高性能，越界访问是未定义行为。咱们要是需要边界检查，标准库容器提供了 `at()` 成员函数，越界时抛出 `std::out_of_range` 异常。在自己的容器中也可以照做：
+`operator[]` 传统的做法是**不做边界检查**，这和原生数组的行为一致，追求最高性能，越界访问是未定义行为。那需要检查的时候怎么办？标准库的约定是再提供一个 `at()` 成员函数：它先检查下标，越界就抛出 `std::out_of_range` 异常，把错误明确报出来，而不是放任程序进入未定义行为。
 
-```cpp
-int& at(std::size_t index)
-{
-    if (index >= count) {
-        throw std::out_of_range("IntArray::at: index out of range");
-    }
-    return data[index];
-}
-
-const int& at(std::size_t index) const
-{
-    if (index >= count) {
-        throw std::out_of_range("IntArray::at: index out of range");
-    }
-    return data[index];
-}
-```
-
-这样咱们就有了两种选择：`[]` 追求性能不检查，`at()` 追求安全抛异常。调试阶段用 `at()`、发布版本用 `[]` 是常见的策略。
+异常机制要到讲异常那一章才正式学，您这里先把结论记下来就行：`[]` 快但不检查，`at()` 多一道检查、越界会立刻报错，讲标准库容器时咱们还会再见到它。给自己的容器写 `operator[]` 时照这个约定来——一般不检查，想要安全版本就再加一个 `at()`。调试阶段多用 `at()`、发布版本用 `[]` 是常见的策略。
 
 ## 实战：io_overload.cpp
 
@@ -172,7 +154,6 @@ const int& at(std::size_t index) const
 // 流运算符和下标运算符综合演练
 
 #include <iostream>
-#include <stdexcept>
 #include <cmath>
 
 class Fraction {
@@ -203,7 +184,7 @@ public:
         : numerator(num), denominator(denom)
     {
         if (denominator == 0) {
-            throw std::invalid_argument("分母不能为零");
+            denominator = 1;   // 沿用上一篇的简化处理
         }
         reduce();
     }
@@ -282,14 +263,6 @@ public:
         return data[index];
     }
 
-    const int& at(std::size_t index) const
-    {
-        if (index >= count) {
-            throw std::out_of_range("IntArray::at: index out of range");
-        }
-        return data[index];
-    }
-
     std::size_t size() const { return count; }
 
     /// @brief 打印所有元素
@@ -333,14 +306,6 @@ int main()
     const IntArray& const_arr = arr;
     std::cout << "const_arr[2] = " << const_arr[2] << std::endl;  // 20
 
-    // 边界检查
-    try {
-        std::cout << "arr.at(10) = " << arr.at(10) << std::endl;
-    }
-    catch (const std::out_of_range& e) {
-        std::cout << "捕获异常: " << e.what() << std::endl;
-    }
-
     return 0;
 }
 ```
@@ -358,10 +323,9 @@ a (double) = 0.75
 
 arr = [0, 10, 20, 30, 40]
 const_arr[2] = 20
-捕获异常: IntArray::at: index out of range
 ```
 
-咱们验证一下：`3/4 + 1/3 = 9/12 + 4/12 = 13/12`，正确。`arr` 被赋值为 `{0, 10, 20, 30, 40}`，`const_arr[2]` 是 20，`at(10)` 越界被异常捕获，都没问题。
+咱们验证一下：`3/4 + 1/3 = 9/12 + 4/12 = 13/12`，正确。`arr` 被赋值为 `{0, 10, 20, 30, 40}`，`const_arr[2]` 是 20，都没问题。
 
 ## 动手试试
 
@@ -371,8 +335,258 @@ const_arr[2] = 20
 
 您要是按照上一章的练习实现了自己的 `Fraction` 类，现在给它加上 `operator<<` 和 `operator>>`。要求 `operator<<` 在分母为 1 时只输出分子，`operator>>` 支持 `分子/分母` 格式的输入。输入失败时不要修改对象，并正确设置流的 `failbit`。写一段测试代码验证 `cin >> fraction` 和 `cout << fraction` 都能正常工作。
 
+::: details 参考答案
+
+```cpp
+#include <iostream>
+#include <istream>
+#include <ostream>
+
+class Fraction {
+ private:
+  int numerator_;    // 分子
+  int denominator_;  // 分母
+  void reduce() {
+    int a = std::abs(numerator_);
+    int b = std::abs(denominator_);
+
+    // 欧几里得算法求最大公约数
+    while (b != 0) {
+      int temp = b;
+      b = a % b;
+      a = temp;
+    }
+
+    int gcd = (a != 0) ? a : 1;
+
+    // 分式化简
+    numerator_ /= gcd;
+    denominator_ /= gcd;
+
+    if (denominator_ < 0) {
+      numerator_ = -numerator_;
+      denominator_ = -denominator_;
+    }
+  }
+
+ public:
+  Fraction(int num = 0, int den = 1) : numerator_(num), denominator_(den) {
+    if (denominator_ == 0) {
+      denominator_ = 1;
+    }
+    reduce();
+  }
+  // 一元运算符
+  Fraction operator-() const { return Fraction(-numerator_, denominator_); }
+  // 复合赋值运算符
+  Fraction& operator+=(const Fraction& rhs) {
+    this->numerator_ = this->numerator_ * rhs.denominator_ +
+                       this->denominator_ * rhs.numerator_;
+    this->denominator_ = this->denominator_ * rhs.denominator_;
+    reduce();
+    return *this;
+  }
+  Fraction& operator-=(const Fraction& rhs) {
+    this->numerator_ = this->numerator_ * rhs.denominator_ -
+                       this->denominator_ * rhs.numerator_;
+    this->denominator_ = this->denominator_ * rhs.denominator_;
+    reduce();
+    return *this;
+  }
+  Fraction& operator*=(const Fraction& rhs) {
+    this->numerator_ = this->numerator_ * rhs.numerator_;
+    this->denominator_ = this->denominator_ * rhs.denominator_;
+    reduce();
+    return *this;
+  }
+  Fraction& operator/=(const Fraction& rhs) {
+    if (rhs.numerator_ == 0) {
+      return *this;
+    }
+    this->numerator_ = this->numerator_ * rhs.denominator_;
+    this->denominator_ = this->denominator_ * rhs.numerator_;
+    reduce();
+    return *this;
+  }
+  friend bool operator<(const Fraction& lhs, const Fraction& rhs) {
+    return (lhs.numerator_ * rhs.denominator_) <
+           (rhs.numerator_ * lhs.denominator_);
+  }
+  friend std::ostream& operator<<(std::ostream& os, const Fraction& rhs) {
+    if (rhs.denominator_ == 1) {
+      os << rhs.numerator_;
+    } else {
+      os << rhs.numerator_ << "/" << rhs.denominator_;
+    }
+    return os;
+  }
+  friend std::istream& operator>>(std::istream& is, Fraction& rhs) {
+    int num = 0;
+    int denom = 1;
+    char slash = '\0';
+    is >> num >> slash >> denom;
+    if (is && (slash == '/') && (denom != 0)) {
+      rhs.numerator_ = num;
+      rhs.denominator_ = denom;
+      rhs.reduce();
+    } else {
+      is.setstate(std::ios::failbit);
+    }
+    return is;
+  }
+};
+// 比较运算符
+bool operator>(const Fraction& lhs, const Fraction& rhs) { return rhs < lhs; }
+bool operator<=(const Fraction& lhs, const Fraction& rhs) {
+  return !(lhs > rhs);
+}
+bool operator>=(const Fraction& lhs, const Fraction& rhs) {
+  return !(lhs < rhs);
+}
+bool operator==(const Fraction& lhs, const Fraction& rhs) {
+  return !(lhs < rhs) && !(rhs < lhs);
+}
+bool operator!=(const Fraction& lhs, const Fraction& rhs) {
+  return !(lhs == rhs);
+}
+// 二元运算符
+Fraction operator+(Fraction lhs, const Fraction& rhs) { return lhs += rhs; }
+Fraction operator-(Fraction lhs, const Fraction& rhs) { return lhs -= rhs; }
+Fraction operator*(Fraction lhs, const Fraction& rhs) { return lhs *= rhs; }
+Fraction operator/(Fraction lhs, const Fraction& rhs) { return lhs /= rhs; }
+
+
+int main() {
+    // 创建两个分数对象
+    const Fraction a(1, 2);
+    const Fraction b(1, 3);
+
+    // 测试分数加法
+    std::cout << "========== 分数运算测试 ==========" << std::endl;
+    std::cout << "分数 a = " << a << std::endl;
+    std::cout << "分数 b = " << b << std::endl;
+    std::cout << "加法运算：" << a << " + " << b
+              << " = " << (a + b) << std::endl;
+
+    // 测试默认构造函数
+    std::cout << "\n========== 默认构造测试 ==========" << std::endl;
+    Fraction c{};
+    std::cout << "分数 c 的初始值为：" << c << std::endl;
+
+    // 测试输入运算符
+    std::cout << "\n========== 分数输入测试 ==========" << std::endl;
+    std::cout << "请输入一个分数（格式：分子/分母）：";
+
+    if (std::cin >> c) {
+        std::cout << "输入成功！" << std::endl;
+        std::cout << "化简后的分数 c = " << c << std::endl;
+    } else {
+        std::cout << "输入失败！请输入正确的分数格式，且分母不能为 0。"
+                  << std::endl;
+    }
+
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+运行结果:
+
+```text
+========== 分数运算测试 ==========
+分数 a = 1/2
+分数 b = 1/3
+加法运算：1/2 + 1/3 = 5/6
+
+========== 默认构造测试 ==========
+分数 c 的初始值为：0
+
+========== 分数输入测试 ==========
+请输入一个分数（格式：分子/分母）：2/4
+输入成功！
+化简后的分数 c = 1/2
+```
+
+> 当`std::cin >> c`输入的内容格式不符合要求时，通过`is.setstate(ios::failbit);`将流错误状态内部的`failbit`输入/输出操作失败（格式化或提取错误）状态位置为 1。表示本次格式化输入或数据提取失败。由于 `operator>>` 返回的是流对象本身，而流对象会记录这些状态位，并可根据当前状态转换为`bool`，因此对`std::cin >> c`的判断就会得到`false`
+
+:::
+
 ### 练习二：实现 Matrix 类的 operator[]
 
 请您设计一个简单的 `Matrix` 类，内部用一维数组存储 N x M 的元素。重载 `operator[]` 使其返回某一行的首元素引用——这需要您定义一个辅助的 `Row` 代理类。先实现基础版本，只要求 `matrix[i][j]` 的读操作能正确工作，再考虑写操作。
 
 提示：`matrix[i]` 返回一个 `Row` 对象，`Row::operator[]` 再返回具体的元素引用。咱们在 C++ 中会反复见到这种经典的"代理模式"用法。
+
+::: details 参考答案
+
+```cpp
+#include <iostream>
+class Matrix {
+ private:
+  int rows_{};
+  int cols_{};
+  int* data_;
+
+ public:
+  class Row {
+   private:
+    int* data_;
+
+   public:
+    Row(int* data) : data_(data) {}
+    int& operator[](int j) { return data_[j]; }
+    const int& operator[](int j) const { return data_[j]; }
+  };
+
+  Matrix(int rows, int cols)
+      : rows_(rows), cols_(cols), data_(new int[rows * cols]{}) {}
+  ~Matrix() { delete[] data_; }
+
+  Matrix(const Matrix& matrix) = delete;
+  Matrix& operator=(const Matrix& matrix) = delete;
+
+  Row operator[](int i) { return Row(data_ + i * cols_); }
+  const Row operator[](int i) const { return Row(data_ + i * cols_); }
+};
+int main() {
+  // 创建一个 2 行 3 列的矩阵
+  Matrix matrix(2, 3);
+
+  // 给矩阵赋值
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < 3; j++) {
+      matrix[i][j] = i * 3 + j;
+    }
+  }
+
+  // 输出矩阵
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < 3; j++) {
+      std::cout << matrix[i][j] << " ";
+    }
+    std::cout << std::endl;
+  }
+
+  return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+运行结果:
+
+```text
+0 1 2 
+3 4 5
+```
+
+:::

@@ -2,17 +2,17 @@
 chapter: 1
 cpp_standard:
 - 23
-description: "Line-by-line breakdown of then()'s ownership chain, from pipeline thinking to the void/non-void branches, to the most intricate ownership management in OnceCallback"
+description: "A line-by-line breakdown of then()'s ownership-chain design — from pipeline thinking to handling the void/non-void branches, understanding the most intricate ownership management in OnceCallback"
 difficulty: beginner
 order: 5
 platform: host
 prerequisites:
-- OnceCallback in practice (II): the core skeleton
-- OnceCallback prerequisites (II): std::invoke and the uniform call protocol
-- OnceCallback prerequisites (III): advanced lambda features
+- 'OnceCallback hands-on (II): building the core skeleton'
+- 'OnceCallback prerequisite (II): std::invoke and the uniform calling protocol'
+- 'OnceCallback prerequisite (III): advanced lambda features'
 reading_time_minutes: 7
 related:
-- OnceCallback in practice (VI): tests and performance comparison
+- 'OnceCallback hands-on (VI): tests and performance comparison'
 tags:
 - host
 - cpp-modern
@@ -20,18 +20,24 @@ tags:
 - 回调机制
 - 函数对象
 - 模板
-title: 'OnceCallback in practice (V): chaining with then'
+title: 'OnceCallback hands-on (V): chaining with then'
+translation:
+  source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/01-5-once-callback-then-chaining.md
+  source_hash: 6c99ff4aa2c2b1ae1b132d119a3cf79fd6d8600cc490376ee026cdce0638d3a9
+  translated_at: '2026-09-26T00:27:54+00:00'
+  engine: anthropic
+  token_count: 1700
 ---
-# OnceCallback in practice (V): chaining with then
+# OnceCallback hands-on (V): chaining with then
 
-`then()` stitches two callbacks into one pipeline, feeding the first one's output into the second. It's the same old Unix pipe trick, and you've surely seen it before:
+`then()` threads two callbacks into a single pipeline, feeding the previous one's output into the next. It's the same old Unix pipe trick, and you've surely seen it before:
 
 ```bash
 # Unix pipe: cmd1's output is cmd2's input
 echo "hello" | tr 'h' 'H' | wc -c
 ```
 
-Drop that onto callbacks and it's the same story: callback A's output goes to callback B.
+Carried over to callbacks, it's the very same story — callback A's output goes to callback B:
 
 ```cpp
 auto pipeline = OnceCallback<int(int, int)>([](int a, int b) {
@@ -43,18 +49,18 @@ auto pipeline = OnceCallback<int(int, int)>([](int a, int b) {
 int result = std::move(pipeline).run(3, 4);  // result == 14
 ```
 
-We started out thinking this was easy. `then()` just sews two callbacks together, right? But OnceCallback is move-only, so the original callback's full estate has to move into the new one. Miss `func_`, miss `token_`, miss `status_`, and you're sunk. This piece walks through `then()` line by line, with two things under the magnifying glass: how the ownership chain gets joined up section by section, and how the void and non-void return types fork into two branches.
+At first we figured it would be easy: `then()` just stitches two callbacks together, right? But OnceCallback is move-only, so the original callback's ownership has to move, wholesale, into the new callback — missing the `func_`, missing the `token_`, missing the `status_`, none of that will do. In this piece we'll take `then()` apart line by line, keeping our eyes on two things in particular: how the ownership chain gets welded together link by link, and how the void and non-void return types split into two branches.
 
-## Ownership: the real problem in `then()`
+## Ownership: then()'s real problem
 
-If you've used Unix pipes, the semantics of `then()` are pretty intuitive:
+If you've ever used Unix pipes, the semantics of `then()` are pure intuition:
 
 ```bash
 # Unix pipe: cmd1's output is cmd2's input
 echo "hello" | tr 'h' 'H' | wc -c
 ```
 
-`then()` does the same thing: callback A's output becomes callback B's input. In code:
+`then()` does exactly the same thing — callback A's output is callback B's input. In code:
 
 ```cpp
 auto pipeline = OnceCallback<int(int, int)>([](int a, int b) {
@@ -66,24 +72,24 @@ auto pipeline = OnceCallback<int(int, int)>([](int a, int b) {
 int result = std::move(pipeline).run(3, 4);  // result == 14
 ```
 
-`then()` chains two independent callbacks into a new one. Calling the new callback walks the whole A → B flow automatically.
+`then()` chains two independent callbacks into one new callback. Invoking the new callback automatically walks through the whole A → B flow.
 
 ---
 
-The chained callback has to keep both the original and the continuation in its own hands. On a plain `std::function` that's no trouble, you just copy. But OnceCallback is move-only, and `func_`, `status_`, `token_` are none of them copyable. `then()` has to consume `*this` and `next`, moving the whole estate of both into a fresh lambda closure.
+The chained new callback has to clutch both the original callback and the continuation in its own hands. With a plain `std::function` this is no great feat — take a copy and be done — but OnceCallback insists on being move-only: `func_`, `status_`, `token_`, not one of them may be copied. All `then()` can do is consume `*this` and `next`, moving both households bodily into a fresh lambda closure.
 
 Drawn out, the ownership chain is a single line:
 
 ```mermaid
 graph LR
-    A["new OnceCallback"] --> B["move_only_function"] --> C["lambda closure"] --> D["original + continuation"]
+    A["new OnceCallback"] --> B["move_only_function"] --> C["lambda closure"] --> D["original callback + continuation"]
 ```
 
-Every section is move semantics passing the baton. No copying, no sharing. That line is the full shape of the move-only constraint inside `then()`.
+Every link in that line is move semantics passing the baton — no copies, no sharing. This line is precisely what the whole set of move-only constraints looks like inside `then()`.
 
 ---
 
-## `then()` line by line
+## then()'s complete implementation, line by line
 
 ```cpp
 template<typename ReturnType, typename... FuncArgs>
@@ -113,67 +119,67 @@ auto OnceCallback<ReturnType(FuncArgs...)>::then(Next&& next) && {
 }
 ```
 
-### Function signature: rvalue qualifier
+### The function signature: rvalue qualification
 
 ```cpp
 auto then(Next&& next) &&
 ```
 
-That trailing `&&` makes it an rvalue-qualified member function, meaning `then()` only accepts `std::move(cb).then(next)` or `.then(next)` on a temporary. If someone slips up and writes `cb.then(next)` on an lvalue, the compiler fires back "no matching overloaded function" right there, and the error is even a clear one. This is a different route from `run()`, which goes through deducing this. `run()` has to give different error messages on lvalue versus rvalue calls, which is more work. `then()` doesn't need that distinction, so one ref-qualifier does the job. Clean.
+That trailing `&&` makes it an rvalue-qualified member function, meaning `then()` only accepts `std::move(cb).then(next)` or a `.then(next)` on a temporary. Anyone who carelessly writes an lvalue call like `cb.then(next)` gets an on-the-spot "no matching overloaded function" from the compiler — an error that is refreshingly blunt. This is a different route from the deducing this approach `run()` takes — `run()` has to give different error messages on lvalues and rvalues, which is more trouble; `then()` needs no such distinction. One ref-qualifier is enough. Clean.
 
-### `std::decay_t<Next>`: strip the reference with decay
+### std::decay_t\<Next\>: decay strips the reference
 
 ```cpp
 using NextType = std::decay_t<Next>;
 ```
 
-When `Next` comes in it might be `SomeLambda&&`, it might be `SomeLambda&`, and dragging a reference along makes the later type deduction awkward. `std::decay_t` peels the reference off and leaves the bare lambda type. After that, `std::invoke_result_t` queries the return against this `NextType`.
+When `Next` arrives it may be `SomeLambda&&` or `SomeLambda&`; with a reference clinging to it, the downstream type deductions get awkward. `std::decay_t` peels the reference off and leaves the bare lambda type, which `std::invoke_result_t` then takes — as `NextType` — to look up the return.
 
-### The two branches of `if constexpr`
+### The two branches of if constexpr
 
-What actually forks `then()` is whether the original callback's return type is void. Once that knife comes down, the two sides look quite different.
+What actually forks `then()` is whether the original callback's return type is void. Once that cut is made, the two sides look very different.
 
-When the original callback returns a value, the non-void branch, that value has to keep flowing into the continuation:
+When the original callback returns a value — the non-void branch — that value must be fed onward to the continuation:
 
 ```cpp
 using NextRet = std::invoke_result_t<NextType, ReturnType>;
 ```
 
-`std::invoke_result_t<NextType, ReturnType>` asks, at compile time: if we hand a value of type `ReturnType` to a callable of type `NextType`, what type does it spit back? That's the new pipeline's outward return type. The work inside the lambda body is straightforward too. Run the original callback to get the intermediate result `mid`, then pass it straight to the continuation:
+`std::invoke_result_t<NextType, ReturnType>` asks, on our behalf at compile time: hand a value of type `ReturnType` to a callable of type `NextType` — what type does it give back? That is the new pipeline's outward return type. The work inside the lambda body is easy to narrate too: first run the original callback to obtain the intermediate result `mid`, then pass it along, as is, to the continuation:
 
 ```cpp
 auto mid = std::move(self).run(std::forward<FuncArgs>(args)...);
 return std::invoke(std::move(cont), std::move(mid));
 ```
 
-The void branch wears a different face. The original callback returns nothing, so naturally the continuation takes no argument:
+The void branch wears a different face. The original callback returns nothing, so naturally the continuation takes no parameter either:
 
 ```cpp
 using NextRet = std::invoke_result_t<NextType>;
 ```
 
-Here `std::invoke_result_t<NextType>` deduces "call `NextType` with an empty parameter list, what do you get." Inside the lambda it's two steps: run the original callback, throw the result away, then pull out the continuation and run it, also with no argument:
+Here `std::invoke_result_t<NextType>` deduces "call `NextType` with an empty parameter list, and see what comes back". The lambda body is just two steps: first run the original callback and toss the result away; then fish out the continuation and run it, also with no arguments:
 
 ```cpp
 std::move(self).run(std::forward<FuncArgs>(args)...);
 return std::invoke(std::move(cont));
 ```
 
-### Lambda capture: the heart of ownership
+### The lambda capture: the heart of ownership
 
 ```cpp
 [self = std::move(*this), cont = std::forward<Next>(next)]
 ```
 
-`self = std::move(*this)` is the crux of the whole ownership chain. It moves the current OnceCallback's entire estate, `func_`, `status_`, `token_`, not one left behind, into the lambda's closure. After the move the current object is an emptied-out shell; `func_` and `token_` are no longer its. `cont = std::forward<Next>(next)` brings the continuation in too, and `std::forward` keeps `next`'s original value category: rvalue moves, lvalue copies.
+`self = std::move(*this)` is the vital organ of the whole ownership chain. It moves the current OnceCallback's entire estate — `func_`, `status_`, `token_`, not one left behind — into the lambda's closure. Once the move is done, the current object is a hollowed-out shell: `func_` and `token_` no longer belong to it. `cont = std::forward<Next>(next)` takes the continuation in as well, with `std::forward` standing guard over `next`'s original value category: an rvalue gets moved, an lvalue gets copied.
 
-This lambda finally gets handed to a fresh `OnceCallback<NextRet(FuncArgs...)>` constructor and stuffed into its `std::move_only_function`. Type erasure is what lets it be folded into the same shell no matter what the lambda actually looks like on the outside.
+This lambda is finally handed to a fresh `OnceCallback<NextRet(FuncArgs...)>` constructor and tucked into its `std::move_only_function`. The type-erasure machinery means that whatever shape the lambda happens to take, it can be folded into the same shell.
 
 ---
 
 ## Multi-stage pipelines
 
-`then()` can keep chaining section by section into a multi-stage pipeline:
+`then()` can naturally keep linking on, section by section, into a multi-stage pipeline:
 
 ```cpp
 using namespace tamcpp::chrome;
@@ -189,26 +195,26 @@ std::string result = std::move(pipeline).run(5);
 // 5 * 2 = 10, 10 + 10 = 20, to_string(20) = "20"
 ```
 
-Every call to `then()` mints a new OnceCallback, with a closure inside that captures the previous step's callback. The moment the outermost `run()` fires, execution unrolls like a set of nested dolls: the outermost gets `run()` → its lambda runs → inside the lambda, `std::move(self).run()` hits the next layer up → and the next → all the way down to the bottom.
+Every call to `then()` casts a new OnceCallback with a closure nested inside it that captured the previous step's callback. The moment the outermost `run()` fires, execution unfolds layer by layer like a nesting doll: the outermost one is `run()` → its own lambda executes → inside that lambda, `std::move(self).run()` is called on the next layer in → and the layer beyond that → drilling all the way down.
 
-There's a cost. Each extra level of `then()` adds one `std::move_only_function` indirection. For two or three stages you can ignore it entirely. Push past ten and the nesting gets deep enough that you'd probably want a flattened pipeline structure, but that's well past the edge of what we're doing here, so we'll leave it for another day.
+There is a price, though. Every extra stage of `then()` adds one more indirection through `std::move_only_function`. For a two- or three-stage pipeline that overhead is entirely negligible; if you really stack up ten-plus stages, the nesting grows deep enough that a flattened pipeline structure is probably called for — but that is far afield from our present topic, so we'll set it aside for now.
 
-## A few spots that trip people up
+## A few easy places to trip up
 
-### `mutable` is not optional
+### mutable is not optional
 
-Inside the lambda we call `std::move(self).run()`, and that call genuinely mutates `self`'s state, flipping status from kValid to kConsumed. Without `mutable`, `self` is a const reference inside the lambda. The compiler will catch you tinkering with a const object every single time and refuse to compile.
+Inside the lambda we call `std::move(self).run()`, and that genuinely mutates `self`'s state — flipping the status from kValid over to kConsumed. Without `mutable` on the lambda, `self` is a const reference inside, and messing with a const object is something the compiler catches every single time — a hard error on the spot.
 
-### The state of `self = std::move(*this)`
+### The state of self = std::move(*this)
 
-After the move, the original OnceCallback's `func_` and `token_` have walked out the door and landed in "moved-from" territory. `status_` isn't explicitly reset to kEmpty, so its old value just hangs there. But with `func_` emptied, the shell is effectively dead, and anyone touching it is in undefined-behavior land. The saving grace is that `&&` qualifier on `then()` guards the door. The caller has no way to keep using the original object after `then()`.
+After the move, the original OnceCallback's `func_` and `token_` have already run away from home, leaving it in a "moved-from" state. Nobody explicitly dials `status_` back to kEmpty, so the old value still hangs there. But with `func_` empty, the shell is effectively dead, and anyone who touches it again is in undefined-behavior territory. Thankfully, that `&&` qualifier on `then()` guards the gate: the caller never gets a chance to keep using the original object after `then()`.
 
-### Why `std::invoke` instead of a direct call
+### Why std::invoke instead of calling directly
 
-`cont` is usually a lambda, so `cont(mid)` would run fine. But the day someone passes in a member function pointer as the continuation, direct-call syntax dies on the spot, and `std::invoke` doesn't. Going through `std::invoke` uniformly means that whatever weapon the other side brings, our setup catches it.
+`cont` is usually just a lambda, and writing `cont(mid)` directly would run fine. But if someday someone passes in a member function pointer as the continuation, the direct-call syntax dies on the spot — `std::invoke` does not. Routing everything through `std::invoke` buys exactly that: whatever tool the other side brings, our machinery can catch it.
 
 ## References
 
-- [Chromium callback.h source](https://chromium.googlesource.com/chromium/src/+/HEAD/base/functional/callback.h)
+- [Chromium callback.h source code](https://chromium.googlesource.com/chromium/src/+/HEAD/base/functional/callback.h)
 - [cppreference: std::invoke](https://en.cppreference.com/w/cpp/utility/functional/invoke)
 - [cppreference: if constexpr](https://en.cppreference.com/w/cpp/language/if)

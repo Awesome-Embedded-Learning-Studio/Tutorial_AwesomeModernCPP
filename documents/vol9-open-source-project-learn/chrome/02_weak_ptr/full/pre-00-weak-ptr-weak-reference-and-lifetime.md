@@ -201,7 +201,7 @@ Chromium 要的是反过来:弱引用可以在序列之间流转,但解引用和
 | 不能一次失效一批 | **共享 flag**——一个 factory invalidate,所有 WeakPtr 集体失效 |
 | 没有序列亲和 | **序列绑定**——deref/失效必须在绑定序列,debug 下 DCHECK |
 
-这张表就是后面六篇实战的路线图。咱们要做的,无非把这四件事一行行落到代码里:一个 `RefCountedThreadSafe` 的 flag(侵入式 + 跨序列安全)、一对 release/acquire 的原子操作(序列间的安全可见性)、一个 `WeakPtrFactory` 担起批量失效、一组 `SEQUENCE_CHECKER` 宏守住院列契约。
+这张表就是后面六篇实战的路线图。咱们要做的,无非把这四件事一行行落到代码里:一个 `RefCountedThreadSafe` 的 flag(侵入式 + 跨序列安全)、一对 release/acquire 的原子操作(序列间的安全可见性)、一个 `WeakPtrFactory` 担起批量失效、一组 `SEQUENCE_CHECKER` 宏守住序列契约。
 
 可在这之前,几块前置知识得先补齐:侵入式引用计数到底怎么回事(`scoped_refptr` / `RefCountedThreadSafe`,下一篇)、原子操作与 memory order(pre-02)、序列与线程亲和(pre-03)、还有 WeakPtr 用到的 concepts 与 `TRIVIAL_ABI`(pre-04~06)。这一篇讲的是那个"为什么",把诉求吃透了,后面每一步实现您都会知道它在补哪个洞。
 

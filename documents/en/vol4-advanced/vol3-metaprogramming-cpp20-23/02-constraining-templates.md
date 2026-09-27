@@ -2,7 +2,7 @@
 chapter: 13
 cpp_standard:
 - 20
-description: 'Writing a concept into the signature is only the first step. What actually changes how you write generic code is that concepts take part in overload resolution. How subsumption (constraint entailment) picks the best fit among constrained overloads, and the trap hidden in atomic constraints.'
+description: 'Putting a concept into the signature is only the first step; what really changes how generic code is written is that constraints now take part in overload resolution. How subsumption (constraint entailment) picks the best fit among several constrained overloads, plus the trap hidden in atomic constraints.'
 difficulty: intermediate
 order: 2
 platform: host
@@ -11,7 +11,7 @@ prerequisites:
 reading_time_minutes: 14
 related:
 - 'Concepts: Putting Constraints in the Signature'
-- 'Requires expressions, in depth: the four kinds'
+- 'Requires Expressions, In Depth: The Four Kinds of Requirements'
 tags:
 - host
 - cpp-modern
@@ -21,34 +21,40 @@ tags:
 - concepts
 - 类型安全
 title: 'Constraining Templates with Concepts: Subsumption and Overloading'
+translation:
+  source: documents/vol4-advanced/vol3-metaprogramming-cpp20-23/02-constraining-templates.md
+  source_hash: aa0af0f3ea208a8c2be498ee400e396f796a575d78fcf83e0465f0fca9a52fc1
+  translated_at: '2026-09-26T04:30:28+00:00'
+  engine: anthropic
+  token_count: 4600
 ---
 # Constraining Templates with Concepts: Subsumption and Overloading
 
-In the last piece we put a concept into the signature and watched the error go from `enable_if` internal expansion to a plain "constraint not satisfied." But the thing that actually changes how you write generic code is something else. Concepts make template **overloading** workable. In C++17 and earlier, two function templates would clash unless their parameter counts or types were clearly different, and conditional overloading through `enable_if` was painful to write. With concepts, you can write a pile of same-named overloads with distinct constraints and let the compiler pick based on which constraint the argument satisfies. The rule for picking is called **subsumption** (constraint entailment), and it is the main character of this piece.
+In the last piece we put concepts into signatures and watched error messages turn from an `enable_if` internal expansion into a single "constraint not satisfied". But the thing that truly changes how generic code is written is something else: concepts make template **overloading** practical. In C++17 and earlier, two same-named function templates would easily collide unless their parameter counts or types clearly differed, and conditional overloading via `enable_if` was painfully awkward to write. With concepts, you can write a family of same-named overloads with different constraints and let the compiler pick based on which constraint the argument satisfies. The picking rule is called **subsumption** (constraint entailment), and it is the protagonist of this piece.
 
-## First, untangle two same-named things: the requires clause and the requires expression
+## First, Tell the Two Same-Named Things Apart: the requires Clause and the requires Expression
 
-Before going further, we have to separate the two uses of the word `requires`, or everything below turns into a blur.
+Before going further, we have to separate the two uses of the word `requires`, or what follows will get blurrier and blurrier.
 
-A **requires clause** (requires-clause) shows up after the template parameter list. Its job is "add a constraint to the template." We saw it as Form 2 in the last piece:
+The **requires clause** (requires-clause) appears after the template parameter list; its job is "attach a constraint to the template". We saw it as form ② in the last piece:
 
 ```cpp
 template <typename T>
-    requires Numeric<T>      // this whole line is a requires clause
+    requires Numeric<T>      // this whole line is the requires clause
 T add(T a, T b) { return a + b; }
 ```
 
-A **requires expression** (requires-expression) is an expression that evaluates to `bool` at compile time. It describes on the spot "what operations the type must provide." The next piece takes it apart. For now, a glance:
+A **requires expression** (requires-expression) is an expression that can be evaluated to a `bool` at compile time, describing "which operations a type must provide" right on the spot. The next piece takes it apart in full — here, just a glance:
 
 ```cpp
-requires(T t) { t + t; t.size(); }   // this is a requires expression, value is bool
+requires(T t) { t + t; t.size(); }   // this is a requires expression; its value is a bool
 ```
 
-The difference is that the clause is a syntactic position where you "set a rule" for the template, while the expression is the formula that describes the rule and produces a truth value. A clause often contains an expression, like `requires requires(T t){ t+t; }` (outer clause, inner expression). That's where the Form 4 double-`requires` from last piece comes from. This piece focuses on how the clause is used and how constraints participate in overloading. The expression gets its own piece next.
+The difference between the two: the clause is the syntactic position where you "lay down the rules" for the template, while the expression is the formula that describes what the rules say and produces a truth value. The clause often stuffs an expression inside itself, as in `requires requires(T t){ t+t; }` (outer clause, inner expression) — that is where the two consecutive `requires` of form ④ in the last piece came from. This piece concentrates on how the clause is used and how constraints take part in overload resolution; the expression is left to the next piece.
 
-## Where you can attach a constraint
+## Where Constraints Can Go
 
-A concept's constraint is not only for free function templates. Function templates, class templates, member functions, even abbreviated `auto` parameters can all be constrained. A combined example:
+Constraints from concepts are not limited to free function templates. Function templates, class templates, member functions, even abbreviated `auto` parameters — all of them can be constrained. One all-in-one example:
 
 ```cpp
 #include <concepts>
@@ -56,33 +62,33 @@ A concept's constraint is not only for free function templates. Function templat
 template <typename T>
 concept Numeric = std::integral<T> || std::floating_point<T>;
 
-// 1. function template
+// ① function template
 template <Numeric T>
 T square(T x) { return x * x; }
 
-// 2. class template: only instantiates for numeric types
+// ② class template: instantiated only for numeric types
 template <Numeric T>
 struct SafeNumber {
     T value;
     SafeNumber(T v) : value(v) {}
-    // 3. a member function can pile on its own constraint
+    // ③ member functions can add constraints of their own
     SafeNumber& operator+=(Numeric auto other) {
         value += other;
         return *this;
     }
 };
 
-// 4. abbreviated syntax: constraint goes right before auto
+// ④ abbreviated syntax: the constraint goes directly in front of auto
 Numeric auto half(Numeric auto x) { return x / 2; }
 ```
 
 <OnlineCompilerDemo allow-run
-  title="Where constraints can go: function, class, member, auto"
+  title="Where Constraints Can Go: function / class / member / auto"
   source-path="code/examples/vol4/vol3-metaprogramming-cpp20-23/constraints_everywhere.cpp"
-  description="The Numeric constraint attached to a function template, a class template, a member function, and abbreviated auto. All four positions compile."
+  description="The Numeric constraint applied to a function template, a class template, a member function, and abbreviated auto — all four positions compile."
 />
 
-Run it:
+Output:
 
 ```text
 square(4) = 16
@@ -91,11 +97,11 @@ SafeNumber(3) + 4 = 7
 half(10) = 5
 ```
 
-All four positions compile. Pay attention to the class template in particular. Once you constrain a class template, an instantiation like `SafeNumber<std::string>` that doesn't satisfy `Numeric` fails the constraint right at the declaration, instead of waiting to blow up when you use a member. The constraint pulls "this class is only for numeric types" forward to the moment of instantiation.
+All four positions compile. The class template deserves a special word of caution: once you constrain a class template, an instantiation like `SafeNumber<std::string>` that does not satisfy `Numeric` fails the constraint right at the declaration, instead of waiting until some member is used to blow up. The constraint pulls "this class is for numeric types only" forward to the very moment of instantiation.
 
-## Subsumption: the compiler picks overloads by constraint entailment
+## Subsumption: The Compiler Picks Overloads by Constraint Entailment
 
-Now the main event. Let's write two same-named overloads, one looser and one tighter, and see what the compiler picks.
+Now for the main event. We write two same-named overloads, one with a looser requirement and one with a tighter one, and watch which one the compiler picks.
 
 ```cpp
 #include <concepts>
@@ -105,36 +111,36 @@ template <typename T>
 concept Animal = requires(T t) { t.eat(); };
 
 template <typename T>
-concept Dog = Animal<T> && requires(T t) { t.bark(); };   // Dog wants one more thing: bark()
+concept Dog = Animal<T> && requires(T t) { t.bark(); };   // Dog demands one more thing than Animal: bark()
 
-void describe(Animal auto) { std::cout << "an animal\n"; }   // loose overload
-void describe(Dog auto)    { std::cout << "a dog\n"; }       // tight overload
+void describe(Animal auto) { std::cout << "an animal\n"; }   // the wide overload
+void describe(Dog auto)    { std::cout << "a dog\n"; }       // the narrow overload
 
 struct Cat { void eat() {} };
 struct Pup { void eat() {} void bark() {} };
 
 int main() {
-    describe(Cat{});   // Cat only satisfies Animal
+    describe(Cat{});   // Cat satisfies Animal only
     describe(Pup{});   // Pup satisfies both Animal and Dog
 }
 ```
 
-This is the core excerpt. The full file (including the `Both/C` covered in the conjunction section below) is at [subsumption_overloads.cpp](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/examples/vol4/vol3-metaprogramming-cpp20-23/subsumption_overloads.cpp).
+What is pasted here is the core part. The complete file (including the `Both/C` case the conjunction section below will cover) is at [subsumption_overloads.cpp](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/examples/vol4/vol3-metaprogramming-cpp20-23/subsumption_overloads.cpp).
 
-Run it (animal/dog part):
+Output (the animal/dog part):
 
 ```text
 an animal
 a dog
 ```
 
-`Cat` only satisfies `Animal`. There's no second overload to pick, so it goes to the loose one. `Pup` satisfies both `Animal` and `Dog`, but it goes to the **tight overload** `Dog`. That's subsumption at work. `Dog`'s requirement is `Animal<T> && bark requirement`, which folds all of `Animal`'s requirements in. We say **`Dog` subsumes `Animal`**. When both overloads match, the compiler picks the one with the tighter, more specific constraint.
+`Cat` satisfies only `Animal`; with no second overload to choose, it goes to the wide one. `Pup` satisfies both `Animal` and `Dog`, yet it is routed to the **narrow overload** `Dog`. This is subsumption at work: what `Dog` requires is `Animal<T> && bark requirement`, which takes everything `Animal` requires entirely inside it — we say **`Dog` subsumes `Animal`**. When both overloads match, the compiler picks the one with the tighter, more specific constraint.
 
-What did this look like in the SFINAE era? You'd use `enable_if` with layer upon layer of "does this member function exist" probing, or reach for tag dispatch. The code doubled in size and still wasn't readable. Concepts hand "which is more specific" to the compiler, computed from the constraint relationship. That is the real reason they change how you write generic code.
+What would this have looked like in the SFINAE era? `enable_if` paired with layer upon layer of "does this member function exist" probing, or tag dispatch brought in on top — several times the code, and still not necessarily readable. Concepts hand the question of "who is more specific" to the compiler, computed from constraint relationships. That is the fundamental way they change generic code.
 
-## Two constraints that don't subsume each other: ambiguity
+## Two Constraints That Do Not Subsume Each Other: Ambiguity
 
-Subsumption only sorts things out when one constraint strictly entails the other. If two constraints are independent, neither containing the other, and some type satisfies both, the compiler can't pick.
+Subsumption disambiguates for you only when one constraint strictly entails the other. If two constraints are independent, neither containing the other, and some type satisfies both at once, the compiler cannot pick one.
 
 ```cpp
 template <typename T> concept Swimmable = requires(T t) { t.swim(); };
@@ -152,19 +158,19 @@ int main() { act(Duck{}); }   // neither subsumes the other
 ambiguity.cpp:12:8: error: call of overloaded 'act(Duck)' is ambiguous
 ```
 
-`Swimmable` and `Flyable` don't subsume each other, `Duck` satisfies both, and the compiler has no reason to prefer one. It reports ambiguity. The fix is either to add a tight overload `Duck = Swimmable<T> && Flyable<T>` (it subsumes both, so it gets picked), or to write `act<ConcreteType>` explicitly at the call site. The key point: **subsumption only resolves ambiguity when there's a containment relationship. It can't resolve a peer-level tie.**
+`Swimmable` and `Flyable` do not entail each other, `Duck` satisfies both, and the compiler, having no reason to prefer either, reports an ambiguity outright. The ways out: add one more narrow overload with `Duck = Swimmable<T> && Flyable<T>` (it subsumes both at once and gets picked), or explicitly write `act<SomeConcreteType>` at the call site. The key is to understand: **subsumption only resolves ambiguity when a containment relation exists; it cannot resolve a contest between two peers**.
 
-## Atomic constraints: the real unit that decides subsumption
+## Atomic Constraints: The Real Unit That Decides Subsumption
 
-How did `Dog` subsuming `Animal` get computed above? That brings us to **atomic constraints**. The compiler doesn't look at "which of the names `Dog` and `Animal` contains the other." It breaks each constraint down into minimal, indivisible atomic constraints and looks at set containment.
+How was "`Dog` entails `Animal`" computed above? For that we need **atomic constraints**. The compiler does not look at "which of the two names `Dog` and `Animal` contains the other"; it decomposes the constraints into a pile of minimal, indivisible atomic constraints and then examines set containment.
 
-`concept Dog = Animal<T> && bark requirement`, after normalization, has the atomic constraint set `{ Animal<T>, bark requirement }`. `Animal`'s atomic constraint set is `{ Animal<T> }`. The former is a proper superset of the latter, so `Dog` subsumes `Animal`.
+After normalization, the atomic constraint set of `concept Dog = Animal<T> && bark requirement` is `{ Animal<T>, bark requirement }`. The atomic constraint set of `Animal` is `{ Animal<T> }`. The former is a proper superset of the latter, so `Dog` subsumes `Animal`.
 
-There's a trap here that gets everyone. Let's run it. Intuitively, writing `C2 = C1<T>`, handing one concept to another unchanged, feels like `C2` ought to be more specific than `C1`. Let's try:
+Here is a pit that is absurdly easy to fall into; let's run one directly and look. Intuitively, a spelling like `C2 = C1<T>` — assigning one concept to another verbatim — feels like `C2` should be more specific than `C1`, right? Run it:
 
 ```cpp
 template <typename T> concept C1 = std::is_integral_v<T>;
-template <typename T> concept C2 = C1<T>;          // just a rename
+template <typename T> concept C2 = C1<T>;          // only the name changed
 
 void g(C1 auto) { /* ... */ }
 void g(C2 auto) { /* ... */ }
@@ -176,9 +182,9 @@ int main() { g(42); }   // int satisfies both C1 and C2
 atomic.cpp:14:15: error: call of overloaded 'g(int)' is ambiguous
 ```
 
-Ambiguous. Why? Because `C2 = C1<T>`, after normalization, has the atomic constraint `C1<T>` itself, **identical** to `C1`'s atomic constraint. The two overloads' constraint sets are equal. Neither properly contains the other, neither subsumes, and it falls back to plain ambiguity. Renaming doesn't conjure up a "more specific" relationship. Subsumption wants a **proper superset** of atomic constraints. A name change doesn't affect that.
+Ambiguous. Why? Because after normalization, the atomic constraint of `C2 = C1<T>` is `C1<T>` itself — **exactly identical** to `C1`'s atomic constraint. The two overloads' constraint sets are equal; neither properly contains the other, neither subsumes the other, and we fall back to an ordinary ambiguity. Changing the name does not conjure a "more specific" relation out of thin air; subsumption demands **proper containment** of atomic constraint sets, and whether the name changed has no bearing on it.
 
-To make `C2` actually win, you have to give it an atomic constraint beyond `C1`. The `&&` combinator does exactly this:
+For `C2` to genuinely win, you must give it an atomic constraint beyond `C1`. Combining with `&&` does precisely that:
 
 ```cpp
 template <typename T> concept A = requires(T t){ t.a(); };
@@ -187,7 +193,7 @@ template <typename T> concept C = A<T> && B<T>;   // atomic constraints = { A<T>
 
 void f(A auto) { /* ... */ }
 void f(B auto) { /* ... */ }
-void f(C auto) { /* ... */ }   // C subsumes A, and subsumes B
+void f(C auto) { /* ... */ }   // C subsumes A, and subsumes B too
 
 int main() { struct S{ void a(){} void b(){} } s; f(s); }
 ```
@@ -197,19 +203,19 @@ $ g++ -std=c++20 -Wall -Wextra conjunction.cpp -o conj && ./conj
 C
 ```
 
-`C`'s atomic constraint set `{ A<T>, B<T> }` is a superset of both `{ A<T> }` and `{ B<T> }`, so it subsumes `A` and `B`, and the compiler picks `C` out of the three. This spells out the real role of `&&`: it isn't "glue two constraints into a new one." It takes the atomic constraints from both sides and **unions** them into one set.
+`C`'s atomic constraint set `{ A<T>, B<T> }` is a superset of both `{ A<T> }` and `{ B<T> }`, so it subsumes both `A` and `B`, and when offered all three candidates the compiler picked `C`. This lays bare `&&`'s real role: `&&` is not "gluing the constraints into a brand-new one"; it **unions** the atomic constraints on both sides into one and the same set.
 
-::: warning Constraints are compared by atoms, not by name
-Subsumption compares the **atomic constraint set** after normalization, not the concept names. `C2 = C1<T>` doesn't make `C2` more specific than `C1`, because their atomic constraints are the same. If you want an overload to win, its atomic constraint set has to be a proper superset of the other, and the usual way to get there is to stack another constraint with `&&`. Remember this, and you won't get tangled in "the names are clearly different, why is it still ambiguous" when you write constrained overload families.
+::: warning Subsumption compares atoms, not names
+Subsumption compares the **atomic constraint sets** after normalization, not the concepts' names. `C2 = C1<T>` does not make `C2` more specific than `C1`, because their atomic constraints are identical. For an overload to win, its atomic constraint set must be a proper superset of the other side's, and the most common way to get there is stacking on one more constraint with `&&`. Remember this one rule, and later, when you write a family of constrained overloads, you will not be led in circles by "the names are clearly different, so why is it still ambiguous".
 :::
 
 <OnlineCompilerDemo allow-run
-  title="Subsumption in full: animal/dog plus the conjunction case C"
+  title="Subsumption, the Full Demo: animal/dog and the conjunction C"
   source-path="code/examples/vol4/vol3-metaprogramming-cpp20-23/subsumption_overloads.cpp"
-  description="Full run of subsumption_overloads.cpp: Cat goes to the loose overload, Pup to the tight one, and Both (satisfying A, B, and C) is picked as C."
+  description="A complete run of subsumption_overloads.cpp: Cat takes the wide overload, Pup the narrow one, and Both, satisfying A/B/C at once, is selected as C."
 />
 
-Full run output:
+Full output:
 
 ```text
 an animal
@@ -217,18 +223,18 @@ a dog
 C
 ```
 
-## A trap: don't use a concept as is_same
+## Trap: Don't Use a concept as an is_same
 
-`std::same_as` is a concept that leads people astray. You can write `template <std::same_as<int> T>` to pin `T` down to exactly `int`.
+The `std::same_as` concept easily leads people astray. It lets you write `template <std::same_as<int> T>`, nailing `T` down to being exactly `int`.
 
 ```cpp
 template <std::same_as<int> T>
 void only_int(T x) { /* ... */ }
 
 only_int(42);       // fine
-// only_int(3.14);  // fails to compile: double doesn't satisfy same_as<int>
+// only_int(3.14);  // fails to compile: double does not satisfy same_as<int>
 ```
 
-It works, but it's usually bad design. If your function only takes `int`, writing an ordinary non-template function `void only_int(int x)` is clearer, simpler, and saves the compiler one instantiation. The real home for a "type equivalence" constraint like `same_as` is inside a template, requiring a relationship between **two parameters**, like `template <typename A, typename B> requires std::same_as<A, B>`, which says "A and B must be the same type." Using it to lock a single template parameter to one concrete type is the wrong tool.
+It runs, but this is usually not good design. If your function accepts only `int`, writing an ordinary non-template function `void only_int(int x)` directly is clearer and simpler, and it spares the compiler one more template instantiation. The place where "type equivalence" constraints such as `same_as` truly shine is stating a requirement about the relationship **between two parameters** inside a template — for example `template <typename A, typename B> requires std::same_as<A, B>`, constraining "A and B must be the same type". Taking it and locking a single template parameter down to some concrete type is using the wrong tool.
 
-With concepts in the signature and participating in overloading, you can write generic code that is both clear and able to dispatch. In the next piece we take apart the expression form of `requires`, the one most easily confused, which describes on the spot "what operations a type must provide." It's the foundation of every `requires(T t){ ... }` you've seen above.
+Concepts in the signature, concepts in overload resolution — once these two are in place, generic code can be written clearly and with dispatch power. In the next piece we take apart the expression form of `requires`, the one most easily confused: it describes "which operations a type must provide" on the spot, and it is the foundation of every `requires(T t){ ... }` spelling above.

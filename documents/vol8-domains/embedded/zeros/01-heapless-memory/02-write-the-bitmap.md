@@ -22,7 +22,7 @@ related:
 
 上一篇咱们把位图在手上盘过了:一个 bit 记一块,查空就是找第一个 0。这一篇把它写成真代码,顺便把测试的台子立起来——从这一篇起,咱们写的每样东西都有测试伺候,位图这种要陪咱们走到最后的零件,更得第一天就上保险。
 
-咱们新建 `include/ZerOS/base/bitmap.hpp`:
+咱们新建 `include/ZerOS/base/bitmap.hpp`,拆成几段贴,每段代码后面就地讲:
 
 ```cpp
 #pragma once
@@ -51,7 +51,13 @@ constexpr std::size_t ctz(std::uint32_t x) {
     return zeros_impl::_ctz(x);
 #endif
 } // ctz
+```
 
+咱们看 `ctz` 的双轨:GCC/Clang 用 `__builtin_ctz`,到 Cortex-M3/M4 上编译成 RBIT+CLZ,两条都是单周期指令;
+
+别的编译器有纯软件兜底,一个 bit 一个 bit 数。这样的话，不至于说别的编译器就没办法了。
+
+```cpp
 /**
  * @brief  A bare-word bitmap for kernel bookkeeping (allocators, schedulers).
  *
@@ -94,7 +100,13 @@ template <std::size_t bit_count> struct Bitmap {
 
     /// All 32 slots free? Safe for the tail word too, padding stays 0.
     [[nodiscard]] constexpr bool word_empty(std::size_t w) const { return words_[w] == 0; }
+```
 
+头注释一上来就是三条规矩:padding 位必须保持 0;`set`/`clear` 是读改写、不是原子的,ISR 要共享这张图,就得自己套临界区;下标越界是 UB。守不住会怎样,注释最后一句写得明明白白:"break them and the helpers will lie to you"。翻译过来:这些工具函数就敢骗您。
+
+这份责任到 `word()` 上看得最清楚:它交出去的就是裸的 32 位平面,不做任何检查。批量写整字的时候,尾部 padding 保不保干净,得调用者自己看着办——下面的测试里 `word(0) = 0xFFu` 那一下,咱们就是那个调用者。那为什么非要有这一层?`std::bitset` 死活不给;可整字的批量置零、池那一篇的 L1 摘要,用的都是它。
+
+```cpp
     // —— CLZ 查找 ——
     /// First clear bit inside the w-th word, npos if that word is full.
     /// The second CLZ step of a two-level lookup: level-1 finds the word,
@@ -125,7 +137,11 @@ template <std::size_t bit_count> struct Bitmap {
         }
         return npos;
     }
+```
 
+查找函数(`find_first_zero`/`find_first_set`)整字整字地跳,字内一步 ctz 落位:这个"跳字+落位"的两段式,就是上一篇咱们盘过的直觉,也是后面两级位图的雏形。
+
+```cpp
     // static_assert on it, memcpy it, summarize it.
     // so public it
     std::uint32_t words_[WORDS]{};
@@ -148,7 +164,15 @@ template <std::size_t bit_count> struct Bitmap {
         return (bit_count & 31) ? (1u << (bit_count & 31)) - 1u : ~0u;
     }
 };
+```
 
+您再看拷贝构造:被删了,注释原话:"A Copy cast is not thought as popular, i think!"。位图记的就是内核的实时状态,谁复制一份,谁就把状态复制走了,不让复制省心。
+
+尾部怎么处理,是位图最容易翻车的地方。`tail_mask` 就是干这个的:算出尾字里哪些位是真的,所有尾字相关的检查底下都是它。比如 `word_full` 判"满",比的是 `valid_mask(w)` 而不是 `0xFFFFFFFF`,注释里还专门用感叹号提醒了,您翻上去能看到那句 `NOT 0xFFFFFFFF!`。
+
+更阴的边界在这里:`bit_count` 恰好是 32 的倍数时,照尾数移位的思路就成了一次移 32 位,而移 32 位在 32 位整数上是 UB——所以那个三元表达式分了支,这种情况直接返回 `~0u`。一行注释交代一个边界,这种地方值得您多看一眼。
+
+```cpp
 // —— Compile-time self checks: free unit tests, zero runtime cost ——
 static_assert([] {
     Bitmap<8> b;
@@ -172,16 +196,6 @@ static_assert(Bitmap<8>{}.find_first_set() == Bitmap<8>::npos);
 
 } // namespace ZerOS::base
 ```
-
-几个设计点,您写的时候值得停下来看看。
-
-头注释把契约写成了合同条款:padding 位必须保持 0、`set`/`clear` 是读改写不是原子的、越界是 UB,最后补一句"break them and the helpers will lie to you"——违约了,这些工具函数就敢骗您。这不是吓唬人,`word()` 给的就是裸的 32 位平面,批量写整字的时候尾部 padding 保不保干净,责任在调用者。为什么非要有字级访问?注释也给了答案:这是 `std::bitset` 拒绝给的东西,而池的 L1 摘要、整字的批量置零,都指着它过日子。
-
-咱们看 `ctz` 的双轨:GCC/Clang 用 `__builtin_ctz`,到 Cortex-M3/M4 上编译成 RBIT+CLZ,两条都是单周期指令;别的编译器有纯软件兜底,一个 bit 一个 bit 数。查找函数(`find_first_zero`/`find_first_set`)整字整字地跳,字内一步 ctz 落位:这个"跳字+落位"的两段式,就是上一篇盘的直觉,也是后面两级位图的雏形。
-
-尾部怎么处理是位图最容易翻车的地方,`tail_mask` 是全部检查的锚:尾字的"满"要跟 `valid_mask` 比而不是 `0xFFFFFFFF`,注释专门提醒了。而 `(bit_count & 31) == 0` 时移 32 位是 UB,所以那个分支返回 `~0u`——一行注释交代一个边界,这种地方值得您多看一眼。
-
-您再看拷贝构造:被删了,注释原话:"A Copy cast is not thought as popular, i think!"。位图是内核的记账本体,谁复制一份谁就把状态复制走了,不让复制省心。
 
 文件尾巴上那四个 `static_assert` 最有意思,您看:立即调用的 lambda,每次编译这个头,回归就跟着跑了一遍——host 测试编它,固件构建也编它,谁都逃不掉。"padding 不得伪造命中"那条就是专门锁尾字安全性的。
 

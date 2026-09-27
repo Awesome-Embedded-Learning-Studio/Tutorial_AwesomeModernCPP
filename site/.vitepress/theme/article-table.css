@@ -1,0 +1,129 @@
+/* Markdown tables in the article body. Card surface matches article-code.css.
+ * The card lives on .vp-table-wrap (injected by plugins/table-wrap-plugin.ts):
+ * a display:block table cannot stretch its inner anonymous table box, so the
+ * wrapper carries border/scroll while the table uses normal table layout. */
+:root {
+  --article-table-bg: #fffefb;
+  --article-table-border: #e2dfd8;
+  --article-table-header: #f5f4f8;
+  --article-table-accent: #656198;
+  --article-table-stripe: rgb(101 97 152 / 3%);
+  --article-table-row-hover: rgb(101 97 152 / 6%);
+  --article-table-shadow: 0 3px 8px rgb(49 39 24 / 3%), 0 14px 36px -18px rgb(49 39 24 / 14%);
+  --article-table-hover-shadow: 0 6px 14px rgb(49 39 24 / 5%), 0 18px 38px -18px rgb(49 39 24 / 18%);
+}
+
+.dark {
+  --article-table-bg: #20232b;
+  --article-table-border: #363a46;
+  --article-table-header: #282b38;
+  --article-table-accent: #c0b8e6;
+  --article-table-stripe: rgb(192 184 230 / 4%);
+  --article-table-row-hover: rgb(192 184 230 / 8%);
+  --article-table-shadow: 0 3px 8px rgb(0 0 0 / 12%), 0 16px 36px -18px rgb(0 0 0 / 40%);
+  --article-table-hover-shadow: 0 6px 14px rgb(0 0 0 / 18%), 0 20px 40px -18px rgb(0 0 0 / 48%);
+}
+
+/* Card + horizontal scroll for wide tables; overflow clips cells to corners. */
+.vp-doc .vp-table-wrap {
+  margin: 24px 0;
+  border: 1px solid var(--article-table-border);
+  border-radius: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: radial-gradient(ellipse 520px 90px at 0 0, var(--article-table-header), transparent),
+    var(--article-table-bg);
+  box-shadow: var(--article-table-shadow);
+}
+
+/* Normal table layout: stretches to the card, so header tint, stripes and
+   hover reach the right edge. Overrides VitePress's display:block default. */
+.vp-doc .vp-table-wrap table {
+  display: table;
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+/* Drop the default grid lines; the header rule and striping carry structure. */
+.vp-doc .vp-table-wrap th,
+.vp-doc .vp-table-wrap td {
+  border: 0;
+  padding: 10px 18px;
+}
+
+.vp-doc .vp-table-wrap th {
+  border-bottom: 1px solid var(--article-table-border);
+  background: var(--article-table-header);
+  color: var(--article-table-accent);
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.vp-doc .vp-table-wrap tbody tr + tr td {
+  border-top: 1px solid color-mix(in srgb, var(--article-table-border) 45%, transparent);
+}
+
+.vp-doc .vp-table-wrap tbody tr:nth-child(even) {
+  background-color: var(--article-table-stripe);
+}
+
+@media screen and (hover: hover) {
+  .vp-doc .vp-table-wrap tbody tr {
+    transition: background-color 0.15s ease;
+  }
+
+  .vp-doc .vp-table-wrap tbody tr:hover {
+    background-color: var(--article-table-row-hover);
+  }
+}
+
+/* First/last columns breathe like the code cards' side padding. */
+.vp-doc .vp-table-wrap th:first-child,
+.vp-doc .vp-table-wrap td:first-child {
+  padding-left: 20px;
+}
+
+.vp-doc .vp-table-wrap th:last-child,
+.vp-doc .vp-table-wrap td:last-child {
+  padding-right: 20px;
+}
+
+/* Inline code inside tables keeps its chip but matches cell line-height. */
+.vp-doc .vp-table-wrap table :not(pre) > code {
+  white-space: nowrap;
+}
+
+/* Move only top-level tables, mirroring the code-card hover rule. */
+@media screen and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .vp-doc .vp-table-wrap:not(blockquote *) {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .vp-doc .vp-table-wrap:not(blockquote *):hover {
+    transform: translateY(-2px);
+    box-shadow: var(--article-table-hover-shadow);
+  }
+}
+
+@media (max-width: 639px) {
+  .vp-doc .vp-table-wrap {
+    border-radius: 10px;
+  }
+
+  .vp-doc .vp-table-wrap th,
+  .vp-doc .vp-table-wrap td {
+    padding: 8px 14px;
+  }
+}
+
+@media print {
+  .vp-doc .vp-table-wrap {
+    box-shadow: none;
+  }
+}

@@ -3,18 +3,18 @@ chapter: 9
 cpp_standard:
 - 17
 - 20
-description: From linearizability to causal consistency, understanding the consistency
-  model spectrum and the core ideas of Paxos/Raft, and building a distributed communication
-  skeleton using gRPC + C++20 coroutines.
+description: From linearizability to causal consistency — understand the spectrum of
+  consistency models and the core ideas of Paxos/Raft, and build a distributed communication
+  skeleton with gRPC + C++20 coroutines.
 difficulty: advanced
 order: 2
 platform: host
 prerequisites:
-- 从单机并发到分布式
-- promise_type 与 awaitable
+- From Standalone Concurrency to Distributed Systems
+- promise_type and awaitable
 reading_time_minutes: 31
 related:
-- 协程 Echo Server 实战
+- 'Coroutine Echo Server in Practice'
 tags:
 - host
 - cpp-modern
@@ -26,121 +26,121 @@ title: A First Look at Distributed Consistency Primitives
 translation:
   source: documents/vol5-concurrency/ch09-distributed-bridge/02-distributed-primitives.md
   source_hash: 09557cd6326b95be7cf8200b23d0839ac5e85be38fa5273600cd2a908cf71dd8
-  translated_at: '2026-06-24T01:08:51.907962+00:00'
+  translated_at: '2026-09-26T08:49:38+00:00'
   engine: anthropic
-  token_count: 5106
+  token_count: 6400
 ---
 # A First Look at Distributed Consistency Primitives
 
-> ℹ️ **Section Positioning**: Following the previous article, we continue our conceptual overview. The consistency model spectrum discussed here also lacks runnable code. The focus is on helping you build an intuition for "from strong to weak consistency," laying the groundwork for reading distributed systems papers and practical implementation in Volume 8.
+> ℹ️ **Where this section fits**: Picking up where the previous article left off, we continue the conceptual tour. The spectrum of consistency models covered here likewise comes with no runnable code—the point is to help you build an intuition for "from strong to weak consistency", laying the groundwork for reading distributed systems papers later on and for the hands-on work in Volume 8.
 
-In the previous article, we explored the five fundamental differences between single-machine concurrency and distributed systems, understanding facts like "networks are unreliable, clocks are inaccurate, and partial failures are inevitable." Honestly, I was quite shocked when I first encountered distributed consistency—on a single machine, consistency is almost "free" (costing only a few nanoseconds for lock/unlock), but in a distributed environment, it becomes something you must exchange for paper-level protocols, multiple rounds of network communication, and majority voting. In this article, we face this core challenge—**consistency**.
+In the previous article we saw the five fundamental differences between single-machine concurrency and distributed systems, and came to terms with the facts of life in a distributed environment: networks are unreliable, clocks are inaccurate, and partial failures are unavoidable. Honestly, the first time we encountered distributed consistency, it was something of a shock—on a single machine, consistency is nearly "free" (the price is a few nanoseconds of lock/unlock), but in a distributed environment it becomes something you must pay for with paper-grade protocols, multiple rounds of network communication, and majority voting. In this article we face that core difficulty head-on: **consistency**.
 
-Let's establish an intuition first: when a piece of data has replicas on multiple machines, do clients reading from different replicas see the same value? When do they see the latest value? How much data divergence exists between replicas? The answers to these questions depend on the consistency model the system chooses. Consistency models are not binary (either consistent or inconsistent); rather, they form a spectrum from strong to weak—understanding this spectrum is fundamental to understanding distributed systems and is the core thread of this article.
+Let's build an intuition first: when a piece of data has replicas on multiple machines, do clients reading from different replicas see the same value? When do they see the latest value? How far apart can the data on different replicas drift? The answers to these questions depend on which consistency model the system has chosen. A consistency model is not a binary choice (consistent or not consistent); it is a spectrum from strong to weak—understanding this spectrum is a foundational skill for understanding distributed systems, and it is the central thread of this article.
 
-## The Consistency Model Spectrum
+## The Spectrum of Consistency Models
 
-Our goal now is to establish this spectrum using four consistency models, ranging from strong to weak. For each model, we will explain it using a concrete scenario rather than just throwing out a definition—understanding "why we need this model" is far more important than memorizing "how this model is defined."
+What we are about to do is build this spectrum with four consistency models, from strongest to weakest. For each model we will explain it through a concrete scenario rather than dropping a definition on you—understanding "why this model is needed" matters far more than memorizing "how this model is defined".
 
 ### Linearizability: The Strongest Guarantee
 
-We start with the strongest. Linearizability, also known as strong consistency or atomic consistency, implies that every operation appears to occur atomically at some **unique point in time** between its invocation and completion, and these points form a total order. Simply put—if we treat the distributed system as a black box, from an external observer's perspective, all operations happen just as if they were on a single machine. This is similar to the `memory_order_seq_cst` we discussed in ch03: the strongest memory order on a single machine guarantees all threads see a consistent operation order, while linearizability is the equivalent guarantee in a distributed environment.
+We start with the strongest. Linearizability, also known as strong consistency or atomic consistency, means: every operation appears to happen atomically at some **unique point in time**—a point between the operation's invocation and its completion—and the time points of all operations together form a total order. Put plainly—treat the distributed system as a black box, and from an external observer's perspective, all operations look as if they happened on a single machine. This has more than a little in common with the `memory_order_seq_cst` we discussed in ch03: the strongest memory order on a single machine guarantees that all threads see a consistent order of operations, and linearizability is the equivalent guarantee in a distributed environment.
 
-Let's use a bank transfer scenario to illustrate. Suppose you and your roommate share an account with a balance of 1000 yuan. You transfer 800 yuan out via a mobile app, and at that exact moment, your roommate checks the balance at an ATM. Under linearizability, your roommate's query can only yield one of two results: either they see 1000 yuan (your transfer hasn't taken effect yet) or they see 200 yuan (your transfer has taken effect). It is impossible for your roommate to see an intermediate state like 500 or 900 yuan.
+Let's illustrate with a bank transfer scenario. Suppose you and your roommate share an account with a balance of 1000 yuan. You transfer 800 yuan out from your phone app, and at the very moment of the transfer your roommate checks the balance at an ATM. Under linearizability, your roommate's query can have only two outcomes: either they see 1000 yuan (your transfer has not taken effect yet), or they see 200 yuan (your transfer has taken effect). It is absolutely impossible for your roommate to see some "intermediate state" such as 500 or 900 yuan.
 
-More critical is the guarantee of time ordering: if you complete the transfer operation first (receiving a "transfer successful" response), and then your roommate initiates a query, your roommate is guaranteed to see 200 yuan—they cannot see an old value. This is the "real-time" property of linearizability: the actual chronological order of operations matches the order presented by the system.
+Even more crucial is the guarantee on time ordering: if you finished the transfer first (you received the "transfer successful" response) and only then did your roommate initiate the query, your roommate is guaranteed to see 200 yuan—an old value is out of the question. This is the "real-time" property of linearizability: the actual time order of operations and the order the system presents are the same.
 
-Linearizability is the strongest consistency guarantee, but it is also the most expensive. To implement it, every write operation must wait for confirmation from a majority of replicas before returning success, and every read operation must also query the majority for the latest value (or query a Leader and ensure the Leader hasn't changed). This implies at least one network round trip in terms of latency (usually multiple rounds), and in terms of availability, if a majority cannot be reached, the system must refuse service.
+Linearizability is the strongest consistency guarantee, but also the most expensive. To implement it, every write must wait for acknowledgment from a majority of replicas before returning success, and every read must query a majority for the latest value (or query the Leader and make sure the Leader has not changed). In latency this means at least one network round trip (usually several); in availability it means that if a majority cannot be reached, the system must refuse service.
 
-Which systems provide linearizability? ZooKeeper (for writes and synchronous reads), etcd, and Consul, mentioned in the previous article, all provide it. Google Spanner achieves external consistency (even stronger than linearizability) through the TrueTime API mentioned previously, while many relational databases in standalone mode are naturally linearizable.
+Which systems provide linearizability? ZooKeeper (for writes and synchronous reads), etcd, and Consul—all mentioned in the previous article—provide it. Google Spanner achieves external consistency (even stronger than linearizability) through the TrueTime API we mentioned last time, and many relational databases are naturally linearizable in single-machine mode.
 
-### Sequential Consistency: Relaxing Time Requirements
+### Sequential Consistency: Relaxing the Time Requirement
 
-Alright, linearizability is the strongest, but also the most expensive. If we relax the requirements slightly—no longer requiring that the actual chronological order of operations matches the order presented by the system, but only requiring that all processes see the same operation order—we get sequential consistency. Specifically, all processes see the same total order of operations, but this order does not have to match the actual physical time of occurrence, as long as each process's own operations maintain the order specified in the program.
+Alright—linearizability is the strongest, but also the priciest. If we relax the requirements a little—no longer demanding that the actual time order of operations match the order the system presents, only that all processes see the same order of operations—we get sequential consistency. Concretely, all processes see the same total order of operations, but that order does not have to match the physical time at which operations actually occurred; it only has to keep each process's own operations in the order the program specified.
 
-Returning to the bank transfer example. Suppose you transfer 800 yuan out on your mobile phone, and then your roommate transfers 500 yuan out at an ATM. Under sequential consistency, the system can present the order "your roommate transfers 500 first, then you transfer 800"—this is the reverse of your physical operation order. But the key is: all observers see the same order. There won't be one person saying "transferred 800 first" and another saying "transferred 500 first."
+Back to the bank transfer example. Suppose you transfer 800 yuan out on your phone first, and then your roommate transfers 500 yuan out at an ATM. Under sequential consistency, the system may present the order "your roommate transfers 500 first, then you transfer 800"—the reverse of the physical order of your operations. But the key point is: all observers see the same order. Nobody will say "800 went first" while someone else says "500 went first".
 
-The difference between sequential consistency and linearizability lies in that "real-time" constraint: linearizability requires the system's presented order to match actual time, while sequential consistency does not. However, both require a globally consistent arrangement of all operations. This difference seems subtle, but it is significant in implementation—linearizability requires some form of global clock or consensus protocol to synchronize time, whereas sequential consistency only needs to guarantee the atomic broadcast order of operations.
+The difference between sequential consistency and linearizability lies in exactly that "real-time" constraint: linearizability requires the order the system presents to match actual time; sequential consistency does not. Both, however, require a globally consistent arrangement of all operations. This difference looks subtle, but it matters enormously in implementation—linearizability needs some form of global clock or consensus protocol to synchronize time, while sequential consistency only needs to guarantee an atomic broadcast order for operations.
 
 ### Causal Consistency: Preserving Causality, Not Global Order
 
-If we relax constraints further, no longer requiring a total global order for all operations, but only requiring that **causally related** operations be seen by all processes in the same order, while causally unrelated operations can be seen in different orders—we arrive at causal consistency.
+If we relax the constraints one step further—no longer requiring a consistent total order over all operations, only that **causally related** operations be seen by all processes in the same order, while causally unrelated operations may be seen in different orders—that is causal consistency.
 
-What does "causally related" mean? Simply put, if operation B reads a value written by operation A, then A and B have a causal relationship—A "caused" B. Or if operation C occurs after operation B (within the same process), and B causally depends on A, then C also causally depends on A. Beyond these direct and indirect dependencies, two operations are **concurrent**—there is no causal relationship between them.
+What does "causally related" mean? Simply put: if operation B reads a value written by operation A, then A and B are causally related—A "caused" B. Or, if operation C happens after operation B (within the same process), and B causally depends on A, then C also causally depends on A. Beyond these direct and indirect dependency relations, two operations are **concurrent**—there is no causal relationship between them.
 
-Let's use a social media scenario to explain. User Alice posts a message: "The weather is nice today!" (Operation A). User Bob sees Alice's post and replies: "Indeed it is!" (Operation B). Operation B causally depends on Operation A—because Bob replied only after seeing Alice's post. Under causal consistency, any user must see Alice's post first, and then see Bob's reply—it is impossible to see Bob's reply but not Alice's post, as that would make no semantic sense.
+A social media scenario explains it. User Alice makes a post: "The weather is lovely today!" (operation A). User Bob sees Alice's post and replies: "Indeed it is!" (operation B). Operation B causally depends on operation A—because Bob replied only after reading Alice's post. Under causal consistency, every user is guaranteed to see Alice's post first and Bob's reply second—nobody can see Bob's reply without seeing Alice's post; that would make no semantic sense.
 
-At the same time, user Carol also posts a message: "Had hotpot today." (Operation C). Operation C and Operation A are concurrent—there is no causal relationship between them. Under causal consistency, different users can see A and C in different orders: some might see the weather post first then the hotpot post, others might see them in reverse—both are fine, because there is no "who caused who" relationship between them.
+Meanwhile, user Carol also makes a post: "Had hotpot today." (operation C). Operation C and operation A are concurrent—there is no causal relationship between them. Under causal consistency, different users may see A and C in different orders: some see the weather post first and then the hotpot post, others the other way around—both are fine, because there is no "who caused whom" relationship between them.
 
-Causal consistency is a practical choice for many distributed databases because its implementation cost is much lower than linearizability—you don't need global consensus, you only need to track and propagate causal relationships (usually using vector clocks) to guarantee semantic correctness. Dynamo-style systems (Amazon Dynamo, Apache Cassandra, Riak) provide eventual consistency with causal session guarantees in certain configurations, which is strictly speaking stronger than "pure" eventual consistency but weaker than strict causal consistency.
+Causal consistency is the practical choice for many distributed databases, because it costs far less to implement than linearizability—you do not need global consensus; tracking and propagating causal relationships (usually with vector clocks) is enough to guarantee semantic correctness. Dynamo-style systems (Amazon Dynamo, Apache Cassandra, Riak) offer eventual consistency with causal session guarantees in certain configurations, which is strictly speaking stronger than "pure" eventual consistency but weaker than strict causal consistency.
 
 ### Eventual Consistency: Weakest but Fastest
 
-At the bottom of the spectrum is eventual consistency. Its guarantee is very weak: if no new writes occur, eventually ("eventually" is a vague point in time, maybe milliseconds, seconds, or even minutes) all replicas will converge to the same value. Before convergence, different replicas may return different values—you might read the latest write from one replica and an old value from five seconds ago from another.
+At the very bottom of the spectrum sits eventual consistency, and its guarantee is very weak: if no new writes arrive, then eventually ("eventually" is a fuzzy point in time—it might be milliseconds, seconds, or even minutes) all replicas converge to the same value. Before convergence, different replicas may return different values—you might read the latest write from one replica and a value five seconds stale from another.
 
-This guarantee sounds unreliable, but it is sufficient in many scenarios. DNS is a classic example of eventual consistency: when you update a DNS record, it may take minutes or even hours for all DNS servers globally to update—but in most cases, this is perfectly acceptable. Like counts, follower lists, and comment counts on social media—updating this data with a delay of a second or two has no catastrophic consequences.
+This guarantee sounds sketchy, but in many scenarios it is good enough. DNS is the classic example of eventual consistency: you update a DNS record, and it may take minutes or even hours for DNS servers around the world to all pick it up—yet in most cases that is perfectly acceptable. Like counts, follower lists, comment counts on social media—this data being a second or two behind carries no catastrophic consequences.
 
-The advantage of eventual consistency lies in performance and availability: because there is no need to wait synchronously for other replicas, writes can return success immediately, and reads only need to access the local replica. In the event of a network partition, each replica can serve requests independently—maximizing availability.
+The advantage of eventual consistency is performance and availability: because there is no synchronous waiting for other replicas, writes return success immediately, and reads only touch the local replica. Under a network partition, every replica can serve requests independently—availability maxed out.
 
-### Hierarchy of Consistency Models
+### The Hierarchy of Consistency Models
 
-Great, now let's look at the four models together. They form a hierarchy from strong to weak:
+Good—now let's put the four models side by side. They form a hierarchy from strong to weak:
 
 ```mermaid
 flowchart TD
-    A["线性一致性<br/>(Linearizability)"] -->|"满足线性一致 → 必然满足以下所有"| B["顺序一致性<br/>(Sequential Consistency)"]
-    B -->|"满足顺序一致 → 必然满足以下所有"| C["因果一致性<br/>(Causal Consistency)"]
-    C -->|"满足因果一致 → 必然满足以下所有"| D["最终一致性<br/>(Eventual Consistency)"]
+    A["Linearizability"] -->|"satisfies linearizability → implies everything below"| B["Sequential Consistency"]
+    B -->|"satisfies sequential consistency → implies everything below"| C["Causal Consistency"]
+    C -->|"satisfies causal consistency → implies everything below"| D["Eventual Consistency"]
 ```
 
-The hierarchy implies that a system satisfying linear consistency also satisfies sequential consistency, causal consistency, and eventual consistency. Conversely, a system satisfying eventual consistency does not necessarily satisfy causal consistency. As we move up each layer, we gain stronger consistency guarantees, but we pay the price of higher latency and reduced availability.
+The hierarchy means: a system that satisfies linearizability also satisfies sequential consistency, causal consistency, and eventual consistency. In the other direction, a system that satisfies eventual consistency does not necessarily satisfy causal consistency. Each level you climb buys a stronger consistency guarantee, at the price of higher latency and lower availability.
 
-> ⚠️ **Warning**
-> In reality, few systems purely implement just one consistency model. I learned this the hard way, assuming a specific database was "eventually consistent," only to discover that under certain configurations, it actually provided stronger consistency guarantees. Many systems offer tunable consistency levels. For instance, Cassandra supports `ONE`, `QUORUM`, and `ALL` read/write consistency levels, which you can choose per operation. `QUORUM` reads and writes ensure you read the latest written value (because the majorities for writes and reads must overlap), but this does not strictly guarantee linear consistency—truly strict linear consistency requires additional mechanisms (like Raft's `ReadIndex` or lease reads). Understanding what guarantees your system provides under specific configurations is far more important than memorizing theoretical definitions.
+> ⚠️ **Pitfall Warning**
+> In the real world, very few systems "purely" implement exactly one consistency model—we stepped in this very pit ourselves: early on we assumed a certain database "was" eventually consistent, only to discover that under a particular configuration it actually provided stronger consistency guarantees. Many systems offer tunable consistency levels. Cassandra, for example, supports the ONE, QUORUM, and ALL read/write consistency levels, selectable per operation. QUORUM reads and writes guarantee that you read the latest written value (because the write majority and the read majority must overlap), but this does not strictly guarantee linearizability—strict linearizability requires extra machinery (such as Raft's ReadIndex or lease reads). Understanding what guarantees your system provides under which configuration matters far more than memorizing theoretical definitions.
 
-## Core Ideas of Paxos/Raft
+## The Core Ideas of Paxos/Raft
 
-Now that we understand the spectrum of consistency models, a natural question arises: if we need strong consistency (like linear consistency), how do we implement it specifically? The answer is through **consensus protocols**. In the world of distributed systems, the core problem that consensus protocols solve is: getting a group of machines to agree on a value—even if some machines crash or the network partitions. This shares a similar spirit with the atomic operations we discussed in ch03—both are designed to make multiple execution units (threads or machines) reach a consensus on the state of a value. The difference is that atomic operations rely on the CPU's cache coherence protocol, while distributed consensus relies on multiple rounds of network communication and voting.
+With the spectrum of consistency models in hand, a natural question follows: if we need strong consistency (linearizability, say), how do we actually implement it? The answer is **consensus protocols**. In the world of distributed systems, the core problem a consensus protocol solves is: getting a group of machines to agree on a value—even if some of the machines may crash and the network may partition. This shares a certain spirit with the atomic operations we discussed in ch03—both exist so that multiple execution units (threads or machines) can reach agreement on the state of a value; the difference is that atomic operations lean on the CPU's cache coherence protocol, while distributed consensus leans on multiple rounds of network communication and voting.
 
-Let's be clear: we don't intend to provide a complete protocol description of Paxos or Raft here (that would be a paper's worth of work; Lamport's Paxos paper reads like a Greek myth, and while the Raft paper is clear, it's still thirty-some pages). Instead, we focus on the core ideas to help you understand "why it is designed this way."
+Let's be upfront: we do not intend to give a complete protocol description of Paxos or Raft here (that is genuinely a paper's worth of work—Lamport's Paxos paper reads like a Greek myth, and the Raft paper, clear as it is, still runs thirty-odd pages). Instead we focus on the core ideas, so that you understand "why it was designed this way".
 
-### Why We Need a Quorum
+### Why We Need a Majority (Quorum)
 
-The cornerstone of a consensus protocol is the **quorum**. Suppose we have $N$ machines. A value needs to be accepted by at least $\lfloor N/2 \rfloor + 1$ machines (a majority) to be considered "committed." Your first reaction might be—why a majority? Why not require everyone to agree?
+The cornerstone of a consensus protocol is the **quorum**—the majority. Suppose we have $N$ machines; a value must be accepted by at least $\lfloor N/2 \rfloor + 1$ machines (that is, a majority) before it counts as "decided". Your first reaction might be—why a majority? Why not require unanimous agreement?
 
-The core insight is: any two majorities must overlap. If there are 5 machines, a majority is at least 3. No matter how you pick them, any two groups of 3 machines share at least 1 common machine. This overlap implies: if a previous value was accepted by a majority, then any new majority must contain at least one machine that knows about the previous value. As long as the protocol is designed correctly, this "witness" machine can ensure that the new value does not overwrite the committed previous value.
+The core insight: any two majorities must overlap. With 5 machines, a majority is at least 3. However you choose them, any two groups of 3 machines share at least 1 machine in common. This overlap means: if a previous value has already been accepted by a majority, then any new majority must contain at least one machine that knows the previous value. As long as the protocol is designed properly, that "witness" machine ensures a new value cannot overwrite a previously decided value.
 
-From this insight, tolerating $f$ crashed machines requires at least $2f + 1$ machines. That is, to tolerate 1 crash, you need 3 machines ($3 = 2 \times 1 + 1$); to tolerate 2 crashes, you need 5 machines ($5 = 2 \times 2 + 1$). This is why coordination services like ZooKeeper, etcd, and Consul often recommend deploying 3 or 5 nodes—3 nodes tolerate 1 node failure, and 5 nodes tolerate 2 node failures.
+From this insight it follows that tolerating $f$ crashed machines requires at least $2f + 1$ machines—tolerating 1 crash takes 3 machines ($3 = 2 \times 1 + 1$), and tolerating 2 crashes takes 5 ($5 = 2 \times 2 + 1$). This is why coordination services such as ZooKeeper, etcd, and Consul recommend 3-node or 5-node deployments: 3 nodes tolerate 1 node failure, 5 nodes tolerate 2.
 
-### Leader Election: Who Gives the Orders
+### Leader Election: Who Calls the Shots
 
-Understanding the principle of a quorum, let's look at Raft. Raft's design philosophy can be summarized in one phrase: "understandability first." When designing Raft, Diego Ongaro and John Ousterhout explicitly set "easy to understand" as a goal equal in importance to "correctness." This stands in stark contrast to Paxos, which is "correct but unreadable." Raft decomposes consensus into three sub-problems: leader election, log replication, and safety. Let's start with leader election.
+With the principle of majorities in place, let's turn to Raft. Raft's design philosophy in one sentence: "understandability first". When Diego Ongaro and John Ousterhout designed Raft, they explicitly made "easy to understand" a goal on par with "correctness"—a stark contrast to Paxos's "correct but nobody can read it" style. Raft decomposes consensus into three sub-problems: Leader election, log replication, and safety. Let's start with Leader election.
 
-In Raft, there is at most one Leader in the cluster at any time—all write requests are handled by the Leader, and all logs are replicated to Followers by the Leader. This "strong Leader" design is easier to understand and implement than Paxos's "multi-Proposer" model.
+In Raft, there is at most one Leader in the cluster at any moment—all write requests are handled by the Leader, and all logs are replicated from the Leader to the Followers. This "strong Leader" design is easier to understand and implement than Paxos's "multi-Proposer" model.
 
-Leader election is driven by **terms** and **heartbeats**. Each term is a monotonically increasing integer, and there is at most one Leader per term. Normally, the Leader periodically sends heartbeats to all Followers (`AppendEntries` RPC, even if empty when there are no logs to replicate). If a Follower does not receive a heartbeat within an election timeout, it assumes the Leader is down and starts a new election.
+Leader election is driven by **terms** and **heartbeats**. Each term is a monotonically increasing integer, and each term has at most one Leader. Under normal conditions the Leader periodically sends heartbeats to all Followers (AppendEntries RPCs—empty heartbeats even when there is nothing to replicate). If a Follower receives no heartbeat within an election timeout, it concludes the Leader is dead and starts a new round of election.
 
-To describe the election process in plain terms: it's "a group of people voting for a leader." The Follower increments the current term, becomes a Candidate, votes for itself first, and then sends `RequestVote` RPCs to all other nodes. The voting rule for other nodes is: at most one vote per term, first-come-first-served (with a restriction: the Candidate's log must be at least as up-to-date as the voter's). If a Candidate receives votes from a majority, it becomes the new Leader and immediately starts sending heartbeats to prevent others from initiating elections.
+In plain words, the election is "a group of people voting for a leader": the Follower increments its current term, becomes a Candidate, first votes for itself, then sends a RequestVote RPC to every other node. The voting rule on the other nodes: at most one vote per term, first come first served (with one restriction: the Candidate's log must be at least as up-to-date as the voter's). If a Candidate receives votes from a majority, it becomes the new Leader and immediately starts sending heartbeats to stop anyone else from initiating an election.
 
-This process features a clever randomization mechanism: each node's election timeout is randomly chosen within a range. This significantly reduces the probability of multiple nodes initiating elections simultaneously and "splitting the vote"—because their timeouts differ, the node that times out first will usually initiate the election and secure the majority.
+The process has one rather clever randomized mechanism: each node's election timeout is chosen randomly within a range. This greatly reduces the odds of several nodes starting elections at the same time and splitting the vote—because their timeouts differ, the node that times out first usually initiates the election first and wins the majority.
 
-### Log Replication: Leader Speaks, Followers Follow
+### Log Replication: The Leader Speaks, the Followers Fall in Line
 
-Once a Leader is selected, log replication is straightforward—the core of the process is "Leader says one sentence, Followers repeat it." The client sends a write request to the Leader. The Leader appends the operation to its own log, then replicates this log entry to all Followers (via `AppendEntries` RPC). When the Leader confirms that this log entry has been accepted by a majority (including itself), it **commits** the log, applies it to the state machine, and returns success to the client.
+Once the Leader is elected, log replication is fairly straightforward—the heart of the whole flow is "the Leader says a line, the Followers repeat it". A client sends a write request to the Leader; the Leader appends the operation to its own log and then replicates that entry to all Followers (via AppendEntries RPCs). When the Leader confirms that the entry has been accepted by a majority (itself included), it **commits** the entry, applies it to the state machine, and returns success to the client.
 
-A key safety guarantee is that committed logs are never overwritten. Raft achieves this through a simple constraint: when sending `AppendEntries`, the Leader includes the index and term of the previous log entry. Upon receiving it, the Follower checks if the entry at the corresponding position in its own log matches. If it doesn't match, the Follower rejects the entry. The Leader then backtracks and retries until it finds a position where both sides agree, starting from there to overwrite.
+The key safety guarantee: committed log entries are never overwritten. Raft achieves this with one simple constraint—the Leader carries the index and term of the preceding log entry in its AppendEntries; upon receipt, the Follower checks whether the corresponding position in its own log matches. If it does not match, the Follower rejects the entry, and the Leader backs up and retries until it finds the position where both sides agree, then overwrites forward from there.
 
-This mechanism ensures that if two log entries have the same term number at the same index position on any Follower, their content must be identical (because a Leader creates only one log entry at a specific index during a term), and all logs preceding that entry are also identical (through recursive matching checks). This is log consistency.
+This mechanism guarantees: if two entries at the same index position in any Follower's log carry the same term number, their content is identical (because a Leader creates only one entry at a given index within a term), and all entries preceding that entry are also identical (through the recursive matching check). That is log consistency.
 
-To summarize the entire Raft process with an analogy: imagine a committee (the cluster) where members communicate via letters (network messages). They need to reach agreement on a series of decisions (logs). Raft's approach is to first elect a chairperson (Leader election). The chairperson proposes all decisions (log replication), and decisions take effect only if agreed upon by a majority (quorum voting). If the chairperson loses contact, the committee votes to elect a new chairperson to continue the work. While this analogy is rough, it captures Raft's core design philosophy—the key to consensus is not that "everyone agrees," but that "agreement by a majority is sufficient," and the intersection of majorities guarantees the propagation of information.
+To wrap up the whole Raft flow with an analogy: picture a committee (the cluster) whose members communicate by letter (network messages). They need to agree on a series of decisions (the log). Raft's approach is to first elect a chair (Leader election); the chair proposes all the decisions (log replication), and a decision takes effect only with majority approval (the quorum vote). If the chair goes silent, the committee votes in a new chair and carries on. The analogy is crude, but it captures Raft's core design idea—the key to consensus is not "everyone agrees", but "a majority agreeing is enough", and the intersection of majorities is what carries information forward.
 
-## C++ Practice Direction
+## Directions for C++ Practice
 
-We've covered enough theory; now let's look at something practical. With the theoretical foundation of distributed consistency in mind, we will explore the direction for writing distributed communication code in C++. To be clear—we won't implement a complete distributed protocol (that's a project in itself; a correct implementation of Raft can take weeks of effort). Instead, we will demonstrate how to use gRPC + C++20 coroutines to build the basic skeleton for communication between distributed services. This leverages the coroutine knowledge we gained in ch06, effectively connecting our previous learnings.
+Plenty of theory—now let's look at something practical. With the theoretical foundations of distributed consistency in place, let's see how to actually write distributed communication code in C++. To be clear up front—we will not implement a complete distributed protocol (that is a standalone-project-sized effort; a correct implementation of Raft alone can eat several weeks). Instead, we will show how to build the basic skeleton of inter-service communication with gRPC + C++20 coroutines. This draws directly on the coroutine knowledge from ch06—tying together what we accumulated along the way.
 
 ### gRPC Basics: Defining Services with Protobuf
 
-gRPC uses Protocol Buffers (protobuf) to define service interfaces and message formats. This is the key infrastructure in the modern C++ ecosystem that connects "concurrency" and "distribution," as mentioned in the previous article. Suppose we want to implement a simple distributed key-value store service. The proto file would look something like this:
+gRPC uses Protocol Buffers (protobuf) to define service interfaces and message formats—the key piece of infrastructure, as we mentioned in the previous article, that connects "concurrency" and "distribution" in the modern C++ ecosystem. Suppose we want to implement a simple distributed key-value store; the proto file would look roughly like this:
 
 ```protobuf
 // kv_store.proto
@@ -148,15 +148,15 @@ syntax = "proto3";
 
 package kvstore;
 
-// 键值存储服务
+// Key-value store service
 service KvStoreService {
-    // 获取指定 key 的值
+    // Get the value for a given key
     rpc Get(GetRequest) returns (GetResponse);
 
-    // 设置 key-value
+    // Set a key-value pair
     rpc Put(PutRequest) returns (PutResponse);
 
-    // 删除指定 key
+    // Delete a given key
     rpc Delete(DeleteRequest) returns (DeleteResponse);
 }
 
@@ -167,13 +167,13 @@ message GetRequest {
 message GetResponse {
     bool found = 1;
     string value = 2;
-    int64 version = 3;    // 因果版本号，类似向量时钟的单调版本
+    int64 version = 3;    // Causal version number, a monotonic version like a vector clock
 }
 
 message PutRequest {
     string key = 1;
     string value = 2;
-    int64 expected_version = 3;  // 乐观并发控制：期望的当前版本
+    int64 expected_version = 3;  // Optimistic concurrency control: the expected current version
 }
 
 message PutResponse {
@@ -190,11 +190,11 @@ message DeleteResponse {
 }
 ```
 
-After generating C++ code with the `protoc` compiler, we will get a bunch of `.pb.h` and `.pb.cc` files, plus a `.grpc.pb.h` and `.grpc.pb.cc`—the latter containing the gRPC server base class and client stub code. Don't be intimidated by this pile of generated files; the only things we really need to care about are the base class and the stub class.
+After the `protoc` compiler generates the C++ code, you end up with a pile of `.pb.h` and `.pb.cc` files, plus a `.grpc.pb.h` and a `.grpc.pb.cc`—the latter pair contains the gRPC server base class and the client stub code. Do not be intimidated by the pile of generated files; the only things you actually need to care about are the base class and the stub class.
 
 ### Server Implementation: Handling RPC Requests
 
-Next, let's look at the server implementation—inheriting from the generated `KvStoreService::Service` base class and overriding each RPC method. We use a simple in-memory map as the storage backend, paired with a `std::shared_mutex` for thread safety. If you recall the reader-writer lock pattern discussed in ch02, this is its direct application.
+Next, the server side—inherit from the generated `KvStoreService::Service` base class and override each RPC method. We use a simple in-memory map as the storage backend, paired with `std::shared_mutex` for thread safety. If you remember the reader-writer lock pattern from ch02, this is a direct application of it.
 
 ```cpp
 // kv_store_server.h
@@ -208,17 +208,17 @@ Next, let's look at the server implementation—inheriting from the generated `K
 #include <shared_mutex>
 #include <optional>
 
-/// @brief 分布式键值存储的 gRPC 服务端实现
+/// @brief gRPC server implementation of the distributed key-value store
 class KvStoreServer final : public kvstore::KvStoreService::Service {
 public:
     KvStoreServer() = default;
 
-    /// @brief 处理 Get 请求
+    /// @brief Handle a Get request
     grpc::Status Get(grpc::ServerContext* context,
                      const kvstore::GetRequest* request,
                      kvstore::GetResponse* response) override
     {
-        // 读锁：允许多个并发读
+        // Read lock: allow multiple concurrent readers
         std::shared_lock lock(mutex_);
 
         auto it = store_.find(request->key());
@@ -233,19 +233,19 @@ public:
         return grpc::Status::OK;
     }
 
-    /// @brief 处理 Put 请求（带乐观并发控制）
+    /// @brief Handle a Put request (with optimistic concurrency control)
     grpc::Status Put(grpc::ServerContext* context,
                      const kvstore::PutRequest* request,
                      kvstore::PutResponse* response) override
     {
-        // 写锁：独占访问
+        // Write lock: exclusive access
         std::unique_lock lock(mutex_);
 
         auto it = store_.find(request->key());
 
-        // 乐观并发控制：
-        // 如果客户端发送了 expected_version，
-        // 检查当前版本是否匹配
+        // Optimistic concurrency control:
+        // if the client sent expected_version,
+        // check whether the current version matches
         if (request->expected_version() > 0) {
             if (it == store_.end()
                 || it->second.version != request->expected_version()) {
@@ -265,7 +265,7 @@ public:
         return grpc::Status::OK;
     }
 
-    /// @brief 处理 Delete 请求
+    /// @brief Handle a Delete request
     grpc::Status Delete(grpc::ServerContext* context,
                         const kvstore::DeleteRequest* request,
                         kvstore::DeleteResponse* response) override
@@ -284,16 +284,16 @@ private:
     };
 
     std::unordered_map<std::string, StoreEntry> store_;
-    std::shared_mutex mutex_;    // 读写锁保护 store_
+    std::shared_mutex mutex_;    // Reader-writer lock protecting store_
 };
 ```
 
-This code demonstrates several key design points. We use `std::shared_mutex` instead of `std::mutex` to protect storage—read operations (Get) use a shared lock (`std::shared_lock`), while write operations (Put/Delete) use an exclusive lock (`std::unique_lock`). This aligns with the reader-writer lock pattern discussed in ch02: in read-heavy scenarios, shared locks can significantly improve concurrency. Another notable point is the `expected_version` field in the Put request—this implements Optimistic Concurrency Control (OCC). When a client reads a value, it receives its version number. When modifying and writing it back, the client includes this version number. If the server finds that the current version number does not match the client's expectation, it means another party has modified the value, and the write is rejected—the client needs to re-read, re-modify, and re-submit. This is much lighter than using a distributed lock and avoids the various security issues associated with distributed locks that we discussed in the previous article.
+This code demonstrates several important design points. We use `std::shared_mutex` rather than `std::mutex` to protect the store—read operations (Get) take a shared lock (`std::shared_lock`), while write operations (Put/Delete) take an exclusive lock (`std::unique_lock`). This matches the reader-writer lock pattern we discussed in ch02: in read-mostly workloads, shared locks raise concurrency noticeably. Another point worth noting is the `expected_version` field in the Put request—this implements Optimistic Concurrency Control (OCC). A client that reads a value also receives its version number, and sends that version back along with the modified write. If the server finds that the current version does not match what the client expected, someone else has already modified the value, and the write is rejected—the client must re-read, re-modify, and re-submit. This is far lighter than a distributed lock, and it sidesteps the various safety problems of distributed locks we discussed in the previous article.
 
-The code to start the server is also very concise:
+The code to start the server is just as concise:
 
 ```cpp
-// main.cpp（服务端）
+// main.cpp (server)
 #include "kv_store_server.h"
 
 int main()
@@ -315,11 +315,11 @@ int main()
 }
 ```
 
-### Asynchronous gRPC: Wrapping CompletionQueue with Coroutines
+### Asynchronous gRPC: Wrapping the CompletionQueue with Coroutines
 
-So far, we have been using gRPC's **synchronous API**—where every RPC call blocks the current thread until completion. While this works fine for low concurrency, using the synchronous model in high-concurrency scenarios (for example, a server handling thousands of requests simultaneously) causes the number of threads to skyrocket, making context switching the primary bottleneck. This is the same issue we discussed in ch06 regarding "why we need asynchrony."
+Everything so far has used gRPC's **synchronous API**—every RPC call blocks the calling thread until it completes. That is fine in low-concurrency scenarios, but if you run the synchronous model under high concurrency (a server that must handle thousands of requests at once, say), the thread count explodes and context switching outright becomes the bottleneck—the very same "why we need async" problem we discussed in ch06.
 
-gRPC provides an asynchronous API centered around `CompletionQueue` (CQ)—an event loop where all asynchronous operations post a completion event to the CQ upon completion. We need a thread to continuously retrieve events from the CQ and process them. This model is very similar to the asynchronous I/O we discussed in ch06: essentially, it is event-driven + callbacks. However, coding directly with CQ is extremely tedious—you must manually manage the lifecycle of request objects, handle various state transitions, and chain callbacks together. If we wrap the CQ with C++20 coroutines, we can significantly improve code readability. Let's look at a simplified example of a coroutine-based gRPC client call.
+gRPC provides an asynchronous API whose centerpiece is the `CompletionQueue` (CQ)—an event loop. Every asynchronous operation posts a completion event to the CQ when it finishes, and you need a thread that keeps pulling events out of the CQ and handling them. This model closely resembles the asynchronous I/O we discussed in ch06: at bottom, both are event-driven plus callbacks. But writing directly against the CQ is extremely tedious—you manage request-object lifetimes by hand, juggle state transitions by hand, and chain callbacks together by hand. Wrapping the CQ with C++20 coroutines improves code readability dramatically. Let's look at a simplified coroutine-flavored gRPC client call.
 
 ```cpp
 #pragma once
@@ -331,8 +331,8 @@ gRPC provides an asynchronous API centered around `CompletionQueue` (CQ)—an ev
 #include <iostream>
 #include <memory>
 
-/// @brief 用于包装 gRPC 异步调用的协程 awaitable
-/// 这是一个简化版，展示了核心思路
+/// @brief A coroutine awaitable that wraps an asynchronous gRPC call
+/// This is a simplified version showing the core idea
 template<typename ResponseType>
 struct GrpcAwaitable {
     grpc::ClientContext context;
@@ -340,22 +340,22 @@ struct GrpcAwaitable {
     grpc::Status status;
     std::unique_ptr<grpc::ClientAsyncResponseReader<ResponseType>> reader;
 
-    /// @brief 协程是否需要挂起（总是挂起，等待 gRPC 完成）
+    /// @brief Whether the coroutine needs to suspend (always suspends, waiting for gRPC to finish)
     bool await_ready() const noexcept { return false; }
 
-    /// @brief 挂起时启动异步 RPC 调用
+    /// @brief Start the asynchronous RPC call upon suspension
     void await_suspend(std::coroutine_handle<> handle)
     {
-        // 启动异步调用，完成后恢复协程
+        // Start the asynchronous call; the coroutine is resumed once it completes
         reader->StartCall();
 
-        // Finish() 会在 CQ 上投递一个完成事件
-        // 我们用一个 tag 来关联协程 handle
+        // Finish() posts a completion event onto the CQ
+        // We use a tag to associate the coroutine handle
         reader->Finish(&response, &status,
                        reinterpret_cast<void*>(handle.address()));
     }
 
-    /// @brief 协程恢复时返回响应
+    /// @brief Return the response when the coroutine resumes
     ResponseType await_resume()
     {
         if (!status.ok()) {
@@ -366,7 +366,7 @@ struct GrpcAwaitable {
     }
 };
 
-/// @brief 协程化的 gRPC 键值存储客户端
+/// @brief A coroutine-based gRPC key-value store client
 class KvStoreCoroutineClient {
 public:
     explicit KvStoreCoroutineClient(std::shared_ptr<grpc::Channel> channel)
@@ -374,13 +374,13 @@ public:
         , cq_()
     {}
 
-    /// @brief 启动 CompletionQueue 事件循环（在独立线程中运行）
+    /// @brief Start the CompletionQueue event loop (runs in a dedicated thread)
     void start_event_loop()
     {
         void* tag = nullptr;
         bool ok = false;
         while (cq_.Next(&tag, &ok)) {
-            // 从 tag 恢复对应的协程
+            // Resume the coroutine associated with the tag
             auto handle = std::coroutine_handle<>::from_address(tag);
             if (handle && !handle.done()) {
                 handle.resume();
@@ -388,7 +388,7 @@ public:
         }
     }
 
-    /// @brief 异步 Get：协程化调用
+    /// @brief Asynchronous Get: a coroutine-friendly call
     GrpcAwaitable<kvstore::GetResponse> get(const std::string& key)
     {
         GrpcAwaitable<kvstore::GetResponse> awaitable;
@@ -402,7 +402,7 @@ public:
         return awaitable;
     }
 
-    /// @brief 异步 Put：协程化调用
+    /// @brief Asynchronous Put: a coroutine-friendly call
     GrpcAwaitable<kvstore::PutResponse> put(
         const std::string& key,
         const std::string& value,
@@ -429,27 +429,27 @@ private:
 };
 ```
 
-The core of this code lies in the `GrpcAwaitable` struct. It is an object that satisfies the C++20 coroutine `awaitable` constraints, utilizing the exact mechanism we discussed in depth in Chapter 6. When a coroutine `co_await`s this object, `await_suspend` is invoked. It initiates the gRPC asynchronous call and registers the coroutine handle as a tag in the `CompletionQueue`. Once the gRPC asynchronous operation completes, the CQ event loop retrieves this tag (which is effectively the coroutine handle) and calls `resume()` to restore the coroutine's execution. Upon resuming, the coroutine retrieves the response result in `await_resume`. The entire process follows the exact same pattern as the awaitable we manually implemented in Chapter 6.
+The heart of this code is the `GrpcAwaitable` struct—an object satisfying the C++20 coroutine `awaitable` requirements, in other words exactly the machinery we dug into in ch06. When a coroutine `co_await`s this object, `await_suspend` is invoked: it starts the gRPC asynchronous call and registers the coroutine handle as the tag on the `CompletionQueue`. When the gRPC asynchronous operation completes, the CQ event loop pops the tag (which is in effect the coroutine handle) and calls `resume()` to resume the coroutine. Once resumed, the coroutine picks up the response in `await_resume`—the same playbook as the awaitable we hand-wrote in ch06, step for step.
 
-In the application layer code, we can use it like this:
+At the application layer, you can use it like this:
 
 ```cpp
-/// @brief 示例：使用协程化的 gRPC 客户端
+/// @brief Example: using the coroutine-based gRPC client
 Task<void> demo_usage(KvStoreCoroutineClient& client)
 {
     try {
-        // 写入一个键值对
+        // Write a key-value pair
         auto put_resp = co_await client.put("hello", "world");
         std::cout << "Put 成功，新版本: "
                   << put_resp.new_version() << "\n";
 
-        // 读取回来
+        // Read it back
         auto get_resp = co_await client.get("hello");
         std::cout << "Get 结果: found=" << get_resp.found()
                   << ", value=" << get_resp.value()
                   << ", version=" << get_resp.version() << "\n";
 
-        // 乐观并发控制：带版本写入
+        // Optimistic concurrency control: write with the version
         auto occ_resp = co_await client.put(
             "hello", "updated_world", get_resp.version());
         if (occ_resp.success()) {
@@ -465,56 +465,56 @@ Task<void> demo_usage(KvStoreCoroutineClient& client)
 }
 ```
 
-You see, the application layer code is almost indistinguishable from a local function call—`co_await` makes the asynchronous gRPC call look as linear and smooth as synchronous code, yet the underlying implementation is fully asynchronous: while waiting for the gRPC response, the current thread does not block; instead, it goes on to handle other coroutines or CQ events. This is the value of coroutines that we emphasized repeatedly in ch06—not to make code faster, but to make asynchronous code readable and maintainable.
+Notice how the application-layer code is barely distinguishable from ordinary local function calls—`co_await` makes the asynchronous gRPC calls read linearly and smoothly, like synchronous code, while underneath everything is fully asynchronous: while waiting for a gRPC response, the current thread does not block; it goes off to service other coroutines or CQ events. This is the value of coroutines that we hammered on repeatedly in ch06—not making code faster, but making asynchronous code readable and maintainable.
 
-> ⚠️ **Warning**
-> The `GrpcAwaitable` above is a simplified example demonstrating the core idea of coroutine-based gRPC. Do not use it directly in a production environment. In production, you need to handle many more details: graceful shutdown of the CQ event loop, timeout control, retry logic, connection state management, thread-safe CQ access, and so on. If you don't want to reinvent the wheel (which I strongly advise against), take a look at the [agrpc](https://github.com/Tradias/agrpc) library—it provides production-grade asynchronous gRPC wrappers based on Boost.Asio's C++20 coroutine support.
+> ⚠️ **Pitfall Warning**
+> The `GrpcAwaitable` above is a simplified example demonstrating the core idea of coroutine-friendly gRPC; do not take it into production as-is. In production you need to handle many more details: graceful shutdown of the CQ event loop, timeout control, retry logic, connection state management, thread-safe CQ access, and so on. If you would rather not build this wheel yourself (we strongly recommend not building it), take a look at [agrpc](https://github.com/Tradias/agrpc)—a library that provides production-grade asynchronous gRPC wrappers on top of Boost.Asio's C++20 coroutine support.
 
-## Summary: The Journey of Volume V
+## Summary: The Journey Through Volume 5
 
-With this, the final article of Volume V is complete. Looking back at the learning path of this volume, we have traveled from "what is a thread" to "how distributed systems communicate"—this has indeed been a considerable journey.
+With this, the final article of Volume 5 is written. Looking back over the volume's learning path, we traveled from "what is a thread" all the way to "how distributed systems communicate"—quite a journey indeed.
 
-**ch00 Concurrency Basics**—We established a basic understanding of concurrency: concurrency and parallelism are not the same thing. Amdahl's Law and Gustafson's Law helped us understand the upper and lower bounds of speedup, the trade-off between throughput and latency guided our architectural choices, and we learned that some scenarios simply don't need concurrency. Correctness first, performance second—this is the principle we have adhered to throughout the volume.
+**ch00 Concurrency Fundamentals**—We built a baseline understanding of concurrency: concurrency and parallelism are not the same thing; Amdahl's law and Gustafson's law bound the speedup from both sides; the throughput-versus-latency trade-off guides architectural choices; and some scenarios simply do not need concurrency at all. Correctness first, performance second—that principle ran through the entire volume.
 
-**ch01 Thread Lifecycle and RAII**—We got to know the lifecycle of `std::thread`, understood the difference between `join()` and `detach()`, and learned to use RAII guards to manage thread resources, ensuring that threads don't leak or get forgotten. This is the fundamental skill of concurrent programming.
+**ch01 Thread Lifecycle and RAII**—We got acquainted with the lifecycle of `std::thread`, understood the difference between `join()` and `detach()`, and learned to guard thread resources with RAII so that threads neither leak nor get forgotten. This is the bread and butter of concurrent programming.
 
-**ch02 Synchronization Primitives**—`std::mutex`, `std::condition_variable`, `std::shared_mutex`... these are the toolbox of concurrent programming. We learned to use them to protect shared data, coordinate execution order between threads, and implement producer-consumer patterns. We also saw their limitations: lock granularity is hard to control, deadlocks are easy to introduce, and performance is poor under high contention.
+**ch02 Synchronization Primitives**—`std::mutex`, `std::condition_variable`, `std::shared_mutex`... these are the toolbox of concurrent programming. We learned to use them to protect shared data, coordinate execution order between threads, and implement the producer-consumer pattern. We also saw their limits: lock granularity is hard to control, deadlock comes easy, and performance suffers under high contention.
 
-**ch03 Atomic Operations and Memory Model**—This is one of the hardest core parts of Volume V, and also the most enjoyable part for me to write. Starting from the basic usage of `std::atomic`, we dove deep into the six memory orders of the C++ memory model (`memory_order_relaxed`, `memory_order_consume`, `memory_order_acquire`, `memory_order_release`, `memory_order_acq_rel`, `memory_order_seq_cst`), understood the reordering rules of compilers and CPUs, and mastered the reasoning method for happens-before relationships. This knowledge lets you know what you are doing when writing lock-free code.
+**ch03 Atomic Operations and the Memory Model**—One of the hardest-core parts of Volume 5, and the part we had the most fun writing. Starting from the basic usage of `std::atomic`, we went deep into the six memory orders of the C++ memory model (`memory_order_relaxed`, `memory_order_consume`, `memory_order_acquire`, `memory_order_release`, `memory_order_acq_rel`, `memory_order_seq_cst`), understood the reordering rules of compilers and CPUs, and mastered the reasoning method for happens-before relationships. This knowledge is what lets you know what you are doing when writing lock-free code.
 
-**ch04 Concurrent Data Structures**—We applied the synchronization primitives and atomic operations learned earlier to specific data structures: thread-safe queues, concurrent maps, and ring buffers. We saw the trade-offs between different strategies: coarse-grained locking, fine-grained locking, read-write locks, and lock-free approaches.
+**ch04 Concurrent Data Structures**—We applied the synchronization primitives and atomic operations from earlier chapters to concrete data structures: thread-safe queues, concurrent maps, ring buffers. We weighed the different strategies—coarse-grained locking, fine-grained locking, reader-writer locks, lock-free approaches.
 
-**ch05 Tasks, Futures, and Thread Pools**—We elevated our level from "bare threads" to "tasks". `std::async`, `std::future`, and `std::promise` provided higher-level concurrent abstractions, while thread pools allowed us to reuse thread resources and control concurrency. The task mindset is more suitable for most application scenarios than the thread mindset.
+**ch05 Futures, Tasks, and Thread Pools**—We moved up a level from "bare threads" to "tasks". `std::async`, `std::future`, and `std::promise` provide higher-level concurrency abstractions, while thread pools let us reuse thread resources and control the degree of concurrency. The task mindset fits most application scenarios better than the thread mindset.
 
-**ch06 Asynchrony and Coroutines**—C++20 coroutines represent a major paradigm shift in concurrent programming. Starting from the basic mechanisms of coroutines (`co_await`, `co_return`, `co_yield`, `promise_type`, `awaitable`), we learned to rewrite callback-style asynchronous code into a linear, readable form using coroutines. Coroutines are not a silver bullet, but they certainly improve the maintainability of asynchronous code.
+**ch06 Async and Coroutines**—C++20 coroutines are a major paradigm shift in concurrent programming. Starting from the basic coroutine machinery (`co_await`, `co_return`, `co_yield`, `promise_type`, `awaitable`), we learned to rewrite callback-style asynchronous code into a linear, readable form. Coroutines are not a silver bullet, but they genuinely raise the maintainability of asynchronous code a notch.
 
-**ch07 Actor and Channel**—We stepped out of the "shared memory + locks" model and explored message-passing concurrent paradigms. The Actor model and CSP/Channel models avoid data races by "sharing nothing and communicating only via messages," making them naturally suitable for multi-core and distributed scenarios.
+**ch07 Actor and Channel**—We stepped outside the "shared memory + locks" model and explored message-passing concurrency paradigms. The Actor model and the CSP/Channel model avoid data races by "sharing nothing, communicating only through messages"—naturally suited to multicore and distributed scenarios.
 
-**ch08 Debugging and Performance**—Concurrent bugs are the hardest bugs to debug. We learned to use ThreadSanitizer to detect data races, used profiling tools to locate lock contention, and understood performance pitfalls like false sharing and lock convoys.
+**ch08 Debugging and Performance**—Concurrency bugs are the hardest bugs to debug. We learned to detect data races with ThreadSanitizer, locate lock contention with profiling tools, and understand performance traps such as false sharing and lock convoys.
 
-**ch09 Distributed Bridging**—These are the two articles right here. Starting from the boundaries of single-machine concurrency, we saw the five fundamental differences of distributed systems, understood the spectrum of consistency models, recognized the core ideas of Paxos/Raft consensus protocols, and finally demonstrated the direction of writing distributed communication code in C++ using gRPC + C++20 coroutines.
+**ch09 Bridging to Distributed Systems**—The two articles you are reading. Starting from the boundary of single-machine concurrency, we saw the five fundamental differences of distributed systems, understood the spectrum of consistency models, met the core ideas of the Paxos/Raft consensus protocols, and closed with gRPC + C++20 coroutines as a direction for writing distributed communication code in C++.
 
-Looking back, no step is isolated. The RAII mindset of ch01 runs through the entire volume—from thread management to lock management to connection management. The memory model knowledge of ch03 is the foundation for understanding the consistency models in ch09 (`memory_order_seq_cst` and linearizability essentially answer the same question). The coroutine mechanism of ch06 is the cornerstone of the gRPC asynchronous wrapping in ch09. The Actor model of ch07 gains its greatest value in a distributed environment—location transparency allows local code to be deployed to multiple machines with almost no changes.
+Looking back, none of the steps stood alone. The RAII mindset of ch01 runs through the entire volume—from thread management to lock management to connection management; the memory model knowledge of ch03 is the foundation for understanding the consistency models of ch09 (`memory_order_seq_cst` and linearizability are, at bottom, answering the same question); the coroutine machinery of ch06 is the cornerstone of the asynchronous gRPC wrapper in ch09; and the Actor model of ch07 gains its greatest value in a distributed environment—location transparency means local code can be deployed across multiple machines with almost no changes.
 
-Learning concurrent programming is never "complete"—it is a field that requires continuous practice, stumbling into traps, and building intuition. But if you have followed Volume V to this point, you should already have a solid theoretical foundation and sufficient practical experience to face the vast majority of concurrent scenarios. The rest is to hone your skills in real projects.
+Learning concurrent programming is never "finished"—it is a field that demands constant practice, constant faceplants, and constantly rebuilt intuition. But if you have followed Volume 5 to this point, you should now have a solid theoretical foundation and enough hands-on experience to face the vast majority of concurrent scenarios. What remains is to hone it all on real projects.
 
 ### Directions for Further Learning
 
-If you want to deepen the foundation established in Volume V, here are some directions I personally recommend.
+If you want to push the foundation laid in Volume 5 further, here are some directions we have personally tested and recommend.
 
-**Book Recommendations**: Martin Kleppmann's *Designing Data-Intensive Applications* is widely recognized as the best introductory book in the field of distributed systems, covering core topics like consistency, consensus, replication, and partitioning—I strongly recommend reading at least the first five chapters. Anthony Williams' *C++ Concurrency in Action* is the authoritative reference for C++ concurrent programming; the second edition covers the C++17 standard (the third edition is expected to cover C++20), and it serves as a "dictionary" you can keep at your desk for quick reference. If you are particularly interested in lock-free programming, Herlihy and Shavit's *The Art of Multiprocessor Programming* is a classic text—however, this book is quite academic and has a certain barrier to entry.
+**Book recommendations**: Martin Kleppmann's *Designing Data-Intensive Applications* is widely recognized as the best entry-level book in the field of distributed systems, covering the core topics of consistency, consensus, replication, and partitioning—we strongly recommend reading at least the first five chapters. Anthony Williams' *C++ Concurrency in Action* is the authoritative reference on C++ concurrency; the second edition covers C++17 (a third edition covering C++20 is expected), the kind of "dictionary" you keep on your desk for quick lookups. If lock-free programming is your particular interest, Herlihy and Shavit's *The Art of Multiprocessor Programming* is the classic text—though the book leans academic and there's a real barrier to entry.
 
-**Open Source Projects**: If you want to see a real distributed consensus protocol implementation, etcd's Raft implementation (in Go, about 2000 lines of core code) is the best choice for getting started—it has detailed comments, clear logic, and every concept from the Raft paper can be found in the code, making it a very comfortable read. In the C++ ecosystem, Apache brpc is a C++ RPC framework open-sourced by Baidu. It includes components like bvar (concurrent variables) and bthread (coroutine scheduling), making it great material for learning production-grade C++ concurrent code.
+**Open-source projects**: If you want to read a real distributed consensus protocol implementation, etcd's Raft implementation (in Go, roughly 2000 lines of core code) is the best starting point—richly commented, clearly organized, with every concept from the Raft paper mapping onto code, a genuinely comfortable read. In the C++ ecosystem, Apache brpc—the C++ RPC framework open-sourced by Baidu—ships bvar (concurrent variables), bthread (coroutine scheduling), and other components, making it good material for studying production-grade C++ concurrency code.
 
-**Practice Directions**: If you want to dive deep into distributed system development in C++, you can try using gRPC + a Raft library (like `libraft`) to implement a simple distributed key-value store. This is a classic lab project from MIT 6.824 (Distributed Systems). The engineering effort is moderate but the coverage is broad; completing it will give you a completely new understanding of consensus protocols.
+**Practice directions**: If you want to go deeper into distributed systems development in C++, try building a simple distributed key-value store with gRPC + a Raft library (such as `libraft`)—the classic lab project from MIT 6.824 (Distributed Systems). The workload is moderate but the coverage is broad; once you finish it, your understanding of consensus protocols will simply not be the same.
 
 ## Reference Resources
 
-- [Designing Data-Intensive Applications — Martin Kleppmann](https://dataintensive.net/) — The "Bible" of distributed systems, covering all core topics like consistency, consensus, and replication.
-- [C++ Concurrency in Action, 2nd Edition — Anthony Williams](https://www.manning.com/books/c-plus-plus-concurrency-in-action-second-edition) — The authoritative reference for C++ concurrent programming (3rd edition expected to cover C++20).
-- [In Search of an Understandable Consensus Algorithm (Raft Paper)](https://raft.github.io/raft.pdf) — The Raft paper by Diego Ongaro and John Ousterhout, 100 times more readable than the Paxos paper.
-- [The Part-Time Parliament (Paxos Paper) — Leslie Lamport](https://lamport.azurewebsites.net/pubs/lamport-paxos.pdf) — The original Paxos paper, describing the consensus protocol through a story about an ancient Greek parliament.
-- [Jepsen Consistency Models](https://jepsen.io/consistency/models) — A visual hierarchy and detailed explanation of consistency models.
-- [agrpc — gRPC with C++20 Coroutines](https://github.com/Tradias/agrpc) — Asynchronous gRPC coroutine wrapper library based on Boost.Asio.
-- [C++20 Coroutines for Asynchronous gRPC Services — Dennis Hezel](https://medium.com/3yourmind/c-20-coroutines-for-asynchronous-grpc-services-5b3dab1d1d61) — How to adapt gRPC's CompletionQueue to C++20 coroutines.
-- [MIT 6.824 Distributed Systems](https://pdos.csail.mit.edu/6.824/) — MIT's distributed systems course, including Labs to implement Raft.
+- [Designing Data-Intensive Applications — Martin Kleppmann](https://dataintensive.net/) — the "bible" of distributed systems, covering all the core topics: consistency, consensus, replication, and more
+- [C++ Concurrency in Action, 2nd Edition — Anthony Williams](https://www.manning.com/books/c-plus-plus-concurrency-in-action-second-edition) — the authoritative reference on C++ concurrent programming (a third edition covering C++20 is expected)
+- [In Search of an Understandable Consensus Algorithm (the Raft paper)](https://raft.github.io/raft.pdf) — the Raft paper by Diego Ongaro and John Ousterhout, 100 times more readable than the Paxos paper
+- [The Part-Time Parliament (the Paxos paper) — Leslie Lamport](https://lamport.azurewebsites.net/pubs/lamport-paxos.pdf) — the original Paxos paper, which explains consensus through the story of an ancient Greek parliament
+- [Jepsen Consistency Models](https://jepsen.io/consistency/models) — a visual hierarchy diagram of consistency models with detailed explanations
+- [agrpc — gRPC with C++20 Coroutines](https://github.com/Tradias/agrpc) — an asynchronous gRPC coroutine wrapper library based on Boost.Asio
+- [C++20 Coroutines for Asynchronous gRPC Services — Dennis Hezel](https://medium.com/3yourmind/c-20-coroutines-for-asynchronous-grpc-services-5b3dab1d61) — how to adapt gRPC's CompletionQueue to C++20 coroutines
+- [MIT 6.824 Distributed Systems](https://pdos.csail.mit.edu/6.824/) — MIT's distributed systems course, with labs implementing Raft

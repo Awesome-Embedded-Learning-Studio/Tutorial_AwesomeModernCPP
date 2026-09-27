@@ -1,0 +1,30 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Macro configuration coupling bug" id="macro-coupling-bug">
+    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="900" pageHeight="540" math="0" shadow="0">
+      <root>
+        <mxCell id="0" /><mxCell id="1" parent="0" />
+        <mxCell id="title" value="宏把一个 LED 的事实拆散后，编译器看不见它们必须一致" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="120" y="18" width="660" height="34" as="geometry" /></mxCell>
+
+        <mxCell id="source_band" value="源码里四处各自合法" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#546E7A;strokeWidth=2;fillColor=#ECEFF1;fontSize=14;fontStyle=1;align=left;spacingLeft=16;verticalAlign=top;spacingTop=10;" vertex="1" parent="1"><mxGeometry x="45" y="72" width="810" height="170" as="geometry" /></mxCell>
+        <mxCell id="port" value="&lt;b&gt;LED2_PORT&lt;/b&gt;&lt;br&gt;GPIOB" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=2;fillColor=#E3F2FD;fontSize=13;" vertex="1" parent="1"><mxGeometry x="75" y="128" width="160" height="62" as="geometry" /></mxCell>
+        <mxCell id="pin" value="&lt;b&gt;LED2_PIN&lt;/b&gt;&lt;br&gt;12" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=2;fillColor=#E3F2FD;fontSize=13;" vertex="1" parent="1"><mxGeometry x="260" y="128" width="140" height="62" as="geometry" /></mxCell>
+        <mxCell id="clock_bad" value="&lt;b&gt;LED2_CLK_EN&lt;/b&gt;&lt;br&gt;IOPAEN" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#C62828;strokeWidth=3;fillColor=#FFEBEE;fontSize=13;fontColor=#B71C1C;" vertex="1" parent="1"><mxGeometry x="425" y="122" width="170" height="74" as="geometry" /></mxCell>
+        <mxCell id="offset" value="&lt;b&gt;配置偏移&lt;/b&gt;&lt;br&gt;(12-8)×4 = 16" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=2;fillColor=#E3F2FD;fontSize=13;" vertex="1" parent="1"><mxGeometry x="620" y="128" width="190" height="62" as="geometry" /></mxCell>
+        <mxCell id="mismatch" value="端口是 B，电闸却还是 A" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#C62828;" vertex="1" parent="1"><mxGeometry x="400" y="202" width="220" height="26" as="geometry" /></mxCell>
+
+        <mxCell id="compiler" value="&lt;b&gt;编译器&lt;/b&gt;&lt;br&gt;每个宏展开后语法、类型都正确&lt;br&gt;&lt;font color=&quot;#1B5E20&quot;&gt;✓ 编译通过　✓ 零警告&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1B5E20;strokeWidth=2.5;fillColor=#E8F5E9;fontSize=13;" vertex="1" parent="1"><mxGeometry x="300" y="275" width="300" height="86" as="geometry" /></mxCell>
+        <mxCell id="to_compiler_1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#78909C;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="port" target="compiler"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="to_compiler_2" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;rounded=0;html=1;strokeColor=#C62828;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="1" source="clock_bad" target="compiler"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="635" y="159" /><mxPoint x="635" y="250" /><mxPoint x="610" y="250" /></Array></mxGeometry></mxCell>
+
+        <mxCell id="rcc_effect" value="RCC 合上 GPIOA 电闸" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#E65100;strokeWidth=2;fillColor=#FFF3E0;fontSize=13;" vertex="1" parent="1"><mxGeometry x="90" y="408" width="240" height="52" as="geometry" /></mxCell>
+        <mxCell id="gpio_effect" value="代码却访问 GPIOB" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=2;fillColor=#E3F2FD;fontSize=13;" vertex="1" parent="1"><mxGeometry x="570" y="408" width="240" height="52" as="geometry" /></mxCell>
+        <mxCell id="runtime_left" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#E65100;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="compiler" target="rcc_effect"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="runtime_right" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#1565C0;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="compiler" target="gpio_effect"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="broken" value="≠" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=28;fontStyle=1;fontColor=#C62828;" vertex="1" parent="1"><mxGeometry x="420" y="414" width="60" height="40" as="geometry" /></mxCell>
+        <mxCell id="result" value="运行结果：GPIOB 时钟仍关闭，LED 无声不亮" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#C62828;strokeWidth=2.5;fillColor=#FFEBEE;fontSize=14;fontStyle=1;fontColor=#B71C1C;" vertex="1" parent="1"><mxGeometry x="240" y="484" width="420" height="44" as="geometry" /></mxCell>
+        <mxCell id="left_result" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#C62828;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="rcc_effect" target="result"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="right_result" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#C62828;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="gpio_effect" target="result"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

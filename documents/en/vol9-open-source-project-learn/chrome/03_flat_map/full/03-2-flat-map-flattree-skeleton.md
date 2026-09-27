@@ -9,11 +9,11 @@ order: 2
 platform: host
 prerequisites:
 - 'flat_map hands-on (I): motivation and API design'
-- 'flat_map prerequisite (1): std::vector internals and growth'
-- 'flat_map prerequisite (V): NO_unique_ADDRESS, EBO, and pair storage'
+- 'flat_map prerequisite (I): std::vector internals and growth'
+- 'flat_map prerequisite (V): NO_UNIQUE_ADDRESS, EBO, and pair storage'
 reading_time_minutes: 12
 related:
-- 'flat_map hands-on (III): lookup and insertion'
+- 'flat_map hands-on (III): lookup and insert'
 tags:
 - host
 - cpp-modern
@@ -22,30 +22,36 @@ tags:
 - map
 - 内存管理
 title: "flat_map hands-on (II): the flat_tree core skeleton"
+translation:
+  source: documents/vol9-open-source-project-learn/chrome/03_flat_map/full/03-2-flat-map-flattree-skeleton.md
+  source_hash: fca4f5d83cd7264730c970abc0f722bf11cdfbcf498cb1c99412bb4280c15fff
+  translated_at: '2026-09-26T02:40:14+00:00'
+  engine: anthropic
+  token_count: 3300
 ---
 # flat_map hands-on (II): the flat_tree core skeleton
 
-In the previous piece we pinned down flat_map's target API and offhandedly said the whole thing really comes down to one class: `flat_tree`. This time we build that "ordered-array associative container adapter" by hand. Once it's standing you'll notice a number that's hard to un-notice: Chromium's flat_set.h is 191 lines, total. The set gets off that cheaply because everything reusable is swallowed by flat_tree, and flat_set itself barely writes any code.
+In the previous piece we pinned down flat_map's target API and mentioned in passing that the whole thing really comes down to one class: `flat_tree`. This time we want to walk you through building the skeleton of that "ordered-array associative container adapter" with your own hands. Once it's standing, you'll run into a rather interesting number: Chromium's flat_set.h is 191 lines, all told. The set gets off that cheap because everything reusable has been swallowed by flat_tree — there is almost no code left for flat_set itself to write.
 
-`flat_tree` serves both map and set from one skeleton through three tricks working together. The first is a generic key-extractor policy (`GetKeyFromValue`): given the same value type, it can pull out the key or hand the value back unchanged, and that choice is what decides whether the container wears a map or set hat. The second is the ordered invariant: after every mutation it quietly patches the ordering back up. The third is a nested `value_compare` that translates a comparison on values back into a comparison on keys. We'll take them one at a time.
+flat_tree manages to serve both map and set from one skeleton, and it pulls that off with three tricks working together. The first is a generic key-extractor policy (`GetKeyFromValue`): handed the same value, it can pull out the key or return the value unchanged, and that is what decides whether the container wears a map hat or a set hat. The second is the ordered invariant: after every mutation it quietly patches the ordering back up by itself. The third is a nested `value_compare` that translates a comparison on values back into a comparison on keys. Let's take them apart one at a time.
 
 ## The flat_tree template signature
 
-`flat_tree`'s signature (flat_tree.h:104-105) looks like this:
+`flat_tree`'s template signature (flat_tree.h:104-105) looks like this:
 
 ```cpp
 template <class Key, class GetKeyFromValue, class KeyCompare, class Container>
 class flat_tree {
 protected:
-    Container body_;                                  // underlying sorted container (default: vector)
-    [[no_unique_address]] KeyCompare comp_;           // key comparator (EBO, zero overhead)
+    Container body_;                                  // underlying sorted container (vector by default)
+    [[no_unique_address]] KeyCompare comp_;           // key comparator (zero overhead via EBO)
     // ...
 };
 ```
 
-Four template parameters, and we'll go through them. `Key` is the key type, no surprise there. `GetKeyFromValue` is the secret weapon of this design: it's a functor exposing `const Key& operator()(const Value&)`, so given a value (a `pair<K,V>` for map, a `K` itself for set) it returns the key. The same flat_tree can act as map or set, and the entire difference rides on this one typename; we'll see the concrete spellings below. `KeyCompare` is the key comparator, defaulting to `std::less<>`. `Container` is the underlying sequence container, defaulting to `std::vector`: map uses `vector<pair<K,V>>`, set uses `vector<K>`.
+Four template parameters; let's go through them one at a time. `Key` is the key type — no suspense there. `GetKeyFromValue` is the secret weapon of this design: it is a function object exposing `const Key& operator()(const Value&)` — handed a value (a `pair<K,V>` for map, plain `K` for set), it hands back the key. The same flat_tree can act as a map or as a set, and the entire difference lands on this one typename; we'll see the concrete spellings further down. `KeyCompare` is the key comparator, defaulting to `std::less<>`. `Container` is the underlying sequence container, defaulting to `std::vector` — `vector<pair<K,V>>` for map, `vector<K>` for set.
 
-Two data members: `body_` is the underlying container, `comp_` is the comparator. `comp_` carries `[[no_unique_address]]` so an empty comparator costs zero bytes; we walked through the why of that in [pre-05](./pre-05-flat-map-enua-ebo-and-pair-storage.md), no need to repeat it here.
+There are just two data members: `body_` is the underlying container, `comp_` the comparator. `comp_` carries `[[no_unique_address]]` so that an empty comparator costs zero bytes; we already walked through the ins and outs of that in [pre-05](./pre-05-flat-map-enua-ebo-and-pair-storage.md), so we won't repeat it here.
 
 ---
 
@@ -53,32 +59,32 @@ Two data members: `body_` is the underlying container, `comp_` is the comparator
 
 The key extractor is what lets map and set share one codebase. Let's look at the two concrete implementations.
 
-flat_map uses `GetFirst` (flat_map.h:24-29):
+On the flat_map side it is `GetFirst` (flat_map.h:24-29):
 
 ```cpp
 struct GetFirst {
     template <class Key, class Mapped>
     constexpr const Key& operator()(const std::pair<Key, Mapped>& p) const {
-        return p.first;   // value is a pair, take first as the key
+        return p.first;   // the value is a pair, take first as the key
     }
 };
 ```
 
-flat_set is even thriftier and just reuses the standard library's `std::identity`, returning its argument as-is:
+flat_set has it even easier: it just takes `std::identity` straight out of the standard library, which returns its argument unchanged:
 
 ```cpp
 // flat_set.h:163 is equivalent to:
 using flat_set = flat_tree<Key, std::identity, Compare, std::vector<Key>>;
-// std::identity's operator()(const T&) returns T itself, so value is the key
+// std::identity's operator()(const T&) returns T itself — the value is the key
 ```
 
-When flat_tree needs to compare two values internally, it first calls the extractor on each to get the key, then compares keys with `comp_`. So the same flat_tree code, under `GetFirst`, treats `pair<K,V>` as a map, and under `std::identity` treats `K` as a set. That stopped us for a second when we first read it: the entire implementation fork between map and set lands on a single typename.
+Whenever flat_tree needs to compare two values internally, it first calls the extractor on each to get the key, then compares the keys with `comp_`. So with one and the same flat_tree codebase, `GetFirst` makes it treat `pair<K,V>` as a map, and `std::identity` makes it treat `K` as a set. We did a double-take the first time we read this — the entire implementation fork between map and set comes down to a single typename.
 
 ---
 
 ## value_compare: translating a value comparison into a key comparison
 
-flat_tree also exposes a nested `value_compare` (flat_tree.h:122-130). Its job is to let the outside world compare by value; for instance, if you want to feed a value array straight to `std::sort`, you need a functor that compares values in hand:
+flat_tree also hands the outside world a nested `value_compare` (flat_tree.h:122-130). Its purpose is to let external code compare by value — say you want to feed an array of values straight into `std::sort`; for that you need a functor that compares values in hand:
 
 ```cpp
 struct value_compare {
@@ -90,17 +96,17 @@ struct value_compare {
 };
 ```
 
-What it does is "extract the key on both sides, then hand off to `comp`." For map that means comparing the `first` of two pairs; for set it means comparing the two keys directly (because the extractor is identity, a passthrough). This nested struct is what lets flat_tree offer a comparison interface at the value level while reusing the same key comparator underneath, with no need to write a separate value-comparison path.
+Its whole job is "extract the key on both sides, then hand them to `comp`". For map that means comparing the `first` of two pairs; for set it means comparing the two keys themselves (the extractor is identity, a straight passthrough). This nested struct is what lets flat_tree offer a comparison interface at the value level while reusing the same key comparator underneath — no separate machinery written just for values.
 
 ---
 
 ## The ordered invariant: sorted and unique after every mutation
 
-The single invariant flat_tree guards is this: `body_` is always strictly ascending under `comp_`, with no duplicates. It's maintained in two places: once during construction (a bulk sort), and once per insert (an incremental guard).
+The single core invariant flat_tree guards is this: `body_` is always strictly ascending under `comp_`, with no duplicates. The invariant is maintained in two places — one bulk sort at construction time, and a per-element guard at insertion time.
 
 ### Construction: sort_and_unique
 
-A normal constructor (taking unordered input) calls `sort_and_unique` (flat_tree.h:147-149; implementation at 567/578/586/594):
+The plain constructor (taking unordered data) calls `sort_and_unique` (flat_tree.h:147-149; the implementation lives at 567/578/586/594):
 
 ```cpp
 void sort_and_unique() {
@@ -110,19 +116,19 @@ void sort_and_unique() {
 }
 ```
 
-`stable_sort` orders by `value_comp`, then `unique` shuffles equivalent elements to the end, and `erase` lops off that tail. One note on why this is `stable_sort` rather than `sort`: if equivalent elements (multiple values under one key) had an original ordering, `stable_sort` preserves their relative order. flat_map only keeps one after dedup, but the stable semantics are safer in edge cases, for example when the value carries state. After construction, `body_` is in a clean sorted-and-unique state.
+`stable_sort` orders by `value_comp`, then `unique` moves the equivalent elements to the end, and `erase` chops off that tail. A word on why this is `stable_sort` rather than `sort`: if equivalent elements (several values under the same key) arrived in some order, `stable_sort` preserves their relative order — flat_map keeps only one of them after dedup anyway, but the stability semantics are safer in certain edge cases (when the value carries state, for instance). Once construction is done, `body_` sits in a clean, sorted, duplicate-free state.
 
 ### Single-point insert: lower_bound + insert
 
-Inserting one element at runtime (flat_tree.h:1060, `unsafe_emplace`) does a `lower_bound` to find the position (keeping order), then `insert`. lower_bound finds "the first position not less than the key," so inserting there stays sorted by construction; if the key is already present, `lower_bound` points at that equal element, and the `unique` contract requires the insert to be rejected to avoid a duplicate. The exact mechanics of this find-then-insert, and the genuinely painful shift cost that comes with it, we save for 03-3.
+When a single element is inserted at runtime (flat_tree.h:1060, `unsafe_emplace`), the code first finds the position with `lower_bound` (keeping things ordered), then `insert`s there. `lower_bound` finds "the first position not less than the key", so inserting right there keeps the ordering for free; if the key is already present, `lower_bound` points at that equal element, and the `unique` semantics then demand the insert be rejected, to avoid a duplicate. The exact mechanics of this find-plus-insert, and the shift cost that genuinely hurts, we save for the detailed walkthrough in 03-3.
 
 ---
 
 ## Constructors: plain vs sorted_unique
 
-flat_tree's constructors split into two families, and the split hides a real performance tradeoff. We'll pull it apart.
+flat_tree's constructors split into two families, and behind that split hides a performance trade-off. Let's pull it apart.
 
-The plain family takes unordered data and dutifully calls `sort_and_unique` internally:
+The plain family: you pass unordered data in, and it dutifully calls `sort_and_unique` internally:
 
 ```cpp
 flat_tree(InputIterator first, InputIterator last, const Compare& comp) {
@@ -131,7 +137,7 @@ flat_tree(InputIterator first, InputIterator last, const Compare& comp) {
 }
 ```
 
-The sorted_unique family takes a `sorted_unique_t` tag as your word that the data is already sorted and unique, and it skips the sort, running only a DCHECK:
+The sorted_unique family: you stake your word via a `sorted_unique_t` tag that the data is already sorted and unique, and it skips the sort, running only a DCHECK:
 
 ```cpp
 flat_tree(sorted_unique_t, InputIterator first, InputIterator last, const Compare& comp) {
@@ -140,41 +146,41 @@ flat_tree(sorted_unique_t, InputIterator first, InputIterator last, const Compar
 }
 ```
 
-The whole difference between the two families is that one `sort_and_unique` call: either it really sorts, or it takes your word. The latter skips an O(N log N) pass when you know the source is already ordered (moving out of another sorted container, for example), and it's the escape hatch flat_tree leaves for performance-sensitive paths. The mechanism behind tag dispatch itself we covered in [pre-04](./pre-04-flat-map-tag-dispatch-and-sorted-unique.md).
+The entire difference between the two families comes down to one `sort_and_unique` call: either it really sorts, or it takes your word. The latter saves an O(N log N) pass when you know the data source is already ordered (moving data over from another sorted container, for instance), and it is the escape hatch flat_tree leaves open for performance-sensitive scenarios. The full story of tag dispatch as a mechanism we told in [pre-04](./pre-04-flat-map-tag-dispatch-and-sorted-unique.md).
 
 ---
 
-## How flat_map and flat_set inherit flat_tree
+## How flat_map / flat_set inherit flat_tree
 
-With the flat_tree skeleton in place, flat_map and flat_set have almost nothing left to write.
+With the flat_tree skeleton in place, there is almost nothing left to write on top of it for flat_map and flat_set.
 
-flat_map (flat_map.h:194-195) inherits and fills in its key extractor:
+flat_map (flat_map.h:194-195) goes the inheritance route and fills in the one key extractor it needs:
 
 ```cpp
 template <class Key, class Mapped, class Compare = std::less<>,
           class Container = std::vector<std::pair<Key, Mapped>>>
 class flat_map : public flat_tree<Key, internal::GetFirst, Compare, Container> {
-    // inherits all the generic operations from flat_tree (find/insert/erase/lower_bound...)
-    // adds only map-specific ones: operator[], at, insert_or_assign, try_emplace
+    // inherits all of flat_tree's generic operations (find/insert/erase/lower_bound...)
+    // adds only the map-specific ones: operator[], at, insert_or_assign, try_emplace
 };
 ```
 
-flat_set (flat_set.h:159-163) goes further and doesn't even define a class, it's just an alias:
+flat_set (flat_set.h:159-163) is more blunt still: it can't even be bothered to define a class and just makes an alias:
 
 ```cpp
 template <class Key, class Compare = std::less<>,
           class Container = std::vector<Key>>
 using flat_set = flat_tree<Key, std::identity, Compare, Container>;
-// no code of its own, set is just flat_tree with key=value
+// no code of its own — a set is just a flat_tree with "key=value"
 ```
 
-The map-specific operations flat_map adds (`operator[]`, `at`, `insert_or_assign`, `try_emplace`) we'll cover in 03-3 alongside lookup and insertion. flat_set, where key is value, genuinely has nothing to add; one `using` and it's done. Look back at those 191 lines of flat_set.h and you can feel how much this abstraction buys you.
+The handful of map-specific operations flat_map adds (`operator[]`/`at`/`insert_or_assign`/`try_emplace`) we're saving for 03-3, together with lookup and insertion. flat_set, where the key is the value, truly has nothing to add — a single `using` and the story is told. Look back at those 191 lines of flat_set.h now, and you can feel how much leverage this abstraction buys.
 
 ---
 
-## A minimal flat_tree of our own
+## A minimal flat_tree replica
 
-Reading Chromium's code only gets you so far, so let's build a minimal version by hand and feel how the "key extractor + ordered invariant" pair actually meshes:
+Just reading Chromium's code isn't quite satisfying, so let's roll a minimal version ourselves and get a first-hand feel for how those two tricks — key extractor plus ordered invariant — mesh:
 
 ```cpp
 // Platform: host | C++ Standard: C++20
@@ -193,7 +199,7 @@ public:
     using iterator = typename Container::iterator;
     using const_iterator = typename Container::const_iterator;
 
-    // Plain constructor: unordered data, sort + dedup internally
+    // Plain constructor: unordered data, sorted and deduped internally
     flat_tree(Container data, KeyCompare comp = KeyCompare())
         : body_(std::move(data)), comp_(comp) {
         sort_and_unique();
@@ -202,9 +208,8 @@ public:
     // Lookup: O(log n) binary search
     const_iterator find(const Key& key) const {
         auto it = std::ranges::lower_bound(
-            body_, key,
-            [&](const value_type& v, const Key& k) { return comp_(GetKeyFromValue{}(v), k); },
-            [&](const Key& k, const value_type& v) { return comp_(k, GetKeyFromValue{}(v)); });
+            body_, key, comp_,
+            [](const value_type& v) { return GetKeyFromValue{}(v); });
         if (it != body_.end() && !comp_(key, GetKeyFromValue{}(*it))) return it;
         return body_.end();
     }
@@ -234,14 +239,14 @@ private:
 }  // namespace tamcpp::chrome::internal
 ```
 
-This minimal version holds onto two things: sort-and-dedup at construction, and binary search at lookup. The key-extractor policy runs through both `find` and `sort_and_unique`, translating value to key each time. Next step is adding insertion and erasure, and that shift cost is flat_map's real soft spot.
+This minimal version holds on to two things: sort-and-dedup at construction, and binary search at lookup. The key-extractor policy runs through both `find` and `sort_and_unique` — you can watch it translating value into key in each. The next step is adding insertion and erasure, and that shift cost is flat_map's real soft spot.
 
 ---
 
 ## Assembling map and set out of flat_tree
 
 ```cpp
-// map: stores pair<K,V>, extracts the key with GetFirst
+// map: stores pair<K,V>, pulls the key with GetFirst
 struct GetFirst {
     template <class K, class V>
     constexpr const K& operator()(const std::pair<K, V>& p) const { return p.first; }
@@ -251,7 +256,7 @@ template <class K, class V>
 using mini_flat_map = internal::flat_tree<K, GetFirst, std::less<>,
                                           std::vector<std::pair<K, V>>>;
 
-// set: stores K, extracts the key with std::identity
+// set: stores K, pulls the key with std::identity
 template <class K>
 using mini_flat_set = internal::flat_tree<K, std::identity, std::less<>, std::vector<K>>;
 
@@ -266,17 +271,17 @@ int main() {
 }
 ```
 
-Run it and you'll see `3 elements, front key=1` (sort worked) and `3 elements` (dedup worked). One flat_tree: under a `GetFirst` hat it's a map, swap in `std::identity` and it's a set.
+Run it and you'll see `3 elements, front key=1` (the sort took effect) and `3 elements` (the dedup took effect). One flat_tree: put the `GetFirst` hat on and it's a map, swap in `std::identity` and it's a set.
 
 ---
 
-The skeleton stands now. The signature `flat_tree<Key, GetKeyFromValue, KeyCompare, Container>` is the common base of the ordered-array associative containers; the key-extractor policy decides whether it wears a map or set hat; the ordered invariant is held by two gates, `sort_and_unique` at construction and `lower_bound + insert` at insertion; and `value_compare` translates value comparison back to key comparison. flat_map adds a handful of map-specific operations on top of this, and flat_set is done with a single `using`, which is how flat_set.h ends up at 191 lines.
+With this, the skeleton is standing. The signature `flat_tree<Key, GetKeyFromValue, KeyCompare, Container>` is the common base of the ordered-array associative containers: the key-extractor policy decides whether it wears a map hat or a set hat; the ordered invariant is guarded by two gates, `sort_and_unique` during construction and `lower_bound + insert` during insertion; and `value_compare` translates value comparison back into key comparison. flat_map adds a handful of map-specific operations on top, and flat_set wraps up with a single `using` — that is how flat_set.h arrives at 191 lines.
 
-Next we write flat_tree's lookup and insertion for real. The O(log n) binary search is the easy part; the O(n) shift is what we actually want to measure for you, because that cost is where the ache is.
+Next we'll write flat_tree's lookup and insertion for real. The O(log n) binary search is the easy part; the O(n) shift is what we actually want to measure for you — just how much that cost hurts.
 
 ## References
 
-- [Chromium `base/containers/flat_tree.h`: the flat_tree class and value_compare](https://source.chromium.org/chromium/chromium/src/+/main:base/containers/flat_tree.h)
-- [Chromium `base/containers/flat_map.h`: GetFirst and the flat_map subclass](https://source.chromium.org/chromium/chromium/src/+/main:base/containers/flat_map.h)
-- [Chromium `base/containers/flat_set.h`: the flat_set alias](https://source.chromium.org/chromium/chromium/src/+/main:base/containers/flat_set.h)
+- [Chromium `base/containers/flat_tree.h` — the flat_tree class and value_compare](https://source.chromium.org/chromium/chromium/src/+/main:base/containers/flat_tree.h)
+- [Chromium `base/containers/flat_map.h` — GetFirst and the flat_map subclass](https://source.chromium.org/chromium/chromium/src/+/main:base/containers/flat_map.h)
+- [Chromium `base/containers/flat_set.h` — the flat_set alias](https://source.chromium.org/chromium/chromium/src/+/main:base/containers/flat_set.h)
 - [flat_map hands-on (I): motivation and API design](./03-1-flat-map-motivation-and-api-design.md)

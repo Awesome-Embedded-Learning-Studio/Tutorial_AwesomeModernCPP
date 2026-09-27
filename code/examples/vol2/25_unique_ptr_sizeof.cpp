@@ -1,0 +1,24 @@
+#include <iostream>
+#include <memory>
+
+struct EmptyDeleter {
+    void operator()(int* p) noexcept { delete p; }
+};
+
+// 有状态删除器：带数据成员，没法 EBO
+struct StatefulDeleter {
+    int extra;
+    void operator()(int* p) noexcept { delete p; }
+};
+
+int main() {
+    std::cout << "sizeof(int*):                             " << sizeof(int*) << "\n";
+    std::cout << "sizeof(unique_ptr<int>):                  " << sizeof(std::unique_ptr<int>)
+              << "\n";
+    std::cout << "sizeof(unique_ptr<int, EmptyDeleter>):    "
+              << sizeof(std::unique_ptr<int, EmptyDeleter>) << "\n";
+    std::cout << "sizeof(unique_ptr<int, void(*)(int*)>):   "
+              << sizeof(std::unique_ptr<int, void (*)(int*)>) << "\n";
+    std::cout << "sizeof(unique_ptr<int, StatefulDeleter>): "
+              << sizeof(std::unique_ptr<int, StatefulDeleter>) << "\n";
+}

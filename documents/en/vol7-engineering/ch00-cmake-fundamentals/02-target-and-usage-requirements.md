@@ -1,6 +1,6 @@
 ---
-title: "The Target Mental Model — Treat a Target as an Object, PUBLIC/PRIVATE/INTERFACE Are Usage Requirements"
-description: "Explain what a target really is, why the target_* commands are member methods, how PUBLIC/PRIVATE/INTERFACE propagate, and why directory-level commands are an anti-pattern"
+title: "The target mental model — treat a target as an object, PUBLIC/PRIVATE/INTERFACE are usage requirements"
+description: "What a target really is, why the target_* commands are member methods, how the PUBLIC/PRIVATE/INTERFACE three states propagate, and why directory-level commands are an anti-pattern"
 chapter: 7
 order: 2
 tags:
@@ -13,25 +13,31 @@ platform: host
 cpp_standard: [17, 20]
 reading_time_minutes: 20
 prerequisites:
-  - "vol7 ch00 01: CMake 是什么——构建系统生成器的两段式流水线"
+  - "What is CMake — the two-stage pipeline of a build system generator"
 related:
-  - "交叉编译与 CMake"
-  - "编译器选项"
+  - "Cross-compilation and a Simple Guide to CMake"
+  - "Guide to Common Compiler Options"
+translation:
+  source: documents/vol7-engineering/ch00-cmake-fundamentals/02-target-and-usage-requirements.md
+  source_hash: 8d5e2ea8cdf1f06ad95fd4e822ff4fc07492411d7122089b2a7d3464cf41c3a4
+  translated_at: '2026-09-26T04:46:03+00:00'
+  engine: anthropic
+  token_count: 12000
 ---
 
-# The Target Mental Model — Treat a Target as an Object, PUBLIC/PRIVATE/INTERFACE Are Usage Requirements
+# The target mental model — treat a target as an object, PUBLIC/PRIVATE/INTERFACE are usage requirements
 
-In the previous article we got a minimal project running, with just one line of real work in `CMakeLists.txt`: `add_executable(hello main.cpp)`. I never gave a name to the thing that line produces. This article hands you that name: **target**.
+In the previous article we got a minimal project running; `CMakeLists.txt` contained exactly one line of real work — `add_executable(hello main.cpp)`. We never gave a name to the thing that one line created. This article hands that name over: **target**.
 
-The word "target" shows up everywhere in the CMake docs, gets crowned the number-one concept in every "modern CMake" tutorial, and the community even has a catchphrase for it: think in targets, not variables. Why does modern CMake lift it so high, and why is the `include_directories()` you copied from an old tutorial already an anti-pattern? This article explains it all the way through. This is the watershed between modern CMake and old-style CMake. Once you cross it, reading any `CMakeLists.txt` afterwards stops feeling like reciting incantations.
+The word target shows up over and over in the official CMake docs, gets crowned the number-one concept in every "modern CMake" tutorial, and the community even has a catchphrase for it: think in targets, not variables. Why does modern CMake lift it so high, and why is the `include_directories()` you copied out of an old tutorial already an anti-pattern? This article works it through to the bottom. This is the watershed between modern CMake and old-style CMake — cross it, and no `CMakeLists.txt` you read afterwards will feel like reciting incantations.
 
-## Treat a Target as an Object
+## Treat a target as an object
 
-"Target" is not an abstract metaphor. It is, literally, a data structure CMake keeps internally. The fastest way to understand it is to think of it as a C++ object.
+A target is not some abstract metaphor; it is, quite literally, a data structure CMake keeps internally. The fastest way to understand it is to think of it as a C++ object.
 
-`add_executable(app main.cpp)` and `add_library(mylib STATIC src/mylib.cpp)` are **constructors**. They create a target object, name it `app` or `mylib`, and record which source files it is built from and whether it should compile into an executable or a library. From that line onward, the names `app` and `mylib` are "alive" in CMake's world, and every later configuration works by treating that name as a handle.
+`add_executable(app main.cpp)` and `add_library(mylib STATIC src/mylib.cpp)` are **constructors**. They create a target object, name it `app` or `mylib`, and record which source files it is built from and whether it should compile into an executable or a library. From that line on, the names `app` and `mylib` are "alive" in CMake's world, and every piece of configuration you write afterwards operates on that name as a handle.
 
-Once created, you give it include search paths, tell it which libraries to link, and switch on compile options. These operations correspond to a family of commands that all start with `target_*`:
+And once the object exists? You give it header search paths, tell it which library to link, switch on compile options. Those operations correspond to a family of commands that all start with `target_*`:
 
 ```cmake
 target_include_directories(mylib PUBLIC include)
@@ -40,41 +46,41 @@ target_compile_options(mylib PRIVATE -Wall -Wextra)
 target_compile_features(mylib PUBLIC cxx_std_17)
 ```
 
-These `target_*` commands are **member methods**. They all do the same thing under the hood: take the target's name and attach a property to that target object. `target_include_directories(mylib PUBLIC include)` translates to "for the object `mylib`, push `include` into its include-path property."
+These `target_*` commands are **member methods**. What they do is essentially the same thing: take a target's name and hang a property on that target object. `target_include_directories(mylib PUBLIC include)` translates to "take the object `mylib` and push `include` into its include-path property."
 
-The things hanging off the target (include paths, the list of linked libraries, compile options, the C++ standard requirement) are its **member variables**. Each target manages its own, without bothering the others.
+The things hanging off a target (include paths, the linked-library list, compile options, the C++ standard requirement) are its **member variables**. Each target manages its own and leaves the others alone.
 
 ::: details What a target actually is inside CMake
-Strictly speaking, a target is a named collection of properties maintained by CMake. You can read the properties attached to it during the configure stage with `get_target_property(v mylib INCLUDE_DIRECTORIES)`. The hands-on section later in this article will use exactly this command to crack the target open and show us. A target is not a black box.
+Strictly speaking, a target is a collection of properties maintained by CMake. You can pull the properties off it during the configure stage with `get_target_property(v mylib INCLUDE_DIRECTORIES)`. The hands-on section later in this article uses exactly this command to crack the target open for us to see — internally, a target is not a black box.
 :::
 
-Why does this "object thinking" matter? Because it nails down the scope of any configuration. `target_include_directories(mylib PUBLIC include)` touches only the properties of `mylib`, leaving every other target in the project untouched. That is exactly the core distinction coming next: old-style CMake is "global pollution," modern CMake is "target-private."
+Why does this "object thinking" matter? Because it pins down the scope of any configuration for good. `target_include_directories(mylib PUBLIC include)` touches the properties of exactly one target, `mylib`, and nothing else in the project. Which is precisely the core distinction coming next: old-style CMake is "global pollution"; modern CMake is "target-private."
 
-## Usage Requirements: The PUBLIC/PRIVATE/INTERFACE Three States
+## Usage requirements: the PUBLIC/PRIVATE/INTERFACE three states
 
-Having the target object alone is not enough. What actually lets modern CMake leap forward is how it models **usage requirements**. The phrase sounds mystical, but it boils down to one sentence: the configuration a target needs when it is compiling itself may differ from what it needs when someone else links against it. CMake uses three keywords to separate the two cases.
+The target object alone is not enough. What truly lets modern CMake be reborn is how it models **usage requirements**. The phrase sounds mystical, but it boils down to one sentence: the configuration a target requires when compiling itself may differ from what it requires when someone else links against it. CMake separates the two cases with three keywords.
 
-PRIVATE means "I need it for my own compile, but whoever links me does not." For example, `mylib` calls the third-party library `fmt` internally for string formatting, but `fmt` leaves no trace in `mylib`'s public header. Downstream users linking `mylib` have no idea `fmt` exists, and naturally do not need `fmt`'s include path. In that case `fmt` is PRIVATE to `mylib`.
+PRIVATE means "I need it to compile myself, but whoever links me does not." For example, `mylib` internally calls the third-party library `fmt` for string formatting, yet `fmt` leaves no trace in `mylib`'s public header. Whoever links `mylib` downstream has no idea `fmt` exists, and naturally needs none of `fmt`'s include paths. In that case `fmt` is PRIVATE to `mylib`.
 
-INTERFACE means "I do not need it myself, but whoever links me does." A typical case is a header-only library. It has no `.cpp` of its own to compile, so the "self-use" half is empty; but the moment downstream includes its headers, it needs the corresponding include path and C++ standard requirement. Here every configuration goes into INTERFACE.
+INTERFACE means "I don't need it myself, but whoever links me does." A typical case is a header-only library: it has no `.cpp` of its own to compile, so the "self-use" half is empty; but the moment downstream includes its headers, the corresponding include paths and C++ standard requirements must be there. In that case all of the configuration goes into INTERFACE.
 
-PUBLIC means "both sides: I use it, and so does whoever links me." The most common case is a type that appears directly in the public header. If the return type of `mylib.h` is `std::string`, then once downstream links `mylib`, the compiler has to find the include path where `<string>` lives in order to parse that return type. `mylib` itself needs that path when compiling its `.cpp`, and downstream needs it when linking `mylib`. That is PUBLIC.
+PUBLIC means "both: I use it, and whoever links me needs it too." The most common case is a type that appears directly in the public header. Say the return type in `mylib.h` is `std::string`: once downstream links `mylib`, the compiler must be able to find the include path where `<string>` lives in order to parse that return type. `mylib` itself needs that path when compiling its `.cpp`, and downstream needs it when linking `mylib`. That is PUBLIC.
 
-Splitting these three states along "self-use / others-use" sits on top of a simple truth table:
+Split these three states along "self-use / others-use" and underneath sits a simple truth table:
 
-| Keyword | Used when compiling self | Also used when others link |
+| Keyword | Used when compiling itself | Also used when others link |
 |--------|:---:|:---:|
 | PRIVATE | Yes | No |
 | INTERFACE | No | Yes |
 | PUBLIC | Yes | Yes |
 
-Memorize this table. It fits every `target_*` command you will ever read.
+Memorize this table — it fits every `target_*` command you will ever read.
 
-### A Concrete Example: fmt Is PRIVATE, <string> Is INTERFACE
+### A concrete example: fmt is PRIVATE, <string> is INTERFACE
 
-Definitions alone are not enough; let us drop down to code. The project below has three targets: a minimal `fmt` (standing in for a third-party formatting library), a `mylib` static library that exposes an outward-facing API, and a downstream `app` executable. `mylib` uses `fmt::format` internally, but its public header uses only `std::string`.
+Definitions alone are not enough; let's drop down to code. The project below has three targets: a minimal `fmt` (standing in for a third-party formatting library), a `mylib` static library exposed to the outside, and a downstream `app` executable. `mylib`'s implementation uses `fmt::format` internally, but its public header uses nothing but `std::string`.
 
-The public header of `mylib`, `include/mylib/mylib.h`:
+`mylib`'s public header, `include/mylib/mylib.h`:
 
 ```cpp
 #pragma once
@@ -82,16 +88,16 @@ The public header of `mylib`, `include/mylib/mylib.h`:
 
 namespace mylib {
 
-/// @brief 把问候语格式化成带前缀的字符串
-/// @note  返回类型用 std::string —— 这是 mylib 公开 API 的一部分,
-///        下游 app 也必须看到完整的 std::string 定义,
-///        所以 <string> 对应的 include 路径属于 INTERFACE 需求
+/// @brief Format a greeting into a prefixed string
+/// @note  The return type is std::string — part of mylib's public API,
+///        so the downstream app must also see the full std::string definition,
+///        which makes the include path for <string> an INTERFACE requirement
 std::string make_greeting(const std::string& name);
 
 }  // namespace mylib
 ```
 
-The implementation of `mylib`, `src/mylib.cpp`:
+`mylib`'s implementation, `src/mylib.cpp`:
 
 ```cpp
 #include "mylib/mylib.h"
@@ -101,15 +107,15 @@ The implementation of `mylib`, `src/mylib.cpp`:
 namespace mylib {
 
 std::string make_greeting(const std::string& name) {
-    // fmt 是 mylib 内部实现细节,公开头文件 mylib.h 里看不到 fmt 的痕迹
-    // 所以下游根本不需要知道 fmt 的存在 —— 这正是 fmt 应当为 PRIVATE 的理由
+    // fmt is an internal implementation detail of mylib; the public header mylib.h shows no trace of it
+    // so downstream never needs to know fmt exists — exactly why fmt should be PRIVATE
     return fmt::format("hello, {}!", name);
 }
 
 }  // namespace mylib
 ```
 
-The three key lines in `CMakeLists.txt` that attach properties to `mylib`:
+The three key lines in `CMakeLists.txt` that hang properties on `mylib`:
 
 ```cmake
 add_library(mylib STATIC src/mylib.cpp)
@@ -117,15 +123,15 @@ target_include_directories(mylib PUBLIC include)
 target_link_libraries(mylib PRIVATE fmt)
 ```
 
-`include` is written as PUBLIC: `mylib` needs to find `mylib/mylib.h` when compiling its own `.cpp` (self-use), and downstream has to find `mylib/mylib.h` to include it after linking `mylib` (others-use). Both halves hold, so it is PUBLIC.
+`include` is written PUBLIC: `mylib` itself has to find `mylib/mylib.h` when compiling its `.cpp` (self-use), and downstream has to find `mylib/mylib.h` to include it after linking `mylib` (others-use). Both halves hold, so it is PUBLIC.
 
-`fmt` is written as PRIVATE: `mylib.cpp` calls `fmt::format` internally (self-use), but `mylib.h` carries no `fmt` symbol and downstream never needs to see `fmt.h` (not others-use), so it is PRIVATE.
+`fmt` is written PRIVATE: `mylib.cpp` calls `fmt::format` internally (self-use), but `mylib.h` carries not a single `fmt` symbol, so downstream never needs to see `fmt.h` (not others-use). Hence PRIVATE.
 
-### Flip PRIVATE to PUBLIC, Watch Downstream Get "Infected"
+### Flip PRIVATE to PUBLIC and watch downstream get "infected"
 
-Explaining concepts in the abstract never sticks. Let us get our hands dirty and change `fmt` from PRIVATE to PUBLIC, and see what happens to `app`.
+The worst way to teach a concept is in a vacuum. Let's get our hands dirty: change `fmt` from PRIVATE to PUBLIC and see what happens to the downstream `app`.
 
-First configure the project (using the Make generator, because its `flags.make` file lists the include paths each target actually receives in plain, readable form; Ninja splits the flags into other files to support C++ modules, which is awkward to read by eye):
+First, configure the project (with the Make generator, because its `flags.make` file lists the include paths each target actually receives in plain, readable form; Ninja, to support C++ modules, splits the flags off into other files that are painful to read by eye):
 
 ```text
 $ cmake -S . -B build -G "Unix Makefiles"
@@ -139,7 +145,7 @@ $ cmake -S . -B build -G "Unix Makefiles"
 -- Generating done (0.0s)
 ```
 
-Right now `mylib` declares `fmt` as PRIVATE. Look at the include flags CMake generated for each of the three targets:
+Right now `mylib` declares `fmt` PRIVATE. Look at the include flags CMake generates for each of the three targets:
 
 ```text
 $ cat build/CMakeFiles/mylib.dir/flags.make | grep INCLUDES
@@ -149,9 +155,9 @@ $ cat build/CMakeFiles/app.dir/flags.make | grep INCLUDES
 CXX_INCLUDES = -I/tmp/cmake-target-demo/include
 ```
 
-Read this line by line. `mylib` gets two paths: its own `include` (PUBLIC) plus `fmt` (PRIVATE, also needed when compiling itself). `app` gets only one path, `include`, because it links only `mylib` and therefore inherits `mylib`'s PUBLIC part (which is `include`); `fmt` is `mylib`'s PRIVATE and does not cross over. `app` knows nothing about `fmt`. That is exactly the encapsulation we want.
+Read it word by word. `mylib` gets two paths: its own `include` (PUBLIC) plus `fmt` (PRIVATE — also needed while compiling itself). `app` gets only one path, `include`: it links only `mylib`, so it inherits `mylib`'s PUBLIC portion (which is `include`), while `fmt`, being `mylib`'s PRIVATE, never crosses over. `app` knows nothing about `fmt` — exactly the encapsulation we wanted.
 
-What if `app`'s `main.cpp` sneaks in an `#include "fmt.h"` now? The compiler cannot find that header and dies immediately. I tried it:
+What happens if `app`'s `main.cpp` sneaks in an `#include "fmt.h"` at this point? The compiler cannot find the header and dies on the spot. We actually tried it:
 
 ```text
 $ cmake --build build --target app
@@ -165,7 +171,7 @@ compilation terminated.
 
 That is the physical meaning of PRIVATE: the encapsulation is real, not lip service.
 
-Now change one line, from `target_link_libraries(mylib PRIVATE fmt)` to `target_link_libraries(mylib PUBLIC fmt)`, reconfigure, and look at `app`'s include flags again:
+Now touch one line — change `target_link_libraries(mylib PRIVATE fmt)` to `target_link_libraries(mylib PUBLIC fmt)`, reconfigure, and look at `app`'s include flags again:
 
 ```text
 $ sed -i 's/target_link_libraries(mylib PRIVATE fmt)/target_link_libraries(mylib PUBLIC fmt)/' CMakeLists.txt
@@ -174,17 +180,17 @@ $ cat build/CMakeFiles/app.dir/flags.make | grep INCLUDES
 CXX_INCLUDES = -I/tmp/cmake-target-demo/include -I/tmp/cmake-target-demo/fmt
 ```
 
-`app` changed nothing at all, yet because upstream `mylib` flipped `fmt` from PRIVATE to PUBLIC, `app` magically gained a `-I.../fmt`. Now `app` does not have to `find_package(fmt)` itself, does not have to write `target_link_libraries(app PRIVATE fmt)` itself, and can simply `#include "fmt.h"` and compile.
+`app` itself changed nothing, yet purely because upstream `mylib` flipped `fmt` from PRIVATE to PUBLIC, `app` gained a `-I.../fmt` out of thin air. Now `app` doesn't need its own `find_package(fmt)`, doesn't need its own `target_link_libraries(app PRIVATE fmt)` — a bare `#include "fmt.h"` just compiles.
 
-This is the **propagation** of usage requirements: PUBLIC lets configuration seep downstream along the link graph, while PRIVATE locks configuration inside the target. This "automatic propagation" is the root reason modern CMake can write complex dependency relationships so cleanly. As long as you correctly mark each dependency public or private, downstream picks up exactly the configuration it should, automatically, with a single link.
+This is the **propagation** of usage requirements: PUBLIC lets configuration seep downstream along the link graph, while PRIVATE seals it inside the target. This "automatic propagation" is the root reason modern CMake can express such complex dependency relationships so cleanly. As long as you correctly mark each dependency public or private, one link is all downstream needs to automatically pick up every bit of configuration it should get.
 
-::: warning Do not use PUBLIC as a universal patch
-Reading this far you might be tempted: if PUBLIC hands downstream the configuration automatically, why not mark every dependency PUBLIC and be done with it? Please do not. PUBLIC means leaking your internal implementation details downstream. The moment downstream starts depending on the `fmt` path you exposed, the day you swap `fmt` for `std::format`, or upgrade and change the path, downstream breaks with it. Encapsulation is breathing room for the future; the more PUBLIC you sprinkle, the less room you leave yourself to refactor. The rule: if PRIVATE works, do not reach for PUBLIC.
+::: warning Don't use PUBLIC as a universal patch
+Reading this far you might be tempted: since PUBLIC hands downstream the configuration automatically, why not mark every dependency PUBLIC and save the effort? Please don't. PUBLIC amounts to leaking internal implementation details downstream. The moment downstream starts depending on the `fmt` path you exposed, the day you swap `fmt` for `std::format`, or upgrade and the path changes, downstream blows up with you. Encapsulation is slack you leave for the future — the more PUBLIC you use, the less room you leave yourself to refactor. The rule: if PRIVATE will do, don't use PUBLIC.
 :::
 
-### What Is That LINK_ONLY in INTERFACE_LINK_LIBRARIES?
+### What the LINK_ONLY in INTERFACE_LINK_LIBRARIES actually is
 
-There is a detail worth expanding on here. I dug into `mylib`'s internal properties with `get_target_property` (with `fmt` configured as PRIVATE):
+There is a detail here worth unfolding. We dug through `mylib`'s internal properties with `get_target_property` (with `fmt` configured as PRIVATE):
 
 ```text
 mylib.INCLUDE_DIRECTORIES         = /tmp/cmake-target-demo/include
@@ -193,66 +199,66 @@ mylib.LINK_LIBRARIES              = fmt
 mylib.INTERFACE_LINK_LIBRARIES    = $<LINK_ONLY:fmt>
 ```
 
-Notice the last line. PRIVATE is supposed to mean "downstream has no idea fmt exists," so why does `fmt` show up in `INTERFACE_LINK_LIBRARIES`?
+Notice the last line. Isn't PRIVATE supposed to mean "downstream has no idea fmt exists"? Then why does `fmt` show up in `INTERFACE_LINK_LIBRARIES`?
 
-There is a subtle but sensible distinction here: PRIVATE encapsulates the **include path** (downstream does not need `fmt.h` at compile time), but the **link relationship** cannot be hidden. `mylib` is a static library, and its `.o` files reference `fmt::format` symbols. When the linker finally turns `app` into an executable, it has to be able to find `libfmt.a` to fill those symbols in, or it throws `undefined reference`. So CMake uses the generator expression `$<LINK_ONLY:fmt>` to say "fmt participates in linking for downstream, but not in compilation." That explains why you do not see `-I.../fmt` in `app`'s `flags.make` (the include path did not cross over), yet `app` still links into a working executable (the link relationship did cross over). PUBLIC/PRIVATE controls the propagation of configuration, not the link graph itself.
+There is a subtle but sensible distinction at work: PRIVATE encapsulates the **include path** (downstream does not need `fmt.h` at compile time), but the **link relationship** cannot be sealed away. `mylib` is a static library; its `.o` files reference `fmt::format`'s symbols, and when the linker finally turns `app` into an executable, it must be able to find `libfmt.a` to fill those symbols in — otherwise the linker throws `undefined reference`. So CMake uses the generator expression `$<LINK_ONLY:fmt>` to say "fmt participates in linking only, not in compilation, for downstream." This explains why you do not see `-I.../fmt` in `app`'s `flags.make` (the include path did not cross over), yet `app` still links into a working executable just fine (the link relationship did cross over). PUBLIC/PRIVATE controls the propagation of configuration, not the link graph itself.
 
-## Why Directory-Level Commands Are an Anti-Pattern
+## Why directory-level commands are an anti-pattern
 
-Once target privacy is clear, going back to old-style CMake makes it obvious why the modern CMake crowd uniformly boycotts these commands.
+Once target privacy makes sense, look back at old-style CMake and it becomes obvious why the modern CMake crowd boycotts these commands unanimously.
 
 Old-style CMake uses directory-level, global commands:
 
 ```cmake
-# 老式 CMake 写法,现代项目里见一次就该重构
+# Old-style CMake; one sighting in a modern project should trigger a refactor
 include_directories(include)
 include_directories(fmt)
 add_definitions(-DUSE_FMT)
 add_compile_options(-Wall)
 ```
 
-The semantics of `include_directories(include)` are "every target in the current `CMakeLists.txt` directory and its subdirectories gets `-Iinclude`, no exceptions." `add_definitions(-DUSE_FMT)` works the same way: every target gets the `-DUSE_FMT` macro defined.
+The semantics of `include_directories(include)` are "every target in the current `CMakeLists.txt`'s directory and its subdirectories gets `-Iinclude`, bar none." `add_definitions(-DUSE_FMT)` works the same way: the `-DUSE_FMT` macro gets defined on every target.
 
-In a small project you cannot see the flaw. Scale up and it falls apart. Picture a project with `mylib`, `tests`, `benchmarks`, and `tools` (four or five targets). You write `add_compile_options(-Wall -Wextra -Werror)` in the top-level `CMakeLists.txt` intending to turn on strict warnings for the main library, and the third-party Catch2 code under `tests/` inherits `-Werror` too, flooding the build with red. Now you have to dig into `tests/CMakeLists.txt` and remember a pile of workaround incantations to turn `-Werror` back off there.
+In a small project you cannot see the flaw; scale up and it collapses. Picture a project with four or five targets — `mylib`, `tests`, `benchmarks`, `tools`. You write `add_compile_options(-Wall -Wextra -Werror)` in the top-level `CMakeLists.txt`, intending strict warnings for the main library, and the pile of third-party Catch2 test code under the `tests` subdirectory inherits `-Werror` too — the build goes red all over. Then you are down in `tests/CMakeLists.txt` figuring out how to turn `-Werror` off again, memorizing a heap of workaround incantations.
 
-Or imagine `mylib` uses `fmt` internally, and to save effort you write `include_directories(fmt)` at the top level. Now `tools`, a target that should have no idea `fmt` exists, also picks up `-Ifmt`. The day its source code accidentally `#include "fmt.h"` it still compiles, and the encapsulation is silently broken. When a maintainer later tries to swap out `fmt`, they have no way to tell which targets used `fmt` on purpose and which got it stained on by a global command.
+Or picture this: `mylib` uses `fmt` internally, and to save effort you write `include_directories(fmt)` at the top level. Now `tools` — a target that was never supposed to know `fmt` exists — picks up `-Ifmt` too; the day its source code accidentally `#include "fmt.h"`, it still compiles, and the encapsulation has been quietly torn open. When a maintainer later wants to swap `fmt` out, they have no way to tell which targets use `fmt` on purpose and which just got stained by a global command.
 
-Modern CMake solves both problems with target-level commands. `target_include_directories(mylib PRIVATE fmt)` bolts `fmt`'s path tightly inside the `mylib` target. It neither leaks to `tools` nor to downstream `app` (because PRIVATE). Each target carries its own configuration boundary; whoever owns the dependency declares it, and the dependency graph stays legible and traceable.
+Modern CMake solves both problems with target-level commands. `target_include_directories(mylib PRIVATE fmt)` locks `fmt`'s path dead inside the `mylib` target — it leaks neither to `tools` nor to the downstream `app` (because PRIVATE). Every target carries its own configuration boundary; whoever owns a dependency declares it, and the dependency graph stays legible and traceable.
 
-Side-by-side comparison:
+Side by side:
 
 ```cmake
-# 老式(目录级,全局污染)
+# Old style (directory-level, global pollution)
 include_directories(include)
 add_definitions(-DMYLIB_EXPORTS)
 
-# 现代(target 级,边界清晰)
+# Modern (target-level, clean boundaries)
 target_include_directories(mylib PUBLIC include)
 target_compile_definitions(mylib PRIVATE MYLIB_EXPORTS)
 ```
 
-The migration rule is straightforward: swap every `include_directories()` for `target_include_directories()`, every `add_definitions()` for `target_compile_definitions()`, every `add_compile_options()` for `target_compile_options()`, and prefix each command with a specific target name. It is the cheapest single step for dragging an old project into modern CMake.
+The migration rule is just as plain: swap every `include_directories()` for `target_include_directories()`, every `add_definitions()` for `target_compile_definitions()`, every `add_compile_options()` for `target_compile_options()`, and put a concrete target's name in front of each command. That is the cheapest single step for dragging an old project into modern CMake.
 
-::: details Can I still set the C++ standard with a variable at the top level?
-You will see many `CMakeLists.txt` files write `set(CMAKE_CXX_STANDARD 17)` at the top. That is also a directory-level (global) setting; it assigns the `CXX_STANDARD` property to every target under the current directory. This usage is still acceptable today, because for most projects the C++ standard is genuinely a project-wide global property. But the more modern, more precise form is `target_compile_features(mylib PUBLIC cxx_std_17)`, which turns the C++ standard into a target usage requirement too: linking `mylib` downstream automatically inherits the C++17 requirement. The next article, on `find_package`, will come back to compare the two forms.
+::: details Can you still set the C++ standard with a variable at the top level
+You will see plenty of `CMakeLists.txt` files writing `set(CMAKE_CXX_STANDARD 17)` at the top. That is also a directory-level (global) setting: it assigns the `CXX_STANDARD` property to every target under the current directory. This usage is still acceptable today, because for the vast majority of projects the C++ standard genuinely is a project-wide global property. But the more modern, more precise form is `target_compile_features(mylib PUBLIC cxx_std_17)`, which turns the C++ standard into a target usage requirement too — downstream links `mylib` and automatically inherits the C++17 requirement. The next article, on `find_package`, comes back to compare the two forms.
 :::
 
-## Hands-On: Tear Down a Two-Target Project
+## Hands-on: tearing down a two-target project
 
-Let us assemble everything from above. We will use a complete, runnable project to demonstrate the two-target setup of a `mylib` static library plus an `app` executable, and see how PUBLIC/PRIVATE actually flows in a real build. The full project lives at `code/examples/vol7/cmake-fundamentals/02-target/`, with this layout:
+Let's assemble everything from above. We will use a complete, runnable project to demonstrate the two-target setup — a `mylib` static library plus an `app` executable — and watch how PUBLIC/PRIVATE actually flows in a real build. The full project lives at `code/examples/vol7/cmake-fundamentals/02-target/`, laid out like this:
 
 ```text
 02-target/
 ├── CMakeLists.txt
 ├── fmt/
-│   ├── fmt.h          # 模拟第三方库的极简实现
+│   ├── fmt.h          # minimal stand-in for a third-party library
 │   └── fmt.cpp
 ├── include/
 │   └── mylib/
-│       └── mylib.h    # mylib 公开头文件
+│       └── mylib.h    # mylib's public header
 ├── src/
-│   └── mylib.cpp      # mylib 实现
-└── main.cpp           # app 可执行
+│   └── mylib.cpp      # mylib implementation
+└── main.cpp           # app executable
 ```
 
 The complete `CMakeLists.txt`:
@@ -265,24 +271,24 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# fmt:仅在本工程内部使用的极简"第三方库",真实工程会换成 find_package(fmt REQUIRED)
+# fmt: a minimal "third-party library" used only inside this project; a real project would use find_package(fmt REQUIRED)
 add_library(fmt STATIC fmt/fmt.cpp)
 target_include_directories(fmt PUBLIC fmt)
 
-# mylib:对外暴露的库,公开头文件 include/mylib/mylib.h 用了 std::string
+# mylib: the library exposed outward; its public header include/mylib/mylib.h uses std::string
 add_library(mylib STATIC src/mylib.cpp)
 target_include_directories(mylib PUBLIC include)
-# fmt 在这里写成 PRIVATE —— mylib.cpp 内部要用,但 mylib.h 完全不暴露 fmt
+# fmt is PRIVATE here — mylib.cpp needs it internally, but mylib.h exposes no fmt at all
 target_link_libraries(mylib PRIVATE fmt)
 
-# app:下游可执行,只链接 mylib,对 fmt 一无所知
+# app: the downstream executable; links only mylib and knows nothing of fmt
 add_executable(app main.cpp)
 target_link_libraries(app PRIVATE mylib)
 ```
 
-Reading this config bottom-up makes the intent clearer. `app` declares only "I link `mylib`," nothing else. `mylib` exposes its own `include` directory as PUBLIC, so downstream gets that path automatically when linking it; it locks `fmt` into PRIVATE, so downstream had better not find out `fmt` is in use. `fmt` exists as a STATIC library in its own right, with `include` as its own PUBLIC (so `mylib` picks up the `fmt.h` path when linking it).
+Read this config bottom-up and the intent comes into focus. `app` declares only "I link `mylib`" — nothing else. `mylib` exposes its own `include` directory as PUBLIC, so downstream gets that path automatically when linking; it locks `fmt` into PRIVATE, so downstream had better not find out `fmt` is in use. `fmt` itself exists as a STATIC library in its own right, with the include path as its own PUBLIC (so `mylib` picks up the `fmt.h` path when linking it).
 
-Three steps to bring the project up:
+Three commands bring the project up:
 
 ```text
 $ cmake -S . -B build -G Ninja && cmake --build build && ./build/app
@@ -304,11 +310,11 @@ $ cmake -S . -B build -G Ninja && cmake --build build && ./build/app
 hello, world!
 ```
 
-The six-step order reveals the dependency graph. `fmt` builds first (steps 1-2, it depends on nothing), `mylib` builds next (steps 3-4, it depends on `fmt`), and `app` builds last (steps 5-6, it depends on `mylib`). Ninja orders everything by dependency automatically; you do not lift a finger.
+The order of those six steps reveals the dependency graph. `fmt` builds first (steps 1-2, it depends on nobody), `mylib` next (steps 3-4, it depends on `fmt`), and `app` last (steps 5-6, it depends on `mylib`). Ninja orders everything by dependency automatically; you don't lift a finger.
 
-The final line, `hello, world!`, is what `app` prints. In `main.cpp` it only does `#include "mylib/mylib.h"`, yet the compiler finds that header, because `mylib` marked `include` as PUBLIC and `app` inherited `-I.../include` when it linked `mylib`.
+That last line, `hello, world!`, is `app` running. Its `main.cpp` does nothing more than `#include "mylib/mylib.h"`, yet the compiler finds the header — thanks to `mylib` marking `include` PUBLIC, the downstream `app` inherited `-I.../include` automatically when linking `mylib`.
 
-If we want to verify this inheritance is really happening, the most direct way is to look at the include flags `app` actually received. Configure once with the Make generator and read `app.dir/flags.make`:
+If we want proof that this inheritance is really at work, the most direct route is to look at the include flags `app` actually received. Configure once more with the Make generator and read `app.dir/flags.make`:
 
 ```text
 $ cmake -S . -B build-mk -G "Unix Makefiles" > /dev/null
@@ -316,11 +322,11 @@ $ cat build-mk/CMakeFiles/app.dir/flags.make | grep INCLUDES
 CXX_INCLUDES = -I/tmp/cmake-target-demo/include
 ```
 
-`app` never wrote a single line of `target_include_directories`, yet `-I.../include` is sitting right there in its compile command. That is the work PUBLIC usage requirements do quietly behind your back. The `fmt` path is absent, because `mylib` marked `fmt` as PRIVATE, and the encapsulation is airtight.
+`app` never wrote a single line of `target_include_directories` itself, yet there it is in its compile command: `-I.../include`. That is PUBLIC usage requirements quietly doing the work behind your back. The `fmt` path is nowhere to be seen, because `mylib` marked `fmt` PRIVATE — the encapsulation is airtight.
 
-## Companion Example
+## Companion example
 
-The two-target project from this article builds directly out of the repository's example directory:
+This article's two-target project builds straight out of the repository's example directory:
 
 ```text
 code/examples/vol7/cmake-fundamentals/02-target/
@@ -333,6 +339,6 @@ code/examples/vol7/cmake-fundamentals/02-target/
 └── main.cpp
 ```
 
-Step into that directory and run the same three commands from the previous section to reproduce every line of output. To feel the PUBLIC/PRIVATE propagation firsthand, change `target_link_libraries(mylib PRIVATE fmt)` to PUBLIC, reconfigure, and run `cat build-mk/CMakeFiles/app.dir/flags.make | grep INCLUDES` again to see the `-I.../fmt` line `app` gained out of thin air.
+Step into that directory and rerun the three commands from the previous section to reproduce every line of output. To feel the PUBLIC/PRIVATE propagation with your own hands, change `target_link_libraries(mylib PRIVATE fmt)` to PUBLIC, reconfigure, then run `cat build-mk/CMakeFiles/app.dir/flags.make | grep INCLUDES` and watch the `-I.../fmt` line `app` gained out of thin air.
 
-That should land the target object, the `target_*` family of member methods, and the three-state PUBLIC/PRIVATE/INTERFACE usage requirements on solid ground. The next article tackles a more practical problem: in a real project `fmt` is not hand-written by us; you bring it in from the system or vcpkg/Conan with `find_package(fmt)`. We will see what the namespaced target like `fmt::fmt` that `find_package` hands back actually is, and how the PUBLIC/INTERFACE configuration on it flows automatically into your project. We will also circle back to a question left open here: for setting the C++ standard, is the directory-level form `set(CMAKE_CXX_STANDARD 17)` better, or the target-level form `target_compile_features(mylib PUBLIC cxx_std_17)`?
+By now the target object, the `target_*` family of member methods, and the three-state PUBLIC/PRIVATE/INTERFACE usage requirements should all have landed on solid ground. The next article takes on a more practical problem: in a real project `fmt` is not something we hand-write — you bring the third-party library in from the system or from vcpkg/Conan with `find_package(fmt)`. What exactly is the namespaced target like `fmt::fmt` that `find_package` hands back, and how does the PUBLIC/INTERFACE configuration hanging off it flow automatically into your project? It also returns to a question we left open: for setting the C++ standard, is the directory-level form `set(CMAKE_CXX_STANDARD 17)` better, or the target-level form `target_compile_features(mylib PUBLIC cxx_std_17)`?

@@ -1,41 +1,37 @@
 ---
-title: Friend
-description: Understand the usage of friend functions and friend classes, and master
-  the appropriate use cases and risks of misusing friends.
+title: "Friends"
+description: "Understand how friend functions and friend classes work, and master the legitimate use cases for friendship as well as the risks of overusing it"
 chapter: 6
 order: 5
 difficulty: beginner
-reading_time_minutes: 10
+reading_time_minutes: 16
 platform: host
 prerequisites:
-- static 成员
+  - "static Members"
 tags:
-- cpp-modern
-- host
-- beginner
-- 入门
-- 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+  - cpp-modern
+  - host
+  - beginner
+  - 入门
+  - 基础
+cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/vol1-fundamentals/ch06/05-friends.md
-  source_hash: 63e4a99f28c5242b20832ea4c0a370a998b8aec2d329c0c554a3c315cd35fbc7
-  translated_at: '2026-05-26T10:51:59.543457+00:00'
+  source_hash: 3bda8a31dd87855b978a402b3cbd1f1c2d65e4d4fa2630a946a7c462751a9716
+  translated_at: '2026-09-25T11:01:52+00:00'
   engine: anthropic
-  token_count: 1934
+  token_count: 3000
 ---
-# Friends
 
-Hey, my friend! Today we are introducing `friend`! Don't get the wrong idea—`friend` is actually a C++ keyword, haha! In the previous chapters, we kept emphasizing encapsulation—`private` members are hidden inside the class, and external code can only manipulate objects through `public` interfaces. But occasionally, we run into a situation where an external function or another class genuinely needs to access private members, and this access is both reasonable and unavoidable. C++ provides a specific mechanism for this scenario—**`friend` (friends)**.
+# Friends: Granting Access to Private Members, On Purpose
 
-The essence of a friend is **targeted authorization**: the class author proactively declares, "I trust this function/class and allow it to see my private members." It doesn't tear down encapsulation entirely (we could just write everything as `public` if we wanted that), but rather opens a small, controlled door. Next, we will break down the three forms of friends—friend functions, friend classes, and friend member functions—one by one, and finally discuss when we should and shouldn't use friends.
+Hey! My friend! Today we're introducing friend! Don't get the wrong idea—friend is actually a C++ keyword, haha! In the previous chapters we kept emphasizing encapsulation—`private` members are hidden inside the class, and external code can only manipulate objects through the `public` interface. But once in a while you'll run into a situation where some external function, or another class, genuinely needs to access private members, and the access is legitimate and unavoidable. C++ provides a dedicated mechanism for exactly this scenario: **`friend`**.
 
-## Friend Functions — Giving an External Function a Pass
+The essence of friendship is **targeted authorization**: the class's author deliberately declares, "I trust this function/class, and I allow it to see my private members." It is not tearing encapsulation down entirely (for that you could just make everything `public`); it grants access precisely, to specific named functions or classes. Next we'll take the three forms of friends—friend functions, friend classes, and friend member functions—apart one by one, and finish by discussing when you should use friends and when you shouldn't.
 
-The friend function is the most basic form of a friend. We declare it inside the class using the `friend` keyword followed by a regular function declaration:
+## Friend Functions: Authorizing an External Function
+
+The friend function is the most basic form of friendship. We declare one inside the class with the `friend` keyword plus the declaration of an ordinary function:
 
 ```cpp
 class Vector3D {
@@ -43,22 +39,22 @@ private:
     float x, y, z;
 public:
     Vector3D(float x, float y, float z) : x(x), y(y), z(z) {}
-    // 声明 dot_product 为友元函数
+    // Declare dot_product as a friend function
     friend float dot_product(const Vector3D& a, const Vector3D& b);
 };
 
-// 友元函数定义——不是成员函数，不需要 Vector3D::
+// Friend function definition—not a member function, no Vector3D:: needed
 float dot_product(const Vector3D& a, const Vector3D& b)
 {
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 ```
 
-There are a few key points to understand here. First, although the `friend` declaration appears inside the class, `dot_product` is **not** a member function of `Vector3D`—it is a regular global function that simply gains the privilege to access `Vector3D`'s private members. When calling it, we treat it like a normal function: `dot_product(v1, v2)`, rather than `v1.dot_product(v2)`.
+There are a few points to get straight here. First, the `friend` declaration appears inside the class, but `dot_product` is **not** a member function of `Vector3D`. It is an ordinary global function that has simply been granted the privilege of accessing `Vector3D`'s private members. You call it just like any normal function: `dot_product(v1, v2)`, not `v1.dot_product(v2)`.
 
-Second, the `friend` declaration can be placed anywhere inside the class—whether in the `public`, `private`, or `protected` region makes no difference; the effect is exactly the same. We typically group them at the beginning or end of the class, separate from member function declarations, so we can see at a glance "which external functions have special permissions."
+Second, the `friend` declaration can sit anywhere in the class—it makes no difference whether it lands in the `public`, `private`, or `protected` section; the effect is exactly the same. Conventionally we gather these declarations at the top or bottom of the class, kept apart from the member function declarations, so that "which external functions hold special privileges" is visible at a glance.
 
-The most classic use case for friend functions is overloading `operator<<` to allow custom types to be output directly to a stream. The reason this requires a friend is that the left operand of `operator<<` is `std::ostream&`, not your class itself—so it cannot be a member function of your class:
+The most classic use case for friend functions is overloading `operator<<`, letting a custom type be written directly to a stream. The reason this scenario needs a friend is that the left operand of `operator<<` is a `std::ostream&`, not our class itself, so it can never be written as a member function of our class:
 
 ```cpp
 class Point {
@@ -68,7 +64,7 @@ private:
 public:
     Point(int x, int y) : x(x), y(y) {}
 
-    // 友元重载 operator<<
+    // Friend overload of operator<<
     friend std::ostream& operator<<(std::ostream& os, const Point& p);
 };
 
@@ -78,16 +74,16 @@ std::ostream& operator<<(std::ostream& os, const Point& p)
     return os;
 }
 
-// 现在可以这样用了
+// Now this works
 Point p(3, 4);
-std::cout << p << std::endl;  // 输出: (3, 4)
+std::cout << p << std::endl;  // Output: (3, 4)
 ```
 
-We will dive into the details of `operator<<` overloading in the next chapter. For now, we just need to understand why it must be a friend—the first parameter is `std::ostream&`, not `Point`, so this function cannot be written as a member function of `Point`.
+We'll expand on the details of `operator<<` overloading in the next chapter; for now, you only need to understand why it must be a friend—its first parameter is a `std::ostream&`, not a `Point`, so this function cannot be written as a member function of `Point`.
 
-## Friend Classes — Making an Entire Class a Trusted Object
+## Friend Classes: Authorizing an Entire Class
 
-If many member functions of one class need to access the private members of another class, declaring friend functions one by one becomes too tedious. In this case, we can use `friend class` to authorize an entire class at once:
+If many member functions of one class need to access the private members of another class, declaring friend functions one by one gets tedious. That's when we can use `friend class` to authorize an entire class in one shot:
 
 ```cpp
 class Matrix {
@@ -95,7 +91,7 @@ private:
     float data[3][3];
 
 public:
-    Matrix()  // 初始化为单位矩阵
+    Matrix()  // Initialize as the identity matrix
     {
         for (int i = 0; i < 3; ++i) {
             for (int j = 0; j < 3; ++j) {
@@ -104,7 +100,7 @@ public:
         }
     }
 
-    // Vector 是 Matrix 的友元类
+    // Vector is a friend class of Matrix
     friend class Vector;
 };
 
@@ -117,7 +113,7 @@ public:
 
     Vector transform(const Matrix& m)
     {
-        // Vector 的成员函数可以直接访问 Matrix 的 private 成员
+        // Vector's member functions can access Matrix's private members directly
         float nx = m.data[0][0] * x + m.data[0][1] * y + m.data[0][2] * z;
         float ny = m.data[1][0] * x + m.data[1][1] * y + m.data[1][2] * z;
         float nz = m.data[2][0] * x + m.data[2][1] * y + m.data[2][2] * z;
@@ -126,21 +122,21 @@ public:
 };
 ```
 
-`friend class Vector;` means that **all** member functions of `Vector` can access the private members of `Matrix`. This is a coarse-grained authorization—we should use it cautiously, but there are indeed scenarios where two classes are tightly coupled enough to warrant this level of trust. Typical reasonable scenarios include the "container + iterator" pattern, and the close collaboration between mathematical types shown above. The common characteristic is that the two classes are **logically a single whole**, but are split into two classes for code organization reasons.
+`friend class Vector;` means **all** member functions of `Vector` can access `Matrix`'s private members. This is coarse-grained authorization, and we should use it with care—but there really are scenarios where two classes are related tightly enough to deserve this level of trust. Typical legitimate cases include the "container + iterator" pattern, and the close cooperation between math types like the pair above. The common trait: the two classes are **logically a single whole**, split into two classes only for code-organization reasons.
 
-## Friend Member Functions — Precision-Guided Authorization
+## Friend Member Functions: Authorizing Just One Member Function
 
-If we feel that "friend class authorization is too broad," C++ also provides finer-grained control: authorizing only **one specific** member function of another class:
+If you feel that friend-class authorization is too broad, C++ offers finer-grained control: authorize only **one specific** member function of another class:
 
 ```cpp
-class Vector;  // 前向声明
+class Vector;  // Forward declaration
 
 class Matrix {
 private:
     float data[3][3];
 public:
     Matrix();
-    // 只授权 Vector::transform 这一个成员函数
+    // Authorize only this one member function: Vector::transform
     friend Vector Vector::transform(const Matrix& m);
 };
 
@@ -155,18 +151,18 @@ public:
 };
 ```
 
-Theoretically, this approach is the safest—following the principle of least privilege, after all. But in practice, friend member functions have a headache-inducing dependency issue: when declaring `friend Vector Vector::transform(const Matrix&)`, the compiler must have already seen the complete definition of the `Vector` class; otherwise, it doesn't know that `transform` is truly a member function of `Vector`. This requires us to carefully arrange the order of header file includes, and if we aren't careful, we can fall into circular dependencies. If we need to authorize three or four member functions, it's cleaner to just use a friend class.
+In theory this approach is the safest—the principle of least privilege, after all. In practice, though, friend member functions come with a headache-inducing dependency problem: when you declare `friend Vector Vector::transform(const Matrix&)`, the compiler must already have seen the complete definition of the `Vector` class, otherwise it cannot know that `transform` really is a member function of `Vector`. This forces us to arrange header include order carefully, and one wrong move drops you into circular dependencies. If you have three or four member functions to authorize, it's cleaner to just use a friend class.
 
-## When to Use Friends — A Decision Checklist
+## When to Use Friends
 
-Friends are easily abused, so it's necessary for us to seriously discuss the boundaries of their use.
+Friends are easy to abuse, so we owe ourselves a serious discussion of the boundaries.
 
-**Scenarios where using friends is reasonable.** Operator overloading is the most typical example—the `operator<<` we discussed earlier is the best case. Tightly coupled implementation partners are also reasonable, such as `Container` and its `Iterator`, or `Matrix` and `Vector`. In these cases, the two classes share implementation details anyway, and using friends simply makes this fact explicit at the code level.
+**Scenarios where using friends is reasonable.** The most typical one is operator overloading—the `operator<<` from earlier is the best example. Tightly coupled implementation partners are also reasonable, such as a `Container` and its `Iterator`, or `Matrix` and `Vector`. In these cases the two classes already share implementation details anyway; using friends simply makes that fact explicit at the code level.
 
-**Scenarios where friends should not be used.** If we just want to be lazy and avoid designing a proper public interface, casually adding a `friend` to let an external function directly manipulate private data—this kind of friend is harmful. Most "need a friend" scenarios can actually be replaced by providing appropriate access interfaces:
+**Scenarios where friends should not be used.** If we just want to be lazy and skip designing a proper public interface, casually adding a `friend` so an external function can manipulate private data directly—this kind of friendship is harmful. Most scenarios that "need a friend" can actually be replaced by providing an appropriate access interface:
 
 ```cpp
-// 不推荐：用友元绕过接口设计
+// Not recommended: using a friend to bypass interface design
 class SensorData {
     friend void serialize(const SensorData& data, uint8_t* buffer);
 private:
@@ -174,7 +170,7 @@ private:
     int count;
 };
 
-// 推荐：提供只读接口，封装完好
+// Recommended: provide a read-only interface, encapsulation stays intact
 class SensorData {
 private:
     float values[100];
@@ -185,15 +181,13 @@ public:
 };
 ```
 
-> ⚠️ **Pitfall Warning: Friend relationships are not inherited, not transitive**
-> There are three key characteristics of friend relationships that are often misunderstood. First, **friends are not inherited**: if `Base` is a friend of `X`, `Derived` (which inherits from `Base`) does not automatically become a friend of `X`. Second, **friends are not transitive**: if `A` is a friend of `B`, and `B` is a friend of `C`, `A` does not automatically become a friend of `C`. Third, **friendship is unidirectional**: `A` being a friend of `B` means `A` can access `B`'s private members, but `B` cannot access `A`'s private members in return—unless `A` also declares `B` as a friend. These three rules ensure that friend permissions don't spread infinitely like a privilege escalation vulnerability.
->
-> ⚠️ **Pitfall Warning: A friend declaration is not a forward declaration of a function**
-> Writing `friend void foo();` inside a class does indeed make `foo` a friend of that class, but when we define the friend function outside the class, we must ensure that a regular declaration (not a `friend` declaration) can be found before the call site. Otherwise, we might encounter "undefined function" linker errors on certain compilers, especially when the friend function is defined in another `.cpp` file. The safest approach is to add a regular function declaration outside the class as well.
+We should remember three key properties of friendship, because they are often misunderstood. **Friendship is not inherited**: if `Base` is a friend of `X`, `Derived` (which inherits from `Base`) does not automatically become a friend of `X`. **Friendship is not transitive**: if `A` is a friend of `B`, and `B` is a friend of `C`, `A` does not automatically become a friend of `C`. **Friendship is one-way**: `A` being a friend of `B` means `A` can access `B`'s private members, but `B` cannot turn around and access `A`'s private members—unless `A` also declares `B` a friend. These three rules ensure that friend privileges never spread endlessly beyond what was declared.
 
-## Hands-On — friend_demo.cpp
+A friend declaration is not a forward declaration of the function. Writing `friend void foo();` inside a class does make `foo` a friend of that class, but when we define the friend function outside the class, we must make sure an ordinary declaration of it (not the `friend` declaration) can be found before the call site. Otherwise, on some compilers you may hit a "function definition not found" linker error, especially when the friend function is defined in another `.cpp` file. The safest practice is to add one plain function declaration outside the class as well.
 
-Now let's look at a complete example: `Matrix` and `Vector` collaborate through a friend relationship to perform matrix-vector multiplication.
+## Hands-On: friend_demo.cpp
+
+Now let's look at a complete example: `Matrix` and `Vector` cooperating through a friend relationship to perform matrix-vector multiplication.
 
 ```cpp
 // friend_demo.cpp
@@ -214,7 +208,7 @@ public:
             std::printf("| %.2f %.2f %.2f |\n",
                         data[i][0], data[i][1], data[i][2]);
     }
-    // 授权 Vector 访问私有成员
+    // Grant Vector access to private members
     friend class Vector;
 };
 
@@ -223,7 +217,7 @@ private:
     std::array<float, 3> v;
 public:
     Vector(float x, float y, float z) : v{x, y, z} {}
-    // 友元权限：直接访问 Matrix 内部数组
+    // Friend privileges: direct access to Matrix's internal array
     Vector transform(const Matrix& m) const
     {
         float nx = m.data[0][0] * v[0] + m.data[0][1] * v[1] + m.data[0][2] * v[2];
@@ -271,31 +265,157 @@ Vector:  (1.00, 2.00, 4.00)
 Result:  (2.00, 6.00, 2.00)
 ```
 
-In this example, `Vector::transform` directly accesses the private array `Matrix::data`. If we didn't use a friend, we would have to provide a `float get(int, int) const` access interface—it's not impossible, but in performance-sensitive scenarios like a math library, one less layer of indirection means tighter loops and more cache-friendly behavior.
+In this example, `Vector::transform` directly accesses the private array `Matrix::data`. Without friendship, we would have to provide a `float get(int, int) const` access interface—it's not that this is impossible, but in performance-sensitive settings like a math library, one less layer of indirection means tighter loops and friendlier cache behavior.
 
 ## Exercises
 
-**Exercise 1: Implement operator<< with a friend**
+### Exercise 1: Implementing operator<< as a Friend
 
-Implement a friend function `operator<<` for the `Student` class below, so that `std::cout << student;` can directly output student information.
+Implement a friend function `operator<<` for the `Student` class below, so that `std::cout << student;` can directly output the student's information.
 
 ```cpp
 class Student {
 private:
     int id;
     float score;
+    std::string name;
 
 public:
-    Student(int id, float score) : id(id), score(score) {}
+    Student(int id, float score, const std::string& name)
+        : id(id), score(score), name(name) {}
 
-    // 在这里添加友元声明
+    // Add the friend declaration here
 };
 
-// 在这里实现 operator<<
+// Implement operator<< here
 ```
 
-Verification: Create a few `Student` objects, use `std::cout` to output their information, and confirm the format is correct.
+To verify: create a few `Student` objects, output their information with `std::cout`, and confirm the format is correct.
 
-**Exercise 2: Design a Container-Iterator friend pair**
+::: details Reference Answer
 
-Implement a `IntBuffer` container and an `IntBufferIterator` iterator. `IntBuffer` internally uses a fixed-size `int` array to store data, and `IntBufferIterator` accesses this array through friend permissions to perform traversal. External code must not be able to directly access the internal array of `IntBuffer`. Hint: `IntBuffer` declares `friend class IntBufferIterator;`, and the iterator holds a pointer to the container.
+```cpp
+#include <iostream>
+#include <string>
+
+class Student {
+ private:
+    int id;
+    float score;
+    std::string name;
+
+ public:
+    Student(int id, float score, const std::string& name)
+        : id(id), score(score), name(name) {}
+
+    friend std::ostream& operator<<(std::ostream& os, const Student& student);
+};
+
+std::ostream& operator<<(std::ostream& os, const Student& student) {
+    os << "学生ID:" << student.id << ","
+       << "姓名：" << student.name << ","
+       << "成绩：" << student.score;
+    return os;
+}
+
+int main() {
+    // Create several Student objects
+    Student student1(1, 95.5f, "小明");
+    Student student2(2, 88.0f, "小红");
+    Student student3(3, 76.5f, "杰");
+
+    // Output student information to verify operator<<
+    std::cout << student1 << std::endl;
+    std::cout << student2 << std::endl;
+    std::cout << student3 << std::endl;
+
+    return 0;
+}
+```
+
+Compile and run:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+Result:
+
+```text
+学生ID:1,姓名：小明,成绩：95.5
+学生ID:2,姓名：小红,成绩：88
+学生ID:3,姓名：杰,成绩：76.5
+```
+
+:::
+
+### Exercise 2: Designing a Container-Iterator Friend Pair
+
+Implement an `IntBuffer` container and an `IntBufferIterator` iterator. `IntBuffer` stores its data internally in a fixed-size `int` array, and `IntBufferIterator` uses friend privileges to access that array and complete the traversal. Outside code must not be able to access `IntBuffer`'s internal array directly. Hint: `IntBuffer` declares `friend class IntBufferIterator;`, and the iterator holds a pointer to the container.
+
+::: details Reference Answer
+
+```cpp
+#include <array>
+#include <cstddef>
+#include <iostream>
+
+class IntBufferIterator;
+
+class IntBuffer {
+ private:
+  std::array<int, 4> data{};
+
+ public:
+  IntBuffer() {
+    for (std::size_t i = 0; i < data.size(); ++i) {
+      data[i] = static_cast<int>(i * 2);
+    }
+  }
+
+  friend class IntBufferIterator;
+};
+
+class IntBufferIterator {
+ private:
+  const IntBuffer* buffer = nullptr;
+  std::size_t index = 0;
+
+ public:
+  explicit IntBufferIterator(const IntBuffer& buffer) : buffer(&buffer) {}
+
+  bool hasNext() const { return index < buffer->data.size(); }
+
+  int next() {
+    int value = buffer->data[index];
+    ++index;
+    return value;
+  }
+};
+
+int main() {
+  IntBuffer buffer;
+  IntBufferIterator iterator{buffer};
+
+  while (iterator.hasNext()) {
+    std::cout << iterator.next() << std::endl;
+  }
+}
+```
+
+Compile and run:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+Result:
+
+```text
+0
+2
+4
+6
+```
+
+:::

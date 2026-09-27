@@ -8,573 +8,1141 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: 'Understanding C++20''s Revolutionary Feature—Coroutines Part 2: Writing a
-  Simple Coroutine Scheduler'
+title: "Understanding C++20's Revolutionary Feature — Coroutines, Part 2: Writing a Simple Coroutine Scheduler"
 description: ''
 translation:
   source: documents/vol4-advanced/02-coroutine-scheduler.md
   source_hash: b0a17f4e8df3445c2d5a65e633bc52764489842afedd519af7803653b3a3b411
-  translated_at: '2026-06-16T04:02:10.283030+00:00'
+  translated_at: '2026-09-26T02:53:04+00:00'
   engine: anthropic
-  token_count: 6737
+  token_count: 8000
 ---
-# Understanding C++20's Revolutionary Feature — Coroutine Support Part 2: Writing a Simple Coroutine Scheduler
+# Understanding C++20's Revolutionary Feature — Coroutines, Part 2: Writing a Simple Coroutine Scheduler
 
 ## Preface
 
-In the previous blog post, we understood the simplest coroutine scheduling interface in C++20 (although it wasn't exactly simple). Clearly, before this blog post, our coroutines were still using a single-coroutine scheduler. Coroutines seem pretty useless. They can't do anything. But don't worry, to further unleash the power of coroutines, I need you to complete this simple little task. This task isn't difficult:
+In the previous post, we came to grips with the simplest coroutine scheduling interface C++20 offers (and even that was far from simple). Clearly, everything before this post still had our coroutines running under what amounted to a single-coroutine scheduler. Coroutines look pretty lame — they can't do anything. But don't worry: so that we can push further and truly unleash the power of coroutines, I need you to get hands-on with this simple little task. It is not difficult:
 
-> - Implement a `Task` that can return a value. (Understand the `resume`/`suspend` lifecycle of `coroutine_handle`.) and use `co_await` to write a coroutine function `worker` that returns `a+b`, where the caller uses `co_await` to get the result.
+> - Implement a `Task<T>` that can be `co_await`ed for a return value. (Understand the resume/suspend lifecycle of `coroutine_handle`.) Then use `Task<int>` to write a coroutine function `co_add(a, b)` that returns a + b, with the caller using `co_await` to obtain the result.
 
-If you are completely confused by the prompt above and don't know what I am talking about—you can read the calling code below first, then go back to my previous blog post to figure out how to write it. ~~(How did you know that I was also confused when I found this exercise?)~~
+If the exercise above leaves you completely lost and you have no idea what I am talking about — you can read the calling code below first, then go back to my previous post and puzzle over how to write it. ~~(How did you know I was just as lost when I first found this exercise?)~~
 
 ```cpp
-int main() {
-    auto add = [](int a, int b) -> Task<int> {
-        co_return co_await worker(a, b);
-    };
-
-    auto result = add(1, 2);
-    Scheduler::instance().spawn(result);
-
-    Scheduler::instance().run();
-    std::cout << "Result from coroutine: " << co_await result << std::endl;
-    return 0;
+Task<int> co_add(int a, int b) {
+ simple_log_with_func_name(
+     std::format("Get a: {} and b: {}, "
+                 "expected a + b = {}",
+                 a, b, a + b));
+ co_return a + b;
 }
+
+Task<void> examples(int a, int b) {
+ simple_log("About to call co_add");
+ int result = co_await co_add(a, b);
+ simple_log(std::format("Get the result: {}", result));
+ co_return;
+}
+
+int main() {
+ simple_log_with_func_name();
+ examples(1, 2);
+ simple_log("Done!");
+}
+
 ```
 
-All you need to do is make the code above run. The way to run it is to implement `Task<int>`. If you have done so, please refer to the code below to compare your implementation. We will reuse `Task<int>` later to complete the theme of this blog post—a scheduler with return value support.
+All you need to do is get the code above running, and the way to get it running is to implement `Task<T>`. Once you have it done, please compare your implementation against the code below. Later on we will reuse `Task<T>` to build the topic of this post — a scheduler with return-value support.
 
-Here is my code. `coroutine_handle` was already given in the previous blog post and has not changed, so feel free to use it.
+Here is my code. `"helpers.h"` was already given in the previous post and has not changed one bit, so use it with confidence.
 
 ```cpp
-// task.hpp
-#pragma once
+#include "helpers.h"
 #include <coroutine>
-#include <optional>
-#include <iostream>
-#include "helpers.hpp"
+#include <format>
 
-template<typename T>
-struct Task {
-    struct promise_type {
-        T value;
-        std::exception_ptr exception;
+template <typename T>
+class Task {
+public:
+ struct promise_type;
+ using coro_handle = std::coroutine_handle<promise_type>;
 
-        Task get_return_object() {
-            return Task{std::coroutine_handle<promise_type>::from_promise(*this)};
-        }
+ Task(coro_handle h)
+     : coroutine_handle(h) {
+  simple_log_with_func_name();
+ }
 
-        std::suspend_never initial_suspend() { return {}; }
-        std::suspend_always final_suspend() noexcept { return {}; }
+ ~Task() {
+  simple_log_with_func_name();
+  if (coroutine_handle) {
+   coroutine_handle.destroy();
+  }
+ }
 
-        void return_value(T val) {
-            value = val;
-        }
+ Task(Task&& o)
+     : coroutine_handle(o.coroutine_handle) {
+  o.coroutine_handle = nullptr;
+ }
 
-        void unhandled_exception() {
-            exception = std::current_exception();
-        }
-    };
+ Task& operator=(Task&& o) {
+  coroutine_handle = std::move(o.coroutine_handle);
+  o.coroutine_handle = nullptr;
+  return *this;
+ }
 
-    std::coroutine_handle<promise_type> handle;
-    Task(std::coroutine_handle<promise_type> h) : handle(h) {}
+ // concept requires
+ struct promise_type {
+  T cached_value;
+  Task get_return_object() {
+   simple_log_with_func_name();
+   return { coro_handle::from_promise(*this) };
+  }
+  // we dont need suspend when first suspend
+  std::suspend_never initial_suspend() {
+   simple_log_with_func_name();
+   return {};
+  }
+  // suspend always for the Task clean ups
+  std::suspend_always final_suspend() noexcept {
+   simple_log_with_func_name();
+   return {};
+  }
 
-    ~Task() {
-        if (handle) handle.destroy();
-    }
+  void return_value(T value) {
+   simple_log_with_func_name(std::format("value T {} is received!", value));
+   cached_value = std::move(value);
+  }
 
-    // Simple awaiter implementation
-    bool await_ready() { return false; }
-    void await_suspend(std::coroutine_handle<> awaiting_handle) {
-        // In a real scheduler, we would push the awaiting_handle to the ready queue
-        // For now, we just resume it immediately to demonstrate the concept
-        awaiting_handle.resume();
-    }
-    T await_resume() { return handle.promise().value; }
+  void unhandled_exception() {
+   // process notings
+  }
+ };
+
+ bool await_ready() {
+  simple_log_with_func_name();
+  return false; // always need suspend
+ }
+
+ void await_suspend(std::coroutine_handle<> h) {
+  simple_log_with_func_name(); // Should never be here
+  h.resume(); // resume these always
+ }
+
+ T await_resume() {
+  simple_log_with_func_name();
+  return coroutine_handle.promise().cached_value;
+ }
+
+private:
+ coro_handle coroutine_handle;
+
+private:
+ Task(const Task&) = delete;
+ Task& operator=(const Task&) = delete;
 };
+
+template <>
+class Task<void> {
+public:
+ struct promise_type;
+ using coro_handle = std::coroutine_handle<promise_type>;
+
+ Task(coro_handle h)
+     : coroutine_handle(h) {
+  simple_log_with_func_name();
+ }
+
+ ~Task() {
+  simple_log_with_func_name();
+  if (coroutine_handle) {
+   coroutine_handle.destroy();
+  }
+ }
+
+ Task(Task&& o)
+     : coroutine_handle(o.coroutine_handle) {
+  o.coroutine_handle = nullptr;
+ }
+
+ Task& operator=(Task&& o) {
+  coroutine_handle = std::move(o.coroutine_handle);
+  o.coroutine_handle = nullptr;
+  return *this;
+ }
+
+ // concept requires
+ struct promise_type {
+  Task get_return_object() {
+   simple_log_with_func_name();
+   return { coro_handle::from_promise(*this) };
+  }
+  // we dont need suspend when first suspend
+  std::suspend_never initial_suspend() {
+   simple_log_with_func_name();
+   return {};
+  }
+  // suspend always for the Task clean ups
+  std::suspend_always final_suspend() noexcept {
+   simple_log_with_func_name();
+   return {};
+  }
+  void return_void() { simple_log_with_func_name(); }
+  void unhandled_exception() {
+   // process notings
+  }
+ };
+
+private:
+ coro_handle coroutine_handle;
+
+private:
+ Task(const Task&) = delete;
+ Task& operator=(const Task&) = delete;
+};
+
+Task<int> co_add(int a, int b) {
+ simple_log_with_func_name(
+     std::format("Get a: {} and b: {}, "
+                 "expected a + b = {}",
+                 a, b, a + b));
+ co_return a + b;
+}
+
+Task<void> examples(int a, int b) {
+ simple_log("About to call co_add");
+ int result = co_await co_add(a, b);
+ simple_log(std::format("Get the result: {}", result));
+ co_return;
+}
+
+int main() {
+ simple_log_with_func_name();
+ examples(1, 2);
+ simple_log("Done!");
+}
+
 ```
 
-If you didn't understand what happened, please continue reading the content below. If your implementation is similar, you can scroll back up and continue writing the scheduler.
+If you did not understand what happened, keep reading below. If your implementation is more or less the same as mine, you can scroll back up and get on with writing the scheduler.
 
-## Implementing a Simplest Scheduler
+## Implementing the Simplest Possible Scheduler
 
-We are now going to implement a simplest scheduler. Here are our requirements:
+We are about to implement the simplest possible scheduler. Here are our requirements:
 
-> - Write a singleton **single-threaded scheduler** (event loop) that can schedule multiple `Task`s. (It is recommended to write a singleton template for practice; besides, the basic code for Task has been completed in the previous task.)
-> - Implement a `SleepAwaiter` awaiter.
-> - Test if it works—write 3 coroutines running concurrently: print "A", "B", "C", alternating output.
+> - Write a singleton **single-threaded scheduler** (an event loop) that can schedule multiple `Task`s. (Writing a singleton template makes for good practice; besides, the basic Task code was already finished in the previous task)
+> - Implement a `sleep(ms)` awaiter
+> - Check whether it actually works — write 3 coroutines running concurrently: they print "A", "B", "C", alternating.
 
-### Step 1 — Implement a Singleton Template
+#### Step 1 — Implementing a Singleton Template
 
-I decided to implement a simple singleton template to facilitate reuse in our other projects. Regarding the discussion of the singleton pattern, although Dependency Injection (DI) is more appropriate, we will still write a `static`-based singleton template (coroutines are only available in C++20, and since C++11, the initialization of static variables has been guaranteed to be thread-safe).
+I decided to implement a simple singleton template, to make reuse in our other projects convenient. On the singleton pattern: even though dependency injection (DI) would be the more appropriate choice, we will still write a `static`-based singleton template (coroutines only arrived with C++20, and C++11 onward already guarantees that static initialization is thread-safe).
 
 > single_instance.hpp
 
 ```cpp
-#ifndef SINGLE_INSTANCE_HPP
-#define SINGLE_INSTANCE_HPP
+#pragma once
 
-template<typename T>
+template <typename SingleInstanceType>
 class SingleInstance {
-protected:
-    SingleInstance() = default;
-    virtual ~SingleInstance() = default;
-
 public:
-    SingleInstance(const SingleInstance&) = delete;
-    SingleInstance& operator=(const SingleInstance&) = delete;
+ static SingleInstanceType& instance() {
+  static SingleInstanceType instance;
+  return instance;
+ }
 
-    static T& instance() {
-        static T instance;
-        return instance;
-    }
+protected:
+ SingleInstance() = default;
+ virtual ~SingleInstance() = default;
+
+private:
+ SingleInstance(const SingleInstance&) = delete;
+ SingleInstance& operator=(const SingleInstance&) = delete;
+ SingleInstance(SingleInstance&&) = delete;
+ SingleInstance& operator=(SingleInstance&&) = delete;
 };
 
-#endif // SINGLE_INSTANCE_HPP
 ```
 
-Obviously, we disabled any form of copying and construction. Also, for convenience in later use, we will adopt a safe virtual destructor. The constructor should be placed in the protected domain so that our singleton subclasses can access it, ensuring we syntactically avoid the creation of a second instance. In terms of usage, we just need to write:
+Clearly, we have disabled every form of copying and construction, and for convenience in later use we adopt a safe virtual destructor. `SingleInstance()` goes under the protected section so our singleton subclasses can reach it, which is what rules out — right at the syntax level — creating a second instance. In use, we only need to write:
 
 ```cpp
-class MyScheduler : public SingleInstance<MyScheduler> {
-    // ...
-};
+class Schedular : public SingleInstance<Schedular>
+{
+    Schedular() = default; // still hiding our constructor away
+public:
+ friend class SingleInstance<Schedular>;
+}
 
-// Usage
-auto& sched = MyScheduler::instance();
 ```
 
-> Coincidentally, I have written an exploration of the singleton pattern, implemented in C++20 as well. Refer to the blog:
+> As it happens, I have written a discussion of the singleton pattern before, also implemented in C++20. See the blog posts:
 >
-> - [CSDN: Deep Dive into C++20 Design Patterns — Creational Patterns: Singleton Pattern - CSDN Blog](https://blog.csdn.net/charlie114514191/article/details/152166469)
-> - [charliechen114514.tech: Deep Dive into C++20 Design Patterns — Creational Patterns: Singleton Pattern](https://www.charliechen114514.tech/archives/chuang-zao-xing-she-ji-mo-shi-dan-li-mo-shi)
+> - [CSDN: A Close Reading of C++20 Design Patterns — Creational Design Patterns: The Singleton Pattern - CSDN Blog](https://blog.csdn.net/charlie114514191/article/details/152166469)
+> - [charliechen114514.tech: A Close Reading of C++20 Design Patterns — Creational Design Patterns: The Singleton Pattern](https://www.charliechen114514.tech/archives/chuang-zao-xing-she-ji-mo-shi-dan-li-mo-shi)
 
-### Step 2: Preliminary Modification of Our `Task`, Letting the Scheduler Take Over Our Coroutines
+#### Step 2: A First Modification of Our `Task`, Giving the Scheduler a Chance to Take Over Our Coroutines
 
-Obviously—we have now decided to use a scheduler to schedule our coroutines—so any suspension operation needs to be controlled by us, rather than the returned struct deciding for itself. To this end, our initialization also needs to be suspended immediately:
+Clearly — we have now decided to drive our coroutines with a scheduler — which means every suspension has to be under our control rather than adjudicated by the return object itself. For that, our initialization needs to be suspended immediately:
 
 ```cpp
-std::suspend_always initial_suspend() { return {}; }
+  // we need suspend when first suspend
+  std::suspend_always initial_suspend() {
+   // simple_log_with_func_name();
+   return {};
+  }
+
 ```
 
-This applies to both the generic implementation and the partial specialization implementation.
+The same goes for the generic implementation and for the partial specialization.
 
-### Step 3: Think About the Scheduler Supported Interface
+#### Step 3: Thinking About the Interfaces the Scheduler Supports
 
-We are now ready to think about the scheduler's interface. Fortunately, our coroutines are not preemptively scheduled, so the code is very easy to write (but "easy" is unlikely). We just need to follow FIFO scheduling when there is no yielding.
+We are now ready to think about the scheduler's interfaces. Happily, our coroutines are not preemptively scheduled, so the code is very easy to write (though "easy" may be optimistic) — all we need is to follow FIFO scheduling when nothing yields.
 
-First, the scheduler needs to support a `Sleep` call, which means letting the current coroutine sleep (do other coroutines if there are any; if not, it means the current thread needs to be idle, so call the `std::this_thread::sleep_for` interface).
+First, the scheduler needs to support a Sleep call — that is, letting the current coroutine go have a proper nap (if there are other coroutine tasks, it works on those; if there are none, that tells us the current thread should idle, and calling one of the `std::this_thread::sleep_*` interfaces does the job).
 
-Therefore, we need to let the scheduler know which coroutines need to sleep—the scheduler needs a container to manage who needs to sleep, and a push interface to designate a specific coroutine for sleeping.
+So we need the scheduler to know which coroutines want to nap — the scheduler needs a container managing who needs to sleep, plus a push for the specific coroutine that wants to sleep.
 
-One thing to know—for convenience, the standard library has an interface called `std::chrono::sleep_until`. So, to facilitate management and reuse of standard library interfaces, we design a `sleep_until` interface for the scheduler—it indicates that we want to sleep until a specified time point before being ready to be scheduled (again, note that coroutine scheduling is cooperative; we can only guarantee the lower bound of the sleep event).
+One thing to know — for convenience, the standard library does have an interface called `sleep_until`. So, to make management easy and to reuse a standard library interface, we design a `sleep_until` interface for our scheduler — it declares that we sleep until a specified time point, at which point we are ready to be scheduled again (and let me stress it once more: coroutine scheduling is cooperative here, so all we can guarantee is a lower bound on how long the sleep lasts).
 
 ```cpp
-void sleep_until(std::coroutine_handle<> handle, std::chrono::steady_clock::time_point wake_time);
+void Schedular::sleep_until(std::coroutine_handle<> which, // who needs to sleep?
+                   std::chrono::steady_clock::time_point until_when);
+
 ```
 
-Additionally, we need a push interface: a `spawn` interface, used to accept the coroutine return struct returned by the coroutine function. All scheduling of this struct must be taken over by the scheduler. So, don't forget to declare the scheduler class as a friend in the Task.
+On top of that, we need a push interface: the spawn interface, which accepts the return object a coroutine function produces. All scheduling of that object must be taken over by the scheduler. So don't forget to declare the scheduler class as a friend over at the Task.
 
 ```cpp
-template<typename T>
-void spawn(Task<T> task);
+ template <typename T>
+ void Schedular::spawn(Task<T>&& task); // Task is move-only, so that is what this interface takes
+
 ```
 
-Finally, there is a scheduling interface—the `run` interface.
+And finally there is one scheduling interface — the run interface
 
 ```cpp
-void run();
+void Schedular::run();
+
 ```
 
-It will start our coroutine scheduling. Just three!
+It will kick off our coroutine scheduling. Just three of them!
 
-### Step 4: Implement the Above Interfaces
+#### Step 4: Implementing the Interfaces Above
 
-#### Implement the `spawn` Interface to Host the Coroutine Return Struct Returned by the Coroutine Function
+##### Implementing the spawn Interface, Taking Custody of the Coroutine Return Objects Returned by Coroutine Functions
 
-Let's start with scheduling itself. First, we need to cache the coroutine interfaces in the ready queue (note that it is not the `Task` itself; we are scheduling coroutines, not the coroutine return structs). As mentioned above, our scheduling policy is FIFO, so first-come-first-served requires us to use a queue to handle our storage.
+We start with scheduling itself. First, we need to hold on to the coroutine handles lined up as ready (note: not the `Task` itself — we are scheduling coroutines, not coroutine return objects). As mentioned above, our scheduling policy is FIFO, so first-come-first-served calls for a queue to handle the storage.
 
 ```cpp
-std::queue<std::coroutine_handle<>> ready_queue;
+std::queue<std::coroutine_handle<>> ready_coroutines; // a simple queue is all we need
+
 ```
 
-So, our `spawn` interface becomes very easy to implement—
+With that, our spawn interface becomes very easy to implement —
 
 ```cpp
-template<typename T>
-void spawn(Task<T> task) {
-    if (task.handle) {
-        ready_queue.push(task.handle);
-    }
+void Schedular::internal_spawn(std::coroutine_handle<> h) {
+    // a private implementation; users should not poke the scheduling queues directly
+ ready_coroutines.push(h); // add it to the scheduling queue
 }
+
+// spawn is a bridging interface: we take out the coroutine_handle managed inside
+// the Task and hand it over to our scheduler to manage
+template <typename T>
+inline void Schedular::spawn(Task<T>&& task) {
+ internal_spawn(task.coroutine_handle);
+ task.coroutine_handle = nullptr; // the Task no longer manages the coroutine_handle itself
+}
+
 ```
 
-#### Implement the Sleep Mechanism
+##### Implementing the Sleep Mechanism
 
-Sleeping requires us to register how long we sleep, who is sleeping, and also sort by a certain priority (think about it: if there are three sleep requests for 100ms, 200ms, and 300ms, the 100ms one should obviously sleep first, then 200ms, then 300ms; otherwise, the first two will be long done). Obviously, we immediately thought of a priority queue. However, the priority queue needs to provide a comparison method to produce a min/max heap. So we need to abstract a `SleepEvent` struct—it registers that our root is the smallest sleep event. Or rather, the one closest to the current time point.
+Sleeping needs to register how long we sleep and who is sleeping, and the records have to be kept sorted by some priority (think: given three sleep requests of 100 ms, 200 ms, and 300 ms, clearly the 100 ms sleeper gets priority, then the 200 ms one, then the 300 ms one — do it the other way around and the first two would be stone cold by wake-up time). The answer that springs to mind at once is a priority queue. But a priority queue needs a comparison method to produce a min/max heap. So we need to abstract a `SleepItem` struct — one that keeps our heap root at the smallest sleep time; or in other words, the one closest to the current time point.
 
 ```cpp
-struct SleepEvent {
-    std::coroutine_handle<> handle;
-    std::chrono::steady_clock::time_point wake_time;
+ struct SleepItem {
+  SleepItem(std::coroutine_handle<> h,
+            std::chrono::steady_clock::time_point tp)
+      : coro_handle(h)
+      , sleep(tp) {
+  }
+  std::chrono::steady_clock::time_point sleep;
+  std::coroutine_handle<> coro_handle;
+  bool operator<(const SleepItem& other) const {
+   return sleep > other.sleep;
+  }
+ };
 
-    bool operator<(const SleepEvent& other) const {
-        return wake_time > other.wake_time; // Min-heap based on wake_time
-    }
+ std::priority_queue<SleepItem> sleepys;
+
+```
+
+But we have not implemented the user-side code yet, and users expect to be able to sleep like this:
+
+```cpp
+co_await sleep(300ms);
+
+```
+
+Well, how to put it? The moment you see `co_await`, your conditioned reflex should be to implement the awaitable interface. So —
+
+```cpp
+struct AwaitableSleep {
+ AwaitableSleep(std::chrono::milliseconds how_long)
+     : duration(how_long)
+     , wake_time(std::chrono::steady_clock::now() + how_long) { }
+
+ /**
+  * @brief await_ready always lets the sessions sleep!
+  *
+  */
+ bool await_ready() { return false; } // we always take over the rest of the flow
+ void await_suspend(std::coroutine_handle<> h) {
+         // do the push; later our own scheduler takes this handle out and throws it into the ready queue
+  Schedular::instance().sleep_until(h, wake_time);
+ }
+
+ // do nothing
+ void await_resume() { }
+
+private:
+ std::chrono::milliseconds duration; // handy for getters or debugging; kick it out if performance comes first
+ std::chrono::steady_clock::time_point wake_time;
 };
 
-std::priority_queue<SleepEvent> sleep_queue;
+inline AwaitableSleep sleep(std::chrono::milliseconds s) {
+ return { s };
+}
+
 ```
 
-But we haven't implemented the user-side code yet. Users expect to be able to sleep like this:
+##### Implementing the Scheduling Logic
+
+First, sleeping is only for when there is nothing left to do — the implementation priority is plain as day: favor the active coroutines!
 
 ```cpp
-co_await sleep_for(std::chrono::milliseconds(100));
+ void run() {
+  // if there is any corotines ready or sleepy unfinished
+  while (!ready_coroutines.empty() || !sleepys.empty()) {
+            // entering this branch means we do have something to do right now — napping, or pulling a coroutine up.
+   while (!ready_coroutines.empty()) {
+    auto front_one = ready_coroutines.front();
+    ready_coroutines.pop();
+    front_one.resume(); // OK, hang this on!
+   }
+
+            ...
+  }
+ }
+
 ```
 
-Eh, how do we say that? Seeing `co_await` should trigger a reflex to implement the awaitable interface. So—
+Only once every bit of active code has finished executing do we go check whether there is anyone in the sleep queue waiting to be woken —
 
 ```cpp
-struct SleepAwaiter {
-    std::chrono::milliseconds duration;
-    bool await_ready() { return false; }
-    void await_suspend(std::coroutine_handle<> handle) {
-        Scheduler::instance().sleep_until(handle, std::chrono::steady_clock::now() + duration);
-    }
-    void await_resume() {}
+   auto now = current(); // current returns std::chrono::steady_clock::now()
+   while (!sleepys.empty() && sleepys.top().sleep <= now) {
+    ready_coroutines.push(sleepys.top().coro_handle);
+    sleepys.pop();
+   }
+
+```
+
+Very good: if our current time has passed the designated sleep wake-up time point (that is, `sleepys.top().sleep`), we send every coroutine whose time has passed into our ready queue.
+
+Next, if we still have coroutines that need to sleep and no new ready queue has arrived, we immediately put this very thread to sleep
+
+```cpp
+ void run() {
+  // if there is any corotines ready or sleepy unfinished
+  while (!ready_coroutines.empty() || !sleepys.empty()) {
+   while (!ready_coroutines.empty()) {
+    auto front_one = ready_coroutines.front();
+    ready_coroutines.pop();
+    front_one.resume(); // OK, hang this on!
+   }
+
+   auto now = current();
+   while (!sleepys.empty() && sleepys.top().sleep <= now) {
+    ready_coroutines.push(sleepys.top().coro_handle);
+    sleepys.pop();
+   }
+
+   if (ready_coroutines.empty() && !sleepys.empty()) {
+    // OK, we can sleep
+    std::this_thread::sleep_until(sleepys.top().sleep);
+   }
+  }
+ }
+
+```
+
+##### Continuing to Modify the Task Interface
+
+Now Tasks need to push straight into the queue, and we need to think through a few things. We will use the scheduler like this:
+
+```cpp
+Task<int> co_add(int a, int b) {
+ co_await sleep(300ms);
+ co_return a + b;
+}
+
+Task<void> worker(const char* name, int a, int b) {
+ int result = co_await co_add(a, b);
+ std::println("{}: {} + {} = {}", name, a, b, result);
+}
+
+Task<void> main_task() {
+ co_await worker("TaskA", 1, 2);
+ co_await worker("TaskB", 3, 4);
+ co_await worker("TaskC", 5, 6);
+}
+
+```
+
+Every parent coroutine will lay down its own execution, and per the logic of C++20 stackless coroutines — we have to save the coroutine handles ourselves. So it is easy to realize: the Task itself must store the parent coroutine's handle, so that when our child coroutine finishes, we can bring the parent coroutine's execution back and the code can go on.
+
+That may be too big a jump, so let's take it one step at a time — when, inside our parent coroutine, we write `co_await worker("TaskA", 1, 2);`, the parent coroutine has to give up its own execution and wait for worker's result. At this point, we recall how our coroutine framework runs, from the first post: it goes through `await_ready` to check whether to suspend — and we clearly returned false, because we want to take over the logic ourselves. So the next step of the execution flow is forwarded into `await_suspend`, and that step is exactly the one we want — the parent coroutine is to be suspended, so the child coroutine is to be pushed!
+
+```cpp
+ // in the coroutine return object of the child coroutine being created
+ void await_suspend(std::coroutine_handle<> h) {
+  // simple_log_with_func_name(); // Should never be here
+  simple_log("Current Routine will be suspend!");
+  coroutine_handle.promise().parent_coroutine = h;
+  simple_log("Child Routine will be called resume!");
+  Schedular::instance().internal_spawn(coroutine_handle);
+ }
+
+```
+
+`coroutine_handle.promise().parent_coroutine = h;` sets the child coroutine's parent to the currently running coroutine, and then puts the child coroutine into the ready queue. Nothing wrong with that! (Note that this code lives in the child coroutine's return object.)
+
+Now our child coroutine has been sent into the ready queue — and the exciting part is that it lands right in the ready-handling logic. When our scheduler executes the ready-coroutine-queue code, this is the logic that runs —
+
+```cpp
+   while (!ready_coroutines.empty()) {
+    auto front_one = ready_coroutines.front();
+    ready_coroutines.pop();
+    front_one.resume(); // OK, hang this on!
+   }
+
+```
+
+The child coroutine is resumed here, and what runs is worker's code — until the child coroutine in turn gets suspended. When worker finishes executing, we still follow the procedure — what gets called is `final_suspend`. Remember the parent_coroutine we stored? This is where it pulls its weight — the child coroutine finishing calls for the parent coroutine to take execution back. So things become very easy:
+
+```cpp
+  std::suspend_always final_suspend() noexcept {
+   // simple_log_with_func_name();
+   if (parent_coroutine) {
+    simple_log("parent_coroutine will be wake up");
+                 // pull the parent coroutine back up to run its code
+    Schedular::instance().internal_spawn(parent_coroutine);
+   }
+   return {}; // the child coroutine is owned by the Task struct; this logic never changes
+  }
+
+```
+
+With that in place, all of our code is done. Let's compile and run it:
+
+```cpp
+[charliechen@Charliechen coroutines]$ build/schedular/schedular
+10:36:12 :Current Routine will be suspend!
+10:36:12 :Child Routine will be called resume!
+10:36:12 :Current Routine will be suspend!
+10:36:12 :Child Routine will be called resume!
+10:36:13 :parent_coroutine will be wake up
+TaskA: 1 + 2 = 3
+10:36:13 :Current Routine will be suspend!
+10:36:13 :Child Routine will be called resume!
+10:36:13 :Current Routine will be suspend!
+10:36:13 :Child Routine will be called resume!
+10:36:13 :parent_coroutine will be wake up
+TaskB: 3 + 4 = 7
+10:36:13 :Current Routine will be suspend!
+10:36:13 :Child Routine will be called resume!
+10:36:13 :Current Routine will be suspend!
+10:36:13 :Child Routine will be called resume!
+10:36:13 :parent_coroutine will be wake up
+TaskC: 5 + 6 = 11
+
+```
+
+The code works perfectly. How was the log above produced? The answer is below:
+
+```cpp
+
+[charliechen@Charliechen coroutines]$ build/schedular/schedular
+10:36:12 :Current Routine will be suspend! // main_task is about to be suspended
+10:36:12 :Child Routine will be called resume! // worker("TaskA", 1, 2) is about to get to work
+10:36:12 :Current Routine will be suspend! // worker("TaskA", 1, 2) is about to be suspended
+10:36:12 :Child Routine will be called resume! // co_add is about to get to work
+10:36:13 :parent_coroutine will be wake up // co_add, as the leaf coroutine, is about to end itself and pull its parent worker back up
+TaskA: 1 + 2 = 3 // worker is pulled back up and runs the printing
+
+// the logic below is analogous
+10:36:13 :Current Routine will be suspend!
+10:36:13 :Child Routine will be called resume!
+10:36:13 :Current Routine will be suspend!
+10:36:13 :Child Routine will be called resume!
+10:36:13 :parent_coroutine will be wake up
+TaskB: 3 + 4 = 7
+10:36:13 :Current Routine will be suspend!
+10:36:13 :Child Routine will be called resume!
+10:36:13 :Current Routine will be suspend!
+10:36:13 :Child Routine will be called resume!
+10:36:13 :parent_coroutine will be wake up
+TaskC: 5 + 6 = 11
+
+```
+
+# Appendix: Implementing the Coroutine Addition Function `co_add`
+
+To spare you flipping back and forth, I will simply paste a copy of the code here as well.
+
+```cpp
+#include "helpers.h"
+#include <coroutine>
+#include <format>
+
+template <typename T>
+class Task {
+public:
+ struct promise_type;
+ using coro_handle = std::coroutine_handle<promise_type>;
+
+ Task(coro_handle h)
+     : coroutine_handle(h) {
+  simple_log_with_func_name();
+ }
+
+ ~Task() {
+  simple_log_with_func_name();
+  if (coroutine_handle) {
+   coroutine_handle.destroy();
+  }
+ }
+
+ Task(Task&& o)
+     : coroutine_handle(o.coroutine_handle) {
+  o.coroutine_handle = nullptr;
+ }
+
+ Task& operator=(Task&& o) {
+  coroutine_handle = std::move(o.coroutine_handle);
+  o.coroutine_handle = nullptr;
+  return *this;
+ }
+
+ // concept requires
+ struct promise_type {
+  T cached_value;
+  Task get_return_object() {
+   simple_log_with_func_name();
+   return { coro_handle::from_promise(*this) };
+  }
+  // we dont need suspend when first suspend
+  std::suspend_never initial_suspend() {
+   simple_log_with_func_name();
+   return {};
+  }
+  // suspend always for the Task clean ups
+  std::suspend_always final_suspend() noexcept {
+   simple_log_with_func_name();
+   return {};
+  }
+
+  void return_value(T value) {
+   simple_log_with_func_name(std::format("value T {} is received!", value));
+   cached_value = std::move(value);
+  }
+
+  void unhandled_exception() {
+   // process notings
+  }
+ };
+
+ bool await_ready() {
+  simple_log_with_func_name();
+  return false; // always need suspend
+ }
+
+ void await_suspend(std::coroutine_handle<> h) {
+  simple_log_with_func_name(); // Should never be here
+  h.resume(); // resume these always
+ }
+
+ T await_resume() {
+  simple_log_with_func_name();
+  return coroutine_handle.promise().cached_value;
+ }
+
+private:
+ coro_handle coroutine_handle;
+
+private:
+ Task(const Task&) = delete;
+ Task& operator=(const Task&) = delete;
 };
-```
 
-#### Implement Scheduling Logic
+template <>
+class Task<void> {
+public:
+ struct promise_type;
+ using coro_handle = std::coroutine_handle<promise_type>;
 
-First, sleeping is only done when there is nothing to do, so the priority of implementation is obvious—prioritize processing active coroutines!
+ Task(coro_handle h)
+     : coroutine_handle(h) {
+  simple_log_with_func_name();
+ }
 
-```cpp
-void run() {
-    while (!ready_queue.empty() || !sleep_queue.empty()) {
-        // 1. Process ready coroutines
-        while (!ready_queue.empty()) {
-            auto handle = ready_queue.front();
-            ready_queue.pop();
-            if (handle && !handle.done()) {
-                handle.resume();
-            }
-        }
+ ~Task() {
+  simple_log_with_func_name();
+  if (coroutine_handle) {
+   coroutine_handle.destroy();
+  }
+ }
 
-        // 2. Check sleep queue
-        // ...
-    }
-}
-```
+ Task(Task&& o)
+     : coroutine_handle(o.coroutine_handle) {
+  o.coroutine_handle = nullptr;
+ }
 
-Only when we have finished executing all active code will we check if there are any guys in the sleep queue waiting to be woken up—
+ Task& operator=(Task&& o) {
+  coroutine_handle = std::move(o.coroutine_handle);
+  o.coroutine_handle = nullptr;
+  return *this;
+ }
 
-```cpp
-auto now = std::chrono::steady_clock::now();
-while (!sleep_queue.empty() && sleep_queue.top().wake_time <= now) {
-    auto event = sleep_queue.top();
-    sleep_queue.pop();
-    if (event.handle && !event.handle.done()) {
-        ready_queue.push(event.handle);
-    }
-}
-```
+ // concept requires
+ struct promise_type {
+  Task get_return_object() {
+   simple_log_with_func_name();
+   return { coro_handle::from_promise(*this) };
+  }
+  // we dont need suspend when first suspend
+  std::suspend_never initial_suspend() {
+   simple_log_with_func_name();
+   return {};
+  }
+  // suspend always for the Task clean ups
+  std::suspend_always final_suspend() noexcept {
+   simple_log_with_func_name();
+   return {};
+  }
+  void return_void() { simple_log_with_func_name(); }
+  void unhandled_exception() {
+   // process notings
+  }
+ };
 
-Excellent. If our current time has passed the specified sleep wake-up time (i.e., `sleepys.top().sleep`), we need to send all coroutines that have passed the time point to our ready queue.
+private:
+ coro_handle coroutine_handle;
 
-Next, if we still have coroutines that need to sleep, and no new ready queue arrives, we immediately put the current thread to sleep.
-
-```cpp
-if (!ready_queue.empty()) continue; // New tasks arrived while checking
-
-if (!sleep_queue.empty()) {
-    auto next_wake = sleep_queue.top().wake_time;
-    std::this_thread::sleep_until(next_wake);
-}
-```
-
-#### Continue Modifying the Task Interface
-
-Now the task needs to push directly to the queue. We need to think about these issues. We will use the scheduler like this:
-
-```cpp
-auto task = worker(1, 2);
-Scheduler::instance().spawn(task);
-```
-
-All parent coroutines will yield their own execution. Following C++20 stackless coroutine logic—we must save the coroutine handle ourselves. So it is easy to think of—`Task` itself needs to store the parent coroutine's handle, so that when our child coroutine resumes, it can resume the parent coroutine's execution and continue the code.
-
-Maybe this is too big a jump. Let's go slowly one by one—when our parent coroutine writes the code—`co_await worker(1, 2)`, the parent coroutine must give up its own execution and wait for the result from `worker`. At this time, we recall the execution logic of our coroutine framework from the first blog post: go to `await_ready` to see if it suspends—we obviously returned no, so we need to take over the logic ourselves. So the next step of the execution flow is forwarded to `await_suspend`. This step is what we want—the parent coroutine needs to be suspended, so the child coroutine needs to be pushed!
-
-```cpp
-void await_suspend(std::coroutine_handle<> parent) {
-    child_handle.promise().parent_handle = parent;
-    Scheduler::instance().spawn(child_handle);
-}
-```
-
-`await_suspend` sets the parent coroutine of the child coroutine to the current thread, and then puts the child coroutine into the ready queue. Nothing wrong! (Note that this code is in the child coroutine return struct).
-
-Now, our child coroutine has been sent to the ready queue. And excitingly—it will be sent to the ready processing logic. When our scheduler executes the ready coroutine queue code, we will execute this logic—
-
-```cpp
-while (!ready_queue.empty()) {
-    auto handle = ready_queue.front();
-    ready_queue.pop();
-    if (handle && !handle.done()) {
-        handle.resume();
-    }
-}
-```
-
-The child coroutine is resumed here, executing the code from `worker`—the child coroutine is now suspended. When `worker` finishes execution, we still follow the process—calling `final_suspend`. Remember the `parent_coroutine` we stored? It comes into play here—the end of the child coroutine requires the parent coroutine to put down the execution code. So things become very easy:
-
-```cpp
-std::suspend_always final_suspend() noexcept {
-    if (parent_handle && !parent_handle.done()) {
-        Scheduler::instance().spawn(parent_handle);
-    }
-    return {};
-}
-```
-
-Once we get here, all our code is completed. Let's compile and run it:
-
-```text
-A
-B
-C
-A
-B
-C
-...
-```
-
-The code works perfectly. How was the log above generated? The answer is as follows:
-
-```cpp
-Scheduler::instance().spawn(print_a(10));
-Scheduler::instance().spawn(print_b(10));
-Scheduler::instance().spawn(print_c(10));
-Scheduler::instance().run();
-```
-
-# Appendix: Implementing the Coroutine Addition Function `worker`
-
-To save you from flipping back and forth, I will just copy and paste the code here.
-
-```cpp
-Task<int> worker(int a, int b) {
-    co_return a + b;
-}
-```
-
-First, the previous blog post mentioned that any function running in a coroutine must return a **coroutine return type**. This requires you to unconditionally embed a struct `promise_type`, and requires you to implement the interface—
-
-```cpp
-struct promise_type {
-    T value;
-    Task get_return_object() { /* ... */ }
-    std::suspend_never initial_suspend() { return {}; }
-    std::suspend_always final_suspend() noexcept { return {}; }
-    void return_value(T val) { value = val; }
-    void unhandled_exception() { /* ... */ }
+private:
+ Task(const Task&) = delete;
+ Task& operator=(const Task&) = delete;
 };
+
 ```
 
-In this example, it is not difficult to understand that `worker` does not need to suspend upon creation, so we just need to return `std::suspend_never` in `initial_suspend`, allowing us to immediately execute the returned result on `worker`. After `a+b` is calculated, it will be sent to the `promise_type`. It is worth noting—in the previous blog post, we already discussed whose lifetime is longer between the return type and the coroutine handle itself. This is also why we choose to suspend, so that the upper-level `Task` is responsible for destroying the coroutine object, rather than it solving it itself. You won't be unfamiliar with this structure; the previous blog post has already explained what this structure is doing.
-
-`co_await` requires waiting for `Task<int>`, so any non-empty `Task` must also implement the Awaitable interface (Note that it is not that every return struct with a `PromiseType` interface needs to implement the Awaitable interface, but rather that we need to implement the Awaitable interface when we need to `co_await` this interface. Please make sure you understand the logical relationship.)
+First, we already mentioned this in the previous post — any function that runs as a coroutine must return a **coroutine return type**, which — no negotiation allowed — means embedding a `struct promise_type`, and it requires you to implement the interfaces —
 
 ```cpp
-bool await_ready() { return false; } // Need to suspend to handle logic
-void await_suspend(std::coroutine_handle<> awaiting_handle) {
-    // Push the parent (awaiting_handle) back to the scheduler
-    Scheduler::instance().spawn(awaiting_handle);
-}
-T await_resume() { return handle.promise().value; }
+ struct promise_type {
+  T cached_value;
+  Task get_return_object() {
+   simple_log_with_func_name();
+   return { coro_handle::from_promise(*this) };
+  }
+  // we dont need suspend when first suspend
+  std::suspend_never initial_suspend() {
+   simple_log_with_func_name();
+   return {};
+  }
+  // suspend always for the Task clean ups
+  std::suspend_always final_suspend() noexcept {
+   simple_log_with_func_name();
+   return {};
+  }
+
+  void return_value(T value) {
+   simple_log_with_func_name(std::format("value T {} is received!", value));
+   cached_value = std::move(value);
+  }
+
+  void unhandled_exception() {
+   // process notings
+  }
+ };
+
 ```
 
-Although logically, we actually don't need a suspend interface, our result is stored in the `promise_type` of the `coroutine_handle`. At this point—we **need to take over the waiting logic, so we still need to suspend**.
+In this post's example, it is not hard to see that `co_add` does not need to suspend the moment it is created, so we can simply return `std::suspend_never` and let ourselves run straight onto the returned result, `co_return a + b`. Once `a + b` has been computed, it gets handed to `return_value`. Note that — as the previous post already discussed — we settled who outlives whom between the return type and the coroutine handle itself; that is also why we choose to suspend, letting the `Task` one level up be responsible for destroying the coroutine object instead of the coroutine settling itself. This structure should be nothing new to you: the previous post already explained what it is doing.
 
-> `await_ready` can actually be expressed as—we need to take over the waiting logic and do our own processing.
+`co_await` wants to wait on a `Task<int>`, so any non-void `Task` must also implement the Awaitable interface (note: it is not that every return object carrying a PromiseType interface has to implement the Awaitable interface — it is that we implement the Awaitable interface precisely when we need to `co_await` such an object. Please keep that logical relationship straight.)
+
+```cpp
+ bool await_ready() {
+  simple_log_with_func_name();
+  return false; // always need suspend
+ }
+
+ void await_suspend(std::coroutine_handle<> h) {
+  simple_log_with_func_name(); // Should never be here
+  h.resume(); // resume these always, call await_resume then
+ }
+
+ T await_resume() {
+  simple_log_with_func_name();
+  return coroutine_handle.promise().cached_value;
+ }
+
+```
+
+Although, logically speaking, we do not actually need the suspension, our result is stored inside the promise_type of the coroutine_handle — so at this point, **we need to take over the waiting logic, and that means suspending after all**.
+
+> await_ready can also be read as: we need to take over the waiting logic and process it our own way
 >
-> The first blog post is at:
+> The first post is at:
 >
-> - CSDN Link: [CSDN](https://blog.csdn.net/charlie114514191/article/details/152518557)
-> - My Blog Link: [charliechen114514.tech](https://www.charliechen114514.tech/archives/li-jie-c-20de-ge-ming-te-xing----xie-cheng-zhi-chi-1)
+> - CSDN link: [CSDN](https://blog.csdn.net/charlie114514191/article/details/152518557)
+> - Link to my own blog: [charliechen114514.tech](https://www.charliechen114514.tech/archives/li-jie-c-20de-ge-ming-te-xing----xie-cheng-zhi-chi-1)
 
-# Appendix 2: Scheduler Code
+# Appendix 2: The Scheduler's Code
 
-> schedular.cpp: Main example code
+> schedular.cpp: the main code of the example
 
 ```cpp
-#include "scheduler.hpp"
-#include <iostream>
+#include "schedular.hpp"
+#include <print>
 
-Task<void> print_a(int count) {
-    for (int i = 0; i < count; ++i) {
-        std::cout << "A" << std::endl;
-        co_await sleep_for(std::chrono::milliseconds(100));
-    }
+using namespace std::chrono_literals;
+
+Task<int> co_add(int a, int b) {
+ co_await sleep(300ms);
+ co_return a + b;
 }
 
-Task<void> print_b(int count) {
-    for (int i = 0; i < count; ++i) {
-        std::cout << "B" << std::endl;
-        co_await sleep_for(std::chrono::milliseconds(100));
-    }
+Task<void> worker(const char* name, int a, int b) {
+ int result = co_await co_add(a, b);
+ std::println("{}: {} + {} = {}", name, a, b, result);
 }
 
-Task<void> print_c(int count) {
-    for (int i = 0; i < count; ++i) {
-        std::cout << "C" << std::endl;
-        co_await sleep_for(std::chrono::milliseconds(100));
-    }
+Task<void> main_task() {
+ co_await worker("TaskA", 1, 2);
+ co_await worker("TaskB", 3, 4);
+ co_await worker("TaskC", 5, 6);
 }
 
 int main() {
-    Scheduler::instance().spawn(print_a(10));
-    Scheduler::instance().spawn(print_b(10));
-    Scheduler::instance().spawn(print_c(10));
-
-    Scheduler::instance().run();
-
-    return 0;
+ Schedular::instance().spawn(main_task());
+ Schedular::instance().run();
 }
+
 ```
 
-> schedular.hpp: Scheduler code
+> schedular.hpp: the scheduler code
 
 ```cpp
 #pragma once
+#include "single_instance.hpp"
+#include <chrono>
 #include <coroutine>
 #include <queue>
-#include <chrono>
 #include <thread>
-#include <algorithm>
-#include "single_instance.hpp"
 
-class Scheduler : public SingleInstance<Scheduler> {
-    friend class SingleInstance<Scheduler>;
+template <typename T>
+class Task;
+struct AwaitableSleep;
+
+class Schedular : public SingleInstance<Schedular> {
+ struct SleepItem {
+  SleepItem(std::coroutine_handle<> h,
+            std::chrono::steady_clock::time_point tp)
+      : coro_handle(h)
+      , sleep(tp) {
+  }
+  std::chrono::steady_clock::time_point sleep;
+  std::coroutine_handle<> coro_handle;
+  bool operator<(const SleepItem& other) const {
+   return sleep > other.sleep;
+  }
+ };
+
+ std::queue<std::coroutine_handle<>> ready_coroutines;
+ std::priority_queue<SleepItem> sleepys;
+
 private:
-    struct SleepEvent {
-        std::coroutine_handle<> handle;
-        std::chrono::steady_clock::time_point wake_time;
+ Schedular() = default;
+ ~Schedular() override {
+  run();
+ }
+ friend class AwaitableSleep;
 
-        bool operator<(const SleepEvent& other) const {
-            return wake_time > other.wake_time;
-        }
-    };
+ template <typename T>
+ friend class Task;
 
-    std::queue<std::coroutine_handle<>> ready_queue;
-    std::priority_queue<SleepEvent> sleep_queue;
+ static std::chrono::steady_clock::time_point
+ current() {
+  return std::chrono::steady_clock::now();
+ }
 
-    Scheduler() = default;
+ void sleep_until(std::coroutine_handle<> which,
+                  std::chrono::steady_clock::time_point until_when) {
+  sleepys.emplace(which, until_when);
+ }
+
+ void internal_spawn(std::coroutine_handle<> h) {
+  ready_coroutines.push(h);
+ }
 
 public:
-    ~Scheduler() override = default;
+ friend class SingleInstance<Schedular>;
 
-    template<typename T>
-    void spawn(Task<T> task) {
-        if (task.handle) {
-            ready_queue.push(task.handle);
-        }
-    }
+ template <typename T>
+ void spawn(Task<T>&& task);
 
-    void sleep_until(std::coroutine_handle<> handle, std::chrono::steady_clock::time_point wake_time) {
-        sleep_queue.push({handle, wake_time});
-    }
+ void run() {
+  // if there is any corotines ready or sleepy unfinished
+  while (!ready_coroutines.empty() || !sleepys.empty()) {
+   while (!ready_coroutines.empty()) {
+    auto front_one = ready_coroutines.front();
+    ready_coroutines.pop();
+    front_one.resume(); // OK, hang this on!
+   }
 
-    void run() {
-        while (!ready_queue.empty() || !sleep_queue.empty()) {
-            // 1. Process ready queue
-            while (!ready_queue.empty()) {
-                auto handle = ready_queue.front();
-                ready_queue.pop();
-                if (handle && !handle.done()) {
-                    handle.resume();
-                }
-            }
+   auto now = current();
+   while (!sleepys.empty() && sleepys.top().sleep <= now) {
+    ready_coroutines.push(sleepys.top().coro_handle);
+    sleepys.pop();
+   }
 
-            // 2. Check sleep queue
-            auto now = std::chrono::steady_clock::now();
-            while (!sleep_queue.empty() && sleep_queue.top().wake_time <= now) {
-                auto event = sleep_queue.top();
-                sleep_queue.pop();
-                if (event.handle && !event.handle.done()) {
-                    ready_queue.push(event.handle);
-                }
-            }
-
-            if (!ready_queue.empty()) continue;
-
-            // 3. Sleep if nothing to do
-            if (!sleep_queue.empty()) {
-                std::this_thread::sleep_until(sleep_queue.top().wake_time);
-            }
-        }
-    }
+   if (ready_coroutines.empty() && !sleepys.empty()) {
+    // OK, we can sleep
+    std::this_thread::sleep_until(sleepys.top().sleep);
+   }
+  }
+ }
 };
+
+struct AwaitableSleep {
+ AwaitableSleep(std::chrono::milliseconds how_long)
+     : duration(how_long)
+     , wake_time(std::chrono::steady_clock::now() + how_long) { }
+
+ /**
+  * @brief await_ready always lets the sessions sleep!
+  *
+  */
+ bool await_ready() { return false; }
+ void await_suspend(std::coroutine_handle<> h) {
+  Schedular::instance().sleep_until(h, wake_time);
+ }
+
+ void await_resume() { }
+
+private:
+ std::chrono::milliseconds duration;
+ std::chrono::steady_clock::time_point wake_time;
+};
+inline AwaitableSleep sleep(std::chrono::milliseconds s) {
+ return { s };
+}
+
+#include "task.hpp"
+
+template <typename T>
+inline void Schedular::spawn(Task<T>&& task) {
+ internal_spawn(task.coroutine_handle);
+ task.coroutine_handle = nullptr;
+}
+
 ```
 
-> task.hpp: Final abstraction of Task
+> task.hpp: the final abstraction of Task
 
 ```cpp
 #pragma once
+#include "helpers.h"
+#include "schedular.hpp"
 #include <coroutine>
-#include <optional>
-#include <iostream>
-#include "helpers.hpp"
+#include <utility>
 
-template<typename T>
-struct Task {
-    struct promise_type {
-        T value;
-        std::exception_ptr exception;
-        std::coroutine_handle<> parent_handle; // Handle to the awaiting coroutine
+template <typename T>
+class Task {
+public:
+ friend class Schedular;
+ struct promise_type;
+ using coro_handle = std::coroutine_handle<promise_type>;
 
-        Task get_return_object() {
-            return Task{std::coroutine_handle<promise_type>::from_promise(*this)};
-        }
+ Task(coro_handle h)
+     : coroutine_handle(h) {
+  // simple_log_with_func_name();
+ }
 
-        std::suspend_always initial_suspend() { return {}; } // Changed to suspend_always
-        std::suspend_always final_suspend() noexcept { return {}; }
+ ~Task() {
+  // simple_log_with_func_name();
+  if (coroutine_handle) {
+   coroutine_handle.destroy();
+  }
+ }
 
-        void return_value(T val) {
-            value = val;
-        }
+ Task(Task&& o)
+     : coroutine_handle(o.coroutine_handle) {
+  o.coroutine_handle = nullptr;
+ }
 
-        void unhandled_exception() {
-            exception = std::current_exception();
-        }
-    };
+ Task& operator=(Task&& o) {
+  coroutine_handle = std::move(o.coroutine_handle);
+  o.coroutine_handle = nullptr;
+  return *this;
+ }
 
-    std::coroutine_handle<promise_type> handle;
-    Task(std::coroutine_handle<promise_type> h) : handle(h) {}
+ // concept requires
+ struct promise_type {
+  T cached_value;
+  std::coroutine_handle<> parent_coroutine;
+  Task get_return_object() {
+   // simple_log_with_func_name();
+   return { coro_handle::from_promise(*this) };
+  }
+  // we dont need suspend when first suspend
+  std::suspend_always initial_suspend() {
+   // simple_log_with_func_name();
+   return {};
+  }
+  // suspend always for the Task clean ups
+  std::suspend_always final_suspend() noexcept {
+   // simple_log_with_func_name();
+   if (parent_coroutine) {
+    simple_log("parent_coroutine will be wake up");
+    Schedular::instance().internal_spawn(parent_coroutine);
+   }
+   return {};
+  }
 
-    ~Task() {
-        if (handle) handle.destroy();
-    }
+  void return_value(T value) {
+   // simple_log_with_func_name(std::format("value T {} is received!", value));
+   cached_value = std::move(value);
+  }
 
-    // Awaiter implementation
-    bool await_ready() { return false; }
+  void unhandled_exception() {
+   // process notings
+  }
+ };
 
-    void await_suspend(std::coroutine_handle<> awaiting_handle) {
-        // Store the parent (awaiter) in the child's promise
-        handle.promise().parent_handle = awaiting_handle;
-        // Schedule the child (current task)
-        Scheduler::instance().spawn(*this);
-    }
+ bool await_ready() {
+  // simple_log_with_func_name();
+  return false; // always need suspend
+ }
 
-    T await_resume() {
-        if (handle.promise().exception) {
-            std::rethrow_exception(handle.promise().exception);
-        }
-        return handle.promise().value;
-    }
+ void await_suspend(std::coroutine_handle<> h) {
+  // simple_log_with_func_name(); // Should never be here
+  simple_log("Current Routine will be suspend!");
+  coroutine_handle.promise().parent_coroutine = h;
+  simple_log("Child Routine will be called resume!");
+  Schedular::instance().internal_spawn(coroutine_handle);
+ }
+
+ T await_resume() {
+  // simple_log_with_func_name();
+  return coroutine_handle.promise().cached_value;
+ }
+
+private:
+ coro_handle coroutine_handle;
+
+private:
+ Task(const Task&) = delete;
+ Task& operator=(const Task&) = delete;
 };
+
+template <>
+class Task<void> {
+public:
+ friend class Schedular;
+ struct promise_type;
+ using coro_handle = std::coroutine_handle<promise_type>;
+
+ Task(coro_handle h)
+     : coroutine_handle(h) {
+  // simple_log_with_func_name();
+ }
+
+ ~Task() {
+  // simple_log_with_func_name();
+  if (coroutine_handle) {
+   coroutine_handle.destroy();
+  }
+ }
+
+ Task(Task&& o)
+     : coroutine_handle(o.coroutine_handle) {
+  o.coroutine_handle = nullptr;
+ }
+
+ Task& operator=(Task&& o) {
+  coroutine_handle = std::move(o.coroutine_handle);
+  o.coroutine_handle = nullptr;
+  return *this;
+ }
+
+ bool await_ready() {
+  // simple_log_with_func_name();
+  return false; // always need suspend
+ }
+
+ void await_suspend(std::coroutine_handle<> h) {
+  // simple_log_with_func_name(); // Should never be here
+  simple_log("Current Routine will be suspend!");
+  coroutine_handle.promise().parent_coroutine = h;
+  simple_log("Child Routine will be called resume!");
+  Schedular::instance().internal_spawn(coroutine_handle);
+ }
+
+ void await_resume() {
+  // simple_log_with_func_name();
+ }
+
+ // concept requires
+ struct promise_type {
+  std::coroutine_handle<> parent_coroutine;
+  Task get_return_object() {
+   // simple_log_with_func_name();
+   return { coro_handle::from_promise(*this) };
+  }
+  // we need suspend when first suspend
+  std::suspend_always initial_suspend() {
+   // simple_log_with_func_name();
+   return {};
+  }
+  // suspend always for the Task clean ups
+  std::suspend_always final_suspend() noexcept {
+   // simple_log_with_func_name();
+   if (parent_coroutine) {
+    Schedular::instance().internal_spawn(parent_coroutine);
+   }
+   return {};
+  }
+  void return_void() {
+   // simple_log_with_func_name();
+  }
+  void unhandled_exception() {
+   // process notings
+  }
+ };
+
+private:
+ coro_handle coroutine_handle;
+
+private:
+ Task(const Task&) = delete;
+ Task& operator=(const Task&) = delete;
+};
+
 ```
 
-The remaining `helpers.h/helpers.cpp` and `single_instance.hpp` have already been provided in the main text. I will not repeat them.
+The remaining helpers.h/helpers.cpp and single_instance.hpp were already given in the main text. I won't repeat them.

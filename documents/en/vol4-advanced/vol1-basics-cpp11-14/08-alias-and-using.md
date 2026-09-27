@@ -4,10 +4,11 @@ cpp_standard:
 - 11
 - 14
 - 17
-description: C++11 alias templates (template<typename T> using X = ...) fix the old
-  problem that typedef cannot be parameterized. The _t alias (from C++14) and the
-  _v variable (from C++17) make type_traits clean to write, and using introduces dependent-base
-  names in template inheritance. This piece covers all three uses.
+description: C++11 alias templates (template<typename T> using X = ...) solve the old
+  problem that typedef cannot be parameterized, the _t aliases since C++14 and the
+  _v variables since C++17 make type traits pleasant to write, and using declarations
+  bring dependent-base names into scope in template inheritance. This piece walks through
+  all three uses.
 difficulty: intermediate
 order: 8
 platform: host
@@ -26,36 +27,42 @@ tags:
 - 类型别名
 - 泛型
 title: 'Alias Templates and using Declarations: Short Names for Types'
+translation:
+  source: documents/vol4-advanced/vol1-basics-cpp11-14/08-alias-and-using.md
+  source_hash: 2f192dbed15fa7d52b886d87725a22089fc0cf9b1240d26f83d3dff7135e575c
+  translated_at: '2026-09-26T04:13:46+00:00'
+  engine: anthropic
+  token_count: 4500
 ---
 # Alias Templates and using Declarations: Short Names for Types
 
-C++11 upgraded type aliasing with a new use of `using` and the **alias template**. The old `typedef` can give one type a new name, but it cannot be parameterized. You want a short name for `std::vector<T>`, and `typedef` cannot do it; you have to go through a nested type inside a class template. `using` plus alias templates fix this directly. This piece covers three uses: the alias template itself, the `_t` alias (from C++14) and the `_v` variable (from C++17) used to type_traits, and the role of `using` in introducing base-class names in template inheritance (a follow-up to the `this->` discussion in piece three).
+C++11 gave type aliasing a major upgrade: a new use of `using` and the **alias template**. The old `typedef` can give a type another name, but it cannot be parameterized—you want a short name for `std::vector<T>`, `typedef` cannot do it, and the only workaround is a detour through a nested type of a class template. `using` plus alias templates solve this directly. This piece covers three uses: alias templates themselves, the `_t` aliases that type traits gained starting with C++14 (plus the `_v` variables added in C++17), and the role of `using` declarations in bringing base-class names into scope under template inheritance (picking up the `this->` thread from the third piece).
 
-## The Limit of typedef: No Parameterization
+## The Limits of typedef: It Cannot Be Parameterized
 
-`typedef` is an old C tradition, giving a type a new name.
+`typedef` is an old C tradition: it gives a type a new name.
 
 ```cpp
 typedef std::vector<int> IntVec;   // IntVec is std::vector<int>
 IntVec v;
 ```
 
-That works. But if you want a general alias for "a `vector` of any `T`," `typedef` is stuck. It cannot take template parameters. The pre-C++11 workaround borrows a nested `using` inside a class template.
+That works fine. But the moment you want a generic alias for "a `vector` of arbitrary `T`", `typedef` is helpless—it cannot carry template parameters. The pre-C++11 workaround was a nested `using` inside a class template:
 
 ```cpp
 template <typename T>
 struct VecHelper {
-    using type = std::vector<T>;   // nested inside a class template, so it can be parameterized
+    using type = std::vector<T>;   // nested inside a class template, so it can take parameters
 };
 
-VecHelper<int>::type v;   // again with ::type, noisy
+VecHelper<int>::type v;   // ::type again — wordy
 ```
 
-This runs, but every use spells `VecHelper<int>::type`, and as noted in the piece on dependent names, you also need `typename`, turning it into `typename VecHelper<T>::type`. Long and awkward.
+It runs, but every use spells out `VecHelper<int>::type`, and—as we said earlier when discussing dependent names—you must also add `typename`, giving `typename VecHelper<T>::type`: long and awkward.
 
-## C++11 Alias Templates: Parameterizing using
+## C++11 Alias Templates: using Becomes a Template
 
-The C++11 alias template cleans this up. The syntax is `template <...> using name = ...`, giving a parameterized type a direct alias.
+C++11's alias templates clean the whole thing up. The syntax is `template <...> using name = ...`, which directly aliases a "type with parameters":
 
 ```cpp
 template <typename T>
@@ -64,46 +71,46 @@ using Vec = std::vector<T>;   // alias template
 Vec<int> v = {1, 2, 3};        // equivalent to std::vector<int>
 ```
 
-Run it.
+Run it:
 
 ```bash
 $ g++ -Wall -Wextra -std=c++17 alias.cpp -o alias && ./alias
 size = 3
 ```
 
-`Vec<int>` is `std::vector<int>`, with no difference in use. Note that an alias template is not a new type. It is purely an "alias." `Vec<int>` and `std::vector<int>` are the same type, fully interchangeable for assignment, comparison, and overloading. This matches `typedef` semantics, with parameterization added.
+`Vec<int>` is `std::vector<int>`; there is no difference in use. Note that an alias template is not a new type—it is purely an "alias": `Vec<int>` and `std::vector<int>` are the same type, fully interchangeable in assignment, comparison, and overloading. The semantics match `typedef`, with parameterization added on top.
 
-The payoff of alias templates is more than brevity. They can also express some complex types that `typedef` struggles with, like function pointer types or containers with allocators, where `using` reads far more clearly than `typedef`.
+The payoff of alias templates goes beyond brevity. They can also express complex types that `typedef` cannot—function pointer types, containers with allocators—and written with `using` they come out far clearer than `typedef`:
 
 ```cpp
-// typedef for function pointer types: the ordering makes your head hurt
+// writing a function pointer type with typedef: the twisted order hurts your head
 typedef int (*Callback)(int, int);
 
-// using: left-to-right, consistent, far more readable
+// with using, left and right read consistently — much more readable
 using Callback = int(*)(int, int);
 ```
 
-Modern C++ basically replaces `typedef` with `using` everywhere, even without parameters, for a consistent style.
+Modern C++ has largely replaced `typedef` with `using`—`using` even for aliases without parameters, for a consistent style.
 
-## C++14 `_t` and C++17 `_v`: The type_traits Shortcut
+## C++14 `_t` and `_v`: Shorthand for Type Traits
 
-The most practical application of alias templates is the `_t` suffix that C++14 added to `<type_traits>`. C++11 type_traits results are nested `::type` or `::value` inside a class, noisy to use.
+The most practical application of alias templates is the set of `_t`-suffixed aliases C++14 added to `<type_traits>`. C++11 type traits report their results as `::type` or `::value` nested inside a class, which is wordy to use:
 
 ```cpp
-// C++11: to get the type with reference removed, you need typename + ::type
+// C++11: to get the reference-stripped type, you must write typename + ::type
 typename std::remove_reference<T>::type
 ```
 
-C++14 added a `_t` alias template for every type-returning trait, one line.
+C++14 gave every type-returning trait a `_t` alias template—one line and done:
 
 ```cpp
-// C++14: alias template, clean
+// C++14: an alias template — clean
 std::remove_reference_t<T>
 ```
 
-The two are fully equivalent. The `_t` version is just an alias template, defined roughly as `template <typename T> using remove_reference_t = typename remove_reference<T>::type;`. Traits that return a boolean get a `_v` suffix, so `std::is_integral<T>::value` shortens to `std::is_integral_v<T>`. Three things need separating here: the `_t` alias template and the `_v` variable template are both **standard-library helpers** (`_t` from C++14 onward, `_v` from C++17 onward); `::value` itself is a static member constant of `std::integral_constant`, present since C++11, and is a separate thing from variable templates.
+The two are exactly equivalent: the `_t` version is just an alias template, defined roughly as `template <typename T> using remove_reference_t = typename remove_reference<T>::type;`. Traits that return a boolean also got a `_v`-suffixed shorthand: `std::is_integral<T>::value` becomes `std::is_integral_v<T>`. Three things need to be kept apart here: the `_t` alias templates and the `_v` variable templates are both **standard library helpers** (`_t` since C++14, `_v` since C++17); `::value` itself, on the other hand, is a static member constant of `std::integral_constant`, there since C++11—a different thing altogether from variable templates.
 
-A quick check shows the two spellings are equivalent.
+Let's verify the equivalence of both spellings:
 
 ```bash
 $ g++ -Wall -Wextra -std=c++17 alias.cpp -o alias && ./alias
@@ -111,17 +118,17 @@ remove_reference_t<int&> is int?  true
 remove_reference<int&>::type is int? true
 ```
 
-`_t` lifts the readability of template metaprogramming by a notch. In part three, when we cover concepts and metaprogramming, you will see that `::type` has basically vanished from modern code, replaced entirely by `_t`. This is also why the type_traits examples in earlier pieces of this volume use `_v` suffixes directly (`is_pointer_v`, `is_same_v`). They are the variable-template shortcuts (C++17 onward), the same idea as the `_t` alias templates.
+`_t` lifts the readability of template metaprogramming code by a whole notch. As you will see when vol3 covers concepts and metaprogramming, `::type` has all but vanished from modern code—everything is `_t`. That is also why the type traits examples in this volume's earlier pieces use the `_v` suffix directly (`is_pointer_v`, `is_same_v`): they are shorthands for variable templates (C++14/17), the same idea as the `_t` alias templates.
 
 ## Alias Templates Cannot Be Specialized
 
-There is a limit alias templates cannot get past: **they cannot be specialized**, neither fully nor partially. If you want a special alias implementation for one concrete type, an alias template cannot do it.
+Alias templates carry one limitation you cannot get around: **they cannot be specialized**—neither fully nor partially. If you want to provide a special alias implementation for one specific type, an alias template cannot do it.
 
 ```cpp
 template <typename T>
 using V = T;
 
-// trying to specialize an alias template -- compile error
+// attempting to specialize an alias template — compile error
 template <>
 using V<int> = long;   // error: alias templates cannot be specialized
 ```
@@ -130,11 +137,11 @@ using V<int> = long;   // error: alias templates cannot be specialized
 alias_bad.cpp:6:1: error: expected unqualified-id before 'using'
 ```
 
-GCC's wording is a little abstract, but the meaning is "alias templates do not accept specialization." If you genuinely need "different type aliases for different types," you wrap it in a class template (class templates can be specialized), hiding the alias in a nested `using` and writing specializations of the wrapper. This is a capability gap of alias templates compared with class templates. By design, alias templates are positioned as "pure forwarding," not for type-computation dispatch.
+GCC's wording is a little abstract, but the message is "alias templates do not accept specialization". If you genuinely need "different type aliases for different types", wrap things in a class template (class templates can be specialized), hide the alias in a nested `using`, and then write specializations of that. This is a capability gap of alias templates relative to class templates, and it is deliberate by design: alias templates are positioned as "pure forwarding" and do no dispatching of type computations.
 
-## using in Template Inheritance: Introducing dependent-base Names
+## using in Template Inheritance: Introducing Dependent Base Names
 
-Piece three, on dependent bases, said that accessing members of a base class template requires `this->`, because the compiler does not look inside a dependent base at phase one. `using` offers another spelling: **use a `using` declaration to bring the base-class name into the derived-class scope**, and then calls no longer need `this->` each time.
+As the third piece said while discussing dependent bases, accessing members of a base template takes `this->`, because the compiler does not look into dependent bases during phase one. `using` offers another way to write it: **a `using` declaration brings the base class's names into the derived class's scope**, after which calls no longer need `this->` every time.
 
 ```cpp
 #include <iostream>
@@ -149,16 +156,16 @@ T Base<T>::kDefault{42};
 
 template <typename T>
 struct Derived : Base<T> {
-    // using brings Base<T>::kDefault and Base<T>::greet into the Derived scope
+    // using brings Base<T>::kDefault and Base<T>::greet into Derived's scope
     using Base<T>::kDefault;
     using Base<T>::greet;
 
-    T fetch() const { return kDefault; }   // direct use, no this->
-    void hello() { greet(); }              // direct use, no this->
+    T fetch() const { return kDefault; }   // use directly, no this->
+    void hello() { greet(); }              // use directly, no this->
 };
 ```
 
-Run it.
+Run it:
 
 ```bash
 $ g++ -Wall -Wextra -std=c++20 using_base.cpp -o using_base && ./using_base
@@ -166,12 +173,12 @@ fetch = 42
 Base::greet
 ```
 
-`using Base<T>::kDefault` tells the compiler "the name `kDefault` refers to the one in `Base<T>`," binding the lookup so that a later bare `kDefault` in `fetch` finds it without `this->`.
+`using Base<T>::kDefault` tells the compiler "the name `kDefault` refers to the one inside `Base<T>`", which binds the lookup, so a bare `kDefault` written in `fetch` afterwards is found directly—no `this->` needed.
 
-`using` injection and `this->` are two spellings for the same problem, and the choice depends on the situation. If you only occasionally touch one or two base-class members, `this->` written on the spot is lighter. If you frequently touch many base-class members (say, the derived class uses the base's type aliases and functions everywhere), a batch of `using` declarations at the top of the class makes the code cleaner. Both are legitimate modern spellings. `using` has a bonus: it can "inherit" base-class type aliases (`value_type`, `iterator`) so the derived class exposes a unified type interface, something STL container adaptors and derived classes do heavily.
+`using` declarations and `this->` are two spellings for the same problem; which one to choose depends on the situation. If you only occasionally access one or two base-class members, writing `this->` on the spot is lighter. If you frequently access many base-class members (say the derived class uses the base's type aliases and functions everywhere), concentrating a set of `using` declarations at the top of the class reads cleaner. Both are legitimate modern style, and `using` has one extra benefit: it can "inherit" the base class's type aliases (`value_type`, `iterator`, that sort), letting the derived class expose a unified type interface to the outside—STL container adapters and derived classes lean on this heavily.
 
 ## Alias Templates and Template Argument Deduction
 
-A final note on a post-C++14 development. Alias templates can participate in template argument deduction, which makes code more flexible. For example, if a function takes `std::vector<T>` and you pass a `Vec<int>` (an alias), deduction still works, because the alias is the original type. C++20 CTAD (class template argument deduction) also interacts with alias templates, allowing deduction of alias-template parameters from constructors. That is deeper territory, covered in part three when we discuss concepts and deduction. For this piece, just remember: an alias template is "transparent," fully identical to the original type it points to for deduction, overloading, and type equivalence.
+Finally, a development from after C++14. Alias templates can participate in template argument deduction, which makes code more flexible. Say you have a function taking `std::vector<T>`: passing in a `Vec<int>` (the alias) deduces just fine, because the alias is the original type. C++20's CTAD (class template argument deduction) also interacts with alias templates, allowing alias template parameters to be deduced from constructors—that territory is deeper, and vol3 treats it in detail when it covers concepts and deduction. The one thing to remember from this piece: alias templates are "transparent"—in deduction, overloading, and type equivalence they behave exactly like the original type they point to.
 
-Next is the centerpiece of the concept portion of this volume: CRTP, the curiously recurring template pattern. With the curious structure of "a derived class passes itself as a template argument to its base," it achieves compile-time static polymorphism and avoids the runtime cost of virtual functions. It is a core technique in high-performance libraries like Eigen and expression templates.
+The next piece is the headline act of this volume's concepts run: CRTP, the Curiously Recurring Template Pattern. With the curious structure of "the derived class passing itself as a template argument to the base class", it achieves compile-time static polymorphism and sidesteps the runtime cost of virtual functions—the core technique behind high-performance libraries such as Eigen and expression templates.

@@ -2,17 +2,16 @@
 chapter: 5
 cpp_standard:
 - 20
-description: 'Automatic joining threads and cooperative cancellation in C++20: Complete
-  usage of stop_source, stop_token, and stop_callback'
+description: 'Auto-joining threads and cooperative cancellation in C++20: complete usage of stop_source, stop_token, and stop_callback'
 difficulty: intermediate
 order: 3
 platform: host
 prerequisites:
-- promise 与 packaged_task
+- promise and packaged_task
 reading_time_minutes: 18
 related:
-- 线程所有权与 RAII
-- 线程池设计
+- Thread Ownership and RAII
+- Thread Pool Design
 tags:
 - host
 - cpp-modern
@@ -20,61 +19,78 @@ tags:
 - 异步编程
 - RAII守卫
 - 进阶
-title: jthread and Stop Token
+title: jthread and Stop Tokens
 translation:
   source: documents/vol5-concurrency/ch05-future-task-threadpool/03-jthread-and-stop-token.md
   source_hash: 80b83f3c158dae7cdfbea2c654447ed483f043668425a77bf856b79280894f26
-  translated_at: '2026-06-16T04:05:15.903308+00:00'
+  translated_at: '2026-09-26T08:29:12+00:00'
   engine: anthropic
-  token_count: 3915
+  token_count: 9000
 ---
 # jthread and Stop Tokens
 
-Honestly, while writing the previous few articles, I felt quite uneasy using `std::thread`. Every time required manual `join()`, and a single slip-up resulted in a `std::terminate` crash. Stopping a thread mid-way required hacking together custom flag bits—it's 2026, and C++ thread management still feels this "primitive." In the last article, we used `std::atomic` and `std::condition_variable` to build manual async task control, but the underlying thread tools hadn't been upgraded. In this article, we will finally fix this shortcoming.
+To be honest, we felt a little guilty using `std::thread` all through the earlier articles. You have to call `join()` manually, one lapse in attention and the program ends in `std::terminate()`, and stopping a thread mid-flight means rolling your own `std::atomic<bool>` flag—it's 2026, and C++ thread management still feels this "primitive". In the previous article we built manual control over asynchronous tasks with `std::promise` and `std::packaged_task`, but the underlying thread tools never got an upgrade, so this article is where we patch that shortcoming.
 
-Before we dive in, a quick note on the environment: all code in this article is based on **C++20** and requires compiler support for the `<thread>` header (GCC 10+, Clang 17+ (libc++ has partial support, full in 20), MSVC 19.28+). If your compiler isn't up to date, upgrade now—there is no fallback for the features covered here.
+Before rushing in, a word about the environment: all code in this article is based on **C++20** and requires compiler support for the `<stop_token>` header (GCC 10+, Clang 17+ (libc++ partially supported, fully supported since Clang 20), and MSVC 19.28+ all work). If your compiler is older than that, go upgrade now—there is no downgrade-compatible substitute for what this article covers.
 
-C++20 finally gives us `std::jthread`, an automatic joining thread wrapper with a built-in cooperative cancellation mechanism. The core of this mechanism consists of three classes: `std::stop_source` (issues a stop request), `std::stop_token` (checks for a stop request), and `std::stop_callback` (registers a stop callback). They can be used independently without `std::jthread`, but they work best together. In this article, we will thoroughly cover this set of tools.
+C++20 finally hands us `std::jthread`, a thread wrapper that joins automatically, together with a built-in cooperative cancellation mechanism. The core of that mechanism is three classes: `std::stop_source` (issues stop requests), `std::stop_token` (checks for stop requests), and `std::stop_callback` (registers stop callbacks). They can be used independently, without `std::jthread`, but they pair most conveniently with it. This article walks through the whole toolkit.
 
 ## The Pain Points of std::thread: A Review
 
-Before learning new tools, let's look back at the specific headaches `std::thread` causes. Understanding these pain points explains why C++20 designed `std::jthread` the way it did.
+Before diving into the new stuff, let's look back at what exactly makes `std::thread` such a headache. Only when we understand the pain points does the C++20 design start to make sense.
 
-Consider a typical problem scenario. The following code looks fine at first glance—create a thread, do work, join, done.
+First, a typical problem scenario. At first glance the code below has nothing wrong with it—create a thread, do some work, join, done.
 
 ```cpp
-void risky_function() {
-    std::thread t([] {
-        std::cout << "Working...\n";
-    });
-    // do some other work
-    t.join();
+#include <thread>
+
+void worker();
+void do_more_work();
+
+void unsafe_example()
+{
+    std::thread t(worker);
+    do_more_work();  // If this throws...
+    t.join();        // This line never runs
+    // t destructs, thread still joinable -> std::terminate()!
 }
 ```
 
-But what if `t.join()` throws an exception? The control flow jumps to stack unwinding, `t`'s destructor finds the thread still joinable, and `std::terminate` unceremoniously kills the entire process. No error message, no recovery, just a crash. You might think, "I'll just add a try-catch?"—you can, but you must do this everywhere `std::thread` is used. Missing one is a ticking time bomb.
+But what if `do_more_work()` throws? Control flow jumps straight into stack unwinding; when `t` is destroyed the thread is still joinable, so `std::terminate()` unceremoniously takes down the whole process. No error message, no room for recovery—just a crash. You might think, "I'll just add a try-catch, problem solved." That works, but you would have to do it at every single place that uses `std::thread`, and one omission is a ticking time bomb.
 
-A common fix is to write a custom RAII wrapper that auto-joins in the destructor. We actually did this in the ch01 article. But every project needs its own version, and the destructor's `join()` is a blocking call—if the thread is running a long task, your program hangs when the guard is destroyed, with no way to signal the thread to stop.
+A common fix is a hand-written RAII wrapper that joins automatically in its destructor—we actually did exactly that in the ch01 article. But every project has to write its own copy, and that destructor `join()` is a blocking call: if the thread is running a long task, destroying the guard stalls the whole program right there, and there is still no way to notify the thread that it is "time to stop".
 
-These two problems—crashing on forgotten join and inability to signal a thread to stop—are what `std::jthread` solves in one go.
+These two problems—blowing up when you forget to join, and having no way to tell a thread to stop—are exactly what `std::jthread` solves in one stroke.
 
 ## std::jthread: The Auto-Joining Thread
 
-Now let's look at `std::jthread`. Its name implies "joining"—it tells you its core selling point right there: automatic join upon destruction. Usage is almost identical to `std::thread`, so you can basically swap them blindly:
+Alright, now let's meet `std::jthread`. The `j` stands for joining—the name already advertises its headline feature: it joins automatically on destruction. Usage is nearly identical to `std::thread`; you can swap it in almost without thinking:
 
 ```cpp
-void safe_function() {
-    std::jthread jt([] {
-        std::cout << "Working...\n";
-    });
-    // No need for jt.join(); it happens automatically
+#include <thread>
+#include <iostream>
+#include <chrono>
+
+void worker()
+{
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::cout << "worker done\n";
+}
+
+int main()
+{
+    std::jthread t(worker);
+    // No manual join needed — t joins automatically when destroyed
+    return 0;
 }
 ```
 
-You will notice the only difference is replacing `std::thread` with `std::jthread` and removing the `join()` line. But if it only auto-joined, there would be no fundamental difference from a hand-written RAII guard. `std::jthread`'s real killer feature is in its destructor behavior: before joining, it **first calls `request_stop()`**, then `join()`. The pseudo-code looks roughly like this:
+As you can see, the only differences from the `std::thread` version are replacing `std::thread` with `std::jthread` and deleting the `t.join()` line. But auto-join alone would be essentially the same as our hand-written RAII guard—`std::jthread`'s real killer move is in its destructor behavior: before joining, it **first calls `request_stop()`**, and only then `join()`. The pseudocode looks roughly like this:
 
 ```cpp
-~jthread() {
+// Logic of std::jthread's destructor (simplified)
+~jthread()
+{
     if (joinable()) {
         request_stop();
         join();
@@ -82,293 +98,346 @@ You will notice the only difference is replacing `std::thread` with `std::jthrea
 }
 ```
 
-This means `std::jthread` doesn't just dumbly wait for the thread to end; it politely notifies the thread to stop first, then waits. If the thread function responds to this stop request, it can exit gracefully instead of blocking the caller indefinitely during destruction. This is incredibly important—if you've used Java's `Thread.interrupt()` or Go's `context`, you'll find C++20's design follows the same philosophy: don't force kill, cooperate to exit.
+In other words, `std::jthread` doesn't just sit there at destruction time waiting for the thread to end—it first politely notifies the thread that it is "time to stop", and then waits. If the thread function can respond to that stop request, it can exit gracefully instead of blocking the caller indefinitely in the destructor. This point really matters: if you have used Java's `Thread.interrupt()` or Go's `context.Cancel()`, you will find that the C++20 design follows exactly the same line of thinking—no forced killing, but cooperative exit.
 
-> **Warning**: If you hand-wrote a `ThreadGuard` or `ScopedThread` RAII wrapper in ch01, take note—those guards only `join()` in the destructor, they do not `request_stop()`. If your thread function has long blocking operations (like `sleep()`, condition variable waits), a hand-written guard will cause the destructor to block indefinitely. The `std::jthread` `request_stop()` + `join()` combination is the correct approach.
+> **Pitfall Warning**: If you already hand-wrote an RAII wrapper like `thread_guard` or `joining_thread` back in ch01, note this—those hand-written guards only `join()` at destruction; they never `request_stop()`. If your thread function contains long blocking operations (a `sleep`, a condition variable wait), a hand-written guard makes the destructor block indefinitely. The `request_stop()` + `join()` combination in `std::jthread` is the correct approach.
 
 ## Cooperative Cancellation: stop_source, stop_token, stop_callback
 
-Great, now we know `std::jthread` auto-joins. But what does "request stop" actually mean? How does the thread know it was requested? This is what cooperative cancellation solves.
+Good—now we know `std::jthread` calls `request_stop()` automatically. But what does "requesting a stop" actually mean? How does the thread find out it has been asked? That is the problem cooperative cancellation solves.
 
-The core idea is simple: you shouldn't "kill" a thread—because you don't know its state, it might hold a lock or be half-way through writing data. You should "request" it to stop, and let the thread decide when to exit at an appropriate time. Think of it as a signaling mechanism: someone raises a red flag saying "please stop," and the thread checks the flag at the start of every loop, exiting gracefully if raised. This mechanism consists of three classes sharing an internal stop-state. `std::stop_source` is the write side, responsible for issuing requests; `std::stop_token` is the read side, responsible for querying status; `std::stop_callback` executes a callback when a request is issued.
+The core idea is quite plain: you should not "kill" a thread—because you don't know what state it is in; it might hold a lock, or be halfway through writing data. Instead, you should "request" it to stop, and let the thread itself decide to exit at a suitable moment. You can think of it as a signaling mechanism: someone raises a red flag saying "please stop"; the thread glances at the flag at the top of each loop iteration, and if the flag is up, it exits gracefully. The mechanism consists of three classes that share an internal stop-state. `std::stop_source` is the writing side, responsible for issuing stop requests; `std::stop_token` is the reading side, responsible for querying the stop state; `std::stop_callback` can run a piece of callback code when a stop request is issued.
 
 ### std::stop_source and std::stop_token
 
-Let's start with the write and read sides. `std::stop_source` provides `request_stop()` to issue a stop request and `get_token()` to get the associated `std::stop_token`. `std::stop_token` is a read-only observer with two query methods: `stop_requested()` returns whether a request has been received, and `stop_possible()` returns whether there is an associated stop state. One `std::stop_source` can derive multiple `std::stop_token`s—this will be used later, meaning you can control multiple threads with a single source.
+Let's start with the writing and reading sides. `std::stop_source` offers `request_stop()` for issuing a stop request and `get_token()` for obtaining an associated `std::stop_token`. `std::stop_token` is a read-only observer with just two query methods: `stop_requested()` returns whether a stop request has been received, and `stop_possible()` returns whether there is an associated stop state. One `stop_source` can derive multiple `stop_token`s—this comes in handy later, because it means a single `stop_source` can control the stopping of several threads at once.
 
 ```cpp
-void basic_stop_demo() {
-    std::stop_source src;
-    std::stop_token tok = src.get_token();
+#include <stop_token>
+#include <iostream>
 
-    std::cout << "Stop requested: " << tok.stop_requested() << '\n'; // false
+int main()
+{
+    std::stop_source source;
+    std::stop_token token = source.get_token();
 
-    src.request_stop();
+    std::cout << source.stop_requested() << "\n";  // 0
+    std::cout << token.stop_requested() << "\n";   // 0
 
-    std::cout << "Stop requested: " << tok.stop_requested() << '\n'; // true
+    source.request_stop();
+
+    std::cout << source.stop_requested() << "\n";  // 1
+    std::cout << token.stop_requested() << "\n";   // 1
+    // request_stop() may be called repeatedly; only the first call returns true
+
+    return 0;
 }
 ```
 
-This example shows the basic one-to-one relationship: a `std::stop_source` issues a request, and its associated `std::stop_token` sees it immediately. Note that `request_stop()` can be called multiple times; only the first returns `true`—subsequent calls are safe but don't re-trigger callbacks.
+This example shows the most basic one-to-one relationship: one `stop_source` issues the request, and its associated `stop_token` sees it immediately. Note that `request_stop()` can be called repeatedly—only the first call returns `true`; subsequent calls are safe but never trigger the callbacks again.
 
-A default-constructed `std::stop_token` has no associated stop state, and `stop_possible()` returns `false`. If you don't need stop capability, you can use a default-constructed empty token to save overhead.
+A default-constructed `std::stop_token` has no associated stop state, and `stop_possible()` returns `false`. If you truly don't need stopping capability, you can construct an empty `std::stop_source` with `std::nostopstate`—it allocates no internal state, saving a bit of overhead.
 
 ### How std::jthread Passes the stop_token
 
-So, how does `std::jthread`'s internal token communicate with our thread function? The answer is—if your thread function accepts a `std::stop_token` as its first parameter, `std::jthread` automatically passes its internal token in. If the function doesn't accept `std::stop_token`, `std::jthread` degrades into a simple auto-join thread with no cancellation capability. This design is clever—backward compatible; use it if you want, ignore it if you don't.
+The next question: how does the `stop_source` inside `std::jthread` communicate with our thread function? The answer: if your thread function accepts a `std::stop_token` as its first parameter, `std::jthread` automatically passes its internal token in; if the function does not accept a `stop_token`, `std::jthread` degrades into an ordinary auto-joining thread with no cancellation ability whatsoever. The design is clever—backward compatible, opt-in if you want it, and completely unobtrusive if you don't.
 
 ```cpp
-void jthread_auto_stop_demo() {
-    std::jthread jt([](std::stop_token st) {
-        while (!st.stop_requested()) {
-            std::cout << "Working...\n";
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        }
-        std::cout << "Thread received stop request, exiting.\n";
-    });
+#include <thread>
+#include <stop_token>
+#include <iostream>
+#include <chrono>
 
+void cancellable_worker(std::stop_token token)
+{
+    while (!token.stop_requested()) {
+        std::cout << "working...\n";
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+    std::cout << "worker: stop requested, exiting\n";
+}
+
+int main()
+{
+    std::jthread t(cancellable_worker);
     std::this_thread::sleep_for(std::chrono::seconds(2));
-    // jt.request_stop() called automatically here
+    t.request_stop();
+    // When t is destroyed: request_stop() first, then join()
+    return 0;
 }
 ```
 
-You'll notice we didn't manually call `request_stop()`—`std::jthread`'s destructor automatically calls `request_stop()` then `join()`. `request_stop()` is also a member of `std::jthread`, calling the internal `std::stop_source`'s method. You can also use `get_stop_source()` or `get_stop_token()` for finer control, like passing the token to other components.
+Notice that we never call `join()` manually in this code—when `t` is destroyed, it automatically does `request_stop()` and then `join()`. `request_stop()` is also a member function of `std::jthread`; underneath, it calls `request_stop()` on the internal `stop_source`. You can also obtain the internal `stop_source` through `t.get_stop_source()` for finer control—for example, registering extra callbacks or passing the token to other components.
 
 ### std::stop_callback: Registering a Stop Callback
 
-Just checking a stop flag isn't enough—sometimes you want to execute cleanup actions the moment a stop request is issued, like closing file handles, releasing network connections, or setting a flag. `std::stop_callback` does exactly this: its constructor accepts a `std::stop_token` and a callable object, triggering the callback when the associated token's `request_stop()` is called.
+Just being able to check a stop flag is not enough—sometimes you want some cleanup to run the instant a stop request is issued: close file handles, release network connections, set some flag. That is exactly what `std::stop_callback` is for: its constructor takes a `std::stop_token` and a callable object, and when the associated `stop_source` calls `request_stop()`, the callback is fired.
 
 ```cpp
-void callback_demo() {
-    std::stop_source src;
-    std::stop_token tok = src.get_token();
+#include <stop_token>
+#include <iostream>
+#include <thread>
+#include <chrono>
 
-    std::stop_callback cb(tok, [] {
-        std::cout << "Stop requested! Cleaning up...\n";
+void worker(std::stop_token token)
+{
+    int counter = 0;
+    std::stop_callback cb(token, [&counter]() {
+        std::cout << "stop callback fired! counter was: "
+                  << counter << "\n";
     });
 
-    std::cout << "Main thread sleeping...\n";
+    while (!token.stop_requested()) {
+        ++counter;
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+    std::cout << "worker exiting\n";
+}
+
+int main()
+{
+    std::jthread t(worker);
     std::this_thread::sleep_for(std::chrono::seconds(1));
-
-    std::cout << "Requesting stop...\n";
-    src.request_stop(); // Callback triggers here
-
-    std::cout << "Main thread exiting.\n";
+    t.request_stop();
+    return 0;
 }
 ```
 
-Running this, you'll see output like this: one second of sleep, then `request_stop()` triggers the callback printing "Cleaning up...", and finally the main thread exits.
+When you run this code, you will see output along these lines: roughly one second of the `working...` loop, then `request_stop()` fires the callback which prints `stop callback fired!`, and finally the worker thread notices `stop_requested()` and leaves the loop.
 
-A few details to watch. First, the callback executes **synchronously** on the thread calling `request_stop()`, not the worker thread—so don't do heavy work in the callback, or you'll block the requester. Second, if the stop is already requested when you register the callback, it runs immediately on the registering thread, so it won't miss the event. Finally, `std::stop_callback`'s destructor automatically unregisters, so when `callback_demo` ends, `cb` is destroyed, avoiding dangling callbacks.
+A few details here deserve attention. First, the callback executes **synchronously on the thread that calls `request_stop()`**, not on the worker thread—so never do anything time-consuming inside the callback, or you will block whichever thread issued the stop request. Second, if the stop request was already issued before you registered the callback, the callback executes immediately on the registering thread—it is never missed. Finally, `std::stop_callback`'s destructor unregisters automatically, so when the `worker` function ends, `cb` is destroyed—no dangling callbacks to worry about.
 
 ## Practical Patterns for Cooperative Cancellation
 
-Now that we've covered the API, let's see how to use it in real scenarios. We'll look at three common cancellation patterns—from simple to complex—each with its own use case.
+At this point we have the API-level machinery sorted out. But an API is just a tool; what really matters is how to use it well in real scenarios. Next we look at three common cancellation patterns—from simple to complex, each with scenarios where it fits.
 
 ### Pattern 1: Polling stop_token in a Loop
 
-The simplest pattern is checking `stop_requested()` in the loop condition. If iterations are short (milliseconds), checking in the `while` condition is enough. But if an iteration takes several seconds, you need checkpoints inside the iteration, or you'll have to wait for the current one to finish before responding.
+The simplest pattern is checking the `stop_token` in the loop condition. If each iteration is short (on the order of milliseconds), checking in the `while` condition is enough; but if a single iteration runs for several seconds, you need to insert checkpoints inside the iteration as well, otherwise a stop request has to wait for the current iteration to finish before it can be answered. Here's the code:
 
 ```cpp
-void polling_pattern() {
-    std::jthread worker([](std::stop_token st) {
-        int counter = 0;
-        while (!st.stop_requested()) {
-            // Quick check
-            if (counter % 10 == 0) {
-                std::cout << "Working... " << counter << '\n';
-            }
-            counter++;
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-            // Simulate long work
-            if (counter == 50) {
-                std::cout << "Long task start...\n";
-                std::this_thread::sleep_for(std::chrono::seconds(3));
-                // Check again after long task
-                if (st.stop_requested()) break;
-            }
-        }
-        std::cout << "Worker exiting cleanly.\n";
-    });
-
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    // Auto request_stop and join here
+void polling_worker(std::stop_token token)
+{
+    int iteration = 0;
+    while (!token.stop_requested()) {
+        process_batch(iteration);
+        ++iteration;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    std::cout << "processed " << iteration << " batches\n";
 }
 ```
 
 ### Pattern 2: condition_variable + stop_token
 
-Pure polling has a problem—many worker threads aren't busy-waiting in a loop but waiting on a condition variable. Simple polling isn't enough here because the thread might be blocked on `wait()` with no chance to check the flag. C++20 added a `wait()` overload for `std::condition_variable_any` that accepts a `std::stop_token`—when a stop request is issued, the wait automatically wakes up, returning `false` to indicate it was stopped, not that the predicate was satisfied.
+Pure polling has a problem: many worker threads don't busy-wait in a loop—they wait on a condition variable. Plain `stop_token` polling falls short there, because the thread may be blocked in `cv.wait()` and never gets a chance to check the stop flag. C++20 added a `wait` overload to `std::condition_variable_any` that accepts a `std::stop_token`—when a stop request is issued, the wait is woken automatically, and `wait` returns `false` to indicate it was woken by the stop signal rather than by the predicate being satisfied.
 
-> **Warning**: Note it's `std::condition_variable_any`, not `std::condition_variable`. The standard committee only added the overload to the former; the latter doesn't support it. If you're using `std::condition_variable`, either switch to `any` or use `std::stop_callback` to manually `notify_all()`.
-
-```cpp
-#include <condition_variable>
-#include <mutex>
-#include <queue>
-
-void cond_var_pattern() {
-    std::jthread producer([](std::stop_token st) {
-        int i = 0;
-        while (!st.stop_requested()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
-            std::cout << "Producing " << i << '\n';
-            i++;
-        }
-    });
-
-    std::queue<int> tasks;
-    std::mutex m;
-    std::condition_variable_any cv;
-
-    std::jthread consumer([&](std::stop_token st) {
-        while (true) {
-            int data;
-            // wait returns false if stop requested
-            if (!cv.wait(m, st, [&]{ return !tasks.empty(); })) {
-                std::cout << "Consumer stopped.\n";
-                break;
-            }
-
-            data = tasks.front();
-            tasks.pop();
-            std::cout << "Consuming " << data << '\n';
-        }
-    });
-
-    std::this_thread::sleep_for(std::chrono::seconds(2));
-    // Auto request_stop triggers cv wakeup
-}
-```
-
-The logic is straightforward: the consumer waits on `cv`. When a task arrives, it processes it. When a stop request occurs, `wait()` returns `false`, and the thread finishes remaining tasks and exits. Internally, `wait()` uses `std::stop_callback` to call `notify_all()` for you. If you must use `std::condition_variable`, you'd need to manually register a callback to `notify_all()`, which is more verbose.
-
-### Pattern 3: Controlling a Group of Threads with stop_source
-
-The previous two patterns are one-to-one—one thread, one stop signal. But in real engineering, one-to-many is common: you have several worker threads and want one button to stop them all. This leverages `std::stop_source`'s ability to derive multiple tokens.
-
-```cpp
-void group_control_demo() {
-    std::stop_source global_src;
-    std::stop_token token = global_src.get_token();
-
-    std::vector<std::jthread> threads;
-    for (int i = 0; i < 4; ++i) {
-        threads.emplace_back([token, i] {
-            while (!token.stop_requested()) {
-                std::cout << "Thread " << i << " working\n";
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
-            }
-            std::cout << "Thread " << i << " stopped\n";
-        });
-    }
-
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    std::cout << "Stopping all threads...\n";
-    global_src.request_stop(); // Stop all at once
-    // jthreads auto-join
-}
-```
-
-I intentionally used `std::jthread` here to show that `std::stop_source` and `std::stop_token` can be used completely independently of `std::jthread`—you can even use them without threads to control async task cancellation. In real projects, using `std::stop_source` for one-to-many control is much cleaner than setting individual flags for each thread, avoiding manual synchronization of multiple flags.
-
-## Integrating Stop Tokens into a Thread Pool
-
-The real challenge is ahead—previous patterns were isolated, but in a real thread pool, you need to handle task queues, condition variables, stopping multiple workers, and ensure no deadlocks or lost tasks on destruction. Using `std::jthread` and `std::stop_token` allows us to manage all this elegantly. Let's look at a simplified but complete implementation:
+> **Pitfall Warning**: Note that it is `condition_variable_any`, not `condition_variable`. The standards committee only added the `stop_token` overload to the former; the latter doesn't support it. If the code you're working with already uses `condition_variable`, either switch to `condition_variable_any`, or use `stop_callback` as mentioned later to `notify` manually.
 
 ```cpp
 #include <thread>
+#include <stop_token>
 #include <condition_variable>
 #include <mutex>
 #include <queue>
-#include <vector>
-#include <functional>
+#include <iostream>
+#include <chrono>
 
-class ThreadPool {
+class TaskWorker
+{
 public:
-    ThreadPool(size_t num_threads) : stop_source_(std::nostopstate) {
-        for (size_t i = 0; i < num_threads; ++i) {
-            workers_.emplace_back([this](std::stop_token st) {
-                while (true) {
-                    std::function<void()> task;
-                    {
-                        std::unique_lock lock(m_);
-                        // Wait with stop_token support
-                        if (!cv_.wait(lock, st, [this] {
-                            return !tasks_.empty();
-                        })) {
-                            // Stop requested
-                            break;
-                        }
-                        task = std::move(tasks_.front());
-                        tasks_.pop();
-                    }
-                    task();
-                }
-            }, stop_source_.get_token());
-        }
-    }
+    TaskWorker()
+        : thread_([this](std::stop_token token) { run(token); })
+    {}
 
-    ~ThreadPool() {
-        // 1. Request stop
-        stop_source_.request_stop();
-        // 2. Wake up everyone waiting
-        cv_.notify_all();
-        // 3. Join all threads (jthread does this automatically)
-    }
-
-    template<typename F>
-    void enqueue(F&& f) {
+    void submit(int task)
+    {
         {
-            std::lock_guard lock(m_);
-            tasks_.push(std::forward<F>(f));
+            std::lock_guard<std::mutex> lock(mutex_);
+            tasks_.push(task);
         }
         cv_.notify_one();
     }
 
 private:
-    std::vector<std::jthread> workers_;
-    std::queue<std::function<void()>> tasks_;
-    std::mutex m_;
+    void run(std::stop_token token)
+    {
+        while (!token.stop_requested()) {
+            int task = 0;
+            {
+                std::unique_lock<std::mutex> lock(mutex_);
+                // Returning false means we were woken by the stop request
+                if (!cv_.wait(lock, token,
+                              [this] { return !tasks_.empty(); })) {
+                    drain_queue();
+                    break;
+                }
+                task = tasks_.front();
+                tasks_.pop();
+            }
+            std::cout << "processing task: " << task << "\n";
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        }
+    }
+
+    void drain_queue()
+    {
+        while (!tasks_.empty()) {
+            int task = tasks_.front();
+            tasks_.pop();
+            std::cout << "draining task: " << task << "\n";
+        }
+    }
+
+    std::mutex mutex_;
+    std::queue<int> tasks_;
     std::condition_variable_any cv_;
-    std::stop_source stop_source_;
+    std::jthread thread_;
 };
 ```
 
-Let's break down the design.
+The logic here is really quite straightforward: the worker waits on `cv_.wait(lock, token, predicate)`, takes out and executes a task when one arrives, and when a stop request comes in, `wait` returns `false`, the thread calls `drain_queue()` to finish the remaining tasks, and then exits. Internally, `condition_variable_any` simply uses `stop_callback` to do the `notify` for you—if you must use `condition_variable` (not `_any`), you have to manually register a callback to call `notify_all()`, which achieves the same effect but makes the code wordier.
 
-First, the constructor—we use an independent `std::stop_source` (member `stop_source_`), not the one inside `std::jthread`. We pass the same token to each worker via `stop_source_.get_token()` in the lambda capture. This is necessary because all workers must share the same stop signal—if each `std::jthread` used its own internal token, we'd have to call `request_stop()` on each one individually, which is tedious and error-prone.
+### Pattern 3: Controlling a Group of Threads with stop_source
 
-Next, the destructor—first call `request_stop()`, then `notify_all()`, and finally let the `std::jthread`s join. You might ask, since `request_stop()` triggers `cv_.wait()` to return, why the extra `notify_all()`? Theoretically, `request_stop()` is enough, but explicit `notify_all()` is clearer intent and ensures we don't rely on specific implementation timing—what if there's a race between `request_stop()` and the last `wait()`? An extra line buys certainty.
+The first two patterns are both one-to-one—one thread, one stop signal. But in real projects, one-to-many is more common: you have several worker threads and want a single button to stop them all at once. This is where the ability of a `stop_source` to derive multiple `stop_token`s comes in.
 
-Finally, a point of confusion: since the lambda accepts a `std::stop_token` parameter, `std::jthread`'s internal token isn't used here. `std::jthread`'s destructor still does `request_stop()` + `join()`, but its internal token affects its own passed argument (which we ignore). The real control comes from our manual `stop_source_.request_stop()` at the start of the destructor.
+```cpp
+#include <stop_token>
+#include <thread>
+#include <iostream>
+#include <chrono>
+
+void data_processor(std::stop_token token, int id)
+{
+    while (!token.stop_requested()) {
+        std::cout << "processor " << id << " working\n";
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    }
+    std::cout << "processor " << id << " stopped\n";
+}
+
+int main()
+{
+    std::stop_source source;
+    std::thread p1(data_processor, source.get_token(), 1);
+    std::thread p2(data_processor, source.get_token(), 2);
+    std::thread p3(data_processor, source.get_token(), 3);
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    source.request_stop();  // One call stops all three threads
+
+    p1.join();
+    p2.join();
+    p3.join();
+    return 0;
+}
+```
+
+We deliberately used `std::thread` instead of `std::jthread` here, to demonstrate that `stop_source` and `stop_token` can be used completely independently of `std::jthread`—you can even use them to control the cancellation of asynchronous tasks in settings with no threads at all. In real projects, using one `std::stop_source` for one-to-many stop control is much cleaner than giving each thread its own `std::atomic<bool>`, and it avoids the synchronization headaches of manually managing multiple flags.
+
+## Integrating Stop Tokens into a Thread Pool
+
+The real pitfalls come later—the three patterns above are isolated scenarios, but in a real thread pool you have to handle the task queue, the condition variable, and the stopping of multiple worker threads all at once, while also ensuring that destruction neither deadlocks nor loses tasks. With `stop_source` and `stop_token`, all of this can be managed in a very elegant, unified way. Let's look at a simplified but complete implementation:
+
+```cpp
+#include <thread>
+#include <stop_token>
+#include <condition_variable>
+#include <mutex>
+#include <queue>
+#include <functional>
+#include <vector>
+#include <iostream>
+
+class SimpleThreadPool
+{
+public:
+    explicit SimpleThreadPool(std::size_t num_threads)
+    {
+        for (std::size_t i = 0; i < num_threads; ++i) {
+            workers_.emplace_back(
+                [this, token = stop_source_.get_token()]() {
+                    worker_loop(token);
+                });
+        }
+    }
+
+    ~SimpleThreadPool()
+    {
+        stop_source_.request_stop();
+        cv_.notify_all();
+        for (auto& w : workers_) {
+            if (w.joinable()) {
+                w.join();
+            }
+        }
+    }
+
+    void submit(std::function<void()> task)
+    {
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            tasks_.push(std::move(task));
+        }
+        cv_.notify_one();
+    }
+
+private:
+    void worker_loop(std::stop_token token)
+    {
+        while (!token.stop_requested()) {
+            std::function<void()> task;
+            {
+                std::unique_lock<std::mutex> lock(mutex_);
+                if (!cv_.wait(lock, token,
+                              [this] { return !tasks_.empty(); })) {
+                    break;
+                }
+                task = std::move(tasks_.front());
+                tasks_.pop();
+            }
+            task();
+        }
+    }
+
+    std::mutex mutex_;
+    std::queue<std::function<void()>> tasks_;
+    std::condition_variable_any cv_;
+    std::stop_source stop_source_;
+    std::vector<std::jthread> workers_;
+};
+```
+
+Let's break down the design of this code.
+
+First, the constructor—we use a standalone `std::stop_source` (the member variable `stop_source_`) rather than relying on the one inside `std::jthread`. In the lambda capture list, `token = stop_source_.get_token()` passes the same token to every worker thread. The reason is that all worker threads must share the same stop signal—if each `jthread` used its own `stop_source`, you would have to call `request_stop()` on them one by one, which is tedious and easy to miss.
+
+Next, the destructor—first call `stop_source_.request_stop()`, then `cv_.notify_all()`, and finally `join()` each worker. You might ask: since `request_stop()` already makes `condition_variable_any`'s `wait` return, why the extra `notify_all()`? True, in theory `request_stop()` alone is enough, but an explicit `notify_all()` expresses the intent more clearly and ensures we don't depend on implementation-specific timing—what if there is a race between `request_stop()` and `wait`? One extra line of `notify_all()` in exchange for determinism—worth it.
+
+Finally, a point that is easy to confuse: because the lambda does not accept a `std::stop_token` parameter, the internal `stop_source` of `std::jthread` is never used here. The `jthread` destructor still does `request_stop()` + `join()`, but its internal `request_stop()` affects the `jthread`'s own `stop_source`, which has nothing to do with the token we passed to `worker_loop`. What actually controls the workers' exit is the manual `stop_source_.request_stop()` at the beginning of the thread pool's destructor.
 
 ## Where We Are
 
-In this article, we started from the pain points of `std::thread`, covered `std::jthread`'s auto-join semantics, the `std::stop_source`/`std::stop_token`/`std::stop_callback` cooperative cancellation mechanism, and finally strung them all together in a thread pool. Looking back, C++20's design is simple—don't force kill threads, signal them to exit gracefully. But behind this simple design, it solves the two biggest headaches from the `std::thread` era: crashing on forgotten join and inability to signal stops.
+In this article we started from the pain points of `std::thread`, walked through `std::jthread`'s auto-join semantics and the `stop_source`/`stop_token`/`stop_callback` cooperative cancellation mechanism, and finally strung them all together in a thread pool. Looking back, the C++20 design is really quite simple—don't forcibly kill a thread; send it a signal and let it exit gracefully on its own. But behind that simple design, it solves the two problems that pained us most in the `std::thread` era: blowing up when you forget to join, and having no way to notify a thread to stop.
 
-Next, we will integrate these tools to build a more complete thread pool—with task priorities, dynamic thread counts, and work stealing. With the foundation of `std::jthread` and stop tokens, the rest will be much easier. Correctness first, performance second—this principle never changes.
+In the next article we will integrate these tools and build a more complete thread pool—with task priorities, dynamic thread counts, and work stealing. With `jthread` and stop tokens as a foundation, what comes next will go much more smoothly. Correctness first, then performance—that principle has not changed.
 
 ## Exercises
 
-### Exercise 1: Interruptible Worker with Stop Token
+### Exercise 1: An Interruptible Worker with a Stop Token
 
-Implement a `Worker` class that runs a background thread printing the current time every 500ms. Use `std::jthread` and `std::stop_token`. When a stop request is received, print "shutting down" and exit. Use `std::stop_callback` to print "cleanup callback executed" on stop. In `main()`, create the worker, run for 3 seconds, then stop it via `request_stop()`. Hint: The callback runs on the thread calling `request_stop()`, so don't do heavy work there.
+Implement an `InterruptibleWorker` class that runs a worker thread internally and prints the current time every 500 ms. Requirements: use `std::jthread` and `std::stop_token`; the thread prints "shutting down" after receiving a stop request and then exits; register a callback with `std::stop_callback` that prints "cleanup callback executed" when the stop happens. In `main()`, create the worker and stop it via `request_stop()` after running for 3 seconds. Hint: the `std::stop_callback` callback executes on the thread that calls `request_stop()`—do not do anything time-consuming inside the callback.
 
-### Exercise 2: Improve the Thread Pool
+### Exercise 2: Reworking the Thread Pool
 
-Based on the `ThreadPool` code above, make these improvements:
-
-1. On destruction, clear unexecuted tasks in the queue (print discarded task IDs) before stopping workers.
-2. Add a `pending_count()` method returning the number of waiting tasks.
-3. Use `std::stop_callback` instead of manual `notify_all()`—register a callback in the worker loop to notify the condition variable. Hint: Think about the `std::stop_callback`'s lifetime—it must remain valid for the entire `ThreadPool` duration.
+Based on the `SimpleThreadPool` code above, make the following improvements: on destruction, first clear out the unexecuted tasks in the queue (printing the number of each discarded task), and only then stop the worker threads; add a `size()` method that returns how many tasks are currently waiting in the queue; replace the manual `notify_all` call with `std::stop_callback`—register a callback before the worker thread's loop begins that notifies the condition variable. Hint: think about the lifetime of the `std::stop_callback`—it needs to stay valid for the entire duration of `worker_loop`.
 
 ### Exercise 3: Combining Multiple stop_sources
 
-Assume you have two groups of worker threads, each with its own `std::stop_source`. Design a mechanism allowing you to stop one group independently, or stop all simultaneously, with requests being one-way. Hint: Keep individual `std::stop_source`s for each group, plus an extra "global" `std::stop_source`. Workers must check both tokens—exiting if either receives a request. `std::stop_token` has no "combine" operation, so you might need to check `stop_requested()` in the loop condition.
+Suppose you have two groups of worker threads, each group with its own `std::stop_source`. Design a mechanism such that any single group can be stopped individually, all threads can be stopped at once, and stop requests are one-way. Hint: you can keep a separate `std::stop_source` for each group, and additionally maintain one "global" `std::stop_source`. Worker threads need to check both tokens—exiting when either token receives a stop request. `std::stop_token` itself has no "combine" operation, so you may need to check `token_a.stop_requested() || token_b.stop_requested()` in the loop condition.
 
-> 💡 Complete example code is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), visit `examples/jthread_demo.cpp`.
+> 💡 The complete example code is in [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP); visit `code/volumn_codes/vol5/ch05-future-task-threadpool/`.
 
 ## References
 

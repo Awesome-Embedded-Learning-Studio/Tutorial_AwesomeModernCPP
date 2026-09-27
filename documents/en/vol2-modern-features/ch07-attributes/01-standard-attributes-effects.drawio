@@ -1,0 +1,89 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Standard Attributes Effects" id="standard-attributes-effects">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="四大标准属性效果对照：不写 vs 写上" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="26" width="600" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- 第一行：把隐患变成警告 -->
+        <mxCell id="row1_header" value="把隐患变成警告：不写时编译器一声不吭，写上后立刻警告" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#c00000;" vertex="1" parent="1">
+          <mxGeometry x="64" y="64" width="700" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- 卡片 1：[[nodiscard]] -->
+        <mxCell id="card1_outer" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="64" y="94" width="345" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="card1_header" value="[[nodiscard]]（C++17）：忽略返回值就警告" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="72" y="102" width="329" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="card1_noattr" value="&lt;b&gt;不写属性：&lt;/b&gt;调用 &lt;font face=&quot;Courier New&quot;&gt;initialize_hardware();&lt;/font&gt; 不检查返回值——编译器一声不吭，系统可能带着错误继续跑" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="72" y="140" width="329" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="card1_withattr" value="&lt;b&gt;写上 [[nodiscard]]&lt;/b&gt;（加在函数声明上）后，同样的调用触发：&lt;br&gt;&lt;font face=&quot;Courier New&quot; color=&quot;#c00000&quot;&gt;warning: ignoring return value&lt;/font&gt;&lt;br&gt;想刻意忽略，得显式写 (void) 才能压掉警告" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="72" y="230" width="329" height="96" as="geometry" />
+        </mxCell>
+
+        <!-- 卡片 2：[[deprecated]] -->
+        <mxCell id="card2_outer" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="419" y="94" width="345" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="card2_header" value="[[deprecated]]（C++14）：调用过时 API 就警告" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="427" y="102" width="329" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="card2_noattr" value="&lt;b&gt;不写属性：&lt;/b&gt;调用 &lt;font face=&quot;Courier New&quot;&gt;old_handler();&lt;/font&gt; 编译器沉默，调用方只能靠文档或注释才知道 API 已过时" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="427" y="140" width="329" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="card2_withattr" value="&lt;b&gt;写上 [[deprecated]]&lt;/b&gt;（附替换说明）后，调用处直接看到：&lt;br&gt;&lt;font face=&quot;Courier New&quot; color=&quot;#c00000&quot;&gt;warning: 'old_handler' is deprecated: Use new_handler() instead&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="427" y="230" width="329" height="96" as="geometry" />
+        </mxCell>
+
+        <!-- 第二行：把有意行为从警告中豁免 -->
+        <mxCell id="row2_header" value="把有意行为从警告中豁免：不写时误报打扰，写上后安静" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#2E7D32;" vertex="1" parent="1">
+          <mxGeometry x="64" y="346" width="700" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- 卡片 3：[[maybe_unused]] -->
+        <mxCell id="card3_outer" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="64" y="376" width="345" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="card3_header" value="[[maybe_unused]]（C++17）：压掉“未使用”误报" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="72" y="384" width="329" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="card3_noattr" value="&lt;b&gt;不写属性：&lt;/b&gt;裸机配置下编译 &lt;font face=&quot;Courier New&quot;&gt;void sensor_task(void* param)&lt;/font&gt;，param 用不到：&lt;br&gt;&lt;font face=&quot;Courier New&quot; color=&quot;#c00000&quot;&gt;warning: unused parameter 'param'&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="72" y="422" width="329" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="card3_withattr" value="&lt;b&gt;写上 [[maybe_unused]]：&lt;/b&gt;&lt;font face=&quot;Courier New&quot;&gt;void sensor_task([[maybe_unused]] void* param)&lt;/font&gt;&lt;br&gt;同一份代码两种配置都不再误报；比 (void)param 或注释掉参数名更语义化" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="72" y="512" width="329" height="96" as="geometry" />
+        </mxCell>
+
+        <!-- 卡片 4：[[fallthrough]] -->
+        <mxCell id="card4_outer" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="419" y="376" width="345" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="card4_header" value="[[fallthrough]]（C++17）：声明贯穿是有意的" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="427" y="384" width="329" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="card4_noattr" value="&lt;b&gt;不写属性：&lt;/b&gt;case 内最后没写 break，直接落到下一个 case：&lt;br&gt;&lt;font face=&quot;Courier New&quot; color=&quot;#c00000&quot;&gt;warning: this statement may fall through&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="427" y="422" width="329" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="card4_withattr" value="&lt;b&gt;写上 [[fallthrough]];&lt;/b&gt;（上一条语句后、下一个 case 前，分号不可少）：编译器知道是故意贯穿，不再警告&lt;br&gt;两个 case 标签之间没有语句时（如 Paused 与 Error 相邻）本就不警告，无需写" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="427" y="512" width="329" height="96" as="geometry" />
+        </mxCell>
+
+        <!-- 脚注 -->
+        <mxCell id="footer1" value="属性是给编译器的声明性提示，不改变程序的语义，但能帮助编译器发现错误或生成更好的代码。" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="64" y="628" width="700" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="footer2" value="[[noreturn]]（优化提示）与 [[carries_dependency]]（实践中近乎摆设）的效果不属于“警告对照”，未入图。" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="64" y="650" width="700" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

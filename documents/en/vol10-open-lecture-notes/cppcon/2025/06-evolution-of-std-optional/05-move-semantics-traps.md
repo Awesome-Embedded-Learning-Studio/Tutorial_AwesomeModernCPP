@@ -1,6 +1,6 @@
 ---
 title: "The Move-Semantics Traps Hiding Inside Optional References"
-description: "CppCon 2025 notes — the \"stolen cat\" bug where optional<T&> meets move semantics: the return type of operator* on an rvalue optional, why *std::move(opt) is dangerous, and why you should write std::move as little as possible"
+description: 'CppCon 2025 notes — the "stolen cat" bug where optional<T&> meets move semantics: the return type of operator* on an rvalue optional, why *std::move(opt) is dangerous, and why the best std::move is the one you never write'
 chapter: 6
 order: 5
 conference: cppcon
@@ -17,37 +17,36 @@ tags:
   - intermediate
   - optional
 prerequisites:
-  - "Shallow traps of optional references: const, value_or, and dangling"
+  - "Shallow Traps of Optional References: const, value_or, and Dangling"
 related:
-  - "Shallow traps of optional references: const, value_or, and dangling"
+  - "Shallow Traps of Optional References: const, value_or, and Dangling"
   - "The Standardization Truth: The Beman Project and a Reference Implementation That Actually Runs"
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/06-evolution-of-std-optional/05-move-semantics-traps.md
   source_hash: b997dd9840e99281ccb82758842dad3205f5e39e3deaccbc2eef4585fe856df7
-  translated_at: '2026-07-29T00:33:58.679864+00:00'
+  translated_at: '2026-09-26T16:31:45+00:00'
   engine: anthropic
-  token_count: 2293
+  token_count: 2000
 ---
-
 # The Move-Semantics Traps Hiding Inside Optional References
 
-[The previous article](./04-shallow-traps-const-value-or-dangling.md) covered the usage-level pitfalls of `optional<T&>`. This one shifts dimensions and looks at the territory where it meets move semantics. This is where C++ produces its most insidious bugs — one `std::move` in the wrong place and you can "steal someone else's cat."
+[The previous part](./04-shallow-traps-const-value-or-dangling.md) covered the usage-level traps of `optional<T&>`. This part switches dimensions and walks into the territory where it crosses paths with move semantics. This is where C++ grows its most insidious bugs: put one `std::move` in the wrong place, and you may well have "stolen someone else's cat."
 
-## First, admit that the most dangerous kind of "it works" exists
+## First, Admit That the Most Dangerous Kind of "It Works" Exists
 
-Honestly, I used to have a terrible coding habit: as long as the code produced the expected output, I considered it done and committed it. I took a bad fall once over an install script. The script looked like it ran correctly — output was all right — so I figured it was done and set it aside. A few days later I ran it in a different environment and it blew up. Later someone much better than me looked at it and found the script was never supposed to work in the first place. It just happened to work.
+Honestly, I used to have a terrible coding habit: as long as the code produced the expected result, I called it done and committed straight away. I took a hard fall over an installation script once. The script looked like it ran through — all the output checked out — so I figured it was finished and tossed it aside. A few days later I ran it in a different environment and it blew up on the spot. It took someone far more experienced looking at it to discover that the script was never supposed to run at all; it only ran by coincidence.
 
-This is the worst kind of "it works," because it gives you false confidence. You think you understand that part thoroughly, when in reality the underlying logic is completely skewed.
+That is the worst kind of "it works," because it hands you a false sense of security: you believe you have that part fully understood, while the underlying logic is actually bent out of shape.
 
-These "happens to work" traps are everywhere in C++ templates and move semantics. This article is about a bug at the intersection of optional references and move semantics that can produce a one-in-a-thousand bizarre crash.
+These "happens to run" traps are everywhere in C++ templates and move semantics. What this part covers is a bug at the crossing of optional references and move semantics that can produce a bizarre crash with roughly one-in-a-thousand probability.
 
-## What "the cat gets stolen" actually means
+## What "The Cat Gets Stolen" Actually Means
 
-Steve Downey gives a particularly vivid example. Suppose there's a cat named Finn, and I create a reference to Finn and wrap it in an optional. Now if I move-assign that optional reference to another optional, in some implementations something absurd happens: Boost.Optional will "steal" the cat itself, rather than simply copying the reference.
+Steve Downey gives a wonderfully vivid example. Suppose there is a cat named Finn; I create a reference to Finn and wrap it in an optional. Now, if that optional reference is move-assigned to another optional, some implementations do something outrageous: Boost.Optional will "steal" the cat itself instead of simply copying the reference.
 
-You may be confused — how can a reference be "stolen"? A reference doesn't own the object. The problem lies in how the return value category of `operator*` interacts with move semantics.
+You may be baffled — how can a reference be "stolen"? A reference does not own the object. The problem sits in the interaction between the value category that `operator*` returns and move semantics.
 
-Let's look at a key fact first: the return type of `operator*` on an rvalue optional differs between the `T` and `T&` specializations. Let's run it:
+Let's start with a key fact: the return type of `operator*` on an rvalue optional differs between the `T` and `T&` specializations. Run it:
 
 ```cpp
 // move_category.cpp
@@ -64,56 +63,56 @@ struct Cat {
 int main() {
     std::optional<Cat> ov = Cat{"Finn"};
     using Rval = decltype(*std::move(ov));          // value version, rvalue optional
-    std::cout << "*std::move(optional<Cat>)  is Cat&& ? "
+    std::cout << "*std::move(optional<Cat>)  是 Cat&& ? "
               << std::is_same_v<Rval, Cat&&> << "\n";
 
     Cat c{"Loki"};
     std::optional<Cat&> or_ = c;
     using Rref = decltype(*std::move(or_));          // reference version, rvalue optional
-    std::cout << "*std::move(optional<Cat&>) is Cat&  ? "
+    std::cout << "*std::move(optional<Cat&>) 是 Cat&  ? "
               << std::is_same_v<Rref, Cat&> << "\n";
 }
 ```
 
 ```bash
 $ g++ -std=c++26 move_category.cpp -o move_category && ./move_category
-*std::move(optional<Cat>)  is Cat&& ? 1
-*std::move(optional<Cat&>) is Cat&  ? 1
+*std::move(optional<Cat>)  是 Cat&& ? 1
+*std::move(optional<Cat&>) 是 Cat&  ? 1
 ```
 
-Read those two output lines. For an rvalue `optional<Cat>` (the value version), the type of `*std::move(opt)` is `Cat&&`, because the optional is about to be destroyed and the Cat inside it can be moved out — this is a sensible optimization. But for an rvalue `optional<Cat&>` (the reference version), the type of `*std::move(opt)` is still `Cat&` — it does not become `Cat&&`.
+Read those two output lines. For an rvalue `optional<Cat>` (the value version), the type of `*std::move(opt)` is `Cat&&`: the optional is about to be destroyed, so the Cat inside may legitimately be moved out — a reasonable optimization. But for an rvalue `optional<Cat&>` (the reference version), the type of `*std::move(opt)` is still `Cat&`; it never became `Cat&&`.
 
-## What's really going on underneath
+## What Is Actually Happening Underneath
 
-That distinction is the heart of "the cat gets stolen."
+This distinction is the core of "the cat gets stolen."
 
-For an rvalue `optional<T>`, having `operator*` return `T&&` is correct. The optional is about to die, the `T` inside can be moved, and writing `some_type dest = *std::move(opt)` moves the `T` out — no problem.
+For an rvalue `optional<T>`, `operator*` returning `T&&` is the right thing. The optional is about to die, the `T` inside can be moved, and when you write `some_type dest = *std::move(opt)` you are moving the `T` out — no problem there.
 
-But for `optional<T&>`, the optional being about to die does not mean the object it references is about to die. Finn is still alive and well; it's just being referenced by an optional that's about to be destroyed. If an implementation has `operator*` return `T&&` for an rvalue `optional<T&>` (which is exactly the bug Boost.Optional used to have), then writing `*std::move(opt)` moves Finn itself. The cat has been stolen.
+But with `optional<T&>`, the optional being about to die does not mean the object it references is about to die. Finn is still alive and well; it just happens to be referenced by an optional that is about to be destroyed. If an implementation has `operator*` return `T&&` for an rvalue `optional<T&>` too (which is precisely the bug Boost.Optional carried back then), then writing `*std::move(opt)` moves Finn itself. The cat has been stolen.
 
-P2988 fixes this: `operator*` on `optional<T&>` always returns `T&`, regardless of whether the optional is an rvalue. Because we're emulating reference semantics, and the value category of a reference is independent of the value category of "the container holding this reference" — once a reference is bound to an object, the value category you reach through it is determined by that object itself. The GCC 16.1.1 implementation measured above is correct: `*std::move(optional<Cat&>)` is `Cat&`, not `Cat&&`.
+P2988 fixed this: `operator*` on `optional<T&>` always returns `T&`, no matter whether the optional is an rvalue. We are emulating reference semantics here, and the value category of a reference has nothing to do with the value category of "the container holding that reference": once a reference is bound to an object, the value category you reach through it is determined by that object itself. The GCC 16.1.1 implementation tested above does the right thing — `*std::move(optional<Cat&>)` is `Cat&`, not `Cat&&`.
 
-## A rule I set for myself
+## A Rule I Set for Myself
 
-Seeing this, I set a rule for myself, and I'll share it with you.
+Having seen this, I set a rule for myself, and I'll share it with you.
 
-Don't try to infer what you're allowed to move.
+Do not try to reason out what you are allowed to move.
 
-What does that mean? Don't think "I know what this function returns, so I can wrap a `std::move` around the outside and it's fine." You might be right today, but tomorrow someone changes that function's return type, or a template instantiates into a different specialization, and your `std::move` can go from harmless to stealing someone else's cat.
+What does that mean? Drop the thought "I know what this function returns, so I can wrap a `std::move` around the outside and it will be fine." You may be right today; tomorrow somebody changes that function's return type, or a template instantiates into a different specialization, and your `std::move` can go from harmless to stealing someone else's cat.
 
-The right approach is: only move objects you're certain you own the right to move, and put the `std::move` on that object itself, not on the outside of the container holding it.
+The correct approach: only move objects you are certain you have the right to move, and write the `std::move` on the object itself, not on the outside of the container that holds it.
 
 ```cpp
-// Dangerous: you don't know whether *rhs after dereference should be moved at all
+// Dangerous: you do not know whether what *rhs dereferences to should be moved at all
 some_type dest = *std::move(rhs);
 
 // Safe: dereference first to get the reference, then move that reference
 some_type dest = std::move(*rhs);
 ```
 
-The difference between these two lines is subtle, and the semantics are completely different. `*std::move(rhs)` first turns the optional into an rvalue and then dereferences it; the result type of the dereference depends on how the optional's `operator*` is defined for rvalues — which is exactly the unpredictable part described above. `std::move(*rhs)` first dereferences to get a reference and then turns that reference into an rvalue; the semantics are clear: I want to move the referenced object itself.
+The difference between these two lines is subtle, and the semantics are entirely different. `*std::move(rhs)` first turns the optional into an rvalue and then dereferences; the result type of the dereference depends on how the optional's `operator*` is defined for rvalues — exactly the unpredictable part from before. `std::move(*rhs)` first dereferences to get the reference and then turns that reference into an rvalue — crisp semantics: what I want to move is the referenced object itself.
 
-Taking it further, the best `std::move` you can write is the one you didn't need to write at all. Take returning a local variable:
+Going one step further: the best `std::move` you can ever write is the one that never needed writing at all. Take returning a local variable:
 
 ```cpp
 Cat make_cat() {
@@ -123,18 +122,18 @@ Cat make_cat() {
 }
 ```
 
-The compiler already knows `c` is local and about to be destroyed, and it handles that automatically. Writing `std::move` by hand can actually kill NRVO, because `std::move(c)` returns an rvalue reference, while NRVO requires the return to be the named local variable itself. Writing `std::move` is essentially explaining things to the compiler, and that's always risky, because you're not necessarily smarter than the compiler. On a good day you might be; on a Friday afternoon, I'm not.
+The compiler already knows `c` is local and about to be destroyed, and it handles that automatically. Hand-writing the `std::move` can actually kill NRVO, because `std::move(c)` yields an rvalue reference, while NRVO requires the return expression to be the named local variable itself. Writing `std::move` is essentially explaining things to the compiler, and that is always risky, because you are not necessarily smarter than the compiler. On a good day you might be; by Friday afternoon, I certainly am not.
 
-## What problem is optional reference actually trying to solve
+## What Problem Is the Optional Reference Actually Trying to Solve
 
-We've spent all this time on bugs, so let's step back — what is `optional<T&>` actually for?
+After all this talk about bugs, step back for a moment: what is `optional<T&>` actually for?
 
-The canonical use case is: look something up, and "not found" is not an exception.
+The canonical use case: look something up, where "not found" does not count as an exception.
 
-I used to write code that looked things up in a map and, on a miss, either threw an exception or returned the end iterator for the caller to deal with. But honestly, "not found" is often a perfectly normal result, and not worth expressing with an exception at all. Exceptions are expensive, and their semantics are wrong here — "key doesn't exist" is not a program error, it's just one possible query result.
+I used to write code that looked things up in a map and, on a miss, either threw an exception or returned the end iterator for the caller to sort out. But honestly, "not found" is very often a perfectly ordinary outcome that does not deserve an exception at all. Exceptions are expensive, and the semantics are wrong: "key does not exist" is not a program error — it is simply one possible query result.
 
-With `optional<T&>`, we can give a map a getter that returns an optional reference: if found, you get a reference and can modify it directly; if not found, it's empty. The standard library doesn't yet build this interface directly into the associative containers (that's P3091's job); for now you can wrap a layer of `reference_wrapper` from [the earlier article](./03-optional-reference-and-assignment.md) as a stopgap.
+With `optional<T&>`, we can give a map a getter that returns an optional reference: a hit hands you the reference to modify directly, a miss comes back empty. The standard library does not yet build this interface directly into the associative containers (that is P3091's job); for now you can bridge the gap with the `reference_wrapper` wrapping from [the earlier part](./03-optional-reference-and-assignment.md).
 
-## What's next
+## What Comes Next
 
-The intersection of move semantics and references comes down to one thing: an optional about to be destroyed does not mean the referenced object is about to be destroyed. So don't write `*std::move(opt)` — write `std::move(*opt)`, and the best move is no move at all. In the next article we step away from optional's own details and look at the part of this talk that excited me the most: how standardization actually happens, and the role The Beman Project plays in it.
+The crossing zone of move semantics and references boils down to a single line: an optional about to be destroyed does not mean the referenced object is about to be destroyed. So do not write `*std::move(opt)` — write `std::move(*opt)` — and the best move is no move at all. In the next part we step out of optional's own details and look at what excited me most in this whole talk: how standardization actually gets done, and the role The Beman Project plays in it.

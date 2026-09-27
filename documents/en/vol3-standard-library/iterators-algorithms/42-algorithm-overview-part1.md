@@ -4,48 +4,48 @@ cpp_standard:
 - 11
 - 17
 - 20
-description: 'We break `<algorithm>` into four sections—non-modifying, modifying,
-  the erase–remove idiom, and sorted range searches—to clarify selection strategies:
-  why `for_each` does not modify ranges, why `remove` only shifts elements instead
-  of deleting them, how C++20''s `std::erase` handles value deletion in a single line,
-  and why the `binary_search` family achieves $O(\log n)$ and requires sorted ranges.'
+description: 'We split `<algorithm>` into four blocks — non-modifying, modifying, the
+  erase-remove idiom, and sorted search — to lay out a selection strategy: why `for_each`
+  never touches the range, why `remove` only shifts elements instead of truly deleting
+  them, how C++20 `std::erase` deletes by value in one line, and why the `binary_search`
+  family earns O(log n) — and why it demands sorting first.'
 difficulty: intermediate
 order: 42
 platform: host
 prerequisites:
-- 迭代器基础与 category
-- 迭代器适配器：反向、插入与流，把现成迭代器改出新行为
-- vector 深入：三指针、扩容与迭代器失效
+- 'Iterator Basics and Categories: The Glue Between Containers and Algorithms'
+- 'Iterator Adapters: Reverse, Insertion, and Stream — Teaching Old Iterators New Tricks'
+- 'Deep Dive into vector: Three Pointers, Reallocation, and Iterator Invalidation'
 reading_time_minutes: 14
 related:
-- 容器选择指南：按操作、内存与失效规则挑对容器
+- 'Container Selection Guide: Picking the Right One by Operations, Memory, and Invalidation Rules'
 tags:
 - host
 - cpp-modern
 - intermediate
 - 容器
-title: 'Algorithm Overview (Part 1): Non-modifying, Modifying, and Searching Operations,
-  and How to Choose the Right Algorithm for a Problem'
+title: 'Algorithm Overview (Part 1): Non-Modifying, Modifying, and Searching — How
+  to Pick the Right Algorithm for a Problem'
 translation:
   source: documents/vol3-standard-library/iterators-algorithms/42-algorithm-overview-part1.md
   source_hash: 26c99c21c5a2ece2c036f069a855f0576584f23f3f20a657da45b2ecb2c9dee2
-  translated_at: '2026-06-24T04:26:06.368689+00:00'
+  translated_at: '2026-09-26T01:33:55+00:00'
   engine: anthropic
-  token_count: 4463
+  token_count: 11500
 ---
-# Algorithm Overview (Part 1): Non-modifying, Modifying, and Lookup — How to Choose the Right Tool
+# Algorithm Overview (Part 1): Non-Modifying, Modifying, and Searching — How to Pick the Right Algorithm for a Problem
 
-In the previous post on iterator adapters, we used a handy little pattern—`lower_bound` to find a position + `insert` to place an element—to insert a new element into a sorted `vector` while maintaining order. That was actually an algorithm stepping into the spotlight. Now, we are officially diving into the `<algorithm>` header.
+When we covered iterator adapters in the previous article, we casually used a little pattern — `lower_bound` to find the position, then `insert` to put the element there — sliding a new element into a sorted `vector` while keeping the order. That was actually an algorithm stepping onto the stage. Now we formally enter the `<algorithm>` volume.
 
-`<algorithm>` is a massive part of the STL, containing over eighty algorithms. If we went through the API signatures one by one, this post would turn into a boring manual—that's cppreference's job, not ours. Let's switch to a more useful perspective: **given a specific requirement, which algorithm should we pick?** We will categorize this large collection of algorithms based on "what they do to your range," remember two or three representatives from each category, keep the time complexity in mind, and you'll be ready to match the right tool to the problem when it arises.
+`<algorithm>` is a huge chunk of the STL, packing more than eighty algorithms. Walking through API signatures one by one would turn this article into a dry manual — that is cppreference's job, not ours. So we take a more useful angle instead: **given a concrete requirement, which algorithm do you actually pick**. Group the whole pile by "what it does to your range", remember two or three representatives per group, keep the complexities in your head, and you can match problems to algorithms on sight.
 
-In this post, we will cover the first four major categories: **non-modifying** algorithms (read-only), **modifying** algorithms (which move elements around), the **erase-remove idiom** (specifically for "removing" elements, and how C++20 simplifies it), and the **binary search** family that relies on sorted ranges. Sorting, partitioning, and merging will be saved for the next post. All examples have been tested locally on GCC 16.1.1 with `-std=c++20 -O2`, and the output reflects real terminal logs.
+This article covers the first four groups: **non-modifying** algorithms that only read, **modifying** algorithms that move elements around, the **erase-remove idiom** built specifically for "deleting elements" (plus how C++20 simplifies it), and the **binary search** family that depends on sorted ranges. Sorting, partitioning, and merging wait for the next article. All examples were run locally on GCC 16.1.1 with `-std=c++20 -O2`, and the outputs are real terminal logs.
 
-## Non-modifying: Read-only, doesn't change a single element
+## Non-Modifying: Read-Only, Not a Single Element Changed
 
-The first category is the easiest to understand—scanning from start to finish, read-only. `for_each` for traversal, `find` for locating, `count` for tallying, and `any_of` for predicate checks all belong here. Their common characteristic is that the range remains identical before and after the call, and the complexity is generally O(n) (except for the binary search family, which we will cover separately later).
+The first group is the easiest to understand — sweep from beginning to end, read and never write. `for_each` for traversal, `find` following the trail, `count` for tallying, and the `any_of` squad doing predicate checks all belong here. What they share: the range looks exactly the same before and after the call, and complexity is basically O(n) (the binary family is the exception — we treat it separately later).
 
-Let's run a quick set of the most commonly used ones to review `for_each`, `find`, `find_if`, `count`, `any_of`, `all_of`, and `none_of` all at once:
+Let's first run a set of the most frequently used ones and see `for_each` / `find` / `find_if` / `count` / `any_of` / `all_of` / `none_of` all in one go:
 
 ```cpp
 // Standard: C++20
@@ -57,16 +57,16 @@ int main()
 {
     std::vector<int> v{3, 1, 4, 1, 5, 9, 2, 6};
 
-    // for_each: 只读遍历，不改区间
+    // for_each: read-only traversal, leaves the range untouched
     int sum = 0;
     std::for_each(v.begin(), v.end(), [&](int x) { sum += x; });
     std::cout << "for_each 求和: " << sum << '\n';
 
-    // find: 线性查找，返回第一个等于目标的迭代器
+    // find: linear search, returns an iterator to the first element equal to the target
     auto it = std::find(v.begin(), v.end(), 5);
     std::cout << "find 5 -> 偏移 " << (it - v.begin()) << '\n';
 
-    // find_if: 第一个满足谓词的
+    // find_if: the first one satisfying the predicate
     auto big = std::find_if(v.begin(), v.end(), [](int x) { return x > 7; });
     std::cout << "find_if(>7) -> " << (big != v.end() ? *big : -1) << '\n';
 
@@ -75,7 +75,7 @@ int main()
     std::cout << "count_if(偶数): "
               << std::count_if(v.begin(), v.end(), [](int x) { return x % 2 == 0; }) << '\n';
 
-    // none_of / any_of / all_of：返回 bool
+    // none_of / any_of / all_of: return bool
     std::cout << "any_of(>8): " << std::any_of(v.begin(), v.end(), [](int x) { return x > 8; }) << '\n';
     std::cout << "all_of(<10): " << std::all_of(v.begin(), v.end(), [](int x) { return x < 10; }) << '\n';
     std::cout << "none_of(<0): " << std::none_of(v.begin(), v.end(), [](int x) { return x < 0; }) << '\n';
@@ -84,7 +84,7 @@ int main()
 }
 ```
 
-Here is the output we got:
+Here is what it prints:
 
 ```text
 for_each 求和: 31
@@ -97,9 +97,9 @@ all_of(<10): 1
 none_of(<0): 1
 ```
 
-In this family, we should specifically highlight the trio `any_of`, `all_of`, and `none_of`. They all perform **short-circuit evaluation**—`any_of` returns `true` immediately upon finding the first element that satisfies the predicate, without scanning the entire range; similarly, `all_of` returns `false` immediately upon finding the first element that fails the condition. Therefore, to check "are there any negative numbers in the range," we can use either `!std::all_of(..., [](x){return x>=0;})` or `std::any_of(..., [](x){return x<0;})`. The latter reads more directly and aligns better with the logic that "this is fundamentally a question about existence."
+Inside this family, the three brothers worth singling out are `any_of` / `all_of` / `none_of`. All of them **short-circuit** — `any_of` returns `true` the moment it finds the first element satisfying the predicate, instead of dumbly sweeping the whole range; `all_of` returns `false` the moment it hits the first element that fails the condition. So for "does the range contain any negative number", both `!std::all_of(..., [](x){return x>=0;})` and `std::any_of(..., [](x){return x<0;})` work; the latter reads more directly and fits the mindset of "this was an existence question to begin with".
 
-There is another easily overlooked but very useful algorithm: `std::search`. It doesn't look for a single element, but for an entire subsequence. For example, to find a specific word in a block of text, `find` searches for "a single character equal to the target," whereas `search` looks for "this substring matching the target sequence element-by-element":
+One more that is easy to overlook but very practical: `std::search`. What it looks for is not a single element but a whole subsequence. Say you are looking for a word inside a stretch of text: `find` answers "does this single character equal the target", while `search` is the one that checks "does this substring equal the target sequence element by element":
 
 ```cpp
 // Standard: C++20
@@ -113,7 +113,7 @@ int main()
     std::string needle = "hello";
     auto it = std::search(text.begin(), text.end(), needle.begin(), needle.end());
     std::cout << "search(\"hello\") 第一次偏移: " << (it - text.begin()) << '\n';
-    // 从上一次匹配点的下一位继续找第二次出现
+    // continue from one past the previous match point to find the second occurrence
     auto it2 = std::search(it + 1, text.end(), needle.begin(), needle.end());
     std::cout << "search 第二次偏移:          " << (it2 - text.begin()) << '\n';
     return 0;
@@ -125,15 +125,15 @@ search("hello") 第一次偏移: 0
 search 第二次偏移:          13
 ```
 
-::: warning Don't confuse `find` with `search`
-`find` checks if a "single element equals the target", while `search` checks if a "whole subsequence is element-wise equal". Use `find` to locate a value within a `vector<int>`, but use `search` to find a continuous subsequence (for example, checking if `[3, 4, 5]` is present). If you mix them up, `find` will return a position where "the first element equals the start of the subsequence", which is completely different from the "whole sequence match" you are looking for.
+::: warning Don't use find where you need search
+`find` compares "a single element equals the target"; `search` compares "a whole sub-range matches element by element". Looking for a value inside a `vector<int>`? Use `find`. Looking for a contiguous subsequence (say, whether `[3, 4, 5]` is in there)? That takes `search`. Mix them up, and `find` hands you the first position whose element equals the head of the subsequence — a completely different thing from the full-segment match you wanted.
 :::
 
-## Mutating: Either modify in-place or write elsewhere
+## Modifying: Either Change In Place or Write Somewhere Else
 
-The second category operates on ranges. It comes in two styles: **in-place modification** (replacing or moving elements within the same range) and **write to destination range** (keeping the source unchanged and writing the result to another location, usually combined with insert iterators discussed in the previous article).
+The second group does touch the range. It comes in two styles: **modify in place** (replace and shuffle within the same range) and **write to a destination range** (source untouched, results written elsewhere — usually teamed up with the insert iterators from the previous article).
 
-Let's run through a set of examples to cover all the patterns:
+Again, let's run a set that walks through all the patterns:
 
 ```cpp
 // Standard: C++20
@@ -153,24 +153,24 @@ int main()
 {
     std::vector<int> src{1, 2, 3, 4, 5};
 
-    // copy: 原样复制到目标区间
+    // copy: replicate as-is into the destination range
     std::vector<int> copied;
     std::copy(src.begin(), src.end(), std::back_inserter(copied));
     print(copied, "copy:           ");
 
-    // copy_if: 带条件的复制
+    // copy_if: copy with a condition
     std::vector<int> evens;
     std::copy_if(src.begin(), src.end(), std::back_inserter(evens),
                  [](int x) { return x % 2 == 0; });
     print(evens, "copy_if(偶数):  ");
 
-    // transform: 一对一映射，把每个元素变身后写到目标
+    // transform: one-to-one mapping, writes each transformed element to the destination
     std::vector<int> squared;
     std::transform(src.begin(), src.end(), std::back_inserter(squared),
                    [](int x) { return x * x; });
     print(squared, "transform(x*x): ");
 
-    // replace / replace_if: 就地把满足条件的元素换成新值
+    // replace / replace_if: in-place overwrite of elements satisfying the condition with a new value
     std::vector<int> r{1, 2, 3, 2, 4, 2};
     std::replace(r.begin(), r.end(), 2, 99);
     print(r, "replace(2->99): ");
@@ -179,13 +179,13 @@ int main()
     std::replace_if(r2.begin(), r2.end(), [](int x) { return x % 2 == 0; }, 0);
     print(r2, "replace_if(偶->0): ");
 
-    // unique: 就地去重相邻重复（关键看后面 erase-remove 段）
+    // unique: drop adjacent duplicates in place (see the erase-remove section later for the key part)
     std::vector<int> u{1, 1, 2, 3, 3, 3, 4, 1, 1};
     auto new_end = std::unique(u.begin(), u.end());
     std::cout << "unique 后逻辑终点偏移: " << (new_end - u.begin())
               << " 实际 size 仍为 " << u.size() << '\n';
 
-    // move: 把元素搬走（右值），目标拿到所有权
+    // move: carry the elements away (as rvalues), destination takes ownership
     std::vector<std::string> words{"aa", "bb", "cc"};
     std::vector<std::string> moved;
     std::move(words.begin(), words.end(), std::back_inserter(moved));
@@ -205,18 +205,18 @@ unique 后逻辑终点偏移: 5 实际 size 仍为 9
 move 后源区间首元素 size: 0
 ```
 
-There are two sets of "in-place vs. copy-elsewhere" comparisons here that are worth remembering:
+Two "in-place vs. write-elsewhere" pairings in here are worth remembering:
 
-- **Modifying values**: Use `replace` / `replace_if` in-place; if we want the result in a new range, use `replace_copy` / `replace_copy_if` (the ones with `_copy` in their names effectively combine "replace + copy" in one step, leaving the source untouched).
-- **Moving elements**: Use `move` to rearrange in-place (this moves elements out of the source range, leaving behind "moved-from" husks—the fact that `words[0].size()` became `0` above is evidence that the string content was moved); use `transform` to copy the transformed result to a new range.
+- **Changing values**: in place, `replace` / `replace_if`; to land the result in a new range, `replace_copy` / `replace_copy_if` (the ones with `_copy` in the name are effectively "replace + copy in one step", leaving the source untouched).
+- **Moving elements**: to reshuffle in place, `move` (it hauls the source elements away, leaving "moved-from" husks behind — `words[0].size()` dropping to 0 above is the evidence that the string's contents were carried off); to copy a transformed result into a new range, `transform`.
 
-We will dedicate a separate section to `unique` shortly, because it is a twin sibling to `remove`. They both share the same counter-intuitive design—**they move elements but do not shrink the container**. This is one of the classic STL pitfalls, and it is the star of the next section.
+We will give `unique` its own section shortly, because it and `remove` are twin brothers carrying the same counter-intuitive design — **they only shift elements, never shrink the container**. That is one of the most classic STL traps, and it stars in the next section.
 
-## The erase-remove idiom: Why remove doesn't actually delete
+## The erase-remove Idiom: Why remove Doesn't Really Delete
 
-This is one of the most classic STL designs, and it is also the one most likely to trip up beginners. The requirement is simple: delete all elements equal to `2` from a `vector`. The first instinct is probably to look for an algorithm named `remove`—and sure enough, there is `std::remove`. However, it **does not actually delete anything**.
+This is the most classic design in the STL and the one most likely to trip up newcomers. The requirement is simple: delete every element equal to `2` from a `vector`. Your first instinct is probably to look for an algorithm named `remove` — and sure enough, `std::remove` exists. But it **does not actually delete anything**.
 
-Let's first look at what it actually does:
+First, let's see what it actually does:
 
 ```cpp
 // Standard: C++20
@@ -246,13 +246,13 @@ remove(2) 后逻辑终点偏移: 4
 remove 后物理内容:    1 3 4 5 4 2 5   [size 仍为 7]
 ```
 
-See what happened? `remove` shifts elements "not equal to 2" to the front, squeezing them into the first part of the range, and then returns a **new logical end**. However, the physical size of the `vector` remains unchanged; it still holds seven elements. The tail end contains leftover old values (`4 2 5`) from the shift—garbage that is "logically discarded but physically occupying slots."
+See what happened — what `remove` does is shift the elements "not equal to 2" forward, squeezing them into the front half of the range, and then return a **new logical end**. The physical size of the `vector` hasn't budged: still 7 elements, with the tail holding leftover stale values from the shuffle (the `4 2 5` crowd) — garbage that is "logically abandoned but still physically squatting in its slot".
 
-### Why not delete directly: Algorithms don't know containers
+### Why It Doesn't Just Delete: Algorithms Don't Know Containers
 
-This design might seem awkward, but the reasoning is actually quite sound: **`std::remove` only recognizes iterators, not containers**. As discussed in the previous section, algorithms are decoupled from containers via iterator interfaces—`remove` only receives two iterators. It has no idea whether they back a `vector`, `list`, or `deque`, let alone which `erase` method to call to actually shrink the capacity. Erasing is a container member function, outside the scope of an algorithm. Therefore, `remove` does what it can: it moves elements and returns the new end, leaving the actual resizing to the caller.
+This design looks awkward, but once the reasoning is laid out it is actually sound: **`std::remove` knows iterators, not containers**. As we covered in the previous article, algorithms decouple from containers through the iterator interface — all `remove` receives is two iterators. It has no idea whether a `vector`, a `list`, or a `deque` hangs behind them, let alone whose `erase` it should call to actually shrink anything. Erasing is a container member function, none of an algorithm's business. So `remove` does only what is within its reach: move elements, return the new end, and hand the shrinking back to the caller.
 
-Thus, to actually delete elements, we need a two-step process—let `remove` do the shifting, then use the container's own `erase` to chop off the tail past the new end:
+So a real deletion takes two steps — let `remove` finish the shifting, then take the container's own `erase` and chop off the tail beyond the new end:
 
 ```cpp
 v.erase(new_end, v.end());
@@ -262,17 +262,17 @@ v.erase(new_end, v.end());
 erase 后:             1 3 4 5   [size=4]
 ```
 
-Combining these two steps gives us the famous **erase-remove idiom**:
+Those two steps together form the famous **erase-remove idiom**:
 
 ```cpp
 v.erase(std::remove(v.begin(), v.end(), 2), v.end());
 ```
 
-The `unique` algorithm works exactly the same way—it only "squeezes out" adjacent duplicates. It merely moves elements without shrinking the container, so actual deletion requires pairing it with `erase`. The output from the previous `unique` example is proof: the logical end is shifted by five, but `size` remains nine. We truly need `u.erase(new_end, u.end())` to actually remove those elements. So, just remember this simple rule: **`remove` / `unique` only move elements; shrinking always relies on `erase`**.
+`unique` plays exactly the same game — it merely "squeezes out" adjacent duplicates, likewise shifting without shrinking, and a real deletion needs `erase` alongside it. The earlier `unique` output is the proof: the logical end sits at offset 5 while `size` is still 9; only after `u.erase(new_end, u.end())` do those elements truly disappear. So one mnemonic is enough: **`remove` / `unique` only shift; shrinking is always `erase`'s job**.
 
-### C++20: `std::erase` and `erase_if` handle this in one line
+### C++20: `std::erase` / `erase_if` Get It Done in One Line
 
-Writing that long chain of `erase(remove(...), end())` repeatedly gets tedious. C++20 introduces a set of new free functions—`std::erase(c, value)` and `std::erase_if(c, pred)`. They accept the container directly and delete values or elements satisfying a condition. Internally, they automatically handle the erase-remove idiom for you and conveniently return the number of elements removed:
+Typing that `erase(remove(...), end())` chain over and over gets genuinely annoying. C++20 ships a set of new free functions — `std::erase(c, value)` and `std::erase_if(c, pred)` — that take the container directly and delete either a value or every element matching a condition, run the whole erase-remove dance for you internally, and even hand back how many they removed:
 
 ```cpp
 // Standard: C++20
@@ -310,43 +310,43 @@ std::erase_if(偶数) 删了 4 个
 结果:                 1 3 4 5 7   [size=4]
 ```
 
-That feels much cleaner, doesn't it? Now that we have this, can we completely forget the old erase-remove idiom? **Not entirely**. There is a nuance regarding the scope of application, verified here using GCC 16.1.1:
+Much cleaner, isn't it. Now that these exist, can the old erase-remove idiom be forgotten entirely? **Not quite**. There is a scope-of-application detail here, verified by hands-on testing on the local GCC 16.1.1:
 
-- **Sequence containers** (`vector` / `string` / `deque` / `list` / `forward_list`): Both `erase(c, value)` and `erase_if(c, pred)` are available.
-- **Associative containers** (`map` / `set` / `multimap` / `multiset` and their `unordered_` variants): **Only `erase_if` is available; there is no value-based `erase`**.
+- **Sequence containers** (`vector` / `string` / `deque` / `list` / `forward_list`): **both** `erase(c, value)` and `erase_if(c, pred)` exist.
+- **Associative containers** (`map` / `set` / `multimap` / `multiset` and their `unordered_` variants): **only `erase_if`; there is no value-based `erase`**.
 
-Why is there no value-based `erase` for associative containers? Because they already have a member function `c.erase(key)` to delete a node by key. If the free function `std::erase(c, value)` also existed, it would cause a name collision with subtly different semantics, so the standards committee decided to provide only `erase_if` for associative containers. We tested this on GCC 16.1.1; calling `std::erase(s, 2)` on a `std::set` results in a compilation error:
+Why no value-based `erase` for associative containers? Because they already have a member `c.erase(key)` that removes a node by key. If the free function `std::erase(c, value)` existed too, the names would collide while the semantics differ subtly, so the standards committee simply gave associative containers only `erase_if`. We tested on GCC 16.1.1: calling `std::erase(s, 2)` on a `std::set` flat-out fails to compile:
 
 ```text
 error: no matching function for call to 'erase(std::set<int>&, int)'
   7 |     std::erase(s, 2);   // 关联容器: 只有 erase_if，没有按值的 erase
 ```
 
-The error message is straightforward: no matching `erase` was found. So, remember this rule—**for associative containers, use `erase_if` to remove elements; for sequence containers, you can use `erase` to remove values or `erase_if` to remove conditions**. For sequence containers, don't bother writing that verbose `erase(remove(...), end())` chain anymore if you can do it in one line.
+The error is blunt: no matching `erase` found. So remember one sentence — **for associative containers, removing elements means `erase_if`; for sequence containers, `erase` works for values and `erase_if` for conditions**. On a sequence container, if you can write one line, don't write that `erase(remove(...), end())` chain anymore.
 
-::: warning ranges::remove returns a subrange, not a raw iterator
-C++20 also provides `std::ranges::remove`. It no longer returns a raw "new end iterator," but a `subrange` (a combination of the retained range and the removed range). When using it with `erase`, write it like this:
+::: warning ranges::remove returns a subrange, not a bare iterator
+C++20 also brings the ranges version, `std::ranges::remove`. What it returns is no longer a bare "new-end iterator" but a `subrange` (a bundle combining the kept range and the discarded range as a pair of iterators). Paired with `erase`, write it like this:
 
 ```cpp
 auto [first, last] = std::ranges::remove(v, 2);
 v.erase(first, last);
 ```
 
-Mixing this up with the classic `v.erase(std::remove(...), v.end())` can be confusing. Fortunately, for sequence containers, using `std::erase` or `erase_if` directly is the most concise one-liner. We rarely write the ranges version of `remove` in daily practice.
+Keeping this mentally mixed with the classic `v.erase(std::remove(...), v.end())` is a recipe for dizziness; fortunately, on sequence containers going straight to `std::erase` / `erase_if` is the cheapest one-liner, so the ranges flavor of remove is rarely worth writing day to day.
 :::
 
-## Ordered Search: The Binary Search Bunch — O(log n) Requires Sorted Data
+## Sorted Search: The Binary Family — O(log n) on the Premise That the Range Is Already Sorted
 
-Up to this point, the `find` and `count` algorithms we discussed are all O(n) linear scans — they struggle when data volumes get large. Is there a faster way? Yes, provided the **range is already sorted**. Once sorted, binary search can cut the complexity down from O(n) to O(log n).
+Everything covered so far — `find`, `count` — is an O(n) linear sweep, and its true colors show once the data grows. Is there a faster lookup? Yes, on the condition that **the range is already sorted**. Once it is, binary search chops the complexity from O(n) down to O(log n).
 
-There are four algorithms in this family, each with a different role:
+The family has four members with different divisions of labor:
 
-- `binary_search(first, last, v)` — Answers "is v present?", returns a `bool`.
-- `lower_bound(first, last, v)` — Returns the position of the first element that is "**not less than** v" (`>= v`).
-- `upper_bound(first, last, v)` — Returns the position of the first element that is "**greater than** v" (`> v`).
-- `equal_range(first, last, v)` — Returns `[lower, upper)` in one go, representing the full range of v within the interval.
+- `binary_search(first, last, v)` — answers only "is v in there", returning a `bool`.
+- `lower_bound(first, last, v)` — returns the position of the first element **not less than** v (`>= v`).
+- `upper_bound(first, last, v)` — returns the position of the first element **greater than** v (`> v`).
+- `equal_range(first, last, v)` — returns `[lower, upper)` in one shot, i.e. the complete extent of v inside the range.
 
-It's easy to confuse `lower_bound` and `upper_bound` just by reading the descriptions. Let's run through them and let the output do the talking:
+Read as prose, `lower_bound` and `upper_bound` are easy to confuse. Let's just run them and let the output speak:
 
 ```cpp
 // Standard: C++20
@@ -356,27 +356,27 @@ It's easy to confuse `lower_bound` and `upper_bound` just by reading the descrip
 
 int main()
 {
-    std::vector<int> v{1, 3, 3, 5, 7, 7, 7, 9};   // 已升序
+    std::vector<int> v{1, 3, 3, 5, 7, 7, 7, 9};   // already sorted ascending
 
-    // binary_search: 在不在（bool）
+    // binary_search: present or not (bool)
     std::cout << "binary_search(7): " << std::binary_search(v.begin(), v.end(), 7) << '\n';
     std::cout << "binary_search(4): " << std::binary_search(v.begin(), v.end(), 4) << '\n';
 
-    // lower_bound: 第一个「不小于」value 的位置（>= value）
+    // lower_bound: position of the first element "not less than" value (>= value)
     auto lo = std::lower_bound(v.begin(), v.end(), 7);
     std::cout << "lower_bound(7) -> 偏移 " << (lo - v.begin()) << " 值 " << *lo << '\n';
 
-    // upper_bound: 第一个「大于」value 的位置（> value）
+    // upper_bound: position of the first element "greater than" value (> value)
     auto up = std::upper_bound(v.begin(), v.end(), 7);
     std::cout << "upper_bound(7) -> 偏移 " << (up - v.begin()) << " 值 " << *up << '\n';
 
-    // equal_range: [lower, upper) 就是 7 的完整范围
+    // equal_range: [lower, upper) is 7's complete extent
     auto [eq_lo, eq_up] = std::equal_range(v.begin(), v.end(), 7);
     std::cout << "equal_range(7): [" << (eq_lo - v.begin()) << ", " << (eq_up - v.begin()) << ") -> ";
     for (auto it = eq_lo; it != eq_up; ++it) std::cout << *it << ' ';
     std::cout << "共 " << (eq_up - eq_lo) << " 个\n";
 
-    // 查一个不存在的值：lower_bound 给的是「该插哪」
+    // searching for a value that isn't there: lower_bound tells you where it would go
     auto lo4 = std::lower_bound(v.begin(), v.end(), 4);
     std::cout << "lower_bound(4) -> 偏移 " << (lo4 - v.begin()) << " 值 " << *lo4
               << "（4 不在，指向插入点）\n";
@@ -393,11 +393,11 @@ equal_range(7): [4, 7) -> 7 7 7 共 3 个
 lower_bound(4) -> 偏移 3 值 5（4 不在，指向插入点）
 ```
 
-Looking at the output, it becomes clear: the three `7`s occupy offsets 4, 5, and 6. `lower_bound(7)` lands on the first `7` (offset 4, the start of `>= 7`), and `upper_bound(7)` lands on the first `9` after the `7`s (offset 7, the start of `> 7`). `equal_range` gives us the half-open range `[4, 7)` in one go. If we search for a non-existent value like `4`, `lower_bound` lands at offset 3 (pointing to `5`) — which is exactly the position where "4 would be inserted if we were to add it."
+Against the output it becomes clear: the three `7`s occupy offsets 4, 5, and 6; `lower_bound(7)` lands on the first `7` (offset 4, where `>= 7` starts); `upper_bound(7)` lands on the first `9` after the `7`s (offset 7, where `> 7` starts); and `equal_range` hands you the half-open range `[4, 7)` in one go. Querying an absent value like `4`, `lower_bound` lands at offset 3 (pointing at `5`) — exactly the spot "where 4 would go if we inserted it".
 
-### Connecting to the Previous Article: `insert_sorted` is just `lower_bound` + `insert`
+### Picking Up from the Previous Article: `insert_sorted` Is Just `lower_bound` + `insert`
 
-Now, looking back, the little "order-preserving insertion" pattern from the previous article makes perfect sense. `lower_bound` finds the insertion point in O(log n) on a sorted range, and then we use the container's `insert` to push the element in. We can't avoid the data movement (contiguous storage, O(n)), but we've reduced the step of finding the position to logarithmic time using binary search:
+Looking back now, that little "order-preserving insert" pattern from the previous article clicks completely. `lower_bound` finds the insertion point on a sorted range in O(log n), then the container's `insert` squeezes the element in. The shifting step is unavoidable (contiguous storage, O(n)), but locating the position has been pressed down to logarithmic by binary search:
 
 ```cpp
 // Standard: C++20
@@ -422,9 +422,9 @@ int main()
 insert_sorted(4): 1 3 4 5 7 9
 ```
 
-### Binary Search vs. Linear Search: How Much Faster?
+### How Much Faster Is Binary Than Linear: Run It and See
 
-Saying "O(log n) is faster than O(n)" is a bit abstract. Let's take a sorted `vector` with ten million elements and compare `find` against `binary_search` in the worst-case scenario (where the target is at the end) to see the real difference:
+Just saying "O(log n) beats O(n)" is a bit hollow. Let's take a sorted `vector` of ten million elements and pit `find` against `binary_search` in the worst case (target at the very end) to see the real gap:
 
 ```cpp
 // Standard: C++20
@@ -437,9 +437,9 @@ int main()
 {
     constexpr int kN = 10'000'000;
     std::vector<int> v(kN);
-    for (int i = 0; i < kN; ++i) v[i] = i;   // 已升序
+    for (int i = 0; i < kN; ++i) v[i] = i;   // already sorted ascending
 
-    int target = kN - 1;   // 最坏情况：在末尾
+    int target = kN - 1;   // worst case: at the end
 
     auto t1 = std::chrono::high_resolution_clock::now();
     bool found_lin = std::find(v.begin(), v.end(), target) != v.end();
@@ -457,7 +457,7 @@ int main()
 }
 ```
 
-Native GCC 16.1.1 with `-O2` (single measurement; specific microsecond counts vary by machine and execution, but the order of magnitude remains stable):
+Run locally on GCC 16.1.1 with `-O2` (a single measurement; the exact microseconds wobble with machine and run, but the order of magnitude is stable):
 
 ```text
 find        (O(n))      1  耗时 5891 us
@@ -465,20 +465,20 @@ binary_search (O(log n)) 1  耗时 1 us
 倍数差距: 5891x
 ```
 
-Want to see the performance gap firsthand? Check out this online demo:
+Want to run it yourself and see the magnitude gap? Open this online demo:
 
 <OnlineCompilerDemo
-  title="Binary vs. Linear Search: The Benefits of O(log n)"
+  title="Binary vs. Linear Search: The Dividend of O(log n)"
   source-path="code/examples/vol3/42_binary_vs_linear.cpp"
-  description="Ten million sorted elements, worst-case scenario (target at the end): std::find scans to the end (milliseconds), std::binary_search finishes in a few comparisons (microseconds). The difference is several orders of magnitude—provided the data is actually sorted."
+  description="Ten million sorted elements, worst case (target at the end): std::find has to sweep to the end (milliseconds), while std::binary_search lands it in a handful of comparisons (microseconds) — a gap of several thousand times in magnitude, provided the data really is sorted."
   allow-run
 />
 
-With ten million elements, a linear `find` might scan to the very end in the worst case, taking milliseconds. Binary search locates the target in just a few comparisons, taking microseconds. That's a difference of several orders of magnitude. This is the bonus that "sorted" brings—provided you actually keep it sorted.
+With ten million elements, a linear `find` in the worst case has to sweep all the way to the end and lands in milliseconds; binary search pinpoints the target in a few comparisons and lands in microseconds — a gap of several thousand times in magnitude. That is the dividend "sorted" pays out — provided you genuinely keep it sorted.
 
-### The Real Trap: Using Binary Search on Unsorted Ranges
+### The Real Trap: Running Binary Search on an Unsorted Range
 
-The "sorted" requirement for binary search algorithms is a **hard prerequisite**, not a "nice-to-have" optimization. The standard specifies this as a precondition; violating it results in **undefined behavior**. The compiler won't stop you, and the results are completely unreliable. Let's run this on a deliberately shuffled sequence to expose the trap:
+For the binary family, "already sorted" is a **hard precondition**, not a "nicer if sorted, passable if not". The standard spells it out as preconditions; violating them is **undefined behavior** — the compiler will not stop you, and the results are entirely untrustworthy. Let's run it on a deliberately shuffled sequence and let the trap show itself:
 
 ```cpp
 // Standard: C++20
@@ -488,8 +488,8 @@ The "sorted" requirement for binary search algorithms is a **hard prerequisite**
 
 int main()
 {
-    // 一个会让 binary_search 漏判的未排序序列
-    std::vector<int> u{10, 1, 30, 2, 20, 3};   // 含 2，但无序
+    // an unsorted sequence that makes binary_search miss
+    std::vector<int> u{10, 1, 30, 2, 20, 3};   // contains 2, but unordered
     std::cout << "实际含 2?        " << (std::find(u.begin(), u.end(), 2) != u.end()) << '\n';
     std::cout << "binary_search(2):" << std::binary_search(u.begin(), u.end(), 2) << '\n';
     return 0;
@@ -501,49 +501,49 @@ int main()
 binary_search(2):0
 ```
 
-`2` is clearly in the range (`find` found it), yet `binary_search` returns `0`—because the binary search algorithm assumes the range is sorted and looks in the direction where "2 should appear in the first half". If it doesn't find it there, it assumes it doesn't exist. This isn't a bug; we just failed to meet its prerequisites. Therefore, before using the binary search family, confirm that the range is actually sorted. If you aren't sure, stick with `find`; it's O(n) and slower, but at least it won't mislead you.
+`2` is plainly in the range (`find` got it), yet `binary_search` returns `0` — because the algorithm assumes order and goes looking in the direction of "2 should be in the front half"; not finding it there, it concludes it doesn't exist. That is not a bug; we simply failed its precondition. So before reaching for the binary family, confirm the range is truly sorted; if unsure, honestly use `find` — O(n) is slower, but at least it won't lie to you.
 
-::: warning Binary search requires a "sorted" range and consistent comparison semantics
-Two frequently overlooked prerequisites: first, the range must be sorted; second, the comparator used for sorting must be semantically consistent with the one used for searching (if you sorted in descending order but use `binary_search`'s default ascending order search, it will still fail). `binary_search`, `lower_bound`, `upper_bound`, and `equal_range` all accept an additional comparator parameter. If the sorting comparator doesn't match the default, you must pass this parameter in. Sort first, search later, keep comparators consistent—only when these three things align are the binary search algorithms reliable.
+::: warning Binary search presupposes "sorted", and consistent comparison semantics
+Two preconditions people keep overlooking: first, the range must already be sorted; second, the comparator used for sorting and the one used for searching must agree semantically (sort in descending order and `binary_search`, which hunts in ascending order by default, is wrong all the same). `binary_search` / `lower_bound` / `upper_bound` / `equal_range` all accept an extra comparator parameter; when your sorting comparator doesn't match it, be sure to pass that parameter. Sort first, search second, keep the comparator consistent — with those three in place, the binary family is trustworthy.
 :::
 
-## Choosing an Algorithm by Requirement: A Decision Table
+## Picking an Algorithm by Need: A Decision Table
 
-With all that said, the practical question boils down to one thing—"For my specific requirement, which algorithm should I use?" We've summarized the scenarios covered in this article into a decision table; just find the row that matches your needs:
+After all that, combat boils down to one question — "for this requirement of mine, which one do I use". We've condensed the scenarios this article covered into a decision table; just find your row:
 
-| What I want to do | Range State | Pick this | Complexity |
+| What I want to do | Range state | Who to pick | Complexity |
 |---|---|---|---|
-| Check "if any element satisfies a condition" | Any | `any_of` / `all_of` / `none_of` | O(n), short-circuiting |
-| Count "how many elements satisfy a condition" | Any | `count_if` | O(n) |
-| Find the first element satisfying a condition | Any | `find_if` | O(n) |
-| Find a contiguous subsequence | Any | `search` | O(n·m) |
-| Transform each element and put it in a new range | Any | `transform` | O(n) |
-| Modify elements in-place that satisfy a condition | Any | `replace_if` | O(n) |
-| Remove all elements equal to a value (sequence containers) | Any | `std::erase(c, value)` | O(n) |
-| Remove all elements satisfying a condition (any container) | Any | `std::erase_if(c, pred)` | O(n) |
-| Remove all elements equal to a value (pre-C++20) | Any | `erase(remove(...), end())` idiom | O(n) |
-| Remove adjacent duplicates | More effective if sorted first | `unique` + `erase` | O(n) |
-| Check "if a value exists" | **Sorted** | `binary_search` | O(log n) |
-| Find the first position "not less / greater than" a value | **Sorted** | `lower_bound` / `upper_bound` | O(log n) |
-| Find the full range of a value | **Sorted** | `equal_range` | O(log n) |
-| Insert a new element while preserving order | **Sorted** | `lower_bound` to find position + `insert` | O(log n) + O(n) |
+| Tell "is there an element satisfying a condition" | any | `any_of` / `all_of` / `none_of` | O(n), short-circuit |
+| Count "how many satisfy a condition" | any | `count_if` | O(n) |
+| Find the first element satisfying a condition | any | `find_if` | O(n) |
+| Find a contiguous subsequence | any | `search` | O(n·m) |
+| Transform every element and place it in a new range | any | `transform` | O(n) |
+| In-place overwrite of elements satisfying a condition | any | `replace_if` | O(n) |
+| Delete every element equal to a value (sequence containers) | any | `std::erase(c, value)` | O(n) |
+| Delete every element satisfying a condition (any container) | any | `std::erase_if(c, pred)` | O(n) |
+| Delete every element equal to a value (pre-C++20) | any | `erase(remove(...), end())` idiom | O(n) |
+| Drop adjacent duplicates | more effective if sorted first | `unique` + `erase` | O(n) |
+| Tell "is a value present" | **sorted** | `binary_search` | O(log n) |
+| Find the first position "not less than / greater than" a value | **sorted** | `lower_bound` / `upper_bound` | O(log n) |
+| Find the complete extent of a value | **sorted** | `equal_range` | O(log n) |
+| Insert a new element in order | **sorted** | `lower_bound` to find the point + `insert` | O(log n) + O(n) |
 
-This table wraps up this article. Remember one overarching principle—**O(n) is the default gear for checking, modifying, and deleting; only if you sort properly do you get the O(log n) binary search bonus**.
+This table is where the article lands. Remember one master principle — **O(n) is the default gear for searching, modifying, and deleting; only what can be kept sorted earns the O(log n) binary dividend**.
 
 ## Summary
 
-- `<algorithm>` falls into four categories based on what it does to a range: non-modifying (read-only), modifying (in-place or write-to-destination), the erase-remove idiom (removing elements), and sorted searching (binary search family).
-- `any_of` / `all_of` / `none_of` use short-circuit evaluation; `search` finds subsequences, not single elements.
-- `remove` / `unique` **only move elements, they don't shrink capacity**; they return a new logical end, and shrinking always relies on the container's `erase`—this is the classic STL pitfall.
-- C++20's `std::erase` / `erase_if` free functions let us delete elements in one line; sequence containers have both, while associative containers only have `erase_if`.
-- The binary search family (`binary_search` / `lower_bound` / `upper_bound` / `equal_range`) reduces search complexity to O(log n), provided the **range is sorted** and the comparator semantics are consistent; using binary search on an unsorted range is undefined behavior and will yield incorrect results.
+- `<algorithm>` splits by what it does to a range into four groups: non-modifying (read-only), modifying (change in place or write to a destination), the erase-remove idiom (deleting elements), and sorted search (the binary family).
+- `any_of` / `all_of` / `none_of` short-circuit; `search` hunts subsequences, not single elements.
+- `remove` / `unique` **only shift, never shrink**; they return a new logical end, and shrinking always falls to the container's `erase` — the most classic STL trap there is.
+- C++20's `std::erase` / `erase_if` free functions make deleting elements a one-liner; sequence containers get both, associative containers only `erase_if`.
+- The binary family (`binary_search` / `lower_bound` / `upper_bound` / `equal_range`) presses search down to O(log n), provided the **range is sorted** and comparator semantics agree; binary search on an unsorted range is undefined behavior and will hand you wrong answers.
 
-In the next article, we will cover the second half of this topic—sorting (`sort` / `stable_sort` / `partial_sort`), partitioning (`partition`), merging (`merge`), and more O(log n) techniques available under the "sorted range" premise.
+In the next article we continue with the second half of the algorithms story — sorting (`sort` / `stable_sort` / `partial_sort`), partitioning (`partition`), merging (`merge`), and more O(log n) tricks available under the "sorted range" premise.
 
 ## References
 
-- [cppreference: Algorithms library](https://en.cppreference.com/w/cpp/algorithm) — Overview of the entire `<algorithm>` suite, categorized by non-modifying / modifying / partitioning / sorting / binary search, etc.
-- [cppreference: std::remove](https://en.cppreference.com/w/cpp/algorithm/remove) — The mechanism of `remove` in the erase-remove idiom: "moves elements, does not shrink capacity"
-- [cppreference: std::erase, std::erase_if (C++20)](https://en.cppreference.com/w/cpp/container/erase) — Unified deletion free functions, their specializations per container, and applicable scopes
-- [cppreference: std::lower_bound](https://en.cppreference.com/w/cpp/algorithm/lower_bound) — The semantics ("first not less than") and complexity of the binary search family
-- [cppreference: std::binary_search](https://en.cppreference.com/w/cpp/algorithm/binary_search) — Binary search prerequisites (sorted) and undefined behavior explanation
+- [cppreference: Algorithms library](https://en.cppreference.com/w/cpp/algorithm) — a tour of the whole `<algorithm>` collection, grouped by non-modifying / modifying / partitioning / sorting / binary search and more
+- [cppreference: std::remove](https://en.cppreference.com/w/cpp/algorithm/remove) — the "shifts but never shrinks" mechanics of remove inside the erase-remove idiom
+- [cppreference: std::erase, std::erase_if (C++20)](https://en.cppreference.com/w/cpp/container/erase) — the unified erasure free functions, their per-container specializations and scopes
+- [cppreference: std::lower_bound](https://en.cppreference.com/w/cpp/algorithm/lower_bound) — the semantics ("first not less than") and complexity of the binary family
+- [cppreference: std::binary_search](https://en.cppreference.com/w/cpp/algorithm/binary_search) — binary search preconditions (sorted) and the undefined-behavior notes

@@ -1,6 +1,6 @@
 ---
-title: "CMakePresets.json: From the cmake -D Old Way to Reproducible --preset"
-description: "A thorough walkthrough of how CMakePresets.json pins the old -D workflow into version control: configurePresets/buildPresets/testPresets, hidden + inherits composition, and per-user overrides via CMakeUserPresets.json"
+title: "CMakePresets.json — from the old cmake -D way to reproducible --preset builds"
+description: "How CMakePresets.json pins the old -D style into version control: the three preset categories configurePresets/buildPresets/testPresets, the hidden + inherits combination, and personal overrides via CMakeUserPresets.json"
 chapter: 7
 order: 4
 tags:
@@ -13,16 +13,22 @@ platform: host
 cpp_standard: [17, 20]
 reading_time_minutes: 16
 prerequisites:
-  - "vol7 ch00 01: CMake 是什么——构建系统生成器的两段式流水线"
-  - "vol7 ch00 02: Target 心智模型——把 target 当对象，PUBLIC/PRIVATE/INTERFACE 是使用需求"
+  - What is CMake — the two-stage pipeline of a build system generator
+  - The target mental model — treat a target as an object, PUBLIC/PRIVATE/INTERFACE are usage requirements
 related:
-  - "交叉编译与 CMake"
-  - "编译器选项"
+  - "Cross-compilation and a Simple Guide to CMake"
+  - "Guide to Common Compiler Options"
+translation:
+  source: documents/vol7-engineering/ch00-cmake-fundamentals/04-cmake-presets.md
+  source_hash: 722591fb811111c2aee15968bc0e284dda67a28d6bac396140e030586ab84bff
+  translated_at: '2026-09-26T05:12:48+00:00'
+  engine: anthropic
+  token_count: 4000
 ---
 
-# CMakePresets.json: From the cmake -D Old Way to Reproducible --preset
+# CMakePresets.json — from the old cmake -D way to reproducible --preset builds
 
-In the previous two pieces every configure command we typed looked the same: `cmake -B build -G Ninja`. In a real project that line is rarely that short. Once you add a build type, a toolchain file, and a few cache variables, the command balloons into something like this:
+In the previous two articles, every configure command we typed looked the same: `cmake -B build -G Ninja`. In a real project that line is usually far from that short. Once you add a build type, a toolchain file, and a few cache variables, the command balloons into something like this:
 
 ```text
 cmake -B build -G Ninja \
@@ -33,33 +39,33 @@ cmake -B build -G Ninja \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 ```
 
-Once a command gets this long, things start going wrong. I have personally stepped on this: I copied `CMAKE_BUILD_TYPE` as `CMAKE_BUILD-TYPE`, configure did not error, silently produced an empty config, and the resulting binary shipped with a pile of debug symbols. Teammates kept asking each other "what did you put for the vcpkg path". In CI the command got embedded into YAML, and changing one option turned a PR red across the board. CMake 3.19 introduced `CMakePresets.json`, which folds all those `-D` flags, the generator choice, and the build directory scattered across the command line into one JSON file. The command then shrinks to a single `cmake --preset debug`. This piece covers how to use it, and how it hooks into the vcpkg toolchain and the VSCode CMake Tools extension.
+Once a command gets this long, problems start. We have stepped on this one ourselves: we copied `CMAKE_BUILD_TYPE` as `CMAKE_BUILD-TYPE`, configure did not report an error, silently ran an empty configuration, and the binary that came out carried a pile of debug symbols; colleagues kept asking each other "what did you fill in for the vcpkg path"; in CI the command got embedded into YAML, and changing one option turned a whole PR red. CMake 3.19 introduced `CMakePresets.json`, which consolidates the `-D` flags, the generator choice, and the build directory scattered across the command line into a single JSON file, and the command finally slims down to one line: `cmake --preset debug`. This article covers how to use it, and how it hooks up with the vcpkg toolchain and VSCode CMake Tools.
 
-## Why Presets: Four Pains of the -D Old Way
+## Why presets: four pain points of the old -D way
 
-Before we touch the JSON, let's nail down why this is worth doing. Going back to the commands we used in the previous pieces, let's pick apart what's wrong with the -D approach one pain at a time.
+Before we start writing JSON, let's nail down why this is worth doing. Referring back to the commands we used in the previous articles, let's pick the old -D style apart pain point by pain point.
 
-First, the command is long and easy to mistype. That line above is over 130 characters spanning several lines. Get one letter wrong in `CMAKE_BUILD_TYPE` or `CMAKE_TOOLCHAIN_FILE` and CMake will not complain. It silently writes the unknown variable into the cache, and you end up with a build tree that "looks configured but actually set nothing". The problem usually only surfaces at runtime. I once burned half a day tracking down the `CMAKE_BUILD-TYPE` typo (underscore typed as a hyphen).
+First, the command is long and easy to mistype. The one above is over 130 characters and spans multiple lines. If a single letter is wrong in key names like `CMAKE_BUILD_TYPE` or `CMAKE_TOOLCHAIN_FILE`, CMake will not complain — it silently writes the unrecognized variable into the cache, and what you end up with is a build tree that "looks configured but actually set nothing". The problem usually does not surface until runtime. We once burned half a day tracking down exactly this `CMAKE_BUILD-TYPE` typo (underscore typed as a hyphen).
 
-Second, it is not reproducible. The command lives only in your terminal history. Switch machines, open a new terminal window, or come back to this project two weeks later and the command is gone. You have to retype it from memory. Even if you remember roughly, the parameter order, whether a particular `-D` was on, you would not bet on any of it.
+Second, it is not reproducible. The command lives only in your terminal history. Switch machines, switch to a new terminal window, or come back to this project half a month later, and the command is long gone — you can only retype it from memory. Even if you remember the rough shape, nobody would vouch for the parameter order or for whether a particular `-D` was actually set.
 
-Third, the team ends up each typing their own. Same project, A uses `Release`, B uses `RelWithDebInfo`, C forgets to set `CMAKE_BUILD_TYPE` at all. Three machines produce three binaries with different behavior. A bug reproduces on B's machine, vanishes on A's, and the post-mortem shows build type mismatch. This kind of back-and-forth is nearly the norm in projects without conventions.
+Third, everyone on the team types their own. Same project: A uses `Release`, B uses `RelWithDebInfo`, C forgot to specify `CMAKE_BUILD_TYPE`, and three machines produce three binaries with different behavior. A bug reproduces on B's machine and vanishes on A's; the post-mortem traces it back to inconsistent build types — this kind of wrangling is nearly the norm in projects without conventions.
 
-Fourth, it is hard to pin down in CI. The CI script has to copy the command verbatim into YAML, and every `-D` is a potential spelling trap. Changing one compile option means editing it in two places (local command + CI YAML), and over time they will inevitably drift.
+Fourth, it is hard to pin down in CI. The CI script has to copy the command verbatim into YAML, and every `-D` is a potential spelling trap. Changing one compile option means editing two places in sync (the local command + the CI YAML), and over time they will inevitably drift.
 
-The presets mechanism exists to take these four pains head on. Write "which `-D` flags, which generator, which build directory" into `CMakePresets.json`, check that file into version control, and the team and CI share one configuration. Locally you run `cmake --preset debug`, in CI you also run `cmake --preset debug`, the command is identical on both sides, and the build behavior is reproducible.
+The presets mechanism exists to go after these four pain points. Write "which `-D` flags, which generator, which build directory" into `CMakePresets.json`, put that file under version control, and the team and CI share one configuration. Locally you type `cmake --preset debug`; in CI it is also `cmake --preset debug`. The command is identical on both sides, and the build behavior is reproducible.
 
-## CMakePresets.json Structure
+## The structure of CMakePresets.json
 
-The top level of `CMakePresets.json` has three categories of presets, one for each stage of the CMake workflow:
+The top level of `CMakePresets.json` defines three categories of presets, matching the three stages of the CMake workflow:
 
-`configurePresets` corresponds to `cmake --preset`, and pins the configure-stage `-D` flags, the generator, and `binaryDir`. This is the most heavily used category.
+`configurePresets` corresponds to `cmake --preset` and pins the configure-stage `-D` flags, the generator, and `binaryDir`. This is the most frequently used category.
 
-`buildPresets` corresponds to `cmake --build --preset`, and pins build-stage arguments like `--target`, `--config`, and the parallelism. Added in schema version 2 (CMake 3.20).
+`buildPresets` corresponds to `cmake --build --preset` and pins build-stage arguments such as `--target`, `--config`, and the parallelism level. It was only added in schema version 2 (CMake 3.20).
 
-`testPresets` corresponds to `ctest --preset`, and pins the test-stage filter, output format, and so on. Also introduced in schema version 2.
+`testPresets` corresponds to `ctest --preset` and pins the test-stage filters, output format, and so on. Also introduced in schema version 2.
 
-Let's look at a complete minimal working example first, then break the fields down. The `CMakePresets.json` below is the one I used while writing and verifying this piece: one hidden `base` preset sets the common fields, and two presets `debug` and `release` that inherit it each set `CMAKE_BUILD_TYPE`:
+Let's look at a complete minimal working example first, then break the fields down. The `CMakePresets.json` below is the one we actually tested this article with: a hidden `base` preset sets the common items, and `debug` and `release`, which inherit from it, each set `CMAKE_BUILD_TYPE`:
 
 ```json
 {
@@ -111,31 +117,31 @@ Let's look at a complete minimal working example first, then break the fields do
 }
 ```
 
-Field by field. The top-level `version` is **the JSON schema version**, not the CMake version. It currently goes up to 9 (introduced in CMake 3.27). 3 is a sensible floor: it covers the full basic capability of `configurePresets` + `buildPresets` + `testPresets` and is natively supported from CMake 3.21 on. The schema version and `cmakeMinimumRequired` are two different things: the former declares "which version of the schema this JSON was written against", the latter declares "how recent a CMake you need at minimum to run this JSON". A CMake older than that minimum refuses to touch `CMakePresets.json` outright, which keeps an old CMake from silently carrying on after failing to parse a new field.
+Field by field. The top-level `version` is **the version number of the JSON schema**, not the version number of CMake. It currently goes up to 9 (introduced in CMake 3.30); 3 is a safe floor that covers the full basic capability of `configurePresets` + `buildPresets` + `testPresets` and is natively supported from CMake 3.21 on. The schema version and `cmakeMinimumRequired` are two different things: the former declares "which version of the schema this JSON was written against", and the latter declares "how new a CMake you need at minimum to run this JSON". A CMake older than that minimum refuses to touch `CMakePresets.json` at all, which keeps an old CMake from failing to parse a new field and yet silently carrying on.
 
-`configurePresets` is an array, and each element is one preset. The `base` preset has a few key fields.
+`configurePresets` is an array; each element is one preset. The `base` preset has a few key fields.
 
-`name` is the unique identifier of the preset, and it is what follows `cmake --preset`.
+`name` is the unique identifier of the preset — it is what follows `cmake --preset`.
 
-`hidden: true` means this preset cannot be used directly by `--preset`, and it does not show up in the `--list-presets` output. It exists only as a base class for other presets to inherit. We will verify this in a moment with `cmake --preset base`, and CMake will refuse it on the spot.
+`hidden: true` means this preset cannot be used directly by `--preset`, nor does it appear in the `--list-presets` output; it serves only as a base class for other presets to inherit. We will verify this right away with `cmake --preset base`, and CMake will block it with an outright error.
 
-`generator` and `binaryDir` pin down `-G` and `-B` respectively. Note that `binaryDir` is written as `${sourceDir}/build/${presetName}`, which involves two layers of macro expansion: `${sourceDir}` is the absolute path of the project root, and `${presetName}` is the name of the current preset (for example `debug` or `release`). The upside is that each preset lands in its own build directory, `build/debug` and `build/release` do not interfere, and switching build type does not require `rm -rf build` to start over.
+`generator` and `binaryDir` pin down `-G` and `-B` respectively. Note that `binaryDir` is written as `${sourceDir}/build/${presetName}` — there are two layers of macro expansion here: `${sourceDir}` is the absolute path of the project root, and `${presetName}` is the name of the current preset (for example `debug` or `release`). The benefit of writing it this way is that each preset lands in its own build directory: `build/debug` and `build/release` stay out of each other's way, and switching build type does not require `rm -rf build` and starting over.
 
-`cacheVariables` is the pinned `-D`. Each `key: value` pair is equivalent to `-Dkey=value`. The value can be a string, a boolean, `null` (meaning the `UNINITIALIZED` type), or an object with a `type` field (for precise control over the cache variable type).
+`cacheVariables` is `-D` made permanent. Each `key: value` entry is equivalent to `-Dkey=value`. The value can be a string, a boolean, `null` (meaning the `UNINITIALIZED` type), or an object with a `type` field (for precise control over the cache variable type).
 
-Next, how `debug` and `release` inherit from `base`. `inherits: "base"` means "this preset pulls in every field of `base` and overrides a portion of them itself". Here it overrides only `cacheVariables.CMAKE_BUILD_TYPE`: `debug` sets it to `Debug`, `release` to `Release`. The common fields on `base` like `generator`, `binaryDir`, and `CMAKE_CXX_STANDARD` are inherited as-is.
+Next, how `debug` and `release` inherit from `base`. `inherits: "base"` means "this preset pulls in every field of `base` and then overrides part of them itself". Here only `cacheVariables.CMAKE_BUILD_TYPE` is overridden: `debug` sets it to `Debug`, and `release` sets it to `Release`. The common fields on `base` — `generator`, `binaryDir`, `CMAKE_CXX_STANDARD` — are inherited untouched.
 
-`inherits` accepts a single string or an array of strings. When the array case has multiple parent presets supplying the same field, **the one earlier in the array wins**. That is different from how C++ resolves multiple-inheritance ambiguity: CMake has a deterministic order here.
+`inherits` accepts a single string or an array of strings. In the array case, when multiple parent presets supply the same field, **the one earlier in the array wins** — this differs from how C++ handles multiple-inheritance ambiguity; CMake has a deterministic order here.
 
-The `buildPresets` section is straightforward: each build preset is bound to a configure preset through its `configurePreset` field. `cmake --build --preset debug` then knows to run the build in the `binaryDir` of `build/debug`, without you writing `cmake --build build/debug` yourself.
+The `buildPresets` section is simple: each build preset is bound to a configure preset through its `configurePreset` field. `cmake --build --preset debug` then knows to run the build under the `binaryDir` of `build/debug`, so you never have to write `cmake --build build/debug` yourself.
 
-::: details Which schema version should I pick?
-The official documentation walks the schema version from 1 up to 9. Which one to pick depends on which new features you actually need. version 1 (CMake 3.19) has only `configurePresets`, no build/test presets; version 2 (3.20) adds `buildPresets`/`testPresets`; version 3 (3.21) brings the `cmakeMinimumRequired` field and more lenient macro expansion. Beyond that, the changes are mostly patches for advanced scenarios like CI integration and conditional includes. My default is 3: it covers the vast majority of project needs and guarantees parsing from CMake 3.21+ onward.
+::: details Which schema version to pick
+In the official documentation the schema version climbs all the way from 1 to 9. Which one to pick depends on which new features you need. version 1 (CMake 3.19) has only `configurePresets`, no build/test presets; version 2 (3.20) fills in `buildPresets`/`testPresets`; version 3 (3.21) adds `condition` fields, `toolchainFile`/`installDir`, and more lenient macro expansion. Beyond that, the changes are mostly patches for advanced scenarios such as CI integration and conditional includes. My default pick is 3: it covers the vast majority of project needs while guaranteeing that CMake 3.21+ can parse it.
 :::
 
-## In Practice: Real Output From configure to build
+## Putting it to work: real output from configure to build
 
-Reading the JSON is not satisfying enough, so let's run it. The minimal project (the `CMakeLists.txt` + `main.cpp`) that pairs with this `CMakePresets.json` lives in the repo at `code/examples/vol7/cmake-fundamentals/04-presets/`. First, see which presets CMake recognizes:
+Just reading the JSON is not satisfying — let's run it once. The minimal project (`CMakeLists.txt` + `main.cpp`) that pairs with this `CMakePresets.json` lives in the repo at `code/examples/vol7/cmake-fundamentals/04-presets/`. First, let's see which presets CMake recognizes:
 
 ```text
 $ cmake --list-presets
@@ -145,14 +151,14 @@ Available configure presets:
   "release" - Release (含 -O3 -DNDEBUG)
 ```
 
-`--list-presets` lists every non-hidden configure preset along with its `displayName`. Note that `base` does not show up, blocked by `hidden`. If you insist on `cmake --preset base`, CMake errors outright:
+`--list-presets` lists all the non-hidden configure presets together with their `displayName`. Note that `base` does not appear — `hidden` blocked it. If you insist on `cmake --preset base`, CMake errors out directly:
 
 ```text
 $ cmake --preset base
 CMake Error: Cannot use hidden configure preset in /tmp/cmake-presets-demo: "base"
 ```
 
-That is exactly the semantics of a hidden preset: base class only, never used directly. The design keeps a teammate from accidentally reaching for a "half-configured" preset.
+That is exactly the semantics of a hidden preset: base class only, never used directly. This design keeps teammates from accidentally reaching for a "half-configured" preset.
 
 Run the `debug` preset:
 
@@ -169,14 +175,14 @@ $ cmake --preset debug
 -- Build files have been written to: /tmp/cmake-presets-demo/build/debug
 ```
 
-The last line is the key evidence: the build files landed in `build/debug`. The `${sourceDir}/build/${presetName}` macro expansion did its job. Run `release` next and the build directory is `build/release`; the two do not interfere:
+The last line is the key evidence: the build files landed in `build/debug`. The `${sourceDir}/build/${presetName}` macro expansion did its job. Run `release` next and the build directory is `build/release`; the two stay out of each other's way:
 
 ```text
 $ ls build/
 debug  release
 ```
 
-Now run the build through a build preset:
+Then run the build through a build preset:
 
 ```text
 $ cmake --build --preset debug
@@ -184,9 +190,9 @@ $ cmake --build --preset debug
 [2/2] Linking CXX executable app
 ```
 
-`cmake --build --preset debug` is equivalent to `cmake --build build/debug`, but you do not have to remember what `binaryDir` looks like. The preset remembers it for you.
+`cmake --build --preset debug` is equivalent to `cmake --build build/debug`, but you do not have to remember what the `binaryDir` looks like — the preset remembers it for you.
 
-Just running it cleanly is not enough. Let's verify that `CMAKE_BUILD_TYPE` from `cacheVariables` actually flowed into the compile command. In `main.cpp` I dropped in an `#ifdef NDEBUG` to tell the two builds apart. First, look at the flags the `release` binary actually received, by digging into `build.ninja`:
+Just running it cleanly is not enough; let's verify that `CMAKE_BUILD_TYPE` from `cacheVariables` really flowed into the compile commands. In `main.cpp` we planted an `#ifdef NDEBUG` to tell the two builds apart. First, let's see the flags the `release` binary actually received, by digging through `build.ninja`:
 
 ```text
 $ grep FLAGS build/release/build.ninja | head -2
@@ -198,7 +204,7 @@ $ grep FLAGS build/debug/build.ninja | head -2
   FLAGS = -g
 ```
 
-`release` gets `-O3 -DNDEBUG`, `debug` gets `-g`, and `-std=c++17` shows up on both sides (from `CMAKE_CXX_STANDARD` on `base`). That nails down the causal chain between `CMAKE_BUILD_TYPE: Debug/Release` written in the preset and the actual compiler flags. The two binaries produce matching output when run:
+`release` gets `-O3 -DNDEBUG`, `debug` gets `-g`, and `-std=c++17` appears on both sides (it comes from `CMAKE_CXX_STANDARD` on `base`). That nails down the causal chain between `CMAKE_BUILD_TYPE: Debug/Release` written in the preset and the actual compiler flags. The two binaries' runtime output also matches:
 
 ```text
 $ ./build/debug/app
@@ -208,23 +214,23 @@ $ ./build/release/app
 release build (NDEBUG defined)
 ```
 
-One `CMakePresets.json`, two presets, two independent build trees, two binaries with different behavior, and the commands are as short as `cmake --preset debug` / `cmake --preset release`. Set that against the 130-plus-character -D command from earlier, and the gap is right there.
+One `CMakePresets.json`, two presets, two independent build trees, two binaries with different behavior — and the commands are as short as `cmake --preset debug` / `cmake --preset release`. Set that against the 130-plus-character old `-D` command from earlier, and the gap is right in front of you.
 
-## CMakeUserPresets.json: Per-User Overrides
+## CMakeUserPresets.json: personal overrides
 
-`CMakePresets.json` is shared by the team and goes into version control. But some things are inherently "machine-local": where vcpkg is installed, whether you have ASan on locally, or me wanting to add a temporary preset to experiment with some flag. Writing those into `CMakePresets.json` pollutes the team configuration. When someone else pulls, either the path is not found or some option that should not be on is suddenly on.
+`CMakePresets.json` is shared by the team and goes into version control. But some things are inherently "local to this machine" — which directory vcpkg is installed in, whether ASan is turned on locally, or me wanting to add a temporary preset to experiment with some flag. Writing these into `CMakePresets.json` pollutes the team configuration: when others pull, either the path cannot be found or some option that should never be on is mysteriously on.
 
-CMake's answer is `CMakeUserPresets.json`. It lives in the same directory as `CMakePresets.json`, has an identical structure, but its semantics are "personal override":
+CMake's answer is `CMakeUserPresets.json`. It sits in the same directory as `CMakePresets.json`, has exactly the same structure, but its semantics are "personal override":
 
 ```text
 project root/
 ├── CMakePresets.json        # in git, shared by the team
-├── CMakeUserPresets.json    # in .gitignore, local only
+├── CMakeUserPresets.json    # in .gitignore, local to this machine only
 ├── CMakeLists.txt
 └── ...
 ```
 
-Presets defined in `CMakeUserPresets.json` are merged with those in the main file and shown together. Crucially, **a preset in UserPresets can inherit a hidden preset from the main file**. On my machine I added an `asan` preset that inherits `base` from the main file and layers an ASan flag on top:
+Presets defined in `CMakeUserPresets.json` and presets in the main file are merged and shown together. More importantly, **a preset in UserPresets can inherit a hidden preset from the main file**. On our machine we added an `asan` preset that inherits `base` from the main file and layers an ASan flag on top:
 
 ```json
 {
@@ -242,7 +248,7 @@ Presets defined in `CMakeUserPresets.json` are merged with those in the main fil
 }
 ```
 
-Run `--list-presets` again:
+Check `--list-presets` again:
 
 ```text
 $ cmake --list-presets
@@ -253,7 +259,7 @@ Available configure presets:
   "release" - Release (含 -O3 -DNDEBUG)
 ```
 
-`asan` shows up, on equal footing with `debug` and `release`. A direct `cmake --preset asan` runs cleanly, and the build directory lands at `build/asan` automatically:
+`asan` shows up, on equal footing with `debug` and `release`. A direct `cmake --preset asan` runs through, and the build directory lands at `build/asan` automatically:
 
 ```text
 $ cmake --preset asan
@@ -263,22 +269,22 @@ $ cmake --preset asan
 ```
 
 ::: warning CMakeUserPresets.json must go into .gitignore
-The official documentation says outright that it "should NOT be checked in". Its whole premise is "every machine has different paths", and once it goes into git, conflicts are guaranteed. The first thing to do when starting a new project is add `CMakeUserPresets.json` to `.gitignore`, before a colleague's PR shows up carrying their own vcpkg path to torment you.
+The official documentation's exact words are "should NOT be checked in". Its whole premise is "every machine has different paths"; once it goes into git, conflicts are guaranteed. The first thing to do when starting a new project is add `CMakeUserPresets.json` to `.gitignore` — don't wait for a colleague's PR to arrive carrying his own vcpkg path to torment you.
 :::
 
-## IDE Integration: VSCode CMake Tools
+## IDE integration: VSCode CMake Tools
 
-Beyond the command line, the place presets really land is the IDE. The VSCode CMake Tools extension reads `CMakePresets.json` natively. The status bar lists the available configure presets and build presets, and clicking one switches, no command typing required.
+Beyond the command line, the place presets really land is the IDE. The VSCode CMake Tools extension reads `CMakePresets.json` natively: the status bar directly lists the selectable configure presets and build presets, and one click switches between them — no commands to type.
 
-clangd benefits indirectly too. Once CMake Tools has picked a preset, it runs the corresponding configure automatically, and the generated `compile_commands.json` gets picked up by clangd to power completion and jump-to-definition in the editor. Because the preset pins every `-D` and the generator, the compile environment the IDE sees is identical to the command line and to CI. That is the biggest advantage of presets over "the IDE maintaining its own configuration": a single source of truth.
+clangd benefits indirectly as well. Once CMake Tools has picked a preset, it runs the corresponding configure automatically, and the generated `compile_commands.json` gets picked up by clangd to power completion and navigation in the editor. Because the preset pins every `-D` and the generator, the compile environment seen in the IDE is identical to the command line and to CI — this is the biggest advantage of presets over "the IDE maintaining its own configuration": a single source of truth.
 
-The Remote-WSL case is just as smooth: `CMakePresets.json` travels into the WSL filesystem with the source, and the CMake Tools on the VSCode Remote side reads it directly. No need to configure it once on the Windows side and again on the WSL side.
+The Remote-WSL scenario is just as smooth: `CMakePresets.json` travels into the WSL filesystem along with the source code, and CMake Tools on the VSCode Remote side reads it directly — no need to configure it once on the Windows side and again on the WSL side.
 
-## Hooking Up Cross-Compilation
+## Hooking up cross-compilation
 
-By this point you can probably smell the natural fit between presets and cross-compilation. The heart of cross-compilation is the `-DCMAKE_TOOLCHAIN_FILE=arm-none-eabi.cmake` flag, plus a pile of target-board cache variables. Those are exactly what presets are best at pinning down.
+At this point you can probably already smell the natural fit between presets and cross-compilation. The core of cross-compilation is that one `-D` flag, `-DCMAKE_TOOLCHAIN_FILE=arm-none-eabi.cmake`, plus a pile of cache variables tied to the target board. These are exactly the things presets are best at pinning down.
 
-`CMakePresets.json` has a dedicated `toolchainFile` field, cleaner than stuffing it into `cacheVariables`:
+`CMakePresets.json` provides a dedicated `toolchainFile` field, cleaner than stuffing it into `cacheVariables`:
 
 ```json
 {
@@ -292,11 +298,11 @@ By this point you can probably smell the natural fit between presets and cross-c
 }
 ```
 
-After that, a single `cmake --preset f407-debug` completes the cross-compilation configuration, and anyone who pulls the repo can reproduce the same toolchain setup. How this mechanism cooperates with `arm-none-eabi-g++`, the sysroot, and the cortex-m link script is something we expand on in detail in the vol7 cross-compilation piece.
+After that, a single `cmake --preset f407-debug` completes the cross-compilation configuration, and anyone on the team who pulls the repo reproduces the same toolchain setup. How this mechanism cooperates with `arm-none-eabi-g++`, the sysroot, and cortex-m linker scripts is something we expand on in detail in the vol7 cross-compilation article.
 
-## Companion Example
+## Companion example
 
-The project scaffold for this piece can be run straight from the example directory in the repo:
+The project scaffold for this article can be run straight from the example directory in the repo:
 
 ```text
 code/examples/vol7/cmake-fundamentals/04-presets/
@@ -305,6 +311,6 @@ code/examples/vol7/cmake-fundamentals/04-presets/
 └── CMakePresets.json
 ```
 
-Once you are in that directory, run `cmake --list-presets`, `cmake --preset debug`, `cmake --build --preset debug`, and `./build/debug/app` in order to reproduce every output in this piece. To verify the propagation of `cacheVariables`, change `debug` to `release`, rerun, and compare `FLAGS = -O3 -DNDEBUG` in `build/release/build.ninja` against `FLAGS = -g` in `build/debug/build.ninja`.
+Once you are in that directory, run `cmake --list-presets`, `cmake --preset debug`, `cmake --build --preset debug`, and `./build/debug/app` in turn to reproduce every output in this article. To verify the propagation of `cacheVariables`, change `debug` to `release` and rerun, then compare `FLAGS = -O3 -DNDEBUG` in `build/release/build.ninja` against `FLAGS = -g` in `build/debug/build.ninja`.
 
-That covers the structure of presets, the hidden + inherits combination, per-user overrides via CMakeUserPresets.json, and IDE integration, all backed by real output that verifies the `${presetName}` macro expansion and the propagation of `CMAKE_BUILD_TYPE`. The next piece tackles a question vol7 has been carrying for a while: when the target board moves from x86 Linux to an ARM Cortex-M device like the STM32F407, how do you write `CMakeLists.txt`, what does the toolchain file look like, and how do presets hook into them? That is, the full cross-compilation pipeline.
+At this point we have grounded the preset structure, the hidden + inherits combination, personal overrides via CMakeUserPresets.json, and IDE integration in practice, and we have verified the `${presetName}` macro expansion and the propagation of `CMAKE_BUILD_TYPE` with real output. The next article settles a question vol7 has been carrying for a long time: when the target board moves from x86 Linux to an ARM Cortex-M device like the STM32F407, how do you write the `CMakeLists.txt`, what does the toolchain file look like, and how do presets hook up with them — in other words, the complete cross-compilation pipeline.

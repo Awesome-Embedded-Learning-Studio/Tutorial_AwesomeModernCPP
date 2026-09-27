@@ -1,6 +1,6 @@
 ---
 title: "Modern socket wrapping: RAII, std::expected, and the C10K that thread-per-connection can't survive"
-description: "Modernize the traditional C-style echo from 00 — RAII unique_fd makes 'forgetting close' impossible, std::expected packs errors and values into the type, then add thread-per-connection for concurrency; ending with a measured run where 2000 idle connections eat virtual memory from 83MB to 24GB, putting the C10K pain point in your own hands and motivating epoll"
+description: "Modernize the traditional C-style echo from 00 — an RAII unique_fd makes a missed close impossible, std::expected packs the error and the value into the type, and thread-per-connection lets it survive concurrent clients; the finale measures 2000 idle connections eating virtual memory from 83MB to 24GB, puts the C10K pain in your own hands, and sets up epoll"
 chapter: 8
 order: 1
 platform: host
@@ -8,29 +8,35 @@ difficulty: intermediate
 cpp_standard: [20, 23]
 reading_time_minutes: 14
 prerequisites:
-  - "Traditional socket programming: the server five-step and TCP handshake"
+  - "Traditional socket programming: the server's five steps and TCP connection setup — the classic style we learned from Stevens"
 related:
-  - "Traditional socket programming: the server five-step and TCP handshake"
-  - "epoll: Linux I/O multiplexing"
+  - "Traditional socket programming: the server's five steps and TCP connection setup — the classic style we learned from Stevens"
+  - "epoll: Linux I/O multiplexing — from poll's bottleneck to the interest list and ready list"
 tags:
   - host
   - cpp-modern
   - intermediate
   - 网络编程
   - RAII守卫
+translation:
+  source: documents/vol8-domains/networking/01-modern-socket-wrapping.md
+  source_hash: 87c3728cd2d5ae032a7b0023294196a7c0eeea9cb5e67d8811b56da3782db50a
+  translated_at: '2026-09-26T04:34:36+00:00'
+  engine: anthropic
+  token_count: 6200
 ---
 
 # Modern socket wrapping: RAII, std::expected, and the C10K that thread-per-connection can't survive
 
-In the previous piece (00) we got an echo server running with the plainest C-style socket, and walked through the five steps and TCP establishment thoroughly. But honestly, finishing that code left me a little uncomfortable — it runs, but it's **dirty**. A raw `int fd` gets passed around a function, and any `if (...) return 1;` in the middle can skip the trailing `close(cfd)`, silently leaking the fd; error handling is scattered `errno` plus `perror`, a "glance at the return value, glance at errno" at every step, and you have to remember yourself which one blew up. This style is 1983 C; it doesn't handle any of this rough work — that's the job of later languages.
+In the previous piece (00) we got an echo server running with the plainest C-style socket code, and took the five steps and TCP connection setup apart properly. But honestly, when that code was done, we felt a little uneasy about it — it runs, but it's **dirty**. A raw `int fd` gets passed all over the place, and any `if (...) return 1;` in the middle can jump past the `close(cfd)` at the end, and the fd quietly leaks away; error handling is scattered `errno` plus `perror`, a "glance at the return value, another glance at errno" after every step, and remembering which step blew up is entirely on you. This way of writing is 1983 C style, and it doesn't look after any of that dirty work — that is a job for the languages that came later.
 
-In this piece we clean it up with Modern C++. Two things specifically: first, weld the fd's lifetime shut with RAII, so "forgetting `close`" cannot happen at the type level; second, pack "success value" and "error with context" into a single return type with `std::expected`, replacing the scattered errno. Once that's done, we add "thread-per-connection" so the server can actually serve many clients at once — and then measure a number that spikes my blood pressure, where you'll see with your own eyes why "thread-per-connection", a practice that seems obvious, falls apart once concurrency scales. That number is exactly the entry ticket to `epoll` in the next piece.
+In this piece we clean it up with Modern C++. Two things, concretely: first, weld the fd's lifetime shut with RAII, so that a missed `close` becomes impossible at the type level; second, use `std::expected` to pack the "success value" and the "error with context" into the same return type, replacing the scattered errno. With that cleaned up, we then give the server "thread-per-connection" so it can genuinely serve several clients at once — and then measure a number that will send your blood pressure through the roof, where you will see with your own eyes why "thread-per-connection", a practice that looks only natural, collapses once concurrency scales up. That number is precisely the admission ticket to `epoll` in the next piece.
 
-The code in this piece is C++23 (`std::expected`, `std::print` are both C++23), compiled and run on this machine with GCC 16.1.1, and every pasted terminal output is real.
+The code in this piece is C++23 (`std::expected` and `std::print` are both C++23), compiled and run on this machine with GCC 16.1.1, and every terminal output pasted here is real.
 
-## First, where exactly is the traditional version "dirty"
+## First, where exactly the traditional version's "dirt" sits
 
-Before we start cleaning, let's point at the dirty spots in 00's code, so every later fix has a target. Recall the core loop of 00:
+Before we start cleaning up, let's point out the dirty spots in that 00 code, so that every fix later on has a target to aim at. Recall 00's core loop:
 
 ```c
 for (;;) {
@@ -47,24 +53,24 @@ for (;;) {
 }
 ```
 
-Here `cfd` is a raw `int`. Looks fine — but think: if somewhere in that `read`/`write` loop you later add an error-handling branch, an early `return`, or throw an exception, the `close(cfd)` line gets skipped. fds are a process-level, finite resource (default cap 1048576 — sounds like a lot, but a long-running server leaking a bit at a time runs out), and leaking one shrinks the pool by one with no error — this kind of bug is called a **resource leak**. It's unscathed in testing, blows up days later when "fds exhausted, `socket()` returns -1", and is excruciating to debug.
+Here `cfd` is a raw `int`. It looks fine — but think about it: if some day, inside that `read`/`write` loop, you add an error-handling branch, an early `return`, or throw an exception, the `close(cfd)` line gets skipped. fds are a finite, process-level resource (the default cap is 1048576 — sounds like a lot, but a long-running server that leaks a little at a time accumulates its way to exhaustion); every leaked one is one fewer, with no error reported — this kind of bug is called a **resource leak**. It sails through testing unscathed and only blows up days later with "fds exhausted, `socket()` returns -1", which is miserably painful to track down.
 
-The error-handling side isn't any better: every syscall failure returns `-1` + sets `errno`, and after every step you check the return, read `errno`, then `perror` to print. The error message and the failure site are decoupled — the "bind" in `perror("bind")` is a hand-written string you stuffed in, with no binding to the actual code; rename it, forget to update, and you mislead yourself.
+The error-handling side is no better: every failed syscall returns `-1` and sets `errno`, so after each step you have to check the return value, read `errno`, then `perror` to print. The error message and the failure site are split apart — the "bind" inside `perror("bind")` is a string you typed by hand and stuffed in, with no binding to the actual code; rename something, forget to update it, and you have misled yourself.
 
-These two dirty spots — **resources you have to remember to release, errors you have to assemble strings for** — are the fate of C style. Modern C++ offers the corresponding, type-level retort.
+These two dirty spots — **resources whose release depends on a human remembering, errors assembled from hand-written strings** — are the fate of C style. Modern C++ provides the matching fix, at the type level.
 
-## RAII: make "forgetting close" impossible
+## RAII: making a missed close impossible
 
-Modern C++'s core idea for managing resources is **RAII** (Resource Acquisition Is Initialization): bind ownership of a resource to a stack object, **acquire the resource on construction, release it on destruction**. The moment the stack object's scope ends, its destructor is guaranteed to run — whether you reach the end normally, `return` early, or throw an exception, there's no escape. In other words, move "remember to release" out of the programmer's head and into the type system.
+The core idea Modern C++ uses for managing resources is called **RAII** (Resource Acquisition Is Initialization): bind ownership of a resource to a stack object — **the object acquires the resource at construction and releases it at destruction**. The moment the stack object's scope ends, the destructor is guaranteed to be called — whether control reaches the end normally, `return`s early, or an exception is thrown, there is no escape. In other words, "remembering to release" moves out of the programmer's head and into the type system.
 
-Applied to fds, we write a `UniqueFd`: takes ownership of a raw fd on construction, `close`s on destruction, and **no copies, move only** — because an fd is an exclusive resource; two objects can't both think they own the same fd (that's a double close).
+Applied to fds, we write a `UniqueFd`: it takes over a raw fd at construction and `close`s it at destruction, and it is **non-copyable, move-only** — because an fd is an exclusively-owned resource, and two objects must not both believe they own the same fd (that would be a double close).
 
 ```cpp
 class UniqueFd {
 public:
     UniqueFd() = default;
     explicit UniqueFd(int fd) : fd_{fd} {}
-    ~UniqueFd() { reset(); }                              // destruct = close
+    ~UniqueFd() { reset(); }                              // destructor = close
 
     UniqueFd(const UniqueFd&) = delete;                   // exclusive, no copies
     UniqueFd& operator=(const UniqueFd&) = delete;
@@ -79,11 +85,11 @@ public:
     int  get() const { return fd_; }
     explicit operator bool() const { return fd_ >= 0; }
 private:
-    int fd_{-1};                                          // -1 = empty, destruct is a no-op
+    int fd_{-1};                                          // -1 = empty, destructor does nothing
 };
 ```
 
-A few design points are worth explaining. `fd_{-1}` is the "empty state" (a legal fd is never -1), so "an empty UniqueFd destructing" is safe — `reset()` sees `fd_ < 0` and does nothing, never `close(-1)`. The move constructor steals the other's fd and zeroes the other to empty (-1), guaranteeing only one `UniqueFd` ever holds a given fd. With this, the loop in 00 becomes:
+A few design points are worth spelling out. `fd_{-1}` is the "empty state" (a legitimate fd is never -1), so "an empty UniqueFd destructing" is safe — `reset()` sees `fd_ < 0` and does nothing; it will never `close(-1)`. The move constructor steals the other side's fd and sets the other side to empty (-1), guaranteeing that at any moment only one `UniqueFd` holds a given fd. With this in hand, that loop from 00 becomes:
 
 ```cpp
 for (;;) {
@@ -94,27 +100,27 @@ for (;;) {
         /* ... */
             continue;
     }
-    UniqueFd conn{raw};        // ← takes ownership; from here, fd is valid while conn lives
+    UniqueFd conn{raw};        // ← takes ownership; from here on, the fd is valid as long as conn lives
     // ... read/write on conn ...
-}   // ← loop body ends, conn destructs, auto-close — impossible to forget
+}   // ← loop body ends, conn destructs, auto-close — a leak is impossible
 ```
 
-`conn` is a stack object; no matter how many `return`s or exceptions get added to this loop body later, its destructor will `close`. **"Forgetting `close`" has gone from a thing you have to remember to a thing that cannot happen.** That's the power of RAII, and the single most fundamental thing separating Modern C++ from C.
+`conn` is a stack object: no matter how many `return`s or exceptions get added to this loop body in the future, its destructor will certainly `close`. **A missed `close` has gone from a thing a human had to remember to a thing that cannot happen.** That is the power of RAII, and the most fundamental line dividing Modern C++ from C.
 
-## std::expected: pack the error and the value into one type
+## std::expected: packing the error and the value into one type
 
-Resources sorted, now error handling. C-style errors are a "return value + errno" pair; Modern C++'s answer is `std::expected<T, E>` — it holds either a **success value T** or an **error E**, both in the same return type, using the type system to force you to handle the error rather than pretend you didn't see it.
+With resources sorted, on to error handling. The C-style error is a "return value + errno" pair; Modern C++'s answer is `std::expected<T, E>` — it holds either a **success value T** or an **error E**, both inside one and the same return type, and the type system forces you to handle the error instead of pretending you didn't see it.
 
-We give the error a small context-carrying struct, bringing along "which step blew up" alongside errno:
+We define a small context-carrying struct for errors, bringing "which step blew up" along with the errno:
 
 ```cpp
 struct SysError {
     int errno_value;
-    std::string context;     // "socket" / "bind" / "listen" — where the failure happened
+    std::string context;     // "socket" / "bind" / "listen" — which step the failure happened in
 };
 ```
 
-Then the three steps `socket + bind + listen` get wrapped into a function returning `std::expected<UniqueFd, SysError>`:
+Then the three steps `socket + bind + listen` get wrapped into a single function returning `std::expected<UniqueFd, SysError>`:
 
 ```cpp
 std::expected<UniqueFd, SysError> make_listener(std::uint16_t port) {
@@ -140,18 +146,18 @@ std::expected<UniqueFd, SysError> make_listener(std::uint16_t port) {
 }
 ```
 
-The caller gets a box that "might succeed or fail", judges with one `if (!listener)`, and on failure `listener.error().context` tells you directly "it was the bind stage, errno 98" — context and error travel together, no need to hand-write a decoupled string like `perror("bind")`. The biggest difference from 00's `perror`: **the error message is no longer a scattered, manually maintained string but a first-class citizen of the type, carried by the error object**.
+What the caller receives is a box that "may succeed or may fail": a single `if (!listener)` tells at a glance, and on failure `listener.error().context` tells you directly "the bind stage, errno 98" — the context travels bound to the error, with no need to hand-write a disconnected string like `perror("bind")`. Compared with 00's `perror`, the biggest difference here is: **the error message is no longer a scattered, human-maintained string, but a first-class citizen of the type, traveling with the error object**.
 
-This is the paradigm upgrade Modern C++ gives to I/O code — of a piece with RAII, both "moving a convention out of the programmer's head into the type system to enforce it".
+This is the paradigm upgrade Modern C++ brings to I/O code — cut from the same cloth as RAII: both take "the conventions living in the programmer's head" and move them into the type system to be enforced.
 
 ## Adding concurrency: thread-per-connection
 
-00's traditional server is **single-threaded** — `accept` one connection, echo it, `close`, `accept` the next. That has a fatal weakness: if a client connects and never sends (just hangs there), the whole server blocks on `read` waiting for it, and every connection after can't get in. It runs, but it can serve only one guest at a time.
+00's traditional server is **single-threaded** — `accept` one connection, finish the echo, `close`, then `accept` the next. That has a fatal weakness: if a client connects and never sends anything (just hangs there), the whole server gets stuck on `read` waiting for it, and every later connection is shut out. It runs, but it can serve only one guest at a time.
 
-The most intuitive upgrade is **spawn a thread for each incoming connection, dedicated to serving it**. After `accept` yields a new fd, hand it to an independent thread, and the main loop immediately goes back to `accept` the next — so multiple clients get handled in parallel by multiple threads, none blocking the others. Paired with the RAII above, the fd moves into the thread via `std::move`, with ownership transferring cleanly:
+The most intuitive upgrade is **for every incoming connection, spawn a thread dedicated to serving it**. After `accept` yields a new fd, hand it to an independent thread, and the main loop immediately goes back to `accept` the next one — so multiple clients are handled in parallel by multiple threads, none of them blocking the others. Combined with the RAII we just wrote, the fd is handed to the thread with `std::move`, and ownership transfers cleanly:
 
 ```cpp
-void handle_session(UniqueFd conn) {       // by value: the thread owns this fd
+void handle_session(UniqueFd conn) {       // take by value: the thread owns this fd
     std::array<char, 4096> buf;
     for (;;) {
         ssize_t n = ::read(conn.get(), buf.data(), buf.size());
@@ -172,45 +178,45 @@ int main() {
 }
 ```
 
-`std::thread{handle_session, std::move(conn)}.detach()` — `detach` lets the thread run independently in the background; the main loop doesn't wait for it. `conn` transfers ownership via `std::move`, and after the move the main loop's `conn` is empty; the fd belongs entirely to the thread, and when the thread function returns, `conn` destructs and auto-`close`s. No double close, no missed close.
+`std::thread{handle_session, std::move(conn)}.detach()` — `detach` lets the thread run independently in the background while the main loop doesn't wait for it. `conn` hands over ownership via `std::move`; after the move, the main loop's `conn` is empty, the fd belongs entirely to the thread, and when the thread function returns, `conn` destructs and `close`s automatically. No double close, and no missed close.
 
-Run it, open three clients at once, all three get echoed immediately — concurrency solved, looks like a happy ending. But we're not done; the real pitfall is next.
+Run it, open three clients connecting at the same time, and all three get their echo immediately — the concurrency problem is solved, and everyone looks happy. But the story doesn't end here; the real pitfall is still ahead.
 
-## But how much concurrency can it take?
+## But how much concurrency can it take
 
-"Thread-per-connection" looks self-evident — one connection, one thread, so straightforward. But let's ask it a different question: **if concurrency climbs — say several thousand, or ten thousand connections — does it still hold up?** Let's actually run it, not go by feel.
+"Thread-per-connection" looks only natural — one connection, one thread, so intuitive. But let's put a different question to it: **if the concurrency scales up — say a few thousand, or ten thousand connections — can it still hold up?** Let's actually run it, not go by feel.
 
-While the server runs, we open a client that makes 2000 **idle connections** (connects but sends nothing, just hangs), and meanwhile read the server's `/proc/<pid>/status` to watch its virtual memory, resident memory, and thread count:
+While the server is running, we open a client that makes 2000 **idle connections** (connected but sending nothing, just hanging), and meanwhile read the server's `/proc/<pid>/status` to watch how its virtual memory, resident memory, and thread count change:
 
 ```text
 [idle]       VmSize:  85352 kB    VmRSS:  4212 kB    Threads: 1
 [2000 conns] VmSize: 25081508 kB  VmRSS: 28888 kB    Threads: 2001
 ```
 
-Look at `VmSize`: **it jumps from 83MB to nearly 24GB**. 2000 connections, and virtual memory ate 24GB. Per connection that's `(25081508 - 85352) / 2000 ≈ 12.5 MB/connection`. Where does that 12.5MB come from? — **each thread has a default 8MB stack** (glibc default), plus glibc's per-thread internal mappings, TLS, guard page, adding up to about 12MB of virtual address space per thread. The `Threads` column is even more direct: `1 → 2001`, one more thread per connection.
+Look at that `VmSize`: **it rockets from 83MB to nearly 24GB**. 2000 connections, and virtual memory ate 24GB. Per connection, that's `(25081508 - 85352) / 2000 ≈ 12.5 MB/connection`. Where does that 12.5MB come from? — **each thread's default 8MB stack** (the glibc default), plus glibc's per-thread internal mappings, TLS, and guard pages, stacking up to roughly 12MB of virtual address space per thread. The `Threads` column is even more direct: `1 → 2001` — one more thread for every connection that arrives.
 
-The interesting one is `VmRSS` (resident physical memory), up only `(28888 - 4212) / 2000 ≈ 12 KB/connection` — because the kernel only allocates physical memory for stack pages "actually touched" (lazy allocation), and idle blocked threads barely touch their stack. So **RSS looks modest, but the virtual address space has already been eaten by stack reservations**. This is the crux of the C10K problem (Dan Kegel's classic 1999 proposition: how does one machine handle ten thousand concurrent connections): thread-per-connection → 10k connections = 8MB × 10000 = **80GB of virtual address space**; and the kernel has to keep a `task_struct` + kernel stack per thread, so ten thousand mostly-idle threads (most of them blocked on `read` waiting for data) burden the scheduler and memory subsystem for nothing — **using a heavy entity ("thread") to serve a light job (a connection that mostly waits on I/O) is wildly inefficient**.
+The interesting one is `VmRSS` (resident physical memory), which rose only `(28888 - 4212) / 2000 ≈ 12 KB/connection` — because the kernel only allocates physical memory for stack pages that are "actually touched" (lazy allocation), and idle blocked threads barely touch their stacks. So **RSS looks modest, but the virtual address space has already been eaten clean by stack reservations**. That is the choke point of the C10K problem (Dan Kegel's classic 1999 proposition: how does one machine hold up ten thousand concurrent connections): thread-per-connection → 10k connections = 8MB × 10000 = **80GB of virtual address space**; and for every thread, the kernel must additionally maintain a `task_struct` + kernel stack, so ten thousand mostly-idle threads (most of them blocked on `read`, waiting for data) put pointless load on the scheduler and the memory subsystem — **using "thread", a heavy entity, to correspond to a connection that may sit idle for a long time is a terrible use of resources**.
 
-Put plainly, thread-per-connection isn't wrong because it "can't run"; it's wrong because **it uses the heaviest resource (a thread) to serve the lightest work (a connection that mostly waits on I/O)**. With few connections you don't feel it; the moment it scales, it blows up.
+Put plainly, the sin of "thread-per-connection" is not that it "can't run", but that **it uses the heaviest resource (a thread) to serve the lightest work (a connection that spends most of its time waiting on I/O)**. With few connections you don't feel it; the moment volume arrives, it blows up.
 
-So what's the fix? The direction is clear: **serve many connections with few threads** — let one or two threads watch thousands of fds at once, and handle whichever fd has data, rather than assigning each connection a dedicated thread on standby. That's exactly what the next piece, **epoll / I/O multiplexing**, solves, and the threshold we cross from "synchronous blocking, thread-per-connection" into "event-driven".
+So what's the fix? The direction is clear: **use a few threads to serve a great many connections** — let one or two threads keep watch over thousands of fds at once, and handle whichever fd has data, instead of assigning every connection a dedicated thread standing guard. That is exactly the problem the next piece, **epoll / I/O multiplexing**, solves — and it is the threshold where we step across from "synchronous blocking, thread-per-connection" into "event-driven".
 
 ## Wrap-up
 
-In this piece we reworked 00's traditional server with Modern C++. A few key takeaways:
+In this piece we reworked 00's traditional server with Modern C++. Let's collect the key pieces:
 
-- **RAII `UniqueFd`**: the fd's lifetime welded to a stack object, destruct = `close`, no copies, move only. "Forgetting `close`" goes from something you remember to something impossible. This is the single most fundamental thing separating Modern C++ from C.
-- **`std::expected<T, E>`**: success value and context-carrying error packed into one return type; `if (!x)` judges at a glance, and the error message travels with the error object, replacing scattered errno + hand-written `perror` strings.
-- **Thread-per-connection**: lets the server handle concurrent clients; the fd goes to the thread via `std::move`, ownership clean.
-- **C10K, measured**: 2000 idle connections eat virtual memory from 83MB to 24GB (~12MB per connection, mostly the 8MB thread stack), Threads climbs to 2001. The root problem is "using a heavy entity (thread) to serve light work (an I/O-waiting connection)"; once connections scale, it blows up.
-- **The way out**: serve many connections with few threads — epoll, next.
+- **RAII `UniqueFd`**: the fd's lifetime is welded onto a stack object — destructor means `close`, non-copyable and move-only. A missed `close` goes from depending on human memory to being impossible. This is the most fundamental line dividing Modern C++ from C.
+- **`std::expected<T, E>`**: the success value and the context-carrying error live in one and the same return type; `if (!x)` decides at a glance, and the error message travels with the error object, replacing scattered errno plus hand-written `perror` strings.
+- **Thread-per-connection**: lets the server hold up under concurrent clients; the fd is handed to the thread with `std::move`, and ownership stays clean.
+- **C10K, measured**: 2000 idle connections took virtual memory from 83MB to 24GB (~12MB per connection, mostly the 8MB thread stack), and Threads climbed to 2001. The root problem is "using a heavy entity (a thread) to serve light work (a connection waiting on I/O)"; once connections scale up, it blows up.
+- **The way out**: a few threads serving a great many connections — epoll, in the next piece.
 
-With this piece, we've gone from "traditional C style" to "modern C++ plus concurrency" on the Linux socket front, and felt the ceiling of the synchronous model with our own hands. The next piece turns that wall over: how epoll lets one thread watch thousands of fds.
+With this piece, the Linux socket story has gone from "traditional C style" to "modern C++ plus concurrency", and we have laid our own hands on the ceiling of the synchronous model. The next piece climbs over that wall: how epoll lets one thread keep watch over thousands of fds.
 
 ## References
 
 - [cppreference: std::expected](https://en.cppreference.com/w/cpp/utility/expected) — C++23 error handling (`std::unexpected` constructs the error value)
 - [cppreference: std::unique_ptr / RAII](https://en.cppreference.com/w/cpp/memory/unique_ptr) — the RAII paradigm; `UniqueFd` is the same idea applied to fds
-- [The C10K problem (Dan Kegel)](https://kea.dev/notes/the-c10k-problem) — "how one machine serves ten thousand concurrent connections"; this piece's measurement is its motivation
-- [Traditional socket programming: the server five-step and TCP handshake (series 00)](./00-traditional-socket-basics.md) — what this piece modernizes
-- [epoll: Linux I/O multiplexing (series, next)](./02-epoll-io-multiplexing.md) — serving many fds with few threads, solving the C10K pain at the end of this piece
+- [The C10K problem (Dan Kegel)](http://kegel.com/c10k.html) — "how one machine holds up ten thousand concurrent connections"; this piece's measurement is exactly its motivation
+- [Traditional socket programming: the server's five steps and TCP connection setup (series 00)](./00-traditional-socket-basics.md) — the target this piece modernizes
+- [epoll: Linux I/O multiplexing (next in this series)](./02-epoll-io-multiplexing.md) — serving a great many fds with a few threads, solving the C10K pain this piece ends on

@@ -1,28 +1,29 @@
 ---
-title: GUI and Graphics
-description: Graphics fundamentals, minimal GUI framework, ImGui, 2D/3D rendering
+title: "GUI and Graphics"
+description: "Graphics fundamentals, minimal GUI framework, ImGui, 2D/3D rendering"
 platform: host
 tags:
-- cpp-modern
-- host
-- intermediate
+  - cpp-modern
+  - host
+  - intermediate
 translation:
   source: documents/vol8-domains/gui-graphics/index.md
   source_hash: 9af3c133e5bfdd756d8bb1cface223f1c7c814bc66422b5964d8884b06c7e352
-  translated_at: '2026-05-26T12:23:33.877333+00:00'
+  translated_at: '2026-09-27T02:52:05+00:00'
   engine: anthropic
-  token_count: 61
+  token_count: 100
 ---
+
 # GUI and Graphics
 
 > Status: Planned
 
 ## Overview
 
-This sub-domain covers C++ GUI and graphics programming, focusing on minimal GUI framework design rather than mature frameworks like Qt.
+This sub-domain covers C++ GUI and graphics programming, with an emphasis on designing a minimal GUI framework rather than using mature frameworks like Qt.
 
-Expected 12 articles.
+An estimated 12 articles are planned.
 
 ## Chapter Navigation
 
-> Content in progress, stay tuned.
+> Content is being written — stay tuned.

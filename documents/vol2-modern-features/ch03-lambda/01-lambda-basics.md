@@ -269,13 +269,15 @@ void setup_system() {
 }
 ```
 
-运行结果：
+这份演示程序就在下面，点「动手试一试」直接跑：
 
-```text
-Press #1 at 100ms
-Press #2 at 160ms
-Timeout at 1200ms
-```
+<OnlineCompilerDemo
+  title="动手验证：lambda 事件处理系统"
+  source-path="code/examples/vol2/33_event_dispatcher.cpp"
+  description="在线运行事件处理系统。注意第三次按键（180ms）没有输出——距上次只有 20ms，被防抖逻辑过滤了。"
+  run-options="-std=c++17"
+  allow-run
+/>
 
 可以看到 lambda 作为回调非常自然——捕获列表把需要的上下文变量引进来，函数体写业务逻辑，注册的时候传进去就行了。比起 C 风格的 `void (*callback)(void* user_data)` 配合 `void*` 强转，类型安全和可读性都好太多了。
 

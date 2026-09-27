@@ -135,7 +135,7 @@ description: "感谢所有为本项目做出贡献的人"
     <span class="card-name">HiAirman <span class="card-badge issue">Issue</span></span>
     <p class="card-role">问题反馈</p>
     <p class="card-types">🐛 💡</p>
-    <p class="card-desc">就「C++98 进阶」章节 alignas 示例的正确性发起讨论（#96）</p>
+    <p class="card-desc">就「结构体与内存对齐」(原「C++98 进阶」章节) alignas 示例的正确性发起讨论（#96）</p>
   </div>
 </a>
 <a href="https://github.com/f4bb0" target="_blank" rel="noopener noreferrer" class="contributor-card">

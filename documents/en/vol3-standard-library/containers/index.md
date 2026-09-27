@@ -1,28 +1,29 @@
 ---
-title: Containers and Data Structures
-description: 'STL Containers Deep Dive: Memory Layout, Iterator Invalidation, Complexity,
-  and Selection Strategies'
+title: "Containers and Data Structures"
+description: "Deep dives into the STL containers: memory layout, iterator invalidation, complexity, and selection strategy"
 sidebar_order: 10
 translation:
   source: documents/vol3-standard-library/containers/index.md
-  source_hash: 6356d7405a469a3c49295c090a825b6a8360239552986a6d50094b476f1ea265
-  translated_at: '2026-06-24T00:37:20.865320+00:00'
+  source_hash: e6f1028be79ed020f777af7d40d768410b96632a7ca70805d80e29ec92739d44
+  translated_at: '2026-09-26T01:48:41+00:00'
   engine: anthropic
-  token_count: 286
+  token_count: 1100
 ---
+
 # Containers and Data Structures
 
-The tools for storing and managing data. This group thoroughly explains the internal representation, growth mechanisms, iterator invalidation rules, and complexity costs of each container. It also provides a decision path for selecting containers based on operations in the "Container Selection Guide".
+The crew that stores and manages your data. This group takes each container's internal representation, growth and iterator-invalidation rules, and complexity costs apart in full, and the "Container Selection Guide" lays out a decision path for picking a container by operation. If you haven't yet gotten your hands on the structures themselves — dynamic arrays, hash tables, and the like — walk through the "Data Structures Primer" sub-series first; get the foundation in place before coming back up.
 
 <ChapterNav variant="sub">
+  <ChapterLink href="primer/">Data Structures Primer: The Structures Underneath the Containers</ChapterLink>
   <ChapterLink href="01-container-selection-guide">Container Selection Guide</ChapterLink>
-  <ChapterLink href="02-array">array: Fixed-Length Arrays</ChapterLink>
-  <ChapterLink href="03-vector-deep-dive">vector Deep Dive</ChapterLink>
-  <ChapterLink href="04-string-memory-deep-dive">string Deep Dive</ChapterLink>
+  <ChapterLink href="02-array">array: A Fixed-Size Array</ChapterLink>
+  <ChapterLink href="03-vector-deep-dive">Deep Dive into vector</ChapterLink>
+  <ChapterLink href="04-string-memory-deep-dive">Deep Dive into string</ChapterLink>
   <ChapterLink href="05-deque-list-forward-list">deque, list, and forward_list</ChapterLink>
-  <ChapterLink href="06-map-set-deep-dive">map and set Deep Dive</ChapterLink>
-  <ChapterLink href="07-unordered-map-set-deep-dive">unordered_map and set Deep Dive</ChapterLink>
-  <ChapterLink href="08-span">span: Non-owning Views</ChapterLink>
+  <ChapterLink href="06-map-set-deep-dive">Deep Dive into map and set</ChapterLink>
+  <ChapterLink href="07-unordered-map-set-deep-dive">Deep Dive into unordered_map and set</ChapterLink>
+  <ChapterLink href="08-span">span: A Non-Owning View</ChapterLink>
   <ChapterLink href="09-container-adapters">Container Adapters</ChapterLink>
   <ChapterLink href="10-new-containers-cpp23-26">New Standard Containers (C++23/26)</ChapterLink>
   <ChapterLink href="11-initializer-lists">initializer_list</ChapterLink>

@@ -4,50 +4,48 @@ cpp_standard:
 - 11
 - 17
 - 20
-description: 'Here is the translation following the provided rules and style guide:
-
-
-  A Deep Dive into `<random>`: Why `rand()` Should Be Retired (limitations include
-  small `RAND_MAX`, non-reproducible cross-platform results, thread safety issues,
-  and lack of distribution control). We explore the trio of engines, distributions,
-  and devices in `<random>`, demonstrate the correct way to seed `mt19937` with `std::random_device{}()`,
-  verify the uniformity of `mt19937` and `uniform_int_distribution` through testing,
-  and use `thread_local` engines to avoid contention in multi-threaded environments.'
+description: A thorough tour of <random>—why rand() deserves retirement (small RAND_MAX,
+  not reproducible across platforms, not thread-safe, no way to control distributions),
+  the <random> trio of engines/distributions/devices, the correct way to seed mt19937
+  with the one-liner std::random_device{}(), measured uniformity of mt19937 plus
+  uniform_int_distribution, and a thread_local engine per thread to avoid races in
+  multithreaded code
 difficulty: intermediate
 order: 60
 platform: host
 prerequisites:
-- 算法总览（上）：非修改式、修改式与查找
-- vector 深入：三指针、扩容与迭代器失效
+- 'Algorithm Overview (Part 1): Non-Modifying, Modifying, and Searching — How to Pick the Right Algorithm for a Problem'
+- 'Deep Dive into vector: Three Pointers, Reallocation, and Iterator Invalidation'
 reading_time_minutes: 15
 related:
-- numeric 算法：累加、前缀和与 midpoint
+- 'numeric: Accumulate, Fill, Inner Product, and Adjacent Difference'
 tags:
 - host
 - cpp-modern
 - intermediate
 - 基础
-title: 'Random: Why You Should Stop Using rand()'
+title: 'random: Why You Should Stop Using rand()'
 translation:
   source: documents/vol3-standard-library/time-numeric/60-random.md
   source_hash: 9a4aa065735385dd8be0b7d7ce7c7907aba0ba7c7a650c441717ca22e9729d73
-  translated_at: '2026-06-24T04:28:33.308489+00:00'
+  translated_at: '2026-09-26T00:17:49+00:00'
   engine: anthropic
-  token_count: 3517
+  token_count: 5500
 ---
+
 # random: Why You Should Stop Using rand()
 
-Almost every C tutorial stops at `srand(time(NULL)); rand() % N;` when it comes to random numbers. It runs, it spits out results, so everyone keeps using it—until the day your simulation results silently change after switching machines, your multi-threaded program crashes under stress testing, or you need to generate normally distributed noise but have no idea how to derive it from the uniform integers between 0 and `RAND_MAX` provided by `rand()`.
+Nearly every C tutorial stops teaching randomness at the same line: `srand(time(NULL)); rand() % N;`. It runs, it produces results, so everyone keeps doing it that way—until the day your simulation results quietly change after you move to a different machine, your multithreaded program crashes intermittently under load testing, or you need to generate normally distributed noise and have no idea how to coax it out of `rand()`'s uniform integers between 0 and `RAND_MAX`.
 
-The standard answer provided by C++11 is a brand new header `<random>`. It breaks down "generating random numbers" into three independent, freely composable components: **engines** (which generate raw uniform unsigned integers), **distributions** (which map those raw integers into the shape you actually want—uniform, normal, Bernoulli, etc.), and **devices** (which provide non-deterministic, true random seeds). In this post, we will thoroughly dissect this trio, and use concrete benchmarks to clarify exactly where `rand()` falls short and why it should be retired. A quick scope limitation: **cryptographically secure random numbers are not discussed in this article**—`std::random_device` is not designed for cryptography; for key generation, please use dedicated cryptographic libraries (like OpenSSL or libsodium).
+C++11's answer is a brand-new header, `<random>`, which splits "generating random numbers" into three independent, freely combinable parts: **engines** (produce raw uniform unsigned integers), **distributions** (map those raw integers into the shape you actually want—uniform, normal, Bernoulli, ...), and **devices** (supply non-deterministic, truly random seeds). In this article we take the trio apart and cover it thoroughly, and along the way we settle—with hands-on measurements—exactly where `rand()` falls short and why it deserves retirement. One scope note up front: **cryptographically secure randomness is out of scope for this article**—`std::random_device` isn't designed for cryptography either; for key generation, use a dedicated cryptographic library (OpenSSL, libsodium, that kind of thing).
 
-## The Indictments of rand(), Tested One by One
+## The Charges Against rand(), Verified One by One
 
-Let's set up the target first. `rand()` isn't so terrible that it's unusable; modern glibc's implementation is actually a linear congruential generator (additive feedback generator), and it looks okay for simple distribution statistics. However, it has several structural flaws, each of which will bite you in real-world engineering.
+First, let's set up the target. `rand()` isn't "so bad it's unusable"—modern glibc's `rand()` is in fact an additive feedback generator, and it looks decent enough when you merely run distribution statistics on it. But it has several structural flaws, and every one of them will bite you in real engineering.
 
-### Charge 1: RAND_MAX is Too Small, and Implementation-Dependent
+### Charge 1: RAND_MAX Is Too Small, and Varies Across Implementations
 
-First, let's look at the local `RAND_MAX`:
+First, check `RAND_MAX` on this machine:
 
 ```cpp
 // Standard: C++20
@@ -65,28 +63,28 @@ int main()
 RAND_MAX = 2147483647
 ```
 
-`2147483647`, which is $2^{31} - 1$, provides 31 bits. This is the case on the local machine (Linux, glibc), but the C standard only guarantees that `RAND_MAX` is at least `32767`—that is, $2^{15} - 1$, **which is only 15 bits**. This means that the same line of `rand()` can produce at most 32,768 distinct values on a standard-compliant implementation. If you want to piece together a 64-bit seed from a single `rand()` (for example, to initialize a PRNG with a huge state space), you must call it several times and shift the results together. Furthermore, there are correlations between calls, making the code ugly and error-prone.
+`2147483647` is `2^31 - 1`—31 bits. That's what we get on this machine (Linux, glibc), but the C standard only guarantees that `RAND_MAX` is at least `32767`—`2^15 - 1`, a **mere 15 bits**. In other words, that same line of `rand()` can produce at most 32768 distinct values on a conforming implementation. If you want to assemble a 64-bit seed out of `rand()` calls (say, to initialize a PRNG with a huge state space), you need several calls plus shifting to stitch the bits together, and successive calls are correlated on top of that—ugly to write and easy to get wrong.
 
-Engines in `<random>` do not suffer from this flaw: `std::mt19937` directly generates 32-bit unsigned integers, where `min()` is `0` and `max()` is `4294967295` ($2^{32} - 1$). This is a full 32 bits, explicitly defined by the type, and consistent across platforms.
+Engines in `<random>` don't have this problem: `std::mt19937` produces 32-bit unsigned integers directly, `min()` is `0`, `max()` is `4294967295` (`2^32 - 1`)—the full 32 bits, in black and white in the type, consistent across platforms.
 
-### Flaw 2: Non-reproducible across platforms and implementations
+### Charge 2: Not Reproducible Across Platforms or Implementations
 
-Running the following code on two different machines with different compilers or standard libraries will yield different results:
+Run the following on two machines with different compilers/standard libraries, and the results will differ:
 
 ```cpp
 std::srand(12345);
-// 前 5 个值
+// first 5 values
 ```
 
-Here is the output on our local machine (GCC 16.1.1 / glibc):
+On this machine (GCC 16.1.1 / glibc), we get:
 
 ```text
 srand(12345) 前5: 383100999 858300821 357768173 455282511 133005921
 ```
 
-The algorithm used by `rand()` in the C standard is **implementation-defined**—glibc uses an additive feedback generator, MSVC's CRT uses a different LCG, and BSD uses yet another. With the same seed `12345`, running on Windows with MSVC yields a completely different sequence. This is fatal for "simulation, testing, and replaying matches": you cannot simply give a seed to someone else to reproduce your random sequence, nor can you reproduce a bug driven by random numbers.
+The algorithm behind `rand()` is **implementation-defined** in the C standard—glibc uses one kind of additive feedback generator, MSVC's CRT uses a different LCG, BSD uses yet another. The same seed `12345` produces a completely different sequence under MSVC on Windows. That's fatal for "simulations, tests, game replays": you can't hand someone a seed and have them reproduce your random sequence, which means you also can't reproduce a bug driven by random numbers.
 
-In contrast, `std::mt19937` is a mathematically deterministic algorithm (Mersenne Twister, MT19937) strictly defined by the standard. **The same seed produces the exact same sequence on any compliant implementation**:
+Contrast that with `std::mt19937`: it is a mathematically fully determined algorithm (Mersenne Twister, MT19937), pinned down by the standard—**the same seed produces exactly the same sequence on any conforming implementation**:
 
 ```cpp
 // Standard: C++20
@@ -107,11 +105,11 @@ int main()
 mt19937(12345) 前5: 3992670690 3823185381 1358822685 561383553 789925284
 ```
 
-Paste this snippet to a colleague using Clang with libc++, or to one using MSVC, and the results will be identical. This is exactly what "reproducible randomness" should look like.
+Paste this sequence to a colleague on Clang+libc++ or one on MSVC, and their runs match to the digit. That's what "reproducible randomness" is supposed to look like.
 
-### Charge Three: Thread Safety
+### Charge 3: Not Thread-Safe
 
-`rand()` maintains an internal state at the process level, reading from and writing to it on every call. The C standard does not guarantee that this state is **thread-safe**—calling `rand()` concurrently from multiple threads constitutes a data race and results in undefined behavior. POSIX adds a lock to glibc's `rand()`, so the following code "appears to work" on a local Linux machine:
+`rand()` maintains one process-wide piece of internal state that every call reads and writes. Under the C standard this state is **not thread-safe**—calling `rand()` from multiple threads at once is a data race, which is undefined behavior. POSIX layers a lock on top for glibc's `rand()`, so the following "appears to work" on our Linux machine:
 
 ```cpp
 // Standard: C++20
@@ -128,7 +126,7 @@ int main()
     for (int t = 0; t < 4; ++t) {
         ts.emplace_back([&]() {
             for (int i = 0; i < 100000; ++i) {
-                total += std::rand() & 1;   // 0 或 1
+                total += std::rand() & 1;   // 0 or 1
             }
         });
     }
@@ -142,48 +140,48 @@ int main()
 4 线程各取 100000 次奇偶，1 的总数 = 199624
 ```
 
-It runs, and the result looks correct. But don't be fooled: this is glibc covering for you, not a guarantee from the C standard. Switch to a non-locking implementation (like a stripped-down libc on some embedded platforms), and this code becomes a data race immediately. At best, the quality of your random numbers collapses; at worst, the program crashes. "It works on my machine" doesn't hold water here.
+It runs, and the result looks right. But don't be fooled: that's glibc catching you, not a guarantee the C standard gives you. Switch to an implementation without the lock (some minimal libc on embedded platforms, for instance) and this exact code is a data race—at best the random quality collapses, at worst it crashes. "It works on my machine" carries no weight here.
 
-Every engine object in `<random>` **carries its own state**. Create as many as you need. As long as threads don't share the same object, there is naturally no contention. Later, we will demonstrate the standard idiom of using `thread_local` to give every thread its own engine.
+In `<random>`, every engine object **carries its own state**—spin up as many as you like; as long as threads don't share the same object, there's no race by construction. Later we'll demonstrate the standard pattern of one engine per thread via `thread_local`.
 
-### Charge 4: No direct way to express "distributions"
+### Charge 4: No Way to Express Distributions Directly
 
-`rand() % N` only gives you a **uniform integer** from 0 to N-1. But what if you want "normally distributed noise with a mean of 0 and a standard deviation of 1"? What about "a boolean value that is true with 0.7 probability"? Or "a floating-point number in the [0, 1) range"?
+`rand() % N` gives you exactly one thing: **uniform integers** from 0 to N-1. But what if what you want is "normally distributed noise with mean 0 and standard deviation 1"? A boolean that is true with probability 0.7? A floating-point value in the interval [0, 1)?
 
-With `rand()`, you have to write it yourself—normal distributions need the Box-Muller transform, floating-point numbers require dividing by `RAND_MAX` while watching out for precision loss, and Bernoulli trials need `rand() < p * RAND_MAX`. None of these are hard, but each requires you to implement, test, and validate it yourself. Plus, if you switch PRNGs, you have to do it all over again.
+With `rand()` you have to build all of that yourself—a normal distribution needs the Box-Muller transform, floats need division by `RAND_MAX` plus care with precision, Bernoulli needs `rand() < p * RAND_MAX`. None of it is hard, but every piece has to be hand-implemented, hand-tested, and hand-verified, and the moment you swap in a different PRNG you start over.
 
-`<random>` encapsulates all the mathematics of "turning a uniform integer into a target distribution" into **distribution objects**. Engines are engines, distributions are distributions, and they can be combined freely. In the next section, we will break down this mechanism completely.
+`<random>` wraps all of that "turn uniform integers into a target distribution" math into **distribution objects**. Engines stay engines, distributions stay distributions—combine them freely. The next section covers this machinery in depth.
 
-::: warning Clarifying the old charge of "low bits aren't random"
-Many older resources emphasize that `rand() % N` has "highly non-random low bits with periodic patterns." This **was historically true for certain implementations**—the most naive Linear Congruential Generator (LCG) has a lowest bit that strictly alternates `0,1,0,1...` (period 2), the next bit has a period of 4, and so on. Taking the modulus exposes these low bits. However, modern glibc's `rand()` hasn't been a simple LCG for a long time. In our tests, `rand()%2` showed adjacent equal values about half the time in 100,000 samples (`49945 / 100000`), so it doesn't suffer from "strict alternation." A more accurate statement is: **`rand()`'s low bit quality depends on the implementation and is not guaranteed by the standard**. You shouldn't base your program's correctness on "the low bits of `rand` on my platform happen to be okay." Using `mt19937` + `uniform_int_distribution` eliminates this uncertainty from the start.
+::: warning Let's also settle the old "low bits are not random" charge
+Plenty of older material stresses that `rand() % N` has "highly non-random low bits with periodic patterns". **Historically, and for certain implementations, that's true**—the lowest bit of the plainest linear congruential generator (LCG) strictly alternates `0,1,0,1...` (period 2), the next-lowest bit has period 4, and so on, and taking a modulo exposes exactly those low bits. But modern glibc's `rand()` stopped being a simple LCG long ago: in our own test, `rand()%2` over 100,000 samples produced adjacent-equal values about half the time (`49945 / 100000`)—no "strict alternation" pathology. So the accurate statement is: **the low-bit quality of `rand()` depends on the concrete implementation, and the standard guarantees nothing**—you shouldn't rest your program's correctness on "the low bits of my platform's rand happen to be okay". Using `mt19937` + `uniform_int_distribution` removes that uncertainty from the start.
 :::
 
-## The `<random>` Trio: Engine, Distribution, and Device
+## The `<random>` Trio: Engines, Distributions, and Devices
 
-Now that we've covered the pain points, let's look at the right tools. The design philosophy of `<random>` can be summed up in one sentence: **Separate "where the randomness comes from" from "what shape the randomness has."**
+With the pain points covered, let's see what the right tool looks like. `<random>`'s design philosophy in one sentence: **separate "where the randomness comes from" from "what shape the randomness takes"**.
 
-- **Engine**: Responsible only for spitting out raw, uniformly distributed unsigned integers. `mt19937`, `minstd_rand`, and `ranlux24` are all engines. It is a stateful object; each call to `eng()` advances the state and returns a value.
-- **Distribution**: Maps the raw integers from the engine into the target distribution you want. `uniform_int_distribution`, `normal_distribution`, `bernoulli_distribution`... It is **stateless** (mostly), acting simply as a function object: `dist(eng)`.
-- **Device**: `std::random_device`, which accesses an external entropy source (usually `/dev/urandom` on Linux) to spit out **non-deterministic** values, specifically used to seed the engine.
+- **Engines**: do exactly one thing—spit out raw, uniformly distributed unsigned integers. `mt19937`, `minstd_rand`, `ranlux24` are all engines. An engine is a stateful object; each call to `eng()` advances the state one step and returns a value.
+- **Distributions**: map the engine's raw integers into the target distribution you want. `uniform_int_distribution`, `normal_distribution`, `bernoulli_distribution`, ... A distribution is itself **stateless** (the overwhelming majority are), just a function object: `dist(eng)`.
+- **Devices**: `std::random_device` reaches an external entropy source (on Linux, usually `/dev/urandom`) and produces **non-deterministic** values—its whole job is seeding engines.
 
-The division of labor is clean: the engine determines "how long the period is, how uniform, and how fast," the distribution decides "what shape these numbers are molded into," and the device decides "where to get an unpredictable starting point." If you want a normal distribution, the flow is "device seeds an engine, engine feeds a normal distribution"—three independent, replaceable steps.
+The division of labor is clean: the engine decides "how long the period, how uniform, how fast"; the distribution decides "what shape these numbers get molded into"; the device decides "where to get an unpredictable starting point". Want a normal distribution? A device seeds an engine, the engine feeds the normal distribution—three steps, each independent and swappable.
 
-### Engine: Why mt19937 is the default choice
+### Engines: Why mt19937 Is the Default Choice
 
-The standard library provides a bunch of engines, but the most common one is `std::mt19937`. It is the 32-bit version of the Mersenne Twister algorithm. The 19937 in its name comes from its period length—`2^19937 - 1`. This is an astronomical number; you will never exhaust the period during your program's lifetime. Its internal state is 624 32-bit words (`std::mt19937::state_size == 624` on my machine). It offers good quality, high speed, and statistically verified properties, making it sufficient for the vast majority of scenarios.
+The standard library ships a whole pile of engines, but the one you'll actually use is `std::mt19937`. It is the 32-bit version of the Mersenne Twister algorithm; the 19937 in its name comes from its period—`2^19937 - 1`, an astronomically large number you will never cycle through within a program's lifetime. Its internal state is 624 32-bit words (`std::mt19937::state_size == 624`, verified on this machine). Good quality, fast, statistically well-vetted—for the overwhelming majority of scenarios, it's all you need.
 
-Two other engine families you might occasionally encounter:
+Two other engine families you'll occasionally bump into:
 
-- `std::linear_congruential_engine`: Linear congruential generators, the old `x = a*x + c mod m` method. `minstd_rand0` / `minstd_rand` are predefined instances. Small state (one integer), fast, but average quality. Only consider these for scenarios where "state must be tiny" and statistical quality requirements are low (e.g., certain embedded constraints).
-- `std::subtract_with_carry_engine`: Subtract-with-carry generators (Lagged Fibonacci). `ranlux24` / `ranlux48` are predefined instances. They have good statistical properties in some cases, but `mt19937` is still the default choice.
+- `std::linear_congruential_engine`: linear congruential—the old `x = a*x + c mod m` approach; `minstd_rand0` / `minstd_rand` are its preset instances. Tiny state (a single integer), fast, but mediocre quality. Only worth considering when "state must be extremely small and statistical quality requirements are low" (certain embedded constraints, say).
+- `std::subtract_with_carry_engine`: a subtract-with-carry generator (lagged Fibonacci); `ranlux24` / `ranlux48` are the preset instances. Statistically strong in certain settings, but the default pick is still mt19937.
 
-A practical detail: `mt19937`'s constructor takes a single 32-bit seed, but its state space is 624 words wide with a period of `2^19937`. Feeding it just a 32-bit seed means you are only picking from `2^32` possible starting states, drastically compressing the reproducible "starting points." If you care about this (e.g., running long simulations and worried about seed collisions), the standard library provides `std::seed_seq`. You can feed multiple seed words into it to fill the engine's initial state. A single seed is usually enough for daily use, but it's good to know this advanced option exists.
+One very practical detail: constructing `mt19937` directly accepts only a single 32-bit seed, yet its state space is 624 words—`2^19937` large. Supplying only a 32-bit seed means picking from just `2^32` possible starting states, drastically shrinking the space of reproducible "starting points". If you care (long-running simulations where you'd rather not collide seeds, say), the standard library provides `std::seed_seq`: fill in multiple seed words and feed that to the engine, spreading the initial state out fully. A single seed is plenty for everyday use—just knowing this advanced option exists is enough.
 
-### Distribution: Molding uniform integers into the shape you need
+### Distributions: Shaping Uniform Integers into What You Want
 
-Distributions are where `<random>` really saves you headaches. The engine spits out uniform integers in `[0, 2^32-1]`, but that is almost never what you want. Distribution objects handle this mapping and, crucially, **handle modulo bias correctly**—a pitfall you might hit with hand-written `eng() % N` but which `uniform_int_distribution` avoids automatically.
+Distributions are where `<random>` really saves you effort. An engine spits out uniform integers over `[0, 2^32-1]`, and that is almost never what you want. Distribution objects do that mapping, and they **handle modulo bias themselves**—a trap you'd step into hand-writing `eng() % N`, but one `uniform_int_distribution` sidesteps automatically.
 
-Let's look at the most common distributions, running one million samples each:
+Let's first run a million samples through the most common distributions:
 
 ```cpp
 // Standard: C++20
@@ -196,11 +194,11 @@ int main()
 {
     std::mt19937 eng(2024);
 
-    // 正态分布: 均值 0, 标准差 1
+    // Normal distribution: mean 0, standard deviation 1
     std::normal_distribution<double> norm(0.0, 1.0);
     constexpr int N = 1000000;
     double sum = 0, sum2 = 0;
-    std::vector<long long> hist(10, 0);   // [-5, 5) 分 10 桶，每桶宽 1.0
+    std::vector<long long> hist(10, 0);   // 10 buckets over [-5, 5), each 1.0 wide
     for (int i = 0; i < N; ++i) {
         double x = norm(eng);
         sum += x; sum2 += x * x;
@@ -215,13 +213,13 @@ int main()
         std::printf("  [%+.0f,%+.0f) %lld\n", i - 5.0, i - 4.0, hist[i]);
     }
 
-    // 伯努利: p=0.7
+    // Bernoulli: p=0.7
     std::bernoulli_distribution bern(0.7);
     long long trues = 0;
     for (int i = 0; i < N; ++i) if (bern(eng)) ++trues;
     std::printf("bernoulli(0.7) %d 样本: true 占比=%.4f\n", N, double(trues) / N);
 
-    // 均匀实数: [0, 1)
+    // Uniform real: [0, 1)
     std::uniform_real_distribution<double> ureal(0.0, 1.0);
     double usum = 0;
     for (int i = 0; i < N; ++i) usum += ureal(eng);
@@ -248,20 +246,20 @@ bernoulli(0.7) 1000000 样本: true 占比=0.7008
 uniform_real(0,1) 1000000 样本: 均值=0.5000 (期望 0.5)
 ```
 
-Want to see the distribution statistics in action? Check out this online demo (completes in 0.04 seconds):
+Want to run it yourself and check the statistics? Open the online demo below (it finishes in 0.04 seconds):
 
 <OnlineCompilerDemo
-  title="<random> Distribution Demo: normal / bernoulli / uniform"
+  title="<random> distributions demo: normal / bernoulli / uniform"
   source-path="code/examples/vol3/60_random_distributions.cpp"
-  description="Feeding mt19937 into three distributions with one million samples each: normal shows a bell-shaped histogram, bernoulli(0.7) checks the true ratio, and uniform_real(0,1) checks if the mean approaches 0.5—things rand()%N can't do"
+  description="mt19937 feeding three distributions, one million samples each: a bell-shaped histogram for normal, the true ratio for bernoulli(0.7), and uniform_real(0,1)'s mean converging on 0.5—none of which rand()%N can do"
   allow-run
 />
 
-Several things are immediately obvious. The normal distribution histogram is a beautiful bell curve; the two middle buckets `[-1, +1)` each have around 340,000 hits, decaying symmetrically outwards. The mean is `-0.0005` and the standard deviation is `1.0002`, almost exactly the nominal `(0, 1)`. The true ratio for Bernoulli `0.7` is `0.7008`. The mean of the uniform real numbers `[0, 1)` is `0.5000`. These are all tasks you would have to implement and verify yourself with `rand()`, but `<random>` handles them for you, and correctly.
+A few things jump out immediately. The normal distribution's histogram is a beautiful bell curve—the two middle buckets `[-1,+1)` hold 340,000-odd each, decaying symmetrically outward; the mean is `-0.0005` and the standard deviation `1.0002`, essentially the nominal `(0, 1)`. Bernoulli `0.7` shows a true ratio of `0.7008`. Uniform reals over `[0, 1)` average `0.5000`. Every one of these is a job you'd have to implement and verify yourself with `rand()`; `<random>` has already done it for you, and done it correctly.
 
-The most critical difference lies in `uniform_int_distribution`. You might think: isn't a uniform integer just `eng() % N`? If you actually write that, you fall into the modulo bias trap. The reason is: the value range produced by the engine is `[0, 2^32-1]`, totaling `2^32` values, and `2^32` is not necessarily divisible by your `N`. For example, if `N=3`, `2^32 = 4294967296 = 3 * 1431655765 + 1`. There is a remainder of 1, meaning bucket 0 gets one more candidate value than buckets 1 and 2, so the distribution is no longer uniform (the bias is small, but objectively exists). `uniform_int_distribution` internally uses rejection sampling to discard this "extra tail" and redraw, guaranteeing strictly equal probability for every bucket. On platforms where `RAND_MAX` is only 15 bits, this bias is quite noticeable; on glibc's 31-bit `rand()`, it is too small to detect—but "relying on platform charity" is one of the reasons `rand()` needs to be retired.
+The most crucial difference sits in `uniform_int_distribution`. You might think: isn't a uniform integer just `eng() % N`? Write it that way and you've stepped into modulo bias. The reason: the engine's range is `[0, 2^32-1]`—`2^32` values in all—and `2^32` is not necessarily divisible by your `N`. Take `N=3`: `2^32 = 4294967296 = 3 * 1431655765 + 1`, remainder 1, so bucket 0 gets one more candidate value than buckets 1 and 2, and the distribution is no longer uniform (the bias is tiny, but it is objectively there). `uniform_int_distribution` uses rejection sampling internally to discard and redraw that "excess tail", guaranteeing strictly equal probability for every bucket. On a platform where `RAND_MAX` is only 15 bits this bias would be glaring; on glibc's 31-bit `rand()` it is too small to measure—but "relying on the platform doing you a favor" is precisely one of the reasons to retire `rand()`.
 
-We tested `rand()%3` versus `uniform_int_distribution(0,2)` with 300 million samples each. Here are the bucket hits:
+We tested `rand()%3` versus `uniform_int_distribution(0,2)`, 300 million samples each, bucket hits:
 
 ```text
 rand()%3 取 300000000 样本:
@@ -274,11 +272,11 @@ mt19937+uniform_int(0,2) 取 300000000 样本:
   bucket 2: 100007683
 ```
 
-On glibc, both are within the noise margin (on the order of one ten-thousandth), indicating that the modulo bias of the native `rand()` is indeed small. However, the conclusion is not that "`rand()%3` is fine," but rather that "it happens to be fine on this machine, but might not be on another platform"—`uniform_int_distribution` saves you from worrying about this from the start.
+On glibc both fall within noise (bias on the order of one part in ten thousand), confirming that this machine's `rand()` really does have tiny modulo bias. But the conclusion is not "`rand()%3` is fine"—it is "this machine happens to be fine; another platform may not be". `uniform_int_distribution` spares you from worrying about it in the first place.
 
-## Correct Approach: A Clean One-Liner Template
+## The Correct Way: A Clean Starter Template with One Core Line
 
-Putting it all together, the standard, portable, and unbiased way to "generate a uniform integer from 1 to 100" boils down to this single core line:
+Putting the above together: for "generate a uniform integer from 1 to 100", the standard, portable, bias-free way boils down to this one core line:
 
 ```cpp
 // Standard: C++20
@@ -287,9 +285,9 @@ Putting it all together, the standard, portable, and unbiased way to "generate a
 
 int main()
 {
-    std::random_device rd;                       // 1. 设备：非确定种子
-    std::mt19937 eng(rd());                      // 2. 引擎：用种子初始化
-    std::uniform_int_distribution<int> dist(1, 100);  // 3. 分布：[1, 100] 闭区间
+    std::random_device rd;                       // 1. Device: a non-deterministic seed
+    std::mt19937 eng(rd());                      // 2. Engine: initialized from the seed
+    std::uniform_int_distribution<int> dist(1, 100);  // 3. Distribution: closed interval [1, 100]
 
     std::printf("rd{}() 种 mt19937 + uniform(1,100) 10 个: ");
     for (int i = 0; i < 10; ++i) std::printf("%d ", dist(eng));
@@ -302,25 +300,21 @@ int main()
 rd{}() 种 mt19937 + uniform(1,100) 10 个: 97 60 100 11 25 17 57 16 43 86
 ```
 
-These three steps correspond to the standard trio: use `random_device` to obtain an unpredictable seed, initialize `mt19937` with it, and use `uniform_int_distribution` to map the engine's output to your desired closed interval `[1, 100]`. Note that the interval for `uniform_int_distribution` is a **closed interval** (both endpoints are inclusive), which differs from the half-open intervals found in many other languages. Writing `dist(1, 100)` means you can actually roll a 100.
+Three steps mapping to the trio: `random_device` fetches an unpredictable seed, `mt19937` initializes from it, and `uniform_int_distribution` maps the engine's output into the closed interval `[1, 100]` you asked for. Note that `uniform_int_distribution`'s range is a **closed interval** (both endpoints are reachable), unlike the half-open intervals of a whole pile of languages—write `dist(1, 100)` and you can genuinely draw a 100.
 
-A more compact approach is to use a temporary object to get the seed directly: `std::mt19937 eng(std::random_device{}());`. Here, `random_device{}` constructs a device object, `()` invokes it once to fetch a value, and the entire expression serves as the constructor argument for `eng`. This one-liner is extremely common in both tutorials and production code, so just memorize it.
+A more compact variant takes the seed straight from a temporary: `std::mt19937 eng(std::random_device{}());`. `random_device{}` constructs a device object, `()` calls it once to fetch a value, and the whole expression serves as `eng`'s constructor argument. This line shows up constantly in tutorials and in real code alike—just commit it to memory.
 
-If you need **reproducibility** (for testing or simulation replay), replace the `random_device` step with a fixed seed: `std::mt19937 eng(42);`. This locks the sequence, ensuring it is consistent across platforms. Whether or not you need reproducibility is the only branching point in this setup; everything else remains the same.
+If you need **reproducibility** (tests, simulation replay), swap the `random_device` step for a fixed seed: `std::mt19937 eng(42);`—the sequence is locked in, identical across platforms. Reproducible or not is the only fork on this line; everything else stays the same.
 
 ::: warning random_device is not cryptographically secure
-Most implementations of `std::random_device` read from `/dev/urandom` and are of high quality, but the **standard allows it to degenerate into a deterministic pseudo-random number generator** (historically, some versions of MinGW did exactly this, returning something akin to `rand()`). Furthermore, it is **not cryptographically secure**. For security-sensitive scenarios like generating keys, tokens, or salts, use a dedicated cryptography library (such as OpenSSL's `RAND_bytes` or libsodium's `randombytes_buf`), not `<random>`.
+Most implementations of `std::random_device` read `/dev/urandom`, which is excellent quality—but **the standard permits it to degrade into a deterministic pseudo-random generator** (certain MinGW versions historically did exactly that, returning something in the vein of `rand()`), and it is **not cryptographically secure**. For security-sensitive scenarios—generating keys, tokens, salts—use a dedicated cryptographic library (OpenSSL's `RAND_bytes`, libsodium's `randombytes_buf`), not `<random>`.
 :::
 
-## Multi-threaded Randomness: One thread_local Engine per Thread
+## Multithreaded Randomness: One thread_local Engine per Thread
 
-The final frequent pain point. When generating random numbers in a multi-threaded program, the cardinal sin is **sharing a single engine object across multiple threads**. Engines have state; concurrent calls result in data races, leading to either poor performance (due to locking) or undefined behavior (UB).
+One last high-frequency pain point. When a multithreaded program needs randomness, the cardinal sin is **multiple threads sharing the same engine object**—engines are stateful, concurrent calls are a data race, and your options are locking (poor performance) or UB.
 
-The correct solution is to give each thread its own independent engine, stored using `thread_local`. Each thread automatically possesses its own engine and state upon entry, isolated from others without requiring locks:
-
-```cpp
-thread_local std::mt19937 eng(std::random_device{}());
-```
+The correct solution is one independent engine per thread, stored `thread_local`. Each thread automatically gets its own engine and its own state—no interference, no locks needed:
 
 ```cpp
 // Standard: C++20
@@ -330,7 +324,7 @@ thread_local std::mt19937 eng(std::random_device{}());
 #include <thread>
 #include <vector>
 
-// 每个线程一个独立引擎，thread_local 保证线程私有
+// One independent engine per thread; thread_local keeps it thread-private
 thread_local std::mt19937 tl_eng{std::random_device{}()};
 
 int main()
@@ -355,55 +349,55 @@ int main()
 期望均值约 50.5 * 400000 = 20200000
 ```
 
-Four threads each drawing 100,000 times yields a total of approximately 20.2 million, matching the expected `50.5 * 400000 = 20200000`. There are a few details worth highlighting here.
+Four threads drawing 100,000 samples each total about 20.2 million, matching the expected `50.5 * 400000 = 20200000`. A few details here deserve a callout.
 
-First, `thread_local std::mt19937` is initialized with `random_device{}()`. This means **each thread fetches a true random seed the first time it accesses the generator**. Consequently, different threads start from different points and produce different sequences, avoiding the awkward situation where "all threads walk the same random sequence."
+First, `thread_local std::mt19937` initialized with `random_device{}()` means **each thread grabs its own truly random seed the first time it accesses the engine**, so different threads start at different points with different sequences—no embarrassment of every thread marching down the same random sequence.
 
-Second, the distribution object `dist` is constructed inside the lambda but outside the loop. Distributions are basically stateless, so we construct it once and call it repeatedly. Do not write it inside the inner loop to construct it on every iteration (although the overhead is small, it is unnecessary). Here, `dist` is a local variable for each thread, so there are no sharing issues.
+Second, the distribution object `dist` is constructed inside the lambda but outside the loop—distributions are essentially stateless, so construct once and call repeatedly; don't put the construction in the inner loop (the cost is small, but there's no point). Here `dist` is a per-thread local variable, so there's no sharing problem either.
 
-Third, `thread_local` is not a free lunch: the first access by each thread triggers the construction of the engine (including one system call for `random_device` and initialization of the 624-byte state of mt19937), which incurs a one-time overhead. Therefore, it is suitable for scenarios where "this thread will repeatedly fetch random numbers." If a thread only fetches a random number once or twice before exiting, using `thread_local` is not cost-effective; simply constructing a local engine is sufficient.
+Third, `thread_local` is not a free lunch: each thread's first access triggers engine construction (one `random_device` system call + initializing mt19937's 624 words of state), a one-time cost. So it suits "this thread draws random numbers repeatedly"; if some thread draws one or two random values and exits, thread_local isn't worth it—just construct a local engine directly.
 
-## Common Real-World Pitfalls
+## A Few Pitfalls You'll Actually Hit
 
-Let's consolidate the places where things easily go wrong; every point here has been verified through the practical tests above:
+Let's collect the spots where this journey tends to go off the road—each one verified by the tests above:
 
-::: warning mt19937 Single Seed Covers Only 2^32 Starting Points
-`std::mt19937 eng(seed)` accepts only one 32-bit seed, but its state space is `2^19937`. Using a single seed means that `2^32` program instances each walk a disjoint trajectory in the `2^19937` state space. This is sufficient for most applications, but if you need to run massive independent simulations simultaneously and are concerned about starting point collisions, use `std::seed_seq` to fill multiple seed words for initialization to fully cover the starting space.
+::: warning A single mt19937 seed covers only 2^32 starting points
+`std::mt19937 eng(seed)` accepts only a single 32-bit seed, but its state space is `2^19937`. Single-seeding means `2^32` program instances each walk their own disjoint orbit through the `2^19937` state space—plenty for the vast majority of applications. But if you're running a huge number of independent simulations simultaneously and worry about starting-point collisions, initialize with `std::seed_seq` filled with multiple seed words to spread the starting-point space out.
 :::
 
-::: warning uniform_int_distribution is a Closed Interval
-The range of `uniform_int_distribution<int>(1, 100)` is `[1, 100]`, **closed on both ends**; 100 can be drawn. This is the same as Python's `random.randint`, but opposite to many half-open interval APIs (the opposite of `randint`, and `std::uniform_real_distribution`'s half-open `[a, b)`). Before using it, confirm clearly whether you need a closed or half-open interval, and don't write code based on habits from other languages.
+::: warning uniform_int_distribution uses a closed interval
+The range of `uniform_int_distribution<int>(1, 100)` is `[1, 100]`, **closed at both ends**—100 is reachable. That matches Python's `random.randint` but runs opposite to a pile of half-open APIs (the flip side of `randint`; `std::uniform_real_distribution`'s half-open `[a, b)`). Confirm whether you want closed or half-open before you use it, and don't write on autopilot from another language's habits.
 :::
 
-::: warning Don't Repeatedly Construct Distributions or Engines in Loops
-Engine construction is expensive (mt19937 needs to initialize 624 bytes of state), and distribution construction, while cheap, is not zero-cost. Move them outside the loop; try to move the engine to the lifecycle of the function or class, and construct the distribution once for repeated use as needed. Writing `std::mt19937 eng(...)` inside the inner loop of a hot path is a common performance pitfall for newcomers.
+::: warning Don't repeatedly construct distributions or engines in loops
+Engine construction is expensive (mt19937 must initialize 624 words of state); distribution construction is cheap but not free. Hoist both out of loops—engines should live at function/class scope where possible, distributions constructed once as needed and reused. Writing `std::mt19937 eng(...)` inside an inner loop on a hot path is a classic beginner performance trap.
 :::
 
-::: warning Sharing an Engine Across Threads is a Data Race
-Engines have state. Calling the same engine object from multiple threads without a lock is undefined behavior (UB). Either use `thread_local` for one engine per thread, or protect it with a mutex (which becomes a bottleneck). Default to `thread_local`.
+::: warning Sharing an engine across threads is a data race
+Engines are stateful; multiple threads calling the same engine object without a lock is UB. Either go `thread_local` with one per thread, or protect it with a mutex (which then becomes a bottleneck). Default to `thread_local`.
 :::
 
-::: warning random_device May Degrade to Pseudo-Random
-The standard allows `std::random_device` to degrade to a deterministic generator when no true entropy source is available, and it is not cryptographically secure. It is generally fine for seeding purposes, but for security-sensitive scenarios, use a dedicated cryptography library.
+::: warning random_device can degrade to pseudo-random
+The standard allows `std::random_device` to degrade into a deterministic generator when no true entropy source exists, and it is not cryptographically secure. Seeding purposes are generally fine; for security-sensitive scenarios, switch to a cryptographic library.
 :::
 
 ## Summary
 
-The philosophy of `<random>` in one sentence: **Decouple "where randomness comes from" (engine), "what shape the randomness takes" (distribution), and "where the starting point comes from" (device).** Let's recap the key conclusions:
+`<random>`'s idea in one sentence: **decouple "where the randomness comes from" (engines), "what shape it takes" (distributions), and "where the starting point comes from" (devices)**. The key takeaways:
 
-- The real reason `rand()` should be retired isn't "how bad the distribution is on modern glibc" (tests show it's actually passable), but rather **`RAND_MAX` is small and inconsistent across implementations, the algorithm is implementation-defined causing non-reproducibility across platforms, it is not thread-safe at the standard level, and it cannot directly express distributions**—each of these is a structural issue that bites in real engineering.
-- Division of labor for the trio: the engine (`mt19937` is most common, period `2^19937-1`, state 624 bytes) spits out uniform unsigned integers; the distribution (`uniform_int`/`uniform_real`/`normal`/`bernoulli`, etc.) shapes it into the target form; the device (`random_device`) provides a non-deterministic seed.
-- Correct core line: `std::random_device rd; std::mt19937 eng(rd()); std::uniform_int_distribution<int> dist(1, 100);` — swap `rd()` for a fixed integer seed if reproducibility is needed.
-- `uniform_int_distribution` uses rejection sampling internally to eliminate the modulo bias of `eng() % N`, and the interval is **closed**—these are the two points most prone to error in manual implementations.
-- Use `thread_local std::mt19937` for one engine per thread in multithreading to avoid data races from shared state; do not repeatedly construct engines in hot paths.
-- `random_device` is not cryptographically secure; use dedicated cryptography libraries for keys/tokens.
+- The real reasons `rand()` deserves retirement are not "how bad its distribution is on modern glibc" (our measurements show it's actually decent), but **`RAND_MAX` is small and inconsistent across implementations, the implementation-defined algorithm makes sequences non-reproducible across platforms, it is thread-unsafe at the standard level, and it cannot express distributions directly**—every one of these is a structural problem that bites in real engineering.
+- The trio's division of labor: engines (`mt19937` most common, period `2^19937-1`, 624-word state) emit uniform unsigned integers; distributions (`uniform_int`/`uniform_real`/`normal`/`bernoulli`, etc.) shape them into the target form; devices (`random_device`) supply non-deterministic seeds.
+- The correct pattern's one core line: `std::random_device rd; std::mt19937 eng(rd()); std::uniform_int_distribution<int> dist(1, 100);` — for reproducibility, replace `rd()` with a fixed integer seed.
+- `uniform_int_distribution` uses rejection sampling internally to eliminate the modulo bias of `eng() % N`, and its interval is **closed**—those two points are where hand-rolled code most often goes wrong.
+- For multithreading, use `thread_local std::mt19937` with one engine per thread to avoid data races on shared state; don't construct engines repeatedly on hot paths.
+- `random_device` is not cryptographically secure; keys/tokens go to a dedicated cryptographic library.
 
-In the next post, we will switch topics and look at another set of standard library facilities for "transforming data," outside of `<random>`.
+In the next article we switch topics—looking at another "transform your data" facility the standard library offers beyond `<random>`.
 
 ## References
 
-- [cppreference: `<random>`](https://en.cppreference.com/w/cpp/numeric/random) — Overview and complete directory of engines/distributions/devices
-- [cppreference: std::mt19937](https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine) — Mersenne Twister engine, `state_size`, and period
-- [cppreference: std::uniform_int_distribution](https://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution) — Closed interval and rejection sampling to eliminate modulo bias
-- [cppreference: std::random_device](https://en.cppreference.com/w/cpp/numeric/random/random_device) — Non-deterministic entropy source and implementation degradation notes
-- [cppreference: std::rand](https://en.cppreference.com/w/cpp/numeric/random/rand) — Thread safety and cross-implementation differences of `rand()`
+- [cppreference: `<random>`](https://en.cppreference.com/w/cpp/numeric/random) — an overview of engines/distributions/devices and the complete catalog
+- [cppreference: std::mt19937](https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine) — the Mersenne Twister engine, `state_size`, and its period
+- [cppreference: std::uniform_int_distribution](https://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution) — the closed interval, and rejection sampling removing modulo bias
+- [cppreference: std::random_device](https://en.cppreference.com/w/cpp/numeric/random/random_device) — the non-deterministic entropy source and notes on implementation degradation
+- [cppreference: std::rand](https://en.cppreference.com/w/cpp/numeric/random/rand) — notes on `rand()`'s thread safety and cross-implementation differences

@@ -3,11 +3,6 @@ name: Build Check
 on:
   pull_request:
     branches: [main]
-  # 合并后在 main 跑一次,让 cache 沉进 main 作用域:PR 间 cache 互相隔离,
-  # 只在 pull_request 触发的话,每个新 PR 首跑必 miss(Windows 冷构建 ~13min);
-  # 有 main 条目兜底后,新 PR 首跑经 restore-keys 命中,只重建改动的卷。
-  push:
-    branches: [main]
 
 jobs:
   build:
@@ -46,10 +41,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: site/.vitepress/.build-cache
-          key: vitepress-build-${{ runner.os }}-${{ hashFiles('documents/**', 'site/.vitepress/config/**', 'site/.vitepress/plugins/**', 'site/.vitepress/public/**', 'site/.vitepress/theme/**', 'scripts/build.ts', 'package.json', 'pnpm-lock.yaml') }}
-          # 兜底必须限定 runner.os:manifest 是纯内容哈希(跨 OS 恒等),
-          # 若不限定,Windows 腿会恢复 Linux 条目并整卷判为 cached,跳过
-          # 全部分卷构建——Windows 专属代码路径(junction/重试)就测不到了。
+          key: vitepress-build-${{ runner.os }}-${{ hashFiles('documents/**', 'site/.vitepress/config/**', 'site/.vitepress/plugins/**', 'site/.vitepress/public/**', 'site/.vitepress/theme/**', 'scripts/build.ts', 'scripts/tags.json', 'package.json', 'pnpm-lock.yaml', '!site/.vitepress/**/*.test.ts', '!site/.vitepress/**/README.md') }}
+          # 只恢复同 OS 的构建产物，避免 Windows 腿复用 Linux 产物。
           restore-keys: |
             vitepress-build-${{ runner.os }}-
 

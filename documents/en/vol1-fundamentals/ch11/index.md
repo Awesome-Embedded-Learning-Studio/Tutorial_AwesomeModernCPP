@@ -1,19 +1,18 @@
 ---
-title: A First Look at the STL
+title: "Exception Handling"
 translation:
   source: documents/vol1-fundamentals/ch11/index.md
-  source_hash: cbe171c76d0469c6f8826c03a91a45078fff935b09b0edb0e53c66c02846f540
-  translated_at: '2026-05-26T10:59:20.251127+00:00'
+  source_hash: edd457d7ea85c01cc935f8faf2851179caa02eb517aa4173e309504adb59691c
+  translated_at: '2026-09-27T04:12:32+00:00'
   engine: anthropic
-  token_count: 81
+  token_count: 30
 ---
-# First Look at the STL
+# Exception Handling
 
 ## Chapter Contents
 
 <ChapterNav variant="sub">
-  <ChapterLink href="01-vector">Getting Started with std::vector</ChapterLink>
-  <ChapterLink href="02-map-set">Getting Started with Associative Containers</ChapterLink>
-  <ChapterLink href="03-algorithms-intro">First Look at the Algorithms Library</ChapterLink>
-  <ChapterLink href="04-stl-patterns">Common STL Patterns</ChapterLink>
+  <ChapterLink href="01-try-catch">Exception Basics</ChapterLink>
+  <ChapterLink href="02-exception-safety">Exception Safety</ChapterLink>
+  <ChapterLink href="03-error-handling-comparison">Comparing Error Handling Approaches</ChapterLink>
 </ChapterNav>

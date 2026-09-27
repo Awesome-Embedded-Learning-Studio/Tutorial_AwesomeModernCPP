@@ -50,7 +50,7 @@ title: C++ 抽象的成本速查表
 
 变量的**存储类型**影响它在哪、访问多快(Agner 卷1 §7.1):
 
-- **自动变量(栈)**:默认。访问最快(在 L1 命中的栈上),编译器还能放进寄存器。`register` 关键字在现代编译器已无意义(编译器自己分配寄存器),是 C++17 起的 deprecated/removed 关键字,别用。
+- **自动变量(栈)**:默认。访问最快(在 L1 命中的栈上),编译器还能放进寄存器。`register` 关键字在现代编译器已无意义(编译器自己分配寄存器),在 C++11 起被弃用、C++17 移除,别用。
 - **静态变量(`static`/全局)**:固定地址,有固定初始化(常量初始化零开销;动态初始化有启动成本)。多线程下静态局部变量的初始化是线程安全的(magic statics),但**有线程安全初始化的运行时开销**(首次进入时的原子检查)。
 - **`thread_local`**:每线程一份。访问稍贵(要查 TLS 的线程局部存储区,通常几条额外指令),但在多线程下避免共享。对「每线程的上下文对象」有用。
 
@@ -100,7 +100,7 @@ sizeof:
 
 ## 参考资源
 
-- Agner Fog《Optimizing software in C++》§7 *Variables / objects / containers》(变量存储类型、位域、enum)。本地
+- Agner Fog《Optimizing software in C++》§7 *Variables / objects / containers》(变量存储类型、位域、enum)
 - Carruth *There Are No Zero-Cost Abstractions*(CppCon 2019)——「没有零开销抽象」命题
 - ch06-01/02/03/05(本卷,各成本的实测出处)
 - 本篇 sizeof 程序:`code/volumn_codes/vol6-performance/ch06/abstraction_sizeof.cpp`

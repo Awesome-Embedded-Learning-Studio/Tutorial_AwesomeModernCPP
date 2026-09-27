@@ -5,16 +5,15 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Master thread-local storage and one-time initialization mechanisms to
-  write thread-safe lazy initialization and global state.
+description: Master thread-local storage and one-time initialization to write thread-safe lazy initialization and global state
 difficulty: intermediate
 order: 4
 platform: host
 prerequisites:
-- 线程所有权与 RAII
+- Thread Ownership and RAII
 reading_time_minutes: 19
 related:
-- 线程参数与生命周期
+- Thread Arguments and Lifetime
 tags:
 - host
 - cpp-modern
@@ -24,348 +23,388 @@ title: thread_local and call_once
 translation:
   source: documents/vol5-concurrency/ch01-thread-lifecycle-raii/04-thread-local-and-call-once.md
   source_hash: 2fa8fb9a7900bd6543b487a4c32aaffa4e5ca175e501c27973e6590ad66cab92
-  translated_at: '2026-06-16T04:03:10.921399+00:00'
+  translated_at: '2026-09-26T06:29:40+00:00'
   engine: anthropic
-  token_count: 3454
+  token_count: 9900
 ---
 # thread_local and call_once
 
-In the previous article, we used RAII to solve the problems of thread ownership and lifetime management. In this article, we will look at a problem from another dimension: when multiple threads need to access certain "global states," how can we ensure thread safety without sacrificing performance?
+In the previous article, we used RAII to solve the problems of thread ownership and lifetime management. This article turns to a problem on a different axis: when multiple threads need to access some kind of "global state", how do we keep things thread-safe without sacrificing performance?
 
-The answer lies in two directions. The first direction is to **avoid sharing entirely**—give each thread an independent copy, so they use their own resources, naturally eliminating contention. This is what `thread_local` storage duration is for. The second direction is to **share but initialize only once**—a global object needs to be initialized upon first use, and no matter how many threads trigger initialization simultaneously, it executes only once. This is the responsibility of `std::call_once`. These two tools solve different problems, but they share a common theme: making concurrent code safe during the "initialization" phase.
+The answer comes in two directions. The first is to **avoid sharing altogether**—give each thread its own private copy and let everyone use their own; with nothing shared, there is nothing to race over. That is exactly what `thread_local` storage duration is for. The second is to **share, but initialize only once**—some global object needs to be initialized on first use, and no matter how many threads trigger that initialization simultaneously, it must run exactly one time. That is the responsibility of `std::call_once`. The two tools solve two different problems, yet they share one theme: making the "initialization" step of concurrent code safe.
 
 ## thread_local Storage Duration
 
-C++ has several types of storage duration: automatic storage (local variables on the stack), static storage (global variables and `static` local variables), dynamic storage (allocated by `new`/`malloc`), and thread storage. `thread_local` is the specifier for thread storage duration—a variable modified by it has an independent instance in each thread, existing from the thread's creation until its exit.
+C++ has several kinds of storage duration: automatic storage (local variables on the stack), static storage (global variables and `static` locals), dynamic storage (allocated with `new`/`malloc`), and thread storage. `thread_local` is the specifier for thread storage duration—a variable it decorates has its own independent instance in every thread, alive from the moment the thread is created until it exits.
 
-What does this mean? Suppose you declare a `thread_local int`. If your program has N threads, there are N independent copies of that `int`. Thread A's modifications to its own copy are completely invisible to Thread B—they are different objects in memory with different addresses. From a thread's perspective, a `thread_local` variable acts like a "thread-specific global variable"—it has a lifetime as long as the thread, but each thread has its own copy.
+What does that mean? Suppose you declare `thread_local int counter = 0;`. Your program then has exactly as many independent copies of `counter` as it has threads. A change thread A makes to its own copy is completely invisible to thread B—they are different objects in memory, right down to their addresses. From a thread's perspective, a `thread_local` variable behaves like a "global variable private to this thread"—it lives exactly as long as the thread does, but every thread gets its own copy.
 
-Let's look at a straightforward example—a thread-safe counter that requires no locks:
+Let's look at the most direct example—a thread-safe counter that needs no locks at all:
 
 ```cpp
-#include <iostream>
 #include <thread>
-#include <string>
+#include <iostream>
 
-thread_local int counter = 0; // Each thread has its own counter
+thread_local int thread_counter = 0;
 
-void task(const std::string& name) {
+void increment_and_print(const char* name)
+{
     for (int i = 0; i < 5; ++i) {
-        ++counter;
-        std::cout << name << ": " << counter << "\n";
+        ++thread_counter;
+        std::cout << name << ": counter = " << thread_counter << "\n";
     }
 }
 
-int main() {
-    std::thread t1(task, "Thread A");
-    std::thread t2(task, "Thread B");
-
-    task("Main Thread");
+int main()
+{
+    std::thread t1(increment_and_print, "Thread-A");
+    std::thread t2(increment_and_print, "Thread-B");
 
     t1.join();
     t2.join();
 
-    // Main thread's counter is still 0, never touched by other threads
-    std::cout << "Main counter final: " << counter << "\n";
+    // The main thread has its own thread_counter copy too
+    std::cout << "Main: counter = " << thread_counter << "\n";
+    return 0;
 }
 ```
 
-The output will look something like this:
+The output looks roughly like this:
 
 ```text
-Thread A: 1
-Thread A: 2
-Main Thread: 1
-Thread B: 1
-Thread A: 3
-Main Thread: 2
+Thread-A: counter = 1
+Thread-A: counter = 2
+Thread-B: counter = 1
+Thread-A: counter = 3
+Thread-B: counter = 2
 ...
-Main counter final: 0
+Main: counter = 0
 ```
 
-You will notice that Thread A and Thread B each count to 5 without interfering with each other. The main thread's `counter` remains 0—it was never touched by any other thread. Three threads, three independent `counter` instances.
+You will notice that `Thread-A` and `Thread-B` each count up to 5 without interfering with each other, while the main thread's `thread_counter` is still 0—no thread ever touched it. Three threads, three independent `thread_counter` instances.
 
-### Initialization Timing of thread_local
+### When thread_local Variables Are Initialized
 
-`thread_local` variables are initialized **when each thread first uses them (ODR-use)**, not when the program starts. This "lazy initialization" behavior is crucial for several reasons. First, if a `thread_local` variable is never accessed by a specific thread, that thread won't allocate memory or execute initialization for it, avoiding waste. Second, the initialization is thread-safe—the standard guarantees that even if multiple threads access the same `thread_local` variable for the first time simultaneously, each thread's initialization happens only once and without interference. Third, the initialization order of `thread_local` variables relates to their declaration position—within the same translation unit, `thread_local` variables are initialized in declaration order; the order between different translation units is unspecified (similar to the static variable initialization order problem).
+A `thread_local` variable is initialized at **each thread's first use of it (ODR-use)**, not at program startup. This initialize-on-first-use behavior matters a great deal—it guarantees several things. First, if a `thread_local` variable is never accessed by a given thread, that thread never allocates memory for it or runs its initialization, so nothing is wasted. Second, initialization is thread-safe—the standard guarantees that even when multiple threads first reach the same `thread_local` variable at the same time, each thread's initialization runs exactly once, with no interference between them. Third, the initialization order of `thread_local` variables follows where they are declared—within a single translation unit, `thread_local` variables initialize in declaration order, while the order across translation units is unspecified (much like the static initialization order problem).
 
-This "lazy initialization" characteristic makes `thread_local` perfect for implementing "on-demand allocation" resources—such as per-thread random number generators, memory pools, or log buffers. These resources would require locking if shared globally, but with `thread_local`, they become completely lock-free.
+This deferred-initialization property makes `thread_local` a natural fit for resources you want allocated on demand—a per-thread random number generator, memory pool, or log buffer, for instance. Shared globally, these resources would need locks; made `thread_local`, they run entirely lock-free.
 
-### thread_local vs. Global/Static Variables: Their Lifetimes
+### thread_local versus Global and static Variables: A Lifetime Comparison
 
-To clearly understand where `thread_local` fits, we can compare it with other storage durations. Global variables and `static` member variables have static storage duration—they are initialized when the program starts (or upon first use for `static` local variables inside functions) and destroyed when the program exits. All threads share the same instance. `thread_local` variables also have a lifetime as long as the thread, but each thread has an independent copy—initialized when the thread starts (upon first use) and destroyed when the thread exits. Normal stack variables (automatic storage duration) are created when the function is called and destroyed when it returns. While they are also isolated between threads, their lifetime is too short—they vanish once the function returns.
+To see clearly where `thread_local` sits, we can line it up against the other storage durations. Global variables and `static` member variables have static storage duration—initialized at program startup (or on first use, for `static` locals inside functions) and destroyed at program exit—and all threads share the same instance. `thread_local` variables also live exactly as long as a thread, but each thread holds an independent copy—initialized when the thread starts (on first use) and destroyed when the thread exits. Ordinary stack variables (automatic storage duration) are created at function call and destroyed at function return; threads are isolated from each other here too, of course, but the lifetime is simply too short—gone the moment the function returns.
 
-An easily overlooked point is the destruction timing of `thread_local` variables. When a thread exits, all `thread_local` variables for that thread are destroyed in reverse order of initialization. This means the destructor of a `thread_local` variable executes within the context of that thread—if you access another thread's state in the destructor, you must be careful about synchronization. Even trickier, if the destructor of a `thread_local` variable triggers access to another `thread_local` variable that has already been destroyed, the behavior is undefined. This "cross-reference in destructor" problem is one of the subtlest traps of `thread_local`.
+One easily overlooked point is when `thread_local` variables are destroyed. When a thread exits, all of that thread's `thread_local` variables are destroyed in the reverse order of their initialization. That means a `thread_local` variable's destructor runs in the thread's own context—if the destructor reaches into other threads' state, synchronization becomes your problem again. Trickier still: if a `thread_local` variable's destructor triggers access to another `thread_local` variable that has already been destroyed, the behavior is undefined. This "cross-referencing during destruction" problem is one of the sneakiest traps `thread_local` sets.
 
 ## Avoiding Inter-Thread Sharing with thread_local
 
-Now that we understand the basic concepts, let's look at a few typical application scenarios for `thread_local` in practice.
+With the basic concepts in place, let's look at a few typical places `thread_local` earns its keep in real code.
 
-### Thread-Safe Random Number Generator
+### A Thread-Safe Random Number Generator
 
-Random number generators are one of the most classic use cases for `thread_local`. The thread safety of `rand()` is implementation-defined and not guaranteed on all platforms. Moreover, even if an implementation happens to be thread-safe, its internal state is still shared by all threads, and results in a multi-threaded environment might lack the random distribution you expect. Random number engines in `<random>` (like `std::mt19937`) are not thread-safe—you cannot call the same engine object in multiple threads simultaneously. The solution is to give each thread an independent engine:
+Random number generators are one of the most classic `thread_local` use cases. The thread safety of `std::rand()` is implementation-defined—not every platform guarantees it. And even if an implementation happens to be thread-safe, its internal state is still shared by all threads, so in a multithreaded environment the results of repeated calls may lack the randomness distribution you expect. As for the random number engines in `<random>` (such as `std::mt19937`), they are not thread-safe—you cannot call the same engine object from multiple threads at the same time. The solution is to give every thread its own engine:
 
 ```cpp
-#include <iostream>
 #include <random>
 #include <thread>
-#include <string>
+#include <iostream>
+#include <vector>
 
-void generate_numbers(const std::string& name) {
-    // Each thread has its own engine and distribution
-    thread_local std::mt19937 engine(std::random_device{}());
-    std::uniform_int_distribution<int> dist(1, 100);
-
-    for (int i = 0; i < 5; ++i) {
-        std::cout << name << " generated: " << dist(engine) << "\n";
-    }
+int random_int(int min_val, int max_val)
+{
+    // Initialized on each thread's first call, reused afterwards
+    thread_local std::mt19937 generator{std::random_device{}()};
+    std::uniform_int_distribution<int> dist(min_val, max_val);
+    return dist(generator);
 }
 
-int main() {
-    std::thread t1(generate_numbers, "Thread A");
-    std::thread t2(generate_numbers, "Thread B");
+void generate_numbers(const char* name, int count)
+{
+    std::cout << name << ": ";
+    for (int i = 0; i < count; ++i) {
+        std::cout << random_int(1, 100) << " ";
+    }
+    std::cout << "\n";
+}
 
+int main()
+{
+    std::thread t1(generate_numbers, "Thread-A", 10);
+    std::thread t2(generate_numbers, "Thread-B", 10);
     t1.join();
     t2.join();
+    return 0;
 }
 ```
 
-`engine` is declared as `thread_local`, so each thread has its own `std::mt19937` instance, maintaining its own random state. `std::random_device{}` is used to provide a different seed for each thread's generator—note that this seed is obtained when the thread first calls `generate_numbers`, not at program startup. So even if two threads start almost simultaneously, they will get different seeds (assuming `std::random_device` itself is non-deterministic, which is true on most platforms).
+Because `generator` is declared `thread_local`, every thread has its own `std::mt19937` instance maintaining its own random state. `std::random_device{}()` exists to seed each thread's generator differently—note that the seed is obtained when the thread first calls `random_int`, not at program startup. So even if two threads start at almost the same moment, they end up with different seeds (as long as `std::random_device` itself is implemented non-deterministically, which holds on most platforms).
 
-### Thread-Local Memory Pool
+### A Thread-Local Memory Pool
 
-In high-performance scenarios, frequent calls to `new` and `delete` can cause severe lock contention—because the standard library's allocator (usually `malloc` or `ptmalloc`) needs to lock internally to protect the free list. A common optimization is to give each thread a small memory pool, allocating small objects directly from the thread-local pool without competing with other threads:
+In high-performance settings, frequent `new` and `delete` calls can cause serious lock contention—the standard library's memory allocator (usually `ptmalloc2` or `tcmalloc`) has to take locks internally to protect its free lists. A common optimization is to give each thread a small memory pool, so allocations of small objects come straight out of the thread-local pool instead of competing with other threads:
 
 ```cpp
-#include <iostream>
-#include <thread>
 #include <vector>
-#include <memory>
+#include <cstddef>
 
-// Simplified thread-local memory pool
 class ThreadLocalPool {
-    struct Block { Block* next; };
-    Block* free_list = nullptr;
-
 public:
-    void* allocate(size_t size) {
-        if (free_list) {
-            void* ptr = free_list;
-            free_list = free_list->next;
+    static ThreadLocalPool& instance()
+    {
+        thread_local ThreadLocalPool pool;
+        return pool;
+    }
+
+    void* allocate(std::size_t size)
+    {
+        if (size <= kBlockSize) {
+            if (!free_list_.empty()) {
+                void* ptr = free_list_.back();
+                free_list_.pop_back();
+                return ptr;
+            }
+            // Carve a block out of the big chunk
+            if (current_offset_ + size > kChunkSize) {
+                chunks_.emplace_back(new char[kChunkSize]);
+                current_offset_ = 0;
+            }
+            void* ptr = chunks_.back().get() + current_offset_;
+            current_offset_ += size;
             return ptr;
         }
-        return ::operator new(size); // Fallback to global new
+        // Allocations larger than the block size fall back to the global allocator
+        return ::operator new(size);
     }
 
-    void deallocate(void* ptr) {
-        Block* block = static_cast<Block*>(ptr);
-        block->next = free_list;
-        free_list = block;
+    void deallocate(void* ptr, std::size_t size)
+    {
+        if (size <= kBlockSize) {
+            free_list_.push_back(ptr);
+        }
+        else {
+            ::operator delete(ptr);
+        }
     }
+
+private:
+    ThreadLocalPool() = default;
+
+    static constexpr std::size_t kBlockSize = 256;
+    static constexpr std::size_t kChunkSize = 4096;
+
+    std::vector<std::unique_ptr<char[]>> chunks_;
+    std::vector<void*> free_list_;
+    std::size_t current_offset_{kChunkSize};  // Initial value triggers the first allocation
 };
-
-thread_local ThreadLocalPool pool; // Each thread has its own pool
-
-void worker(int id) {
-    std::vector<void*> ptrs;
-    for (int i = 0; i < 100; ++i) {
-        ptrs.push_back(pool.allocate(sizeof(int)));
-    }
-    for (void* p : ptrs) {
-        pool.deallocate(p);
-    }
-    std::cout << "Thread " << id << " done.\n";
-}
-
-int main() {
-    std::thread t1(worker, 1);
-    std::thread t2(worker, 2);
-    t1.join();
-    t2.join();
-}
 ```
 
-This simplified memory pool demonstrates the typical usage of `thread_local` in performance optimization: `thread_local` ensures each thread has its own independent memory pool, so allocation and deallocation of small objects happen entirely locally without any synchronization. Of course, this is just a teaching example—in production, you should use mature allocators (like `mimalloc`, `jemalloc`), which already implement similar thread-local caching internally. But understanding the role `thread_local` plays here is very helpful for writing high-performance concurrent code.
+This simplified memory pool shows the classic performance play for `thread_local`: `thread_local ThreadLocalPool pool` guarantees every thread its own pool, and small-object allocation and deallocation complete entirely on the local thread with no synchronization at all. Of course, this is a teaching example—in production you should use a mature memory allocator (such as `jemalloc` or `tcmalloc`), which already build thread-local caching on the same idea internally. But understanding the role `thread_local` plays here is a big help when writing high-performance concurrent code.
 
 ## std::call_once and std::once_flag
 
-Having covered the "one copy per thread" scenario, let's look at the "all threads share one copy but initialize only once" scenario.
+That wraps up the "one copy per thread" scenario; now we turn to the scenario where "all threads share one copy, but it is initialized exactly once".
 
-`std::call_once` is a one-time initialization mechanism provided by C++11. You give it a `std::once_flag` and a callable object, and it guarantees that no matter how many threads call `std::call_once` simultaneously, the callable object is executed only once—the first arriving thread executes the initialization, while the others wait for it to complete. This mechanism is very useful for implementing singletons, global configuration initialization, lazy loading, and so on.
+`std::call_once` is C++11's one-time initialization mechanism. You hand it a `std::once_flag` and a callable, and it guarantees that no matter how many threads call `call_once` at the same time, the callable executes exactly once—the first thread to arrive performs the initialization and the others wait for it to finish. The mechanism is extremely useful for implementing singletons, initializing global configuration, lazy loading, and similar scenarios.
 
 ### Basic Usage
 
 ```cpp
-#include <iostream>
 #include <mutex>
+#include <iostream>
 #include <thread>
 
 std::once_flag init_flag;
-int shared_resource = 0;
+int* shared_resource = nullptr;
 
-void init_resource() {
-    std::cout << "Initializing shared resource...\n";
-    shared_resource = 42; // Expensive initialization
+void ensure_initialized()
+{
+    std::call_once(init_flag, []() {
+        std::cout << "Initializing shared resource...\n";
+        shared_resource = new int(42);
+    });
 }
 
-void worker() {
-    std::call_once(init_flag, init_resource);
-    std::cout << "Using resource: " << shared_resource << "\n";
+void use_resource(const char* thread_name)
+{
+    ensure_initialized();
+    std::cout << thread_name << ": resource = " << *shared_resource << "\n";
 }
 
-int main() {
-    std::thread t1(worker);
-    std::thread t2(worker);
-    std::thread t3(worker);
+int main()
+{
+    std::thread t1(use_resource, "Thread-A");
+    std::thread t2(use_resource, "Thread-B");
+    std::thread t3(use_resource, "Thread-C");
 
     t1.join();
     t2.join();
     t3.join();
+
+    delete shared_resource;
+    return 0;
 }
 ```
 
-In the output, you will find "Initializing shared resource..." appears only once—regardless of the scheduling order of the three threads, the initialization code executes only once. `std::once_flag` records whether initialization is complete, and `std::call_once` checks this flag on each call. If initialization hasn't started, the first thread executes it; if it's in progress, other threads block and wait; if it's complete, all threads skip directly.
+In the output you will find "Initializing shared resource..." appears exactly once—whatever order the three threads get scheduled in, the initialization code runs a single time. The `std::once_flag` records whether initialization has completed, and `call_once` checks that flag on every call. If initialization hasn't started yet, the first thread runs it; if it is in progress, the other threads block and wait; if it is done, every thread skips straight through.
 
 ### call_once and Exception Retry
 
-`std::call_once` has a critical behavior: if the initialization function (the callable object) throws an exception, `std::call_once` does not mark the `std::once_flag` as "completed." This means the next time a thread calls `std::call_once`, initialization will be attempted again. This design is very reasonable—if initialization fails (e.g., file open failure, network connection timeout), you don't want all subsequent threads to think "it's already initialized" and then use an invalid state.
+`std::call_once` has one crucial behavior: if the initialization function (the callable) throws an exception, `call_once` does not mark the `once_flag` as "done". That means the next time a thread calls `call_once`, the initialization is attempted again. The design makes complete sense—if initialization failed (say, opening a file failed or a network connection timed out), you don't want every subsequent thread to assume "already initialized" and then run on invalid state.
 
 ```cpp
-#include <iostream>
 #include <mutex>
-#include <thread>
+#include <iostream>
+#include <stdexcept>
 
-std::once_flag init_flag;
+std::once_flag config_flag;
+bool config_loaded = false;
 int attempt_count = 0;
 
-void risky_init() {
+void load_config()
+{
     ++attempt_count;
-    std::cout << "Attempt " << attempt_count << "...\n";
+    std::cout << "Attempt " << attempt_count << ": loading config...\n";
+
     if (attempt_count < 3) {
-        throw std::runtime_error("Not ready yet");
+        // Simulate the first two attempts failing
+        throw std::runtime_error("Config file not ready");
     }
-    std::cout << "Initialization succeeded!\n";
+
+    config_loaded = true;
+    std::cout << "Config loaded successfully\n";
 }
 
-void worker() {
+void worker(const char* name)
+{
     try {
-        std::call_once(init_flag, risky_init);
-    } catch (const std::exception& e) {
-        std::cout << "Caught: " << e.what() << "\n";
+        std::call_once(config_flag, load_config);
+        std::cout << name << ": using config\n";
     }
-}
-
-int main() {
-    std::thread t1(worker);
-    std::thread t2(worker);
-    t1.join();
-    t2.join();
-
-    // Retry from main thread
-    worker();
+    catch (const std::exception& e) {
+        std::cout << name << ": init failed - " << e.what() << "\n";
+    }
 }
 ```
 
-In this example, the first two calls to `std::call_once` cause `risky_init` to throw an exception, so `init_flag` is not marked as complete, and the next call retries initialization. Only after the third success do all subsequent calls skip initialization. This "retry on exception" behavior is a significant advantage of `std::call_once` over the Meyers singleton—we will compare them in detail shortly.
+In this example, the first two calls to `call_once` make `load_config` throw, so the `once_flag` is never marked as completed and the next call attempts the initialization again. Once the third attempt succeeds, every subsequent call skips the initialization outright. This retry-after-exception behavior is a major advantage of `call_once` over the Meyers singleton—we will compare the two in detail shortly.
 
-## Meyers Singleton: Static Local Variables in Function Scope
+## The Meyers Singleton: A static Local in Function Scope
 
-Since C++11, `static` local variables in function scope have a very important guarantee: **their initialization is thread-safe**. If multiple threads simultaneously reach the declaration of a `static` local variable for the first time, only one thread will execute the initialization, and the others will wait. This is known as the "Meyers singleton" (named after Scott Meyers, who popularized this pattern in *Effective C++):
+Since C++11, `static` local variables in function scope carry a very important guarantee: **their initialization is thread-safe**. If multiple threads first reach the declaration of a `static` variable at the same time, exactly one of them performs the initialization while the others wait. This is the so-called "Meyers singleton" (named after Scott Meyers, who popularized the idiom in *Effective C++*):
 
 ```cpp
 #include <iostream>
-#include <mutex>
 #include <thread>
 
 class Singleton {
 public:
-    static Singleton& getInstance() {
-        static Singleton instance; // Magic static
-        return instance;
+    static Singleton& instance()
+    {
+        static Singleton inst;  // Thread-safe initialization
+        return inst;
     }
 
-    void doSomething() { std::cout << "Working...\n"; }
+    void do_work()
+    {
+        std::cout << "Singleton working\n";
+    }
 
 private:
-    Singleton() {
+    Singleton()
+    {
         std::cout << "Singleton constructed\n";
-        // Simulate expensive init
     }
-    ~Singleton() = default;
-    // Delete copy/move
+
+    // Forbid copying and moving
     Singleton(const Singleton&) = delete;
     Singleton& operator=(const Singleton&) = delete;
 };
 
-void worker() {
-    Singleton& s = Singleton::getInstance();
-    s.doSomething();
+void use_singleton(const char* name)
+{
+    std::cout << name << ": accessing singleton\n";
+    Singleton::instance().do_work();
 }
 
-int main() {
-    std::thread t1(worker);
-    std::thread t2(worker);
+int main()
+{
+    std::thread t1(use_singleton, "Thread-A");
+    std::thread t2(use_singleton, "Thread-B");
     t1.join();
     t2.join();
+    return 0;
 }
 ```
 
-"Singleton constructed" will only output once, no matter how many threads call `getInstance()` simultaneously. The C++11 standard ([stmt.dcl] p4) explicitly states: if control enters the declaration of a `static` local variable while multiple threads are active, one thread executes initialization and the others block. This guarantee is implemented jointly by the compiler and runtime library—on GCC and Clang, it is usually implemented through the `__cxa_guard_acquire` / `__cxa_guard_release` ABI functions, using a mechanism similar to `std::call_once` underneath.
+"Singleton constructed" is printed only once, no matter how many threads call `instance()` concurrently. The C++11 standard ([stmt.dcl] paragraph 4) states it explicitly: if control flow enters the declaration of a `static` local variable in multiple threads simultaneously, one of them executes the initialization and the others block and wait. The compiler and the runtime library deliver this guarantee together—on GCC and Clang it is typically implemented through the two ABI functions `__cxa_guard_acquire` / `__cxa_guard_release`, whose underlying machinery resembles `call_once`.
 
-The Meyers singleton is the simplest and safest way to implement the singleton pattern. No manual locking, no `std::once_flag`, no `std::call_once`—the compiler handles everything for you. If your singleton initialization cannot fail (won't throw exceptions), the Meyers singleton is the best choice.
+The Meyers singleton is the simplest, safest way to implement the singleton pattern. No manual locking, no `std::call_once`, no `std::atomic`—the compiler takes care of everything for you. If your singleton's initialization cannot fail (won't throw), the Meyers singleton is the best choice.
 
-## When call_once is Better Than Meyers Singleton
+## When call_once Beats the Meyers Singleton
 
-Since the Meyers singleton is so good, why do we still need `std::call_once`? The key difference lies in **control granularity** and **exception handling**.
+If the Meyers singleton is this good, why do we still need `std::call_once`? The key differences are **granularity of control** and **exception handling**.
 
-Meyers singleton initialization is tied to the variable declaration—you cannot do preparatory work before initialization, nor can you choose a different strategy if initialization fails. `std::call_once`, however, gives you full control: the initialization function can be a normal function or lambda, and you decide its contents freely; initialization can access external state (like reading a config file path, connecting to a database); if initialization fails (throws an exception), subsequent calls can retry.
+A Meyers singleton's initialization is welded to the variable's declaration—you can't do preparatory work before it, and you can't pick a different strategy after it fails. `call_once` hands you full control: the initialization function can be an ordinary function or a lambda whose contents you decide freely; the initialization can access external state (reading a configuration file path, connecting to a database); and if it fails (throws), subsequent calls can retry.
 
-A more subtle difference is the "location" of initialization. Meyers singleton initialization happens when the `getInstance()` function is called for the first time—this timing might not be what you want. You might prefer to explicitly initialize all global resources after program startup, rather than triggering a sudden, time-consuming initialization in the middle of a request. `std::call_once` allows you to place this initialization logic anywhere—you can call it proactively at the start of `main()`, or lazy-load only when truly needed, entirely under your control.
+A subtler difference is the "location" of initialization. A Meyers singleton initializes when the `instance()` function is first called—and that moment may not be the one you want. Perhaps you would rather initialize all global resources explicitly right after the program starts, instead of an expensive initialization suddenly firing in the middle of handling some request. `call_once` lets you put that initialization logic anywhere—invoke it proactively at the top of `main()`, or lazy-load it when truly needed; it is entirely up to you.
 
-There is also a practical scenario: if your "singleton" is not a single object but a set of initialization steps (like initializing the logging system, configuration manager, database connection pool, etc.), `std::call_once` can package all these steps in one function. The Meyers singleton can only initialize one object—to initialize multiple things, you would need to write a `static` local variable for each, which is less flexible.
+There is also a very practical scenario: if your "singleton" is not one object but a set of initialization steps (bringing up the logging system, the configuration manager, the database connection pool, and so on), `call_once` can bundle all of those steps into a single function. A Meyers singleton can only initialize one object—to initialize several things you would need a separate `static` local for each, which is not flexible.
 
-To summarize the selection strategy: if your initialization logic is simple, won't fail, and only needs to initialize one object, the Meyers singleton is the best choice—concise, safe, zero overhead. If you need more flexible control—initialization might fail, needs retry, needs to access external state, or needs to initialize a group of resources rather than a single object—`std::call_once` is the more suitable tool.
+To sum up the selection strategy: if your initialization logic is simple, cannot fail, and only needs to initialize one object, the Meyers singleton is the best choice—concise, safe, zero overhead. If you need more flexible control—initialization may fail and need retries, must access external state, or must initialize a group of resources rather than a single object—`call_once` is the better tool.
 
 ## thread_local and Dynamically Loaded Libraries
 
-`thread_local` is very reliable in normal use, but there are issues to be aware of in scenarios involving dynamically loaded libraries (shared library / DLL).
+`thread_local` is very reliable in ordinary use, but scenarios involving dynamically linked libraries (shared libraries / DLLs) come with a few things to watch out for.
 
-The root of the problem lies in the lifetime management of `thread_local` variables. Each thread's `thread_local` variables need to be destroyed when the thread exits, which requires registering a destructor callback. In the main program, this registration is done by the C++ runtime when the `thread_local` variable is first accessed. In dynamically loaded libraries, however, the situation becomes more complex—the library can be loaded or unloaded at any time, and the destructor callbacks for `thread_local` variables need to be cleaned up before the library is unloaded.
+The root of the problem lies in lifetime management of `thread_local` variables. Each thread's `thread_local` variables must be destroyed when that thread exits, which requires registering a destruction callback. In the main program, this registration is performed by the C++ runtime when a `thread_local` variable is first accessed. In a dynamically loaded library, the situation gets more complicated—the library may be loaded or unloaded at any time, and the destruction callbacks for its `thread_local` variables need to be cleaned up before the library is unloaded.
 
-On Linux (glibc + GCC/Clang), support for `thread_local` variables in dynamic libraries usually works fine—the `__cxa_thread_atexit` function is responsible for registering destructor callbacks on thread exit and handles library unloading correctly. However, in the Windows DLL model, the behavior of `thread_local` in DLLs has been problematic for a long time—when a DLL is unloaded, the destructor callbacks for `thread_local` variables of already exited threads would point to invalid code segments, causing crashes. It wasn't until relatively recent MSVC versions (VS 2017 and later) that support for `thread_local` in DLLs became more robust.
+On Linux (glibc + GCC/Clang), `thread_local` variables in shared libraries usually work fine—the `__cxa_thread_atexit` function is responsible for registering the thread-exit destruction callbacks, and it handles library unloading correctly. In the Windows DLL model, however, `thread_local` inside DLLs has been problematic for a long time—when a DLL unloads, the destruction callbacks for `thread_local` variables of already-exited threads can point into code sections that are no longer valid, causing crashes. Only fairly recent MSVC versions (VS 2017 and later) support `thread_local` in DLLs reasonably well.
 
-If you need to write cross-platform library code that might be dynamically loaded, pay attention to the following points when using `thread_local`. First, ensure your target platform's compiler support for `thread_local` in dynamic libraries is complete. Second, if the destructor of a `thread_local` variable has side effects (like releasing locks, writing files, notifying other threads), be especially careful—these destructors might not execute in the order you expect when the library is unloaded. Finally, in some embedded or special environments (like WebAssembly, certain RTOSes), support for `thread_local` may be incomplete or entirely absent—if your code needs to run on these platforms, it's better to implement thread-local storage using other methods.
+If you need to write cross-platform library code that may be dynamically loaded, keep the following in mind when using `thread_local`. First, make sure the compilers on your target platforms fully support `thread_local` in dynamic libraries. Second, be especially careful if a `thread_local` variable's destructor has side effects (releasing locks, writing files, notifying other threads)—when the library unloads, those destructions may not run in the order you expect. Finally, in some embedded or special environments (WebAssembly, certain RTOSes), `thread_local` support may be incomplete or absent altogether—if your code needs to run on these platforms, you are better off implementing thread-local storage some other way.
 
 ## Summary
 
-In this article, we discussed two mechanisms for handling "initialization" problems in concurrent environments. `thread_local` provides independent copies of variables for each thread, fundamentally eliminating data sharing—suitable for scenarios like random number generators, memory pools, and log buffers where "each thread has its own copy." Its initialization is lazy (on first use), thread-safe, and destruction occurs when the corresponding thread exits.
+This article discussed two mechanisms for handling "initialization" in a concurrent environment. `thread_local` gives each thread an independent copy of a variable, eliminating data sharing at the root—a natural fit for random number generators, memory pools, log buffers, and other "one per thread" resources. Its initialization is deferred (on first use) and thread-safe, and destruction happens when the owning thread exits.
 
-`std::call_once` combined with `std::once_flag` provides the guarantee that "all threads share one copy, but initialize only once." It is more flexible than the Meyers singleton—supporting exception retries, initializing non-object resources (like a set of function calls), and triggering initialization at any location. If your initialization logic is simple and won't fail, the Meyers singleton is still the first choice—it's more concise and requires no extra `std::once_flag` variable. The two are not mutually exclusive but complementary tools; the choice depends on your specific needs.
+`std::call_once` paired with `std::once_flag` provides the "all threads share one copy, but initialize only once" guarantee. It is more flexible than the Meyers singleton—it supports retrying after exceptions, can initialize non-object resources (a set of function calls, for example), and can be triggered from any location. If your initialization logic is simple and cannot fail, the Meyers singleton remains the first choice—it is more concise and needs no extra `once_flag` variable. The two are not replacements for each other but complementary tools; which one you choose depends on your concrete needs.
 
-With this, the four articles of ch01 are complete. We started from the basic usage of `std::thread`, covered parameter passing, lifetime management, RAII wrappers, thread ownership, and thread-local storage and one-time initialization. These are the foundation for subsequent content—when we discuss mutexes, atomic operations, and lock-free programming later, we will frequently use the concepts and tools established in this chapter.
+With this, the four articles of ch01 are complete. Starting from the basic usage of `std::thread`, we worked through argument passing, lifetime management, RAII wrappers, thread ownership, and finally thread-local storage and one-time initialization. All of it is the foundation for what comes next—when we discuss mutexes, atomic operations, and lock-free programming later on, we will keep leaning on the concepts and tools established in this chapter.
 
-> 💡 Complete example code is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), visit `ch01`.
+> 💡 The complete example code lives in [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP); visit `code/volumn_codes/vol5/ch01-thread-lifecycle-raii/`.
 
 ## Exercises
 
-### Exercise 1: Thread-Safe Configuration Initializer
+### Exercise 1: A Thread-Safe Configuration Initializer
 
-Implement a `ConfigLoader` class that reads configuration from a file (you can simulate with `std::ifstream`), using `std::call_once` to ensure it initializes only once. Requirements: (1) If file reading fails, it should throw an exception and allow retry; (2) Provide a `get()` method to return the configuration value; (3) Multiple threads can call `get()` simultaneously, but only the first call triggers the file read.
+Implement a `ConfigManager` class that reads its configuration from a file (you can simulate it with `std::getline`) and uses `std::call_once` to guarantee initialization happens exactly once. Requirements: (1) if reading the file fails, it should throw an exception and allow a retry; (2) provide a `get(key)` method that returns the configured value; (3) multiple threads may call `get()` at the same time, but only the first call triggers the file read.
 
 ```cpp
-// TODO: Implement ConfigLoader
-// - std::once_flag flag
-// - std::call_once in get()
-// - Throw exception on simulated failure
+// Skeleton code
+#include <mutex>
+#include <string>
+#include <unordered_map>
+
+class ConfigManager {
+public:
+    static ConfigManager& instance();
+
+    std::string get(const std::string& key) const;
+
+private:
+    ConfigManager() = default;
+    void load_from_file();
+
+    std::once_flag init_flag_;
+    std::unordered_map<std::string, std::string> config_;
+};
 ```
 
-### Exercise 2: thread_local Logger
+### Exercise 2: A thread_local Logger
 
-Implement a simple thread-local logger where each thread has its own log buffer (`std::stringstream`), and log writing is lock-free. Provide two methods: `log()` to write messages, and `flush()` to output the buffer content to `std::cout` and clear it. In `main()`, launch 4 threads, have each write 10 log messages and then flush, and observe if the output is thread-safe.
+Implement a simple thread-local logger: each thread has its own log buffer (a `std::stringstream`), and writing log entries takes no locks. Provide two methods: `log(message)` appends a log entry, and `flush()` writes the buffer's contents to `std::cout` and clears it. In `main()`, start 4 threads; each writes 10 log entries and then flushes. Watch whether the output stays thread-safe.
 
-### Exercise 3: Comparing call_once and Meyers Singleton
+### Exercise 3: Comparing call_once and the Meyers Singleton
 
-Implement the same singleton in two ways—one using `std::call_once`, one using the Meyers singleton. Then simulate an expensive initialization in the singleton's constructor (like `std::this_thread::sleep_for`), use 8 threads to access the singleton simultaneously, and measure the performance difference between the two implementations. Think about why the performance might differ. Hint: The Meyers singleton's initialization lock is on the `static` variable itself, while `std::call_once`'s lock is on `std::once_flag`—if multiple threads access simultaneously, the waiting mechanism is similar, but implementation details may vary.
+Implement the same singleton both ways—one with `std::call_once`, one as a Meyers singleton. Then simulate an expensive initialization in the singleton's constructor (`std::this_thread::sleep_for(std::chrono::milliseconds(100))`), have 8 threads access the singleton simultaneously, and measure the performance difference between the two implementations. Think about it: why might their performance differ? Hint: the Meyers singleton's initialization lock sits on the `static` variable, while `call_once`'s lock sits on the `once_flag`—when multiple threads arrive at once, the waiting mechanism is the same, but the implementation details may differ.
 
 ## References
 

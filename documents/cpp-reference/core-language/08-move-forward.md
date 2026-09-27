@@ -31,7 +31,7 @@ title: std::move
 | 操作 | 签名 | 说明 |
 |------|------|------|
 | 移动转换 (C++14起) | `template<class T> constexpr std::remove_reference_t<T>&& move(T&& t) noexcept;` | 将对象 `t` 转换为右值引用 (xvalue) |
-| 完美转发 | `template<class T> T&& forward(typename std::remove_reference<T>::type& t) noexcept;` | 转发引用场景下保留值类别，需配合 `std::move` 使用 |
+| 完美转发 | `template<class T> T&& forward(typename std::remove_reference<T>::type& t) noexcept;` | 转发引用场景下保留值类别(转发右值时相当于 `std::move`,转发左值时相当于传引用) |
 | 条件移动 | `template<class T> typename std::conditional<...>::type move_if_noexcept(T& t) noexcept;` | 移动构造不抛异常时转为右值，否则返回左值 |
 
 ## 最小示例

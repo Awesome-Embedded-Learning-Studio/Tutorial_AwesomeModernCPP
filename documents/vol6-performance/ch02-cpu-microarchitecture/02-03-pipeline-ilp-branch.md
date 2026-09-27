@@ -148,7 +148,7 @@ uint64_t sum_gt128(const std::vector<uint8_t>& d) {
 
 ## 参考资源
 
-- Agner Fog《The microarchitecture of Intel, AMD and VIA CPUs》§22 *AMD Ryzen*:Zen 族流水线宽度(4-wide 译码、6 µop/clock 派发、8 µop/clock 退休)、分支吞吐(taken 1/2 clock、not-taken 2/clock)、µop cache、执行单元数量。本地:`.claude/drafts/books/optimazation_in_cpp/microarchitecture.md`
+- Agner Fog《The microarchitecture of Intel, AMD and VIA CPUs》§22 *AMD Ryzen*:Zen 族流水线宽度(4-wide 译码、6 µop/clock 派发、8 µop/clock 退休)、分支吞吐(taken 1/2 clock、not-taken 2/clock)、µop cache、执行单元数量:`.claude/drafts/books/optimazation_in_cpp/microarchitecture.md`
 - Bryant & O'Hallaron《CSAPP》第 4 章 *Processor Architecture*(流水线、冒险的概念级定义)与第 5 章 *Optimizing Program Performance*(循环展开、多累加器、reassociation 的经典推导)
 - Stack Overflow 传奇问题 *Why is processing a sorted array faster than processing an unsorted array?*(分支预测实验的出处,muffinista / Mysticial 的经典回答)
 - 本篇实测代码:`code/volumn_codes/vol6-performance/ch02/pipeline_branch_ilp.cpp`

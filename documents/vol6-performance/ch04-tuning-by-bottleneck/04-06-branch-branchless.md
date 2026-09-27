@@ -98,7 +98,7 @@ if (rare_error) [[unlikely]] { handle_error(); }  // 告诉编译器这条路很
 
 ## 参考资源
 
-- Agner Fog《The microarchitecture of Intel, AMD and VIA CPUs》分支预测章节。本地
+- Agner Fog《The microarchitecture of Intel, AMD and VIA CPUs》分支预测章节
 - Bakhvalov《Performance Analysis and Tuning on Modern CPUs》第 9 章 *Optimizing Bad Speculation*
 - ch02-03 流水线、ILP 与分支预测(本卷,4.2× 真分支惩罚的实测出处)
 - 本篇实测代码:`code/volumn_codes/vol6-performance/ch04/branchless.cpp`
