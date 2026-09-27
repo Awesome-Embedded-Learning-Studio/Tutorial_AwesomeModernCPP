@@ -4,8 +4,7 @@ cpp_standard:
 - 11
 - 14
 - 17
-description: Putting the Rule of Five into practice in your own classes, when = default
-fits, delete-copy-keep-move designs, and safely moving embedded resource handles
+description: Putting the Rule of Five into practice in your own classes, when = default fits, delete-copy-keep-move designs, and safely moving embedded resource handles
 difficulty: intermediate
 order: 7
 platform: host
