@@ -1,0 +1,542 @@
+{
+ "version": 1,
+ "id": "f103-toggle-bsrr",
+ "title": "Toggle：读一次，写一次",
+ "subtitle": "把当前状态翻译成一笔 32 位 BSRR 写入",
+ "source": "projects/vol8-f103-led/02-dsl/f103-toggle-bsrr.yaml",
+ "backend": "web",
+ "template": "process_flow",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#111521",
+  "bgRaised": "#171D2D",
+  "text": "#F4F6FB",
+  "muted": "#98A2B8",
+  "fill": "#66D9EF",
+  "fillEdge": "#2E9DC2",
+  "emptyEdge": "#43506A",
+  "grow": "#FFB86C",
+  "numOnFill": "#0B1E27",
+  "ok": "#72D49A",
+  "bad": "#FF6B7A",
+  "cardBg": "#1B2234"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "Toggle：读一次，写一次",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.5696,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "把当前状态翻译成一笔 32 位 BSRR 写入",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#98A2B8",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.672,
+   "h": 0.272
+  },
+  "show:read": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "accent",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.112,
+   "w": 3.0376,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "读 ODR 快照",
+     "w": 1.452
+    },
+    {
+     "text": "odr = GPIOx->ODR",
+     "w": 2.112
+    }
+   ],
+   "cx": -3.5,
+   "cy": 1.05
+  },
+  "show:edge_1": {
+   "kind": "arrow",
+   "x1": -1.8012,
+   "y1": 1.05,
+   "x2": -1.3028,
+   "y2": 1.05,
+   "cx": -1.552,
+   "cy": 1.05,
+   "w": 0.4984,
+   "h": 0.0,
+   "label": {
+    "text": "当前为低",
+    "x": -1.552,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.9504,
+    "h": 0.2448
+   }
+  },
+  "show:set": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.32,
+   "w": 2.2456,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "低半字 SET",
+     "w": 1.32
+    },
+    {
+     "text": "~odr & pin",
+     "w": 1.32
+    }
+   ],
+   "cx": 0.0,
+   "cy": 1.05
+  },
+  "show:edge_2": {
+   "kind": "arrow",
+   "x1": 1.3028,
+   "y1": 1.05,
+   "x2": 1.7352,
+   "y2": 1.05,
+   "cx": 1.519,
+   "cy": 1.05,
+   "w": 0.4324,
+   "h": 0.0,
+   "label": {
+    "text": "当前为高",
+    "x": 1.519,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.9504,
+    "h": 0.2448
+   }
+  },
+  "show:reset": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.244,
+   "w": 3.1696,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "高半字 RESET",
+     "w": 1.584
+    },
+    {
+     "text": "(odr & pin) << 16",
+     "w": 2.244
+    }
+   ],
+   "cx": 3.5,
+   "cy": 1.05
+  },
+  "show:edge_3": {
+   "kind": "arrow",
+   "x1": 3.5,
+   "y1": 0.242,
+   "x2": 3.5,
+   "y2": -0.742,
+   "cx": 3.5,
+   "cy": -0.25,
+   "w": 0.0,
+   "h": 0.984,
+   "label": {
+    "text": "拼成 32 位",
+    "x": 2.7704,
+    "y": -0.25,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.1592,
+    "h": 0.2448
+   }
+  },
+  "show:merge": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.452,
+   "w": 2.3776,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "按位或合成",
+     "w": 1.32
+    },
+    {
+     "text": "SET | RESET",
+     "w": 1.452
+    }
+   ],
+   "cx": 3.5,
+   "cy": -1.55
+  },
+  "show:edge_4": {
+   "kind": "arrow",
+   "x1": 2.1312,
+   "y1": -1.55,
+   "x2": 1.5668,
+   "y2": -1.55,
+   "cx": 1.849,
+   "cy": -1.55,
+   "w": 0.5644,
+   "h": 0.0,
+   "label": {
+    "text": "str",
+    "x": 1.849,
+    "y": -1.1976,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.3348,
+    "h": 0.2448
+   }
+  },
+  "show:store": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "success",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.848,
+   "w": 2.7736,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "写 BSRR",
+     "w": 0.924
+    },
+    {
+     "text": "一次写完成翻转",
+     "w": 1.848
+    }
+   ],
+   "cx": 0.0,
+   "cy": -1.55
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "低电平的位进入 SET 区，高电平的位进入 RESET 区",
+   "x": 0.0,
+   "y": 0.0882,
+   "fs": 0.24,
+   "color": "#FFB86C",
+   "mono": false,
+   "anchor": "middle",
+   "w": 7.1712,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "最终写入原子；前面的 ODR 读取仍留下并发窗口",
+   "x": 0.0,
+   "y": -0.4882,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 6.7632,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 3.03,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 2.03
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 2.03,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show read",
+   "note": "",
+   "duration": 2.67,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:read",
+     "cx": 0.0,
+     "cy": 0.4,
+     "t": 0.0,
+     "dur": 2.67
+    }
+   ]
+  },
+  {
+   "kind": "move",
+   "label": "move read",
+   "note": "to [-3.5, 1.05]",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "move",
+     "target": "show:read",
+     "frm": [
+      0.0,
+      0.4
+     ],
+     "to": [
+      -3.5,
+      1.05
+     ],
+     "t": 0.0,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show edge_1",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:edge_1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show set",
+   "note": "",
+   "duration": 1.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:set",
+     "cx": 0.0,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 1.95
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show edge_2",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:edge_2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show reset",
+   "note": "",
+   "duration": 2.79,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:reset",
+     "cx": 3.5,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 2.79
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show edge_3",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:edge_3",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show merge",
+   "note": "",
+   "duration": 2.07,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:merge",
+     "cx": 3.5,
+     "cy": -1.55,
+     "t": 0.0,
+     "dur": 2.07
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show edge_4",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:edge_4",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show store",
+   "note": "",
+   "duration": 1.59,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:store",
+     "cx": 0.0,
+     "cy": -1.55,
+     "t": 0.0,
+     "dur": 1.59
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.5s",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 13.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:edge_1",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:set",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:edge_2",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:reset",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:edge_3",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:merge",
+     "t": 1.5,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:edge_4",
+     "t": 1.8,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 2.1,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 4.85,
+     "dur": 2.4
+    }
+   ]
+  }
+ ]
+}
