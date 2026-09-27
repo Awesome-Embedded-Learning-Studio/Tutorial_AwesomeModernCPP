@@ -19,6 +19,12 @@ tags:
 - 入门
 - 基础
 title: std::vector Quick Start
+translation:
+  source: documents/vol1-fundamentals/ch10/01-vector.md
+  source_hash: 05c0397224d621a6bc5fa80a541c0185f2d8062fc97a83b8236c87e61c9023d3
+  translated_at: '2026-09-27T06:59:37+00:00'
+  engine: anthropic
+  token_count: 1648
 ---
 # std::vector Quick Start
 
@@ -309,11 +315,4 @@ Insert 100,000 elements into a vector in two ways: once without calling `reserve
 > - [cppreference: std::remove](https://en.cppreference.com/w/cpp/algorithm/remove)
 > - [cppreference: std::erase (C++20)](https://en.cppreference.com/w/cpp/container/vector/erase2)
 
-translation:
-  source: documents/vol1-fundamentals/ch10/01-vector.md
-  source_hash: 05c0397224d621a6bc5fa80a541c0185f2d8062fc97a83b8236c87e61c9023d3
-  translated_at: '2026-09-27T06:59:37+00:00'
-  engine: anthropic
-  token_count: 1648
----
 <!-- note: The C++ standard does not prescribe vector's growth factor, and emplace_back is not categorically faster than push_back; the translation preserves the source wording. -->

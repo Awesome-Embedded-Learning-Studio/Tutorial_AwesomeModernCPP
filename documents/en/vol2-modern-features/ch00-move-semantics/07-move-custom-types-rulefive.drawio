@@ -1,0 +1,45 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Rule of Five: SimpleVector" id="rulefive-simplevector">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="规则五：SimpleVector 的五个特殊成员" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="24" width="600" height="32" as="geometry" />
+        </mxCell>
+
+        <mxCell id="classbar" value="&lt;b&gt;class SimpleVector&lt;/b&gt;：int* data_ / std::size_t size_ / std::size_t capacity_，独占一份 new[] 出来的数组" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#ffffff;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="90" y="68" width="647" height="42" as="geometry" />
+        </mxCell>
+
+        <!-- 第一行：析构 / 拷贝构造 / 移动构造 -->
+        <mxCell id="card_dtor" value="&lt;b&gt;析构函数&lt;/b&gt;&lt;br&gt;~SimpleVector()&lt;br&gt;&lt;br&gt;&lt;font color=&quot;#c00000&quot;&gt;&lt;b&gt;释放资源&lt;/b&gt;&lt;/font&gt;&lt;br&gt;delete[] data_，把自己那份内存还给堆" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="90" y="126" width="207" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="card_copyctor" value="&lt;b&gt;拷贝构造&lt;/b&gt;&lt;br&gt;SimpleVector(const SimpleVector&amp;amp;)&lt;br&gt;&lt;br&gt;&lt;font color=&quot;#1a5fb4&quot;&gt;&lt;b&gt;深拷贝&lt;/b&gt;&lt;/font&gt;&lt;br&gt;new int[capacity_] 再 std::copy 过去，两个对象各持一份内存" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="310" y="126" width="207" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="card_movector" value="&lt;b&gt;移动构造&lt;/b&gt;&lt;br&gt;SimpleVector(SimpleVector&amp;amp;&amp;amp;) noexcept&lt;br&gt;&lt;br&gt;&lt;font color=&quot;#2E7D32&quot;&gt;&lt;b&gt;接管 + 置空&lt;/b&gt;&lt;/font&gt;&lt;br&gt;接过 other 的指针和长度，再把 other 置成空（nullptr / 0）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="530" y="126" width="207" height="160" as="geometry" />
+        </mxCell>
+
+        <!-- 第二行：拷贝赋值 / 移动赋值 / = default 对照 -->
+        <mxCell id="card_copyassign" value="&lt;b&gt;拷贝赋值&lt;/b&gt;&lt;br&gt;operator=(const SimpleVector&amp;amp;)&lt;br&gt;&lt;br&gt;&lt;font color=&quot;#1a5fb4&quot;&gt;&lt;b&gt;先释放，再深拷贝&lt;/b&gt;&lt;/font&gt;&lt;br&gt;delete[] 自己的旧内存，重新分配并复制；判 this != &amp;amp;other 防自赋值" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="90" y="306" width="207" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="card_moveassign" value="&lt;b&gt;移动赋值&lt;/b&gt;&lt;br&gt;operator=(SimpleVector&amp;amp;&amp;amp;) noexcept&lt;br&gt;&lt;br&gt;&lt;font color=&quot;#2E7D32&quot;&gt;&lt;b&gt;先释放，再接管 + 置空&lt;/b&gt;&lt;/font&gt;&lt;br&gt;delete[] 自己的旧内存，接过 other 的指针，other 置成空" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="310" y="306" width="207" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="card_default" value="&lt;b&gt;对照：UserProfile&lt;/b&gt;&lt;br&gt;成员只有 string / vector / int&lt;br&gt;&lt;br&gt;&lt;font color=&quot;#8a6d00&quot;&gt;&lt;b&gt;五个全部 = default&lt;/b&gt;&lt;/font&gt;&lt;br&gt;编译器生成的版本已经够好，一个都不用手写" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#888888;strokeWidth=1;dashed=1;fillColor=#fff2cc;fontSize=13;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="530" y="306" width="207" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="footer_note" value="要点：移动成员里把源对象置空，它析构时才不会释放已转移的资源；移动保证不抛异常就标 noexcept，vector 扩容靠 move_if_noexcept 决定用移动还是退回拷贝" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontColor=#555555;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="90" y="480" width="647" height="44" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

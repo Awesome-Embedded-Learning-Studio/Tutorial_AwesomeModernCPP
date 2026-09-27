@@ -1,0 +1,124 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Outer Padding" id="outer-padding">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="430" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- 标题带 -->
+        <mxCell id="title" value="Outer 的内存布局：Flip 整个当成员，自己也按 4 字节对齐" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="78" y="26" width="672" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- 偏移量标尺带 -->
+        <mxCell id="ruler-label" value="偏移量" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=13;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="8" y="80" width="62" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="ruler-0" value="0" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#bbbbbb;strokeWidth=1;fillColor=#f5f5f5;fontSize=13;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="78" y="80" width="56" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="ruler-1" value="1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#bbbbbb;strokeWidth=1;fillColor=#f5f5f5;fontSize=13;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="134" y="80" width="56" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="ruler-2" value="2" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#bbbbbb;strokeWidth=1;fillColor=#f5f5f5;fontSize=13;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="190" y="80" width="56" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="ruler-3" value="3" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#bbbbbb;strokeWidth=1;fillColor=#f5f5f5;fontSize=13;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="246" y="80" width="56" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="ruler-4" value="4" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#bbbbbb;strokeWidth=1;fillColor=#f5f5f5;fontSize=13;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="302" y="80" width="56" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="ruler-5" value="5" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#bbbbbb;strokeWidth=1;fillColor=#f5f5f5;fontSize=13;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="358" y="80" width="56" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="ruler-6" value="6" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#bbbbbb;strokeWidth=1;fillColor=#f5f5f5;fontSize=13;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="414" y="80" width="56" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="ruler-7" value="7" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#bbbbbb;strokeWidth=1;fillColor=#f5f5f5;fontSize=13;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="470" y="80" width="56" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="ruler-8" value="8" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#bbbbbb;strokeWidth=1;fillColor=#f5f5f5;fontSize=13;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="526" y="80" width="56" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="ruler-9" value="9" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#bbbbbb;strokeWidth=1;fillColor=#f5f5f5;fontSize=13;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="582" y="80" width="56" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="ruler-10" value="10" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#bbbbbb;strokeWidth=1;fillColor=#f5f5f5;fontSize=13;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="638" y="80" width="56" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="ruler-11" value="11" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#bbbbbb;strokeWidth=1;fillColor=#f5f5f5;fontSize=13;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="694" y="80" width="56" height="26" as="geometry" />
+        </mxCell>
+
+        <!-- 字节主体带：成员实线蓝，填充虚线灰 -->
+        <mxCell id="cell-tag" value="&lt;b&gt;tag&lt;/b&gt;&lt;br&gt;char" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="78" y="106" width="56" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="pad-mid" value="填充 ×3" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#888888;strokeWidth=1;dashed=1;fillColor=#f2f2f2;fontSize=13;fontColor=#666666;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="134" y="106" width="168" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="cell-in" value="&lt;b&gt;in&lt;/b&gt;&lt;br&gt;Flip（8 字节）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="302" y="106" width="448" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- 摊开带：in 内部就是上一条的 Flip -->
+        <mxCell id="expand-label" value="把 in 摊开看——Flip 的内部布局：" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=13;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="96" y="196" width="196" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="unfold-left" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#888888;strokeWidth=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="302" y="162" as="sourcePoint" />
+            <mxPoint x="302" y="196" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="unfold-right" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#888888;strokeWidth=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="750" y="162" as="sourcePoint" />
+            <mxPoint x="750" y="196" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="cell-in-b" value="&lt;b&gt;b&lt;/b&gt;&lt;br&gt;int（4 字节）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="302" y="196" width="224" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="cell-in-a" value="&lt;b&gt;a&lt;/b&gt;&lt;br&gt;char" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="526" y="196" width="56" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="pad-in-tail" value="填充 ×3" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#888888;strokeWidth=1;dashed=1;fillColor=#f2f2f2;fontSize=13;fontColor=#666666;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="582" y="196" width="168" height="52" as="geometry" />
+        </mxCell>
+
+        <!-- 注释带 -->
+        <mxCell id="ann-align" value="in 里有 int，自己也按 4 字节对齐，只能从偏移 4 开始；偏移 1–3 照样垫填充" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="96" y="276" width="280" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow-align" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#888888;strokeWidth=1.5;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="222" y="274" as="sourcePoint" />
+            <mxPoint x="218" y="164" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ann-tail" value="Flip 的尾巴填充原样带进来——规则一、二、三就是这么叠着生效的" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="478" y="276" width="272" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow-tail" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#888888;strokeWidth=1.5;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="614" y="274" as="sourcePoint" />
+            <mxPoint x="666" y="250" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 汇总带 -->
+        <mxCell id="summary" value="tag 1 字节 + 填充 3 字节 + in 8 字节，算下来 &lt;b&gt;sizeof(Outer) = 12&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=15;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="78" y="348" width="672" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- 脚注 -->
+        <mxCell id="footnote" value="以 int 为 4 字节、按 4 字节对齐的典型平台为例（如 64 位 Linux / x86-64）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="78" y="400" width="672" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -19,6 +19,12 @@ tags:
 - 入门
 - 基础
 title: A First Look at the Algorithms Library
+translation:
+  source: documents/vol1-fundamentals/ch10/03-algorithms-intro.md
+  source_hash: ab5313b0f6f5d9fef26d85d88375db6310c9cc969170ce5b9d3c7074ec613b1f
+  translated_at: '2026-09-27T06:59:37+00:00'
+  engine: anthropic
+  token_count: 1709
 ---
 # A First Look at the Algorithms Library
 
@@ -289,11 +295,4 @@ std::vector<std::string> lines = {
 > - [cppreference: \<numeric\>](https://en.cppreference.com/w/cpp/header/numeric)
 > - [cppreference: Lambda expressions](https://en.cppreference.com/w/cpp/language/lambda)
 
-translation:
-  source: documents/vol1-fundamentals/ch10/03-algorithms-intro.md
-  source_hash: ab5313b0f6f5d9fef26d85d88375db6310c9cc969170ce5b9d3c7074ec613b1f
-  translated_at: '2026-09-27T06:59:37+00:00'
-  engine: anthropic
-  token_count: 1709
----
 <!-- note: Introsort is a common implementation technique for std::sort, not a strategy mandated by the C++ standard; the translation preserves the source wording. -->

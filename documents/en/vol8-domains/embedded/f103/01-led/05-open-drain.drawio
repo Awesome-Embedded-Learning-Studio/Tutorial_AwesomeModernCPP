@@ -1,0 +1,79 @@
+<mxfile host="65bd71144e">
+    <diagram name="Open-Drain Output" id="open-drain">
+        <mxGraphModel dx="732" dy="461" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="460" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=17;fontStyle=1;" value="开漏输出：上管缺席，高电平外包给外部上拉" vertex="1">
+                    <mxGeometry height="30" width="480" x="170" y="14" as="geometry"/>
+                </mxCell>
+                <mxCell id="vdd" edge="1" parent="1" style="html=1;strokeColor=#C62828;strokeWidth=2.5;endArrow=none;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="100" y="80" as="sourcePoint"/>
+                        <mxPoint x="420" y="80" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="vdd_l" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#C62828;" value="VDD" vertex="1">
+                    <mxGeometry height="20" width="70" x="100" y="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="vdd_ext" edge="1" parent="1" style="html=1;strokeColor=#E65100;strokeWidth=2;endArrow=none;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="260" y="80" as="sourcePoint"/>
+                        <mxPoint x="260" y="122" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="ext_pullup" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#E65100;strokeWidth=2;fillColor=#FFF3E0;fontSize=12;align=center;verticalAlign=middle;" value="&lt;b&gt;外部上拉电阻&lt;/b&gt;&lt;br&gt;（芯片外的事！）" vertex="1">
+                    <mxGeometry height="46" width="130" x="195" y="122" as="geometry"/>
+                </mxCell>
+                <mxCell id="ext_pin" edge="1" parent="1" style="html=1;strokeColor=#E65100;strokeWidth=2;endArrow=none;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="260" y="168" as="sourcePoint"/>
+                        <mxPoint x="260" y="250" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="pin_dot" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#37474F;strokeColor=#37474F;" value="" vertex="1">
+                    <mxGeometry height="22" width="22" x="249" y="239" as="geometry"/>
+                </mxCell>
+                <mxCell id="pin_l" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#37474F;" value="引脚" vertex="1">
+                    <mxGeometry height="20" width="55" x="185" y="240" as="geometry"/>
+                </mxCell>
+                <mxCell id="pin_nmos" edge="1" parent="1" style="html=1;strokeColor=#1565C0;strokeWidth=2.5;endArrow=none;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="260" y="261" as="sourcePoint"/>
+                        <mxPoint x="260" y="300" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="nmos" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=2.5;fillColor=#BBDEFB;fontSize=12;align=center;verticalAlign=middle;" value="&lt;b&gt;N-MOS 下管&lt;/b&gt;" vertex="1">
+                    <mxGeometry height="42" width="130" x="195" y="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="nmos_vss" edge="1" parent="1" style="html=1;strokeColor=#1565C0;strokeWidth=2.5;endArrow=none;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="260" y="342" as="sourcePoint"/>
+                        <mxPoint x="260" y="390" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="vss" edge="1" parent="1" style="html=1;strokeColor=#455A64;strokeWidth=2.5;endArrow=none;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="100" y="390" as="sourcePoint"/>
+                        <mxPoint x="420" y="390" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="vss_l" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#455A64;" value="VSS (GND)" vertex="1">
+                    <mxGeometry height="20" width="100" x="100" y="400" as="geometry"/>
+                </mxCell>
+                <mxCell id="no_pmos" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontColor=#90A4AE;fontStyle=2;" value="P-MOS 上管的位置：空着&lt;br&gt;（这就是&quot;开漏&quot;的&quot;开&quot;）" vertex="1">
+                    <mxGeometry height="36" width="250" x="50" y="201" as="geometry"/>
+                </mxCell>
+                <mxCell id="w0" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1B5E20;strokeWidth=2;fillColor=#E8F5E9;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" value="&lt;b&gt;写 0&lt;/b&gt;：N-MOS 导通，引脚拉到 ≈ 0V&lt;br&gt;（这条路和推挽完全一样）" vertex="1">
+                    <mxGeometry height="56" width="320" x="470" y="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="w1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#E65100;strokeWidth=2;fillColor=#FFF3E0;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" value="&lt;b&gt;写 1&lt;/b&gt;：N-MOS 关断，引脚和 VDD 没有通路&lt;br&gt;——浮空（高阻），靠外部上拉慢慢拽高，&lt;br&gt;拽多快看电阻多小" vertex="1">
+                    <mxGeometry height="80" width="320" x="470" y="210" as="geometry"/>
+                </mxCell>
+                <mxCell id="w_use" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#4A148C;strokeWidth=2;fillColor=#F3E5F5;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" value="正经用途：I2C 总线、线与、电平转换&lt;br&gt;——都是要&quot;谁也不许主动推高&quot;的场合" vertex="1">
+                    <mxGeometry height="56" width="320" x="470" y="314" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

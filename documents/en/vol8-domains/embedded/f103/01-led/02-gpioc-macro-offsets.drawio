@@ -1,0 +1,146 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="GPIOC Macro Chain and Offsets" id="gpioc-macro-offsets">
+    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="从 #define 到地址：GPIOC 宏链与 GPIO_TypeDef 偏移" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="18" width="520" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== Macro chain ===================== -->
+        <mxCell id="periph" value="&lt;b&gt;PERIPH_BASE&lt;/b&gt;&lt;br&gt;0x40000000" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=2;fillColor=#E3F2FD;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="50" y="66" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="apb2" value="&lt;b&gt;APB2PERIPH_BASE&lt;/b&gt;&lt;br&gt;0x40010000" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=2;fillColor=#E3F2FD;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="330" y="66" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="gpiocbase" value="&lt;b&gt;GPIOC_BASE&lt;/b&gt;&lt;br&gt;0x40011000" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#E65100;strokeWidth=2.5;fillColor=#FFF3E0;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="610" y="66" width="170" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="m1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#1565C0;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="periph" target="apb2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m1l" value="+ 0x10000" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#1565C0;" vertex="1" parent="1">
+          <mxGeometry x="220" y="48" width="100" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="m2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#1565C0;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="apb2" target="gpiocbase">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m2l" value="+ 0x1000" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#1565C0;" vertex="1" parent="1">
+          <mxGeometry x="505" y="48" width="100" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="chain_note" value="0x40000000 + 0x10000 + 0x1000 = 0x40011000 —— 宏层层展开，最后就是一个写死的地址" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontColor=#616161;" vertex="1" parent="1">
+          <mxGeometry x="60" y="124" width="700" height="22" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== Offset table ===================== -->
+        <mxCell id="tbl_title" value="GPIO_TypeDef：成员的地址 = 基地址 + 偏移" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#37474F;" vertex="1" parent="1">
+          <mxGeometry x="140" y="158" width="520" height="26" as="geometry" />
+        </mxCell>
+
+        <!-- Column headers -->
+        <mxCell id="hdr_member" value="成员（偏移）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#9E9E9E;" vertex="1" parent="1">
+          <mxGeometry x="120" y="188" width="170" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="hdr_addr" value="实际地址" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#9E9E9E;" vertex="1" parent="1">
+          <mxGeometry x="430" y="188" width="170" height="22" as="geometry" />
+        </mxCell>
+
+        <!-- Row 0: CRL -->
+        <mxCell id="crl_m" value="CRL（0x00）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#B0BEC5;strokeWidth=1;fillColor=#FAFAFA;fontSize=13;align=center;verticalAlign=middle;fontColor=#616161;" vertex="1" parent="1">
+          <mxGeometry x="120" y="216" width="170" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="crl_a" value="0x40011000" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#B0BEC5;strokeWidth=1;fillColor=#FAFAFA;fontSize=13;align=center;verticalAlign=middle;fontColor=#616161;fontFamily=Consolas;" vertex="1" parent="1">
+          <mxGeometry x="430" y="216" width="170" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="crl_e" style="html=1;strokeColor=#B0BEC5;strokeWidth=1;endArrow=none;dashed=1;" edge="1" parent="1" source="crl_m" target="crl_a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Row 1: CRH (highlight) -->
+        <mxCell id="crh_m" value="&lt;b&gt;CRH（0x04）&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=2.5;fillColor=#E3F2FD;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="120" y="260" width="170" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="crh_a" value="&lt;b&gt;0x40011004&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=2.5;fillColor=#E3F2FD;fontSize=13;align=center;verticalAlign=middle;fontFamily=Consolas;" vertex="1" parent="1">
+          <mxGeometry x="430" y="260" width="170" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="crh_e" style="html=1;strokeColor=#1565C0;strokeWidth=2;endArrow=none;" edge="1" parent="1" source="crh_m" target="crh_a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="crh_n" value="本篇主角&lt;br&gt;|= / &amp;= 读改写的对象" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontColor=#1565C0;" vertex="1" parent="1">
+          <mxGeometry x="620" y="260" width="190" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- Row 2: IDR -->
+        <mxCell id="idr_m" value="IDR（0x08）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#B0BEC5;strokeWidth=1;fillColor=#FAFAFA;fontSize=13;align=center;verticalAlign=middle;fontColor=#616161;" vertex="1" parent="1">
+          <mxGeometry x="120" y="304" width="170" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="idr_a" value="0x40011008" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#B0BEC5;strokeWidth=1;fillColor=#FAFAFA;fontSize=13;align=center;verticalAlign=middle;fontColor=#616161;fontFamily=Consolas;" vertex="1" parent="1">
+          <mxGeometry x="430" y="304" width="170" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="idr_e" style="html=1;strokeColor=#B0BEC5;strokeWidth=1;endArrow=none;dashed=1;" edge="1" parent="1" source="idr_m" target="idr_a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Row 3: ODR (highlight) -->
+        <mxCell id="odr_m" value="&lt;b&gt;ODR（0x0C）&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#1B5E20;strokeWidth=2.5;fillColor=#E8F5E9;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="120" y="348" width="170" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="odr_a" value="&lt;b&gt;0x4001100C&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#1B5E20;strokeWidth=2.5;fillColor=#E8F5E9;fontSize=13;align=center;verticalAlign=middle;fontFamily=Consolas;" vertex="1" parent="1">
+          <mxGeometry x="430" y="348" width="170" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="odr_e" style="html=1;strokeColor=#1B5E20;strokeWidth=2;endArrow=none;" edge="1" parent="1" source="odr_m" target="odr_a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="odr_n" value="上一篇反复采样的那格&lt;br&gt;灯的状态报告" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontColor=#1B5E20;" vertex="1" parent="1">
+          <mxGeometry x="620" y="348" width="190" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- Row 4: BSRR (highlight) -->
+        <mxCell id="bsrr_m" value="&lt;b&gt;BSRR（0x10）&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#E65100;strokeWidth=2.5;fillColor=#FFF3E0;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="120" y="392" width="170" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="bsrr_a" value="&lt;b&gt;0x40011010&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#E65100;strokeWidth=2.5;fillColor=#FFF3E0;fontSize=13;align=center;verticalAlign=middle;fontFamily=Consolas;" vertex="1" parent="1">
+          <mxGeometry x="430" y="392" width="170" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="bsrr_e" style="html=1;strokeColor=#E65100;strokeWidth=2;endArrow=none;" edge="1" parent="1" source="bsrr_m" target="bsrr_a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="bsrr_n" value="上一篇那条 str 的目标&lt;br&gt;一条指令一步到位" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontColor=#E65100;" vertex="1" parent="1">
+          <mxGeometry x="620" y="392" width="190" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- Row 5: BRR -->
+        <mxCell id="brr_m" value="BRR（0x14）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#B0BEC5;strokeWidth=1;fillColor=#FAFAFA;fontSize=13;align=center;verticalAlign=middle;fontColor=#616161;" vertex="1" parent="1">
+          <mxGeometry x="120" y="436" width="170" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="brr_a" value="0x40011014" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#B0BEC5;strokeWidth=1;fillColor=#FAFAFA;fontSize=13;align=center;verticalAlign=middle;fontColor=#616161;fontFamily=Consolas;" vertex="1" parent="1">
+          <mxGeometry x="430" y="436" width="170" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="brr_e" style="html=1;strokeColor=#B0BEC5;strokeWidth=1;endArrow=none;dashed=1;" edge="1" parent="1" source="brr_m" target="brr_a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Row 6: LCKR -->
+        <mxCell id="lckr_m" value="LCKR（0x18）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#B0BEC5;strokeWidth=1;fillColor=#FAFAFA;fontSize=13;align=center;verticalAlign=middle;fontColor=#616161;" vertex="1" parent="1">
+          <mxGeometry x="120" y="480" width="170" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="lckr_a" value="0x40011018" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#B0BEC5;strokeWidth=1;fillColor=#FAFAFA;fontSize=13;align=center;verticalAlign=middle;fontColor=#616161;fontFamily=Consolas;" vertex="1" parent="1">
+          <mxGeometry x="430" y="480" width="170" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="lckr_e" style="html=1;strokeColor=#B0BEC5;strokeWidth=1;endArrow=none;dashed=1;" edge="1" parent="1" source="lckr_m" target="lckr_a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Bottom note -->
+        <mxCell id="bottom_note" value="七个成员各占 4 字节，偏移 0x00 到 0x18 正好排满——这就是 C 结构体的规矩，也是 MMIO 的地基" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontColor=#37474F;" vertex="1" parent="1">
+          <mxGeometry x="60" y="536" width="700" height="26" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
