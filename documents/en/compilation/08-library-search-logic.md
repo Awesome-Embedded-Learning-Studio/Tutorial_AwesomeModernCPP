@@ -48,7 +48,7 @@ Here is the part you need to know: **when the dynamic linker needs to resolve so
 
 1. Libraries specified by `LD_PRELOAD` (loaded first, used for symbol overriding / injection).
 2. If the executable contains `DT_RPATH` and no `DT_RUNPATH`, the `DT_RPATH` paths are used (note: `DT_RPATH` is deprecated, but still supported).
-3. The `LD_LIBRARY_PATH` environment variable (**ignored for non-setuid/setgid executables**).
+3. The `LD_LIBRARY_PATH` environment variable (**setuid/setgid executables ignore this variable**).
 4. If the executable contains `DT_RUNPATH`, that is used (and when `DT_RUNPATH` is present, `DT_RPATH` is generally ignored).
 5. The cache `/etc/ld.so.cache` maintained by ldconfig, together with `/lib`, `/usr/lib` (and the architecture-specific `/lib64`, `/usr/lib64`) — the "trusted directories".
 6. (If nothing above was found) it ultimately fails with an error (such as `ld.so: cannot find ...`).

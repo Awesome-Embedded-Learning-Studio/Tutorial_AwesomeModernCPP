@@ -199,7 +199,7 @@ int main()
 
 但问题也很明显：**主线程在每一步都阻塞了**。`f1.get()` 会阻塞到读文件完成，`f2.get()` 会阻塞到处理完成——这跟同步代码有什么区别？如果你想真正实现"主线程不阻塞、异步步骤自动串联"的效果，你需要 `.then()` 这个东西——在 future 的值就绪后自动调用注册的函数，返回一个新的 future，形成链式调用。
 
-`std::future::then()` 最早出现在 C++ 的 Concurrency TS（技术规范）中，作为 `std::experimental::future` 的一部分，Boost.Asio 的 `boost::future` 也实现了完整的 `.then()` 支持。但 Concurrency TS 最终没有被合并到 C++ 国际标准中——到 C++23 为止，标准 `std::future` 依然没有 `.then()`。C++ 委员会的态度是：与其在 `std::future` 上打补丁，不如推 Sender/Receiver 模型（P2300 提案，即 `std::execution`，已在 2024 年 7 月的 St. Louis 会议上正式并入 C++26 工作草案）。所以在标准 C++ 中，虽然 `std::execution` 即将到来，但目前的 `std::future` 链式组合仍然是一件笨拙的事情。
+`std::future::then()` 最早出现在 C++ 的 Concurrency TS（技术规范）中，作为 `std::experimental::future` 的一部分，Boost.Asio 的 `boost::future` 也实现了完整的 `.then()` 支持。但 Concurrency TS 最终没有被合并到 C++ 国际标准中——到 C++23 为止，标准 `std::future` 依然没有 `.then()`。C++ 委员会的态度是：与其在 `std::future` 上打补丁，不如推 Sender/Receiver 模型（P2300 提案，即 `std::execution`，已在 2024 年 6 月的 St. Louis 会议上正式并入 C++26 工作草案）。所以在标准 C++ 中，虽然 `std::execution` 即将到来，但目前的 `std::future` 链式组合仍然是一件笨拙的事情。
 
 > ⚠️ 如果你需要 future 链式组合，可以参考 Boost.Asio 的 `boost::future::then()`，或者使用第三方库如 `thousandeyes-futures`。但标准 C++ 中的 `std::future` 暂时没有这个能力。
 

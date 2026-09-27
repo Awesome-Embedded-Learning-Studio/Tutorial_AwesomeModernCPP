@@ -9,8 +9,6 @@ description: Introduces the basic concepts of cross-compilation and toolchains, 
 difficulty: beginner
 order: 1
 platform: host
-prerequisites:
-- 'Chapter 0: Preface and Fundamentals'
 reading_time_minutes: 13
 related: []
 tags:

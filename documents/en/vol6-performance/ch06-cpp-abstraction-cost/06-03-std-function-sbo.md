@@ -90,6 +90,6 @@ One sentence to wrap up: `std::function` has two costs — the call is indirect 
 ## References
 
 - cppreference *std::function* — type-erasure semantics, SBO notes
-- Stepov/Stroustrup CppCoreGuidelines *F.50* — when to use function vs template vs function pointer
+- Sutter/Stroustrup CppCoreGuidelines *F.50* — when to use function vs template vs function pointer
 - Agner Fog, *Optimizing software in C++*, object/container overhead. Local copy
 - The measurement code for this article: `code/volumn_codes/vol6-performance/ch06/function_sbo.cpp`

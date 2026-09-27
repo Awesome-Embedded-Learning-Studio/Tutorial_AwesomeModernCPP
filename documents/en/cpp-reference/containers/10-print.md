@@ -49,7 +49,7 @@ Writes formatted strings straight to `stdout` — `std::format` and `std::cout` 
 | Blank line | `void println()` | Outputs just a newline character |
 | Output to file | `void print(FILE* f, format_string, args...)` | Writes to a given C file stream |
 | Output to file with newline | `void println(FILE* f, format_string, args...)` | Newline version |
-| Output to stream | `void vprint_unicode(std::ostream&, ...)` | Writes to a C++ stream |
+| Output to stream | `void vprint_unicode(std::ostream&, std::format_args)` | Writes to a C++ stream |
 
 ## Minimal Example
 

@@ -150,7 +150,7 @@ auto run(this Self&& self, FuncArgs&&... args) -> ReturnType {
 
 #### 跟 Chromium 的做法对比
 
-Chromium 享受不到 C++23 的福利,它走的是两个重载的老路:`Run() &&` 是真正执行的版本,`Run() const&` 里头塞个 `static_assert(!sizeof(*this), "...")` 故意制造编译错误。那个 `!sizeof` hack 利用了 C++ 的一条性质——`sizeof` 只能在完整类型上求值,所以 `!sizeof(*this)` 一旦求值,就说明此刻在类定义内部(`*this` 是完整类型),值必然是 `false`。C++23 之前直接写 `static_assert(false, "...")` 会在所有代码路径上触发,哪怕这个重载从没被调用过,所以 Chromium 只能拿 `!sizeof` 这种绕弯子的写法。C++23 把这条限制松开了,但 Chromium 的代码库还没全量迁 C++23,旧写法就这么留着了。
+Chromium 享受不到 C++23 的福利,它走的是两个重载的老路:`Run() &&` 是真正执行的版本,`Run() const&` 里头塞个 `static_assert(!sizeof(*this), "...")` 故意制造编译错误。那个 `!sizeof` hack 吃的是类模板的一条性质——依赖 `this` 的表达式要等模板实例化时才求值:`static_assert(false, ...)` 不依赖模板参数,类模板一定义就立刻触发;而 `!sizeof(*this)` 依赖 `*this`,只要这个重载没被实际调用(模板未实例化),它就安然无恙,一旦真被调用,`sizeof(*this)` 求值得非零值,断言爆炸。C++23 之前直接写 `static_assert(false, "...")` 会在所有代码路径上触发,哪怕这个重载从没被调用过,所以 Chromium 只能拿 `!sizeof` 这种绕弯子的写法。C++23 把这条限制松开了,但 Chromium 的代码库还没全量迁 C++23,旧写法就这么留着了。
 
 咱们这套 deducing this 方案,一个函数模板就靠 `Self` 的推导把左值右值分得清清楚楚,比 Chromium 那两个重载加 `!sizeof` hack 干净一大截。这是踩在新标准肩膀上得来的便宜,笔者得说一句公道话。
 
@@ -200,9 +200,9 @@ explicit OnceCallback(Functor&& f);
 
 ```cpp
 template<typename Signature, typename F, typename... BoundArgs>
-auto bind_once(F&& funtor, BoundArgs&&... args) {
+auto bind_once(F&& functor, BoundArgs&&... args) {
     return OnceCallback<Signature>(
-        [f = std::forward<F>(funtor),
+        [f = std::forward<F>(functor),
          ...bound = std::forward<BoundArgs>(args)]
         (auto&&... call_args) mutable -> decltype(auto) {
             return std::invoke(

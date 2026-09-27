@@ -211,6 +211,6 @@ int main() {
 
 - [cppreference: std::expected](https://en.cppreference.com/w/cpp/utility/expected) —— C++23 的错误处理(`std::unexpected` 构造错误值)
 - [cppreference: std::unique_ptr / RAII](https://en.cppreference.com/w/cpp/memory/unique_ptr) —— RAII 范式,`UniqueFd` 是同一思想在 fd 上的应用
-- [The C10K problem (Dan Kegel)](https://kea.dev/notes/the-c10k-problem) —— "一台机器如何扛一万并发连接",本篇实测正是它的动机
+- [The C10K problem (Dan Kegel)](http://kegel.com/c10k.html) —— "一台机器如何扛一万并发连接",本篇实测正是它的动机
 - [传统 socket 编程:服务器五步与 TCP 建链(本系列 00)](./00-traditional-socket-basics.md) —— 本篇的现代化对象
 - [epoll:Linux I/O 多路复用(本系列下一篇)](./02-epoll-io-multiplexing.md) —— 用少量线程服务大量 fd,解决本篇结尾的 C10K 痛点

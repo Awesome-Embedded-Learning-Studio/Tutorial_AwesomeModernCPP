@@ -145,6 +145,7 @@ In sorting algorithms, swap is one of the most frequent operations. `std::sort` 
 #include <vector>
 #include <algorithm>
 #include <string>
+#include <cstring>
 
 struct NoexceptType
 {

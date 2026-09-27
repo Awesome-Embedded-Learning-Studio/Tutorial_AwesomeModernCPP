@@ -138,6 +138,7 @@ void swap(T& a, T& b) noexcept(
 #include <vector>
 #include <algorithm>
 #include <string>
+#include <cstring>
 
 struct NoexceptType
 {

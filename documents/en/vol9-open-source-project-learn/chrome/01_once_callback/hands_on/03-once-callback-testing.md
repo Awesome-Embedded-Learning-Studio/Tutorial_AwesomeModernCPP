@@ -253,7 +253,7 @@ This trade-off stands up in a teaching context and in the overwhelming majority 
 With this, the design, implementation, and testing of the `OnceCallback` group are wrapped up. The complete file listing is below — follow it to locate the corresponding code:
 
 ```text
-documents/vol9-open-source-project-learn/chrome/hands_on/
+documents/vol9-open-source-project-learn/chrome/01_once_callback/hands_on/
 ├── 01-once-callback-design.md           # Design: motivation and API
 ├── 02-once-callback-implementation.md   # Implementation: step by step
 └── 03-once-callback-testing.md          # Verification: testing and performance

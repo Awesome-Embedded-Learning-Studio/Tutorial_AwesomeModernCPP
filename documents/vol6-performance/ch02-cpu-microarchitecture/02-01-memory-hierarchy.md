@@ -160,7 +160,7 @@ size\stride(B)    8B    16B    32B    64B   128B   256B   512B
 
 ## 参考资源
 
-- Agner Fog《The microarchitecture of Intel, AMD and VIA CPUs》§23 *AMD Zen 3*:Zen 3 的缓存延迟表(L1=4、L2=14、L3=47 周期)、流水线宽度、分支吞吐。本地:`.claude/drafts/books/optimazation_in_cpp/microarchitecture.md`
+- Agner Fog《The microarchitecture of Intel, AMD and VIA CPUs》§23 *AMD Zen 3*:Zen 3 的缓存延迟表(L1=4、L2=14、L3=47 周期)、流水线宽度、分支吞吐:`.claude/drafts/books/optimazation_in_cpp/microarchitecture.md`
 - Bakhvalov, D.《Performance Analysis and Tuning on Modern CPUs》第 3 章 *CPU Microarchitecture*:存储层次与延迟数字的工程视角
 - Bryant & O'Hallaron《Computer Systems: A Programmer's Perspective》(CSAPP)第 6 章 *The Memory Hierarchy*:memory mountain 实验的出处,以及「空间/时间局部性」的形式化定义
 - 本篇实测代码:`code/volumn_codes/vol6-performance/ch02/memory_mountain.cpp`

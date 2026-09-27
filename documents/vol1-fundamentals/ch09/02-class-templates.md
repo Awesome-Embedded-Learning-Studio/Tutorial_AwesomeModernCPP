@@ -186,7 +186,7 @@ Stack<int> s1;                                  // Container 默认为 std::vect
 Stack<int, std::deque<int>> s2;                 // Container 显式指定为 std::deque<int>
 ```
 
-咱们看标准库的 `std::stack` 就是这种设计：第二参数默认为 `std::vector<T>`，可以换成 `std::deque<T>` 或 `std::list<T>`。
+咱们看标准库的 `std::stack` 就是这种设计：第二参数默认为 `std::deque<T>`，可以换成 `std::vector<T>` 或 `std::list<T>`。
 
 ## 快速了解 CTAD——让编译器推导模板参数（C++17）
 

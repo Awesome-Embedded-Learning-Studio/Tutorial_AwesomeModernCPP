@@ -25,7 +25,7 @@ related:
 
 1979年，那年，咱们的C++语言发明者 Bjarne Stroustrup，在 Bell 实验室（熟悉嘛？这个实验室还诞生了另外两个了不起的东西，一个是Unix，另外一个，就是C语言）下正在搞他的博士课题。
 
-> Bjarne Stroustrup 在贝尔实验室开始折腾他的 "C with Classes"，出发点吧，也不是"给桌面程序员一个更好的语言"，而是他要做的博士课题：在分布式系统里做模拟，SIMULA 的类好用，但是实在是太慢，C 快，贼快，超级快，但写大规模程序太容易把代码搅成一团，捏着鼻子写太难受了。本杰明说要把两者捏在一起<RefLink :id="1" preview="Mahmutbegović, C++ in Embedded Systems, Packt, 2025, Ch.1" />。
+> Bjarne Stroustrup 在贝尔实验室开始折腾他的 "C with Classes"，出发点吧，也不是"给桌面程序员一个更好的语言"，而是他要做的博士课题：在分布式系统里做模拟，SIMULA 的类好用，但是实在是太慢，C 快，贼快，超级快，但写大规模程序太容易把代码搅成一团，捏着鼻子写太难受了。Bjarne 说要把两者捏在一起<RefLink :id="1" preview="Mahmutbegović, C++ in Embedded Systems, Packt, 2025, Ch.1" />。
 
 1983年，Bjarne Stroustrup 决定把这门语言用更加简洁的方式替代称呼，并且，我们这样叫了他43年——C++。
 
@@ -61,7 +61,7 @@ ISO 标准委员会的回应更值得咱们记一辈子：他们没有认可 EC+
 
 ## 标准化年代：从 C++98 到安全行业的用脚投票
 
-1998 年，第一版 ISO 标准 C++98 落地，语言进入稳步演进期。真正的大转折是 2011 年的 C++11：`constexpr` 把计算推到编译期，`<atomic>` 给多核裸机编程立了标准内存模型，这两个特性对嵌入式的分量，咱们后面每一站都会反复尝到。此后 14、17、20、23 一路小步快跑，C++20 的 concepts 正是上一篇那道"配错方向编译期报错"的底层机制<RefLink :id="8" preview="cppreference.com, History of C++" />。
+1998 年，第一版 ISO 标准 C++98 落地，语言进入稳步演进期。真正的大转折是 2011 年的 C++11：`constexpr` 把计算推到编译期，`<atomic>` 给多核裸机编程立了标准内存模型，这两个特性对嵌入式的分量，咱们后面每一站都会反复尝到。此后 14、17、20、23 一路小步快跑，C++20 的 concepts 正是上一篇那道"配错方向编译期报错"的底层机制<RefLink :id="8" preview="cplusplus.com, History of C++" />。
 
 而比语言演进更能说明问题的，在咱们看来是**规范侧的态度**。安全攸关行业是对"语言开销可控"最挑剔的客户，它们的时间线是这样走的<RefLink :id="9" preview="Parasoft, Breaking Down the AUTOSAR C++14 Coding Guidelines" />：2008 年 MISRA C++:2008 发布，基线是 C++03；2017 年汽车行业的 AUTOSAR 出了 AUTOSAR C++14 指南，全称就叫"在关键与安全相关系统中使用 C++14 语言的指南"；2023 年两边合并，MISRA C++:2023 发布，基线直接跳到 C++17，把 AUTOSAR 的规则整体吸收<RefLink :id="10" preview="Perforce, What You Need to Know About the Next MISRA Standard" />。
 

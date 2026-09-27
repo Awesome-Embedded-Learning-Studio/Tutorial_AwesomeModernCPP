@@ -1,6 +1,6 @@
 ---
 title: "Row-major — how a 2D coordinate lands in 1D memory"
-description: "Taking apart the arithmetic behind operator()(i, j): a 2D coordinate lands in 1D memory at i*Cols+j, one full row stored before the next; this order matches both NumPy's default C order and C++ native arrays, and it is what the Stage 6 diff is built on"
+description: "Taking apart the arithmetic behind operator()(i, j): a 2D coordinate lands in 1D memory at i*Cols+j, one full row stored before the next; this order matches both NumPy's default C order and C++ native arrays, and it is what the Stage 5 diff is built on"
 chapter: 8
 order: 10
 platform: host
@@ -75,7 +75,7 @@ So why do we insist on row-major? Two reasons, both rock solid.
 
 First, native 2D arrays in C and C++ are row-major to begin with. In memory, `float w[4][3]` is exactly `w[0][0], w[0][1], w[0][2], w[1][0], ...` — one row after another. C++ programmers know this order best; no mental transposing required.
 
-Second, and weightier: NumPy's default C order is row-major. Call `.flatten()` on `np.array([[1,2,3],[4,5,6]])` and out comes `[1,2,3,4,5,6]` — the exact same order as our `data_[i*Cols+j]`. That means when Stage 5 exports weights from NumPy, `W[i, j]` on the Python side and `t(i, j)` on the C++ side point at the same number, which is what lets the Stage 6 diff compare element by element.
+Second, and weightier: NumPy's default C order is row-major. Call `.flatten()` on `np.array([[1,2,3],[4,5,6]])` and out comes `[1,2,3,4,5,6]` — the exact same order as our `data_[i*Cols+j]`. That means when Stage 5 exports weights from NumPy, `W[i, j]` on the Python side and `t(i, j)` on the C++ side point at the same number, which is what lets the Stage 5 diff compare element by element.
 
 If either side quietly used the other order, the diff would be wrong across the board — you'd be comparing C++'s row-major `data_[7]` against whatever number sits at that spot in NumPy's column-major layout, nothing would ever match, and you could debug it until you question your life choices. So right here we pin this layout down, and no later stage is allowed to change its mind.
 

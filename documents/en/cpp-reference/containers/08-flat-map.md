@@ -54,7 +54,7 @@ A sorted map that swaps the red-black tree for a contiguous array — faster loo
 | Clear | `void clear()` | Removes all elements |
 | Iteration | `iterator begin()` / `end()` | Traverses in key order |
 | Lower/upper bound | `iterator lower_bound(const K&)` | Finds boundaries in sorted order |
-| Contains | `bool contains(const K& key) const` | (Available since C++20) Checks whether a key exists |
+| Contains | `bool contains(const K& key) const` | (Available since C++23) Checks whether a key exists |
 
 ## Minimal Example
 
@@ -83,7 +83,7 @@ int main() {
 - Contiguous storage is CPU-cache-friendly; lookups on small datasets far outperform `std::map`
 - No per-node allocator overhead and less memory fragmentation — a good fit for embedded environments with tight heap space
 - Insertion/erasure is O(n), so it is unsuitable for large datasets that change frequently
-- Compiler support is still landing (GCC 15+, Clang 20+, MSVC 19.51+); evaluate your toolchain before production use
+- Compiler support is still landing (GCC 15+, Clang 20+, MSVC STL not yet); evaluate your toolchain before production use
 
 ## Compiler Support
 

@@ -7,7 +7,7 @@ description: 'A tour through the new members C++23/26 added to the container fam
   flat_map flattens the red-black tree into a sorted vector (ordered and cache-friendly,
   but with O(n) insert/erase), inplace_vector is fixed-capacity and heap-free (C++26),
   mdspan is a multidimensional view (C++23, with submdspan slicing arriving in C++26),
-  plus the still-on-the-road hive proposal.'
+  plus hive, landed with C++26.'
 difficulty: intermediate
 order: 10
 platform: host
@@ -36,7 +36,7 @@ translation:
 
 ## What This Article Covers: The Long-Standing Gaps C++23/26 Filled
 
-The standard library's `container` family was settled back in C++98 and then stayed put for over twenty years — `vector`/`map`/`unordered_map` have barely moved since. But a few gaps keep coming up in practice: could the ordered associative containers drop the red-black tree and switch to contiguous storage in exchange for cache friendliness? Between fixed-length `array` and heap-allocating `vector`, could there be a middle ground with "a known capacity ceiling, a runtime-variable length, and a firm promise never to touch the heap"? Could multidimensional data (matrices, images, voxels) get a non-owning multidimensional view like `span`? The C++23 and C++26 waves filled exactly these holes — this article covers the three that are already standardized, `flat_map`/`flat_set`, `inplace_vector`, and `mdspan`, and briefly mentions `hive`, which is still on the way.
+The standard library's `container` family was settled back in C++98 and then stayed put for over twenty years — `vector`/`map`/`unordered_map` have barely moved since. But a few gaps keep coming up in practice: could the ordered associative containers drop the red-black tree and switch to contiguous storage in exchange for cache friendliness? Between fixed-length `array` and heap-allocating `vector`, could there be a middle ground with "a known capacity ceiling, a runtime-variable length, and a firm promise never to touch the heap"? Could multidimensional data (matrices, images, voxels) get a non-owning multidimensional view like `span`? The C++23 and C++26 waves filled exactly these holes — this article covers the three that are already standardized, `flat_map`/`flat_set`, `inplace_vector`, and `mdspan`, and briefly mentions `hive`, landed with C++26.
 
 A heads-up before we start: these components are all very new. `flat_map` and `mdspan` are C++23 (they need a fairly recent libstdc++/libc++), and `inplace_vector` is C++26 — if your toolchain lags behind, the code won't compile. Understanding their design matters more than being able to use them right away; once you move up to a C++23/26 toolchain, these are ready-made ammunition. Every example in this article was actually run on GCC 16.1.1 (libstdc++, `-std=c++23` / `-std=c++26`): `<flat_map>` and `<mdspan>` are available from GCC 15 onward, while `<inplace_vector>` needs GCC 16.
 
@@ -158,9 +158,9 @@ d[0,0] = 1, rank = 2
 
 One pitfall worth calling out: **`submdspan` (slicing) is C++26, not C++23**. When mdspan landed in C++23, the row-slicing, column-slicing, and sub-block-slicing functionality didn't make the cut and was moved to C++26 (P2630). So if you want to grab a row in C++23, you still have to compute the offset yourself; you need to wait for a C++26 toolchain to use zero-copy slices like `std::submdspan(m, std::full_extent, slice)`. mdspan's bigger significance is being the foundation of `std::linalg` (the linear algebra library) — in later standards, the matrix-operation APIs are all built on top of mdspan.
 
-## Still on the Road: hive and Other Proposals
+## hive: Adopted into C++26
 
-Finally, one that gets mentioned a lot but **has not entered the standard yet**: `std::hive` (from Matt Bentley's `plf::hive`, proposals P0909/P2826). It is a "node container" whose design goals are stable element addresses (insertion and erasure don't disturb the addresses of other elements), fast erasure, and cache-friendly traversal (nodes organized in blocks rather than a pure linked list) — a fit for scenarios where you "hold references pointing at elements long-term while inserting and erasing frequently". As of C++26 it remains a proposal, not adopted — to use it today you can only go through the third-party `plf::hive` library. We mention it here to point at the direction: the standards committee is seriously considering "a node container nicer to use than list", but it is not yet a member of `std::`, so don't write "C++26's hive" in articles or on your resume.
+Finally, one that gets mentioned a lot and \*\*has entered the standard with C++26\*\*: `std::hive` (from Matt Bentley's `plf::hive`, accepted into C++26 at the February 2025 Kona meeting). It is a "node container" whose design goals are stable element addresses (insertion and erasure don't disturb the addresses of other elements), fast erasure, and cache-friendly traversal (nodes organized in blocks rather than a pure linked list) — a fit for scenarios where you "hold references pointing at elements long-term while inserting and erasing frequently". Standardization does not mean implementations are ready — mainstream standard libraries are still catching up, so for now you can get a taste through the third-party `plf::hive` library.
 
 ## A Few Parting Words
 

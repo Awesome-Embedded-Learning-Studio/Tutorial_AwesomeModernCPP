@@ -76,15 +76,15 @@ for (auto& item : items) {
 
 ## SBO 与 string 的 SSO 是一回事
 
-SBO 的思想和 `std::string` 的 **SSO(Small String Optimization)** 是一回事(都在对象内部留小缓冲,小就走内联、大才堆分配)。两者都解决「类型擦除/动态大小 + 避免热路径堆分配」的矛盾。SSO/SSO 的机制(为什么阈值是 16-24 字节、怎么和 ABI 配合)归 vol3/vol4;vol6 只讲「它影响热路径构造的堆分配成本」这层。
+SBO 的思想和 `std::string` 的 **SSO(Small String Optimization)** 是一回事(都在对象内部留小缓冲,小就走内联、大才堆分配)。两者都解决「类型擦除/动态大小 + 避免热路径堆分配」的矛盾。SBO/SSO 的机制(为什么阈值是 16-24 字节、怎么和 ABI 配合)归 vol3/vol4;vol6 只讲「它影响热路径构造的堆分配成本」这层。
 
-`std::function` 的 sizeof 因实现而异(libstdc++ 32 字节、libc++ 48 字节、MSFC 又不同),SBO 阈值也随之不同。所以「我这个 lambda 会不会触发堆分配」要 `sizeof` 或看实现,但**通用建议是:别在热路径依赖 SBO 命中,大捕获该换模板**。
+`std::function` 的 sizeof 因实现而异(libstdc++ 32 字节、libc++ 48 字节、MSVC 又不同),SBO 阈值也随之不同。所以「我这个 lambda 会不会触发堆分配」要 `sizeof` 或看实现,但**通用建议是:别在热路径依赖 SBO 命中,大捕获该换模板**。
 
 一句话收口:`std::function` 有两个代价,调用间接(比直接 lambda 慢 ~6 倍)、构造可能堆分配(大捕获触发,比 SBO 贵 ~8.5 倍);SBO 让小捕获(≤16-24B)存对象内部不堆分配,大捕获堆分配;热路径上避免反复构造 `std::function` + 大捕获,这是堆分配黑洞,对策是模板参数、函数指针、复用对象、减少捕获;SBO 与 string SSO 同思想,机制归 vol3/vol4。
 
 ## 参考资源
 
 - cppreference *std::function*——类型擦除语义、SBO 说明
-- Stepov/Stroustrup CppCoreGuidelines *F.50*——什么时候用 function vs 模板 vs 函数指针
-- Agner Fog《Optimizing software in C++》对象/容器开销。本地
+- Sutter/Stroustrup CppCoreGuidelines *F.50*——什么时候用 function vs 模板 vs 函数指针
+- Agner Fog《Optimizing software in C++》对象/容器开销
 - 本篇实测代码:`code/volumn_codes/vol6-performance/ch06/function_sbo.cpp`

@@ -84,7 +84,7 @@ The three layers in one sentence: the top-level callback object is just a pointe
 
 Before we start, confirm the toolchain. This `OnceCallback` series takes a few bites of C++23: `std::move_only_function` (in `<functional>`, the move-only type-erased callable wrapper introduced in C++23 — our core building block), deducing this (the explicit object parameter `this auto&& self`, which lets a member function deduce the value category of `this`), and occasionally `if consteval` for compile-time conditionals.
 
-On the compiler side, GCC 12+ or Clang 16+ fully supports the features above; just compile with `-std=c++23`. This snippet quickly verifies your environment:
+On the compiler side, GCC 14+ or Clang 18+ fully supports the features above; just compile with `-std=c++23`. This snippet quickly verifies your environment:
 
 ```cpp
 #include <functional>
@@ -104,7 +104,7 @@ int main() {
 }
 ```
 
-If this compiles, your environment is set. Though, honestly, as we write this article some compilers' `std::move_only_function` implementations still have bugs (early GCC 12 releases fail to compile in certain SFINAE scenarios), so to be safe use a stable GCC 13+ or Clang 17+.
+If this compiles, your environment is set. Though, honestly, as we write this article some compilers' `std::move_only_function` implementations still have bugs (early GCC 12 releases fail to compile in certain SFINAE scenarios), so to be safe use a stable GCC 14+ or Clang 18+.
 
 As for prerequisite knowledge, we assume you're already comfortable with the following (all covered in Volume 2): move semantics and perfect forwarding — `OnceCallback` is move-only at its core, and if the mechanics of `std::move` and `std::forward` aren't solid for you, the implementation process will hurt (the Volume 2 ch00 move-semantics series); `std::function`'s type erasure and SBO — we build directly on top of `std::move_only_function`, so you need to understand what type erasure does and why small-object optimization matters (Volume 2 ch03); `std::invoke` and the unified invocation protocol — `bind_once` uses it to uniformly handle function pointers, member-function pointers, functors, and the other distinct callable shapes (also Volume 2 ch03); and variadic templates and parameter-pack expansion — the template specialization of `OnceCallback<R(Args...)>` and `bind_once`'s argument binding both lean on parameter-pack syntax (Volume 2 ch00 on perfect forwarding, plus the Volume 4 template basics).
 

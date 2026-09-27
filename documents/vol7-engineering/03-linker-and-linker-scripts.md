@@ -9,8 +9,6 @@ description: 深入讲解链接器的工作原理、链接脚本的编写方法�
 difficulty: beginner
 order: 3
 platform: host
-prerequisites:
-- 'Chapter 0: 前言与基础'
 reading_time_minutes: 12
 related: []
 tags:
@@ -52,7 +50,7 @@ void printMessage() {
 
 // file2.cpp
 extern void printMessage();  // 这只是一个声明
-void main() {
+int main() {
     printMessage();  // 链接器负责找到实际的函数地址
 }
 
@@ -207,8 +205,6 @@ SECTIONS
   PROVIDE(end = _end);
 }
 
-/* 导出栈顶符号，供启动文件使用 */
-PROVIDE(_estack = _estack);
 
 ```
 
@@ -238,7 +234,7 @@ PROVIDE(_estack = _estack);
 2. **拷贝 `.data` 段**：将已初始化数据从 FLASH 复制到 RAM
 3. **清零 `.bss` 段**：将未初始化数据区域清零
 4. **调用 C++ 全局构造函数**（如果使用 C++）
-5. **设置堆栈指针**
+5. 堆栈指针无需手工设置——Cortex-M 的初始 SP 由硬件在复位时自动从向量表首项载入(所以下面的示例代码里看不到这一步)
 6. **跳转到 `main()` 函数**
 
 ### 4.2 启动代码实现示例

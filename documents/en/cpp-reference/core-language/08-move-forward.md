@@ -38,7 +38,7 @@ It force-casts an lvalue to an rvalue reference, telling the compiler "this obje
 | Operation | Signature | Description |
 |------|------|------|
 | Move cast (since C++14) | `template<class T> constexpr std::remove_reference_t<T>&& move(T&& t) noexcept;` | Converts the object `t` to an rvalue reference (xvalue) |
-| Perfect forwarding | `template<class T> T&& forward(typename std::remove_reference<T>::type& t) noexcept;` | Preserves the value category in forwarding-reference scenarios; works in tandem with `std::move` |
+| Perfect forwarding | `template<class T> T&& forward(typename std::remove_reference<T>::type& t) noexcept;` | Preserves the value category in forwarding-reference scenarios; equivalent to `std::move` for rvalue arguments and to pass-by-reference for lvalues |
 | Conditional move | `template<class T> typename std::conditional<...>::type move_if_noexcept(T& t) noexcept;` | Converts to an rvalue if the move constructor is non-throwing; otherwise returns an lvalue |
 
 ## Minimal Example

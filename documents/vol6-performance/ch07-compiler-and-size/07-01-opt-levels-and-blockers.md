@@ -101,7 +101,7 @@ void f(int* __restrict a, int* __restrict b, int* __restrict scale, int n);
 ## 参考资源
 
 - GCC 手册 *Options That Control Optimization*(`-O0`/`-O1`/`-O2`/`-O3`/`-Os`/`-Oz` 各启用的 pass 清单)
-- Agner Fog《Optimizing software in C++》§8 *Different C++ compilers》。本地
+- Agner Fog《Optimizing software in C++》§8 *Different C++ compilers》
 - CSAPP 第 5 章 *Optimizing Program Performance》(optimization blockers 的概念定义,别名/内存引用那套)
 - 本篇实测代码:`code/volumn_codes/vol6-performance/ch07/opt_levels_blockers.cpp`
 

@@ -51,7 +51,7 @@ None (language feature)
 | `if constexpr (cond) { ... }` | Compiles the `then` branch if `cond` is `true` |
 | `if constexpr (cond) { ... } else { ... }` | Compiles exactly one of the two branches |
 | `if constexpr (cond1) { ... } else if constexpr (cond2) { ... } else { ... }` | Multi-branch chain |
-| `if constexpr` combined with concepts | `if constexpr (std::integral\<T\>)` type trait check |
+| `if constexpr` combined with concepts | `if constexpr (std::integral\<T\>)` concept constraint check (std::integral is a concept) |
 | `if constexpr` combined with `requires` | (C++20) Concepts-based overloading is generally preferred instead |
 
 ## Minimal Example

@@ -37,7 +37,7 @@ None (language feature)
 
 | Operation | Signature | Description |
 |------|------|------|
-| No-capture lambda | `[captures](params) { body }` | Basic syntax, generates a closure type |
+| Basic form | `[captures](params) { body }` | Basic syntax, generates a closure type |
 | No-parameter lambda | `[captures] { body }` | Shorthand that omits the parameter list |
 | Capture by value | `[x, y]` | Captures variables by copying their values |
 | Capture by reference | `[&x, &y]` | Captures variables by reference |

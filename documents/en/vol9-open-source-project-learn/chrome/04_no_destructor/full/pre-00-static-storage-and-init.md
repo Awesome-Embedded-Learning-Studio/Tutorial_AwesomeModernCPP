@@ -84,7 +84,7 @@ int b_value = std::rand();     // dynamic initialization (rand is not constexpr,
 
 When we first saw this example it looked innocent; running it was what revealed the trick. If `a.cpp`'s `a_value` gets initialized first, it reads `b_value` before `b_value` has had its turn at dynamic initialization — all that's there is the zero-initialized 0 — so `a_value` works out to 1, not the value it should have gotten after `b_value` was truly evaluated. One nuance to lock in: only dynamic initialization can collide with SIOF — constant initialization (something like `int b = 42;`) is finished at compile time and always precedes dynamic initialization, so it never meets SIOF. But the moment two globals across .cpp files depend on each other and both are dynamically initialized, the order is completely out of control, and the result is undefined behavior. What makes this bug so agonizing is how hard it is to reproduce — switch machines, switch compiler flags, and the order changes; runs perfectly locally, flakes out on CI.
 
-The standard's prescribed remedy for SIOF is called "construct on first use": tuck that global variable inside a function as a local static, and don't lift a finger to initialize it until the function is called for the very first time.
+The classic counter to SIOF (from the isocpp FAQ) is called "construct on first use": tuck that global variable inside a function as a local static, and don't lift a finger to initialize it until the function is called for the very first time.
 
 ```cpp
 int& a_value() {

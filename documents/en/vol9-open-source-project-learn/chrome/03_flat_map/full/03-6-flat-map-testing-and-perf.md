@@ -101,7 +101,7 @@ Measured (this machine, GCC 16, -O2, companion `20_lookup_vs_shift_perf`; a 100k
   std::map:  34 ms
 ```
 
-Don't rush to a verdict. At N=100k with an `int` key, the two sides are nearly tied — an int comparison costs a single cycle on its own, and that little cache dividend hasn't yet outweighed `std::map`'s advantage of a lower tree. flat_map truly pulls away only when N gets bigger, or the key gets heavier. Switch the key to `std::string`, for example: comparison itself becomes expensive, the cost share of a single cache miss is instantly magnified, and in standalone large-N tests flat_map coming out several times faster is common. So "flat_map lookup is always faster" is not a line to memorize as dogma — it feeds on the workload: the bigger N gets and the heavier the key, the more visible the edge.
+Don't rush to a verdict. At N=100k with an `int` key, the two sides are nearly tied — an int comparison costs a single cycle on its own, and that little cache dividends at this scale have not yet earned their keep — the two sides have comparable search depth. flat_map truly pulls away only when N gets bigger, or the key gets heavier. Switch the key to `std::string`, for example: comparison itself becomes expensive, the cost share of a single cache miss is instantly magnified, and in standalone large-N tests flat_map coming out several times faster is common. So "flat_map lookup is always faster" is not a line to memorize as dogma — it feeds on the workload: the bigger N gets and the heavier the key, the more visible the edge.
 
 ## Performance: insertion (the O(n) shift wall)
 

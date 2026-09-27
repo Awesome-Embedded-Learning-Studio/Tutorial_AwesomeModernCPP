@@ -65,7 +65,7 @@ This is free software; see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 ```
 
-只要能看到版本号输出，GCC 就装好了。这里笔者建议版本不低于 11——GCC 11 全面支持 C++20 的大部分特性，后续教程中咱们会大量使用 C++17 和 C++20 的功能。如果您发行版自带的 GCC 比较老（比如 Ubuntu 20.04 默认是 GCC 9），可以考虑通过 PPA 或者编译源码来升级，这个暂时不展开。
+只要能看到版本号输出，GCC 就装好了。这里笔者建议版本不低于 11——GCC 11 支持了 C++20 的大部分特性，后续教程中咱们会大量使用 C++17 和 C++20 的功能。如果您发行版自带的 GCC 比较老（比如 Ubuntu 20.04 默认是 GCC 9），可以考虑通过 PPA 或者编译源码来升级，这个暂时不展开。
 
 您要是想顺便试试 Clang（后续教程中部分特性会用它做对比），可以这样装：
 
@@ -130,7 +130,7 @@ cmake version 3.28.3
 CMake suite maintained and supported by Kitware (kitware.com/cmake).
 ```
 
-**CMake 的版本笔者建议不低于 3.16**。理由你可能看不懂，非要看的话，我的回答是：从 3.16 开始 CMake 引入了一些对 C++20 模块和预设（presets）的支持，后续教程中咱们写的 `CMakeLists.txt` 会用到这些特性。如果您发行版仓库里的 CMake 版本偏低，可以从 Kitware 官方源或者 pip 安装更新的版本。放弃理解了吧，记得`cmake --verison`反复确认一下。
+**CMake 的版本笔者建议不低于 3.16**。理由你可能看不懂，非要看的话，我的回答是：从 3.16 开始 CMake 引入了一些对 C++20 模块和预设（presets）的支持，后续教程中咱们写的 `CMakeLists.txt` 会用到这些特性。如果您发行版仓库里的 CMake 版本偏低，可以从 Kitware 官方源或者 pip 安装更新的版本。放弃理解了吧，记得`cmake --version`反复确认一下。
 
 ## 配好 VS Code
 

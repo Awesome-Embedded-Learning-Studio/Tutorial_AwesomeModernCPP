@@ -10,8 +10,6 @@ description: A detailed guide to common GCC/Clang compiler options, including la
 difficulty: beginner
 order: 2
 platform: host
-prerequisites:
-- 'Chapter 0: Preface and Fundamentals'
 reading_time_minutes: 8
 related: []
 tags:

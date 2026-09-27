@@ -27,7 +27,7 @@ A structured quick-reference index covering all major features from C++98 throug
 ## Quick Navigation
 
 **By standard version:**
-[C++98/03](#c9803) | [C++11](#c11) | [C++14](#c14) | [C++17](#c17) | [C++20](#c20) | [C++23](#c23) | [C++26](#c26)
+[C++98/03](#c-98-03) | [C++11](#c-11) | [C++14](#c-14) | [C++17](#c-17) | [C++20](#c-20) | [C++23](#c-23) | [C++26](#c-26)
 
 **By functional category:**
 [Memory Management](#memory-management) | [Containers and Views](#containers-and-views) | [Concurrency](#concurrency) | [Core Language Features](#core-language-features) | [Templates and Metaprogramming](#templates-and-metaprogramming)
@@ -275,6 +275,7 @@ Concurrency and multithreading features: threads, locks, atomic operations, sync
 | std::latch / barrier | C++20 | `<latch>` | Thread synchronization primitives | **Medium** |
 | std::stop_token | C++20 | `<stop_token>` | Cooperative thread cancellation | **Medium** |
 
+:::
 ::: details Cheat sheets still pending
 Cheat sheets have not been created yet for: std::condition_variable, std::future / async, std::chrono, std::shared_timed_mutex, std::shared_mutex, std::atomic_ref, std::latch / barrier, std::stop_token
 
@@ -330,6 +331,7 @@ Core language features: keywords, syntactic sugar, the type system, compile-time
 | Multidimensional subscript operator | C++23 | Language feature | operator[] with multiple arguments | **Low** |
 | [std::stacktrace](core-language/19-stacktrace.md) | C++23 | `<stacktrace>` | Capture and print the call stack | **Medium** |
 
+:::
 ::: details Cheat sheets still pending
 Cheat sheets have not been created yet for: move semantics, static_assert, user-defined literals, delegating/inheriting constructors, alignas / alignof, return type deduction, relaxed constexpr, decltype(auto), binary literals, CTAD, guaranteed copy elision, std::byte, if/switch init statements, consteval, constinit, std::source_location, designated initializers, std::to_underlying, std::unreachable, if consteval, multidimensional subscript operator
 
@@ -350,9 +352,12 @@ Generic programming and metaprogramming features: templates, constraints, type t
 | std::is_constant_evaluated | C++20 | `<type_traits>` | Detects constant-evaluation contexts | **Medium** |
 | std::is_scoped_enum | C++23 | `<type_traits>` | Detects scoped enumeration types | **Low** |
 
+:::
 ::: details Cheat sheets still pending
 Cheat sheets have not been created yet for: std::integer_sequence, std::invoke, std::apply, std::is_constant_evaluated, std::is_scoped_enum
 
 ---
 
 *Some content is referenced from [cppreference.com](https://en.cppreference.com/), used under the [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license*
+
+:::

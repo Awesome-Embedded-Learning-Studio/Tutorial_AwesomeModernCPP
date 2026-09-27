@@ -57,7 +57,7 @@ struct Tracked {
 这张表是 RVO 教学的金标准(不依赖计时,编译器打不穿):
 
 - **URVO(返回无名临时)**:`return Tracked(1);`。C++17 起是**强制拷贝消除(guaranteed copy elision)**,返回的 prvalue 直接在调用方初始化,既不拷贝也不移动。**0 拷贝 0 移动**。
-- **NRVO(返回有名局部)**:`Tracked t(...); return t;`。命名局部变量的返回,编译器**事实上**会消除(C++17 前就普遍做了,C++17 起更多场景保证)。**0 拷贝 0 移动**。
+- **NRVO(返回有名局部)**:`Tracked t(...); return t;`。命名局部变量的返回,编译器**事实上**会消除(C++17 前就普遍做了;标准里 NRVO 一直是 permitted 而非强制,C++17 真正保证的是 prvalue 返回的省略)。**0 拷贝 0 移动**。
 - **`return std::move(t)`(反模式)**:你手写的 `std::move` **强制转成右值**,这**禁用了 NRVO**(NRVO 要求左值),编译器被迫走 move 构造。**0 拷贝 1 移动**,多了一次本可避免的 move。所以「`return std::move(局部)`」是 C++ 里著名的**反模式**,它只能让代码变慢,永远不会变快。
 - **返回 lvalue(全局/参数)**:`return g_global;`。lvalue 不能 RVO/move(没资格),走拷贝。**1 拷贝 0 移动**。这是真正「贵」的情形:返回一个外部命名对象,必须拷贝它。
 
@@ -111,5 +111,5 @@ vector(const vector& o) : data_(new T[o.size()]) { copy o.data_ → data_; }
 
 - cppreference *Copy elision*(C++17 guaranteed elision 规则)
 - Meyer, S. *Effective Modern C++ Item 25*(reverse:对右值重载 vs 引用限定)——move 语义的工程用法
-- Agner Fog《Optimizing software in C++》§7.16 *Returning objects》。本地
+- Agner Fog《Optimizing software in C++》§7.16 *Returning objects》
 - 本篇实测代码:`code/volumn_codes/vol6-performance/ch06/rvo_move.cpp`(含 -fno-elide-constructors 对照)

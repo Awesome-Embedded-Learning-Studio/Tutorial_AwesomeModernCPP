@@ -140,7 +140,7 @@ The valuable feedback from these folks deserves recording just as much — it's 
     <span class="card-name">HiAirman <span class="card-badge issue">Issue</span></span>
     <p class="card-role">Bug Reports</p>
     <p class="card-types">🐛 💡</p>
-    <p class="card-desc">Opened a discussion on the correctness of an alignas example in the "Advanced C++98" chapter (#96)</p>
+    <p class="card-desc">Opened a discussion on the correctness of an alignas example in "Struct and Memory Alignment" (formerly the "Advanced C++98" chapter) (#96)</p>
   </div>
 </a>
 <a href="https://github.com/f4bb0" target="_blank" rel="noopener noreferrer" class="contributor-card">

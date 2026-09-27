@@ -27,7 +27,7 @@ Modern C++ brought in a genuinely breakthrough feature: modules. They have had s
 
 ## Why Use Modules
 
-C++ modules (C++20) are a compilation-unit mechanism meant to replace traditional header files. Before, whenever a source file changed, that entire source file had to be recompiled from scratch. Module-based incremental compilation, however, analyzes things down to the binary ABI level. MSVC's modules (yes, they are in practice not very interoperable with other compiler vendors) cache compilation artifacts via the module binary interface / BMI, and this time around the export story is more robust. Later we will introduce two keywords to show you how module import and export actually work.
+C++ modules (C++20) are a compilation-unit mechanism meant to replace traditional header files. Before, whenever a source file changed, that entire source file had to be recompiled from scratch. Module-based incremental compilation, however, analyzes things down to the binary ABI level. MSVC's modules (yes, they are in practice not very interoperable with other compiler vendors) cache compilation artifacts via the module binary interface / BMI, and this time around the export story is more robust. Module import and export are done with exactly two keywords: `import` and `export`.
 
 ------
 
@@ -36,7 +36,7 @@ C++ modules (C++20) are a compilation-unit mechanism meant to replace traditiona
 VS2022 is no longer up for download these days (at least it is not easy to get hold of), which is exactly why we went with VS2026. To use modules smoothly on VS2026, confirm the following:
 
 1. **Visual Studio 2026 (or newer) is installed**, including the "Desktop development with C++" workload. VS2026 ships with MSVC Build Tools v14.50 (IDE 18.0), with further improvements to modules and language compatibility. So these days there is essentially no burden — no need to separately enable any experimental features; it went mainstream a long time ago.
-2. **C++ standard settings**: the project or command line uses `/std:c++20`, or more conservatively `/std:c++latest` (VS2026's MSVC provides more complete support for modules). But don't worry — **VS2026 already defaults to the option above, so there is nothing to change; if you are the cautious type, just take one look to make sure**
+2. **C++ standard settings**: the project or command line uses `/std:c++20`, or more aggressively `/std:c++latest` (VS2026's MSVC provides more complete support for modules). But don't worry — **VS2026 already defaults to the option above, so there is nothing to change; if you are the cautious type, just take one look to make sure**
 
 ------
 
