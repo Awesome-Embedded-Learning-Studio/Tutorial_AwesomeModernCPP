@@ -14,7 +14,7 @@ tags:
 difficulty: intermediate
 platform: stm32f1
 cpp_standard: [23]
-reading_time_minutes: 14
+reading_time_minutes: 5
 prerequisites:
   - "零开销日志组件完整踩坑记录：从 source_location 撞墙到反汇编验收"
 related:

@@ -14,7 +14,7 @@ tags:
 difficulty: intermediate
 platform: stm32f1
 cpp_standard: [23]
-reading_time_minutes: 16
+reading_time_minutes: 5
 prerequisites:
   - "两行编译旗子砍掉 64% 固件：-ffunction-sections 的函数粒度回收实录"
 related:

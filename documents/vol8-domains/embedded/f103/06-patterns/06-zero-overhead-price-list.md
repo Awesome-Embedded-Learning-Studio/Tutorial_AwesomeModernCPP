@@ -13,7 +13,7 @@ tags:
 difficulty: intermediate
 platform: stm32f1
 cpp_standard: [23]
-reading_time_minutes: 14
+reading_time_minutes: 4
 prerequisites:
   - "终审在 map：『裁剪级别连字符串都不进固件』的完整证据链"
 related:
