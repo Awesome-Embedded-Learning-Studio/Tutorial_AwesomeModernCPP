@@ -183,7 +183,7 @@ Before touching code, let's take stock of the toolchain. OnceCallback depends on
 
 ### Compiler requirements
 
-GCC 13+ or Clang 17+ fully support the feature set above; compile with `-std=c++23`.
+GCC 14+ or Clang 18+ fully support the feature set above; compile with `-std=c++23`.
 
 ### Verification code
 

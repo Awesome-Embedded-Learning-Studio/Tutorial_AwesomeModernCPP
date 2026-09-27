@@ -846,7 +846,7 @@ struct Task {
 
 ### Using Comparison Synthesis Helpers
 
-C++23 provides the `std::compare_*` family of functions to simplify comparison logic:
+Since C++20, tools like `std::compare_three_way` simplify comparing two values (note it takes exactly two arguments; multi-field comparisons must be chained field by field):
 
 ```cpp
 #include <compare>
@@ -860,10 +860,9 @@ struct Task {
 
     std::strong_ordering operator<=>(const Task& other) const {
         // Use the C++23 synthesis function (if available)
-        return std::compare_three_way()(
-            priority, other.priority,
-            deadline, other.deadline,
-            created_at, other.created_at,
+        if (auto c = priority <=> other.priority; c != 0) return c;
+        if (auto c = deadline <=> other.deadline; c != 0) return c;
+        if (auto c = created_at <=> other.created_at; c != 0) return c;
             task_id, other.task_id
         );
     }
@@ -920,7 +919,7 @@ struct Task {
 ```
 
 ------
-**Note**: C++23 provides more powerful comparison synthesis tools, such as `std::compare_three_way` and `std::compare_*_result`; consult the latest standard library documentation when using them.
+**Note**: since C++20 the library offers comparison tools such as `std::compare_three_way`; there is no `std::compare_*_result` multi-field synthesis family (the usual approaches are the if-chain above, or `std::tie` with `<=>`). Consult the latest standard library documentation when using them.
 
 ------
 

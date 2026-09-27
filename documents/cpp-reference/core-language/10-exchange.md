@@ -42,7 +42,7 @@ int main() {
     int a = 10, b = 20;
     // 交换 a 和 b，无需临时变量
     a = std::exchange(b, a);
-    std::cout << a << " " << b << "\n"; // 输出: 10 10
+    std::cout << a << " " << b << "\n"; // 输出: 20 10
 
     // 打印斐波那契数列前几项
     for (int x{0}, y{1}; x < 50; x = std::exchange(y, x + y))

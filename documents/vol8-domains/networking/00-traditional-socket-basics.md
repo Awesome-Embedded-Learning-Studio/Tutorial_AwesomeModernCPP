@@ -60,7 +60,7 @@ bind(lfd, (struct sockaddr *)&addr, sizeof(addr));
 
 `sockaddr_in` 是"IPv4 地址"的结构体,三个字段要填:协议族(`sin_family = AF_INET`)、IP 地址(`sin_addr`)、端口(`sin_port`)。`INADDR_ANY` 是个特殊值,意思是"本机所有网卡的 IP 都监听"——你的机器可能有 lo(127.0.0.1)、eth0(192.168.x.x)、wlan0 等好几个 IP,`INADDR_ANY` 一次全包;如果只填某一个具体 IP,就只在那张网卡上监听。
 
-这里有个**新人必踩的字节序**问题,值得停下来讲。注意 `htonl(INADDR_ANY)` 和 `htons(PORT)` 这两个调用——它们不是装饰。TCP/IP 规定线上传输多字节数用**大端序(big-endian)**,叫 network byte order;而你的 x86/ARM CPU 是小端序(little-endian)。端口 13013 在小端机器内存里字节排布是 `05 33 00 00`(低字节在前),大端是 `00 00 33 05`——你直接把主机序的端口塞进 `sin_port`,内核和对端都按网络序解析,端口就全错了。`htonl`(host to network long,32 位,给 IP)和 `htons`(host to network short,16 位,给端口)就是干这个字节翻转的,在大端机器上是空操作、小端机器上翻转,所以写上它**无论什么 CPU 都对**。
+这里有个**新人必踩的字节序**问题,值得停下来讲。注意 `htonl(INADDR_ANY)` 和 `htons(PORT)` 这两个调用——它们不是装饰。TCP/IP 规定线上传输多字节数用**大端序(big-endian)**,叫 network byte order;而你的 x86/ARM CPU 是小端序(little-endian)。端口 13013(= 0x32D5)在小端机器内存里字节排布是 `D5 32 00 00`(低字节在前),大端是 `00 00 32 D5`——你直接把主机序的端口塞进 `sin_port`,内核和对端都按网络序解析,端口就全错了。`htonl`(host to network long,32 位,给 IP)和 `htons`(host to network short,16 位,给端口)就是干这个字节翻转的,在大端机器上是空操作、小端机器上翻转,所以写上它**无论什么 CPU 都对**。
 
 因此，一个重要的经验油然而生：**凡是塞进 `sockaddr_in` 的多字节整数(IP、端口),一律过一遍 `htonl`/`htons`**,别拿主机序的裸值硬塞。反过来从内核读出来要给人类看,就用 `ntohl`/`ntohs`(network to host)翻回来。
 

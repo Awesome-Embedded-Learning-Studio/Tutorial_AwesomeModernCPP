@@ -247,7 +247,7 @@ Chromium 那一套是固定堆分配——`new BindState<Functor, BoundArgs...>`
 `OnceCallback` 这一组的设计、实现、测试到这儿算是收口了,完整文件清单如下,您要找对应代码照着摸就行:
 
 ```text
-documents/vol9-open-source-project-learn/chrome/hands_on/
+documents/vol9-open-source-project-learn/chrome/01_once_callback/hands_on/
 ├── 01-once-callback-design.md           # 设计篇：动机与接口
 ├── 02-once-callback-implementation.md   # 实现篇：逐步实现
 └── 03-once-callback-testing.md          # 验证篇：测试与性能

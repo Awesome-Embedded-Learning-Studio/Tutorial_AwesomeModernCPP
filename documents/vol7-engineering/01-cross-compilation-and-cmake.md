@@ -9,8 +9,6 @@ description: 介绍交叉编译的基础概念、工具链，以及使用CMake�
 difficulty: beginner
 order: 1
 platform: host
-prerequisites:
-- 'Chapter 0: 前言与基础'
 reading_time_minutes: 13
 related: []
 tags:

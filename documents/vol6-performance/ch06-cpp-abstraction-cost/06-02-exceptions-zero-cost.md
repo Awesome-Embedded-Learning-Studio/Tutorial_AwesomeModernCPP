@@ -88,5 +88,5 @@ C++ 标准库就是这个取舍:`vector::operator[]` 不检查越界(快),`vecto
 
 - Itanium C++ ABI *Exception Handling*(itanium-cxx-abi.github.io/cxx-abi-eh.html)——EH 表、personality function、栈展开的规范
 - CppCoreGuidelines *Errors and Exception Handling*(Stroustrup & Sutter)——异常使用纪律
-- Agner Fog《Optimizing software in C++》异常小节。本地
+- Agner Fog《Optimizing software in C++》异常小节
 - 本篇实测代码:`code/volumn_codes/vol6-performance/ch06/exception_cost.cpp`

@@ -50,7 +50,7 @@ for (;;) {
 }
 ```
 
-The problem sits in two places: **① every call must copy the full fd set into the kernel** (10k `pollfd`s at 8 bytes each, a copy of 80k elements); **② the readiness information comes back "mashed into the array", so you have to do your own O(n) walk**. Once connections pass 10k, these two steps alone eat noticeable CPU on every loop — and **the more connections, the slower it gets** (the n in O(n) keeps growing).
+The problem sits in two places: **① every call must copy the full fd set into the kernel** (10k `pollfd`s at 8 bytes each, a copy of 80k bytes (10k×8B)); **② the readiness information comes back "mashed into the array", so you have to do your own O(n) walk**. Once connections pass 10k, these two steps alone eat noticeable CPU on every loop — and **the more connections, the slower it gets** (the n in O(n) keeps growing).
 
 `select` is worse: it uses an `fd_set` bitmap plus a hard `FD_SETSIZE` cap (1024 by default). `poll` dropped the bitmap in favor of an array, losing the 1024 cap, but the O(n) nature didn't change.
 
@@ -175,9 +175,9 @@ With this piece, we can already make **one thread watch tens of thousands of fds
 ## References
 
 - [man 2 epoll_create1](https://man7.org/linux/man-pages/man2/epoll_create1.2.html) / [man 2 epoll_ctl](https://man7.org/linux/man-pages/man2/epoll_ctl.2.html) / [man 2 epoll_wait](https://man7.org/linux/man-pages/man2/epoll_wait.2.html) — the authoritative definitions of the three APIs
-- [man 7 epoll](https://man7.org/linux/man-pages/man7/epoll.7.html) — "epoll semantics", including the official wording on LT/ET `O(O)` readiness notification and "avoid starvation"
+- [man 7 epoll](https://man7.org/linux/man-pages/man7/epoll.7.html) — "epoll semantics", including the official wording on LT/ET `O(1)` readiness notification and "avoid starvation"
 - [man 2 poll](https://man7.org/linux/man-pages/man2/poll.2.html) — poll's O(n) model, for contrast with epoll
-- [The C10K problem (Dan Kegel)](https://kea.dev/notes/the-c10k-problem) — the direct motivation behind epoll's birth
+- [The C10K problem (Dan Kegel)](http://kegel.com/c10k.html) — the direct motivation behind epoll's birth
 - [epoll's kernel implementation: fs/eventpoll.c](https://github.com/torvalds/linux/blob/master/fs/eventpoll.c) — the origin of the interest list (red-black tree, `ep_insert`) and the ready list (enqueued via `ep_poll_callback`)
 - [Modern socket wrapping: RAII and the measured C10K (previous piece in this series, 01)](./01-modern-socket-wrapping.md) — the measured run of thread-per-connection failing under concurrency, and the motivational starting point of this piece's epoll
 - [Traditional socket programming: the server's five steps and TCP setup (this series, 00)](./00-traditional-socket-basics.md) — the five-step socket foundation

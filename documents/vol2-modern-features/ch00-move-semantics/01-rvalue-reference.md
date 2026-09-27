@@ -317,7 +317,7 @@ int main()
 
     // 情况 2：const& 绑的是"函数返回的引用"，而这个引用指向一个临时对象——不延长，悬空
     const std::string& dead = pass_through(std::string("I am passed"));
-    std::cout << "2) 经函数返回的引用: \"" << dead << "\n";  // use-after-scope
+    std::cout << "2) 经函数返回的引用: \"" << dead << "\"\n";  // use-after-scope
 
     return 0;
 }

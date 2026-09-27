@@ -840,7 +840,7 @@ struct Task {
 
 ### 使用比较合成助手
 
-C++23提供了`std::compare_*`系列函数简化比较逻辑：
+C++20 起提供了 `std::compare_three_way` 这样的两值比较工具,可以简化比较逻辑(注意它只接受两个参数,多字段比较需要逐字段链式书写)：
 
 ```cpp
 #include <compare>
@@ -853,11 +853,10 @@ struct Task {
     uint16_t task_id;
 
     std::strong_ordering operator<=>(const Task& other) const {
-        // 使用C++23的合成函数（如果可用）
-        return std::compare_three_way()(
-            priority, other.priority,
-            deadline, other.deadline,
-            created_at, other.created_at,
+        // 多字段比较:逐字段链式,先到先得
+        if (auto c = priority <=> other.priority; c != 0) return c;
+        if (auto c = deadline <=> other.deadline; c != 0) return c;
+        if (auto c = created_at <=> other.created_at; c != 0) return c;
             task_id, other.task_id
         );
     }
@@ -914,7 +913,7 @@ struct Task {
 ```
 
 ------
-**注意**：C++23提供了更强大的比较合成工具，如`std::compare_three_way`和`std::compare_*_result`，使用时请查阅最新标准库文档。
+**注意**：C++20 起提供了 `std::compare_three_way` 这样的比较工具;标准库并没有 `std::compare_*_result` 系列 多字段合成函数(多字段比较的常见做法是上面的 if 链,或 `std::tie` 配合 `<=>`),使用时请查阅最新标准库文档。
 
 ------
 

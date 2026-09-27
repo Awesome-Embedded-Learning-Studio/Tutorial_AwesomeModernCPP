@@ -61,7 +61,7 @@ Then measure four ways of "returning", checking the copies/moves count for each:
 This table is the gold standard for teaching RVO (no timers involved, nothing for the compiler to punch through):
 
 - **URVO (returning an unnamed temporary)**: `return Tracked(1);`. Since C++17 this is **guaranteed copy elision**: the returned prvalue initializes directly in the caller, neither copied nor moved. **0 copies, 0 moves**.
-- **NRVO (returning a named local)**: `Tracked t(...); return t;`. Returning a named local variable is elided **as a matter of fact** by compilers (widely done even before C++17; since C++17, more scenarios are guaranteed). **0 copies, 0 moves**.
+- **NRVO (returning a named local)**: `Tracked t(...); return t;`. Returning a named local variable is elided **as a matter of fact** by compilers (widely done even before C++17; in the standard NRVO has always been permitted, never mandatory — what C++17 actually guarantees is elision of prvalue returns). **0 copies, 0 moves**.
 - **`return std::move(t)` (anti-pattern)**: your hand-written `std::move` **force-converts the result to an rvalue**, which **disables NRVO** (NRVO requires an lvalue), so the compiler is forced down the move constructor. **0 copies, 1 move** — one avoidable move too many. That's why "`return std::move(local)`" is a famous **anti-pattern** in C++: it can only make code slower, never faster.
 - **Returning an lvalue (a global or a parameter)**: `return g_global;`. An lvalue isn't RVO/move-eligible (doesn't qualify), so it takes the copy path. **1 copy, 0 moves**. This is the genuinely "expensive" case: returning an externally named object forces a copy of it.
 

@@ -9,7 +9,7 @@ cpp_standard: [23]
 reading_time_minutes: 12
 prerequisites:
   - "Project scaffold — pour the toolchain foundation"
-  - "Templates and non-type parameters"
+  - "Class Templates"
 tags:
   - host
   - cpp-modern

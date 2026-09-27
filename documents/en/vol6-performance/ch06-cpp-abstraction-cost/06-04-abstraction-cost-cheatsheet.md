@@ -54,7 +54,7 @@ This table is the measurement roll-up of ch06-01/02/03/05; see each article for 
 
 A variable's **storage type** affects where it lives and how fast it is to access (Agner vol 1 §7.1):
 
-- **Automatic variables (stack)**: the default. Fastest to access (a stack that hits in L1), and the compiler can put them in registers. The `register` keyword is meaningless on modern compilers (they allocate registers themselves); it's been a deprecated/removed keyword since C++17 — don't use it.
+- **Automatic variables (stack)**: the default. Fastest to access (a stack that hits in L1), and the compiler can put them in registers. The `register` keyword is meaningless on modern compilers (they allocate registers themselves); it was deprecated in C++11 and removed in C++17 — don't use it.
 - **Static variables (`static`/global)**: fixed address, fixed initialization (constant initialization is zero-cost; dynamic initialization has a startup cost). Under multithreading, initialization of a static local variable is thread-safe (magic statics), but **thread-safe initialization has a runtime cost** (an atomic check on first entry).
 - **`thread_local`**: one copy per thread. Access is slightly more expensive (it has to look up the thread-local storage area through TLS, usually a few extra instructions), but it avoids sharing under multithreading. Useful for "per-thread context objects".
 

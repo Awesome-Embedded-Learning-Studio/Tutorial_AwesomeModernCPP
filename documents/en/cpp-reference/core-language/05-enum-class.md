@@ -48,6 +48,7 @@ No header required (language keyword)
 
 ```cpp
 // Standard: C++11
+#include <cstdint>
 #include <iostream>
 
 int main() {

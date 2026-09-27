@@ -81,7 +81,7 @@ C++ 的模板和 `constexpr` 能把计算推到**编译期**,编译完算完,运
 ## 参考资源
 
 - CSAPP 第 7 章 *Linking*——静态/动态链接、GOT/PLT、符号解析的机制
-- Agner Fog《Optimizing software in C++》§8「Different C++ compilers」(编译器对比)+ §15「Metaprogramming」(编译期元编程的体积面)。本地
+- Agner Fog《Optimizing software in C++》§8「Different C++ compilers」(编译器对比)+ §15「Metaprogramming」(编译期元编程的体积面)
 - GCC/Clang/MSVC 文档各自的 `-O` 行为、`-fpic`/`-fpic`、`constexpr` 支持
 - ch07-04 体积优化(本卷,模板膨胀的对策)
 

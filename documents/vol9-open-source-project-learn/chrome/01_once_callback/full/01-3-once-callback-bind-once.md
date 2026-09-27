@@ -64,9 +64,9 @@ int r = std::move(bound).run(30);  // r == 60
 
 ```cpp
 template<typename Signature, typename F, typename... BoundArgs>
-auto bind_once(F&& funtor, BoundArgs&&... args) {
+auto bind_once(F&& functor, BoundArgs&&... args) {
     return OnceCallback<Signature>(
-        [f = std::forward<F>(funtor),
+        [f = std::forward<F>(functor),
          ...bound = std::forward<BoundArgs>(args)]
         (auto&&... call_args) mutable -> decltype(auto) {
             return std::invoke(
@@ -83,10 +83,10 @@ auto bind_once(F&& funtor, BoundArgs&&... args) {
 
 先看模板参数,这是入口。`bind_once` 顶上挂了三个:`Signature` 是目标回调的签名(比如 `int(int)`),必须您手动写,编译器推不出来;`F` 是那个可调用对象的类型(lambda 闭包、函数指针之类),由第一个实参推;`BoundArgs...` 是绑定参数的类型包,跟着后面的实参走。后两个是 CTAD 干的活,只有第一个得您亲自动手。
 
-接下来是捕获列表,这块是整套实现里最精巧的。`f = std::forward<F>(funtor)` 用 init capture 把可调用对象完美转发进闭包:传进来的是右值就移进来,是左值就拷进来,值类别一路保到底。下一行 `...bound = std::forward<BoundArgs>(args)` 是 C++20 才有的 lambda init capture pack expansion,给 `BoundArgs...` 里每个类型都发一个捕获变量,各自走 `std::forward` 初始化。要是 `BoundArgs = {int, std::string}`,展开完等价于:
+接下来是捕获列表,这块是整套实现里最精巧的。`f = std::forward<F>(functor)` 用 init capture 把可调用对象完美转发进闭包:传进来的是右值就移进来,是左值就拷进来,值类别一路保到底。下一行 `...bound = std::forward<BoundArgs>(args)` 是 C++20 才有的 lambda init capture pack expansion,给 `BoundArgs...` 里每个类型都发一个捕获变量,各自走 `std::forward` 初始化。要是 `BoundArgs = {int, std::string}`,展开完等价于:
 
 ```cpp
-[f = std::forward<F>(funtor),
+[f = std::forward<F>(functor),
  b1 = std::forward<int>(arg1),
  b2 = std::forward<std::string>(arg2)]
 ```

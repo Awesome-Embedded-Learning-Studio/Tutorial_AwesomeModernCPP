@@ -217,6 +217,6 @@ With this piece, the Linux socket story has gone from "traditional C style" to "
 
 - [cppreference: std::expected](https://en.cppreference.com/w/cpp/utility/expected) — C++23 error handling (`std::unexpected` constructs the error value)
 - [cppreference: std::unique_ptr / RAII](https://en.cppreference.com/w/cpp/memory/unique_ptr) — the RAII paradigm; `UniqueFd` is the same idea applied to fds
-- [The C10K problem (Dan Kegel)](https://kea.dev/notes/the-c10k-problem) — "how one machine holds up ten thousand concurrent connections"; this piece's measurement is exactly its motivation
+- [The C10K problem (Dan Kegel)](http://kegel.com/c10k.html) — "how one machine holds up ten thousand concurrent connections"; this piece's measurement is exactly its motivation
 - [Traditional socket programming: the server's five steps and TCP connection setup (series 00)](./00-traditional-socket-basics.md) — the target this piece modernizes
 - [epoll: Linux I/O multiplexing (next in this series)](./02-epoll-io-multiplexing.md) — serving a great many fds with a few threads, solving the C10K pain this piece ends on

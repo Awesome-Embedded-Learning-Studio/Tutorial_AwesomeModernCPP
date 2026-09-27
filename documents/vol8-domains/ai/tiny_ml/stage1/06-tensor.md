@@ -9,7 +9,7 @@ cpp_standard: [23]
 reading_time_minutes: 12
 prerequisites:
   - "工程脚手架——把工具链地基浇好"
-  - "模板与非类型参数"
+  - "类模板"
 tags:
   - host
   - cpp-modern

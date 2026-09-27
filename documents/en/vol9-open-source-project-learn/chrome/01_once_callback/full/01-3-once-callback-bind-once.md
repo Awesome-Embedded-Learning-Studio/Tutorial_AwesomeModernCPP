@@ -70,9 +70,9 @@ Let's put the whole source on the table first, and chew through it one segment a
 
 ```cpp
 template<typename Signature, typename F, typename... BoundArgs>
-auto bind_once(F&& funtor, BoundArgs&&... args) {
+auto bind_once(F&& functor, BoundArgs&&... args) {
     return OnceCallback<Signature>(
-        [f = std::forward<F>(funtor),
+        [f = std::forward<F>(functor),
          ...bound = std::forward<BoundArgs>(args)]
         (auto&&... call_args) mutable -> decltype(auto) {
             return std::invoke(
@@ -89,10 +89,10 @@ auto bind_once(F&& funtor, BoundArgs&&... args) {
 
 The template parameters come first — they are the entrance. `bind_once` carries three of them at the top: `Signature` is the target callback's signature (`int(int)`, say) — you must write it yourself, the compiler cannot deduce it; `F` is the type of the callable (a lambda closure, a function pointer, that sort of thing), deduced from the first argument; `BoundArgs...` is the pack of bound-argument types, following the trailing arguments. The latter two are CTAD's work; only the first one falls to you personally.
 
-Next comes the capture list, the most delicate piece of the whole implementation. `f = std::forward<F>(funtor)` uses an init capture to perfectly forward the callable into the closure: an rvalue coming in gets moved in, an lvalue coming in gets copied in, and the value category is preserved the whole way down. The next line, `...bound = std::forward<BoundArgs>(args)`, is the lambda init-capture pack expansion that C++20 brought in: it hands one capture variable to every type in `BoundArgs...`, each initialized through `std::forward`. If `BoundArgs = {int, std::string}`, the finished expansion is equivalent to:
+Next comes the capture list, the most delicate piece of the whole implementation. `f = std::forward<F>(functor)` uses an init capture to perfectly forward the callable into the closure: an rvalue coming in gets moved in, an lvalue coming in gets copied in, and the value category is preserved the whole way down. The next line, `...bound = std::forward<BoundArgs>(args)`, is the lambda init-capture pack expansion that C++20 brought in: it hands one capture variable to every type in `BoundArgs...`, each initialized through `std::forward`. If `BoundArgs = {int, std::string}`, the finished expansion is equivalent to:
 
 ```cpp
-[f = std::forward<F>(funtor),
+[f = std::forward<F>(functor),
  b1 = std::forward<int>(arg1),
  b2 = std::forward<std::string>(arg2)]
 ```

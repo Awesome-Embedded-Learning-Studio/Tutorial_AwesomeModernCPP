@@ -41,6 +41,7 @@ title: enum class
 
 ```cpp
 // Standard: C++11
+#include <cstdint>
 #include <iostream>
 
 int main() {

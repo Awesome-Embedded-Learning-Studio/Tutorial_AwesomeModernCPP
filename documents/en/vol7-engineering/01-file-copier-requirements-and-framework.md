@@ -9,7 +9,7 @@ tags:
 - host
 - intermediate
 title: 'Modern C++ in Practice — Building a File Copier from Scratch (Part 1): Requirements Analysis and Basic Framework'
-description: ''
+description: File-copier practice, part 1 - nail down the requirements and stand up the skeleton, turning last chapter's engineering habits into a real small project
 translation:
   source: documents/vol7-engineering/01-file-copier-requirements-and-framework.md
   source_hash: 814769f28e09746b9ea21d9a4ea5b19a28046494df3658df53daa8ca122550c2

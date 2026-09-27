@@ -48,7 +48,7 @@ for (auto& [k, v] : load_data()) {
 }
 ```
 
-Spread the cost out and look at it. Insert #1 is `O(1)`, insert #2 is `O(2)`, climbing all the way to the Nth at `O(N)`, for a total of `O(1) + O(2) + ... + O(N) = O(N²)`. Let the data grow and it becomes a disaster. With 100k elements, the total shift count lands around `10⁸`, and measured runs grind on for several seconds. That is the exact spot where we stepped in it back then.
+Spread the cost out and look at it. Insert #1 is `O(1)`, insert #2 is `O(2)`, climbing all the way to the Nth at `O(N)`, for a total of `O(1) + O(2) + ... + O(N) = O(N²)`. Let the data grow and it becomes a disaster. With 100,000 elements, the random-order model puts total shifts at about `N²/4 ≈ 2.5×10⁹`, and measured runs grind on for several seconds. That is the exact spot where we stepped in it back then.
 
 flat_map's interface designers clearly knew about this too, which is why they set aside cheaper routes specifically for construction time.
 

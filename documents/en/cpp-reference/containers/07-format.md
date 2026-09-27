@@ -50,7 +50,7 @@ checking of the argument count, and support for formatting custom types.
 |------|------|------|
 | Format a string | `string format(fmt, args...)` | Returns the formatted string |
 | Format to output | `void vformat_to(out_it, fmt, args)` | Outputs to an iterator |
-| Format to buffer | `size_t formatted_size(fmt, args...)` | Precomputes the output length |
+| Format to buffer | `format_to_n(out, n, fmt, args...)` | writes into a fixed buffer, returns the output end and the total needed length |
 | Format to stdout | (C++23) `void print(fmt, args...)` | Writes directly to standard output |
 | Positional arguments | `"{0} {1} {0}"` | References arguments by index |
 | Width/precision | `"{:>10.2f}"` | Right-aligned, width 10, precision 2 |
@@ -85,7 +85,7 @@ int main() {
   that does not match the argument types
 - Replaces `std::stringstream`, avoiding heap allocation overhead
 - Checks the argument count at compile time, but full compile-time validation of
-  format specifiers requires the help of C++23's `std::is_constant_evaluated`
+  format specifiers requires the help of mandatory compile-time checking of format strings (C++23, P2216)
 - Flash overhead can be significant (the code size of the formatting engine);
   evaluate before use on extremely resource-constrained devices
 - The [{fmt}](https://github.com/fmtlib/fmt) library can serve as a fallback

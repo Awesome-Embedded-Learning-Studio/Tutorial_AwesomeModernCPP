@@ -57,7 +57,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 ```
 
-The first three lines lock down the standard. `CMAKE_CXX_STANDARD 23` paired with `STANDARD_REQUIRED ON` nails C++23 in place so the compiler can't quietly downgrade. Set `STANDARD` without `STANDARD_REQUIRED` and some compilers silently fall back to the highest standard they support; later, when you use a C++23 feature, you get a baffling error that nobody would think to trace back to the standard. `CMAKE_EXPORT_COMPILE_COMMANDS ON` generates `compile_commands.json` for clangd — the IDE's go-to-definition, completion, and diagnostics all live off it. Leave this line off and writing code becomes genuinely painful.
+The opening `set()` calls lock down the standard first. `CMAKE_CXX_STANDARD 23` paired with `STANDARD_REQUIRED ON` nails C++23 in place so the compiler can't quietly downgrade. Set `STANDARD` without `STANDARD_REQUIRED` and some compilers silently fall back to the highest standard they support; later, when you use a C++23 feature, you get a baffling error that nobody would think to trace back to the standard. `CMAKE_EXPORT_COMPILE_COMMANDS ON` generates `compile_commands.json` for clangd — the IDE's go-to-definition, completion, and diagnostics all live off it. Leave this line off and writing code becomes genuinely painful.
 
 ```cmake
 include(FetchContent)

@@ -203,9 +203,8 @@ public:
     // 查找:O(log n) 二分
     const_iterator find(const Key& key) const {
         auto it = std::ranges::lower_bound(
-            body_, key,
-            [&](const value_type& v, const Key& k) { return comp_(GetKeyFromValue{}(v), k); },
-            [&](const Key& k, const value_type& v) { return comp_(k, GetKeyFromValue{}(v)); });
+            body_, key, comp_,
+            [](const value_type& v) { return GetKeyFromValue{}(v); });
         if (it != body_.end() && !comp_(key, GetKeyFromValue{}(*it))) return it;
         return body_.end();
     }

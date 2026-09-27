@@ -111,7 +111,7 @@ Presets 这套机制就是冲着这四个痛点来的。把「用哪些 `-D`、�
 }
 ```
 
-逐字段拆。顶层 `version` 是 **JSON schema 的版本号**，不是 CMake 的版本号。当前最高到 9（CMake 3.27 引入），3 是个稳妥的下限，覆盖了 `configurePresets` + `buildPresets` + `testPresets` 全部基础能力，CMake 3.21 起原生支持。schema 版本和 `cmakeMinimumRequired` 是两件事：前者声明「这份 JSON 按哪个版本的 schema 写」，后者声明「跑这份 JSON 至少要 CMake 多新」。低于这个版本的 CMake 看到 `CMakePresets.json` 直接拒绝，避免老 CMake 解析不了新字段却默默继续。
+逐字段拆。顶层 `version` 是 **JSON schema 的版本号**，不是 CMake 的版本号。当前最高到 9（CMake 3.30 引入），3 是个稳妥的下限，覆盖了 `configurePresets` + `buildPresets` + `testPresets` 全部基础能力，CMake 3.21 起原生支持。schema 版本和 `cmakeMinimumRequired` 是两件事：前者声明「这份 JSON 按哪个版本的 schema 写」，后者声明「跑这份 JSON 至少要 CMake 多新」。低于这个版本的 CMake 看到 `CMakePresets.json` 直接拒绝，避免老 CMake 解析不了新字段却默默继续。
 
 `configurePresets` 是个数组，每个元素是一个 preset。`base` 这个 preset 有几个关键字段。
 
@@ -130,7 +130,7 @@ Presets 这套机制就是冲着这四个痛点来的。把「用哪些 `-D`、�
 `buildPresets` 部分简单：每个 build preset 通过 `configurePreset` 字段绑定到一个 configure preset。`cmake --build --preset debug` 就知道去 `build/debug` 这个 `binaryDir` 下执行构建，不用再写 `cmake --build build/debug`。
 
 ::: details schema version 选几合适
-官方文档里 schema 版本一路从 1 涨到 9。选哪个取决于您要用的新特性。version 1（CMake 3.19）只有 `configurePresets`，没有 build/test presets；version 2（3.20）补齐 `buildPresets`/`testPresets`；version 3（3.21）加入 `cmakeMinimumRequired` 字段和更宽松的宏展开。再往后主要是给 CI 集成、条件化 include 等高级场景打补丁。笔者的默认选择是 3，能覆盖绝大多数工程需求，同时保证 CMake 3.21+ 就能解析。
+官方文档里 schema 版本一路从 1 涨到 9。选哪个取决于您要用的新特性。version 1（CMake 3.19）只有 `configurePresets`，没有 build/test presets；version 2（3.20）补齐 `buildPresets`/`testPresets`；version 3（3.21）加入 `condition` 条件字段、`toolchainFile`/`installDir` 等,宏展开也更宽松。再往后主要是给 CI 集成、条件化 include 等高级场景打补丁。笔者的默认选择是 3，能覆盖绝大多数工程需求，同时保证 CMake 3.21+ 就能解析。
 :::
 
 ## 用起来：从 configure 到 build 的真实输出

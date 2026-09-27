@@ -1,6 +1,6 @@
 ---
 title: "Getting Started"
-description: "Before installing anything, first answer one question with four firmwares that differ only in how they blink an LED: what right does C++ have to a microcontroller — every number reproducible; then from Renode observation, the working environment, and a first firmware through debugging, real hardware, and clangd, the seven environment pieces all fall into place"
+description: "Before installing anything, first answer one question with four firmwares that differ only in how they blink an LED: what right does C++ have to a microcontroller — every number reproducible; then from Renode observation, the working environment, and a first firmware through debugging, real hardware, and clangd, the eight environment pieces all fall into place"
 chapter: 0
 order: 0
 tags:

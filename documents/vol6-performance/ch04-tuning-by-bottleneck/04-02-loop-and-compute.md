@@ -117,6 +117,6 @@ return a0 + a1 + a2 + a3;
 ## 参考资源
 
 - Bryant & O'Hallaron《CSAPP》第 5 章 *Optimizing Program Performance*——code motion / 消除内存引用 / 展开 / 多累加器 / reassociation 的经典推导(本篇五招的出处)
-- Agner Fog《Optimizing software in C++》§12 *Optimizing loops》。本地
+- Agner Fog《Optimizing software in C++》§12 *Optimizing loops》
 - ch02-03 流水线、ILP 与分支预测(本卷,dot1/dot4 多累加器 2.92× 的实测出处)
 - 本篇实测代码:`code/volumn_codes/vol6-performance/ch04/loop_opt.cpp`

@@ -222,7 +222,7 @@ template:      36.1899 ms
 std::function: 150.557 ms
 ```
 
-Look closely at these numbers. The template entry barely does better than "doing nothing"—the compiler inlined `AddOnePolicy::transform` wholesale into the loop, and `x + 1` got folded by loop induction into a single arithmetic instruction; the function call no longer exists at all. The virtual function is nearly twice as slow—that's the price of the indirect call plus no inlining. And `std::function` is the most absurdly slow of all; it gets its own dedicated discussion later in this section.
+Look closely at these numbers. In this particular run the virtual function (28.9ms) even beat the template (36.2ms) — that is how much variance and code layout can move a microbenchmark: with a stable call target, branch prediction nearly always hits, while the inlined template loop lost the layout lottery on this machine. So don't turn "templates always beat virtual functions" into dogma: the template's advantage is that it *permits* zero-overhead inlining (the disassembly below shows exactly that ideal form), and a virtual call with a stable, well-predicted target doesn't necessarily lose. `std::function`, on the other hand, is absurdly slow (150ms) and gets its own dedicated discussion later in this section.
 
 Timings alone aren't intuitive enough, so let's drag out the assembly compiled from the template strategy and confirm what it actually got inlined into:
 

@@ -65,7 +65,7 @@ madvise(a2, SZ, MADV_HUGEPAGE);   // 请求透明大页
 // 对两份做同样的指针追逐,比延迟
 ```
 
-跑三次的结果:
+跑两次的结果:
 
 ```text
 第 1 次: 4KB 页 136.5 ns   2MB 页 134.0 ns   比值 1.02
@@ -85,11 +85,11 @@ madvise(a2, SZ, MADV_HUGEPAGE);   // 请求透明大页
 | **译码宽度** | 6-wide(Golden Cove 起) | 4-wide x86 译码,**靠 op-cache 补到 6-8 µop/周期** | 极宽(~8-wide),且无 x86 译码负担 | 宽(4-5+)|
 | **ROB 深度** | 深(~400-500+) | 中深(Zen3 ~256) | 极深(~600+) | 中等 |
 | **L1d / L2** | 48 KB / 1-2 MB | 32 KB / 512KB-1MB | 128 KB / 大 | 64 KB / 可变 |
-| **LLC 结构** | 共享 LLC(MIC / 内置)| Zen3+ 单 CCD 共享大 L3 | 系统级缓存(SLC) | 共享 /簇 L3 |
+| **LLC 结构** | 共享 LLC(MLC / 内置)| Zen3+ 单 CCD 共享大 L3 | 系统级缓存(SLC) | 共享 /簇 L3 |
 | **TLB** | L1 dTLB + L2 TLB | L1 dTLB + L2 TLB | 类似分层 | 类似分层 |
 | **特色** | 深流水线、强前端 | 统一 CCD 大缓存、高频率 | 超宽 ROB、高 ILP | 能效比、可授权 |
 
-读这张表的姿势:别盯绝对数(代际在演进),盯**结构性差异**。比如「AMD Zen 靠 4-wide x86 译码 + op-cache 补吞吐,而 Apple 是真·超宽译码 + 超深 ROB」,这是为什么 Apple Silicon 在 IPC(每指令周期数)上能打 x86 的根因之一,也解释了为什么 x86 代码的「前端瓶颈」(译码跟不上)比 ARM 更常见(ch04-07 前端优化会讲)。再比如「Zen3 把 L3 整合成单 CCD 共享」,这是 AMD 大幅缩小跨核缓存延迟的关键,直接影响多线程性能曲线(ch05)。
+读这张表的姿势:别盯绝对数(代际在演进),盯**结构性差异**。比如「AMD Zen 靠 4-wide x86 译码 + op-cache 补吞吐,而 Apple 是真·超宽译码 + 超深 ROB」,这是为什么 Apple Silicon 在 IPC(每周期指令数)上能打 x86 的根因之一,也解释了为什么 x86 代码的「前端瓶颈」(译码跟不上)比 ARM 更常见(ch04-07 前端优化会讲)。再比如「Zen3 把 L3 整合成单 CCD 共享」,这是 AMD 大幅缩小跨核缓存延迟的关键,直接影响多线程性能曲线(ch05)。
 
 > 这张表严格意义上属于「给指针」的范畴,寄存器重命名表大小、执行端口分布、各指令延迟/吞吐这些**架构表录级**的数据,Agner 卷3(微架构)、卷4(指令表)是案头权威,Wikichip 是在线百科。vol6 讲到够支撑你「理解快慢」就停,深挖查这两处。
 
@@ -107,7 +107,7 @@ madvise(a2, SZ, MADV_HUGEPAGE);   // 请求透明大页
 ## 参考资源
 
 - Bryant & O'Hallaron《CSAPP》第 9 章 *Virtual Memory*:页表、TLB、页表漫游的概念与代价
-- Agner Fog《The microarchitecture of Intel, AMD and VIA CPUs》§22 *AMD Ryzen* 与各 Intel 章:TLB、流水线、执行端口的架构级细节。本地:`.claude/drafts/books/optimazation_in_cpp/microarchitecture.md`
+- Agner Fog《The microarchitecture of Intel, AMD and VIA CPUs》§22 *AMD Ryzen* 与各 Intel 章:TLB、流水线、执行端口的架构级细节:`.claude/drafts/books/optimazation_in_cpp/microarchitecture.md`
 - Wikichip *Microarchitectures*:各 CPU 族(Intel / AMD / Apple / ARM)精确参数速查,跨平台调优的案头入口
 - Drepper, U.《What Every Programmer Should Know About Memory》:TLB、huge page、页表的工程视角
 - 本篇实测代码:`code/volumn_codes/vol6-performance/ch02/tlb_hugepage.cpp`

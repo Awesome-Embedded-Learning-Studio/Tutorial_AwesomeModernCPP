@@ -21,7 +21,7 @@ difficulty: beginner
 ## 快速导航
 
 **按标准版本：**
-[C++98/03](#c9803) | [C++11](#c11) | [C++14](#c14) | [C++17](#c17) | [C++20](#c20) | [C++23](#c23) | [C++26](#c26)
+[C++98/03](#c-98-03) | [C++11](#c-11) | [C++14](#c-14) | [C++17](#c-17) | [C++20](#c-20) | [C++23](#c-23) | [C++26](#c-26)
 
 **按功能类别：**
 [内存管理](#内存管理) | [容器与视图](#容器与视图) | [并发](#并发) | [核心语言特性](#核心语言特性) | [模板与元编程](#模板与元编程)
@@ -188,7 +188,7 @@ C++26 是正在制定中的下一版标准（ISO/IEC 14882:2026）。截至 2026
 | 特性 | 头文件 | 简述 | 适用性 |
 |------|--------|------|--------|
 | Reflection（静态反射） | `<meta>`（草案） | 编译期类型自省与生成，C++26 旗舰特性 | **中** |
-| Contracts（契约） | `<contracts>`（草案） | precondition/postvalue/assert 运行期契约检查 | **中** |
+| Contracts（契约） | `<contracts>`（草案） | precondition/postcondition/assert 运行期契约检查 | **中** |
 | std::execution / Senders | `<execution>`（草案） | scheduler/sender/receiver 异步任务图（P2300） | **中** |
 | std::linalg | `<linalg>` | 基于 BLAS 的线性代数自由函数 | **中** |
 | std::text_encoding | `<text_encoding>` | 识别运行期文本编码 | **低** |
@@ -269,6 +269,7 @@ C++26 是正在制定中的下一版标准（ISO/IEC 14882:2026）。截至 2026
 | std::latch / barrier | C++20 | `<latch>` | 线程同步原语 | **中** |
 | std::stop_token | C++20 | `<stop_token>` | 协作式线程取消 | **中** |
 
+:::
 ::: details 待补充参考卡
 以下特性尚未创建参考卡：std::condition_variable、std::future / async、std::chrono、std::shared_timed_mutex、std::shared_mutex、std::atomic_ref、std::latch / barrier、std::stop_token
 
@@ -324,6 +325,7 @@ C++26 是正在制定中的下一版标准（ISO/IEC 14882:2026）。截至 2026
 | 多维下标运算符 | C++23 | 语言特性 | operator[] 多参数 | **低** |
 | [std::stacktrace](core-language/19-stacktrace.md) | C++23 | `<stacktrace>` | 调用栈捕获与打印 | **中** |
 
+:::
 ::: details 待补充参考卡
 以下特性尚未创建参考卡：移动语义、static_assert、用户自定义字面量、委托/继承构造、alignas / alignof、返回类型推导、constexpr 扩展、decltype(auto)、二进制字面量、CTAD、保证拷贝消除、std::byte、if/switch 初始化语句、consteval、constinit、std::source_location、指定初始化器、std::to_underlying、std::unreachable、if consteval、多维下标运算符
 
@@ -344,9 +346,12 @@ C++26 是正在制定中的下一版标准（ISO/IEC 14882:2026）。截至 2026
 | std::is_constant_evaluated | C++20 | `<type_traits>` | 检测编译期上下文 | **中** |
 | std::is_scoped_enum | C++23 | `<type_traits>` | 检测作用域枚举 | **低** |
 
+:::
 ::: details 待补充参考卡
 以下特性尚未创建参考卡：std::integer_sequence、std::invoke、std::apply、std::is_constant_evaluated、std::is_scoped_enum
 
 ---
 
 *部分内容参考自 [cppreference.com](https://en.cppreference.com/)，采用 [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) 许可*
+
+:::

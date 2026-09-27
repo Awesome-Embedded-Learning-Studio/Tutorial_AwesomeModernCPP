@@ -193,7 +193,7 @@ Stack<int> s1;                                  // Container defaults to std::ve
 Stack<int, std::deque<int>> s2;                 // Container explicitly specified as std::deque<int>
 ```
 
-Note that the Standard Library's `std::stack` follows exactly this design: its second parameter defaults to `std::vector<T>` and can be swapped for `std::deque<T>` or `std::list<T>`.
+Note that the Standard Library's `std::stack` follows exactly this design: its second parameter defaults to `std::deque<T>` and can be swapped for `std::vector<T>` or `std::list<T>`.
 
 ## A Quick Look at CTAD—Letting the Compiler Deduce Template Parameters (C++17)
 

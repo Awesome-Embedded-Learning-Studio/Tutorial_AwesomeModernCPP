@@ -10,8 +10,6 @@ description: A deep dive into how the linker works, how to write linker scripts,
 difficulty: beginner
 order: 3
 platform: host
-prerequisites:
-- 'Chapter 0: Preface and Fundamentals'
 reading_time_minutes: 12
 related: []
 tags:
@@ -59,7 +57,7 @@ void printMessage() {
 
 // file2.cpp
 extern void printMessage();  // This is only a declaration
-void main() {
+int main() {
     printMessage();  // The linker is responsible for finding the actual function address
 }
 
@@ -214,8 +212,6 @@ SECTIONS
   PROVIDE(end = _end);
 }
 
-/* Export the top-of-stack symbol for the startup file to use */
-PROVIDE(_estack = _estack);
 
 ```
 
@@ -245,7 +241,7 @@ After the processor resets, it jumps to `Reset_Handler`. This is the first piece
 2. **Copy the `.data` section**: copy the initialized data from FLASH to RAM
 3. **Zero the `.bss` section**: clear the uninitialized data region
 4. **Call the C++ global constructors** (if using C++)
-5. **Set up the stack pointer**
+5. The stack pointer needs no manual setup — on Cortex-M the initial SP is loaded by hardware from the first vector-table entry at reset (which is why the sample code below has no such step)
 6. **Jump to the `main()` function**
 
 ### 4.2 A Startup Code Example

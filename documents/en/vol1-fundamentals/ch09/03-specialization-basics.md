@@ -183,7 +183,7 @@ If you genuinely need to customize behavior through function template specializa
 
 Full specialization pins down every template parameter, but sometimes we only want to customize for a whole family of types—"all pointer types" or "all array types", say—rather than one concrete type. That's where partial specialization earns its keep.
 
-Partial specialization only applies to class templates and variable templates; function templates don't support it. Looking at the syntax, the angle brackets of the partial specialization's `template <>` still hold the parameters that remain unfixed:
+Partial specialization only applies to class templates and variable templates; function templates don't support it. Looking at the syntax, the angle brackets of the partial specialization's `template <...>` still hold the parameters that remain unfixed:
 
 ```cpp
 // Generic version

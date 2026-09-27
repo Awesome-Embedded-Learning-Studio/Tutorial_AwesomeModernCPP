@@ -323,7 +323,7 @@ int main()
 
     // Case 2: const& binds "a reference returned from a function" that points to a temporary -- no extension, dangling
     const std::string& dead = pass_through(std::string("I am passed"));
-    std::cout << "2) 经函数返回的引用: \"" << dead << "\n";  // use-after-scope
+    std::cout << "2) 经函数返回的引用: \"" << dead << "\"\n";  // use-after-scope
 
     return 0;
 }

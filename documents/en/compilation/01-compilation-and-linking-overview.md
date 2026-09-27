@@ -180,7 +180,7 @@ un_init_local_var   |0000000000000004|   b  |            OBJECT|0000000000000004
 
 Alright, let's pore over this table. What you need to do is watch the Class column — it tells you what each entry in our table is.
 
-- Class U means an undefined reference, one of the "blanks" mentioned earlier. This object has two of them: "fn_a" and "z_global".
+- Class U means an undefined reference, one of the "blanks" mentioned earlier. This object has two U-class symbols: `extern_func` and `extern_var`.
 - Class t or T marks where code is defined; the particular class tells you whether the function is local (t) or non-local (T) — that is, whether it was originally declared `static`. Some systems may also show a section, such as .text.
 - Class d or D marks an initialized global variable; likewise, the particular class says whether the variable is local (d) or non-local (D). If a section is shown, it will be something like .data.
 - For uninitialized global variables you get b if it is static/local, and B, or C, if not. In this case the section may look like .bss or *COM*.

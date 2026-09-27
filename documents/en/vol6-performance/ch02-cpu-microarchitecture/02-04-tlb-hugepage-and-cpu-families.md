@@ -74,7 +74,7 @@ madvise(a2, SZ, MADV_HUGEPAGE);   // request transparent huge pages
 // run the same pointer chase over both copies and compare latency
 ```
 
-The results of three runs:
+The results of two runs:
 
 ```text
 第 1 次: 4KB 页 136.5 ns   2MB 页 134.0 ns   比值 1.02
@@ -94,11 +94,11 @@ With the TLB covered, ch02's hardware foundation is complete. But the numbers in
 | **Decode width** | 6-wide (since Golden Cove) | 4-wide x86 decode, **topped up to 6-8 µops/cycle by the op-cache** | extremely wide (~8-wide), and no x86 decode burden | wide (4-5+) |
 | **ROB depth** | deep (~400-500+) | medium-deep (Zen3 ~256) | extremely deep (~600+) | moderate |
 | **L1d / L2** | 48 KB / 1-2 MB | 32 KB / 512KB-1MB | 128 KB / large | 64 KB / varies |
-| **LLC structure** | shared LLC (MIC / on-die) | Zen3+ single-CCD shared large L3 | system-level cache (SLC) | shared / per-cluster L3 |
+| **LLC structure** | shared LLC (MLC / on-die) | Zen3+ single-CCD shared large L3 | system-level cache (SLC) | shared / per-cluster L3 |
 | **TLB** | L1 dTLB + L2 TLB | L1 dTLB + L2 TLB | similarly tiered | similarly tiered |
 | **Distinguishing traits** | deep pipelines, strong front end | unified single-CCD large cache, high clocks | ultra-wide ROB, high ILP | efficiency, licensable |
 
-How to read this table: don't stare at the absolute numbers (generations keep evolving); stare at the **structural differences**. For example, "AMD Zen pairs 4-wide x86 decode with an op-cache to top up throughput, while Apple goes genuinely ultra-wide on decode plus an ultra-deep ROB" — that is one root reason Apple Silicon can go toe-to-toe with x86 on IPC (cycles per instruction), and it also explains why a "front-end bottleneck" in x86 code (decode can't keep up) shows up more often than on ARM (ch04-07 covers front-end optimization). Or take "Zen3 consolidated the L3 into a single-CCD shared cache" — that was the key move behind AMD sharply cutting cross-core cache latency, and it directly shapes the multithreaded performance curve (ch05).
+How to read this table: don't stare at the absolute numbers (generations keep evolving); stare at the **structural differences**. For example, "AMD Zen pairs 4-wide x86 decode with an op-cache to top up throughput, while Apple goes genuinely ultra-wide on decode plus an ultra-deep ROB" — that is one root reason Apple Silicon can go toe-to-toe with x86 on IPC (instructions per cycle), and it also explains why a "front-end bottleneck" in x86 code (decode can't keep up) shows up more often than on ARM (ch04-07 covers front-end optimization). Or take "Zen3 consolidated the L3 into a single-CCD shared cache" — that was the key move behind AMD sharply cutting cross-core cache latency, and it directly shapes the multithreaded performance curve (ch05).
 
 > Strictly speaking, this table belongs to the "pointers" category. For data at the **architecture-datasheet level** — register renaming table sizes, execution-port layouts, per-instruction latency/throughput — Agner's volume 3 (microarchitecture) and volume 4 (instruction tables) are the desk-side authority, and Wikichip is the online encyclopedia. vol6 stops at just enough for you to understand why things are fast or slow; for deeper digging, go to those two.
 

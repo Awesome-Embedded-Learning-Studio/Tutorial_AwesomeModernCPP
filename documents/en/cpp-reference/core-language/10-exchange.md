@@ -48,7 +48,7 @@ int main() {
     int a = 10, b = 20;
     // Swap a and b without a temporary variable
     a = std::exchange(b, a);
-    std::cout << a << " " << b << "\n"; // Output: 10 10
+    std::cout << a << " " << b << "\n"; // Output: 20 10
 
     // Print the first few Fibonacci numbers
     for (int x{0}, y{1}; x < 50; x = std::exchange(y, x + y))

@@ -112,7 +112,7 @@ g++ ... -Wl,--gc-sections
 ## 参考资源
 
 - 现有 vol6 `06-evaluating-performance-and-size.md`(本篇是其扩写版的前置,已存在)
-- Agner Fog《Optimizing assembly》§10 *Code size optimization》。本地
+- Agner Fog《Optimizing assembly》§10 *Code size optimization》
 - GCC/Clang 文档 `-Os`/`-Oz`/`-ffunction-sections`/`-Wl,--gc-sections`/`extern template`
 - CSAPP 第 7 章 *Linking*(`--gc-sections` 的链接机制背景)
 - 本篇实测代码:`code/volumn_codes/vol6-performance/ch07/size_demo.cpp`

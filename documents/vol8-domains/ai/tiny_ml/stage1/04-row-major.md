@@ -1,6 +1,6 @@
 ---
 title: "行主序——二维坐标怎么落进一维内存"
-description: "拆 operator()(i,j) 背后的换算:二维坐标落进一维内存是 i*Cols+j,一行存满再下一行;这个顺序跟 NumPy 默认 C order、C++ 原生数组都一致,是 Stage 6 对拍的基础"
+description: "拆 operator()(i,j) 背后的换算:二维坐标落进一维内存是 i*Cols+j,一行存满再下一行;这个顺序跟 NumPy 默认 C order、C++ 原生数组都一致,是 Stage 5 对拍的基础"
 chapter: 8
 order: 10
 platform: host
@@ -69,7 +69,7 @@ flat_index = i * Cols + j
 
 第一条,C 和 C++ 的原生二维数组本来就是行主序。`float w[4][3]` 在内存里就是 `w[0][0], w[0][1], w[0][2], w[1][0], ...`,一行接一行。C++ 程序员对这套顺序最熟,不用做任何心智转置。
 
-第二条,也是更要紧的,NumPy 默认的 C order 就是行主序。`np.array([[1,2,3],[4,5,6]])` 调一下 `.flatten()`,出来的就是 `[1,2,3,4,5,6]`,跟咱们 `data_[i*Cols+j]` 的顺序一模一样。这意味着 Stage 5 从 NumPy 导出权重时,Python 那边 `W[i, j]` 和 C++ 这边 `t(i, j)` 指向的是同一个数,Stage 6 的对拍才能一位一位地比。
+第二条,也是更要紧的,NumPy 默认的 C order 就是行主序。`np.array([[1,2,3],[4,5,6]])` 调一下 `.flatten()`,出来的就是 `[1,2,3,4,5,6]`,跟咱们 `data_[i*Cols+j]` 的顺序一模一样。这意味着 Stage 5 从 NumPy 导出权重时,Python 那边 `W[i, j]` 和 C++ 这边 `t(i, j)` 指向的是同一个数,Stage 5 的对拍才能一位一位地比。
 
 要是哪边偷偷用了另一套序,对拍就全错,你拿 C++ 行主序的 `data_[7]` 去比 NumPy 列主序某个位置的数,怎么都对不上,能 debug 到怀疑人生。所以这条布局,笔者在这里就把它定下来,后面所有 stage 都不许再改主意。
 

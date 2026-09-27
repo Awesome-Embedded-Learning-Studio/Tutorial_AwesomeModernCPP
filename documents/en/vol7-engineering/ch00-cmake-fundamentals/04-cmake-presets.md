@@ -117,7 +117,7 @@ Let's look at a complete minimal working example first, then break the fields do
 }
 ```
 
-Field by field. The top-level `version` is **the version number of the JSON schema**, not the version number of CMake. It currently goes up to 9 (introduced in CMake 3.27); 3 is a safe floor that covers the full basic capability of `configurePresets` + `buildPresets` + `testPresets` and is natively supported from CMake 3.21 on. The schema version and `cmakeMinimumRequired` are two different things: the former declares "which version of the schema this JSON was written against", and the latter declares "how new a CMake you need at minimum to run this JSON". A CMake older than that minimum refuses to touch `CMakePresets.json` at all, which keeps an old CMake from failing to parse a new field and yet silently carrying on.
+Field by field. The top-level `version` is **the version number of the JSON schema**, not the version number of CMake. It currently goes up to 9 (introduced in CMake 3.30); 3 is a safe floor that covers the full basic capability of `configurePresets` + `buildPresets` + `testPresets` and is natively supported from CMake 3.21 on. The schema version and `cmakeMinimumRequired` are two different things: the former declares "which version of the schema this JSON was written against", and the latter declares "how new a CMake you need at minimum to run this JSON". A CMake older than that minimum refuses to touch `CMakePresets.json` at all, which keeps an old CMake from failing to parse a new field and yet silently carrying on.
 
 `configurePresets` is an array; each element is one preset. The `base` preset has a few key fields.
 
@@ -136,7 +136,7 @@ Next, how `debug` and `release` inherit from `base`. `inherits: "base"` means "t
 The `buildPresets` section is simple: each build preset is bound to a configure preset through its `configurePreset` field. `cmake --build --preset debug` then knows to run the build under the `binaryDir` of `build/debug`, so you never have to write `cmake --build build/debug` yourself.
 
 ::: details Which schema version to pick
-In the official documentation the schema version climbs all the way from 1 to 9. Which one to pick depends on which new features you need. version 1 (CMake 3.19) has only `configurePresets`, no build/test presets; version 2 (3.20) fills in `buildPresets`/`testPresets`; version 3 (3.21) adds the `cmakeMinimumRequired` field and more lenient macro expansion. Beyond that, the changes are mostly patches for advanced scenarios such as CI integration and conditional includes. My default pick is 3: it covers the vast majority of project needs while guaranteeing that CMake 3.21+ can parse it.
+In the official documentation the schema version climbs all the way from 1 to 9. Which one to pick depends on which new features you need. version 1 (CMake 3.19) has only `configurePresets`, no build/test presets; version 2 (3.20) fills in `buildPresets`/`testPresets`; version 3 (3.21) adds `condition` fields, `toolchainFile`/`installDir`, and more lenient macro expansion. Beyond that, the changes are mostly patches for advanced scenarios such as CI integration and conditional includes. My default pick is 3: it covers the vast majority of project needs while guaranteeing that CMake 3.21+ can parse it.
 :::
 
 ## Putting it to work: real output from configure to build

@@ -156,7 +156,7 @@ There is a detail I find worth savoring: the `static_assert` condition hangs off
 
 #### Compared with Chromium's approach
 
-Chromium does not get to enjoy C++23's benefits; it goes the old two-overload route: `Run() &&` is the version that really executes, while `Run() const&` stuffs in a `static_assert(!sizeof(*this), "...")` to deliberately manufacture a compile error. That `!sizeof` hack exploits a property of C++ — `sizeof` can only be evaluated on a complete type, so once `!sizeof(*this)` is evaluated, it means we are inside the class definition at that moment (`*this` is a complete type), and the value is necessarily `false`. Before C++23, writing `static_assert(false, "...")` directly would fire on all code paths, even if the overload had never been called, so Chromium had to take the roundabout `!sizeof` spelling. C++23 loosened that restriction, but Chromium's codebase has not fully migrated to C++23, so the old spelling stays as it is.
+Chromium does not get to enjoy C++23's benefits; it goes the old two-overload route: `Run() &&` is the version that really executes, while `Run() const&` stuffs in a `static_assert(!sizeof(*this), "...")` to deliberately manufacture a compile error. That `!sizeof` hack leans on a property of class templates — expressions depending on `this` are only evaluated when the template is instantiated: `static_assert(false, ...)` depends on no template parameter, so it fires the moment the class template is defined; `!sizeof(*this)` depends on `*this`, so as long as the overload is never actually called (the template stays uninstantiated) it sits quiet, and the moment someone does call it, `sizeof(*this)` evaluates to a nonzero value and the assert blows up. Before C++23, writing `static_assert(false, "...")` directly would fire on all code paths, even if the overload had never been called, so Chromium had to take the roundabout `!sizeof` spelling. C++23 loosened that restriction, but Chromium's codebase has not fully migrated to C++23, so the old spelling stays as it is.
 
 With our deducing this approach, a single function template separates lvalue from rvalue cleanly through the deduction of `Self` — a good stretch cleaner than Chromium's two overloads plus the `!sizeof` hack. That is a bargain earned by standing on the shoulders of the new standard, and fairness demands I say so.
 
@@ -206,9 +206,9 @@ That is argument binding — stuffing the "known arguments" into the callback up
 
 ```cpp
 template<typename Signature, typename F, typename... BoundArgs>
-auto bind_once(F&& funtor, BoundArgs&&... args) {
+auto bind_once(F&& functor, BoundArgs&&... args) {
     return OnceCallback<Signature>(
-        [f = std::forward<F>(funtor),
+        [f = std::forward<F>(functor),
          ...bound = std::forward<BoundArgs>(args)]
         (auto&&... call_args) mutable -> decltype(auto) {
             return std::invoke(

@@ -31,7 +31,7 @@ auto add(const AddType& a, const AddType& b){
 }
 
 std::string
-trim_self(const std::string& waited_trim){ // returns the copy of the trimmed string
+trim_self(const std::string& str){ // returns the copy of the trimmed string
     size_t i = 0; // left index
  while (i < str.size() && isspace((unsigned char)str[i]))
   i++;

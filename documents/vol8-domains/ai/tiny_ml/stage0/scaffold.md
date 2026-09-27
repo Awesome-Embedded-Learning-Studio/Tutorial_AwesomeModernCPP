@@ -51,7 +51,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 ```
 
-头三行锁标准。`CMAKE_CXX_STANDARD 23` 配 `STANDARD_REQUIRED ON`,把 C++23 钉死,不让编译器偷偷降级。光写 `STANDARD` 不加 `STANDARD_REQUIRED`,某些编译器会静悄悄降到它能支持的最高标准,你后面用到 C++23 特性时炸出一个莫名其妙的报错,排都排不到标准头上。`CMAKE_EXPORT_COMPILE_COMMANDS ON` 是给 clangd 生成 `compile_commands.json`,IDE 的跳转、补全、诊断全指望它,不开这句,写代码会很难受。
+开头几条 `set()` 调用先把标准锁死。`CMAKE_CXX_STANDARD 23` 配 `STANDARD_REQUIRED ON`,把 C++23 钉死,不让编译器偷偷降级。光写 `STANDARD` 不加 `STANDARD_REQUIRED`,某些编译器会静悄悄降到它能支持的最高标准,你后面用到 C++23 特性时炸出一个莫名其妙的报错,排都排不到标准头上。`CMAKE_EXPORT_COMPILE_COMMANDS ON` 是给 clangd 生成 `compile_commands.json`,IDE 的跳转、补全、诊断全指望它,不开这句,写代码会很难受。
 
 ```cmake
 include(FetchContent)
