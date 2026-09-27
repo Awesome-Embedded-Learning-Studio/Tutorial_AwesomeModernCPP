@@ -4,15 +4,15 @@ cpp_standard:
 - 11
 - 14
 - 17
-description: Master the RAII principle in full, from its underlying mechanisms to real-world application
+description: Master RAII in full, from its underlying mechanisms to real-world applications
 difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
-- Move Construction and Move Assignment
+- 'Chapter 0: Move Construction and Move Assignment'
 reading_time_minutes: 17
 related:
-- 'Deep Dive into unique_ptr: A Zero-Overhead Smart Pointer with Exclusive Ownership'
+- 'Deep Dive into unique_ptr: The Zero-Overhead Smart Pointer with Exclusive Ownership'
 - 'scope_guard and defer: A General-Purpose Scope Guard'
 tags:
 - host
@@ -23,24 +23,24 @@ tags:
 title: 'Deep Dive into RAII: The Cornerstone of Resource Management'
 translation:
   source: documents/vol2-modern-features/ch01-smart-pointers/01-raii-deep-dive.md
-  source_hash: 1b7c39d05c1b8797e66bf1530d0666792c9208a904d43878f875088410e8dfb2
-  translated_at: '2026-09-25T14:31:23+00:00'
+  source_hash: 08defcf873b5b1cb4fcba82a4a25299ac5dc6e42ce3ad49bee083c288ed786fd
+  translated_at: '2026-09-27T04:42:49+00:00'
   engine: anthropic
-  token_count: 8500
+  token_count: 8200
 ---
 # Deep Dive into RAII: The Cornerstone of Resource Management
 
-When I first learned C++, I had zero concept of "resource management"—I would new an object and forget to delete it, open a file and forget to fclose it, lock a mutex and forget to unlock it. As my projects grew larger, these "hand-slip, forgot-to-release" bugs started showing up like cockroaches: spotting one meant ten more were hiding in the corners (and, as it always turned out, by the time I spotted one I'd probably also be writing a project postmortem at the same time—sob). Then one day I seriously read Bjarne Stroustrup's book and finally understood that C++ had an elegant solution prepared for us all along: RAII.
+When I first learned C++, I had zero concept of "resource management"—I would new an object and forget to delete it, open a file and forget to fclose it, lock a mutex and forget to unlock it. As my projects grew larger, these "hand-slip, forgot-to-release" bugs started showing up like cockroaches: spotting one meant ten more were hiding in the corners (and, as things invariably turned out, by the time I spotted one I'd probably also be writing a project postmortem at the same time—sob). Then one day I seriously read Bjarne Stroustrup's book, and finally understood that C++ had an elegant solution prepared for us all along: RAII<RefLink :id="1" preview="Bjarne Stroustrup, The C++ Programming Language, 4th ed., ch.13 Exception Handling" />.
 
-RAII (Resource Acquisition Is Initialization) is C++'s most central idea about resource management, and the foundation of every "automatic cleanup" mechanism in modern C++—smart pointers, lock guards, file handle wrappers, and so on. Once you understand RAII, you are no longer just "using the tools"; you are understanding the design philosophy behind them. In today's article, we will thoroughly nail down RAII, from mechanism to practice.
+RAII (Resource Acquisition Is Initialization) is C++'s most central idea about resource management, and the foundation of every "automatic cleanup" mechanism in modern C++—smart pointers, lock guards, file handle wrappers, and so on. Once you understand RAII, you are no longer just "using the tools"; you are understanding the design philosophy behind them. In today's article, we will work from mechanism to practice and nail RAII down completely.
 
-## What RAII Really Is—A One-Sentence Summary
+## What RAII Really Is: A One-Sentence Summary
 
 The core idea of RAII is utterly plain: **put resource acquisition in the constructor, and resource release in the destructor**. Once an object is created successfully, the resource is in hand; the moment the object leaves its scope (whether by a normal return, an early return, or a thrown exception), the destructor is guaranteed to be called, and the resource is guaranteed to be released.
 
-My first reaction at the time was—huh? That's it? Isn't that just how it should be? But then I thought it over carefully—hey, there's real wisdom here! I used to write drivers, and in C (especially back in my driver-writing days—just thinking about the 4~5 goto statements I had to juggle makes me chuckle), if avoiding bugs rests entirely on programmers remembering "release resources on every return path", then honestly I don't think I could remain a functioning human programmer.
+My first reaction was—huh? That's it? What else would you even do? But once I let it sink in—hey, there's real wisdom here! I used to write drivers, and in C (especially back in my driver days, the mere thought of wrangling four or five gotos makes me chuckle), if dodging bugs rests entirely on programmers remembering "release the resources on every return path", then I don't think I could keep calling myself a human programmer.
 
-Enough rambling—let's look at the most bare-bones example, wrapping a file handle with RAII:
+Enough chatter—let's look at the plainest possible example, wrapping a file handle with RAII:
 
 ```cpp
 #include <cstdio>
@@ -62,7 +62,7 @@ public:
         }
     }
 
-    // Copying is forbidden—a file handle must not be held by two objects at once
+    // Copying is forbidden—a file handle should not be held by two objects at once
     FileHandle(const FileHandle&) = delete;
     FileHandle& operator=(const FileHandle&) = delete;
 
@@ -89,28 +89,28 @@ private:
 };
 ```
 
-Usage is dead simple:
+Usage is minimal:
 
 ```cpp
 void write_log(const char* msg) {
     FileHandle fh("/tmp/app.log", "a");
     std::fprintf(fh.get(), "%s\n", msg);
     // When the function ends, fh's destructor fcloses automatically
-    // Normal return, early return, or exception—no leak in any case
+    // Normal return, early return, or thrown exception—no leak in any case
 }
 ```
 
-If you come from C, the contrast is immediate: in C, every branch that might return early needs a manual `fclose`; miss one and you have a file descriptor leak. RAII hands that "don't forget" burden to the compiler—the destructor will be called (as long as the program exits through normal control flow, rather than calling `std::exit()` or `std::abort()` directly), and that is not a convention but a guarantee of the C++ language standard.
+If you come from C, one comparison tells you everything: in C, every branch that can return early needs a manual `fclose`, and missing a single one leaks a file descriptor. RAII hands this "don't forget" burden over to the compiler—the destructor will be invoked (as long as the program exits through normal control flow, rather than calling `std::exit()` or `std::abort()` directly). That is not a convention; it is a guarantee from the C++ language standard<RefLink :id="2" preview="cppreference RAII — lifetime-based resource management" />.
 
-We turned the manual-`fclose` versus `FileHandle` comparison into an animation: you can play it, pause it, or step through it one frame at a time, and watch clearly what becomes of the resource on both exit paths—the early return and the thrown exception:
+We turned the manual-`fclose` versus `FileHandle` comparison into an animation—you can play it, pause it, or single-step it with the step controls, and watch clearly what happens to the resource on the two exit paths, the early return and the thrown exception:
 
 <Anim id="raii-lifetime" />
 
-## Stack Unwinding—The Engine Behind RAII
+## Stack Unwinding: The Engine Behind RAII
 
-The key mechanism that makes RAII work is called **stack unwinding**. When the program leaves a scope (whether because execution reached the end, hit a return statement, or threw an exception), the C++ runtime automatically destroys every already-constructed local object in that scope—calling their destructors one by one, from the last constructed to the first.
+The key mechanism that makes RAII work is called **stack unwinding**. When a program leaves a scope—whether by executing to the end, hitting a return statement, or throwing an exception—the C++ runtime automatically destroys every already-constructed local object in that scope, calling their destructors one after another, from the most recent to the oldest.
 
-This process is a language-level guarantee, not some "best practice" or "compiler optimization". Let's feel the power of stack unwinding with a concrete example:
+This is a language-level guarantee, not some "best practice" or "compiler optimization". Let's feel the power of stack unwinding with a concrete example:
 
 ```cpp
 #include <iostream>
@@ -133,7 +133,7 @@ void demo_stack_unwinding() {
     Tracer a("a");
     Tracer b("b");
     throw std::runtime_error("boom!");
-    Tracer c("c");  // Execution never reaches here
+    Tracer c("c");  // Execution never reaches this point
 }
 
 int main() {
@@ -145,17 +145,17 @@ int main() {
 }
 ```
 
-The output:
+This demo program is right below—click "Try it yourself" to run it directly:
 
-```text
-Tracer(a) 构造
-Tracer(b) 构造
-~Tracer(b) 析构
-~Tracer(a) 析构
-捕获异常: boom!
-```
+<OnlineCompilerDemo
+  title="Hands-On Verification: Destructor Order During Stack Unwinding"
+  source-path="code/examples/vol2/21_raii_tracer.cpp"
+  description="Watch stack unwinding online after an exception is thrown. Note the destruction order: b, constructed last, is destroyed first (LIFO), and c, never constructed, never appears in the output."
+  run-options="-O2 -std=c++11"
+  allow-run
+/>
 
-Look closely: after the exception is thrown, `b` and `a` are still correctly destroyed—and in the order **last constructed, first destroyed** (LIFO). `c` was never constructed, so it needs no destruction. That is the whole secret of stack unwinding: no matter how control flow leaves the scope, every constructed local object gets destroyed in turn.
+Watch closely: after the exception is thrown, `b` and `a` are still correctly destroyed—and in the order **last constructed, first destroyed** (LIFO). `c` was never constructed, so it needs no destruction. That is the whole secret of stack unwinding: no matter how control flow leaves the scope, all fully constructed local objects are destroyed in turn.
 
 We can verify this guarantee with code:
 
@@ -182,7 +182,7 @@ void test_stack_unwinding() {
     Tracer t1("t1");
     Tracer t2("t2");
     may_throw();  // The exception is thrown here
-    Tracer t3("t3");  // Execution never reaches here
+    Tracer t3("t3");  // Execution never reaches this point
 }
 
 int main() {
@@ -194,17 +194,17 @@ int main() {
 }
 ```
 
-The output:
+This verification program is right below—click "Try it yourself" to run it directly:
 
-```text
-Tracer(t1) constructed
-Tracer(t2) constructed
-~Tracer(t2) destroyed
-~Tracer(t1) destroyed
-Caught: Exception thrown
-```
+<OnlineCompilerDemo
+  title="Hands-On Verification: Stack Unwinding Across Functions"
+  source-path="code/examples/vol2/22_raii_unwinding_verify.cpp"
+  description="Verify online how unwinding propagates across functions: after may_throw throws, t2 and t1 are destroyed in order, and finally main catches the exception."
+  run-options="-O2 -std=c++11"
+  allow-run
+/>
 
-Destructors should be guaranteed not to throw. If a destructor throws a new exception while an exception is propagating (during stack unwinding), the program calls `std::terminate()`. Since C++11, a user-declared destructor is `noexcept(true)` by default (even without an explicit annotation), so throwing means termination. Therefore a destructor should catch and handle all exceptions internally, or move operations that can fail out of the destructor and provide an explicit interface to handle errors.
+Destructors should guarantee that they do not throw. If a destructor throws a new exception while an exception is propagating (during stack unwinding), the program calls `std::terminate()`. Since C++11, a user-declared destructor is `noexcept(true)` by default (even without an explicit annotation), so throwing means termination. Therefore a destructor should catch and handle all exceptions inside it, or move operations that might fail out of the destructor and expose an explicit interface for error handling<RefLink :id="3" preview="cppreference Exceptions — stack unwinding; std::terminate if a destructor throws during unwinding" />.
 
 We can verify this behavior:
 
@@ -226,21 +226,21 @@ int main() {
 }
 ```
 
-If you try to throw from a destructor (even one explicitly marked `noexcept(false)`), during stack unwinding it still ends with `std::terminate()` being called. This is a mandatory requirement of the C++ standard, aimed at preventing the exception-handling machinery itself from crashing.
+If you try to throw from a destructor (even with an explicit `noexcept(false)`), doing so during stack unwinding still causes `std::terminate()` to be called. This is a hard requirement of the C++ standard, and its purpose is to keep the exception-handling machinery itself from crashing.
 
-**Edge case**: the destructor guarantee only applies to exiting through "normal control flow". If the program calls `std::exit()`, `std::abort()`, or `_exit()`, or is killed by a signal, stack unwinding does not happen, and the destructors of local objects are not called. This is one of the reasons to prefer exceptions over `std::exit()`.
+**Edge case**: the destructor guarantee only applies to "exit through normal control flow". If the program calls `std::exit()`, `std::abort()`, or `_exit()`, or gets killed by a signal, no stack unwinding takes place, and destructors of local objects are not called. This is one of the reasons you should prefer exceptions over `std::exit()`.
 
-## Exception Safety Guarantees—RAII's Practical Value
+## Exception Safety Guarantees: RAII's Practical Value
 
-Exception safety is the yardstick for whether code behaves "correctly" when an exception occurs. The C++ community defines three levels of exception safety guarantee, from weakest to strongest:
+Exception safety is the standard for judging whether code behaves "correctly" when an exception occurs. The C++ community defines three levels of exception safety guarantee<RefLink :id="4" preview="Herb Sutter, Exceptional C++, 1999 — Exception-Safety Issues and Techniques" />, from weakest to strongest:
 
-**Basic Guarantee**: after an exception occurs, the program is still in a valid state—no resources are leaked, and the invariants of all objects still hold. The program's concrete state may have changed, though (a container might have lost some of its elements, for example). RAII by itself gets you to this level automatically: as long as every resource is managed by an RAII object, stack unwinding releases them automatically.
+**Basic guarantee**: after an exception, the program remains in a valid state—no resources are leaked, and every object's invariants still hold. The program's concrete state may have changed, though (a container, for example, may have lost some of its elements). RAII alone gets you to this level automatically: as long as all resources are managed by RAII objects, stack unwinding releases them for you.
 
-**Strong Guarantee**: after an exception occurs, the program state rolls back to what it was before the operation—the operation either succeeds completely or fails completely, with no "half-finished" intermediate state. Implementing the strong guarantee usually requires the copy-and-swap idiom or a transaction-style rollback mechanism. RAII cannot achieve this guarantee on its own, but RAII is the foundational tool for implementing it.
+**Strong guarantee**: after an exception, the program state rolls back to what it was before the operation—either the operation succeeds completely or it fails completely, with no "half-finished" intermediate state. Implementing the strong guarantee usually requires the copy-and-swap idiom or a transactional rollback mechanism. This guarantee is not something RAII can deliver on its own, but RAII is the foundational tool for building it.
 
-**Nothrow Guarantee**: the operation guarantees it will not throw an exception. Destructors, memory deallocation operations, and certain low-level operations (such as moving an `int`) belong to this class. This is the strongest guarantee, but not every operation can achieve it.
+**Nothrow guarantee**: the operation guarantees that it will not throw. Destructors, deallocation, and certain low-level operations (such as moving an `int`) belong to this class. This is the strongest guarantee, but not every operation can achieve it.
 
-Let's look at a practical example: suppose we want to write a configuration update function and want it to reach at least the basic guarantee:
+Let's look at a practical example: suppose we are writing a configuration-update function and want it to reach at least the basic guarantee:
 
 ```cpp
 #include <vector>
@@ -273,13 +273,13 @@ private:
 };
 ```
 
-In this code, `std::lock_guard`, `std::string`, `std::vector`, and `std::ofstream` are all RAII-managed resources. No matter which step inside `update_config` throws an exception, the mutex gets unlocked, the file gets closed, and the memory of the strings and the vector gets freed—this is the basic exception safety guarantee RAII brings you, obtained almost for free.
+In this code, `std::lock_guard`, `std::string`, `std::vector`, and `std::ofstream` are all RAII-managed resources. No matter which step inside `update_config` throws, the mutex gets unlocked, the file gets closed, and the string's and vector's memory gets released—that is the basic exception safety guarantee RAII hands you, obtained essentially for free.
 
 ## The RAII Wrapper Design Pattern
 
-In real-world projects, we often need to write RAII wrappers for various kinds of resources. Although the C++ standard library already provides many (`std::unique_ptr`, `std::shared_ptr`, `std::lock_guard`, `std::fstream`, and so on), you will always run into scenarios the standard library doesn't cover. At that point, mastering the design routine of RAII wrappers becomes essential.
+In real-world engineering we often need to write RAII wrappers for all kinds of resources. Although the C++ standard library already provides many (`std::unique_ptr`, `std::shared_ptr`, `std::lock_guard`, `std::fstream`, and so on), you will always run into scenarios it does not cover. That is when mastering the design recipe of an RAII wrapper becomes really important.
 
-A well-formed RAII wrapper usually follows this design pattern: the constructor acquires the resource (throwing an exception or entering an invalid state if acquisition fails), the destructor releases the resource (and must be noexcept), copying is forbidden (to prevent double release), and moving is allowed (to support ownership transfer). Let's look at a network socket example:
+A well-formed RAII wrapper usually follows this design pattern: the constructor acquires the resource (throwing or entering an invalid state if acquisition fails); the destructor releases the resource (and must be `noexcept`); copying is forbidden (to prevent double release); moving is allowed (to support ownership transfer). Let's look at another example, a network socket:
 
 ```cpp
 #include <sys/socket.h>
@@ -331,17 +331,17 @@ private:
 };
 ```
 
-You'll notice this pattern is nearly identical to the earlier `FileHandle`—acquire, release, forbid copying, allow moving: this is the "four-piece set" of an RAII wrapper. Once you've mastered this pattern, wrapping a database connection, an OpenGL texture, an SDL window, or a CUDA stream all follows the same routine.
+You will notice this pattern is almost identical to the earlier `FileHandle`—acquire, release, forbid copying, allow moving: the "four-piece set" of an RAII wrapper. Once you have this pattern down, wrapping a database connection, an OpenGL texture, an SDL window, or a CUDA stream is all the same routine.
 
-## RAII for Mutexes—Why You Should Never unlock by Hand
+## RAII for Mutexes: Why You Should Never Call unlock Manually
 
-One of the most classic RAII examples in the C++ standard library is `std::lock_guard` and `std::unique_lock`. Many beginners think "isn't manual lock/unlock good enough?"—I thought so too, back then. Until one day, in a 200-line function with 5 return paths and 3 exception-throwing spots, I spent an entire afternoon tracking down an intermittent deadlock bug—from that day on, I never manually unlocked again.
+Two of the most classic RAII examples in the C++ standard library are `std::lock_guard` and `std::unique_lock`. Many beginners feel that "manually locking/unlocking works just fine"—I thought so too, back in the day. Until, in one 200-line function with 5 return paths and 3 exception-throwing points, I spent an entire afternoon tracking down an intermittent deadlock bug—from that day on, I never manually unlocked again.
 
 ```cpp
 #include <mutex>
 #include <iostream>
 
-// Wrong way: managing the lock by hand
+// Wrong way: managing the lock manually
 void bad_increment(std::mutex& m, int& counter) {
     m.lock();
     if (counter > 100) {
@@ -349,8 +349,8 @@ void bad_increment(std::mutex& m, int& counter) {
         return;
     }
     counter++;
-    // What if this throws? The lock is never released → deadlock
-    m.unlock();            // And don't forget the unlock at the end either
+    // What if an exception is thrown here? The lock is never released → deadlock
+    m.unlock();            // And don't forget this final unlock either
 }
 
 // Right way: RAII management
@@ -360,17 +360,17 @@ void good_increment(std::mutex& m, int& counter) {
         return;  // lock_guard's destructor unlocks automatically
     }
     counter++;
-    // However we exit, lock_guard unlocks
+    // However we exit, lock_guard will unlock
 }
 ```
 
-The implementation principle of `std::lock_guard` is extremely simple—call `mutex.lock()` on construction, `mutex.unlock()` on destruction. Yet the reliability it brings is enormous. My suggestion: wherever locking is needed, always use an RAII wrapper (`lock_guard`, `unique_lock`, or `scoped_lock`), and never manage the lock's state by hand.
+How `std::lock_guard` works is extremely simple—its constructor calls `mutex.lock()`, and its destructor calls `mutex.unlock()`. Yet the reliability it brings is enormous. My advice: wherever locking is needed, always use an RAII wrapper (`lock_guard`, `unique_lock`, or `scoped_lock`), and never manage lock state by hand<RefLink :id="5" preview="C++ Core Guidelines, Section R: Resource Management" />.
 
-## Embedded Practice—GPIO Pin Management and SPI Chip-Select Control
+## Embedded in Practice: GPIO Pin Management and SPI Chip-Select Control
 
-The idea of RAII applies equally to embedded development. In embedded systems, "resources" are no longer file descriptors or mutexes, but hardware resources such as GPIO pins, SPI chip-select lines, DMA channels, and I2C buses. The consequences of forgetting to release these resources can be more severe than in desktop programs—a peripheral hangs, power consumption rises, or the entire system becomes unstable.
+The idea of RAII applies just as well to embedded development. In an embedded system, "resources" are no longer file descriptors or mutexes, but hardware resources such as GPIO pins, SPI chip-select lines, DMA channels, and I2C buses. Forgetting to release these resources can have more serious consequences than in desktop programs—peripherals hang, power consumption rises, even the whole system becomes unstable.
 
-First, an example of GPIO pin management. We use RAII to bind the pin's lifetime to the object's lifetime: initialize the pin on construction, and restore it to a safe state on destruction (usually a high-impedance input mode).
+First, an example of GPIO pin management. We use RAII to bind the pin's lifetime to the object's lifetime: the constructor initializes the pin, and the destructor restores it to a safe state (usually a high-impedance input mode).
 
 ```cpp
 // gpio_raii.h
@@ -393,7 +393,7 @@ public:
 
     ~GpioPin() noexcept {
         if (moved_) return;
-        // Restore to a safe state: input (high-impedance), preventing leakage from a floating pin
+        // Restore to a safe state: input (high impedance), to prevent leakage from a floating pin
         hal_gpio_config(pin_, GpioDir::kInput, false, false);
     }
 
@@ -420,7 +420,7 @@ private:
 };
 ```
 
-The usage is just as clean as on the desktop side:
+The usage is just as clean as on the desktop:
 
 ```cpp
 void blink_once() {
@@ -432,7 +432,7 @@ void blink_once() {
 }
 ```
 
-Managing the SPI chip-select (CS) line is another classic RAII scenario. During SPI communication, the CS line needs to be pulled low at the start of each transaction and pulled high at the end. If you forget to pull it high, the slave device stays busy and all subsequent communication goes wrong. Use RAII to bind the CS line's state to the transaction:
+Managing an SPI chip-select (CS) line is another classic RAII scenario. During SPI communication, the CS line must be pulled low at the start of each transaction and pulled high at the end. If you forget to pull it high, the slave device stays busy and all subsequent communication goes wrong. Use RAII to bind the CS line's state to the transaction:
 
 ```cpp
 class SpiTransaction {
@@ -462,7 +462,7 @@ private:
 };
 ```
 
-To use it, just place the transaction object in scope:
+When using it, you only need to place the transaction object in scope:
 
 ```cpp
 void read_sensor(SpiBus& spi, uint8_t cs) {
@@ -472,11 +472,11 @@ void read_sensor(SpiBus& spi, uint8_t cs) {
 }
 ```
 
-Using RAII in embedded scenarios comes with several special constraints: destructors must not perform blocking operations (otherwise real-time behavior suffers), must not allocate heap memory (many embedded systems have no heap, or a limited one), and creating RAII objects in an ISR (interrupt service routine) requires particular care—an ISR's stack space is limited, and destruction must not do anything elaborate.
+Using RAII in embedded scenarios comes with a few special constraints: destructors must not perform blocking operations (otherwise real-time behavior suffers) and must not allocate heap memory (many embedded systems have no heap, or a limited one), and creating RAII objects in an ISR (interrupt service routine) calls for extra caution—ISR stack space is limited, and destructors cannot afford complex work.
 
-## Exercise—Designing a General-Purpose ScopeGuard Class
+## Exercise: Designing a General-Purpose ScopeGuard Class
 
-As this article's closing exercise, let's design a general-purpose `ScopeGuard` class. Its design goal: at minimal cost, wrap any "cleanup action to execute on exit" into an RAII object. This class is extremely useful in real projects—when you have operations that "don't warrant a dedicated RAII class, yet must be guaranteed to run on exit", `ScopeGuard` is the best choice.
+As the closing exercise of this article, let's design a general-purpose `ScopeGuard` class. Its design goal: wrap any "cleanup action to execute on exit" into a RAII object at minimal cost. This class is extremely useful in real-world engineering—when you have operations that don't fit a dedicated RAII class but still need guaranteed execution on exit, `ScopeGuard` is the best choice.
 
 ```cpp
 #include <utility>
@@ -500,11 +500,11 @@ public:
         if (active_) {
             func_();
             // If func_() throws, since the destructor is marked noexcept
-            // the C++ runtime automatically calls std::terminate()
+            // the C++ runtime calls std::terminate() automatically
         }
     }
 
-    // Dismiss the guard—sometimes on success you don't want the cleanup to run
+    // Dismiss the guard—sometimes, after success, you don't want the cleanup to run
     void dismiss() noexcept { active_ = false; }
 
     // Copying is forbidden
@@ -522,7 +522,7 @@ ScopeGuard<F> make_scope_guard(F&& func) noexcept {
 }
 ```
 
-Usage example:
+Example usage:
 
 ```cpp
 void complex_operation() {
@@ -542,11 +542,11 @@ void complex_operation() {
 }
 ```
 
-This `ScopeGuard` implementation is in fact a direct descendant of the classic scheme Andrei Alexandrescu proposed back in the 2000s. In later chapters we will see how the C++ standard formalized this pattern into `std::scope_exit` / `std::scope_fail`, and how the Boost.Scope library provides richer functionality.
+This `ScopeGuard` implementation is a direct descendant of the classic design Andrei Alexandrescu proposed in the 2000s. In later chapters we will see how the C++ standard standardized this pattern into `std::scope_exit` / `std::scope_fail`, and how the Boost.Scope library provides richer functionality.
 
-## Verifying the Edge Cases—When Destructors Are Not Called
+## Probing the Boundary: When Destructors Do Not Get Called
 
-To fully understand the boundaries of RAII's applicability, we need to be explicit about which situations prevent destructors from being called. This helps us make the right decisions when designing systems:
+To fully understand where RAII's guarantee ends, we need to be clear about which situations do not invoke the destructor. This helps us make the right decisions when designing systems:
 
 ```cpp
 // GCC 16.1.1, -O2 -std=c++11
@@ -565,43 +565,74 @@ struct Tracer {
 
 void test_normal_return() {
     Tracer t("normal");
-    return;  // The destructor is called
+    return;  // The destructor gets called
 }
 
 void test_exit() {
     Tracer t("exit");
-    std::exit(0);  // The destructor is NOT called!
+    std::exit(0);  // The destructor does NOT get called!
 }
 
 int main() {
     std::cout << "Normal case:\n";
     test_normal_return();
     std::cout << "\nstd::exit() case:\n";
-    test_exit();  // Constructs Tracer("exit") inside, then std::exit terminates the process outright
+    test_exit();  // Constructs Tracer("exit") internally, then std::exit terminates the process directly
 }
 ```
 
-The output:
+This boundary-verification program is right below—click "Try it yourself" to run it directly:
 
-```text
-Normal case:
-Tracer(normal) constructed
-~Tracer(normal) destroyed
+<OnlineCompilerDemo
+  title="Hands-On Verification: std::exit() Does Not Trigger Destructors"
+  source-path="code/examples/vol2/23_raii_exit_boundary.cpp"
+  description="Verify the std::exit() boundary online: the normal branch shows both construction and destruction, while the exit branch shows only construction—the process terminates directly, and the destructor never gets a chance to run."
+  run-options="-O2 -std=c++11"
+  allow-run
+/>
 
-std::exit() case:
-Tracer(exit) constructed
-```
+After `std::exit()` there is no `~Tracer(exit) destroyed` anywhere—the process terminates directly inside `test_exit`, and `Tracer("exit")`'s destructor never gets a chance to run.
 
-After `std::exit()` there is no `~Tracer(exit) destroyed` line at all—the process terminates right inside `test_exit`, and `Tracer("exit")`'s destructor never gets a chance to run.
+This verification tells us: RAII's guarantee applies only to **normal control flow** (exception handling included). If the program exits abnormally through `std::exit()`, `std::abort()`, `_exit()`, or signal handling, destructors do not execute. This is one more reason modern C++ recommends exceptions over `std::exit()`—exceptions guarantee stack unwinding and resource cleanup, while `std::exit()` does not.
 
-This verification tells us: RAII's guarantee applies only to **normal control flow** (including exception handling). If the program exits abnormally—through `std::exit()`, `std::abort()`, `_exit()`, signal handling, or the like—destructors do not run. This is one more reason modern C++ recommends exceptions over `std::exit()`—exceptions guarantee stack unwinding and resource cleanup, while `std::exit()` does not.
+In the next article we won't rush into the tools—first we will set up the concept of "ownership": what exclusive, shared, and borrowed each mean, and how a function signature can state its ownership intent plainly. Once that model stands, `unique_ptr` and `shared_ptr` stop being two scattered tools and become two implementations of the same idea.
 
-The `unique_ptr` we'll talk about in the next article is the most direct application of the RAII idea to smart pointers: zero-overhead exclusive ownership. With this RAII foundation in place, `unique_ptr` will look completely natural.
-
-## References
-
-- [cppreference: RAII](https://en.cppreference.com/w/cpp/language/raii)
-- [cppreference: Exception safety](https://en.cppreference.com/w/cpp/language/exceptions)
-- Bjarne Stroustrup, *The C++ Programming Language*, Chapter 13: Exception Handling
-- Herb Sutter, *Exceptional C++*, Items 10-18: Exception Safety
-- [C++ Core Guidelines: Resource Management](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#S-resource)
+<ReferenceCard title="References">
+  <ReferenceItem
+    :id="1"
+    author="Bjarne Stroustrup"
+    title="The C++ Programming Language (4th Edition)"
+    publisher="Addison-Wesley"
+    :year="2013"
+    chapter="Chapter 13: Exception Handling"
+  />
+  <ReferenceItem
+    :id="2"
+    author="cppreference.com"
+    title="RAII"
+    url="https://en.cppreference.com/w/cpp/language/raii"
+  />
+  <ReferenceItem
+    :id="3"
+    author="cppreference.com"
+    title="Exceptions"
+    chapter="Stack unwinding; std::terminate"
+    url="https://en.cppreference.com/w/cpp/language/exceptions"
+  />
+  <ReferenceItem
+    :id="4"
+    author="Herb Sutter"
+    title="Exceptional C++: 47 Engineering Puzzles, Programming Problems, and Solutions"
+    publisher="Addison-Wesley"
+    :year="1999"
+    chapter="Section: Exception-Safety Issues and Techniques"
+    url="http://www.gotw.ca/publications/xc++.htm"
+  />
+  <ReferenceItem
+    :id="5"
+    author="Bjarne Stroustrup / Herb Sutter (eds.)"
+    title="C++ Core Guidelines — R: Resource Management"
+    publisher="isocpp.org"
+    url="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#r-resource-management"
+  />
+</ReferenceCard>
