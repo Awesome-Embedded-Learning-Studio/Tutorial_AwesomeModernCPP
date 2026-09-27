@@ -1,6 +1,6 @@
 ---
 title: "Make/Destroy: Typed Birth and Death, and the Compile-Time Line of Defense"
-description: "Closing out the memory line: Make/Destroy builds a typed facade on placement new, with ObjectType as the first template parameter so the pool type can be deduced; the sizeof and alignof guards go into static_asserts (a 64-byte object in a 16-byte-aligned block is fine, a 64-byte-aligned object is not — over-aligned data meets LDRD and the hardware HardFaults); the Resurrector case turns Destroy's destroy-first-release-second order into a tested contract; a negative compile test uses try_compile on a TU that must fail to prove the guard exists, and in a real run removing the alignof guard makes configure FATAL_ERROR on the spot; final acceptance = ctest, three targets, 24 cases, 40555 assertions, all passing (real output)"
+description: "The closing move of the memory line: Make/Destroy is a typed facade over placement new, with ObjectType first in the template parameter list so the pool type can be deduced; the sizeof and alignof guards go into static_asserts (a 64-byte object in a 16-byte-aligned block is fine, a 64-byte-aligned object is not — over-alignment meets LDRD and the hardware HardFaults); the Resurrector case turns Destroy's destroy-first-return-second order into a tested contract; a negative compile test builds a TU that must fail via try_compile, proving the guard exists — tried for real: rip out the alignof guard and configure FATAL_ERRORs on the spot; final acceptance = ctest, three targets, 24 cases, 40555 assertions, all passing (real output)"
 chapter: 1
 order: 4
 tags:
@@ -15,20 +15,20 @@ platform: stm32f1
 cpp_standard: [23]
 reading_time_minutes: 25
 prerequisites:
-  - 'Fixed-Size Block Pool: An Allocator with One Bit per Block'
+  - "Fixed-Size Block Pool: An Allocator with One Bit per Block"
 related:
   - "Fixed-Size Block Pool: An Allocator with One Bit per Block"
 translation:
   source: documents/vol8-domains/embedded/zeros/01-heapless-memory/04-make-destroy-and-guards.md
-  source_hash: 68e8f5722e13d9a9fda4786a3c4067550c83209b828ba1dbeee4f88e55c49a01
-  translated_at: '2026-09-25T07:55:39+00:00'
+  source_hash: 3bde6fe598e12193a3569402bf5b95e9153994e48af1d84c39fa6e01455e2a8d
+  translated_at: '2026-09-27T06:05:45+00:00'
   engine: anthropic
-  token_count: 4800
+  token_count: 6000
 ---
 
 # Make/Destroy: Typed Birth and Death, and the Compile-Time Line of Defense
 
-The pool hands out `void*`; the kernel objects we want are types. A facade is what sits missing in between. This article finishes the memory line: with the facade seated, the memory stack is complete, and the grand acceptance run begins.
+The pool hands out `void*`; the kernel objects we want are types. Between the two sits the one layer still missing: a facade. This article writes the memory line to its end: once the facade takes its seat, the memory stack is complete, and the grand acceptance run begins.
 
 Create `include/ZerOS/kernel/mem/typeable.hpp`:
 
@@ -54,7 +54,19 @@ namespace ZerOS::memory
             static_assert(sizeof(ObjectType) <= PoolStuff::BLOCK_SIZE, "block overflow");
             static_assert(alignof(ObjectType) <= PoolStuff::BLOCK_ALIGN, "block under-aligned");
         }
+```
 
+There is a point to the parameter order, and the comment's first sentence is exactly it: `ObjectType` appears only in the return type, so it can never be deduced and must be specified explicitly — which is why it sits first in the template parameter list, leaving the pool type after it to be deduced from the arguments. At the call site this reads `Make<Gadget>(pool, 41, "answer")`: the pool type tags along automatically, no need for you to spell it out.
+
+Those two guard lines are the core line of defense you should keep your eyes on throughout this article. The block must hold the object — that is the `sizeof` line; the object must also sit straight — that is the `alignof` line. The example in the comment is precise, so let us take it apart.
+
+A 64-byte **object** placed in a 16-byte-aligned block: no problem, it fits and it sits straight. Now look at a 64-byte-**aligned** object: not allowed. The block's alignment is only 16, so `placement new` would land it on an unaligned address.
+
+And what does unaligned get you? This is UB, and the kind no sanitizer reliably catches. On the Cortex-M3 it is especially not a theoretical concern: over-aligned data running into instructions like `LDRD`/`STM` makes the hardware HardFault outright, without so much as a chance to report an error back to us. So both conditions must be intercepted at compile time, one line of `static_assert` each.
+
+The guards are wrapped in `if constexpr (requires ...)`, and you should take note of how tight that grip is: a pool that does not expose geometry such as `BLOCK_SIZE`/`BLOCK_ALIGN` gets no pressure from the facade — it still works. This exact tightness is locked in by a dedicated test, which we meet below.
+
+```cpp
         auto raw_buffer = pool.raw_allocate();
         if(!raw_buffer) {
             return std::unexpected {raw_buffer.error()};
@@ -64,7 +76,11 @@ namespace ZerOS::memory
         // With the given arguments
         return ::new (*raw_buffer) ObjectType(std::forward<CreationArgs>(args)...);
     }
+```
 
+Look at what `Make` does: it draws a block of raw memory from the pool, `placement new` constructs the object in place, and the constructor arguments are perfectly forwarded; on failure the error travels back unchanged, and not one extra object gets constructed.
+
+```cpp
     template<MemoryPool PoolStuff, typename ObjectType>
     MemoryAllocationError Destroy(PoolStuff& pool, ObjectType* obj) {
         if (!obj) {
@@ -76,17 +92,11 @@ namespace ZerOS::memory
 }
 ```
 
-Look at what `Make` does: it draws a block of raw memory from the pool, constructs the object in place with `placement new`, and perfect-forwards the constructor arguments; on failure the error passes back untouched, and not one extra object gets constructed. `Destroy` is the reverse: `destroy_at` runs the destructor first, then the block goes back to the pool.
-
-The parameter order is deliberate — the comment's opening sentence is exactly about it: `ObjectType` appears only in the return type, so it can never be deduced and must be specified explicitly — hence it goes first in the template parameter list, leaving the pool type after it to be deduced from the arguments. At the call site that reads `Make<Gadget>(pool, 41, "answer")`: the pool type tags along automatically, and you never have to spell it out.
-
-Those two guard lines are the core defense this article asks you to keep your eyes on. The block must be able to hold the object (`sizeof`), and the object must also sit square (`alignof`): the example in the comment is exact — a 64-byte object in a 16-byte-aligned block is fine; a 64-byte-**aligned** object is not, because `placement new` would land it on an unaligned address, which is UB of the kind no sanitizer reliably catches. On a Cortex-M3 this is no theoretical matter: over-aligned data meeting instructions like `LDRD`/`STM` HardFaults the hardware outright. So both conditions must be intercepted at compile time — one `static_assert` per line.
-
-The guards sit inside `if constexpr (requires ...)`, and you should note how loose this is: if a pool does not expose geometry information like `BLOCK_SIZE`/`BLOCK_ALIGN`, the facade does not insist — it still works. That exact tension is locked down by a dedicated test; more below.
+Now look at `Destroy` — just three lines: a null pointer passes straight through, `destroy_at` runs the destructor first, then the block goes back to the pool.
 
 ## Putting the Facade on the Rack
 
-The `test/CMakeLists.txt` listing gets its final additions in this article; here it is complete (from here on it matches the reference answer character for character):
+This article tops off the list in `test/CMakeLists.txt`, so let us write it out in its complete form (from here on, character for character identical with the reference solution):
 
 ```cmake
 # Host-only unit tests. Cross builds (arm-none-eabi) never reach here:
@@ -144,7 +154,7 @@ if(zeros_make_overaligned_compiles)
 endif()
 ```
 
-The negative-test wiring at the tail end gets a dedicated section below. First, write `test/test_typeable.cpp` — eleven test cases, 249 lines in full:
+The wiring of that negative-test stretch at the tail gets a dedicated section below. First, `test/test_typeable.cpp` — eleven cases, the full 249 lines:
 
 ```cpp
 // Host unit tests for ZerOS/kernel/mem/typeable.hpp:
@@ -398,17 +408,17 @@ TEST_CASE("Make also accepts pools without a BLOCK_SIZE constant", "[typeable]")
 }
 ```
 
-Let's pick the three brightest to talk about.
+Let me pick the three brightest to talk about.
 
-The **Resurrector case** turns the order of two lines inside `Destroy` into a tested contract: when a destructor allocates from its own pool, the new object must land on a **different** block. The comment shows you exactly how to reproduce the bug — flip the order of `destroy_at` and `raw_deallocate` inside `Destroy`, and this case fails on the spot: the just-freed own block becomes the first-fit hole, and `placement new` would overwrite in place an object whose destructor is still running. There is also a small discipline here: no Catch2 macros inside a destructor (they report by throwing), so the result gets parked in an outside pointer and asserted after the destructor exits — fitting, since exceptions are a banned word in the firmware world anyway, and the tests stay consistent with that.
+The **Resurrector case** turns the order of two lines of code inside `Destroy` into a tested contract: when a destructor allocates from its own pool, the new object must land on a **different** block. The comment even teaches you how to reproduce the bug — flip the order of `destroy_at` and `raw_deallocate` inside `Destroy`, and this case fails immediately: the object's own block, freshly freed, becomes the first-fit hole, and `placement new` would overwrite in place an object whose destructor has not finished running. There is also a small discipline at work: no Catch2 macros inside destructors (they report by throwing), so the result is parked in an outside pointer and asserted once the destructor has returned — and besides, exceptions are a banned word in the firmware world anyway, so the test stays consistent with that.
 
-Then the **boundary-value cases**: watch how they pin the equality on both sides of the `static_assert`s — `ExactFit` is exactly 64 bytes, pressing on the `sizeof` guard's equals sign; `MaxAligned` is exactly `max_align_t`-aligned, pressing on the `alignof` guard's equals sign. The guards read `<=`, so both sides have to prove they deserve to pass.
+Then come the **boundary-value cases**: watch them pin the equals signs on both sides of the `static_assert`s — `ExactFit` is exactly 64 bytes, pressing right on the `sizeof` guard's equals sign; `MaxAligned` is exactly `max_align_t`-aligned, pressing right on the `alignof` guard's equals sign. The guards are written `<=`, and both cases have to prove that equality is indeed let through.
 
-The **BarePool case** locks down how tight the `requires` gate is; weigh this balance yourself: a bare pool with no geometry constants whatsoever still works with `Make`, as long as it satisfies the concept's three operations — the guard means "check when the pool is willing to expose its geometry", not "refuse entry to those that don't".
+The **BarePool case** locks in the tightness of the `requires` gate — weigh this measure for yourself: a bare pool carrying no geometry constants whatsoever still works with `Make`, as long as it satisfies the concept's trio of functions. The guard means "check when the pool is willing to expose its geometry", not "bar the door on those that do not".
 
 ## Negative Compile Tests: Proving the Defense Exists Is a Test Too
 
-Everything above is positive: the code that should pass, passes. One kind of testing is still missing — for a line of defense like `static_assert`, how do you prove it **exists**? Some future refactor slips a hand and deletes the guard: who raises the alarm? Create `test/neg_make_overaligned.cpp`; the requirement on this file is that it must fail to compile:
+Everything above was positive cases: the code passes what it should. One style of testing is still missing — `static_assert` is a line of defense, so how do we prove it **exists**? Some future refactor slips and deletes the guard: who raises the alarm? Create `test/neg_make_overaligned.cpp`, and this file's requirement is that it must fail to compile:
 
 ```cpp
 // Negative compile test: this translation unit MUST fail to build.
@@ -441,11 +451,11 @@ int main() {
 }
 ```
 
-The wiring sits at the tail of `test/CMakeLists.txt`, which we pasted above: `try_compile` builds this file and stores the result in `zeros_make_overaligned_compiles`; a **successful compile** is what triggers the `FATAL_ERROR` instead. The whole logic is inverted — a normal test proves "the code is right"; this kind proves "the defense is still there".
+The wiring sits at the tail of `test/CMakeLists.txt`, which we pasted above: `try_compile` builds this file and stores the outcome in `zeros_make_overaligned_compiles`; if it **compiles successfully**, that instead triggers a `FATAL_ERROR`. The whole logic runs backwards — a normal test proves "the code is right"; this kind proves "the defense is still there".
 
-The attribution is deliberate too; look at the causal chain in the comments: the type's size stays within 64, so the failure cannot come from the `sizeof` guard; the toolchain is pinned to C++23, so it cannot come from a missing `std::expected`. The failure can only come from the `alignof` `static_assert` — a single variable. `test_typeable` passing doubles as the positive control: everything that should pass passes, and what should be blocked really is blocked.
+The attribution is just as deliberate — look at the causal chain in the comments: the type's size is pinned within 64, so the failure cannot come from the `sizeof` guard; the toolchain is pinned to C++23, so the failure cannot come from a missing `std::expected`; therefore the failure can only come from the `alignof` `static_assert` — a single variable. `test_typeable` passing doubles as the positive control: everything that should pass does pass, and what should be intercepted truly is.
 
-Here's a real run for you. Comment out the `alignof` guard line in `typeable.hpp` and reconfigure:
+Let me actually run it for you. Comment out the `alignof` guard line in `typeable.hpp` and reconfigure:
 
 ```text
 CMake Error at test/CMakeLists.txt:51 (message):
@@ -453,11 +463,11 @@ CMake Error at test/CMakeLists.txt:51 (message):
   broken
 ```
 
-There it is: the configure stage goes on strike outright, and the build never even gets its turn. Put the guard back, and everything is normal again. This is the machine-checked guarantee that "the defense cannot be silently torn down".
+There it is: the configure stage walks off the job on the spot, before the build even gets its turn. Put the guard back, and everything is as it was. This is the machine-enforced guarantee that "the line of defense cannot be silently dismantled".
 
 ## Final Acceptance
 
-The wrap-up acceptance for the four memory-line articles takes three commands:
+The closing acceptance for the memory line's four articles, three commands:
 
 ```shell
 cmake -B build-host -DZEROS_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
@@ -465,7 +475,7 @@ cmake --build build-host
 ctest --test-dir build-host --output-on-failure
 ```
 
-The real output from my machine:
+The real output on my machine:
 
 ```text
 Test project /tmp/zeros-mem/build-host
@@ -481,7 +491,7 @@ Test project /tmp/zeros-mem/build-host
 Total Test time (real) =   0.07 sec
 ```
 
-The report cards of the three binaries, one by one:
+The three binaries' individual report cards:
 
 ```text
 All tests passed (158 assertions in 6 test cases)
@@ -489,10 +499,10 @@ All tests passed (40295 assertions in 7 test cases)
 All tests passed (102 assertions in 11 test cases)
 ```
 
-24 cases, 40555 assertions — most of them from that fuzz: twenty thousand operations, each allocation verifying its stamp, each free verifying ownership; that is how the numbers pile up. With all tests passing, the first four articles of this station count as done: `git add -A` and commit. The numbers you get should match these character for character: the seed is fixed, so it does not matter how many machines you swap between.
+Twenty-four cases, 40555 assertions, most of them out of that fuzz: twenty thousand operations, every allocation verifying its stamp, every free verifying ownership — that is how the number piles up. All tests passing means the first four articles of this station are cleared, and `git add -A` commits it. The numbers you get should match these character for character: the seed is fixed, and it makes no difference how many machines you swap in.
 
-An early intuition on footprint, too: compiled into firmware, this memory stack adds overhead approaching zero — the bitmaps' all-zero default state lands in `.bss`, and the pool's construction is `constexpr`. You will verify those numbers with your own eyes once the board enters the picture in the next article.
+An intuition about size, handed to you in advance as well: compiled into the firmware, this memory stack's added cost trends toward zero — the bitmaps' all-zero default state lands in `.bss`, and the pool's constructor is `constexpr`. You will verify these numbers with your own eyes in the next article, once we are on the board.
 
-## Next Article
+## The Next Stop
 
-Now that it is solid on host, the next article moves this whole memory stack onto a `-nostdlib` board. Walls will be hit — three of them at once: `memset` suddenly goes missing (the linker reports an undefined reference, with the line number pointing exactly at the poisoning line), nobody foots the bill for global constructors (`.init_array` is outlawed from then on), and the `__cxa_guard_*` entourage that function-local `static`s drag along is left without support too. Hit the walls one by one, and once you are through, the pools in your hands are truly alive on the Blue Pill. The reference answer is in the repository as usual: `b4a5daf`.
+Stable on host, the next article hauls this whole memory stack onto a `-nostdlib` board. Walls will be hit — three of them in one go: `memset` suddenly goes missing (the linker reports undefined reference, with the line number pinned to the poisoning line), global constructors find nobody picking up the bill (`.init_array` is outlawed from then on), and the `__cxa_guard_*` entourage that function-local `static` drags along loses its footing too. Hit them one wall at a time, and once you are through, the pool in your hands is truly alive on the Blue Pill. The reference solution is in the repo as always, `b4a5daf`.

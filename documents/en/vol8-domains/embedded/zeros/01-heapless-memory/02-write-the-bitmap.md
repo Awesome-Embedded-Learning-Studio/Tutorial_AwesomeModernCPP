@@ -1,6 +1,6 @@
 ---
 title: "Writing the Bitmap: A Fixed-Capacity Bitmap"
-description: "This article walks the path the concept piece thought through: create include/ZerOS/base/bitmap.hpp, a fixed-capacity template with bit-level set/clear/test plus word-level word() access (the layer std::bitset refuses to give); dual-track ctz (__builtin_ctz lowers to RBIT+CLZ on Cortex-M3/M4, with a pure-software fallback); tail_mask as the anchor of every tail-word check; four static_asserts of immediately-invoked lambdas at the end of the file, so every compile is a regression run. The test infrastructure rises in step: a ZEROS_BUILD_TESTS mutually-exclusive switch in the root CMakeLists, per-language flag injection via .clangd, Catch2 v3.7.1 arriving through FetchContent; acceptance = test_bitmap with six cases and 158 assertions all passing (real output)."
+description: "This article walks the road the concept piece thought through: create include/ZerOS/base/bitmap.hpp, a fixed-capacity template with bit-level set/clear/test plus word-level word() access (the layer std::bitset refuses to give); dual-track ctz (__builtin_ctz compiles to RBIT+CLZ on Cortex-M3/M4, with a pure-software fallback); tail_mask as the anchor of every tail-word check; four static_asserts of immediately-invoked lambdas at the end of the file, so every compile is a regression run. The test infrastructure rises in step: a ZEROS_BUILD_TESTS mutually-exclusive switch in the root CMakeLists, per-language flag injection via .clangd, Catch2 v3.7.1 arriving through FetchContent; acceptance = test_bitmap with six cases and 158 assertions all passing (real output)."
 chapter: 1
 order: 2
 tags:
@@ -15,20 +15,20 @@ reading_time_minutes: 20
 prerequisites:
   - 'A World Without a Heap: How Memory Gets Handed Out, and What a Bitmap Is'
 related:
-  - "A World Without a Heap: How Memory Gets Handed Out, and What a Bitmap Is"
+  - 'A World Without a Heap: How Memory Gets Handed Out, and What a Bitmap Is'
 translation:
   source: documents/vol8-domains/embedded/zeros/01-heapless-memory/02-write-the-bitmap.md
-  source_hash: 590313db31ef6dd8bb4912ba9bea50e56eb225a8834e7de19c00f1030b0bb9ae
-  translated_at: '2026-09-25T07:55:43+00:00'
+  source_hash: 15f8885f84f2c141ec64da5c1a41feeebd118fe1822365cee16485291665c57e
+  translated_at: '2026-09-27T06:02:30+00:00'
   engine: anthropic
-  token_count: 2300
+  token_count: 3400
 ---
 
 # Writing the Bitmap: A Fixed-Capacity Bitmap
 
-Last time we turned the bitmap over in our hands: one bit records one block, and finding a free block is just finding the first 0. This time we write it as real code, and while we're at it we stand up the test bench — from this article on, everything we write gets tests waiting on it, and a part like the bitmap, which is going to accompany us all the way to the end, all the more needs insurance from day one.
+Last time we turned the bitmap over in our hands: one bit records one block, and finding a free one is just finding the first 0. This time we write it as real code, and while we're at it we stand up the test bench — from this article on, everything we write gets tests waiting on it, and a part like the bitmap, which is going to walk with us all the way to the end, all the more needs insurance from day one.
 
-We create a new file, `include/ZerOS/base/bitmap.hpp`:
+We create `include/ZerOS/base/bitmap.hpp`, paste it in several segments, and talk through each segment right after it:
 
 ```cpp
 #pragma once
@@ -57,7 +57,13 @@ constexpr std::size_t ctz(std::uint32_t x) {
     return zeros_impl::_ctz(x);
 #endif
 } // ctz
+```
 
+Look at the dual-track `ctz`: GCC/Clang take `__builtin_ctz`, which compiles into RBIT+CLZ on Cortex-M3/M4 — both single-cycle instructions.
+
+Other compilers get the pure-software fallback, counting one bit at a time. That way, no compiler is simply left with no way through.
+
+```cpp
 /**
  * @brief  A bare-word bitmap for kernel bookkeeping (allocators, schedulers).
  *
@@ -100,7 +106,13 @@ template <std::size_t bit_count> struct Bitmap {
 
     /// All 32 slots free? Safe for the tail word too, padding stays 0.
     [[nodiscard]] constexpr bool word_empty(std::size_t w) const { return words_[w] == 0; }
+```
 
+The header comment opens with three rules: padding bits must stay 0; `set`/`clear` are read-modify-write and not atomic, so if ISRs share this map you have to wrap them in a critical section yourself; out-of-range indexes are UB. And what happens if you don't hold the line is spelled out plainly in the comment's last sentence: "break them and the helpers will lie to you". In other words, these helper functions will quite happily lie to you.
+
+This responsibility shows most clearly on `word()`: what it hands over is the raw 32-bit plane, with no checks of any kind. When you bulk-write whole words, whether the tail padding stays clean is left for the caller to watch — in the tests below, at that `word(0) = 0xFFu` moment, we are that caller. So why must this layer exist at all? `std::bitset` flatly refuses to give it; yet whole-word bulk zeroing and the L1 summaries in the pool article both live off it.
+
+```cpp
     // —— CLZ lookup ——
     /// First clear bit inside the w-th word, npos if that word is full.
     /// The second CLZ step of a two-level lookup: level-1 finds the word,
@@ -131,7 +143,11 @@ template <std::size_t bit_count> struct Bitmap {
         }
         return npos;
     }
+```
 
+The find functions (`find_first_zero`/`find_first_set`) skip whole words at a time, and a single ctz lands the bit inside the word: that two-stage "skip the word, then land the bit" shape is exactly the intuition we turned over in the previous article — and the embryo of the two-level bitmap to come.
+
+```cpp
     // static_assert on it, memcpy it, summarize it.
     // so public it
     std::uint32_t words_[WORDS]{};
@@ -154,7 +170,15 @@ template <std::size_t bit_count> struct Bitmap {
         return (bit_count & 31) ? (1u << (bit_count & 31)) - 1u : ~0u;
     }
 };
+```
 
+Now look at the copy constructor: deleted, and the comment says it verbatim: "A Copy cast is not thought as popular, i think!". What a bitmap records is the kernel's live state — whoever copies one carries the state away with them — so simply not allowing copies buys peace of mind.
+
+Tail handling is where a bitmap most easily comes to grief. `tail_mask` is what it is for: it works out which bits in the tail word are real, and every tail-word-related check bottoms out in it. For instance, when `word_full` decides "full", it compares against `valid_mask(w)` rather than `0xFFFFFFFF` — the comment even calls that out with an exclamation mark; scroll up and you can spot that `NOT 0xFFFFFFFF!` line.
+
+The sneakier edge sits here: when `bit_count` happens to be an exact multiple of 32, the shift-by-the-remainder idea becomes a shift by 32, and shifting a 32-bit integer by 32 is UB — which is why that ternary branches and returns `~0u` outright in this case. One comment line accounts for one edge; places like this deserve an extra look from you.
+
+```cpp
 // —— Compile-time self checks: free unit tests, zero runtime cost ——
 static_assert([] {
     Bitmap<8> b;
@@ -179,21 +203,11 @@ static_assert(Bitmap<8>{}.find_first_set() == Bitmap<8>::npos);
 } // namespace ZerOS::base
 ```
 
-A few design points here are worth stopping for as you write this.
-
-The header comment lays the contract out as legal clauses: padding bits must stay 0, `set`/`clear` are read-modify-write and not atomic, out-of-range indexes are UB — and then it closes with one extra line, "break them and the helpers will lie to you": break the contract, and these helper functions will dare to lie to you. That's not scaremongering — `word()` really does hand you the raw 32-bit plane, so when you bulk-write whole words, whether the tail padding stays clean is the caller's responsibility. Why insist on word-level access at all? The comment answers that too: it's the layer `std::bitset` refuses to give us, and the pool's L1 summaries and whole-word bulk zeroing both live off of it.
-
-Look at the dual-track `ctz`: GCC/Clang take `__builtin_ctz`, which compiles into RBIT+CLZ on Cortex-M3/M4 — both single-cycle instructions; other compilers get the pure-software fallback, counting one bit at a time. The find functions (`find_first_zero`/`find_first_set`) skip whole words at a time, and a single ctz lands the bit inside the word. That two-stage "skip the word, then land the bit" shape is precisely the intuition we turned over in the previous article — and the embryo of the two-level bitmap to come.
-
-Tail handling is where a bitmap most easily comes to grief, and `tail_mask` is the anchor of every check: a tail word's "full" must be compared against `valid_mask`, not `0xFFFFFFFF` — the comment calls that out on purpose. And because shifting by 32 when `(bit_count & 31) == 0` would be UB, that branch returns `~0u` instead — one comment line covering one edge case; places like this deserve an extra look from you.
-
-Now look at the copy constructor: deleted. The comment says it verbatim: "A Copy cast is not thought as popular, i think!". The bitmap is the kernel's bookkeeping itself — whoever copies one carries a duplicate of the state away — so simply disallowing copies keeps life simple.
-
 The four `static_assert`s at the end of the file are the most interesting part. Look: immediately-invoked lambdas — every time this header gets compiled, a regression run comes along with it. Host tests compile it, firmware builds compile it; nobody escapes. The "padding must never fake a hit" one exists specifically to lock down tail-word safety.
 
 ## Setting Up the Test Bench
 
-With the code written, we need a way to keep it in line. The bitmap is going to walk the whole road with us, so we set up the test infrastructure now, and every new part from here on hooks onto this same bench.
+With the code written, we need a way to keep it in line. The bitmap is going to walk the whole road with us, so we stand up the test infrastructure now, and every new part from here on hooks onto this same bench.
 
 First, the root `CMakeLists.txt`, with a mutually exclusive switch added:
 
@@ -220,9 +234,9 @@ else()
 endif()
 ```
 
-At the project-setup stop we locked the architecture flags inside the toolchain file and kept only cross-target-common things at the root, and the dividend lands here: the host configuration doesn't even need to point at a toolchain file — `cmake -B build-host -DZEROS_BUILD_TESTS=ON` is an ordinary desktop project where we can enable exceptions, run tests, and hook up sanitizers, none of it stepping on anyone's toes; the default configuration is still the firmware, unchanged by a single character.
+At the project bring-up stop we locked the architecture flags inside the toolchain file and kept only cross-target-common things at the root, and that dividend pays out here: the host configuration doesn't even need to point at a toolchain file — `cmake -B build-host -DZEROS_BUILD_TESTS=ON` is an ordinary desktop project where we can enable exceptions, run tests, and hook up sanitizers, none of it stepping on anyone's toes; the default configuration is still the firmware, unchanged by a single character.
 
-Beyond configuration, we owe the editor one small file: `.clangd`. The reason: orphan headers — ones not yet included by any TU — get handled by clangd's fallback, the standard stops at gnu++17, and concept syntax turns into a sea of red; injecting per-language flags consistent with CMake fixes it:
+Beyond configuration, we owe the editor one small file: `.clangd`. The reason: orphan headers — the kind not yet included by any TU — get handled by clangd's fallback, the standard stops at gnu++17, and concept syntax turns into a sea of red; injecting per-language flags consistent with CMake fixes it:
 
 ```yaml
 # Inject flags in per-language blocks: .hpp/.cpp get C++23 (conf HAL headers are
@@ -247,7 +261,7 @@ Diagnostics:
   MissingIncludes: None
 ```
 
-Then comes `test/CMakeLists.txt`: we choose Catch2 as the test framework and pull it in with FetchContent, stuffing no third-party code into the repository:
+Then comes `test/CMakeLists.txt`: we pick Catch2 as the test framework and pull it in with FetchContent, stuffing no third-party code into the repository:
 
 ```cmake
 # Host-only unit tests. Cross builds (arm-none-eabi) never reach here:
@@ -374,7 +388,7 @@ TEST_CASE("first_zero_in_word pinpoints inside one word", "[bitmap]") {
 }
 ```
 
-The sizes the cases pick are all deliberate. Look at `70`: `32 + 32 + 6`, three words with only 6 real bits in the tail word — it forces out both the bit-level round trip and cross-word searching. `5` is harsher still: 27 padding bits in the tail word, dedicated to verifying the "padding must never fake a hit" contract. The `word(0) = ~0u` line is the only place the raw plane gets touched; once it is full, `first_zero_in_word` must report `npos`, and the word-level and bit-level views agree.
+The sizes the cases pick are all deliberate. Look at `70`: `32 + 32 + 6`, three words with only 6 real bits in the tail word — it forces out both the bit-level round trip and cross-word searching. `5` is harsher still: 27 padding bits in the tail word, dedicated to verifying the "padding must never fake a hit" contract. The `word(0) = ~0u` line is the only place the raw plane gets touched; once it is written full, `first_zero_in_word` must report `npos`, and the word-level and bit-level views agree.
 
 ## Acceptance
 

@@ -1,6 +1,6 @@
 ---
 title: "Fixed-Size Block Pool: An Allocator with One Bit per Block"
-description: "The bitmap gets a real job: first we write the MemoryPool concept so the compiler enforces the pool contract (raw_allocate returns expected, try_allocate stays reserved for ISRs); then we build the two-level bitmap fixed-size block pool BitmapPool — L1 keeps one full-flag per L2 word, L2 keeps one bit per block, first-fit finds the free ones; the 0x67 poison check after free is our self-service use-after-free detection on bare metal, with ever_poisoned_ gating out false alarms from fresh .bss; wild pointers / interior pointers / double-free all map to NotOwned; acceptance = test_bitmap_pool, seven cases, 40295 assertions all passing (including a fixed-seed 20260904 fuzz of twenty thousand operations, where the stamp/~stamp twin values prove exclusive ownership)"
+description: "The bitmap gets a full-time job: first we write the MemoryPool concept and hand the pool contract to the compiler (raw_allocate returns expected, try_allocate stays reserved for ISRs); then we write the two-level bitmap fixed-size block pool BitmapPool — L1 keeps one full-flag per L2 word, L2 keeps one bit per block, first-fit finds the free ones; the 0x67 poison check after free is our self-service use-after-free detection on bare metal, with the ever_poisoned_ gate fending off false alarms from fresh .bss blocks; wild pointers, interior pointers, and double-frees all map to NotOwned; acceptance = test_bitmap_pool, seven cases and 40295 assertions all passing (including a fixed-seed 20260904 fuzz of twenty thousand operations, with the stamp/~stamp twin values proving exclusive ownership)"
 chapter: 1
 order: 3
 tags:
@@ -14,24 +14,24 @@ platform: stm32f1
 cpp_standard: [23]
 reading_time_minutes: 25
 prerequisites:
-  - 'Writing the Bitmap: A Fixed-Capacity Bitmap'
+  - "Writing the Bitmap: A Fixed-Capacity Bitmap"
 related:
   - "Writing the Bitmap: A Fixed-Capacity Bitmap"
 translation:
   source: documents/vol8-domains/embedded/zeros/01-heapless-memory/03-block-pool.md
-  source_hash: 0bca054968dbe345dbdf19cfa3b53897e2e69ae89b4e2f71f972446aa6e536ad
-  translated_at: '2026-09-25T08:00:52+00:00'
+  source_hash: 82b49ea064d17d411996c12b6831ae0f8cbbb509189ea4d54237316abc0fea62
+  translated_at: '2026-09-27T06:00:31+00:00'
   engine: anthropic
-  token_count: 7500
+  token_count: 8000
 ---
 
 # Fixed-Size Block Pool: An Allocator with One Bit per Block
 
-With the bitmap in hand, this article turns the grid we sketched in the concepts article into something real: a fixed-size block pool that can hand out blocks, take them back, and verify the identity of whoever comes knocking to return one.
+With the bitmap in hand, this article turns the grid we sketched in the concepts article into something real: a fixed-size block pool that can hand out blocks, take them back, and check the credentials of whoever comes to return one.
 
 ## Write the Contract First, Then the Implementation
 
-In the first article we bragged a little: write the interface constraints in a compiler-checkable form, and if an implementation is missing even one function, the `static_assert` fails on the spot. Now it is time for that promise to take the stage. Create `include/ZerOS/kernel/mem/pool.hpp`:
+In the first article we bragged: write the interface constraints in a compiler-checkable form, and if an implementation is missing so much as one function, the `static_assert` fails on the spot. Now it is that boast's turn on stage. Create `include/ZerOS/kernel/mem/pool.hpp`:
 
 ```cpp
 #pragma once
@@ -57,13 +57,23 @@ namespace ZerOS::memory
 }
 ```
 
-You can take in the whole contract at a glance: it can hand out a block (`raw_allocate` returns `expected<void*, error code>`), take one back (`raw_deallocate` returns an error code), plus a fast path reserved for interrupts (`try_allocate` returns a raw pointer directly, and failure is simply `nullptr`—inside an ISR there is no time to unwrap an `expected`).
+A concept really is a contract. We declare that a memory pool must, at the very least, have the following properties:
 
-The error codes form a small taxonomy: `OutOfMemory` means the pool is genuinely out of slots, `Poisoned` means someone was caught writing to a freed block, and `NotOwned` means the pointer you brought back simply does not belong to this pool—wild pointers, interior pointers, and double-frees all land here. Why `expected` for the error channel instead of `optional`? The comments in the pool below give two reasons: with most implementations, `optional` costs 8 extra bytes; and more importantly, the error classification should not be thrown away at the user-interface layer.
+1. raw_allocate — it can hand out a memory block; we deliberately do not constrain the size
+2. raw_deallocate — what is borrowed must be returned!
+3. try_allocate — a tentative allocation; ISR-style code does not dare the satisfying, full-throated unwrap of an expected.
+
+Ah, and a quick word on the error codes:
+
+- `OutOfMemory`: there are genuinely no slots left
+- `Poisoned`: someone was caught writing to an already-freed block
+- `NotOwned`: the pointer you brought back simply does not belong to this pool — wild pointers, interior pointers, and double-frees are all its jurisdiction.
+
+Why does the error channel use `expected` instead of `optional`? The comments in the pool below hand us two reasons: with most implementations, `optional` costs 8 extra bytes; and more importantly, the error classification should not get dropped at the user-interface layer.
 
 ## The Star: A Two-Level Bitmap Fixed-Size Block Pool
 
-Create `include/ZerOS/kernel/mem/bitmap_allocate.hpp`:
+Create `include/ZerOS/kernel/mem/bitmap_allocate.hpp`. Pasting the whole file at once would be too long, so we walk it from top to bottom and explain each stretch of code right where it stands:
 
 ```cpp
 #pragma once
@@ -104,7 +114,11 @@ struct BitmapPool {
     // B. for User Interfaces, we should never carry it
 
     constexpr BitmapPool() = default;
+```
 
+The `static_assert` in the constants section hands the geometric constraint to the compiler: the block size must be a multiple of `max_align_t`, otherwise misalignment starts from the second block on. `BLOCK_ALIGN` stores that alignment requirement as a constant; the `typeable.hpp` the comment points to is where the next article's `Make<>` validates objects against it. The `ALL_ALIGNED` macro is defined here too; the `buffer_` that uses it waits at the tail of the file, and we will meet it when we reach the member section.
+
+```cpp
     // ------------------------------------------------------------------
     // Contract surface: these three together satisfy concept MemoryPool
     // ------------------------------------------------------------------
@@ -144,7 +158,11 @@ struct BitmapPool {
         auto res = raw_allocate();
         return res ? *res : nullptr;
     }
+```
 
+The public section holds exactly these three functions — precisely the trio the concept above names. The backbone of `raw_allocate`: find a free block, check the poison, mark it taken, hand out the pointer; `raw_deallocate` walks the other direction: check the pointer's identity, take the block back, poison it. You do not need to fully follow the poison check inside the `if constexpr (owns_poison_policy)` stretch just yet — the `poison_block` section below is its home turf; the criteria behind the two `NotOwned` exits likewise live in the private functions below, and we will get to them one by one. `try_allocate` is for ISRs: an interrupt handler does not dare unwrap an `expected`, so failure folds into `nullptr` — a one-line forwarding job, done.
+
+```cpp
   private:
     // we fetch the first available block, if not, return the
     // npos
@@ -163,7 +181,13 @@ struct BitmapPool {
         // OK, this is the case, find in this word
         return bitmap_l2_.first_zero_in_word(word_index);
     }
+```
 
+The path to a free block is two steps: `bitmap_l1_.find_first_zero()` locates the first L2 word that is not full; `first_zero_in_word` then enters that word and lands on the exact bit. The two bitmaps each govern one level: `bitmap_l2_` keeps one bit per block, recording occupancy; `bitmap_l1_` keeps one bit per word, recording "is this word full yet". The skip-a-word-then-land two-stage scheme we wrote in the last article reports for duty unchanged. When nothing is found we return `npos`, a sentinel that runs through this whole file; `raw_allocate` tests it with `IsAvailableIndex`, and that is where `OutOfMemory` comes from.
+
+With few blocks you cannot see the payoff; only when the block count grows does the benefit come out: skipping whole words at a time presses the search down to constant order. This structure should already look familiar to you — a commercial RTOS's priority-ready bitmap finds the "highest-priority ready task" exactly this way; the "allocators, schedulers" written in the bitmap article's header comment was not written for decoration either, and the structure will take the stage once more when the journey reaches the scheduler.
+
+```cpp
     void set_as_in_used(std::size_t index) {
         bitmap_l2_.set(index);
 
@@ -193,7 +217,11 @@ struct BitmapPool {
         used_--;
         return true;
     }
+```
 
+To see how the occupancy bits are maintained, watch this pair of functions. After setting the L2 bit, `set_as_in_used` takes one extra look: is this word full now (`word_full`)? If it is, light the corresponding L1 bit too; `release_block` goes the other way — after clearing L2 it clears L1 unconditionally. The comment says it plainly: once ANY block is freed, the word is back to "not full"; the unconditional clear is idempotent, and only that keeps the invariant honest. The double-free line of defense also lives in this function: if `bitmap_l2_.test(index)` does not pass, the block was never occupied in the first place, `false` travels back up, and the caller translates it into `NotOwned`.
+
+```cpp
     constexpr void* fetch_target_block(std::size_t index) { return buffer_ + index * BLOCK_SIZE; }
     std::size_t index_of_given_ptr(void* ptr) {
         auto* p = static_cast<std::byte*>(ptr);
@@ -210,7 +238,11 @@ struct BitmapPool {
 
         return off / BLOCK_SIZE;
     }
+```
 
+The eligibility vetting of a returned pointer is exactly the two checks in `index_of_given_ptr`: whether the pointer is inside the pool's territory, and if so, whether the offset is block-aligned. Wild pointers, interior pointers aimed at the middle of a block, pointers from someone else's pool — none of them pass these two gates; together with the double-free intercepted by `release_block` above, they all come back `NotOwned`. Note the `p < buffer_` line: ordering two pointers into unrelated objects is, strictly speaking, unspecified behavior; but this is host-side code, everybody writes it this way in practice, and if you insist on being rigorous it can be rewritten as an integer comparison — over in the startup code we hold the line on "cast to integer, then compare". With the two sites side by side, weigh it yourself.
+
+```cpp
     // poisoned the target block
     static constexpr std::byte POISON_VALUE{0x67};
     void poison_block(std::size_t index) {
@@ -232,7 +264,17 @@ struct BitmapPool {
         }
         return false;
     }
+```
 
+That `if constexpr` stretch inside `raw_allocate` above is implemented by this pair of functions, and what they do is not complicated. When `owns_poison_policy` is on, the moment a block comes back, `poison_block` fills the whole block with `0x67`, and in passing sets the block's bit in `ever_poisoned_`. What that bit is for, we will see in a moment.
+
+Before that block is handed out again, `detected_poison` runs a prior check: is the whole block still 0x67? If even one position does not match, someone wrote to freed memory; `Poisoned` bounces it back, and this block is no longer issued to you.
+
+Why can a bitmap pool do this? A free list cannot: the linked list has to write its next pointer into the free block itself, so the block's contents are inherently dirty — even if you wanted to verify, there would be nothing to verify against. The bitmap records occupancy outside the blocks; a freed block comes back clean, whatever was filled in is what is there, and one inspection tells you someone touched it. There is no ASan on the board either, so this poison scheme is our self-service use-after-free detection.
+
+That `ever_poisoned_` gate exists so the innocent do not get framed. Think it through: a fresh `.bss` block that has never been poisoned is all zeros to begin with, and all zeros of course is not a solid block of 0x67 — without a gate, would it not be a false alarm on every single block? So only blocks that have been poisoned go through this check.
+
+```cpp
     // Buffer Locations here, as it request all baasic
     ALL_ALIGNED std::byte buffer_[BUFFER_SIZE];
     base::Bitmap<block_cnt> bitmap_l2_;      // one bit per block: 1 = occupied
@@ -249,15 +291,7 @@ static_assert(MemoryPool<BitmapPool<64, 8, true>>);
 } // namespace ZerOS::memory
 ```
 
-Let's walk through the structure.
-
-**Two-level bitmap**. `bitmap_l2_` keeps one bit per block recording occupancy; `bitmap_l1_` keeps one bit per L2 word recording "is this word full?". The path to a free block is two steps: `find_first_zero` in L1 locates the first word that is not full, then `first_zero_in_word` lands on the exact bit inside that word—the "skip a word, then land the bit" two-stage move from the previous article's bitmap, reporting for duty unchanged. With few blocks you cannot see the payoff; once the block count grows, skipping whole words at a time crushes the search down to constant order. And this should already look familiar: the priority-ready bitmap of commercial RTOSes finds the "highest-priority ready task" exactly this way, so that "allocators, schedulers" line in the header comment was not written for decoration—this structure will make a second appearance when the journey reaches the scheduler.
-
-**Poison detection**. When `owns_poison_policy` is on, a block gets filled edge to edge with `0x67` the moment it is returned, and `ever_poisoned_` marks its bit; before this block is handed out again, we first check whether it is still a solid block of 0x67—if not, someone wrote to freed memory, and `Poisoned` comes back immediately. This is the capability that the concepts article's "separate the ledger from the inventory" buys us: a free list hides its pointers inside the bellies of the blocks, so the contents are naturally dirty and there is nothing coherent left to verify; a bitmap's freed blocks come back clean—whatever was poured in is what you find, and one lookup tells you who laid a finger on it. There is no ASan on the board, so this is our do-it-ourselves use-after-free detection. The `ever_poisoned_` gate exists so the innocent are not framed: a fresh `.bss` block that has never been poisoned is all zeros to begin with and should never be read as "the poison was tampered with".
-
-**Vetting the pointer that comes back**. `index_of_given_ptr` first checks whether the pointer lies inside the pool's territory and whether it is block-aligned; then `release_block` checks whether that block is actually occupied: wild pointers, interior pointers aimed at the middle of a block, pointers from someone else's pool, double-frees—all of them get `NotOwned`. Note the `p < buffer_` line here: ordering two pointers into unrelated objects is, strictly speaking, unspecified behavior; but this is host-side code, everybody writes it this way in practice, and if you insist on being strict it can be rewritten as an integer comparison—over in the startup code we hold the line on "cast to integer, then compare". With the two sites side by side, weigh it yourself.
-
-**Compile-time constraints on the geometry**. We require the block size to be a multiple of `max_align_t`; otherwise misalignment starts from the second block on. `buffer_` wears `ALL_ALIGNED`, and the `#define` is `#undef`ed the moment it has done its job—macro hygiene. The line at the file's tail, `static_assert(MemoryPool<BitmapPool<64, 8, true>>)`, is the pool proving itself to the concept: leave one interface unimplemented, and this line stops the build.
+The member section closes the file, and every name is one we have met: `buffer_` wears the `ALL_ALIGNED` from the top, so the whole buffer is aligned to `max_align_t`; combined with the block-size `static_assert` from the beginning, the starting address of every block keeps its alignment. The three bitmap members each mind one thing: L2 records occupancy, L1 records word-fullness, `ever_poisoned_` records poison history, and `used_` counts the blocks in use. The `#define` gets `#undef`-ed as soon as it has done its job — macro hygiene, nothing leaks out. The line at the tail, `static_assert(MemoryPool<BitmapPool<64, 8, true>>)`, deserves a dedicated look: the pool proves itself to the concept, and if one interface goes missing, this line stops the build.
 
 ## Throw Twenty Thousand Operations at It
 
@@ -443,11 +477,11 @@ TEST_CASE("randomized torture: interleaved alloc/free keeps invariants", "[pool]
 }
 ```
 
-Two of these cases are worth slowing down for as you write them.
+Two of the cases are worth slowing down for as you write them.
 
-When you write the 100-block case, the comment deserves a line-by-line read: it records three real historical bugs—the l2 bitmap mistakenly using the word count as its bit count, l1 mistakenly using `L1_SIZE` as its bit width, and release clearing l1 only when the word became **empty**. That last bug's consequence: once an l1 bit was set it froze forever, and the whole word could never be found again. The case's move is to occupy all 100 blocks, dig exactly one hole, and then demand that this hole must be found again: if the hole cannot be found, the only explanation is that the road from l1 down to l2 is broken.
+When you write the 100-block case, the comment deserves a line-by-line read: it records three real historical bugs — the l2 bitmap mistakenly using the word count as its bit count, l1 mistakenly using `L1_SIZE` as its bit width, and release clearing l1 only when the word became **empty**. The consequence of that last bug: once an l1 bit was set it froze forever, and the whole word could never be found again. The case's move is to occupy all 100 blocks, dig exactly one hole, and then demand that this hole must be found: if the hole cannot be found, the only explanation is that the road from l1 to l2 is broken.
 
-The fuzz case is this article's ballast, and it deserves five extra minutes of your time. The seed is pinned to `20260904`: a failure must reproduce bit for bit, on any machine. The 55/45 allocation bias makes the pool genuinely saturate and then drain, instead of receiving a couple of painless pats; every live block gets two values written into it, `stamp` and `~stamp`, verified right before the free: if the stamp is broken, then two owners—or one wild write—touched this block. Across twenty thousand operations, if any invariant collapses, the whole thing derails on the spot.
+The fuzz case is this article's ballast, and it deserves five extra minutes of your time. The seed is pinned to `20260904`: a failure must reproduce bit for bit, on any machine; the 55/45 allocation bias makes the pool genuinely fill up and then drain, instead of receiving a couple of painless pats; every live block gets two values written into it, `stamp` and `~stamp`, verified right before the free: if the stamp is broken, two owners or one wild write touched this block. Across twenty thousand operations, if any invariant collapses, the whole thing derails on the spot.
 
 ## Acceptance
 
@@ -462,6 +496,6 @@ The real output on my machine:
 All tests passed (40295 assertions in 7 test cases)
 ```
 
-Forty thousand assertions, the bulk of them inside the fuzz, and the number stays the same however many times you run it—the seed is fixed. All green means pass.
+Forty-thousand-odd assertions, the bulk of them inside the fuzz, and the number stays the same however many times you run it — the seed is dead. All passing means we pass.
 
-The pool can hand out `void*` now, but kernel objects want types. In the next article we write the final layer of facade: `Make<T>(pool, ...` lets objects be born inside the pool, `Destroy` gives them a decent burial, plus two compile-time lines of defense and a negative test dedicated to proving that "the defenses exist".
+The pool can hand out `void*` now, but kernel objects want types. In the next article we write the final layer of facade: `Make<T>(pool, ...` lets an object be born inside the pool, `Destroy` gives it a decent burial, plus two compile-time lines of defense and a negative test dedicated to proving that the defenses exist.
