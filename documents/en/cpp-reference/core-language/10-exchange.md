@@ -5,7 +5,7 @@ cpp_standard:
 - 17
 - 20
 - 23
-description: Replace the old value with a new value and return the old value
+description: Replaces an object's old value with a new one and returns the old value
 difficulty: beginner
 order: 10
 reading_time_minutes: 1
@@ -17,15 +17,15 @@ title: std::exchange
 translation:
   source: documents/cpp-reference/core-language/10-exchange.md
   source_hash: 835d27d86d82597a3b19ef0f0f1d8ff827e6520aa2d0fca593bc3a73bfcf7865
-  translated_at: '2026-06-16T03:28:57.962702+00:00'
+  translated_at: '2026-09-27T01:40:50+00:00'
   engine: anthropic
-  token_count: 310
+  token_count: 380
 ---
 # std::exchange (C++14)
 
 ## In a Nutshell
 
-Assigns a new value to a variable while retrieving its old value, avoiding the need for manual temporary variables.
+Assigns a new value to a variable and hands you its old value at the same time, sparing you a hand-written temporary.
 
 ## Header
 
@@ -34,8 +34,8 @@ Assigns a new value to a variable while retrieving its old value, avoiding the n
 ## Core API Quick Reference
 
 | Operation | Signature | Description |
-|-----------|-----------|-------------|
-| Replace and return old value | `template<class T, class U = T> T exchange(T& obj, U&& new_value);` | Replaces `obj` with `new_value` and returns the old value of `obj` |
+|------|------|------|
+| Replace and return the old value | `template<class T, class U = T> T exchange(T& obj, U&& new_value);` | Replaces `obj` with `new_value` and returns the old value of `obj` |
 
 ## Minimal Example
 
@@ -46,11 +46,11 @@ Assigns a new value to a variable while retrieving its old value, avoiding the n
 
 int main() {
     int a = 10, b = 20;
-    // 交换 a 和 b，无需临时变量
+    // Swap a and b without a temporary variable
     a = std::exchange(b, a);
-    std::cout << a << " " << b << "\n"; // 输出: 10 10
+    std::cout << a << " " << b << "\n"; // Output: 10 10
 
-    // 打印斐波那契数列前几项
+    // Print the first few Fibonacci numbers
     for (int x{0}, y{1}; x < 50; x = std::exchange(y, x + y))
         std::cout << x << " ";
 }
@@ -58,10 +58,10 @@ int main() {
 
 ## Embedded Applicability: Medium
 
-- It is a pure inline function with no additional heap allocation or system call overhead.
-- It relies on move semantics; when using it with custom types, verify the actual cost of move construction/assignment.
-- It is very concise for implementing move constructors and state machine transitions, making it suitable for resource-rich environments.
-- Supported as `constexpr` since C++20, allowing for compile-time usage.
+- A pure inline function, with no extra heap allocation or system-call overhead
+- Relies on move semantics; when using it with custom types, verify the actual cost of the move constructor/assignment
+- Very concise for implementing move constructors and state machine transitions, a good fit for resource-rich targets
+- `constexpr` since C++20, so it can be used at compile time
 
 ## Compiler Support
 
@@ -75,4 +75,4 @@ int main() {
 
 ---
 
-*Part of the content references [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*
+*Some content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*

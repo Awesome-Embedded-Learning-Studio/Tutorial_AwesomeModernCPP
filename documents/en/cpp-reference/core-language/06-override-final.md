@@ -6,9 +6,8 @@ cpp_standard:
 - 17
 - 20
 - 23
-description: Used after a member function declaration to ensure that the function
-  actually overrides a virtual function from the base class; otherwise, a compilation
-  error occurs.
+description: Placed after a member function declaration to confirm the function really
+  overrides a base-class virtual function, with a compile error otherwise
 difficulty: beginner
 order: 6
 reading_time_minutes: 1
@@ -20,55 +19,51 @@ title: override specifier
 translation:
   source: documents/cpp-reference/core-language/06-override-final.md
   source_hash: a8b5f85610928bd6195d5b697fe609acba57eb537a0fb42ad726ace344ffdc25
-  translated_at: '2026-06-16T03:28:55.315876+00:00'
+  translated_at: '2026-09-27T01:37:26+00:00'
   engine: anthropic
-  token_count: 370
+  token_count: 350
 ---
-# override Specifier (C++11)
+# override specifier (C++11)
 
 ## In a Nutshell
 
-Appending `override` to a virtual function declaration instructs the compiler to verify that the function successfully overrides a base class virtual function. Signature mismatches or attempts to override non-virtual functions will result in a compilation error.
+Adding `override` at the end of a virtual function declaration asks the compiler to verify that you really did override a base-class virtual function; a signature mismatch or a non-virtual base-class function becomes an immediate compile error.
 
 ## Header
 
-None (This is a language-level keyword feature)
+None (a language-keyword-level feature)
 
-## Core API Quick Reference
+## Core API Cheat Sheet
 
 | Operation | Signature | Description |
-|-----------|-----------|-------------|
-| Function declaration | `void foo() override;` | Used in declarations to ensure overriding of a base class virtual function |
-| Function definition (in-class) | `void foo() override { }` | Used when defining the function inside the class |
-| Pure virtual function override | `void foo() override = 0;` | `override` appears before `= 0` |
-| Combined with final | `void foo() override final;` | Can be combined with `final` in any order |
-| Destructor override | `~Derived() override;` | Can be used to check overriding of virtual destructors |
+|------|------|------|
+| Function declaration | `return_type func_name(params) override;` | Used at declaration time to ensure you are overriding a base-class virtual function |
+| Function definition (in-class) | `return_type func_name(params) override { ... }` | Used when defining the function inside the class |
+| Pure virtual override | `return_type func_name(params) override = 0;` | `override` appears before `= 0` |
+| Combined with final | `return_type func_name(params) override final;` | Can be combined with `final` in either order |
+| Destructor override | `~Derived() override;` | Can be used to check overrides of virtual destructors |
 
 ## Minimal Example
 
 ```cpp
-struct Base {
-    virtual void func() { /* ... */ }
-    virtual void only_in_base() { /* ... */ }
-};
-
+// Standard: C++11
+#include <iostream>
+struct Base { virtual void foo() { std::cout << "Base\n"; } };
 struct Derived : Base {
-    // Correctly overrides Base::func
-    void func() override { /* ... */ }
-
-    // Error: 'only_in_base' is not virtual in Base
-    // void only_in_base() override;
-
-    // Error: signature mismatch (const qualifier)
-    // void func() const override;
+    // void foo(int) override; // compile error: signature mismatch
+    void foo() override { std::cout << "Derived\n"; }
 };
+int main() {
+    Derived d;
+    d.foo();
+}
 ```
 
 ## Embedded Applicability: High
 
-- Zero runtime overhead; performs static checks exclusively at compile time.
-- Embedded code often features multi-layer Hardware Abstraction Layers (HALs); `override` effectively prevents silent errors caused by changes to base class interfaces.
-- Does not impact code size or execution speed, making it suitable for resource-constrained environments.
+- Zero runtime overhead; it is purely a compile-time static check
+- Embedded code often has hardware abstraction layers (HALs) built on multi-level inheritance, and `override` effectively prevents the silent errors caused by modifications to a base-class interface
+- No impact on code size or execution speed, a good fit for resource-sensitive contexts
 
 ## Compiler Support
 
@@ -82,4 +77,4 @@ struct Derived : Base {
 
 ---
 
-*Part of the content references [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*
+*Part of the content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*
