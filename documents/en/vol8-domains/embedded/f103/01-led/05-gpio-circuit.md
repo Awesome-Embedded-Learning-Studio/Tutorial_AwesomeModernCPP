@@ -46,7 +46,7 @@ Drive capability comes with hard numbers: an ordinary F103 pin tops out at an ab
 
 Now look at `CNF=01` (open-drain), which removes the upper transistor outright:
 
-![Open-drain output: the upper transistor's spot is left empty (that emptiness is the "open" in "open-drain"); VDD reaches the pin only through an external pull-up resistor (off-chip), and below the pin only the N-MOS lower transistor connects to VSS; a note on the right explains that writing 0 pulls the line low, while writing 1 leaves the pin floating, hauled high by the external pull-up](./05-open-drain.drawio)
+![Open-drain output: the upper transistor's spot is left empty (that emptiness is the “open” in “open-drain”); VDD reaches the pin only through an external pull-up resistor (off-chip), and below the pin only the N-MOS lower transistor connects to VSS; a note on the right explains that writing 0 pulls the line low, while writing 1 leaves the pin floating, hauled high by the external pull-up](./05-open-drain.drawio)
 
 Write 0, and it is the lower transistor that conducts: the pin is pulled to ground, and the path for current is still there. Write 1? The lower transistor cuts off, **and that is the end of the story**: the upper transistor does not exist, the path between the pin and VDD is gone, and the pin floats (high-impedance state). To output a "high", you have to rely on an external pull-up resistor to haul the pin up, slowly. How fast that haul goes, and how much current it leaks at idle, are both its call: choose a small one for speed, a large one for thrift — and you cannot have both ends at once.
 
