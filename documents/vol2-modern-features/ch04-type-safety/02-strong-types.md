@@ -8,8 +8,6 @@ description: 用 phantom type 模式和 C++17 参数推导实现类型安全的�
 difficulty: intermediate
 order: 2
 platform: host
-prerequisites:
-- 'Chapter 4: enum class 与强类型枚举'
 reading_time_minutes: 11
 related:
 - 用户自定义字面量
@@ -23,15 +21,15 @@ title: 强类型 typedef：防止混淆的类型安全
 ---
 # 强类型 typedef：防止混淆的类型安全
 
-笔者在某次代码审查中见过一段非常经典的 bug：一个函数的签名是 `void set_rect(int width, int height)`，调用方写成了 `set_rect(h, w)`——参数顺序搞反了。编译器没有任何警告，因为 `width` 和 `height` 都是 `int`，类型完全匹配。但屏幕上的矩形就是歪的.这个bug不难解,但是就是感觉整个人被狠狠发可了一顿.
+笔者在一次代码审查里见过一个非常经典的 bug：一个函数的签名是 `void set_rect(int width, int height)`，调用方写成了 `set_rect(h, w)`，参数顺序搞反了。编译器当然一点警告都没有，因为 `width` 和 `height` 的类型都是 `int`，所以类型完全匹配。但屏幕上的矩形就是歪的。这 bug 其实不难解，但是就是感觉整个人被狠狠发可了一顿。
 
-这种 bug 的根源在于：`typedef` 和 `using` 创建的只是**类型别名**，不是新类型。`using Width = int;` 和 `using Height = int;` 之后，`Width` 和 `Height` 仍然是同一个 `int`，编译器不会帮你区分它们。要真正创建编译器能够区分的类型，我们需要一种叫做"强类型 typedef"（也叫 opaque typedef、phantom type）的技术。
+根源倒是不复杂，咱们一句话就能摊开：`typedef` 和 `using` 创建的只是**类型别名**而非新类型。等咱们写完 `using Width = int;` 和 `using Height = int;`，`Width` 和 `Height` 其实仍然是同一个 `int`，编译器不会替您区分它们。想要编译器真能区分的类型，咱们就得请出“强类型 typedef”这门技术。它还有两个名字呢。opaque typedef 直译的话是不透明别名，phantom type 咱们一般叫幽灵类型。
 
-这一章我们从 `typedef` 的局限讲起，然后实现一个实用的强类型包装器，最后用它构建一个类型安全的单位系统。
+咱们就从眼下的第一步走起，把 `typedef` 的局限摆出来看清楚。
 
 ## 第一步——理解 typedef / using 的局限
 
-先看一段代码，感受一下普通别名到底有多"脆弱"：
+咱们直接上代码，您感受一下普通别名到底有多“脆弱”：
 
 ```cpp
 using UserId = int;
@@ -50,13 +48,13 @@ process_order(uid);   // 传了 UserId 进去？编译器不管
 int total = uid + oid;  // 两个"不同语义"的 ID 相加？随便加
 ```
 
-问题很清楚：`using UserId = int` 只是在给 `int` 起了个绰号。在编译器眼里，`UserId` 和 `OrderId` 和 `int` 完全是同一个东西。所有接受 `int` 的操作，`UserId` 和 `OrderId` 都能参与——哪怕语义上完全说不通。
+问题咱们看清楚了：`using UserId = int` 只是给 `int` 起了个绰号。在编译器的眼里，`UserId`、`OrderId` 和 `int` 就是同一个东西的三个名字。凡是接受 `int` 的操作，`UserId` 和 `OrderId` 其实全都能掺一脚，编译器连语义上完全说不通的组合都照收。
 
-这在大型代码库中是个巨大的隐患。函数参数列表越长、参数类型越是重复使用同一个底层类型，出错概率就越高。而且这类 bug 编译器抓不到，单元测试也未必能覆盖到，只能靠人眼在 code review 里发现——而人眼偏偏最不擅长发现这种"看起来都对"的问题。
+进了大型代码库，隐患也跟着被放大了。函数的参数列表越长，参数类型越是翻来覆去地用同一个底层类型，出错的概率就越高。更麻烦的是，编译器偏偏一声不吭，单元测试的覆盖也未必到位，最后能指望的只剩人眼，得靠您在 code review 里把它翻出来。可人眼偏偏最不擅长发现“看起来都对”的问题。您想想，`uid = oid` 夹在一排赋值语句的中间，谁会多看它一眼呢。
 
 ## 第二步——Phantom Type 模式
 
-解决方案的核心思想叫做 phantom type：用一个只有标记作用、不占实际空间的模板参数来区分不同的类型。
+解法是现成的，就是前面已经点过名的幽灵类型 phantom type。咱们把它的机制拆开看：模板参数只起标记的作用，实际的空间一丁点不占，靠它把不同的类型区分开。
 
 ```cpp
 // 标签结构体，只用来区分类型，不需要实现任何东西
@@ -78,7 +76,7 @@ using Width  = StrongInt<WidthTag>;
 using Height = StrongInt<HeightTag>;
 ```
 
-现在 `Width` 和 `Height` 是两个完全不同的类型。编译器会阻止你把一个赋给另一个：
+现在 `Width` 和 `Height` 是两个完全不同的类型，您要是把一个赋给另一个，编译器会直接把您拦下来：
 
 ```cpp
 Width w(100);
@@ -92,17 +90,17 @@ set_rect(h, w);    // 编译错误！参数类型不匹配
 set_rect(Width(100), Height(200));  // OK
 ```
 
-`WidthTag` 和 `HeightTag` 是空的类，不占用任何存储空间（因为 C++ 的空基类优化 EBO）。编译器在生成代码时，`StrongInt<WidthTag>` 和 `StrongInt<HeightTag>` 的运行时表现和裸 `int` 完全一样——零额外开销。
+咱们再看 `WidthTag` 和 `HeightTag`：它们是空的类，但在这里只起到模板形参的作用，只参与编译期的类型区分，也不进入对象的布局，所以 `StrongInt<WidthTag>` 的大小和裸 `int` 一样。
 
-这个模式的精髓在于：**用编译期的类型信息换取运行时的零开销**。类型检查全部在编译期完成，运行时就是普通的整数操作。
+整套模式的收益就落在这一句上：**用编译期的类型信息，换运行时的零开销**。咱们要的类型检查全部在编译期完成，运行时剩下的就是普通的整数操作。
 
-两种写法放在一起对比，同一句 `set_rect(h, w)` 的编译结果如下：
+咱们把两种写法放在一起，同一句 `set_rect(h, w)` 的编译结果是这样的，顺带也把 `StrongInt` 包装器的要点收进了图里：
 
 ![类型别名与强类型包装对同一句 set_rect(h, w) 的不同编译结果](./02-strong-types-wrapper.drawio)
 
 ## 第三步——构建实用的强类型包装器
 
-上面那个 `StrongInt` 太简陋了。在实际项目中，我们通常需要支持一些运算操作。下面我们来构建一个更实用的版本，支持加减、比较、流输出等常见操作。
+刚才的 `StrongInt` 还太素了，真到了项目里，光靠构造和取值就撑不住了。加减、比较、流输出这些日常的操作都得有，咱们把它扩成一份实用版本：
 
 ```cpp
 #include <cstdint>
@@ -189,11 +187,11 @@ std::ostream& operator<<(std::ostream& os, const StrongInt<Tag, Rep>& v)
 }
 ```
 
-这个 `StrongInt` 模板覆盖了日常使用中最常见的需求：构造、取值、加减、比较、流输出。而且所有运算都要求操作数是**同一种 StrongInt 特化**——你不可能把 `Width` 和 `Height` 相加，因为它们的 `Tag` 不同。
+写完咱们盘一下，`StrongInt` 模板覆盖了日常使用里最常见的需求，构造、取值、加减、比较、流输出这些日常操作都有了。所有运算要求的操作数都是**同一种 StrongInt 特化**，您也没法把 `Width` 和 `Height` 相加，因为它们的 `Tag` 不同，编译器直接就拒绝了。
 
 ## 第四步——类型安全的单位系统
 
-现在我们来用强类型包装器构建一个类型安全的物理单位系统。这是强类型 typedef 最经典的应用场景之一——通过类型系统防止不同物理量的值被混用。
+接下来咱们拿强类型包装器搭一个类型安全的物理单位系统，这也是强类型 typedef 最经典的应用场景之一：靠的就是类型系统，防止不同物理量的值被混用。
 
 ```cpp
 // 标签定义
@@ -229,7 +227,7 @@ constexpr Milliseconds to_milliseconds(Seconds s) noexcept
 }
 ```
 
-使用起来：
+咱们用起来看看：
 
 ```cpp
 Meters distance(5000.0);
@@ -241,13 +239,13 @@ Milliseconds ms = to_milliseconds(duration);
 // auto bad = distance + duration;  // 编译错误！Meters 和 Seconds 不能相加
 ```
 
-这就是类型安全单位系统的威力：编译器在编译期就帮你拦截了所有"物理量不匹配"的错误。你不可能不小心把米和秒加在一起，也不可能把摄氏度当成华氏度来用。
+咱们这就见识到了类型安全单位系统的威力：编译期的时候，编译器就替您拦下了所有“物理量不匹配”的错误。您不可能不小心把米和秒加在一起，当然也不可能把摄氏度当华氏度用。
 
-当然，这个例子中的单位系统还是简化版的——真正的物理单位系统还需要处理无量纲数、复合单位（速度 = 距离 / 时间）等。但核心思路是一样的：用 phantom type 在编译期区分不同的物理量，运行时零开销。
+当然，咱们刚搭的单位系统还是简化版，真正的物理单位系统还要多管几样东西，比如复合单位（速度 = 距离 / 时间）的合成，后面讲到用户自定义字面量的时候，会把单位系统真的搭起来。不过思路没有变：用 phantom type 在编译期区分不同的物理量。
 
 ## 第五步——避免参数混淆的实战案例
 
-除了物理单位，强类型在避免参数混淆方面也非常有用。考虑一个常见的场景：业务系统中到处都是 ID 类型。
+强类型能干的当然不止物理单位，咱们再看一个常见的场景，业务系统里的 ID 类型到处都是。
 
 ```cpp
 struct UserIdTag {};
@@ -287,25 +285,30 @@ service.create_order(user, product, 3);  // OK
 // service.cancel_order(user);              // 编译错误！UserId 不是 OrderId
 ```
 
-在大型项目中，数据库表的主键、外键、各种关联 ID 全都是 `uint64_t`。如果没有强类型区分，调用方很容易把 `user_id` 传到 `order_id` 的位置。笔者见过这种 bug 导致生产数据库执行了错误的删除操作——修复成本远比引入强类型高得多。
+大型项目的数据库表里，主键、外键、各种关联的 ID 全都是 `uint64_t`。少了强类型区分，调用方很容易把 `user_id` 传进 `order_id` 的位置。笔者就见过这么一回：两个 ID 在调用里换了位置，review 的时候也没人看出来，生产数据库照着执行了错误的删除。事后修复花的成本，比当初就引入强类型的成本高得多。
 
 ## 第六步——C++17 CTAD 简化使用
 
-C++17 引入了类模板参数推导（Class Template Argument Deduction, CTAD），可以省去显式指定模板参数的麻烦。虽然我们的 `StrongInt` 需要两个模板参数（`Tag` 和 `Rep`），`Tag` 无法推导，但我们可以通过推导指引来简化构造：
+C++17 引入了类模板参数推导，大家一般叫它 CTAD（Class Template Argument Deduction），本意是把显式指定模板参数的麻烦省掉。可咱们手上的 `StrongInt` 偏偏有两个模板参数（`Tag` 和 `Rep`），构造的时候只递一个 `Rep` 值进去，实参里看不见 `Tag` 的存在，编译器当然没得推导。咱们要是写一条推导指引硬教编译器，推导出来的类型连初始化都过不去，指引在这里反而帮不上忙。真正的解法是让构造函数带上一个 tag 形参：
 
 ```cpp
-// 对于 Rep 类型的推导指引
-template <typename Tag>
-StrongInt(Tag*) -> StrongInt<Tag, int>;
+// 让构造函数带上一个 tag 形参（其余成员与第三步的一致）
+template <typename Tag, typename Rep = int>
+class StrongInt {
+public:
+    constexpr explicit StrongInt(Tag*, Rep value) : value_(value) {}
+    constexpr Rep get() const noexcept { return value_; }
+};
 
-// 使用时只需要指定 Tag
+// 构造的时候把 tag 一起递进去
 struct ScoreTag {};
 using Score = StrongInt<ScoreTag, int>;
 
-Score s(100);  // 直接构造，不需要写 <ScoreTag, int>
+Score s((ScoreTag*)nullptr, 100);                 // 走别名构造，Tag 在编译期对上号
+StrongInt auto_deduced((ScoreTag*)nullptr, 100);  // 不写别名，CTAD 推出 StrongInt<ScoreTag, int>
 ```
 
-不过说实话，在我们的使用模式中，强类型通常都是通过 `using` 别名来使用的，所以 CTAD 的实际作用不大。真正有用的是 C++17 的另一个特性——`if constexpr` 和 `auto` 推导让模板代码写起来更自然：
+tag 形参的路子能走通，只是 `(ScoreTag*)nullptr` 一遍遍地写下来，确实够啰嗦的。对咱们更省心的办法是靠 `auto` 推导，配一个 `make_strong` 这样的工厂函数，模板代码写起来自然多了：
 
 ```cpp
 template <typename Tag, typename Rep>
@@ -319,9 +322,11 @@ auto width = make_strong<WidthTag>(100);
 // width 的类型是 StrongInt<WidthTag, int>，自动推导
 ```
 
+> 这里的 `StrongInt<Tag, Rep>(value)` 用的是第三步那个单参构造：进了工厂函数，`Tag` 在调用点就是显式给出来的模板实参，用不着再往构造函数的参数表里塞。本节新添的 tag 形参构造，是专门留给裸 CTAD 的，两条路各管各的，咱们在类里把两个构造并存着用。
+
 ## 嵌入式实战——寄存器地址的类型安全
 
-在嵌入式开发中，外设寄存器的地址通常用裸 `uint32_t` 表示。如果不同外设的寄存器地址不小心混在一起，后果可能是写入错误的寄存器导致硬件行为异常。强类型可以在这里发挥作用：
+咱们把视角挪到嵌入式开发里：外设寄存器的地址通常就是个裸 `uint32_t`。不同外设的地址要是不小心混在一起，后果可能是写错了寄存器，硬件的行为跟着出异常。强类型在这儿倒是同样派得上用场：
 
 ```cpp
 struct GpioRegTag {};
@@ -338,13 +343,13 @@ void uart_write(UartRegAddr addr, uint32_t value);
 // gpio_write(UartRegAddr(0x40001000), 42);  // 编译错误！类型不匹配
 ```
 
-这种模式在大型嵌入式项目中非常有价值——当你的芯片有几十个外设、几百个寄存器地址时，类型安全的地址系统可以防止你写错寄存器。而且运行时零开销：`StrongInt` 的 `get()` 函数会被内联，生成的代码和直接用 `uint32_t` 完全一样。
+项目一大它就更值钱了。您的芯片有几十个外设、几百个寄存器地址的时候，类型安全的地址系统能防止您写错寄存器。真到了运行时，`StrongInt` 的 `get()` 会被内联，生成的代码和直接用 `uint32_t` 完全一样。
 
 ## 已有库推荐
 
-如果你不想自己维护一套强类型框架，社区里有几个成熟的开源库可以考虑。Jonathan Mueller 的 [NamedType](https://github.com/joboccara/NamedType) 是最知名的一个，它支持运算符继承、函数式操作、哈希、流输出等，功能非常全面。Boost 也有 [Boost.StrongTypes](https://github.com/boostorg/strong_typedef)（实验性质的 strong_typedef）。
+您要是不想自己维护一套强类型框架，社区里有几个成熟的开源库可以考虑。Jonathan Boccara 的 [NamedType](https://github.com/joboccara/NamedType) 是最知名的一个，它把运算符继承、函数式操作、哈希、流输出全都包圆了，可以说是非常全面了。foonathan 的 [type_safe](https://github.com/foonathan/type_safe) 里也有 strong_typedef，参考资源里的第一篇文章就是他写的。
 
-不过笔者的建议是：如果你的需求只是"区分不同语义的同类型参数"，手写一个简单的 `StrongInt` 模板就够了——代码不到一百行，完全可控，没有外部依赖。只有在需要更复杂的特性（如运算符继承、隐式转换策略定制）时，才需要引入第三方库。
+不过笔者的建议是：只为区分不同语义的同类型参数的话，手写一个简单的 `StrongInt` 模板就够了。咱们写下来的代码不到一百行，控制权完全在咱们手里，也不需要引入外部的依赖。等真需要运算符继承、隐式转换策略定制之类更复杂的特性时，咱们再引入第三方库也不迟。
 
 ## 参考资源
 

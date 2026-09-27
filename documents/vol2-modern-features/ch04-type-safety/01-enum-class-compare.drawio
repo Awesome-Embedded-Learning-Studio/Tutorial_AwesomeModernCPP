@@ -29,7 +29,7 @@
           <mxGeometry x="80" y="284" width="290" height="52" as="geometry" />
         </mxCell>
         <mxCell id="left_row4" value="&lt;b&gt;enum Status { None, Ok, Error };&lt;/b&gt;&lt;br&gt;&lt;b&gt;enum Permission { None, ... };&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#c00000&quot;&gt;编译错误：None 重定义，只能加前缀变通&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#ffffff;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
-          <mxGeometry x="80" y="340" width="290" height="52" as="geometry" />
+          <mxGeometry x="80" y="340" width="290" height="56" as="geometry" />
         </mxCell>
         <mxCell id="left_bar" value="混用全被放行，bug 留到运行时" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
           <mxGeometry x="70" y="412" width="310" height="36" as="geometry" />
@@ -67,7 +67,7 @@
           <mxGeometry x="447" y="456" width="310" height="56" as="geometry" />
         </mxCell>
 
-        <mxCell id="source_note" value="两侧代码与结论取自本文「三宗罪」与「三大改进」两节" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+        <mxCell id="source_note" value="两侧代码与结论取自本文「C 风格 enum 的三个老毛病」与「enum class 的三个改进」两节" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
           <mxGeometry x="113" y="520" width="600" height="20" as="geometry" />
         </mxCell>
 
