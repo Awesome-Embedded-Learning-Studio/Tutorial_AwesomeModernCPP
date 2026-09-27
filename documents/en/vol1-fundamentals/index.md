@@ -8,10 +8,10 @@ tags:
   - intermediate
 translation:
   source: documents/vol1-fundamentals/index.md
-  source_hash: b9051ebe7bd08eeb8151a1ebbc52fafc24e887dad8d5ea0c164a473588f5ecbd
-  translated_at: '2026-09-26T09:52:32+00:00'
+  source_hash: a20b6082c0764c27dfbe290349678fd949da437f1eeb8b5ebd75caf9f9efcbe4
+  translated_at: '2026-09-27T04:21:14+00:00'
   engine: anthropic
-  token_count: 220
+  token_count: 250
 ---
 # Volume 1: C++ Fundamentals
 
@@ -30,8 +30,8 @@ This volume covers C++ fundamentals, from environment setup to object-oriented p
   <ChapterLink num="7" href="ch07/">Operator Overloading</ChapterLink>
   <ChapterLink num="8" href="ch08/">Inheritance and Polymorphism</ChapterLink>
   <ChapterLink num="9" href="ch09/">Template Basics</ChapterLink>
-  <ChapterLink num="10" href="ch10/">Exception Handling</ChapterLink>
-  <ChapterLink num="11" href="ch11/">A First Look at the STL</ChapterLink>
+  <ChapterLink num="10" href="ch10/">A First Look at the STL</ChapterLink>
+  <ChapterLink num="11" href="ch11/">Exception Handling</ChapterLink>
   <ChapterLink num="12" href="ch12/">Memory Model Fundamentals</ChapterLink>
 </ChapterNav>
 
