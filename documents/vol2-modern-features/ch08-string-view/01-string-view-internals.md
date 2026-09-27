@@ -262,12 +262,15 @@ int main() {
 }
 ```
 
-运行结果：
+这份解析程序就在下面，点「动手试一试」直接跑：
 
-```text
-key=[host] value=[localhost]
-key=[port] value=[8080]
-```
+<OnlineCompilerDemo
+  title="动手验证：零拷贝解析 key=value"
+  source-path="code/examples/vol2/41_parse_kv.cpp"
+  description="在线解析带空白和分号的配置串：remove_prefix 逐段消费输入，全程零拷贝，key/value 都切得干干净净。"
+  run-options="-std=c++17"
+  allow-run
+/>
 
 注意这里的关键操作：我们用 `remove_prefix` 来逐段消费输入字符串，用 `substr` 来提取不包含分隔符的片段，用 `remove_prefix` / `remove_suffix` 来做 trim。整个过程对原始数据零拷贝——`string_view` 只是反复调整指针和长度。在解析器的热路径上，这种模式可以显著减少内存分配次数。
 
@@ -308,13 +311,15 @@ int main() {
 }
 ```
 
-运行结果：
+这份分割器就在下面，点「动手试一试」直接跑：
 
-```text
-[name=Alice]
-[age=30]
-[city=Beijing]
-```
+<OnlineCompilerDemo
+  title="动手验证：token 分割器"
+  source-path="code/examples/vol2/42_token_split.cpp"
+  description="在线运行手写分割器：按分号切出三段，除了 vector 自身增长没有任何堆分配。"
+  run-options="-std=c++17"
+  allow-run
+/>
 
 注意看 `split` 函数内部的逻辑：我们反复调用 `remove_prefix` 来推进视图的起始位置，用 `substr` 来提取每个 token。整个过程中没有任何堆分配（除了 `vector` 本身的增长），所有操作都是 O(1) 的指针调整。如果用 `std::string` 来实现，每次 `substr` 都会分配新内存——对于一个简单的 INI 文件解析器来说，这种开销完全是不必要的。
 

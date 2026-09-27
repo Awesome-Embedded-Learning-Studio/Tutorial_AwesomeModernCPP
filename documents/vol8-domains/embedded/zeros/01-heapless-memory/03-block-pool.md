@@ -51,13 +51,23 @@ namespace ZerOS::memory
 }
 ```
 
-契约的内容您一眼能看完:能发一块(`raw_allocate` 返回 `expected<void*, 错误码>`),能收一块(`raw_deallocate` 返回错误码),还有给中断留的快路(`try_allocate` 直接返回裸指针,失败就是 `nullptr`——ISR 里没功夫拆 `expected`)。
+概念真是一个契约。咱们说，一个内存池子，起码要具备如下的属性：
 
-错误码是一个小分类学:`OutOfMemory` 是真的没格子了,`Poisoned` 是检测到有人写过已释放的块,`NotOwned` 是您拿来归还的指针根本不是这池的——野指针、内部指针、double-free 全归它管。为什么错误通道用 `expected` 不用 `optional`?下面池子的注释给了两条理由:多数实现的 `optional` 要多付 8 字节;更重要的是错误分类不该在用户接口那层丢掉。
+1. raw_allocate，可以分配出来指定的内存块，当然咱们不约束大小
+2. raw_deallocate，有借有还嘛！
+3. try_allocate，试试分配，ISR一类的不敢玩酣畅淋漓的拆expected。
+
+欸，稍微提一下错误码的事情：
+
+- `OutOfMemory` 是真的没格子了
+- `Poisoned` 是检测到有人写过已释放的块,
+- `NotOwned` 是您拿来归还的指针根本不是这池的——野指针、内部指针、double-free 全归它管。
+
+为什么错误通道用 `expected` 不用 `optional`?下面池子的注释给了咱们两条理由:多数实现的 `optional` 要多付 8 字节;更重要的是错误分类不该在用户接口那层丢掉。
 
 ## 主角:两级位图定长块池
 
-新建 `include/ZerOS/kernel/mem/bitmap_allocate.hpp`:
+新建 `include/ZerOS/kernel/mem/bitmap_allocate.hpp`。整块贴下来太长,咱们顺着文件从上往下走,每段代码后面就地讲:
 
 ```cpp
 #pragma once
@@ -98,7 +108,11 @@ struct BitmapPool {
     // B. for User Interfaces, we should never carry it
 
     constexpr BitmapPool() = default;
+```
 
+常量区这行 `static_assert` 把几何约束交给编译器:块尺寸必须是 `max_align_t` 的倍数,不然第二块开始就不对齐。`BLOCK_ALIGN` 把这条对齐要求存成常量,注释指的 `typeable.hpp`,就是下一篇 `Make<>` 拿它验对象的地方。`ALL_ALIGNED` 宏也定义在这,用它的 `buffer_` 排在文件尾巴,咱们走到成员区再看它。
+
+```cpp
     // ------------------------------------------------------------------
     // Contract surface: these three together satisfy concept MemoryPool
     // ------------------------------------------------------------------
@@ -138,7 +152,11 @@ struct BitmapPool {
         auto res = raw_allocate();
         return res ? *res : nullptr;
     }
+```
 
+公区就这三个函数,正好是上面 concept 点名的三件套。`raw_allocate` 的主干:找空块、验毒、占位、发指针;`raw_deallocate` 反着走:查指针身份、收块、毒化。中间那截 `if constexpr (owns_poison_policy)` 的验毒,眼下不用全看懂,下面 `poison_block` 一段是它的主场;两个 `NotOwned` 出口的判据也都在下面的私有函数里,咱们挨个下去。`try_allocate` 是给 ISR 的:中断里不敢拆 `expected`,失败折成 `nullptr`,一行转发完事。
+
+```cpp
   private:
     // we fetch the first available block, if not, return the
     // npos
@@ -157,7 +175,13 @@ struct BitmapPool {
         // OK, this is the case, find in this word
         return bitmap_l2_.first_zero_in_word(word_index);
     }
+```
 
+找空块的路径就两步:`bitmap_l1_.find_first_zero()` 定位第一个没满的 L2 字;`first_zero_in_word` 再进这个字,落到具体的 bit。两个位图各管一层:`bitmap_l2_` 每块一位,记占用;`bitmap_l1_` 每个字一位,记"这个字满了没"。上一篇咱们写过的"跳字+落位"两段式,原样上岗。找不到的时候返回 `npos`,这个哨兵值贯穿全文;`raw_allocate` 拿 `IsAvailableIndex` 一判,`OutOfMemory` 就是这么来的。
+
+块数少的时候看不出便宜,块数一多好处才出来:整字整字地跳,搜索就压成了常数级。这个结构您应该已经眼熟了,商用 RTOS 的优先级就绪位图,就是这么找"最高优先级就绪任务"的;位图那篇头注释里写的 "allocators, schedulers" 也不是白写的,到调度器那一站它还会再出场一次。
+
+```cpp
     void set_as_in_used(std::size_t index) {
         bitmap_l2_.set(index);
 
@@ -187,7 +211,11 @@ struct BitmapPool {
         used_--;
         return true;
     }
+```
 
+占用位怎么维护,咱们看这一对函数。`set_as_in_used` 置上 L2 之后多看一眼:这个字满了没(`word_full`),满了就把 L1 的对应位也点上;`release_block` 反过来,清完 L2 无条件清 L1——注释里写明白了:任何一块被释放,这个字就回到"未满",无条件清是幂等的,不变量才立得住。double-free 的防线也在这个函数里:`bitmap_l2_.test(index)` 不过,说明这块根本没占着,`false` 递回去,上层翻成 `NotOwned`。
+
+```cpp
     constexpr void* fetch_target_block(std::size_t index) { return buffer_ + index * BLOCK_SIZE; }
     std::size_t index_of_given_ptr(void* ptr) {
         auto* p = static_cast<std::byte*>(ptr);
@@ -204,7 +232,11 @@ struct BitmapPool {
 
         return off / BLOCK_SIZE;
     }
+```
 
+归还指针的资格审查,就是 `index_of_given_ptr` 的两道检查:指针在不在池的地界里;在的话,偏移是不是块对齐。野指针、指向块中间的内部指针、别人池子的指针,都过不了这两关,连同上面 `release_block` 拦下的 double-free,统统 `NotOwned`。注意 `p < buffer_` 这行:两个不相干对象比指针大小,严格讲是未指明行为,不过这是 host 侧代码、实践上人人这么写,真要较真是可以改成整数比较的——启动代码那边咱们守着"转整数再比"的纪律,两处对照,您自己掂量。
+
+```cpp
     // poisoned the target block
     static constexpr std::byte POISON_VALUE{0x67};
     void poison_block(std::size_t index) {
@@ -226,7 +258,17 @@ struct BitmapPool {
         }
         return false;
     }
+```
 
+上面 `raw_allocate` 里那截 `if constexpr`,实现就在这一对函数,干的事不复杂。`owns_poison_policy` 开着的时候,块一归还,`poison_block` 就把整块填成 `0x67`,顺手在 `ever_poisoned_` 里把这一位标上。这一位是干嘛用的,咱们往下看。
+
+下次这个块再被分配出去之前,`detected_poison` 会先验一遍:整块是不是还是 0x67。只要有一位对不上,说明有人写过已释放的内存,`Poisoned` 打回,这个块不再发给您。
+
+为什么位图池能这么干?空闲链就不行:链表要把 next 指针写进空闲块本身,块的内容天然是脏的,想验也无从验。位图把占用状态记在块外面,块释放之后干干净净,填了什么就是什么,被人动过一查便知。板上又没有 ASan,这套毒化就是咱们自助的 use-after-free 探测。
+
+`ever_poisoned_` 那个门控,是为了不冤枉好人。咱们想想看:从来没毒化过的新鲜 `.bss` 块本来就是全零,全零当然不等于满块 0x67,不挡一下,岂不是块块都要误报?所以只有毒化过的块才进这道检查。
+
+```cpp
     // Buffer Locations here, as it request all baasic
     ALL_ALIGNED std::byte buffer_[BUFFER_SIZE];
     base::Bitmap<block_cnt> bitmap_l2_;      // one bit per block: 1 = occupied
@@ -243,15 +285,7 @@ static_assert(MemoryPool<BitmapPool<64, 8, true>>);
 } // namespace ZerOS::memory
 ```
 
-咱们把结构捋一遍。
-
-**两级位图**。`bitmap_l2_` 每块一位记占用;`bitmap_l1_` 每个 L2 字一位记"这个字满了没"。找空块的路径就两步:L1 里 `find_first_zero` 找到第一个没满的字,再在这个字里 `first_zero_in_word` 落到具体的 bit——上一篇位图里那个"跳字+落位"的两段式,原样上岗。块数少的时候看不出便宜,块数一多,整字整字地跳就把搜索压成常数级;而且您应该已经眼熟了,商用 RTOS 的优先级就绪位图就是这么找"最高优先级就绪任务"的,头注释里那句 "allocators, schedulers" 不是白写的,这个结构到调度器那一站会再出场一次。
-
-**毒化检测**。`owns_poison_policy` 开着的时候,块一归还就整块填 `0x67`,并且 `ever_poisoned_` 把这一位标上;下次这个块再被分配出来之前,先验一遍还是不是满块 0x67——不是,说明有人写过已释放的内存,直接返回 `Poisoned`。这就是概念篇说的"账本和库存分离"换来的能力:空闲链把指针藏在块肚子里,块的内容天然是脏的,想验无从验;位图的块释放后干干净净,填进去什么就是什么,被谁动过手指一查便知。板上没有 ASan,这是咱们自助的 use-after-free 探测。`ever_poisoned_` 的门控是为了不冤枉好人:从来没毒化过的新鲜 `.bss` 块本来就是全零,不该被当成"毒被改了"。
-
-**归还的资格审查**。`index_of_given_ptr` 先看指针在不在池的地界里、是不是块对齐的,再由 `release_block` 看这块是不是真占着:野指针、指向块中间的内部指针、别人池子的指针、double-free,统统 `NotOwned`。注意这里 `p < buffer_` 这行:两个不相干对象比指针大小,严格讲是未指明行为,不过这是 host 侧代码、实践上人人这么写,真要较真是可以改成整数比较的——启动代码那边咱们守着"转整数再比"的纪律,两处对照,您自己掂量。
-
-**几何的编译期约束**。咱们要求块尺寸是 `max_align_t` 的倍数,不然第二块开始就不对齐了;`buffer_` 挂 `ALL_ALIGNED`,`#define` 用完就 `#undef`,宏卫生。文件尾巴一行 `static_assert(MemoryPool<BitmapPool<64, 8, true>>)`:池自己向 concept 证明自己,少实现一个接口,这行就把构建拦下来。
+成员区收尾,名字咱们全见过:`buffer_` 挂着顶上的 `ALL_ALIGNED`,整块 buffer 按 `max_align_t` 对齐;再配合开头那条块尺寸的 `static_assert`,每一块的起点就都保得住对齐。三个位图成员各管一件事:L2 记占用,L1 记字满,`ever_poisoned_` 记毒化史,`used_` 数着在用的块数。`#define` 用完就 `#undef`,宏卫生,不往外漏。尾巴上那行 `static_assert(MemoryPool<BitmapPool<64, 8, true>>)` 咱们专门看一眼:池自己向 concept 证明自己,少实现一个接口,这行就把构建拦下来。
 
 ## 拿两万次操作招呼它
 

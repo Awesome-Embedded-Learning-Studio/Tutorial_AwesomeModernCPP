@@ -324,13 +324,15 @@ int main()
 }
 ```
 
-运行结果大致如下（具体数值取决于硬件和编译器优化）：
+这份对比程序就在下面（`kCrc32Table` 的编译期生成和运行时版本都在同一个源文件里），点「动手试一试」直接跑——Runtime generation 那行的具体数值取决于硬件和编译器优化，两行 first entry 则恒为 0：
 
-```text
-Runtime generation: 2.5 us
-CRC table first entry: 0
-Runtime table first entry: 0
-```
+<OnlineCompilerDemo
+  title="动手验证：CRC 表的编译期 vs 运行期生成"
+  source-path="code/examples/vol2/32_crc32_runtime_vs_constexpr.cpp"
+  description="在线对比：运行时生成一张 CRC-32 表只要几微秒，而 constexpr 版本的表在编译期就已就位，运行时零成本。"
+  run-options="-O2 -std=c++17"
+  allow-run
+/>
 
 **注意**：这个 benchmark 有一定的局限性。现代编译器非常聪明，即使你声明的是运行时版本，如果编译器发现函数的输入是常量且没有副作用，它可能会在优化阶段自动将其提升为编译期计算（这种优化称为"常量传播"）。因此，为了准确测量 constexpr 的优势，你需要确保编译器不会对运行时版本做这种优化。在实际项目中，constexpr 的真正价值不在于节省这 2.5 微秒，而在于：
 

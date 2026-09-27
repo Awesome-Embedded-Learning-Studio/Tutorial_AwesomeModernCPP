@@ -46,6 +46,11 @@ Tracker make_bad_move(const std::string& name) {
     return std::move(t);
 }
 
+// 返回函数参数——NRVO 不适用，但有隐式移动
+Tracker return_param(Tracker t) {
+    return t;
+}
+
 int main() {
     std::cout << "=== 1. RVO（返回 prvalue）===\n";
     {
@@ -73,6 +78,16 @@ int main() {
         auto d = make_bad_move("D");
         std::cout << "  结果: " << d.name() << "\n";
     }
+    std::cout << '\n';
 
+    std::cout << "=== 5. 返回参数（隐式移动）===\n";
+    {
+        Tracker param("E_param");
+        auto e = return_param(std::move(param));
+        std::cout << "  结果: " << e.name() << "\n";
+    }
+    std::cout << '\n';
+
+    std::cout << "=== 程序结束 ===\n";
     return 0;
 }
