@@ -26,9 +26,9 @@
           <mxGeometry x="90" y="188" width="270" height="52" as="geometry" />
         </mxCell>
         <mxCell id="left_result" value="&lt;b&gt;无堆分配&lt;/b&gt;&lt;br&gt;构造 = 一次值拷贝 + 少量元数据设置" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="70" y="272" width="310" height="40" as="geometry" />
+          <mxGeometry x="70" y="272" width="310" height="46" as="geometry" />
         </mxCell>
-        <mxCell id="left_note" value="std::any small = 42;&lt;br&gt;int、double、小型结构体都在此列（SBO 范围内的类型通常不超过 32 字节左右）" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;fontColor=#555555;spacing=2;" vertex="1" parent="1">
+        <mxCell id="left_note" value="std::any small = 42;&lt;br&gt;int、double 这些小类型都在此列（SBO 阈值通常只有几个指针大小：libstdc++ 8 字节、libc++ 24 字节、MSVC 48 字节）" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;fontColor=#555555;spacing=2;" vertex="1" parent="1">
           <mxGeometry x="70" y="348" width="310" height="56" as="geometry" />
         </mxCell>
 
@@ -62,7 +62,7 @@
         </mxCell>
 
         <!-- 共用尺寸说明 -->
-        <mxCell id="size_strip" value="&lt;b&gt;sizeof(std::any)：典型 16 或 32 字节（取决于实现）&lt;/b&gt;&lt;br&gt;包括 SBO 缓冲区 + 类型信息指针 + 管理数据" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+        <mxCell id="size_strip" value="&lt;b&gt;sizeof(std::any)：典型 16、32 或 64 字节（libstdc++ / libc++ / MSVC）&lt;/b&gt;&lt;br&gt;包括 SBO 缓冲区 + 类型信息指针 + 管理数据" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
           <mxGeometry x="70" y="414" width="687" height="44" as="geometry" />
         </mxCell>
 
@@ -92,7 +92,7 @@
           </mxGeometry>
         </mxCell>
 
-        <mxCell id="source_note" value="图中数值均为文中给出的典型值（实现相关）：sizeof(std::any) 典型 16 或 32 字节；SBO 范围内的类型通常不超过 32 字节左右" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+        <mxCell id="source_note" value="图中数值均为文中给出的典型值（实现相关）：sizeof(std::any) 典型 16、32 或 64 字节，SBO 阈值通常只有几个指针大小（libstdc++ 8 字节、libc++ 24 字节、MSVC 48 字节）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
           <mxGeometry x="113" y="668" width="600" height="20" as="geometry" />
         </mxCell>
 

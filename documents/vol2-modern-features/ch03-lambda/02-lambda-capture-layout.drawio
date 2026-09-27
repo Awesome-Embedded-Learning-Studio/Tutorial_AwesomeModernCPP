@@ -31,7 +31,7 @@
         <mxCell id="vl-external" value="&lt;b&gt;外部变量 threshold&lt;/b&gt;&lt;br&gt;之后被改成 200——影响不到闭包里的副本" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=14;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
           <mxGeometry x="95" y="274" width="280" height="64" as="geometry" />
         </mxCell>
-        <mxCell id="vl-note" value="sizeof(is_high) == 4 字节——就是一个 int（无捕获时仅 1 字节）&lt;br&gt;is_high(150) 为 false：闭包里的副本还是 100" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=14;whiteSpace=wrap;" vertex="1" parent="1">
+        <mxCell id="vl-note" value="sizeof(is_high) == 4 字节——就是一个 int（无捕获时仅 1 字节）&lt;br&gt;is_high(150) 为 true：闭包里的副本还是 100" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=14;whiteSpace=wrap;" vertex="1" parent="1">
           <mxGeometry x="70" y="350" width="330" height="64" as="geometry" />
         </mxCell>
 

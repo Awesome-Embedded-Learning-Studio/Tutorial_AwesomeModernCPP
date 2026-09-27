@@ -1,0 +1,453 @@
+{
+ "version": 1,
+ "id": "constexpr-crc-rodata",
+ "title": "CRC 表：编译期算好，写进 .rodata",
+ "subtitle": "constexpr 实战 · make_crc32_table() → kCrc32Table",
+ "source": "projects/vol2-ch02-constexpr-crc/02-dsl/constexpr-crc-rodata.yaml",
+ "backend": "web",
+ "template": "process_flow",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#111521",
+  "bgRaised": "#171D2D",
+  "text": "#F4F6FB",
+  "muted": "#98A2B8",
+  "fill": "#66D9EF",
+  "fillEdge": "#2E9DC2",
+  "emptyEdge": "#43506A",
+  "grow": "#FFB86C",
+  "numOnFill": "#0B1E27",
+  "ok": "#72D49A",
+  "bad": "#FF6B7A",
+  "cardBg": "#1B2234"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "CRC 表：编译期算好，写进 .rodata",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 6.6048,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "constexpr 实战 · make_crc32_table() → kCrc32Table",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#98A2B8",
+   "mono": false,
+   "anchor": "middle",
+   "w": 6.248,
+   "h": 0.272
+  },
+  "show:compile": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "accent",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.112,
+   "w": 3.0376,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "编译期",
+     "w": 0.792
+    },
+    {
+     "text": "编译器跑生成函数",
+     "w": 2.112
+    }
+   ],
+   "cx": -5.25,
+   "cy": 1.05
+  },
+  "show:edge_1": {
+   "kind": "arrow",
+   "x1": -3.5512,
+   "y1": 1.05,
+   "x2": -3.3168,
+   "y2": 1.05,
+   "cx": -3.434,
+   "cy": 1.05,
+   "w": 0.2344,
+   "h": 0.0,
+   "label": {
+    "text": "生成 256 项",
+    "x": -3.434,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.2708,
+    "h": 0.2448
+   }
+  },
+  "show:table": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.848,
+   "w": 2.7736,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "kCrc32Table",
+     "w": 1.452
+    },
+    {
+     "text": "256 项全部算好",
+     "w": 1.848
+    }
+   ],
+   "cx": -1.75,
+   "cy": 1.05
+  },
+  "show:edge_2": {
+   "kind": "arrow",
+   "x1": -0.1832,
+   "y1": 1.05,
+   "x2": 0.1832,
+   "y2": 1.05,
+   "cx": 0.0,
+   "cy": 1.05,
+   "w": 0.3664,
+   "h": 0.0,
+   "label": {
+    "text": "写入二进制",
+    "x": 0.0,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.188,
+    "h": 0.2448
+   }
+  },
+  "show:rodata": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.848,
+   "w": 2.7736,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": ".rodata 只读段",
+     "w": 1.848
+    },
+    {
+     "text": "表写进目标文件",
+     "w": 1.848
+    }
+   ],
+   "cx": 1.75,
+   "cy": 1.05
+  },
+  "show:edge_3": {
+   "kind": "arrow",
+   "x1": 3.3168,
+   "y1": 1.05,
+   "x2": 3.5512,
+   "y2": 1.05,
+   "cx": 3.434,
+   "cy": 1.05,
+   "w": 0.2344,
+   "h": 0.0,
+   "label": {
+    "text": "启动即就位",
+    "x": 3.434,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.188,
+    "h": 0.2448
+   }
+  },
+  "show:run": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "success",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.112,
+   "w": 3.0376,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "运行时",
+     "w": 0.792
+    },
+    {
+     "text": "零初始化，只查表",
+     "w": 2.112
+    }
+   ],
+   "cx": 5.25,
+   "cy": 1.05
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "表在编译期生成，直接写进 .rodata",
+   "x": 0.0,
+   "y": 0.0882,
+   "fs": 0.24,
+   "color": "#FFB86C",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.992,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "运行时一行初始化代码都不用跑",
+   "x": 0.0,
+   "y": -0.4882,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.4352,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 3.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 2.4,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show compile",
+   "note": "",
+   "duration": 1.71,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:compile",
+     "cx": 0.0,
+     "cy": 0.4,
+     "t": 0.0,
+     "dur": 1.71
+    }
+   ]
+  },
+  {
+   "kind": "move",
+   "label": "move compile",
+   "note": "to [-5.25, 1.05]",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "move",
+     "target": "show:compile",
+     "frm": [
+      0.0,
+      0.4
+     ],
+     "to": [
+      -5.25,
+      1.05
+     ],
+     "t": 0.0,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show edge_1",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:edge_1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show table",
+   "note": "",
+   "duration": 2.07,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:table",
+     "cx": -1.75,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 2.07
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show edge_2",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:edge_2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show rodata",
+   "note": "",
+   "duration": 2.07,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:rodata",
+     "cx": 1.75,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 2.07
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show edge_3",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:edge_3",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show run",
+   "note": "",
+   "duration": 1.71,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:run",
+     "cx": 5.25,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 1.71
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.5s",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 10.85,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:compile",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:edge_1",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:table",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:edge_2",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:edge_3",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 1.5,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 4.25,
+     "dur": 2.03
+    }
+   ]
+  }
+ ]
+}

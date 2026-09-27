@@ -89,6 +89,8 @@ auto a = std::make_unique<Widget>(7);
 auto b = std::move(a);  // ownership changes hands: b takes over, a is left empty-handed
 ```
 
+`std::make_unique<Widget>(7)` may be your first encounter with it; what it does is not complicated: it builds a `Widget(7)` on the heap for you and hands the result to the returned `unique_ptr` to manage. It takes over the `new` so completely that you never touch a raw pointer — for this article we'll simply use it as the "created already managed" spelling, and leave the details for the next article.
+
 Put the two properties together—non-copyable, movable—and that is exclusive ownership's entire manifesto. Why ban copying? Copy an owning handle and you have two "masters", each believing the release is its own business; the ending is the same memory deleted twice. When we hand-wrote `FileHandle` in article 01, we `= delete`d the copy constructor to ward off exactly this accident, and we'll give it a dedicated look later.
 
 As for the movable half, reread it with the move constructor from the last chapter in mind. You remember what a move constructor does: it carries off the source object's pointer and leaves the source empty. Translated into the language of ownership, it is one sentence: ownership moved from source to target. After `std::move(a)` executes, `a` no longer owns anything; it is a valid empty shell—you can safely destruct it, and you can assign it a new value too. Last chapter we practiced how to write a move constructor; this article upgrades that into a question: **once this line has executed, who is responsible for releasing?** When you can answer without pausing to think, move semantics is truly in your hands.

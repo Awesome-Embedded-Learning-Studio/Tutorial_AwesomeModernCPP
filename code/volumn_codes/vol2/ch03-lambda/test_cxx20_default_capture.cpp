@@ -1,6 +1,6 @@
 /**
  * @file test_cxx20_default_capture.cpp
- * @brief 验证 C++20 中 [=] 不再隐式捕获 this
+ * @brief 验证 C++20 中 [=] 隐式捕获 this 被弃用（编译器发警告）
  *
  * 编译命令:
  *   g++ -std=c++17 -O0 -o test_cxx17 test_cxx20_default_capture.cpp
@@ -8,7 +8,7 @@
  *
  * 运行:
  *   ./test_cxx17  # C++17 中 [=] 隐式捕获 this（有警告）
- *   ./test_cxx20  # C++20 中 [=] 不再隐式捕获 this（有警告）
+ *   ./test_cxx20  # C++20 中 [=] 隐式捕获 this 被弃用（发警告，行为暂兼容）
  */
 
 #include <iostream>
@@ -16,7 +16,7 @@
 class Test {
     int x = 42;
 
-public:
+  public:
     auto get_lambda_cxx11_17() {
         // C++11/14/17: [=] 隐式捕获 this
         // 实际上是通过 this->x 访问成员变量
@@ -24,9 +24,9 @@ public:
     }
 
     auto get_lambda_cxx20_safe() {
-        // C++20: [=] 不再隐式捕获 this
+        // C++20: [=] 隐式捕获 this 已被弃用
         // 需要显式指定 this 或 *this
-        return [=, this]() { return x; };  // 显式捕获 this
+        return [=, this]() { return x; }; // 显式捕获 this
     }
 
     auto get_lambda_cxx20_by_value() {
@@ -50,8 +50,8 @@ int main() {
     std::cout << "[*this] 按值捕获对象: " << lam3() << "\n";
 
     std::cout << "\n=== 验证结论 ===\n";
-    std::cout << "1. C++20 中 [=] 不再隐式捕获 this 指针\n";
-    std::cout << "2. C++20 需要显式使用 [=, this] 或 [=, *this]\n";
+    std::cout << "1. C++20 弃用了 [=] 隐式捕获 this 的写法（警告，行为暂兼容）\n";
+    std::cout << "2. 想显式捕获就用 [=, this] 或 [=, *this]\n";
     std::cout << "3. [this] 捕获指针（有悬垂风险）\n";
     std::cout << "4. [*this] 按值捕获整个对象（安全但有复制开销）\n";
 

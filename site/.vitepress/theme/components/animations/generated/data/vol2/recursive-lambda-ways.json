@@ -1,0 +1,1247 @@
+{
+ "version": 1,
+ "id": "recursive-lambda-ways",
+ "title": "没有名字的 lambda，怎么调用自己？",
+ "subtitle": "三种递归写法的调用链与实测开销",
+ "source": "projects/vol2-ch03-recursive-lambda/02-dsl/recursive-lambda-ways.yaml",
+ "backend": "web",
+ "template": "freeform",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#111521",
+  "bgRaised": "#171D2D",
+  "text": "#F4F6FB",
+  "muted": "#98A2B8",
+  "fill": "#66D9EF",
+  "fillEdge": "#2E9DC2",
+  "emptyEdge": "#43506A",
+  "grow": "#FFB86C",
+  "numOnFill": "#0B1E27",
+  "ok": "#72D49A",
+  "bad": "#FF6B7A",
+  "cardBg": "#1B2234"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "没有名字的 lambda，怎么调用自己？",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 6.88,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "三种递归写法的调用链与实测开销",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#98A2B8",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.96,
+   "h": 0.272
+  },
+  "show:card_fn": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 3.168,
+   "w": 4.0936,
+   "h": 1.734,
+   "rows": [
+    {
+     "text": "方式 1 std::function",
+     "w": 2.64
+    },
+    {
+     "text": "std::function<int(int)>",
+     "w": 3.036
+    },
+    {
+     "text": "factorial = [&factorial]",
+     "w": 3.168
+    }
+   ],
+   "cx": -3.9,
+   "cy": -0.2
+  },
+  "show:rl_f1": {
+   "kind": "rowlist",
+   "w": 4.7616,
+   "h": 5.29,
+   "noteX": 3.8856,
+   "entries": [
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 1.584,
+      "w": 2.5096,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "factorial(5)",
+        "w": 1.584
+       }
+      ]
+     },
+     "note": {
+      "text": "n=5 过 wrapper",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.752,
+      "h": 0.272
+     },
+     "tone": "bad"
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 1.584,
+      "w": 2.5096,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "factorial(4)",
+        "w": 1.584
+       }
+      ]
+     },
+     "note": {
+      "text": "n=4 又过一次",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.552,
+      "h": 0.272
+     },
+     "tone": "bad"
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 1.584,
+      "w": 2.5096,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "factorial(3)",
+        "w": 1.584
+       }
+      ]
+     },
+     "note": {
+      "text": "n=3 又过一次",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.552,
+      "h": 0.272
+     },
+     "tone": "bad"
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 1.584,
+      "w": 2.5096,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "factorial(2)",
+        "w": 1.584
+       }
+      ]
+     },
+     "note": {
+      "text": "n=2 又过一次",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.552,
+      "h": 0.272
+     },
+     "tone": "bad"
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 1.584,
+      "w": 2.5096,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "factorial(1)",
+        "w": 1.584
+       }
+      ]
+     },
+     "note": {
+      "text": "触底，返回 1",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.568,
+      "h": 0.272
+     },
+     "tone": "ok"
+    }
+   ],
+   "rowHs": [
+    0.778,
+    0.778,
+    0.778,
+    0.778,
+    0.778
+   ],
+   "cx": 2.8,
+   "cy": -0.2
+  },
+  "show:a1": {
+   "kind": "arrow",
+   "x1": 0.2392,
+   "y1": -0.2,
+   "x2": -1.6732,
+   "y2": -0.2,
+   "cx": -0.717,
+   "cy": -0.2,
+   "w": 1.9124,
+   "h": 0.0,
+   "label": {
+    "text": "每层递归都经它间接调用",
+    "x": -0.717,
+    "y": 0.1524,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 2.6136,
+    "h": 0.2448
+   }
+  },
+  "show:card_m1": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 3.168,
+   "w": 4.0936,
+   "h": 1.734,
+   "rows": [
+    {
+     "text": "factorial(5) 得 120",
+     "w": 2.508
+    },
+    {
+     "text": "100 万次 factorial(10)",
+     "w": 2.904
+    },
+    {
+     "text": "std::function ~18,700 µs",
+     "w": 3.168
+    }
+   ],
+   "cx": 0.6,
+   "cy": -1.85
+  },
+  "show:card_y": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.772,
+   "w": 3.6976,
+   "h": 1.734,
+   "rows": [
+    {
+     "text": "方式 2 Y 组合子",
+     "w": 1.98
+    },
+    {
+     "text": "y(n) 转发 f_(self, n)",
+     "w": 2.772
+    },
+    {
+     "text": "self 接住 y 本身",
+     "w": 2.112
+    }
+   ],
+   "cx": -3.9,
+   "cy": -0.2
+  },
+  "show:rl_f2": {
+   "kind": "rowlist",
+   "w": 5.0256,
+   "h": 5.29,
+   "noteX": 4.0176,
+   "entries": [
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 1.584,
+      "w": 2.5096,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "factorial(5)",
+        "w": 1.584
+       }
+      ]
+     },
+     "note": {
+      "text": "转发 f_(self, 5)",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 2.016,
+      "h": 0.272
+     },
+     "tone": "ok"
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 0.924,
+      "w": 1.8496,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "self(4)",
+        "w": 0.924
+       }
+      ]
+     },
+     "note": {
+      "text": "直接调，可内联",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.848,
+      "h": 0.272
+     },
+     "tone": "ok"
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 0.924,
+      "w": 1.8496,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "self(3)",
+        "w": 0.924
+       }
+      ]
+     },
+     "note": {
+      "text": "直接调，可内联",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.848,
+      "h": 0.272
+     },
+     "tone": "ok"
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 0.924,
+      "w": 1.8496,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "self(2)",
+        "w": 0.924
+       }
+      ]
+     },
+     "note": {
+      "text": "直接调，可内联",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.848,
+      "h": 0.272
+     },
+     "tone": "ok"
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 0.924,
+      "w": 1.8496,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "self(1)",
+        "w": 0.924
+       }
+      ]
+     },
+     "note": {
+      "text": "触底，返回 1",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.568,
+      "h": 0.272
+     },
+     "tone": "ok"
+    }
+   ],
+   "rowHs": [
+    0.778,
+    0.778,
+    0.778,
+    0.778,
+    0.778
+   ],
+   "cx": 2.8,
+   "cy": -0.2
+  },
+  "show:a2": {
+   "kind": "arrow",
+   "x1": -1.8712,
+   "y1": -0.2,
+   "x2": 0.1072,
+   "y2": -0.2,
+   "cx": -0.882,
+   "cy": -0.2,
+   "w": 1.9784,
+   "h": 0.0,
+   "label": {
+    "text": "self 引用随调用下传",
+    "x": -0.882,
+    "y": 0.1524,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 2.2212,
+    "h": 0.2448
+   }
+  },
+  "show:card_m2": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.64,
+   "w": 3.5656,
+   "h": 1.734,
+   "rows": [
+    {
+     "text": "同样 100 万次调用",
+     "w": 2.244
+    },
+    {
+     "text": "Y 组合子 ~130-250 µs",
+     "w": 2.64
+    },
+    {
+     "text": "约快 75-145 倍",
+     "w": 1.848
+    }
+   ],
+   "cx": 0.6,
+   "cy": -1.85
+  },
+  "show:card_fib": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.904,
+   "w": 3.8296,
+   "h": 1.734,
+   "rows": [
+    {
+     "text": "方式 3 自身传递",
+     "w": 1.98
+    },
+    {
+     "text": "[](auto&& self, int n)",
+     "w": 2.904
+    },
+    {
+     "text": "fib(fib, 10) 得 55",
+     "w": 2.376
+    }
+   ],
+   "cx": -3.9,
+   "cy": -0.2
+  },
+  "show:rl_f3": {
+   "kind": "rowlist",
+   "w": 5.2536,
+   "h": 3.034,
+   "noteX": 4.1976,
+   "entries": [
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 1.584,
+      "w": 2.5096,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "fib(fib, 10)",
+        "w": 1.584
+       }
+      ]
+     },
+     "note": {
+      "text": "调用方手动传自身",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 2.112,
+      "h": 0.272
+     },
+     "tone": "ok"
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 1.716,
+      "w": 2.6416,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "self(self, 9)",
+        "w": 1.716
+       }
+      ]
+     },
+     "note": {
+      "text": "体内接着传 self",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.94,
+      "h": 0.272
+     },
+     "tone": "ok"
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 1.716,
+      "w": 2.6416,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "self(self, 8)",
+        "w": 1.716
+       }
+      ]
+     },
+     "note": {
+      "text": "两条子链同走法",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.848,
+      "h": 0.272
+     },
+     "tone": "ok"
+    }
+   ],
+   "rowHs": [
+    0.778,
+    0.778,
+    0.778
+   ],
+   "cx": 2.8,
+   "cy": -0.2
+  },
+  "show:a3": {
+   "kind": "arrow",
+   "x1": -1.8052,
+   "y1": -0.2,
+   "x2": -0.0068,
+   "y2": -0.2,
+   "cx": -0.906,
+   "cy": -0.2,
+   "w": 1.7984,
+   "h": 0.0,
+   "label": {
+    "text": "把自身当参数传下去",
+    "x": -0.906,
+    "y": 0.1524,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 2.1384,
+    "h": 0.2448
+   }
+  },
+  "show:card_m3": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.508,
+   "w": 3.4336,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "写的是 fib(fib, 10)",
+     "w": 2.508
+    },
+    {
+     "text": "而不是 fib(10)",
+     "w": 1.848
+    }
+   ],
+   "cx": 0.6,
+   "cy": -1.85
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "std::function 好写，每层递归付一次间接调用",
+   "x": 0.0,
+   "y": 0.3764,
+   "fs": 0.24,
+   "color": "#FFB86C",
+   "mono": false,
+   "anchor": "middle",
+   "w": 6.5184,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "Y 组合子下传自身引用，整条链可内联",
+   "x": 0.0,
+   "y": -0.2,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.3664,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "自身传递省掉辅助类，代价是 fib(fib, 10)",
+   "x": 0.0,
+   "y": -0.7764,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 6.0528,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 3.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 2.4,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_fn",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_fn",
+     "cx": -3.9,
+     "cy": -0.2,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.4s",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show rl_f1",
+   "note": "",
+   "duration": 6.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "rowlist_show",
+     "target": "show:rl_f1",
+     "cx": 2.8,
+     "cy": -0.2,
+     "t": 0.0,
+     "dur": 6.0
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a1",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.0s",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide a1",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:a1",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide rl_f1",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:rl_f1",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_m1",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_m1",
+     "cx": 0.6,
+     "cy": -1.85,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.4s",
+   "duration": 1.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide card_fn",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:card_fn",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide card_m1",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:card_m1",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_y",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_y",
+     "cx": -3.9,
+     "cy": -0.2,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.4s",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show rl_f2",
+   "note": "",
+   "duration": 6.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "rowlist_show",
+     "target": "show:rl_f2",
+     "cx": 2.8,
+     "cy": -0.2,
+     "t": 0.0,
+     "dur": 6.0
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a2",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.0s",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide a2",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:a2",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide rl_f2",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:rl_f2",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_m2",
+   "note": "",
+   "duration": 2.79,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_m2",
+     "cx": 0.6,
+     "cy": -1.85,
+     "t": 0.0,
+     "dur": 2.79
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.4s",
+   "duration": 1.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide card_y",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:card_y",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide card_m2",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:card_m2",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_fib",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_fib",
+     "cx": -3.9,
+     "cy": -0.2,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.4s",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show rl_f3",
+   "note": "",
+   "duration": 3.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "rowlist_show",
+     "target": "show:rl_f3",
+     "cx": 2.8,
+     "cy": -0.2,
+     "t": 0.0,
+     "dur": 3.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a3",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a3",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.0s",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide a3",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:a3",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide rl_f3",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:rl_f3",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_m3",
+   "note": "",
+   "duration": 2.67,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_m3",
+     "cx": 0.6,
+     "cy": -1.85,
+     "t": 0.0,
+     "dur": 2.67
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.4s",
+   "duration": 1.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 15.7,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:card_fib",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:card_m3",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 0.6,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 3.35,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 6.1,
+     "dur": 2.4
+    }
+   ]
+  }
+ ]
+}
