@@ -1,0 +1,151 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Pimpl Deleter Path" id="pimpl-deleter-path">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="删除器住哪：unique_ptr 与 shared_ptr 的析构路径对照" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="26" width="600" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- 左列：unique_ptr 版（删除器长在类型里，类内 = default 被拒） -->
+        <mxCell id="left_header" value="unique_ptr 版：删除器长在类型里" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#c00000;" vertex="1" parent="1">
+          <mxGeometry x="70" y="64" width="310" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="left_sizeof" value="sizeof = 8 字节（和裸指针一样大）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="70" y="98" width="310" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="left_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="70" y="140" width="310" height="116" as="geometry" />
+        </mxCell>
+        <mxCell id="left_label" value="unique_ptr&lt;Impl&gt; 对象" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="146" width="290" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="left_ptr" value="Impl* ptr" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="90" y="172" width="270" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="left_ptr_bytes" value="8 字节" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="296" y="172" width="56" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="left_deleter" value="删除器 default_delete&lt;Impl&gt;：空基类优化（EBO）内嵌 0 字节，调用编译期直连" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#888888;strokeWidth=1;dashed=1;fillColor=#f2f2f2;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="90" y="206" width="270" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="l_step1" value="类内 = default：析构在 main.cpp（Impl 不完整处）被实例化" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#FFFFFF;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="70" y="276" width="310" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="l_step2" value="~unique_ptr() 要现场生成 delete impl_ 的机器码：要算 sizeof(Impl)、要调 ~Impl()" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#FFFFFF;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="70" y="340" width="310" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="l_step3" value="Impl 只有前向声明，两样都给不出——生成失败，编译被拒" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#FFFFFF;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="70" y="404" width="310" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="l_assert" value="libstdc++ 安的检查：static_assert(sizeof(_Tp)&gt;0)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="70" y="488" width="310" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="l_verdict" value="✗ 类内 ~Widget() = default 被编译器拒掉" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#c00000;strokeWidth=2;fillColor=#ffe6e6;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="70" y="540" width="310" height="38" as="geometry" />
+        </mxCell>
+
+        <!-- 右列：shared_ptr 版（删除器藏进堆上控制块，类内 = default 通过） -->
+        <mxCell id="right_header" value="shared_ptr 版：删除器藏进堆上控制块" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#2E7D32;" vertex="1" parent="1">
+          <mxGeometry x="447" y="64" width="310" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="right_sizeof" value="sizeof = 16 字节（两根指针，翻倍）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="447" y="98" width="310" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="right_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="447" y="140" width="310" height="116" as="geometry" />
+        </mxCell>
+        <mxCell id="right_label" value="shared_ptr&lt;Impl&gt; 对象" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="457" y="146" width="290" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="right_ptr" value="Impl* ptr（指向对象）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="467" y="172" width="270" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="right_ptr_bytes" value="8 字节" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="681" y="172" width="48" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="right_cb" value="ControlBlock* cb（指向控制块）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="467" y="206" width="270" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="right_cb_bytes" value="8 字节" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="681" y="206" width="48" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="t_obj" value="&lt;b&gt;Impl 对象&lt;/b&gt;（堆上）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=2;fillColor=#E8F5E9;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="617" y="276" width="140" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="cb_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="447" y="326" width="310" height="98" as="geometry" />
+        </mxCell>
+        <mxCell id="cb_title" value="控制块（堆上）：删除器住在这里" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontStyle=1;fontColor=#1565C0;" vertex="1" parent="1">
+          <mxGeometry x="457" y="332" width="290" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="cb_counts" value="引用计数：strong_count / weak_count" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=1;fillColor=#BBDEFB;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="467" y="354" width="270" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="cb_del" value="&lt;b&gt;销毁动作 delete impl_&lt;/b&gt;（类型擦除记进此处）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=1;fillColor=#E3F2FD;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="467" y="382" width="270" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="make_note" value="销毁动作在构造点生成并记入：make_shared&lt;Impl&gt;() 所在的 cpp，Impl 在那里是完整的" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=11;fontColor=#555555;spacing=2;" vertex="1" parent="1">
+          <mxGeometry x="447" y="432" width="310" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="r_step" value="析构只做：引用计数减一，归零就把销毁动作转交给控制块——全程不需要 sizeof(Impl)" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#FFFFFF;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="447" y="476" width="310" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="r_verdict" value="✓ 类内 ~Widget() = default 全部通过" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=2;fillColor=#e6f4ea;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="447" y="540" width="310" height="38" as="geometry" />
+        </mxCell>
+
+        <mxCell id="source_note" value="sizeof 数值为文章实测：x86_64 Linux，GCC 16" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="113" y="594" width="600" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- 连线 -->
+        <mxCell id="e_ptr" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#2E7D32;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="737" y="186" as="sourcePoint" />
+            <mxPoint x="687" y="276" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_cb" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#1565C0;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="560" y="256" as="sourcePoint" />
+            <mxPoint x="560" y="326" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_l1" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=1.5;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="225" y="320" as="sourcePoint" />
+            <mxPoint x="225" y="340" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_l2" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=1.5;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="225" y="384" as="sourcePoint" />
+            <mxPoint x="225" y="404" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_l3" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=1.5;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="225" y="448" as="sourcePoint" />
+            <mxPoint x="225" y="468" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_l4" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=1.5;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="225" y="512" as="sourcePoint" />
+            <mxPoint x="225" y="540" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_r1" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=1.5;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="602" y="520" as="sourcePoint" />
+            <mxPoint x="602" y="540" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

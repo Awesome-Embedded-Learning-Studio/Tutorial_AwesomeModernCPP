@@ -100,14 +100,17 @@ int main() {
 }
 ```
 
-笔者跑出来的结果：
+这个 benchmark 就在下面（Timer 类和两个测试函数都在同一个源文件里），点「动手试一试」直接跑——绝对数字随机器不同，量级差距才是重点：
 
-```text
-std::string::substr:   38.7 ms (sink=5000000)
-string_view::substr:    0.4 ms (sink=5000000)
-```
+<OnlineCompilerDemo
+  title="动手测量：substr 的堆分配代价"
+  source-path="code/examples/vol2/43_substr_benchmark.cpp"
+  description="在线对比两种 substr。笔者一次运行：std::string::substr 38.7 ms，string_view::substr 0.4 ms（sink 都是 5000000），将近百倍差距。"
+  run-options="-O2 -std=c++17"
+  allow-run
+/>
 
-将近 100 倍的差距。原因很简单：`std::string::substr` 做了 100000 次堆分配和字符拷贝（每次 50 字节），而 `string_view::substr` 只做了 100000 次指针加法和长度调整。这个差距在字符串更长、调用更频繁的场景下会更加明显。
+将近 100 倍的差距（笔者机器上的实测，您的倍数会有出入，但方向不会变）。原因很简单：`std::string::substr` 做了 100000 次堆分配和字符拷贝（每次 50 字节），而 `string_view::substr` 只做了 100000 次指针加法和长度调整。这个差距在字符串更长、调用更频繁的场景下会更加明显。
 
 当然，这个测试是刻意构造的极端场景。在实际项目中，如果你只偶尔做一次 substr，这点差距你可能根本感知不到。但如果你在写一个解析器，需要频繁地对输入字符串做分割、提取、跳过等操作，那 `string_view` 的优势就会非常突出。
 
@@ -197,14 +200,15 @@ void bench_param_passing() {
 }
 ```
 
-笔者跑出来的结果：
+这个 benchmark 就在下面，点「动手试一试」直接跑。笔者一次运行的四个数字（第 2 行比第 1 行慢了约 8 倍，第 4 行又比第 2 行快了约 3 倍）：
 
-```text
-const string& + string arg:  12.3 ms
-const string& + char* arg:   95.7 ms   ← 慢了 8 倍！
-string_view   + string arg:  12.1 ms
-string_view   + char* arg:   35.2 ms   ← 快了 3 倍
-```
+<OnlineCompilerDemo
+  title="动手测量：传参签名的隐藏成本"
+  source-path="code/examples/vol2/44_param_passing_benchmark.cpp"
+  description="在线测量四种传参组合。笔者一次运行：const string& + char* 最慢（95.7 ms，隐式构造百万个临时 string），string_view + char* 35.2 ms，传 string 时两者持平（约 12 ms）。"
+  run-options="-O2 -std=c++17"
+  allow-run
+/>
 
 把三种签名的传参机制和上面四个数字画在一张图里：
 

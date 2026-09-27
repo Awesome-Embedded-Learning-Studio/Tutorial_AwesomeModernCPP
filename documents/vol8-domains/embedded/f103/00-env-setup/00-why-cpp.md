@@ -151,7 +151,7 @@ void _fini(void) {}
 
 两个空函数，来历咱们直接读注释：链接选项 `-nostartfiles` 把 C 运行时默认的 `_init`/`_fini` 丢了，而 newlib 里负责发起全局构造的 `__libc_init_array` 偏要调用它们，不给这两个空桩，链接直接失败。
 
-咱们构建的口径也统一：同一份 CMake 工具链文件（里面明写着 `-fno-exceptions -fno-rtti`，第三秤要用到这个细节）、同一个链接脚本（C8T6 的 64K Flash / 20K SRAM 内存布局）、统一 Release（`-O3 -DNDEBUG`）。
+咱们构建的条件也统一：同一份 CMake 工具链文件（里面明写着 `-fno-exceptions -fno-rtti`，第三秤要用到这个细节）、同一个链接脚本（C8T6 的 64K Flash / 20K SRAM 内存布局）、统一 Release（`-O3 -DNDEBUG`）。
 
 **好了！各位坐起来！** 我要开始，卑微的说差异了。一号男嘉宾选择了直接梭哈寄存器！呱！是嵌入式高手口也！
 
@@ -341,7 +341,7 @@ arm-none-eabi-nm build/virtual | grep _ZTV    # _ZTV = vtable 符号前缀
 80001a2: 4798        blx  r3             ; 间接调用
 ```
 
-这次 vtable 真的进固件了（`_ZTV7GpioPin`，躺在 Flash 里），每个对象头部多出 4 字节的 vptr，每次调用多两次内存读外加间接跳转。这份固件 text 涨到 5964，data 从 12 涨到 96，咱们多付的这些字节，就是虚函数真实的开销。
+这次 vtable 真的进固件了（`_ZTV7GpioPin`，就在 Flash 里），每个对象头部多出 4 字节的 vptr，每次调用多两次内存读外加间接跳转。这份固件 text 涨到 5964，data 从 12 涨到 96，咱们多付的这些字节，就是虚函数真实的开销。
 
 所以"C++ 就是 OOP"这句话在嵌入式语境下有两处错了，而且笔者认为错的很离谱！
 
@@ -384,7 +384,7 @@ note: constraints not satisfied
 
 ## 欸欸！我几句话要说哈，别下一篇~
 
-最后交代两点口径。正文所有数字出自 Release 构建（`-O3 -DNDEBUG`）；要是您手动指定别的级别或干脆不开优化，数字会变——**零开销抽象的"零"以开优化为前提**，这条咱们在后面性能相关的站里正面展开。裸寄存器版和 OOP 版这两份，库里的 `examples/` 没有现成的，您照着正文贴的骨架和差异片段，往自己的工程里加两个 target 就能复原，正好当这站的动手题。
+最后交代两点前提。正文所有数字出自 Release 构建（`-O3 -DNDEBUG`）；要是您手动指定别的级别或干脆不开优化，数字会变——**零开销抽象的"零"以开优化为前提**，这条咱们在后面性能相关的站里正面展开。裸寄存器版和 OOP 版这两份，库里的 `examples/` 没有现成的，您照着正文贴的骨架和差异片段，往自己的工程里加两个 target 就能复原，正好当这站的动手题。
 
 <ReferenceCard title="参考文献">
   <ReferenceItem
@@ -393,7 +393,7 @@ note: constraints not satisfied
     title="The Best Embedded Programming Languages for Engineers Now"
     :year="2024"
     url="https://www.beningo.com/the-best-embedded-programming-languages-for-engineers-now/"
-    chapter="行业调查口径:C 驱动全球超过 60% 的嵌入式项目"
+    chapter="调查数据:C 驱动全球超过 60% 的嵌入式项目"
   />
   <ReferenceItem
     :id="2"

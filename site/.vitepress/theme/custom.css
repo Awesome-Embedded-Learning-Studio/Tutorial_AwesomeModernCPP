@@ -201,17 +201,96 @@ html[data-font-size='xxlarge'] {
   white-space: nowrap;
 }
 
-/* 宽屏下 VitePress 会把布局居中的外侧留白塞进 sidebar 的 padding-left：
-   viewport 越宽，导航树离左边越远（1920px 下约 212px），形成一大片无效空白。
-   sidebar 外框宽度和右边缘仍交给 VitePress 计算，只收回内容与站点标题的动态缩进，
-   因而正文位置、侧栏拖拽手柄和居中布局都不受影响。重复类名用于覆盖组件 scoped CSS。 */
-@media (min-width: 1440px) {
+/* VitePress 的 link 是 flex item，但默认 min-width:auto；长标题会按固有宽度把 link 撑出
+   item，最后被侧栏粗暴裁切，看不到省略号。把收缩约束补在整条 flex 链上。 */
+.VPSidebar .item,
+.VPSidebar .link {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.VPSidebar .link {
+  overflow: hidden;
+}
+
+/* --vp-layout-max-width(1560)高于 VitePress 自带的 1440 断点。若不纠正，
+   1440–1559px 区间会套用负的居中余量，把侧栏无端压窄约 60px。 */
+@media (min-width: 1440px) and (max-width: 1559px) {
   .VPSidebar.VPSidebar {
     padding-left: 32px;
+    width: var(--vp-sidebar-width);
+  }
+
+  .VPContent.VPContent.has-sidebar {
+    padding-right: 0;
+    padding-left: var(--vp-sidebar-width);
   }
 
   .VPNavBar.has-sidebar .title.title {
     padding-left: 32px;
+    width: var(--vp-sidebar-width);
+  }
+
+  .VPNavBar.has-sidebar .content.content {
+    padding-right: 32px;
+    padding-left: var(--vp-sidebar-width);
+  }
+
+  .VPNavBar.has-sidebar .divider.divider,
+  .VPLocalNav.VPLocalNav.has-sidebar {
+    padding-left: var(--vp-sidebar-width);
+  }
+}
+
+/* 超宽屏把导航列画成贴近视口左缘的浮动 panel。
+   VitePress 默认把 (viewport - layout) / 2 全堆在左侧栏之前/之内；2K/4K 屏上会留下
+   数百像素无意义空白。超宽屏不再居中整套三栏：左栏固定在 12px，正文从导航轨道
+   右侧开始，剩余空间交给正文内部布局。1560px 以下保留原生贴边侧栏。 */
+@media (min-width: 1560px) {
+  .VPSidebar.VPSidebar {
+    top: calc(var(--vp-layout-top-height, 0px) + var(--vp-nav-height) + 12px);
+    bottom: 12px;
+    left: 12px;
+    padding: 20px 16px 40px;
+    width: calc(var(--vp-sidebar-width) - 24px);
+    border: 1px solid var(--vp-c-divider);
+    border-radius: 12px;
+    background-color: var(--vp-sidebar-bg-color);
+    box-shadow: 0 8px 28px rgba(42, 36, 32, 0.08);
+  }
+
+  /* 原 curtain 用来在整页侧栏滚动时遮住顶栏下方内容；浮动 panel 自己有裁切边界。 */
+  .VPSidebar .curtain {
+    display: none;
+  }
+
+  .VPContent.VPContent.has-sidebar {
+    padding-right: 0;
+    padding-left: var(--vp-sidebar-width);
+  }
+
+  .VPNavBar.has-sidebar .title.title {
+    padding-left: 28px;
+    width: var(--vp-sidebar-width);
+  }
+
+  .VPNavBar.has-sidebar .content.content {
+    padding-right: 32px;
+    padding-left: var(--vp-sidebar-width);
+  }
+
+  .VPNavBar.has-sidebar .divider.divider,
+  .VPLocalNav.VPLocalNav.has-sidebar {
+    padding-left: var(--vp-sidebar-width);
+  }
+
+  .rs-handle--left {
+    top: calc(var(--vp-layout-top-height, 0px) + var(--vp-nav-height) + 12px);
+    bottom: 12px;
+  }
+
+  .dark .VPSidebar.VPSidebar {
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
   }
 }
 
@@ -1770,6 +1849,102 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
   display: block;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
   background: var(--vp-c-bg-elv);
+  border-radius: 4px;
+}
+
+/* ================================================================
+   Doc Image Lightbox(文章图片点击放大)
+   扫描器: theme/image-client.ts(给 .vp-doc img 加 doc-img--zoomable)
+   模态:   theme/components/ImageLightbox.vue(Teleport 到 body)
+   样式抄 mermaid-lightbox 段:变量照用,暗色自动适配。
+   ================================================================ */
+
+/* 正文里被接管的图片:光标提示可放大,键盘可达性 outline */
+.doc-img--zoomable {
+  cursor: zoom-in;
+}
+
+.doc-img--zoomable:focus-visible {
+  outline: 2px solid var(--vp-c-brand-1);
+  outline-offset: 2px;
+}
+
+.image-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 12, 8, 0.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.image-lightbox__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--vp-c-bg-soft);
+  border-bottom: 1px solid var(--vp-c-border);
+  color: var(--vp-c-text-2);
+}
+
+.image-lightbox__btn {
+  appearance: none;
+  border: 1px solid var(--vp-c-border);
+  border-radius: 6px;
+  background: var(--vp-c-bg-elv);
+  color: var(--vp-c-text-1);
+  font-size: 13px;
+  line-height: 1;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.image-lightbox__btn:hover,
+.image-lightbox__btn:focus-visible {
+  color: var(--vp-c-brand-1);
+  border-color: var(--vp-c-brand-1);
+  outline: none;
+}
+
+.image-lightbox__close {
+  margin-left: auto;
+}
+
+.image-lightbox__hint {
+  font-size: 12px;
+  color: var(--vp-c-text-3);
+  margin-left: 8px;
+}
+
+.image-lightbox__stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 32px;
+}
+
+.image-lightbox__target {
+  display: inline-block;
+  touch-action: none; /* panzoom 自己管 pointer,关掉浏览器默认触摸手势 */
+  user-select: none;
+}
+
+/* 不设 background:透明 PNG 靠深色遮罩衬底(与 GitHub 行为一致);
+   max-* 是 naturalWidth=0(Firefox 无固有尺寸 svg / 加载失败)时的兜底,
+   正常路径走 JS 设的显式像素宽高。 */
+.image-lightbox__target img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
   border-radius: 4px;
 }
 

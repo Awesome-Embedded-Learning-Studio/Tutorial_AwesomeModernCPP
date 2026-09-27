@@ -1,0 +1,157 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="GPIO Pin Internal Circuit" id="gpio-pin-anatomy">
+    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="640" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="一个 GPIO 引脚的内部电路（RM0008 §9.1 框图翻译版）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=17;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="16" width="540" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Power rails -->
+        <mxCell id="vdd_rail" value="" style="html=1;strokeColor=#C62828;strokeWidth=2.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="50" y="80" as="sourcePoint" />
+            <mxPoint x="790" y="80" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vdd_label" value="VDD 3.3V" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=13;fontStyle=1;fontColor=#C62828;" vertex="1" parent="1">
+          <mxGeometry x="50" y="52" width="100" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="vss_rail" value="" style="html=1;strokeColor=#455A64;strokeWidth=2.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="50" y="520" as="sourcePoint" />
+            <mxPoint x="790" y="520" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vss_label" value="VSS (GND)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=13;fontStyle=1;fontColor=#455A64;" vertex="1" parent="1">
+          <mxGeometry x="50" y="530" width="100" height="22" as="geometry" />
+        </mxCell>
+
+        <!-- ============ Output branch: MOS pair (x=250) ============ -->
+        <mxCell id="vdd_pmos" value="" style="html=1;strokeColor=#1B5E20;strokeWidth=2;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="250" y="80" as="sourcePoint" />
+            <mxPoint x="250" y="150" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="pmos" value="&lt;b&gt;P-MOS 上管&lt;/b&gt;&lt;br&gt;导通 → 引脚接 VDD" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1B5E20;strokeWidth=2;fillColor=#E8F5E9;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="185" y="150" width="130" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="pmos_nmos" value="" style="html=1;strokeColor=#1B5E20;strokeWidth=2;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="250" y="196" as="sourcePoint" />
+            <mxPoint x="250" y="340" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="nmos" value="&lt;b&gt;N-MOS 下管&lt;/b&gt;&lt;br&gt;导通 → 引脚接 VSS" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=2;fillColor=#E3F2FD;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="185" y="340" width="130" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="nmos_vss" value="" style="html=1;strokeColor=#1565C0;strokeWidth=2;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="250" y="386" as="sourcePoint" />
+            <mxPoint x="250" y="520" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ODR / BSRR write control -->
+        <mxCell id="odr" value="&lt;b&gt;ODR / BSRR&lt;/b&gt;&lt;br&gt;（写）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#6A1B9A;strokeWidth=2;fillColor=#F3E5F5;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="30" y="195" width="130" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="odr_pmos" value="栅极" style="html=1;strokeColor=#6A1B9A;strokeWidth=1.5;dashed=1;endArrow=block;endFill=1;fontSize=10;fontColor=#6A1B9A;" edge="1" parent="1" source="odr" target="pmos">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="odr_nmos" value="栅极" style="html=1;strokeColor=#6A1B9A;strokeWidth=1.5;dashed=1;endArrow=block;endFill=1;fontSize=10;fontColor=#6A1B9A;exitX=0.5;exitY=1;" edge="1" parent="1" source="odr" target="nmos">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ============ Pull-up / pull-down branch (x=370, dashed = software switch) ============ -->
+        <mxCell id="vdd_pullup" value="" style="html=1;strokeColor=#E65100;strokeWidth=1.5;dashed=1;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="370" y="80" as="sourcePoint" />
+            <mxPoint x="370" y="150" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="pullup" value="&lt;b&gt;弱上拉&lt;/b&gt;&lt;br&gt;~40kΩ" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#E65100;strokeWidth=1.5;dashed=1;fillColor=#FFF3E0;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="315" y="150" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="pullup_node" value="" style="html=1;strokeColor=#E65100;strokeWidth=1.5;dashed=1;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="370" y="190" as="sourcePoint" />
+            <mxPoint x="370" y="295" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="pulldown" value="&lt;b&gt;弱下拉&lt;/b&gt;&lt;br&gt;~40kΩ" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#E65100;strokeWidth=1.5;dashed=1;fillColor=#FFF3E0;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="315" y="400" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="pulldown_node" value="" style="html=1;strokeColor=#E65100;strokeWidth=1.5;dashed=1;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="370" y="295" as="sourcePoint" />
+            <mxPoint x="370" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="pulldown_vss" value="" style="html=1;strokeColor=#E65100;strokeWidth=1.5;dashed=1;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="370" y="440" as="sourcePoint" />
+            <mxPoint x="370" y="520" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="pull_note" value="虚线 = 软件接通/断开&lt;br&gt;（F1：CNF=10 时启用，上/下由 ODR 位选）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#E65100;" vertex="1" parent="1">
+          <mxGeometry x="390" y="460" width="200" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ============ Pin node ============ -->
+        <mxCell id="pin_bus" value="" style="html=1;strokeColor=#37474F;strokeWidth=2.5;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="250" y="295" as="sourcePoint" />
+            <mxPoint x="620" y="295" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="pin_dot" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#37474F;strokeColor=#37474F;" vertex="1" parent="1">
+          <mxGeometry x="514" y="284" width="22" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="pin_label" value="引脚 Pin" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontStyle=1;fontColor=#37474F;" vertex="1" parent="1">
+          <mxGeometry x="482" y="318" width="90" height="22" as="geometry" />
+        </mxCell>
+
+        <!-- ============ Protection diodes (above pin) ============ -->
+        <mxCell id="diode" value="&lt;b&gt;保护二极管 ×2&lt;/b&gt;&lt;br&gt;钳位到 VDD / VSS" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#B71C1C;strokeWidth=1.5;fillColor=#FFEBEE;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="455" y="140" width="160" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="diode_vdd" value="" style="html=1;strokeColor=#B71C1C;strokeWidth=1.5;dashed=1;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="535" y="140" as="sourcePoint" />
+            <mxPoint x="535" y="80" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="diode_pin" value="" style="html=1;strokeColor=#B71C1C;strokeWidth=1.5;dashed=1;endArrow=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="525" y="284" as="sourcePoint" />
+            <mxPoint x="525" y="186" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ============ Input path: Schmitt -> IDR ============ -->
+        <mxCell id="schmitt" value="&lt;b&gt;施密特触发器&lt;/b&gt;&lt;br&gt;带迟滞的门槛" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#4A148C;strokeWidth=2;fillColor=#F3E5F5;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="620" y="272" width="160" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="schmitt_idr" value="" style="html=1;strokeColor=#4A148C;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="700" y="318" as="sourcePoint" />
+            <mxPoint x="700" y="392" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="idr" value="&lt;b&gt;输入锁存 → IDR&lt;/b&gt;&lt;br&gt;（读）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#4A148C;strokeWidth=2;fillColor=#F3E5F5;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="620" y="392" width="160" height="46" as="geometry" />
+        </mxCell>
+
+        <!-- ============ Bottom note ============ -->
+        <mxCell id="bottom_note" value="CNF / MODE 四位决定哪条路上岗：输出走左边两只 MOS 管（推挽/开漏），&lt;br&gt;输入走右边施密特触发器；上下拉 ~40kΩ 只在输入模式接通，输出模式两只管子直接驱动" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontColor=#37474F;" vertex="1" parent="1">
+          <mxGeometry x="60" y="565" width="700" height="46" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

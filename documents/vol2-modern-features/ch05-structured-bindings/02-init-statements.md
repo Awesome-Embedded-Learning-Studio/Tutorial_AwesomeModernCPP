@@ -163,13 +163,15 @@ int dispatch(std::string_view input) {
 }
 ```
 
-`"start"_hash` 是编译期常量，能当 case 标签；运行时拿输入算 `hash_string`，再分发。GCC 16.1.1 实测：
+`"start"_hash` 是编译期常量，能当 case 标签；运行时拿输入算 `hash_string`，再分发。完整程序就在下面，点「动手试一试」直接跑：
 
-```text
-dispatch("start")  = 1
-dispatch("status") = 3
-dispatch("reboot") = 0
-```
+<OnlineCompilerDemo
+  title="动手验证：字符串哈希分发"
+  source-path="code/examples/vol2/38_hash_dispatch.cpp"
+  description="在线运行哈希分发：start/status 各命中自己的 case，reboot 落进 default 返回 0。"
+  run-options="-std=c++17"
+  allow-run
+/>
 
 得提醒一句：哈希把无限种输入压进有限范围，理论上必然碰撞，两个不同的串算出同一个哈希，就会落进错误的 case。要的是精确匹配，命中之后还得拿原串再比一次。
 
@@ -211,13 +213,15 @@ if (LockTracker lock; false) {
 std::puts("已离开 if/else 块");
 ```
 
-```text
-进入 if/else 块
-  >> 锁获取
-else 分支执行中（此时锁仍被持有）
-  << 锁释放
-已离开 if/else 块
-```
+这份追踪程序就在下面，点「动手试一试」直接跑：
+
+<OnlineCompilerDemo
+  title="动手验证：锁覆盖整个 if/else"
+  source-path="code/examples/vol2/39_lock_scope_tracker.cpp"
+  description="在线观察锁的释放时机：<< 锁释放 排在 else 分支执行之后、离开 if/else 块之前——else 也在持锁状态下跑。"
+  run-options="-std=c++17"
+  allow-run
+/>
 
 `<< 锁释放` 排在 `else 分支执行中` 之后、`已离开 if/else 块` 之前，说明锁覆盖了整个 `if/else`，else 跑的时候锁还没放。要是只想在 if 里持锁、else 用不着锁，这种写法就把锁的范围带大了，得换更细的写法。
 
@@ -343,10 +347,15 @@ if (auto [it, ok] = m.insert({1, "ONE"}); ok) {
 }
 ```
 
-```text
-if   分支: Inserted three
-else 分支: Existing one (新值 ONE 未覆盖)
-```
+这份演示程序就在下面，点「动手试一试」直接跑：
+
+<OnlineCompilerDemo
+  title="动手验证：init 变量在 else 里也能用"
+  source-path="code/examples/vol2/40_insert_branch_demo.cpp"
+  description="在线验证：第一次插新 key 走 if，第二次插已存在的 key 走 else——两个分支里 it 都拿得到，insert 失败也不覆盖旧值。"
+  run-options="-std=c++17"
+  allow-run
+/>
 
 第一次插新 key 走 if，第二次插已存在的 key 走 else，`it` 在两个分支里都拿得到，还顺带看出 insert 失败时新值不会覆盖旧值。
 

@@ -65,7 +65,8 @@ const textFam = {
       const a = c.D.actors[id]
       if (!a || a.kind !== 'text') continue
       c.prim.push({ tag: 'text', x: a.x, y: a.y, fs: a.fs, fill: a.color,
-                    ff: a.mono ? MONO : SANS, op, text: a.text })
+                    ff: a.mono ? MONO : SANS, op, text: a.text,
+                    role: id === 'title' ? 'title' : id === 'sub' ? 'subtitle' : 'copy' })
     }
   },
 }
@@ -306,17 +307,27 @@ const annotFam = {
          视觉即"空框在上、代码行在下"。线上 12 动画的 code 卡均如此,
          golden 首录即固化(不变≠对), v1/v2 同错故对拍绿(等价≠正确)。
          v2 侧 emit_annot 同步修; 回归锁: card_containment.test.js */
+      const variant = a.variant || 'default'
+      const tone = variant === 'accent' ? c.P.fill
+        : variant === 'success' ? c.P.ok
+        : variant === 'danger' ? c.P.bad
+        : variant === 'muted' ? c.P.muted : c.P.emptyEdge
+      const headTone = variant === 'default' ? c.P.text : tone
       c.prim.push({ tag: 'rect', x: cx - a.w / 2, y: cy - a.h / 2, w: a.w,
-                    h: a.h, stroke: c.P.emptyEdge, sw: 0.02, op, rx: true })
+                    h: a.h, fill: c.P.cardBg, fillOp: 0.96,
+                    stroke: tone, sw: variant === 'default' ? 0.018 : 0.026,
+                    op, rx: true, role: 'card' })
       const top = cy + a.h / 2 - 0.26
       for (let li = 0; li < a.rows.length; li++) {
         const ln = a.rows[li]
         const yy = top - a.lh / 2 - li * a.pitch
         c.prim.push({ tag: 'text',
                x: cx - a.w / 2 + 0.26 + a.gutW + 0.30 + ln.w / 2,
-               y: yy, fs: a.fs, fill: c.P.text, ff: MONO, op, text: ln.text })
+               y: yy, fs: a.fs, fill: li === 0 ? headTone : c.P.text,
+               ff: MONO, op, text: ln.text, role: li === 0 ? 'code-head' : 'code' })
         c.prim.push({ tag: 'text', x: cx - a.w / 2 + 0.26 + a.gutW / 2, y: yy,
-               fs: a.fs * 0.8, fill: c.P.muted, ff: MONO, op, text: String(li + 1) })
+               fs: a.fs * 0.8, fill: c.P.muted, ff: MONO, op, text: String(li + 1),
+               role: 'gutter' })
       }
     }
     const emitBars = (a, cx, cy, op) => {
@@ -378,11 +389,11 @@ const annotFam = {
                       x1: a.x1 + dx, y1: a.y1 + dy,
                       x2: a.x1 + (a.x2 - a.x1) * g + dx,
                       y2: a.y1 + (a.y2 - a.y1) * g + dy,
-                      color: c.P.fill, sw: 0.03, op })
+                      color: c.P.fill, sw: 0.03, op, role: 'flow-arrow' })
         if (a.label) {
           c.prim.push({ tag: 'text', x: a.label.x + dx, y: a.label.y + dy,
                         fs: a.label.fs, fill: c.P.muted, ff: SANS, op,
-                        text: a.label.text })
+                        text: a.label.text, role: 'arrow-label' })
         }
       }
     }
@@ -510,12 +521,18 @@ export function arrowHeadPts(it, fw, fh) {
 </script>
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick, useId } from 'vue'
 
 const props = defineProps({
   data: { type: Object, required: true },
   autoplay: { type: Boolean, default: true }
 })
+
+/* 同页可有多个播放器；SVG paint server id 必须实例唯一，避免渐变/滤镜串台。 */
+const instanceId = `amp-${useId().replace(/:/g, '')}`
+const paintIds = {
+  bg: `${instanceId}-bg`, grid: `${instanceId}-grid`, shadow: `${instanceId}-shadow`,
+}
 
 /* 数据校验: json 损坏时显式报错, 不静默白屏 */
 const dataErr = computed(() => {
@@ -552,6 +569,7 @@ function stepIndexOf(time) {
 const curStepIdx = computed(() => stepIndexOf(t.value))
 const curStep = computed(() => props.data.steps[curStepIdx.value])
 const progress = computed(() => (t.value / total.value) * 100)
+const stepNumber = computed(() => String(curStepIdx.value + 1).padStart(2, '0'))
 
 function play() {
   if (t.value >= total.value - 1e-3) t.value = 0
@@ -664,23 +682,45 @@ const RATES = [0.5, 1, 1.5, 2]
 </script>
 
 <template>
-  <figure ref="rootEl" class="amp">
+  <figure ref="rootEl" class="amp" :data-template="data.template || 'freeform'">
     <div v-if="dataErr" class="amp-err">{{ dataErr }}</div>
     <template v-else>
     <svg class="amp-svg" :viewBox="'0 0 ' + data.frame.w * 100 + ' ' + data.frame.h * 100"
          preserveAspectRatio="xMidYMid meet" role="img" :aria-label="data.title">
+      <defs>
+        <linearGradient :id="paintIds.bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" :stop-color="data.palette.bgRaised || data.palette.cardBg" />
+          <stop offset="0.52" :stop-color="data.palette.bg" />
+          <stop offset="1" stop-color="#0B0F18" />
+        </linearGradient>
+        <pattern :id="paintIds.grid" width="36" height="36" patternUnits="userSpaceOnUse">
+          <circle cx="1.5" cy="1.5" r="1.2" fill="#93A4C7" fill-opacity="0.11" />
+        </pattern>
+        <filter :id="paintIds.shadow" x="-20%" y="-30%" width="140%" height="170%">
+          <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#02050C"
+                        flood-opacity="0.42" />
+        </filter>
+      </defs>
       <rect x="0" y="0" :width="data.frame.w * 100" :height="data.frame.h * 100"
-            :fill="data.palette.bg" />
+            :fill="`url(#${paintIds.bg})`" />
+      <rect class="amp-grid" x="0" y="0" :width="data.frame.w * 100"
+            :height="data.frame.h * 100" :fill="`url(#${paintIds.grid})`" />
+      <circle class="amp-glow" :cx="data.frame.w * 78" :cy="data.frame.h * 5"
+              r="260" :fill="data.palette.fill" fill-opacity="0.07" />
       <!-- 修复(Bug 2): x 一律 + frame.w/2 原点平移(y 侧原本就有 frame.h/2 翻转) -->
       <template v-for="(it, k) in frame" :key="k">
         <text v-if="it.tag === 'text'" :x="(data.frame.w / 2 + it.x) * 100"
               :y="(data.frame.h / 2 - it.y) * 100"
               :font-size="it.fs * 100" :fill="it.fill" :font-family="it.ff"
+              :class="it.role ? `amp-${it.role}` : undefined"
               :opacity="it.op" text-anchor="middle" dominant-baseline="central">{{ it.text }}</text>
         <rect v-else-if="it.tag === 'rect'" :x="(data.frame.w / 2 + it.x) * 100"
               :y="(data.frame.h / 2 - it.y - it.h) * 100" :width="it.w * 100"
               :height="it.h * 100" :fill="it.fill || 'none'" :fill-opacity="it.fillOp || 0"
-              :stroke="it.stroke" :stroke-width="it.sw * 100" :opacity="it.op" />
+              :stroke="it.stroke" :stroke-width="it.sw * 100" :opacity="it.op"
+              :rx="it.rx ? 12 : undefined" :ry="it.rx ? 12 : undefined"
+              :class="it.role ? `amp-${it.role}` : undefined"
+              :filter="it.role === 'card' ? `url(#${paintIds.shadow})` : undefined" />
         <rect v-else-if="it.tag === 'ghost'" :x="(data.frame.w / 2 + it.x - it.s / 2) * 100"
               :y="(data.frame.h / 2 - it.y - it.s / 2) * 100" :width="it.s * 100"
               :height="it.s * 100" :opacity="it.op" :fill="data.palette.grow"
@@ -701,52 +741,162 @@ const RATES = [0.5, 1, 1.5, 2]
         <g v-else-if="it.tag === 'harrow'" :opacity="it.op">
           <line :x1="(data.frame.w / 2 + it.x1) * 100" :y1="(data.frame.h / 2 - it.y1) * 100"
                 :x2="(data.frame.w / 2 + it.x2) * 100" :y2="(data.frame.h / 2 - it.y2) * 100"
-                :stroke="it.color" :stroke-width="it.sw * 100" />
+                :stroke="it.color" :stroke-width="it.sw * 100" stroke-linecap="round" />
           <polygon :fill="it.color" :points="arrowHeadPts(it, data.frame.w, data.frame.h)" />
         </g>
       </template>
     </svg>
     <noscript><span class="amp-noscript">动画需要 JavaScript 支持。</span></noscript>
     <div class="amp-bar">
-      <button class="amp-btn" :title="playing ? '暂停' : '播放'" @click="toggle">{{ playing ? '❚❚' : '▶' }}</button>
-      <button class="amp-btn" title="上一步(语义 Step)" @click="stepBy(-1)">⏮</button>
-      <button class="amp-btn" title="下一步(语义 Step)" @click="stepBy(1)">⏭</button>
-      <div class="amp-progress" role="slider" tabindex="0"
-           :aria-valuemin="0" :aria-valuemax="Math.round(total)"
-           :aria-valuenow="Math.round(t)" aria-label="动画进度(左右方向键微调)"
-           @click="seek" @keydown.left.prevent="seekBy(-total * 0.05)"
-           @keydown.right.prevent="seekBy(total * 0.05)">
-        <div class="amp-fill" :style="{ width: progress + '%' }" />
-        <span v-for="(st, i) in data.steps.slice(1)" :key="i" class="amp-tick"
-              :style="{ left: (stepStarts[i + 1] / total) * 100 + '%' }" />
+      <div class="amp-transport">
+        <div class="amp-controls" role="group" aria-label="播放控制">
+          <button class="amp-btn amp-play" :title="playing ? '暂停' : '播放'"
+                  :aria-label="playing ? '暂停' : '播放'" @click="toggle">
+            <svg v-if="playing" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 4h3v12H5zm7 0h3v12h-3z" /></svg>
+            <svg v-else viewBox="0 0 20 20" aria-hidden="true"><path d="m6 4 10 6-10 6z" /></svg>
+          </button>
+          <button class="amp-btn" title="上一步（语义 Step）" aria-label="上一步" @click="stepBy(-1)">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4h2v12H4zm3 6 9-6v12z" /></svg>
+          </button>
+          <button class="amp-btn" title="下一步（语义 Step）" aria-label="下一步" @click="stepBy(1)">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m4 4 9 6-9 6zm10 0h2v12h-2z" /></svg>
+          </button>
+        </div>
+        <div class="amp-progress" role="slider" tabindex="0"
+             :aria-valuemin="0" :aria-valuemax="Math.round(total)"
+             :aria-valuenow="Math.round(t)" aria-label="动画进度（左右方向键微调）"
+             @click="seek" @keydown.left.prevent="seekBy(-total * 0.05)"
+             @keydown.right.prevent="seekBy(total * 0.05)">
+          <div class="amp-fill" :style="{ width: progress + '%' }" />
+          <span v-for="(st, i) in data.steps.slice(1)" :key="i" class="amp-tick"
+                :style="{ left: (stepStarts[i + 1] / total) * 100 + '%' }" />
+        </div>
+        <span class="amp-time">{{ fmtTime(t) }} / {{ fmtTime(total) }}</span>
       </div>
-      <span class="amp-label">{{ curStep.label }} · {{ fmtTime(t) }}/{{ fmtTime(total) }}</span>
-      <div class="amp-rates">
-        <button v-for="r in RATES" :key="r" class="amp-btn amp-rate"
-                :class="{ on: rate === r }" @click="rate = r">{{ r }}x</button>
+      <div class="amp-context">
+        <div class="amp-step"><span>STEP {{ stepNumber }}</span>{{ curStep.label }}</div>
+        <div class="amp-rates" role="group" aria-label="播放速度">
+          <button v-for="r in RATES" :key="r" class="amp-rate"
+                  :class="{ on: rate === r }" :aria-pressed="rate === r"
+                  @click="rate = r">{{ r }}×</button>
+        </div>
       </div>
     </div>
     </template>
   </figure>
 </template>
 <style scoped>
-.amp { max-width: 860px; margin: 1em auto; font-family: system-ui, sans-serif; }
-.amp-svg { width: 100%; height: auto; display: block; border-radius: 8px 8px 0 0; }
-.amp-bar { display: flex; align-items: center; gap: 6px; padding: 6px 8px;
-           background: #1e1e2a; border-radius: 0 0 8px 8px; color: #ECECE4; }
-.amp-btn { background: #2a2a3a; color: #ECECE4; border: none; border-radius: 6px;
-           padding: 4px 10px; cursor: pointer; font-size: 13px; }
-.amp-btn:hover { background: #3a3a4e; }
-.amp-rate.on { background: #5EC8E0; color: #0e2430; }
-.amp-progress { position: relative; flex: 1; height: 8px; background: #2a2a3a;
-                border-radius: 4px; cursor: pointer; }
-.amp-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px;
-            background: #5EC8E0; }
-.amp-tick { position: absolute; top: -2px; width: 1px; height: 12px; background: #9a9aad; }
-.amp-label { font-size: 12px; white-space: nowrap; color: #9a9aad; }
-.amp-rates { display: flex; gap: 2px; }
-.amp-noscript { color: #9a9aad; font-size: 13px; padding: 6px; }
-.amp-err { color: #e06c75; font-size: 13px; padding: 8px; background: #1e1e2a;
-           border-radius: 8px; font-family: Consolas, Menlo, monospace; }
-.amp-progress:focus { outline: 2px solid #5EC8E0; outline-offset: 2px; }
+.amp {
+  max-width: 900px;
+  margin: 1.4em auto;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, #66769a 38%, transparent);
+  border-radius: 16px;
+  background: #111521;
+  box-shadow: 0 18px 46px rgba(4, 8, 18, .22), 0 3px 10px rgba(4, 8, 18, .14);
+  font-family: Inter, "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+}
+.amp-svg { width: 100%; height: auto; display: block; }
+.amp-grid { pointer-events: none; }
+.amp-glow { filter: blur(56px); pointer-events: none; }
+.amp-title { font-weight: 750; letter-spacing: -.01em; }
+.amp-subtitle { letter-spacing: .02em; }
+.amp-card { vector-effect: non-scaling-stroke; }
+.amp-code-head { font-weight: 700; }
+.amp-gutter { opacity: .7; }
+.amp-arrow-label { font-weight: 600; letter-spacing: .02em; }
+.amp-bar {
+  display: grid;
+  gap: 10px;
+  padding: 11px 14px 12px;
+  color: #F4F6FB;
+  background: linear-gradient(180deg, #1A2132 0%, #151B29 100%);
+  border-top: 1px solid rgba(137, 154, 191, .16);
+}
+.amp-transport { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.amp-controls { display: flex; align-items: center; gap: 5px; }
+.amp-btn {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(136, 153, 189, .2);
+  border-radius: 9px;
+  color: #DDE4F2;
+  background: rgba(55, 66, 91, .58);
+  cursor: pointer;
+  transition: border-color .16s ease, background .16s ease, transform .16s ease;
+}
+.amp-btn svg { width: 15px; height: 15px; fill: currentColor; }
+.amp-btn:hover { border-color: rgba(102, 217, 239, .48); background: #35415B; }
+.amp-btn:active { transform: translateY(1px); }
+.amp-play { color: #0B1E27; border-color: transparent; background: #66D9EF; }
+.amp-play:hover { color: #08171D; background: #8BE7F6; }
+.amp-progress {
+  position: relative;
+  flex: 1;
+  height: 8px;
+  min-width: 90px;
+  border-radius: 999px;
+  background: #2A3348;
+  cursor: pointer;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .26);
+}
+.amp-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #45BED8, #77E4F5);
+  box-shadow: 0 0 12px rgba(102, 217, 239, .28);
+}
+.amp-fill::after {
+  position: absolute;
+  top: 50%;
+  right: -5px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #172031;
+  border-radius: 50%;
+  background: #D8F8FF;
+  transform: translateY(-50%);
+  content: "";
+}
+.amp-tick { position: absolute; top: 1px; width: 1px; height: 6px; background: rgba(220, 231, 248, .4); }
+.amp-time { min-width: 82px; color: #AEB8CC; font: 600 11px/1 Consolas, Menlo, monospace; text-align: right; }
+.amp-context { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-left: 106px; }
+.amp-step { min-width: 0; overflow: hidden; color: #C9D1E1; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.amp-step span { margin-right: 8px; color: #66D9EF; font: 700 10px/1 Consolas, Menlo, monospace; letter-spacing: .08em; }
+.amp-rates { display: flex; gap: 2px; padding: 2px; border-radius: 8px; background: rgba(7, 11, 20, .3); }
+.amp-rate {
+  padding: 4px 7px;
+  border: 0;
+  border-radius: 6px;
+  color: #8F9BB1;
+  background: transparent;
+  cursor: pointer;
+  font: 600 10px/1 system-ui, sans-serif;
+}
+.amp-rate:hover { color: #E7ECF5; }
+.amp-rate.on { color: #0B1E27; background: #66D9EF; }
+.amp-noscript { color: #98A2B8; font-size: 13px; padding: 8px; }
+.amp-err { color: #FF8190; font-size: 13px; padding: 12px; background: #1B2234;
+           font-family: Consolas, Menlo, monospace; }
+.amp-progress:focus-visible, .amp-btn:focus-visible, .amp-rate:focus-visible {
+  outline: 2px solid #66D9EF;
+  outline-offset: 3px;
+}
+@media (max-width: 640px) {
+  .amp { margin: 1em 0; border-radius: 12px; }
+  .amp-bar { padding: 9px 10px 10px; }
+  .amp-transport { gap: 7px; }
+  .amp-btn { width: 29px; height: 29px; border-radius: 8px; }
+  .amp-time { min-width: 72px; font-size: 10px; }
+  .amp-context { padding-left: 0; }
+  .amp-step { font-size: 11px; }
+  .amp-rate { padding: 4px 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .amp-btn { transition: none; }
+}
 </style>

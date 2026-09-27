@@ -10,15 +10,16 @@ translation:
 ---
 # Smart Pointers and RAII
 
-Manually managing resources (`new`/`delete`, `fopen`/`fclose`, `lock`/`unlock`) is a nightmare source of bugs for C++ programmers. The RAII (Resource Acquisition Is Initialization) principle tells us to bind resource acquisition to object construction, leave release to destructors, and let scope manage the lifetime for you. In this chapter, we first dive deep into RAII, then master the design philosophy and correct usage of `unique_ptr`, `shared_ptr`, and `weak_ptr` one by one, and finally see how custom deleters and scope guards handle more complex resource scenarios.
+Manually managing resources (`new`/`delete`, `fopen`/`fclose`, `lock`/`unlock`) is a nightmare source of bugs for C++ programmers. The RAII (Resource Acquisition Is Initialization) principle tells us to bind resource acquisition to object construction, leave release to destructors, and let scope manage the lifetime for you. In this chapter, we first dive deep into RAII, then establish the ownership model—exclusive, shared, and non-owning access, each in its place—then master the design philosophy and correct usage of `unique_ptr`, `shared_ptr`, and `weak_ptr` one by one, and finally see how custom deleters and scope guards handle more complex resource scenarios.
 
 ## Chapter Contents
 
 <ChapterNav variant="sub">
   <ChapterLink href="01-raii-deep-dive">Deep Dive into RAII: The Cornerstone of Resource Management</ChapterLink>
-  <ChapterLink href="02-unique-ptr">Understanding unique_ptr: Zero-Overhead Smart Pointer with Exclusive Ownership</ChapterLink>
-  <ChapterLink href="03-shared-ptr">Understanding shared_ptr: Shared Ownership and Reference Counting</ChapterLink>
-  <ChapterLink href="04-weak-ptr">weak_ptr and Circular References</ChapterLink>
-  <ChapterLink href="05-custom-deleter">Custom Deleters and Intrusive Reference Counting</ChapterLink>
-  <ChapterLink href="06-scope-guard">scope_guard and defer: Generic Scope Guards</ChapterLink>
+  <ChapterLink href="02-ownership-model">Resource Ownership: Exclusive, Shared, and Non-Owning</ChapterLink>
+  <ChapterLink href="03-unique-ptr">Understanding unique_ptr: Zero-Overhead Smart Pointer with Exclusive Ownership</ChapterLink>
+  <ChapterLink href="04-shared-ptr">Understanding shared_ptr: Shared Ownership and Reference Counting</ChapterLink>
+  <ChapterLink href="05-weak-ptr">weak_ptr and Circular References</ChapterLink>
+  <ChapterLink href="06-custom-deleter">Custom Deleters and Intrusive Reference Counting</ChapterLink>
+  <ChapterLink href="07-scope-guard">scope_guard and defer: Generic Scope Guards</ChapterLink>
 </ChapterNav>

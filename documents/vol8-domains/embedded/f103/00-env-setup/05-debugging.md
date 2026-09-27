@@ -31,7 +31,7 @@ related:
 
 我相信大家如果是从上位机来的，或者是在编写交叉平台无关的程序的时候，应该都是调试过程序的。比如说，您使用IDE摁下调试键，调试器Attach到了运行的程序，程序也就在您指定的位置上停下来。这个指定的位置，叫断点（也就是咱们开发中的经典吐槽：“不是，这个哥们啥情况，下个断点都不会吗？”）。上位机开发中我们时常这样看问题并且处理他们。
 
-> 官方的说——在电脑上调普通程序，您按 F5 就能打断点，是因为调试器（GDB 这类）和被调试的程序住在同一台机器上，操作系统给了它一套控制接口，停进程、读内存，直接伸手就够得着。
+> 官方的说——在电脑上调普通程序，您按 F5 就能打断点，是因为调试器（GDB 这类）和被调试的程序在同一台机器上，操作系统给了它一套控制接口，停进程、读内存，直接伸手就够得着。
 
 但是还是有问题。我们不是上位机开发！我们是要部署到我们的单片机上的，他不跑在我们的操作系统上。GDB 伸不过去，中间需要一个翻译：**GDB Server**。它监听一个 TCP 端口，把 GDB 发来的"第 373 行停一下""把变量 tickstart 给我"翻译成对目标 CPU 的操作。
 
@@ -80,11 +80,11 @@ sysbus LoadELF $bin
 machine StartGdbServer 3333
 ```
 
-建机器、装 bluepill 板级户口、加载固件，其实真正的新面孔只有最后一句 `machine StartGdbServer 3333`——给机器开一个 GDB 服务，等电脑这头来连。终端保持开着别关：`--console` 模式下 Renode 跟着终端的 stdin 活着，想塞进脚本里自动化跑的话，重定向了 stdin 后，它加载完就自己退，日志里看不出半点异常。真跑起来是这样：
+建机器、装 bluepill 板级描述、加载固件，其实真正的新面孔只有最后一句 `machine StartGdbServer 3333`——给机器开一个 GDB 服务，等电脑这头来连。终端保持开着别关：`--console` 模式下 Renode 跟着终端的 stdin 活着，想塞进脚本里自动化跑的话，重定向了 stdin 后，它加载完就自己退，日志里看不出半点异常。真跑起来是这样：
 
 ![blinky_gdb 一条龙的真终端：Renode 加载固件、SVD 就位、GDB 服务在 3333 待命](./server_startup.png)
 
-日志里那行 `Loading block of 7536 bytes length`——7536 正是 Debug 构建的 text，加载的是哪份固件，字节数自己会说话，咱们看一眼就能确认口径没拿错。这个 target 还有个聪明的地方：CMake 用生成器表达式把**当前 build 目录的** ELF 喂给 renode，您从 build-debug 调它加载的就是 Debug 固件、从 build 调就是 Release，调试器跟模拟器各拿各的 ELF 这种幽灵没有出生的机会。
+日志里那行 `Loading block of 7536 bytes length`——7536 正是 Debug 构建的 text，加载的是哪份固件，字节数自己会说话，咱们看一眼就能确认没拿错固件。这个 target 还有个聪明的地方：CMake 用生成器表达式把**当前 build 目录的** ELF 喂给 renode，您从 build-debug 调它加载的就是 Debug 固件、从 build 调就是 Release，调试器跟模拟器各拿各的 ELF 这种幽灵没有出生的机会。
 
 ## 喂！把 VSCode 连上去
 
@@ -112,7 +112,7 @@ machine StartGdbServer 3333
 }
 ```
 
-咱们认三个关键字段：`servertype: "external"` 告诉 Cortex-Debug"GDB Server 我自己管着呢，你别另起"；`gdbTarget` 就是 Renode 那个 3333 端口；`executable` 指向 Debug 构建的 ELF——为什么必须是它，下面构建口径那一节专门说。
+咱们认三个关键字段：`servertype: "external"` 告诉 Cortex-Debug"GDB Server 我自己管着呢，你别另起"；`gdbTarget` 就是 Renode 那个 3333 端口；`executable` 指向 Debug 构建的 ELF——为什么必须是它，下面讲构建差异的那一节专门说。
 
 然后您按 F5。头一回连上，DEBUG CONSOLE 里大概会刷两行怪话：
 
@@ -155,7 +155,7 @@ Program stopped, probably due to a reset and/or halt issued by debugger
 
 对的，你看我们调试用的是build-debug，因为我们的行号断点要靠 ELF 里的 `-g` 调试信息（也就是addr2line中行号和地址的双向映射）：变量表、行号表，调试器把"这格栈是哪个变量""这条指令对应源码第几行"对上号，全靠它。而咱们日常的默认构建按 Release 走，全开优化、不带 `-g`：ELF 里有函数符号，往函数上打断点还使得；变量和行号干脆没有。您要是拿默认构建的固件连进来，行号断点找不到落点、变量面板空空如也——这不是操作错了，是那份 ELF 里压根没记这些。
 
-所以调试的时候咱们用 Debug 口径，另起一个 build 目录，两边互不干扰：
+所以调试的时候咱们用 Debug 构建，另起一个 build 目录，两边互不干扰：
 
 ```bash
 cmake -B build-debug -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/arch/stm32f103c8t6.cmake -DCMAKE_BUILD_TYPE=Debug
@@ -171,7 +171,7 @@ cmake --build build-debug --target blinky
 
 7536 对 5500，多出来的两千字节就是不开优化的代价。
 
-需要注意的是函数的地址排布两个口径不一样，Release 版 `HAL_Delay` 在 `0x08000350`，Debug 版在 `0x080004cc`。**讨论地址、贴输出，永远先说清楚是哪份构建**——两份 ELF 混着看，看到的现象全是在骗您。您在断点里看到的超长文件路径也是 `-g` 干的：编译时机器上的绝对路径被它原样记进 ELF，所以每个人看到的都是自己机器的样子，不用奇怪。
+需要注意的是函数的地址排布两份构建里不一样，Release 版 `HAL_Delay` 在 `0x08000350`，Debug 版在 `0x080004cc`。**讨论地址、贴输出，永远先说清楚是哪份构建**——两份 ELF 混着看，看到的现象全是在骗您。您在断点里看到的超长文件路径也是 `-g` 干的：编译时机器上的绝对路径被它原样记进 ELF，所以每个人看到的都是自己机器的样子，不用奇怪。
 
 什么时候用哪副面孔，现在可以说清楚了：
 
@@ -182,7 +182,7 @@ cmake --build build-debug --target blinky
 | 变量 | 无 | 参数、局部变量全在 |
 | 用途 | 日常构建、体积对照 | 抓虫、单步、看现场 |
 
-> 笔者提示一下：您抓完虫记得切回默认口径再上秤，拿 Debug 版的 7536 去谈零开销，是给自己挖坑。
+> 笔者提示一下：您抓完虫记得切回默认构建再上秤，拿 Debug 版的 7536 去谈零开销，是给自己挖坑。
 
 ## 断点本身也有物理课
 
@@ -198,11 +198,11 @@ cmake --build build-debug --target blinky
 
 ## 排错速查
 
-连不上 3333，先看 Renode 活着没：那两行 "GDB server ... started on port :3333" 在不在日志里；再看端口被谁占着，`ss -tln | grep 3333` 一查便知。断点下了不命中，先核对调试器加载的 ELF 和机器里跑的是不是同一份：04 篇那个"跑的还是别人的固件"的幽灵，在调试器里同样存在；再考虑口径：
+连不上 3333，先看 Renode 活着没：那两行 "GDB server ... started on port :3333" 在不在日志里；再看端口被谁占着，`ss -tln | grep 3333` 一查便知。断点下了不命中，先核对调试器加载的 ELF 和机器里跑的是不是同一份：04 篇那个"跑的还是别人的固件"的幽灵，在调试器里同样存在；再考虑构建类型：
 
-Release 构建里函数可能被优化器揉进调用者，行号断点找不到落点，换 Debug 口径再试。至于 F5 按下去毫无动静、调试器报 "Cannot execute this command while the target running" 这类话，是仿真压根没开起来：这台 Renode（1.17）默认 GDB 一连上就自动开跑，但 `machine StartGdbServer` 有个 autostart 参数，笔者把它显式掰成 `false` 试过，连上时 CPU 停在 `0x00000000`，等到来生也等不来断点。遇到这种情况，在 Renode 终端里敲一句 `start` 立竿见影，这一句顶多白敲，不敲就要赌版本默认行为。
+Release 构建里函数可能被优化器揉进调用者，行号断点找不到落点，换 Debug 构建再试。至于 F5 按下去毫无动静、调试器报 "Cannot execute this command while the target running" 这类话，是仿真压根没开起来：这台 Renode（1.17）默认 GDB 一连上就自动开跑，但 `machine StartGdbServer` 有个 autostart 参数，笔者把它显式掰成 `false` 试过，连上时 CPU 停在 `0x00000000`，等到来生也等不来断点。遇到这种情况，在 Renode 终端里敲一句 `start` 立竿见影，这一句顶多白敲，不敲就要赌版本默认行为。
 
-到这儿，咱们手里的观测家伙就全了：采样判据看结果，断点调试看过程，两副构建口径按需切换。模拟器这套练熟了，真板子上的流程结构一模一样，只是 GDB Server 那个位置换成 OpenOCD 加调试探针。有板子的朋友，06 篇见；没板子的也不亏，接下来 07 篇咱们先让编辑器看懂这套交叉编译的代码，跳转补全一条龙。
+到这儿，咱们手里的观测家伙就全了：采样判据看结果，断点调试看过程，两副构建按需切换。模拟器这套练熟了，真板子上的流程结构一模一样，只是 GDB Server 那个位置换成 OpenOCD 加调试探针。有板子的朋友，06 篇见；没板子的也不亏，接下来 07 篇咱们先让编辑器看懂这套交叉编译的代码，跳转补全一条龙。
 
 <ReferenceCard title="参考文献">
   <ReferenceItem

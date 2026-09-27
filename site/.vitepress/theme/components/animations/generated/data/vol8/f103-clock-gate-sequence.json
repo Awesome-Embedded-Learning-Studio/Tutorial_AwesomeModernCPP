@@ -1,0 +1,542 @@
+{
+ "version": 1,
+ "id": "f103-clock-gate-sequence",
+ "title": "GPIOC 的时钟闸门",
+ "subtitle": "APB2ENR.bit4：先合闸，再访问",
+ "source": "projects/vol8-f103-led/02-dsl/f103-clock-gate-sequence.yaml",
+ "backend": "web",
+ "template": "process_flow",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#111521",
+  "bgRaised": "#171D2D",
+  "text": "#F4F6FB",
+  "muted": "#98A2B8",
+  "fill": "#66D9EF",
+  "fillEdge": "#2E9DC2",
+  "emptyEdge": "#43506A",
+  "grow": "#FFB86C",
+  "numOnFill": "#0B1E27",
+  "ok": "#72D49A",
+  "bad": "#FF6B7A",
+  "cardBg": "#1B2234"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "GPIOC 的时钟闸门",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.3024,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "APB2ENR.bit4：先合闸，再访问",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#98A2B8",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.6,
+   "h": 0.272
+  },
+  "show:read": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "accent",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.584,
+   "w": 2.5096,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "读 APB2ENR",
+     "w": 1.32
+    },
+    {
+     "text": "保留其他电闸",
+     "w": 1.584
+    }
+   ],
+   "cx": -3.5,
+   "cy": 1.05
+  },
+  "show:edge_1": {
+   "kind": "arrow",
+   "x1": -2.0652,
+   "y1": 1.05,
+   "x2": -1.3028,
+   "y2": 1.05,
+   "cx": -1.684,
+   "cy": 1.05,
+   "w": 0.7624,
+   "h": 0.0,
+   "label": {
+    "text": "ldr",
+    "x": -1.684,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.3348,
+    "h": 0.2448
+   }
+  },
+  "show:setbit": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.32,
+   "w": 2.2456,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "置 bit 4",
+     "w": 1.056
+    },
+    {
+     "text": "IOPCEN = 1",
+     "w": 1.32
+    }
+   ],
+   "cx": 0.0,
+   "cy": 1.05
+  },
+  "show:edge_2": {
+   "kind": "arrow",
+   "x1": 1.3028,
+   "y1": 1.05,
+   "x2": 2.0652,
+   "y2": 1.05,
+   "cx": 1.684,
+   "cy": 1.05,
+   "w": 0.7624,
+   "h": 0.0,
+   "label": {
+    "text": "orr",
+    "x": 1.684,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.3348,
+    "h": 0.2448
+   }
+  },
+  "show:write": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.584,
+   "w": 2.5096,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "写回 APB2ENR",
+     "w": 1.584
+    },
+    {
+     "text": "GPIOC 合闸",
+     "w": 1.32
+    }
+   ],
+   "cx": 3.5,
+   "cy": 1.05
+  },
+  "show:edge_3": {
+   "kind": "arrow",
+   "x1": 3.5,
+   "y1": 0.242,
+   "x2": 3.5,
+   "y2": -0.742,
+   "cx": 3.5,
+   "cy": -0.25,
+   "w": 0.0,
+   "h": 0.984,
+   "label": {
+    "text": "str",
+    "x": 3.1826,
+    "y": -0.25,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.3348,
+    "h": 0.2448
+   }
+  },
+  "show:delay": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "muted",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.584,
+   "w": 2.5096,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "假读一次",
+     "w": 1.056
+    },
+    {
+     "text": "等待时钟稳定",
+     "w": 1.584
+    }
+   ],
+   "cx": 3.5,
+   "cy": -1.55
+  },
+  "show:edge_4": {
+   "kind": "arrow",
+   "x1": 2.0652,
+   "y1": -1.55,
+   "x2": 1.6328,
+   "y2": -1.55,
+   "cx": 1.849,
+   "cy": -1.55,
+   "w": 0.4324,
+   "h": 0.0,
+   "label": {
+    "text": "tmpreg",
+    "x": 1.849,
+    "y": -1.1976,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.6696,
+    "h": 0.2448
+   }
+  },
+  "show:access": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "success",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.98,
+   "w": 2.9056,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "访问 GPIOC",
+     "w": 1.32
+    },
+    {
+     "text": "CRH / BSRR 生效",
+     "w": 1.98
+    }
+   ],
+   "cx": 0.0,
+   "cy": -1.55
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "端口地址正确，不等于外设已经能工作",
+   "x": 0.0,
+   "y": 0.0882,
+   "fs": 0.24,
+   "color": "#FFB86C",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.3856,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "先开钟、再确认读回，最后访问 GPIOC",
+   "x": 0.0,
+   "y": -0.4882,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.328,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 2.67,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 1.67
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 1.67,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show read",
+   "note": "",
+   "duration": 1.83,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:read",
+     "cx": 0.0,
+     "cy": 0.4,
+     "t": 0.0,
+     "dur": 1.83
+    }
+   ]
+  },
+  {
+   "kind": "move",
+   "label": "move read",
+   "note": "to [-3.5, 1.05]",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "move",
+     "target": "show:read",
+     "frm": [
+      0.0,
+      0.4
+     ],
+     "to": [
+      -3.5,
+      1.05
+     ],
+     "t": 0.0,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show edge_1",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:edge_1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show setbit",
+   "note": "",
+   "duration": 1.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:setbit",
+     "cx": 0.0,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 1.95
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show edge_2",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:edge_2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show write",
+   "note": "",
+   "duration": 1.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:write",
+     "cx": 3.5,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 1.95
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show edge_3",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:edge_3",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show delay",
+   "note": "",
+   "duration": 1.47,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:delay",
+     "cx": 3.5,
+     "cy": -1.55,
+     "t": 0.0,
+     "dur": 1.47
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show edge_4",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:edge_4",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show access",
+   "note": "",
+   "duration": 2.31,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:access",
+     "cx": 0.0,
+     "cy": -1.55,
+     "t": 0.0,
+     "dur": 2.31
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.5s",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 12.94,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:edge_1",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:setbit",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:edge_2",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:write",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:edge_3",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:delay",
+     "t": 1.5,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:edge_4",
+     "t": 1.8,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 2.1,
+     "dur": 2.39
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 4.84,
+     "dur": 2.4
+    }
+   ]
+  }
+ ]
+}

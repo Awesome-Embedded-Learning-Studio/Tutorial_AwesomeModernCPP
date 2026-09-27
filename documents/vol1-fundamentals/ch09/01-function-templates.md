@@ -10,7 +10,7 @@ difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
-- 从继承到模板
+- 为什么需要模板
 reading_time_minutes: 16
 tags:
 - cpp-modern
@@ -21,13 +21,21 @@ title: 函数模板
 ---
 # 函数模板：同一份逻辑，别复制三遍
 
-上一篇咱们看清了虚函数多态的边界：类型本身在变的时候，继承帮不上忙，得把类型当参数交给编译器。这一篇咱们就动手写第一个模板，从最常用的函数模板开始。假设咱们现在要写一个 `max` 函数，它接受两个值，返回较大的那个。思路很直接——两行代码就能搞定。但如果咱们的程序里同时需要比较 `int`、`double` 和 `std::string`，那就要写三个版本：一个 `max(int, int)`，一个 `max(double, double)`，一个 `max(std::string, std::string)`。三个版本的逻辑完全一样，都是 `(a > b) ? a : b`，区别仅仅是参数类型不同。
+总算，我们可以开始正式的入门函数模板了。简单的复习一下：**类型本身在变的时候，继承帮不上忙，把类型当参数交给编译器就行**。
 
-这种"逻辑相同、类型不同"的重复代码，在实际项目里到处都是：排序、查找、交换、打印数组，几乎每个通用操作都会碰到。C++ 提供了一种机制，让咱们只写一次逻辑，编译器就能自动为不同类型生成对应的函数版本，这就是函数模板（function template），上一篇咱们真跑过的 `smallest` 就是它。现在咱们把这套机制拆开讲清楚。
+说是这样说，但是好像还没落地实际，对吧。那好。咱们就从模板的最简单的一种使用入手，**也就是大名鼎鼎的函数模板，开始！**
+
+无需假设，您现在就是干！起手写一个 `max_value` 函数吧，笔者要求，它接受两个值，返回较大的那个。
+
+> 插一个缓冲，您顿一下，思考一下这个问题，判断是不是用模板解决，最为合理呢？
+>
+> 第二个缓冲是：之所以不叫 `max`，是因为 `std::max` 已经在标准库里了，直接同名容易在某些编译器上引起冲突——尤其是 Windows 上 `<windows.h>` 会定义一个 `max` 宏，那才是真正的血压拉满。之前被耍过，这也是为什么笔者真的很不喜欢Windows。越举的事情，太多！
+
+其实思路很直接，两行代码就能搞定。但如果咱们的程序里同时需要比较 `int`、`double` 和 `std::string`，那就要写三个版本：一个 `max_value(int, int)`，一个 `max_value(double, double)`，一个 `max_value(std::string, std::string)`。三个版本的逻辑完全一样，都是 `(a > b) ? a : b`，区别仅仅是参数类型不同。合理性非常必要了，来走起！
 
 ## template\<typename T\>——泛型的起点
 
-咱们先从最简单的例子入手，写一个泛型的 `max_value` 函数（之所以不叫 `max`，是因为 `std::max` 已经在标准库里了，直接同名容易在某些编译器上引起冲突——尤其是 Windows 上 `<windows.h>` 会定义一个 `max` 宏，那才是真正的血压拉满）。
+其实并不困难：
 
 ```cpp
 template <typename T>
@@ -37,11 +45,17 @@ T max_value(T a, T b)
 }
 ```
 
-`template <typename T>` 告诉编译器：这是一个模板，`T` 是一个类型参数。紧跟其后的函数定义中，所有出现 `T` 的地方在实例化时都会被替换成实际类型。当咱们调用 `max_value(3, 5)` 时，编译器推导出 `T` 是 `int`，于是生成一个 `int max_value(int, int)` 的函数版本。调用 `max_value(1.0, 2.0)` 则生成 `double max_value(double, double)` 版本。整个过程对调用者来说是透明的。
+`template <typename T>` 告诉编译器：这是一个模板，`T` 是一个类型参数。紧跟其后的函数定义中，所有出现 `T` 的地方在实例化时都会被替换成实际类型。
+
+有点难度？其实举一个例子就好。当咱们调用 `max_value(3, 5)` 时，编译器推导出 `T` 是 `int`，于是生成一个 `int max_value(int, int)` 的函数版本。调用 `max_value(1.0, 2.0)` 则生成 `double max_value(double, double)` 版本。整个过程对调用者来说是透明的。
 
 ### typename 和 class 有什么区别
 
-在模板参数列表里，`typename` 和 `class` 完全等价：`template <typename T>` 和 `template <class T>` 是一个意思，没有任何语义差异。早期 C++ 只支持 `class` 关键字，后来引入 `typename`，就是为了消除"T 必须是一个类"的误解。`T` 可以是任何类型，内置类型（`int`、`double`、指针）、自定义类，甚至函数指针都行。现代 C++ 风格更倾向用 `typename`，咱们读起来语义更准，也清爽。
+欸！会有一些老一点的教材是写`template<class T>`的写法的，我可以用最直白，最不绕弯子，最一阵见血的方式告诉你：在模板参数列表里，`typename` 和 `class` 完全等价！
+
+`template <typename T>` 和 `template <class T>` 是**一个意思，没有任何语义差异**。早期 C++ 只支持 `class` 关键字，后来才引入 `typename`，就是为了消除"T 必须是一个类"的误解（甚至之后，用来强调咱们之后写的一大堆东西是一个类型，编译器不要插手认为他是个变量！）。
+
+`T` 可以是任何类型，内置类型（`int`、`double`、指针）、自定义类，甚至函数指针都行。现代 C++ 风格更倾向用 `typename`，咱们读起来语义更准，也清爽。
 
 ### 多个类型参数
 
@@ -59,14 +73,16 @@ Dest cast_to(Source value)
 
 ## 模板实例化——编译器帮你"写代码"
 
-模板本身并不是代码，它是一份"代码配方"。只有当您实际调用模板函数时，编译器才会根据调用参数的类型，把模板"展开"成一份具体的函数定义。这个过程叫做模板实例化（template instantiation）。（感觉有点像宏是不是？笔者没记错的话，它最初最初的定位真是这个！）
+**模板本身并不是代码，它是一份"代码配方"。** 你告诉他咋做，他给您搞个大的！
+
+只有当您实际调用模板函数时，编译器才会根据调用参数的类型，把模板"展开"成一份具体的函数定义。这个过程叫做模板实例化（template instantiation）。（感觉有点像宏是不是？笔者没记错的话，它最初最初的定位真是这个！）
 
 ```cpp
 int x = max_value(3, 5);       // T = int, 生成 int max_value(int, int)
 double y = max_value(1.0, 2.0); // T = double, 生成 double max_value(double, double)
 ```
 
-上面两次调用，编译器生成了两个完全独立的函数。它们在编译后的二进制文件里各自存在，和手写两个重载函数的效果一样。这也是模板的核心代价：代码膨胀（code bloat）。如果您拿 20 种不同类型实例化同一个模板，编译器就会生成 20 份函数代码。对小型函数这不是问题，但对大型模板（比如某些 STL 算法的完整特化），代码体积可能明显增大。
+上面两次调用，编译器生成了两个完全独立的函数。它们在编译后的二进制文件里各自存在，和手写两个重载函数的效果一样。**这也是模板的核心代价：代码膨胀（code bloat），嵌入式的朋友就需要尤其注意这个问题。因为不恰当或者是意外的实例化很容易导致您的代码烧不上Flash了**。
 
 ### 隐式实例化 vs 显式实例化
 
@@ -103,7 +119,15 @@ auto r = max_value(3, 5.0);  // 编译错误！
 
 模板推导失败时的报错信息通常非常长。编译器会列出它试过的所有重载和模板候选，然后告诉您"没有一个能匹配"。对新手来说，这种几十行的报错信息相当劝退。解决办法是定位报错信息的最后一行——那里通常会指出具体哪个参数的类型不匹配，然后从调用点往回推导，检查每个实参的类型是否一致。
 
-解决推导冲突有三种方式。第一种是显式指定模板参数，就像咱们刚才看到的 `max_value<double>(3, 5.0)`，强制 `T = double`，`3` 会被隐式转换。第二种是手动转换参数类型：`max_value(static_cast<double>(3), 5.0)`。第三种是修改模板本身，用两个独立的类型参数——不过这种做法要小心，咱们稍后讨论。
+> clang，我记得对这里的报错处理就非常的优雅，gcc 不知道是否改进，之前出错一点，代码你就别想读了。当然concept的出现，让我们的报错可以更加舒服，直接告诉你不符合某个概念，从编译器的可读性提升到了语法指示的可读性。我认为是不错的，也是咱们后续更加激进的现代C++的一个重要的阐述。
+
+解决推导冲突有三种方式。
+
+第一种是显式指定模板参数，就像咱们刚才看到的 `max_value<double>(3, 5.0)`，强制 `T = double`，`3` 会被隐式转换。
+
+第二种是手动转换参数类型：`max_value(static_cast<double>(3), 5.0)`。
+
+第三种是修改模板本身，用两个独立的类型参数——不过这种做法要小心，咱们稍后讨论。
 
 ### 两个类型参数的陷阱
 
@@ -121,7 +145,7 @@ template <typename T, typename U>
 
 ```cpp
 template <typename T, typename U>
-auto max_value_two(T a, U b) -> std::common_type_t<T, U>
+auto max_value_two(T a, U b) -> std::common_type_t<T, U> // 是的，common就是共有的意思，可以被一致处理的类型
 {
     return (a > b) ? a : b;
 }
@@ -131,9 +155,9 @@ auto max_value_two(T a, U b) -> std::common_type_t<T, U>
 
 ## 模板特化——当通用方案不合适时
 
-咱们写的 `max_value` 对大多数类型都工作正常，但对于 `const char*`（C 风格字符串），它会比较两个指针的地址，而不是字符串内容。这种行为显然不是咱们想要的。
+咱们写的 `max_value` 对大多数类型都工作正常，但对于 `const char*`（C 风格字符串），它会比较两个指针的地址，而不是字符串内容。**我相信大伙对比较字符串所在的地址半毛钱兴趣没有，肯定不是我们想要的！**
 
-模板特化（template specialization）允许咱们为某个特定类型提供一个专门的实现：
+所以，这就需要我们请出来**模板特化（template specialization）**这个概念了，为什么？因为他允许咱们为某个特定类型提供一个专门的实现。
 
 ```cpp
 // 通用模板
@@ -147,7 +171,7 @@ T max_value(T a, T b)
 template <>
 const char* max_value<const char*>(const char* a, const char* b)
 {
-    return (std::strcmp(a, b) > 0) ? a : b;
+    return (std::strcmp(a, b) > 0) ? a : b; // 编译器在注意到您传递了原生的const char*的时候，走这里
 }
 ```
 
@@ -305,32 +329,14 @@ int main()
 
 ### 验证运行
 
-```bash
-g++ -Wall -Wextra -std=c++17 func_template.cpp -o func_template && ./func_template
-```
+这份完整代码就在下面，点「动手试一试」直接跑，不用开终端：
 
-预期输出：
-
-```text
-=== max_value ===
-max_value(3, 7) = 7
-max_value(2.5, 1.3) = 2.5
-max_value("banana", "apple") = banana
-max_value<double>(3, 5.7) = 5.7
-
-=== swap_value ===
-before: a=10, b=20
-after:  a=20, b=10
-before: x=1.5, y=2.5
-after:  x=2.5, y=1.5
-before: s1="hello", s2="world"
-after:  s1="world", s2="hello"
-
-=== print_array ===
-int[]:    [3, 1, 4, 1, 5, 9]
-double[]: [1.1, 2.2, 3.3]
-string[]: [Alice, Bob, Charlie]
-```
+<OnlineCompilerDemo
+  title="实战演练：func_template.cpp"
+  source-path="code/examples/vol1/17_function_templates.cpp"
+  description="在线运行 func_template.cpp，对照下面的核对点。试着给 print_array 再喂一个别的类型的数组，或者删掉 const char* 特化看看会发生什么。"
+  allow-run
+/>
 
 咱们核对几个关键结果：`max_value(3, 7)` 正确返回 `7`；`max_value("banana", "apple")` 走的是 `const char*` 特化版本，按字典序比较，`"banana"` 大于 `"apple"` 所以返回 `"banana"`；`swap_value` 交换前后值正确互换；`print_array` 正确打印了三种不同类型数组的内容，且没有多余的尾部逗号。
 

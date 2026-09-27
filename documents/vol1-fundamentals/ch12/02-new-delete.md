@@ -11,7 +11,7 @@ order: 2
 platform: host
 prerequisites:
 - 内存布局
-reading_time_minutes: 13
+reading_time_minutes: 10
 tags:
 - cpp-modern
 - host
@@ -27,7 +27,14 @@ title: 动态内存管理
 
 ## 从 new/delete 说起
 
-咱们看 C++ 用 `new` 和 `delete` 替代了 C 的 `malloc` 和 `free`。简单来说，`new` 是 `malloc` 加上构造函数调用的封装；`delete` 则先调用析构函数，再回收内存。这个区别正是 C++ 动态内存管理与 C 的根本分水岭。
+咱们看 C++ 用 `new` 和 `delete` 接替了 C 的 `malloc` 和 `free`。`new` 做两件事：先找一块内存（底层通常走 `malloc` 这条路），再**在上面调用构造函数**；`delete` 反过来，**先调用析构函数，再归还内存**。
+
+> 您可以粗暴的认为，**粗暴的认为！**，new 是 **`malloc + T()`**的组合，delete是 **`~T() + free()`**的组合
+> 区别我记得有语法大佬科普过，这里因为是入门，不说了，吓跑萌新不行。
+>
+> Q: 这里穿插一个好玩的话题，new出来的内存需要判定NULL嘛？
+>
+> A: 一眼就是 C 出身的，因为我就是问过这个问题，`new` 失败是不返回空指针的，它的选择是直接抛一个叫做 `std::bad_alloc`的臭鸡蛋给您, 接住混蛋！这里的 `bad_malloc` 就是异常那一章刚学的知识，这儿就用上了。哈哈！
 
 咱们分配单个对象时，对于类类型，`new` 会自动调用构造函数，`delete` 会自动调用析构函数：
 
@@ -56,7 +63,7 @@ delete[] arr;  // 注意：是 delete[]，不是 delete
 
 `delete` 和 `delete[]` 不匹配是经典中的经典错误。用 `delete` 去释放 `new[]` 分配的数组，行为是未定义的。对于 `int` 这类基本类型，某些平台可能"碰巧"不出问题；但对于类类型的数组，`delete`（不带 `[]`）只会调用第一个元素的析构函数，其余元素的析构函数根本不会被调用，如果析构函数负责释放嵌套的动态内存，后果就是资源泄漏。咱们要养成雷打不动的习惯：`new` 对 `delete`，`new[]` 对 `delete[]`，宁可多写一个 `[]`，也不要心存侥幸。
 
-## 内存泄漏——沉默的杀手
+## 内存泄漏——不报错的失败
 
 内存泄漏到底有多阴险？咱们来看一个最简单的场景：
 
@@ -101,18 +108,25 @@ int main()
 
 ```text
 =================================================================
-==12345==ERROR: LeakSanitizer: detected memory leaks
+==120445==ERROR: LeakSanitizer: detected memory leaks
 
 Direct leak of 4 byte(s) in 1 object(s) allocated from:
-    #0 0x401234 in operator new(unsigned long)
-    #1 0x401156 in create_leak() leak_demo.cpp:7
-    #2 0x401178 in main leak_demo.cpp:14
+    #0 0x6ffc2d12d2a1 in operator new(unsigned long) (/usr/lib/libasan.so.8+0x12d2a1)
+    #1 0x55f4a03ff1da in create_leak() /tmp/leak_demo.cpp:7
+    #2 0x55f4a03ff2b6 in main /tmp/leak_demo.cpp:14
+    #3 0x6ffc2c827780  (/usr/lib/libc.so.6+0x27780)
+    #4 0x6ffc2c8278b8  __libc_start_main (/usr/lib/libc.so.6+0x278b8)
+    #5 0x55f4a03ff0f4  _start (/tmp/leak_asan+0x10f4)
 
 SUMMARY: AddressSanitizer: 4 byte(s) leaked in 1 allocation(s).
 =================================================================
 ```
 
+`==120445==` 是进程号，地址、路径在您机器上肯定不同，每次运行也会变。真正要读的是 `leak_demo.cpp:7` 这样的线索：哪一行分配的内存、从哪里调用出去的，栈帧从上往下就是调用链。
+
 ASan 会显著降低程序运行速度（通常慢 2-5 倍）并增加内存占用（大约 3-5 倍），所以只应在调试和测试阶段使用。生产构建中一定要去掉 `-fsanitize=address`。另外，ASan 与某些并行调试工具可能冲突，咱们遇到奇怪的段错误时，试试去掉 ASan 看看是不是工具本身的问题。
+
+MSVC的朋友？别折腾了，不支持的。要搞左转考虑一下clang-cl哦（斜眼笑）。
 
 ## RAII 把堆资源绑到栈上
 
@@ -147,95 +161,21 @@ void safe_function()
 
 `AutoInt` 的析构函数保证了 `delete` 一定会被执行，不管 `safe_function` 是正常返回还是因为异常退出。但现实中咱们不会为每种类型都手写一个 `AutoXxx` 包装类，标准库已经替咱们做好了，而且做得更完善。这就是智能指针。
 
-## 智能指针——RAII 的标准答案
+## 智能指针——标准库替咱们写好的 RAII
 
-C++11 给咱们引入了三种智能指针，全部定义在 `<memory>` 头文件中，分别对应不同的所有权语义。
-
-### unique_ptr——独占所有权
-
-咱们看 `std::unique_ptr` 表达的是"唯一所有权"：一块内存同一时刻只能被一个 `unique_ptr` 持有。它不可拷贝，但可以移动——通过 `std::move` 把所有权从一个 `unique_ptr` 转移到另一个：
+现实中咱们不会为每种类型都手写一个 `AutoXxx` 包装类——标准库在 `<memory>` 里早就备好了现成的：`std::unique_ptr` 独占所有权（不能拷贝、只能移动），`std::shared_ptr` 共享所有权（引用计数，拷贝加一、析构减一、归零释放），`std::weak_ptr` 只观察不持有，专门破循环引用。最常用的 `unique_ptr` 长这样：
 
 ```cpp
 auto p = std::make_unique<int>(42);   // C++14 的 make_unique
 std::cout << *p << "\n";              // 42
-
-// auto p2 = p;                       // 编译错误！unique_ptr 不可拷贝
-auto p2 = std::move(p);              // OK：所有权转移，p 变为 nullptr
-std::cout << *p2 << "\n";            // 42
-// 离开作用域，p2 析构，内存自动释放
+// 离开作用域，p 析构，delete 自动执行
 ```
 
-咱们看 `std::make_unique`（C++14）比直接 `std::unique_ptr<int>(new int(42))` 更安全，它将分配和构造合并在一个不可中断的步骤中，避免边缘情况下的泄漏。C++11 项目可以直接写 `std::unique_ptr<int>(new int(42))`。
-
-`unique_ptr` 还支持自定义删除器和数组版本。自定义删除器让咱们在释放内存时执行自定义操作，这在嵌入式开发中非常有用，比如把内存归还给内存池而不是标准堆：
-
-```cpp
-auto pool_deleter = [](int* p) {
-    std::cout << "归还到内存池\n";
-    ::operator delete(p);
-};
-std::unique_ptr<int, decltype(pool_deleter)> p(new int(42), pool_deleter);
-// p 析构时，pool_deleter 被调用，而不是默认的 delete
-```
-
-咱们看数组版本则替代 `new[]`/`delete[]`：`auto arr = std::make_unique<int[]>(10);` 会自动提供 `operator[]`，离开作用域自动调用 `delete[]`。
-
-### shared_ptr——共享所有权
-
-咱们看 `std::shared_ptr` 允许多个指针共享同一块内存的所有权。内部通过引用计数追踪：每拷贝一次加一，每销毁一个减一，计数归零时自动释放。
-
-```cpp
-auto p1 = std::make_shared<int>(42);
-std::cout << p1.use_count() << "\n";  // 1
-
-auto p2 = p1;  // 拷贝，共享所有权
-std::cout << p1.use_count() << "\n";  // 2
-
-{
-    auto p3 = p1;
-    std::cout << p1.use_count() << "\n";  // 3
-}  // p3 析构，计数减为 2
-
-std::cout << p1.use_count() << "\n";  // 2
-// p1 和 p2 离开作用域后，计数归零，内存释放
-```
-
-咱们看 `std::make_shared` 比 `std::shared_ptr<int>(new int(42))` 更高效，它只需一次分配就能同时分配控制块和对象本身，后者需要两次。除非需要自定义删除器，否则应优先使用它。
-
-`shared_ptr` 的引用计数本身是线程安全的（原子操作），但指向的对象的并发访问不是：多个线程同时读写 `*p` 依然是数据竞争。另外，`shared_ptr` 有性能开销：控制块的内存开销、引用计数的原子操作开销、对象和控制块可能不在同一缓存行上导致的缓存不友好。咱们的所有权语义要是唯一的，请使用 `unique_ptr`，不要"为了安全"而滥用 `shared_ptr`。
-
-### weak_ptr——打破循环引用
-
-咱们看 `shared_ptr` 有一个经典的陷阱：循环引用。对象 A 持有指向 B 的 `shared_ptr`，对象 B 也持有指向 A 的 `shared_ptr`，两者的引用计数永远不会归零，内存永远不会被释放。
-
-`std::weak_ptr` 就是用来解决这个问题的。它是一种"观察者"，可以从 `shared_ptr` 构造，但不增加引用计数。咱们要访问 `weak_ptr` 指向的对象，需要先调用 `lock()` 提升为 `shared_ptr`：
-
-```cpp
-struct Node {
-    std::shared_ptr<Node> next;
-    std::weak_ptr<Node> prev;  // 用 weak_ptr 打破循环
-    int value;
-    explicit Node(int v) : value(v) {}
-    ~Node() { std::cout << "Node(" << value << ") 析构\n"; }
-};
-
-auto n1 = std::make_shared<Node>(1);
-auto n2 = std::make_shared<Node>(2);
-n1->next = n2;       // n2 的引用计数变为 2
-n2->prev = n1;       // n1 的引用计数不变（weak_ptr 不增加计数）
-
-// 通过 weak_ptr 访问前驱节点
-if (auto locked = n2->prev.lock()) {
-    std::cout << "前驱节点值: " << locked->value << "\n";  // 1
-}
-// n1、n2 正常析构，没有泄漏
-```
-
-咱们看 `prev` 要是也是 `shared_ptr`，`n1` 和 `n2` 会形成循环引用——即使外部的 `n1` 和 `n2` 离开作用域，它们互相持有的 `shared_ptr` 会让引用计数始终为 1，永远不会析构。换成 `weak_ptr` 之后，循环被打破，两个节点都能正常释放。
+`new` 和 `delete` 都不见了，这就是 RAII 换来的写法。这三种指针每一种都有不少讲究：零开销凭什么、控制块长什么样、循环引用怎么破、自定义删除器怎么玩。咱们不在本卷展开，卷二第一章有整整六篇专门拆它们。眼下记一条行为准则就够用：**能用 `unique_ptr` 就不裸 `new`，能用 `make_*` 就不写 `new`**。
 
 ## placement new——在指定地址构造对象
 
-咱们看普通的 `new` 会自动在堆上找内存，而 `placement new` 则是"您来指定地址，我只负责调用构造函数"。分配内存完全由您自己负责。
+咱们看普通的 `new` 会自动在堆上找内存，而 `placement new` 则是只负责调用构造函数，地址完全由您来指定。
 
 ```cpp
 #include <new>  // placement new 需要这个头文件
@@ -248,11 +188,11 @@ std::cout << *p << "\n";        // 42
 p->~int();  // 显式调用析构函数（对于 int 是空操作）
 ```
 
-`placement new` 在上位机开发中用得不多，但在嵌入式系统中非常有价值：它允许咱们在预分配的内存池或共享内存中构造 C++ 对象。注意三点：缓冲区对齐必须满足对象要求（`alignas` 保证了这一点）；内存不是 `new` 分配的，不能调用 `delete`，只能显式调用析构函数；显式调用析构函数在 C++ 中非常罕见，几乎只出现在这个场景中。
+`placement new` 在上位机开发中用得不多，但在嵌入式系统中非常有价值：它允许咱们在预分配的内存池或共享内存中构造 C++ 对象。用它要注意三件事。缓冲区对齐必须满足对象要求，`alignas` 保证了这一点。内存不是 `new` 分配的，不能调用 `delete`，只能显式调用析构函数。而显式调用析构函数这件事在 C++ 中非常罕见，几乎只出现在这个场景中。
 
 ## 动手实践——裸指针 vs 智能指针
 
-咱们把前面的内容整合到一个完整示例中：裸指针、智能指针和自定义删除器的对比。
+咱们把前面的内容整合到一个完整示例中：裸指针、智能指针和自定义删除器的对比。最后一段的删除器原理卷二再拆，这里先看现象。
 
 ```cpp
 // dynamic.cpp
@@ -314,31 +254,23 @@ int main()
 }
 ```
 
-正常编译运行，输出如下：
+咱们把完整代码放在下面，点"动手试一试"直接跑（编译条件已设为 -O0）：
 
-```text
-=== 裸指针版本 ===
-值: 42
-手动释放完成
-
-=== 智能指针版本 ===
-值: 42
-离开作用域时自动释放
-
-=== 自定义删除器 ===
-值: 99
-自定义删除器被调用，值为: 99
-
-程序结束
-```
+<OnlineCompilerDemo
+  title="动手实践：dynamic.cpp"
+  source-path="code/examples/vol1/28_new_delete.cpp"
+  description="在线运行裸指针、智能指针、自定义删除器三段对比。您想看 ASan 报泄漏：解开提前 return 的注释，在编译条件里加上 -fsanitize=address。"
+  run-options="-O0 -std=c++17"
+  allow-run
+/>
 
 咱们要是取消 `raw_pointer_demo` 里的提前返回注释，ASan 会报告两个泄漏点共 24 字节。而 `smart_pointer_demo` 无论如何都不会泄漏，这就是 RAII 的安全感。
 
 ## 练习
 
-### 练习 1：转换裸指针为智能指针
+### 练习 1：换上 unique_ptr，然后被卡住
 
-请您将以下代码改写为智能指针版本：单个对象用 `unique_ptr`，共享对象用 `shared_ptr`。
+请您把下面的代码换成 `std::unique_ptr`：`logger` 用 `make_unique` 创建。换到 `backup` 那行您会被卡住——`unique_ptr` 不可拷贝，这正是它在替您追问：`backup` 到底有没有所有权？没有的话，该用什么方式访问对象？答案卷二揭晓，您可以先带着问题过去。
 
 ```cpp
 class Logger {
@@ -361,6 +293,6 @@ int main()
 }
 ```
 
-### 练习 2：用自定义删除器实现简单内存池
+### 练习 2：AutoInt 换成 unique_ptr
 
-请您实现一个固定大小的内存池类，用 `unique_ptr` 配合自定义删除器管理从池中分配的对象。提示：删除器不一定要 `delete`，可以调用 `pool.deallocate()` 归还内存。
+请您把前面 `safe_function` 里手写的 `AutoInt` 换成 `std::unique_ptr`：功能保持不变，代码少了多少行？再把 `risky_operation()` 换成真的抛异常，验证析构依然会被调用。

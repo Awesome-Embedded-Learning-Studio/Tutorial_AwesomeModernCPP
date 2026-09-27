@@ -23,7 +23,7 @@ tags:
 title: 'Deep Dive into RAII: The Cornerstone of Resource Management'
 translation:
   source: documents/vol2-modern-features/ch01-smart-pointers/01-raii-deep-dive.md
-  source_hash: 6820424c74d76ce39bde85fbf3a951c9697dc822af5f4fd6e9c8205e984c367c
+  source_hash: 08defcf873b5b1cb4fcba82a4a25299ac5dc6e42ce3ad49bee083c288ed786fd
   translated_at: '2026-06-16T03:55:54.326748+00:00'
   engine: anthropic
   token_count: 3720
@@ -564,7 +564,7 @@ Exception destructed
 
 This verification tells us: RAII's guarantee only applies to **normal control flow** (including exception handling). If the program exits abnormally via `std::abort()`, `std::quick_exit()`, `std::exit()`, or signal handling, destructors will not execute. This is one reason why modern C++ recommends using exceptions over `exit()`—exceptions guarantee stack unwinding and resource cleanup, while `exit()` does not.
 
-The next chapter covers `std::unique_ptr`—RAII applied directly to smart pointers, for zero-overhead exclusive ownership. With the RAII groundwork laid, `unique_ptr` reads very naturally.
+The next chapter pauses before the toolbox and establishes the concept of ownership—what exclusive, shared, and non-owning mean, and how function signatures spell out ownership intent. With that model in place, `unique_ptr` and `shared_ptr` stop being two separate tools and become two implementations of the same idea.
 
 ## Reference Resources
 

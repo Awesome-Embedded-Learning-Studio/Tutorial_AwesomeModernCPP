@@ -19,9 +19,11 @@ tags:
 - 进阶
 title: 类模板
 ---
-# 类模板：把类型当参数传
+# 骗你的，还有下一关：类模板
 
-上一篇咱们学会了用 `template <typename T>` 让函数变成泛型的——一个 `max_value` 就能处理各种类型。但函数模板只能泛化"一段逻辑"。咱们要是想要一个泛化的"数据结构"呢？比如一个栈，它的 push、pop、top 操作对各种类型来说逻辑完全一样，但栈内部需要存储一组同类型的元素，这个"类型"在编写类的时候就决定了。C++ 标准库之所以能提供 `std::vector<int>`、`std::vector<std::string>` 这样灵活的容器，靠的就是类模板（class template）。这也是本篇的主角！它让咱们把类型参数化到整个类的层面：成员变量、成员函数、甚至嵌套类型都可以使用模板参数。这一篇咱们就来搞清楚类模板的语法、成员函数的定义方式、模板参数的种类，最后手把手实现一个完整的泛型栈。
+在上一篇呢，我们终于费劲巴拉的，学会了函数模板，当然这样说显得太没成就感了。我用这个方式带您复习一下：我们成功的让我们的函数走向了泛型编程的时代，我们终于有能力写出来接收任意类型参数，甚至返回任意类型参数的函数了。
+
+问题在于，程序设计，不只是算法，还有数据结构呢！咱们要是想要一个泛化的"数据结构"呢？比如一个栈，它的 push、pop、top 操作对各种类型来说逻辑完全一样，但栈内部需要存储一组同类型的元素，这个"类型"在编写类的时候就决定了。C++ 标准库之所以能提供 `std::vector<int>`、`std::vector<std::string>` 这样灵活的容器，靠的就是类模板（class template）。这也是本篇的主角！它让咱们把类型参数化到整个类的层面：成员变量、成员函数、甚至嵌套类型都可以使用模板参数。
 
 ## 类模板的基本语法
 
@@ -313,32 +315,14 @@ int main()
 
 ### 验证运行
 
-```bash
-g++ -Wall -Wextra -std=c++17 stack_demo.cpp -o stack_demo && ./stack_demo
-```
+这份完整代码就在下面，点「动手试一试」直接跑，不用开终端（在线版把 `stack.hpp` 和 `stack_demo.cpp` 合成了一个文件）：
 
-预期输出：
-
-```text
-=== Stack<int> ===
-size: 3
-top:  30
-after pop, top: 20
-empty: false
-
-=== Stack<double> ===
-size: 2
-top:  2.718
-after pop, top: 3.14
-
-=== Stack<std::string> ===
-size: 3
-top:  template
-after pop, top: world
-
-=== Exception test ===
-caught: Stack::pop(): stack is empty
-```
+<OnlineCompilerDemo
+  title="实战演练：stack_demo.cpp"
+  source-path="code/examples/vol1/18_class_templates.cpp"
+  description="在线运行泛型栈 Stack，对照下面的核对点。试着再压几个元素，或者故意对空栈调一次 top，看看异常长什么样。"
+  allow-run
+/>
 
 咱们核对关键结果：`Stack<int>` 压入三个元素后 top 是 `30`（最后压入的），pop 一次后 top 变成 `20`，正确。`Stack<double>` 和 `Stack<std::string>` 的行为也符合 LIFO（后进先出）预期。空栈调用 `pop` 时正确抛出 `std::out_of_range` 异常。
 

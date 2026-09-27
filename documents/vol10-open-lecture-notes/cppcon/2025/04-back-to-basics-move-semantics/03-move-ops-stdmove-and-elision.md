@@ -238,7 +238,7 @@ NRVO 的思路非常巧妙：编译器在生成代码时，直接把 `temp` 构�
 
 从 C++17 开始，这种优化在某些场景下变成了**强制性**的<RefLink :id="4" preview="C++ Standard, [class.copy.elision] — mandatory elision in certain contexts" />——编译器必须消除拷贝，而不是"可以消除但也可以不消除"。这不是一个可选的优化，而是语言的定义行为。历史原因让它还叫"优化"，但实际上它已经是一种保证了。
 
-关于 NRVO 和 RVO 的完整技术细节，我们之前在 vol2 有专门的文章讲解：[RVO 与 NRVO：编译器的返回值优化](../../../../vol2-modern-features/ch00-move-semantics/03-rvo-nrvo.md)。
+关于 NRVO 和 RVO 的完整技术细节，我们之前在 vol2 有专门的文章讲解：[RVO 与 NRVO：编译器的返回值优化](../../../../vol2-modern-features/ch00-move-semantics/04-rvo-nrvo.md)。
 
 ## 千万别对返回值用 std::move
 
@@ -530,7 +530,7 @@ public:
 
 移动构造函数的核心是"破坏性拷贝"——偷走源对象的资源指针，然后把源对象置成无害状态。重载决议自动选择拷贝还是移动，你不需要在调用点做额外判断。`std::move` 不移动任何东西，它只是一个到右值引用的类型转换，使得重载决议能够选择移动版本。右值引用参数在函数内部是左值——因为它有名字——所以你仍然需要 `std::move` 才能从中移动。`return` 语句是"有名字就是左值"规则的例外，编译器会自动识别隐式可移动的返回表达式。NRVO 可以让返回值零成本到达调用方——而 `return std::move(temp)` 会阻止 NRVO，千万别这么写。移动后的对象处于"有效但未指定"的状态，唯一安全的操作是赋新值或析构。移动构造函数一定要标 `noexcept`——否则 `std::vector` 扩容时会退回拷贝，性能差距可能非常大。
 
-如果你想继续深入移动语义的更多应用场景——完美转发、万能引用、引用折叠——可以看 vol2 的 [完美转发：保持值类别的精确传递](../../../../vol2-modern-features/ch00-move-semantics/04-perfect-forwarding.md)。移动语义和完美转发搭配使用，才是现代 C++ 模板编程的完整基础。
+如果你想继续深入移动语义的更多应用场景——完美转发、万能引用、引用折叠——可以看 vol2 的 [完美转发：保持值类别的精确传递](../../../../vol2-modern-features/ch00-move-semantics/05-perfect-forwarding.md)。移动语义和完美转发搭配使用，才是现代 C++ 模板编程的完整基础。
 
 <ReferenceCard title="参考文献">
   <ReferenceItem
