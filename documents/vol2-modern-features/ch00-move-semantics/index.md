@@ -5,14 +5,16 @@ description: "理解值类别体系，掌握移动构造、RVO 和完美转发"
 
 # 移动语义与右值引用
 
-移动语义是 C++11 最重要的特性之一——它让"转移资源所有权"成为一等公民，彻底改变了我们处理拷贝开销的方式。这一章我们从值类别体系出发，搞清楚什么是左值、什么是右值、为什么需要右值引用；然后深入移动构造和移动赋值的实现原理，看看编译器的 RVO 优化帮你省了多少事，最后用完美转发把所有东西串起来。移动语义不只是性能优化，它是理解现代 C++ 资源管理的基石。
+移动语义是 C++11 最重要的特性之一——它让"转移资源所有权"成为一等公民，彻底改变了我们处理拷贝开销的方式。这一章我们从值类别体系出发，搞清楚什么是左值、什么是右值、为什么需要右值引用；然后深入移动构造和移动赋值的实现原理，理清规则五这套特殊成员函数的联动关系，看看编译器的 RVO 优化帮你省了多少事，随后用完美转发把所有东西串起来，最后落到两篇实战：标准库容器的收益与性能实测，以及自定义类型的落地写法。移动语义不只是性能优化，它是理解现代 C++ 资源管理的基石。
 
 ## 本章内容
 
 <ChapterNav variant="sub">
   <ChapterLink href="01-rvalue-reference">右值引用：从拷贝到移动</ChapterLink>
   <ChapterLink href="02-move-semantics">移动构造与移动赋值</ChapterLink>
-  <ChapterLink href="03-rvo-nrvo">RVO 与 NRVO：编译器的返回值优化</ChapterLink>
-  <ChapterLink href="04-perfect-forwarding">完美转发：保持值类别的精确传递</ChapterLink>
-  <ChapterLink href="05-move-in-practice">移动语义实战：从 STL 到自定义类型</ChapterLink>
+  <ChapterLink href="03-rule-of-five">规则五：特殊成员函数的配套关系</ChapterLink>
+  <ChapterLink href="04-rvo-nrvo">RVO 与 NRVO：编译器的返回值优化</ChapterLink>
+  <ChapterLink href="05-perfect-forwarding">完美转发：保持值类别的精确传递</ChapterLink>
+  <ChapterLink href="06-move-and-stl">移动语义实战：标准库容器与性能实测</ChapterLink>
+  <ChapterLink href="07-move-custom-types">移动语义实战：自定义类型与资源句柄</ChapterLink>
 </ChapterNav>

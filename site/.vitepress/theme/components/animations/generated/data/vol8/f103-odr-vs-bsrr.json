@@ -1,0 +1,700 @@
+{
+ "version": 1,
+ "id": "f103-odr-vs-bsrr",
+ "title": "翻转同一位：读改写，还是单写？",
+ "subtitle": "ODR 会留下窗口；BSRR / BRR 不依赖旧值",
+ "source": "projects/vol8-f103-led/02-dsl/f103-odr-vs-bsrr.yaml",
+ "backend": "web",
+ "template": "comparison_flow",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#111521",
+  "bgRaised": "#171D2D",
+  "text": "#F4F6FB",
+  "muted": "#98A2B8",
+  "fill": "#66D9EF",
+  "fillEdge": "#2E9DC2",
+  "emptyEdge": "#43506A",
+  "grow": "#FFB86C",
+  "numOnFill": "#0B1E27",
+  "ok": "#72D49A",
+  "bad": "#FF6B7A",
+  "cardBg": "#1B2234"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "翻转同一位：读改写，还是单写？",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 6.336,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "ODR 会留下窗口；BSRR / BRR 不依赖旧值",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#98A2B8",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.764,
+   "h": 0.272
+  },
+  "show:odr_read": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "accent",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.32,
+   "w": 2.2456,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "ldr 读 ODR",
+     "w": 1.32
+    },
+    {
+     "text": "拿到旧快照",
+     "w": 1.32
+    }
+   ],
+   "cx": -5.25,
+   "cy": 1.05
+  },
+  "show:rmw_edge_1": {
+   "kind": "arrow",
+   "x1": -3.9472,
+   "y1": 1.05,
+   "x2": -3.1848,
+   "y2": 1.05,
+   "cx": -3.566,
+   "cy": 1.05,
+   "w": 0.7624,
+   "h": 0.0,
+   "label": {
+    "text": "读",
+    "x": -3.566,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.2376,
+    "h": 0.2448
+   }
+  },
+  "show:odr_edit": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "danger",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.584,
+   "w": 2.5096,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "eor 改 bit13",
+     "w": 1.584
+    },
+    {
+     "text": "窗口仍然敞开",
+     "w": 1.584
+    }
+   ],
+   "cx": -1.75,
+   "cy": 1.05
+  },
+  "show:rmw_edge_2": {
+   "kind": "arrow",
+   "x1": -0.3152,
+   "y1": 1.05,
+   "x2": 0.3152,
+   "y2": 1.05,
+   "cx": 0.0,
+   "cy": 1.05,
+   "w": 0.6304,
+   "h": 0.0,
+   "label": {
+    "text": "改",
+    "x": 0.0,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.2376,
+    "h": 0.2448
+   }
+  },
+  "show:isr_write": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "danger",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.584,
+   "w": 2.5096,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "中断也改 ODR",
+     "w": 1.584
+    },
+    {
+     "text": "新状态出现",
+     "w": 1.32
+    }
+   ],
+   "cx": 1.75,
+   "cy": 1.05
+  },
+  "show:rmw_edge_3": {
+   "kind": "arrow",
+   "x1": 3.1848,
+   "y1": 1.05,
+   "x2": 3.8152,
+   "y2": 1.05,
+   "cx": 3.5,
+   "cy": 1.05,
+   "w": 0.6304,
+   "h": 0.0,
+   "label": {
+    "text": "抢占",
+    "x": 3.5,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:odr_store": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "danger",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.584,
+   "w": 2.5096,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "str 写旧快照",
+     "w": 1.584
+    },
+    {
+     "text": "中断修改丢失",
+     "w": 1.584
+    }
+   ],
+   "cx": 5.25,
+   "cy": 1.05
+  },
+  "show:mask": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "accent",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.98,
+   "w": 2.9056,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "准备 bit13 掩码",
+     "w": 1.98
+    },
+    {
+     "text": "1 << 13",
+     "w": 0.924
+    }
+   ],
+   "cx": 5.25,
+   "cy": -1.55
+  },
+  "show:direct_edge_1": {
+   "kind": "arrow",
+   "x1": 3.6172,
+   "y1": -1.55,
+   "x2": 3.1188,
+   "y2": -1.55,
+   "cx": 3.368,
+   "cy": -1.55,
+   "w": 0.4984,
+   "h": 0.0,
+   "label": {
+    "text": "置位或复位",
+    "x": 3.368,
+    "y": -1.1976,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.188,
+    "h": 0.2448
+   }
+  },
+  "show:bsrr": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "success",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.452,
+   "w": 2.3776,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "str 写 BSRR",
+     "w": 1.452
+    },
+    {
+     "text": "不先读 ODR",
+     "w": 1.32
+    }
+   ],
+   "cx": 1.75,
+   "cy": -1.55
+  },
+  "show:direct_edge_2": {
+   "kind": "arrow",
+   "x1": 0.3812,
+   "y1": -1.55,
+   "x2": -0.3152,
+   "y2": -1.55,
+   "cx": 0.033,
+   "cy": -1.55,
+   "w": 0.6964,
+   "h": 0.0,
+   "label": {
+    "text": "无读改写窗口",
+    "x": 0.033,
+    "y": -1.1976,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.4256,
+    "h": 0.2448
+   }
+  },
+  "show:atomic": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "success",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.584,
+   "w": 2.5096,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "硬件按位生效",
+     "w": 1.584
+    },
+    {
+     "text": "单写完成",
+     "w": 1.056
+    }
+   ],
+   "cx": -1.75,
+   "cy": -1.55
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "ODR 的风险来自读与写之间的旧快照",
+   "x": 0.0,
+   "y": 0.0882,
+   "fs": 0.24,
+   "color": "#FFB86C",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.0304,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "BSRR / BRR 用写 1 生效的语义避开旧值",
+   "x": 0.0,
+   "y": -0.4882,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.568,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 3.15,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 2.15
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 2.15,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show odr_read",
+   "note": "",
+   "duration": 1.83,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:odr_read",
+     "cx": 0.0,
+     "cy": 0.4,
+     "t": 0.0,
+     "dur": 1.83
+    }
+   ]
+  },
+  {
+   "kind": "move",
+   "label": "move odr_read",
+   "note": "to [-5.25, 1.05]",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "move",
+     "target": "show:odr_read",
+     "frm": [
+      0.0,
+      0.4
+     ],
+     "to": [
+      -5.25,
+      1.05
+     ],
+     "t": 0.0,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show rmw_edge_1",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:rmw_edge_1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show odr_edit",
+   "note": "",
+   "duration": 2.07,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:odr_edit",
+     "cx": -1.75,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 2.07
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show rmw_edge_2",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:rmw_edge_2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show isr_write",
+   "note": "",
+   "duration": 1.71,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:isr_write",
+     "cx": 1.75,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 1.71
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show rmw_edge_3",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:rmw_edge_3",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show odr_store",
+   "note": "",
+   "duration": 1.71,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:odr_store",
+     "cx": 5.25,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 1.71
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show mask",
+   "note": "",
+   "duration": 2.07,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:mask",
+     "cx": 0.0,
+     "cy": -0.55,
+     "t": 0.0,
+     "dur": 2.07
+    }
+   ]
+  },
+  {
+   "kind": "move",
+   "label": "move mask",
+   "note": "to [5.25, -1.55]",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "move",
+     "target": "show:mask",
+     "frm": [
+      0.0,
+      -0.55
+     ],
+     "to": [
+      5.25,
+      -1.55
+     ],
+     "t": 0.0,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show direct_edge_1",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:direct_edge_1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show bsrr",
+   "note": "",
+   "duration": 1.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:bsrr",
+     "cx": 1.75,
+     "cy": -1.55,
+     "t": 0.0,
+     "dur": 1.95
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show direct_edge_2",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:direct_edge_2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show atomic",
+   "note": "",
+   "duration": 1.47,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:atomic",
+     "cx": -1.75,
+     "cy": -1.55,
+     "t": 0.0,
+     "dur": 1.47
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.5s",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 15.1,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:rmw_edge_1",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:odr_edit",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:rmw_edge_2",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:isr_write",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:rmw_edge_3",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:odr_store",
+     "t": 1.5,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:mask",
+     "t": 1.8,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:direct_edge_1",
+     "t": 2.1,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:bsrr",
+     "t": 2.4,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:direct_edge_2",
+     "t": 2.7,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 3.0,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 5.75,
+     "dur": 2.4
+    }
+   ]
+  }
+ ]
+}

@@ -16,6 +16,9 @@
     "indent": 2,
     "start_indented": false
   },
+  "MD010": {
+    "code_blocks": false
+  },
   "MD001": false,
   "MD025": false,
   "MD035": false,

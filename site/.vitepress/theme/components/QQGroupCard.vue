@@ -35,7 +35,8 @@ async function copyNumber() {
 </script>
 
 <template>
-  <div class="qq-group-card">
+  <!-- no-zoom:二维码图不进正文图片点击放大(image-client.ts 扫描时排除) -->
+  <div class="qq-group-card no-zoom">
     <img
       class="qq-group-qr"
       :src="qrSrc"

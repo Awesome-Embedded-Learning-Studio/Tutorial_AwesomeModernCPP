@@ -167,5 +167,5 @@ cmake -B build . && cmake --build build
 
 - 配套代码:`code/volumn_codes/vol8-labs/ministl/stage1_rawbuf_vector/`
 - [cppreference:`std::move_if_noexcept`](https://en.cppreference.com/w/cpp/utility/move_if_noexcept)
-- [移动语义实战:从 STL 到自定义类型](../../vol2-modern-features/ch00-move-semantics/05-move-in-practice.md)(vol2 语言特性层,本篇实现层)
+- [移动语义实战:标准库容器与性能实测](../../vol2-modern-features/ch00-move-semantics/06-move-and-stl.md)(vol2 语言特性层,本篇实现层)
 - [综合项目:concepts 约束的 mini-STL 算法库](../../vol4-advanced/vol3-metaprogramming-cpp20-23/09-mini-stl-with-concepts.md)(vol4,concepts 的另一面)

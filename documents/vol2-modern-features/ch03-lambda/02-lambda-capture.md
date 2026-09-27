@@ -385,14 +385,15 @@ void demo_closure_size() {
 }
 ```
 
-典型的输出（64 位系统，GCC）：
+这份验证程序就在下面，点「动手试一试」直接跑（64 位系统上）：
 
-```text
-no_capture:    1 bytes
-capture_int:   4 bytes
-capture_ref:   8 bytes
-capture_both:  16 bytes
-```
+<OnlineCompilerDemo
+  title="动手验证：lambda 闭包的大小"
+  source-path="code/examples/vol2/34_lambda_capture_size.cpp"
+  description="在线查看闭包大小：无捕获 1 字节，值捕获 int 4 字节，引用捕获是指针 8 字节，混合捕获考虑对齐到 16 字节。"
+  run-options="-std=c++17"
+  allow-run
+/>
 
 值得注意的一点：无捕获的 lambda 大小通常是 1 字节而不是 0 字节——C++ 不允许大小为 0 的对象（否则数组里的元素地址就没法区分了）。而引用捕获存储的是指针，在 64 位系统上占 8 字节。
 

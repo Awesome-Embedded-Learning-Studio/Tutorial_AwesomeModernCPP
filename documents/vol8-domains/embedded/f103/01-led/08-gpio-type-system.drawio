@@ -1,0 +1,33 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="GPIO type system" id="gpio-type-system">
+    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="900" pageHeight="610" math="0" shadow="0">
+      <root>
+        <mxCell id="0" /><mxCell id="1" parent="0" />
+        <mxCell id="title" value="把配置写进类型：一个 Gpio 类型携带全部硬件事实" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="130" y="18" width="640" height="34" as="geometry" /></mxCell>
+        <mxCell id="gpio_type" value="&lt;b&gt;Gpio&lt;C, GPIO_PIN_13, Output, NoPull&gt;&lt;/b&gt;&lt;br&gt;配置只有一个来源：类型本身" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#6A1B9A;strokeWidth=3;fillColor=#F3E5F5;fontSize=14;" vertex="1" parent="1"><mxGeometry x="215" y="72" width="470" height="72" as="geometry" /></mxCell>
+
+        <mxCell id="port_fact" value="&lt;b&gt;端口身份&lt;/b&gt;&lt;br&gt;GpioPort::C&lt;br&gt;0x40011000" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=2;fillColor=#E3F2FD;fontSize=12;" vertex="1" parent="1"><mxGeometry x="45" y="190" width="180" height="76" as="geometry" /></mxCell>
+        <mxCell id="mask_fact" value="&lt;b&gt;唯一掩码&lt;/b&gt;&lt;br&gt;GPIO_PIN_13&lt;br&gt;countr_zero → 13" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=2;fillColor=#E3F2FD;fontSize=12;" vertex="1" parent="1"><mxGeometry x="255" y="190" width="180" height="76" as="geometry" /></mxCell>
+        <mxCell id="dir_fact" value="&lt;b&gt;方向&lt;/b&gt;&lt;br&gt;Output&lt;br&gt;可 set/reset/toggle" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=2;fillColor=#E3F2FD;fontSize=12;" vertex="1" parent="1"><mxGeometry x="465" y="190" width="180" height="76" as="geometry" /></mxCell>
+        <mxCell id="pull_fact" value="&lt;b&gt;上下拉&lt;/b&gt;&lt;br&gt;NoPull&lt;br&gt;编译期选择" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=2;fillColor=#E3F2FD;fontSize=12;" vertex="1" parent="1"><mxGeometry x="675" y="190" width="180" height="76" as="geometry" /></mxCell>
+        <mxCell id="e_port" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#6A1B9A;strokeWidth=1.8;endArrow=block;endFill=1;" edge="1" parent="1" source="gpio_type" target="port_fact"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_mask" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#6A1B9A;strokeWidth=1.8;endArrow=block;endFill=1;" edge="1" parent="1" source="gpio_type" target="mask_fact"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_dir" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#6A1B9A;strokeWidth=1.8;endArrow=block;endFill=1;" edge="1" parent="1" source="gpio_type" target="dir_fact"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_pull" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#6A1B9A;strokeWidth=1.8;endArrow=block;endFill=1;" edge="1" parent="1" source="gpio_type" target="pull_fact"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="clock" value="&lt;b&gt;if constexpr&lt;/b&gt;&lt;br&gt;C → IOPCEN&lt;br&gt;自动开对电闸" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#E65100;strokeWidth=2.5;fillColor=#FFF3E0;fontSize=13;" vertex="1" parent="1"><mxGeometry x="110" y="326" width="250" height="76" as="geometry" /></mxCell>
+        <mxCell id="hal_init" value="&lt;b&gt;GPIO_InitTypeDef&lt;/b&gt;&lt;br&gt;mask / direction / pull&lt;br&gt;自动翻译给 HAL" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#E65100;strokeWidth=2.5;fillColor=#FFF3E0;fontSize=13;" vertex="1" parent="1"><mxGeometry x="540" y="326" width="250" height="76" as="geometry" /></mxCell>
+        <mxCell id="port_clock" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#E65100;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="port_fact" target="clock"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="mask_hal" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#E65100;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="mask_fact" target="hal_init"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="dir_hal" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#E65100;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="dir_fact" target="hal_init"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="pull_hal" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#E65100;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="pull_fact" target="hal_init"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="concept" value="&lt;b&gt;GPIOOutputPin&lt;/b&gt;&lt;br&gt;direction == Output&lt;br&gt;并且具备 set/reset/toggle" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#C62828;strokeWidth=2.5;fillColor=#FFEBEE;fontSize=13;" vertex="1" parent="1"><mxGeometry x="185" y="458" width="260" height="82" as="geometry" /></mxCell>
+        <mxCell id="led" value="&lt;b&gt;LED&lt;Pin, ActiveLow&gt;&lt;/b&gt;&lt;br&gt;on → reset　off → set&lt;br&gt;非法输入脚在编译期止步" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1B5E20;strokeWidth=3;fillColor=#E8F5E9;fontSize=13;" vertex="1" parent="1"><mxGeometry x="495" y="458" width="280" height="82" as="geometry" /></mxCell>
+        <mxCell id="type_concept" value="约束" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;rounded=0;html=1;strokeColor=#C62828;strokeWidth=2;endArrow=block;endFill=1;fontSize=12;fontColor=#C62828;" edge="1" parent="1" source="gpio_type" target="concept"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="190" y="108" /><mxPoint x="20" y="108" /><mxPoint x="20" y="499" /><mxPoint x="170" y="499" /></Array></mxGeometry></mxCell>
+        <mxCell id="concept_led" value="满足才实例化" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#1B5E20;strokeWidth=2.5;endArrow=block;endFill=1;fontSize=12;fontColor=#1B5E20;" edge="1" parent="1" source="concept" target="led"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="bottom_note" value="端口、电闸、掩码、方向和极性从此不再是互相独立的参数：它们共同决定“这个类型能否存在”" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontColor=#37474F;" vertex="1" parent="1"><mxGeometry x="80" y="568" width="740" height="28" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

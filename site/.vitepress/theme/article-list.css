@@ -1,0 +1,63 @@
+/* Markdown lists in the article body. Accent markers echo the code-card palette. */
+:root {
+  --article-list-marker: #9183b2;
+  --article-list-marker-nested: #b3aec9;
+  --article-list-line: 1.85;
+}
+
+.dark {
+  --article-list-marker: #b1a0d0;
+  --article-list-marker-nested: #7d7494;
+}
+
+.vp-doc ul,
+.vp-doc ol {
+  padding-left: 1.5em;
+  line-height: var(--article-list-line);
+}
+
+.vp-doc li {
+  line-height: var(--article-list-line);
+}
+
+.vp-doc li + li {
+  margin-top: 6px;
+}
+
+/* ::marker paints only real bullets/numbers, never component chrome like tabs. */
+.vp-doc ul > li::marker {
+  color: var(--article-list-marker);
+}
+
+.vp-doc ol > li::marker {
+  color: var(--article-list-marker);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Nested levels fade one step, like nested quotes losing the outer decoration. */
+.vp-doc li > ul,
+.vp-doc li > ol {
+  margin: 6px 0;
+}
+
+.vp-doc li ul > li::marker,
+.vp-doc li ol > li::marker {
+  color: var(--article-list-marker-nested);
+}
+
+/* Loose lists (li > p) keep paragraphs compact inside the item. */
+.vp-doc li > p {
+  margin: 0.5em 0;
+}
+
+.vp-doc li > p:first-child {
+  margin-top: 0;
+}
+
+@media (max-width: 639px) {
+  .vp-doc ul,
+  .vp-doc ol {
+    padding-left: 1.25em;
+  }
+}

@@ -75,7 +75,7 @@ E ... [requires_expr_expected_type_constraint] Line 12: expected concept name wi
 ...
 ```
 
-`<concepts>` 一丢,连锁反应全来了:`std` 未声明、requires 表达式报“不是 concept”,您屏幕上那一片红,源头就是这一条找不到的头。病根在于 clangd 从没去问真正的交叉编译器“您的头文件装在哪”,它拿自己家 libc++ 的布局去套一个 GCC 工具链。GCC 家的 libstdc++ 住在 `c++/16.2.0`(按版本排),LLVM 家的 libc++ 住在 `c++/v1`,两家目录排法不同,布局猜错了,再多的假路径也拼不出真的 `<cstdint>`。
+`<concepts>` 一丢,连锁反应全来了:`std` 未声明、requires 表达式报“不是 concept”,您屏幕上那一片红,源头就是这一条找不到的头。病根在于 clangd 从没去问真正的交叉编译器“您的头文件装在哪”,它拿自己家 libc++ 的布局去套一个 GCC 工具链。GCC 家的 libstdc++ 放在 `c++/16.2.0`(按版本排),LLVM 家的 libc++ 放在 `c++/v1`,两家目录排法不同,布局猜错了,再多的假路径也拼不出真的 `<cstdint>`。
 
 ## 问编译器本人:query-driver
 
@@ -132,7 +132,7 @@ I ... All checks completed, 0 errors
 }
 ```
 
-等号后面是逗号分隔的路径,支持 glob。`**/arm-none-eabi-g*` 一个 glob 把 gcc、g++ 连带变体全放行了,C 工程和 C++ 工程都覆盖,也省得关心工具链到底装在 `/usr/bin` 还是 `/usr/sbin`(Ubuntu 的 apt 装在 `/usr/bin`,咱们这台 Arch 系在 `/usr/sbin`,发行版不同位置不同)。要写死也可以,跑一下 `which arm-none-eabi-g++`,输出填进去。两个注意:这里必须是路径或路径的 glob,写 `--query-driver=arm-none-eabi-g++` 这种光秃秃的命令名不生效,clangd 不去 PATH 里找;另外它是**进程旗标**,只能放在 IDE 传给 clangd 的启动参数里,`.clangd` 配置文件收不了它,所以这份文件注定住在 `.vscode` 里。
+等号后面是逗号分隔的路径,支持 glob。`**/arm-none-eabi-g*` 一个 glob 把 gcc、g++ 连带变体全放行了,C 工程和 C++ 工程都覆盖,也省得关心工具链到底装在 `/usr/bin` 还是 `/usr/sbin`(Ubuntu 的 apt 装在 `/usr/bin`,咱们这台 Arch 系在 `/usr/sbin`,发行版不同位置不同)。要写死也可以,跑一下 `which arm-none-eabi-g++`,输出填进去。两个注意:这里必须是路径或路径的 glob,写 `--query-driver=arm-none-eabi-g++` 这种光秃秃的命令名不生效,clangd 不去 PATH 里找;另外它是**进程旗标**,只能放在 IDE 传给 clangd 的启动参数里,`.clangd` 配置文件收不了它,所以这份文件只能放在 `.vscode` 里。
 
 库根还有一份 `.clangd`,管的是另一件事:孤立头文件。`compile_commands.json` 只登记 `.cpp` 的编译命令,您单独打开一个 `.hpp` 而它没被任何编译单元包含时,clangd 查无此条,退回一份兜底配置去解析,兜底默认的标准停在 gnu++17,咱们库里 concept 这类 C++20 语法就会误报。这份配置按扩展名分块注入旗标:
 
@@ -173,7 +173,7 @@ clangd --check=include/libestdx/gpio/gpio_base.hpp --query-driver='**/arm-none-e
 
 ## 起步站,齐了
 
-到这儿,起步站七篇凑齐:一篇破迷思,一篇简史,Renode 观测、工作环境、第一个固件、调试、真机,再到这篇的编辑器。回头看,这套环境已经能编译、能仿真、能调试、能上真板、写起来还顺手。下一站进 LED:先下到地砖下面用裸寄存器点一盏灯,看清官方库在替咱们做什么,再回到 HAL 之上用现代 C++ 把同一盏灯重新点亮。
+到这儿,起步站七篇凑齐:一篇破迷思,一篇简史,Renode 观测、工作环境、第一个固件、调试、上真正的开发板,再到这篇的编辑器。回头看,这套环境已经能编译、能仿真、能调试、能上真板、写起来还顺手。下一站进 LED:先下到地砖下面用裸寄存器点一盏灯,看清官方库在替咱们做什么,再回到 HAL 之上用现代 C++ 把同一盏灯重新点亮。
 
 <ReferenceCard title="参考文献">
   <ReferenceItem

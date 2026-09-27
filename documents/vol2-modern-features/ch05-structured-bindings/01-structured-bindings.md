@@ -66,12 +66,15 @@ for (const auto& [id, name] : sensor_names) {
 }
 ```
 
-这里有个细节：循环体里写的是 `+id` 而不是 `id`。原因在于 `uint8_t` 的 `operator<<` 会把它当字符输出，而 `+` 会做整型提升（integral promotion），强制转换成 `int` 再打印。口说无凭，跑一下最直白（GCC 16.1.1，`-O2`）：
+这里有个细节：循环体里写的是 `+id` 而不是 `id`。原因在于 `uint8_t` 的 `operator<<` 会把它当字符输出，而 `+` 会做整型提升（integral promotion），强制转换成 `int` 再打印。口说无凭，您自己点「动手试一试」跑一遍最直白：
 
-```text
-without + (raw uint8_t): A
-with +    (promoted)   : 65
-```
+<OnlineCompilerDemo
+  title="动手验证：+id 的整型提升"
+  source-path="code/examples/vol2/35_uint8_promotion.cpp"
+  description="在线对比同一个 uint8_t：不加 + 打印成字符 A，加了 + 整型提升后打印成数字 65。"
+  run-options="-std=c++17"
+  allow-run
+/>
 
 同样是 `id = 65`，不加 `+` 打印出来是字符 `A`，加了才显示数字。
 
@@ -171,12 +174,15 @@ auto& [r3, r4] = range;
 r3 = 5;  // range.first 变成 5
 ```
 
-跑一下就能看到 `auto&` 改的是原对象、`auto` 改的是拷贝：
+跑一下就能看到 `auto&` 改的是原对象、`auto` 改的是拷贝——程序就在下面，点「动手试一试」直接跑：
 
-```text
-range.first  after auto& mutation: 5
-r1 (copy,    unaffected)         : 1
-```
+<OnlineCompilerDemo
+  title="动手验证：值绑定 vs 引用绑定"
+  source-path="code/examples/vol2/36_binding_semantics.cpp"
+  description="在线对比两种绑定语义：auto& 绑定改了 range.first（变 5），auto 拷贝绑定的 r1 不受影响（还是 1）。"
+  run-options="-std=c++17"
+  allow-run
+/>
 
 底层机制是这样的：编译器先声明一个匿名变量（类型由 `auto`/`auto&`/`const auto&`/`auto&&` 决定），用右侧表达式初始化它。然后每个绑定变量都是这个匿名变量的成员的引用（或者对于按值情况，是指向拷贝的成员的引用）。
 
@@ -256,11 +262,15 @@ SensorData data{5, 23.5f};
 auto [id, value] = data;    // id = 5, value = 23.5
 ```
 
-实跑确认（注意 `id` 又得加 `+` 才打印成数字）：
+实跑确认就在下面（注意 `id` 又得加 `+` 才打印成数字），点「动手试一试」直接跑：
 
-```text
-id = 5, value = 23.5
-```
+<OnlineCompilerDemo
+  title="动手验证：自定义类型的结构化绑定"
+  source-path="code/examples/vol2/37_sensor_data_binding.cpp"
+  description="在线验证 tuple-like 协议：特化 tuple_size/tuple_element 后，带私有成员的 SensorData 也能 auto [id, value] 解包。"
+  run-options="-std=c++17"
+  allow-run
+/>
 
 > 这里的关键是 `get<I>()` 函数必须定义在类所在的命名空间中（ADL 规则），这样编译器才能找到它。对于标准命名空间 `std` 中的特化，您需要在 `std` 命名空间中写 `tuple_size` 和 `tuple_element` 的特化，但 `get` 函数放在类所在的命名空间即可。
 

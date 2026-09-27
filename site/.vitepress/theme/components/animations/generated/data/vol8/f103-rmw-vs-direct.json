@@ -1,0 +1,629 @@
+{
+ "version": 1,
+ "id": "f103-rmw-vs-direct",
+ "title": "读改写三连，还是一条直达？",
+ "subtitle": "CRH |= 0x200000 与 BSRR = 0x2000 的两种待遇",
+ "source": "projects/vol8-f103-led/02-dsl/f103-rmw-vs-direct.yaml",
+ "backend": "web",
+ "template": "comparison_flow",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#111521",
+  "bgRaised": "#171D2D",
+  "text": "#F4F6FB",
+  "muted": "#98A2B8",
+  "fill": "#66D9EF",
+  "fillEdge": "#2E9DC2",
+  "emptyEdge": "#43506A",
+  "grow": "#FFB86C",
+  "numOnFill": "#0B1E27",
+  "ok": "#72D49A",
+  "bad": "#FF6B7A",
+  "cardBg": "#1B2234"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "读改写三连，还是一条直达？",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.4912,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "CRH |= 0x200000 与 BSRR = 0x2000 的两种待遇",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#98A2B8",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.428,
+   "h": 0.272
+  },
+  "show:code1": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "accent",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.98,
+   "w": 2.9056,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "CRH |= 0x200000",
+     "w": 1.98
+    },
+    {
+     "text": "读改写三连",
+     "w": 1.32
+    }
+   ],
+   "cx": -5.25,
+   "cy": 1.05
+  },
+  "show:rmw_edge_1": {
+   "kind": "arrow",
+   "x1": -3.6172,
+   "y1": 1.05,
+   "x2": -3.0528,
+   "y2": 1.05,
+   "cx": -3.335,
+   "cy": 1.05,
+   "w": 0.5644,
+   "h": 0.0,
+   "label": {
+    "text": "读",
+    "x": -3.335,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.2376,
+    "h": 0.2448
+   }
+  },
+  "show:ldr": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "danger",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.32,
+   "w": 2.2456,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "ldr 读回",
+     "w": 1.056
+    },
+    {
+     "text": "0x40011004",
+     "w": 1.32
+    }
+   ],
+   "cx": -1.75,
+   "cy": 1.05
+  },
+  "show:rmw_edge_2": {
+   "kind": "arrow",
+   "x1": -0.4472,
+   "y1": 1.05,
+   "x2": 0.3812,
+   "y2": 1.05,
+   "cx": -0.033,
+   "cy": 1.05,
+   "w": 0.8284,
+   "h": 0.0,
+   "label": {
+    "text": "改",
+    "x": -0.033,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.2376,
+    "h": 0.2448
+   }
+  },
+  "show:orr": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "danger",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.452,
+   "w": 2.3776,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "orr 置位",
+     "w": 1.056
+    },
+    {
+     "text": "r3 |= bit21",
+     "w": 1.452
+    }
+   ],
+   "cx": 1.75,
+   "cy": 1.05
+  },
+  "show:rmw_edge_3": {
+   "kind": "arrow",
+   "x1": 3.1188,
+   "y1": 1.05,
+   "x2": 3.9472,
+   "y2": 1.05,
+   "cx": 3.533,
+   "cy": 1.05,
+   "w": 0.8284,
+   "h": 0.0,
+   "label": {
+    "text": "写",
+    "x": 3.533,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.2376,
+    "h": 0.2448
+   }
+  },
+  "show:str1": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "danger",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.32,
+   "w": 2.2456,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "str 写回",
+     "w": 1.056
+    },
+    {
+     "text": "0x40011004",
+     "w": 1.32
+    }
+   ],
+   "cx": 5.25,
+   "cy": 1.05
+  },
+  "show:code2": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "accent",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.716,
+   "w": 2.6416,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "BSRR = 0x2000",
+     "w": 1.716
+    },
+    {
+     "text": "一步直达",
+     "w": 1.056
+    }
+   ],
+   "cx": 5.25,
+   "cy": -1.55
+  },
+  "show:direct_edge_1": {
+   "kind": "arrow",
+   "x1": 3.7492,
+   "y1": -1.55,
+   "x2": 3.0528,
+   "y2": -1.55,
+   "cx": 3.401,
+   "cy": -1.55,
+   "w": 0.6964,
+   "h": 0.0,
+   "label": {
+    "text": "直达",
+    "x": 3.401,
+    "y": -1.1976,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:str2": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "success",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.32,
+   "w": 2.2456,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "str 直达",
+     "w": 1.056
+    },
+    {
+     "text": "0x40011010",
+     "w": 1.32
+    }
+   ],
+   "cx": 1.75,
+   "cy": -1.55
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "|= 和 &= ：读、改、写三条一组",
+   "x": 0.0,
+   "y": 0.3764,
+   "fs": 0.24,
+   "color": "#FFB86C",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.5264,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "= 到 BSRR ：一条 str 一步到位",
+   "x": 0.0,
+   "y": -0.2,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.4688,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "差的是寄存器的脾气，硬件定的",
+   "x": 0.0,
+   "y": -0.7764,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.4352,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 2.91,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 1.91
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 1.91,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show code1",
+   "note": "",
+   "duration": 2.55,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:code1",
+     "cx": 0.0,
+     "cy": 0.4,
+     "t": 0.0,
+     "dur": 2.55
+    }
+   ]
+  },
+  {
+   "kind": "move",
+   "label": "move code1",
+   "note": "to [-5.25, 1.05]",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "move",
+     "target": "show:code1",
+     "frm": [
+      0.0,
+      0.4
+     ],
+     "to": [
+      -5.25,
+      1.05
+     ],
+     "t": 0.0,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show rmw_edge_1",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:rmw_edge_1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show ldr",
+   "note": "",
+   "duration": 1.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:ldr",
+     "cx": -1.75,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 1.95
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show rmw_edge_2",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:rmw_edge_2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show orr",
+   "note": "",
+   "duration": 2.07,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:orr",
+     "cx": 1.75,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 2.07
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show rmw_edge_3",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:rmw_edge_3",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show str1",
+   "note": "",
+   "duration": 1.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:str1",
+     "cx": 5.25,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 1.95
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show code2",
+   "note": "",
+   "duration": 2.31,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:code2",
+     "cx": 0.0,
+     "cy": -0.55,
+     "t": 0.0,
+     "dur": 2.31
+    }
+   ]
+  },
+  {
+   "kind": "move",
+   "label": "move code2",
+   "note": "to [5.25, -1.55]",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "move",
+     "target": "show:code2",
+     "frm": [
+      0.0,
+      -0.55
+     ],
+     "to": [
+      5.25,
+      -1.55
+     ],
+     "t": 0.0,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show direct_edge_1",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:direct_edge_1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show str2",
+   "note": "",
+   "duration": 1.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:str2",
+     "cx": 1.75,
+     "cy": -1.55,
+     "t": 0.0,
+     "dur": 1.95
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.5s",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 14.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:rmw_edge_1",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:ldr",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:rmw_edge_2",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:orr",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:rmw_edge_3",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:str1",
+     "t": 1.5,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:direct_edge_1",
+     "t": 1.8,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:str2",
+     "t": 2.1,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 2.4,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 5.15,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 7.9,
+     "dur": 2.03
+    }
+   ]
+  }
+ ]
+}

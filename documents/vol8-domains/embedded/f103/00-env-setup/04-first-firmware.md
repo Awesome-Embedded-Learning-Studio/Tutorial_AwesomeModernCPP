@@ -1,6 +1,6 @@
 ---
 title: "第一个自己的固件：往库里加 target"
-description: "看了三篇理论，这一篇全程动手：照抄 01_blinky 起自己的 00_my_blinky，注册进构建系统，亲历 sim target 撞名和漏注册两颗雷的真报错，再踩第三颗不响的——半改名让全绿的仿真跑起别人的固件；CMakeLists 逐段解剖，最后改一行 HAL_Delay 让效果在采样判据下可见——外加一个 200 比 500 还省 4 字节的指令编码彩蛋"
+description: "看了三篇理论，这一篇全程动手：照抄 01_blinky 起自己的 00_my_blinky，注册进构建系统，亲历 sim target 撞名和漏注册两个坑的真报错，再踩进第三个不报错的——半改名让全绿的仿真跑起别人的固件；CMakeLists 逐段解剖，最后改一行 HAL_Delay 让效果在采样判据下可见——外加一个 200 比 500 还省 4 字节的指令编码彩蛋"
 chapter: 0
 order: 4
 tags:
@@ -48,7 +48,7 @@ add_subdirectory(04_button)
 add_subdirectory(00_my_blinky)
 ```
 
-趁手热，咱们把这个目录结构看明白。这套工程是三层，最上面的是**顶层编排**（根 `CMakeLists.txt`，定标准、挂子目录）、**家族包**（`include/libestdx/boards/stm32f1/`，把官方 HAL 编成 `hal` 静态库——"轮子只讲不造"的那部分住这）、**固件**（`examples/` 下每个目录一个可执行目标，消费 hal）。您刚才这一拷一加，就是往第三层里添了一位新住户。
+趁手热，咱们把这个目录结构看明白。这套工程是三层，最上面的是**顶层编排**（根 `CMakeLists.txt`，定标准、挂子目录）、**家族包**（`include/libestdx/boards/stm32f1/`，把官方 HAL 编成 `hal` 静态库——"轮子只讲不造"的那部分住这）、**固件**（`examples/` 下每个目录一个可执行目标，消费 hal）。您刚才这一拷一加，就是往第三层里添了一个新目标。
 
 ## 哈哈哈哈被骗了兄弟
 
@@ -143,7 +143,7 @@ add_executable(my_blinky
 )
 ```
 
-咱们一段一段看。第一段声明可执行目标，注意那两个 C 文件：`stm32f1xx_it.c` 和 `syscalls.c` **住在固件这边而不是库里**。中断向量表和 newlib 对这些符号的引用在链接后期才出现，放库里会被"没人引用就不拉"的规则丢掉，谁拥有谁负责。接着链接：
+咱们一段一段看。第一段声明可执行目标，注意那两个 C 文件：`stm32f1xx_it.c` 和 `syscalls.c` **放在固件这边而不是库里**。中断向量表和 newlib 对这些符号的引用在链接后期才出现，放库里会被"没人引用就不拉"的规则丢掉，谁拥有谁负责。接着链接：
 
 ```cmake
 target_link_libraries(my_blinky PRIVATE hal)
@@ -173,7 +173,7 @@ add_custom_command(TARGET my_blinky POST_BUILD
 
 这个机制反过来也会送你个大的：`blinky` 这个名字在 `01_blinky` 那里**找得到**，于是您固件里漏改的引用静默解析到别人的 target 上。您的 `objcopy` 拷出来的是 01 的 ELF，您的 `my_flash` 烧进板子的是 01 的固件，一路上没有任何人喊一声。
 
-还没完。`renode.resc` 里的 `$bin` 是手写的文件路径，target 改名之后这条路就悬空了——而 ninja 从不清理孤儿产物，改名之前编出来的旧 ELF 还好端端躺在 `build/` 里，LoadELF 每次都成功。好在日志说——
+还没完。`renode.resc` 里的 `$bin` 是手写的文件路径，target 改名之后这条路就悬空了——而 ninja 从不清理孤儿产物，改名之前编出来的旧 ELF 还好端端待在 `build/` 里，LoadELF 每次都成功。好在日志说——
 
 ```text
 [4/5] Linking CXX executable examples/00_my_blinky/blinky; objcopy -> bin, report size

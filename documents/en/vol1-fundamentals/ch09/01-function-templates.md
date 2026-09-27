@@ -312,32 +312,14 @@ Let's unpack a few key points. `print_array` takes an array-by-reference paramet
 
 ### Verifying the Run
 
-```bash
-g++ -Wall -Wextra -std=c++17 func_template.cpp -o func_template && ./func_template
-```
+The complete program sits right below—hit "Try it yourself" and run it, no terminal needed:
 
-Expected output:
-
-```text
-=== max_value ===
-max_value(3, 7) = 7
-max_value(2.5, 1.3) = 2.5
-max_value("banana", "apple") = banana
-max_value<double>(3, 5.7) = 5.7
-
-=== swap_value ===
-before: a=10, b=20
-after:  a=20, b=10
-before: x=1.5, y=2.5
-after:  x=2.5, y=1.5
-before: s1="hello", s2="world"
-after:  s1="world", s2="hello"
-
-=== print_array ===
-int[]:    [3, 1, 4, 1, 5, 9]
-double[]: [1.1, 2.2, 3.3]
-string[]: [Alice, Bob, Charlie]
-```
+<OnlineCompilerDemo
+  title="Hands-On: func_template.cpp"
+  source-path="code/examples/vol1/17_function_templates.cpp"
+  description="Run func_template.cpp online and check it against the key results below. Try feeding print_array an array of another type, or delete the const char* specialization and see what happens."
+  allow-run
+/>
 
 Let's double-check a few key results: `max_value(3, 7)` correctly returns `7`; `max_value("banana", "apple")` goes through the `const char*` specialized version and compares lexicographically, so `"banana"` is greater than `"apple"` and `"banana"` is returned; `swap_value` swaps the values correctly before and after; and `print_array` prints the contents of three arrays of different types correctly, with no stray trailing comma.
 

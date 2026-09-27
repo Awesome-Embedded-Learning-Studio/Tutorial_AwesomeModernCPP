@@ -9,7 +9,8 @@ const unavailableAvatars = ref(new Set<string>())
 </script>
 
 <template>
-  <aside v-if="people.length" class="weekly-thanks" aria-label="本期鸣谢">
+  <!-- no-zoom:鸣谢头像不进正文图片点击放大(image-client.ts 扫描时排除) -->
+  <aside v-if="people.length" class="weekly-thanks no-zoom" aria-label="本期鸣谢">
     <div class="weekly-thanks__heading">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="m12 3 2.6 5.6 6.1.8-4.5 4.3 1.1 6.1-5.3-3-5.3 3 1.1-6.1L3.3 9.4l6.1-.8L12 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />

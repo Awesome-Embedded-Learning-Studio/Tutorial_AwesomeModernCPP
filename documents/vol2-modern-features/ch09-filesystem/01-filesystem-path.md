@@ -62,13 +62,15 @@ int main() {
 }
 ```
 
-运行结果（Linux 上）：
+这份程序就在下面，点「动手试一试」直接跑（Linux 上）：
 
-```text
-p1: "/usr/local/bin"
-p2: "/home/user/docs"
-p3: "C:\\Users\\Alice\\Documents"
-```
+<OnlineCompilerDemo
+  title="动手验证：path 的构造与输出"
+  source-path="code/examples/vol2/45_path_construct.cpp"
+  description="在线验证 path 的三种构造方式。注意 operator<< 输出 path 时会自动加引号，反斜杠在 Linux 上只是普通文件名字符。"
+  run-options="-std=c++17"
+  allow-run
+/>
 
 注意 `operator<<` 输出 `path` 时会加上引号。如果你不想要引号，可以用 `p.string()` 输出。
 
@@ -108,50 +110,15 @@ int main() {
 }
 ```
 
-运行结果（Linux 上）：
+这份分解程序就在下面，点「动手试一试」直接跑（Linux 上）：
 
-```text
-原始路径:     "/usr/local/bin/gcc"
-root_name:    ""
-root_dir:     "/"
-root_path:    "/"
-relative_path:"usr/local/bin/gcc"
-parent_path:  "/usr/local/bin"
-filename:     "gcc"
-stem:         "gcc"
-extension:    ""
-------
-原始路径:     "/home/user/report.pdf"
-root_name:    ""
-root_dir:     "/"
-root_path:    "/"
-relative_path:"home/user/report.pdf"
-parent_path:  "/home/user"
-filename:     "report.pdf"
-stem:         "report"
-extension:    ".pdf"
-------
-原始路径:     "config.ini"
-root_name:    ""
-root_dir:     ""
-root_path:    ""
-relative_path:"config.ini"
-parent_path:  ""
-filename:     "config.ini"
-stem:         "config"
-extension:    ".ini"
-------
-原始路径:     "/tmp/archive.tar.gz"
-root_name:    ""
-root_dir:     "/"
-root_path:    "/"
-relative_path:"tmp/archive.tar.gz"
-parent_path:  "/tmp"
-filename:     "archive.tar.gz"
-stem:         "archive.tar"
-extension:    ".gz"
-------
-```
+<OnlineCompilerDemo
+  title="动手验证：路径分解的全套成员"
+  source-path="code/examples/vol2/46_path_decompose.cpp"
+  description="在线分解四个典型路径。重点对比第四个：/tmp/archive.tar.gz 的 extension 只取 .gz，stem 是 archive.tar。"
+  run-options="-std=c++17"
+  allow-run
+/>
 
 咱们把第二条路径 `/home/user/report.pdf` 的分解画成一张图：
 

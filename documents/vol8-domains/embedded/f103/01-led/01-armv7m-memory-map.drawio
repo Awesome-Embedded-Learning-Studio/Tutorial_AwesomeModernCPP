@@ -1,0 +1,138 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="ARMv7-M 4GB Memory Map" id="armv7m-memory-map">
+    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="620" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="ARMv7-M 画死的 4GB 分区（DDI 0403 Table B3-1）与 ST 的填充" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=17;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="15" width="660" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- Address axis -->
+        <mxCell id="axis" value="" style="endArrow=block;html=1;strokeColor=#455A64;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="130" y="480" as="sourcePoint" />
+            <mxPoint x="130" y="60" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="axis_top" value="0xFFFFFFFF" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#455A64;" vertex="1" parent="1">
+          <mxGeometry x="30" y="48" width="92" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== Band: System ===================== -->
+        <mxCell id="band_sys" value="&lt;b&gt;System&lt;/b&gt;&lt;br&gt;头 1MB 是 PPB，往后是厂商区" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#4A148C;strokeWidth=2;fillColor=#F3E5F5;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="245" y="60" width="300" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="addr_sys" value="0xE0000000" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=top;fontSize=12;fontStyle=1;fontColor=#455A64;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="180" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="fill_sys" value="NVIC @ 0xE000E000、SysTick&lt;br&gt;（bluepill.repl: nvic @ sysbus 0xE000E000）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#4A148C;strokeWidth=1;dashed=1;fillColor=#FAFAFA;fontSize=11;align=left;verticalAlign=middle;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="570" y="66" width="230" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="link_sys" value="" style="endArrow=none;html=1;strokeColor=#9E9E9E;strokeWidth=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="545" y="93" as="sourcePoint" />
+            <mxPoint x="570" y="93" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ===================== Band: Device ===================== -->
+        <mxCell id="band_dev" value="&lt;b&gt;Device&lt;/b&gt;&lt;br&gt;外部设备 &lt;font color=&quot;#C62828&quot;&gt;XN&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#546E7A;strokeWidth=2;fillColor=#ECEFF1;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="245" y="126" width="300" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="addr_dev" value="0xA0000000" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=top;fontSize=12;fontStyle=1;fontColor=#455A64;" vertex="1" parent="1">
+          <mxGeometry x="40" y="126" width="180" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="fill_dev" value="F103 没用上，空着" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#90A4AE;strokeWidth=1;dashed=1;fillColor=#FAFAFA;fontSize=11;align=left;verticalAlign=middle;spacingLeft=8;fontColor=#90A4AE;" vertex="1" parent="1">
+          <mxGeometry x="570" y="132" width="230" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="link_dev" value="" style="endArrow=none;html=1;strokeColor=#9E9E9E;strokeWidth=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="545" y="159" as="sourcePoint" />
+            <mxPoint x="570" y="159" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ===================== Band: RAM ===================== -->
+        <mxCell id="band_ram" value="&lt;b&gt;RAM&lt;/b&gt;&lt;br&gt;外部内存" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#9E7C0C;strokeWidth=2;fillColor=#FFF8E1;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="245" y="192" width="300" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="addr_ram" value="0x60000000" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=top;fontSize=12;fontStyle=1;fontColor=#455A64;" vertex="1" parent="1">
+          <mxGeometry x="40" y="192" width="180" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="fill_ram" value="F103 没用上，空着" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#90A4AE;strokeWidth=1;dashed=1;fillColor=#FAFAFA;fontSize=11;align=left;verticalAlign=middle;spacingLeft=8;fontColor=#90A4AE;" vertex="1" parent="1">
+          <mxGeometry x="570" y="198" width="230" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="link_ram" value="" style="endArrow=none;html=1;strokeColor=#9E9E9E;strokeWidth=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="545" y="225" as="sourcePoint" />
+            <mxPoint x="570" y="225" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ===================== Band: Peripheral ===================== -->
+        <mxCell id="band_periph" value="&lt;b&gt;Peripheral&lt;/b&gt;&lt;br&gt;片上外设 &lt;font color=&quot;#C62828&quot;&gt;XN&lt;/font&gt;（不许执行）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#E65100;strokeWidth=2;fillColor=#FFF3E0;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="245" y="258" width="300" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="addr_periph" value="0x40000000" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=top;fontSize=12;fontStyle=1;fontColor=#455A64;" vertex="1" parent="1">
+          <mxGeometry x="40" y="258" width="180" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="fill_periph" value="RCC @ 0x40021000、GPIOC @ 0x40011000&lt;br&gt;（bluepill.repl 里逐行落位）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#E65100;strokeWidth=1;dashed=1;fillColor=#FAFAFA;fontSize=11;align=left;verticalAlign=middle;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="570" y="264" width="230" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="link_periph" value="" style="endArrow=none;html=1;strokeColor=#9E9E9E;strokeWidth=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="545" y="291" as="sourcePoint" />
+            <mxPoint x="570" y="291" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ===================== Band: SRAM ===================== -->
+        <mxCell id="band_sram" value="&lt;b&gt;SRAM&lt;/b&gt;&lt;br&gt;片上内存" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#1B5E20;strokeWidth=2;fillColor=#E8F5E9;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="245" y="324" width="300" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="addr_sram" value="0x20000000" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=top;fontSize=12;fontStyle=1;fontColor=#455A64;" vertex="1" parent="1">
+          <mxGeometry x="40" y="324" width="180" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="fill_sram" value="ST 填 20K：0x20000000–0x20005000&lt;br&gt;（initial SP 0x20005000 就是这格的顶）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1B5E20;strokeWidth=1;dashed=1;fillColor=#FAFAFA;fontSize=11;align=left;verticalAlign=middle;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="570" y="330" width="230" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="link_sram" value="" style="endArrow=none;html=1;strokeColor=#9E9E9E;strokeWidth=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="545" y="357" as="sourcePoint" />
+            <mxPoint x="570" y="357" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ===================== Band: Code ===================== -->
+        <mxCell id="band_code" value="&lt;b&gt;Code&lt;/b&gt;&lt;br&gt;代码和常量（通常接 Flash）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=2;fillColor=#E3F2FD;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="245" y="390" width="300" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="addr_code" value="0x00000000" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=top;fontSize=12;fontStyle=1;fontColor=#455A64;" vertex="1" parent="1">
+          <mxGeometry x="40" y="390" width="180" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="fill_code" value="ST 填 64K Flash @ 0x08000000&lt;br&gt;（咱们跑的指令就住在这格）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=1;dashed=1;fillColor=#FAFAFA;fontSize=11;align=left;verticalAlign=middle;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="570" y="396" width="230" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="link_code" value="" style="endArrow=none;html=1;strokeColor=#9E9E9E;strokeWidth=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="545" y="423" as="sourcePoint" />
+            <mxPoint x="570" y="423" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Bottom note -->
+        <mxCell id="bottom_note" value="每格 512MB，六格排满 4GB；架构画格子，厂商往里填 —— &lt;br&gt;换 NXP、换 GD，格子边界一模一样，这就是「拿到哪家芯片都一视同仁」" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontColor=#37474F;" vertex="1" parent="1">
+          <mxGeometry x="90" y="480" width="660" height="52" as="geometry" />
+        </mxCell>
+
+        <!-- XN legend -->
+        <mxCell id="xn_legend" value="&lt;font color=&quot;#C62828&quot;&gt;&lt;b&gt;XN&lt;/b&gt;&lt;/font&gt; = eXecute Never：这块只能读写，不能跳进去执行" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontColor=#757575;" vertex="1" parent="1">
+          <mxGeometry x="245" y="540" width="400" height="22" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,827 @@
+{
+ "version": 1,
+ "id": "f103-str-journey",
+ "title": "一条 str，从取指到引脚",
+ "subtitle": "STM32F103 · 0x08000178: str r5, [r4, #16]",
+ "source": "projects/vol8-f103-led/02-dsl/f103-str-journey.yaml",
+ "backend": "web",
+ "template": "process_flow",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#111521",
+  "bgRaised": "#171D2D",
+  "text": "#F4F6FB",
+  "muted": "#98A2B8",
+  "fill": "#66D9EF",
+  "fillEdge": "#2E9DC2",
+  "emptyEdge": "#43506A",
+  "grow": "#FFB86C",
+  "numOnFill": "#0B1E27",
+  "ok": "#72D49A",
+  "bad": "#FF6B7A",
+  "cardBg": "#1B2234"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "一条 str，从取指到引脚",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.5952,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "STM32F103 · 0x08000178: str r5, [r4, #16]",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#98A2B8",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.084,
+   "h": 0.272
+  },
+  "show:pc": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "accent",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.98,
+   "w": 2.9056,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "0x08000178",
+     "w": 1.32
+    },
+    {
+     "text": "str r5,[r4,#16]",
+     "w": 1.98
+    }
+   ],
+   "cx": -5.25,
+   "cy": 1.05
+  },
+  "show:edge_1": {
+   "kind": "arrow",
+   "x1": -3.6172,
+   "y1": 1.05,
+   "x2": -2.9208,
+   "y2": 1.05,
+   "cx": -3.269,
+   "cy": 1.05,
+   "w": 0.6964,
+   "h": 0.0,
+   "label": {
+    "text": "取指",
+    "x": -3.269,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:fe": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.056,
+   "w": 1.9816,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "Fe 取指",
+     "w": 0.924
+    },
+    {
+     "text": "抓回编码",
+     "w": 1.056
+    }
+   ],
+   "cx": -1.75,
+   "cy": 1.05
+  },
+  "show:edge_2": {
+   "kind": "arrow",
+   "x1": -0.5792,
+   "y1": 1.05,
+   "x2": 0.4472,
+   "y2": 1.05,
+   "cx": -0.066,
+   "cy": 1.05,
+   "w": 1.0264,
+   "h": 0.0,
+   "label": {
+    "text": "译码",
+    "x": -0.066,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:de": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.32,
+   "w": 2.2456,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "De 译码",
+     "w": 0.924
+    },
+    {
+     "text": "0x40011010",
+     "w": 1.32
+    }
+   ],
+   "cx": 1.75,
+   "cy": 1.05
+  },
+  "show:edge_3": {
+   "kind": "arrow",
+   "x1": 3.0528,
+   "y1": 1.05,
+   "x2": 4.0132,
+   "y2": 1.05,
+   "cx": 3.533,
+   "cy": 1.05,
+   "w": 0.9604,
+   "h": 0.0,
+   "label": {
+    "text": "执行",
+    "x": 3.533,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:ex": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.188,
+   "w": 2.1136,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "Ex 执行",
+     "w": 0.924
+    },
+    {
+     "text": "发 0x2000",
+     "w": 1.188
+    }
+   ],
+   "cx": 5.25,
+   "cy": 1.05
+  },
+  "show:edge_4": {
+   "kind": "arrow",
+   "x1": 5.25,
+   "y1": 0.242,
+   "x2": 5.25,
+   "y2": -0.742,
+   "cx": 5.25,
+   "cy": -0.25,
+   "w": 0.0,
+   "h": 0.984,
+   "label": {
+    "text": "发上总线",
+    "x": 4.6248,
+    "y": -0.25,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.9504,
+    "h": 0.2448
+   }
+  },
+  "show:bus": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.188,
+   "w": 2.1136,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "总线矩阵",
+     "w": 1.056
+    },
+    {
+     "text": "查表→APB2",
+     "w": 1.188
+    }
+   ],
+   "cx": 5.25,
+   "cy": -1.55
+  },
+  "show:edge_5": {
+   "kind": "arrow",
+   "x1": 4.0132,
+   "y1": -1.55,
+   "x2": 3.1188,
+   "y2": -1.55,
+   "cx": 3.566,
+   "cy": -1.55,
+   "w": 0.8944,
+   "h": 0.0,
+   "label": {
+    "text": "路由",
+    "x": 3.566,
+    "y": -1.1976,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:gpio": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.452,
+   "w": 2.3776,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "GPIOC·BSRR",
+     "w": 1.32
+    },
+    {
+     "text": "收下 0x2000",
+     "w": 1.452
+    }
+   ],
+   "cx": 1.75,
+   "cy": -1.55
+  },
+  "show:edge_6": {
+   "kind": "arrow",
+   "x1": 0.3812,
+   "y1": -1.55,
+   "x2": -0.4472,
+   "y2": -1.55,
+   "cx": -0.033,
+   "cy": -1.55,
+   "w": 0.8284,
+   "h": 0.0,
+   "label": {
+    "text": "生效",
+    "x": -0.033,
+    "y": -1.1976,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:pin": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.32,
+   "w": 2.2456,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "PC13",
+     "w": 0.528
+    },
+    {
+     "text": "顶到高电平",
+     "w": 1.32
+    }
+   ],
+   "cx": -1.75,
+   "cy": -1.55
+  },
+  "show:edge_7": {
+   "kind": "arrow",
+   "x1": -3.0528,
+   "y1": -1.55,
+   "x2": -4.0132,
+   "y2": -1.55,
+   "cx": -3.533,
+   "cy": -1.55,
+   "w": 0.9604,
+   "h": 0.0,
+   "label": {
+    "text": "灯灭",
+    "x": -3.533,
+    "y": -1.1976,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:led": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "success",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.188,
+   "w": 2.1136,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "LED",
+     "w": 0.396
+    },
+    {
+     "text": "高电平→灭",
+     "w": 1.188
+    }
+   ],
+   "cx": -5.25,
+   "cy": -1.55
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "地址译码时算好，碰内存在执行时",
+   "x": 0.0,
+   "y": 0.3764,
+   "fs": 0.24,
+   "color": "#FFB86C",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.752,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "矩阵按地址分发：0x40011000 归 GPIOC",
+   "x": 0.0,
+   "y": -0.2,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.3808,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "BSRR 收下 0x2000，PC13 顶高，灯灭",
+   "x": 0.0,
+   "y": -0.7764,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.064,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 2.91,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 1.91
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 1.91,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show pc",
+   "note": "",
+   "duration": 2.55,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:pc",
+     "cx": 0.0,
+     "cy": 0.4,
+     "t": 0.0,
+     "dur": 2.55
+    }
+   ]
+  },
+  {
+   "kind": "move",
+   "label": "move pc",
+   "note": "to [-5.25, 1.05]",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "move",
+     "target": "show:pc",
+     "frm": [
+      0.0,
+      0.4
+     ],
+     "to": [
+      -5.25,
+      1.05
+     ],
+     "t": 0.0,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show edge_1",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:edge_1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show fe",
+   "note": "",
+   "duration": 1.35,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:fe",
+     "cx": -1.75,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 1.35
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show edge_2",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:edge_2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show de",
+   "note": "",
+   "duration": 1.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:de",
+     "cx": 1.75,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 1.95
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show edge_3",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:edge_3",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show ex",
+   "note": "",
+   "duration": 1.71,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:ex",
+     "cx": 5.25,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 1.71
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show edge_4",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:edge_4",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show bus",
+   "note": "",
+   "duration": 1.59,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:bus",
+     "cx": 5.25,
+     "cy": -1.55,
+     "t": 0.0,
+     "dur": 1.59
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show edge_5",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:edge_5",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show gpio",
+   "note": "",
+   "duration": 1.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:gpio",
+     "cx": 1.75,
+     "cy": -1.55,
+     "t": 0.0,
+     "dur": 1.95
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show edge_6",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:edge_6",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show pin",
+   "note": "",
+   "duration": 1.35,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:pin",
+     "cx": -1.75,
+     "cy": -1.55,
+     "t": 0.0,
+     "dur": 1.35
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show edge_7",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:edge_7",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show led",
+   "note": "",
+   "duration": 1.35,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:led",
+     "cx": -5.25,
+     "cy": -1.55,
+     "t": 0.0,
+     "dur": 1.35
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.5s",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 18.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:edge_1",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:fe",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:edge_2",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:de",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:edge_3",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:ex",
+     "t": 1.5,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:edge_4",
+     "t": 1.8,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:bus",
+     "t": 2.1,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:edge_5",
+     "t": 2.4,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:gpio",
+     "t": 2.7,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:edge_6",
+     "t": 3.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:pin",
+     "t": 3.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:edge_7",
+     "t": 3.6,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 3.9,
+     "dur": 2.15
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 6.4,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 9.15,
+     "dur": 2.4
+    }
+   ]
+  }
+ ]
+}

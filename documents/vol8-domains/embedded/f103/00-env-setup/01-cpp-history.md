@@ -184,7 +184,7 @@ C是个出色的语言，就像您跟我说“喂帮我看看这段代码的性�
     title="The Best Embedded Programming Languages for Engineers Now"
     :year="2024"
     url="https://www.beningo.com/the-best-embedded-programming-languages-for-engineers-now/"
-    chapter="行业调查口径:C 驱动全球超过 60% 的嵌入式项目"
+    chapter="调查数据:C 驱动全球超过 60% 的嵌入式项目"
   />
   <ReferenceItem
     :id="12"

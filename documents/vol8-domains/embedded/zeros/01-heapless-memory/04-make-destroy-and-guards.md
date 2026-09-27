@@ -48,7 +48,19 @@ namespace ZerOS::memory
             static_assert(sizeof(ObjectType) <= PoolStuff::BLOCK_SIZE, "block overflow");
             static_assert(alignof(ObjectType) <= PoolStuff::BLOCK_ALIGN, "block under-aligned");
         }
+```
 
+形参顺序有个讲究,注释头一句就是它:`ObjectType` 只出现在返回类型里,永远推导不出来,必须显式指定——所以放在模板参数表第一位,后面的池类型才能从实参推导。调用点写出来就是 `Make<Gadget>(pool, 41, "answer")`,池类型自动跟上,不用您拼写一遍。
+
+守卫那两行,是您这一篇要盯住的核心防线。块要装得下对象,这是 `sizeof` 那条;对象还要坐得正,这是 `alignof` 那条。注释举的例子很精确,咱们拆开看。
+
+64 字节的**对象**,放进 16 字节对齐的块:没问题,装得下,坐得也正。您再看 64 字节**对齐**的对象:不行,块的对齐只有 16,`placement new` 会把它落在一个没对齐的地址上。
+
+没对齐会怎样?这是 UB,而且是没有哪个 sanitizer 能可靠抓住的那种。这种 UB 在 Cortex-M3 上尤其不是理论问题:过对齐的数据遇上 `LDRD`/`STM` 这类指令,硬件直接 HardFault,连给咱们报个错的机会都没有。所以这两条必须在编译期拦,一行 `static_assert` 拦一条。
+
+守卫套在 `if constexpr (requires ...)` 里,您留意这个松紧:池要是没暴露 `BLOCK_SIZE`/`BLOCK_ALIGN` 这种几何信息,门面不强迫,照样能用——这个松紧度是有测试专门锁着的,下面见。
+
+```cpp
         auto raw_buffer = pool.raw_allocate();
         if(!raw_buffer) {
             return std::unexpected {raw_buffer.error()};
@@ -58,7 +70,11 @@ namespace ZerOS::memory
         // With the given arguments
         return ::new (*raw_buffer) ObjectType(std::forward<CreationArgs>(args)...);
     }
+```
 
+咱们看 `Make` 干的事:从池里领一块裸内存,`placement new` 在原地构造对象,构造实参完美转发过去;失败时错误原样传回,一个多余的对象都不会被构造。
+
+```cpp
     template<MemoryPool PoolStuff, typename ObjectType>
     MemoryAllocationError Destroy(PoolStuff& pool, ObjectType* obj) {
         if (!obj) {
@@ -70,13 +86,7 @@ namespace ZerOS::memory
 }
 ```
 
-咱们看 `Make` 干的事:从池里领一块裸内存,`placement new` 在原地构造对象,构造实参完美转发过去;失败时错误原样传回,一个多余的对象都不会被构造。`Destroy` 反过来:先 `destroy_at` 跑析构,再把块还给池。
-
-形参顺序有个讲究,注释头一句就是它:`ObjectType` 只出现在返回类型里,永远推导不出来,必须显式指定——所以放在模板参数表第一位,后面的池类型才能从实参推导。调用点写出来就是 `Make<Gadget>(pool, 41, "answer")`,池类型自动跟上,不用您拼写一遍。
-
-守卫那两行,是您这一篇要盯住的核心防线。块要装得下(`sizeof`),对象还要坐得正(`alignof`):注释举的例子精确——64 字节的对象放进 16 字节对齐的块,没问题;64 字节**对齐**的对象,不行,`placement new` 会把它落在没对齐的地址上,这是 UB,而且是没有哪个 sanitizer 能可靠抓住的那种。在 Cortex-M3 上这不是理论问题,过对齐的数据遇上 `LDRD`/`STM` 这类指令,硬件直接 HardFault。所以这两条必须在编译期拦,一行 `static_assert` 一条。
-
-守卫套在 `if constexpr (requires ...)` 里,您留意这个松紧:池要是没暴露 `BLOCK_SIZE`/`BLOCK_ALIGN` 这种几何信息,门面不强迫,照样能用——这个松紧度是有测试专门锁着的,下面见。
+咱们再看 `Destroy`,就三行:空指针直接放行,先 `destroy_at` 跑析构,再把块还给池。
 
 ## 给门面上刑
 
