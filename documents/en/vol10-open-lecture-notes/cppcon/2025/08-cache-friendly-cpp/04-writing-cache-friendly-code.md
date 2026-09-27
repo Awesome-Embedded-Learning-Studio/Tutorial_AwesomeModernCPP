@@ -134,8 +134,8 @@ Folding the rules above into a checklist to run through when facing a concrete s
 3. **Pick the right data type.** As [part three](03-data-types-and-cache.md) covered: shrink storage-heavy fields (enums especially) without hesitation, don't blindly shrink arithmetic-heavy fields, and let measurement decide.
 4. **Iterate in memory-contiguous order.** The inner loop touches contiguous memory — no hopping around.
 5. **When multiple threads write shared data, alignment-pad against false sharing.**
-6. **The most important one: measure after every change.** All the optimizations above are only "might help" — whether one actually works, and by how much, is decided by the profiler and the benchmark.
+6. **The most important one: measure after every change.** Every optimization above is only a "might help" — whether one actually works, and by how much, is decided by the profiler and the benchmark.
 
 All of this sounds like common sense, but every rule only truly sticks after you've been bitten by it. The biggest value of Jonathan's talk isn't teaching you any single trick — it's planting a reflex, so that every line of memory-accessing code you write flashes one question through your head: "For this access pattern, what's the cache-line utilization?" Build that intuition, and you're the one writing faster code than most people.
 
-[Back to the index](index.md) · [Companion piece: why 99% of microbenchmarks lie](../07-microbenchmarks-that-lie/index.md)
+[Back to the index](index.md) · [Companion piece: Why 99% of C++ Microbenchmarks Lie](../07-microbenchmarks-that-lie/index.md)
