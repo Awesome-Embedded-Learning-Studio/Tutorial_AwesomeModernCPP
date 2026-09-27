@@ -1,0 +1,16 @@
+{
+  "type": "choice",
+  "title": "独占的所有权",
+  "stars": 1,
+  "hints": [
+    "拷贝构造不是「没写」,是被**显式删除**了:`unique_ptr` 承诺所有权独占,拷贝出来就有两个持有者,和承诺直接冲突。",
+    "`get()` 只是把裸指针借出来看看,不动所有权。把 `unique_ptr` 直接喂给 `shared_ptr` 的构造函数,人家收不收?"
+  ],
+  "options": [
+    "auto q = p;",
+    "auto q = std::move(p);",
+    "int* raw = p.get();",
+    "std::shared_ptr<int> s = p;"
+  ],
+  "answer": [2, 3]
+}
