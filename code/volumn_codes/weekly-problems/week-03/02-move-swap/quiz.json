@@ -1,0 +1,17 @@
+{
+  "type": "judge-assert",
+  "title": "用移动写 swap",
+  "stars": 2,
+  "hints": [
+    "经典的「三行交换」:`T tmp = std::move(a);` 先把 a 移动到临时对象里,后面两行再各移动一次——全程走移动构造和移动赋值。",
+    "`Box` 的拷贝构造和拷贝赋值都会让 `SwapStats::copies` 加一:哪一行忘了 `std::move`,比如写成 `T tmp = a;`,计数就不再是 0。"
+  ],
+  "tests": [
+    "swap_check(3, 4).exchanged == true",
+    "swap_check(3, 4).copies == 0",
+    "swap_check(-7, 99).exchanged == true",
+    "swap_check(-7, 99).copies == 0",
+    "swap_check(12345, 6).exchanged == true",
+    "swap_check(12345, 6).copies == 0"
+  ]
+}
