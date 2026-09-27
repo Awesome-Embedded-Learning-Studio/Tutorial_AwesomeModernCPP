@@ -1,0 +1,834 @@
+{
+ "version": 1,
+ "id": "vtable-dispatch",
+ "title": "一次虚函数调用，两步间接",
+ "subtitle": "shapes[1] 与 shapes[2] 的 draw() 走查",
+ "source": "projects/vol1-ch08-vtable/02-dsl/vtable-dispatch.yaml",
+ "backend": "web",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#17171f",
+  "text": "#ECECE4",
+  "muted": "#9a9aad",
+  "fill": "#5EC8E0",
+  "fillEdge": "#2E86AB",
+  "emptyEdge": "#4a4a5e",
+  "grow": "#FFB454",
+  "numOnFill": "#0e2430",
+  "ok": "#7BC96A",
+  "bad": "#E06C75",
+  "cardBg": "#1e1e2a"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "一次虚函数调用，两步间接",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.0688,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "shapes[1] 与 shapes[2] 的 draw() 走查",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.652,
+   "h": 0.272
+  },
+  "show:call1": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.244,
+   "w": 3.1696,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "shapes[1]->draw()",
+     "w": 2.244
+    },
+    {
+     "text": "静态类型: Shape*",
+     "w": 2.112
+    }
+   ],
+   "cx": -2.6,
+   "cy": -1.35
+  },
+  "show:a1": {
+   "kind": "arrow",
+   "x1": -2.6,
+   "y1": -0.542,
+   "x2": -2.6,
+   "y2": 0.042,
+   "cx": -2.6,
+   "cy": -0.25,
+   "w": 0.0,
+   "h": 0.584,
+   "label": {
+    "text": "解引用",
+    "x": -3.1064,
+    "y": -0.25,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.7128,
+    "h": 0.2448
+   }
+  },
+  "show:obj_c": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.716,
+   "w": 2.6416,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "Circle 对象",
+     "w": 1.452
+    },
+    {
+     "text": "隐藏成员 vptr",
+     "w": 1.716
+    }
+   ],
+   "cx": -2.6,
+   "cy": 0.85
+  },
+  "show:a2": {
+   "kind": "arrow",
+   "x1": -1.0992,
+   "y1": 0.85,
+   "x2": -0.0968,
+   "y2": 0.85,
+   "cx": -0.598,
+   "cy": 0.85,
+   "w": 1.0024,
+   "h": 0.0,
+   "label": {
+    "text": "① 读 vptr",
+    "x": -0.598,
+    "y": 1.2024,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.1448,
+    "h": 0.2448
+   }
+  },
+  "show:vt_c": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.508,
+   "w": 3.4336,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "Circle 的 vtable",
+     "w": 2.112
+    },
+    {
+     "text": "[0] &Circle::draw()",
+     "w": 2.508
+    }
+   ],
+   "cx": 1.8,
+   "cy": 0.85
+  },
+  "show:a3": {
+   "kind": "arrow",
+   "x1": 1.8,
+   "y1": 0.042,
+   "x2": 1.8,
+   "y2": -0.542,
+   "cx": 1.8,
+   "cy": -0.25,
+   "w": 0.0,
+   "h": 0.584,
+   "label": {
+    "text": "② 间接调用",
+    "x": 1.0002,
+    "y": -0.25,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.2996,
+    "h": 0.2448
+   }
+  },
+  "show:fn_c": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 3.564,
+   "w": 4.4896,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "Circle::draw()",
+     "w": 1.848
+    },
+    {
+     "text": "printf(\"Circle::draw()\\n\");",
+     "w": 3.564
+    }
+   ],
+   "cx": 1.8,
+   "cy": -1.35
+  },
+  "show:call2": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.244,
+   "w": 3.1696,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "shapes[2]->draw()",
+     "w": 2.244
+    },
+    {
+     "text": "静态类型: Shape*",
+     "w": 2.112
+    }
+   ],
+   "cx": -2.6,
+   "cy": -1.35
+  },
+  "show:b1": {
+   "kind": "arrow",
+   "x1": -2.6,
+   "y1": -0.542,
+   "x2": -2.6,
+   "y2": 0.042,
+   "cx": -2.6,
+   "cy": -0.25,
+   "w": 0.0,
+   "h": 0.584,
+   "label": {
+    "text": "解引用",
+    "x": -3.1064,
+    "y": -0.25,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.7128,
+    "h": 0.2448
+   }
+  },
+  "show:obj_r": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.848,
+   "w": 2.7736,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "Rectangle 对象",
+     "w": 1.848
+    },
+    {
+     "text": "隐藏成员 vptr",
+     "w": 1.716
+    }
+   ],
+   "cx": -2.6,
+   "cy": 0.85
+  },
+  "show:b2": {
+   "kind": "arrow",
+   "x1": -1.0332,
+   "y1": 0.85,
+   "x2": -0.2948,
+   "y2": 0.85,
+   "cx": -0.664,
+   "cy": 0.85,
+   "w": 0.7384,
+   "h": 0.0,
+   "label": {
+    "text": "① 读 vptr",
+    "x": -0.664,
+    "y": 1.2024,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.1448,
+    "h": 0.2448
+   }
+  },
+  "show:vt_r": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.904,
+   "w": 3.8296,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "Rectangle 的 vtable",
+     "w": 2.508
+    },
+    {
+     "text": "[0] &Rectangle::draw()",
+     "w": 2.904
+    }
+   ],
+   "cx": 1.8,
+   "cy": 0.85
+  },
+  "show:b3": {
+   "kind": "arrow",
+   "x1": 1.8,
+   "y1": 0.042,
+   "x2": 1.8,
+   "y2": -0.542,
+   "cx": 1.8,
+   "cy": -0.25,
+   "w": 0.0,
+   "h": 0.584,
+   "label": {
+    "text": "② 间接调用",
+    "x": 1.0002,
+    "y": -0.25,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.2996,
+    "h": 0.2448
+   }
+  },
+  "show:fn_r": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 3.96,
+   "w": 4.8856,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "Rectangle::draw()",
+     "w": 2.244
+    },
+    {
+     "text": "printf(\"Rectangle::draw()\\n\");",
+     "w": 3.96
+    }
+   ],
+   "cx": 1.8,
+   "cy": -1.35
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "同一句 shapes[i]->draw()，两步间接",
+   "x": 0.0,
+   "y": 0.3764,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.2128,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "① 读 vptr 定位 vtable，② 取槽位调用",
+   "x": 0.0,
+   "y": -0.2,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.7168,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "落到哪个 draw()，由对象的实际类型决定",
+   "x": 0.0,
+   "y": -0.7764,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.7936,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 2.79,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 1.79
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 1.79,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show call1",
+   "note": "",
+   "duration": 2.79,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:call1",
+     "cx": -2.6,
+     "cy": -1.35,
+     "t": 0.0,
+     "dur": 2.79
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a1",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show obj_c",
+   "note": "",
+   "duration": 1.83,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:obj_c",
+     "cx": -2.6,
+     "cy": 0.85,
+     "t": 0.0,
+     "dur": 1.83
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a2",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show vt_c",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:vt_c",
+     "cx": 1.8,
+     "cy": 0.85,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a3",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a3",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show fn_c",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:fn_c",
+     "cx": 1.8,
+     "cy": -1.35,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide fn_c",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:fn_c",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide a3",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:a3",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide vt_c",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:vt_c",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide a2",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:a2",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide obj_c",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:obj_c",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide a1",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:a1",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide call1",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:call1",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show call2",
+   "note": "",
+   "duration": 2.79,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:call2",
+     "cx": -2.6,
+     "cy": -1.35,
+     "t": 0.0,
+     "dur": 2.79
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show b1",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:b1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show obj_r",
+   "note": "",
+   "duration": 2.19,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:obj_r",
+     "cx": -2.6,
+     "cy": 0.85,
+     "t": 0.0,
+     "dur": 2.19
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show b2",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:b2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show vt_r",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:vt_r",
+     "cx": 1.8,
+     "cy": 0.85,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show b3",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:b3",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show fn_r",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:fn_r",
+     "cx": 1.8,
+     "cy": -1.35,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 16.2,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:call2",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:b1",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:obj_r",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:b2",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:vt_r",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:b3",
+     "t": 1.5,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:fn_r",
+     "t": 1.8,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 2.1,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 4.85,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 7.6,
+     "dur": 2.4
+    }
+   ]
+  }
+ ]
+}

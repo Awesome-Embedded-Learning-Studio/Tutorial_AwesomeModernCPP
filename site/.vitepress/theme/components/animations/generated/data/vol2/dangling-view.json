@@ -1,0 +1,521 @@
+{
+ "version": 1,
+ "id": "dangling-view",
+ "title": "string_view：底层没了，窗口还在",
+ "subtitle": "std::string_view sv = std::string(\"temp\")",
+ "source": "projects/vol2-ch08-pitfalls/02-dsl/dangling-view.yaml",
+ "backend": "web",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#17171f",
+  "text": "#ECECE4",
+  "muted": "#9a9aad",
+  "fill": "#5EC8E0",
+  "fillEdge": "#2E86AB",
+  "emptyEdge": "#4a4a5e",
+  "grow": "#FFB454",
+  "numOnFill": "#0e2430",
+  "ok": "#7BC96A",
+  "bad": "#E06C75",
+  "cardBg": "#1e1e2a"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "string_view：底层没了，窗口还在",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 6.4064,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "std::string_view sv = std::string(\"temp\")",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.084,
+   "h": 0.272
+  },
+  "show:card_tmp": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.508,
+   "w": 3.4336,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "std::string(\"temp\")",
+     "w": 2.508
+    },
+    {
+     "text": "// 临时对象",
+     "w": 1.452
+    }
+   ],
+   "cx": -3.4,
+   "cy": 0.75
+  },
+  "show:card_sv": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.848,
+   "w": 2.7736,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "string_view sv",
+     "w": 1.848
+    },
+    {
+     "text": "// 非拥有窗口",
+     "w": 1.716
+    }
+   ],
+   "cx": 3.3,
+   "cy": 0.75
+  },
+  "show:arrow_bad": {
+   "kind": "arrow",
+   "x1": 1.7332,
+   "y1": 0.75,
+   "x2": -1.5032,
+   "y2": 0.75,
+   "cx": 0.115,
+   "cy": 0.75,
+   "w": 3.2364,
+   "h": 0.0,
+   "label": {
+    "text": "只看不拥有",
+    "x": 0.115,
+    "y": 1.1024,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.188,
+    "h": 0.2448
+   }
+  },
+  "show:lb_dead": {
+   "kind": "text",
+   "text": "语句结束，临时销毁",
+   "x": -3.4,
+   "y": 0.75,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.376,
+   "h": 0.272,
+   "id": "lb_dead"
+  },
+  "show:lb_ub": {
+   "kind": "text",
+   "text": "再访问：未定义行为",
+   "x": 3.3,
+   "y": -0.35,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.376,
+   "h": 0.272,
+   "id": "lb_ub"
+  },
+  "show:card_s": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.904,
+   "w": 3.8296,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "std::string s(\"temp\");",
+     "w": 2.904
+    },
+    {
+     "text": "// s 活到作用域末",
+     "w": 2.244
+    }
+   ],
+   "cx": -3.4,
+   "cy": -1.45
+  },
+  "show:card_sv2": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.508,
+   "w": 3.4336,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "string_view sv = s;",
+     "w": 2.508
+    },
+    {
+     "text": "// 底层活着，安全",
+     "w": 2.244
+    }
+   ],
+   "cx": 3.3,
+   "cy": -1.45
+  },
+  "show:arrow_ok": {
+   "kind": "arrow",
+   "x1": 1.4032,
+   "y1": -1.45,
+   "x2": -1.3052,
+   "y2": -1.45,
+   "cx": 0.049,
+   "cy": -1.45,
+   "w": 2.7084,
+   "h": 0.0,
+   "label": {
+    "text": "指向活着的 s",
+    "x": 0.049,
+    "y": -1.0976,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.4112,
+    "h": 0.2448
+   }
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "view 不延长底层的生命周期",
+   "x": 0.0,
+   "y": 0.3764,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.912,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "临时 string 活不过那条语句",
+   "x": 0.0,
+   "y": -0.2,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.0416,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "先落 std::string 变量，view 再指过去",
+   "x": 0.0,
+   "y": -0.7764,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.5296,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 3.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 2.4,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_tmp",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_tmp",
+     "cx": -3.4,
+     "cy": 0.75,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.6s",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show card_sv",
+   "note": "",
+   "duration": 2.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_sv",
+     "cx": 3.3,
+     "cy": 0.75,
+     "t": 0.0,
+     "dur": 2.43
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show arrow_bad",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:arrow_bad",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.0s",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide card_tmp",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:card_tmp",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_dead",
+   "note": "",
+   "duration": 1.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_dead",
+     "t": 0.0,
+     "dur": 1.43
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_ub",
+   "note": "",
+   "duration": 1.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_ub",
+     "t": 0.0,
+     "dur": 1.43
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.2s",
+   "duration": 1.2,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_ub",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_ub",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_s",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_s",
+     "cx": -3.4,
+     "cy": -1.45,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_sv2",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_sv2",
+     "cx": 3.3,
+     "cy": -1.45,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show arrow_ok",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:arrow_ok",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.2s",
+   "duration": 1.2,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 16.89,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:card_sv",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:arrow_bad",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:card_s",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:card_sv2",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:arrow_ok",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb_dead",
+     "t": 1.5,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 1.8,
+     "dur": 2.15
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 4.3,
+     "dur": 2.39
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 7.04,
+     "dur": 2.4
+    }
+   ]
+  }
+ ]
+}

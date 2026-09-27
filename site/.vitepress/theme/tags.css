@@ -1,0 +1,11 @@
+/* 标签索引页(/tags/)的布局解锁:沿用 weekly.css 的 :has() 手法,
+   让 TagExplorer 撑破 VitePress 默认的 688px 文档帽,拿到宽版标签墙。
+   注意:本页注入 frontmatter.sidebar=false 后,默认主题 scoped 规则
+   `.VPDoc:not(.has-sidebar) .container[data-v-…]` 的特异性是 (0,4,0),
+   纯 :has() 写法只有 (0,3,0) 会被压死 —— container 那行必须带 :not(.has-sidebar) 提到平级,
+   靠加载顺序取胜(已实测);weekly.css 的同款 container 规则其实也一直被压着,这里不带病复制。 */
+
+.VPDoc:has(.tag-explorer):not(.has-sidebar) > .container { max-width: 1240px; }
+.VPDoc:has(.tag-explorer) > .container > .content { max-width: 1240px; min-width: 0; padding: 0 24px 72px; }
+/* 内容仍可能被 content-container 的默认帽压住,一并放开 */
+.VPDoc:has(.tag-explorer) .content-container { max-width: 1240px; }

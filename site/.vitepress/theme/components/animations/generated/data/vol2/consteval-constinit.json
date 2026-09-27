@@ -1,0 +1,549 @@
+{
+ "version": 1,
+ "id": "consteval-constinit",
+ "title": "constexpr、consteval、constinit",
+ "subtitle": "两可 · 仅编译期 · 仅初始化",
+ "source": "projects/vol2-ch02-consteval/02-dsl/consteval-constinit.yaml",
+ "backend": "web",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#17171f",
+  "text": "#ECECE4",
+  "muted": "#9a9aad",
+  "fill": "#5EC8E0",
+  "fillEdge": "#2E86AB",
+  "emptyEdge": "#4a4a5e",
+  "grow": "#FFB454",
+  "numOnFill": "#0e2430",
+  "ok": "#7BC96A",
+  "bad": "#E06C75",
+  "cardBg": "#1e1e2a"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "constexpr、consteval、constinit",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 6.2016,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "两可 · 仅编译期 · 仅初始化",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.384,
+   "h": 0.272
+  },
+  "show:card_ce": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 3.036,
+   "w": 3.9616,
+   "h": 1.734,
+   "rows": [
+    {
+     "text": "constexpr int sq(int x)",
+     "w": 3.036
+    },
+    {
+     "text": "{ return x * x; }",
+     "w": 2.244
+    },
+    {
+     "text": "sq(runtime_val);",
+     "w": 2.112
+    }
+   ],
+   "cx": -4.0,
+   "cy": -0.35
+  },
+  "show:s_ce": {
+   "kind": "text",
+   "text": "两可：编译期或运行期",
+   "x": -4.0,
+   "y": 1.15,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.64,
+   "h": 0.272,
+   "id": "s_ce"
+  },
+  "show:v_ce": {
+   "kind": "text",
+   "text": "退化为运行时调用",
+   "x": -4.0,
+   "y": -1.85,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.112,
+   "h": 0.272,
+   "id": "v_ce"
+  },
+  "show:card_cv": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 3.036,
+   "w": 3.9616,
+   "h": 1.734,
+   "rows": [
+    {
+     "text": "consteval int sq(int x)",
+     "w": 3.036
+    },
+    {
+     "text": "{ return x * x; }",
+     "w": 2.244
+    },
+    {
+     "text": "sq(runtime_val);",
+     "w": 2.112
+    }
+   ],
+   "cx": 0.12,
+   "cy": -0.35
+  },
+  "show:s_cv": {
+   "kind": "text",
+   "text": "必须在编译期求值",
+   "x": 0.12,
+   "y": 1.15,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.112,
+   "h": 0.272,
+   "id": "s_cv"
+  },
+  "show:v_cv": {
+   "kind": "text",
+   "text": "编译错误：不是常量",
+   "x": 0.12,
+   "y": -1.85,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.376,
+   "h": 0.272,
+   "id": "v_cv"
+  },
+  "show:card_ci": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.772,
+   "w": 3.6976,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "constinit int g = 42;",
+     "w": 2.772
+    },
+    {
+     "text": "g = 100;",
+     "w": 1.056
+    }
+   ],
+   "cx": 4.12,
+   "cy": -0.35
+  },
+  "show:s_ci": {
+   "kind": "text",
+   "text": "保证常量初始化",
+   "x": 4.12,
+   "y": 1.15,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.848,
+   "h": 0.272,
+   "id": "s_ci"
+  },
+  "show:v_ci": {
+   "kind": "text",
+   "text": "运行时改值 OK",
+   "x": 4.12,
+   "y": -1.85,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.692,
+   "h": 0.272,
+   "id": "v_ci"
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "constexpr 宽容：编译期或运行期都行",
+   "x": 0.0,
+   "y": 0.6646,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.2896,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "consteval 严格：传运行期值直接报错",
+   "x": 0.0,
+   "y": 0.0882,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.2896,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "constinit 管初始化：初值编译期定",
+   "x": 0.0,
+   "y": -0.4882,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.9728,
+   "h": 0.3264
+  },
+  "concl:3": {
+   "kind": "text",
+   "text": "函数默认 constexpr，要强制再升级",
+   "x": 0.0,
+   "y": -1.0646,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.9728,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 3.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 2.4,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_ce",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_ce",
+     "cx": 0,
+     "cy": -0.35,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "move",
+   "label": "move card_ce",
+   "note": "to [-4.0, -0.35]",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "move",
+     "target": "show:card_ce",
+     "frm": [
+      0,
+      -0.35
+     ],
+     "to": [
+      -4.0,
+      -0.35
+     ],
+     "t": 0.0,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show s_ce",
+   "note": "",
+   "duration": 1.55,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:s_ce",
+     "t": 0.0,
+     "dur": 1.55
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show v_ce",
+   "note": "",
+   "duration": 1.31,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:v_ce",
+     "t": 0.0,
+     "dur": 1.31
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.4s",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show card_cv",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_cv",
+     "cx": 0.12,
+     "cy": -0.35,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show s_cv",
+   "note": "",
+   "duration": 1.31,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:s_cv",
+     "t": 0.0,
+     "dur": 1.31
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show v_cv",
+   "note": "",
+   "duration": 1.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:v_cv",
+     "t": 0.0,
+     "dur": 1.43
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.4s",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show card_ci",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_ci",
+     "cx": 4.12,
+     "cy": -0.35,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show s_ci",
+   "note": "",
+   "duration": 1.19,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:s_ci",
+     "t": 0.0,
+     "dur": 1.19
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show v_ci",
+   "note": "",
+   "duration": 1.31,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:v_ci",
+     "t": 0.0,
+     "dur": 1.31
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 19.3,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:card_ce",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:card_cv",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:card_ci",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:s_ce",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:s_ci",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:s_cv",
+     "t": 1.5,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:v_ce",
+     "t": 1.8,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:v_ci",
+     "t": 2.1,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:v_cv",
+     "t": 2.4,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 2.7,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 5.45,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 8.2,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:3",
+     "t": 10.95,
+     "dur": 2.4
+    }
+   ]
+  }
+ ]
+}

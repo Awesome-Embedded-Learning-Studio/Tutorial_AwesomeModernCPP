@@ -1,0 +1,843 @@
+{
+ "version": 1,
+ "id": "raii-lifetime",
+ "title": "资源谁来收：靠记性还是靠对象？",
+ "subtitle": "C++17 · FILE* 手动管理 vs FileHandle",
+ "source": "projects/vol2-ch01-raii/02-dsl/raii-lifetime.yaml",
+ "backend": "web",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#17171f",
+  "text": "#ECECE4",
+  "muted": "#9a9aad",
+  "fill": "#5EC8E0",
+  "fillEdge": "#2E86AB",
+  "emptyEdge": "#4a4a5e",
+  "grow": "#FFB454",
+  "numOnFill": "#0e2430",
+  "ok": "#7BC96A",
+  "bad": "#E06C75",
+  "cardBg": "#1e1e2a"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "资源谁来收：靠记性还是靠对象？",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 6.336,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "C++17 · FILE* 手动管理 vs FileHandle",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.528,
+   "h": 0.272
+  },
+  "show:code_m": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.508,
+   "w": 3.4336,
+   "h": 1.734,
+   "rows": [
+    {
+     "text": "FILE* f =",
+     "w": 1.188
+    },
+    {
+     "text": "  fopen(path, \"a\");",
+     "w": 2.508
+    },
+    {
+     "text": "if (!ok) return;",
+     "w": 2.112
+    }
+   ],
+   "cx": -3.3,
+   "cy": 0.7
+  },
+  "show:res_m": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.32,
+   "w": 2.2456,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "FILE* 句柄",
+     "w": 1.32
+    },
+    {
+     "text": "app.log",
+     "w": 0.924
+    }
+   ],
+   "cx": -4.4,
+   "cy": -1.45
+  },
+  "show:a_m": {
+   "kind": "arrow",
+   "x1": -1.407,
+   "y1": 0.7631,
+   "x2": 1.3993,
+   "y2": 0.8566,
+   "cx": -0.0039,
+   "cy": 0.8099,
+   "w": 2.8063,
+   "h": 0.0935,
+   "label": {
+    "text": "fopen",
+    "x": -0.0039,
+    "y": 1.1623,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.558,
+    "h": 0.2448
+   }
+  },
+  "show:ev_m": {
+   "kind": "text",
+   "text": "提前 return",
+   "x": -3.3,
+   "y": -0.9,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.396,
+   "h": 0.272,
+   "id": "ev_m"
+  },
+  "show:lb_leak": {
+   "kind": "text",
+   "text": "忘了 fclose → 泄漏",
+   "x": -4.4,
+   "y": -2.45,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.436,
+   "h": 0.272,
+   "id": "lb_leak"
+  },
+  "show:obj_r": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.848,
+   "w": 2.7736,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "FileHandle fh(",
+     "w": 1.848
+    },
+    {
+     "text": "  path, \"a\");",
+     "w": 1.716
+    }
+   ],
+   "cx": -3.3,
+   "cy": 0.9
+  },
+  "show:a_get": {
+   "kind": "arrow",
+   "x1": -1.7332,
+   "y1": 0.9,
+   "x2": 1.3972,
+   "y2": 0.9,
+   "cx": -0.168,
+   "cy": 0.9,
+   "w": 3.1304,
+   "h": 0.0,
+   "label": {
+    "text": "拥有",
+    "x": -0.168,
+    "y": 1.2524,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:res_r": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.32,
+   "w": 2.2456,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "FILE* 句柄",
+     "w": 1.32
+    },
+    {
+     "text": "app.log",
+     "w": 0.924
+    }
+   ],
+   "cx": 2.7,
+   "cy": 0.9
+  },
+  "show:lb_ret": {
+   "kind": "text",
+   "text": "正常 return",
+   "x": -0.3,
+   "y": -0.4,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.396,
+   "h": 0.272,
+   "id": "lb_ret"
+  },
+  "show:lb_dt1": {
+   "kind": "text",
+   "text": "~FileHandle() → fclose",
+   "x": 0,
+   "y": -1.2,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.868,
+   "h": 0.272,
+   "id": "lb_dt1"
+  },
+  "show:lb_throw": {
+   "kind": "text",
+   "text": "中途抛异常",
+   "x": -0.3,
+   "y": -0.4,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.32,
+   "h": 0.272,
+   "id": "lb_throw"
+  },
+  "show:lb_dt2": {
+   "kind": "text",
+   "text": "栈展开 → 析构照跑",
+   "x": 0,
+   "y": -1.2,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.36,
+   "h": 0.272,
+   "id": "lb_dt2"
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "手动:提前 return 忘了 fclose,资源泄漏",
+   "x": 0.0,
+   "y": 0.3764,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.6976,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "RAII:构造获取,析构释放,绑在对象上",
+   "x": 0.0,
+   "y": -0.2,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.16,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "正常返回、提前 return、抛异常,都收干净",
+   "x": 0.0,
+   "y": -0.7764,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.9424,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 3.15,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 2.15
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 2.15,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show code_m",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:code_m",
+     "cx": -3.3,
+     "cy": 0.7,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show res_m",
+   "note": "",
+   "duration": 1.71,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:res_m",
+     "cx": 2.7,
+     "cy": 0.9,
+     "t": 0.0,
+     "dur": 1.71
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a_m",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_m",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show ev_m",
+   "note": "",
+   "duration": 1.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:ev_m",
+     "t": 0.0,
+     "dur": 1.43
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_leak",
+   "note": "",
+   "duration": 2.03,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_leak",
+     "t": 0.0,
+     "dur": 2.03
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide a_m",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:a_m",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide code_m",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:code_m",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide ev_m",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:ev_m",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "move",
+   "label": "move lb_leak",
+   "note": "to [-4.4, -2.45]",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "move",
+     "target": "show:lb_leak",
+     "frm": [
+      2.7,
+      -0.5
+     ],
+     "to": [
+      -4.4,
+      -2.45
+     ],
+     "t": 0.0,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "move",
+   "label": "move res_m",
+   "note": "to [-4.4, -1.45]",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "move",
+     "target": "show:res_m",
+     "frm": [
+      2.7,
+      0.9
+     ],
+     "to": [
+      -4.4,
+      -1.45
+     ],
+     "t": 0.0,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show obj_r",
+   "note": "",
+   "duration": 2.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:obj_r",
+     "cx": -3.3,
+     "cy": 0.9,
+     "t": 0.0,
+     "dur": 2.43
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a_get",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_get",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show res_r",
+   "note": "",
+   "duration": 1.71,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:res_r",
+     "cx": 2.7,
+     "cy": 0.9,
+     "t": 0.0,
+     "dur": 1.71
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.4s",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show lb_ret",
+   "note": "",
+   "duration": 1.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_ret",
+     "t": 0.0,
+     "dur": 1.43
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide a_get",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:a_get",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide res_r",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:res_r",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide obj_r",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:obj_r",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_dt1",
+   "note": "",
+   "duration": 2.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_dt1",
+     "t": 0.0,
+     "dur": 2.4
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_ret",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_ret",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_dt1",
+   "note": "",
+   "duration": 2.55,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_dt1",
+     "t": 2.15,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show obj_r",
+   "note": "",
+   "duration": 2.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:obj_r",
+     "cx": -3.3,
+     "cy": 0.9,
+     "t": 0.0,
+     "dur": 2.43
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a_get",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_get",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show res_r",
+   "note": "",
+   "duration": 1.71,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:res_r",
+     "cx": 2.7,
+     "cy": 0.9,
+     "t": 0.0,
+     "dur": 1.71
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_throw",
+   "note": "",
+   "duration": 0.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_throw",
+     "t": 0.0,
+     "dur": 0.95
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide a_get",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:a_get",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide res_r",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:res_r",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide obj_r",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:obj_r",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_dt2",
+   "note": "",
+   "duration": 1.55,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_dt2",
+     "t": 0.0,
+     "dur": 1.55
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.6s",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 14.97,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_dt2",
+     "t": 0.02,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb_throw",
+     "t": 0.32,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 0.62,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 3.37,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 6.12,
+     "dur": 2.4
+    }
+   ]
+  }
+ ]
+}

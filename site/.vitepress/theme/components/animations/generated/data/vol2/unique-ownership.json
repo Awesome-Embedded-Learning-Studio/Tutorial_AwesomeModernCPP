@@ -1,0 +1,753 @@
+{
+ "version": 1,
+ "id": "unique-ownership",
+ "title": "unique_ptr：一个对象一个主人",
+ "subtitle": "C++17 · 独占所有权：拒绝拷贝，允许移动",
+ "source": "projects/vol2-ch01-unique/02-dsl/unique-ownership.yaml",
+ "backend": "web",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#17171f",
+  "text": "#ECECE4",
+  "muted": "#9a9aad",
+  "fill": "#5EC8E0",
+  "fillEdge": "#2E86AB",
+  "emptyEdge": "#4a4a5e",
+  "grow": "#FFB454",
+  "numOnFill": "#0e2430",
+  "ok": "#7BC96A",
+  "bad": "#E06C75",
+  "cardBg": "#1e1e2a"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "unique_ptr：一个对象一个主人",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.7856,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "C++17 · 独占所有权：拒绝拷贝，允许移动",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.952,
+   "h": 0.272
+  },
+  "show:code1": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 3.96,
+   "w": 4.8856,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "auto p1 =",
+     "w": 1.188
+    },
+    {
+     "text": " std::make_unique<Widget>(42);",
+     "w": 3.96
+    }
+   ],
+   "cx": 0,
+   "cy": -2.6
+  },
+  "show:p1": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.716,
+   "w": 2.6416,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "unique_ptr p1",
+     "w": 1.716
+    },
+    {
+     "text": "Widget* ptr",
+     "w": 1.452
+    }
+   ],
+   "cx": -4.0,
+   "cy": 0.9
+  },
+  "show:heap1": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.32,
+   "w": 2.2456,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "Widget(42)",
+     "w": 1.32
+    },
+    {
+     "text": "value = 42",
+     "w": 1.32
+    }
+   ],
+   "cx": 4.0,
+   "cy": -1.1
+  },
+  "show:own1": {
+   "kind": "arrow",
+   "x1": -4.0,
+   "y1": 0.092,
+   "x2": -4.0,
+   "y2": -0.292,
+   "cx": -4.0,
+   "cy": -0.1,
+   "w": 0.0,
+   "h": 0.384,
+   "label": {
+    "text": "拥有",
+    "x": -4.3876,
+    "y": -0.1,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:code2": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.716,
+   "w": 2.6416,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "auto p2 = p1;",
+     "w": 1.716
+    }
+   ],
+   "cx": 0,
+   "cy": -2.6
+  },
+  "show:cp_try": {
+   "kind": "arrow",
+   "x1": -2.4992,
+   "y1": 0.9,
+   "x2": 2.4992,
+   "y2": 0.9,
+   "cx": 0.0,
+   "cy": 0.9,
+   "w": 4.9984,
+   "h": 0.0,
+   "label": {
+    "text": "拷贝?",
+    "x": 0.0,
+    "y": 1.2524,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.5868,
+    "h": 0.2448
+   }
+  },
+  "show:p2c": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.716,
+   "w": 2.6416,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "unique_ptr p2",
+     "w": 1.716
+    },
+    {
+     "text": "Widget* ptr",
+     "w": 1.452
+    }
+   ],
+   "cx": 4.0,
+   "cy": 0.9
+  },
+  "show:lb_rej": {
+   "kind": "text",
+   "text": "编译错误！不可拷贝",
+   "x": 0,
+   "y": -0.1,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.376,
+   "h": 0.272,
+   "id": "lb_rej"
+  },
+  "show:code3": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.98,
+   "w": 2.9056,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "auto p2 =",
+     "w": 1.188
+    },
+    {
+     "text": " std::move(p1);",
+     "w": 1.98
+    }
+   ],
+   "cx": 0,
+   "cy": -2.6
+  },
+  "show:p2": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.716,
+   "w": 2.6416,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "unique_ptr p2",
+     "w": 1.716
+    },
+    {
+     "text": "Widget* ptr",
+     "w": 1.452
+    }
+   ],
+   "cx": 4.0,
+   "cy": 0.9
+  },
+  "show:xfer": {
+   "kind": "arrow",
+   "x1": -2.4992,
+   "y1": 0.9,
+   "x2": 2.4992,
+   "y2": 0.9,
+   "cx": 0.0,
+   "cy": 0.9,
+   "w": 4.9984,
+   "h": 0.0,
+   "label": {
+    "text": "std::move",
+    "x": 0.0,
+    "y": 1.2524,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.0044,
+    "h": 0.2448
+   }
+  },
+  "show:own2": {
+   "kind": "arrow",
+   "x1": 4.0,
+   "y1": 0.092,
+   "x2": 4.0,
+   "y2": -0.292,
+   "cx": 4.0,
+   "cy": -0.1,
+   "w": 0.0,
+   "h": 0.384,
+   "label": {
+    "text": "拥有",
+    "x": 3.6124,
+    "y": -0.1,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:lb_null": {
+   "kind": "text",
+   "text": "p1 == nullptr",
+   "x": -4.0,
+   "y": -1.1,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.612,
+   "h": 0.272,
+   "id": "lb_null"
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "同一时刻只有一个 unique_ptr 拥有对象",
+   "x": 0.0,
+   "y": 0.3764,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.5872,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "拷贝构造已删除，编译期就拦下",
+   "x": 0.0,
+   "y": -0.2,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.4352,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "移动 = 转交指针，p1 置为空",
+   "x": 0.0,
+   "y": -0.7764,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.0608,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 3.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 2.4,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show code1",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:code1",
+     "cx": 0,
+     "cy": -2.6,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show p1",
+   "note": "",
+   "duration": 2.31,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:p1",
+     "cx": -4.0,
+     "cy": 0.9,
+     "t": 0.0,
+     "dur": 2.31
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show heap1",
+   "note": "",
+   "duration": 1.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:heap1",
+     "cx": -4.0,
+     "cy": -1.1,
+     "t": 0.0,
+     "dur": 1.95
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show own1",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:own1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.6s",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide code1",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:code1",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show code2",
+   "note": "",
+   "duration": 2.31,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:code2",
+     "cx": 0,
+     "cy": -2.6,
+     "t": 0.0,
+     "dur": 2.31
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show cp_try",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:cp_try",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show p2c",
+   "note": "",
+   "duration": 2.31,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:p2c",
+     "cx": 4.0,
+     "cy": 0.9,
+     "t": 0.0,
+     "dur": 2.31
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_rej",
+   "note": "",
+   "duration": 1.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_rej",
+     "t": 0.0,
+     "dur": 1.43
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_rej",
+   "note": "",
+   "duration": 1.02,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_rej",
+     "t": 0.62,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide cp_try",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:cp_try",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide p2c",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:p2c",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide code2",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:code2",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show code3",
+   "note": "",
+   "duration": 2.55,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:code3",
+     "cx": 0,
+     "cy": -2.6,
+     "t": 0.0,
+     "dur": 2.55
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show p2",
+   "note": "",
+   "duration": 2.31,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:p2",
+     "cx": 4.0,
+     "cy": 0.9,
+     "t": 0.0,
+     "dur": 2.31
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide own1",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:own1",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show xfer",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:xfer",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "move",
+   "label": "move heap1",
+   "note": "to [4.0, -1.1]",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "move",
+     "target": "show:heap1",
+     "frm": [
+      -4.0,
+      -1.1
+     ],
+     "to": [
+      4.0,
+      -1.1
+     ],
+     "t": 0.0,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show own2",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:own2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_null",
+   "note": "",
+   "duration": 1.91,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_null",
+     "t": 0.0,
+     "dur": 1.91
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.6s",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 12.53,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:xfer",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 0.3,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 3.05,
+     "dur": 2.03
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 5.43,
+     "dur": 2.27
+    }
+   ]
+  }
+ ]
+}

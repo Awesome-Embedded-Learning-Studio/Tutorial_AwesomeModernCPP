@@ -1,0 +1,782 @@
+{
+ "version": 1,
+ "id": "lvalue-rvalue",
+ "title": "左值还是右值？",
+ "subtitle": "C++17 · 值类别与 T&& 的绑定",
+ "source": "projects/vol2-ch00-rvalue/02-dsl/lvalue-rvalue.yaml",
+ "backend": "web",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#17171f",
+  "text": "#ECECE4",
+  "muted": "#9a9aad",
+  "fill": "#5EC8E0",
+  "fillEdge": "#2E86AB",
+  "emptyEdge": "#4a4a5e",
+  "grow": "#FFB454",
+  "numOnFill": "#0e2430",
+  "ok": "#7BC96A",
+  "bad": "#E06C75",
+  "cardBg": "#1e1e2a"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "左值还是右值？",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.9568,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "C++17 · 值类别与 T&& 的绑定",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.46,
+   "h": 0.272
+  },
+  "show:lab_lv": {
+   "kind": "text",
+   "text": "左值 lvalue",
+   "x": -3.4,
+   "y": 1.5,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.396,
+   "h": 0.272,
+   "id": "lab_lv"
+  },
+  "show:lab_rv": {
+   "kind": "text",
+   "text": "右值 rvalue",
+   "x": 3.4,
+   "y": 1.5,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.396,
+   "h": 0.272,
+   "id": "lab_rv"
+  },
+  "show:list_lv": {
+   "kind": "rowlist",
+   "w": 4.1976,
+   "h": 3.034,
+   "noteX": 3.1416,
+   "entries": [
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 0.132,
+      "w": 1.0576,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "x",
+        "w": 0.132
+       }
+      ]
+     },
+     "note": {
+      "text": "有名字，能取地址",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#ECECE4",
+      "mono": false,
+      "anchor": "middle",
+      "w": 2.112,
+      "h": 0.272
+     },
+     "tone": ""
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 0.66,
+      "w": 1.5856,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "*(&x)",
+        "w": 0.66
+       }
+      ]
+     },
+     "note": {
+      "text": "解引用得到左值",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#ECECE4",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.848,
+      "h": 0.272
+     },
+     "tone": ""
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 0.528,
+      "w": 1.4536,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "rref",
+        "w": 0.528
+       }
+      ]
+     },
+     "note": {
+      "text": "命名的右值引用",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#ECECE4",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.848,
+      "h": 0.272
+     },
+     "tone": ""
+    }
+   ],
+   "rowHs": [
+    0.778,
+    0.778,
+    0.778
+   ],
+   "cx": -3.4,
+   "cy": -0.45
+  },
+  "show:list_rv": {
+   "kind": "rowlist",
+   "w": 4.9336,
+   "h": 3.034,
+   "noteX": 3.9716,
+   "entries": [
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 0.264,
+      "w": 1.1896,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "42",
+        "w": 0.264
+       }
+      ]
+     },
+     "note": {
+      "text": "prvalue 字面量",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#ECECE4",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.784,
+      "h": 0.272
+     },
+     "tone": ""
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 0.66,
+      "w": 1.5856,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "x + 1",
+        "w": 0.66
+       }
+      ]
+     },
+     "note": {
+      "text": "prvalue 临时值",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#ECECE4",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.784,
+      "h": 0.272
+     },
+     "tone": ""
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 1.584,
+      "w": 2.5096,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "std::move(x)",
+        "w": 1.584
+       }
+      ]
+     },
+     "note": {
+      "text": "xvalue 即将过期",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#ECECE4",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.924,
+      "h": 0.272
+     },
+     "tone": ""
+    }
+   ],
+   "rowHs": [
+    0.778,
+    0.778,
+    0.778
+   ],
+   "cx": 3.4,
+   "cy": -0.45
+  },
+  "show:card_x": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 0.792,
+   "w": 1.7176,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "x",
+     "w": 0.132
+    },
+    {
+     "text": "lvalue",
+     "w": 0.792
+    }
+   ],
+   "cx": -3.6,
+   "cy": 0.9
+  },
+  "show:card_42": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 0.924,
+   "w": 1.8496,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "42",
+     "w": 0.264
+    },
+    {
+     "text": "prvalue",
+     "w": 0.924
+    }
+   ],
+   "cx": 3.6,
+   "cy": 0.9
+  },
+  "show:code_r4": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.848,
+   "w": 2.7736,
+   "h": 1.734,
+   "rows": [
+    {
+     "text": "int&& r4 = x;",
+     "w": 1.716
+    },
+    {
+     "text": "// 编译错误",
+     "w": 1.452
+    },
+    {
+     "text": "// x 是 lvalue",
+     "w": 1.848
+    }
+   ],
+   "cx": -3.6,
+   "cy": -1.35
+  },
+  "show:lab_no": {
+   "kind": "text",
+   "text": "编译器拦下",
+   "x": -3.6,
+   "y": -0.1,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.32,
+   "h": 0.272,
+   "id": "lab_no"
+  },
+  "show:code_r1": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.64,
+   "w": 3.5656,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "int&& r1 = 42;",
+     "w": 1.848
+    },
+    {
+     "text": "// OK：42 是 prvalue",
+     "w": 2.64
+    }
+   ],
+   "cx": 3.6,
+   "cy": -1.35
+  },
+  "show:a_ok": {
+   "kind": "arrow",
+   "x1": 3.6,
+   "y1": 0.092,
+   "x2": 3.6,
+   "y2": -0.542,
+   "cx": 3.6,
+   "cy": -0.225,
+   "w": 0.0,
+   "h": 0.634,
+   "label": {
+    "text": "绑定",
+    "x": 3.2124,
+    "y": -0.225,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "左值持久：有名字，能取地址",
+   "x": 0.0,
+   "y": 0.3764,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.1184,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "右值短暂：prvalue 临时，xvalue 即将过期",
+   "x": 0.0,
+   "y": -0.2,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 6.0336,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "右值引用 T&& 只绑右值，接管资源",
+   "x": 0.0,
+   "y": -0.7764,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.8624,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 2.19,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 1.19
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 1.19,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lab_lv",
+   "note": "",
+   "duration": 1.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lab_lv",
+     "t": 0.0,
+     "dur": 1.43
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lab_rv",
+   "note": "",
+   "duration": 1.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lab_rv",
+     "t": 0.0,
+     "dur": 1.43
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show list_lv",
+   "note": "",
+   "duration": 3.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "rowlist_show",
+     "target": "show:list_lv",
+     "cx": -3.4,
+     "cy": -0.45,
+     "t": 0.0,
+     "dur": 3.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show list_rv",
+   "note": "",
+   "duration": 3.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "rowlist_show",
+     "target": "show:list_rv",
+     "cx": 3.4,
+     "cy": -0.45,
+     "t": 0.0,
+     "dur": 3.6
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide list_rv",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:list_rv",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide list_lv",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:list_lv",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide lab_rv",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lab_rv",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide lab_lv",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lab_lv",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_x",
+   "note": "",
+   "duration": 1.47,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_x",
+     "cx": -3.6,
+     "cy": 0.9,
+     "t": 0.0,
+     "dur": 1.47
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_42",
+   "note": "",
+   "duration": 1.59,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_42",
+     "cx": 3.6,
+     "cy": 0.9,
+     "t": 0.0,
+     "dur": 1.59
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show code_r4",
+   "note": "",
+   "duration": 2.31,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:code_r4",
+     "cx": -3.6,
+     "cy": -1.35,
+     "t": 0.0,
+     "dur": 2.31
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lab_no",
+   "note": "",
+   "duration": 0.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lab_no",
+     "t": 0.0,
+     "dur": 0.95
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.4s",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show code_r1",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:code_r1",
+     "cx": 3.6,
+     "cy": -1.35,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a_ok",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_ok",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.6s",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 14.41,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:card_x",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:card_42",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:code_r4",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:code_r1",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a_ok",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lab_no",
+     "t": 1.5,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 1.8,
+     "dur": 1.91
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 4.06,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 6.81,
+     "dur": 2.4
+    }
+   ]
+  }
+ ]
+}

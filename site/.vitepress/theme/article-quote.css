@@ -1,0 +1,119 @@
+/* Markdown quotations in the article body. Keep the native blockquote markup. */
+:root {
+  --article-quote-bg: #faf9fc;
+  --article-quote-tint: #efedf6;
+  --article-quote-border: #e0dce9;
+  --article-quote-accent: #9183b2;
+  --article-quote-ink: #514c60;
+  --article-quote-shadow: 0 3px 12px rgb(63 48 83 / 3%);
+  --article-quote-hover-shadow: 0 7px 20px rgb(63 48 83 / 8%);
+}
+
+.dark {
+  --article-quote-bg: #25232d;
+  --article-quote-tint: #302b3e;
+  --article-quote-border: #403a4f;
+  --article-quote-accent: #b1a0d0;
+  --article-quote-ink: #d0c9de;
+  --article-quote-shadow: 0 3px 12px rgb(0 0 0 / 10%);
+  --article-quote-hover-shadow: 0 7px 20px rgb(0 0 0 / 22%);
+}
+
+.vp-doc blockquote {
+  position: relative;
+  margin: 24px 0;
+  padding: 18px 22px 18px 54px;
+  border: 1px solid var(--article-quote-border);
+  border-radius: 12px;
+  background: radial-gradient(ellipse 480px 180px at 0 0, var(--article-quote-tint), transparent),
+    var(--article-quote-bg);
+  box-shadow: var(--article-quote-shadow);
+  color: var(--article-quote-ink);
+  font-size: 0.96em;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+
+/* Decorative only: it adds no label to copied text or screen-reader output. */
+.vp-doc blockquote::before {
+  position: absolute;
+  top: 22px;
+  left: 18px;
+  width: 20px;
+  height: 20px;
+  background: var(--article-quote-accent);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10 5H6a2 2 0 0 0-2 2v5h6V5Zm0 7c0 4-2 6-5 7M21 5h-4a2 2 0 0 0-2 2v5h6V5Zm0 7c0 4-2 6-5 7' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  pointer-events: none;
+  content: '';
+}
+
+.vp-doc blockquote > p {
+  margin: 0.65em 0;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+/* Nested quotations stay compact, without repeating the outer decoration. */
+.vp-doc blockquote blockquote {
+  margin: 14px 0;
+  padding: 2px 0 2px 16px;
+  border: 0;
+  border-left: 2px solid var(--article-quote-border);
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  font-size: inherit;
+}
+
+.vp-doc blockquote blockquote::before {
+  display: none;
+}
+
+.vp-doc blockquote > :first-child {
+  margin-top: 0;
+}
+
+.vp-doc blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+@media screen and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .vp-doc blockquote:not(blockquote *) {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .vp-doc blockquote:not(blockquote *):hover {
+    transform: translateY(-2px);
+    box-shadow: var(--article-quote-hover-shadow);
+  }
+}
+
+@media (max-width: 639px) {
+  .vp-doc blockquote {
+    padding: 16px 16px 16px 44px;
+    border-radius: 10px;
+  }
+
+  .vp-doc blockquote::before {
+    top: 21px;
+    left: 14px;
+    width: 18px;
+    height: 18px;
+  }
+
+  .vp-doc blockquote blockquote {
+    padding: 2px 0 2px 12px;
+    border-radius: 0;
+  }
+}
+
+@media print {
+  .vp-doc blockquote {
+    --article-quote-border: #d8d3e2;
+    --article-quote-accent: #817197;
+    background: #f7f6fa;
+    box-shadow: none;
+    color: #514c60;
+    break-inside: auto;
+  }
+}

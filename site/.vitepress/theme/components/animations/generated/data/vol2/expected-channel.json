@@ -1,0 +1,882 @@
+{
+ "version": 1,
+ "id": "expected-channel",
+ "title": "expected：值或错误，只装一边",
+ "subtitle": "C++23 · std::expected<T, E>",
+ "source": "projects/vol2-ch10-expected/02-dsl/expected-channel.yaml",
+ "backend": "web",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#17171f",
+  "text": "#ECECE4",
+  "muted": "#9a9aad",
+  "fill": "#5EC8E0",
+  "fillEdge": "#2E86AB",
+  "emptyEdge": "#4a4a5e",
+  "grow": "#FFB454",
+  "numOnFill": "#0e2430",
+  "ok": "#7BC96A",
+  "bad": "#E06C75",
+  "cardBg": "#1e1e2a"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "expected：值或错误，只装一边",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.8112,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "C++23 · std::expected<T, E>",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.348,
+   "h": 0.272
+  },
+  "show:ret_ok": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.98,
+   "w": 2.9056,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "parse_int(\"42\")",
+     "w": 1.98
+    },
+    {
+     "text": "return value;",
+     "w": 1.716
+    }
+   ],
+   "cx": -4.3,
+   "cy": 0.3
+  },
+  "show:a_ok": {
+   "kind": "arrow",
+   "x1": -2.6672,
+   "y1": 0.3,
+   "x2": -1.5648,
+   "y2": 0.3,
+   "cx": -2.116,
+   "cy": 0.3,
+   "w": 1.1024,
+   "h": 0.0,
+   "label": {
+    "text": "返回值通道",
+    "x": -2.116,
+    "y": 0.6524,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.188,
+    "h": 0.2448
+   }
+  },
+  "show:exp_ok": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.244,
+   "w": 3.1696,
+   "h": 2.212,
+   "rows": [
+    {
+     "text": "expected<int,",
+     "w": 1.716
+    },
+    {
+     "text": "  ParseError> r",
+     "w": 1.98
+    },
+    {
+     "text": "has_value_ = true",
+     "w": 2.244
+    },
+    {
+     "text": "union: val_ = 42",
+     "w": 2.112
+    }
+   ],
+   "cx": 0.2,
+   "cy": 0.3
+  },
+  "show:acc_val": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.188,
+   "w": 2.1136,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "r.value()",
+     "w": 1.188
+    }
+   ],
+   "cx": 4.5,
+   "cy": 0.3
+  },
+  "show:a_val": {
+   "kind": "arrow",
+   "x1": 1.9648,
+   "y1": 0.3,
+   "x2": 3.2632,
+   "y2": 0.3,
+   "cx": 2.614,
+   "cy": 0.3,
+   "w": 1.2984,
+   "h": 0.0,
+   "label": {
+    "text": ".value()",
+    "x": 2.614,
+    "y": 0.6524,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.8928,
+    "h": 0.2448
+   }
+  },
+  "show:lbl_got": {
+   "kind": "text",
+   "text": "= 42",
+   "x": 4.5,
+   "y": -0.55,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.496,
+   "h": 0.272,
+   "id": "lbl_got"
+  },
+  "show:ret_err": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.376,
+   "w": 3.3016,
+   "h": 1.734,
+   "rows": [
+    {
+     "text": "parse_int(\"42abc\")",
+     "w": 2.376
+    },
+    {
+     "text": "return",
+     "w": 0.792
+    },
+    {
+     "text": "  unexpected{e};",
+     "w": 2.112
+    }
+   ],
+   "cx": -4.3,
+   "cy": 0.3
+  },
+  "show:a_err": {
+   "kind": "arrow",
+   "x1": -2.4692,
+   "y1": 0.3,
+   "x2": -1.6308,
+   "y2": 0.3,
+   "cx": -2.05,
+   "cy": 0.3,
+   "w": 0.8384,
+   "h": 0.0,
+   "label": {
+    "text": "错误通道",
+    "x": -2.05,
+    "y": 0.6524,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.9504,
+    "h": 0.2448
+   }
+  },
+  "show:exp_err": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.376,
+   "w": 3.3016,
+   "h": 2.212,
+   "rows": [
+    {
+     "text": "expected<int,",
+     "w": 1.716
+    },
+    {
+     "text": "  ParseError> r",
+     "w": 1.98
+    },
+    {
+     "text": "has_value_ = false",
+     "w": 2.376
+    },
+    {
+     "text": "union: err_ = e",
+     "w": 1.98
+    }
+   ],
+   "cx": 0.2,
+   "cy": 0.3
+  },
+  "show:acc_ev": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.188,
+   "w": 2.1136,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "r.value()",
+     "w": 1.188
+    }
+   ],
+   "cx": 4.5,
+   "cy": 0.3
+  },
+  "show:a_vx": {
+   "kind": "arrow",
+   "x1": 2.0308,
+   "y1": 0.3,
+   "x2": 3.2632,
+   "y2": 0.3,
+   "cx": 2.647,
+   "cy": 0.3,
+   "w": 1.2324,
+   "h": 0.0,
+   "label": {
+    "text": ".value()",
+    "x": 2.647,
+    "y": 0.6524,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.8928,
+    "h": 0.2448
+   }
+  },
+  "show:lbl_throw": {
+   "kind": "text",
+   "text": "抛 bad_expected_access",
+   "x": 4.35,
+   "y": -0.55,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.744,
+   "h": 0.272,
+   "id": "lbl_throw"
+  },
+  "show:acc_ee": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.188,
+   "w": 2.1136,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "r.error()",
+     "w": 1.188
+    }
+   ],
+   "cx": 4.5,
+   "cy": 0.3
+  },
+  "show:a_ex": {
+   "kind": "arrow",
+   "x1": 2.0308,
+   "y1": 0.3,
+   "x2": 3.2632,
+   "y2": 0.3,
+   "cx": 2.647,
+   "cy": 0.3,
+   "w": 1.2324,
+   "h": 0.0,
+   "label": {
+    "text": ".error()",
+    "x": 2.647,
+    "y": 0.6524,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.8928,
+    "h": 0.2448
+   }
+  },
+  "show:lbl_code": {
+   "kind": "text",
+   "text": "= kInvalidCharacter",
+   "x": 4.5,
+   "y": -0.55,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.356,
+   "h": 0.272,
+   "id": "lbl_code"
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "expected = 标志位 + union 双槽存储",
+   "x": 0.0,
+   "y": 0.3764,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.1936,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "成功 return T，失败 unexpected{e}",
+   "x": 0.0,
+   "y": -0.2,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.0064,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "错误进了返回类型，取值先看标志",
+   "x": 0.0,
+   "y": -0.7764,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.752,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 3.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 2.4,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show ret_ok",
+   "note": "",
+   "duration": 2.55,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:ret_ok",
+     "cx": -4.3,
+     "cy": 0.3,
+     "t": 0.0,
+     "dur": 2.55
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a_ok",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_ok",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show exp_ok",
+   "note": "",
+   "duration": 2.79,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:exp_ok",
+     "cx": 0.2,
+     "cy": 0.3,
+     "t": 0.0,
+     "dur": 2.79
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show acc_val",
+   "note": "",
+   "duration": 1.83,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:acc_val",
+     "cx": 4.5,
+     "cy": 0.3,
+     "t": 0.0,
+     "dur": 1.83
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a_val",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_val",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lbl_got",
+   "note": "",
+   "duration": 0.83,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lbl_got",
+     "t": 0.0,
+     "dur": 0.83
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide lbl_got",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lbl_got",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide a_val",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:a_val",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide acc_val",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:acc_val",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide a_ok",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:a_ok",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide ret_ok",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:ret_ok",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show ret_err",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:ret_err",
+     "cx": -4.3,
+     "cy": 0.3,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a_err",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_err",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide exp_ok",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:exp_ok",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show exp_err",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:exp_err",
+     "cx": 0.2,
+     "cy": 0.3,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show acc_ev",
+   "note": "",
+   "duration": 1.83,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:acc_ev",
+     "cx": 4.5,
+     "cy": 0.3,
+     "t": 0.0,
+     "dur": 1.83
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a_vx",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_vx",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lbl_throw",
+   "note": "",
+   "duration": 2.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lbl_throw",
+     "t": 0.0,
+     "dur": 2.4
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide lbl_throw",
+   "note": "",
+   "duration": 3.05,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lbl_throw",
+     "t": 2.65,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide a_vx",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:a_vx",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide acc_ev",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:acc_ev",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show acc_ee",
+   "note": "",
+   "duration": 1.83,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:acc_ee",
+     "cx": 4.5,
+     "cy": 0.3,
+     "t": 0.0,
+     "dur": 1.83
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a_ex",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_ex",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lbl_code",
+   "note": "",
+   "duration": 2.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lbl_code",
+     "t": 0.0,
+     "dur": 2.4
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 14.695,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:ret_err",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a_err",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:exp_err",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:acc_ee",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a_ex",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lbl_code",
+     "t": 2.045,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 2.345,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 5.095,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 7.845,
+     "dur": 2.15
+    }
+   ]
+  }
+ ]
+}

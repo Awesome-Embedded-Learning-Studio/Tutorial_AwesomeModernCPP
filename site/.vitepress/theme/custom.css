@@ -1,0 +1,2067 @@
+/* ================================================================
+   品牌色系统 · 钢蓝(Steel Blue) + 暖中性底
+   强调色:钢蓝 brand-1 #2563EB(亮)/ #60A5FA(暗提亮)——现代/类型安全/性能/工程
+   中性底:骨白 #FCFAF6(亮)/ 暖炭 #17120E(暗),暖偏黄底调利长篇中文+代码阅读
+   钢蓝只作强调(边/进度/hover/link),不通篇蓝底。暖中性底+字体栈 1:1 镜像 C-Journey。
+   ================================================================ */
+:root {
+  /* ── 品牌色 · 钢蓝(亮)── */
+  --vp-c-brand-1: #2563EB;
+  --vp-c-brand-2: #1E40AF;
+  --vp-c-brand-3: #3B82F6;
+  --vp-c-brand-soft:   rgba(37, 99, 235, 0.10);
+  --vp-c-brand-soft-2: rgba(37, 99, 235, 0.16);
+  --vp-c-brand: var(--vp-c-brand-1);
+
+  /* ── 背景 · 骨白(与 C-Journey 一致,品牌色无关;2026-09 反馈偏暗,整体提亮一档)── */
+  --vp-c-bg: #FCFAF6;
+  --vp-c-bg-soft: #F4F0E9;
+  --vp-c-bg-soft-up: #FEFCF9;
+  --vp-c-bg-elv: #FFFDF9;
+
+  /* ── 文字 · 深炭 ── */
+  --vp-c-text-1: #2A2420;
+  --vp-c-text-2: #5C524A;
+  --vp-c-text-3: #8A7E72;
+
+  /* ── 分隔 / 边框 ── */
+  --vp-c-divider: #E0D8CC;
+  --vp-c-border: #D6CDBF;
+
+  /* ── CJK 字体栈 ── */
+  --vp-font-family: system-ui, -apple-system, 'Segoe UI', Roboto,
+    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑',
+    'Source Han Sans SC', 'Noto Sans CJK SC', sans-serif;
+
+  /* ── HomeTipBanner(原 Material 蓝 #3f51b5,统一到品牌色)── */
+  --vp-tip-bg: rgba(37, 99, 235, 0.08);
+  --vp-tip-border: rgba(37, 99, 235, 0.22);
+  --vp-tip-text: var(--vp-c-text-2);
+  --vp-tip-accent: var(--vp-c-brand-1);
+  --vp-tip-accent-hover: var(--vp-c-brand-2);
+
+  /* ── 终端调色板(终端始终深色,不随站点明暗切换;与钢蓝同系)── */
+  --term-bg-from: #0f172a;     /* slate-900 */
+  --term-bg-to:   #1e3a5f;     /* 深钢蓝(替代原紫蓝 #0f3460) */
+  --term-border: rgba(96, 165, 250, 0.30);  /* brand-3,替代 indigo */
+  --term-shadow: rgba(15, 23, 42, 0.36);
+  --term-glow:   rgba(96, 165, 250, 0.26);  /* brand-3 光晕,替代 indigo */
+  --term-title:  rgba(226, 232, 240, 0.55);
+  --term-code:   #cbd5e1;
+  --term-cmd:    var(--vp-c-brand-3);  /* 与品牌统一(原 #42a5f5) */
+  --term-ok:     #34D399;              /* 成功绿(语义,与 brand 区分) */
+  --term-save:   #fbbf24;              /* 保存琥珀(状态语义) */
+  --term-out:    #e2e8f0;
+}
+
+.dark {
+  /* ── 品牌色 · 钢蓝(暗色提亮)── */
+  --vp-c-brand-1: #60A5FA;
+  --vp-c-brand-2: #93C5FD;
+  --vp-c-brand-3: #BFDBFE;
+  --vp-c-brand-soft:   rgba(96, 165, 250, 0.16);
+  --vp-c-brand-soft-2: rgba(96, 165, 250, 0.22);
+
+  /* ── 背景 · 暖炭 ── */
+  --vp-c-bg: #17120E;
+  --vp-c-bg-soft: #1F1812;
+  --vp-c-bg-soft-up: #241C15;
+  --vp-c-bg-elv: #241C15;
+
+  /* ── 文字 · 暖灰 ── */
+  --vp-c-text-1: #E8D8CA;
+  --vp-c-text-2: #B5A89E;
+  --vp-c-text-3: #7F756C;
+
+  /* ── 分隔 / 边框 ── */
+  --vp-c-divider: #33291F;
+  --vp-c-border: #3D3225;
+
+  /* ── HomeTipBanner(暗色)── */
+  --vp-tip-bg: rgba(96, 165, 250, 0.10);
+  --vp-tip-border: rgba(96, 165, 250, 0.24);
+  --vp-tip-text: var(--vp-c-text-2);
+  --vp-tip-accent: var(--vp-c-brand-1);
+  --vp-tip-accent-hover: var(--vp-c-brand-2);
+
+  /* 终端调色板不随暗色变(终端本就深色) */
+}
+
+/* ── 选区配色(soft tint,明暗双模式都可读)── */
+::selection {
+  background: var(--vp-c-brand-soft-2);
+}
+
+/* ── 滚动条美化(WebKit + Firefox)── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--vp-c-divider);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--vp-c-text-3); }
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--vp-c-divider) transparent;
+}
+
+/* ================================================================
+   正文字号五档(超小/小/正常/大/超大)—— 由 FontSizeSwitcher 切 documentElement 的 data-font-size。
+   默认「正常」(zoom 1);往下为小/超小,往上为大/超大。
+   用 CSS zoom 整页缩放:rem + 所有 px 字号(自定义组件 + VitePress 默认)一并跟随,
+   等同浏览器 Ctrl+/- 原生缩放,避免「只有正文跳动、组件不动」的割裂感。
+   首屏由 config head 内联脚本提前设 data-font-size(默认 normal),避免刷新闪烁。
+   注:zoom 连尺寸/间距一起按比例缩放(2023 起全主流浏览器支持,含 Firefox 109+)。
+   ================================================================ */
+html[data-font-size='xxsmall'] {
+  zoom: 0.85;
+}
+
+html[data-font-size='small'] {
+  zoom: 0.92;
+}
+
+html[data-font-size='normal'] {
+  zoom: 1;
+}
+
+html[data-font-size='large'] {
+  zoom: 1.08;
+}
+
+html[data-font-size='xxlarge'] {
+  zoom: 1.16;
+}
+
+/* Chinese Typography */
+.vp-doc {
+  line-height: 1.85;
+  font-size: 1.05rem;
+  /* 正文 0.82rem≈13px 偏小 → 0.95rem≈15px,1080p+ 屏阅读更舒适 */
+}
+
+.vp-doc h1 {
+  line-height: 1.4;
+}
+
+.vp-doc h2 {
+  line-height: 1.45;
+}
+
+.vp-doc h3 {
+  line-height: 1.5;
+}
+
+.vp-doc h4 {
+  line-height: 1.55;
+}
+
+.vp-doc p {
+  margin-bottom: 1.2em;
+}
+
+/* Content Width —— 整体布局宽度,它决定文档正文区的最终宽度。
+   VitePress 用它算 VPContent 的左右 padding,正文区天花板 ≈
+   layout − 272(目录栏) − 256(大纲栏) − 128(各层 padding)。
+   取 1560 → 天花板 ≈ 904px(中文 ~53 字/行,舒适),正文撑满即无缝;
+   1920 屏两侧留白 ~180px(仍小于 VitePress 默认 1440 的留白)。
+   想让正文更宽就调大此值,代价是正文行变长。 */
+:root {
+  --vp-layout-max-width: 1560px;
+}
+
+/* 文档正文列:让它撑满父级 content 区,从而无缝。
+   父级天花板 ≈ layout(1560) − 272(目录栏) − 256(大纲栏) − 128(padding) ≈ 904px,
+   所以 max-width 只要 ≥ 904 就会撑满;实际正文宽度由父级链决定,这里给 1380 留足余量。
+   (之前设 1300 / 1700 看着一样,正是因为都 ≥ 天花板,渲染都卡在父级宽度上。)
+   三类选择器叠加特异性,稳压 VitePress 默认的 has-aside / 无 aside 规则。 */
+.VPDoc .content-container,
+.VPDoc.has-aside .content-container,
+.VPDoc:not(.has-aside) .content-container {
+  max-width: 1380px;
+}
+
+/* ================================================================
+   侧栏 / 大纲 / 首页卡片 —— 字号随正文整体放大
+   正文 1.05rem(≈16.8px);侧栏、大纲、卡片按层级略小,避免全局偏小。
+   ================================================================ */
+
+/* 左侧目录栏:略小于正文,作为导航层级(默认 14px 偏小) */
+.VPSidebar .link {
+  font-size: 1.2rem;
+}
+
+/* sidebar item 标题:超大字体(zoom 1.16)下长标题省略号截断,不溢出 sidebar/视口。
+   .text 是 .item(flex) 的子项,VitePress 默认 min-width:auto 不收缩 + 无 overflow/ellipsis,
+   抬字号后 nowrap 长标题撑爆 .text→.item→溢出。补 min-width:0 + ellipsis 优雅收口。 */
+.VPSidebar .text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* VitePress 的 link 是 flex item，但默认 min-width:auto；长标题会按固有宽度把 link 撑出
+   item，最后被侧栏粗暴裁切，看不到省略号。把收缩约束补在整条 flex 链上。 */
+.VPSidebar .item,
+.VPSidebar .link {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.VPSidebar .link {
+  overflow: hidden;
+}
+
+/* --vp-layout-max-width(1560)高于 VitePress 自带的 1440 断点。若不纠正，
+   1440–1559px 区间会套用负的居中余量，把侧栏无端压窄约 60px。 */
+@media (min-width: 1440px) and (max-width: 1559px) {
+  .VPSidebar.VPSidebar {
+    padding-left: 32px;
+    width: var(--vp-sidebar-width);
+  }
+
+  .VPContent.VPContent.has-sidebar {
+    padding-right: 0;
+    padding-left: var(--vp-sidebar-width);
+  }
+
+  .VPNavBar.has-sidebar .title.title {
+    padding-left: 32px;
+    width: var(--vp-sidebar-width);
+  }
+
+  .VPNavBar.has-sidebar .content.content {
+    padding-right: 32px;
+    padding-left: var(--vp-sidebar-width);
+  }
+
+  .VPNavBar.has-sidebar .divider.divider,
+  .VPLocalNav.VPLocalNav.has-sidebar {
+    padding-left: var(--vp-sidebar-width);
+  }
+}
+
+/* 超宽屏把导航列画成贴近视口左缘的浮动 panel。
+   VitePress 默认把 (viewport - layout) / 2 全堆在左侧栏之前/之内；2K/4K 屏上会留下
+   数百像素无意义空白。超宽屏不再居中整套三栏：左栏固定在 12px，正文从导航轨道
+   右侧开始，剩余空间交给正文内部布局。1560px 以下保留原生贴边侧栏。 */
+@media (min-width: 1560px) {
+  .VPSidebar.VPSidebar {
+    top: calc(var(--vp-layout-top-height, 0px) + var(--vp-nav-height) + 12px);
+    bottom: 12px;
+    left: 12px;
+    padding: 20px 16px 40px;
+    width: calc(var(--vp-sidebar-width) - 24px);
+    border: 1px solid var(--vp-c-divider);
+    border-radius: 12px;
+    background-color: var(--vp-sidebar-bg-color);
+    box-shadow: 0 8px 28px rgba(42, 36, 32, 0.08);
+  }
+
+  /* 原 curtain 用来在整页侧栏滚动时遮住顶栏下方内容；浮动 panel 自己有裁切边界。 */
+  .VPSidebar .curtain {
+    display: none;
+  }
+
+  .VPContent.VPContent.has-sidebar {
+    padding-right: 0;
+    padding-left: var(--vp-sidebar-width);
+  }
+
+  .VPNavBar.has-sidebar .title.title {
+    padding-left: 28px;
+    width: var(--vp-sidebar-width);
+  }
+
+  .VPNavBar.has-sidebar .content.content {
+    padding-right: 32px;
+    padding-left: var(--vp-sidebar-width);
+  }
+
+  .VPNavBar.has-sidebar .divider.divider,
+  .VPLocalNav.VPLocalNav.has-sidebar {
+    padding-left: var(--vp-sidebar-width);
+  }
+
+  .rs-handle--left {
+    top: calc(var(--vp-layout-top-height, 0px) + var(--vp-nav-height) + 12px);
+    bottom: 12px;
+  }
+
+  .dark .VPSidebar.VPSidebar {
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+  }
+}
+
+/* 右侧大纲:辅助导航,再小一档(默认 14px) */
+.VPDocAsideOutline .outline-link {
+  font-size: 1.1rem;
+}
+
+/* 首页 feature 卡片:标题字号温和默认(:where 零特异性,不与 Home 区 .VPFeature .title 打架;
+   Home 区规则在下方,普通特异性即可覆盖此默认,无需 !important) */
+:where(.VPFeature .title) {
+  font-size: 1.125rem;
+}
+
+.VPFeature .details {
+  font-size: 0.95rem;
+}
+
+/* 正文代码块样式见 article-code.css。 */
+.vp-doc :not(pre)>code {
+  font-size: 0.78em;
+  padding: 0.15em 0.35em;
+  border-radius: 4px;
+}
+
+/* 正文表格样式见 article-table.css。 */
+/* 正文列表样式见 article-list.css。 */
+
+/* 正文引用面板样式见 article-quote.css。 */
+
+/* Links */
+.vp-doc a {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+  transition: color 0.2s ease;
+}
+
+.vp-doc a:hover {
+  text-decoration-style: solid;
+}
+
+/* Images */
+.vp-doc img {
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Online Compiler Demo */
+.online-compiler-demo {
+  margin: 24px 0;
+  padding: 16px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg-soft);
+}
+
+/* 分栏：桌面左右、窄屏上下（断点见下方 @media） */
+.online-compiler-demo__split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  margin-top: 14px;
+  align-items: start;
+}
+
+.online-compiler-demo__source-pane,
+.online-compiler-demo__control-pane {
+  min-width: 0;
+}
+
+/* 源码 tab 切换（仅 arm-source-path 存在时出现） */
+.online-compiler-demo__source-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+
+.online-compiler-demo__button--tab {
+  min-height: 28px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.online-compiler-demo__button--tab.is-active {
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
+  background: var(--vp-c-bg);
+}
+
+/* 只读源码块：等宽，与「结果区」「编辑器」风格一致 */
+.online-compiler-demo__source-code {
+  margin: 0;
+  min-height: 260px;
+  max-height: 460px;
+  padding: 14px;
+  border-radius: 8px;
+  background: var(--vp-code-block-bg);
+  color: var(--vp-code-block-color);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre;
+  overflow: auto;
+}
+
+.online-compiler-demo__source-code code {
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  white-space: pre;
+}
+
+/* shiki 高亮输出（只读源码区）。高度/背景/字体对齐 fallback 的 .source-code，避免切换跳动 */
+.online-compiler-demo__source-view {
+  min-width: 0;
+}
+
+.online-compiler-demo__source-highlight .shiki {
+  margin: 0;
+  min-height: 260px;
+  max-height: 460px;
+  padding: 14px;
+  border-radius: 8px;
+  background: var(--vp-code-block-bg);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  overflow: auto;
+}
+
+.online-compiler-demo__source-highlight .shiki code {
+  font-family: inherit;
+  font-size: inherit;
+  background: transparent;
+}
+
+/* 双主题：默认走 light 变量，html.dark 下切 dark 变量
+   （VitePress 暗色即 <html class="dark">，正好对接 shiki 的 defaultColor:false 输出） */
+.online-compiler-demo__source-highlight .shiki,
+.online-compiler-demo__source-highlight .shiki span {
+  color: var(--shiki-light);
+}
+
+html.dark .online-compiler-demo__source-highlight .shiki,
+html.dark .online-compiler-demo__source-highlight .shiki span {
+  color: var(--shiki-dark) !important;
+}
+
+.online-compiler-demo__source-hint {
+  margin: 8px 0 0 !important;
+  color: var(--vp-c-text-2);
+  font-size: 12px;
+}
+
+.online-compiler-demo__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.online-compiler-demo__eyebrow {
+  margin: 0 0 4px !important;
+  color: var(--vp-c-brand-1);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.online-compiler-demo h3 {
+  margin: 0 !important;
+  border-top: 0 !important;
+  padding-top: 0 !important;
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+.online-compiler-demo__description {
+  margin: 8px 0 0 !important;
+  color: var(--vp-c-text-2);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.online-compiler-demo__source {
+  flex: 0 1 320px;
+  padding: 4px 0;
+  color: var(--vp-c-text-2);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: right;
+  word-break: break-all;
+}
+
+.online-compiler-demo__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 0;
+}
+
+.online-compiler-demo__meta span {
+  padding: 4px 8px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.online-compiler-demo__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.online-compiler-demo__button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--vp-c-brand-1);
+  border-radius: 6px;
+  background: var(--vp-c-brand-1);
+  color: var(--vp-c-white);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.online-compiler-demo__button:hover:not(:disabled) {
+  border-color: var(--vp-c-brand-2);
+  background: var(--vp-c-brand-2);
+}
+
+.online-compiler-demo__button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.online-compiler-demo__button--secondary {
+  border-color: var(--vp-c-divider);
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-1);
+}
+
+.online-compiler-demo__button--secondary:hover:not(:disabled) {
+  border-color: var(--vp-c-brand-1);
+  background: var(--vp-c-bg);
+}
+
+.online-compiler-demo__error {
+  margin: 14px 0 0 !important;
+  padding: 10px 12px;
+  border: 1px solid rgba(215, 58, 73, 0.35);
+  border-radius: 6px;
+  background: rgba(215, 58, 73, 0.08);
+  color: var(--vp-c-danger-1);
+  font-size: 13px;
+}
+
+.online-compiler-demo__editor {
+  margin-top: 14px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg);
+  overflow: hidden;
+}
+
+.online-compiler-demo__options {
+  margin-top: 14px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg);
+  overflow: hidden;
+}
+
+.online-compiler-demo__editor-header,
+.online-compiler-demo__options-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--vp-c-divider);
+  color: var(--vp-c-text-2);
+  font-size: 12px;
+}
+
+.online-compiler-demo__editor-header strong,
+.online-compiler-demo__options-header strong {
+  color: var(--vp-c-text-1);
+}
+
+.online-compiler-demo__option-list {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.online-compiler-demo__option-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 140px) minmax(96px, 150px) minmax(240px, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.online-compiler-demo__option-label {
+  padding-top: 8px;
+  color: var(--vp-c-text-2);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.online-compiler-demo__input,
+.online-compiler-demo__options-textarea {
+  width: 100%;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  outline: none;
+}
+
+.online-compiler-demo__input {
+  height: 34px;
+  padding: 0 10px;
+}
+
+.online-compiler-demo__options-textarea {
+  min-height: 58px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.online-compiler-demo__input:focus,
+.online-compiler-demo__options-textarea:focus {
+  border-color: var(--vp-c-brand-1);
+  box-shadow: 0 0 0 2px var(--vp-c-brand-soft);
+}
+
+.online-compiler-demo__textarea {
+  display: block;
+  width: 100%;
+  min-height: 360px;
+  padding: 14px;
+  border: 0;
+  background: var(--vp-code-block-bg);
+  color: var(--vp-code-block-color);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  resize: vertical;
+  outline: none;
+  tab-size: 4;
+  white-space: pre;
+  overflow: auto;
+}
+
+.online-compiler-demo__textarea:focus {
+  box-shadow: inset 0 0 0 2px var(--vp-c-brand-1);
+}
+
+.online-compiler-demo__editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--vp-c-divider);
+}
+
+.online-compiler-demo__result {
+  margin-top: 14px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-code-block-bg);
+  overflow: hidden;
+}
+
+.online-compiler-demo__result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--vp-c-divider);
+  color: var(--vp-c-text-2);
+  font-size: 12px;
+}
+
+.online-compiler-demo__result-header span {
+  font-family: var(--vp-font-family-mono);
+  text-align: right;
+}
+
+.online-compiler-demo__result pre {
+  max-height: 420px;
+  margin: 0;
+  padding: 14px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.online-compiler-demo__result code {
+  padding: 0;
+  background: transparent;
+  color: var(--vp-code-block-color);
+  white-space: pre;
+}
+
+/* ── 编译进行中骨架屏(shimmer):result 尚未返回时占位,避免结果区整块消失干等 ──
+   result--skeleton 复用 .online-compiler-demo__result 的边框/圆角/底;header 内的 strong/span
+   换成 .skel 条,pre 区换成 .skel-lines 多行条。shimmer 靠 background-position 扫光。 */
+.online-compiler-demo__skel-lines {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skel {
+  display: block;
+  border-radius: 4px;
+  background: linear-gradient(90deg,
+      var(--vp-c-divider) 0%,
+      var(--vp-c-bg-soft) 50%,
+      var(--vp-c-divider) 100%);
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.4s ease-in-out infinite;
+}
+
+.skel--title { width: 40%; height: 12px; }
+.skel--meta  { width: 28%; height: 12px; }
+.skel--line  { height: 10px; }
+
+@keyframes skel-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skel {
+    animation: none;
+    background: var(--vp-c-bg-soft);
+  }
+}
+
+.online-compiler-demo__noscript {
+  margin: 12px 0 0 !important;
+  color: var(--vp-c-text-2);
+  font-size: 13px;
+}
+
+/* ── 默认态 CTA("动手试一试")── */
+.online-compiler-demo__cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 12px 16px;
+  border: 1px solid var(--vp-c-brand-1);
+  border-radius: 8px;
+  background: var(--vp-c-brand-1);
+  color: var(--vp-c-white);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.online-compiler-demo__cta:hover {
+  background: var(--vp-c-brand-2);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.18);
+}
+
+.online-compiler-demo__cta:active {
+  transform: translateY(0);
+}
+
+.online-compiler-demo__cta-arrow {
+  transition: transform 0.2s ease;
+}
+
+.online-compiler-demo__cta:hover .online-compiler-demo__cta-arrow {
+  transform: translateX(4px);
+}
+
+/* ── 浮层:灰色遮罩 + 比页面小一圈的卡片(cap 1280px) ── */
+.online-compiler-demo__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3vh 5vw;          /* 比页面小一圈:纵向 3vh/横向 5vw 视口边距 */
+  overflow: auto;
+  animation: ocd-fade-in 0.2s ease;
+}
+
+.online-compiler-demo__modal {
+  background: var(--vp-c-bg);
+  border-radius: 12px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+  width: 100%;
+  max-width: 1280px;
+  min-height: 80vh;          /* 内容少也至少 80vh 挺着,不缩成一小块 */
+  max-height: 94vh;          /* 留 3vh×2 边距,不顶满 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: ocd-pop-in 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.online-compiler-demo__modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+
+.online-compiler-demo__modal-header strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 16px;
+  color: var(--vp-c-text-1);
+}
+
+.online-compiler-demo__modal-close {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-2);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.online-compiler-demo__modal-close:hover {
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
+  background: var(--vp-c-brand-soft);
+}
+
+/* 浮层里的 split:占满剩余高度,两栏各自滚动(textarea 撑满源码栏) */
+.online-compiler-demo__modal .online-compiler-demo__split {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  grid-template-rows: minmax(0, 1fr);  /* 行填满 split 的 flex 高度 */
+  align-items: stretch;                /* 覆盖原 split 的 align-items:start,让 pane 拉满行高 */
+}
+
+.online-compiler-demo__modal .online-compiler-demo__source-pane {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.online-compiler-demo__modal .online-compiler-demo__control-pane {
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.online-compiler-demo__modal .online-compiler-demo__textarea {
+  flex: 1;
+  min-height: 320px;
+}
+
+/* ── 编辑态高亮 overlay:shiki backdrop + 透明文字 textarea,两层重叠对齐 ──
+   textarea 文本透明(看背后高亮)、光标/选区仍由 textarea 接管;两层 font/padding/行高一致
+   (均 padding 14 / mono / 12px / 1.55)保证字符位置完全重合。滚动靠 onEditorScroll 同步。 */
+.online-compiler-demo__editor-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 320px;
+  overflow: hidden;
+  background: var(--vp-code-block-bg);
+  border-radius: 8px;
+}
+
+.online-compiler-demo__editor-backdrop {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  pointer-events: none;        /* 鼠标穿透到上层 textarea */
+  scrollbar-width: none;       /* 滚动条隐藏(滚动由 textarea 接管) */
+}
+
+.online-compiler-demo__editor-backdrop::-webkit-scrollbar {
+  display: none;
+}
+
+.online-compiler-demo__editor-backdrop .shiki {
+  margin: 0 !important;          /* 压掉 <pre> UA 的 margin-block-start(会顶下一行) */
+  min-height: auto !important;
+  max-height: none !important;
+  padding: 14px;                 /* 与 textarea 完全一致 → 字符位置重合 */
+  background: transparent !important;
+  border: 0;
+  border-radius: 0;
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  line-height: 18.6px;           /* 像素级,与 textarea 确定性一致(避免 unitless 在块/表单控件间渲染差) */
+  tab-size: 4;                   /* 与 textarea 的 tab-size 一致,Tab 字符宽度对齐 */
+  white-space: pre;
+  font-variant-ligatures: none;  /* 关连字(==/!= 等),与 textarea 字符等宽对齐 */
+  letter-spacing: 0;
+  word-spacing: 0;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+.online-compiler-demo__modal .online-compiler-demo__editor-textarea {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 14px;                       /* 与 backdrop pre 完全一致 */
+  border: 0;
+  background: transparent;
+  color: transparent;                  /* 文本透明,看背后高亮 */
+  -webkit-text-fill-color: transparent; /* Safari 兼容 */
+  caret-color: var(--vp-c-text-1);     /* 光标仍可见 */
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  line-height: 18.6px;                 /* 像素级,与 backdrop 确定性一致 */
+  tab-size: 4;
+  white-space: pre;
+  font-variant-ligatures: none;        /* 关连字,与 backdrop 字符等宽对齐 */
+  letter-spacing: 0;
+  word-spacing: 0;
+  box-sizing: border-box;
+  resize: none;                        /* overlay 下尺寸由 wrap 决定 */
+  flex: none;
+  min-height: 0;
+}
+
+.online-compiler-demo__editor-textarea::selection {
+  background: var(--vp-c-brand-soft-2); /* 选区可见(brand soft 色) */
+}
+
+@keyframes ocd-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ocd-pop-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .online-compiler-demo__overlay,
+  .online-compiler-demo__modal {
+    animation: none;
+  }
+}
+
+@media (max-width: 911px) {
+  .online-compiler-demo__split {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .online-compiler-demo {
+    padding: 14px;
+  }
+
+  .online-compiler-demo__header {
+    display: block;
+  }
+
+  .online-compiler-demo__source {
+    display: block;
+    margin-top: 10px;
+    text-align: left;
+  }
+
+  .online-compiler-demo__button {
+    flex: 1 1 140px;
+  }
+
+  .online-compiler-demo__result-header {
+    display: block;
+  }
+
+  .online-compiler-demo__editor-header,
+  .online-compiler-demo__options-header {
+    display: block;
+  }
+
+  .online-compiler-demo__editor-header span,
+  .online-compiler-demo__options-header span {
+    display: block;
+    margin-top: 4px;
+  }
+
+  .online-compiler-demo__option-row {
+    grid-template-columns: 1fr;
+  }
+
+  .online-compiler-demo__option-label {
+    padding-top: 0;
+  }
+
+  .online-compiler-demo__textarea {
+    min-height: 300px;
+  }
+
+  .online-compiler-demo__result-header span {
+    display: block;
+    margin-top: 4px;
+    text-align: left;
+  }
+}
+
+/* Print */
+@media print {
+  .vp-doc {
+    font-size: 11pt;
+    line-height: 1.7;
+  }
+}
+
+/* ================================================================
+   Home Layout — Hero & Feature Cards
+   ================================================================ */
+
+/* ── Hero Section ────────────────────────────────────────────── */
+
+.VPHero {
+  padding-bottom: 48px !important;
+}
+
+@media (min-width: 960px) {
+  .VPHero {
+    padding-bottom: 64px !important;
+  }
+}
+
+.VPHome .VPHero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(135deg,
+      var(--vp-c-brand-soft) 0%,
+      transparent 50%,
+      var(--vp-c-indigo-soft) 100%);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.VPHero .name.clip {
+  background: linear-gradient(135deg,
+      var(--vp-c-brand-1) 0%,
+      var(--vp-c-indigo-1) 50%,
+      var(--vp-c-purple-1) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.VPHero .tagline {
+  font-weight: 400 !important;
+  color: var(--vp-c-text-2) !important;
+}
+
+/* ── Hero 按钮区:首行主 CTA + GitHub,次行图标化 ghost 快捷入口 ──────────
+   设计意图:hero 只需要回答一个问题——新人从哪进。首行 brand 主按钮(自然宽度,
+   不拉伸,尾部一枚箭头指路)旁边伴一枚 GitHub ghost;其余入口降级为第二行的
+   ghost 描边按钮,前置身份图标(GitHub mark/书/地图/心形)区分去处,hover 才浮出
+   钢蓝软底。分行动作交给"0 高 strut"完成:flex 排序 brand+GitHub(order 0)→
+   strut(order 1,flex-basis:100% 撑爆本行)→ ghost 组(order 2),不依赖任何
+   按钮文字宽度,ghost 行宽变化不影响首行结构。
+   全部走自然宽度:胶囊天生按内容收缩,强行等宽会在短文字两侧留出空洞;
+   ghost 形态下 flex-wrap 换到哪行都成立,不再有"应该等宽却参差"的预期。
+   图标用 mask + background: currentColor,颜色随文字走(平时深灰、hover 钢蓝),
+   与 feature 卡 rail/icon 同一套视觉语言。按钮文案一个字符不动。
+   类名加倍(.actions.actions/.action.action)抬高特异性,稳压 VitePress scoped
+   的 [data-v] 同分规则,不赌样式注入顺序(同上文 .VPSidebar.VPSidebar 先例)。 */
+.VPHero .actions.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 0;                      /* 行距改由 .action 的 margin-top 承担,给 0 高 strut 让路 */
+  margin: 0;                       /* 抵消默认 -6px,水平间距统一交给 gap */
+  padding-top: 12px;               /* 默认 24−12:抵消首行 action 的 margin-top,总间距不变 */
+}
+
+@media (min-width: 640px) {
+  .VPHero .actions.actions {
+    padding-top: 20px;             /* 默认 32−12,同理 */
+  }
+}
+
+.VPHero .actions .action.action {
+  padding: 0;                      /* 抵消默认 6px(原与负 margin 配对) */
+  min-width: 0;
+  margin-top: 12px;                /* 行距来源(strut 行自身 0 高 0 距,不产生空隙) */
+}
+
+/* 0 高断行 strut:排在 GitHub 之后(order 1),把 ghost 组(order 2)整体压到下一行。
+   借的是"flex 按 order 排序装行"的规则——strut flex-basis:100% 在首行放不下,
+   换行后自身高度 0,视觉上只留一个不可见的分水岭。 */
+.VPHero .actions::before {
+  content: '';
+  order: 1;
+  flex-basis: 100%;
+  height: 0;
+  margin: 0;
+}
+
+.VPHero .actions .action:nth-child(n+3) {
+  order: 2;                        /* 第 3 个起全是 ghost,统一沉到 strut 之后 */
+}
+
+/* 主按钮尾部箭头(hover 前探,呼应 feature 卡 link-text-icon 的位移手法) */
+.VPHero .actions .action:first-child .VPButton::after {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-left: 8px;
+  vertical-align: -1.5px;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M12 5l7 7-7 7'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M12 5l7 7-7 7'/%3E%3C/svg%3E") no-repeat center / contain;
+  transition: transform 0.25s ease;
+}
+
+.VPHero .actions .action:first-child .VPButton:hover::after {
+  transform: translateX(3px);
+}
+
+/* 次按钮 ghost 化:透明底 + 描边,把实底让给主按钮 */
+.VPHero .actions .action:not(:first-child) .VPButton.alt {
+  background-color: transparent;
+  border-color: var(--vp-c-border);
+  color: var(--vp-c-text-1);
+}
+
+.VPHero .actions .action:not(:first-child) .VPButton.alt:hover {
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
+  background-color: var(--vp-c-brand-soft);
+}
+
+.VPHero .actions .action:not(:first-child) .VPButton.alt:active {
+  border-color: var(--vp-c-brand-2);
+  color: var(--vp-c-brand-2);
+  background-color: var(--vp-c-brand-soft-2);
+}
+
+/* 次按钮前置图标:形状装在 CSS 变量里,按位置分配(GitHub mark/书/地图/心形)。
+   mask 只取 alpha,颜色交给 currentColor → 跟文字一起变钢蓝。 */
+.VPHero .actions .action:not(:first-child) .VPButton::before {
+  content: '';
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  margin-right: 7px;
+  vertical-align: -2px;
+  background-color: currentColor;
+  -webkit-mask: var(--hero-action-icon) no-repeat center / contain;
+  mask: var(--hero-action-icon) no-repeat center / contain;
+  flex-shrink: 0;
+}
+
+.VPHero .actions .action:nth-child(2) {
+  --hero-action-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12'/%3E%3C/svg%3E");
+}
+
+.VPHero .actions .action:nth-child(3) {
+  --hero-action-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20'/%3E%3C/svg%3E");
+}
+
+.VPHero .actions .action:nth-child(4) {
+  --hero-action-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z'/%3E%3Cpath d='M9 3v15M15 6v15'/%3E%3C/svg%3E");
+}
+
+/* 第 5 个起(鸣谢等)统一心形;未来再加按钮默认也挂心形,要新形状再来改这里 */
+.VPHero .actions .action:nth-child(n+5) {
+  --hero-action-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .VPHero .actions .action:first-child .VPButton::after {
+    transition: none;
+  }
+}
+
+/* ── Hero Image Slot: content card (HomeHeroVisual terminal) ──
+   VitePress sizes .image-container as a fixed 320/392px square and gives .image
+   large negative margins — both meant for a small decorative image with a
+   blurred background blob. A real content card needs normal document flow, so
+   neutralize those; otherwise the card overflows up into the hero text (and the
+   nav on narrow screens) and the -48px bottom margin pulls the next section
+   (ProofStrip) up into an overlap. */
+
+.VPHero .image-bg {
+  display: none !important;
+}
+
+/* 移动端把标题(.container)置于终端(.image)上方:order 1 < 2(桌面本就是 container 在左,不受影响) */
+.VPHero .container {
+  order: 1 !important;
+}
+
+.VPHero .image {
+  order: 2 !important;
+  margin: 40px auto 0 !important;
+}
+
+.VPHero .image-container {
+  width: auto !important;
+  height: auto !important;
+}
+
+@media (min-width: 640px) {
+  .VPHero .image {
+    margin: 40px auto 0 !important;
+  }
+}
+
+@media (min-width: 960px) {
+
+  /* Desktop two-column hero: image column fills remaining width, card centered. */
+  .VPHero .image {
+    flex-grow: 1;
+    margin: 0 !important;
+    min-height: 100%;
+  }
+
+  .VPHero .image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100% !important;
+    height: 100% !important;
+    transform: none !important;
+  }
+}
+
+/* ── Proof 条:移动端(<960,hero 堆叠)夹在标题与终端之间;桌面端(≥960)仍在 hero 下方 ──
+   两个实例按视口切换显隐。移动端那条放在 home-hero-actions-after(标题块末尾、终端之前),
+   底边距归零——终端的 margin-top 提供 proof→终端 的间隙。 */
+.proof-on-mobile {
+  display: none;
+}
+
+.proof-on-desktop {
+  display: block;
+}
+
+.proof-on-mobile .proof-strip {
+  margin-bottom: 0 !important;
+}
+
+@media (max-width: 959px) {
+  .proof-on-mobile {
+    display: block;
+  }
+
+  .proof-on-desktop {
+    display: none;
+  }
+}
+
+/* ── Feature Card Entrance Animation ────────────────────────── */
+
+@keyframes feature-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.VPFeatures .item {
+  animation: feature-fade-up 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.VPFeatures .item:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.VPFeatures .item:nth-child(2) {
+  animation-delay: 78ms;
+}
+
+.VPFeatures .item:nth-child(3) {
+  animation-delay: 156ms;
+}
+
+.VPFeatures .item:nth-child(4) {
+  animation-delay: 234ms;
+}
+
+.VPFeatures .item:nth-child(5) {
+  animation-delay: 312ms;
+}
+
+.VPFeatures .item:nth-child(6) {
+  animation-delay: 390ms;
+}
+
+.VPFeatures .item:nth-child(7) {
+  animation-delay: 468ms;
+}
+
+.VPFeatures .item:nth-child(8) {
+  animation-delay: 546ms;
+}
+
+.VPFeatures .item:nth-child(9) {
+  animation-delay: 624ms;
+}
+
+.VPFeatures .item:nth-child(10) {
+  animation-delay: 702ms;
+}
+
+.VPFeatures .item:nth-child(11) {
+  animation-delay: 780ms;
+}
+
+.VPFeatures .item:nth-child(12) {
+  animation-delay: 858ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .VPFeatures .item {
+    animation: none;
+  }
+}
+
+/* ── Features Grid ───────────────────────────────────────────── */
+
+/* VitePress 默认渲染的首页卡网格整体隐藏：16 卡已由 HomePathExplorer 的
+   「全部内容」视图(HomeFeatureGrid,读同一份 frontmatter)接管。
+   .VPHomeFeatures 只在 layout: home 渲染(全仓仅中英两个首页),不影响其他页面;
+   隐藏副本仍留在 DOM 中(SEO 无损),但移出 tab 序,交互归自渲染副本。 */
+.VPHomeFeatures {
+  display: none;
+}
+
+.VPFeatures {
+  padding-top: 16px;
+  padding-bottom: 48px;
+}
+
+/* ── Individual Card ─────────────────────────────────────────── */
+
+.VPFeature {
+  position: relative;        /* 给 rail ::before 提供定位上下文 */
+  overflow: hidden;          /* 圆角裁 rail 左上/左下角,与卡片轮廓贴合 */
+  border: 1px solid var(--vp-c-divider) !important;
+  border-radius: 14px !important;
+  background-color: var(--vp-c-bg) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: border-color 0.39s ease,
+    box-shadow 0.39s ease,
+    transform 0.39s ease;
+}
+
+/* ── 卡片左侧 rail(anatomy OrganCard 手法,用 CSS ::before 模拟,不改 VitePress 默认 DOM)──
+   默认 3px 半透明,hover 加粗到 5px 并提亮;底色按 tier 分层(镜像 icon tier 系统)。 */
+.VPFeature::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--vp-c-brand-1);
+  opacity: 0.35;
+  transition: opacity 0.39s ease, width 0.39s ease;
+}
+
+.VPFeature.link:hover::before {
+  opacity: 1;
+  width: 5px;
+}
+
+/* 三档 tier rail 着色:卷1-4 brand(钢蓝)/卷5-7 green/卷8-12 purple */
+.VPFeatures .item:nth-child(-n+4) .VPFeature::before { background: var(--vp-c-brand-1); }
+.VPFeatures .item:nth-child(n+5):nth-child(-n+7) .VPFeature::before { background: var(--vp-c-green-1); }
+.VPFeatures .item:nth-child(n+8) .VPFeature::before { background: var(--vp-c-purple-1); }
+
+.VPFeature.link:hover {
+  border-color: var(--vp-c-brand-1) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.07),
+    0 3px 8px rgba(0, 0, 0, 0.04);
+  transform: translateY(-4px);
+}
+
+.VPFeature .box {
+  padding: 28px 24px;
+}
+
+/* ── Icon Container ──────────────────────────────────────────── */
+/* !important 已去除:.VPFeature .icon(0,2,0)与 VitePress scoped .icon[data-v](0,2,0)等特异性,
+   custom.css 源序在后即覆盖。tier 规则特异性更高(0,4,0)、仍带 !important,叠加不受影响。 */
+
+.VPFeature .icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg,
+      var(--vp-c-brand-soft) 0%,
+      var(--vp-c-indigo-soft) 100%);
+  color: var(--vp-c-brand-1);
+  font-size: 22px;
+  transition: background 0.39s ease,
+    color 0.39s ease,
+    transform 0.39s ease;
+}
+
+.VPFeature.link:hover .icon {
+  transform: scale(1.1);
+}
+
+/* ── Card Title ──────────────────────────────────────────────── */
+
+.VPFeature .title {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--vp-c-text-1);
+  transition: color 0.39s ease;
+}
+
+.VPFeature.link:hover .title {
+  color: var(--vp-c-brand-1);
+}
+
+/* ── Card Details ────────────────────────────────────────────── */
+
+.VPFeature .details {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--vp-c-text-2);
+  font-weight: 400;
+}
+
+/* ── Link Arrow ──────────────────────────────────────────────── */
+
+.VPFeature .link-text-icon {
+  transition: transform 0.39s ease;
+}
+
+.VPFeature.link:hover .link-text-icon {
+  transform: translateX(4px);
+}
+
+/* ── Tier Color Coding: Core (1-4) ─ Brand/Indigo ────────────── */
+
+.VPFeatures .item:nth-child(-n+4) .VPFeature .icon {
+  background: linear-gradient(135deg, var(--vp-c-brand-soft), var(--vp-c-indigo-soft)) !important;
+  color: var(--vp-c-brand-1) !important;
+}
+
+.VPFeatures .item:nth-child(-n+4) .VPFeature.link:hover .icon {
+  background: linear-gradient(135deg, var(--vp-c-brand-1), var(--vp-c-indigo-1)) !important;
+  color: var(--vp-c-white) !important;
+}
+
+/* ── Tier Color Coding: Engineering (5-7) ─ Green ────────────── */
+
+.VPFeatures .item:nth-child(n+5):nth-child(-n+7) .VPFeature .icon {
+  background: linear-gradient(135deg, var(--vp-c-green-soft), rgba(16, 185, 129, 0.08)) !important;
+  color: var(--vp-c-green-1) !important;
+}
+
+.VPFeatures .item:nth-child(n+5):nth-child(-n+7) .VPFeature.link:hover .icon {
+  background: linear-gradient(135deg, var(--vp-c-green-1), var(--vp-c-green-2)) !important;
+  color: var(--vp-c-white) !important;
+}
+
+.VPFeatures .item:nth-child(n+5):nth-child(-n+7) .VPFeature.link:hover {
+  border-color: var(--vp-c-green-1) !important;
+}
+
+.VPFeatures .item:nth-child(n+5):nth-child(-n+7) .VPFeature.link:hover .title {
+  color: var(--vp-c-green-1) !important;
+}
+
+/* ── Tier Color Coding: Domain (8-12) ─ Purple ───────────────── */
+
+.VPFeatures .item:nth-child(n+8) .VPFeature .icon {
+  background: linear-gradient(135deg, var(--vp-c-purple-soft), rgba(159, 122, 234, 0.08)) !important;
+  color: var(--vp-c-purple-1) !important;
+}
+
+.VPFeatures .item:nth-child(n+8) .VPFeature.link:hover .icon {
+  background: linear-gradient(135deg, var(--vp-c-purple-1), var(--vp-c-purple-2)) !important;
+  color: var(--vp-c-white) !important;
+}
+
+.VPFeatures .item:nth-child(n+8) .VPFeature.link:hover {
+  border-color: var(--vp-c-purple-1) !important;
+}
+
+.VPFeatures .item:nth-child(n+8) .VPFeature.link:hover .title {
+  color: var(--vp-c-purple-1) !important;
+}
+
+/* ── Dark Mode ───────────────────────────────────────────────── */
+
+.dark .VPFeature {
+  background-color: var(--vp-c-bg-elv) !important;
+  border-color: var(--vp-c-border) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2),
+    0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.dark .VPFeature.link:hover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3),
+    0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+
+@media (max-width: 639px) {
+  .VPFeature .box {
+    padding: 20px 18px !important;
+  }
+
+  .VPFeature .icon {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 10px !important;
+    font-size: 18px !important;
+  }
+
+  .VPFeature .title {
+    font-size: 14px !important;
+  }
+
+  .VPFeature .details {
+    font-size: 12.5px !important;
+  }
+}
+
+/* ── Contributor Card Grid ──────────────────────────────────── */
+
+.contributor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  margin: 1.5em 0;
+}
+
+.contributor-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 14px;
+  background-color: var(--vp-c-bg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: border-color 0.39s ease, box-shadow 0.39s ease, transform 0.39s ease;
+  text-decoration: none !important;
+  color: inherit;
+}
+
+.contributor-card:hover {
+  border-color: var(--vp-c-brand-1);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.07), 0 3px 8px rgba(0, 0, 0, 0.04);
+  transform: translateY(-4px);
+}
+
+.dark .contributor-card {
+  background-color: var(--vp-c-bg-elv);
+  border-color: var(--vp-c-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.dark .contributor-card:hover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.contributor-card .card-avatar {
+  width: 56px;
+  height: 56px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--vp-c-divider);
+  flex-shrink: 0;
+  transition: border-color 0.39s ease;
+}
+
+.contributor-card:hover .card-avatar {
+  border-color: var(--vp-c-brand-1);
+}
+
+.contributor-card .card-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.contributor-card .card-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--vp-c-text-1);
+  text-decoration: none !important;
+  transition: color 0.39s ease;
+}
+
+.contributor-card .card-name:hover {
+  color: var(--vp-c-brand-1) !important;
+}
+
+.contributor-card .card-role {
+  margin: 0;
+  font-size: 13px;
+  color: var(--vp-c-text-2);
+  line-height: 1.5;
+}
+
+.contributor-card .card-types {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: 2px;
+}
+
+.contributor-card .card-desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--vp-c-text-3);
+  line-height: 1.6;
+}
+
+.contributor-card .card-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  border-radius: 9px;
+  vertical-align: middle;
+}
+
+.contributor-card .card-badge.pr {
+  color: #fff;
+  background-color: #3fb950;
+}
+
+.dark .contributor-card .card-badge.pr {
+  background-color: #238636;
+}
+
+.contributor-card .card-badge.issue {
+  color: #fff;
+  background-color: #58a6ff;
+}
+
+.dark .contributor-card .card-badge.issue {
+  background-color: #1f6feb;
+}
+
+@media (max-width: 639px) {
+  .contributor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .contributor-card {
+    padding: 18px;
+    gap: 12px;
+  }
+
+  .contributor-card .card-avatar {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* ================================================================
+   Mermaid Diagrams
+   ================================================================ */
+
+.mermaid-diagram {
+  margin: 1rem 0;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 节点/边标签：给足内边距与行高，避免 CJK 多行文字被节点框裁剪 */
+.mermaid-diagram .nodeLabel,
+.mermaid-diagram .edgeLabel {
+  padding: 0.15em 0.35em;
+  line-height: 1.45;
+}
+
+/* foreignObject 默认裁剪溢出内容；放开让标签自适应，不遮挡 */
+.mermaid-diagram foreignObject {
+  overflow: visible;
+}
+
+.mermaid-error {
+  padding: 12px;
+  border: 1px solid var(--vp-c-danger-2);
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 0.85em;
+}
+
+/* ── maximize 按钮:图被容器挤窄时浮现,点开进全屏模态 ── */
+
+.mermaid-diagram--zoomable {
+  position: relative;
+}
+
+.mermaid-maximize-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--vp-c-border);
+  border-radius: 6px;
+  background: var(--vp-c-bg-elv);
+  color: var(--vp-c-text-2);
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+/* hover 图 / 键盘聚焦图内 → 按钮完全显形并高亮 */
+.mermaid-diagram--zoomable:hover .mermaid-maximize-btn,
+.mermaid-diagram--zoomable:focus-within .mermaid-maximize-btn {
+  opacity: 1;
+}
+
+.mermaid-maximize-btn:hover,
+.mermaid-maximize-btn:focus-visible {
+  opacity: 1;
+  color: var(--vp-c-brand-1);
+  border-color: var(--vp-c-brand-1);
+  outline: none;
+}
+
+/* ── 全屏查看模态(MermaidLightbox.vue,Teleport 到 body) ── */
+
+.mermaid-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 12, 8, 0.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.mermaid-lightbox__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--vp-c-bg-soft);
+  border-bottom: 1px solid var(--vp-c-border);
+  color: var(--vp-c-text-2);
+}
+
+.mermaid-lightbox__btn {
+  appearance: none;
+  border: 1px solid var(--vp-c-border);
+  border-radius: 6px;
+  background: var(--vp-c-bg-elv);
+  color: var(--vp-c-text-1);
+  font-size: 13px;
+  line-height: 1;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.mermaid-lightbox__btn:hover,
+.mermaid-lightbox__btn:focus-visible {
+  color: var(--vp-c-brand-1);
+  border-color: var(--vp-c-brand-1);
+  outline: none;
+}
+
+.mermaid-lightbox__close {
+  margin-left: auto;
+}
+
+.mermaid-lightbox__hint {
+  font-size: 12px;
+  color: var(--vp-c-text-3);
+  margin-left: 8px;
+}
+
+.mermaid-lightbox__stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 32px;
+}
+
+.mermaid-lightbox__target {
+  display: inline-block;
+  touch-action: none; /* panzoom 自己管 pointer,关掉浏览器默认触摸手势 */
+  user-select: none;
+}
+
+.mermaid-lightbox__target svg {
+  display: block;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  background: var(--vp-c-bg-elv);
+  border-radius: 4px;
+}
+
+/* ================================================================
+   Doc Image Lightbox(文章图片点击放大)
+   扫描器: theme/image-client.ts(给 .vp-doc img 加 doc-img--zoomable)
+   模态:   theme/components/ImageLightbox.vue(Teleport 到 body)
+   样式抄 mermaid-lightbox 段:变量照用,暗色自动适配。
+   ================================================================ */
+
+/* 正文里被接管的图片:光标提示可放大,键盘可达性 outline */
+.doc-img--zoomable {
+  cursor: zoom-in;
+}
+
+.doc-img--zoomable:focus-visible {
+  outline: 2px solid var(--vp-c-brand-1);
+  outline-offset: 2px;
+}
+
+.image-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 12, 8, 0.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.image-lightbox__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--vp-c-bg-soft);
+  border-bottom: 1px solid var(--vp-c-border);
+  color: var(--vp-c-text-2);
+}
+
+.image-lightbox__btn {
+  appearance: none;
+  border: 1px solid var(--vp-c-border);
+  border-radius: 6px;
+  background: var(--vp-c-bg-elv);
+  color: var(--vp-c-text-1);
+  font-size: 13px;
+  line-height: 1;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.image-lightbox__btn:hover,
+.image-lightbox__btn:focus-visible {
+  color: var(--vp-c-brand-1);
+  border-color: var(--vp-c-brand-1);
+  outline: none;
+}
+
+.image-lightbox__close {
+  margin-left: auto;
+}
+
+.image-lightbox__hint {
+  font-size: 12px;
+  color: var(--vp-c-text-3);
+  margin-left: 8px;
+}
+
+.image-lightbox__stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 32px;
+}
+
+.image-lightbox__target {
+  display: inline-block;
+  touch-action: none; /* panzoom 自己管 pointer,关掉浏览器默认触摸手势 */
+  user-select: none;
+}
+
+/* 不设 background:透明 PNG 靠深色遮罩衬底(与 GitHub 行为一致);
+   max-* 是 naturalWidth=0(Firefox 无固有尺寸 svg / 加载失败)时的兜底,
+   正常路径走 JS 设的显式像素宽高。 */
+.image-lightbox__target img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  border-radius: 4px;
+}
+
+/* ================================================================
+   Resizable Sidebar(可拖拽侧栏宽度)
+   组件: theme/components/ResizableSidebar.vue
+   左 handle 在组件模板内(fixed),右 handle 运行时注入 .aside(absolute)。
+   宽度由 --vp-sidebar-width(VitePress 原生,全链路消费)与 --vp-aside-width(本站自定义)驱动。
+   ================================================================ */
+
+:root {
+  --vp-aside-width: 256px; /* 右大纲栏宽度变量,默认与 VitePress 原值一致 */
+}
+
+/* 右栏宽度由变量驱动,覆盖 VitePress 的固定 max-width / width */
+.VPDoc.has-aside .aside {
+  max-width: var(--vp-aside-width);
+  position: relative; /* 给注入的 absolute handle 提供锚点 */
+}
+.VPDoc .aside-container {
+  width: calc(var(--vp-aside-width) - 32px); /* 保持原 32px 内边距逻辑(原 max-width 256 → container 224) */
+}
+
+/* 手柄公共态:常显一条 1px 淡灰细线(::before),悬浮 / 拖拽时变品牌色加粗。
+   命中热区 8px(透明本体),避免过窄扫不到。z-index 压在 sidebar 之上,防止被侧栏盖住。 */
+.rs-handle {
+  z-index: calc(var(--vp-z-index-sidebar) + 1);
+  width: 8px;
+  background: transparent;
+  cursor: col-resize;
+}
+.rs-handle::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  transform: translateX(-50%);
+  background: var(--vp-c-divider);
+  transition: width 0.15s ease, background-color 0.15s ease;
+}
+.rs-handle:hover::before,
+.rs-handle.is-active::before {
+  width: 2px;
+  background: var(--vp-c-brand-1);
+}
+
+/* 左手柄:fixed。left 仅作 SSR 首屏 fallback,onMounted 后由 JS 读取 .VPSidebar 右边缘精确
+   覆盖 —— 宽屏(≥1440px)布局居中,右缘带 (vw-maxW)/2 偏移且受滚动条影响,CSS 公式推算
+   总有小偏差,改读 getBoundingClientRect 根治(与右 handle 同策略)。 */
+.rs-handle--left {
+  position: fixed;
+  left: var(--vp-sidebar-width);
+  margin-left: -4px;
+  top: var(--vp-nav-height, 64px);
+  bottom: 0;
+}
+
+/* 右手柄:absolute 注入 .aside 内,居中压在其左边缘(默认隐藏,仅大屏显示见下方媒体查询) */
+.rs-handle--right {
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  display: none;
+}
+
+/* 拖拽进行中:禁选中文,全屏 col-resize 光标 */
+body.rs-resizing {
+  user-select: none;
+  cursor: col-resize;
+}
+
+/* 响应式:左栏 <960px 沉为抽屉;右栏 aside 仅 ≥1280px 显示 */
+@media (max-width: 959px) {
+  .rs-handle--left {
+    display: none;
+  }
+}
+@media (min-width: 1280px) {
+  .rs-handle--right {
+    display: block;
+  }
+}
+
+/* ================================================================
+   Content Page Enhancements
+   ================================================================ */
+
+/* ── Horizontal Rules ──────────────────────────────────────────── */
+
+.vp-doc hr {
+  border: none;
+  border-top: 1px dashed var(--vp-c-divider);
+  margin: 2.5em 0;
+  opacity: 0.6;
+}
+
+/* ── Custom Containers ─────────────────────────────────────────── */
+
+.vp-doc .custom-block {
+  border-radius: 8px;
+  margin: 1.2em 0;
+}
+
+/* ── Content Dark Mode ─────────────────────────────────────────── */
+
+.dark .vp-doc img {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* ── drawio viewer ──────────────────────────────────────────────── */
+
+/* 工具条(缩放/全屏)是绝对定位, 容器必须建立定位上下文; 否则锚到页面级
+   定位祖先, 悬浮到图外压住正文(@dhlx/vitepress-plugin-drawio 容器默认无
+   position, 全站 26 张 drawio 共用此修复) */
+.mxgraph {
+  position: relative;
+}

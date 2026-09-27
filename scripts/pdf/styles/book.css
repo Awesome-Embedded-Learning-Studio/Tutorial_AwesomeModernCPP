@@ -1,0 +1,1191 @@
+/*
+ * Independent B5 book design for the offline PDF pipeline.
+ * This deliberately does not import the VitePress theme: the HTML is a book,
+ * not a screenshot of the website.
+ */
+
+:root {
+  color-scheme: light;
+  --book-paper: #fffefa;
+  --book-ink: #211d19;
+  --book-muted: #6d655d;
+  --book-rule: #cec5bb;
+  --book-accent: #8a3025;
+  --book-accent-soft: #f5e8e2;
+  --book-code-bg: #f7f5f2;
+  --book-code-inline-bg: #f3f1ed;
+  --book-code-rule: #ded8d1;
+  --book-code-ink: #37332f;
+  --book-code-size: 8.4pt;
+  --book-code-leading: 1.45;
+  --book-serif: "Noto Serif CJK SC", "Source Han Serif SC", "Noto Serif SC",
+    "Songti SC", SimSun, serif;
+  --book-sans: "Noto Sans CJK SC", "Source Han Sans SC", "Noto Sans SC",
+    system-ui, sans-serif;
+  /* Cascadia Mono first: it is Microsoft's open-source successor to Consolas,
+   * which is what the site renders in Windows browsers, so the book and the
+   * site read as the same face. CI installs fonts-cascadia-code. Noto Sans
+   * Mono stays ahead of the CJK face as the Latin safety net for machines
+   * without Cascadia: the CJK face's half-width Latin is noticeably condensed
+   * and would take over the whole code block. */
+  --book-mono: "Cascadia Mono", "Noto Sans Mono", "Noto Sans Mono CJK SC",
+    "Source Han Mono SC", "DejaVu Sans Mono", monospace;
+}
+
+@page {
+  size: 176mm 250mm;
+  margin: 19mm 18mm 21mm 22mm;
+}
+
+@page cover {
+  size: 176mm 250mm;
+  margin: 0;
+
+  @top-left { content: none; }
+  @top-center { content: none; }
+  @top-right { content: none; }
+  @bottom-left { content: none; }
+  @bottom-center { content: none; }
+  @bottom-right { content: none; }
+}
+
+@page contents:left {
+  margin-left: 18mm;
+  margin-right: 22mm;
+
+  @top-left {
+    content: string(book-title);
+    color: #746b62;
+    font-family: var(--book-sans);
+    font-size: 7.5pt;
+    letter-spacing: 0.04em;
+  }
+
+  @bottom-left {
+    content: counter(page);
+    color: #746b62;
+    font-family: var(--book-sans);
+    font-size: 8pt;
+  }
+}
+
+@page contents:right {
+  margin-left: 22mm;
+  margin-right: 18mm;
+
+  @top-right {
+    content: string(book-title);
+    color: #746b62;
+    font-family: var(--book-sans);
+    font-size: 7.5pt;
+    letter-spacing: 0.04em;
+  }
+
+  @bottom-right {
+    content: counter(page);
+    color: #746b62;
+    font-family: var(--book-sans);
+    font-size: 8pt;
+  }
+}
+
+@page book:left {
+  margin-left: 18mm;
+  margin-right: 22mm;
+
+  @top-left {
+    content: string(book-title);
+    color: #746b62;
+    font-family: var(--book-sans);
+    font-size: 7.5pt;
+    letter-spacing: 0.035em;
+  }
+
+  @top-right {
+    content: string(chapter);
+    color: #746b62;
+    font-family: var(--book-sans);
+    font-size: 7.5pt;
+  }
+
+  @bottom-left {
+    content: counter(page);
+    color: #746b62;
+    font-family: var(--book-sans);
+    font-size: 8pt;
+  }
+}
+
+@page book:right {
+  margin-left: 22mm;
+  margin-right: 18mm;
+
+  @top-left {
+    content: string(chapter);
+    color: #746b62;
+    font-family: var(--book-sans);
+    font-size: 7.5pt;
+  }
+
+  @top-right {
+    content: string(book-title);
+    color: #746b62;
+    font-family: var(--book-sans);
+    font-size: 7.5pt;
+    letter-spacing: 0.035em;
+  }
+
+  @bottom-right {
+    content: counter(page);
+    color: #746b62;
+    font-family: var(--book-sans);
+    font-size: 8pt;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--book-paper);
+  color: var(--book-ink);
+  font-family: var(--book-serif);
+  font-size: 10.5pt;
+  line-break: strict;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  background: var(--book-paper);
+  color: var(--book-ink);
+  font: inherit;
+}
+
+.book-root {
+  string-set: book-title attr(data-book-title);
+}
+
+.book-cover {
+  page: cover;
+  width: 176mm;
+  min-height: 250mm;
+  padding: 24mm 23mm 22mm;
+  background:
+    linear-gradient(125deg, rgb(138 48 37 / 9%), transparent 48%),
+    var(--book-paper);
+  break-after: page;
+}
+
+.book-cover__frame {
+  display: flex;
+  min-height: 204mm;
+  flex-direction: column;
+  border: 0.35mm solid var(--book-accent);
+  padding: 22mm 17mm 15mm;
+}
+
+.book-cover__series,
+.book-cover__label {
+  margin: 0;
+  color: var(--book-muted);
+  font-family: var(--book-sans);
+  letter-spacing: 0.14em;
+}
+
+.book-cover__series {
+  font-size: 10pt;
+  font-weight: 600;
+}
+
+.book-cover__label {
+  margin-top: 31mm;
+  color: var(--book-accent);
+  font-size: 12pt;
+  font-weight: 700;
+}
+
+.book-cover h1 {
+  max-width: 110mm;
+  margin: 5mm 0 0;
+  font-size: 29pt;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  line-height: 1.28;
+  text-align: left;
+}
+
+.book-cover__rule {
+  width: 30mm;
+  margin-top: 10mm;
+  border-top: 0.8mm solid var(--book-accent);
+}
+
+.book-cover__credit {
+  margin: auto 0 0;
+  color: var(--book-muted);
+  font-family: var(--book-sans);
+  font-size: 8.8pt;
+  line-height: 1.45;
+}
+
+.book-cover__credit p {
+  margin: 0;
+}
+
+.book-cover__credit p + p {
+  margin-top: 0.8mm;
+}
+
+.book-cover__studio {
+  color: var(--book-ink);
+  font-weight: 650;
+  letter-spacing: 0.025em;
+}
+
+.book-cover__credit time {
+  font-variant-numeric: tabular-nums;
+}
+
+.book-toc {
+  page: contents;
+  break-after: page;
+}
+
+.book-toc h1 {
+  margin: 11mm 0 12mm;
+  color: var(--book-ink);
+  font-size: 24pt;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+}
+
+.toc-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.toc-entry {
+  margin: 0;
+  break-inside: avoid;
+}
+
+.toc-entry a {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(7mm, 1fr) auto;
+  align-items: end;
+  gap: 2mm;
+  padding: 1.4mm 0;
+  color: inherit;
+  font-family: var(--book-sans);
+  font-size: 9.3pt;
+  line-height: 1.45;
+  text-decoration: none;
+}
+
+.toc-entry a::after {
+  min-width: 4ch;
+  content: target-counter(attr(href), page);
+  color: var(--book-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.toc-entry__title {
+  line-break: strict;
+}
+
+.toc-entry__leader {
+  min-width: 7mm;
+  margin-bottom: 0.32em;
+  border-bottom: 0.25mm dotted var(--book-rule);
+}
+
+.toc-entry--chapter-index {
+  margin-top: 3.8mm;
+}
+
+.toc-entry--chapter-index a {
+  color: var(--book-accent);
+  font-size: 10pt;
+  font-weight: 700;
+}
+
+.toc-entry--article a {
+  padding-left: 5mm;
+}
+
+.book-body {
+  page: book;
+}
+
+.book-document {
+  page: book;
+  string-set: chapter attr(data-running-title);
+  margin: 0;
+  /* The tail sentinel is absolutely positioned inside the article box so it
+     never takes a fragmentation slot of its own; a zero-height in-flow block
+     after a page-filling element otherwise spills onto a visually blank
+     page. */
+  position: relative;
+}
+
+.book-document--chapter-start {
+  break-before: page;
+}
+
+.book-document + .book-document:not(.book-document--chapter-start) {
+  margin-top: 9mm;
+}
+
+.book-document--chapter-index .book-content > h1:first-child,
+.book-document--chapter-start .book-content > h1:first-child {
+  max-width: 116mm;
+  margin-top: 14mm;
+  margin-bottom: 9mm;
+  color: var(--book-accent);
+  font-size: 24pt;
+  line-height: 1.3;
+}
+
+.book-document--book-index .book-content > h1:first-child {
+  margin-top: 8mm;
+  font-size: 21pt;
+}
+
+.book-content {
+  min-width: 0;
+}
+
+.book-content p,
+.book-content li,
+.document-endnotes li {
+  line-break: strict;
+  orphans: 2;
+  widows: 2;
+  word-break: normal;
+  /* Long unbreakable tokens (URLs, std:: identifiers) must wrap inside the
+     text box instead of overflowing the page by a few pixels. */
+  overflow-wrap: anywhere;
+  /* Compress fullwidth punctuation to half-width alternates. Standard CJK
+     book practice, and it absorbs sub-pixel measure rounding: Chromium's
+     line breaker can consider a punctuation-heavy line "fitting" while
+     scrollWidth disagrees by a few px on fractional (mm-derived) widths. */
+  font-feature-settings: 'halt' 1;
+}
+
+.book-content p {
+  margin: 0 0 0.78em;
+  line-height: 1.78;
+  text-align: justify;
+  text-justify: inter-ideograph;
+}
+
+.book-content p.book-image-intro {
+  text-align: left;
+}
+
+.book-content h1,
+.book-content h2,
+.book-content h3,
+.book-content h4,
+.book-content h5,
+.book-content h6,
+.document-endnotes h2 {
+  break-after: avoid;
+  color: var(--book-ink);
+  font-family: var(--book-sans);
+  font-weight: 700;
+  line-break: strict;
+  orphans: 3;
+}
+
+.book-content h1 {
+  margin: 8mm 0 5mm;
+  font-size: 19pt;
+  line-height: 1.35;
+}
+
+.book-content h2 {
+  margin: 7mm 0 3mm;
+  padding-bottom: 1.2mm;
+  border-bottom: 0.25mm solid var(--book-rule);
+  font-size: 15pt;
+  line-height: 1.4;
+}
+
+.book-content h3 {
+  margin: 5.5mm 0 2.5mm;
+  font-size: 12.5pt;
+  line-height: 1.45;
+}
+
+.book-content h4,
+.book-content h5,
+.book-content h6 {
+  margin: 4mm 0 2mm;
+  font-size: 10.8pt;
+  line-height: 1.5;
+}
+
+.book-content h2 + p,
+.book-content h3 + p,
+.book-content h4 + p {
+  orphans: 3;
+}
+
+.book-content ul,
+.book-content ol {
+  margin: 0.35em 0 0.9em;
+  padding-left: 2em;
+}
+
+.book-content li {
+  margin: 0.18em 0;
+  line-height: 1.68;
+}
+
+.book-content li::marker {
+  color: var(--book-accent);
+}
+
+.book-content blockquote {
+  margin: 1em 0;
+  padding: 3mm 4mm;
+  border: 0.2mm solid #dcd7e5;
+  border-left: 0.65mm solid #a296b8;
+  border-radius: 2mm;
+  background: #f5f3f8;
+  color: #514c60;
+  /* Long quotations must remain free to split across book pages. */
+  break-inside: auto;
+}
+
+.book-content blockquote blockquote {
+  margin: 0.65em 0;
+  padding: 0.5mm 0 0.5mm 3mm;
+  border: 0;
+  border-left: 0.4mm solid #d0c8dc;
+  border-radius: 0;
+  background: none;
+}
+
+.book-content blockquote > :first-child {
+  margin-top: 0;
+}
+
+.book-content blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+.book-content hr {
+  height: 0;
+  margin: 7mm 0;
+  border: 0;
+  border-top: 0.25mm solid var(--book-rule);
+}
+
+.book-content a,
+.document-endnotes a {
+  color: #713128;
+  text-decoration: underline;
+  text-decoration-thickness: 0.18mm;
+  text-underline-offset: 0.14em;
+}
+
+.book-content kbd {
+  padding: 0.05em 0.35em;
+  border: 0.2mm solid #aaa096;
+  border-bottom-width: 0.45mm;
+  border-radius: 0.8mm;
+  background: #faf8f5;
+  font-family: var(--book-sans);
+  font-size: 0.82em;
+  white-space: nowrap;
+}
+
+/* Code fragments keep their syntax colors but use a print-safe background. */
+.book-content :not(pre) > code {
+  padding: 0.05em 0.24em;
+  border-radius: 0.7mm;
+  background: var(--book-code-inline-bg);
+  color: #45403b;
+  font-family: var(--book-mono);
+  font-size: 0.86em;
+  overflow-wrap: anywhere;
+}
+
+.book-content div[class*="language-"],
+.book-content .vp-code-fold,
+.book-content pre,
+.book-content pre.shiki {
+  break-inside: auto !important;
+  overflow: visible !important;
+}
+
+.book-content div[class*="language-"],
+.book-content .vp-code-fold,
+.book-content pre {
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.book-content div[class*="language-"],
+.book-content .vp-code-fold {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 1.1em 0;
+  border: 0.15mm solid var(--book-code-rule);
+  border-radius: 1.6mm;
+  background: var(--book-code-bg) !important;
+}
+
+.book-content pre,
+.book-content pre.shiki {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 3mm 3.2mm;
+  border: 0;
+  background: var(--book-code-bg) !important;
+  color: var(--book-code-ink);
+  font-family: var(--book-mono);
+  font-size: var(--book-code-size);
+  line-height: var(--book-code-leading);
+  tab-size: 4;
+  white-space: pre-wrap;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+.book-content pre code {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  white-space: inherit;
+}
+
+/* Shiki emits one .line span per source line. Keeping each line indivisible
+ * gives Paged.js legal break points between lines. Line numbers are materialized
+ * by the transform because Paged.js resets CSS counters in cloned fragments. */
+.book-content pre code > .line {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 1.45em;
+  padding-left: 3.2em;
+  break-inside: avoid;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+/* Keep a small amount of source context at the end of a code fragment. */
+.book-content pre code > .line:nth-last-child(2),
+.book-content pre code > .line:nth-last-child(3) {
+  break-after: avoid;
+}
+
+.book-content .book-code-continuation {
+  display: block;
+  margin-bottom: 1.5mm;
+  color: var(--book-muted);
+  font-family: var(--book-sans);
+  font-size: 8pt;
+  font-weight: 600;
+  break-after: avoid;
+  white-space: normal;
+}
+
+.book-content pre code > .line > span {
+  white-space: inherit;
+  overflow-wrap: inherit;
+}
+
+/* github-light is tuned for a bright screen. These print overrides keep its
+ * semantic distinctions while reducing saturation against the warm paper. */
+.book-content pre span[style*="color:#24292E"] { color: var(--book-code-ink) !important; }
+.book-content pre span[style*="color:#D73A49"] { color: #9b504d !important; }
+.book-content pre span[style*="color:#6F42C1"] { color: #665c85 !important; }
+.book-content pre span[style*="color:#032F62"] { color: #416871 !important; }
+.book-content pre span[style*="color:#005CC5"] { color: #47718a !important; }
+.book-content pre span[style*="color:#6A737D"] { color: #7f827f !important; }
+.book-content pre span[style*="color:#E36209"] { color: #a26442 !important; }
+.book-content pre span[style*="color:#B31D28"] { color: #93464a !important; }
+
+.book-content pre code > .line::before {
+  display: inline-block;
+  width: 2.5em;
+  margin-left: -3.2em;
+  margin-right: 0.7em;
+  content: attr(data-line-number);
+  color: #aaa198;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  user-select: none;
+}
+
+/* Program output stays distinct from source without a dark, ink-heavy panel. */
+.book-content div.language-output {
+  border-color: #a7bbc9;
+  border-left: 0.65mm solid #6b90a8;
+  background: #eef3f5 !important;
+}
+
+.book-content div.language-output::before {
+  display: block;
+  padding: 2.2mm 3.2mm 0;
+  content: attr(data-output-label);
+  color: #5d7788;
+  font-family: var(--book-sans);
+  font-size: 7.5pt;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  break-after: avoid;
+}
+
+.book-content .language-output pre {
+  background: #eef3f5 !important;
+  padding-top: 1.6mm;
+}
+
+.book-content .language-output pre code > .line {
+  padding-left: 0;
+}
+
+.book-content .language-output pre code > .line::before {
+  display: none;
+}
+
+.book-content .line-numbers-wrapper,
+.book-content button.copy,
+.book-content .lang,
+.book-content .mermaid-maximize-btn {
+  display: none !important;
+}
+
+.book-content .vp-code-fold > div[class*="language-"] {
+  display: block !important;
+  margin: 0;
+  border: 0;
+}
+
+/* A code group is interactive on the site; a book shows every variant. */
+.book-content .vp-code-group .tabs,
+.book-content .vp-code-group input[type="radio"] {
+  display: none !important;
+}
+
+.book-content .vp-code-group .blocks > div {
+  display: block !important;
+  margin-bottom: 3mm;
+}
+
+/* Tables may fragment between rows; headers repeat and an individual row stays
+ * together. Wide identifiers can wrap instead of creating a clipped scroller. */
+.book-content table {
+  width: 100%;
+  margin: 1.1em 0;
+  border-collapse: collapse;
+  break-inside: auto;
+  font-family: var(--book-sans);
+  font-size: 8.1pt;
+  line-height: 1.48;
+}
+
+.book-content thead {
+  display: table-header-group;
+  break-inside: avoid;
+  break-after: avoid;
+}
+
+.book-content tfoot {
+  display: table-footer-group;
+}
+
+.book-content tr {
+  break-inside: avoid;
+}
+
+.book-content th,
+.book-content td {
+  padding: 1.5mm 1.7mm;
+  border: 0.2mm solid var(--book-rule);
+  overflow-wrap: anywhere;
+  text-align: left;
+  vertical-align: top;
+}
+
+.book-content th {
+  background: #eee9e3;
+  font-weight: 700;
+}
+
+/* Media is constrained to both the width and usable height of a B5 page. */
+.book-content img,
+.book-content svg,
+.book-content canvas,
+.book-content video {
+  max-width: 100%;
+  height: auto;
+}
+
+.book-content img,
+.book-content figure > svg,
+.book-content figure > canvas,
+.book-content .mermaid-diagram > svg,
+.book-content .mxgraph svg,
+.book-content .drawio-diagram svg {
+  max-height: 178mm;
+  object-fit: contain;
+}
+
+.book-content figure,
+.book-content .mermaid-diagram,
+.book-content .mxgraph,
+.book-content .drawio-diagram,
+.book-content .book-figure {
+  max-width: 100%;
+  margin: 1.15em auto;
+  break-inside: avoid;
+  overflow: visible;
+  text-align: center;
+}
+
+.book-content .mermaid-diagram svg,
+.book-content .mxgraph svg,
+.book-content .drawio-diagram svg {
+  display: block;
+  width: auto;
+  margin: 0 auto;
+}
+
+.book-content .mxgraph,
+.book-content .drawio-diagram {
+  height: auto !important;
+  min-height: 12mm;
+}
+
+/* GraphViewer emits a fixed-pixel wrapper/SVG chain based on the diagram's
+ * source bounds. Collapse only the wrappers outside the SVG coordinate system
+ * to the printable width, then let the viewBox scale the graph uniformly. */
+.book-content .mxgraph :where(div, span):not(svg *),
+.book-content .drawio-diagram :where(div, span):not(svg *) {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.book-content .mxgraph svg,
+.book-content .drawio-diagram svg {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+.book-content figcaption,
+.book-content .figure-caption {
+  margin-top: 2mm;
+  color: var(--book-muted);
+  font-family: var(--book-sans);
+  font-size: 8pt;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.book-content .mermaid-error,
+.book-content [data-rendered="error"] {
+  border: 0.4mm solid #a40000;
+  color: #8a0000;
+}
+
+/* markdown-it-mathjax3 emits MathML. Display formulae stay with their own
+ * layout box and cannot be split in the middle. */
+.book-content math[display="block"],
+.book-content mjx-container[display="true"],
+.book-content .math-display,
+.book-content .katex-display {
+  max-width: 100%;
+  margin: 0.9em 0;
+  break-inside: avoid;
+  overflow: visible;
+}
+
+.book-content .custom-block {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 1em 0;
+  padding: 2.5mm 3.5mm;
+  border-left: 0.8mm solid #80766d;
+  background: #f5f2ee;
+  break-inside: auto;
+  overflow-wrap: anywhere;
+}
+
+.book-content .custom-block-title {
+  break-before: avoid;
+  break-after: avoid;
+  font-family: var(--book-sans);
+  font-weight: 700;
+}
+
+/* Print-native forms of the VitePress reference and interactive components. */
+.book-content .reference-link,
+.book-content .online-endnote-marker {
+  position: relative;
+  top: -0.15em;
+  font-family: var(--book-sans);
+  font-size: 0.72em;
+  font-variant-numeric: tabular-nums;
+  line-height: 0;
+  white-space: nowrap;
+}
+
+.book-content .reference-link a,
+.book-content .online-endnote-marker a {
+  text-decoration: none;
+}
+
+.book-content .cross-book-xref {
+  text-decoration-style: dashed;
+}
+
+.book-content .cross-book-xref::after {
+  content: "\2197";
+  display: inline-block;
+  margin-left: 0.12em;
+  color: var(--book-muted);
+  font-family: var(--book-sans);
+  font-size: 0.7em;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.book-content .reference-card,
+.book-content .talk-info-card,
+.book-content .qq-group-card,
+.book-content .online-demo {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  break-inside: auto;
+}
+
+.book-content .reference-card {
+  margin: 1.2em 0;
+  padding: 3mm 4mm;
+  border: 0.25mm solid var(--book-rule);
+  border-left: 0.9mm solid var(--book-accent);
+  background: #faf7f3;
+  break-inside: auto;
+  font-size: 8.8pt;
+}
+
+.book-content .reference-card > h2 {
+  margin: 0 0 2.5mm;
+  padding: 0 0 1.4mm;
+  border-bottom: 0.2mm solid var(--book-rule);
+  font-size: 11pt;
+  line-height: 1.45;
+}
+
+.book-content .reference-card ol,
+.book-content ol.reference-card {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.book-content .reference-card li {
+  margin: 0.45em 0;
+  padding-left: 3.2em;
+  break-inside: avoid;
+  line-height: 1.55;
+  text-indent: -3.2em;
+  overflow-wrap: anywhere;
+}
+
+.book-content .reference-card li + li {
+  padding-top: 0.45em;
+  border-top: 0.15mm solid #ded7cf;
+}
+
+.book-content .reference-card .reference-number {
+  display: inline-block;
+  min-width: 2.8em;
+  color: var(--book-accent);
+  font-family: var(--book-sans);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: right;
+  text-indent: 0;
+}
+
+.book-content .reference-card blockquote {
+  margin: 0.55em 0 0;
+  padding: 1.8mm 3mm;
+  font-size: 0.94em;
+  text-indent: 0;
+}
+
+.book-content ol.standalone-reference {
+  margin: 1em 0;
+}
+
+.book-content .talk-info-card {
+  margin: 1em 0;
+  padding: 3mm 4mm;
+  border-top: 0.65mm solid var(--book-accent);
+  border-bottom: 0.2mm solid var(--book-rule);
+  background: var(--book-accent-soft);
+  break-inside: avoid;
+  font-family: var(--book-sans);
+  font-size: 8.9pt;
+}
+
+.book-content .talk-info-card p {
+  margin: 0.3em 0;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.book-content .talk-info-card .talk-kicker {
+  break-after: avoid;
+  color: var(--book-accent);
+  font-size: 0.82em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* QQ 群卡片：二维码必须保持白底，暗色模式也一样，否则扫不出来 */
+.book-content .qq-group-card {
+  display: flex;
+  align-items: center;
+  gap: 5mm;
+  margin: 1em 0;
+  padding: 3mm 4mm;
+  border: 0.25mm solid var(--book-rule);
+  border-left: 0.9mm solid var(--book-accent);
+  background: #faf7f3;
+  break-inside: avoid;
+  font-family: var(--book-sans);
+  font-size: 8.9pt;
+}
+
+.book-content .qq-group-card .qq-group-qr {
+  flex: 0 0 auto;
+  width: 33mm;
+  height: 33mm;
+  padding: 1.5mm;
+  background: #fff;
+  border: 0.2mm solid var(--book-rule);
+}
+
+.book-content .qq-group-card .qq-group-info {
+  min-width: 0;
+}
+
+.book-content .qq-group-card p {
+  margin: 0.35em 0;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.book-content .qq-group-card .qq-group-name {
+  font-weight: 700;
+}
+
+.book-content .qq-group-card .id-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.book-content .qq-group-card .qq-group-hint {
+  color: #6b6259;
+  font-size: 0.9em;
+}
+
+.book-content .talk-info-card .talk-title {
+  break-after: avoid;
+  color: var(--book-ink);
+  font-size: 1.12em;
+  font-weight: 700;
+}
+
+.book-content .online-demo {
+  margin: 1.25em 0;
+  padding: 3mm 3.5mm;
+  border: 0.18mm solid var(--book-code-rule);
+  border-top: 0.55mm solid #7b9297;
+  background: #fbfaf7;
+}
+
+.book-content .online-demo > h3 {
+  break-before: avoid;
+  margin: 0 0 2.5mm;
+  color: #405c62;
+  font-size: 12pt;
+}
+
+.book-content .online-demo-source {
+  min-width: 0;
+  break-before: avoid;
+  break-inside: auto;
+}
+
+.book-content .online-demo div[class*="language-"] {
+  border-color: #e6e1db;
+  background: #f9f7f4 !important;
+}
+
+.book-content .online-demo > p:not(.online-demo-note) {
+  break-after: avoid;
+}
+
+.book-content .online-demo-source > h4 {
+  margin: 3mm 0 1.5mm;
+  color: var(--book-muted);
+  font-size: 9pt;
+  letter-spacing: 0.03em;
+}
+
+.book-content .online-demo-note {
+  margin: 2.5mm 0 0;
+  padding-top: 2mm;
+  border-top: 0.2mm solid var(--book-code-rule);
+  break-inside: avoid;
+  color: var(--book-muted);
+  font-family: var(--book-sans);
+  font-size: 8pt;
+  line-height: 1.5;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+/* <Anim> players and local <video> demos cannot play on paper; the transform
+ * leaves a one-line pointer to the live article in their place. */
+.book-content .book-media-note {
+  margin: 0.9em 0;
+  padding: 1.2mm 0 1.2mm 3mm;
+  border-left: 0.5mm solid var(--book-rule);
+  break-inside: avoid;
+  color: var(--book-muted);
+  font-family: var(--book-sans);
+  font-size: 8.4pt;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.document-endnotes {
+  margin-top: 8mm;
+  padding-top: 4mm;
+  border-top: 0.25mm solid var(--book-rule);
+  font-family: var(--book-sans);
+  font-size: 8.3pt;
+}
+
+.document-endnotes h2 {
+  margin: 0 0 2.5mm;
+  font-size: 11pt;
+}
+
+.document-endnotes ol {
+  margin: 0;
+  padding-left: 0;
+  counter-reset: book-endnote;
+  list-style: none;
+}
+
+.document-endnotes li {
+  margin: 0.35em 0;
+  padding-left: 3em;
+  break-inside: auto;
+  counter-increment: book-endnote;
+  line-height: 1.55;
+  text-indent: -3em;
+  overflow-wrap: anywhere;
+}
+
+.document-endnotes li::before {
+  content: "[" counter(book-endnote) "]";
+  display: inline-block;
+  min-width: 2.65em;
+  margin-right: 0.35em;
+  color: var(--book-accent);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: right;
+  text-indent: 0;
+}
+
+/* Retained on the final fragment of every source document. The runtime checks
+ * these markers after pagination so a split/overflow bug cannot silently drop
+ * the tail of an article. Out of flow: a zero-height in-flow block following a
+ * page-filling element can become the only content of a blank page. */
+.book-document-sentinel {
+  position: absolute;
+  bottom: 0;
+  display: block !important;
+  width: 100%;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+.header-anchor,
+.VPBadge,
+.outline-link,
+.chapter-nav,
+.online-compiler-demo__actions,
+.online-compiler-demo__cta,
+.online-compiler-demo__result,
+noscript {
+  display: none !important;
+}
+
+/* Paged.js screen preview is kept neutral; page.pdf() removes these gaps. */
+.pagedjs_pages {
+  background: #dedbd6;
+}
+
+.pagedjs_page {
+  margin: 8mm auto;
+  background: var(--book-paper);
+  box-shadow: 0 1mm 4mm rgb(0 0 0 / 14%);
+}
+
+@media print {
+  html,
+  body,
+  .pagedjs_pages {
+    background: var(--book-paper);
+  }
+
+  .pagedjs_page {
+    margin: 0;
+    box-shadow: none;
+  }
+}
+
+html[lang^="en"] .book-content p,
+html[lang^="en"] .book-content li {
+  hyphens: auto;
+  text-align: left;
+}

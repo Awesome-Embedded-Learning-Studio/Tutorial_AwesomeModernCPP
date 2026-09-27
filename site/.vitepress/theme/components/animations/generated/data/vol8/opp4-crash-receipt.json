@@ -1,0 +1,457 @@
+{
+ "version": 1,
+ "id": "opp4-crash-receipt",
+ "title": "乘法先验溢出检查：宁可崩，不带病跑",
+ "subtitle": "SIZE_MAX/4+1 个 int 的请求，当场被拦",
+ "source": "projects/vol8-raw-buffer/02-dsl/opp4-crash-receipt.yaml",
+ "backend": "web",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#17171f",
+  "text": "#ECECE4",
+  "muted": "#9a9aad",
+  "fill": "#5EC8E0",
+  "fillEdge": "#2E86AB",
+  "emptyEdge": "#4a4a5e",
+  "grow": "#FFB454",
+  "numOnFill": "#0e2430",
+  "ok": "#7BC96A",
+  "bad": "#E06C75",
+  "cardBg": "#1e1e2a"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "乘法先验溢出检查：宁可崩，不带病跑",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 7.1808,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "SIZE_MAX/4+1 个 int 的请求，当场被拦",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.608,
+   "h": 0.272
+  },
+  "counter": {
+   "kind": "text",
+   "text": "size = 0    capacity = 0",
+   "x": 0.0,
+   "y": 1.6,
+   "fs": 0.3,
+   "color": "#ECECE4",
+   "mono": true,
+   "anchor": "middle",
+   "w": 4.752,
+   "h": 0.3
+  },
+  "_empty": {
+   "kind": "text",
+   "text": "还没申请内存",
+   "x": 0.0,
+   "y": -1.0,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.584,
+   "h": 0.272
+  },
+  "_cap_row": {
+   "kind": "text",
+   "text": "申请内存: capacity 0 → 4",
+   "x": 4.9,
+   "y": -0.9368,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.816,
+   "h": 0.3264
+  },
+  "row:row": {
+   "kind": "cells",
+   "cap": 4,
+   "side": 0.62,
+   "cx": 4.9,
+   "cy": -2.1,
+   "w": 2.66,
+   "h": 0.62,
+   "cells": [
+    {
+     "i": 0,
+     "x": 3.88,
+     "y": -2.1,
+     "s": 0.62
+    },
+    {
+     "i": 1,
+     "x": 4.56,
+     "y": -2.1,
+     "s": 0.62
+    },
+    {
+     "i": 2,
+     "x": 5.24,
+     "y": -2.1,
+     "s": 0.62
+    },
+    {
+     "i": 3,
+     "x": 5.92,
+     "y": -2.1,
+     "s": 0.62
+    }
+   ],
+   "idx": []
+  },
+  "show:code_req": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 4.356,
+   "w": 5.2816,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "Sources<int> s(SIZE_MAX / 4 + 1);",
+     "w": 4.356
+    }
+   ],
+   "cx": 0,
+   "cy": 0.65
+  },
+  "show:code_crash": {
+   "kind": "code",
+   "fs": 0.3,
+   "lh": 0.387,
+   "pitch": 0.607,
+   "gutW": 0.1584,
+   "bodyW": 7.128,
+   "w": 8.1064,
+   "h": 1.514,
+   "rows": [
+    {
+     "text": "[TAMCPP Check Crash]",
+     "w": 3.96
+    },
+    {
+     "text": "capacity * sizeof(Sources) overflows",
+     "w": 7.128
+    }
+   ],
+   "cx": -1,
+   "cy": -1.1
+  },
+  "show:row_note": {
+   "kind": "text",
+   "text": "对照：正常请求——检查通过",
+   "x": 3.88,
+   "y": -2.896,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.432,
+   "h": 0.272,
+   "id": "row_note"
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "SIZE_MAX/4+1 个 int: 乘法必溢出",
+   "x": 0.0,
+   "y": -2.6604,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.728,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "检查在前——宁可崩, 不带病跑",
+   "x": 0.0,
+   "y": -3.2368,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.416,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 5.79,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 2.39
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 2.39,
+     "dur": 0.5
+    },
+    {
+     "type": "fadein",
+     "target": "counter",
+     "t": 2.39,
+     "dur": 0.5
+    },
+    {
+     "type": "write",
+     "target": "_empty",
+     "t": 3.39,
+     "dur": 1.07
+    },
+    {
+     "type": "fadeout",
+     "target": "_empty",
+     "t": 5.49,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "grow_to",
+   "label": "申请 4",
+   "note": "capacity 0->4, 搬 0 格",
+   "duration": 6.15,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "_cap_row",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "row_create",
+     "target": "row:row",
+     "g": {
+      "kind": "cells",
+      "cap": 4,
+      "side": 0.62,
+      "cx": 4.9,
+      "cy": -2.1,
+      "w": 2.66,
+      "h": 0.62,
+      "cells": [
+       {
+        "i": 0,
+        "x": 3.88,
+        "y": -2.1,
+        "s": 0.62
+       },
+       {
+        "i": 1,
+        "x": 4.56,
+        "y": -2.1,
+        "s": 0.62
+       },
+       {
+        "i": 2,
+        "x": 5.24,
+        "y": -2.1,
+        "s": 0.62
+       },
+       {
+        "i": 3,
+        "x": 5.92,
+        "y": -2.1,
+        "s": 0.62
+       }
+      ],
+      "idx": []
+     },
+     "t": 2.4,
+     "dur": 0.7
+    },
+    {
+     "type": "fadeout",
+     "target": "_cap_row",
+     "t": 5.6,
+     "dur": 0.3
+    },
+    {
+     "type": "counter",
+     "text": "size = 0    capacity = 4",
+     "t": 5.9,
+     "dur": 0.25
+    }
+   ]
+  },
+  {
+   "kind": "push",
+   "label": "push ×4 (slow)",
+   "note": "[0,4)",
+   "duration": 1.2,
+   "speed": 0.6,
+   "events": [
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 0,
+     "s": 1,
+     "cap": 4,
+     "counter": true,
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 1,
+     "s": 2,
+     "cap": 4,
+     "counter": true,
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 2,
+     "s": 3,
+     "cap": 4,
+     "counter": true,
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 3,
+     "s": 4,
+     "cap": 4,
+     "counter": true,
+     "t": 0.9,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show code_req",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:code_req",
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show code_crash",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:code_crash",
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show row_note",
+   "note": "",
+   "duration": 1.91,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:row_note",
+     "t": 0.0,
+     "dur": 1.91
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.0s",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 11.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:code_req",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:code_crash",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:row_note",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 0.9,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 3.65,
+     "dur": 2.15
+    },
+    {
+     "type": "pulse",
+     "target": "counter",
+     "t": 8.5,
+     "dur": 1.0
+    }
+   ]
+  }
+ ]
+}

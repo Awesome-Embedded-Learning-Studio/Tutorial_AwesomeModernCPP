@@ -1,0 +1,631 @@
+{
+ "version": 1,
+ "id": "ctad-deduction",
+ "title": "不写模板参数，类型从哪来？",
+ "subtitle": "C++17 · CTAD 与推导指引",
+ "source": "projects/vol2-ch06-ctad/02-dsl/ctad-deduction.yaml",
+ "backend": "web",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#17171f",
+  "text": "#ECECE4",
+  "muted": "#9a9aad",
+  "fill": "#5EC8E0",
+  "fillEdge": "#2E86AB",
+  "emptyEdge": "#4a4a5e",
+  "grow": "#FFB454",
+  "numOnFill": "#0e2430",
+  "ok": "#7BC96A",
+  "bad": "#E06C75",
+  "cardBg": "#1e1e2a"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "不写模板参数，类型从哪来？",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.4912,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "C++17 · CTAD 与推导指引",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.932,
+   "h": 0.272
+  },
+  "show:call": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 3.432,
+   "w": 4.3576,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "std::lock_guard lock(mtx);",
+     "w": 3.432
+    }
+   ],
+   "cx": -3.5,
+   "cy": 1.3
+  },
+  "show:a1": {
+   "kind": "arrow",
+   "x1": -1.1412,
+   "y1": 1.3,
+   "x2": -0.1448,
+   "y2": 1.3,
+   "cx": -0.643,
+   "cy": 1.3,
+   "w": 0.9964,
+   "h": 0.0,
+   "label": {
+    "text": "推导",
+    "x": -0.643,
+    "y": 1.6524,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:deduced": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.904,
+   "w": 3.8296,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "lock_guard<std::mutex>",
+     "w": 2.904
+    }
+   ],
+   "cx": 1.95,
+   "cy": 1.3
+  },
+  "show:buf": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 3.96,
+   "w": 4.8856,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "FixedBuffer buf = {1,2,3,4,5};",
+     "w": 3.96
+    }
+   ],
+   "cx": -3.5,
+   "cy": 0.1
+  },
+  "show:a2": {
+   "kind": "arrow",
+   "x1": -0.8772,
+   "y1": 0.1,
+   "x2": 0.8032,
+   "y2": 0.1,
+   "cx": -0.037,
+   "cy": 0.1,
+   "w": 1.6804,
+   "h": 0.0,
+   "label": {
+    "text": "隐式推导",
+    "x": -0.037,
+    "y": 0.4524,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.9504,
+    "h": 0.2448
+   }
+  },
+  "show:res_bad": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.508,
+   "w": 3.4336,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "FixedBuffer<int, ?>",
+     "w": 2.508
+    },
+    {
+     "text": "推不出 N,编译错误",
+     "w": 2.244
+    }
+   ],
+   "cx": 2.7,
+   "cy": 0.1
+  },
+  "show:lb_guide": {
+   "kind": "text",
+   "text": "自定义推导指引",
+   "x": -1.6,
+   "y": -0.66,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.848,
+   "h": 0.272,
+   "id": "lb_guide"
+  },
+  "show:guide": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 3.3,
+   "w": 4.2256,
+   "h": 1.734,
+   "rows": [
+    {
+     "text": "FixedBuffer(T, Args...)",
+     "w": 3.036
+    },
+    {
+     "text": "  -> FixedBuffer<T,",
+     "w": 2.508
+    },
+    {
+     "text": "     1 + sizeof...(Args);",
+     "w": 3.3
+    }
+   ],
+   "cx": -1.6,
+   "cy": -1.9
+  },
+  "show:a4": {
+   "kind": "arrow",
+   "x1": 0.6928,
+   "y1": -1.9,
+   "x2": 1.3032,
+   "y2": -1.9,
+   "cx": 0.998,
+   "cy": -1.9,
+   "w": 0.6104,
+   "h": 0.0,
+   "label": {
+    "text": "按指引推导",
+    "x": 0.998,
+    "y": -1.5476,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.188,
+    "h": 0.2448
+   }
+  },
+  "show:res_good": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.508,
+   "w": 3.4336,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "FixedBuffer<int, 5>",
+     "w": 2.508
+    }
+   ],
+   "cx": 3.2,
+   "cy": -1.9
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "构造实参定模板参，CTAD 免手写",
+   "x": 0.0,
+   "y": 0.3764,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.5456,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "推不出就写指引，教编译器怎么推",
+   "x": 0.0,
+   "y": -0.2,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.752,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "FixedBuffer 的 N，靠指引数实参",
+   "x": 0.0,
+   "y": -0.7764,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.6176,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 2.91,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 1.91
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 1.91,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show call",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:call",
+     "cx": 0,
+     "cy": 0.4,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "move",
+   "label": "move call",
+   "note": "to [-3.5, 1.3]",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "move",
+     "target": "show:call",
+     "frm": [
+      0,
+      0.4
+     ],
+     "to": [
+      -3.5,
+      1.3
+     ],
+     "t": 0.0,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a1",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show deduced",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:deduced",
+     "cx": 1.95,
+     "cy": 1.3,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.5s",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show buf",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:buf",
+     "cx": -3.5,
+     "cy": 0.1,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a2",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show res_bad",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:res_bad",
+     "cx": 2.7,
+     "cy": 0.1,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.6s",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show lb_guide",
+   "note": "",
+   "duration": 1.19,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_guide",
+     "t": 0.0,
+     "dur": 1.19
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show guide",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:guide",
+     "cx": -1.6,
+     "cy": -1.9,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.3s",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show a4",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a4",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show res_good",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:res_good",
+     "cx": 3.2,
+     "cy": -1.9,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide a2",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:a2",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide res_bad",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:res_bad",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.4s",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 16.24,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:call",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a1",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:deduced",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:buf",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:guide",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a4",
+     "t": 1.5,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:res_good",
+     "t": 1.8,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb_guide",
+     "t": 2.1,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 2.4,
+     "dur": 2.39
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 5.14,
+     "dur": 2.15
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 7.64,
+     "dur": 2.4
+    }
+   ]
+  }
+ ]
+}
