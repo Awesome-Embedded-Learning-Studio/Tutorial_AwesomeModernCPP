@@ -5,7 +5,7 @@ cpp_standard:
 - 20
 - 23
 description: A wrapper that may or may not contain a value, used to safely express
-  "no value" semantics.
+  "no value" semantics
 difficulty: beginner
 order: 3
 reading_time_minutes: 1
@@ -17,69 +17,59 @@ title: std::optional
 translation:
   source: documents/cpp-reference/memory/03-optional.md
   source_hash: 9ec38736539e011433bfc3498bff703caabaa1466021aab14d987d7db90d69c6
-  translated_at: '2026-06-16T03:29:39.393857+00:00'
+  translated_at: '2026-09-27T02:14:43+00:00'
   engine: anthropic
-  token_count: 404
+  token_count: 800
 ---
 # std::optional (C++17)
 
 ## In a Nutshell
 
-A container used to represent "a value that may not exist," which is safer and more intuitive than returning a status code plus a pointer or using output parameters.
+A container for representing "a value that may not exist" — safer and more intuitive than returning a `bool` plus a pointer or an output parameter.
 
-## Header File
+## Header
 
-`<optional>`
+`#include <optional>`
 
 ## Core API Cheat Sheet
 
 | Operation | Signature | Description |
 |-----------|-----------|-------------|
-| Construct | `optional()` | Default constructor, does not contain a value |
-| Assign empty | `reset()` or `= nullopt` | Sets the state to valueless |
-| Check has value | `has_value()` | Returns `true` if a value is present |
-| Check has value | `operator bool()` | Same as above |
-| Get value | `operator*()` or `operator->()` | Dereference to get value (undefined behavior if no value) |
-| Safe get | `value()` | Get value, throws `bad_optional_access` if no value |
-| Value or default | `value_or()` | Returns value if present, otherwise returns default value |
-| In-place construct | `emplace()` | Constructs value in-place |
-| Reset | `reset()` | Destroys the contained value |
+| Construct | `optional()` | Default construction; contains no value |
+| Assign empty | `optional& operator=(nullopt_t)` | Sets the state to no value |
+| Check for value | `explicit operator bool() const` | Returns `true` when a value is present |
+| Check for value | `bool has_value() const` | Same as above |
+| Access value | `T& operator*()` | Dereferences to obtain the value (undefined behavior when there is no value) |
+| Safe access | `T& value()` | Returns the value; throws `bad_optional_access` if there is none |
+| Value or default | `T value_or(const T& default_value) const` | Returns the value if present, otherwise the default value |
+| In-place construct | `T& emplace(Args&&... args)` | Constructs the value in place |
+| Reset | `void reset() noexcept` | Destroys the contained value |
 
 ## Minimal Example
 
 ```cpp
-#include <optional>
 #include <iostream>
+#include <optional>
+#include <string>
 
-// A function that might fail
-std::optional<int> divide(int a, int b) {
-    if (b == 0) {
-        return std::nullopt; // Indicate failure
-    }
-    return a / b; // Indicate success
+std::optional<std::string> find(bool b) {
+    return b ? std::optional<std::string>{"found"} : std::nullopt;
 }
 
 int main() {
-    auto result = divide(10, 2);
+    auto res = find(false);
+    std::cout << res.value_or("not found") << '\n';
 
-    // Check if result contains a value
-    if (result) {
-        std::cout << "Result: " << *result << '\n';
-    } else {
-        std::cout << "Division failed\n";
-    }
-
-    // Get value or default
-    auto safe_result = divide(10, 0).value_or(-1);
-    std::cout << "Safe result: " << safe_result << '\n';
+    if (auto val = find(true))
+        std::cout << *val << '\n';
 }
 ```
 
 ## Embedded Applicability: High
 
-- Zero-overhead abstraction; when no value is present, it only occupies storage space equivalent to one byte (plus alignment/padding), and involves no heap allocation.
-- Can replace raw pointers as return values for functions that may fail, avoiding the risks of null pointer dereferencing.
-- Fully supported since C++17; member functions are comprehensively `constexpr` in C++23 and later, further broadening the range of applicable scenarios.
+- Zero-overhead abstraction: the no-value state takes up only a `bool`-sized amount of storage, and no heap allocation is involved
+- Can replace raw pointers as the return type of functions that might fail, avoiding the risk of dereferencing a null pointer
+- Fully supported since C++17; member functions become fully `constexpr` from C++23 onward, further widening the range of applicable scenarios
 
 ## Compiler Support
 
@@ -93,4 +83,4 @@ int main() {
 
 ---
 
-*部分内容参考自 [cppreference.com](https://en.cppreference.com/)，采用 [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) 许可*
+*Some content is adapted from [cppreference.com](https://en.cppreference.com/), used under the [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license*
