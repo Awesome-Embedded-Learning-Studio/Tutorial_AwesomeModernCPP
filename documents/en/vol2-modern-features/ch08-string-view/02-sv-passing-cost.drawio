@@ -1,0 +1,126 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="string_view Passing Cost" id="sv-passing-cost">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="字符串传参成本对比：按值 / const 引用 / string_view" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="64" y="28" width="700" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- 三列表头 -->
+        <mxCell id="h1" value="按值传 std::string" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#c00000;" vertex="1" parent="1">
+          <mxGeometry x="64" y="72" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="h2" value="传 const std::string&amp;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#a16207;" vertex="1" parent="1">
+          <mxGeometry x="304" y="72" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="h3" value="传 std::string_view" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#2e7d32;" vertex="1" parent="1">
+          <mxGeometry x="544" y="72" width="220" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- 函数签名 -->
+        <mxCell id="sig1" value="count_digits(std::string s)" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#FFFFFF;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="64" y="100" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="sig2" value="count_digits(const std::string&amp; s)" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#FFFFFF;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="304" y="100" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="sig3" value="count_digits(std::string_view sv)" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#FFFFFF;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="544" y="100" width="220" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- 列一：按值传（拷贝：分配 + 复制） -->
+        <mxCell id="c1_caller" value="调用方的字符串（实参）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#f2f2f2;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="79" y="150" width="190" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c1_e1" value="拷贝构造" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;fontSize=11;fontColor=#555555;align=center;verticalAlign=middle;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="174" y="180" as="sourcePoint" />
+            <mxPoint x="174" y="208" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c1_param" value="形参 s：栈上 string 对象" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="79" y="208" width="190" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="c1_e2" value="ptr" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;fontSize=11;fontColor=#555555;align=center;verticalAlign=middle;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="174" y="242" as="sourcePoint" />
+            <mxPoint x="174" y="270" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c1_heap" value="&lt;b&gt;堆上新分配的缓冲区&lt;/b&gt;&lt;br&gt;内容逐字符复制一份" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="79" y="270" width="190" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="c1_cost" value="&lt;b&gt;最重&lt;/b&gt;：无论实参是什么，每次调用都要堆分配、逐字符拷贝、析构释放" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#ffe6e6;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="64" y="340" width="220" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="c1_note" value="（文章基准测试没单独测这种写法；机制上开销比 const 引用只多不少）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=11;fontColor=#555555;spacing=2;" vertex="1" parent="1">
+          <mxGeometry x="64" y="404" width="220" height="44" as="geometry" />
+        </mxCell>
+
+        <!-- 列二：const string&（引用，char* 实参要构造临时 string） -->
+        <mxCell id="c2_hA" value="实参是 std::string" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontStyle=1;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="304" y="150" width="220" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="c2_boxA" value="只把引用绑到实参上&lt;br&gt;零分配、零拷贝" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="319" y="174" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="c2_timeA" value="&lt;b&gt;12.3 ms&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=15;fontColor=#2e7d32;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="304" y="222" width="220" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="c2_hB" value="实参是 const char*" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontStyle=1;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="304" y="262" width="220" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="c2_boxB" value="隐式构造临时 std::string：&lt;br&gt;strlen 算长度、堆分配、&lt;br&gt;拷贝字符；返回后析构释放" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="319" y="286" width="190" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="c2_timeB" value="&lt;b&gt;95.7 ms（慢了 8 倍）&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=14;fontColor=#c00000;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="304" y="358" width="220" height="28" as="geometry" />
+        </mxCell>
+
+        <!-- 列三：string_view（16 字节视图，零拷贝） -->
+        <mxCell id="c3_hdr" value="视图本体：指针 + 长度" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontStyle=1;fontColor=#2e7d32;" vertex="1" parent="1">
+          <mxGeometry x="544" y="150" width="220" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="c3_cell1" value="指针 data" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="544" y="170" width="110" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="c3_cell2" value="长度 size" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="654" y="170" width="110" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="c3_cap" value="共 16 字节；只记录数据在哪、有多长，不拥有数据" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=11;fontColor=#555555;spacing=2;" vertex="1" parent="1">
+          <mxGeometry x="544" y="206" width="220" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="c3_hA" value="实参是 std::string" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontStyle=1;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="544" y="234" width="220" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="c3_boxA" value="直接取 data() 和 size()&lt;br&gt;连 strlen 都不需要" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="559" y="258" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="c3_timeA" value="&lt;b&gt;12.1 ms&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=15;fontColor=#2e7d32;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="544" y="306" width="220" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="c3_hB" value="实参是 const char*" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontStyle=1;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="544" y="346" width="220" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="c3_boxB" value="只做一次 strlen（O(n) 遍历）&lt;br&gt;不分配堆内存" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="559" y="370" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="c3_timeB" value="&lt;b&gt;35.2 ms（快了 3 倍）&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=14;fontColor=#2e7d32;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="544" y="418" width="220" height="28" as="geometry" />
+        </mxCell>
+
+        <!-- 结论与环境 -->
+        <mxCell id="takeaway" value="&lt;b&gt;结论&lt;/b&gt;：实参全是 std::string 时两种写法基本持平；只要可能传 const char* 或字面量，参数就该用 string_view" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#e6f4ea;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="64" y="470" width="700" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="footer" value="实测数据出自原文：x86_64 Linux，GCC 13.2，-std=c++17 -O2，耗时为 100 万次调用的总和" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="64" y="522" width="700" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

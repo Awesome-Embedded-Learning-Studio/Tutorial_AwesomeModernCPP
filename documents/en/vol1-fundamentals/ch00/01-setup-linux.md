@@ -5,8 +5,8 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: 'Setting up a C++ development environment on Linux: installing compilers,
-  CMake, and VS Code, configuring from scratch to compiling and running your first
+description: 'Set up a C++ development environment on Linux: install the compiler,
+  CMake, and VS Code, and go from a bare system to compiling and running your first
   program'
 difficulty: beginner
 order: 1
@@ -21,106 +21,111 @@ tags:
 title: Linux Environment Setup
 translation:
   source: documents/vol1-fundamentals/ch00/01-setup-linux.md
-  source_hash: 0ee00a722a8be338ca862b41034c4448ffeed6bc87bcb2a92dd7680b70089c1d
-  translated_at: '2026-06-16T03:39:28.567794+00:00'
+  source_hash: 945671b6f7ecb9eb98ea5e9baa5968d79163e2fa2c0ad5b57f077ce0568a3561
+  translated_at: '2026-09-25T09:42:36+00:00'
   engine: anthropic
-  token_count: 1994
+  token_count: 2600
+  notes: '原文两处明显笔误按正确拼写与文意译出：第 134 行 `cmake --verison` 原文疑为 `cmake --version`；第 252 行残句「为什么跟独立上一条的原因我说过了」语序疑乱，按上下文意译（疑为「为什么跟上一条分开的原因我说过了」）。'
 ---
-# Setting Up the Linux Environment
+# Linux Environment Setup
 
-Before we start writing C++, we need to set up our workspace. The goal of this article is simple: to build a C++ development environment from scratch on Linux that can compile, build, and facilitate comfortable coding. The whole process takes about fifteen minutes, but if this is your first time configuring a Linux environment, set aside half an hour—or, honestly, maybe a day, just to be safe. The prerequisite is that you are already familiar with Linux; if you aren't, jump to the next chapter—Windows Deployment.
+Get moving! So says CharlieChen114514.
 
-Why Linux? To put it plainly, the entire C++ toolchain ecosystem grew up around Unix/Linux. The first line of GCC code was written in 1987, and Clang and CMake are also Unix-first designs. When compiling and debugging C++ code on Linux, the resources you can find, the answers on Stack Overflow, and the CI configurations of open-source projects almost all assume you are running Linux. Furthermore, subsequent tutorials will involve embedded cross-compilation and WSL development, so a Linux environment is an unavoidable foundation. (Personal note: I put Linux before Windows because I prefer developing on Linux; my Windows PC is strictly for gaming. Who wouldn't rush to Linux to write code, right? *Just kidding*.)
+Alright, enough memes—before we put pen to paper on C++, we have to get the environment squared away. The job of this article is simple: build, from zero on Linux, a C++ development environment that can compile, can build, and is comfortable to write in. The whole process takes roughly **fifteen minutes (or not; hard to say)**, but if this is your first time fiddling with Linux environment setup, set aside half an hour—hmm, or possibly a day, to be safe. The premise is that you are already familiar with Linux; friends who aren't should head to the next article and do the Windows setup instead. Grinding through it anyway is not recommended. **But for Windows support, you will need to improvise a little, every single time~**
 
-## Environment Overview
+Why Linux? Frankly, the entire C++ toolchain ecosystem grew up around Unix/Linux. GCC's first line of code dates back to 1987, and both Clang and CMake are Unix-first designs. When you compile and debug C++ code on Linux, the references you can find when things break, the answers on Stack Overflow, the CI configurations of open-source projects—almost all of them assume you are running Linux. On top of that, later tutorials in this series will involve embedded cross-compilation and WSL development, so a Linux environment is a foundation you cannot get around. (One confession: Linux comes before Windows here also because I prefer developing on Linux—on my machine, Windows is purely for gaming. Who on earth would charge headlong into Windows to write code? (kidding))
 
-All commands in this article have been verified under the following environments:
+## Get That Compiler Installed! Taking Office on the C++ Journey
 
-- **Operating System**: Ubuntu 22.04 / 24.04 (applicable to Debian-based systems), Fedora 39+, Arch Linux.
-- **Shell**: Both Bash and Zsh are acceptable.
-- **WSL**: WSL2 (Ubuntu 22.04) built into Windows 11 is also applicable; I will mention WSL-specific considerations later.
+> "Dude, what even is a compiler???"
 
-If you are using other distributions, the package manager commands will differ slightly, but the logic is exactly the same—install the compiler, install CMake, install the editor. Three things. Here, we assume a beginner is using Linux!
+A compiler is the tool that **translates C++ source code into binary files the machine can execute**. In the Linux world, the two mainstream C++ compilers are the **GCC (GNU Compiler Collection) suite** and **Clang (from the LLVM camp)**. Ubuntu/Debian's default `build-essential` package pulls in GCC along with the related build tools in one fell swoop—that's the easiest route for us.
 
-## Step 1 — Install the Compiler
-
-The compiler is the tool we use to translate C++ source code into binary files that the machine can execute. In the Linux world, the two most mainstream C++ compilers are GCC (GNU Compiler Collection) and Clang. The default `build-essential` package on Ubuntu/Debian installs GCC and related build tools all at once, which is our most hassle-free choice.
-
-Execute the corresponding command based on your distribution:
+Depending on your distribution, run the matching command:
 
 ::: code-group
 
-```bash Debian/Ubuntu
-sudo apt update && sudo apt install -y build-essential
+```bash [Ubuntu / Debian]
+sudo apt update && sudo apt install build-essential -y
 ```
 
-```bash Fedora
-sudo dnf install gcc gcc-c++ cmake ninja-build
-```
-
-```bash Arch Linux
-sudo pacman -S base-devel cmake ninja
+```bash [Arch Linux]
+sudo pacman -S gcc make
 ```
 
 :::
 
-`build-essential` is a meta package; it doesn't contain any software itself, but it pulls down a series of tools necessary for compilation, such as `gcc`, `g++`, `make`, and `libc6-dev`. Once this package is installed, the basic C and C++ compilation environment is ready.
+`build-essential` is a meta package: it contains no software itself, but it pulls down a whole series of tools compilation requires, such as `g++`, `gcc`, `make`, and `libc6-dev`. Once this one package is installed, we have a basic C and C++ compilation environment.
 
-Arch's default `base-devel` package already includes C++ support, so there is no need to explicitly install `gcc`.
+Arch is even easier here: the default `gcc` package already includes C++ support, so we don't need to install `gcc-c++` separately.
 
-After installation, let's verify it. Open a terminal and execute:
+Once it's installed, verify. Open a terminal and run:
 
 ```bash
+
 g++ --version
 ```
 
-Your output will look something like this (specific version numbers will vary by distribution and update status):
+The output you see should look roughly like this (the exact version number varies with distribution and update state):
 
 ```text
-g++ (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
-Copyright (C) 2021 Free Software Foundation, Inc.
+g++ (Ubuntu 13.2.0-23ubuntu4) 13.2.0
+Copyright (C) 2023 Free Software Foundation, Inc.
 This is free software; see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 ```
 
-As long as you can see the version number output, GCC is installed successfully. We recommend a GCC version no lower than 11—GCC 11 fully supports most C++20 features, and subsequent tutorials will make extensive use of C++17 and C++20 features. If your distribution's default GCC is older (like Ubuntu 20.04 defaulting to GCC 9), you can consider upgrading via a PPA or compiling from source, though we won't expand on that here.
+As long as a version number prints, GCC is installed. My recommendation is nothing older than version 11—GCC 11 fully supports most of C++20, and the later tutorials make heavy use of C++17 and C++20 features. If the GCC that ships with your distribution is rather old (Ubuntu 20.04, for instance, defaults to GCC 9), you can upgrade through a PPA or by building from source; we won't expand on that for now.
 
-If you also want to try Clang (we will use Clang for comparison for some features in later tutorials), you can install it like this:
+If you'd like to try Clang while you're at it (certain features in later tutorials will be compared against it), install it like this:
 
 ```bash
-# Debian/Ubuntu
-sudo apt install -y clang
+# Ubuntu / Debian
+sudo apt install clang -y
 
-# Fedora
-sudo dnf install clang
+# Verify
+clang++ --version
 ```
 
-Clang's error messages are a bit friendlier than GCC's. When debugging template metaprogramming, it's common to switch to Clang to see the error hints. However, GCC is completely sufficient for daily development. Keep both installed; they don't conflict.
+```text
+Ubuntu clang version 17.0.6 (++20231206065830+6009708b4367-1~exp1~20231206065905.65)
+Target: x86_64-pc-linux-gnu
+Thread model: posix
+InstalledDir: /usr/bin
+```
 
-> ⚠️ **Troubleshooting Warning**: If you execute `sudo apt install` in WSL and get an `E: Unable to locate package` error, don't panic. Most likely, you forgot to run `sudo apt update`, or the WSL distribution wasn't initialized correctly. Run `sudo apt update` in the WSL terminal, then reinstall the package. Also, the default Ubuntu image for WSL can sometimes be old; it's recommended to check your WSL distribution version in the Microsoft Store.
+Clang's error messages are friendlier than GCC's—when I'm stuck debugging template code, I often switch to Clang to read the diagnostics. For day-to-day development, though, GCC is entirely sufficient; just keep both compilers installed, they don't conflict.
 
-## Step 2 — Install CMake
+If you installed things inside WSL and still get `command not found`, don't panic—nine times out of ten you skipped `sudo apt update`, or the WSL distribution never got properly initialized. Run `sudo apt update && sudo apt upgrade -y` in the WSL terminal, then reinstall `build-essential`. Also, the Ubuntu image WSL pulls in by default can sometimes be on the old side; if in doubt, check your distribution's version in the Microsoft Store.
 
-With the compiler ready, we also need a build tool to manage the project's compilation process. You might ask—can't I just run `g++` directly? For a single file, that's fine, but real-world projects often have dozens or even hundreds of source files with dependencies on each other; manually typing compilation commands is simply unrealistic.
+## Get CMake Installed
 
-> What, you haven't seen one? Check out GitHub and look at:
+With a compiler in hand, we still need a build tool to manage the project's compilation pipeline. You might ask—isn't `g++ hello.cpp -o hello` enough? For a single file, certainly no problem, but real projects often have dozens or hundreds of source files with dependencies between them; typing compile commands by hand is simply not realistic.
+
+> What, you've never seen a CMake project? Fine—open GitHub and browse:
 >
 > - CFBox: <https://github.com/Awesome-Embedded-Learning-Studio/CFBox>
 > - CFDesktop: <https://github.com/Awesome-Embedded-Learning-Studio/CFDesktop>
 >
-> Browse around a bit. I bet you won't want to type compiler commands manually.
-> (Of course, I'm not promoting my projects again. I'm sure of it.)
+> Poke around a bit. I bet you won't be hand-typing compiler commands.
+> (Of course I'm not promoting my own projects again. I'm sure of it.)
 
-CMake does exactly this: it reads a configuration file called `CMakeLists.txt` and automatically generates the corresponding build scripts (like Makefiles or Ninja files), handling the dirty work of compiling and linking for you.
+That is exactly the job CMake does: it reads a configuration file called `CMakeLists.txt`, then automatically generates the corresponding build scripts (a Makefile or Ninja file, say), taking the grunt work of compiling and linking off our hands.
 
-Installing CMake is also a one-command affair:
+Installing CMake is likewise a one-command affair:
 
 ```bash
-# Debian/Ubuntu
-sudo apt install -y cmake
+# Ubuntu / Debian
+sudo apt install cmake -y
 
 # Fedora
-sudo dnf install cmake
+sudo dnf install cmake -y
+
+# Arch
+sudo pacman -S cmake
+
+# Yay users, rejoice
+yay -S cmake
 ```
 
 Verify the installation:
@@ -130,127 +135,127 @@ cmake --version
 ```
 
 ```text
-cmake version 3.22.1
+cmake version 3.28.3
+
+CMake suite maintained and supported by Kitware (kitware.com/cmake).
 ```
 
-We recommend a CMake version no lower than 3.16—starting from 3.16, CMake introduced support for C++20 modules and presets, which we will use in our `CMakeLists.txt` later. If the CMake version in your distribution's repository is low, you can install a newer version from the official Kitware repository or pip:
+**For CMake, I recommend nothing below version 3.16.** The reasoning may not land for you, but since you insist on asking, my answer is: starting with 3.16, CMake introduced support for pieces of C++20 modules and presets, and the `CMakeLists.txt` we write in later tutorials will use those features. If the CMake in your distribution's repositories is on the older side, you can install a newer version from Kitware's official repository or via pip. Give up on understanding it—just remember to double-check repeatedly with `cmake --version`.
+
+## Get VS Code Set Up
+
+Editors are a matter of taste; vim and emacs are of course fine. But if you want a C++ development environment that **works out of the box with a mature extension ecosystem**, VS Code is the most mainstream choice today. (Out of the box usually means an IDE, but I suggest you skip those—face the pain of setting up the environment yourself. Knowing what's actually going on from the very start beats bumbling your way to the deep end without even knowing how to investigate problems.) Its remote development experience under WSL is also remarkably good: the code compiles and runs on Linux while the editing interface stays on Windows—best of both worlds.
+
+> Yes, this very tutorial is written in VS Code! The thing is genuinely great—I wholeheartedly recommend it!
+
+![vscode text](assets/01-linux/vscode-interfaces.png)
+
+There are many ways to install VS Code; let's take the easiest: go to the [official site](https://code.visualstudio.com/), download the `.deb` package (Ubuntu/Debian) or `.rpm` package (Fedora), then double-click to install. Arch users can simply run `sudo pacman -S code`.
+
+With VS Code installed, a few key extensions remain. Press `Ctrl+Shift+X` to open the extensions panel. First, search for C/C++ (by Microsoft)—syntax highlighting, IntelliSense, and debugging support all ride on it; it's the cornerstone of writing C++ in VS Code. Next, grab its sibling CMake Tools, which lets you configure, build, and debug CMake projects by clicking buttons right inside the editor, no terminal-switching needed. Top it off with CMake by twxs, which gives `CMakeLists.txt` syntax highlighting and completion. With those three in place, this environment has taken shape.
+
+## Get Your First CMake Project Running
+
+At this point all the tools are ready, so let's drill for real: create a CMake-managed C++ project from scratch, compile it, and run it. If this step goes through smoothly, the whole toolchain is configured correctly, and the later chapters can be pure coding with peace of mind.
+
+Find a spot and create a project directory—fire up that Linux command line~
 
 ```bash
-# Using pip (version often newer)
-pip install cmake
+# Recursively create ~/projects and ~/projects/hello_cmake, then switch into it.
+mkdir -p ~/projects/hello_cmake && cd ~/projects/hello_cmake
 ```
 
-## Step 3 — Configure VS Code
-
-The choice of editor is subjective. Vim and Emacs are certainly fine, but if you want a C++ development environment that works out of the box and has a mature plugin ecosystem, VS Code is currently the most mainstream choice. Plus, its remote development experience under WSL is excellent—code compiles and runs on Linux, while the editor interface stays on Windows. The best of both worlds.
-
-> Yes, I wrote this tutorial in VS Code! It's great, highly recommended!
-
-There are many ways to install VS Code. The simplest is to go to the [official website](https://code.visualstudio.com/) to download the `.deb` package (Ubuntu/Debian) or `.rpm` package (Fedora), then double-click to install. Arch users can directly `sudo pacman -S code`.
-
-After installing VS Code, we need to install a few key extensions. Open VS Code, press `Ctrl+Shift+X` to enter the Extensions panel, search for and install the following three:
-
-- **C/C++** (by Microsoft) — Provides syntax highlighting, IntelliSense, and debugging support; the cornerstone of VS Code C++ development.
-- **CMake Tools** (by Microsoft) — Configure, build, and debug CMake projects directly in VS Code without switching to the terminal.
-- **CMake** (by twxs) — Provides syntax highlighting and completion for `CMakeLists.txt`.
-
-## Step 4 — Run Your First CMake Project
-
-Now that all the tools are ready, let's practice—creating a CMake-managed C++ project from scratch, compiling, and running it. If this step goes smoothly, it means the toolchain configuration is problem-free, and we can confidently write code in subsequent chapters.
-
-First, find a place to create a project directory:
-
-```bash
-mkdir hello_cmake
-cd hello_cmake
-```
-
-Then create our first C++ source file `main.cpp`:
+Then create our first C++ source file, `hello.cpp`:
 
 ```cpp
+// Create the file in VS Code, or with touch, or with echo "" > hello.cpp—whatever works~
 #include <iostream>
 
-int main() {
-    std::cout << "Hello, CMake!" << std::endl;
+int main()
+{
+    std::cout << "Hello, Modern C++!" << std::endl;
     return 0;
 }
 ```
 
-This is a simplest C++ program—`#include <iostream>` introduces the standard input/output library, `std::cout` is the standard output stream, and the `<<` operator sends the string to the output stream. `std::endl` inserts a newline and flushes the output buffer, ensuring the content is displayed immediately.
+Let's look at this simplest of C++ programs first: `#include <iostream>` pulls in the standard input/output library; `std::cout` is C++'s standard output stream; the `<<` operator sends the string into the output stream. `std::endl`, besides emitting a newline, also flushes the output buffer, making sure the content shows up immediately.
 
-Next, create `CMakeLists.txt`—this file tells CMake how to build our project:
+Next, create `CMakeLists.txt`; this file tells CMake how our project should be built:
 
 ```cmake
 cmake_minimum_required(VERSION 3.16)
-project(HelloCmake LANGUAGES CXX)
+project(hello_cmake LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(hello main.cpp)
+add_executable(hello hello.cpp)
 ```
 
-Let's break this down line by line. `cmake_minimum_required(VERSION 3.16)` declares the minimum CMake version required for this project; if your CMake version is lower than 3.16, the configuration phase will error out directly rather than producing inexplicable build failures. `project(HelloCmake LANGUAGES CXX)` defines the project name and supported languages—`CXX` is CMake's identifier for C++. `set(CMAKE_CXX_STANDARD 20)` sets the C++ standard to C++20, `set(CMAKE_CXX_STANDARD_REQUIRED True)` ensures the compiler errors out if it doesn't support C++20 instead of silently downgrading. Finally, `add_executable(hello main.cpp)` declares that we are building an executable named `hello` with the source file `main.cpp`.
+Whoa there, don't run off—I'll take it slow.
 
-Now let's build. CMake recommends building in a separate directory to avoid polluting the source code directory with generated temporary files:
+- `cmake_minimum_required(VERSION 3.16)` declares the minimum CMake version this project needs; if your CMake is older than 3.16, the configure stage fails outright instead of producing baffling build failures later.
+- `project(hello_cmake LANGUAGES CXX)` defines the project's name and supported languages; `CXX` is CMake's codename for C++.
+- `set(CMAKE_CXX_STANDARD 20)` sets the C++ standard to C++20, and `CMAKE_CXX_STANDARD_REQUIRED ON` makes sure the build errors out if the compiler doesn't support C++20, rather than quietly downgrading.
+- `add_executable(hello hello.cpp)` declares that we are building an executable named `hello` from the source file `hello.cpp`.
+
+Now let's build. CMake's recommended practice is to build in a separate directory, keeping the generated temporary files from polluting the source directory:
 
 ```bash
-mkdir build
-cd build
+mkdir build && cd build
 cmake ..
-cmake --build .
+make
 ```
 
-You will see output similar to this:
+You will see output like this:
 
 ```text
--- The C compiler identification is GNU 11.4.0
--- The CXX compiler identification is GNU 11.4.0
--- Detecting compiler CXX features...
--- Detecting compiler CXX features - done
--- Configuring done
--- Generating done
--- Build files have been written to: /.../hello_cmake/build
-[ 50%] Building CXX object CMakeFiles/hello.dir/main.cpp.o
+-- The CXX compiler identification is GNU 13.2.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (0.3s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/charlie/projects/hello_cmake/build
+[ 50%] Building CXX object CMakeFiles/hello.dir/hello.cpp.o
 [100%] Linking CXX executable hello
 [100%] Built target hello
 ```
 
-Build successful. Now run our program:
+Build succeeded. Now run our program:
 
 ```bash
 ./hello
 ```
 
 ```text
-Hello, CMake!
+Hello, Modern C++!
 ```
 
-If you see this output, congratulations—the compiler, CMake, and the entire toolchain are in place. You are ready for the formal C++ learning journey. If you open this project directory (`hello_cmake`) with VS Code, the CMake Tools extension will automatically recognize `CMakeLists.txt` and configure the project. Build and Run buttons will appear in the status bar at the bottom. From now on, you can compile and run directly in VS Code with a click, no need to type commands every time.
+When you see that line of output, congratulations: the compiler, CMake, and the entire toolchain are all in place, and you can officially start writing C++. If you open this project directory with VS Code (`code ~/projects/hello_cmake`), the CMake Tools extension will recognize `CMakeLists.txt` automatically and configure the project; build and run buttons will appear in the status bar at the bottom, and from then on a click inside VS Code compiles and runs things—no more typing the commands every time.
 
-## What to Do When You Encounter Problems
+## What to Do When You Hit Problems
 
-Toolchain configuration varies widely across different machines, so running into issues is normal. Here are a few common errors and their solutions.
+Toolchain configuration is the step that varies the most from machine to machine, so if you stumble into a pit, that's perfectly normal. Here are a few of the most common errors and the corresponding lines of attack.
 
-**`command not found: g++` or `command not found: cmake`**
+**`g++: command not found` or `cmake: command not found`**
 
-This means the corresponding tool isn't installed, or it's installed but not in your `PATH` environment variable. Use `which g++` and `which cmake` to check their locations first—if they return empty, reinstall the corresponding package. If they return a path but the command still isn't found, there's a problem with your `PATH` configuration. Check if `/usr/bin` was accidentally removed from your `PATH` in `~/.bashrc` or `~/.zshrc`.
+This means the tool in question isn't installed, or is installed but not on your `PATH` environment variable. First check where they live with `which g++` and `which cmake`—if either comes back empty, reinstall the corresponding package. If a path comes back but the command still isn't found, your `PATH` is misconfigured; check whether `~/.bashrc` or `~/.zshrc` has removed `/usr/bin` from `PATH`.
 
-**CMake reports `No CMAKE_CXX_COMPILER could be found`**
+**CMake reports `CMake Error: Could not find CMAKE_CXX_COMPILER`**
 
-This usually happens in WSL or Docker containers—the system has CMake installed but no compiler. Go back to Step 1 and confirm `g++ --version` outputs normally, then re-run `cmake ..`.
+This usually happens inside WSL or a Docker container—the system has CMake installed but no compiler. Go back to the compiler installation section, confirm that `g++ --version` prints normally, then rerun `cmake ..`.
 
-**Compilation reports `undefined reference` linking errors**
+**Linker errors at compile time like `undefined reference to symbol`**
 
-You won't encounter this with a single file `g++` command. However, as projects get more complex later, if you see linking errors, it's basically because you forgot to link a library in `CMakeLists.txt`—the `target_link_libraries` command is missing the corresponding library. We will cover this in detail in later chapters.
+The single-file `hello.cpp` won't run into this one. But once projects grow more complex later on, if you hit a linking error, it's almost always a forgotten library in `CMakeLists.txt`: the `target_link_libraries` command is missing the library in question. We'll cover this in detail in later chapters.
 
 **Slow file system performance under WSL**
 
-WSL accessing the Windows file system (paths under `/mnt`) is much slower than accessing the native Linux file system. If your project is under `/mnt/c/Users`, compilation will be noticeably laggy. The solution is to put the project in the Linux home directory (e.g., `~/projects`), and edit it via VS Code's Remote - WSL extension.
+WSL accessing the Windows file system (paths under `/mnt/c/`) is far slower than accessing the native Linux file system. If your project lives under `/mnt/c/Users/.../projects/`, compilation will visibly chug. The fix is to keep the project in the Linux-side home directory (`~/projects/`) and edit it through VS Code's Remote - WSL.
 
-**Other issues?**
+**Anything else?**
 
-- Check the community.
-- Ask AI, or ask the experts around you.
-- Send a private email, or go to <https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP> and open an Issue to ask me. I sometimes see Issues faster than emails. As for why this is a separate point: I'm a novice, not really an expert, but I can help look at beginner issues.
+For whatever remains, ask the community, ask an AI, or ask the gurus around you; you can also come straight to <https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP> and open an Issue on this repository to ask me. I sometimes read Issues faster than I go through email. As for why this is separate from the item above—the reason has been given already: I'm honestly mediocre, truly no guru, but beginner questions I can definitely help look at.

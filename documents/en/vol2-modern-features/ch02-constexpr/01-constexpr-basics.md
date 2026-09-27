@@ -4,351 +4,426 @@ cpp_standard:
 - 11
 - 14
 - 17
-description: Master the core mechanisms of compile-time computation and the evolution
-  of the standard, from `constexpr` variables to `constexpr` functions.
+description: From constexpr variables to constexpr functions, master the core mechanisms
+  of compile-time computation and the evolution of the standard
 difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
-- 'Chapter 0: 移动构造与移动赋值'
+- 'Chapter 0: Move Construction and Move Assignment'
 reading_time_minutes: 17
 related:
-- constexpr 构造函数与字面类型
-- 编译期计算实战
+- constexpr Constructors and Literal Types
+- 'Compile-Time Computation in Practice: From Lookup Tables to Compile-Time Strings'
 tags:
 - host
 - cpp-modern
 - intermediate
 - constexpr
 - 编译期计算
-title: 'constexpr Fundamentals: The Art of Compile-Time Evaluation'
+title: 'constexpr Basics: The Art of Compile-Time Evaluation'
 translation:
   source: documents/vol2-modern-features/ch02-constexpr/01-constexpr-basics.md
-  source_hash: 008babb96171ec695231edcf2d4465b79d423d80955d701cb46db55d7ad1f6a4
-  translated_at: '2026-06-16T03:56:45.574624+00:00'
+  source_hash: d9391d3e959c68b5be694608b6003607b9ce2e17cc106a8f31230338c9bdd5a0
+  translated_at: '2026-09-25T14:55:05+00:00'
   engine: anthropic
-  token_count: 3130
+  token_count: 7300
 ---
 # constexpr Basics: The Art of Compile-Time Evaluation
 
-## Introduction
+Let's keep it simple! The core problem `constexpr` solves is not "is it fast", but "does it even need to be computed". When you write `constexpr int kBufferSize = 256;` in your code, you are telling the compiler: this value is already settled at compile time—just write it straight into the binary. Not a single instruction needs to be spent at runtime. That is more thorough than any runtime optimization.
 
-Let's keep it simple! The core problem `constexpr` solves isn't "is it fast?", but "do we even need to calculate it?". When you write `constexpr` in your code, you are telling the compiler: this value is determined at compile time, so just write it directly into the binary file. It doesn't cost a single instruction at runtime. This is more thorough than any runtime optimization.
-
-To verify this, let's look at the assembly output of a test code snippet (GCC 15.2.1, -O2 optimization):
+To verify this, let's look at the assembly output of a piece of test code (GCC 15.2.1, -O2 optimization):
 
 ```cpp
-int get_value() {
-    constexpr int x = 16;
-    return x * x;
+constexpr int kBufferSize = 256;
+
+int get_buffer_size()
+{
+    return kBufferSize;
 }
 ```
 
-Compiled assembly code (verified):
+The compiled assembly (verified):
 
 ```asm
-get_value():
-        mov     eax, 256
-        ret
+get_buffer_size():
+    movl    $256, %eax
+    ret
 ```
 
-We can see that the function directly returns the immediate value 256, without any memory access or calculation. This is direct evidence that "the compiler calculates it for you and writes an immediate value."
+As you can see, the function simply returns the immediate value 256—no memory access, no computation whatsoever. This is tangible evidence that "the compiler works it out for you and writes down an immediate value".
 
-In this chapter, we start from scratch to understand the ins and outs of `constexpr`: what it is, what it isn't, what restrictions have been relaxed in various C++ standard versions, and how to use it to write safer and faster code.
+In this chapter, we sort out the full story of `constexpr` from scratch: what it is, what it isn't, which restrictions each C++ standard version has relaxed, and how to use it to write safer and faster code.
 
-## Step 1 — Understanding `constexpr` Variables
+## Step 1—Getting Clear on constexpr Variables
 
-### Compile-Time Constants vs `const`
+### Compile-Time Constants vs const
 
-Many people confuse `constexpr` and `const`. This is a misconception that needs to be corrected early. The semantics of `const` are "this variable cannot be modified after initialization," but its initial value can be calculated entirely at runtime. The semantics of `constexpr` are stronger: it requires that the variable's initial value must be determinable at compile time.
+Many people treat `const` and `constexpr` as the same thing—a misconception worth correcting as early as possible. The semantics of `const` is "this variable cannot be modified after initialization", but its initial value can perfectly well be computed at runtime. `constexpr` carries stronger semantics: it demands that the variable's initial value be determinable at compile time.
 
 ```cpp
-void runtime_example() {
-    int user_input;
-    std::cin >> user_input;
-    const int c = user_input;  // OK: Read-only, value determined at runtime
-    // constexpr int ce = user_input; // ERROR: Value not known at compile time
-}
+// const: a runtime constant; the initial value may come from the runtime
+int get_runtime_value();
+const int kSize = get_runtime_value();     // OK, kSize is const but not a compile-time constant
+
+// constexpr: a compile-time constant; the initial value must be computable at compile time
+constexpr int kBufferSize = 256;           // OK, 256 is a literal
+constexpr int kMask = kBufferSize - 1;     // OK, computed from a compile-time constant
+
+// constexpr int kBad = get_runtime_value(); // Compile error! The initializer is not a constant expression
 ```
 
-`c` is a `const` variable. The compiler won't let you modify it, but its value is determined at runtime. This means you cannot use it to declare array sizes (C-style arrays in C++ require compile-time constants as lengths), nor can you use it as a non-type template parameter. `constexpr` variables don't have these restrictions—because they have a determined value at compile time.
+`kSize` is a `const` variable: the compiler won't let you modify it, but its value isn't settled until runtime. That means you cannot use it to declare an array size (C-style arrays in C++ require a compile-time constant as their length), nor as a non-type template parameter. `kBufferSize` has neither of those restrictions—because its value is fixed at compile time.
 
-Here is a common pitfall: The C++ standard specifies that if a `const` integral variable is initialized with a constant expression, it is itself a constant expression. This means that at global/namespace scope, a declaration like `const int max_size = 100;` is actually usable for array sizes and non-type template parameters. This contradicts the intuition many people have that "`const` cannot be used in compile-time contexts." However, the advantage of `constexpr` is that it clearly expresses your intent, applies to all literal types (not just integral types), and strictly requires the initializer to be a constant expression.
+Here is a pit that is easy to fall into: the C++ standard says that if a `const` integer variable is initialized with a constant expression, then it is itself a constant expression. This means that at global or namespace scope, a declaration like `const int kSize = 256;` can in fact be used as an array size or a non-type template parameter. That runs against the intuition many people hold that "const cannot be used in compile-time contexts". The advantage of `constexpr` is that it states your intent explicitly, applies to all literal types (not just integers), and strictly requires the initializer to be a constant expression.
 
-Here is another pitfall: At global or namespace scope, `const` integral variables in C++ have internal linkage by default (just like `static`), and `constexpr` variables also have internal linkage. However, if your `const` variable happens to be initialized with a value that can be calculated at compile time, the compiler might treat it as a constant expression—this is a compiler extension behavior, not guaranteed by the standard. So if you need a compile-time constant, explicitly write `constexpr`; don't rely on the compiler to decide for you.
+Here is another pit that is easy to stumble into: at global or namespace scope, a `const` integer variable in C++ has internal linkage by default (just like `static`), and `constexpr` variables have internal linkage too. But if your `const` variable happens to be initialized with a value that can already be computed at compile time, the compiler may go ahead and treat it as a constant expression—that is compiler extension behavior, not something the standard guarantees. So if you need a compile-time constant, write `constexpr` explicitly instead of counting on the compiler to decide for you.
 
-### Requirements for `constexpr` Variables
+### Requirements for constexpr Variables
 
-To declare a variable as `constexpr`, the following conditions must be met: it must be a literal type, it must be initialized immediately, and the initializing expression must be a constant expression. We will expand on the concept of literal types in the next chapter; for now, just know that scalar types (`int`, `float`, pointers, etc.), reference types, and class types with `constexpr` constructors all count as literal types.
+For a variable to be declared `constexpr`, a few conditions must hold: it must be of literal type, it must be initialized immediately, and the initializer expression must be a constant expression. We will unpack the notion of literal types in detail in the next article; for now, it is enough to know that scalar types (`int`, `float`, pointers, and so on), reference types, and class types with `constexpr` constructors all count as literal types.
 
-## Step 2 — `constexpr` Functions: The Double Agent
+## Step 2—constexpr Functions: A Double Agent
 
-`constexpr` functions are the most interesting part of `constexpr`. We call them "double agents" because they can work in two scenarios: when their arguments are all compile-time constants and the context requires compile-time evaluation, they execute at compile time; otherwise, they execute at runtime just like ordinary functions.
+`constexpr` functions are the most interesting part of `constexpr`. We call them a "double agent" because they can work in two settings: when all of their arguments are compile-time constants and the context demands compile-time evaluation, they execute at compile time; otherwise they execute at runtime just like ordinary functions.
 
-### Basic Form
+### The Basic Form
 
 ```cpp
-constexpr int square(int x) {
+constexpr int square(int x)
+{
     return x * x;
 }
 
-int main() {
-    constexpr int compile_time_result = square(10); // Evaluated at compile time
-    int y = 20;
-    int runtime_result = square(y);                 // Evaluated at runtime
-}
+// Compile-time evaluation: the argument is a literal, and the context is a constexpr variable initialization
+constexpr int kResult = square(8);  // The compiler directly replaces kResult with 64
+
+// Runtime evaluation: the argument comes from the runtime
+int runtime_input = 42;
+int result = square(runtime_input);  // An ordinary function call, executed at runtime
 ```
 
-You see, the same function, two different fates. This is actually the essence of `constexpr` function design: you write one piece of code, and the compiler decides when to execute it based on context. This "context-adaptive" characteristic makes `constexpr` functions much more flexible than pure compile-time tools (like template metaprogramming).
+See—one function, two destinies. This is actually the essence of how `constexpr` functions are designed: you write the code once, and the compiler decides, based on context, when to execute it. This "context-adaptive" nature makes `constexpr` functions far more flexible than pure compile-time machinery such as template metaprogramming.
 
-### The Golden Duo: `static_assert` and `constexpr`
+We turned the two destinies of this very function into an animation: you can play it, pause it, or single-step through it with the step button, and get a clear look at the differences between the compile-time and runtime sides:
 
-`static_assert` is a compile-time assertion, and its first parameter must be a constant expression. This naturally pairs with `constexpr` functions—you can use `static_assert` to verify the behavior of `constexpr` functions at compile time.
+<Anim id="constexpr-two-worlds" />
+
+### static_assert and constexpr: A Perfect Match
+
+`static_assert` is a compile-time assertion: its first argument must be a constant expression. That naturally pairs it with `constexpr` functions—you can use `static_assert` to verify how a `constexpr` function behaves at compile time.
 
 ```cpp
-constexpr int factorial(int n) {
+constexpr int factorial(int n)
+{
     return n <= 1 ? 1 : n * factorial(n - 1);
 }
 
-static_assert(factorial(5) == 120, "Factorial of 5 should be 120");
+static_assert(factorial(0) == 1, "factorial(0) should be 1");
+static_assert(factorial(1) == 1, "factorial(1) should be 1");
+static_assert(factorial(5) == 120, "factorial(5) should be 120");
+static_assert(factorial(10) == 3628800, "factorial(10) should be 3628800");
 ```
 
-If you write a bug in the implementation of `factorial` (e.g., mistakenly writing `n + 1` instead of `n - 1`), `static_assert` will crash immediately at compile time, telling you exactly where the problem is. This ability to "catch errors at compile time" is extremely valuable in large projects. Moreover, this kind of testing is zero-cost—they don't generate any runtime code.
+If you introduce a bug in your `factorial` implementation (say, mistyping `n <= 1` as `n < 1`), the `static_assert` blows up immediately at compile time and tells you where the problem is. This ability to "catch errors at compile time" is extremely valuable in large projects. And these tests are zero-cost—they generate no runtime code whatsoever.
 
-## Step 3 — Evolution of the Standard: From Constraints to Freedom
+## Step 3—The Evolution of the Standard: From Hands Tied to Free Rein
 
-The capabilities of `constexpr` vary significantly across different C++ standards. Understanding these differences is crucial for writing portable and correct `constexpr` code.
+The capabilities of `constexpr` differ enormously across C++ standards. Understanding those differences is essential for writing portable and correct `constexpr` code.
 
 ### C++11: Extremely Strict Restrictions
 
-C++11 introduced `constexpr`, but with extremely strict limitations. The body of a `constexpr` function could contain only a single `return` statement (plus `using`, `typedef` declarations, etc., that don't generate code). This meant you couldn't write loops, declare local variables, or write `if` statements—all logic had to be compressed into a single ternary operator expression or recursive calls.
+C++11 introduced `constexpr`, but under extremely strict constraints. The body of a `constexpr` function could contain nothing but a single `return` statement (plus statements that generate no code, such as `static_assert` or `using` declarations). That means you could not write loops, could not declare local variables, and could not write `if-else`—all logic had to be squeezed into a ternary operator expression or recursive calls.
 
 ```cpp
-// C++11 style: Recursive implementation
-constexpr int factorial_cxx11(int n) {
-    return n <= 1 ? 1 : n * factorial_cxx11(n - 1);
+// C++11 style: only recursion and the ternary operator
+constexpr int fibonacci_cxx11(int n)
+{
+    return n <= 1 ? n : fibonacci_cxx11(n - 1) + fibonacci_cxx11(n - 2);
 }
 ```
 
-This code looks concise, but there is a hidden problem: recursion depth. Compilers have a default limit on the recursion depth of `constexpr` evaluation, the specific value depends on the compiler implementation. Based on testing, GCC 15.2.1 has a recursion depth limit of about 520-600 layers; exceeding this limit triggers a compilation error. If you calculate a value of the scale `factorial(50)`, although the recursively expanded call tree is large, the call depth is relatively shallow (only 50 layers), so it usually won't trigger the limit. But if you write a linear recursion by hand (e.g., subtracting 1 and recursing to 0), when the parameter is large, it will exceed the limit.
+This code looks tidy, but it hides a problem: recursion depth. Compilers impose a default limit on the recursion depth of `constexpr` evaluation, and the exact number depends on the implementation. In our measurements, GCC 15.2.1 caps recursion depth at roughly 520-600 levels; exceeding that limit triggers a compile error. If you compute a value on the scale of `fibonacci(50)`, the expanded call tree is huge, but the call depth is shallow (only 50 levels), so the limit usually is not triggered. But if you hand-write a linear recursion (say, decrementing by 1 each time down to 0), a large argument will blow past the limit.
 
-To verify this, we wrote a test program (see `ch05/factorial_limit.cpp`), with actual results as follows:
+To verify this, we wrote a test program (see `constexpr_limits_test.cpp`), and the measured results were:
 
 ```text
-[...]
+Depth 100: 100 (OK)
+Depth 256: 256 (OK)
+Depth 512: 512 (OK)
+Depth 520: 520 (OK)
+Depth 600: [compile error]
 ```
 
-This shows that the 512/1024 mentioned in articles is a conservative estimate; the actual situation varies by compiler and version. If you need to handle deeper recursion, consider switching to an iterative version (supported starting from C++14), or use compiler options to adjust the limit (like GCC's `-fconstexpr-depth`).
+This shows that the 512/1024 figures mentioned in the article are conservative estimates; the actual situation varies by compiler and version. If you need to handle deeper recursion, consider switching to an iterative version (supported since C++14), or adjusting the limit with a compiler option (such as GCC's `-fconstexpr-depth=`).
 
-### C++14: Significantly Relaxed
+### C++14: Major Relaxations
 
-C++14 was the turning point where `constexpr` became truly practical. Local variables, `if` statements, and `for`/`while` loops can now be used in the function body. The only things still not allowed are `goto`, assembly statements, and local variables of non-literal types.
+C++14 is the turning point where `constexpr` became genuinely practical. Function bodies could now use local variables, `if-else` statements, and `for`/`while` loops. The only things still forbidden were `goto`, `label` statements, and local variables of non-literal types.
 
 ```cpp
-// C++14 style: Iterative implementation
-constexpr int factorial_cxx14(int n) {
+// C++14 style: a much more natural way to write it
+constexpr int factorial_cxx14(int n)
+{
     int result = 1;
     for (int i = 2; i <= n; ++i) {
         result *= i;
     }
     return result;
 }
+
+static_assert(factorial_cxx14(6) == 720);
 ```
 
-Finally, we don't have to cram all logic into recursion. For embedded developers, this means you can implement logic like CRC calculations and lookup table generation in a more natural way, instead of racking your brains to use template metaprogramming or recursion to bypass restrictions.
+Finally, we no longer have to cram all the logic into recursion. For embedded developers, this means you can implement CRC computation, lookup-table generation, and similar logic the natural way, instead of racking your brain to work around the limits with template metaprogramming or recursion.
 
-Another important change is that `constexpr` member functions are no longer implicitly `const`. In C++11, `constexpr` member functions were implicitly marked with the `const` qualifier, meaning they could not modify any member variables. C++14 removed this restriction, allowing `constexpr` member functions to modify members (in a compile-time context), making the behavior of compile-time objects more flexible.
+Another important change: `constexpr` member functions are no longer implicitly `const`. In C++11, a `constexpr` member function implicitly received the `const` qualifier, which meant it could not modify any member variables. C++14 removed that restriction, so a `constexpr` member function can modify members (in compile-time contexts), making the behavior of compile-time objects more flexible.
 
 ### C++17: More Practical Features
 
-C++17 further expanded the capabilities of `constexpr`. `constexpr` lambda expressions are officially supported (GCC/Clang had extension support before), and `if constexpr` became standard. Furthermore, more and more functions in the standard library are marked as `constexpr`: `std::pair`, `std::array` operations, `std::chrono` utilities, etc.
+C++17 extended the capabilities of `constexpr` further. `constexpr` lambda expressions became officially supported (GCC/Clang had offered them as extensions before), and `if constexpr` became standard equipment. In addition, more and more functions in the standard library were marked `constexpr`: the various operations of `std::array` and `std::tuple`, `std::min`/`std::max`, and more.
 
 ```cpp
-// C++17: constexpr lambda and if constexpr
-constexpr auto get_square_lambda() {
-    return [](int n) { return n * n; };
-}
+// C++17: constexpr lambda
+constexpr auto add = [](int a, int b) constexpr { return a + b; };
+static_assert(add(3, 4) == 7);
 
-constexpr int check_value(int n) {
-    if constexpr (sizeof(int) == 4) {
-        return n * 2;
-    } else {
-        return n;
-    }
-}
+// C++17: constexpr std::array
+#include <array>
+constexpr std::array<int, 5> kArr = {1, 2, 3, 4, 5};
+static_assert(kArr.size() == 5);
+static_assert(kArr[2] == 3);
 ```
 
-Let's summarize the key differences of the three standards with a table:
+Let's summarize the key differences across the three standards in a table:
 
 | Capability | C++11 | C++14 | C++17 |
-|------------|-------|-------|-------|
-| Local Variables | `static` only | Allowed | Allowed |
+|------|-------|-------|-------|
+| Local variables | `return` only | Allowed | Allowed |
 | Loops (`for`/`while`) | Forbidden | Allowed | Allowed |
-| `if` Statement | Forbidden (ternary only) | Allowed | Allowed |
-| Member Func Modify Members | Forbidden (implicit `const`) | Allowed | Allowed |
-| Lambda | Not Supported | Partial Support | Official Support |
-| Standard Library `constexpr` | Very Few | Increased | Significantly Increased |
+| `if-else` statements | Forbidden (ternary operator only) | Allowed | Allowed |
+| Member functions modifying members | Forbidden (implicit `const`) | Allowed | Allowed |
+| Lambda | Not supported | Partially supported | Officially supported |
+| constexpr in the standard library | Very little | More | A large increase |
 
-## Step 4 — `constexpr` vs Templates: When to Use Which
+## Step 4—constexpr vs Templates: When to Use Which
 
-Both `constexpr` and template metaprogramming can achieve compile-time calculation, but their positioning is vastly different. Template metaprogramming is Turing complete and can theoretically perform any calculation at compile time; but it is painful to write, even more painful to read, and the compilation error messages are like gibberish. `constexpr` is a "good enough" solution—it covers the vast majority of compile-time calculation needs and reads almost exactly like a normal function.
+Both `constexpr` and template metaprogramming can do compile-time computation, but their positions are entirely different. Template metaprogramming is Turing-complete and can, in theory, perform any computation at compile time; but it is painful to write, even more painful to read, and its compile error messages read like an alien tongue. `constexpr` is the "good enough" solution—it covers the vast majority of compile-time computation needs, and writing it feels almost the same as writing an ordinary function.
 
 ```cpp
-// Template metaprogramming version (C++11)
-template<int N>
+// Template metaprogramming version: computing the factorial (C++98 style)
+template <int N>
 struct Factorial {
-    static const int value = N * Factorial<N - 1>::value;
+    static constexpr int value = N * Factorial<N - 1>::value;
 };
-
-template<>
+template <>
 struct Factorial<0> {
-    static const int value = 1;
+    static constexpr int value = 1;
 };
+static_assert(Factorial<5>::value == 120);
 
-// constexpr version (C++14)
-constexpr int factorial(int n) { /* ... */ }
+// constexpr version: much clearer
+constexpr int factorial(int n)
+{
+    int result = 1;
+    for (int i = 2; i <= n; ++i) {
+        result *= i;
+    }
+    return result;
+}
+static_assert(factorial(5) == 120);
 ```
 
-From the author's experience, the principle is simple: if you can solve it with a `constexpr` function, don't resort to template metaprogramming. Template metaprogramming is suitable for scenarios that require calculation at the type level (e.g., selecting different implementation strategies based on type), while `constexpr` is suitable for compile-time calculation at the value level. The two are often used together—templates handle type-level dispatch, and `constexpr` functions handle specific value calculations.
+In our experience, the rule is simple: if a `constexpr` function can handle it, don't reach for template metaprogramming. Template metaprogramming fits scenarios where the computation must happen at the type level (choosing different implementation strategies by type, say), while `constexpr` fits compile-time computation at the value level. The two often work together—templates dispatch at the type level, and `constexpr` functions do the concrete value computation.
 
-## Step 5 — Practical Examples
+## Step 5—Practical Examples
 
 ### Compile-Time Fibonacci and Factorial
 
-We have already shown these two classic examples earlier. Now let's do something more practical—use a `constexpr` function to generate a compile-time lookup table.
+We already showed these two classic examples earlier. Now let's have something more practical—generating a compile-time lookup table with a `constexpr` function.
 
-### Compile-Time CRC-32 Lookup Table
+### A Compile-Time CRC-32 Lookup Table
 
-CRC checksums are ubiquitous in communication protocols and storage systems. The traditional approach is to generate a CRC lookup table at runtime with a loop, or use a tool like Python to generate the table and `#include` it. With `constexpr`, we can let the compiler generate this table for us.
+CRC checksums are everywhere in communication protocols and storage systems. The traditional approach generates the CRC lookup table at runtime with a loop, or generates the table with a tool like Python and `#include`s it into the code. With `constexpr`, we can have the compiler generate this table for us.
 
 ```cpp
-constexpr uint32_t crc32_table(uint8_t idx) {
-    uint32_t crc = idx;
-    for (int i = 0; i < 8; ++i) {
-        if (crc & 1)
-            crc = (crc >> 1) ^ 0xEDB88320;
-        else
-            crc >>= 1;
-    }
-    return crc;
-}
+#include <array>
+#include <cstdint>
 
-// Generate the full table at compile time
-constexpr std::array<uint32_t, 256> crc32_lut = [] {
-    std::array<uint32_t, 256> table{};
-    for (int i = 0; i < 256; ++i) {
-        table[i] = crc32_table(i);
+constexpr std::array<std::uint32_t, 256> make_crc32_table()
+{
+    std::array<std::uint32_t, 256> table{};
+    constexpr std::uint32_t kPolynomial = 0xEDB88320u;
+
+    for (std::size_t i = 0; i < 256; ++i) {
+        std::uint32_t crc = static_cast<std::uint32_t>(i);
+        for (int j = 0; j < 8; ++j) {
+            if (crc & 1) {
+                crc = (crc >> 1) ^ kPolynomial;
+            } else {
+                crc >>= 1;
+            }
+        }
+        table[i] = crc;
     }
     return table;
-}();
+}
+
+// Generate the full CRC-32 lookup table at compile time
+constexpr auto kCrc32Table = make_crc32_table();
+
+// Runtime use: only a table lookup is needed
+constexpr std::uint32_t crc32_compute(const std::uint8_t* data, std::size_t len)
+{
+    std::uint32_t crc = 0xFFFFFFFFu;
+    for (std::size_t i = 0; i < len; ++i) {
+        crc = (crc >> 8) ^ kCrc32Table[(crc ^ data[i]) & 0xFF];
+    }
+    return crc ^ 0xFFFFFFFFu;
+}
 ```
 
-`crc32_lut` is fully generated at compile time and is written directly into the read-only data section (`.rodata`) of the target file. No initialization code is needed at runtime; it can be used directly. The elegance of this pattern lies in: the table generation logic and table usage logic are in the same source file, requiring no extra code generation tools or build steps.
+`kCrc32Table` is generated in full at compile time and ends up written directly into the object file's read-only data section (`.rodata`). At runtime, no initialization code is needed—just use it as is. The elegance of this pattern: the table-generation logic and the table-using logic live in the same source file, with no extra code-generation tools or build steps.
 
 ### Compile-Time vs Runtime Performance Comparison
 
-To intuitively feel the power of `constexpr`, let's look at a simple comparison experiment.
+To get a feel for the power of `constexpr`, let's run a simple comparison experiment.
 
 ```cpp
-// Runtime version
-uint32_t runtime_crc32(uint32_t crc, const uint8_t* data, size_t len) {
-    for (size_t i = 0; i < len; ++i) {
-        crc = (crc >> 8) ^ crc32_lut_runtime[(crc ^ data[i]) & 0xFF];
+#include <chrono>
+#include <iostream>
+
+// Runtime version of the CRC table generation
+std::array<std::uint32_t, 256> make_crc32_table_runtime()
+{
+    std::array<std::uint32_t, 256> table{};
+    constexpr std::uint32_t kPolynomial = 0xEDB88320u;
+    for (std::size_t i = 0; i < 256; ++i) {
+        std::uint32_t crc = static_cast<std::uint32_t>(i);
+        for (int j = 0; j < 8; ++j) {
+            if (crc & 1) {
+                crc = (crc >> 1) ^ kPolynomial;
+            } else {
+                crc >>= 1;
+            }
+        }
+        table[i] = crc;
     }
-    return crc;
+    return table;
 }
 
-// Compile-time version (uses constexpr table)
-constexpr uint32_t compiletime_crc32(uint32_t crc, const uint8_t* data, size_t len) {
-    for (size_t i = 0; i < len; ++i) {
-        crc = (crc >> 8) ^ crc32_lut[(crc ^ data[i]) & 0xFF];
-    }
-    return crc;
+int main()
+{
+    // Runtime generation
+    auto start = std::chrono::high_resolution_clock::now();
+    auto runtime_table = make_crc32_table_runtime();
+    auto end = std::chrono::high_resolution_clock::now();
+    std::cout << "Runtime generation: "
+              << std::chrono::duration<double, std::micro>(end - start).count()
+              << " us\n";
+
+    // constexpr version: uses kCrc32Table directly, zero elapsed time
+    std::cout << "CRC table first entry: " << kCrc32Table[0] << "\n";
+    std::cout << "Runtime table first entry: " << runtime_table[0] << "\n";
+
+    return 0;
 }
 ```
 
-Results are roughly as follows (specific values depend on hardware and compiler optimization):
+The output looks roughly like this (exact numbers depend on hardware and compiler optimization):
 
 ```text
-Runtime CRC32:  2.85 us
-Compile-time CRC32: 0.35 us
+Runtime generation: 2.5 us
+CRC table first entry: 0
+Runtime table first entry: 0
 ```
 
-**Note**: This benchmark has certain limitations. Modern compilers are very smart; even if you declare a runtime version, if the compiler finds that the function's input is a constant and has no side effects, it might automatically promote it to compile-time calculation during the optimization phase (this optimization is called "constant propagation"). Therefore, to accurately measure the advantage of `constexpr`, you need to ensure the compiler doesn't perform this optimization on the runtime version. In actual projects, the true value of `constexpr` isn't in saving these 2.5 microseconds, but in:
+**Note**: this benchmark has its limitations. Modern compilers are very smart: even if you declare the runtime version, if the compiler sees that the function's input is constant and it has no side effects, it may promote it to compile-time computation during optimization (an optimization known as "constant propagation"). So, to measure the advantage of constexpr accurately, you need to make sure the compiler does not apply that optimization to the runtime version. In real projects, the true value of constexpr lies not in saving those 2.5 microseconds, but in:
 
-1. Forcing compile-time calculation, not relying on the compiler's "mood".
-2. Being usable in contexts requiring constant expressions (like array sizes, template parameters).
-3. Discovering logic errors at compile time (via `static_assert`).
+1. Forcing the computation to happen at compile time, independent of the compiler's "mood"
+2. Being usable in contexts that require constant expressions (array sizes, template parameters, and so on)
+3. Catching logic errors at compile time (via static_assert)
 
-However, for embedded systems, faster startup time is indeed a practical advantage—the `constexpr` version of the table is stored directly in the read-only data section, requiring no initialization code.
+That said, for embedded systems the faster startup time is a real, practical advantage—the constexpr version's table sits directly in the read-only data section and needs no initialization code at all.
 
 ### Compile-Time Math Lookup Tables
 
-Another common scenario is trigonometric function lookup tables. In signal processing and motor control, we often need to quickly get `sin`/`cos` values. Directly calling `std::sin` on embedded systems might be too slow (especially on MCUs without an FPU), and lookup tables are a classic optimization method.
+Another common scenario is trigonometric lookup tables. In signal processing and motor control, you often need `sin`/`cos` values fast. Calling `std::sin` directly can be too slow on embedded targets (especially MCUs without an FPU), and a lookup table is the classic optimization.
 
 ```cpp
-constexpr float deg_to_rad(float deg) {
-    return deg * 3.14159265f / 180.0f;
-}
+#include <array>
+#include <cmath>
 
-// Taylor series approximation for sin
-constexpr float sin_approx(float x) {
-    // ... implementation details ...
-    return result;
-}
-
-constexpr std::array<float, 360> sin_lut = [] {
-    std::array<float, 360> table{};
-    for (int i = 0; i < 360; ++i) {
-        table[i] = sin_approx(deg_to_rad(i));
+template <std::size_t N>
+constexpr std::array<float, N> make_sin_table()
+{
+    std::array<float, N> table{};
+    for (std::size_t i = 0; i < N; ++i) {
+        // Map [0, N-1] to [0, 2π)
+        constexpr double kPi = 3.14159265358979323846;
+        double angle = 2.0 * kPi * static_cast<double>(i) / static_cast<double>(N);
+        // Note: before C++26, std::sin is not guaranteed to be constexpr
+        // On compilers that do not support constexpr std::sin, a Taylor expansion can approximate it
+        double x = angle;
+        double sin_val = x - x*x*x/6.0 + x*x*x*x*x/120.0;
+        table[i] = static_cast<float>(sin_val);
     }
     return table;
-}();
+}
+
+constexpr auto kSinTable256 = make_sin_table<256>();
+
+// Fast table lookup for sin values (input is an index in 0-255)
+inline float fast_sin(std::size_t index)
+{
+    return kSinTable256[index & 0xFF];
+}
 ```
 
-Here is a detail worth noting: The C++ standard does not guarantee `std::sin` is a `constexpr` function. It wasn't until C++26 that a proposal was made to make it officially `constexpr`. So in C++17 and earlier, you need to implement compile-time trigonometric calculations yourself using Taylor expansion or other approximation methods. However, this doesn't affect the final result—the compiled lookup data is precise.
+One detail worth noting here: the C++ standard does not guarantee that `std::sin` is a `constexpr` function. Not until C++26 is there a proposal to make it officially `constexpr`. So in C++17 and earlier, you need to implement compile-time trigonometric computation yourself with a Taylor expansion or another approximation. This does not affect the final result, though—the compiled lookup-table data is exact.
 
 ## Common Pitfalls and Gotchas
 
-### `constexpr` is Not "Force Compile-Time Evaluation"
+### constexpr Does Not Force Compile-Time Evaluation
 
-This is the easiest mistake to make. A `constexpr` function is only "allowed" to be evaluated at compile time, not "required" to. If you assign the return value of a `constexpr` function to a normal variable (not a `constexpr` variable), the compiler is perfectly free to call it at runtime. If you really need to force compile-time evaluation, use a `constexpr` variable to receive the return value, or use `std::is_constant_evaluated` in C++20 (we will cover this in detail in later chapters).
+This is the easiest mistake to make. A `constexpr` function merely "can" be evaluated at compile time, it is not "required" to be. If you assign the return value of a `constexpr` function to an ordinary variable (not a `constexpr` variable), the compiler is entirely free to call it at runtime. If you truly need to force compile-time evaluation, receive the return value in a `constexpr` variable, or use `consteval` in C++20 (which we will cover in detail in a later article).
 
-### Compiler Recursion Depth Limits
+### The Compiler's Recursion Depth Limit
 
-Even with the iterative version of C++14, `constexpr` functions can still trigger the compiler's evaluation step limit. Different compilers have different default limits: GCC 15.2.1 has a default recursion depth limit of about 520-600 layers (tested), Clang defaults to 512 layers (documented value), and MSVC has similar limits. Besides recursion depth, compilers also have a total step limit (GCC defaults to about 33M steps). If you do a lot of calculation at compile time (e.g., generating a very large lookup table), you might trigger the compiler's internal limits, manifesting as compilation failure.
+Even with the C++14 iterative version, the inside of a `constexpr` function can still trip the compiler's evaluation step limits. Each compiler has different defaults: GCC 15.2.1 caps recursion depth at roughly 520-600 levels (measured), Clang defaults to 512 levels (documented), and MSVC has similar limits. Beyond recursion depth, compilers also cap total steps (GCC defaults to about 33M steps); if you do massive computation at compile time (generating a very large lookup table, say), you may hit the compiler's internal limits, and the symptom is a failed build.
 
-When encountering this, you can increase the limit via compiler options (like GCC's `-fconstexpr-depth` and `-fconstexpr-loop-limit`), or consider splitting the generation of large tables into smaller segments. However, in actual projects, if your `constexpr` calculation is complex enough to trigger these limits, you should usually reconsider the design—although compile-time calculation is zero-cost, it significantly increases compilation time.
+When that happens, you can raise the limits with compiler options (such as GCC's `-fconstexpr-depth=` and `-fconstexpr-ops-limit=`), or consider splitting the generation of a large table into smaller chunks. In practice, though, if your constexpr computation is complex enough to trigger these limits, you should usually reconsider the design—compile-time computation may be zero-cost, but it noticeably inflates compile time.
 
-### Undefined Behavior in `constexpr` Functions
+### Undefined Behavior in constexpr Functions
 
-When a `constexpr` function is evaluated at compile time, if it triggers undefined behavior (UB), the compiler will report an error directly—this is actually a good thing. Things like array out-of-bounds, signed integer overflow, or division by zero might quietly produce wrong results at runtime, but they will be intercepted by the compiler during `constexpr` evaluation.
+When a `constexpr` function is evaluated at compile time and triggers undefined behavior (UB), the compiler rejects it with an error outright—and that is actually a good thing. Things like out-of-bounds array access, signed integer overflow, and division by zero may quietly produce wrong results at runtime, but during `constexpr` evaluation the compiler intercepts them.
 
 ```cpp
-constexpr int bad_func(int n) {
-    int arr[10] = {};
-    return arr[n]; // If n >= 10, compilation error
+constexpr int bad_divide(int a, int b)
+{
+    return a / b;  // If b == 0, compile-time evaluation fails with a compile error
 }
 
-constexpr int test = bad_func(20); // Compile error: array index out of bounds
+// constexpr int kBoom = bad_divide(10, 0);  // Compile error: division by zero
 ```
 
-This feature makes `constexpr` a kind of "safety net"—for things you can calculate at compile time, the compiler helps you check their legality.
+This property makes `constexpr` a kind of safety net—whatever you can compute at compile time, the compiler checks its legality for you.
 
-## Run Online
+## Run It Online
 
-Run the `constexpr` basic examples online to observe the difference between compile-time evaluation and runtime evaluation:
+Run the constexpr basics example online and observe the difference between compile-time and runtime evaluation:
 
 <OnlineCompilerDemo
   title="constexpr Basics: Compile-Time Factorial and CRC-32 Lookup Table"
   source-path="code/examples/vol2/05_constexpr_basics.cpp"
-  description="Run online and observe the compile-time and runtime behavior of constexpr functions, as well as static_assert validation."
+  description="Run it online and observe the compile-time and runtime behavior of constexpr functions, along with static_assert checks."
   allow-run
   allow-x86-asm
 />
 
-## Reference Resources
+## References
 
 - [cppreference: constexpr specifier](https://en.cppreference.com/w/cpp/language/constexpr)
 - [cppreference: constant expressions](https://en.cppreference.com/w/cpp/language/constant_expression)
-- [C++ Feature-test macro `__cpp_constexpr`](https://en.cppreference.com/w/cpp/feature_test)
+- [C++ feature-test macro `__cpp_constexpr`](https://en.cppreference.com/w/cpp/feature_test)

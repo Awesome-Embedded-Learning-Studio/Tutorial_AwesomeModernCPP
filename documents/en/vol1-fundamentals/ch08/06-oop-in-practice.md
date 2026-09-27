@@ -5,14 +5,14 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Comprehensively apply inheritance, polymorphism, and operator overloading
-  to implement a complete shape drawing system, and discuss the design choice between
-  inheritance versus composition.
+description: Combine inheritance, polymorphism, and operator overloading to build
+  a complete shape-drawing system, and revisit the inheritance vs composition design
+  choice.
 difficulty: intermediate
 order: 6
 platform: host
 prerequisites:
-- 多继承与虚继承
+- Multiple Inheritance and Virtual Inheritance
 reading_time_minutes: 14
 tags:
 - cpp-modern
@@ -22,43 +22,43 @@ tags:
 title: OOP in Practice
 translation:
   source: documents/vol1-fundamentals/ch08/06-oop-in-practice.md
-  source_hash: bf42567b3138e82c4db1ee7c034c628f6ace3c93d58bc04107eb5638ff55df3b
-  translated_at: '2026-09-17T00:00:00+00:00'
-  engine: manual
-  token_count: 3239
+  source_hash: 2e777d0f35eef612f64cca8c0b3c9cc7684ef7dd14b73b883a7a87a611372114
+  translated_at: '2026-09-25T11:39:25+00:00'
+  engine: anthropic
+  token_count: 7800
 ---
-# OOP in Practice
+# OOP in Practice: Building a Shape-Drawing System from Scratch
 
-So far, we have dismantled all the core components of OOP—classes and objects, construction and destruction, inheritance and polymorphism, operator overloading, and virtual inheritance. Each concept individually isn't overly complex, but in real-world projects, these components appear simultaneously and collaborate. In this chapter, we switch gears: instead of discussing scattered concepts, we will implement a complete graphics rendering system from start to finish, stringing together all the OOP techniques we've learned. Finally, we will discuss the design choice between inheritance versus composition.
+By this point we have taken every core OOP topic apart—classes and objects, construction and destruction, inheritance and polymorphism, operator overloading, virtual inheritance. Each topic on its own is not that complicated, but in a real project they all walk on stage at the same time and have to cooperate. So this chapter plays the game differently: instead of covering knowledge points in scattered pieces, we implement a complete shape-drawing system from start to finish, stringing together all the OOP techniques we have learned in one go, and at the end we also discuss the design choice of inheritance vs composition.
 
-## Design First—The Class Hierarchy of a Graphics System
+## Design First: The Shape System's Class Hierarchy
 
-Before writing code, let's clarify the requirements. Don't just start coding immediately; halfway through, you might find the class relationship designed incorrectly, and then you'll be adding `dynamic_cast` and `static_cast` everywhere—we don't do that.
+Before writing any code, let's get the requirements straight. Grabbing the requirements and charging straight into code, discovering halfway through that the class relationships were designed wrong, then sprinkling `virtual` and `friend` everywhere—that is not how we do things.
 
-> **Pitfall Warning**: When designing an inheritance hierarchy, the easiest mistake to make is using "sharing some implementation details" as a reason for inheritance. Inheritance expresses an "Is-a" relationship—a Circle **is a kind of** Shape, so `Circle` inheriting from `Shape` is reasonable. But if you make `Circle` inherit from `Canvas` just because "both Circle and Canvas need `draw()`", that is abusing inheritance. Before drawing an inheritance arrow, ask yourself: Is Derived **a kind of** Base? If not, don't inherit.
+The easiest mistake to make when designing an inheritance hierarchy is treating "shares some implementation details" as a reason to inherit. Inheritance expresses an is-a relationship—a circle **is a** shape, so having `Circle` inherit `Shape` is reasonable. But if you make `Circle` inherit from `std::ostream` just because "both circles and canvases need `std::ostream`", that is inheritance abuse. Before drawing every inheritance arrow, we ask ourselves first: is Derived **a kind of** Base? If not, don't inherit.
 
-Based on requirements, our class hierarchy looks roughly like this:
+Based on the requirements, our class hierarchy looks roughly like this:
 
 ```text
-Shape (抽象基类)
+Shape (abstract base class)
   |-- Circle
   |-- Rectangle
   |-- Triangle
 
-Canvas (管理类，持有 vector<unique_ptr<Shape>>)
-ShapeSerializer (工具类，负责序列化)
-ColoredShape (装饰类，组合持有 Shape)
+Canvas (manager class, holds vector<unique_ptr<Shape>>)
+ShapeSerializer (utility class, handles serialization)
+ColoredShape (decorator class, holds a Shape by composition)
 ```
 
-`Shape` is the abstract base class, defining interfaces shared by all shapes. Three concrete shape classes inherit from `Shape` and implement their respective calculation logic. `Canvas` is not a shape; it **contains** shapes—this is a typical scenario of composition over inheritance. `Canvas` utilizes the polymorphic interface of `Shape` through composition. `ColoredShape` also uses composition to add color to any shape, which we will detail later.
+`Shape` is the abstract base class that defines the interface shared by all shapes. The three concrete shape classes inherit `Shape` and implement their own computation logic. `Canvas` is not a shape—it **contains** shapes, a textbook case of composition rather than inheritance. `ShapeSerializer` uses `Shape`'s polymorphic interface through composition. `ColoredShape` likewise uses composition to add color to any shape; we will unpack it in detail later.
 
-## Starting with the Abstract Base Class
+## Starting from the Abstract Base Class
 
-The foundation of the class hierarchy is `Shape`. Its responsibility is simple—define "what a shape should do" without providing any specific implementation. We give it four pure virtual functions: calculate area, calculate perimeter, draw, and report the name. Additionally, we add a set of `operator==` and `operator!=`, using default implementations for equality comparison based on name and area.
+The root of the class hierarchy is `Shape`. Its responsibility is simple—define "what a shape should be able to do" without providing any concrete implementation. We give it four pure virtual functions: compute the area, compute the perimeter, draw itself, and report its name. On top of those, a pair of `operator==` and `operator!=` with default implementations doing equality comparison based on name and area.
 
 ```cpp
 // shapes.cpp
-// 编译: g++ -Wall -Wextra -std=c++17 shapes.cpp -o shapes
+// Compile: g++ -Wall -Wextra -std=c++17 shapes.cpp -o shapes
 
 #include <cmath>
 #include <iostream>
@@ -66,7 +66,7 @@ The foundation of the class hierarchy is `Shape`. Its responsibility is simple�
 #include <string>
 #include <vector>
 
-/// @brief 所有图形的抽象基类
+/// @brief Abstract base class for all shapes
 class Shape {
 public:
     virtual ~Shape() = default;
@@ -89,15 +89,15 @@ public:
 };
 ```
 
-`virtual ~Shape()` looks insignificant, but forgetting to write it has serious consequences—when holding a `Shape` via `unique_ptr<Shape>`, the destructor used is `Shape`'s destructor. If it isn't virtual, the derived class's destructor will never be called, and a resource leak is imminent. This is a baseline requirement for polymorphic class hierarchies, with no exceptions.
+`virtual ~Shape() = default;` looks unremarkable, but forgetting the `virtual` has serious consequences—when a `Circle` is held through a `unique_ptr<Shape>`, destruction goes through `Shape`'s destructor, and if that destructor is not virtual, the derived class's destructor never gets called; a resource leak is staring us in the face. This is the bottom-line requirement for a polymorphic class hierarchy, no exceptions.
 
-The four pure virtual functions make `Shape` an abstract class, preventing instantiation. Any class that wants to be a "Shape" must implement these four interfaces—this is the "interface contract". As for `operator==` in `Shape`, we use an epsilon tolerance instead of direct `==` because floating-point arithmetic has precision errors. Two mathematically equal values might differ by a tiny amount after different calculation paths; using direct `==` could cause two circles with the same radius to be judged as "unequal".
+The four `= 0` pure virtual functions make `Shape` an abstract class that cannot be instantiated. Any class that wants to count as a "shape" must implement these four functions—this is the "interface contract". As for the `std::abs(area() - other.area()) < 1e-9` inside `operator==`: we use an epsilon tolerance instead of a plain `==` because floating-point arithmetic carries precision error. Two mathematically equal values that traveled different computation paths can differ by as much as `1e-15`, so writing `area() == other.area()` directly would get two circles of the same radius judged "not equal".
 
-## Three Concrete Shapes—The `override` Defense
+## Three Concrete Shapes: The override Line of Defense
 
-With the base class set up, we now implement the concrete shapes. Each is marked with `override` for virtual function overrides—this isn't optional decoration. If you misspell the signature (e.g., typing `area` as `arae`), without `override` the compiler will silently create a new virtual function, polymorphism will fail directly without any warning. With `override`, a signature mismatch results in a direct compilation error.
+With the base class in place, we now start implementing the concrete shapes. Every one of them marks its virtual function overrides with `override`—this is not optional decoration. If we mistype a signature (say, typing `arae` for `area`), then without `override` the compiler silently creates a brand-new virtual function; polymorphism quietly stops working, without a single warning. With `override`, a mismatched signature is a compile error on the spot.
 
-First up, `Circle`, the most intuitive one:
+Let's write `Circle` first, the most intuitive one:
 
 ```cpp
 class Circle : public Shape {
@@ -135,9 +135,9 @@ public:
 };
 ```
 
-The constructor performs defensive checks—radius cannot be negative. Area uses the classic $\pi r^2$, perimeter uses $2\pi r$, and `draw` outputs shape information to a stream. These are very straightforward implementations.
+We run a defensive check in the constructor—the radius cannot be negative. Area uses the classic `PI * r^2`, perimeter uses `2 * PI * r`, and `draw` writes the shape's information to a stream. All very straightforward implementations.
 
-Next is `Rectangle`:
+Next, `Rectangle`:
 
 ```cpp
 class Rectangle : public Shape {
@@ -169,9 +169,9 @@ public:
 };
 ```
 
-Width and height undergo similar defensive checks. Area is $w \times h$, perimeter is $2(w+h)$, nothing fancy.
+Width and height get the same defensive check. Area is just `width * height`, perimeter is `2 * (width + height)`—no tricks here.
 
-Finally, `Triangle`, defined by three vertex coordinates, where the calculation is slightly more complex:
+Finally we write `Triangle`, where three vertex coordinates pin down a triangle and the math gets slightly more involved:
 
 ```cpp
 class Triangle : public Shape {
@@ -195,7 +195,7 @@ public:
 
     double area() const override
     {
-        // 叉积公式：|AB x AC| / 2
+        // Cross product formula: |AB x AC| / 2
         double abx = x2_ - x1_;
         double aby = y2_ - y1_;
         double acx = x3_ - x1_;
@@ -221,11 +221,11 @@ public:
 };
 ```
 
-Area uses the cross-product formula—construct vectors AB and AC, and the absolute value of the cross product divided by 2 is the triangle's area. This formula is more stable than Heron's formula, avoiding the need to calculate side lengths first and then take a square root. Perimeter is the sum of the distances of the three sides, using the private static member function `distance` to avoid code duplication.
+The area uses the cross product formula—build vectors AB and AC, and the absolute value of their cross product divided by 2 is the triangle's area. This formula is more stable than Heron's formula, which requires computing the side lengths first and then taking a square root. The perimeter is the sum of the three side lengths, and we use a private static member function `distance` to avoid duplicated code.
 
-## Global `operator<<`—Enabling Direct `cout` for Shapes
+## A Global operator<<: Streaming Shapes Straight to cout
 
-Calling `draw()` every time is slightly annoying, so let's overload a global `operator<<` to allow any `Shape` to be used directly with `cout`:
+Calling `shape.draw(std::cout)` every single time is a bit annoying, so let's overload a global `operator<<` so every `Shape` can be written directly as `cout << shape`:
 
 ```cpp
 std::ostream& operator<<(std::ostream& os, const Shape& shape)
@@ -235,11 +235,11 @@ std::ostream& operator<<(std::ostream& os, const Shape& shape)
 }
 ```
 
-Just four lines, delegating to `Shape`'s virtual function `draw`. Because `draw` is a virtual function, we enjoy polymorphism here too—pass in a `Circle` and `Circle::draw` is called, pass in a `Rectangle` and `Rectangle::draw` is called. Returning `ostream&` supports chaining, like `cout << shape << endl`.
+Four short lines, and all they do is delegate to `Shape`'s virtual function `draw`. Because `draw` is virtual, we enjoy polymorphism here too—pass in a `Circle` and `Circle::draw` gets called; pass in a `Triangle` and `Triangle::draw` gets called. Returning `os` is what supports chained calls, like `cout << shape1 << " and " << shape2`.
 
-## Canvas—`unique_ptr` Managing Polymorphic Objects
+## Canvas: Managing Polymorphic Objects with unique_ptr
 
-With the three shape classes written, we now need a "canvas" to manage them uniformly. `Canvas` is the class that best reflects "polymorphism in action"—it holds various shape objects using `unique_ptr`, and all operations are performed through virtual function interfaces.
+With the three shape classes written, we now need a "canvas" to manage them uniformly. `Canvas` is the class that best embodies "polymorphism in practice"—it holds a variety of shape objects in a `vector<unique_ptr<Shape>>`, and every operation goes through the virtual function interface.
 
 ```cpp
 class Canvas {
@@ -254,9 +254,9 @@ public:
     Canvas& operator=(Canvas&&) = default;
 ```
 
-Right at the start, there's a hurdle: because `Canvas` holds `unique_ptr<Shape>`, and `unique_ptr` is not copyable, the copy constructor and copy assignment must be deleted. If you forget to disable them, the compiler will try to generate default copies, then produce a dazzling string of template errors when copying the `unique_ptr`. Explicitly deleting them not only avoids errors but also clearly expresses design intent—the canvas shouldn't be copied, and ownership of shape objects is unique. Move operations are safe, so `= default` works.
+There is a hurdle right at the top: because `Canvas` holds `unique_ptr`s, and `unique_ptr` is not copyable, the copy constructor and copy assignment must be `= delete`d. If we forget to disable them, the compiler tries to generate the default copies and then throws a dizzying wall of template errors while copying the `unique_ptr`s. Actively writing `= delete` not only avoids the errors but also expresses the design intent clearly—a canvas should not be copied; ownership of the shape objects is exclusive. Move operations, on the other hand, are safe, so `= default` is fine.
 
-Next, look at `addShape`—a template member function that makes adding shapes very convenient:
+Next up is `emplace`—a template member function that makes adding shapes very smooth:
 
 ```cpp
     template <typename ConcreteShape, typename... Args>
@@ -267,9 +267,9 @@ Next, look at `addShape`—a template member function that makes adding shapes v
     }
 ```
 
-Usage is as simple as `canvas.addShape<Circle>(5.0)`, much more concise than `canvas.addShape(std::make_unique<Circle>(5.0))`. Template argument deduction combined with perfect forwarding (`std::forward`) passes arguments intact to the specific shape's constructor.
+In use we just write `canvas.emplace<Circle>(0, 0, 5)`, which is a good deal tidier than `canvas.add(make_unique<Circle>(0, 0, 5))`. Template argument deduction teams up with perfect forwarding (`std::forward`) so the arguments reach the concrete shape's constructor untouched.
 
-Then there are several utility methods:
+Then we write a few functional methods:
 
 ```cpp
     void draw_all(std::ostream& os) const
@@ -307,11 +307,11 @@ Then there are several utility methods:
 };
 ```
 
-`drawAll` iterates through all shapes and calls `draw`—dynamic dispatch calls the corresponding version based on the actual object type; this is runtime polymorphism at work. `totalArea` sums the areas, and `maxAreaShape` finds the shape with the largest area and returns a raw pointer (note that this returns a non-owning pointer, the caller should not `delete` it).
+We have `draw_all` iterate over all shapes and call `draw`—`shape->draw(os)` dispatches to the corresponding version based on the actual object's type; this is runtime polymorphism doing real work. `total_area` sums up the areas, and `find_largest` finds the shape with the largest area and returns a raw pointer (note that what we return here is a non-owning pointer; the caller should not `delete` it).
 
-## ShapeSerializer—Utility Class
+## ShapeSerializer: A Utility Class
 
-Serialization is an independent feature, so we extract it into a utility class rather than stuffing it into `Canvas`. This follows the Single Responsibility Principle—the canvas manages shapes, the serializer handles output formatting.
+Serialization is an independent piece of functionality, so we pull it out into a utility class instead of stuffing it into `Canvas`. This follows the single responsibility principle—the canvas manages shapes, and the serializer owns the output format.
 
 ```cpp
 class ShapeSerializer {
@@ -325,11 +325,11 @@ public:
 };
 ```
 
-All static methods, no instantiation needed. It retrieves information through `Shape`'s public interface, requiring no access to internal data—this is the power of good encapsulation.
+All static methods, no instantiation needed. It gathers information through `Canvas`'s public interface, so we never need to touch the internal data—this is the power of good encapsulation.
 
-## ColoredShape—Composition Over Inheritance
+## ColoredShape: Composition over Inheritance
 
-So far, we have only used inheritance. Now let's look at a scenario where composition is more appropriate: adding color to any shape.
+Everything so far has been inheritance. Now let's look at a scenario where composition is the better fit: adding color to an arbitrary shape.
 
 ```cpp
 class ColoredShape {
@@ -354,11 +354,11 @@ public:
 };
 ```
 
-Note that `ColoredShape` **does not** inherit from `Shape`. It holds a `unique_ptr<Shape>` internally and delegates area and perimeter calculations directly to it, while managing color information itself. Why not use inheritance? Because if we used inheritance, `ColoredShape` wouldn't know what kind of shape it is and couldn't calculate area or perimeter. With composition, you can add color to any shape without creating subclasses like `ColoredCircle`, `ColoredRectangle` for every shape type. In the future, if you want to add "transparency" or "borders", you simply layer on more composition; the class hierarchy won't bloat.
+Notice that `ColoredShape` does **not** inherit from `Shape`. It holds a `unique_ptr<Shape>` internally, delegates area and perimeter computation straight to it, and manages the color information itself. Why not inheritance? Because with inheritance, `ColoredShape` would not know which shape it is and could not compute the area or perimeter. With composition, we can add color to any shape without creating subclasses like `ColoredCircle` and `ColoredRectangle` for every kind of shape. Later, when we want "with transparency" or "with a border", composition stacks on one more layer the same way, and the class hierarchy never bloats.
 
-## Live Fire—Testing in `main`
+## Time to Log On: Taking main for a Test Drive
 
-All components are in place; let's write a `main` function to tie them together:
+All the parts are in place; let's write a `main` to string them together:
 
 ```cpp
 int main()
@@ -402,9 +402,9 @@ int main()
 }
 ```
 
-`main` stuffs a circle with radius 5, a 10x4 rectangle, and a right-angled triangle into the canvas. `drawAll` draws all shapes at once, `maxAreaShape` finds the largest one—using `cout << *` works because it returns a `Shape*`, and dereferencing it automatically calls the correct version of the virtual function `draw`. Finally, we test `operator==` and `operator!=`.
+`canvas.emplace<Circle>(0, 0, 5)` drops a circle of radius 5 onto the canvas, followed by a 10x4 rectangle and a right triangle. `draw_all` draws all the shapes in one go, and `find_largest` picks out the one with the largest area—printed directly with `operator<<`, because it returns a `Shape*`, and once dereferenced the virtual function `draw` automatically calls the right version. At the end we test `ColoredShape` and `operator==`.
 
-## Verification
+## Verifying the Run
 
 Compile and run:
 
@@ -412,7 +412,7 @@ Compile and run:
 g++ -Wall -Wextra -std=c++17 shapes.cpp -o shapes && ./shapes
 ```
 
-Verify output:
+Check the output:
 
 ```text
 --- Draw All ---
@@ -445,24 +445,24 @@ c1 == c2: 1
 c1 == c3: 0
 ```
 
-Check key values: Circle area ~78.54, Rectangle area 40.00, Triangle area 6.00, Total Area ~124.54 match. The largest area is the circle. Two circles with radius 5 are judged equal, and different radii are judged unequal.
+Let's verify the key numbers: circle area `PI * 25 = 78.5398`, rectangle area `40`, triangle area `6`—the total `124.5398` checks out. The circle has the largest area. The two circles with radius 5 compare equal, and circles with different radii compare unequal.
 
-## Inheritance vs Composition: The Criteria, Verified in Practice
+## Inheritance vs Composition: The Criteria Confirmed in Practice
 
-The first article of this chapter established the decision order: ask whether composition works first, then whether is-a holds, and finally whether behavior stays substitutable. Looking back at the finished system, both relationships coexist, each passing its own test. `Circle` inherits from `Shape`: a circle **is a kind of** shape—an essential, stable relationship—and it genuinely needs to be operated through a base-class pointer by `Canvas`, so both is-a and the polymorphism requirement hold. `Canvas` holds shapes: a canvas **contains** shapes, but a canvas is not a shape, so has-a takes composition—and it only touches shapes through `Shape`'s public interface, which keeps the coupling naturally low.
+In article 1 we established the order of judgment: first ask whether composition works, then ask about is-a, and finally ask whether the behavior is substitutable. Looking back after finishing this system, the code contains both relationships side by side, and each passes its own test. `Circle` inherits `Shape`: a circle **is a** shape—an essential, stable relationship—and it needs to be operated uniformly by `Canvas` through base-class pointers, so both the is-a and the polymorphism requirements hold. `Canvas` holds shapes: a canvas **contains** shapes, but a canvas is not a shape; has-a means composition, and it uses shapes only through `Shape`'s public interface, so the coupling is naturally low.
 
-`ColoredShape` verifies the other half: color is an accidental, variable attribute of a shape, not an essential relationship, so it gets layered composition—adding color to any shape requires no new subclasses, and transparency or borders later on just means one more layer, with no bloating of the class hierarchy.
+Then look at `ColoredShape`, which confirms the other half: color is an accidental, changeable attribute of a shape, not an essential relationship, so composition layers it on—adding color to any shape requires no new subclass, and when transparency or borders come along later, one more layer does the job, and the class hierarchy does not bloat.
 
 ## Exercises
 
 ### Exercise 1: Add New Shapes
 
-Add `Square` and `Ellipse` classes. Should `Square` inherit from `Rectangle`? Hint: A square requires width and height to always be equal, but `Rectangle`'s interface allows modifying width or height independently. Inheritance would lead to a semantic contradiction.
+Please add two classes, `Square` and `Ellipse`. Can `Square` inherit from `Rectangle`? Hint: a square requires width and height to stay equal at all times, but `Rectangle`'s interface allows width or height to be modified independently—inheriting would lead to a semantic contradiction.
 
-### Exercise 2: Shape Grouping
+### Exercise 2: Grouping Shapes
 
-Implement a `ShapeGroup` class that **inherits from `Shape`** and internally holds a `vector<unique_ptr<Shape>>`. Its area is the sum of all sub-shape areas, and its perimeter returns 0. It can be added to a `Canvas` or even nested. This is a classic case where inheritance and composition are used simultaneously.
+Please implement a `ShapeGroup` class that **inherits from `Shape`** and internally holds a `vector<unique_ptr<Shape>>`. Its area is the sum of all child shapes' areas, and its perimeter returns 0. It can be added to a `Canvas`, and it can even be nested. This is a classic case of inheritance and composition being used at the same time.
 
 ### Exercise 3: JSON Serialization
 
-Add a `toJson()` virtual function to `Shape`, where each concrete class overrides it to output JSON. Then add a `toJson()` method in `Canvas` to output the canvas as a JSON array. No third-party libraries are needed; manually splicing strings is sufficient.
+Please add a `to_json()` virtual function to `Shape`, with each concrete class overriding it to output JSON. Then add a `serialize_json()` method to `ShapeSerializer` that outputs the canvas as a JSON array. No third-party library is needed—hand-stitching strings is enough.

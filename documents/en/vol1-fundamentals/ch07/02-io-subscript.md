@@ -5,14 +5,13 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Master the implementation of `<<`/`>>` overloading and `operator[]`,
-  giving custom types stream I/O and indexed access.
+description: Master the implementation of `<<`/`>>` overloading and `operator[]`, giving custom types stream I/O and indexed access.
 difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
 - Arithmetic and Comparison Operators
-reading_time_minutes: 10
+reading_time_minutes: 21
 tags:
 - cpp-modern
 - host
@@ -21,10 +20,10 @@ tags:
 title: Stream and Subscript Operators
 translation:
   source: documents/vol1-fundamentals/ch07/02-io-subscript.md
-  source_hash: 7395644cbd408d52bc4d133fff76197285c8ad061c50c1172a6b99bd921aef43
-  translated_at: '2026-09-21T16:42:02+00:00'
-  engine: manual
-  token_count: 2600
+  source_hash: bf04a66081af6ee6c1f4a07c2396c08d5a42919d0c3d00bd7c6faf967bb76609
+  translated_at: '2026-09-25T11:13:16+00:00'
+  engine: anthropic
+  token_count: 5300
 ---
 # Stream and Subscript Operators: Making cout Recognize Your Types
 
@@ -36,7 +35,7 @@ These two families of operators (the stream operators `<<`/`>>` and the subscrip
 
 Recall how we usually print variables: `std::cout << 42 << " hello";`. The left operand of `<<` is a `std::ostream` object, and the right operand is the content. So in `std::cout << fraction`, the left operand is the stream, not a `Fraction`—which means `operator<<` **cannot be a member function**, because the implicit first parameter of a member function is `this`, and here the left operand is a stream.
 
-The solution is to implement it as a non-member function (usually declared as a friend), with the signature:
+Our solution is to implement it as a non-member function (usually declared as a friend), with the signature:
 
 ```cpp
 friend std::ostream& operator<<(std::ostream& os, const Fraction& f);
@@ -81,7 +80,7 @@ friend std::istream& operator>>(std::istream& is, Fraction& f)
 
     is >> num >> slash >> denom;
 
-    // Check stream state and denominator validity
+    // Check the stream state and denominator validity
     if (is && slash == '/' && denom != 0) {
         f.numerator = num;
         f.denominator = denom;
@@ -100,11 +99,11 @@ Inside `operator>>` we absolutely must check the stream state. Plenty of sample 
 
 Another common mistake is not setting `failbit` when input fails. If we only check the stream state but never set `failbit`, the caller has no way to tell whether input succeeded via `if (cin >> fraction)`. That is exactly what `is.setstate(std::ios::failbit)` in the code above handles.
 
-Usage works exactly like `cin >>` for an `int`: after typing `3/4`, `if (std::cin >> f)` leaves `f` as `Fraction(3, 4)`; typing `abc` takes the failure path and reports the error.
+Usage works exactly like `cin >>` for an `int`: after typing `3/4`, `if (std::cin >> f)` leaves `f` as `Fraction(3, 4)`; typing `abc` takes the failure branch and reports the error.
 
 ## The Subscript Operator `operator[]`
 
-The subscript operator is the signature feature of a custom container class: with it, our container supports `obj[i]`, matching the native array experience. `operator[]` must be implemented as a member function, and **usually comes in two versions**: a non-`const` version returning a modifiable reference, and a `const` version returning a read-only reference. We saw this design in the operator overloading chapter; here we put it into actual code.
+The subscript operator is the standard fixture of a custom container class: with it, our container supports `obj[i]` element access, matching the native array experience exactly. `operator[]` must be implemented as a member function, and **usually comes in two versions**: a non-`const` version returning a modifiable reference, and a `const` version returning a read-only reference. We saw this design in the operator overloading chapter; here we put it into actual code.
 
 Let's demonstrate the basic structure with a compact `IntArray`:
 
@@ -146,7 +145,7 @@ The coexistence of both versions is the crux of this design. Calling `arr[0] = 4
 
 If we forget to provide the `const` version of `operator[]`, any access to container elements through a `const` reference stops compiling. This bites most often at function boundaries—plenty of functions take a `const IntArray&` parameter and read elements with `arr[i]` inside; without the `const` version that is an immediate error. Providing both versions is the standard, recommended practice.
 
-### Boundary Checking: `operator[]` vs `at()`
+### Bounds Checking: `operator[]` vs `at()`
 
 The traditional approach for `operator[]` is to **perform no bounds checking**—consistent with native arrays, chasing maximum performance, with out-of-bounds access being undefined behavior. So what do you do when you *do* want checking? The standard library's convention is to additionally provide an `at()` member function: it checks the index first and throws a `std::out_of_range` exception when the index is out of bounds, reporting the error loudly instead of letting the program wander into undefined behavior.
 
@@ -340,10 +339,260 @@ Reading without practicing amounts to not learning. Write every exercise out you
 
 ### Exercise 1: Add Stream Operators to the Previous `Fraction`
 
-If you implemented your own `Fraction` class in the previous chapter's exercise, add `operator<<` and `operator>>` to it now. Require `operator<<` to print only the numerator when the denominator is 1, and `operator>>` to accept input in the `numerator/denominator` format. On input failure the object must stay unmodified, and the stream's `failbit` must be set correctly. Write a test that verifies both `cin >> fraction` and `cout << fraction` work.
+If you implemented your own `Fraction` class in the previous chapter's exercise, add `operator<<` and `operator>>` to it now. `operator<<` must print only the numerator when the denominator is 1, and `operator>>` must accept input in the `numerator/denominator` format. On input failure, leave the object unmodified and set the stream's `failbit` correctly. Then write a test that verifies both `cin >> fraction` and `cout << fraction` work.
+
+::: details Reference Solution
+
+```cpp
+#include <iostream>
+#include <istream>
+#include <ostream>
+
+class Fraction {
+ private:
+  int numerator_;    // Numerator
+  int denominator_;  // Denominator
+  void reduce() {
+    int a = std::abs(numerator_);
+    int b = std::abs(denominator_);
+
+    // Euclidean algorithm for the greatest common divisor
+    while (b != 0) {
+      int temp = b;
+      b = a % b;
+      a = temp;
+    }
+
+    int gcd = (a != 0) ? a : 1;
+
+    // Reduce the fraction
+    numerator_ /= gcd;
+    denominator_ /= gcd;
+
+    if (denominator_ < 0) {
+      numerator_ = -numerator_;
+      denominator_ = -denominator_;
+    }
+  }
+
+ public:
+  Fraction(int num = 0, int den = 1) : numerator_(num), denominator_(den) {
+    if (denominator_ == 0) {
+      denominator_ = 1;
+    }
+    reduce();
+  }
+  // Unary operator
+  Fraction operator-() const { return Fraction(-numerator_, denominator_); }
+  // Compound assignment operators
+  Fraction& operator+=(const Fraction& rhs) {
+    this->numerator_ = this->numerator_ * rhs.denominator_ +
+                       this->denominator_ * rhs.numerator_;
+    this->denominator_ = this->denominator_ * rhs.denominator_;
+    reduce();
+    return *this;
+  }
+  Fraction& operator-=(const Fraction& rhs) {
+    this->numerator_ = this->numerator_ * rhs.denominator_ -
+                       this->denominator_ * rhs.numerator_;
+    this->denominator_ = this->denominator_ * rhs.denominator_;
+    reduce();
+    return *this;
+  }
+  Fraction& operator*=(const Fraction& rhs) {
+    this->numerator_ = this->numerator_ * rhs.numerator_;
+    this->denominator_ = this->denominator_ * rhs.denominator_;
+    reduce();
+    return *this;
+  }
+  Fraction& operator/=(const Fraction& rhs) {
+    if (rhs.numerator_ == 0) {
+      return *this;
+    }
+    this->numerator_ = this->numerator_ * rhs.denominator_;
+    this->denominator_ = this->denominator_ * rhs.numerator_;
+    reduce();
+    return *this;
+  }
+  friend bool operator<(const Fraction& lhs, const Fraction& rhs) {
+    return (lhs.numerator_ * rhs.denominator_) <
+           (rhs.numerator_ * lhs.denominator_);
+  }
+  friend std::ostream& operator<<(std::ostream& os, const Fraction& rhs) {
+    if (rhs.denominator_ == 1) {
+      os << rhs.numerator_;
+    } else {
+      os << rhs.numerator_ << "/" << rhs.denominator_;
+    }
+    return os;
+  }
+  friend std::istream& operator>>(std::istream& is, Fraction& rhs) {
+    int num = 0;
+    int denom = 1;
+    char slash = '\0';
+    is >> num >> slash >> denom;
+    if (is && (slash == '/') && (denom != 0)) {
+      rhs.numerator_ = num;
+      rhs.denominator_ = denom;
+      rhs.reduce();
+    } else {
+      is.setstate(std::ios::failbit);
+    }
+    return is;
+  }
+};
+// Comparison operators
+bool operator>(const Fraction& lhs, const Fraction& rhs) { return rhs < lhs; }
+bool operator<=(const Fraction& lhs, const Fraction& rhs) {
+  return !(lhs > rhs);
+}
+bool operator>=(const Fraction& lhs, const Fraction& rhs) {
+  return !(lhs < rhs);
+}
+bool operator==(const Fraction& lhs, const Fraction& rhs) {
+  return !(lhs < rhs) && !(rhs < lhs);
+}
+bool operator!=(const Fraction& lhs, const Fraction& rhs) {
+  return !(lhs == rhs);
+}
+// Binary operators
+Fraction operator+(Fraction lhs, const Fraction& rhs) { return lhs += rhs; }
+Fraction operator-(Fraction lhs, const Fraction& rhs) { return lhs -= rhs; }
+Fraction operator*(Fraction lhs, const Fraction& rhs) { return lhs *= rhs; }
+Fraction operator/(Fraction lhs, const Fraction& rhs) { return lhs /= rhs; }
+
+
+int main() {
+    // Create two fraction objects
+    const Fraction a(1, 2);
+    const Fraction b(1, 3);
+
+    // Test fraction addition
+    std::cout << "========== 分数运算测试 ==========" << std::endl;
+    std::cout << "分数 a = " << a << std::endl;
+    std::cout << "分数 b = " << b << std::endl;
+    std::cout << "加法运算：" << a << " + " << b
+              << " = " << (a + b) << std::endl;
+
+    // Test the default constructor
+    std::cout << "\n========== 默认构造测试 ==========" << std::endl;
+    Fraction c{};
+    std::cout << "分数 c 的初始值为：" << c << std::endl;
+
+    // Test the input operator
+    std::cout << "\n========== 分数输入测试 ==========" << std::endl;
+    std::cout << "请输入一个分数（格式：分子/分母）：";
+
+    if (std::cin >> c) {
+        std::cout << "输入成功！" << std::endl;
+        std::cout << "化简后的分数 c = " << c << std::endl;
+    } else {
+        std::cout << "输入失败！请输入正确的分数格式，且分母不能为 0。"
+                  << std::endl;
+    }
+
+    return 0;
+}
+```
+
+Compile and run:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+Output:
+
+```text
+========== 分数运算测试 ==========
+分数 a = 1/2
+分数 b = 1/3
+加法运算：1/2 + 1/3 = 5/6
+
+========== 默认构造测试 ==========
+分数 c 的初始值为：0
+
+========== 分数输入测试 ==========
+请输入一个分数（格式：分子/分母）：2/4
+输入成功！
+化简后的分数 c = 1/2
+```
+
+> When the content consumed by `std::cin >> c` does not match the required format, `is.setstate(ios::failbit);` sets the stream's internal `failbit`—the "input/output operation failed (formatting or extraction error)" state bit—to 1, marking this formatted input or data extraction as failed. Since `operator>>` returns the stream object itself, and the stream object records these state bits and can convert itself to `bool` based on its current state, evaluating `std::cin >> c` in a condition yields `false`
+
+:::
 
 ### Exercise 2: Implement `operator[]` for a `Matrix` Class
 
-Design a simple `Matrix` class that stores its N x M elements in a one-dimensional array internally. Overload `operator[]` so it returns a reference to the first element of a row—this calls for a helper `Row` proxy class. Build the basic version first, requiring only that reads through `matrix[i][j]` work correctly, then think about writes.
+Design a simple `Matrix` class that stores its N x M elements in a one-dimensional array internally. Overload `operator[]` so that it returns a reference to the first element of a row—which means you need to define a helper `Row` proxy class. Build the basic version first, requiring only that reads through `matrix[i][j]` work correctly, then think about writes.
 
-Hint: `matrix[i]` returns a `Row` object, and `Row::operator[]` in turn returns the actual element reference. This classic "proxy pattern" setup appears all over C++.
+Hint: `matrix[i]` returns a `Row` object, and `Row::operator[]` in turn returns the reference to the actual element. This classic "proxy pattern" technique shows up again and again in C++.
+
+::: details Reference Solution
+
+```cpp
+#include <iostream>
+class Matrix {
+ private:
+  int rows_{};
+  int cols_{};
+  int* data_;
+
+ public:
+  class Row {
+   private:
+    int* data_;
+
+   public:
+    Row(int* data) : data_(data) {}
+    int& operator[](int j) { return data_[j]; }
+    const int& operator[](int j) const { return data_[j]; }
+  };
+
+  Matrix(int rows, int cols)
+      : rows_(rows), cols_(cols), data_(new int[rows * cols]{}) {}
+  ~Matrix() { delete[] data_; }
+
+  Matrix(const Matrix& matrix) = delete;
+  Matrix& operator=(const Matrix& matrix) = delete;
+
+  Row operator[](int i) { return Row(data_ + i * cols_); }
+  const Row operator[](int i) const { return Row(data_ + i * cols_); }
+};
+int main() {
+  // Create a 2-row, 3-column matrix
+  Matrix matrix(2, 3);
+
+  // Assign values to the matrix
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < 3; j++) {
+      matrix[i][j] = i * 3 + j;
+    }
+  }
+
+  // Print the matrix
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < 3; j++) {
+      std::cout << matrix[i][j] << " ";
+    }
+    std::cout << std::endl;
+  }
+
+  return 0;
+}
+```
+
+Compile and run:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+Output:
+
+```text
+0 1 2 
+3 4 5
+```
+
+:::

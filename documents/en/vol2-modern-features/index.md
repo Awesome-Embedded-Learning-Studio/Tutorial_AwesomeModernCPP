@@ -1,21 +1,22 @@
 ---
-title: 'Volume 2: Modern C++ Features'
-description: In-depth explanation of C++11-17 core features
+title: "Volume Two: Modern C++ Features"
+description: "A deep dive into the core features of C++11-17"
 platform: host
 tags:
-- cpp-modern
-- host
-- intermediate
+  - cpp-modern
+  - host
+  - intermediate
 translation:
   source: documents/vol2-modern-features/index.md
   source_hash: fbf78a5c736da7b4caad403341ee73b937597a435de5746970fd69e5c1f9f575
-  translated_at: '2026-05-26T11:36:18.799045+00:00'
+  translated_at: '2026-09-25T14:10:18+00:00'
   engine: anthropic
-  token_count: 293
+  token_count: 350
 ---
-# Volume 2: Modern C++ Features
 
-This volume covers the core modern features of C++11/14/17, from move semantics to smart pointers, from constexpr to lambda expressions, from type safety to the filesystem library—systematically mastering the key knowledge that distinguishes "modern C++" from "old C++."
+# Volume Two: Modern C++ Features
+
+This volume covers the core modern features of C++11/14/17—from move semantics to smart pointers, from constexpr to lambdas, from type safety to the filesystem library—giving you a systematic grasp of the key knowledge that separates "modern C++" from "old C++".
 
 ## Chapter Navigation
 
@@ -27,9 +28,9 @@ This volume covers the core modern features of C++11/14/17, from move semantics 
   <ChapterLink num="4" href="ch04-type-safety/">Type Safety</ChapterLink>
   <ChapterLink num="5" href="ch05-structured-bindings/">Structured Bindings and Initialization</ChapterLink>
   <ChapterLink num="6" href="ch06-auto-decltype/">auto and decltype</ChapterLink>
-  <ChapterLink num="7" href="ch07-attributes/">Attributes</ChapterLink>
+  <ChapterLink num="7" href="ch07-attributes/">Attribute System</ChapterLink>
   <ChapterLink num="8" href="ch08-string-view/">A Deep Dive into string_view</ChapterLink>
   <ChapterLink num="9" href="ch09-filesystem/">Filesystem Library</ChapterLink>
-  <ChapterLink num="10" href="ch10-error-handling/">Modern Error Handling</ChapterLink>
+  <ChapterLink num="10" href="ch10-error-handling/">Modern Approaches to Error Handling</ChapterLink>
   <ChapterLink num="11" href="ch11-user-defined-literals/">User-Defined Literals</ChapterLink>
 </ChapterNav>

@@ -4,17 +4,17 @@ cpp_standard:
 - 11
 - 14
 - 17
-description: Master core C++ lambda expression usage, from syntax elements to STL
-  integration
+description: From syntax elements to working with the STL, master the core usage
+  of C++ lambda expressions
 difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
-- 'Chapter 0: 移动构造与移动赋值'
+- 'Chapter 0: Move Construction and Move Assignment'
 reading_time_minutes: 13
 related:
-- Lambda 捕获机制深入
-- std::function 与类型擦除
+- Deep Dive into Lambda Capture
+- std::function, std::invoke, and Callable Objects
 tags:
 - host
 - cpp-modern
@@ -23,278 +23,349 @@ tags:
 title: 'Lambda Basics: The Elegant Expression of Anonymous Functions'
 translation:
   source: documents/vol2-modern-features/ch03-lambda/01-lambda-basics.md
-  source_hash: f93bd347851164729c377c501086ca9d4bbffe70f0cae70b82a5dd4f9cf6a809
-  translated_at: '2026-06-16T03:56:51.543924+00:00'
+  source_hash: 3216fd6df3c3f36c684f0bef37c1b6af744978980d27315b78aa2d7dc88045e4
+  translated_at: '2026-09-25T15:11:29+00:00'
   engine: anthropic
-  token_count: 2427
+  token_count: 3500
 ---
 # Lambda Basics: The Elegant Expression of Anonymous Functions
 
-## Introduction
-
-When writing sorting logic, I have always found C function pointers and C++98 functors somewhat awkward. Function pointers either pollute the global namespace or require passing `static` member functions along with a `void*` context back and forth. Functors allow encapsulating state within a class, but defining a complete class just for a two-line comparison logic feels like overkill (ah, the most OOP episode). C++11 introduced lambda expressions, which are essentially anonymous function objects defined at the point of use—no need to jump to the top of the file to declare them, no need for the compiler to generate extra symbols, and the logic is written right next to the call site, making it immediately clear to anyone reading the code.
+When writing sorting logic, we have always found C function pointers and C++98 functors a bit awkward. A function pointer either sits in the global scope polluting the namespace, or you end up ferrying a `void*` context back and forth alongside a `static` member function. Functors can encapsulate state inside a class, but defining a complete class for a two-line comparison is cracking a walnut with a sledgehammer (wow, the most OOP episode yet). C++11 brought lambda expressions—essentially anonymous function objects that can be defined in place, right where they are used. No jumping to the top of the file to declare anything, no extra symbols generated for the compiler; the logic lives right next to the call site, and anyone reading the code sees it at a glance.
 
 ---
 
-## Deconstructing Lambda Syntax
+## Breaking Down the Lambda Syntax
 
-The full syntax of a lambda expression looks a bit intimidating, but each part is quite intuitive when broken down:
-
-```cpp
-[capture_list](parameters) -> return_type { function_body }
-```
-
-The `capture_list` determines how the lambda accesses variables from the outer scope; `parameters` are identical to a normal function's parameter list; `return_type` is the trailing return type, which in C++11 can only be omitted for the compiler to deduce under specific conditions (see the next section); and `function_body` is the body of the function. Let's start with the simplest lambda and gradually add complexity:
+The complete syntax of a lambda expression looks a little intimidating, but taken apart, every piece of it is intuitive:
 
 ```cpp
-auto lambda = []() { return 42; };
+[capture](parameters) -> return_type { body }
 ```
 
-You will notice that we use `auto` to receive the lambda. This is because each lambda expression generates a unique, unnamed class type (the so-called closure type), so you cannot directly write the name of this type. `auto` is the most natural choice here.
+`capture` is the capture clause, which decides how the lambda accesses variables from the enclosing scope; `parameters` is exactly the same as an ordinary function's parameter list; `-> return_type` is a trailing return type—in C++11 you may only omit it and let the compiler deduce it under specific conditions (see the next section); and `body` is just the function body. Let's start from the simplest possible lambda and add ingredients step by step:
+
+```cpp
+// A lambda that does absolutely nothing, pure slack
+auto do_nothing = []() {};
+
+// Simply returns a value
+auto forty_two = []() { return 42; };
+
+// With parameters
+auto double_it = [](int x) { return x * 2; };
+
+// Actual use: call it like a normal function
+int result = double_it(21);  // result == 42
+```
+
+You will notice that the lambda is received with `auto`—that is because every lambda expression generates a unique, nameless class type (the so-called closure type), and there is no way for you to spell that type's name out directly. `auto` is simply the most natural choice here.
 
 ---
 
 ## Return Type Deduction
 
-C++11's rules for lambda return type deduction are relatively strict: the compiler can automatically deduce the return type only when the lambda body meets the following conditions:
+C++11's rules for lambda return type deduction are relatively strict: the compiler can deduce the return type automatically only when the lambda body satisfies the following conditions:
 
-1. The function body consists of a single `return` statement, or
-2. All `return` statements return expressions of the same deduced type.
+1. The function body contains a single `return` statement, or
+2. The expressions returned by all `return` statements deduce to the same type
 
-When these conditions are met, you can omit the return type:
+When these conditions hold, you can omit `-> return_type`:
 
 ```cpp
-auto simple = [](int x) { return x * 2; }; // Deduced as int
+// Deduced as int automatically
+auto square = [](int x) { return x * x; };
+
+// Deduced as double automatically (because of the static_cast<double>)
+auto divide = [](int a, int b) -> double {
+    return static_cast<double>(a) / b;
+};
 ```
 
-If the function body is complex, for example, having multiple branches with different return paths, the compiler may not be able to deduce it, or the result may differ from your expectations. In such cases, explicitly specifying the return type is the safest approach:
+If the function body is more complex—say several branches each returning along a different path—the compiler may fail to deduce, or may deduce something other than what you expected. At that point, specifying the return type explicitly is the safest move:
 
 ```cpp
-auto complex = [](int x) -> int {
+auto classify = [](int x) -> int {
     if (x > 0) {
-        return x;
-    } else {
-        return 0;
-    }
-};
-```
-
-My advice is: omit the return type for simple lambdas, and write it out explicitly for complex ones. Omitting it makes the code more compact, provided you don't force the reader to guess the return type.
-
----
-
-## As Arguments for STL Algorithms—The Main Battleground
-
-The most common scenario for lambda expressions is serving as predicates or operation functions for STL algorithms. Previously, you either passed a global function pointer or wrote a functor class. Now, you can simply write the lambda at the call site, making the logic clear at a glance:
-
-```cpp
-std::vector<int> vec{4, 1, 3, 5, 2};
-std::sort(vec.begin(), vec.end(), [](int a, int b) {
-    return a > b; // Descending order
-});
-```
-
-Previously, you had to define the comparison logic elsewhere, causing the reader to jump back and forth to find the definition. Now, the lambda is written right next to the algorithm call, so a quick glance reveals what the predicate does.
-
----
-
-## Capturing External Variables—Letting Lambda "See" the Outside
-
-By default, a lambda cannot access any variables from the outer scope. This is an intentional design: the lambda provides a clean sandbox that won't accidentally touch external state. When you do need to access external variables, you declare them explicitly via the capture list:
-
-```cpp
-int factor = 10;
-auto multiply = [factor](int x) { return x * factor; }; // Capture by value
-```
-
-Capture by value copies the variable at the moment the lambda is created; subsequent external modifications do not affect the copy inside the lambda. Capture by reference allows the lambda to operate directly on the original variable. Both methods have their use cases and their pitfalls—we will discuss this in detail in the next chapter. For now, just remember one thing: **when you only read and do not write, capture by value is the safest default choice.**
-
-There are also two common default capture modes: `[=]` means capture by value all used external variables, and `[&]` means capture by reference all used external variables. While convenient, in production code, I suggest explicitly listing the variable names to be captured to avoid unintentionally capturing variables that shouldn't be captured.
-
-```cpp
-int a = 1, b = 2;
-auto explicit_capture = [a, &b]() { b = a + b; }; // Explicit is better
-```
-
----
-
-## The Type of Lambda—Unveiling the Closure Type
-
-As mentioned earlier, each lambda expression produces a unique, anonymous class type (closure type). This class type has a `operator()` member function, with parameters and return values matching what you wrote in the lambda. The standard only mandates the behavior; the specific implementation is up to the compiler. Conceptually, you can think of the lambda as the compiler generating a class like this:
-
-```cpp
-class CompilerGeneratedName {
-public:
-    int operator()(int x) const {
         return x * 2;
+    } else if (x < 0) {
+        return -x;
     }
+    return 0;   // Without this line, some compilers may emit a warning
 };
 ```
 
-In actual implementation, the compiler adds corresponding data members based on the lambda's capture list and determines whether `operator()` is `const` based on the `mutable` keyword. The generation of the type name is decided by each compiler (e.g., GCC uses mangling, Clang uses a different scheme), and consistency across compilers is not guaranteed.
+Our advice: omit the return type on simple lambdas, and write it out explicitly on complex ones. Omitting it keeps the code more compact—but on the condition that you never leave the reader guessing for ages what the return type actually is.
 
-This is why you cannot directly write the type name of a lambda—this name is generated internally by the compiler and varies across compilers and compilation units. Therefore, when storing a lambda, use either `auto` (type known at compile time) or `std::function` (type erasure at runtime with extra overhead).
+---
 
-Passing a lambda via a template parameter is a common practice for zero-overhead abstraction—the compiler sees the complete lambda type and has the opportunity to perform inline optimization:
+## As Arguments to STL Algorithms—the Lambda's Main Battlefield
+
+The most common scenario for lambda expressions is serving as the predicate or operation function of an STL algorithm. You used to either pass a global function pointer or write a functor class; now you just write the lambda at the call site, and the logic is plain to see:
 
 ```cpp
-template <typename Func>
-void apply_template(Func f) {
-    // The compiler knows the exact type of Func here
-    f(10); // Likely inlined
+#include <algorithm>
+#include <vector>
+#include <iostream>
+
+void process_data() {
+    std::vector<int> readings = {12, 45, 23, 67, 34, 89, 56};
+
+    // Find the first reading above the threshold
+    auto it = std::find_if(readings.begin(), readings.end(),
+                          [](int value) { return value > 50; });
+
+    // Count how many anomalous values there are
+    int anomaly_count = std::count_if(readings.begin(), readings.end(),
+                                     [](int value) { return value > 80; });
+    std::cout << "Anomalies: " << anomaly_count << "\n";
+
+    // Double in place
+    std::transform(readings.begin(), readings.end(), readings.begin(),
+                  [](int value) { return value * 2; });
+
+    // Custom sort: descending order
+    std::sort(readings.begin(), readings.end(),
+             [](int a, int b) { return a > b; });
 }
 ```
 
-The key here is "possible": whether inlining actually happens depends on the compiler's optimization strategy, the complexity of the lambda, compiler options, etc. But compared to the runtime indirect call of `std::function`, template parameters at least give the compiler a chance to optimize.
-
-> **About `std::function` overhead**: `std::function` uses type erasure and Small Buffer Optimization (SBO). In libstdc++, a `std::function` object typically occupies 32 bytes (on 64-bit systems), even if the stored lambda only needs 1 byte. The call involves an extra layer of virtual-function-style indirection, which may prevent inlining. If runtime polymorphism is not needed, prefer `auto` or template parameters. We will dive deeper into this in Chapter 4, "Type Erasure and std::function".
+You used to have to define `is_above_threshold()` somewhere else, and reading the code meant hopping around hunting for the definition. Now the lambda sits right next to the algorithm call—one glance tells you what the predicate is doing.
 
 ---
 
-## In Practice: An Event Handling System
+## Capturing External Variables—Letting the Lambda "See" Outside
 
-Let's use lambdas to build a simple event handling system. This is a common requirement in real projects—registering callbacks, triggering callbacks, where callbacks might come from different modules with their own contexts:
+By default, a lambda cannot access any variable from the enclosing scope. This is deliberate design: a lambda gets a clean sandbox and cannot accidentally touch external state. When you genuinely need to access an external variable, you declare it explicitly through the capture clause:
 
 ```cpp
-#include <iostream>
+int threshold = 50;
+
+// Compile error: threshold is not in the lambda's scope
+// auto check = [](int value) { return value > threshold; };
+
+// Capture by value: copies threshold into the closure object
+auto by_value = [threshold](int value) { return value > threshold; };
+
+// Capture by reference: refers to the external threshold directly
+auto by_ref = [&threshold](int value) { return value > threshold; };
+```
+
+Capture by value copies the variable at the instant the lambda is created; later modifications outside won't affect the copy inside the lambda. Capture by reference lets the lambda operate on the original variable directly. Each approach has its place, and each has its own pits—we'll devote the next article to that discussion. For now, remember just one thing: **when you only read and never write, capture by value is the safest default.**
+
+There are also two common default-capture forms: `[=]` captures every external variable the lambda uses by value, and `[&]` captures them all by reference. They are convenient, but in production code we suggest listing the names of the variables to capture explicitly whenever possible, to avoid unintentionally capturing things you shouldn't.
+
+```cpp
+int a = 1, b = 2, c = 3;
+
+// Capture everything by value
+auto sum_all = [=]() { return a + b + c; };  // 6
+
+// Capture everything by reference—can modify the external variables
+auto increment_all = [&]() { a++; b++; c++; };
+increment_all();  // a=2, b=3, c=4
+
+// Mixed capture: a by value, b by reference
+auto mixed = [a, &b]() { return a + b; };
+```
+
+---
+
+## The Type of a Lambda—Closure Types Demystified
+
+As mentioned earlier, every lambda expression produces a unique, anonymous class type (the closure type). That class type has an `operator()` member function whose parameters and return value are exactly the ones you wrote in the lambda. The standard only specifies the behavior; the concrete implementation is left to the compiler. Conceptually, you can understand a lambda as the compiler generating a class like this:
+
+```cpp
+// The lambda you wrote
+auto greet = [](const std::string& name) -> std::string {
+    return "Hello, " + name;
+};
+
+// The class the compiler conceptually generates (simplified)
+struct /* a unique name generated by the compiler */ {
+    std::string operator()(const std::string& name) const {
+        return "Hello, " + name;
+    }
+};
+auto greet = /* an instance of the class above */{};
+```
+
+In a real implementation, the compiler adds data members according to the lambda's capture clause, and decides whether `operator()` is const based on the `mutable` keyword. How the type name is generated is each compiler's own business (GCC uses `_Z...` mangling, Clang uses `$_0...`, and so on), and consistency across compilers is not guaranteed.
+
+This is why you cannot write down a lambda's type name directly—the name is generated inside the compiler, and it differs across compilers and across translation units. So when storing a lambda, you either use `auto` (the type is known at compile time) or `std::function` (runtime type erasure, with extra overhead).
+
+We have turned this correspondence into an animation—you can play it, pause it, or step through it one frame at a time to see where each of the three parts lands in the closure class:
+
+<Anim id="lambda-anatomy" />
+
+Passing a lambda as a template parameter is a common zero-overhead abstraction technique—the compiler sees the lambda's complete type and gets a chance to inline it:
+
+```cpp
+template<typename Func>
+void call_func(Func f) {
+    f();
+}
+
+call_func([]() { /* ... */ });  // The type is visible to the compiler, may be inlined
+```
+
+The operative word here is "may": whether inlining really happens depends on the compiler's optimization strategy, how complex the lambda is, the compile options, and other factors. But compared with `std::function`'s runtime indirect call, a template parameter at least gives the compiler the opportunity to optimize.
+
+> **On the cost of `std::function`**: internally, `std::function` uses type erasure and the Small Buffer Optimization (SBO). In libstdc++, a `std::function` object typically occupies 32 bytes (on a 64-bit system), even when the lambda it stores needs only 1 byte. Each call adds a virtual-function-style indirect jump, which may prevent inlining. If you don't need runtime polymorphism, prefer `auto` or a template parameter. We'll expand on this in depth in the fourth article, "std::function, std::invoke, and Callable Objects".
+
+---
+
+## Hands-On: An Event Handling System
+
+Let's use lambdas to build a simple event handling system—a very common requirement in real projects: registering callbacks and triggering them, where the callbacks may come from different modules, each with its own context:
+
+```cpp
+#include <cstdint>
 #include <functional>
-#include <vector>
-#include <string>
+#include <array>
+#include <iostream>
 
-class EventSystem {
+class EventDispatcher {
 public:
-    using Callback = std::function<void()>;
-    using EventID = size_t;
+    using Handler = std::function<void(uint32_t)>;
 
-    EventID subscribe(Callback cb) {
-        EventID id = next_id++;
-        callbacks.push_back({id, std::move(cb)});
-        return id;
+    void on_event(int id, Handler handler) {
+        if (id >= 0 && id < static_cast<int>(handlers_.size())) {
+            handlers_[id] = std::move(handler);
+        }
     }
 
-    void trigger(EventID id) {
-        for (auto& entry : callbacks) {
-            if (entry.first == id && entry.second) {
-                entry.second();
-            }
+    void trigger(int id, uint32_t timestamp) {
+        if (id >= 0 && id < static_cast<int>(handlers_.size()) && handlers_[id]) {
+            handlers_[id](timestamp);
         }
     }
 
 private:
-    std::vector<std::pair<EventID, Callback>> callbacks;
-    EventID next_id = 0;
+    std::array<Handler, 8> handlers_;
 };
 
-int main() {
-    EventSystem sys;
+// Usage example
+void setup_system() {
+    EventDispatcher dispatcher;
+    int press_count = 0;
+    uint32_t last_press_time = 0;
 
-    // Module A handles button clicks
-    int click_count = 0;
-    auto click_handler = [&click_count]() {
-        click_count++;
-        std::cout << "Button clicked! Total: " << click_count << "\n";
-    };
-    auto click_id = sys.subscribe(click_handler);
+    // Register the key-press callback: captures press_count and last_press_time by reference
+    dispatcher.on_event(0, [&](uint32_t timestamp) {
+        if (timestamp - last_press_time > 50) {   // 50ms debounce
+            press_count++;
+            last_press_time = timestamp;
+            std::cout << "Press #" << press_count
+                      << " at " << timestamp << "ms\n";
+        }
+    });
 
-    // Module B handles timer events
-    int timer_value = 100;
-    auto timer_handler = [timer_value]() {
-        std::cout << "Timer expired with value: " << timer_value << "\n";
-    };
-    auto timer_id = sys.subscribe(timer_handler);
+    // Register the timeout callback: captures threshold by value
+    uint32_t threshold = 1000;
+    dispatcher.on_event(1, [threshold](uint32_t timestamp) {
+        if (timestamp > threshold) {
+            std::cout << "Timeout at " << timestamp << "ms\n";
+        }
+    });
 
-    // Simulate events
-    sys.trigger(click_id);
-    sys.trigger(click_id);
-    sys.trigger(timer_id);
+    // Simulate event triggers
+    dispatcher.trigger(0, 100);
+    dispatcher.trigger(0, 160);   // 60ms since the last press, passes the debounce
+    dispatcher.trigger(0, 180);   // 20ms since the last press, filtered out by the debounce
+    dispatcher.trigger(1, 1200);
 }
 ```
 
 Output:
 
 ```text
-Button clicked! Total: 1
-Button clicked! Total: 2
-Timer expired with value: 100
+Press #1 at 100ms
+Press #2 at 160ms
+Timeout at 1200ms
 ```
 
-You can see that using lambdas as callbacks is very natural—the capture list brings in the necessary context variables, the body contains the business logic, and it's passed in during registration. Compared to C-style `void*` pointers paired with `reinterpret_cast` casts, both type safety and readability are significantly improved.
+You can see how naturally lambdas work as callbacks—the capture clause pulls in the context variables you need, the body holds the business logic, and you just pass the whole thing in when registering. Compared with the C-style `void (*callback)(void* user_data)` paired with a `void*` cast, both type safety and readability are in a different league.
 
 ---
 
-## C++14 Generic Lambdas
+## Generic Lambdas in C++14
 
-C++14 brought a very practical enhancement to lambdas: parameter types can be `auto`. This turns the lambda into a template function object—the compiler generates a separate instance of `operator()` for different argument types:
+C++14 brought lambdas a very practical enhancement: parameter types can be `auto`. This turns the lambda into a template function object—the compiler generates a separate instantiation of `operator()` for each different argument type:
 
 ```cpp
-auto generic = [](auto x, auto y) {
-    return x + y;
-};
+// Generic lambda: accepts any type that supports operator+
+auto add = [](auto a, auto b) { return a + b; };
 
-generic(1, 2);    // Instantiates for int
-generic(1.0, 2.0); // Instantiates for double
+int xi = add(3, 4);              // int operator+(int, int)
+double xd = add(3.5, 2.5);       // double operator+(double, double)
+std::string xs = add(std::string("hello"), std::string(" world"));
 ```
 
-The closure type generated by the compiler behind the scenes looks roughly like this:
+The closure type the compiler generates behind the scenes looks roughly like this:
 
 ```cpp
-class CompilerGeneratedName {
-public:
-    template <typename T, typename U>
-    auto operator()(T x, U y) const {
-        return x + y;
+struct GenericClosure {
+    template<typename T1, typename T2>
+    auto operator()(T1 a, T2 b) const {
+        return a + b;
     }
 };
 ```
 
-Generic lambdas are particularly useful when writing generic algorithms and utility functions, eliminating the need to wrap a template function around the lambda. We will explore this in depth in Chapter 3, "Generic Lambdas and Template Lambdas".
+Generic lambdas are especially handy when writing generic algorithms and utility functions—you no longer need to wrap the lambda in an outer template function. We'll explore this in depth in the third article, "Generic Lambdas and Template Lambdas".
 
 ---
 
-## Caveats and Pitfall Warnings
+## Common Pitfalls
 
-### Don't Make Lambda Bodies Too Long
+### Don't Let Lambda Bodies Grow Too Long
 
-The advantage of lambdas lies in local definition and compact logic. If a lambda exceeds 5-7 lines, you should consider extracting it into a named function or a functor. Lambdas longer than this actually reduce readability—the reader has to scroll through several screens within the algorithm's argument list, which violates the original intent of "logic at the point of use".
+A lambda's strength is in-place definition and compact logic. If a lambda exceeds 5-7 lines, it's time to consider extracting it into a named function or a functor. Lambdas beyond that length actually hurt readability—readers have to scroll through several screens inside an algorithm's argument list, which defeats the original intent of "logic at the point of use".
 
-### The Lifetime Trap of Reference Capture
+### The Lifetime Trap of Capture by Reference
 
-This is one of the most common sources of lambda bugs: the variable captured by reference has been destroyed by the time the lambda executes. A typical scenario is creating a lambda inside a function and returning it:
+This is one of the most common sources of lambda bugs: a variable captured by reference is already destroyed by the time the lambda executes. The classic scenario is creating a lambda inside a function and returning it:
 
 ```cpp
-// DANGER: Returning a lambda that captures a local variable by reference
-auto get_callback() {
-    int local = 10;
-    return [&local]() { // local is destroyed when get_callback returns
-        return local;
-    };
+// Dangerous! The returned lambda refers to the local variable local
+auto make_bad_lambda() {
+    int local = 42;
+    return [&local]() { return local; };   // local is destroyed after the function returns
+}
+
+// Safe: capture by value
+auto make_safe_lambda() {
+    int local = 42;
+    return [local]() { return local; };    // the lambda holds a copy
 }
 ```
 
-Reference capture itself is not wrong, but you must ensure that the referenced object outlives the lambda. In scenarios like event systems and asynchronous callbacks, this constraint is easily overlooked.
+Capture by reference is not wrong in itself—you just have to guarantee that the referenced object outlives the lambda. In event systems and asynchronous callbacks, this constraint is remarkably easy to overlook.
 
-### Prefer `auto` Over `std::function` for Storing Lambdas
+### Prefer `auto` over `std::function` for Storing Lambdas
 
-Unless you need runtime polymorphism (e.g., putting different types of callbacks into the same container), do not use `std::function` to store lambdas. `auto` directly holds the closure type, with a size equal to the captured data members (capture-less lambdas are typically just 1 byte), giving the compiler a chance to inline optimizations. `std::function` performs type erasure, has a fixed overhead (32-64 bytes), and adds an extra layer of indirection during the call.
+Unless you need runtime polymorphism (for example, putting callbacks of different types into the same container), don't use `std::function` to store a lambda. `auto` holds the closure type directly; the type's size equals the size of the captured data members (a captureless lambda is usually just 1 byte), and it gives the compiler a chance to inline; `std::function` applies type erasure, with a fixed overhead (32-64 bytes) and an extra indirect jump on every call.
 
 ```cpp
-auto lambda = []() { /* ... */ };
-auto stored_auto = lambda; // Zero overhead, exact type
-std::function<void()> stored_func = lambda; // Type erasure, overhead
+// Type known at compile time, size = 1 byte (no captures), may be inlined
+auto f = [](int x) { return x * 2; };
+
+// Type-erased, size = 32 bytes (libstdc++), indirect call at runtime
+std::function<int(int)> g = [](int x) { return x * 2; };
 ```
 
-This difference can be significant on performance-critical paths, but avoid premature optimization: if the code isn't a hot path, the convenience of `std::function` might be more important.
+This difference can matter on performance-critical paths, but avoid premature optimization too: if the code isn't on a hot path, the convenience of `std::function` may well matter more.
 
 ---
 
-## Run Online
+## Run It Online
 
-Run the Lambda Event Handling System example online to observe the actual behavior of reference capture and value capture:
+Run the lambda event handling system example online and observe the actual behavior of capture by reference and capture by value:
 
 <OnlineCompilerDemo
-  title="Lambda Basics: Event Handling System"
+  title="Lambda Basics: An Event Handling System"
   source-path="code/examples/vol2/08_lambda_basics.cpp"
-  description="Run online and observe the actual behavior of Lambda's reference capture and value capture in event dispatch."
+  description="Run it online and observe how reference capture and value capture actually behave during event dispatch."
   allow-run
 />
 

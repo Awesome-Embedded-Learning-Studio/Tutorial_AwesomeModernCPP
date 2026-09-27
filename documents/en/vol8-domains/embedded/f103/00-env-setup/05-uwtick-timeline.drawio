@@ -1,0 +1,46 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="uwtick-timeline" name="uwTick时间线">
+    <mxGraphModel dx="900" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="380" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="ev1" value="第一次进 HAL_Delay&#10;uwTick=0，tickstart=0" style="rounded=1;whiteSpace=wrap;html=1;fontSize=15;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="70" y="110" width="180" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="poll" value="原地轮询：uwTick 追到 tickstart+500" style="rounded=1;whiteSpace=wrap;html=1;fontSize=15;dashed=1;fillColor=#f5f5f5;strokeColor=#999999;" vertex="1" parent="1">
+          <mxGeometry x="310" y="110" width="320" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="ovh" value="翻转 GPIO&#10;+ 循环开销" style="rounded=1;whiteSpace=wrap;html=1;fontSize=15;dashed=1;fillColor=#f5f5f5;strokeColor=#999999;" vertex="1" parent="1">
+          <mxGeometry x="690" y="110" width="110" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="ev2" value="第二次进 HAL_Delay&#10;uwTick=501" style="rounded=1;whiteSpace=wrap;html=1;fontSize=15;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="860" y="110" width="180" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="ev1" target="poll">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="poll" target="ovh">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="ovh" target="ev2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="axis" value="仿真时间（uwTick 每 1 毫秒加一）" style="shape=flexArrow;html=1;fontSize=13;fontStyle=1;strokeColor=#d79b00;fillColor=#ffe6cc;" vertex="1" parent="1">
+          <mxGeometry x="70" y="220" width="970" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="t0" value="0" style="text;html=1;fontSize=14;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="100" y="255" width="40" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="t500" value="500" style="text;html=1;fontSize=14;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="590" y="255" width="40" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="t501" value="501" style="text;html=1;fontSize=14;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="930" y="255" width="40" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="note" value="格子宽度不按拍数等比：轮询那段实打实等了 500 拍，翻转和循环开销只有 1 拍上下。" style="text;html=1;fontSize=13;align=left;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="70" y="300" width="970" height="30" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

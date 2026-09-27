@@ -1,0 +1,77 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="enum class Compare" id="enum-class-compare">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="同一组用法：C 风格 enum 静默放行，enum class 编译期拦截" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="26" width="600" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- 左列：C 风格 enum -->
+        <mxCell id="left_header" value="C 风格 enum：静默放行" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#c00000;" vertex="1" parent="1">
+          <mxGeometry x="70" y="70" width="310" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="left_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="70" y="104" width="310" height="296" as="geometry" />
+        </mxCell>
+        <mxCell id="left_decl" value="enum Color { Red, Green, Blue };&lt;br&gt;enum Fruit { Apple, ... };&lt;br&gt;void paint(int c);" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="80" y="112" width="290" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="left_row1" value="&lt;b&gt;paint(Red);&lt;/b&gt;  &lt;font color=&quot;#c00000&quot;&gt;OK，隐式转成 int&lt;/font&gt;&lt;br&gt;&lt;b&gt;paint(Orange);&lt;/b&gt;  &lt;font color=&quot;#c00000&quot;&gt;也 OK！语义完全错了&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#ffffff;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="172" width="290" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="left_row2" value="&lt;b&gt;paint(42);&lt;/b&gt;  &lt;font color=&quot;#c00000&quot;&gt;编译通过，运行时才知道出问题&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#ffffff;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="228" width="290" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="left_row3" value="&lt;b&gt;if (Red == Apple)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#c00000&quot;&gt;编译通过且为 true！因为都是 0&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#ffffff;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="284" width="290" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="left_row4" value="&lt;b&gt;enum Status { None, Ok, Error };&lt;/b&gt;&lt;br&gt;&lt;b&gt;enum Permission { None, ... };&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#c00000&quot;&gt;编译错误：None 重定义，只能加前缀变通&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#ffffff;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="340" width="290" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="left_bar" value="混用全被放行，bug 留到运行时" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="70" y="412" width="310" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="left_note" value="同样放行的还有：Read | Write 这类位运算（枚举值已隐式转 int），以及 if (color == 1) 的裸整数比较" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;fontColor=#555555;spacing=2;" vertex="1" parent="1">
+          <mxGeometry x="70" y="456" width="310" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- 右列：enum class -->
+        <mxCell id="right_header" value="enum class：编译期拦截" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#2E7D32;" vertex="1" parent="1">
+          <mxGeometry x="447" y="70" width="310" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="right_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="447" y="104" width="310" height="296" as="geometry" />
+        </mxCell>
+        <mxCell id="right_decl" value="enum class Color { Red, Green, Blue };&lt;br&gt;enum class Fruit { Apple, ... };&lt;br&gt;void paint(Color c);" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="457" y="112" width="290" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="right_row1" value="&lt;b&gt;paint(Color::Red);&lt;/b&gt;  &lt;font color=&quot;#2E7D32&quot;&gt;OK&lt;/font&gt;&lt;br&gt;&lt;b&gt;paint(0);&lt;/b&gt;  &lt;font color=&quot;#c00000&quot;&gt;编译错误！&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#ffffff;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="457" y="172" width="290" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="right_row2" value="&lt;b&gt;int x = Color::Red;&lt;/b&gt;  &lt;font color=&quot;#c00000&quot;&gt;编译错误！&lt;/font&gt;&lt;br&gt;&lt;b&gt;static_cast&lt;int&gt;(Color::Red)&lt;/b&gt;  &lt;font color=&quot;#2E7D32&quot;&gt;OK，显式转换&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#ffffff;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="457" y="228" width="290" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="right_row3" value="&lt;b&gt;if (Color::Red == Fruit::Apple)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#c00000&quot;&gt;编译错误！类型不匹配&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#ffffff;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="457" y="284" width="290" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="right_row4" value="&lt;b&gt;Status::None&lt;/b&gt; 与 &lt;b&gt;Permission::None&lt;/b&gt; 共存&lt;br&gt;&lt;font color=&quot;#2E7D32&quot;&gt;同名值各归各的枚举，互不冲突&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#ffffff;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="457" y="340" width="290" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="right_bar" value="类型不匹配，全部拦在编译期" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="447" y="412" width="310" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="right_note" value="要当整数用：static_cast，或 C++23 的 std::to_underlying；位运算需手动重载六个运算符" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;fontColor=#555555;spacing=2;" vertex="1" parent="1">
+          <mxGeometry x="447" y="456" width="310" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="source_note" value="两侧代码与结论取自本文「三宗罪」与「三大改进」两节" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="113" y="520" width="600" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,81 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="ScopeGuard Timeline" id="scope-guard-timeline">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="scope_guard 时间线：构造时登记一次，三种出口都触发析构" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="64" y="26" width="700" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- 时间线：进入作用域 → 作用域内执行 → 三种出口 -->
+        <mxCell id="card_entry" value="&lt;b&gt;进入作用域&lt;/b&gt;&lt;br&gt;构造 ScopeGuard&lt;br&gt;登记动作 func_&lt;br&gt;active_ = true" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#e8f0fe;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="70" y="150" width="160" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="card_body" value="&lt;b&gt;作用域内执行&lt;/b&gt;&lt;br&gt;validate / apply /&lt;br&gt;notify_observers()…&lt;br&gt;任意位置可能&lt;br&gt;return 或 throw" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#f2f2f2;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="280" y="150" width="170" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="exit_normal" value="&lt;b&gt;正常执行到末尾&lt;/b&gt;&lt;br&gt;析构时执行 func_()" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#e6f4ea;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="530" y="80" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="exit_return" value="&lt;b&gt;提前 return&lt;/b&gt;&lt;br&gt;析构时执行 func_()" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#fff2cc;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="530" y="165" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="exit_throw" value="&lt;b&gt;抛出异常，栈展开&lt;/b&gt;&lt;br&gt;析构时执行 func_()" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#ffe6e6;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="530" y="250" width="220" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e_entry" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#222222;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="230" y="200" as="sourcePoint" />
+            <mxPoint x="280" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_normal" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#008000;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="450" y="200" as="sourcePoint" />
+            <mxPoint x="530" y="115" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_return" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#B8860B;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="450" y="200" as="sourcePoint" />
+            <mxPoint x="530" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_throw" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#c00000;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="450" y="200" as="sourcePoint" />
+            <mxPoint x="530" y="285" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 析构逻辑说明 -->
+        <mxCell id="dtor_note" value="三种出口走的是同一段析构逻辑：&lt;b&gt;active_ 为 true 就调用 func_()&lt;/b&gt;；调用被 try-catch(...) 包住，异常逃逸会 std::terminate()；成功路径可 dismiss() 把 active_ 置 false 取消守卫" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#f2f2f2;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="70" y="350" width="680" height="48" as="geometry" />
+        </mxCell>
+
+        <!-- 三种守卫的判定条件 -->
+        <mxCell id="variants_header" value="三种守卫：析构时的判定条件不同" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="70" y="416" width="680" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="var_exit" value="&lt;b&gt;ScopeGuard&lt;/b&gt;&lt;br&gt;(scope_exit 语义)&lt;br&gt;不看异常状态&lt;br&gt;任何出口都执行&lt;br&gt;典型：恢复旧模式" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#f2f2f2;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="70" y="448" width="210" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="var_success" value="&lt;b&gt;ScopeSuccess&lt;/b&gt;&lt;br&gt;记下构造时的&lt;br&gt;uncaught_exceptions()&lt;br&gt;析构时数量&lt;b&gt;不变&lt;/b&gt;才执行&lt;br&gt;典型：tx.commit()" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#e6f4ea;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="305" y="448" width="210" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="var_fail" value="&lt;b&gt;ScopeFail&lt;/b&gt;&lt;br&gt;记下构造时的&lt;br&gt;uncaught_exceptions()&lt;br&gt;析构时数量&lt;b&gt;增加&lt;/b&gt;才执行&lt;br&gt;典型：tx.rollback()" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#ffe6e6;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="540" y="448" width="210" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="footer" value="同一作用域叠多个守卫（如 DEFER 宏）时，按定义的逆序析构：后定义的先执行" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="70" y="602" width="680" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

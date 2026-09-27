@@ -1,0 +1,88 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="decltype Rules" id="decltype-rules">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="decltype 的两条规则:不加括号查名字,加括号查表达式" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="26" width="600" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- 左列:不加括号 -->
+        <mxCell id="left_header" value="不加括号:查名字的声明类型" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#2E7D32;" vertex="1" parent="1">
+          <mxGeometry x="70" y="70" width="310" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="left_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="70" y="104" width="310" height="214" as="geometry" />
+        </mxCell>
+        <mxCell id="left_setup" value="&lt;b&gt;int x = 42;&lt;/b&gt;&lt;br&gt;&lt;b&gt;const int&amp; cr = x;&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="80" y="112" width="290" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="left_row1" value="&lt;b&gt;decltype(x)&lt;/b&gt;  →  &lt;font color=&quot;#2E7D32&quot;&gt;&lt;b&gt;int&lt;/b&gt;&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#ffffff;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="80" y="172" width="290" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="left_row2" value="&lt;b&gt;decltype(cr)&lt;/b&gt;  →  &lt;font color=&quot;#2E7D32&quot;&gt;&lt;b&gt;const int&amp;&lt;/b&gt;&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#ffffff;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="80" y="220" width="290" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="left_explain" value="x、cr 只是变量名(名字表达式),decltype 直接查它们声明时的类型" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#888888;strokeWidth=1;dashed=1;fillColor=#f2f2f2;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="268" width="290" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="left_bar" value="x 声明成什么,decltype(x) 就报什么" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="70" y="328" width="310" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="left_note" value="和 auto 正相反:auto 按初始化表达式推导新类型,丢掉引用和顶层 const;decltype 只是查询,原样返回" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;fontColor=#555555;spacing=2;" vertex="1" parent="1">
+          <mxGeometry x="70" y="372" width="310" height="52" as="geometry" />
+        </mxCell>
+
+        <!-- 右列:加括号 -->
+        <mxCell id="right_header" value="加括号:查左值表达式" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#c00000;" vertex="1" parent="1">
+          <mxGeometry x="447" y="70" width="310" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="right_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="447" y="104" width="310" height="214" as="geometry" />
+        </mxCell>
+        <mxCell id="right_setup" value="&lt;b&gt;int x = 42;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#888888&quot;&gt;// 还是这个 x,只多一对括号&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="457" y="112" width="290" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="right_row1" value="&lt;b&gt;decltype((x))&lt;/b&gt;  →  &lt;font color=&quot;#c00000&quot;&gt;&lt;b&gt;int&amp;&lt;/b&gt;(不是 int!)&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#ffffff;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="457" y="172" width="290" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="right_row2" value="&lt;b&gt;decltype(auto) b = (x);&lt;/b&gt;&lt;br&gt;→ &lt;font color=&quot;#c00000&quot;&gt;&lt;b&gt;int&amp;&lt;/b&gt;&lt;/font&gt;(C++14,同一陷阱)" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#ffffff;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="457" y="220" width="290" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="right_explain" value="(x) 不只是名字,是表达式:x 求值结果是左值,decltype 返回左值引用;x + 1(右值)则得到 int" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#888888;strokeWidth=1;dashed=1;fillColor=#f2f2f2;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="457" y="268" width="290" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="right_bar" value="(x) 是左值表达式,decltype 给 int&amp;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="447" y="328" width="310" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="right_note" value="同一陷阱藏在 return (x); 里:decltype(auto) 推出 int&amp;,返回局部变量就成了悬空引用,去掉括号才安全" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;fontColor=#555555;spacing=2;" vertex="1" parent="1">
+          <mxGeometry x="447" y="372" width="310" height="52" as="geometry" />
+        </mxCell>
+
+        <!-- 底部:经典用途 -->
+        <mxCell id="use_header" value="经典用途:尾置返回类型(返回类型依赖参数时)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="70" y="440" width="687" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="use_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="70" y="470" width="687" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="use_code" value="template&lt;typename T, typename U&gt;&lt;br&gt;&lt;b&gt;auto add(T t, U u) -&gt; decltype(t + u)&lt;/b&gt; { return t + u; }" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="80" y="478" width="667" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="use_why" value="返回类型写在前面时,参数 t、u 还没声明,编译器不知道它们的类型;&lt;br&gt;尾置把返回类型推迟到参数列表之后,decltype 里就能用参数了" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#ffffff;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="532" width="667" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="use_cpp14" value="C++14 起 &lt;b&gt;auto add(T t, U u) { return t + u; }&lt;/b&gt; 就够用;&lt;br&gt;要精确保留引用语义时,仍得靠 decltype / decltype(auto)" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="580" width="667" height="44" as="geometry" />
+        </mxCell>
+
+        <mxCell id="source_note" value="代码与结论取自本文「decltype 的推导规则」「decltype(auto)」「尾置返回类型」三节" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="113" y="648" width="600" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

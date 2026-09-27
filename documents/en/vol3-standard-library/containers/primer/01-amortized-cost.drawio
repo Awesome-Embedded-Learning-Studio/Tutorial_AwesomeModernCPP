@@ -1,0 +1,91 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="amortized-cost" name="页面-1">
+    <mxGraphModel dx="900" dy="700" grid="1" gridSize="10" page="1" pageScale="1" pageWidth="900" pageHeight="500" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title" value="翻倍的摊还：绝大多数写入便宜，偶尔贵一次" style="text;html=1;fontSize=20;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="16" width="640" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="yaxis" value="" style="endArrow=classic;html=1;strokeWidth=1.5;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="70" y="400" as="sourcePoint"/>
+            <mxPoint x="70" y="90" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xaxis" value="" style="endArrow=classic;html=1;strokeWidth=1.5;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="70" y="400" as="sourcePoint"/>
+            <mxPoint x="840" y="400" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ylab" value="单次 push_back 的代价（搬走的元素数）" style="text;html=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="20" y="70" width="280" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="xlab" value="第 N 次 push_back（容量从 1 开始翻倍）" style="text;html=1;fontSize=12;align=center;" vertex="1" parent="1">
+          <mxGeometry x="300" y="420" width="400" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="b1" value="1" style="rounded=0;html=1;fontSize=11;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="90" y="382" width="26" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="b2" value="2" style="rounded=0;html=1;fontSize=11;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="128" y="364" width="26" height="36" as="geometry"/>
+        </mxCell>
+        <mxCell id="b3" style="rounded=0;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="166" y="382" width="26" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="b4" value="4" style="rounded=0;html=1;fontSize=11;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="204" y="328" width="26" height="72" as="geometry"/>
+        </mxCell>
+        <mxCell id="b5" style="rounded=0;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="242" y="382" width="26" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="b6" style="rounded=0;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="280" y="382" width="26" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="b7" style="rounded=0;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="318" y="382" width="26" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="b8" value="8" style="rounded=0;html=1;fontSize=11;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="356" y="256" width="26" height="144" as="geometry"/>
+        </mxCell>
+        <mxCell id="b9" style="rounded=0;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="394" y="382" width="26" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="b10" style="rounded=0;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="432" y="382" width="26" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="b11" style="rounded=0;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="470" y="382" width="26" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="b12" style="rounded=0;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="508" y="382" width="26" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="b13" style="rounded=0;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="546" y="382" width="26" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="b14" style="rounded=0;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="584" y="382" width="26" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="b15" style="rounded=0;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="622" y="382" width="26" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="b16" value="16" style="rounded=0;html=1;fontSize=11;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="660" y="112" width="26" height="288" as="geometry"/>
+        </mxCell>
+        <mxCell id="b17" style="rounded=0;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="698" y="382" width="26" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="legendHi" value="容量边界的写入：搬走全部旧元素，O(n)" style="rounded=0;html=1;fontSize=12;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="560" y="150" width="280" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="legendLo" value="其余写入：写一格就完，O(1)" style="rounded=0;html=1;fontSize=12;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="560" y="190" width="280" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="note" value="高柱的间隔一次比一次远，平均高度被摊薄回常数（≈ 2 次元素写入 / 次）。" style="text;html=1;fontSize=13;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="80" y="450" width="700" height="20" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

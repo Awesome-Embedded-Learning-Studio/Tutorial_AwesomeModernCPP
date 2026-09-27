@@ -2,15 +2,15 @@
 chapter: 5
 cpp_standard:
 - 17
-description: 'C++17 if and switch initializers: keeping variable lifetimes just right'
+description: C++17 if and switch initializers pin variable lifetimes exactly where they belong
 difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- 'Chapter 5: 结构化绑定'
+- 'Chapter 5: Structured Bindings: Unpacking Multiple Values in One Line'
 reading_time_minutes: 9
 related:
-- RAII 深入理解
+- 'Deep Dive into RAII: The Cornerstone of Resource Management'
 tags:
 - host
 - cpp-modern
@@ -18,20 +18,20 @@ tags:
 title: 'if/switch Initializers: Narrowing Variable Scope'
 translation:
   source: documents/vol2-modern-features/ch05-structured-bindings/02-init-statements.md
-  source_hash: 9208012125648d7a9ee96d22585f4687417a6b6509b9143092491bedf66502ef
-  translated_at: '2026-07-16T00:00:00+00:00'
-  engine: manual
-  token_count: 1900
+  source_hash: 9a0c072bbbfe8902121f6b508f4426652331c5ec1fd0451406fc168b40221330
+  translated_at: '2026-09-25T15:37:46+00:00'
+  engine: anthropic
+  token_count: 2100
 ---
 # if/switch Initializers: Narrowing Variable Scope
 
-When reviewing code, I keep bumping into this pattern: a variable gets declared, feeds into a condition, then stays visible for the rest of the function even though it only matters inside the `if` block. The variable has leaked into the outer scope. C++17 offers a clean fix: initializer statements for `if` and `switch`, which pin a variable's lifetime to exactly the lines where it's useful.
+In code review we keep running into this pattern: a variable is declared, feeds into a condition, and then remains visible for the rest of the function—even though it only mattered inside the `if` branch. The variable has leaked into the outer scope. C++17 offers a clean fix: initializer statements for `if` and `switch`, which pin a variable's lifetime to exactly the few lines where it is actually useful.
 
 ------
 
-## The Cause: Variables Leaking into Outer Scope
+## The Motivation: Variables Leaking Into the Outer Scope
 
-Consider a familiar scene. You look up a key in a map and branch on the result:
+Start with a familiar scenario: look up a key in a map, then take different branches depending on the result:
 
 ```cpp
 {
@@ -41,29 +41,29 @@ Consider a familiar scene. You look up a key in a map and branch on the result:
     } else {
         cache[key] = compute_value(key);
     }
-    // it is still visible here, but it's done its job
+    // it is still visible here, but it is no longer useful
 }
 ```
 
-Someone might say, that's just one extra declaration, what's the big deal. The trouble is, the iterator `it` is still alive after the `if/else`. Declare another variable with the same name later and you've shadowed it; accidentally use `it` again and you may read a meaningless state. The longer the function, the more this leakage piles up, and it turns into maintenance debt.
+You might say: it is just one extra declaration, what is the big deal. The problem is that the iterator `it` is still alive after the `if/else` ends. Declare another variable with the same name later and you get shadowing; accidentally reuse `it` later and you may read a meaningless state. As the function grows longer, these leaks pile up—and that pile becomes maintenance debt.
 
-A more typical case is a lock's scope. If you only want the lock held during the condition check:
+Even more typical is a lock's protection range. Say we only want to hold the lock while the condition is being checked:
 
 ```cpp
 std::unique_lock<std::mutex> lock(mtx);
 if (condition) {
     do_something();
 }
-// lock destructs here, but you only needed it during the if
+// lock is destroyed only here, but you only needed it during the if
 ```
 
-C++17 `if` initializers clean all of this up.
+C++17's if initializer cleans up all of these scenarios.
 
 ------
 
 ## Syntax of the if Initializer
 
-The syntax is plain: inside the `if` parentheses, a semicolon separates the initialization statement from the condition.
+The syntax is straightforward: inside the parentheses of `if`, a semicolon separates the initializer statement from the condition.
 
 ```cpp
 if (init-statement; condition) {
@@ -71,11 +71,11 @@ if (init-statement; condition) {
 }
 ```
 
-The `init-statement` can be any declaration or expression statement; most often it's a variable declaration. The `condition` after the semicolon then tests the variable declared before it.
+The `init-statement` can be any declaration statement or expression statement; the most common case is a variable declaration. The `condition` after the semicolon then tests the variable declared before it.
 
-### Classic map Lookup
+### The Classic Use Case: map Lookup
 
-This is one of the most practical uses: look up a map, check whether it was found, handle the result.
+This is one of the most practical uses of the if initializer: search the map, check whether the key was found, then handle the result.
 
 ```cpp
 std::map<std::string, int> cache;
@@ -85,14 +85,18 @@ if (auto it = cache.find(key); it != cache.end()) {
 } else {
     cache[key] = compute_value(key);
 }
-// it is invisible here, its scope is confined to the if/else
+// it is not visible here; its scope is confined to the if/else
 ```
 
-Set this beside the version without an initializer and the difference is obvious: the old `it` leaks past the `if`, while now its lifetime is pinned inside the `if/else` block.
+Compared with the version without an initializer, the difference is obvious: before, `it` leaked past the `if`; now its lifetime is pinned exactly inside the `if/else` block.
 
-### Combined with Structured Binding
+Here is how `it`'s visible range compares between the two styles:
 
-The previous article covered structured binding. Paired with an `if` initializer it's even handier. `std::map::insert` returns a `pair<iterator, bool>`, where the `bool` tells you whether the insertion happened. One line does it:
+![Scope comparison of it between the old style and the if initializer](./02-init-scope.drawio)
+
+### Combining With Structured Bindings
+
+The previous article covered structured bindings; they pair naturally with the if initializer. `std::map::insert` returns a `pair<iterator, bool>`, and that `bool` says whether the insertion succeeded. One line does it:
 
 ```cpp
 if (auto [it, ok] = cache.insert({key, compute_value(key)}); ok) {
@@ -102,13 +106,13 @@ if (auto [it, ok] = cache.insert({key, compute_value(key)}); ok) {
 }
 ```
 
-Both `it` and `ok` are confined to the `if/else`. The intent reads cleanly: try to insert, print "Inserted" on success, otherwise "Already exists".
+Both `it` and `ok` are locked inside the `if/else`. The intent is clear: try to insert; if it worked, print "Inserted", otherwise print "Already exists".
 
 ------
 
-## switch Initializers
+## The switch Initializer
 
-`switch` has the same initializer syntax, again with a semicolon between the init and the condition:
+switch gets the same initializer syntax, with a semicolon separating the initializer from the condition:
 
 ```cpp
 switch (init-statement; condition) {
@@ -117,7 +121,7 @@ switch (init-statement; condition) {
 }
 ```
 
-A common use is preparing data right before the switch. For instance, dispatching on a command type read from an input stream:
+A common use is preparing the data right before the switch—for example, dispatching on the command type read from an input stream:
 
 ```cpp
 switch (auto cmd = read_command(); cmd.type) {
@@ -134,16 +138,16 @@ switch (auto cmd = read_command(); cmd.type) {
         handle_unknown(cmd);
         break;
 }
-// cmd is invisible here
+// cmd is not visible here
 ```
 
-There's also a trickier approach: hash the string and switch on the hash (C++ `switch` can't match strings directly). A complete, runnable version looks like this:
+There is also a trick: hash the string and switch on the hash value (C++'s `switch` cannot match strings directly). A complete, runnable version looks like this:
 
 ```cpp
 #include <string_view>
 #include <cstddef>
 
-// Compile-time hash (user-defined literal), so case labels can use "start"_hash
+// Compile-time hash (a user-defined literal), so case labels can be written as "start"_hash
 constexpr std::size_t operator""_hash(const char* s, std::size_t n) {
     std::size_t h = 0;
     for (std::size_t i = 0; i < n; ++i) h = h * 31 + std::size_t(s[i]);
@@ -165,7 +169,7 @@ int dispatch(std::string_view input) {
 }
 ```
 
-`"start"_hash` is a compile-time constant, so it works as a case label; at runtime you hash the input with `hash_string` and dispatch. Tested on GCC 16.1.1:
+`"start"_hash` is a compile-time constant, so it can serve as a case label; at runtime we hash the input with `hash_string` and dispatch on it. Verified with GCC 16.1.1:
 
 ```text
 dispatch("start")  = 1
@@ -173,62 +177,62 @@ dispatch("status") = 3
 dispatch("reboot") = 0
 ```
 
-One caveat: a hash squeezes infinitely many inputs into a finite range, so collisions are inevitable in theory. Two different strings can produce the same hash and land in the wrong case. If you need exact matching, compare against the original string again after a match.
+One caveat worth stating: a hash squashes infinitely many inputs into a finite range, so collisions are theoretically inevitable—two different strings that hash to the same value land in the wrong case. What we want is an exact match, so after a hit you must compare the original string once more.
 
 ------
 
-## The Lock Guard Pattern: RAII Meets Initializers
+## The Lock Guard Pattern: RAII Meets the Initializer
 
-`if` initializers are a natural fit for RAII-style resource management, and locks are the canonical example. To check a condition while holding a lock:
+The if initializer is a natural fit for RAII-style resource management, and locks are the classic example. To check a condition while holding a lock:
 
 ```cpp
 std::mutex mtx;
 bool ready = false;
 
-// check the condition while holding the lock
+// Check the condition while the lock is held
 if (std::lock_guard lock(mtx); ready) {
-    // executing under the lock
+    // Execute while the lock is held
     process();
     ready = false;
 }
-// lock destructs at the end of the if/else, releasing automatically
+// lock is destroyed when the if/else ends, releasing the lock automatically
 ```
 
-Here `std::lock_guard lock(mtx)` relies on C++17 CTAD (class template argument deduction), so you skip writing `std::lock_guard<std::mutex> lock(mtx)`. The `lock` object destructs at the end of the whole `if/else` block and calls `mtx.unlock()` for you.
+Here `std::lock_guard lock(mtx)` uses C++17 CTAD (class template argument deduction), so we do not need to write `std::lock_guard<std::mutex> lock(mtx)`. The `lock` object is destroyed when the entire `if/else` block ends, calling `mtx.unlock()` automatically.
 
-One thing to watch: the lock destructs at the end of the entire `if/else` block, so the `else` branch also runs under the lock. Don't just take my word for it; write a RAII tracker that prints when it acquires and releases, and run it (GCC 16.1.1):
+One thing to note: the lock's destruction happens when the entire `if/else` block ends, which means the `else` branch also runs while the lock is held. Claims need proof, so let's write a RAII tracker that prints when the lock is acquired and released, and run it (GCC 16.1.1):
 
 ```cpp
 struct LockTracker {
-    LockTracker()  { std::puts("  >> lock acquired"); }
-    ~LockTracker() { std::puts("  << lock released"); }
+    LockTracker()  { std::puts("  >> 锁获取"); }
+    ~LockTracker() { std::puts("  << 锁释放"); }
 };
 
-std::puts("entering if/else block");
+std::puts("进入 if/else 块");
 if (LockTracker lock; false) {
     // if branch, not executed
 } else {
-    std::puts("else branch runs (lock still held)");
+    std::puts("else 分支执行中（此时锁仍被持有）");
 }
-std::puts("left if/else block");
+std::puts("已离开 if/else 块");
 ```
 
 ```text
-entering if/else block
-  >> lock acquired
-else branch runs (lock still held)
-  << lock released
-left if/else block
+进入 if/else 块
+  >> 锁获取
+else 分支执行中（此时锁仍被持有）
+  << 锁释放
+已离开 if/else 块
 ```
 
-`<< lock released` lands after `else branch runs` and before `left if/else block`, which shows the lock covers the whole `if/else`; the else runs before the lock is let go. If you only want the lock in the if branch and not the else, this pattern widens the lock's reach, and you need a finer-grained approach.
+`<< 锁释放` appears after `else 分支执行中` and before `已离开 if/else 块`, which shows that the lock covers the entire `if/else`—while else runs, the lock has not been released yet. If we only need the lock inside the if and the else does not need it, this style over-extends the lock's range, and a finer-grained approach is called for.
 
 ### File and Resource Checks
 
-The same pattern fits files, network connections, and the like:
+The same pattern suits files, network connections, and similar resources:
 
 ```cpp
-// check whether the file opens, read it if so
+// Check whether the file opens; if it does, read it
 if (auto f = std::ifstream("config.txt"); f.is_open()) {
     std::string line;
     while (std::getline(f, line)) {
@@ -237,36 +241,36 @@ if (auto f = std::ifstream("config.txt"); f.is_open()) {
 } else {
     use_default_config();
 }
-// f destructs here, file closes automatically
+// f is destroyed here; the file closes automatically
 ```
 
 ### Can the Lock and the Lookup Share One if
 
-"Lock first, then check the condition" is common in multithreaded code. Some try to cram the lock, the lookup, and the test into one if:
+In multi-threaded code, "lock first, then check a condition" is a common sequence. Some want to stuff the lock, the lookup, and the test all into one if:
 
 ```cpp
-// wishful version, won't compile
+// Wishful thinking; this does not compile
 if (std::lock_guard lock(mtx); auto it = data_store.find(id); it != data_store.end()) {
     process(it->second);
 }
 ```
 
-It won't compile. The `if` parentheses accept only one init-statement; a single semicolon splits the init from the condition, so two won't fit. A few correct ways:
+It does not compile. The parentheses of if hold exactly one init-statement—a single semicolon separates init from condition, so two will not fit. There are a few correct routes:
 
 ```cpp
-// Method 1: lock as init, lookup result as the condition
+// Option 1: the lock as init, the lookup result as the condition
 if (std::lock_guard lock(mtx); data_store.count(id) > 0) {
     process(data_store.at(id));
 }
 
-// Method 2: lock as init, nest another if with its own init
+// Option 2: the lock as init, with a nested if carrying its own init
 if (std::lock_guard lock(mtx); true) {
     if (auto it = data_store.find(id); it != data_store.end()) {
         process(it->second);
     }
 }
 
-// Method 3: fall back to a plain block, most straightforward
+// Option 3: back to a plain block; the most straightforward
 {
     std::lock_guard lock(mtx);
     if (auto it = data_store.find(id); it != data_store.end()) {
@@ -275,28 +279,28 @@ if (std::lock_guard lock(mtx); true) {
 }
 ```
 
-Method 2's `if (std::lock_guard lock(mtx); true)` looks odd, but it's valid; the lock destructs over the whole outer if/else, so the inner if still runs under the lock.
+In option 2, `if (std::lock_guard lock(mtx); true)` looks awkward but is legal: the lock's destruction covers the entire outer if/else, and the inner if still runs while the lock is held.
 
 ------
 
-## The Value of Scope Limitation
+## The Payoff of Scope Restriction
 
-The real payoff of `if` initializers is making a variable's scope match its actual use; saving a line is a side effect. That helps both readability and maintainability.
+The real benefit of the if initializer is that a variable's scope hugs its actual purpose exactly; saving a line is just a side effect. Readability and maintainability both gain.
 
 ### Avoiding Variable Shadowing
 
-Without `if` initializers, multiple lookups in the same function need different variable names, or braces to limit scope:
+Without the if initializer, multiple lookups in the same function force different variable names, or braces purely to limit scope:
 
 ```cpp
-// without initializers: name clash
+// Without the initializer: variable-name clashes
 auto it1 = m1.find(key1);
 if (it1 != m1.end()) { use1(it1->second); }
 
-auto it2 = m2.find(key2);  // can't also call this it
+auto it2 = m2.find(key2);  // can't reuse the name it here
 if (it2 != m2.end()) { use2(it2->second); }
 ```
 
-With `if` initializers, each `it` is confined to its own `if/else` scope, so no renaming:
+With the if initializer, each `it` is confined to its own `if/else` scope—no renaming needed:
 
 ```cpp
 if (auto it = m1.find(key1); it != m1.end()) { use1(it->second); }
@@ -305,17 +309,17 @@ if (auto it = m2.find(key2); it != m2.end()) { use2(it->second); }
 
 ### Improving Code Locality
 
-When a variable's declaration sits right next to its use, the reader sees its purpose at a glance. Declare at the top of a function, use it thirty lines down, and the reader has to scroll back and forth. `if` initializers nail the declaration to the use.
+When a variable's declaration sits right next to its use, readers see its purpose at a glance. Declare it at the top of the function and use it dozens of lines later, and readers must scroll back and forth. The if initializer nails declaration and use together.
 
 ```cpp
-// declaration and use separated, reader hunts through a wall of code
+// Declaration and use far apart; readers must hunt for the connection
 auto status = check_system();
 // ... 30 lines of other code ...
 if (status == Status::Ok) {
     // ...
 }
 
-// with an initializer, declaration and use are adjacent
+// With the initializer, declaration and use sit side by side
 if (auto status = check_system(); status == Status::Ok) {
     // ...
 }
@@ -325,51 +329,51 @@ if (auto status = check_system(); status == Status::Ok) {
 
 ## Common Pitfalls
 
-### init Variables Are Visible in else Too
+### The init Variable Is Available in else Too
 
-A variable declared in the `if` initializer is visible in both the `if` and `else` branches, which is easy to miss. Run it:
+A variable declared in an if initializer is usable in both the `if` and `else` branches—a point people often miss. Let's run it:
 
 ```cpp
 std::map<int, std::string> m{{1, "one"}, {2, "two"}};
-// first insert of a new key
+// First insertion: a new key
 if (auto [it, ok] = m.insert({3, "three"}); ok) {
-    std::cout << "if   branch: Inserted " << it->second << '\n';
+    std::cout << "if   分支: Inserted " << it->second << '\n';
 } else {
-    std::cout << "else branch: Existing " << it->second << '\n';
+    std::cout << "else 分支: Existing " << it->second << '\n';
 }
-// second insert of an existing key
+// Second insertion: an existing key
 if (auto [it, ok] = m.insert({1, "ONE"}); ok) {
-    std::cout << "if   branch: Inserted " << it->second << '\n';
+    std::cout << "if   分支: Inserted " << it->second << '\n';
 } else {
-    std::cout << "else branch: Existing " << it->second << " (new value ONE not overwritten)\n";
+    std::cout << "else 分支: Existing " << it->second << " (新值 ONE 未覆盖)\n";
 }
 ```
 
 ```text
-if   branch: Inserted three
-else branch: Existing one (new value ONE not overwritten)
+if   分支: Inserted three
+else 分支: Existing one (新值 ONE 未覆盖)
 ```
 
-The first insert (new key) takes the if; the second (existing key) takes the else, and `it` is reachable in both. You also see that a failed insert doesn't overwrite the old value.
+The first insert of a new key takes the if branch; the second, with an existing key, takes else. `it` is accessible in both branches—and as a bonus, we can see that a failed insert does not overwrite the old value with the new one.
 
-### No Ternary Operator
+### Not Usable with the Ternary Operator
 
-`if` initializers apply only to `if` and `switch`; they don't fit into the ternary operator `?:`. To initialize inside a ternary, fall back to the old declare-then-use approach.
+The if initializer works only with `if` and `switch`; there is no way to use it with the ternary operator `?:`. To initialize something for a ternary expression, we are back to the old declare-first-then-use approach.
 
-### Debugging
+### A Debugging Caveat
 
-Variables declared in an initializer have a very short scope, and in some debuggers they become unobservable once execution leaves the `if/else` block. To keep watching a variable while debugging, you may need to temporarily move its declaration outside the `if`.
+Variables declared by an initializer have very short scopes, and in some debuggers they become unobservable as soon as execution leaves the `if/else` block. If you need to keep watching a variable during debugging, you may have to temporarily move its declaration outside the `if`.
 
 ------
 
 ## Run It Online
 
-Run the if/switch initializer example and watch each variable get pinned inside its block:
+Run the if/switch initializer examples online and feel how variable scope gets pinned precisely inside the if/switch block:
 
 <OnlineCompilerDemo
   title="if/switch Initializers: Narrowing Variable Scope"
   source-path="code/examples/vol2/13_init_statements.cpp"
-  description="Run it and see how map lookup, insert + structured binding, a lock guard, and a switch initializer each confine a variable to its if/switch block."
+  description="Run online and observe how map lookup, insert + structured bindings, the lock guard, and the switch initializer keep variable scope confined to the if/switch block."
   allow-run
 />
 

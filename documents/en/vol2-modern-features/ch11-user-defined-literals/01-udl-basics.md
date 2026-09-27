@@ -4,57 +4,57 @@ cpp_standard:
 - 11
 - 14
 - 17
-description: Operator "" Raw/Cooked Forms and Standard Library Literals
+description: The raw and cooked forms of operator"" and the standard library literals
 difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
-- 'Chapter 2: constexpr 基础'
+- 'Chapter 2: constexpr Basics: The Art of Compile-Time Evaluation'
 reading_time_minutes: 10
 related:
-- UDL 实战
+- 'UDL in Practice: A Type-Safe Unit System'
 tags:
 - host
 - cpp-modern
 - intermediate
 - 字面量
-title: User-Defined Literal Fundamentals
+title: 'User-Defined Literals: The Basics'
 translation:
   source: documents/vol2-modern-features/ch11-user-defined-literals/01-udl-basics.md
-  source_hash: 81be9869727ffd1f7c21abc8e4aa0794b66b3b7a3c6d8188a0c9e2fe16295976
-  translated_at: '2026-06-24T01:19:22.886253+00:00'
+  source_hash: 4e4ddff2934406437f1073653139ea4834477d66b4091782985ff2935dae79d5
+  translated_at: '2026-09-25T16:55:39+00:00'
   engine: anthropic
-  token_count: 2450
+  token_count: 4000
 ---
-# User-Defined Literals Basics
+# User-Defined Literals: Letting 1000_ms Tell You Its Unit
 
-When writing embedded code, we often run into frustrating scenarios: does the `1000` in `TIM1->ARR = (1000 - 1)` represent milliseconds or microseconds? Is `USART1->BRR = 0x271` meant for 9600 or 115200? Does `#define BUFFER_SIZE 1024` refer to bytes or words? These "magic numbers" are not only hard to understand but also error-prone. Even worse, conversions between different units rely entirely on manual calculation by the programmer, where a single slip-up can cause problems.
+When we write embedded code, we keep running into the same uncomfortable situations: in `TIM1->ARR = (1000 - 1)`, is that 1000 in milliseconds or microseconds? Is `USART1->BRR = 0x271` 9600 baud or 115200? Is `#define BUFFER_SIZE 1024` in bytes or words? These "magic numbers" are hard to understand and easy to get wrong — worse still, conversions between different units depend entirely on the programmer doing the arithmetic by hand, and one careless slip is all it takes.
 
-**User-defined literals** (UDL), introduced in C++11, are designed to solve this. They allow us to define custom literal suffixes, such as `100_ms`, `72_MHz`, or `4_KiB`, making code more intuitive and safer. Furthermore, all conversions can be performed at compile time, resulting in zero runtime overhead.
+**User-defined literals** (UDL), introduced in C++11, exist to solve exactly this problem. They let us define our own literal suffixes, such as `100_ms`, `72_MHz`, and `4_KiB`, making the code more intuitive and safer — and every conversion can be done at compile time, with zero runtime overhead.
 
 ------
 
-## Four Forms of `operator""`
+## The Four Forms of operator""
 
-We define user-defined literals using the `operator""` suffix operator. Based on the parameter types, there are four main definition forms, corresponding to integer literals, floating-point literals, string literals, and character literals:
+A user-defined literal is defined with the `operator""` suffix operator. Depending on the parameter type, there are a few major forms, corresponding to integer literals, floating-point literals, string literals, and character literals:
 
 ```cpp
-// 整数字面量（cooked 形式）
+// Integer literal (cooked form)
 ReturnType operator""_suffix(unsigned long long value);
 
-// 浮点数字面量（cooked 形式）
+// Floating-point literal (cooked form)
 ReturnType operator""_suffix(long double value);
 
-// 字符串字面量（raw 形式）
+// String literal (raw form)
 ReturnType operator""_suffix(const char* str, size_t length);
 
-// 字符字面量（cooked 形式）
+// Character literal (cooked form)
 ReturnType operator""_suffix(char c);
 ```
 
-We need to distinguish between two pairs of concepts: **cooked** and **raw**. Cooked literals refer to literals that the compiler has already parsed and converted—for integer and floating-point types, the compiler parses them into numeric types before passing them to `operator""`. Raw literals receive the raw character sequence, and the compiler performs no parsing. String literals only support the raw form, while integer literals support both cooked (`unsigned long long`) and raw (`const char*`) forms.
+Here we need to distinguish two concepts: **cooked** and **raw**. A cooked literal is one the compiler has already parsed and converted — for integers and floating-point numbers, the compiler first parses them into numeric types and then passes them to `operator""`. A raw literal receives the original character sequence, with no parsing done by the compiler at all. String literals only support the raw form, while integer literals support both the cooked form (`unsigned long long`) and the raw form (`const char*`).
 
-Let's start with a simple example:
+Let's start with the simplest possible example:
 
 ```cpp
 #include <cstdint>
@@ -71,16 +71,20 @@ constexpr Milliseconds operator""_ms(unsigned long long v) {
 void delay(Milliseconds ms);
 
 void example() {
-    delay(500_ms);  // 清晰：500 毫秒
-    // delay(500);  // 编译错误！必须明确单位
+    delay(500_ms);  // Clear: 500 milliseconds
+    // delay(500);  // Compile error! The unit must be explicit
 }
 ```
 
-After the compiler parses `500_ms`, it calls `operator""_ms(500)` and returns a `Milliseconds` object. The function signature `delay(Milliseconds)` only accepts parameters with units—we cannot pass a bare integer, or the compiler will raise an error directly. This is the source of type safety.
+After the compiler parses `500_ms`, it calls `operator""_ms(500)`, which returns a `Milliseconds` object. The function signature `delay(Milliseconds)` only accepts arguments that carry a unit — a bare integer cannot get in, and the compiler rejects it outright. That is where the type safety comes from.
+
+Let's break down how `500_ms` gets parsed:
+
+![Anatomy of the user-defined literal 500_ms](./01-udl-anatomy.drawio)
 
 ### Integer and Floating-Point Overloads
 
-We can define separate overloads for integer and floating-point types, allowing the same suffix to behave differently in different contexts:
+You can define separate overloads for integers and floating-point numbers, so the same suffix behaves differently in different contexts:
 
 ```cpp
 struct Frequency {
@@ -88,30 +92,30 @@ struct Frequency {
     constexpr explicit Frequency(std::uint32_t v) : hz(v) {}
 };
 
-// 整数版本：100_Hz
+// Integer version: 100_Hz
 constexpr Frequency operator""_Hz(unsigned long long value) {
     return Frequency{static_cast<std::uint32_t>(value)};
 }
 
-// 浮点版本：1.5_kHz
+// Floating-point version: 1.5_kHz
 constexpr Frequency operator""_kHz(long double value) {
     return Frequency{static_cast<std::uint32_t>(value * 1000.0)};
 }
 
 void example() {
-    auto f1 = 100_Hz;    // 整型版本，f1.hz = 100
-    auto f2 = 1.5_kHz;   // 浮点版本，f2.hz = 1500
+    auto f1 = 100_Hz;    // Integer overload, f1.hz = 100
+    auto f2 = 1.5_kHz;   // Floating-point overload, f2.hz = 1500
 }
 ```
 
 ### String Literals
 
-String literal operators take a pointer to the string and its length, which we can use for compile-time string processing:
+The string literal operator receives a pointer to the string plus its length, which opens the door to compile-time string processing:
 
 ```cpp
 #include <cstdint>
 
-/// FNV-1a 哈希（编译期）
+/// FNV-1a hash (compile time)
 constexpr std::uint32_t hash_string(
     const char* str, std::uint32_t value = 2166136261u) {
     return *str
@@ -132,11 +136,11 @@ void example() {
 }
 ```
 
-This can be used in embedded systems to implement efficient event IDs, message type identifiers, and more—strings are converted to integers at compile time with zero runtime overhead.
+In embedded work this can be used to build efficient event IDs, message type identifiers, and the like — the string is converted to an integer at compile time, so the runtime cost is zero.
 
 ### Raw Integer Literals
 
-Integer literals also have a raw form that accepts a `const char*`, allowing us to handle formats not natively supported by the compiler:
+Integer literals also have a raw form, which receives a `const char*` and lets you handle formats the compiler does not natively support:
 
 ```cpp
 #include <cstdint>
@@ -160,13 +164,13 @@ void example() {
 }
 ```
 
-This raw form was quite useful before C++14, as `0b1010` binary literals were not introduced until C++14. Although the standard now supports them, the raw form can still be used to implement custom base conversions.
+This raw form was extremely useful before C++14 — it was C++14 that introduced `0b1010` binary literals. The standard supports them natively now, but the raw form is still there for implementing custom base conversions.
 
 ------
 
 ## Standard Library Literals
 
-C++14 introduced a batch of commonly used literal suffixes in the standard library. To use them, we must introduce the corresponding namespaces via `using namespace`. These suffixes do not have an underscore prefix—because they reside within the `std::literals` namespace, they are literals reserved for the standard library.
+C++14 introduced a batch of commonly used literal suffixes into the standard library; to use them, pull in the corresponding namespace with `using namespace`. These suffixes come without a leading underscore — they live inside the `std::literals` namespaces and are the standard library's reserved literals.
 
 ### chrono Literals (C++14)
 
@@ -187,7 +191,7 @@ void example() {
 }
 ```
 
-### String Literals (C++14)
+### string Literals (C++14)
 
 ```cpp
 #include <string>
@@ -211,7 +215,7 @@ using namespace std::complex_literals;
 
 void example() {
     auto c1 = 3.0 + 4.0i;   // std::complex<double>{3.0, 4.0}
-    auto c2 = 1.0i;          // 虚数单位
+    auto c2 = 1.0i;          // the imaginary unit
 }
 ```
 
@@ -227,15 +231,17 @@ void example() {
 }
 ```
 
+------
+
 ## Naming Rules
 
-Regarding the naming of UDL suffixes, the C++ standard has clear rules:
+The C++ standard has explicit rules about how UDL suffixes may be named:
 
-**Suffixes not starting with `_` are reserved for the standard library**. Therefore, suffixes without underscores, such as `1ms` or `3.14s`, can only be defined by the standard library. User-defined suffixes **must start with `_`**, for example, `_ms`, `_Hz`, or `_V`.
+**Suffixes that do not start with `_` are reserved for the standard library.** So suffixes like `1ms` and `3.14s`, which need no underscore, can only be defined by the standard library. User-defined suffixes **must start with `_`**, for example `_ms`, `_Hz`, `_V`.
 
-Additionally, identifiers starting with `__` (double underscore) or containing `__` are reserved for the implementation (compiler) and must not be used.
+In addition, identifiers that begin with `__` (a double underscore), or that contain `__` anywhere, are reserved for the implementation (the compiler) and must not be used.
 
-We recommend using a naming style with `_` followed by a short but clear suffix: `_ms`, `_us`, `_Hz`, `_kHz`, `_MHz`, `_V`, `_mV`, `_KiB`. When defining these in a header file, we must place them within a namespace to avoid polluting the global namespace:
+The recommended naming style is `_` plus a short but clear suffix: `_ms`, `_us`, `_Hz`, `_kHz`, `_MHz`, `_V`, `_mV`, `_KiB`. When defining these in a header file, always place them inside a namespace to avoid polluting the global namespace:
 
 ```cpp
 namespace mylib::literals {
@@ -244,14 +250,16 @@ namespace mylib::literals {
     }
 }
 
-// 使用时
+// Usage
 using namespace mylib::literals;
 auto t = 500_ms;
 ```
 
-## Compile-Time vs. Run-Time
+------
 
-User-defined literals combined with `constexpr` allow for purely compile-time unit conversion. This is one of their most powerful features. We must mark the literal operator as `constexpr`. This way, `500_ms` is optimized by the compiler into a constant, resulting in zero runtime overhead:
+## Compile Time vs Runtime
+
+UDL combined with `constexpr` enables purely compile-time unit conversion — one of its most powerful features. Always mark your literal operators `constexpr`; that way `500_ms` is optimized by the compiler into a constant, with no runtime overhead:
 
 ```cpp
 constexpr Milliseconds operator""_ms(unsigned long long v) {
@@ -259,37 +267,39 @@ constexpr Milliseconds operator""_ms(unsigned long long v) {
 }
 
 constexpr auto startup_delay = 100_ms;
-// startup_delay 在编译期就已经构造好了
-// 生成的代码等价于直接写 Milliseconds{100}
+// startup_delay is already constructed at compile time
+// The generated code is equivalent to writing Milliseconds{100} directly
 ```
 
-If we do not mark it as `constexpr`, the literal operator becomes a normal function call. Although the overhead is minimal after inlining, we lose the ability to perform compile-time computation, and we cannot use it with `static_assert` or template arguments.
+Without the `constexpr` marker, the literal operator becomes an ordinary function call — small cost once inlined, but you lose the ability to compute at compile time, and it can no longer be used in `static_assert` or as template arguments.
 
-C++20 introduced `consteval`, which forces literal operators to execute only at compile time:
+C++20 introduced `consteval`, which forces a literal operator to execute only at compile time:
 
 ```cpp
 consteval Milliseconds operator""_ms(unsigned long long v) {
     return Milliseconds{v};
 }
 
-constexpr auto t1 = 100_ms;   // OK，编译期执行
-// 注意：consteval 要求字面量必须是编译期常量
-// 例如：std::stoi("123")_ms 会编译失败，因为 stoi 不是 constexpr
+constexpr auto t1 = 100_ms;   // OK, evaluated at compile time
+// Note: consteval requires the literal to be a compile-time constant
+// For example, std::stoi("123")_ms fails to compile, because stoi is not constexpr
 ```
+
+------
 
 ## Common Pitfalls
 
-### Suffix Naming Conflicts
+### Suffix Name Collisions
 
-If we define a `_deg` suffix in a header file, and another library defines a `_deg` suffix with the same name but a different implementation, ambiguity will arise when using `using namespace`. The solution is to use a unique prefix for the suffix, or to always use the full namespace qualification.
+If you define a `_deg` suffix in a header file, and another library also defines a `_deg` with the same name but a different implementation, bringing both in via `using namespace` produces ambiguity. The solution is to use a distinctive prefix for your suffixes, or to always use full namespace qualification.
 
 ### Floating-Point Precision
 
-Floating-point UDLs may have precision issues. `0.1_V + 0.2_V` might not equal `0.3_V` due to floating-point arithmetic. The solution is to use integer representations—for example, storing millivolts instead of volts:
+Floating-point UDLs can have precision problems. In floating-point arithmetic, `0.1_V + 0.2_V` may not equal `0.3_V`. The solution is an integer representation — for example, storing millivolts instead of volts:
 
 ```cpp
 struct Voltage {
-    std::int64_t millivolts;  // 用整数存储
+    std::int64_t millivolts;  // stored as an integer
 };
 
 constexpr Voltage operator""_V(long double value) {
@@ -309,24 +319,24 @@ auto x = 100_km / 2 * 3;  // (100_km / 2) * 3 = 150_km
 auto y = 100_km / (2 * 3); // 100_km / 6 ≈ 16.67_km
 ```
 
-Literal operators follow the same precedence and associativity (left-to-right) as standard operators. When writing complex expressions, we must ensure we use parentheses correctly.
+Literal operators follow the same precedence and left-to-right associativity as ordinary operators. When writing complex expressions, be careful to add parentheses.
 
 ### Integer Overflow
 
-Unit conversions for large numbers can cause overflow. If our UDL involves multiplication (for example, multiplying by 1,000,000 in `operator""_ms`), we must consider the upper limit of `unsigned long long` (approximately $1.8 \times 10^{19}$) and document the range limitations. Note that integer overflow is **undefined behavior** in C++, and the compiler might not issue a warning.
+Unit conversion on large numbers can overflow. If your UDL involves multiplication (say, multiplying by 1000000 inside `operator""_ms`), keep the upper limit of `unsigned long long` in mind (about 1.8 * 10^19) and document the range limits. Note that integer overflow is **undefined behavior** in C++, and the compiler may not emit a warning.
 
 ------
 
-## Common Examples
+## General-Purpose Examples
 
-Finally, let's look at several common literal definitions that we can use directly in our projects:
+To finish up, here are several commonly used literal definitions that you can drop straight into your own project:
 
 ```cpp
 #include <cstdint>
 
 namespace mylib::literals {
 
-// ===== 时间单位 =====
+// ===== Time units =====
 struct Milliseconds { std::uint64_t value; };
 struct Microseconds { std::uint64_t value; };
 struct Seconds      { std::uint64_t value; };
@@ -341,7 +351,7 @@ constexpr Seconds operator""_s(unsigned long long v) {
     return Seconds{v};
 }
 
-// ===== 频率单位 =====
+// ===== Frequency units =====
 struct Hertz { std::uint32_t value; };
 
 constexpr Hertz operator""_Hz(unsigned long long v) {
@@ -354,7 +364,7 @@ constexpr Hertz operator""_MHz(long double v) {
     return Hertz{static_cast<std::uint32_t>(v * 1000000.0)};
 }
 
-// ===== 内存单位 =====
+// ===== Memory units =====
 struct Bytes { std::uint64_t value; };
 
 constexpr Bytes operator""_B(unsigned long long v) {
@@ -367,7 +377,7 @@ constexpr Bytes operator""_MiB(unsigned long long v) {
     return Bytes{v * 1024 * 1024};
 }
 
-// ===== 温度单位 =====
+// ===== Temperature units =====
 struct Celsius    { double value; };
 struct Fahrenheit { double value; };
 
@@ -381,7 +391,7 @@ constexpr Celsius operator""_degK(long double v) {
     return Celsius{static_cast<double>(v - 273.15)};
 }
 
-// ===== 角度单位 =====
+// ===== Angle units =====
 struct Degrees { double value; };
 
 constexpr Degrees operator""_deg(long double v) {
@@ -394,7 +404,7 @@ constexpr Degrees operator""_rad(long double v) {
 }  // namespace mylib::literals
 ```
 
-**When using:**
+Usage:
 
 ```cpp
 using namespace mylib::literals;
@@ -406,7 +416,7 @@ auto room_temp = 25.0_degC;
 auto angle = 3.14159_rad;
 ```
 
-Every number is accompanied by its unit, making the code almost self-explanatory (it's truly satisfying to read!)
+Every number carries its own unit along with it, and the code barely needs any comments (and honestly, that feels great!)
 
 ## References
 

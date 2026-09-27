@@ -4,43 +4,40 @@ cpp_standard:
 - 11
 - 14
 - 17
-description: Implement a type-safe unit system using the phantom type pattern and
-  C++17 argument deduction
+description: Implement a type-safe unit system with the phantom type pattern and C++17 argument deduction
 difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- 'Chapter 4: enum class 与强类型枚举'
+- 'Chapter 4: enum class and Scoped Enums'
 reading_time_minutes: 11
 related:
-- 用户自定义字面量
+- user-defined literal
 tags:
 - host
 - cpp-modern
 - intermediate
 - 类型安全
 - 类型别名
-title: 'Strong Typedefs: Type Safety to Prevent Confusion'
+title: 'Strong Typedefs: Type Safety That Prevents Mix-Ups'
 translation:
   source: documents/vol2-modern-features/ch04-type-safety/02-strong-types.md
-  source_hash: d3774e0b9e62180e6709b60347d88aa2aa28199efdc1c6a712a6daa9d1aef0e0
-  translated_at: '2026-06-16T06:06:40.701659+00:00'
+  source_hash: 394d14227ab939e80ee716d4d66dea81dbf4cd8fdad31dac585c1b9a70b56787
+  translated_at: '2026-09-25T15:30:18+00:00'
   engine: anthropic
-  token_count: 2455
+  token_count: 4700
 ---
-# Strong Typedefs: Type Safety to Prevent Confusion
+# Strong Typedefs: Type Safety That Prevents Mix-Ups
 
-## Introduction
+We once saw a beautifully classic bug during a code review: a function with the signature `void set_rect(int width, int height)`, called as `set_rect(h, w)` — the arguments were swapped. The compiler raised not a single warning, because `width` and `height` are both `int` and the types match perfectly. And yet the rectangle on screen was crooked. The bug wasn't hard to fix, but it still felt like getting thoroughly screwed.
 
-During a code review, I once encountered a classic bug: a function signature was `void set_rect(int width, int height)`, but the caller wrote `set_rect(h, w)`—reversing the parameter order. The compiler issued no warnings because `width` and `height` are both `int`, so the types matched perfectly. However, the rectangle on the screen was distorted. This bug wasn't hard to fix, but it felt like a slap in the face.
+The root cause of this kind of bug: `typedef` and `using` create **type aliases**, not new types. After `using Width = int;` and `using Height = int;`, `Width` and `Height` are still the very same `int`, and the compiler won't help you tell them apart. To create types the compiler can genuinely distinguish, we need a technique known as the "strong typedef" (also called an opaque typedef or a phantom type).
 
-The root cause of this bug is that `typedef` and `using` create **type aliases**, not new types. After `using Width = int;` and `using Height = int;`, `Width` and `Height` are still just `int`. The compiler does not distinguish between them. To create types that the compiler can truly distinguish, we need a technique called "strong typedef" (also known as opaque typedef or phantom type).
+In this chapter we start from the limitations of `typedef`, then implement a practical strong type wrapper, and finally use it to build a type-safe unit system.
 
-In this chapter, we start with the limitations of `typedef`, then implement a practical strong type wrapper, and finally use it to build a type-safe unit system.
+## Step 1 — Understanding the Limitations of typedef / using
 
-## Step One — Understanding the Limitations of typedef / using
-
-Let's look at a code snippet to see just how "fragile" ordinary aliases are:
+Let's start with a snippet to get a feel for just how "fragile" plain aliases are:
 
 ```cpp
 using UserId = int;
@@ -49,30 +46,30 @@ using OrderId = int;
 UserId uid = 42;
 OrderId oid = 100;
 
-// 以下全部编译通过，没有任何警告
-uid = oid;           // OrderId 赋给 UserId？编译器觉得没问题
-OrderId another = uid;  // 反过来也行
+// Everything below compiles without a single warning
+uid = oid;           // Assigning an OrderId to a UserId? The compiler sees no problem
+OrderId another = uid;  // Works the other way around, too
 
 void process_order(OrderId id);
-process_order(uid);   // 传了 UserId 进去？编译器不管
+process_order(uid);   // Passing a UserId in? The compiler doesn't care
 
-int total = uid + oid;  // 两个"不同语义"的 ID 相加？随便加
+int total = uid + oid;  // Adding two IDs with "different semantics"? Go right ahead
 ```
 
-The problem is clear: `using UserId = int` merely gives `int` a nickname. To the compiler, `UserId`, `OrderId`, and `int` are exactly the same thing. Any operation that accepts `int` can be performed with `UserId` or `OrderId`—even if it makes absolutely no sense semantically.
+The problem is plain: `using UserId = int` merely gives `int` a nickname. In the compiler's eyes, `UserId`, `OrderId`, and `int` are one and the same thing. Every operation that accepts `int` will happily take `UserId` or `OrderId` — even when it makes no semantic sense whatsoever.
 
-This poses a significant risk in large codebases. The longer the function parameter list and the more frequently the same underlying type is reused for parameters, the higher the probability of errors. Furthermore, the compiler cannot catch these bugs, and unit tests may not cover them, leaving them to be spotted only by human eyes during code review—yet humans are notoriously bad at catching these "looks correct" issues.
+In a large codebase this is a huge hazard. The longer a function's parameter list, and the more its parameters reuse the same underlying type, the higher the odds of a mistake. Worse, the compiler can't catch this kind of bug and unit tests may not cover it either — the only remaining line of defense is a human eyeball during code review, and the human eyeball happens to be worst of all at spotting problems that "look correct".
 
 ## Step 2 — The Phantom Type Pattern
 
-The core idea behind the solution is called the **phantom type**: we use a template parameter that serves only as a tag and occupies no actual space to distinguish between different types.
+The core idea of the solution is called the phantom type: use a template parameter that serves purely as a marker and takes up no actual space to distinguish different types.
 
 ```cpp
-// 标签结构体，只用来区分类型，不需要实现任何东西
+// Tag structs: they exist only to tell types apart; nothing needs implementing
 struct WidthTag {};
 struct HeightTag {};
 
-// 强类型包装器
+// The strong type wrapper
 template <typename Tag, typename Rep = int>
 class StrongInt {
 public:
@@ -87,27 +84,31 @@ using Width  = StrongInt<WidthTag>;
 using Height = StrongInt<HeightTag>;
 ```
 
-Now `Width` and `Height` are two completely different types. The compiler will prevent us from assigning one to the other:
+Now `Width` and `Height` are two completely different types. The compiler will stop you from assigning one to the other:
 
 ```cpp
 Width w(100);
 Height h(200);
 
-// h = w;          // 编译错误！不能把 Width 赋给 Height
-// Width bad = h;  // 编译错误！
+// h = w;          // Compile error! Can't assign a Width to a Height
+// Width bad = h;  // Compile error!
 
 void set_rect(Width w, Height h);
-set_rect(h, w);    // 编译错误！参数类型不匹配
+set_rect(h, w);    // Compile error! Argument types don't match
 set_rect(Width(100), Height(200));  // OK
 ```
 
-`WidthTag` and `HeightTag` are empty classes that occupy no storage space (thanks to C++ Empty Base Optimization, or EBO). When the compiler generates code, the runtime performance of `StrongInt<WidthTag>` and `StrongInt<HeightTag>` is identical to a raw `int`—zero overhead.
+`WidthTag` and `HeightTag` are empty classes that occupy no storage (thanks to C++'s Empty Base Optimization, EBO). When the compiler generates code, `StrongInt<WidthTag>` and `StrongInt<HeightTag>` behave at runtime exactly like a raw `int` — zero extra overhead.
 
-The essence of this pattern is: **trading compile-time type information for zero runtime overhead**. All type checking is performed during compilation, leaving only ordinary integer operations at runtime.
+The essence of this pattern: **trading compile-time type information for zero runtime overhead**. All the type checking happens at compile time; at runtime it's just plain integer arithmetic.
+
+Put the two styles side by side, and the same call `set_rect(h, w)` compiles like this:
+
+![Compile results for the same set_rect(h, w) call: type aliases versus a strong type wrapper](./02-strong-types-wrapper.drawio)
 
 ## Step 3 — Building a Practical Strong Type Wrapper
 
-The `StrongInt` above is too basic. In real-world projects, we typically need to support arithmetic operations. Let's build a more practical version that supports common operations like addition, subtraction, comparison, and stream output.
+The `StrongInt` above is too bare-bones. In real projects we usually need to support some arithmetic. Let's build a more practical version that supports the common operations: addition, subtraction, comparison, stream output, and the like.
 
 ```cpp
 #include <cstdint>
@@ -115,21 +116,21 @@ The `StrongInt` above is too basic. In real-world projects, we typically need to
 #include <iostream>
 #include <type_traits>
 
-/// @brief 强类型整数包装器
-/// @tparam Tag   幽灵标签，用于区分不同类型
-/// @tparam Rep   底层存储类型
+/// @brief Strong integer wrapper
+/// @tparam Tag   Phantom tag used to distinguish types
+/// @tparam Rep   Underlying storage type
 template <typename Tag, typename Rep = int>
 class StrongInt {
 public:
     using ValueType = Rep;
 
-    // 构造
+    // Construction
     constexpr explicit StrongInt(Rep value = Rep{}) : value_(value) {}
 
-    // 获取底层值
+    // Get the underlying value
     constexpr Rep get() const noexcept { return value_; }
 
-    // 自增/自减
+    // Increment / decrement
     constexpr StrongInt& operator++() noexcept { ++value_; return *this; }
     constexpr StrongInt operator++(int) noexcept {
         StrongInt tmp = *this;
@@ -143,7 +144,7 @@ public:
         return tmp;
     }
 
-    // 复合赋值（同类型）
+    // Compound assignment (same type)
     constexpr StrongInt& operator+=(const StrongInt& other) noexcept {
         value_ += other.value_;
         return *this;
@@ -153,7 +154,7 @@ public:
         return *this;
     }
 
-    // 算术运算（同类型）
+    // Arithmetic (same type)
     constexpr StrongInt operator+(const StrongInt& other) const noexcept {
         return StrongInt(value_ + other.value_);
     }
@@ -161,7 +162,7 @@ public:
         return StrongInt(value_ - other.value_);
     }
 
-    // 比较运算
+    // Comparison
     constexpr bool operator==(const StrongInt& other) const noexcept {
         return value_ == other.value_;
     }
@@ -185,7 +186,7 @@ private:
     Rep value_;
 };
 
-// 流输出（方便调试）
+// Stream output (handy for debugging)
 template <typename Tag, typename Rep>
 std::ostream& operator<<(std::ostream& os, const StrongInt<Tag, Rep>& v)
 {
@@ -194,14 +195,14 @@ std::ostream& operator<<(std::ostream& os, const StrongInt<Tag, Rep>& v)
 }
 ```
 
-This `StrongInt` template covers the most common requirements for daily use: construction, value retrieval, addition, subtraction, comparison, and stream output. Furthermore, all operations require operands to be **the same kind of `StrongInt` specialization**—we cannot add `Width` and `Height` because their `Tag` types differ.
+This `StrongInt` template covers the most common everyday needs: construction, extracting the value, addition and subtraction, comparison, and stream output. And every operation requires its operands to be **the same StrongInt specialization** — you can't add a `Width` to a `Height`, because their `Tag`s differ.
 
-## Step Four — A Type-Safe Unit System
+## Step 4 — A Type-Safe Unit System
 
-Now, let's use strong type wrappers to build a type-safe system of physical units. This is one of the most classic application scenarios for strong typedefs—preventing values of different physical quantities from being mixed up via the type system.
+Now let's use the strong type wrapper to build a type-safe system of physical units. This is one of the most classic applications of strong typedefs — using the type system to stop values of different physical quantities from being mixed up.
 
 ```cpp
-// 标签定义
+// Tag definitions
 struct MetersTag {};
 struct KilometersTag {};
 struct CelsiusTag {};
@@ -209,7 +210,7 @@ struct FahrenheitTag {};
 struct SecondsTag {};
 struct MillisecondsTag {};
 
-// 类型别名
+// Type aliases
 using Meters        = StrongInt<MetersTag, double>;
 using Kilometers    = StrongInt<KilometersTag, double>;
 using Celsius       = StrongInt<CelsiusTag, double>;
@@ -217,7 +218,7 @@ using Fahrenheit    = StrongInt<FahrenheitTag, double>;
 using Seconds       = StrongInt<SecondsTag, double>;
 using Milliseconds  = StrongInt<MillisecondsTag, int64_t>;
 
-// 单位转换函数
+// Unit conversion functions
 constexpr Kilometers to_kilometers(Meters m) noexcept
 {
     return Kilometers(m.get() / 1000.0);
@@ -234,27 +235,25 @@ constexpr Milliseconds to_milliseconds(Seconds s) noexcept
 }
 ```
 
-Here is the translation:
-
-**Usage:**
+In use:
 
 ```cpp
 Meters distance(5000.0);
 Kilometers km = to_kilometers(distance);
-// km = distance;  // 编译错误！不能直接赋值
+// km = distance;  // Compile error! No direct assignment
 
 Seconds duration(2.5);
 Milliseconds ms = to_milliseconds(duration);
-// auto bad = distance + duration;  // 编译错误！Meters 和 Seconds 不能相加
+// auto bad = distance + duration;  // Compile error! Meters and Seconds can't be added
 ```
 
-This demonstrates the power of a type-safe unit system: the compiler catches all "physical quantity mismatch" errors for you at compile time. You cannot accidentally add meters to seconds, nor mistake Celsius for Fahrenheit.
+That's the power of a type-safe unit system: the compiler intercepts every "physical quantity mismatch" error for you at compile time. You can't accidentally add meters to seconds, and you can't use a Celsius value as Fahrenheit.
 
-Of course, the unit system in this example is simplified—a real-world physical unit system would also need to handle dimensionless numbers, composite units (velocity = distance / time), and more. However, the core concept remains the same: use phantom types to distinguish between different physical quantities at compile time, with zero runtime overhead.
+Of course, the unit system in this example is still the simplified edition — a real physical unit system also has to handle dimensionless numbers, compound units (velocity = distance / time), and more. But the core idea is the same: use phantom types to separate different physical quantities at compile time, with zero runtime overhead.
 
-## Step 5 — Practical Case Study on Avoiding Parameter Confusion
+## Step 5 — A Practical Case of Preventing Parameter Mix-Ups
 
-Beyond physical units, strong types are also very useful for avoiding parameter confusion. Consider a common scenario: ID types are scattered throughout business logic systems.
+Beyond physical units, strong types are also excellent at preventing parameter mix-ups. Consider a familiar scene: a business system littered with ID types.
 
 ```cpp
 struct UserIdTag {};
@@ -269,13 +268,13 @@ class OrderService {
 public:
     OrderId create_order(UserId user, ProductId product, int quantity)
     {
-        // 如果参数写反了，编译器会直接报错
+        // If the parameters get swapped, the compiler errors out right away
         return OrderId(next_id_++);
     }
 
     void cancel_order(OrderId id)
     {
-        // 只接受 OrderId，不接受 UserId 或 ProductId
+        // Accepts only OrderId — not UserId or ProductId
     }
 
 private:
@@ -290,29 +289,29 @@ ProductId product(100);
 OrderId order(1);
 
 service.create_order(user, product, 3);  // OK
-// service.create_order(product, user, 3);  // 编译错误！
-// service.cancel_order(user);              // 编译错误！UserId 不是 OrderId
+// service.create_order(product, user, 3);  // Compile error!
+// service.cancel_order(user);              // Compile error! UserId is not an OrderId
 ```
 
-In large-scale projects, primary keys, foreign keys, and various associated IDs in database tables are all `uint64_t`. Without strong type distinctions, it is easy for the caller to mistakenly pass a `user_id` where an `order_id` is expected. We have seen bugs of this nature cause incorrect deletion operations in production databases—the cost of fixing them is far higher than the cost of introducing strong types.
+In large projects, primary keys, foreign keys, and all sorts of association IDs in database tables are `uint64_t`. Without strong types to separate them, it's easy for a caller to pass a `user_id` where an `order_id` belongs. We've seen this kind of bug make a production database execute the wrong delete operation — the cost of fixing it far exceeded the cost of introducing strong types.
 
 ## Step 6 — Simplifying Usage with C++17 CTAD
 
-C++17 introduced Class Template Argument Deduction (CTAD), which eliminates the need to explicitly specify template arguments. Although our `StrongInt` requires two template parameters (`Tag` and `Rep`), and `Tag` cannot be deduced, we can simplify construction by using deduction guides:
+C++17 introduced Class Template Argument Deduction (CTAD), which spares us the trouble of spelling out template arguments explicitly. Our `StrongInt` takes two template parameters (`Tag` and `Rep`), and `Tag` can't be deduced — but we can still simplify construction with deduction guides:
 
 ```cpp
-// 对于 Rep 类型的推导指引
+// Deduction guide for the Rep type
 template <typename Tag>
 StrongInt(Tag*) -> StrongInt<Tag, int>;
 
-// 使用时只需要指定 Tag
+// In use, only the Tag needs to be spelled out
 struct ScoreTag {};
 using Score = StrongInt<ScoreTag, int>;
 
-Score s(100);  // 直接构造，不需要写 <ScoreTag, int>
+Score s(100);  // Direct construction — no need to write <ScoreTag, int>
 ```
 
-However, in practice, we typically use strong types via `using` aliases, so CTAD isn't particularly useful in our usage pattern. What is truly useful is another C++17 feature—`if constexpr` and `auto` deduction make template code feel more natural:
+Honestly, though, in our usage pattern strong types are nearly always consumed through `using` aliases, so CTAD doesn't buy much. What's genuinely useful is another C++17 feature — `if constexpr` and `auto` deduction make template code much more natural to write:
 
 ```cpp
 template <typename Tag, typename Rep>
@@ -321,14 +320,14 @@ constexpr auto make_strong(Rep value)
     return StrongInt<Tag, Rep>(value);
 }
 
-// 使用
+// Usage
 auto width = make_strong<WidthTag>(100);
-// width 的类型是 StrongInt<WidthTag, int>，自动推导
+// width has type StrongInt<WidthTag, int>, deduced automatically
 ```
 
 ## Embedded in Practice — Type Safety for Register Addresses
 
-In embedded development, we typically represent peripheral register addresses using raw `uint32_t` values. If register addresses from different peripherals are accidentally mixed up, the consequences could range from writing to the wrong register to causing abnormal hardware behavior. Strong typing can play a crucial role here:
+In embedded development, peripheral register addresses are usually represented as raw `uint32_t`. If register addresses from different peripherals get mixed up by accident, the consequence may be a write to the wrong register and erratic hardware behavior. Strong types can step in here:
 
 ```cpp
 struct GpioRegTag {};
@@ -342,16 +341,16 @@ using SpiRegAddr  = StrongInt<SpiRegTag, uint32_t>;
 void gpio_write(GpioRegAddr addr, uint32_t value);
 void uart_write(UartRegAddr addr, uint32_t value);
 
-// gpio_write(UartRegAddr(0x40001000), 42);  // 编译错误！类型不匹配
+// gpio_write(UartRegAddr(0x40001000), 42);  // Compile error! Type mismatch
 ```
 
-This pattern is extremely valuable in large embedded projects. When your chip has dozens of peripherals and hundreds of register addresses, a type-safe address system prevents you from writing to the wrong register. Moreover, the runtime overhead is zero: the `get()` function of `StrongInt` will be inlined, and the generated code is identical to directly using `uint32_t`.
+This pattern is extremely valuable in large embedded projects — when your chip has dozens of peripherals and hundreds of register addresses, a type-safe address system keeps you from writing to the wrong register. And the runtime overhead is zero: `StrongInt`'s `get()` gets inlined, and the generated code is identical to using a raw `uint32_t` directly.
 
-## Recommended Libraries
+## Recommended Existing Libraries
 
-If you prefer not to maintain your own strong type framework, there are several mature open-source libraries in the community to consider. Jonathan Mueller's [NamedType](https://github.com/joboccara/NamedType) is the most well-known; it supports operator inheritance, functional operations, hashing, stream output, and more, offering a very comprehensive feature set. Boost also offers [Boost.StrongTypes](https://github.com/boostorg/strong_typedef) (the experimental `strong_typedef`).
+If you'd rather not maintain your own strong type framework, the community offers a few mature open-source libraries worth considering. Jonathan Müller's [NamedType](https://github.com/joboccara/NamedType) is the best known: it supports operator inheritance, functional-style operations, hashing, stream output, and more — a very comprehensive feature set. Boost also has [Boost.StrongTypes](https://github.com/boostorg/strong_typedef) (the experimental strong_typedef).
 
-However, my suggestion is: if your requirement is simply to "distinguish parameters of the same type but different semantics," hand-writing a simple `StrongInt` template is sufficient. It is less than one hundred lines of code, fully controllable, and has no external dependencies. You only need to introduce a third-party library when you require more complex features (such as operator inheritance or custom implicit conversion strategies).
+Our advice, though: if all you need is "distinguishing same-type parameters with different semantics", a hand-written `StrongInt` template is enough — under a hundred lines of code, fully under your control, no external dependencies. Only when you need more sophisticated features (operator inheritance, customized implicit conversion policies) is it worth pulling in a third-party library.
 
 ## References
 

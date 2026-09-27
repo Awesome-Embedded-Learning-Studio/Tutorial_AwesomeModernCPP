@@ -3,16 +3,15 @@ chapter: 7
 cpp_standard:
 - 20
 - 23
-description: '[[likely]]/[[unlikely]], [[no_unique_address]], [[assume]], and other
-  new attributes'
+description: '[[likely]]/[[unlikely]], [[no_unique_address]], [[assume]], and other new attributes'
 difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- 'Chapter 7: 标准属性详解'
+- 'Chapter 7: Deep Dive into Standard Attributes: Making the Compiler Your Code Reviewer'
 reading_time_minutes: 14
 related:
-- constexpr 构造函数与字面类型
+- constexpr Constructors and Literal Types
 tags:
 - host
 - cpp-modern
@@ -20,206 +19,273 @@ tags:
 title: 'C++20-23 New Attributes: Performance-Oriented Compiler Hints'
 translation:
   source: documents/vol2-modern-features/ch07-attributes/02-modern-attributes.md
-  source_hash: df02100cdff5cb85a3066b40f414d0d3953d26316479485a538df470c13a674f
-  translated_at: '2026-06-16T03:58:28.120582+00:00'
+  source_hash: 275036bd2d02fcf8e41a130e7bf4f7e98a6f0507ab0c8cf46e8a6522af7e6aae
+  translated_at: '2026-09-25T16:03:10+00:00'
   engine: anthropic
-  token_count: 2670
+  token_count: 3600
 ---
 # C++20-23 New Attributes: Performance-Oriented Compiler Hints
 
-In the previous chapter, we looked at standard attributes from C++11-17, which primarily addressed "code correctness"—enforcing return value checks, eliminating warnings, and marking deprecated APIs. The new attributes added in C++20 and C++23 shift focus: they are more concerned with performance, providing optimization hints to the compiler. `[[likely]]` and `[[unlikely]]` help the compiler optimize branch prediction (aha, I recall first encountering this when looking at GNU C extensions), `[[no_unique_address]]` saves redundant space in memory layouts, and `[[assume]]` allows the compiler to perform more aggressive optimizations based on assumptions.
+In the previous chapter we looked at the C++11-17 standard attributes, which mostly target "code correctness"—enforcing return-value checks, eliminating warnings, marking deprecated APIs. The attributes added in C++20 and C++23 change direction: they care more about performance, handing the compiler optimization hints. `[[likely]]` and `[[unlikely]]` help the compiler optimize branch prediction (aha—I remember first running into this while reading code that used GNU C extensions), `[[no_unique_address]]` trims redundant space out of memory layouts, and `[[assume]]` lets the compiler optimize more aggressively based on assumptions.
 
-When used correctly, these attributes can yield tangible performance gains, but misuse can be counterproductive. Let's break them down one by one.
+Used well, these attributes buy real, tangible performance; used wrong, they can backfire. Let's take them apart one by one.
 
-> TL;DR: **New attributes in C++20-23 shift from "helping the compiler find bugs" to "helping the compiler optimize code." Using them in the right scenarios and verifying the results is the way to go.**
+> One-sentence summary: **the new C++20-23 attributes shift from "helping the compiler find bugs" to "helping the compiler optimize code". Pick the right scenario and verify the results—that's the way to go.**
 
 ------
 
+Before the one-by-one dissection, let's first put the three performance attributes side by side on one effects card:
+
+![C++20-23 performance attributes effects card: what they do, what they save, where the pitfalls are](./02-modern-attributes-effects.drawio)
+
 ## [[likely]] and [[unlikely]] (C++20): Branch Prediction Hints
 
-### Why Manual Hints are Needed
+### Why Manual Hints Are Needed
 
-Modern CPUs have dynamic branch predictors that guess branch directions based on runtime history. In most cases, the CPU's guesses are smart enough. However, manual hints still hold value in specific scenarios: first, when a function is called for the first time and the branch predictor has no historical data; second, in embedded systems where some CPUs have simpler branch predictors; and third, because compilers can improve instruction cache hit rates by adjusting code layout (keeping hot paths together).
+Modern CPUs all have dynamic branch predictors that guess which way a branch will go based on runtime history. Most of the time the CPU's guesses are already smart enough. But manual hints still have value in these scenarios: first, when a function is called for the first time, the branch predictor has no history yet; second, in embedded systems some CPUs have rather primitive branch predictors; third, the compiler can improve instruction-cache hit rates by rearranging the code layout (grouping hot paths together).
 
-`[[likely]]` tells the compiler "this branch is more likely to be executed," while `[[unlikely]]` indicates "this branch is rarely executed."
+`[[likely]]` tells the compiler "this branch is more likely to be executed", while `[[unlikely]]` says "this branch rarely executes".
 
 ### Syntax and Placement
 
-These attributes can be placed in the body of an `if` statement or on the `case` label of a `switch` statement:
+This pair of attributes can be placed in the branch body of an `if` statement, or on a `case` label of a `switch`:
 
 ```cpp
-// 1. Applied to the statement body (C++20 standard)
-if (condition) {
-    [[likely]] // Hints that the 'then' branch is likely
-    // code for likely path
+// Placed in an if branch
+if (error == ErrorCode::Ok) [[likely]] {
+    // Normal path — very likely to execute
+    process_data();
 } else {
-    [[unlikely]] // Hints that the 'else' branch is unlikely
-    // code for unlikely path
+    // Error path — rarely executes
+    handle_error();
 }
 
-// 2. Applied to the condition (GCC extension, non-standard)
-if ([[likely]] condition) {
-    // ...
+// Placed on a switch case
+switch (status) {
+    [[likely]] case Status::Running:
+        run_task();
+        break;
+    case Status::Error:
+        recover();
+        break;
+    default:
+        break;
 }
 ```
 
-⚠️ **Note on placement:** `[[likely]]` is placed before the statement body, not on the conditional expression itself. This is mandated by the C++20 standard.
+Watch the attribute placement: `[[likely]]` goes before the `{` of the branch body, not on the condition expression. That's what the C++20 standard specifies.
 
-### Analyzing Actual Effects: Let's Look at Assembly
+### Analyzing the Real Effect: Assembly First, Talk Later
 
-Many articles tell you that "adding `[[likely]]` makes the compiler optimize code layout," but what exactly is optimized? Talk is cheap; let's look at the assembly directly. The following test uses GCC 15 with `-O2`:
+Many articles will tell you "add `[[likely]]` and the compiler optimizes the code layout", but what exactly did it optimize? Talk is cheap; let's read the assembly directly. The following test was compiled with GCC 15 at `-O2 -std=c++20`:
 
 ```cpp
-int test_likely(int x) {
-    if (x > 0) [[likely]]
-        return x * 2;
-    else
-        return x;
+// Without the hint
+int process_no_hint(int value) {
+    if (value > 0) {
+        return value * 2;
+    } else {
+        return -value;
+    }
 }
 
-int test_unlikely(int x) {
-    if (x > 0) [[unlikely]]
-        return x * 2;
-    else
-        return x;
+// With [[likely]]
+int process_likely(int value) {
+    if (value > 0) [[likely]] {
+        return value * 2;
+    } else {
+        return -value;
+    }
 }
 ```
 
-The assembly generated for both functions is **exactly the same**:
+The assembly generated for the two functions is **completely identical**:
 
 ```asm
-test_likely(int):
-  mov eax, edi
-  imul eax, edi
-  test edi, edi
-  cmovle eax, edi
-  ret
-
-test_unlikely(int):
-  mov eax, edi
-  imul eax, edi
-  test edi, edi
-  cmovle eax, edi
-  ret
+process_no_hint:
+process_likely:
+    movl    %edi, %eax
+    leal    (%rdi,%rdi), %edx
+    negl    %eax
+    testl   %edi, %edi
+    cmovg   %edx, %eax
+    ret
 ```
 
-The compiler didn't generate a conditional branch at all—it used `cmov` (conditional move) to calculate both paths and then selected one based on the result of `test`. Branch prediction? Non-existent. `[[likely]]` has no effect here because the compiler found a solution better than branching.
+The compiler never emitted a conditional branch at all—it computes both paths with `cmovg` (a conditional move) and picks one based on the result of `testl`. Branch prediction? Doesn't exist here. `[[likely]]` has no effect whatsoever in this case, because the compiler already found something better than a branch.
 
-This isn't an isolated case. Modern compilers, even at `-O2` or `-O3`, often optimize simple conditional branches into `cmov`, bitwise operations, or mathematical formulas, rendering `[[likely]]` a mere "code comment." Scenarios where `[[likely]]` actually affects code layout usually involve: longer branch bodies (more than a few instructions), function calls or memory operations inside branches, or complex logic that the compiler cannot replace with `cmov`.
+This is not an isolated case. Under `-O2` and even `-O1`, modern compilers frequently turn simple conditional branches into `cmov`, bit operations, or mathematical formulas, reducing `[[likely]]` to a pure "code comment". The scenarios where you can actually see `[[likely]]` affect the code layout are usually: fairly long branch bodies (more than a few instructions), branches containing function calls or memory operations, or logic too complex for the compiler to replace with a `cmov`.
 
-### When is it Worth Using?
+### When It's Worth Using
 
-So, `[[likely]]` isn't a magic switch where "adding it makes it faster." The correct approach is: first, use profiling (like `perf`) to confirm that a specific branch has a high misprediction rate, then consider adding hints. Before adding one, compare the assembly to ensure the compiler actually changed the code layout. If the assembly hasn't changed, it means the compiler already optimized it in a better way, and `[[likely]]` is just redundant information noise.
+So `[[likely]]` is not a magic "add it and go faster" switch. The correct way to use it: first confirm through profiling (for example `perf stat -e branch-misses`) that a branch really has a high misprediction rate, and only then consider adding the hint. Before adding it, compare the assembly to confirm the compiler actually changed the code layout. If the assembly didn't change, the compiler has already optimized things in a better way, and `[[likely]]` is just redundant information noise.
 
-Typical effective scenarios include: error checking branches (normal path `[[likely]]`, error path `[[unlikely]]`), boundary condition handling, and logic with complex branch bodies that the compiler cannot replace with `cmov`.
+Typical scenarios where it pays off include: error-check branches (normal path `[[likely]]`, error path `[[unlikely]]`), boundary-condition handling, and logic with branch bodies complex enough that the compiler can't substitute a `cmov`.
 
-### Comparison with Compiler Built-ins
+### Comparison with Compiler Builtins
 
-Before `[[likely]]` existed, GCC/Clang used `__builtin_expect` for branch prediction hints:
+Before `[[likely]]` existed, GCC/Clang used `__builtin_expect` for branch-prediction hints:
 
 ```cpp
-// GCC/Clang built-in way
-if (__builtin_expect(x > 0, 1)) { ... } // likely
-if (__builtin_expect(x > 0, 0)) { ... } // unlikely
+// Old way
+if (__builtin_expect(error == ErrorCode::Ok, 1)) {
+    process_data();
+}
+
+// New way
+if (error == ErrorCode::Ok) [[likely]] {
+    process_data();
+}
 ```
 
-`[[likely]]` is much more readable, and being a standardized attribute means it works on all compilers supporting C++20.
+`[[likely]]` reads far better, and being a standardized attribute means it works on every compiler that supports C++20.
 
 ------
 
 ## [[no_unique_address]] (C++20): Empty Base Optimization
 
-### The Problem: Empty Classes Still Take 1 Byte
+### The Problem: Even an Empty Class Takes 1 Byte
 
-The C++ standard requires every complete object to have a unique address. This means that even an "empty class" with no data members has a `sizeof` at least 1. When you use an empty class as a member of another class, it wastes a whole byte for nothing:
+The C++ standard requires every complete object to have a unique address, which means even an "empty class" with no data members at all has a `sizeof` of at least 1. When you make an empty class a member of another class, it burns a byte for nothing:
 
 ```cpp
-struct Empty {};
-struct Holder {
-    int data;
-    Empty e; // Wastes 1 byte here!
+struct Empty {
+    void foo() {}   // Only member functions, no data members
 };
 
-// sizeof(Holder) is usually 8 (4 padding + 4 int), not 4.
+struct Container {
+    // Common memory layout on x86-64:
+    // offset   0: e       (1 byte)
+    // offset 1~3: padding (3 bytes)
+    // offset 4~7: x       (4 bytes)
+    // Because int is 4 bytes, the compiler usually
+    // places it at an address that is a multiple of 4
+    Empty e;
+    int x;
+};
+
+struct [[gnu::packed]] PackedContainer {
+    // offset   0: e       (1 byte)
+    // offset 1~4: x       (4 bytes)
+    Empty e;
+    int x;
+};
+
+static_assert(sizeof(Empty) == 1);
+static_assert(sizeof(Container) == 8); // Almost certainly has padding
+static_assert(sizeof(PackedContainer) == sizeof(int) + 1); // Tells the compiler not to add padding
 ```
 
-For most applications, wasting 1 byte is negligible. However, in generic programming, policy classes (allocators, mutex policies, etc.) are often empty. If multiple policy classes are members simultaneously, each taking 1 byte, the waste adds up. More critically, this causes `sizeof` results to deviate from expectations, affecting optimizations like cache line alignment.
+For most applications, wasting 1 byte is nothing. But in generic programming, policy classes (allocators, mutex policies, and so on) are frequently empty classes. If several policy classes sit as members at the same time, each taking 1 byte, the total adds up before you notice. More critically, this makes `sizeof` come out different from what you'd expect, interfering with optimizations such as cache-line alignment.
 
 ### The Traditional EBO Solution
 
-The traditional solution is Empty Base Optimization (EBO)—holding the empty class via inheritance rather than as a member, so the compiler doesn't need to allocate separate space for it:
+The traditional solution is Empty Base Optimization (EBO)—hold the empty class through inheritance instead of a member, so the compiler no longer needs to allocate separate space for it:
 
 ```cpp
-// Traditional EBO: Use inheritance
-template<typename Alloc, typename Mutex>
-struct Optimized : private Alloc, private Mutex {
-    int data;
-    // No space wasted for Alloc or Mutex if they are empty
+struct Empty {};
+
+// Traditional EBO: via inheritance
+struct Container : private Empty {
+    int x;
 };
+
+static_assert(sizeof(Container) == sizeof(int));  // Empty takes no space
 ```
 
-But EBO has downsides: you can only inherit from one base class of the same type (you can't inherit from two `Mutex` policies simultaneously); inheritance is a strong coupling, and modifying inheritance relationships just to save memory is unreasonable; and some coding standards prohibit private inheritance.
+But EBO has a few drawbacks: you can only inherit one empty base of the same type (you can't inherit two `Empty`s at once); inheritance is a very strong coupling relationship, and changing your inheritance structure just to save memory is unreasonable; and some coding standards forbid private inheritance.
 
 ### The [[no_unique_address]] Solution
 
-C++20's `[[no_unique_address]]` allows you to achieve the same optimization via member variables (instead of inheritance):
+`[[no_unique_address]]`, introduced in C++20, lets you achieve the same optimization through a member variable (instead of inheritance):
 
 ```cpp
-struct Holder {
-    [[no_unique_address]] Empty e;
-    int data;
+struct Empty {
+    void foo() {}
 };
-// sizeof(Holder) is now 4. 'e' shares the same address as 'data'.
+
+struct Container {
+    [[no_unique_address]] Empty e;   // If Empty is an empty class, e takes no space
+    int x;
+};
+
+static_assert(sizeof(Container) == sizeof(int));  // e is optimized away
 ```
 
-### Application in Policy Pattern
+### Application in Policy-Based Design
 
-`[[no_unique_address]]` is particularly useful in the policy pattern. Suppose you have a container class that accepts an allocator policy and a lock policy as template parameters. In a single-threaded scenario, the lock policy is an empty class (all methods are no-ops), and you don't want it to waste space:
+`[[no_unique_address]]` is especially useful in policy-based design. Suppose you have a container class that takes an allocator policy and a locking policy as template parameters. In a single-threaded scenario, the locking policy is an empty class (every method is a no-op), and you don't want it burning space for nothing:
 
 ```cpp
-struct NullMutex { void lock() {} void unlock() {} }; // Empty class
-struct RealMutex { std::mutex m; void lock() {} void unlock() {} }; // Has data
-
-template<typename MutexPolicy>
-class Container {
-    [[no_unique_address]] MutexPolicy mutex;
-    int data[100];
+struct NullMutex {
+    void lock() {}
+    void unlock() {}
 };
 
-// Single-threaded usage
-Container<NullMutex> c1; // sizeof(c1) == 400, no space wasted on mutex
-// Multi-threaded usage
-Container<RealMutex> c2; // sizeof(c2) == 408 (400 + 8 for std::mutex)
+struct StdMutex {
+    void lock()   { mtx_.lock(); }
+    void unlock() { mtx_.unlock(); }
+private:
+    std::mutex mtx_;
+};
+
+template<typename T, typename Mutex = NullMutex>
+class ThreadSafeBuffer {
+public:
+    void push(const T& item) {
+        mutex_.lock();
+        // ... add the element
+        mutex_.unlock();
+    }
+
+private:
+    [[no_unique_address]] Mutex mutex_;
+    T* data_;
+    std::size_t size_;
+    std::size_t capacity_;
+};
+
+// Single-threaded version: NullMutex takes no space
+ThreadSafeBuffer<int> single_thread_buf;
+static_assert(sizeof(single_thread_buf) == sizeof(void*) + sizeof(std::size_t) * 2);
+
+// Multi-threaded version: std::mutex takes real space
+ThreadSafeBuffer<int, StdMutex> multi_thread_buf;
+static_assert(sizeof(multi_thread_buf) == sizeof(std::mutex) + sizeof(void*) + sizeof(std::size_t) * 2);
 ```
 
-This design allows you to flexibly switch policies via template parameters without sacrificing memory efficiency. In single-threaded mode, not a single byte is wasted; in multi-threaded mode, a real mutex is used.
+This design lets you switch policies flexibly through template parameters without sacrificing memory efficiency: the single-threaded scenario doesn't waste a single byte, while the multi-threaded scenario uses a real mutex.
 
 ### Caveats
 
-There are some details to watch out for with `[[no_unique_address]]`. Multiple `[[no_unique_address]]` members of the same type might share the same address (since they are all empty and need not be distinguished), depending on the compiler implementation:
+`[[no_unique_address]]` has a few details to watch. Multiple `[[no_unique_address]]` members of the same type may share the same address (they're all empty classes, so there's nothing to distinguish), and the exact behavior depends on the compiler implementation:
 
 ```cpp
-struct Test {
+struct A {
     [[no_unique_address]] Empty e1;
     [[no_unique_address]] Empty e2;
-    [[no_unique_address]] Empty e3;
+    int x;
 };
-// It is implementation-defined whether e1, e2, e3 have the same address.
+
+A a;
+// &a.e1 == &a.e2 can be true! (Not necessarily in GCC 15.2.1, but the first empty member may share an address with a later non-empty member)
 ```
 
-> **Verification**: Tested on GCC 15.2.1, multiple `[[no_unique_address]]` empty members do not necessarily share the same address, but the first empty member may share the same address as a subsequent non-empty member. The optimization effect of `[[no_unique_address]]` is definite and significant.
+> **Verified**: tested on GCC 15.2.1, multiple `[[no_unique_address]]` empty members do not necessarily share the same address, but the first empty member's address may be the same as a later non-empty member's. The `sizeof` savings are deterministic and significant.
 
-If you need to take the address of these members or point to them with references, be extremely careful—their addresses might be identical. Also, this attribute only works for empty classes. If the class has data members, adding it has no effect:
+If you need to take the addresses of these members or point references at them, be extra careful—their addresses may be identical. Besides, this attribute only works for empty classes. If the class has data members, adding it does nothing:
 
 ```cpp
-struct NotEmpty { int x; };
-struct Holder {
-    [[no_unique_address]] NotEmpty e; // Attribute ignored, takes up space
-    int data;
+struct NotEmpty { int data; };
+
+struct Test {
+    [[no_unique_address]] NotEmpty e;   // e still occupies sizeof(int)
+    int x;
 };
+static_assert(sizeof(Test) == 2 * sizeof(int));
 ```
 
-Additionally, MSVC in some versions has bugs regarding `[[no_unique_address]]`—even empty classes might not be optimized. This requires special attention in cross-platform projects; it is recommended to verify `sizeof` results on the target platform.
+Also, some MSVC versions have bugs in their `[[no_unique_address]]` support—even empty classes may not get optimized. This needs special attention in cross-platform projects; it's recommended to verify the `sizeof` result on each target platform.
 
 ------
 
@@ -227,116 +293,130 @@ Additionally, MSVC in some versions has bugs regarding `[[no_unique_address]]`�
 
 ### Semantics
 
-C++23's `[[assume]]` tells the compiler "please assume this expression is true." The compiler can perform more aggressive optimizations based on this assumption. If the expression is actually false at runtime, the behavior is undefined.
+`[[assume(expression)]]`, introduced in C++23, tells the compiler "please assume `expression` is true", and the compiler can optimize more aggressively based on that assumption. If `expression` actually evaluates to false at runtime, the behavior is undefined.
 
-This differs from `assert`. `assert` checks the condition at runtime and terminates the program if it fails; `[[assume]]` performs no runtime check at all, simply allowing the compiler to optimize boldly.
+This is different from `assert`. `assert` checks the condition at runtime and terminates the program on failure; `[[assume]]` does no runtime checking at all—it simply lets the compiler optimize with full confidence.
 
 ### Example
 
 ```cpp
-void safe_divide(int a, int b) {
-    [[assume: b != 0]]; // Tell compiler: b is never 0
-    // Compiler may omit the divide-by-zero check
-    int result = a / b;
+int divide(int a, int b) {
+    [[assume(b != 0)]];
+    return a / b;
 }
 ```
 
-In this example, the compiler can theoretically omit the code path for the zero-divide check, generating faster division instructions. But if you pass `0` for `b`, the consequences are undefined—it might crash, return garbage, or appear normal while silently corrupting data.
+In this example, the compiler can in principle drop the divide-by-zero code path and generate a faster division. But if you pass `b == 0`, the consequences are undefined—it might crash, might return garbage, might look fine while quietly doing damage.
 
-> **Verification**: Under GCC 15.2.1 at `-O2` optimization, a simple division function generates the same assembly whether or not `[[assume]]` is used. This indicates that for simple scenarios, the compiler has already done sufficient optimization. The value of `[[assume]]` is mainly seen in more complex scenarios where the compiler cannot infer invariants through static analysis.
+> **Verified**: at the `-O2` optimization level on GCC 15.2.1, a simple division function generates identical assembly with or without `[[assume]]`. For a scenario this simple, the compiler already optimizes well enough. The value of `[[assume]]` mainly shows up in more complex scenarios, where the compiler cannot infer the invariant through static analysis.
 
-### Comparison with `__builtin_assume`
+### Comparison with __builtin_assume
 
-Before `[[assume]]`, MSVC used `__assume`, and GCC used `__builtin_assume` (though GCC's more common way is `if (cond) __builtin_unreachable();`):
+Before `[[assume]]`, MSVC used `__assume` and GCC used `__builtin_assume` (though the more common GCC idiom is `if (cond) __builtin_unreachable()`):
 
 ```cpp
 // MSVC
 __assume(b != 0);
 
 // GCC
-__builtin_assume(b != 0);
-// Or the classic trick:
-if (!(b != 0)) __builtin_unreachable();
+if (b == 0) __builtin_unreachable();
+
+// The standard C++23 spelling
+[[assume(b != 0)]];
 ```
 
 ### Use Cases
 
-Typical use cases for `[[assume]]` are: when you have definitive knowledge of certain runtime conditions that the compiler cannot infer through static analysis. For example, if you know an array access will never go out of bounds, or that a pointer is never null:
+The typical use case for `[[assume]]` is: you have definitive knowledge about certain runtime conditions that the compiler cannot infer through static analysis. For example, you know an array access never goes out of bounds, or you know a pointer is never null:
 
 ```cpp
-void process_array(int* arr, size_t size) {
-    [[assume: size == 16]]; // Optimization hint for fixed-size processing
-    [[assume: arr != nullptr]];
-    // Compiler can vectorize or unroll loops more aggressively
+void process_array(int* data, std::size_t size) {
+    [[assume(data != nullptr)]];
+    [[assume(size > 0)]];
+
+    for (std::size_t i = 0; i < size; ++i) {
+        // The compiler can omit the null check and bounds check
+        data[i] *= 2;
+    }
 }
 ```
 
-⚠️ **Warning:** `[[assume]]` is the most dangerous of all attributes. If your assumption is wrong, the program's behavior is completely unpredictable. The author suggests using it only after thorough profiling, confirming a bottleneck, and when you can 100% guarantee the condition always holds. In 99% of code, you don't need it.
+A warning: `[[assume]]` is the most dangerous of all the attributes. If your assumption is wrong, the program's behavior is completely unpredictable. My recommendation is to use it only after thorough profiling has confirmed the bottleneck, and only when you can 100% guarantee the condition always holds. In 99% of code, you don't need it.
 
 ------
 
 ## C++20 [[nodiscard]] Enhancements
 
-The previous chapter mentioned that C++20 added the ability for `[[nodiscard]]` to carry custom messages. Here is a brief supplement.
+The previous chapter already mentioned that C++20 gave `[[nodiscard]]` the ability to carry a custom message. Here is a bit of supplementary explanation.
 
-### Extension of nodiscard in the Standard Library
+### nodiscard Extensions in the Standard Library
 
-C++20 also expanded the scope of `[[nodiscard]]` in the standard library. The following standard library functions are marked with `[[nodiscard]]`:
+C++20 also extended where `[[nodiscard]]` is applied in the standard library. The following standard library functions are marked `[[nodiscard]]`:
 
-- `std::atomic::try_lock` (since C++20)
-- `std::vector::empty` (since C++20)
+- `std::vector::empty()` (since C++20)
+- `std::string::empty()` (since C++20)
 
-> **Verification**: Tested in libstdc++ 15.2.1, the `empty` method indeed produces a nodiscard warning. However, the claim in the article that `std::vector` and `std::string` types themselves are marked `[[nodiscard]]` is not accurate in the current implementation—at least `std::vector` constructors do not produce warnings. Support for this varies across standard library implementations (libstdc++, libc++, MSVC STL).
+> **Verified**: tested with libstdc++ 15.2.1, the `empty()` method does indeed produce a nodiscard warning. But the article's claim that the `std::unique_ptr` and `std::shared_ptr` types themselves are marked `[[nodiscard]]` is not accurate in the current implementation—at least `std::make_unique()` and the constructors produce no warning. Different standard library implementations (libstdc++, libc++, MSVC STL) may differ in this support.
 
-This means if you write `vec.empty()` instead of `vec.clear()`, a C++20 compiler will issue a warning. This used to be a common source of bugs—`empty` looks like "clear," but it actually means "is empty." With `[[nodiscard]]`, misused code at least gets a warning reminder.
+This means that if you write `vec.empty();` instead of `if (vec.empty())`, a C++20 compiler will warn you. This used to be a common source of bugs—`empty()` looks like it "empties" the container, but it actually "checks for emptiness". With `[[nodiscard]]`, misused code at least gets a warning.
 
 ```cpp
 std::vector<int> vec = {1, 2, 3};
-vec.empty(); // Warning: ignoring return value of 'empty' [-Wunused-result]
+
+// Before C++20: return value unchecked, passes silently
+vec.empty();  // Looks like it empties the container; actually does nothing
+
+// C++20: the compiler emits a nodiscard warning
+vec.empty();  // warning: ignoring return value of 'empty()'
 ```
 
 ### Using nodiscard Messages in Your Own Code
 
-For library authors, `[[nodiscard("reason")]]` is very practical. You can explain in the message why the return value shouldn't be ignored and how to use it correctly:
+For library authors, `[[nodiscard("reason")]]` is extremely practical. The message can explain why the return value should not be ignored, and what the correct usage looks like:
 
 ```cpp
-[[nodiscard("Returning a raw pointer requires manual memory management")]]
-int* get_data();
+// Tell callers why the return value must be checked
+[[nodiscard("Memory leak: returned pointer must be freed")]]
+void* allocate_buffer(std::size_t size);
+
+// Tell callers how to use it correctly
+[[nodiscard("Store the lock_guard to keep the mutex locked")]]
+std::unique_lock<std::mutex> acquire_lock();
 ```
 
 ------
 
-## Comparison with C++11-17 Attributes
+## Comparison with the C++11-17 Attributes
 
-Comparing attributes from C++11-17 with the new ones in C++20-23 reveals a clear evolutionary path: early attributes focused on code correctness and maintainability, while later attributes focus more on performance optimization.
+Put the C++11-17 attributes and the new C++20-23 attributes side by side, and a clear trajectory emerges: the early attributes focus on code correctness and maintainability, the later ones focus more on performance optimization.
 
 | Attribute | Version | Focus | Risk |
-|-----------|---------|-------|------|
+|------|------|--------|------|
 | `[[noreturn]]` | C++11 | Correctness | Low |
 | `[[carries_dependency]]` | C++11 | Performance | Low |
 | `[[deprecated]]` | C++14 | Maintainability | Low |
 | `[[nodiscard]]` | C++17 | Correctness | Low |
-| `[[maybe_unused]]` | C++17 | Correctness | Low |
-| `[[fallthrough]]` | C++17 | Readability | Low |
-| `[[likely]]` / `[[unlikely]]` | C++20 | Performance | Low |
+| `[[fallthrough]]` | C++17 | Correctness | Low |
+| `[[maybe_unused]]` | C++17 | Readability | Low |
+| `[[likely]]/[[unlikely]]` | C++20 | Performance | Low |
 | `[[no_unique_address]]` | C++20 | Performance | Low |
 | `[[assume]]` | C++23 | Performance | **High** |
 
-Only `[[assume]]` is truly "dangerous"—if the assumption is wrong, the consequence is undefined behavior. For other attributes, even if the "hint" is wrong, the worst case is slightly worse performance; it won't crash the program.
+Of these, only `[[assume]]` is truly "dangerous"—if the assumption is wrong, the consequence is undefined behavior. The other attributes, even when the "hint" is wrong, at worst cost slightly worse performance; they won't crash your program.
 
 ------
 
-## Recommendations for Measuring Performance Impact
+## Recommendations for Measuring the Performance Impact
 
-For performance-oriented attributes like `[[likely]]`/`[[unlikely]]` and `[[assume]]`, the author's advice is: always measure after adding them. Optimization effectiveness depends heavily on specific hardware, compilers, and code context. Some scenarios show clear gains, while others show no difference at all.
+For performance-oriented attributes like `[[likely]]`/`[[unlikely]]` and `[[assume]]`, my advice is: always measure after adding them. The optimization effect depends heavily on the specific hardware, compiler, and code context. Some scenarios show a clear gain; others show no difference at all.
 
-Testing methods can be simple: use tools like `perf` or `VTune` to compare instruction count, branch misprediction rates, and cache hit rates before and after adding the attribute. If there is no significant improvement, it's not worth adding—because attributes increase the "information density" of the code, requiring the reader to understand one more concept.
+The test method can be simple: use `perf stat` or `valgrind --tool=cachegrind` to compare instruction counts, branch-misprediction rates, and cache hit rates before and after adding the attribute. If the numbers don't improve significantly, it isn't worth adding—because attributes increase the code's "information density", making readers absorb one more concept.
 
-For `[[no_unique_address]]`, verification is more direct—just look at the `sizeof` results. If the empty policy class indeed takes no space, the attribute is working.
+For `[[no_unique_address]]`, verification is more direct—just look at the `sizeof` result. If the empty policy class really takes no space, the attribute is doing its job.
 
 ------
 
-## Reference Resources
+## References
 
 - [cppreference: assume (C++23)](https://en.cppreference.com/w/cpp/language/attributes/assume)
 - [cppreference: likely/unlikely (C++20)](https://en.cppreference.com/w/cpp/language/attributes/likely)

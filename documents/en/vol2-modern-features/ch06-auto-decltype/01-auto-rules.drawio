@@ -1,0 +1,100 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="auto Deduction Rules" id="auto-rules">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="auto 四种写法 × 初始化表达式：推导结果速查" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="26" width="600" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- 表头：初始化表达式三类 -->
+        <mxCell id="hdr_form" value="声明形式" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#f2f2f2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="84" y="70" width="132" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="hdr_val" value="普通左值&lt;br&gt;&lt;b&gt;int val = 10;&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="220" y="70" width="176" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="hdr_ci" value="const 左值&lt;br&gt;&lt;b&gt;const int ci = 42;&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="400" y="70" width="176" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="hdr_rv" value="右值&lt;br&gt;&lt;b&gt;42&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="580" y="70" width="176" height="48" as="geometry" />
+        </mxCell>
+
+        <!-- 第一行：auto 按值拷贝 -->
+        <mxCell id="form_auto" value="&lt;b&gt;auto x&lt;/b&gt;&lt;br&gt;按值拷贝" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#f2f2f2;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="84" y="122" width="132" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="auto_val" value="auto x = val;&lt;br&gt;&lt;b&gt;int&lt;/b&gt;（拷贝一份）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#ffffff;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="220" y="122" width="176" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="auto_ci" value="auto a = ci;&lt;br&gt;&lt;b&gt;int&lt;/b&gt;  &lt;font color=&quot;#c00000&quot;&gt;丢了顶层 const&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="400" y="122" width="176" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="auto_rv" value="auto x = 42;&lt;br&gt;&lt;b&gt;int&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#ffffff;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="580" y="122" width="176" height="64" as="geometry" />
+        </mxCell>
+
+        <!-- 第二行：auto& 左值引用 -->
+        <mxCell id="form_ref" value="&lt;b&gt;auto&amp;amp; x&lt;/b&gt;&lt;br&gt;左值引用&lt;br&gt;可修改原对象" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#f2f2f2;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="84" y="190" width="132" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="ref_val" value="auto&amp;amp; b = val;&lt;br&gt;&lt;b&gt;int&amp;amp;&lt;/b&gt;（保留引用）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#ffffff;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="220" y="190" width="176" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="ref_ci" value="auto&amp;amp; a = ci;&lt;br&gt;&lt;b&gt;const int&amp;amp;&lt;/b&gt;（const 被保留）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#ffffff;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="400" y="190" width="176" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="ref_rv" value="auto&amp;amp; b = 42;&lt;br&gt;&lt;font color=&quot;#c00000&quot;&gt;&lt;b&gt;编译错误&lt;/b&gt;&lt;/font&gt;（不能绑定右值）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="580" y="190" width="176" height="64" as="geometry" />
+        </mxCell>
+
+        <!-- 第三行：const auto& 只读引用 -->
+        <mxCell id="form_cref" value="&lt;b&gt;const auto&amp;amp; x&lt;/b&gt;&lt;br&gt;只读访问&lt;br&gt;不拷贝" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#f2f2f2;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="84" y="258" width="132" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="cref_val" value="const auto&amp;amp; r = val;&lt;br&gt;&lt;b&gt;const int&amp;amp;&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#e6f4ea;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="220" y="258" width="176" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="cref_ci" value="const auto&amp;amp; r = ci;&lt;br&gt;&lt;b&gt;const int&amp;amp;&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#e6f4ea;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="400" y="258" width="176" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="cref_rv" value="const auto&amp;amp; r = 42;&lt;br&gt;&lt;b&gt;const int&amp;amp;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2E7D32&quot;&gt;可绑定右值，延长临时对象生命周期&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#e6f4ea;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="580" y="258" width="176" height="64" as="geometry" />
+        </mxCell>
+
+        <!-- 第四行：auto&& 转发引用 -->
+        <mxCell id="form_fwd" value="&lt;b&gt;auto&amp;amp;&amp;amp; x&lt;/b&gt;&lt;br&gt;转发引用" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#fff2cc;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="84" y="326" width="132" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="fwd_val" value="auto&amp;amp;&amp;amp; r1 = val;&lt;br&gt;&lt;b&gt;int&amp;amp;&lt;/b&gt;（左值初始化）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#fff2cc;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="220" y="326" width="176" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="fwd_ci" value="auto&amp;amp;&amp;amp; r3 = ci;&lt;br&gt;&lt;b&gt;const int&amp;amp;&lt;/b&gt;（也是左值初始化）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#fff2cc;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="400" y="326" width="176" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="fwd_rv" value="auto&amp;amp;&amp;amp; r2 = 42;&lt;br&gt;&lt;b&gt;int&amp;amp;&amp;amp;&lt;/b&gt;（右值初始化）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#fff2cc;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="580" y="326" width="176" height="64" as="geometry" />
+        </mxCell>
+
+        <!-- 要点条：按值丢引用/丢顶层 const -->
+        <mxCell id="bar_byvalue" value="&lt;b&gt;按值拷贝：引用和顶层 const 都会被丢。&lt;/b&gt;int&amp;amp; ref = val; auto b = ref; 推导为 &lt;b&gt;int&lt;/b&gt;（是拷贝）；函数返回引用也一样：auto a = get_ref(); 推导为 &lt;b&gt;int&lt;/b&gt;（拷贝，不是引用！），要保住引用必须显式写 auto&amp;amp;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#ffe6e6;fontSize=13;align=center;verticalAlign=middle;spacingLeft=10;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="84" y="402" width="672" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="bar_lowconst" value="&lt;b&gt;顶层 const 丢，底层 const 留：&lt;/b&gt;const int* p; auto q = p; 推导为 &lt;b&gt;const int*&lt;/b&gt;；int* const p2; auto q2 = p2; 推导为 &lt;b&gt;int*&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;align=center;verticalAlign=middle;spacingLeft=10;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="84" y="466" width="672" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="bar_forward" value="&lt;b&gt;auto&amp;amp;&amp;amp; 是转发引用，不是右值引用：&lt;/b&gt;左值初始化就是左值引用，右值初始化才是右值引用；范围 for 里不管左值引用还是代理类型都能正确绑定" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=13;align=center;verticalAlign=middle;spacingLeft=10;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="84" y="518" width="672" height="44" as="geometry" />
+        </mxCell>
+
+        <mxCell id="source_note" value="推导规则与本文「auto 的四种写法」「顶层 const vs 底层 const」「常见的坑」三节一致：auto 遵循模板参数推导" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="113" y="574" width="600" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

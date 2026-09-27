@@ -5,13 +5,12 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Master the core operations of `std::map`, `std::set`, and `std::unordered_map`,
-  and learn how to perform key-based lookups and maintain ordered collections.
+description: Master the core operations of `std::map`, `std::set`, and `std::unordered_map`, and learn key-based lookup and maintaining sorted collections.
 difficulty: beginner
 order: 2
 platform: host
 prerequisites:
-- std::vector 快速上手
+- std::vector Quick Start
 reading_time_minutes: 13
 tags:
 - cpp-modern
@@ -19,295 +18,298 @@ tags:
 - beginner
 - 入门
 - 基础
-title: Quick Start with Associative Containers
+title: Associative Containers Quick Start
 translation:
   source: documents/vol1-fundamentals/ch11/02-map-set.md
-  source_hash: 00dfbb2064cc83d1d706821fd59f93f6fa2a60b3c3141b0a245196c460d0819e
-  translated_at: '2026-06-16T03:47:31.886997+00:00'
+  source_hash: 4a8480038d214e0f7a6833c9b4c89b0b6912577fa315d34a5e5266fd86fdcd30
+  translated_at: '2026-09-25T11:58:47+00:00'
   engine: anthropic
-  token_count: 2768
+  token_count: 5500
 ---
-# Quick Start with Associative Containers
+# Associative Containers Quick Start: Give a Key, Get a Result
 
-In the previous chapter, we went through `std::vector` from beginning to end—dynamic arrays, contiguous storage, O(1) random access via index. It's the go-to choice for handling ordered sequences. However, in many scenarios, we don't care about "what is the element at position X," but rather "what is the value corresponding to a specific key." For example, counting word occurrences in a text, or checking if a word exists in a spelling dictionary. For these "lookup by key" requirements, using a `vector` requires either sorting followed by binary search or linear scanning, which is tedious to write and performs poorly. The C++ Standard Library provides a group of containers specifically designed for such problems, known as **associative containers**.
+In the previous article we walked `std::vector` from head to tail—a dynamic array with contiguous storage and O(1) subscript access, the go-to tool whenever you process data whose element order matters. But in many scenarios what we care about is not "which element sits at position N" but "what value does this key map to". Counting how often each word appears in a text, or checking whether a word is in a spelling dictionary—these "give a key, get a result" demands are awkward with a vector: you either sort and binary-search, or scan linearly, both of which are painful to write and perform poorly. The C++ standard library ships a group of containers built precisely for this class of problems, called **associative containers**.
 
-In this chapter, we will focus on the trio: `std::map` (ordered key-value pairs), `std::set` (ordered unique element sets), and `std::unordered_map` (hashed key-value pairs). Their shared characteristic is that lookup, insertion, and deletion operations are fast without traversing the entire container. The difference lies in the implementation: `std::map` and `std::set` use red-black trees internally, keeping elements ordered with O(log n) complexity; while `std::unordered_map` uses hash tables, offering average O(1) performance without guaranteed order.
+This chapter introduces three siblings: `std::map` (sorted key-value pairs), `std::set` (a sorted collection of unique elements), and `std::unordered_map` (hashed key-value pairs). They share one trait: lookup, insertion, and deletion are all fast, and none of them requires traversing the whole container. The difference lies underneath: `map` and `set` are implemented with red-black trees, so elements stay ordered and every operation costs O(log n); `unordered_map` uses a hash table—O(1) on average, but with no ordering guarantee.
 
-## Getting Started — Basic Operations with std::map
+## Logging In — Basic std::map Operations
 
-`std::map` is an ordered key-value container declared in the `<map>` header file. Each element is a `std::pair<Key, Value>`, where `Key` is the key type and `Value` is the value type. It uses a red-black tree (a self-balancing binary search tree) internally, so elements are always sorted in ascending order by key. Lookup, insertion, and deletion are all O(log n).
+`std::map` is a sorted key-value container, declared in the `<map>` header. Each of its elements is a `std::pair<const Key, Value>`, where Key is the key type and Value is the value type. Internally it stores elements in a red-black tree (a self-balancing binary search tree), so elements are always arranged in ascending key order, and lookup, insertion, and deletion are all O(log n).
 
-Let's first look at how to insert data:
+First, let's see how to put things into it:
 
 ```cpp
 #include <iostream>
-#include <string>
 #include <map>
+#include <string>
 
-int main() {
-    // 1. Constructor initialization
-    std::map<std::string, int> scores = {
-        {"Alice", 90},
-        {"Bob", 85}
+int main()
+{
+    std::map<std::string, int> scores;
+
+    // Way 1: assign through operator[]
+    scores["Alice"] = 95;
+    scores["Bob"] = 87;
+
+    // Way 2: insert a pair with insert
+    scores.insert({"Charlie", 72});
+
+    // Way 3: construct in place with emplace (recommended)
+    scores.emplace("Diana", 91);
+
+    // Way 4: initializer list
+    std::map<std::string, int> ages = {
+        {"Alice", 22}, {"Bob", 25}, {"Charlie", 20}
     };
 
-    // 2. insert() member function
-    scores.insert({"Charlie", 88}); // Insert pair directly
-    scores.insert(std::make_pair("David", 92)); // Insert using make_pair
-
-    // 3. operator[] (CAUTION: modifies map if key doesn't exist)
-    scores["Eve"] = 95;
-
-    // 4. try_emplace() (C++17, recommended for avoiding temporary objects)
-    scores.try_emplace("Frank", 89);
-
-    for (const auto& [name, score] : scores) {
-        std::cout << name << ": " << score << std::endl;
-    }
-
     return 0;
 }
 ```
 
-Each insertion method has its use cases. `operator[]` is the most intuitive, but it has a very insidious behavior—if the key doesn't exist, it automatically inserts a value-initialized element (0 for `int`, or the default constructor called for class types). This means `scores["Unknown"]` will insert a `{"Unknown", 0}` entry even if you just wanted to check the value. We will detail this pitfall later.
+Each of these insertion styles has its place. `operator[]` is the most intuitive, but it hides a genuinely sneaky behavior: when the key does not exist, it automatically inserts a value-initialized element (0 for `int`; for class types it calls the default constructor). In other words, even if we only wanted to peek at the value, `scores["Eve"]` stuffs a `{"Eve", 0}` into the map. More on that later.
 
-Next is lookup. `find()` returns an iterator pointing to the found element, or `end()` if not found. `count()` returns the number of matching elements (0 or 1 for a map). C++20 introduced `contains()`, which has more intuitive semantics:
+Next, lookup. `find` returns an iterator pointing to the element found, or `end()` if there is none. `count` returns the number of matching elements (for a map, either 0 or 1). C++20 added `contains`, whose meaning is the most direct:
 
 ```cpp
-#include <map>
+// Works in every version since C++11
+auto it = scores.find("Alice");
+if (it != scores.end()) {
+    std::cout << "Alice: " << it->second << "\n";
+}
 
-int main() {
-    std::map<std::string, int> scores = { {"Alice", 90} };
+// count also tests for existence
+if (scores.count("Bob")) {
+    std::cout << "Bob exists\n";
+}
 
-    // 1. find() - returns iterator
-    auto it = scores.find("Alice");
-    if (it != scores.end()) {
-        std::cout << "Found: " << it->second << std::endl;
-    }
-
-    // 2. count() - returns 0 or 1
-    if (scores.count("Bob")) {
-        std::cout << "Bob exists" << std::endl;
-    }
-
-    // 3. contains() - C++20, returns bool
-    if (scores.contains("Alice")) {
-        std::cout << "Alice is here" << std::endl;
-    }
-
-    return 0;
+// contains, introduced in C++20, has the clearest semantics
+if (scores.contains("Diana")) {
+    std::cout << "Diana exists\n";
 }
 ```
 
-Deletion uses `erase()`, which can remove by key or by iterator:
+For deletion we use `erase`, either by key or by iterator:
 
 ```cpp
-#include <map>
-
-int main() {
-    std::map<std::string, int> scores = { {"Alice", 90}, {"Bob", 85}, {"Charlie", 88} };
-
-    // 1. Erase by key
-    scores.erase("Bob");
-
-    // 2. Erase by iterator
-    auto it = scores.find("Charlie");
-    if (it != scores.end()) {
-        scores.erase(it);
-    }
-
-    return 0;
-}
+scores.erase("Bob");            // erase by key
+scores.erase(scores.begin());   // erase the first element (the smallest key)
+scores.clear();                 // clear the whole map
 ```
 
-> **Pitfall Warning**: `operator[]` **automatically inserts a default value** when the key doesn't exist. This has two consequences: First, if you just want to check if a key exists, using `operator[]` silently modifies the map, which is a logical bug. Furthermore, if your value type doesn't have a default constructor, the code won't compile. Second, on `const map`, `operator[]` is simply not available because it is a modifying operation. Therefore, for read-only lookup, please use `find()`, `count()`, or `contains()`. If you need bounds-checked access, use `at()`—it throws an `std::out_of_range` exception, just like `vector::at()`.
+When the key is absent, `map[key]` **automatically inserts a default value**. Two consequences follow. If we only meant to check whether a key exists, using `operator[]` silently modifies the map—which is a logic bug—and if our value type has no default constructor, it will not even compile. On top of that, `operator[]` is flat-out unusable on a `const map`, because it is a mutating operation. So: for read-only lookups, use `find`, `count`, or `contains`; for bounds-checked access, use `at()`—like vector's `at`, it throws `std::out_of_range` when the key does not exist.
 
-## Different Style — Maintaining Unique Ordered Sets with std::set
+## Switching Gears — Maintaining Unique, Sorted Collections with std::set
 
-`std::set` is declared in the `<set>` header file and can be understood as a "map with only keys and no values." All its elements are unique and always sorted. When we need deduplication or to determine "if something belongs to a set," `std::set` comes into play.
+`std::set` is declared in the `<set>` header and can be understood as "a map with keys but no values". All of its elements are unique and always sorted. Whenever we need to deduplicate, or to answer "does this thing belong to the set", `set` earns its keep.
 
-Basic operations are very similar to `map`:
+Its basic operations look nearly identical to map's:
 
 ```cpp
 #include <iostream>
 #include <set>
 
-int main() {
-    std::set<int> numbers;
+int main()
+{
+    std::set<int> s = {5, 3, 1, 4, 2, 3, 1};
 
-    // Insert
-    numbers.insert(5);
-    numbers.insert(3);
-    numbers.insert(5); // Duplicate, will be ignored
-    numbers.insert(1);
+    // Duplicate elements are dropped automatically, and elements end up sorted
+    // s: {1, 2, 3, 4, 5}
+
+    s.insert(6);        // insert
+    s.emplace(0);       // construct in place and insert
+    s.erase(3);         // erase by key
 
     // Lookup
-    if (numbers.contains(3)) { // C++20
-        std::cout << "3 is in the set" << std::endl;
+    if (s.contains(4)) {            // C++20
+        std::cout << "4 is in the set\n";
     }
 
-    // Deletion
-    numbers.erase(5);
-
-    // Iteration
-    for (int n : numbers) {
-        std::cout << n << " "; // Output: 1 3
+    if (s.count(2)) {               // works in all C++ versions
+        std::cout << "2 is in the set\n";
     }
-    std::cout << std::endl;
+
+    auto it = s.find(1);
+    if (it != s.end()) {
+        std::cout << "Found: " << *it << "\n";
+    }
 
     return 0;
 }
 ```
 
-You will notice that `set`'s interface is almost identical to `map`, except it lacks `operator[]` and `at()`—because `set` has no "value" to access; dereferencing an iterator yields the key itself. Another minor difference is that `set::insert()` returns a `pair<iterator, bool>`, where the `bool` tells you whether the insertion actually happened (returns `false` if the element already exists).
+You will find that set's interface mirrors map's almost exactly, minus `operator[]` and `at`—there is no "value" to access, and dereferencing the iterator hands you the key itself. One other small difference: set's `insert` returns a `pair<iterator, bool>`, where the `bool` tells you whether the insertion actually happened (`false` means the element was already there).
 
-An easily overlooked feature is that `set` provides `lower_bound()` and `upper_bound()`, which are useful for range queries. For example, finding all elements in the set greater than or equal to 3 and less than 7:
+One easily overlooked feature is that set provides `lower_bound` and `upper_bound`, which we can use for range queries. For example, to find all elements in the set that are greater than or equal to 3 and less than 7:
 
 ```cpp
-#include <iostream>
-#include <set>
-
-int main() {
-    std::set<int> numbers = {1, 3, 5, 7, 9, 11};
-
-    // Find first element >= 3
-    auto start = numbers.lower_bound(3);
-    // Find first element > 7
-    auto end = numbers.upper_bound(7);
-
-    for (auto it = start; it != end; ++it) {
-        std::cout << *it << " "; // Output: 3 5 7
-    }
-    std::cout << std::endl;
-
-    return 0;
+std::set<int> s = {1, 3, 5, 7, 9};
+auto lo = s.lower_bound(3);   // points at 3
+auto hi = s.upper_bound(7);   // points at 9
+for (auto it = lo; it != hi; ++it) {
+    std::cout << *it << " ";   // Output: 3 5 7
 }
 ```
 
-## Iterating Key-Value Pairs — Traversing Associative Containers
+## Walking the Key-Value Pairs — Traversing Associative Containers
 
-Like `vector`, associative containers support range-for loops. However, `map`'s element type is `std::pair<const Key, Value>`. In C++11, you needed to access keys and values via `first` and `second`:
+Like vector, associative containers support range-for traversal. But a map's element type is `pair<const Key, Value>`, so in C++11 we access the key and the value through `.first` and `.second`:
 
 ```cpp
-for (const auto& pair : scores) {
-    std::cout << pair.first << ": " << pair.second << std::endl;
+std::map<std::string, int> scores = {
+    {"Alice", 95}, {"Bob", 87}, {"Charlie", 72}
+};
+
+// C++11 style
+for (const auto& p : scores) {
+    std::cout << p.first << ": " << p.second << "\n";
 }
 ```
 
-C++17 introduced **structured binding**, allowing us to name the two members of the pair individually, significantly improving readability:
+C++17 introduced **structured bindings**, which let us give the two members of the pair a name each—a big readability win:
 
 ```cpp
-for (const auto& [key, value] : scores) {
-    std::cout << key << ": " << value << std::endl;
+// C++17 style — recommended
+for (const auto& [name, score] : scores) {
+    std::cout << name << ": " << score << "\n";
 }
 ```
 
-`auto [key, value]` is the syntax for structured binding. `key` binds to `pair.first`, and `value` binds to `pair.second`. Note the use of `const auto&` instead of `auto`—just like when iterating vectors, this avoids unnecessary copies. If you need to modify the value during iteration (note: the `key` is `const` and cannot be modified), simply remove the `const`:
+`[name, score]` is the structured-binding syntax: `name` binds to `pair.first`, `score` binds to `pair.second`. Note that we use `const auto&` rather than `auto`—same as when traversing a vector—to avoid unnecessary copies. If we need to modify values during traversal (note: the key is `const` and cannot be modified), just drop the `const`:
 
 ```cpp
-for (auto& [key, value] : scores) {
-    value += 10; // OK
-    // key = "new"; // ERROR: key is const
+// Give everyone extra points
+for (auto& [name, score] : scores) {
+    score += 5;
+    // name += "x";  // compile error! the key is const
 }
 ```
 
-Iterating `set` is simpler since it only has a key:
+Traversing a set is even simpler, since it has only a key:
 
 ```cpp
-for (int n : numbers) {
-    std::cout << n << " ";
+std::set<int> s = {5, 3, 1, 4, 2};
+for (const auto& elem : s) {
+    std::cout << elem << " ";   // Output: 1 2 3 4 5 (sorted)
 }
 ```
 
-## Changing the Engine — std::unordered_map
+## Swapping the Engine — std::unordered_map
 
-`std::unordered_map` is declared in the `<unordered_map>` header. Its functionality is nearly identical to `std::map`—both are key-value containers supporting `insert()`, `erase()`, `find()`, `count()`, `contains()` (C++20), `operator[]`, and `at()`. However, the underlying data structure is completely different: `std::map` uses a red-black tree, while `std::unordered_map` uses a hash table.
+`std::unordered_map` is declared in the `<unordered_map>` header and does almost exactly what `std::map` does: both are key-value containers, and both support `insert`, `emplace`, `erase`, `find`, `count`, `contains` (C++20), `operator[]`, and `at`. But the underlying data structure is completely different: `map` uses a red-black tree, `unordered_map` uses a hash table.
 
-This difference brings several practical implications. Regarding lookup performance, `std::map` is stable at O(log n), while `std::unordered_map` is average O(1) but worst-case O(n)—degrading when many keys hash to the same bucket. Regarding element order, `std::map` is always sorted by key, whereas `std::unordered_map`'s order is unpredictable; insertion or deletion can change the order. Regarding memory usage, hash tables generally consume more memory than red-black trees.
+That difference has several practical consequences. Lookup performance: `map` is a steady O(log n), while `unordered_map` averages O(1) but degrades to O(n) in the worst case—when a large number of keys collide in the hash table. Element order: `map` is always sorted by key, whereas `unordered_map`'s element order is unpredictable, and every insertion or deletion may reshuffle it. Memory usage: a hash table usually consumes more memory than a red-black tree.
 
-So, when should you use which? A simple selection criterion: if you need to iterate elements in key order or need range queries like `lower_bound()`/`upper_bound()`, use `std::map`. If you just frequently do "give a key, get a value" and don't care about order, `std::unordered_map` is faster. In most daily scenarios, `std::unordered_map` is the better choice—pure key-based lookup is far more common than ordered traversal.
+So when should you use which? A simple rule of thumb: if you need to traverse elements in key order, or need range queries like `lower_bound`/`upper_bound`, use `map`; if you are just doing frequent "give a key, fetch a value" operations and don't care about order, `unordered_map` is faster. For the vast majority of everyday scenarios, `unordered_map` is the more fitting choice—after all, pure key-lookup use cases far outnumber those that genuinely need ordered traversal.
 
 ```cpp
 #include <iostream>
 #include <string>
 #include <unordered_map>
 
-int main() {
-    std::unordered_map<std::string, int> ages;
+int main()
+{
+    std::unordered_map<std::string, int> freq;
+    freq["hello"] = 3;
+    freq["world"] = 5;
+    freq.emplace("cpp", 1);
 
-    ages["Alice"] = 30;
-    ages["Bob"] = 25;
-
-    // Fast lookup
-    if (ages.contains("Alice")) {
-        std::cout << "Alice is " << ages["Alice"] << " years old." << std::endl;
+    // The interface is exactly the same as map's
+    if (auto it = freq.find("hello"); it != freq.end()) {
+        std::cout << it->first << ": " << it->second << "\n";
     }
 
-    // Order is not guaranteed
-    for (const auto& [name, age] : ages) {
-        std::cout << name << ": " << age << std::endl;
+    // But iteration order is not guaranteed
+    for (const auto& [word, count] : freq) {
+        std::cout << word << " -> " << count << "\n";
     }
 
     return 0;
 }
 ```
 
-> **Pitfall Warning**: `std::unordered_map` requires the key type to either have a default `std::hash` specialization or for you to manually provide a hash function. The standard library provides `std::hash` specializations for built-in types (`int`, `double`, `std::string`, etc.), so these can be used as keys directly. However, if you want to use a custom struct as a key for `std::unordered_map`, you must implement the `std::hash` specialization and `operator==`, otherwise the code won't compile. In contrast, `std::map` only requires the key to support `operator<` (or a custom comparator), which is a lower barrier to entry. If you find that compilation fails with a custom key type, check if you are using `std::unordered_map` and forgot to provide a hash function.
+`unordered_map` requires the key type to either have a default `std::hash` specialization, or to come with a hash function we provide ourselves. The standard library already provides `std::hash` specializations for the built-in types (`int`, `double`, `std::string`, and so on), so those types work as keys directly. But if we want to use a custom struct as an `unordered_map` key, we have to implement a `std::hash` specialization and `operator==` ourselves, otherwise it simply fails to compile. By comparison, `std::map` only asks that the key support `operator<` (or a custom comparator)—a much lower bar. When a custom type used as a key refuses to compile, first check whether you used `unordered_map` and forgot to supply a hash function.
 
-## Practice Time — Word Frequency and Spell Checking
+## Hands-On Time — Word Frequency Counting and Spell Checking
 
-Now let's combine `map` and `set` to write a practical program. The first feature is word frequency statistics: read a text and use `std::map` to count occurrences of each word. The second feature is spell checking: use a `std::set` to store a dictionary and check if input words exist in it.
+Now let's knead map and set together into one hands-on program. The first feature is word frequency counting: read in a piece of text and count how often each word appears, using a `std::map`. The second feature is spell checking: store a dictionary in a `std::set`, then check whether the input words are in it.
 
 ```cpp
 #include <iostream>
-#include <fstream>
-#include <sstream>
-#include <string>
 #include <map>
 #include <set>
-#include <algorithm> // For std::transform
+#include <sstream>
+#include <string>
+#include <vector>
 
-// Helper function to convert string to lowercase
-std::string to_lower(std::string s) {
-    std::transform(s.begin(), s.end(), s.begin(),
-                   [](unsigned char c){ return std::tolower(c); });
-    return s;
+/// Split a string into a list of words by whitespace
+std::vector<std::string> split_words(const std::string& text)
+{
+    std::vector<std::string> words;
+    std::istringstream iss(text);
+    std::string word;
+    while (iss >> word) {
+        words.push_back(word);
+    }
+    return words;
 }
 
-int main() {
-    // 1. Word Frequency Statistics
-    std::string text = "Hello world Hello C++ World Map Set";
-    std::stringstream ss(text);
-    std::string word;
+/// Count how often each word occurs, using a map
+void word_frequency_demo()
+{
+    std::string text = "the cat sat on the mat and the cat slept";
+    auto words = split_words(text);
 
-    std::map<std::string, int> word_counts;
-
-    while (ss >> word) {
-        word = to_lower(word);
-        word_counts[word]++;
+    std::map<std::string, int> freq;
+    for (const auto& w : words) {
+        // operator[] is exactly right here: inserts 0 if absent, then ++ increments
+        ++freq[w];
     }
 
-    std::cout << "--- Word Frequencies ---" << std::endl;
-    for (const auto& [word, count] : word_counts) {
-        std::cout << word << ": " << count << std::endl;
+    std::cout << "=== Word Frequency ===\n";
+    for (const auto& [word, count] : freq) {
+        std::cout << "  " << word << ": " << count << "\n";
     }
+}
 
-    // 2. Spell Checking
+/// Simple spell checking with a set
+void spell_check_demo()
+{
+    // Build a small dictionary
     std::set<std::string> dictionary = {
-        "hello", "world", "cpp", "map", "set", "test"
+        "the", "cat", "sat", "on", "mat", "and", "slept",
+        "dog", "ran", "in", "park", "hello", "world"
     };
 
-    std::cout << "\n--- Spell Check ---" << std::endl;
-    std::vector<std::string> words_to_check = {"hello", "java", "map", "rust"};
+    std::string text = "the cat danced on the roof";
+    auto words = split_words(text);
 
-    for (const auto& w : words_to_check) {
-        if (dictionary.contains(to_lower(w))) { // C++20
-            std::cout << w << ": OK" << std::endl;
-        } else {
-            std::cout << w << ": MISSPELLED" << std::endl;
+    std::cout << "\n=== Spell Check ===\n";
+    std::cout << "Input: \"" << text << "\"\n";
+    for (const auto& w : words) {
+        if (!dictionary.contains(w)) {
+            std::cout << "  Unknown word: \"" << w << "\"\n";
         }
     }
+}
 
+/// Compare the iteration order of map and unordered_map
+void map_order_demo()
+{
+    std::map<std::string, int> ordered = {
+        {"delta", 4}, {"alpha", 1}, {"charlie", 3}, {"bravo", 2}
+    };
+
+    std::cout << "\n=== std::map (ordered) ===\n";
+    for (const auto& [key, val] : ordered) {
+        std::cout << "  " << key << ": " << val << "\n";
+    }
+}
+
+int main()
+{
+    word_frequency_demo();
+    spell_check_demo();
+    map_order_demo();
     return 0;
 }
 ```
@@ -315,120 +317,63 @@ int main() {
 Compile and run:
 
 ```bash
-g++ -std=c++20 main.cpp -o main
-./main
+g++ -std=c++20 -Wall -Wextra -o map_demo map_demo.cpp && ./map_demo
 ```
 
 Expected output:
 
 ```text
---- Word Frequencies ---
-c++: 1
-hello: 2
-map: 1
-set: 1
-world: 2
+=== Word Frequency ===
+  and: 1
+  cat: 2
+  mat: 1
+  on: 1
+  sat: 1
+  slept: 1
+  the: 3
 
---- Spell Check ---
-hello: OK
-java: MISSPELLED
-map: OK
-rust: MISSPELLED
+=== Spell Check ===
+Input: "the cat danced on the roof"
+  Unknown word: "danced"
+  Unknown word: "roof"
+
+=== std::map (ordered) ===
+  alpha: 1
+  bravo: 2
+  charlie: 3
+  delta: 4
 ```
 
-Looking at the word frequency output—`std::map` automatically sorted the results by key in lexicographical order. This is the ordering provided by the red-black tree. In the frequency statistics, we used `operator[]` for counting. Here, the behavior of `operator[]` ("insert default value 0 if missing") is exactly what we want—on the first encounter of a word, it inserts 0 and then increments to 1; subsequent encounters just increment. However, be careful: this usage only applies when you truly want "create on access." In read-only lookups, it is a trap.
+Look at the word frequency output: `map` automatically arranged the results in lexicographic key order—that is the ordering the red-black tree buys us. We counted with `++freq[w]`, and here `operator[]`'s "insert the default value 0 if absent" behavior is exactly what we want: the first time a word appears, it is inserted as 0 and incremented to 1; every later occurrence just keeps incrementing. But be very careful—this pattern is only appropriate when you truly want "create on access"; in a read-only lookup it is a trap.
 
-For the spell checking part, the `contains()` method (C++20) of `std::set` makes the code very clear—just one line to check if a word is in the dictionary. If your compiler doesn't support C++20, you can use `count()` instead: `if (dictionary.count(word) > 0)`.
+In the spell-check part, set's `contains` method (C++20) keeps the code crystal clear: a single line decides whether a word is in the dictionary. If your compiler does not support C++20, substitute `count`: `dictionary.count(w) != 0`.
 
 ## Your Turn — Exercises
 
 ### Exercise 1: Student Grade Management
 
-Use `std::map` to implement a simple grade management program: support adding students and grades, querying grades by name, deleting students, and listing all students and their grades (sorted by name). Requirement: use `find()` to check if a student exists, not `operator[]`.
+Use `std::map<std::string, int>` to implement a simple grade-management program: it should support adding students with grades, querying a grade by name, removing a student, and listing all students with their grades (sorted by name). You are required to use `find`—not `operator[]`—to check whether a student exists.
 
 ```cpp
-#include <iostream>
-#include <string>
-#include <map>
-
-int main() {
-    std::map<std::string, int> grades;
-    std::string command, name;
-    int score;
-
-    while (std::cin >> command) {
-        if (command == "add") {
-            std::cin >> name >> score;
-            grades[name] = score;
-        } else if (command == "query") {
-            std::cin >> name;
-            auto it = grades.find(name);
-            if (it != grades.end()) {
-                std::cout << name << "'s score: " << it->second << std::endl;
-            } else {
-                std::cout << "Student " << name << " not found." << std::endl;
-            }
-        } else if (command == "delete") {
-            std::cin >> name;
-            if (grades.erase(name)) {
-                std::cout << "Deleted " << name << std::endl;
-            } else {
-                std::cout << "Student " << name << " not found." << std::endl;
-            }
-        } else if (command == "list") {
-            for (const auto& [n, s] : grades) {
-                std::cout << n << ": " << s << std::endl;
-            }
-        } else if (command == "exit") {
-            break;
-        }
-    }
-    return 0;
-}
+void add_student(std::map<std::string, int>& db,
+                 const std::string& name, int score);
+bool get_score(const std::map<std::string, int>& db,
+               const std::string& name, int& out_score);
+void list_all(const std::map<std::string, int>& db);
 ```
 
-### Exercise 2: Rewrite Word Frequency with unordered_map
+### Exercise 2: Rewriting Word Frequency Counting with unordered_map
 
-Replace `std::map` with `std::unordered_map` in the practical program above and observe the change in output order. Then use `std::chrono` to time the execution and compare the performance difference between the two implementations when processing a text containing 100,000 random words. Experience the actual difference between O(1) and O(log n) with large datasets.
+Replace the `std::map` in the hands-on program above with `std::unordered_map`, and observe how the output order changes. Then time both versions with `<chrono>` and compare their performance on a text containing 100,000 random words. Get a feel for how much O(1) and O(log n) actually differ once the data grows.
 
 ### Exercise 3: Set Operations
 
-Use two `std::set`s to store sets A and B, and manually implement intersection, union, and difference operations. (Hint: Iterate through one set and use `find()` or `contains()` to check in the other set.)
+Use two `std::set<int>` objects to store sets A and B respectively, and implement intersection, union, and difference by hand. (Hint: iterate one of the sets and probe the other with `contains` or `find`.)
 
 ```cpp
-#include <iostream>
-#include <set>
-#include <vector>
-
-int main() {
-    std::set<int> A = {1, 2, 3, 4, 5};
-    std::set<int> B = {4, 5, 6, 7, 8};
-    std::set<int> intersection, difference;
-
-    // Intersection
-    for (int x : A) {
-        if (B.contains(x)) { // C++20, or use B.count(x)
-            intersection.insert(x);
-        }
-    }
-
-    // Difference (A - B)
-    for (int x : A) {
-        if (!B.contains(x)) {
-            difference.insert(x);
-        }
-    }
-
-    std::cout << "Intersection: ";
-    for (int x : intersection) std::cout << x << " ";
-    std::cout << std::endl;
-
-    std::cout << "Difference (A-B): ";
-    for (int x : difference) std::cout << x << " ";
-    std::cout << std::endl;
-
-    return 0;
-}
+std::set<int> set_union(const std::set<int>& a, const std::set<int>& b);
+std::set<int> set_intersection(const std::set<int>& a, const std::set<int>& b);
+std::set<int> set_difference(const std::set<int>& a, const std::set<int>& b);
 ```
 
 ---

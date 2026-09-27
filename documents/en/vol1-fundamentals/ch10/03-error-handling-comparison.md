@@ -11,248 +11,266 @@ difficulty: intermediate
 order: 3
 platform: host
 prerequisites:
-- 异常安全
+- Exception Safety
 reading_time_minutes: 15
 tags:
 - cpp-modern
 - host
 - intermediate
 - 进阶
-title: Comparison of Error Handling Approaches
+title: Comparing Error Handling Approaches
 translation:
   source: documents/vol1-fundamentals/ch10/03-error-handling-comparison.md
-  source_hash: 4b1df1b29e50a5f938cc7c639dce92b8e57c6096c72f16d0b9f4f1caa627d30b
-  translated_at: '2026-06-16T03:46:32.005530+00:00'
+  source_hash: c5a0ed3995a5a85d4a14efdbd2f0e4d1dfa3127b67b2da6a4c3c2d8dbbd9cbc5
+  translated_at: '2026-09-25T11:50:28+00:00'
   engine: anthropic
-  token_count: 2669
+  token_count: 3000
 ---
-# Comparing Error Handling Strategies
+# Comparing Error Handling Approaches: A Fuller Toolbox Demands More Skill
 
-The C++ language provides us with more error handling tools than most languages. In the C era, we only had return values and `errno`; Java and C# rely almost entirely on exceptions; Rust provides `Result` and `?` operators. C++? It has them all. Error codes, exceptions, `std::optional`, `std::expected`—the toolbox is fully stocked. Having many options isn't a bad thing, but if we don't understand the design intent and trade-offs of each tool, it's easy to write code with mixed styles: in the same project, some functions return `std::error_code`, some throw exceptions, and some return `std::optional`. The caller has to consult the documentation every time to know how to handle errors.
+The error handling toolbox C++ hands us is larger than in most languages. In the C era we had only return values and `errno`; Java and C# lean almost entirely on exceptions; Rust gave us `Result<T, E>` and the `?` operator. And C++? It has all of them: error codes, exceptions, `std::optional`, `std::expected`. Having plenty isn't a bad thing, but if we don't understand the design intent and trade-offs behind each tool, mixed-style code comes easy: in the same project, one function returns `-1`, another throws, a third returns `std::nullopt`, and the caller has to dig through the docs every single time to figure out how errors should be handled.
 
-In this article, we take a high-level perspective to compare several major error handling strategies in C++. Our goal is not to argue about "which is best"—that debate is usually meaningless—but to clarify which scenarios suit which method, which don't, and how to make choices in actual projects. We will start from the oldest error codes, work our way through to C++23's `std::expected`, and finally provide a practical decision guide.
+In this article we step back for a wider view and put C++'s major error handling strategies side by side. Our goal is not to argue over "which one is best" (that debate is usually pointless), but to work out which approach fits which scenarios, which it doesn't, and how to choose in a real project. We start with the oldest of them all—error codes—walk all the way up to C++23's `std::expected`, and close with a practical decision guide.
 
 ## Starting with Error Codes: Simple but Unsafe
 
-Error codes are a legacy solution from the C language era and are the first error handling method every C++ programmer encounters. The principle is very direct: a function tells you if it succeeded or failed through its return value, usually using `0` to indicate success and a negative number for an error, or using a set of `enum` or `std::error_code` to distinguish different error types.
+Error codes are a solution inherited from the C era, and the first error handling style every C++ programmer meets. The idea is dead simple: the function tells us through its return value whether it succeeded or failed—usually `0` for success and a negative number for failure, or a set of `#define`s or an `enum` to tell different error types apart.
 
 ```cpp
-// Traditional C style error code
-int divide(int a, int b, int& result) {
+int divide(int a, int b, int* result) {
     if (b == 0) {
-        return -1; // Error: Division by zero
+        return -1;  // Error code: division by zero
     }
-    result = a / b;
-    return 0; // Success
+    *result = a / b;
+    return 0;       // Success
+}
+
+// Caller
+int quotient = 0;
+if (divide(10, 3, &quotient) != 0) {
+    // Handle the error
 }
 ```
 
-The advantage of error codes lies in their **predictability**—the control flow doesn't suddenly jump away; every line of code executes in order, and you can see at a glance from the function signature which errors it might return. Moreover, it has zero overhead: no exception tables, no stack unwinding, and no runtime support required.
+The strength of error codes is their **predictability**—control flow never suddenly jumps away, every line executes in order, and we can see at a glance from the function signature which errors it might return. On top of that, the extra cost is zero: no exception tables, no stack unwinding, no runtime support of any kind.
 
-But error codes have a fatal problem: **the caller can choose to ignore it**. The `divide` function above returns an `int`. If the caller doesn't check the return value at all, the compiler won't complain, and the program will still run—only the result might be wrong. In a large project, failing to check error codes is almost inevitable. Even worse, error codes can only convey "what error happened" and cannot carry rich contextual information (like file paths, failed argument values) unless you define extra structures or use output parameters, which makes the code bloated.
+But error codes have one fatal flaw: **the caller can simply ignore them**. The `divide` function above returns an `int`; if the caller never checks the return value, the compiler won't complain and the program still runs—only the result may be wrong. In a large project, a missed error-code check is practically guaranteed to happen at some point. Worse, an error code can only convey *what* error happened; it cannot carry rich context (the file path, the argument values that failed) unless we define an extra struct or use output parameters—and then the code bloats.
 
-> **Warning**: If your function returns an error code but the caller doesn't check it, the error is **silently swallowed**. This type of bug is extremely hard to track—the program won't crash, won't report an error, it will just silently produce an incorrect result. In embedded systems, this kind of "silent error" can cause abnormal hardware behavior, and you won't have any idea where the problem is.
+If our function returns an error code and the caller doesn't check it, the error is **silently swallowed**. Bugs of this kind are extremely hard to trace: the program doesn't crash and doesn't report anything—it just quietly produces wrong results. In an embedded system, such "silent errors" can make the hardware misbehave, and we have no clue where things went wrong.
 
-## Exceptions: Can't be Ignored but Comes at a Cost
+## Exceptions: Impossible to Ignore, but Not Cheap
 
-C++ exceptions solve the "error ignored" problem at the language level. A `throw` statement interrupts the normal execution flow and searches up the call stack for a matching `catch` block. If you don't catch it, the program calls `std::terminate`—you cannot pretend you didn't see it.
+C++ exceptions solve the "ignored error" problem at the language level. A `throw` statement interrupts the normal flow of execution and climbs the call stack looking for a matching `catch` block. If we don't catch it, the program goes straight to `std::terminate`—there is no pretending we didn't see it.
 
 ```cpp
-// Exception handling
-double divide(int a, int b) {
+int divide(int a, int b) {
     if (b == 0) {
-        throw std::invalid_argument("Division by zero");
+        throw std::invalid_argument("division by zero");
     }
-    return static_cast<double>(a) / b;
+    return a / b;
 }
 
-void try_divide() {
-    try {
-        auto res = divide(10, 0);
-        std::cout << "Result: " << res << std::endl;
-    } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-    }
+// The caller must handle it, or the exception keeps propagating
+try {
+    int result = divide(10, 0);
+} catch (const std::invalid_argument& e) {
+    std::cout << "Error: " << e.what() << "\n";
 }
 ```
 
-The strength of exceptions is that they bind "error information" with "control flow"—you cannot catch an exception and then not handle it (without re-throwing). Also, exceptions can carry arbitrarily rich information (via derived classes of `std::exception`). After a low-level function throws an exception, the top level can uniformly catch and handle it, while intermediate layers don't need to care.
+The strength of exceptions is that they bind the error information and the control flow together—we cannot catch an exception and leave it unhandled. Exceptions can also carry arbitrarily rich information (through classes derived from `std::exception`): a low-level function deep in the call stack throws, the top level catches and handles it uniformly, and the layers in between don't need to care at all.
 
-But exceptions also have several non-negligible issues. The first is **performance overhead**: although the overhead of the "Happy path" (when no exception occurs) is very small on modern compilers (zero-cost model), once an exception is thrown, the overhead of stack unwinding is considerable—local objects must be destructed frame by frame, and matching `catch` blocks must be located. The second is **opaque control flow**: looking at the function signature, you have no idea if it will throw an exception or what it might throw. C++11 introduced `noexcept` and `throw()`, but dynamic exception specifications like `throw(type)` were removed in C++17. Now only the `noexcept` keyword remains—it only tells you "this function guarantees not to throw," but there is no language-level constraint for "what might be thrown."
+Still, exceptions have several problems we cannot overlook. **Performance cost** is the first: although the cost of the "happy path" (when no exception occurs) is already tiny on modern compilers (the zero-cost model), once an exception is actually thrown, the cost of stack unwinding is considerable—local objects must be destructed frame by frame and the matching `catch` block located. **Opaque control flow** is another: looking at a function signature alone, we have no way to know whether it throws, or what it throws. C++11 did bring us `throw()` and `noexcept`, but dynamic exception specifications like `throw(std::invalid_argument)` were removed in C++17, leaving only the single keyword `noexcept`—it can only tell us "this function guarantees it won't throw," and imposes no language-level constraint at all on "which exceptions might be thrown."
 
-The third, and most practical issue: **many embedded toolchains simply do not support exceptions**. The `-fno-exceptions` option in GCC and Clang completely disables the exception mechanism; if a `throw` statement is present, the linker will error out. On resource-constrained MCUs, the code size overhead of exceptions (exception tables, RTTI) is often unacceptable. This leads to a fragmented status quo: desktop and server-side C++ use exceptions heavily, while embedded C++ basically doesn't—same language, two different styles.
+Then we run into the most practical problem of all: **many embedded toolchains don't support exceptions at all**. GCC's and Clang's `-fno-exceptions` flag disables the exception machinery entirely; the moment a `throw` statement appears, the link fails. On severely resource-constrained MCUs, the code-size cost of exceptions (exception tables, RTTI) is often unacceptable. The result is a split reality: desktop and server C++ uses exceptions heavily, while embedded C++ barely uses them—the same language, two different styles.
 
-## std::optional: Is it There or Not?
+## std::optional: A Value or No Value
 
-C++17 introduced `std::optional`, which expresses a very simple concept: this value **might exist, or it might not**. Unlike error codes, `std::optional` is part of the type system—the function signature `std::optional<int> find_id(...)` explicitly tells you "the return value might be missing," and the caller must face this fact.
+C++17 introduced `std::optional<T>`, which expresses a very plain idea: this value **may exist, or may not**. Unlike error codes, `optional` is part of the type system—the signature `std::optional<int> divide(int a, int b)` tells us explicitly that "the return value may be absent," and the caller has to face that fact.
 
 ```cpp
 #include <optional>
-#include <iostream>
 
 std::optional<int> safe_divide(int a, int b) {
     if (b == 0) {
-        return std::nullopt; // Indicate failure
+        return std::nullopt;  // Division by zero: return empty
     }
     return a / b;
 }
 
-void test_optional() {
-    auto result = safe_divide(10, 0);
-    if (result.has_value()) {
-        std::cout << "Result: " << result.value() << std::endl;
-    } else {
-        std::cout << "Division failed." << std::endl;
+// Caller
+auto result = safe_divide(10, 0);
+if (result.has_value()) {
+    std::cout << "Result: " << result.value() << "\n";
+} else {
+    std::cout << "Division by zero!\n";
+}
+```
+
+The strength of `std::optional` is that it is **lightweight and explicit**. It forces the caller, at the type level, to deal with the "value absent" case—if we call `.value()` without checking `has_value()` and the value is empty, we get a `std::bad_optional_access` exception (yes, internally it still uses exceptions). We can also skip the check and access the value directly with `*result`, but when the value is empty that is undefined behavior.
+
+The problem with `std::optional` is that it can only tell us "it failed"—it **cannot tell us why it failed**. Division by zero is one failure, overflow is another, an invalid argument a third—but `std::optional` treats them all alike and returns `std::nullopt` for every one of them. Once we need to distinguish different error types, `optional` is no longer enough.
+
+Where `optional` fits: there is exactly one kind of error ("not found", "doesn't exist"), and the caller doesn't need to know the specific reason. Think of looking up an element in a container: `std::find_if` returns `end()` when nothing matches, but if we design our API to return a `std::optional`, the semantics become crystal clear—a value means found, empty means not found. Simple and clean.
+
+## std::expected: Both the Value and the Reason
+
+`std::expected<T, E>`, introduced in C++23, combines the type safety of `std::optional` with the rich error information of exceptions. Put simply, an `expected<T, E>` holds either a success value `T` or an error `E`—and that error can be any type, entirely up to you.
+
+```cpp
+#include <expected>
+#include <string>
+
+enum class DivideError {
+    DivisionByZero,
+    IntegerOverflow
+};
+
+std::expected<int, DivideError> checked_divide(int a, int b) {
+    if (b == 0) {
+        return std::unexpected(DivideError::DivisionByZero);
+    }
+    // Simplified: overflow left unhandled for now
+    return a / b;
+}
+
+// Caller
+auto result = checked_divide(10, 0);
+if (result.has_value()) {
+    std::cout << "Result: " << result.value() << "\n";
+} else {
+    // Different error types can be handled differently
+    switch (result.error()) {
+        case DivideError::DivisionByZero:
+            std::cout << "Cannot divide by zero!\n";
+            break;
+        case DivideError::IntegerOverflow:
+            std::cout << "Integer overflow occurred!\n";
+            break;
     }
 }
 ```
 
-The benefit of `std::optional` is that it is **lightweight and explicit**. It forces the caller to handle the "value is missing" case at the type level—if you directly call `.value()` without checking `.has_value()`, it will throw `std::bad_optional_access` (yes, it still uses exceptions internally). You can also use `*result` to skip the check and access directly, but if the value is empty, that is undefined behavior.
+Look at the biggest difference between `std::expected` and `std::optional`: when failure happens, `expected` can tell us **why it failed**. The error type `E` can be an enum, a struct, a `std::string`—any type that carries enough information. That lets the caller pick different recovery strategies for different error types, instead of staring at a hollow "failed".
 
-The problem with `std::optional` is: it can only tell you "it failed," but **not why it failed**. Division by zero is one kind of failure, overflow is another, and invalid arguments are a third—but `std::optional` treats all these the same, returning `std::nullopt` for everything. If you need to distinguish between different error types, `std::optional` isn't enough.
+C++23 also gave `std::expected` a set of monadic operations that let us chain multiple fallible steps together: `and_then` continues to the next step on success, `transform` converts the value's type on success, and `or_else` attempts recovery on failure. On error, these operations automatically skip the remaining steps and propagate the error value directly—much like Rust's `?` operator in spirit, just less syntactically neat.
 
-Scenarios suitable for `std::optional` are those where there is only one kind of error ("not found", "does not exist"), and the caller doesn't need to know the specific reason. For example, finding an element in a container: `find` returns `std::nullopt` if not found. If your API is designed to return `std::optional<T>`, the semantics are clear—found means the value, not found means empty, simple and clear.
+`std::expected` has its costs, though. Before the C++23 standard was officially finalized, mainstream compiler support was still incomplete (GCC 12+ and MSVC 19.34+ covered the basic functionality; Clang lagged relatively behind). If your project is still on C++17 or an earlier standard, a third-party library such as `tl::expected` can stand in—the interface is nearly identical, so migration costs little.
 
-## std::expected: Wanting Both Value and Reason
+`std::expected`'s `value()` method throws a `std::bad_expected_access<E>` exception when the value is absent. If "no exceptions" was the whole reason you chose `expected`, remember to check with `has_value()` first, or dereference with `*` (UB when the value is empty, but no exception). Mixing `expected` with exception handling is a style inconsistency that is easy to miss.
 
-`std::expected` is a type introduced in C++23 that combines the type safety of `std::optional` with the rich error information of exceptions. Simply put, `std::expected<T, E>` either contains a successful value `T` or an error `E`—and this error can be any type you define.
+## The Four Strategies Head to Head
+
+Let's put the key properties of the four error handling approaches side by side. The table below is the core reference for making the choice:
+
+| Property | Error codes | Exceptions | `std::optional` | `std::expected` |
+|------|--------|------|------------------|------------------|
+| Can be ignored? | Yes (the biggest problem) | No | Yes (but the type system reminds you) | Yes (but the type system reminds you) |
+| Carries error info | Needs extra machinery | Natively supported | No (only present/absent) | Yes, custom error type |
+| Performance cost | Zero | Stack unwinding costs | Tiny | Tiny |
+| Embedded usability | Fully usable | Mostly disabled | Fully usable | Fully usable (C++23) |
+| Stack unwinding | None | Yes | None | None |
+| Standard required | Plain C suffices | C++ (must be enabled) | C++17 | C++23 |
+
+From this table a clear divide emerges. The essential difference between exceptions and the other three lies in the **control flow model**: exceptions are a non-local jump, while error codes / `optional` / `expected` are all local value passing. That distinction decides where each of them fits.
+
+In a real project, the selection logic goes roughly like this. When the project allows exceptions (desktop/server applications), use exceptions for "unrecoverable, unexpected" errors and `expected` or `optional` for "anticipated errors the caller needs to handle"; when the project bans exceptions (embedded systems, game engines, real-time systems), stick to error codes and `optional` / `expected` only, and make sure every error path has explicit handling logic. **The worst case is mixing several styles with no unified convention**—that turns the whole codebase's error handling into a mess.
+
+## In Practice: Three Ways to Write Safe Division
+
+Now let's take one complete sample program and put the three exception-free error handling approaches together: the same functionality (safe integer division) implemented with error codes, `std::optional`, and `std::expected` respectively, then exercised uniformly in `main`.
 
 ```cpp
+// error_cmp.cpp
+// Comparing three error handling approaches: error codes, optional, expected
+
+#include <cstdio>
+#include <optional>
 #include <expected>
-#include <iostream>
+#include <string>
+
+// ========== Approach 1: error codes ==========
+
+constexpr int kErrDivisionByZero = -1;
+constexpr int kErrSuccess = 0;
+
+int divide_error_code(int a, int b, int* out) {
+    if (b == 0) {
+        return kErrDivisionByZero;
+    }
+    *out = a / b;
+    return kErrSuccess;
+}
+
+// ========== Approach 2: std::optional ==========
+
+std::optional<int> divide_optional(int a, int b) {
+    if (b == 0) {
+        return std::nullopt;
+    }
+    return a / b;
+}
+
+// ========== Approach 3: std::expected ==========
 
 enum class MathError {
     DivisionByZero,
-    Overflow
 };
 
-std::expected<int, MathError> safe_divide(int a, int b) {
+std::expected<int, MathError> divide_expected(int a, int b) {
     if (b == 0) {
         return std::unexpected(MathError::DivisionByZero);
     }
-    // Overflow check omitted for brevity
     return a / b;
 }
 
-void test_expected() {
-    auto result = safe_divide(10, 0);
-    if (result) {
-        std::cout << "Result: " << result.value() << std::endl;
-    } else {
-        switch (result.error()) {
-            case MathError::DivisionByZero:
-                std::cout << "Error: Division by zero" << std::endl;
-                break;
-            case MathError::Overflow:
-                std::cout << "Error: Integer overflow" << std::endl;
-                break;
-        }
-    }
-}
-```
-
-The biggest difference between `std::expected` and `std::optional` is that when failure occurs, `std::expected` can tell you **why it failed**. The error type `E` can be an enum, a struct, `std::string`—any type that carries enough information. This allows the caller to adopt different recovery strategies based on the error type, instead of facing a hollow "it failed."
-
-C++23 also provides a set of monadic operations for `std::expected`, allowing us to chain multiple operations that might fail: `.and_then()` continues to the next step on success, `.transform()` converts the value type on success, and `.or_else()` attempts recovery on failure. These operations automatically skip subsequent steps on error, directly propagating the error value—similar to Rust's `?` operator, though the syntax is not as concise.
-
-However, `std::expected` also has its costs. Before the C++23 standard is fully finalized, support in mainstream compilers is not yet complete (GCC 12+, MSVC 19.34+ support basic features, Clang's support is lagging). If your project is still using C++17 or earlier, you can use a third-party library (like `tl::expected`) as a substitute—the interface is basically the same, and migration costs are very low.
-
-> **Warning**: The `.value()` method of `std::expected` throws a `std::bad_expected_access` exception when the value is empty. If your reason for choosing `std::expected` is "no exceptions," remember to check with `.has_value()` first, or use `*` to dereference (UB if empty, but won't throw). Mixing `std::expected` with exception handling is a subtle style inconsistency that is easily overlooked.
-
-## A Head-to-Head Comparison of Four Strategies
-
-Let's compare the key attributes of the four error handling methods. The table below is our core reference when making choices:
-
-| Feature | Error Codes | Exceptions | `std::optional` | `std::expected` |
-|---------|-------------|------------|----------------|-----------------|
-| Can be ignored | Yes (Biggest issue) | No | Yes (Type system warns you) | Yes (Type system warns you) |
-| Carries error info | Needs extra mechanism | Native support | None (Just has/has not) | Yes, custom error type |
-| Performance overhead | Zero | Stack unwinding cost | Minimal | Minimal |
-| Embedded availability | Fully available | Mostly disabled | Fully available | Fully available (C++23) |
-| Call stack unwinding | No | Yes | No | No |
-| Standard requirement | C language | C++ (Must enable) | C++17 | C++23 |
-
-From this table, we can see a clear divide. The fundamental difference between exceptions and the other three methods lies in the **control flow model**: exceptions are non-local jumps, while error codes / `std::optional` / `std::expected` are all local value passing. This distinction determines their applicable scenarios.
-
-In actual projects, our choice logic is roughly this: if the project allows exceptions (desktop/server applications), use exceptions for "unrecoverable, unexpected" errors, and use `std::expected` or `std::optional` for "expected, caller-needs-to-handle" errors. If the project disables exceptions (embedded, game engines, real-time systems), then use only error codes and `std::optional` / `std::expected`, and ensure explicit handling logic exists on all error paths. **The worst situation is mixing multiple methods without a unified convention**—that makes the error handling of the entire codebase a mess.
-
-## In Action: Three Ways to Write Safe Division
-
-Now let's use a complete example program to put the three "non-exception" error handling methods together—same functionality (safe integer division), implemented with error codes, `std::optional`, and `std::expected` respectively, and tested uniformly in `main`.
-
-```cpp
-#include <iostream>
-#include <optional>
-#include <expected>
-
-// 1. Error Code Implementation
-enum class DivErrCode {
-    OK,
-    DivByZero
-};
-
-DivErrCode divide_ec(int a, int b, int& out) {
-    if (b == 0) return DivErrCode::DivByZero;
-    out = a / b;
-    return DivErrCode::OK;
-}
-
-// 2. std::optional Implementation
-std::optional<int> divide_opt(int a, int b) {
-    if (b == 0) return std::nullopt;
-    return a / b;
-}
-
-// 3. std::expected Implementation
-enum class DivError {
-    DivByZero
-};
-
-std::expected<int, DivError> divide_exp(int a, int b) {
-    if (b == 0) return std::unexpected(DivError::DivByZero);
-    return a / b;
-}
+// ========== Test ==========
 
 int main() {
-    // Test Case 1: Success
-    int a = 10, b = 2;
+    struct TestCase {
+        int a;
+        int b;
+        const char* label;
+    };
 
-    // Error Code
-    int res_ec;
-    auto ec = divide_ec(a, b, res_ec);
-    if (ec == DivErrCode::OK) std::cout << "EC Result: " << res_ec << std::endl;
-    else std::cout << "EC Error" << std::endl;
+    TestCase cases[] = {
+        {10, 3,  "10 / 3"},
+        {10, 0,  "10 / 0 (error)"},
+        {7,  2,  "7 / 2"},
+    };
 
-    // Optional
-    auto res_opt = divide_opt(a, b);
-    if (res_opt) std::cout << "Opt Result: " << *res_opt << std::endl;
-    else std::cout << "Opt Error" << std::endl;
+    for (const auto& tc : cases) {
+        std::printf("--- Test: %s ---\n", tc.label);
 
-    // Expected
-    auto res_exp = divide_exp(a, b);
-    if (res_exp) std::cout << "Exp Result: " << *res_exp << std::endl;
-    else std::cout << "Exp Error: " << static_cast<int>(res_exp.error()) << std::endl;
+        // Error code version
+        int result_code = 0;
+        int err = divide_error_code(tc.a, tc.b, &result_code);
+        if (err == kErrSuccess) {
+            std::printf("  [ErrorCode]  result = %d\n", result_code);
+        } else {
+            std::printf("  [ErrorCode]  error: division by zero\n");
+        }
 
-    std::cout << "---" << std::endl;
+        // optional version
+        auto result_opt = divide_optional(tc.a, tc.b);
+        if (result_opt.has_value()) {
+            std::printf("  [Optional]   result = %d\n", result_opt.value());
+        } else {
+            std::printf("  [Optional]   error: no value\n");
+        }
 
-    // Test Case 2: Failure (Divide by zero)
-    int c = 10, d = 0;
-
-    // Error Code
-    int res_ec2;
-    auto ec2 = divide_ec(c, d, res_ec2);
-    if (ec2 == DivErrCode::OK) std::cout << "EC Result: " << res_ec2 << std::endl;
-    else std::cout << "EC Error: DivByZero" << std::endl;
-
-    // Optional
-    auto res_opt2 = divide_opt(c, d);
-    if (res_opt2) std::cout << "Opt Result: " << *res_opt2 << std::endl;
-    else std::cout << "Opt Error: nullopt" << std::endl;
-
-    // Expected
-    auto res_exp2 = divide_exp(c, d);
-    if (res_exp2) std::cout << "Exp Result: " << *res_exp2 << std::endl;
-    else std::cout << "Exp Error: " << static_cast<int>(res_exp2.error()) << std::endl;
+        // expected version
+        auto result_exp = divide_expected(tc.a, tc.b);
+        if (result_exp.has_value()) {
+            std::printf("  [Expected]   result = %d\n", result_exp.value());
+        } else {
+            switch (result_exp.error()) {
+                case MathError::DivisionByZero:
+                    std::printf("  [Expected]   error: DivisionByZero\n");
+                    break;
+            }
+        }
+    }
 
     return 0;
 }
@@ -261,38 +279,42 @@ int main() {
 Compile and run:
 
 ```bash
-g++ -std=c++23 -o error_demo error_demo.cpp
-./error_demo
+g++ -std=c++23 -Wall -Wextra error_cmp.cpp -o error_cmp && ./error_cmp
 ```
 
-If your compiler doesn't fully support `std::expected` yet, you can temporarily switch the standard to C++20 and use the `tl/expected.hpp` header library as a substitute. On GCC 13+ and MSVC 19.34+, the code above compiles directly.
+If your compiler doesn't fully support `std::expected` yet, you can temporarily switch the standard to C++20 and substitute the `tl::expected` header-only library. On GCC 13+ and MSVC 19.34+, the code above compiles as-is.
 
 Expected output:
 
 ```text
-EC Result: 5
-Opt Result: 5
-Exp Result: 5
----
-EC Error: DivByZero
-Opt Error: nullopt
-Exp Error: 0
+--- Test: 10 / 3 ---
+  [ErrorCode]  result = 3
+  [Optional]   result = 3
+  [Expected]   result = 3
+--- Test: 10 / 0 (error) ---
+  [ErrorCode]  error: division by zero
+  [Optional]   error: no value
+  [Expected]   error: DivisionByZero
+--- Test: 7 / 2 ---
+  [ErrorCode]  result = 3
+  [Optional]   result = 3
+  [Expected]   result = 3
 ```
 
-Three test cases, three implementation methods, results are completely consistent—but "consistent" is only on the surface. Notice the error case `divide(10, 0)`: the error code version outputs a string "DivByZero", the `std::optional` version can only say "nullopt", while the `std::expected` version gives the specific `DivError` enum value. In such a simple example, the difference isn't huge, but imagine if a function had five different failure modes—`std::optional` would be completely powerless—it can't tell you which failure occurred.
+Three test cases, three implementations, completely identical results—yet "identical" is only the surface. Look closely at the `10 / 0` error case: the error code version printed a `"division by zero"` string, the `optional` version could only say `"no value"`, and the `expected` version gave the concrete `DivisionByZero` enum value. In an example this simple the difference is minor, but imagine the function having a few more failure modes: `optional` would be completely helpless—it has no way to tell us which failure occurred.
 
-> **Warning**: In the three methods above, the error code version `divide_ec` has a trap that is easily overlooked—if the caller doesn't check the return value and uses `out` directly, the value of `out` on the error path is uninitialized (we initialized it in the test code, but in real code, output parameters are often forgotten to be initialized). `std::optional` and `std::expected` are safer in this regard: if you don't check `has_value()` and call `value()`, it throws an exception or causes UB, at least preventing you from continuing with a garbage value.
+Of the three versions above, the error code version `divide_error_code` hides an easily missed trap: if the caller skips checking the return value and uses `result_code` anyway, then on the error path the value of `result_code` is uninitialized (we did initialize it with `= 0`, but that is just the test code's style; in real code, output parameters are frequently forgotten). `optional` and `expected` are safer on this front: calling `.value()` without checking `has_value()` throws immediately or triggers UB—at the very least, we never carry on running with a garbage value.
 
 ## Exercises
 
-### Exercise 1: Extend Error Types
+### Exercise 1: Extending the Error Types
 
-Add an `Overflow` error type to the `std::expected` version above. Hint: In `divide`, if `a == INT_MIN` and `b == -1`, it causes overflow in two's complement representation (result exceeds the range of `int`). Handle this additional error condition in all three implementations and add corresponding test cases.
+Add an `IntegerOverflow` error type to the `error_cmp.cpp` above. Hint: in `checked_divide`, `a == INT_MIN && b == -1` overflows under two's-complement representation (the result falls outside the range of `int`). Handle this extra error condition in each of the three implementations, and add matching test cases.
 
-### Exercise 2: File Reading Error Handling
+### Exercise 2: Error Handling for Reading a File
 
-Assume you have a function `read_config`, which might fail for three reasons: file not found, permission denied, or read timeout. Design the interface for this function using `std::optional` and `std::expected` respectively (no need to implement the logic, just design the signature and error types), and compare the expressive power of the two solutions.
+Suppose you have a function `std::string read_file(const std::string& path)` that can fail for three reasons: the file doesn't exist, insufficient permissions, or a read timeout. Design this function's interface twice, once with `std::optional` and once with `std::expected` (no need to implement the actual logic—just design the signatures and error types), and compare the difference in expressive power between the two.
 
-### Exercise 3: Error Propagation Chain
+### Exercise 3: The Error Propagation Chain
 
-Use `std::expected` to implement a simple parsing chain: `parse_header` -> `validate_checksum` -> `deserialize_payload`. Each function returns `std::expected<T, Error>`. Write a complete call chain in `main` to ensure any failure in any step is correctly propagated to the top level with clear error information.
+Build a simple parsing chain with `std::expected`: `read_file` -> `parse_config` -> `validate_config`, with each function returning a `std::expected`. Write the full call chain in `main`, making sure a failure at any step propagates correctly to the top with a clear error message.

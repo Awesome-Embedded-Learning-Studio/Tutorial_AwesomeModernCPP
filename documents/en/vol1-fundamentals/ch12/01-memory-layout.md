@@ -1,102 +1,98 @@
 ---
+title: "Memory Layout"
+description: "Understand the memory model of the stack, heap, static storage, and the code segment, and learn to analyze where variables are stored and how long they live"
 chapter: 12
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-description: Understand the memory model of the stack, heap, static storage, and code
-  segments, and learn to analyze the storage location and lifetime of variables.
-difficulty: intermediate
 order: 1
+difficulty: intermediate
+reading_time_minutes: 15
 platform: host
 prerequisites:
-- STL 常用模式
-reading_time_minutes: 14
+  - "Common STL Patterns"
 tags:
-- cpp-modern
-- host
-- intermediate
-- 进阶
-title: Memory Layout
+  - cpp-modern
+  - host
+  - intermediate
+  - 进阶
+cpp_standard: [11, 14, 17, 20]
 translation:
-  engine: anthropic
   source: documents/vol1-fundamentals/ch12/01-memory-layout.md
-  source_hash: 13a3773fc7844e21766c52ae92086fc063d5bd34a3cb22644272e2d0cf18fc5f
-  token_count: 2135
-  translated_at: '2026-05-26T11:01:27.201653+00:00'
+  source_hash: 95ac5efa22c7a1c11540fd1e6ed04114f3bbd5704937e405b6fa5a2560c4e3c8
+  translated_at: '2026-09-25T12:02:09+00:00'
+  engine: anthropic
+  token_count: 3400
 ---
-# Memory Layout
 
-We previously spent considerable time discussing language-level features like types, containers, and templates, but we haven't directly answered a fundamental question: when you write `int x = 42;`, where does this `42` actually reside? Where is it located in memory? When is it created, and when is it destroyed? These might seem like "low-level details," but honestly, if you don't know which memory region your data lives in, debugging certain bizarre issues will feel like the blind men and the elephant—the address from a segmentation fault tells you the stack blew up, but you're left completely baffled.
+# Memory Layout: Where the 42 in `int x = 42` Actually Lives
 
-Understanding memory layout essentially comes down to two things: **where data resides**, and **how long it lives**. In this chapter, we break down a program's memory space into several major regions, analyzing the characteristics, typical use cases, and common pitfalls of each.
+We have spent an enormous number of pages on language-level matters—types, containers, templates—but one fundamental question has never been answered head-on: when we write `int x = 42;`, where exactly does that `42` live? What position in memory does it occupy? When is it created, and when is it destroyed? These questions look like "low-level details", but if you don't know which region of memory your data calls home, debugging certain bizarre problems turns into the blind men and the elephant—the address from a segmentation fault tells you the stack blew up, and you are still completely lost.
+
+Understanding memory layout really comes down to two things: **where data is stored**, and **how long it lives**. In this chapter we split a program's memory space into a few major regions and walk through each one's characteristics, typical uses, and the traps it sets for the unwary.
 
 ## The Four Major Memory Regions
 
-When a C++ program runs, the operating system allocates a block of virtual address space for it. This space is not a single homogeneous region; rather, it is divided into several segments, each with its own purpose and management method. For our purposes, the four most critical regions are:
+When a C++ program runs, the operating system allocates a block of virtual address space for it. That block is not one homogeneous region; it is carved into several segments, each with its own purpose and way of being managed. For us, the four regions that matter most are these:
 
 ![Process virtual address space layout](./01-memory-layout.drawio)
 
-The text segment stores compiled machine instructions and some read-only data (such as string literals `"hello"`). This region is typically read-only, and attempting to modify it will directly trigger a segmentation fault. The data segment stores initialized global and `static` variables, whose values are determined before the program starts. The BSS segment is part of the data segment, specifically reserved for uninitialized global and `static` variables—these are automatically initialized to zero, so the executable file doesn't need to store their initial values, only their size. The heap and stack are regions used dynamically at runtime; the former is managed manually by the programmer, while the latter is managed automatically by the compiler.
+Let's look at what each region holds. The text segment stores the compiled machine instructions plus some read-only data (string literals such as `"hello"`); this region is usually read-only, and any attempt to modify it triggers a segmentation fault on the spot. The data segment holds initialized global and `static` variables, whose values are already settled when the program starts. The BSS segment is the part of the data segment reserved for uninitialized global and `static` variables—these are automatically initialized to zero, so the executable does not need to store their initial values at all; recording their size is enough. The heap and the stack are the regions used dynamically at runtime: the former is managed by hand by the programmer, the latter automatically by the compiler.
 
-A key observation about this layout model is that the stack grows from high addresses to low addresses, while the heap grows from low addresses to high addresses, expanding toward each other. This means their address ranges won't overlap (unless one exhausts the available space). Furthermore, if you print the address of a stack variable and a heap variable at the same time, the stack variable will typically have a noticeably larger address value.
+One key observation about this layout model: the stack grows from high addresses toward low ones, the heap grows from low addresses toward high ones, and the two march toward each other. That means their address ranges will not overlap (unless one side exhausts the available space), and if we print the address of a stack variable and a heap variable side by side, the stack variable usually shows up with a noticeably larger value.
 
 ## Stack Memory—The Auto-Managed Fast Lane
 
-The stack is the most frequently used memory region in a C++ program. Local variables declared inside functions, function parameters, and return addresses—they all live on the stack. The stack's management is extremely straightforward and brutal: a pointer (the stack pointer) points to the current top of the stack. Allocating memory means moving the pointer toward lower addresses, and freeing memory means moving it back toward higher addresses. This "pointer movement" style of allocation doesn't require any search or merge operations, making stack allocation so fast it has near-zero overhead.
+The stack is the most heavily used memory region in a C++ program. Local variables declared inside functions, function parameters, return addresses—they all live on the stack. Stack management is brutally simple: a single pointer (the stack pointer) marks the current top of the stack; allocating memory means moving the pointer toward lower addresses, and freeing memory means moving it back up. This "pointer-shoving" style of allocation needs no searching and no merging, which is why stack allocation is so fast it amounts to nearly zero overhead.
 
-Each time a function is called, the compiler creates a "stack frame" on the stack for that function, containing all of the function's local variables, parameters, and return address. When the function returns, the entire stack frame is popped, and all local variables are instantly destroyed. This mechanism is called automatic storage duration—the variable's lifetime is entirely determined by its scope. It is created upon entering the scope and destroyed upon leaving it, without you needing to lift a finger.
+Every time a function is called, the compiler creates a stack frame for it on the stack, holding that function's local variables, parameters, and return address. When the function returns, the whole frame is popped and every local variable is destroyed in an instant. This mechanism is called automatic storage duration: a variable's lifetime is decided entirely by its scope—created on entering the scope, destroyed on leaving it—and we don't have to lift a finger.
 
 ```cpp
 #include <iostream>
 
 void foo()
 {
-    int a = 1;    // 栈上分配
-    double b = 2.0; // 紧随 a 之后
+    int a = 1;    // Allocated on the stack
+    double b = 2.0; // Right after a
     std::cout << "a 的地址: " << &a << "\n";
     std::cout << "b 的地址: " << &b << "\n";
-    // 函数返回，a 和 b 的空间自动回收
+    // On return, a's and b's storage is reclaimed automatically
 }
 
 int main()
 {
     foo();
-    // 这里 a 和 b 已经不存在了
+    // Here, a and b no longer exist
     return 0;
 }
 ```
 
-The stack's downside is equally obvious: limited space. On Linux, the default stack size is typically 8 MB (checkable with `ulimit -s`), and on Windows, it's usually 1 MB. This limit is more than enough for normal function calls, but two scenarios can easily blow past this upper bound.
+The stack's drawback is just as obvious: space is limited. On Linux the default stack size is usually 8 MB (check it with `ulimit -s`); on Windows it is usually 1 MB. For normal function calls that limit is more than enough, but two scenarios blow through it with ease.
 
-> **Pitfall Warning**: Allocating large arrays on the stack is one of the most common mistakes beginners make. The seemingly innocent declaration `int arr[10000000];` actually requires about 40 MB of stack space—far exceeding the default limit. The program will immediately segfault on startup, without even having time to output an error message. If you need a large block of memory, please use `std::vector` or allocate on the heap.
+Allocating a large array on the stack is one of the most common traps beginners step in. The harmless-looking declaration `int arr[10000000];` actually needs roughly 40 MB of stack space—far past the default limit—so the program segfaults the moment it starts, without even getting a chance to print an error message. When we need a large block of memory, use `std::vector` or allocate on the heap.
 
-Another typical scenario is recursion without a proper termination condition, or recursion that goes too deep. For example, recursively calculating a factorial up to `n = 100000` consumes stack frame space at every level of function call, quickly devouring the entire stack. In a debugger, a stack overflow usually manifests as an abnormally low stack pointer address—for instance, on Linux, you'll see the value of the `rsp` register has dropped far below the normal stack region range, meaning the stack pointer plunged straight down past the safe boundary.
+The other classic scenario is recursion without a correct termination condition, or recursion whose depth is simply too large. Computing a factorial by recursing down to `n = 100000`, for instance, burns stack-frame space at every level of the call and devours the stack in no time. In a debugger, a stack overflow usually shows up as an abnormally low stack pointer address: on Linux we will see the `rsp` register sitting far below the normal stack region—that is the stack pointer having charged straight down past the safety boundary.
 
-There is also a less obvious scenario: in embedded systems, stack space is often much smaller (some RTOS task stacks are only a few KB). In such cases, even ordinary local arrays (like `char buf[512];`) can become hidden dangers. Therefore, we should build a habit when writing code: for data structures exceeding a few hundred bytes, prioritize heap or static allocation instead of defaulting to the stack.
+There is also a less conspicuous scenario: in embedded systems the stack is often smaller still (some RTOS task stacks are only a few KB), and then even an ordinary local array (say `char buf[512];`) can become a hidden hazard. So build a habit as you write code: for data structures larger than a few hundred bytes, prefer heap or static allocation instead of tossing them onto the stack by default.
 
-> **Pitfall Warning**: Unlike a failed `new` on the heap, which throws an exception or returns `nullptr`, a stack overflow gives no such grace. When the operating system detects a stack overflow, it directly sends a SIGSEGV signal, and the program terminates immediately. There is no opportunity for graceful handling. During debugging, your only options are post-mortem analysis of a core dump or adding a counter guard at the recursion entry point.
+A stack overflow (unlike a failed heap `new`, which throws an exception or returns `nullptr`) gets no such courtesy: when the operating system detects a stack overflow it fires SIGSEGV directly and the program terminates immediately. There is no chance for graceful handling; when debugging, all we can rely on is after-the-fact analysis of a core dump, or a counter guard added at the recursion entry.
 
 ## Heap Memory—The Free but Dangerous Wilderness
 
-The heap is the largest available memory region in a program—theoretically, it can expand to the maximum value allowed by the operating system (on the TB scale on 64-bit systems). When you request memory using `new` or `malloc`, the allocator finds a suitably sized block on the heap and returns it to you. This block will persist until you explicitly release it (using `delete` or `free`). This storage method, where the programmer manually controls the lifetime, is called dynamic storage duration.
+The heap is the largest usable memory region in a program—in theory it can expand to whatever maximum the operating system allows (terabyte scale on 64-bit systems). When we request memory with `new` or `malloc`, the allocator finds a suitably sized block on the heap and returns it; that block keeps existing until it is explicitly released (`delete` or `free`). Storage whose lifetime the programmer controls by hand like this is called dynamic storage duration.
 
-The heap's flexibility comes at a cost. The allocator needs to maintain data structures like free lists or buddy systems to track which regions are occupied and which are free. Every `new` requires executing a search algorithm to find a block of the right size, and every `delete` requires executing merge operations to prevent memory fragmentation. This management overhead makes heap allocation orders of magnitude slower than stack allocation. Furthermore, frequently allocating and freeing blocks of different sizes leads to memory fragmentation—even if the total free space is sufficient, the free blocks might be carved into a large number of discontinuous small fragments, unable to satisfy larger allocation requests. This is why high-performance systems use custom allocators or memory pools to bypass the default heap allocation mechanism.
+The heap's flexibility comes at a price. The allocator has to maintain data structures such as free lists or buddy systems to track which regions are occupied and which are free; every `new` runs a search algorithm to find a block of the right size, and every `delete` runs merge operations to keep memory from fragmenting. This management overhead makes heap allocation orders of magnitude slower than stack allocation. On top of that, frequently allocating and freeing blocks of different sizes leads to memory fragmentation: the total free space may be sufficient, but it has been carved into masses of tiny, non-contiguous fragments that cannot satisfy a larger request. That is also why high-performance systems use custom allocators or memory pools to bypass the default heap allocation machinery.
 
 ```cpp
 #include <iostream>
 
 int main()
 {
-    // 堆分配
+    // Heap allocation
     int* p1 = new int(42);
-    int* p2 = new int[1000]; // 数组也在堆上
+    int* p2 = new int[1000]; // Arrays go on the heap too
 
     std::cout << "p1 指向的地址: " << p1 << "\n";
     std::cout << "p2 指向的地址: " << p2 << "\n";
 
-    // 必须手动释放
+    // Must be released manually
     delete p1;
     delete[] p2;
 
@@ -104,25 +100,25 @@ int main()
 }
 ```
 
-> **Pitfall Warning**: Forgetting to `delete`, resulting in a memory leak, is one of C++'s most notorious problems. Leaked memory is never reclaimed before the program ends. For short-lived console programs, this usually isn't a big deal (the operating system reclaims all resources when the process exits), but for long-running server programs or embedded systems, a memory leak will slowly consume all available memory, eventually causing the system to crash. This is why we repeatedly emphasized RAII in previous chapters—use smart pointers (`std::unique_ptr`, `std::shared_ptr`) and containers (`std::vector`, `std::string`) to manage dynamic memory, letting destructors automatically release resources and fundamentally eliminating the need for manual `delete`.
+Forgetting `delete` and causing a memory leak is one of C++'s most notorious problems. Leaked memory is never reclaimed before the program ends. For a short-lived console program that usually is not a big deal (the operating system reclaims all resources when the process exits), but for long-running server programs or embedded systems, a leak nibbles the available memory away bit by bit until the system finally crashes. This is exactly why earlier chapters hammered on RAII over and over: manage dynamic memory with smart pointers (`std::unique_ptr`, `std::shared_ptr`) and containers (`std::vector`, `std::string`), let destructors release resources automatically, and eliminate the need for manual `delete` at the root.
 
 ## Static and Global Memory—From Program Start to Finish
 
-Global variables, namespace-scoped variables, variables declared with `static`, and class `static` member variables all belong to static storage duration. Their lifetimes span the entire execution of the program: they are created and initialized before `main()` begins executing, and are destroyed only after `main()` returns.
+Global variables, namespace-scope variables, variables declared with `static`, and class `static` member variables all have static storage duration. Their lifetimes run through the entire program: they are created and initialized before `main()` begins executing, and destroyed only after `main()` returns.
 
-Variables in the static storage area have two initialization methods. If the value is a constant determinable at compile time (like `const int kMaxSize = 100;`), the compiler writes the initial value directly into the executable's data segment. If the initial value requires runtime computation (like `static int counter = compute_init_value();`), initialization completes at program startup, before `main()` executes.
+Variables in static storage are initialized in one of two ways. For constants whose value can be determined at compile time (like `const int kMaxSize = 100;`), the compiler writes the initial value directly into the executable's data segment; for initial values that must be computed at runtime (like `static int counter = compute_init_value();`), initialization is completed at program startup, before `main()` executes.
 
 ```cpp
 #include <iostream>
 
-int global_var = 10;          // 数据段：已初始化全局变量
-int global_uninit;             // BSS 段：未初始化全局变量（自动为 0）
-const char* kMessage = "hello"; // 数据段：指针本身在数据段
-                               // "hello" 字面量在代码段（只读）
+int global_var = 10;          // Data segment: initialized global variable
+int global_uninit;             // BSS segment: uninitialized global variable (automatically 0)
+const char* kMessage = "hello"; // Data segment: the pointer itself lives in the data segment
+                               // the "hello" literal lives in the text segment (read-only)
 
 void demo()
 {
-    static int call_count = 0; // 数据段：首次调用时初始化
+    static int call_count = 0; // Data segment: initialized on first call
     ++call_count;
     std::cout << "第 " << call_count << " 次调用\n";
 }
@@ -132,48 +128,48 @@ int main()
     std::cout << "global_var = " << global_var << "\n";
     std::cout << "global_uninit = " << global_uninit << "\n";
 
-    demo(); // 第 1 次
-    demo(); // 第 2 次
-    demo(); // 第 3 次
+    demo(); // 1st call
+    demo(); // 2nd call
+    demo(); // 3rd call
 
     return 0;
 }
 ```
 
-`static` local variables have a highly practical feature: lazy initialization. They are only initialized when program execution reaches that declaration statement, not at program startup. Starting with C++11, this initialization is also thread-safe—if multiple threads simultaneously enter a function containing a `static` local variable for the first time, the compiler guarantees that only one thread executes the initialization while the others block and wait. This feature makes `static` local variables the best approach for implementing thread-safe singletons (Meyer's Singleton).
+`static` local variables come with a very practical property: lazy initialization. A `static` local is initialized only when execution reaches its declaration statement, not at program startup. Since C++11, this initialization is thread-safe too—if multiple threads first enter a function containing a `static` local variable at the same time, the compiler guarantees that only one thread performs the initialization while the others block and wait. This property makes the `static` local variable the best vehicle for a thread-safe singleton (the Meyers' Singleton).
 
-> **Pitfall Warning**: The construction and destruction order of global variables is undefined across translation units (i.e., different .cpp files). If a global object in `a.cpp` depends on the initialization result of another global object in `b.cpp`, the program might exhibit undefined behavior during the startup phase—because the standard doesn't guarantee which one is initialized first. This is the notorious "Static Initialization Order Fiasco." The solution is to wrap the global object using a `static` local variable inside a function (Construct On First Use Idiom), leveraging the lazy initialization feature we just discussed to ensure the correct initialization order.
+The construction and destruction order of global variables is undefined across translation units (that is, across different .cpp files). If a global object in `a.cpp` depends on the initialization result of another global object in `b.cpp`, the program can hit undefined behavior during the startup phase—because the standard guarantees nothing about which one is initialized first. This is the notorious "Static Initialization Order Fiasco". The fix is to wrap the object in a `static` local variable inside a function (the Construct On First Use Idiom), exploiting the lazy initialization we just described to guarantee a correct initialization order.
 
-## Hands-on Verification—Printing Addresses of Each Region
+## Hands-On Verification—Printing the Addresses of Each Region
 
-Enough theory; let's write a program to verify this in practice. In the following code, we place a variable in each region and print their addresses. By observing the numerical size and relative positions of these addresses, we can intuitively verify the memory layout model.
+That was a lot of theory, so let's write a program and check it for real. In the code below we put one variable in each region and print its address. By looking at the addresses' magnitudes and relative positions, we can verify the memory layout model with our own eyes.
 
 ```cpp
 // layout.cpp
-// 编译: g++ -std=c++17 -O0 layout.cpp -o layout
-// 注意: 使用 -O0 关闭优化，防止编译器对变量做激进优化
+// Build: g++ -std=c++17 -O0 layout.cpp -o layout
+// Note: -O0 disables optimization, keeping the compiler from getting aggressive with these variables
 
 #include <cstdint>
 #include <iostream>
 
-// 全局变量 —— 数据段（已初始化）
+// Global variable — data segment (initialized)
 int g_initialized = 42;
 
-// 全局变量 —— BSS 段（未初始化，自动为 0）
+// Global variable — BSS segment (uninitialized, automatically 0)
 int g_uninitialized;
 
-// const 全局 —— 通常在只读段或被编译器内联
+// const global — usually in a read-only segment or inlined by the compiler
 constexpr int kGlobalConst = 100;
 
 int main()
 {
-    // 栈变量
+    // Stack variable
     int stack_var = 1;
 
-    // 堆变量
+    // Heap variable
     int* heap_var = new int(2);
 
-    // static 局部变量 —— 数据段
+    // static local variable — data segment
     static int s_static_local = 3;
 
     std::cout << "=== 各区域变量地址 ===\n";
@@ -212,44 +208,44 @@ BSS段  (未初始化):  g_uninitialized @ 0x404030
 数据段地址 > 代码段地址? 是
 ```
 
-These addresses perfectly validate our layout model: the text segment is at the lowest address, followed closely by the data and BSS segments, the heap is in the lower-middle area growing upward, and the stack is near the highest address growing downward. The address of the `main` function is far smaller than all other variables—it truly resides in the text segment. The addresses of `g_initialized` and `s_static_local` are very close—they are both in the data segment. The address of `g_uninitialized` is slightly larger than the initialized variables—the BSS segment comes after the data segment. The huge address gap between the stack and heap variables represents the unused space between them.
+These addresses validate our layout model beautifully: the text segment sits at the lowest addresses, with the data and BSS segments right above it; the heap occupies the lower-middle range and grows upward; the stack sits near the highest addresses and grows downward. The address of `main` is far smaller than every other one—it really is inside the text segment. `g_initialized` and `s_static_local` sit at very close addresses; both are in the data segment. `g_uninitialized` has a slightly larger address than the initialized variables, the BSS segment coming after the data segment. And the huge gap between the stack variable and the heap variable is exactly the unused space between the two.
 
-If you run this program on your own machine, the specific address values will certainly differ (especially stack addresses, which change with every run—this is called ASLR, or Address Space Layout Randomization, a security mechanism of the operating system), but the relative size relationships should remain consistent. If one day you see a stack address that is smaller than a heap address, it's highly likely the compiler performed some special memory layout optimization, or your platform uses a non-traditional memory model—this situation is extremely rare in desktop and server environments.
+Run this program on your own machine and the specific values will certainly differ (especially the stack address, which changes on every run—that is ASLR, address space layout randomization, an operating system security mechanism), but the relative ordering should be the same. If one day you find a stack address smaller than a heap address, most likely the compiler performed some special memory layout optimization, or your platform uses a non-traditional memory model—either way, that is extremely rare in desktop and server environments.
 
 ## Exercises
 
-### Exercise 1: Identify Storage Regions
+### Exercise 1: Identify the Storage Region
 
-Determine which memory region (stack, heap, data segment, BSS segment, or text segment) each of the following variables is stored in:
+For each variable below, figure out which memory region it is stored in (stack, heap, data segment, BSS segment, text segment):
 
 ```cpp
-const char* msg = "error";    // msg 和 "error" 各在哪里？
+const char* msg = "error";    // Where do msg and "error" each live?
 static int count;              // ?
-int* p = new int[10];         // p 和 p 指向的数组各在哪里？
+int* p = new int[10];         // Where do p and the array it points to each live?
 void func() {
     int local = 0;            // ?
     static int visits = 0;    // ?
 }
 ```
 
-### Exercise 2: Find the Stack Overflow Hazard
+### Exercise 2: Spot the Stack Overflow Hazard
 
-What is wrong with the following code? How should it be fixed?
+What is wrong with the following code? Think about how you would fix it.
 
 ```cpp
 void process_image()
 {
-    // 图像缓冲区：1920 x 1080 x 4 (RGBA) = 约 8 MB
+    // Image buffer: 1920 x 1080 x 4 (RGBA) = about 8 MB
     unsigned char buffer[1920 * 1080 * 4];
-    // ... 处理图像 ...
+    // ... process the image ...
 }
 
 int fibonacci(int n)
 {
-    return fibonacci(n - 1) + fibonacci(n - 2); // 缺少终止条件
+    return fibonacci(n - 1) + fibonacci(n - 2); // Missing termination condition
 }
 ```
 
 ### Exercise 3: Verify the Layout Model
 
-Write a program that declares a local variable, allocates a heap variable, defines a `static` local variable, and prints the address of a global variable, all within the same function. Observe whether their address distribution matches the layout model we described. Then, call a sub-function within that function, and print the address of a local variable inside the sub-function to verify whether the sub-function's stack variable address is smaller than the parent function's (the stack grows toward lower addresses).
+Write a program that, inside one function, declares a local variable, allocates a heap variable, defines a `static` local variable, and prints the address of a global variable. Observe whether the distribution of their addresses matches the layout model we described. Then call a child function from within that function and print the address of a local variable inside the child, verifying that the child function's stack variable has a smaller address than the parent's (the stack grows toward lower addresses).

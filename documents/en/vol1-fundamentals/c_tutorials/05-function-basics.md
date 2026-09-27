@@ -2,14 +2,14 @@
 chapter: 1
 cpp_standard:
 - 11
-description: Understand the C function declaration, definition, and calling mechanisms,
-  the essence of pass-by-value, pointer parameters, return value strategies, and recursion
-  principles, to build a solid foundation for C++ pass-by-reference and function overloading.
+description: Understand how C functions are declared, defined, and called; the essence
+  of pass-by-value; pointer parameters; return value strategies; and recursion, building
+  a solid foundation for C++ pass-by-reference and function overloading.
 difficulty: beginner
 order: 7
 platform: host
 prerequisites:
-- 指针与数组、const 和空指针
+- Pointers, Arrays, const, and Null Pointers
 reading_time_minutes: 10
 tags:
 - host
@@ -20,331 +20,298 @@ tags:
 title: Function Basics and Parameter Passing
 translation:
   source: documents/vol1-fundamentals/c_tutorials/05-function-basics.md
-  source_hash: 04657bb27248ca746408f203ef4731211b9cb85ffc225e70cc702f66d2cd6b8a
-  translated_at: '2026-06-16T03:33:53.249516+00:00'
+  source_hash: 141442920fddb75b0c78242b9176e0fb9ccd7c0a472887333905b3be71ad558a
+  translated_at: '2026-09-25T12:58:21+00:00'
   engine: anthropic
-  token_count: 1747
+  token_count: 4500
 ---
 # Function Basics and Parameter Passing
 
-Up to this point, we have crammed all our code into the `main` function. However, real-world programs do not work this way. A project often spans tens of thousands of lines of code. If we squeeze everything into a single function, it becomes unmaintainable. Functions are the basic unit of modular programming in C: we encapsulate a block of logic, give it a name, and call it whenever needed.
+So far, every line of code we've written has been crammed into `main`. Real-world programs don't work that way—a project easily runs to tens of thousands of lines, and squeezing all of that into a single function would be next to impossible to maintain. Functions are the basic unit of modular programming in C: wrap up a piece of logic, give it a name, and call it whenever you need it.
 
-This sounds simple, but to truly master functions, we need to understand the mechanisms behind them: how parameters are passed in, how return values come back, and how stack frames operate. Only with this solid foundation can we avoid confusion when we later tackle C++ reference passing, function overloading, and templates.
-
-## Environment Setup
-
-We will conduct all subsequent experiments in the following environment:
-
-- **Platform:** Linux x86_64 (WSL2 is also acceptable)
-- **Compiler:** GCC 13+ or Clang 17+
-- **Compiler Flags:** `-std=c17 -Wall -Wextra`
+It sounds simple, but the machinery behind functions—how arguments get in, how return values come back, how stack frames operate—is worth understanding properly. Once it clicks, you won't be confused later when you get to C++ reference passing, function overloading, and templates.
 
 ## Step 1 — Function Declaration and Definition
 
 ### Declare First, Use Later
 
-The C compiler processes code from top to bottom. If you call a function inside `main`, but that function is defined after `main`, the compiler does not know the function exists when it encounters the call point. Therefore, we need a **function declaration** (also known as a function prototype) to tell the compiler the function's "signature" in advance—specifically, the parameter types and return type:
+The C compiler processes code from top to bottom. If you call a function inside `main` but that function is defined after `main`, the compiler doesn't yet know the function exists when it reaches the call site. That's why we need a **function declaration** (also called a function prototype) to tell the compiler the function's "signature" in advance—the parameter types and the return type:
 
 ```c
 #include <stdio.h>
 
-// Function Prototype: Tells the compiler that a function named 'add' exists elsewhere.
-// It takes two integers and returns an integer.
-int add(int a, int b);
+// Function declaration (prototype)—tell the compiler in advance what this function looks like
+int calculate_checksum(const unsigned char* data, unsigned int length);
 
-int main() {
-    int result = add(5, 3);
-    printf("5 + 3 = %d\n", result);
+int main(void) {
+    unsigned char buffer[] = {0x01, 0x02, 0x03, 0x04};
+    int checksum = calculate_checksum(buffer, 4);
+    printf("Checksum: 0x%02X\n", checksum);
     return 0;
 }
 
-// Function Definition: The actual implementation of the function.
-int add(int a, int b) {
-    return a + b;
+// Function definition—the actual implementation of the function
+int calculate_checksum(const unsigned char* data, unsigned int length) {
+    int sum = 0;
+    for (unsigned int i = 0; i < length; i++) {
+        sum += data[i];
+    }
+    return sum & 0xFF;
 }
 ```
 
-Let's verify this by compiling and running:
+Let's verify—compile and run:
 
 ```bash
-gcc -std=c17 -Wall -Wextra main.c -o main
-./main
+gcc -Wall -Wextra -std=c17 checksum.c -o checksum && ./checksum
 ```
 
-**Output:**
+Output:
 
 ```text
-5 + 3 = 8
+Checksum: 0x0a
 ```
 
-In real-world projects, function declarations are usually placed in header files (`.h`), while function definitions are placed in source files (`.c`). Other files that need to call the function simply `#include` the corresponding header file. This is the basic pattern of modularization, which we saw in the compilation basics chapter.
+In real projects, function declarations usually go in header files (`.h`), and function definitions go in source files (`.c`). Any other file that needs to call the function just `#include`s the corresponding header—that's the basic pattern of modularization, and we already saw it in the post on compilation basics.
 
-Parameter names in function prototypes can be omitted (keeping only the types), but retaining them is better practice. It acts as documentation, allowing anyone reading the code to immediately understand the purpose of each parameter.
+Parameter names in a function prototype can be omitted (leaving only the types), but keeping them is the better practice—they act as documentation, letting anyone reading the code see at a glance what each parameter is for.
 
-## Step 2 — C Only Supports Pass-by-Value
+## Step 2 — C Has Only Pass-by-Value
 
-This is the most critical point to understanding C functions: **C only supports pass-by-value**. All parameters are copied when passed. The function receives a copy of the original data, and modifications to that copy do not affect the original data.
+This is the single most important point for understanding C functions: **C has only pass-by-value**. Every argument is copied when it is passed; what the function holds inside is a copy of the original data, and changes to that copy do not affect the original.
 
-### The Copy Remains Unchanged — The Safety of Pass-by-Value
+### Only the Copy Gets Modified—The Safety of Pass-by-Value
 
 ```c
-#include <stdio.h>
-
-void try_to_modify(int x) {
-    x = 100; // Modifies the local copy 'x'
-    printf("Inside function: x = %d\n", x);
+void try_modify(int x) {
+    x = 100;  // modifies a copy of x
 }
 
-int main() {
-    int num = 10;
-    try_to_modify(num);
-    printf("Outside function: num = %d\n", num);
+int main(void) {
+    int value = 42;
+    try_modify(value);
+    printf("%d\n", value);  // still 42
     return 0;
 }
 ```
 
-`try_to_modify` receives a copy of `num` (let's call it `x`). Modifying `x` does not affect the external `num`. While this might look like it "didn't work," look at it from another perspective: it means the function cannot accidentally modify the caller's data. This is a form of safety protection.
+What `try_modify` receives is a copy of `value` (named `x`), and modifying `x` has no effect on the `value` outside. It may look like the call "didn't work", but flip it around—it also means a function can't accidentally modify the caller's data. That's a safety guarantee.
 
-### Passing Pointers — Bypassing the Limitations of Pass-by-Value
+### Passing Pointers—Getting Around the Pass-by-Value Limitation
 
-What if we actually need the function to modify the caller's variable? The answer is to pass the address (a pointer). Note that we are still technically passing by value—it's just that the "value" being passed is an address:
+But what if we really do need the function to modify the caller's variables? The answer is to pass an address (a pointer). Note that this is still pass-by-value—the only difference is that the "value" being passed is an address:
 
 ```c
-#include <stdio.h>
-
-// Receives addresses of two integers
-void swap(int *a, int *b) {
-    int temp = *a; // Dereference to read value
-    *a = *b;       // Dereference to write value
+void swap(int* a, int* b) {
+    int temp = *a;
+    *a = *b;
     *b = temp;
 }
 
-int main() {
-    int x = 10;
-    int y = 20;
-    printf("Before swap: x = %d, y = %d\n", x, y);
-
-    swap(&x, &y); // Pass the addresses of x and y
-
-    printf("After swap: x = %d, y = %d\n", x, y);
+int main(void) {
+    int x = 10, y = 20;
+    swap(&x, &y);
+    printf("x=%d, y=%d\n", x, y);
     return 0;
 }
 ```
 
-`swap` receives the addresses of `x` and `y` (a copy of the pointer value), and then reads and writes to that memory location directly via dereferencing (`*a`). The pointer itself is a copy, but the memory it points to is the original data.
+`swap` receives the addresses of `x` and `y` (copies of the pointer values), then reads and writes that memory directly by dereferencing with `*`. The pointer itself is a copy, but the memory it points to is the original data.
 
-Let's verify this:
+Let's verify:
 
 ```bash
-gcc -std=c17 -Wall -Wextra main.c -o main
-./main
+gcc -Wall -Wextra -std=c17 swap_demo.c -o swap_demo && ./swap_demo
 ```
 
-**Output:**
+Output:
 
 ```text
-Before swap: x = 10, y = 20
-After swap: x = 20, y = 10
+x=20, y=10
 ```
 
-> ⚠️ **Warning**
-> When passing large structures by value, the entire block of data is copied. This wastes both stack space and time. You should pass a pointer (usually a `const` pointer) instead. This copies only an address (4 or 8 bytes), allowing the function to access the entire structure efficiently.
+Passing a large struct by value copies the entire block of data—wasting both stack space and time. Pass a pointer instead (usually a `const` pointer): copying a single address (4 or 8 bytes) is enough to give the function access to the whole struct.
 
 ## Step 3 — Return Values and Multiple Return Values
 
-A C function can only return one value. If we need to return multiple results, there are two common techniques.
+A C function can return only one value. When you need to produce multiple results, two tricks are common.
 
-### Method 1: "Returning" via Pointer Parameters
+### Method 1: "Returning" Through Pointer Parameters
 
 ```c
-#include <stdio.h>
-#include <stdbool.h>
-
-// Returns success/failure status, actual results are written via pointers
-bool divide(int a, int b, int *quotient, int *remainder) {
-    if (b == 0) {
-        return false;
-    }
-    *quotient = a / b;
-    *remainder = a % b;
-    return true;
+void divmod(int dividend, int divisor, int* quotient, int* remainder) {
+    *quotient = dividend / divisor;
+    *remainder = dividend % divisor;
 }
 
-int main() {
+int main(void) {
     int q, r;
-    if (divide(10, 3, &q, &r)) {
-        printf("Quotient: %d, Remainder: %d\n", q, r);
-    } else {
-        printf("Error: Division by zero\n");
-    }
+    divmod(17, 5, &q, &r);
+    printf("17 / 5 = %d 余 %d\n", q, r);
     return 0;
 }
 ```
 
-This is a very common C language pattern. Values that need to be "returned" are passed out via pointer parameters, while the function's actual return value is typically used to indicate success or failure.
+This is a very common C pattern—the values to be "returned" go out through pointer parameters, while the function's own return value is typically reserved for indicating success or failure.
 
-### Method 2: Returning a Structure
+### Method 2: Returning a Struct
 
 ```c
-#include <stdio.h>
-
 typedef struct {
     int quotient;
     int remainder;
 } DivResult;
 
-DivResult divide(int a, int b) {
-    DivResult res = {0, 0};
-    if (b != 0) {
-        res.quotient = a / b;
-        res.remainder = a % b;
-    }
-    return res;
-}
-
-int main() {
-    DivResult res = divide(10, 3);
-    printf("Quotient: %d, Remainder: %d\n", res.quotient, res.remainder);
-    return 0;
+DivResult div_with_remainder(int dividend, int divisor) {
+    DivResult result;
+    result.quotient = dividend / divisor;
+    result.remainder = dividend % divisor;
+    return result;
 }
 ```
 
-Modern compilers have excellent optimizations for returning structures (Return Value Optimization, RVO), so this usually does not incur extra copying overhead.
+Modern compilers optimize struct returns very well (return value optimization, RVO), so there is usually no extra copy overhead.
 
 ## Step 4 — Recursion: A Function Calling Itself
 
-### What is Recursion?
+### What Is Recursion
 
-A function that calls itself, either directly or indirectly, is recursion. The essence of recursion is to break a problem down into smaller, similar sub-problems. Think of it this way: if you want to count a stack of cards, you count the top one (1), then recursively count the rest (N-1 cards), and finally the result is 1 + (N-1) = N.
+A function calling itself, directly or indirectly, is recursion. The essence of recursion is decomposing a problem into smaller subproblems of the same kind. As an analogy: to count how many cards are in a stack, you count the top card (1), then recursively count the rest (N-1 cards), and the final answer is 1 + (N-1) = N.
+
+```c
+int factorial(int n) {
+    if (n <= 1) {
+        return 1;  // Base case—the condition that stops the recursion
+    }
+    return n * factorial(n - 1);  // Recursive step
+}
+```
+
+The chain of recursive calls: `factorial(5)` → `5 * factorial(4)` → `5 * 4 * factorial(3)` → ... → `5 * 4 * 3 * 2 * 1 = 120`
+
+Every recursive call allocates a new stack frame on the stack (holding local variables, parameters, and the return address), so recursion depth is limited by the stack size—which is why recursion can lead to stack overflow.
+
+Let's verify:
 
 ```c
 #include <stdio.h>
 
 int factorial(int n) {
-    if (n <= 1) {
-        return 1; // Base case: stop recursion
-    }
-    return n * factorial(n - 1); // Recursive step
+    if (n <= 1) return 1;
+    return n * factorial(n - 1);
 }
 
-int main() {
-    int n = 5;
-    printf("%d! = %d\n", n, factorial(n));
+int main(void) {
+    for (int i = 0; i <= 10; i++) {
+        printf("%d! = %d\n", i, factorial(i));
+    }
     return 0;
 }
 ```
 
-**Recursion Call Chain:** `factorial(5)` → `factorial(4)` → `factorial(3)` → ... → `factorial(1)`
-
-Each recursive call allocates a new stack frame on the stack (to store local variables, parameters, and the return address). Therefore, recursion depth is limited by the stack size. This is why recursion can potentially lead to stack overflow.
-
-Let's verify this:
-
-```bash
-gcc -std=c17 -Wall -Wextra main.c -o main
-./main
-```
-
-**Output:**
+Output:
 
 ```text
+0! = 1
+1! = 1
+2! = 2
+3! = 6
+4! = 24
 5! = 120
+6! = 720
+7! = 5040
+8! = 40320
+9! = 362880
+10! = 3628800
 ```
 
-> ⚠️ **Warning**
-> The biggest risk with recursion is **stack overflow**. Every recursive call consumes stack space. If the recursion depth is too large (e.g., `factorial(100000)`), the stack space will be exhausted and the program will crash immediately. For scenarios involving deep recursion, manually converting it to an iterative loop is safer.
+The biggest risk of recursion is **stack overflow**. Every recursive call consumes stack space; if the recursion goes too deep (say `factorial(100000)`), the stack is exhausted and the program crashes outright. For deeply recursive scenarios, converting to an iterative loop by hand is safer.
 
 ### Tail Recursion
 
-If the recursive call is the very last operation in a recursive function, it satisfies the form of tail recursion. Theoretically, the compiler can optimize tail recursion into a loop, avoiding the accumulation of stack frames:
+If the recursive call is the very last operation of the recursive function, the function fits the tail-recursive form. In theory, the compiler can optimize tail recursion into a loop, avoiding the accumulation of stack frames:
 
 ```c
-#include <stdio.h>
-
-// Tail recursive version
 int factorial_tail(int n, int accumulator) {
-    if (n <= 1) {
-        return accumulator;
-    }
+    if (n <= 1) return accumulator;
     return factorial_tail(n - 1, n * accumulator);
 }
-
-int main() {
-    printf("5! = %d\n", factorial_tail(5, 1));
-    return 0;
-}
+// Usage: factorial_tail(5, 1) → 120
 ```
 
-However, note that the C standard does not guarantee that the compiler will perform tail recursion optimization. In deep recursion scenarios, manually converting to iteration is still safer.
+But note: the C standard does not guarantee that the compiler performs this tail-recursion optimization. For deep recursion, manually converting to iteration is safer.
 
 ## Step 5 — Variadic Functions
 
-Some functions accept a variable number of arguments—the most typical example is `printf`. C provides a mechanism for variadic functions via `<stdarg.h>`:
+Some functions take a variable number of arguments—the most classic example is `printf`. C provides the variadic-function mechanism through `<stdarg.h>`:
 
 ```c
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdio.h>
 
-int sum_all(int count, ...) {
+/// @brief Compute the average of any number of integers
+/// @param count the number of integers
+/// @param ... a variable number of int arguments
+/// @return the average
+double average(int count, ...) {
     va_list args;
-    va_start(args, count); // Initialize args list
+    va_start(args, count);  // initialization; count is the last fixed parameter
 
-    int sum = 0;
+    double sum = 0.0;
     for (int i = 0; i < count; i++) {
-        sum += va_arg(args, int); // Get next argument
+        sum += va_arg(args, int);  // fetch the arguments one by one, as int
     }
 
-    va_end(args); // Clean up
-    return sum;
+    va_end(args);  // clean up
+    return sum / count;
 }
 
-int main() {
-    printf("Sum of 1, 2, 3: %d\n", sum_all(3, 1, 2, 3));
-    printf("Sum of 5, 10, 15, 20: %d\n", sum_all(4, 5, 10, 15, 20));
+int main(void) {
+    printf("Avg: %.2f\n", average(3, 10, 20, 30));
+    printf("Avg: %.2f\n", average(5, 1, 2, 3, 4, 5));
     return 0;
 }
 ```
 
-**Output:**
+Output:
 
 ```text
-Sum of 1, 2, 3: 6
-Sum of 5, 10, 15, 20: 50
+Avg: 20.00
+Avg: 3.00
 ```
 
-The usage of the variadic mechanism involves four steps: declare the list with `va_list` → initialize with `va_start` → fetch arguments one by one with `va_arg` → clean up with `va_end`.
+Using the variadic mechanism is a four-step affair: declare the argument list with `va_list` → initialize with `va_start` → fetch arguments one by one with `va_arg` → clean up with `va_end`.
 
-> ⚠️ **Warning**
-> Variadic arguments have no type checking. If you pass a `double` but use `va_arg` to retrieve an `int`, the compiler will not report an error, but the value retrieved at runtime will be wrong. There is also no count checking—you must inform the function of the number of arguments through some other means (like the `count` parameter above). This is the most dangerous aspect of C variadic functions.
+Variadic arguments have no type checking—if you pass a `double` but fetch it with `va_arg(args, int)`, the compiler won't complain, but the value you get at runtime is wrong. There is no argument-count check either—you have to tell the function, somehow, how many arguments there are. This is the most dangerous part of C variadics.
 
-## Bridging to C++
+## C++ Transition
 
-C++ makes comprehensive enhancements to functions. The most direct change is **reference passing**—`T&` makes parameter passing both efficient and intuitive, eliminating the need for manual address-taking and dereferencing.
+C++ upgrades functions across the board. The most direct change is **pass-by-reference**—`void swap(int& a, int& b)` makes parameter passing both efficient and intuitive, with no manual address-taking and dereferencing.
 
-C++ also supports **function overloading**. Functions with the same name can have different parameter lists, and the compiler automatically selects the correct one based on the argument types. This solves the naming bloat problem seen in C with functions like `add_int`, `add_float`, `add_double`. **Variadic templates** (introduced in C++11) provide a type-safe mechanism for variadic arguments, perfectly replacing C's `<stdarg.h>`.
+C++ also supports **function overloading**—functions with the same name can have different parameter lists, and the compiler picks the right one automatically based on the argument types at the call site. This solves C's naming bloat with `print_int`, `print_float`, `print_string`, and friends. **Variadic templates**, introduced in C++11, are a type-safe variadic mechanism that perfectly replaces C's `va_list`.
 
-The `constexpr` function allows functions to execute at compile time. If the arguments are compile-time constants, the function result is also a compile-time constant. This is much safer than C macros.
+`constexpr` functions can execute at compile time—if the arguments are compile-time constants, the result is a compile-time constant too. That is far safer than C macros.
 
 ## Exercises
 
-### Exercise 1: Variadic Max
+### Exercise 1: Maximum of Variadic Arguments
 
-**Difficulty: Basic** · pull arguments one by one with va_arg
+**Difficulty: Basic** · fetch arguments one by one with va_arg
 
-Following the `average` example in this chapter, implement a variadic function that returns the maximum of all its integer arguments. The first argument `count` says how many integers follow:
+Following the pattern of this post's `average`, implement a variadic function that returns the maximum among all of its integer arguments. The first parameter `count` says how many integers follow:
 
 ```c
 /// @brief Return the maximum of count integers
-/// @param count number of integer arguments that follow
-/// @return the maximum; returns 0 if count is 0
+/// @param count the number of integer arguments that follow
+/// @return the maximum; returns 0 when count is 0
 int max_int(int count, ...);
 ```
 
 Usage: `max_int(3, 10, 25, 7)` should return `25`.
 
-**Challenge extension** (optional): if you want to implement `log_message(level, format, ...)` with real formatting, you need to forward the variadic arguments to the `printf` family, i.e. `vprintf`/`vfprintf` (not covered in this chapter). Look up `vprintf` on cppreference and then try it.
+**Challenge extension** (optional): to implement a formatted logging function like `log_message(level, format, ...)`, you need to forward the variadic arguments to the `printf` family—that is, `vprintf`/`vfprintf` (not covered in this post). Look up `vprintf` on cppreference first, then get to work.
 
-::: details Reference answer
+::: details Reference solution
 
 ```c
 #include <stdarg.h>
@@ -369,66 +336,97 @@ int max_int(int count, ...) {
 }
 ```
 
-Same structure as `average`, just "accumulate then divide" becomes "compare and keep the max". The `va_start` / `va_arg` / `va_end` trio is rehearsed once more here.
+The structure is exactly the same as `average`; we've just replaced "sum, then divide" with "compare one by one and keep the maximum". Consider this one more pass over the `va_start` / `va_arg` / `va_end` trio.
 
 :::
 
-### Exercise 2: Recursion vs. Iteration — Binary Search
+### Exercise 2: Recursion vs. Iteration—Binary Search
 
 **Difficulty: Intermediate** · two ways to write the same algorithm
 
-Implement binary search using both recursion and iteration, and compare their performance and readability:
+Implement binary search both recursively and iteratively, and compare the two for performance and readability:
 
 ```c
-#include <stdio.h>
+int binary_search_recursive(const int* arr, size_t len, int target);
+int binary_search_iterative(const int* arr, size_t len, int target);
+```
 
-// TODO: Implement recursive binary search
-int binary_search_recursive(int arr[], int low, int high, int target) {
-    // Base case and recursive step
+::: details Reference solution
+
+```c
+int binary_search_recursive(const int* arr, size_t len, int target) {
+    if (len < 1) {
+        printf("%d is not found in index\n", target);
+        return -1;
+    }
+    size_t mid = (len - 1) / 2;
+
+    if (arr[mid] == target) {return mid;}
+    if (arr[mid] < target) {
+        int res = binary_search_recursive(arr + mid + 1, len - mid - 1, target);
+        return (res == -1) ? -1 : (int)(res + mid + 1);
+    }
+    if (arr[mid] > target) {return binary_search_recursive(arr, mid , target);}
     return -1;
 }
 
-// TODO: Implement iterative binary search
-int binary_search_iterative(int arr[], int size, int target) {
-    // Loop implementation
+int binary_search_iterative(const int* arr, size_t len, int target) {
+    size_t lo = 0, hi = len;            // search interval [lo, hi), half-open
+    while (lo < hi) {
+        size_t mid = lo + (hi - lo) / 2;
+        if (arr[mid] == target) {
+            return mid;
+        }
+        if (arr[mid] < target) {
+            lo = mid + 1;               // search the right half; lo only grows, no underflow
+        } else {
+            hi = mid;                   // search the left half; hi converges to mid, no underflow
+        }
+    }
+    printf("%d is not found in index\n", target);
     return -1;
-}
-
-int main() {
-    int data[] = {1, 3, 5, 7, 9, 11, 13};
-    int target = 7;
-    // Test both functions
-    return 0;
 }
 ```
+
+:::
 
 ### Exercise 3: Multiple Return Values in Practice
 
-**Difficulty: Basic** · return multiple results through pointer parameters
+**Difficulty: Basic** · carry out multiple results through pointer parameters
 
-Implement a function that calculates both the maximum and minimum values of an array:
+Implement a function that finds the maximum and the minimum of an array at the same time:
 
 ```c
-#include <stdio.h>
-#include <limits.h>
+/// @brief Find both the minimum and the maximum of an array
+/// @param data the array
+/// @param len the length of the array
+/// @param min_out output pointer for the minimum
+/// @param max_out output pointer for the maximum
+void find_min_max(const int* data, size_t len, int* min_out, int* max_out);
+```
 
-// TODO: Implement function to find min and max
-// Return false if array is empty
-bool find_min_max(int arr[], int size, int *min_out, int *max_out) {
-    return false;
-}
+::: details Reference solution
 
-int main() {
-    int data[] = {3, 1, 4, 1, 5, 9, 2, 6};
-    int min, max;
-    if (find_min_max(data, 8, &min, &max)) {
-        printf("Min: %d, Max: %d\n", min, max);
+```c
+void find_min_max(const int* data, size_t len, int* min_out, int* max_out) {
+    if (data == NULL || min_out == NULL || max_out == NULL || len < 1) {
+        return;
     }
-    return 0;
+    *min_out = *max_out = data[0];
+    for (size_t i = 1; i < len; i++) {
+        if (data[i] < *min_out) {
+            *min_out = data[i];
+        }
+        if (data[i] > *max_out) {
+            *max_out = data[i];
+        }
+    }
 }
 ```
 
+:::
+
 ## References
 
-- [cppreference: Function declaration](https://en.cppreference.com/w/c/language/function_declaration)
+- [cppreference: function declaration](https://en.cppreference.com/w/c/language/function_declaration)
 - [cppreference: stdarg.h](https://en.cppreference.com/w/c/variadic)

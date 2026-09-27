@@ -7,10 +7,10 @@ difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- 'Chapter 9: path 操作'
+- 'Chapter 9: Path Operations: Cross-Platform Path Handling'
 reading_time_minutes: 16
 related:
-- 目录遍历与搜索
+- Directory Traversal and Search
 tags:
 - host
 - cpp-modern
@@ -18,303 +18,454 @@ tags:
 title: File and Directory Operations
 translation:
   source: documents/vol2-modern-features/ch09-filesystem/02-filesystem-ops.md
-  source_hash: bddc354baa3b809392cd5539c6d2b8a46359c8a248e8c8e8944aa7df81257eeb
-  translated_at: '2026-06-16T03:59:22.562465+00:00'
+  source_hash: 9362ed2535b4ff9ef74aa8b9954f86f0d1d782480f8f68dbd3ee0ddb134f2bdd
+  translated_at: '2026-09-25T16:16:36+00:00'
   engine: anthropic
-  token_count: 3354
+  token_count: 7800
 ---
-# File and Directory Operations
+# File and Directory Operations: This Time We Actually Touch the Disk
 
-In the previous post, we learned how to use `std::filesystem::path` to handle path syntax—construction, decomposition, modification, and comparison—all pure computation without touching the disk. In this post, we get real: we use the `std::filesystem` library to directly operate on the file system—checking if files exist, creating directories, copying files, deleting files, and querying permissions and disk space.
+In the previous article we learned to handle path syntax with `std::filesystem::path` — construction, decomposition, modification, comparison: all pure computation, no disk involved. This time we get serious: we use the `<filesystem>` library to operate on the file system directly — checking whether a file exists, creating directories, copying files, deleting files, querying permissions and disk space.
 
-As before, our environment is C++17, GCC 13+ / Clang 15+ / MSVC 2022. The header file is `<filesystem>`, and the namespace is `std::filesystem`.
+As in the previous article, our environment is C++17, GCC 13+ / Clang 15+ / MSVC 2022. The header is `<filesystem>`, with `namespace fs = std::filesystem;`.
 
-## File Status Queries: Does it exist? What type is it?
+First, let's lay out the operations this article spends the most time on against a single /tmp directory tree, so you can see which node each call lands on — and what the tree gains or loses once it runs:
 
-The first step in file system operations is usually "check what is actually at this path." `std::filesystem` provides a set of query functions to answer this.
+![Where exists, copy, create, and remove land on a /tmp directory tree](./02-dir-tree-ops.drawio)
 
-### exists: Does the path exist?
+## File Status Queries: Does It Exist, and What Type Is It
 
-`std::filesystem::exists` checks if a given path exists on the file system. It accepts a `path` object or a `symlink_status` (we will cover this in the next post). It returns `bool`:
+The first step in file system work is usually "let's see what is actually at this path". `<filesystem>` provides a set of query functions to answer that question.
+
+### exists: Does the Path Exist
+
+`fs::exists(p)` checks whether the given path exists on the file system. It accepts a `path` object, or a `directory_entry` (which we cover in the next article). It returns a `bool`:
 
 ```cpp
 #include <filesystem>
+#include <iostream>
+
 namespace fs = std::filesystem;
 
 int main() {
-    fs::path p = "test.txt";
-
+    fs::path p = "/usr/local/bin/gcc";
     if (fs::exists(p)) {
-        // Path exists
+        std::cout << p << " 存在\n";
     } else {
-        // Path does not exist
+        std::cout << p << " 不存在\n";
+    }
+    return 0;
+}
+```
+
+`exists()` throws in some situations (for example, when insufficient permissions prevent access to the parent directory). If you don't want the exception to propagate, use the overload that does not take a `std::error_code`, or wrap the call in a try-catch. The better approach is the overload that takes a `std::error_code`:
+
+```cpp
+std::error_code ec;
+bool exists = fs::exists(p, ec);
+if (ec) {
+    std::cerr << "查询失败: " << ec.message() << "\n";
+}
+```
+
+### is_regular_file / is_directory / is_symlink: Type Checks
+
+Once you know a path exists, the next step is determining its type. `fs::is_regular_file(p)` checks whether it is a regular file, `fs::is_directory(p)` whether it is a directory, and `fs::is_symlink(p)` whether it is a symbolic link. There are also finer-grained checks such as `is_block_file`, `is_character_file`, `is_fifo`, `is_socket`, and `is_other`, which come up occasionally in Linux systems programming.
+
+```cpp
+fs::path p = "/usr/local/bin";
+
+if (fs::is_directory(p)) {
+    std::cout << p << " 是一个目录\n";
+} else if (fs::is_regular_file(p)) {
+    std::cout << p << " 是一个普通文件\n";
+} else if (fs::is_symlink(p)) {
+    std::cout << p << " 是一个符号链接\n";
+}
+```
+
+If the path does not exist, these functions return `false` — no exception. So you don't need to call `exists()` before checking the type; just check directly. But note: if the underlying `status()` call itself fails (say, due to permission problems), it throws a `filesystem_error`.
+
+### file_size / last_write_time / status: Metadata Queries
+
+Beyond the type, we often also need a file's size, last modification time, and permission status:
+
+```cpp
+#include <filesystem>
+#include <iostream>
+#include <chrono>
+#include <ctime>
+
+namespace fs = std::filesystem;
+
+void print_file_info(const fs::path& p) {
+    std::error_code ec;
+
+    // File size (bytes)
+    auto size = fs::file_size(p, ec);
+    if (!ec) {
+        std::cout << "大小: " << size << " 字节\n";
+        if (size > 1024 * 1024) {
+            std::cout << "      "
+                      << size / (1024.0 * 1024.0) << " MB\n";
+        } else if (size > 1024) {
+            std::cout << "      "
+                      << size / 1024.0 << " KB\n";
+        }
+    }
+
+    // Last modification time
+    auto ftime = fs::last_write_time(p, ec);
+    if (!ec) {
+        // Before C++20: we must convert to time_t for display
+        auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+            ftime - fs::file_time_type::clock::now() + std::chrono::system_clock::now()
+        );
+        auto time_t_val = std::chrono::system_clock::to_time_t(sctp);
+        std::cout << "修改时间: "
+                  << std::ctime(&time_t_val);
+    }
+
+    // File status (permissions etc.)
+    auto status = fs::status(p, ec);
+    if (!ec) {
+        std::cout << "类型: " << static_cast<int>(status.type()) << "\n";
+        std::cout << "权限: " << static_cast<unsigned>(status.permissions()) << "\n";
+    }
+}
+
+int main() {
+    print_file_info("/usr/local/bin/gcc");
+    return 0;
+}
+```
+
+Before C++20, converting `last_write_time` to a readable format is somewhat tedious (as shown above), because `file_time_type`'s clock is not necessarily `system_clock`. C++20 offers a cleaner route via `std::chrono::clock_cast`, but C++17 is stuck with the approximation above. In real projects, `std::ctime` is good enough for simple display — just don't expect the result to be perfectly precise.
+
+## Creating Directories
+
+`fs::create_directory(p)` creates a directory — on the condition that the parent directory already exists. If the parent does not exist, the call fails:
+
+```cpp
+fs::path dir = "/tmp/myapp_config";
+if (!fs::exists(dir)) {
+    if (fs::create_directory(dir)) {
+        std::cout << "目录创建成功\n";
+    } else {
+        std::cerr << "目录创建失败\n";
     }
 }
 ```
 
-⚠️ `exists` may throw an exception in some cases (e.g., insufficient permissions preventing access to the parent directory). If you do not want exceptions to propagate, use the overload that does not accept `error_code&`, or wrap it in try-catch. A better approach is to use the overload that accepts `error_code&`:
+If you need to create a multi-level directory (say `/tmp/a/b/c`, where neither `/tmp/a` nor `/tmp/a/b` exists), use `fs::create_directories(p)`. It automatically creates every missing intermediate directory in the path, similar to `mkdir -p`:
 
 ```cpp
-std::error_code ec;
-bool exists = fs::exists("test.txt", ec);
-if (ec) {
-    // Handle error: ec.message()
-}
+fs::path deep_dir = "/tmp/myapp/data/cache/tmp";
+fs::create_directories(deep_dir);  // Creates all intermediate directories automatically
+std::cout << "创建完成\n";
 ```
 
-### is_regular_file / is_directory / is_symlink: Type determination
+`create_directories` is one of the file system operations I use the most. At program startup, making sure the config, log, and cache directories all exist is a very common requirement — `create_directories` settles it in one line, with no manual per-level checks.
 
-Once we know a path exists, the next step is to determine its type. `is_regular_file` checks if it is a regular file, `is_directory` checks if it is a directory, and `is_symlink` checks if it is a symbolic link. There are also more specific type checks like `is_block_file`, `is_character_file`, `is_fifo`, `is_socket`, and `is_other`, which are occasionally used in Linux system programming.
-
-```cpp
-if (fs::is_regular_file(p)) {
-    // It's a file
-} else if (fs::is_directory(p)) {
-    // It's a directory
-} else if (fs::is_symlink(p)) {
-    // It's a symlink
-}
-```
-
-⚠️ If the path does not exist, these functions return `false`—they do not throw exceptions. So, you do not need to call `exists` before checking the type; just check directly. However, be aware: if the underlying `status` call itself fails (e.g., due to permission issues), it will throw a `filesystem_error` exception.
-
-### file_size / last_write_time / status: Metadata queries
-
-Beyond type, we often need to query file size, last modification time, and permission status:
-
-```cpp
-if (fs::is_regular_file(p)) {
-    // File size in bytes
-    std::uintmax_t size = fs::file_size(p);
-
-    // Last modification time
-    fs::file_time_type ftime = fs::last_write_time(p);
-
-    // Convert to system time for display (C++17 approximation)
-    auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
-        ftime - fs::file_time_type::clock::now() + std::chrono::system_clock::now()
-    );
-    std::time_t cftime = std::chrono::system_clock::to_time_t(sctp);
-    std::cout << "File time: " << std::asctime(std::localtime(&cftime)) << std::endl;
-
-    // Permission status
-    fs::file_status status = fs::status(p);
-    fs::perms perms = status.permissions();
-}
-```
-
-⚠️ Converting `file_time_type` to a readable format was a bit verbose before C++20 (as shown above) because `file_time_type`'s clock is not necessarily `system_clock`. C++20 provides a more concise way via `std::chrono::clock_cast`, but in C++17, the approximation method above must be used. In actual projects, using `std::asctime` for simple display is sufficient, though the precision might not be perfectly accurate.
-
-## Creating Directories
-
-`create_directory` creates a directory—provided the parent directory already exists. If the parent directory does not exist, the call fails:
-
-```cpp
-fs::create_directory("foo"); // OK if parent exists
-fs::create_directory("foo/bar/baz"); // Error: "foo/bar" does not exist
-```
-
-If you need to create a multi-level directory (e.g., `foo/bar/baz`, where `foo` and `foo/bar` do not exist), use `create_directories`. It automatically creates all missing intermediate directories in the path, similar to `mkdir -p`:
-
-```cpp
-fs::create_directories("foo/bar/baz"); // Creates foo, foo/bar, and foo/bar/baz
-```
-
-`create_directories` is one of the file system operations I use most frequently. When a program starts, ensuring that configuration, log, and cache directories exist is a very common requirement. With `create_directories`, one line of code handles it, without manually checking if each level exists.
-
-⚠️ `create_directory` returns `false` if the directory already exists, but it does not report an error. `create_directories` behaves similarly—if all directories exist, it also returns `false`. Therefore, you should not use the return value to judge "whether an error occurred," but rather use the `error_code&` version.
+`create_directory` returns `false` when the directory already exists, but that is not an error. Same for `create_directories` — if every directory already exists, it also returns `false`. So don't use the return value to decide "did it fail"; use the `std::error_code` overloads instead.
 
 ## Copying Files and Directories
 
-`copy` is a multi-purpose copy function. Its behavior depends on the type of the `from` path and whether `copy_options` are specified:
+`fs::copy(from, to)` is a multi-purpose copy function. Its behavior depends on the type of `from` and on whether `copy_options` are given:
 
 ```cpp
-// Copy a file
-fs::copy("src.txt", "dst.txt");
+// Default behavior:
+// - If from is a regular file, copy the file to to
+// - If from is a directory, copy the directory structure to to (contents are not copied recursively)
+// - If from is a symbolic link, copy the link itself
 
-// Copy a directory (non-recursive by default)
-fs::copy("src_dir", "dst_dir");
+fs::path src = "/tmp/source.txt";
+fs::path dst = "/tmp/dest.txt";
 
-// Recursive directory copy
-fs::copy("src_dir", "dst_dir", fs::copy_options::recursive);
+std::error_code ec;
+fs::copy(src, dst, ec);
+if (ec) {
+    std::cerr << "复制失败: " << ec.message() << "\n";
+}
 ```
 
-### copy_options: Controlling copy behavior
+### copy_options: Controlling Copy Behavior
 
-`copy_options` is a bitmask type used to fine-tune copy behavior. Common options include:
+`copy_options` is a bitmask type for fine-grained control over how copying behaves. Commonly used options include:
 
-`overwrite_existing`—if the target file exists, overwrite it. By default, if the target exists, `copy` will fail (or skip, depending on the specific operation).
+`fs::copy_options::overwrite_existing` — if the destination file already exists, overwrite it. By default, when the destination exists, `copy` fails (or skips, depending on the specific operation).
 
-`recursive`—recursively copy directory contents. If `from` is a directory, it recursively copies all files and subdirectories.
+`fs::copy_options::recursive` — recursively copy directory contents. If `from` is a directory, every file and subdirectory under it gets copied.
 
-`copy_symlinks`—copy the symbolic link itself (rather than following the link and copying the target file).
+`fs::copy_options::copy_symlinks` — copy the symbolic link itself (rather than following the link and copying the file it points to).
 
 ```cpp
-fs::copy("src", "dst",
-    fs::copy_options::recursive |
-    fs::copy_options::overwrite_existing |
-    fs::copy_options::copy_symlinks
-);
+// Recursively copy an entire directory
+fs::copy("/tmp/source_dir", "/tmp/dest_dir",
+         fs::copy_options::recursive |
+         fs::copy_options::overwrite_existing);
 ```
 
-`copy_file` is a function specifically for file copying. The difference between it and `copy` is: `copy_file` only handles regular files and provides finer control. ⚠️ Note: `copy_file` **does not provide atomicity guarantees**—if the copy fails (e.g., insufficient disk space, power loss), the target file may be in a partially written state. If atomicity is required, use the "copy to temporary file + atomic rename" pattern. (See the `std::filesystem::rename` function example in the "Temporary File Handling" section).
+`fs::copy_file(from, to, options)` is a function dedicated to copying files. The difference from `copy`: `copy_file` only handles regular files, and it offers finer control. Note: `copy_file` **provides no atomicity guarantee** — if the copy fails partway through (out of disk space, power loss, and so on), the destination may be left partially written. If you need atomicity, use the "copy to a temporary file + atomic rename" pattern. (See the `safe_write_file` example in the "Temporary File Handling" section.)
 
 ```cpp
-// Copy file, do not overwrite if exists
-bool success = fs::copy_file("src.txt", "dst.txt");
+// Unsafe file copy (no atomicity guarantee)
+fs::path src = "/data/important_config.yaml";
+fs::path dst = "/backup/important_config.yaml";
 
-// Force overwrite
-fs::copy_file("src.txt", "dst.txt", fs::copy_options::overwrite_existing);
+std::error_code ec;
+fs::copy_file(src, dst,
+              fs::copy_options::overwrite_existing, ec);
+// Possibility 1: if dst already exists, its contents may be overwritten step by step
+// during the copy, so other processes can observe a partially copied file
+// Possibility 2: if the machine loses power mid-copy, dst may end up incomplete or even corrupted
+if (ec) {
+    std::cerr << "复制失败: " << ec.message() << "\n";
+} else {
+    std::cout << "复制成功\n";
+}
 ```
 
 ## Deleting and Renaming
 
-`remove` deletes a file or an empty directory. If the path does not exist, it returns `false` (no error). If the path is a symbolic link, it deletes the link itself, not the target. If the path is a non-empty directory, deletion fails:
+`fs::remove(p)` deletes a file or an empty directory. If the path does not exist, it returns `false` (no error). If the path is a symbolic link, it removes the link itself, not the target. If the path is a non-empty directory, the deletion fails:
 
 ```cpp
-bool deleted = fs::remove("tmp.txt"); // true if deleted
+fs::path temp = "/tmp/temp_file.txt";
+bool removed = fs::remove(temp);
+if (removed) {
+    std::cout << "已删除\n";
+} else {
+    std::cout << "文件不存在或删除失败\n";
+}
 ```
 
-`remove_all` recursively deletes a directory and all its contents (files, subdirectories, symbolic links). It returns the number of files removed. This is a "nuclear" operation—always confirm the path is correct before calling:
+`fs::remove_all(p)` recursively deletes a directory and everything inside it (files, subdirectories, symbolic links), returning the number of files removed. This is a "nuke-grade" operation — always confirm the path is right before calling it:
 
 ```cpp
-std::uintmax_t num_removed = fs::remove_all("build_dir");
-std::cout << "Removed " << num_removed << " files/dirs\n";
+fs::path temp_dir = "/tmp/my_temp_dir";
+auto count = fs::remove_all(temp_dir);
+std::cout << "删除了 " << count << " 个文件/目录\n";
 ```
 
-⚠️ `remove_all` is an irreversible operation. Once, while debugging, I accidentally wrote the path wrong (missing a directory level) and nearly wiped the entire project directory. Fortunately, I was running in a test environment, so no actual damage occurred. Since then, I always print and confirm the path before calling `remove_all`. I suggest you develop this habit as well.
+`remove_all` is irreversible. Once, while debugging, I got the path wrong (dropped one directory level) and nearly wiped out an entire project directory. Luckily it was running in a test environment, so nothing real was lost. Ever since, I always print the path and double-check before calling `remove_all`. I suggest you build the same habit.
 
-`rename` renames or moves a file/directory. In most implementations, renaming on the same file system is an atomic operation (modifying directory entries without moving data). ⚠️ Note: Cross-file system renaming usually **will fail** (throwing an exception or returning an error) rather than automatically performing copy + delete. To move across file systems, explicitly use `copy` + `remove`:
+`fs::rename(old_path, new_path)` renames or moves a file/directory. In most implementations, renaming within the same file system is an atomic operation (only the directory entry changes; no data moves). Note: renaming across file systems usually **fails** (throwing an exception or returning an error) instead of automatically doing copy + delete. To move across file systems, use `copy` + `remove` explicitly:
 
 ```cpp
-// Atomic rename/move on the same filesystem
-fs::rename("old.txt", "new.txt");
-
-// Cross-filesystem move (manual implementation)
-fs::copy("/src/src.txt", "/dst/src.txt");
-fs::remove("/src/src.txt");
+std::error_code ec;
+fs::rename("/tmp/old_name.txt", "/tmp/new_name.txt", ec);
+if (ec) {
+    std::cerr << "重命名失败: " << ec.message() << "\n";
+}
 ```
 
 ## Permissions and Disk Space
 
-### permissions: Modifying file permissions
+### permissions: Modifying File Permissions
 
-`permissions` modifies a file's permission bits, similar to the `chmod` command. Permissions are represented by the `perms` enum:
-
-```cpp
-fs::permissions("script.sh",
-    fs::perms::owner_all | fs::perms::group_read | fs::perms::others_read
-);
-```
-
-The third parameter can be `replace_options::replace` (replace all permissions, default behavior), `replace_options::add` (add specified permission bits), or `replace_options::remove` (remove specified permission bits). This is more convenient than replacing all permissions when you only need to modify one or two bits.
-
-### space: Querying disk space
-
-`space` returns a `space_info` structure containing the disk's capacity, used space, and free space:
+`fs::permissions(p, prms)` modifies a file's permission bits, much like `chmod`. Permissions are represented by the `fs::perms` enum:
 
 ```cpp
-fs::space_info si = fs::space(".");
-std::cout << "Capacity: " << si.capacity << "\n";
-std::cout << "Free: " << si.free << "\n";
-std::cout << "Available: " << si.available << "\n";
+fs::path script = "/tmp/my_script.sh";
+
+// Set to rwxr-xr-x (755)
+fs::permissions(script,
+    fs::perms::owner_read | fs::perms::owner_write | fs::perms::owner_exec |
+    fs::perms::group_read | fs::perms::group_exec |
+    fs::perms::others_read | fs::perms::others_exec);
+
+// Or use perm_options to control how the bits are modified
+fs::permissions(script,
+    fs::perms::owner_exec,     // Modify only the owner_exec bit
+    fs::perm_options::add);    // Add it (other bits unaffected)
 ```
 
-Note the difference between `free` and `available`: `free` is the remaining space on the disk (including parts only root can use), while `available` is the space actually available to the current user. On Linux, this difference comes from reserved blocks (ext4 reserves 5% for root by default).
+The third parameter, `perm_options`, can be `replace` (replace all permissions — the default behavior), `add` (add the specified permission bits), or `remove` (remove the specified permission bits). When you only need to modify one or two bits, this is more convenient than replacing the whole permission set.
+
+### space: Querying Disk Space
+
+`fs::space(p)` returns a `space_info` struct holding the disk's capacity, used space, and available space:
+
+```cpp
+auto info = fs::space("/tmp");
+if (info.capacity > 0) {
+    std::cout << "总容量:   "
+              << info.capacity / (1024.0 * 1024 * 1024) << " GB\n";
+    std::cout << "可用空间: "
+              << info.available / (1024.0 * 1024 * 1024) << " GB\n";
+    std::cout << "剩余空间: "
+              << info.free / (1024.0 * 1024 * 1024) << " GB\n";
+}
+```
+
+Note the difference between `available` and `free`: `free` is the raw remaining space on the disk (including the portion only root can use), while `available` is what the current user can actually use. On Linux, the gap between the two comes from reserved blocks (ext4 reserves 5% for root by default).
 
 ## Temporary File Handling
 
-C++ does not provide a standard API for "creating temporary files" directly (C++23's `std::filesystem::temp_directory_path` only tells you where the temporary directory is). However, in C++17, we can combine existing tools to safely handle temporary files:
+C++ provides no standard API for "creating a temporary file" directly (C++23's `std::filesystem::temp_directory_path()` only tells you where the temporary directory is). But in C++17, we can combine the tools we already have to handle temporary files safely:
 
 ```cpp
-fs::path temp_file = fs::temp_directory_path() / "tmp_XXXXXX";
-// Create a unique filename (simplified logic)
-// ... generate unique name logic ...
-fs::path target = "data.json";
+#include <filesystem>
+#include <fstream>
+#include <random>
+#include <string>
 
-// Write to temp file
-{
-    std::ofstream ofs(temp_file);
-    ofs << "Important data";
-} // File closed here
+namespace fs = std::filesystem;
 
-// Atomic rename
-std::error_code ec;
-fs::rename(temp_file, target, ec);
-if (ec) {
-    fs::remove(temp_file); // Clean up if rename failed
+/// @brief Create a unique temporary file path
+/// @return The temporary file's path (the file is not created yet)
+fs::path make_temp_file() {
+    auto temp_dir = fs::temp_directory_path();
+
+    // Generate a random suffix
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dist(0, 999999);
+    auto suffix = std::to_string(dist(gen));
+
+    auto temp_path = temp_dir / ("myapp_temp_" + suffix + ".tmp");
+    return temp_path;
 }
-```
 
-This "write to temp file + atomic rename" pattern is crucial in scenarios requiring data integrity—if the program crashes or power is lost during the write, the target file is either the old complete version or the new complete version; there is no "half-written" corrupted state. Many databases, configuration file managers, and package managers use this pattern.
+/// @brief Safely write data to a temporary file, then atomically rename it to the target file
+/// @param target Target file path
+/// @param data The data to write
+/// @return Whether it succeeded
+bool safe_write_file(const fs::path& target, const std::string& data) {
+    auto temp = make_temp_file();
 
-## Real-world Example: Log Rotation Tool
-
-Let's combine all the operations learned in this post to write a practical log rotation tool. The core logic of log rotation is: when a log file exceeds a certain size, rename it to a backup file (with a sequence number), then create a new empty log file. We also limit the number of backups, deleting old backups that exceed the limit.
-
-```cpp
-void rotate_log(const fs::path& log_file, std::size_t max_size, std::size_t max_backups) {
-    if (!fs::exists(log_file)) return;
-
-    // Check size
-    if (fs::file_size(log_file) < max_size) return;
-
-    // Rotate backups: log.3 -> log.4, log.2 -> log.3, etc.
-    for (std::size_t i = max_backups; i > 1; --i) {
-        fs::path old = log_file.string() + "." + std::to_string(i - 1);
-        fs::path target = log_file.string() + "." + std::to_string(i);
-        if (fs::exists(old)) {
-            fs::rename(old, target);
+    // Write to the temporary file first
+    {
+        std::ofstream out(temp);
+        if (!out) return false;
+        out << data;
+        out.close();
+        if (out.fail()) {
+            fs::remove(temp);
+            return false;
         }
     }
 
-    // Move current log to .1
-    fs::path backup = log_file.string() + ".1";
-    fs::rename(log_file, backup);
-
-    // Create new log file
-    std::ofstream(log_file);
+    // Atomic rename
+    std::error_code ec;
+    fs::rename(temp, target, ec);
+    if (ec) {
+        fs::remove(temp);  // Clean up the temporary file
+        return false;
+    }
+    return true;
 }
 ```
 
-After running, the file status under the log directory will look like this:
+This "write to a temporary file + atomic rename" pattern matters a lot whenever data integrity must be guaranteed — if the program crashes or the power goes out during the write, the target file is either the complete old version or the complete new one, never a corrupted "half-written" state. Many databases, configuration file managers, and package managers rely on exactly this pattern.
 
-```text
-app.log      (new empty file)
-app.log.1    (previous log)
-app.log.2    (previous backup 1)
-app.log.3    (previous backup 2)
-```
+## In Practice: A Log Rotation Tool
 
-This rotation tool uses `exists`, `file_size`, `rename`, and `remove` (implicit when overwriting) — all core operations learned in this post. The "atomic rename" ensures that no log data is lost during rotation—even if the program crashes during the rename process, at most one backup file will not be renamed, and the next rotation will handle it automatically.
-
-## Two Modes of Error Handling
-
-Throughout this post, I have been using two ways to handle errors: throwing exceptions and using `error_code&`. Let's summarize the best practices for error handling in `std::filesystem`.
-
-Most `std::filesystem` functions have two overloads: one that throws a `filesystem_error` exception on error, and another that accepts an `error_code&` parameter and returns an error code through it on failure. The choice depends on your scenario:
+Let's combine everything from this article and write a practical log rotation tool. The core logic of log rotation: once the log file exceeds a certain size, rename it to a backup file (with a sequence number), then create a new empty log file. The number of backups is also capped — old backups beyond the cap get deleted.
 
 ```cpp
-// Method 1: Exception (suitable for initialization/fatal errors)
-try {
-    fs::create_directories("config");
-} catch (const fs::filesystem_error& e) {
-    std::cerr << "Init failed: " << e.what() << std::endl;
-    std::exit(1);
+#include <filesystem>
+#include <iostream>
+#include <fstream>
+#include <algorithm>
+#include <vector>
+#include <string>
+
+namespace fs = std::filesystem;
+
+/// @brief Perform a log rotation
+/// @param log_path Log file path
+/// @param max_size Maximum file size (bytes)
+/// @param max_backups Maximum number of backups
+void rotate_log(const fs::path& log_path,
+                std::uintmax_t max_size,
+                int max_backups) {
+    std::error_code ec;
+
+    // Check whether the log file exists and exceeds the size limit
+    if (!fs::exists(log_path, ec) || ec) return;
+    auto size = fs::file_size(log_path, ec);
+    if (ec || size < max_size) return;
+
+    auto stem = log_path.stem().string();
+    auto ext = log_path.extension().string();
+    auto parent = log_path.parent_path();
+
+    // Collect the existing backup files
+    std::vector<fs::path> backups;
+    for (int i = 1; i <= max_backups + 1; ++i) {
+        auto backup_name = stem + "." + std::to_string(i) + ext;
+        auto backup_path = parent / backup_name;
+        if (fs::exists(backup_path)) {
+            backups.push_back(backup_path);
+        }
+    }
+
+    // Delete old backups beyond the count limit
+    std::sort(backups.begin(), backups.end());
+    while (static_cast<int>(backups.size()) >= max_backups) {
+        fs::remove(backups.back(), ec);
+        backups.pop_back();
+    }
+
+    // Shift existing backup sequence numbers up by one
+    for (int i = static_cast<int>(backups.size()); i >= 1; --i) {
+        auto old_name = stem + "." + std::to_string(i) + ext;
+        auto new_name = stem + "." + std::to_string(i + 1) + ext;
+        fs::rename(parent / old_name, parent / new_name, ec);
+    }
+
+    // Rename the current log to the .1 backup
+    auto first_backup = parent / (stem + ".1" + ext);
+    fs::rename(log_path, first_backup, ec);
+
+    // Create a new empty log file
+    std::ofstream(log_path).close();
+
+    std::cout << "日志轮转完成: " << log_path << "\n";
 }
 
-// Method 2: error_code (suitable for runtime operations)
-std::error_code ec;
-fs::copy_file(src, dst, ec);
-if (ec) {
-    std::cerr << "Copy failed: " << ec.message() << std::endl;
-    // Handle error (retry, skip, etc.)
+int main() {
+    // Example: rotate app.log when it exceeds 1 MB, keeping at most 5 backups
+    rotate_log("/tmp/app.log", 1024 * 1024, 5);
+    return 0;
 }
 ```
 
-My personal preference is: for initialization operations at program startup (creating config directories, etc.), use the throwing version—because if these fail, the program cannot run normally, and an exception can directly terminate the startup process. For operations that might fail normally at runtime (copying files, deleting temporary files, etc.), use the `error_code&` version—because these failures are expected and need to be handled gracefully.
+After it runs, the files under `/tmp/` will look like this:
 
-## Reference Resources
+```text
+app.log         ← the new empty log file
+app.1.log       ← the previous log
+app.2.log       ← the log from two rotations ago
+...
+app.5.log       ← the oldest backup
+```
+
+This rotation tool uses `exists`, `file_size`, `rename`, `remove` — essentially every core operation from this article. The "atomic rename" guarantees that no log data is lost during rotation — even if the program crashes mid-rename, at worst one backup file doesn't finish renaming, and the next rotation sorts it out automatically.
+
+## Two Patterns of Error Handling
+
+Throughout this article, I have been handling errors in two ways: throwing exceptions and `std::error_code`. Let's sum up the best practices for error handling in `<filesystem>`.
+
+Most `fs::xxx()` functions come in two overloads: one that throws a `fs::filesystem_error` exception on failure, and another that takes a `std::error_code&` parameter and reports the error code through it on failure. Which one to pick depends on your situation:
+
+```cpp
+// Pattern 1: throw (for operations that "should not fail")
+fs::create_directories("/tmp/myapp/data");
+
+// Pattern 2: error_code (for operations that "might fail")
+std::error_code ec;
+fs::copy(src, dst, ec);
+if (ec) {
+    // Handle the error
+}
+```
+
+My personal preference: for initialization work at program startup (creating config directories and the like), use the throwing version — failure there means the program cannot run properly anyway, and an exception can abort the startup flow directly. For operations that can legitimately fail at runtime (copying files, deleting temporary files, and so on), use the `error_code` version — those failures are expected and need to be handled gracefully.
+
+## References
 
 - [cppreference: std::filesystem](https://en.cppreference.com/w/cpp/filesystem)
 - [cppreference: copy](https://en.cppreference.com/w/cpp/filesystem/copy)

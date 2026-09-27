@@ -1,12 +1,12 @@
 ---
-title: Smart Pointers and RAII
-description: Implementing automatic resource management with RAII and smart pointers
+title: "Smart Pointers and RAII"
+description: "Automatic resource management with RAII and smart pointers"
 translation:
   source: documents/vol2-modern-features/ch01-smart-pointers/index.md
   source_hash: 4f63d303b554985d7e4a22a64eaa9ecab4a1c3b8117f319ca775db04ee746ca0
-  translated_at: '2026-05-26T11:22:42.661092+00:00'
+  translated_at: '2026-09-25T14:28:01+00:00'
   engine: anthropic
-  token_count: 193
+  token_count: 230
 ---
 # Smart Pointers and RAII
 

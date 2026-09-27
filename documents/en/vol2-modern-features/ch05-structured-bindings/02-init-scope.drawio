@@ -1,0 +1,86 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Init Statement Scope" id="init-scope">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="旧写法 vs if 初始化器：it 的作用域对比" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="113" y="26" width="600" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- 左列：旧写法，it 漏到外层作用域 -->
+        <mxCell id="left_header" value="旧写法：it 漏到外层作用域" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#c00000;" vertex="1" parent="1">
+          <mxGeometry x="60" y="68" width="290" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="left_outer" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="60" y="102" width="290" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="left_outer_label" value="外层作用域（函数体 / 代码块）" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="70" y="108" width="270" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="left_decl" value="auto it = cache.find(key);" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#fff2cc;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="75" y="134" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="left_ifelse" value="if (it != cache.end()) {&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;use(it-&gt;second);&lt;br&gt;} else {&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;cache[key] = compute_value(key);&lt;br&gt;}" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#FFFFFF;fontSize=13;align=left;verticalAlign=middle;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="75" y="174" width="260" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="left_leak1" value="// it 在这里仍然可见，但它已经没用了" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#c00000;strokeWidth=1;fillColor=#ffe6e6;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="75" y="296" width="260" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="left_leak2" value="process(it-&gt;second);&amp;nbsp;&amp;nbsp;// 不小心又用到" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#c00000;strokeWidth=1;dashed=1;fillColor=#ffe6e6;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="75" y="342" width="260" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="left_scope_label" value="it 的可见范围" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#c00000;" vertex="1" parent="1">
+          <mxGeometry x="335" y="116" width="90" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="left_scope_arrow" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeColor=#c00000;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="380" y="136" as="sourcePoint" />
+            <mxPoint x="380" y="398" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="left_note" value="隐患：it 在 if/else 之后仍活着，后面误用可能拿到没意义的状态；查第二个 map 只得换名 it1/it2，函数越长泄漏越多。" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;fontColor=#555555;spacing=2;" vertex="1" parent="1">
+          <mxGeometry x="60" y="414" width="290" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- 右列：if 初始化器，it 只活在 if/else 内 -->
+        <mxCell id="right_header" value="新写法：if 初始化器收窄作用域" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#2E7D32;" vertex="1" parent="1">
+          <mxGeometry x="477" y="68" width="290" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="right_outer" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="477" y="102" width="290" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="right_outer_label" value="外层作用域（函数体 / 代码块）" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="487" y="108" width="270" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="right_ifelse" value="if (auto it = cache.find(key);&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;it != cache.end()) {&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;use(it-&gt;second);&lt;br&gt;} else {&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;cache[key] = compute_value(key);&lt;br&gt;}" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e6f4ea;fontSize=13;align=left;verticalAlign=middle;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="492" y="134" width="260" height="132" as="geometry" />
+        </mxCell>
+        <mxCell id="right_after1" value="// it 在这里不可见，&lt;br&gt;// 作用域被限制在 if/else 内部" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#888888;strokeWidth=1;fillColor=#f2f2f2;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="492" y="284" width="260" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="right_after2" value="// 再查别的 map，照样叫 it：&lt;br&gt;if (auto it = m2.find(k); ...)" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#888888;strokeWidth=1;dashed=1;fillColor=#FFFFFF;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="492" y="338" width="260" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="right_scope_label" value="it 的可见范围" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#2E7D32;" vertex="1" parent="1">
+          <mxGeometry x="743" y="116" width="84" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="right_scope_arrow" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeColor=#2E7D32;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="785" y="136" as="sourcePoint" />
+            <mxPoint x="785" y="264" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="right_note" value="收益：it 被关在 if/else 内部，出了块就不可见，误用直接编不过；声明和使用钉在一起，每个 it 各归各的作用域。" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;fontColor=#555555;spacing=2;" vertex="1" parent="1">
+          <mxGeometry x="477" y="414" width="290" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="syntax_card" value="一般形式：if (init-statement; condition)，分号前声明，分号后判断，变量只活在 if/else 内" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#888888;strokeWidth=1;dashed=1;fillColor=#f2f2f2;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="213" y="482" width="400" height="30" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

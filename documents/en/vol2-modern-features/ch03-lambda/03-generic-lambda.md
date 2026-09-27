@@ -4,280 +4,450 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: From auto parameters to template parameters, lambda's generic programming
-  capabilities
+description: From auto parameters to template parameters — the generic programming
+  power of lambdas
 difficulty: intermediate
 order: 3
 platform: host
 prerequisites:
-- 'Chapter 3: Lambda 基础'
-- 'Chapter 3: Lambda 捕获机制深入'
+- 'Chapter 3: Lambda Basics: The Elegant Expression of Anonymous Functions'
+- 'Chapter 3: Deep Dive into Lambda Capture'
 reading_time_minutes: 13
 related:
-- 函数式编程模式
+- Functional Programming Patterns
 tags:
 - host
 - cpp-modern
 - intermediate
 - lambda
 - 泛型
-title: Generic Lambda and Template Lambda
+title: Generic Lambdas and Template Lambdas
 translation:
   source: documents/vol2-modern-features/ch03-lambda/03-generic-lambda.md
-  source_hash: cd92a40277ccf7816e5227685cacafdcb516fc98d0f439ca446cedb8b4833d7e
-  translated_at: '2026-06-16T03:57:09.990614+00:00'
+  source_hash: 442b6c038bab63924be4fb080eb9de71f70dd858f40c08269524e8fbf3875e9a
+  translated_at: '2026-09-25T15:10:19+00:00'
   engine: anthropic
-  token_count: 3026
+  token_count: 3400
 ---
 # Generic Lambdas and Template Lambdas
 
-## Introduction
-
-In the previous two chapters, the lambda parameter types we used were all concrete—`int`, `float`, `std::string`, and so on. However, in real-world projects, much lambda logic is type-agnostic: a sorting comparator only requires the type to support `operator<`, and an accumulator only requires support for `operator+`. If we write a lambda for each type, we revert to the C++98 functor path—repetitive and redundant. C++14 gave lambdas generic capabilities (`auto` parameters), and C++20 went further by allowing lambdas to have explicit template parameter lists. In this chapter, we will thoroughly clarify the underlying mechanisms, usage, and boundaries of generic lambdas.
+In the previous two chapters, every lambda we wrote took concrete parameter types—`int`, `double`, `const std::string&`, and the like. In real projects, however, a lot of lambda logic is type-neutral: a sorting comparator only requires the type to support `<`, and an accumulator only requires it to support `+`. If we wrote a separate lambda for every type, we would be right back on the old C++98 functor road—repetitive and redundant. C++14 gave lambdas generic capabilities (`auto` parameters), and C++20 went further and gave lambdas explicit template parameter lists outright. In this chapter we thoroughly work out the underlying mechanisms, usage, and boundaries of generic lambdas.
 
 ---
 
-## C++14 Generic Lambdas — `auto` Parameters
+## C++14 Generic Lambdas — auto Parameters
 
-C++14 allows the use of `auto` for lambda parameter types. This kind of lambda is called a generic lambda. To the caller, it behaves like a function template—arguments of different types each instantiate a version of `operator()`:
+C++14 allows lambda parameter types to use `auto`. Such a lambda is called a generic lambda. To the caller, it behaves just like a function template—arguments of different types each get their own instantiation of `operator()`:
 
 ```cpp
-auto generic_add = [](auto a, auto b) {
+// Generic lambda: accepts any type that supports operator+
+auto add = [](auto a, auto b) {
     return a + b;
 };
 
-int i = generic_add(1, 2);        // Instantiates operator()(int, int)
-double d = generic_add(1.0, 2.0); // Instantiates operator()(double, double)
+int xi = add(3, 4);                         // int
+double xd = add(3.14, 2.72);                // double
+std::string xs = add(std::string("hi "), std::string("there"));
 ```
 
-When the same lambda object is invoked with arguments of different types, the compiler generates an instance of `operator()` for each combination of argument types. This behavior is identical to function template instantiation.
+When the same lambda object is called with arguments of different types, the compiler generates one instance of `operator()` for each combination of argument types. This behavior is exactly the same as function template instantiation.
 
-### Under the Hood: Template Call Operator
+Drawn out, the correspondence between one lambda object and three `operator()` instances looks like this:
 
-The compiler translates a generic lambda into a closure type roughly like this:
+![Generic lambda instantiation: one lambda corresponds to multiple operator() instances](./03-generic-lambda-instant.drawio)
+
+### Under the Hood: The Template Call Operator
+
+Behind the scenes, the compiler translates a generic lambda into a closure type roughly like this:
 
 ```cpp
-class ClosureType {
-public:
-    template<typename T, typename U>
-    auto operator()(T a, U b) const {
+// What you wrote
+auto add = [](auto a, auto b) { return a + b; };
+
+// What the compiler generates (simplified)
+struct ClosureType {
+    template<typename T1, typename T2>
+    auto operator()(T1 a, T2 b) const {
         return a + b;
     }
 };
 ```
 
-Each `auto` parameter corresponds to a template parameter of the closure type's `operator()`. Two `auto` parameters mean `operator()` is a member function template with two template parameters. This understanding is crucial—it implies that generic lambdas enjoy all the power of templates, including SFINAE (Substitution Failure Is Not An Error), explicit instantiation, and so on.
+Each `auto` parameter corresponds to one template parameter of the closure type's `operator()`. Two `auto`s mean `operator()` is a member function template with two template parameters. This insight matters—it means a generic lambda enjoys every capability templates have, including SFINAE, explicit instantiation, and so on.
 
-### Multiple `auto` Parameters
+### auto Parameters of Different Types
 
-It is worth noting that each `auto` is an independent template parameter, and their deduction rules do not affect each other:
+Note that each `auto` is an independent template parameter; their deduction rules do not affect one another:
 
 ```cpp
-auto print_pair = [](auto first, auto second) {
-    std::cout << first << ", " << second << std::endl;
+auto multiply = [](auto a, auto b) {
+    return a * b;
 };
 
-print_pair(1, 2.5); // T is int, U is double
+multiply(3, 4.5);    // int * double -> double
+multiply(2.0f, 3);   // float * int -> float
 ```
 
-If you want two parameters to be the same type, in C++14 you need to use some tricks (like using `std::same_as` or a generic lambda with a single parameter returning another lambda), whereas in C++20 you can use template parameters directly (we will cover this shortly).
+If you want both parameters to be of the same type, in C++14 you need a few tricks (for example `std::common_type_t`), while in C++20 you can express it directly with template parameters (we will get there shortly).
 
 ---
 
-## `if constexpr` in Lambdas
+## if constexpr Inside Lambdas
 
-C++17's `if constexpr` allows selecting different code paths at compile time based on type information. In generic lambdas, this is particularly useful—you can choose different implementations based on the type traits of the arguments:
+C++17's `if constexpr` can select different code paths at compile time based on type information. Inside a generic lambda it is especially useful—you can choose different implementations based on the parameter's type characteristics:
 
 ```cpp
-auto describe = [](auto const& value) {
-    if constexpr (std::is_integral_v<decltype(value)>) {
-        std::cout << "Integer: " << value << std::endl;
-    } else if constexpr (std::is_floating_point_v<decltype(value)>) {
-        std::cout << "Float: " << value << std::endl;
+#include <type_traits>
+#include <iostream>
+#include <vector>
+#include <string>
+
+auto process = [](auto& container) {
+    using T = std::decay_t<decltype(container)>;
+
+    if constexpr (std::is_same_v<T, std::string>) {
+        std::cout << "Processing string: " << container << "\n";
+    } else if constexpr (std::is_same_v<T, std::vector<int>>) {
+        std::cout << "Processing int vector, size: " << container.size() << "\n";
     } else {
-        std::cout << "Unknown type" << std::endl;
+        std::cout << "Processing unknown type\n";
     }
 };
+
+void demo_if_constexpr() {
+    std::string s = "hello";
+    std::vector<int> v = {1, 2, 3};
+    double d = 3.14;
+
+    process(s);  // Processing string: hello
+    process(v);  // Processing int vector, size: 3
+    process(d);  // Processing unknown type
+}
 ```
 
-The key to `if constexpr` is that branches not satisfying the condition are discarded at compile time and do not participate in final code generation. This means you can use operations specific to a type (like `.push_back()` for vectors) in different branches; as long as that branch doesn't meet the condition for the current instantiation, the compiler won't check its semantic validity. Note that discarded branches still undergo basic syntax checking and cannot contain unresolvable template-dependent names.
+The key to `if constexpr`: branches whose conditions are not met are discarded at compile time and take no part in final code generation. This means you can use operations specific to a certain type in different branches (for example `container.size()`)—as long as that branch's condition fails in the current instantiation, the compiler will not check its semantic correctness. Note that discarded branches still go through basic syntax checking, and must not contain template-dependent names that cannot be parsed.
 
-A more practical scenario involves handling different iterator types—random access iterators can use subscript access, while forward iterators can only use `++`. `if constexpr` allows you to handle both cases elegantly within a single lambda.
+A more practical scenario is handling different iterator types—random-access iterators can be accessed with subscripts, while forward iterators only give you `++`. `if constexpr` lets a single lambda handle both cases elegantly.
 
 ---
 
 ## C++20 Template Lambdas — Explicit Template Parameters
 
-C++14 generic lambdas using `auto` parameters are convenient, but they have limitations: you cannot know the name of the deduced type, you cannot impose constraints on template parameters, and you cannot reference the type inside the lambda to declare other variables. C++20 adds explicit template parameter lists to lambdas, solving these problems in one stroke:
+C++14 generic lambdas with `auto` parameters are convenient, but they have a few problems: you cannot know the name of the deduced type, you cannot impose constraints on the template parameters, and you cannot refer to that type inside the lambda to declare other variables. C++20 gave lambdas explicit template parameter lists, solving all of these problems in one stroke:
 
 ```cpp
-auto add_same = []<typename T>(T a, T b) {
+// C++20 template lambda: explicitly declaring template parameters
+auto add_explicit = []<typename T>(T a, T b) {
     return a + b;
 };
 
-add_same(1, 2);    // OK, T is int
-add_same(1.0, 2.0); // OK, T is double
-// add_same(1, 2.0); // Error: T cannot be both int and double
+add_explicit(3, 4);       // T = int
+add_explicit(3.0, 4.0);   // T = double
+// add_explicit(3, 4.0);  // Compile error: T cannot be both int and double
 ```
 
-Here, the `template<typename T>` syntax is identical to normal templates. Both parameters are of type `T`, so the two arguments must be of the same type when called—something C++14's `auto` cannot do.
+The `<typename T>` syntax here is exactly the same as for ordinary templates. Both parameters have type `T`, so both arguments must be of the same type at the call site—precisely what C++14's `auto` cannot achieve.
 
-### Using Template Parameter Names Inside Lambdas
+### Using Template Parameter Names Inside the Lambda
 
-Template parameter names can be used freely inside the lambda body, which is much more flexible than `auto`:
+The template parameter name can be used freely inside the lambda body, which is far more flexible than `auto`:
 
 ```cpp
-auto get_element = []<typename T>(std::vector<T> const& vec) {
-    // We can use T directly
-    T default_val{};
-    return vec.empty() ? default_val : vec[0];
+#include <vector>
+#include <iostream>
+
+// Use the template parameter name to create containers or variables of the same type
+auto transform_to_vector = []<typename T>(const std::vector<T>& input) {
+    std::vector<T> result;
+    result.reserve(input.size());
+    for (const auto& elem : input) {
+        result.push_back(elem * 2);
+    }
+    return result;
 };
+
+void demo_template_param_name() {
+    std::vector<int> data = {1, 2, 3, 4, 5};
+    auto doubled = transform_to_vector(data);
+    for (int x : doubled) {
+        std::cout << x << " ";   // 2 4 6 8 10
+    }
+    std::cout << "\n";
+}
 ```
 
-If you use C++14's `auto` parameter, you get `std::vector<U> const&`, but inside the lambda you don't know if the element type is `T`—you have to use `typename U::value_type` to deduce it. With C++20 template parameter `T`, everything is straightforward.
+With a C++14 `auto` parameter, what you get is `const std::vector<int>&`, but inside the lambda you do not know that the element type is `int`—you would have to deduce it with `decltype`. With a C++20 template parameter `T`, everything is straightforward.
 
 ### Constraining with Concepts
 
-C++20 Concepts and template lambdas are natural partners. You can use the `requires` clause to impose constraints on template parameters, making the lambda accept only types that satisfy specific concepts:
+C++20 concepts and template lambdas are natural partners. You can use a `requires` clause to constrain the template parameters, so that the lambda only accepts types satisfying a specific concept:
 
 ```cpp
-auto numeric_add = []<std::integral T>(T a, T b) {
+#include <concepts>
+#include <iostream>
+#include <string>
+
+// Accepts integer types only
+auto int_only = []<std::integral T>(T a, T b) {
     return a + b;
 };
 
-numeric_add(10, 20); // OK
-// numeric_add(10.5, 20.5); // Error: double does not satisfy std::integral
-```
-
-The benefit of Concepts constraints lies not only in compile-time type safety—error messages are much friendlier than traditional SFINAE. When you pass the wrong type, the compiler tells you directly "constraint not satisfied" and points out which specific concept failed, rather than outputting a massive template instantiation stack. You can compile with `-fconcepts-diagnostics-depth=2` and trigger an error to compare the error message quality of Concepts and SFINAE.
-
-### Explicitly Specifying Template Arguments When Invoking Template Lambdas
-
-Sometimes you don't want the compiler to deduce the template parameters and want to specify them explicitly. Template lambdas also support explicit template argument calls, though the syntax is a bit special:
-
-```cpp
-auto cast_to_int = []<typename T>(T val) -> int {
-    return static_cast<int>(val);
+// Accepts floating-point types only
+auto float_only = []<std::floating_point T>(T a, T b) {
+    return a + b;
 };
 
-double d = 3.14;
-int i = cast_to_int.operator()<double>(d); // Explicitly specify T as double
+// Custom concept: types that support serialization
+template<typename T>
+concept Serializable = requires(T t, std::ostream& os) {
+    { serialize(t, os) } -> std::same_as<void>;
+};
+
+auto serialize_and_log = []<Serializable T>(const T& obj) {
+    std::ostringstream oss;
+    serialize(obj, oss);
+    std::cout << "Serialized: " << oss.str() << "\n";
+};
+
+void demo_concepts() {
+    int_only(1, 2);         // OK
+    // int_only(1.0, 2.0); // Compile error: double does not satisfy std::integral
+
+    float_only(1.0, 2.0);   // OK
+    // float_only(1, 2);   // Compile error: int does not satisfy std::floating_point
+}
 ```
 
-The `.operator()<...>` syntax is indeed not very pretty, but in practice, you rarely need to call it explicitly—most of the time compiler deduction is sufficient. Scenarios requiring explicit specification are mainly when you want to force a specific conversion (like forcing a `float` to be treated as a `long`), or when the lambda uses `if constexpr` to select different branches based on template parameters.
+The benefit of concept constraints goes beyond compile-time type safety—the error messages are also far friendlier than traditional SFINAE. When you pass the wrong type, the compiler tells you directly that a "constraint was not satisfied" and points out exactly which concept failed, instead of dumping a huge stack of template instantiations. You can compile `code/volumn_codes/vol2/ch03-lambda/test_concepts_error_messages.cpp` and trigger the errors to compare the error-message quality of concepts versus SFINAE.
+
+### Explicitly Specifying Template Arguments When Calling a Template Lambda
+
+Sometimes you do not want the compiler to deduce the template arguments—you want to specify them yourself. Template lambdas also support explicitly specifying template arguments, though the syntax is a bit special:
+
+```cpp
+auto identity = []<typename T>(T x) { return x; };
+
+// Normal call: the compiler deduces T = int
+auto r1 = identity(42);
+
+// Explicitly specifying the template argument
+auto r2 = identity.template operator()<int>(42);
+```
+
+That `.template operator()<T>()` syntax is admittedly not pretty, but in practice you rarely need to call it explicitly—most of the time the compiler's deduction is enough. The main scenarios for explicit specification are when you want to force a conversion (for example, forcing an `int` to be treated as a `double`), or when the lambda uses `if constexpr` internally to choose different branches based on the template parameter.
 
 ---
 
 ## Recursive Lambdas
 
-Lambdas are anonymous by nature—they have no name, so they cannot call themselves within their body. However, recursion is a common requirement in programming. We have several ways to work around this limitation.
+A lambda is anonymous—it has no name, so it cannot call itself from inside its own body. Yet recursion is a very common need in programming. We have several ways to get around this limitation.
 
-### Method 1: Wrapping with `std::function`
+### Approach 1: Wrapping with `std::function`
 
-The most intuitive way is to store the lambda in a `std::function`, then achieve self-invocation through the variable name:
-
-```cpp
-std::function<int(int)> fibonacci = [&](int n) {
-    if (n <= 1) return n;
-    return fibonacci(n - 1) + fibonacci(n - 2);
-};
-```
-
-**Note**: `std::function` invocation involves type erasure, and every recursive call requires an indirect call through a virtual function table. In performance-sensitive code, this overhead needs to be considered. Actual tests (see `bench_recursive.cpp`) show that at `-O2` optimization, the `std::function` version of recursive calls is about 70-150 times slower than a templated implementation (depending on recursion depth and compiler optimization capabilities).
-
-### Method 2: Generic Lambda + `auto&&` Parameter (Y Combinator Idea)
-
-A more efficient approach utilizes the characteristics of generic lambdas, passing a "self-reference" as an argument. This is a simplified version of the Y combinator concept:
+The most straightforward way is to store the lambda in a `std::function`, and then achieve self-invocation through the `std::function` variable's name:
 
 ```cpp
-auto y_combinator = [](auto&& self) {
-    return [&](auto&&... args) {
-        return self(std::forward<decltype(args)>(args)...);
+#include <functional>
+#include <iostream>
+
+void demo_recursive_std_function() {
+    std::function<int(int)> factorial = [&factorial](int n) {
+        if (n <= 1) return 1;
+        return n * factorial(n - 1);
     };
-};
 
-// Usage
-auto factorial = y_combinator([](auto&& self, int n) -> int {
-    if (n <= 1) return 1;
-    return n * self(self, n - 1);
-});
+    std::cout << factorial(5) << "\n";   // 120
+}
 ```
 
-The key to this version is that the first parameter `self` of the generic lambda receives a reference to the lambda object itself. Inside the lambda, recursion is implemented by calling `self(self, ...)`. Because `operator()` is a template function, the compiler can inline the entire call chain.
+**Note**: calling through a `std::function` involves type erasure, and every recursive call is an indirect call through the virtual function table. In performance-sensitive code, this overhead needs to be taken into account. Actual measurements (see `code/volumn_codes/vol2/ch03-lambda/test_recursive_lambda_performance.cpp`) show that under -O2 optimization, the recursive `std::function` version is roughly 70-150x slower than a templated implementation (depending on recursion depth and the compiler's optimization capability).
 
-**Performance Comparison** (based on `bench_recursive.cpp` with g++ 15.2.1 -O2, 1,000,000 `fibonacci(10)` calls):
+### Approach 2: Generic Lambda + auto&& Parameter (the Y-Combinator Idea)
 
-- `std::function` version: ~18,700 µs (type erasure overhead, hard to optimize)
-- Y Combinator version: ~130-250 µs (templated, fully inlinable)
-- Performance improvement: ~75-145x
-
-In practice, if your recursion depth is shallow or the call frequency is low, the simplicity of `std::function` may be more important. But for performance-critical code, the Y combinator or directly passing the self-reference is more appropriate.
-
-### Method 3: C++14 Generic Lambda Passing Self Directly
-
-If you don't want to write a Y combinator helper class, there is a hack—using an `auto` parameter to receive the self-reference:
+A more efficient approach exploits generic lambdas: pass the "reference to itself" in as an argument. This is a simplified take on the Y-combinator idea:
 
 ```cpp
-auto recursive_lambda = [](auto&& self, int n) -> int {
-    if (n <= 1) return 1;
-    return n * self(self, n - 1);
+#include <iostream>
+
+// Y-combinator helper: takes a higher-order function and returns its fixed point
+template<typename F>
+class YCombinator {
+    F f_;
+public:
+    explicit YCombinator(F f) : f_(std::move(f)) {}
+
+    template<typename... Args>
+    decltype(auto) operator()(Args&&... args) {
+        return f_(*this, std::forward<Args>(args)...);
+    }
 };
 
-// Call
-recursive_lambda(recursive_lambda, 5);
+template<typename F>
+YCombinator(F) -> YCombinator<F>;
+
+void demo_y_combinator() {
+    auto factorial = YCombinator([](auto&& self, int n) -> int {
+        if (n <= 1) return 1;
+        return n * self(n - 1);
+    });
+
+    std::cout << factorial(5) << "\n";   // 120
+    std::cout << factorial(10) << "\n";  // 3628800
+}
 ```
 
-The problem with this style is that the caller must manually pass the lambda itself into it—`recursive_lambda(recursive_lambda, 5)` instead of just `recursive_lambda(5)`. Although it looks a bit weird, it is acceptable for internal logic that doesn't need to be encapsulated into an API.
+The key to this version: the generic lambda's first parameter, `auto&& self`, receives a reference to the `YCombinator` object itself. Inside the lambda, the recursive call happens through `self(n - 1)`. Because `YCombinator::operator()` is a function template, the compiler can inline the entire call chain.
+
+**Performance comparison** (based on `test_recursive_lambda_performance.cpp`, measured with g++ 15.2.1 -O2, 1,000,000 calls to `factorial(10)`):
+
+- `std::function` version: ~18,700 µs (type-erasure overhead, hard to optimize away)
+- Y-combinator version: ~130-250 µs (templated, fully inlinable)
+- Speedup: roughly 75-145x
+
+In practice, if your recursion depth is small or the call frequency is low, the simplicity of `std::function` may matter more. But for performance-critical code, the Y combinator or directly passing a self-reference is the better fit.
+
+### Approach 3: A C++14 Generic Lambda That Passes Itself
+
+If you would rather not write a Y-combinator helper class, there is a clever shortcut—receive the self-reference through an `auto&` parameter:
+
+```cpp
+#include <iostream>
+
+void demo_self_ref() {
+    // fibonacci
+    auto fib = [](auto&& self, int n) -> long long {
+        if (n <= 1) return n;
+        return self(self, n - 1) + self(self, n - 2);
+    };
+
+    std::cout << fib(fib, 10) << "\n";   // 55
+}
+```
+
+The problem with this style is that the caller must manually pass the lambda itself—`fib(fib, 10)` instead of `fib(10)`. It looks a bit odd, but it is acceptable for internal logic that never needs to be wrapped into an API.
 
 ---
 
-## General Examples
+## General-Purpose Examples
 
-### Generic Comparator
+### A Generic Comparator
 
 ```cpp
-auto compare = [](auto const& a, auto const& b) {
-    return a < b;
+#include <algorithm>
+#include <vector>
+#include <string>
+
+// Generic comparator: sort by any field
+template<typename Projection>
+auto make_comparator(Projection proj) {
+    return [proj = std::move(proj)](const auto& a, const auto& b) {
+        return proj(a) < proj(b);
+    };
+}
+
+struct Employee {
+    std::string name;
+    int age;
+    double salary;
 };
 
-std::vector<int> v = {3, 1, 4, 1, 5};
-std::sort(v.begin(), v.end(), compare);
+void demo_generic_comparator() {
+    std::vector<Employee> employees = {
+        {"Alice", 30, 85000.0},
+        {"Bob", 25, 72000.0},
+        {"Charlie", 35, 92000.0},
+    };
+
+    // Sort by age
+    std::sort(employees.begin(), employees.end(),
+             make_comparator([](const auto& e) { return e.age; }));
+
+    // Sort by salary, descending
+    std::sort(employees.begin(), employees.end(),
+             make_comparator([](const auto& e) { return -e.salary; }));
+
+    // Sort by name
+    std::sort(employees.begin(), employees.end(),
+             make_comparator([](const auto& e) -> const auto& { return e.name; }));
+}
 ```
 
-### Generic Transformer
+### A Generic Transformer
 
 ```cpp
-auto transform = [](auto const& input) {
-    using T = std::decay_t<decltype(input)>;
-    // Perform some transformation logic
-    return input;
+#include <vector>
+#include <algorithm>
+#include <iterator>
+
+// Generic transform: apply the transformation function to every element of the container
+auto make_transformer = [](auto func) {
+    return [f = std::move(f)](auto& container) {
+        std::transform(container.begin(), container.end(),
+                      container.begin(), f);
+        return container;
+    };
 };
+
+// Chained transforms
+auto make_pipeline = [](auto... transforms) {
+    return [=](auto input) {
+        auto current = std::move(input);
+        // Apply each transform in turn (C++17 fold expression)
+        ((current = transforms(current)), ...);
+        return current;
+    };
+};
+
+void demo_generic_transformer() {
+    auto double_it = make_transformer([](int x) { return x * 2; });
+    auto add_one = make_transformer([](int x) { return x + 1; });
+
+    std::vector<int> data = {1, 2, 3, 4, 5};
+    auto result = double_it(data);    // {2, 4, 6, 8, 10}
+}
 ```
 
 ### Polymorphic Container Operations
 
-Generic lambdas combined with template functions allow for writing generic algorithms that do not depend on specific container types. The following example uses a generic lambda to print any container type, as long as the container's elements support `operator<<`:
+Generic lambdas combined with template functions let you write generic algorithms that do not depend on any concrete container type. The following example uses a generic lambda to print containers of arbitrary types, as long as the container's element type supports `operator<<`:
 
 ```cpp
-auto print_container = [](auto const& container) {
-    for (auto const& elem : container) {
-        std::cout << elem << " ";
+#include <iostream>
+#include <vector>
+#include <list>
+#include <array>
+#include <set>
+
+auto print_container = [](const auto& container) {
+    using T = std::decay_t<decltype(container)>;
+    std::cout << "[";
+    bool first = true;
+    for (const auto& elem : container) {
+        if (!first) std::cout << ", ";
+        std::cout << elem;
+        first = false;
     }
-    std::cout << std::endl;
+    std::cout << "]\n";
 };
 
-std::vector<int> v1 = {1, 2, 3};
-std::list<double> l1 = {1.1, 2.2, 3.3};
+void demo_polymorphic_container() {
+    std::vector<int> v = {1, 2, 3};
+    std::list<double> l = {1.1, 2.2, 3.3};
+    std::array<std::string, 2> a = {"hello", "world"};
+    std::set<int> s = {5, 3, 1, 4, 2};
 
-print_container(v1); // Works for vector
-print_container(l1); // Works for list
+    print_container(v);   // [1, 2, 3]
+    print_container(l);   // [1.1, 2.2, 3.3]
+    print_container(a);   // [hello, world]
+    print_container(s);   // [1, 2, 3, 4, 5]
+}
 ```
 
-The flexibility of generic lambdas makes these "write once, use everywhere" generic operations very natural. You don't need to write an overload for each container type—`auto` parameters combined with range-based for loops handle all containers that support iteration with a single lambda.
+The flexibility of generic lambdas makes this kind of "write once, use everywhere" generic operation feel completely natural. You do not need to write one overload per container type—an `auto` parameter combined with a range-based for loop, and a single lambda handles every container that supports iteration.
 
 ---
 
-## Reference Resources
+## References
 
 - [Lambda expressions - cppreference](https://en.cppreference.com/w/cpp/language/lambda)
 - [C++20 template lambdas (P0428)](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0428r2.pdf)
@@ -285,18 +455,17 @@ The flexibility of generic lambdas makes these "write once, use everywhere" gene
 
 ## Verification Code
 
-The performance comparisons and proof-of-concept code for this chapter are located in the `generic_lambda_demo` directory:
+This chapter's performance comparisons and proof-of-concept code are located in `code/volumn_codes/vol2/ch03-lambda/`:
 
-- `bench_recursive.cpp`: Performance benchmarks for different recursive lambda implementations
-- `concepts_vs_sfinae.cpp`: Comparison of error message quality between Concepts and SFINAE
+- `test_recursive_lambda_performance.cpp`: benchmarks comparing the different recursive-lambda implementations
+- `test_concepts_error_messages.cpp`: comparing error-message quality between concepts and SFINAE
 
-Compile and run (requires CMake):
+Build and run (CMake required):
 
 ```bash
-cd generic_lambda_demo
-mkdir build && cd build
-cmake ..
-make
-./bench_recursive
-./concepts_vs_sfinae
+cd code/volumn_codes/vol2/ch03-lambda
+cmake -B build
+cmake --build build
+./build/test_recursive_lambda_performance
+./build/test_concepts_error_messages
 ```
