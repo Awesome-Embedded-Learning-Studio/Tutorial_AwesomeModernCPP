@@ -81,7 +81,25 @@ A huge thank-you to these friends for their PRs and for their support in every o
     <span class="card-name">xiaoshuaijie <span class="card-badge pr">PR</span></span>
     <p class="card-role">Content Additions & Build Fixes</p>
     <p class="card-types">💡 📝</p>
-    <p class="card-desc">Submitted PRs completing reference answers for several C tutorial chapters — function pointers & callbacks, arrays & C strings, structs & unions, dynamic memory & file I/O (#149, #153, #164, #165) — fixed Windows build failures and stabilized the split-volume build (#160, #169); earlier reported a wrong statement in "Scope and Storage Classes" (#144), which led to a fix</p>
+    <p class="card-desc">Submitted PRs completing reference answers for several C tutorial chapters — function pointers & callbacks, arrays & C strings, structs & unions, dynamic memory & file I/O (#149, #153, #164, #165) — fixed Windows build failures and stabilized the split-volume build (#160, #169); earlier reported a wrong statement in "Scope and Storage Classes" (#144), which led to a fix; this release completed reference answers for every chapter of Vol. 1 (Ch. 1–7) in the C++ tutorial (20+ PRs), along with build and wording fixes</p>
+  </div>
+</a>
+<a href="https://github.com/Voyagerroc-Lab" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/Voyagerroc-Lab.png?size=96" alt="Erol Tasci" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">Erol Tasci <span class="card-badge pr">PR</span></span>
+    <p class="card-role">Getting-Started Tutorial Improvement</p>
+    <p class="card-types">📝 💡</p>
+    <p class="card-desc">Co-authored the PR with Voyagerroc-Pro clarifying how CMake generators relate to build tools like Ninja and Make in the getting-started tutorial, plus mingw32-make setup notes for Windows (#258)</p>
+  </div>
+</a>
+<a href="https://github.com/Voyagerroc-Pro" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/Voyagerroc-Pro.png?size=96" alt="Voyagerroc-Pro" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">Voyagerroc-Pro <span class="card-badge pr">PR</span></span>
+    <p class="card-role">Getting-Started Tutorial Improvement</p>
+    <p class="card-types">📝 💡</p>
+    <p class="card-desc">Co-authored the getting-started tutorial's CMake build explanation with Erol Tasci (#258)</p>
   </div>
 </a>
 </div>
