@@ -15,7 +15,7 @@ argument-hint: "[必填: 要讲解的 C++ 概念]"
 
 1. **定位**:先在**本仓库**找项目怎么讲这个概念 —— 查 `documents/roadmap/index.md`(学习顺序)和各卷 `documents/vol*/index.md`,grep 概念名,读项目已有处理。**别凭通用记忆现编一套**,对齐项目的讲法和进度。
 2. **验证**:凡涉及 C++ 行为断言,先编译实测或查 cppreference 标版本(做法同 `/verify-claim`)。**禁止凭记忆断言。**
-3. **讲解**:用**项目声音**讲([`writing-style.md`](../style/writing-style.md) Part 2)—— 讲"为什么"、类比 + 机制拆解、标志性句式、鼓励读者自己跑代码。
+3. **讲解**:用**项目声音**讲 —— 维护者环境先读 `.claude/tools/content_forge/tools/humanizer-zh/corpus/VOICE.md`(不存在则按 [`writing-style.md`](../style/writing-style.md) Part 2)—— 讲"为什么"、类比 + 机制拆解、标志性句式、鼓励读者自己跑代码。
 4. **纠偏**:概念若有常见误解,主动点破(查 [`faq.md`](../../.github/faq.md))。
 
 ## 输出

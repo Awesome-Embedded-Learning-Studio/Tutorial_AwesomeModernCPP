@@ -50,7 +50,7 @@ estimated_effort: epic
 | 6a | `gui-graphics/` | GUI 与图形（桌面） | XCB 渲染基础 + GUI 核心概念（含协程） | index 骨架 |
 | 6b | `embedded-gui/` | 嵌入式 GUI | OLED/LCD 显示 + 触摸 + 轻量 Widget 框架 | 待创建 |
 | 7 | `algorithms/` | C++ 工程数据结构与算法 | 工程数据结构 + LeetCode 刷题解析（持续扩展） | index 骨架，需重建 |
-| 8 | `systems-programming/` | 系统编程 | OS 应用层 API 全覆盖，Modern C++ 封装 | 待创建 |
+| 8 | `systems-programming/` | 系统编程 | OS 应用层 API 全覆盖，Modern C++ 封装 | 一期已落地（2026-09：Linux/Windows 两侧并行结构，总纲 + 两侧文件 I/O 与文件映射，5 篇正文 + 5 index；进程/异步 I/O 等待续） |
 
 ### 大型项目（外置到 `todo/021-projects.md`）
 

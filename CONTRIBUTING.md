@@ -46,29 +46,6 @@ pre-commit 会在运行检查前临时隔离未暂存改动，避免把未准备
 
 日常验证请使用 `pre-commit run` 检查已暂存文件。`pre-commit run --all-files` 会对全仓文件运行自动修复型 hook，包括对所有 C/C++ 文件执行 `clang-format -i`。
 
-## 文章规范
-
-### 文章结构
-
-每篇文章应遵循以下结构：
-
-```markdown
----
-# [FRONTMATTER 元数据]
----
-
-# 标题
-
-## 引言 / 动机
-## 核心概念
-## 代码示例
-## 实战应用
-## 注意事项
-## 小结
-## 练习（可选）
-## 参考资源
-```
-
 ### Frontmatter 元数据
 
 每篇文章必须包含以下元数据，这样的话，方便我们根据标签找内容——站内导航的「标签索引」页可按标签、难度、平台筛选文章，CI 也会校验 tags 是否在白名单内（标签词表见 `scripts/tags.json`）。
@@ -93,16 +70,16 @@ pre-commit 会在运行检查前临时隔离未暂存改动，避免把未准备
 ```
 documents/vol2-modern-features/     # 卷二目录
 ├── index.md                        # 卷首页
-├── ch01-smart-pointers/            # 章节（可选子目录）
-│   ├── 01-raii-deep-dive.md
-│   ├── 02-unique-ptr.md
-│   └── 03-shared-ptr.md
-└── cpp17-string-view.md            # 也可直接放在卷目录下
+└── ch01-smart-pointers/            # 章节（可选子目录）
+    ├── 01-raii-deep-dive.md
+    ├── 02-unique-ptr.md
+    └── 03-shared-ptr.md
+# PS，除非是index.md，否则不建议放置，除非是历史文件
 ```
 
 ### 写作风格
 
-完整的写作人格、语气规则、文章骨架与代码风格见 [`.claude/style/writing-style.md`](.claude/style/writing-style.md)(建议！当然如果您是投稿随意！毕竟这个文章是您的！但是通用教程还请保持文风的一致性！)。
+写作人格、语气要点、文章骨架与代码风格见 [`.claude/style/writing-style.md`](.claude/style/writing-style.md)(公开风格卡;建议！当然如果您是投稿随意！毕竟这个文章是您的！但是通用教程还请保持文风的一致性！)。
 
 ## 自定义 Vue 组件
 

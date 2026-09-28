@@ -52,7 +52,7 @@ pnpm build                                          # 完整构建(manifest 校�
 
 ## 正文写作约束
 
-周页面引言、出处致谢段、`answer.md` 都是站内中文正文,不是代码注释。动笔前读 `.claude/style/writing-style.md`(已提交,写作人格与去 AI 味规则);维护者环境另有更全的 `.claude/tools/content_forge/writing_style.md` 与 `tools/humanizer_lint.py`,能跑则跑。要点:自称笔者;拉着人一起走用咱们;称呼对方用您。口语可以留,比喻和框架词不要;`answer.md` 讲思路带排错段,参考 `week-01/01-count-coins/solution/charliechen114514/answer.md` 的结构。
+周页面引言、出处致谢段、`answer.md` 都是站内中文正文,不是代码注释。动笔前读 `.claude/style/writing-style.md`(公开风格卡,写作人格与去 AI 味规则);维护者本地 `.claude/tools/content_forge/`(gitignore 不入库)有完整声音资产(`tools/humanizer-zh/corpus/VOICE.md` + `COMPARE.md`)与 `tools/humanizer_lint.py`,能跑则跑。要点:自称笔者;拉着人一起走用咱们;称呼对方用您。口语可以留,比喻和框架词不要;`answer.md` 讲思路带排错段,参考 `week-01/01-count-coins/solution/charliechen114514/answer.md` 的结构。
 
 ## PR 规范
 
