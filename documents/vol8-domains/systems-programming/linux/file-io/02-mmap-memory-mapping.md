@@ -27,7 +27,7 @@ tags:
 
 更妙的是,`mmap` 建立映射的那一刻**几乎什么都没干**:一页数据都没读,一字节的内存都没占,只在内核里登记了一句"这段地址合法,背后是那个文件"。真正的搬运,要等您第一次摸到某个页才发生,这一下就叫**缺页(page fault)**了。懒加载配上零拷贝的组合,养活了动态链接器与数据库,也养活了一切"把文件当数组用"的程序,打的都是同一套地基。本篇咱们把六个参数一个个看过去,把映射的释放交给 RAII,然后排一串实验往下走:缺页有多贵、文件在背后被截短会发生什么、两个进程怎么共享同一份文件,一路到 512 MiB 顺序读里 mmap 与 read 的胜负。
 
-实验环境咱们交代清楚,后面的数字都要靠它对表:第一批实验(缺页、SIGBUS、写时复制)出自笔者的台机,用的 CPU 是 AMD Ryzen 7 9700X,代码放在 `/tmp/sysprog-linux02/` 的目录里。后来补做的 mprotect、`/proc/self/maps`、跨进程可见性与 Dirty 计数,换了一台 i7-13700H 的笔记本,代码放在 `/tmp/l02_exps/` 的目录里。512 MiB 基准则是两台各跑了一轮,哪轮是哪台的数字,咱们到基准一节再细说。两边都是 WSL2 的环境,内核都是 6.18.33.2-microsoft-standard-WSL2 的同一构建,g++ 也都是 16.2.1 的同一版本。出自哪台机器的数字,咱们行文里随用随标。`unique_fd`、`sys_call`、`errno_code` 这三件工具的用法,咱们沿用上一篇的定义。
+实验环境咱们交代清楚,后面的数字都要靠它对表:第一批实验(缺页、SIGBUS、写时复制)出自笔者的台机,用的 CPU 是 AMD Ryzen 7 9700X,这一批的代码没有留档,咱们只在文中留了数字。后来补做的 mprotect、`/proc/self/maps`、跨进程可见性与 Dirty 计数,加上第一批三个实验在笔记本上的复跑,换的是一台 i7-13700H 的机器,代码与全部原始输出收进了仓库 `code/volumn_codes/vol8/systems-programming/linux/file-io/02-mmap-memory-mapping/`。512 MiB 基准则是两台各跑了一轮,哪轮是哪台的数字,咱们到基准一节再细说。两边都是 WSL2 的环境,内核都是 6.18.33.2-microsoft-standard-WSL2 的同一构建,g++ 也都是 16.2.1 的同一版本。出自哪台机器的数字,咱们行文里随用随标。`unique_fd`、`sys_call`、`errno_code` 这三件工具的用法,咱们沿用上一篇的定义。
 
 ## mmap() 的六个参数:每一个都挂着行为后果
 
@@ -529,7 +529,7 @@ mmap(MAP_POPULATE) itself took 37.0 ms
 populate :   92.5 ms, 5534.9 MiB/s, sum 68449008524, minor faults 8350
 ```
 
-笔记本(i7-13700H)这一轮的 bench 是咱们照节选复原的,代码与全部输出存进了 `/tmp/l02_exps/e6_bench_laptop/`:
+笔记本(i7-13700H)这一轮的 bench 是咱们照节选复原的,代码与全部输出收进了仓库 `code/volumn_codes/vol8/systems-programming/linux/file-io/02-mmap-memory-mapping/09-bench/`:
 
 ```text
 $ for i in 1 2 3; do ./bench read big.bin; ./bench mmap big.bin; done

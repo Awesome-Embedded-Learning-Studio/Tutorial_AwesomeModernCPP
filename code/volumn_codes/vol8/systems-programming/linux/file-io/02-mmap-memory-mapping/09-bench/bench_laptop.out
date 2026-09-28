@@ -1,0 +1,8 @@
+read     :   110.4 ms, 4636.9 MiB/s, sum 68450753178, minor faults 446
+mmap     :    79.1 ms, 6469.4 MiB/s, sum 68450753178, minor faults 8381
+read     :    97.9 ms, 5230.3 MiB/s, sum 68450753178, minor faults 447
+mmap     :    75.1 ms, 6819.7 MiB/s, sum 68450753178, minor faults 8380
+read     :   107.0 ms, 4783.1 MiB/s, sum 68450753178, minor faults 447
+mmap     :    76.7 ms, 6679.2 MiB/s, sum 68450753178, minor faults 8380
+mmap(MAP_POPULATE) itself took 8.8 ms
+populate :    73.3 ms, 6988.0 MiB/s, sum 68450753178, minor faults 8514

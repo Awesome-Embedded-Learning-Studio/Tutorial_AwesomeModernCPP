@@ -1,0 +1,10 @@
+baseline                   Dirty =      316 kB, Writeback =      0 kB
+pread byte @page 12345 before write : 0 (sparse hole reads as zero)
+wrote 1 byte x 32768 pages in 32.7 ms
+after dirtying             Dirty =   131388 kB, Writeback =      0 kB
+pread byte @page 1 via 2nd fd now : 1 (expected 1, page index & 0xFF)
+pread byte @page 12345 now        : 57 (expected 57, i.e. 12345 & 0xFF)
+msync(MS_SYNC) over 128 MiB       : 50.6 ms
+after msync(MS_SYNC)       Dirty =      316 kB, Writeback =      0 kB
+after +1 MiB, no msync     Dirty =     1288 kB, Writeback =      0 kB
+pread byte @page 1 now            : 171 (0xAB = 171, visible immediately)
