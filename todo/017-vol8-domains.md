@@ -52,7 +52,7 @@ estimated_effort: epic
 | 7 | `algorithms/` | C++ 工程数据结构与算法 | 工程数据结构 + LeetCode 刷题解析（持续扩展） | index 骨架，需重建 |
 | 8 | `systems-programming/` | 系统编程 | OS 应用层 API 全覆盖，Modern C++ 封装 | 一期已落地（2026-09：Linux/Windows 两侧并行结构，总纲 + 两侧文件 I/O 与文件映射，5 篇正文 + 5 index；进程/异步 I/O 等待续） |
 
-### 大型项目（外置到 `todo/021-projects.md`）
+### 大型项目（外置到 `todo/020-projects.md`）
 
 以下项目规模大、跨领域，在 projects TODO 中独立规划：
 
@@ -82,11 +82,18 @@ estimated_effort: epic
 
 #### D5. 大型项目外置
 
-以下项目规模大、跨领域，独立到 `todo/021-projects.md` 规划：
+以下项目规模大、跨领域，独立到 `todo/020-projects.md` 规划：
 - 手搓 MiniGUI 框架（桌面+嵌入式）
 - 手写 LRU Cache、线程安全 HashMap、迷你搜索引擎（算法领域）
 - syskit 系统编程工具库、跨平台异步 I/O 事件循环库（系统编程领域）
 - 嵌入式综合项目（传感器采集/参数管理/电机控制）
+
+#### D6. 系统编程镜像制与粒度口径（2026-09-28）
+
+- 旧版路线 28 个 bullet 全 Linux 命名、零 Windows 文章槽位，与已落地的「Linux/Windows 两侧镜像」结构脱节；本节重写后口径以「领域 8：系统编程路线」节为准。
+- 粒度判据改为「一篇 = 一个能动手实验的核心问题」，信号拆 2 篇、进程拆 3 篇，单篇 200-500 行。
+- ch00 原 01（为什么需要系统编程）内容已被 00-overview 吸收，不再单列；02/03 合并为 2 篇概念篇，材料从 L01/W01 平移，契约工具唯一定义处随之挪入。
+- 大型项目文件名勘误：`todo/021-projects.md` 不存在，实为 `todo/020-projects.md`，全文已改。
 
 ---
 
@@ -158,7 +165,7 @@ Phase 1 + Phase 2 完成后，用综合项目串联全部知识。
 - 候选 2：**嵌入式参数管理系统** — Flash 存储 + Watchdog 保护 + RTC 时间戳 + 命令行配置（UART）
 - 候选 3：**电机控制系统** — Timer PWM + ADC 电流采样 + PID + FreeRTOS 实时任务
 
-预估：每个项目 3-5 篇文章 + 1 个完整工程。与 `todo/021-projects.md` 交叉。
+预估：每个项目 3-5 篇文章 + 1 个完整工程。与 `todo/020-projects.md` 交叉。
 
 #### Phase 4：ESP32 第二平台（远期）
 
@@ -400,7 +407,7 @@ Phase 1 + Phase 2 完成后，用综合项目串联全部知识。
 - 09 模型、视图与数据驱动 + undo/redo（Property\<T\> 可观察属性、数据绑定、Command\<T\> + CommandHistory、Model-View 分离）
 - 10 主题与风格系统（Style 属性集、Theme 查询、widget 状态切换、CSS 式继承、Painter 抽象层）
 
-### 独立项目（外置到 `todo/021-projects.md`）
+### 独立项目（外置到 `todo/020-projects.md`）
 
 - **手搓 MiniGUI 框架**（Widget 基类 + Label/Button/TextInput + 容器布局 + undo/redo + Mini Notepad 完整 Demo）
   - 桌面端：XCB 后端 + 协程主循环
@@ -454,7 +461,7 @@ Phase 1 + Phase 2 完成后，用综合项目串联全部知识。
 - 13 贪心与回溯（区间调度、N皇后、排列组合、concepts 约束回溯模板）
 - 14 字符串算法（KMP/Rabin-Karp/Z-algorithm、string_view 零拷贝匹配、CTRE 编译期正则）
 
-### 独立项目（外置到 `todo/021-projects.md`）
+### 独立项目（外置到 `todo/020-projects.md`）
 
 - **手写 LRU Cache**（双向链表 + 哈希表、LeetCode #146 现代实现、侵入式设计变体）
 - **手写线程安全 HashMap**（开放寻址 vs 链式、分段锁策略、atomic 指针操作）
@@ -464,61 +471,107 @@ Phase 1 + Phase 2 完成后，用综合项目串联全部知识。
 
 ## 领域 8：系统编程路线
 
-**目录**：`systems-programming/` | **定位**：操作系统应用层 API 的 Modern C++ 封装，求全不求简
+**目录**：`systems-programming/` | **定位**：Linux 主线深讲 + Windows 对照篇 + Windows 独有篇，Modern C++ 视角的系统编程，求全不求简（分批推进）
 
-### ch00 系统编程思维与 RAII 基石（3 篇，全部 foundational）
+### 口径与镜像制（2026-09-28 对齐，取代旧版全 Linux 单列路线）
 
-- 01 为什么需要系统编程（用户态 vs 内核态、POSIX 标准族、Linux/macOS/Windows API 哲学差异）
-- 02 RAII 封装操作系统资源（unique_ptr + 自定义删除器、scope_exit/unique_resource C++23、unique_fd 完整实现）
-- 03 系统调用错误处理范式（errno 陷阱、error_code 体系、expected\<T, error_code\>、sys_call() 模板函数自动转换 -1 返回码）
+- **一篇 = 一个能动手实验的核心问题**。每个机制配可复现实验与真实输出，机制讲透再走；单篇 200-500 行，超出就拆。
+- **平台组织三分类**：共享机制在主平台（Linux）深讲一次；Windows 镜像篇小节同名对照，API 拼写对照可薄；**机制分叉**（如截短拦截 vs SIGBUS、64KiB 分配粒度、读满语义）两侧都全量讲。
+- **Windows 独有能力**（IOCP、ACL、注册表、SEH、Console API）独立成篇，开篇声明自己是哪一层的扩展，不当缩水镜像写。
+- **契约工具唯一定义处**：unique_fd / unique_handle / mapped_region / sys_call / errno_code 全家族的定义挪到 ch00 概念篇，L01/W01 修订时改为引用，防止两侧各定义一遍。错误工具必须「定义即用」（L01 的 errno_code 定义后全篇零调用是反面教训）。
+- 与兄弟子域划界：epoll 机制与事件循环已在 vol5 ch06 与 networking 深讲，本域 ch04 只做全景衔接不重开课。
 
-### ch01 文件 I/O 与文件系统（5 篇）
+### 现状与既定修订（2026-09 一期已落地 5 篇 + 5 index）
 
-- 01 POSIX 文件 I/O：open/read/write/close（fd 模型、flags、部分读写、lseek/pread/pwrite、dup/dup2、unique_fd 封装）
-- 02 内存映射文件：mmap 原理与实践（MAP_SHARED/MAP_PRIVATE、msync/mprotect/madvise、mapped_region RAII、性能对比）
-- 03 C++17 std::filesystem 全面覆盖（path 操作、目录迭代、权限管理、空间查询、性能陷阱、实战：目录同步工具）
-- 04 文件锁：flock、lockf 与 POSIX 记录锁（三种锁机制对比、fork 后继承行为、NFS 陷阱、RAII file_lock）
-- 05 文件监控：inotify 与跨平台变更通知（inotify 事件类型、递归监控、inotify+epoll 集成、macOS FSEvents/Windows ReadDirectoryChangesW）
+- 已有：`00-overview`、`linux/file-io/01-02`、`windows/file-io/01-02`。
+- 既定拆分两处：L01 拆出「页缓存与持久性」独立篇（→ linux/file-io/03）；W02 拆出「结构化异常：SEH 与 VEH」独立篇（→ windows/file-io/03，约 280 行）。
+- 存量补课：L01 补 EINTR/fcntl 族/dup3 与 close-on-exec/SEEK 家族；L02 扩写 mprotect、/proc/self/maps、MAP_SHARED 跨进程演示、msync/madvise 实验化（约 470 行，不拆）；W01 补 SetFilePointerEx/GetFileSizeEx、FlushFileBuffers、dwShareMode 专节；00-总纲扩两大阵营节 + MSYS2 安装钥匙 + 压栈指令史；reading_time 与 difficulty 标签全线复核（现值低估约 2.5-3 倍）。
 
-### ch02 内存管理：OS 层面（4 篇）
+### ch00 思维与契约（2 篇，材料从 L01/W01 平移）
 
-- 01 进程内存布局与虚拟内存（/proc/pid/maps 解读、text/data/bss/heap/mmap/stack/vdso、页表/TLB/缺页中断、C++ new 底层行为）
-- 02 虚拟内存 API：mprotect/madvise/mlock（Guard pages、JIT 场景、MADV_DONTNEED 即时释放、mlock 实时系统、实战：内存越界检测器）
-- 03 共享内存：POSIX 与 System V（shm_open/mmap vs shmget/shmat、同步问题、RAII shared_memory、实战：高性能进程间消息队列）
-- 04 对齐分配与大页内存（aligned_alloc/posix_memalign、C++17 operator new 对齐重载、THP、Hugetlbfs、Overcommit 与 OOM Killer）
+- 01 OS 资源的 RAII 范式（unique_fd/unique_handle/mapped_region 同构 move-only 骨架、unique_ptr+删除器、scope_exit/unique_resource C++23）
+- 02 错误处理范式：从 errno 到 expected（errno/GetLastError 边界装箱一次成 error_code、sys_call() 模板、双出口约定：工具层 expected、应用顶层 system_error）
 
-### ch03 进程管理与进程间通信（5 篇）
+### ch01 文件 I/O（Linux 6 篇 + Windows 5 篇）
 
-- 01 进程创建：fork、exec 与 posix_spawn（COW 语义、exec 家族、僵尸/孤儿进程、RAII child_process、Windows CreateProcess）
-- 02 进程间通信：管道、消息队列与信号量（pipe/FIFO/POSIX mq/sem、POSIX vs System V IPC 对比、选择指南）
-- 03 信号处理：从 signal 到 signalfd（sigaction vs signal、异步信号安全、实时信号、signalfd+epoll、pidfd、实战：优雅关闭服务器）
-- 04 守护进程、会话与进程组（daemonization 完整步骤、systemd .service、getrlimit/setrlimit、atexit vs RAII）
-- 05 进程环境：命令行参数、环境变量与资源限制（getenv/setenv、/proc/self/ 目录、uname/sysinfo、实战：进程信息查询工具）
+Linux（`linux/file-io/`）：
 
-### ch04 I/O 多路复用与异步 I/O（4 篇）
+- 01 POSIX 文件 I/O（**已有，补课**：EINTR、fcntl 族、dup3 与 close-on-exec、SEEK_DATA/SEEK_HOLE）
+- 02 mmap 内存映射（**已有，扩写**：mprotect 基本语义与 guard page、/proc/self/maps 观察法、MAP_SHARED 跨进程可见性演示、msync/madvise 配实验）
+- 03 页缓存与持久性（**新，从 01 拆出**：双重拷贝账本、脏页与写回时点、fsync/fdatasync/O_SYNC、崩溃一致性）
+- 04 std::filesystem：目录与元数据（**新**：path 操作、目录迭代、权限与空间查询、实战：目录同步工具）
+- 05 文件锁：flock 与 fcntl 记录锁（**新**：两种机制对比、fork 继承行为、NFS 陷阱、RAII file_lock）
+- 06 inotify 文件监控（**新**：事件类型、递归监控、inotify+epoll 集成）
 
-- 01 I/O 多路复用：从 select 到 epoll（select 1024 限制→poll→epoll LT/ET、事件循环基本结构、signalfd/timerfd/inotify 集成、RAII epoll_wrapper）
-- 02 timerfd 与 eventfd：将一切化为文件描述符（一次性/周期性定时器、eventfd 信号量/计数器模式、统一纳入 epoll）
-- 03 io_uring：Linux 异步 I/O 新纪元（SQ/CQ 共享环形缓冲区、liburing API、链式请求、Proactor vs Reactor、io_uring+协程）
-- 04 跨平台异步 I/O 抽象设计（epoll/kqueue/IOCP/io_uring 差异矩阵、concepts 约束后端、策略模式、实战：跨平台最小事件循环库）
+Windows（`windows/file-io/`）：
 
-### ch05 时间与定时器（3 篇）
+- 01 Win32 文件 I/O（**已有，补课**：SetFilePointerEx/GetFileSizeEx、FlushFileBuffers、dwShareMode 专节）
+- 02 文件映射（**已有，扩写**：VirtualProtect、PrefetchVirtualMemory/OfferVirtualMemory、ReadFile vs 映射的选型实测）
+- 03 结构化异常：SEH 与 VEH（**新，从 02 拆出**：EXCEPTION_IN_PAGE_ERROR、__try/__except 编译器矩阵、VEH 时机、退出码语义）
+- 04 目录枚举与 NTFS 家族（**新，对照 linux/04**：FindFirstFileW、文件属性、硬链接/junction/符号链接/稀疏文件）
+- 05 文件锁：LockFileEx（**新，对照 linux/05**）
 
-- 01 时钟源与 POSIX 时间 API（CLOCK_MONOTONIC/REALTIME/BOOTTIME、clock_gettime、clock_nanosleep、时间戳选择指南）
-- 02 C++20 std::chrono 深度指南：日历与时区（utc_clock/tai_clock/gps_clock、year/month/day、time_zone/zoned_time、std::format chrono）
-- 03 POSIX 定时器全景对比（alarm/setitimer/timer_create/timerfd 选择矩阵、实战：周期性任务调度器）
+### ch02 内存管理：OS 层面（Linux 4 篇 + Windows 2 篇）
 
-### ch06 终端与控制台编程（2 篇）
+Linux（`linux/memory/`）：
 
-- 01 终端 I/O：termios 与 raw 模式（termios 四组标志、canonical vs raw、VMIN/VTIME、ANSI 转义序列、RAII terminal_guard）
-- 02 伪终端（PTY）与进程交互（posix_openpt/forkpty、终端模拟器原理、实战：终端录制/回放工具）
+- 01 进程内存布局与 /proc/pid/maps（text/data/bss/heap/mmap/stack/vdso；缺页/页表机制 L02 已铺垫，此处收口成全图）
+- 02 虚拟内存 API 全景：mprotect/madvise/mlock（L02 只讲 mprotect 基本语义，此处深讲：guard page/JIT/MADV 策略/mlock、实战：内存越界检测器）
+- 03 共享内存：shm_open 与映射（MAP_SHARED 跨进程 L02 已演示，此处成体系：命名对象、同步问题、RAII shared_memory、实战：进程间消息队列）
+- 04 对齐分配与大页（aligned_alloc/posix_memalign、对齐 new、THP、Overcommit 与 OOM Killer）
 
-### ch07 平台抽象（2 篇）
+Windows（`windows/memory/`）：
 
-- 01 平台抽象层设计：从 #ifdef 到 concepts（编译期平台检测、策略模式 vs concepts 约束、native_handle 概念、Boost.Asio/libuv 设计借鉴）
-- 02 构建跨平台 syskit 工具库（io/fs/process/ipc/signal/timer/tty/event 模块化整合、CMake 跨平台构建、单元测试策略）
+- 01 虚拟内存：VirtualAlloc/VirtualProtect（对照 linux/02：SEC_COMMIT/SEC_RESERVE、粒度）
+- 02 共享内存：页面文件后备的命名映射对象（对照 linux/03）
 
-### 独立项目（外置到 `todo/021-projects.md`）
+### ch03 进程与信号（Linux 5 篇 + Windows 2 篇）
+
+Linux（`linux/process/`、`linux/signal/`）：
+
+- 01 进程创建与生命周期：fork/exec/posix_spawn（COW 已在 L02 实测，此处讲全：exec 家族、僵尸/孤儿、waitpid、RAII child_process）
+- 02 守护进程、会话与环境（daemonization、进程组/会话、getrlimit/setrlimit、环境变量）
+- 03 IPC：管道、FIFO 与 POSIX mq/sem（选择指南、POSIX vs System V）
+- 04 信号（上）：sigaction 与异步信号安全（handler 内 write/_exit 法定裸区、可重入性、SA_SIGINFO 诊断）
+- 05 信号（下）：实时信号、signalfd 与 pidfd（信号化为 fd、统一进 epoll、实战：优雅关闭服务器）
+
+Windows（`windows/process/`）：
+
+- 01 进程与作业：CreateProcessW 与 Job 对象（对照 linux/01）
+- 02 控制台事件与 APC（SetConsoleCtrlHandler 是 Windows 对信号的最近对照；QueueUserAPC）
+
+### ch04 I/O 多路复用与异步 I/O（Linux 3 篇 + Windows 2 篇 + 跨平台 1 篇）
+
+- linux/01 select→poll→epoll 全景（epoll 机制 vol5 ch06 已深讲，本篇只做三兄弟对比与衔接）
+- linux/02 timerfd 与 eventfd（一切化为文件描述符、统一纳入 epoll）
+- linux/03 io_uring（SQ/CQ、liburing、链式请求、Proactor vs Reactor）
+- windows/01 OVERLAPPED 异步 I/O 与 WaitForMultipleObjects（对照 linux 侧同步原语差异）
+- windows/02 IOCP 完成端口（Windows 异步支柱，独有篇深讲）
+- 03 跨平台异步 I/O 抽象（epoll/kqueue/IOCP/io_uring 差异矩阵、concepts 约束后端、与 vol5 ch06 事件循环衔接）
+
+### ch05 时间与定时器（3 篇，平台无关为主）
+
+- 01 时钟源与 POSIX 时间 API（CLOCK_MONOTONIC/REALTIME/BOOTTIME、clock_gettime、时间戳选择指南）
+- 02 C++20 std::chrono 深度：日历与时区（utc/tai/gps_clock、year/month/day、zoned_time、format chrono）
+- 03 定时器全景：alarm→setitimer→timer_create→timerfd（选择矩阵、实战：周期性任务调度器）
+
+### ch06 终端与控制台（Linux 2 篇 + Windows 1 篇）
+
+- linux/01 termios 与 raw 模式（四组标志、canonical vs raw、VMIN/VTIME、RAII terminal_guard）
+- linux/02 伪终端（PTY）与进程交互（posix_openpt/forkpty、实战：终端录制/回放）
+- windows/01 Console API（字符缓冲区、输入事件、VT 序列；Windows 独有阵营）
+
+### ch07 平台抽象与工具对账（2 篇）
+
+- 01 平台抽象层设计：从 #ifdef 到 concepts（编译期平台检测、策略模式 vs concepts、native_handle、Asio/libuv 借鉴）
+- 02 syskit 工具库工程化（io/fs/process/ipc/signal/timer/tty/event、CMake 跨平台、测试策略；**含工具对账**：networking 的 UniqueFd/expected\<SysError\> 与本域 unique_fd/sys_call 是两套近亲，此处统一命名与错误模型，收编或分层）
+
+### Windows 独有篇候补（占位，按需启动）
+
+- 安全描述符与 ACL（lpSecurityAttributes 不能永远 nullptr）
+- 注册表（配置持久化的 Windows 正道）
+
+### 独立项目（外置到 `todo/020-projects.md`）
 
 - **syskit 系统编程工具库**（ch07/02 的完整工程化产出）
-- **跨平台异步 I/O 事件循环库**（ch04/04 的完整工程化产出）
+- **跨平台异步 I/O 事件循环库**（ch04/03 的完整工程化产出）
