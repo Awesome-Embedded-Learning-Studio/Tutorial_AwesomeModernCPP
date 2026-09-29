@@ -1,4 +1,5 @@
 ---
+sidebar_order: 9
 title: "卷五练习体系"
 description: "卷五并发编程的完整 Lab 练习体系：从线程生命周期到 Mini Concurrent Runtime"
 ---

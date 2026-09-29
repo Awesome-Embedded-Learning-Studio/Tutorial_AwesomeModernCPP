@@ -1,4 +1,5 @@
 ---
+sidebar_order: 3
 title: "原子操作与内存模型"
 description: "从 std::atomic 的操作集到六种内存序的完整拆解，建立无锁编程的理论基础"
 ---

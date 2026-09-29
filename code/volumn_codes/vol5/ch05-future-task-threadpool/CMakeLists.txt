@@ -9,4 +9,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+find_package(Threads REQUIRED)
+
 add_executable(jthread_move_semantics jthread_move_semantics.cpp)
+add_executable(03_thread_pool 03_thread_pool.cpp)
+target_link_libraries(03_thread_pool PRIVATE Threads::Threads)

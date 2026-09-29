@@ -1,4 +1,5 @@
 ---
+sidebar_order: 4
 title: "并发数据结构"
 description: "从线程安全队列到并发容器，掌握基于锁的并发数据结构设计策略"
 ---
