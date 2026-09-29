@@ -1,24 +1,26 @@
 ---
-title: "Concurrent Thinking and Fundamentals"
-description: "Building sound judgment for concurrency: understanding why we need concurrency, what problems it can cause, and how hardware and the OS support multithreading"
+sidebar_order: 0
+title: "Concurrency Worldview and the First Tool"
+description: "Stand up a concurrency mindset from one blocked-solid main loop, and catch your first data race with ThreadSanitizer"
 translation:
   source: documents/vol5-concurrency/ch00-concurrency-fundamentals/index.md
-  source_hash: db7f230c5115c9b8ecc6a129401c1476c99ab15f3e97da2897882a4360532094
-  translated_at: '2026-09-26T06:15:08+00:00'
+  source_hash: 443549b19a87d3509869dc4a39e79915984fa3ea827b671314572f8f7edd21ea
+  translated_at: '2026-09-29T14:40:17+00:00'
   engine: anthropic
-  token_count: 300
+  token_count: 400
 ---
 
-# Concurrent Thinking and Fundamentals
+# Concurrency Worldview and the First Tool
 
-In our view, concurrency is a watershed in C++ engineering ability. Once the growth in single-core frequency ran into the power wall, nearly all further gains in modern software performance came to depend on two directions: better algorithms, and better parallelization. And the foundation of parallelization is concurrency — letting multiple flows of execution work in concert, without breaking correctness, to squeeze the full compute out of multi-core hardware. Frankly, if the program you write always runs single-threaded and sequential, then no matter how beautiful the code is, you are wasting most of the transistors on that CPU of yours.
+We don't start this volume with `std::thread`. Most tutorials open by walking the reader straight into spawning threads; we'd rather build the mindset up front: why concurrency is worth it, and what things look like when they go wrong. Once both questions have landed, every line of concurrency code that follows has some judgment behind it. The three principles written at the head of this volume — `correctness before performance`, `locks before lock-free`, `synchronization before tasks` — govern every tradeoff in every chapter that follows, and in this chapter we'll spell them out one by one.
 
-Before we write any multithreaded code, though, we must first answer three questions: why do we need concurrency? What exactly goes wrong when concurrency enters the picture? And how do the CPU and the operating system support multiple threads? Most tutorials would open by teaching you `std::thread` right away; we would rather not. We want to build the mindset of the concurrency field first — correctness before performance. That is the principle for this entire volume.
+The arrangement of the two articles goes like this. The first uses nothing but a main loop blocked solid to make clear "why we need concurrency" and "where concurrency differs from parallelism", and along the way it hefts the upper bound on the payoff from parallelism, plus when you shouldn't reach for concurrency at all. The second is Tools 101: data races are the number-one killer in concurrency, so we take ThreadSanitizer as our first tool, learning both to read its reports and to recognize its limits. As for how much it costs to spin up a thread, that number has to be measured by hand, and we placed the measuring method in [OS Threads and Their Cost](../ch04-concurrent-data-structures/00-os-threads-and-cost.md) at the head of [Chapter 4](../ch04-concurrent-data-structures/) — by the time you head back there, you'll have the hands-on feel to pick it right up.
+
+The chapter map, the lab system, and the reading conventions for the whole volume all live on [the volume home page](../) — when you're lost, go back to that page and get your bearings.
 
 ## In This Chapter
 
 <ChapterNav variant="sub">
-  <ChapterLink href="01-why-concurrency">Why We Need Concurrency</ChapterLink>
-  <ChapterLink href="02-concurrency-problems">Fundamental Concurrency Problems</ChapterLink>
-  <ChapterLink href="03-cpu-cache-and-os-threads">CPU Cache and OS Threads</ChapterLink>
+  <ChapterLink href="01-why-concurrency">Why Concurrency: A Blocked Main Loop</ChapterLink>
+  <ChapterLink href="02-data-race-and-tsan">Data Races and ThreadSanitizer, Lesson One</ChapterLink>
 </ChapterNav>

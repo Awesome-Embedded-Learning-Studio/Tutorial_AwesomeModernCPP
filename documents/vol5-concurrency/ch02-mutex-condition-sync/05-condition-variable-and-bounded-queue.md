@@ -2,7 +2,7 @@
 title: "condition_variable 与阻塞队列"
 description: "从轮询的两难出发，建立谓词等待的纪律，再把它组装成可关闭、可超时的有界阻塞队列"
 chapter: 2
-order: 4
+order: 5
 tags:
   - host
   - cpp-modern
@@ -26,7 +26,7 @@ cpp_standard:
 
 # condition_variable 与阻塞队列
 
-咱们在 [mutex 那篇](01-mutex-and-raii-guards) 里把临界区看住了，又在 [死锁那篇](03-deadlock-and-gdb) 里练了怎么给挂住的程序找凶手。不过有一类需求，咱们拿这两样家伙合力也接不住：线程等的其实是一个条件，而 mutex 对条件一无所知。消费者等的是队列非空、生产者等的是队列不满，mutex 能给您的保证只有互斥，也就是同一时刻碰共享状态的人至多一个。这些条件什么时候成立？它一个字都不会说。
+咱们在 [mutex 那篇](01-mutex-and-raii-guards) 里把临界区看住了，又在 [死锁那篇](02-deadlock-and-gdb) 里练了怎么给挂住的程序找凶手。不过有一类需求，咱们拿这两样家伙合力也接不住：线程等的其实是一个条件，而 mutex 对条件一无所知。消费者等的是队列非空、生产者等的是队列不满，mutex 能给您的保证只有互斥，也就是同一时刻碰共享状态的人至多一个。这些条件什么时候成立？它一个字都不会说。
 
 最土的办法咱们都会写：轮询。
 
@@ -123,7 +123,7 @@ while (!pred()) { wait(lock); }
 
 谓词（predicate）这个词您别被它唬住，它其实就是个返回 bool 的可调用对象，回答的是条件现在成立吗。`cv.wait(lock, [] { return ready; })` 跟您手写的那段 while 循环完全等价。这个等价展开里还藏着一个大事实：**`pred()` 是在持有锁的时候被求值的**。循环里的 `pred()` 跑在 wait 外面、锁的里面，每转一圈做的都是拿着锁查条件的事。后面的所有推理，咱们都靠这一行撑着。
 
-还有一个问题值得咱们停一停：谓词看的那个共享变量，如果是 atomic 的，改它的时候还要拿锁吗？不少人的直觉是都 atomic 了就不需要锁了。cppreference 在 cv 的主页上专门写过一句，大意是：**哪怕共享变量是 atomic 的，也必须在持有 mutex 的情况下修改，才能把修改正确地发布给等待的线程**。锁在这里管的不只是互斥，还有等待方与通知方之间的同步关系：通知方的改完并 notify，和等待方的查条件并入睡，靠的正是同一把锁串起来的一条线。内存序的正式定义不在本篇展开，[happens-before 的正源](../ch03-atomic-memory-model/02-atomics-and-happens-before)在 ch03，这里您只需要认下持锁修改的规范。
+还有一个问题值得咱们停一停：谓词看的那个共享变量，如果是 atomic 的，改它的时候还要拿锁吗？不少人的直觉是都 atomic 了就不需要锁了。cppreference 在 cv 的主页上专门写过一句，大意是：**哪怕共享变量是 atomic 的，也必须在持有 mutex 的情况下修改，才能把修改正确地发布给等待的线程**。锁在这里管的不只是互斥，还有等待方与通知方之间的同步关系：通知方的改完并 notify，和等待方的查条件并入睡，靠的正是同一把锁串起来的一条线。内存序的正式定义不在本篇展开，[happens-before 的正源](../ch03-atomic-memory-model/02-atomics-and-happens-before)在 第 3 章，这里您只需要认下持锁修改的规范。
 
 > 咱们再补一个边角的事实：如果等待的是纯事件，notify 本身就是全部的含义，也没有共享的条件可查，那裸 wait 配上外层循环也是合法的写法。本篇从头到尾教的都是谓词版，免得咱们在边角上分岔。
 
@@ -137,7 +137,22 @@ while (!pred()) { wait(lock); }
 
 咱们还可以亲手把丢失唤醒复现出来，跑过一遍的体感比读十遍文字都牢。咱们让 worker 一进来就睡 200 毫秒，睡醒了再去等一个 ready 标志，主线程在 50 毫秒的时候置位 ready 并 notify。裸 wait 的版本会永远挂在 wait 上：通知发的时候它还在睡懒觉，等它摸到 cv 的跟前，通知早凉了。换成谓词版的写法，同一个时序下程序就正常退出了，因为 worker 拿到锁之后的第一次求值看到的就是 true。练习 2 会让您亲手跑一遍。
 
-<!-- 实验回填：裸 wait 挂死与谓词版通过的真实运行记录 -->
+笔者实测：WSL2 Arch Linux、内核 6.18、g++ 16.2.1、AMD Ryzen 7 9700X。两个版本各写成一个独立程序（时序就是上面说的：worker 先睡 200 毫秒，主线程 50 毫秒时置位并 notify），裸 wait 版用 `timeout 3` 限着跑：
+
+```text
+$ timeout 3 ./lost_wakeup_bare
+main: notified
+$ echo $?
+124
+$ ./lost_wakeup_pred
+main: notified
+worker: ready = 1
+main: joined
+$ echo $?
+0
+```
+
+裸 wait 版打完 `main: notified` 就再没动静，3 秒后被 timeout 掐掉、退出码 124——通知在 worker 睡觉的那 150 毫秒里发完就没了，它摸到 cv 跟前时已经无会可赴。谓词版同一个时序，worker 醒来拿到锁、第一次求值就看到 true，连 wait 的门都没进，程序干干净净退出。
 
 ## 把 mutex 那篇的黑盒收编
 
@@ -212,11 +227,11 @@ private:
 };
 ```
 
-咱们手上的锁还是原来的一把，管住 queue_ 和 capacity_ 的所有访问。cv 则变成了两把，not_full_ 伺候的是生产者的等待，not_empty_ 伺候的是消费者的等待。push 做完了只叫 not_empty_、pop 做完了只叫 not_full_，通知的指向就精确了：腾出空位，叫的是等空位的人。放进新货的时候，叫的是等货的人。
+咱们手上的锁还是原来的一把，管住 `queue_` 和 `capacity_` 的所有访问。cv 则变成了两把，`not_full_` 伺候的是生产者的等待，`not_empty_` 伺候的是消费者的等待。push 做完了只叫 `not_empty_`、pop 做完了只叫 `not_full_`，通知的指向就精确了：腾出空位，叫的是等空位的人。放进新货的时候，叫的是等货的人。
 
 单把 cv 行不行？行倒是行的、正确性一点不差，Williams 的《C++ Concurrency in Action》里那几个 threadsafe_queue 就是单 cv 的形状，咱们上一节的无界版也是。咱们关心的差别在唤醒的精度。单 cv 的时候，push 的 notify_one 叫醒的可能是另一个生产者：它揉着眼睛拿到了锁，发现队列还是满的、谓词不成立，扭头又睡了。程序倒是没坏，就是白叫了一趟。醒过来却发现没自己事的唤醒，教材上给它起了个名字叫无效唤醒。队列两边都有等待者的时候，双 cv 把叫错边的可能直接消掉了。咱们注意用词：说单 cv 不够精确是可以的，说它不正确就冤枉了。谓词和锁兜住的是正确性，cv 的数量只决定叫醒谁。
 
-咱们跑个最小的演示就能看见背压在工作：容量给 10、让生产者连塞 20 个数，消费者慢慢地取。塞满了 10 个之后，生产者第 11 次 push 的谓词就不成立了，它就把自己挂在了 not_full_ 上，直到消费者取走了一个、回头 notify 它。两个线程被容量逼着你一步我一步地推进，谁想甩开谁都是做不到的。
+咱们跑个最小的演示就能看见背压在工作：容量给 10、让生产者连塞 20 个数，消费者慢慢地取。塞满了 10 个之后，生产者第 11 次 push 的谓词就不成立了，它就把自己挂在了 `not_full_` 上，直到消费者取走了一个、回头 notify 它。两个线程被容量逼着你一步我一步地推进，谁想甩开谁都是做不到的。
 
 演示的骨架给您摆在这儿：两个线程、一个队列、一个求和。
 
@@ -243,11 +258,30 @@ int main()
 
 最后印出来的总数是 210，丢掉的数一个也没有，这就是背压在替咱们守门。生产者塞满之后就在 push 里睡着了，消费者的每次 pop 都会叫它一声，节奏也就完全被容量牵着走了。您把容量改成 5、生产改成 50，它还是稳的，变的只是睡与醒的次数。
 
-<!-- 实验回填：容量 10 / 生产 20 的运行记录 -->
+<OnlineCompilerDemo
+  title="动手验证：背压把 20 个数一个不丢地送到手"
+  source-path="code/examples/vol5/38_bounded_queue_backpressure.cpp"
+  description="容量 10 的双 cv 有界队列，生产者塞 20 个数、消费者取 20 个数。观察输出：sum = 210（1 加到 20 的期望值）。多跑几遍，总数稳定不变；生产者塞满 10 个后睡在 `not_full_` 上、消费者每 pop 一个叫它一声，这一睡一醒都发生在队列内部，输出里看到的只有最后的总数。"
+  run-options="-O2 -std=c++17 -pthread"
+  allow-run
+/>
 
-工具也该上场了。咱们在 [data race 那篇](../ch00-concurrency-fundamentals/02-data-race-and-tsan) 学过 TSan 报告的读法，这里正好复习：把双 cv 版放进多生产者多消费者的压力场景，咱们用 `-fsanitize=thread` 重编一份、多跑几轮，看它到底报不报 data race？谓词和锁都写对的话，报告应当干净：所有对 queue_ 的读写都在 mutex 的保护下，TSan 追得到其中的每一对。真蹦出了报告，就按 data race 那篇的流程走，十有八九是哪条路径忘了拿锁。
+三遍全是 210，一个数都没丢。生产者确实在塞满 10 个之后睡过去了，只是这一睡一醒都发生在 push 和 pop 的内部，从输出上看不到，看到的只有最后不缺斤短两的总数。
 
-<!-- 实验回填：TSan 验证有界队列的报告 -->
+工具也该上场了。咱们在 [data race 那篇](../ch00-concurrency-fundamentals/02-data-race-and-tsan) 学过 TSan 报告的读法，这里正好复习：把双 cv 版放进多生产者多消费者的压力场景，咱们用 `-fsanitize=thread` 重编一份、多跑几轮，看它到底报不报 data race？谓词和锁都写对的话，报告应当干净：所有对 `queue_` 的读写都在 mutex 的保护下，TSan 追得到其中的每一对。真蹦出了报告，就按 data race 那篇的流程走，十有八九是哪条路径忘了拿锁。
+
+笔者实测：WSL2 Arch Linux、内核 6.18、g++ 16.2.1、AMD Ryzen 7 9700X。咱们把本篇的 close/drain 版 BoundedQueue 放进压力场景：3 个生产者各塞 5000 个数、2 个消费者 drain 到底，容量 64，一轮跑完再连跑三轮，用 `g++ -std=c++20 -fsanitize=thread -g -O2 -pthread` 编译后连跑三次：
+
+```text
+$ ./queue_stress_tsan
+round 1: consumed = 15000 (expect 15000), sum = 112492500 (expect 112492500)
+round 2: consumed = 15000 (expect 15000), sum = 112492500 (expect 112492500)
+round 3: consumed = 15000 (expect 15000), sum = 112492500 (expect 112492500)
+$ echo $?
+0
+```
+
+九轮压力（三次 × 三轮）下来，TSan 一个 `WARNING: ThreadSanitizer` 都没吐，退出码 0，报告干干净净——45000 次 push/pop 的每一对读写都在 mutex 的保护下。总数和总和也逐轮对上（112492500 是 0..4999 三份加两段偏移的真实期望值），正确性与无竞争两份证据都齐了。
 
 ## close()：给队列一个干净的结束
 
@@ -265,7 +299,7 @@ enum class QueueResult {
 };
 ```
 
-接下来咱们把 closed_ 标志加进队列，谓词的两边都挂上它：
+接下来咱们把 `closed_` 标志加进队列，谓词的两边都挂上它：
 
 ```cpp
 template <typename T>
@@ -320,9 +354,9 @@ private:
 };
 ```
 
-咱们挑几处要紧的看。closed_ 是谓词的一部分，两边都挂上了 `|| closed_`，于是 close 变成对所有等待者的敲门声：就算队列满着，等空位的生产者也会醒，看到 closed_ 也就收工了。close 里为什么是 notify_all？因为关门是个全局的事件，两边所有睡着的人都需要醒。用 notify_one 的话一次只能叫一个，指望醒了的人再去叫下一个，这样的链条又脆又慢，中间的哪个环节没接上，后面的人就永远睡过头了。notify_all 是关闭场景的标配。
+咱们挑几处要紧的看。`closed_` 是谓词的一部分，两边都挂上了 `|| closed_`，于是 close 变成对所有等待者的敲门声：就算队列满着，等空位的生产者也会醒，看到 `closed_` 也就收工了。close 里为什么是 notify_all？因为关门是个全局的事件，两边所有睡着的人都需要醒。用 notify_one 的话一次只能叫一个，指望醒了的人再去叫下一个，这样的链条又脆又慢，中间的哪个环节没接上，后面的人就永远睡过头了。notify_all 是关闭场景的标配。
 
-还有一处不对称的地方，您多半已经瞄到了：push 醒来查 closed_，pop 醒来查的却是 empty()。这样的不对称看着别扭，语义其实是自洽的。push 会被拒的原因只有一种，就是关门了。pop 失败的原因也只有一种，就是队列空了：关着门但存货还在的时候，pop 是照样能取的，这正是 drain 的含义。两个后查动作各自对准自己唯一的失败原因，查谁就不言自明了。
+还有一处不对称的地方，您多半已经瞄到了：push 醒来查 `closed_`，pop 醒来查的却是 empty()。这样的不对称看着别扭，语义其实是自洽的。push 会被拒的原因只有一种，就是关门了。pop 失败的原因也只有一种，就是队列空了：关着门但存货还在的时候，pop 是照样能取的，这正是 drain 的含义。两个后查动作各自对准自己唯一的失败原因，查谁就不言自明了。
 
 消费者的用法也顺势定型了，咱们用 while 循环把 drain 走完：
 
@@ -347,7 +381,15 @@ asio（C++ 的网络库）那一行的口径要交代一下：官方的 referenc
 
 close 的正确性值得一次像样的压力测试：3 个生产者各 push 100 个数、2 个消费者一直取到 kClosed 为止、生产者全部 join 之后才关门，最后咱们用 atomic 计数核对，看总数是不是正好凑齐了 300 个。顺序要是排反了，赶在前面把门关了再去等生产者，push 就会吃到 kClosed 而提前撤退，丢数就是意料之中了。
 
-<!-- 实验回填：3x100 生产者两消费者 drain 测试的运行记录 -->
+<OnlineCompilerDemo
+  title="动手验证：join 完生产者再 close，drain 一个不丢"
+  source-path="code/examples/vol5/39_bounded_queue_close_drain.cpp"
+  description="3 个生产者各塞 100 个数、2 个消费者取到 kClosed 为止，容量 8，生产者全部 join 之后才 close。观察输出：drain consumed = 300 (expect 300)。多跑几遍总数稳定；消费者退场靠的是 pop 返回 kClosed，不是超时或猜测。"
+  run-options="-O2 -std=c++17 -pthread"
+  allow-run
+/>
+
+五遍全是 300，一个不丢。顺序排对的关门前 drain 都这么稳，反例您也就有底气了：真把 close 挪到生产者 join 之前，push 就会吃到 kClosed 提前撤退——这个反例留给您自己跑，数对不上才是它该有的样子。
 
 ## 不想死等：try_pop_for 的三态返回
 
@@ -418,7 +460,7 @@ bool push_or_drop(T value)
 }
 ```
 
-您盯着看就会发现 push_or_drop 压根没碰 wait，它是用不着 cv 的。它的动作就四下：加锁、查容量、入队、走人。那么哪些操作才真的需要 cv？只有条件不满足时愿意睡下去的那些。不想睡的，一把锁加一个 if 就到头了。这个对照比任何定义都更能帮咱们划清 cv 的地盘。背压策略的全景：丢、挤、阻塞怎么选，是 [工具箱那篇](05-sync-primitives-toolkit) 的地盘，这里咱们不抢戏。
+您盯着看就会发现 push_or_drop 压根没碰 wait，它是用不着 cv 的。它的动作就四下：加锁、查容量、入队、走人。那么哪些操作才真的需要 cv？只有条件不满足时愿意睡下去的那些。不想睡的，一把锁加一个 if 就到头了。这个对照比任何定义都更能帮咱们划清 cv 的地盘。背压策略的全景：丢、挤、阻塞怎么选，是 [工具箱那篇](06-sync-primitives-toolkit) 的地盘，这里咱们不抢戏。
 
 ## notify 要拿着锁去喊吗
 
@@ -452,7 +494,7 @@ cppreference 给的示例姿势正是锁外通知，示例的注释写得直白�
 
 ## 存货的类型，队列也有它的要求
 
-pop 里有一行是值得多看两眼的：`value = std::move(queue_.front())`。如果 T 的移动赋值会抛异常，这一行抛了，元素其实还在队列里，front() 给的是引用，后面的 queue_.pop() 还没执行到，下一位消费者取到的还是它。语义上不一定错、但这个边界您得知道。工程上更省心的做法，是咱们把要求立在编译期：
+pop 里有一行是值得多看两眼的：`value = std::move(queue_.front())`。如果 T 的移动赋值会抛异常，这一行抛了，元素其实还在队列里，front() 给的是引用，后面的 `queue_`.pop() 还没执行到，下一位消费者取到的还是它。语义上不一定错、但这个边界您得知道。工程上更省心的做法，是咱们把要求立在编译期：
 
 ```cpp
 static_assert(std::is_nothrow_move_constructible_v<T>,
@@ -473,7 +515,7 @@ wait 自己的异常行为，标准写得比很多人以为的要冷。裸 wait 
 - 共享变量哪怕声明成了 atomic，修改也要放进同一把 mutex 的临界区里，通知方与等待方靠它对上节奏。
 - cv 与 mutex 一一配对，同一个 cv 上混用两把锁是未定义行为。
 - notify 一般排在解锁之后，正确性上两种排法等价，性能交给具体的实现和测量去裁决。
-- 关闭的套路是 closed_ 进谓词、notify_all 喊醒两边、pop 后查空完成 drain，析构之前要保证人人都被通知过。
+- 关闭的套路是 `closed_` 进谓词、notify_all 喊醒两边、pop 后查空完成 drain，析构之前要保证人人都被通知过。
 
 队列的完整代码已经归仓，您可以在配套代码目录里找到它，带着 static_assert 与全部的成员。练习咱们放在了下面，您动手练过才算数。
 
@@ -493,19 +535,61 @@ wait 自己的异常行为，标准写得比很多人以为的要冷。裸 wait 
 
 ## 下一步
 
-咱们全程没碰过取消。有一个事实您得知道：`condition_variable` 的 wait 只有两个重载、裸版和谓词版，**没有接受 stop_token 的版本**。C++20 把带 stop_token 的 wait 放在了 `condition_variable_any` 上，那是个泛型的版本，什么锁都能配，而代价是可能更重。想让队列的 pop 在外部请求停止的时候立刻醒来，咱们得整体换用 cv_any，那是 [ch05 线程池](../ch05-future-task-threadpool/03-thread-pool) 的正源内容，worker 循环加 stop_token 的完整套路在那边展开。本篇的 BoundedQueue 靠 close 就能干净收场，够用了。
+咱们全程没碰过取消。有一个事实您得知道：`condition_variable` 的 wait 只有两个重载、裸版和谓词版，**没有接受 stop_token 的版本**。C++20 把带 stop_token 的 wait 放在了 `condition_variable_any` 上，那是个泛型的版本，什么锁都能配，而代价是可能更重。想让队列的 pop 在外部请求停止的时候立刻醒来，咱们得整体换用 cv_any，那是 [第 5 章 线程池](../ch05-future-task-threadpool/03-thread-pool) 的正源内容，worker 循环加 stop_token 的完整套路在那边展开。本篇的 BoundedQueue 靠 close 就能干净收场，够用了。
 
-本篇造出来的组件，去处都不小气：ch05 的线程池拿它当任务队列，[ch07 的 Actor](../ch07-actor-channel/01-actor-model) 的邮箱也是同一个形状，那边的差异增量会在本篇的基础上展开。要是您的场景追着吞吐跑，无锁的 SPSC 与 MPSC 队列，在 [ch04 的 SPSC 与 MPSC 篇](../ch04-concurrent-data-structures/04-spsc-and-mpsc) 等着您。动手量更大的活儿，在 [exercises 的阻塞队列 Lab](../exercises/01-bounded-queue) 里等着您，它会带着本篇的队列走进多消费者压力与分片锁的取舍里。
+本篇造出来的组件，去处都不小气：第 5 章 的线程池拿它当任务队列，[第 7 章 的 Actor](../ch07-actor-channel/01-actor-model) 的邮箱也是同一个形状，那边的差异增量会在本篇的基础上展开。要是您的场景追着吞吐跑，无锁的 SPSC 与 MPSC 队列，在 [第 4 章 的 SPSC 与 MPSC 篇](../ch04-concurrent-data-structures/04-spsc-and-mpsc) 等着您。动手量更大的活儿，在 [exercises 的阻塞队列 Lab](../exercises/01-bounded-queue) 里等着您，它会带着本篇的队列走进多消费者压力与分片锁的取舍里。
 
 > 💡 咱们把完整示例代码放在 [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)，您可以访问 `code/volumn_codes/vol5/ch02-mutex-condition-sync/`。
 
 ## 参考资源
 
-- [std::condition_variable -- cppreference](https://en.cppreference.com/w/cpp/thread/condition_variable)
-- [std::condition_variable::wait -- cppreference](https://en.cppreference.com/w/cpp/thread/condition_variable/wait)
-- [std::condition_variable::wait_for -- cppreference](https://en.cppreference.com/w/cpp/thread/condition_variable/wait_for)
-- [std::condition_variable::notify_one -- cppreference](https://en.cppreference.com/w/cpp/thread/condition_variable/notify_one)
-- [std::condition_variable::~condition_variable -- cppreference](https://en.cppreference.com/w/cpp/thread/condition_variable/~condition_variable)
-- [Boost.Thread 同步数据结构（sync_queue 与 queue_op_status）](https://www.boost.org/doc/libs/release/doc/html/thread/sds.html)
-- [Spurious wake-ups in Win32 condition variables -- Raymond Chen](https://devblogs.microsoft.com/oldnewthing/20180201-00/?p=97946)
-- [C++ Concurrency in Action, 2nd ed. -- Anthony Williams, Manning, 2019](https://www.manning.com/books/c-plus-plus-concurrency-in-action-second-edition)
+<ReferenceCard title="参考文献">
+  <ReferenceItem
+    :id="1"
+    title="std::condition_variable"
+    author="cppreference"
+    url="https://en.cppreference.com/w/cpp/thread/condition_variable"
+  />
+  <ReferenceItem
+    :id="2"
+    title="std::condition_variable::wait"
+    author="cppreference"
+    url="https://en.cppreference.com/w/cpp/thread/condition_variable/wait"
+  />
+  <ReferenceItem
+    :id="3"
+    title="std::condition_variable::wait_for"
+    author="cppreference"
+    url="https://en.cppreference.com/w/cpp/thread/condition_variable/wait_for"
+  />
+  <ReferenceItem
+    :id="4"
+    title="std::condition_variable::notify_one"
+    author="cppreference"
+    url="https://en.cppreference.com/w/cpp/thread/condition_variable/notify_one"
+  />
+  <ReferenceItem
+    :id="5"
+    title="std::condition_variable::~condition_variable"
+    author="cppreference"
+    url="https://en.cppreference.com/w/cpp/thread/condition_variable/~condition_variable"
+  />
+  <ReferenceItem
+    :id="6"
+    title="Boost.Thread 同步数据结构（sync_queue 与 queue_op_status）"
+    url="https://www.boost.org/doc/libs/release/doc/html/thread/sds.html"
+  />
+  <ReferenceItem
+    :id="7"
+    title="Spurious wake-ups in Win32 condition variables"
+    author="Raymond Chen"
+    url="https://devblogs.microsoft.com/oldnewthing/20180201-00/?p=97946"
+  />
+  <ReferenceItem
+    :id="8"
+    title="C++ Concurrency in Action, 2nd ed."
+    author="Anthony Williams, Manning, 2019"
+    :year="2019"
+    url="https://www.manning.com/books/c-plus-plus-concurrency-in-action-second-edition"
+  />
+</ReferenceCard>

@@ -21,15 +21,11 @@ related:
 
 # std::thread 基础
 
-[上一篇](../ch00-concurrency-fundamentals/03-os-threads-and-cost.md)咱们把 `std::thread` 当把手用了两回：开篇的示意算一回，掐表基准里真用的算一回。创建的价钱量过了，欠下的债都记在了本篇头上。今天咱们就来亲手开一条线程，再把它体面地送走。
+[上一篇](../ch00-concurrency-fundamentals/02-data-race-and-tsan.md)咱们把全卷的第一件工具 TSan 收进了包，第 0 章到这儿也就收了尾。今天咱们就来亲手开一条线程，再把它体面地送走；
 
-工具还是 ch00 用过的那套：本机的 g++（GCC 16.2.1，跑在 20 核的 WSL2 里），编译的时候带上 `-Wall -Wextra -pedantic -pthread`。全卷的代码都在这套环境里编译验证过，您跟着敲就行。
+## 开一条线程，并不困难
 
-本篇从最少的写法讲起，一路讲到一个压轴的 `parallel_for_each`：数据分了块、派生一批线程、再逐个 join。往后它还要被咱们翻修一遍，咱们把它搭结实点。
-
-## 开一条线程：最少的写法
-
-咱们从最朴素的形态开始：一个普通的函数，就是线程的入口。
+来，直接代码走起。
 
 ```cpp
 #include <iostream>
@@ -48,22 +44,24 @@ int main()
 }
 ```
 
-两行的新东西，咱们一行一行看。`std::thread t(print_hello, 42)` 构造了一条线程：头一个参数是它的入口，后面的参数会原样传给它。`t.join()` 等它把活儿干完了才返回。咱们编译运行，屏幕上会多出一行来自新线程的问候，那就是另一条执行流在跟咱们打招呼。
+恭喜，你入门并发编程了。完结撒。。。回来，没完事呢。
 
-构造函数在幕后做的事，咱们挑要紧的说。它做的头一件事，是把函数和实参各拷了一份、存进对象里。跟着它去求底层的线程创建，等内核把线程派了出来，新线程就在自己的栈上、用拷来的副本把函数调用起来。
+但是这的确就是并发程序的一个简单样例了！您请看，我们引入了两个新东西。`std::thread t(print_hello, 42)` 构造了一条线程：头一个参数是它的入口，后面的参数会原样传给它。`t.join()` 等它把活儿干完了才返回。咱们编译运行，屏幕上会多出一行来自新线程的问候，那就是另一条执行流在跟咱们打招呼。
 
-第二件事咱们机器上有实证可查。libstdc++ 的 `std::thread` 启动路径最终落在 glibc 的 `pthread_create` 上，符号表里的记录看得清清楚楚：
+`std::thread t(print_hello, 42)`是thread的构造函数在发力，我相信大伙没意见，大伙应该关心的是在幕后做的事。它做的头一件事，是把函数和实参各拷了一份、存进对象里。跟着它去求底层的线程创建，等内核把线程派了出来，新线程就在自己的栈上，向我们塞给他的函数传递拷贝得到的副本。
+
+第二件事咱们机器上有实证可查。libstdc++ 的 `std::thread` 启动路径最终落在 glibc 的`pthread_create` 上，符号表里的记录看得清清楚楚：
 
 ```text
 $ nm -D /usr/lib64/libstdc++.so.6 | grep pthread_create
                  U pthread_create@GLIBC_2.34
 ```
 
-咱们写的每一条 `std::thread`，在 Linux 加 libstdc++ 的组合上，最终都是 `pthread_create` 生出来的。这句限定咱们要挂牢：MSVC 走的是另一套线程 API，平台断言不写成全平台的。[上一篇](../ch00-concurrency-fundamentals/03-os-threads-and-cost.md)里 clone 与 EAGAIN 的故事，接的正是这里。
+咱们写的每一条 `std::thread`，在 Linux 加 libstdc++ 的组合上，最终都是 `pthread_create` 生出来的。这句限定咱们要挂牢：MSVC 走的是另一套线程 API，平台断言不写成全平台的。[OS 线程那一篇](../ch04-concurrent-data-structures/00-os-threads-and-cost.md)里 clone 与 EAGAIN 的故事，接的正是这里。
 
-构造的失败也有形可循：资源不够的时候，构造函数抛出的就是 `std::system_error`，错误条件里可能就有您认识的 `resource_unavailable_try_again`，正是 EAGAIN 的错码名。[上一篇](../ch00-concurrency-fundamentals/03-os-threads-and-cost.md)里咱们看过的线程数上限，顶到头上的时候就是在这一行遇上的。
+构造的失败也有形可循：资源不够的时候，构造函数抛出的就是 `std::system_error`，错误条件里可能就有您认识的 `resource_unavailable_try_again`，正是 EAGAIN 的错码名。[OS 线程那一篇](../ch04-concurrent-data-structures/00-os-threads-and-cost.md)里咱们看过的线程数上限，顶到头上的时候就是在这一行遇上的。
 
-还有一层保证值得咱们现在就记下：构造函数的返回在前，新线程的开跑在后，所以咱们在构造以前写好的数据，线程函数一睁眼就看见了。咱们在 [data race 那一篇](../ch00-concurrency-fundamentals/02-data-race-and-tsan.md)里说过“线程创建也是 happens-before 的来源”，说的就是这件事。正式的定义住在 ch03，眼下咱们只用口语版。
+> 提醒一下喔：构造函数的返回在前，新线程的开跑在后，所以咱们在构造以前写好的数据，线程函数一睁眼就看见了！换而言之，构造函数一执行，线程里的东西就被丢出去了！
 
 ### lambda：把活儿写在调用点
 
@@ -162,7 +160,17 @@ int main()
 
 join 的语义一句话：谁调用了它、谁就被挂起，直到 `t` 身后的线程把代码执行完毕。它还给了一层顺序保证：线程的活儿全干完在前，join 的返回在后，所以 join 之后，子线程写下的任何结果，咱们放心理用。咱们在 [data race 那一篇](../ch00-concurrency-fundamentals/02-data-race-and-tsan.md)里说过，join 就是 happens-before 的来源之一，落的就是这一层。
 
-<!-- 实验回填：本例运行输出三行的先后顺序 -->
+您点"动手试一试"自己跑一遍，看两行输出的先后：
+
+<OnlineCompilerDemo
+  title="动手验证：join 把 main 挂起了整整一秒"
+  source-path="code/examples/vol5/13_join_order.cpp"
+  description="子线程睡一秒，main 先打出 waiting，join 挂起等它，然后才打出 joined。观察运行耗时：约 1 秒，正是 slow_work 睡的那一秒。"
+  run-options="-O2 -std=c++17 -pthread"
+  allow-run
+/>
+
+`time` 量下来整个进程耗时 1.002 秒，正好是 `slow_work` 睡的那一秒：waiting 先打出来，join 把 main 挂起了整整一秒，joined 那行才落地。
 
 还有一个容易被忽略的事实，值得您记下：线程的代码跑完了、还没被 join，它仍然算是活动的线程，它的 join 或 detach 也还没有做。要判断的正是这一层，靠的就是 `joinable()`，咱们马上说它。
 
@@ -191,9 +199,19 @@ int main()
 
 detach 的语义也一句话：把线程从对象的手里放走，咱们从此撒手不管。放走之后对象成了空壳，join 却再也够不着它了，线程接下来的路得自己走。本例里 main 转身就返回了，进程多半等不到 `cleanup` 的那行输出。从 main 返回触发的是与 `std::exit` 同一套收尾：静态存储期的对象析构、atexit 的处理器跑完，然后进程也就终止了。进程终止的时候，还在跑的后台线程直接消亡，它们的局部对象不会析构。
 
-<!-- 实验回填：本例运行输出（时序敏感，多跑几次看差异） -->
+<OnlineCompilerDemo
+  title="动手验证：detach 之后进程先退，cleanup 多半等不到"
+  source-path="code/examples/vol5/14_detach_racy_exit.cpp"
+  description="main 打完一行转身就返回，cleanup 还有一秒钟的觉没睡完。观察输出：cleanup 那行多半不会出现，因为进程先退了；偶发的机器卡顿下它也可能冒出来，这是抖动。"
+  run-options="-O2 -std=c++17 -pthread"
+  allow-run
+/>
 
-detach 最要命的地方在于它手里攥着的引用：等主线程的局部变量没了，而它还在后面用。这个现场长什么样，[下一篇](./02-thread-arguments-and-lifetime.md)会整篇演给您看，本篇咱们只把事实立住：放出去的线程，生死您就管不着了。Core Guidelines 的态度也直白，CP.26 的标题就叫 Don't `detach()` a thread。
+main 打完一行转身就返回了，cleanup 还有一秒钟的觉没睡完，进程先走一步，它的输出也就没了下文。
+
+detach 最要命的地方在于它手里攥着的引用：等主线程的局部变量没了，而它还在后面用。这个现场长什么样，[下一篇](./02-thread-arguments-and-lifetime.md)会整篇演给您看，您只需要注意一个事情：放出去的线程，生死您就管不着了。Core Guidelines 的态度也直白，CP.26 的标题就叫 Don't `detach()` a thread。
+
+> 换而言之，我们除非是极端少见的情况，比如说thread彻底跟我们毫无关系了，才可以这样做，否则，一概不允许。我们甚至是禁用 detach 的，没场景需要，就不要乱用！
 
 ### 什么都不做，会怎样
 
@@ -214,7 +232,13 @@ int main()
 
 下场的名字叫 `std::terminate`，程序当场就死了。咱们本地跑一遍：输出的是一行 `terminate called without an active exception`，退出码落在了 134，也就是咱们熟悉的 SIGABRT。
 
-<!-- 实验回填：terminate 输出原文与退出码 -->
+<OnlineCompilerDemo
+  title="动手验证：不 join 也不 detach，当场 terminate"
+  source-path="code/examples/vol5/15_no_join_terminate.cpp"
+  description="程序会以 SIGABRT 崩溃，这是预期行为：先打出 terminate called without an active exception，退出码 134。"
+  run-options="-O2 -std=c++17 -pthread"
+  allow-run
+/>
 
 判据咱们说准确：析构的时候，对象若仍然处于 joinable 的状态，terminate 就跟着落地了。这是 `std::thread` 一以贯之的设计哲学——不做隐式的、可能令人惊讶的事情。join 还是 detach 的选择，标准不给默认的答案，含糊是不行的。至于标准为什么偏偏挑了当场崩溃这一手，咱们到 [jthread 那一篇](./03-thread-ownership-and-jthread.md)再回头说它。
 
@@ -222,12 +246,12 @@ int main()
 
 `joinable()` 回答的问题只有一个：这个对象的身后现在有没有牵着线程。四种空壳的状态，咱们拿一张小表记全：
 
-| 状态 | `joinable()` |
-|------|--------------|
-| 默认构造的 `std::thread` | false |
-| 被 move 走之后 | false |
-| `join()` 之后 | false |
-| `detach()` 之后 | false |
+| 状态                     | `joinable()` |
+| ------------------------ | ------------ |
+| 默认构造的 `std::thread` | false        |
+| 被 move 走之后           | false        |
+| `join()` 之后            | false        |
+| `detach()` 之后          | false        |
 
 move 那一行咱们只登记不深谈，所有权是 [jthread 那一篇](./03-thread-ownership-and-jthread.md)的主菜。眼下您把判据记牢就够了：terminate 看的是它，往后写收尾代码的时候，问的也是它。
 
@@ -259,7 +283,15 @@ int main()
 
 咱们本机的 libstdc++ 把 id 打印成一串纯数字（pthread 底层值的十进制），join 之后那一行打出来的却是字面文本 `thread::id of a non-executing thread`。join 完成的那一瞬间，t 成了空壳，这个 id 也就失效了。
 
-<!-- 实验回填：本例实际输出四行（数字部分每次运行都不同） -->
+<OnlineCompilerDemo
+  title="动手验证：join 前后 t 的 id 变了样"
+  source-path="code/examples/vol5/16_get_id_before_after_join.cpp"
+  description="id 的数值每次运行都不同，看的不是数字，是三个关系：t 的 id 与 worker 自己报的一致（两条打印从两头认出同一条线程）、join 之后 t 的 id 变成 thread::id of a non-executing thread。worker 那行的位置也不定死，机器一忙可能插到前面。"
+  run-options="-O2 -std=c++17 -pthread"
+  allow-run
+/>
+
+数字部分每次运行都不同，您跑出来必然是另一串。有一处对上了就能放心：`t 的 id` 与 worker 自己报的 id 是同一个值，两条打印从两头拿到了同一条线程的身份。worker 那行的位置不是定死的，本机上 main 的两行总是先打出来，线程启动慢于 main 的下一条语句；机器一忙，它也可能插到前面去。
 
 打印成什么样，标准里没有格式的规定，您别拿格式当逻辑依据，MSVC 那边打印的就是十六进制的模样。标准保证的是另一些东西：id 的拷贝、相等比较、全序关系，标准都给了保证，还专门给 `std::hash` 配了特化，明说它的设计用途就是当关联容器的键。所以咱们拿 `unordered_map<std::thread::id, T>` 给每条线程记档案，写起来也就名正言顺了。还有个小知识：线程跑完了之后，它的 id 值可能被后来新建的线程复用，您做日志排查的时候心里记下这件事，也就够了。
 
@@ -280,7 +312,7 @@ int main()
 }
 ```
 
-本机打印的是 20，跟咱们 20 核的机器对得上。它的标准口径，咱们按事实摆开。咱们看签名：它是 `static unsigned int hardware_concurrency()`，返回的是 unsigned int，而不是 `size_t`。它返回的是“实现支持的并发线程数”，而且咱们只能把它当成提示，标准的原话是 The value should be considered only a hint，您不能把它当真，实现在超线程、资源配额这些事上各有各的算法。而最要紧的事实是：值查不出来或算不出来的时候，它返回的就是 0。这个 0 说的不是核数，它是不知道的意思，怎么兜底是调用者的责任。文末的骨架正好踩到这件事，咱们到时候把话说清。
+本机打印的是 16，跟咱们 8 核 16 线程的 9700X 对得上。它的标准口径，咱们按事实摆开。咱们看签名：它是 `static unsigned int hardware_concurrency()`，返回的是 unsigned int，而不是 `size_t`。它返回的是“实现支持的并发线程数”，而且咱们只能把它当成提示，标准的原话是 The value should be considered only a hint，您不能把它当真，实现在超线程、资源配额这些事上各有各的算法。而最要紧的事实是：值查不出来或算不出来的时候，它返回的就是 0。这个 0 说的不是核数，它是不知道的意思，怎么兜底是调用者的责任。文末的骨架正好踩到这件事，咱们到时候把话说清。
 
 它最常见的用法就是定并行度：线程池要开几条工人、数据要切几块，咱们都从它问起。问出来的数您也别直接照单全收，正式的工程里总得自己再校一遍。
 
@@ -391,7 +423,15 @@ int main()
 
 碰每个元素的线程自始至终是同一条，块与块的边界是分开的，天然就没有了 race。join 又把顺序隔开了，所以咱们回到 main 里再读 `data`，就理直气壮了。跟串行的 `std::for_each` 各跑几遍对拍，结果分毫不差，咱们才算过关。
 
-<!-- 实验回填：本例运行输出（sum 的值）与串行对拍结果 -->
+<OnlineCompilerDemo
+  title="动手验证：parallel_for_each 与串行版对拍"
+  source-path="code/examples/vol5/17_parallel_for_each.cpp"
+  description="观察 sum = 999000，多跑几遍结果稳定。把它换成串行的 std::for_each 单线程版本，跑出来的还是同样的 999000——并行没有改动任何元素的总和。"
+  run-options="-O2 -std=c++17 -pthread"
+  allow-run
+/>
+
+999000 正是 0 到 999 翻倍求和的期望值，0+2+4+…+1998 = 2×(999×1000/2)。
 
 ### 出了异常怎么办：两条线都通向 terminate
 
@@ -399,7 +439,7 @@ int main()
 
 咱们看头一条线：某条线程的函数里抛了异常。异常是跑不过线程边界的，主线程的 try-catch 接不到它。它在子线程自己的栈上逃逸，接不住它的正是子线程自己，于是 `std::terminate` 就在子线程里落了地，整个进程当场就死了，死因记在子线程的名下，主线程连栈展开的影子都没见着。另一条线在主线程自己身上：它抛了异常（比如哪一步分配失败）。栈展开会替咱们把 `threads` 析构掉，元素们还处于 joinable 的状态，terminate 就在主线程这边落了地。
 
-所以咱们得把两桩事分开记。“析构时仍 joinable 就 terminate”看的是对象的状态，跟子线程里发生了什么无关。“异常从线程函数里逃逸”看的是子线程的栈，主线程怎么收尾影响不到它。想把子线程的异常体面地接回来，得靠 ch05 的 future 那一套，那是往后的故事，本篇咱们只把事实立住。
+所以咱们得把两桩事分开记。“析构时仍 joinable 就 terminate”看的是对象的状态，跟子线程里发生了什么无关。“异常从线程函数里逃逸”看的是子线程的栈，主线程怎么收尾影响不到它。想把子线程的异常体面地接回来，得靠 第 5 章 的 future 那一套，那是往后的故事，本篇咱们只把事实立住。
 
 ### 骨架没兜的一处隐患
 
@@ -435,14 +475,66 @@ int main()
 
 ## 参考资源
 
-- [std::thread — cppreference](https://en.cppreference.com/w/cpp/thread/thread) —— 类总览与成员索引
-- [std::thread::thread — cppreference](https://en.cppreference.com/w/cpp/thread/thread/thread) —— decay-copy 构造语义与构造失败的 `std::system_error`
-- [std::thread::join — cppreference](https://en.cppreference.com/w/cpp/thread/thread/join) —— 跑完在前、join 返回在后的同步保证
-- [std::thread::joinable — cppreference](https://en.cppreference.com/w/cpp/thread/thread/joinable) —— 跑完没 join 仍算活动线程的判据原文
-- [std::thread::id — cppreference](https://en.cppreference.com/w/cpp/thread/thread/id) —— 关联容器键的设计用途与 `std::hash` 特化
-- [std::thread::hardware_concurrency — cppreference](https://en.cppreference.com/w/cpp/thread/thread/hardware_concurrency) —— hint 语义与查不出来返回 0
-- [Core Guidelines CP.23](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#cp23-think-of-a-joining-thread-as-a-scoped-container) —— 把会 join 的线程当 scoped container
-- [Core Guidelines CP.26](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#cp26-dont-detach-a-thread) —— 别 detach 线程
-- [Williams, *C++ Concurrency in Action*, 2nd ed, Manning, 2019](https://www.manning.com/books/c-plus-plus-concurrency-in-action-second-edition) —— §2.1 线程的基本管理
-
-
+<ReferenceCard title="参考文献">
+  <ReferenceItem
+    :id="1"
+    author="cppreference"
+    title="std::thread"
+    url="https://en.cppreference.com/w/cpp/thread/thread"
+    chapter="类总览与成员索引"
+  />
+  <ReferenceItem
+    :id="2"
+    author="cppreference"
+    title="std::thread::thread"
+    url="https://en.cppreference.com/w/cpp/thread/thread/thread"
+    chapter="decay-copy 构造语义与构造失败的 `std::system_error`"
+  />
+  <ReferenceItem
+    :id="3"
+    author="cppreference"
+    title="std::thread::join"
+    url="https://en.cppreference.com/w/cpp/thread/thread/join"
+    chapter="跑完在前、join 返回在后的同步保证"
+  />
+  <ReferenceItem
+    :id="4"
+    author="cppreference"
+    title="std::thread::joinable"
+    url="https://en.cppreference.com/w/cpp/thread/thread/joinable"
+    chapter="跑完没 join 仍算活动线程的判据原文"
+  />
+  <ReferenceItem
+    :id="5"
+    author="cppreference"
+    title="std::thread::id"
+    url="https://en.cppreference.com/w/cpp/thread/thread/id"
+    chapter="关联容器键的设计用途与 `std::hash` 特化"
+  />
+  <ReferenceItem
+    :id="6"
+    author="cppreference"
+    title="std::thread::hardware_concurrency"
+    url="https://en.cppreference.com/w/cpp/thread/thread/hardware_concurrency"
+    chapter="hint 语义与查不出来返回 0"
+  />
+  <ReferenceItem
+    :id="7"
+    title="Core Guidelines CP.23"
+    url="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#cp23-think-of-a-joining-thread-as-a-scoped-container"
+    chapter="把会 join 的线程当 scoped container"
+  />
+  <ReferenceItem
+    :id="8"
+    title="Core Guidelines CP.26"
+    url="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#cp26-dont-detach-a-thread"
+    chapter="别 detach 线程"
+  />
+  <ReferenceItem
+    :id="9"
+    title="Williams, *C++ Concurrency in Action*, 2nd ed, Manning, 2019"
+    :year="2019"
+    url="https://www.manning.com/books/c-plus-plus-concurrency-in-action-second-edition"
+    chapter="§2.1 线程的基本管理"
+  />
+</ReferenceCard>

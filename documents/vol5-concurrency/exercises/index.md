@@ -18,14 +18,14 @@ description: "卷五并发编程的完整 Lab 练习体系：从线程生命周�
 
 | Lab | 项目名称 | 覆盖章节 | 建议时长 | 难度 | 前置 Lab |
 |-----|----------|----------|----------|------|----------|
-| [Lab 0](00-thread-lifecycle.md) | Thread Lifecycle | ch00–ch01 | 4–6h | intermediate | 无 |
-| [Lab 1](01-bounded-queue.md) | Bounded Queue & Sync Primitives | ch02–ch04 | 8–12h | intermediate | Lab 0 |
-| [Lab 2](02-atomic-spsc.md) | Atomic Metrics & SPSC Ring Buffer | ch03–ch04 | 6–8h | intermediate | Lab 0 |
-| [Lab 2.5](02.5-debugging.md) | Concurrency Debugging | ch08 | 3–4h | intermediate | Lab 0–2 |
-| [Lab 3](03-thread-pool.md) | Production-style Thread Pool | ch05 | 10–14h | advanced | Lab 0–1 |
-| [Lab 4](04-coroutine-scheduler.md) | Coroutine Scheduler & Event Loop | ch06 | 12–16h | advanced | Lab 3 |
-| [Lab 5](05-channel-actor.md) | Channel or Actor Runtime | ch07 | 8–12h | advanced | Lab 1, 4 |
-| [Capstone](06-capstone-mini-runtime.md) | Mini Concurrent Runtime | ch08–ch09 | 8–12h | advanced | Lab 0–5 |
+| [Lab 0](00-thread-lifecycle.md) | Thread Lifecycle | 第 0 章–第 1 章 | 4–6h | intermediate | 无 |
+| [Lab 1](01-bounded-queue.md) | Bounded Queue & Sync Primitives | 第 2 章–第 4 章 | 8–12h | intermediate | Lab 0 |
+| [Lab 2](02-atomic-spsc.md) | Atomic Metrics & SPSC Ring Buffer | 第 3 章–第 4 章 | 6–8h | intermediate | Lab 0 |
+| [Lab 2.5](02.5-debugging.md) | Concurrency Debugging | 第 8 章 | 3–4h | intermediate | Lab 0–2 |
+| [Lab 3](03-thread-pool.md) | Production-style Thread Pool | 第 5 章 | 10–14h | advanced | Lab 0–1 |
+| [Lab 4](04-coroutine-scheduler.md) | Coroutine Scheduler & Event Loop | 第 6 章 | 12–16h | advanced | Lab 3 |
+| [Lab 5](05-channel-actor.md) | Channel or Actor Runtime | 第 7 章 | 8–12h | advanced | Lab 1, 4 |
+| [Capstone](06-capstone-mini-runtime.md) | Mini Concurrent Runtime | 第 8 章–第 9 章 | 8–12h | advanced | Lab 0–5 |
 
 最低要求完成 **Lab 0、Lab 1、Lab 3 和 Capstone**（约 30–45 小时），即可覆盖卷五最核心的能力曲线。完整完成全部 Lab 约需 60–85 小时。
 

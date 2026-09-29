@@ -56,7 +56,17 @@ int main() {
 
 实测层是咱们自己的环境声明：本卷代码究竟在哪台机器、哪个编译器上真跑过，这件事等实验回填的时候落在那儿。顺带纠正一句流传甚广的说法：协程并不需要 GCC 13。您拿 GCC 11 配上 `-std=c++20` 去编译本篇的代码，这一关是过得去的。把某一台机器的实测环境当成规范门槛，就是版本号谣言的标准配方。
 
-<!-- 实验回填：本卷协程代码的实测环境声明（编译器版本、平台、编译命令与通过情况） -->
+笔者实测：WSL2 Arch Linux、内核 6.18、g++ 16.2.1、AMD Ryzen 7 9700X。本卷协程代码用下面的命令编译，`-Wall -Wextra -pedantic` 全开，一个警告都没有，跑起来也干净：
+
+```text
+$ g++ --version | head -1
+g++ (GCC) 16.2.1 20260810
+$ g++ -std=c++20 -Wall -Wextra -pedantic 02_task_coroutine.cpp -o task_coroutine
+```
+
+```text
+Linux 6.18.33.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC x86_64 GNU/Linux
+```
 
 ## promise 骨架：三个新成员
 
@@ -222,7 +232,33 @@ T sync_wait(Task<T> task) {
 
 咱们把输出在脑子里过一遍：`main_task` 一启动，就一头扎进了 TaskA 的 co_await。worker 打印了 enter，co_add 也打印了 running，worker 随后打印了算式，三层调用到这里就走完了。TaskB、TaskC 也照同样的顺序各走一遍，最后跑完的是 `main_task`。全程没有任何一行输出会抢在别人的前头，惰性 Task 的执行顺序从代码上一眼就能读出来，这个性质等会儿的练习要用。
 
-<!-- 实验回填：三层链 demo 的实际运行输出（编译命令 + 完整日志原文） -->
+咱们不光在脑子里过，还在机器上真跑了一遍。编译命令就是配套代码头部注释里那条，输出原文如下，一行没动：
+
+```text
+$ g++ -std=c++20 -Wall -Wextra -pedantic 02_task_coroutine.cpp -o task_coroutine
+$ ./task_coroutine
+=== demo A: three-layer chain ===
+main_task: enter
+  worker: enter
+  co_add: running
+  worker: TaskA: 1 + 2 = 3
+  worker: enter
+  co_add: running
+  worker: TaskB: 3 + 4 = 7
+  worker: enter
+  co_add: running
+  worker: TaskC: 5 + 6 = 11
+main_task: all done
+
+=== demo B: exception channel ===
+exception_parent: enter
+  failing: about to throw
+exception_parent: caught 'boom from child coroutine'
+exception_parent: continue after catch
+$
+```
+
+您逐行对下来：每一组都是 worker 的 enter 在前、co_add 的 running 居中、算式收尾，TaskA、TaskB、TaskC 一组不落地按代码顺序出现，没有任何一行抢跑。跟咱们在脑子里过的顺序一模一样。
 
 ## 对称转移：恢复别人的正确姿势
 
@@ -256,7 +292,57 @@ sync_wait()  的栈帧
 
 咱们别小看这个增长。异步代码里链条的深度常常不由人控制：请求协程等解析的结果，解析的那头等读缓冲，读缓冲的下面还等着 socket，用户随手一包就多了一层。深链之下咱们离爆栈有多远，看的只是栈还剩多少。
 
-<!-- 实验回填：深链实验（朴素 resume 版 vs 对称转移版，-O0/-O2 两档，各深度档位的栈深/崩溃点，perf 或 /proc 数据原文） -->
+笔者实测：WSL2 Arch Linux、内核 6.18、g++ 16.2.1、AMD Ryzen 7 9700X。这一段咱们真拿深链量过。测试线程栈用的默认配额，`ulimit -s` 给的是 8192 KiB（8 MiB），全程没有动过。朴素 resume 版把 `await_suspend` 改成正文里的反面教材写法（里面直接 `handle_.resume()`，FinalAwaiter 里直接 `continuation.resume()`），对称转移版就是配套代码的原样；两者共用同一个 `descend(N)`：递归 `co_await descend(N-1)` 直到深度归零。为了量出栈用到哪了，咱们在 `await_suspend` 的栈帧里放了一个探针：记下整个运行期间见过的最低栈地址，跑完拿 main 的栈地址一减，就是栈的下探量。两档优化、四个深度档位的结果：
+
+```text
+$ ulimit -s
+8192
+$ g++ -std=c++20 -Wall -Wextra -pedantic naive_task.cpp -o naive_O0 -O0    # 朴素 resume 版
+$ g++ -std=c++20 -Wall -Wextra -pedantic naive_task.cpp -o naive_O2 -O2
+$ ./naive_O0 100 ; ./naive_O0 10000 ; ./naive_O0 27500
+naive chain finished, depth = 100,  stack used at deepest point = 16048 bytes
+naive chain finished, depth = 10000, stack used at deepest point = 1600048 bytes
+naive chain finished, depth = 27500, stack used at deepest point = 4400048 bytes
+$ ./naive_O0 28125 ; echo "exit=$?"
+（无输出，进程直接倒下）
+exit=139
+$ ./naive_O2 100 ; ./naive_O2 10000 ; ./naive_O2 130000
+naive chain finished, depth = 100,   stack used at deepest point = 3193 bytes
+naive chain finished, depth = 10000, stack used at deepest point = 319993 bytes
+naive chain finished, depth = 130000, stack used at deepest point = 4159993 bytes
+```
+
+朴素 resume 版的栈深是标准的线性增长：`-O0` 下每层约 160 字节（1600048 除以 10000），深度 27500 时已经吃掉 4.4 MiB，深度加到 28125 就把 8 MiB 的配额顶穿，进程带着退出码 139（128 加 SIGSEGV 的 11）倒下。`-O2` 把每层压到约 32 字节，扛到的深度也就大了一个量级不到：笔者用二分把崩溃边界卡出来，能活过 130468，131250 倒下。开优化只是让斜率变小，栈随链深增长这件事本身没变。
+
+再看对称转移版，同一套探针、同样的两档优化：
+
+```text
+$ g++ -std=c++20 -Wall -Wextra -pedantic 02_task_coroutine.cpp -o sym_O2 -O2
+$ ./sym_O2 100 ; ./sym_O2 10000 ; ./sym_O2 100000 ; ./sym_O2 1000000
+deep chain finished, depth = 100,      stack used at deepest point = 80 bytes
+deep chain finished, depth = 10000,    stack used at deepest point = 80 bytes
+deep chain finished, depth = 100000,   stack used at deepest point = 80 bytes
+deep chain finished, depth = 1000000,  stack used at deepest point = 80 bytes
+```
+
+`-O2` 下咱们等的那句话兑现了：深度从 100 涨到一百万，栈的下探量钉在 80 字节纹丝不动。深度一千万层也照常跑完，协程帧本体在堆上，栈这边每层就一双手指头数得过来的开销。尾调用是真发出来了。
+
+可 `-O0` 那一档，结果就值得您多看一眼了。探针显示 `await_suspend` 里看到的栈只有 921 字节、不随深度涨，但深度过 52819 的时候进程照样带着 SIGSEGV 倒下（能活过 52046）：
+
+```text
+$ g++ -std=c++20 -Wall -Wextra -pedantic 02_task_coroutine.cpp -o sym_O0 -O0
+$ ./sym_O0 52000 ; echo "exit=$?"
+deep chain finished, depth = 52000, stack used at deepest point = 921 bytes
+exit=0
+$ ./sym_O0 52819 ; echo "exit=$?"
+（无输出，进程直接倒下）
+exit=139
+$ dmesg | tail -2
+[10871.221065] sym_O0[16395]: segfault at 7fff98cecff8 ip 000078b3db0a5063 sp 00007fff98ced000 error 6 in libc.so.6[a5063,78b3db024000+17b000] likely on CPU 2 (core 1, socket 0)
+[10871.238483] sym_O0[16397]: segfault at 7fff2c625ff8 ip 00005ddb7a27f8b2 sp 00007fff2c625ff0 error 6 in sym_O0[38b2,5ddb7a27d000+4000] likely on CPU 12 (core 6, socket 0)
+```
+
+探针为什么看不见？因为对称转移那一步 resume 调用不是发生在咱们手写的 `await_suspend` 里，而是发生在编译器生成的 co_await 收尾代码里，咱们的探针够不着那一层。内核日志里 `sp` 已经顶到 `7fff...d000` 这种页边界上，栈就是从那里写穿的。折算下来每层约 160 字节，跟朴素版 `-O0` 一个量级——也就是说，在 GCC 16.2.1 的 x86-64 上、不开优化，对称转移发的就是普通调用，不是尾调用。这正是前面引的 PR c++/100897 描述的病：截至咱们实测的版本它还在，修没修、哪个版本修，您上线前得拿自己的编译器版本实测一回，别拿这篇的结论当免检通行证。这也是咱们接下来把三条路摆成表的底气：朴素版的栈随深度线性涨是实锤，对称转移的「恒定」在 GCC 上要挂 `-O1` 起步的优化档才成立。
 
 ### 语言给的答案：返回句柄
 
@@ -335,7 +421,19 @@ Task<void> exception_parent() {
 
 咱们预期的行为是这样的：`failing` 一进门就抛了，异常进了 `unhandled_exception`、也存进了 promise。控制权交回给了 `exception_parent`，`await_resume` 重抛了它，catch 接住了、打印了，协程正常地收尾。异常就这样穿过了协程边界，中间连一点失控的动静都没有。
 
-<!-- 实验回填：异常通道 demo 的实际运行输出（编译命令 + 完整日志原文） -->
+笔者实测：WSL2 Arch Linux、内核 6.18、g++ 16.2.1、AMD Ryzen 7 9700X。还是同一个二进制，demo B 段的实际输出如下：
+
+```text
+$ g++ -std=c++20 -Wall -Wextra -pedantic 02_task_coroutine.cpp -o task_coroutine
+$ ./task_coroutine | sed -n '/demo B/,$p'
+=== demo B: exception channel ===
+exception_parent: enter
+  failing: about to throw
+exception_parent: caught 'boom from child coroutine'
+exception_parent: continue after catch
+```
+
+行为跟咱们预期的逐条对上了：`failing` 抛出的瞬间协程体就退场了，`got %d` 那行没有出现，异常从子协程的 `unhandled_exception` 一路存进 promise，再由父协程 `co_await` 处的 `await_resume` 重抛，落在父协程自己的 catch 里。`caught` 之后父协程照常收尾，`continue after catch` 打了出来，整个进程干净退出（退出码 0）。
 
 > 有个细节咱们顺路记下：协程体的 try/catch 大罩子罩不到 `initial_suspend`。它是在罩子外头执行的，那里抛出的异常不会进 `unhandled_exception()`，而是直接传给协程的调用者。Baker 的忠告更直白：`initial_suspend`、`final_suspend`、`unhandled_exception` 三处，咱们一处都不许它抛东西。要求也有软硬之分：`final_suspend` 的 `noexcept` 是规范的硬性要求，少了它程序就是非良构。`initial_suspend` 和 `unhandled_exception` 的不抛，靠的则是实现自律。咱们的实现给三处都声明了 `noexcept`，编译器替咱们守着。
 
@@ -450,11 +548,62 @@ TaskB: 3 + 4 = 7
 
 ## 参考资源
 
-- Lewis Baker, *Understanding Symmetric Transfer*, Asymmetric Transfer 博客, 2020-05-11 —— 尾调用保证、朴素 resume 的栈增长与互相等待的死循环，正文多处转述自它：<https://lewissbaker.github.io/2020/05/11/understanding_symmetric_transfer>
-- P0913R0 *Add symmetric coroutine control transfer* —— `await_suspend` 返回句柄、恢复层数不设上限与 `noop_coroutine` 的提案出处：<https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0913r0.html>
-- Lewis Baker, *Understanding the promise type*, 2018-09-05 —— promise 侧设计的正源，续体存 promise 的理由：<https://lewissbaker.github.io/2018/09/05/understanding-the-promise-type>
-- cppreference: Coroutines —— 协程执行全流程、`await_suspend` 三种返回语义、Generator 官方示例（存异常、重抛）与特性测试宏取值：<https://en.cppreference.com/w/cpp/language/coroutines>
-- GCC Bugzilla PR c++/100897 *Symmetric transfer does not prevent stack-overflow for C++20 coroutines*：<https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100897>
-- LLVM issue #42853 *Coroutine symmetric transfer tail call optimization not working on AArch64*：<https://github.com/llvm/llvm-project/issues/42853>
-- GCC 官方 C++20 语言支持状态页（协程一行，含 `-fcoroutines` 与版本口径）：<https://gcc.gnu.org/projects/cxx-status.html>
-- CWG 2556 *Fallthrough to co_return*（掉出协程体等价 `co_return;` 的追溯裁决）：<https://cplusplus.github.io/CWG/issues/2556.html>
+<ReferenceCard title="参考文献">
+  <ReferenceItem
+    :id="1"
+    author="Lewis Baker"
+    title="Understanding Symmetric Transfer"
+    year="2020-05-11"
+    url="https://lewissbaker.github.io/2020/05/11/understanding_symmetric_transfer"
+    chapter="Asymmetric Transfer 博客。尾调用保证、朴素 resume 的栈增长与互相等待的死循环，正文多处转述自它"
+  />
+  <ReferenceItem
+    :id="2"
+    author="WG21"
+    title="P0913R0 Add symmetric coroutine control transfer"
+    :year="2018"
+    url="https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0913r0.html"
+    chapter="await_suspend 返回句柄、恢复层数不设上限与 noop_coroutine 的提案出处"
+  />
+  <ReferenceItem
+    :id="3"
+    author="Lewis Baker"
+    title="Understanding the promise type"
+    year="2018-09-05"
+    url="https://lewissbaker.github.io/2018/09/05/understanding-the-promise-type"
+    chapter="promise 侧设计的正源，续体存 promise 的理由"
+  />
+  <ReferenceItem
+    :id="4"
+    author="cppreference"
+    title="Coroutines"
+    url="https://en.cppreference.com/w/cpp/language/coroutines"
+    chapter="协程执行全流程、await_suspend 三种返回语义、Generator 官方示例（存异常、重抛）与特性测试宏取值"
+  />
+  <ReferenceItem
+    :id="5"
+    author="GCC Bugzilla"
+    title="PR c++/100897 Symmetric transfer does not prevent stack-overflow for C++20 coroutines"
+    url="https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100897"
+  />
+  <ReferenceItem
+    :id="6"
+    author="LLVM"
+    title="issue #42853 Coroutine symmetric transfer tail call optimization not working on AArch64"
+    url="https://github.com/llvm/llvm-project/issues/42853"
+  />
+  <ReferenceItem
+    :id="7"
+    author="GCC"
+    title="C++20 语言支持状态页"
+    url="https://gcc.gnu.org/projects/cxx-status.html"
+    chapter="协程一行，含 -fcoroutines 与版本口径"
+  />
+  <ReferenceItem
+    :id="8"
+    author="CWG"
+    title="CWG 2556 Fallthrough to co_return"
+    url="https://cplusplus.github.io/CWG/issues/2556.html"
+    chapter="掉出协程体等价 co_return; 的追溯裁决"
+  />
+</ReferenceCard>

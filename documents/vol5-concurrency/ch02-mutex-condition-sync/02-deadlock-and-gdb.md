@@ -2,7 +2,7 @@
 title: "死锁与现场诊断"
 description: "复现一个必死的 AB-BA 现场，用 gdb 三命令判读谁在等谁，再把总锁序、std::lock、try_lock 回退三条防线与层级锁一件件配齐"
 chapter: 2
-order: 3
+order: 2
 tags:
   - host
   - cpp-modern
@@ -26,7 +26,7 @@ cpp_standard:
 
 # 死锁与现场诊断
 
-[mutex 那篇](./01-mutex-and-raii-guards.md)里咱们把一把锁的用法立稳了，可它也留了话：一次要拿两把锁的时候，拿的顺序不对，程序就僵住了。那篇演示 Account 划转的时候，把这团麻烦整个绕开了，`scoped_lock` 一条语句拿了两把，顺序的问题交给算法接管了。[thread_local 那篇](./02-thread-local.md)刚把每线程一份的世界走完，那是把不共享做到头的路线。本篇咱们把遮着的布掀开，看看共享的路线要付什么代价：咱们故意不接管，亲眼看一看僵住的样子，再学一学怎么把挂住的程序查个水落石出。
+[mutex 那篇](./01-mutex-and-raii-guards.md)里咱们把一把锁的用法立稳了，可它也留了话：一次要拿两把锁的时候，拿的顺序不对，程序就僵住了。那篇演示 Account 划转的时候，把这团麻烦整个绕开了，`scoped_lock` 一条语句拿了两把，顺序的问题交给算法接管了。本篇咱们把遮着的布掀开，看看不接管的路线要付什么代价：咱们故意不接管，亲眼看一看僵住的样子，再学一学怎么把挂住的程序查个水落石出。
 
 挂住是并发程序里体感最特别的一种死法。崩溃好歹给您留一个 core 加一行信号，挂住的时候什么都不给：CPU 静悄悄的，日志停在半截不动了，进度条也不动了，整个程序吊在半死不活的状态里。[data race 那篇](../ch00-concurrency-fundamentals/02-data-race-and-tsan.md)的结尾咱们让死锁亮过相、四样配方也背过，当时说好的，诊断的流程归本篇展开。咱们把死锁稳定地跑出来，用 gdb 的三命令把现场判读明白，再把防身的手段一件件配齐。
 
@@ -231,7 +231,7 @@ $2 = 880930
 - `不可剥夺`：谁也没法从 t1 的手里把 A 抢走，而别人想拿的话，只能等它的主人自己放。
 - `循环等待`：t1 等 t2 手里的 B，t2 等 t1 手里的 A，等待的关系闭成了环。
 
-咱们看四条里的取舍：互斥与不可剥夺是锁存在的意义，破掉它们就等于不用锁了（确实存在干脆不用锁的设计，而那归 [ch03 的 atomic 篇](../ch03-atomic-memory-model/02-atomics-and-happens-before.md)的篇幅去讲）。工程上的防线，几乎都打在后两条上：总锁序让等待的关系成不了环，而 `std::lock` 用一条语句拿全，僵持也就形不成了。`try_lock` 的回退则让线程压根不抱着锁去堵。而层级锁的做法更狠，它把循环等待从生产环境的挂死，直接变成开发期的异常了。
+咱们看四条里的取舍：互斥与不可剥夺是锁存在的意义，破掉它们就等于不用锁了（确实存在干脆不用锁的设计，而那归 [第 3 章 的 atomic 篇](../ch03-atomic-memory-model/02-atomics-and-happens-before.md)的篇幅去讲）。工程上的防线，几乎都打在后两条上：总锁序让等待的关系成不了环，而 `std::lock` 用一条语句拿全，僵持也就形不成了。`try_lock` 的回退则让线程压根不抱着锁去堵。而层级锁的做法更狠，它把循环等待从生产环境的挂死，直接变成开发期的异常了。
 
 data race 那篇的结尾里，咱们还认过两张近亲的脸，这里把欠着的深讲补上。活锁的形状是大家都在动、都在让，而活儿就是没干。饥饿的形状是调度总也轮不到某个线程，它想拿锁的时候总被插队。它们跟死锁的病理不一样：死锁的时候大家全睡了，活锁的时候大家全在空转，而饥饿里有人一直被冷落。饥饿的治理方向是把公平性做进锁的语义：有的实现提供按到达次序放行的公平锁，读写锁也有不冷落写者的放行策略，而标准把选择留给了实现，工具箱那篇讲 shared_mutex 时咱们还会遇到写者被饿着的实例。防线三的手法会把活锁招出来，咱们到防线三再细说。
 
@@ -268,11 +268,13 @@ int main()
 }
 ```
 
-```text
-worker 1: 两把都到手
-worker 2: 两把都到手
-程序正常收尾
-```
+<OnlineCompilerDemo
+  title="动手验证：统一锁序之后，环闭不上了"
+  source-path="code/examples/vol5/34_total_lock_order.cpp"
+  description="两个线程都按 A、B 的顺序拿，worker 1、worker 2 先后打出「两把都到手」，程序正常收尾，不再挂死。worker 1 与 2 的先后可能互换，两行都在就是环没成。"
+  run-options="-O2 -std=c++17 -pthread"
+  allow-run
+/>
 
 为什么咱们这么一改就断根了？因为统一的次序是传递的。全工程都按 A 在 B 之前的次序拿锁，那么一个线程等另一把的时候，被等的锁在尺子上一定更靠后。所以等待的关系只能从低处指向高处，排成的链再长也成不了环。
 
@@ -325,9 +327,13 @@ int main()
 }
 ```
 
-```text
-总额 = 2000（期望 2000）
-```
+<OnlineCompilerDemo
+  title="动手验证：scoped_lock 传参顺序相反也不僵"
+  source-path="code/examples/vol5/35_scoped_lock_transfer.cpp"
+  description="两个线程各划转两万次、传参一顺一反，总额稳定打出 2000（期望 2000），程序秒级跑完不挂死。"
+  run-options="-O2 -std=c++17 -pthread"
+  allow-run
+/>
 
 两个线程各划转了两万次，传参的顺序一顺一反，总额分毫不差地守住了。咱们看僵持形不成的道理：在拿不到第二把的时候，`std::lock` 的算法把第一把也放掉了，抱着锁僵等的僵局也就没了。
 
@@ -377,11 +383,13 @@ int main()
 }
 ```
 
-```text
-worker 2 done
-worker 1 done
-程序正常收尾
-```
+<OnlineCompilerDemo
+  title="动手验证：try_lock 回退把僵等改成重试"
+  source-path="code/examples/vol5/36_try_lock_backoff.cpp"
+  description="两个线程各重试十万轮，worker 1、worker 2 先后 done，程序正常收尾。done 两行的先后会互换，CPU 快慢也影响总耗时，但谁都不会抱着一把锁堵死等另一把。"
+  run-options="-O2 -std=c++17 -pthread"
+  allow-run
+/>
 
 咱们看 `worker` 里的 while 循环：第二把的 `try_lock()` 失败了就退出本轮，`a` 也随着析构放掉了，再用 `yield()` 把处理器客气地让一让，下一轮的尝试再从 A 摸起。线程从不会在持有一把的情况下去堵等另一把，僵持也就形不成了，跟 `std::lock` 的道理殊途同归，只是这回逻辑全在咱们眼皮底下。
 
@@ -399,7 +407,7 @@ Core Guidelines 把它写成了 CP.22，标题的措辞非常直白：`Never cal
 
 ## 层级锁：把违规变成当场异常
 
-[thread_local 那篇](./02-thread-local.md)里给咱们留过一个钩子，层级锁要来借的就是每线程一份的状态，现在就轮到它出场了。层级锁的思路是把防线的纪律变成运行时的检查：咱们给每把锁标一个层级数，而线程每拿一把，就把自己当前的层级记进一份 thread_local 的状态里。拿锁的规则只有一条，新锁的层级必须比手里已有的更低，加锁的路线一路下行。越级的那个线程会当场吃到异常，死锁从生产环境的挂死里，变成了开发期的报错栈。
+层级锁要借的是 thread_local 的本领：每线程一份的状态。说明符的完整讲法在 [thread_local 那篇](./04-thread-local.md)，眼下您只需要认下这句话——带上 `thread_local` 的变量，每个线程里各有一份、互相看不见，现在就轮到它出场了。层级锁的思路是把防线的纪律变成运行时的检查：咱们给每把锁标一个层级数，而线程每拿一把，就把自己当前的层级记进一份 thread_local 的状态里。拿锁的规则只有一条，新锁的层级必须比手里已有的更低，加锁的路线一路下行。越级的那个线程会当场吃到异常，死锁从生产环境的挂死里，变成了开发期的报错栈。
 
 ```cpp
 // 层级锁：thread_local 记录本线程当前层级，越级上锁抛异常
@@ -494,13 +502,15 @@ std::thread fresh([] {
 fresh.join();
 ```
 
-```text
-下行加锁：一路顺利
-抓到越级: 锁层级越级：当前线程已持有同级或更低层级的锁
-新线程直接拿中层：合法
-```
+<OnlineCompilerDemo
+  title="动手验证：层级锁把越级变成当场异常"
+  source-path="code/examples/vol5/37_hierarchical_mutex.cpp"
+  description="高 -> 中 -> 低一路下行顺利；在 low_mutex 怀里回头够 mid_mutex 当场抛 logic_error 被捕获；新线程直接拿中层合法——层级状态是 thread_local 的，上一线程的历史漏不过来。"
+  run-options="-O2 -std=c++17 -pthread"
+  allow-run
+/>
 
-输出的判读，咱们挨个来。下行加锁的一路顺利，因为 10000、5000、100 是严格递减的。在 `low_mutex` 的怀抱里回头够 `mid_mutex`，5000 不低于当前的层级 100，违规就成立了，异常也就当场抛出来了。而新线程直接拿中层是合法的，因为层级状态是 thread_local 的：fresh 线程的 `current_level_` 从 `ULONG_MAX` 起步，上一个线程的层级历史不会漏过来，这正是 [thread_local 那篇](./02-thread-local.md) 讲的每线程一份在起作用。
+输出的判读，咱们挨个来。下行加锁的一路顺利，因为 10000、5000、100 是严格递减的。在 `low_mutex` 的怀抱里回头够 `mid_mutex`，5000 不低于当前的层级 100，违规就成立了，异常也就当场抛出来了。而新线程直接拿中层是合法的，因为层级状态是 thread_local 的：fresh 线程的 `current_level_` 从 `ULONG_MAX` 起步，上一个线程的层级历史不会漏过来，这正是 [thread_local 那篇](./04-thread-local.md) 讲的每线程一份在起作用。
 
 实现里有两个细节值得咱们多看一眼。`unlock` 恢复的是 `previous_level_` 而不是清零，也就是说解锁要按拿锁的逆序来，好在 RAII 守卫的析构天生就是逆序的，所以您用 `lock_guard` 包它就是绝配。`check_violation` 用的是大于等于：同级也算违规的，两把同层级的锁想互等也成不了。代价是每次 lock/unlock 多几次整型的读写与比较，换的是把锁序违规从线上事故提前到开发期的异常栈。
 
@@ -515,7 +525,7 @@ t1: 拿到 A，伸手等 B
 t2: 拿到 B，伸手等 A
 ```
 
-它拿到的退出码是 124，而 TSan 从头到尾一个字都没说。您别急着给 TSan 定罪，咱们把它分成两半看。管内存竞争的那一半，[data race 那篇](../ch00-concurrency-fundamentals/02-data-race-and-tsan.md) 讲过它的原理：纯 happens-before 的检测器，靠向量时钟判断两次访问之间有没有同步的关系。它盯的是内存访问的次序，而死锁的两方安安静静地各等各的，谁也没碰谁的内存，所以没有可报的违例。另一半是死锁侦测的锁序图组件，GCC 与 LLVM 的 TSan 都默认开启，由 TSAN_OPTIONS 的 `detect_deadlocks` 开关管着。ch01 的 sanitizer 对比表把 TSan 的这一半记作“锁序反转（预警）”，详讲指名记在了 ch02，指的就是它了，咱们在这里把详讲补上。
+它拿到的退出码是 124，而 TSan 从头到尾一个字都没说。您别急着给 TSan 定罪，咱们把它分成两半看。管内存竞争的那一半，[data race 那篇](../ch00-concurrency-fundamentals/02-data-race-and-tsan.md) 讲过它的原理：纯 happens-before 的检测器，靠向量时钟判断两次访问之间有没有同步的关系。它盯的是内存访问的次序，而死锁的两方安安静静地各等各的，谁也没碰谁的内存，所以没有可报的违例。另一半是死锁侦测的锁序图组件，GCC 与 LLVM 的 TSan 都默认开启，由 TSAN_OPTIONS 的 `detect_deadlocks` 开关管着。第 1 章 的 sanitizer 对比表把 TSan 的这一半记作“锁序反转（预警）”，详讲指名记在了 第 2 章，指的就是它了，咱们在这里把详讲补上。
 
 锁序图记的是已经完成的获取：线程拿着 M0、成功拿到了 M1，图里就多一条 M0 指向 M1 的边。有向图里一旦出现了环，它就报出 `lock-order-inversion (potential deadlock)` 的预警。咱们造一个单线程的反序现场，让两段获取都完整地走完，看它的锁序图会不会报预警：
 
@@ -566,12 +576,77 @@ SUMMARY: ThreadSanitizer: lock-order-inversion (potential deadlock) /tmp/ch0203/
 
 代价的说明在手册里也写得明明白白：`Performance can be very poor. Slowdowns on the order of 100:1 are not unusual.`，慢一百倍都不算稀奇的事，所以它更像事后查现场的重量级工具，日常开发咱们还是靠 TSan 常态化跑。手册里的建议还有一条：`make your application Memcheck-clean before using Helgrind`，把 Memcheck 这一关过了再来，原话还说了 `Memcheck and Helgrind are to some extent complementary`，它们本来就是互补的搭配。
 
-笔者的本机没装 valgrind，Helgrind 对着这个死锁现场的真实报告咱们还欠着，等维护者的机器装好它再补，报告的判读以上面三类检出为纲。
+笔者实测：WSL2 Arch Linux、内核 6.18、g++ 16.2.1、AMD Ryzen 7 9700X，valgrind 3.25.1。deadlock.cpp 用正文 L77 的命令编译后，直接拿现成的二进制跑 `timeout 60 valgrind --tool=helgrind ./deadlock`——它是真死锁，永远等不完，60 秒后 timeout 发 SIGTERM 收场，退出码 124。报告原文（中间 `std::__invoke`/`_Invoker` 一串机制帧与重复的锁观测段咱们裁掉了，裁处用省略行标出，其余逐字未动）：
 
-<!-- 实验回填：Helgrind 真实输出占位。本机（Arch/WSL2）无 valgrind 且无免密
-     sudo，无法冒烟。维护者机执行 `sudo pacman -S valgrind` 安装后运行
-     `valgrind --tool=helgrind ./deadlock`，把真实报告贴到上一段之后，并据实
-     修正本段的预期措辞。 -->
+```text
+==197563== Helgrind, a thread error detector
+==197563== Command: ./deadlock
+==197563==
+t1: 拿到 A，伸手等 B
+==197563== ---Thread-Announcement------------------------------------------
+==197563==  Thread #3 was created
+==197563==    ……（clone/pthread_create 一串创建栈，裁掉）
+==197563== ---Thread-Announcement------------------------------------------
+==197563==  Thread #2 was created
+==197563==    ……（同上，裁掉）
+==197563==  Lock at 0x4005220 was first observed
+==197563==    at 0x487BD0F: mutex_lock_WRK (hg_intercepts.c:1003)
+==197563==    by 0x4001735: std::lock_guard<std::mutex>::lock_guard(std::mutex&) (std_mutex.h:276)
+==197563==    by 0x4001367: thread2() (deadlock.cpp:20)
+==197563==    ……（std::invoke/_Invoker 机制帧，裁掉）
+==197563==  Address 0x4005220 is 0 bytes inside data symbol "mtx_b"
+==197563==
+==197563==  Lock at 0x40051E0 was first observed
+==197563==    at 0x487BD0F: mutex_lock_WRK (hg_intercepts.c:1003)
+==197563==    by 0x4001735: std::lock_guard<std::mutex>::lock_guard(std::mutex&) (std_mutex.h:276)
+==197563==    by 0x4001246: thread1() (deadlock.cpp:11)
+==197563==    ……（std::invoke/_Invoker 机制帧，裁掉）
+==197563==  Address 0x40051e0 is 0 bytes inside data symbol "mtx_a"
+==197563==
+==197563==  Possible data race during read of size 8 at 0x40050D8 by thread #3
+==197563==  Locks held: 1, at address 0x4005220
+==197563==    at 0x49E9E8E: width (ios_base.h:790)
+==197563==    by 0x49EA411: std::basic_ostream<char, std::char_traits<char> >& std::operator<< <std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*) (ostream.h:739)
+==197563==    by 0x4001380: thread2() (deadlock.cpp:21)
+==197563==       ……（机制帧，裁掉）
+==197563==  This conflicts with a previous write of size 8 by thread #2
+==197563==  Locks held: 1, at address 0x40051E0
+==197563==    at 0x49E9F70: width (ios_base.h:801)
+==197563==    by 0x49EA411: std::basic_ostream<char, std::char_traits<char> >& std::operator<< <std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*) (ostream.h:739)
+==197563==    by 0x400125F: thread1() (deadlock.cpp:12)
+==197563==    ……（机制帧，裁掉）
+==197563==  Address 0x40050d8 is 24 bytes inside data symbol "_ZSt4cout@GLIBCXX_3.4"
+==197563==
+==197563==  ……（第二起对同一地址的 Possible data race during write of size 8，
+==197563==     双方栈与上一起相同，deadlock.cpp:21 对 :12，裁掉）
+==197563==
+t2: 拿到 B，伸手等 A
+==197563==
+==197563== Process terminating with default action of signal 15 (SIGTERM)
+==197563==    ……（futex/join 一串栈，main 停在 deadlock.cpp:31，裁掉）
+==197563== ----------------------------------------------------------------
+==197563==
+==197563== Thread #3: Exiting thread still holds 1 lock
+==197563==    at 0x4D619E3: pthread_mutex_lock@@GLIBC_2.2.5 (pthread_mutex_lock.c:87)
+==197563==    by 0x487BCB0: mutex_lock_WRK (hg_intercepts.c:996)
+==197563==    by 0x4001735: std::lock_guard<std::mutex>::lock_guard(std::mutex&) (std_mutex.h:276)
+==197563==    by 0x40013CE: thread2() (deadlock.cpp:23)
+==197563==    ……（机制帧，裁掉）
+==197563==
+==197563== Thread #2: Exiting thread still holds 1 lock
+==197563==    at 0x4D619E3: pthread_mutex_lock@@GLIBC_2.2.5 (pthread_mutex_lock.c:87)
+==197563==    by 0x487BCB0: mutex_lock_WRK (hg_intercepts.c:996)
+==197563==    by 0x4001735: std::lock_guard<std::mutex>::lock_guard(std::mutex&) (std_mutex.h:276)
+==197563==    by 0x40012AD: thread1() (deadlock.cpp:14)
+==197563==    ……（机制帧，裁掉）
+==197563==
+==197563== Use --history-level=approx or =none to gain increased speed, at
+==197563== the cost of reduced accuracy of conflicting-access information
+==197563== For lists of detected and suppressed errors, rerun with: -s
+==197563== ERROR SUMMARY: 4 errors from 4 contexts (suppressed: 51 from 22)
+```
+
+判读有三条，第一条就得先泼盆冷水：**Helgrind 没有 deadlock 预警、也没有报 lock-order-inversion**。道理跟上面 TSan 的沉默一模一样——t1 的第二把锁（14 行）永远拿不完，B 指回 A 的那条边从没作为完成事件进过锁序图，环闭不上，第二类检出（锁序死锁）在这儿也是哑的。第二条是报告里真正的收获：收尾那两条 `Thread #2/#3: Exiting thread still holds 1 lock`，栈直直指着 deadlock.cpp:14（thread1 等 mtx_b）和 :23（thread2 等 mtx_a），两条等待边各持一把、互等对方，死锁现场等于被 Helgrind 白纸黑字记了下来，只是它没替咱们下“死锁”这个结论。第三条是那两起 `Possible data race`：报的不是咱们的锁，是 `std::cout` 的格式化状态（`_ZSt4cout` 里的 width 字段，ios_base.h:790/801）——两个线程各持不同的锁同时写 cout，在 Helgrind 眼里就是没同步的共享访问，这倒是真的（上一篇咱们刚见过 cout 交错的现场），只是它与死锁无关，读报告时别被它带偏了主线索。
 
 咱们把分工收个尾：内存访问的竞争，TSan 管日常的活。死锁的现场，gdb 的三命令管判读。不想重编译就要查锁序的时候，就轮到 Helgrind 上场了。
 
@@ -586,19 +661,71 @@ SUMMARY: ThreadSanitizer: lock-order-inversion (potential deadlock) /tmp/ch0203/
 
 ## 下一步
 
-锁序的纪律立稳了，同步的另一半是等待与通知，谓词等待的正源在 [condition_variable 与阻塞队列](./04-condition-variable-and-bounded-queue.md)，咱们本篇 try_lock 回退的写法算是给它热了身。而 call_once、semaphore、latch、barrier 一并住在 [同步原语工具箱](./05-sync-primitives-toolkit.md)，ch00 讲到一半的 `优先级反转` 与 futex 的深讲，也都记在它的名下了。动手量更大的活儿，在 [exercises 的阻塞队列 Lab](../exercises/01-bounded-queue) 里等着您。
+锁序的纪律立稳了，同步的另一半是等待与通知，谓词等待的正源在 [condition_variable 与阻塞队列](./05-condition-variable-and-bounded-queue.md)，咱们本篇 try_lock 回退的写法算是给它热了身。而 call_once、semaphore、latch、barrier 一并住在 [同步原语工具箱](./06-sync-primitives-toolkit.md)，第 0 章 讲到一半的 `优先级反转` 与 futex 的深讲，也都记在它的名下了。动手量更大的活儿，在 [exercises 的阻塞队列 Lab](../exercises/01-bounded-queue) 里等着您。
 
 > 💡 咱们把完整示例代码放在 [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)，您可以访问 `code/volumn_codes/vol5/ch02-mutex-condition-sync/`。
 
 ## 参考资源
 
-- [Debugging with GDB: Threads -- sourceware](https://sourceware.org/gdb/current/onlinedocs/gdb.html/Threads)
-- [std::lock -- cppreference](https://en.cppreference.com/w/cpp/thread/lock)
-- [std::scoped_lock -- cppreference](https://en.cppreference.com/w/cpp/thread/scoped_lock)
-- [std::try_lock -- cppreference](https://en.cppreference.com/w/cpp/thread/try_lock)
-- [CP.21: Use std::lock() or std::scoped_lock to acquire multiple mutexes -- C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#cp21-use-stdlock-or-stdscoped_lock-to-acquire-multiple-mutexes)
-- [CP.22: Never call unknown code while holding a lock (e.g., a callback) -- C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#cp22-never-call-unknown-code-while-holding-a-lock-eg-a-callback)
-- [Helgrind: a thread error detector -- valgrind.org](https://valgrind.org/docs/manual/hg-manual.html)
-- [ThreadSanitizerCppManual -- google/sanitizers wiki](https://github.com/google/sanitizers/wiki/ThreadSanitizerCppManual)
-- [Coffman, Elphick, Shoshani: System Deadlocks, ACM Computing Surveys, 1971](https://doi.org/10.1145/356586.356588)
-- [Williams, *C++ Concurrency in Action*, 2nd ed, Manning, 2019](https://www.manning.com/books/c-plus-plus-concurrency-in-action-second-edition)
+<ReferenceCard title="参考文献">
+  <ReferenceItem
+    :id="1"
+    title="Debugging with GDB: Threads"
+    author="sourceware"
+    url="https://sourceware.org/gdb/current/onlinedocs/gdb.html/Threads"
+  />
+  <ReferenceItem
+    :id="2"
+    title="std::lock"
+    author="cppreference"
+    url="https://en.cppreference.com/w/cpp/thread/lock"
+  />
+  <ReferenceItem
+    :id="3"
+    title="std::scoped_lock"
+    author="cppreference"
+    url="https://en.cppreference.com/w/cpp/thread/scoped_lock"
+  />
+  <ReferenceItem
+    :id="4"
+    title="std::try_lock"
+    author="cppreference"
+    url="https://en.cppreference.com/w/cpp/thread/try_lock"
+  />
+  <ReferenceItem
+    :id="5"
+    title="CP.21: Use std::lock() or std::scoped_lock to acquire multiple mutexes"
+    author="C++ Core Guidelines"
+    url="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#cp21-use-stdlock-or-stdscoped_lock-to-acquire-multiple-mutexes"
+  />
+  <ReferenceItem
+    :id="6"
+    title="CP.22: Never call unknown code while holding a lock (e.g., a callback)"
+    author="C++ Core Guidelines"
+    url="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#cp22-never-call-unknown-code-while-holding-a-lock-eg-a-callback"
+  />
+  <ReferenceItem
+    :id="7"
+    title="Helgrind: a thread error detector"
+    author="valgrind.org"
+    url="https://valgrind.org/docs/manual/hg-manual.html"
+  />
+  <ReferenceItem
+    :id="8"
+    title="ThreadSanitizerCppManual"
+    author="google/sanitizers wiki"
+    url="https://github.com/google/sanitizers/wiki/ThreadSanitizerCppManual"
+  />
+  <ReferenceItem
+    :id="9"
+    title="Coffman, Elphick, Shoshani: System Deadlocks, ACM Computing Surveys, 1971"
+    :year="1971"
+    url="https://doi.org/10.1145/356586.356588"
+  />
+  <ReferenceItem
+    :id="10"
+    title="Williams, *C++ Concurrency in Action*, 2nd ed, Manning, 2019"
+    :year="2019"
+    url="https://www.manning.com/books/c-plus-plus-concurrency-in-action-second-edition"
+  />
+</ReferenceCard>

@@ -6,7 +6,7 @@ description: 通过 Channel 或 Actor 模式实践消息传递并发，掌握 CS
 difficulty: advanced
 order: 6
 prerequisites:
-- '卷五 ch07: Actor 与 Channel'
+- '卷五 第 7 章: Actor 与 Channel'
 - 'Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives'
 - 'Lab 4: Coroutine Scheduler and Event Loop'
 reading_time_minutes: 10
@@ -29,8 +29,8 @@ title: 'Lab 5: Channel or Actor Runtime'
 
 在开始之前，确保你已经读完以下章节：
 
-- **ch07-01**：Actor 模型与消息传递 — Actor 模型的基本概念和实现
-- **ch07-02**：Channel 与 CSP 模型 — CSP 通信顺序进程、Go-style channel
+- **第 7 章第 01 篇**：Actor 模型与消息传递 — Actor 模型的基本概念和实现
+- **第 7 章第 02 篇**：Channel 与 CSP 模型 — CSP 通信顺序进程、Go-style channel
 
 ## 环境准备
 

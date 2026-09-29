@@ -25,7 +25,3 @@ target_link_libraries(check_then_act PRIVATE Threads::Threads)
 
 add_executable(deadlock_reorder 04_deadlock_reorder.cpp)
 target_link_libraries(deadlock_reorder PRIVATE Threads::Threads)
-
-# ch00/03 OS 线程与开销：空线程创建成本基准
-add_executable(os_threads_and_cost 03_os_threads_and_cost.cpp)
-target_link_libraries(os_threads_and_cost PRIVATE Threads::Threads)

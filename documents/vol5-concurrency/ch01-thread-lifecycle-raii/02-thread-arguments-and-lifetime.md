@@ -24,8 +24,6 @@ related:
 
 [上一篇](./01-std-thread.md) 里咱们把 `std::thread` 的启动、join、detach 操练了一遍，文末还留了一个念想：detach 出去的线程到底能闯多大的祸。动身之前咱们得补一块地基：写 `std::thread t(f, x)` 的时候，那个 `x` 是怎么到新线程手里的？是别名还是副本？为什么有的参数要包一层 `std::ref`，`unique_ptr` 传进去编译器又为什么直接拒绝？这些疑问的背后站着同一个机制，它的名字叫 decay-copy（退化拷贝）。
 
-咱们头一件要做的，是把 decay-copy 的机制看明白，往后的线程池、协程、Actor，传参都以这一篇讲的为准。机制清楚了，咱们再处理真正要命的事，也就是对象的生命周期：detach 一旦用错了，线程手里的引用会指向已经死掉的对象。要抓 detach 惹出的悬垂，咱们得请一件新工具，[data race 那篇](../ch00-concurrency-fundamentals/02-data-race-and-tsan.md) 结尾已经替咱们约好了它，您在本篇就会见到它。
-
 ## 参数去哪了：每个参数都被拷了一份
 
 咱们从一个最直白的愿望开始：主线程里有一个 `int` 型的 `value`，咱们想让线程函数把它改成 42。这段代码在您眼里毫无毛病：
@@ -99,7 +97,9 @@ int main()
 
 cppreference 的 Notes 对此有一句直接的指示：`If a reference argument needs to be passed to the thread function, it has to be wrapped (e.g., with std::ref or std::cref).` 咱们把机关找出来了，它就藏在 `reference_wrapper` 的身上：`std::ref(message)` 造出的是一个值语义的小对象，decay 剥不掉它的外壳，拷贝它拷的只是包装器，而 INVOKE 调用时又把它解包回了 `std::string&`。于是副本安全地到了新线程，解包之后指向的还是 `main` 里的 `message`，线程里改到的才是原件。
 
-可天下没有白给的共享。`std::ref` 打破隔离默认的那一刻起，被引用对象的生命周期就成了您自己的责任：而线程还在跑，`message` 却提前死掉了怎么办？上面的例子靠的是 `join()` 兜底，join 还没返回的时候，`message` 一定还活得好好的。您要是把 join 换成 detach，事故就进门了。这件事咱们记下来，等传参的正路讲完，咱们回头就处理它。
+可天下没有白给的共享。`std::ref` 打破隔离默认的那一刻起，被引用对象的生命周期就成了您自己的责任：而线程还在跑，`message` 却提前死掉了怎么办？上面的例子靠的是 `join()` 兜底，join 还没返回的时候，`message` 一定还活得好好的。
+
+> 目前为止，还犯不着用这样的方式非要绕过去，除非您完全清晰的可控对象生命周期！而且，几乎没有场景我们真的需要拷贝引用，大家基本上都是传递各种语义的指针的！
 
 ## move-only 参数：把所有权移进线程
 
@@ -212,21 +212,81 @@ echo "exit=$?"
 
 ASan 的报告长篇大论，可它的结构就只有三层，咱们拿三行就能读懂一份：
 
+笔者实测：WSL2 Arch Linux、内核 6.18、g++ 16.2.1、AMD Ryzen 7 9700X。真实报告原文如下（地址与 pid 每次运行都会变，这份是其中一次）：
+
 ```text
-==ERROR: AddressSanitizer: stack-use-after-return
-READ of size 4 at ... thread T1
-    #0 ... operator()(...) dangling.cpp:12
-...
-[nd, nn) 'local_value' (line 8)
-...
+$ ./dangling_asan
+=================================================================
+==207444==ERROR: AddressSanitizer: stack-use-after-return on address 0x7176073f01b0 at pc 0x562d25a68b39 bp 0x7176065feb60 sp 0x7176065feb50
+READ of size 4 at 0x7176073f01b0 thread T1
+    #0 0x562d25a68b38 in operator() /tmp/vol5-exp/ch01b/dangling.cpp:293
+    #1 0x562d25a6dc95 in __invoke_impl<void, (anonymous namespace)::faulty_function()::<lambda()> > /usr/include/c++/16/bits/invoke.h:63
+    #2 0x562d25a6d957 in __invoke<(anonymous namespace)::faulty_function()::<lambda()> > /usr/include/c++/16/bits/invoke.h:98
+    #3 0x562d25a6d6d1 in _M_invoke<0> /usr/include/c++/16/bits/std_thread.h:303
+    #4 0x562d25a6d55d in operator() /usr/include/c++/16/bits/std_thread.h:310
+    #5 0x562d25a6d40d in _M_run /usr/include/c++/16/bits/std_thread.h:255
+    #6 0x757609aea858  (/usr/lib/libstdc++.so.6+0xea858) (BuildId: 5b8d3de442de987b24d0e3679533068f2ae62497)
+    #7 0x757609e61858  (/usr/lib/libasan.so.8+0x61858) (BuildId: b8a4241051a1621937fdc46e867ba7ecb56d96ea)
+    #8 0x7576096980a1  (/usr/lib/libc.so.6+0x980a1) (BuildId: 503200d7fda94a5dc6058d7e0694e5d1dcb2e372)
+    #9 0x75760972080b  (/usr/lib/libc.so.6+0x12080b) (BuildId: 503200d7fda94a5dc6058d7e0694e5d1dcb2e372)
+
+Address 0x7176073f01b0 is located in stack of thread T0 at offset 48 in frame
+    #0 0x562d25a68bce in faulty_function /tmp/vol5-exp/ch01b/dangling.cpp:287
+
+  This frame has 3 object(s):
+    [48, 52) 'local_value' (line 289) <== Memory access at offset 48 is inside this variable
+    [64, 72) 't' (line 291)
+    [96, 104) '<unknown>'
+HINT: this may be a false positive if your program uses some custom stack unwind mechanism, swapcontext or vfork
+      (longjmp and C++ exceptions *are* supported)
+SUMMARY: AddressSanitizer: stack-use-after-return /tmp/vol5-exp/ch01b/dangling.cpp:293 in operator()
+Shadow bytes around the buggy address:
+  0x7176073eff00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x7176073eff80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x7176073f0000: f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f3 f3 f3 f3
+  0x7176073f0080: f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f3 f3 f3 f3
+  0x7176073f0100: f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f3 f3 f3 f3
+=>0x7176073f0180: f5 f5 f5 f5 f5 f5[f5]f5 f5 f5 f5 f5 f5 f5 f5 f5
+  0x7176073f0200: f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f3 f3 f3 f3
+  0x7176073f0280: f1 f1 f1 f1 f1 f1 f8 f2 f8 f2 f2 f2 00 00 f3 f3
+  0x7176073f0300: f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f3 f3 f3 f3
+  0x7176073f0380: f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f3 f3 f3 f3
+  0x7176073f0400: f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f3 f3 f3 f3
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
 Thread T1 created by T0 here:
-    #0 ... std::thread::_M_start_thread
-...
-ABORTING
-<!-- 实验回填：完整报告原文、真实的地址/偏移/线程号与退出码 -->
+    #0 0x757609f226f4 in pthread_create (/usr/lib/libasan.so.8+0x1226f4) (BuildId: b8a4241051a1621937fdc46e867ba7ecb56d96ea)
+    #1 0x757609aea961 in std::thread::_M_start_thread(std::unique_ptr<std::thread::_State, std::default_delete<std::thread::_State> >, void (*)()) (/usr/lib/libstdc++.so.6+0xea961) (BuildId: 5b8d3de442de987b24d0e3679533068f2ae62497)
+    #2 0x562d25a6af4a in thread<(anonymous namespace)::faulty_function()::<lambda()> > /usr/include/c++/16/bits/std_thread.h:175
+    #3 0x562d25a68cd4 in faulty_function /tmp/vol5-exp/ch01b/dangling.cpp:294
+    #4 0x562d25a697e3 in main /tmp/vol5-exp/ch01b/dangling.cpp:352
+    #5 0x757609627780  (/usr/lib/libc.so.6+0x27780) (BuildId: 503200d7fda94a5dc6058d7e0694e5d1dcb2e372)
+    #6 0x7576096278b8 in __libc_start_main (/usr/lib/libc.so.6+0x278b8) (BuildId: 503200d7fda94a5dc6058d7e0694e5d1dcb2e372)
+    #7 0x562d25a65304 in _start (/tmp/vol5-exp/ch01b/dangling_asan+0x9304) (BuildId: 4083dec8575473efa26614d638805f9aeeb908d3)
+
+==207444==ABORTING
+exit=1
 ```
 
-三行各自的职责都很分明，咱们一行行看。ERROR 行报的是错的种类：stack-use-after-return，栈上的对象在函数返回之后又被访问。第二段的 frame objects 直接点出了事的栈对象，`[nd, nn) 'local_value' (line 8)` 说的就是那块栈内存的地址区间，外加它的名字和它原来住在哪一行。第三段 created by 记下了线程的出生地：T1 是 T0 在 `_M_start_thread` 里创建的，创建时的调用栈就在报告里。哪个对象出了错、错在哪次访问、线程又是谁创建的，一份报告全交代了。进程在头一个错误处就停了，退出码给的是 1，ASan 的文档对此有一句原话：`AddressSanitizer exits on the first detected error. This is by design.`
+
+三行各自的职责都很分明，咱们一行行看。ERROR 行报的是错的种类：stack-use-after-return，栈上的对象在函数返回之后又被访问。第二段 `This frame has 3 object(s)` 直接点出了事的栈帧里住着谁，`[48, 52) 'local_value' (line 289)` 说的就是那块栈内存的地址区间，外加它的名字和它原来住在哪一行（行号对到仓库源文件 `02_thread_arguments_and_lifetime.cpp` 上就是 289）。第三段 created by 记下了线程的出生地：T1 是 T0 在 `_M_start_thread` 里创建的，创建时的调用栈就在报告里。哪个对象出了错、错在哪次访问、线程又是谁创建的，一份报告全交代了。进程在头一个错误处就停了，退出码给的是 1，ASan 的文档对此有一句原话：`AddressSanitizer exits on the first detected error. This is by design.`
 
 有两个名字值得咱们当场分清。您可能在别处见过 use-after-scope（对象的作用域结束了还被访问），而它跟 use-after-return 是一对兄弟，本例里的函数已经返回，所以报告写的是后者。GCC 的 `-fsanitize=address` 默认把两类都管上了，咱们不用背旗标细节，认得报告里的名字就行。
 
@@ -234,11 +294,11 @@ ABORTING
 
 TSan 的课咱们上过了，ASan 也见了真身，咱们把两件工具合在一张表里，各自的辖区就清楚了：
 
-| 工具 | 编译旗标 | 管什么 | 不管什么 |
-|---|---|---|---|
-| ASan | `-fsanitize=address -g` | 内存错：越界、use-after-free、use-after-return、use-after-scope、double-free、泄漏（LSan 一体） | data race、逻辑错 |
-| TSan | `-fsanitize=thread -g -O2` | data race、锁序反转（预警，ch02 详讲） | 内存错（悬垂它不吭声）、已成真的死锁（不报，程序只挂住） |
-| UBSan | `-fsanitize=undefined` | 未定义行为：溢出、空指针解引用一类 | race、堆悬垂 |
+| 工具  | 编译旗标                   | 管什么                                                                                          | 不管什么                                                 |
+| ----- | -------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| ASan  | `-fsanitize=address -g`    | 内存错：越界、use-after-free、use-after-return、use-after-scope、double-free、泄漏（LSan 一体） | data race、逻辑错                                        |
+| TSan  | `-fsanitize=thread -g -O2` | data race、锁序反转（预警，第 2 章 详讲）                                                       | 内存错（悬垂它不吭声）、已成真的死锁（不报，程序只挂住） |
+| UBSan | `-fsanitize=undefined`     | 未定义行为：溢出、空指针解引用一类                                                              | race、堆悬垂                                             |
 
 UBSan 咱们一句带过，本卷的排错主力是前两位。
 
@@ -246,9 +306,28 @@ UBSan 咱们一句带过，本卷的排错主力是前两位。
 
 真正有记忆点的读法，是咱们把同一份代码分别用两套工具各跑一遍：悬垂的代码在 ASan 底下吼声震天，您刚刚看过，而它跑到 TSan 底下就一声不吭了，因为悬垂不在它的辖区里。反过来咱们再看看，[data race 那篇](../ch00-concurrency-fundamentals/02-data-race-and-tsan.md) 的计数器例子在 TSan 底下吼，在 ASan 底下倒是静悄悄的。工具没吭声的时候，不代表您的代码没问题：您的程序过了 TSan 不代表没有悬垂，过了 ASan 也不代表您就没有 race。
 
-<!-- 实验回填：悬垂例的 TSan 版运行记录（预期安静），与 ch00/02 race 例的 ASan 版对照 -->
+笔者实测：WSL2 Arch Linux、内核 6.18、g++ 16.2.1、AMD Ryzen 7 9700X。同一份悬垂代码换成 TSan 镜头（`g++ -std=c++20 -fsanitize=thread -g -O2 -pthread dangling.cpp -o dangling_tsan && ./dangling_tsan dangling`），它一声不吭：
 
-开销的代价也得报给您。ASan 文档的口径是 `Typical slowdown introduced by AddressSanitizer is 2x.`，内存的占用还要涨得更多。所以它并不适合常驻在生产环境里，不过它在测试与排错里，用两倍上下的慢换一份逐字节的明察，这个代价咱们可以接受。真在乎细节的实测数字，咱们留到实验回填统一补上。
+```text
+$ ./dangling_tsan dangling
+Value: 42
+main done
+$ echo "exit=$?"
+exit=0
+```
+
+反过来，[第 0 章的 race 例子](../ch00-concurrency-fundamentals/02-data-race-and-tsan.md)（仓库文件 `01_data_race.cpp`）换成 ASan 镜头跑，同样一声不吭，退出码 0，只把错误的计数器结果原样吐出来：
+
+```text
+$ g++ -std=c++20 -fsanitize=address -g -pthread race.cpp -o race_asan && ./race_asan
+counter = 168256
+$ echo "exit=$?"
+exit=0
+```
+
+（`counter` 的具体值每次运行都不一样，这不是笔误，正是 race 本身。）两份安静加一份吼声，分工表的辖区划分就这么落了地。
+
+开销的代价也得报给您。ASan 文档的口径是 `Typical slowdown introduced by AddressSanitizer is 2x.`，内存的占用还要涨得更多。所以它并不适合常驻在生产环境里，不过它在测试与排错里，用两倍上下的慢换一份逐字节的明察，这个代价咱们可以接受。真在乎数字，笔者在 ch00 的 race 例子上各跑三遍做了个小对拍：普通版（`-O2`）单次约 2.5 到 3.0 毫秒，ASan 版约 7.4 到 7.9 毫秒，慢了 2.7 倍上下，跟文档的口径对得上。
 
 ## this 也会悬垂：对象没能活过线程
 
@@ -396,7 +475,7 @@ private:
 
 咱们把收场走一遍：析构的时候 `stop()` 写入 false，`running_` 析构、计数从 2 降到了 1，可堆上的 `atomic<bool>` 还活得好好的，因为线程闭包里的 `shared_ptr` 还攥着最后一个引用。线程一旦看见了 false，就退出了循环，闭包也跟着销毁了，计数也就归零了，`atomic<bool>` 到了现在才被释放。数据活过了线程，一切都在按部就班地进行。
 
-有一句注脚咱们必须配在这里。`shared_ptr` 控制块里的引用计数，增减是原子的，多个线程各持一份拷贝、各自析构的时候，计数就不会乱了，cppreference 的注脚大意就是控制块线程安全。不过这样的安全只罩得住计数，而罩不住被指对象的内容：两个线程各拿一份 `shared_ptr<vector<int>>`、并发去读写同一个 vector 的时候，那照样就是 data race 了。生命周期的事情归 `shared_ptr` 管，内容的同步还得咱们自己想办法，[ch03](../ch03-atomic-memory-model/02-atomics-and-happens-before.md) 那边接着跟您细说。
+有一句注脚咱们必须配在这里。`shared_ptr` 控制块里的引用计数，增减是原子的，多个线程各持一份拷贝、各自析构的时候，计数就不会乱了，cppreference 的注脚大意就是控制块线程安全。不过这样的安全只罩得住计数，而罩不住被指对象的内容：两个线程各拿一份 `shared_ptr<vector<int>>`、并发去读写同一个 vector 的时候，那照样就是 data race 了。生命周期的事情归 `shared_ptr` 管，内容的同步还得咱们自己想办法，[第 3 章](../ch03-atomic-memory-model/02-atomics-and-happens-before.md) 那边接着跟您细说。
 
 ### 修法三：不 detach，join 收尾
 
@@ -481,11 +560,52 @@ private:
 
 ## 参考资源
 
-- [std::thread constructor -- cppreference](https://en.cppreference.com/w/cpp/thread/thread/thread)
-- [std::ref, std::cref -- cppreference](https://en.cppreference.com/w/cpp/utility/functional/ref)
-- [AddressSanitizer -- Clang Compiler 文档](https://clang.llvm.org/docs/AddressSanitizer.html)
-- [GCC Instrumentation Options](https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html) —— sanitizer 互斥条款的出处
-- [P0806R2: Deprecate implicit capture of this via [=]](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0806r2.html)
-- [C++ Core Guidelines CP.24: Think of a thread as a global container](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#cp24-think-of-a-thread-as-a-global-container)
-- [C++ Core Guidelines CP.26: Don't detach() a thread](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#cp26-dont-detach-a-thread)
-- [Williams, *C++ Concurrency in Action*, 2nd ed, Manning, 2019](https://www.manning.com/books/c-plus-plus-concurrency-in-action-second-edition)
+<ReferenceCard title="参考文献">
+  <ReferenceItem
+    :id="1"
+    title="std::thread constructor"
+    author="cppreference"
+    url="https://en.cppreference.com/w/cpp/thread/thread/thread"
+  />
+  <ReferenceItem
+    :id="2"
+    title="std::ref, std::cref"
+    author="cppreference"
+    url="https://en.cppreference.com/w/cpp/utility/functional/ref"
+  />
+  <ReferenceItem
+    :id="3"
+    title="AddressSanitizer"
+    author="Clang Compiler 文档"
+    url="https://clang.llvm.org/docs/AddressSanitizer.html"
+  />
+  <ReferenceItem
+    :id="4"
+    title="GCC Instrumentation Options"
+    url="https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html"
+    chapter="sanitizer 互斥条款的出处"
+  />
+  <ReferenceItem
+    :id="5"
+    title="P0806R2: Deprecate implicit capture of this via [=]"
+    url="https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0806r2.html"
+    author="WG21"
+    :year="2018"
+  />
+  <ReferenceItem
+    :id="6"
+    title="C++ Core Guidelines CP.24: Think of a thread as a global container"
+    url="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#cp24-think-of-a-thread-as-a-global-container"
+  />
+  <ReferenceItem
+    :id="7"
+    title="C++ Core Guidelines CP.26: Don't detach() a thread"
+    url="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#cp26-dont-detach-a-thread"
+  />
+  <ReferenceItem
+    :id="8"
+    title="Williams, *C++ Concurrency in Action*, 2nd ed, Manning, 2019"
+    :year="2019"
+    url="https://www.manning.com/books/c-plus-plus-concurrency-in-action-second-edition"
+  />
+</ReferenceCard>

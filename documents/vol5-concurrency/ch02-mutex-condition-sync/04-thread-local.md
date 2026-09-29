@@ -2,7 +2,7 @@
 title: "thread_local：每线程一份的世界"
 description: "把共享变量变成每线程一份：初始化的翻译单元粒度、析构的逆序时点、三种声明位置，以及什么时候不该用它"
 chapter: 2
-order: 2
+order: 4
 tags:
   - host
   - cpp-modern
@@ -55,17 +55,15 @@ t1.join();
 t2.join();
 ```
 
-下面的输出是咱们在 GCC 16.2.1（x86-64 Linux）上跑出来的，地址的值在每次运行里都会变：
+咱们把程序跑起来看输出，地址的值在每次运行、每台机器上都不同，要看的不是数值本身：
 
-```text
-t1: counter=1，地址 0x7644525ff6a4
-t1: counter=2，地址 0x7644525ff6a4
-t1: counter=3，地址 0x7644525ff6a4
-t2: counter=1，地址 0x764451dfe6a4
-t2: counter=2，地址 0x764451dfe6a4
-t2: counter=3，地址 0x764451dfe6a4
-main: counter=0，地址 0x764452d4c764
-```
+<OnlineCompilerDemo
+  title="动手验证：thread_local 让每个线程数自己的数"
+  source-path="code/examples/vol5/30_thread_local_counter.cpp"
+  description="t1 与 t2 各自数到 3，main 的 counter 始终是 0。地址的十六进制数值每次运行都不同，看的是两点：同一线程三次的地址不变，两个线程的地址互不相同。"
+  run-options="-O2 -std=c++17 -pthread"
+  allow-run
+/>
 
 咱们把输出并排读一遍：三个执行流拿到了三段不同的地址，main 里的 `counter` 自始至终都是 0。t1 与 t2 求值的是同一个名字，拿到的却是不同的对象，这就是线程存储期（thread storage duration）的含义，名字只有一个、实例的生死跟着各自的线程走。
 
@@ -104,20 +102,13 @@ void scenario_init_granularity()
 
 按照不少资料的讲法，`thread_local` 变量在每个线程里只构造第一次用到的对象，没有用到的对象不会有任何动静。照这样的预期，main 只碰了 `probe_c`，另外的两个探针就不该出场。可咱们实际跑出来的输出是：
 
-```text
-main 只碰 probe_c：
-    ctor a
-    ctor b
-    ctor c
-worker 只碰 probe_a：
-    ctor a
-    ctor b
-    ctor c
-    dtor c
-    dtor b
-    dtor a
-join 已返回
-```
+<OnlineCompilerDemo
+  title="动手验证：只碰一个探针，三个构造函数一起跑"
+  source-path="code/examples/vol5/31_tls_init_granularity.cpp"
+  description="main 只碰 probe_c，ctor a、b、c 却一起出场；worker 同样如此，且它的三个 dtor 都跑在 join 返回之前。join 已返回之后还有 main 线程自己的 dtor c、b、a 三行，那是进程收尾时 main 的三个探针在析构。"
+  run-options="-O2 -std=c++17 -pthread"
+  allow-run
+/>
 
 main 只碰了 `probe_c`，三个构造函数却一起跑了。worker 只碰了 `probe_a`，结局也是一样的。请您再留意 join 的位置，worker 的三个析构函数在它返回之前就全部跑完了。构造怎么一起跑、析构什么时候来，咱们顺着这两件事往下看。
 
@@ -199,10 +190,13 @@ int main()
 
 咱们拿到的输出到第二行就结束了：
 
-```text
-ctor worker_tag
-main: 还没等 worker 醒，直接 std::exit
-```
+<OnlineCompilerDemo
+  title="动手验证：std::exit 时 worker 的 thread_local 不析构"
+  source-path="code/examples/vol5/32_exit_skips_worker_tls_dtor.cpp"
+  description="只有 ctor worker_tag 与 main 的告别两行，找不到 dtor worker_tag：worker 的对象构造了，析构无声缺席。进程约 0.2 秒就退出，不会等 worker 睡满 5 秒。"
+  run-options="-O2 -std=c++17 -pthread"
+  allow-run
+/>
 
 输出里找不到 `dtor worker_tag` 的行：worker 的对象构造了，析构却无声无息地缺席了。把刷新日志缓冲、回写文件一类的事情放进 `thread_local` 析构的代码，在别的线程更早调用 `exit` 的情况下会无声地丢数据。想在长命的后台线程上依赖析构的副作用，请您三思。
 
@@ -277,22 +271,13 @@ int next_id()
 
 咱们连续调用三次 `next_id`，再看程序的收尾部分，输出的内容是：
 
-```text
-    第 1 次尝试构造
-    捕获：还没准备好
-  第 1 次调用 -> -1
-    第 2 次尝试构造
-    捕获：还没准备好
-  第 2 次调用 -> -1
-    第 3 次尝试构造
-  第 3 次调用 -> 3
-
-main 返回：main 线程的三个探针在此之后析构
-    dtor：成功构造过，退出线程时析构
-    dtor c
-    dtor b
-    dtor a
-```
+<OnlineCompilerDemo
+  title="动手验证：块作用域 thread_local 构造失败后重试"
+  source-path="code/examples/vol5/33_block_tls_flaky_retry.cpp"
+  description="前两次尝试构造抛异常、调用返回 -1，第三次构造成功后第 3 次调用返回 3；main 返回之后 Flaky 的 dtor 先出场，排在三个探针的 dtor c、b、a 之前——块作用域对象构造得更晚，析构反而更早。"
+  run-options="-O2 -std=c++17 -pthread"
+  allow-run
+/>
 
 咱们把三次调用读一遍：构造抛了异常的对象不算初始化完成，控制流下一次经过声明的位置会再试一次，第三次成功了之后，析构的注册才算完成。咱们换一个线程来跑，语义原样地成立，每个线程各走各的第一次。块作用域因此是真正的按变量懒构造，想要省下确定用不到的构造开销，合适的位置就在这里。每线程的随机数引擎是这里的常客：
 
@@ -351,7 +336,7 @@ void handle()
 
 两个版本咱们都能跑通，区别在读代码的人需要知道多少。显式版本的调用链上，数据流是可见的，单测直接把构造好的 `LogCtx` 传进去就能跑。隐式版本省掉了层层传参的样板，可 `handle` 的行为多了一个看不见的输入，单测必须提前布置好全局的状态。您工程里的选择标准就在这里：需要调用方感知的上下文走参数的路线，纯粹属于内部实现的上下文，才值得咱们把 `thread_local` 请出来。
 
-咱们还会在 [死锁与 gdb](./03-deadlock-and-gdb.md) 里再见到它的一个正当场景：层级锁。按锁的等级组织获取顺序来预防死锁，它需要知道当前线程持有了哪些锁，这样的集合天然是每线程一份的，`thread_local` 咱们正好用它承接，等级的制定、方案的落地，咱们留到那一篇里完整展开。
+它的一个正当场景您已经见过了：[死锁与 gdb](./02-deadlock-and-gdb.md) 的层级锁，拿它记录每个线程当前持到哪一级了。按锁的等级组织获取顺序来预防死锁，它需要知道当前线程持有了哪些锁，这样的集合天然是每线程一份的，`thread_local` 咱们正好用它承接，等级的制定、方案的落地，咱们留到那一篇里完整展开。
 
 ## 练习：轮到您动手了
 
@@ -361,15 +346,47 @@ void handle()
 
 ## 下一步
 
-每线程一份的状态，紧接着就有一个正当的去处：[死锁与 gdb](./03-deadlock-and-gdb.md) 的层级锁，要拿它记录每个线程当前持到哪一级了。同步的另一半是等待与通知，谓词等待的纪律，在 [condition_variable 与阻塞队列](./04-condition-variable-and-bounded-queue.md)里立了起来。线程入口只需要跑一次的初始化需求，对应的工具是 `std::call_once` 与 `std::once_flag`，完整的用法在 [同步原语工具箱](./05-sync-primitives-toolkit.md)。线程之间要传递的东西一旦超出标记与计数，内存序的正式规则，就在 [原子操作与 happens-before](../ch03-atomic-memory-model/02-atomics-and-happens-before.md) 里等着您。
+每线程一份的状态，正当的去处咱们已经见过一处：[死锁与 gdb](./02-deadlock-and-gdb.md) 的层级锁，拿它记录每个线程当前持到哪一级了。同步的另一半是等待与通知，谓词等待的纪律，在 [condition_variable 与阻塞队列](./05-condition-variable-and-bounded-queue.md)里立了起来。线程入口只需要跑一次的初始化需求，对应的工具是 `std::call_once` 与 `std::once_flag`，完整的用法在 [同步原语工具箱](./06-sync-primitives-toolkit.md)。线程之间要传递的东西一旦超出标记与计数，内存序的正式规则，就在 [原子操作与 happens-before](../ch03-atomic-memory-model/02-atomics-and-happens-before.md) 里等着您。
 
 > 💡 咱们把完整示例代码放在 [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)，您可以访问 `code/volumn_codes/vol5/ch02-mutex-condition-sync/`。
 
 ## 参考资源
 
-- [Storage class specifiers -- cppreference](https://en.cppreference.com/w/cpp/language/storage_duration)
-- [Initialization -- cppreference](https://en.cppreference.com/w/cpp/language/initialization)
-- [basic.start.dynamic -- C++ Working Draft（eel.is 镜像）](https://eel.is/c++draft/basic.start.dynamic)
-- [basic.start.term -- C++ Working Draft（eel.is 镜像）](https://eel.is/c++draft/basic.start.term)
-- [TLS -- GCC Wiki](https://gcc.gnu.org/wiki/TLS)
-- [Williams, *C++ Concurrency in Action*, 2nd ed, Manning, 2019](https://www.manning.com/books/c-plus-plus-concurrency-in-action-second-edition)
+<ReferenceCard title="参考文献">
+  <ReferenceItem
+    :id="1"
+    title="Storage class specifiers"
+    author="cppreference"
+    url="https://en.cppreference.com/w/cpp/language/storage_duration"
+  />
+  <ReferenceItem
+    :id="2"
+    title="Initialization"
+    author="cppreference"
+    url="https://en.cppreference.com/w/cpp/language/initialization"
+  />
+  <ReferenceItem
+    :id="3"
+    title="basic.start.dynamic"
+    author="C++ Working Draft（eel.is 镜像）"
+    url="https://eel.is/c++draft/basic.start.dynamic"
+  />
+  <ReferenceItem
+    :id="4"
+    title="basic.start.term"
+    author="C++ Working Draft（eel.is 镜像）"
+    url="https://eel.is/c++draft/basic.start.term"
+  />
+  <ReferenceItem
+    :id="5"
+    title="TLS"
+    author="GCC Wiki"
+    url="https://gcc.gnu.org/wiki/TLS"
+  />
+  <ReferenceItem
+    :id="6"
+    title="Williams, *C++ Concurrency in Action*, 2nd ed, Manning, 2019"
+    :year="2019"
+    url="https://www.manning.com/books/c-plus-plus-concurrency-in-action-second-edition"
+  />
+</ReferenceCard>

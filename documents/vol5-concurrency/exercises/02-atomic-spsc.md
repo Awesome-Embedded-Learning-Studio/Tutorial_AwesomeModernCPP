@@ -7,7 +7,7 @@ description: 通过原子计数器和单生产者单消费者环形缓冲区，�
 difficulty: intermediate
 order: 2
 prerequisites:
-- '卷五 ch03: 原子操作与内存模型'
+- '卷五 第 3 章: 原子操作与内存模型'
 - 'Lab 0: Thread Lifecycle Lab'
 reading_time_minutes: 14
 tags:
@@ -30,11 +30,11 @@ Lab 1 全程在用 mutex 和 condition_variable——加锁、等待、唤醒，
 
 在开始之前，确保你已经读完以下章节：
 
-- **ch03-01**：atomic 操作 — `atomic<T>`、`load`/`store`/`fetch_add`、is_lock_free
-- **ch03-02**：内存序详解 — relaxed、acquire-release、seq_cst 的语义和开销
-- **ch03-03**：memory_order_fence 与屏障 — 显式 fence 的使用场景
-- **ch03-04**：atomic wait 与引用语义 — `wait`/`notify_one`/`notify_all`
-- **ch03-05**：原子操作模式 — 常见的 atomic 使用模式
+- **第 3 章第 01 篇**：atomic 操作 — `atomic<T>`、`load`/`store`/`fetch_add`、is_lock_free
+- **第 3 章第 02 篇**：内存序详解 — relaxed、acquire-release、seq_cst 的语义和开销
+- **第 3 章第 03 篇**：memory_order_fence 与屏障 — 显式 fence 的使用场景
+- **第 3 章第 04 篇**：atomic wait 与引用语义 — `wait`/`notify_one`/`notify_all`
+- **第 3 章第 05 篇**：原子操作模式 — 常见的 atomic 使用模式
 
 这个 Lab 不依赖 Lab 1 的组件，但建议先完成 Lab 1 以便理解 mutex 方案的基准对比。
 
@@ -335,7 +335,7 @@ TEST_CASE("Milestone 3: acquire-release SPSC correctness",
 
 ### 为什么
 
-ch00-03 讲过 false sharing：两个原子变量如果恰好在同一个 cache line（通常 64 字节）上，一个线程修改变量 A 会让另一个线程的变量 B 所在的 cache line 失效，即使 B 根本没被修改。在 SPSC 场景中，`head_` 和 `tail_` 被不同线程高频修改——如果它们在同一个 cache line 上，每次修改都会导致对方的 cache miss，性能可能下降数倍。
+第 0 章第 03 篇 讲过 false sharing：两个原子变量如果恰好在同一个 cache line（通常 64 字节）上，一个线程修改变量 A 会让另一个线程的变量 B 所在的 cache line 失效，即使 B 根本没被修改。在 SPSC 场景中，`head_` 和 `tail_` 被不同线程高频修改——如果它们在同一个 cache line 上，每次修改都会导致对方的 cache miss，性能可能下降数倍。
 
 ### 实现指引
 

@@ -13,8 +13,8 @@ platform: host
 reading_time_minutes: 25
 cpp_standard: [17]
 prerequisites:
-  - "卷五 ch00: 并发思维与基础"
-  - "卷五 ch01: 线程生命周期与 RAII"
+  - "卷五 第 0 章: 并发思维与基础"
+  - "卷五 第 1 章: 线程生命周期与 RAII"
 related:
   - "并发基本问题"
   - "std::thread 基础"
@@ -27,7 +27,7 @@ related:
 
 ## 目标
 
-读完了 ch01 的四篇文章，我们现在已经知道 `std::thread` 怎么创建、参数怎么传、`JoiningThread` 怎么写、`thread_local` 怎么用。但"知道"和"写过"之间的距离，说实话，比很多朋友想象的要大。一个很典型的经历是：你看了 RAII 包装的代码觉得"这我懂了"，然后自己写一个多线程程序，一跑 TSan 就发现 data race 满天飞，或者某个异常路径把线程给忘了。
+读完了 第 1 章 的四篇文章，我们现在已经知道 `std::thread` 怎么创建、参数怎么传、`JoiningThread` 怎么写、`thread_local` 怎么用。但"知道"和"写过"之间的距离，说实话，比很多朋友想象的要大。一个很典型的经历是：你看了 RAII 包装的代码觉得"这我懂了"，然后自己写一个多线程程序，一跑 TSan 就发现 data race 满天飞，或者某个异常路径把线程给忘了。
 
 这个 Lab 的目标很直白：我们要写一个**并行文件扫描器**——主线程把一个目录下的文件分片，分发给 N 个 worker 线程去扫描，每个 worker 统计自己负责的文件信息（大小、扩展名分布），最后主线程汇总。项目不大，但它会逼你直面四个核心问题：怎么创建和管理多个线程、怎么用 RAII 保证异常路径不泄漏线程、怎么安全地给线程传参数、怎么用线程局部统计做无竞争的汇总。
 
@@ -37,13 +37,13 @@ related:
 
 开始前确保你读完以下章节：
 
-- **ch00-01** 为什么需要并发 — 并发 vs 并行、Amdahl 定律
-- **ch00-02** 并发基本问题 — data race、race condition、死锁
-- **ch00-03** CPU cache 与 OS 线程 — cache line、false sharing
-- **ch01-01** std::thread 基础 — 创建、join/detach、hardware_concurrency
-- **ch01-02** 线程参数与生命周期 — decay-copy、悬空引用、move-only
-- **ch01-03** 线程所有权与 RAII — thread_guard、joining_thread、异常安全
-- **ch01-04** thread_local 与 call_once — 线程局部存储
+- **第 0 章第 01 篇** 为什么需要并发 — 并发 vs 并行、Amdahl 定律
+- **第 0 章第 02 篇** 并发基本问题 — data race、race condition、死锁
+- **第 0 章第 03 篇** CPU cache 与 OS 线程 — cache line、false sharing
+- **第 1 章第 01 篇** std::thread 基础 — 创建、join/detach、hardware_concurrency
+- **第 1 章第 02 篇** 线程参数与生命周期 — decay-copy、悬空引用、move-only
+- **第 1 章第 03 篇** 线程所有权与 RAII — thread_guard、joining_thread、异常安全
+- **第 1 章第 04 篇** thread_local 与 call_once — 线程局部存储
 
 这个 Lab 没有前置 Lab 依赖。
 
@@ -203,7 +203,7 @@ TEST_CASE("MS1: scan collects all files", "[lab0][milestone1]") {
 
 ### 为什么
 
-Milestone 1 的手工 `join()` 有个明显问题：如果在 join 循环之前某处抛了异常，剩下的线程就成了无主线程，析构时 `std::terminate()`。ch01-03 讲过这个根源和 RAII 的解法，这个 milestone 把它从"理解"推进到"实现并实战使用"。
+Milestone 1 的手工 `join()` 有个明显问题：如果在 join 循环之前某处抛了异常，剩下的线程就成了无主线程，析构时 `std::terminate()`。第 1 章第 03 篇 讲过这个根源和 RAII 的解法，这个 milestone 把它从"理解"推进到"实现并实战使用"。
 
 ### 实现指引
 
@@ -251,7 +251,7 @@ TEST_CASE("MS2: exception path still joins all workers", "[lab0][milestone2]") {
 
 ### 为什么
 
-ch01-02 讲过 `std::thread` 的 decay-copy 语义和引用悬空风险，但小例子里这些问题往往不暴露——因为变量生命周期恰好够长。真实扫描器里情况更复杂：主线程可能在 worker 没跑完就开始清理临时数据，或者 lambda 捕获了局部 `vector` 的引用。这类 bug 开发时可能偶然不触发，高并发压力下才以不可预测的方式出现。
+第 1 章第 02 篇 讲过 `std::thread` 的 decay-copy 语义和引用悬空风险，但小例子里这些问题往往不暴露——因为变量生命周期恰好够长。真实扫描器里情况更复杂：主线程可能在 worker 没跑完就开始清理临时数据，或者 lambda 捕获了局部 `vector` 的引用。这类 bug 开发时可能偶然不触发，高并发压力下才以不可预测的方式出现。
 
 ### 实现指引
 
@@ -365,12 +365,29 @@ TEST_CASE("MS4: multi-threaded stats match single-threaded baseline", "[lab0][mi
 
 - 把扫描结果按扩展名排序输出，练一下对 `unordered_map` 的遍历和排序
 - 加一个 `--recursive=false` 选项，只扫顶层目录（不递归），练接口设计
-- 用 `std::jthread` + `stop_token` 改造 `JoiningThread`，体会 C++20 的协作式取消（这是 ch05 的预告）
+- 用 `std::jthread` + `stop_token` 改造 `JoiningThread`，体会 C++20 的协作式取消（这是 第 5 章 的预告）
 
 这些都不在测试覆盖范围内，做出来你自己爽就行。
 
 ## 参考资源
 
-- [std::thread — cppreference](https://en.cppreference.com/w/cpp/thread/thread)
-- [ThreadSanitizer — Clang 文档](https://clang.llvm.org/docs/ThreadSanitizer.html)
-- [`std::filesystem::recursive_directory_iterator` — cppreference](https://en.cppreference.com/w/cpp/filesystem/recursive_directory_iterator)
+<ReferenceCard title="参考文献">
+  <ReferenceItem
+    :id="1"
+    author="cppreference"
+    title="std::thread"
+    url="https://en.cppreference.com/w/cpp/thread/thread"
+  />
+  <ReferenceItem
+    :id="2"
+    author="Clang 文档"
+    title="ThreadSanitizer"
+    url="https://clang.llvm.org/docs/ThreadSanitizer.html"
+  />
+  <ReferenceItem
+    :id="3"
+    author="cppreference"
+    title="std::filesystem::recursive_directory_iterator"
+    url="https://en.cppreference.com/w/cpp/filesystem/recursive_directory_iterator"
+  />
+</ReferenceCard>

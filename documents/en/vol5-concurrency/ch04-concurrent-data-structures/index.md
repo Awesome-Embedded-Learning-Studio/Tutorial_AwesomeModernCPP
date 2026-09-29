@@ -3,7 +3,7 @@ title: "Concurrent Data Structures"
 description: "From thread-safe queues to concurrent containers: master the design strategies of lock-based concurrent data structures"
 translation:
   source: documents/vol5-concurrency/ch04-concurrent-data-structures/index.md
-  source_hash: a14ec2edba40c33ca7c8caec9a8a57ca94344cbcf67f97eac70d264050d5b7d3
+  source_hash: 6aa5f31faf334fb42dc8a40618b9ebf9bae8d5c4df5e6f4ef83eccd1d310706c
   translated_at: '2026-09-26T08:13:28+00:00'
   engine: anthropic
   token_count: 350
@@ -18,6 +18,7 @@ We'll start with the most practical one, the thread-safe queue — it's the corn
 ## In This Chapter
 
 <ChapterNav variant="sub">
+  <ChapterLink href="00-os-threads-and-cost">OS Threads and Their Cost</ChapterLink>
   <ChapterLink href="01-thread-safe-queue">Thread-Safe Queue</ChapterLink>
   <ChapterLink href="02-thread-safe-containers">Thread-Safe Container Design</ChapterLink>
   <ChapterLink href="03-lock-free-basics">Lock-Free Programming Fundamentals</ChapterLink>
