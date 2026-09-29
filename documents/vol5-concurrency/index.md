@@ -15,14 +15,72 @@ tags:
 ## 章节导航
 
 <ChapterNav variant="sub">
-  <ChapterLink href="ch00-concurrency-fundamentals">ch00 · 并发世界观与第一件工具</ChapterLink>
-  <ChapterLink href="ch01-thread-lifecycle-raii">ch01 · 线程：第一条执行流</ChapterLink>
-  <ChapterLink href="ch02-mutex-condition-sync">ch02 · 共享与同步</ChapterLink>
-  <ChapterLink href="ch03-atomic-memory-model">ch03 · 原子与内存模型</ChapterLink>
-  <ChapterLink href="ch04-concurrent-data-structures">ch04 · 无锁与性能实测</ChapterLink>
-  <ChapterLink href="ch05-future-task-threadpool">ch05 · 从线程到任务</ChapterLink>
-  <ChapterLink href="ch06-async-io-coroutine">ch06 · 协程</ChapterLink>
-  <ChapterLink href="ch07-actor-channel">ch07 · 组合与收官</ChapterLink>
+  <ChapterLink href="ch00-concurrency-fundamentals">第 0 章 · 并发世界观与第一件工具</ChapterLink>
+  <ChapterLink href="ch01-thread-lifecycle-raii">第 1 章 · 线程：第一条执行流</ChapterLink>
+  <ChapterLink href="ch02-mutex-condition-sync">第 2 章 · 共享与同步</ChapterLink>
+  <ChapterLink href="ch03-atomic-memory-model">第 3 章 · 原子与内存模型</ChapterLink>
+  <ChapterLink href="ch04-concurrent-data-structures">第 4 章 · 无锁与性能实测</ChapterLink>
+  <ChapterLink href="ch05-future-task-threadpool">第 5 章 · 从线程到任务</ChapterLink>
+  <ChapterLink href="ch06-async-io-coroutine">第 6 章 · 协程</ChapterLink>
+  <ChapterLink href="ch07-actor-channel">第 7 章 · 组合与收官</ChapterLink>
   <ChapterLink href="bridge-distributed">番外 · 分布式桥</ChapterLink>
   <ChapterLink href="exercises">练习体系</ChapterLink>
 </ChapterNav>
+
+## 这一卷怎么走
+
+八章的正文、一篇番外、一套练习，加起来就是卷五全部的家当。每章的定位咱们摆在下面，链接都通到各章的门牌：
+
+| 章                                                                 | 这一章管什么                                                                                                                          |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| [第 0 章 · 并发世界观与第一件工具](./ch00-concurrency-fundamentals/) | 为什么并发、data race 与 TSan 的第一课，都在本章                                                                                      |
+| [第 1 章 · 线程：第一条执行流](./ch01-thread-lifecycle-raii/)        | `std::thread` 的生命周期与 RAII，jthread 与 stop_token 的取消正源                                                                     |
+| [第 2 章 · 共享与同步](./ch02-mutex-condition-sync/)                 | mutex、死锁诊断、condition_variable，阻塞队列的正源也在这里                                                                           |
+| [第 3 章 · 原子与内存模型](./ch03-atomic-memory-model/)              | cache 地基、happens-before 的正式定义、内存序的配对形状                                                                               |
+| [第 4 章 · 无锁与性能实测](./ch04-concurrent-data-structures/)       | OS 线程的开销标价与 perf stat 入门，perf 的主课堂，无锁栈、内存回收，伪共享（各写各的数据，却挤在同一个缓存行上）与 SPSC/MPSC 队列（单生产者单消费者 / 多生产者单消费者） |
+| [第 5 章 · 从线程到任务](./ch05-future-task-threadpool/)             | async、future、promise，生产级线程池的正源                                                                                            |
+| [第 6 章 · 协程](./ch06-async-io-coroutine/)                         | `task<T>`、协程的取消、事件循环与定时器                                                                                               |
+| [第 7 章 · 组合与收官](./ch07-actor-channel/)                        | Actor 与 Channel/CSP，Echo 服务的总装走读，全卷一次关门                                                                               |
+| [番外 · 分布式桥](./bridge-distributed/)                             | 一致性与 Raft 的思想实验，通往卷八的路标                                                                                              |
+| [练习体系](./exercises/)                                             | Lab 00 到 Lab 07，从第一场竞态到 Capstone                                                                                             |
+
+表格是冷的，咱们把表格里埋着的三条线说热乎一点。**组件怎么流转**：第 2 章造出的阻塞队列，到了第 5 章就进线程池当任务队列，第 5 章的线程池与第 6 章的 `task<T>`，在第 7 章被组装成 Actor 与 Channel 的成品。您在哪一章迷了路，回到本页看一眼组件流到了哪儿，位置也就找回来了。
+
+**工具的出场也排了课表**：TSan 的第一课排在第 0 章，gdb 的三板斧在第 2 章的死锁篇，perf 的重头戏压在第 4 章。哪件工具管的是哪类问题，咱们到了哪一章就讲那一章里登场的工具，工具永远跟着问题走。
+
+**练习的编号跟章号一一对上**：Lab 00 是工具链与第一场竞态，Lab 04 对应 perf 实测伪共享，Lab 05 攒的是生产级的线程池，Lab 07 是收官的 Capstone；剩下的 Lab 01、02、03、06 依次对应线程的生命周期、同步与阻塞队列、内存序实验室、协程调度器与取消。整套 Lab 走下来大约是 53 到 75 小时的量，时间紧的话，最低的完成集是 Lab 00、02、05、07，大约 28 到 41 小时。入口都在[练习体系](./exercises/)的页面上。
+
+整卷还可以当成**三幕**来看。头两章是地基，练的是执行流与同步的手感，走完了它们，并发对您就不再是玄学。第 3 章和第 4 章是深水区的两章，讲的是内存模型与无锁，全卷最硬的骨头，在那儿靠的正是慢工出细活。后三章讲的是上层与组装，主角换成了任务、协程与 Actor，把地基上的能力包成顺手的工具。番外是通向卷八的桥，把单机的故事接到分布式去。
+
+这一卷**不教**的东西也说清楚：进程间的东西不在册，分布式的一致性只在做桥的番外里沾一沾，GPU 与 SIMD 的向量并行另请高明。把不教的圈子圈出来了，教的那一块才立得住。
+
+## 从哪一条路进来
+
+顺走的读法按章号一路读下去，练习也一并做，这是最稳的一条路。挑着走的人带着手头的问题来，比如您正排查着一个偶发的崩溃，那就直奔[第 0 章的数据竞争与 TSan 篇](./ch00-concurrency-fundamentals/02-data-race-and-tsan.md)，再补[第 2 章的死锁篇](./ch02-mutex-condition-sync/02-deadlock-and-gdb.md)，然后回头补地基。带队的老师可以把本页当导览，每一幕的讨论各安排一场，作业就落在 Lab 00 与 Lab 02 的身上。哪条走法咱们都欢迎，地图一直在这儿等着您。
+
+从别的语言来的读者，咱们也给您提个醒（没碰过这几门语言的话，这段跳过也不影响）：C++ 没有内建的运行时管家，线程的调度、同步、生命周期，件件都摆在您自己手里。Java 的内存模型、Go 的调度器、Rust 的所有权检查，各家有各家的护法，C++ 的护法就是您自己读过的这几章。
+
+## 本卷的读法约定
+
+咱们跟您有三条约定，您知道了读起来会顺很多。头一条是关于数字的：正文里的性能数字分两等，纯数学的推演直接给数，实测的数字一律带着可复现的命令，还没来得及测的位置会挂一行 `实验回填` 的注释占位，在占位填上以前，那句话就不能当数了。
+
+还有一条是关于代码的：完整可编译的代码归 `code/volumn_codes/vol5/` 代码仓，正文里只留关键的片段与讲解，您要跑就到仓里跑。
+
+末一条是关于术语的：术语头一回出现的时候，要么咱们当场写一段速写，要么给一个前向指引，告诉您正式的定义住在哪一篇。往前翻了找不到、往后翻怕剧透的时候，回本页的地图上看一眼也就行了。
+
+练习的分量也交代一句：每篇末尾的练习做与不做，读完后留在手里的东西差得很远。并发是一门手上的功夫，光看而不动手的话，三个月后剩下的只有名词。哪怕您时间再紧，咱们也建议您把每篇的头一道练习做了。
+
+## 走完每一章，您手里多了什么
+
+走完了一章就对照一行，对照下来手里没底的话，咱们就建议您把那一章再翻一遍。
+
+| 走完    | 您应该能                                            |
+| ------- | --------------------------------------------------- |
+| 第 0 章 | 认识 data race，会跑 TSan                          |
+| 第 1 章 | 稳妥地起线程、传参数、收尾，会用 jthread 发停止请求 |
+| 第 2 章 | 用锁与条件变量写出正确的共享结构                    |
+| 第 3 章 | 读懂内存序，判断一次跨线程的读写是否安全            |
+| 第 4 章 | 给线程开销量出量级，用 perf 定位瓶颈，掂得出无锁的代价与收益 |
+| 第 5 章 | 用任务与线程池代替裸线程                            |
+| 第 6 章 | 用协程组织高并发的 I/O                              |
+| 第 7 章 | 把全套家伙组装成一个能体面收尾的服务                |

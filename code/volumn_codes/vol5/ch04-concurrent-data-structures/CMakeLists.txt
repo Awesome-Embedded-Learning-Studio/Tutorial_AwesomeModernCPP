@@ -11,6 +11,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(Threads REQUIRED)
 
+# ch04/00 OS 线程与开销：空线程创建成本基准
+add_executable(os_threads_and_cost 00_os_threads_and_cost.cpp)
+target_link_libraries(os_threads_and_cost PRIVATE Threads::Threads)
+
 add_executable(01_bounded_queue 01_bounded_queue.cpp)
 target_link_libraries(01_bounded_queue PRIVATE Threads::Threads)
 

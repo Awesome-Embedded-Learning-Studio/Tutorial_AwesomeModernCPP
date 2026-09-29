@@ -28,7 +28,7 @@ cpp_standard: [11, 17, 20, 23]
 
 咱们在 [packaged_task 那篇](02-promise-and-packaged-task) 的末尾搭过一个单 worker 的 SimpleTaskQueue，一个线程、一条队列、一个返回 future 的 submit，就是它的全部。它倒是能跑，可是提交四个任务也只能排着队一个接一个地跑，跟调用方自己写个循环没有什么本质上的区别。今天咱们把它扩成真的线程池：一组早就建好的 worker，守的是同一个任务队列，任务谁抢到了就归谁执行。
 
-为什么要复用线程？因为创建一个线程要付的成本是一整套的：系统调用的进出、栈的分配、调度器的登记，销毁时又把同一套倒着走了一遍。[OS 线程那一篇](../ch00-concurrency-fundamentals/03-os-threads-and-cost) 用 perf stat 看过开销的明细，数字咱们这里不重复，值得留下的形状是短命线程的创建销毁摊不平，复用才是对路的做法。池子还把并发度收进了咱们手里，同时有几个 worker 在跑由构造参数说了算，而不是由任务到得勤不勤决定。
+为什么要复用线程？因为创建一个线程要付的成本是一整套的：系统调用的进出、栈的分配、调度器的登记，销毁时又把同一套倒着走了一遍。[OS 线程那一篇](../ch04-concurrent-data-structures/00-os-threads-and-cost) 用 perf stat 看过开销的明细，数字咱们这里不重复，值得留下的形状是短命线程的创建销毁摊不平，复用才是对路的做法。池子还把并发度收进了咱们手里，同时有几个 worker 在跑由构造参数说了算，而不是由任务到得勤不勤决定。
 
 本篇是两样的正源：worker 循环，还有 cv_any 集成 stop_token 的等待，后面咱们写 [协程的取消](../ch06-async-io-coroutine/03-coroutine-cancellation)、[Actor 的邮箱](../ch07-actor-channel/01-actor-model) 时都要回本篇取这两样料。
 
@@ -38,9 +38,9 @@ cpp_standard: [11, 17, 20, 23]
 
 ## 池子由哪几样零件组成
 
-把池子的零件摆开数一数，其实没几样：装任务的队列，干活的 worker，互斥用的锁，等待用的 cv，报停用的 bool 标志，全都在这儿了。任务队列咱们直接用 [阻塞队列那篇](../ch02-mutex-condition-sync/04-condition-variable-and-bounded-queue) 的那一套，只是换成了无界简化版：容量上限被去掉了，关闭的活由池自己的析构接管。notify 的分工还是老一套：开张的时候一个新任务只需叫醒一个 worker，notify_one 也就够了，轮到 notify_all 登场的是关门，理由咱们在队列篇讲过。
+把池子的零件摆开数一数，其实没几样：装任务的队列，干活的 worker，互斥用的锁，等待用的 cv，报停用的 bool 标志，全都在这儿了。任务队列咱们直接用 [阻塞队列那篇](../ch02-mutex-condition-sync/05-condition-variable-and-bounded-queue) 的那一套，只是换成了无界简化版：容量上限被去掉了，关闭的活由池自己的析构接管。notify 的分工还是老一套：开张的时候一个新任务只需叫醒一个 worker，notify_one 也就够了，轮到 notify_all 登场的是关门，理由咱们在队列篇讲过。
 
-咱们也要交代无界的代价：submit 是永不阻塞的，任务堆多少全看生产者的心情，生产快过消费的时候，跟着遭殃的就是内存了。有界化就是把 [阻塞队列那篇](../ch02-mutex-condition-sync/04-condition-variable-and-bounded-queue) 的 BoundedQueue 原样换进来，队满的时候 submit 就阻塞了，背压就有了。本篇为了讲清 worker 的循环，用的都是无界版。
+咱们也要交代无界的代价：submit 是永不阻塞的，任务堆多少全看生产者的心情，生产快过消费的时候，跟着遭殃的就是内存了。有界化就是把 [阻塞队列那篇](../ch02-mutex-condition-sync/05-condition-variable-and-bounded-queue) 的 BoundedQueue 原样换进来，队满的时候 submit 就阻塞了，背压就有了。本篇为了讲清 worker 的循环，用的都是无界版。
 
 队列元素的类型为什么是 `function<void()>`？因为队列的职责只有搬运，不该关心任务的返回值。返回值的通道由 packaged_task 与 future 另走一路，队列里躺着的只需是一件能被调用的东西。咱们把这个手法叫类型擦除：千姿百态的任务进了队列，都是同一副 void() 的面孔，worker 取了出来只管调用，别的一概不问。
 
@@ -55,9 +55,9 @@ explicit ThreadPool(std::size_t num_threads)
 }
 ```
 
-每个 worker 跑的都是同一个 worker_loop，线程数就是循环的份数。数量怎么定没有万能的答案：CPU 密集的活大致照着 `hardware_concurrency()` 的返回值给，您也可以为 I/O 密集的活放宽一些，毕竟那样的线程常常挂在等待上。您还得提防那个查询返回 0 的情况，[jthread 那篇](../ch01-thread-lifecycle-raii/03-thread-ownership-and-jthread) 的 parallel_for_each 里咱们兜过底，写法这里就不再重复了。构造要是还想加一道开工的门闩，等全体 worker 都就位了再统一放行，[工具箱那篇](../ch02-mutex-condition-sync/05-sync-primitives-toolkit) 的 latch 就是干这个的。
+每个 worker 跑的都是同一个 worker_loop，线程数就是循环的份数。数量怎么定没有万能的答案：CPU 密集的活大致照着 `hardware_concurrency()` 的返回值给，您也可以为 I/O 密集的活放宽一些，毕竟那样的线程常常挂在等待上。您还得提防那个查询返回 0 的情况，[jthread 那篇](../ch01-thread-lifecycle-raii/03-thread-ownership-and-jthread) 的 parallel_for_each 里咱们兜过底，写法这里就不再重复了。构造要是还想加一道开工的门闩，等全体 worker 都就位了再统一放行，[工具箱那篇](../ch02-mutex-condition-sync/06-sync-primitives-toolkit) 的 latch 就是干这个的。
 
-成员这边咱们一眼就能数完。workers_ 存的是线程，tasks_ 装的是任务，互斥的活儿交给 mutex_，唤醒的活儿交给 cv_，stop_ 是停止的标志。workers_ 在成员表里排的位置是最前面，它的用意要到析构崩溃的现场才揭晓，您到时候回来一看就明白。任务在进队列以前是要被擦成同一个类型的，怎么擦的、返回值怎么拿的，咱们马上说。
+成员这边咱们一眼就能数完。`workers_` 存的是线程，`tasks_` 装的是任务，互斥的活儿交给 `mutex_`，唤醒的活儿交给 `cv_`，`stop_` 是停止的标志。`workers_` 在成员表里排的位置是最前面，它的用意要到析构崩溃的现场才揭晓，您到时候回来一看就明白。任务在进队列以前是要被擦成同一个类型的，怎么擦的、返回值怎么拿的，咱们马上说。
 
 ## worker 循环的正源：C++17 裸版
 
@@ -82,13 +82,13 @@ void worker_loop()
 }
 ```
 
-咱们逐行走读。wait 用的是谓词版，这半句的纪律在 [阻塞队列那篇](../ch02-mutex-condition-sync/04-condition-variable-and-bounded-queue) 里立过：虚假唤醒和丢失唤醒都由持锁求值的谓词挡在外面，两条交错的路径那边也推演过了。谓词的内容您也眼熟，`stop_ || !tasks_.empty()` 跟队列篇的写法是同一副骨架，只是那边的 closed_ 归队列，这边的 stop_ 归池子。
+咱们逐行走读。wait 用的是谓词版，这半句的纪律在 [阻塞队列那篇](../ch02-mutex-condition-sync/05-condition-variable-and-bounded-queue) 里立过：虚假唤醒和丢失唤醒都由持锁求值的谓词挡在外面，两条交错的路径那边也推演过了。谓词的内容您也眼熟，`stop_ || !tasks_.empty()` 跟队列篇的写法是同一副骨架，只是那边的 `closed_` 归队列，这边的 `stop_` 归池子。
 
 醒来之后的判断就是 drain 语义的全部。stop 是真的、队列也是空的，才走 return 的分支。停止请求来了也不算完，worker 会把队列里的存货接着取出来执行，最后一个干完了才走。丢弃已提交的任务谈不上优雅，那可就是事故了。咱们反过来看：只查 stop 不查空的写法，会让关门瞬间还滞留在队列里的任务再也没人取，调用方手里的 future 永远等不到结果。
 
-stop_ 要不要换成 atomic？咱们不换。它的读写都发生在锁内：worker 在持锁的窗口里求值，析构在持锁的窗口里置位，锁已经给了它足够的保护。就算真换成了 atomic<bool>，那把锁也还是省不掉的，因为谓词读的是队列，而队列的读取本来就离不开锁。所以 bool 配 mutex 就是正解，再叠一层 atomic 就画蛇添足了。
+`stop_` 要不要换成 atomic？咱们不换。它的读写都发生在锁内：worker 在持锁的窗口里求值，析构在持锁的窗口里置位，锁已经给了它足够的保护。就算真换成了 atomic<bool>，那把锁也还是省不掉的，因为谓词读的是队列，而队列的读取本来就离不开锁。所以 bool 配 mutex 就是正解，再叠一层 atomic 就画蛇添足了。
 
-花括号的位置咱们再看一眼，这是 worker 循环里排位最靠前的设计决策：锁的里面取任务，任务在锁的外面执行，所以任务跑多久都牵连不到 mutex_ 的身上。咱们要是拿着锁执行任务，其他 worker 和所有 submit 调用方就全堵在 mutex_ 上了，整台池子退化成串行的单线程，那多开的线程图什么？锁护的只是队列的一取一放，任务的身体是不归它管的。
+花括号的位置咱们再看一眼，这是 worker 循环里排位最靠前的设计决策：锁的里面取任务，任务在锁的外面执行，所以任务跑多久都牵连不到 `mutex_` 的身上。咱们要是拿着锁执行任务，其他 worker 和所有 submit 调用方就全堵在 `mutex_` 上了，整台池子退化成串行的单线程，那多开的线程图什么？锁护的只是队列的一取一放，任务的身体是不归它管的。
 
 咱们把 worker 的一辈子数成三个状态：睡在 cv 上等活的时光，持锁取件的瞬间，解锁干活的时段，循环往复地转下去。任务做完了回到循环顶，队列里剩了存货就直接接着取，notify 都省得等了。排查池子类 bug 的时候，咱们的视角也顺着状态走。任务不执行的毛病，咱们多半能在 notify 和谓词身上找到源头。池子卡住关不掉的毛病，基本是关闭时序出了问题，后文复现的那次挂掉就是现场的标本。
 
@@ -137,7 +137,7 @@ auto submit(F&& f, Args&&... args)
 }
 ```
 
-拒收的检查必须发生在持锁的窗口里，跟 stop_ 的置位隔着一道 mutex。submit 看到 stop 为假、放心入队的瞬间，析构恰好把 stop 置位的竞态，被同一把锁串行化掉了。咱们靠的正是这层串行化：少了它，任务可能被推进一条已经没有 worker 的队列里，future 就永远悬在那里了。
+拒收的检查必须发生在持锁的窗口里，跟 `stop_` 的置位隔着一道 mutex。submit 看到 stop 为假、放心入队的瞬间，析构恰好把 stop 置位的竞态，被同一把锁串行化掉了。咱们靠的正是这层串行化：少了它，任务可能被推进一条已经没有 worker 的队列里，future 就永远悬在那里了。
 
 轮到解释 shared_ptr 那一层为什么省不掉了，咱们用一句话把因果链接上：队列存的是 `function<void()>`，它要求装进去的东西可拷贝，而 packaged_task 偏偏是 move-only 的。shared_ptr 干的事，是把拷贝本体的动作偷换成了拷贝句柄：lambda 捕的是句柄，task 的本体只有一份。这套仪式在 C++11 年代以后的各种正经实现里反复出现过，您以后在开源代码里再见到它，就该像见到了老朋友。
 
@@ -161,7 +161,7 @@ pool.submit([&] { svc.handle(request_id); });        // lambda 的等价写法�
 
 ### 一个经典的死法：池中池
 
-worker 的任务里要是再调 submit 并且原地 get，咱们就给自己埋了雷。咱们设想四个 worker 手里全有任务，每个任务都在等一个还没被调度的新任务：新任务躺在队列的深处，可全体的 worker 都腾不出手。死锁的形状跟 [死锁那篇](../ch02-mutex-condition-sync/03-deadlock-and-gdb) 讲的循环等待是一副骨架，只不过资源换成了线程本身。
+worker 的任务里要是再调 submit 并且原地 get，咱们就给自己埋了雷。咱们设想四个 worker 手里全有任务，每个任务都在等一个还没被调度的新任务：新任务躺在队列的深处，可全体的 worker 都腾不出手。死锁的形状跟 [死锁那篇](../ch02-mutex-condition-sync/02-deadlock-and-gdb) 讲的循环等待是一副骨架，只不过资源换成了线程本身。
 
 ```cpp
 // 死法示范：千万别在 worker 里这样写
@@ -202,7 +202,7 @@ workers_.emplace_back([this](std::stop_token st) {
 });
 ```
 
-第一轮的代码咱们编过了，可惜一到停止它就露馅了。每个 jthread 的内部都有一份私有的 stop_source，自动注入的 token 连接的是各自私有的停止状态。咱们想让全体一起停的时候，workers_[i].request_stop() 是做不到的，它连着的只是第 i 个 worker 的私有旗子。组控制的正解形状咱们在 [jthread 那篇](../ch01-thread-lifecycle-raii/03-thread-ownership-and-jthread) 见过：在外部造一个共享的 stop_source，把它的 token 分发给全体成员。池子的第二轮迭代就是这个套路：
+第一轮的代码咱们编过了，可惜一到停止它就露馅了。每个 jthread 的内部都有一份私有的 stop_source，自动注入的 token 连接的是各自私有的停止状态。咱们想让全体一起停的时候，`workers_`[i].request_stop() 是做不到的，它连着的只是第 i 个 worker 的私有旗子。组控制的正解形状咱们在 [jthread 那篇](../ch01-thread-lifecycle-raii/03-thread-ownership-and-jthread) 见过：在外部造一个共享的 stop_source，把它的 token 分发给全体成员。池子的第二轮迭代就是这个套路：
 
 ```cpp
 workers_.emplace_back(
@@ -214,15 +214,15 @@ lambda 显式捕获了池持有的 token，jthread 的自动注入就被绕开�
 | 停止状态的来源 | 谁持有它 | request_stop 停得到谁 |
 |---|---|---|
 | jthread 自带的私有 source | 每个 jthread 的内部 | 只有它自己 |
-| 池持有的 stop_source_ | ThreadPool 的成员 | 全体 worker（token 已分发） |
+| 池持有的 `stop_source_` | ThreadPool 的成员 | 全体 worker（token 已分发） |
 
-析构的时候每个 jthread 照规范对自己的私有 source 举一次旗，可惜 worker 的循环并不看它，等于白举了。真正叫醒 worker 的，是咱们手里这把 stop_source_，咱们一喊全体都听得见。两套 source 的协调成本摊在这儿，这就是新特性带进来的新麻烦。
+析构的时候每个 jthread 照规范对自己的私有 source 举一次旗，可惜 worker 的循环并不看它，等于白举了。真正叫醒 worker 的，是咱们手里这把 `stop_source_`，咱们一喊全体都听得见。两套 source 的协调成本摊在这儿，这就是新特性带进来的新麻烦。
 
 咱们把三件套的接口也盘一下：stop_source 是开关的持有端，request_stop 的发起权在它手里。stop_token 是只读的票根，探测的活儿归 worker_loop。stop_callback 是挂上去的铃铛。三样的名字各叫各的，公用的却是同一份停止状态。
 
 ## cv_any 三参 wait：集成 stop_token 的正源
 
-worker_loop(std::stop_token st) 的等待，咱们该怎么写？等待的 cv_ 得换成 condition_variable_any。这里有个规范事实咱们直接摆出来。接受 stop_token 的三参 wait 重载，只存在于 condition_variable_any 的身上。std::condition_variable 的重载列表里没有它，咱们拿 cv 去调三参版 wait，在编译期就被拦下了，笔者在本机试过（GCC 16.2.1），报错的信息是 no matching function，仅有的两个候选一个收两参、一个只收一参，咱们的三个参数谁也接不住。咱们在规范文本里找不到切分的理由，也就不猜了。cv_any 是泛型的版本，能搭配的锁类型比 cv 多得多，代价则是可能更重的实现。队列篇收尾的时候咱们预告过它，本篇就是那次预告的兑现。
+worker_loop(std::stop_token st) 的等待，咱们该怎么写？等待的 `cv_` 得换成 condition_variable_any。这里有个规范事实咱们直接摆出来。接受 stop_token 的三参 wait 重载，只存在于 condition_variable_any 的身上。std::condition_variable 的重载列表里没有它，咱们拿 cv 去调三参版 wait，在编译期就被拦下了，笔者在本机试过（GCC 16.2.1），报错的信息是 no matching function，仅有的两个候选一个收两参、一个只收一参，咱们的三个参数谁也接不住。咱们在规范文本里找不到切分的理由，也就不猜了。cv_any 是泛型的版本，能搭配的锁类型比 cv 多得多，代价则是可能更重的实现。队列篇收尾的时候咱们预告过它，本篇就是那次预告的兑现。
 
 真正的主角是三参 wait 的语义。cppreference 给了等价代码，咱们逐行读：
 
@@ -284,7 +284,7 @@ void worker_loop(std::stop_token st)
 }
 ```
 
-咱们跟 C++17 裸版比一比形状。谓词里的 stop_ 没了，它搬进了 stop_token。醒来后的判断也从 `stop_ && tasks_.empty()` 缩成了一个对返回值的取反。stop 标志的置位、唤醒、drain 判断，三件事全被一个库调用接管了。
+咱们跟 C++17 裸版比一比形状。谓词里的 `stop_` 没了，它搬进了 stop_token。醒来后的判断也从 `stop_ && tasks_.empty()` 缩成了一个对返回值的取反。stop 标志的置位、唤醒、drain 判断，三件事全被一个库调用接管了。
 
 三代 worker 循环的对照，咱们也收进一张表里：
 
@@ -294,19 +294,31 @@ void worker_loop(std::stop_token st)
 | 旧文 C++20 版 | 队列非空 | wait 返回值外面套两层 if | stop_token |
 | 本篇正源 C++20 | 队列非空 | 一个对返回值的取反 | stop_token |
 
-细心的您可能发现了：队列篇的 BoundedQueue 关门靠的是 close 把 closed_ 的旗子竖起来，池子这头靠的是 stop_token 加 drain。两边的目标倒是一致的，落点各有各的安排：队列把关闭做成了容器自己的事，池子把关闭做成了持有者的事。这个分工咱们记下来，后面 Actor 的邮箱关门时，走的还是同一个思路。
+细心的您可能发现了：队列篇的 BoundedQueue 关门靠的是 close 把 `closed_` 的旗子竖起来，池子这头靠的是 stop_token 加 drain。两边的目标倒是一致的，落点各有各的安排：队列把关闭做成了容器自己的事，池子把关闭做成了持有者的事。这个分工咱们记下来，后面 Actor 的邮箱关门时，走的还是同一个思路。
 
-化简版的行为咱们在本机验证过（GCC 16.2.1、x86-64 Linux）：4 个 worker、100 个任务的池子反复建拆 300 轮，每轮都核对 100 个任务全部执行、全部线程干净地退出。两条边路咱们也没放过：停止后的拒收、停止前最后一次提交的执行。真实的输出咱们原样贴上：
+化简版的行为咱们在本机验证过（GCC 16.2.1、x86-64 Linux）：4 个 worker、100 个任务的池子反复建拆 300 轮，每轮都核对 100 个任务全部执行、全部线程干净地退出。两条边路咱们也没放过：停止后的拒收、停止前最后一次提交的执行。整个验收咱们落成独立程序，您点"动手试一试"自己跑：
 
-```text
-drain+clean-exit: PASS (300 rounds)
-exception-via-future: PASS
-submit-after-stop rejected: PASS, drained task ran: PASS
-```
+<OnlineCompilerDemo
+  title="动手验证：化简版线程池的三项验收"
+  source-path="code/examples/vol5/48_thread_pool_drain.cpp"
+  description="C++20 化简版（jthread + stop_token + 三参 wait）：4 worker、100 任务的池子反复建拆 300 轮核对全执行全退出，再看异常经 future 重抛、stop 后 submit 拒收且已入队任务照跑。观察输出：三行全 PASS。轮数固定 300，耗时随机器快慢不同，PASS/FAIL 的判定不受影响。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 TSan 的走查咱们也补了（`-O1 -g -fsanitize=thread`），报告也是干净的。
 
-<!-- 实验回填：TSan 长压与千次建拆的完整输出原文、-O0/-O2 两档对照，回填时附编译命令 -->
+长压咱们在本机也跑足了（WSL2 Arch Linux、内核 6.18、g++ 16.2.1、AMD Ryzen 7 9700X）。命令是 `g++ -std=c++20 -Wall -Wextra -pthread -fsanitize=thread -g -O2 pool_stress.cpp`（`-O0` 档把末尾的 `-O2` 换掉即可），压测内容为 300 轮 drain 加三组各 1000 次建拆（worker 数 2、4、8 递增，每 100 轮掺一个抛异常的任务），TSan 全程零报告：
+
+```text
+drain+clean-exit: PASS (300 rounds, 2.02552 s)
+teardown x1000 (workers=2): PASS, 2.4483 s
+teardown x1000 (workers=4): PASS, 6.90624 s
+teardown x1000 (workers=8): PASS, 8.19563 s
+all stress: PASS
+```
+
+`-O0` 档同一份代码同样是四行 PASS（耗时 2.20 / 5.78 / 7.38 / 8.70 s），两档一致，说明化简版的正确性不靠优化档位的运气。一个顺手的观察也记下：TSan 簿记把 300 轮 drain 拖到两秒上下，比普通构建慢了一个量级，长压跑在 TSan 版上图的正是这份慢换来的信心。
 
 ## 关闭的时序：三步不能换
 
@@ -326,13 +338,13 @@ TSan 的走查咱们也补了（`-O1 -g -fsanitize=thread`），报告也是干�
 }
 ```
 
-三个动作各有各的道理，咱们一个一个过。stop_ 的置位发生在持锁的窗口里，这是共享状态修改的纪律，也顺手堵死了与 submit 的竞态：两边隔着的正是同一把 mutex。notify_all 挪到了解锁的后面，是队列篇讲过的常见排法。标准当然允许持锁 notify，但醒了的人睁眼就得抢同一把锁，抢不到就又睡了回去，白醒了一趟。轮到 join 了，它的位置在最末尾。
+三个动作各有各的道理，咱们一个一个过。`stop_` 的置位发生在持锁的窗口里，这是共享状态修改的纪律，也顺手堵死了与 submit 的竞态：两边隔着的正是同一把 mutex。notify_all 挪到了解锁的后面，是队列篇讲过的常见排法。标准当然允许持锁 notify，但醒了的人睁眼就得抢同一把锁，抢不到就又睡了回去，白醒了一趟。轮到 join 了，它的位置在最末尾。
 
 咱们把顺序换一换，死锁立刻就到了。咱们动嘴推演就够了：析构的线程守在 join 上，等的是 worker 退出。worker 却睡死在 cv 上了，等的是一次不会来的 notify。两边等的都是对方，这场对峙是没有出口的。
 
 咱们再换到 worker 的视角，把析构的全程走一遍：
 
-1. worker 睡在 cv 上，析构方持锁置位 stop_，解锁，notify_all。
+1. worker 睡在 cv 上，析构方持锁置位 `stop_`，解锁，notify_all。
 2. worker 醒来，重新拿到锁，谓词求值为真：stop 或队列非空。
 3. 队列有存货就接着取，锁外执行，做完回循环顶。
 4. 队列空了而且 stop 为真，worker 从 while 返回，线程结束。
@@ -363,7 +375,7 @@ terminate called after throwing an instance of 'std::future_error'
   what():  std::future_error: No associated state
 ```
 
-有时的死相是段错误（退出码 139），有时是上面这个异常的穿透（退出码 134）。咱们找根因，最后落在了成员的析构顺序上。request_stop 和 notify_all 都是无辜的：workers_ 声明在成员表的最前面，析构却轮在了最后。C++ 的成员按声明的逆序销毁，所以等到 jthread 的 join 真正发生时，mutex_、cv_any_、tasks_ 早就被拆干净了。而函数体那两行跑完的一瞬间，worker 可能还活得好好的，摸到的队列和锁却是已经死了的对象，未定义行为以 future_error 的面目冒了出来。带 notify_all 的版本和去掉 notify_all 的版本挂得一样快，两个实验互相印证了凶手另有其人。
+有时的死相是段错误（退出码 139），有时是上面这个异常的穿透（退出码 134）。咱们找根因，最后落在了成员的析构顺序上。request_stop 和 notify_all 都是无辜的：`workers_` 声明在成员表的最前面，析构却轮在了最后。C++ 的成员按声明的逆序销毁，所以等到 jthread 的 join 真正发生时，`mutex_`、`cv_any_`、`tasks_` 早就被拆干净了。而函数体那两行跑完的一瞬间，worker 可能还活得好好的，摸到的队列和锁却是已经死了的对象，未定义行为以 future_error 的面目冒了出来。带 notify_all 的版本和去掉 notify_all 的版本挂得一样快，两个实验互相印证了凶手另有其人。
 
 咱们只用一行修法，把 join 收回到析构函数的体内：
 
@@ -376,7 +388,7 @@ terminate called after throwing an instance of 'std::future_error'
 }
 ```
 
-workers_.clear() 做的事就是逐个析构 jthread，request_stop（私有旗是白举的）加 join，全都发生在其余成员尚且活着的窗口里。咱们看修复后的版本：同样的 drain 测试 300 轮全部通过，TSan 的报告也是干净的。
+`workers_`.clear() 做的事就是逐个析构 jthread，request_stop（私有旗是白举的）加 join，全都发生在其余成员尚且活着的窗口里。咱们看修复后的版本：同样的 drain 测试 300 轮全部通过，TSan 的报告也是干净的。
 
 notify_all 的悬案也能结了。request_stop 一个人能不能唤醒全体？规范的回答是能，道理就是刚才讲过的注册机制。实验咱们也做了，把修复版的 notify_all 再去掉，300 轮的常规测试、三轮每轮一千回的压测，外加 TSan 的复查，结果全部是干净的退出。notify_all 确实是冗余的，咱们还是把它留在了代码里：多喊的那一嗓子的代价约等于零，而且它把全员必须醒的意图写在了明处，以后要是有人把 wait 改回两参的版本，它就是保命的那一行。
 
@@ -384,9 +396,9 @@ notify_all 的悬案也能结了。request_stop 一个人能不能唤醒全体�
 
 | 版本 | 停止怎么发 | 谁负责 join | 踩过的雷 |
 |---|---|---|---|
-| C++17 裸版 | 持锁置 stop_，解锁后 notify_all | 析构函数体的 for 循环 | 顺序换位就是死锁 |
+| C++17 裸版 | 持锁置 `stop_`，解锁后 notify_all | 析构函数体的 for 循环 | 顺序换位就是死锁 |
 | C++20 第一版 | request_stop | 指望成员析构顺带 join | 成员逆序销毁，join 轮在了最后 |
-| C++20 正源 | request_stop 加 notify_all | workers_.clear() 在函数体内 | 无（300 轮加 TSan 验证过） |
+| C++20 正源 | request_stop 加 notify_all | `workers_`.clear() 在函数体内 | 无（300 轮加 TSan 验证过） |
 
 配套代码里咱们还留了一个 stop() 成员，它干的事就是 request_stop。有些时候就是要提前关门的：出了错想赶紧收工的场合，测试里要复现关闭的竞态。它跟析构走的是同一条路，关门的时序咱们不另写一份。
 
@@ -409,11 +421,11 @@ bool shutdown_with_deadline(std::chrono::milliseconds limit)
 }
 ```
 
-计数的另一半记在 worker_loop 的退场路径上：构造池子的时候，咱们把 live_workers_ 初始化成 worker 的数目，退场的 return 之前在持锁的窗口里把它减一，咱们再对 exit_cv_ 喊一声 notify_all，数目就对得上了。wait_until 返回 false 的时候，池子就处在半关的状态，没退的线程还在跑它们的活。咱们要么放宽期限再等，要么放弃等待走人，但 detach 的路咱们前面已经堵死了。
+计数的另一半记在 worker_loop 的退场路径上：构造池子的时候，咱们把 `live_workers_` 初始化成 worker 的数目，退场的 return 之前在持锁的窗口里把它减一，咱们再对 `exit_cv_` 喊一声 notify_all，数目就对得上了。wait_until 返回 false 的时候，池子就处在半关的状态，没退的线程还在跑它们的活。咱们要么放宽期限再等，要么放弃等待走人，但 detach 的路咱们前面已经堵死了。
 
 ### 析构之后再 submit：未定义行为
 
-析构跑完了，workers_ 空了，停止也请求过了，这时的池子就是一具空壳。咱们拿它再去 submit，多数实现上确实会被拒收的检查拦下来，抛出了异常，看着挺安全的。不过严格按标准讲，等析构函数返回了，全体成员的生命周期就都结束了：submit 读的 stop_source_ 是已销毁的对象，tasks_ 和它的队列也是，读个 size 并不比摸别的成员更体面。这一趟走的本就是未定义行为，只是成员占的内存在栈上或堆上都还没被动过，碰巧收得干净而已。咱们的建议干脆：析构过的池子就别再碰，把它当一次性的用品。
+析构跑完了，`workers_` 空了，停止也请求过了，这时的池子就是一具空壳。咱们拿它再去 submit，多数实现上确实会被拒收的检查拦下来，抛出了异常，看着挺安全的。不过严格按标准讲，等析构函数返回了，全体成员的生命周期就都结束了：submit 读的 `stop_source_` 是已销毁的对象，`tasks_` 和它的队列也是，读个 size 并不比摸别的成员更体面。这一趟走的本就是未定义行为，只是成员占的内存在栈上或堆上都还没被动过，碰巧收得干净而已。咱们的建议干脆：析构过的池子就别再碰，把它当一次性的用品。
 
 ### 池子不能拷贝，移动也要三思
 
@@ -469,15 +481,70 @@ exercises 的线程池 Lab 还会补上就地执行的开关，工时表上给�
 
 ## 参考资源
 
-- [std::condition_variable_any::wait -- cppreference](https://en.cppreference.com/w/cpp/thread/condition_variable_any/wait)
-- [std::condition_variable -- cppreference](https://en.cppreference.com/w/cpp/thread/condition_variable)
-- [std::jthread -- cppreference](https://en.cppreference.com/w/cpp/thread/jthread)
-- [std::stop_source::request_stop -- cppreference](https://en.cppreference.com/w/cpp/thread/stop_source/request_stop)
-- [std::stop_callback -- cppreference](https://en.cppreference.com/w/cpp/thread/stop_callback)
-- [std::packaged_task -- cppreference](https://en.cppreference.com/w/cpp/thread/packaged_task)
-- [std::function -- cppreference](https://en.cppreference.com/w/cpp/utility/functional/function)
-- [std::move_only_function -- cppreference](https://en.cppreference.com/w/cpp/utility/functional/move_only_function)
-- [P0288R9: move_only_function -- open-std.org](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p0288r9.html)
-- [P0660R10: Stop Token and Joining Thread, Rev 10 -- open-std.org](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p0660r10.pdf)
-- Anthony Williams. *C++ Concurrency in Action*, 2nd ed. Manning, 2019. 第 9 章有线程池的完整叙述，析构与异常的口径跟本篇一致。
-
+<ReferenceCard title="参考文献">
+  <ReferenceItem
+    :id="1"
+    title="std::condition_variable_any::wait"
+    author="cppreference"
+    url="https://en.cppreference.com/w/cpp/thread/condition_variable_any/wait"
+  />
+  <ReferenceItem
+    :id="2"
+    title="std::condition_variable"
+    author="cppreference"
+    url="https://en.cppreference.com/w/cpp/thread/condition_variable"
+  />
+  <ReferenceItem
+    :id="3"
+    title="std::jthread"
+    author="cppreference"
+    url="https://en.cppreference.com/w/cpp/thread/jthread"
+  />
+  <ReferenceItem
+    :id="4"
+    title="std::stop_source::request_stop"
+    author="cppreference"
+    url="https://en.cppreference.com/w/cpp/thread/stop_source/request_stop"
+  />
+  <ReferenceItem
+    :id="5"
+    title="std::stop_callback"
+    author="cppreference"
+    url="https://en.cppreference.com/w/cpp/thread/stop_callback"
+  />
+  <ReferenceItem
+    :id="6"
+    title="std::packaged_task"
+    author="cppreference"
+    url="https://en.cppreference.com/w/cpp/thread/packaged_task"
+  />
+  <ReferenceItem
+    :id="7"
+    title="std::function"
+    author="cppreference"
+    url="https://en.cppreference.com/w/cpp/utility/functional/function"
+  />
+  <ReferenceItem
+    :id="8"
+    title="std::move_only_function"
+    author="cppreference"
+    url="https://en.cppreference.com/w/cpp/utility/functional/move_only_function"
+  />
+  <ReferenceItem
+    :id="9"
+    title="P0288R9: move_only_function"
+    author="open-std.org"
+    url="https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p0288r9.html"
+  />
+  <ReferenceItem
+    :id="10"
+    title="P0660R10: Stop Token and Joining Thread, Rev 10"
+    author="open-std.org"
+    url="http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p0660r10.pdf"
+  />
+  <ReferenceItem
+    :id="11"
+    title="Anthony Williams. *C++ Concurrency in Action*, 2nd ed. Manning, 2019. 第 9 章有线程池的完整叙述，析构与异常的口径跟本篇一致。"
+    :year="2019"
+  />
+</ReferenceCard>

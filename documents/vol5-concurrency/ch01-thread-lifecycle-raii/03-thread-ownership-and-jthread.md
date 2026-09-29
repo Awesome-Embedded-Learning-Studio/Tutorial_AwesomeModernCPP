@@ -58,7 +58,17 @@ int main()
 
 预期行为：move 以前 `t1` 是 joinable 的，move 之后 `t1` 变成了空壳（joinable 为假），`t2` 把线程接了过来（joinable 为真）。咱们若往 `t1` 上调 `join()`，会被拒绝——它已经不代表任何线程了。
 
-<!-- 实验回填：上面这段的实际运行输出（三行 joinable 打印），编译命令与输出原文 -->
+您点"动手试一试"自己跑一遍：
+
+<OnlineCompilerDemo
+  title="动手验证：move 之后 t1 成了空壳"
+  source-path="code/examples/vol5/18_thread_move_ownership.cpp"
+  description="三行 joinable 输出依次是 1、0、1：move 之前 t1 持有线程，move 之后 t1 空了、t2 接手。worker running 那行的位置随线程调度抖动，可能插在三行中间或落在末尾。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
+
+三行与预期一一对应，move 之后 `t1` 真就成了空壳。
 
 ### 四个空壳状态
 
@@ -91,7 +101,7 @@ void own_the_thread(std::thread t);  // sink：收下就归我管
 // own_the_thread(std::move(t));    // 交出去之后，t 就别再碰了
 ```
 
-最后看往容器里流的：`std::thread` 是 move-only 的，而 `std::vector` 从 C++11 起就接纳 move-only 元素，所以 `std::vector<std::thread>` 也是完全合法的——ch01/01 文末那批派生线程再逐个 join 的代码，用的骨架就是它。容器这一路咱们留到压轴再展示，等 `jthread` 上了场，咱们再拿它重写一遍，写出来的味道就不一样了。
+最后看往容器里流的：`std::thread` 是 move-only 的，而 `std::vector` 从 C++11 起就接纳 move-only 元素，所以 `std::vector<std::thread>` 也是完全合法的——第 1 章/01 文末那批派生线程再逐个 join 的代码，用的骨架就是它。容器这一路咱们留到压轴再展示，等 `jthread` 上了场，咱们再拿它重写一遍，写出来的味道就不一样了。
 
 ## 为什么偏偏是 terminate
 
@@ -350,7 +360,17 @@ int main()
 
 预期的行为是：请求发出以前 token 查到 0，发出以后查到的是 1，`request_stop()` 的两次调用只有头一次返回 true。值得您记牢的性质有两个。停止请求是单向的、一经发出就不可撤回，标准没有留出反悔的接口。计次是幂等的：多次调用是安全的，但只有实际发出请求的那次返回 true，后来的调用不会再触发一次请求。可见性也有保证——同一停止状态派生出的所有 source 与 token，都看得见这次发出的请求。
 
-<!-- 实验回填：本例实际输出（三行），以及在 request_stop 之后再派生 token 的行为验证 -->
+四行输出咱们自己跑出来看（最后一行是请求发出之后才派生的 token）：
+
+<OnlineCompilerDemo
+  title="动手验证：停止请求只 true 一次，晚派生的 token 也看得见"
+  source-path="code/examples/vol5/19_stop_token_state.cpp"
+  description="四行依次是 0、1 0、1、1：请求发出前 token 查到 0；两次 request_stop 只有头一次返回 true；请求之后查到 1；请求之后才派生的 token 一落地也查到 1。单线程程序，输出顺序稳定。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
+
+晚派生那行值得您多看一眼：请求发出之后才从 source 取的 token，一落地就看见 1——可见性保证连迟到的观众都覆盖到了。
 
 咱们把两个边角讲清楚就翻篇。`stop_possible()` 在两种情况下为假：token 没有关联任何停止状态（默认构造的 token），或者状态还在但既没有收到请求、世上也不再有任何存活的 `stop_source`——source 都没了，请求也就永远发不出来了。这也顺带解释了一件事：`jthread` 析构以前，它 token 的 `stop_possible()` 恒为真，因为内部那个 source 一直活得好好的。另一个边角说的是分配：默认构造 `stop_source` 的时候会分配停止状态、可能抛 `std::bad_alloc`。您确实不需要停止能力的时候，可以用 `std::stop_source(std::nostopstate)` 构造一个不分配的空 source，这个构造是 noexcept 的。
 
@@ -389,7 +409,17 @@ int main()
 
 适合的场景是迭代短促的计算型循环，一圈也就毫秒级的工夫，停止请求的生效几乎是即时的。您若遇上单次迭代要跑好几秒的任务，咱们就得在迭代体内再设检查点，让等待的上限变短。轮询的边界也要认清：线程若是阻塞在长睡眠或等待上，循环条件根本没机会求值——让停止请求能唤醒阻塞中的线程，靠的是 `condition_variable_any` 与 token 的集成写法，那是 [线程池](../ch05-future-task-threadpool/03-thread-pool.md) 一篇的正源内容，本篇就按住不表了。
 
-<!-- 实验回填：本例实际输出与停止时延的大致量级（从 request_stop 到 worker 退出的间隔） -->
+实际输出就一行，咱们跑一遍看：
+
+<OnlineCompilerDemo
+  title="动手验证：停止请求下一圈就生效"
+  source-path="code/examples/vol5/20_polling_stop.cpp"
+  description="1 秒里每圈 100 毫秒，输出 processed 10 batches；整个程序约 1 秒出头退出——request_stop 之后 worker 醒来一查条件就退了，jthread 析构自动 join，不需要手动收尾。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
+
+停止时延咱们单独测了：在 `request_stop()` 前后打时间戳、join 返回处收尾，五次运行的间隔是 0 到 1 毫秒。1 秒里跑了 10 圈、每圈 100 毫秒，请求多半落在睡眠的半道上，worker 醒来一查条件就退了，所以量级就是"毫秒级、近乎即时"，与上文的判断一致。
 
 ### 回调：停止瞬间的收尾动作
 
@@ -430,7 +460,27 @@ P0660R10 给 `stop_callback` 写了四条行为保证，咱们挨个过一遍。
 
 > 规范还给咱们写了同步子句：真正发出请求的那次 `request_stop`（返回 true 的那次）与看见它的 `stop_requested` 之间、回调注册与回调执行之间，都有 synchronizes-with 的保证——谁对谁可见、何时可见，正式的名字叫 happens-before，完整的定义住在 [原子操作与 happens-before](../ch03-atomic-memory-model/02-atomics-and-happens-before.md) 那一篇里，本篇就不越界了。
 
-<!-- 实验回填：本例实际输出顺序（回调打印与 worker exits 两行的先后），以及把回调改为打印线程 id 后的对照 -->
+上面这段原样跑，输出顺序就是回调在前、worker 退出在后：
+
+<OnlineCompilerDemo
+  title="动手验证：回调先落屏，worker 后退出"
+  source-path="code/examples/vol5/21_stop_callback.cpp"
+  description="callback fired, counter = 5 在前、worker exits 在后：回调同步跑在 request_stop() 那一行上，那一行返回、main 才往下走。counter 的值随调度在 5 附近浮动。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
+
+回调先落屏不奇怪：它同步跑在 `request_stop()` 那一行上，那一行返回、main 才往下走。把回调换成打印线程 id 再看（这个变体在回调里多打了一行线程号）：
+
+<OnlineCompilerDemo
+  title="动手验证：回调跑在 main 的线程上"
+  source-path="code/examples/vol5/22_stop_callback_thread_id.cpp"
+  description="callback fired 后面括号里的线程 id 与第一行 main thread id 一模一样——回调确实不在 worker 自己的线程上跑。id 的数值每次运行都不同，看相等就够了。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
+
+回调落屏时带的线程 id，跟 main 的 id 一模一样——它确实不在 worker 自己的线程上跑。（id 的数值每次运行都会变，看相等就够了。）
 
 ### 组控制：一个 source 停一组线程
 
@@ -475,11 +525,21 @@ int main()
 
 咱们把这里的门道看清：token 是显式传进去的，于是每个 `jthread` 内部的那个 source 就全程闲置了，真正掌握停止权的是外部共享的 `source`。析构照样按规范走：每个 jthread 对自己的内部 source 调 `request_stop()`，这个请求没人理会、等于多发了一次、然后照常 join。该做的收尾一件不落，真正发停止请求的主动权却始终攥在 `main` 手里。
 
-<!-- 实验回填：本例实际输出（四个 worker 的 working/exits 交错与停止时机） -->
+一份完整的运行记录长这样：
+
+<OnlineCompilerDemo
+  title="动手验证：一次 request_stop，四个 worker 一起收工"
+  source-path="code/examples/vol5/49_stop_source_group.cpp"
+  description="1 秒里各睡 200 毫秒，四个 worker 各打四轮 is working，随后一次 request_stop、四个 exits。四个 worker 的先后顺序每次不同，看的是四个全都跑到了；exits 行偶尔还会交错成 worker worker 21 exits 这样的乱码——四个线程共写一个流没有锁，这是后面并发章节的老熟人。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
+
+四组 working 整整齐齐排了四轮（1 秒里各睡 200 毫秒，恰好四圈），随后一次 `request_stop` 四个 worker 一起收工。末尾那行 `worker worker 21 exits` 不是笔误，是原文：worker 2 和 worker 1 同时往 `std::cout` 写字，两行的字符在流里交错了——四个线程共写一个流，输出本身就没这层锁，这是后面并发章节的老熟人，先在这儿见一面。
 
 ### vector\<jthread\> 与 parallel_for_each
 
-容器路线现在可以补上了。咱们把 ch01/01 文末那批派生线程、逐个手动 join 的骨架拿出来，元素统一换成 `jthread` 的写法：
+容器路线现在可以补上了。咱们把 第 1 章/01 文末那批派生线程、逐个手动 join 的骨架拿出来，元素统一换成 `jthread` 的写法：
 
 ```cpp
 #include <algorithm>
@@ -495,7 +555,7 @@ void parallel_for_each(Iterator first, Iterator last, Func func,
         return;
     }
     if (thread_count == 0) {
-        // hardware_concurrency() 只是提示值，讲法见 ch01/01
+        // hardware_concurrency() 只是提示值，讲法见 第 1 章/01
         thread_count = std::thread::hardware_concurrency();
     }
     if (thread_count == 0) {
@@ -526,7 +586,20 @@ void parallel_for_each(Iterator first, Iterator last, Func func,
 
 咱们跟旧骨架一对比，差异全在收尾上：那个手动 join 的循环没有了。vector 的析构会逐个销毁元素，每个 `jthread` 的析构各自做一轮 request_stop，本例的 worker 不看 token，这些请求全落了空，跟着把 join 也做了，函数一返回就全都收尾了。`reserve` 顺手把扩容问题也料理了——真发生搬移也不怕，jthread 是 move-only 的、move 又带 noexcept，vector 也就搬得动了。分块的思路照旧：每线程一块、最后一块留给调用方自己算，省一个线程的开销。这里咱们还提前堵了一处隐患：`hardware_concurrency()` 查不出来的时候会返回 0，不兜住的话，`thread_count - 1` 就在无符号数上回绕出一个大得吓人的数字，循环也就跟着失控了。所以代码里兜成了 1，哪怕最后串行地跑完，收场也是干净的。
 
-<!-- 实验回填：与串行 std::for_each 的结果对拍（正确性），以及不同 thread_count 下的耗时对比（性能数字一律现场测） -->
+笔者实测：WSL2 Arch Linux、内核 6.18、g++ 16.2.1、AMD Ryzen 7 9700X（`-O2`，8000 万个 int、每个做一次 `v = v * 3 + 1`）。仓库演示程序的对拍结论先行：`parallel_for_each 与串行结果一致: 1`，正确性过了。耗时咱们按不同 thread_count 各测了一遍（两次运行数字稳定在同一档）：
+
+```text
+serial: 14 ms
+threads=1: 19 ms, match=1
+threads=2: 13 ms, match=1
+threads=4: 13 ms, match=1
+threads=8: 13 ms, match=1
+threads=16: 13 ms, match=1
+threads=hc(16): 13 ms, match=1
+hardware_concurrency = 16
+```
+
+单开一个线程反而比串行慢 5 毫秒上下，这是分块与起线程的固定开销；加到 16 个线程也只在 13 毫秒附近平着走。这活儿是逐元素改 320 MB 的数组，跑到后面拼的是内存带宽而不是 CPU 核数，多线程帮不上忙——这个现象本身值得您记住：并行不是免费的，也不是永远有赚的，瓶颈不在 CPU 上的活儿，加核只会加开销。
 
 ## 练习
 
@@ -544,17 +617,60 @@ void parallel_for_each(Iterator first, Iterator last, Func func,
 
 ## 下一步
 
-所有权怎么流转、join 怎么自动化、停止请求怎么发出怎么收，咱们在这一篇里都讲全了。您要是往 ch02 走，[mutex 与 RAII 守卫](../ch02-mutex-condition-sync/01-mutex-and-raii-guards.md) 会把共享数据的同步补上。往 ch05 去的话，[线程池](../ch05-future-task-threadpool/03-thread-pool.md) 会把这一章攒下的能力组装成生产级的形态。动手的路线在 [练习体系](../exercises/)：Lab 00 的 bonus 题目，正好请您用 `jthread` 把手写的自动 join 改造一遍。想看这一章在全卷的位置，您回 [卷地图](../) 瞄一眼就行。
+所有权怎么流转、join 怎么自动化、停止请求怎么发出怎么收，咱们在这一篇里都讲全了。您要是往 第 2 章 走，[mutex 与 RAII 守卫](../ch02-mutex-condition-sync/01-mutex-and-raii-guards.md) 会把共享数据的同步补上。往 第 5 章 去的话，[线程池](../ch05-future-task-threadpool/03-thread-pool.md) 会把这一章攒下的能力组装成生产级的形态。动手的路线在 [练习体系](../exercises/)：Lab 00 的 bonus 题目，正好请您用 `jthread` 把手写的自动 join 改造一遍。想看这一章在全卷的位置，您回 [卷地图](../) 瞄一眼就行。
 
 > 💡 咱们把完整示例代码放在 [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)，您可以访问 `code/volumn_codes/vol5/ch01-thread-lifecycle-raii/`。
 
 ## 参考资源
 
-- [P0660R10: Stop Token and Joining Thread](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p0660r10.pdf) —— jthread 与 stop_token 家族的单一涵盖提案
-- [std::jthread — cppreference](https://en.cppreference.com/w/cpp/thread/jthread)
-- [std::stop_source — cppreference](https://en.cppreference.com/w/cpp/thread/stop_source)
-- [std::stop_token — cppreference](https://en.cppreference.com/w/cpp/thread/stop_token)
-- [std::stop_callback — cppreference](https://en.cppreference.com/w/cpp/thread/stop_callback)
-- [std::thread::join — cppreference](https://en.cppreference.com/w/cpp/thread/thread/join)
-- [libc++ C++20 状态页](https://libcxx.llvm.org/Status/Cxx20.html) —— P0660R10 于 LLVM 20 Complete
-- [Williams, *C++ Concurrency in Action*, 2nd ed, Manning, 2019](https://www.manning.com/books/c-plus-plus-concurrency-in-action-second-edition) —— §2.3 线程所有权转移
+<ReferenceCard title="参考文献">
+  <ReferenceItem
+    :id="1"
+    title="P0660R10: Stop Token and Joining Thread"
+    url="http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p0660r10.pdf"
+    chapter="jthread 与 stop_token 家族的单一涵盖提案"
+  />
+  <ReferenceItem
+    :id="2"
+    author="cppreference"
+    title="std::jthread"
+    url="https://en.cppreference.com/w/cpp/thread/jthread"
+  />
+  <ReferenceItem
+    :id="3"
+    author="cppreference"
+    title="std::stop_source"
+    url="https://en.cppreference.com/w/cpp/thread/stop_source"
+  />
+  <ReferenceItem
+    :id="4"
+    author="cppreference"
+    title="std::stop_token"
+    url="https://en.cppreference.com/w/cpp/thread/stop_token"
+  />
+  <ReferenceItem
+    :id="5"
+    author="cppreference"
+    title="std::stop_callback"
+    url="https://en.cppreference.com/w/cpp/thread/stop_callback"
+  />
+  <ReferenceItem
+    :id="6"
+    author="cppreference"
+    title="std::thread::join"
+    url="https://en.cppreference.com/w/cpp/thread/thread/join"
+  />
+  <ReferenceItem
+    :id="7"
+    title="libc++ C++20 状态页"
+    url="https://libcxx.llvm.org/Status/Cxx20.html"
+    chapter="P0660R10 于 LLVM 20 Complete"
+  />
+  <ReferenceItem
+    :id="8"
+    title="Williams, *C++ Concurrency in Action*, 2nd ed, Manning, 2019"
+    :year="2019"
+    url="https://www.manning.com/books/c-plus-plus-concurrency-in-action-second-edition"
+    chapter="§2.3 线程所有权转移"
+  />
+</ReferenceCard>

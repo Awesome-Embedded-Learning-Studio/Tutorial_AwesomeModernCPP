@@ -13,6 +13,7 @@ description: "从线程安全队列到并发容器，掌握基于锁的并发数
 ## 本章内容
 
 <ChapterNav variant="sub">
+  <ChapterLink href="00-os-threads-and-cost">OS 线程与开销</ChapterLink>
   <ChapterLink href="01-thread-safe-queue">线程安全队列</ChapterLink>
   <ChapterLink href="02-thread-safe-containers">线程安全容器设计</ChapterLink>
   <ChapterLink href="03-lock-free-basics">无锁编程基础</ChapterLink>

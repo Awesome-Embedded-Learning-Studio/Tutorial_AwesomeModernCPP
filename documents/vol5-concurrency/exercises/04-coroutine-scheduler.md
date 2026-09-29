@@ -6,7 +6,7 @@ description: 实现极简协程调度器，掌握 C++20 协程从语法到运行
 difficulty: advanced
 order: 5
 prerequisites:
-- '卷五 ch06: 异步 I/O 与协程'
+- '卷五 第 6 章: 异步 I/O 与协程'
 - 'Lab 3: Production-style Thread Pool'
 reading_time_minutes: 14
 tags:
@@ -28,11 +28,11 @@ Lab 3 的线程池是"任务级"的并发——每个任务是一个完整的函
 
 在开始之前，确保你已经读完以下章节：
 
-- **ch06-01**：异步编程演进 — 从回调到协程的动机
-- **ch06-02**：C++20 协程基础 — `co_await`、`co_return`、`promise_type`
-- **ch06-03**：promise_type 与 awaitable — 自定义 awaitable 的完整机制
-- **ch06-04**：异步 I/O 与事件循环 — epoll/kqueue 事件驱动模型
-- **ch06-05**：协程实战：echo server — 完整的协程网络应用
+- **第 6 章第 01 篇**：异步编程演进 — 从回调到协程的动机
+- **第 6 章第 02 篇**：C++20 协程基础 — `co_await`、`co_return`、`promise_type`
+- **第 6 章第 03 篇**：promise_type 与 awaitable — 自定义 awaitable 的完整机制
+- **第 6 章第 04 篇**：异步 I/O 与事件循环 — epoll/kqueue 事件驱动模型
+- **第 6 章第 05 篇**：协程实战：echo server — 完整的协程网络应用
 - **Lab 3**：线程池的关闭语义设计思路（本 Lab 的关闭设计参考）
 
 ## 环境准备

@@ -13,7 +13,7 @@ platform: host
 reading_time_minutes: 20
 cpp_standard: [17, 20]
 prerequisites:
-  - "卷五 ch02: 互斥量、条件变量与同步原语"
+  - "卷五 第 2 章: 互斥量、条件变量与同步原语"
   - "Lab 0: Thread Lifecycle Lab"
 related:
   - "mutex 与 RAII 守卫"
@@ -39,9 +39,9 @@ Lab 0 跑通了多线程骨架——创建线程、RAII 包装、参数安全传
 
 ## 前置知识
 
-- **ch02-01** mutex 与 RAII 守卫 — `std::mutex`、`lock_guard`、`unique_lock`
-- **ch02-04** condition_variable — 谓词等待、虚假唤醒、`notify_one` vs `notify_all`
-- **ch02-05** latch / barrier / semaphore — C++20 同步原语
+- **第 2 章第 01 篇** mutex 与 RAII 守卫 — `std::mutex`、`lock_guard`、`unique_lock`
+- **第 2 章第 04 篇** condition_variable — 谓词等待、虚假唤醒、`notify_one` vs `notify_all`
+- **第 2 章第 05 篇** latch / barrier / semaphore — C++20 同步原语
 - **Lab 0** — `JoiningThread`（本 Lab 的测试和示例里会用到）
 
 ## 工程脚手架（先把这个跑起来）
@@ -268,7 +268,7 @@ class ConcurrentCache {
 
 ### 为什么
 
-ch02-05 讲了这三个原语的概念，但"知道"和"会挑"差很远。这个 milestone 的核心不是写多少代码，而是**判断"这个场景该用哪个原语"**——三个函数各对应一种典型场景，做的时候想清楚为什么是它。
+第 2 章第 05 篇 讲了这三个原语的概念，但"知道"和"会挑"差很远。这个 milestone 的核心不是写多少代码，而是**判断"这个场景该用哪个原语"**——三个函数各对应一种典型场景，做的时候想清楚为什么是它。
 
 ### 实现指引
 
@@ -312,7 +312,29 @@ ch02-05 讲了这三个原语的概念，但"知道"和"会挑"差很远。这�
 
 ## 参考资源
 
-- [`std::condition_variable` — cppreference](https://en.cppreference.com/w/cpp/thread/condition_variable)
-- [`std::condition_variable::wait` 的谓词重载 — cppreference](https://en.cppreference.com/w/cpp/thread/condition_variable/wait)
-- [`std::latch` / `std::barrier` / `std::counting_semaphore — cppreference`](https://en.cppreference.com/w/cpp/thread)
-- [ThreadSanitizer — Clang 文档](https://clang.llvm.org/docs/ThreadSanitizer.html)
+<ReferenceCard title="参考文献">
+  <ReferenceItem
+    :id="1"
+    author="cppreference"
+    title="std::condition_variable"
+    url="https://en.cppreference.com/w/cpp/thread/condition_variable"
+  />
+  <ReferenceItem
+    :id="2"
+    author="cppreference"
+    title="std::condition_variable::wait 的谓词重载"
+    url="https://en.cppreference.com/w/cpp/thread/condition_variable/wait"
+  />
+  <ReferenceItem
+    :id="3"
+    author="cppreference"
+    title="std::latch / std::barrier / std::counting_semaphore"
+    url="https://en.cppreference.com/w/cpp/thread"
+  />
+  <ReferenceItem
+    :id="4"
+    author="Clang 文档"
+    title="ThreadSanitizer"
+    url="https://clang.llvm.org/docs/ThreadSanitizer.html"
+  />
+</ReferenceCard>

@@ -7,7 +7,7 @@ description: 实现固定大小线程池，掌握 future、packaged_task、异�
 difficulty: advanced
 order: 4
 prerequisites:
-- '卷五 ch05: future、任务与线程池'
+- '卷五 第 5 章: future、任务与线程池'
 - 'Lab 0: Thread Lifecycle Lab'
 - 'Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives'
 reading_time_minutes: 12
@@ -29,10 +29,10 @@ title: 'Lab 3: Production-style Thread Pool'
 
 在开始之前，确保你已经读完以下章节：
 
-- **ch05-01**：std::async 与 future — `std::future`、`std::promise`、`std::async`
-- **ch05-02**：promise 与 packaged_task — `std::packaged_task`、类型擦除
-- **ch05-03**：jthread 与 stop_token — C++20 协作式取消
-- **ch05-04**：线程池设计 — 线程池的基本架构和设计考量
+- **第 5 章第 01 篇**：std::async 与 future — `std::future`、`std::promise`、`std::async`
+- **第 5 章第 02 篇**：promise 与 packaged_task — `std::packaged_task`、类型擦除
+- **第 5 章第 03 篇**：jthread 与 stop_token — C++20 协作式取消
+- **第 5 章第 04 篇**：线程池设计 — 线程池的基本架构和设计考量
 - **Lab 0**：`JoiningThread` 的实现
 - **Lab 1**：`BoundedBlockingQueue` 的实现（本 Lab 直接复用）
 
