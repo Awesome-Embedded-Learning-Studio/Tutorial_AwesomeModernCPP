@@ -1,4 +1,5 @@
 ---
+sidebar_order: 7
 title: "Actor 模型与 CSP"
 description: "探索\"不共享内存\"的并发范式——Actor 模型的消息传递与 CSP 的 channel 通信"
 ---

@@ -1,19 +1,19 @@
 ---
-title: "线程生命周期与 RAII"
-description: "从 std::thread 创建到 RAII 包装，掌握 C++ 线程的所有权语义与生命周期管理"
+sidebar_order: 1
+title: "线程：第一条执行流"
+description: "从 std::thread 的构造、传参与收尾，到 move-only 所有权、jthread 自动 join 与 stop_token 三件套：把第一条执行流的生命周期管到底"
 ---
 
-# 线程生命周期与 RAII
+# 线程：第一条执行流
 
-上一篇我们了解了 CPU cache 和 OS 线程的底层机制，现在终于可以动手写第一个多线程程序了。但在敲下 `std::thread t(...)` 之前，我们需要先想清楚一件事：线程是一种**资源**，它占用操作系统内核对象、栈空间、TLS 存储等。跟文件句柄、动态内存一样，线程也必须被正确地获取和释放——否则你要面对的就是 `std::terminate` 和资源泄漏。
+ch00 咱们给 OS 线程标了价，创建的价钱、切换的价钱，心里都有了数。这一章咱们把 `std::thread` 正经拿在手里用——ch00 里它只被当把手用了两回，开篇的示意算一回，掐表基准里真用的算一回，真正的用法都留给了这一章。卷首的 `先正确性，再性能` 在这一章不止一次派上用场：detach 图省事的写法，常常就是日后出事的写法。
 
-这一章我们从 `std::thread` 的基础用法开始，逐步深入参数传递的陷阱、所有权转移的语义，最后用 RAII 把这些复杂性封装起来。目标是让多线程代码和单线程代码一样，拥有清晰的所有权和确定性的资源释放。
+三篇的走法是这样排的。第一篇把 `std::thread` 立了起来：构造的三种入口、join 与 detach 的分岔、joinable 的判据，文末拼出一个手动 join 的 `parallel_for_each`。第二篇钻的是传参：参数是怎么被 decay-copy 拷进线程的，`std::ref` 与 `std::move` 分头管的是哪些参数，detach 用错了引用为什么会悬垂，ASan 又怎么把它抓住。第三篇讲的是所有权与收尾：从 move-only 的所有权语义、手写的自动 join 类，到 C++20 的 `jthread` 与 stop_token 三件套，咱们把协作式取消一次讲全，往后的线程池与协程要用到取消，您到时候回这一篇取料就行。
 
 ## 本章内容
 
 <ChapterNav variant="sub">
   <ChapterLink href="01-std-thread">std::thread 基础</ChapterLink>
-  <ChapterLink href="02-thread-arguments-and-lifetime">线程参数与生命周期</ChapterLink>
-  <ChapterLink href="03-thread-ownership-and-raii">线程所有权与 RAII</ChapterLink>
-  <ChapterLink href="04-thread-local-and-call-once">thread_local 与 call_once</ChapterLink>
+  <ChapterLink href="02-thread-arguments-and-lifetime">线程参数与生命周期陷阱</ChapterLink>
+  <ChapterLink href="03-thread-ownership-and-jthread">线程所有权与 jthread/stop_token</ChapterLink>
 </ChapterNav>

@@ -1,20 +1,20 @@
 ---
-title: "异步 I/O 与协程"
-description: "从异步编程范式演进到 C++20 协程机制，掌握 co_await/co_yield/co_return 与协程生命周期管理"
+sidebar_order: 6
+title: "协程"
+description: "从 C++20 协程机制到手写 task<T> 正源，再到协程取消与事件循环，用更轻的任务单位组织异步 I/O"
 ---
 
-# 异步 I/O 与协程
+# 协程
 
-前面的章节里，我们用线程、mutex、atomic、future 这些工具构建了并发程序的基础设施。但当我们面对"I/O 密集型"场景——比如一个网络服务器需要同时处理上千个连接——传统的"一个连接一个线程"模型就会暴露出严重的资源浪费问题。线程在等待 I/O 时白白占用内存和调度资源，我们需要一种更轻量的方式来表达"先去干别的事，等 I/O 完成了再回来"。
+咱们在前面的几章里，手里的执行流始终是线程：开一条线程，协调用的是 mutex 和 atomic，传结果走的是 future。到了 I/O 密集的场景，这套模型就开始吃力了，一个连接一条线程的开销不小，线程等 I/O 的时候又白白占住了内存和调度资源。咱们需要一种更轻的表达：咱们去干别的，等 I/O 完成了再回来。卷首的 `先同步再任务` 说的就是这道顺序：同步的机制前面立住了，这一章把任务这个单位做得更轻了。
 
-这一章我们从异步编程范式的演进开始，对比回调、future 链、协程三种模型的动机和痛点，理解为什么协程被认为是"异步编程的正确打开方式"。然后深入 C++20 协程的内部机制——编译器对协程函数的状态机变换、协程帧的分配与销毁、coroutine_handle 的生命周期管理——并从零实现一个完整的 generator，把所有概念串联起来。接着我们把目光投向协程的两大定制扩展点（promise_type 与 awaitable），将协程和操作系统的 I/O 多路复用机制接通，构建协程驱动的事件循环，最后用一个完整的协程 Echo Server 实战串联所有知识点。
+这一章咱们从 C++20 协程的机制地基开始，把三个关键字、promise 的钩子、awaiter 协议一样样过一遍。接着咱们手写惰性的 `Task<T>`，它是全卷六大正源里的一席，值、异常、续体的三条通道一次接通，后面的取消与调度都在 Task 身上接着搭。然后补上协程的取消：任务挂在 `co_await` 上等结果的时候，停止的信号怎么送进去，收到信号的任务怎么收尾。收尾的时候咱们把 Task 接上事件循环与定时器，让调度循环成为唯一调用 resume 的地方，蹦床接线的栈真相也在那里落定。
 
 ## 本章内容
 
 <ChapterNav variant="sub">
-  <ChapterLink href="01-async-programming-evolution">异步编程演进：从回调地狱到协程</ChapterLink>
-  <ChapterLink href="02-coroutine-basics">C++20 协程基础</ChapterLink>
-  <ChapterLink href="03-promise-type-and-awaitable">promise_type 与 awaitable</ChapterLink>
-  <ChapterLink href="04-async-io-and-event-loop">异步 I/O 与事件循环</ChapterLink>
-  <ChapterLink href="05-coroutine-echo-server">实战：协程 Echo Server</ChapterLink>
+  <ChapterLink href="01-coroutine-basics">C++20 协程基础</ChapterLink>
+  <ChapterLink href="02-task-coroutine">手写 task&lt;T&gt;：惰性任务与对称转移</ChapterLink>
+  <ChapterLink href="03-coroutine-cancellation">协程取消</ChapterLink>
+  <ChapterLink href="04-event-loop-and-timers">事件循环与定时器</ChapterLink>
 </ChapterNav>

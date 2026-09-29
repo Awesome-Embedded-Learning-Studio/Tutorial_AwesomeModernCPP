@@ -12,3 +12,20 @@ find_package(Threads REQUIRED)
 
 add_executable(false_sharing_bench false_sharing_bench.cpp)
 target_link_libraries(false_sharing_bench PRIVATE Threads::Threads)
+
+# ch00/02 数据竞争与 ThreadSanitizer 第一课的四个示例
+add_executable(data_race 01_data_race.cpp)
+target_link_libraries(data_race PRIVATE Threads::Threads)
+
+add_executable(data_race_mutex 02_data_race_mutex.cpp)
+target_link_libraries(data_race_mutex PRIVATE Threads::Threads)
+
+add_executable(check_then_act 03_check_then_act.cpp)
+target_link_libraries(check_then_act PRIVATE Threads::Threads)
+
+add_executable(deadlock_reorder 04_deadlock_reorder.cpp)
+target_link_libraries(deadlock_reorder PRIVATE Threads::Threads)
+
+# ch00/03 OS 线程与开销：空线程创建成本基准
+add_executable(os_threads_and_cost 03_os_threads_and_cost.cpp)
+target_link_libraries(os_threads_and_cost PRIVATE Threads::Threads)

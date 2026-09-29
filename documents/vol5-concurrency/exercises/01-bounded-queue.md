@@ -40,7 +40,7 @@ Lab 0 跑通了多线程骨架——创建线程、RAII 包装、参数安全传
 ## 前置知识
 
 - **ch02-01** mutex 与 RAII 守卫 — `std::mutex`、`lock_guard`、`unique_lock`
-- **ch02-03** condition_variable — 谓词等待、虚假唤醒、`notify_one` vs `notify_all`
+- **ch02-04** condition_variable — 谓词等待、虚假唤醒、`notify_one` vs `notify_all`
 - **ch02-05** latch / barrier / semaphore — C++20 同步原语
 - **Lab 0** — `JoiningThread`（本 Lab 的测试和示例里会用到）
 

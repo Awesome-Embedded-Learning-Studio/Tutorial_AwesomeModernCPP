@@ -1,19 +1,19 @@
 ---
-title: "future、任务与线程池"
-description: "从 std::async 到 promise/packaged_task，构建灵活的异步任务通道与线程池基础设施"
+sidebar_order: 5
+title: "从线程到任务"
+description: "从 std::async/future 的启动与结果获取，到 promise/packaged_task 的手动通道，再到 worker 循环正源与优雅关闭的线程池：把执行流交给任务的一章"
 ---
 
-# future、任务与线程池
+# 从线程到任务
 
-前几章我们一直在跟底层原语打交道：thread、mutex、atomic、condition variable。这些东西给了我们精确的控制力，但也带来了大量的手动管理负担——你需要自己设计同步机制、自己传递结果、自己处理错误。C++ 标准库提供了一套更高层的异步抽象来简化这些工作：future 是结果容器，promise 是值的写端，packaged_task 是任务的封装器，async 是最便捷的启动方式。它们组合在一起，构成了线程池和任务队列的基础设施。
+ch01 到 ch04 咱们把执行流的底层一路配齐了：线程本身、锁与同步、原子与内存序，ch04 还把无锁的性能量过了。可咱们手里攥着的仍是线程：开几条线程、怎么配同步、结果从哪取，样样都得咱们自己动手。卷首的 `先同步再任务` 说的就是这道顺序：同步的机制前面立住了，到了 ch05，咱们改在任务的层面组织代码：做什么交给任务、谁来跑交给池子。
 
-这一章我们从 `std::async` 和 `std::future` 开始，理解异步任务的启动策略和结果获取机制；然后深入 `std::promise` 和 `std::packaged_task`，学会手动控制值的设置和任务的执行；最后我们会讨论 `std::shared_future` 和线程池的设计模式，把前面学到的所有组件串联起来。
+三篇的走法是这样排的。第一篇讲的是 `std::async` 与 future：一句调用就把任务发了出去，结果和异常都替咱们接住，launch 策略的分岔也在这篇里定。第二篇把手动通道立了起来：promise 怎么写值、packaged_task 怎么把任务打包、future 那头怎么取，咱们自己接线。第三篇要立的是正源：线程池的 worker 循环。咱们从取任务的循环写起，经优雅关闭的三步时序，一路讲到析构的收场——析构之后再 submit 就是未定义的行为，任务里反过来把池子析构了，等来的就是 terminate。ch01 留下的 stop_token 三件套，也在这里头一回真正派上了用场。
 
 ## 本章内容
 
 <ChapterNav variant="sub">
-  <ChapterLink href="01-std-async-and-future">std::async 与 future</ChapterLink>
+  <ChapterLink href="01-async-and-future">std::async 与 future</ChapterLink>
   <ChapterLink href="02-promise-and-packaged-task">promise 与 packaged_task</ChapterLink>
-  <ChapterLink href="03-jthread-and-stop-token">jthread 与停止令牌</ChapterLink>
-  <ChapterLink href="04-thread-pool">线程池设计</ChapterLink>
+  <ChapterLink href="03-thread-pool">线程池：worker 循环与优雅关闭</ChapterLink>
 </ChapterNav>

@@ -14,8 +14,8 @@ find_package(Threads REQUIRED)
 add_executable(01_coroutine_basics 01_coroutine_basics.cpp)
 target_link_libraries(01_coroutine_basics PRIVATE Threads::Threads)
 
-add_executable(02_awaitable_task 02_awaitable_task.cpp)
-target_link_libraries(02_awaitable_task PRIVATE Threads::Threads)
+add_executable(02_task_coroutine 02_task_coroutine.cpp)
+target_link_libraries(02_task_coroutine PRIVATE Threads::Threads)
 
 add_executable(03_timer_scheduler 03_timer_scheduler.cpp)
 target_link_libraries(03_timer_scheduler PRIVATE Threads::Threads)
