@@ -20,7 +20,34 @@ title: 结构化绑定：一行解包多个值
 ---
 # 结构化绑定：一行解包多个值
 
-笔者写代码时总撞上一个别扭的场景：函数返回多个值，您得一个个拆开赋给变量。用 `pair` 写 `result.first`、`result.second`，用 `tuple` 写 `std::get<0>(t)`——要么语义不明，要么写法丑陋。C++11 引入了 `std::tie` 缓解这事，但老实说那语法也不优雅：先声明好所有变量，再用 `tie` 往里塞。有没有那种跟 Python `a, b = func()` 一样爽的拆分写法？真有了，孩子们。
+我相信大家在实际上编写项目的适合，总是会遇上这样一个令人感到尴尬的问题。举个例子，在 GUI 编程中，我们可能需要出路如下场景。比如说，笔者当时就遇到过一个场景，我们只需要鼠标当前所在位置的 Y 方向，但是因为接口API `FetchCurrentMousePosition` 支持的是返回的点，而不只是一个简单的 Y 值。导致可能需要这样费力的书写：
+
+```cpp
+struct Point {int x, y;};
+Point FetchCurrentMousePosition();
+
+// 处理的时候，您不得不先搞出来一个Point
+const Point kResult = FetchCurrentMousePosition();
+const int kCurrentY = kResult.y;
+
+// 在进行后续的处理。
+```
+
+上面这个 `Point` 的例子还算体面——成员好歹有名字，只是取个 `y` 还得先请出整个结构体。
+
+别急！还有第二关~。用 `pair` ，恁得写 `result.first`、`result.second`，用 `tuple` 得写 `std::get<0>(t)`。。。
+
+何意味语义？没事，您也不知道，我也不知道， Code Review 的人也不知道，只好含泪来问问您：大哥，这是啥？
+
+> 当时跟LLM聊的时候，他就说要么语义不明，要么写法丑陋。其实颇有三分道理
+
+所以，《Effective Modern C++》就以 C++11 的面孔向您介绍了 `std::tie` 缓解这事，但老实说那语法也没优雅到哪里去。先声明好所有变量，再用 `tie` 往里塞。有没有那种跟 Python `a, b = func()` 一样爽的拆分写法？真有了，孩子们。回到开头的 `FetchCurrentMousePosition`，C++17 里您只需要写一行：
+
+```cpp
+const auto [_, kCurrentY] = FetchCurrentMousePosition();
+```
+
+用不上的 `_` 摆在那儿就行，想要的 `current_y` 直接是个有名字的变量。这一行，就是本篇的主角。
 
 C++17 终于给了正经答案——结构化绑定（Structured Binding）。一行把 `pair`、`tuple`、数组、结构体全拆开，直接拿到有名字的变量，语义清晰，零开销。
 
@@ -30,7 +57,9 @@ C++17 终于给了正经答案——结构化绑定（Structured Binding）。�
 
 ### pair：最常见的多返回值
 
-`std::pair` 是标准库中最常见的"打包两个值"的方式。`std::map::insert` 返回一个 `pair<iterator, bool>`，`std::map::find` 返回一个 `pair<const Key, Value>&`。在结构化绑定出现之前，我们只能这样写：
+`std::pair` 大概是笔者试图表达明确的两个有关系的值时，使用的最多的一个标准库抽象了。甚至不光是我，连标准库搞`std::map::insert` 的时候都返回一个 `pair<iterator, bool>`，`std::map::find` 会返回一个 `pair<const Key, Value>&`。
+
+回忆一下上面您的苦日子，在结构化绑定出现之前，我们只能这样写：
 
 ```cpp
 auto result = m.insert({1, "one"});
@@ -193,7 +222,7 @@ auto& x = __anonymous.first;   // 引用匿名变量的成员
 auto& y = __anonymous.second;
 ```
 
-这意味着绑定变量本身永远是引用——它们引用的是那个隐藏的匿名对象的成员。您没法拿到"绑定变量本身"的地址，只能拿到它所引用的子对象的地址。
+这意味着绑定变量本身永远是引！它们引用的是那个隐藏的匿名对象的成员。您没法拿到"绑定变量本身"的地址，只能拿到它所引用的子对象的地址。
 
 注意：`auto&` 要求右侧是左值。如果右侧是临时对象（比如 `std::make_pair(1, 2)` 的返回值），`auto&` 会编译失败，因为非 const 引用不能绑定到右值。这时应该用 `const auto&` 或直接 `auto` 按值拷贝。
 
@@ -255,7 +284,7 @@ template<>
 struct std::tuple_element<1, SensorData> { using type = float; };
 ```
 
-配合 `get<I>` 的 ADL 重载，现在就可以愉快地解包了：
+配合 `get<I>` 的 ADL 重载，现在我们就可以愉快地解包了：
 
 ```cpp
 SensorData data{5, 23.5f};
@@ -302,7 +331,7 @@ static_assert(test_structured_binding());
 在 lambda 捕获方面，C++17 其实就支持直接捕获结构化绑定变量。下面的代码在 C++17 中就能工作：
 
 ```cpp
-std::map<int, std::string> m = {{1, "one"}, {2, "two"}};
+std::map<int, std::string> m = { { 1, "one"}, {2, "two"} };
 
 for (const auto& [k, v] : m) {
     auto callback = [k, v] {  // C++17 就支持直接捕获
@@ -330,7 +359,7 @@ auto x = __tmp.first;
 auto y = __tmp.second;
 ```
 
-"汇编完全一样"这种话不能空口说。拿 GCC 16.1.1 实测，两种写法各 `g++ -std=c++17 -O2 -S`，再 `diff`：
+"汇编完全一样"这种话不能空口说。咱们最好拿 GCC 16.1.1 实测，两种写法各 `g++ -std=c++17 -O2 -S`，再 `diff`：
 
 ```bash
 g++ -std=c++17 -O2 -S sb_structured.cpp
