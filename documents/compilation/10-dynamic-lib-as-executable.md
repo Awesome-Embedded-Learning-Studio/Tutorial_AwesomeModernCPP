@@ -19,15 +19,13 @@ cpp_standard: [11, 14, 17, 20]
 会有人直接甩给我一个Segment Fault，告诉我你就是在胡言乱语。您可以自行切换到/lib目录下，找一个自己喜欢的库，比如说，笔者看重了libcurl库和libcrypt库，我们可以直接尝试执行它。
 
 
-```cpp
-
+```text
 [charliechen@Charliechen runaable_dynamic_library]$ /lib/libcurl.so
 Segmentation fault         (core dumped) /lib/libcurl.so
 [charliechen@Charliechen runaable_dynamic_library]$ /lib/libcurl.so.4.8.0
 Segmentation fault         (core dumped) /lib/libcurl.so.4.8.0
 [charliechen@Charliechen runaable_dynamic_library]$ /lib/libcrypt.so.2.0.0
 Segmentation fault         (core dumped) /lib/libcrypt.so.2.0.0
-
 ```
 
 我们第一个想法是——为什么？为什么事情会变成这样？答案很简单，在后续的博客中，笔者会强调，一般而言，以.so结尾的，一般是动态库（或者说共享库，笔者已经说明了在今天的操作系统中，可以不再刻意的区分共享库和动态库了）
@@ -39,8 +37,7 @@ Segmentation fault         (core dumped) /lib/libcrypt.so.2.0.0
 然而并不是，我们可以再次尝试一下执行C库：
 
 
-```cpp
-
+```text
 [charliechen@Charliechen runaable_dynamic_library]$ /lib/libc.so.6
 GNU C Library (GNU libc) stable release version 2.42.
 Copyright (C) 2025 Free Software Foundation, Inc.
@@ -52,7 +49,6 @@ libc ABIs: UNIQUE IFUNC ABSOLUTE
 Minimum supported kernel: 4.4.0
 For bug reporting instructions, please see:
 <https://gitlab.archlinux.org/archlinux/packaging/packages/glibc/-/issues>.
-
 ```
 
 嗯？这个事情跟我们想的很不一样。这一次，C库不光没有SegmentFault，还甚至打印出来一段非常具备标识性的字符串并且优雅的退出了！很神秘对不对？没关系，笔者来带你一步一步探究到底发生了什么。
@@ -64,8 +60,7 @@ For bug reporting instructions, please see:
 我们需要强调一下ELF格式的一个基本知识——所有 ELF 文件（可执行文件和共享库）都有一个"入口点"，这是 CPU 开始执行指令的地方。或者说，告诉CPU的执行流（X86-64上是EIP或者RIP的值）一个确切的初始值。
 
 
-```cpp
-
+```text
 [charliechen@Charliechen runaable_dynamic_library]$ readelf -h /lib/libcurl.so
 ELF Header:
   Magic:   7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00
@@ -87,7 +82,6 @@ ELF Header:
   Size of section headers:           64 (bytes)
   Number of section headers:         28
   Section header string table index: 27
-
 ```
 
 呦呵，这下不就真相大白了？如果我们尝试将`/lib/libcurl.so`视作一个可执行文件处理，那么这个时候，操作系统的加载器读取`/lib/libcurl.so`并且通过一般的检查后，将跳转地址设置成了`0x0`，啊哈，这不就访问空指针了嘛？
@@ -96,34 +90,29 @@ ELF Header:
 
 
 ```cpp
-
 #include <stdio.h>
 
 int main() {
- printf("Jumping to address 0x0...\n");
- void (*func)() = (void (*)())0x0;
- func();
+    printf("Jumping to address 0x0...\n");
+    void (*func)() = (void (*)())0x0;
+    func();
 }
-
 ```
 
 编译并且执行它，得到的正好就是：
 
 
-```cpp
-
+```text
 [charliechen@Charliechen runaable_dynamic_library]$ gcc dump.c -o dump
 [charliechen@Charliechen runaable_dynamic_library]$ ./dump
 Jumping to address 0x0...
 Segmentation fault         (core dumped) ./dump
-
 ```
 
 那么我们的libc库如何呢？
 
 
-```cpp
-
+```text
 [charliechen@Charliechen runaable_dynamic_library]$ readelf -h /lib/libc.so.6
 ELF Header:
   Magic:   7f 45 4c 46 02 01 01 03 00 00 00 00 00 00 00 00
@@ -145,7 +134,6 @@ ELF Header:
   Size of section headers:           64 (bytes)
   Number of section headers:         64
   Section header string table index: 63
-
 ```
 
 嗯？还真不一样，不要着急，只有一个`0x27830`，我们什么也不知道，下一步，就是请出我们的objdump大法看看细节：
@@ -153,8 +141,7 @@ ELF Header:
 > 会有朋友问我，为什么不是nm，嗯，对于动态库，nm暴露的是对外导出符号的地址，一般而言，你找不到EntryPoint对应的到底是什么。不过不用担心，我们还有一个招数，那就是objdump看反汇编。
 
 
-```cpp
-
+```text
 [charliechen@Charliechen runaable_dynamic_library]$ objdump -d /lib/libc.so.6 --start-address=0x27830 --stop-address=0x27860
 
 /lib/libc.so.6:     file format elf64-x86-64
@@ -174,7 +161,6 @@ Disassembly of section .text:
    27855:       66 2e 0f 1f 84 00 00    cs nopw 0x0(%rax,%rax,1)
    2785c:       00 00 00
    2785f:       90                      nop
-
 ```
 
 不必太着急，我们现在发动回忆大法，现在我们从0x27834开始，代码试图做这些事情：
@@ -192,8 +178,7 @@ Disassembly of section .text:
 想要查看是不是真放的？
 
 
-```cpp
-
+```text
 [charliechen@Charliechen runaable_dynamic_library]$ hexdump -C -s 0x1b50a0 -n 483 /lib/libc.so.6
 001b50a0  47 4e 55 20 43 20 4c 69  62 72 61 72 79 20 28 47  |GNU C Library (G|
 001b50b0  4e 55 20 6c 69 62 63 29  20 73 74 61 62 6c 65 20  |NU libc) stable |
@@ -227,7 +212,6 @@ Disassembly of section .text:
 001b5270  73 2f 67 6c 69 62 63  2f 2d 2f 69 73 73 75 65 73  |s/glibc/-/issues|
 001b5280  3e 2e 0a                                          |>..|
 001b5283
-
 ```
 
 足够了！后面的分析，显然就是将0作为exit的参数放置到edi中，并且优雅的退出了。
@@ -240,71 +224,66 @@ Disassembly of section .text:
 
 
 ```cpp
-
 #define NOT_API __attribute__((visibility("hidden")))
 
 long NOT_API syscall_write(int fd, const char* buf, unsigned long len) {
- long ret;
- asm volatile(
-     "syscall"
-     : "=a"(ret)
-     : "a"(1), "D"(fd), "S"(buf), "d"(len) // 1 is sys_write
-     : "rcx", "r11", "memory");
- return ret;
+    long ret;
+    asm volatile(
+        "syscall"
+        : "=a"(ret)
+        : "a"(1), "D"(fd), "S"(buf), "d"(len)  // 1 is sys_write
+        : "rcx", "r11", "memory");
+    return ret;
 }
 
 void NOT_API syscall_exit(int code) {
- asm volatile(
-     "syscall"
-     :
-     : "a"(60), "D"(code) // 60 is sys_exit
-     : "memory");
+    asm volatile(
+        "syscall"
+        :
+        : "a"(60), "D"(code)  // 60 is sys_exit
+        : "memory");
 }
 
 unsigned long NOT_API ccstrlen(const char* s) {
- unsigned long i = 0;
- while (s[i])
-  i++;
- return i;
+    unsigned long i = 0;
+    while (s[i])
+        i++;
+    return i;
 }
 
 int add(int a, int b) {
- return a + b;
+    return a + b;
 }
 
 void NOT_API _printf(const char* msg) {
- syscall_write(1, msg, ccstrlen(msg));
+    syscall_write(1, msg, ccstrlen(msg));
 }
 
 int NOT_API direct_load_helper_main() {
- _printf("Hey! Welcome CCLibrary! "
-         "These is a dynamic library helps math calculations\n");
- _printf("Current Version is 0.1.0\n");
- _printf("You can process add by using the library!\n");
+    _printf("Hey! Welcome CCLibrary! "
+            "These is a dynamic library helps math calculations\n");
+    _printf("Current Version is 0.1.0\n");
+    _printf("You can process add by using the library!\n");
 
- // Must Call these to remind linux
- // to clear the stack
- syscall_exit(0);
+    // Must Call these to remind linux
+    // to clear the stack
+    syscall_exit(0);
 }
-
-
 ```
 
 编译这段代码：
 
 ```bash
 gcc -shared -fPIC -o libcclib.so cclib.c -Wl,-e,direct_load_helper_main
-
 ```
 
 执行一下，就能得到结果了！
 
-```bash
+```text
 [charliechen@Charliechen runaable_dynamic_library]$ ./libcclib.so
 Hey! Welcome CCLibrary! These is a dynamic library helps math calculations
 Current Version is 0.1.0
 You can process add by using the library!
-
 ```
 
 感兴趣的读者可以仿照笔者之前的分析重新走一遍流程。
@@ -313,38 +292,31 @@ You can process add by using the library!
 
 
 ```cpp
-
 #pragma once
 
 int add(int a, int b);
-
 ```
 
 并且在main.c中像我们一般的库编程一样做这个事情：
 
 
 ```cpp
-
 #include "cclib.h"
 #include <stdio.h>
 
 int main() {
- int result = add(1, 2);
- printf("Result of 1 + 2 = %d\n", result);
+    int result = add(1, 2);
+    printf("Result of 1 + 2 = %d\n", result);
 }
-
-
 ```
 
 毫无压力！
 
 
-```cpp
-
+```text
 [charliechen@Charliechen runaable_dynamic_library]$ gcc main.c -o main ./libcclib.so
 [charliechen@Charliechen runaable_dynamic_library]$ ./main
 Result of 1 + 2 = 3
-
 ```
 
 ## 现代 CMake 视角

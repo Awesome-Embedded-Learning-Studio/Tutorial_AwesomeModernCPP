@@ -1,0 +1,119 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="动态库构建链接与运行时" id="dynamic-library-flow">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="826" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="动态库：构建期只记一笔依赖（DT_NEEDED），链接的收尾推迟到运行时由 ld.so 完成" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="85" y="16" width="1000" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- 阶段一：构建动态库 -->
+        <mxCell id="g1" value="构建动态库" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#d6b656;fillColor=#fff2cc;verticalAlign=top;fontSize=14;fontStyle=1;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="40" y="64" width="380" height="376" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_src" value="foo.c, bar.c （源码）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;fillColor=#e8f0fe;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="70" y="100" width="320" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_pic" value="gcc -fPIC -c  →  foo.o, bar.o" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;fillColor=#e8f0fe;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="70" y="176" width="320" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_shared" value="gcc -shared -Wl,-soname,libfoo.so.1&#10;-o libfoo.so.1.0" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;fillColor=#ffe6cc;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="70" y="252" width="320" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_symlink" value="ln -s libfoo.so.1.0 libfoo.so.1&#10;ln -s libfoo.so.1  libfoo.so" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;fillColor=#e8f0fe;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="70" y="340" width="320" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_note" value="libfoo.so.1.0 是真身；libfoo.so.1 与 soname 同名供运行时查找；libfoo.so 仅供编译期 -lfoo 使用" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="50" y="400" width="360" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="de1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#222222;" edge="1" parent="1" source="d1_src" target="d1_pic">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="de2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#222222;" edge="1" parent="1" source="d1_pic" target="d1_shared">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="de3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#222222;" edge="1" parent="1" source="d1_shared" target="d1_symlink">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 阶段二：构建客户端 -->
+        <mxCell id="g2" value="构建客户端（信任头文件与 soname）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#d6b656;fillColor=#fff2cc;verticalAlign=top;fontSize=14;fontStyle=1;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="740" y="64" width="380" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_src" value="main.c （使用 foo.h 的声明）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;fillColor=#e8f0fe;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="770" y="100" width="320" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_obj" value="gcc -c  →  main.o" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;fillColor=#e8f0fe;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="770" y="176" width="320" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_link" value="gcc main.o -L. -lfoo -Wl,-rpath,$ORIGIN -o client" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;fillColor=#e8f0fe;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="770" y="252" width="320" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="de4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#222222;" edge="1" parent="1" source="d2_src" target="d2_obj">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="de5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#222222;" edge="1" parent="1" source="d2_obj" target="d2_link">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="client_elf" value="client ELF：不复制库代码，只记录&#10;DT_NEEDED: libfoo.so.1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#d5e8d4;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="770" y="380" width="320" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="de6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#222222;" edge="1" parent="1" source="d2_link" target="client_elf">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 阶段三：运行时 -->
+        <mxCell id="g3" value="运行时：内核 → ld.so → 程序" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#d6b656;fillColor=#fff2cc;verticalAlign=top;fontSize=14;fontStyle=1;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="40" y="500" width="1080" height="270" as="geometry" />
+        </mxCell>
+        <mxCell id="r1" value="内核加载 client ELF&#10;发现 PT_INTERP，先映射 ld-linux.so" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;fillColor=#e1d5e7;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="70" y="540" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" value="ld.so 按 DT_NEEDED 找到库&#10;mmap 映射 client 与 libfoo.so.1（PT_LOAD）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;fillColor=#e1d5e7;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="350" y="540" width="260" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="r3" value="处理 RELATIVE 重定位&#10;（基址修正）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;fillColor=#e1d5e7;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="650" y="540" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="r4" value="解析符号重定位（PLT/GOT）&#10;lazy 首次调用 或 eager BIND_NOW" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;fillColor=#e1d5e7;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="880" y="540" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="r5" value="按依赖顺序执行 DT_INIT / .init_array（构造函数）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;fillColor=#e1d5e7;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="270" y="650" width="300" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="r6" value="转交控制权：_start → main" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;fillColor=#d5e8d4;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="630" y="650" width="240" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="re1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#222222;" edge="1" parent="1" source="r1" target="r2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="re2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#222222;" edge="1" parent="1" source="r2" target="r3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="re3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#222222;" edge="1" parent="1" source="r3" target="r4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="re4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#222222;" edge="1" parent="1" source="r4" target="r6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="re5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#222222;" edge="1" parent="1" source="r5" target="r6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 汇聚箭头 -->
+        <mxCell id="conv1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#c00000;dashed=1;" edge="1" parent="1" source="d1_symlink" target="r2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="conv2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#c00000;dashed=1;" edge="1" parent="1" source="client_elf" target="r2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="conv_label" value="构建出的库与记录了依赖的 client，在运行时汇合于 ld.so 的映射步骤" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=12;fontColor=#c00000;" vertex="1" parent="1">
+          <mxGeometry x="370" y="460" width="420" height="24" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

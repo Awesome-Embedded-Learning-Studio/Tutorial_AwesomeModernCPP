@@ -30,7 +30,7 @@ C++函数到链接器符号之间的映射，是编译器厂商决定的，尽�
 
 读者同志们会发问：这是怎么回事呢？其实，我们很容易想到这样一系列的代码：
 
-```c++
+```cpp
 // 在C++中，我们很喜欢将一些方法放置到类中,
 // OOP就是推介我们这样做的！
 class Foo {
@@ -40,10 +40,9 @@ public:
 
 // 或者，我们喜欢放置一些工具类的函数到单独的命名空间中
 namespace charlies_tools {
-   std::vector<std::string_view> split(const std::string& waited_splits, const char ch);
-   std::vector<std::string_view> split(const std::string& waited_splits, const std::string_view sp_view);
-};
-
+std::vector<std::string_view> split(const std::string& waited_splits, const char ch);
+std::vector<std::string_view> split(const std::string& waited_splits, const std::string_view sp_view);
+}
 ```
 
 我们作为C++程序员，会很自然的使用到这些特性，回避掉一些符号层次的冲突问题，提升软件工程中更好的可读性。
@@ -52,22 +51,18 @@ namespace charlies_tools {
 
 
 ```text
-
 0000000000000012 T _ZN14charlies_tools5splitERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEc
 0000000000000022 T _ZN14charlies_tools5splitERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt17basic_string_viewIcS3_E
 0000000000000000 T _ZN3Foo8someFuncEiPKc
-
 ```
 
 然后我们再看看MSVC产生的：
 
 
 ```text
-
 00C 00000000 SECT4  notype ()    External     | ?someFunc@Foo@@QAEXHPBD@Z (public: void __thiscall Foo::someFunc(int,char const *))
 00D 00000010 SECT4  notype ()    External     | ?split@charlies_tools@@YAXABV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@D@Z (void __cdecl charlies_tools::split(class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const &,char))
 00E 00000020 SECT4  notype ()    External     | ?split@charlies_tools@@YAXABV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$basic_string_view@DU?$char_traits@D@std@@@3@@Z (void __cdecl charlies_tools::split(class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const &,class std::basic_string_view<char,struct std::char_traits<char> >))
-
 ```
 
 实际上，我们可以看到，写入到可重定位文件中的符号,长的完全不一样，说明我们根本没法通用我们的符号。除此之外，我们还有重载等一系列功能，允许我们提供相同的函数名，不同的参数列表可以共存到一个目标文件的技术，导致我们的工具链不得不费心思处理这些问题。
@@ -86,11 +81,10 @@ static void init_a_and_b() {
     static B authentic_networks;
 }
 
-auto dummy = [](){
+auto dummy = []() {
     init_a_and_b();
     return 0;
 }();
-
 ```
 
 ## 所以，如何设计少麻烦的二进制接口
@@ -100,17 +94,15 @@ auto dummy = [](){
 当然，您大可不必真的像C程序员那样防止冲突，采用C命名的习惯，这里说的是不要导出C++特色各异的ABI符号规则。办法就是将您决定导出的符号，修饰上extern "C"标识。
 
 ```cpp
-
 #ifdef __cplusplus
-extern "C"{
+extern "C" {
 #endif
 
-    int functional_a(int a, int b);
+int functional_a(int a, int b);
 
 #ifdef __cplusplus
 }
 #endif
-
 ```
 
 这样我们就能让链接器所看到的接口看起来干净很多。
@@ -134,7 +126,6 @@ int do_something(int a, int b);
 
 // 更完整的声明 - 增加了extern "C"和异常规范
 extern "C" int do_something(int a, int b) noexcept;
-
 ```
 
 ##### 类型定义
@@ -151,7 +142,6 @@ struct MyData {
 
 // 函数使用这个结构体
 extern "C" void process_data(const MyData* data);
-
 ```
 
 如果头文件里没有`MyData`的完整定义，编译器就不知道`sizeof(MyData)`是多少，无法正确地为`process_data`函数调用分配栈空间或传递参数。
@@ -165,7 +155,6 @@ extern "C" void process_data(const MyData* data);
 #define LIB_VERSION 0x00010002
 
 extern "C" int initialize_lib(int buffer_capacity = MAX_BUFFER_SIZE);
-
 ```
 
 ##### 包含其他头文件
@@ -176,7 +165,6 @@ extern "C" int initialize_lib(int buffer_capacity = MAX_BUFFER_SIZE);
 #include <stddef.h> // 为了使用 size_t
 
 extern "C" void* allocate_buffer(size_t size);
-
 ```
 
 ## 现代 CMake 视角
@@ -199,39 +187,34 @@ extern "C" void* allocate_buffer(size_t size);
 
 class Foo {
 public:
- void someFunc(int a, const char* b);
+    void someFunc(int a, const char* b);
 };
 
 namespace charlies_tools {
 void split(const std::string& waited_splits, const char ch);
 void split(const std::string& waited_splits, const std::string_view sp_view);
-};
+}
 
 void Foo::someFunc(int a, const char* b) { }
 void charlies_tools::split(const std::string& waited_splits, const char ch) { }
 void charlies_tools::split(const std::string& waited_splits, const std::string_view sp_view) { }
-
 ```
 
 然后，在Linux机器上，利用-c指令只翻译test.cpp为机器码：
 
 
 ```bash
-
 g++ -c test.cpp -o test_name
-
 ```
 
 然后，利用nm指令查看ABI
 
 
 ```text
-
 [charliechen@Charliechen runaable_dynamic_library]$ nm test_name
 0000000000000012 T _ZN14charlies_tools5splitERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEc
 0000000000000022 T _ZN14charlies_tools5splitERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt17basic_string_viewIcS3_E
 0000000000000000 T _ZN3Foo8someFuncEiPKc
-
 ```
 
 这就得到了笔者在正文中列出的结果
@@ -240,7 +223,6 @@ g++ -c test.cpp -o test_name
 
 
 ```text
-
 D:\DownloadFromInternet>cl /c /std:c++latest test.cpp
 用于 x86 的 Microsoft (R) C/C++ 优化编译器 19.44.35217 版
 版权所有(C) Microsoft Corporation。保留所有权利。
@@ -252,14 +234,12 @@ working 草稿中的语言功能预览提供。我们希望你提供有关 bug �
 https://go.microsoft.com/fwlink/?linkid=2045807。
 
 test.cpp
-
 ```
 
 随后，利用dumpbin小工具，得到：
 
 
 ```text
-
 D:\DownloadFromInternet>dumpbin /SYMBOLS test.obj
 Microsoft (R) COFF/PE Dumper Version 14.44.35217.0
 Copyright (C) Microsoft Corporation.  All rights reserved.
@@ -294,5 +274,4 @@ String Table Size = 0x123 bytes
           74 .debug$S
          178 .drectve
           25 .text$mn
-
 ```

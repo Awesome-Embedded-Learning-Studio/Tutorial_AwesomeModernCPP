@@ -19,26 +19,27 @@ cpp_standard: [11, 14, 17, 20]
 重用无处不在，我相信不会有人不赞同的。我们讨论的重用就是代码的再次利用。这一点，在C++编程中已经可以窥得一丝猫腻了：
 
 ```cpp
-template<typename AddType>
-auto add(const AddType& a, const AddType& b){
-    return a + b; // 没有任何技巧的相加
+#include <cctype>
+#include <string>
+
+template <typename AddType>
+auto add(const AddType& a, const AddType& b) {
+    return a + b;  // 没有任何技巧的相加
 }
 
-std::string
-trim_self(const std::string& str){ // returns the copy of the trimmed string
-    size_t i = 0; // left index
- while (i < str.size() && isspace((unsigned char)str[i]))
-  i++;
-    size_t j = str.size(); // right index
+std::string trim_self(const std::string& str) {  // returns the copy of the trimmed string
+    size_t i = 0;                                // left index
+    while (i < str.size() && isspace((unsigned char)str[i]))
+        i++;
+    size_t j = str.size();  // right index
     while (j > 0 && isspace((unsigned char)str[j - 1]))
-  j--;
- return str.substr(i, j);
+        j--;
+    return str.substr(i, j - i);
 }
 
-int main()
-{
-    int res = add(1, 2); // deduced as int
-    float res2 = add(1.0f, 2.0f); // deduced as floats
+int main() {
+    int res = add(1, 2);            // deduced as int
+    float res2 = add(1.0f, 2.0f);   // deduced as floats
 }
 
 ```
@@ -51,7 +52,7 @@ int main()
 
 下面两个图会比较好的说明静态库的作用
 
-![static_library](./compilation-linking-2-reuse-concept/static_library.png)
+![静态库从源码打包到被多个项目链接的流程，每个可执行文件各内嵌一份库代码副本](./asset/static_library.drawio)
 
 但是这存在一个新的问题。实际上，libfoo的代码完全一致，但是却存在两份。这种比较硬的复制在有时候我们是不期望的。libfoo比较小还好，现在的硬盘容量相对没那么昂贵了，我们可以说冗余优势。但是更多的情况下，我们如果libfoo有比较重要的安全更新，希望所有的软件都要下一次启动重新加载的时候，静态库看起来无能为力。因为他是只是简单的把分发从更加困难的源码分发转向了二进制分发。但是丝毫没有解决更加重要的load when use的问题。所以看起来并不优雅。所以实际上，静态库使用的并不算太广泛（笔者自己也很少用静态库）
 
@@ -120,7 +121,7 @@ int main()
 
 > 重要：**可执行文件中的符号优先**于共享库（这就是所谓的 symbol interposition），因此可执行文件可以"覆盖"库中的函数（这也是 `LD_PRELOAD` 可替换函数实现的基础）。
 
-![dynamic_library](./compilation-linking-2-reuse-concept/dynamic_library.png)
+![动态库三阶段流程：构建库、构建客户端只记录 DT_NEEDED 依赖、运行时由 ld.so 完成映射重定位与转交控制](./asset/dynamic_library.drawio)
 
 上面这个图就把具体的流程说清楚了。
 

@@ -27,8 +27,7 @@ cpp_standard: [11, 14, 17, 20]
 很简单，我们只需要使用nm工具即可。假设我们有一个库文件`libsome_helpers.so`准备检查，那么输入如下指令就OK了。
 
 
-```cpp
-
+```text
 [charliechen@Charliechen runaable_dynamic_library]$ nm -D libsome_helpers.so
 00000000000010e9 T add
                  w __cxa_finalize@GLIBC_2.2.5
@@ -36,7 +35,6 @@ cpp_standard: [11, 14, 17, 20]
                  w _ITM_deregisterTMCloneTable
                  w _ITM_registerTMCloneTable
 00000000000010fd T minus
-
 ```
 
 ##### Windows平台
@@ -44,8 +42,7 @@ cpp_standard: [11, 14, 17, 20]
 这个好说，假设笔者打算检查的是CCWidget.dll，查看导出的符号就是`dumpbin /EXPORTS CCWidgets.dll`
 
 
-```cpp
-
+```text
 D:\NewQtProjects\CCWidgetLibrary\build\Desktop_Qt_6_10_0_MSVC2022_64bit-Release\widgets>dumpbin /EXPORTS CCWidgets.dll
 Microsoft (R) COFF/PE Dumper Version 14.44.35217.0
 Copyright (C) Microsoft Corporation.  All rights reserved.
@@ -76,7 +73,6 @@ File Type: DLL
           9    8 00014130 ??0CCButton@@QEAA@AEBVQIcon@@AEBVQString@@PEAVQWidget@@@Z
          10    9 000141F0 ??0CCButton@@QEAA@AEBVQString@@PEAVQWidget@@@Z、
          ...
-
 ```
 
 ## 主流工具链是如何控制符号的可见性的？
@@ -95,7 +91,6 @@ File Type: DLL
 
 
 ```cpp
-
 #ifdef CCLOG_BUILD_SHARED
 #define CCLOG_API __attribute__((visibility("default")))
 #define CCLOG_PRIVATE_API __attribute__((visibility("hidden")))
@@ -103,7 +98,6 @@ File Type: DLL
 #define CCLOG_API
 #define CCLOG_PRIVATE_API
 #endif
-
 ```
 
 ##### 方式3：对于一组聚合符号的修饰`#pragma visibility push/pop`
@@ -118,7 +112,6 @@ int api_minus(int a, int b);
 
 /* Remember to pop for preventing the leak of unwanted visibility decorations */
 #pragma visibility pop
-
 ```
 
 #### Windows MSVC是如何操作的
@@ -134,7 +127,6 @@ int api_minus(int a, int b);
 /* If we plan to import symbols from DLL, we need to decorate symbols by this */
 #define CCLOG_API __declspec(dllimport)
 #endif
-
 ```
 
 ## 现代 CMake 视角

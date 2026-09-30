@@ -1,0 +1,79 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="静态库构建与链接" id="static-library-flow">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="静态库：一份源码打包一次，链接时把代码复制进每个可执行文件" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="64" y="24" width="700" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- 源码 -->
+        <mxCell id="src_box" value="静态库源码（复用模块）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#f3e8f5;" vertex="1" parent="1">
+          <mxGeometry x="254" y="70" width="320" height="96" as="geometry" />
+        </mxCell>
+        <mxCell id="src_files" value="foo.c&#10;bar.c&#10;..." style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#999999;strokeWidth=1;fillColor=#ffffff;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="284" y="92" width="260" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- 编译 -->
+        <mxCell id="obj" value="foo.o    bar.o  （可重定位目标文件）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="254" y="206" width="320" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#222222;" edge="1" parent="1" source="src_box" target="obj">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1_label" value="gcc -c" style="edgeLabel;html=1;align=center;verticalAlign=middle;fillColor=#ffffff;fontSize=12;" vertex="1" connectable="0" parent="e1">
+          <mxGeometry x="-0.2" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- 打包 -->
+        <mxCell id="lib" value="libfoo.a （静态库）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=2;fillColor=#ffe6cc;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="254" y="296" width="320" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#222222;" edge="1" parent="1" source="obj" target="lib">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2_label" value="ar rcs libfoo.a foo.o bar.o" style="edgeLabel;html=1;align=center;verticalAlign=middle;fillColor=#ffffff;fontSize=12;" vertex="1" connectable="0" parent="e2">
+          <mxGeometry x="-0.2" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- 两个项目链接 -->
+        <mxCell id="linkA" value="项目A 链接：&#10;gcc mainA.o -L. -lfoo -o exeA" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="94" y="412" width="300" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="linkB" value="项目B 链接：&#10;gcc mainB.o -L. -lfoo -o exeB" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#e8f0fe;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="434" y="412" width="300" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#222222;" edge="1" parent="1" source="lib" target="linkA">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#222222;" edge="1" parent="1" source="lib" target="linkB">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="branch_label" value="同一个库，可同时被多个项目链接" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="294" y="374" width="240" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- 产物 -->
+        <mxCell id="exeA" value="exeA&#10;（内嵌 libfoo 代码的一份副本）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#d5e8d4;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="94" y="528" width="300" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="exeB" value="exeB&#10;（内嵌 libfoo 代码的另一份副本）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#222222;strokeWidth=1;fillColor=#d5e8d4;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="434" y="528" width="300" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#222222;" edge="1" parent="1" source="linkA" target="exeA">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#222222;" edge="1" parent="1" source="linkB" target="exeB">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="note" value="libfoo 的代码完全一致，但是却存在两份硬拷贝——库有更新时，exeA 和 exeB 都要重新链接发布" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontColor=#c00000;" vertex="1" parent="1">
+          <mxGeometry x="94" y="612" width="640" height="28" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
