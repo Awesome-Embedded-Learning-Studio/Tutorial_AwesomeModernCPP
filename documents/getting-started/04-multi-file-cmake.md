@@ -13,6 +13,22 @@ tags:
   - beginner
   - CMake
 reading_time_minutes: 15
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: Voyagerroc-Lab
+    roles: [revision]
+    note:
+      zh: "参与文章内容与示例修订 (PR #258)"
+      en: "Contributed article and example revisions (PR #258)"
+  - github: Voyagerroc-Pro
+    roles: [revision]
+    note:
+      zh: "参与文章内容与示例修订 (PR #258)"
+      en: "Contributed article and example revisions (PR #258)"
 ---
 
 # 项目变大——多个文件怎么办，引出 CMake

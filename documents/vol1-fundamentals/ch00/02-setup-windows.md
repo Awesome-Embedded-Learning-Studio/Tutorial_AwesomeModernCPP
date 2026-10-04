@@ -17,6 +17,17 @@ tags:
   - 入门
   - 基础
 title: Windows 环境搭建
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: owollz4
+    roles: [revision]
+    note:
+      zh: "参与文章内容与示例修订 (PR #271)"
+      en: "Contributed article and example revisions (PR #271)"
 ---
 
 # Windows 环境搭建

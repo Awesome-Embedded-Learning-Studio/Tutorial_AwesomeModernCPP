@@ -76,7 +76,7 @@ description: "感谢所有为本项目做出贡献的人"
     <span class="card-name">xiaoshuaijie <span class="card-badge pr">PR</span></span>
     <p class="card-role">内容补充与构建修复</p>
     <p class="card-types">💡 📝</p>
-    <p class="card-desc">提交 PR 为 C 语言教程补全函数指针与回调、数组与 C 字符串、结构体与联合体、动态内存与文件 I/O 等多章练习参考答案（#149、#153、#164、#165），修复 Windows 构建失败并稳定分卷构建（#160、#169）；此前反馈「作用域与存储类别」表述错误（#144）促成修正；本版再为 C++ 教程补全卷一 ch01–ch07 全部章节的练习参考答案（二十余个 PR），并修复跨卷构建与表述问题</p>
+    <p class="card-desc">提交 PR 为 C 语言教程补全函数指针与回调、数组与 C 字符串、结构体与联合体、动态内存与文件 I/O 等多章练习参考答案（#149、#153、#164、#165），修复 Windows 构建失败并稳定分卷构建（#160、#169）；此前反馈「作用域与存储类别」表述错误（#144）促成修正；本版再为 C++ 教程补全卷一 ch01–ch07 全部章节的练习参考答案（二十余个 PR），并修复跨卷构建与表述问题；另投稿起步卷第 7 篇「想要真 Linux——WSL2 加 VS Code 环境搭建」（#276）</p>
   </div>
 </a>
 <a href="https://github.com/Voyagerroc-Lab" target="_blank" rel="noopener noreferrer" class="contributor-card">

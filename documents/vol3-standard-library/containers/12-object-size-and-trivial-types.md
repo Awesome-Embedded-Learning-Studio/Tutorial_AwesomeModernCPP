@@ -20,6 +20,17 @@ tags:
 - 类型安全
 - 容器
 title: 对象大小、对齐与平凡类型
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: YukunJ
+    roles: [revision]
+    note:
+      zh: "参与文章内容与示例修订 (PR #75)"
+      en: "Contributed article and example revisions (PR #75)"
 ---
 # 对象大小、对齐与平凡类型
 
