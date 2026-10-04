@@ -119,7 +119,7 @@ Over. Enjoy.
 
 WSL will keep us company every day from now on, so knowing a few WSL commands pays off. Installation and the plain off-switch are covered above; here are some other common commands. Run all of them in `PowerShell` or `Windows Terminal`.
 
-### Check Installed Distributions
+### 3.3.1 Check Installed Distributions
 
 Start by listing the installed Linux distributions and checking their running state and WSL version:
 
@@ -131,7 +131,7 @@ wsl -l -v
 
 The `NAME`, `STATE`, and `VERSION` columns show the distribution name, running state, and WSL version. The `*` before a name marks the **default distribution**, which is the one entered by a plain `wsl` command.
 
-### Set the Default Distribution
+### 3.3.2 Set the Default Distribution
 
 If several distributions are installed, make the one you use most often the default. For example, set `Ubuntu-26.04` as the default:
 
@@ -145,7 +145,7 @@ After this, running `wsl` again enters `Ubuntu-26.04`.
 
 > This changes which distribution the `wsl` command enters by default; it does not change the WSL version of any other distribution.
 
-### Check the WSL Component Version
+### 3.3.3 Check the WSL Component Version
 
 To view the versions of WSL itself, its kernel, and related components, run:
 
@@ -163,7 +163,7 @@ wsl -l -v
 
 ![Output of wsl -l -v; the VERSION column reads 2](images/wsl_l_v.png)
 
-### Switch a Distribution to WSL2
+### 3.3.4 Switch a Distribution to WSL2
 
 If `wsl -l -v` shows that a distribution is still using WSL 1, switch it to WSL 2 manually:
 
@@ -173,7 +173,7 @@ wsl --set-version Ubuntu-26.04 2
 
 Replace `Ubuntu-26.04` with the name of the target distribution. A distribution freshly installed with `wsl --install` uses WSL 2 by default; of course, if your operating system is truly ancient — an early Windows 10 release, say — you'll want to watch out here.
 
-### Temporarily Enter a Different Distribution
+### 3.3.5 Temporarily Enter a Different Distribution
 
 If you do not want to change the default distribution, add `-d` (`--distribution`) to `wsl` to enter a specific distribution temporarily:
 
@@ -189,7 +189,7 @@ wsl -d Ubuntu-24.04
 
 This enters `Ubuntu-24.04`, again without affecting the default distribution.
 
-### Stop a Specific Distribution
+### 3.3.6 Stop a Specific Distribution
 
 ```powershell
 wsl --terminate <distribution-name>
