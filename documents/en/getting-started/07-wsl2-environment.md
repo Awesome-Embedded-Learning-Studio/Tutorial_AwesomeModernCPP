@@ -346,7 +346,7 @@ In VS Code, install the extensions: Remote - WSL / WSL (saves you from configuri
 
 ![The Remote - WSL extension install page](images/wsl.png)
 
-In a WSL terminal, enter your project directory and run:
+Method 1 (recommended): In a WSL terminal, enter your project directory and run:
 
 ```bash
 cd ~/myproj
@@ -355,8 +355,15 @@ code .
 
 ![After code ., VS Code opens the project connected to WSL](images/remote_ssh_choice.png)
 
-code . opens that directory in Windows' VS Code, but VS Code runs its extensions and terminal "connected to WSL": your editor, terminal, and debugging all work inside the Linux environment (the toolchain lives on the WSL side).
-Upside: near-zero configuration, and the experience is close to native Linux.
+`code .` launches the Windows version of VS Code and connects it to the current WSL distribution through the Remote - WSL extension. The VS Code interface runs on Windows, while the workspace, integrated terminal, extensions, and debugging processes run in WSL. This means you only need to install compilers, debuggers, and other development tools in WSL. The first time you open the project, VS Code may automatically install VS Code Server.
+
+Method 2: If you are currently using Windows PowerShell, run `wsl` first to enter WSL, then run the commands above:
+
+```powershell
+wsl
+```
+
+This approach requires very little additional configuration and provides an experience close to native Linux.
 
 ## 6.2 VS Code Remote SSH (for Dev Boards and Servers)
 
