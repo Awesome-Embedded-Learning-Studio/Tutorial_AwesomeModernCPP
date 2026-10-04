@@ -12,12 +12,12 @@ tags:
   - 基础
   - beginner
   - 工具链
-reading_time_minutes: 12
+reading_time_minutes: 10
 contributors_footer: inline
 translation:
   source: documents/getting-started/07-wsl2-environment.md
-  source_hash: 996970a5b1ea0eada4171193eb071d72facbe3861cd9c34aafc6d1a04da3aeff
-  translated_at: '2026-10-04T11:00:00+00:00'
+  source_hash: 27a0edb9cd16e7be3bad5522e17f84fd6dfc984d85ec669d871adaaa0f635024
+  translated_at: '2026-10-04T11:31:47+00:00'
   engine: anthropic
   token_count: 7000
 ---
@@ -117,50 +117,82 @@ Over. Enjoy.
 
 ## 3.3 Checking and Common Management Commands
 
-WSL will keep you company every day from now on, so knowing a few WSL commands pays off. Installation and the plain off-switch are above; here are some other common ones.
+WSL will keep us company every day from now on, so knowing a few WSL commands pays off. Installation and the plain off-switch are covered above; here are some other common commands. Run all of them in `PowerShell` or `Windows Terminal`.
 
-List installed distributions and their versions (in `PowerShell` or `Windows Terminal`):
+### Check Installed Distributions
+
+Start by listing the installed Linux distributions and checking their running state and WSL version:
 
 ```powershell
 wsl -l -v
 ```
 
-To make a distribution the default (Ubuntu-26.04 in this example):
+![Output of wsl -l -v, showing the current default distribution](images/wsl_set.png)
+
+The `NAME`, `STATE`, and `VERSION` columns show the distribution name, running state, and WSL version. The `*` before a name marks the **default distribution**, which is the one entered by a plain `wsl` command.
+
+### Set the Default Distribution
+
+If several distributions are installed, make the one you use most often the default. For example, set `Ubuntu-26.04` as the default:
 
 ```powershell
 wsl --set-default Ubuntu-26.04
 ```
 
-To switch an existing distribution to WSL2 (if it isn't already):
+After this, running `wsl` again enters `Ubuntu-26.04`.
 
-```powershell
-wsl --set-version Ubuntu-26.04 2
-```
+![Output of wsl -l -v after setting Ubuntu-26.04 as the default distribution](images/wsl_l_v.png)
 
-> When you install WSL these days, the default is WSL2. Only if your OS is truly ancient — an early Windows 10, say — do you need to watch out here.
+> This changes which distribution the `wsl` command enters by default; it does not change the WSL version of any other distribution.
 
-To double-check the WSL component versions:
+### Check the WSL Component Version
+
+To view the versions of WSL itself, its kernel, and related components, run:
 
 ```powershell
 wsl --version
 ```
 
-You'll see something like this:
+![Output of wsl --version: WSL component and kernel version numbers](images/wsl_version.png)
 
-![Output of wsl --version: component and kernel version numbers](images/wsl_version.png)
+`wsl --version` reports WSL component information; it cannot by itself tell you whether a particular distribution uses WSL 1 or WSL 2. Go back to `wsl -l -v` and check whether the target distribution's `VERSION` column is `2`.
 
-Note that `wsl --version` reports the WSL components and kernel; it can't tell you whether a given distribution runs WSL 1 or WSL 2. Keep going:
-
-   ```powershell
-   wsl -l -v
-   ```
+```powershell
+wsl -l -v
+```
 
 ![Output of wsl -l -v; the VERSION column reads 2](images/wsl_l_v.png)
 
-Check the `VERSION` column for your target distribution; only a `2` means it's on WSL2.
+### Switch a Distribution to WSL2
+
+If `wsl -l -v` shows that a distribution is still using WSL 1, switch it to WSL 2 manually:
 
 ```powershell
-wsl --terminate XXX # XXX is the name of our WSL distribution
+wsl --set-version Ubuntu-26.04 2
+```
+
+Replace `Ubuntu-26.04` with the name of the target distribution. A distribution freshly installed with `wsl --install` uses WSL 2 by default; of course, if your operating system is truly ancient — an early Windows 10 release, say — you'll want to watch out here.
+
+### Temporarily Enter a Different Distribution
+
+If you do not want to change the default distribution, add `-d` (`--distribution`) to `wsl` to enter a specific distribution temporarily:
+
+```powershell
+wsl -d Ubuntu-26.04
+```
+
+This enters `Ubuntu-26.04` without changing the default setting.
+
+```powershell
+wsl -d Ubuntu-24.04
+```
+
+This enters `Ubuntu-24.04`, again without affecting the default distribution.
+
+### Stop a Specific Distribution
+
+```powershell
+wsl --terminate <distribution-name>
 ```
 
 ![wsl --terminate stopping one distribution](images/wsl_l.png)
@@ -171,7 +203,7 @@ Say I need to shut down the running RK3506 — then
 wsl --terminate RK3506
 ```
 
-safely stops the RK3506 distribution without disturbing the others.
+This command safely stops the RK3506 distribution without disturbing the others. To shut down every running WSL instance at once, use the `wsl --shutdown` command introduced earlier.
 
 # 4. Isolating the Windows PATH
 

@@ -121,39 +121,45 @@ Over，您可以开始美美使用了。
 
 ## 3.3 检查与常用管理命令
 
-之后WSL将会陪伴您度过每一天，所以，稍微会一些WSL的指令是不赖的，上面已经给出了WSL的安装，和直接关掉的指令。下面给出一些常见的其他指令
+之后WSL将会陪伴您度过每一天，所以，稍微会一些WSL的指令是不赖的，上面已经给出了WSL的安装，和直接关掉的指令，下面给出一些常见的其他指令，下面的命令都在 `PowerShell` 或 `Windows Terminal` 中执行。
 
-列出已安装的 Linux 发行版并查看版本（在 `PowerShell` 或 `Windows Terminal`）：
+### 查看已安装的发行版
+
+先列出已经安装的 Linux 发行版，同时查看它们的运行状态和 WSL 版本：
 
 ```powershell
 wsl -l -v
 ```
 
-如果需要把某个发行版设置为默认（例如 Ubuntu-26.04）：
+![wsl -l -v 的输出，查看此时的默认发行版](images/wsl_set.png)
+
+输出中的 `NAME`、`STATE` 和 `VERSION` 分别表示发行版名称、运行状态和 WSL 版本。名称前的 `*` 表示当前的**默认发行版**，所以直接执行 `wsl` 时会进入这一发行版。
+
+### 设置默认发行版
+
+如果电脑上安装了多个发行版，可以把常用的那个设为默认。例如，将 `Ubuntu-26.04` 设为默认发行版：
 
 ```powershell
 wsl --set-default Ubuntu-26.04
 ```
 
-将现有发行版切换到 WSL2（如果不是）：
+设置完成后再次执行 `wsl`，就会进入 `Ubuntu-26.04`。
 
-```powershell
-wsl --set-version Ubuntu-26.04 2
-```
+![wsl -l -v 的输出，此时的默认进入的发行版为 Ubuntu-26.04](images/wsl_l_v.png)
 
-> 现在进行 WSL 的安装时，默认发行版本为 WSL2。当然，如果您的操作系统非常老旧，比如说是Windows 10的早期的一个版本，那需要注意一下。
+> 这里修改的是 `wsl` 默认进入的发行版，不会改变其他发行版的 WSL 版本。
 
-进一步确认 WSL 组件版本：
+### 确认 WSL 组件版本
+
+如果要查看 WSL 本身、内核和相关组件的版本，执行：
 
 ```powershell
 wsl --version
 ```
 
-出现类似于下图的内容
-
 ![wsl --version 的输出，WSL 各组件与内核版本号](images/wsl_version.png)
 
-`wsl --version` 用于查看 WSL 组件和内核版本，不能单独判断某个发行版使用的是 WSL 1 还是 WSL 2。请继续执行：
+`wsl --version` 查看的是 WSL 组件信息，不能单独判断某个发行版使用的是 WSL 1 还是 WSL 2。发行版的版本仍然要回到 `wsl -l -v`，确认目标发行版的 `VERSION` 列是否为 `2`。
 
 ```powershell
 wsl -l -v
@@ -161,10 +167,36 @@ wsl -l -v
 
 ![wsl -l -v 的输出，看 VERSION 列是 2](images/wsl_l_v.png)
 
-在输出的 `VERSION` 列查看目标发行版；显示 `2` 才表示该发行版使用 WSL2。
+### 将发行版切换到 WSL2
+
+如果 `wsl -l -v` 显示某个发行版仍在使用 WSL 1，可以手动切换到 WSL 2：
 
 ```powershell
-wsl --terminate XXX # XXX是咱们的WSL发行版的名称
+wsl --set-version Ubuntu-26.04 2
+```
+
+把命令中的 `Ubuntu-26.04` 换成目标发行版名称即可。使用 `wsl --install` 新安装的发行版默认使用 WSL 2；当然，如果您的操作系统非常老旧，比如说是Windows 10的早期的一个版本，那需要注意一下。
+
+### 临时进入不同的发行版
+
+不想修改默认发行版时，可以给 `wsl` 加上 `-d`（`--distribution`），只临时进入指定发行版：
+
+```powershell
+wsl -d Ubuntu-26.04
+```
+
+进入 `Ubuntu-26.04`，但不会改变默认设置。
+
+```powershell
+wsl -d Ubuntu-24.04
+```
+
+进入 `Ubuntu-24.04`，同样不会影响默认发行版。
+
+### 停止指定发行版
+
+```powershell
+wsl --terminate <发行版名称>
 ```
 
 ![wsl --terminate 停掉指定发行版](images/wsl_l.png)
@@ -175,7 +207,7 @@ wsl --terminate XXX # XXX是咱们的WSL发行版的名称
 wsl --terminate RK3506
 ```
 
-就能在不干扰其他发行版运行的情况下安全停掉RK3506这个发行版。
+这个命令就能在不干扰其他发行版运行的情况下安全停掉RK3506这个发行版。如果要一次关闭所有正在运行的 WSL 实例，可以使用前面介绍过的 `wsl --shutdown`。
 
 # 四、WSL2 隔离 Windows PATH
 
