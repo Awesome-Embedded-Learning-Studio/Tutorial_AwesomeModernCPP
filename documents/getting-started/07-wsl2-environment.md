@@ -350,7 +350,7 @@ autoMemoryReclaim=gradual
 
 ![Remote - WSL 扩展的安装页](images/wsl.png)
 
-在 WSL 终端进入项目目录并执行：
+方式一（推荐）：在 WSL 终端中进入项目目录，然后执行：
 
 ```bash
 cd ~/myproj
@@ -359,8 +359,15 @@ code .
 
 ![code . 之后 VS Code 以连接 WSL 的方式打开项目](images/remote_ssh_choice.png)
 
-code . 会在 Windows 的 VS Code 中打开该目录，但 VS Code 会以“连接到 WSL”的方式运行扩展与终端。此时你的编辑器、终端和调试都在 Linux 环境下工作（工具依赖都安装在 WSL)。
-优点：几乎不用配置，体验接近原生 Linux。
+`code .` 会调用 Windows 端的 VS Code，并通过 Remote - WSL 扩展连接到当前的 WSL 发行版。VS Code 的界面运行在 Windows 上，而工作区、集成终端、扩展和调试进程运行在 WSL 中，因此编译器、调试器等工具只需安装在 WSL 内。首次打开项目时，VS Code 可能会自动安装 VS Code Server。
+
+方式二：如果当前使用的是 Windows PowerShell，先执行 `wsl` 进入 WSL，再运行上面的命令：
+
+```powershell
+wsl
+```
+
+这种方式几乎不需要额外配置，使用体验接近原生 Linux。
 
 ## 6.2 用 VS Code 远程 SSH（当你要连接远程开发板或服务器时）
 
