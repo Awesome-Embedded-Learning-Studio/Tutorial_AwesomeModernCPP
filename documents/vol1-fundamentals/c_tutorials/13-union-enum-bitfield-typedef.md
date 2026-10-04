@@ -19,6 +19,17 @@ tags:
 - 入门
 - 类型安全
 title: 联合体、枚举、位域与 typedef
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #164, #169)"
+      en: "Contributed exercise solutions and article revisions (PR #164, #169)"
 ---
 # 联合体、枚举、位域与 typedef
 

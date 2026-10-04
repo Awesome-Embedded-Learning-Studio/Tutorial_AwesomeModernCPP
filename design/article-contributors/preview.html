@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>文章贡献卡预览</title><style>
+:root{color-scheme:light;--vp-c-bg:#FCFAF6;--vp-c-bg-soft:#F4F0E9;--vp-c-bg-elv:#FFFDF9;--vp-c-text-1:#2A2420;--vp-c-text-2:#63574e;--vp-c-divider:#ddd6cc;--vp-c-brand-1:#2563EB;--vp-c-brand-soft:rgba(37,99,235,.1)}
+.dark{color-scheme:dark;--vp-c-bg:#17120E;--vp-c-bg-soft:#1F1812;--vp-c-bg-elv:#241C15;--vp-c-text-1:#E8D8CA;--vp-c-text-2:#c0ab98;--vp-c-divider:#493a2d;--vp-c-brand-1:#60A5FA;--vp-c-brand-soft:rgba(96,165,250,.16)}
+*{box-sizing:border-box}body{margin:0;background:var(--vp-c-bg);color:var(--vp-c-text-1);font-family:system-ui,sans-serif;line-height:1.7}.preview-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:808px;margin:auto;padding:20px 24px;border-bottom:1px solid var(--vp-c-divider);font-size:13px}.preview-toolbar button{border:1px solid var(--vp-c-divider);border-radius:6px;background:var(--vp-c-bg-soft);color:var(--vp-c-text-1);padding:6px 12px;cursor:pointer}article{max-width:760px;margin:36px auto 64px;padding:0 24px}h1{font-size:clamp(22px,4vw,30px);line-height:1.35;margin:12px 0 20px}.preview-label{font-size:12px;color:var(--vp-c-text-2)}.preview-prose{font-size:15px}.preview-prose pre{padding:16px;border-radius:8px;background:var(--vp-c-bg-soft);overflow:auto}a{color:var(--vp-c-brand-1)}
+/* Scope card- names to the article signature; /team/ keeps its own card styles. */
+.card-contributors-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0 0 24px;
+  padding: 8px 12px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg-soft);
+}
+
+.card-contributors-meta .card-meta-caption { display: inline-flex; align-items: center; gap: 6px; }
+.card-contributors-meta .card-meta-label { color: var(--vp-c-text-2); font-size: 12px; font-weight: 500; }
+.card-contributors-meta .card-meta-count { color: var(--vp-c-text-2); font-size: 11px; }
+.card-contributors-meta .card-meta-count::before { content: '·'; margin-right: 6px; }
+.card-contributors-meta .card-meta-avatars { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.card-contributors-meta .card-meta-more { margin-left: auto; color: var(--vp-c-brand-1); font-size: 12px; text-decoration: none; white-space: nowrap; }
+.card-contributors-meta .card-meta-more:hover { text-decoration: underline; }
+
+:where(.card-contributors-meta, .card-article-contributors) .card-avatar-fallback {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-brand-1);
+  font-size: 12px;
+  font-weight: 600;
+}
+.card-contributors-meta .card-avatar-fallback { width: 28px; height: 28px; }
+
+:where(.card-contributors-meta, .card-article-contributors) .card-avatar-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 50%;
+  text-decoration: none;
+}
+
+:where(.card-contributors-meta, .card-article-contributors) .card-avatar {
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 50%;
+  background: transparent;
+  object-fit: cover;
+  transition: border-color .15s;
+}
+
+.card-contributors-meta .card-avatar { width: 28px; height: 28px; }
+.card-article-contributors .card-avatar { width: 32px; height: 32px; }
+
+:where(.card-contributors-meta, .card-article-contributors) .card-avatar-tip {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 6px);
+  left: 0;
+  width: max-content;
+  max-width: min(240px, calc(100vw - 64px));
+  padding: 5px 9px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg-elv);
+  color: var(--vp-c-text-1);
+  box-shadow: 0 3px 12px rgb(0 0 0 / .12);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+:where(.card-contributors-meta, .card-article-contributors) .card-avatar-link:hover .card-avatar,
+:where(.card-contributors-meta, .card-article-contributors) .card-avatar-link:focus-visible .card-avatar {
+  border-color: var(--vp-c-brand-1);
+}
+
+:where(.card-contributors-meta, .card-article-contributors) .card-avatar-link:hover .card-avatar-tip,
+:where(.card-contributors-meta, .card-article-contributors) .card-avatar-link:focus-visible .card-avatar-tip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.card-article-contributors {
+  margin: 32px 0 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--vp-c-divider);
+  color: var(--vp-c-text-1);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.card-article-contributors .card-section-title {
+  margin: 0 0 14px;
+  padding: 0;
+  border: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.card-article-contributors .card-people {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card-article-contributors .card-person {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  min-width: 0;
+  scroll-margin-top: 100px;
+  border-radius: 6px;
+}
+
+.card-article-contributors .card-person:target { background: var(--vp-c-brand-soft); }
+.card-article-contributors .card-person-body { min-width: 0; }
+.card-article-contributors .card-person-meta { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; }
+.card-article-contributors .card-name { color: var(--vp-c-text-1); font-weight: 600; text-decoration: none; overflow-wrap: anywhere; }
+.card-article-contributors .card-name:hover { color: var(--vp-c-brand-1); }
+.card-article-contributors .card-roles { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.card-article-contributors .card-role { padding: 0 5px; border-radius: 4px; background: var(--vp-c-brand-soft); color: var(--vp-c-brand-1); font-size: 11px; line-height: 1.7; }
+.card-article-contributors .card-note { margin: 4px 0 0; color: var(--vp-c-text-2); overflow-wrap: anywhere; font-size: 12px; line-height: 1.65; }
+.card-article-contributors .card-note a { margin-left: 4px; color: var(--vp-c-brand-1); text-decoration: none; }
+.card-article-contributors .card-note a:hover { text-decoration: underline; }
+.card-article-contributors .card-history { margin-top: 16px; }
+.card-article-contributors .card-history-summary { width: fit-content; max-width: 100%; cursor: pointer; color: var(--vp-c-text-2); font-size: 12px; }
+.card-article-contributors .card-history-count { margin-left: 4px; color: var(--vp-c-text-2); font-variant-numeric: tabular-nums; }
+.card-article-contributors .card-history-hint { margin: 8px 0; color: var(--vp-c-text-2); font-size: 12px; }
+.card-article-contributors .card-history-list { margin: 12px 0 0 5px; padding: 0 0 0 16px; border-left: 1px solid var(--vp-c-divider); list-style: none; }
+.card-article-contributors .card-history-entry { position: relative; margin: 0; padding-bottom: 14px; }
+.card-article-contributors .card-history-entry:last-child { padding-bottom: 0; }
+.card-article-contributors .card-history-entry::before { position: absolute; top: 7px; left: -20px; width: 7px; height: 7px; border-radius: 50%; background: var(--vp-c-brand-1); content: ''; }
+.card-article-contributors .card-history-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--vp-c-text-2); font-size: 12px; overflow-wrap: anywhere; }
+.card-article-contributors .card-history-meta a { color: var(--vp-c-brand-1); text-decoration: none; }
+.card-article-contributors .card-history-meta a:hover { text-decoration: underline; }
+
+:where(.card-contributors-meta, .card-article-contributors) :is(a, summary, .card-person):focus-visible {
+  outline: 2px solid var(--vp-c-brand-1);
+  outline-offset: 3px;
+}
+
+@media (max-width: 639px) {
+  .card-article-contributors .card-people { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .card-contributors-meta { gap: 6px; }
+  /* Keep tooltips within a 375px screen even when many avatars wrap. */
+  .card-contributors-meta .card-avatar-link { position: static; }
+  .card-contributors-meta { position: relative; }
+  .card-contributors-meta .card-avatar-tip { top: calc(100% + 4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.card-contributors-meta, .card-article-contributors) .card-avatar { transition: none; }
+}
+
+</style></head><body><div class="preview-toolbar"><span>文章贡献卡 · HTML + CSS 静态成品</span><button type="button" id="theme" aria-pressed="false">切换暗色</button></div><article lang="zh"><p class="preview-label">真实样例 · 原稿投稿与技术校订</p><h1>想要真 Linux——WSL2 加 VS Code 环境搭建</h1><div class="card-contributors-meta" role="group" aria-label="本文贡献者"><span class="card-meta-caption"><span class="card-meta-label">本文贡献者</span><span class="card-meta-count">2 人</span></span><div class="card-meta-avatars"><!--[--><a class="card-avatar-link" href="#wsl-zh-card-contributor-xiaoshuaijie" aria-label="xiaoshuaijie · 撰写"><span class="card-avatar-fallback" aria-hidden="true">X</span><img class="card-avatar" src="https://github.com/xiaoshuaijie.png?size=96" alt="" width="28" height="28" loading="lazy" decoding="async"><span class="card-avatar-tip" aria-hidden="true">xiaoshuaijie · 撰写</span></a><a class="card-avatar-link" href="#wsl-zh-card-contributor-charliechen114514" aria-label="Charliechen114514 · 修订 · 审校"><span class="card-avatar-fallback" aria-hidden="true">C</span><img class="card-avatar" src="https://github.com/Charliechen114514.png?size=96" alt="" width="28" height="28" loading="lazy" decoding="async"><span class="card-avatar-tip" aria-hidden="true">Charliechen114514 · 修订 · 审校</span></a><!--]--></div><a class="card-meta-more" href="#wsl-zh-heading">查看署名 <span aria-hidden="true">↓</span></a></div><div class="preview-prose"><p>这里是教程正文。页头只显示小头像，点击可跳到文末对应的贡献者。</p><pre><code>$ code .</code></pre><p>正文结束后，署名区显示每个人的具体贡献。历史记录来自实际 Git 提交。</p></div><section class="card-article-contributors" aria-labelledby="wsl-zh-heading"><h2 id="wsl-zh-heading" class="card-section-title">本文贡献者</h2><ul class="card-people"><!--[--><li id="wsl-zh-card-contributor-xiaoshuaijie" class="card-person" tabindex="-1"><a class="card-avatar-link" href="https://github.com/xiaoshuaijie" target="_blank" rel="noopener noreferrer" aria-label="xiaoshuaijie · 访问 GitHub 主页"><span class="card-avatar-fallback" aria-hidden="true">X</span><img class="card-avatar" src="https://github.com/xiaoshuaijie.png?size=96" alt="" width="32" height="32" loading="lazy" decoding="async"><span class="card-avatar-tip" aria-hidden="true">xiaoshuaijie · 撰写</span></a><div class="card-person-body"><div class="card-person-meta"><a class="card-name" href="https://github.com/xiaoshuaijie" target="_blank" rel="noopener noreferrer">xiaoshuaijie</a><span class="card-roles"><!--[--><span class="card-role">撰写</span><!--]--></span></div><p class="card-note">撰写并投稿原稿 <a href="https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/pull/276" target="_blank" rel="noopener noreferrer">PR #276</a></p></div></li><li id="wsl-zh-card-contributor-charliechen114514" class="card-person" tabindex="-1"><a class="card-avatar-link" href="https://github.com/Charliechen114514" target="_blank" rel="noopener noreferrer" aria-label="Charliechen114514 · 访问 GitHub 主页"><span class="card-avatar-fallback" aria-hidden="true">C</span><img class="card-avatar" src="https://github.com/Charliechen114514.png?size=96" alt="" width="32" height="32" loading="lazy" decoding="async"><span class="card-avatar-tip" aria-hidden="true">Charliechen114514 · 修订 · 审校</span></a><div class="card-person-body"><div class="card-person-meta"><a class="card-name" href="https://github.com/Charliechen114514" target="_blank" rel="noopener noreferrer">Charliechen114514</a><span class="card-roles"><!--[--><span class="card-role">修订</span><span class="card-role">审校</span><!--]--></span></div><p class="card-note">技术校订、配图本地化与收录 <!----></p></div></li><!--]--></ul><p class="card-history-hint">本文尚无已提交的 Git 变更记录。</p></section></article>
+<article lang="en"><p class="preview-label">Real example · English interface and inherited source credits</p><h1>Want Real Linux — WSL2 + VS Code Environment Setup</h1><div class="card-contributors-meta" role="group" aria-label="Contributors of This Article"><span class="card-meta-caption"><span class="card-meta-label">Contributors</span><span class="card-meta-count">2</span></span><div class="card-meta-avatars"><!--[--><a class="card-avatar-link" href="#wsl-en-card-contributor-xiaoshuaijie" aria-label="xiaoshuaijie · Author"><span class="card-avatar-fallback" aria-hidden="true">X</span><img class="card-avatar" src="https://github.com/xiaoshuaijie.png?size=96" alt="" width="28" height="28" loading="lazy" decoding="async"><span class="card-avatar-tip" aria-hidden="true">xiaoshuaijie · Author</span></a><a class="card-avatar-link" href="#wsl-en-card-contributor-charliechen114514" aria-label="Charliechen114514 · Revision · Review"><span class="card-avatar-fallback" aria-hidden="true">C</span><img class="card-avatar" src="https://github.com/Charliechen114514.png?size=96" alt="" width="28" height="28" loading="lazy" decoding="async"><span class="card-avatar-tip" aria-hidden="true">Charliechen114514 · Revision · Review</span></a><!--]--></div><a class="card-meta-more" href="#wsl-en-heading">Credits <span aria-hidden="true">↓</span></a></div><div class="preview-prose"><p>Article content goes here. Small avatars link to each contributor’s signature below.</p><pre><code>$ code .</code></pre><p>The signature below records each person’s contribution. History comes from actual Git commits.</p></div><section class="card-article-contributors" aria-labelledby="wsl-en-heading"><h2 id="wsl-en-heading" class="card-section-title">Contributors of This Article</h2><ul class="card-people"><!--[--><li id="wsl-en-card-contributor-xiaoshuaijie" class="card-person" tabindex="-1"><a class="card-avatar-link" href="https://github.com/xiaoshuaijie" target="_blank" rel="noopener noreferrer" aria-label="xiaoshuaijie · Visit GitHub profile"><span class="card-avatar-fallback" aria-hidden="true">X</span><img class="card-avatar" src="https://github.com/xiaoshuaijie.png?size=96" alt="" width="32" height="32" loading="lazy" decoding="async"><span class="card-avatar-tip" aria-hidden="true">xiaoshuaijie · Author</span></a><div class="card-person-body"><div class="card-person-meta"><a class="card-name" href="https://github.com/xiaoshuaijie" target="_blank" rel="noopener noreferrer">xiaoshuaijie</a><span class="card-roles"><!--[--><span class="card-role">Author</span><!--]--></span></div><p class="card-note">Wrote and submitted the original article <a href="https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/pull/276" target="_blank" rel="noopener noreferrer">PR #276</a></p></div></li><li id="wsl-en-card-contributor-charliechen114514" class="card-person" tabindex="-1"><a class="card-avatar-link" href="https://github.com/Charliechen114514" target="_blank" rel="noopener noreferrer" aria-label="Charliechen114514 · Visit GitHub profile"><span class="card-avatar-fallback" aria-hidden="true">C</span><img class="card-avatar" src="https://github.com/Charliechen114514.png?size=96" alt="" width="32" height="32" loading="lazy" decoding="async"><span class="card-avatar-tip" aria-hidden="true">Charliechen114514 · Revision · Review</span></a><div class="card-person-body"><div class="card-person-meta"><a class="card-name" href="https://github.com/Charliechen114514" target="_blank" rel="noopener noreferrer">Charliechen114514</a><span class="card-roles"><!--[--><span class="card-role">Revision</span><span class="card-role">Review</span><!--]--></span></div><p class="card-note">Technical revision, image localization, and integration <!----></p></div></li><!--]--></ul><p class="card-history-hint">No committed Git history for this article yet.</p></section></article>
+<article lang="zh"><p class="preview-label">假想样例 · 四人协作，用于验证布局与多角色扩展</p><h1>串口通信：从轮询到中断</h1><div class="card-contributors-meta" role="group" aria-label="本文贡献者"><span class="card-meta-caption"><span class="card-meta-label">本文贡献者</span><span class="card-meta-count">4 人</span></span><div class="card-meta-avatars"><!--[--><a class="card-avatar-link" href="#four-people-card-contributor-charliechen114514" aria-label="Charliechen114514 · 撰写"><span class="card-avatar-fallback" aria-hidden="true">C</span><img class="card-avatar" src="https://github.com/Charliechen114514.png?size=96" alt="" width="28" height="28" loading="lazy" decoding="async"><span class="card-avatar-tip" aria-hidden="true">Charliechen114514 · 撰写</span></a><a class="card-avatar-link" href="#four-people-card-contributor-xiaoshuaijie" aria-label="xiaoshuaijie · 修订"><span class="card-avatar-fallback" aria-hidden="true">X</span><img class="card-avatar" src="https://github.com/xiaoshuaijie.png?size=96" alt="" width="28" height="28" loading="lazy" decoding="async"><span class="card-avatar-tip" aria-hidden="true">xiaoshuaijie · 修订</span></a><a class="card-avatar-link" href="#four-people-card-contributor-owollz4" aria-label="owollz4 · 修订"><span class="card-avatar-fallback" aria-hidden="true">O</span><img class="card-avatar" src="https://github.com/owollz4.png?size=96" alt="" width="28" height="28" loading="lazy" decoding="async"><span class="card-avatar-tip" aria-hidden="true">owollz4 · 修订</span></a><a class="card-avatar-link" href="#four-people-card-contributor-yukunj" aria-label="YukunJ · 翻译"><span class="card-avatar-fallback" aria-hidden="true">Y</span><img class="card-avatar" src="https://github.com/YukunJ.png?size=96" alt="" width="28" height="28" loading="lazy" decoding="async"><span class="card-avatar-tip" aria-hidden="true">YukunJ · 翻译</span></a><!--]--></div><a class="card-meta-more" href="#four-people-heading">查看署名 <span aria-hidden="true">↓</span></a></div><div class="preview-prose"><p>这里是教程正文。页头只显示小头像，点击可跳到文末对应的贡献者。</p><pre><code>$ code .</code></pre><p>正文结束后，署名区显示每个人的具体贡献。历史记录来自实际 Git 提交。</p></div><section class="card-article-contributors" aria-labelledby="four-people-heading"><h2 id="four-people-heading" class="card-section-title">本文贡献者</h2><ul class="card-people"><!--[--><li id="four-people-card-contributor-charliechen114514" class="card-person" tabindex="-1"><a class="card-avatar-link" href="https://github.com/Charliechen114514" target="_blank" rel="noopener noreferrer" aria-label="Charliechen114514 · 访问 GitHub 主页"><span class="card-avatar-fallback" aria-hidden="true">C</span><img class="card-avatar" src="https://github.com/Charliechen114514.png?size=96" alt="" width="32" height="32" loading="lazy" decoding="async"><span class="card-avatar-tip" aria-hidden="true">Charliechen114514 · 撰写</span></a><div class="card-person-body"><div class="card-person-meta"><a class="card-name" href="https://github.com/Charliechen114514" target="_blank" rel="noopener noreferrer">Charliechen114514</a><span class="card-roles"><!--[--><span class="card-role">撰写</span><!--]--></span></div><p class="card-note">编写初版与串口示例（假想） <!----></p></div></li><li id="four-people-card-contributor-xiaoshuaijie" class="card-person" tabindex="-1"><a class="card-avatar-link" href="https://github.com/xiaoshuaijie" target="_blank" rel="noopener noreferrer" aria-label="xiaoshuaijie · 访问 GitHub 主页"><span class="card-avatar-fallback" aria-hidden="true">X</span><img class="card-avatar" src="https://github.com/xiaoshuaijie.png?size=96" alt="" width="32" height="32" loading="lazy" decoding="async"><span class="card-avatar-tip" aria-hidden="true">xiaoshuaijie · 修订</span></a><div class="card-person-body"><div class="card-person-meta"><a class="card-name" href="https://github.com/xiaoshuaijie" target="_blank" rel="noopener noreferrer">xiaoshuaijie</a><span class="card-roles"><!--[--><span class="card-role">修订</span><!--]--></span></div><p class="card-note">补充练习参考答案（假想） <!----></p></div></li><li id="four-people-card-contributor-owollz4" class="card-person" tabindex="-1"><a class="card-avatar-link" href="https://github.com/owollz4" target="_blank" rel="noopener noreferrer" aria-label="owollz4 · 访问 GitHub 主页"><span class="card-avatar-fallback" aria-hidden="true">O</span><img class="card-avatar" src="https://github.com/owollz4.png?size=96" alt="" width="32" height="32" loading="lazy" decoding="async"><span class="card-avatar-tip" aria-hidden="true">owollz4 · 修订</span></a><div class="card-person-body"><div class="card-person-meta"><a class="card-name" href="https://github.com/owollz4" target="_blank" rel="noopener noreferrer">owollz4</a><span class="card-roles"><!--[--><span class="card-role">修订</span><!--]--></span></div><p class="card-note">修复代码注释与边界说明（假想） <!----></p></div></li><li id="four-people-card-contributor-yukunj" class="card-person" tabindex="-1"><a class="card-avatar-link" href="https://github.com/YukunJ" target="_blank" rel="noopener noreferrer" aria-label="YukunJ · 访问 GitHub 主页"><span class="card-avatar-fallback" aria-hidden="true">Y</span><img class="card-avatar" src="https://github.com/YukunJ.png?size=96" alt="" width="32" height="32" loading="lazy" decoding="async"><span class="card-avatar-tip" aria-hidden="true">YukunJ · 翻译</span></a><div class="card-person-body"><div class="card-person-meta"><a class="card-name" href="https://github.com/YukunJ" target="_blank" rel="noopener noreferrer">YukunJ</a><span class="card-roles"><!--[--><span class="card-role">翻译</span><!--]--></span></div><p class="card-note">翻译英文版并统一术语（假想） <!----></p></div></li><!--]--></ul><p class="card-history-hint">本文尚无已提交的 Git 变更记录。</p></section></article><script>document.getElementById('theme').addEventListener('click',function(){const dark=document.documentElement.classList.toggle('dark');this.setAttribute('aria-pressed',String(dark));this.textContent=dark?'切换亮色':'切换暗色';});</script></body></html>

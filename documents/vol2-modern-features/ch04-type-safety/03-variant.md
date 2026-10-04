@@ -19,6 +19,17 @@ tags:
 - variant
 - 类型安全
 title: std::variant：类型安全的联合体
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: YukunJ
+    roles: [revision]
+    note:
+      zh: "参与文章内容与示例修订 (PR #33)"
+      en: "Contributed article and example revisions (PR #33)"
 ---
 # std::variant：类型安全的联合体
 
