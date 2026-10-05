@@ -1,0 +1,52 @@
+$ ./e3_named_sync.exe mutex; echo "exit=$?"
+[worker pid=23084] 完成(无锁裸奔),此刻计数=85990
+
+[E3-mutex-无锁] 两进程各 10 万次共享计数自增
+[父] 首次 CreateMutexW err=0;同名再 Create -> err=183(183=ERROR_ALREADY_EXISTS,句柄照常有效——与命名映射同一套"创建即打开"语义)
+[父] 终值=116589 / 期望 200000 -> 丢更新(差 83411 次)
+[worker pid=2248] 完成(互斥体护驾),此刻计数=200000
+
+[E3-mutex-锁] 两进程各 10 万次共享计数自增
+[父] 终值=200000 / 期望 200000 -> 一个不丢(差 0 次)
+exit=0
+
+$ ./e3_named_sync.exe mutex abandoned; echo "exit=$?"
+[abandoner pid=26028] 拿到互斥体(等待结果 0),啥也不干直接 ExitProcess
+[E3-abandoned] 持锁暴毙:子进程抱着命名互斥体 ExitProcess
+[父] 子进程退出码=1,现在去等那把没人放的互斥体...
+[父] WaitForSingleObject 返回 128(WAIT_ABANDONED=0x80) —— 互斥体没坏,拿到手还能继续用
+exit=0
+
+$ ./e3_named_sync.exe event; echo "exit=$?"
+[waiter 1 pid=11464] 醒了:等待结果=0,等了 59418 微秒
+[waiter 0 pid=21092] 醒了:等待结果=0,等了 59424 微秒
+[E3-event] 同一个 CreateEventW,bManualReset 一个参数定广播还是单播
+
+[手动复位事件] 两个等待进程就位,父进程只 SetEvent 一次
+[父] SetEvent 一次
+[父] waiter0 等待时长 59424 微秒(结果 0)
+[父] waiter1 等待时长 59418 微秒(结果 0)
+[父] 手动复位:一次 SetEvent,两个 waiter 都醒——广播
+[waiter 1 pid=24520] 醒了:等待结果=0,等了 50409 微秒
+[waiter 0 pid=6152] 醒了:等待结果=0,等了 52215 微秒
+
+[自动复位事件] 两个等待进程就位,父进程只 SetEvent 一次
+[父] SetEvent 一次
+[父] 第一发只放行了 waiter 1;再 SetEvent 一发才轮到另一个
+[父] waiter0 等待时长 52215 微秒(结果 0)
+[父] waiter1 等待时长 50409 微秒(结果 0)
+[父] 自动复位:一次 SetEvent 只放行一个;第二个得等下一次
+exit=0
+
+$ ./e3_named_sync.exe semaphore; echo "exit=$?"
+[sem-waiter 0 pid=12892] 过闸:等待结果=0,排队 1 微秒(名额到手,攥着不放直到父进程放行)
+[sem-waiter 1 pid=23288] 过闸:等待结果=0,排队 1 微秒(名额到手,攥着不放直到父进程放行)
+[sem-waiter 2 pid=10844] 过闸:等待结果=0,排队 304982 微秒(名额到手,攥着不放直到父进程放行)
+[E3-semaphore] 初值 2 的命名信号量,3 个进程排队
+[父] CreateSemaphoreW(初值2,上限2) -> 00000000000000f4 err=0
+[父] 300ms 后 ReleaseSemaphore(1) -> ret=1 prev=0 err=0(0=释放前名额已被两个 waiter 占光)
+[父] waiter0 排队 1 微秒后过闸
+[父] waiter1 排队 1 微秒后过闸
+[父] waiter2 排队 304982 微秒后过闸
+[父] 前两个瞬时过闸、第三个干等 300ms+——计数信号量跨进程管并发名额
+exit=0

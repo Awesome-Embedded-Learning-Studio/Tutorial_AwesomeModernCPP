@@ -12,7 +12,7 @@ depends_on:
   - "020-compilation-and-reference.md" # compilation/ 是链接器文章的前置
 blocks:
   - "017-vol8-domains.md"           # vol8 嵌入式依赖 vol7 交叉编译内容
-  - "021-projects.md"               # 贯穿式项目使用 vol7 工程实践
+  - "020-projects.md"               # 贯穿式项目使用 vol7 工程实践
 estimated_effort: large
 ---
 

@@ -1,0 +1,6 @@
+[1] A 落在 (4,1),B 落在 (5,1)(跟光标走);'#' 落在 (40,2)(WriteConsoleOutput 自带坐标)
+    此刻光标=(6,1) —— 两套写法互不干扰,但光标只认 VT/WriteConsole 一系
+[2] WRAP_AT_EOL 开:光标起 (115,6) 写 "ABCDEFGH",A=(115,6) H=(2,7) —— 越过行尾回绕到下一行,E..H 在第二行
+[2] WRAP_AT_EOL 关:光标起 (115,6) 写 "ABCDEFGH",A=(115,6) H=(119,6) —— 越过行尾不回绕,E..H 反复覆盖 (119,6),只剩 H
+[3] DISABLE_NEWLINE_AUTO_RETURN 不设:B=(118,9) C=(0,10) —— 行尾 \n 连回车一起做,C 到下一行行首
+[3] DISABLE_NEWLINE_AUTO_RETURN 设:B=(118,9) C=(119,10) —— \n 只下移一行不回零,C 落在 (119,10)

@@ -1,0 +1,39 @@
+setup: /home/charliechen/l04_scratch/e1_cache_dir 下 200 个 3 字节文件
+
+mode=type   dirs=0 regs=200 other=0 size_sum=0
+strace -c 计数(单独进程跑同 mode):
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 37.16    0.000152          30         5           newfstatat
+ 36.67    0.000150          25         6           openat
+ 26.16    0.000107          17         6           close
+  0.00    0.000000           0         2           getdents64
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.000409          21        19           total
+----
+mode=size   dirs=0 regs=0 other=0 size_sum=600
+strace -c 计数(单独进程跑同 mode):
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 95.99    0.005387          26       205           newfstatat
+  1.84    0.000103          17         6           close
+  1.71    0.000096          48         2           getdents64
+  0.46    0.000026           4         6           openat
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.005612          25       219           total
+----
+mode=fresh  dirs=0 regs=200 other=0 size_sum=0
+strace -c 计数(单独进程跑同 mode):
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 98.69    0.005215          25       205           newfstatat
+  0.87    0.000046           7         6           close
+  0.44    0.000023          11         2           getdents64
+  0.00    0.000000           0         6           openat
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.005284          24       219           total
+----
+== 结论 ==
+type  : 条目类型用 readdir 带回的 d_type 缓存,200 条零 per-entry stat(newfstatat 仅 5 次,全是进程/构造基线)
+size  : entry.file_size() 不缓存,每条一次 newfstatat(205 = 200 + 5 基线)
+fresh : fs::is_regular_file(entry.path()) 每条一次 newfstatat(205)

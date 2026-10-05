@@ -1,0 +1,112 @@
+$ # 环境:Windows 11 26200 / NTFS(C:) / MSYS2 UCRT64 g++ 16.1.0,工作目录 C:/msys64/tmp/l05win
+$ # (在 WSL 里经 /mnt/c/msys64/tmp/l05win 进入;g++ 即 /mnt/c/msys64/ucrt64/bin/g++.exe)
+$ g++ -std=c++20 -Wall -Wextra matrix.cpp -o matrix.exe
+$ ./matrix.exe demo
+pid=12008(当前进程), 数据文件:C:/msys64/tmp/l05win/matrix.bin(NTFS)
+
+==== E1a  LOCKFILE_EXCLUSIVE_LOCK 互斥:A 拿 → B 阻塞 → A 放 → B 接棒 ====
+  [     15 ms] A(pid=20400):LockFileEx([0,1048576) EX,阻塞版) = TRUE,持锁
+  [    265 ms] B:LockFileEx(同区间,阻塞版)调用中 …
+  [    812 ms] A:UnlockFile [0,1048576) = TRUE → B 的拿锁时刻应紧贴这一行
+  [    812 ms] B(pid=8004):阻塞版返回 = TRUE,拿到锁(A 一放就接棒)
+
+==== E1b  共享锁(不带 EXCLUSIVE):两边同时持有 ====
+  [    828 ms] 共享A(pid=24772):LockFileEx([0,1048576) 不带 EXCLUSIVE) = TRUE,共享锁到手(与另一边同时持有)
+  [   1093 ms] 共享B(pid=25132):LockFileEx([0,1048576) 不带 EXCLUSIVE) = TRUE,共享锁到手(与另一边同时持有)
+  [   1234 ms] 探针C:两个共享锁都在场时,EXCLUSIVE|FAIL_IMMEDIATELY 试同区间 = FALSE, GetLastError()=33(ERROR_LOCK_VIOLATION)(共享之上独占进不来)
+  [   1437 ms] 共享A(pid=24772):UnlockFile = TRUE
+  [   1703 ms] 共享B(pid=25132):UnlockFile = TRUE
+
+==== E1c  LOCKFILE_FAIL_IMMEDIATELY:冲突 = FALSE + GetLastError()=33 ====
+  [   1703 ms] A:hA: LockFileEx [0,100) EX = TRUE
+  [   1703 ms] B:hB: LockFileEx [0,100) EX|FAIL_IMMEDIATELY = FALSE, GetLastError()=33(ERROR_LOCK_VIOLATION)(同区间被占,立刻回来)
+  [   1703 ms] B:hB: LockFileEx [100,200) EX|FAIL_IMMEDIATELY = TRUE(不相交就放行)
+
+==== E1w  锁与读写:别的句柄 read/write 真会被挡吗(咨询锁吗) ====
+  [   1703 ms] A:hA: LockFileEx [0,100) EX = TRUE
+  [   1703 ms] B:hB: ReadFile@[50,10) = FALSE, GetLastError()=33(ERROR_LOCK_VIOLATION) —— 锁内,被挡
+  [   1703 ms] B:hB: ReadFile@[250,10) = TRUE(锁外,畅通)
+  [   1703 ms] A:hA(持锁者): ReadFile@[50,10) = TRUE(自己不受影响)
+  [   1703 ms] B:hB: 放锁后再读 @[50,10) = TRUE(恢复)
+  [   1703 ms] A:hA: LockFileEx [0,100) 共享 = TRUE
+  [   1703 ms] B:hB: 共享锁下 ReadFile@[50,10) = TRUE(读放行)
+  [   1703 ms] B:hB: 共享锁下 WriteFile@[50,10) = FALSE, GetLastError()=33(ERROR_LOCK_VIOLATION) —— 写被挡
+  [   1703 ms] 本进程:   → 对照:POSIX flock/fcntl 是咨询锁,read/write 永远不看锁;Windows 的区间锁会真挡别的句柄的 I/O(文档另注明映射视图不受限,未测)
+
+==== E1d  字节区间:A 锁 [0,100),B 试 [50,150) 冲突、[100,200) 成功 ====
+  [   1703 ms] A:hA: LockFileEx [0,100) EX = TRUE
+  [   1703 ms] B:hB: LockFileEx [50,150) EX|FAIL = FALSE, GetLastError()=33(ERROR_LOCK_VIOLATION)(与 [0,100) 交叠 50 字节)
+  [   1703 ms] B:hB: LockFileEx [100,200) EX|FAIL = TRUE(相邻不相交 → 拿到)
+  [   1703 ms] B:hB: LockFileEx [99,101) EX|FAIL = FALSE, GetLastError()=33(ERROR_LOCK_VIOLATION)(单字节交叠也算冲突)
+  [   1703 ms] A:hA: LockFileEx [200,长度0) EX = TRUE(零长度是「空区间」还是「到 EOF」?往下看)
+  [   1703 ms] B:探针试 [900,50)(文件 1000 字节,在 200 之后)= TRUE
+  [   1703 ms] B:探针试 [250,10)(紧挨 200)= TRUE
+  [   1703 ms] 本进程:   → 长度 0 = 空区间,什么都没锁(对照:fcntl 的 l_len=0 是锁到 EOF,Windows 这里不是)
+  [   1703 ms] A:hA: LockFileEx [200,1048576) EX = TRUE(把长度给足,锁过 EOF 也没问题)
+  [   1703 ms] B:探针再试 [900,50) = FALSE, GetLastError()=33(ERROR_LOCK_VIOLATION)(这回真挡了)
+  [   1703 ms] B:hA CloseHandle 清场后再试 [0,100) = TRUE
+
+==== E1e  同句柄区间语义:重复加锁、重叠、部分解锁 ====
+  [   1703 ms] 本进程:h1: LockFileEx [0,100) EX = TRUE
+  [   1703 ms] 本进程:h1: 同句柄再锁 [50,150) EX(带 FAIL_IMMEDIATELY 防挂死)= FALSE, GetLastError()=33(ERROR_LOCK_VIOLATION)
+  [   1703 ms] 本进程:   → 对照:fcntl 同进程后锁直接改写重叠段、flock 同 fd 是转换,LockFileEx 连自己名下都挡
+  [   1703 ms] 本进程:h1: UnlockFile [0,100) = TRUE(唯一的锁就是它,整段放干净)
+  [   1703 ms] 探针:h2 试 [0,50) = TRUE;[50,150) = TRUE(确认场上已无锁)
+  [   1703 ms] 本进程:h1: LockFileEx [0,100) EX = TRUE
+  [   1703 ms] 本进程:h1: 原地再锁 [0,100) EX|FAIL = FALSE, GetLastError()=33(ERROR_LOCK_VIOLATION)(第二把没立起来)
+  [   1703 ms] 本进程:h1: UnlockFile [0,100) 第一次 = TRUE
+  [   1718 ms] 探针:h2 试 [0,100) = TRUE(放一次就干净 —— 没有计数、没有第二把)
+  [   1718 ms] 本进程:h1: UnlockFile [0,100) 第二次 = FALSE, GetLastError()=158(ERROR_NOT_LOCKED)
+  [   1718 ms] 本进程:h1: LockFileEx [0,100) EX = TRUE
+  [   1718 ms] 本进程:h1: UnlockFile [10,20)(部分解锁)= FALSE, GetLastError()=158(ERROR_NOT_LOCKED)
+  [   1718 ms] 本进程:h1: UnlockFile [0,100)(整段)= TRUE
+  [   1718 ms] 本进程:h1: LockFileEx [0,100) EX = TRUE
+  [   1718 ms] 本进程:h1: 同句柄再锁 [0,100) 共享(不带 EXCLUSIVE,带 FAIL)= TRUE(文档特例:同句柄可叠)
+  [   1718 ms] 本进程:h1: UnlockFile [0,100) 第一次 = TRUE
+  [   1718 ms] 探针:EX 试 [0,100) = FALSE, GetLastError()=33(ERROR_LOCK_VIOLATION);共享试 [0,100) = TRUE(看剩下的是哪一把)
+  [   1718 ms] 本进程:h1: UnlockFile [0,100) 第二次 = TRUE
+  [   1718 ms] 探针:EX 试 [0,100) = TRUE(两把都该放干净了,EX 探针才作数)
+
+==== E1f  两个句柄:同进程 CreateFileA 两次,互相冲突吗 ====
+  [   1718 ms] 本进程:h1: LockFileEx [0,100) EX = TRUE
+  [   1718 ms] 本进程:h2(同进程第二次 open):LockFileEx [0,100) EX|FAIL = FALSE, GetLastError()=33(ERROR_LOCK_VIOLATION)
+  [   1718 ms] 本进程:   → 同进程两个句柄互相挡:冲突判定没有属主豁免,进程身份救不了
+  [   3218 ms] 本进程:1.5 s 过去,对 h2 的阻塞版 LockFileEx 仍未返回(线程 g_woken=0)
+  [   3218 ms] 本进程:   → 放锁的人永远不来:同进程两句柄,自己挡死了自己
+  [   3531 ms] 本进程:CloseHandle(h1) 之后:g_woken=1 —— 阻塞线程应声拿到并已放掉:它等的正是「另一个句柄」
+
+==== E1g  CloseHandle:该句柄名下所有区间一起放 ====
+  [   3531 ms] A:hA: [0,100) = TRUE,[200,300) = TRUE,两把都上身
+  [   3531 ms] B:hB 试 [0,100) = FALSE, GetLastError()=33(ERROR_LOCK_VIOLATION);[200,300) = FALSE, GetLastError()=33(ERROR_LOCK_VIOLATION)
+  [   3531 ms] B:hA CloseHandle(一次 UnlockFile 都没调)后:试 [0,100) = TRUE;[200,300) = TRUE
+
+==== E1h  句柄继承(bInheritHandles):继承来的句柄能干什么 ====
+  [   3531 ms] 父:可继承句柄 hL(SA.bInheritHandle=TRUE):LockFileEx [0,100) EX = TRUE
+  [   3531 ms] 子(pid=28016):① 自己 CreateFileA 的新句柄:LockFileEx [0,100) EX|FAIL = FALSE, GetLastError()=33(ERROR_LOCK_VIOLATION) —— 「我是它孩子」不算数
+  [   3531 ms] 子:② 继承来的句柄值(与父指向同一文件对象):LockFileEx [0,100) EX|FAIL = FALSE, GetLastError()=33(ERROR_LOCK_VIOLATION)
+  [   3531 ms] 子:③ UnlockFile(继承句柄,[0,100)) = FALSE, GetLastError()=158(ERROR_NOT_LOCKED)
+  [   3547 ms] 父:子进程退场后,父探针试 [0,100) = FALSE, GetLastError()=33(ERROR_LOCK_VIOLATION)
+  [   3547 ms] 父:   → ②③ 连起来读:继承句柄既加不进去(冲突判定不豁免任何人)、也放不掉父的锁(解锁认进程)
+  [   3547 ms] 父:   → 对照:flock 的子进程能经继承 fd 替父放锁(同一描述共享同一把锁),Windows 这条路走不通
+
+---- I3 对照:bInheritHandles=FALSE,句柄值照样传过去 ----
+  [   3547 ms] 父:普通句柄(不可继承):LockFileEx [0,100) EX = TRUE
+  [   3547 ms] 子(pid=17940):LockFileEx(父传来的句柄值) = FALSE, GetLastError()=6(ERROR_INVALID_HANDLE);GetFileType=0(错误 6) —— bInheritHandles=FALSE 时,句柄值没有跨进程的意义
+  [   3547 ms] 父:对照组的锁毫发无损:父探针 [0,100) = FALSE, GetLastError()=33(ERROR_LOCK_VIOLATION)(应仍被挡)
+
+---- I4 锁的寿命:持锁进程退出,继承句柄还在别人手里 ----
+  [   3562 ms] proxy(pid=27840):可继承句柄上锁 [1000,200) EX = TRUE,接着 spawn sleeper、自己立即退出(全程不 UnlockFile)
+  [   3562 ms] sleeper(pid=20468):攥着继承句柄睡 1200 ms,什么都不做
+  [   3562 ms] 探针:proxy 进程已退出(全程没 UnlockFile,但 sleeper 攥着同一文件对象的句柄):试 [1000,200) = TRUE
+  [   5265 ms] 探针:sleeper 也退场后,再试 [1000,200) = TRUE
+
+---- I5 归属单位判别:DuplicateHandle、新 open、关句柄次序 ----
+  [   5265 ms] 本进程:h1(新 open): LockFileEx [0,100) EX = TRUE
+  [   5265 ms] 本进程:DuplicateHandle 复制出 h2(与 h1 指向同一文件对象)
+  [   5265 ms] 本进程:h2: LockFileEx [0,100) EX|FAIL = FALSE, GetLastError()=33(ERROR_LOCK_VIOLATION)(同进程同对象,照样加不进)
+  [   5265 ms] 本进程:h2: UnlockFile [0,100)(放 h1 立的那把)= TRUE —— 同进程的复制品放得掉
+  [   5265 ms] 本进程:h1: 重新 LockFileEx [0,100) EX = TRUE
+  [   5265 ms] 本进程:h3(全新 open,同进程): UnlockFile [0,100) = FALSE, GetLastError()=158(ERROR_NOT_LOCKED)
+  [   5265 ms] 本进程:   → 解锁认进程+文件对象,新 open 的句柄放不掉
+  [   5265 ms] 本进程:CloseHandle(h1) 后(h2 还开着同一对象),新句柄试 [0,100) = FALSE, GetLastError()=33(ERROR_LOCK_VIOLATION)
+  [   5265 ms] 本进程:h2/h3 也全关后,再试 = TRUE(清场确认)

@@ -1,0 +1,31 @@
+== E1 shm_open 命名对象全生命周期 ==
+
+$ ls -l /dev/shm
+total 0
+[1] shm_open("/lm03_demo", O_CREAT|O_EXCL|O_RDWR, 0600) 成功,fd=3
+    刚创建时 fstat:size=0 mode=0600(新对象尺寸为 0,不 ftruncate 直接 mmap 会 EINVAL/长度 0)
+[2] ftruncate(fd, 65536) 后:size=65536
+[3] mmap MAP_SHARED 完成,写入第一代标记 0x1111 + 文本 "generation-1"
+$ ls -l /dev/shm
+total 4
+-rw------- 1 charliechen charliechen 65536 Oct  3 10:49 lm03_demo
+[4] 未 unlink,再次 shm_open 同名 O_CREAT|O_EXCL → 返回 -1,errno=17 (File exists)
+[5] 第二个进程视角:shm_open(name, O_RDWR) 不带 O_CREAT 也成功(fd=4),映射后读到 0x1111 "generation-1"——同一实体
+[6] shm_unlink("/lm03_demo") 返回 0,名字没了
+  readlink(/proc/self/fd/3) -> /dev/shm/lm03_demo (deleted)
+$ ls -l /dev/shm
+total 0
+[7] unlink 后旧映射:仍读到 0x1111 "generation-1"
+    继续写 gen1[1]=42 也成功——unlink 只删名字,实体活到所有映射/fd 关闭
+[8] unlink 后同名 O_CREAT|O_EXCL 重建成功(fd=4),写入 0x2222 "generation-2"
+    同一时刻旧映射看到的还是 0x1111 "generation-1"——同名的两个对象互不相干,证明 unlink 后重建的是新实体
+
+[9] 收尾:新对象 unlink、旧映射 munmap,进程正常退出
+
+== 附:shm_open 的 mode 会被进程 umask 截断 ==
+都请求 0666:umask=0022 时实际落盘 0644;umask=0000 时实际 0666
+$ ls -l /dev/shm
+total 0
+-rw-rw-rw- 1 charliechen charliechen 0 Oct  3 10:49 lm03_umask000
+-rw-r--r-- 1 charliechen charliechen 0 Oct  3 10:49 lm03_umask022
+(umask 演示对象已清理)

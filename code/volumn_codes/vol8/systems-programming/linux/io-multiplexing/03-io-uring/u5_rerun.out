@@ -1,0 +1,7 @@
+16 MiB (4096 x 4KiB), 页缓存已预热, 5 轮取中位:
+read(2) 逐块 :      2.8 ms (4096 次系统调用)
+io_uring 256 一批:      2.6 ms (submit 调用 16 次 + wait 调用 16 次, 其余收割是用户态 peek)
+每块均摊: read 692 ns, io_uring 636 ns
+
+SQPOLL 探针: 建环成功, submit=1 (只写共享环, 不催内核)
+SQPOLL: 内核线程 已把 NOP 干完 (res=0)

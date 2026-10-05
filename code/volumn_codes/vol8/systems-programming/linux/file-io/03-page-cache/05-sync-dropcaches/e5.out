@@ -1,0 +1,18 @@
+# 环境: 6.18.33.2-microsoft-standard-WSL2 | AMD Ryzen 7 9700X 8-Core Processor | 数据盘 /dev/sdd ext4 1055762868 65035020 937024376 7% /
+
+== 步骤 0: sudo / drop_caches 可用性 ==
+# sudo -n true: 不可用 —— 提示: sudo: a password is required
+# 结论: /proc/sys/vm/drop_caches 需要 root,本环境无法做 drop_caches 观察;
+#       真崩溃丢失(掉电/宿主机死机)更无法安全演示,文章如实交代即可。
+
+== 步骤 1: sync 压基线 ==
+# 基线 Dirty=108 kB
+
+== 步骤 2: dd 写 64MiB,不 sync,立刻观察 ==
+#   67108864 bytes (67 MB, 64 MiB) copied, 0.0379661 s, 1.8 GB/s
+# dd 返回后: Dirty=65644 kB(≈64MiB 脏页滞留), 文件大小 67108864 字节, 前 8 字节 0000000000000000
+#            —— 文件此刻"完全可读",但这 64MiB 只在内存里,盘上一个字节都还没有
+
+== 步骤 3: sync 之后 ==
+# sync 返回后: Dirty=72 kB, 文件大小 67108864 字节, 前 8 字节 0000000000000000
+#            —— sync 返回 = 内核已把这批脏页写回存储;从这一刻起,断电才不丢

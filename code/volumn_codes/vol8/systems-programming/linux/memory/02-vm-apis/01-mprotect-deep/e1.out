@@ -1,0 +1,72 @@
+E1: mprotect deep dive (page size 4096)
+
+== (1) guard page: si_addr follows the exact byte ==
+data  page = [0x7ad3a9f31000, 0x7ad3a9f32000)  rw-p
+guard page = [0x7ad3a9f32000, 0x7ad3a9f33000)  ---p (PROT_NONE)
+   maps: 7ad3a9f31000-7ad3a9f32000 rw-p 00000000 00:00 0 
+   maps: 7ad3a9f32000-7ad3a9f33000 ---p 00000000 00:00 0 
+data[kPage-1] = 'K' ok (last legal byte)
+-- scenario: g1 write guard+0     -> SIGSEGV, si_addr == guard+0
+
+[handler] SIGSEGV in scenario "g1 write guard+0", si_addr = 0x00007ad3a9f32000, si_code = 2 (SEGV_ACCERR)  <- 映射在,权限不许
+   OK: child exited 71 as expected
+-- scenario: g2 write guard+4095  -> SIGSEGV, si_addr == guard+4095
+
+[handler] SIGSEGV in scenario "g2 write guard+last", si_addr = 0x00007ad3a9f32fff, si_code = 2 (SEGV_ACCERR)  <- 映射在,权限不许
+   OK: child exited 72 as expected
+-- scenario: g3 read  guard+123   -> SIGSEGV, si_addr == guard+123
+
+[handler] SIGSEGV in scenario "g3 read guard+123", si_addr = 0x00007ad3a9f3207b, si_code = 2 (SEGV_ACCERR)  <- 映射在,权限不许
+   OK: child exited 73 as expected
+
+== (2) W^X: RW write code -> RX exec -> RW patch -> RX again ==
+-- scenario: wx4 RWX page, write int3, call -> SIGTRAP
+   step1 [RW ] memcpy mov eax,42; ret
+   step2 [RX ] mprotect RX, call -> eax = 42
+   step3 [RW->RX] patch mov eax,99; ret (x86-64 取指缓存硬件自洽,无需显式 flush), call -> eax = 99
+   step4 mprotect(R|W|X) rc=0  <- W^X 只有 macOS 强制,Linux 放行
+   step4' write int3 under RWX, call ->
+
+[handler] SIGTRAP in scenario "wx4 exec int3 under RWX", si_addr = 0x0000000000000000, si_code = 128 (SI_KERNEL)  <- 内核送的 trap,不带精确地址(本机 int3 实测)
+   OK: child exited 74 as expected
+
+== (3) mprotect on every kind of segment ==
+pitfall probe first (needs cold PLT):
+-- scenario: seg8 cold errno read under RO .data -> SIGSEGV inside ld.so (GOT lazy binding)
+    seg8: child mprotect(.data page, PROT_READ) rc=0, now first cold errno read
+
+[handler] SIGSEGV in scenario "seg8 cold errno read under RO .data page", si_addr = 0x000061f2a500c000, si_code = 2 (SEGV_ACCERR)  <- 映射在,权限不许
+   OK: child exited 78 as expected
+   (&g_data = 0x61f2a500c0d8, si_addr 与它同页:那里住着 .got.plt)
+   text (function page) r-x   -> r-x  rc= 0 (ok)
+   text (function page) +W    -> rwx  rc= 0 (ok)
+   text page really became rwx -- maps says:
+   maps: 61f2a5007000-61f2a5008000 rwxp 00001000 08:30 1689032                    /home/charliechen/lm02_scratch/e1
+   rodata page           +W   -> rw-  rc= 0 (ok)
+   rodata real write under rw: 'R' -> 'X' (COW copy, no signal)
+   .data page           ->r   -> r--  rc= 0, restore rw rc= 0
+   .data page           rw    -> rw-  rc= 0, restore rw rc= 0
+   heap(brk) page       ->--- -> ---  rc= 0, restore rw rc= 0
+   heap(brk) page        +x   -> r-x  rc= 0 (ok)
+   heap(brk) page       rw    -> rw-  rc= 0, restore rw rc= 0
+   [vvar]                     -> rw-  rc=-1 errno=13 (Permission denied)
+   [vdso]                     -> rw-  rc=-1 errno=22 (Invalid argument)
+   [vsyscall]                 -> 本机 maps 里没有这段映射
+-- scenario: seg5 write .data after RW->R -> SIGSEGV ACCERR
+    seg5: child mprotect(.data page, PROT_READ) rc=0
+
+[handler] SIGSEGV in scenario "seg5 write .data after RW->R", si_addr = 0x000061f2a500c0d8, si_code = 2 (SEGV_ACCERR)  <- 映射在,权限不许
+   OK: child exited 75 as expected
+-- scenario: seg6 read heap after ->NONE  -> SIGSEGV ACCERR
+   seg6: child mprotect(heap page, PROT_NONE) rc=0
+
+[handler] SIGSEGV in scenario "seg6 read heap after ->NONE", si_addr = 0x000061f2ce35c920, si_code = 2 (SEGV_ACCERR)  <- 映射在,权限不许
+   OK: child exited 76 as expected
+-- scenario: seg7 write stack page after RW->R -> SIGSEGV ACCERR (handler on altstack)
+   seg7: child mprotect(stack page, PROT_READ) rc=0
+
+[handler] SIGSEGV in scenario "seg7 write stack page after RW->R", si_addr = 0x00007fff54fa9087, si_code = 2 (SEGV_ACCERR)  <- 映射在,权限不许
+   OK: child exited 77 as expected
+after: g_data=1 (seg5 never landed), *heap=0, stack local=0, rodata=RODATA-SENTINEL
+
+done

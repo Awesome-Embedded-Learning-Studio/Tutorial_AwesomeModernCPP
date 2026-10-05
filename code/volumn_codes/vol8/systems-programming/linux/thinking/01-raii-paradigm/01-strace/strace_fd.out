@@ -1,0 +1,19 @@
+104302 openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+104302 close(3)                         = 0
+104302 openat(AT_FDCWD, "/usr/lib/libstdc++.so.6", O_RDONLY|O_CLOEXEC) = 3
+104302 close(3)                         = 0
+104302 openat(AT_FDCWD, "/usr/lib/libm.so.6", O_RDONLY|O_CLOEXEC) = 3
+104302 close(3)                         = 0
+104302 openat(AT_FDCWD, "/usr/lib/libgcc_s.so.1", O_RDONLY|O_CLOEXEC) = 3
+104302 close(3)                         = 0
+104302 openat(AT_FDCWD, "/usr/lib/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+104302 close(3)                         = 0
+104302 openat(AT_FDCWD, "/tmp/raii_lab/01-strace/note.txt", O_WRONLY|O_CREAT|O_TRUNC, 0666) = 3
+104302 close(3)                         = 0
+104302 openat(AT_FDCWD, "/tmp/raii_lab/01-strace/note.txt", O_RDONLY) = 3
+104302 close(3)                         = 0
+104302 openat(AT_FDCWD, "/tmp/raii_lab/01-strace/note.txt", O_WRONLY|O_CREAT|O_TRUNC, 0666) = 3
+104302 close(3)                         = 0
+104302 openat(AT_FDCWD, "/tmp/raii_lab/01-strace/note.txt", O_RDONLY) = 3
+104302 close(3)                         = 0
+104302 +++ exited with 0 +++

@@ -61,6 +61,17 @@ MSVC_SKIP_PROJECTS = {
         'ARM32/GCC 内联汇编教学,MSVC 无对应',
 }
 
+# Windows 两线(MSVC 与 mingw)共用的前缀级平台性跳过:按目录前缀匹配。
+# 系统编程子卷的 Linux 侧存档是 POSIX 专属教学(fork/mmap/epoll/termios 一类),
+# 思维基石的公共工具落在 POSIX fd 上,与 networking 的 socket 同属"平台性示例"。
+# Ubuntu 线不受影响(同平台本就能编)。
+WINDOWS_PREFIX_SKIP = [
+    ('volumn_codes/vol8/systems-programming/linux/',
+     'POSIX 专属教学存档(fd/fork/epoll/termios),Windows 线跳过'),
+    ('volumn_codes/vol8/systems-programming/thinking/',
+     '公共工具落在 POSIX fd 上,Windows 线跳过'),
+]
+
 
 def is_stm32_project(cmake_path: Path) -> bool:
     """Detect STM32 cross-compile project by reading CMakeLists.txt."""
@@ -401,16 +412,22 @@ def main():
     target = 'host' if args.host else 'stm32' if args.stm32 else 'all'
     projects = discover_projects(code_root, target)
 
-    # MSVC 线:过滤显式列入 MSVC_SKIP_PROJECTS 的平台性工程
+    # Windows 两线(MSVC 与 mingw):过滤平台性工程
     if sys.platform == 'win32' or args.msvc:
         def skip_reason(p: Path) -> str | None:
             rel = p.relative_to(code_root).as_posix()
-            return MSVC_SKIP_PROJECTS.get(rel)
+            exact = MSVC_SKIP_PROJECTS.get(rel)
+            if exact:
+                return exact
+            for prefix, reason in WINDOWS_PREFIX_SKIP:
+                if rel.startswith(prefix):
+                    return reason
+            return None
 
         skipped = [(p, skip_reason(p)) for p in projects if skip_reason(p)]
         projects = [p for p in projects if not skip_reason(p)]
         if skipped:
-            print(f"MSVC skip list: {len(skipped)} project(s)", flush=True)
+            print(f"Windows skip list: {len(skipped)} project(s)", flush=True)
             for p, reason in skipped:
                 print(f"  [SKIP] {p.relative_to(code_root).as_posix()} - {reason}", flush=True)
             print(flush=True)

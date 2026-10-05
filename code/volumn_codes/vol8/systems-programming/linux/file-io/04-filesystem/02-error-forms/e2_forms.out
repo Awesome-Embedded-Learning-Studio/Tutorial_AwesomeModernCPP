@@ -1,0 +1,27 @@
+== [1] directory_iterator(不存在目录)—— 抛异常版 ==
+  caught std::filesystem::filesystem_error
+  what()       = "filesystem error: directory iterator cannot open directory: No such file or directory [/home/charliechen/l04_scratch/e2/no_such_dir]"
+  code().value()    = 2 (ENOENT=2)
+  code().message()  = "No such file or directory"
+  code() == errc::no_such_file_or_directory : true
+  path1()      = "/home/charliechen/l04_scratch/e2/no_such_dir"
+
+== [2] 同一操作,error_code 重载 ==
+  构造返回后:ec.value()=2 (ENOENT=2)
+  ec.message()="No such file or directory"
+  ec == {} 判失败:true(ec 非默认值即失败,可直接当哨兵)
+  失败时拿到的是收尾迭代器:it == end(不抛,得空壳)
+
+== [3] 非成员函数的 error_code 版,同一路径 /home/charliechen/l04_scratch/e2/no_such_dir ==
+  fs::exists             ret=false  ec.value()=0   ec.message()="Success"
+  fs::is_directory       ret=false  ec.value()=2   ec.message()="No such file or directory"
+  fs::status             type=-1 (not_found 枚举值 = -1) ec.value()=2 ec.message()="No such file or directory"
+  fs::file_size          ret=false  ec.value()=2   ec.message()="No such file or directory"
+    file_size 返回值 = 18446744073709551615 (uintmax_t(-1)=错误哨兵)
+  同一种「文件不在」,四种态度:exists 连 ec 都清零(not_found 是答案);
+  is_directory 返 false 但 ec 留着 ENOENT;status 给 not_found 类型且 ec 带 ENOENT
+  (类型即答案,code 记原因);file_size 视为错误,返哨兵值。libstdc++ 的 exists()
+  内部:status 已知就 ec.clear() —— 这步是它跟 is_directory 分岔的地方。
+
+== [4] 增量的非抛形态(活例子见 e2_vanish)==
+  it.increment(ec) 与 ++it 对应;ec 版失败不抛,返回值仍是迭代器

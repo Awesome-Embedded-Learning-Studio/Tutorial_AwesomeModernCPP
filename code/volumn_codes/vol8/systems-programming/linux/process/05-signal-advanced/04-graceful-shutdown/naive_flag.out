@@ -1,0 +1,21 @@
+== E4-b 朴素版:handler 设 flag,主循环阻塞在 accept() ==
+剧本两条连接:t=50 与 t=400;SIGTERM 在 t=200 到
+
+[面孔一] SA_RESTART:信号打断 accept 后内核自动重启,旗子没人看
+t=101ms [面孔一] 接了第 1 条连接,干完 50ms 活,回了 ack
+t=101ms [client] 第 1 次 connect → 0,收到「ack」
+handler 跑了:g_stop=1(handler 里只有赋值+write 两件安全的事)
+t=503ms [面孔一] 接了第 2 条连接,干完 50ms 活,回了 ack
+t=503ms [面孔一] 循环回来看旗:g_stop=1 → 退场(共接了 2 条)
+t=503ms [client] 第 2 次 connect → 0,收到「ack」
+
+[面孔二] 不开 SA_RESTART:accept 返回 EINTR,主循环当场看旗
+t=605ms [面孔二] 接了第 1 条连接,干完 50ms 活,回了 ack
+t=605ms [client] 第 1 次 connect → 0,收到「ack」
+handler 跑了:g_stop=1(handler 里只有赋值+write 两件安全的事)
+t=704ms [面孔二] accept 返回 EINTR → 当场看旗:g_stop=1
+t=956ms [client] 第 2 次 connect → -1(Connection refused)
+
+对照:面孔一关停被拖到下一条连接来(t=200 的旗 t≈470 才生效)还多接了一条;
+面孔二 EINTR 即退,但 handler+flag+每个阻塞点查旗三件套缺一不可——
+signalfd 版(E4-a)把信号变事件,阻塞点们都不用挨个配对。

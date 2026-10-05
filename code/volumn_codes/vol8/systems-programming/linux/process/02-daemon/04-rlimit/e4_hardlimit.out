@@ -1,0 +1,10 @@
+== E4d 软限/硬限边界(RLIMIT_NOFILE 作载体,uid=1000) ==
+初始: rlim_cur=1048576 rlim_max=1048576
+
+① 软限升到硬限(1048576)        -> 成功
+② 硬限升到 1048577(越权)      -> 失败 EPERM 如约:(errno=1 Operation not permitted)
+③ 硬限降到 1024            -> 成功
+④ 再升回 1048576(降过之后)   -> 失败 回不来了:(errno=1 Operation not permitted)
+
+结论: 软限在 [0,硬限] 内随便调;硬限只有 root(CAP_SYS_RESOURCE)能升,
+普通用户降了就锁死——所以守护进程常见写法是启动早期把软限直接拉到硬限

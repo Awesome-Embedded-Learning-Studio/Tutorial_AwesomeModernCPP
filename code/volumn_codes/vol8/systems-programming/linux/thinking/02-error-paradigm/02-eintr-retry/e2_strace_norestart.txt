@@ -1,0 +1,39 @@
+106137 16:17:38.177201 close(3)         = 0
+106137 16:17:38.178112 read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 1024) = 1024
+106137 16:17:38.178993 close(3)         = 0
+106137 16:17:38.179377 read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 1024) = 1024
+106137 16:17:38.180260 close(3)         = 0
+106137 16:17:38.180900 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 1024) = 1024
+106137 16:17:38.181723 close(3)         = 0
+106137 16:17:38.182069 read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\300y\2\0\0\0\0\0"..., 1024) = 1024
+106137 16:17:38.182932 close(3)         = 0
+106137 16:17:38.185978 rt_sigaction(SIGUSR1, {sa_handler=0x5f71bc34e394, sa_mask=[], sa_flags=SA_RESTORER, sa_restorer=0x76858903e6f0}, NULL, 8) = 0
+106137 16:17:38.186879 close(4)         = 0
+106137 16:17:38.186994 read(3 <unfinished ...>
+106181 16:17:38.187029 close(3)         = 0
+106181 16:17:38.187182 clock_nanosleep(CLOCK_REALTIME, 0, {tv_sec=0, tv_nsec=200000000}, 0x7ffc62a175a0) = 0
+106181 16:17:38.387575 kill(106137, SIGUSR1 <unfinished ...>
+106137 16:17:38.387700 <... read resumed>, 0x7ffc62a176f0, 64) = ? ERESTARTSYS (To be restarted if SA_RESTART is set)
+106181 16:17:38.387758 <... kill resumed>) = 0
+106137 16:17:38.387812 --- SIGUSR1 {si_signo=SIGUSR1, si_code=SI_USER, si_pid=106181, si_uid=1000} ---
+106181 16:17:38.387864 clock_nanosleep(CLOCK_REALTIME, 0, {tv_sec=0, tv_nsec=200000000} <unfinished ...>
+106137 16:17:38.387928 rt_sigreturn({mask=[]}) = -1 EINTR (Interrupted system call)
+106137 16:17:38.388135 read(3 <unfinished ...>
+106181 16:17:38.588121 <... clock_nanosleep resumed>, 0x7ffc62a175a0) = 0
+106181 16:17:38.588319 write(4, "ping\n", 5) = 5
+106137 16:17:38.588525 <... read resumed>, "ping\n", 64) = 5
+106181 16:17:38.588560 close(4 <unfinished ...>
+106137 16:17:38.588627 read(3 <unfinished ...>
+106181 16:17:38.588652 <... close resumed>) = 0
+106137 16:17:38.588725 <... read resumed>, "", 64) = 0
+106181 16:17:38.588750 exit_group(0 <unfinished ...>
+106137 16:17:38.588777 close(3 <unfinished ...>
+106181 16:17:38.588804 <... exit_group resumed>) = ?
+106137 16:17:38.588831 <... close resumed>) = 0
+106137 16:17:38.588926 wait4(106181 <unfinished ...>
+106181 16:17:38.589094 +++ exited with 0 +++
+106137 16:17:38.589150 <... wait4 resumed>, [{WIFEXITED(s) && WEXITSTATUS(s) == 0}], 0, NULL) = 106181
+106137 16:17:38.589299 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=106181, si_uid=1000, si_status=0, si_utime=0, si_stime=0} ---
+106137 16:17:38.589939 write(1, "mode = norestart (SA_RESTART OFF"..., 263) = 263
+106137 16:17:38.590100 exit_group(0)    = ?
+106137 16:17:38.590466 +++ exited with 0 +++

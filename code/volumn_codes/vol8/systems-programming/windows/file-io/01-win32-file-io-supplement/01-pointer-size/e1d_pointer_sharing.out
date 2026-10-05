@@ -1,0 +1,28 @@
+$ ./e1d_pointer_sharing.exe
+准备:文件 "0123456789",h1=00000000000000ec h2=00000000000000f0(两次 CreateFileW)
+
+[1] h1 读 4 字节,h2 的指针不动
+    读前  pos(h1)=0  pos(h2)=0
+    h1 读到 "0123"
+    读后  pos(h1)=4  pos(h2)=0   <- 只有 h1 前进
+    h2 读到 "0123"  <- h2 从 0 读起,拿到同样 4 字节
+    读后  pos(h1)=4  pos(h2)=4
+
+[2] h1 负向回退 -2,再读;h2 置若罔闻
+    回退后 pos(h1)=2  pos(h2)=4
+    h1 读到 "2345"  (从下标 2 起)
+    此刻  pos(h1)=6  pos(h2)=4
+
+[3] DuplicateHandle(h1 -> h3):同一个文件对象,指针共享
+    h3=00000000000000f4 诞生即继承 pos(h3)=6  (h1 刚读完,停在这)
+    h3 读到 "6789"
+    读后  pos(h3)=10  pos(h1)=10   <- h1 被 h3 的读推着走
+          pos(h2)=4                <- h2 纹丝不动
+    h3 回退 -4 后 pos(h1)=6  pos(h3)=6  <- h1 跟着回退,共享实锤
+
+[4] 收束成表
+    CreateFileW x2  -> 指针独立(== POSIX open x2 独立偏移)
+    DuplicateHandle -> 指针共享(== POSIX dup/dup2 共享偏移)
+    Windows 没有"每次 CreateFileW 共享指针"一说;共享只来自复制/继承句柄
+
+收尾:临时文件与目录已清理

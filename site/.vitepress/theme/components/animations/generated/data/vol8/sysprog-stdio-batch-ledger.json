@@ -1,0 +1,456 @@
+{
+ "version": 1,
+ "id": "sysprog-stdio-batch-ledger",
+ "title": "stdio 攒批 vs 裸 write",
+ "subtitle": "同样写 5 次 hello",
+ "source": "projects/vol8-sysprog-overview/02-dsl/sysprog-stdio-batch-ledger.yaml",
+ "backend": "web",
+ "template": "freeform",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#111521",
+  "bgRaised": "#171D2D",
+  "text": "#F4F6FB",
+  "muted": "#98A2B8",
+  "fill": "#66D9EF",
+  "fillEdge": "#2E9DC2",
+  "emptyEdge": "#43506A",
+  "grow": "#FFB86C",
+  "numOnFill": "#0B1E27",
+  "ok": "#72D49A",
+  "bad": "#FF6B7A",
+  "cardBg": "#1B2234"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "stdio 攒批 vs 裸 write",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.4416,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "同样写 5 次 hello",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#98A2B8",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.172,
+   "h": 0.272
+  },
+  "ledger": {
+   "kind": "text",
+   "counter": true,
+   "text": "缓冲字节 = 0    攒批写入 = 0    裸写写入 = 0",
+   "x": 0,
+   "y": 2.35,
+   "fs": 0.3,
+   "color": "#F4F6FB",
+   "mono": true,
+   "anchor": "middle",
+   "w": 8.91,
+   "h": 0.3
+  },
+  "show:legend": {
+   "kind": "text",
+   "text": "左 = stdio 先攒缓冲 · 右 = 裸 write 每次进内核",
+   "x": 0,
+   "y": -3.4,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.896,
+   "h": 0.272,
+   "id": "legend"
+  },
+  "show:stdio_lane": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "accent",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 3.432,
+   "w": 4.3576,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "fwrite(\"hello\\n\", ...)  ×5",
+     "w": 3.432
+    },
+    {
+     "text": "fclose(f)",
+     "w": 1.188
+    }
+   ],
+   "cx": -3.5,
+   "cy": 0.2
+  },
+  "show:raw_lane": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 3.564,
+   "w": 4.4896,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "write(fd, \"hello\\n\", 6)  ×5",
+     "w": 3.564
+    }
+   ],
+   "cx": 3.5,
+   "cy": 0.2
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "stdio:5 次 fwrite 攒 30 字节,fclose 只换 1 次 write",
+   "x": 0.0,
+   "y": 0.3764,
+   "fs": 0.24,
+   "color": "#FFB86C",
+   "mono": false,
+   "anchor": "middle",
+   "w": 7.7232,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "裸版:5 次 write,每次都付一次系统调用",
+   "x": 0.0,
+   "y": -0.2,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.6064,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "攒批摊的就是那一两百 ns 的固定来回",
+   "x": 0.0,
+   "y": -0.7764,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.3472,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 3.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 2.4,
+     "dur": 0.5
+    },
+    {
+     "type": "fadein",
+     "target": "ledger",
+     "t": 2.4,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "显示图例",
+   "note": "",
+   "duration": 2.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:legend",
+     "t": 0.0,
+     "dur": 2.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "亮相 fwrite(\"hello\\n\", ...)  ×5",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:stdio_lane",
+     "cx": -3.5,
+     "cy": 0.2,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "亮相 write(fd, \"hello\\n\", 6)  ×5",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:raw_lane",
+     "cx": 3.5,
+     "cy": 0.2,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "bump",
+   "label": "缓冲字节 +6",
+   "note": "ledger.缓冲字节",
+   "duration": 0.25,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "counter",
+     "target": "ledger",
+     "text": "缓冲字节 = 6    攒批写入 = 0    裸写写入 = 0",
+     "t": 0.0,
+     "dur": 0.25
+    }
+   ]
+  },
+  {
+   "kind": "bump",
+   "label": "缓冲字节 +6",
+   "note": "ledger.缓冲字节",
+   "duration": 0.25,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "counter",
+     "target": "ledger",
+     "text": "缓冲字节 = 12    攒批写入 = 0    裸写写入 = 0",
+     "t": 0.0,
+     "dur": 0.25
+    }
+   ]
+  },
+  {
+   "kind": "bump",
+   "label": "缓冲字节 +6",
+   "note": "ledger.缓冲字节",
+   "duration": 0.25,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "counter",
+     "target": "ledger",
+     "text": "缓冲字节 = 18    攒批写入 = 0    裸写写入 = 0",
+     "t": 0.0,
+     "dur": 0.25
+    }
+   ]
+  },
+  {
+   "kind": "bump",
+   "label": "缓冲字节 +6",
+   "note": "ledger.缓冲字节",
+   "duration": 0.25,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "counter",
+     "target": "ledger",
+     "text": "缓冲字节 = 24    攒批写入 = 0    裸写写入 = 0",
+     "t": 0.0,
+     "dur": 0.25
+    }
+   ]
+  },
+  {
+   "kind": "bump",
+   "label": "缓冲字节 +6",
+   "note": "ledger.缓冲字节",
+   "duration": 0.25,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "counter",
+     "target": "ledger",
+     "text": "缓冲字节 = 30    攒批写入 = 0    裸写写入 = 0",
+     "t": 0.0,
+     "dur": 0.25
+    }
+   ]
+  },
+  {
+   "kind": "bump",
+   "label": "攒批写入 +1",
+   "note": "ledger.攒批写入",
+   "duration": 0.25,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "counter",
+     "target": "ledger",
+     "text": "缓冲字节 = 30    攒批写入 = 1    裸写写入 = 0",
+     "t": 0.0,
+     "dur": 0.25
+    }
+   ]
+  },
+  {
+   "kind": "bump",
+   "label": "裸写写入 +1",
+   "note": "ledger.裸写写入",
+   "duration": 0.25,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "counter",
+     "target": "ledger",
+     "text": "缓冲字节 = 30    攒批写入 = 1    裸写写入 = 1",
+     "t": 0.0,
+     "dur": 0.25
+    }
+   ]
+  },
+  {
+   "kind": "bump",
+   "label": "裸写写入 +1",
+   "note": "ledger.裸写写入",
+   "duration": 0.25,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "counter",
+     "target": "ledger",
+     "text": "缓冲字节 = 30    攒批写入 = 1    裸写写入 = 2",
+     "t": 0.0,
+     "dur": 0.25
+    }
+   ]
+  },
+  {
+   "kind": "bump",
+   "label": "裸写写入 +1",
+   "note": "ledger.裸写写入",
+   "duration": 0.25,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "counter",
+     "target": "ledger",
+     "text": "缓冲字节 = 30    攒批写入 = 1    裸写写入 = 3",
+     "t": 0.0,
+     "dur": 0.25
+    }
+   ]
+  },
+  {
+   "kind": "bump",
+   "label": "裸写写入 +1",
+   "note": "ledger.裸写写入",
+   "duration": 0.25,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "counter",
+     "target": "ledger",
+     "text": "缓冲字节 = 30    攒批写入 = 1    裸写写入 = 4",
+     "t": 0.0,
+     "dur": 0.25
+    }
+   ]
+  },
+  {
+   "kind": "bump",
+   "label": "裸写写入 +1",
+   "note": "ledger.裸写写入",
+   "duration": 0.25,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "counter",
+     "target": "ledger",
+     "text": "缓冲字节 = 30    攒批写入 = 1    裸写写入 = 5",
+     "t": 0.0,
+     "dur": 0.25
+    }
+   ]
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 14.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:stdio_lane",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:raw_lane",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 0.6,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 3.35,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 6.1,
+     "dur": 2.4
+    },
+    {
+     "type": "pulse",
+     "target": "ledger",
+     "t": 11.95,
+     "dur": 1.0
+    }
+   ]
+  }
+ ]
+}

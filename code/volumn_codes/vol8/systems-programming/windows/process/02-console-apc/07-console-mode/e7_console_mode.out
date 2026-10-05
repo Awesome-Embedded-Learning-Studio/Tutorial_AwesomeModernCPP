@@ -1,0 +1,11 @@
+$ ./e7_console_mode.exe
+[E7] pid=3252 GetConsoleWindow=0000000000000000
+[0] CONIN$ 初始 mode=0x1F7:ENABLE_PROCESSED_INPUT=1(1=Ctrl+C 走信号)
+[1] 场景 A:PROCESSED_INPUT 开(默认),注入 Ctrl+C —— 期望 handler 被调,缓冲无残留
+    注入 Ctrl+C 键事件(按下+抬起,共 2 条)-> 1
+    handler 调用数=0,输入缓冲残留=2 条(0=被当信号消费)
+[2] 场景 B:关掉 ENABLE_PROCESSED_INPUT(顺手关 LINE/ECHO),再注入 —— 期望读到 0x03
+    注入 Ctrl+C 键事件(按下+抬起,共 2 条)-> 1
+    WaitForSingleObject(CONIN$,1500)=0(0=缓冲有货)
+    ReadFile 读到 1 字节: 03 —— handler 调用数=0(0=没走信号,Ctrl+C 只是字节 0x03)
+[E7] done

@@ -1,0 +1,38 @@
+    (c) 这行 stderr 本身就是实验的一部分
+== [1] GetLastError 的时机:失败和取码之间插了什么? ==
+(a) 失败后立刻取                 -> err=2  (2=ERROR_FILE_NOT_FOUND)
+(b) 插入 GetProcessId(成功,5444) -> err=2
+(c) 插入 fprintf(stderr)         -> err=2
+    (d) 这行 printf 在缓冲区里躺着,还没过系统调用
+(d) 插入 printf(管道全缓冲)    -> err=2
+(e) 插入 new/delete 1000 字节    -> err=2
+
+== [2] FormatMessageW + CP_UTF8:错误描述的正路 ==
+  err=2   -> 系统找不到指定的文件。
+  err=6   -> 句柄无效。
+  err=13  -> 数据无效。
+  err=32  -> 另一个程序正在使用此文件，进程无法访问。
+  err=87  -> 参数错误。
+
+== [3] MinGW libstdc++ system_category().message():有文本,但是 ANSI 代码页字节 ==
+  system(2) 原始字节 -> "ϵͳ�Ҳ���ָ�����ļ���"   hex: cf b5 cd b3 d5 d2 b2 bb b5 bd d6 b8 b6 a8 b5 c4 ce c4 bc fe a1 a3
+  system(2) GBK转UTF8 -> "系统找不到指定的文件。"
+  system(6) 原始字节 -> "�����Ч��"   hex: be e4 b1 fa ce de d0 a7 a1 a3
+  system(6) GBK转UTF8 -> "句柄无效。"
+  system(13) 原始字节 -> "������Ч��"   hex: ca fd be dd ce de d0 a7 a1 a3
+  system(13) GBK转UTF8 -> "数据无效。"
+  system(32) 原始字节 -> "��һ����������ʹ�ô��ļ��������޷����ʡ�"   hex: c1 ed d2 bb b8 f6 b3 cc d0 f2 d5 fd d4 da ca b9 d3 c3 b4 cb ce c4 bc fe a3 ac bd f8 b3 cc ce de b7 a8 b7 c3 ce ca a1 a3
+  system(32) GBK转UTF8 -> "另一个程序正在使用此文件，进程无法访问。"
+  system(87) 原始字节 -> "��������"   hex: b2 ce ca fd b4 ed ce f3 a1 a3
+  system(87) GBK转UTF8 -> "参数错误。"
+
+== [4] 同一个数字,挂 generic_category 是另一套宇宙(errno) ==
+  值 2   | system 转码: 系统找不到指定的文件。 | generic: No such file or directory
+  值 13  | system 转码: 数据无效。              | generic: Permission denied
+  值 32  | system 转码: 另一个程序正在使用此文件，进程无法访问。 | generic: Broken pipe
+
+== [5] system_category().default_error_condition 在 MinGW 上映射到哪 ==
+  system(2) -> condition{value=2, category=generic, message="No such file or directory"}
+  system(13) -> condition{value=22, category=generic, message="Invalid argument"}
+  system(32) -> condition{value=16, category=generic, message="Resource device"}
+  system(87) -> condition{value=22, category=generic, message="Invalid argument"}

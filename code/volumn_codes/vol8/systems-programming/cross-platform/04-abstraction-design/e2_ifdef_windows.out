@@ -1,0 +1,2 @@
+[ifdef] backend=Win32  err=0 len=27 match=yes
+[ifdef] missing-file err=2 len=0 (POSIX ENOENT=2 / Win32 ERROR_FILE_NOT_FOUND=2)

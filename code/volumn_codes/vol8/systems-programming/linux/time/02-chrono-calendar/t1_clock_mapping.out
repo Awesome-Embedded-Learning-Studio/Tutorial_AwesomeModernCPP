@@ -1,0 +1,20 @@
+== E1a: 三个老熟人是谁的别名 ==
+is_same<high_resolution_clock, system_clock> : 是
+is_same<high_resolution_clock, steady_clock> : 否
+system_clock::is_steady=0  steady_clock::is_steady=1
+
+== E1b: chrono::now() 对拍 clock_gettime ==
+system_clock − CLOCK_REALTIME = -411 ns → 同源(都读墙上钟)
+steady_clock  − CLOCK_MONOTONIC  = -50 ns → 同源(都读单调钟)
+
+== E1c: 同一瞬间,四把尺子 ==
+system_clock 纪元 1970-01-01 UTC:  1791121304.997 s(UTC 刻度,不数闰秒)
+utc_clock    纪元 1970-01-01 UTC:  1791121331.997 s(UTC 刻度,1972 以来 27 次闰秒都数进去)
+tai_clock    纪元 1958-01-01 TAI:  2169812541.997 s
+gps_clock    纪元 1980-01-06 GPS:  1475156522.997 s
+
+把纪元差扣掉之后,剩下的就是物理偏移:
+utc − system                     = +27 s → 1972 以来插入的闰秒数
+tai − system − 378,691,200(纪元差)= +37 s → TAI−UTC 当下值
+gps − system + 315,964,800(纪元差) = +18 s → GPS−UTC 当下值(GPS 领先)
+(TAI−UTC=37 对表篇 1 E1 的 CLOCK_TAI−CLOCK_REALTIME=37 s:内核与库读同一份闰秒数据)

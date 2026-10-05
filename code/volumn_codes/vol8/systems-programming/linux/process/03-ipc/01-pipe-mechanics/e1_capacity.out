@@ -1,0 +1,6 @@
+新建管道:fd=3(读)、4(写),F_GETPIPE_SZ = 65536 字节(16 页 × 4096)
+F_SETPIPE_SZ(4096) 返回 4096 → 再探 F_GETPIPE_SZ = 4096 字节
+F_SETPIPE_SZ(5000) 返回 8192 → 实际容量 8192 字节(向上取整到 2 页)
+F_SETPIPE_SZ(262144) 返回 262144 → 实际容量 262144 字节(64 页)
+/proc/sys/fs/pipe-max-size = 1048576(非特权 F_SETPIPE_SZ 的上限)
+F_SETPIPE_SZ(2097152 超上限) 返回 -1,errno=1 (Operation not permitted)——想要更大得有 CAP_SYS_RESOURCE

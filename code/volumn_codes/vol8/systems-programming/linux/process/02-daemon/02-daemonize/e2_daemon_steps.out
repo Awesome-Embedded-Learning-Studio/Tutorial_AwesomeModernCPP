@@ -1,0 +1,35 @@
+== E2 守护进程化经典步骤:sid/pgid/tty 变化链 ==
+
+阶段0 初始                   pid=13247  ppid=13246  pgid=13246  sid=13246 
+    fd0 -> /dev/pts/10 ; 控制终端:有,该 tty 所属会话 sid=13246
+阶段1 fork#1 后(子,父暂未退) pid=13248  ppid=13247  pgid=13246  sid=13246 
+    fd0 -> /dev/pts/10 ; 控制终端:有,该 tty 所属会话 sid=13246
+
+setsid() 成功,三条实证:
+  1) pid=13248 pgid=13248 sid=13248 -> pid==pgid==sid,本进程是新会话的会话长兼新组长
+  2) TIOCGSID 从成功变 ENOTTY:控制终端归属被切断
+  3) fd0 的 readlink 没变:描述符还开着,指向旧 tty——所以下一步还要显式重定向
+阶段2 setsid 后               pid=13248  ppid=13247  pgid=13248  sid=13248 
+    fd0 -> /dev/pts/10 ; 控制终端:无,ioctl(fd0,TIOCGSID) 失败: Inappropriate ioctl for device
+
+(父进程 pid=13247:收到"子已 setsid"的通知,现在退出。
+ 第一次 fork 的意义:shell 只等父进程——父一退,shell 就认为命令结束了,
+ 而真正的服务在子进程里继续跑,从此与 shell 的生命周期解耦)
+
+(父进程已退,getppid()=249:孤儿被收养。教科书口径是 1/init,本机取决于最近的 subreaper)
+
+(会话长 pid=13248 退出,孙 pid=13249 继续。
+ 第二次 fork 的意义:孙不是会话长,永远无法通过 open(tty 设备)自动获得
+ 控制终端——有的终端实现会把它送给第一个 open 它的会话长,双 fork 把这条路堵死)
+阶段3 fork#2 后(孙)          pid=13249  ppid=249    pgid=13248  sid=13248 
+    fd0 -> /dev/pts/10 ; 控制终端:无,ioctl(fd0,TIOCGSID) 失败: Inappropriate ioctl for device
+
+chdir 前 cwd=/home/charliechen/lp02_scratch
+chdir("/") 后 cwd=/(不占着挂载点,不妨碍别人卸载文件系统)
+umask: 0022 -> 0000(守护进程要把新建文件的权限位完全交给自己代码里的 open mode)
+阶段6 stdio 重定向后       pid=13249  ppid=249    pgid=13248  sid=13248 
+    fd0 -> /dev/null ; 控制终端:无,ioctl(fd0,TIOCGSID) 失败: Inappropriate ioctl for device
+    isatty(0)=0(fd0/1/2 全部指向 /dev/null:读永远 EOF,写永远无声无息)
+
+[DONE] 最终画像: pid=13249 ppid=249 pgid=13248 sid=13248
+  对照断言: sid!=pid(非会话长)且 pgid!=pid(非组长)且无控制终端 -> 守护进程雏形成立

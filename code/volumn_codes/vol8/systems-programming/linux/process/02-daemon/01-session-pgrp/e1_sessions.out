@@ -1,0 +1,22 @@
+== E1 会话与进程组全景 ==
+初始(本进程)          pid=13049   ppid=13030   pgid=13030   sid=13030  
+跨进程查询家族: getsid(pid)/getpgid(pid) 对任意进程可用 ->
+  getsid(1)=1  getpgid(1)=1  (PID 1 的会话与进程组)
+  getsid(0)=13030  getpgid(0)=13030  (0 = 自己,与上面 dump 里一致)
+
+子A: fork 后             pid=13050   ppid=13049   pgid=13030   sid=13030  
+子A: setpgid(0,0) 后     pid=13050   ppid=13049   pgid=13050   sid=13030  
+子A(现组长,pid==pgid): setsid() = -1, errno=1 = Operation not permitted
+孙: setsid() = 13051 -> 成为新会话的会话长兼新组长
+孙: setsid 后            pid=13051   ppid=13050   pgid=13051   sid=13051  
+孙(已是会话长): setsid() = -1, errno=1 = Operation not permitted
+
+== ps 快照对照(pid,ppid,pgid,sid) ==
+API 读数: 本进程 pgid=13030 sid=13030 | 子A pgid=13050 sid=13030 | 孙 pgid=13051 sid=13051
+四列怎么看: 子A 只有 PGID 列离开父亲;孙的 PGID 和 SID 都等于自己 pid
+
+    PID    PPID    PGID     SID COMMAND
+  13030    2318   13030   13030 zsh
+  13049   13030   13030   13030 e1_sessions
+  13050   13049   13050   13030 e1_sessions
+  13051   13050   13051   13051 e1_sessions

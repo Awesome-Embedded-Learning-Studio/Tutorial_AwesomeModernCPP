@@ -1,0 +1,72 @@
+$ g++ -std=c++20 -O2 -Wall -Wextra linux_spsc.cpp -o /tmp/linux_spsc; echo "exit=$?"
+exit=0
+
+$ /tmp/linux_spsc spin; echo "exit=$?"
+[E4-Linux] 模式=spin 消息数=1000000 槽数=4096(16B/槽) 对象=/sysprog_spsc_77350 通知=eventfd
+[生产者 pid=77350 cpu2] 1000000 条,5.09 ms,吞吐 19659 万条/s(5.09 ns/条),遇满自旋 1591 次
+[消费者 退出码=0] 1000000 条,核对错误 0 条(值+tag 逐条验),5.07 ms,吞吐 19710 万条/s,睡眠 0 次
+[E4-Linux] spin:通知共 0 次;100 万条零丢失零乱序
+exit=0
+
+$ /tmp/linux_spsc spin; echo "exit=$?"
+[E4-Linux] 模式=spin 消息数=1000000 槽数=4096(16B/槽) 对象=/sysprog_spsc_77355 通知=eventfd
+[生产者 pid=77355 cpu2] 1000000 条,4.98 ms,吞吐 20071 万条/s(4.98 ns/条),遇满自旋 1536 次
+[消费者 退出码=0] 1000000 条,核对错误 0 条(值+tag 逐条验),4.96 ms,吞吐 20163 万条/s,睡眠 0 次
+[E4-Linux] spin:通知共 0 次;100 万条零丢失零乱序
+exit=0
+
+$ /tmp/linux_spsc spin; echo "exit=$?"
+[E4-Linux] 模式=spin 消息数=1000000 槽数=4096(16B/槽) 对象=/sysprog_spsc_77357 通知=eventfd
+[生产者 pid=77357 cpu2] 1000000 条,5.04 ms,吞吐 19842 万条/s(5.04 ns/条),遇满自旋 1989 次
+[消费者 退出码=0] 1000000 条,核对错误 0 条(值+tag 逐条验),5.01 ms,吞吐 19954 万条/s,睡眠 0 次
+[E4-Linux] spin:通知共 0 次;100 万条零丢失零乱序
+exit=0
+
+$ /tmp/linux_spsc hybrid; echo "exit=$?"
+[E4-Linux] 模式=hybrid 消息数=1000000 槽数=4096(16B/槽) 对象=/sysprog_spsc_77359 通知=eventfd
+[生产者 pid=77359 cpu2] 1000000 条,30.38 ms,吞吐 3291 万条/s(30.38 ns/条),遇满自旋 4186 次
+[消费者 退出码=0] 1000000 条,核对错误 0 条(值+tag 逐条验),30.30 ms,吞吐 3301 万条/s,睡眠 0 次
+[E4-Linux] hybrid:通知共 0 次;100 万条零丢失零乱序
+exit=0
+
+$ /tmp/linux_spsc hybrid; echo "exit=$?"
+[E4-Linux] 模式=hybrid 消息数=1000000 槽数=4096(16B/槽) 对象=/sysprog_spsc_77361 通知=eventfd
+[生产者 pid=77361 cpu2] 1000000 条,29.84 ms,吞吐 3351 万条/s(29.84 ns/条),遇满自旋 6463 次
+[消费者 退出码=0] 1000000 条,核对错误 0 条(值+tag 逐条验),29.82 ms,吞吐 3354 万条/s,睡眠 0 次
+[E4-Linux] hybrid:通知共 0 次;100 万条零丢失零乱序
+exit=0
+
+$ /tmp/linux_spsc hybrid; echo "exit=$?"
+[E4-Linux] 模式=hybrid 消息数=1000000 槽数=4096(16B/槽) 对象=/sysprog_spsc_77363 通知=eventfd
+[生产者 pid=77363 cpu2] 1000000 条,30.49 ms,吞吐 3280 万条/s(30.49 ns/条),遇满自旋 740 次
+[消费者 退出码=0] 1000000 条,核对错误 0 条(值+tag 逐条验),30.47 ms,吞吐 3282 万条/s,睡眠 0 次
+[E4-Linux] hybrid:通知共 0 次;100 万条零丢失零乱序
+exit=0
+
+$ /tmp/linux_spsc notify; echo "exit=$?"
+[E4-Linux] 模式=notify 消息数=1000000 槽数=4096(16B/槽) 对象=/sysprog_spsc_77366 通知=eventfd
+[生产者 pid=77366 cpu2] 1000000 条,264.25 ms,吞吐 378 万条/s(264.25 ns/条),遇满自旋 244 次
+[消费者 退出码=0] 1000000 条,核对错误 0 条(值+tag 逐条验),264.23 ms,吞吐 378 万条/s,等待 790900 次
+[E4-Linux] notify:通知共 1000000 次;100 万条零丢失零乱序
+exit=0
+
+$ /tmp/linux_spsc notify; echo "exit=$?"
+[E4-Linux] 模式=notify 消息数=1000000 槽数=4096(16B/槽) 对象=/sysprog_spsc_77385 通知=eventfd
+[生产者 pid=77385 cpu2] 1000000 条,267.02 ms,吞吐 375 万条/s(267.02 ns/条),遇满自旋 244 次
+[消费者 退出码=0] 1000000 条,核对错误 0 条(值+tag 逐条验),266.98 ms,吞吐 375 万条/s,等待 808317 次
+[E4-Linux] notify:通知共 1000000 次;100 万条零丢失零乱序
+exit=0
+
+$ /tmp/linux_spsc notify; echo "exit=$?"
+[E4-Linux] 模式=notify 消息数=1000000 槽数=4096(16B/槽) 对象=/sysprog_spsc_77387 通知=eventfd
+[生产者 pid=77387 cpu2] 1000000 条,264.47 ms,吞吐 378 万条/s(264.47 ns/条),遇满自旋 244 次
+[消费者 退出码=0] 1000000 条,核对错误 0 条(值+tag 逐条验),264.44 ms,吞吐 378 万条/s,等待 781214 次
+[E4-Linux] notify:通知共 1000000 次;100 万条零丢失零乱序
+exit=0
+
+$ /tmp/linux_spsc burst; echo "exit=$?"
+[E4-Linux] 模式=burst 消息数=1000000 槽数=4096(16B/槽) 对象=/sysprog_spsc_77389 通知=eventfd
+[生产者 pid=77389 cpu2] 1000000 条,534.00 ms,吞吐 187 万条/s(534.00 ns/条),遇满自旋 10230 次
+[消费者 退出码=0] 1000000 条,核对错误 0 条(值+tag 逐条验),533.97 ms,吞吐 187 万条/s,睡眠 197 次
+[E4-Linux] burst:通知共 5172 次;100 万条零丢失零乱序
+exit=0

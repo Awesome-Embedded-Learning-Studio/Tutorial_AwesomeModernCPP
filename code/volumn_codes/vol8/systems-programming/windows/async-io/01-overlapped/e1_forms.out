@@ -1,0 +1,23 @@
+[     0 ms] == [a] 同步句柄 + lpOverlapped=NULL:file-io/01 的正主,回放三连读 ==
+[     0 ms] 第1次裸读: ret=1 got=8 值=0 (期望 0)
+[     0 ms] 第2次裸读: ret=1 got=8 值=8 (期望 8)
+[     0 ms] 第3次裸读: ret=1 got=8 值=16 (期望 16)
+[     0 ms] 同步+EOF(0字节可读): ret=1 got=0 (file-io/01 口径:TRUE 且 got=0)
+[     0 ms] 同步+骑EOF(4字节可读): ret=1 got=4 (口径:TRUE 且 got=剩余字节数)
+[     0 ms] == [b] 同步句柄 + lpOverlapped:位置搬进 Offset,调用还是阻塞的 ==
+[     0 ms] 预备:两次裸读后文件指针 = 16
+[     0 ms] 带 Offset=8000 读: ret=1 got=8 值=8000 gle=0((见 gle)) —— 永远不回 997,同步完成
+[     0 ms] 读完文件指针 = 8008(不是 16 了:同步句柄上 OVERLAPPED 读会把指针跟到 Offset+字节数)
+[     0 ms] 接着裸读: 值=8008(顺着跟过来的新指针取)—— 同步句柄上两套定位其实共用一条指针
+[     0 ms] 同步+OVERLAPPED 骑EOF: ret=1 got=4 gle=0((见 gle))
+[     0 ms] == [c] 异步句柄(FILE_FLAG_OVERLAPPED):Offset 独立定位,返回二态 ==
+[     0 ms] 读 Offset=2000: ret=0 gle=997(ERROR_IO_PENDING) —— 异步句柄上这轮直接回 997 在途(内核没当场做完)
+[     0 ms] 读 Offset=1000: ret=0 gle=997(ERROR_IO_PENDING)
+[     0 ms] GOR(ovA): ret=1 got=8 值=2000 —— 一把句柄两处偏移,数据各归各
+[     0 ms] GOR(ovB): ret=1 got=8 值=1000 —— 投递序 2000→1000,定位靠 Offset 不靠指针
+[     0 ms] 异步+满读(8字节可读): ReadFile ret=0 gle=997(ERROR_IO_PENDING); GOR ret=1 got=8 gle=0((见 gle))
+[     0 ms] 异步+骑EOF(4字节可读): ReadFile ret=0 gle=997(ERROR_IO_PENDING); GOR ret=1 got=4 gle=0((见 gle))
+[     0 ms] 异步+正对EOF(0字节可读): ReadFile ret=0 gle=997(ERROR_IO_PENDING); GOR ret=0 got=0 gle=38(ERROR_HANDLE_EOF)
+[     0 ms] 异步句柄裸读(不给 OVERLAPPED): ret=0 gle=87(ERROR_INVALID_PARAMETER) —— 文档口径:必须给
+[     0 ms] 指针推到 8000 后从 Offset=0 读: 值=0(不是 8000)—— 异步句柄只认 OVERLAPPED.Offset,文件指针形同虚设
+[     0 ms] e1 完

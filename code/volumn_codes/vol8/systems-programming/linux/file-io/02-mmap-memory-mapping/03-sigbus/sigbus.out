@@ -1,0 +1,7 @@
+mapped 2 pages (8192 bytes) at 0x74a4915cb000
+touch +0        ... ok
+ftruncate -> 4096 bytes, mapping still claims 8192
+touch +4096      ... beyond EOF
+
+[handler] caught SIGBUS, faulting address = 0x000074a4915cc000, si_code = BUS_ADRERR
+[handler] signal, not a return value; _exit(70)

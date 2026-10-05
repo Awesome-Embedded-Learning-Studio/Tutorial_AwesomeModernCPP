@@ -1,0 +1,36 @@
+26570 execve("./build/e2d_strace_target", ["./build/e2d_strace_target"], 0x7ffc37236818 /* 69 vars */) = 0
+26570 clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0x76150d8f2a50) = 26571
+26571 execve("/bin/echo", ["echo", "[e2d] \347\273\217 execl \345\210\260\350\276\276 echo"], 0x7ffe7e58fed8 /* 69 vars */) = 0
+26571 +++ exited with 0 +++
+26570 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=26571, si_uid=1000, si_status=0, si_utime=0, si_stime=0} ---
+26570 clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0x76150d8f2a50) = 26572
+26572 execve("/home/charliechen/.local/bin/echo", ["echo", "[e2d] \347\273\217 execlp(PATH \346\220\234\345\210\260 ech"...], 0x7ffe7e58fed8 /* 69 vars */) = -1 ENOENT (No such file or directory)
+26572 execve("/opt/arm-gnu-toolchain/bin/echo", ["echo", "[e2d] \347\273\217 execlp(PATH \346\220\234\345\210\260 ech"...], 0x7ffe7e58fed8 /* 69 vars */) = -1 ENOENT (No such file or directory)
+26572 execve("/home/charliechen/.vscode-server/bin/07f806f999227108933c2e30515b26eecc1fda74/bin/remote-cli/echo", ["echo", "[e2d] \347\273\217 execlp(PATH \346\220\234\345\210\260 ech"...], 0x7ffe7e58fed8 /* 69 vars */) = -1 ENOENT (No such file or directory)
+26572 execve("/home/charliechen/.local/share/pnpm/echo", ["echo", "[e2d] \347\273\217 execlp(PATH \346\220\234\345\210\260 ech"...], 0x7ffe7e58fed8 /* 69 vars */) = -1 ENOENT (No such file or directory)
+26572 execve("/home/charliechen/.local/bin/echo", ["echo", "[e2d] \347\273\217 execlp(PATH \346\220\234\345\210\260 ech"...], 0x7ffe7e58fed8 /* 69 vars */) = -1 ENOENT (No such file or directory)
+26572 execve("/opt/arm-gnu-toolchain/bin/echo", ["echo", "[e2d] \347\273\217 execlp(PATH \346\220\234\345\210\260 ech"...], 0x7ffe7e58fed8 /* 69 vars */) = -1 ENOENT (No such file or directory)
+26572 execve("/usr/local/sbin/echo", ["echo", "[e2d] \347\273\217 execlp(PATH \346\220\234\345\210\260 ech"...], 0x7ffe7e58fed8 /* 69 vars */) = -1 ENOENT (No such file or directory)
+26572 execve("/usr/local/bin/echo", ["echo", "[e2d] \347\273\217 execlp(PATH \346\220\234\345\210\260 ech"...], 0x7ffe7e58fed8 /* 69 vars */) = -1 ENOENT (No such file or directory)
+26572 execve("/usr/sbin/echo", ["echo", "[e2d] \347\273\217 execlp(PATH \346\220\234\345\210\260 ech"...], 0x7ffe7e58fed8 /* 69 vars */) = 0
+26572 +++ exited with 0 +++
+26570 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=26572, si_uid=1000, si_status=0, si_utime=0, si_stime=0} ---
+26570 clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0x76150d8f2a50) = 26573
+26573 execve("/home/charliechen/.local/bin/echo", ["echo", "[e2d] \347\273\217 execvp(PATH \346\220\234\345\210\260 ech"...], 0x7ffe7e58fed8 /* 69 vars */) = -1 ENOENT (No such file or directory)
+26573 execve("/opt/arm-gnu-toolchain/bin/echo", ["echo", "[e2d] \347\273\217 execvp(PATH \346\220\234\345\210\260 ech"...], 0x7ffe7e58fed8 /* 69 vars */) = -1 ENOENT (No such file or directory)
+26573 execve("/home/charliechen/.vscode-server/bin/07f806f999227108933c2e30515b26eecc1fda74/bin/remote-cli/echo", ["echo", "[e2d] \347\273\217 execvp(PATH \346\220\234\345\210\260 ech"...], 0x7ffe7e58fed8 /* 69 vars */) = -1 ENOENT (No such file or directory)
+26573 execve("/home/charliechen/.local/share/pnpm/echo", ["echo", "[e2d] \347\273\217 execvp(PATH \346\220\234\345\210\260 ech"...], 0x7ffe7e58fed8 /* 69 vars */) = -1 ENOENT (No such file or directory)
+26573 execve("/home/charliechen/.local/bin/echo", ["echo", "[e2d] \347\273\217 execvp(PATH \346\220\234\345\210\260 ech"...], 0x7ffe7e58fed8 /* 69 vars */) = -1 ENOENT (No such file or directory)
+26573 execve("/opt/arm-gnu-toolchain/bin/echo", ["echo", "[e2d] \347\273\217 execvp(PATH \346\220\234\345\210\260 ech"...], 0x7ffe7e58fed8 /* 69 vars */) = -1 ENOENT (No such file or directory)
+26573 execve("/usr/local/sbin/echo", ["echo", "[e2d] \347\273\217 execvp(PATH \346\220\234\345\210\260 ech"...], 0x7ffe7e58fed8 /* 69 vars */) = -1 ENOENT (No such file or directory)
+26573 execve("/usr/local/bin/echo", ["echo", "[e2d] \347\273\217 execvp(PATH \346\220\234\345\210\260 ech"...], 0x7ffe7e58fed8 /* 69 vars */) = -1 ENOENT (No such file or directory)
+26573 execve("/usr/sbin/echo", ["echo", "[e2d] \347\273\217 execvp(PATH \346\220\234\345\210\260 ech"...], 0x7ffe7e58fed8 /* 69 vars */) = 0
+26573 +++ exited with 0 +++
+26570 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=26573, si_uid=1000, si_status=0, si_utime=0, si_stime=0} ---
+26570 clone3({flags=CLONE_VM|CLONE_VFORK|CLONE_CLEAR_SIGHAND, exit_signal=SIGCHLD, stack=0x76150d8e9000, stack_size=0x9000}, 88 <unfinished ...>
+26574 execve("/bin/echo", ["echo", "[e2d] \347\273\217 posix_spawn \345\210\260\350\276\276"], 0x7ffe7e58fed8 /* 69 vars */ <unfinished ...>
+26570 <... clone3 resumed>)             = 26574
+26574 <... execve resumed>)             = 0
+26574 +++ exited with 0 +++
+26570 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=26574, si_uid=1000, si_status=0, si_utime=0, si_stime=0} ---
+26570 +++ exited with 0 +++

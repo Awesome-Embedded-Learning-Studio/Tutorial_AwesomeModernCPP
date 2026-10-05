@@ -1,0 +1,17 @@
+[0] 环境:/dev/ptmx 主次设备号 5:2(mode 0666);
+    devpts 挂载:devpts /dev/pts devpts rw,nosuid,noexec,noatime,gid=5,mode=620,ptmxmode=000 0 0
+  /dev/pts 内容(开新 pty 前): 7 5 4 9 3 2 0 1 ptmx
+[1] posix_openpt -> master fd=3
+    ptsname -> /dev/pts/6(isatty(master)=1)
+  /dev/pts 内容(posix_openpt 之后、grantpt 之前): 6 7 5 4 9 3 2 0 1 ptmx
+[2] unlockpt 之前 open(/dev/pts/6) -> -1 errno=5(Input/output error)
+[3] grantpt 之后  stat /dev/pts/6: uid=1000 gid=5 mode=0620
+    unlockpt 之后  stat /dev/pts/6: uid=1000 gid=5 mode=0620
+[4] open(/dev/pts/6) -> 4 isatty=1 ttyname=/dev/pts/6
+  /dev/pts 内容(master 开着): 6 7 5 4 9 3 2 0 1 ptmx
+[5] master 写 "ping\n",slave read -> n=5 (ping
+):字节过了一遍行规程
+[6] close(master) 之后  stat /dev/pts/6 失败:No such file or directory
+    slave 再 read -> n=0 (EOF)  <- master 没了,slave 读到 EOF(read 返回 0)
+    slave 再 write -> n=-1 Input/output error  <- 写也一样,对端没人了
+  /dev/pts 内容(master 关掉后): 7 5 4 9 3 2 0 1 ptmx

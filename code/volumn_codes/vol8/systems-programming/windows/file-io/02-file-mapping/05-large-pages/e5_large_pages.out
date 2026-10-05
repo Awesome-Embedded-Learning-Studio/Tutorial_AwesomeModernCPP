@@ -1,0 +1,12 @@
+$ ./e5_large_pages.exe; echo "exit=$?"
+[1] 大页粒度
+  GetLargePageMinimum() = 2097152(2MiB,普通小页 4096 字节,比值 512)
+[2] SeLockMemoryPrivilege 特权探测
+  AdjustTokenPrivileges ret=1  GetLastError=1300(1300=ERROR_NOT_ALL_ASSIGNED)
+  [判定] 本账户没有"锁定内存页"用户权限(组策略 secpol.msc 可授予,需注销重登),大页路径按"需要特权未测"入档
+[3] 大页申请实证
+  VirtualAlloc(MEM_LARGE_PAGES, 2MiB)      -> 0000000000000000  err=1314
+  CreateFileMappingW(SEC_LARGE_PAGES, 2MiB) -> 0000000000000000  err=1314
+[4] 普通页对照
+  VirtualAlloc(普通页 4KiB)                -> 000001738c070000  err=0
+exit=0

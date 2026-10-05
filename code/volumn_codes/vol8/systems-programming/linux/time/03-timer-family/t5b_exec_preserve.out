@@ -1,0 +1,3 @@
+[A·exec 后] setitimer 武装的 2s 一次性:getitimer 读到剩 1.999111 s(interval=0ms)—— itimer 活过了 exec
+[B·exec 后] alarm(2) 武装:alarm(0) 返回旧剩余 2 s —— alarm 活过了 exec
+[C·父进程] 不撤的 exec 子进程结局:WIFSIGNALED=1 WTERMSIG=14(SIGALRM=14)—— 计时器活着跨过了 exec,处置复位成默认,到点就是它

@@ -1,0 +1,15 @@
+== 1. sem_timedwait:300 ms 超时 ==
+sem_timedwait(300ms) 返回 -1,errno=110 (Connection timed out),实测等了 300.1 ms
+
+== 2. sem_getvalue 观察 post 前后 ==
+post 一次 → 1;再 post → 2;wait 一次 → 1
+
+== 3. sem_init(pshared=1) 匿名信号量:放进共享匿名映射,fork 后两个进程共用 ==
+  [子进程 @1856313.8] 匿名 sem_wait 拿到(等了 0.0 ms)——父子共用同一个计数器
+  [子进程 @1856714.0] 匿名 sem_post 放行
+  [父进程 @1856714.0] 匿名 sem_wait 拿到(等了 300.1 ms,等的就是子进程那次 post)
+  对照:sem_init 的 pshared=0 版本只在本进程内有效,跨 fork 的语义靠 pshared=1 + 共享内存
+
+== 4. unlink 生命周期:旧句柄照用,新名字从头来(与 shm_unlink 同构) ==
+unlink 前旧句柄值=1;执行 sem_unlink……
+旧句柄 post 后=2;新句柄(初值 7)=7——两个实体互不相干,名字已经归新实体

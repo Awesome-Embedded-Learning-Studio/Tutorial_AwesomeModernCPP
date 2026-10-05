@@ -1,0 +1,3 @@
+孩子报告: pid=1089214 sid=1089214(pid==sid:1,会话长) pgid=1089214 isatty0/1/2=1/1/1 ttyname(0)=/dev/pts/6 TIOCGSID=0(sid=1089214,控制终端到手) TIOCGPGRP=0(前台组=1089214,自己)
+父进程 t=0.1ms 收齐 master 流:(ping\r\npong\r\n) —— 里面混着孩子的回显与输出,一条流分不出方向
+孩子退出:0

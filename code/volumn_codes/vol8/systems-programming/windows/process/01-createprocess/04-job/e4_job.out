@@ -1,0 +1,44 @@
+E4 job objects | driver pid=12420
+== [1] KILL_ON_JOB_CLOSE:显式关掉 Job 句柄 ==
+child alive, heartbeats=6; closing the ONLY job handle now
+job handle closed -> child wait=0x0 after 0ms, exit code=0 (0x00000000)
+heartbeats frozen at 6 (no more lines after death)
+
+== [2] 父进程退出时,Job 句柄自动关闭 -> 孩子陪葬? ==
+(a) mid 用了 KILL_ON_JOB_CLOSE:
+[mid] child pid=25480 in job (kill_on_close=1); mid holds on 400ms for handle pickup, then exits
+mid pid=23188 grandchild pid=25480 (handle secured while mid alive)
+after mid exit: grandchild wait=0x0 in 0ms  -> KILLED WITH ITS PARENT, hb=4 lines
+(b) mid 没用这面旗(对照):
+[mid] child pid=1852 in job (kill_on_close=0); mid holds on 400ms for handle pickup, then exits
+mid pid=5552 grandchild pid=1852 (handle secured while mid alive)
+after mid exit: grandchild STILL ALIVE after 1.5s (wait TIMEOUT), hb=18 lines -> orphan lives on
+
+== [3] 反例:孩子自己继承了 Job 句柄 -> 陪葬失灵 ==
+child pid=24392 inherited ITS OWN copy of the job handle; driver closes job handle
+child STILL ALIVE 1.2s after our close (its own handle keeps the job open), hb=16 lines
+=> 教训:开 KILL_ON_JOB_CLOSE 时,千万别让 Job 句柄被孩子继承
+
+== [4] QueryInformationJobObject:Job 的账本 ==
+empty job: ActiveProcesses=0 TotalProcesses=0 TotalPageFaults=0 TotalTerminated=0
+both alive: NumberOfProcesses=2 ids=[19588, 12952]  (driver pid=12420 is NOT in the list)
+after both exited: ActiveProcesses=0 TotalProcesses=2 TotalPageFaults=2783 TotalTerminated=0
+id list now: NumberOfProcesses=0
+
+== [5] JOB_OBJECT_LIMIT_PROCESS_MEMORY:40MB 限额 ==
+limit set & read back: ProcessMemoryLimit=40MB
+(a) capped run:
+[alloc child] pid=8116 target=256MB step=4MB
+[alloc child] VirtualAlloc failed at total=36MB err=1455
+[alloc child] VirtualAlloc phase ended at 36MB
+[alloc child] new 64MB threw std::bad_alloc (std::bad_alloc)
+[alloc child] exiting 42
+(a) exit code=42 (expect 42)
+(b) control run, no job:
+[alloc child] pid=19632 target=256MB step=4MB
+[alloc child] VirtualAlloc phase ended at 256MB
+[alloc child] new 64MB: got 00000111eb0d8040
+[alloc child] exiting 42
+(b) exit code=42
+
+E4 done.

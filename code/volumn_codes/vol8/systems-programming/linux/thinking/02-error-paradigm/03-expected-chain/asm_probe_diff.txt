@@ -1,0 +1,35 @@
+# sink_manual (手写分支) vs sink_monadic (expected + and_then + value_or),g++ 16.2.1 -std=c++23 -O2 -S
+
+## sink_manual:
+_Z11sink_manuali:
+.LFB2467:
+	.cfi_startproc
+	leal	(%rdi,%rdi), %eax
+	testl	%edi, %edi
+	movl	$-1, %edx
+	cmovle	%edx, %eax
+	ret
+	.cfi_endproc
+
+## sink_monadic:
+_Z12sink_monadici:
+.LFB2468:
+	.cfi_startproc
+	leal	(%rdi,%rdi), %eax
+	testl	%edi, %edi
+	movl	$-1, %edx
+	cmovle	%edx, %eax
+	ret
+	.cfi_endproc
+
+## diff:
+--- body_manual.txt	2026-10-02 16:21:10.873742560 +0800
++++ body_monadic.txt	2026-10-02 16:21:10.876867502 +0800
+@@ -1,5 +1,5 @@
+-_Z11sink_manuali:
+-.LFB2467:
++_Z12sink_monadici:
++.LFB2468:
+ 	.cfi_startproc
+ 	leal	(%rdi,%rdi), %eax
+ 	testl	%edi, %edi

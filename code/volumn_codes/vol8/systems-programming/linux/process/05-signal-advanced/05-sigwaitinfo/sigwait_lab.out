@@ -1,0 +1,28 @@
+== E5 sigwaitinfo/sigtimedwait:同步取信号 ==
+
+[a] 阻塞 {SIGUSR1,SIGUSR2},子进程(pid=677793)发了两个信号,主进程同步取:
+    第 1 次 取到 signo=10 si_code=SI_QUEUE si_pid=677793 si_value=11
+    第 2 次 取到 signo=12 si_code=SI_USER si_pid=677793 si_value=0
+    (没装任何 handler:信号被挡在门外,由我在指定的点亲手取)
+
+[b] sigtimedwait 空等 200ms 超时:
+    返回 -1,errno=Resource temporarily unavailable(EAGAIN),耗时 200ms(标称 200ms)
+
+[c] 阻塞期连发 3 次:
+    实时信号第 1 次取到 signo=36 si_value=1
+    实时信号第 2 次取到 signo=36 si_value=2
+    实时信号第 3 次取到 signo=36 si_value=3
+    标准信号 SIGUSR2 连发 3 次,非阻塞清点取到 1 次(只记 1 次)
+
+[d] sigwaitinfo 与 signalfd 抢的是同一条 pending 队列:
+  d1) 先 sigwaitinfo 一条,再 read(signalfd):
+      sigwaitinfo 取到 si_value=21
+      read(signalfd) 返回 1 条,ssi_int=22 —— 剩下那条也在这儿
+  d2) 反过来,先 read(signalfd) 一条,再 sigtimedwait:
+      read(signalfd) 返回 1 条,ssi_int=31
+      sigtimedwait 取到 si_value=32 —— 队列不重复,谁读谁消费
+
+[e] 信号处理三条出路:handler 异步抢跑(上篇)/ sigwaitinfo 定点同步取(本篇)/
+    signalfd 事件循环里当 fd 用(本篇 E2)—— 同一阻塞集合,三种消费姿势
+
+E5 done,t=200ms

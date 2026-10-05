@@ -1,0 +1,23 @@
+# 场景一:Linux 原生配置(g++ 16.2.1,cmake 4.4.3)
+-- [probe] CMAKE_SYSTEM_NAME = Linux
+-- [probe] CMAKE_SYSTEM_VERSION = 6.18.33.2-microsoft-standard-WSL2
+-- [probe] CMAKE_CXX_COMPILER = /usr/sbin/c++
+-- [probe] WIN32= UNIX=1 MSVC= MINGW= MSYS= CYGWIN=
+-- [probe] CMAKE_SIZEOF_VOID_P = 8
+-- [probe] HAVE_SYS_EPOLL_H=1 HAVE_SYS_EVENT_H= HAVE_LIBURING_H=1 HAVE_WINDOWS_H=
+
+# 运行:
+== route 3: CMake configure-time results (via config.h) ==
+  HAVE_SYS_EPOLL_H=1 HAVE_SYS_EVENT_H=0 HAVE_LIBURING_H=1 HAVE_WINDOWS_H=0
+
+# 场景二:裸 CXX 覆盖指向 g++.exe(宿主/目标张冠李戴现场)
+-- [probe] CMAKE_SYSTEM_NAME = Linux
+-- [probe] CMAKE_SYSTEM_VERSION = 6.18.33.2-microsoft-standard-WSL2
+-- [probe] CMAKE_CXX_COMPILER = /mnt/c/msys64/ucrt64/bin/g++.exe
+-- [probe] WIN32= UNIX=1 MSVC= MINGW= MSYS= CYGWIN=
+-- [probe] CMAKE_SIZEOF_VOID_P = 
+-- [probe] HAVE_SYS_EPOLL_H= HAVE_SYS_EVENT_H= HAVE_LIBURING_H= HAVE_WINDOWS_H=1
+
+# 运行(check_include_file 的 try_compile 用的是真编译器,结果反而正确):
+== route 3: CMake configure-time results (via config.h) ==
+  HAVE_SYS_EPOLL_H=0 HAVE_SYS_EVENT_H=0 HAVE_LIBURING_H=0 HAVE_WINDOWS_H=1

@@ -1,0 +1,50 @@
+[A] directory_iterator,不删除
+  step=1     name=f0888      attr_ec=0(Success)
+  step=2     name=f2525      attr_ec=0(Success)
+  step=3     name=f0843      attr_ec=0(Success)
+  step=4     name=f2761      attr_ec=0(Success)
+  step=5     name=f0398      attr_ec=0(Success)
+  step=6     name=f1502      attr_ec=0(Success)
+  step=500   name=f0282      attr_ec=0(Success)
+  step=1000  name=f0704      attr_ec=0(Success)
+  step=1500  name=f2148      attr_ec=0(Success)
+  step=2000  name=f0319      attr_ec=0(Success)
+  step=2500  name=f0958      attr_ec=0(Success)
+  step=3000  name=f2161      attr_ec=0(Success)
+  [A 小结] 共见 3001 条(基线应为 3001);increment 失败 0 次;属性查询成功 3000、失败 0
+  树还在吗:在
+
+[B] recursive_directory_iterator,不删除
+  step=1    depth=0 t00
+  step=2    depth=0 t11
+  step=3    depth=0 t19
+  step=4    depth=0 t17
+  step=5    depth=0 t01
+  step=6    depth=0 t16
+  step=7    depth=0 t07
+  step=8    depth=0 t14
+  step=9    depth=0 t06
+  step=10   depth=0 t13
+  step=11   depth=0 t10
+  step=12   depth=0 t05
+  step=13   depth=0 t02
+  step=14   depth=0 t18
+  step=15   depth=0 t12
+  step=16   depth=0 t08
+  step=17   depth=0 sub_a
+  step=18   depth=1 sub_a/u0
+  step=19   depth=1 sub_a/u1
+  step=20   depth=1 sub_a/u2
+  step=21   depth=1 sub_a/u3
+  step=22   depth=1 sub_a/u4
+  step=23   depth=0 t09
+  step=24   depth=0 t04
+  step=25   depth=0 t03
+  step=26   depth=0 sub_b
+  step=27   depth=1 sub_b/u0
+  step=28   depth=1 sub_b/u1
+  step=29   depth=1 sub_b/u2
+  step=30   depth=1 sub_b/u3
+  step=31   depth=1 sub_b/u4
+  step=32   depth=0 t15
+  [B 小结] 共见 32 条(基线应为 30);树还在吗:在

@@ -1,0 +1,17 @@
+== E4a: 首次 get_tzdb() 的代价 ==
+首次 get_tzdb(): 1.751 ms(解析时区数据库,之后常驻)
+再次 get_tzdb(): 0.000050 ms(同一份引用,指针是 同一个)
+
+== E4b: 库里有什么 ==
+版本串: 2026c(来自 OS 的 tzdata)
+zones=341  links=257  leap_seconds=27
+
+== E4c: 查名与 current_zone ==
+locate_zone("Asia/Shanghai"): 0.922 us → Asia/Shanghai
+current_zone(): Asia/Shanghai(读 TZ 环境变量,未设则 /etc/localtime,机制同篇 1 E6)
+locate_zone("Mars/Olympus_Mons"): 抛 std::chrono::tzdb: cannot locate zone: Mars/Olympus_Mons
+
+== E4d: 数据从 OS 哪里读 ==
+strace 的记录在 t4_tzdb_strace.txt:openat 落在 /usr/share/zoneinfo/tzdata.zi 与
+leapseconds 两处 —— 标准库不是自带时区数据,而是解析发行版的 tzdata 文件。
+(这也是跨机器部署要确认 tzdata 包版本的实证依据)

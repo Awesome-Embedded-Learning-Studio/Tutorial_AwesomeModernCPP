@@ -1,0 +1,14 @@
+[     0 ms] [1] 建裸端口
+[     0 ms] CreateIoCompletionPort(INVALID_HANDLE_VALUE,...) = 248;并发值给 0 的含义=处理器数(本机 16)
+[     0 ms] [2] 挂文件句柄(key=4242),投三发不同偏移的读
+[     0 ms] 挂接返回 248(就是那枚端口)
+[     0 ms]   投递#1 Offset=3000: ret=0 gle=997(997 在途)
+[     0 ms]   投递#2 Offset=1000: ret=0 gle=997(997 在途)
+[     0 ms]   投递#3 Offset=2000: ret=0 gle=997(997 在途)
+[     0 ms]   GQCS 第1包: ret=1 bytes=8 key=4242 OVERLAPPED* 与投递#1 逐一相认(指针同一) 值=3000
+[     0 ms]   GQCS 第2包: ret=1 bytes=8 key=4242 OVERLAPPED* 与投递#2 逐一相认(指针同一) 值=1000
+[     0 ms]   GQCS 第3包: ret=1 bytes=8 key=4242 OVERLAPPED* 与投递#3 逐一相认(指针同一) 值=2000
+[     0 ms] [3] 空队列超时 + 第二把句柄另一个 key
+[   813 ms] GQCS(空队列,800ms): ret=0 历时 813 ms gle=258(258=WAIT_TIMEOUT)
+[   813 ms] 第二把句柄(key=777)的一发: GQCS ret=1 key=777 值=4000 —— 完成包带着各自句柄的 key 回来
+[   813 ms] iocp-e1 完

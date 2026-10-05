@@ -1,0 +1,31 @@
+left 7 条 / right 7 条;判据 size+mtime,不读内容
+
+== 新增(右有左无) ==
+  + dir_new                d size=0 mtime=17:31:04
+  + only_right.txt         f size=4 mtime=17:31:04
+== 删除(左有右无) ==
+  - dir_old                d size=0 mtime=16:31:04
+  - only_left.txt          f size=4 mtime=16:31:04
+== 修改(两边都有,元数据对不上) ==
+  M keep.txt               mtime (5->5 字节,16:31:04->17:31:04)
+  M mod.txt                size mtime (5->9 字节,16:31:04->17:31:04)
+  M samesize.txt           mtime (4->4 字节,16:31:04->17:31:04)
+
+未变 1 条(stable.txt:内容+size+mtime 全同)。
+对照真 diff:diff -rq /home/charliechen/l04_scratch/e6_left /home/charliechen/l04_scratch/e6_right(在 shell 里跑,输出见 .out)
+
+== 对照:真 diff -rq ==
+Only in /home/charliechen/l04_scratch/e6_right: dir_new
+Only in /home/charliechen/l04_scratch/e6_left: dir_old
+Files /home/charliechen/l04_scratch/e6_left/mod.txt and /home/charliechen/l04_scratch/e6_right/mod.txt differ
+Only in /home/charliechen/l04_scratch/e6_left: only_left.txt
+Only in /home/charliechen/l04_scratch/e6_right: only_right.txt
+Files /home/charliechen/l04_scratch/e6_left/samesize.txt and /home/charliechen/l04_scratch/e6_right/samesize.txt differ
+(diff -rq exit=1)
+
+== 解读 ==
+- 三类清单与 diff -rq 的 Only in / differ 一一对应(dir_old/dir_new 整目录折叠成一条,同 diff 粒度);
+- keep.txt 是元数据判据的假阳性:内容相同、mtime 漂了 1h -> 报 M,diff -rq(读内容)不报。
+  这就是 rsync「快速检查」的经典坑:size+mtime 省了读文件,代价是时间戳被碰过的文件会白传一遍;
+- samesize.txt:4 字节换 4 字节,size 判据抓不到,靠 mtime 差异抓到(若连 mtime 都一样,只有读内容才能发现);
+- stable.txt:内容+size+mtime 三者都同 -> 未变,1 条。

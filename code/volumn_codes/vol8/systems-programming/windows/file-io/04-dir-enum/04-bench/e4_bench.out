@@ -1,0 +1,11 @@
+== 10000 文件目录遍历计时(暖缓存,预热后每腿 3 轮取中位)==
+  目录:C:\Users\CharlieChen114514\AppData\Local\Temp\sysprog-direnum\e4lots
+
+  A  FindFirstFileW                          条目 10002(含 . ..)  3 轮 1.73 / 1.67 / 1.79 ms  中位 1.67 ms
+  B  FindFirstFileExW flags=0                条目 10002(含 . ..)  3 轮 1.66 / 1.81 / 1.94 ms  中位 1.81 ms
+  C  FindFirstFileExW LARGE_FETCH            条目 10002(含 . ..)  3 轮 1.38 / 1.39 / 1.56 ms  中位 1.39 ms
+
+  对照 Linux 侧(E4,同规模 ext4):手搓 readdir 2.16 ms / directory_iterator
+  3.42 ms——Windows 的 WIN32_FIND_DATAW 在枚举的同时就带回了属性与大小,
+  没有"再补一发 stat"的腿。LARGE_FETCH 这台机器上稳定快一截(本档 ~19%),
+  是提示位不是承诺位,别的机器/冷缓存下幅度另算。

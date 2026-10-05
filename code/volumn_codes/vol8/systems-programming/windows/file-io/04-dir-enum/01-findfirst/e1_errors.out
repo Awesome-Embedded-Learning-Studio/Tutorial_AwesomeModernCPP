@@ -1,0 +1,21 @@
+== [1] 错误路径区分 ==
+  不存在目录 \*           -> INVALID_HANDLE_VALUE, err=3
+  不存在目录 \*.txt       -> INVALID_HANDLE_VALUE, err=3
+  存在目录,模式无匹配 -> INVALID_HANDLE_VALUE, err=2
+  空目录 \*                 -> 成功,吐了 2 项(最后一项之后 FindNextFileW err=18)
+  空目录 \*.txt             -> INVALID_HANDLE_VALUE, err=2
+  文件路径挂 \*           -> INVALID_HANDLE_VALUE, err=267
+  尾部反斜杠(无模式)   -> INVALID_HANDLE_VALUE, err=2
+  尾部双反斜杠+*         -> 成功,吐了 2 项(最后一项之后 FindNextFileW err=18)
+
+== [2] 空目录的完整枚举过程(三件套逐项) ==
+  FindFirstFileW 成功,第一项 = "."
+  FindNextFileW  -> ".."
+  FindNextFileW 止步,err=18(18=ERROR_NO_MORE_FILES,正常收尾,不是错误)
+  句柄用尽后再 FindNextFileW -> 0, err=18(还是 18,不会翻页也不会崩)
+
+== [3] 对照:ERROR_NO_MORE_FILES 只属于 FindNextFileW ==
+  FindFirstFileW 的失败码是 2/3/267 这类"真错误";18 只会出现在收尾的
+  FindNextFileW 上——把它当异常抛就冤枉了,它是循环的退出条件。
+
+(测试树已清理)

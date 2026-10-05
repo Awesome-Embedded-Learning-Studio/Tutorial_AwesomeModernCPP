@@ -1,0 +1,16 @@
+[A] 观察者 pid=26512
+[A] 本机 PID 1 是什么:/proc/1/comm = systemd
+[A]               /proc/1/cmdline = /sbin/init
+[C] 出生:pid=26514 ppid=26513(临时父 B)
+[B] 临时父 pid=26513,C 已出生,我退场——C 从此没爹
+[A] B 已被 A 收尸。A 试着多管闲事去 wait 孙辈 C(pid=26514):返回 -1,errno=10(ECHILD:不是我的孩子,没资格)
+[A] 只能旁观:
+[A] t+0.0s:State:	S (sleeping)
+[C] ppid 变成了 249,收养者的 comm = Relay(252)
+[C] 我现在是孤儿,再干 1 秒活然后自己退出——看我会不会变僵尸
+[A] t+1.1s:/proc/26514 消失(ENOENT)——C 退出后没以僵尸滞留,收养者收了尸
+[A] 机制:C 的 ppid 实测变成 249(Relay(252)),不是 PID 1(systemd)!
+    内核把孤儿过继给最近的 subreaper 祖先(prctl PR_SET_CHILD_SUBREAPER 标记),
+    没有才落到 PID 1;本会话里 WSL 的会话级 /init(Relay)就是那个 subreaper。
+    收养者负责 wait:它退出的瞬间就被收,所以孤儿没机会变僵尸——
+    僵尸的定义是死了没人 wait,而收养者永远会 wait。

@@ -4,7 +4,7 @@ Claude Code 在本项目的**专属补充**。通用项目信息(架构 / 命令
 
 ## 写作纪律(必须遵守)
 
-1. 写作前 **MUST** 先查 [.claude/style/writing-style.md](.claude/style/writing-style.md)(人格、语气、文章骨架、代码风格)
+1. 写作前 **MUST** 先查风格规范:维护者环境(有 `.claude/tools/content_forge/`,不入库)读其写手资产 `tools/humanizer-zh/corpus/VOICE.md` + `COMPARE.md`,成稿修订按其 `writing_style.md` 审稿规约并尽量跑 `tools/humanizer_lint.py`;该目录不存在时(公开 checkout)按 [.claude/style/writing-style.md](.claude/style/writing-style.md)(公开精简卡,含人格、语气、骨架、代码风格)执行
 2. 写作前 **MUST** 先 web search,准确性优先,token 成本其次
 3. 完成后 **MUST** 自查,而非留给作者;自查后告知如何验证
 4. 完成一个文件夹下的文章,**MUST** 顺手建 `index.md`,确保每篇都能被 VitePress 访问
@@ -47,7 +47,8 @@ Claude Code 有持久记忆(跨会话保留用户偏好、项目进展、踩坑)
 | 文件 | 用途 |
 |---|---|
 | [AGENTS.md](AGENTS.md) | 跨 agent 通用入口(架构 / 命令 / 金科玉律) |
-| [.claude/style/writing-style.md](.claude/style/writing-style.md) | 写作人格 / 语气 / 骨架 / 代码风格 |
+| [.claude/style/writing-style.md](.claude/style/writing-style.md) | 写作人格 / 语气 / 骨架 / 代码风格(公开精简卡) |
+| `.claude/tools/content_forge/` | 维护者完整写作与审稿体系(gitignore 不入库:VOICE / COMPARE / writing_style / humanizer_lint) |
 | [.claude/rules/documents-frontmatter.md](.claude/rules/documents-frontmatter.md) | Frontmatter 字段与标签 |
 | [.claude/commands/](.claude/commands/) | `/patch` `/minor` 规划 skills |
 | [.claude/prompts/](.claude/prompts/) | 文章审查 prompt(事实 / 严谨) |

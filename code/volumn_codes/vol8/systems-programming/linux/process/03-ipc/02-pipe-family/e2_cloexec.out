@@ -1,0 +1,23 @@
+== 姿势一:裸 pipe(fd=3 读、4 写) ==  子进程 exec 后的 fd 表:
+total 0
+lr-x------ 1 charliechen charliechen 64 Oct  4 11:06 0 -> /dev/null
+l-wx------ 1 charliechen charliechen 64 Oct  4 11:06 1 -> /home/charliechen/lp03_scratch/03-ipc/02-pipe-family/e2_cloexec.out
+l-wx------ 1 charliechen charliechen 64 Oct  4 11:06 2 -> /home/charliechen/lp03_scratch/03-ipc/02-pipe-family/e2_cloexec.out
+lr-x------ 1 charliechen charliechen 64 Oct  4 11:06 3 -> pipe:[353914]
+l-wx------ 1 charliechen charliechen 64 Oct  4 11:06 4 -> pipe:[353914]
+lr-x------ 1 charliechen charliechen 64 Oct  4 11:06 5 -> /proc/23679/fd
+== 姿势二:pipe2(O_CLOEXEC) ==  子进程 exec 后的 fd 表:
+total 0
+lr-x------ 1 charliechen charliechen 64 Oct  4 11:06 0 -> /dev/null
+l-wx------ 1 charliechen charliechen 64 Oct  4 11:06 1 -> /home/charliechen/lp03_scratch/03-ipc/02-pipe-family/e2_cloexec.out
+l-wx------ 1 charliechen charliechen 64 Oct  4 11:06 2 -> /home/charliechen/lp03_scratch/03-ipc/02-pipe-family/e2_cloexec.out
+lr-x------ 1 charliechen charliechen 64 Oct  4 11:06 3 -> /proc/23680/fd
+== 姿势三:裸 pipe + fcntl 只给写端(fd=4)补 FD_CLOEXEC ==  子进程 exec 后的 fd 表:
+total 0
+lr-x------ 1 charliechen charliechen 64 Oct  4 11:06 0 -> /dev/null
+l-wx------ 1 charliechen charliechen 64 Oct  4 11:06 1 -> /home/charliechen/lp03_scratch/03-ipc/02-pipe-family/e2_cloexec.out
+l-wx------ 1 charliechen charliechen 64 Oct  4 11:06 2 -> /home/charliechen/lp03_scratch/03-ipc/02-pipe-family/e2_cloexec.out
+lr-x------ 1 charliechen charliechen 64 Oct  4 11:06 3 -> pipe:[353916]
+lr-x------ 1 charliechen charliechen 64 Oct  4 11:06 4 -> /proc/23681/fd
+
+结论:FD_CLOEXEC 是 fd 级标志,exec 换程序时内核替你 close;pipe2(O_CLOEXEC) 创建时一把带上,或事后 fcntl 逐个补——与 L01 文件篇的 CLOEXEC 结论同一条

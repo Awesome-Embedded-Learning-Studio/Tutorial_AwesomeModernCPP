@@ -1,0 +1,17 @@
+[exec 前] pid=26436,fd 3(普通)与 fd 4(O_CLOEXEC)指向同一个文件
+[exec 前] /proc/self/fd 清单:
+    fd 0 -> /dev/null
+    fd 1 -> /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/process/01-fork-exec/e2-exec-family/e2b.out
+    fd 2 -> /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/process/01-fork-exec/e2-exec-family/e2b.out
+    fd 3 -> /home/charliechen/lp01_scratch/e2b_data.bin
+    fd 4 -> /home/charliechen/lp01_scratch/e2b_data.bin
+[exec 前] 先从 fd 3 读 8 字节=01234567,偏移=8
+[exec 前] 现在调 execl 换一个全新的程序映像……
+[exec 后] pid=26436 —— 与 exec 前打印的是同一个数
+[exec 后] /proc/self/fd 清单:
+    fd 0 -> /dev/null
+    fd 1 -> /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/process/01-fork-exec/e2-exec-family/e2b.out
+    fd 2 -> /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/process/01-fork-exec/e2-exec-family/e2b.out
+    fd 3 -> /home/charliechen/lp01_scratch/e2b_data.bin
+[exec 后] fd 3 还能用:再读 8 字节=89:;<=>?,偏移=16(接着 exec 前的位置读)
+[exec 后] 带 O_CLOEXEC 的那个 fd 不在清单里了:同一个文件,一个穿过 exec 一个被关

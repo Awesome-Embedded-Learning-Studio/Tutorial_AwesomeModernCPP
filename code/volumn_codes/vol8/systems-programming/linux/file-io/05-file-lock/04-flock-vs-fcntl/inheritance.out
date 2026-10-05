@@ -1,0 +1,40 @@
+pid=168327, 文件:/home/charliechen/l05_scratch/e4/inherit.bin(ext4)
+
+==== fork × flock:锁跟着打开文件描述走 ====
+  [     0 ms] 父(pid=168327):持 flock
+  [     0 ms] 子(pid=168328):继承 fd 上 flock(LOCK_EX) = 0
+  [     0 ms] 子:LOCK_UN = 0 —— 放的是父进程的锁
+  [     0 ms] 竞争者(子 UN 后):flock(LOCK_EX|LOCK_NB) = 0(拿到锁)
+  [     0 ms] 父:再持 flock,fork 出只 close 继承 fd 的子进程
+  [     0 ms] 子(pid=168330):close(继承 fd)
+  [     1 ms] 竞争者(子 close 后):flock(LOCK_EX|LOCK_NB) = -1(锁被占)
+
+==== fork × fcntl:记录锁跟着进程走,fork 不继承 ====
+  [     1 ms] 父(pid=168327):持 F_SETLK W[0,100)
+  [     1 ms] 子(pid=168332):继承 fd 上 F_SETLK W[0,100) = -1, errno=11
+  [     1 ms] 子:F_GETLK → l_pid=168327(=父pid),锁不随 fork 继承
+  [     1 ms] 竞争者(对照):F_SETLK W[0,100) = -1(锁被占)
+
+==== dup × flock:close 的引用计数语义 ====
+  [     1 ms] fd1 持锁,dup 出 fd2(同一描述的两个引用)
+  [     1 ms] close(fd1)
+  [     1 ms] 竞争者(close fd1 后):flock(LOCK_EX|LOCK_NB) = -1(锁被占)
+  [     2 ms] close(fd2)(最后一个引用)
+  [     2 ms] 竞争者(close fd2 后):flock(LOCK_EX|LOCK_NB) = 0(拿到锁)
+
+==== exec × flock:锁挂描述,fd 不关就活过 exec ====
+  [     2 ms] 子(pid=168336):open + flock 后 exec 自己(无 O_CLOEXEC)
+  [     0 ms] exec 后的进程(pid=168336):fd 还握着,锁还在,600 ms 后退场
+  [   302 ms] 竞争者(exec 后窗口内):flock(LOCK_EX|LOCK_NB) = -1(锁被占)
+  [   604 ms] 竞争者(exec 子退场后):flock(LOCK_EX|LOCK_NB) = 0(拿到锁)
+
+==== exec × flock × O_CLOEXEC:fd 在 exec 瞬间关闭,锁当场释放 ====
+  [   604 ms] 子(pid=168345):flock(O_CLOEXEC fd) 后 exec 自己
+  [     0 ms] exec 后的进程(pid=168345):fd 已被 O_CLOEXEC 关掉
+  [   904 ms] 竞争者(exec 后窗口内):flock(LOCK_EX|LOCK_NB) = 0(拿到锁)
+
+==== exec × fcntl:锁挂进程,exec 不动它 ====
+  [  1206 ms] 子(pid=168353):F_SETLK W[0,100) 后 exec 自己
+  [     0 ms] exec 后的进程(pid=168353):fcntl 锁仍属于本进程,600 ms 后退场
+  [  1506 ms] 竞争者(exec 后窗口内):F_SETLK W[0,100) = -1(锁被占)
+  [  1808 ms] 竞争者(exec 子退场后):F_SETLK W[0,100) = 0(拿到锁)

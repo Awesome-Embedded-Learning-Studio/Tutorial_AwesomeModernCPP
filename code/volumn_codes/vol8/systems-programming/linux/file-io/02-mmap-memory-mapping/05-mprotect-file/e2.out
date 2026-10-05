@@ -1,0 +1,10 @@
+mapped 16 bytes (rounded to 4096 B) at 0x787a3c315000, MAP_SHARED RW
+1) write 'XXXX' as RW      : ok,  fd2 pread = XXXXBBBBCCCCDDDD
+2) mprotect -> PROT_READ   : ok,  view is now read-only
+
+[handler] SIGSEGV, si_addr = 0x0000787a3c315000, si_code = SEGV_ACCERR(2)
+   parent: child exit status = 18176 (WIFEXITED=true, code=71)
+3) mprotect -> RW again    : ok,  write 'ZZZZ', fd2 pread = ZZZZBBBBCCCCDDDD
+4) mprotect(base+8, ...)   : rc=-1, errno=22 (Invalid argument)  <- addr 必须页对齐
+5) O_RDONLY fd + PROT_WRITE + MAP_SHARED : MAP_FAILED, errno=13 (Permission denied)
+   same fd, switch to MAP_PRIVATE         : mapped (COW, legal)

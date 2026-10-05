@@ -1,0 +1,7 @@
+view=0000025519a70000 (3-page mapping active)
+SetEndToFile(4096)                 -> 0 gle=1224
+FileEndOfFileInfo(4096)             -> 0 gle=1224
+FileAllocationInfo(4096)            -> 0 gle=1224
+unmap + SetEndOfFile(4096)          -> 1 gle=1224
+final size=4096
+done

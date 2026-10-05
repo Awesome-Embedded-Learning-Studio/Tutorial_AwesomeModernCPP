@@ -1,0 +1,16 @@
+[场景1 管道]喂 61 62 63 7f 7a 0a (abcDELz\n)
+  READ n=6 61 62 63 7f 7a 0a (abcDELz\n)
+READ n=0 
+  —— 6 个字节一个不少,DEL 就是 0x7f,没有谁替你编辑
+
+[场景2 pty 出厂态(canonical+ECHO)]
+  喂 61 62 63 7f 7a 0a (abcDELz\n)
+  master 收到的回显:61 62 63 08 20 08 7a 0d 0a (abc^H ^Hz\r\n)
+  READ n=4 61 62 7a 0a (abz\n)
+  —— 到手的是编辑后的行;行编辑、回显都在 tty 层,不在读程序里
+
+[场景3 pty 关 ECHO(编辑仍在)]
+  喂 61 62 63 7f 7a 0a (abcDELz\n)
+  master 收到的回显:(无)
+  READ n=4 61 62 7a 0a (abz\n)
+  —— 到手的是编辑后的行;行编辑、回显都在 tty 层,不在读程序里;回显可以单独关掉,编辑照做

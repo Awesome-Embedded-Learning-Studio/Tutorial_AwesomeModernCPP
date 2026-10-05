@@ -1,0 +1,68 @@
+--- fdinfo(3) 刚创建, 未设定 ---
+pos:	0
+flags:	04002
+mnt_id:	16
+ino:	1041
+clockid: 1
+ticks: 0
+settime flags: 00
+it_value: (0, 0)
+it_interval: (0, 0)
+
+[i] 一次性 200ms, it_interval=0
+--- fdinfo(3) 设定后(剩约 200ms) ---
+pos:	0
+flags:	04002
+mnt_id:	16
+ino:	1041
+clockid: 1
+ticks: 0
+settime flags: 00
+it_value: (0, 199994019)
+it_interval: (0, 0)
+--- fdinfo(3) 60ms 时(剩约 140ms) ---
+pos:	0
+flags:	04002
+mnt_id:	16
+ino:	1041
+clockid: 1
+ticks: 0
+settime flags: 00
+it_value: (0, 139869103)
+it_interval: (0, 0)
+  select 报就绪, 距设定 200 ms
+  read = 1
+  read = -1 (Resource temporarily unavailable)
+
+[ii] 周期 100ms, 读方故意睡 350ms 再来:
+--- fdinfo(3) 350ms 时(约 3 档已过) ---
+pos:	0
+flags:	04002
+mnt_id:	16
+ino:	1041
+clockid: 1
+ticks: 1
+settime flags: 00
+it_value: (0, 0)
+it_interval: (0, 100000000)
+  read = 3
+  一次 read 报的是错过的档数: 3 (不丢数据, 但也不排队报 3 次)
+  read = 1
+
+[iii] 改 interval 100ms -> 30ms, 再撤掉:
+  t+100 ms 到期 (30ms 档)
+  t+130 ms 到期 (30ms 档)
+  t+160 ms 到期 (30ms 档)
+  t+190 ms 到期 (30ms 档)
+  t+220 ms 到期 (30ms 档)
+--- fdinfo(3) 撤销后(剩余时间为 0) ---
+pos:	0
+flags:	04002
+mnt_id:	16
+ino:	1041
+clockid: 1
+ticks: 0
+settime flags: 00
+it_value: (0, 0)
+it_interval: (0, 0)
+  撤销后等 300ms: select 返回 0 (不再有到期事件)

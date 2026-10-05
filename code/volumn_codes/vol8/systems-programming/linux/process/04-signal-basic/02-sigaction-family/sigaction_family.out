@@ -1,0 +1,37 @@
+[E2.1] SA_SIGINFO: sender is identifiable, my pid=15082 uid=1000
+    [H] caught 10: si_signo=10 si_code=-6(SI_TKILL  raise/tgkill发来) si_pid=15082 si_uid=1000
+    [H] caught 10: si_signo=10 si_code=0(SI_USER   kill()发来) si_pid=15083 si_uid=1000
+[E2.1] child pid=15083 sent it -> si_pid must equal this
+    [H] caught 14: si_signo=14 si_code=128(SI_KERNEL 内核产生) si_pid=0 si_uid=0
+
+[E2.2] sa_mask={SIGUSR1}: USR1 cannot preempt USR2 handler
+    [H] SIGUSR2 handler entered
+    [H] mask inside handler: SIGUSR2=1 SIGUSR1=1 (self + sa_mask both blocked)
+    [H] raise(SIGUSR1) inside handler -> pending=1 (NOT delivered while we run)
+    [H] SIGUSR2 handler returning
+    [H] SIGUSR1 handler runs only AFTER SIGUSR2 handler returned
+[E2.2] back in main
+
+[E2.3] SA_NODEFER: same signal re-enters its own handler
+    [H] enter, depth=1
+    [H] enter, depth=2
+    [H] leave
+    [H] leave
+[E2.3] done (depth back to 0; without SA_NODEFER the inner raise would stay pending)
+
+[E2.4] SA_RESETHAND: one-shot handler, 2nd delivery hits SIG_DFL
+    [H] first delivery: handler body runs
+CHILD: survived 1st; raising again with disposition reset to SIG_DFL (terminate)
+[E2.4] child ended: WIFSIGNALED=1 WTERMSIG=10 (SIGUSR1=10) -> reset happened
+
+[E2.5] signal(): glibc installs BSD semantics
+[E2.5] signal() returned old disposition: (non-null)
+[E2.5] readback sa_flags=0x14000000: SA_RESTART=1 SA_NODEFER=0 SA_RESETHAND=0
+[E2.5] raised twice -> handler count=2; handler PERSISTS (System V semantics would reset after 1st and die on 2nd)
+
+[E2.6] sigprocmask: BLOCK=并集, UNBLOCK=差集, SETMASK=整个替换
+    mask initial (empty)                    SIGINT=0 SIGTERM=0 SIGUSR1=0 SIGUSR2=0
+    mask BLOCK{USR2}                        SIGINT=0 SIGTERM=0 SIGUSR1=0 SIGUSR2=1
+    mask BLOCK{USR1,USR2}                   SIGINT=0 SIGTERM=0 SIGUSR1=1 SIGUSR2=1
+    mask UNBLOCK{USR2}                      SIGINT=0 SIGTERM=0 SIGUSR1=1 SIGUSR2=0
+    mask SETMASK{} (clear all)              SIGINT=0 SIGTERM=0 SIGUSR1=0 SIGUSR2=0

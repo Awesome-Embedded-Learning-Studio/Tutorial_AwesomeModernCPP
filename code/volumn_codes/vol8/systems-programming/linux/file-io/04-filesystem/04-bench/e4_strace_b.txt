@@ -1,0 +1,22 @@
+# strace -e trace=openat,getdents64,close,newfstatat,statx ./e4_bench one b   # directory_iterator 单趟
+# 与手搓 one a 完全同形:openat 一次 + getdents64 x11(32768B 缓冲装 1 万条要 11 轮) + close
+# newfstatat 只有 5 次进程启动基线,遍历本身零 stat(类型来自 readdir 的 d_type)
+close(3)                                = 0
+close(3)                                = 0
+close(3)                                = 0
+close(3)                                = 0
+close(3)                                = 0
+openat(AT_FDCWD, "/home/charliechen/l04_scratch/e4_big", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 3
+getdents64(3, 0x618190a10180 /* 1024 entries */, 32768) = 32752
+getdents64(3, 0x618190a10180 /* 1024 entries */, 32768) = 32768
+getdents64(3, 0x618190a10180 /* 1024 entries */, 32768) = 32768
+getdents64(3, 0x618190a10180 /* 1024 entries */, 32768) = 32768
+getdents64(3, 0x618190a10180 /* 1024 entries */, 32768) = 32768
+getdents64(3, 0x618190a10180 /* 1024 entries */, 32768) = 32768
+getdents64(3, 0x618190a10180 /* 1024 entries */, 32768) = 32768
+getdents64(3, 0x618190a10180 /* 1024 entries */, 32768) = 32768
+getdents64(3, 0x618190a10180 /* 1024 entries */, 32768) = 32768
+getdents64(3, 0x618190a10180 /* 786 entries */, 32768) = 25152
+getdents64(3, 0x618190a10180 /* 0 entries */, 32768) = 0
+close(3)                                = 0
++++ exited with 0 +++
