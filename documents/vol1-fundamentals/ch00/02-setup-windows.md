@@ -1,23 +1,24 @@
 ---
 chapter: 0
 cpp_standard:
-- 11
-- 14
-- 17
-- 20
+  - 11
+  - 14
+  - 17
+  - 20
 description: 在 Windows 上搭建 C++ 开发环境：安装 Visual Studio 或 MinGW、配置 CMake 和 vcpkg，从零开始到编译运行
 difficulty: beginner
 order: 2
 platform: host
 reading_time_minutes: 12
 tags:
-- cpp-modern
-- host
-- beginner
-- 入门
-- 基础
+  - cpp-modern
+  - host
+  - beginner
+  - 入门
+  - 基础
 title: Windows 环境搭建
 ---
+
 # Windows 环境搭建
 
 Windows上的C++开发属于是有点地狱的，真的，对我而言。
@@ -165,7 +166,7 @@ cmake --build build
 
 使用 MinGW Makefiles 生成器时，如果 PATH 里有其他带 `make.exe` 的程序（比如 Qt 自带的、或者某些旧版 MinGW 的），可能会导致构建失败。如果碰到这个问题，可以在构建时显式指定 make 路径：`cmake -B build -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe`。
 
-无论哪条路线，构建成功后都会在 `build` 目录下生成一个 `hello.exe`（或者 `Release/hello.exe`）。运行它：
+无论哪条路线，构建成功后都会在 `build` 目录下生成一个 `hello.exe`（或者 `Release/hello.exe`）。在刚才的终端里运行它(不要尝试在文件夹里双击运行，否则你会看到一闪而过的窗口，或许你可以思考一下这是为什么，怎么样能让它不再一闪而过)：
 
 ```powershell
 # MSVC 路线
@@ -203,29 +204,29 @@ CMake Tools 扩展会自动检测系统中的编译器。安装好扩展后打�
 
 ```json
 {
-    "version": "0.2.0",
-    "configurations": [
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug hello",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/hello.exe",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "C:/msys64/ucrt64/bin/gdb.exe",
+      "setupCommands": [
         {
-            "name": "Debug hello",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/hello.exe",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "miDebuggerPath": "C:/msys64/ucrt64/bin/gdb.exe",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
         }
-    ]
+      ]
+    }
+  ]
 }
 ```
 

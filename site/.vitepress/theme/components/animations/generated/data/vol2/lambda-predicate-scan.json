@@ -1,0 +1,1558 @@
+{
+ "version": 1,
+ "id": "lambda-predicate-scan",
+ "title": "find_if 停在命中处，count_if 数到尾",
+ "subtitle": "lambda 当谓词，逐格判断",
+ "source": "projects/vol2-ch03-lambda/02-dsl/lambda-predicate-scan.yaml",
+ "backend": "web",
+ "template": "freeform",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#111521",
+  "bgRaised": "#171D2D",
+  "text": "#F4F6FB",
+  "muted": "#98A2B8",
+  "fill": "#66D9EF",
+  "fillEdge": "#2E9DC2",
+  "emptyEdge": "#43506A",
+  "grow": "#FFB86C",
+  "numOnFill": "#0B1E27",
+  "ok": "#72D49A",
+  "bad": "#FF6B7A",
+  "cardBg": "#1B2234"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "find_if 停在命中处，count_if 数到尾",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 7.1744,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "lambda 当谓词，逐格判断",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#98A2B8",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.98,
+   "h": 0.272
+  },
+  "counter": {
+   "kind": "text",
+   "text": "size = 0    capacity = 0",
+   "x": 0.0,
+   "y": 1.6,
+   "fs": 0.3,
+   "color": "#F4F6FB",
+   "mono": true,
+   "anchor": "middle",
+   "w": 4.752,
+   "h": 0.3
+  },
+  "_empty": {
+   "kind": "text",
+   "text": "还没申请内存",
+   "x": 0.0,
+   "y": -1.0,
+   "fs": 0.2,
+   "color": "#98A2B8",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.584,
+   "h": 0.272
+  },
+  "_cap_row": {
+   "kind": "text",
+   "text": "申请内存: capacity 0 → 7",
+   "x": -0.3,
+   "y": 0.1632,
+   "fs": 0.24,
+   "color": "#FFB86C",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.816,
+   "h": 0.3264
+  },
+  "row:row": {
+   "kind": "cells",
+   "cap": 7,
+   "side": 0.4687,
+   "cx": -0.3,
+   "cy": -1,
+   "w": 3.6407,
+   "h": 0.4687,
+   "cells": [
+    {
+     "i": 0,
+     "x": -1.886,
+     "y": -1,
+     "s": 0.4687
+    },
+    {
+     "i": 1,
+     "x": -1.3574,
+     "y": -1,
+     "s": 0.4687
+    },
+    {
+     "i": 2,
+     "x": -0.8287,
+     "y": -1,
+     "s": 0.4687
+    },
+    {
+     "i": 3,
+     "x": -0.3,
+     "y": -1,
+     "s": 0.4687
+    },
+    {
+     "i": 4,
+     "x": 0.2287,
+     "y": -1,
+     "s": 0.4687
+    },
+    {
+     "i": 5,
+     "x": 0.7574,
+     "y": -1,
+     "s": 0.4687
+    },
+    {
+     "i": 6,
+     "x": 1.286,
+     "y": -1,
+     "s": 0.4687
+    }
+   ],
+   "idx": []
+  },
+  "show:lb_v0": {
+   "kind": "text",
+   "text": "12",
+   "x": -1.886,
+   "y": -1.7203,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.248,
+   "h": 0.272,
+   "id": "lb_v0"
+  },
+  "show:lb_v1": {
+   "kind": "text",
+   "text": "45",
+   "x": -1.3574,
+   "y": -1.7203,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.248,
+   "h": 0.272,
+   "id": "lb_v1"
+  },
+  "show:lb_v2": {
+   "kind": "text",
+   "text": "23",
+   "x": -0.8287,
+   "y": -1.7203,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.248,
+   "h": 0.272,
+   "id": "lb_v2"
+  },
+  "show:lb_v3": {
+   "kind": "text",
+   "text": "67",
+   "x": -0.3,
+   "y": -1.7203,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.248,
+   "h": 0.272,
+   "id": "lb_v3"
+  },
+  "show:lb_v4": {
+   "kind": "text",
+   "text": "34",
+   "x": 0.2287,
+   "y": -1.7203,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.248,
+   "h": 0.272,
+   "id": "lb_v4"
+  },
+  "show:lb_v5": {
+   "kind": "text",
+   "text": "89",
+   "x": 0.7574,
+   "y": -1.7203,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.248,
+   "h": 0.272,
+   "id": "lb_v5"
+  },
+  "show:lb_v6": {
+   "kind": "text",
+   "text": "56",
+   "x": 1.286,
+   "y": -1.7203,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.248,
+   "h": 0.272,
+   "id": "lb_v6"
+  },
+  "show:card_find": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 4.092,
+   "w": 5.0176,
+   "h": 2.212,
+   "rows": [
+    {
+     "text": "auto it = std::find_if(",
+     "w": 3.036
+    },
+    {
+     "text": "  readings.begin(),",
+     "w": 2.508
+    },
+    {
+     "text": "  readings.end(),",
+     "w": 2.244
+    },
+    {
+     "text": "  [](int v){ return v > 50; });",
+     "w": 4.092
+    }
+   ],
+   "cx": 4.5,
+   "cy": 0.15
+  },
+  "ptr:it": {
+   "kind": "ptr",
+   "id": "it",
+   "name": "it",
+   "above": true,
+   "x": 1.5204,
+   "tipY": -0.5256,
+   "baseY": -0.1356,
+   "txt": {
+    "text": "it",
+    "x": 1.5204,
+    "y": 0.0244,
+    "fs": 0.22,
+    "color": "#F4F6FB",
+    "mono": true,
+    "anchor": "middle",
+    "w": 0.2904,
+    "h": 0.22
+   },
+   "cx": 1.5204,
+   "cy": -0.1956,
+   "w": 0.2904,
+   "h": 0.66
+  },
+  "show:lb_e0": {
+   "kind": "text",
+   "text": "12 > 50 ? 否",
+   "x": 0,
+   "y": 0.62,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.504,
+   "h": 0.272,
+   "id": "lb_e0"
+  },
+  "show:lb_e3": {
+   "kind": "text",
+   "text": "67 > 50 ? 是——命中，停下",
+   "x": 0,
+   "y": 0.62,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.352,
+   "h": 0.272,
+   "id": "lb_e3"
+  },
+  "show:card_count": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 4.092,
+   "w": 5.0176,
+   "h": 2.212,
+   "rows": [
+    {
+     "text": "int n = std::count_if(",
+     "w": 2.904
+    },
+    {
+     "text": "  readings.begin(),",
+     "w": 2.508
+    },
+    {
+     "text": "  readings.end(),",
+     "w": 2.244
+    },
+    {
+     "text": "  [](int v){ return v > 80; });",
+     "w": 4.092
+    }
+   ],
+   "cx": 4.5,
+   "cy": 0.15
+  },
+  "show:lb_c3": {
+   "kind": "text",
+   "text": "67 > 80 ? 否",
+   "x": 0,
+   "y": 0.62,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.504,
+   "h": 0.272,
+   "id": "lb_c3"
+  },
+  "show:lb_c5": {
+   "kind": "text",
+   "text": "89 > 80 ? 是——计入",
+   "x": 0,
+   "y": 0.62,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.56,
+   "h": 0.272,
+   "id": "lb_c5"
+  },
+  "show:lb_done": {
+   "kind": "text",
+   "text": "扫到尾后",
+   "x": 0,
+   "y": 0.62,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.056,
+   "h": 0.272,
+   "id": "lb_done"
+  },
+  "show:card_out": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.584,
+   "w": 2.5096,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "// 真实输出",
+     "w": 1.452
+    },
+    {
+     "text": "Anomalies: 1",
+     "w": 1.584
+    }
+   ],
+   "cx": 4.5,
+   "cy": 0.15
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "谓词写在调用处，一眼可见",
+   "x": 0.0,
+   "y": -2.084,
+   "fs": 0.24,
+   "color": "#FFB86C",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.8016,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "find_if：首个命中即停",
+   "x": 0.0,
+   "y": -2.6604,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.2592,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "count_if：扫到尾，只数个数",
+   "x": 0.0,
+   "y": -3.2368,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.0416,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 5.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 2.4,
+     "dur": 0.5
+    },
+    {
+     "type": "fadein",
+     "target": "counter",
+     "t": 2.4,
+     "dur": 0.5
+    },
+    {
+     "type": "write",
+     "target": "_empty",
+     "t": 3.4,
+     "dur": 1.07
+    },
+    {
+     "type": "fadeout",
+     "target": "_empty",
+     "t": 5.5,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "grow_to",
+   "label": "申请 7",
+   "note": "capacity 0->7, 搬 0 格",
+   "duration": 6.15,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "_cap_row",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "row_create",
+     "target": "row:row",
+     "g": {
+      "kind": "cells",
+      "cap": 7,
+      "side": 0.4687,
+      "cx": -0.3,
+      "cy": -1,
+      "w": 3.6407,
+      "h": 0.4687,
+      "cells": [
+       {
+        "i": 0,
+        "x": -1.886,
+        "y": -1,
+        "s": 0.4687
+       },
+       {
+        "i": 1,
+        "x": -1.3574,
+        "y": -1,
+        "s": 0.4687
+       },
+       {
+        "i": 2,
+        "x": -0.8287,
+        "y": -1,
+        "s": 0.4687
+       },
+       {
+        "i": 3,
+        "x": -0.3,
+        "y": -1,
+        "s": 0.4687
+       },
+       {
+        "i": 4,
+        "x": 0.2287,
+        "y": -1,
+        "s": 0.4687
+       },
+       {
+        "i": 5,
+        "x": 0.7574,
+        "y": -1,
+        "s": 0.4687
+       },
+       {
+        "i": 6,
+        "x": 1.286,
+        "y": -1,
+        "s": 0.4687
+       }
+      ],
+      "idx": []
+     },
+     "t": 2.4,
+     "dur": 0.7
+    },
+    {
+     "type": "fadeout",
+     "target": "_cap_row",
+     "t": 5.6,
+     "dur": 0.3
+    },
+    {
+     "type": "counter",
+     "text": "size = 0    capacity = 7",
+     "t": 5.9,
+     "dur": 0.25
+    }
+   ]
+  },
+  {
+   "kind": "push",
+   "label": "push ×7 (normal)",
+   "note": "[0,7)",
+   "duration": 1.26,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 0,
+     "s": 1,
+     "cap": 7,
+     "counter": true,
+     "t": 0.0,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 1,
+     "s": 2,
+     "cap": 7,
+     "counter": true,
+     "t": 0.18,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 2,
+     "s": 3,
+     "cap": 7,
+     "counter": true,
+     "t": 0.36,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 3,
+     "s": 4,
+     "cap": 7,
+     "counter": true,
+     "t": 0.54,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 4,
+     "s": 5,
+     "cap": 7,
+     "counter": true,
+     "t": 0.72,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 5,
+     "s": 6,
+     "cap": 7,
+     "counter": true,
+     "t": 0.9,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 6,
+     "s": 7,
+     "cap": 7,
+     "counter": true,
+     "t": 1.08,
+     "dur": 0.18
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_v0",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_v0",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_v1",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_v1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_v2",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_v2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_v3",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_v3",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_v4",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_v4",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_v5",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_v5",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_v6",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_v6",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_find",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_find",
+     "cx": 4.5,
+     "cy": 0.15,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.4s",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 it 出场",
+   "note": "index 0",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_show",
+     "target": "it",
+     "t": 0.0,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [0,1) red",
+   "note": "",
+   "duration": 1.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#FF6B7A",
+      "cx": -1.886,
+      "cy": -1.0,
+      "w": 0.5687,
+      "h": 0.5687
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#FF6B7A",
+      "cx": -1.886,
+      "cy": -1.0,
+      "w": 0.5687,
+      "h": 0.5687
+     },
+     "t": 1.3,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_e0",
+   "note": "",
+   "duration": 1.67,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_e0",
+     "t": 0.0,
+     "dur": 1.67
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.2s",
+   "duration": 0.2,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_e0",
+   "note": "",
+   "duration": 1.88,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_e0",
+     "t": 1.48,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 it → 1",
+   "note": "index 1",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_move",
+     "target": "it",
+     "to": [
+      -1.3574,
+      -0.5256
+     ],
+     "t": 0.0,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [1,2) red",
+   "note": "",
+   "duration": 1.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#FF6B7A",
+      "cx": -1.3574,
+      "cy": -1.0,
+      "w": 0.5687,
+      "h": 0.5687
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#FF6B7A",
+      "cx": -1.3574,
+      "cy": -1.0,
+      "w": 0.5687,
+      "h": 0.5687
+     },
+     "t": 1.3,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 it → 2",
+   "note": "index 2",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_move",
+     "target": "it",
+     "to": [
+      -0.8287,
+      -0.5256
+     ],
+     "t": 0.0,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [2,3) red",
+   "note": "",
+   "duration": 1.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#FF6B7A",
+      "cx": -0.8287,
+      "cy": -1.0,
+      "w": 0.5687,
+      "h": 0.5687
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#FF6B7A",
+      "cx": -0.8287,
+      "cy": -1.0,
+      "w": 0.5687,
+      "h": 0.5687
+     },
+     "t": 1.3,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 it → 3",
+   "note": "index 3",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_move",
+     "target": "it",
+     "to": [
+      -0.3,
+      -0.5256
+     ],
+     "t": 0.0,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [3,4) green",
+   "note": "",
+   "duration": 1.9,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#72D49A",
+      "cx": -0.3,
+      "cy": -1.0,
+      "w": 0.5687,
+      "h": 0.5687
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#72D49A",
+      "cx": -0.3,
+      "cy": -1.0,
+      "w": 0.5687,
+      "h": 0.5687
+     },
+     "t": 1.6,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_e3",
+   "note": "",
+   "duration": 2.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_e3",
+     "t": 0.0,
+     "dur": 2.4
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_e3",
+   "note": "",
+   "duration": 2.3,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_e3",
+     "t": 1.9,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide card_find",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:card_find",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_count",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_count",
+     "cx": 4.5,
+     "cy": 0.15,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 it → 0",
+   "note": "index 0",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_move",
+     "target": "it",
+     "to": [
+      -1.886,
+      -0.5256
+     ],
+     "t": 0.0,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 it → 1",
+   "note": "index 1",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_move",
+     "target": "it",
+     "to": [
+      -1.3574,
+      -0.5256
+     ],
+     "t": 0.0,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 it → 2",
+   "note": "index 2",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_move",
+     "target": "it",
+     "to": [
+      -0.8287,
+      -0.5256
+     ],
+     "t": 0.0,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 it → 3",
+   "note": "index 3",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_move",
+     "target": "it",
+     "to": [
+      -0.3,
+      -0.5256
+     ],
+     "t": 0.0,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [3,4) red",
+   "note": "",
+   "duration": 1.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#FF6B7A",
+      "cx": -0.3,
+      "cy": -1.0,
+      "w": 0.5687,
+      "h": 0.5687
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#FF6B7A",
+      "cx": -0.3,
+      "cy": -1.0,
+      "w": 0.5687,
+      "h": 0.5687
+     },
+     "t": 1.3,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_c3",
+   "note": "",
+   "duration": 1.67,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_c3",
+     "t": 0.0,
+     "dur": 1.67
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.2s",
+   "duration": 0.2,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_c3",
+   "note": "",
+   "duration": 1.88,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_c3",
+     "t": 1.48,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 it → 4",
+   "note": "index 4",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_move",
+     "target": "it",
+     "to": [
+      0.2287,
+      -0.5256
+     ],
+     "t": 0.0,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 it → 5",
+   "note": "index 5",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_move",
+     "target": "it",
+     "to": [
+      0.7574,
+      -0.5256
+     ],
+     "t": 0.0,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [5,6) green",
+   "note": "",
+   "duration": 1.7,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#72D49A",
+      "cx": 0.7574,
+      "cy": -1.0,
+      "w": 0.5687,
+      "h": 0.5687
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#72D49A",
+      "cx": 0.7574,
+      "cy": -1.0,
+      "w": 0.5687,
+      "h": 0.5687
+     },
+     "t": 1.4,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_c5",
+   "note": "",
+   "duration": 2.15,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_c5",
+     "t": 0.0,
+     "dur": 2.15
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.4s",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_c5",
+   "note": "",
+   "duration": 2.2,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_c5",
+     "t": 1.8,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 it → 6",
+   "note": "index 6",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_move",
+     "target": "it",
+     "to": [
+      1.286,
+      -0.5256
+     ],
+     "t": 0.0,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 it → 7",
+   "note": "index 7",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_move",
+     "target": "it",
+     "to": [
+      1.5204,
+      -0.5256
+     ],
+     "t": 0.0,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_done",
+   "note": "",
+   "duration": 0.83,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_done",
+     "t": 0.0,
+     "dur": 0.83
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.3s",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_done",
+   "note": "",
+   "duration": 0.87,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_done",
+     "t": 0.47,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide card_count",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:card_count",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_out",
+   "note": "",
+   "duration": 2.19,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_out",
+     "cx": 4.5,
+     "cy": 0.15,
+     "t": 0.0,
+     "dur": 2.19
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.2s",
+   "duration": 1.2,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 15.27,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:card_out",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb_v0",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb_v1",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb_v2",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb_v3",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb_v4",
+     "t": 1.5,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb_v5",
+     "t": 1.8,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb_v6",
+     "t": 2.1,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 2.4,
+     "dur": 1.79
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 4.54,
+     "dur": 2.03
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 6.92,
+     "dur": 2.39
+    },
+    {
+     "type": "pulse",
+     "target": "counter",
+     "t": 12.27,
+     "dur": 1.0
+    }
+   ]
+  }
+ ]
+}

@@ -205,6 +205,16 @@ int&& r3 = std::move(x); // OK：std::move(x) 是 xvalue
 error: cannot bind rvalue reference of type 'int&&' to lvalue of type 'int'
 ```
 
+错误原文您不用光听笔者转述，咱们把上面的绑定代码原样放成了在线程序，您把 `r4` 的注释去掉再点「运行」，结果区就把 GCC 的原文顶给您：
+
+<OnlineCompilerDemo
+  title="动手验证：右值引用只绑右值"
+  source-path="code/examples/vol2/54_rvalue_bind.cpp"
+  description="在线验证绑定规则：默认状态三行绑定都能过、输出 42 11 10；解注释 r4 那行再点「运行」，结果区直接给出 GCC 的绑定错误原文。在线环境是 Compiler Explorer 的 GCC 15.2。"
+  run-options="-O2 -std=c++17"
+  allow-run
+/>
+
 值类别的分法和右值引用的绑定规则做成了动画，您可以播放、暂停，也可以按步进键一格格地看：
 
 <Anim id="lvalue-rvalue" />

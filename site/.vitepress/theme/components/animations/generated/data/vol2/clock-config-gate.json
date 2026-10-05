@@ -1,0 +1,781 @@
+{
+ "version": 1,
+ "id": "clock-config-gate",
+ "title": "时钟配置：编译期放行还是拦截",
+ "subtitle": "ClockConfig · static_assert 编译期校验",
+ "source": "projects/vol2-ch02-clock-config/02-dsl/clock-config-gate.yaml",
+ "backend": "web",
+ "template": "comparison_flow",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#111521",
+  "bgRaised": "#171D2D",
+  "text": "#F4F6FB",
+  "muted": "#98A2B8",
+  "fill": "#66D9EF",
+  "fillEdge": "#2E9DC2",
+  "emptyEdge": "#43506A",
+  "grow": "#FFB86C",
+  "numOnFill": "#0B1E27",
+  "ok": "#72D49A",
+  "bad": "#FF6B7A",
+  "cardBg": "#1B2234"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "时钟配置：编译期放行还是拦截",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.9136,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "ClockConfig · static_assert 编译期校验",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#98A2B8",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.792,
+   "h": 0.272
+  },
+  "show:g_hse": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "muted",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.188,
+   "w": 2.1136,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "HSE 8 MHz",
+     "w": 1.188
+    },
+    {
+     "text": "外部晶振",
+     "w": 1.056
+    }
+   ],
+   "cx": -5.25,
+   "cy": 1.05
+  },
+  "show:good_edge_1": {
+   "kind": "arrow",
+   "x1": -4.0132,
+   "y1": 1.05,
+   "x2": -3.0528,
+   "y2": 1.05,
+   "cx": -3.533,
+   "cy": 1.05,
+   "w": 0.9604,
+   "h": 0.0,
+   "label": {
+    "text": "倍频",
+    "x": -3.533,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:g_pll": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "muted",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.32,
+   "w": 2.2456,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "PLL ×9",
+     "w": 0.792
+    },
+    {
+     "text": "8 × 9 = 72",
+     "w": 1.32
+    }
+   ],
+   "cx": -1.75,
+   "cy": 1.05
+  },
+  "show:good_edge_2": {
+   "kind": "arrow",
+   "x1": -0.4472,
+   "y1": 1.05,
+   "x2": 0.2492,
+   "y2": 1.05,
+   "cx": -0.099,
+   "cy": 1.05,
+   "w": 0.6964,
+   "h": 0.0,
+   "label": {
+    "text": "sys_clock()",
+    "x": -0.099,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.2276,
+    "h": 0.2448
+   }
+  },
+  "show:g_sys": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "muted",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.716,
+   "w": 2.6416,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "SYSCLK 72 MHz",
+     "w": 1.716
+    },
+    {
+     "text": "恰在 72 上限",
+     "w": 1.584
+    }
+   ],
+   "cx": 1.75,
+   "cy": 1.05
+  },
+  "show:good_edge_3": {
+   "kind": "arrow",
+   "x1": 3.2508,
+   "y1": 1.05,
+   "x2": 4.0792,
+   "y2": 1.05,
+   "cx": 3.665,
+   "cy": 1.05,
+   "w": 0.8284,
+   "h": 0.0,
+   "label": {
+    "text": "static_assert",
+    "x": 3.665,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.4508,
+    "h": 0.2448
+   }
+  },
+  "show:g_ok": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "success",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.056,
+   "w": 1.9816,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "构建通过",
+     "w": 1.056
+    }
+   ],
+   "cx": 5.25,
+   "cy": 1.05
+  },
+  "show:b_hse": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "muted",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.188,
+   "w": 2.1136,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "HSE 8 MHz",
+     "w": 1.188
+    },
+    {
+     "text": "外部晶振",
+     "w": 1.056
+    }
+   ],
+   "cx": -5.25,
+   "cy": -1.55
+  },
+  "show:bad_edge_1": {
+   "kind": "arrow",
+   "x1": -4.0132,
+   "y1": -1.55,
+   "x2": -3.1848,
+   "y2": -1.55,
+   "cx": -3.599,
+   "cy": -1.55,
+   "w": 0.8284,
+   "h": 0.0,
+   "label": {
+    "text": "倍频",
+    "x": -3.599,
+    "y": -1.1976,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:b_pll": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "muted",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.584,
+   "w": 2.5096,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "PLL ×18",
+     "w": 0.924
+    },
+    {
+     "text": "8 × 18 = 144",
+     "w": 1.584
+    }
+   ],
+   "cx": -1.75,
+   "cy": -1.55
+  },
+  "show:bad_edge_2": {
+   "kind": "arrow",
+   "x1": -0.3152,
+   "y1": -1.55,
+   "x2": 0.1832,
+   "y2": -1.55,
+   "cx": -0.066,
+   "cy": -1.55,
+   "w": 0.4984,
+   "h": 0.0,
+   "label": {
+    "text": "sys_clock()",
+    "x": -0.066,
+    "y": -1.1976,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.2276,
+    "h": 0.2448
+   }
+  },
+  "show:b_sys": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "danger",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.848,
+   "w": 2.7736,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "SYSCLK 144 MHz",
+     "w": 1.848
+    },
+    {
+     "text": "超过 72 上限",
+     "w": 1.584
+    }
+   ],
+   "cx": 1.75,
+   "cy": -1.55
+  },
+  "show:bad_edge_3": {
+   "kind": "arrow",
+   "x1": 3.3168,
+   "y1": -1.55,
+   "x2": 4.0792,
+   "y2": -1.55,
+   "cx": 3.698,
+   "cy": -1.55,
+   "w": 0.7624,
+   "h": 0.0,
+   "label": {
+    "text": "static_assert",
+    "x": 3.698,
+    "y": -1.1976,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.4508,
+    "h": 0.2448
+   }
+  },
+  "show:b_fail": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "danger",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.056,
+   "w": 1.9816,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "编译失败",
+     "w": 1.056
+    }
+   ],
+   "cx": 5.25,
+   "cy": -1.55
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "谁改出越界配置，构建当场失败",
+   "x": 0.0,
+   "y": 0.0882,
+   "fs": 0.24,
+   "color": "#FFB86C",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.4352,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "全组的每一次构建，都自动查一遍配置",
+   "x": 0.0,
+   "y": -0.4882,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.3856,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 3.03,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 2.03
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 2.03,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show g_hse",
+   "note": "",
+   "duration": 1.83,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:g_hse",
+     "cx": 0.0,
+     "cy": 0.4,
+     "t": 0.0,
+     "dur": 1.83
+    }
+   ]
+  },
+  {
+   "kind": "move",
+   "label": "move g_hse",
+   "note": "to [-5.25, 1.05]",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "move",
+     "target": "show:g_hse",
+     "frm": [
+      0.0,
+      0.4
+     ],
+     "to": [
+      -5.25,
+      1.05
+     ],
+     "t": 0.0,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show good_edge_1",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:good_edge_1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show g_pll",
+   "note": "",
+   "duration": 1.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:g_pll",
+     "cx": -1.75,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 1.95
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show good_edge_2",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:good_edge_2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show g_sys",
+   "note": "",
+   "duration": 2.31,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:g_sys",
+     "cx": 1.75,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 2.31
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show good_edge_3",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:good_edge_3",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show g_ok",
+   "note": "",
+   "duration": 1.23,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:g_ok",
+     "cx": 5.25,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 1.23
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show b_hse",
+   "note": "",
+   "duration": 1.83,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:b_hse",
+     "cx": 0.0,
+     "cy": -0.55,
+     "t": 0.0,
+     "dur": 1.83
+    }
+   ]
+  },
+  {
+   "kind": "move",
+   "label": "move b_hse",
+   "note": "to [-5.25, -1.55]",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "move",
+     "target": "show:b_hse",
+     "frm": [
+      0.0,
+      -0.55
+     ],
+     "to": [
+      -5.25,
+      -1.55
+     ],
+     "t": 0.0,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show bad_edge_1",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:bad_edge_1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show b_pll",
+   "note": "",
+   "duration": 2.19,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:b_pll",
+     "cx": -1.75,
+     "cy": -1.55,
+     "t": 0.0,
+     "dur": 2.19
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show bad_edge_2",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:bad_edge_2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show b_sys",
+   "note": "",
+   "duration": 2.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:b_sys",
+     "cx": 1.75,
+     "cy": -1.55,
+     "t": 0.0,
+     "dur": 2.43
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show bad_edge_3",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:bad_edge_3",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show b_fail",
+   "note": "",
+   "duration": 1.23,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:b_fail",
+     "cx": 5.25,
+     "cy": -1.55,
+     "t": 0.0,
+     "dur": 1.23
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.5s",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 13.33,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:g_hse",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:good_edge_1",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:g_pll",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:good_edge_2",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:g_sys",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:good_edge_3",
+     "t": 1.5,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:b_hse",
+     "t": 1.8,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:bad_edge_1",
+     "t": 2.1,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:b_pll",
+     "t": 2.4,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:bad_edge_2",
+     "t": 2.7,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:b_sys",
+     "t": 3.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:bad_edge_3",
+     "t": 3.3,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 3.6,
+     "dur": 2.03
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 5.98,
+     "dur": 2.39
+    }
+   ]
+  }
+ ]
+}

@@ -9,6 +9,10 @@ export const meta = {
   ],
 }
 
+// 防御:某些调用层会把 args 序列化成字符串传入,先尝试解回对象
+if (typeof args === 'string') {
+  try { args = JSON.parse(args) } catch { /* 保持原样,走下方校验报错 */ }
+}
 if (!args || !Array.isArray(args.files) || !args.files.length || !args.batch) {
   throw new Error('需要 args: { batch: string, files: string[] }')
 }
