@@ -6,7 +6,7 @@ order: 3
 platform: host
 difficulty: advanced
 cpp_standard: [20]
-reading_time_minutes: 21
+reading_time_minutes: 47
 prerequisites:
   - "共享内存:shm_open 与映射"
   - "POSIX 文件 I/O:open/read/write 与 fd 的一生"

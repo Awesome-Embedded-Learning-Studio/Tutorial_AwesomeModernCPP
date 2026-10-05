@@ -96,7 +96,7 @@ grantpt 后:      uid=1000 gid=5 mode=0620
 
 节点当场就消失了,posix_openpt 之后清单里多出来的 6 现在没了,节点的生灭跟着 master 走,这就兑现了。slave 的这头还开着 fd,read 拿到的是 0(EOF),write 吃到的是 EIO。pts(4) 对这半场没写一个字的承诺,咱们按实测的口径记:master 没了,读端见到的是 EOF,写端见到的是 EIO。到了 E6 咱们再站到 master 那一侧把收场盘一遍,那边的量法又不一样了。
 
-收尾的时候还有个打包好的选择,openpty 一个调用就把这四步连同 open(slave) 全包了。还有个姿势值得咱们现在认下:posix_openpt 这批函数出自 UNIX 98 标准,man 3 posix_openpt 开出来的条件是 _XOPEN_SOURCE 不小于 600,同门的 grantpt 一家只要 500。C 的严格模式里少了这句宏就编不过,咱们拿一个只含必要头文件的小文件试过,无宏与 500 的两档都吃到了 implicit declaration,600 那档的编译才干净。不过 g++ 在 Linux 上默认就定义了 _GNU_SOURCE,声明全都是亮着的,咱们删掉 e1 源码顶上那句 `#define _XOPEN_SOURCE 600`,再按本篇的口径编了一遍,出来的零警告照样能过,留着的那句 define 就算一道保险。
+收尾的时候还有个打包好的选择,openpty 一个调用就把这四步连同 open(slave) 全包了。还有个姿势值得咱们现在认下:posix_openpt 这批函数出自 UNIX 98 标准,man 3 posix_openpt 开出来的条件是 `_XOPEN_SOURCE` 不小于 600,同门的 grantpt 一家只要 500。C 的严格模式里少了这句宏就编不过,咱们拿一个只含必要头文件的小文件试过,无宏与 500 的两档都吃到了 implicit declaration,600 那档的编译才干净。不过 g++ 在 Linux 上默认就定义了 `_GNU_SOURCE`,声明全都是亮着的,咱们删掉 e1 源码顶上那句 `#define _XOPEN_SOURCE 600`,再按本篇的口径编了一遍,出来的零警告照样能过,留着的那句 define 就算一道保险。
 
 ## E2:forkpty 一条龙:一个调用办齐 setsid、控制终端与 0/1/2
 

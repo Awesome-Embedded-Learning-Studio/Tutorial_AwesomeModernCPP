@@ -6,7 +6,7 @@ order: 5
 platform: host
 difficulty: intermediate
 cpp_standard: [20]
-reading_time_minutes: 20
+reading_time_minutes: 47
 prerequisites:
   - "Win32 文件 I/O:句柄、CreateFileW 与同步读写"
   - "OS 资源的 RAII 范式:fd、HANDLE 与映射的同一副骨架"

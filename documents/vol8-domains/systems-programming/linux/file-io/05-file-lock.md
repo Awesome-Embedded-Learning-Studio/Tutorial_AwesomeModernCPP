@@ -6,7 +6,7 @@ order: 5
 platform: host
 difficulty: intermediate
 cpp_standard: [20]
-reading_time_minutes: 21
+reading_time_minutes: 46
 prerequisites:
   - "POSIX 文件 I/O:open/read/write 与 fd 的一生"
   - "OS 资源的 RAII 范式:fd、HANDLE 与映射的同一副骨架"

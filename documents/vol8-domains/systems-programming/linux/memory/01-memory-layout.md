@@ -6,7 +6,7 @@ order: 1
 platform: host
 difficulty: intermediate
 cpp_standard: [20]
-reading_time_minutes: 15
+reading_time_minutes: 31
 prerequisites:
   - "mmap 内存映射:把文件贴进地址空间"
   - "页缓存与持久性:write() 返回之后发生了什么"

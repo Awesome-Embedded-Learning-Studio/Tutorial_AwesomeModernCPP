@@ -6,7 +6,7 @@ order: 1
 platform: host
 difficulty: intermediate
 cpp_standard: [20]
-reading_time_minutes: 22
+reading_time_minutes: 48
 prerequisites:
   - "OS 资源的 RAII 范式:fd、HANDLE 与映射的同一副骨架"
   - "错误处理范式:从 errno 到 expected"

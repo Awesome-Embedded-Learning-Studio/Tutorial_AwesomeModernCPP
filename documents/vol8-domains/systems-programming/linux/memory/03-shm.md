@@ -6,7 +6,7 @@ order: 3
 platform: host
 difficulty: advanced
 cpp_standard: [20]
-reading_time_minutes: 19
+reading_time_minutes: 39
 prerequisites:
   - "mmap 内存映射:把文件贴进地址空间"
   - "OS 资源的 RAII 范式:fd、HANDLE 与映射的同一副骨架"
