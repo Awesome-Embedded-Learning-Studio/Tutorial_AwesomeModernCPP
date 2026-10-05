@@ -19,6 +19,17 @@ tags:
 - 入门
 - 基础
 title: const 初探
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #171)"
+      en: "Contributed exercise solutions and article revisions (PR #171)"
 ---
 # 哟哟哟！这不 const 吗？几天不见这么不可变了
 
