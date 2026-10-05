@@ -49,7 +49,7 @@ current_status:
   variant: polishing   # polishing 金边（默认）| draft 灰蓝 | verified 绿
 ```
 
-行为（组件 `site/.vitepress/theme/components/StatusToast.vue`）：读者进入带此字段的文章时，右下角滑入提示框，悬停暂停倒计时，约 6 秒后滑出，可点 × 关闭。同一篇文章的同一状态内容只弹一次（localStorage 记录）；修改状态文本后老读者会再看到一次。文章状态稳定后把这个字段删掉即可，无需其他清理。
+行为（组件 `site/.vitepress/theme/components/StatusToast.vue`）：读者进入带此字段的文章时，右下角滑入提示框，悬停暂停倒计时，约 6 秒后滑出，可点 × 关闭。每次进入页面（含刷新）都会再弹一次。文章状态稳定后把这个字段删掉即可，无需其他清理。
 
 ## 标签体系（VALID_TAGS）
 

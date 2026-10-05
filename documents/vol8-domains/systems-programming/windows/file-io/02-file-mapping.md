@@ -439,7 +439,7 @@ $ ./demo4.exe
 
 (3)~(5) 行把页尾的语义补齐了:16 字节文件的视图,EOF 之后、页之内的那一段,读出来的是零。咱们写进去也不报错,咱们接着刷 `FlushViewOfFile`,看到的文件还是 16 字节、内容原样,写了也永远到不了文件。这与 Linux 侧的页尾语义完全同一套:文件末尾不满一页的部分,读出来的是零,写了它也不会进文件。
 
-咱们在前面的访问表里已经见过 access violation 这个词,e1 的硬写也已经领教过一回,现在咱们把它真正拍下来。而在 Windows 那儿,它属于结构化异常(structured exception)里的一种。截短的剧本既然在文件系统那一层就被拦下了,那结构化异常是不是就用不上了?其实不是。文档里明说了:`"To guard against EXCEPTION_IN_PAGE_ERROR exceptions, use structured exception handling to protect any code that writes to or reads from a memory mapped view of a file other than the page file"`。而网络断连、磁盘满、设备故障,页调度器拿不回数据的那些时刻,异常也是照样来的。最常见的当属写只读视图,文档的访问表里写得白纸黑字:`"An attempt to write to the file view results in an access violation"`。咱们实测接一个。笔者得多交代一句:咱们用的 GCC 不认 `__try/__except` 这个语言扩展(MSVC 与 Clang 才支持),咱们就改用 `AddVectoredExceptionHandler` 挂上向量化处理器,记录完一笔就放行了,让进程以自身的异常码终止。分发链的完整机制,下一篇咱们专门走完(`demo2` 的续集,hex 打印的辅助函数略。`in_watch` 负责判断出错地址有没有落进咱们登记要监视的那段视图,这段区间与它的写法同样从略):
+咱们在前面的访问表里已经见过 access violation 这个词,e1 的硬写也已经领教过一回,现在咱们把它真正拍下来。而在 Windows 那儿,它属于结构化异常(structured exception)里的一种。截短的剧本既然在文件系统那一层就被拦下了,那结构化异常是不是就用不上了?其实不是。文档里明说了:`"To guard against EXCEPTION_IN_PAGE_ERROR exceptions, use structured exception handling to protect any code that writes to or reads from a memory mapped view of a file other than the page file"`。而网络断连、磁盘满、设备故障,页调度器拿不回数据的那些时刻,异常也是照样来的。最常见的当属写只读视图,文档的访问表里写得白纸黑字:`"An attempt to write to the file view results in an access violation"`。咱们实测接一个。笔者得多交代一句:咱们用的 GCC 不认 `__try/__except` 这个语言扩展(MSVC 与 Clang 才支持),咱们就改用 `AddVectoredExceptionHandler` 挂上向量化处理器,记录完一笔就放行了,让进程以自身的异常码终止。分发链的完整的机制,下一篇咱们专门走完(`demo2` 的续集,hex 打印的辅助函数略。`in_watch` 负责判断出错地址有没有落进咱们登记要监视的那段视图,这段区间与它的写法同样从略):
 
 ```cpp
 static LONG WINAPI watch_handler(EXCEPTION_POINTERS* epi)

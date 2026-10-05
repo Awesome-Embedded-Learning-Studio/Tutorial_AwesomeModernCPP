@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // 文章状态提示框:frontmatter 里带 current_status 的文章,进入页面时
-// 右下角滑入一个 MC 成就风格的提示。同一篇的同一状态内容只弹一次
-// (localStorage 记录),状态文本变更后老读者会再看到一次更新。
+// 右下角滑入一个 MC 成就风格的提示。每次进入(含刷新)都会再弹一次,
+// 悬停暂停倒计时,超时或点 × 滑出。
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vitepress'
 
@@ -53,12 +53,6 @@ let hideTimer: ReturnType<typeof setTimeout> | null = null
 let showTimer: ReturnType<typeof setTimeout> | null = null
 let remainingMs = 6000
 let startedAt = 0
-let shownKey = ''
-
-function storageKey(cfg: StatusConfig): string {
-  const path = route.data.path || window.location.pathname
-  return `status-toast:${path}:${cfg.title}::${cfg.detail}`
-}
 
 function clearTimers() {
   if (showTimer) clearTimeout(showTimer), (showTimer = null)
@@ -92,15 +86,9 @@ function resumeHide() {
   scheduleHide()
 }
 
-function show(cfg: StatusConfig) {
+function show() {
   clearTimers()
   remainingMs = 6000
-  shownKey = storageKey(cfg)
-  try {
-    window.localStorage.setItem(shownKey, '1')
-  } catch {
-    // 隐私模式等场景下存不进去就算了,每次进页都会再弹一次
-  }
   showTimer = setTimeout(() => {
     visible.value = true
     startedAt = Date.now()
@@ -109,16 +97,7 @@ function show(cfg: StatusConfig) {
 }
 
 function maybeShow() {
-  const cfg = config.value
-  if (!cfg) return
-  const key = storageKey(cfg)
-  let seen = false
-  try {
-    seen = window.localStorage.getItem(key) === '1'
-  } catch {
-    seen = false
-  }
-  if (!seen) show(cfg)
+  if (config.value) show()
 }
 
 onMounted(maybeShow)

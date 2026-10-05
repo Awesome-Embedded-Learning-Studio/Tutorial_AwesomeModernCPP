@@ -1,6 +1,6 @@
 ---
 title: "结构化异常:SEH 与 VEH"
-description: "Windows 侧访问出错的完整机制链。从上一篇写只读视图收到的 0xC0000005 接起:异常记录的实测口径 info[0] 0=读/1=写/8=DEP 执行(8 不是写)、info[1] 精确到字节;VEH 头插链序与修现场后 CONTINUE_EXECUTION 同一条写指令重放成功、不修现场则原地打转;MinGW 没有 __try/__except 关键字,唯一活路是 excpt.h 的 __try1/__except1 宏,独家实测 UCRT 变体 filter ABI(第 1 参是 EXCEPTION_POINTERS 形状)、析构混用编译期零检查、-O2 代码生成抽奖;没人处理时退出码就是异常码本身;IN_PAGE_ERROR 的剧本被 ERROR_USER_MAPPED_FILE 整个拦下、越文件尾读到的是零填充(Linux 同场景是 SIGBUS),本地复现不了这件事本身就是答案;MinGW 的 throw 走 0x20474343 不是 0xE06D7363,VEH 看得见 throw,SEH 作用域截得住穿越的 C++ 异常"
+description: "Windows 侧访问出错的完整的机制链。从上一篇写只读视图收到的 0xC0000005 接起:异常记录的实测口径 info[0] 0=读/1=写/8=DEP 执行(8 不是写)、info[1] 精确到字节;VEH 头插链序与修现场后 CONTINUE_EXECUTION 同一条写指令重放成功、不修现场则原地打转;MinGW 没有 __try/__except 关键字,唯一活路是 excpt.h 的 __try1/__except1 宏,独家实测 UCRT 变体 filter ABI(第 1 参是 EXCEPTION_POINTERS 形状)、析构混用编译期零检查、-O2 代码生成抽奖;没人处理时退出码就是异常码本身;IN_PAGE_ERROR 的剧本被 ERROR_USER_MAPPED_FILE 整个拦下、越文件尾读到的是零填充(Linux 同场景是 SIGBUS),本地复现不了这件事本身就是答案;MinGW 的 throw 走 0x20474343 不是 0xE06D7363,VEH 看得见 throw,SEH 作用域截得住穿越的 C++ 异常"
 chapter: 8
 order: 3
 platform: host
@@ -426,7 +426,7 @@ done
 
 ## 另一侧怎么看
 
-咱们把两侧的分野摆开收尾。同样是访问出错的场景，Linux 送的是信号，handler 拿的是 siginfo，`si_addr` 给地址、`si_code` 分病因，咱们想在 handler 里修现场，得从第三个参数的 ucontext 里摸上下文。Windows 送的是异常码，filter 与 VEH 拿的是 EXCEPTION_RECORD，info[0] 分读写与 DEP、info[1] 给地址，修现场有现成的 `EXCEPTION_CONTINUE_EXECUTION`，重放是分发器替您做的。文件被砍短了以后再摸越界，Linux 用的是 SIGBUS 追责，Windows 把截短拦在了 `SetEndOfFile` 那里，越界读换来的是一排零填充，IN_PAGE_ERROR 只留给真正的 I/O 故障。Ctrl+C 也是分岔的一处，咱们顺手验过(e6，输出删节了两行):VEH 与 `SetConsoleCtrlHandler` 同时在岗，控制台事件发了出去，VEH 的分发计数是零，ctrl handler 却在**另一个线程**里跑了，文档的原话是 `the system creates a new thread in the process to execute the function`，控制台事件走的是新线程，压根儿不进异常的分发器。C 与 Break 咱们都发过，稳定送达的是 CTRL_BREAK。CTRL_C 咱们在 WSL interop 链起的进程里是收不到的，这件事的根因，后来在 [控制台事件与 APC](../process/02-console-apc.md) 那一篇查清了，是启动链继承下来的忽略位，咱们用一句 `SetConsoleCtrlHandler(NULL, FALSE)` 把它解除之后，定向发送的 CTRL_C 就能实收，控制台窗口的真假不在因果里。MinGW 的 `signal(SIGINT)` 只是 CRT 在上面的模拟，正主的完整机制，咱们在那一篇里讲全了。
+咱们把两侧的分野摆开收尾。同样是访问出错的场景，Linux 送的是信号，handler 拿的是 siginfo，`si_addr` 给地址、`si_code` 分病因，咱们想在 handler 里修现场，得从第三个参数的 ucontext 里摸上下文。Windows 送的是异常码，filter 与 VEH 拿的是 EXCEPTION_RECORD，info[0] 分读写与 DEP、info[1] 给地址，修现场有现成的 `EXCEPTION_CONTINUE_EXECUTION`，重放是分发器替您做的。文件被砍短了以后再摸越界，Linux 用的是 SIGBUS 追责，Windows 把截短拦在了 `SetEndOfFile` 那里，越界读换来的是一排零填充，IN_PAGE_ERROR 只留给真正的 I/O 故障。Ctrl+C 也是分岔的一处，咱们顺手验过(e6，输出删节了两行):VEH 与 `SetConsoleCtrlHandler` 同时在岗，控制台事件发了出去，VEH 的分发计数是零，ctrl handler 却在**另一个线程**里跑了，文档的原话是 `the system creates a new thread in the process to execute the function`，控制台事件走的是新线程，压根儿不进异常的分发器。C 与 Break 咱们都发过，稳定送达的是 CTRL_BREAK。CTRL_C 咱们在 WSL interop 链起的进程里是收不到的，这件事的根因，后来在 [控制台事件与 APC](../process/02-console-apc.md) 那一篇查清了，是启动链继承下来的忽略位，咱们用一句 `SetConsoleCtrlHandler(NULL, FALSE)` 把它解除之后，定向发送的 CTRL_C 就能实收，控制台窗口的真假不在因果里。MinGW 的 `signal(SIGINT)` 只是 CRT 在上面的模拟，正主的完整的机制，咱们在那一篇里讲全了。
 
 与咱们已有工具的关系也交代一句。Win32 调用的失败，走的是 GetLastError 加 error_code 的老路，工具与双出口的分寸定义在 [错误处理范式](../../thinking/02-error-paradigm.md) 里。本篇讲的异常，伺候的是另一类东西:调用没有返回失败，是执行本身出了故障。两条路是不相干的，一条管预料内的失败，另一条管预料外的崩溃，您写防御代码的时候，两边咱们都得想。Linux 侧的完整剧本，请您移步 [mmap 内存映射:把文件贴进地址空间](../../linux/file-io/02-mmap-memory-mapping.md) 的 SIGBUS 一节，拿它对读今天的零填充，分岔的地方一眼就能看清。
 
