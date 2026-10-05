@@ -1,0 +1,37 @@
+# 场景 1:Linux 原生(if 写法,UNIX 分支)
+-- [if-variant] branch = UNIX  (CMAKE_SYSTEM_NAME=Linux)
+posix branch selected (epoll.h included)
+
+# 场景 2:裸覆盖 g++.exe + make(if 写法被平台身份骗走,构建失败)
+-- [if-variant] branch = UNIX  (CMAKE_SYSTEM_NAME=Linux)
+/home/charliechen/sysprog_ch07_scratch/e3_cmake_branches/variant_if/main.cpp:7:12: fatal error: sys/epoll.h: No such file or directory
+make[2]: *** [CMakeFiles/demo.dir/build.make:79: CMakeFiles/demo.dir/main.cpp.o] Error 1
+(构建失败:g++.exe 没有 <sys/epoll.h>,而 if(UNIX) 把 POSIX 分支选给了它)
+
+# 场景 3:toolchain 文件 + make(if 写法,WIN32 分支,构建成功)
+-- [if-variant] branch = WIN32  (CMAKE_SYSTEM_NAME=Windows)
+win32 branch selected (windows.h included)
+
+# 场景 4:genex 写法 configure 期(原文未展开)+ 两种身份下的展开结果
+-- [genex-variant] raw text at configure time: $<PLATFORM_ID:Windows>
+-- [genex-variant] CMAKE_SYSTEM_NAME=Linux
+-- Build files have been written to: /home/charliechen/sysprog_ch07_scratch/e3_cmake_branches/b4-genex-bare
+bare 下 genex 构建失败数:1 (同 if 写法一样被骗)
+-- [genex-variant] raw text at configure time: $<PLATFORM_ID:Windows>
+-- [genex-variant] CMAKE_SYSTEM_NAME=Windows
+-- Build files have been written to: /home/charliechen/sysprog_ch07_scratch/e3_cmake_branches/b5-genex-tc
+
+# 场景 5:ninja -v 抓到的编译命令行(genex 生成期展开的直接证据)
+  toolchain(Windows): -DGENEX_SAYS_WINDOWS=1
+
+# 场景 6:make 生成器 + C: 路径编译器 + 增量重编的失败现场(独家记录)
+CMakeFiles/demo.dir/compiler_depend.make:4: *** multiple target patterns.  Stop.
+make[1]: *** [CMakeFiles/Makefile2:87: CMakeFiles/demo.dir/all] Error 2
+make: *** [Makefile:91: all] Error 2
+(make 把编译器路径里的 C: 当目标分隔符,增量重编必炸;解法:换 Ninja 生成器)
+[2/2] Linking CXX executable demo.exe
+win32 branch selected (windows.h included)
+[2/2] Linking CXX executable demo.exe
+win32 branch selected (windows.h included)
+(Ninja 下增量重编正常;interop 产物每次重链都要补 chmod +x)
+  linux 原生    : -DGENEX_SAYS_LINUX=1

@@ -1,0 +1,23 @@
+$ ./e1c_size_sources.exe
+准备:文件 100 字节(内容无意义,尺寸是 100)
+
+[1] 句柄 A 的三路尺寸读数
+    GetFileSizeEx                       -> 100
+    GetFileInformationByHandle 64 位拼装 -> 100
+    FileStandardInfo.EndOfFile          -> 100
+    GetFileSize(老 32 位版)             -> 100   (与上面一致)
+
+[2] 句柄 B 在 1 MiB 处写 1 字节后,句柄 A 重新读
+    GetFileSizeEx                       -> 1048577
+    BY_HANDLE_FILE_INFORMATION 64 位拼装 -> 1048577
+    FileStandardInfo.EndOfFile          -> 1048577
+    FileStandardInfo.AllocationSize     -> 1052672  (分配尺寸,含洞策略)
+    —— 尺寸挂在文件上,A 不动也看得见
+
+[3] 两次 CreateFileW 的身份字段(句柄 A vs 句柄 B)
+    卷序列号      A=DA3672FA  B=DA3672FA  (同盘)
+    nFileIndex    A=002300000001B2AD
+                  B=002300000001B2AD  (相同 -> 同一文件;指针独立是另一回事,见 e1d)
+    链接数        A=1  B=1  (NTFS 硬链接计数,FAT 上不可靠)
+
+收尾:临时文件与目录已清理

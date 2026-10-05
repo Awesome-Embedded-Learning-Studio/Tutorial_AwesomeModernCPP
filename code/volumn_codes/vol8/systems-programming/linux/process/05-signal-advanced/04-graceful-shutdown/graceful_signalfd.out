@@ -1,0 +1,25 @@
+t=  1ms [RUNNING ] 服务器就绪:127.0.0.1:40978,3 个 worker(pid 655995/655996/655997),
+    SIGTERM/SIGINT 已阻塞并挂上 signalfd;supervisor 将在 t=300ms 发 SIGTERM
+t= 52ms [RUNNING ] accept 新连接 → 派发给 w0
+t= 52ms [w0 pid=655995] 接单:「req-1」开始处理(250ms 在途)
+t=152ms [RUNNING ] accept 新连接 → 派发给 w1
+t=152ms [w1 pid=655996] 接单:「req-2」开始处理(250ms 在途)
+t=301ms [RUNNING ] signalfd 读到 signo=15(SIGTERM)——信号作为事件进入循环,不是 handler
+t=301ms [DRAINING] 状态机:close(listen_fd),停止接新连接
+t=301ms [DRAINING] 状态机:向 3 个 worker 发 drain 指令(干完在途就退)
+t=301ms [w2 pid=655997] 收到 drain:队列已清空,退场
+t=301ms [DRAINING] w2(pid=655997)的 pidfd 可读 → waitid(P_PIDFD) 收尸完成
+t=302ms [w0 pid=655995] 完工:已回「ack(req-1) by w0
+」
+t=302ms [w0 pid=655995] 收到 drain:队列已清空,退场
+t=302ms [DRAINING] w0(pid=655995)的 pidfd 可读 → waitid(P_PIDFD) 收尸完成
+t=302ms [client] 第 1 条连接收到:「ack(req-1) by w0」
+t=402ms [w1 pid=655996] 完工:已回「ack(req-2) by w1
+」
+t=402ms [w1 pid=655996] 收到 drain:队列已清空,退场
+t=402ms [DRAINING] w1(pid=655996)的 pidfd 可读 → waitid(P_PIDFD) 收尸完成
+t=402ms [REAPING ] 状态机:3 个 worker 全部退场,收尸完毕
+t=402ms [EXIT    ] 清理退场:关 signalfd、收 supervisor/client
+t=403ms [client] 第 2 条连接收到:「ack(req-2) by w1」(SIGTERM 时在途,drain 放它做完)
+t=503ms [client] 关停后再连一条:connect → -1(Connection refused)
+t=504ms [EXIT    ] 服务进程退出(优雅关闭完成)

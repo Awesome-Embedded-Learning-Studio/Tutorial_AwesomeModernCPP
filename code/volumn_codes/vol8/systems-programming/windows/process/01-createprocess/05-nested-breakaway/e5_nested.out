@@ -1,0 +1,31 @@
+E5 nested jobs & breakaway | driver pid=17768 | driver itself inside some job? 1
+
+== [1] 世袭:Job 里的进程生的孩子,自动进同一个 Job ==
+    [breakout] self in job? 1
+    [breakout] grandchild spawned WITHOUT any flag -> in job? 1
+child exit code=10 (10=grandchild IN job, 11=escaped)
+
+== [2] breakaway 允许位:job 带 BREAKAWAY_OK,创建带 CREATE_BREAKAWAY_FROM_JOB ==
+    [trybreak] breakaway spawn OK -> grandchild in job? 0 (0 = walked out)
+child exit code=22 (21=failed escape, 22=WALKED OUT)
+
+== [3] 强闯:job 没开允许位,创建硬带 CREATE_BREAKAWAY_FROM_JOB ==
+    [trybreak] CreateProcessW(CREATE_BREAKAWAY_FROM_JOB) FAILED err=5
+child exit code=20 (20=CreateProcessW REFUSED)
+
+== [4] 静默出走:SILENT_BREAKAWAY_OK,不带旗也走 ==
+    [breakout] self in job? 1
+    [breakout] grandchild spawned WITHOUT any flag -> in job? 0
+child exit code=11 (10=stayed, 11=SILENTLY escaped)
+
+== [5] 嵌套:子 Job 限额 256MB,父 Job 48MB,谁说了算? ==
+(a) naive: AssignProcessToJobObject(parent, child_job_handle) -> 0 (err=6)
+    ^ hProcess 只认进程句柄;嵌套不是这么建的
+(b) assign process to parent first (ret=1), then to child (ret=1) -> hierarchy formed
+process is member of BOTH jobs? parent=1 child=1
+    [alloc child] pid=30276 target=384MB step=8MB
+    [alloc child] VirtualAlloc FAILED at total=40MB err=1455
+    [alloc child] ended at 40MB
+alloc child exit=42 (42); verdict: fails ~40MB -> PARENT cap binds; fails ~248MB -> only child cap
+
+E5 done.

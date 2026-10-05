@@ -50,7 +50,7 @@ estimated_effort: epic
 | 6a | `gui-graphics/` | GUI 与图形（桌面） | XCB 渲染基础 + GUI 核心概念（含协程） | index 骨架 |
 | 6b | `embedded-gui/` | 嵌入式 GUI | OLED/LCD 显示 + 触摸 + 轻量 Widget 框架 | 待创建 |
 | 7 | `algorithms/` | C++ 工程数据结构与算法 | 工程数据结构 + LeetCode 刷题解析（持续扩展） | index 骨架，需重建 |
-| 8 | `systems-programming/` | 系统编程 | OS 应用层 API 全覆盖，Modern C++ 封装 | 一期已落地（2026-09：Linux/Windows 两侧并行结构，总纲 + 两侧文件 I/O 与文件映射，5 篇正文 + 5 index；进程/异步 I/O 等待续） |
+| 8 | `systems-programming/` | 系统编程 | OS 应用层 API 全覆盖，Modern C++ 封装 | **中文全卷完工**（2026-10-05：ch00-ch07 共 40 篇全部闭环 READY，80+ 路实验入册；EN 40 篇挂账待拍板） |
 
 ### 大型项目（外置到 `todo/020-projects.md`）
 
@@ -92,7 +92,7 @@ estimated_effort: epic
 
 - 旧版路线 28 个 bullet 全 Linux 命名、零 Windows 文章槽位，与已落地的「Linux/Windows 两侧镜像」结构脱节；本节重写后口径以「领域 8：系统编程路线」节为准。
 - 粒度判据改为「一篇 = 一个能动手实验的核心问题」，信号拆 2 篇、进程拆 3 篇，单篇 200-500 行。
-- ch00 原 01（为什么需要系统编程）内容已被 00-overview 吸收，不再单列；02/03 合并为 2 篇概念篇，材料从 L01/W01 平移，契约工具唯一定义处随之挪入。
+- ch00 原 01（为什么需要系统编程）内容已被 00-overview 吸收，不再单列；02/03 合并为 2 篇概念篇，材料从 L01/W01 平移，公共工具唯一定义处随之挪入（2026-10 已落地）。
 - 大型项目文件名勘误：`todo/021-projects.md` 不存在，实为 `todo/020-projects.md`，全文已改。
 
 ---
@@ -478,93 +478,94 @@ Phase 1 + Phase 2 完成后，用综合项目串联全部知识。
 - **一篇 = 一个能动手实验的核心问题**。每个机制配可复现实验与真实输出，机制讲透再走；单篇 200-500 行，超出就拆。
 - **平台组织三分类**：共享机制在主平台（Linux）深讲一次；Windows 镜像篇小节同名对照，API 拼写对照可薄；**机制分叉**（如截短拦截 vs SIGBUS、64KiB 分配粒度、读满语义）两侧都全量讲。
 - **Windows 独有能力**（IOCP、ACL、注册表、SEH、Console API）独立成篇，开篇声明自己是哪一层的扩展，不当缩水镜像写。
-- **契约工具唯一定义处**：unique_fd / unique_handle / mapped_region / sys_call / errno_code 全家族的定义挪到 ch00 概念篇，L01/W01 修订时改为引用，防止两侧各定义一遍。错误工具必须「定义即用」（L01 的 errno_code 定义后全篇零调用是反面教训）。
+- **公共工具唯一定义处**：unique_fd / unique_handle / mapped_region / sys_call / errno_code 全家族的定义挪到 ch00 概念篇，L01/W01 修订时改为引用，防止两侧各定义一遍（2026-10 已落地）。错误工具必须「定义即用」（L01 的 errno_code 定义后全篇零调用是反面教训）。
 - 与兄弟子域划界：epoll 机制与事件循环已在 vol5 ch06 与 networking 深讲，本域 ch04 只做全景衔接不重开课。
 
-### 现状与既定修订（2026-09 一期已落地 5 篇 + 5 index）
+### 现状（2026-10-02：ch00+ch01 全部交付）
 
-- 已有：`00-overview`、`linux/file-io/01-02`、`windows/file-io/01-02`。
-- 既定拆分两处：L01 拆出「页缓存与持久性」独立篇（→ linux/file-io/03）；W02 拆出「结构化异常：SEH 与 VEH」独立篇（→ windows/file-io/03，约 280 行）。
-- 存量补课：L01 补 EINTR/fcntl 族/dup3 与 close-on-exec/SEEK 家族；L02 扩写 mprotect、/proc/self/maps、MAP_SHARED 跨进程演示、msync/madvise 实验化（约 470 行，不拆）；W01 补 SetFilePointerEx/GetFileSizeEx、FlushFileBuffers、dwShareMode 专节；00-总纲扩两大阵营节 + MSYS2 安装钥匙 + 压栈指令史；reading_time 与 difficulty 标签全线复核（现值低估约 2.5-3 倍）。
+- 已交付 13 篇全部闭环 READY（分支 feat/system_programming，未 commit）：`thinking/01-02`（思维基石）、`linux/file-io/01-06`、`windows/file-io/01-05`，加总纲与各级 index；13 路实验入册 `code/volumn_codes/vol8/systems-programming/`（WSL2 真机 + MSYS2 interop 跑 Windows 原生 .exe），实验简报在 `.claude/drafts/sysprog-briefs/`。
+- 既定修订全部落地：L01 补课（EINTR/fcntl/dup3-CLOEXEC/SEEK 家族/exp 编号双映射）、L02 整篇重写（2026-09）+ 存量 lint 清零（2026-10）、W01 补课（指针尺寸/FlushFileBuffers/dwShareMode 矩阵）、W02 扩写（VirtualProtect/SEC_RESERVE/选型实测）、00-总纲刷新（进度句/章表/思维基石统一）。
+- 口径变更记录：「契约」是作者确认的禁词——全子卷改「公共工具」，章节名统一「思维基石」；实验编号口径为 Linux 大写 E 系、Windows 小写 e 系、L01 用 exp1-11↔存档 E1-E3 双映射，跨篇撞号靠「互不相干」桥接句。
+- EN 全空白（挂账，节奏待定）。
 
-### ch00 思维与契约（2 篇，材料从 L01/W01 平移）
+### ch00 思维基石（2 篇）✅ 已交付
 
-- 01 OS 资源的 RAII 范式（unique_fd/unique_handle/mapped_region 同构 move-only 骨架、unique_ptr+删除器、scope_exit/unique_resource C++23）
-- 02 错误处理范式：从 errno 到 expected（errno/GetLastError 边界装箱一次成 error_code、sys_call() 模板、双出口约定：工具层 expected、应用顶层 system_error）
+- 01 OS 资源的 RAII 范式 ✅（539 行——公共工具唯一定义处之一）
+- 02 错误处理范式：从 errno 到 expected ✅（598 行——sys_call/errno_code/last_error_code 定义处）
 
-### ch01 文件 I/O（Linux 6 篇 + Windows 5 篇）
+### ch01 文件 I/O（Linux 6 篇 + Windows 5 篇）✅ 已交付
 
 Linux（`linux/file-io/`）：
 
-- 01 POSIX 文件 I/O（**已有，补课**：EINTR、fcntl 族、dup3 与 close-on-exec、SEEK_DATA/SEEK_HOLE）
-- 02 mmap 内存映射（**已有，扩写**：mprotect 基本语义与 guard page、/proc/self/maps 观察法、MAP_SHARED 跨进程可见性演示、msync/madvise 配实验）
-- 03 页缓存与持久性（**新，从 01 拆出**：双重拷贝账本、脏页与写回时点、fsync/fdatasync/O_SYNC、崩溃一致性）
-- 04 std::filesystem：目录与元数据（**新**：path 操作、目录迭代、权限与空间查询、实战：目录同步工具）
-- 05 文件锁：flock 与 fcntl 记录锁（**新**：两种机制对比、fork 继承行为、NFS 陷阱、RAII file_lock）
-- 06 inotify 文件监控（**新**：事件类型、递归监控、inotify+epoll 集成）
+- 01 POSIX 文件 I/O ✅（468 行——补课四主题全落、定义改引用思维基石）
+- 02 mmap 内存映射 ✅（622 行——2026-09 整篇重写，2026-10 存量清零）
+- 03 页缓存与持久性 ✅（345 行——E1-E6 六实验）
+- 04 std::filesystem：目录与元数据 ✅（425 行——含双树 diff 实战）
+- 05 文件锁：flock 与 fcntl 记录锁 ✅（467 行——E2d 全释放陷阱+OFD 对照）
+- 06 inotify 文件监控 ✅（493 行——合并四元组实测+溢出 16384）
 
 Windows（`windows/file-io/`）：
 
-- 01 Win32 文件 I/O（**已有，补课**：SetFilePointerEx/GetFileSizeEx、FlushFileBuffers、dwShareMode 专节）
-- 02 文件映射（**已有，扩写**：VirtualProtect、PrefetchVirtualMemory/OfferVirtualMemory、ReadFile vs 映射的选型实测）
-- 03 结构化异常：SEH 与 VEH（**新，从 02 拆出**：EXCEPTION_IN_PAGE_ERROR、__try/__except 编译器矩阵、VEH 时机、退出码语义）
-- 04 目录枚举与 NTFS 家族（**新，对照 linux/04**：FindFirstFileW、文件属性、硬链接/junction/符号链接/稀疏文件）
-- 05 文件锁：LockFileEx（**新，对照 linux/05**）
+- 01 Win32 文件 I/O ✅（517 行——补课三主题+dwShareMode 全矩阵）
+- 02 文件映射 ✅（534 行——扩写四节+W03 钩子）
+- 03 结构化异常：SEH 与 VEH ✅（496 行——UCRT 变体 filter ABI 独家逆向）
+- 04 目录枚举与 NTFS 家族 ✅（425 行——宽字符九姿势+家族矩阵）
+- 05 文件锁：LockFileEx ✅（472 行——第三种答案三发现+三方对照表）
 
-### ch02 内存管理：OS 层面（Linux 4 篇 + Windows 2 篇）
+### ch02 内存管理：OS 层面（Linux 4 篇 + Windows 2 篇）✅ 已交付（2026-10-03）
 
 Linux（`linux/memory/`）：
 
-- 01 进程内存布局与 /proc/pid/maps（text/data/bss/heap/mmap/stack/vdso；缺页/页表机制 L02 已铺垫，此处收口成全图）
-- 02 虚拟内存 API 全景：mprotect/madvise/mlock（L02 只讲 mprotect 基本语义，此处深讲：guard page/JIT/MADV 策略/mlock、实战：内存越界检测器）
-- 03 共享内存：shm_open 与映射（MAP_SHARED 跨进程 L02 已演示，此处成体系：命名对象、同步问题、RAII shared_memory、实战：进程间消息队列）
-- 04 对齐分配与大页（aligned_alloc/posix_memalign、对齐 new、THP、Overcommit 与 OOM Killer）
+- 01 进程内存布局与 /proc/pid/maps ✅（292 行——41 段全图、malloc 分水岭两层机制、ASLR）
+- 02 虚拟内存 API 全景 ✅（446 行——guarded_buffer 招牌、MADV 全家、si_addr 字节精度纠正）
+- 03 共享内存 shm_open ✅（380 行——竞态三版、SPSC 无锁队列、与 Windows 两段死镜像互验）
+- 04 对齐分配与大页 ✅（331 行——WSL2 进程级关死 THP 的独家发现、Overcommit 数字链）
 
 Windows（`windows/memory/`）：
 
-- 01 虚拟内存：VirtualAlloc/VirtualProtect（对照 linux/02：SEC_COMMIT/SEC_RESERVE、粒度）
-- 02 共享内存：页面文件后备的命名映射对象（对照 linux/03）
+- 01 虚拟内存 VirtualAlloc ✅（314 行——64KB 粒度双轨、PAGE_GUARD 一次性三连、VQ 全扫）
+- 02 共享内存 ✅（431 行——名字/对象两段死、四模式同机对比、八行对照表）
 
-### ch03 进程与信号（Linux 5 篇 + Windows 2 篇）
+### ch03 进程与信号（Linux 5 篇 + Windows 2 篇）✅（2026-10-04 全部闭环 READY）
 
 Linux（`linux/process/`、`linux/signal/`）：
 
-- 01 进程创建与生命周期：fork/exec/posix_spawn（COW 已在 L02 实测，此处讲全：exec 家族、僵尸/孤儿、waitpid、RAII child_process）
-- 02 守护进程、会话与环境（daemonization、进程组/会话、getrlimit/setrlimit、环境变量）
-- 03 IPC：管道、FIFO 与 POSIX mq/sem（选择指南、POSIX vs System V）
-- 04 信号（上）：sigaction 与异步信号安全（handler 内 write/_exit 法定裸区、可重入性、SA_SIGINFO 诊断）
-- 05 信号（下）：实时信号、signalfd 与 pidfd（信号化为 fd、统一进 epoll、实战：优雅关闭服务器）
+- 01 进程创建与生命周期：fork/exec/posix_spawn ✅（443 行——COW 的 Pss 实证、1 GiB fork 31.6ms 对 posix_spawn 0.48ms、孤儿收养者实测 pid 249 Relay、RAII child_process）
+- 02 守护进程、会话与环境 ✅（360 行——setsid 六组实测变化链、孤儿被 249 收养与 01 互证、rlimit 双段时序、environ 所有权陷阱）
+- 03 IPC：管道、FIFO 与 POSIX mq/sem ✅（471 行——popen 走 clone3(vfork) 纠正教科书、PIPE_BUF 4096 零撕裂/8192 撕裂、SCM_RIGHTS 传 fd 引用复制、六通道选型矩阵）
+- 04 信号（上）：sigaction 与异步信号安全 ✅（509 行——printf 损坏 562 行双口径翻案（完好整行重复为大头）、volatile 汇编旁证、self-pipe 三模式）
+- 05 信号（下）：实时信号、signalfd 与 pidfd ✅（390 行——pid 复用竞态真实现场（新 namespace 绕 RESERVED_PIDS）、SFD_CLOEXEC 创建时定性探针、prefork echo 优雅关闭全时序）
 
 Windows（`windows/process/`）：
 
-- 01 进程与作业：CreateProcessW 与 Job 对象（对照 linux/01）
-- 02 控制台事件与 APC（SetConsoleCtrlHandler 是 Windows 对信号的最近对照；QueueUserAPC）
+- 01 进程与作业：CreateProcessW 与 Job 对象（对照 linux/01）✅（257 行——未引号路径 Program.exe 攻击复刻、四种死法清理矩阵、Job 嵌套出走与限额）
+- 02 控制台事件与 APC（SetConsoleCtrlHandler 是 Windows 对信号的最近对照；QueueUserAPC）✅（316 行——CTRL_C 不投递根因是继承忽略位（推翻 ConPTY 归因）、APC 排队零执行对 SleepEx FIFO 连跑）
 
-### ch04 I/O 多路复用与异步 I/O（Linux 3 篇 + Windows 2 篇 + 跨平台 1 篇）
+### ch04 I/O 多路复用与异步 I/O（Linux 3 篇 + Windows 2 篇 + 跨平台 1 篇）✅（2026-10-04 全部闭环 READY）
 
-- linux/01 select→poll→epoll 全景（epoll 机制 vol5 ch06 已深讲，本篇只做三兄弟对比与衔接）
-- linux/02 timerfd 与 eventfd（一切化为文件描述符、统一纳入 epoll）
-- linux/03 io_uring（SQ/CQ、liburing、链式请求、Proactor vs Reactor）
-- windows/01 OVERLAPPED 异步 I/O 与 WaitForMultipleObjects（对照 linux 侧同步原语差异）
-- windows/02 IOCP 完成端口（Windows 异步支柱，独有篇深讲）
-- 03 跨平台异步 I/O 抽象（epoll/kqueue/IOCP/io_uring 差异矩阵、concepts 约束后端、与 vol5 ch06 事件循环衔接）
+- linux/01 select→poll→epoll 全景 ✅（333 行——1024 上限归属翻案（glibc 位图/内核不查 rlimit/两 man 都承诺只 poll 兑现）、pselect 保 const 是 glibc 垫的双层归属、成本曲线纳秒口径）
+- linux/02 timerfd 与 eventfd ✅（319 行——上限 2^64−2 纠正、信号量+LT 忙通知档连醒 5 次、改 interval 首档沿用旧 it_value、1ms 档中位 999.3µs）
+- linux/03 io_uring ✅（357 行——双轨（裸 syscall 425 衔接编号表→liburing 2.15）、SQPOLL 特权门 5.13（内核源码核）、enter 的 SQ_WAKEUP 实测收窄、页缓存热路径墙钟打平 syscall 差 128 倍）
+- windows/01 OVERLAPPED 异步 I/O ✅（367 行——同步句柄+OVERLAPPED 指针 16→8008、两堵墙 64/65 与 63/64 分开量、CancelIo 线程归属 996 不动、hEvent=NULL 句柄信号分不清）
+- windows/02 IOCP 完成端口 ✅（404 行——第四档补跑推翻原结论（并发值 0+一口气四线全醒，上限不派活只放行）、CloseHandle 后完成包 109 立即送达、Job 挂端口三包字段落点）
+- 03 跨平台异步 I/O 抽象 ✅（353 行——四后端八维矩阵锚点全引两侧实测、AsyncBackend concept 双侧编译零警告+负例诊断原文、kqueue 全文档口径、string_view 过 %s 段错误返工教学点）
 
-### ch05 时间与定时器（3 篇，平台无关为主）
+### ch05 时间与定时器（3 篇，平台无关为主）✅（2026-10-04 全部闭环 READY）
 
-- 01 时钟源与 POSIX 时间 API（CLOCK_MONOTONIC/REALTIME/BOOTTIME、clock_gettime、时间戳选择指南）
-- 02 C++20 std::chrono 深度：日历与时区（utc/tai/gps_clock、year/month/day、zoned_time、format chrono）
-- 03 定时器全景：alarm→setitimer→timer_create→timerfd（选择矩阵、实战：周期性任务调度器）
+- 01 时钟源与 POSIX 时间 API ✅（305 行——RAW−MONOTONIC 冻结分歧 −106.4ms、vDSO 16.9 对 168.9ns 十倍、tick 三口径 298.0/298.1/290）
+- 02 C++20 std::chrono 深度 ✅（342 行——四钟纪元 +27/+37/+18s、闰秒 23:59:60 实存、中国 1988 夏令时教例、tzdb 落 OS 的 strace 证据；sys_days UB 误说经保真翻案改定义良好折算）
+- 03 定时器全景 ✅（355 行——exec 保留翻转（man+补测双证：alarm/itimer 跨 execve 存活）、SIGEV_THREAD 每次派新线程、漂移对照约 78ms 对 0.08ms 以下）
 
-### ch06 终端与控制台（Linux 2 篇 + Windows 1 篇）
+### ch06 终端与控制台（Linux 2 篇 + Windows 1 篇）✅（2026-10-05 全部闭环 READY）
 
-- linux/01 termios 与 raw 模式（四组标志、canonical vs raw、VMIN/VTIME、RAII terminal_guard）
-- linux/02 伪终端（PTY）与进程交互（posix_openpt/forkpty、实战：终端录制/回放）
-- windows/01 Console API（字符缓冲区、输入事件、VT 序列；Windows 独有阵营）
+- linux/01 termios 与 raw 模式 ✅（402 行——^C 冲队与递信号可拆、VMIN/VTIME 字符间计时器 D+F 合判、glibc 2.42 存档重录）
+- linux/02 伪终端（PTY）与进程交互 ✅（328 行——script(1) 复刻与 timing 回放逐字节一致、master 读写不对称 EIO 判据）
+- windows/01 Console API ✅（319 行——读回验收方法论、VT 开关对照、Win11 2J 不归零光标、87 断言补实验重录）
 
-### ch07 平台抽象与工具对账（2 篇）
+### ch07 平台抽象与工具对账（2 篇）✅（2026-10-05 全部闭环 READY，全卷收官）
 
-- 01 平台抽象层设计：从 #ifdef 到 concepts（编译期平台检测、策略模式 vs concepts、native_handle、Asio/libuv 借鉴）
-- 02 syskit 工具库工程化（io/fs/process/ipc/signal/timer/tty/event、CMake 跨平台、测试策略；**含工具对账**：networking 的 UniqueFd/expected\<SysError\> 与本域 unique_fd/sys_call 是两套近亲，此处统一命名与错误模型，收编或分层）
+- 01 平台抽象层设计 ✅（376 行——死分支藏三错 Linux 零警告/Windows 全现形、CMake 身份与能力两线分叉、_open_osfhandle 真桥收 uintptr_t 口、虚表 1-5ns 占系统调用 1-4%）
+- 02 syskit 工具库工程化 ✅（336 行——两套近亲逐项对照与统一方案（syskit:: 蛇形+error_code 双出口，影响面含 lab0 拷贝）、INTERFACE 库零平台分支双平台全过、getpid 假基准 1.3ns 纠正）
 
 ### Windows 独有篇候补（占位，按需启动）
 

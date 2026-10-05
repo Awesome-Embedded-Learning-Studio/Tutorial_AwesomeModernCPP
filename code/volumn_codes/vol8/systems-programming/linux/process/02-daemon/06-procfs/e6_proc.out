@@ -1,0 +1,44 @@
+== E6 /proc/pid 家族速览 ==
+argv: argc=3, argv[0]=./e6_proc argv[1]=hello argv[2]=world
+
+-- self 视角 --
+[self status(此刻在运行,State 应为 R)]
+Name:	e6_proc
+State:	R (running)
+Tgid:	15018
+Pid:	15018
+PPid:	15016
+Uid:	1000	1000	1000	1000
+Gid:	1000	1000	1000	1000
+Threads:	1
+[self] /proc/15018/cmdline 共 22 字节, NUL 显示为 \0:
+    "./e6_proc\0hello\0world\0"
+    这就是 exec 时内核原样记下的 argv 各项,逐项以 NUL 拼接
+/proc/15018/exe -> /home/charliechen/lp02_scratch/e6_proc
+    (指向正在运行的二进制;文件被 rm 后这里会变成 "... (deleted)")
+
+-- 外查一个子进程的状态变化 --
+[子进程活着(在 sleep): State 应为 S(可中断睡眠)]
+Name:	e6_proc
+State:	S (sleeping)
+Tgid:	15019
+Pid:	15019
+PPid:	15018
+Uid:	1000	1000	1000	1000
+Gid:	1000	1000	1000	1000
+Threads:	1
+[子进程已死未收尸(waitpid 前): State 应为 Z(僵尸)]
+Name:	e6_proc
+State:	Z (zombie)
+Tgid:	15019
+Pid:	15019
+PPid:	15018
+Uid:	1000	1000	1000	1000
+Gid:	1000	1000	1000	1000
+Threads:	1
+[僵尸的 cmdline(应为空:地址空间已释放)] cmdline 空(僵尸/内核线程;内核线程的 cmdline 本来就是空)
+waitpid 后: 退出码=3,再看 /proc/15019/status:
+[收尸之后] 打开失败: No such file or directory —— 目录随收尸蒸发
+
+Uid 四元组: 依次是 real/effective/saved/fs —— 本实验全程普通用户,四项相同;
+setuid 程序里 euid 会先变,后续 exec 时 saved 决定"还能不能变回去"

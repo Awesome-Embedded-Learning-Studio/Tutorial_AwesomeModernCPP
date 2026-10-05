@@ -1,0 +1,48 @@
+$ ./e5_heap_layers.exe; echo "exit=$?"
+== 步骤0:堆句柄族 ==
+  GetProcessHeap()=0000019e4e4c0000  建私有堆前 GetProcessHeaps=2 个,建后 3 个(默认堆 + CRT/启动链的 + 我们的=0000019e4e900000)
+
+== 步骤1:小块三家同台(32 字节)==
+  malloc(32)       req=0x00000020 p=0000019e4e4ceca0 VQ: COMMIT  RegionSize=0x00004000 AllocBase=0000019e4e4c0000 块偏移=0xeca0 主堆段内
+  HeapAlloc(默认堆) req=0x00000020 p=0000019e4e4cee20 VQ: COMMIT  RegionSize=0x00004000 AllocBase=0000019e4e4c0000 块偏移=0xee20 主堆段内
+  HeapAlloc(私有堆) req=0x00000020 p=0000019e4e900860 VQ: COMMIT  RegionSize=0x00002000 AllocBase=0000019e4e900000 块偏移=0x0860 新段(专属)
+  (malloc 与默认堆 HeapAlloc 同一个 AllocBase=0000019e4e4c0000 —— CRT malloc 坐在进程堆上;私有堆另起炉灶)
+
+== 步骤2:尺寸阶梯(默认堆,全部留到步骤3 一起释放)==
+  HeapAlloc(4K)    req=0x00001000 p=0000019e4e4d15c0 VQ: COMMIT  RegionSize=0x00003000 AllocBase=0000019e4e4c0000 块偏移=0x115c0 主堆段内
+  HeapAlloc(64K)   req=0x00010000 p=0000019e4e4d25d0 VQ: COMMIT  RegionSize=0x00013000 AllocBase=0000019e4e4c0000 块偏移=0x125d0 主堆段内
+  HeapAlloc(256K)  req=0x00040000 p=0000019e4e4e25e0 VQ: COMMIT  RegionSize=0x00044000 AllocBase=0000019e4e4c0000 块偏移=0x225e0 主堆段内
+  HeapAlloc(384K)  req=0x00060000 p=0000019e4e5225f0 VQ: COMMIT  RegionSize=0x00065000 AllocBase=0000019e4e4c0000 块偏移=0x625f0 主堆段内
+  HeapAlloc(416K)  req=0x00068000 p=0000019e4e780080 VQ: COMMIT  RegionSize=0x0006a000 AllocBase=0000019e4e780000 块偏移=0x0080 新段(专属)
+  HeapAlloc(480K)  req=0x00078000 p=0000019e4e7e8090 VQ: COMMIT  RegionSize=0x0007b000 AllocBase=0000019e4e780000 块偏移=0x68090 新段(专属)
+  HeapAlloc(512K)  req=0x00080000 p=0000019e4e910080 VQ: COMMIT  RegionSize=0x00082000 AllocBase=0000019e4e910000 块偏移=0x0080 新段(专属)
+  HeapAlloc(768K)  req=0x000c0000 p=0000019e4e990090 VQ: COMMIT  RegionSize=0x000c3000 AllocBase=0000019e4e910000 块偏移=0x80090 新段(专属)
+  HeapAlloc(896K)  req=0x000e0000 p=0000019e4eb10080 VQ: COMMIT  RegionSize=0x000e2000 AllocBase=0000019e4eb10000 块偏移=0x0080 新段(专属)
+  HeapAlloc(960K)  req=0x000f0000 p=0000019e4ebf0090 VQ: COMMIT  RegionSize=0x000f3000 AllocBase=0000019e4eb10000 块偏移=0xe0090 新段(专属)
+  HeapAlloc(992K)  req=0x000f8000 p=0000019e4ece00a0 VQ: COMMIT  RegionSize=0x000fc000 AllocBase=0000019e4eb10000 块偏移=0x1d00a0 新段(专属)
+  HeapAlloc(1016K) req=0x000fe000 p=0000019e4edd80b0 VQ: COMMIT  RegionSize=0x00103000 AllocBase=0000019e4eb10000 块偏移=0x2c80b0 新段(专属)
+  HeapAlloc(1024K) req=0x00100000 p=0000019e4ef14040 VQ: COMMIT  RegionSize=0x00101000 AllocBase=0000019e4ef10000 块偏移=0x4040 新段(专属)
+  HeapAlloc(2048K) req=0x00200000 p=0000019e4f029040 VQ: COMMIT  RegionSize=0x00201000 AllocBase=0000019e4f020000 块偏移=0x9040 新段(专属)
+
+== 步骤3:释放后的三种下场 ==
+  free(4K) 后     req=0x00001000 p=0000019e4e4d15c0 VQ: COMMIT  RegionSize=0x000b6000 AllocBase=0000019e4e4c0000 块偏移=0x115c0 主堆段内
+  free(64K) 后    req=0x00010000 p=0000019e4e4d25d0 VQ: COMMIT  RegionSize=0x000b5000 AllocBase=0000019e4e4c0000 块偏移=0x125d0 主堆段内
+  free(256K) 后   req=0x00040000 p=0000019e4e4e25e0 VQ: COMMIT  RegionSize=0x000a5000 AllocBase=0000019e4e4c0000 块偏移=0x225e0 主堆段内
+  free(384K) 后   req=0x00060000 p=0000019e4e5225f0 VQ: RESERVE RegionSize=0x00064000 AllocBase=0000019e4e4c0000 块偏移=0x625f0 主堆段内
+  free(416K) 后   req=0x00068000 p=0000019e4e780080 VQ: COMMIT  RegionSize=0x00001000 AllocBase=0000019e4e780000 块偏移=0x0080 新段(专属)
+  free(480K) 后   req=0x00078000 p=0000019e4e7e8090 VQ: RESERVE RegionSize=0x0007a000 AllocBase=0000019e4e780000 块偏移=0x68090 新段(专属)
+  free(512K) 后   req=0x00080000 p=0000019e4e910080 VQ: COMMIT  RegionSize=0x00001000 AllocBase=0000019e4e910000 块偏移=0x0080 新段(专属)
+  free(768K) 后   req=0x000c0000 p=0000019e4e990090 VQ: RESERVE RegionSize=0x00180000 AllocBase=0000019e4e910000 块偏移=0x80090 新段(专属)
+  free(896K) 后   req=0x000e0000 p=0000019e4eb10080 VQ: COMMIT  RegionSize=0x003c7000 AllocBase=0000019e4eb10000 块偏移=0x0080 新段(专属)
+  free(960K) 后   req=0x000f0000 p=0000019e4ebf0090 VQ: RESERVE RegionSize=0x000f0000 AllocBase=0000019e4eb10000 块偏移=0xe0090 新段(专属)
+  free(992K) 后   req=0x000f8000 p=0000019e4ece00a0 VQ: COMMIT  RegionSize=0x001f7000 AllocBase=0000019e4eb10000 块偏移=0x1d00a0 新段(专属)
+  free(1016K) 后  req=0x000fe000 p=0000019e4edd80b0 VQ: RESERVE RegionSize=0x00138000 AllocBase=0000019e4eb10000 块偏移=0x2c80b0 新段(专属)
+  free(1024K) 后  req=0x00100000 p=0000019e4ef14040 VQ: FREE    RegionSize=0x0010c000 AllocBase=0000000000000000 块偏移=0x19e4ef14040 整段已归还
+  free(2048K) 后  req=0x00200000 p=0000019e4f029040 VQ: FREE    RegionSize=0x7e55cac57000 AllocBase=0000000000000000 块偏移=0x19e4f029040 整段已归还
+
+== 步骤4:CRT malloc 的大块同一条链 ==
+  malloc(1MiB)     req=0x00100000 p=0000019e4ef1f040 VQ: COMMIT  RegionSize=0x00101000 AllocBase=0000019e4ef10000 块偏移=0xf040 新段(专属)
+  free 后         req=0x00100000 p=0000019e4ef1f040 VQ: FREE    RegionSize=0x7e55cad61000 AllocBase=0000000000000000 块偏移=0x19e4ef1f040 整段已归还
+
+结论:块小走主堆段;跨过坎(本机在 0x60000 与 0x7f000 之间,见上表)后堆管理器直接向 VirtualAlloc 要新段;释放时小段保留退订、大段整块归还 —— malloc/HeapAlloc/VirtualAlloc 三层只是记账单位不同。
+exit=0

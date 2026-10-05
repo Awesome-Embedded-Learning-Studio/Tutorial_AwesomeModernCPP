@@ -1,0 +1,17 @@
+$ g++ -std=c++20 -O2 -Wall -Wextra linux_probe.cpp -o /tmp/linux_probe; echo "exit=$?"
+exit=0
+
+$ /tmp/linux_probe; echo "exit=$?"
+[Linux 侧] pid=77291 页大小=4096 名字=/sysprog_e5_77291(POSIX shm 名字空间)
+  shm_open(O_CREAT|O_RDWR|O_EXCL) -> fd=3 errno=0(Success)
+  stat(/dev/shm/sysprog_e5_77291) -> 0 size=0 —— 名字就是 /dev/shm 里一个真文件
+  shm_open(第二次,带 O_EXCL)  -> fd=-1 errno=17(File exists)
+  shm_open(第二次,不带 O_EXCL)-> fd=4 errno=0 —— 同一对象另一个 fd,没有"已存在"信号
+  ftruncate(256KiB) 后 stat size=262144 —— 大小是 ftruncate 显式给的(Windows 在 CreateFileMapping 参数里给)
+  mmap(MAP_SHARED) -> 0x7293cc4f2000
+  mmap(offset=页+8) -> 0xffffffffffffffff errno=22(Invalid argument) —— offset 必须按页对齐(Windows 要 64KB)
+  shm_unlink(/sysprog_e5_77291) -> 0 名字显式摘除,与还有多少映射/多少 fd 无关
+  unlink 后再 shm_open -> fd=-1 errno=2(No such file or directory) —— 名字没了
+  unlink 后旧映射读写:回读 4096/4096 相符,再写 4096 字节也成功 —— 对象活到 munmap
+[Linux 侧] 完
+exit=0

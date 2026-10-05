@@ -1,0 +1,49 @@
+glibc = 2.44
+
+==== align = 64 ====
+aligned_alloc(64,    64)           -> 0x5c328280a080  %64   = 0  [OK]
+posix_memalign(&p, 64,    64)      -> rc=0(0=success)
+  address                          -> 0x5c328280a080  %64   = 0  [OK]
+operator new(   64, align_val_t(64)) -> 0x5c328280a080  %64   = 0  [OK]
+aligned_alloc(64,   100)           -> 0x5c328280a400  %64   = 0  [OK]
+posix_memalign(&p, 64,   100)      -> rc=0(0=success)
+  address                          -> 0x5c328280a400  %64   = 0  [OK]
+operator new(  100, align_val_t(64)) -> 0x5c328280a400  %64   = 0  [OK]
+aligned_alloc(64,  4096)           -> 0x5c328280a4c0  %64   = 0  [OK]
+posix_memalign(&p, 64,  4096)      -> rc=0(0=success)
+  address                          -> 0x5c328280a4c0  %64   = 0  [OK]
+operator new( 4096, align_val_t(64)) -> 0x5c328280a4c0  %64   = 0  [OK]
+aligned_alloc(64, 10000)           -> 0x5c328280a4c0  %64   = 0  [OK]
+posix_memalign(&p, 64, 10000)      -> rc=0(0=success)
+  address                          -> 0x5c328280a4c0  %64   = 0  [OK]
+operator new(10000, align_val_t(64)) -> 0x5c328280a4c0  %64   = 0  [OK]
+
+==== align = 4096 ====
+aligned_alloc(4096,    64)         -> 0x5c328280b000  %4096 = 0  [OK]
+posix_memalign(&p, 4096,    64)    -> rc=0(0=success)
+  address                          -> 0x5c328280b000  %4096 = 0  [OK]
+operator new(   64, align_val_t(4096)) -> 0x5c328280b000  %4096 = 0  [OK]
+aligned_alloc(4096,   100)         -> 0x5c328280c000  %4096 = 0  [OK]
+posix_memalign(&p, 4096,   100)    -> rc=0(0=success)
+  address                          -> 0x5c328280c000  %4096 = 0  [OK]
+operator new(  100, align_val_t(4096)) -> 0x5c328280c000  %4096 = 0  [OK]
+aligned_alloc(4096,  4096)         -> 0x5c328280d000  %4096 = 0  [OK]
+posix_memalign(&p, 4096,  4096)    -> rc=0(0=success)
+  address                          -> 0x5c328280d000  %4096 = 0  [OK]
+operator new( 4096, align_val_t(4096)) -> 0x5c328280d000  %4096 = 0  [OK]
+aligned_alloc(4096, 10000)         -> 0x5c328280d000  %4096 = 0  [OK]
+posix_memalign(&p, 4096, 10000)    -> rc=0(0=success)
+  address                          -> 0x5c328280d000  %4096 = 0  [OK]
+operator new(10000, align_val_t(4096)) -> 0x5c328280d000  %4096 = 0  [OK]
+
+new OverAligned (alignas(64))      -> 0x5c328280a4c0  %64   = 0  [OK]
+pmr::new_delete_resource           -> 0x5c328280d000  %4096 = 0  [OK]
+
+==== 非法对齐值 ====
+aligned_alloc(48, 128)    -> (nil) errno=22(Invalid argument)
+aligned_alloc(0, 128)     -> (nil) errno=22(Invalid argument)
+aligned_alloc(3, 96)      -> (nil) errno=22(Invalid argument)
+posix_memalign(&p,48,128) -> rc=22(Invalid argument) p=0x1
+posix_memalign(&p,4,128)  -> rc=22(Invalid argument) p=0x1
+operator new(8, align_val_t{3}) -> 抛 std::bad_alloc: std::bad_alloc
+aligned_alloc(64, 100)    -> 0x5c328280c000 errno=0 (size 非倍数,C17 放宽后 glibc 接受)

@@ -1,0 +1,36 @@
+pid=152060, 数据文件:/home/charliechen/l05_scratch/e1/flock.bin(ext4)
+
+==== E1a  LOCK_EX 互斥:第二进程阻塞,解锁瞬间接棒 ====
+  [     0 ms] A(pid=152060):flock(LOCK_EX) = 0,持锁
+  [   400 ms] A:LOCK_UN,放锁 → C 的拿锁时刻应紧贴这一行
+  [   400 ms] C(pid=152062):自己 open + 阻塞 flock(LOCK_EX) 返回 0,拿到锁
+
+==== E1b  同一进程两次 flock:同 fd / dup / 重新 open ====
+  [   400 ms] fd1: flock(LOCK_EX) = 0
+  [   400 ms] fd1 再 flock(LOCK_EX) = 0(同一描述,重复加锁即转换)
+  [   400 ms] fd1 再 flock(LOCK_SH) = 0(同一描述上 EX→SH 转换)
+  [   400 ms] dup(fd1) 上 flock(LOCK_EX|LOCK_NB) = 0(dup 共享同一描述,不冲突)
+  [   400 ms] 竞争者(pid=152069, 自己open):flock(LOCK_EX|LOCK_NB) = -1, errno=11(EWOULDBLOCK)
+  [   401 ms] 重新 open 的 fd2:flock(LOCK_EX|LOCK_NB) = -1, errno=11(EWOULDBLOCK)
+  [   401 ms]            → 同进程两个描述也会自冲突
+  [   401 ms] 子进程对 fd2 用阻塞版 flock,2 s alarm 护航…
+  [  2401 ms] 子进程被 SIGALRM 击杀:阻塞版 flock 2 s 未返回 → 自锁死
+
+==== E1c  LOCK_NB:冲突时 -1 + EWOULDBLOCK ====
+  [  2401 ms] 竞争者(pid=152083, 自己open):flock(LOCK_EX|LOCK_NB) = -1, errno=11(EWOULDBLOCK)
+
+==== E1d  close(fd) 隐式释放:A close 后 B 立刻拿到 ====
+  [  2402 ms] A 持锁
+  [  2402 ms] 竞争者(pid=152084, 自己open):flock(LOCK_EX|LOCK_NB) = -1, errno=11(EWOULDBLOCK)
+  [  2402 ms] A close(fd)
+  [  2402 ms] 竞争者(pid=152085, 自己open):flock(LOCK_EX|LOCK_NB) = 0
+
+==== E1e  fork 继承:锁属于打开文件描述,不属于进程 ====
+  [  2402 ms] 父:持锁(fork 前)
+  [  2403 ms] 子(pid=152086):继承 fd 上 flock(LOCK_EX) = 0(同一描述,不与父冲突)
+  [  2403 ms] 子:LOCK_UN = 0(放的是整个描述上的锁)
+  [  2403 ms] 竞争者(pid=152087, 自己open):flock(LOCK_EX|LOCK_NB) = 0
+  [  2403 ms] 父:再次持锁
+  [  2403 ms] 子(pid=152088):close(继承 fd)
+  [  2404 ms] 竞争者(pid=152089, 自己open):flock(LOCK_EX|LOCK_NB) = -1, errno=11(EWOULDBLOCK)
+  [  2404 ms] 竞争者(pid=152090, 自己open):flock(LOCK_EX|LOCK_NB) = 0

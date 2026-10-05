@@ -1,0 +1,4 @@
+$ ./m11(filter 返回 0 → 继续上找,无人接 → 裸崩)
+before
+  [filter] code=0xC0000005, return 0 (CONTINUE_SEARCH)
+exit=5 (0xC0000005 截断)

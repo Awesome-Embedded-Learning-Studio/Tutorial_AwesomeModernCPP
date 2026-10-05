@@ -31,6 +31,7 @@ import QQGroupCard from './components/QQGroupCard.vue'
 import Anim from './components/Anim.vue'
 import TagExplorer from './components/TagExplorer.vue'
 import DocTags from './components/DocTags.vue'
+import StatusToast from './components/StatusToast.vue'
 import { setupDevFakeLag } from './dev-fake-lag'
 import './custom.css'
 import './article-code.css'
@@ -44,7 +45,7 @@ export default {
   extends: DefaultTheme,
   Layout() {
     return h(WeeklyPracticeProvider, null, { default: () => h(DefaultTheme.Layout, null, {
-      'layout-top': () => [h(NavSpinner), h(ReadingProgress), h(ResizableSidebar), h(MermaidLightbox), h(ImageLightbox)],
+      'layout-top': () => [h(NavSpinner), h(ReadingProgress), h(ResizableSidebar), h(MermaidLightbox), h(ImageLightbox), h(StatusToast)],
       'doc-before': () => h(WeeklyPageHeader),
       'doc-footer-before': () => h(DocTags),
       'home-hero-image': () => h(HomeHeroVisual),

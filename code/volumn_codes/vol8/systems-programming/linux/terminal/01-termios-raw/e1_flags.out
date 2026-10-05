@@ -1,0 +1,43 @@
+[A] master=3 slave=4:isatty(master)=1 isatty(slave)=1
+    tcgetattr(master)=0 tcgetattr(slave)=0 两端看到的 iflag/lflag 相同:1
+    经 master 清 ECHO:tcsetattr(master)=0,slave 侧 ECHO=0(0=同步清掉,两端共享同一份行规程)
+[B1. 新开 pty slave 的出厂设置(内核默认)]
+  c_iflag  = 0x00000500 :  ICRNL IXON
+  c_oflag  = 0x00000005 :  OPOST ONLCR
+  c_cflag  = 0x000f00bf : CS8 CREAD
+  c_lflag  = 0x00008a3b :  ISIG ICANON ECHO ECHOE ECHOK ECHOCTL ECHOKE IEXTEN
+  c_cc: VINTR=^C VQUIT=^\ VERASE=^? VKILL=^U VEOF=^D VSTART=^Q VSTOP=^S VSUSP=^Z VMIN=1 VTIME=0
+    c_cflag=0xf00bf 的记录:低 4 位 0xf 是输出波特率的老编码(B38400=0o17),0xf0000 那几位是输入波特率的镜像(老编码<<16);本机 glibc 的 B 常量已是真实速率值(B9600 宏==9600,glibc 2.42 起的新口径),内核里存的仍是老编码,glibc 两头翻译,round-trip 实测:
+    设 B9600 后 cfgetospeed=9600 c_cflag=0xd00bd(低 4 位变 0xd=0o15 老编码,pty 上无物理意义,stty 同样报 9600)
+[C1. cfmakeraw 之后]
+  c_iflag  = 0x00000000 : 
+  c_oflag  = 0x00000004 :  ONLCR
+  c_cflag  = 0x000f00bf : CS8 CREAD
+  c_lflag  = 0x00000a30 :  ECHOE ECHOK ECHOCTL ECHOKE
+  c_cc: VINTR=^C VQUIT=^\ VERASE=^? VKILL=^U VEOF=^D VSTART=^Q VSTOP=^S VSUSP=^Z VMIN=1 VTIME=0
+[cfmakeraw 相对原始的差异]
+  c_iflag : -ICRNL -IXON
+  c_oflag : -OPOST
+  c_cflag : (无变化)
+  c_lflag : -ISIG -ICANON -ECHO -IEXTEN
+    注意:cfmakeraw 只清 OPOST、不清 ONLCR(OPOST 一关,ONLCR 失去作用,留着无害);ECHOE/ECHOK/ECHOCTL/ECHOKE 是 ECHO 的子开关,母开关 ECHO 一清它们全部失效;
+    本例 CSIZE 已是 CS8,所以 c_cflag 看不出变化。
+[C2. 手工只清 ICANON|ECHO(常见的『最小 raw』)]
+  c_iflag  = 0x00000500 :  ICRNL IXON
+  c_oflag  = 0x00000005 :  OPOST ONLCR
+  c_cflag  = 0x000f00bf : CS8 CREAD
+  c_lflag  = 0x00008a31 :  ISIG ECHOE ECHOK ECHOCTL ECHOKE IEXTEN
+  c_cc: VINTR=^C VQUIT=^\ VERASE=^? VKILL=^U VEOF=^D VSTART=^Q VSTOP=^S VSUSP=^Z VMIN=1 VTIME=0
+[C2. 手工最小 raw 相对原始的差异]
+  c_iflag : (无变化)
+  c_oflag : (无变化)
+  c_cflag : (无变化)
+  c_lflag : -ICANON -ECHO
+[C3. 手工最小 raw 与 cfmakeraw 的差距]
+[手工 raw vs cfmakeraw 相对原始的差异]
+  c_iflag : -ICRNL -IXON
+  c_oflag : -OPOST
+  c_cflag : (无变化)
+  c_lflag : -ISIG -IEXTEN
+    含义:手工版下 ISIG 仍在(^C 还是信号)、IXON 仍在(^S/^Q 会被吃掉)、ICRNL 仍在(CR 会被改写成 NL)、
+             OPOST 仍在(程序写的 \n 出门变 \r\n)。这些差异正是 E2/E3/E5 要逐个看到的行为。

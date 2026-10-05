@@ -1,0 +1,27 @@
+== E3 pidfd:进程句柄化 ==
+
+[a] 第三种收尸:pidfd + poll + waitid(P_PIDFD)
+    fork 出 c1(pid=678699),pidfd_open → fd=3;子进程 300ms 后退出
+    t= 51ms poll(pidfd, 50ms)=0(活着时无事件)
+    t=301ms poll 就绪,waitid(P_PIDFD) → 退出码 42(si_code 路径:WEXITED)
+    收尸后再 poll(pidfd)=1,revents=0x11(=0x1|0x10 POLLIN|POLLHUP:人已注销,句柄等价于挂断)
+    二次 waitid → No child processes(尸已收过;waitpid 二次收也是这个错)
+
+[b] pidfd_send_signal(收方 sigwaitinfo 读回):
+    父进程 pidfd_send_signal(句柄) 返回 0(带 sival_int=777)
+    c2(pid=678706)收到 signo=35,si_value=777,发送方 si_pid=678698
+
+[c] pidfd_getfd(本机 yama/ptrace_scope:1):
+    父进程:pidfd_getfd(c3 的 fd=3) → 5,pread 出:「PIDFD-GETFD-MARKER-31415926
+」
+    兄弟 c4:pidfd_getfd(c3 的 fd) → -1,errno=Operation not permitted(非后代,被 yama 拦)
+
+[d] pid 复用竞态:新 user+pid namespace,pid_max 调到 302:
+    [ns 内] pid_max=302;先烧掉低号段(2..299 共 298 个),让 A 落进会循环的段:
+    [ns 内] A(pid=301)已退出并收尸,pidfd=4 还在手上
+    [ns 内] 第 2 个候选 B 拿到了老数字 pid=301 —— 数字回来了,人不是 A
+    [ns 内] kill(数字 301) 返回 0 → 误伤 B;pidfd_send_signal(老句柄) 返回 -1,errno=No such process
+    [ns 内] 数字会被复用,句柄不会认错人:这就是 pidfd 的立身之本
+    [ns 内] B(pid=301)收到 signo=10 si_pid=1 —— 我不是 A,被误伤了!
+
+E3 done,t=437ms

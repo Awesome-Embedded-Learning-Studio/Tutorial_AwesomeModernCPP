@@ -1,0 +1,24 @@
+== E6 信号设施速查:本机可用性探针 ==
+Linux 6.18.33.2-microsoft-standard-WSL2
+glibc 2.44
+
+signal()
+  signal(SIGRTMIN+5,SIG_IGN) glibc 包装 → rt_sigaction(13)  返回 SIG_DFL(0):装上了
+sigaction()
+  sigaction(SIGUSR1,IGN)     rt_sigaction(13)                   返回 0
+sigqueue()
+  sigqueue(self,SIGUSR1,val) rt_sigqueueinfo(129)               返回 0(带值入队)
+sigwaitinfo()/sigtimedwait()
+  sigtimedwait(空,0ms)      rt_sigtimedwait(128)/rt_sigtimedwait_time64(421) 返回 -1/EAGAIN(接口可用)
+signalfd()
+  signalfd({SIGUSR2})        signalfd4(289)                     返回 fd=3(SFD_NONBLOCK/SFD_CLOEXEC 都在)
+timerfd()(对照班底)
+  timerfd_create(MONOTONIC)  timerfd_create(283)                返回 fd=3
+pidfd 一族
+  pidfd_open(self)           pidfd_open(434)                    返回 fd=3;poll(0ms)=0(自己活着,无事件)
+  pidfd_send_signal(IGN 号) pidfd_send_signal(424)             返回 0(句柄发信号)
+  pidfd_getfd(self,0)        pidfd_getfd(438)                   返回 fd=4(同进程拿到自己 stdin 的副本)
+waitid(P_PIDFD)
+  waitid(P_PIDFD,...)        waitid(247) + idtype=P_PIDFD(3)    E3 已实测:poll+waitid 收尸闭环
+
+各设施的角色/场景/分工表见本目录 README。

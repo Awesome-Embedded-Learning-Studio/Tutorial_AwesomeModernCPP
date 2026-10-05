@@ -1,0 +1,16 @@
+[1] 注入 5 条后,GetNumberOfConsoleInputEvents=5
+[2] PeekConsoleInput 取 1 条(不取走),EventType=KEY_EVENT:1,队列余量仍 5
+[3] ReadConsoleInput 逐条读:
+    KEY_EVENT  按下 vk=0x41(A) scan=0x1e char=A repeat=1 修饰:(无)
+    KEY_EVENT  松开 vk=0x41(A) scan=0x1e char=A repeat=1 修饰:(无)
+    KEY_EVENT  按下 vk=0x43(C) scan=0x2e char=c repeat=1 修饰:L-Ctrl 
+    MOUSE_EVENT 位置=(5,3) 按钮=0x1 事件=0x0 修饰:(无)
+    FOCUS_EVENT  bSetFocus=1
+    取完后队列余量=0
+[4] 开 ENABLE_WINDOW_INPUT 后 SetConsoleScreenBufferSize(120x3000) -> 0 GetLastError=87
+    于是这条事件的形态用注入演示:
+    WINDOW_BUFFER_SIZE_EVENT  新尺寸=100x30
+[5] SetConsoleScreenBufferSize(原样 120x9001) -> 0 GetLastError=87
+    SetConsoleWindowInfo(同尺寸 120x30 原样重设) -> 1 GetLastError=0 队列=0
+    SetConsoleWindowInfo(异尺寸 120x29) -> 1 GetLastError=0 队列=0
+    读回 srWindow=120x29(窗口真改没改,以读回为准)

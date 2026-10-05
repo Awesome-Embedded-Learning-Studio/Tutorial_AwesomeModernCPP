@@ -1,0 +1,40 @@
+E4 队列:合并与溢出 —— root: /home/charliechen/l06_scratch/e4
+/proc/sys/fs/inotify/: max_user_watches=524288 max_user_instances=1024 max_queued_events=16384
+wd_same=1 → solo/same.txt(文件级,只报 IN_MODIFY)
+
+==== A 读者跟上:每写一拍读一拍 ====
+10 次写 → 10 条 IN_MODIFY:读者跟上,一条不少
+
+==== B 读者不读:200 次背靠背写 solo/same.txt ====
+200 次写 → 1 条事件:
+  wd=1   mask=0x00000002 IN_MODIFY                                    cookie=0      len=0   name=''
+  # 四元组(wd=1, IN_MODIFY, cookie=0, name='')全同且相邻,内核入队时叠成一条:事件数 ≠ 写次数,IN_MODIFY 不能当计数器
+
+wd_root=2 → root/(目录级,报 IN_MODIFY|IN_CREATE)
+==== C 读者不读:轮流写 c0..c3 共 200 次 ====
+200 次写 → 200 条事件(首尾各 3):
+  wd=2   mask=0x00000002 IN_MODIFY                                    cookie=0      len=16  name='c0.txt'
+  wd=2   mask=0x00000002 IN_MODIFY                                    cookie=0      len=16  name='c1.txt'
+  wd=2   mask=0x00000002 IN_MODIFY                                    cookie=0      len=16  name='c2.txt'
+  ...
+  wd=2   mask=0x00000002 IN_MODIFY                                    cookie=0      len=16  name='c1.txt'
+  wd=2   mask=0x00000002 IN_MODIFY                                    cookie=0      len=16  name='c2.txt'
+  wd=2   mask=0x00000002 IN_MODIFY                                    cookie=0      len=16  name='c3.txt'
+  # 名字轮着来,队尾永远和来客不同 → 一条不合并:合并条件是「完全相同且相邻」,不是「同类事件都算一条」
+
+==== D 灌爆队列:4 写者 × 128 文件 × 1500 ms,父进程全程不读 ====
+max_queued_events = 16384
+  [写者 1] 完成写次数 1474816
+  [写者 3] 完成写次数 1480192
+  [写者 2] 完成写次数 1477120
+  [写者 0] 完成写次数 1442560
+(备场:512 个文件创建,IN_CREATE 512 条,先读走不计数)
+读出 16385 条事件,其中 IN_Q_OVERFLOW 1 条,首次出现在第 16384 条:
+  wd=2   mask=0x00000002 IN_MODIFY                                    cookie=0      len=16  name='w1_0.bin'
+  wd=2   mask=0x00000002 IN_MODIFY                                    cookie=0      len=16  name='w0_0.bin'
+  ...
+  wd=-1  mask=0x00004000 IN_Q_OVERFLOW                                cookie=0      len=0   name=''
+  ...
+  wd=2   mask=0x00000002 IN_MODIFY                                    cookie=0      len=16  name='w2_17.bin'
+  wd=-1  mask=0x00004000 IN_Q_OVERFLOW                                cookie=0      len=0   name=''
+  # 溢出条目 wd=-1、mask=IN_Q_OVERFLOW:恰好排在第 16384 条(0 起),前面 16384 条是队列装得下的部分;此后写者仍在写,但再没有事件进来 —— 溢出后丢了多少没有账可查,监控程序要么读得快,要么靠应用层对账

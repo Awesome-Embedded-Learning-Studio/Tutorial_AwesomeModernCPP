@@ -1,0 +1,44 @@
+== E1 实时信号:排队、带数据、到达顺序 ==
+
+[a] 范围:SIGRTMIN=34 SIGRTMAX=64 __SIGRTMIN=32
+    libc 的 SIGRTMIN 比内核 __SIGRTMIN 大 2:NPTL 内部占用 32/33 两号,
+    用户可用的实时信号共 31 个(34..64)。本实验用 SIGRTMIN+1=35 与 SIGRTMAX=64
+
+[b] 阻塞期连发 3 次,解阻塞后:
+    SIGRTMIN+1(sigqueue×3,编号 101/102/103) → handler 共跑 3 次
+      第 1 次:signo=35 si_code=-1 sival_int=101 sival_ptr=0x65
+      第 2 次:signo=35 si_code=-1 sival_int=102 sival_ptr=0x66
+      第 3 次:signo=35 si_code=-1 sival_int=103 sival_ptr=0x67
+    SIGUSR1(kill 语义×3,编号 1/2/3) → handler 共跑 1 次
+      第 1 次:signo=10 si_code=-1 sival_int=1 sival_ptr=0x1
+
+[c] 带数据(sigqueue → SA_SIGINFO 的 si_value 读回):
+    sival_ptr=&payload → handler 共跑 1 次
+      第 1 次:signo=35 si_code=-1 sival_int=-1720446808 sival_ptr=0x5597997410a8
+      si_value.sival_ptr 指回 &payload,解引用得 4242(同进程有效;
+      若发送方在别的进程,这个值只是个地址数字,解引用无意义)
+
+[d] 到达顺序
+  d1) 空 sa_mask,一次解阻塞 {SIGRTMAX, SIGRTMIN+1×3}:
+      入队顺序:先 SIGRTMAX(=900),后 SIGRTMIN+1(=201/202/203)
+      解阻塞前 sigpending:SIGRTMIN+1=pending, SIGRTMAX=pending(两号都在账上)
+    实际执行顺序 → handler 共跑 4 次
+      第 1 次:signo=64 si_code=-1 sival_int=900 sival_ptr=0x384
+      第 2 次:signo=35 si_code=-1 sival_int=201 sival_ptr=0xc9
+      第 3 次:signo=35 si_code=-1 sival_int=202 sival_ptr=0xca
+      第 4 次:signo=35 si_code=-1 sival_int=203 sival_ptr=0xcb
+  d2) sa_mask=全屏蔽(handler 期间其他号进不来),同批 {SIGUSR1,SIGUSR2,SIGRTMIN,SIGRTMIN+1}:
+    实际执行顺序 → handler 共跑 4 次
+      第 1 次:signo=10 si_code=-1 sival_int=10 sival_ptr=0xa
+      第 2 次:signo=12 si_code=-1 sival_int=12 sival_ptr=0xc
+      第 3 次:signo=34 si_code=-1 sival_int=34 sival_ptr=0x22
+      第 4 次:signo=35 si_code=-1 sival_int=35 sival_ptr=0x23
+      (入队 12→35→10→34,执行却是小号 10→12→34→35:出队顺序的直接证据)
+  d3) 同一批 pending,不走 handler,用 sigwaitinfo 逐个取:
+      第 1 次取到 signo=10(带值 10)
+      第 2 次取到 signo=12(带值 12)
+      第 3 次取到 signo=34(带值 34)
+      第 4 次取到 signo=35(带值 35)
+      (同样小号优先 10→12→34→35,和 man signal(7) 的口径一致)
+
+E1 done,t=0ms

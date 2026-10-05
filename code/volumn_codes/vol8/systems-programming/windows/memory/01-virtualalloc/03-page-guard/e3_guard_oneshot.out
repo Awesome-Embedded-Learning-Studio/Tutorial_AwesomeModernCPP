@@ -1,0 +1,24 @@
+$ ./e3_guard_oneshot.exe; echo "exit=$?"
+guard 页=00000273639f0000(0x104 = PAGE_READWRITE|PAGE_GUARD)
+
+== 第 1 次写:应当响 ==
+  [VQ 写前  ] Protect=0x0104(READWRITE+GUARD) State=COMMIT
+  [VEH 命中 1] code=0x80000001 info[0]=1(写) info[1]=0x273639F0000 异常指令=00007ff7009a17d5
+     是 guard 页的这一笔 → CONTINUE_EXECUTION,原指令重放
+  重放成功,*g='A'
+  [VQ 写后  ] Protect=0x0004(READWRITE) State=COMMIT
+
+== 第 2 次写同页同地址:零异常(GUARD 已自灭)==
+  *g='B',VEH 新增命中=0(写前 1 → 写后 1)
+  [VQ 再写后] Protect=0x0004(READWRITE) State=COMMIT
+
+== 再武装:VirtualProtect 塞回 GUARD 位 ==
+  VirtualProtect(...RW|GUARD) -> 1(旧保护=0x4)
+  [VQ 再武装后] Protect=0x0104(READWRITE+GUARD) State=COMMIT
+  [VEH 命中 2] code=0x80000001 info[0]=1(写) info[1]=0x273639F0000 异常指令=00007ff7009a18d3
+     是 guard 页的这一笔 → CONTINUE_EXECUTION,原指令重放
+  *g='C'(这一笔应当又响一次)
+  [VQ 第三次写后] Protect=0x0004(READWRITE) State=COMMIT
+
+结论:GUARD 语义 = 触碰即拆的一次性陷阱,要再响得再武装;NOACCESS 是持续封路(对照)。
+exit=0

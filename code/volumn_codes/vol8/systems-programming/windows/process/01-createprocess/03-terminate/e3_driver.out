@@ -1,0 +1,55 @@
+E3 TerminateProcess vs graceful exit | driver pid=11048
+evidence per case: stderr transcript (dll/atexit lines) + stdout marker + exit code
+
+----- case normal -----
+[driver] child pid=20732 ready handshake: 0x0
+[driver] exit code=0 (0x00000000)
+[driver] child stderr transcript (verbatim, in order):
+[dll] DLL_PROCESS_ATTACH (loader notified)
+[child] mode=normal setup done (atexit registered, dll loaded, marker in stdout buffer)
+[child] returning 0 from main (CRT exit path)
+[child] atexit handler ran (CRT exit path honored)
+[dll] DLL_PROCESS_DETACH (loader gave us a goodbye chance)
+[driver] end transcript
+[driver] child stdout file (37 bytes): "STDOUT_MARKER_ONLY_SURVIVES_REAL_EXIT"
+[driver] stdout marker survived? YES -> buffer was flushed
+
+----- case exitprocess -----
+[driver] child pid=15672 ready handshake: 0x0
+[driver] exit code=0 (0x00000000)
+[driver] child stderr transcript (verbatim, in order):
+[dll] DLL_PROCESS_ATTACH (loader notified)
+[child] mode=exitprocess setup done (atexit registered, dll loaded, marker in stdout buffer)
+[child] calling ExitProcess(0) DIRECTLY, bypassing CRT exit
+[dll] DLL_PROCESS_DETACH (loader gave us a goodbye chance)
+[driver] end transcript
+[driver] child stdout file (37 bytes): "STDOUT_MARKER_ONLY_SURVIVES_REAL_EXIT"
+[driver] stdout marker survived? YES -> buffer was flushed
+
+----- case hang -----
+[driver] child pid=6748 ready handshake: 0x0
+[driver] TerminateProcess(h, 31337) -- no chance to clean up
+[driver] exit code=31337 (0x00007A69)
+[driver] child stderr transcript (verbatim, in order):
+[dll] DLL_PROCESS_ATTACH (loader notified)
+[child] mode=hang setup done (atexit registered, dll loaded, marker in stdout buffer)
+[child] idling, waiting to be TerminateProcess'd...
+[driver] end transcript
+[driver] child stdout file (0 bytes): ""
+[driver] stdout marker survived? NO  -> buffer died with the process
+
+----- case ctrlbreak -----
+[driver] child pid=31132 ready handshake: 0x0
+[driver] GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT, pid) -- the catchable 'signal'
+[driver] exit code=5 (0x00000005)
+[driver] child stderr transcript (verbatim, in order):
+[dll] DLL_PROCESS_ATTACH (loader notified)
+[child] mode=ctrlbreak setup done (atexit registered, dll loaded, marker in stdout buffer)
+[child] ctrl handler installed, idling...
+[child] CTRL_BREAK_EVENT handler: graceful cleanup ran, calling ExitProcess(5)
+[dll] DLL_PROCESS_DETACH (loader gave us a goodbye chance)
+[driver] end transcript
+[driver] child stdout file (37 bytes): "STDOUT_MARKER_ONLY_SURVIVES_REAL_EXIT"
+[driver] stdout marker survived? YES -> buffer was flushed
+
+E3 done.

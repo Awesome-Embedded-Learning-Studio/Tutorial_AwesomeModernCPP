@@ -1,0 +1,30 @@
+$ ./e2_granularity.exe; echo "exit=$?"
+dwPageSize=4096(页粒度)  dwAllocationGranularity=65536(分配粒度)
+
+== 步骤1:请求尺寸 vs 实得地址/RegionSize(MEM_RESERVE|MEM_COMMIT)==
+  请求       返回地址       低16位 64K对齐  RegionSize(VQ)
+  0x1          177ba5c0000        0        是        0x00001000(1 页)
+  0x1000       177ba5d0000        0        是        0x00001000(1 页)
+  0xffff       177ba5e0000        0        是        0x00010000(16 页)
+  0x10000      177ba5f0000        0        是        0x00010000(16 页)
+  0x10001      177ba600000        0        是        0x00011000(17 页)
+  0x100001     177ba620000        0        是        0x00101000(257 页)
+
+  探针:上面 1 字节那笔(00000177ba5c0000)块内偏移 +4KiB 处:
+  [VQ +4KiB           ] State=FREE    Protect=0x0001 AllocBase=0000000000000000 RegionSize=0x0000f000
+  [VQ +64KiB(块外)  ] State=COMMIT  Protect=0x0004 AllocBase=00000177ba5d0000 RegionSize=0x00001000
+
+== 步骤2:默认模式连发 4 次 64KiB(自底向上连号)==
+  a0=00000177ba730000
+  a1=00000177ba740000
+  a2=00000177ba750000
+  a3=00000177ba760000  <- 间隔:0x10000 0x10000 0x10000
+
+== 步骤3:MEM_TOP_DOWN(从高往低发)==
+  默认     low =00000177ba770000
+  TOP_DOWN td1=00007ff48a850000
+  TOP_DOWN td2=00007ff48a750000
+  td1-low=0x7e7cd00e0000(跨了半个用户态空间,量级对比)
+  td1-td2=0x100000(第二次 TOP_DOWN 更低 —— 高水位往下走,间隔恰 1MiB)
+  td1/td2 低16位:0 / 0
+exit=0

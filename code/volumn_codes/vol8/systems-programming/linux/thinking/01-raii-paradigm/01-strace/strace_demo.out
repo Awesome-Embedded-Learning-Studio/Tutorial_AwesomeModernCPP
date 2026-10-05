@@ -1,0 +1,8 @@
+== phase 0: create the file (first scope) ==
+== phase 1: normal scope exit ==
+[scope] fd=3 in scope
+== phase 2: early return ==
+[early-return] fd=3 still open, returning now
+== phase 3: mapped_region ==
+[map] asked 16 B, region claims 4096 B at 0x7084406de000, first byte 'w'
+== main returns ==

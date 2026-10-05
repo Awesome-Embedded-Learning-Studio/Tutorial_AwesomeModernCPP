@@ -1,0 +1,7 @@
+== 第一幕:read 的两种「等」与 EOF ==
+[1000.3 ms] read#1 返回 4:「ping」——管道空但写者活着时,read 干等了约 1000 ms
+[1300.5 ms] read#2 返回 0——写端全关,这是 EOF(与 Windows 篇 W01 的 ReadFile 到文件尾返 0 同一语义)
+
+== 第二幕:读端全关 → SIGPIPE + EPIPE ==
+write(写端) 返回 -1,errno=32 (Broken pipe);信号处理器被调过:是(SIGPIPE 已被我们捕获)
+SIGPIPE 设为 SIG_IGN 再来一次:write 返回 -1,errno=32 (Broken pipe)——忽略信号后错误只剩 errno 这一条通道

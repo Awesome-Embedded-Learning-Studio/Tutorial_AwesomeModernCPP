@@ -1,0 +1,14 @@
+== E2a: 背靠背连读的相邻间隔分布(每次读 kN=1000000) ==
+getres 都报 1ns(E1),下面的分布才是真读取粒度:
+CLOCK_MONOTONIC        零差=  0.0%  最小非零=10 ns  中位=20 ns  p99=21 ns  max=119998 ns
+CLOCK_REALTIME         零差=  0.0%  最小非零=10 ns  中位=20 ns  p99=21 ns  max=169140 ns
+CLOCK_MONOTONIC_RAW    零差=  0.0%  最小非零=10 ns  中位=20 ns  p99=21 ns  max=45356 ns
+CLOCK_THREAD_CPUTIME_ID 零差=  0.0%  最小非零=330 ns  中位=341 ns  p99=421 ns  max=272757 ns
+
+== E2b: COARSE 的值是台阶 ==
+CLOCK_MONOTONIC_COARSE 1000000 次读里只有 4 个不同值;相邻台阶平均间隔 3 ms(getres 见 E1)
+
+== E2c: 每次读取的代价(整段计时/kN) ==
+CLOCK_MONOTONIC        1000000 次读总耗 16566795 ns → 16.6 ns/次
+CLOCK_MONOTONIC_RAW    1000000 次读总耗 16339256 ns → 16.3 ns/次
+CLOCK_MONOTONIC_COARSE 1000000 次读总耗 1981623 ns → 2.0 ns/次

@@ -1,0 +1,17 @@
+## mklink 四条(cmd 原话,控制台代码页 936 的输出经 iconv GBK->UTF-8)
+
+C:\> mklink sl_file.txt real.txt        (文件符号链接)
+你没有足够的权限执行此操作。
+
+C:\> mklink /D sl_dir real_dir          (目录符号链接)
+你没有足够的权限执行此操作。
+
+C:\> mklink /J jn_dir real_dir          (junction,免特权)
+为 jn_dir <<===>> real_dir 创建的联接
+
+C:\> mklink /H hard.txt real.txt        (硬链接,免特权)
+为 hard.txt <<===>> real.txt 创建了硬链接
+
+解读:/D 的拒绝就是 CreateSymbolicLinkW 1314 的 cmd 版——没开发者模式、
+     没管理员,符号链接造不了;/J 与 /H 不要特权,这是 junction/硬链接
+     能当'平民链接'用的原因。

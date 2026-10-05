@@ -1,0 +1,410 @@
+newfstatat(AT_FDCWD, "/etc/ld.so.cache", {st_mode=S_IFREG|0644, st_size=112523, ...}, 0) = 0
+openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+close(3)                                = 0
+newfstatat(AT_FDCWD, "/etc/ld.so.cache", {st_mode=S_IFREG|0644, st_size=112523, ...}, 0) = 0
+openat(AT_FDCWD, "/usr/lib/libstdc++.so.6", O_RDONLY|O_CLOEXEC) = 3
+close(3)                                = 0
+newfstatat(AT_FDCWD, "/etc/ld.so.cache", {st_mode=S_IFREG|0644, st_size=112523, ...}, 0) = 0
+openat(AT_FDCWD, "/usr/lib/libm.so.6", O_RDONLY|O_CLOEXEC) = 3
+close(3)                                = 0
+newfstatat(AT_FDCWD, "/etc/ld.so.cache", {st_mode=S_IFREG|0644, st_size=112523, ...}, 0) = 0
+openat(AT_FDCWD, "/usr/lib/libgcc_s.so.1", O_RDONLY|O_CLOEXEC) = 3
+close(3)                                = 0
+newfstatat(AT_FDCWD, "/etc/ld.so.cache", {st_mode=S_IFREG|0644, st_size=112523, ...}, 0) = 0
+openat(AT_FDCWD, "/usr/lib/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+close(3)                                = 0
+openat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop", O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_DIRECTORY) = 3
+getdents64(3, 0x57b3130e5180 /* 4 entries */, 32768) = 104
+openat(3, "loop", O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_DIRECTORY) = 4
+getdents64(4, 0x57b3130ed4c0 /* 3 entries */, 32768) = 80
+getdents64(4, 0x57b3130ed4c0 /* 0 entries */, 32768) = 0
+close(4)                                = 0
+openat(3, "loop", O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_DIRECTORY) = 4
+getdents64(4, 0x57b3130ed4c0 /* 2 entries */, 32768) = 48
+getdents64(4, 0x57b3130ed4c0 /* 0 entries */, 32768) = 0
+close(4)                                = 0
+getdents64(3, 0x57b3130e5180 /* 0 entries */, 32768) = 0
+close(3)                                = 0
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop", 0x7ffdd6cdeb90, 0) = -1 ENOENT (No such file or directory)
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop", 0x7ffdd6cdeb90, 0) = -1 ENOENT (No such file or directory)
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/keep.txt", O_WRONLY|O_CREAT|O_TRUNC, 0666) = 3
+close(3)                                = 0
+openat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 3
+getdents64(3, 0x57b3130ed4c0 /* 4 entries */, 32768) = 104
+openat(3, "loop", O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_DIRECTORY) = 4
+getdents64(4, 0x57b3130f5500 /* 3 entries */, 32768) = 80
+getdents64(4, 0x57b3130f5500 /* 0 entries */, 32768) = 0
+close(4)                                = 0
+getdents64(3, 0x57b3130ed4c0 /* 0 entries */, 32768) = 0
+close(3)                                = 0
+openat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 3
+getdents64(3, 0x57b3130ed4c0 /* 4 entries */, 32768) = 104
+openat(3, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 4
+getdents64(4, 0x57b3130f5500 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(4, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 5
+getdents64(5, 0x57b3130fd540 /* 4 entries */, 32768) = 104
+openat(5, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 6
+getdents64(6, 0x57b313105580 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(6, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 7
+getdents64(7, 0x57b31310d5c0 /* 4 entries */, 32768) = 104
+openat(7, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 8
+getdents64(8, 0x57b313115600 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(8, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 9
+getdents64(9, 0x57b31311d640 /* 4 entries */, 32768) = 104
+openat(9, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 10
+getdents64(10, 0x57b313125680 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(10, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 11
+getdents64(11, 0x57b31312d6c0 /* 4 entries */, 32768) = 104
+openat(11, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 12
+getdents64(12, 0x57b313135700 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(12, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 13
+getdents64(13, 0x57b31313d740 /* 4 entries */, 32768) = 104
+openat(13, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 14
+getdents64(14, 0x57b313145780 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(14, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 15
+getdents64(15, 0x57b31314d7c0 /* 4 entries */, 32768) = 104
+openat(15, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 16
+getdents64(16, 0x57b313155b40 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(16, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 17
+getdents64(17, 0x57b31315e8f0 /* 4 entries */, 32768) = 104
+openat(17, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 18
+getdents64(18, 0x57b3131677e0 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(18, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 19
+getdents64(19, 0x57b31316fbf0 /* 4 entries */, 32768) = 104
+openat(19, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 20
+getdents64(20, 0x57b313178f50 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(20, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 21
+getdents64(21, 0x57b313181e60 /* 4 entries */, 32768) = 104
+openat(21, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 22
+getdents64(22, 0x57b313189fc0 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(22, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 23
+getdents64(23, 0x57b3131937e0 /* 4 entries */, 32768) = 104
+openat(23, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 24
+getdents64(24, 0x57b31319b820 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(24, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 25
+getdents64(25, 0x57b3131a5160 /* 4 entries */, 32768) = 104
+openat(25, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 26
+getdents64(26, 0x57b3131ae3a0 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(26, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 27
+getdents64(27, 0x57b3131b63e0 /* 4 entries */, 32768) = 104
+openat(27, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 28
+getdents64(28, 0x57b3131bfcf0 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(28, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 29
+getdents64(29, 0x57b3131c8b90 /* 4 entries */, 32768) = 104
+openat(29, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 30
+getdents64(30, 0x57b3131d2070 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(30, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 31
+getdents64(31, 0x57b3131da0b0 /* 4 entries */, 32768) = 104
+openat(31, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 32
+getdents64(32, 0x57b3131e3d20 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(32, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 33
+getdents64(33, 0x57b3131ecda0 /* 4 entries */, 32768) = 104
+openat(33, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 34
+getdents64(34, 0x57b3131f6520 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(34, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 35
+getdents64(35, 0x57b3131ff690 /* 4 entries */, 32768) = 104
+openat(35, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 36
+getdents64(36, 0x57b313208f60 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(36, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 37
+getdents64(37, 0x57b313210fa0 /* 4 entries */, 32768) = 104
+openat(37, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 38
+getdents64(38, 0x57b31321b120 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(38, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 39
+getdents64(39, 0x57b313223160 /* 4 entries */, 32768) = 104
+openat(39, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 40
+getdents64(40, 0x57b31322d490 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(40, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 41
+getdents64(41, 0x57b3132368d0 /* 4 entries */, 32768) = 104
+openat(41, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 42
+getdents64(42, 0x57b313240590 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(42, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 43
+getdents64(43, 0x57b3132485d0 /* 4 entries */, 32768) = 104
+openat(43, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 44
+getdents64(44, 0x57b313252c60 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(44, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 45
+getdents64(45, 0x57b31325aca0 /* 4 entries */, 32768) = 104
+openat(45, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 46
+getdents64(46, 0x57b3132654e0 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(46, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 47
+getdents64(47, 0x57b31326d520 /* 4 entries */, 32768) = 104
+openat(47, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 48
+getdents64(48, 0x57b313277f10 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(48, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 49
+getdents64(49, 0x57b31327ff50 /* 4 entries */, 32768) = 104
+openat(49, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 50
+getdents64(50, 0x57b31328aaf0 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(50, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 51
+getdents64(51, 0x57b3132943e0 /* 4 entries */, 32768) = 104
+openat(51, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 52
+getdents64(52, 0x57b31329e730 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(52, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 53
+getdents64(53, 0x57b3132a6770 /* 4 entries */, 32768) = 104
+openat(53, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 54
+getdents64(54, 0x57b3132b1670 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(54, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 55
+getdents64(55, 0x57b3132b96b0 /* 4 entries */, 32768) = 104
+openat(55, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 56
+getdents64(56, 0x57b3132c4760 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(56, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 57
+getdents64(57, 0x57b3132ce320 /* 4 entries */, 32768) = 104
+openat(57, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 58
+getdents64(58, 0x57b3132d8a60 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(58, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 59
+getdents64(59, 0x57b3132e0aa0 /* 4 entries */, 32768) = 104
+openat(59, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 60
+getdents64(60, 0x57b3132ebeb0 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(60, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 61
+getdents64(61, 0x57b3132f5c50 /* 4 entries */, 32768) = 104
+openat(61, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 62
+getdents64(62, 0x57b313300630 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(62, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 63
+getdents64(63, 0x57b313308670 /* 4 entries */, 32768) = 104
+openat(63, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 64
+getdents64(64, 0x57b313313de0 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(64, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 65
+getdents64(65, 0x57b31331dd60 /* 4 entries */, 32768) = 104
+openat(65, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 66
+getdents64(66, 0x57b3133289e0 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(66, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 67
+getdents64(67, 0x57b313330a20 /* 4 entries */, 32768) = 104
+openat(67, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 68
+getdents64(68, 0x57b31333c4f0 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(68, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 69
+getdents64(69, 0x57b313344530 /* 4 entries */, 32768) = 104
+openat(69, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 70
+getdents64(70, 0x57b3133501b0 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(70, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 71
+getdents64(71, 0x57b3133581f0 /* 4 entries */, 32768) = 104
+openat(71, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 72
+getdents64(72, 0x57b313364020 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(72, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 73
+getdents64(73, 0x57b31336c060 /* 4 entries */, 32768) = 104
+openat(73, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 74
+getdents64(74, 0x57b3133783a0 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(74, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 75
+getdents64(75, 0x57b313383620 /* 4 entries */, 32768) = 104
+openat(75, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 76
+getdents64(76, 0x57b31338b660 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(76, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 77
+getdents64(77, 0x57b3133978e0 /* 4 entries */, 32768) = 104
+openat(77, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 78
+getdents64(78, 0x57b31339f920 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(78, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 79
+getdents64(79, 0x57b3133abd50 /* 4 entries */, 32768) = 104
+openat(79, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 80
+getdents64(80, 0x57b3133b3d90 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(80, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 81
+getdents64(81, 0x57b3133c0720 /* 4 entries */, 32768) = 104
+openat(81, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 82
+getdents64(82, 0x57b3133cbe20 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(82, "inner", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 83
+getdents64(83, 0x57b3133d6610 /* 4 entries */, 32768) = 104
+openat(83, "loop", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 84
+getdents64(84, 0x57b3133e1e60 /* 3 entries */, 32768) = 80
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_loop/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner/loop/inner", 0x7ffdd6cdeca0, 0) = -1 ELOOP (Too many levels of symbolic links)
+getdents64(84, 0x57b3133e1e60 /* 0 entries */, 32768) = 0
+close(84)                               = 0
+getdents64(83, 0x57b3133d6610 /* 0 entries */, 32768) = 0
+close(83)                               = 0
+getdents64(82, 0x57b3133cbe20 /* 0 entries */, 32768) = 0
+close(82)                               = 0
+getdents64(81, 0x57b3133c0720 /* 0 entries */, 32768) = 0
+close(81)                               = 0
+getdents64(80, 0x57b3133b3d90 /* 0 entries */, 32768) = 0
+close(80)                               = 0
+getdents64(79, 0x57b3133abd50 /* 0 entries */, 32768) = 0
+close(79)                               = 0
+getdents64(78, 0x57b31339f920 /* 0 entries */, 32768) = 0
+close(78)                               = 0
+getdents64(77, 0x57b3133978e0 /* 0 entries */, 32768) = 0
+close(77)                               = 0
+getdents64(76, 0x57b31338b660 /* 0 entries */, 32768) = 0
+close(76)                               = 0
+getdents64(75, 0x57b313383620 /* 0 entries */, 32768) = 0
+close(75)                               = 0
+getdents64(74, 0x57b3133783a0 /* 0 entries */, 32768) = 0
+close(74)                               = 0
+getdents64(73, 0x57b31336c060 /* 0 entries */, 32768) = 0
+close(73)                               = 0
+getdents64(72, 0x57b313364020 /* 0 entries */, 32768) = 0
+close(72)                               = 0
+getdents64(71, 0x57b3133581f0 /* 0 entries */, 32768) = 0
+close(71)                               = 0
+getdents64(70, 0x57b3133501b0 /* 0 entries */, 32768) = 0
+close(70)                               = 0
+getdents64(69, 0x57b313344530 /* 0 entries */, 32768) = 0
+close(69)                               = 0
+getdents64(68, 0x57b31333c4f0 /* 0 entries */, 32768) = 0
+close(68)                               = 0
+getdents64(67, 0x57b313330a20 /* 0 entries */, 32768) = 0
+close(67)                               = 0
+getdents64(66, 0x57b3133289e0 /* 0 entries */, 32768) = 0
+close(66)                               = 0
+getdents64(65, 0x57b31331dd60 /* 0 entries */, 32768) = 0
+close(65)                               = 0
+getdents64(64, 0x57b313313de0 /* 0 entries */, 32768) = 0
+close(64)                               = 0
+getdents64(63, 0x57b313308670 /* 0 entries */, 32768) = 0
+close(63)                               = 0
+getdents64(62, 0x57b313300630 /* 0 entries */, 32768) = 0
+close(62)                               = 0
+getdents64(61, 0x57b3132f5c50 /* 0 entries */, 32768) = 0
+close(61)                               = 0
+getdents64(60, 0x57b3132ebeb0 /* 0 entries */, 32768) = 0
+close(60)                               = 0
+getdents64(59, 0x57b3132e0aa0 /* 0 entries */, 32768) = 0
+close(59)                               = 0
+getdents64(58, 0x57b3132d8a60 /* 0 entries */, 32768) = 0
+close(58)                               = 0
+getdents64(57, 0x57b3132ce320 /* 0 entries */, 32768) = 0
+close(57)                               = 0
+getdents64(56, 0x57b3132c4760 /* 0 entries */, 32768) = 0
+close(56)                               = 0
+getdents64(55, 0x57b3132b96b0 /* 0 entries */, 32768) = 0
+close(55)                               = 0
+getdents64(54, 0x57b3132b1670 /* 0 entries */, 32768) = 0
+close(54)                               = 0
+getdents64(53, 0x57b3132a6770 /* 0 entries */, 32768) = 0
+close(53)                               = 0
+getdents64(52, 0x57b31329e730 /* 0 entries */, 32768) = 0
+close(52)                               = 0
+getdents64(51, 0x57b3132943e0 /* 0 entries */, 32768) = 0
+close(51)                               = 0
+getdents64(50, 0x57b31328aaf0 /* 0 entries */, 32768) = 0
+close(50)                               = 0
+getdents64(49, 0x57b31327ff50 /* 0 entries */, 32768) = 0
+close(49)                               = 0
+getdents64(48, 0x57b313277f10 /* 0 entries */, 32768) = 0
+close(48)                               = 0
+getdents64(47, 0x57b31326d520 /* 0 entries */, 32768) = 0
+close(47)                               = 0
+getdents64(46, 0x57b3132654e0 /* 0 entries */, 32768) = 0
+close(46)                               = 0
+getdents64(45, 0x57b31325aca0 /* 0 entries */, 32768) = 0
+close(45)                               = 0
+getdents64(44, 0x57b313252c60 /* 0 entries */, 32768) = 0
+close(44)                               = 0
+getdents64(43, 0x57b3132485d0 /* 0 entries */, 32768) = 0
+close(43)                               = 0
+getdents64(42, 0x57b313240590 /* 0 entries */, 32768) = 0
+close(42)                               = 0
+getdents64(41, 0x57b3132368d0 /* 0 entries */, 32768) = 0
+close(41)                               = 0
+getdents64(40, 0x57b31322d490 /* 0 entries */, 32768) = 0
+close(40)                               = 0
+getdents64(39, 0x57b313223160 /* 0 entries */, 32768) = 0
+close(39)                               = 0
+getdents64(38, 0x57b31321b120 /* 0 entries */, 32768) = 0
+close(38)                               = 0
+getdents64(37, 0x57b313210fa0 /* 0 entries */, 32768) = 0
+close(37)                               = 0
+getdents64(36, 0x57b313208f60 /* 0 entries */, 32768) = 0
+close(36)                               = 0
+getdents64(35, 0x57b3131ff690 /* 0 entries */, 32768) = 0
+close(35)                               = 0
+getdents64(34, 0x57b3131f6520 /* 0 entries */, 32768) = 0
+close(34)                               = 0
+getdents64(33, 0x57b3131ecda0 /* 0 entries */, 32768) = 0
+close(33)                               = 0
+getdents64(32, 0x57b3131e3d20 /* 0 entries */, 32768) = 0
+close(32)                               = 0
+getdents64(31, 0x57b3131da0b0 /* 0 entries */, 32768) = 0
+close(31)                               = 0
+getdents64(30, 0x57b3131d2070 /* 0 entries */, 32768) = 0
+close(30)                               = 0
+getdents64(29, 0x57b3131c8b90 /* 0 entries */, 32768) = 0
+close(29)                               = 0
+getdents64(28, 0x57b3131bfcf0 /* 0 entries */, 32768) = 0
+close(28)                               = 0
+getdents64(27, 0x57b3131b63e0 /* 0 entries */, 32768) = 0
+close(27)                               = 0
+getdents64(26, 0x57b3131ae3a0 /* 0 entries */, 32768) = 0
+close(26)                               = 0
+getdents64(25, 0x57b3131a5160 /* 0 entries */, 32768) = 0
+close(25)                               = 0
+getdents64(24, 0x57b31319b820 /* 0 entries */, 32768) = 0
+close(24)                               = 0
+getdents64(23, 0x57b3131937e0 /* 0 entries */, 32768) = 0
+close(23)                               = 0
+getdents64(22, 0x57b313189fc0 /* 0 entries */, 32768) = 0
+close(22)                               = 0
+getdents64(21, 0x57b313181e60 /* 0 entries */, 32768) = 0
+close(21)                               = 0
+getdents64(20, 0x57b313178f50 /* 0 entries */, 32768) = 0
+close(20)                               = 0
+getdents64(19, 0x57b31316fbf0 /* 0 entries */, 32768) = 0
+close(19)                               = 0
+getdents64(18, 0x57b3131677e0 /* 0 entries */, 32768) = 0
+close(18)                               = 0
+getdents64(17, 0x57b31315e8f0 /* 0 entries */, 32768) = 0
+close(17)                               = 0
+getdents64(16, 0x57b313155b40 /* 0 entries */, 32768) = 0
+close(16)                               = 0
+getdents64(15, 0x57b31314d7c0 /* 0 entries */, 32768) = 0
+close(15)                               = 0
+getdents64(14, 0x57b313145780 /* 0 entries */, 32768) = 0
+close(14)                               = 0
+getdents64(13, 0x57b31313d740 /* 0 entries */, 32768) = 0
+close(13)                               = 0
+getdents64(12, 0x57b313135700 /* 0 entries */, 32768) = 0
+close(12)                               = 0
+getdents64(11, 0x57b31312d6c0 /* 0 entries */, 32768) = 0
+close(11)                               = 0
+getdents64(10, 0x57b313125680 /* 0 entries */, 32768) = 0
+close(10)                               = 0
+getdents64(9, 0x57b31311d640 /* 0 entries */, 32768) = 0
+close(9)                                = 0
+getdents64(8, 0x57b313115600 /* 0 entries */, 32768) = 0
+close(8)                                = 0
+getdents64(7, 0x57b31310d5c0 /* 0 entries */, 32768) = 0
+close(7)                                = 0
+getdents64(6, 0x57b313105580 /* 0 entries */, 32768) = 0
+close(6)                                = 0
+getdents64(5, 0x57b3130fd540 /* 0 entries */, 32768) = 0
+close(5)                                = 0
+getdents64(4, 0x57b3130f5500 /* 0 entries */, 32768) = 0
+close(4)                                = 0
+getdents64(3, 0x57b3130ed4c0 /* 0 entries */, 32768) = 0
+close(3)                                = 0
++++ exited with 0 +++

@@ -1,0 +1,9 @@
+== strtok: the in-progress pointer lives in static storage ==
+[strtok] main strtok #1 -> alpha
+[strtok] (handler-style) strtok -> X   <- 静态进度被覆盖
+[strtok] main strtok #2 (expect beta) -> Y   <- CORRUPTED
+
+== localtime: the result struct itself is static ==
+[localtime] first  localtime -> 2001-09-09 01:46:40
+[localtime] second localtime -> 2014-05-13 16:53:20
+[localtime] re-read pointer a   -> 2014-05-13 16:53:20   <- a silently became t2

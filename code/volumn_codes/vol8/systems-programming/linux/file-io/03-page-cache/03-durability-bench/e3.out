@@ -1,0 +1,28 @@
+# 环境: 6.18.33.2-microsoft-standard-WSL2 | AMD Ryzen 7 9700X 8-Core Processor | 数据盘 /dev/sdd ext4 1055762868 65035712 937023684 7% /
+# 口径: size=256MiB chunk=1024KiB rounds=3 计时=clock_gettime(CLOCK_MONOTONIC),含 sync 调用本身
+
+# round 1 mode=plain pre_dirty=200kB  RESULT mode=plain totalMiB=256 chunkKiB=1024 elapsed_ms=129.9 mib_per_s=1971
+# round 2 mode=plain pre_dirty=0kB  RESULT mode=plain totalMiB=256 chunkKiB=1024 elapsed_ms=40.4 mib_per_s=6334
+# round 3 mode=plain pre_dirty=0kB  RESULT mode=plain totalMiB=256 chunkKiB=1024 elapsed_ms=38.8 mib_per_s=6604
+# round 1 mode=fsync pre_dirty=0kB  RESULT mode=fsync totalMiB=256 chunkKiB=1024 elapsed_ms=60.6 mib_per_s=4222
+# round 2 mode=fsync pre_dirty=128kB  RESULT mode=fsync totalMiB=256 chunkKiB=1024 elapsed_ms=60.0 mib_per_s=4266
+# round 3 mode=fsync pre_dirty=208kB  RESULT mode=fsync totalMiB=256 chunkKiB=1024 elapsed_ms=61.4 mib_per_s=4167
+# round 1 mode=fdatasync pre_dirty=44kB  RESULT mode=fdatasync totalMiB=256 chunkKiB=1024 elapsed_ms=60.3 mib_per_s=4245
+# round 2 mode=fdatasync pre_dirty=68kB  RESULT mode=fdatasync totalMiB=256 chunkKiB=1024 elapsed_ms=59.3 mib_per_s=4319
+# round 3 mode=fdatasync pre_dirty=0kB  RESULT mode=fdatasync totalMiB=256 chunkKiB=1024 elapsed_ms=59.6 mib_per_s=4295
+# round 1 mode=osync pre_dirty=0kB  RESULT mode=osync totalMiB=256 chunkKiB=1024 elapsed_ms=301.6 mib_per_s=849
+# round 2 mode=osync pre_dirty=100kB  RESULT mode=osync totalMiB=256 chunkKiB=1024 elapsed_ms=284.4 mib_per_s=900
+# round 3 mode=osync pre_dirty=0kB  RESULT mode=osync totalMiB=256 chunkKiB=1024 elapsed_ms=318.6 mib_per_s=804
+
+# ===================== 汇总(原始轮次 + 中位数) =====================
+mode              r1_ms        r2_ms        r3_ms      median_ms median_MiB_s
+plain             129.9         40.4         38.8           40.4         6337
+fsync              60.6         60.0         61.4           60.6         4224
+fdatasync          60.3         59.3         59.6           59.6         4295
+osync             301.6        284.4        318.6          301.6          849
+
+# ===================== 附加: O_SYNC + 4KiB 小块(64MiB 口径) =====================
+# round 1 mode=osync4k pre_dirty=52kB  RESULT mode=osync totalMiB=64 chunkKiB=4 elapsed_ms=22387.2 mib_per_s=3
+# round 2 mode=osync4k pre_dirty=52kB  RESULT mode=osync totalMiB=64 chunkKiB=4 elapsed_ms=15162.0 mib_per_s=4
+# round 3 mode=osync4k pre_dirty=208kB  RESULT mode=osync totalMiB=64 chunkKiB=4 elapsed_ms=20871.5 mib_per_s=3
+osync_4k        22387.2      15162.0      20871.5        20871.5            3

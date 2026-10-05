@@ -15,6 +15,7 @@ from typing import Dict, List, Set, Tuple
 from tags import VALID_TAGS
 
 VALID_DIFFICULTY = {'beginner', 'intermediate', 'advanced'}
+VALID_STATUS_VARIANTS = {'polishing', 'draft', 'verified'}
 VALID_CPP_STANDARDS = {'11', '14', '17', '20', '23', '26'}
 
 # Lecture note specific fields (vol10-open-lecture-notes)
@@ -114,6 +115,32 @@ class FrontmatterValidator:
                             f"{filepath}: Unknown tag: '{tag}'. "
                             f"Consider adding it to VALID_TAGS if appropriate."
                         )
+
+        # Validate current_status (optional; string or {title, detail?, variant?, icon?})
+        if 'current_status' in frontmatter:
+            cs = frontmatter['current_status']
+            ok = False
+            if isinstance(cs, str) and cs.strip():
+                ok = True
+            elif isinstance(cs, dict):
+                title = cs.get('title')
+                if isinstance(title, str) and title.strip():
+                    ok = True
+                    variant = cs.get('variant', 'polishing')
+                    if variant not in VALID_STATUS_VARIANTS:
+                        self.errors.append(
+                            f"{filepath}: Invalid current_status.variant: '{variant}'. "
+                            f"Must be one of {sorted(VALID_STATUS_VARIANTS)}"
+                        )
+                else:
+                    self.errors.append(
+                        f"{filepath}: current_status as a mapping requires a non-empty 'title'."
+                    )
+            if not ok and not self.errors:
+                self.errors.append(
+                    f"{filepath}: Invalid current_status: must be a non-empty string "
+                    f"or a mapping with 'title'."
+                )
 
     def validate_lecture_note_fields(self, frontmatter: Dict, filepath: Path):
         """Validate lecture note specific fields (vol10-open-lecture-notes)."""

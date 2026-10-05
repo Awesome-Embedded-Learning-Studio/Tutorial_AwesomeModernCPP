@@ -1,0 +1,29 @@
+$ ./e1_lifecycle.exe; echo "exit=$?"
+[E1] 命名对象生命周期,pid=20084,名字=Local\SysProgShm_E1_20084
+
+[1] CreateFileMappingW 两次同名 + OpenFileMappingW(括号里是进程句柄总数)
+  第1次 Create(请求 64KiB)  -> h=00000000000000f0 err=0  (handles 60->61)
+  第2次 Create(同名)       -> h=00000000000000f4 err=183  (183=ERROR_ALREADY_EXISTS,句柄照常有效)
+  第3次 Create(同名,请求 1MiB) -> h=00000000000000f8 err=183,映射后 RegionSize=0x10000(64KiB) <- 尺寸被忽略,还是 64KiB 那个对象
+  OpenFileMappingW(存在)   -> h=00000000000000f8 err=0  (handles 62->63)
+  OpenFileMappingW(不存在) -> h=0000000000000000 err=2  (2=ERROR_FILE_NOT_FOUND)
+
+[2] 生命周期两段论:名字死于最后一个句柄,对象死于最后一个引用
+  MapViewOfFile(h2 全景)   -> base=0000021691e30000
+  CloseHandle(h1),h2 还拿着句柄 -> 按名打开: h=00000000000000f0 err=0 (有句柄在,名字就在;h4复用了 刚关掉的 h1 那个句柄槽)
+  关掉 h2/h3:句柄数回到 60(基线 60),本进程再无该对象的句柄
+  句柄全关后写视图 4096 字节再读回:4096/4096 字节相符 —— 视图是另一类引用,对象还活着
+  句柄全关后按名再打开      -> h=0000000000000000 err=2 (2=ERROR_FILE_NOT_FOUND!)名字在最后一个句柄关闭那刻就摘了,对象匿名续命
+  UnmapViewOfFile:最后一根引用撒手,对象此刻才销毁(没有显式 unlink;名字已亡,销毁无从按名查证)
+
+[3] 名字空间:Local\ 按会话隔离,Global\ 要特权(section 才要)
+  CreateFileMappingW(Global\...section) -> h=0000000000000000 err=5 (5=ERROR_ACCESS_DENIED,SeCreateGlobalPrivilege 未持有)
+  CreateMutexW     (Global\...mutex)    -> h=00000000000000f8 err=0 (成功!特权门槛只拦 section,不拦互斥体/事件/信号量)
+
+[4] SEC_RESERVE|PAGE_READWRITE(页文件后备,保留语义的正主)
+  4MiB SEC_RESERVE 映射 -> base=0000021692140000 State=MEM_RESERVE Protect=0x0 RegionSize=0x400000
+  VirtualAlloc(首页 MEM_COMMIT) -> 0000021692140000,State=MEM_COMMIT Protect=0x4
+  提交后写读:*(uint64_t*)base=0x5A5A5A5A5A5A5A5A
+
+[E1] 完:handles 60(基线 60,无泄漏)
+exit=0

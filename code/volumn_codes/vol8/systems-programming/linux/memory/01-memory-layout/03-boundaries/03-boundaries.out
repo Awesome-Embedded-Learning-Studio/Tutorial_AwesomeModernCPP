@@ -1,0 +1,53 @@
+== E3-1 malloc 尺寸扫描(起始 [heap]=60fa2fef0000-60fa2ff23000) ==
+    请求  指针         来源       [heap]end      所在映射
+      1024  0x60fa2ff02200 brk([heap])  60fa2ff23000(+0) 60fa2fef0000-60fa2ff23000(204KB)
+      4096  0x60fa2ff03e80 brk([heap])  60fa2ff23000(+0) 60fa2fef0000-60fa2ff23000(204KB)
+     16384  0x60fa2ff04e90 brk([heap])  60fa2ff23000(+0) 60fa2fef0000-60fa2ff23000(204KB)
+     65536  0x60fa2ff08ea0 brk([heap])  60fa2ff23000(+0) 60fa2fef0000-60fa2ff23000(204KB)
+     98304  0x60fa2ff18eb0 brk([heap])  60fa2ff51000(+188416) 60fa2fef0000-60fa2ff51000(388KB)
+    114688  0x60fa2ff30ec0 brk([heap])  60fa2ff51000(+0) 60fa2fef0000-60fa2ff51000(388KB)
+    122880  0x60fa2ff4ced0 brk([heap])  60fa2ff8b000(+237568) 60fa2fef0000-60fa2ff8b000(620KB)
+    126976  0x60fa2ff6aee0 brk([heap])  60fa2ff8b000(+0) 60fa2fef0000-60fa2ff8b000(620KB)
+    130048  0x60fa2ff89ef0 brk([heap])  60fa2ffca000(+258048) 60fa2fef0000-60fa2ffca000(872KB)
+    131008  0x60fa2ffa9b00 brk([heap])  60fa2ffca000(+0) 60fa2fef0000-60fa2ffca000(872KB)
+    131048  0x60fa2ffc9ad0 brk([heap])  60fa3000a000(+262144) 60fa2fef0000-60fa3000a000(1128KB)
+    131049  0x60fa2ffe9ac0 brk([heap])  60fa3000a000(+0) 60fa2fef0000-60fa3000a000(1128KB)
+    131050  0x7a0cc2ad8010 mmap(匿名) 60fa3000a000(+0) 7a0cc2ad8000-7a0cc2afe000(152KB)
+    131056  0x7a0cc27df010 mmap(匿名) 60fa3000a000(+0) 7a0cc27df000-7a0cc2800000(132KB)
+    131072  0x7a0cc27be010 mmap(匿名) 60fa3000a000(+0) 7a0cc27be000-7a0cc2800000(264KB)
+    131073  0x7a0cc279d010 mmap(匿名) 60fa3000a000(+0) 7a0cc279d000-7a0cc2800000(396KB)
+    135168  0x7a0cc277b010 mmap(匿名) 60fa3000a000(+0) 7a0cc277b000-7a0cc2800000(532KB)
+    163840  0x7a0cc2752010 mmap(匿名) 60fa3000a000(+0) 7a0cc2752000-7a0cc2800000(696KB)
+    196608  0x7a0cc2721010 mmap(匿名) 60fa3000a000(+0) 7a0cc2721000-7a0cc2800000(892KB)
+    262144  0x7a0cc26e0010 mmap(匿名) 60fa3000a000(+0) 7a0cc26e0000-7a0cc2800000(1152KB)
+   1048576  0x7a0cc22ff010 mmap(匿名) 60fa3000a000(+0) 7a0cc22ff000-7a0cc2400000(1028KB)
+   4194304  0x7a0cc1efe010 mmap(匿名) 60fa3000a000(+0) 7a0cc1efe000-7a0cc2400000(5128KB)
+  67108864  0x7a0cbdefd010 mmap(匿名) 60fa3000a000(+0) 7a0cbdefd000-7a0cc2400000(70668KB)
+分水岭:第一笔走 mmap 的请求 = 131050 字节(glibc 默认 mmap 阈值 128KiB=131072)
+
+== E3-2 栈增长([stack] 起初 7fff4b91a000-7fff4b93c000,RLIMIT_STACK=8192KB) ==
+[alloca] 每轮 4KB,共 200 轮:
+  第   0 轮 alloca 缓冲 = 0x7fff4b938910
+  第  50 轮 alloca 缓冲 = 0x7fff4b9065f0
+  第 100 轮 alloca 缓冲 = 0x7fff4b8d42d0
+  第 150 轮 alloca 缓冲 = 0x7fff4b8a1fb0
+[深递归] 每帧 ~192B,深度 12000,每 3000 层报一次帧地址:
+  depth 12000 帧内 pad = 0x7fff4b939be0
+  depth  9000 帧内 pad = 0x7fff4b7d4a40
+  depth  6000 帧内 pad = 0x7fff4b738640
+  depth  3000 帧内 pad = 0x7fff4b69c240
+  depth     0 帧内 pad = 0x7fff4b5ffe40
+  递归返回后局部变量地址 = 0x7fff4b939948
+[stack] 现在 7fff4b5ff000-7fff4b93c000:起始(低地址端)下探了 3180KB,顶端不动 → 向低地址生长
+
+== E3-3 归还观察 ==
+[a] free 前的 64MB 块:0x7a0cbdefd010 所在映射 7a0cbdefd000-7a0cc2400000(70668KB)
+    free 后:所在映射 已消失(munmap 立刻归还地址空间)
+[b] 256×48KB 全部来自 brk:喂大前 [heap]=60fa2fef0000-60fa3000a000(1128KB)
+    喂大后 [heap]=60fa2fef0000-60fa30c20000(13504KB,涨了 12376KB)
+    全部 free 后 [heap]=60fa2fef0000-60fa3002b000(1260KB,brk 已收缩)
+    → 小块 free 后堆顶以上归还内核(留 M_TOP_PAD 常驻),但已 write 过的页不再还给内核
+[c] free 一笔 4MB mmap 块(0x7a0cc1efe010),让 glibc 抬高动态 mmap 阈值:
+    malloc(3MB) = 0x60fa3000a2d0 → brk([heap])([heap] end 60fa3002b000 → 60fa3032b000)
+    malloc(5MB) = 0x7a0cc1dfe010 → mmap(匿名)
+    → 阈值被抬到被释放块的大小(≈4MB):3MB 回 brk、5MB 仍 mmap

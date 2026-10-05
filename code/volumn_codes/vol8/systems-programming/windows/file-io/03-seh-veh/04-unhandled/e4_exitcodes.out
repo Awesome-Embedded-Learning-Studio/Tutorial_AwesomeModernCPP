@@ -1,0 +1,17 @@
+$ cmd /v:on /c "e4_bare.exe < nul & echo ERRORLEVEL=!ERRORLEVEL!"
+bare: about to write to NULL
+ERRORLEVEL=-1073741819
+
+$ cmd /v:on /c "e4_ueh.exe < nul & echo ERRORLEVEL=!ERRORLEVEL!"
+ueh: about to write to NULL
+  [UEH] code=0xC0000005 at rip=00007ff79b721547, returning EXECUTE_HANDLER
+ERRORLEVEL=-1073741819
+
+$ cmd /v:on /c "e4_errmode.exe < nul & echo ERRORLEVEL=!ERRORLEVEL!"
+errmode: about to write to NULL (no GPF box)
+ERRORLEVEL=-1073741819
+
+-1073741819 = 0xC0000005 的有符号 32 位写法:裸崩退出码就是异常码本身;
+UEH 返回 EXECUTE_HANDLER 也一样(handler 跑完进程照样以异常码收场);
+SEM_NOGPFAULTERRORBOX 只压错误框,不改退出码。
+WER:DontShowUI 无本地覆盖(默认允许 UI),但控制台进程在 stdio 重定向下崩,未观察到弹窗,进程即刻退出。

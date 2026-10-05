@@ -34,6 +34,22 @@ globs: documents/**/*.md
 | `reading_time_minutes` | int | — | 预估阅读时长（分钟） |
 | `prerequisites` | list[string] | — | 前置知识章节列表 |
 | `related` | list[string] | — | 相关文章标题 |
+| `current_status` | string \| object | 见下 | 文章当前状态（如「正在打磨」），页面右下角弹 MC 成就风格提示；**默认不写**，状态稳定后应移除 |
+
+### `current_status` 用法
+
+```yaml
+# 简写:一行字,弹框只有标题
+current_status: 正在打磨
+
+# 完整:标题 + 描述 + 变体
+current_status:
+  title: 正在打磨
+  detail: 本篇正在逐句打磨，表述可能随时调整
+  variant: polishing   # polishing 金边（默认）| draft 灰蓝 | verified 绿
+```
+
+行为（组件 `site/.vitepress/theme/components/StatusToast.vue`）：读者进入带此字段的文章时，右下角滑入提示框，悬停暂停倒计时，约 6 秒后滑出，可点 × 关闭。同一篇文章的同一状态内容只弹一次（localStorage 记录）；修改状态文本后老读者会再看到一次。文章状态稳定后把这个字段删掉即可，无需其他清理。
 
 ## 标签体系（VALID_TAGS）
 

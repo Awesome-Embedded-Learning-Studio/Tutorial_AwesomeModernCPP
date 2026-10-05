@@ -1,0 +1,21 @@
+nr_hugepages          = 0
+nr_overcommit_hugepages = 0
+/proc/meminfo 大页相关字段:
+    HugePages_Total:       0
+    HugePages_Free:        0
+    HugePages_Rsvd:        0
+    HugePages_Surp:        0
+    Hugepagesize:       2048 kB
+    Hugetlb:               0 kB
+open(nr_hugepages, O_WRONLY) -> 失败 errno=13 (Permission denied)  [无 root,如实记录]
+
+MAP_HUGETLB 尝试(池为空,预期 ENOMEM):
+MAP_HUGETLB|MAP_HUGE_2MB, 2 MiB        -> MAP_FAILED  errno=12 (Cannot allocate memory)
+MAP_HUGETLB|MAP_HUGE_1GB, 1 GiB        -> MAP_FAILED  errno=12 (Cannot allocate memory)
+MAP_HUGETLB(默认页大小), 2 MiB    -> MAP_FAILED  errno=12 (Cannot allocate memory)
+
+对照组(不带 HUGETLB,普通匿名映射):
+普通 MAP_ANONYMOUS, 2 MiB            -> 0x74f0fc800000  成功
+
+结论口径:显式大页需要管理员先往 nr_hugepages 池里预留(启动参数或 root 写
+sysctl,或挂 hugetlbfs);无特权环境下能走的大页路径是 E3 的 THP(madvise)。

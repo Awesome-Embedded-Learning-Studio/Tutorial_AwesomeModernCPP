@@ -1,0 +1,16 @@
+# 环境: 6.18.33.2-microsoft-standard-WSL2 | AMD Ryzen 7 9700X 8-Core Processor | 数据盘 /dev/sdd ext4 1055762868 65034892 937024504 7% /
+== 场景 A: write() 后立刻 _exit(0),不 fsync ==
+  子进程 A 已退出 (waitpid status=0x0)。父进程现在 read 同一文件:
+  read() 返回 44 字节,内容: "WRITTEN_VIA_WRITE_SYSCALL_NO_FSYNC_THEN_EXIT"
+  判定: 可见 —— write() 返回时数据已在页缓存(内核),进程死不死它都在
+
+== 场景 B: 写到一半 kill -9 ==
+  子进程被 kill -9 (waitpid status=0x9, SIGKILL=9)。父进程读回校验:
+  文件大小: 1728512 字节 (422 个完整 4KiB 块, 尾部零头 0 字节)
+  校验: 422/422 个完整块编号与填充模式全部完好, 序号 0..421 连续
+  判定: kill -9 杀掉的是进程;凡是 write() 已经返回的数据,一个字节都没丢
+
+== 场景 C(对照): stdio 用户态缓冲,同样 _exit(0) ==
+  C1 fprintf 后 _exit(0): 文件大小 0 字节 (100 行 x 24 字节本应 2400)
+  C2 fprintf + fflush 后 _exit(0): 文件大小 2400 字节
+  判定: 丢数据的另一层是 stdio 用户态缓冲;write() 返回后那一层已经不存在了

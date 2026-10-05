@@ -1,0 +1,35 @@
+E2: madvise family (page size 4096, ext4 backing file /home/charliechen/lm02_scratch/ra.bin)
+
+== (A) MADV_NORMAL/SEQUENTIAL/RANDOM x readahead, via mincore ==
+   NORMAL     baseline    0 KiB resident -> after touching 1 MiB:   8192 KiB (+7168 KiB beyond touched)
+   SEQUENTIAL baseline    0 KiB resident -> after touching 1 MiB:   3088 KiB (+2064 KiB beyond touched)
+   RANDOM     baseline    0 KiB resident -> after touching 1 MiB:   1024 KiB (+   0 KiB beyond touched)
+   MADV_WILLNEED (8 MiB, no touch):
+   before        :    0 KiB resident
+   after WILLNEED: 8192 KiB resident (prefetch is async; polled until stable)
+
+== (B) MADV_DONTNEED on anonymous pages ==
+   wrote 8 MiB pattern (0xC0DE0000+i), Rss = 8192 kB
+   p[0]=0xc0de0000, p[1MiB]=0xc0e20000, p[5MiB]=0xc0f20000
+   madvise(first 4 MiB, MADV_DONTNEED) rc=0, Rss = 4096 kB
+   read back: p[0]=0x00000000 (zero page), p[1MiB]=0x00000000, p[5MiB]=0xc0f20000 (intact)
+   mincore first 64 KiB: 1000000000000000
+   mincore last 64 KiB: 1111111111111111
+
+== (C) MADV_DONTFORK ==
+   parent: DONTFORK page 0x7b94ba5aa000 = 0x5a5a5a5a, COW page 0x7b94ba5a9000 = 0xa5a5a5a5
+   child : DONTFORK page in maps? NO (gone) ; COW page in maps? yes
+   child : COW page reads 0xa5a5a5a5, child writes 0x11 -> reads 0x00000011
+
+[handler] SIGSEGV reading DONTFORK page, si_addr = 0x00007b94ba5aa000, si_code = 1 (SEGV_MAPERR)  <- 子进程里地址根本不在映射里
+   child exited 83; parent after: DONTFORK page = 0x5a5a5a5a, COW page = 0xa5a5a5a5 (COW 各改各的)
+
+== (D) MADV_REMOVE ==
+   anon private : rc=-1 errno=22 (Invalid argument)
+   ext4 shared  : 3 pages written; madvise rc=0 errno=0; pread middle all-zero; st_blocks 24 -> 16, size=12288 (hole punched, KEEP_SIZE)
+   tmpfs shared: 3 pages 'a','b','c'; size=12288, st_blocks=24 (512B units), shm f_bfree=6940363
+   madvise(middle page, MADV_REMOVE) rc=0 errno=0
+   after punch: size=12288 (unchanged); st_blocks 24 -> 16 (page freed), then read hole via mapping -> st_blocks back to 24 (shmem 立了零页)
+   map page0='a' page1=0x00 page2='c'; pread middle page reads all-zero (hole)
+
+done

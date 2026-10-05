@@ -1,0 +1,5 @@
+$ ./leak_raii 1000
+RLIMIT_NOFILE: soft=1048576 hard=1048576
+fds before (3): 0 1 2
+fds after  (3): 0 1 2
+loop=1000 caught=1000 leaked=0

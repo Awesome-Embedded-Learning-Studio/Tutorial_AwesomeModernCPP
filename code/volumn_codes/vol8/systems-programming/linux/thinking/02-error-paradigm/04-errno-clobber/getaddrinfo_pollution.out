@@ -1,0 +1,4 @@
+numeric AI_NUMERICHOST       rc= 0 errno after=0
+plain numeric (no flag)      rc= 0 errno after=0
+name "localhost"             rc= 0 errno after=6
+name again (cache warm)      rc= 0 errno after=6

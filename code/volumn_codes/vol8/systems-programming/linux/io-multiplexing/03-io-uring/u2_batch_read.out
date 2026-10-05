@@ -1,0 +1,3 @@
+一次 io_uring_submit 提交了 64 个读请求 (各 4 KiB, 各自带偏移)
+收割 64 个 CQE (wait 真等 1 次, 其余 63 次是用户态 peek), 校验全部通过 (块号-偏移-内容对上), 共 262144 字节
+系统调用次数对照: read(2) 逐块 = 64 次; io_uring = submit 1 次 + wait 1 次 + peek 不进内核

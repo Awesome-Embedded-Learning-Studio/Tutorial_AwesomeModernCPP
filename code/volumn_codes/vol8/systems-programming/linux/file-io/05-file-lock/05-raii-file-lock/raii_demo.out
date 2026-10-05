@@ -1,0 +1,16 @@
+pid=169508, 文件:/home/charliechen/l05_scratch/e5/raii.bin(ext4)
+
+==== 双进程时序:A 拿写锁写数据,B 有限等待接棒 ====
+  [     0 ms] A(pid=169508):构造 file_lock,已写 "ticket=42",持锁 700 ms
+  [     0 ms] B(pid=169509):try_lock() = false(锁在 A 手里)
+  [   201 ms] B:try_lock_for(200ms) = false(实际等了 200 ms,超时)
+  [   700 ms] A:作用域将尽,file_lock 析构在即
+  [   700 ms] A:已放锁
+  [   700 ms] B:try_lock_for(3s) = true(等了 499 ms —— A 一放锁就拿到)
+  [   700 ms] B:读到 "ticket=42"(临界区数据完好)
+
+==== move 语义:锁跟着新主人走,moved-from 析构不放锁 ====
+  [   701 ms] 探针(lk1 持锁中):flock = -1(锁被占)
+  [   701 ms] move 后:lk1 还活着吗?否(moved-from);lk2 持有 fd=3
+  [   701 ms] 探针(lk1 析构后):flock = -1(锁被占)
+  [   702 ms] 探针(lk2 reset 后):flock = 0(拿到锁)

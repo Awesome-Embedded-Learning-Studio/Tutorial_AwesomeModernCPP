@@ -1,0 +1,33 @@
+E2 exit codes & waiting | parent pid=14612
+== [1] 三种退出形态:GetExitCodeProcess 读到什么 ==
+(a) child returns 42 from main
+    normal return 42:            exit code=42          (0x0000002A)  wait=signaled
+(b) child calls abort()  [Linux: WIFSIGNALED + WTERMSIG=6, 根本不是退出码]
+    abort():                     exit code=3221226505  (0xC0000409)  wait=signaled
+(c) parent TerminateProcess(h, 4660)
+    terminated 4660:             exit code=4660        (0x00001234)  wait=signaled
+(d) STILL_ACTIVE 陷阱:进程还没退,GetExitCodeProcess 给 259
+    queried while running     exit code=259 (259 = STILL_ACTIVE)
+    after real exit:             exit code=77          (0x0000004D)  wait=signaled
+
+== [2] 句柄只是观察权:CloseHandle(hProcess) 后进程还活着 ==
+handles closed for pid=13820; sleeping 300ms...
+OpenProcess(pid) succeeded -> process is STILL ALIVE 300ms after handle closed
+waited on reopened handle -> 0x0, exit code=5 (child chose 5)
+=> closing a handle drops OUR view, not the process; kernel object dies on LAST handle
+
+== [3] WaitForMultipleObjects:三个孩子赛跑 ==
+(a) chronological finish order (poll each with timeout 0):
+    t+547ms child[1] done, exit=22
+    t+1250ms child[2] done, exit=33
+    t+1844ms child[0] done, exit=11
+(b) single WFMO(bWaitAll=FALSE) blocks until ANY signaled:
+    returned 0x1 (=WAIT_OBJECT_0+1, child index) at t+516ms
+(c) WFMO(bWaitAll=TRUE) drains all, then collect by handle order:
+    all done at t+1297ms (ret 0x0); exit codes in HANDLE order:
+    child[0] exit=11
+    child[1] exit=22
+    child[2] exit=33
+    => waitpid(-1) 返回"某个"结束者还要再问是谁;WFMO 的返回值直接给出索引
+
+E2 done.

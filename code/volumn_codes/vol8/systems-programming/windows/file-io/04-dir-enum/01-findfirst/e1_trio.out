@@ -1,0 +1,85 @@
+== [1] 测试树按乱序创建,FindFirstFileW 枚举序 ==
+  创建顺序:zeta.txt, alpha.txt, Mike.TXT, 中文文件.txt, Beta.dat, noext, longname.html, 子目录/
+  枚举结果(pattern=\*,只报名字与短名):
+    [1] .                       
+    [2] ..                      
+    [3] alpha.txt               
+    [4] Beta.dat                
+    [5] longname.html             短名=LONGNA~1.HTM
+    [6] Mike.TXT                
+    [7] noext                   
+    [8] zeta.txt                
+    [9] 中文文件.txt        
+    [10] 子目录               
+  共 10 项(含 . 与 ..)——NTFS 按大小写折叠后的字典序返回,与创建顺序无关
+
+== [2] 特殊项 . 与 .. 的字段解读 ==
+    [1] .                      attr=DIRECTORY (0x10)
+        大小 0(0x0)= High 0x0 << 32 | Low 0x0
+        创建 2026-10-02 11:41:43.206 / 访问 2026-10-02 11:41:43.208 / 修改 2026-10-02 11:41:43.207
+    [2] ..                     attr=DIRECTORY (0x10)
+        大小 0(0x0)= High 0x0 << 32 | Low 0x0
+        创建 2026-10-02 11:19:17.340 / 访问 2026-10-02 11:41:43.206 / 修改 2026-10-02 11:41:43.206
+    [3] alpha.txt              attr=ARCHIVE (0x20)
+        大小 1(0x1)= High 0x0 << 32 | Low 0x1
+        创建 2026-10-02 11:41:43.206 / 访问 2026-10-02 11:41:43.206 / 修改 2026-10-02 11:41:43.206
+    [4] Beta.dat               attr=ARCHIVE (0x20)
+        大小 1(0x1)= High 0x0 << 32 | Low 0x1
+        创建 2026-10-02 11:41:43.207 / 访问 2026-10-02 11:41:43.207 / 修改 2026-10-02 11:41:43.207
+    [5] longname.html          attr=ARCHIVE (0x20)
+        大小 3(0x3)= High 0x0 << 32 | Low 0x3
+        创建 2026-10-02 11:41:43.207 / 访问 2026-10-02 11:41:43.207 / 修改 2026-10-02 11:41:43.207
+    [6] Mike.TXT               attr=ARCHIVE (0x20)
+        大小 1(0x1)= High 0x0 << 32 | Low 0x1
+        创建 2026-10-02 11:41:43.207 / 访问 2026-10-02 11:41:43.207 / 修改 2026-10-02 11:41:43.207
+    [7] noext                  attr=ARCHIVE (0x20)
+        大小 1(0x1)= High 0x0 << 32 | Low 0x1
+        创建 2026-10-02 11:41:43.207 / 访问 2026-10-02 11:41:43.207 / 修改 2026-10-02 11:41:43.207
+    [8] zeta.txt               attr=ARCHIVE (0x20)
+        大小 3(0x3)= High 0x0 << 32 | Low 0x3
+        创建 2026-10-02 11:41:43.206 / 访问 2026-10-02 11:41:43.206 / 修改 2026-10-02 11:41:43.206
+    [9] 中文文件.txt       attr=ARCHIVE (0x20)
+        大小 7(0x7)= High 0x0 << 32 | Low 0x7
+        创建 2026-10-02 11:41:43.207 / 访问 2026-10-02 11:41:43.207 / 修改 2026-10-02 11:41:43.207
+    [10] 子目录              attr=DIRECTORY (0x10)
+        大小 0(0x0)= High 0x0 << 32 | Low 0x0
+        创建 2026-10-02 11:41:43.207 / 访问 2026-10-02 11:41:43.207 / 修改 2026-10-02 11:41:43.207
+
+== [3] 过滤模式 ==
+  [3a] *.txt(点项不该出现):
+    [1] alpha.txt               
+    [2] Mike.TXT                
+    [3] zeta.txt                
+    [4] 中文文件.txt        
+  [3b] *.(DOS 尾点模式,看看能匹配到谁):
+    [1] .                       
+    [2] ..                      
+    [3] noext                   
+    [4] 子目录               
+  [3c] *.htm(短名匹配:longname.html 会不会被捎上?):
+    [1] longname.html             短名=LONGNA~1.HTM
+  [3d] 单个具体名字(等价于查一个文件的属性,不用通配符):
+    [1] alpha.txt              attr=ARCHIVE (0x20)
+        大小 1(0x1)= High 0x0 << 32 | Low 0x1
+        创建 2026-10-02 11:41:43.206 / 访问 2026-10-02 11:41:43.206 / 修改 2026-10-02 11:41:43.206
+
+== [4] 高低 32 位拼 64 位大小:SetEndOfFile 拉一个 4.5 GiB 账面文件 ==
+  SetFilePointerEx 到 0x120000000 后 SetEndOfFile——没写一个字节,账面就这么大
+  FindFirstFileW 回看:High=0x1 Low=0x20000000 -> 拼出 4831838208 字节
+
+== [5] 根目录 C:\ 的头几项(根目录没有 . 与 ..) ==
+    [1] $Recycle.Bin
+    [2] .cache
+    [3] AMD
+    [4] appverifUI.dll
+    [5] audio.log
+    [6] CloudMusic
+    [7] Documents and Settings
+    [8] DumpStack.log
+    (截断前 8 项;注意:没有 . 和 ..)
+
+== [6] 收尾:查找句柄与文件句柄的失败值宇宙对照 ==
+  失败返回 FindFirstFileW = ffffffffffffffff,INVALID_HANDLE_VALUE? 是,err=3(3=ERROR_PATH_NOT_FOUND)
+  FindClose 对 INVALID_HANDLE_VALUE:FALSE(err=3,对照 01 篇 CloseHandle 对 -1 是静默 TRUE)
+
+(测试树已清理)

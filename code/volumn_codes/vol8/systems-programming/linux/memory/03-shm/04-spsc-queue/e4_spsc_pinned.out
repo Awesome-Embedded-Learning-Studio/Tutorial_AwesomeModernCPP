@@ -1,0 +1,13 @@
+== E4 附:钉核对照(父进程 CPU0 / 子进程 CPU1;环境逻辑核 nproc=16)==
+== 问题:spin 落后 yield 是不是因为两进程被调度到同一个核?==
+
+spin  N=1000000 槽=1024×32B(共 32960B 实体):received=1000000 order_err=0 corrupt=0(子进程 pid=43192) 耗时 6.6 ms,152.52 百万条/秒,有效载荷 4654.7 MiB/s
+spin  N=1000000 槽=1024×32B(共 32960B 实体):received=1000000 order_err=0 corrupt=0(子进程 pid=43194) 耗时 6.2 ms,161.74 百万条/秒,有效载荷 4935.9 MiB/s
+spin  N=1000000 槽=1024×32B(共 32960B 实体):received=1000000 order_err=0 corrupt=0(子进程 pid=43196) 耗时 6.1 ms,162.67 百万条/秒,有效载荷 4964.3 MiB/s
+
+yield N=1000000 槽=1024×32B(共 32960B 实体):received=1000000 order_err=0 corrupt=0(子进程 pid=43198) 耗时 3.9 ms,256.80 百万条/秒,有效载荷 7836.8 MiB/s
+yield N=1000000 槽=1024×32B(共 32960B 实体):received=1000000 order_err=0 corrupt=0(子进程 pid=43200) 耗时 3.6 ms,276.85 百万条/秒,有效载荷 8448.8 MiB/s
+yield N=1000000 槽=1024×32B(共 32960B 实体):received=1000000 order_err=0 corrupt=0(子进程 pid=43202) 耗时 3.8 ms,266.28 百万条/秒,有效载荷 8126.3 MiB/s
+结论:钉核后 spin 仍落后——同核调度不是主因,主因是自旋方反复 acquire-load
+对方每条消息都要写的 tail 行,cache line 乒乓吃掉吞吐;sched_yield 让生产者安静,
+消费者成批追进度,反而更快(对吞吐;单条延迟另说)。

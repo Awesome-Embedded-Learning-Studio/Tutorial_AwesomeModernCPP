@@ -1,0 +1,15 @@
+== 场景 A:AV + SEH __try1 在场 ==
+  #1 VEH-veh2(后注册,First=1,插到 veh1 前面)
+  #2 VEH-veh1(先注册,First=1)
+     veh1 看到 code=0xC0000005
+  #3 VEH-veh3(First=0,排链尾)
+     SEH filter 看到 code=0xC0000005
+  #4 SEH __try1 的 filter
+  -> result=-1(SEH 处理块跑完)
+== 场景 B:AV + 无 SEH,只有 UEH ==
+  #5 VEH-veh2(后注册,First=1,插到 veh1 前面)
+  #6 VEH-veh1(先注册,First=1)
+     veh1 看到 code=0xC0000005
+  #7 VEH-veh3(First=0,排链尾)
+  #8 UEH(SetUnhandledExceptionFilter)
+     UEH 看到 code=0xC0000005,返回 EXECUTE_HANDLER

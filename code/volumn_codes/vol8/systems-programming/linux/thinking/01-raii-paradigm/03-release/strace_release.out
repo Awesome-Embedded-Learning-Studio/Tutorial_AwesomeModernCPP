@@ -1,0 +1,35 @@
+openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/libstdc++.so.6", O_RDONLY|O_CLOEXEC) = 3
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/libm.so.6", O_RDONLY|O_CLOEXEC) = 3
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/libgcc_s.so.1", O_RDONLY|O_CLOEXEC) = 3
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+close(3)                                = 0
+== 1) release(): give up ownership ==
+openat(AT_FDCWD, "/dev/null", O_RDONLY) = 3
+[open     ] a -> fd 3
+[release  ] a gave up fd 3, a now holds nothing
+close(3)                                = 0
+[manual   ] ::close(3) done — the only close it gets
+== 2) reset(new_fd): close old, take new ==
+openat(AT_FDCWD, "/dev/null", O_RDONLY) = 3
+[open     ] b -> fd 3
+openat(AT_FDCWD, "/dev/null", O_RDONLY) = 4
+[open     ] c -> fd 4
+close(3)                                = 0
+[reset(new)] b closed its old fd and now holds 4
+close(4)                                = 0
+[reset()  ] b.reset() -> b now holds nothing
+== 3) swap(): exchange roles ==
+openat(AT_FDCWD, "/dev/null", O_RDONLY) = 3
+[open     ] x -> fd 3
+openat(AT_FDCWD, "/dev/null", O_RDONLY) = 4
+[open     ] y -> fd 4
+[swap     ] x holds 4, y holds 3
+close(3)                                = 0
+close(4)                                = 0
+== done ==
++++ exited with 0 +++

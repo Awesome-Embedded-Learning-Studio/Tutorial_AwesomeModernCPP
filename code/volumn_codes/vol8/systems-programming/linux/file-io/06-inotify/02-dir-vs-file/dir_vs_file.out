@@ -1,0 +1,72 @@
+E2 目录 vs 文件 —— root: /home/charliechen/l06_scratch/e2
+/proc/sys/fs/inotify/: max_user_watches=524288 max_user_instances=1024 max_queued_events=16384
+wd_a=1 → A/(目录)
+
+==== 第 1 步:touch A/x ====
+  wd=1   mask=0x00000100 IN_CREATE                                    cookie=0      len=16  name='x'
+  wd=1   mask=0x00000020 IN_OPEN                                      cookie=0      len=16  name='x'
+  wd=1   mask=0x00000008 IN_CLOSE_WRITE                               cookie=0      len=16  name='x'
+
+==== 第 2 步:mkdir A/B ====
+  wd=1   mask=0x40000100 IN_CREATE|IN_ISDIR                           cookie=0      len=16  name='B'
+
+==== 第 3 步:touch A/B/y(watch 只挂在 A 上) ====
+  (0 个事件)
+  # ★ inotify 不递归:watch 的是 A,孙子辈 A/B/y 的 create一个事件都没报
+
+==== 第 4 步:touch A/a-very-long-filename-example.txt ====
+  wd=1   mask=0x00000100 IN_CREATE                                    cookie=0      len=48  name='a-very-long-filename-example.txt'
+  wd=1   mask=0x00000020 IN_OPEN                                      cookie=0      len=48  name='a-very-long-filename-example.txt'
+  wd=1   mask=0x00000008 IN_CLOSE_WRITE                               cookie=0      len=48  name='a-very-long-filename-example.txt'
+  # 长 32 字符的名字:len = 48(32+'\0' = 33,向上取整到 16 的倍数)
+
+wd_b=2 → A/B/(目录) —— 现在子目录也有自己的表了
+
+==== 第 3 步:touch A/B/y(watch 只挂在 A 上) ====
+  wd=2   mask=0x00000020 IN_OPEN                                      cookie=0      len=16  name='y'
+  wd=2   mask=0x00000008 IN_CLOSE_WRITE                               cookie=0      len=16  name='y'
+  # 同一个动作,A 的 wd_a 沉默、B 的 wd_b 报告:事件归属按 watch 的目录算,不按路径前缀
+
+==== 第 5 步:创建并写入 A/f(给文件 watch 用) ====
+  wd=1   mask=0x00000100 IN_CREATE                                    cookie=0      len=16  name='f'
+  wd=1   mask=0x00000020 IN_OPEN                                      cookie=0      len=16  name='f'
+  wd=1   mask=0x00000002 IN_MODIFY                                    cookie=0      len=16  name='f'
+  wd=1   mask=0x00000008 IN_CLOSE_WRITE                               cookie=0      len=16  name='f'
+
+IN_ONLYDIR 对文件 add_watch(A/x) = -1, errno = 20 (Not a directory) —— 只想盯目录时的防呆位
+
+wd_f=3 → A/f(单个文件)
+wd 表:wd_a=1 → A/,wd_b=2 → A/B/,wd_f=3 → A/f
+
+==== 第 6 步:open+write+close A/f ====
+  wd=1   mask=0x00000020 IN_OPEN                                      cookie=0      len=16  name='f'
+  wd=3   mask=0x00000020 IN_OPEN                                      cookie=0      len=0   name=''
+  wd=1   mask=0x00000002 IN_MODIFY                                    cookie=0      len=16  name='f'
+  wd=3   mask=0x00000002 IN_MODIFY                                    cookie=0      len=0   name=''
+  wd=1   mask=0x00000008 IN_CLOSE_WRITE                               cookie=0      len=16  name='f'
+  wd=3   mask=0x00000008 IN_CLOSE_WRITE                               cookie=0      len=0   name=''
+  # 文件级 watch 的 name 恒空(len=0):名字是目录 watch 用来报「孩子是谁」的,自己就是主角,不用报名
+
+==== 第 7 步:rename A/f → A/f.bak ====
+  wd=1   mask=0x00000040 IN_MOVED_FROM                                cookie=8619   len=16  name='f'
+  wd=1   mask=0x00000080 IN_MOVED_TO                                  cookie=8619   len=16  name='f.bak'
+  wd=3   mask=0x00000800 IN_MOVE_SELF                                 cookie=0      len=0   name=''
+  # 同一次 rename:wd_a 报 IN_MOVED_FROM/IN_MOVED_TO(cookie 配对),wd_f 报 IN_MOVE_SELF —— watch 跟着 inode 走,搬家不撒手
+
+==== 第 8 步:原路径 A/f 放上新 inode 并写入 ====
+  wd=1   mask=0x00000100 IN_CREATE                                    cookie=0      len=16  name='f'
+  wd=1   mask=0x00000020 IN_OPEN                                      cookie=0      len=16  name='f'
+  wd=1   mask=0x00000002 IN_MODIFY                                    cookie=0      len=16  name='f'
+  wd=1   mask=0x00000008 IN_CLOSE_WRITE                               cookie=0      len=16  name='f'
+  # ★ wd_f 对新 inode 的写入完全沉默:watch 绑 inode 不绑路径,原地换文件 = 监控脱靶
+
+==== 第 9 步:unlink A/f.bak(被 watch 的旧 inode 被删) ====
+  wd=3   mask=0x00000004 IN_ATTRIB                                    cookie=0      len=0   name=''
+  wd=3   mask=0x00000400 IN_DELETE_SELF                               cookie=0      len=0   name=''
+  wd=3   mask=0x00008000 IN_IGNORED                                   cookie=0      len=0   name=''
+  wd=1   mask=0x00000200 IN_DELETE                                    cookie=0      len=16  name='f.bak'
+  # 旧 inode 被 unlink:IN_ATTRIB(链接数归零)→ IN_DELETE_SELF → IN_IGNORED,watch 寿终正寝
+
+之后再 inotify_rm_watch(wd_f=3) = -1, errno = 22 (Invalid argument) —— 随 IN_IGNORED 已被内核摘掉
+
+子进程退出 status=0x0

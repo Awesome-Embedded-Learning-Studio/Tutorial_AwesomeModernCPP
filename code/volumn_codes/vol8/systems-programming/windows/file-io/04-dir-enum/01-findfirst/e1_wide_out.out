@@ -1,0 +1,127 @@
+setup: 建了 3 个文件;枚举回来对上号:中文=对上 emoji=对上
+## e1_wide_out.out —— 由 run_wide_out.sh 汇编:每 mode 独立进程跑,stdout 落文件后
+## od 十六进制留证(字节是证据),stderr 的返回值报告原样附在后面。
+
+===== 环境事实(mode=base,程序自己报) =====
+stdout isatty=0 stderr isatty=0
+GetACP=936 (ANSI,本机 936=GBK)
+GetOEMCP=936
+GetConsoleOutputCP=936 (重定向下进程仍能读到控制台代码页设置)
+setlocale(LC_ALL,nullptr)="C"
+MB_CUR_MAX=1
+
+===== mode=a =====
+-- stderr 报告:
+mode=a 运行时拿到:cn(经 CP_UTF8 转写)=中文文件.txt
+printf(%ls) 中文行返回 10,emoji 行返回 18(负数=失败;写到哪断了看 od)
+-- stdout 字节数: 30
+-- stdout 内容(尽力按 UTF-8 显示):
+[a] cn=[]
+[a] emoji=[emoji]
+-- stdout 字节十六进制(od -An -tx1):
+ 5b 61 5d 20 63 6e 3d 5b 5d 0d 0a 5b 61 5d 20 65
+ 6d 6f 6a 69 3d 5b 65 6d 6f 6a 69 5d 0d 0a
+
+===== mode=b =====
+-- stderr 报告:
+mode=b 运行时拿到:cn(经 CP_UTF8 转写)=中文文件.txt
+wprintf(%ls) 中文行返回 18,emoji 行返回 24
+-- stdout 字节数: 44
+-- stdout 内容(尽力按 UTF-8 显示):
+[b] cn=[????.txt]
+[b] emoji=[emoji??.txt]
+-- stdout 字节十六进制(od -An -tx1):
+ 5b 62 5d 20 63 6e 3d 5b 3f 3f 3f 3f 2e 74 78 74
+ 5d 0d 0a 5b 62 5d 20 65 6d 6f 6a 69 3d 5b 65 6d
+ 6f 6a 69 3f 3f 2e 74 78 74 5d 0d 0a
+
+===== mode=c =====
+-- stderr 报告:
+mode=c 运行时拿到:cn(经 CP_UTF8 转写)=中文文件.txt
+setlocale(LC_ALL,"") -> "Chinese (Simplified)_China.936"
+printf(%ls) 中文行返回 22,emoji 行返回 18
+-- stdout 字节数: 42
+-- stdout 内容(尽力按 UTF-8 显示):
+[c] cn=[�����ļ�.txt]
+[c] emoji=[emoji]
+-- stdout 字节十六进制(od -An -tx1):
+ 5b 63 5d 20 63 6e 3d 5b d6 d0 ce c4 ce c4 bc fe
+ 2e 74 78 74 5d 0d 0a 5b 63 5d 20 65 6d 6f 6a 69
+ 3d 5b 65 6d 6f 6a 69 5d 0d 0a
+
+===== mode=d =====
+-- stderr 报告:
+mode=d 运行时拿到:cn(经 CP_UTF8 转写)=中文文件.txt
+setlocale(LC_ALL,".UTF8") -> "Chinese (Simplified)_China.utf8"
+printf(%ls) 中文行返回 26,emoji 行返回 18
+-- stdout 字节数: 46
+-- stdout 内容(尽力按 UTF-8 显示):
+[d] cn=[中文文件.txt]
+[d] emoji=[emoji]
+-- stdout 字节十六进制(od -An -tx1):
+ 5b 64 5d 20 63 6e 3d 5b e4 b8 ad e6 96 87 e6 96
+ 87 e4 bb b6 2e 74 78 74 5d 0d 0a 5b 64 5d 20 65
+ 6d 6f 6a 69 3d 5b 65 6d 6f 6a 69 5d 0d 0a
+
+===== mode=e =====
+-- stderr 报告:
+mode=e 运行时拿到:cn(经 CP_UTF8 转写)=中文文件.txt
+setlocale(LC_ALL,".UTF8") -> "Chinese (Simplified)_China.utf8"
+wprintf(%ls) 中文行返回 18,emoji 行返回 24
+-- stdout 字节数: 50
+-- stdout 内容(尽力按 UTF-8 显示):
+[e] cn=[中文文件.txt]
+[e] emoji=[emoji.txt]
+-- stdout 字节十六进制(od -An -tx1):
+ 5b 65 5d 20 63 6e 3d 5b e4 b8 ad e6 96 87 e6 96
+ 87 e4 bb b6 2e 74 78 74 5d 0d 0a 5b 65 5d 20 65
+ 6d 6f 6a 69 3d 5b 65 6d 6f 6a 69 2e 74 78 74 5d
+ 0d 0a
+
+===== mode=f =====
+-- stderr 报告:
+mode=f 运行时拿到:cn(经 CP_UTF8 转写)=中文文件.txt
+WideCharToMultiByte(CP_UTF8) 后 printf(%s) 中文行返回 26,emoji 行返回 26
+-- stdout 字节数: 54
+-- stdout 内容(尽力按 UTF-8 显示):
+[f] cn=[中文文件.txt]
+[f] emoji=[emoji😀.txt]
+-- stdout 字节十六进制(od -An -tx1):
+ 5b 66 5d 20 63 6e 3d 5b e4 b8 ad e6 96 87 e6 96
+ 87 e4 bb b6 2e 74 78 74 5d 0d 0a 5b 66 5d 20 65
+ 6d 6f 6a 69 3d 5b 65 6d 6f 6a 69 f0 9f 98 80 2e
+ 74 78 74 5d 0d 0a
+
+===== mode=orient =====
+-- stderr 报告:
+mode=orient 运行时拿到:cn(经 CP_UTF8 转写)=中文文件.txt
+第一步 wprintf 返回 34
+第二步 printf 返回 59(0/负数=这行根本没出去)
+-- stdout 字节数: 95
+-- stdout 内容(尽力按 UTF-8 显示):
+[orient] wprintf ??:cn=[????.txt]
+[orient] 后到的 printf(narrow):还想再补一行 ASCII
+-- stdout 字节十六进制(od -An -tx1):
+ 5b 6f 72 69 65 6e 74 5d 20 77 70 72 69 6e 74 66
+ 20 3f 3f 3a 63 6e 3d 5b 3f 3f 3f 3f 2e 74 78 74
+ 5d 0d 0a 5b 6f 72 69 65 6e 74 5d 20 e5 90 8e e5
+ 88 b0 e7 9a 84 20 70 72 69 6e 74 66 28 6e 61 72
+ 72 6f 77 29 3a e8 bf 98 e6 83 b3 e5 86 8d e8 a1
+ a5 e4 b8 80 e8 a1 8c 20 41 53 43 49 49 0d 0a
+
+===== mode=orient2 =====
+-- stderr 报告:
+mode=orient2 运行时拿到:cn(经 CP_UTF8 转写)=中文文件.txt
+第一步 printf 返回 45
+第二步 wprintf 返回 36
+-- stdout 字节数: 83
+-- stdout 内容(尽力按 UTF-8 显示):
+[orient2] printf 先走(narrow):ASCII 一行
+[orient2] ??? wprintf:cn=[????.txt]
+-- stdout 字节十六进制(od -An -tx1):
+ 5b 6f 72 69 65 6e 74 32 5d 20 70 72 69 6e 74 66
+ 20 e5 85 88 e8 b5 b0 28 6e 61 72 72 6f 77 29 3a
+ 41 53 43 49 49 20 e4 b8 80 e8 a1 8c 0d 0a 5b 6f
+ 72 69 65 6e 74 32 5d 20 3f 3f 3f 20 77 70 72 69
+ 6e 74 66 3a 63 6e 3d 5b 3f 3f 3f 3f 2e 74 78 74
+ 5d 0d 0a
