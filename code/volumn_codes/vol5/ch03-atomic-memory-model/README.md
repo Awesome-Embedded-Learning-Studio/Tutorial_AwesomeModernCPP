@@ -15,7 +15,7 @@ cmake --build build
 ./build/atomic_default_ctor_verify
 ```
 
-benchmark 需要 CMake 3.20 或更高版本。请在仓库根目录构建；示例会将两个线程固定到 CPU 0 和 CPU 2，如果这些 CPU 不可用，先修改源码开头的 CPU 编号。
+benchmark 仅在 Linux x86-64 上构建。请在仓库根目录构建；示例会将两个线程固定到 CPU 0 和 CPU 2，如果这些 CPU 不可用，先修改源码开头的 CPU 编号。
 
 ```bash
 cmake -S code/volumn_codes/vol5/ch03-atomic-memory-model \

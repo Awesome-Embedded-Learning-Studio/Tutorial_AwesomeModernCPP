@@ -76,7 +76,7 @@ void consumer()
 }
 ```
 
-注意看这段代码和上一篇的"发布-订阅"模式有什么区别。在上一篇中，我们写的是 `flag.store(1, std::memory_order_release)`，把 release 语义绑定在 store 操作上。而这里，store 本身是 `relaxed` 的，release 的约束由独立的 fence 提供。两种写法在语义上是等价的——最终建立的都是同一个 happens-before 关系。那为什么要用 fence？等下我们会看到一个 fence 无法被普通 atomic 操作替代的场景。
+注意看这段代码和上一篇的"发布-订阅"模式有什么区别。在上一篇中，我们写的是 `flag.store(1, std::memory_order_release)`，把 release 语义绑定在 store 操作上。而这里，store 本身是 `relaxed` 的，release 的约束由独立的 fence 提供。两种写法在语义上是等价的——最终建立的都是同一个 happens-before 关系。那为什么要用 fence？等下我们会看到 fence 把"什么时候建立同步"与"哪个原子操作建立同步"分开的场景。
 
 ### atomic-fence 同步
 
@@ -168,7 +168,7 @@ void thread_b()
 
 我们回头看，fence 真正多给我们的是同步位置的选择：它可以借助符合条件的原子读写建立同步，也可以等运行时确认要读取数据，再执行 acquire fence。不过，写法灵活不等于机器指令更少或延迟更低；独立 fence 和带排序原子操作的开销还要看目标平台。代价则是推理更费劲：我们得核对原子读写与 fence 的先后关系，还要确认 load 究竟读到了哪次 store。
 
-那实际跑起来呢？我们在 WSL2 上的 Intel Core i5-12400（x86-64）试了一组双线程基准：使用 CMake 3.20.5 和 GCC 16.2 构建，编译选项为 `-O3 -march=native`，生产者和消费者分别固定在 CPU 0、CPU 2。生产者每轮写三个数据并发布三个原子标志，消费者等三个标志都更新后读取数据，再用另一个原子变量确认，生产者才进入下一轮。两版只改变发布和读取的内存序：一版逐字段使用 release store / acquire load，另一版使用一对 release / acquire fence 配合三个 relaxed store / load。测试源码在 `code/volumn_codes/vol5/ch03-atomic-memory-model/fence_vs_ordered_benchmark.cpp`，每次测试 200 万轮，每种写法运行 7 次并取中位数。示例要求 Linux x86-64、CMake 3.20 或更高版本；请在仓库根目录运行以下命令。如果你的环境没有 CPU 0、CPU 2，可以在源码开头修改固定的 CPU 编号：
+那实际跑起来呢？我们在 WSL2 上的 Intel Core i5-12400（x86-64）试了一组双线程基准：使用 CMake 3.20.5 和 GCC 16.2 构建，编译选项为 `-O3 -march=native`，生产者和消费者分别固定在 CPU 0、CPU 2。生产者每轮写三个数据并发布三个原子标志，消费者等三个标志都更新后读取数据，再用另一个原子变量确认，生产者才进入下一轮。两版只改变发布和读取的内存序：一版逐字段使用 release store / acquire load，另一版使用一对 release / acquire fence 配合三个 relaxed store / load。测试源码在 `code/volumn_codes/vol5/ch03-atomic-memory-model/fence_vs_ordered_benchmark.cpp`，每次测试 200 万轮，每种写法运行 7 次并取中位数。示例要求 Linux x86-64；请在仓库根目录运行以下命令。如果你的环境没有 CPU 0、CPU 2，可以在源码开头修改固定的 CPU 编号：
 
 ```bash
 cmake -S code/volumn_codes/vol5/ch03-atomic-memory-model \
@@ -182,7 +182,7 @@ cmake --build /tmp/vol5-fence-build --target fence_vs_ordered_benchmark
 | 逐字段 release / acquire | 124.8 ns/轮 |
 | fence + relaxed | 117.4 ns/轮 |
 
-这次运行中 fence 版的中位数略低，但单次结果有明显波动。这里测量的是完整交接过程，包含轮询、缓存通信和确认操作，不是单条 fence 指令的延迟。这一组结果不能证明 fence 稳定更快；换个平台、换种访问模式，还得重新看生成代码和实测结果。
+这次运行中 fence 版的中位数略低，但单次结果有明显波动。这里测量的是完整交接过程，包含轮询、缓存通信和确认操作，不是单条 fence 指令的延迟。而且在 x86-64 上，这两版编译出的机器指令其实是同一套：release/acquire fence 一条指令都不生成，release store 和 acquire load 也就是普通 mov（后面讲平台屏障指令的小节会具体看到）。两个中位数的差值来自运行波动和代码布局，不反映写法本身的差异。这组对比要到生成指令确实不同的平台（比如 ARM）上，才真正在测两种写法的差别。这一组结果不能证明 fence 稳定更快；换个平台、换种访问模式，还得重新看生成代码和实测结果。
 
 笔者的建议是：在大多数场景下，优先使用带排序的原子操作（比如 `store(..., release)` + `load(..., acquire)`）；只有同步位置确实需要与具体原子操作分开，或在目标平台上测到了收益时，再考虑 fence。记住，fence 不是"更高级"的写法，它是一种"更手动"的写法——手动意味着更大的自由度，也意味着更容易出错。
 
