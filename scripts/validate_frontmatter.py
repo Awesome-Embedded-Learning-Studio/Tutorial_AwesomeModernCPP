@@ -221,9 +221,9 @@ class FrontmatterValidator:
         """Run validation on all markdown files in tutorial directory."""
         md_files = list(self.tutorial_dir.rglob('*.md'))
 
-        # Skip index.md files and tags.md (they don't need frontmatter)
+        # Skip index.md files and tags.md/bookmarks.md (site tool pages, not chapter articles)
         # Also skip non-article files (e.g. images/ directory)
-        skip_names = {'index.md', 'tags.md', 'README.md'}
+        skip_names = {'index.md', 'tags.md', 'bookmarks.md', 'README.md'}
         skip_dir_parts = {'images'}
         md_files = [
             f for f in md_files

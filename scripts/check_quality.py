@@ -37,7 +37,7 @@ VALID_DIFFICULTY = {'beginner', 'intermediate', 'advanced'}
 REQUIRED_FM_FIELDS = {'title', 'chapter', 'order'}
 RECOMMENDED_FM_FIELDS = {'description', 'tags'}
 
-SKIP_FILENAMES = {'index.md', 'tags.md', 'README.md'}
+SKIP_FILENAMES = {'index.md', 'tags.md', 'bookmarks.md', 'README.md'}
 SKIP_DIR_PARTS = {'images', 'generated'}
 
 IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.drawio'}

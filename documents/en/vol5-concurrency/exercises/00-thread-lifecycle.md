@@ -21,14 +21,14 @@ related:
   - "Thread Ownership and RAII"
 translation:
   source: documents/vol5-concurrency/exercises/00-thread-lifecycle.md
-  source_hash: ff4f57476dec5b5d89b2ce4d45333b7aa37f6a7714a8be66b5ffee096c7fea97
+  source_hash: a0dd59669eea75ce22481a7d0419d3ff2c5e84f4e216a933a830c20cbe1cdebb
   translated_at: '2026-09-26T09:17:12+00:00'
   engine: anthropic
   token_count: 11800
 ---
 # Lab 0: Thread Lifecycle
 
-> The runnable project that goes with this Lab lives at [`code/volumn_codes/vol5-labs/templates/lab0_thread_lifecycle/`](../../../../code/volumn_codes/vol5-labs/templates/lab0_thread_lifecycle/). Expect roughly **4–6 hours** of hands-on work (`reading_time_minutes` counts pure reading minutes, not hands-on time).
+> The runnable project that goes with this Lab lives at `code/volumn_codes/vol5-labs/templates/lab0_thread_lifecycle/`. Expect roughly **4–6 hours** of hands-on work (`reading_time_minutes` counts pure reading minutes, not hands-on time).
 
 ## Objectives
 
@@ -71,7 +71,7 @@ templates/lab0_thread_lifecycle/
     └── test_milestone1.cpp … test_milestone4.cpp
 ```
 
-Build instructions for the entire `vol5-labs/` directory, plus the dogfooding feedback process, live in [`vol5-labs/README.md`](../../../../code/volumn_codes/vol5-labs/README.md). Read it first.
+Build instructions for the entire `vol5-labs/` directory, plus the dogfooding feedback process, live in `vol5-labs/README.md`. Read it first.
 
 First build (requires internet access; FetchContent pulls Catch2 v3):
 
@@ -181,7 +181,7 @@ For statistics, start with the simplest thing possible: global `std::atomic<std:
 
 ### Verification
 
-The corresponding tests live in [`test/test_milestone1.cpp`](../../../../code/volumn_codes/vol5-labs/templates/lab0_thread_lifecycle/test/test_milestone1.cpp), covering three scenarios: the scan collects all files, an empty directory doesn't crash, and the total byte count is correct. Key assertion:
+The corresponding tests live in `test/test_milestone1.cpp`, covering three scenarios: the scan collects all files, an empty directory doesn't crash, and the total byte count is correct. Key assertion:
 
 ```cpp
 TEST_CASE("MS1: scan collects all files", "[lab0][milestone1]") {
@@ -228,7 +228,7 @@ Once `JoiningThread` is done, go back to `file_scanner.h`, swap `std::vector<std
 
 > **Don't let the tests fool you**: `test_milestone2` only tests the `JoiningThread` class itself (decoupled from `FileScanner`) and **does not check whether `scan()` actually uses it**. So even with `JoiningThread` implemented and every test green, if `scan()` still uses raw `std::thread`s plus a manual `join()` loop, this milestone has not truly been completed. **The real acceptance criteria: no manual `join()` loop visible in `scan()`, and the thread container is `std::vector<lab0::JoiningThread>`.**
 
-[`test/test_milestone2.cpp`](../../../../code/volumn_codes/vol5-labs/templates/lab0_thread_lifecycle/test/test_milestone2.cpp) only tests `JoiningThread` itself (decoupled from `FileScanner`), covering four scenarios: automatic join at scope exit, all workers still joined on an exception path, ownership transferred by move, and `vector` destruction joining everything. Pay attention to the exception-path one:
+`test/test_milestone2.cpp` only tests `JoiningThread` itself (decoupled from `FileScanner`), covering four scenarios: automatic join at scope exit, all workers still joined on an exception path, ownership transferred by move, and `vector` destruction joining everything. Pay attention to the exception-path one:
 
 ```cpp
 TEST_CASE("MS2: exception path still joins all workers", "[lab0][milestone2]") {
@@ -272,7 +272,7 @@ In MS1 we passed the file path list to workers by value — which is in fact alr
 
 ### Verification
 
-[`test/test_milestone3.cpp`](../../../../code/volumn_codes/vol5-labs/templates/lab0_thread_lifecycle/test/test_milestone3.cpp) verifies: non-divisible splits still cover all files (30 files / 8 workers), prime file counts (17 files) lose nothing under any split, and move-only types (`unique_ptr`) can be passed into threads safely. Take the prime case:
+`test/test_milestone3.cpp` verifies: non-divisible splits still cover all files (30 files / 8 workers), prime file counts (17 files) lose nothing under any split, and move-only types (`unique_ptr`) can be passed into threads safely. Take the prime case:
 
 ```cpp
 TEST_CASE("MS3: prime file count covered by any worker count", "[lab0][milestone3]") {
@@ -330,7 +330,7 @@ One more small point: the `worker_id` in `results[worker_id]` must be unique per
 
 > **Don't let the tests fool you**: `test_milestone4` only checks that the result numbers are right (matching the single-threaded run); it **does not check whether the statistics are genuinely "local per worker"**. So even with every test green, if `scan()` still does its statistics through a shared `mutex`/`atomic`, you are really still at MS1 and this milestone has not truly been completed. **The real acceptance criteria: no locks and no shared atomics in `scan()`; statistics go through independent `results[worker_id]` slots plus main-thread aggregation.**
 
-[`test/test_milestone4.cpp`](../../../../code/volumn_codes/vol5-labs/templates/lab0_thread_lifecycle/test/test_milestone4.cpp) verifies: a multi-threaded scan's results are **exactly identical** to a single-threaded file-by-file scan (all three of file count, byte count, and extension distribution must match), plus a stress test of 200 files / 8 workers. Key assertion:
+`test/test_milestone4.cpp` verifies: a multi-threaded scan's results are **exactly identical** to a single-threaded file-by-file scan (all three of file count, byte count, and extension distribution must match), plus a stress test of 200 files / 8 workers. Key assertion:
 
 ```cpp
 TEST_CASE("MS4: multi-threaded stats match single-threaded baseline", "[lab0][milestone4]") {
