@@ -17,9 +17,11 @@ if (!args || !Array.isArray(args.files) || !args.files.length || !args.batch) {
   throw new Error('需要 args: { batch: string, files: string[] }')
 }
 
-const FILES = args.files
+// 兼容直接传 en 镜像路径:先剥掉 en/ 前缀还原中文源,enOf 借此保持幂等
+const cnOf = (p) => p.replace(/^documents\/en\//, 'documents/')
+const FILES = args.files.map(cnOf)
 const BATCH = args.batch
-const enOf = (p) => p.replace(/^documents\//, 'documents/en/')
+const enOf = (p) => cnOf(p).replace(/^documents\//, 'documents/en/')
 const short = (p) => p.split('/').pop()
 
 const OUT_TITLES = {
