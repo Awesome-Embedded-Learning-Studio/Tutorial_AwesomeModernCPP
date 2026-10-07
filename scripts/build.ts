@@ -280,7 +280,11 @@ export default withDrawio(defineConfig({
   ...sharedBase,
   srcDir: '${relSrc.replace(/\\/g, '/')}',
   outDir: '${relOut.replace(/\\/g, '/')}',
-  ignoreDeadLinks: true,
+  // 根站 srcDir 只有 index/tags/bookmarks(中英),首页正文链向各卷的入口物理不存在,
+  // 只忽略各卷挂载前缀(含 /en 侧);根站页面之间的链接(/tags /bookmarks /en/tags...)仍被死链检查覆盖。
+  ignoreDeadLinks: ${JSON.stringify([
+    ...VOLUMES.flatMap(v => [v.urlPrefix, `${v.urlPrefix}/**`, `/en${v.urlPrefix}`, `/en${v.urlPrefix}/**`]),
+  ])},
   transformPageData(pageData) { applyTagsPageData(pageData); applyArticleContributors(pageData) },
   title: '现代 C++ 教程',
   description: '系统化的现代 C++ 教程 — 从基础入门到领域实战',
@@ -760,7 +764,7 @@ async function main() {
 
   const rootSrcDir = join(BUILD_TMP, 'root-src')
   mkdirSync(rootSrcDir, { recursive: true })
-  for (const f of ['index.md', 'tags.md']) {
+  for (const f of ['index.md', 'tags.md', 'bookmarks.md']) {
     const s = join(DOCUMENTS, f)
     if (existsSync(s)) cpSync(s, join(rootSrcDir, f))
   }
@@ -772,7 +776,7 @@ async function main() {
   }
   if (existsSync(join(DOCUMENTS, 'en'))) {
     mkdirSync(join(rootSrcDir, 'en'), { recursive: true })
-    for (const f of ['index.md', 'tags.md']) {
+    for (const f of ['index.md', 'tags.md', 'bookmarks.md']) {
       const s = join(DOCUMENTS, 'en', f)
       if (existsSync(s)) cpSync(s, join(rootSrcDir, 'en', f))
     }

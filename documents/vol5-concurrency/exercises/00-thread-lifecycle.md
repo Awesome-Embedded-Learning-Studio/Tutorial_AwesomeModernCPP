@@ -23,7 +23,7 @@ related:
 
 # Lab 0: Thread Lifecycle Lab
 
-> 本 Lab 配套可运行工程在 [`code/volumn_codes/vol5-labs/templates/lab0_thread_lifecycle/`](../../../code/volumn_codes/vol5-labs/templates/lab0_thread_lifecycle/)。动手工作量约 **4–6 小时**（`reading_time_minutes` 是纯阅读分钟数，不是动手时间）。
+> 本 Lab 配套可运行工程在 `code/volumn_codes/vol5-labs/templates/lab0_thread_lifecycle/`。动手工作量约 **4–6 小时**（`reading_time_minutes` 是纯阅读分钟数，不是动手时间）。
 
 ## 目标
 
@@ -66,7 +66,7 @@ templates/lab0_thread_lifecycle/
     └── test_milestone1.cpp … test_milestone4.cpp
 ```
 
-整个 `vol5-labs/` 目录的构建说明和 dogfooding 反馈流程见 [`vol5-labs/README.md`](../../../code/volumn_codes/vol5-labs/README.md)。先把它读一遍。
+整个 `vol5-labs/` 目录的构建说明和 dogfooding 反馈流程见 `vol5-labs/README.md`。先把它读一遍。
 
 第一次构建（需要联网，FetchContent 会拉取 Catch2 v3）：
 
@@ -176,7 +176,7 @@ return 汇总
 
 ### 验证
 
-对应测试在 [`test/test_milestone1.cpp`](../../../code/volumn_codes/vol5-labs/templates/lab0_thread_lifecycle/test/test_milestone1.cpp)，覆盖三个场景：扫描收集到全部文件、空目录不崩溃、总字节数正确。关键断言：
+对应测试在 `test/test_milestone1.cpp`，覆盖三个场景：扫描收集到全部文件、空目录不崩溃、总字节数正确。关键断言：
 
 ```cpp
 TEST_CASE("MS1: scan collects all files", "[lab0][milestone1]") {
@@ -223,7 +223,7 @@ Milestone 1 的手工 `join()` 有个明显问题：如果在 join 循环之前�
 
 > **别被测试骗了**：`test_milestone2` 只测 `JoiningThread` 类本身（和 `FileScanner` 解耦），**不检查 `scan()` 有没有真的用它**。所以哪怕你实现了 `JoiningThread`、测试全绿，但 `scan()` 里还是裸 `std::thread` + 手工 `join()` 循环——这个 milestone 就没真正完成。**真正的验收标准：`scan()` 里看不到手工 `join()` 循环，线程容器是 `std::vector<lab0::JoiningThread>`。**
 
-[`test/test_milestone2.cpp`](../../../code/volumn_codes/vol5-labs/templates/lab0_thread_lifecycle/test/test_milestone2.cpp) 只测 `JoiningThread` 本身（和 `FileScanner` 解耦），覆盖四个场景：作用域结束自动 join、异常路径仍 join 全部 worker、move 转移所有权、`vector` 析构 join 全部。重点看异常路径这个：
+`test/test_milestone2.cpp` 只测 `JoiningThread` 本身（和 `FileScanner` 解耦），覆盖四个场景：作用域结束自动 join、异常路径仍 join 全部 worker、move 转移所有权、`vector` 析构 join 全部。重点看异常路径这个：
 
 ```cpp
 TEST_CASE("MS2: exception path still joins all workers", "[lab0][milestone2]") {
@@ -267,7 +267,7 @@ MS1 我们把文件路径列表按值传给 worker——这其实已经是安全
 
 ### 验证
 
-[`test/test_milestone3.cpp`](../../../code/volumn_codes/vol5-labs/templates/lab0_thread_lifecycle/test/test_milestone3.cpp) 验证：非整除分片也覆盖所有文件（30 文件 / 8 worker）、素数文件数（17 文件）任何分片都不丢、move-only 类型（`unique_ptr`）能安全传入线程。比如素数那个：
+`test/test_milestone3.cpp` 验证：非整除分片也覆盖所有文件（30 文件 / 8 worker）、素数文件数（17 文件）任何分片都不丢、move-only 类型（`unique_ptr`）能安全传入线程。比如素数那个：
 
 ```cpp
 TEST_CASE("MS3: prime file count covered by any worker count", "[lab0][milestone3]") {
@@ -325,7 +325,7 @@ return total;
 
 > **别被测试骗了**：`test_milestone4` 只验结果数值对不对（和单线程一致），**不检查统计是不是真的"每 worker 局部"**。所以哪怕测试全绿，但 `scan()` 里还在用共享 `mutex`/`atomic` 统计——你其实停在 MS1，这个 milestone 没真正完成。**真正的验收标准：`scan()` 里没有锁、没有共享 atomic，统计走 `results[worker_id]` 独立槽位 + 主线程汇总。**
 
-[`test/test_milestone4.cpp`](../../../code/volumn_codes/vol5-labs/templates/lab0_thread_lifecycle/test/test_milestone4.cpp) 验证：多线程扫描结果与单线程逐一扫描**完全一致**（文件数、字节数、扩展名分布三项都对），外加一个 200 文件 / 8 worker 的压力测试。关键断言：
+`test/test_milestone4.cpp` 验证：多线程扫描结果与单线程逐一扫描**完全一致**（文件数、字节数、扩展名分布三项都对），外加一个 200 文件 / 8 worker 的压力测试。关键断言：
 
 ```cpp
 TEST_CASE("MS4: multi-threaded stats match single-threaded baseline", "[lab0][milestone4]") {
