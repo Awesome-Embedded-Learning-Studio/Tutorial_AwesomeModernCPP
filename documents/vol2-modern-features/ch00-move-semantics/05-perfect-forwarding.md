@@ -65,7 +65,9 @@ std::string make_string(std::string&& s)
 
 ## 万能引用——不是所有 T&& 都是右值引用
 
-Scott Meyers 给这种特殊的 `T&&` 起了名字叫"万能引用"（universal reference）<RefLink :id="1" preview="Scott Meyers, Effective Modern C++, Item 24 — distinguish universal references from rvalue references" />，C++ 标准术语叫"转发引用"（forwarding reference）<RefLink :id="2" preview="cppreference References — forwarding references and reference collapsing" />。它长得和右值引用一模一样（欸，笔者也有点想不通为什么，不知道有没有 C++ 大佬能给讲讲为啥偏偏长一样，小生受教！），但行为完全不同。
+> 就像不是所有的矿泉水。。。抱歉走错地方了
+
+Scott Meyers 大佬给这种特殊的 `T&&` 起了名字叫"万能引用"（universal reference）<RefLink :id="1" preview="Scott Meyers, Effective Modern C++, Item 24 — distinguish universal references from rvalue references" />，C++ 标准术语叫"转发引用"（forwarding reference）<RefLink :id="2" preview="cppreference References — forwarding references and reference collapsing" />。它长得和右值引用一模一样（欸，笔者也有点想不通为什么，不知道有没有 C++ 大佬能给讲讲为啥偏偏长一样，小生受教！），但行为完全不同。
 
 关键区别在于**类型推导的上下文**。普通的右值引用 `std::string&&` 只能绑定右值，这是固定的。但模板参数推导中的 `T&&` 会根据传入的实参自动调整：传左值进来，`T` 推导为左值引用类型，`T&&` 通过引用折叠变成左值引用；传右值进来，`T` 推导为非引用类型，`T&&` 就是右值引用。
 

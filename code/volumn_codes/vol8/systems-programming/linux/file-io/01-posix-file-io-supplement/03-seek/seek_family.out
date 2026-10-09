@@ -1,0 +1,36 @@
+
+==== a) 造一个稀疏文件:ftruncate 1 MiB + 三段 pwrite ====
+st_size     = 1048576 字节(1 MiB)
+st_blocks   = 24 × 512 = 12288 字节  <- 磁盘实占,st_size 只是「账面」
+
+==== b) SEEK_DATA/SEEK_HOLE:把 data/hole 交替区间全部走一遍 ====
+hole  [      0,    4096)  长度    4096
+data  [   4096,    8192)  长度    4096
+hole  [   8192,   69632)  长度   61440
+data  [  69632,   73728)  长度    4096
+hole  [  73728, 1040384)  长度  966656
+data  [1040384, 1044480)  长度    4096
+hole  [1044480, 1048576)  长度    4096(尾部全洞,SEEK_DATA 报 ENXIO)
+洞里 pread(2048, 8) = 8 字节: 00 00 00 00 00 00 00 00  <- 零页,内核现造的,不占磁盘
+细看两处:8 字节的 pwrite 报成了 4096 字节的 data,尾部 256 字节 Z 同样被撑到块边界
+          —— SEEK_DATA/SEEK_HOLE 的精度是文件系统块(这里 4 KiB),小于一个块的洞根本不存在
+
+==== c) ENXIO 的两种脸 ====
+全洞文件 lseek(0, SEEK_DATA)      = -1, errno=6(ENXIO)
+从文件尾 lseek(1048576, SEEK_DATA)  = -1, errno=6(ENXIO)
+
+==== d) SEEK_END/SEEK_CUR 的负偏移:倒着数、游标回拨 ====
+lseek(-4, SEEK_END) = 6, read = "6789"
+先读 2 字节("01"),游标在 2;lseek(-1, SEEK_CUR) = 1,接着读 "12"  <- 回拨一格重读了下标 1
+
+==== e) 负的绝对位置被拒;越过文件尾合法,write 之前文件不长大 ====
+lseek(-1, SEEK_SET)  = -1, errno=22(EINVAL)  <- 结果为负,直接拒
+lseek(+100, SEEK_END)= 110,此时 st_size 仍是 10  <- 洞已定位,字节未落盘
+
+==== f) 管道上 seek:ESPIPE ====
+lseek(读端, 0, SEEK_SET ) =  -1, errno=29(ESPIPE)
+lseek(读端, 0, SEEK_CUR ) =  -1, errno=29(ESPIPE)
+lseek(读端, 0, SEEK_END ) =  -1, errno=29(ESPIPE)
+lseek(读端, 0, SEEK_DATA) =  -1, errno=29(ESPIPE)
+lseek(读端, 0, SEEK_HOLE) =  -1, errno=29(ESPIPE)
+管道是流,没有「位置」可言——想定位的都回去找普通文件

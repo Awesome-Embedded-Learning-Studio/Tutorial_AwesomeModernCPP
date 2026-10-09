@@ -1,0 +1,35 @@
+注册: pa读端(fd=3, EPOLLIN) pb读端(fd=5, EPOLLOUT) eventfd(fd=7, EPOLLIN|EPOLLET)
+--- fdinfo(8) ADD 三个之后 ---
+pos:	0
+flags:	02
+mnt_id:	16
+ino:	1041
+tfd:        7 events: 80000019 data:                7  pos:0 ino:411 sdev:10
+tfd:        5 events:       1c data:                5  pos:0 ino:5c969a sdev:f
+tfd:        3 events:       19 data:                3  pos:0 ino:5c9699 sdev:f
+tfd 行 = 兴趣表里在册的 fd, events 是十六进制: 0x19=EPOLLIN|EPOLLERR|EPOLLHUP, 0x1c=EPOLLOUT|ERR|HUP, 0x80000019 再加 EPOLLET
+内核给每个注册都自动补上 EPOLLERR|EPOLLHUP, 所以看到的不是裸的 1 与 4
+--- fdinfo(8) DEL pb 之后 ---
+pos:	0
+flags:	02
+mnt_id:	16
+ino:	1041
+tfd:        7 events: 80000019 data:                7  pos:0 ino:411 sdev:10
+tfd:        3 events:       19 data:                3  pos:0 ino:5c9699 sdev:f
+--- fdinfo(7) eventfd 写入 3 之后 (counter 是内核态, fdinfo 可见) ---
+pos:	0
+flags:	02
+mnt_id:	16
+ino:	1041
+eventfd-count:                3
+eventfd-id: 240
+eventfd-semaphore: 0
+read(eventfd) = 3, 读走即清零
+--- fdinfo(7) 读走之后 ---
+pos:	0
+flags:	02
+mnt_id:	16
+ino:	1041
+eventfd-count:                0
+eventfd-id: 240
+eventfd-semaphore: 0

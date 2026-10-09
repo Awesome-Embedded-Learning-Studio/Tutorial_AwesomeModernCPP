@@ -1,0 +1,5 @@
+/* 由 CMake configure_file 生成:配置期检测的结果进入编译期视野 */
+#cmakedefine01 HAVE_SYS_EPOLL_H
+#cmakedefine01 HAVE_SYS_EVENT_H
+#cmakedefine01 HAVE_LIBURING_H
+#cmakedefine01 HAVE_WINDOWS_H

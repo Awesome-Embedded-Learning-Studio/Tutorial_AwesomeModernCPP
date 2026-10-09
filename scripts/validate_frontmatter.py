@@ -15,6 +15,7 @@ from typing import Dict, List, Set, Tuple
 from tags import VALID_TAGS
 
 VALID_DIFFICULTY = {'beginner', 'intermediate', 'advanced'}
+VALID_STATUS_VARIANTS = {'polishing', 'draft', 'verified'}
 VALID_CPP_STANDARDS = {'11', '14', '17', '20', '23', '26'}
 
 # Lecture note specific fields (vol10-open-lecture-notes)
@@ -115,6 +116,32 @@ class FrontmatterValidator:
                             f"Consider adding it to VALID_TAGS if appropriate."
                         )
 
+        # Validate current_status (optional; string or {title, detail?, variant?, icon?})
+        if 'current_status' in frontmatter:
+            cs = frontmatter['current_status']
+            ok = False
+            if isinstance(cs, str) and cs.strip():
+                ok = True
+            elif isinstance(cs, dict):
+                title = cs.get('title')
+                if isinstance(title, str) and title.strip():
+                    ok = True
+                    variant = cs.get('variant', 'polishing')
+                    if variant not in VALID_STATUS_VARIANTS:
+                        self.errors.append(
+                            f"{filepath}: Invalid current_status.variant: '{variant}'. "
+                            f"Must be one of {sorted(VALID_STATUS_VARIANTS)}"
+                        )
+                else:
+                    self.errors.append(
+                        f"{filepath}: current_status as a mapping requires a non-empty 'title'."
+                    )
+            if not ok and not self.errors:
+                self.errors.append(
+                    f"{filepath}: Invalid current_status: must be a non-empty string "
+                    f"or a mapping with 'title'."
+                )
+
     def validate_lecture_note_fields(self, frontmatter: Dict, filepath: Path):
         """Validate lecture note specific fields (vol10-open-lecture-notes)."""
         parts = filepath.parts
@@ -194,9 +221,9 @@ class FrontmatterValidator:
         """Run validation on all markdown files in tutorial directory."""
         md_files = list(self.tutorial_dir.rglob('*.md'))
 
-        # Skip index.md files and tags.md (they don't need frontmatter)
+        # Skip index.md files and tags.md/bookmarks.md (site tool pages, not chapter articles)
         # Also skip non-article files (e.g. images/ directory)
-        skip_names = {'index.md', 'tags.md', 'README.md'}
+        skip_names = {'index.md', 'tags.md', 'bookmarks.md', 'README.md'}
         skip_dir_parts = {'images'}
         md_files = [
             f for f in md_files

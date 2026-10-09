@@ -1,0 +1,21 @@
+$ ./e3 /tmp/errpar/e3.conf
+loading config from: /tmp/errpar/e3.conf
+ok: first line = "resolution = 1920x1080"
+
+$ ./e3 /tmp/errpar/e3_missing.conf
+[config] first_line("/tmp/errpar/e3_missing.conf") failed: 2 No such file or directory -- passing through
+loading config from: /tmp/errpar/e3_missing.conf
+caught at top: config '/tmp/errpar/e3_missing.conf': No such file or directory
+    code: value = 2, category = generic
+
+$ ./e3 /tmp/errpar   # a directory
+[config] first_line("/tmp/errpar") failed: 21 Is a directory -- passing through
+loading config from: /tmp/errpar
+caught at top: config '/tmp/errpar': Is a directory
+    code: value = 21, category = generic
+
+$ ./e3 /tmp/errpar/e3_empty.conf
+[config] first_line("/tmp/errpar/e3_empty.conf") failed: 22 Invalid argument -- passing through
+loading config from: /tmp/errpar/e3_empty.conf
+caught at top: config '/tmp/errpar/e3_empty.conf': Invalid argument
+    code: value = 22, category = generic

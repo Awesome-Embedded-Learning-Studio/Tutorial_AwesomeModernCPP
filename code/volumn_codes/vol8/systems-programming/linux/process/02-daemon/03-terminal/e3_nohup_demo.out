@@ -1,0 +1,7 @@
+Script started on 2026-10-04 10:54:50+08:00 [COMMAND="nohup sleep 5 & pid=$!; sleep 0.3; kill -HUP $pid; sleep 0.3; if kill -0 $pid 2>/dev/null; then echo ">> kill -HUP 后 nohup 启动的 pid=$pid 仍存活(SIGHUP 被 SIG_IGN 挡住)"; fi; ls -l nohup.out; echo ">> stdout 原是 tty,nohup 把它改道到 nohup.out,stderr 跟着 stdout"; kill $pid 2>/dev/null; wait $pid 2>/dev/null; rm -f nohup.out" <not executed on terminal>]
+nohup: appending output to 'nohup.out'
+>> kill -HUP 后 nohup 启动的 pid=13776 仍存活(SIGHUP 被 SIG_IGN 挡住)
+-rw------- 1 charliechen charliechen 0 Oct  4 10:54 nohup.out
+>> stdout 原是 tty,nohup 把它改道到 nohup.out,stderr 跟着 stdout
+
+Script done on 2026-10-04 10:54:51+08:00 [COMMAND_EXIT_CODE="0"]

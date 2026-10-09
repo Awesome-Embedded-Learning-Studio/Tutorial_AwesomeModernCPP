@@ -1,4 +1,4 @@
-import { execFile } from 'child_process'
+import { execFile, execFileSync } from 'child_process'
 import {
   cpSync, mkdirSync, rmSync, writeFileSync,
   readdirSync, readFileSync, existsSync,
@@ -175,6 +175,10 @@ function hashFile(path: string): string {
 
 function hashBuildInputs(): string {
   const h = createHash('sha256')
+  // Credit history changes on commits/amends or deeper fetches, even when Markdown bytes do not.
+  try {
+    h.update(execFileSync('git', ['log', '--format=%H', '--', 'documents'], { cwd: PROJECT_ROOT }))
+  } catch { /* Source archives can build without Git history. */ }
   for (const [label, value] of [
     ['site', hashDir(MAIN_VP, isNonBuildSiteFile)],
     ['package', hashFile(join(PROJECT_ROOT, 'package.json'))],
@@ -221,19 +225,21 @@ function generateVolumeConfig(vol: Volume, lang: 'zh' | 'en', absSiteDir: string
   const relShared = relative(vpDir, join(MAIN_VP, 'config', 'shared')).replace(/\\/g, '/')
   const relSidebar = relative(vpDir, join(MAIN_VP, 'config', 'sidebar')).replace(/\\/g, '/')
   const relTagsManifest = relative(vpDir, join(MAIN_VP, 'config', 'tags-manifest')).replace(/\\/g, '/')
+  const relContributors = relative(vpDir, join(MAIN_VP, 'config', 'article-contributors')).replace(/\\/g, '/')
 
   return `import { defineConfig } from 'vitepress'
 import withDrawio from '@dhlx/vitepress-plugin-drawio'
 import { sharedBase, ${lang === 'en' ? 'sharedEnThemeConfig' : 'sharedThemeConfig'} } from '${relShared}'
 import { volumeSidebar } from '${relSidebar}'
 import { applyTagsPageData } from '${relTagsManifest}'
+import { applyArticleContributors } from '${relContributors}'
 
 export default withDrawio(defineConfig({
   ...sharedBase,
   srcDir: '${relSrc.replace(/\\/g, '/')}',
   outDir: '${relOut.replace(/\\/g, '/')}',
   ignoreDeadLinks: true,
-  transformPageData(pageData) { applyTagsPageData(pageData) },
+  transformPageData(pageData) { applyTagsPageData(pageData); applyArticleContributors(pageData) },
   title: '${lang === 'en' ? 'Modern C++ Tutorial' : '现代 C++ 教程'}',
   lang: '${lang === 'en' ? 'en-US' : 'zh-CN'}',
   ${locale}
@@ -260,6 +266,7 @@ function generateRootConfig(absSiteDir: string, absSrcDir: string): string {
   const relNav = relative(vpDir, join(MAIN_VP, 'config', 'nav')).replace(/\\/g, '/')
   const relSidebar = relative(vpDir, join(MAIN_VP, 'config', 'sidebar')).replace(/\\/g, '/')
   const relTagsManifest = relative(vpDir, join(MAIN_VP, 'config', 'tags-manifest')).replace(/\\/g, '/')
+  const relContributors = relative(vpDir, join(MAIN_VP, 'config', 'article-contributors')).replace(/\\/g, '/')
 
   return `import { defineConfig } from 'vitepress'
 import withDrawio from '@dhlx/vitepress-plugin-drawio'
@@ -267,13 +274,18 @@ import { sharedBase, sharedThemeConfig, sharedEnThemeConfig, makeSocialLinks } f
 import { navEn } from '${relNav}'
 import { buildSidebar } from '${relSidebar}'
 import { applyTagsPageData } from '${relTagsManifest}'
+import { applyArticleContributors } from '${relContributors}'
 
 export default withDrawio(defineConfig({
   ...sharedBase,
   srcDir: '${relSrc.replace(/\\/g, '/')}',
   outDir: '${relOut.replace(/\\/g, '/')}',
-  ignoreDeadLinks: true,
-  transformPageData(pageData) { applyTagsPageData(pageData) },
+  // 根站 srcDir 只有 index/tags/bookmarks(中英),首页正文链向各卷的入口物理不存在,
+  // 只忽略各卷挂载前缀(含 /en 侧);根站页面之间的链接(/tags /bookmarks /en/tags...)仍被死链检查覆盖。
+  ignoreDeadLinks: ${JSON.stringify([
+    ...VOLUMES.flatMap(v => [v.urlPrefix, `${v.urlPrefix}/**`, `/en${v.urlPrefix}`, `/en${v.urlPrefix}/**`]),
+  ])},
+  transformPageData(pageData) { applyTagsPageData(pageData); applyArticleContributors(pageData) },
   title: '现代 C++ 教程',
   description: '系统化的现代 C++ 教程 — 从基础入门到领域实战',
   lang: 'zh-CN',
@@ -752,7 +764,7 @@ async function main() {
 
   const rootSrcDir = join(BUILD_TMP, 'root-src')
   mkdirSync(rootSrcDir, { recursive: true })
-  for (const f of ['index.md', 'tags.md']) {
+  for (const f of ['index.md', 'tags.md', 'bookmarks.md']) {
     const s = join(DOCUMENTS, f)
     if (existsSync(s)) cpSync(s, join(rootSrcDir, f))
   }
@@ -764,7 +776,7 @@ async function main() {
   }
   if (existsSync(join(DOCUMENTS, 'en'))) {
     mkdirSync(join(rootSrcDir, 'en'), { recursive: true })
-    for (const f of ['index.md', 'tags.md']) {
+    for (const f of ['index.md', 'tags.md', 'bookmarks.md']) {
       const s = join(DOCUMENTS, 'en', f)
       if (existsSync(s)) cpSync(s, join(rootSrcDir, 'en', f))
     }

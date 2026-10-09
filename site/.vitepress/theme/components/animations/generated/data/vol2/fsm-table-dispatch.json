@@ -1,0 +1,516 @@
+{
+ "version": 1,
+ "id": "fsm-table-dispatch",
+ "title": "状态转移：查表分派",
+ "subtitle": "DebounceFsm::handle · kDebounceTable",
+ "source": "projects/vol2-ch02-fsm-table/02-dsl/fsm-table-dispatch.yaml",
+ "backend": "web",
+ "template": "freeform",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#111521",
+  "bgRaised": "#171D2D",
+  "text": "#F4F6FB",
+  "muted": "#98A2B8",
+  "fill": "#66D9EF",
+  "fillEdge": "#2E9DC2",
+  "emptyEdge": "#43506A",
+  "grow": "#FFB86C",
+  "numOnFill": "#0B1E27",
+  "ok": "#72D49A",
+  "bad": "#FF6B7A",
+  "cardBg": "#1B2234"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "状态转移：查表分派",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.8016,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "DebounceFsm::handle · kDebounceTable",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#98A2B8",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.464,
+   "h": 0.272
+  },
+  "show:input": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "accent",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.508,
+   "w": 3.4336,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "fsm.handle(Timeout)",
+     "w": 2.508
+    },
+    {
+     "text": "state_ = Debouncing",
+     "w": 2.508
+    }
+   ],
+   "cx": -5.14,
+   "cy": -0.6
+  },
+  "show:a_scan": {
+   "kind": "arrow",
+   "x1": -3.2432,
+   "y1": -0.6,
+   "x2": -2.6948,
+   "y2": -0.6,
+   "cx": -2.969,
+   "cy": -0.6,
+   "w": 0.5484,
+   "h": 0.0,
+   "label": {
+    "text": "查表",
+    "x": -2.969,
+    "y": -0.2476,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:table": {
+   "kind": "rowlist",
+   "w": 5.4296,
+   "h": 5.29,
+   "noteX": 4.6156,
+   "entries": [
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 1.32,
+      "w": 2.2456,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "Idle+Press",
+        "w": 1.32
+       }
+      ]
+     },
+     "note": {
+      "text": "→ Debouncing",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.628,
+      "h": 0.272
+     },
+     "tone": ""
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 2.376,
+      "w": 3.3016,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "Debouncing+Timeout",
+        "w": 2.376
+       }
+      ]
+     },
+     "note": {
+      "text": "→ Pressed",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.256,
+      "h": 0.272
+     },
+     "tone": "ok"
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 2.376,
+      "w": 3.3016,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "Debouncing+Release",
+        "w": 2.376
+       }
+      ]
+     },
+     "note": {
+      "text": "→ Idle",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 0.884,
+      "h": 0.272
+     },
+     "tone": ""
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 1.98,
+      "w": 2.9056,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "Pressed+Release",
+        "w": 1.98
+       }
+      ]
+     },
+     "note": {
+      "text": "→ Idle",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 0.884,
+      "h": 0.272
+     },
+     "tone": ""
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 1.98,
+      "w": 2.9056,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "Pressed+Timeout",
+        "w": 1.98
+       }
+      ]
+     },
+     "note": {
+      "text": "→ Idle",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 0.884,
+      "h": 0.272
+     },
+     "tone": ""
+    }
+   ],
+   "rowHs": [
+    0.778,
+    0.778,
+    0.778,
+    0.778,
+    0.778
+   ],
+   "cx": 0.2,
+   "cy": -0.6
+  },
+  "show:a_hit": {
+   "kind": "arrow",
+   "x1": 3.0948,
+   "y1": -0.6,
+   "x2": 3.6412,
+   "y2": -0.6,
+   "cx": 3.368,
+   "cy": -0.6,
+   "w": 0.5464,
+   "h": 0.0,
+   "label": {
+    "text": "命中",
+    "x": 3.368,
+    "y": -0.2476,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:result": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "success",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.112,
+   "w": 3.0376,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "state_ = Pressed",
+     "w": 2.112
+    }
+   ],
+   "cx": 5.34,
+   "cy": -0.6
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "引擎只做一件事：拿当前态和事件查表",
+   "x": 0.0,
+   "y": 0.3764,
+   "fs": 0.24,
+   "color": "#FFB86C",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.3856,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "查不到匹配的转移，事件就被忽略",
+   "x": 0.0,
+   "y": -0.2,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.752,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "表是 constexpr 常量，重复与死状态在编译期就报错",
+   "x": 0.0,
+   "y": -0.7764,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 7.3392,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 2.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 1.43
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 1.43,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show input",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:input",
+     "cx": -5.14,
+     "cy": -0.6,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a_scan",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_scan",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show table",
+   "note": "",
+   "duration": 6.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "rowlist_show",
+     "target": "show:table",
+     "cx": 0.2,
+     "cy": -0.6,
+     "t": 0.0,
+     "dur": 6.0
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a_hit",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_hit",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show result",
+   "note": "",
+   "duration": 2.67,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:result",
+     "cx": 5.34,
+     "cy": -0.6,
+     "t": 0.0,
+     "dur": 2.67
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.5s",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 17.09,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:input",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a_scan",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:table",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a_hit",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:result",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 1.5,
+     "dur": 2.39
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 4.24,
+     "dur": 2.15
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 6.74,
+     "dur": 2.4
+    }
+   ]
+  }
+ ]
+}

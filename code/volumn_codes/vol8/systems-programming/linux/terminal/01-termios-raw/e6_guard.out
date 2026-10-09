@@ -1,0 +1,21 @@
+[阶段A 无 guard:改完就跑,raw 留在 tty 上]
+  初始 lflag=0x8a3b ICANON=1 ECHO=1 ISIG=1
+  孩子A(_exit 无善后)之后 lflag=0xa30 ICANON=0 ECHO=0 ISIG=0
+  孩子B(没设过任何东西)读到 n=1 (a) —— 继承了 raw,没换行也到货
+  孩子B(没设过任何东西)读到 n=1 (b) —— 继承了 raw,没换行也到货
+
+[阶段B 有 guard,正常返回:析构还原]
+  初始 lflag=0x8a3b ICANON=1 ECHO=1 ISIG=1
+  孩子正常返回后 lflag=0x8a3b ICANON=1 ECHO=1 ISIG=1
+
+[阶段C 有 guard,中途 throw:栈展开照样还原]
+  初始 lflag=0x8a3b ICANON=1 ECHO=1 ISIG=1
+  孩子抛异常被接住后 lflag=0x8a3b ICANON=1 ECHO=1 ISIG=1
+  孩子报告的异常:模拟业务炸了
+
+[阶段D1 guard 用 TCSAFLUSH:还原时冲掉没读的输入]
+  接力读端读到 n=2 (z
+) —— junk 被 TCSAFLUSH 冲了
+
+[阶段D2 guard 用 TCSANOW:还原时保留没读的输入]
+  接力读端读到 n=4 (junk) —— junk 滞留,混进了这一行

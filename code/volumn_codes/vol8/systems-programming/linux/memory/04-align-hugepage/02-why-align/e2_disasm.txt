@@ -1,0 +1,93 @@
+# objdump -d e2_avx 两个装载函数的完整函数体(编译 g++ 16.2.1 -std=c++20 -O2)
+# 证据链:load_aligned 发的是 vmovdqa %ymm(对齐版,硬件要求 32 字节),load_unaligned 发的是 vmovdqu(无对齐要求版)
+
+    1132:	e8 39 02 00 00       	call   1370 <_ZL12load_alignedPKDv4_x>
+    1137:	48 8d 3d d2 0f 00 00 	lea    0xfd2(%rip),%rdi        # 2110 <_IO_stdin_used+0x110>
+    113e:	e8 3d ff ff ff       	call   1080 <puts@plt>
+    1143:	be 00 10 00 00       	mov    $0x1000,%esi
+    1148:	bf 20 00 00 00       	mov    $0x20,%edi
+    114d:	e8 ee fe ff ff       	call   1040 <aligned_alloc@plt>
+    1152:	ba 08 00 00 00       	mov    $0x8,%edx
+    1157:	48 8d 3d f2 0f 00 00 	lea    0xff2(%rip),%rdi        # 2150 <_IO_stdin_used+0x150>
+    115e:	48 8d 58 08          	lea    0x8(%rax),%rbx
+    1162:	31 c0                	xor    %eax,%eax
+    1164:	48 89 de             	mov    %rbx,%rsi
+    1167:	e8 c4 fe ff ff       	call   1030 <printf@plt>
+    116c:	48 89 df             	mov    %rbx,%rdi
+    116f:	e8 bc 01 00 00       	call   1330 <_ZL14load_unalignedPKv>
+    1174:	48 8d 3d 0d 10 00 00 	lea    0x100d(%rip),%rdi        # 2188 <_IO_stdin_used+0x188>
+    117b:	e8 00 ff ff ff       	call   1080 <puts@plt>
+    1180:	48 8d 3d 41 10 00 00 	lea    0x1041(%rip),%rdi        # 21c8 <_IO_stdin_used+0x1c8>
+    1187:	e8 f4 fe ff ff       	call   1080 <puts@plt>
+    118c:	48 8b 3d cd 2e 00 00 	mov    0x2ecd(%rip),%rdi        # 4060 <stdout@GLIBC_2.2.5>
+    1193:	e8 c8 fe ff ff       	call   1060 <fflush@plt>
+    1198:	48 89 df             	mov    %rbx,%rdi
+    119b:	e8 d0 01 00 00       	call   1370 <_ZL12load_alignedPKDv4_x>
+    11a0:	48 8d 3d 69 10 00 00 	lea    0x1069(%rip),%rdi        # 2210 <_IO_stdin_used+0x210>
+    11a7:	e8 d4 fe ff ff       	call   1080 <puts@plt>
+    11ac:	48 8b 84 24 98 00 00 	mov    0x98(%rsp),%rax
+    11b3:	00 
+    11b4:	64 48 2b 04 25 28 00 	sub    %fs:0x28,%rax
+    11bb:	00 00 
+    11bd:	75 0b                	jne    11ca <main+0x12a>
+    11bf:	48 81 c4 a0 00 00 00 	add    $0xa0,%rsp
+    11c6:	31 c0                	xor    %eax,%eax
+    11c8:	5b                   	pop    %rbx
+    11c9:	c3                   	ret
+    11ca:	e8 81 fe ff ff       	call   1050 <__stack_chk_fail@plt>
+    11cf:	90                   	nop
+
+0000000000001370 <_ZL12load_alignedPKDv4_x>:
+    1370:	c5 fd 6f 07          	vmovdqa (%rdi),%ymm0
+    1374:	c4 e3 f9 16 c1 01    	vpextrq $0x1,%xmm0,%rcx
+    137a:	c4 e1 f9 7e c0       	vmovq  %xmm0,%rax
+    137f:	c4 e3 7d 39 c0 01    	vextracti128 $0x1,%ymm0,%xmm0
+    1385:	c4 e1 f9 7e c6       	vmovq  %xmm0,%rsi
+    138a:	48 31 c8             	xor    %rcx,%rax
+    138d:	c4 e3 f9 16 c2 01    	vpextrq $0x1,%xmm0,%rdx
+    1393:	48 31 f0             	xor    %rsi,%rax
+    1396:	48 31 d0             	xor    %rdx,%rax
+    1399:	89 05 61 2d 00 00    	mov    %eax,0x2d61(%rip)        # 4100 <_ZL4sink>
+    139f:	c5 f8 77             	vzeroupper
+    13a2:	c3                   	ret
+
+
+    116f:	e8 bc 01 00 00       	call   1330 <_ZL14load_unalignedPKv>
+    1174:	48 8d 3d 0d 10 00 00 	lea    0x100d(%rip),%rdi        # 2188 <_IO_stdin_used+0x188>
+    117b:	e8 00 ff ff ff       	call   1080 <puts@plt>
+    1180:	48 8d 3d 41 10 00 00 	lea    0x1041(%rip),%rdi        # 21c8 <_IO_stdin_used+0x1c8>
+    1187:	e8 f4 fe ff ff       	call   1080 <puts@plt>
+    118c:	48 8b 3d cd 2e 00 00 	mov    0x2ecd(%rip),%rdi        # 4060 <stdout@GLIBC_2.2.5>
+    1193:	e8 c8 fe ff ff       	call   1060 <fflush@plt>
+    1198:	48 89 df             	mov    %rbx,%rdi
+    119b:	e8 d0 01 00 00       	call   1370 <_ZL12load_alignedPKDv4_x>
+    11a0:	48 8d 3d 69 10 00 00 	lea    0x1069(%rip),%rdi        # 2210 <_IO_stdin_used+0x210>
+    11a7:	e8 d4 fe ff ff       	call   1080 <puts@plt>
+    11ac:	48 8b 84 24 98 00 00 	mov    0x98(%rsp),%rax
+    11b3:	00 
+    11b4:	64 48 2b 04 25 28 00 	sub    %fs:0x28,%rax
+    11bb:	00 00 
+    11bd:	75 0b                	jne    11ca <main+0x12a>
+    11bf:	48 81 c4 a0 00 00 00 	add    $0xa0,%rsp
+    11c6:	31 c0                	xor    %eax,%eax
+    11c8:	5b                   	pop    %rbx
+    11c9:	c3                   	ret
+    11ca:	e8 81 fe ff ff       	call   1050 <__stack_chk_fail@plt>
+    11cf:	90                   	nop
+
+0000000000001330 <_ZL14load_unalignedPKv>:
+    1330:	c5 fe 6f 07          	vmovdqu (%rdi),%ymm0
+    1334:	c4 e3 f9 16 c1 01    	vpextrq $0x1,%xmm0,%rcx
+    133a:	c4 e1 f9 7e c0       	vmovq  %xmm0,%rax
+    133f:	c4 e3 7d 39 c0 01    	vextracti128 $0x1,%ymm0,%xmm0
+    1345:	c4 e1 f9 7e c6       	vmovq  %xmm0,%rsi
+    134a:	48 31 c8             	xor    %rcx,%rax
+    134d:	c4 e3 f9 16 c2 01    	vpextrq $0x1,%xmm0,%rdx
+    1353:	48 31 f0             	xor    %rsi,%rax
+    1356:	48 31 d0             	xor    %rdx,%rax
+    1359:	89 05 a1 2d 00 00    	mov    %eax,0x2da1(%rip)        # 4100 <_ZL4sink>
+    135f:	c5 f8 77             	vzeroupper
+    1362:	c3                   	ret
+    1363:	66 90                	xchg   %ax,%ax
+    1365:	66 66 2e 0f 1f 84 00 	data16 cs nopw 0x0(%rax,%rax,1)
+    136c:	00 00 00 00 

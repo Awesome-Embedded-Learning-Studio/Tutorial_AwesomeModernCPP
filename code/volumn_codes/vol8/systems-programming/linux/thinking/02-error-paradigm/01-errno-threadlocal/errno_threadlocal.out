@@ -1,0 +1,11 @@
+[1] open(no_such_file_e1) failed:
+    ec.value() = 2   (ENOENT = 2)   equal = yes
+    ec.message() = "No such file or directory"
+    ec == std::errc::no_such_file_or_directory : true
+[2] write to closed fd: return = -1 (expect -1)
+    ec2.value() = 9   (EBADF = 9)   equal = yes
+    ec2.message() = "Bad file descriptor"
+[3] two threads, interleaved failures:
+    [thread A] value = 2  (expect ENOENT=2) -> kept own value
+    [thread B] value = 9  (expect EBADF=9) -> kept own value
+    (interleave: A fail -> B fail -> both errno_code(); a plain global would cross-contaminate here)

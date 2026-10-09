@@ -1,0 +1,30 @@
+# 环境: 6.18.33.2-microsoft-standard-WSL2 | AMD Ryzen 7 9700X 8-Core Processor | 数据盘 /dev/sdd ext4 1055762868 65035288 937024108 7% /
+# 口径: 每轮 = 200 次 (改动 + sync),报告每次 sync 的中位/最大耗时与整轮墙钟
+
+# round 1 scen=fixed sync=fsync pre_dirty=336kB  RESULT scenario=fixed sync=fsync iters=200 per_op_median_us=257.0 per_op_max_us=1239.6 total_ms=66.4
+# round 2 scen=fixed sync=fsync pre_dirty=0kB  RESULT scenario=fixed sync=fsync iters=200 per_op_median_us=248.5 per_op_max_us=1250.5 total_ms=65.3
+# round 3 scen=fixed sync=fsync pre_dirty=0kB  RESULT scenario=fixed sync=fsync iters=200 per_op_median_us=250.2 per_op_max_us=1144.0 total_ms=64.8
+# round 1 scen=fixed sync=fdatasync pre_dirty=24kB  RESULT scenario=fixed sync=fdatasync iters=200 per_op_median_us=246.2 per_op_max_us=477.8 total_ms=50.7
+# round 2 scen=fixed sync=fdatasync pre_dirty=44kB  RESULT scenario=fixed sync=fdatasync iters=200 per_op_median_us=246.0 per_op_max_us=451.4 total_ms=52.6
+# round 3 scen=fixed sync=fdatasync pre_dirty=4kB  RESULT scenario=fixed sync=fdatasync iters=200 per_op_median_us=246.2 per_op_max_us=360.5 total_ms=50.5
+# round 1 scen=append sync=fsync pre_dirty=4kB  RESULT scenario=append sync=fsync iters=200 per_op_median_us=1013.8 per_op_max_us=2503.3 total_ms=212.5
+# round 2 scen=append sync=fsync pre_dirty=16kB  RESULT scenario=append sync=fsync iters=200 per_op_median_us=1302.3 per_op_max_us=1762.7 total_ms=261.5
+# round 3 scen=append sync=fsync pre_dirty=0kB  RESULT scenario=append sync=fsync iters=200 per_op_median_us=1391.5 per_op_max_us=5218.4 total_ms=284.5
+# round 1 scen=append sync=fdatasync pre_dirty=68kB  RESULT scenario=append sync=fdatasync iters=200 per_op_median_us=1356.6 per_op_max_us=2206.6 total_ms=272.9
+# round 2 scen=append sync=fdatasync pre_dirty=16kB  RESULT scenario=append sync=fdatasync iters=200 per_op_median_us=863.6 per_op_max_us=1349.9 total_ms=180.2
+# round 3 scen=append sync=fdatasync pre_dirty=16kB  RESULT scenario=append sync=fdatasync iters=200 per_op_median_us=1023.9 per_op_max_us=2183.3 total_ms=214.5
+# round 1 scen=touch sync=fsync pre_dirty=4kB  RESULT scenario=touch sync=fsync iters=200 per_op_median_us=746.2 per_op_max_us=1061.5 total_ms=152.7
+# round 2 scen=touch sync=fsync pre_dirty=0kB  RESULT scenario=touch sync=fsync iters=200 per_op_median_us=738.4 per_op_max_us=1024.1 total_ms=151.7
+# round 3 scen=touch sync=fsync pre_dirty=40kB  RESULT scenario=touch sync=fsync iters=200 per_op_median_us=844.0 per_op_max_us=1159.0 total_ms=174.7
+# round 1 scen=touch sync=fdatasync pre_dirty=28kB  RESULT scenario=touch sync=fdatasync iters=200 per_op_median_us=156.9 per_op_max_us=324.7 total_ms=33.4
+# round 2 scen=touch sync=fdatasync pre_dirty=52kB  RESULT scenario=touch sync=fdatasync iters=200 per_op_median_us=159.6 per_op_max_us=306.8 total_ms=31.6
+# round 3 scen=touch sync=fdatasync pre_dirty=68kB  RESULT scenario=touch sync=fdatasync iters=200 per_op_median_us=161.2 per_op_max_us=382.1 total_ms=34.7
+
+# ============ 汇总: 每次 sync 的中位耗时(µs),三轮原始值 + 中位数 ============
+scenario sync              r1_us      r2_us      r3_us    median_us
+fixed    fsync             257.0      248.5      250.2        250.2
+fixed    fdatasync         246.2      246.0      246.2        246.2
+append   fsync            1013.8     1302.3     1391.5       1302.3
+append   fdatasync        1356.6      863.6     1023.9       1023.9
+touch    fsync             746.2      738.4      844.0        746.2
+touch    fdatasync         156.9      159.6      161.2        159.6

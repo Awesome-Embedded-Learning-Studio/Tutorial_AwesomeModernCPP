@@ -1,0 +1,2640 @@
+{
+ "version": 1,
+ "id": "ranges-lazy-pipeline",
+ "title": "逐层物化 vs 按需计算",
+ "subtitle": "Ranges 惰性求值，中间容器全免",
+ "source": "projects/vol2-ch03-functional-patterns/02-dsl/ranges-lazy-pipeline.yaml",
+ "backend": "web",
+ "template": "freeform",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#111521",
+  "bgRaised": "#171D2D",
+  "text": "#F4F6FB",
+  "muted": "#98A2B8",
+  "fill": "#66D9EF",
+  "fillEdge": "#2E9DC2",
+  "emptyEdge": "#43506A",
+  "grow": "#FFB86C",
+  "numOnFill": "#0B1E27",
+  "ok": "#72D49A",
+  "bad": "#FF6B7A",
+  "cardBg": "#1B2234"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "逐层物化 vs 按需计算",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.1728,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "Ranges 惰性求值，中间容器全免",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#98A2B8",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.772,
+   "h": 0.272
+  },
+  "counter": {
+   "kind": "text",
+   "text": "size = 0    capacity = 0",
+   "x": 0.0,
+   "y": 1.6,
+   "fs": 0.3,
+   "color": "#F4F6FB",
+   "mono": true,
+   "anchor": "middle",
+   "w": 4.95,
+   "h": 0.3
+  },
+  "_empty": {
+   "kind": "text",
+   "text": "还没申请内存",
+   "x": 0.0,
+   "y": -1.0,
+   "fs": 0.2,
+   "color": "#98A2B8",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.584,
+   "h": 0.272
+  },
+  "_cap_data": {
+   "kind": "text",
+   "text": "申请内存: capacity 0 → 10",
+   "x": 0,
+   "y": 2.2132,
+   "fs": 0.24,
+   "color": "#FFB86C",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.9648,
+   "h": 0.3264
+  },
+  "row:data": {
+   "kind": "cells",
+   "cap": 10,
+   "side": 0.3921,
+   "cx": 0,
+   "cy": 1.05,
+   "w": 4.4612,
+   "h": 0.3921,
+   "cells": [
+    {
+     "i": 0,
+     "x": -2.0346,
+     "y": 1.05,
+     "s": 0.3921
+    },
+    {
+     "i": 1,
+     "x": -1.5824,
+     "y": 1.05,
+     "s": 0.3921
+    },
+    {
+     "i": 2,
+     "x": -1.1303,
+     "y": 1.05,
+     "s": 0.3921
+    },
+    {
+     "i": 3,
+     "x": -0.6782,
+     "y": 1.05,
+     "s": 0.3921
+    },
+    {
+     "i": 4,
+     "x": -0.2261,
+     "y": 1.05,
+     "s": 0.3921
+    },
+    {
+     "i": 5,
+     "x": 0.2261,
+     "y": 1.05,
+     "s": 0.3921
+    },
+    {
+     "i": 6,
+     "x": 0.6782,
+     "y": 1.05,
+     "s": 0.3921
+    },
+    {
+     "i": 7,
+     "x": 1.1303,
+     "y": 1.05,
+     "s": 0.3921
+    },
+    {
+     "i": 8,
+     "x": 1.5824,
+     "y": 1.05,
+     "s": 0.3921
+    },
+    {
+     "i": 9,
+     "x": 2.0346,
+     "y": 1.05,
+     "s": 0.3921
+    }
+   ],
+   "idx": []
+  },
+  "show:v1": {
+   "kind": "text",
+   "text": "1",
+   "x": -2.0346,
+   "y": 0.368,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.124,
+   "h": 0.272,
+   "id": "v1"
+  },
+  "show:v2": {
+   "kind": "text",
+   "text": "2",
+   "x": -1.5824,
+   "y": 0.368,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.124,
+   "h": 0.272,
+   "id": "v2"
+  },
+  "show:v3": {
+   "kind": "text",
+   "text": "3",
+   "x": -1.1303,
+   "y": 0.368,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.124,
+   "h": 0.272,
+   "id": "v3"
+  },
+  "show:v4": {
+   "kind": "text",
+   "text": "4",
+   "x": -0.6782,
+   "y": 0.368,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.124,
+   "h": 0.272,
+   "id": "v4"
+  },
+  "show:v5": {
+   "kind": "text",
+   "text": "5",
+   "x": -0.2261,
+   "y": 0.368,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.124,
+   "h": 0.272,
+   "id": "v5"
+  },
+  "show:v6": {
+   "kind": "text",
+   "text": "6",
+   "x": 0.2261,
+   "y": 0.368,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.124,
+   "h": 0.272,
+   "id": "v6"
+  },
+  "show:v7": {
+   "kind": "text",
+   "text": "7",
+   "x": 0.6782,
+   "y": 0.368,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.124,
+   "h": 0.272,
+   "id": "v7"
+  },
+  "show:v8": {
+   "kind": "text",
+   "text": "8",
+   "x": 1.1303,
+   "y": 0.368,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.124,
+   "h": 0.272,
+   "id": "v8"
+  },
+  "show:v9": {
+   "kind": "text",
+   "text": "9",
+   "x": 1.5824,
+   "y": 0.368,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.124,
+   "h": 0.272,
+   "id": "v9"
+  },
+  "show:v10": {
+   "kind": "text",
+   "text": "10",
+   "x": 2.0346,
+   "y": 0.368,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.248,
+   "h": 0.272,
+   "id": "v10"
+  },
+  "show:la1": {
+   "kind": "text",
+   "text": "第一步 filter：偶数逐个复制进新 vector evens",
+   "x": 0,
+   "y": -0.3,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.648,
+   "h": 0.272,
+   "id": "la1"
+  },
+  "_cap_evens": {
+   "kind": "text",
+   "text": "申请内存: capacity 0 → 5",
+   "x": -3.4,
+   "y": -0.1368,
+   "fs": 0.24,
+   "color": "#FFB86C",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.816,
+   "h": 0.3264
+  },
+  "row:evens": {
+   "kind": "cells",
+   "cap": 5,
+   "side": 0.5545,
+   "cx": -3.4,
+   "cy": -1.3,
+   "w": 3.0127,
+   "h": 0.5545,
+   "cells": [
+    {
+     "i": 0,
+     "x": -4.6291,
+     "y": -1.3,
+     "s": 0.5545
+    },
+    {
+     "i": 1,
+     "x": -4.0145,
+     "y": -1.3,
+     "s": 0.5545
+    },
+    {
+     "i": 2,
+     "x": -3.4,
+     "y": -1.3,
+     "s": 0.5545
+    },
+    {
+     "i": 3,
+     "x": -2.7855,
+     "y": -1.3,
+     "s": 0.5545
+    },
+    {
+     "i": 4,
+     "x": -2.1709,
+     "y": -1.3,
+     "s": 0.5545
+    }
+   ],
+   "idx": []
+  },
+  "show:t_evens": {
+   "kind": "text",
+   "text": "evens",
+   "x": -5.9,
+   "y": -1.3,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.62,
+   "h": 0.272,
+   "id": "t_evens"
+  },
+  "show:e0": {
+   "kind": "text",
+   "text": "2",
+   "x": -4.6291,
+   "y": -2.0633,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.124,
+   "h": 0.272,
+   "id": "e0"
+  },
+  "show:e1": {
+   "kind": "text",
+   "text": "4",
+   "x": -4.0145,
+   "y": -2.0633,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.124,
+   "h": 0.272,
+   "id": "e1"
+  },
+  "show:e2": {
+   "kind": "text",
+   "text": "6",
+   "x": -3.4,
+   "y": -2.0633,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.124,
+   "h": 0.272,
+   "id": "e2"
+  },
+  "show:e3": {
+   "kind": "text",
+   "text": "8",
+   "x": -2.7855,
+   "y": -2.0633,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.124,
+   "h": 0.272,
+   "id": "e3"
+  },
+  "show:e4": {
+   "kind": "text",
+   "text": "10",
+   "x": -2.1709,
+   "y": -2.0633,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.248,
+   "h": 0.272,
+   "id": "e4"
+  },
+  "show:la2": {
+   "kind": "text",
+   "text": "第二步 transform：evens 全量再复制一遍，×2 写进 doubled",
+   "x": 0,
+   "y": -0.3,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 7.044,
+   "h": 0.272,
+   "id": "la2"
+  },
+  "_cap_doubled": {
+   "kind": "text",
+   "text": "申请内存: capacity 0 → 5",
+   "x": 3.4,
+   "y": -0.1368,
+   "fs": 0.24,
+   "color": "#FFB86C",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.816,
+   "h": 0.3264
+  },
+  "row:doubled": {
+   "kind": "cells",
+   "cap": 5,
+   "side": 0.5545,
+   "cx": 3.4,
+   "cy": -1.3,
+   "w": 3.0127,
+   "h": 0.5545,
+   "cells": [
+    {
+     "i": 0,
+     "x": 2.1709,
+     "y": -1.3,
+     "s": 0.5545
+    },
+    {
+     "i": 1,
+     "x": 2.7855,
+     "y": -1.3,
+     "s": 0.5545
+    },
+    {
+     "i": 2,
+     "x": 3.4,
+     "y": -1.3,
+     "s": 0.5545
+    },
+    {
+     "i": 3,
+     "x": 4.0145,
+     "y": -1.3,
+     "s": 0.5545
+    },
+    {
+     "i": 4,
+     "x": 4.6291,
+     "y": -1.3,
+     "s": 0.5545
+    }
+   ],
+   "idx": []
+  },
+  "show:t_doubled": {
+   "kind": "text",
+   "text": "doubled",
+   "x": 5.9,
+   "y": -1.3,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.868,
+   "h": 0.272,
+   "id": "t_doubled"
+  },
+  "show:d0": {
+   "kind": "text",
+   "text": "4",
+   "x": 2.1709,
+   "y": -2.0633,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.124,
+   "h": 0.272,
+   "id": "d0"
+  },
+  "show:d1": {
+   "kind": "text",
+   "text": "8",
+   "x": 2.7855,
+   "y": -2.0633,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.124,
+   "h": 0.272,
+   "id": "d1"
+  },
+  "show:d2": {
+   "kind": "text",
+   "text": "12",
+   "x": 3.4,
+   "y": -2.0633,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.248,
+   "h": 0.272,
+   "id": "d2"
+  },
+  "show:d3": {
+   "kind": "text",
+   "text": "16",
+   "x": 4.0145,
+   "y": -2.0633,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.248,
+   "h": 0.272,
+   "id": "d3"
+  },
+  "show:d4": {
+   "kind": "text",
+   "text": "20",
+   "x": 4.6291,
+   "y": -2.0633,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.248,
+   "h": 0.272,
+   "id": "d4"
+  },
+  "show:la3": {
+   "kind": "text",
+   "text": "100 万元素实测：慢约 16 倍，多分约 4 MB 内存",
+   "x": 0,
+   "y": -0.3,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.696,
+   "h": 0.272,
+   "id": "la3"
+  },
+  "show:c_filter": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.584,
+   "w": 2.5096,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "filter(偶数)",
+     "w": 1.584
+    }
+   ],
+   "cx": -4.3,
+   "cy": -0.35
+  },
+  "show:c_transform": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.716,
+   "w": 2.6416,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "transform(×2)",
+     "w": 1.716
+    }
+   ],
+   "cx": -0.4,
+   "cy": -0.35
+  },
+  "show:a1": {
+   "kind": "arrow",
+   "x1": -2.8652,
+   "y1": -0.35,
+   "x2": -1.9008,
+   "y2": -0.35,
+   "cx": -2.383,
+   "cy": -0.35,
+   "w": 0.9644,
+   "h": 0.0
+  },
+  "show:c_take": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 0.924,
+   "w": 1.8496,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "take(3)",
+     "w": 0.924
+    }
+   ],
+   "cx": 2.6,
+   "cy": -0.35
+  },
+  "show:a2": {
+   "kind": "arrow",
+   "x1": 1.1008,
+   "y1": -0.35,
+   "x2": 1.4952,
+   "y2": -0.35,
+   "cx": 1.298,
+   "cy": -0.35,
+   "w": 0.3944,
+   "h": 0.0
+  },
+  "show:lo0": {
+   "kind": "text",
+   "text": "for (int x : result)",
+   "x": 5.5,
+   "y": -0.35,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.48,
+   "h": 0.272,
+   "id": "lo0"
+  },
+  "show:lb1": {
+   "kind": "text",
+   "text": "管道搭好了——构建时什么都不做",
+   "x": 0,
+   "y": -2.75,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.96,
+   "h": 0.272,
+   "id": "lb1"
+  },
+  "show:lb2": {
+   "kind": "text",
+   "text": "第 1 次迭代：跳过 1，命中 2 → ×2 → 4",
+   "x": 0,
+   "y": -2.75,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.904,
+   "h": 0.272,
+   "id": "lb2"
+  },
+  "show:lo1": {
+   "kind": "text",
+   "text": "输出：4",
+   "x": 5.5,
+   "y": -0.35,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.916,
+   "h": 0.272,
+   "id": "lo1"
+  },
+  "show:lb3": {
+   "kind": "text",
+   "text": "第 2 次迭代：跳过 3，命中 4 → ×2 → 8",
+   "x": 0,
+   "y": -2.75,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.904,
+   "h": 0.272,
+   "id": "lb3"
+  },
+  "show:lo2": {
+   "kind": "text",
+   "text": "输出：4 8",
+   "x": 5.5,
+   "y": -0.35,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.164,
+   "h": 0.272,
+   "id": "lo2"
+  },
+  "show:lb4": {
+   "kind": "text",
+   "text": "第 3 次迭代：跳过 5，命中 6 → ×2 → 12",
+   "x": 0,
+   "y": -2.75,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.028,
+   "h": 0.272,
+   "id": "lb4"
+  },
+  "show:lo3": {
+   "kind": "text",
+   "text": "输出：4 8 12",
+   "x": 5.5,
+   "y": -0.35,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.536,
+   "h": 0.272,
+   "id": "lo3"
+  },
+  "show:lb5": {
+   "kind": "text",
+   "text": "take 收满 3 个，管道停下",
+   "x": 0,
+   "y": -2.75,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.104,
+   "h": 0.272,
+   "id": "lb5"
+  },
+  "show:lb6": {
+   "kind": "text",
+   "text": "7~10 没被读过，中间容器一个都没有",
+   "x": 0,
+   "y": -2.75,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.316,
+   "h": 0.272,
+   "id": "lb6"
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "老写法：每层新 vector，两轮全量复制",
+   "x": 0.0,
+   "y": -2.084,
+   "fs": 0.24,
+   "color": "#FFB86C",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.4768,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "Ranges：构建不算，迭代才算",
+   "x": 0.0,
+   "y": -2.6604,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.0608,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "take 收满即停，中间容器没有了",
+   "x": 0.0,
+   "y": -3.2368,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.5456,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 5.19,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 1.79
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 1.79,
+     "dur": 0.5
+    },
+    {
+     "type": "fadein",
+     "target": "counter",
+     "t": 1.79,
+     "dur": 0.5
+    },
+    {
+     "type": "write",
+     "target": "_empty",
+     "t": 2.79,
+     "dur": 1.07
+    },
+    {
+     "type": "fadeout",
+     "target": "_empty",
+     "t": 4.89,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "grow_to",
+   "label": "申请 10",
+   "note": "capacity 0->10, 搬 0 格",
+   "duration": 6.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "_cap_data",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "row_create",
+     "target": "row:data",
+     "g": {
+      "kind": "cells",
+      "cap": 10,
+      "side": 0.3921,
+      "cx": 0,
+      "cy": 1.05,
+      "w": 4.4612,
+      "h": 0.3921,
+      "cells": [
+       {
+        "i": 0,
+        "x": -2.0346,
+        "y": 1.05,
+        "s": 0.3921
+       },
+       {
+        "i": 1,
+        "x": -1.5824,
+        "y": 1.05,
+        "s": 0.3921
+       },
+       {
+        "i": 2,
+        "x": -1.1303,
+        "y": 1.05,
+        "s": 0.3921
+       },
+       {
+        "i": 3,
+        "x": -0.6782,
+        "y": 1.05,
+        "s": 0.3921
+       },
+       {
+        "i": 4,
+        "x": -0.2261,
+        "y": 1.05,
+        "s": 0.3921
+       },
+       {
+        "i": 5,
+        "x": 0.2261,
+        "y": 1.05,
+        "s": 0.3921
+       },
+       {
+        "i": 6,
+        "x": 0.6782,
+        "y": 1.05,
+        "s": 0.3921
+       },
+       {
+        "i": 7,
+        "x": 1.1303,
+        "y": 1.05,
+        "s": 0.3921
+       },
+       {
+        "i": 8,
+        "x": 1.5824,
+        "y": 1.05,
+        "s": 0.3921
+       },
+       {
+        "i": 9,
+        "x": 2.0346,
+        "y": 1.05,
+        "s": 0.3921
+       }
+      ],
+      "idx": []
+     },
+     "t": 2.4,
+     "dur": 0.7
+    },
+    {
+     "type": "fadeout",
+     "target": "_cap_data",
+     "t": 5.85,
+     "dur": 0.3
+    },
+    {
+     "type": "counter",
+     "text": "size = 0    capacity = 10",
+     "t": 6.15,
+     "dur": 0.25
+    }
+   ]
+  },
+  {
+   "kind": "push",
+   "label": "push ×10 (fast)",
+   "note": "[0,10)",
+   "duration": 1.0,
+   "speed": 1.8,
+   "events": [
+    {
+     "type": "fill",
+     "target": "row:data",
+     "i": 0,
+     "s": 1,
+     "cap": 10,
+     "counter": true,
+     "t": 0.0,
+     "dur": 0.1
+    },
+    {
+     "type": "fill",
+     "target": "row:data",
+     "i": 1,
+     "s": 2,
+     "cap": 10,
+     "counter": true,
+     "t": 0.1,
+     "dur": 0.1
+    },
+    {
+     "type": "fill",
+     "target": "row:data",
+     "i": 2,
+     "s": 3,
+     "cap": 10,
+     "counter": true,
+     "t": 0.2,
+     "dur": 0.1
+    },
+    {
+     "type": "fill",
+     "target": "row:data",
+     "i": 3,
+     "s": 4,
+     "cap": 10,
+     "counter": true,
+     "t": 0.3,
+     "dur": 0.1
+    },
+    {
+     "type": "fill",
+     "target": "row:data",
+     "i": 4,
+     "s": 5,
+     "cap": 10,
+     "counter": true,
+     "t": 0.4,
+     "dur": 0.1
+    },
+    {
+     "type": "fill",
+     "target": "row:data",
+     "i": 5,
+     "s": 6,
+     "cap": 10,
+     "counter": true,
+     "t": 0.5,
+     "dur": 0.1
+    },
+    {
+     "type": "fill",
+     "target": "row:data",
+     "i": 6,
+     "s": 7,
+     "cap": 10,
+     "counter": true,
+     "t": 0.6,
+     "dur": 0.1
+    },
+    {
+     "type": "fill",
+     "target": "row:data",
+     "i": 7,
+     "s": 8,
+     "cap": 10,
+     "counter": true,
+     "t": 0.7,
+     "dur": 0.1
+    },
+    {
+     "type": "fill",
+     "target": "row:data",
+     "i": 8,
+     "s": 9,
+     "cap": 10,
+     "counter": true,
+     "t": 0.8,
+     "dur": 0.1
+    },
+    {
+     "type": "fill",
+     "target": "row:data",
+     "i": 9,
+     "s": 10,
+     "cap": 10,
+     "counter": true,
+     "t": 0.9,
+     "dur": 0.1
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show v1",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:v1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show v2",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:v2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show v3",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:v3",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show v4",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:v4",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show v5",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:v5",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show v6",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:v6",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show v7",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:v7",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show v8",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:v8",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show v9",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:v9",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show v10",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:v10",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show la1",
+   "note": "",
+   "duration": 2.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:la1",
+     "t": 0.0,
+     "dur": 2.4
+    }
+   ]
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [0,10) gold",
+   "note": "",
+   "duration": 1.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#FFB86C",
+      "cx": 0.0,
+      "cy": 1.05,
+      "w": 4.5613,
+      "h": 0.4921
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#FFB86C",
+      "cx": 0.0,
+      "cy": 1.05,
+      "w": 4.5613,
+      "h": 0.4921
+     },
+     "t": 1.3,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "grow_to",
+   "label": "申请 5",
+   "note": "capacity 0->5, 搬 0 格",
+   "duration": 5.9,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "_cap_evens",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "row_create",
+     "target": "row:evens",
+     "g": {
+      "kind": "cells",
+      "cap": 5,
+      "side": 0.5545,
+      "cx": -3.4,
+      "cy": -1.3,
+      "w": 3.0127,
+      "h": 0.5545,
+      "cells": [
+       {
+        "i": 0,
+        "x": -4.6291,
+        "y": -1.3,
+        "s": 0.5545
+       },
+       {
+        "i": 1,
+        "x": -4.0145,
+        "y": -1.3,
+        "s": 0.5545
+       },
+       {
+        "i": 2,
+        "x": -3.4,
+        "y": -1.3,
+        "s": 0.5545
+       },
+       {
+        "i": 3,
+        "x": -2.7855,
+        "y": -1.3,
+        "s": 0.5545
+       },
+       {
+        "i": 4,
+        "x": -2.1709,
+        "y": -1.3,
+        "s": 0.5545
+       }
+      ],
+      "idx": []
+     },
+     "t": 2.4,
+     "dur": 0.7
+    },
+    {
+     "type": "fadeout",
+     "target": "_cap_evens",
+     "t": 5.6,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "push",
+   "label": "push ×5 (normal)",
+   "note": "[0,5)",
+   "duration": 0.9,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fill",
+     "target": "row:evens",
+     "i": 0,
+     "s": 1,
+     "cap": 5,
+     "counter": false,
+     "t": 0.0,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:evens",
+     "i": 1,
+     "s": 2,
+     "cap": 5,
+     "counter": false,
+     "t": 0.18,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:evens",
+     "i": 2,
+     "s": 3,
+     "cap": 5,
+     "counter": false,
+     "t": 0.36,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:evens",
+     "i": 3,
+     "s": 4,
+     "cap": 5,
+     "counter": false,
+     "t": 0.54,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:evens",
+     "i": 4,
+     "s": 5,
+     "cap": 5,
+     "counter": false,
+     "t": 0.72,
+     "dur": 0.18
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show t_evens",
+   "note": "",
+   "duration": 0.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:t_evens",
+     "t": 0.0,
+     "dur": 0.95
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show e0",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:e0",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show e1",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:e1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show e2",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:e2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show e3",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:e3",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show e4",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:e4",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide la1",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:la1",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show la2",
+   "note": "",
+   "duration": 2.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:la2",
+     "t": 0.0,
+     "dur": 2.4
+    }
+   ]
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [0,5) gold",
+   "note": "",
+   "duration": 1.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#FFB86C",
+      "cx": -3.4,
+      "cy": -1.3,
+      "w": 3.1127,
+      "h": 0.6545
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#FFB86C",
+      "cx": -3.4,
+      "cy": -1.3,
+      "w": 3.1127,
+      "h": 0.6545
+     },
+     "t": 1.3,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "grow_to",
+   "label": "申请 5",
+   "note": "capacity 0->5, 搬 0 格",
+   "duration": 5.9,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "_cap_doubled",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "row_create",
+     "target": "row:doubled",
+     "g": {
+      "kind": "cells",
+      "cap": 5,
+      "side": 0.5545,
+      "cx": 3.4,
+      "cy": -1.3,
+      "w": 3.0127,
+      "h": 0.5545,
+      "cells": [
+       {
+        "i": 0,
+        "x": 2.1709,
+        "y": -1.3,
+        "s": 0.5545
+       },
+       {
+        "i": 1,
+        "x": 2.7855,
+        "y": -1.3,
+        "s": 0.5545
+       },
+       {
+        "i": 2,
+        "x": 3.4,
+        "y": -1.3,
+        "s": 0.5545
+       },
+       {
+        "i": 3,
+        "x": 4.0145,
+        "y": -1.3,
+        "s": 0.5545
+       },
+       {
+        "i": 4,
+        "x": 4.6291,
+        "y": -1.3,
+        "s": 0.5545
+       }
+      ],
+      "idx": []
+     },
+     "t": 2.4,
+     "dur": 0.7
+    },
+    {
+     "type": "fadeout",
+     "target": "_cap_doubled",
+     "t": 5.6,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "push",
+   "label": "push ×5 (normal)",
+   "note": "[0,5)",
+   "duration": 0.9,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fill",
+     "target": "row:doubled",
+     "i": 0,
+     "s": 1,
+     "cap": 5,
+     "counter": false,
+     "t": 0.0,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:doubled",
+     "i": 1,
+     "s": 2,
+     "cap": 5,
+     "counter": false,
+     "t": 0.18,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:doubled",
+     "i": 2,
+     "s": 3,
+     "cap": 5,
+     "counter": false,
+     "t": 0.36,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:doubled",
+     "i": 3,
+     "s": 4,
+     "cap": 5,
+     "counter": false,
+     "t": 0.54,
+     "dur": 0.18
+    },
+    {
+     "type": "fill",
+     "target": "row:doubled",
+     "i": 4,
+     "s": 5,
+     "cap": 5,
+     "counter": false,
+     "t": 0.72,
+     "dur": 0.18
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show t_doubled",
+   "note": "",
+   "duration": 1.19,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:t_doubled",
+     "t": 0.0,
+     "dur": 1.19
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show d0",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:d0",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show d1",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:d1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show d2",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:d2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show d3",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:d3",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show d4",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:d4",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide la2",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:la2",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show la3",
+   "note": "",
+   "duration": 2.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:la3",
+     "t": 0.0,
+     "dur": 2.4
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide la3",
+   "note": "",
+   "duration": 5.05,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:la3",
+     "t": 4.65,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show c_filter",
+   "note": "",
+   "duration": 1.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:c_filter",
+     "cx": -4.3,
+     "cy": -0.35,
+     "t": 0.0,
+     "dur": 1.95
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show c_transform",
+   "note": "",
+   "duration": 2.31,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:c_transform",
+     "cx": -0.4,
+     "cy": -0.35,
+     "t": 0.0,
+     "dur": 2.31
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a1",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show c_take",
+   "note": "",
+   "duration": 1.59,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:c_take",
+     "cx": 2.6,
+     "cy": -0.35,
+     "t": 0.0,
+     "dur": 1.59
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a2",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lo0",
+   "note": "",
+   "duration": 2.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lo0",
+     "t": 0.0,
+     "dur": 2.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb1",
+   "note": "",
+   "duration": 2.15,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb1",
+     "t": 0.0,
+     "dur": 2.15
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb1",
+   "note": "",
+   "duration": 2.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb1",
+     "t": 2.2,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb2",
+   "note": "",
+   "duration": 2.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb2",
+     "t": 0.0,
+     "dur": 2.4
+    }
+   ]
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [0,1) red",
+   "note": "",
+   "duration": 1.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#FF6B7A",
+      "cx": -2.0346,
+      "cy": 1.05,
+      "w": 0.4921,
+      "h": 0.4921
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#FF6B7A",
+      "cx": -2.0346,
+      "cy": 1.05,
+      "w": 0.4921,
+      "h": 0.4921
+     },
+     "t": 1.3,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [1,2) green",
+   "note": "",
+   "duration": 1.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#72D49A",
+      "cx": -1.5824,
+      "cy": 1.05,
+      "w": 0.4921,
+      "h": 0.4921
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#72D49A",
+      "cx": -1.5824,
+      "cy": 1.05,
+      "w": 0.4921,
+      "h": 0.4921
+     },
+     "t": 1.3,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide lo0",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lo0",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lo1",
+   "note": "",
+   "duration": 0.83,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lo1",
+     "t": 0.0,
+     "dur": 0.83
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.4s",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb2",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb2",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb3",
+   "note": "",
+   "duration": 2.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb3",
+     "t": 0.0,
+     "dur": 2.4
+    }
+   ]
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [2,3) red",
+   "note": "",
+   "duration": 1.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#FF6B7A",
+      "cx": -1.1303,
+      "cy": 1.05,
+      "w": 0.4921,
+      "h": 0.4921
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#FF6B7A",
+      "cx": -1.1303,
+      "cy": 1.05,
+      "w": 0.4921,
+      "h": 0.4921
+     },
+     "t": 1.3,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [3,4) green",
+   "note": "",
+   "duration": 1.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#72D49A",
+      "cx": -0.6782,
+      "cy": 1.05,
+      "w": 0.4921,
+      "h": 0.4921
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#72D49A",
+      "cx": -0.6782,
+      "cy": 1.05,
+      "w": 0.4921,
+      "h": 0.4921
+     },
+     "t": 1.3,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide lo1",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lo1",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lo2",
+   "note": "",
+   "duration": 1.07,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lo2",
+     "t": 0.0,
+     "dur": 1.07
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.4s",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb3",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb3",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb4",
+   "note": "",
+   "duration": 2.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb4",
+     "t": 0.0,
+     "dur": 2.4
+    }
+   ]
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [4,5) red",
+   "note": "",
+   "duration": 1.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#FF6B7A",
+      "cx": -0.2261,
+      "cy": 1.05,
+      "w": 0.4921,
+      "h": 0.4921
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#FF6B7A",
+      "cx": -0.2261,
+      "cy": 1.05,
+      "w": 0.4921,
+      "h": 0.4921
+     },
+     "t": 1.3,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [5,6) green",
+   "note": "",
+   "duration": 1.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#72D49A",
+      "cx": 0.2261,
+      "cy": 1.05,
+      "w": 0.4921,
+      "h": 0.4921
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#72D49A",
+      "cx": 0.2261,
+      "cy": 1.05,
+      "w": 0.4921,
+      "h": 0.4921
+     },
+     "t": 1.3,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide lo2",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lo2",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lo3",
+   "note": "",
+   "duration": 1.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lo3",
+     "t": 0.0,
+     "dur": 1.43
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.4s",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb4",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb4",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb5",
+   "note": "",
+   "duration": 2.27,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb5",
+     "t": 0.0,
+     "dur": 2.27
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb5",
+   "note": "",
+   "duration": 2.73,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb5",
+     "t": 2.33,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb6",
+   "note": "",
+   "duration": 2.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb6",
+     "t": 0.0,
+     "dur": 2.4
+    }
+   ]
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 23.765,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:c_filter",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:c_transform",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a1",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:c_take",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a2",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:d0",
+     "t": 1.5,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:d1",
+     "t": 1.8,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:d2",
+     "t": 2.1,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:d3",
+     "t": 2.4,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:d4",
+     "t": 2.7,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:e0",
+     "t": 3.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:e1",
+     "t": 3.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:e2",
+     "t": 3.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:e3",
+     "t": 3.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:e4",
+     "t": 4.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb6",
+     "t": 5.845,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lo3",
+     "t": 6.145,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:t_doubled",
+     "t": 6.445,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:t_evens",
+     "t": 6.745,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:v1",
+     "t": 7.045,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:v10",
+     "t": 7.345,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:v2",
+     "t": 7.645,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:v3",
+     "t": 7.945,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:v4",
+     "t": 8.245,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:v5",
+     "t": 8.545,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:v6",
+     "t": 8.845,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:v7",
+     "t": 9.145,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:v8",
+     "t": 9.445,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:v9",
+     "t": 9.745,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 10.045,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 12.795,
+     "dur": 2.27
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 15.415,
+     "dur": 2.39
+    },
+    {
+     "type": "pulse",
+     "target": "counter",
+     "t": 20.765,
+     "dur": 1.0
+    }
+   ]
+  }
+ ]
+}

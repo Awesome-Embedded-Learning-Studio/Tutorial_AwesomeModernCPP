@@ -1,0 +1,11 @@
+命名信号量 /lp03_sem 已建:初值=2(两个名额)。三个 exec 出来的 worker 进场:
+[worker0 pid=23751 @1854010.6] 尝试 sem_wait(此刻 sem_getvalue=2)
+[worker0 pid=23751 @1854010.6] 拿到名额!sem_wait 等了    0.0 ms(剩余名额 sem_getvalue=1)
+[worker1 pid=23752 @1854160.8] 尝试 sem_wait(此刻 sem_getvalue=1)
+[worker1 pid=23752 @1854160.8] 拿到名额!sem_wait 等了    0.0 ms(剩余名额 sem_getvalue=0)
+[worker2 pid=23753 @1854311.3] 尝试 sem_wait(此刻 sem_getvalue=0)
+[worker0 pid=23751 @1855010.8] sem_post 放行(名额回到 1)
+[worker2 pid=23753 @1855010.8] 拿到名额!sem_wait 等了  699.4 ms(剩余名额 sem_getvalue=0)
+[worker1 pid=23752 @1855161.0] sem_post 放行(名额回到 1)
+[worker2 pid=23753 @1856010.9] sem_post 放行(名额回到 2)
+全部结束:sem_getvalue=2(名额一个不少)。worker2 的「等了 xx ms」就是名额干等的时长

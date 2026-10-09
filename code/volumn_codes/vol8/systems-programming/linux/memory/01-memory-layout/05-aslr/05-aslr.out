@@ -1,0 +1,20 @@
+== ASLR 开 · 第 1 次 ==
+exe=600afa76f000 heap=600afe5f4000 stack=7ffcc36cc000-7ffcc36ee000 libc=707580200000 vvar=707580a02000 vdso=707580a08000
+== ASLR 开 · 第 2 次 ==
+exe=558f32b3c000 heap=558f406be000 stack=7ffe1d5ae000-7ffe1d5d0000 libc=74165ba00000 vvar=74165c240000 vdso=74165c246000
+== ASLR 开 · 第 3 次 ==
+exe=621b9561e000 heap=621bb7e13000 stack=7ffc575ab000-7ffc575cd000 libc=7fe7d6800000 vvar=7fe7d7053000 vdso=7fe7d7059000
+== ASLR 开 · 第 4 次 ==
+exe=5d9db4839000 heap=5d9df1ce2000 stack=7ffcf3051000-7ffcf3073000 libc=708d66a00000 vvar=708d672d6000 vdso=708d672dc000
+== ASLR 开 · 第 5 次 ==
+exe=6371f0e14000 heap=637207920000 stack=7ffd75df3000-7ffd75e15000 libc=7acd84000000 vvar=7acd84765000 vdso=7acd8476b000
+== setarch -R(ASLR 关)· 第 1 次 ==
+exe=555555554000 heap=55555555b000 stack=7ffffffdd000-7ffffffff000 libc=7ffff7800000 vvar=7ffff7fb6000 vdso=7ffff7fbc000
+== setarch -R(ASLR 关)· 第 2 次 ==
+exe=555555554000 heap=55555555b000 stack=7ffffffdd000-7ffffffff000 libc=7ffff7800000 vvar=7ffff7fb6000 vdso=7ffff7fbc000
+== setarch -R(ASLR 关)· 第 3 次 ==
+exe=555555554000 heap=55555555b000 stack=7ffffffdd000-7ffffffff000 libc=7ffff7800000 vvar=7ffff7fb6000 vdso=7ffff7fbc000
+== setarch -R(ASLR 关)· 第 4 次 ==
+exe=555555554000 heap=55555555b000 stack=7ffffffdd000-7ffffffff000 libc=7ffff7800000 vvar=7ffff7fb6000 vdso=7ffff7fbc000
+== setarch -R(ASLR 关)· 第 5 次 ==
+exe=555555554000 heap=55555555b000 stack=7ffffffdd000-7ffffffff000 libc=7ffff7800000 vvar=7ffff7fb6000 vdso=7ffff7fbc000

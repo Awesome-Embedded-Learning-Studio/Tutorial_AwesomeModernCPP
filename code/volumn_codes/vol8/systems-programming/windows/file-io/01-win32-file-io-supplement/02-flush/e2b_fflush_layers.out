@@ -1,0 +1,19 @@
+$ ./e2b_fflush_layers.exe
+[1] CRT 层持留:FILE* 逐字节写 100 个 's'
+    fwrite 完成未 fflush,旁路句柄看到的尺寸 -> 0  (-1xx 是打不开的错误码)
+    fflush 之后,旁路句柄看到的尺寸       -> 100  (fflush 耗时 0.066 ms)
+
+[2] 三层计时:32MiB(1MiB 块 fwrite)
+    fwrite  32MiB      ->    6.892 ms  (进 OS 缓存)
+    fflush 第一次      ->    4.963 ms  (清 CRT 残余)
+    fflush 第二次(空) ->    0.000 ms  (无残余时的固定开销,对照用)
+    FlushFileBuffers   ->    9.202 ms  (刷缓存管理器脏页 + 存储栈)
+    三段累计           ->   21.057 ms
+
+[3] 尺寸可见性:旁路句柄在每步之后看到的字节数
+    fwrite 完(未 fflush) -> 33554432  <- 大块 fwrite 已直通 OS,不在 CRT 缓冲里
+    fflush 之后           -> 33554432
+    FlushFileBuffers 之后 -> 33554432(尺寸早就在了,这一步买的是持久性,不是可见性)
+
+分层:fwrite/fputc -> CRT 缓冲 -> WriteFile -> 系统缓存 -> 盘
+     fflush 清 CRT 层;FlushFileBuffers 清系统缓存层;谁也不越层替别人干活

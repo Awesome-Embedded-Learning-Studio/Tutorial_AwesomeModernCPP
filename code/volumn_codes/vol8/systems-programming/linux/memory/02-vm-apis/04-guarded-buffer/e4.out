@@ -1,0 +1,48 @@
+E4: guarded_buffer<T> -- turn silent overflow into precise SIGSEGV (page 4096)
+
+== construct guarded_buffer<char>(100) ==
+   data  = [0x71d77caf1f9c, 0x71d77caf2000) 100 bytes, 末字节紧贴 guard 页首
+   guard = [0x71d77caf2000, 0x71d77caf3000) PROT_NONE
+   data+100 == guard_begin ? yes
+   maps: 71d77caf1000-71d77caf2000 rw-p 00000000 00:00 0 
+   maps: 71d77caf2000-71d77caf3000 ---p 00000000 00:00 0 
+
+== normal read/write ==
+   wrote 100 bytes, checksum 10906 == readback 10906 ? yes
+   d[99]='Z' ok (last legal byte)
+
+== overflow by exactly 1 byte: d[100] = 'X' ==
+
+[handler] SIGSEGV, si_addr = 0x000071d77caf2000, si_code = 2 (SEGV_ACCERR)
+[handler] guard = [0x000071d77caf2000, 0x000071d77caf3000), si_addr IN guard, 越界第 1 / 4096 字节; requested address = 0x000071d77caf2000 == si_addr (精确落点)
+   caught it, process alive, d[99] still 'Z'
+
+== overflow 1 page deep: d[100+4095] ==
+
+[handler] SIGSEGV, si_addr = 0x000071d77caf2fff, si_code = 2 (SEGV_ACCERR)
+[handler] guard = [0x000071d77caf2000, 0x000071d77caf3000), si_addr IN guard, 越界第 4096 / 4096 字节; requested address = 0x000071d77caf2fff == si_addr (精确落点)
+   caught at guard's last byte
+
+== overflow READ: c = d[100+3] ==
+
+[handler] SIGSEGV, si_addr = 0x000071d77caf2003, si_code = 2 (SEGV_ACCERR)
+[handler] guard = [0x000071d77caf2000, 0x000071d77caf3000), si_addr IN guard, 越界第 4 / 4096 字节; requested address = 0x000071d77caf2003 == si_addr (精确落点)
+   reads are guarded too
+
+== guarded_buffer<int>(10): data[10] is 4 bytes into guard ==
+   di[9]=81 ok
+
+[handler] SIGSEGV, si_addr = 0x000071d77caf0000, si_code = 2 (SEGV_ACCERR)
+[handler] guard = [0x000071d77caf0000, 0x000071d77caf1000), si_addr IN guard, 越界第 1 / 4096 字节; requested address = 0x000071d77caf0000 == si_addr (精确落点)
+   caught: di[10] faults at guard start
+
+== underflow d[-1]: NOT covered by a rear-only guard ==
+   no signal -- 前向不设防,这就是本设计的边界(前后双 guard 可补)
+
+== control group: same layout WITHOUT guard page ==
+   ctrl buffer at 0x71d77caedf9c, ctrl[100] lands at 0x71d77caee000 (page 2, rw-p)
+   ctrl[100]='X' -- no signal, value read back: 'X' (silent corruption)
+   ctrl[100+4095]='Y' -- still no signal
+
+verdict: guard page 把越界从'静默写脏邻居'变成'必炸 + si_addr 报出越界第几字节',
+而且 siglongjmp 让进程接着活 —— 这就是分配器隔离带/电子围栏的原理

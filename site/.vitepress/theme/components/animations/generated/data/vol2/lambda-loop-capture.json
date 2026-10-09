@@ -1,0 +1,1208 @@
+{
+ "version": 1,
+ "id": "lambda-loop-capture",
+ "title": "循环里 [&i]，五个闭包同一个地址",
+ "subtitle": "引用捕获 vs 值捕获的生命周期",
+ "source": "projects/vol2-ch03-lambda/02-dsl/lambda-loop-capture.yaml",
+ "backend": "web",
+ "template": "freeform",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#111521",
+  "bgRaised": "#171D2D",
+  "text": "#F4F6FB",
+  "muted": "#98A2B8",
+  "fill": "#66D9EF",
+  "fillEdge": "#2E9DC2",
+  "emptyEdge": "#43506A",
+  "grow": "#FFB86C",
+  "numOnFill": "#0B1E27",
+  "ok": "#72D49A",
+  "bad": "#FF6B7A",
+  "cardBg": "#1B2234"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "循环里 [&i]，五个闭包同一个地址",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 6.4832,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "引用捕获 vs 值捕获的生命周期",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#98A2B8",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.664,
+   "h": 0.272
+  },
+  "show:card_i1": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.452,
+   "w": 2.3776,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "int i = 0;",
+     "w": 1.32
+    },
+    {
+     "text": "// 循环变量",
+     "w": 1.452
+    }
+   ],
+   "cx": -3.9,
+   "cy": -0.2
+  },
+  "show:lb_i0": {
+   "kind": "text",
+   "text": "i = 0",
+   "x": -3.9,
+   "y": -1.25,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.62,
+   "h": 0.272,
+   "id": "lb_i0"
+  },
+  "show:rl_bad": {
+   "kind": "rowlist",
+   "w": 3.4736,
+   "h": 5.29,
+   "noteX": 2.7136,
+   "entries": [
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 0.528,
+      "w": 1.4536,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "[&i]",
+        "w": 0.528
+       }
+      ]
+     },
+     "note": {
+      "text": "第 1 轮 push",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.52,
+      "h": 0.272
+     },
+     "tone": "bad"
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 0.528,
+      "w": 1.4536,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "[&i]",
+        "w": 0.528
+       }
+      ]
+     },
+     "note": {
+      "text": "第 2 轮 push",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.52,
+      "h": 0.272
+     },
+     "tone": "bad"
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 0.528,
+      "w": 1.4536,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "[&i]",
+        "w": 0.528
+       }
+      ]
+     },
+     "note": {
+      "text": "第 3 轮 push",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.52,
+      "h": 0.272
+     },
+     "tone": "bad"
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 0.528,
+      "w": 1.4536,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "[&i]",
+        "w": 0.528
+       }
+      ]
+     },
+     "note": {
+      "text": "第 4 轮 push",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.52,
+      "h": 0.272
+     },
+     "tone": "bad"
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 0.528,
+      "w": 1.4536,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "[&i]",
+        "w": 0.528
+       }
+      ]
+     },
+     "note": {
+      "text": "第 5 轮 push",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.52,
+      "h": 0.272
+     },
+     "tone": "bad"
+    }
+   ],
+   "rowHs": [
+    0.778,
+    0.778,
+    0.778,
+    0.778,
+    0.778
+   ],
+   "cx": 2.8,
+   "cy": -0.2
+  },
+  "show:lb_i2": {
+   "kind": "text",
+   "text": "i = 2",
+   "x": -3.9,
+   "y": -1.25,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.62,
+   "h": 0.272,
+   "id": "lb_i2"
+  },
+  "show:lb_i4": {
+   "kind": "text",
+   "text": "i = 4",
+   "x": -3.9,
+   "y": -1.25,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.62,
+   "h": 0.272,
+   "id": "lb_i4"
+  },
+  "show:lb_cyc": {
+   "kind": "text",
+   "text": "i 的值在变，&i 没变",
+   "x": -0.8,
+   "y": 1.0,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.468,
+   "h": 0.272,
+   "id": "lb_cyc"
+  },
+  "show:arrow_bad": {
+   "kind": "arrow",
+   "x1": 0.8832,
+   "y1": -0.2,
+   "x2": -2.5312,
+   "y2": -0.2,
+   "cx": -0.824,
+   "cy": -0.2,
+   "w": 3.4144,
+   "h": 0.0,
+   "label": {
+    "text": "都是 &i 这一个地址",
+    "x": -0.824,
+    "y": 0.1524,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 2.1096,
+    "h": 0.2448
+   }
+  },
+  "show:lb_dead": {
+   "kind": "text",
+   "text": "循环结束，i 销毁",
+   "x": -3.9,
+   "y": -0.2,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.096,
+   "h": 0.272,
+   "id": "lb_dead"
+  },
+  "show:lb_ub": {
+   "kind": "text",
+   "text": "地址还指着，对象没了",
+   "x": -3.9,
+   "y": -1.25,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.64,
+   "h": 0.272,
+   "id": "lb_ub"
+  },
+  "show:card_out_bad": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.772,
+   "w": 3.6976,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "再调用 handlers[k]()",
+     "w": 2.64
+    },
+    {
+     "text": "// 实测常见输出垃圾值",
+     "w": 2.772
+    }
+   ],
+   "cx": 0.6,
+   "cy": -1.85
+  },
+  "show:card_i2": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.452,
+   "w": 2.3776,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "int i = 0;",
+     "w": 1.32
+    },
+    {
+     "text": "// 循环变量",
+     "w": 1.452
+    }
+   ],
+   "cx": -3.9,
+   "cy": -0.2
+  },
+  "show:rl_ok": {
+   "kind": "rowlist",
+   "w": 3.2176,
+   "h": 5.29,
+   "noteX": 2.5196,
+   "entries": [
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 0.396,
+      "w": 1.3216,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "[i]",
+        "w": 0.396
+       }
+      ]
+     },
+     "note": {
+      "text": "复制 i == 0",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.396,
+      "h": 0.272
+     },
+     "tone": "ok"
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 0.396,
+      "w": 1.3216,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "[i]",
+        "w": 0.396
+       }
+      ]
+     },
+     "note": {
+      "text": "复制 i == 1",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.396,
+      "h": 0.272
+     },
+     "tone": "ok"
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 0.396,
+      "w": 1.3216,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "[i]",
+        "w": 0.396
+       }
+      ]
+     },
+     "note": {
+      "text": "复制 i == 2",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.396,
+      "h": 0.272
+     },
+     "tone": "ok"
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 0.396,
+      "w": 1.3216,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "[i]",
+        "w": 0.396
+       }
+      ]
+     },
+     "note": {
+      "text": "复制 i == 3",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.396,
+      "h": 0.272
+     },
+     "tone": "ok"
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "variant": "default",
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 0.396,
+      "w": 1.3216,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "[i]",
+        "w": 0.396
+       }
+      ]
+     },
+     "note": {
+      "text": "复制 i == 4",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#F4F6FB",
+      "mono": false,
+      "anchor": "middle",
+      "w": 1.396,
+      "h": 0.272
+     },
+     "tone": "ok"
+    }
+   ],
+   "rowHs": [
+    0.778,
+    0.778,
+    0.778,
+    0.778,
+    0.778
+   ],
+   "cx": 2.8,
+   "cy": -0.2
+  },
+  "show:lb_ok": {
+   "kind": "text",
+   "text": "每个闭包有自己的 i 副本",
+   "x": -3.9,
+   "y": -1.25,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.012,
+   "h": 0.272,
+   "id": "lb_ok"
+  },
+  "show:lb_dead2": {
+   "kind": "text",
+   "text": "i 销毁，副本仍在",
+   "x": -3.9,
+   "y": -0.2,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.096,
+   "h": 0.272,
+   "id": "lb_dead2"
+  },
+  "show:card_out_ok": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.188,
+   "w": 2.1136,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "真实输出",
+     "w": 1.056
+    },
+    {
+     "text": "0 1 2 3 4",
+     "w": 1.188
+    }
+   ],
+   "cx": 0.6,
+   "cy": -1.85
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "[&i] 存地址，闭包不延长 i 的生命周期",
+   "x": 0.0,
+   "y": 0.3764,
+   "fs": 0.24,
+   "color": "#FFB86C",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.6256,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "循环变量 i 活不过循环体",
+   "x": 0.0,
+   "y": -0.2,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.6144,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "[i] 各存一份副本，输出 0 1 2 3 4",
+   "x": 0.0,
+   "y": -0.7764,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.9344,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 3.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 2.4,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_i1",
+   "note": "",
+   "duration": 1.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_i1",
+     "cx": -3.9,
+     "cy": -0.2,
+     "t": 0.0,
+     "dur": 1.95
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.4s",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show lb_i0",
+   "note": "",
+   "duration": 0.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_i0",
+     "t": 0.0,
+     "dur": 0.95
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show rl_bad",
+   "note": "",
+   "duration": 6.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "rowlist_show",
+     "target": "show:rl_bad",
+     "cx": 2.8,
+     "cy": -0.2,
+     "t": 0.0,
+     "dur": 6.0
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_i0",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_i0",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_i2",
+   "note": "",
+   "duration": 0.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_i2",
+     "t": 0.0,
+     "dur": 0.95
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_i2",
+   "note": "",
+   "duration": 1.3,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_i2",
+     "t": 0.9,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_i4",
+   "note": "",
+   "duration": 0.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_i4",
+     "t": 0.0,
+     "dur": 0.95
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_cyc",
+   "note": "",
+   "duration": 1.79,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_cyc",
+     "t": 0.0,
+     "dur": 1.79
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.6s",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show arrow_bad",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:arrow_bad",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_cyc",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_cyc",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide card_i1",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:card_i1",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_i4",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_i4",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_dead",
+   "note": "",
+   "duration": 1.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_dead",
+     "t": 0.0,
+     "dur": 1.43
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_ub",
+   "note": "",
+   "duration": 1.55,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_ub",
+     "t": 0.0,
+     "dur": 1.55
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.0s",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide rl_bad",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:rl_bad",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_out_bad",
+   "note": "",
+   "duration": 2.79,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_out_bad",
+     "cx": 0.6,
+     "cy": -1.85,
+     "t": 0.0,
+     "dur": 2.79
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.4s",
+   "duration": 1.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide card_out_bad",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:card_out_bad",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_dead",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_dead",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_ub",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_ub",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide arrow_bad",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:arrow_bad",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_i2",
+   "note": "",
+   "duration": 1.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_i2",
+     "cx": -3.9,
+     "cy": -0.2,
+     "t": 0.0,
+     "dur": 1.95
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.3s",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show rl_ok",
+   "note": "",
+   "duration": 6.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "rowlist_show",
+     "target": "show:rl_ok",
+     "cx": 2.8,
+     "cy": -0.2,
+     "t": 0.0,
+     "dur": 6.0
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_ok",
+   "note": "",
+   "duration": 1.91,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_ok",
+     "t": 0.0,
+     "dur": 1.91
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide card_i2",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:card_i2",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_dead2",
+   "note": "",
+   "duration": 1.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_dead2",
+     "t": 0.0,
+     "dur": 1.43
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide rl_ok",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:rl_ok",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_out_ok",
+   "note": "",
+   "duration": 1.83,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_out_ok",
+     "cx": 0.6,
+     "cy": -1.85,
+     "t": 0.0,
+     "dur": 1.83
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.4s",
+   "duration": 1.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 14.76,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:card_out_ok",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb_dead2",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lb_ok",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 0.9,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 3.65,
+     "dur": 1.91
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 5.91,
+     "dur": 2.4
+    }
+   ]
+  }
+ ]
+}

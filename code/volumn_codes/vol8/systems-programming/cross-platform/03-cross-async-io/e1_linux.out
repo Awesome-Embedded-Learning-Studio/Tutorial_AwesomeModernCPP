@@ -1,0 +1,3 @@
+[轮1] backend=epoll wait=1 take: id=1 err=0 bytes=5 data='hello'
+[轮2] backend=epoll wait=1 take: id=2 err=0 bytes=5 data='cross'
+PASS: 两轮完成事件与数据全部对上

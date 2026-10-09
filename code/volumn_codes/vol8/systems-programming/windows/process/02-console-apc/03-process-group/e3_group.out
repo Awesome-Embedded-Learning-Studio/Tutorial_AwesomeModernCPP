@@ -1,0 +1,30 @@
+$ ./e3_group.exe
+[E3] 父进程 pid=15788
+  [child-A] pid=3056 就绪 (同组,Ctrl+C 忽略位=复位)
+[0] child-A 就绪(同组,共享控制台)
+  [child-B] pid=14604 就绪 (新组 pgid=自己,Ctrl+C 忽略位=继承的 ON)
+[0] child-B 就绪(CREATE_NEW_PROCESS_GROUP,pgid=B自己=14604)
+[1] 父发 CTRL_C(0):广播到共享本控制台者 —— 期望 P、A 响应,B 静默(免疫)
+    [P handler] type=0 tid=11608
+    [A handler] type=0 tid=18660
+    (上面若只有 P 和 A 两行 handler,type=0 —— B 一行都没有)
+[2] 父发 CTRL_BREAK(0):BREAK 不受忽略位限制 —— 期望 P、A、B 全响应
+    [A handler] type=1 tid=5820
+    [B handler] type=1 tid=23888
+    [P handler] type=1 tid=24640
+[3] 通知 B 自己解除免疫(NULL+FALSE)
+  [child-B] 已 SetConsoleCtrlHandler(NULL,FALSE):免疫解除
+[4] 父发 CTRL_C(0, 定向 B 组 pgid=14604):文档口径"返回成功但收不到" —— 实测:
+    [B handler] type=0 tid=18328
+    返回值=1,下面有没有人响应?
+[5] 父发 CTRL_BREAK(1, 定向 B 组 pgid=14604):能定向 —— 期望只有 B 响应(P/A 不动)
+    [B handler] type=1 tid=25872
+    返回值=1
+[6] 父再发 CTRL_C(0) 广播:B 已解除免疫 —— 期望 P、A、B 全响应
+    [B handler] type=0 tid=21616
+    [A handler] type=0 tid=11020
+    [P handler] type=0 tid=19108
+  [child-A] 收到退出信号,正常返回 exit=0
+  [child-B] 收到退出信号,正常返回 exit=0
+[尾] A exit=0  B exit=0(都 0 = 免疫是「不投递」,不是「杀掉」)
+[E3] done

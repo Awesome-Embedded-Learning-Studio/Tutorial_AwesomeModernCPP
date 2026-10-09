@@ -60,7 +60,7 @@ const textFam = {
     /* counter 除外 —— 它由 counter 家族渲染动态文本+脉冲框,
        否则同屏叠两份(2026-09-03 反馈 Bug 4) */
     for (const [id, op] of Object.entries(c.texts)) {
-      if (id === 'counter') continue
+      if (id === 'counter' || c.D.actors[id]?.counter) continue
       if (op <= 0.01) continue
       const a = c.D.actors[id]
       if (!a || a.kind !== 'text') continue
@@ -74,21 +74,24 @@ const textFam = {
 /* --- counter: 计数器文本 + 增长脉冲框 --- */
 const counterFam = {
   reduce: {
-    counter: (c, ev, at, p) => { if (p > 0.5) c.counterTxt = ev.text },
-    pulse:   (c, ev, at, p) => { c.pulse = 1 - p },
+    counter: (c, ev, at, p) => {
+      if (p > 0.5) c.counterTxt[ev.target || 'counter'] = ev.text
+    },
+    pulse: (c, ev, at, p) => { c.pulse[ev.target || 'counter'] = 1 - p },
   },
   render(c) {
-    /* 无 counter actor 的自定义 json 优雅降级, 不白屏 */
-    const a = c.D.actors.counter
-    if (!a) return
-    const op = c.texts.counter === undefined ? 1 : c.texts.counter
-    if (op <= 0.01) return
-    c.prim.push({ tag: 'text', x: a.x, y: a.y, fs: a.fs * (1 + 0.04 * c.pulse),
-                  fill: a.color, ff: MONO, op, text: c.counterTxt || a.text })
-    if (c.pulse > 0.02) {
-      c.prim.push({ tag: 'rect', x: a.x - a.w * 0.55, y: a.y - a.h * 0.8,
-                    w: a.w * 1.1, h: a.h * 1.6, stroke: c.P.grow, sw: 0.02,
-                    op: c.pulse })
+    for (const [id, a] of Object.entries(c.D.actors)) {
+      if (id !== 'counter' && !a.counter) continue
+      const op = c.texts[id] === undefined ? 1 : c.texts[id]
+      if (op <= 0.01) continue
+      const pulse = c.pulse[id] || 0
+      c.prim.push({ tag: 'text', x: a.x, y: a.y, fs: a.fs * (1 + 0.04 * pulse),
+                    fill: a.color, ff: MONO, op, text: c.counterTxt[id] || a.text })
+      if (pulse > 0.02) {
+        c.prim.push({ tag: 'rect', x: a.x - a.w * 0.55, y: a.y - a.h * 0.8,
+                      w: a.w * 1.1, h: a.h * 1.6, stroke: c.P.grow, sw: 0.02,
+                      op: pulse })
+      }
     }
   },
 }
@@ -124,8 +127,9 @@ const tabularFam = {
            >= 比较, 位级对齐 —— 此前 (t-at)/dur>=0.5 与 at+dur/2 两条算术
            路径在 ulp 级分歧, 特定时间轴会在中点采样上差 1(2026-09-04) */
         const flipAt = at + ev.dur / 2
-        c.counterTxt = 'size = ' + (time >= flipAt ? ev.s : ev.s - 1) +
-                       '    capacity = ' + ev.cap
+        const counterId = typeof ev.counter === 'string' ? ev.counter : 'counter'
+        c.counterTxt[counterId] = 'size = ' + (time >= flipAt ? ev.s : ev.s - 1) +
+                                  '    capacity = ' + ev.cap
       }
     },
     relocate: (c, ev, at, p, time) => {
@@ -278,7 +282,16 @@ const annotFam = {
     code_show:    (c, ev, at, p) => { c.moves[ev.target] = { op: p, sx: ev.cx, sy: ev.cy } },
     bars_show:    (c, ev, at, p) => { c.moves[ev.target] = { op: p, sx: ev.cx, sy: ev.cy } },
     rowlist_show: (c, ev, at, p) => { c.moves[ev.target] = { op: p, sx: ev.cx, sy: ev.cy } },
+    rings_show:   (c, ev, at, p) => { c.moves[ev.target] = { op: p, sx: ev.cx, sy: ev.cy } },
     arrow_show:   (c, ev, at, p) => { c.moves[ev.target] = { op: p, grow: ease(p) } },
+    set_variant: (c, ev, at, p) => {
+      const m = c.moves[ev.target] || (c.moves[ev.target] = { op: 1 })
+      m.variant = p > 0.5 ? ev.variant : ev.frm
+    },
+    set_ring: (c, ev, at, p) => {
+      const m = c.moves[ev.target] || (c.moves[ev.target] = { op: 1 })
+      m.ring = p > 0.5 ? ev.ring : ev.frm
+    },
     move: (c, ev, at, p) => {
       /* 修复: CellRow 的 move 写入行状态而非 moves —— 渲染循环的 moves
          只展开 text/code/bars/rowlist 四种, 行移动此前是瞬移无动画 */
@@ -301,13 +314,13 @@ const annotFam = {
   },
   render(c) {
     /* 大件与自由标注: 平铺展开为 text/rect 原语 */
-    const emitCard = (a, cx, cy, op) => {
+    const emitCard = (a, cx, cy, op, currentVariant) => {
       /* 2026-09-06 修复: rect 的 y 契约是画框系"底边"(模板 4-y-h),
          此前传 cy+h/2(顶边) → 框整体上浮一个卡高, 文字留在卡几何原位,
          视觉即"空框在上、代码行在下"。线上 12 动画的 code 卡均如此,
          golden 首录即固化(不变≠对), v1/v2 同错故对拍绿(等价≠正确)。
          v2 侧 emit_annot 同步修; 回归锁: card_containment.test.js */
-      const variant = a.variant || 'default'
+      const variant = currentVariant || a.variant || 'default'
       const tone = variant === 'accent' ? c.P.fill
         : variant === 'success' ? c.P.ok
         : variant === 'danger' ? c.P.bad
@@ -360,6 +373,23 @@ const annotFam = {
         yTop -= Math.max(ent.card.h, ent.note.h) + 0.35
       }
     }
+    const emitRings = (a, cx, cy, op, activeRing) => {
+      const active = activeRing || a.active
+      for (const ring of a.rings) {
+        const tone = ring.variant === 'accent' ? c.P.fill
+          : ring.variant === 'success' ? c.P.ok
+          : ring.variant === 'danger' ? c.P.bad
+          : ring.variant === 'muted' ? c.P.muted : c.P.fill
+        const on = ring.id === active
+        c.prim.push({ tag: 'circle', x: cx, y: cy, r: ring.r,
+          fill: tone, fillOp: on ? 0.14 : 0.025,
+          stroke: on ? tone : c.P.emptyEdge, sw: on ? 0.032 : 0.012,
+          op, role: 'ring' })
+        c.prim.push({ tag: 'text', x: cx, y: cy + ring.labelY, fs: ring.fs,
+          fill: on ? tone : c.P.muted, ff: SANS, op, text: ring.label,
+          role: on ? 'ring-active-label' : 'ring-label' })
+      }
+    }
     for (const [id, m] of Object.entries(c.moves)) {
       const op = m.op === undefined ? 1 : m.op
       if (op <= 0.01) continue
@@ -376,11 +406,13 @@ const annotFam = {
         c.prim.push({ tag: 'text', x: cx, y: cy, fs: a.fs, fill: a.color,
                       ff: SANS, op, text: a.text })
       } else if (a.kind === 'code') {
-        emitCard(a, cx, cy, op)
+        emitCard(a, cx, cy, op, m.variant)
       } else if (a.kind === 'bars') {
         emitBars(a, cx, cy, op)
       } else if (a.kind === 'rowlist') {
         emitRowList(a, cx, cy, op)
+      } else if (a.kind === 'rings') {
+        emitRings(a, cx, cy, op, m.ring)
       } else if (a.kind === 'arrow') {
         /* grow 通道: 箭头从尾端生长到头端(终点 = 尾 + 全长 × ease(p));
            与 v2 转译器的 x2/y2 关键帧(s ease)位级同源。 */
@@ -415,7 +447,7 @@ export function buildFrame(D, time) {
   /* 帧状态黑板: 各家族 reduce 写入, render 按注册序消费 */
   const c = { D, P: D.palette, prim: [],
               rows: {}, texts: {}, moves: {}, ptrs: {},
-              counterTxt: null, pulse: 0, hls: [] }
+              counterTxt: {}, pulse: {}, hls: [] }
 
   /* 时间轴重放: 事件绝对时刻 = step 起点 + ev.t, p 为该事件的进行度 */
   const ss = [0]
@@ -623,7 +655,7 @@ function _snapshot() {
   const vb = (svg.getAttribute('viewBox') || '0 0 0 0').trim().split(/\s+/).map(Number)
   const W = vb[2] || 1, H = vb[3] || 1
   const out = []
-  for (const el of svg.querySelectorAll('text,rect,polygon,line')) {
+  for (const el of svg.querySelectorAll('text,rect,circle.amp-ring,polygon,line')) {
     const tag = el.tagName.toLowerCase()
     if (tag === 'text') {
       out.push(`text ${_snapNum(el.getAttribute('x'))} ${_snapNum(el.getAttribute('y'))}` +
@@ -636,6 +668,10 @@ function _snapshot() {
       out.push(`rect ${_snapNum(el.getAttribute('x'))} ${_snapNum(el.getAttribute('y'))}` +
         ` ${_snapNum(w)} ${_snapNum(h)} op=${_snapNum(el.getAttribute('opacity') ?? 1)}` +
         (el.getAttribute('rx') !== null ? ' rx' : ''))
+    } else if (tag === 'circle') {
+      out.push(`circle ${_snapNum(el.getAttribute('cx'))} ${_snapNum(el.getAttribute('cy'))}` +
+        ` r=${_snapNum(el.getAttribute('r'))}` +
+        ` op=${_snapNum(el.getAttribute('opacity') ?? 1)}`)
     } else if (tag === 'polygon') {
       const pts = (el.getAttribute('points') || '').trim().split(/\s+/)
         .map((p) => p.split(',').map(_snapNum).join(',')).join(' ')
@@ -721,6 +757,11 @@ const RATES = [0.5, 1, 1.5, 2]
               :rx="it.rx ? 12 : undefined" :ry="it.rx ? 12 : undefined"
               :class="it.role ? `amp-${it.role}` : undefined"
               :filter="it.role === 'card' ? `url(#${paintIds.shadow})` : undefined" />
+        <circle v-else-if="it.tag === 'circle'" :cx="(data.frame.w / 2 + it.x) * 100"
+                :cy="(data.frame.h / 2 - it.y) * 100" :r="it.r * 100"
+                :fill="it.fill || 'none'" :fill-opacity="it.fillOp || 0"
+                :stroke="it.stroke" :stroke-width="it.sw * 100" :opacity="it.op"
+                :class="it.role ? `amp-${it.role}` : undefined" />
         <rect v-else-if="it.tag === 'ghost'" :x="(data.frame.w / 2 + it.x - it.s / 2) * 100"
               :y="(data.frame.h / 2 - it.y - it.s / 2) * 100" :width="it.s * 100"
               :height="it.s * 100" :opacity="it.op" :fill="data.palette.grow"

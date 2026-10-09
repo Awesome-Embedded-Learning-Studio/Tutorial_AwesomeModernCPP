@@ -9,8 +9,6 @@ description: 告别整数隐式转换，用 enum class 构建类型安全的枚�
 difficulty: intermediate
 order: 1
 platform: host
-prerequisites:
-- 'Chapter 0: 移动构造与移动赋值'
 reading_time_minutes: 13
 related:
 - 强类型 typedef
@@ -25,19 +23,19 @@ title: enum class 与强类型枚举
 ---
 # enum class 与强类型枚举
 
-笔者写这篇文章之前，翻了一下以前写的 C 风格代码——满屏幕的 `enum Color { Red, Green, Blue };`，然后 `if (color == 1)` 这种东西随处可见。
+笔者动笔以前，翻了一回自己以前写的 C 风格代码。满屏幕的 `enum Color { Red, Green, Blue };`，配上随处可见的 `if (color == 1)`，看得笔者直皱眉。
 
-如果说是老项目,那没办法,但是到了 2026 年还这么写，基本上就是在给自己挖坑。C 风格 enum 的隐式整数转换、命名污染、无法前向声明，这三板斧砍下来，每一条都够在 code review 里被骂一顿。
+上一章咱们跟 lambda 泡了一整章，这一章回到一个更小、出场率却极高的东西上：枚举。像开头那样的代码，搁在没法动的老项目里，咱们也就认了。可到了 2026 年还接着这么写，就真的说不过去了。老 `enum` 的毛病凑在一块儿就是三样：隐式整数转换、命名污染、没法前向声明。每一样都够您在 code review 里挨一顿说。
 
-`enum class`（C++11 引入的强类型枚举）就是来解决这些问题的。它不只是一个语法糖——它是一种类型安全层面的承诺。这一章我们从 C 风格 enum 的痛点出发，一步步搞清楚 `enum class` 到底修掉了什么 bug，以及怎么用它写出更安全的代码。
+`enum class`，C++11 引入的强类型枚举，就是冲着它们来的。您可别把它当成单纯的语法糖，它给的是类型安全层面的保证：老 `enum` 一路放行的那些误用，换成它之后全都变成了编译错误。
 
-## 第一步——C 风格 enum 的三宗罪
+## C 风格 enum 的三个老毛病
 
-在讲 `enum class` 之前，我们先看看老 `enum` 到底有哪些让人血压升高的问题。
+咱们把老 `enum` 摊开检查一遍，看看它的毛病到底出在哪儿。
 
-### 罪名一：隐式转换为整数
+### 毛病一：隐式转换成整数
 
-老式 `enum` 的值可以隐式转换成 `int`。这听起来像是"方便"，实际上是在鼓励你写出这种代码：
+老式 `enum` 的值能隐式转换成 `int`，中间不需要您写任何显式转换。乍一看还挺方便的。可是方便久了，您手上就会多出这样的代码：
 
 ```cpp
 enum Color { Red, Green, Blue };
@@ -54,11 +52,13 @@ if (Red == Apple) {
 }
 ```
 
-不同枚举类型的值可以互相比较、可以传给任何接受 `int` 的函数——编译器完全不管这些值在语义上是否匹配。这类 bug 在代码量大的时候极难追踪，因为编译器不会给你任何警告。
+上面的 `paint(Orange)` 编译照过，`Red == Apple` 更是直接判成了真。对编译器而言这些值全是整数，所以比较也好、传参也好，它都不加区分地放行了。这样的 bug 在代码量大的时候极难追踪，`paint(Orange)` 这样的调用，编译器从头到尾不会给咱们一条警告。
 
-### 罪名二：命名污染
+> 您要是自己跑一遍会发现，跨枚举的比较（比如 `Red == Apple`）倒是会收到一条默认开的 `-Wenum-compare` 警告，不过它也只是警告而已，编译是照样能过的。把 `Orange` 塞给 `paint(int)` 的传参才是真正一点提示都没有的。
 
-老式 `enum` 的所有枚举值都直接暴露在外部作用域中。如果你有两个枚举都定义了 `None` 或 `Error` 这样的常用名字，就会产生冲突：
+### 毛病二：枚举值污染外部作用域
+
+老式 `enum` 的第二样毛病，是把所有枚举值一股脑暴露到外部作用域里去了。您要是定义了两个枚举，恰好都用了 `None` 或者 `Error` 这样的常用名字，冲突马上就来了：
 
 ```cpp
 enum Status { None, Ok, Error };
@@ -69,11 +69,11 @@ enum Status { Status_None, Status_Ok, Status_Error };
 enum Permission { Perm_None, Perm_Read, Perm_Write, Perm_Execute };
 ```
 
-加前缀确实能解决问题，但这是在用手工约定代替语言机制——每个团队都可能有不同的前缀风格，维护成本直接拉满。
+加前缀这一招您多半也见过、也确实管用，不过它靠的是手工约定而不是语言机制。每个团队的前缀风格还都不一样，等团队多了，维护成本就跟着上去了。
 
-### 罪名三：无法前向声明
+### 毛病三：没法前向声明
 
-C 风格 `enum` 的底层类型由编译器自行决定，所以编译器在看到 `enum` 定义之前无法确定它的大小。这导致 `enum` 不能前向声明（除非你手动指定底层类型，但那就不是"纯 C 风格"了），在头文件依赖管理上非常不方便。
+第三样毛病的根源出在声明上。前向声明（forward declaration：只写名字、暂时不给完整定义的声明）在头文件管理里很常用，偏偏 C 风格 `enum` 用不了。原因在于它的底层类型（underlying type：枚举值实际按哪种整数类型来存）由编译器自行决定，编译器还没见到完整定义的时候，它的大小就定不下来了，所以没法前向声明。除非您手动指定底层类型，可那样一来就谈不上“纯 C 风格”了。头文件的依赖管理也因此很别扭。
 
 ```cpp
 // status.h
@@ -87,13 +87,13 @@ public:
 };
 ```
 
-这三条加在一起，基本上就是"类型安全"的反面教材。C++11 的 `enum class` 针对每一条都给出了明确的解决方案。
+咱们把三条毛病摆在一块儿看，基本就是类型安全的反面教材。而 `enum class` 对每一条毛病，都给出了对症的修法。
 
-## 第二步——enum class 的三大改进
+## enum class 的三个改进
 
 ### 作用域隔离
 
-`enum class` 的枚举值不会泄漏到外部作用域。必须通过 `EnumName::Value` 的方式访问：
+头一样改进是作用域隔离：`enum class` 的枚举值不再泄漏到外部作用域，您想用哪个值，都得通过 `EnumName::Value` 的写法来访问：
 
 ```cpp
 enum class Color { Red, Green, Blue };
@@ -104,11 +104,11 @@ Color c = Color::Red;   // 正确
 // Fruit f = Color::Red; // 编译错误！类型不匹配
 ```
 
-这下 `Color::Red` 和 `Fruit::Apple` 各管各的，永远不可能撞名或者混用。编译器在编译期就能帮你拦截掉所有跨类型的误用。
+`Color::Red` 和 `Fruit::Apple` 从此就各归各的了，撞名或者混用再也发生不了。而跨类型的每一种误用，编译器在编译期就能替您拦下来。
 
 ### 禁止隐式转换
 
-`enum class` 不会隐式转换为任何整数类型，必须使用 `static_cast` 显式转换：
+第二样改进对准的是隐式转换：`enum class` 不再隐式转换成任何整数类型了。您要转成整数，就得显式写 `static_cast` 这样的转换：
 
 ```cpp
 enum class Color : uint8_t { Red, Green, Blue };
@@ -122,7 +122,7 @@ paint(Color::Red);      // OK
 // paint(static_cast<Color>(0));  // OK 但不推荐——绕过类型检查
 ```
 
-你可能会觉得"每次都写 `static_cast` 好麻烦"。笔者的看法是：**麻烦正是安全的代价**。如果某个地方需要把枚举值当整数用，那你就必须显式写出来——这意味着你在那个位置做出了一个有意识的决定，而不是无意中被编译器放过了。
+您可能会觉得每次都写 `static_cast` 太麻烦。笔者倒愿意为这点麻烦多打几个字。某个地方需要把枚举值当整数用，您就必须显式写出来。这意味着您在那个位置做了一个有意识的决定，而不是无意中被编译器放过了。
 
 咱们把前面的反例与修正写法并排成一张图，左边是老 `enum` 的静默放行，右边是 `enum class` 的编译期拦截：
 
@@ -130,7 +130,7 @@ paint(Color::Red);      // OK
 
 ### 指定底层类型与前向声明
 
-`enum class` 可以指定底层类型，并且默认为 `int`。指定底层类型后，编译器在声明时就知道枚举的大小，所以前向声明变得可行：
+第三样改进是底层类型可以指定了：您不写的时候默认也是 `int`。等您把底层类型定下来，编译器只看声明就知道它的大小了，前向声明跟着就可行了：
 
 ```cpp
 // status.h —— 前向声明
@@ -147,7 +147,7 @@ public:
 enum class Status : uint8_t { kOk = 0, kError = 1, kBusy = 2 };
 ```
 
-在头文件中只需要前向声明，完整定义放在 `.cpp` 文件中，这就打破了头文件之间的循环依赖。而且在嵌入式中，你可以把底层类型指定为 `uint8_t`，确保枚举变量只占一个字节：
+咱们在头文件里只需要一句前向声明，完整定义挪进了 `.cpp` 文件，头文件之间的循环依赖就这么断开了。做嵌入式的时候，您还可以把底层类型指定成 `uint8_t`，让枚举变量稳稳地只占一个字节：
 
 ```cpp
 enum class SensorState : uint8_t {
@@ -160,9 +160,9 @@ enum class SensorState : uint8_t {
 static_assert(sizeof(SensorState) == 1, "SensorState should be 1 byte");
 ```
 
-## 第三步——位运算与 enum class
+## 位运算与 enum class
 
-在 C 风格代码中，用枚举值做位标志（bitmask）是非常常见的操作：
+位标志（bitmask：把每一个二进制位当成一个独立的开关来用）在 C 风格的代码里非常常见，咱们拿枚举值拼权限更是常事：
 
 ```cpp
 // C 风格：天然支持位运算（因为隐式转换成 int）
@@ -170,7 +170,7 @@ enum Permission { Read = 1, Write = 2, Execute = 4 };
 int perms = Read | Write;  // OK
 ```
 
-但 `enum class` 禁止了隐式转换，所以 `Color::Red | Color::Green` 这种写法直接编译错误。要支持位运算，我们需要手动重载运算符：
+`enum class` 把隐式转换禁了，所以 `Color::Red | Color::Green` 这样的写法直接编不过。咱们想让 `Permission` 支持位运算，运算符就得自己动手重载了：
 
 ```cpp
 #include <type_traits>
@@ -234,7 +234,7 @@ constexpr bool has_flag(Permission flags, Permission flag) noexcept
 }
 ```
 
-使用起来非常自然：
+咱们接着看用起来的样子：
 
 ```cpp
 Permission user_perms = Permission::kRead | Permission::kWrite;
@@ -247,13 +247,15 @@ user_perms |= Permission::kExecute;  // 添加执行权限
 user_perms &= ~Permission::kWrite;   // 移除写权限
 ```
 
-这段代码虽然看起来有点长（毕竟要手写六个运算符），但它保证了类型安全：你不可能把 `Permission` 和 `Color` 的值混在一起做位运算。在实际项目中，这些运算符通常会被提取到一个通用的头文件里，配合模板或宏来复用。
+长是长了点，毕竟六个运算符全得咱们亲手写。换来的东西也很实在：您没法再把 `Permission` 和 `Color` 的值混在一起做位运算了。到了实际项目里，大家一般会把运算符收进通用的头文件，复用的时候靠模板或者宏。
 
-说到这里，值得提一下 C++23 的进展。`std::to_underlying` 已经在 C++23 中被正式纳入标准库，上面的 `to_underlying` 辅助函数可以直接换成 `<utility>` 里的 `std::to_underlying`。至于 `std::flags` 这种专门为位掩码设计的类型包装器，目前还在提案阶段（P1872），尚未进入标准。在那之前，手动重载运算符仍然是最主流的做法。
+写 `to_underlying` 的时候您可能已经想到了，这样的辅助函数标准库迟早会有的。它真的来了：`std::to_underlying` 已经在 C++23 里正式进入了标准库，上面的手写版本可以直接换成 `<utility>` 里的它。位运算符这块标准库眼下没有现成的对应物，所以手动重载运算符，仍然是最主流的做法。
 
-## 第四步——switch 匹配与编译器警告
+> 咱们也顺带提一句，位标志专用的类型包装器 `std::flags` 还停在提案阶段没进来呢。
 
-`enum class` 和 `switch` 语句是天生一对。由于 `enum class` 的值必须通过限定名访问，编译器知道所有可能的取值，可以在你遗漏分支时发出警告：
+## switch 匹配与编译器警告
+
+咱们把 `enum class` 和 `switch` 放在一起用，配合是相当顺的。`enum class` 的值都得走限定名（就是前面一直写的 `EnumName::Value` 那样的带前缀完整写法），编译器因此知道全部可能的取值，您漏写分支的时候，它就能给出警告了：
 
 ```cpp
 enum class NetworkState : uint8_t {
@@ -275,13 +277,13 @@ std::string_view to_string(NetworkState state)
 }
 ```
 
-笔者强烈建议：**在使用 `enum class` 做 `switch` 时，不要写 `default` 分支**。原因在于，如果你写了 `default`，编译器就会认为你已经处理了所有"其他"情况，`-Wswitch` 警告就失效了。而如果你不写 `default`，以后新增枚举值时，编译器会在所有遗漏的 `switch` 处给出警告，帮你把 bug 扼杀在编译期。
+笔者的建议很直接：**拿 `enum class` 做 `switch` 的时候不要写 `default` 分支**。道理是这样的：写了 `default`，编译器就当您把“其他”情况全处理完了，`-Wswitch` 警告也就跟着失效了。可您要不写，以后新增枚举值的时候，编译器就会在所有漏掉的 `switch` 处给出警告，bug 也就被拦在了编译期。
 
-对应的编译器选项是 GCC/Clang 的 `-Wswitch`（默认开启）或 `-Wswitch-enum`（更严格，即使有 `default` 也会警告）。在项目的 CMakeLists.txt 中加上这些选项，是一个不错的工程实践。
+对应的编译器选项是 GCC/Clang 的 `-Wswitch`。GCC 要等到您打开 `-Wall` 才会带上它，Clang 那边默认就是开的。更严格的还有 `-Wswitch-enum`（写了 `default` 也照样警告）。您把选项加进项目的 `CMakeLists.txt`，就是个不错的工程实践。
 
-## 第五步——C++20 using enum
+## C++20 的 using enum
 
-`enum class` 的作用域隔离虽然是好事，但有时候在一个频繁使用某个枚举的函数里，反复写 `EnumName::` 确实有些啰嗦。C++20 引入了 `using enum` 声明，可以一次性把某个枚举的所有值引入当前作用域：
+作用域隔离是个不折不扣的好东西，不过您要是在一个函数里翻来覆去地用同一个枚举，`EnumName::` 就得一遍一遍地写，读着也确实够啰嗦的。C++20 新增了 `using enum` 声明，一口气能把某个枚举的值全部引进当前作用域：
 
 ```cpp
 enum class TokenType {
@@ -311,7 +313,7 @@ std::string_view token_to_string(TokenType type)
 }
 ```
 
-`using enum` 的作用域仅限于当前块（花括号内），所以不会污染外部作用域。它也可以用在类定义中：
+`using enum` 的生效范围只到当前块（花括号以内），出了块就没了，所以外部作用域不会被污染。咱们还能把它用进类定义里：
 
 ```cpp
 class Lexer {
@@ -323,13 +325,13 @@ public:
 };
 ```
 
-这里有一个踩坑点：`using enum` 会把所有枚举值都引入当前作用域。如果两个枚举有同名的值，同时 `using enum` 会产生冲突。所以使用时要确保你清楚该枚举的所有值，以及它们不会和当前作用域中的名字冲突。
+这里有一个容易出问题的地方，您动手以前要心里有数：`using enum` 会把所有枚举值都一股脑地引进当前作用域。两个枚举要是有同名的值，又被咱们同时 `using enum`，冲突就来了。所以您在用以前，得确认枚举全部的值，还有它们跟当前作用域里的名字不冲突。
 
-## 实战应用——状态机与错误码
+## 实战应用：状态机与错误码
 
 ### 状态机
 
-状态机是嵌入式和协议解析中最常见的模式之一。用 `enum class` 来表示状态，配合 `switch` 实现状态转移，既清晰又安全：
+您在嵌入式和协议解析里会反复见到状态机，算是最常见的模式之一。咱们用 `enum class` 表示状态、拿 `switch` 写状态转移，清晰和安全都占上了：
 
 ```cpp
 #include <cstdio>
@@ -403,11 +405,11 @@ private:
 };
 ```
 
-这段代码的好处是：如果你以后给 `DeviceState` 新增了一个状态（比如 `kPaused`），编译器会在所有缺少这个分支的 `switch` 处发出警告（前提是你没写 `default`），这样你就不会遗漏任何状态转移逻辑。
+代码的好处在您新增状态时才体现出来：哪天给 `DeviceState` 加了一个 `kPaused`，编译器就会在所有缺这个分支的 `switch` 处发出警告，前提还是您没写 `default`。状态转移的逻辑一条都漏不掉了。
 
 ### 错误码
 
-用 `enum class` 做错误码，比用 `#define` 或裸 `int` 安全得多：
+咱们拿 `enum class` 做错误码，比 `#define` 和裸 `int` 都安全多了：
 
 ```cpp
 #include <string_view>
@@ -438,11 +440,11 @@ Result open_file(const char* path)
 }
 ```
 
-这样做的好处是：调用方不能随便传一个 `42` 进去当错误码——它必须使用 `ErrorCode` 类型的值。这种编译期检查虽然简单，但在大型项目中能帮你省下大量调试时间。
+好处也是很直接：调用方没法随手塞一个 `42` 进去当错误码了，能用的只有 `ErrorCode` 类型的值。这样的检查动作很简单，大项目里却实打实帮您省下大把调试时间。
 
 ## C 与 C++ 接口互操作
 
-在实际项目中，`enum class` 有时会碰到与 C 接口交互的场景。底层 C 库可能要求传 `int` 或 `uint32_t`，而你的 C++ 代码用的是 `enum class`。这时候需要显式转换：
+实际项目里也少不了跟 C 接口打交道的场景：您手上写的 C++ 代码用的是 `enum class`，底下对接的 C 库要的却是 `int` 或者 `uint32_t`。两边对不上的时候，就得显式转换了：
 
 ```cpp
 extern "C" void hal_set_mode(uint8_t mode);
@@ -460,11 +462,11 @@ void set_device_mode(HalMode mode)
 }
 ```
 
-如果你需要频繁做这种转换，`to_underlying` 辅助函数（或者 C++23 的 `std::to_underlying`）能帮你少写几行 `static_cast`。不过从笔者的经验来看，这种转换通常集中在接口层（adapter 层），不会散布在业务逻辑中，所以代码量并不算大。
+您要是经常做转换，`to_underlying`（或者 C++23 的 `std::to_underlying`）能帮您省下几行 `static_cast`。不过按笔者的经验，转换一般集中在接口层（adapter：专门跟外部接口对接的那一层），业务逻辑里倒是难得见着几处，所以代码量并不大。
 
 ## 在线运行
 
-在线运行 enum class 示例，对比 C 风格 enum 的问题与强类型改进：
+咱们光看不练可不算数，您到下面的例子里亲手跑一遍，把 C 风格 `enum` 的问题和强类型的改进都亲眼验证一下：
 
 <OnlineCompilerDemo
   title="enum class：强类型枚举与类型安全"

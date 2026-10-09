@@ -23,6 +23,17 @@ tags:
 - 智能指针
 - 引用计数
 title: shared_ptr 详解：共享所有权与引用计数
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: YukunJ
+    roles: [revision]
+    note:
+      zh: "参与文章内容与示例修订 (PR #32)"
+      en: "Contributed article and example revisions (PR #32)"
 ---
 # shared_ptr 详解：共享所有权与引用计数
 

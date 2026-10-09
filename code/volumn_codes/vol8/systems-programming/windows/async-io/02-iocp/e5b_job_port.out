@@ -1,0 +1,10 @@
+[     0 ms] Job 挂端口: SetInformationJobObject ret=1(key=0x99)
+[     0 ms] 子进程已建(pause 状态,pid=29036),已入 Job,现在放行
+[     0 ms] GQCS: ret=1 bytes=6 key=0x99 ov=0x716c → NEW_PROCESS(新进程进组)
+[     0 ms]   ↑ lpOverlapped 里装的是 pid=29036(十进制)
+[     0 ms] GQCS: ret=1 bytes=7 key=0x99 ov=0x716c → EXIT_PROCESS(组内进程退场)
+[     0 ms]   ↑ lpOverlapped 里装的是 pid=29036(十进制)
+[     0 ms] GQCS: ret=1 bytes=4 key=0x99 ov=0x0 → ACTIVE_PROCESS_ZERO(组里没有活进程了)
+[     0 ms] ACTIVE_PROCESS_ZERO 到了,收队
+[     0 ms] 子进程退场码 = 7(建的时候让它 exit 7);已知 pid=29036 —— 拿这两个数对上面的字段落点
+[     0 ms] iocp-e5b 完

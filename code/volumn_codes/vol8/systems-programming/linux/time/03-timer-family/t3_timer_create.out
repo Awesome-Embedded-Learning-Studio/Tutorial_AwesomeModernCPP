@@ -1,0 +1,24 @@
+== E3a: SIGEV_SIGNAL(100ms × 3,载荷 20261004) ==
+  SIGEV_SIGNAL 到货: si_code=SI_TIMER si_value.sival_int=20261004
+  SIGEV_SIGNAL 到货: si_code=SI_TIMER si_value.sival_int=20261004
+  SIGEV_SIGNAL 到货: si_code=SI_TIMER si_value.sival_int=20261004
+
+== E3b: SIGEV_NONE(300ms 一次性,每 50ms 问一次剩多少) ==
+  墙钟  50.1 ms: it_value 剩 0.249 ms
+  墙钟 100.2 ms: it_value 剩 0.199 ms
+  墙钟 150.3 ms: it_value 剩 0.149 ms
+  墙钟 200.4 ms: it_value 剩 0.099 ms
+  墙钟 250.5 ms: it_value 剩 0.049 ms
+  墙钟 300.6 ms: it_value 剩 0.000 ms
+  墙钟 350.7 ms: it_value 剩 0.000 ms
+  到期后 it_value 归零、无任何信号 —— 到没到点,全靠自己看表
+
+== E3c: SIGEV_THREAD(120ms × 2) ==
+  SIGEV_THREAD 回调: 载荷=77,跑在 tid 1046441
+  SIGEV_THREAD 回调: 载荷=77,跑在 tid 1046442
+
+== E3d: SIGEV_THREAD_ID(定向投递,150ms × 2) ==
+  SIGEV_THREAD_ID 到货: 目标线程自己处理 tid 1046443
+  SIGEV_THREAD_ID 到货: 目标线程自己处理 tid 1046443
+  两次都由目标线程处理;主线程全程屏蔽同一个信号、一次没被吵醒 —— 定向投递成立
+  (计数核对: 主线程侧 g_sig_hits=3 是 E3a 的 3 次,工作线程侧 g_tid_hits=2)

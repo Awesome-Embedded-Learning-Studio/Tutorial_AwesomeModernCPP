@@ -3,8 +3,8 @@ title: Contributors
 description: "Thanks to everyone who has contributed to this project"
 translation:
   source: documents/team/index.md
-  source_hash: 74b8885afb78cba4e7e4c4b18327ac31a256fa446b5624217be19b4246285af0
-  translated_at: '2026-09-27T03:11:13+00:00'
+  source_hash: e63f2cb5a07848da5eccf7e3a8d141e1e39859072dbe15b50c1a5ffbe980f74b
+  translated_at: '2026-10-04T00:00:00+00:00'
   engine: anthropic
   token_count: 2600
 ---
@@ -81,7 +81,25 @@ A huge thank-you to these friends for their PRs and for their support in every o
     <span class="card-name">xiaoshuaijie <span class="card-badge pr">PR</span></span>
     <p class="card-role">Content Additions & Build Fixes</p>
     <p class="card-types">💡 📝</p>
-    <p class="card-desc">Submitted PRs completing reference answers for several C tutorial chapters — function pointers & callbacks, arrays & C strings, structs & unions, dynamic memory & file I/O (#149, #153, #164, #165) — fixed Windows build failures and stabilized the split-volume build (#160, #169); earlier reported a wrong statement in "Scope and Storage Classes" (#144), which led to a fix</p>
+    <p class="card-desc">Submitted PRs completing reference answers for several C tutorial chapters — function pointers & callbacks, arrays & C strings, structs & unions, dynamic memory & file I/O (#149, #153, #164, #165) — fixed Windows build failures and stabilized the split-volume build (#160, #169); earlier reported a wrong statement in "Scope and Storage Classes" (#144), which led to a fix; this release completed reference answers for every chapter of Vol. 1 (Ch. 1–7) in the C++ tutorial (20+ PRs), along with build and wording fixes; also contributed the WSL2 + VS Code remote development tutorial, now Getting Started chapter 7 (#276)</p>
+  </div>
+</a>
+<a href="https://github.com/Voyagerroc-Lab" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/Voyagerroc-Lab.png?size=96" alt="Erol Tasci" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">Erol Tasci <span class="card-badge pr">PR</span></span>
+    <p class="card-role">Getting-Started Tutorial Improvement</p>
+    <p class="card-types">📝 💡</p>
+    <p class="card-desc">Co-authored the PR with Voyagerroc-Pro clarifying how CMake generators relate to build tools like Ninja and Make in the getting-started tutorial, plus mingw32-make setup notes for Windows (#258)</p>
+  </div>
+</a>
+<a href="https://github.com/Voyagerroc-Pro" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/Voyagerroc-Pro.png?size=96" alt="Voyagerroc-Pro" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">Voyagerroc-Pro <span class="card-badge pr">PR</span></span>
+    <p class="card-role">Getting-Started Tutorial Improvement</p>
+    <p class="card-types">📝 💡</p>
+    <p class="card-desc">Co-authored the getting-started tutorial's CMake build explanation with Erol Tasci (#258)</p>
   </div>
 </a>
 </div>

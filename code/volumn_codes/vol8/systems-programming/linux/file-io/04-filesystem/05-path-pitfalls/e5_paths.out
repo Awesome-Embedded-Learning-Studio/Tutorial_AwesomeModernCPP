@@ -1,0 +1,35 @@
+== [1] operator/ 的四种脾气 ==
+  fs::path("base") / "leaf"    -> "base/leaf"
+  fs::path("base/") / "leaf"   -> "base/leaf"
+  fs::path("base//") / "leaf"  -> "base//leaf"
+  fs::path("base") / ""        -> "base/"
+  fs::path("base") / "/abs"    -> "/abs"
+  fs::path("base") / "./leaf"  -> "base/./leaf"
+  p = "root"; p/="sub"; p/="file.txt" -> "root/sub/file.txt"
+
+== [2] lexically_normal(纯词法) ==
+  "./a/../b"                   -> "b"
+  "a/b/.."                     -> "a/"
+  "a/../.."                    -> ".."
+  "../b"                       -> "../b"
+  "a//b///c"                   -> "a/b/c"
+  "a/./b"                      -> "a/b"
+  "/../../a"                   -> "/a"
+  "./"                         -> "."
+  ""                           -> ""
+  (注意 "./a/../b" -> "b":中间目录被 a/../ 抵消;不查盘,"a/../b" 里的 a 是不是目录、存不存在,一概不管)
+
+== [3] path::value_type 与 c_str()(Linux 侧) ==
+  sizeof(path::value_type) = 1
+  string_type 即 std::string:yes
+  printf("%s", p.c_str()) = /usr/bin/env(可直接喂 C API)
+  (Windows 侧 value_type 是 wchar_t,c_str() 是 const wchar_t*;窄字符 C API 需显式转换(如 string())或改用宽字符 API —— 镜像篇对拍点)
+
+== [4] 迭代 path 的元素 ==
+  "/usr/local/include" -> [/] [usr] [local] [include]
+  "a/b/c" -> [a] [b] [c]
+  "a/b/" -> [a] [b] []
+  "/" -> [/]
+  "." -> [.]
+  ".." -> [..]
+  "/abs/path/../x" -> [/] [abs] [path] [..] [x]

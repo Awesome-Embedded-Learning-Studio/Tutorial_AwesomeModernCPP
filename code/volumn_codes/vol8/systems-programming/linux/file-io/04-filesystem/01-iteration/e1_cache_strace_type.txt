@@ -1,0 +1,22 @@
+# mode=type 完整 strace(200 条目,零 per-entry stat;newfstatat 只有启动基线)
+newfstatat(AT_FDCWD, "/etc/ld.so.cache", {st_mode=S_IFREG|0644, st_size=112523, ...}, 0) = 0
+openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+close(3)                                = 0
+newfstatat(AT_FDCWD, "/etc/ld.so.cache", {st_mode=S_IFREG|0644, st_size=112523, ...}, 0) = 0
+openat(AT_FDCWD, "/usr/lib/libstdc++.so.6", O_RDONLY|O_CLOEXEC) = 3
+close(3)                                = 0
+newfstatat(AT_FDCWD, "/etc/ld.so.cache", {st_mode=S_IFREG|0644, st_size=112523, ...}, 0) = 0
+openat(AT_FDCWD, "/usr/lib/libm.so.6", O_RDONLY|O_CLOEXEC) = 3
+close(3)                                = 0
+newfstatat(AT_FDCWD, "/etc/ld.so.cache", {st_mode=S_IFREG|0644, st_size=112523, ...}, 0) = 0
+openat(AT_FDCWD, "/usr/lib/libgcc_s.so.1", O_RDONLY|O_CLOEXEC) = 3
+close(3)                                = 0
+newfstatat(AT_FDCWD, "/etc/ld.so.cache", {st_mode=S_IFREG|0644, st_size=112523, ...}, 0) = 0
+openat(AT_FDCWD, "/usr/lib/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+close(3)                                = 0
+openat(AT_FDCWD, "/home/charliechen/l04_scratch/e1_cache_dir", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 3
+getdents64(3, 0x5778a8888190 /* 202 entries */, 32768) = 4848
+getdents64(3, 0x5778a8888190 /* 0 entries */, 32768) = 0
+close(3)                                = 0
+mode=type   dirs=0 regs=200 other=0 size_sum=0
++++ exited with 0 +++

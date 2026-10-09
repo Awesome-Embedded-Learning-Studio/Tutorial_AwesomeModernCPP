@@ -17,6 +17,17 @@ tags:
 - beginner
 - 入门
 title: 函数指针与回调模式
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #149)"
+      en: "Contributed exercise solutions and article revisions (PR #149)"
 ---
 # 函数指针与回调模式
 

@@ -1,0 +1,20 @@
+$ ./e2_delivery.exe
+[E2] pid=26116 main_tid=26004
+[A1] 连发两次 CTRL_C:两次 handler 的 tid 各是多少?和主线程比?
+    [handler] type=0 tid=30380
+    [handler] type=0 tid=11700
+[A2] OpenThread 探测 handler 线程是否还活着(活着的线程应能打开):
+    对照:活着的 worker tid=25620 -> OpenThread=00000000000000d0(应非空)
+    handler tid#1=30380 -> OpenThread=0000000000000000 gle=87(NULL=线程已不存在)
+    handler tid#2=11700 -> OpenThread=0000000000000000 gle=87(NULL=线程已不存在)
+    结论:两次事件两个不同 tid(每次事件一条新线程);handler 返回后线程即逝
+  [victim-c] pid=21968 就绪:0 个 handler,Ctrl+C 忽略位已复位,开始干等
+[B1] 炮灰就绪,父进程发 CTRL_C_EVENT(炮灰无 handler,只能走默认 handler)
+    [handler] type=0 tid=12768
+    炮灰 94ms 内死透:exit code=0xC000013A(-1073741510)  [STATUS_CONTROL_C_EXIT=0xC000013A=1]
+  [victim-b] pid=18796 就绪:0 个 handler,Ctrl+C 忽略位已复位,开始干等
+[B2] 炮灰就绪,父进程发 CTRL_BREAK_EVENT(炮灰无 handler,只能走默认 handler)
+    [handler] type=1 tid=23076
+    炮灰 93ms 内死透:exit code=0xC000013A(-1073741510)  [STATUS_CONTROL_C_EXIT=0xC000013A=1]
+    父进程自己带着 handler 返回 TRUE,两次广播都活着 —— 这就是对照
+[E2] done

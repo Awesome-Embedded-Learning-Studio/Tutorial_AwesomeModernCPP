@@ -76,13 +76,13 @@ void consumer()
 }
 ```
 
-注意看这段代码和上一篇的"发布-订阅"模式有什么区别。在上一篇中，我们写的是 `flag.store(1, std::memory_order_release)`，把 release 语义绑定在 store 操作上。而这里，store 本身是 `relaxed` 的，release 的约束由独立的 fence 提供。两种写法在语义上是等价的——最终建立的都是同一个 happens-before 关系。那为什么要用 fence？等下我们会看到一个 fence 无法被普通 atomic 操作替代的场景。
+注意看这段代码和上一篇的"发布-订阅"模式有什么区别。在上一篇中，我们写的是 `flag.store(1, std::memory_order_release)`，把 release 语义绑定在 store 操作上。而这里，store 本身是 `relaxed` 的，release 的约束由独立的 fence 提供。两种写法在语义上是等价的——最终建立的都是同一个 happens-before 关系。那为什么要用 fence？等下我们会看到 fence 把"什么时候建立同步"与"哪个原子操作建立同步"分开的场景。
 
 ### atomic-fence 同步
 
 第二种模式是第一种的反转：线程 A 用普通的 release store，线程 B 用独立的 acquire fence。条件是线程 B 中有一个 atomic load 排在 fence 之前，并且这个 load 读到了线程 A 的 store 写入的值。
 
-这种模式的一个典型应用场景是"邮箱扫描"：我们有多个邮箱（每个邮箱由一个原子标志位标识），读者需要扫描所有邮箱，但只需要跟其中写入了自己的数据的那个邮箱建立同步。如果用带 acquire 的 load 去读每一个邮箱标志位，那即使标志位不是自己的，也会引入不必要的屏障开销。更好的做法是用 relaxed load 扫描，发现自己关心的邮箱有数据之后，只对那一个邮箱做一次 acquire fence：
+这种模式的一个典型应用场景是"邮箱扫描"：我们有多个邮箱（每个邮箱由一个原子标志位标识），读者需要扫描所有邮箱，但只在读取属于自己的数据时才需要建立同步。一种写法是用 relaxed load 扫描，发现匹配的邮箱后，再执行 acquire fence：
 
 ```cpp
 #include <atomic>
@@ -117,13 +117,13 @@ void read_my_mail(int my_id)
 }
 ```
 
-这里的关键洞察是：acquire fence 只在我们确认需要同步的时候才执行。前面的 31 次 relaxed load 不引入任何屏障，性能代价极低。这就是 fence 相比"带排序的原子操作"的灵活性——它可以把"决策"和"同步"分开，在确认需要同步之后再施加屏障。
+这里的关键是把"是否读取数据"与"为读取数据建立同步"分开：没有匹配的邮箱就不会执行 acquire fence。relaxed load 仍有原子读取和缓存访问的成本；acquire load 也不一定生成单独的硬件屏障指令。因此，这种写法提供了按需同步的灵活性，但不能仅凭源码断定它比逐个使用 acquire load 更快。
 
 ### fence-fence 同步
 
 第三种模式是两端都用 fence。线程 A 用 release fence + relaxed store，线程 B 用 relaxed load + acquire fence。条件是线程 A 的 fence 排在 store 之前，线程 B 的 load 读到了 store 的值，且 load 排在 fence 之前。
 
-这种模式的适用场景是"批量发布"：线程 A 准备好一组数据后，用一次 release fence 同时发布多个 relaxed store。对应的消费者用一次 acquire fence 读取多个 relaxed load。比起对每个原子操作都设置 release/acquire，一次 fence 覆盖多个操作显然更高效：
+这种模式可以用于发布一组预先写好的数据：线程 A 先写数据，再执行 release fence 和多个 relaxed store；线程 B 先读取原子标志，再执行 acquire fence。如果其中一个 load 读到了对应的 store，两端的 fence 就能建立同步，使线程 A 在 release fence 之前写好的数据可供线程 B 在 acquire fence 之后读取：
 
 ```cpp
 #include <atomic>
@@ -162,13 +162,29 @@ void thread_b()
 }
 ```
 
-这种模式在无锁数据结构里很常见——当你需要同时发布多个字段，但不希望每个字段都带一个 release store 时，一次 release fence + 多个 relaxed store 是更优雅的选择。
+这里的"一组数据"指 release fence 之前写好的 `data`，不是说三个 `arr` 元素作为整体同时可见。读者可能只看到其中部分新标志；acquire fence 也不会改变此前 load 返回的值。只有在对应原子读写连接了两端的 fence，且数据在 fence 两侧按要求访问时，才能依赖这条同步关系。
 
 ### fence 与原子操作的比较：何时用 fence
 
-到这里我们可以总结一下 fence 相比"带排序的原子操作"的优势和劣势了。fence 的优势在于灵活性：一次 fence 可以覆盖多个原子操作，可以把同步延迟到真正需要的时候才施加，可以避免不必要的屏障开销。劣势在于可读性和易错性——fence 的语义比带排序的原子操作更难推理，因为它跟具体原子操作之间的 sequenced-before 关系必须被程序员自己保证，编译器不会帮你检查。
+我们回头看，fence 真正多给我们的是同步位置的选择：它可以借助符合条件的原子读写建立同步，也可以等运行时确认要读取数据，再执行 acquire fence。不过，写法灵活不等于机器指令更少或延迟更低；独立 fence 和带排序原子操作的开销还要看目标平台。代价则是推理更费劲：我们得核对原子读写与 fence 的先后关系，还要确认 load 究竟读到了哪次 store。
 
-笔者的建议是：在大多数场景下，优先使用带排序的原子操作（比如 `store(..., release)` + `load(..., acquire)`），只有在确认性能敏感且能从 fence 的灵活性中获益时，才考虑用 fence 替代。记住，fence 不是"更高级"的写法，它是一种"更手动"的写法——手动意味着更大的自由度，也意味着更容易出错。
+那实际跑起来呢？我们在 WSL2 上的 Intel Core i5-12400（x86-64）试了一组双线程基准：使用 CMake 3.20.5 和 GCC 16.2 构建，编译选项为 `-O3 -march=native`，生产者和消费者分别固定在 CPU 0、CPU 2。生产者每轮写三个数据并发布三个原子标志，消费者等三个标志都更新后读取数据，再用另一个原子变量确认，生产者才进入下一轮。两版只改变发布和读取的内存序：一版逐字段使用 release store / acquire load，另一版使用一对 release / acquire fence 配合三个 relaxed store / load。测试源码在 `code/volumn_codes/vol5/ch03-atomic-memory-model/fence_vs_ordered_benchmark.cpp`，每次测试 200 万轮，每种写法运行 7 次并取中位数。示例要求 Linux x86-64；请在仓库根目录运行以下命令。如果你的环境没有 CPU 0、CPU 2，可以在源码开头修改固定的 CPU 编号：
+
+```bash
+cmake -S code/volumn_codes/vol5/ch03-atomic-memory-model \
+  -B /tmp/vol5-fence-build -DCMAKE_BUILD_TYPE=Release
+cmake --build /tmp/vol5-fence-build --target fence_vs_ordered_benchmark
+/tmp/vol5-fence-build/fence_vs_ordered_benchmark
+```
+
+| 写法 | 7 次中位数 |
+| --- | ---: |
+| 逐字段 release / acquire | 124.8 ns/轮 |
+| fence + relaxed | 117.4 ns/轮 |
+
+这次运行中 fence 版的中位数略低，但单次结果有明显波动。这里测量的是完整交接过程，包含轮询、缓存通信和确认操作，不是单条 fence 指令的延迟。而且在 x86-64 上，这两版编译出的机器指令其实是同一套：release/acquire fence 一条指令都不生成，release store 和 acquire load 也就是普通 mov（后面讲平台屏障指令的小节会具体看到）。两个中位数的差值来自运行波动和代码布局，不反映写法本身的差异。这组对比要到生成指令确实不同的平台（比如 ARM）上，才真正在测两种写法的差别。这一组结果不能证明 fence 稳定更快；换个平台、换种访问模式，还得重新看生成代码和实测结果。
+
+笔者的建议是：在大多数场景下，优先使用带排序的原子操作（比如 `store(..., release)` + `load(..., acquire)`）；只有同步位置确实需要与具体原子操作分开，或在目标平台上测到了收益时，再考虑 fence。记住，fence 不是"更高级"的写法，它是一种"更手动"的写法——手动意味着更大的自由度，也意味着更容易出错。
 
 ## std::atomic_signal_fence：线程内的信号屏障
 
@@ -250,7 +266,7 @@ ARM 提供三种屏障指令。`DMB`（Data Memory Barrier）确保在它之前�
 
 DMB 还有选项后缀：`DMB ST` 只管 store 屏障，`DMB LD` 只管 load 屏障，`DMB ISH` 是 inner shareable 域的全向屏障（多核之间最常见的使用场景）。当 C++ 代码中调用 `std::atomic_thread_fence(memory_order_release)` 时，在 ARM 上编译器通常会生成 `DMB ISH` 指令。而对于 `memory_order_acquire`，GCC 和 Clang 会生成更轻量的 `DMB ISHLD` 指令，只对 load 操作施加屏障。
 
-关于这些 CPU 屏障指令，我们通常不需要直接使用——标准库的 `atomic_thread_fence` 和带排序的原子操作已经帮我们封装好了。但理解底层机制有助于我们做出更好的性能决策：在 x86 上，`seq_cst` 的额外开销是一次 `mfence`；在 ARM 上，每次 `acquire`/`release` 都是一次 `DMB`，开销大得多。
+关于这些 CPU 屏障指令，我们通常不需要直接使用——标准库的 `atomic_thread_fence` 和带排序的原子操作已经帮我们封装好了。不过别把内存序直接换算成固定的指令成本：前面看到，x86 上的 `seq_cst` fence 也可能用带 `LOCK` 前缀的指令实现；ARM 上带排序的原子操作与独立 fence 具体生成什么指令，同样取决于目标架构和编译器。要比较性能，先看生成的汇编，再在目标平台上测量。
 
 ## volatile 不是线程安全机制
 

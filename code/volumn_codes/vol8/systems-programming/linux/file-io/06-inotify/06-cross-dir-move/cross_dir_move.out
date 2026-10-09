@@ -1,0 +1,37 @@
+E6 搬移检测 —— A/B 同设备(ext4),C 跨设备(tmpfs, /dev/shm)
+/proc/sys/fs/inotify/: max_user_watches=524288 max_user_instances=1024 max_queued_events=16384
+statfs(/home/charliechen/l06_scratch/e6/A) = ext2/3/4 (f_type=0xef53)
+statfs(/home/charliechen/l06_scratch/e6/B) = ext2/3/4 (f_type=0xef53)
+statfs(/dev/shm/l06_e6_C               ) = tmpfs (f_type=0x1021994)
+wd_a=1 → A/,wd_b=2 → B/,wd_c=3 → C/
+  wd=1   mask=0x00000100 IN_CREATE                                    cookie=0      len=16  name='f_samefs'
+  wd=1   mask=0x00000020 IN_OPEN                                      cookie=0      len=16  name='f_samefs'
+  wd=1   mask=0x00000002 IN_MODIFY                                    cookie=0      len=16  name='f_samefs'
+  wd=1   mask=0x00000008 IN_CLOSE_WRITE                               cookie=0      len=16  name='f_samefs'
+  wd=1   mask=0x00000100 IN_CREATE                                    cookie=0      len=16  name='f_xdev'
+  wd=1   mask=0x00000020 IN_OPEN                                      cookie=0      len=16  name='f_xdev'
+  wd=1   mask=0x00000002 IN_MODIFY                                    cookie=0      len=16  name='f_xdev'
+  wd=1   mask=0x00000008 IN_CLOSE_WRITE                               cookie=0      len=16  name='f_xdev'
+
+==== mv A/f_samefs B/  (ext4 → ext4,rename(2) 一步到位)====
+  wd=1   mask=0x00000040 IN_MOVED_FROM                                cookie=8787   len=16  name='f_samefs'
+  wd=2   mask=0x00000080 IN_MOVED_TO                                  cookie=8787   len=16  name='f_samefs'
+
+==== 先看 rename(2) 跨设备会怎样 ====
+rename(A/f_xdev, C/f_xdev) = -1, errno = 18 (Invalid cross-device link)
+  (0 个事件)
+
+==== mv 走的退路:复制 + 删除(自己照 mv 的做法演一遍)====
+  wd=1   mask=0x00000020 IN_OPEN                                      cookie=0      len=16  name='f_xdev'
+  wd=3   mask=0x00000100 IN_CREATE                                    cookie=0      len=16  name='f_xdev'
+  wd=3   mask=0x00000020 IN_OPEN                                      cookie=0      len=16  name='f_xdev'
+  wd=1   mask=0x00000001 IN_ACCESS                                    cookie=0      len=16  name='f_xdev'
+  wd=3   mask=0x00000002 IN_MODIFY                                    cookie=0      len=16  name='f_xdev'
+  wd=3   mask=0x00000008 IN_CLOSE_WRITE                               cookie=0      len=16  name='f_xdev'
+  wd=1   mask=0x00000010 IN_CLOSE_NOWRITE                             cookie=0      len=16  name='f_xdev'
+  wd=3   mask=0x00000004 IN_ATTRIB                                    cookie=0      len=16  name='f_xdev'
+  wd=1   mask=0x00000200 IN_DELETE                                    cookie=0      len=16  name='f_xdev'
+
+==== 结论对照 ====
+同设备 rename:A 侧 IN_MOVED_FROM 与 B 侧 IN_MOVED_TO 的cookie 相同、wd 不同 —— 配对成立
+跨设备 mv:源侧只有 OPEN/ACCESS/CLOSE_NOWRITE/DELETE,目的侧只有 CREATE/MODIFY/CLOSE_WRITE/ATTRIB,cookie 全程为 0 —— 事件流里不存在「这次搬移」,监控端只能自己猜(时间窗 + 同名)或放弃

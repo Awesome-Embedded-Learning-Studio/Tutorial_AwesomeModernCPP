@@ -19,6 +19,17 @@ tags:
 - 入门
 - 基础
 title: 指针基础
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #207)"
+      en: "Contributed exercise solutions and article revisions (PR #207)"
 ---
 # 指针是什么：一个变量，装着另一个变量的地址
 

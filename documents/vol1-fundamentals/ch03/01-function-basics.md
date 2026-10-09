@@ -19,6 +19,17 @@ tags:
 - 入门
 - 基础
 title: 函数基础
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #186)"
+      en: "Contributed exercise solutions and article revisions (PR #186)"
 ---
 # 函数基础：别把一万行代码堆进一个 main
 

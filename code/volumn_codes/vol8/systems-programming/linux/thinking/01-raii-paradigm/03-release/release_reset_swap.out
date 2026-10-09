@@ -1,0 +1,14 @@
+== 1) release(): give up ownership ==
+[open     ] a -> fd 3
+[release  ] a gave up fd 3, a now holds nothing
+[manual   ] ::close(3) done — the only close it gets
+== 2) reset(new_fd): close old, take new ==
+[open     ] b -> fd 3
+[open     ] c -> fd 4
+[reset(new)] b closed its old fd and now holds 4
+[reset()  ] b.reset() -> b now holds nothing
+== 3) swap(): exchange roles ==
+[open     ] x -> fd 3
+[open     ] y -> fd 4
+[swap     ] x holds 4, y holds 3
+== done ==

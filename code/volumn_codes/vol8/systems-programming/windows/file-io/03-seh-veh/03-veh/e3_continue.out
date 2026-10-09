@@ -1,0 +1,13 @@
+page=00000261d33f0000 当前 PAGE_READONLY
+== 模式 0:VEH 修好现场再 CONTINUE_EXECUTION ==
+  [VEH hit 1] code=0xC0000005 info[0]=1(WRITE) info[1]=0x261D33F0000
+     修现场:VirtualProtect -> PAGE_READWRITE,返回 CONTINUE_EXECUTION
+  写指令重放成功:*(int*)page = 0x1234
+== 模式 1:不修现场硬 CONTINUE_EXECUTION(原地打转,3 次后放行)==
+  (这行之后进程应当死掉)
+  [VEH hit 1] code=0xC0000005 info[0]=1(WRITE) info[1]=0x261D33F0000
+     不修现场,硬返回 CONTINUE_EXECUTION(同一个错会再来)
+  [VEH hit 2] code=0xC0000005 info[0]=1(WRITE) info[1]=0x261D33F0000
+     不修现场,硬返回 CONTINUE_EXECUTION(同一个错会再来)
+  [VEH hit 3] code=0xC0000005 info[0]=1(WRITE) info[1]=0x261D33F0000
+     打转 3 次了,放行让它崩

@@ -1,0 +1,14 @@
+起点:pid=26434,程序 /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/process/01-fork-exec/build/e2a_exec_variants
+  [probe] execlp(e2a_exec_variants) 失败:No such file or directory(PATH 不含本目录时它真的搜不到)
+  [probe] 证实 execlp 的搜索范围是 PATH,不含当前目录
+第 1 棒 execl:完整路径+参数逐个列+NULL 哨兵,变身开始
+第 2 棒到达:经 execl 变身,pid=26434 还是同一个进程
+      交棒 execv:完整路径+参数打包成 char* 数组
+第 3 棒到达:经 execv 变身
+      交棒 execve:系统调用本尊,路径+argv+环境数组全套自己给
+第 4 棒到达:经 execve 变身,自定义 envp 生效:E02A_VIA=execve
+      交棒 execlp:只给文件名,自己去 PATH 里搜
+第 5 棒到达:execlp 在 PATH 里搜到了我
+      交棒 execvp:文件名+char* 数组,同样搜 PATH
+终点:经 execvp 变身。当前 pid=26434,出发时 pid=26434,五次变身 pid 从未变
+      出发时塞进环境的变量一路带到终点:exec 换的是程序映像,进程还是那个进程

@@ -5,7 +5,7 @@ argument-hint: "[可选: 主题/线索;留空则交互问]"
 
 # /new-article — 起新文章骨架
 
-按项目骨架([`writing-style.md`](../style/writing-style.md) Part 1)生成一篇新文章的 frontmatter + 章节骨架。
+按项目骨架([`writing-style.md`](../style/writing-style.md) Part 1,公开卡 —— 骨架规范的唯一真理源)生成一篇新文章的 frontmatter + 章节骨架。
 
 ## 输入
 

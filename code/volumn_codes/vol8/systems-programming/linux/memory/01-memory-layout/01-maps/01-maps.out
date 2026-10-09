@@ -1,0 +1,140 @@
+== /proc/self/maps 原文(共 41 行,程序运行中自读) ==
+63b203fb2000-63b203fb4000 r--p 00000000 08:30 1689135                    /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/memory/01-memory-layout/01-maps/01-maps
+63b203fb4000-63b203fbb000 r-xp 00002000 08:30 1689135                    /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/memory/01-memory-layout/01-maps/01-maps
+63b203fbb000-63b203fbc000 r--p 00009000 08:30 1689135                    /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/memory/01-memory-layout/01-maps/01-maps
+63b203fbc000-63b203fbd000 r--p 0000a000 08:30 1689135                    /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/memory/01-memory-layout/01-maps/01-maps
+63b203fbd000-63b203fbe000 rw-p 0000b000 08:30 1689135                    /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/memory/01-memory-layout/01-maps/01-maps
+63b232da1000-63b232dd4000 rw-p 00000000 00:00 0                          [heap]
+74f996000000-74f996024000 r--p 00000000 08:30 1199257                    /usr/lib/libc.so.6
+74f996024000-74f99619f000 r-xp 00024000 08:30 1199257                    /usr/lib/libc.so.6
+74f99619f000-74f996215000 r--p 0019f000 08:30 1199257                    /usr/lib/libc.so.6
+74f996215000-74f996219000 r--p 00214000 08:30 1199257                    /usr/lib/libc.so.6
+74f996219000-74f99621b000 rw-p 00218000 08:30 1199257                    /usr/lib/libc.so.6
+74f99621b000-74f996223000 rw-p 00000000 00:00 0 
+74f9962c9000-74f9962d9000 r--p 00000000 08:30 1199334                    /usr/lib/libm.so.6
+74f9962d9000-74f996375000 r-xp 00010000 08:30 1199334                    /usr/lib/libm.so.6
+74f996375000-74f9963fe000 r--p 000ac000 08:30 1199334                    /usr/lib/libm.so.6
+74f9963fe000-74f9963ff000 r--p 00134000 08:30 1199334                    /usr/lib/libm.so.6
+74f9963ff000-74f996400000 rw-p 00135000 08:30 1199334                    /usr/lib/libm.so.6
+74f996400000-74f99649a000 r--p 00000000 08:30 1129479                    /usr/lib/libstdc++.so.6.0.36
+74f99649a000-74f99661d000 r-xp 0009a000 08:30 1129479                    /usr/lib/libstdc++.so.6.0.36
+74f99661d000-74f9966bd000 r--p 0021d000 08:30 1129479                    /usr/lib/libstdc++.so.6.0.36
+74f9966bd000-74f9966ce000 r--p 002bc000 08:30 1129479                    /usr/lib/libstdc++.so.6.0.36
+74f9966ce000-74f9966cf000 rw-p 002cd000 08:30 1129479                    /usr/lib/libstdc++.so.6.0.36
+74f9966cf000-74f9966d3000 rw-p 00000000 00:00 0 
+74f996704000-74f996709000 rw-p 00000000 00:00 0 
+74f996709000-74f99670d000 r--p 00000000 08:30 1127341                    /usr/lib/libgcc_s.so.1
+74f99670d000-74f996730000 r-xp 00004000 08:30 1127341                    /usr/lib/libgcc_s.so.1
+74f996730000-74f996734000 r--p 00027000 08:30 1127341                    /usr/lib/libgcc_s.so.1
+74f996734000-74f996735000 r--p 0002b000 08:30 1127341                    /usr/lib/libgcc_s.so.1
+74f996735000-74f996736000 rw-p 0002c000 08:30 1127341                    /usr/lib/libgcc_s.so.1
+74f996736000-74f996738000 rw-p 00000000 00:00 0 
+74f996738000-74f996754000 r--p 00000000 08:30 20857                      /etc/ld.so.cache
+74f996754000-74f996758000 r--p 00000000 00:00 0                          [vvar]
+74f996758000-74f99675a000 r--p 00000000 00:00 0                          [vvar_vclock]
+74f99675a000-74f99675c000 r-xp 00000000 00:00 0                          [vdso]
+74f99675c000-74f99675d000 r--p 00000000 08:30 1199196                    /usr/lib/ld-linux-x86-64.so.2
+74f99675d000-74f99678a000 r-xp 00001000 08:30 1199196                    /usr/lib/ld-linux-x86-64.so.2
+74f99678a000-74f996799000 r--p 0002e000 08:30 1199196                    /usr/lib/ld-linux-x86-64.so.2
+74f996799000-74f99679b000 r--p 0003d000 08:30 1199196                    /usr/lib/ld-linux-x86-64.so.2
+74f99679b000-74f99679c000 rw-p 0003f000 08:30 1199196                    /usr/lib/ld-linux-x86-64.so.2
+74f99679c000-74f99679d000 rw-p 00000000 00:00 0 
+7ffecb2e8000-7ffecb30a000 rw-p 00000000 00:00 0                          [stack]
+
+== 逐段归类(同行原文 → 程序判定) ==
+63b203fb2000-63b203fb4000 r--p 00000000 08:30 1689135                    /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/memory/01-memory-layout/01-maps/01-maps
+    -> [   8 KB] 本程序·ELF 头+链接器元数据(只读 LOAD 首段)
+63b203fb4000-63b203fbb000 r-xp 00002000 08:30 1689135                    /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/memory/01-memory-layout/01-maps/01-maps
+    -> [  28 KB] 本程序·代码段(.text)
+63b203fbb000-63b203fbc000 r--p 00009000 08:30 1689135                    /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/memory/01-memory-layout/01-maps/01-maps
+    -> [   4 KB] 本程序·只读数据段(.rodata)
+63b203fbc000-63b203fbd000 r--p 0000a000 08:30 1689135                    /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/memory/01-memory-layout/01-maps/01-maps
+    -> [   4 KB] 本程序·GNU_RELRO(重定位完成后由 rw 转只读的 .got/.dynamic)
+63b203fbd000-63b203fbe000 rw-p 0000b000 08:30 1689135                    /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/memory/01-memory-layout/01-maps/01-maps
+    -> [   4 KB] 本程序·可写数据段(.data/.bss 前半,尾部常接 .bss 匿名页)
+63b232da1000-63b232dd4000 rw-p 00000000 00:00 0                          [heap]
+    -> [ 204 KB] [heap](brk 管辖,向高地址生长)
+74f996000000-74f996024000 r--p 00000000 08:30 1199257                    /usr/lib/libc.so.6
+    -> [ 144 KB] 共享库 libc·ELF 头+链接器元数据(只读 LOAD 首段)
+74f996024000-74f99619f000 r-xp 00024000 08:30 1199257                    /usr/lib/libc.so.6
+    -> [1516 KB] 共享库 libc·代码段(.text)
+74f99619f000-74f996215000 r--p 0019f000 08:30 1199257                    /usr/lib/libc.so.6
+    -> [ 472 KB] 共享库 libc·只读数据段(.rodata)
+74f996215000-74f996219000 r--p 00214000 08:30 1199257                    /usr/lib/libc.so.6
+    -> [  16 KB] 共享库 libc·GNU_RELRO(重定位完成后由 rw 转只读的 .got/.dynamic)
+74f996219000-74f99621b000 rw-p 00218000 08:30 1199257                    /usr/lib/libc.so.6
+    -> [   8 KB] 共享库 libc·可写数据段(.data/.bss 前半,尾部常接 .bss 匿名页)
+74f99621b000-74f996223000 rw-p 00000000 00:00 0 
+    -> [  32 KB] 匿名 rw 段(紧邻 libc.so.6 的 rw 段,典型的 .bss 接续页)
+74f9962c9000-74f9962d9000 r--p 00000000 08:30 1199334                    /usr/lib/libm.so.6
+    -> [  64 KB] 共享库 libm·ELF 头+链接器元数据(只读 LOAD 首段)
+74f9962d9000-74f996375000 r-xp 00010000 08:30 1199334                    /usr/lib/libm.so.6
+    -> [ 624 KB] 共享库 libm·代码段(.text)
+74f996375000-74f9963fe000 r--p 000ac000 08:30 1199334                    /usr/lib/libm.so.6
+    -> [ 548 KB] 共享库 libm·只读数据段(.rodata)
+74f9963fe000-74f9963ff000 r--p 00134000 08:30 1199334                    /usr/lib/libm.so.6
+    -> [   4 KB] 共享库 libm·GNU_RELRO(重定位完成后由 rw 转只读的 .got/.dynamic)
+74f9963ff000-74f996400000 rw-p 00135000 08:30 1199334                    /usr/lib/libm.so.6
+    -> [   4 KB] 共享库 libm·可写数据段(.data/.bss 前半,尾部常接 .bss 匿名页)
+74f996400000-74f99649a000 r--p 00000000 08:30 1129479                    /usr/lib/libstdc++.so.6.0.36
+    -> [ 616 KB] 共享库 libstdc++·ELF 头+链接器元数据(只读 LOAD 首段)
+74f99649a000-74f99661d000 r-xp 0009a000 08:30 1129479                    /usr/lib/libstdc++.so.6.0.36
+    -> [1548 KB] 共享库 libstdc++·代码段(.text)
+74f99661d000-74f9966bd000 r--p 0021d000 08:30 1129479                    /usr/lib/libstdc++.so.6.0.36
+    -> [ 640 KB] 共享库 libstdc++·只读数据段(.rodata)
+74f9966bd000-74f9966ce000 r--p 002bc000 08:30 1129479                    /usr/lib/libstdc++.so.6.0.36
+    -> [  68 KB] 共享库 libstdc++·GNU_RELRO(重定位完成后由 rw 转只读的 .got/.dynamic)
+74f9966ce000-74f9966cf000 rw-p 002cd000 08:30 1129479                    /usr/lib/libstdc++.so.6.0.36
+    -> [   4 KB] 共享库 libstdc++·可写数据段(.data/.bss 前半,尾部常接 .bss 匿名页)
+74f9966cf000-74f9966d3000 rw-p 00000000 00:00 0 
+    -> [  16 KB] 匿名 rw 段(紧邻 libstdc++.so.6.0.36 的 rw 段,典型的 .bss 接续页)
+74f996704000-74f996709000 rw-p 00000000 00:00 0 
+    -> [  20 KB] 匿名映射(无文件背书,mmap 区)
+74f996709000-74f99670d000 r--p 00000000 08:30 1127341                    /usr/lib/libgcc_s.so.1
+    -> [  16 KB] 共享库 libgcc_s·ELF 头+链接器元数据(只读 LOAD 首段)
+74f99670d000-74f996730000 r-xp 00004000 08:30 1127341                    /usr/lib/libgcc_s.so.1
+    -> [ 140 KB] 共享库 libgcc_s·代码段(.text)
+74f996730000-74f996734000 r--p 00027000 08:30 1127341                    /usr/lib/libgcc_s.so.1
+    -> [  16 KB] 共享库 libgcc_s·只读数据段(.rodata)
+74f996734000-74f996735000 r--p 0002b000 08:30 1127341                    /usr/lib/libgcc_s.so.1
+    -> [   4 KB] 共享库 libgcc_s·GNU_RELRO(重定位完成后由 rw 转只读的 .got/.dynamic)
+74f996735000-74f996736000 rw-p 0002c000 08:30 1127341                    /usr/lib/libgcc_s.so.1
+    -> [   4 KB] 共享库 libgcc_s·可写数据段(.data/.bss 前半,尾部常接 .bss 匿名页)
+74f996736000-74f996738000 rw-p 00000000 00:00 0 
+    -> [   8 KB] 匿名 rw 段(紧邻 libgcc_s.so.1 的 rw 段,典型的 .bss 接续页)
+74f996738000-74f996754000 r--p 00000000 08:30 20857                      /etc/ld.so.cache
+    -> [ 112 KB] ld.so 缓存(动态链接器查库用的文件映射)
+74f996754000-74f996758000 r--p 00000000 00:00 0                          [vvar]
+    -> [  16 KB] [vvar] 内核只读数据页(vdso 配套,如时钟源)
+74f996758000-74f99675a000 r--p 00000000 00:00 0                          [vvar_vclock]
+    -> [   8 KB] [vvar_vclock] 内核只读数据页(vdso 配套,如时钟源)
+74f99675a000-74f99675c000 r-xp 00000000 00:00 0                          [vdso]
+    -> [   8 KB] [vdso] 内核映射的虚拟共享对象(系统调用加速桩)
+74f99675c000-74f99675d000 r--p 00000000 08:30 1199196                    /usr/lib/ld-linux-x86-64.so.2
+    -> [   4 KB] 动态链接器 ld.so·ELF 头+链接器元数据(只读 LOAD 首段)
+74f99675d000-74f99678a000 r-xp 00001000 08:30 1199196                    /usr/lib/ld-linux-x86-64.so.2
+    -> [ 180 KB] 动态链接器 ld.so·代码段(.text)
+74f99678a000-74f996799000 r--p 0002e000 08:30 1199196                    /usr/lib/ld-linux-x86-64.so.2
+    -> [  60 KB] 动态链接器 ld.so·只读数据段(.rodata)
+74f996799000-74f99679b000 r--p 0003d000 08:30 1199196                    /usr/lib/ld-linux-x86-64.so.2
+    -> [   8 KB] 动态链接器 ld.so·GNU_RELRO(重定位完成后由 rw 转只读的 .got/.dynamic)
+74f99679b000-74f99679c000 rw-p 0003f000 08:30 1199196                    /usr/lib/ld-linux-x86-64.so.2
+    -> [   4 KB] 动态链接器 ld.so·可写数据段(.data/.bss 前半,尾部常接 .bss 匿名页)
+74f99679c000-74f99679d000 rw-p 00000000 00:00 0 
+    -> [   4 KB] 匿名 rw 段(紧邻 ld-linux-x86-64.so.2 的 rw 段,典型的 .bss 接续页)
+7ffecb2e8000-7ffecb30a000 rw-p 00000000 00:00 0                          [stack]
+    -> [ 136 KB] [stack](主线程栈,向低地址生长)
+
+== 权限组合统计 ==
+  r--p  x 21
+  r-xp  x 7
+  rw-p  x 13
+  总段数: 41
+
+== 大类统计 ==
+  vdso     x 3
+  共享库 x 26
+  匿名   x 5
+  堆      x 1
+  本程序 x 5
+  栈      x 1

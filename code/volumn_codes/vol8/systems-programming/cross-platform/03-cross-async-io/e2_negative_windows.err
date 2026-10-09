@@ -1,0 +1,42 @@
+# 命令: /mnt/c/msys64/ucrt64/bin/g++.exe -std=c++20 -Wall -Wextra -c e2_negative.cpp (预期编译失败,只取诊断)
+# 编译器: MSYS2 UCRT64 g++ (Rev5) 16.1.0, Win11 26200, WSL interop 调起
+e2_negative.cpp: In function 'int main()':
+e2_negative.cpp:64:17: error: no matching function for call to 'drive(LazyBackend&)'
+   64 |     return drive(b);
+      |            ~~~~~^~~
+  • there is 1 candidate
+    • candidate 1: 'template<class B>  requires  AsyncBackend<B> int drive(B&)'
+      e2_negative.cpp:57:5:
+         57 | int drive(B& backend) {
+            |     ^~~~~
+      • template argument deduction/substitution failed:
+        • constraints not satisfied
+          • e2_negative.cpp: In substitution of 'template<class B>  requires  AsyncBackend<B> int drive(B&) [with B = LazyBackend]':
+          • required from here
+            e2_negative.cpp:64:17:   
+               64 |     return drive(b);
+                  |            ~~~~~^~~
+          • required for the satisfaction of 'AsyncBackend<B>' [with B = LazyBackend]
+            e2_negative.cpp:35:9:   
+               35 | concept AsyncBackend = requires(B& b, typename B::request r, int timeout_ms) {
+                  |         ^~~~~~~~~~~~
+          • in requirements with 'B& b', 'typename B::request r', 'int timeout_ms' [with B = LazyBackend]
+            e2_negative.cpp:35:24:   
+               35 | concept AsyncBackend = requires(B& b, typename B::request r, int timeout_ms) {
+                  |                        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+               36 |     typename B::completion;
+                  |     ~~~~~~~~~~~~~~~~~~~~~~~
+               37 |     typename B::request;
+                  |     ~~~~~~~~~~~~~~~~~~~~
+               38 |     { b.submit(r) } -> std::same_as<bool>;
+                  |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+               39 |     { b.wait(timeout_ms) } -> std::same_as<int>;
+                  |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+               40 |     { b.take() } -> std::same_as<std::optional<typename B::completion>>;
+                  |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+               41 | };
+                  | ~                       
+          • the required expression 'b.take()' is invalid
+            e2_negative.cpp:40:13:
+               40 |     { b.take() } -> std::same_as<std::optional<typename B::completion>>;
+                  |       ~~~~~~^~

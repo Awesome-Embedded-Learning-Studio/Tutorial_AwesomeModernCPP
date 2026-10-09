@@ -1,0 +1,43 @@
+$ ./e2_run.sh   # 编译 + 32MiB x 四路径 x 5 轮 + 中位数汇总(完整输出如下)
+# 环境: Win11 26200 | MSYS2 UCRT64 g++ 16.1.0 | 目标卷 = %TEMP% 所在 NTFS 系统盘(NVMe,WD_BLACK SN7100)
+# 口径: size=32MiB chunk=1024KiB rounds=5 计时=QueryPerformanceCounter;write_ms 与 flush_ms 分列,flush 含在 total 里
+
+# ---- mode=plain ----
+round1 RESULT mode=plain    totalMiB=32 chunkKiB=1024 write_ms=6.911 flush_ms=0.000 total_ms=6.911 write_MiB_s=4630 total_MiB_s=4630
+round2 RESULT mode=plain    totalMiB=32 chunkKiB=1024 write_ms=6.772 flush_ms=0.000 total_ms=6.772 write_MiB_s=4725 total_MiB_s=4725
+round3 RESULT mode=plain    totalMiB=32 chunkKiB=1024 write_ms=6.484 flush_ms=0.000 total_ms=6.484 write_MiB_s=4935 total_MiB_s=4935
+round4 RESULT mode=plain    totalMiB=32 chunkKiB=1024 write_ms=6.553 flush_ms=0.000 total_ms=6.553 write_MiB_s=4883 total_MiB_s=4883
+round5 RESULT mode=plain    totalMiB=32 chunkKiB=1024 write_ms=6.908 flush_ms=0.000 total_ms=6.908 write_MiB_s=4632 total_MiB_s=4632
+# ---- mode=flush ----
+round1 RESULT mode=flush    totalMiB=32 chunkKiB=1024 write_ms=6.831 flush_ms=9.505 total_ms=16.336 write_MiB_s=4684 total_MiB_s=1959
+round2 RESULT mode=flush    totalMiB=32 chunkKiB=1024 write_ms=6.424 flush_ms=7.863 total_ms=14.287 write_MiB_s=4982 total_MiB_s=2240
+round3 RESULT mode=flush    totalMiB=32 chunkKiB=1024 write_ms=7.029 flush_ms=7.745 total_ms=14.774 write_MiB_s=4552 total_MiB_s=2166
+round4 RESULT mode=flush    totalMiB=32 chunkKiB=1024 write_ms=6.346 flush_ms=8.012 total_ms=14.358 write_MiB_s=5043 total_MiB_s=2229
+round5 RESULT mode=flush    totalMiB=32 chunkKiB=1024 write_ms=6.984 flush_ms=8.632 total_ms=15.616 write_MiB_s=4582 total_MiB_s=2049
+# ---- mode=wt ----
+round1 RESULT mode=wt       totalMiB=32 chunkKiB=1024 write_ms=15.655 flush_ms=0.000 total_ms=15.655 write_MiB_s=2044 total_MiB_s=2044
+round2 RESULT mode=wt       totalMiB=32 chunkKiB=1024 write_ms=16.422 flush_ms=0.000 total_ms=16.422 write_MiB_s=1949 total_MiB_s=1949
+round3 RESULT mode=wt       totalMiB=32 chunkKiB=1024 write_ms=14.857 flush_ms=0.000 total_ms=14.857 write_MiB_s=2154 total_MiB_s=2154
+round4 RESULT mode=wt       totalMiB=32 chunkKiB=1024 write_ms=14.975 flush_ms=0.000 total_ms=14.975 write_MiB_s=2137 total_MiB_s=2137
+round5 RESULT mode=wt       totalMiB=32 chunkKiB=1024 write_ms=14.537 flush_ms=0.000 total_ms=14.537 write_MiB_s=2201 total_MiB_s=2201
+# ---- mode=wt_flush ----
+round1 RESULT mode=wt_flush totalMiB=32 chunkKiB=1024 write_ms=14.773 flush_ms=0.229 total_ms=15.002 write_MiB_s=2166 total_MiB_s=2133
+round2 RESULT mode=wt_flush totalMiB=32 chunkKiB=1024 write_ms=14.642 flush_ms=0.196 total_ms=14.838 write_MiB_s=2185 total_MiB_s=2157
+round3 RESULT mode=wt_flush totalMiB=32 chunkKiB=1024 write_ms=15.882 flush_ms=0.205 total_ms=16.086 write_MiB_s=2015 total_MiB_s=1989
+round4 RESULT mode=wt_flush totalMiB=32 chunkKiB=1024 write_ms=16.479 flush_ms=0.274 total_ms=16.754 write_MiB_s=1942 total_MiB_s=1910
+round5 RESULT mode=wt_flush totalMiB=32 chunkKiB=1024 write_ms=16.436 flush_ms=0.166 total_ms=16.602 write_MiB_s=1947 total_MiB_s=1927
+
+# ===================== 汇总(5 轮中位数) =====================
+mode        write_ms   flush_ms   total_ms  write_MiB_s  total_MiB_s
+plain          6.772      0.000      6.772         4725         4725
+flush          6.831      8.012     14.774         4685         2166
+wt            14.975      0.000     14.975         2137         2137
+wt_flush      15.882      0.205     16.086         2015         1989
+
+# ===================== 附加: wt + 4KiB 小块(32MiB 口径) =====================
+round1 RESULT mode=wt       totalMiB=32 chunkKiB=4 write_ms=428.441 flush_ms=0.000 total_ms=428.441 write_MiB_s=75 total_MiB_s=75
+round2 RESULT mode=wt       totalMiB=32 chunkKiB=4 write_ms=382.231 flush_ms=0.000 total_ms=382.232 write_MiB_s=84 total_MiB_s=84
+round3 RESULT mode=wt       totalMiB=32 chunkKiB=4 write_ms=389.295 flush_ms=0.000 total_ms=389.295 write_MiB_s=82 total_MiB_s=82
+round4 RESULT mode=wt       totalMiB=32 chunkKiB=4 write_ms=443.059 flush_ms=0.000 total_ms=443.059 write_MiB_s=72 total_MiB_s=72
+round5 RESULT mode=wt       totalMiB=32 chunkKiB=4 write_ms=379.870 flush_ms=0.000 total_ms=379.871 write_MiB_s=84 total_MiB_s=84
+wt_4k              -          -    389.295            -      82.1999

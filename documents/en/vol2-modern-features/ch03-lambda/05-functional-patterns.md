@@ -4,17 +4,18 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Higher-order functions, composition, and currying — functional programming
-  techniques in C++
+description: Higher-order functions, composition, and currying — functional programming techniques in C++
 difficulty: intermediate
 order: 5
 platform: host
 prerequisites:
-- 'Lambda Basics: The Elegant Expression of Anonymous Functions'
-- std::function, std::invoke, and Callable Objects
+- 'Chapter 3: Lambda Basics: Elegant Anonymous Functions'
+- 'Chapter 3: Deep Dive into Lambda Capture'
+- 'Chapter 3: Generic Lambdas and Template Lambdas'
+- 'Chapter 3: std::function, std::invoke, and Callable Objects'
 reading_time_minutes: 15
 related:
-- 'Volume 4: Deep Dive into the Ranges Library'
+- 'C++20 Ranges: Ranges and Views'
 tags:
 - host
 - cpp-modern
@@ -24,31 +25,29 @@ tags:
 title: Functional Programming Patterns
 translation:
   source: documents/vol2-modern-features/ch03-lambda/05-functional-patterns.md
-  source_hash: 793fd51f45233e82bd480696950b326d17263f4f76a8575df03cf1c46d0d31f5
-  translated_at: '2026-09-25T15:20:40+00:00'
+  source_hash: d94231283a183686f9b47999ea5091b40e9b34cf43c1ccadd7262ae2e95694f3
+  translated_at: '2026-09-27T10:30:33+00:00'
   engine: anthropic
-  token_count: 3900
+  token_count: 4500
 ---
-# Functional Programming Patterns: Passing Functions Around as Values
+# Functional Programming Patterns
 
-When functional programming comes up, many C++ developers' first reaction is probably: "Isn't that the Haskell crowd's thing? What does it have to do with C++?" In fact, C++ has been absorbing functional programming ideas ever since C++11—lambdas are anonymous functions that behave as first-class citizens, `std::function` is a higher-order type, and the `std::algorithm` family is essentially a set of map/filter/reduce variants. It's just that C++ doesn't wrap these things in a "purely functional" interface.
+Whenever functional programming comes up, plenty of people in the C++ world file it under the Haskell camp's name and figure it has little to do with C++. I used to draw that same line myself, until I actually went back and counted—and found that C++ has been absorbing this set of ideas ever since C++11: lambdas made anonymous functions first-class citizens, `std::function` packs callables of every stripe into a single type, and the `std::algorithm` family is, at heart, a set of map, filter, and reduce variants. C++ just never wrapped these things up in an interface that bills itself as "purely functional."
 
-In this chapter we'll look at the functional programming patterns that actually pay off in C++—higher-order functions, function composition, and partial application—and how to write functional-style data processing pipelines with STL algorithms. At the end we'll preview the C++20 Ranges library, which you could fairly call the "ultimate form" of functional programming in C++.
+This is the last article of the chapter, and all the parts are already in hand: lambda captures, `auto` parameters for generic lambdas, and `std::function`'s type erasure—we took them apart one by one over the first four articles. This time we put them to work together: a function can serve as an argument, as a return value, and as something you keep in a container. Let's start with higher-order functions.
 
 ---
 
 ## Higher-Order Functions—Functions That Take or Return Functions
 
-The higher-order function is the cornerstone of functional programming. The definition is simple: either a parameter is a function, or the return value is a function, or both. In C++, higher-order functions are implemented through template parameters or `std::function`.
-
-Let's look at a real example—a generic retry mechanism. Its parameters are an operation that might fail, a predicate that decides whether a retry is needed, and a maximum number of attempts:
+A higher-order function, as we mean it, is a function that takes or returns functions. Having a function among the parameters counts; returning a function as the result counts; covering both ends counts just the same. In C++, this is built on template parameters or `std::function`, and article 04 just had us take a good look under their hoods. Let's go straight to a practical example: a generic retry mechanism. What we pass in is an operation that may fail, a predicate that decides whether to retry, plus a maximum retry count:
 
 ```cpp
 #include <iostream>
 #include <functional>
 #include <random>
 
-// A higher-order function: takes an "operation" and a "decision function" as arguments
+// Higher-order function: takes an "operation" and a "decision function" as arguments
 template<typename Operation, typename ShouldRetry>
 auto with_retry(Operation&& op, ShouldRetry&& should_retry, int max_attempts)
     -> std::invoke_result_t<Operation>
@@ -90,11 +89,11 @@ void demo_higher_order() {
 }
 ```
 
-You have already used plenty of higher-order functions from the STL—`std::sort` takes a comparison function, `std::transform` takes a transformation function, `std::find_if` takes a predicate. What these functions have in common is that they "pull the strategy out of the algorithm and let the caller decide". That is the core value of higher-order functions.
+You have been using the STL's higher-order functions for a long time already: `std::sort` takes a comparison function, `std::transform` takes a transformation function, and `std::find_if` takes a predicate. These algorithms all do the same job—they pull the policy out of the algorithm and hand the decision to the caller. The skeleton of the sort never moves; what counts as bigger or smaller, who goes in front and who goes behind, is decided entirely by which function you pass in.
 
 ### Functions That Return Functions
 
-Higher-order functions don't just take functions—they can also return them. This pattern is especially useful for creating configurable strategy objects. For example, returning a filter with a preset threshold:
+The other half of a higher-order function's repertoire is returning functions. It is a particularly smooth way to build configurable strategy objects—here is a function that returns a filter with a preset threshold, so you can feel it for yourself:
 
 ```cpp
 auto make_threshold_filter(int threshold) {
@@ -110,10 +109,10 @@ auto filter_above_50 = make_threshold_filter(50);
 auto filter_above_80 = make_threshold_filter(80);
 ```
 
-One caveat, though: if different branches return lambdas of different types, returning them directly leads to a type mismatch—every lambda's closure type is unique. Take this example:
+One spot to keep an eye on, though: if different branches return lambdas of different types—and every lambda's closure type is one of a kind—the types being returned directly no longer line up. Here is an example that fails to compile:
 
 ```cpp
-// ❌ Compile error: the lambdas in the two branches have different types
+// ❌ Compile error: the lambdas in the different branches have different types
 auto make_counter(bool start_high) {
     if (start_high) {
         return []() { return 100; };  // closure type A
@@ -123,10 +122,10 @@ auto make_counter(bool start_high) {
 }
 ```
 
-In this situation you need `std::function` to erase the types and unify the return type:
+The error the compiler spits out can scroll a whole screen, and the first time you meet it you will probably freeze for a second. To unify the return type, we bring in the type erasure from article 04, and the tool for that is `std::function`:
 
 ```cpp
-// ✅ Correct: std::function unifies the type
+// ✅ Correct: use std::function to unify the type
 std::function<int()> make_counter(bool start_high) {
     if (start_high) {
         return []() { return 100; };
@@ -136,15 +135,13 @@ std::function<int()> make_counter(bool start_high) {
 }
 ```
 
-The cost is that `std::function` introduces a little runtime overhead (type erasure and possible heap allocation), but in most scenarios that overhead is negligible.
+The cost is the small bit of runtime overhead that `std::function` brings along—type erasure and possible heap allocation all included—but in most settings we can write that overhead off as negligible. If it really does land on a hot path: the numbers I measured in article 04 put it at 7 to 9 times slower than a direct call.
 
 ---
 
 ## Function Composition—compose and pipe
 
-Function composition chains multiple functions together, with one function's output feeding the next function's input. Mathematically, `compose(f, g)(x) = f(g(x))`; in pipeline style, `pipe(g, f)(x) = f(g(x))`—apply g first, then f.
-
-The cleanest way to implement function composition in C++ is generic lambdas plus `auto` return type deduction:
+Function composition, as we usually mean it, is the style of chaining several functions together, with one function's output feeding exactly into the next function's input. In mathematical notation we write `compose(f, g)(x) = f(g(x))`; the pipeline-style notation is `pipe(g, f)(x) = f(g(x))`—`g` finishes, then `f` takes its turn, following the direction the data flows. The cleanest implementation in C++ is generic lambdas plus `auto` return type deduction, and the skills we banked in article 03 come into play here:
 
 ```cpp
 #include <iostream>
@@ -159,7 +156,7 @@ auto compose = [](auto f, auto g) {
     };
 };
 
-// pipe: g first, then f (more intuitive semantics)
+// pipe: g first, then f (reads more intuitively)
 auto pipe = [](auto g, auto f) {
     return [g = std::move(g), f = std::move(f)](auto&&... args) {
         return f(g(std::forward<decltype(args)>(args)...));
@@ -181,10 +178,10 @@ void demo_composition() {
 }
 ```
 
-Composing two functions is easy enough, but once you compose several, nested `compose` calls make the code hard to read. A more elegant approach is a variadic version, `compose_all`:
+Composing two functions still reads fine; once there are more of them, the nested `compose` calls stop being readable. So let's upgrade to a variadic `compose_all` and tidy up multi-level composition in one shot:
 
 ```cpp
-// Compose multiple functions: apply right to left
+// Compose multiple functions: applied right to left
 template<typename F>
 auto compose_all(F f) {
     return f;
@@ -197,7 +194,7 @@ auto compose_all(F f, Fs... rest) {
     };
 }
 
-// pipe_all: apply left to right (more intuitive)
+// pipe_all: applied left to right (more intuitive)
 template<typename F>
 auto pipe_all(F f) {
     return f;
@@ -222,19 +219,19 @@ void demo_multi_compose() {
 }
 ```
 
-C++17 fold expressions make variadic template implementations remarkably compact. `pipe_all` applies its functions from left to right—first `add_one`, then `double_it`, finally `negate_it`—so the data flows in the same direction as the code is written, which reads very naturally.
+By the way, the `compose_all` and `pipe_all` above take the recursive-expansion route; the C++17 fold expression hasn't been brought in yet. That line `((current = transforms(current)), ...)` in `make_pipeline` from article 03—that's exactly one. `pipe_all` applies functions left to right: the order you read the code in is the order the data flows through, which is why it reads so naturally.
 
 ---
 
-## Partial Application—Binding Some Arguments
+## Partial Application—Binding Part of the Parameters
 
-Partial application means "presetting some of a function's arguments and returning a new function that only needs the remaining ones". The C++ standard library provides `std::bind`, but in modern C++ a lambda is usually the better choice—the code is clearer, the error messages friendlier, and there are none of `std::bind`'s weird corner cases.
+Partial application is the style of fixing part of a function's arguments ahead of time and getting back a new function that waits only for the remaining ones. The standard library stocks `std::bind` for this job, but in modern C++ a lambda is usually the better choice: the code comes out clearer, the error messages come out friendlier, and none of `std::bind`'s odd corner cases tag along. Let's write it with a lambda directly:
 
 ```cpp
 #include <iostream>
 #include <functional>
 
-// Partial application with a lambda
+// Partial application via a lambda
 auto make_adder(int base) {
     return [base](int x) { return base + x; };
 }
@@ -249,7 +246,7 @@ auto partial = [](auto f, auto... fixed_args) {
 void demo_partial_application() {
     auto add = [](int a, int b, int c) { return a + b + c; };
 
-    // Fix the first argument at 1
+    // Fix the first argument to 1
     auto add1 = partial(add, 1);
     std::cout << add1(2, 3) << "\n";   // 6
 
@@ -277,25 +274,23 @@ void demo_partial_application() {
 }
 ```
 
-Partial application is especially handy in event handling and the strategy pattern—you can pin down certain arguments during the configuration phase and pass only the remaining ones at runtime. Compared with writing a full strategy class, a partially applied lambda is far lighter.
+Partial application is especially handy in event handling and strategy-pattern settings. You pin certain arguments down at configuration time, and at runtime you only pass in what's left. Compared to solemnly writing out a full-blown strategy class, a partially applied lambda weighs far less.
 
-### Currying—Just Know the Concept
+### Currying—Knowing the Concept Is Enough
 
-Currying and partial application often get confused with each other, but they are different concepts. Currying converts a multi-argument function into a chain of single-argument calls: `f(a, b, c)` becomes `f(a)(b)(c)`. Partial application fixes some arguments and returns a function that takes fewer of them, while currying makes a function accept exactly one argument at a time and return the next function, until all the arguments are in.
+Currying and partial application get lumped together all the time, but the two are not the same thing. What currying does is convert a multi-argument function into a chain of single-argument function calls—that is, `f(a, b, c)` gets taken apart into the call chain `f(a)(b)(c)`. Partial application fixes part of the arguments and returns a function with fewer of them. Currying instead has the function take in exactly one argument at a time, hand back the next function once it has it, and count as done only when every argument has been gathered. The three-argument `add` from above makes the contrast easiest to see: partial application pins down the first argument, and the returned function waits for the other two. On the currying route, the function returned by `add(a)` waits for exactly one `b`, and only after `b` is in does `c` get its turn.
 
-Honestly, currying is less practical in C++ than partial application—C++ natively supports multi-argument function calls, so there is no reason to break every function into single-argument chains. Partial application is the pattern you will actually use. The value of understanding currying is the idea it reveals, one of the core insights of functional programming: functions themselves are first-class citizens that can be progressively "specialized".
+Currying is honestly less practical in C++ than partial application. C++ already supports multi-argument function calls, so there is no need to take every function apart into a chain of single-argument ones; what gets used day to day is partial application. So why do we still cover currying? Because it points at one thing: a function can be "specialized" step by step—every argument we supply leaves us holding a newer, more specific function.
 
 ---
 
-## map/filter/reduce—Functional Style with STL Algorithms
+## map/filter/reduce—The Functional Face of STL Algorithms
 
-map (mapping), filter (filtering), and reduce (reducing) are the three workhorses of functional data processing. C++'s STL algorithms provide the matching tools: `std::transform` plays map, `std::copy_if` / `std::remove_if` play filter, and `std::accumulate` plays reduce.
+Map, filter, and reduce are the three basic operations functional programming uses to process data, and the STL algorithms stock a tool for each: `std::transform` does map's job, `std::copy_if` / `std::remove_if` do filter's job, and `std::accumulate` does reduce's job. You already met map and filter in the earlier code. Reduce counts as a new acquaintance for us, though you have handwritten its job in article 02: that accumulating lambda that used reference capture to pile numbers into `sum` was doing reduction. Chain the three steps together—data flows out of one step's output and into the next step's input—and you have a data processing pipeline, drawn below:
 
-Strung together, the three stages move the data along like stations on a line:
+![filter, map, reduce data processing pipeline](./05-functional-patterns-pipeline.drawio)
 
-![The filter, map, reduce data processing pipeline](./05-functional-patterns-pipeline.drawio)
-
-Let's demonstrate these three operations with a complete data processing pipeline:
+Let's take all three steps through a complete data processing pipeline for real:
 
 ```cpp
 #include <algorithm>
@@ -322,7 +317,7 @@ void demo_map_filter_reduce() {
         {"temp_03", 18.2, 1000},
     };
 
-    // === Filter: keep only the temp_01 readings ===
+    // === Filter: keep only temp_01 readings ===
     std::vector<SensorReading> filtered;
     std::copy_if(readings.begin(), readings.end(),
                 std::back_inserter(filtered),
@@ -347,9 +342,9 @@ void demo_map_filter_reduce() {
 }
 ```
 
-### Wrapping Them into Reusable Functional Tools
+### Wrapping Them into Reusable Functional Utilities
 
-That three-stage pattern can be wrapped into generic lambda utilities, pushing the code one notch further toward the functional style:
+That three-stage style can go one step further: wrap the map and filter logic inside generic lambdas, and a call takes a single line. Let's wrap two of them ourselves:
 
 ```cpp
 auto functional_map = [](const auto& container, auto func) {
@@ -369,19 +364,19 @@ auto functional_filter = [](const auto& container, auto pred) {
     return result;
 };
 
-// Chaining example: filter the evens -> double them
+// Chaining example: filter even numbers -> double
 std::vector<int> data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 auto evens = functional_filter(data, [](int x) { return x % 2 == 0; });
 auto doubled = functional_map(evens, [](int x) { return x * 2; });
 ```
 
-The drawback of this style is that every operation creates a new `std::vector`—multiple filters and maps mean multiple temporary containers. Benchmarks show that for a filter+transform pipeline over 1 million elements, this approach is roughly 16x slower than C++20 Ranges, and it allocates an extra ~4 MB of memory for the intermediate containers. The C++20 Ranges library solves this problem with lazy evaluation, which we will come to shortly.
+The drawback of writing it this way sits right out in the open too: every operation creates a new `std::vector`, and once the filter and map stages multiply, temporary containers pop up one after another. How much overhead that adds up to—we'll let the numbers speak at the end of this article. The C++20 Ranges library solves this problem through lazy evaluation: its views are in no hurry to compute results; they produce the data on demand, only when you actually iterate over them.
 
 ---
 
 ## Thinking in Immutable Data
 
-Functional programming has a core principle: avoid modifying data—create new data instead. It sounds wasteful, but the benefits are tangible—no data races (the starting point of thread safety), easier reasoning about code behavior (deterministic input gives deterministic output), and easier undo/redo (the old data is still around). Obeying immutability fully in C++ is unrealistic, but we can adopt this mindset selectively on critical paths. For example, a "sort without modifying the original data" function:
+Functional programming holds one more basic position: try not to modify data—if you want a new result, create new data. The first time you hear that it sounds rather wasteful, but think the position through once and the benefits are all in front of you. If we don't modify data, data races have nowhere to come from—that is where thread safety starts. Fixed input means fixed output, so when you read the code, the behavior is something you can reason about. The old data is always still there; when you want undo and redo, the old versions are still in our hands. Holding fully to immutability in C++ isn't realistic, but we can pick the critical paths where this mindset earns its keep—for instance, writing a "sort without touching the original data" function:
 
 ```cpp
 #include <vector>
@@ -395,15 +390,17 @@ std::vector<int> sorted_copy(const std::vector<int>& input) {
 }
 ```
 
-In modern C++ (especially at -O2/-O3 optimization levels), returning a `std::vector` almost always has its extra copies optimized away by NRVO or move semantics, so the performance cost of the immutable style is smaller than it looks. Benchmarks show that for sorting 1 million elements, `sorted_copy` is only about 1.5% slower than `std::sort` mutating the data in place—and that cost comes mainly from the initial copy of the input, not from copying the return value. In scenarios where you genuinely need to keep the original data, that price is perfectly acceptable.
+In modern C++ (at -O2/O3 optimization levels), the extra copies that come with returning a `std::vector` are almost entirely optimized away by NRVO (named return value optimization) or move semantics, so the cost of the immutable style is smaller than it looks. For a sort of one million elements, I measured `sorted_copy` against a `std::sort` that modifies the data in place: only about 1.5% slower—and that 1.5% goes mostly into the initial copy of the input data, not into copying the return value. In settings where the original data genuinely has to be kept, that is a price we can accept without complaint.
+
+> **Performance data source**: my benchmark in `code/volumn_codes/vol2/ch03-lambda/test_immutability_nrvo.cpp`, run on GCC 15.2.1 with `-O2`.
 
 ---
 
 ## Practical Applications
 
-### Data Processing Pipeline
+### A Data Processing Pipeline
 
-Let's build a log-processing pipeline—the filter, transform, reduce trio. It follows the same idea as Unix pipes: each stage does one thing, and data flows from one stage into the next.
+Let's build a log-processing pipeline, still following the filter, transform, and reduce three-stage layout. It carries over the Unix pipeline idea: each stage does only its own job, and the data flows out of one stage and into the next.
 
 ```cpp
 struct LogEntry {
@@ -438,9 +435,9 @@ void demo_pipeline() {
 }
 ```
 
-### Event Filter Chain
+### An Event Filter Chain
 
-A "filter chain" is a series of predicate functions combined so that data must pass every filter to be accepted. This is extremely practical in scenarios like request validation and data checking. Each filter is an independent pure function that can be tested and combined on its own. Need to add a new filtering rule? Write a lambda and drop it into the array—no existing code has to change.
+A "filter chain" is the pattern of combining a set of predicate functions: the data has to pass every one of the filters to be accepted. You will find it very smooth to use in request validation and data checking. Each filter is an independent pure function—same input only ever yields same output, and it doesn't touch external state either. We can test any one of them in isolation, or swap any one of them out. Want to add a new filtering rule? Write a lambda and drop it into the array; not a single line of the existing code has to change.
 
 ```cpp
 struct Request {
@@ -472,9 +469,11 @@ void demo_filter_chain() {
 
 ---
 
-## A Ranges Preview—The Ultimate Form of Functional Programming in C++20
+## A Ranges Preview—C++20's Lazy Views
 
-Earlier, when we processed data with map/filter/reduce, every operation created a new temporary `std::vector`. If the pipeline has several steps, these intermediate containers take a noticeable toll on performance. Benchmarks show that for a pipeline containing filter and transform, the traditional approach is roughly 16x slower than C++20 Ranges and needs to allocate multiple temporary containers (for 1 million elements, roughly 4 MB of extra memory). The C++20 Ranges library solves this problem with lazy evaluation—a view does not compute its result up front; it computes on demand, as you iterate.
+Earlier, while we were processing data with map/filter/reduce, every operation created a new temporary `std::vector`; once a pipeline has many steps, those intermediate containers pile up into real overhead. I measured this one too: for a pipeline over one million elements with a filter and a transform, the old style ran about 16 times slower than C++20 Ranges, and it also had to allocate several extra temporary containers for the intermediate results, roughly 4 MB of additional memory. A 16x gap is not small, and the code squares with it: temporary containers get copied layer upon layer, while Ranges views waive every one of those intermediate layers—and lazy evaluation, mentioned just above, is what they lean on.
+
+> **Performance data source**: again my benchmark in `code/volumn_codes/vol2/ch03-lambda/test_ranges_performance.cpp`, run on GCC 15.2.1 with `-O2`.
 
 ```cpp
 #include <ranges>
@@ -485,10 +484,10 @@ Earlier, when we processed data with map/filter/reduce, every operation created 
 void demo_ranges_preview() {
     std::vector<int> data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
-    // Ranges: a lazy pipeline, no intermediate containers
+    // Ranges: lazy pipeline, no intermediate containers
     auto result = data
-        | std::views::filter([](int x) { return x % 2 == 0; })   // evens
-        | std::views::transform([](int x) { return x * 2; })      // double them
+        | std::views::filter([](int x) { return x % 2 == 0; })   // even numbers
+        | std::views::transform([](int x) { return x * 2; })      // double
         | std::views::take(3);                                     // take the first 3
 
     std::cout << "Ranges result: ";
@@ -499,9 +498,13 @@ void demo_ranges_preview() {
 }
 ```
 
-This pipeline says: from `data`, filter out the even numbers, double them, then take the first three. The key is the `|` operator—it chains multiple view operations into one pipeline. The whole pipeline does nothing when it is built; the computation only really starts when `for (int x : result)` iterates. No intermediate containers, no redundant data copies.
+This pipeline says three steps: keep the even numbers, double them, take the first three. The part that deserves a second look is the `|` operator, which strings several view operations into one pipeline. The whole pipeline does nothing while it is being built; the computation truly begins only once our `for` loop starts iterating. The intermediate containers are gone, and so are the surplus data copies.
 
-Ranges' `views::filter` and `views::transform` correspond to functional programming's filter and map, `views::take` and `views::drop` to Haskell's `take` and `drop`, and `views::join` to `concat`. You could say Ranges is C++'s official answer to functional data processing. We will unpack the details of the Ranges library in Volume 4.
+We turned the side-by-side comparison of the two styles into an animation you can step through frame by frame with the step controls: the old style materializes intermediate containers layer by layer, while the Ranges pipeline computes one step only when it reaches it.
+
+<Anim id="ranges-lazy-pipeline" />
+
+Ranges' `views::filter` and `views::transform` correspond to functional programming's filter and map, `views::take` and `views::drop` correspond to Haskell's `take` and `drop`, and `views::join` corresponds to `concat`. Set the mappings side by side and you can more or less see it: Ranges is the functional data-processing scheme C++ has taken into its standard library. Volume 4 will dig into its details for us.
 
 ---
 
@@ -509,4 +512,3 @@ Ranges' `views::filter` and `views::transform` correspond to functional programm
 
 - [STL algorithms - cppreference](https://en.cppreference.com/w/cpp/algorithm)
 - [C++20 Ranges - cppreference](https://en.cppreference.com/w/cpp/ranges)
-- [Functional programming in C++ - Fluent C++](https://www.fluentcpp.com/2019/01/15/functional-programming-in-cpp/)

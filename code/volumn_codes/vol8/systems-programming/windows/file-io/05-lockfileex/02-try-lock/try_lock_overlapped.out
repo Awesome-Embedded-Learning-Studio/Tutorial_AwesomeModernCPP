@@ -1,0 +1,21 @@
+$ # 环境:Windows 11 26200 / NTFS(C:) / MSYS2 UCRT64 g++ 16.1.0,工作目录 C:/msys64/tmp/l05win
+$ g++ -std=c++20 -Wall -Wextra try_lock_overlapped.cpp -o try_lock_overlapped.exe
+$ ./try_lock_overlapped.exe demo
+pid=21924(当前进程), 文件:C:/msys64/tmp/l05win/tryov.bin(NTFS)
+口径:waiter 用 FILE_FLAG_OVERLAPPED 句柄 + OVERLAPPED.hEvent(手动重置),不轮询
+
+==== 场景 1:持锁者握 600 ms,waiter WaitForSingleObject(事件, 3000 ms) ====
+  [      0 ms] holder(pid=32904):LockFileEx([0,4096) EX) = TRUE,持锁 600 ms
+  [    109 ms] waiter:LockFileEx(异步句柄,不带 FAIL_IMMEDIATELY)= FALSE, GetLastError()=997(ERROR_IO_PENDING) —— 冲突不再阻塞,改挂账排队
+  [    609 ms] holder:UnlockFile = TRUE,离场
+  [    609 ms] waiter:事件等了 500 ms 置位,GetOverlappedResult = TRUE —— 锁到手,一次也没轮询
+  [    609 ms] waiter:UnlockFileEx = TRUE(显式放锁后关句柄)
+
+==== 场景 2:持锁者握 1200 ms,waiter 限期 200 ms → 超时撤单 ====
+  [    953 ms] holder(pid=26828):LockFileEx([0,4096) EX) = TRUE,持锁 1200 ms
+  [   1062 ms] waiter:LockFileEx = FALSE, GetLastError()=997(ERROR_IO_PENDING),请求在队列里挂着
+  [   1281 ms] waiter:WaitForSingleObject = WAIT_TIMEOUT(0x102),等了 219 ms,限期到
+  [   1281 ms] waiter:CancelIoEx(定向撤这一笔) = TRUE
+  [   1281 ms] waiter:收尾 GetOverlappedResult = FALSE, GetLastError()=995(ERROR_OPERATION_ABORTED) —— 请求作废,锁没到手
+  [   2172 ms] holder:UnlockFile = TRUE,离场
+  [   2578 ms] 探针:holder 退场后,新句柄试同区间 = TRUE —— 被撤销的请求没有留下锁

@@ -1,17 +1,27 @@
 # ch03: Atomic 操作与内存模型
 
-本目录包含 4 个示例，分为两类。
+本目录包含 5 个示例，分为可运行示例与汇编验证示例。
 
 ## 可运行示例
 
 | 文件 | 说明 | 运行预期 |
 |------|------|---------|
 | `atomic_default_ctor_verify.cpp` | 验证 `std::atomic<T>` 不要求 T 可默认构造 | 输出 `42`、`100`、`200` 三行 |
+| `fence_vs_ordered_benchmark.cpp` | 比较逐字段 release/acquire 与 fence + relaxed 的完整交接耗时（Linux x86-64） | 输出每轮耗时和两种写法的中位数 |
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ./build/atomic_default_ctor_verify
+```
+
+benchmark 仅在 Linux x86-64 上构建。请在仓库根目录构建；示例会将两个线程固定到 CPU 0 和 CPU 2，如果这些 CPU 不可用，先修改源码开头的 CPU 编号。
+
+```bash
+cmake -S code/volumn_codes/vol5/ch03-atomic-memory-model \
+  -B /tmp/vol5-fence-build -DCMAKE_BUILD_TYPE=Release
+cmake --build /tmp/vol5-fence-build --target fence_vs_ordered_benchmark
+/tmp/vol5-fence-build/fence_vs_ordered_benchmark
 ```
 
 ## 汇编验证示例

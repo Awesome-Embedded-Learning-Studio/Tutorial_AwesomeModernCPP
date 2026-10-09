@@ -1,0 +1,681 @@
+{
+ "version": 1,
+ "id": "constinit-siof",
+ "title": "静态初始化顺序灾难",
+ "subtitle": "SIOF · 动态初始化顺序未定义",
+ "source": "projects/vol2-ch02-constinit-siof/02-dsl/constinit-siof.yaml",
+ "backend": "web",
+ "template": "freeform",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#111521",
+  "bgRaised": "#171D2D",
+  "text": "#F4F6FB",
+  "muted": "#98A2B8",
+  "fill": "#66D9EF",
+  "fillEdge": "#2E9DC2",
+  "emptyEdge": "#43506A",
+  "grow": "#FFB86C",
+  "numOnFill": "#0B1E27",
+  "ok": "#72D49A",
+  "bad": "#FF6B7A",
+  "cardBg": "#1B2234"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "静态初始化顺序灾难",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.8016,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "SIOF · 动态初始化顺序未定义",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#98A2B8",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.508,
+   "h": 0.272
+  },
+  "show:ph1": {
+   "kind": "text",
+   "text": "① 加载阶段：静态初始化",
+   "x": -3.4,
+   "y": 1.75,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.028,
+   "h": 0.272,
+   "id": "ph1"
+  },
+  "show:ph2": {
+   "kind": "text",
+   "text": "② 动态初始化：顺序未定义",
+   "x": 1.1,
+   "y": 1.75,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.292,
+   "h": 0.272,
+   "id": "ph2"
+  },
+  "show:ph3": {
+   "kind": "text",
+   "text": "③ main",
+   "x": 4.7,
+   "y": 1.75,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 0.884,
+   "h": 0.272,
+   "id": "ph3"
+  },
+  "show:a_ph12": {
+   "kind": "arrow",
+   "x1": -1.706,
+   "y1": 1.75,
+   "x2": -0.726,
+   "y2": 1.75,
+   "cx": -1.216,
+   "cy": 1.75,
+   "w": 0.98,
+   "h": 0.0
+  },
+  "show:a_ph23": {
+   "kind": "arrow",
+   "x1": 2.926,
+   "y1": 1.75,
+   "x2": 4.078,
+   "y2": 1.75,
+   "cx": 3.502,
+   "cy": 1.75,
+   "w": 1.152,
+   "h": 0.0
+  },
+  "show:card_a": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.64,
+   "w": 3.5656,
+   "h": 1.734,
+   "rows": [
+    {
+     "text": "// a.cpp",
+     "w": 1.056
+    },
+    {
+     "text": "std::vector<int>",
+     "w": 2.112
+    },
+    {
+     "text": "    g_data{1, 2, 3};",
+     "w": 2.64
+    }
+   ],
+   "cx": -3.6,
+   "cy": 0.1
+  },
+  "show:sa_a": {
+   "kind": "text",
+   "text": "动态初始化：调用构造函数",
+   "x": -3.6,
+   "y": -1.35,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.168,
+   "h": 0.272,
+   "id": "sa_a"
+  },
+  "show:card_b": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "default",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 3.168,
+   "w": 4.0936,
+   "h": 2.212,
+   "rows": [
+    {
+     "text": "// b.cpp",
+     "w": 1.056
+    },
+    {
+     "text": "extern std::vector<int>",
+     "w": 3.036
+    },
+    {
+     "text": "    g_data;",
+     "w": 1.452
+    },
+    {
+     "text": "int g_first = g_data[0];",
+     "w": 3.168
+    }
+   ],
+   "cx": 3.6,
+   "cy": 0.1
+  },
+  "show:sa_b": {
+   "kind": "text",
+   "text": "动态初始化：要读 g_data",
+   "x": 3.6,
+   "y": -1.35,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.98,
+   "h": 0.272,
+   "id": "sa_b"
+  },
+  "show:a_ord1": {
+   "kind": "arrow",
+   "x1": -1.6372,
+   "y1": 0.1,
+   "x2": 1.3732,
+   "y2": 0.1,
+   "cx": -0.132,
+   "cy": 0.1,
+   "w": 3.0104,
+   "h": 0.0,
+   "label": {
+    "text": "a 先初始化",
+    "x": -0.132,
+    "y": 0.4524,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.1736,
+    "h": 0.2448
+   }
+  },
+  "show:v1": {
+   "kind": "text",
+   "text": "g_data 已构造：b 读到 1，一切正常",
+   "x": 0,
+   "y": -2.05,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.268,
+   "h": 0.272,
+   "id": "v1"
+  },
+  "show:a_ord2": {
+   "kind": "arrow",
+   "x1": 1.3732,
+   "y1": 0.1,
+   "x2": -1.6372,
+   "y2": 0.1,
+   "cx": -0.132,
+   "cy": 0.1,
+   "w": 3.0104,
+   "h": 0.0,
+   "label": {
+    "text": "b 先初始化",
+    "x": -0.132,
+    "y": 0.4524,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 1.1736,
+    "h": 0.2448
+   }
+  },
+  "show:v2": {
+   "kind": "text",
+   "text": "b 可能读到未初始化的 g_data！",
+   "x": 0,
+   "y": -2.05,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.756,
+   "h": 0.272,
+   "id": "v2"
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "动态初始化：翻译单元之间顺序未定义",
+   "x": 0.0,
+   "y": 0.3764,
+   "fs": 0.24,
+   "color": "#FFB86C",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.3856,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "链接顺序一换，一切正常就可能出事",
+   "x": 0.0,
+   "y": -0.2,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.0688,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "constinit：初始化必须在加载阶段完成",
+   "x": 0.0,
+   "y": -0.7764,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.4576,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 2.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 1.43
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 1.43,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show ph1",
+   "note": "",
+   "duration": 1.79,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:ph1",
+     "t": 0.0,
+     "dur": 1.79
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show ph2",
+   "note": "",
+   "duration": 1.91,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:ph2",
+     "t": 0.0,
+     "dur": 1.91
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show ph3",
+   "note": "",
+   "duration": 1.07,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:ph3",
+     "t": 0.0,
+     "dur": 1.07
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a_ph12",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_ph12",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a_ph23",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_ph23",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.4s",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show card_a",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_a",
+     "cx": -3.6,
+     "cy": 0.1,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show sa_a",
+   "note": "",
+   "duration": 1.79,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:sa_a",
+     "t": 0.0,
+     "dur": 1.79
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show card_b",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:card_b",
+     "cx": 3.6,
+     "cy": 0.1,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show sa_b",
+   "note": "",
+   "duration": 2.15,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:sa_b",
+     "t": 0.0,
+     "dur": 2.15
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.4s",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show a_ord1",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_ord1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show v1",
+   "note": "",
+   "duration": 2.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:v1",
+     "t": 0.0,
+     "dur": 2.4
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide a_ord1",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:a_ord1",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "hide v1",
+   "note": "",
+   "duration": 2.55,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:v1",
+     "t": 2.15,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a_ord2",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_ord2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show v2",
+   "note": "",
+   "duration": 2.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:v2",
+     "t": 0.0,
+     "dur": 2.4
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 17.805,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:a_ph12",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a_ph23",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:card_a",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:card_b",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a_ord2",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:ph1",
+     "t": 1.5,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:ph2",
+     "t": 1.8,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:ph3",
+     "t": 2.1,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:sa_a",
+     "t": 2.4,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:sa_b",
+     "t": 2.7,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:v2",
+     "t": 3.545,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 3.845,
+     "dur": 2.39
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 6.585,
+     "dur": 2.27
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 9.205,
+     "dur": 2.4
+    }
+   ]
+  }
+ ]
+}

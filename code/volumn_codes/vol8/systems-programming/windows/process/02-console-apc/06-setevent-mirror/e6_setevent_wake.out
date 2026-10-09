@@ -1,0 +1,7 @@
+$ ./e6_setevent_wake.exe
+[E6] main tid=17924
+[1] main 进 WaitForSingleObject(wake, 5000),然后自己给自己发 CTRL_C_EVENT
+    79ms 后醒:ret=0(0=句柄有信号)handler 共被调 1 次 —— 它只干了 SetEvent
+[2] main 进 WaitForSingleObject(wake, 5000),然后自己给自己发 CTRL_BREAK_EVENT
+    78ms 后醒:ret=0(0=句柄有信号)handler 共被调 1 次 —— 它只干了 SetEvent
+[E6] done —— 事件线程只 SetEvent,决策与 IO 全回主线程:与 self-pipe 同构

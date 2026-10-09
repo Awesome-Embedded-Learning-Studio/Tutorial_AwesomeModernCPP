@@ -1,0 +1,6 @@
+$ ./e5_player session.timing session.typescript > replay.out
+回放完成:12 笔 138 字节,计划睡眠合计 1255.8ms,实际睡眠合计 1256.9ms,全程墙钟 1257.1ms(含写 stdout 的开销),倍速=1.00
+$ cmp replay.out session.typescript && echo 一致
+一致
+$ ./e5_player session.timing session.typescript 2.0 > /dev/null
+回放完成:12 笔 138 字节,计划睡眠合计 627.9ms,实际睡眠合计 628.9ms,全程墙钟 629.0ms(含写 stdout 的开销),倍速=2.00

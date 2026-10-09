@@ -1,0 +1,5 @@
+$ ./m12(longjmp 跳出受保护区:无 filter 无 handler)
+first pass
+landed back via longjmp —— 受保护区被跳过,无 filter 无 handler
+done
+exit=0

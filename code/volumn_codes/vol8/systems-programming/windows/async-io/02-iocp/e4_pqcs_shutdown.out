@@ -1,0 +1,18 @@
+[     0 ms] 裸端口就绪(一枚句柄,没挂任何 I/O 设备)—— 端口自己就是一条完成队列
+[     0 ms] [1] 三条工线程睡进 GQCS,主线程逐个 PQCS 叫醒
+[   219 ms] 三条线程都已睡进 GQCS,开始投关停包
+[   219 ms]   PQCS 关停包 #1: ret=1
+[   219 ms]   PQCS 关停包 #2: ret=1
+[   219 ms]   工2 醒来: GQCS ret=1 bytes=0 key=关停哨兵 ov=0xdeadbeef (tid=10548)
+[   219 ms]   工2 认出关停,退场
+[   219 ms]   PQCS 关停包 #3: ret=1
+[   219 ms]   工1 醒来: GQCS ret=1 bytes=0 key=关停哨兵 ov=0xdeadbeef (tid=22732)
+[   219 ms]   工1 认出关停,退场
+[   219 ms]   工3 醒来: GQCS ret=1 bytes=0 key=关停哨兵 ov=0xdeadbeef (tid=16416)
+[   219 ms]   工3 认出关停,退场
+[   219 ms] 三条工线程全部退场,join 干净返回
+[   219 ms] [2] 三件套原样透传:bytes=111 key=888 ov=0xABCD
+[   344 ms]   收到: bytes=111 key=888 ov=0xabcd —— 塞什么,收什么
+[   344 ms] [3] 收尾后再投一枚没人读的包,端口不吃亏
+[   344 ms]   PQCS: ret=1 —— 端口没有活线程也接得住,包在队列里等着
+[   344 ms] iocp-e4 完

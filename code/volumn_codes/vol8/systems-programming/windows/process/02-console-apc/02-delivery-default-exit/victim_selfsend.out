@@ -1,0 +1,2 @@
+$ cmd.exe /v:on /c "C:\msys64\tmp\victim_selfsend.exe < nul & echo ERRORLEVEL=!ERRORLEVEL!"
+ERRORLEVEL=-1073741510   # = 0xC000013A(STATUS_CONTROL_C_EXIT)的有符号写法,与父进程 GetExitCodeProcess 读数一致

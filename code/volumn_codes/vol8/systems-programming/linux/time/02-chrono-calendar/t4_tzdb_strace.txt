@@ -1,0 +1,4 @@
+# strace 看 get_tzdb 首次加载读了哪些文件(截取 openat 行):
+$ strace -e trace=openat ./t4_tzdb_load 2>&1 | grep zoneinfo
+openat(AT_FDCWD, "/usr/share/zoneinfo/tzdata.zi", O_RDONLY) = 3
+openat(AT_FDCWD, "/usr/share/zoneinfo/leapseconds", O_RDONLY) = 4

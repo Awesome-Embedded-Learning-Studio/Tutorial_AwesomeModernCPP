@@ -1,0 +1,7 @@
+== SEH 吞 C++ throw ==
+  [SEH filter] code=0x20474343 flags=0x00000080 nparams=1
+    info[0]=0x1769183DA80(GCC 变体只带 1 个参数)
+  guarded_call 正常返回(result=-1)——注意:catch 没接到这一票
+  [~Loud] 析构跑了
+  try/catch 之后还活着,继续跑
+done

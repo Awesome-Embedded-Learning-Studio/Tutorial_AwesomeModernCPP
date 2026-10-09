@@ -1,0 +1,9 @@
+$ g++ -std=c++20 ... m1_keywords.cpp(__try/__except 关键字)
+probe_try.cpp: In function 'int main()':
+probe_try.cpp:7:5: error: '__try' was not declared in this scope
+    7 |     __try {
+      |     ^~~~~
+probe_try.cpp:9:7: error: '__except' was not declared in this scope
+    9 |     } __except (EXCEPTION_EXECUTE_HANDLER) {
+      |       ^~~~~~~~
+compile exit=0

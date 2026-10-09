@@ -1,0 +1,10 @@
+file size = 4096(1 页,内容 0x5A)
+view=0000020432e40000(3 页映射盖在 1 页文件上)
+== 写 view[2*4096] = 0x77(第 2 页,文件里没有)
+-> 0(0=写成功无异常)
+== 读回 view[2*4096]
+-> 0x77
+== FlushViewOfFile(强制回写第 2 页)
+FlushViewOfFile -> 1
+file size after flush = 12288(文件被写胖了)
+done

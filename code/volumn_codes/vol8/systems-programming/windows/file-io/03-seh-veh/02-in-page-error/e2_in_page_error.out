@@ -1,0 +1,22 @@
+file=C:\Users\CHARLI~2\AppData\Local\Temp\seh_veh_inpage.bin
+file written unbuffered: 12288 bytes(内容 0x40..0x7f 循环)
+  [写完] file size = 12288
+view=0000026a8fd20000(3 页映射建立)
+  映射存活时 SetEndOfFile(4096)      -> 0 gle=1224 (1224=ERROR_USER_MAPPED_FILE)
+  映射存活时 FileAllocationInfo(4096) -> 0 gle=1224
+== 读 view[4096+5](此刻文件其实还是 3 页,应得 0x45)
+-> 0x45
+  解除映射+关句柄后 SetEndOfFile      -> 1
+  [截短后] file size = 4096
+view=0000026a8fd20000(3 页映射盖在 1 页文件上)
+== 读 view[5](第 0 页,文件里有)
+-> 0x45
+== 读 view[1*4096+5](第 1 页,文件里没有)
+-> 0(0=零填充,无异常;Linux 这里是 SIGBUS)
+== 读 view[2*4096](第 2 页,文件里没有)
+-> 0
+== 读 view[3*4096](越过映射边界本身)
+  [filter 触发] code=0xC0000005 flags=0x00000000
+    info[0]=0 info[1]=0x26A8FD23000
+-> -1(-1=异常;这才是 ACCESS_VIOLATION 的地界)
+done

@@ -1,0 +1,53 @@
+# 环境: 6.18.33.2-microsoft-standard-WSL2 | AMD Ryzen 7 9700X 8-Core Processor | 数据盘 /dev/sdd ext4 1055762868 65032488 937026908 7% /
+# vm 口径: dirty_background_ratio=10 dirty_ratio=20 dirty_expire_centisecs=3000 dirty_writeback_centisecs=500
+# MemTotal: 55522928 kB (决定上面 ratio 阈值的分母)
+
+# 压基线: sync,等 Dirty 落回低位
+# 基线 Dirty=112 kB Writeback=408 kB
+
+# 起 writer: 256 MiB,只 write(),随后 _exit(0)
+[e1_dirty] path=/home/charliechen/l03_scratch/e1.bin total=256MiB chunk=1024KiB writes=256 write_loop=129.1ms (1983 MiB/s)
+[e1_dirty] write 循环结束。不 fsync、不 close,直接 _exit(0) —— 数据生死交给页缓存
+
+# writer 已退出。开始采样(相对秒  Dirty[kB]  Writeback[kB]):
+# 0  262144  240
+# 2  262208  0
+# 4  262300  0
+# 6  262472  0
+# 8  262528  0
+# 10  262588  0
+# 12  262628  0
+# 14  262684  0
+# 16  262768  0
+# 18  262852  4
+# 20  262880  0
+# 22  262972  0
+# 24  263032  0
+# 26  263088  0
+# 28  263188  0
+# 30  263328  0
+# 32  192  0
+# 34  300  0
+# 36  336  0
+# 38  316  0
+# 40  436  0
+# 42  516  0
+# 44  564  0
+# 46  776  0
+# 48  848  0
+# 50  860  0
+# 52  928  0
+# 54  984  0
+# 56  1052  0
+# 58  1092  0
+# 60  1184  0
+# 62  384  0
+# 64  444  0
+# 66  520  0
+# 68  356  0
+# 70  440  0
+# 72  524  0
+# 74  564  0
+# 76  592  0
+# 78  496  0
+# 80  556  0

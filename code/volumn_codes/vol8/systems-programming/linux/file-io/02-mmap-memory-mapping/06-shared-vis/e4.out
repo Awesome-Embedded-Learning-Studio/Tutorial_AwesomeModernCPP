@@ -1,0 +1,7 @@
+parent : mmap MAP_SHARED 16 B at 0x710c9d355000, view = AAAABBBBCCCCDDDD
+child  : its OWN mmap at 0x710c9d354000, wrote 'X' at [4], pinged pipe
+parent : after pipe ping (no msync anywhere):
+  own mapping [4]     = X   <- 子进程写的字节,父亲自己的映射直接可见
+  pread(fd, 16 B)     = AAAAXBBBCCCCDDDD   <- 独立 syscall 路径问文件,同一个答案
+  whole view          = AAAAXBBBCCCCDDDD
+waitpid: WIFEXITED=true code=0 (0 = child clean)

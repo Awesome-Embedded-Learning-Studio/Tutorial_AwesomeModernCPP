@@ -21,7 +21,7 @@ related:
   - 'latch, barrier, and semaphore'
 translation:
   source: documents/vol5-concurrency/exercises/01-bounded-queue.md
-  source_hash: 956f42289afc87049bb47f380040c1b6681e68a1a1c502c030dcf97530a0cb5c
+  source_hash: 2d5b3222401ff2c5b5d79f833d783a8940074148bc9588a893a31dc250cf4617
   translated_at: '2026-09-26T09:22:45+00:00'
   engine: anthropic
   token_count: 8200
@@ -29,7 +29,7 @@ translation:
 
 # Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives
 
-> The runnable companion project for this lab lives at [`code/volumn_codes/vol5-labs/templates/lab1_bounded_queue/`](../../../../code/volumn_codes/vol5-labs/templates/lab1_bounded_queue/). Expect roughly **8–12 hours** of hands-on work (`reading_time_minutes` counts pure reading minutes, not hands-on time).
+> The runnable companion project for this lab lives at `code/volumn_codes/vol5-labs/templates/lab1_bounded_queue/`. Expect roughly **8–12 hours** of hands-on work (`reading_time_minutes` counts pure reading minutes, not hands-on time).
 
 ## Goal
 
@@ -145,7 +145,7 @@ That lambda predicate is your lifeline. If you write `not_full_.wait(lock)` (no 
 
 > **Don't be fooled by the tests**: `test_milestone1` checks "you can push and pop, FIFO order, blocking behavior, multiple producers with no loss or duplication" — **all behavior, never whether you used a predicate wait**. You could perfectly well pass the tests with a bare `wait()` (no predicate), if no spurious wakeup happens to fire. But that's a time bomb: under high concurrency or particular schedulings, it will go off. **The real acceptance criterion: every wait in `push`/`pop` is a predicate wait (`cv.wait(lock, predicate)`); there is no bare `wait()`.** Run MS4's stress test under TSan, and a bare wait will sooner or later surface as a data race or an out-of-bounds access.
 
-[`test/test_milestone1.cpp`](../../../../code/volumn_codes/vol5-labs/templates/lab1_bounded_queue/test/test_milestone1.cpp) covers four scenarios: single push/pop, FIFO order, pop blocking until a push arrives, and multiple producers with no loss or duplication under concurrency.
+`test/test_milestone1.cpp` covers four scenarios: single push/pop, FIFO order, pop blocking until a push arrives, and multiple producers with no loss or duplication under concurrency.
 
 ## Milestone 2: close Semantics
 

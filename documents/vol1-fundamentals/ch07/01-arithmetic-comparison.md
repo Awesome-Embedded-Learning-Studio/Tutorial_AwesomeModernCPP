@@ -18,6 +18,17 @@ tags:
 - intermediate
 - 进阶
 title: 算术与比较运算符
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #251)"
+      en: "Contributed exercise solutions and article revisions (PR #251)"
 ---
 # 算术与比较运算符重载：告别满屏的 .add()
 

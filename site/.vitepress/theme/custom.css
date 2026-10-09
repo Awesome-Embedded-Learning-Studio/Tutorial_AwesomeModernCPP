@@ -2065,3 +2065,13 @@ body.rs-resizing {
 .mxgraph {
   position: relative;
 }
+
+/* ── 便签定位高亮(noteDom 的 CSS Custom Highlight,渐进增强) ────── */
+
+::highlight(note-flash) {
+  background-color: rgba(37, 99, 235, 0.22);
+  text-decoration: underline;
+  text-decoration-color: var(--vp-c-brand-1);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
