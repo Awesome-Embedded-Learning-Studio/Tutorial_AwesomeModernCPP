@@ -1,0 +1,16 @@
+{
+  "type": "judge-assert",
+  "title": "max_list",
+  "stars": 2,
+  "hints": [
+    "四件套各司其职:`va_list` 声明游标,`va_start(args, first)` 从 `first` 之后开始读,`va_arg(args, int)` 每次取一个,`va_end` 收尾。头文件是 `<cstdarg>`。",
+    "循环读到负值为止——负值是哨兵,只报结束,不参与比大小。还有,`first` 本身也在候选名单里,别忘了它。"
+  ],
+  "tests": [
+    "max_list(3, 5, 7, 2, -1) == 7",
+    "max_list(42, -1) == 42",
+    "max_list(10, 20, 20, 5, -1) == 20",
+    "max_list(5, -2, -3, -1) == 5",
+    "max_list(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -1) == 10"
+  ]
+}

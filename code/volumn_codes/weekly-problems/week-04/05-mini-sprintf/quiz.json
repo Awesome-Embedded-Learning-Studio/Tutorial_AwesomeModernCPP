@@ -1,0 +1,20 @@
+{
+  "type": "judge-assert",
+  "title": "迷你 sprintf",
+  "stars": 3,
+  "hints": [
+    "骨架和 max_list 一样是 va_list 四件套;区别是这回您从「读参数的人」变成「定规则的人」——逐个字符扫 `fmt`,普通字符直接抄,`%` 后面的字符决定 `va_arg` 取什么。",
+    "`%d` 逐位取数字要用「先取余再除」的 do-while(想想值为 0 时 while 循环会打印什么);最小的 int −2147483648 取反就溢出了,先转成 `unsigned` 再折算才安全——判题用例里有它。",
+    "`%c` 取参数要写 `(char)va_arg(args, int)`:字符经过可变参数列表会被提升成 `int`,这是它和普通参数最大的不同。"
+  ],
+  "tests": [
+    "[]{ char b[128]; int n = mini_sprintf(b, \"no directives\"); return n == 13 && text_eq(b, \"no directives\"); }() == true",
+    "[]{ char b[128]; int n = mini_sprintf(b, \"%d\", 42); return n == 2 && text_eq(b, \"42\"); }() == true",
+    "[]{ char b[128]; int n = mini_sprintf(b, \"%d\", 0); return n == 1 && text_eq(b, \"0\"); }() == true",
+    "[]{ char b[128]; int n = mini_sprintf(b, \"%d\", INT_MIN); return n == 11 && text_eq(b, \"-2147483648\"); }() == true",
+    "[]{ char b[128]; int n = mini_sprintf(b, \"%d\", -7); return n == 2 && text_eq(b, \"-7\"); }() == true",
+    "[]{ char b[128]; int n = mini_sprintf(b, \"%s scored %d%%\", \"ann\", 100); return n == 15 && text_eq(b, \"ann scored 100%\"); }() == true",
+    "[]{ char b[128]; int n = mini_sprintf(b, \"%c%c%c\", 'C', '+', '+'); return n == 3 && text_eq(b, \"C++\"); }() == true",
+    "[]{ char b[128]; b[0] = 'x'; int n = mini_sprintf(b, \"\"); return n == 0 && b[0] == '\\0'; }() == true"
+  ]
+}

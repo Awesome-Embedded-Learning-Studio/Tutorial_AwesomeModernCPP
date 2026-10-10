@@ -1,0 +1,24 @@
+cmake_minimum_required(VERSION 3.16)
+project(03_heap_buffer_overflow CXX)
+
+# MSVC:按 UTF-8 读源码与执行字符集(源文件是 UTF-8 无 BOM,含中文注释/字符串,
+# 不显式声明会被 cl 按系统代码页误读,C2001 常量中有换行符)
+add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# --- 复现代码 ---
+# /Z7 保留调试信息并避免 sccache 编译时共享 PDB。
+add_executable(crash crash.cpp)
+target_compile_options(crash PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /Od /Z7>
+                                     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -g -O0>)
+
+# --- 修复代码 ---
+add_executable(fixed fixed.cpp)
+target_compile_options(fixed PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /Od /Z7>
+                                     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -g -O0>)
+
+# --- ASAN 选项（可选，手动开启） ---
+# cmake -DCMAKE_CXX_FLAGS="-fsanitize=address -g" ..
+# MSVC: cmake -DCMAKE_CXX_FLAGS="/fsanitize=address /Z7" ..
