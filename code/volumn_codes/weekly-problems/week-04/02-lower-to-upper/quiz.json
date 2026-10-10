@@ -1,0 +1,14 @@
+{
+  "type": "judge-io",
+  "title": "小写变大写",
+  "stars": 1,
+  "hints": [
+    "`getchar()` 的返回值要存进 `int`,不能存 `char`:EOF 是个负值,`char` 装不下它。",
+    "小写字母加上 `'A' - 'a'` 就是对应的大写;其余字符(数字、标点、换行、已经是大写的字母)原样 `putchar` 出去。"
+  ],
+  "tests": [
+    { "in": "abcd", "out": "ABCD" },
+    { "in": "MiXeD 123 !?\n", "out": "MIXED 123 !?\n" },
+    { "in": "OK 42\n", "out": "OK 42\n" }
+  ]
+}

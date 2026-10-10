@@ -184,8 +184,11 @@ class FrontmatterValidator:
         frontmatter, has_frontmatter = self.parse_frontmatter(content)
 
         if not has_frontmatter:
-            self.warnings.append(f"{filepath}: No frontmatter found (skipping validation)")
-            return True
+            # 免检文件(index/tags/bookmarks/README/images)在文件收集阶段已被过滤,
+            # 走到这里还缺 frontmatter 的是正式文章(如周页面投稿裸稿),必须拦下
+            self.errors.append(f"{filepath}: No frontmatter found (required: {', '.join(sorted(REQUIRED_FIELDS))})")
+            self.stats['with_errors'] += 1
+            return False
 
         # Check required fields
         missing = REQUIRED_FIELDS - set(frontmatter.keys())

@@ -6,11 +6,9 @@ on:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false   # 一条腿挂了也让另一条跑完,PR 上能同时看到两个 OS 的结果
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+    # 只留 Linux 腿:站点构建缓存按 documents 内容 hash 打 key,文档一改即整体失效,
+    # Windows 腿全量重建要拖 ~19 分钟;缓存策略重定前先下掉,恢复时把 matrix 加回来
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -42,7 +40,7 @@ jobs:
         with:
           path: site/.vitepress/.build-cache
           key: vitepress-build-${{ runner.os }}-${{ hashFiles('documents/**', 'site/.vitepress/config/**', 'site/.vitepress/plugins/**', 'site/.vitepress/public/**', 'site/.vitepress/theme/**', 'scripts/build.ts', 'scripts/tags.json', 'package.json', 'pnpm-lock.yaml', '!site/.vitepress/**/*.test.ts', '!site/.vitepress/**/README.md') }}
-          # 只恢复同 OS 的构建产物，避免 Windows 腿复用 Linux 产物。
+          # 只恢复同 OS 的构建产物,别跨系统混用。
           restore-keys: |
             vitepress-build-${{ runner.os }}-
 
