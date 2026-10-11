@@ -1,0 +1,23 @@
+/* 中英文路线图共用宽版文档布局，图表、卡片和正文保持同一列。
+   带上容器层级以覆盖默认主题的 scoped 宽度规则，只作用于含 RoadmapJourney 的页面。 */
+@media (min-width: 960px) {
+  .VPDoc:has(.rj-wrap):not(.has-sidebar) > .container {
+    max-width: var(--vp-layout-max-width);
+  }
+
+  .VPDoc:has(.rj-wrap) > .container > .content {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .VPDoc:has(.rj-wrap) > .container > .content > .content-container {
+    max-width: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .VPDoc:has(.rj-wrap) > .container > .aside {
+    flex-shrink: 0;
+  }
+}

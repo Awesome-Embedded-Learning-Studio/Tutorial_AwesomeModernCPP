@@ -1,7 +1,6 @@
 import DefaultTheme from 'vitepress/theme'
 import { h } from 'vue'
 import type { Theme } from 'vitepress'
-import HomeTipBanner from './components/HomeTipBanner.vue'
 import ReadingProgress from './components/ReadingProgress.vue'
 import ScreenshotCarousel from './components/ScreenshotCarousel.vue'
 import ChapterNav from './components/ChapterNav.vue'
@@ -38,6 +37,10 @@ import NoteCapture from './components/NoteCapture.vue'
 import ArticleNotes from './components/ArticleNotes.vue'
 import { setupBookmarkRestore, setupBookmarkAutoTrack } from './composables/useBookmarks'
 import ArticleContributors from './components/ArticleContributors.vue'
+import RoadmapJourney from './components/RoadmapJourney.vue'
+import VolumeCardGrid from './components/VolumeCardGrid.vue'
+import PathChooser from './components/PathChooser.vue'
+import MaturityBoard from './components/MaturityBoard.vue'
 import { setupDevFakeLag } from './dev-fake-lag'
 import './custom.css'
 import './article-code.css'
@@ -46,6 +49,7 @@ import './article-table.css'
 import './article-list.css'
 import './weekly.css'
 import './tags.css'
+import './roadmap.css'
 import './article-contributors.css'
 
 export default {
@@ -60,7 +64,7 @@ export default {
       'home-hero-actions-after': () => h('div', { class: 'proof-on-mobile' }, [h(WeeklyHomeWidget), h(ProofStrip)]),
       'home-hero-after': () => [h(WeeklyHomeWidget), h('div', { class: 'proof-on-desktop' }, [h(ProofStrip)])],
       'home-features-before': () =>
-        h('div', { class: 'home-pre-features' }, [h(ScreenshotCarousel), h(HomeTipBanner)]),
+        h('div', { class: 'home-pre-features' }, [h(ScreenshotCarousel)]),
       'home-features-after': () => h(HomePathExplorer),
       'nav-bar-content-after': () => [h(FontSizeSwitcher), h(BookmarkButton)],
       'nav-screen-content-after': () => [h(FontSizeSwitcher), h(BookmarkButton)],
@@ -87,6 +91,10 @@ export default {
     app.component('QQGroupCard', QQGroupCard)
     app.component('TagExplorer', TagExplorer)
     app.component('ArticleContributors', ArticleContributors)
+    app.component('RoadmapJourney', RoadmapJourney)
+    app.component('VolumeCardGrid', VolumeCardGrid)
+    app.component('PathChooser', PathChooser)
+    app.component('MaturityBoard', MaturityBoard)
     app.component('Anim', Anim)
     app.component('BookmarkList', BookmarkList)
   }

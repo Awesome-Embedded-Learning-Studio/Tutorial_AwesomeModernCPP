@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 首页「全部内容」视图（HomePathExplorer 的视图二）。
+ * 首页「全部内容」卡片区，由 HomePathExplorer 挂载。
  *
  * 数据直接读当前首页 frontmatter 的 features（与 VitePress 默认 VPFeatures 同源，
  * CN/EN 两套首页各取各的，不漂移）；标记刻意复用 .VPFeatures/.VPFeature 类名，
@@ -25,7 +25,7 @@ const features = computed<Feature[]>(() =>
   (frontmatter.value.features as Feature[] | undefined) ?? [],
 )
 
-/* 栅格档位判定照抄 VitePress VPFeatures.vue：16 项 → grid-4 */
+/* 栅格档位判定与 VitePress VPFeatures.vue 一致，随首页条目数量调整。 */
 const grid = computed(() => {
   const length = features.value.length
   if (!length) return undefined
@@ -89,7 +89,7 @@ const grid = computed(() => {
 
 .VPFeatures {
   position: relative;
-  padding: 16px 24px 48px;
+  padding: 16px 0 48px;
 }
 
 .container {
