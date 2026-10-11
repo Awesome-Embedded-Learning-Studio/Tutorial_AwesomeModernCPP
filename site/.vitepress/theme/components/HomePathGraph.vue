@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 首页「学习路径图」：SVG 交互图（HomePathExplorer 的视图一）。
+ * 学习路线图页的 SVG 交互图，由 RoadmapJourney 挂载。
  *
  * 交互图骨架移植自 Awesome-Embedded 的 RoadmapGraph.vue（PCB 走线 / 悬停链高亮 /
  * 拖拽 + localStorage 记忆 / suppressClick 防拖完误跳），按本项目改造：
@@ -10,8 +10,8 @@
  *   brand/text/border 色阶；暗色模式零额外工作。
  * - 新增 panzoom 缩放平移（@panzoom/panzoom，按 MermaidLightbox 范式 onMounted 动态
  *   import，不进 SSR bundle）；Ctrl/⌘+滚轮缩放，普通滚轮仍归页面滚动。
- * - 三层手势分工：拖节点（pointerdown 上 stopPropagation 掐断 panzoom）｜
- *   拖画布空白（panzoom）｜翻页（外层 pager，图内横滑归图不翻页，tab 兜底）。
+ * - 手势分工：拖节点（pointerdown 上 stopPropagation 掐断 panzoom），
+ *   拖画布空白（panzoom），竖滑穿透回页面滚动。
  * - 坐标换算：panzoom 的 CSS transform 在祖先链上，getScreenCTM 在部分浏览器不反映，
  *   改用 bounding-rect 线性映射（panzoom 只有均匀 scale+translate，数学严格成立）。
  */
