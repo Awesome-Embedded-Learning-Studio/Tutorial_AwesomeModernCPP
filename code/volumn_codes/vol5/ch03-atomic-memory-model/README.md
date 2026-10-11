@@ -1,6 +1,6 @@
 # ch03: Atomic 操作与内存模型
 
-本目录包含 5 个示例，分为可运行示例与汇编验证示例。
+本目录包含 7 个示例，分为可运行示例与汇编验证示例。
 
 ## 可运行示例
 
@@ -8,6 +8,7 @@
 |------|------|---------|
 | `atomic_default_ctor_verify.cpp` | 验证 `std::atomic<T>` 不要求 T 可默认构造 | 输出 `42`、`100`、`200` 三行 |
 | `fence_vs_ordered_benchmark.cpp` | 比较逐字段 release/acquire 与 fence + relaxed 的完整交接耗时（Linux x86-64） | 输出每轮耗时和两种写法的中位数 |
+| `store_buffer_litmus.cpp` | StoreLoad 重排现场：双线程各写各的标志再读对方的，relaxed 与 seq_cst 两阶段对比（Linux x86-64，绑 CPU 0/CPU 2） | relaxed 阶段 `(0,0)` 计数非零（比例随机器波动，百分之一到百分之三量级），seq_cst 阶段恒为 `0` |
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release
@@ -15,7 +16,7 @@ cmake --build build
 ./build/atomic_default_ctor_verify
 ```
 
-benchmark 仅在 Linux x86-64 上构建。请在仓库根目录构建；示例会将两个线程固定到 CPU 0 和 CPU 2，如果这些 CPU 不可用，先修改源码开头的 CPU 编号。
+benchmark 与 litmus 仅在 Linux x86-64 上构建。请在仓库根目录构建；两个程序都会将两个线程固定到 CPU 0 和 CPU 2，如果这些 CPU 不可用，先修改源码开头的 CPU 编号。
 
 ```bash
 cmake -S code/volumn_codes/vol5/ch03-atomic-memory-model \
@@ -26,11 +27,12 @@ cmake --build /tmp/vol5-fence-build --target fence_vs_ordered_benchmark
 
 ## 汇编验证示例
 
-以下 3 个文件**没有 `main()` 函数**，不能作为可执行文件运行。它们的设计目的是通过 `-S` 生成汇编文件，验证文章中关于 x86 指令的技术断言。
+以下 4 个文件**没有 `main()` 函数**，不能作为可执行文件运行。它们的设计目的是通过 `-S` 生成汇编文件，验证文章中关于 x86 指令的技术断言。
 
 | 文件 | 验证内容 | 预期汇编结果 |
 |------|---------|------------|
 | `atomic_cas_weak_strong_asm.cpp` | weak/strong CAS 是否生成相同指令 | 均生成 `lock cmpxchgl` |
+| `compiler_reordering_asm.cpp` | 编译器在 as-if 之内的访存合并 | `merge_two_stores` 对同一变量只留一条 `movl` 写；`double_load` 对同一变量的两次读合成一条 `movl` |
 | `fence_x86_instructions.cpp` | 各级别 fence 的 x86 指令 | relaxed/acquire/release 无指令，seq_cst → `lock orq` 或 `mfence` |
 | `memory_order_store_x86.cpp` | 各 memory_order store 的 x86 指令 | relaxed/release → `movl`，seq_cst → `xchgl` |
 

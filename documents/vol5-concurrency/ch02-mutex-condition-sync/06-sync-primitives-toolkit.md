@@ -243,7 +243,7 @@ for (int id = 0; id != n; ++id) {
   allow-run
 />
 
-每行的次序是随机的，醒得早的 worker 打得早，数值倒是定的。第 1 轮四个人的贡献是 1、2、3、4，聚合出了 10。第 2 轮翻倍成了 20。两轮的累计是 30。咱们没给 `round_total` 加过一把锁，聚合那段凭什么安全？靠的是规范写明的次序保证，原文的话只有一句：完成步骤的结束，strongly happens-before 所有被它放行的调用返回。咱们译过来对着看：worker 写完了 `partial[id]` 才报到，完成函数执行的时候本轮的写都落了地。完成函数写完了 `round_total`，放行之后的 worker 才醒来读它。两个方向的次序都有规范背书，聚合的一整段一把锁都不用。strongly 一词的分量，等 [第 3 章 内存序篇](../ch03-atomic-memory-model/03-memory-ordering.md)把 happens-before 家族摆全了，咱们再回来品。
+每行的次序是随机的，醒得早的 worker 打得早，数值倒是定的。第 1 轮四个人的贡献是 1、2、3、4，聚合出了 10。第 2 轮翻倍成了 20。两轮的累计是 30。咱们没给 `round_total` 加过一把锁，聚合那段凭什么安全？靠的是规范写明的次序保证，原文的话只有一句：完成步骤的结束，strongly happens-before 所有被它放行的调用返回。咱们译过来对着看：worker 写完了 `partial[id]` 才报到，完成函数执行的时候本轮的写都落了地。完成函数写完了 `round_total`，放行之后的 worker 才醒来读它。两个方向的次序都有规范背书，聚合的一整段一把锁都不用。strongly 一词的分量，[第 3 章 的原子篇](../ch03-atomic-memory-model/02-atomics-and-happens-before.md)把 happens-before 家族摆全了，咱们再回来品。
 
 完成函数有个值得专门对待的约束：不许抛异常。规范的模板参数表写着，`CompletionFunction` 得满足 `is_nothrow_invocable_v<CompletionFunction&>` 为真的要求。笔者在 GCC 16.2.1 上做了个探针，完成函数故意省了 noexcept：
 
@@ -492,7 +492,7 @@ private:
 
 ## 下一步
 
-锁与等待的工具配齐了，卷内下一站换地基：[第 3 章 的原子篇](../ch03-atomic-memory-model/02-atomics-and-happens-before.md)接管 happens-before 的正式定义，本篇押着的 DCLP 那桩悬案，在那边有了正式判据。semaphore 底下的那层 atomic wait，正源在 [第 3 章 的等待与模式篇](../ch03-atomic-memory-model/04-fence-wait-and-patterns.md)。咱们回头看任务侧的线索，线程池的正源在 [第 5 章 的线程池篇](../ch05-future-task-threadpool/03-thread-pool.md)，它的开工门闩就是 latch 的主场。动手量更大的活儿，在 [exercises 的阻塞队列 Lab](../exercises/01-bounded-queue) 里候着，全卷的走向见 [卷地图](../)。
+锁与等待的工具配齐了，卷内下一站换地基：[第 3 章 的开篇](../ch03-atomic-memory-model/01-cache-and-reordering.md)先把「机器真的会乱序」的现场摆出来，随后 [第 3 章 的原子篇](../ch03-atomic-memory-model/02-atomics-and-happens-before.md)接管 happens-before 的正式定义，本篇押着的 DCLP 那桩悬案，在那边有了正式判据。semaphore 底下的那层 atomic wait，正源在 [第 3 章 的等待与模式篇](../ch03-atomic-memory-model/04-fence-wait-and-patterns.md)。咱们回头看任务侧的线索，线程池的正源在 [第 5 章 的线程池篇](../ch05-future-task-threadpool/03-thread-pool.md)，它的开工门闩就是 latch 的主场。动手量更大的活儿，在 [exercises 的阻塞队列 Lab](../exercises/01-bounded-queue) 里候着，全卷的走向见 [卷地图](../)。
 
 > 💡 咱们把完整示例代码放在 [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)，您可以访问 `code/volumn_codes/vol5/ch02-mutex-condition-sync/`。
 

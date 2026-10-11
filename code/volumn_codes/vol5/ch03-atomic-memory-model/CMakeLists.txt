@@ -18,6 +18,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         target_compile_options(fence_vs_ordered_benchmark PRIVATE -O3 -march=native)
     endif()
+    add_executable(store_buffer_litmus store_buffer_litmus.cpp)
+    target_link_libraries(store_buffer_litmus PRIVATE Threads::Threads)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(store_buffer_litmus PRIVATE -O2)
+    endif()
 endif()
 
 # 汇编验证文件（无 main 函数，仅编译为 .s 文件用于指令检查）
@@ -51,10 +56,12 @@ function(add_asm_target SRC_FILE)
 endfunction()
 
 add_asm_target(atomic_cas_weak_strong_asm.cpp)
+add_asm_target(compiler_reordering_asm.cpp)
 add_asm_target(fence_x86_instructions.cpp)
 add_asm_target(memory_order_store_x86.cpp)
 
 add_custom_target(asm_check
-    DEPENDS gen_atomic_cas_weak_strong_asm gen_fence_x86_instructions gen_memory_order_store_x86
+    DEPENDS gen_atomic_cas_weak_strong_asm gen_compiler_reordering_asm
+            gen_fence_x86_instructions gen_memory_order_store_x86
     COMMENT "All assembly files generated in: ${ASM_OUTPUT_DIR}/"
 )
