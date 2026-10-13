@@ -215,6 +215,7 @@ The remaining four in that row we introduce one sentence each:
 ```
 
   Savor the structure: the leading endbr64 and sub come from crti.o, the closing add and ret come from crtn.o, and `_init`'s body is stitched together by the linker out of fragments from the two ends. The four instructions sandwiched in the middle belong to neither end — they are the `__gmon_start__` hook: call it if a definition turns up, and if the value loaded is zero, jump straight past. In our program it is an undefined weak symbol of the w variety, so these few instructions spin idle here. Once a profiling tool gets linked in, they find their employment. In the linker piece we explained why weak symbols leave an opening; what we see here is where that opening lands in the startup flow.
+
 - crtbeginS.o contributes the first entry of .init_array, frame_dummy, and the first entry of .fini_array, `__do_global_dtors_aux`, plus the two small functions deregister_tm_clones and register_tm_clones. TM is short for transactional memory, and these two are likewise hooks hung on weak references, skipped just the same when nobody defines them.
 - crtendS.o puts out two boundary symbols, `__FRAME_END__` and `__TMC_END__`, used as the terminus when the crtbeginS side counts through its tables.
 - crtn.o, in nm's output, has not a single symbol. It is the tail of .init and .fini, and the last two instructions of the `_init` above are its entire content.

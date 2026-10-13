@@ -15,7 +15,7 @@ description: "gcc -shared -fPIC produces libmyutil.so; the linker copies no code
 cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/compilation/08-dynamic-libraries-overview.md
-  source_hash: 6505173f37349aadedd3d77910e0ffbbe8a89c44f3d59ae4308b1c8244885480
+  source_hash: aebf598f0a8f5e044ec303b5dd9f8178a6a34660fd793e47ef92cc8295c46619
   translated_at: '2026-10-13T04:07:57+00:00'
   engine: anthropic
   token_count: 3600
@@ -47,7 +47,7 @@ $ readelf -h libmyutil.so | grep -E "Type|Entry"
   Entry point address:               0x0
 ```
 
-Let's take the two options one at a time. -shared is an instruction to the linker: the product comes out to dynamic-library spec, the ELF type is marked DYN, that row of startup files is not attached, and not even main is looked for — b.c has no main at all, yet the link went through anyway; the no_main error scene from the linking article does not get a rerun here. -fPIC stands for Position Independent Code, and it makes the compiled machine code execute correctly no matter what address it gets mapped to. Why is it indispensable? The same library gets mapped by different processes to all different addresses — you will see this with your own eyes in the run-time section later — and how it manages that at the machine-code level is precisely what the next article covers in full. You have met the DYN type before, in the object-file anatomy article, in its other half of a life: pie executables like hello_app also read DYN in the Type column. What separates the two is the Entry column: a pie executable has an entry point, and that article said it points at _start. The .so before us has an Entry of 0x0, which says outright that it has no entry — it does not run by itself; being mapped by someone else is its job. If you are curious whether it can still be run as an executable, the side article plays with exactly that.
+Let's take the two options one at a time. -shared is an instruction to the linker: the product comes out to dynamic-library spec, the ELF type is marked DYN, that row of startup files is not attached, and not even main is looked for — b.c has no main at all, yet the link went through anyway; the no_main error scene from the linking article does not get a rerun here. -fPIC stands for Position Independent Code, and it makes the compiled machine code execute correctly no matter what address it gets mapped to. Why is it indispensable? The same library gets mapped by different processes to all different addresses — you will see this with your own eyes in the run-time section later — and how it manages that at the machine-code level is precisely what the next article covers in full. You have met the DYN type before, in the object-file anatomy article, in its other half of a life: pie executables like hello_app also read DYN in the Type column. What separates the two is the Entry column: a pie executable has an entry point, and that article said it points at `_start`. The .so before us has an Entry of 0x0, which says outright that it has no entry — it does not run by itself; being mapped by someone else is its job. If you are curious whether it can still be run as an executable, the side article plays with exactly that.
 
 ## Registered in the Dynamic Section: DT_NEEDED
 
@@ -117,7 +117,7 @@ On the static side, the 4KB table dragged in the entire b_fat.o member (the stat
 
 ## Run Time: The Dynamic Linker Hooks Up Libraries by Registration
 
-When the program starts running, the first order of business is not main. The interpreter at the end of the file output in the very first article is, in the flesh, the dynamic linker — a program living at /lib64/ld-linux-x86-64.so.2. When the kernel loads the executable it spots the interpreter there, and so it loads the dynamic linker in ahead of everything and starts running from it: it reads the NEEDED list, finds every entry, opens it, maps it into the address space, hooks up the addresses that need hooking, and only then hands control to the program's _start. The fine print of this whole pipeline belongs to the program startup article; today we look only at its two ends, and the list itself ldd alone will show us:
+When the program starts running, the first order of business is not main. The interpreter at the end of the file output in the very first article is, in the flesh, the dynamic linker — a program living at /lib64/ld-linux-x86-64.so.2. When the kernel loads the executable it spots the interpreter there, and so it loads the dynamic linker in ahead of everything and starts running from it: it reads the NEEDED list, finds every entry, opens it, maps it into the address space, hooks up the addresses that need hooking, and only then hands control to the program's `_start`. The fine print of this whole pipeline belongs to the program startup article; today we look only at its two ends, and the list itself ldd alone will show us:
 
 ```text
 $ LD_LIBRARY_PATH=. ldd dyn_app
