@@ -3,40 +3,42 @@ chapter: 13
 difficulty: intermediate
 order: 8
 platform: host
-reading_time_minutes: 25
+reading_time_minutes: 13
 tags:
 - cpp-modern
 - host
 - intermediate
-title: "Dynamic Libraries: An Overview of Build-Time and Run-Time"
-description: "Build libmyutil.so with gcc -shared -fPIC; the linker copies none of a dynamic library's code, instead writing the dependency into the dynamic section as DT_NEEDED — verified with nm and size side by side. At run time the dynamic linker follows the record to find each library and map it in; ldd shows the list, and moving the .so away shows a real startup error. Then two processes go under the microscope, maps against smaps, to see how one code page lives only once in physical memory. Finally, CMake's SHARED and VERSION/SOVERSION explain the three-piece naming."
+- 工具链
+- CMake
+title: 'Dynamic Libraries: An Overview of the Build-Time and Run-Time Stages'
+description: "gcc -shared -fPIC produces libmyutil.so; the linker copies no code from a dynamic library, instead registering the dependency as DT_NEEDED in the dynamic section, verified with side-by-side runs of nm and size; at run time the dynamic linker finds each registered library and maps it into memory, ldd lists the inventory, and moving the .so away shows the real startup error; two processes and a maps/smaps comparison then show how the code pages live in physical memory only once; finally, CMake's SHARED and VERSION/SOVERSION show the three-piece naming scheme."
 cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/compilation/08-dynamic-libraries-overview.md
-  source_hash: 7045598177370555bd03b217be02cbafec63dabcfe9cf32502d646cf068d42d8
-  translated_at: '2026-09-30T09:39:31+00:00'
-  engine: glm
-  token_count: 4521
+  source_hash: 6505173f37349aadedd3d77910e0ffbbe8a89c44f3d59ae4308b1c8244885480
+  translated_at: '2026-10-13T04:07:57+00:00'
+  engine: anthropic
+  token_count: 3600
 ---
 
-# Dynamic Libraries: An Overview of Build-Time and Run-Time
+# Dynamic Libraries: An Overview of the Build-Time and Run-Time Stages
 
-At the end of 07 we handed a question forward to today: libstdc++, glibc — how do they get away with being shared by untold numbers of programs? The question has a back story, too. In 06 we noted down the static library's shortcoming: every executable that links one carries a complete copy of its own, so when a hundred thousand programs link it, there are a hundred thousand copies — and when a bug in b.c gets fixed, not one of a hundred thousand relinks is excused. And in 01 we planted half a sentence: that row of libraries collect2 carries by default is attached as dynamic dependencies, their code never entering our file — just how such attaching works, we left as a cliffhanger at the time. Today we make good on all three at once.
+At the end of the previous article we handed ourselves a question for today: what makes libstdc++ and glibc shareable by countless programs? This question has a backstory. In the static-library article we wrote down its weakness: every executable that links it carries a full copy of its own; once a hundred thousand programs link it, there are a hundred thousand copies, and if a single bug is fixed in b.c, not one of those hundred thousand relinks can be spared. The opening article also planted half a sentence: the row of libraries collect2 brings along by default are attached as dynamic dependencies — none of their code enters our file, and exactly how they attach was left as a cliffhanger back then. Today we make good on all three statements at once.
 
-The line of thinking was announced for us in advance: register at build time, connect at run time. Said in full — at build time, the linker facing a dynamic library does nothing but register. It writes the need for it into the executable, and not one byte of the library's code comes in. At run time, when the program starts, the dynamic linker takes the record, finds every library on it, maps it into memory, and gets the addresses wired; only then does our main get its turn. The library itself has become a file of its own, lying in a directory on the disk. The thing we make today is a dynamic library — it also goes by the name shared library — and on Linux its suffix is .so: the unit of distribution has changed. The library stands on its own as a file, what everyone shares is one and the same file, and all a program keeps on its person is a few lines of record.
+The approach has been previewed for us too: register at build time, hook up at run time. Unpacked, it reads like this: at build time, the linker facing a dynamic library only registers it — the need for the library is written into the executable, and not a single byte of the library's code comes in. At run time, when the program starts, the dynamic linker goes through the registrations, finds every listed library, maps it into memory, hooks the addresses up, and only then does the turn of the main we wrote arrive. The library has become a file of its own, sitting in a directory on disk. What we are building today is exactly this: a dynamic library — also called a shared library in English, with the suffix .so on Linux: the unit of distribution changed, the library became an independent file, everyone shares the same one, and what remains on the program's body is just a few lines of registration.
 
-The environment disclosure, as always: my experiments ran in WSL2, the toolchain is still GCC 16.2.1 with binutils 2.47, glibc is 2.44, and CMake is 4.4.3. Every stretch of output in this piece was genuinely run. If your versions differ, details like byte counts and the look of addresses may drift; the mechanics themselves, though, haven't budged in years.
+As for the environment, the usual disclosure: my experiments all ran in WSL2, the toolchain is still GCC 16.2.1 paired with binutils 2.47, glibc is 2.44, CMake is 4.4.3, and every piece of output in this article came out of a real run. If your versions differ, details like exact byte counts and the shape of addresses may not match; the mechanisms themselves have not changed in years.
 
-The two stages have two agents between them. One is the linker, whose whole workday we followed in 05; the other is the dynamic linker — the true identity of the interpreter at the end of file's output in 01. Its identity was unmasked back then; today we simply call it by its real name. What each of them does, and where to watch them do it, one table lays out. The raw material is still 05's old cast: a.c carries the two extern declarations shared_seed and helper, b.c does the defining, and 10 plus 32 makes 42.
+The two stages each have an agent in charge. One is the linker we followed through the whole story in the linking article; the other is the dynamic linker — the true identity of the interpreter at the end of the file output in the very first article, whose identity was revealed at the time, and today we simply call it by its own name. What each of them does and where to watch it, laid out in one table; the raw materials are the same cast from the linking article: a.c carries the two extern declarations for shared_seed and helper, b.c holds the definitions, and 10 plus 32 makes 42.
 
-| Stage | Agent | What it does | Where to look |
-|-------|-------|--------------|---------------|
-| Build time | The linker | Finds the .so, checks symbols, records the dependency — copies no code | The NEEDED lines of readelf -d |
-| Run time | The dynamic linker | Follows the record to find each library, maps it into memory, wires up addresses | The process's maps file under /proc |
+| Stage | Agent in charge | What it does | Where to look |
+|------|--------|--------|----------|
+| Build time | The linker | Finds the .so, checks symbols, registers the dependency — copies no code | The NEEDED lines of readelf -d |
+| Run time | The dynamic linker | Finds the libraries by registration, maps them into memory, hooks up addresses | The process's maps file under /proc |
 
-## Building a .so: -shared and -fPIC
+## Building the .so: -shared and -fPIC
 
-The command for making a dynamic library is one line, and we verify the artifact while we're at it:
+The command that makes a dynamic library is a single one, and we verify the product along the way:
 
 ```text
 $ gcc -shared -fPIC -o libmyutil.so b.c
@@ -45,11 +47,11 @@ $ readelf -h libmyutil.so | grep -E "Type|Entry"
   Entry point address:               0x0
 ```
 
-We'll take the two options one at a time. -shared is an instruction to the linker: turn out the artifact to a dynamic library's spec. The ELF type gets marked DYN, the row of startup files doesn't get attached, and it doesn't even go looking for main — b.c has no main to begin with, and the link still passed; the no_main failure we staged in 05 doesn't get an encore here. -fPIC spells out Position Independent Code, and it makes the machine code come out executing correctly no matter which address it gets mapped to. Why is it non-negotiable? The same library will be mapped by different processes to different addresses — you'll see that with your own eyes in the run-time section below — and how the machine code manages it at the machine-code level is exactly the one subject of 09 (Position-Independent Code and GOT/PLT), the whole piece. You've already met the other half of type DYN in 04: a pie executable like hello_app also shows DYN in its Type column. What separates the two is the Entry column: a pie executable has an entry, which 04 said points at _start. The .so in front of us reads Entry 0x0 — as good as declaring outright that it has no entry. It doesn't run itself; being mapped by someone else is its job. And if you're curious whether it can be run as an executable, 16's side story plays exactly that game.
+Let's take the two options one at a time. -shared is an instruction to the linker: the product comes out to dynamic-library spec, the ELF type is marked DYN, that row of startup files is not attached, and not even main is looked for — b.c has no main at all, yet the link went through anyway; the no_main error scene from the linking article does not get a rerun here. -fPIC stands for Position Independent Code, and it makes the compiled machine code execute correctly no matter what address it gets mapped to. Why is it indispensable? The same library gets mapped by different processes to all different addresses — you will see this with your own eyes in the run-time section later — and how it manages that at the machine-code level is precisely what the next article covers in full. You have met the DYN type before, in the object-file anatomy article, in its other half of a life: pie executables like hello_app also read DYN in the Type column. What separates the two is the Entry column: a pie executable has an entry point, and that article said it points at _start. The .so before us has an Entry of 0x0, which says outright that it has no entry — it does not run by itself; being mapped by someone else is its job. If you are curious whether it can still be run as an executable, the side article plays with exactly that.
 
-## The Record Lives in the Dynamic Section: DT_NEEDED
+## Registered in the Dynamic Section: DT_NEEDED
 
-The library is here; the caller's turn has come. The link command you just practiced in 06:
+The library is in hand; now it's the caller's turn. You just practiced the link commands in the static-library article:
 
 ```text
 $ gcc -c a.c -o a.o
@@ -58,7 +60,7 @@ $ LD_LIBRARY_PATH=. ./dyn_app; echo $?
 42
 ```
 
-The name-assembly convention hasn't changed one character — still the old work of -L adding a directory and -l asking for a library by name. What changed sits at the linker's end. The same -lmyutil: in 06 it unwrapped libmyutil.a, drew out the member, and merged it into the program; this time a .so is lying in the directory, and the job switches to registering. The extra LD_LIBRARY_PATH exists to add a directory to the paths searched for libraries at run time. Why, when link time went smoothly, does run time still need it standing by? The way searching is governed belongs to 10 (Library Search); in this piece it has only one duty, getting ./dyn_app in the experiment directory to run. And 42 is still the familiar 42. Where did the record get written? readelf -d walks us there. What it reads is the dynamic section — the region of the ELF set aside for dynamic linking's use — and our dependency list is lying inside it:
+The name-assembling convention hasn't changed by a single letter — it's still the old work of -L adding a directory and -l asking for a library by name. What changed is on the linker's side: the same -lmyutil that, in the static-library article, resolved to libmyutil.a and extracted members into the program now finds a .so lying in the directory, and its job switches to registering. The newcomer LD_LIBRARY_PATH adds directories to the run-time library search path. Why does it need to serve at run time when the link went so smoothly? The rules of searching belong to the library-search article; here its only duty is to make ./dyn_app in the experiment directory run. 42 is still the familiar 42. Where did the registration land? readelf -d takes us to see — it reads the dynamic section, a region of the ELF file reserved for dynamic linking, and our dependency list lies inside it:
 
 ```text
 $ readelf -d dyn_app | head -5
@@ -69,11 +71,11 @@ Dynamic section at offset 0x2dd0 contains 27 entries:
  0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
 ```
 
-We've got two NEEDED lines. Their formal name is DT_NEEDED, the DT_ prefix marking a dynamic tag's name. The first line's libmyutil.so is the one we registered by hand. The second line's libc.so.6 is one member of that row of libraries collect2 slips in by default every time — the row we met in 01. Now you've seen what their being attached looks like: attached means, precisely, that one line of name got written into the dynamic section. That pays off half of 01's cliffhanger. The library wears a dynamic section too: inside libmyutil.so there is likewise a NEEDED line recording libc.so.6. A library depending on a library is a road that works — each keeps its own list.
+We got two NEEDED lines; their formal name is DT_NEEDED, where DT takes its leading letters from dynamic tag. The libmyutil.so on the first line is the one we registered with our own hands. The libc.so.6 on the second line is a member of that row of libraries collect2 brings along by default every time — the row we met in the opening article. Now you can see what their attachment looks like: to attach is to write one line of names into the dynamic section. Half of the very first article's cliffhanger is redeemed right here. A library carries a dynamic section of its own too: inside libmyutil.so there is likewise a NEEDED line recording libc.so.6 — the road of a library depending on a library works the same way, and each side keeps its own list.
 
-## Did the Code Come In? nm and size Side by Side
+## Did the Code Come In: nm and size, Side by Side
 
-The difference between registering and copying — we test it with three instruments, and the first looks at symbols:
+To pin down the difference between registering and copying, we verify with three things; the first one looks at symbols:
 
 ```text
 $ nm dyn_app | grep -E "helper|shared_seed"
@@ -81,9 +83,9 @@ $ nm dyn_app | grep -E "helper|shared_seed"
 0000000000004018 B shared_seed
 ```
 
-helper still gets U. On the static-linking side, 06's lib_app already had helper as a T with an address: b.o's machine code had been merged in. In today's dyn_app it is a reference still hanging, its definition left exactly where it was, inside libmyutil.so. The shared_seed line looks odd: how did it get an address in the executable — and in bss, of all places? This is a separate piece of paperwork the linker does for data symbols: it arranges the variable's storage under the executable's name, and at run time the library's side lines itself up with it. The machine-code-level ins and outs belong to 09; for now, just file the phenomenon away.
+helper still carries U. On the static side, in the static-library article, lib_app's helper was already a T with an address — b.o's machine code had been merged in. In today's dyn_app it is a reference left hanging, its definition staying untouched inside libmyutil.so. The shared_seed line looks odd: how did it find lodging in the executable, and in bss of all places? This is a separate procedure the linker runs for data symbols, arranging the variable's storage under the executable's name, to be reconciled with the library's side at run time; the machine-code particulars belong to the next article — for now, just take note of the phenomenon.
 
-The second instrument looks at bulk. We take the same a.o and send it down each road, static and dynamic:
+The second thing to check is size. We take the same a.o and link it down the two roads, static and dynamic:
 
 ```text
 $ gcc -c b.c -o b.o && ar rcs libmyutil.a b.o && gcc a.o ./libmyutil.a -o static_app
@@ -93,12 +95,12 @@ $ size static_app dyn_app
    1472	    600	      8	   2080	    820	dyn_app
 ```
 
-Writing the path of libmyutil.a directly is something the linker accepts too — we tried that in 06 — and it spares the linker from picking through a roomful of .a and .so; the rules of that picking belong to 10. The result you probably didn't see coming: the dynamically linked executable came out bigger. By how much demands its yardstick be stated: size's text column went from 1249 up to 1472, a growth of 223 bytes. If you weigh the files on disk with ls -l, what you measure is 15872 against 15992, a difference of 120 bytes — the two numbers are two different yardsticks, each measuring its own thing. The library's code truly didn't come in; what came in is dynamic linking's own gear. We look section by section with size -A: the growth gathers in the batch of sections that serve dynamic linking. .dynamic rose from 416 to 496; .dynsym and .dynstr — the dynamic symbol table and its string table — each put on a few dozen bytes; and there are newcomers, 32 bytes of .plt (the name PLT got one distant glance in 01 — the trampoline function calls go through; the main act is 09's) and 24 bytes of .rela.plt. The genuine code, .text, actually fell from 279 to 268 — and the 11 bytes it shed are precisely helper's machine code. We measured b.o with readelf -S: its .text comes to exactly those 11 bytes. For a library this small, the paperwork of registering costs more than the library's code itself. And what if the library were bigger than this? We feed the library 4KB more and shoot again:
+Writing the libmyutil.a path directly works too — the linker takes it as it comes; we tried that in the static-library article, and it even spares the linker the chore of choosing among a roomful of .a and .so files (the rules of choosing belong to the library-search article). The result you probably didn't expect: the dynamically linked executable is, of all things, bigger. And how much bigger deserves a precise yardstick: size's text column grew from 1249 to 1472, up 223 bytes. If you instead weigh the files on disk with ls -l, you measure 15872 versus 15992, a difference of 120 bytes — the two numbers use different yardsticks. The library's code indeed did not come in, but dynamic linking's own luggage did. size -A shows it section by section: the growth concentrates in the sections that serve dynamic linking. .dynamic grew from 416 to 496; .dynsym and .dynstr — the dynamic symbol table and its string table — each thickened by a few dozen bytes; and new arrivals include 32 bytes of .plt (the name PLT got a distant glance in the opening article — the springboard that function calls jump through; the main act is the next article's business) and 24 bytes of .rela.plt. The real code in .text, meanwhile, dropped from 279 to 268, and the 11 bytes that came out are exactly helper's machine code — measure b.o with readelf -S and its .text is those very 11 bytes in total. For a library this small, the overhead of registering costs more than the library code itself. What if the library were more than this? We fatten the library by 4KB and take another shot:
 
 ```c
 int shared_seed = 10;
 int helper(void) { return 32; }
-const int big_table[1024] = {1, 2, 3};   // b_fat.c: the 4KB constant table, living in this same member
+const int big_table[1024] = {1, 2, 3};   // b_fat.c: the 4KB constant table in the same member
 ```
 
 ```text
@@ -111,11 +113,11 @@ $ gcc a.o ./libmyfat.a -o static_fat_app && gcc a.o -L. -lmyfat -o dyn_fat_app &
    1471	    600	      8	   2079	    81f	dyn_fat_app
 ```
 
-On the static side, the 4KB table dragged in the entire b_fat.o member (we covered this in 06: the smallest unit of extraction is the member), and text rose by 4124. On the dynamic side, 1472 became 1471 — and that 1 is the registered library name coming up one character shorter: libmyfat.so has one character fewer than libmyutil.so, and .dynstr shrank a byte to match. We put both sides through readelf -S, section against section: apart from .dynstr, nothing moved by a hair — which amounts to nothing having moved. This round of comparing settles the register-don't-copy distinction: an executable's girth rises and falls together with the static library's contents, and has nothing to do with the dynamic library's contents. All it carries off is a few lines of record.
+On the static side, the 4KB table dragged in the entire b_fat.o member (the static-library article covered this: the smallest unit of extraction is the member), and text grew by 4124. On the dynamic side, 1472 became 1471, and the 1 in question comes from the registered library name being one character shorter: libmyfat.so has one fewer character than libmyutil.so, so .dynstr shrank by 1 byte along with it. We cross-checked both sides section by section with readelf -S: apart from .dynstr, not a thing moved — it amounts to no change at all. This side-by-side settles the difference between registering and copying: the executable's girth rises and falls together with the static library's contents and has nothing whatever to do with the dynamic library's contents; all it carries away is a few lines of registration.
 
-## Run Time: The Dynamic Linker Follows the Record
+## Run Time: The Dynamic Linker Hooks Up Libraries by Registration
 
-When the program runs, the first order of business is not main. The interpreter at the tail of file's output in 01 — its true identity is the dynamic linker, a program living at /lib64/ld-linux-x86-64.so.2. The kernel, loading the executable, catches sight of it and loads the dynamic linker ahead of everything, starting the run from there: what the dynamic linker reads is the NEEDED list; it finds each entry, opens it, maps it into its address space, wires up the addresses that need wiring, and only then hands control to the program's _start. The fine detail of this whole pipeline belongs to 14 (Program Startup); today we watch only its two ends. The list itself, ldd shows us:
+When the program starts running, the first order of business is not main. The interpreter at the end of the file output in the very first article is, in the flesh, the dynamic linker — a program living at /lib64/ld-linux-x86-64.so.2. When the kernel loads the executable it spots the interpreter there, and so it loads the dynamic linker in ahead of everything and starts running from it: it reads the NEEDED list, finds every entry, opens it, maps it into the address space, hooks up the addresses that need hooking, and only then hands control to the program's _start. The fine print of this whole pipeline belongs to the program startup article; today we look only at its two ends, and the list itself ldd alone will show us:
 
 ```text
 $ LD_LIBRARY_PATH=. ldd dyn_app
@@ -124,9 +126,9 @@ $ LD_LIBRARY_PATH=. ldd dyn_app
 	/lib64/ld-linux-x86-64.so.2 => /usr/lib64/ld-linux-x86-64.so.2 (0x000076c91d195000)
 ```
 
-How to read it: the left column is the name, what follows => is the path actually found, and in the parentheses is the address it was assigned. The libmyutil.so we registered was found at ./libmyutil.so by way of LD_LIBRARY_PATH; libc resolved to the system's /usr/lib/libc.so.6. The vdso line I trimmed is a small stretch of code the kernel maps in, letting frequent operations like reading the clock skip the trap into the kernel — beside our subject. The most interesting line is the last one: the dynamic linker put itself on the list too, its own identity also being a .so.
+How to read it: the left column is the name, the right side of => is the path actually found, and inside the parentheses is the address it was assigned. Our registered libmyutil.so was found at ./libmyutil.so by way of LD_LIBRARY_PATH; libc was found at the system's /usr/lib/libc.so.6. The vdso line I trimmed is a small piece of code the kernel maps in so that high-frequency clock reads need not trap into the kernel — unrelated to our topic. The most interesting line is the last one: the dynamic linker lists itself too; its own identity is also a .so.
 
-What happens when an entry on the list can't be found? We move the library out of the way and run the thing for real:
+What if an entry on the list can't be found? We move the library away and run it for real so you can see:
 
 ```text
 $ mkdir -p stash && mv libmyutil.so stash/ && LD_LIBRARY_PATH=. ./dyn_app; echo $?
@@ -134,11 +136,11 @@ $ mkdir -p stash && mv libmyutil.so stash/ && LD_LIBRARY_PATH=. ./dyn_app; echo 
 127
 ```
 
-The error in front of you is probably an old acquaintance. It and 05's undefined reference are errors from two different stages: that one came from the build-time linker, and what it blocked was the link. This one comes from the run-time dynamic linker; the moment it prints, the process exits on the spot, exit code 127, and not one line of main got its turn. We mv the library back and the program runs again immediately — without a single byte of the executable having been touched. There's a more frustrating situation still: the file is sitting right there, and it insists it cannot be found. That is the search paths failing to cover it, and the way to chase that down belongs to 10.
+The error before you probably looks familiar. It and the linking article's undefined reference are errors from two different stages: that one is reported by the build-time linker, and what it stops is the link. This one is reported by the run-time dynamic linker, and the moment the error appears the process exits outright, with an exit code of 127 — main doesn't get a single line of its turn. mv the library back and the program runs again immediately, without the executable changing by a single byte. There is also a more frustrating scenario: the file is clearly there, yet it insists it can't be found — that's the search path failing to cover it, and the troubleshooting playbook belongs to the library-search article.
 
 ## How Sharing Works: Two Processes, One Page
 
-Now we return to the main question 05 set down: untold numbers of programs — how do they get to share? Our observation window is /proc: every process owns a directory under /proc, the PID is the directory's name, and the maps file inside lists, one line per mapping, everything mapped into that process's address space. I prepared a three-line caller, d_hold.c, to hold a process still for us: it declares helper, calls it once, stashes the return value in a local variable, then suspends itself with pause(). We link it against the dynamic library, start two instances, and note the two process numbers as P1 and P2. That pair of files I moved onto a directory on real disk, plus one extra sync — the reason will meet you at smaps's Clean column below (smaps is maps's sister file; it records an extra set of counters for each mapping):
+Now back to the main question posed in the linking article: what lets countless programs share? Our observation window is /proc: every process has its own directory under /proc, with the PID as the directory's name, and the maps file inside lists the mappings in that process's address space line by line. I prepared a three-line caller, d_hold.c, so the process would stay alive for us to inspect: it declares helper, calls it once, stores the return value in a local variable, then suspends itself with pause(). We link it against the dynamic library and start two instances; the two process numbers we noted are P1 and P2. I moved this pair of files onto a disk directory and ran an extra sync, and the reason becomes clear once you see the Clean column in the smaps output below (smaps is the sister file next to maps, recording one extra set of counters per mapping):
 
 ```text
 $ cp libmyutil.so hold_app /var/tmp/dynlib_share/ && sync
@@ -151,10 +153,10 @@ $ grep libmyutil.so /proc/$P1/maps
 7343e14c1000-7343e14c2000 rw-p 00003000 08:30 757322                     /var/tmp/dynlib_share/libmyutil.so
 $ grep libmyutil.so /proc/$P2/maps
 7eef9ec3c000-7eef9ec3d000 r-xp 00001000 08:30 757322                     /var/tmp/dynlib_share/libmyutil.so
-(P2's remaining lines mirror P1's line for line; I trimmed them)
+(the rest of P2's lines mirror P1's line for line; I trimmed them)
 ```
 
-Two points deserve your eyes. The first is about addresses: the two processes mapped the same library to addresses of their own. Virtual addresses are each process's own business — every address space minds its own — and the thing actually shared is the physical-memory layer. The second is about the inode: the 08:30 757322 pair of columns in the line records the device number and the inode number. The inode is a file's serial number inside the filesystem, and what the two processes turn up between them is the same 757322 — what got mapped is one and the same file. The physical layer maps cannot see; for that we call on smaps next door: same mappings, but under each segment an extra set of counters, and the lines that start with Shared count the physical memory this segment holds in company with other processes. Let's pull out the code segment (r-xp) of each process:
+There are two points to watch. The first is about addresses: the two processes mapped the same library at their own respective addresses — virtual addresses are each process's own, since every process's address space keeps to itself to begin with — and what is genuinely shared is the physical-memory layer. The second is about the inode: the two columns 08:30 757322 in each line record the device number and the inode number; an inode is a file's number within the filesystem, and both processes matched the same 757322 — the file being mapped was, all along, the same one. The physical layer is invisible to maps, so we call on its neighbor smaps: for the same mappings, one extra set of counters is recorded under each segment, and the lines starting with Shared count the physical memory in that segment that is shared with other processes. We extract the code segment (r-xp) of each of the two processes:
 
 ```text
 $ awk '/r-xp.*libmyutil\.so/{p=1;print;next} p&&/^[0-9a-f]+-/{exit} p{print}' /proc/$P1/smaps | grep -E "^[0-9a-f]+-|^(Rss|Shared_Clean|Shared_Dirty|Private_Dirty):"
@@ -170,7 +172,7 @@ Shared_Clean:          4 kB
  (the two zero-valued lines match P1's; I trimmed them)
 ```
 
-This page of code, in both processes, records Shared_Clean: 4 kB — one page of physical memory, recorded under both processes at once. Clean says the page's contents still match the file on disk, and the early sync was aimed squarely at that. If you look right after the file has been written out, or if your /tmp is an in-memory filesystem, that column will read Dirty instead. That's fine; what matters is spotting the word Shared. For contrast we take the data segment (rw-p); here is P1's (P2's three numbers match it exactly):
+Both processes book this page of code as 4 kB under Shared_Clean: one page of physical memory, counted on two processes' heads. Clean means the page's contents match the file on disk — the extra sync ahead of time was aimed at exactly that. If you look right after the file has just been written out, or your /tmp is a memory-backed disk, that column will read Dirty; no harm done, just make sure the word is Shared. The control group is the data segment (rw-p); we look at P1's (P2's three numbers match it to the digit):
 
 ```text
 $ awk '/rw-p.*libmyutil\.so/{p=1;print;next} p&&/^[0-9a-f]+-/{exit} p{print}' /proc/$P1/smaps | grep -E "^[0-9a-f]+-|^(Rss|Shared_Clean|Private_Dirty):"
@@ -180,7 +182,7 @@ Shared_Clean:          0 kB
 Private_Dirty:         4 kB
 ```
 
-The data page is private on both sides: it is written to. At load time the dynamic linker already altered addresses inside it (what it altered — we'll see in 09), and the program's reads and writes into it never stop afterward, each process amending its own. The code page nobody writes, so the kernel points every process that uses it at the same physical page. And here the answer to 05 is complete: across the whole machine, every process mapping libc maps the same one file, and its code pages live exactly once in physical memory. Let the programs using libc number ten thousand — the pages in memory stay one copy, and the file on disk stays one copy. Of the two troubles static libraries left behind — ten thousand copies sitting in memory, and every program needing a relink at upgrade time — the first is solved here; the second's remedy is right below. Swap only the .so file, and not one byte of the executable has to move:
+The data page is a private copy on both sides: it is meant to be written — the dynamic linker already patched addresses into it at load time (what got patched, we'll see in the next article) — and the program's reads and writes to it never stop afterward, each process changing its own. Nobody writes the code page, so the kernel lets every process that uses it point at the same physical page. The linking article's answer is complete as of here: across every process on the machine, the file mapped as libc is the same one, and its code pages live in physical memory exactly once. Once ten thousand programs use libc, there is still one copy of the pages in memory and one copy of the file on disk. Of the two ills the static library left behind — ten thousand copies in memory, and a full relink of everything on upgrade — the first is solved here, and the fix for the second is right below: swap the .so file alone, without touching a single byte of the executable:
 
 ```text
 $ gcc -shared -fPIC -o libmyutil.so b_v2.c    # same interface, helper now returns 52
@@ -188,11 +190,11 @@ $ LD_LIBRARY_PATH=. ./dyn_app; echo $?
 62
 ```
 
-We didn't recompile dyn_app, did no relinking either, and the next run hands us the new 52 — 10 plus 52 makes 62. Upgrading a dynamic library swaps exactly one file, and every program that ever used it picks the change up at its next launch. The claim stands on one premise: the interface didn't move. What the functions are called, what parameters they take, what they return — these outward commitments taken together are called the ABI (Application Binary Interface; the roadmap in 01 gave the full name). Once the interface changes, the library you swap in no longer matches the old programs — and that is the entire subject of 12 (ABI Design).
+We didn't recompile dyn_app, nor did we do any relinking; run it again and we get the new version's 52 — 10 plus 52 makes 62: upgrading a dynamic library means swapping one file, and every program that ever used it picks up the new version at its next start. This holds on one precondition: the interface didn't move. What the function is named, what arguments it takes, what it returns — these outward agreements together are called the ABI (Application Binary Interface; the opening article's roadmap gave the full name). Once the interface changes, the swapped-in library no longer matches the old programs — that is the ABI article's subject in full.
 
-## The CMake Perspective
+## The CMake View
 
-This routine of typing -shared and -fPIC by hand is CMake's department in everyday builds. We fetch 06's static-version project, and the differences amount to just these few spots:
+The hand-typed -shared and -fPIC routine all falls to CMake in everyday builds. We take the static version of the project from the static-library article; the differences come down to these few spots:
 
 ```cmake
 cmake_minimum_required(VERSION 3.16)
@@ -203,14 +205,14 @@ add_executable(app a.c)
 target_link_libraries(app PRIVATE myutil)
 ```
 
-STATIC traded for SHARED. Only b.c remains in the source list — this piece's demo has no need of a second member, and it's still in 06's project. The added properties line we'll come to shortly. What CMake carried in on our behalf, --verbose lays bare:
+STATIC became SHARED. The list keeps only b.c — this article's demo has no use for the second member, which still lives in the static-library article's project. The extra properties line we'll get to shortly. What CMake brought along for us, --verbose makes plain to see:
 
 ```text
 $ cmake --build build --verbose 2>&1 | grep -E "\-fPIC"
 /usr/sbin/cc -fPIC -shared -Wl,--dependency-file=CMakeFiles/myutil.dir/link.d -Wl,-soname,libmyutil.so.1 -o libmyutil.so.1.2.3 CMakeFiles/myutil.dir/b.c.o
 ```
 
-The compile line I trimmed carries -fPIC just the same. In the link line that survived, -fPIC and -shared are both there: the two things we typed by hand, both covered, plus one job more — `-Wl,-soname,libmyutil.so.1`, registering the library's official name into it. The artifact comes down as a three-piece set; one glance with ls:
+The compile line I trimmed carries -fPIC too. In the link line that remains, both -fPIC and -shared are present — everything we typed by hand is there — and it does one extra job: `-Wl,-soname,libmyutil.so.1`, registering the library's formal name into it. The product came out as a three-piece set; let's take a look with ls:
 
 ```text
 $ ls -l build/libmyutil.so*
@@ -219,7 +221,7 @@ lrwxrwxrwx 1 charliechen charliechen    18 Sep 30 15:53 build/libmyutil.so.1 -> 
 -rwxr-xr-x 1 charliechen charliechen 15176 Sep 30 15:53 build/libmyutil.so.1.2.3
 ```
 
-The real body is the fully versioned libmyutil.so.1.2.3; the two levels in front are symbolic links, and we'll get to know them in order. VERSION 1.2.3 records the complete version; SOVERSION 1 records the interface generation, and the linker worked that into the SONAME (soname is short for shared object name — the official name a library registers for itself):
+The real file is libmyutil.so.1.2.3, carrying the full version number; the two levels in front of it are symlinks, and we take them one by one. VERSION 1.2.3 records the complete version, SOVERSION 1 records the interface generation, and the linker spliced it into the SONAME (soname is short for shared object name — the formal name the library registers for itself):
 
 ```text
 $ readelf -d build/libmyutil.so.1.2.3 | grep SONAME
@@ -230,11 +232,11 @@ $ readelf -d build/app | grep -E "NEEDED|RUNPATH"
  0x000000000000001d (RUNPATH)            Library runpath: [/tmp/dynlib_demo/build]
 ```
 
-What app's NEEDED records is libmyutil.so.1: it doesn't record the development-time libmyutil.so, nor the concrete libmyutil.so.1.2.3 — what it records is precisely the interface-generation tier. The payoff is in plain sight: the day 1.2.4 arrives, swap the real body and repoint the symlink, and not one line of app gets relinked. How the three pieces are arranged and how the version numbers are chosen — the details belong to 10 and 12. The RUNPATH line is the build-directory search path CMake wrote in along the way, which is why our ./build/app runs without any LD_LIBRARY_PATH. We ran it; what came out was still 42. There is also a global switch, BUILD_SHARED_LIBS: set it to ON, and an add_library that doesn't spell out a type flips its default from STATIC to SHARED — the artifact we measured came out libmyutil.so. But a global switch is one cut for everything; it can't match the precision of writing the type explicitly on each target, and that explicit spelling is what projects usually keep.
+app's NEEDED records libmyutil.so.1: it records neither the development-time libmyutil.so nor the concrete libmyutil.so.1.2.3, but precisely the interface-generation rung. You can see the benefit: when 1.2.4 ships some day, swap out the real file, adjust the symlinks, and app doesn't need a single relink. How to arrange the three-piece set and how to settle the version numbers are details left to the library-search article and the ABI article. The RUNPATH line is the build-directory search path CMake writes in as a convenience, which is why our ./build/app runs without LD_LIBRARY_PATH. We ran it, and got the familiar 42. There is also a global switch, BUILD_SHARED_LIBS: once we set it to ON, an add_library call without an explicit type defaults to SHARED instead of STATIC — our measured product was libmyutil.so. But a global switch is an all-or-nothing cut, less precise than stating the type explicitly per target, so real projects usually still state it explicitly.
 
 ## What Goes into That call Line
 
-Both stages walked, one last spot remains unseen: registering settles which library is wanted; it does not settle what the address is. The call instruction in a.o, where main calls helper — in 05 we watched the linker fill its offset in on the spot under static linking. In today's dyn_app, what will land in that position? readelf -r had already let the clue out to us:
+Both stages are done, and one last spot remains unseen: registration settles which library is wanted; what it doesn't settle is what the address is. In a.o, the call line where main calls helper — in the linking article we watched the linker fill in the offset on the spot during static linking. In today's dyn_app, what ends up filled into that spot? readelf -r leaked the clue to us long ago:
 
 ```text
 $ readelf -r dyn_app | grep -E "COPY|JUMP"
@@ -242,4 +244,4 @@ $ readelf -r dyn_app | grep -E "COPY|JUMP"
 000000004000  000500000007 R_X86_64_JUMP_SLO 0000000000000000 helper + 0
 ```
 
-You know every one of these columns; we read them column by column in 04: Offset says which spot gets changed, Sym. Name says who is being looked up, Addend plays the correction term, and JUMP_SLO is JUMP_SLOT as truncated by readelf's column width. Only one thing has changed: the filling of these two relocations is not something the linker itself can supply. The addresses exist only once the libraries are mapped in, and the hand doing the filling has changed to the run-time dynamic linker. What exactly sits in that position in the machine code, how the code runs no matter which address it lands at, and which table the address wiring goes through — that one thing is 09's entire piece. Keep libmyutil.so where it is; 09 still uses it.
+You know all these columns — we read them one column at a time in the object-file anatomy article: Offset says where to patch, Sym. Name says whom to look for, the Addend acts as the correction term, and JUMP_SLO is readelf's column width truncating JUMP_SLOT. Only one thing has changed: for how these two relocations get filled, the linker itself can supply nothing — the addresses don't exist until the library is mapped in, and the one filling the table has been swapped for the run-time dynamic linker. What actually sits at that spot in the machine code, how the code manages to run no matter which address it's mapped to, and which table the address hookup goes through — the next article devotes itself to exactly this one thing. Keep libmyutil.so around; that article uses it again.

@@ -3,27 +3,29 @@ chapter: 13
 difficulty: intermediate
 order: 10
 platform: host
-reading_time_minutes: 31
+reading_time_minutes: 16
 tags:
 - cpp-modern
 - host
 - intermediate
+- 工具链
+- 链接器
 title: "Library Search Logic: How Libraries Are Found at Link Time and Run Time"
-description: "The order of -L directories at link time tested against two same-named libraries, then a fake libz shadowing the system library to watch -L outrank the default directories; with a .a and a .so side by side in one directory the dynamic one wins, -l: and the full path overruling; the three link-time not-found failures walked scenario by scenario, the single pass caught on a trace with --trace-symbol; at run time a different party takes over the finding, with LD_PRELOAD, LD_LIBRARY_PATH, RUNPATH, the ldconfig cache, and the trusted directories proven rank by rank, RPATH and RUNPATH told apart by one tag; the three-piece set with its three names each governing a stretch, and what NEEDED records when the SONAME is unset tested too; closing from the CMake perspective with BUILD_RPATH and find_library."
+description: "The order of -L directories at link time, tested with two same-named libraries and a fake libz shadowing the system one to prove -L outranks the default directories; with a .a and a .so side by side in one directory the dynamic one wins, and -l: or a full path overrules; the three link-time not-found failures walked scenario by scenario, the single-pass scan caught on a --trace-symbol trace; at run time a different party takes over the search, with LD_PRELOAD, LD_LIBRARY_PATH, RUNPATH, the ldconfig cache, and the trusted directories each proven rank by rank, and RPATH versus RUNPATH settled by one tag; the three-piece set's three names each governing a stretch, with what NEEDED records when the SONAME is unset tested too; closing with the CMake perspective on BUILD_RPATH and find_library."
 cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/compilation/10-library-search-logic.md
-  source_hash: 0aa8985d6a4233b0806918f23ed3eb1e9e46866c2aa74d460951b0729171cab1
-  translated_at: '2026-10-01T08:06:53+00:00'
-  engine: glm
-  token_count: 4330
+  source_hash: b6180b309d0f57fe8e0ed4a91f73bf41de6a58d1a6f8a656aeba1360ccf352f5
+  translated_at: '2026-10-13T04:13:54+00:00'
+  engine: anthropic
+  token_count: 8600
 ---
 
 # Library Search Logic: How Libraries Are Found at Link Time and Run Time
 
-At the end of part 09 we passed three questions from the engineering side along to today, questions you walk into every day of the week: in what order does the linker actually look for libraries? Does -lcalc go for libcalc.so or for libcalc.a? And at run time, where do LD_LIBRARY_PATH, the system directories, and the rest each rank? These questions have an earlier history of their own. Back in part 01, passing by the subject of libraries, we asked a string of our own: linked the library and it still says not found; static or dynamic, which one stands in front; the library is plainly there and it still says missing. We agreed back then that when the day came, we would walk them one scenario at a time. Today is the day we make good: link time walks one line, run time walks another, each with its own order, each answering to its own errors.
+At the close of part 09 we handed over to today three questions that come up on the engineering side every single day: in what order does the linker actually search for libraries? Does -lcalc go after libcalc.so or libcalc.a? And at run time, where do LD_LIBRARY_PATH and the system directories rank against each other? These questions reach back even further. Back in part 01, passing by the topic of libraries, we asked a string of our own: you link the library and it still says not found; between static and dynamic, which one stands in front; the library is plainly there and it still reports it missing. We promised back then that when the day came, we would walk through them one scenario at a time. Today is the day we make good: link time runs along one line, run time along another, each with its own search order, each answering to its own errors.
 
-For the specimen we keep the name calc, but the contents swap for a setup that reports its own identity: the function inside the library is called answer, and whichever library got linked in, whichever got loaded in, the return value reports its number on the spot:
+For the specimen we keep the name calc, but swap the contents for a setup that reports its own identity: the function inside the library is simply called answer, and whichever library got linked in, whichever got loaded in, the return value announces its number on the spot:
 
 ```c
 // main.c — the caller: whichever number answer returns, that is the library that got picked
@@ -32,11 +34,11 @@ extern int answer(void);
 int main(void) { printf("answer=%d\n", answer()); return 0; }
 ```
 
-I prepared a whole row of libraries, answer's values lined up from 1 to 42; the only difference from one to the next is the return value, which makes them just right as markers for telling libraries apart. The environment disclosure as usual: my experiments all ran in WSL2, the toolchain is still GCC 16.2.1 paired with binutils 2.47, glibc is 2.44, CMake is 4.4.3, and every stretch of output in this piece was really run. If your versions differ, details like the wording of errors and the look of paths may come out differently; the mechanics themselves haven't changed in years.
+I have a whole row of these libraries prepared, with answer running from 1 up to 42, the only difference between them being the return value — just the right marker for telling libraries apart. The usual environment disclosure: my experiments all ran in WSL2, the toolchain is still the GCC 16.2.1 plus binutils 2.47 combination, glibc is 2.44, and CMake is 4.4.3, and every piece of output in this article is really run. If your versions differ, details like the wording of error messages and the shape of paths may drift a little, but the mechanics themselves have not changed in years.
 
 ## Link Time: The Order of -L Directories
 
-The linker holds a ready-made list: every -L you write adds one directory to that list, and the order follows the order you wrote them in. Don't take that on faith — let's set out two libraries with the same name and different contents:
+The linker holds a ready-made list: every -L you write adds one directory to the list, ranked just as they were written down. Don't take my word for it — let's set out two same-named libraries with different contents:
 
 ```text
 $ ar rcs dir_a/libcalc.a calc_a.o      # answer returns 1
@@ -47,9 +49,9 @@ $ gcc main.o -Ldir_b -Ldir_a -lcalc -o app_b && ./app_b
 answer=2
 ```
 
-(The comments at the ends of the lines are mine; the commands were really run.) The two commands differ in one thing only, the order the two -L flags are written in: in the winning run, what got picked was the return-1 version from dir_a; swap the two -L flags, and the return-2 one takes the post. The linker searched the directories one by one, left to right; the first directory that could assemble the library's name got the library, and the directories behind it were never looked at again.
+The two commands differ only in the order the two -L flags are written in: in the winning run, the version picked is the one in dir_a returning 1, and the moment we swap the two -L flags, the one returning 2 takes the job. The linker searches the directories one by one from left to right, the first directory where the library name assembles gets the library, and the directories ranked behind it are never looked at again.
 
-Besides the -L flags we write, the linker carries a short string of default directories of its own. We asked it with ld --verbose: the built-in list runs /usr/x86_64-pc-linux-gnu/lib64, /usr/lib, /usr/local/lib, /usr/x86_64-pc-linux-gnu/lib, padded in behind all the -L directories. That claim shouldn't stay on the lips either, so we ran a shadowing round against a library the system really has: I built a fake libz.so whose entire file exports one thing, answer; we put it into the shadow directory, and main asks for the library by -lz:
+Besides the -L flags we write, the linker also carries a short string of default directories of its own — we asked it with ld --verbose: the built-in list runs /usr/x86_64-pc-linux-gnu/lib64, /usr/lib, /usr/local/lib, /usr/x86_64-pc-linux-gnu/lib and so on, sitting behind all the -L entries. We should not leave this at words alone, so we shadowed it once with a library that really exists on the system: I built a fake libz.so whose entire file exports only one symbol, answer, put it into a shadow directory, and had main ask for the library with -lz:
 
 ```text
 $ gcc -shared -fPIC -o shadow/libz.so calc_a.c
@@ -60,11 +62,11 @@ $ ldd app_shadow | grep libz
 	libz.so => /usr/lib/libz.so (0x00007779df4d8000)
 ```
 
-This round has to be told in two halves. Link time alone: the real libz.so was lying in the default directories and the link passed anyway — answer got resolved at link time onto the fake in shadow, so the -L directories standing in front of the default directories, that much is verified. Then run time: the dynamic linker takes the name libz.so from NEEDED, but what it loads into the process is the real libz from /usr/lib, which has no answer inside, and main's first call goes off the road on the spot. The name is one and the same; the two parties doing the finding each picked their own file. We file this accident right here and come back to it when we reach run time.
+This round we have to tell in two halves. Look at link time alone: the real libz.so sits in the default directories, yet the link went through, and answer resolved at link time onto the fake one in shadow — the -L directories do rank in front of the default directories, and that much is verified. Now look at run time: the dynamic linker took the name libz.so from NEEDED, but what got loaded into the process was the real libz from /usr/lib, which has no answer inside it, and main's very first call fell over on the spot. Same name, yet the two parties handling the search each picked their own file. We'll leave this accident on record here and come back to it when we reach run time.
 
-## Same Name, Both Present: .so Ranks Ahead of .a
+## Side by Side under One Name: .so Ranks Ahead of .a
 
-With the directory settled, the files inside one directory have rules of their own. Part 06 left an opening: libfoo.a and libfoo.so lying side by side in the same directory — which one does -lfoo actually take? Let's set out a real pair, the static library's answer returning 1 and the dynamic library's returning 7:
+With the directory settled, the files inside one and the same directory have their own hierarchy too. Part 06 left an opening: when libfoo.a and libfoo.so lie side by side in the same directory, which one does -lfoo actually take? Let's lay out a real pair, the static library's answer returning 1, the dynamic one's returning 7:
 
 ```text
 $ cp dir_a/libcalc.a mixed/libcalc.a
@@ -81,11 +83,11 @@ $ gcc main.o ./mixed/libcalc.a -o app_path_a && ./app_path_a
 answer=1
 ```
 
-The winner is the dynamic library: the linker enters the directory to look for -lcalc's candidates, libcalc.so is already there, and the .a never so much as gets opened; only when the .so is absent does the one on top become the .a. The part 06 question of which of the two suffixes ranks first — the answer falls due now: dynamic in front, static padding behind. To step over that order and name the .a outright, you can go through -l:libcalc.a; writing the full path works too. We ran both, answer came back to 1 each time, and this time answer got the address-carrying T — the machine code merged into the executable file, exactly the old static-linking routine part 06 walked through. Part 08 also showed us that writing the library file's path directly gets accepted just the same, and it spares the linker from picking through a roomful of .a and .so; with that, the rules of the picking are fully told.
+The dynamic library wins: when the linker enters the directory to look for -lcalc candidates, libcalc.so is already there, and the .a never even gets the chance to be opened; only once the .so is gone does the .a move up to the top. The precedence between the two suffixes that part 06 promised an answer for, we now hand it in: dynamic in front, static behind. If you want to jump this queue and call for the .a by name, you can go through -l:libcalc.a, and the full-path spelling works too — we ran each of them once, and in both answer came back as 1; and this time answer shows up as a T with an address, the machine code merged into the executable, exactly the familiar static-linking story part 06 told. As part 08 also showed, if you write the library file's path directly, the linker takes that too, and it is spared picking through a roomful of .a and .so files — with that, the whole method of choosing is laid out complete.
 
-## The Three Link-Time Not-Found Failures
+## Three Ways to Not Find It at Link Time
 
-With order and suffix both standing, the turn has come to make good on part 01's promise: the library got linked, and it still says not found. We start from the first scenario, the library sitting in the wrong position. Back when part 05 worked through the undefined reference investigation, we asked: was it some .o forgotten, or the definition living in a library that never got written? The library is written, the .o is attached, and a third failure was still waiting: the library placed on the command line ahead of the .o that references it.
+With order and suffix both standing, it is time to make good on part 01's promise: you linked the library, and it still says not found. Let's start with the first scenario: the library is placed in the wrong spot. When part 05 walked through hunting down undefined references, we asked whether some .o had been forgotten to attach, or whether the definition lived in a library never written. The library is written, the .o is attached, and a third way to trip is still waiting: the library is ranked on the command line in front of the .o that references it.
 
 ```text
 $ gcc -Ldir_a -lcalc main.o -o app_order
@@ -97,13 +99,13 @@ $ gcc main.o -Ldir_a -lcalc -o /dev/null -Wl,--trace-symbol=answer
 /usr/bin/ld: dir_a/libcalc.a(calc_a.o): definition of answer
 ```
 
-We did one thing — moved main.o to the left of -lcalc — and the link passed; not one byte of the library was touched. What carried it was exactly the ordering part 06 laid down: libraries go after the references. Behind it sits the linker's single pass: it walks the command line once, left to right, and files already walked past are never revisited. When libcalc.a's turn came, it glanced at the U entries hanging unresolved in its hand; main.o's reference had not arrived yet, the list was empty, the index got consulted for nothing, and not a single member was pulled out. By the time main.o hung answer onto U, that .a file up front had long since gone by. The ordering between libraries we keep by the same rule: libraries reference other libraries themselves, and when library A uses library B's symbols, -lB must stand to the right of -lA — the same principle as .o files written in front of the libraries. If two libraries use each other's symbols, one side's symbols will always come up short; that is exactly the circular dependency part 06 noted without unfolding, and we have two ways out. The first is to write the -l flag a second time; the last pass picks up the symbols the earlier round dropped, and the line reads -lA -lB -lA. The other goes through the switches --start-group and --end-group: the two libraries written between the switches, and the linker sweeps the group again and again until no new member can be pulled out.
+We only moved main.o to the left of -lcalc and the link went through, without touching a single byte of the library — riding exactly on the ordering part 06 laid down: the library goes behind what references it. Behind this sits the linker's single-pass scan: it walks the command line from left to right and never revisits a file it has passed. By the time it reaches libcalc.a, it glances at the list of U symbols hanging in its hand; main.o's reference has not arrived yet, the list is empty, the index lookup comes up for nothing, so not one member gets extracted; by the time main.o then puts answer onto the U list, that .a file up ahead is long gone. The ordering between libraries themselves we have to keep just the same: a library references other libraries too — if library A uses a symbol of library B, then -lB has to sit to the right of -lA, the same principle as writing the .o before the library. If two libraries use each other's symbols, one side's symbols are bound to come up empty — that is the circular dependency part 06 noted without expanding; we have two ways out. The first is to write the -l flags a second time, the final pass making up the symbols the earlier round missed, which laid out comes to -lA -lB -lA. The other uses the --start-group and --end-group flags: write the two libraries between the flags, and the linker will scan the group over and over until no new member can be extracted.
 
-Talk with nothing behind it never convinces, and the linker can confess on its own: add the --trace-symbol=answer switch to the link command, and it reports every station this symbol passed through. In the successful link above, the trace shows reference and definition arriving one after the other, and the member got pulled out. Move the library up front and run it again, and only the reference line is left in the trace; the definition never appears again, and the error comes back the same as ever.
+Words alone are always thin, and the linker can confess on its own: add the --trace-symbol=answer flag to the link command and it reports every stop that symbol made along the way. In the successful link above, reference and definition arrive in the trace one after the other, and the member gets extracted. Move the library to the front and run it again, and the trace keeps only the reference line, definition never appears again, and the error is just as before.
 
-There is a fact I owe you besides: with the same misordering, swap the .a for a .so, and on this GCC 16.2.1 of ours the link actually succeeded — answer still came out 7. A dynamic library has no extraction to speak of: the linker registers the whole thing, so when a .o farther down the line references it, the registration is already in hand; the victim of this scenario is chiefly the .a. If the same command on your machine reports undefined reference, the odds are your distribution patched --as-needed into gcc by default: it registers only the libraries somebody has already asked for at that moment, and a .so standing ahead of the references gets dropped whole. Our own link command carries no such switch; I turned up the real link line with gcc -###, and it appeared in neither direction's output.
+One piece of the truth I have to report to you: with the same misplacement, when we swapped the .a for a .so, on this GCC 16.2.1 setup the link actually succeeded, and answer still printed 7. A dynamic library knows no extraction — the linker registers it whole, and when a later .o references it, the registration is already on file, so the victim in this scenario is mainly the .a. If the same command on your side reports undefined reference, chances are your distribution quietly adds --as-needed to gcc by default: it only registers libraries somebody already wanted at that moment, and a .so ranked in front of its references gets dropped entirely. The link line this setup of ours produced carries no such flag — I dug through the real link line with gcc -###, and it showed up in neither direction's output.
 
-On to the second scenario: the name fell out with the convention. I copied the library into the naming directory and plucked the lib prefix off along the way:
+On to the second scenario: the name breaks the convention. I copied the library into a naming directory and stripped the lib prefix while I was at it:
 
 ```text
 $ cp dir_a/libcalc.a naming/calc.a
@@ -113,9 +115,9 @@ $ gcc main.o -Lnaming -lcalc -o app_naming
 collect2: error: ld returned 1 exit status
 ```
 
-You saw this same error in part 06; today we pay back the angle that was owed: why searching this directory is searching for nothing. The candidate names it goes looking for are only libcalc.so and libcalc.a, while the file in naming is called calc.a, so it assembles against neither candidate. In truth the linker is not blind to the file; this one simply is not on the candidate list. The two roads the note hands over each lead somewhere: -l:calc.a steps around the name assembly, and changing the name back to libcalc.a puts it on the list again.
+You saw this same error in part 06; today we pay back the angle owed back then: why searching this directory comes up empty anyway. The candidate names we ask it to look for are only libcalc.so and libcalc.a, and the file in naming is called calc.a, so it assembles against neither candidate. The linker is not actually blind to this file — it simply is not on the candidate list under any entry. The two routes the note hands over each have their place: -l:calc.a bypasses the name assembly, and changing the name back to libcalc.a puts it back on the list.
 
-The third scenario is the most ill-used of all: the library is lying right in our current directory, and we wrote not one -L:
+The third scenario is the least deserved of all: the library is lying right in our current directory, and we did not write a single -L:
 
 ```text
 $ gcc main.o -lcalc -o app_bare
@@ -123,13 +125,13 @@ $ gcc main.o -lcalc -o app_bare
 collect2: error: ld returned 1 exit status
 ```
 
-libcalc.a and libcalc.so are both there in the mixed directory, but the linker's directory list admits only what -L adds plus that built-in string of defaults; the directory we are standing in cannot squeeze its way in. If you want it in, writing one -L. is enough. When you someday face a cannot find and investigate, the directions to check are just three: does the name follow the convention? Is the directory on the list? Does the library stand after the references?
+The libcalc.a and libcalc.so in mixed are both right there, but the linker's directory list only recognizes what -L adds and that string of default directories it carries; the directory we currently stand in cannot squeeze in. To let it in, writing one -L. is enough. When you hunt down a cannot find someday, there are only three directions to check: does the name follow the convention? Is the directory on the list? Is the library ranked behind what references it?
 
-## Run Time: A Different Party Does the Finding
+## Run Time: a Different Party Takes over the Search
 
-Remember the shadow round? What link time picked was the fake libz in the -L directory; what run time loaded in was the real libz from /usr/lib. The question part 08 left behind can be answered in full right here: why, when link time went smoothly, does run time still need LD_LIBRARY_PATH standing by? Because the two stages never had the same party doing the finding. Link time is represented by the linker: it knows -L and its own defaults, and once the linking is done, the -L information lands nowhere in the executable file. Run time is represented by the dynamic linker — the true identity of the interpreter at the tail of part 01's file output, the same party that read NEEDED line by line in part 08. It never saw our link command from beginning to end, so of course it does not know -L. And the LD_LIBRARY_PATH=. we kept writing in part 09 — you can now say plainly what it does: it patches the current directory in as one rank of the environment variable.
+Remember the shadow round? At link time the fake libz in the -L directory got picked; at run time what got loaded in was the real libz from /usr/lib. The question part 08 left behind can be answered in full here: why, when the link went so smoothly, does run time still need LD_LIBRARY_PATH waiting on it? Because the one handling the library search in the two stages is simply not the same party. At link time it is the linker that steps forward; it knows -L and its own default directories, and once the link is done, the -L information has not landed anywhere in the executable. At run time it is the dynamic linker that steps forward — the true identity behind the interpreter at the end of the file output in part 01, the same party that read NEEDED line by line in part 08; it is all the same one. It has never seen our link command from start to finish, so naturally it does not know -L either. The LD_LIBRARY_PATH=. we kept writing in part 09 — now you can say clearly what it does: it slips the current directory into the environment variable tier.
 
-The ranks it recognizes, we test one rank at a time. SONAME we met in part 08: the official name a library registers for itself. The three libraries laid ready this time differ in content, but all register the SONAME libcalc.so.1; they sit in three separate directories, with answer returning 10, 20, and 30. The program carries one run-time search path pre-embedded, done with the -rpath linker switch: the linker writes the path into the dynamic section, and there it is as RUNPATH. At link time we write the path inside rpath_dir directly, so as not to drag the link-time question of who gets picked back on stage; NEEDED registers only the SONAME, and which file the link used, run time no longer remembers:
+The tiers it recognizes, we measured tier by tier. We made SONAME's acquaintance in part 08: the formal name the library registers for itself. The three libraries prepared this time differ in contents but all register the SONAME libcalc.so.1, placed into three separate directories, with answer returning 10, 20, and 30. The program has a run-time search path planted in it, by way of the -rpath linker flag: the linker writes the path into the dynamic section, and it becomes a RUNPATH. At link time we write the path into rpath_dir directly, to keep the link-time choice question from dragging back in; NEEDED registers only the SONAME, and by run time it no longer remembers which file was linked:
 
 ```text
 $ gcc -shared -fPIC -Wl,-soname,libcalc.so.1 -o rpath_dir/libcalc.so.1 calc10.c
@@ -145,9 +147,9 @@ $ LD_PRELOAD=/tmp/…/preload/libcalc.so.1 ./app_rpath
 answer=30
 ```
 
-(I trimmed the long paths to /tmp/…; the rest is as it came out.) The three results we take one at a time: run bare, what loads in is the return-10 version in the rpath_dir that RUNPATH points to; set LD_LIBRARY_PATH, and the return-20 one presses RUNPATH back down; bring up LD_PRELOAD last, and even the search is spared — the preloaded library is mapped into the process ahead of everyone, its registered SONAME is also libcalc.so.1, the NEEDED line has its owner on the spot, and the whole search that would have followed never happens. We counted with LD_DEBUG=libs: the trace holds not one find library=libcalc line, and the count came out 0.
+(I trimmed the long paths down to /tmp/…; the rest is verbatim.) The three result lines we take one at a time: run bare, what gets loaded is the version in the rpath_dir that RUNPATH points at, returning 10; set LD_LIBRARY_PATH as well, and the one returning 20 pushes RUNPATH down instead; finally bring in LD_PRELOAD, and not even the search happens — the preloaded library is the first one mapped into the process, and it registers the SONAME libcalc.so.1 too, so the NEEDED line finds its owner on the spot and the entire search behind it never takes place. We counted with LD_DEBUG=libs: not a single find library=libcalc line in the trace — the count came out 0.
 
-The complete order we need not memorize; the LD_DEBUG=libs search trace labels each rank's name at the end of its line. The program's two dependencies each got a search; we sieved them with the grep pattern twice over, and the lines left standing we read from the top:
+The full order is nothing to memorize: the LD_DEBUG=libs search trace labels each tier's name at the end of its line. The program's two dependencies each got searched once, we filtered twice with a grep pattern, and the lines that remain we read from the top:
 
 ```text
 $ LD_DEBUG=libs LD_LIBRARY_PATH=/tmp/…/lp_dir ./app_rpath 2>&1 | grep -E "find library|search path=.*(LD_LIBRARY_PATH|RUNPATH)|search cache|trying file=/usr/lib/libc"
@@ -160,9 +162,9 @@ $ LD_DEBUG=libs LD_LIBRARY_PATH=/tmp/…/lp_dir ./app_rpath 2>&1 | grep -E "find
    1648884:	  trying file=/usr/lib/libc.so.6
 ```
 
-(The digit string at the head of each line is the process ID; yours will not come out the same.) Reading downward: libcalc hit on the LD_LIBRARY_PATH rank alone, so its search stops at the second line; libc came up empty on that same rank, next came RUNPATH's turn, and the rank after that reads search cache=/etc/ld.so.cache — the cache's roster happens to carry libc, and one step lands on /usr/lib/libc.so.6. Look also at the subdirectories wedged into the paths, glibc-hwcaps/x86-64-v3 and the like: that is the scheme, since glibc 2.33, for picking an optimized build by the CPU's instruction-set tier; this piece has no use for it — recognizing the directory itself is enough. And if the cache comes up empty too? The last rank is the system's default directories, whose original form we look at in a moment.
+(That string of digits at the head of each line is the process id; yours will not come out the same.) Reading on down: libcalc hits on the LD_LIBRARY_PATH tier right away, so its search stops at the second line; libc draws a blank on that same tier, next it is RUNPATH's turn, and the tier after that is search cache=/etc/ld.so.cache — libc happens to be on the cache's list, and it lands on /usr/lib/libc.so.6 in one step. As for the glibc-hwcaps/x86-64-v3 style subdirectories tucked inside the paths, that is glibc's scheme, since 2.33, for picking an optimized build by CPU instruction-set tier; we have no use for it in this piece — just recognize the directory itself. And if the cache comes up empty too? The last tier is the system's default directories, whose original shape we'll look at in a moment.
 
-This order — LD_LIBRARY_PATH pressing down RUNPATH — older references often write the other way around. Their authors are usually not wrong; what changed generations is the tag. The dynamic section carries two tags for writing run-time search paths: the old-style one is named DT_RPATH, the new-style one DT_RUNPATH. The linker today produces the new style by default, and that default is held by the --enable-new-dtags switch; add --disable-new-dtags and it falls back to the old style. The difference as it lands in the search order is one line: RPATH stands ahead of LD_LIBRARY_PATH, RUNPATH stands behind it. Let's relink the same program with the old-style tag:
+This order — LD_LIBRARY_PATH outranking RUNPATH — older references often write the other way around. The authors of those references are often not wrong; what really changed generations is the tag: there are two tags for writing a run-time search path into the dynamic section, the old-style one named DT_RPATH and the new-style one named DT_RUNPATH. The linker today produces the new style by default, the default being held in place by the --enable-new-dtags flag, and adding --disable-new-dtags falls back to the old style. The difference that lands on search order is a single line: RPATH ranks in front of LD_LIBRARY_PATH, RUNPATH behind it. Let's relink the same program with the old-style tag:
 
 ```text
 $ gcc main.o ./rpath_dir/libcalc.so.1 -Wl,--disable-new-dtags,-rpath,/tmp/…/rpath_dir -o app_oldrpath
@@ -172,11 +174,11 @@ $ LD_LIBRARY_PATH=/tmp/…/lp_dir ./app_oldrpath
 answer=10
 ```
 
-Same environment variable, same two libraries, and this time 10 wins: RPATH pressed LD_LIBRARY_PATH back down, the exact reverse of the RUNPATH round. The day you see opposite experimental results on two machines, the difference is most likely this one tag — one look at readelf -d and you know.
+Same environment variable, same two libraries, and this time the winner is 10 — RPATH pushed LD_LIBRARY_PATH back, exactly the reverse of the RUNPATH round. If you ever see opposite experimental results on two machines, most likely it is this one tag's difference; one look with readelf -d settles it.
 
-## Plainly There, Yet Reported Missing
+## Right There, Yet Reported Missing
 
-Part 08 left behind a situation still harder to swallow: the file is plainly there, and it still says not found. Let's set the scene out: this time we embedded no RUNPATH in the program, the library lies in the rpath_dir directory right beside it, and the link used exactly that one:
+Part 08 left behind an even more galling situation: the file is plainly there, yet it insists it cannot find it. Let's stage this scene. This time we planted no RUNPATH in the program; the library lies in the rpath_dir directory next door, and it is the very one linked against:
 
 ```text
 $ gcc main.o ./rpath_dir/libcalc.so.1 -o app_norpath
@@ -194,18 +196,18 @@ $ LD_DEBUG=libs ./app_norpath 2>&1 | grep -E "find library|search cache|search p
 ./app_norpath: error while loading shared libraries: libcalc.so.1: cannot open shared object file: No such file or directory
 ```
 
-Count through the trace yourself: we embedded no RUNPATH, we set no LD_LIBRARY_PATH, the cache holds no shadow of it either, and the search last reached the system search path rank — the system's default directories, which the documentation calls the trusted directories — and everything we met along /usr/lib was (no such file). And the current directory? No rank has a place for it; its situation is one and the same as link-time scenario three: over there, without a -L it cannot get onto the list; over here there is no -L at all, still less anyone to carry it along. If we want a library like this found, three roads are open. The first is to move the file into a trusted directory — root privileges are unavoidable, and once it is moved you still have to bring ldconfig out: it is the glibc family's cache-keeping tool, which scans the trusted directories and the ones registered in /etc/ld.so.conf.d and writes the name-to-path mapping into /etc/ld.so.cache. The second road is LD_LIBRARY_PATH or RUNPATH, patching the directory into one of the search ranks. The third is writing the path into RUNPATH at release time. My WSL has no passwordless elevation, so I did not actually do that step; let's take a read-only look at what the cache looks like:
+Count through the trace one by one: we planted no RUNPATH, we set no LD_LIBRARY_PATH, the cache holds no shadow of it either, and at last the search reaches the system search path tier — the system's default directories, which the documentation calls the trusted directories — and all the way down /usr/lib we see nothing but (no such file). And the current directory? Not one tier holds a place for it, in exactly the predicament of scenario three at link time: over there, without adding -L it cannot enter the list; over here there is no -L at all, still less anyone to carry it along. If we want a library like this to be found, there are three roads. The first is to move the file into the trusted directories — root privileges are unavoidable — and once moved, ldconfig has to be called in: glibc's family tool for keeping the cache, which scans the trusted directories and the directories registered in /etc/ld.so.conf.d and writes the name-to-path mapping into /etc/ld.so.cache. The second road is LD_LIBRARY_PATH or RUNPATH, slipping the directory into one tier of the search. The third is to write the path into RUNPATH at release time. My WSL has no passwordless privilege escalation, so I did not actually do this step; let's just take a read-only look at what the cache looks like:
 
 ```text
 $ ldconfig -p | grep "libz\.so$"
 	libz.so (libc6,x86-64) => /usr/lib/libz.so
 ```
 
-That the cache rank really gets used, the previous section's libc trace already played out: after the search cache line it drops straight to trying file=/usr/lib/libc.so.6, one step, one hit. The not-found round is that same line followed by (no such file), with the trusted directories holding up the rear empty too, and only then does the error touch ground. The link-time cannot find and the run-time cannot open shared object file — this piece has now shown you both: one error's letterhead reads /usr/bin/ld, the other's is the program's own name. Which party is speaking? Match the letterheads and they sort themselves out.
+The cache tier genuinely getting used, last section's libc trace already acted it out: after the search cache line it drops straight to trying file=/usr/lib/libc.so.6, hitting in one step. In the not-found round, that same line is followed by (no such file), the trusted directories at the bottom of the barrel come up empty too, and only then does the error touch ground. The link-time cannot find and the run-time cannot open shared object file, we have now seen both in this piece: one error's header is /usr/bin/ld, the other's is the program's own name — which of the two is speaking? One glance at the header tells them apart.
 
-## The Three-Piece Set: Three Names, Each Governing Its Own Stretch
+## The Three-Piece Set: Three Names, Each Governing a Stretch
 
-With the order told, how the three-piece set part 08 left us gets arranged, we also settle today. The real body's name carries the full version number; the one we built is libcalc.so.1.2.3, and the trade jargon for it is realname. The second name is the official one, libcalc.so.1, registered with the soname switch, with a symlink fitted alongside. The third name serves development linking; its jargon is the linker name, and it is the libcalc.so symlink — exactly the thing part 06's -l assembles:
+With the ordering told, let's also fill in today how the three-piece set part 08 left us gets arranged. The real file's name carries the full version number — what we build is libcalc.so.1.2.3, and the trade calls it the realname. The second name is the formal one, libcalc.so.1, which we register with the soname flag, with a symlink fitted to match. The third name is the one for development-time linking, in the trade's words the linker name: the symlink libcalc.so, which is exactly what the -l name assembly in part 06 assembles up:
 
 ```text
 $ gcc -shared -fPIC -Wl,-soname,libcalc.so.1 -o trio/libcalc.so.1.2.3 calc42.c
@@ -219,9 +221,9 @@ $ LD_LIBRARY_PATH=trio ./app_trio
 answer=42
 ```
 
-Walk one link from head to end, and the stretch each of the three names governs, we take in one by one: -lcalc assembles the linker name libcalc.so; the linker follows the symlink down to the real body, reads out the SONAME it registered, and what gets written into NEEDED is libcalc.so.1; at run time the dynamic linker searches by that name, hits the symlink libcalc.so.1, and the symlink points back at the real body — that is how the 42 got in. At upgrade time you swap the real body and repoint the symlinks, and not one byte of the executable has to move; that benefit part 08 spoke of, laid onto files, is exactly this arrangement. What each of the version number's three segments records, and which kind of change should move which segment — those matters we hand to part 12 (ABI Design).
+Let's walk one link from start to finish and identify, one by one, which stretch each of the three names governs: -lcalc assembles the linker name libcalc.so; the linker follows the symlink to the real file, reads off its registered SONAME, and what gets written into NEEDED is libcalc.so.1; the run-time dynamic linker searches with that name, hits the symlink libcalc.so.1, and the symlink points back to the real file — that is how the 42 got in. On an upgrade you swap the real file and move the symlinks, and not one byte of the executable has to change; the benefit part 08 spoke of lands on the files as exactly this arrangement. What each of the version number's three parts records, and which part what kind of change should move — those we hand to the ABI article.
 
-Since what NEEDED records is the SONAME, when the SONAME changes, does NEEDED follow? We registered the soname as libcalc.so.9 and relinked a copy, the real body's file name left as it was:
+Since NEEDED records the SONAME, when the SONAME changes, does NEEDED follow along? We relink one copy registering the soname as libcalc.so.9, the real file's name unchanged:
 
 ```text
 $ gcc -shared -fPIC -Wl,-soname,libcalc.so.9 -o soname/libcalc.so.1.0.0 calc42.c
@@ -235,7 +237,7 @@ $ LD_LIBRARY_PATH=soname ./app_soname9
 answer=42
 ```
 
-NEEDED really did follow, and it honors the SONAME alone; what the real body's file happens to be called, NEEDED does not care about. With no file named libcalc.so.9 in the directory, the run-time search still comes up empty; patch in one same-named symlink and it lives again. And when the SONAME is left unset? The behavior splits in two, and we tested both. A library found through -l gets its file name recorded in NEEDED — part 08's hand-built libmyutil.so registered exactly libmyutil.so, and this is where that came from. A library linked by its full path gets, of all things, the whole slash-carrying path recorded:
+NEEDED did follow along, and it recognizes only the SONAME — what the real file happens to be called, NEEDED does not care; with no file named libcalc.so.9 in the directory, the run-time search comes up empty just the same, and adding one same-named symlink brings it back to life. And when the SONAME is left out entirely? The behavior splits in two, and we measured both. For a library found through -l, NEEDED records the file name — the hand-built libmyutil.so in part 08 registered exactly libmyutil.so, and here is where that came from. For a library linked by full path, NEEDED records, of all things, the entire slash-bearing path:
 
 ```text
 $ gcc -shared -fPIC -o soname/libcalc_noson.so.5 calc42.c
@@ -244,15 +246,15 @@ $ readelf -d app_noson | grep calc
  0x0000000000000001 (NEEDED)             Shared library: [./soname/libcalc_noson.so.5]
 ```
 
-A dependency name carrying a slash drags one more run-time behavior out into the open: seeing the slash in the name, the dynamic linker does not search at all — it takes the name as a literal path relative to the directory the program started from and opens it directly. We ran it from other directories; however long you stretch LD_LIBRARY_PATH, it cannot be brought back. That is why a library released in earnest always registers a SONAME and fixes the name as a bare one without a slash: only then does the searching machinery get something it can take hold of.
+A slash-bearing dependency name also drags out another run-time behavior: when the dynamic linker sees a slash in the name, it stops searching and opens it directly as a literal path relative to the launch directory. We ran it from a different directory, and no amount of LD_LIBRARY_PATH could save it. That is why libraries released in earnest all register a SONAME, settling the name as a bare, slash-free one, so the search machinery can get a handhold on it.
 
-## Windows Faces the Same Problem
+## The Same Problem on Windows
 
-Everything in this piece has been the ELF way of doing things; on the Windows side the large structure is the same while the details everywhere differ — of the comparison promised in part 06, today we compare one small stretch only. In the link-time search, the MSVC family looks for .lib: the static library's file is one, and the import library fitted to a DLL is one too — a single suffix carrying two identities. The directories searched are supplied by the LIB environment variable, and the name assembly has no lib-prefix affair: foo's library is simply called foo.lib. At run time the loader looks for DLLs: the first place searched is the EXE's own directory, the system directories line up after, and PATH pads out the very end. One spot is exactly reversed between the two, so hold them side by side: on our side, a library lying beside the program gets no attention — the cannot open round in the previous section just played that out — while on the Windows end it runs the other way: putting the DLL and the EXE together is the first-class proper road, the loader searching from the very front by its own nature. That the two stages, linking and running, each do their own searching — that large structure is common to both sides; the closer comparison we hand to part 12 (ABI Design).
+Everything in this piece has been the ELF side of the story. The broad structure on Windows is the same, the details everywhere differ; of the comparison part 06 promised, today we take only a short stretch. At link time, the MSVC family looks for .lib: the static library's file is one, and so is the import library fitted to a DLL — one suffix carrying two identities. The directories searched come from the LIB environment variable, and the name assembly has no lib-prefix convention: the library for foo is just foo.lib. At run time the loader looks for the DLL, and the very first place searched is the EXE's own directory, with the system directories ranked behind, and PATH sitting at the very end. In one spot the two sides are exactly reversed — look at it side by side: on our side, a library lying next to the program goes unnoticed (the cannot open round last section just acted it out); on the Windows side it is the other way around — DLL and EXE placed together is the first-class, proper road, and the loader naturally searches from the very front. That the two stages, linking and running, search separately is the broad structure both sides share; the finer points of the comparison we hand to the ABI article.
 
 ## The CMake Perspective
 
-The chores of hand-tuning -L and hand-writing -rpath all belong to CMake in everyday builds. For that string of run-time paths, CMake gives us a dedicated place to write them:
+All this work of tuning -L by hand and writing -rpath by hand belongs to CMake in day-to-day builds. That string of run-time paths has a dedicated place to be written in CMake:
 
 ```cmake
 add_library(calc SHARED calc_c.c)
@@ -261,16 +263,16 @@ target_link_libraries(app PRIVATE calc)
 set_target_properties(app PROPERTIES BUILD_RPATH "/opt/calc_runtime")
 ```
 
-BUILD_RPATH governs the run-time search path of build-tree artifacts; offhand we wrote into it a /opt/calc_runtime that does not exist yet. Bring --verbose along to look at the link line, and there it really is, landed in the link line's rpath switch:
+BUILD_RPATH governs the run-time search path of the build-tree artifacts, and we casually wrote in a /opt/calc_runtime that does not exist yet. Run with --verbose and look at the link line: it really landed in the link line's rpath flag:
 
 ```text
 $ cmake --build build --verbose 2>&1 | grep "cc .*-o app"
 /usr/sbin/cc … CMakeFiles/app.dir/main_c.c.o -o app  -Wl,-rpath,/opt/calc_runtime:/tmp/…/build libcalc.so
 ```
 
-(The middle stretch of the link line and the long paths I trimmed as usual into … and /tmp/…; the rest is as it came out.) Two paths sit in the link line: the /opt/calc_runtime we wrote at the head, and the build directory CMake itself patched in behind. The RUNPATH that part 08 mentioned only as something CMake wrote in along the way, without the why — today the why gets paid back: seeing that the target being linked lives in the build tree, CMake writes the build directory in as well, so an app in the build tree, run bare, finds the libraries of its own tree. There is also the global CMAKE_BUILD_RPATH for adding it all at once, used the very same way.
+(The middle of the link line and the long paths I trimmed to … and /tmp/… as usual; the rest is verbatim.) Look at the paths in the link line, there are two of them: the /opt/calc_runtime we wrote sits at the head, and the build directory CMake adds on its own sits behind. That RUNPATH line in part 08 — the one said to be something CMake slips in without saying why — today the why gets filled in: seeing that the target being linked lives in the build tree, CMake slips the build directory in as well, so the app in the build tree finds the same-tree library when run bare. There is also the global CMAKE_BUILD_RPATH for adding paths across the board, used in exactly the same way.
 
-And the -L end? Part 06's CMake section showed us: for a library born in the same build, CMake hands libmyutil.a's path straight to the link command, carrying -L and the name assembly on our behalf. If the library lives outside the project, the one that steps out to find it is find_library, and what it finds will be an absolute path:
+And the -L end of things? Part 06's CMake section showed us: for a library born in the same build, CMake hands libmyutil.a's path straight to the link command, carrying both -L and the name assembly for us. If the library lives outside the project, the one that steps out to find it is find_library, and what it finds will be an absolute path:
 
 ```cmake
 find_library(CALC_LIB NAMES calc PATHS ${CMAKE_CURRENT_SOURCE_DIR}/libs NO_DEFAULT_PATH)
@@ -285,6 +287,6 @@ $ cmake --build build --verbose 2>&1 | grep "cc .*-o app"
 
 In the link line, -L and -l are both gone; what gets handed over is the absolute path, and along with it the library directory gets written into RUNPATH — the built app passes when run bare, and what we measured out was exactly 42. As for the target_link_directories we did not use and the still older link_directories, the trade-off in one sentence: the former takes effect per target, the latter is a directory-level cut through everything, smearing every subdirectory; and in CMake's own recommendation the two of them rank behind find_library — a path already searched out and settled is steadier than stuffing a string of -L flags for the linker to go bumping against one by one.
 
-## Next Up: Same-Named Symbols, Who Gets the Final Say
+## Next: Same-Named Symbols, Who Has the Final Say
 
-Both lines run smooth by now. On the link-time line, the linker finds its libraries with the -L directory list and the name-assembly convention, registering what should be registered and extracting what should be extracted; on the run-time line, the dynamic linker, in the order of preload, environment variable, RUNPATH, cache, trusted directories, gathers the libraries in and maps them in too. But with the libraries all inside the process, the work is only half done: when main calls answer, several export tables in the process stand open — who stands at the head of the line? By what right does the stand-in win? How do we guard our own symbols? And how do we narrow the opening on purpose? Part 09's preload experiment showed one corner of it; part 11 (Symbol Visibility) is the piece that takes this one matter head on.
+Both lines run smooth by this point: on the link-time line, the linker finds the library with the -L directory list and the name-assembly convention, registering what should be registered, extracting what should be extracted; on the run-time line, the dynamic linker, in the order preload, environment variable, RUNPATH, cache, trusted directories, gathers the libraries up and maps them in. But with the libraries all inside the process, the job is only half done: when main calls answer, several export tables in the process are all open — who stands at the head? On what grounds does a replacement win? How do we guard our own symbols? And how do we narrow the opening on purpose? Part 09's preload experiment showed a corner of it; the symbol visibility article devotes its whole length to exactly this one matter.

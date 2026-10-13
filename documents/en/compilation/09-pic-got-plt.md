@@ -3,36 +3,38 @@ chapter: 13
 difficulty: advanced
 order: 9
 platform: host
-reading_time_minutes: 26
+reading_time_minutes: 20
 tags:
 - cpp-modern
 - host
 - advanced
+- 工具链
+- 链接器
 title: "Position-Independent Code and GOT/PLT: Addresses Settled at Load Time"
 description: "The linker's real error when a .so is built without PIC, instruction-by-instruction disassembly of a mov through the GOT and a call through the PLT on x86-64, the two dynamic relocation types GLOB_DAT and JUMP_SLOT, lazy binding caught in the act with LD_DEBUG and a gdb before/after comparison, LD_PRELOAD genuinely replacing a call made from inside the library, plus the COPY relocation on the executable side, closing with CMake's POSITION_INDEPENDENT_CODE."
 cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/compilation/09-pic-got-plt.md
-  source_hash: b06bb74f3819a33fb74116e60e0f30f2e0aee0bfaa0f5cfa5cab8b107d612e5d
-  translated_at: '2026-09-30T09:42:36+00:00'
-  engine: glm
-  token_count: 4457
+  source_hash: ff746950f6ee72532ab057814a6b72912e380de26b84a8d76a079352ae943862
+  translated_at: '2026-10-13T04:10:38+00:00'
+  engine: anthropic
+  token_count: 13500
 ---
 
 # Position-Independent Code and GOT/PLT: Addresses Settled at Load Time
 
-At the end of part 08 we left an opening hanging: the dynamic library's code got mapped into the process, but just what does that call line in the executable say? We put that question aside unexplained. And the trail leading to it has a history of its own. In part 01's hello.s, an @PLT suffix hung off the tail of a call operand, and file reported that the program we had built was pie; at the time we left it at one sentence, that pie means position-independent. The back half of part 05 named the matter too: a pie program's addresses are settled at link time, and the whole thing shifts again when it loads, machinery deferred to part 09. Today we make good on all of it, one item at a time.
+The end of 08 left an opening we never closed: the dynamic library's code gets mapped into the process, but what exactly the call line in the executable says — we set that question aside at the time. The opening has a back story, too. In 01's hello.s, a call operand wore an @PLT suffix on its tail, and file reported that the program we built was pie; all we said back then was that pie means position-independent. The later stretch of 05 named the matter as well: a pie program's addresses are settled at link time and get shifted wholesale at load time — the mechanism was left for this piece. Today we make good on these debts one by one.
 
-To begin, let's get the problem clearly in view. Which address a shared library will be loaded at, nobody knows at build time. Yet machine code cannot get away from addresses: reading data takes an address, and calling a function takes an address. The compiler and the linker have to write the instructions out without knowing the addresses, and then have somebody patch the real ones in at the moment of loading. The whole piece today comes down to two things: what the writing looks like, and how the one doing the patching patches.
+First, let's state the problem plainly. Nobody at build time knows which address a shared library will be loaded at. And yet machine code cannot live without addresses: fetching data takes an address, and calling a function takes an address too. The compiler and the linker have to write out the instructions without knowing the addresses, then have someone fill in the real ones at the moment of loading. The whole piece watches two things: what the writing looks like, and how the one doing the filling does it.
 
-As usual, the environment disclosure: all my experiments ran in WSL2, on the combination of GCC 16.2.1, binutils 2.47, glibc 2.44, and CMake 4.4.3, and every piece of output in this piece was really run. If your versions differ, details like addresses and paths may drift, but the mechanics themselves haven't changed in years.
+The environment disclosure, as always: my experiments all ran in WSL2, with the combination of GCC 16.2.1, binutils 2.47, glibc 2.44, and CMake 4.4.3, and every stretch of output in this piece was genuinely run. If your versions differ, details like addresses and paths may drift; the mechanics themselves haven't budged in years.
 
-## Shifted as a Whole: Two Processes, Two Sets of Addresses
+## Shifted Wholesale: Two Processes, Two Sets of Addresses
 
-The libmyutil.so that part 08 told us to keep, we have no use for this time. To see the workings of the GOT and PLT clearly, we swap in a slimmer three-line specimen, plus a program that uses it:
+The libmyutil.so that 08 asked us to keep around, we won't be using this time. To see the GOT/PLT machinery clearly, we swap in a leaner three-line specimen, plus a program that uses it:
 
 ```c
-// libcalc.c — export one variable and one function, then have another function use both
+// libcalc.c — exports one variable and one function, then lets another function use them
 int tax_rate = 17;
 
 int base_tax(void) { return 100; }
@@ -40,7 +42,7 @@ int base_tax(void) { return 100; }
 int total_tax(void) { return base_tax() + tax_rate; }
 ```
 
-Over in main.c, the first thing done is to print a line reading start, and only then come the calls to base_tax and total_tax. The library build command carries a -fPIC; what it is for and why it cannot be left off, we cover in the very next section. For now we simply run the program and watch with our own eyes the wholesale shifting that part 05 talked about:
+The first thing main.c does is print a line of start, and only then do the calls to base_tax and total_tax get their turn. The command that builds the library carries a -fPIC — what it does and why it's non-negotiable we take up in the next section; here, let's just get the program running and see with our own eyes the wholesale shifting 05 spoke of:
 
 ```text
 $ gcc -fPIC -shared libcalc.c -o libcalc.so && gcc main.c -L. -lcalc -o app && LD_LIBRARY_PATH=. ./app
@@ -48,7 +50,7 @@ start
 base=100 total=117
 ```
 
-(The LD_LIBRARY_PATH=. we carry along tells the dynamic linker to look for libraries in the current directory; the complete rules of the search order get unfolded in part 10 (Library Search).) We also prepare a sibling app_wait: after printing its result it sleeps for thirty seconds, leaving us a window to observe. We start two of them at once and dig out each one's /proc/PID/maps:
+(The LD_LIBRARY_PATH=. tells the dynamic linker to look for libraries in the current directory; the complete rules of the search order belong to the next piece.) Let's also build an app_wait of the same make: after printing the results it stalls for 30 seconds, leaving us an observation window. We start two copies of it at the same time and pull up each one's /proc/PID/maps:
 
 ```text
 --- P1
@@ -59,15 +61,15 @@ base=100 total=117
 78897cfa7000-78897cfa8000 r--p 00000000 00:49 103684  …/pic/libcalc.so
 ```
 
-(Read them two lines at a time; I trimmed the long paths, and the numbers are untouched.) The first line of each pair is the program itself; the second is the library. The inode numbers at the end of each maps line tell us that P1 and P2 mapped the very same app_wait file, and the libcalc.so mappings are the same file too. And the addresses? The program's two copies sit at 5b08… and 5a1c…, the library's at 7773… and 7889…. One and the same file, two processes, and what they get are two sets of addresses.
+(Read it two lines at a time; I trimmed the long paths, and the numbers are untouched.) In each pair, the first line is the program itself; the second is the library. The inode numbers at the end of each maps line tell us that P1 and P2 mapped the very same app_wait file, and the two libcalc.so mappings are the same file too. And the addresses? The program's two copies sit at 5b08… and 5a1c…, the library's at 7773… and 7889…. One and the same file, two processes in front of us, and what we get are two sets of addresses.
 
-I arranged none of this. It is the kernel deliberately shuffling things at every load, and behind it stands a mechanism called ASLR, short for Address Space Layout Randomization. On my system /proc/sys/kernel/randomize_va_space holds the value 2, which is full randomization. Add the fact that several libraries cannot crowd into the same address, and the answer is sitting in front of us: a library's load address is not something build time can hand over.
+I didn't stage any of this; it's the kernel deliberately shuffling things at every load, driven by a mechanism called ASLR — Address Space Layout Randomization, in full. On our system /proc/sys/kernel/randomize_va_space reads 2, meaning full randomization. Add the fact that multiple libraries cannot crowd onto the same address, and the answer is laid out before us: the library's load address cannot be supplied at build time.
 
-So what is machine code to do? The cheapest way to write it is to bake the address straight into the instruction, but the address changes at every load, so baking it in comes out wrong. Someone might think: after loading, have the dynamic linker go patch the addresses inside the code one by one — would that do? Of course not. The code segment is shared in physical memory by multiple processes; in part 08 we saw that only one copy lives there. If everyone patched in their own values, the sharing would be gone. Only one road is left: arrange things so that the instructions as written contain no absolute address at all. That is what Position-Independent Code means, and PIC is its usual abbreviation.
+So what about the machine code? The laziest way to write it is to bake the address straight into the instruction, but the address changes with every load, and a baked-in one is wrong. Someone might think: once loading is done, have the dynamic linker patch every address in the code, one by one — would that work? Of course not. The code segment in physical memory is shared among multiple processes; in 08 we saw that it lives in exactly one copy, and if every process patched out its own copy, the sharing would be gone. One road remains: write instructions that contain no absolute addresses at all. Position-Independent Code is exactly that, and PIC is its common abbreviation.
 
-## -fPIC: Address-Baked Code Gets Stopped by the Linker
+## -fPIC: Bake In an Address and the Linker Stops You
 
-Position independence is not something you get by shouting for it. It is something the compiler builds instruction by instruction, and -fPIC is the switch that does the building. Let's strip it off and see what comes of baking addresses in:
+Position independence isn't achieved by proclamation. The compiler rewrites it into the code instruction by instruction, and -fPIC is the switch that turns that work on. Let's take the switch off and see what fate awaits a hardwired address:
 
 ```text
 $ gcc -shared libcounter.c -o libcounter_nopic.so
@@ -77,7 +79,7 @@ $ gcc -shared libcounter.c -o libcounter_nopic.so
 collect2: error: ld returned 1 exit status
 ```
 
-(libcounter.c we wrote as a sibling of libcalc.c: again one exported variable plus one function that reads it; the temporary file name ccF4K1RU.o is different every run.) This is an error through and through. The link failed on the spot, and no artifact ever landed. Older teaching materials often tell you this is "merely a relocation warning"; on our GCC 16.2.1, that story does not hold. What got stopped? Look at the data-fetching instruction the compiler generates without PIC:
+(libcounter.c is written to the same pattern as libcalc.c — one exported variable plus one function that reads it; the temp file name ccF4K1RU.o changes every run.) This is a genuine error: the link fails on the spot, and not even an artifact lands. Old textbooks often carry the line that this is "just a relocation warning"; on our GCC 16.2.1 that no longer holds. What got stopped? Let's look at the load instruction the compiler generates without PIC:
 
 ```text
 $ objdump -dr --no-show-raw-insn -M intel libcounter.o
@@ -90,11 +92,11 @@ $ objdump -dr --no-show-raw-insn -M intel libcounter.o
    b:	ret
 ```
 
-What we see is a single mov fetching counter directly. By the rip-relative addressing we got to know in part 04, what it writes down is how far away the variable sits. With that distance baked in, the program has in effect asserted that counter will spend its whole life inside the module that compiled it. But it happens to be an exported symbol, and at run time another module may push it aside; what that looks like, we will actually run through in the dedicated section on symbol interposition later on. Think it over and the linker's move makes sense: it simply sealed off the direct-fetch road. R_X86_64_PC32 is not allowed on a replaceable symbol in a shared library, and the recompile with -fPIC sentence in the error is saying exactly that: change how you write it.
+What we see is a mov that loads counter directly. By the rip-relative addressing we learned to read in 04, it states how far the variable sits from the instruction itself. With that distance hardwired, the program has effectively asserted that counter will spend its whole life inside the module that compiled it. But it is an exported symbol, and at run time it may be displaced by another module — what displacement looks like we'll actually run through in the dedicated section on interposition later. Thinking it back over, the linker simply sealed off the direct-load route: R_X86_64_PC32 is not allowed on a displaceable symbol in a shared library, and that recompile with -fPIC in the error is the linker telling you to change how it's written.
 
-Two exceptions deserve a mention along the way; both linked fine, and between them they are counter-evidence that pins down what got stuck above. Give the variable a static and the link passes on the first try; a private symbol has no standing to be replaced. A library that only calls external functions and never touches an exported variable links fine too: the linker builds PLT entries for the calls (PLT is short for Procedure Linkage Table, and we are getting to it shortly). What you are more likely to meet in real engineering is the .a scenario: you take someone else's static library, compiled without -fPIC — the .a files we packed with ar back in part 06 — and want to link it into your own .so. The error that comes out is the same species as the one above, with the lead role handed to a member of the .a.
+Two exceptions are worth noting along the way; both linked through fine, which proves from the other side exactly what the case above was blocking. A variable marked static links on the first try — a private symbol has no standing to be displaced. A library that only calls external functions and never touches exported variables also links through, because the linker built PLT entries for the calls (PLT stands for Procedure Linkage Table, which we get to in a moment). The version you're more likely to meet in real work is the .a case: you take someone's static library that was built without -fPIC — the kind of .a we packaged with ar in 06 — and try to link it into your own .so, and the error that comes out is the same make as the one above, with the .a's members playing the lead.
 
-On the executable side let's glance at one more switch, -fPIE, whose full name is Position-Independent Executable: a position-independent executable. As for the pie that file reported back in part 01, today we make good on its identity:
+One more glance at the executable side, where there is a second setting called -fPIE — Position-Independent Executable in full, meaning a position-independent executable. That pie that file reported back in the opening piece, today we cash in its identity:
 
 ```text
 $ readelf -h app | grep Type; readelf -h app_nopie | grep Type; readelf -h libcalc.so | grep Type
@@ -103,11 +105,11 @@ $ readelf -h app | grep Type; readelf -h app_nopie | grep Type; readelf -h libca
   Type:                              DYN (Shared object file)
 ```
 
-(app_nopie is what we built with -no-pie added; the rest of the command is the same.) The difference between the two settings comes down to one question: do you have to guard against being replaced? A library takes -fPIC; its exported symbols can be pushed aside at any moment, so every cross-module reference has to leave room for that. An executable takes -fPIE; in the process it stands first in the symbol search order, its own definitions cannot be displaced by anyone else, and the only thing it needs to guard against is being moved. Look at the Type column once more: the pie program and the .so are both DYN, both built the install-anywhere way; it is the old fixed-address executables that carry EXEC.
+(app_nopie is the one we built with -no-pie added; the other commands are the same make.) The division of labor between the two settings comes down to one question: guarding against displacement. A library uses -fPIC because its exported symbols can be displaced at any moment, so every cross-module reference has to leave room for that. An executable uses -fPIE: within the process it sits at the head of the symbol lookup order, its own definitions won't be displaced by anyone, and the only thing to guard against is being moved. Now look at the Type column: a pie program is DYN just like a .so — both are built to run no matter where they're put — while EXEC is reserved for the old-style executables of fixed address.
 
-## GOT: A Variable's Address, Fetched from a Table
+## GOT: Data Addresses, Fetched from a Table
 
-Now for the main act. With total_tax's disassembly in hand, the first thing we look at is the data-fetching part:
+Now we take apart the main act. With total_tax's disassembly in hand, the data-loading part is what we look at first:
 
 ```text
 $ objdump -d --no-show-raw-insn -M intel libcalc.so (excerpt)
@@ -122,9 +124,9 @@ $ objdump -d --no-show-raw-insn -M intel libcalc.so (excerpt)
     1129:	ret
 ```
 
-Reading tax_rate takes two mov instructions; let's take them one at a time. The first is rip-relative, and the real point is the 3fd0 in the comment: that address lands inside a table called the GOT. GOT stands for Global Offset Table; the roster of this volume's sixteen pieces at the end of part 01 already reported its name. What that first mov fetches is not the value of tax_rate. What it wants is the content stored in the slot at 0x3fd0 in the table, which is tax_rate's run-time address. The second mov takes that freshly delivered address, and only then gets the true value 17. Nowhere in the code is an address baked in; the only thing baked in is how far away the GOT slot sits. The GOT lives inside the library itself, and when the library shifts as a whole, it shifts along, so the distance never changes.
+Reading tax_rate takes two mov instructions; let's take them one at a time. The first is rip-relative, and the 3fd0 in the comment is the point: that address lands inside a table called the GOT. GOT stands for Global Offset Table — the "sixteen pieces of this volume" checklist at the end of 01 already spoke its name. What it fetches is not the value of tax_rate. What it wants is the content stored in slot 0x3fd0 of the table, which is tax_rate's run-time address. The second mov takes that acquired address and only then loads the real value, 17. Nowhere in the code is an address hardwired; the only hardwired thing is how far away the GOT slot sits. The GOT grows on the library's own body, so when the library shifts wholesale the slot shifts with it, and that distance never changes.
 
-Who registered the address for that slot, and who fills it in? We call up part 04's old friend, readelf -r. We filtered the output down to the names we care about; the full table holds a few extra entries the linker registered on behalf of the startup code:
+So who registered the address in this slot, and who fills it? Let's call on an old friend from 04, readelf -r. I filtered the output down to the names we care about; the full table also carries a few miscellany the linker registered on behalf of the startup code:
 
 ```text
 $ readelf -rW libcalc.so | grep -E 'tax_rate|base_tax'
@@ -132,9 +134,9 @@ $ readelf -rW libcalc.so | grep -E 'tax_rate|base_tax'
 0000000000004000  0000000700000007 R_X86_64_JUMP_SLOT     0000000000001109 base_tax + 0
 ```
 
-The 0x3fd0 line is exactly tax_rate's registration: the type is R_X86_64_GLOB_DAT, meaning that at load time, tax_rate's real address gets filled into the slot at 0x3fd0. The relocations we read in part 04 were PC32 and PLT32, and that batch of empty slots got filled at link time. GLOB_DAT is the other half of relocation: it is reserved for the dynamic linker, and its filling happens at run time. In the file, this is the form that addresses settled at load time take.
+The 0x3fd0 line is precisely tax_rate's registration: the type R_X86_64_GLOB_DAT means that at load time, tax_rate's real address gets filled into slot 0x3fd0. The relocations we read in 04 were PC32 and PLT32 — that batch of placeholders got filled in at link time. GLOB_DAT is the other half of relocation work: it is left to the dynamic linker, and the filling happens at run time. This is what "addresses settled at load time" looks like inside the file.
 
-There is a third way to fetch data, and it shows up on the executable's end; we take it in passing. main.c only calls functions, so I wrote a separate ratemain.c whose entire body is a single printf reading tax_rate directly, and the program it links into is called rateapp:
+There is a third way to fetch data, and it shows up on the executable's side of the fence; let's look while we're here. main.c only called functions, so I wrote a separate ratemain.c — the whole file is one printf that reads tax_rate directly — and the program it links into is called rateapp:
 
 ```text
 $ LD_LIBRARY_PATH=. ./rateapp
@@ -146,11 +148,11 @@ $ nm rateapp | grep tax_rate; nm libcalc.so | grep tax_rate
 0000000000004010 D tax_rate
 ```
 
-Look at the type: R_X86_64_COPY, the copy relocation. The end of part 08 flashed an R_X86_64_COPY(shared_seed) line, and this is exactly the business it was doing; the curiosity of shared_seed landing in bss gets its answer in this very section. The two nm lines are the most interesting part. The library's tax_rate is a D, living in .data, and it is where the initial value 17 comes from. In rateapp a tax_rate has appeared out of thin air, and its letter is a B; by part 04's alphabet, B is in charge of .bss. At load time the initial value gets copied wholesale by the dynamic linker into the executable's .bss copy, and the copy's authorization is exactly the COPY record. Once the copying is done, both sides use the same one; when we photograph the binding records with LD_DEBUG below, we will see that the tax_rate slot in libcalc's own GOT is filled with the address of the copy inside the executable. The executable, for its part, fetches it without ceremony: one rip-relative direct fetch that never so much as brushes the GOT. Why can it be this frugal? Back then an executable was full of absolute addressing; the linker had to have a definite address in hand, and copying one into .bss was the only choice. PIE inherited the arrangement: standing first in the search order is the executable itself, so directly fetching its own copy is actually the cheapest route. The price is that one variable now has two records in the process, and the questions that grow out of this belong to part 12 (ABI Design).
+Look at the type: R_X86_64_COPY — that is the copy relocation. The end of 08 flashed an R_X86_64_COPY (shared_seed), and this is the job it does; the oddity of shared_seed living in bss finds its answer right here. The two nm lines are the most interesting. In the library, tax_rate is a D: it lives in .data, and the initial value 17 is its doing. In rateapp, a tax_rate has appeared out of thin air, and it holds the letter B — by 04's letter table, B governs .bss. At load time, the initial value got copied wholesale by the dynamic linker into the executable's .bss copy, and the COPY record is the warrant for that copying. Once the copying is done, both sides use one and the same instance — and when we photograph the binding records with LD_DEBUG below, we'll see that libcalc's own GOT slot for tax_rate is filled with the address of the copy made inside the executable. The executable's own access is refreshingly blunt: one rip-relative direct load, never even brushing the edge of the GOT. Why so cheap? Executables of that era were full of absolute addressing, and the linker had to hold a definite address in hand; copying one into .bss was the only choice. PIE kept the arrangement: the one at the head of the lookup order is the executable itself, so a direct load from its own copy is the cheapest of all. The price is that the same variable now has two records in one process — the problems that follow from that belong to 12 (ABI Design).
 
-## PLT: A Function Call Takes One Extra Hop
+## PLT: Function Calls Take One Extra Hop
 
-That takes care of reading data. Now we return to that call line in total_tax. In part 01's hello.s, @PLT hung off the tail of a call operand, and at the time we said only that it had to do with how calls into dynamic libraries work: the PLT a trampoline, the GOT the table it consults for addresses. Once linking is done, it has grown into a real, physical thing. Look at main on the app side; app keeps a PLT set of its own, and here it is:
+Done with reading data, we return to that call line in total_tax. In the opening piece's hello.s, @PLT hung off the tail of the call operand, and all we said then was that it had something to do with how dynamic-library calls are made: the PLT is a trampoline, and the GOT is a table for looking up addresses. Once linking is finished, it has grown into a real, physical thing. Let's look at main on the app side — app has a PLT of its own, and we'll see it shortly:
 
 ```text
 $ objdump -d --no-show-raw-insn -M intel app (excerpt)
@@ -158,7 +160,7 @@ $ objdump -d --no-show-raw-insn -M intel app (excerpt)
     1188:	call   1050 <total_tax@plt>
 ```
 
-The call's target is 0x1060, and the label reads base_tax@plt. PLT stands for Procedure Linkage Table; in part 04 we glimpsed it from afar as the trampoline that function calls go through, and today we read its entries out one by one. Each entry is a short stretch of fixed jump code, and that is what the trade jargon calls a stub. app and libcalc each keep their own set, each serving their own call sites. The stub in libcalc looks like this, together with the special first entry in front of it:
+The call's target is 0x1060, and the label reads base_tax@plt. PLT stands for Procedure Linkage Table; in 04 we glimpsed it from afar, calling it the trampoline that function calls pass through. Today we read its entries out one by one. Each entry is a small fixed stretch of jump code — that is what the jargon calls a stub. app and libcalc each keep their own set, each serving its own call sites. The stub inside libcalc looks like this, together with that special first entry ahead of it:
 
 ```text
 $ objdump -d --no-show-raw-insn -M intel libcalc.so (excerpt)
@@ -171,9 +173,9 @@ $ objdump -d --no-show-raw-insn -M intel libcalc.so (excerpt)
     103b:	jmp    1020 <_init+0x20>
 ```
 
-The base_tax@plt stub is three instructions in all; let's read them one at a time. The leading jmp jumps to the address stored in GOT slot 0x4000. The entry that registered it is the JUMP_SLOT, and it works the same way as the GLOB_DAT: one governs functions, the other governs data. Following it, push 0x0 pushes the relocation index onto the stack, which amounts to announcing itself: base_tax, standing at index 0. The closing jmp 1020 jumps to the PLT's first entry, the one the jargon calls PLT0. PLT0 does the shared work: it pushes the GOT+8 slot, where at load time a record describing this module gets filled in (the link_map). Then it hands control to the GOT+16 slot, which holds glibc's resolver; we will call it _dl_runtime_resolve. The resolver takes the index off the stack, looks up base_tax's real address, writes the address it found back into the 0x4000 slot, and only then delivers the flow of execution into base_tax proper.
+The base_tax@plt stub is three instructions in all; let's read them one at a time. The lead jmp jumps to whatever address sits in GOT slot 0x4000; the registration for that slot is a JUMP_SLOT, used exactly like GLOB_DAT — one minds functions, the other minds data. The push 0x0 that follows pushes the relocation's index number onto the stack, which amounts to announcing itself: base_tax, number 0 in the queue. The closing jmp 1020 jumps to the PLT's very first entry — PLT0, in the jargon. It does the common work: it pushes the GOT+8 slot, which at load time gets filled with a record describing this module (the link_map). Then it hands control to the GOT+16 slot, which holds glibc's resolver function; we'll call it `_dl_runtime_resolve`. The resolver takes the index off the stack, looks up base_tax's real address, writes the found address back into slot 0x4000, and only then delivers execution into base_tax itself.
 
-So what did the 0x4000 slot hold when it left the factory? The handful of slots the PLT uses live off on their own in a section called .got.plt, and let's dump its bytes out raw:
+So what does slot 0x4000 hold as it ships from the factory? The slots the PLT uses live in a section of their own called .got.plt; let's pour its bytes out exactly as they are:
 
 ```text
 $ readelf -x .got.plt libcalc.so
@@ -184,11 +186,11 @@ Hex dump of section '.got.plt':
   0x00003ff8 00000000 00000000 36100000 00000000 ........6.......
 ```
 
-Look at what the table holds: four entries in all. 0x3fe8 stores the address of the dynamic section (.dynamic), 0x3e00; that is the thing we were reading with readelf -d for DT_NEEDED back in part 08. 0x3ff0 and 0x3ff8 are two empty seats reserved for the dynamic linker; the link_map and the resolver both get their values only at load time, so in the file they are two zeros for now. Read the entry at 0x4000 little-endian and the value is 0x1036, which happens to be the address of the push 0x0 instruction inside the stub. That factory value at 0x4000 strings the whole thing together: in its factory state, the leading jmp travels in a circle and lands right back on the push instruction in its own stub, and from there it is push, jump into PLT0, into the resolver. Once the resolver has written the real address back into the slot, the next call goes from the leading jmp straight into base_tax; the resolving work is done exactly once in its lifetime. A factory value that circles back to its own stub before setting out: that is the whole of lazy binding's machinery.
+Look at the table's contents: four items in all. 0x3fe8 stores the address of the dynamic segment (.dynamic), 0x3e00 — the very thing we read with readelf -d for DT_NEEDED in the previous piece. 0x3ff0 and 0x3ff8 are two vacancies reserved for the dynamic linker; the link_map and the resolver get their values only at load time, so the file holds two zeros right now. 0x4000, read in little-endian order, comes out as 0x1036 — precisely the address of the stub's push 0x0 instruction. The factory value of 0x4000 strings the whole story together: in its as-shipped state, the lead jmp takes one turn in a circle and lands right back on its own stub's push instruction, and from there it goes push, jump into PLT0, into the resolver. Once the resolver has written the real address back into the slot, the next call flies straight into base_tax from the first jmp — the resolving work happens exactly once in a lifetime. That as-shipped value, looping back around before setting out, is the entire machinery of lazy binding.
 
-## Lazy Binding: Resolved on the First Call
+## Lazy Binding: Resolved Only on the First Call
 
-Deferring the resolution of JUMP_SLOTs until the first call is the practice known as lazy binding. GLOB_DAT gets no such treatment; it is finished off during loading. We accept no claims without evidence, so let's have the dynamic linker confess on its own record. Set the environment variable LD_DEBUG=bindings and it logs every single symbol binding. app prints its start line at the top and only then makes its first call, so the dividing line is ready-made:
+Deferring a JUMP_SLOT's resolution to the first call is called lazy binding. GLOB_DAT gets no such treatment — it is fully handled during loading. Verbal claims we don't accept: we'll make the dynamic linker confess on its own. Set the environment variable LD_DEBUG=bindings and it writes down every symbol binding it performs. app prints a line of start before making its first call, so the dividing line is ready-made:
 
 ```text
 $ LD_DEBUG=bindings LD_LIBRARY_PATH=. stdbuf -oL ./app 2>&1 | grep -E 'base_tax|tax_rate|start|base=' | grep -v stdbuf
@@ -200,9 +202,9 @@ start
 base=100 total=117
 ```
 
-(The digit string at the head of each line is the process ID; yours will come out different. We used stdbuf -oL to switch stdout to line buffering; without it, the stderr in the pipeline would jump the gun and the ordering would lie to us.) Watch the dividing line. The bindings of tax_rate and __libc_start_main sit ahead of start: the startup-period work was all finished by then. The two base_tax lines sit after start, and one belongs to app while the other belongs to libcalc: exactly the first call through each of the two PLT sets. Run it once more with LD_BIND_NOW=1 and all four lines move up ahead of start; the line between lazy and eager could not be plainer.
+(That string of digits at the head of each line is the process ID; yours will come out different. We set stdbuf -oL to make stdout line-buffered — otherwise the stderr traveling down the pipe would jump the queue, and the ordering would lie to us.) Now the dividing line: the bindings of tax_rate and `__libc_start_main` sit ahead of start, all the start-up work already done. The two base_tax bindings sit after start, one from app and one from libcalc — exactly each of the two PLTs' own first call. Run it once more with LD_BIND_NOW=1 and all four move up ahead of start; the line between lazy and eager could not be clearer.
 
-We also caught the slot's before-and-after values, and this time we bring gdb on stage. We set one breakpoint at the top of main and another where the two calls have returned. gdb disables ASLR by default, so the library's load base stays put; handy for taking readings:
+We caught the slot's before and after values too, and this time gdb takes the stage. We plant one breakpoint at the top of main and another where the two calls return: gdb turns ASLR off by default, which is what pins the library's load base in place and makes the numbers easy to read:
 
 ```text
 libcalc base = 0x7ffff7f9d000
@@ -212,16 +214,16 @@ after  GOT slot = 0x7ffff7f9e109
    0x7ffff7f9e109 <base_tax>:	push   %rbp
 ```
 
-Before the first call has happened, what we read in the slot is base plus 0x1036, pointing at the push instruction inside the stub. After the call, the slot has been swapped for base_tax proper (base plus 0x1109), matching the 0x1109 in the relocation table's Sym. Value column exactly. The stub itself has not moved a single byte; all that changed is 8 bytes in the GOT.
+Before the first call happens, the slot we read holds base plus 0x1036, pointing at the push instruction inside the stub. After the call has happened, the slot holds base_tax itself (base plus 0x1109), matching the 0x1109 in the relocation table's Sym. Value column exactly. The stub hasn't changed by a single byte; the only thing that changed is those 8 bytes in the GOT.
 
-So is the default lazy or eager? No need to memorize anybody's claim; one look at readelf -d settles it. FLAGS carrying BIND_NOW means eager; no BIND_NOW means lazy. On my machine, the executable that GCC 16.2.1 links by default carries no such flag, so it goes lazy. When we want to choose eager on purpose, two roads are open. Add `-Wl,-z,now` at link time, and the flag goes straight into the file. Or set LD_BIND_NOW=1 before running, buying a one-off stretch of eagerness. Plenty of distributions and hardening configurations these days make eager binding the default: a little more time spent at startup buys having every resolution finished in advance and a smaller attack surface, which for server-side programs is often a good trade. Which to choose comes down to whether your own program cares more about the speed of starting up or about steadiness at run time.
+So is the default lazy or eager? We don't have to memorize anyone's word for it — readelf -d settles it at a glance: a FLAGS entry carrying BIND_NOW means eager, and without it, lazy. On my machine, the executable GCC 16.2.1 links by default carries no such flag: it goes lazy. To choose eager deliberately there are two roads: add `-Wl,-z,now` at link time and the flag goes straight into the file, or set LD_BIND_NOW=1 before running for a one-time eager binding. Quite a few distributions and hardening configs now make eager binding the default: you pay a little extra start-up time and get every resolution finished up front plus a smaller attack surface — often a worthwhile trade for server-side programs. How to choose still comes down to whether your program cares more about start-up speed or about steadiness at run time.
 
-## Symbol Interposition: The Library's Internal Calls Leave the Door Open
+## Interposition: Calls Inside the Library Left a Door Open
 
-We return to the question put on hold earlier: total_tax calls the library's own base_tax, so why does that call have to go through the PLT as well? The binding records above have already let the answer show through: when libcalc resolved base_tax, it was searching for it as a global symbol. When the dynamic linker resolves a symbol, it lays out every module's export table in the process and searches from the top; whoever sits in front wins. There is no special privilege here, no library always getting to use its own people. A same-named definition in another module pushing aside the library's internal call — the trade jargon for that is symbol interposition. Let's actually run it once; our stand-in is a single line:
+Back to the question we set aside earlier: total_tax calls its own base_tax — why should that have to go through the PLT? The binding records above have already let the answer slip out: when libcalc resolved base_tax, it looked for it as a global symbol. When the dynamic linker resolves a symbol, it lays out the export tables of every module in the process and searches from the front — whoever comes first wins, and there is no special privilege by which a library always uses its own. A same-named definition in another module displacing a call made inside the library: the jargon for this is interposition. Let's actually run it once; our impostor is one line long:
 
 ```c
-// libfake.c — the stand-in: a same-named definition with a deliberately different return value
+// libfake.c — the impostor: a same-named definition, return value deliberately different
 int base_tax(void) { return 999; }
 ```
 
@@ -231,11 +233,11 @@ start
 base=999 total=1016
 ```
 
-LD_PRELOAD has the dynamic linker load this library ahead of every other library. Set that against the opening's base=100 and the origin of 999 is easy to read: app's own call got replaced. What matters is 1016 = 999 + 17: the base_tax() inside total_tax also called the stand-in. A call the library wrote itself got its target swapped by an outsider, and we did not recompile a single line. And this is no accident. It is part of the machinery: precisely because the library's internal calls go through the PLT and leave that room, replacement is possible at all. Quite a few of the memory-profiling and tracing tools you will meet later on got their start by preloading their own malloc and free, and the whole method sits right here. The door staying open is convenient, but the danger is real too. The complete rules for who sits in front, and the means of narrowing the door — symbol visibility — get their dedicated treatment in part 11 (Symbol Visibility). Where a preloaded library gets found from is a one-sentence matter for part 10 (Library Search).
+LD_PRELOAD has the dynamic linker load this library ahead of all the others. Set it against the base=100 from the start: the 999 is easy to explain — app's own call got displaced. What matters is 1016 = 999 + 17: the base_tax() inside total_tax called the impostor too. A call the library wrote itself had its target swapped by an outsider, and we didn't have to recompile a single line. This is not an accident. It is part of the design: precisely because calls inside a library go through the PLT and leave room, replacement becomes possible. Plenty of the memory-profiling and tracing tools you'll meet later on got their start by preloading their own malloc and free — the whole trick lives right here. The door being open is convenient; the danger is just as real. The complete rules of who comes first, and the means for narrowing the door — symbol visibility — get their own piece in 11. Where preloaded libraries get found from is one sentence away in the next piece.
 
 ## The CMake Perspective
 
-These days you seldom get to type -fPIC by hand; the build system watches that setting for us. CMake's master switch is CMAKE_POSITION_INDEPENDENT_CODE, and our minimal project looks like this:
+Typing -fPIC by hand is rare these days; the build system minds this setting for us. CMake's master switch is CMAKE_POSITION_INDEPENDENT_CODE, and our minimal project looks like this:
 
 ```cmake
 cmake_minimum_required(VERSION 3.20)
@@ -248,17 +250,17 @@ add_executable(app main.c)
 target_link_libraries(app PRIVATE calc)
 ```
 
-We dig the real compile commands out with --verbose and check them against what we expect (I trimmed the paths): calc's side carries -fPIC, and app's side carries -fPIE — exactly the two settings this piece has been about.
+We dig the real compile commands out with --verbose and check them against each other (paths trimmed): calc's side carries -fPIC, and app's side carries -fPIE — exactly the two settings this piece has been about.
 
 ```text
 … -fPIC … -o CMakeFiles/calc.dir/libcalc.c.o …
 … -fPIE … -o CMakeFiles/app.dir/main.c.o …
 ```
 
-When we want finer control, the POSITION_INDEPENDENT_CODE target property earns its keep: with set_target_properties we dial one target at a time, and the exceptions the global variable cannot reach are its jurisdiction. We tested the defaults too. A SHARED library carries -fPIC automatically; not one character is required from you. A STATIC library, on the other hand, goes without by default. When does that hurt? At the moment you take that default static library and link it into a .so, what gets reported is the R_X86_64_PC32 from the top of this piece; the wording matches the opening error, only the lead role changes, from counter to the tax_rate inside a .a member. So for projects whose static libraries serve as raw material for other people's .so files, turning PIC on globally is the worry-free starting configuration. As for PIE for executables, you need not give it a thought: app's link line does not even carry -pie, and the product still landed as a pie executable. Defaults are the toolchain's business, and CMake is happy to leave it at that.
+When we want finer control, the POSITION_INDEPENDENT_CODE target property comes into play: set_target_properties turns it for a single target, and the exceptions the global variable doesn't cover belong to it. We measured the defaults too: a SHARED library carries -fPIC automatically, without a word from you. A STATIC library by default does not — when does that hurt? The moment you take a default static library and link it into a .so, out comes the very R_X86_64_PC32 we met at the top of this piece, in the same error shape as the opening one, with tax_rate inside an .a member playing the lead instead of counter. So for projects whose static libraries go out to be turned into .so's, turning PIC on globally is the low-worry starting configuration. As for the executable's PIE, you don't have to lift a finger: app's link line doesn't even carry -pie, and the artifact still came out a pie executable. Defaults belong to the toolchain, and CMake is happy not to interfere.
 
-## Next Up: In What Order Does the Linker Look for Libraries
+## What Comes Next: In What Order Does the Linker Find Libraries
 
-Position independence has delivered install-anywhere execution: no absolute addresses are embedded in the code anymore; data exits through the GOT, functions exit through the PLT, and the dynamic linker patches the real addresses in at load time. In part 05 we watched helper receive 0x112c at link time and then get shifted wholesale at load time. After the shift, every reference still connects, and what it connects through is exactly today's machinery.
+Position independence has delivered the run-anywhere guarantee: no absolute addresses embedded in the code anymore, data exits through the GOT, function calls exit through the PLT, and the real addresses get filled in at load time by the dynamic linker. In 05 we watched helper get its 0x112c at link time and then be shifted wholesale at load. After the shift, every reference still connects — and what connects them is exactly today's machinery.
 
-With machine code squared away, one question from the engineering side still meets you every day: when linking, in what order does the linker actually look for libraries? Does -lcalc go for libcalc.so or for libcalc.a? And at run time, where do LD_LIBRARY_PATH, the system directories, and the rest each rank? The full unfolding of those rules is exactly what the next piece, part 10 (Library Search), takes up.
+The machine-code side is settled now, but on the engineering side one question will meet you every day: when linking, in what order does the linker search for libraries? Does -lcalc find libcalc.so or libcalc.a? And at run time, where do LD_LIBRARY_PATH and the system directories each rank? The next piece unfolds those rules in full.

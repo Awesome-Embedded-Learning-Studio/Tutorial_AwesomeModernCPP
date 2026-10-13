@@ -3,20 +3,22 @@ chapter: 13
 difficulty: advanced
 order: 15
 platform: host
-reading_time_minutes: 28
+reading_time_minutes: 15
 tags:
 - cpp-modern
 - host
 - advanced
+- 工具链
+- 链接器
 title: "LTO and Modern Linkers: Moving the Optimization Boundary to Link Time"
 description: "One -flto added at compiling, and optimization moves from inside the compiler into the link stage: a scale call across two translation units keeps its call under -O2, folds into the mov $0x2b immediate under -flto -O2, and the function vanishes whole, body and symbol together; readelf dissecting a slim object — .text at zero bytes, the function's body living in a .gnu.lto_* section as intermediate representation, set against -ffat-lto-objects' fat objects; the -v output photographed live, collect2 handing over liblto_plugin as it always does, and lto1's two rounds of -fwpa and -fltrans; ar against gcc-ar with the index identical to the last character, plus the local fact that a bare-ar library links fine without -flto; -Wodr naming struct Config's two faces at link time while the inline half stays silent; the 41-file chain specimen with text shrunk from 3377 to 1437 and all 40 step functions at zero, the price of a doubled link time and the link cost incremental builds cannot save; bfd against gold really run (-print-prog-name verifying the swap, threefold timings, the LTO plugin eaten just the same), lld 22.1.8 and mold 2.42.1, the last C++ release, pulled in and really run; CMake 3.9's three IPO names and 3.29's LINKER_TYPE really run, with MOLD's no-install failure pasted as it came and one PATH addition running the link straight through; closing with nm -D proving the export side unmoved by LTO."
 cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/compilation/15-lto-and-modern-linkers.md
-  source_hash: 4ed3dab831fb1f6c639c595eb1adad26690fa65c768b6c721ba9e2cbb1c888d8
-  translated_at: '2026-10-12T04:42:24+00:00'
-  engine: glm
-  token_count: 4683
+  source_hash: 634298c1f2954cb5b5fa950d29ee87037870d09bd8b9b436eca1e319cbbf80e0
+  translated_at: '2026-10-13T04:37:26+00:00'
+  engine: anthropic
+  token_count: 4700
 ---
 
 # LTO and Modern Linkers: Moving the Optimization Boundary to Link Time
@@ -97,7 +99,7 @@ $ g++ -O2 -flto util_lto.o main_lto.o -o app -v
  /usr/lib/gcc/x86_64-pc-linux-gnu/16/lto1 -quiet -dumpbase ./app.ltrans0.ltrans ... -fltrans @/tmp/ccX1B1sV -o /tmp/cc6ZjdaB.s
 ```
 
-(The temporary files' names I kept exactly as they came; run it yourself and the string you get will be another one — it does not get in the way of our watching.) collect2, the wrapper around the linker ld, hands liblto_plugin.so over to the linker; the plugin calls lto-wrapper out; and lto-wrapper pulls up lto1, the compiler proper, for two rounds. The first round, -fwpa, does the whole-program analysis — the verdicts on inlining are handed down in this round. The second round, -fltrans, translates the analyzed partitions back into real machine code. The -fresolution file in the middle has a story of its own: the linker writes the symbol resolution it had settled into it — which names got merged with which, which definition survived — all written out on the list, and the compiler does its work following the list. You see: of the optimization work itself the linker truly touched not one item, yet it ushered the whole optimization pipeline in through the door — and with that, the last piece's verdict stands overturned.
+(The temporary files' names I kept exactly as they came; run it yourself and the string you get will be another one — it does not get in the way of our watching.) collect2 hands liblto_plugin.so over to the linker; the plugin calls lto-wrapper out; and lto-wrapper pulls up lto1, the compiler proper, for two rounds. The first round, -fwpa, does the whole-program analysis — the verdicts on inlining are handed down in this round. The second round, -fltrans, translates the analyzed partitions back into real machine code. The -fresolution file in the middle has a story of its own: the linker writes the symbol resolution it had settled into it — which names got merged with which, which definition survived — all written out on the list, and the compiler does its work following the list. You see: of the optimization work itself the linker truly touched not one item, yet it ushered the whole optimization pipeline in through the door — and with that, the last piece's verdict stands overturned.
 
 Object files carrying only IR have a name of their own: we call them slim objects. Carrying both is doable too — we have to add -ffat-lto-objects explicitly, and the product goes by the name fat objects. Lay the three files side by side and compare sizes: the ordinary util_o2.o is 1224 bytes, the slim util_lto.o is, of all things, 3680, and the fat util_fat.o is 3920. The slim one actually larger than the ordinary one — you read that right: the function is too small, and the registration information the IR carries with it got the upper hand. (The slim and fat byte counts, and the hexadecimal on the tail of the .gnu.lto_ section names, will drift by a few bytes from run to run — the IR registration numbers carry randomness. What does not change is the order: ordinary smallest, slim in the middle, fat the largest.) Slim, that is to say, speaks of the contents — no finished machine code in them; it is not a remark about the file's size. We open the fat object up: the .gnu.lto_ sections are all there, and .text holds another honest-to-goodness 13 bytes — real code held in reserve for settings that cannot read IR. Our volume's ordinary builds have no use for it; CMake even asks for the slim ones on our behalf, by name — you will see it with your own eyes in the CMake section.
 
@@ -124,7 +126,7 @@ The link simply passed — and printed 43. Looking back at -v explains it: on th
 
 ## Two Faces, and This Time -Wodr Calls It Out
 
-The meeting brings one more by-product with it. In part 07 we verified two precedents. The kind where a type wears two faces, -Wodr can catch: it is GCC's warning switch dedicated to reporting ODR violations — ODR being the One Definition Rule, an acquaintance from part 07 — and once LTO is on, it names names on the spot. The kind where an inline function carries two bodies: we hung -flto -Wall -Wextra on that one, and its performance was total silence. Rerunning the first costs little, so we take it through once as the controlled comparison. In config.h we let the macro cut out the two faces:
+The meeting brings one more by-product with it. In part 07 we verified two precedents. The kind where a type wears two faces, -Wodr can catch: it is GCC's warning switch dedicated to reporting ODR violations — ODR's full name is the One Definition Rule, the single-definition rule — and once LTO is on, it names names on the spot. The kind where an inline function carries two bodies: we hung -flto -Wall -Wextra on that one, and its performance was total silence. Rerunning the first costs little, so we take it through once as the controlled comparison. In config.h we let the macro cut out the two faces:
 
 ```cpp
 // config.h (wrapped in a header guard)
@@ -178,7 +180,7 @@ The gain carries a price, and the price lands on the link end. On the same 41-fi
 
 The spot incremental builds cannot save is more specific still. We changed chain_5.cpp alone; recompiling it took only 0.009 seconds — the incremental saving still holds on the compile end. But the LTO link that followed took 0.063 seconds, the same price as the full one: GCC keeps no cache for LTO by default, so the 41 IR files start over from scratch at every link, and once the project grows, the link end sits heavier and heavier. So on projects with LTO on, the common practice is to turn it off in the debug builds and turn it back on for the release builds. We leave the trade-off to the CMake section, where a single switch of yours toggles it.
 
-## Swapping Linkers: -fuse-ld and the Family
+## Swapping Linkers: -fuse-ld and the Families
 
 After all this talk of LTO, the linkers themselves get their turn. The ld we speak of every day — its real body is ld.bfd. bfd is the binutils family's library layer for reading ELF, and its full name is Binary File Descriptor. The same house holds one more linker born for speed, gold; outside the gate there is lld, of the LLVM house; and the newest, begun in 2020, is mold. The switch for changing linkers is -fuse-ld=name, and the driver's way of doing it is plain: look for the program under the altered name. One command verifies this for us:
 

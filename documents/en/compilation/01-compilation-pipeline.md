@@ -3,37 +3,39 @@ chapter: 13
 difficulty: intermediate
 order: 1
 platform: host
-reading_time_minutes: 17
+reading_time_minutes: 18
 tags:
 - cpp-modern
 - host
 - intermediate
-title: "Compilation and Linking: Four Stages from .cpp to Executable"
-description: "Run each of g++'s four stages yourself with -E, -S, -c, and -o, get a good look at what each stage's artifact looks like, and get acquainted with cc1plus, as, and collect2, the programs that actually do the work."
+- 工具链
+- 基础
+title: 'Compilation and Linking: Four Stages from .cpp to Executable'
+description: 'Run g++ through its four stages one by one with -E, -S, -c, and -o, get a clear look at what each stage''s artifact looks like, and meet cc1plus, as, and collect2, the programs that actually do the work.'
 cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/compilation/01-compilation-pipeline.md
-  source_hash: 0c39a0c3b0a49fea7b1ec27b1b6b5bb5c9e6bd8d9ace6a03e9c51cc43c022100
-  translated_at: '2026-09-30T05:48:45+00:00'
-  engine: glm
-  token_count: 4031
+  source_hash: ff6ccfacd656f114219f79c80245313b33865f7f0db16ca6d9beebb20312cb47
+  translated_at: '2026-10-13T03:40:32+00:00'
+  engine: anthropic
+  token_count: 3300
 ---
 
 # Compilation and Linking: Four Stages from .cpp to Executable
 
-Just about every day we type a command like this one, and those of us who don't are off clicking a Build button in an IDE instead:
+Just about every day we type out a command like this one, and those of us who don't type it are clicking the build button in an IDE instead:
 
 ```bash
 g++ hello.cpp -o hello
 ```
 
-Enter goes down, a few seconds pass, and a runnable `hello` is lying in the directory. So what did the machine actually do during those seconds? Most tutorials turn the page right here, as if being able to run were already enough, and you flip to the next chapter along with them. But you have most likely seen `undefined reference`, seen duplicate-definition errors, or spent a long while staring dumbly at a whole string of linker errors. Everything that gives you those headaches happens inside those few seconds, and those seconds happen to be the least-explained part of C++ engineering.
+Enter goes down, a few seconds pass, and a runnable `hello` is sitting in the directory. So what did the machine actually do during those seconds? Most tutorials turn the page right here, as if "it runs" were already enough, and you flip along to the next chapter with them. But you have almost certainly run into `undefined reference`, run into duplicate-definition errors, or spent a good while staring blankly at a wall of linker errors. All of the things that give you those headaches happen inside those few seconds in the middle, and those seconds happen to be the least-talked-about part of C++ engineering.
 
-This volume is my attempt to account for what goes on in those seconds. In this first piece we do a plain thing: the command you type has four stages hiding behind it, so we will run every stage with our own hands and pull the intermediate artifacts out one at a time to look at them. And once that's done there's something that may surprise you: the g++ you type every day does not compile a single line of code itself. Someone else does the real work, and later on we will meet them with our own eyes.
+In this volume I want to account for everything that happens in those few seconds. As the opening article of the volume, we'll do something plain and simple: the command you type hides four stages behind it, and we'll run each stage by hand, pulling out the intermediate artifacts one by one to have a look. And once we're done, there's one more thing that may surprise you: the g++ you type every day doesn't actually compile a single line of code itself. The programs doing the real work are someone else, and we'll meet them face to face later on.
 
-## Our test subject: six lines of code
+## Our Specimen: Six Lines of Code
 
-The whole series starts from this:
+The whole series starts from this file:
 
 ```cpp
 // hello.cpp
@@ -45,19 +47,19 @@ int main() {
 }
 ```
 
-Six lines in all, and it can't be slimmed down any further. What gets typed into the terminal is g++, but today you will see that the names actually taking the stage belong to three other programs.
+Six lines in total, and it can't get any smaller than this. What you type into the terminal is g++, but as you'll see today, the names that actually take the stage are three others.
 
-I work inside WSL2 (the Linux subsystem within Windows), using the GCC 16.2.1 toolchain together with binutils 2.47 and glibc 2.44. binutils is the GNU family's binary toolset; the assembler and the linker we are about to meet both come out of it. glibc is the GNU C library, the runtime library for C/C++ programs on Linux. Every output that shows up in this piece is something I really ran. If your versions differ, details like line counts and paths will drift a bit, but the four stages themselves haven't changed in decades.
+I work in WSL2 (the Windows Subsystem for Linux), with GCC 16.2.1 as the toolchain, paired with binutils 2.47 and glibc 2.44. binutils is GNU's suite of binary tools; the assembler and the linker we're about to meet both come out of it. glibc is GNU's C library, the runtime library for C/C++ programs on Linux. Every piece of output in this article is something I actually ran. If your versions differ, details like line counts and paths will drift a little, but the four stages themselves haven't changed in decades.
 
-## Preprocessing: source in, source out
+## Preprocessing: Source In, Source Out
 
-g++ also hands us a few switches, and with them we can stop g++ partway down the road and keep the intermediate artifacts. The first one we reach for is `-E`: once preprocessing is done, it stops.
+g++ also gives us a few switches, and with them we can stop g++ partway through and keep the intermediate artifact. The first one is `-E`: once preprocessing finishes, it stops right there.
 
 ```bash
 g++ -E hello.cpp -o hello.i
 ```
 
-This time the artifact is `hello.i`. What does it actually look like? Let's have `wc` count the lines:
+The artifact this time is `hello.i`. What did it actually turn into? Let's count the lines with `wc`:
 
 ```text
 $ wc -l hello.cpp hello.i
@@ -65,23 +67,23 @@ $ wc -l hello.cpp hello.i
      6 hello.cpp
 ```
 
-Six lines went in; forty-four thousand nine hundred seventy-one came out. The first time I saw that number, I sat there scrolling the terminal back for ages, and everything that scrolled past was header files.
+Six lines went in, forty-four thousand nine hundred and seventy-one came out. The first time I saw that number, I sat there scrolling the terminal for a good while, and everything scrolling past was header files.
 
-Where does all the extra come from? From the one line we wrote, `#include <iostream>`. When the preprocessor meets `#include`, it copies the pointed-to file in verbatim. iostream itself includes other headers, so the copying goes on and on and ends up at forty-odd thousand lines. Apart from `#include`, our file contains no other preprocessor directives. If we had written macros, this is the step where they would get expanded too. Comments have it the easiest: they simply get dropped.
+Where did all the extra material come from? From the `#include <iostream>` line we wrote. When the preprocessor sees `#include`, it copies the referenced file in verbatim. iostream itself includes other headers, so the copying keeps going, and it grows past forty thousand lines. Our file contains no preprocessing directives besides `#include`. If we had written macros, they would get expanded at this stage too. Comments are easier: they're simply stripped out.
 
-So what kind of file is `hello.i`? Let's give the `file` command the floor:
+So what kind of file is `hello.i`? Let's let the `file` command answer:
 
 ```text
 hello.i:   C++ source, ASCII text
 ```
 
-You see: it is still C++ source code, genuine ASCII text. Preprocessing is a source-to-source text transformation; nothing machine-specific has been produced. You can open `hello.i` right now, jump straight to the bottom, and find our `main` lying there untouched, with forty-odd thousand lines of expanded headers in front of it.
+See that: it's still C++ source code, honest-to-goodness ASCII text. Preprocessing is a source-to-source text transformation and produces nothing machine-specific. You can open `hello.i` right now and scroll all the way to the bottom: our `main` is lying there untouched, preceded by forty-thousand-odd lines of expanded headers.
 
-> How headers keep themselves from being copied twice, what else macro expansion gets up to, and what conditional compilation is for — all of that belongs to piece 02. And those forty-odd thousand lines in hello.i? We will come back and deal with them then.
+> How headers keep themselves from being copied in twice, what other tricks macro expansion has up its sleeve, what conditional compilation is for — all of that belongs to the next article. Those forty-thousand-odd lines of hello.i, we'll come back and deal with them then.
 
-## Compilation: from source to assembly
+## Compilation: Source Becomes Assembly
 
-Now it is the second switch's turn, `-S`: we have g++ stop after generating the assembly.
+Time for the second switch, `-S`: we have g++ stop right after generating the assembly.
 
 ```bash
 g++ -S hello.cpp -o hello.s
@@ -91,7 +93,7 @@ g++ -S hello.cpp -o hello.s
 hello.s:   assembler source, ASCII text
 ```
 
-What comes out is still text, but it is already another language. The beginning of `hello.s` looks like this; let's work our way down, line by line:
+The output is still text, but it's a different language now. Here is how `hello.s` opens; let's read it line by line:
 
 ```asm
 	.file	"hello.cpp"
@@ -106,23 +108,23 @@ main:
 	call	_ZStlsISt11char_traitsIcEERSt13basic_ostreamIcT_ES5_PKc@PLT
 ```
 
-Let's start from `main`. Its name is still main; only its identity has changed: it is now a label in the assembly. The two instructions right under the label, `pushq` and `movq`, are the same old routine for opening a function, the pair responsible for setting up this frame's stack.
+Let's start from `main`. It's still called main; only its identity has changed: it's now a label in the assembly, and the two instructions right below it, `pushq` and `movq`, are the usual function-opening routine that sets up this call's stack frame.
 
-Next, look at the string literal we wrote, `"hello, linker!\n"` — it changed shape too: the compiler took it away, assigned it an internal number `.LC0`, and from then on, whenever the code below wants it, it refers to it by address.
+Now look at the string literal we wrote, `"hello, linker!\n"`. It has changed shape too: the compiler took it away and gave it an internal label, `.LC0`, and whenever later code needs it, it has to reference the string by address.
 
-That `_ZSt4cout` string that looks like garbage is really `std::cout`. C++ has namespaces, it has overloading, far too many things share a name, so the compiler flat-out encodes all of that information into the symbol name to guarantee no collisions. The move is called name mangling. There is no rush to learn how to read it; hand it to `c++filt` and the original gets spat right back out. Today we only need to recognize one representative: once cout enters the world of assembly, its name becomes `_ZSt4cout`.
+That garbled-looking string `_ZSt4cout` is actually `std::cout`. C++ has namespaces and overloads, so far too many things share a name, and the compiler simply encodes all of that information into the symbol name to guarantee no collisions. This move is called name mangling. No need to rush into reading it — hand it to `c++filt` and it reports the original name back to us on the spot. For today, one representative is enough: once cout enters the world of assembly, its name becomes `_ZSt4cout`.
 
-The one most worth a look is the call at the end. Let me translate the function it calls for you: it is the `operator<<` we have been using, the overload that sends a string into cout. Two places there deserve a stop.
+The most interesting line is the call at the end. Let me translate the function it calls for you: it's the very `operator<<` we're using, the overload that sends a string into cout. Two things here are worth stopping for.
 
-Look: the implementation of `operator<<` is nowhere in our six lines of code. We only called it; its implementation lives somewhere else. Where exactly? I will keep that to myself for now — in the later part where g++ shows its true face, you will see it with your own eyes.
+First, the implementation of `operator<<` isn't anywhere in our six lines of code. We only called it; its implementation lives somewhere else. Where? I'll keep you in suspense — in the section on g++'s real identity, you'll see it with your own eyes.
 
-The other place is at the tail of the called symbol, where an `@PLT` suffix hangs. The suffix has to do with how calls into dynamic libraries work, and alongside the PLT there is also a GOT: the PLT is the trampoline mechanism that function calls go through, and the GOT is the table it consults for addresses. It is completely fine if none of this makes sense to you yet; piece 09 (position-independent code and GOT/PLT) was prepared precisely for them.
+The other is the `@PLT` suffix hanging off the called symbol. That suffix has to do with how calls into shared libraries work, and alongside the PLT there's a GOT: the PLT is the trampoline mechanism a function call goes through, and the GOT is the table it consults for addresses. It's completely fine if this makes no sense yet — the article on position independence and GOT/PLT exists precisely for them.
 
-> As for the compiler's interior — every layer from parsing through optimization to instruction selection — each one is worth a whole piece of its own, and that is exactly what piece 03 does.
+> As for the compiler's internals, every layer from parsing through optimization to instruction selection could fill a whole article on its own. The compiler article doesn't dig into those layers' algorithms; it looks from the other end: your source code goes in, and where in the output assembly the compiler laid its hands on it.
 
-## Assembly: from text to binary
+## Assembly: Text Becomes Binary
 
-The third switch, `-c`, is next: we have g++ stop after producing the object file.
+On to the third switch, `-c`: we have g++ stop after producing the object file.
 
 ```bash
 g++ -c hello.cpp -o hello.o
@@ -132,13 +134,13 @@ g++ -c hello.cpp -o hello.o
 hello.o:   ELF 64-bit LSB relocatable, x86-64, version 1 (SYSV), not stripped
 ```
 
-At this step the artifact is no longer meant for human eyes. `file` says it is an ELF 64-bit relocatable file. ELF stands for Executable and Linkable Format; on Linux, both object files and executables use this container, and we will be dealing with it over and over in pieces 04 and 16. relocatable means, well, relocatable: the addresses inside the file are still provisional, and it is the linking stage that decides where they end up. The assembler's work is entirely mechanical: it takes our `hello.s`, translates it into machine code one instruction at a time, and packs the result up in ELF format. That is where the `.o` files we are forever talking about come from.
+At this point, the artifact is no longer meant for human eyes. `file` says it's an ELF 64-bit relocatable file. ELF stands for Executable and Linkable Format, and it's the container used by both object files and executables on Linux — we'll run into it again and again in the object-file anatomy article and the side article. Relocatable means just what it says: the addresses inside the file are still provisional, waiting for the linking stage to decide where they end up. The assembler's work is entirely mechanical: it takes our `hello.s`, translates it into machine code one instruction at a time, and packages the result in ELF format. That's where the `.o` files we're always talking about come from.
 
-There is one more word in the output worth being happy about: not stripped. The symbol information is all still there. For us that is tremendous news — later, when we dissect object files with tools like `nm` and `objdump`, we will be counting entirely on the symbol table it left behind. It plays the lead in piece 04 (Object File Anatomy: What's Inside a .o), where we will bring the tools along and take this hello.o apart from the inside out.
+One more word in the output should make us happy: not stripped, meaning the symbol information all stayed in. This is tremendous news for us — when we later dissect object files with tools like `nm` and `objdump`, we'll be leaning entirely on the symbol table it preserved. It's the star of the object-file anatomy article; when we get there, we'll bring the tools and take this hello.o apart from the inside out.
 
-## Linking: from object file to executable
+## Linking: Object File Becomes Executable
 
-At the linking step we take the previous stage's `hello.o` as the raw material:
+At the linking step, we take the previous stage's `hello.o` as the raw material:
 
 ```bash
 g++ hello.o -o hello_app
@@ -148,11 +150,11 @@ g++ hello.o -o hello_app
 hello_app: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2
 ```
 
-Hold this output next to the `hello.o` line and compare: you can pick out quite a few differences. The format is still ELF, but its identity has gone from relocatable to pie executable. pie means position-independent — the finer points there are a question piece 09 will answer for us. Either way, this is now a real, runnable program. The dynamically linked that follows says it will depend on dynamic libraries while running. And at the end a new face has shown up, named interpreter, with a long path hanging off it.
+Compare this output with the `hello.o` line and quite a few differences jump out. The format is still ELF, but the identity has changed from relocatable to pie executable. pie means position-independent; the fine print behind that is a question the position-independence article will answer for us. Either way, it's now a program that genuinely runs. The dynamically linked that follows says it depends on shared libraries at runtime. And at the end there's a new face called interpreter, dragging a long path behind it.
 
-interpreter's identity we can reveal right now: it is the dynamic linker. Our program uses dynamic libraries such as libstdc++, and when the operating system loads it and gets it running, interpreter is the one that has to track down each library it needs and wire it up. Between loading the program and the first line of main there is a whole further pipeline, and that is the content of piece 14 (program startup).
+Time to reveal the interpreter's identity: it's the dynamic linker. Our program uses shared libraries like libstdc++, and when the operating system loads it up and runs it, it's the interpreter that fetches each needed library and hooks everything up. Between program loading and the first line of main, there's a whole pipeline, and that's the subject of the program startup article.
 
-For how much stuff linking actually packed into the program, we have a more direct way to see it: the `size` command.
+For a more tangible look at how much stuff linking stuffed into the program, there's the `size` command:
 
 ```text
 $ size hello.o hello_app
@@ -161,21 +163,21 @@ $ size hello.o hello_app
    1708	    632	    280	   2620	    a3c	hello_app
 ```
 
-A quick vocabulary note: text is the code section, data holds initialized global data, bss holds uninitialized global data, and dec and hex are the first three columns summed, in decimal and in hexadecimal.
+A quick glossary for the columns: text is the code section, data holds initialized global data, bss holds uninitialized global data, and dec and hex are the first three columns summed up in decimal and hexadecimal.
 
-Now the numbers. In the hello.o row, text comes to 156 and data and bss are clean zeros — we did only write six lines of code. And hello_app? text grew to 1708, and data and bss went from nothing to something. Who is the extra? Our code did not grow; the extra parts are other object files and the runtime startup code, merged in at the linking step. And who put them there? No rush — in the next section you will see the answer yourself.
+Now the numbers. In hello.o's row, text is 156 and data and bss are a clean 0 — after all, we only wrote six lines of code. What about hello_app? text grew to 1708, and data and bss went from nothing to something. Who's the extra? Our code didn't get any longer; what got added is other object files and the runtime's startup code, merged in at the linking step. Who put them there? Hold on — in the next section you'll see the answer for yourself.
 
-## g++ itself is not the compiler
+## g++ Itself Is Not the Compiler
 
-We have now run all four stages with our own hands, so let's blow g++'s cover: from start to finish, g++ was never the compiler.
+We've now run all four stages by hand; time for the reveal: g++ was never the compiler at any point.
 
-Give g++ a `-v`, compile all the way through one more time, and have it report what it does behind the scenes:
+Let's put `-v` on g++ and do one complete compile, so it lays out what happens behind the curtain:
 
 ```bash
 g++ -v hello.cpp -o hello_v
 ```
 
-The output runs long. I have cut the parts off the main thread; only three commands are actually doing the work. The ellipses are mine, and plenty of arguments got dropped along the way:
+The output is quite long; I've cut the parts unrelated to our storyline, and only three commands are actually doing the work. I added the ellipses myself — plenty more parameters were left out:
 
 ```text
  /usr/lib/gcc/x86_64-pc-linux-gnu/16/cc1plus -quiet ... -o /tmp/ccC9eT4s.s
@@ -183,43 +185,43 @@ The output runs long. I have cut the parts off the main thread; only three comma
  /usr/lib/gcc/x86_64-pc-linux-gnu/16/collect2 ... -o hello_v ... crt*.o ... /tmp/ccRhctwc.o -lstdc++ -lm -lgcc_s ...
 ```
 
-Look at the one leading the pack, cc1plus: that is the real compiler. There is an interesting detail here: the two stages we called preprocessing and compilation are handled entirely by this one program. So the four stages we speak of are a logical division for observing the process, convenient for stopping midway and pulling out intermediates; how the real tools divide themselves up does not map onto it one to one. That is precisely the job of the `-E`, `-S`, and `-c` we used earlier: have g++ work to a certain stretch and then call it a day, keeping the intermediate artifact.
+Look at the first one, cc1plus — that's the real compiler. Here's an interesting detail: the two stages we talked about, preprocessing and compilation, are both handled by this single program. So the four stages we've been counting are a logical division for observation, a convenience that lets us halt partway and extract intermediate artifacts. The real tools' boundaries don't map onto it one to one. The `-E`, `-S`, and `-c` flags we used earlier do exactly this job: make g++ clock out after a given segment, leaving the intermediate artifact behind.
 
-The `as` in the middle is the assembler, born out of binutils, and its job is translating `.s` into `.o`. The finale, `collect2`, is a wrapper around the linker `ld`. All the good stuff is pressed into that one line, so let's zoom in on it.
+The `as` in the middle is the assembler out of binutils, and its whole job is turning `.s` into `.o`. The finale, `collect2`, is a wrapper around the linker `ld`. All the good stuff is packed into that one line, so let's zoom in on it.
 
-Stuffed in there is a batch of things we never asked for by name: `Scrt1.o`, `crti.o`, `crtbeginS.o`, `crtendS.o`, `crtn.o` — a set of C runtime startup files. collect2 also took the liberty of bringing along a row of default libraries: the `-lstdc++`, `-lm`, `-lgcc_s`, and `-lc` we never wrote are all in there. We did not write a single line of startup code; it came by itself. What the startup files do before main travels the same road as interpreter, and we leave that for piece 14 (program startup). And the implementation of `operator<<` lives in the library that `-lstdc++` points to — that is the answer to the suspense from earlier. You can now explain the `size` comparison too: the only file we named was hello.o, yet collect2 statically merged in the startup files, and the growth in text, data, and bss is their contribution. That row of default libraries is another matter: they are attached as dynamic dependencies, and their code never enters this file. Just how dynamic libraries get attached — that we leave for piece 08 (Dynamic Libraries Overview: Build Time and Run Time).
+Packed inside are things we never asked for: `Scrt1.o`, `crti.o`, `crtbeginS.o`, `crtendS.o`, `crtn.o` — a set of C runtime startup files. collect2 also took the liberty of bringing along a row of default libraries we never wrote: `-lstdc++`, `-lm`, `-lgcc_s`, and `-lc`, all of them in there. We didn't write a single line of startup code, yet it showed up on its own. What the startup files do before main runs is on the same road as the interpreter, so we'll leave it for the program startup article. As for the implementation of `operator<<`, it lives in the library `-lstdc++` points to — there's the answer to the suspense I built earlier. You can now also explain the size output comparison: the only thing we specified was hello.o, yet collect2 statically merged the startup files in, and the growth in text, data, and bss is their contribution. The row of default libraries is a different story: they're attached as dynamic dependencies, and their code never enters this file. How shared libraries actually get attached, we'll save for the dynamic libraries overview.
 
-With that, g++'s identity is settled: it is a driver. What we casually call "just compile it" is, behind the scenes, g++ summoning cc1plus, as, and collect2 in order, handing each step's output to the next, and translating the arguments we pass into the form each of them understands. So strictly speaking, today we never touched the compiler directly, not once; g++ has been running the errands for us the whole way.
+Having talked this far, g++'s identity is clear: it's actually a driver. What we usually call "compiling something" is, behind the scenes, g++ summoning cc1plus, as, and collect2 in order, handing each step's output to the next, and translating the arguments we passed into the form each tool understands. So strictly speaking, we never touched the compiler directly today — g++ has been running the errands for us the whole time.
 
-## The sixteen pieces of this volume
+## The Sixteen Articles of This Volume
 
-Today we touched each of the four stages; the remaining fifteen pieces, broadly, zoom in on them:
+Today we've given each of the four stages a first touch; the remaining fifteen articles more or less take each one and blow it up:
 
-- The **compilation segment** covers 02 through 05: 02 Preprocessing: How a Translation Unit Comes to Be, 03 What the Compiler Does: From C++ to Assembly, 04 Object File Anatomy: What's Inside a .o, and 05 The Linker: Symbol Resolution and undefined reference. Today we only looked at each stage's artifact; the internal unfolding is their job.
-- The **reuse segment** is about 06 and 07: one piece packages static libraries, and the other takes on templates, inline, and the ODR (the one definition rule). How do we package the code we write for others to reuse? How does a single definition manage not to be duplicated? The answers are sitting in those two pieces.
-- The **dynamic library engineering segment** is the longest, running from 08's overview of dynamic libraries all the way to 13's runtime loading and plugins: 09 is about position independence and GOT/PLT (GOT is short for Global Offset Table), 10 about library search logic, 11 about symbol visibility, and 12 about ABI design (ABI stands for Application Binary Interface). The mechanisms behind the dynamically linked and @PLT we lightly brushed today all get unfolded in this segment.
-- The **advanced segment** wraps up: 14 program startup, 15 LTO (Link Time Optimization) and modern linkers, plus 16's side story. The side story takes up a fun question: can a dynamic library be run directly as an executable? Today we only glimpsed interpreter from a distance; the whole pipeline before main belongs to piece 14.
+- The **compilation segment** covers 02 through 05: 02 preprocessing, 03 what the compiler does, 04 object-file anatomy, and 05 the linker. Today we only looked at each stage's artifact; the innards are left to those.
+- The **reuse segment** is 06 and 07: one article on packaging static libraries, the other wrangling templates, inline, and the ODR (the One Definition Rule). How do we package the code we write so others can reuse it? How does the same definition avoid being duplicated? The answers live in those two.
+- The **shared-library engineering segment** is the longest, running from the dynamic libraries overview in 08 all the way to runtime loading and plugins in 13: 09 covers position independence and GOT/PLT (GOT stands for Global Offset Table), 10 covers library search logic, 11 covers symbol visibility, and 12 covers ABI (Application Binary Interface) design. The dynamically linked and @PLT we brushed against lightly today — the mechanisms behind them all get unfolded in this segment.
+- The **advanced segment** closes it out: 14 program startup, 15 LTO (Link Time Optimization) and modern linkers, plus the side article in 16. The side article takes up a fun question: can a shared library be run directly, as an executable? Today we only glimpsed the interpreter from a distance; the whole flow before main belongs to the program startup article.
 
-## The build system's view
+## The Build System's Perspective
 
-Day to day you probably don't type g++ directly; you build inside a CMake project. That is fine — the build system can print out, exactly as it runs them, the commands it executes:
+Day to day you probably don't type g++ directly — you build inside a CMake project. That's actually fine, because the build system can lay out the commands it really executes, exactly as they run:
 
 ```bash
 cmake --build build --verbose
 ```
 
-With `--verbose` on, every real command the build runs gets printed: each source file gets its own compile command, and a single link command wraps up the job. What we typed by hand today and what it runs are the same kind of thing; the difference is only in the length of the paths and the number of the arguments.
+With `--verbose` added, every real command run during the build gets printed: each source file has its own compile command, and the finale is a single link command. What we typed by hand today and what it runs are the same kind of thing; the only difference is the length of the paths and the number of arguments.
 
-So there is no magic in the build system: it does no compiling itself. It lines the four stages up for us, arranges the compilation of hundreds of source files in parallel, and gets the paths, macro definitions, and link options filled in correctly, one by one. As for how to use CMake itself, that is volume seven's turf (engineering practice). Here we are confirming just one thing: what runs when you build every day is exactly today's four stages.
+So there's no magic in a build system: it doesn't compile anything itself. It lines up the four stages for us, schedules the compilation of hundreds of source files in parallel, and fills in the paths, macro definitions, and link options one by one. As for how to use CMake itself, that's Volume 7's (engineering practice) territory. Here we only confirm one thing: what runs when you build every day is exactly today's four segments.
 
-## Back to daily life: where undefined reference happens
+## Back to Daily Life: Where undefined reference Happens
 
-Finally, let's return to a moment you know all too well: you changed a bit of code, ran the build command, and the screen flooded with undefined reference — and the program didn't come out.
+Finally, let's return to a moment you know best: you change a bit of code, type out the build command, the screen fills up with undefined reference, and the program refuses to build.
 
-Now you can work out for yourself which stage the error lands in. Preprocessing won't take this blame; all it does is text substitution. The compiler doesn't handle it either. We saw it with our own eyes in the assembly today: the `operator<<` that hello.cpp calls is defined nowhere in this file, and the compiler went right ahead and calmly generated the call instruction. When translating a single file, using something defined elsewhere is perfectly normal business; the compiler's only job is to record the reference faithfully.
+You can now reason through for yourself which segment this error comes from. Preprocessing isn't to blame — all it does is text substitution. The compiler doesn't actually care either: we saw it with our own eyes in the assembly today — the `operator<<` hello.cpp calls isn't defined anywhere in this file, yet the compiler calmly generated the call instruction anyway. When translating a single file, using things defined elsewhere is perfectly normal; the compiler's only job is to faithfully record the reference.
 
-The real checkpoint is linking. The linker takes every one of those references and goes looking for the implementation across all the .o files and libraries: the ones it finds get connected, and for the ones it doesn't, you receive an undefined reference. Why didn't our hello_app complain? The implementation of `operator<<` lives in libstdc++, and collect2 carries `-lstdc++` by default; the names matched up, and the link went through.
+The real checkpoint is linking. The linker takes each such reference and searches every .o and library for an implementation: found means wired up; not found, and you receive an undefined reference. Why didn't our hello_app error out? The implementation of `operator<<` is in libstdc++, and collect2 brings `-lstdc++` along by default — the name matched, so the link went through.
 
-And what if you linked the library and it still can't be found? In what order does the linker search libraries? Do static libraries or dynamic libraries come first? Why does it claim it can't find a library that clearly exists? Those belong to piece 05 (The Linker: Symbol Resolution and undefined reference) and piece 10 (Library Search Logic: How Libraries Are Found at Link Time and Run Time), and we will go through them one scenario at a time.
+And what if the library is linked and the symbol still can't be found? In what order does the linker search libraries? Do static or shared libraries come first? Why does it insist a library can't be found when it's plainly there? Those belong to the linker article and the library-search article, and we'll walk through them scenario by scenario when we get there.
 
-The next piece is 02. We will start from those 44,971 lines of hello.i, go back to the preprocessing step, and see what it actually did.
+The next article picks up from those 44,971 lines of hello.i and goes back to see exactly what the preprocessing step did.
