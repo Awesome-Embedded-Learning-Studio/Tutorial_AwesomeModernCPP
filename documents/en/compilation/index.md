@@ -8,10 +8,10 @@ tags:
   - intermediate
 translation:
   source: documents/compilation/index.md
-  source_hash: 1f487380ec8bb8ff28899726e24b557443abca6abf77d7ce0c02b8f534e4735c
-  translated_at: '2026-09-26T17:05:28+00:00'
-  engine: anthropic
-  token_count: 830
+  source_hash: 9fc8de1ed8ce675d3e723a81ecfff4eff686060b647c7116abbcdebe7e0b0c0e
+  translated_at: '2026-10-02T10:08:00+00:00'
+  engine: glm
+  token_count: 413
 ---
 # Deep Dive into C/C++ Compilation and Linking
 
@@ -21,15 +21,23 @@ This volume is about what the compiler and the linker are actually doing behind 
 
 ## Chapter Navigation
 
+> This volume has been fully restructured: articles 01-16 have all been rewritten.
+
 <ChapterNav>
-  <ChapterLink num="1" href="01-compilation-and-linking-overview">Compilation and Linking Overview: Where undefined reference Comes From</ChapterLink>
-  <ChapterLink num="2" href="02-reuse-concept">The Essence of Reuse: From Source Level to Binary Level</ChapterLink>
-  <ChapterLink num="3" href="03-creating-and-using-static-libs">Static Libraries: Packaged with ar, Linked with -l/-L</ChapterLink>
-  <ChapterLink num="4" href="04-dynamic-libraries-1">Dynamic Libraries (Part 1): Why -fPIC Is Mandatory</ChapterLink>
-  <ChapterLink num="5" href="05-dynamic-library-design">Dynamic Library Design: ABI and Cross-Toolchain Interfaces</ChapterLink>
-  <ChapterLink num="6" href="06-symbol-visibility">Symbol Visibility: Controlling What a Dynamic Library Exports</ChapterLink>
-  <ChapterLink num="7" href="07-symbol-missing-and-runtime-loading">Missing Symbols and Runtime Loading: dlopen and LoadLibrary</ChapterLink>
-  <ChapterLink num="8" href="08-library-search-logic">Library Search Logic: How Libraries Are Found at Link Time and Run Time</ChapterLink>
-  <ChapterLink num="9" href="09-dynamic-library-details">Dynamic Library Details: PLT/GOT Lazy Binding and Symbol Interposition</ChapterLink>
-  <ChapterLink num="10" href="10-dynamic-lib-as-executable">Side Story: Can a Dynamic Library Run as an Executable?</ChapterLink>
+  <ChapterLink num="1" href="01-compilation-pipeline">Compilation and Linking: Four Stages from .cpp to Executable</ChapterLink>
+  <ChapterLink num="2" href="02-preprocessing">Preprocessing: How a Translation Unit Comes to Be</ChapterLink>
+  <ChapterLink num="3" href="03-what-the-compiler-does">What the Compiler Does: From C++ to Assembly</ChapterLink>
+  <ChapterLink num="4" href="04-object-file-anatomy">Object File Anatomy: What's Inside a .o</ChapterLink>
+  <ChapterLink num="5" href="05-linking-symbol-resolution">The Linker: Symbol Resolution and undefined reference</ChapterLink>
+  <ChapterLink num="6" href="06-static-libraries">Static Libraries: Packaging with ar and Linking with -l/-L</ChapterLink>
+  <ChapterLink num="7" href="07-templates-inline-odr">Templates, inline, and ODR: Ten Translation Units, One Entity</ChapterLink>
+  <ChapterLink num="8" href="08-dynamic-libraries-overview">Dynamic Libraries: An Overview of Build-Time and Run-Time</ChapterLink>
+  <ChapterLink num="9" href="09-pic-got-plt">Position-Independent Code and GOT/PLT: Addresses Settled at Load Time</ChapterLink>
+  <ChapterLink num="10" href="10-library-search-logic">Library Search Logic: How Libraries Are Found at Link Time and Run Time</ChapterLink>
+  <ChapterLink num="11" href="11-symbol-visibility">Symbol Visibility: Controlling What a Dynamic Library Exports</ChapterLink>
+  <ChapterLink num="12" href="12-abi-design">ABI Design: Defining the Interface, Managing Its Versions</ChapterLink>
+  <ChapterLink num="13" href="13-runtime-loading-plugins">Runtime Loading and Plugins: The Program Finds Libraries, Fetches Symbols, and Unloads</ChapterLink>
+  <ChapterLink num="14" href="14-program-startup">Program Startup: From exec to main</ChapterLink>
+  <ChapterLink num="15" href="15-lto-and-modern-linkers">LTO and Modern Linkers: Moving the Optimization Boundary to Link Time</ChapterLink>
+  <ChapterLink num="16" href="16-dynamic-lib-as-executable">Side Story: Can a Dynamic Library Run as an Executable?</ChapterLink>
 </ChapterNav>

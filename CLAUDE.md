@@ -13,13 +13,6 @@ Claude Code 在本项目的**专属补充**。通用项目信息(架构 / 命令
    - `article-factcheck-audit.md` —— 事实准确性 + 引用验证(人名 / 日期 / 规格 / 代码行为)
    - `article-rigor-audit.md` —— 编译器行为 + 技术断言验证(强制编译 / 汇编佐证)
 
-## 规划命令(skills,规划者模式 —— 只规划不执行)
-
-- [`/patch`](.claude/commands/patch.md) —— 小迭代规划(开发原子单位,累积制)
-- [`/minor`](.claude/commands/minor.md) —— 发版打包规划(攒够后手工判定触发)
-
-确认讨论后产出【总结 + 迭代 Issue】到聊天框,套本地 `.claude/templates/iteration-issue.md`。不调 `gh`、不开 issue。
-
 ## 实用命令(skills,执行型)
 
 - [`/audit`](.claude/commands/audit.md) —— 对一篇文章跑事实 + 严谨双审查并修正
@@ -50,7 +43,7 @@ Claude Code 有持久记忆(跨会话保留用户偏好、项目进展、踩坑)
 | [.claude/style/writing-style.md](.claude/style/writing-style.md) | 写作人格 / 语气 / 骨架 / 代码风格(公开精简卡) |
 | `.claude/tools/content_forge/` | 维护者完整写作与审稿体系(gitignore 不入库:VOICE / COMPARE / writing_style / humanizer_lint) |
 | [.claude/rules/documents-frontmatter.md](.claude/rules/documents-frontmatter.md) | Frontmatter 字段与标签 |
-| [.claude/commands/](.claude/commands/) | `/patch` `/minor` 规划 skills |
+| [.claude/commands/](.claude/commands/) | 实用 skills(/audit /verify-claim 等) |
 | [.claude/prompts/](.claude/prompts/) | 文章审查 prompt(事实 / 严谨) |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | 贡献流程一条龙 |
 | `site/.vitepress/config/` | VitePress 配置(nav / sidebar / theme) |
