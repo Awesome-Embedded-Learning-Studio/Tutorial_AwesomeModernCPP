@@ -1,0 +1,4 @@
+page size     : 4096, mapped 16384 pages
+first touch   :    1.49 ms, minor faults  1027, sum 2088960
+second touch  :    0.20 ms, minor faults     0, sum 2088960
+after DONTNEED:    3.28 ms, minor faults  1024, sum 2088960

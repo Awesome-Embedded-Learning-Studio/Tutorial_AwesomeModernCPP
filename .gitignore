@@ -46,4 +46,4 @@ scripts/cppref_cache/
 .vscode/
 
 # Native .venv
-.venv/
+.venv

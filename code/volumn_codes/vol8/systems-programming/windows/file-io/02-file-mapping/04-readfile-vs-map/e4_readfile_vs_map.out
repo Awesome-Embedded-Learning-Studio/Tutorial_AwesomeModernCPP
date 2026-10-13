@@ -1,0 +1,53 @@
+$ ./e4_readfile_vs_map.exe envinfo; echo "exit=$?"
+[envinfo] 本机环境自报
+  物理内存 61.7 GiB,可用 34.5 GiB
+  测试文件所在卷 C:\ 文件系统=NTFS(后备盘总线类型见 README,PowerShell 口径)
+  注:盘型探测在程序内两条路都走不通——IOCTL_STORAGE_QUERY_PROPERTY 对文件句柄
+      err=87/1,GetFileInformationByHandleEx(FileStorageInfo) err=50,且 MinGW 头的
+      FILE_STORAGE_INFO 是截断版(缺 BusType/FileSystemType/MediaType 尾部字段)
+exit=0
+
+$ ./e4_readfile_vs_map.exe create; echo "exit=$?"
+[create] 建 256MiB 测试文件(确定性内容)+ FlushFileBuffers
+  写入+落盘耗时 0.25 s(理论校验和自检通过)
+exit=0
+
+$ ./e4_readfile_vs_map.exe readfile-seq; echo "exit=$?"
+[readfile-seq] ReadFile 顺序整读,块 1MiB,3 轮(暖缓存)
+  readfile-seq 轮1    53.41 ms     4794 MiB/s
+  readfile-seq 轮2    51.08 ms     5012 MiB/s
+  readfile-seq 轮3    50.14 ms     5106 MiB/s
+  readfile-seq 中位    51.08 ms     5012 MiB/s  校验和=34225520640(与理论一致)
+exit=0
+
+$ ./e4_readfile_vs_map.exe map-seq; echo "exit=$?"
+[map-seq] MapViewOfFile 顺序扫全文件,3 轮(轮1含首触缺页,轮2/3暖)
+  map-seq 轮1    93.45 ms     2739 MiB/s
+  map-seq 轮2    18.18 ms    14081 MiB/s
+  map-seq 轮3    18.03 ms    14198 MiB/s
+  map-seq 中位    18.18 ms    14081 MiB/s  校验和=34225520640(与理论一致)
+exit=0
+
+$ ./e4_readfile_vs_map.exe readfile-rand; echo "exit=$?"
+[readfile-rand] 随机 4KiB x 10000:SetFilePointerEx + ReadFile,3 轮(暖缓存)
+  readfile-rand 轮1    33.22 ms    3.32 us/op
+  readfile-rand 轮2    31.37 ms    3.14 us/op
+  readfile-rand 轮3    31.93 ms    3.19 us/op
+  readfile-rand 中位    31.93 ms    3.19 us/op  校验和=5237682176(与同一偏移序列理论值一致)
+exit=0
+
+$ ./e4_readfile_vs_map.exe map-rand; echo "exit=$?"
+[map-rand] 随机 4KiB x 10000:视图直接寻址,3 轮(轮1含首触缺页)
+  map-rand 轮1    15.27 ms    1.53 us/op
+  map-rand 轮2     5.54 ms    0.55 us/op
+  map-rand 轮3     5.31 ms    0.53 us/op
+  map-rand 中位     5.54 ms    0.55 us/op  校验和=5237682176(与同一偏移序列理论值一致)
+exit=0
+
+$ ./e4_readfile_vs_map.exe readfile-nobuf; echo "exit=$?"
+[readfile-nobuf] ReadFile 顺序整读,块 1MiB,3 轮(FILE_FLAG_NO_BUFFERING,绕过缓存,冷读侧写)
+  readfile-nobuf 轮1    83.49 ms     3066 MiB/s
+  readfile-nobuf 轮2    81.19 ms     3153 MiB/s
+  readfile-nobuf 轮3    82.20 ms     3114 MiB/s
+  readfile-nobuf 中位    82.20 ms     3114 MiB/s  校验和=34225520640(与理论一致)
+exit=0

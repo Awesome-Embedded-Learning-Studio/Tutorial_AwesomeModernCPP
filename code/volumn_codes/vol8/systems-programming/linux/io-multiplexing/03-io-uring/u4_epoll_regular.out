@@ -1,0 +1,12 @@
+[普通文件 fd=3]
+fcntl F_SETFL O_NONBLOCK = 0 (这个标志本身设得上去)
+O_NONBLOCK 下 read = 4096 (有数据直接给, 不会拿 EAGAIN 说"现在没有")
+
+epoll_ctl ADD 普通文件 = -1 errno=1 (Operation not permitted)
+man 2 epoll_ctl 对 EPERM 的解释: 目标 fd 不支持 epoll (内核里没有 poll 支持的文件类型)
+
+[对照: 空管道 + O_NONBLOCK] read = -1 errno=11 (Resource temporarily unavailable)
+空管道 epoll_wait(0) 返回 0, 管道在其中报就绪: 否
+
+结论: 普通文件两头都关死 -- 非阻塞语义不生效(read 永不 EAGAIN), epoll 直接拒收(EPERM);
+对磁盘文件做统一的异步, 只能走 io_uring 的 READ (完成事件带真实字节数, 见 E2)。

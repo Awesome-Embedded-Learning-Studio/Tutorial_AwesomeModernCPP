@@ -1,0 +1,25 @@
+== A. 尺寸与移动语义(两侧同构) ==
+  sizeof                             net:4  sysp:4
+  is_nothrow_move_constructible      net:1  sysp:1
+  is_nothrow_move_assignable         net:1  sysp:1
+  is_default_constructible           net:1  sysp:1
+== B. 接口面差异(trait 探针) ==
+  reset 带参重载 reset(int)      net:0  sysp:1
+  成员 swap()                      net:0  sysp:1
+  std::is_swappable_v                net:1  sysp:1
+  release()                          net:1  sysp:1
+  get() 标注 noexcept              net:0  sysp:1
+  reset() 标注 noexcept            net:0  sysp:1
+== C. 错误模型对拍(SysError vs error_code) ==
+  sizeof(错误类型)               net:40  sysp:16
+  两侧错误值同源(errno=2)
+  net::SysError  携带上下文: "open"
+  sysp error_code message(): "No such file or directory"
+  error_code == errc::no_such_file_or_directory : true
+  SysError errno_value 与 errc 判等(裸 int 比较枚举):
+== D. 全链路对拍:open+read 一个不存在的文件 ==
+  [net ] 失败: context="open" errno=2 ("哪一步"在错误对象里)
+  [sysp] 失败: value=2 message="No such file or directory" ("哪一步"要在调用点/日志层补)
+== E. 成功路径换手(/dev/null) ==
+  net  moved: src_empty=1 dst_valid=1
+  sysp moved: src_empty=1 dst_valid=0  after swap: sw=1 sm=0

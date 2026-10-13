@@ -1,0 +1,14 @@
+{
+  "type": "judge-io",
+  "title": "checksum",
+  "stars": 2,
+  "hints": [
+    "两件事在同一个循环里做:每读进一个字符,先 `putchar(ch)` 抄送出去,再 `sum += ch` 累加,别读完再补回显。",
+    "加法本身在 `int` 里做(`sum` 和 `ch` 都先提升),加完才存回 `signed char`;超出 −128 到 127 的部分不会被丢弃,按 256 取模折回这个区间(C++20 起有定义,主流编译器一直如此)。"
+  ],
+  "tests": [
+    { "in": "Hello world!\n", "out": "Hello world!\n\n102\n" },
+    { "in": "a", "out": "a\n96\n" },
+    { "in": "", "out": "\n-1\n" }
+  ]
+}

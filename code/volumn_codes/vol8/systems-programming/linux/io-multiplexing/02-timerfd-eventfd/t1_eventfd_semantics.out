@@ -1,0 +1,24 @@
+[默认模式 efd=3]
+  write(第1次, 1) = 8
+  write(第2次, 2) = 8
+  write(第3次, 5) = 8
+三次 write 之后计数器 = 1+2+5, 一次 read 全取走:
+  read(取值) = 8
+  read(再读) = -1 errno=11 (Resource temporarily unavailable)
+
+[信号量模式 EFD_SEMAPHORE efs=4]
+  write(一次写 5, 5) = 8
+  read(第n次) = 1
+  read(第n次) = 1
+  read(第n次) = 1
+  read(第n次) = 1
+  read(第n次) = 1
+  read(第n次) = -1 errno=11 (Resource temporarily unavailable)
+
+[溢出演练 efo=5]
+  write(写到只差 1 满, 18446744073709551614) = 8
+  write(再加 5, 5) = -1 errno=11 (Resource temporarily unavailable)
+
+[尺寸错配 efe=6]
+  write(4 字节) = -1 errno=22 (Invalid argument)
+  read(4 字节)  = -1 errno=22 (Invalid argument)

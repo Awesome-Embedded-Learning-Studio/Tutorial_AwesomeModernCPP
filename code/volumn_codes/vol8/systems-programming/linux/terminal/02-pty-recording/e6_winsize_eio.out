@@ -1,0 +1,21 @@
+[1] 新开 pty 的 winsize: rows=0 cols=0 —— 0x0,没人替你设
+[2] t=200ms TIOCSWINSZ(30x100)
+[2] t=500ms TIOCSWINSZ(40x120)
+    孩子报告 t=  100ms TIOCGWINSZ=0x0 SIGWINCH 计数=0
+    孩子报告 t=  200ms TIOCGWINSZ=30x100 SIGWINCH 计数=1
+    孩子报告 t=  301ms TIOCGWINSZ=30x100 SIGWINCH 计数=1
+    孩子报告 t=  401ms TIOCGWINSZ=30x100 SIGWINCH 计数=1
+    孩子报告 t=  501ms TIOCGWINSZ=40x120 SIGWINCH 计数=2
+    孩子报告 t=  601ms TIOCGWINSZ=40x120 SIGWINCH 计数=2
+    孩子报告 t=  701ms TIOCGWINSZ=40x120 SIGWINCH 计数=2
+    孩子报告 t=  801ms TIOCGWINSZ=40x120 SIGWINCH 计数=2
+    孩子报告 t=  901ms TIOCGWINSZ=40x120 SIGWINCH 计数=2
+    孩子报告 t= 1001ms TIOCGWINSZ=40x120 SIGWINCH 计数=2
+    孩子报告 t= 1102ms TIOCGWINSZ=40x120 SIGWINCH 计数=2
+    孩子报告 t= 1202ms TIOCGWINSZ=40x120 SIGWINCH 计数=2
+    孩子报告 t= 1302ms TIOCGWINSZ=40x120 SIGWINCH 计数=2
+    孩子报告 t= 1402ms TIOCGWINSZ=40x120 SIGWINCH 计数=2
+[3] 孩子退场(slave 全关),父进程这边:
+    read(master)  -> n=-1 errno=5(Input/output error)  <- 队列空+对端关,才报 EIO
+    write(master) -> n=1 errno=0(Success)  <- 写不报错
+    再 read(master) -> n=1 (回显)  <- 刚写的 x 被行规程回显回来了(ECHO 还开着)

@@ -1,0 +1,11 @@
+$ ./leak_raw 8        # 小批量试跑,确认离 RLIMIT_NOFILE 还远
+RLIMIT_NOFILE: soft=1048576 hard=1048576
+fds before (3): 0 1 2
+fds after  (11): 0 1 2 3 4 5 6 7 8 9 10
+loop=8 caught=8 open_failures=0 leaked=8
+
+$ ./leak_raw 1000
+RLIMIT_NOFILE: soft=1048576 hard=1048576
+fds before (3): 0 1 2
+fds after  (1003): 0 1 2 3 4 5 6 7 ... 999 1000 1001 1002
+loop=1000 caught=1000 open_failures=0 leaked=1000

@@ -1,0 +1,13 @@
+全局变量 g_shared:地址=0x5eec80aab0a0 初值=100
+64 MiB 缓冲:地址=0x761d333ff010 (逐页校验和=16384)
+fork 前:    Rss=  69536 kB  Pss=  65813 kB  Private_Clean=      0 kB  Private_Dirty=  65768 kB
+父·fork后: Rss=  69600 kB  Pss=  32952 kB  Private_Clean=      0 kB  Private_Dirty=     44 kB
+子进程刚出生,同一批地址:g_shared 地址=0x5eec80aab0a0 值=100
+子·未写: Rss=  67204 kB  Pss=  32915 kB  Private_Clean=      0 kB  Private_Dirty=     36 kB
+子进程写完:g_shared 地址=0x5eec80aab0a0 值=200(地址没变,值分家了)
+子·写后: Rss=  67268 kB  Pss=  65684 kB  Private_Clean=      0 kB  Private_Dirty=  65572 kB
+子进程退出后父进程再读:g_shared=100(没被子进程改成的 200 污染)
+父·子退后: Rss=  69600 kB  Pss=  65814 kB  Private_Clean=      0 kB  Private_Dirty=  65768 kB
+解读:fork 后谁都没写时,父子 Pss 各约一半(共享页对半分账);
+      子进程把 64 MiB 写满后 Pss 变全额,两边 Pss 之和≈128 MiB——
+      物理内存复制了一份,而 0x761d333ff010 这个地址两边从头到尾没变过,这就是写时复制。

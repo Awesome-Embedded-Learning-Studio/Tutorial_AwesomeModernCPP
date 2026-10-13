@@ -1,0 +1,686 @@
+{
+ "version": 1,
+ "id": "sysprog-syscall-roundtrip",
+ "title": "一次系统调用的往返",
+ "subtitle": "左边看 CPU 档位 · 右边看这一拍发生什么",
+ "source": "projects/vol8-sysprog-overview/02-dsl/sysprog-syscall-roundtrip.yaml",
+ "backend": "web",
+ "template": "freeform",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#111521",
+  "bgRaised": "#171D2D",
+  "text": "#F4F6FB",
+  "muted": "#98A2B8",
+  "fill": "#66D9EF",
+  "fillEdge": "#2E9DC2",
+  "emptyEdge": "#43506A",
+  "grow": "#FFB86C",
+  "numOnFill": "#0B1E27",
+  "ok": "#72D49A",
+  "bad": "#FF6B7A",
+  "cardBg": "#1B2234"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "一次系统调用的往返",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.8016,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "左边看 CPU 档位 · 右边看这一拍发生什么",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#98A2B8",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.952,
+   "h": 0.272
+  },
+  "show:privilege_title": {
+   "kind": "text",
+   "text": "CPU 当前特权级",
+   "x": -3.8,
+   "y": 2.25,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.816,
+   "h": 0.272,
+   "id": "privilege_title"
+  },
+  "show:privilege": {
+   "kind": "rings",
+   "cx": -3.8,
+   "cy": -0.4,
+   "w": 4.6,
+   "h": 4.6,
+   "active": "ring3",
+   "rings": [
+    {
+     "id": "ring3",
+     "label": "ring 3 · 您的程序",
+     "variant": "danger",
+     "r": 2.3,
+     "labelY": 2.02,
+     "fs": 0.22
+    },
+    {
+     "id": "ring2",
+     "label": "ring 2 · 通常不用",
+     "variant": "muted",
+     "r": 1.74,
+     "labelY": 1.46,
+     "fs": 0.22
+    },
+    {
+     "id": "ring1",
+     "label": "ring 1 · 通常不用",
+     "variant": "muted",
+     "r": 1.18,
+     "labelY": 0.9,
+     "fs": 0.22
+    },
+    {
+     "id": "ring0",
+     "label": "ring 0 · 内核",
+     "variant": "accent",
+     "r": 0.62,
+     "labelY": 0.0,
+     "fs": 0.22
+    }
+   ]
+  },
+  "show:work_title": {
+   "kind": "text",
+   "text": "这一拍发生什么",
+   "x": 3.7,
+   "y": 1.55,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.848,
+   "h": 0.272,
+   "id": "work_title"
+  },
+  "show:user_call": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "danger",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.716,
+   "w": 2.6416,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "用户程序运行",
+     "w": 1.584
+    },
+    {
+     "text": "调用 getpid()",
+     "w": 1.716
+    }
+   ],
+   "cx": 3.7,
+   "cy": -0.25
+  },
+  "show:enter_gate": {
+   "kind": "arrow",
+   "x1": 2.2004,
+   "y1": -0.28,
+   "x2": -1.3205,
+   "y2": -0.3504,
+   "cx": 0.44,
+   "cy": -0.3152,
+   "w": 3.5209,
+   "h": 0.0704,
+   "label": {
+    "text": "syscall · 控制权进入内核",
+    "x": 0.44,
+    "y": 0.0372,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 2.7792,
+    "h": 0.2448
+   }
+  },
+  "show:kernel_entry": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "accent",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.112,
+   "w": 3.0376,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "进入内核预设入口",
+     "w": 2.112
+    },
+    {
+     "text": "保存用户态寄存器",
+     "w": 2.112
+    }
+   ],
+   "cx": 3.7,
+   "cy": -0.25
+  },
+  "show:kernel_work": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "accent",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.112,
+   "w": 3.0376,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "按系统调用号分发",
+     "w": 2.112
+    },
+    {
+     "text": "执行 getpid",
+     "w": 1.452
+    }
+   ],
+   "cx": 3.7,
+   "cy": -0.25
+  },
+  "show:kernel_return": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "accent",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.112,
+   "w": 3.0376,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "getpid 已执行完",
+     "w": 1.98
+    },
+    {
+     "text": "恢复用户态寄存器",
+     "w": 2.112
+    }
+   ],
+   "cx": 3.7,
+   "cy": -0.25
+  },
+  "show:return_gate": {
+   "kind": "arrow",
+   "x1": -1.3205,
+   "y1": -0.3504,
+   "x2": 1.9373,
+   "y2": -0.2853,
+   "cx": 0.3084,
+   "cy": -0.3178,
+   "w": 3.2577,
+   "h": 0.0652,
+   "label": {
+    "text": "sysret · 控制权返回程序",
+    "x": 0.3084,
+    "y": 0.0346,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 2.6676,
+    "h": 0.2448
+   }
+  },
+  "show:user_resume": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "success",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.244,
+   "w": 3.1696,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "回到用户程序",
+     "w": 1.584
+    },
+    {
+     "text": "getpid() 返回 PID",
+     "w": 2.244
+    }
+   ],
+   "cx": 3.7,
+   "cy": -0.25
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "syscall 交出控制权，sysret 再交还",
+   "x": 0.0,
+   "y": 0.0882,
+   "fs": 0.24,
+   "color": "#FFB86C",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.0832,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "保存、分发、执行、恢复，一步都省不掉",
+   "x": 0.0,
+   "y": -0.4882,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.7024,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 2.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 1.43
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 1.43,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "显示图例",
+   "note": "",
+   "duration": 1.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:privilege_title",
+     "t": 0.0,
+     "dur": 1.43
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "显示权限环",
+   "note": "",
+   "duration": 0.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "rings_show",
+     "target": "show:privilege",
+     "cx": -3.8,
+     "cy": -0.4,
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "显示图例",
+   "note": "",
+   "duration": 1.19,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:work_title",
+     "t": 0.0,
+     "dur": 1.19
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "亮相 用户程序运行",
+   "note": "",
+   "duration": 2.07,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:user_call",
+     "cx": 3.7,
+     "cy": -0.25,
+     "t": 0.0,
+     "dur": 2.07
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.0s",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "连接 syscall · 控制权进入内核",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:enter_gate",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "set_ring",
+   "label": "切换到 ring 0 · 内核",
+   "note": "ring3 -> ring0",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "set_ring",
+     "target": "show:privilege",
+     "frm": "ring3",
+     "ring": "ring0",
+     "t": 0.0,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "收起 syscall · 控制权进入内核",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:enter_gate",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "收起 用户程序运行",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:user_call",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "亮相 进入内核预设入口",
+   "note": "",
+   "duration": 1.71,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:kernel_entry",
+     "cx": 3.7,
+     "cy": -0.25,
+     "t": 0.0,
+     "dur": 1.71
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "收起 进入内核预设入口",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:kernel_entry",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "亮相 按系统调用号分发",
+   "note": "",
+   "duration": 1.83,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:kernel_work",
+     "cx": 3.7,
+     "cy": -0.25,
+     "t": 0.0,
+     "dur": 1.83
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.0s",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "收起 按系统调用号分发",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:kernel_work",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "亮相 getpid 已执行完",
+   "note": "",
+   "duration": 2.07,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:kernel_return",
+     "cx": 3.7,
+     "cy": -0.25,
+     "t": 0.0,
+     "dur": 2.07
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "连接 sysret · 控制权返回程序",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:return_gate",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "set_ring",
+   "label": "切换到 ring 3 · 您的程序",
+   "note": "ring0 -> ring3",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "set_ring",
+     "target": "show:privilege",
+     "frm": "ring0",
+     "ring": "ring3",
+     "t": 0.0,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "收起 sysret · 控制权返回程序",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:return_gate",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "hide",
+   "label": "收起 getpid 已执行完",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:kernel_return",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "亮相 回到用户程序",
+   "note": "",
+   "duration": 2.55,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:user_resume",
+     "cx": 3.7,
+     "cy": -0.25,
+     "t": 0.0,
+     "dur": 2.55
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.0s",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 10.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:privilege",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:user_resume",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 0.6,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 3.35,
+     "dur": 2.4
+    }
+   ]
+  }
+ ]
+}

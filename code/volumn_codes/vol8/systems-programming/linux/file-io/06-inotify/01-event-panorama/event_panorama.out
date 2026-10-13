@@ -1,0 +1,46 @@
+E1 事件全景 —— watched: /home/charliechen/l06_scratch/e1/tree  mask: IN_ALL_EVENTS
+/proc/sys/fs/inotify/: max_user_watches=524288 max_user_instances=1024 max_queued_events=16384
+sizeof(struct inotify_event) = 16(1 int + 3 uint32 + char name[1],按 8 字节对齐)
+inotify_add_watch("/home/charliechen/l06_scratch/e1/tree", IN_ALL_EVENTS) = wd 1
+
+
+==== 第  1 步:open(f.txt, O_WRONLY|O_CREAT|O_TRUNC) ====
+  wd=1   mask=0x00000100 IN_CREATE                                    cookie=0      len=16  name='f.txt'
+  wd=1   mask=0x00000020 IN_OPEN                                      cookie=0      len=16  name='f.txt'
+  # len=16 不是 strlen("f.txt")=5:是 5+'\0' 凑 6,再向16(sizeof(struct inotify_event))对齐填充
+
+==== 第  2 步:write(fd, "hello", 5) ====
+  wd=1   mask=0x00000002 IN_MODIFY                                    cookie=0      len=16  name='f.txt'
+
+==== 第  3 步:close(fd) ====
+  wd=1   mask=0x00000008 IN_CLOSE_WRITE                               cookie=0      len=16  name='f.txt'
+
+==== 第  4 步:open O_RDONLY + read 2 字节 + close ====
+  wd=1   mask=0x00000020 IN_OPEN                                      cookie=0      len=16  name='f.txt'
+  wd=1   mask=0x00000001 IN_ACCESS                                    cookie=0      len=16  name='f.txt'
+  wd=1   mask=0x00000010 IN_CLOSE_NOWRITE                             cookie=0      len=16  name='f.txt'
+
+==== 第  5 步:chmod(f.txt, 0600) ====
+  wd=1   mask=0x00000004 IN_ATTRIB                                    cookie=0      len=16  name='f.txt'
+
+==== 第  6 步:rename(f.txt, g.txt)  同目录改名 ====
+  wd=1   mask=0x00000040 IN_MOVED_FROM                                cookie=8596   len=16  name='f.txt'
+  wd=1   mask=0x00000080 IN_MOVED_TO                                  cookie=8596   len=16  name='g.txt'
+  # 同一次 rename 的两条事件 cookie 相同(配对暗号),wd 相同(没出目录);其余事件 cookie 恒为 0
+
+==== 第  7 步:unlink(g.txt) ====
+  wd=1   mask=0x00000200 IN_DELETE                                    cookie=0      len=16  name='g.txt'
+
+==== 第  8 步:mkdir(sub) ====
+  wd=1   mask=0x40000100 IN_CREATE|IN_ISDIR                           cookie=0      len=16  name='sub'
+
+==== 第  9 步:rmdir(sub) ====
+  wd=1   mask=0x40000200 IN_DELETE|IN_ISDIR                           cookie=0      len=16  name='sub'
+
+==== 第 10 步:rmdir(tree)  被监控目录本身被删 ====
+  wd=1   mask=0x00000400 IN_DELETE_SELF                               cookie=0      len=0   name=''
+  wd=1   mask=0x00008000 IN_IGNORED                                   cookie=0      len=0   name=''
+
+目录没了之后再 inotify_rm_watch(wd=1) = -1, errno = 22 (Invalid argument) —— watch 已被内核随 IN_IGNORED 自动摘除
+
+子进程退出 status=0x0,事件全景收线

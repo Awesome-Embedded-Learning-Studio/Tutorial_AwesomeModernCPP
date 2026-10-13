@@ -1,0 +1,31 @@
+E2:canonical 行缓冲 vs raw 逐键(时刻表:喂 300ms 一次,读端什么时候拿到、拿到几块)
+
+[阶段1 canonical:行没写完,read 一直干等]
+  喂 t=   0ms 61 62 (ab)
+  喂 t= 300ms 63 64 (cd)
+  喂 t= 600ms 0a (\n)
+  读 t=[    0.2..  600.6]ms n=5   61 62 63 64 0a (abcd\n)
+  master 收到的回显:61 62 63 64 0d 0a (abcd\r\n)
+
+[阶段2 canonical:DEL(0x7f) 的行内编辑发生在 tty 层,读端拿不到]
+  喂 t=   0ms 61 62 63 (abc)
+  喂 t= 200ms 7f (DEL)
+  喂 t= 400ms 64 0a (d\n)
+  读 t=[    0.3..  400.8]ms n=4   61 62 64 0a (abd\n)
+  master 收到的回显:61 62 63 08 20 08 64 0d 0a (abc^H ^Hd\r\n)
+
+[阶段3 canonical:NAK(^U) 整行抹掉,读端只看到新行]
+  喂 t=   0ms 61 62 63 (abc)
+  喂 t= 200ms 15 (NAK)
+  喂 t= 400ms 78 79 0a (xy\n)
+  读 t=[    0.3..  400.6]ms n=3   78 79 0a (xy\n)
+  master 收到的回显:61 62 63 08 20 08 08 20 08 08 20 08 78 79 0d 0a (abc^H ^H^H ^H^H ^Hxy\r\n)
+
+[阶段4 raw(cfmakeraw,VMIN=1):喂几块到几块,没有行概念]
+  喂 t=   0ms 61 62 (ab)
+  喂 t= 300ms 63 64 (cd)
+  喂 t= 600ms 0a (\n)
+  读 t=[    0.2..    0.3]ms n=2   61 62 (ab)
+  读 t=[    0.3..  300.5]ms n=2   63 64 (cd)
+  读 t=[  300.5..  600.6]ms n=1   0a (\n)
+  master 收到的回显:(无)

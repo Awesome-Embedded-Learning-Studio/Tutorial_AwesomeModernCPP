@@ -1,0 +1,7 @@
+[?2004hsh-5.3$ echo hello
+[?2004lhello
+[?2004hsh-5.3$ sleep 1; echo done
+[?2004lexit
+done
+[?2004hsh-5.3$ exit
+[?2004lexit

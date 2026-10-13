@@ -1,0 +1,30 @@
+$ ./e1_pointer_moves.exe
+初始:写入 10 字节,文件大小=10,当前指针=10
+
+[1] 三种基准 + 正负偏移(文件 10 字节,内容 ABCDEFGHIJ)
+  FILE_BEGIN  +3                     -> pos=3 err=0
+  FILE_CURRENT +2                    -> pos=5 err=0
+  FILE_CURRENT -1                    -> pos=4 err=0
+  FILE_END  -3                       -> pos=7 err=0
+  FILE_END  0  (定位到 EOF)       -> pos=10 err=0
+
+[2] 查询当前位置:距离 0 + FILE_CURRENT
+  FILE_CURRENT 0  (只查不动)     -> pos=10 err=0
+  cur_pos() 独立复核                  -> pos=10
+
+[3] 越过 EOF 移动指针:合法,尺寸纹丝不动
+  FILE_BEGIN +103 (越过 EOF)       -> pos=103 err=0
+  移动后 GetFileSizeEx                  -> 10  (仍是 10)
+  FILE_END  +1000000                 -> pos=1000010 err=0
+  移动后 GetFileSizeEx                  -> 10  (仍是 10)
+
+[4] 在越过 EOF 的位置读:TRUE + 0 字节,不是错误
+  FILE_BEGIN +103 再来一次       -> pos=103 err=0
+  ReadFile(16B)                        -> ret=1 读到=0 err=0  (EOF 是 0 字节,不是失败)
+
+[5] FILE_BEGIN 配负偏移:失败,ERROR_NEGATIVE_SEEK
+  FILE_BEGIN -100                    -> 失败 ret=0 err=131(ERROR_NEGATIVE_SEEK)
+  FILE_BEGIN -1                      -> 失败 ret=0 err=131(ERROR_NEGATIVE_SEEK)
+  此后指针停在原地                     -> pos=103
+
+收尾:临时文件与目录已清理

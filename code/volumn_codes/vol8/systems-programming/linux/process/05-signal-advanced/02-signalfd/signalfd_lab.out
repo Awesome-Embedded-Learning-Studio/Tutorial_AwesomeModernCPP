@@ -1,0 +1,34 @@
+== E2 signalfd:先阻塞,再创建,然后 read ==
+
+[a] 未阻塞就创建 signalfd,再发 1 个 SIGUSR2:
+    handler 计数=1(信号被传统路消费了)
+    poll(signalfd, 200ms) 返回 0,revents=0 → signalfd 上什么都没有
+
+[b] 先阻塞再创建,连发 3 个 SIGUSR2(标准信号只记 1 次):
+    poll 返回 1,revents=0x1(POLLIN=0x1)
+      读 signalfd:一次 read 返回 128 字节 = 1 条记录
+        [1] ssi_signo=12 ssi_code=SI_USER(0,来自 kill) ssi_pid=39851 ssi_uid=1000 ssi_int=0
+    解阻塞后 handler 计数仍=0 —— 从 signalfd 读走的信号不会再进 handler
+
+[c] 字段解读:fork 子进程发信号(跨进程,ssi_pid 有看头):
+      子进程发完后的 read:一次 read 返回 384 字节 = 3 条记录
+        [1] ssi_signo=12 ssi_code=SI_USER(0,来自 kill) ssi_pid=39853 ssi_uid=1000 ssi_int=0
+        [2] ssi_signo=36 ssi_code=SI_QUEUE(-1,来自 sigqueue) ssi_pid=39853 ssi_uid=1000 ssi_int=22
+        [3] ssi_signo=37 ssi_code=SI_QUEUE(-1,来自 sigqueue) ssi_pid=39853 ssi_uid=1000 ssi_int=31
+    (ssi_pid=39853 是发送方=子进程;36/37 乱序入队(先 37 后 36),出队按小号先——同 E1)
+
+[d] signalfd+timerfd 混挂事件循环(时间戳相对循环启动):
+    t=151ms 事件循环:timerfd 第 1 次到期
+    t=202ms 事件循环:signalfd 读到 signo=12 ssi_int=7 ssi_pid=39854
+    t=301ms 事件循环:timerfd 第 2 次到期
+    t=402ms 事件循环:signalfd 读到 signo=12 ssi_int=8 ssi_pid=39854
+    t=451ms 事件循环:timerfd 第 3 次到期
+    t=601ms 事件循环:timerfd 第 4 次到期
+    (同一循环里定时器与信号各自就位——self-pipe 的内核原生版)
+
+[e] 动态扩掩码:sfd2 原来只挂 {SIGUSR2,SIGRTMIN+2,SIGRTMIN+3}(=12/36/37),现在加 SIGRTMIN+4(38):
+      扩容后的 read:一次 read 返回 128 字节 = 1 条记录
+        [1] ssi_signo=38 ssi_code=SI_QUEUE(-1,来自 sigqueue) ssi_pid=39851 ssi_uid=1000 ssi_int=44
+    (老三样没来,新号 44 一发即中:掩码是活的,fd 不换)
+
+E2 done,t=802ms

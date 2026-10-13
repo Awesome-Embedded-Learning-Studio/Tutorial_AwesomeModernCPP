@@ -1,0 +1,6 @@
+[smoke] platform=Linux
+  [1] missing file: value=2 message="No such file or directory"
+  [2] roundtrip: len=20 match=yes
+  [3] system_error: value=2 what-prefix ok
+  [4] move/swap semantics: ok
+[smoke] ALL PASS

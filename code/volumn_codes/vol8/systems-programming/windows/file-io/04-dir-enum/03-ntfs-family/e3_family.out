@@ -1,0 +1,46 @@
+== [1] 硬链接:两个名字,一条 MFT 记录 ==
+    original.txt     FileIndex=0x00150000000ab77f  nNumberOfLinks=2  VolSer=0xda3672fa
+    hard.txt         FileIndex=0x00150000000ab77f  nNumberOfLinks=2  VolSer=0xda3672fa
+    从 hard.txt 续写 "world",再从 original.txt 读:hello world
+    DeleteFileW(original.txt) 后,hard.txt 读到 "hello world"
+    hard.txt         FileIndex=0x00150000000ab77f  nNumberOfLinks=1  VolSer=0xda3672fa
+
+== [2] 符号链接:这台机器不给我造 ==
+    无 flag            -> ret=0 err=1314(1314=ERROR_PRIVILEGE_NOT_HELD)
+    ALLOW_UNPRIVILEGED -> ret=0 err=1314(此 flag 需开发者模式背书,本机未开)
+    cmd 侧 mklink /D 的拒绝原话见 e3_mklink_capture.txt
+
+== [3] junction:免特权的目录链接 ==
+    mklink /J jn_dir -> target_dir,rc=0
+    FindFirstFileW 单名查询(不跟随):attr=0x410
+    GetFileAttributesW:attr=0x410(与单名查询同款,直接读链接自身)
+    枚举 jn_dir\*(打开即穿过):
+      t1.txt
+      t2.txt
+    reparse tag=0xa0000003(0xA0000003=IO_REPARSE_TAG_MOUNT_POINT) 目标=\??\C:\Users\CharlieChen114514\AppData\Local\Temp\sysprog-direnum\e3fam\target_dir
+    悬空 junction:GetFileAttributesW -> 0x410 err=1234(哨兵未动=调用成功,它没去跟目标);FindFirstFileW 单名 -> attr=0x410(链接自身,活得很好)
+    跨卷 junction(C: -> F:\):rc=0,枚举前 3 项: $RECYCLE.BIN h618 imx6ull
+    RemoveDirectoryW(jn_dir) 后目标里的 t1.txt 还在(单名查询成功,size=1)
+
+== [4] 稀疏文件:1 GiB 的账面,两簇的身价 ==
+    normal.bin     逻辑大小   1073741825 字节   实占   1073741825 字节   attr=ARCHIVE
+    sparse.bin     逻辑大小   1073741825 字节   实占       131072 字节   attr=ARCHIVE|SPARSE
+    normal.bin 的已分配区间(中间不是洞,是实打实的零):
+    已分配区间 1 个: [0..1073741825)
+    sparse.bin 的已分配区间(1 GiB 的洞):
+    已分配区间 2 个: [0..65536) [1073741824..1073741825)
+
+== [5] 家族合影:FindFirstFileW 枚举家族目录 ==
+    hard.txt       attr=ARCHIVE                      size=11
+    jn_crossvol    attr=DIRECTORY|REPARSE            size=0
+    jn_dangling    attr=DIRECTORY|REPARSE            size=0
+    normal.bin     attr=ARCHIVE                      size=1073741825
+    sparse.bin     attr=ARCHIVE|SPARSE               size=1073741825
+    target_dir     attr=DIRECTORY                    size=0
+
+== [6] exFAT 负对照(D:盘,同一套家族全部碰壁) ==
+    CreateHardLinkW    -> ret=0 err=1
+    FSCTL_SET_SPARSE   -> ret=0 err=1
+    mklink /J          -> rc=1,链接 attr=0xffffffff(不存在=0xFFFFFFFF,造不出来)
+
+(测试目录已清理)

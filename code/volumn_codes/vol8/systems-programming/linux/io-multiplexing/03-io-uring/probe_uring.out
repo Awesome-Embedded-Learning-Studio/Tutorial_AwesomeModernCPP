@@ -1,0 +1,4 @@
+kernel check: io_uring_setup syscall number = 425
+io_uring_setup(8, params) = 3  -> OK, ring fd = 3
+sq_entries=8 cq_entries=16 flags=0x0 sq_thread_cpu=0 sq_thread_idle=0 features=0x3ffff wq_fd=0
+features bits: NODROP=1 SUBMIT_STABLE=1 RW_CUR_POS=1 CUR_PERSONALITY=1 SINGLE_MMAP=1

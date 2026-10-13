@@ -1,0 +1,14 @@
+maps lines total: 41 (before any mmap of the file)
+mapped SHARED 2 pages at 0x77d7b60db000 (offset 0)
+mapped PRIVATE 2 pages at 0x77d7b60d9000 (offset 8K)
+maps lines total: 44 (after 3 mmaps, +3)
+  file-related: 77d7b60d9000-77d7b60db000 rw-p 00002000 00:49 4657                       /tmp/l02_exps/e3_proc_maps/e3data.bin
+  file-related: 77d7b60db000-77d7b60dd000 rw-s 00000000 00:49 4657                       /tmp/l02_exps/e3_proc_maps/e3data.bin
+  ext4-backed : 77d7b60d7000-77d7b60d9000 r--p 00000000 08:30 660959                     /home/charliechen/l02_scratch/e3ext.bin
+
+[same file, anonymous/bss side of the world]
+  heap  : 5d798897e000-5d79889b1000 rw-p 00000000 00:00 0                          [heap]
+  stack : 7ffff688f000-7ffff68b1000 rw-p 00000000 00:00 0                          [stack]
+
+after munmap(SHARED): maps lines total: 43 (-1), SHARED line gone, PRIVATE stays
+  file-related: 77d7b60d9000-77d7b60db000 rw-p 00002000 00:49 4657                       /tmp/l02_exps/e3_proc_maps/e3data.bin

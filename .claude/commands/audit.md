@@ -32,4 +32,4 @@ argument-hint: "[必填: 待审查文章的相对/绝对路径]"
 - **禁止**在项目目录跑 cmake / make / ninja 或建 build 目录。
 - **禁止**把报告 / 日志写到 `/tmp/` 或任何位置 —— 报告直接作为返回文本输出。
 - 只修改目标文章 + 对应 `code/volumn_codes/` 目录。
-- 写作风格遵循 [`writing-style.md`](../style/writing-style.md)。
+- 写作风格:维护者环境按 `.claude/tools/content_forge/writing_style.md`(审稿规约)并尽量跑其 `tools/humanizer_lint.py`;目录不存在(公开 checkout)则遵循 [`writing-style.md`](../style/writing-style.md)。

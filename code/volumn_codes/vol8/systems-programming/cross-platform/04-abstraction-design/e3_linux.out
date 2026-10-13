@@ -1,0 +1,5 @@
+sizeof: int=4 intptr_t=8 void*=8
+raw fd            = 3
+roundtrip fd      = 3  identical=yes
+via void*         = 3  identical=yes
+read(roundtripped)= 19 bytes: 'bridge via intptr_t'

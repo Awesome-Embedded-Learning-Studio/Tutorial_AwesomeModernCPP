@@ -1,0 +1,27 @@
+../e2_ifdef_dead_branch.cpp: In function 'std::string read_all_dead(const char*, int&)':
+../e2_ifdef_dead_branch.cpp:42:5: error: 'DWORDD' was not declared in this scope; did you mean 'DWORD'?
+   42 |     DWORDD got = 0;                    // 错误 2:类型拼错,应为 DWORD
+      |     ^~~~~~
+      |     DWORD
+../e2_ifdef_dead_branch.cpp:44:45: error: 'got' was not declared in this scope
+   44 |         if (!ReaddFile(h, buf, sizeof buf, &got, nullptr)) {   // 错误 1:函数拼错
+      |                                             ^~~
+../e2_ifdef_dead_branch.cpp:44:14: error: 'ReaddFile' was not declared in this scope; did you mean 'ReadFile'?
+   44 |         if (!ReaddFile(h, buf, sizeof buf, &got, nullptr)) {   // 错误 1:函数拼错
+      |              ^~~~~~~~~
+      |              ReadFile
+../e2_ifdef_dead_branch.cpp:48:13: error: 'got' was not declared in this scope
+   48 |         if (got == 0) break;
+      |             ^~~
+../e2_ifdef_dead_branch.cpp:49:25: error: 'got' was not declared in this scope
+   49 |         out.append(buf, got);
+      |                         ^~~
+../e2_ifdef_dead_branch.cpp:51:18: error: too many arguments to function 'WINBOOL CloseHandle(HANDLE)'
+   51 |     ::CloseHandle(h, 2);               // 错误 3:参数个数错
+      |     ~~~~~~~~~~~~~^~~~~~
+In file included from C:/msys64/ucrt64/include/winbase.h:19,
+                 from C:/msys64/ucrt64/include/windows.h:70,
+                 from ../e2_ifdef_dead_branch.cpp:22:
+C:/msys64/ucrt64/include/handleapi.h:19:29: note: declared here
+   19 |   WINBASEAPI WINBOOL WINAPI CloseHandle (HANDLE hObject);
+      |                             ^~~~~~~~~~~

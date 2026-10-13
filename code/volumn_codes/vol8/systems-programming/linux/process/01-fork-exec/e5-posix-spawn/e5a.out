@@ -1,0 +1,13 @@
+任务一:跑 printenv E5A_MARK,环境里塞 E5A_MARK=hello-spawn-env
+  [fork+exec] 子进程输出:
+hello-spawn-env
+  [fork+exec] 退出状态:exit=0
+  [posix_spawn] 子进程输出:
+hello-spawn-env
+  [posix_spawn] 退出状态:exit=0
+任务二:跑 sh -c exit 7,看退出码能不能拿回来
+  [fork+exec] 退出状态:exit=7
+  [posix_spawn] 退出状态:exit=7
+结论:行为一致。差别:fork+execve 需要 fork 分叉点+execve 失败路径+waitpid 三件套;
+      posix_spawn 一发完成,vfork 级的效率由实现负责(glibc 走 clone(CLONE_VM|CLONE_VFORK),
+      见 e2d 的 strace 证据),还免掉了 vfork 自己动手的危险。

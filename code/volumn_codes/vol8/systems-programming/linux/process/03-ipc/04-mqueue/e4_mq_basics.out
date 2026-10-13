@@ -1,0 +1,24 @@
+mq_open("/lp03_e4") → mqd=3;命名对象落在哪?看目录:
+  [ls -l /dev/mqueue/]
+-rw------- 1 charliechen charliechen 80 Oct  4 11:06 lp03_e4
+mq_getattr:mq_maxmsg=10 mq_msgsize=256 mq_curmsgs=0 mq_flags=0
+
+按 prio 1 → 3 → 2 的顺序发三条不同长度的消息:
+  发送 prio=1 长度=10 字节(id=M1,填充字符 'x')
+  发送 prio=3 长度=50 字节(id=M2,填充字符 'y')
+  发送 prio=2 长度=200 字节(id=M3,填充字符 'z')
+  mq_curmsgs=3(排队 3 条)
+
+连收三次(mq_receive 带 prio 出参,返回值就是本条字节数):
+  第1次收到 prio=3 长度=50 字节(id=M2)——长度与发送时一字不差,边界还在,内容校验通过
+  第2次收到 prio=2 长度=200 字节(id=M3)——长度与发送时一字不差,边界还在,内容校验通过
+  第3次收到 prio=1 长度=10 字节(id=M1)——长度与发送时一字不差,边界还在,内容校验通过
+
+同 prio=5 连发两条,验证同优先级内按发送序:
+  先收到(8 字节):「first-in」
+  后收到(9 字节):「second-in」——同优先级内 FIFO;「跳队」只发生在跨优先级之间
+
+mq_unlink 后再看目录:
+  [ls -l /dev/mqueue/]
+结论:mq 的名字空间是 /dev/mqueue 这个挂载点(mqueue 文件系统),与 shm 的 /dev/shm 同构;
+mq_send/mq_receive 一次一条、边界保留, prio 高的先出——这两点是它与管道字节流的根本差异

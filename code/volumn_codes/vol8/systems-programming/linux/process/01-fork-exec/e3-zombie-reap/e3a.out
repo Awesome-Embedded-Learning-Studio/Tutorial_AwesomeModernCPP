@@ -1,0 +1,10 @@
+[子] pid=26439,先睡 300ms,给父进程留时间读我的 State
+[子] 现在调 _exit(42):释放内存、关 fd,但 task_struct 和退出码留下
+[父][t1 子还活着] State:	S (sleeping)
+[父][t2 子已退、未收尸] State:	Z (zombie)
+[父] 同一时刻 ps 眼里:
+        PID    PPID STAT COMMAND
+      26439   26438 Z    e3a_zombie_life <defunct>
+[父] 现在才 waitpid 收尸(第二阶段)……
+[父][t3 收尸完成] WIFEXITED=1 WEXITSTATUS=42(退出码从僵尸残骸里取出)
+[父] 再读 /proc/26439/status:fopen 失败(No such file or directory)——进程彻底消失,双阶段结束

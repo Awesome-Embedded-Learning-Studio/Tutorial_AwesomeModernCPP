@@ -1,0 +1,7 @@
+== E4c RLIMIT_STACK 读取 ==
+getrlimit: rlim_cur=8388608 字节 (8192 KiB = 8.0 MiB), rlim_max=unlimited(RLIM_INFINITY)
+maps [stack]: 7ffc2fa16000-7ffc2fa38000 rw-p 00000000 00:00 0                          [stack]
+当前已映射大小 = 136 KiB(远小于软限,软限是"允许长到的上限")
+呼应内存篇: 栈越界不是立刻 SIGSEGV,而是先按需扩栈,碰到 rlim_cur 才拒扩展;
+拒扩展的那次访问才变成 SIGSEGV。多线程程序里这条 rlimit 只管主线程栈,
+其他线程栈走 pthread_attr 的默认大小(通常也是 8 MiB,由 glibc 缓存/分配)

@@ -1,0 +1,22 @@
+== E1: clock_getres 与时钟族首次读数 ==
+CLK_TCK(sysconf)=100  (COARSE 分辨率反推出的 tick 档位见下两行)
+CLOCK_REALTIME         getres=0.000000001  now=1791121284.559110361  墙上时间,可被 settimeofday/adjtime 改
+CLOCK_REALTIME_COARSE  getres=0.004000000  now=1791121284.556746979  墙上时间的粗读档,分辨率=1/HZ
+CLOCK_MONOTONIC        getres=0.000000001  now=39943.706318194  单调钟,不受 settimeofday 步进影响
+CLOCK_MONOTONIC_COARSE getres=0.004000000  now=39943.703953129  单调钟的粗读档,分辨率=1/HZ
+CLOCK_MONOTONIC_RAW    getres=0.000000001  now=39943.599872894  原始硬件计数,不受 NTP 频率调整影响
+CLOCK_BOOTTIME         getres=0.000000001  now=39943.706318876  单调钟,挂起期间也在走
+CLOCK_TAI              getres=0.000000001  now=1791121321.559112876  国际原子时刻度,闰秒只往一个方向加
+CLOCK_PROCESS_CPUTIME_ID getres=0.000000001  now=0.001620885  进程 CPU 时间(用户+系统)
+CLOCK_THREAD_CPUTIME_ID getres=0.000000001  now=0.001622578  线程 CPU 时间(用户+系统)
+
+== 同期差值(背靠背读,残差来自读取顺序的先后) ==
+TAI - REALTIME       = 37000000020 ns (原子时与 UTC 的整秒差,即闰秒累计数)
+BOOTTIME - MONOTONIC = 20 ns (开机以来挂起的累计时长)
+RAW - MONOTONIC      = -106445801 ns (0 附近=本机没有 NTP 频率纪律在拉,见 E3)
+/proc/uptime         = 39943.700 s 对 BOOTTIME 39943.706323 s,差 -0.006 s
+                       (挂起总时长;为 0 即本次开机以来没挂起过)
+
+== adjtimex 只读: 内核时钟纪律状态 ==
+status=0x0  freq=-23324 ppm  maxerror=2006 us  esterror=1 us
+STA_UNSYNC(0x40) 置位? 否 —— 置位说明内核没有活跃的时间纪律源在调频

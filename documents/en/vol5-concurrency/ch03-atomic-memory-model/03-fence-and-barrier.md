@@ -20,15 +20,15 @@ related:
   - Atomic Operation Patterns
 translation:
   source: documents/vol5-concurrency/ch03-atomic-memory-model/03-fence-and-barrier.md
-  source_hash: f8513d92b724cbb63b4b0d04d040faa5214329c954a6bf36912f18db8c6d938c
-  translated_at: '2026-09-26T07:13:44+00:00'
+  source_hash: 33c2e1dddd7045c56bd41847cf5d3fa5033f1a6b18b391b179a761010b8c7c8d
+  translated_at: '2026-10-07T01:27:43+00:00'
   engine: anthropic
-  token_count: 4800
+  token_count: 4400
 ---
 
 # Fences and Compiler Barriers
 
-In the previous article we spent a lot of space dissecting the six levels of `memory_order`—from `relaxed` to `seq_cst`—and every step was about drawing a line between "what the compiler/CPU may reorder" and "what guarantees we need." But did you notice that all of the synchronization so far has been "bound" to some atomic operation? `store(..., memory_order_release)` and `load(..., memory_order_acquire)` show up in pairs: release is bound to the write, acquire is bound to the read.
+In the previous article we spent a lot of space dissecting the six levels of `memory_order`—from `relaxed` to `seq_cst`—and every step was about drawing a line between "what the compiler/CPU may reorder" and "what guarantees we need." But did you notice that all the synchronization so far has been "bound" to some atomic operation? `store(..., memory_order_release)` and `load(..., memory_order_acquire)` show up in pairs: release is bound to the write, acquire is bound to the read.
 
 Here is the question: what if we only want to control reordering behavior, without doing a store or a load on any specific atomic variable? In other words, can we pull the "no reordering" constraint out on its own and decouple it from atomic operations?
 
@@ -82,13 +82,13 @@ void consumer()
 }
 ```
 
-Notice what changed compared with the "publish-subscribe" pattern from the previous article. There we wrote `flag.store(1, std::memory_order_release)`, binding the release semantics to the store itself. Here the store is `relaxed`, and the release constraint comes from a standalone fence. The two forms are semantically equivalent—both end up establishing the same happens-before relationship. So why use a fence? Shortly we will see a scenario where a fence cannot be replaced by ordinary atomic operations.
+Notice what changed compared with the "publish-subscribe" pattern from the previous article. There we wrote `flag.store(1, std::memory_order_release)`, binding the release semantics to the store itself. Here the store is `relaxed`, and the release constraint comes from a standalone fence. The two forms are semantically equivalent—both end up establishing the same happens-before relationship. So why use a fence? Shortly we will see a scenario where a fence separates when synchronization happens from which atomic operation carries it.
 
 ### Atomic-Fence Synchronization
 
 The second pattern is the first one flipped: thread A uses a plain release store, and thread B uses a standalone acquire fence. The condition is that thread B has an atomic load sequenced-before the fence, and that load reads the value written by thread A's store.
 
-A typical application of this pattern is "mailbox scanning": we have multiple mailboxes (each identified by an atomic flag), and the reader has to scan all of them but only needs to synchronize with the one that holds data for it. Reading every mailbox flag with an acquire load would introduce unnecessary barrier overhead even for flags that are not ours. The better approach is to scan with relaxed loads, and once we discover that a mailbox we care about has data, issue a single acquire fence for that one mailbox:
+A typical application of this pattern is "mailbox scanning": we have a number of mailboxes (each identified by an atomic flag), and the reader has to scan all of them, but only needs to establish synchronization when it reads data that belongs to it. One way to write this is to scan with relaxed loads and, once we find a matching mailbox, issue an acquire fence:
 
 ```cpp
 #include <atomic>
@@ -123,13 +123,13 @@ void read_my_mail(int my_id)
 }
 ```
 
-The key insight here: the acquire fence executes only once we have confirmed that we need to synchronize. The preceding 31 relaxed loads introduce no barrier at all, so the performance cost is minimal. That is the flexibility fences have over "ordered atomic operations"—they let you separate the decision from the synchronization, and apply the barrier only after confirming that synchronization is needed.
+The key here is separating "whether to read the data" from "establishing synchronization for that read": if no mailbox matches, the acquire fence never executes. Relaxed loads still cost an atomic read and a cache access, and an acquire load does not necessarily emit a separate hardware barrier instruction. So this style gives you the flexibility of synchronizing on demand, but you cannot conclude from the source code alone that it is faster than an acquire load on every single mailbox.
 
 ### Fence-Fence Synchronization
 
 The third pattern uses fences on both ends. Thread A uses a release fence + relaxed store, and thread B uses a relaxed load + acquire fence. The conditions: thread A's fence is sequenced-before its store, thread B's load reads the value of that store, and the load is sequenced-before the fence.
 
-This pattern fits "batch publishing": after thread A prepares a batch of data, it publishes several relaxed stores at once under a single release fence. The consumer on the other side reads several relaxed loads under a single acquire fence. Compared with setting release/acquire on every individual atomic operation, one fence covering multiple operations is clearly more efficient:
+This pattern can be used to publish a batch of data written ahead of time: thread A writes the data first, then executes a release fence followed by several relaxed stores; thread B reads the atomic flags first, then executes an acquire fence. If one of the loads reads the value written by the corresponding store, the two fences establish synchronization, making the data thread A wrote before the release fence available to thread B after the acquire fence:
 
 ```cpp
 #include <atomic>
@@ -168,13 +168,29 @@ void thread_b()
 }
 ```
 
-This pattern is common in lock-free data structures—when you need to publish several fields at once but don't want each one to carry a release store, a single release fence plus multiple relaxed stores is the more elegant choice.
+"A batch of data" here means the `data` written before the release fence—it does not mean the three `arr` elements become visible all at once as a group. The reader may observe only some of the new flags, and the acquire fence does not change the values the loads above already returned. You can rely on this synchronization only when a corresponding atomic read/write pair connects the two fences, and the data is accessed on the required side of each fence.
 
 ### Fences vs. Atomic Operations: When to Use a Fence
 
-At this point we can summarize the strengths and weaknesses of fences compared with "ordered atomic operations." The strength of a fence is flexibility: one fence can cover multiple atomic operations, synchronization can be deferred until it is genuinely needed, and unnecessary barrier overhead can be avoided. The weakness is readability and error-proneness—fences are harder to reason about than ordered atomic operations, because the sequenced-before relationship between the fence and the specific atomic operations must be guaranteed by you, the programmer; the compiler will not check it for you.
+Looking back, what a fence really buys us is a choice of where synchronization happens: it can piggyback on a qualifying pair of atomic reads and writes, or wait until runtime has confirmed which data will be read and only then execute the acquire fence. That said, a flexible source-level style does not mean fewer machine instructions or lower latency; how a standalone fence compares with ordered atomic operations in cost depends on the target platform. The price is harder reasoning: we have to verify where the atomic reads and writes sit relative to the fence, and confirm exactly which store a load has read.
 
-Our recommendation: in most scenarios, prefer ordered atomic operations (for example `store(..., release)` + `load(..., acquire)`), and only consider replacing them with fences once you have confirmed the code is performance-sensitive and can benefit from the fence's flexibility. Remember, a fence is not the "more advanced" way to write things—it is the "more manual" way, and manual means more freedom, but also more room for mistakes.
+But what happens when we actually run it? We tried a two-thread benchmark on an Intel Core i5-12400 (x86-64) under WSL2: built with CMake 3.20.5 and GCC 16.2, compile options `-O3 -march=native`, with the producer and the consumer pinned to CPU 0 and CPU 2 respectively. Each round the producer writes three pieces of data and publishes three atomic flags; the consumer waits until all three flags are updated, reads the data, and then acknowledges through another atomic variable—only then does the producer move on to the next round. The two versions differ only in the memory order used for publishing and reading: one uses release store / acquire load per field, the other uses a pair of release / acquire fences combined with three relaxed stores / loads. The benchmark source is at `code/volumn_codes/vol5/ch03-atomic-memory-model/fence_vs_ordered_benchmark.cpp`; each run performs 2 million rounds, each version is run 7 times, and we take the median. The example requires Linux x86-64; run the following commands from the repository root. If your machine does not have CPU 0 or CPU 2, you can edit the pinned CPU numbers at the top of the source:
+
+```bash
+cmake -S code/volumn_codes/vol5/ch03-atomic-memory-model \
+  -B /tmp/vol5-fence-build -DCMAKE_BUILD_TYPE=Release
+cmake --build /tmp/vol5-fence-build --target fence_vs_ordered_benchmark
+/tmp/vol5-fence-build/fence_vs_ordered_benchmark
+```
+
+| Style | Median of 7 runs |
+| --- | ---: |
+| Per-field release / acquire | 124.8 ns/round |
+| Fence + relaxed | 117.4 ns/round |
+
+In this run the fence version's median is slightly lower, but individual results fluctuate noticeably. What is being measured here is the complete handoff process—including polling, cache traffic, and the acknowledgment—not the latency of a single fence instruction. Moreover, on x86-64 the two versions compile to exactly the same set of machine instructions: release/acquire fences generate not a single instruction, and a release store or an acquire load is just an ordinary mov (the section on platform barrier instructions below shows this in detail). The gap between the two medians comes from run-to-run fluctuation and code layout; it does not reflect a difference between the two styles. This comparison only starts truly measuring the difference between the two styles on a platform where the generated instructions actually differ (ARM, for example). These results do not prove that fences are consistently faster; change the platform or the access pattern, and you have to look at the generated code and measure again.
+
+Our recommendation: in most scenarios, prefer ordered atomic operations (for example `store(..., release)` + `load(..., acquire)`); reach for a fence only when the synchronization point genuinely has to be separated from a specific atomic operation, or when you have measured a benefit on the target platform. Remember, a fence is not the "more advanced" way to write things—it is the "more manual" way, and manual means more freedom, but also more room for mistakes.
 
 ## std::atomic_signal_fence: The Intra-Thread Signal Fence
 
@@ -256,7 +272,7 @@ ARM provides three barrier instructions. `DMB` (Data Memory Barrier) ensures tha
 
 DMB also takes option suffixes: `DMB ST` is a store-only barrier, `DMB LD` is a load-only barrier, and `DMB ISH` is an all-around barrier over the inner shareable domain (the most common case for communication between cores). When C++ code calls `std::atomic_thread_fence(memory_order_release)`, on ARM the compiler typically generates a `DMB ISH` instruction. For `memory_order_acquire`, GCC and Clang generate the lighter `DMB ISHLD` instruction, which applies the barrier only to load operations.
 
-We usually do not need to use these CPU barrier instructions directly—the standard library's `atomic_thread_fence` and ordered atomic operations have already wrapped them for us. But understanding the underlying mechanism helps us make better performance decisions: on x86, the extra cost of `seq_cst` is one `mfence`; on ARM, every `acquire`/`release` costs a `DMB`, which is much more expensive.
+We normally do not need to use these CPU barrier instructions directly—the standard library's `atomic_thread_fence` and ordered atomic operations already wrap them for us. But do not convert memory orders into a fixed instruction cost in your head: as we saw above, even a `seq_cst` fence on x86 may be implemented with a `LOCK`-prefixed instruction, and on ARM exactly which instructions ordered atomic operations and standalone fences generate likewise depends on the target architecture and the compiler. To compare performance, look at the generated assembly first, then measure on the target platform.
 
 ## volatile Is Not a Thread Safety Mechanism
 

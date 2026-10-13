@@ -101,6 +101,8 @@ estimated_effort: epic
 - **Mini GUI Framework**：远期，无前置内容就绪。
 - **Embedded OS**：等 RTOS 路线成熟。
 - **IoT Gateway**：远期，已从旧 TODO 037 降级。
+- **syskit 系统编程工具库**：来源卷八 systems-programming ch07/02（unique_fd/unique_handle/mapped_region/file_lock/child_process 等契约工具的工程化整合）。依赖：卷八 systems-programming ch00-ch06 主体成型；前置内容已在存量 5 篇中初具规模。代码仓：`code/projects/syskit/`。注意：networking 子域已有近亲工具（UniqueFd/expected\<SysError\>），启动前先做命名与错误模型对账（见 todo/017 领域 8 ch07/02）。
+- **跨平台异步 I/O 事件循环库**：来源卷八 systems-programming ch04/03（epoll/IOCP/io_uring 差异矩阵之上的最小事件循环）。依赖：卷五 ch06 事件循环与卷八 ch04 各篇；与 syskit 的 event 模块同源，建议在 syskit 之后启动以复用其契约工具。代码仓：`code/projects/async-event-loop/`。
 
 ### External References
 
@@ -120,6 +122,7 @@ estimated_effort: epic
 卷五 (014, active)   ──→ Mini Concurrent Runtime（就绪：可直接提取）
                        ──→ Echo Server（已完成：交叉链接）
 卷八 (017, active)   ──→ General CLI Framework（部分就绪：LED/Button/UART 有代码，Flash 待补）
+                       ──→ syskit 工具库 / 异步事件循环库（候选：等 systems-programming ch00-ch04 成型）
 ```
 
 ## Old TODO Merge

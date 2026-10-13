@@ -1,0 +1,55 @@
+$ ./e3_matrix.exe
+== [1] 矩阵:第一个句柄 share x 第二个句柄要的访问 ==
+    (0(excl)=独占;第一个句柄固定 GENERIC_READ|GENERIC_WRITE;第二个句柄 share
+     给足 R|W|D,只测"第二访问 vs 第一 share"这一向;双向检查见 [2])
+    第一share 要READ     要WRITE    要R|W      要DELETE
+    0(excl)   拒32        拒32        拒32        拒32      
+    R         成功       拒32        拒32        拒32      
+    W         拒32        成功       拒32        拒32      
+    R|W       成功       成功       成功       拒32      
+    R|W|D     成功       成功       成功       成功     
+    拒32 = ERROR_SHARING_VIOLATION。要点:share 位与访问位是两把尺子,
+    要 DELETE 访问,在场句柄必须给了 FILE_SHARE_DELETE
+
+== [2] 双向检查:第二个句柄的 share 也要装得下第一个句柄的在用访问 ==
+    (第一句柄:访问 R|W、share R|W;第二句柄只要 READ,但 share 各配一档)
+    第二 share=0(独占) 第二个访问=READ       -> 拒绝 err=32(ERROR_SHARING_VIOLATION)
+    第二 share=R         第二个访问=READ       -> 拒绝 err=32(ERROR_SHARING_VIOLATION)
+    第二 share=R|W       第二个访问=READ       -> 开到 h=000000000000015c
+    第一个句柄自己握着写访问,第二个句柄 share=0 或只给 R,都装不下它,
+    于是被拒 —— share 声明的是"我允许别人怎么动这个文件",不是"我能开门"
+
+== [3] 删除/改名:FILE_SHARE_DELETE 的有无 ==
+    (a) share=R|W(无D)句柄在握:
+        DeleteFileW -> ret=0 err=32
+        MoveFileExW(改名) -> ret=0 err=32
+        句柄关闭后再改名 -> ret=1 err=0  (放手才放行)
+    (b) share=R|W|D 句柄在握:
+        DeleteFileW -> ret=1 err=0
+        DeletePending -> 1  (FileStandardInfo 直读)
+        ReadFile -> ret=1 读到=9 前8字节=44454C4554452D4D
+        WriteFile -> ret=1 写到=9  (delete pending 下句柄照常干活)
+        GetFileAttributesW -> 0xFFFFFFFF err=2
+        新开句柄(OPEN_EXISTING) -> 拒绝 err=2
+        最后一个句柄关闭后 GetFileAttributesW -> 0xFFFFFFFF(0xFFFFFFFF=没了)
+        (注意 err=2:本机 Win11 26200 的 DeleteFileW 走的是"名字立刻摘掉、
+         句柄吊命到最后一关"的近 POSIX 语义;新开句柄看到的是 FILE_NOT_FOUND,
+         不是老资料里的 ACCESS_DENIED)
+    (c) share=R|W|D 句柄在握时改名 -> ret=1 err=0
+        改名后原句柄 ReadFile -> ret=1 读到=9 "RENAME-ME"(句柄跟文件走)
+        关句柄后新名字健在 -> attr=0x00000020(0xFFFFFFFF=没跟过去)
+
+== [4] 同进程约束 ==
+    [1]-[3] 的"第二个句柄"全部开在同一个进程里:Windows 的共享检查挂在
+    内核文件对象上,不看出身;POSIX 的 open() 对同一进程再开一次没有任何约束
+
+== [5] 指针独立 + 数据可见(share=R|W 双开) ==
+    h1 覆写 "V2" 后:pos(h1)=2 pos(h2)=0  <- h2 偏移纹丝不动
+    h2 从自己的 0 位置读 -> "V2"(缓冲句柄间缓存一致,写完立刻可见)
+
+== [6] 跨进程复验(自重挂子进程) ==
+    父进程 pid=29964 以 share=0 独占句柄 h=0000000000000168 挂住文件
+    [子进程 pid=16840 第1轮] CreateFileW(READ) -> 拒绝 err=32
+    [子进程 pid=16840 第2轮] CreateFileW(READ) -> h=0000000000000158 成功
+
+收尾:临时目录已清理

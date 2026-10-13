@@ -1,0 +1,26 @@
+== E1 附:权限位跨 uid 实证(root 建对象,user 进程开) ==
+
+[1] root 会话建两个对象:0600 与 0666(umask 0,mode 原样生效)
+create /lm03_perm600 mode 0600:成功 uid=0 内容"written-by-uid-0"
+create /lm03_perm666 mode 0666:成功 uid=0 内容"written-by-uid-0"
+
+$ ls -l /dev/shm
+total 8
+-rw------- 1 root root 4096 Oct  3 10:50 lm03_perm600
+-rw-rw-rw- 1 root root 4096 Oct  3 10:50 lm03_perm666
+
+[2] user 进程(uid=1000)分别去开:
+open /lm03_perm600:失败 uid=1000 errno=13 (Permission denied)
+open /lm03_perm666:成功 uid=1000 读到"written-by-uid-0"
+    ↑ 0600(other 无 rw)→ EACCES;0666 → 打开成功并读到 root 写的内容
+
+[3] 反向:user 建一个 0600 对象,root 去开
+create /lm03_user600 mode 0600:成功 uid=1000 内容"written-by-uid-1000"
+open /lm03_user600:成功 uid=0 读到"written-by-uid-1000"
+    ↑ root 不受 0600 限制:CAP_DAC_OVERRIDE 越过常规权限检查(这是 root 的特权,不是权限失效)
+
+[4] 清理(root 会话)
+unlink /lm03_perm600:rc=0 uid=0
+unlink /lm03_perm666:rc=0 uid=0
+unlink /lm03_user600:rc=0 uid=0
+done

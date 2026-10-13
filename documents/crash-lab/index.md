@@ -20,9 +20,10 @@ PS：写自这几天加班到半夜处理狗屎崩溃的 CharlieChen114514
 
 ## 已经开张的门类
 
-先开门营业的是[内存安全](/crash-lab/a-memory-safety/),眼下挂着两桩案子:
+先开门营业的是[内存安全](/crash-lab/a-memory-safety/),眼下挂着三桩案子:
 
 - [01 · 空指针解引用:崩得最明白的一案](/crash-lab/a-memory-safety/01-null-deref)
 - [02 · 释放之后,指针还活着](/crash-lab/a-memory-safety/02-use-after-free)
+- [03 · 堆缓冲区溢出:多写一个没事,多写两个必死](/crash-lab/a-memory-safety/03-heap-buffer-overflow)
 
 每个案子在仓库 `code/volumn_codes/crash-lab/` 下都备了能亲手编译运行的代码,一份故意写崩的 `crash.cpp`,一份修好的 `fixed.cpp`,克隆下来 `cmake -B build && cmake --build build` 就能跑。别的门类——算术溢出、迭代器失效、数据竞争这一批——案卷还在陆续搬,搬来一批,亮一批。

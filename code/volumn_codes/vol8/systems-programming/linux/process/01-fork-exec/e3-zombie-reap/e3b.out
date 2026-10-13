@@ -1,0 +1,34 @@
+=== 姿势一:阻塞 wait —— 父进程什么都干不了,子进程死一个醒一次 ===
+  t=200ms 收到 pid=26470 exit=11
+  t=401ms 收到 pid=26471 exit=22
+  t=601ms 收到 pid=26472 exit=33
+
+=== 姿势二:waitpid(WNOHANG) 轮询 —— 不阻塞,但要自己一遍遍问 ===
+  t=802ms 第 11 次轮询:收到 pid=26473 exit=11
+  t=1003ms 第 22 次轮询:收到 pid=26474 exit=22
+  t=1204ms 第 33 次轮询:收到 pid=26475 exit=33
+  合计轮询 33 次,其中空手而归 30 次——轮询的代价是空转与延迟的折中
+
+=== 姿势三:SIGCHLD 处理器 + SA_RESTART(read 自动重启) ===
+  t=1405ms read 拿到字节 a(SA_RESTART 把被信号打断的 read 自动续上了)
+    [SIGCHLD 处理器] 收尸 pid=26476 exit=20
+  t=1605ms read 拿到字节 b(SA_RESTART 把被信号打断的 read 自动续上了);处理器已顺手收尸
+    [SIGCHLD 处理器] 收尸 pid=26477 exit=21
+  t=1805ms read 拿到字节 c(SA_RESTART 把被信号打断的 read 自动续上了);处理器已顺手收尸
+    [SIGCHLD 处理器] 收尸 pid=26478 exit=22
+  管道活干完(3 字节),处理器共收尸 3 个,EINTR 发生 0 次,僵尸清零
+
+=== 姿势三:SIGCHLD 处理器 + 无 SA_RESTART(read 返回 EINTR,自己重试) ===
+  t=2006ms read 拿到字节 a(这次 read 正常返回)
+    [SIGCHLD 处理器] 收尸 pid=26491 exit=20
+  t=2006ms read 被打断了:返回 -1,errno=EINTR(手动 for 循环重试)
+  t=2206ms read 拿到字节 b(这次 read 正常返回);处理器已顺手收尸
+    [SIGCHLD 处理器] 收尸 pid=26492 exit=21
+  t=2206ms read 被打断了:返回 -1,errno=EINTR(手动 for 循环重试)
+  t=2406ms read 拿到字节 c(这次 read 正常返回);处理器已顺手收尸
+    [SIGCHLD 处理器] 收尸 pid=26493 exit=22
+  管道活干完(3 字节),处理器共收尸 3 个,EINTR 发生 2 次,僵尸清零
+
+=== 附:SIGCHLD=SIG_IGN 一刀切 —— 内核自动收尸,wait 反而拿不到 ===
+  子进程 _exit(55) 后 200ms,没有调过任何 wait:/proc 已消失——内核替我们收了,没留僵尸
+  再调 waitpid:返回 -1,errno=10(No child processes)——孩子已被内核收走,没得等了

@@ -302,7 +302,7 @@ static_assert(test_structured_binding());
 咱们再聊 lambda 捕获，这边有个常见的误会要澄清：C++17 其实就支持直接捕获结构化绑定变量。您看，下面的代码拿 C++17 就能直接跑了：
 
 ```cpp
-std::map<int, std::string> m = {{1, "one"}, {2, "two"}};
+std::map<int, std::string> m = { { 1, "one"}, {2, "two"} };
 
 for (const auto& [k, v] : m) {
     auto callback = [k, v] {  // C++17 就支持直接捕获

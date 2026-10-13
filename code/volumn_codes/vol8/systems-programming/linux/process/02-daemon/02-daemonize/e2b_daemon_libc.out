@@ -1,0 +1,13 @@
+== E2b daemon(0,0) 一步到位对照 ==
+(POSIX.1-2008 已废除 daemon();glibc 仍提供,同款 snapshot 看清楚它做了/没做什么)
+
+调用 daemon() 前          pid=13366  ppid=13365  pgid=13365  sid=13365 
+    fd0 -> /dev/pts/10 ; 控制终端:有,该 tty 所属会话 sid=13365
+daemon() 返回后           pid=13367  ppid=249    pgid=13367  sid=13367 
+    fd0 -> /dev/null ; 控制终端:无,ioctl(fd0,TIOCGSID) 失败: Inappropriate ioctl for device
+
+daemon(0,0) 顺带做了 chdir("/"):cwd=/
+对照手工双 fork 版(E2)的最终态: 那边 sid!=pid 且 pgid!=pid;
+这里 pid=13367 pgid=13367 sid=13367 -> pid==pgid==sid,本进程仍是会话长,
+只差一次 fork:若之后 open 一个终端设备(不带 O_NOCTTY),它还可能被抓成控制终端。
+另外 daemon() 不屏蔽任何信号、不处理 SIGHUP——这些保险都得调用者自己加。

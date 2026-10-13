@@ -1,0 +1,20 @@
+*** bit out of range 0 - FD_SETSIZE on fd_set ***: terminated
+FD_SETSIZE = 1024 (glibc 编译期常量, fd_set 位图 128 字节)
+child: FD_SET(1024) -> 被 SIGABRT 终止 (WTERMSIG=6, wait status 6), glibc 守卫把越界拦成了硬失败
+开了 1050 根管道, 最大 fd = 2101
+初始 RLIMIT_NOFILE: soft=1048576 hard=1048576
+关注 fd=1025 (第 512 根管道读端), 手工置位 bit 1025
+
+[RLIMIT_NOFILE soft=1024]
+select(nfds=1026) = 1 errno=0 (Success)
+  -> fd=1025 报告就绪 (bit 仍在位图里)
+  select 返回 1 -> 内核对 select 的 nfds 不查 rlimit, fd>1024 照常工作
+  poll(1050 个条目) = -1 errno=22 (Invalid argument)
+[RLIMIT_NOFILE soft=8192]
+select(nfds=1026) = 1 errno=0 (Success)
+  -> fd=1025 报告就绪 (bit 仍在位图里)
+  select 返回 1: 与低位档一致 -> 1024 之界只在 glibc 的 fd_set 里
+
+poll(1050 个 fd) = 1, 无 glibc 上限
+epoll: ADD 1050 个 fd 全部成功, wait(0) 返回 1 个就绪
+  就绪: fd=1025 EPOLLIN

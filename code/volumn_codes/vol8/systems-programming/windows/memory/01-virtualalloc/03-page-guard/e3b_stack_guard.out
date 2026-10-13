@@ -1,0 +1,29 @@
+$ ./e3b_stack_guard.exe layout; echo "exit=$?"
+mode=layout  栈上取样点=00000073f2dff734(主线程,预约总量以 VQ 读数为准)
+  -- 压栈前 --
+  0073f2df9000..0073f2e00000 COMMIT  0x0004(7页) AllocBase=00000073f2c00000
+  0073f2df6000..0073f2df9000 COMMIT  0x0104+GUARD(3页) AllocBase=00000073f2c00000  <-- 栈的 guard 带
+  0073f2c00000..0073f2df6000 RESERVE 000000(502页) AllocBase=00000073f2c00000
+  guard 带=00000073f2df6000  本栈预约合计=2048 KiB
+
+递归 48 层(每层 16 KiB,共 768 KiB)平安回来,期间 VEH 命中=0
+
+  -- 压栈后 --
+  0073f2d3a000..0073f2e00000 COMMIT  0x0004(198页) AllocBase=00000073f2c00000
+  0073f2d37000..0073f2d3a000 COMMIT  0x0104+GUARD(3页) AllocBase=00000073f2c00000  <-- 栈的 guard 带
+  0073f2c00000..0073f2d37000 RESERVE 000000(311页) AllocBase=00000073f2c00000
+  guard 带=00000073f2d37000,较压栈前 下移 764 KiB —— 提交推进到哪,guard 重埋到哪
+exit=0
+
+$ ./e3b_stack_guard.exe overflow; echo "exit=$?"
+mode=overflow
+  工作线程开跑,先拍自己的栈布局:
+  -- 工作线程栈(请求预约 256 KiB) --
+  00a2751c0000..00a275200000 COMMIT  0x0004(64页) AllocBase=000000a275000000
+  00a2751af000..00a2751c0000 COMMIT  0x0104+GUARD(17页) AllocBase=000000a275000000  <-- 栈的 guard 带
+  00a275000000..00a2751af000 RESERVE 000000(431页) AllocBase=000000a275000000
+  预约合计=2048 KiB —— 实际以 VQ 读数为准(CreateThread 的取整口径见 README)
+  开始无限递归...
+  [VEH] code=0xC00000FD info[1]=0xA275011280 depth=122
+  [VEH] STATUS_STACK_OVERFLOW —— 栈预约耗尽,放行让它收场(进程将崩)
+exit=253

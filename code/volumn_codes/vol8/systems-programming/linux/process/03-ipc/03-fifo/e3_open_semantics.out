@@ -1,0 +1,21 @@
+
+== A. 读端先开:open(O_RDONLY) 阻塞直到写者出现 ==
+[ 500.3 ms] 父进程:睡满 500 ms 后才 open(O_WRONLY) fd=3——对面立刻放行
+[ 500.3 ms] 子进程:O_RDONLY 返回 fd=3(等了 500.1 ms)
+
+== B. 写端先开:open(O_WRONLY) 阻塞直到读者出现 ==
+[1001.1 ms] 父进程:睡满 500 ms 后才 open(O_RDONLY) fd=3——双向都是 open 在等对面
+[1001.1 ms] 子进程:O_WRONLY 返回 fd=3(等了 500.1 ms)
+
+== C. O_NONBLOCK:写侧 ENXIO / 读侧「成功但 read=0」的 EOF 陷阱 ==
+open(O_WRONLY|O_NONBLOCK)(没有读者):返回 -1,errno=6 (No such device or address)
+open(O_RDONLY|O_NONBLOCK)(没有写者):返回 3——注意,成功了!没有像写侧那样报错
+紧接着 read():返回 0——不是 EAGAIN,是 0(EOF 语义)。非阻塞读 FIFO 的经典陷阱:
+  「从没出现过写者」与「写者全关了」在这里都表现为 read=0,poll 侧会表现为永真 POLLIN
+
+== D. 权限不足:mkfifo(0400) 后,属主自己 open(O_WRONLY) 也被拒 ==
+open(O_WRONLY|O_NONBLOCK):返回 -1,errno=13 (Permission denied)——目录项的 rwx 位照常参与 DAC 检查
+
+== 附:FIFO 与匿名 pipe 是同一套缓冲 ==
+F_GETPIPE_SZ(FIFO fd=3) = 65536 字节——与 e1 里匿名 pipe 的默认容量同一套
+子进程:写满后被拒,共写入 65536 字节(read 返回 -1,errno=11 EAGAIN——O_NONBLOCK 撞满仓)

@@ -1,0 +1,8 @@
+popen-写方向:这行经管道进了 cat 的 stdin
+popen("...") 读到 57 字节:
+popen-hello-from-shell
+6.18.33.2-microsoft-standard-WSL2
+pclose 返回 0(子进程 exit 0)
+
+pclose(写方向) 返回 0——cat 把上面那行吐回了终端,走的就是我们 dup2 给它的管道
+popen("exit 7") → pclose = 1792,WEXITSTATUS = 7:子进程退出状态原样透传

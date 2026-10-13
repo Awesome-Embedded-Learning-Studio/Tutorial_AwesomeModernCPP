@@ -17,7 +17,7 @@ tags:
 
 读完这一卷，您能在 Windows 上独立搭好写 C++ 的环境（vscode、编译器、CMake），跑通一个多文件工程，并且让编辑器的补全、跳转、报错都好使。后面想学 C++ 语法去卷一，想搞懂构建深入去卷七，想做嵌入式去卷八——起步卷只负责把您送到门口。
 
-> 想看详细的多路线环境搭建（MSVC vs MinGW 对比、vcpkg、Linux），去 [卷一·基础入门](/vol1-fundamentals/) 的环境搭建章。起步卷只走一条最省心的快车道，不展开对比。
+> 想看详细的多路线环境搭建（MSVC vs MinGW 对比、vcpkg），去 [卷一·基础入门](/vol1-fundamentals/) 的环境搭建章。起步卷主线只走一条最省心的快车道；想要「真 Linux」环境的，第 7 篇带您装 WSL2。
 
 ## 章节导航
 
@@ -28,4 +28,5 @@ tags:
   <ChapterLink num="4" href="04-multi-file-cmake">项目变大——多个文件怎么办，引出 CMake</ChapterLink>
   <ChapterLink num="5" href="05-vscode-clangd">让 vscode 看懂您的代码——装 clangd，红线消失</ChapterLink>
   <ChapterLink num="6" href="06-where-next">跑通了——然后去哪</ChapterLink>
+  <ChapterLink num="7" href="07-wsl2-environment">想要真 Linux——WSL2 加 VS Code 环境搭建</ChapterLink>
 </ChapterNav>

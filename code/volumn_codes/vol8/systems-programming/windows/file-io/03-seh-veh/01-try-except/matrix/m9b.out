@@ -1,0 +1,8 @@
+$ ./m9b(filter 返回 -1 → 恢复执行:RaiseException 的地址让它"正常返回")
+  [body] raising
+  [hit 1] code=0xE0000999 flags=0x00000080 excaddr=00007fff83a341ca ctx=000000d5d73fe8a0 ctx.Rip=00007fff83a341ca real.Rip=00007fff83a341ca
+  [body] AFTER RaiseException returned normally
+  [handler] landed, hits=1
+  [guard_demo] after guarded region
+done
+exit=0

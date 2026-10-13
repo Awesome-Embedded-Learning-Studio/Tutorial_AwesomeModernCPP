@@ -1,0 +1,40 @@
+E3 递归监控 —— root: /home/charliechen/l06_scratch/e3/tree
+/proc/sys/fs/inotify/: max_user_watches=524288 max_user_instances=1024 max_queued_events=16384
+
+起手:walk 整棵树,每个目录挂一只 watch
+  [watch] add_watch(wd=1) /home/charliechen/l06_scratch/e3/tree
+起手 watch 数:1
+
+==== 第 1 步:mkdir -p a/b/c(嵌套树) ====
+  [event] wd=1  IN_CREATE|IN_ISDIR  /home/charliechen/l06_scratch/e3/tree/a
+  [watch] add_watch(wd=2) /home/charliechen/l06_scratch/e3/tree/a
+  [watch] add_watch(wd=3) /home/charliechen/l06_scratch/e3/tree/a/b
+  [watch] add_watch(wd=4) /home/charliechen/l06_scratch/e3/tree/a/b/c
+  # 事件只报了 a 的 create;a/b、a/b/c 在事件到手前就已被create_directories 造好,靠 add_tree 的兜底 walk 补挂
+
+==== 第 2 步:touch a/1.txt a/b/2.txt a/b/c/3.txt ====
+  [event] wd=2  IN_CREATE  /home/charliechen/l06_scratch/e3/tree/a/1.txt
+  [event] wd=3  IN_CREATE  /home/charliechen/l06_scratch/e3/tree/a/b/2.txt
+  [event] wd=4  IN_CREATE  /home/charliechen/l06_scratch/e3/tree/a/b/c/3.txt
+
+==== 第 3 步:mkdir -p deep/x/y ====
+  [event] wd=1  IN_CREATE|IN_ISDIR  /home/charliechen/l06_scratch/e3/tree/deep
+  [watch] add_watch(wd=5) /home/charliechen/l06_scratch/e3/tree/deep
+  [watch] add_watch(wd=6) /home/charliechen/l06_scratch/e3/tree/deep/x
+  [watch] add_watch(wd=7) /home/charliechen/l06_scratch/e3/tree/deep/x/y
+  # 同样的竞态:deep/x、deep/x/y 靠兜底 walk 补挂
+
+==== 第 4 步:touch deep/x/y/4.txt + rm a/1.txt ====
+  [event] wd=7  IN_CREATE  /home/charliechen/l06_scratch/e3/tree/deep/x/y/4.txt
+  [event] wd=2  IN_DELETE  /home/charliechen/l06_scratch/e3/tree/a/1.txt
+
+==== 第 5 步:mv deep → deep2(整目录改名) ====
+  [event] wd=1  IN_MOVED_FROM|IN_ISDIR  /home/charliechen/l06_scratch/e3/tree/deep
+  [event] wd=1  IN_MOVED_TO|IN_ISDIR  /home/charliechen/l06_scratch/e3/tree/deep2
+  [event] wd=5  IN_MOVE_SELF  /home/charliechen/l06_scratch/e3/tree/deep
+  # 目录整棵改名:父目录(wd=1)报一对 MOVED_FROM/TO;deep 自己的 wd=5 报 IN_MOVE_SELF;deep/x、deep/x/y 虽然路径全变了,却一个事件都没有 —— 内核只为被改名的 inode 本身报 MOVE_SELF,不替后代报。三只 watch 都仍有效(绑 inode),但 wd 表里的旧路径已过期:真要追路径,得在 MOVE_SELF 时改表
+
+==== 对账 ====
+存活 watch:7 只,累计 add_watch:7 次
+max_user_watches = 524288,占比 0.0013% —— 一只手表一个 inode,深树大树的成本主要在这儿
+子进程退出 status=0x0

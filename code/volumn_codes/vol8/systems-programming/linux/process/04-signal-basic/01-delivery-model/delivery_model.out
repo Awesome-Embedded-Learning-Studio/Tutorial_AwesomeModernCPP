@@ -1,0 +1,30 @@
+[E1.1] three send paths, pid=15070 uid=1000
+    [H] SIGUSR1 handler entered
+[E1.1] path kill(getpid())      -> handler count=1
+    [H] SIGUSR1 handler entered
+[E1.1] path raise(SIGUSR1)      -> handler count=1
+    [H] SIGUSR1 handler entered
+[E1.1] path child kill(parent) -> handler count=1
+
+[E1.2] main loop prints via write(2), child sends SIGUSR1 at staggered times:
+MAIN iter 1 (t=0ms)
+MAIN iter 2 (t=20ms)
+    [H] SIGUSR1 handler entered
+MAIN iter 3 (t=40ms)
+MAIN iter 4 (t=60ms)
+MAIN iter 5 (t=80ms)
+    [H] SIGUSR1 handler entered
+MAIN iter 6 (t=100ms)
+MAIN iter 7 (t=120ms)
+MAIN iter 8 (t=141ms)
+    [H] SIGUSR1 handler entered
+[E1.2] observation: handler lines always sit BETWEEN main lines, never split one
+
+[E1.3] block SIGUSR1, send it 3 times while blocked:
+[E1.3] after 3 sends:         pending: SIGUSR1=1 SIGUSR2=0 SIGALRM=0
+[E1.3] handler count while blocked = 0 (never ran)
+    [H] SIGUSR1 handler entered
+[E1.3] after unblock: handler count = 1  <- 3 sends, ONE delivery
+[E1.3] after unblock:         pending: SIGUSR1=0 SIGUSR2=0 SIGALRM=0
+    [H] SIGUSR1 handler entered
+[E1.3] control run: 1 send while blocked -> handler count = 1 (same as 3 sends)

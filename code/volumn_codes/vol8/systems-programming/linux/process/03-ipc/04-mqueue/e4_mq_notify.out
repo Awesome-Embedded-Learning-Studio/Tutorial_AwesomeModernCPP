@@ -1,0 +1,6 @@
+mq_notify 已注册(SIGEV_SIGNAL/SIGUSR1,sigev_value=0xC0DE),fork 子进程 500 ms 后发消息……
+信号到了:si_code=-3(SI_MESGQ,消息队列专属来源),sigev_value 带回 0xc0de——注册时塞的私货原样返回
+收到本条:wake-1(mq_curmsgs 消费前=1)
+等子进程发第二条(不重新注册)……
+第二条到货了吗?mq_curmsgs=1;信号又来过吗:没有——mq_notify 的注册是一次性的,消费即失效
+补收第二条:wake-2;要继续被通知,得再调一次 mq_notify(或在收货线程里重新武装)

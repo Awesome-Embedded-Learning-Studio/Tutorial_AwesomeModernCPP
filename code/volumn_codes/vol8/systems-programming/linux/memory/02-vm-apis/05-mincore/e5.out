@@ -1,0 +1,30 @@
+E5: mincore residency bitmap (page 4096)
+
+== anonymous 8 pages, page by page ==
+   1) fresh mmap, untouched:          00000000  (0/8 resident, Rss=20 kB)
+   2) wrote pages 0,3,7:              10010001  (3/8 resident, Rss=32 kB)
+   read page 1 (never written) -> 0x00000000
+   3) after READ of page 1:           11010001  (4/8 resident, Rss=32 kB)
+   ^ 零页也算驻留(present),但 Rss 没涨:mincore 数的是 PTE present,
+     smaps Rss 只数真的分给这个 VMA 的物理页,共享零页不算 -- 口径分叉,如实记录
+   madvise(page 3, MADV_DONTNEED) rc=0
+   4) after DONTNEED page 3:          11000001  (3/8 resident, Rss=28 kB)
+   page 3 reads back 0x00000000 (zeroed)
+   5) after READ page 3:              11010001  (4/8 resident, Rss=28 kB)
+   6) rewrote page 3:                 11010001  (4/8 resident, Rss=32 kB)
+
+== file-backed 2 pages (ext4) ==
+   1) after fadvise DONTNEED:         00  (0/2 resident, Rss=0 kB)
+   2) after MADV_WILLNEED:            11  (2/2 resident, Rss=0 kB)
+   ^ mincore 全 1 而 Rss=0:文件映射的 mincore 问的是页缓存,页缓存有了就算 1,
+     哪怕还没缺页进本进程页表 -- 和匿名页的口径不一样
+   page 0 reads 0xaaaaaaaa (now faulted into OUR page table, Rss grows)
+   3) after reading page 0:           11  (2/2 resident, Rss=8 kB)
+   4) DONTNEED page 1:                11  (2/2 resident, Rss=4 kB)
+   ^ MADV_DONTNEED 丢的是本进程页表映射,页缓存里的文件页还在,mincore 依旧 1;
+     真把文件页从页缓存请出去要靠 fadvise(文件级),再拍一次:
+   5) fadvise DONTNEED again:         10  (1/2 resident, Rss=4 kB)
+   ^ page 0 还映射在本进程页表里,页缓存请不动它;page 1 无映射,请走了
+     page 1 再读还是 0xbbbbbbbb(重新缺页,从磁盘/缓存回来)
+
+done

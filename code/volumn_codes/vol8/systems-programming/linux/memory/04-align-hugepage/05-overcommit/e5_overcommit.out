@@ -1,0 +1,32 @@
+overcommit_memory = 0   (0=启发式 1=永远允许 2=严格按 CommitLimit)
+overcommit_ratio  = 50   (仅模式 2 用到)
+CommitLimit=44538680 kB  Committed_AS=13916392 kB  MemTotal=55522928 kB  SwapTotal=16777216 kB
+
+  [阶段0 基线]
+    VmSize:	    7304 kB
+    VmRSS:	    4036 kB
+    VmData:	     312 kB
+
+  malloc(512 GiB) -> (nil) errno=12 (Cannot allocate memory)
+  malloc(256 GiB) -> (nil) errno=12(被拒)
+  malloc(128 GiB) -> (nil) errno=12(被拒)
+  malloc( 64 GiB) -> 0x733e09fff010 errno=0(成功)
+
+  mmap(512 GiB, MAP_NORESERVE) -> 成功 errno=0
+  [阶段3 阶段映射后,一字节没碰:VmSize +512 GiB,RSS 不动]
+    VmSize:	536878216 kB
+    VmRSS:	    4044 kB
+    VmData:	536871224 kB
+  [阶段4 只写 1 GiB:VmRSS 涨到 ~1 GiB 量级,承诺的其余 511 GiB 不占物理页]
+    VmSize:	536878216 kB
+    VmRSS:	 1052620 kB
+    VmData:	536871224 kB
+  [阶段5 munmap 后:回到基线]
+    VmSize:	    7304 kB
+    VmRSS:	    4044 kB
+    VmData:	     312 kB
+
+口径:模式 0(本机)启发式,单次大于 RAM+swap 的申请会被拒;
+模式 1 永远放行;模式 2 严格模式,全系统 Committed_AS 不得超过 CommitLimit
+(= ratio%×RAM + swap,本机即 50%×~53 GiB + 16 GiB ≈ 42.5 GiB)。
+切换要写 /proc/sys/vm/overcommit_memory,无 root 做不了,只读记录。

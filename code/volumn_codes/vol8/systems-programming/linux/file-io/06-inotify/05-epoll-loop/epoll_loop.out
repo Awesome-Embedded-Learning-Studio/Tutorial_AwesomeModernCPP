@@ -1,0 +1,33 @@
+E5 inotify × epoll —— root: /home/charliechen/l06_scratch/e5/tree
+/proc/sys/fs/inotify/: max_user_watches=524288 max_user_instances=1024 max_queued_events=16384
+epoll_ctl(ADD) fd=3 (inotify), events=EPOLLIN(水平触发)
+epoll_ctl(ADD) fd=4 (timerfd ), events=EPOLLIN(水平触发)
+epoll_ctl(ADD) fd=5 (pipe     ), events=EPOLLIN(水平触发)
+wd=1 → /home/charliechen/l06_scratch/e5/tree
+
+[  302 ms] pipe    :"tick 1-1"
+[  502 ms] timerfd :到期 1 次
+[  602 ms] pipe    :"tick 1-2"
+[  902 ms] pipe    :"tick 1-3"
+[ 1002 ms] timerfd :到期 1 次
+[ 1102 ms] inotify :wd=1   mask=0x00000100 IN_CREATE                                    cookie=0      len=16  name='note.txt'
+[ 1102 ms] inotify :wd=1   mask=0x00000002 IN_MODIFY                                    cookie=0      len=16  name='note.txt'
+[ 1102 ms] inotify :wd=1   mask=0x00000008 IN_CLOSE_WRITE                               cookie=0      len=16  name='note.txt'
+[ 1403 ms] pipe    :"tick 2-1"
+[ 1502 ms] timerfd :到期 1 次
+[ 1703 ms] pipe    :"tick 2-2"
+[ 2002 ms] timerfd :到期 1 次
+[ 2003 ms] pipe    :"tick 2-3"
+[ 2203 ms] inotify :wd=1   mask=0x00000002 IN_MODIFY                                    cookie=0      len=16  name='note.txt'
+[ 2203 ms] inotify :wd=1   mask=0x00000008 IN_CLOSE_WRITE                               cookie=0      len=16  name='note.txt'
+[ 2502 ms] timerfd :到期 1 次
+[ 2503 ms] pipe    :"tick 3-1"
+[ 2804 ms] pipe    :"tick 3-2"
+[ 3002 ms] timerfd :到期 1 次
+[ 3103 ms] pipe    :"tick 3-3"
+[ 3304 ms] inotify :wd=1   mask=0x00000040 IN_MOVED_FROM                                cookie=8809   len=16  name='note.txt'
+[ 3304 ms] inotify :wd=1   mask=0x00000080 IN_MOVED_TO                                  cookie=8809   len=16  name='note2.txt'
+[ 3502 ms] timerfd :到期 1 次
+[ 3604 ms] pipe    :"BYE"
+
+子进程退出 status=0x0 —— 一个 epoll_wait 循环,三类 fd 统一调度收线

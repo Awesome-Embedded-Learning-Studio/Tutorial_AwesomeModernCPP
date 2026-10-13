@@ -1,0 +1,60 @@
+== E4b RLIMIT_CPU: 软限 1s = SIGXCPU(警告) / 硬限 2s = SIGKILL(处决) ==
+初始: rlim_cur=unlimited rlim_max=unlimited
+setrlimit(软 1s, 硬 2s) 后进入满载循环:
+主循环: wall=+41ms cpu=+38ms SIGXCPU 已命中 0 次 sum=19999999900000000
+主循环: wall=+78ms cpu=+74ms SIGXCPU 已命中 0 次 sum=39999999800000000
+主循环: wall=+114ms cpu=+110ms SIGXCPU 已命中 0 次 sum=59999999700000000
+主循环: wall=+151ms cpu=+150ms SIGXCPU 已命中 0 次 sum=79999999600000000
+主循环: wall=+188ms cpu=+186ms SIGXCPU 已命中 0 次 sum=99999999500000000
+主循环: wall=+224ms cpu=+222ms SIGXCPU 已命中 0 次 sum=119999999400000000
+主循环: wall=+261ms cpu=+258ms SIGXCPU 已命中 0 次 sum=139999999300000000
+主循环: wall=+298ms cpu=+294ms SIGXCPU 已命中 0 次 sum=159999999200000000
+主循环: wall=+335ms cpu=+334ms SIGXCPU 已命中 0 次 sum=179999999100000000
+主循环: wall=+372ms cpu=+370ms SIGXCPU 已命中 0 次 sum=199999999000000000
+主循环: wall=+408ms cpu=+406ms SIGXCPU 已命中 0 次 sum=219999998900000000
+主循环: wall=+445ms cpu=+442ms SIGXCPU 已命中 0 次 sum=239999998800000000
+主循环: wall=+482ms cpu=+478ms SIGXCPU 已命中 0 次 sum=259999998700000000
+主循环: wall=+518ms cpu=+514ms SIGXCPU 已命中 0 次 sum=279999998600000000
+主循环: wall=+555ms cpu=+554ms SIGXCPU 已命中 0 次 sum=299999998500000000
+主循环: wall=+591ms cpu=+590ms SIGXCPU 已命中 0 次 sum=319999998400000000
+主循环: wall=+628ms cpu=+626ms SIGXCPU 已命中 0 次 sum=339999998300000000
+主循环: wall=+665ms cpu=+662ms SIGXCPU 已命中 0 次 sum=359999998200000000
+主循环: wall=+703ms cpu=+702ms SIGXCPU 已命中 0 次 sum=379999998100000000
+主循环: wall=+740ms cpu=+738ms SIGXCPU 已命中 0 次 sum=399999998000000000
+主循环: wall=+779ms cpu=+778ms SIGXCPU 已命中 0 次 sum=419999997900000000
+主循环: wall=+817ms cpu=+814ms SIGXCPU 已命中 0 次 sum=439999997800000000
+主循环: wall=+855ms cpu=+854ms SIGXCPU 已命中 0 次 sum=459999997700000000
+主循环: wall=+892ms cpu=+890ms SIGXCPU 已命中 0 次 sum=479999997600000000
+主循环: wall=+929ms cpu=+926ms SIGXCPU 已命中 0 次 sum=499999997500000000
+主循环: wall=+966ms cpu=+962ms SIGXCPU 已命中 0 次 sum=519999997400000000
+[SIGXCPU] wall=+999ms cpu=+998ms (第 1 次命中;软限是警告,硬限 2s 将是 SIGKILL)
+主循环: wall=+1003ms cpu=+1002ms SIGXCPU 已命中 1 次 sum=539999997300000000
+主循环: wall=+1040ms cpu=+1038ms SIGXCPU 已命中 1 次 sum=559999997200000000
+主循环: wall=+1077ms cpu=+1074ms SIGXCPU 已命中 1 次 sum=579999997100000000
+主循环: wall=+1113ms cpu=+1110ms SIGXCPU 已命中 1 次 sum=599999997000000000
+主循环: wall=+1150ms cpu=+1146ms SIGXCPU 已命中 1 次 sum=619999996900000000
+主循环: wall=+1187ms cpu=+1186ms SIGXCPU 已命中 1 次 sum=639999996800000000
+主循环: wall=+1224ms cpu=+1222ms SIGXCPU 已命中 1 次 sum=659999996700000000
+主循环: wall=+1261ms cpu=+1258ms SIGXCPU 已命中 1 次 sum=679999996600000000
+主循环: wall=+1298ms cpu=+1294ms SIGXCPU 已命中 1 次 sum=699999996500000000
+主循环: wall=+1334ms cpu=+1333ms SIGXCPU 已命中 1 次 sum=719999996400000000
+主循环: wall=+1371ms cpu=+1370ms SIGXCPU 已命中 1 次 sum=739999996300000000
+主循环: wall=+1408ms cpu=+1406ms SIGXCPU 已命中 1 次 sum=759999996200000000
+主循环: wall=+1445ms cpu=+1442ms SIGXCPU 已命中 1 次 sum=779999996100000000
+主循环: wall=+1481ms cpu=+1478ms SIGXCPU 已命中 1 次 sum=799999996000000000
+主循环: wall=+1518ms cpu=+1514ms SIGXCPU 已命中 1 次 sum=819999995900000000
+主循环: wall=+1555ms cpu=+1554ms SIGXCPU 已命中 1 次 sum=839999995800000000
+主循环: wall=+1591ms cpu=+1590ms SIGXCPU 已命中 1 次 sum=859999995700000000
+主循环: wall=+1628ms cpu=+1626ms SIGXCPU 已命中 1 次 sum=879999995600000000
+主循环: wall=+1664ms cpu=+1662ms SIGXCPU 已命中 1 次 sum=899999995500000000
+主循环: wall=+1701ms cpu=+1698ms SIGXCPU 已命中 1 次 sum=919999995400000000
+主循环: wall=+1738ms cpu=+1734ms SIGXCPU 已命中 1 次 sum=939999995300000000
+主循环: wall=+1776ms cpu=+1774ms SIGXCPU 已命中 1 次 sum=959999995200000000
+主循环: wall=+1813ms cpu=+1810ms SIGXCPU 已命中 1 次 sum=979999995100000000
+主循环: wall=+1852ms cpu=+1850ms SIGXCPU 已命中 1 次 sum=999999995000000000
+主循环: wall=+1889ms cpu=+1886ms SIGXCPU 已命中 1 次 sum=1019999994900000000
+主循环: wall=+1926ms cpu=+1922ms SIGXCPU 已命中 1 次 sum=1039999994800000000
+主循环: wall=+1963ms cpu=+1962ms SIGXCPU 已命中 1 次 sum=1059999994700000000
+./e4_cpu_run.sh: line 4: 14657 Killed                     ./e4_cpu
+
+驱动观察: 退出码 137 —— 137 = 128+9,即被 SIGKILL 处决(硬限不可协商)

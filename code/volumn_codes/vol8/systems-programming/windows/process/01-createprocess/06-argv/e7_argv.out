@@ -1,0 +1,37 @@
+E7 GetCommandLineW + CommandLineToArgvW | driver pid=21248
+
+== [1] 花式引号:空格参数、内嵌引号、尾参数 ==
+parent sends cmdline:
+    "\\wsl.localhost\LinuxWSL\home\charliechen\Tutorial_AwesomeModernCPP\code\volumn_codes\vol8\systems-programming\windows\process\01-createprocess\06-argv\e7_argv.exe" argv plain "two words" "quoted ""inner"" text" tail
+    [child] GetCommandLineW() = ["\\wsl.localhost\LinuxWSL\home\charliechen\Tutorial_AwesomeModernCPP\code\volumn_codes\vol8\systems-programming\windows\process\01-createprocess\06-argv\e7_argv.exe" argv plain "two words" "quoted ""inner"" text" tail]
+    [child] CommandLineToArgvW -> argc=6:
+        [0] "\\wsl.localhost\LinuxWSL\home\charliechen\Tutorial_AwesomeModernCPP\code\volumn_codes\vol8\systems-programming\windows\process\01-createprocess\06-argv\e7_argv.exe"
+        [1] "argv"
+        [2] "plain"
+        [3] "two words"
+        [4] "quoted "inner"
+        [5] "text tail"
+    [child] main() got argc=6:
+        [0] "\\wsl.localhost\LinuxWSL\home\charliechen\Tutorial_AwesomeModernCPP\code\volumn_codes\vol8\systems-programming\windows\process\01-createprocess\06-argv\e7_argv.exe"
+        [1] "argv"
+        [2] "plain"
+        [3] "two words"
+        [4] "quoted "inner" text"
+        [5] "tail"
+    [child] CRT argv == CommandLineToArgvW? NO (content differs)
+
+== [2] argv[0] 造假:app=真身,cmdline 首 token=TOTALLY_NOT_ME.EXE ==
+parent sends cmdline:
+    TOTALLY_NOT_ME.EXE argv hello
+    [child] GetCommandLineW() = [TOTALLY_NOT_ME.EXE argv hello]
+    [child] CommandLineToArgvW -> argc=3:
+        [0] "TOTALLY_NOT_ME.EXE"
+        [1] "argv"
+        [2] "hello"
+    [child] main() got argc=3:
+        [0] "TOTALLY_NOT_ME.EXE"
+        [1] "argv"
+        [2] "hello"
+    [child] CRT argv == CommandLineToArgvW? YES, argument for argument
+
+E7 done.

@@ -1,0 +1,18 @@
+[阶段1 ECHO:回显是 tty 干的,关掉它,读端照收、屏幕无痕]
+  喂(ECHO 开) t=0ms hi\n
+    master 侧(回显):68 69 0d 0a (hi\r\n)
+  喂(ECHO 关) t=150ms secret\n
+    master 侧(回显):(无)
+    读端收到 n=3 68 69 0a (hi\n)
+    读端收到 n=7 73 65 63 72 65 74 0a (secret\n)
+
+[阶段2 OPOST:孩子两次写同样的 A\nB,门里门外差一个 \r]
+    master 侧(OPOST 开,第一轮):41 0d 0a 42 (A\r\nB)
+    (t=200ms 清 OPOST)
+    master 侧(OPOST 关,第二轮):41 0a 42 (A\nB)
+
+[阶段3 ICRNL:进门方向,CR 要不要被翻成 NL]
+  喂(ICRNL 关) y\r ^D
+  喂(ICRNL 开) x\r
+    读端收到 n=2 79 0d (y\r)
+    读端收到 n=2 78 0a (x\n)

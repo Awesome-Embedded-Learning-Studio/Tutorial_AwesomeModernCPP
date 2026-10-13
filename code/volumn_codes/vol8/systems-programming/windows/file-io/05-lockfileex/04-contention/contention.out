@@ -1,0 +1,15 @@
+$ # 环境:Windows 11 26200 / NTFS(C:) / MSYS2 UCRT64 g++ 16.1.0,工作目录 C:/msys64/tmp/l05win
+$ g++ -std=c++20 -Wall -Wextra contention.cpp -o contention.exe
+$ ./contention.exe demo
+pid=2208(当前进程), 文件:C:/msys64/tmp/l05win/contention.bin(NTFS), 8 工作进程 × 100 轮,临界区 Sleep(10ms),3 轮取中位
+
+模式        r1            r2            r3
+locked     12765.0 ms   12870.7 ms   12947.3 ms  | 中位  12870.7 ms,16088.3 µs/人次
+free        1506.8 ms    1596.0 ms    1601.2 ms  | 中位   1596.0 ms,1995.0 µs/人次
+        (free 折算:每轮 Sleep(10) 实际 ≈ 15.96 ms —— 并行睡眠的单份成本)
+
+空临界区(纯锁传递开销):8 进程 × 2000 轮 lock/unlock
+micro         87.5 ms     110.0 ms     112.6 ms  | 中位    110.0 ms
+
+单句柄无争抢:1000000 对 LockFileEx/UnlockFile → 1.120 µs/一对
+Sleep(10) 真实粒度:100 次 → 15.97 ms/次(计时口径的注脚)

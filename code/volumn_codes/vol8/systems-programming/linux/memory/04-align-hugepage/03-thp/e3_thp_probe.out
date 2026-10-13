@@ -1,0 +1,37 @@
+sysfs: enabled=always [madvise] never  2048kB/enabled=always [inherit] madvise never  shmem_enabled=always within_size advise [never] deny force
+prctl(PR_GET_THP_DISABLE) = 1   <-- WSL2 的 init 给整个进程树设了它
+
+---- 基线(相对本进程启动的增量) ----
+    nr_anon_transparent_hugepages  +0
+    thp_fault_alloc                +0
+    thp_fault_fallback             +0
+    thp_collapse_alloc             +0
+
+① 出厂状态:mmap+MADV_HUGEPAGE+首触(0x7a126c800000)
+    [被关] AnonHugePages:         0 kB
+    [被关] THPeligible:           0
+    madvise(MADV_COLLAPSE) rc=-1 errno=22(Invalid argument)  <-- 直接 EINVAL
+
+② prctl(PR_SET_THP_DISABLE, 0) 后:PR_GET=0
+    mmap+MADV_HUGEPAGE+首触(0x7a126c800000):
+    [复活] AnonHugePages:     32768 kB
+    [复活] THPeligible:           1
+---- ② 之后(相对本进程启动的增量) ----
+    nr_anon_transparent_hugepages  +16
+    thp_fault_alloc                +16
+    thp_fault_fallback             +0
+    thp_collapse_alloc             +0
+
+③ 无 madvise 的 4K 首触后,直接 MADV_COLLAPSE(0x7a126a800000):
+    [塌缩前] AnonHugePages:         0 kB
+    [塌缩前] THPeligible:           0
+    madvise(MADV_COLLAPSE) rc=0 errno=0(Success)
+    [塌缩后] AnonHugePages:     32768 kB
+    [塌缩后] THPeligible:           0
+---- ③ 之后(相对本进程启动的增量) ----
+    nr_anon_transparent_hugepages  +32
+    thp_fault_alloc                +16
+    thp_fault_fallback             +0
+    thp_collapse_alloc             +16
+
+校验:p2 每页 0x22、p3 每页 0x33,首字节和=696320(应=8192*(0x22+0x33)=696320)

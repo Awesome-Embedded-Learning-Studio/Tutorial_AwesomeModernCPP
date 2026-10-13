@@ -1,0 +1,19 @@
+anonymous 3 pages at 0x78245aadf000 .. 0x78245aae2000 (page size 4096)
+mprotect([++4096, ++8192) -> PROT_NONE  (guard page)
+-- scenario: s1 read data page 0            -> no signal, byte travels via exit code
+   OK: child exited 81 as expected
+-- scenario: s2 read PROT_NONE guard page 1  -> SIGSEGV SEGV_ACCERR
+
+[handler] SIGSEGV in scenario "s2 guard page read", si_addr = 0x000078245aae0000, si_code = SEGV_ACCERR(2)  <- 映射在,权限不许
+   OK: child exited 72 as expected
+-- scenario: s3 write page 2, RW->R, rewrite -> SIGSEGV SEGV_ACCERR
+
+[handler] SIGSEGV in scenario "s3 write after RW->R", si_addr = 0x000078245aae1000, si_code = SEGV_ACCERR(2)  <- 映射在,权限不许
+   OK: child exited 73 as expected
+-- scenario: s4 R->RW upgrade, write again   -> no signal, byte = 'U'
+   OK: child exited 85 as expected
+-- scenario: s5 dereference nullptr          -> SIGSEGV SEGV_MAPERR
+
+[handler] SIGSEGV in scenario "s5 nullptr read", si_addr = 0x0000000000000000, si_code = SEGV_MAPERR(1)  <- 地址不在任何映射里
+   OK: child exited 75 as expected
+done: guard/readonly violations -> SEGV_ACCERR; unmapped -> SEGV_MAPERR

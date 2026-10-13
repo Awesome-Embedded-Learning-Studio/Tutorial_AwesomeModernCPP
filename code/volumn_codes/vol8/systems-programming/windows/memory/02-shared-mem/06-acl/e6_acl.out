@@ -1,0 +1,11 @@
+$ ./e6_acl.exe; echo "exit=$?"
+[E6] lpSecurityAttributes:NULL 的默认门禁 vs 显式 SDDL
+  NULL 安全属性创建 -> h=00000000000000f8 err=0,查它的 DACL:
+  [NULL] DACL:present,AceCount=3(+NT AUTHORITY\SYSTEM(mask=0xF001F),+DESKTOP-65DBAA7\CharlieChen114514(mask=0xF001F),+NT AUTHORITY\LogonSessionId_0_1154262(mask=0xF001F))
+  当前用户 SID = S-1-5-21-22440925-1731184610-2823811988-1005
+  SDDL=D:P(A;;0xF001F;;;SY)(A;;0xF001F;;;BA)(A;;0xF001F;;;S-1-5-21-22440925-1731184610-2823811988-1005)
+  转换 -> ret=1(ACE:SY/BA/当前用户,0xF001F=SECTION_ALL_ACCESS)
+  显式安全属性创建 -> h=00000000000000d0 err=0,查它的 DACL:
+  [SDDL] DACL:present,AceCount=3(+NT AUTHORITY\SYSTEM(mask=0xF001F),+BUILTIN\Administrators(mask=0xF001F),+DESKTOP-65DBAA7\CharlieChen114514(mask=0xF001F))
+  理论口径:DACL 没授权的用户 OpenFileMappingW → err=5(单机单用户,实测留给专篇)
+exit=0

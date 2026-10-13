@@ -1,0 +1,35 @@
+== 成功的调用对 last-error 槽位的影响(哨兵=2)==
+  GetProcessId(GetCurrentProcess)    -> err=2    保留
+  GetCurrentProcessId()              -> err=2    保留
+  CreateFileW(真成功,开空闲文件) -> err=0    清零!
+  CreateFileW(撞独占锁,失败32) -> err=32   改成杂音!
+  ReadFile(成功)                   -> err=2    保留
+  WriteFile(成功)                  -> err=2    保留
+  GetFullPathNameW(成功)           -> err=2    保留
+  GetFileAttributesExW(成功)       -> err=2    保留
+  FindFirstFileW+FindClose(成功)   -> err=2    保留
+  RegOpenKeyExW+RegCloseKey(成功)  -> err=2    保留
+  GetComputerNameW(成功)           -> err=203  改成杂音!
+  GetFileSizeEx(成功)              -> err=2    保留
+  GetTempPathW(成功)               -> err=2    保留
+  WideCharToMultiByte(成功)        -> err=2    保留
+  GetModuleHandleW(成功)           -> err=2    保留
+  LoadLibraryW(成功)               -> err=2    保留
+  Sleep(0)                           -> err=2    保留
+  GetSystemInfo(成功)              -> err=2    保留
+  QueryPerformanceCounter(成功)    -> err=2    保留
+  WaitForSingleObject(已授信事件) -> err=2    保留
+  SetEvent(成功)                   -> err=2    保留
+  ResetEvent(成功)                 -> err=2    保留
+  GetStdHandle(成功)               -> err=2    保留
+  VirtualAlloc+VirtualFree(成功)   -> err=2    保留
+  GetFileAttributesW(存在的文件) -> err=2    保留
+  FormatMessageW(成功)             -> err=2    保留
+  OutputDebugStringW(空串)         -> err=2    保留
+  new char[1000] + delete[]          -> err=2    保留
+  fprintf(stderr)(不缓冲)         -> err=2    保留
+   fflush(stdout)                     -> err=2    保留
+
+== 失败的调用一定覆盖槽位(对照组)==
+  GetProcessId(野句柄,失败)      -> err=6
+  CreateFileW(又一个不存在,失败)  -> err=2

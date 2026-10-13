@@ -1,0 +1,47 @@
+tree root: /home/charliechen/l04_scratch/e1_tree  (mid 先建、alpha.txt 最后建;readdir 吐的序两者都不像)
+
+== [A] fs::directory_iterator(单层,默认) ==
+  link_mid       type=link->dir 
+  link_zeta      type=link->file
+  alpha.txt      type=file
+  mid            type=dir
+  broken_link    type=link->file
+  zeta.txt       type=file
+  .hidden        type=file
+
+== [B] fs::recursive_directory_iterator(默认 directory_options::none) ==
+  depth=0 link_mid                                             type=link->dir 
+  depth=0 link_zeta                                            type=link->file
+  depth=0 alpha.txt                                            type=file
+  depth=0 mid                                                  type=dir
+  depth=1 mid/.h2                                              type=file
+  depth=1 mid/yan.txt                                          type=file
+  depth=1 mid/deep1                                            type=dir
+  depth=2 mid/deep1/xray.txt                                   type=file
+  depth=2 mid/deep1/deep2                                      type=dir
+  depth=3 mid/deep1/deep2/deep3                                type=dir
+  depth=4 mid/deep1/deep2/deep3/deep4                          type=dir
+  depth=5 mid/deep1/deep2/deep3/deep4/bottom.txt               type=file
+  depth=0 broken_link                                          type=link->file
+  depth=0 zeta.txt                                             type=file
+  depth=0 .hidden                                              type=file
+  (link_mid 是指向目录的符号链接:报了名,但默认不下降,其下没有条目)
+
+== [C] opendir+readdir(顶层,原始 d_name 序,含 . 和 ..) ==
+  d_name=link_mid       d_type=DT_LNK
+  d_name=link_zeta      d_type=DT_LNK
+  d_name=alpha.txt      d_type=DT_REG
+  d_name=.              d_type=DT_DIR
+  d_name=..             d_type=DT_DIR
+  d_name=mid            d_type=DT_DIR
+  d_name=broken_link    d_type=DT_LNK
+  d_name=zeta.txt       d_type=DT_REG
+  d_name=.hidden        d_type=DT_REG
+
+== [D] std::sort 后的字典序(对照) ==
+  .hidden alpha.txt broken_link link_mid link_zeta mid zeta.txt 
+
+== 判定 ==
+directory_iterator 顶层序 == readdir 序(去 . ..): yes
+directory_iterator 顶层序 == 字典序:              no(非排序)
+recursive 的 depth-0 条目序 == [A] 顶层序:        yes(DFS 先序,顶层兄弟序不动)

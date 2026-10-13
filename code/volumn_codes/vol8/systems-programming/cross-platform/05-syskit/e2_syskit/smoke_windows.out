@@ -1,0 +1,6 @@
+[smoke] platform=Windows
+  [1] missing file: value=2 message="系统找不到指定的文件。"
+  [2] roundtrip: len=20 match=yes
+  [3] system_error: value=3 what-prefix ok
+  [4] move/swap semantics: ok
+[smoke] ALL PASS

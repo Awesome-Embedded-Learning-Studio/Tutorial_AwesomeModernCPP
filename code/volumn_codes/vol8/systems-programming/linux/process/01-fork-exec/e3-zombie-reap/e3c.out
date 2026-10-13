@@ -1,0 +1,9 @@
+四种死法,同一个 waitpid,靠宏分辨:
+  _exit(42)                pid=26505   WIFEXITED=1   WEXITSTATUS=42 (0x2A)
+  _exit(0x1234) 截断     pid=26506   WIFEXITED=1   WEXITSTATUS=52 (0x34)
+  [子] abort() 前先喊一嗓子
+  abort() 自毁           pid=26507   WIFSIGNALED=1  WTERMSIG=6 (SIGABRT)
+  父进程 kill -9        pid=26508   WIFSIGNALED=1  WTERMSIG=9 (SIGKILL)
+解读:退出码与信号共用 waitpid 的原始状态字,不查 WIFSIGNALED 直接
+      WEXITSTATUS,会把被信号杀死读成退出码 0 之外的古怪值;
+      shell 里 $? 同样只有低 8 位(exit 256 与 exit 0 难分)。

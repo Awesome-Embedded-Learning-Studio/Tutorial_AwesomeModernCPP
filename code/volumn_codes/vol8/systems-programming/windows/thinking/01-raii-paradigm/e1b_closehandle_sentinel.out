@@ -1,0 +1,5 @@
+CloseHandle(NULL                   =                0) -> ret=0 err=6
+CloseHandle(INVALID_HANDLE_VALUE   = ffffffffffffffff) -> ret=1 err=1234
+CloseHandle(GetCurrentProcess()    = ffffffffffffffff) -> ret=1 err=1234
+CloseHandle((HANDLE)-2             = fffffffffffffffe) -> ret=1 err=1234
+CloseHandle((HANDLE)0x1234         =             1234) -> ret=0 err=6

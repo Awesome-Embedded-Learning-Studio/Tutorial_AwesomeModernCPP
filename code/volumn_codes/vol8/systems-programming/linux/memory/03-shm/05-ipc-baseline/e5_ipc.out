@@ -1,0 +1,9 @@
+== E5 同一 1 MiB:共享内存环形队列 vs pipe 分 1024 次写读,各 3 轮 ==
+
+shm    1 MiB(1024 B × 1024 块):received=1024 corrupt=0 耗时 0.136 ms → 7343 MiB/s
+shm    1 MiB(1024 B × 1024 块):received=1024 corrupt=0 耗时 0.137 ms → 7304 MiB/s
+shm    1 MiB(1024 B × 1024 块):received=1024 corrupt=0 耗时 0.255 ms → 3917 MiB/s
+
+pipe   1 MiB(1024 B × 1024 块):received=1024 corrupt=0 耗时 0.426 ms → 2349 MiB/s
+pipe   1 MiB(1024 B × 1024 块):received=1024 corrupt=0 耗时 0.461 ms → 2169 MiB/s
+pipe   1 MiB(1024 B × 1024 块):received=1024 corrupt=0 耗时 0.418 ms → 2390 MiB/s

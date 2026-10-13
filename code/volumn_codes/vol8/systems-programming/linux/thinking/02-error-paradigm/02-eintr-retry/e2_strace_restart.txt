@@ -1,0 +1,40 @@
+106245 16:17:38.594329 close(3)         = 0
+106245 16:17:38.595066 read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 1024) = 1024
+106245 16:17:38.595860 close(3)         = 0
+106245 16:17:38.596186 read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 1024) = 1024
+106245 16:17:38.596858 close(3)         = 0
+106245 16:17:38.597413 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 1024) = 1024
+106245 16:17:38.598082 close(3)         = 0
+106245 16:17:38.598403 read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\300y\2\0\0\0\0\0"..., 1024) = 1024
+106245 16:17:38.599228 close(3)         = 0
+106245 16:17:38.602030 rt_sigaction(SIGUSR1, {sa_handler=0x565fe0d32394, sa_mask=[], sa_flags=SA_RESTORER|SA_RESTART, sa_restorer=0x7dbd7de3e6f0}, NULL, 8) = 0
+106245 16:17:38.602692 close(4)         = 0
+106245 16:17:38.602805 read(3 <unfinished ...>
+106246 16:17:38.602874 close(3)         = 0
+106246 16:17:38.603000 clock_nanosleep(CLOCK_REALTIME, 0, {tv_sec=0, tv_nsec=200000000}, 0x7ffde36ea5e0) = 0
+106246 16:17:38.803453 kill(106245, SIGUSR1 <unfinished ...>
+106245 16:17:38.803570 <... read resumed>, 0x7ffde36ea730, 64) = ? ERESTARTSYS (To be restarted if SA_RESTART is set)
+106246 16:17:38.803605 <... kill resumed>) = 0
+106245 16:17:38.803635 --- SIGUSR1 {si_signo=SIGUSR1, si_code=SI_USER, si_pid=106246, si_uid=1000} ---
+106246 16:17:38.803667 clock_nanosleep(CLOCK_REALTIME, 0, {tv_sec=0, tv_nsec=200000000} <unfinished ...>
+106245 16:17:38.803709 rt_sigreturn({mask=[]}) = 0
+106245 16:17:38.803850 read(3 <unfinished ...>
+106246 16:17:39.003903 <... clock_nanosleep resumed>, 0x7ffde36ea5e0) = 0
+106246 16:17:39.004010 write(4, "ping\n", 5 <unfinished ...>
+106245 16:17:39.004115 <... read resumed>, "ping\n", 64) = 5
+106246 16:17:39.004156 <... write resumed>) = 5
+106245 16:17:39.004217 read(3 <unfinished ...>
+106246 16:17:39.004246 close(4 <unfinished ...>
+106245 16:17:39.004332 <... read resumed>, "", 64) = 0
+106246 16:17:39.004360 <... close resumed>) = 0
+106245 16:17:39.004391 close(3 <unfinished ...>
+106246 16:17:39.004421 exit_group(0 <unfinished ...>
+106245 16:17:39.004451 <... close resumed>) = 0
+106246 16:17:39.004479 <... exit_group resumed>) = ?
+106245 16:17:39.004509 wait4(106246 <unfinished ...>
+106246 16:17:39.004669 +++ exited with 0 +++
+106245 16:17:39.004718 <... wait4 resumed>, [{WIFEXITED(s) && WEXITSTATUS(s) == 0}], 0, NULL) = 106246
+106245 16:17:39.004800 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=106246, si_uid=1000, si_status=0, si_utime=0, si_stime=0} ---
+106245 16:17:39.005178 write(1, "mode = restart (SA_RESTART ON : "..., 267) = 267
+106245 16:17:39.005353 exit_group(0)    = ?
+106245 16:17:39.005658 +++ exited with 0 +++

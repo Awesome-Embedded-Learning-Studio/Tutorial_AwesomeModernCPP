@@ -1,0 +1,7 @@
+mkfifo("/home/charliechen/lp03_scratch/e3_meet.fifo", 0666) 完成,st_mode=010644 → S_ISFIFO=true(类型位是 p)
+  prw-r--r-- 1 charliechen charliechen 0 Oct  4 11:06 /home/charliechen/lp03_scratch/e3_meet.fifo
+[读端 pid=23563] open(O_RDONLY) ……(此刻还没有任何写者)
+[读端 pid=23563] open 返回 fd=3,干等了 801.1 ms——写者出现了
+[写端 pid=23564] 写 73 字节后关闭,退出
+[读端 pid=23563] EOF,共 73 字节,开头是:「hello,我是跟读端毫无亲缘的写者,咱们只认识这条路径名」
+orchestrator:两个 exec 出来的进程(pid 23563 / 23564)完成了这次相会,总耗时 802.4 ms;unlink 收尾

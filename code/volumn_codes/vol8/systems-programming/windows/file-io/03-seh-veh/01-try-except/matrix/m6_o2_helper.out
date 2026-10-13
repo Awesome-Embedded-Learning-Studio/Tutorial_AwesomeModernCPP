@@ -1,0 +1,5 @@
+$ ./m6 (普通函数,-O0 与 -O2 都正常)
+  [filter] code=0xE0006606
+  [handler] landed
+done
+exit=0

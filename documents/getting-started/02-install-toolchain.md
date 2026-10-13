@@ -13,6 +13,22 @@ tags:
   - beginner
   - 工具链
 reading_time_minutes: 12
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: Voyagerroc-Lab
+    roles: [revision]
+    note:
+      zh: "参与文章内容与示例修订 (PR #258)"
+      en: "Contributed article and example revisions (PR #258)"
+  - github: Voyagerroc-Pro
+    roles: [revision]
+    note:
+      zh: "参与文章内容与示例修订 (PR #258)"
+      en: "Contributed article and example revisions (PR #258)"
 ---
 
 # 装好写 C++ 要用的三样东西
@@ -24,6 +40,8 @@ reading_time_minutes: 12
 先说清楚 CMake 是干嘛的。咱们以后写 C++，一个项目不会只有一个 .cpp 文件，可能五六个、十几个，还得分文件夹放。这时候手动敲命令一个个编译会疯掉。CMake 就是帮咱们管这些事的，您写一份配置文件告诉它「项目里有哪几个文件、要生成什么程序」，剩下的事它来。具体怎么用，下一篇咱们就上手，现在先把它装上。
 
 这一篇全是手把手，每一步都有截图位。装完三样东西，咱们下一篇就能写出第一个能跑的程序。
+
+另外，本篇走的是 Windows 原生路线。如果您想要一个真正的 Linux 环境（很多开源工具在 Linux 上更顺手），可以先去第 7 篇把 WSL2 装起来再回来，装工具的思路是相通的。
 
 ## Windows 路线（推荐）
 

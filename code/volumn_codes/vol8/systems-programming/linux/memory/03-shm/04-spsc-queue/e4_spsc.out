@@ -1,0 +1,11 @@
+== E4 SPSC 无锁环形队列:两进程 1,000,000 条 × 32 B,各 3 轮 ==
+
+--- spin(满/空时的等待策略:CPU 自旋 + pause)---
+spin  N=1000000 槽=1024×32B(共 32960B 实体):received=1000000 order_err=0 corrupt=0(子进程 pid=41159) 耗时 6.7 ms,148.16 百万条/秒,有效载荷 4521.5 MiB/s
+spin  N=1000000 槽=1024×32B(共 32960B 实体):received=1000000 order_err=0 corrupt=0(子进程 pid=41161) 耗时 6.1 ms,163.97 百万条/秒,有效载荷 5003.9 MiB/s
+spin  N=1000000 槽=1024×32B(共 32960B 实体):received=1000000 order_err=0 corrupt=0(子进程 pid=41166) 耗时 7.0 ms,142.28 百万条/秒,有效载荷 4342.1 MiB/s
+
+--- yield(满/空时的等待策略:sched_yield 让出)---
+yield N=1000000 槽=1024×32B(共 32960B 实体):received=1000000 order_err=0 corrupt=0(子进程 pid=41169) 耗时 3.8 ms,264.33 百万条/秒,有效载荷 8066.7 MiB/s
+yield N=1000000 槽=1024×32B(共 32960B 实体):received=1000000 order_err=0 corrupt=0(子进程 pid=41171) 耗时 3.7 ms,267.57 百万条/秒,有效载荷 8165.4 MiB/s
+yield N=1000000 槽=1024×32B(共 32960B 实体):received=1000000 order_err=0 corrupt=0(子进程 pid=41173) 耗时 4.0 ms,248.63 百万条/秒,有效载荷 7587.6 MiB/s

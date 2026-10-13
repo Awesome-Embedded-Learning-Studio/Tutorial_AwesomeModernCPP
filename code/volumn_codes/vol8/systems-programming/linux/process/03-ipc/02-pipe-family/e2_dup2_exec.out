@@ -1,0 +1,5 @@
+stderr-line:我还是落终端
+父进程:等子进程(pid=23683)的 stdout……(stderr 那行你应该已经直接在下面看到了)
+父进程:从管道拿到 49 字节的子进程 stdout:
+stdout-line:我走的是被 dup2 过来的管道
+waitpid:exit=0——这就是 popen 内部那套 fork+dup2+exec 的手工完整版

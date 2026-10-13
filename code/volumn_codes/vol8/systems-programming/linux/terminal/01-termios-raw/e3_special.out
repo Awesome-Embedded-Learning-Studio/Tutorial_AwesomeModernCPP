@@ -1,0 +1,37 @@
+E3:特殊字符与 ISIG——同一串字节,两种模式下走两条完全不同的路
+
+[阶段1 canonical 无会话:^C 冲掉排队的 ab,但信号没有收件人(SIGINT=0)]
+  喂 t=   0ms 61 62 (ab)
+  喂 t= 200ms 03 (^C)
+  喂 t= 400ms 63 64 0a (cd\n)
+  读 t=[    0.2..  400.6]ms n=3   63 64 0a (cd\n) 计数:SIGINT=0 SIGQUIT=0
+  master 收到的回显:61 62 5e 43 63 64 0d 0a (ab^Ccd^M\n)   孩子退出码=0
+
+[阶段1b canonical 前台组:setsid+TIOCSCTTY+tcsetpgrp 三步之后,同一场 ^C 有人接了]
+  喂 t=   0ms 61 62 (ab)
+  喂 t= 200ms 03 (^C)
+  喂 t= 400ms 63 64 0a (cd\n)
+  读 t=[    0.4..  400.5]ms n=3   63 64 0a (cd\n) 计数:SIGINT=1 SIGQUIT=0
+  master 收到的回显:61 62 5e 43 63 64 0d 0a (ab^Ccd^M\n)   孩子退出码=0
+
+[阶段2 canonical:^D 交出行、再 ^D 是 EOF,EOF 之后还能接着读]
+  喂 t=   0ms 61 62 (ab)
+  喂 t= 200ms 04 (^D)
+  喂 t= 400ms 04 (^D)
+  喂 t= 600ms 78 0a (x\n)
+  读 t=[    0.3..  200.5]ms n=2   61 62 (ab) 计数:SIGINT=0 SIGQUIT=0
+  读 t=[  200.5..  400.6]ms n=0   () 计数:SIGINT=0 SIGQUIT=0
+  读 t=[  400.6..  600.7]ms n=2   78 0a (x\n) 计数:SIGINT=0 SIGQUIT=0
+  master 收到的回显:61 62 78 0d 0a (abx^M\n)   孩子退出码=0
+
+[阶段3 canonical 前台组:^\ 是 SIGQUIT]
+  喂 t=   0ms 61 62 (ab)
+  喂 t= 200ms 1c (^\)
+  喂 t= 400ms 63 64 0a (cd\n)
+  读 t=[    0.3..  400.6]ms n=3   63 64 0a (cd\n) 计数:SIGINT=0 SIGQUIT=1
+  master 收到的回显:61 62 5e 5c 63 64 0d 0a (ab^\cd^M\n)   孩子退出码=0
+
+[阶段4 raw:0x03/0x04/0x1c 全是普通字节,一次 read 原样全收]
+  喂 t=   0ms 61 62 03 63 64 04 1c 0a (ab^Ccd^D^\\n)
+  读 t=[    0.3..    0.3]ms n=8   61 62 03 63 64 04 1c 0a (ab^Ccd^D^\\n) 计数:SIGINT=0 SIGQUIT=0
+  master 收到的回显:(无)   孩子退出码=0

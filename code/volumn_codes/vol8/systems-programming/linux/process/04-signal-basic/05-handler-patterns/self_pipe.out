@@ -1,0 +1,6 @@
+t=   0ms event loop starts, poll(pipe_r, 200ms timeout)
+t= 100ms poll woke up -> byte 'i' = SIGINT (graceful handling)
+t= 301ms (heartbeat, nothing readable)
+t= 501ms poll woke up -> byte 'i' = SIGINT (graceful handling)
+t= 551ms poll woke up -> byte 't' = SIGTERM -> shutdown
+t= 551ms event loop exited cleanly

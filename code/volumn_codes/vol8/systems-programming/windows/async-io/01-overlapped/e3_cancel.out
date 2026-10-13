@@ -1,0 +1,23 @@
+[     0 ms] == [1] 定向撤单:CancelIoEx 指名道姓 ==
+[    16 ms] 投读: gle=997(ERROR_IO_PENDING) —— 无数据,在途
+[    16 ms] CancelIoEx(定向): ret=1
+[    16 ms] GOR: ret=0 gle=995(ERROR_OPERATION_ABORTED) —— 请求被撤,以 995 收场
+[    16 ms] == [2] 全量撤单:CancelIo 清光这把句柄上的在途 ==
+[    31 ms] 两发在途读: A gle=997 B gle=997
+[    31 ms] CancelIo(不带 OVERLAPPED,全量): ret=1
+[    31 ms] GOR(A): ret=0 gle=995(ERROR_OPERATION_ABORTED); GOR(B): ret=0 gle=995(ERROR_OPERATION_ABORTED) —— 一勺烩,都是 995
+[    31 ms] == [3] 定向撤 A,放过 B:B 照常吃数据完成 ==
+[    47 ms] 两发在途读: A gle=997(无事件) B gle=997(带事件)
+[    47 ms] CancelIoEx 只点 A
+[   219 ms] GOR(A): ret=0 gle=995(ERROR_OPERATION_ABORTED); B 的事件等待 0 后 GOR ret=1 got=8 vB=150 —— 撤单不影响邻居
+[   219 ms] == [3b] 探针:OVERLAPPED.hEvent=NULL 的在途读,GOR(bWait=TRUE) 靠什么等 ==
+[   437 ms] GOR(bWait=TRUE) 等了 203 ms 返回: ret=1 gle=0((其他)) —— 单发在途时它落在句柄信号上,真等到了数据
+[   437 ms] 注:句柄信号整把只有一枚,多发行共享它准不准,见 e5 第二部分的两发在途实测
+[   437 ms] == [4] 撤完之后:管道还活着,再投一发照常完成 ==
+[   453 ms] 第一发已撤(995),同句柄再投一发
+[   578 ms] 第二发: 投递 gle=997(ERROR_IO_PENDING),GOR ret=1 got=8 v2=80 —— 句柄没被取消弄坏
+[   578 ms] == [5] 线程归属:别的线程发的读,CancelIo(仅本线程)撤不动,CancelIoEx(全线程)才撤得动 ==
+[   594 ms] worker(tid=12336)投读: gle=997(ERROR_IO_PENDING)
+[   609 ms] 主线程 CancelIo: ret=1;GOR(FALSE): ret=0 gle=996(ERROR_IO_INCOMPLETE(尚未完成,996)) —— 在途纹丝不动,CancelIo 只认调用线程的请求
+[   609 ms] 主线程 CancelIoEx(不点名): ret=1;GOR(TRUE): ret=0 gle=995(ERROR_OPERATION_ABORTED) —— 跨线程也照撤
+[   625 ms] e3 完

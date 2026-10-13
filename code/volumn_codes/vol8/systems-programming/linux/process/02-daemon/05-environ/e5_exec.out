@@ -1,0 +1,83 @@
+== E5b exec 的两条环境路 ==
+父进程先 setenv(E5_EXTRA),当前 environ 条目数=70,PATH 前 48 字符:
+  "/home/charliechen/.local/bin:/opt/arm-gnu-toolch..."
+
+--- 路 1: execle + envp 白名单数组(子进程环境被整个替换) ---
+E5_FROM=execle
+PATH=/usr/bin:/bin
+
+--- 路 2: execve + environ(子进程原样继承,能看到 E5_EXTRA) ---
+SHELL=/usr/bin/zsh
+WSL2_GUI_APPS_ENABLED=1
+WSL_DISTRO_NAME=LinuxWSL
+NAME=DESKTOP-65DBAA7
+PWD=/home/charliechen/lp02_scratch
+LOGNAME=charliechen
+HOME=/home/charliechen
+LANG=en_US.UTF-8
+WSL_INTEROP=/run/WSL/249_interop
+WAYLAND_DISPLAY=wayland-0
+TERM=xterm-256color
+USER=charliechen
+DISPLAY=localhost:0
+SHLVL=3
+XDG_RUNTIME_DIR=/run/user/1000
+WSLENV=VSCODE_WSL_EXT_LOCATION/up
+VSCODE_WSL_EXT_LOCATION=/mnt/c/Users/CharlieChen114514/.vscode/extensions/ms-vscode-remote.remote-wsl-0.104.3
+PATH=/home/charliechen/.local/bin:/opt/arm-gnu-toolchain/bin:/home/charliechen/.vscode-server/bin/07f806f999227108933c2e30515b26eecc1fda74/bin/remote-cli:/home/charliechen/.local/share/pnpm:/home/charliechen/.local/bin:/opt/arm-gnu-toolchain/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/charliechen/.claude/plugins/cache/superpowers-marketplace/superpowers/6.4.2/bin
+DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+HOSTTYPE=x86_64
+PULSE_SERVER=unix:/mnt/wslg/PulseServer
+OLDPWD=/home/charliechen/Tutorial_AwesomeModernCPP
+_=/home/charliechen/lp02_scratch/./e5_exec
+VSCODE_CWD=/mnt/c/Users/CharlieChen114514/AppData/Local/Programs/Microsoft VS Code
+VSCODE_NLS_CONFIG={"userLocale":"zh-cn","osLocale":"zh-cn","resolvedLanguage":"zh-cn","defaultMessagesFile":"/home/charliechen/.vscode-server/bin/07f806f999227108933c2e30515b26eecc1fda74/out/nls.messages.json","languagePack":{"translationsConfigFile":"/home/charliechen/.vscode-server/data/clp/75539731208fa508a5b042c8fe051beb.zh-cn/tcf.json","messagesFile":"/home/charliechen/.vscode-server/data/clp/75539731208fa508a5b042c8fe051beb.zh-cn/75eb6056ba509d03c4c2cde0ee386d3830b23c058b83617cfd06a03db9042073/nls.messages.json","corruptMarkerFile":"/home/charliechen/.vscode-server/data/clp/75539731208fa508a5b042c8fe051beb.zh-cn/corrupted.info"},"locale":"zh-cn","availableLanguages":{"*":"zh-cn"},"_languagePackId":"75539731208fa508a5b042c8fe051beb.zh-cn","_languagePackSupport":true,"_translationsConfigFile":"/home/charliechen/.vscode-server/data/clp/75539731208fa508a5b042c8fe051beb.zh-cn/tcf.json","_cacheRoot":"/home/charliechen/.vscode-server/data/clp/75539731208fa508a5b042c8fe051beb.zh-cn","_resolvedLanguagePackCoreLocation":"/home/charliechen/.vscode-server/data/clp/75539731208fa508a5b042c8fe051beb.zh-cn/75eb6056ba509d03c4c2cde0ee386d3830b23c058b83617cfd06a03db9042073","_corruptedFile":"/home/charliechen/.vscode-server/data/clp/75539731208fa508a5b042c8fe051beb.zh-cn/corrupted.info"}
+VSCODE_HANDLES_SIGPIPE=true
+DEBUGINFOD_URLS=https://debuginfod.archlinux.org 
+VSSCRIPT_PATH=/usr/lib/python3.14/site-packages/vapoursynth/libvsscript.so
+ZSH=/home/charliechen/.oh-my-zsh
+PAGER=less
+LESS=-R
+LSCOLORS=Gxfxcxdxbxegedabagacad
+LS_COLORS=rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.7z=01;31:*.ace=01;31:*.alz=01;31:*.apk=01;31:*.arc=01;31:*.arj=01;31:*.bz=01;31:*.bz2=01;31:*.cab=01;31:*.cpio=01;31:*.crate=01;31:*.deb=01;31:*.drpm=01;31:*.dwm=01;31:*.dz=01;31:*.ear=01;31:*.egg=01;31:*.esd=01;31:*.gz=01;31:*.jar=01;31:*.lha=01;31:*.lrz=01;31:*.lz=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.lzo=01;31:*.pyz=01;31:*.rar=01;31:*.rpm=01;31:*.rz=01;31:*.sar=01;31:*.swm=01;31:*.t7z=01;31:*.tar=01;31:*.taz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tgz=01;31:*.tlz=01;31:*.txz=01;31:*.tz=01;31:*.tzo=01;31:*.tzst=01;31:*.udeb=01;31:*.war=01;31:*.whl=01;31:*.wim=01;31:*.xz=01;31:*.z=01;31:*.zip=01;31:*.zoo=01;31:*.zst=01;31:*.avif=01;35:*.jpg=01;35:*.jpeg=01;35:*.jxl=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:*~=00;90:*#=00;90:*.bak=00;90:*.crdownload=00;90:*.dpkg-dist=00;90:*.dpkg-new=00;90:*.dpkg-old=00;90:*.dpkg-tmp=00;90:*.old=00;90:*.orig=00;90:*.part=00;90:*.rej=00;90:*.rpmnew=00;90:*.rpmorig=00;90:*.rpmsave=00;90:*.swp=00;90:*.tmp=00;90:*.ucf-dist=00;90:*.ucf-new=00;90:*.ucf-old=00;90:
+P9K_SSH=0
+_P9K_SSH_TTY=
+PNPM_HOME=/home/charliechen/.local/share/pnpm
+VSCODE_ESM_ENTRYPOINT=vs/workbench/api/node/extensionHostProcess
+VSCODE_HANDLES_UNCAUGHT_ERRORS=true
+VSCODE_RECONNECTION_GRACE_TIME=10800000
+ELECTRON_RUN_AS_NODE=1
+VSCODE_IPC_HOOK_CLI=/run/user/1000/vscode-ipc-fdd70aca-9097-4538-81a3-b7ca45e30f8d.sock
+NoDefaultCurrentDirectoryInExePath=1
+CLAUDE_AGENT_SDK_VERSION=0.3.196
+MCP_CONNECTION_NONBLOCKING=true
+CLAUDE_CODE_ENABLE_TASKS=0
+CLAUDE_CODE_ENTRYPOINT=claude-vscode
+CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING=true
+HTTP_PROXY=http://127.0.0.1:7897
+http_proxy=http://127.0.0.1:7897
+HTTPS_PROXY=http://127.0.0.1:7897
+https_proxy=http://127.0.0.1:7897
+NO_PROXY=172.31.*,172.30.*,172.29.*,172.28.*,172.27.*,172.26.*,172.25.*,172.24.*,172.23.*,172.22.*,172.21.*,172.20.*,172.19.*,172.18.*,172.17.*,172.16.*,10.*,192.168.*,127.*,localhost,<local>
+no_proxy=172.31.*,172.30.*,172.29.*,172.28.*,172.27.*,172.26.*,172.25.*,172.24.*,172.23.*,172.22.*,172.21.*,172.20.*,172.19.*,172.18.*,172.17.*,172.16.*,10.*,192.168.*,127.*,localhost,<local>
+COREPACK_ENABLE_AUTO_PIN=0
+AI_AGENT=claude-code_2-1-196_agent
+ANTHROPIC_AUTH_TOKEN=305305deb316454b94891a8409dadd6a.2eyPTC54x9pWgFRk
+ANTHROPIC_BASE_URL=https://open.bigmodel.cn/api/anthropic
+API_TIMEOUT_MS=3000000
+CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+CLAUDE_CODE_AUTO_COMPACT_WINDOW=1000000
+ANTHROPIC_DEFAULT_HAIKU_MODEL=GLM-4.7
+ANTHROPIC_DEFAULT_SONNET_MODEL=glm-5.3[1m]
+ANTHROPIC_DEFAULT_OPUS_MODEL=glm-5.3[1m]
+GIT_EDITOR=true
+CLAUDE_CODE_EXECPATH=/home/charliechen/.vscode-server/extensions/anthropic.claude-code-2.1.196-linux-x64/resources/native-binary/claude
+CLAUDECODE=1
+CLAUDE_CODE_SESSION_ID=31756ee2-848c-4e43-b440-edc6b89ceed6
+CLAUDE_CODE_CHILD_SESSION=1
+CLAUDE_EFFORT=high
+E5_EXTRA=inherited-via-environ
+
+结论: /usr/bin/env 只是把收到的环境原样打印——
+  路 1 只剩白名单两条(连父进程的 HOME/TERM 都没了);
+  路 2 全量在场且带着 E5_EXTRA。构造沙箱/清洗环境时走路 1,普通传递走路 2

@@ -16,6 +16,17 @@ tags:
 - cpp-modern
 - intermediate
 title: path 操作：跨平台路径处理
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: YukunJ
+    roles: [revision]
+    note:
+      zh: "参与文章内容与示例修订 (PR #45)"
+      en: "Contributed article and example revisions (PR #45)"
 ---
 # path 操作：跨平台路径处理
 

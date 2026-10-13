@@ -1,0 +1,37 @@
+$ ./e4 enoent
+baseline mode = enoent; probes = 11
+    (insert: fprintf to stderr)
+[ 0] fprintf(stderr, ...)                 baseline= 2 after= 2  unchanged
+    (insert: raw write to fd 2)
+[ 1] successful write(2, ...)             baseline= 2 after= 2  unchanged
+[ 2] strerror(ENOMEM)                     baseline= 2 after= 2  unchanged
+    (insert: buffered printf, no syscall while buffered)
+[ 3] printf to stdout (buffered)          baseline= 2 after= 2  unchanged
+    (insert: iostream line)
+[ 4] std::cout << (iostreams)             baseline= 2 after= 2  unchanged
+[ 5] malloc 1 MiB + free                  baseline= 2 after= 2  unchanged
+[ 6] std::string 4 KiB (heap)             baseline= 2 after= 2  unchanged
+[ 7] fopen("/tmp") + fclose               baseline= 2 after= 2  unchanged
+[ 8] getaddrinfo("localhost") ok          baseline= 2 after= 6  POLLUTED
+[ 9] SECOND FAILING open()                baseline= 2 after= 2  unchanged
+[10] fprintf(stderr) with fd 2 CLOSED     baseline= 2 after= 9  POLLUTED
+summary: 2 of 11 probes polluted errno in this run
+
+$ ./e4 ebadf
+baseline mode = ebadf; probes = 11
+    (insert: fprintf to stderr)
+[ 0] fprintf(stderr, ...)                 baseline= 9 after= 9  unchanged
+    (insert: raw write to fd 2)
+[ 1] successful write(2, ...)             baseline= 9 after= 9  unchanged
+[ 2] strerror(ENOMEM)                     baseline= 9 after= 9  unchanged
+    (insert: buffered printf, no syscall while buffered)
+[ 3] printf to stdout (buffered)          baseline= 9 after= 9  unchanged
+    (insert: iostream line)
+[ 4] std::cout << (iostreams)             baseline= 9 after= 9  unchanged
+[ 5] malloc 1 MiB + free                  baseline= 9 after= 9  unchanged
+[ 6] std::string 4 KiB (heap)             baseline= 9 after= 9  unchanged
+[ 7] fopen("/tmp") + fclose               baseline= 9 after= 9  unchanged
+[ 8] getaddrinfo("localhost") ok          baseline= 9 after= 6  POLLUTED
+[ 9] SECOND FAILING open()                baseline= 9 after= 2  POLLUTED
+[10] fprintf(stderr) with fd 2 CLOSED     baseline= 9 after= 9  unchanged
+summary: 2 of 11 probes polluted errno in this run

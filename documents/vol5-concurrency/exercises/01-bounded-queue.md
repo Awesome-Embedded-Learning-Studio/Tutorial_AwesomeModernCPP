@@ -23,7 +23,7 @@ related:
 
 # Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives
 
-> 本 Lab 配套可运行工程在 [`code/volumn_codes/vol5-labs/templates/lab1_bounded_queue/`](../../../code/volumn_codes/vol5-labs/templates/lab1_bounded_queue/)。动手工作量约 **8–12 小时**（`reading_time_minutes` 是纯阅读分钟数，不是动手时间）。
+> 本 Lab 配套可运行工程在 `code/volumn_codes/vol5-labs/templates/lab1_bounded_queue/`。动手工作量约 **8–12 小时**（`reading_time_minutes` 是纯阅读分钟数，不是动手时间）。
 
 ## 目标
 
@@ -139,7 +139,7 @@ not_empty_.notify_one();
 
 > **别被测试骗了**：`test_milestone1` 测的是"能放能取、FIFO、阻塞行为、多生产者不丢不重"——**全是行为，不查你用没用 predicate wait**。你完全可以用裸 `wait()`（无谓词）蒙混过测试（碰巧没触发虚假唤醒）。但那是定时炸弹：高并发或特定调度下必炸。**真正的验收标准：`push`/`pop` 的等待都是谓词 wait（`cv.wait(lock, predicate)`），没有裸 `wait()`。** 用 TSan 跑 MS4 的压力测试，裸 wait 迟早会以 data race 或越界暴露。
 
-[`test/test_milestone1.cpp`](../../../code/volumn_codes/vol5-labs/templates/lab1_bounded_queue/test/test_milestone1.cpp) 覆盖四个场景：单 push/pop、FIFO、pop 阻塞直到 push、多生产者并发不丢不重。
+`test/test_milestone1.cpp` 覆盖四个场景：单 push/pop、FIFO、pop 阻塞直到 push、多生产者并发不丢不重。
 
 ## Milestone 2: close 语义
 

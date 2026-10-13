@@ -1,0 +1,53 @@
+[parent] 等子进程 marker_a ...
+[parent] rm -rf /home/charliechen/l04_scratch/e2_live(阶段 A)
+[parent] rm -rf /home/charliechen/l04_scratch/e2_live(阶段 B)
+[A] directory_iterator,迭代中外部删除
+  step=1     name=f0888      attr_ec=0(Success)
+  step=2     name=f2525      attr_ec=0(Success)
+  step=3     name=f0843      attr_ec=0(Success)
+  step=4     name=f2761      attr_ec=0(Success)
+  step=5     name=f0398      attr_ec=0(Success)
+  step=6     name=f1502      attr_ec=0(Success)
+  step=200   name=f1431      attr_ec=2(No such file or directory)
+  step=400   name=f0790      attr_ec=2(No such file or directory)
+  step=600   name=f1026      attr_ec=2(No such file or directory)
+  step=800   name=f0041      attr_ec=2(No such file or directory)
+  step=1000  name=f0704      attr_ec=2(No such file or directory)
+  [A 小结] 共见 1022 条(基线应为 3001);increment 失败 0 次;属性查询成功 84、失败 938
+  树还在吗:已被 rm -rf
+
+[B] recursive_directory_iterator,迭代中外部删除
+  step=1    depth=0 t00
+  step=2    depth=0 t11
+  step=3    depth=0 t19
+  step=4    depth=0 t17
+  step=5    depth=0 t01
+  step=6    depth=0 t16
+  step=7    depth=0 t07
+  step=8    depth=0 t14
+  step=9    depth=0 t06
+  step=10   depth=0 t13
+  step=11   depth=0 t10
+  step=12   depth=0 t05
+  step=13   depth=0 t02
+  step=14   depth=0 t18
+  step=15   depth=0 t12
+  step=16   depth=0 t08
+  step=17   depth=0 sub_a
+  step=17 increment 失败:2 (No such file or directory) —— 标准把这算错误,递归下降打不开子目录
+  [B 小结] 共见 17 条(基线应为 32 = 20 文件 + 2 目录 + 10 子文件);树还在吗:已被 rm -rf
+[parent] child exit status=0,实验收尾
+
+== 解读(与 e2_vanish_solo.out 基线对照) ==
+阶段 A(directory_iterator,3000 文件):
+  - 迭代器自己从头到尾没报错(increment 失败 0 次):glibc 的 readdir 用户态缓冲
+    (32 KiB,本轮装了 1022 条)在 rm -rf 之后照样吐名字 —— 名单是删除前抄下来的;
+  - 缓存外的属性查询(file_size,每条一次 stat)从第 ~85 条起全部 ENOENT:
+    名字是陈旧的,盘上已经没有这个东西 —— 938/1022 失败;
+  - 走到缓冲末尾,下一次 getdents64 对着「还开着 fd 但已被清空」的目录返回 EOF,
+    迭代干净收尾:3001 条只见了 1022 条,不抛、不设 ec、不多走一条。
+  => 「不报错」的三种来源都在这:缓冲名单、缓存类型(d_type 判型不查盘)、EOF 截断。
+阶段 B(recursive_directory_iterator,小树):
+  - 子目录 sub_a 的名字在删除前已进缓冲,条目照常产出;
+  - 轮到「下降打开 sub_a」时目录已消失 -> increment(ec) 这次真报错:ENOENT。
+  => 平铺迭代静默截断,递归迭代在下降点报错 —— 同一场 rm -rf,两种结局。

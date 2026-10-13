@@ -1,0 +1,24 @@
+## dir /a:类型列直接标 <JUNCTION> 并附跳转目标(输出按 GBK 转 UTF-8)
+
+ 驱动器 C 中的卷没有标签。
+ 卷的序列号是 DA36-72FA
+
+ C:\Users\CharlieChen114514\AppData\Local\Temp\sysprog-direnum\e3cap 的目录
+
+2026/10/02  19:37    <DIR>          .
+2026/10/02  19:37    <DIR>          ..
+2026/10/02  19:37                13 hard.txt
+2026/10/02  19:37    <JUNCTION>     jn_dir [C:\Users\CharlieChen114514\AppData\Local\Temp\sysprog-direnum\e3cap\real_dir]
+2026/10/02  19:37                13 real.txt
+2026/10/02  19:37    <DIR>          real_dir
+               2 个文件             26 字节
+               4 个目录 598,688,370,688 可用字节
+
+## fsutil hardlink list:一条 MFT 记录的多个名字(免管理员)
+
+\Users\CharlieChen114514\AppData\Local\Temp\sysprog-direnum\e3cap\real.txt
+\Users\CharlieChen114514\AppData\Local\Temp\sysprog-direnum\e3cap\hard.txt
+
+## fsutil sparse queryflag(免管理员;setflag 同样免,但 C++ 侧走 FSCTL_SET_SPARSE)
+
+该文件没有设为稀疏

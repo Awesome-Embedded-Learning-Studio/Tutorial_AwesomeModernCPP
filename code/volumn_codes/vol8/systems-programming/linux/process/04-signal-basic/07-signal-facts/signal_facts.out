@@ -1,0 +1,15 @@
+[E7.1] catch/ignore SIGKILL & SIGSTOP: kernel refuses at sigaction time
+    sigaction(SIGKILL , SIG_IGN) -> -1 errno=22 (Invalid argument)
+    sigaction(SIGSTOP , SIG_IGN) -> -1 errno=22 (Invalid argument)
+    sigaction(SIGTERM , SIG_IGN) -> 0 errno=0 (OK, accepted)
+    sigaction(SIGSEGV , SIG_IGN) -> 0 errno=0 (OK, accepted)
+
+[E7.2] child ignores SIGTERM, still dies to SIGKILL
+    CHILD 15171: SIGTERM ignored, ready
+    CHILD: survived a SIGTERM at t=300ms
+[E7.2] child end: WIFSIGNALED=1 WTERMSIG=9 (SIGKILL=9)
+
+[E7.3] SIGPIPE default kills; ignored -> write returns EPIPE
+[E7.3] child-A end: WIFSIGNALED=1 WTERMSIG=13 (SIGPIPE=13)
+    CHILD-B: write returned -1 errno=32 (Broken pipe) -> alive, error is visible
+[E7.3] child-B end: WIFEXITED=1 code=0

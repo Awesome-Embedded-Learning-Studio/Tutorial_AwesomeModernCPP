@@ -1,0 +1,6 @@
+mode = norestart (SA_RESTART OFF: read returns -1/EINTR)
+read returned 5 bytes: "ping
+"
+signal delivered = 1, EINTR retries inside sys_call = 1
+expected flavor: second read = 0 (EOF passthrough, 0 is not -1)
+flavor-one error path: open: No such file or directory

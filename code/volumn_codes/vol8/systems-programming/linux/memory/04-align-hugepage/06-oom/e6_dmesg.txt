@@ -1,0 +1,4 @@
+# dmesg 全量扫描 OOM 记录(2026-10-03 本机):
+# dmesg 总行数: 694
+# 匹配 'oom|out of memory|killed process' 的行数: 0
+# (0 = 本次开机以来内核环日志里没有任何 OOM kill 记录;WSL2 无持久 journal,重启后即清零)

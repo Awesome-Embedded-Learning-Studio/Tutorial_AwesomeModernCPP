@@ -1,0 +1,10 @@
+[     0 ms] == [1] 野路子:读在途,直接 CloseHandle ==
+[     0 ms] 投一发在途读: ret=0 gle=997(ERROR_IO_PENDING),然后直接关句柄
+[     0 ms] CloseHandle 已返回(句柄值这会儿已经作废),GQCS 等它的完成包,限期 6000ms
+[     0 ms] GQCS: ret=0 历时 0 ms gle=109(ERROR_BROKEN_PIPE) pov=就是那发读 —— 野路子的下场,实测口径
+[     0 ms] == [2] 正路子:CancelIoEx 撤单 → 等 995 完成包 → 再关 ==
+[     0 ms] 投一发在途读: ret=0 gle=997(ERROR_IO_PENDING)
+[     0 ms] CancelIoEx(定向): ret=1
+[     0 ms] GQCS: ret=0 历时 0 ms gle=995(ERROR_OPERATION_ABORTED) pov=就是那发读 key=2 —— 撤单也有完成包,995 送到
+[     0 ms] 收完 995 再 CloseHandle:干干净净
+[     0 ms] iocp-e5 完

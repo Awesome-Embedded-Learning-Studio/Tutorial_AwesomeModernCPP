@@ -1,0 +1,16 @@
+# objdump -d e4_o2 | 篡改前的原文截取(consume_virtual 与 consume_static,GCC 16.2.1 -O2,x86-64)
+# 要害:consume_static 三条指令收场(read_some 内联成两条 SSE);consume_virtual 先比对两个候选地址投机去虚化,猜不中才走 jmp *%rax 间接跳转兜底
+0000000000001700 <_ZL15consume_virtualR13VirtualSourcePv>:
+    1700:	48 8b 07             	mov    (%rdi),%rax
+    1703:	48 8d 15 96 00 00 00 	lea    0x96(%rip),%rdx        # 17a0 <_ZN11MemVirtualB9read_someEPvm>
+    170a:	48 8b 00             	mov    (%rax),%rax
+    170d:	48 39 d0             	cmp    %rdx,%rax
+    1710:	74 2e                	je     1740 <_ZL15consume_virtualR13VirtualSourcePv+0x40>
+    1712:	48 8d 15 17 02 00 00 	lea    0x217(%rip),%rdx        # 1930 <_ZN11MemVirtualA9read_someEPvm>
+    1719:	48 39 d0             	cmp    %rdx,%rax
+    171c:	75 12                	jne    1730 <_ZL15consume_virtualR13VirtualSourcePv+0x30>
+    171e:	66 0f 6f 05 3a 29 00 	movdqa 0x293a(%rip),%xmm0        # 4060 <_ZN11MemVirtualA8kPayloadE>
+    1725:	00 
+    1726:	b8 10 00 00 00       	mov    $0x10,%eax
+    172b:	0f 11 06             	movups %xmm0,(%rsi)
+    172e:	c3                   	ret

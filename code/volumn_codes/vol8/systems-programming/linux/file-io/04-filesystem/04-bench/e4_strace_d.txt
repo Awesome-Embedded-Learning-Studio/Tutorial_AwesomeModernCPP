@@ -1,0 +1,19 @@
+# strace 同口径 ./e4_bench one d   # directory_iterator + entry.file_size(ec)
+# getdents64 仍是 11 轮,但 newfstatat 涨到 10005 = 10000 条目每条一次 + 5 基线
+# —— file_size 不进目录项缓存(E1 的 e1_cache 同结论),这就是 16ms vs 3.4ms 的来源
+close(3)                                = 0
+close(3)                                = 0
+close(3)                                = 0
+close(3)                                = 0
+close(3)                                = 0
+openat(AT_FDCWD, "/home/charliechen/l04_scratch/e4_big", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 3
+getdents64(3, 0x5be9dde34180 /* 1024 entries */, 32768) = 32752
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e4_big/f00408", {st_mode=S_IFREG|0644, st_size=0, ...}, 0) = 0
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e4_big/f00721", {st_mode=S_IFREG|0644, st_size=0, ...}, 0) = 0
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e4_big/f02711", {st_mode=S_IFREG|0644, st_size=0, ...}, 0) = 0
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e4_big/f02893", {st_mode=S_IFREG|0644, st_size=0, ...}, 0) = 0
+newfstatat(AT_FDCWD, "/home/charliechen/l04_scratch/e4_big/f08519", {st_mode=S_IFREG|0644, st_size=0, ...}, 0) = 0
+...(中间 9980 行 newfstatat 略,完整证据在 e4_strace_d_full.txt.gz)...
+getdents64(3, 0x5be9dde34180 /* 0 entries */, 32768) = 0
+close(3)                                = 0
++++ exited with 0 +++

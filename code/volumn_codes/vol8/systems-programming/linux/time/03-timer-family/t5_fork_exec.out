@@ -1,0 +1,20 @@
+== E5a: 同一个内核计时器 —— alarm 和 setitimer(ITIMER_REAL) 共用一笔 ==
+setitimer 武装后: it_value=99ms it_interval=100ms
+调 alarm(2) 之后: it_value=1999ms it_interval=0ms —— 周期被抹掉,
+两件工具共用同一个计时器,后写的顶掉先写的
+
+== E5b: fork 探针一: alarm 单独问继承 ==
+[fork 子进程 A] 子进程里 alarm(0) 返回 0 s —— 0 说明 alarm 没跟过来
+
+== E5c: fork 探针二: setitimer/timer_create/timerfd(观测 600ms) ==
+[fork 子进程 B] SIGALRM(setitimer) 0 次,SIGUSR1(timer_create) 0 次 —— 都是 0,两件都没跟过来
+[fork 父进程] 同窗口内 SIGALRM(setitimer) 6 次,SIGUSR1(timer_create) 6 次 —— 武装只留在父进程
+
+== E5d: exec 之后,只剩 fd 形态的能活 ==
+[exec 子进程] 继承的 timerfd fd=3,读到档数 12 —— fd 活过了 exec
+
+== E5e: 矩阵怎么读 ==
+  信号形态三件(alarm/setitimer/timer_create)fork 后在子进程全部静默:fork 不继承;
+  exec 更会把信号处理器复位成默认,就算继承了也没人接;
+  timerfd 是 fd,fork 与 exec 都挡不住它(除非建的时候带 TFD_CLOEXEC)——
+  这正是「定时器要不要跨进程存活」选型的一票硬依据。

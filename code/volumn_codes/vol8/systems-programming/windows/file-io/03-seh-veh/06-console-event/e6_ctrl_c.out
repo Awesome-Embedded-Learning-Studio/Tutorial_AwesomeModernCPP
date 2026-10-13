@@ -1,0 +1,8 @@
+SetConsoleCtrlHandler -> 1, console cp=936
+GenerateConsoleCtrlEvent(CTRL_C_EVENT) -> 1 (CTRL_C_EVENT=0)
+GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT) -> 1 (CTRL_BREAK_EVENT=1)
+veh_dispatches=0(0 = Ctrl+C 从没进过 SEH 分发器)
+done
+--- handler 线程日志(e6_handler.log):
+ctrl handler: type=1 (thread=23640)
+--- 主线程 id 对照:stdout 上一行没有,结论以 handler 线程号 != ctrl 派发为准

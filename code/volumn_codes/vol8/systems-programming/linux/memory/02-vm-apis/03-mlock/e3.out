@@ -1,0 +1,35 @@
+E3: mlock / mlockall (page size 4096)
+RLIMIT_MEMLOCK: soft=67108864 hard=67108864 bytes
+
+== (1) mlock 2 pages of an 8-page anon mapping (never touched) ==
+   before mlock  bitmap: 00000000
+   VmLck=0 kB, smaps Locked=0 kB
+   mlock(p, 2 pages) rc=0  -- pages still never written by us:
+   after mlock   bitmap: 11000000
+   VmLck=8 kB, smaps Locked=8 kB  <- mlock 自己把页摸进了内存
+   p[0]=0x7f written; VmLck=8 kB (unchanged)
+
+== (2) munlock: unlock, don't evict ==
+   after munlock bitmap: 11000000
+   VmLck=0 kB (back to 0), pages still resident
+
+== (3) RLIMIT_MEMLOCK boundary ==
+   mlock(limit + 1 page = 67112960 B): rc=-1 errno=12 (Cannot allocate memory)
+   mlock(limit exactly = 67108864 B): rc=0 errno=0 (Success)
+   VmLck=65536 kB
+   one more page on top of a full limit: rc=-1 errno=12 (Cannot allocate memory)
+   VmLck now=0 kB
+
+== (4) mlockall(MCL_CURRENT) ==
+   VmRSS=4088 kB vs limit 67108864 bytes
+   mlockall(MCL_CURRENT) rc=0 errno=0 (Success)
+   VmLck=7296 kB
+
+== swap on this box (why realtime wants mlock) ==
+   /proc/swaps:
+     Filename				Type		Size		Used		Priority
+     /dev/sdc                                partition	16777216	0		-2
+   /proc/sys/vm/swappiness: 60
+   locked pages never swap out -- that is the whole pitch; forcing deterministic swap-out here would need root (drop_caches) or dangerous memory pressure, recorded as-is
+
+done

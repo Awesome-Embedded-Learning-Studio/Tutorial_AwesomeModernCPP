@@ -1,0 +1,16 @@
+文件:/home/charliechen/l05_scratch/e7/ext4.bin
+st_dev=8:48(十进制)= 08:30(十六进制),inode=1716962
+
+[P1] flock 互斥:A 持锁 300 ms,B 阻塞版接棒
+  B(pid=170777):阻塞 300 ms 后拿到锁
+
+[P2] 同进程重新 open:flock(LOCK_EX|LOCK_NB)
+  fd2 试锁 = -1, errno=11(EWOULDBLOCK)
+
+[P3] fcntl:close 无关 fd → 记录锁全释放?
+  竞争者:F_SETLK = -1(被占)
+  已 close 无关的 fd2
+  竞争者:F_SETLK = 0(拿到)
+
+[P4] 持 flock 时 /proc/locks:
+  /proc/locks: 13: FLOCK  ADVISORY  WRITE 170776 08:30:1716962 0 EOF

@@ -1,0 +1,12 @@
+[A] indirect-virtual(predictable) :   0.94 ns/op  (目标交替,BTB 全命中,最好档)
+[A2] indirect-virtual(shuffled)    :   5.23 ns/op  (mt19937 乱序,预测失效,最坏档)
+[B] static(template)               :   0.84 ns/op  (编译期实例化,直接调用)
+[C] plain function                 :   0.84 ns/op  (普通调用锚,对齐 ch00 口径)
+[D] getpid anchor                  : 138.23 ns/op  (系统调用锚)
+virtual overhead vs plain : best 1.12x worst 6.24x   vs syscall : best 1% worst 4%
+[A] indirect-virtual(predictable) :   0.94 ns/op  (目标交替,BTB 全命中,最好档)
+[A2] indirect-virtual(shuffled)    :   5.16 ns/op  (mt19937 乱序,预测失效,最坏档)
+[B] static(template)               :   0.85 ns/op  (编译期实例化,直接调用)
+[C] plain function                 :   0.89 ns/op  (普通调用锚,对齐 ch00 口径)
+[D] getpid anchor                  : 136.14 ns/op  (系统调用锚)
+virtual overhead vs plain : best 1.06x worst 5.82x   vs syscall : best 1% worst 4%

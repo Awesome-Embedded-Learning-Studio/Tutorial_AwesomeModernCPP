@@ -15,6 +15,17 @@ tags:
   - 入门
   - 基础
 cpp_standard: [11, 14, 17, 20]
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #244)"
+      en: "Contributed exercise solutions and article revisions (PR #244)"
 ---
 
 # 友元：把私有成员的访问权，主动给出去

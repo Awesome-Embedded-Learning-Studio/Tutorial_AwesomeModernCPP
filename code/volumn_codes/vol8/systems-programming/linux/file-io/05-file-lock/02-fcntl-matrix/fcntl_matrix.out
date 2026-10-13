@@ -1,0 +1,56 @@
+pid=153582, 数据文件:/home/charliechen/l05_scratch/e2/fcntl.bin(ext4)
+
+==== E2a  字节区间:A 锁 [0,100),B 试 [50,150) 冲突、[100,200) 成功 ====
+  [     0 ms] A(持锁者 pid=153584):F_SETLK F_WRLCK [0,100) = 0
+  [     0 ms] B(pid=153585):F_SETLK F_WRLCK [50,150) = -1, errno=11(EAGAIN(即 EWOULDBLOCK))
+  [     0 ms] B(pid=153586):F_SETLK F_WRLCK [100,200) = 0
+  [     0 ms] A 已 _exit(0)(见 E2f:进程退出即释放)
+  [     1 ms] B(pid=153587):F_SETLK F_WRLCK [0,50) = 0
+
+==== E2b  F_GETLK:探测冲突锁的 pid 与实际区间 ====
+  [     1 ms] A(持锁者 pid=153588) 持 F_WRLCK [0,100)
+  [     1 ms] 探针B(pid=153589):F_GETLK F_WRLCK [0,200) → 撞上 F_WRLCK l_pid=153588, 区间[0,100)(r=0)
+  [     1 ms] 探针B(pid=153590):F_GETLK F_WRLCK [150,200) → 无冲突(l_type=F_UNLCK)
+  [     2 ms] 探针B(pid=153591):F_GETLK F_WRLCK [50,60) → 撞上 F_WRLCK l_pid=153588, 区间[0,100)(r=0)
+
+==== E2c  读共享/写排他:四种组合 ====
+  A 持 F_RDLCK [0,100) 时,B 试 F_RDLCK [0,100):  [     2 ms] B(pid=153593):F_SETLK F_RDLCK [0,100) = 0
+  A 持 F_RDLCK [0,100) 时,B 试 F_WRLCK [0,100):  [     3 ms] B(pid=153595):F_SETLK F_WRLCK [0,100) = -1, errno=11(EAGAIN(即 EWOULDBLOCK))
+  A 持 F_WRLCK [0,100) 时,B 试 F_RDLCK [0,100):  [     4 ms] B(pid=153597):F_SETLK F_RDLCK [0,100) = -1, errno=11(EAGAIN(即 EWOULDBLOCK))
+  A 持 F_WRLCK [0,100) 时,B 试 F_WRLCK [0,100):  [     4 ms] B(pid=153599):F_SETLK F_WRLCK [0,100) = -1, errno=11(EAGAIN(即 EWOULDBLOCK))
+
+==== E2d  陷阱:同进程 close 任意一个 fd → 全部记录锁释放 ====
+  [     5 ms] 本进程(pid=153582):fd1 上 F_SETLK W [0,100) = 0
+  [     5 ms] 竞争者(pid=153600):F_SETLK F_WRLCK [0,100) = -1, errno=11(EAGAIN(即 EWOULDBLOCK))
+  [     5 ms] 本进程:open 第二个 fd(只读都行),随即 close(fd2)
+  [     5 ms] 本进程:fd2 已 close,fd1 还开着,一次 LOCK_UN 都没调
+  [     5 ms] 竞争者(pid=153601):F_SETLK F_WRLCK [0,100) = 0
+  [     5 ms] 变体二:本进程经 fd1b 再锁 [0,100) = 0(fd0 早开着)
+  [     6 ms] 竞争者(pid=153602):F_SETLK F_WRLCK [0,100) = -1, errno=11(EAGAIN(即 EWOULDBLOCK))
+  [     6 ms] 本进程:close(fd0) —— 关的不是加锁那个 fd
+  [     6 ms] 竞争者(pid=153603):F_SETLK F_WRLCK [0,100) = 0
+
+==== E2d'  对照:F_OFD_SETLK(锁挂在打开文件描述上)没有这个陷阱 ====
+  [     6 ms] 本进程:fd1 上 F_OFD_SETLK W [0,100) = 0
+  [     6 ms] 探针(pid=153604):F_GETLK F_WRLCK [0,100) → 撞上 F_WRLCK l_pid=-1, 区间[0,100)(r=0)
+  [     7 ms] OFD探针(pid=153605):F_OFD_GETLK F_WRLCK [0,100) → 撞上 F_WRLCK l_pid=-1, 区间[0,100)(r=0)
+  [     7 ms] 竞争者(pid=153606):F_SETLK F_WRLCK [0,100) = -1, errno=11(EAGAIN(即 EWOULDBLOCK))
+  [     7 ms] 本进程:open 第二个 fd 并 close —— 锁不受影响?
+  [     7 ms] 竞争者(pid=153607):F_SETLK F_WRLCK [0,100) = -1, errno=11(EAGAIN(即 EWOULDBLOCK))
+  [     7 ms] 本进程:close(持锁的 fd1)
+  [     7 ms] 竞争者(pid=153608):F_SETLK F_WRLCK [0,100) = 0
+
+==== E2e  替换语义:后锁覆盖重叠段;同进程第二把锁不自冲突 ====
+  [     8 ms] 本进程(pid=153582):fd1 上 W [0,100)
+  [     8 ms] 本进程:fd2 上再 W [0,100) = 0(POSIX 锁按进程算,永不自冲突)
+  [     8 ms] 本进程:fd1 上 R [50,150) = 0(重叠段被替换)
+  [     8 ms] 读探针(pid=153609):F_GETLK F_RDLCK [0,50) → 撞上 F_WRLCK l_pid=153582, 区间[0,50)(r=0)
+  [     8 ms] 读探针(pid=153610):F_GETLK F_RDLCK [50,150) → 无冲突(l_type=F_UNLCK)
+  [     8 ms] 写探针(pid=153611):F_GETLK F_WRLCK [50,150) → 撞上 F_RDLCK l_pid=153582, 区间[50,150)(r=0)
+  [     9 ms] 竞争者(pid=153612):F_SETLK F_WRLCK [0,200) = 0
+
+==== E2f  进程退出释放:持锁者 _exit,竞争者立刻拿得到 ====
+  [     9 ms] A(持锁者 pid=153613):持 W [0,100)
+  [     9 ms] 竞争者(pid=153614):F_SETLK F_WRLCK [0,100) = -1, errno=11(EAGAIN(即 EWOULDBLOCK))
+  [    10 ms] A 已 _exit(0),没有任何放锁动作
+  [    10 ms] 竞争者(pid=153615):F_SETLK F_WRLCK [0,100) = 0

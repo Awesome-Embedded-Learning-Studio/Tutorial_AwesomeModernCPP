@@ -1,0 +1,38 @@
+
+==== a) dup:拿最低空闲 fd;FD_CLOEXEC 不随 dup 复制 ====
+open 得 fd=3(F_GETFD=1),dup 得 fd=4(F_GETFD=0)
+原件带着 FD_CLOEXEC,复制件没有——想带过去得再 F_SETFD,或直接用 dup3
+
+==== b) 共享偏移:dup 出来的接着读,重新 open 的从头读 ====
+fd(3)  read 4 字节      = "0123",偏移=4
+dup(4) 接着 read 4 字节 = "4567",偏移=8  <- 同一个打开文件描述,游标共用
+重新 open(5) read 4 字节 = "0123"                <- 新描述,游标从头来
+
+==== c) dup2 原子重定向:printf 落文件;没 fflush 的那条不跟调用时刻走 ====
+(pending) 这条不 fflush,先躺在 stdio 缓冲区里  <- dup2 换回 stdout 之后它才被后续输出带着冲出来,落点已是终端
+stdio 缓冲区住在用户态:flush 的落点跟着「此刻的 fd 1」走,不跟着 printf 的调用时刻走
+马上验证 redirect.txt 的内容:
+---
+dup2(4, 1) = 1
+这条 printf 发生在重定向期间,立刻 fflush → 落进文件
+---
+
+==== d) 为什么不 close(1) 再 dup:空窗期 1 号槽会被别的 open 抢走 ====
+close(1) 之后,下一次 open 返回的 fd = 1 —— 1 号槽被无关 open 抢走了
+这时想恢复就得再 close(1)+dup,一来一回全是竞态窗口;dup2 一条系统调用收口,这就是「原子」的意义
+
+==== e) dup3:带 flags;oldfd==newfd 是 EINVAL,dup2 则是 no-op ====
+dup2(fd,10)  F_GETFD=0  dup3(fd,11,O_CLOEXEC) F_GETFD=1
+dup2(fd,fd)  = 3(检查后发现是自己,直接返回,no-op)
+dup3(fd,fd,0)= -1, errno=22(EINVAL)  <- dup3 明确拒绝
+
+==== f) fork + exec:FD_CLOEXEC 的生死(exec 前先看一眼 fd 表) ====
+[child exec 前] /proc/self/fd: 0 1 2 3 4 20(pid=320407)
+
+==== f) exec 之后(子进程视角):同一批 fd 号,三种命运 ====
+[child exec 后] /proc/self/fd: 0 1 2 3 20(pid=320407)
+(exec 前是 0 1 2 3 4 20;对照上面,4 没了、3 和 20 还在)
+read(3, ...)          = 10:"0123456789"  <- 裸 fd 活过了 execve
+fcntl(4, F_GETFD)     = -1, errno=9(EBADF)  <- 带 CLOEXEC 的 fd,exec 前被内核关了
+read(20, ...)          = 10:"0123456789"  <- 它复制自带 CLOEXEC 的 4,但 fd 标志不随 dup 走,又活了
+[parent] 子进程退出码 = 0

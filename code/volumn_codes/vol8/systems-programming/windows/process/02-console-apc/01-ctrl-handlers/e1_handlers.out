@@ -1,0 +1,17 @@
+$ ./e1_handlers.exe
+[E1] pid=12420 main_tid=18328
+[1] 链 Z,A,B,C 全 FALSE(C 先 FALSE,Z 兜底 TRUE),发 CTRL_BREAK_EVENT
+    [1] 调用链: C(FALSE传递) -> B(FALSE传递) -> A(FALSE传递) -> Z(兜底TRUE)
+[2] C 改返回 TRUE:同一条链再发 CTRL_BREAK,期望链在 C 截断
+    [2] 调用链: C(TRUE拦截)
+[3] SetConsoleCtrlHandler(C,FALSE) 注销 C -> 1,再发,期望 B->A->Z
+    [3] 调用链: B(FALSE传递) -> A(FALSE传递) -> Z(兜底TRUE)
+[4] 现在发 CTRL_C_EVENT —— 本进程由 WSL interop 链启动,忽略位被设上,期望空
+    [4] 调用链: (空 —— 没有任何 handler 被调)
+[5] SetConsoleCtrlHandler(NULL,FALSE) 复位忽略位 -> 1,再发 CTRL_C,期望 B->A->Z
+    [5] 调用链: B(FALSE传递) -> A(FALSE传递) -> Z(兜底TRUE)
+[6] SetConsoleCtrlHandler(NULL,TRUE) 显式忽略 Ctrl+C -> 1:发 CTRL_C 期望空;
+    [6-CTRL_C] 调用链: (空 —— 没有任何 handler 被调)
+    但紧接着发 CTRL_BREAK —— BREAK 不受忽略位限制,期望 B->A->Z
+    [6-CTRL_BREAK] 调用链: B(FALSE传递) -> A(FALSE传递) -> Z(兜底TRUE)
+[E1] done

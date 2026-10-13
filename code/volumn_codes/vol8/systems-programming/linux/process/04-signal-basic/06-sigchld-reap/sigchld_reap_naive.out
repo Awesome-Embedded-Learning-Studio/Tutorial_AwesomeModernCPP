@@ -1,0 +1,19 @@
+[E6.A] SA_NOCLDSTOP=0 (default): stop/continue ALSO raise SIGCHLD
+    t= 50ms child STOPPED (WIFSTOPPED, stopsig=19); SIGCHLD count now 1
+    t= 50ms child CONTINUED (WIFCONTINUED); SIGCHLD count now 2
+    t=101ms child EXITED (code 0); SIGCHLD count now 3
+[E6.A] SA_NOCLDSTOP=1: stop/continue are SILENT, exit still signals
+    t= 51ms child STOPPED (WIFSTOPPED, stopsig=19); SIGCHLD count now 0
+    t= 56ms child CONTINUED (WIFCONTINUED); SIGCHLD count now 0
+    t=101ms child EXITED (code 0); SIGCHLD count now 1
+
+[E6.B] single waitpid (naive): 3 kids exit while SIGCHLD blocked
+    3 children dead; pending SIGCHLD=1 (one bit, not three)
+    handler entries=1, reaped in handler=1 (of 3 kids)
+    kid 0 (pid 15165): /proc state = '?'
+    kid 1 (pid 15166): /proc state = 'Z'  <- ZOMBIE left behind
+    kid 2 (pid 15167): /proc state = 'Z'  <- ZOMBIE left behind
+
+[E6.C] zombie fate: default vs SA_NOCLDWAIT
+    default:     /proc state='Z' (Z=zombie waiting for reap); waitpid -> 15168 WEXITSTATUS=7
+    SA_NOCLDWAIT: /proc state='?' ('?'=already gone); waitpid -> -1 errno=10(No child processes)

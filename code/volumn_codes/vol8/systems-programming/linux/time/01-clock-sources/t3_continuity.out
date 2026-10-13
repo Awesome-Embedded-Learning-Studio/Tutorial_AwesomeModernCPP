@@ -1,0 +1,11 @@
+== E3a: MONOTONIC 回退扫描 ==
+2000000 次连读,回退次数=0(settimeofday 步进不进 MONOTONIC,这正是它当计时钟的资格)
+
+== E3b: 10 s 窗口偏移监测(1 kHz 采样) ==
+REALTIME-MONOTONIC 偏移: min=1791081340852770.5 us  max=1791081340852793.8 us  峰谷差=23.3 us
+偏移瞬移(单步变化超 ±100us)次数=0 —— 0 次=窗口内没有发生墙上时间步进
+窗口实长 9796.7 ms;RAW-MONOTONIC 从 -106.446 ms 走到 -106.444 ms,变化 2.2 us
+  → 当下分歧率 = 0.000 ppm(RAW 不受 NTP 调频,分歧率就是内核频率修正的力度)
+
+== E3c: 开机以来的累计分歧 ==
+MONOTONIC=39953.5 s,RAW-MONOTONIC=-106.444 ms → 平均分歧率 -0.003 ppm

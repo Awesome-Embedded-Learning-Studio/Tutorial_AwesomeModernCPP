@@ -1,0 +1,7 @@
+t=   0ms work loop starts (SIGINT will arrive ~100ms)
+t=   0ms working iter 1
+t=  30ms working iter 2
+t=  61ms working iter 3
+t=  91ms working iter 4
+t= 100ms g_stop seen at iter 5 -> break
+t= 100ms cleanup: flush buffers, close files, say goodbye

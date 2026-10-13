@@ -1,0 +1,12 @@
+$ ./e4_apc.exe
+[E4] main tid=8040
+[worker] tid=1320 就绪,先卡在 WaitForSingleObject(start)(不可警告)
+[main] t=91861281 两条 APC 排完(q1=1 q2=1):worker 正卡在不可警告等待,一条都没跑
+[worker] t=91861281 进入 SleepEx(600, FALSE) —— 不可警告睡眠 600ms
+[worker] t=91861890 醒来(ret=0),此刻 APC 执行数=0(排队≠执行,1 的证据)
+[worker] t=91861890 进入 SleepEx(5000, TRUE) —— 可警告睡眠:队列里的 APC 立刻开闸
+    [APC#1] t=91861890 tid=1320 arg=111(与 worker tid 同 = 复用原线程)
+    [APC#2] t=91861890 tid=1320 arg=222
+[worker] t=91861890 返回 ret=192(WAIT_IO_COMPLETION=192),实际只睡了 609ms,APC 执行数=2
+[E4] done —— 读输出顺序:APC#1 恒在 APC#2 前(队列 FIFO);
+      两次 APC 的 tid == worker tid(对照控制台事件的【新】线程,APC 复用原线程)

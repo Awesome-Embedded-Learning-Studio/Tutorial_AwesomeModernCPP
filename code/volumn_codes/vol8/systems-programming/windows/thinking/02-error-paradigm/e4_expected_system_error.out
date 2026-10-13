@@ -1,0 +1,13 @@
+[1] 成功路径:read_file_size(e4_data.bin)
+    r.has_value()=1  *r=123456  (预期 123456)
+[2] 失败路径:read_file_size(no_such_file.bin),工具层不带异常
+    r2.has_value()=0  r2.error().value()=2 (2=ERROR_FILE_NOT_FOUND)
+    system_category 渲染(GBK 转码):"系统找不到指定的文件。"
+    win32_category 渲染(UTF-8 直读):"系统找不到指定的文件。"
+[3] 应用顶层:同一份 error_code 包成 std::system_error 抛出
+    [system_category] e.code().value()=2
+      what() 原始:  "read_file_size: ϵͳ�Ҳ���ָ�����ļ���"   <-- message 是 ANSI 代码页字节
+      what() 转码后:"read_file_size: 系统找不到指定的文件。"
+      e.code() == errc::no_such_file_or_directory : 1
+    [win32_category] what():"read_file_size: 系统找不到指定的文件。"  <-- UTF-8 直读,无需转码
+      e.code() == errc::no_such_file_or_directory : 1

@@ -1,0 +1,16 @@
+syscall 编号: __NR_io_uring_setup=425 __NR_io_uring_enter=426 __NR_io_uring_register=427
+io_uring_setup(4) = 3, sq_entries=4 cq_entries=8 features=0x3ffff
+features: SINGLE_MMAP=1 NODROP=1 SUBMIT_STABLE=1
+mmap: SQ 环 208 B @ 0x78d9f1498000, CQ 环 192 B @ 0x78d9f1497000, SQE 数组 256 B @ 0x78d9f1496000
+SINGLE_MMAP 置位: SQ/CQ 在同一块区域, 允许一次 mmap 同拿两环
+(这里按经典三段式分开映射, 地址自然不同: 0x78d9f1498000 / 0x78d9f1497000; 特性省的是映射次数)
+/proc/self/maps 里能看到这两段映射:
+  78d9f1496000-78d9f1497000 rw-s 10000000 00:10 6114131                    anon_inode:[io_uring]
+  78d9f1498000-78d9f1499000 rw-s 00000000 00:10 6114131                    anon_inode:[io_uring]
+环参数: sq_mask=3 cq_mask=7 (容量-1), SQE=64 B, CQE=16 B
+
+塞入 1 个 NOP (user_data=0xC0FFEE), SQ tail 0 -> 1
+io_uring_enter(submit=1, wait=1, GETEVENTS) = 1
+CQ: head=0 tail=1, 就绪 1 个
+  CQE: user_data=0xc0ffee res=0 flags=0x0
+收完, CQ head=1 tail=1。提交走 SQ 尾指针, 完成走 CQ: 两个环都是与内核共享的内存。

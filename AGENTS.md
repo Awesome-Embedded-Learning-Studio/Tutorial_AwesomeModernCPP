@@ -26,7 +26,7 @@ code/volumn_codes/        各卷可编译示例(无根 CMakeLists,逐目录构�
 |---|---|
 | 贡献文章 / 代码示例 | [CONTRIBUTING.md](CONTRIBUTING.md) —— 流程一条龙 |
 | 出题 / 投题解(每周一些题) | [code/volumn_codes/weekly-problems/AGENTS.md](code/volumn_codes/weekly-problems/AGENTS.md) —— 落题规程 + 模板包;人读详解见 [站点手册](documents/community/weekly-guide/) |
-| 写作人格 / 语气 / 文章骨架 / 代码风格 | [.claude/style/writing-style.md](.claude/style/writing-style.md) |
+| 写作人格 / 语气 / 文章骨架 / 代码风格 | [.claude/style/writing-style.md](.claude/style/writing-style.md)(公开卡;维护者环境另有 `content_forge` 完整体系,见 `.claude/tools/content_forge/`,不入库) |
 | Frontmatter 字段与标签体系 | [.claude/rules/documents-frontmatter.md](.claude/rules/documents-frontmatter.md) |
 | 辅助 C++ 学习者(学习辅助 track) | [.github/learning-with-agents.md](.github/learning-with-agents.md) + [FAQ](.github/faq.md) |
 | 复用本项目 Claude 资产(commands / prompts / hooks) | [CLAUDE.md](CLAUDE.md) → `.claude/` |

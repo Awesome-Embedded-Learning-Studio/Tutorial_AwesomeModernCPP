@@ -1,0 +1,38 @@
+$ ./e2_sec_reserve.exe probe; echo "exit=$?"
+[probe] 保留区状态体检(不访问任何字节)
+  SEC_RESERVE 64MiB 映射成功,视图=0000028896020000
+  VirtualQuery(区首         +0x000000): State=MEM_RESERVE(0x2000) Protect=raw=0x0            RegionSize=0x4000000
+  VirtualQuery(中部         +0x400000): State=MEM_RESERVE(0x2000) Protect=raw=0x0            RegionSize=0x3c00000
+  VirtualQuery(区尾         +0x3fff000): State=MEM_RESERVE(0x2000) Protect=raw=0x0            RegionSize=0x1000
+exit=0
+
+$ ./e2_sec_reserve.exe touch; echo "exit=$?"
+  SEC_RESERVE 64MiB 映射成功,视图=000001693c7e0000
+  VirtualQuery(写入前      +0x000000): State=MEM_RESERVE(0x2000) Protect=raw=0x0            RegionSize=0x4000000
+  写 base[0]='Z' ...[unhandled-exception] code=0xC0000005
+  ExceptionInformation[0]   = 1  (写访问冲突)
+  ExceptionInformation[1]   = 000001693c7e0000  (目标数据地址)
+exit=5
+
+$ ./e2_sec_reserve.exe commit; echo "exit=$?"
+  SEC_RESERVE 64MiB 映射成功,视图=0000018cb5480000
+[commit] 两段式:先保留整块,再逐段 VirtualAlloc(MEM_COMMIT)
+  段A=[0,1MiB) 段B=[32MiB,33MiB),两段之间 31MiB 保持保留态
+  VirtualAlloc(段A, MEM_COMMIT)              -> 0000018cb5480000(ok)
+  VirtualAlloc(段B, MEM_COMMIT)              -> 0000018cb7480000(ok)
+  VirtualQuery(段A           +0x000000): State=MEM_COMMIT(0x1000)  Protect=PAGE_READWRITE(0x04) RegionSize=0x100000
+  VirtualQuery(空洞         +0x1000000): State=MEM_RESERVE(0x2000) Protect=raw=0x0            RegionSize=0x1000000
+  VirtualQuery(段B           +0x2000000): State=MEM_COMMIT(0x1000)  Protect=PAGE_READWRITE(0x04) RegionSize=0x100000
+  段A全0x5A/段B全0xA5 写入+回读校验和 = 267386880(期望 267386880)
+  VirtualAlloc(空洞, RESERVE|COMMIT)          -> 0000000000000000 err=487(487=ERROR_INVALID_ADDRESS)
+  VirtualQuery(空洞2        +0x800000): State=MEM_RESERVE(0x2000) Protect=raw=0x0            RegionSize=0x1800000
+exit=0
+
+$ ./e2_sec_reserve.exe file-backed; echo "exit=$?"
+[file-backed] SEC_RESERVE 配真文件句柄(文件 16KiB,映射对象 1MiB)
+  CreateFileMappingW(真文件 + SEC_RESERVE) -> 成功  err=0
+  MapViewOfFile                            -> 000002b64bf20000
+  VirtualQuery: State=MEM_COMMIT(0x1000) Protect=PAGE_READWRITE(0x04)
+  写 v[0]='F' ... 写入后 v[0]=F <- 文件后备把 SEC_RESERVE 兑现成了已提交
+  文件长度:映射前 16384 -> 映射后 1048576(被零扩展到 1MiB = 文件后备兑现)
+exit=0

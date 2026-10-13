@@ -1,188 +1,154 @@
 ---
 title: "Learning Roadmap"
-description: "A modern C++ learning path from zero to embedded practice — pick a starting point by background, ten volumes in progressive depth, plus pacing advice and companion resources"
+description: "Pick a starting point by background, see the ten volumes at a glance, then read them one by one, with pacing advice, companion resources, and content maturity along the way. This page answers how to learn, where to start, and what each volume teaches"
 translation:
   source: documents/roadmap/index.md
-  source_hash: 1d3794a5531009425eca0fc88217903b7d6c32751755f05faf0ac2268ef72685
-  translated_at: '2026-09-27T03:14:48+00:00'
+  source_hash: 6c3ff7739e6f8aa8e847f03412a6ce01738242ca8632e6a9f93ae0d148dfd2ce
+  translated_at: '2026-10-11T08:54:10+00:00'
   engine: anthropic
-  token_count: 2200
+  token_count: 2600
 ---
 
 # Learning Roadmap
 
-This tutorial set is a systematic modern C++ learning resource — **ten volumes that take you from first principles all the way to embedded practice**. This roadmap answers exactly three questions: how to learn it, where to start, and what each volume teaches.
+Hey! If you're looking at this page, you're probably feeling a bit lost — right? If you're truly new, meeting C++ or even programming for the first time, you've no doubt heard that C++ is a hard language to break into. It is. There's no denying it: the language carries heavy historical baggage, one language with a thousand ways to write the same thing. It's easy to slide into language-lawyer territory, and then find yourself helpless the moment real production work needs to ship. This little repository is an attempt to hand you a way through.
 
-Whether you're starting from zero, coming from a C / embedded background, or already writing C++ and looking to round out your engineering skills, the sections below first help you pick a starting point by background, then walk through the volumes one by one.
+We hope that every volume, once you've walked through it, leaves you with something to think about and something to take away. C++ truly is a weighty language, and every construct can reflect a weighty historical legacy. That, I believe, is something AI in the LLM era can't teach you, and can't easily cultivate either. But it is a hard road — you wouldn't be here otherwise, right?
 
-> This page is the **learning roadmap** (how readers learn). The project's own development progress and planning is a separate matter — see [Content Maturity and Project Roadmap](#content-maturity-and-project-roadmap) at the end of this page.
+This page answers three questions only: how to learn it, where to start, and what each volume teaches. Ready to go? The path chooser and the overview cards sit right below. Want a closer look at each volume? The **volume-by-volume breakdown** walks through them one at a time. Just checking whether a volume is finished? **Content maturity** at the end of the page gives you the qualitative answer.
 
-## How to Use This Roadmap
+> What you are reading is the **learning roadmap** — it answers only how to learn. The project's own development progress and release planning are a separate matter, and we pull the two apart at the end of this page.
 
-The whole tutorial is organized along one progressive spine:
+<RoadmapJourney />
 
-```text
-Fundamentals → Modern Features → Standard Library → Advanced → Concurrency → Performance → Engineering → Domain Practice
-```
+## Pick a Starting Point by Background
 
-A few things to settle up front:
+Your current background decides the starting point, and you don't have to begin at page one of Vol.1. Starting from zero, or knowing only C? We put the entry at the Quick Start volume, with Vol.1 right after it. Coming from C or embedded and missing the modern style? Vol.2 is where you catch up, then you dive into the hands-on work in Vol.8. Already writing C++? Go straight to the topics that match your goals. The chips on the cards below are clickable and take you straight to the corresponding volume.
 
-- **This is not a syntax cheat sheet.** Every key concept comes with a compilable CMake example — one you can run, modify, and verify.
-- **Volumes depend on each other.** Later volumes assume you've internalized the core of the earlier ones, and **Vol.1 → Vol.2 is the most critical watershed** — once you're through Vol.2, you've truly entered "modern C++".
-- **You can skip around.** Readers with relevant background don't need to start from page one of Vol.1 — just pick a starting point via the "three paths" below.
-- **Companion resources are one lookup away.** [C++ feature reference cards](/cpp-reference/) (dual-view quick lookup by standard version + feature category), [hands-on projects](/projects/), [lecture notes](/vol10-open-lecture-notes/).
+<PathChooser />
 
-## Three Learning Paths (Pick a Starting Point by Background)
+## The Ten Volumes at a Glance
 
-```mermaid
-flowchart TD
-    Start(["Your background?"]) --> A["Zero basics / only know C"]
-    Start --> B["Have C or embedded experience"]
-    Start --> C["Already know C++"]
+The card wall below shows each entry's role, difficulty, prerequisites, and status. Click a card to enter the volume, or click "On this page" to jump to its breakdown below. The main line runs Vol.1 through Vol.10. Quick Start and Compilation and Linking in Depth sit outside that numbering, one at the very front and one alongside the engineering volume, and both have their own cards on the wall.
 
-    A --> V1["Vol.1 Fundamentals<br/>incl. C crash course"]
-    B --> V2["Vol.2 Modern Features"]
-    V1 --> V2
-
-    V2 --> V3["Vol.3 Standard Library"]
-    V2 --> V5["Vol.5 Concurrency"]
-    V3 --> V4["Vol.4 Advanced"]
-    V4 --> V5
-    V5 --> V6["Vol.6 Performance"]
-    V6 --> V7["Vol.7 Engineering"]
-    V7 --> V8["Vol.8 Domains/Embedded"]
-
-    C --> Goal["Pick topics by goal"]
-    Goal --> V4
-    Goal --> V5
-    Goal --> V6
-    Goal --> V7
-    Goal --> V9["Vol.9 Open Source"]
-
-    V8 --> V9
-    V8 -.interleave.-> V10["Vol.10 Lecture Notes"]
-    V2 -.stay sharp.-> WP["Weekly Problems<br/>solve online"]
-```
-
-**Path A · Zero basics / only know C** — start at [Vol.1](/vol1-fundamentals/) (includes a complete C crash course). Walking the main line volume by volume is the most solid route — and the longest. Skip strategy: if you already have programming experience, move quickly through the C crash course and sink your teeth into value categories, OOP, and template basics.
-
-**Path B · Have C or embedded experience** — your syntax foundation is enough; go straight into [Vol.2](/vol2-modern-features/) to pick up "modern C++ style", then plunge into [Vol.8 embedded](/vol8-domains/) for real practice. Fill in concurrency (Vol.5), performance (Vol.6), and engineering (Vol.7) as needed.
-
-**Path C · Already know C++** — go straight to the topic that matches your goal: for concurrency/async read [Vol.5](/vol5-concurrency/), for performance read [Vol.6](/vol6-performance/), for engineering read [Vol.7](/vol7-engineering/), to read large codebases go to [Vol.9](/vol9-open-source-project-learn/), to chase the frontier read [Vol.4](/vol4-advanced/).
+<VolumeCardGrid />
 
 ## Volume-by-Volume Breakdown
 
+The entries below are ordered by learning path rather than by volume number: Quick Start first, then Vol.1, with Compilation and Linking in Depth sitting next to Vol.7. Each entry covers role, topics, difficulty, and prerequisites, and closes with my pacing advice. Entry length follows the content — a few volumes wrap up in a couple of lines, others earn more.
+
+<a id="gs"></a>
+### Quick Start
+
+If you're starting from zero, this is the entrance built for you, placed before Vol.1. The volume starts from what an editor and a compiler actually are, walks you through running your first program, then assembles a multi-file project with CMake and gets clangd completion and squiggles working — with real screenshots throughout, so you can follow along click by click. The classic blockers, an environment that won't install and a program that won't run, are all dealt with here.
+
+Beginner level, no prerequisites to bring. With a programming background you can skip the volume entirely and come back when your environment misbehaves. Work through it, and the syntax course in Vol.1 won't be hanging in the air.
+
+<a id="v1"></a>
 ### Vol.1 · Fundamentals
 
-- **Role**: build a complete C++ knowledge system from zero — the foundation and starting point of the whole tutorial; comes with a complete C crash course (including embedded-relevant advanced C).
-- **Key topics**: environment setup · the type system & value categories · control flow & functions · pointers & references · arrays & strings · classes & object orientation · operator overloading · inheritance & polymorphism · first steps with templates · exception handling · a first look at the STL · memory model basics; the C crash course covers the essence of pointers, structs & alignment, C pitfalls, and embedded C patterns.
-- **Level · Prerequisites**: beginner → intermediate / none.
-- **Suggested pacing**: read it all if you're starting from zero; if you have a foundation, skip the C crash course and focus on value categories, OOP, and template basics — these determine how smoothly everything after goes. This volume is being rewritten (quick start → full-stack introduction); chapters may shift slightly, but the core topics are stable.
+Vol.1 is the foundation of the whole tutorial: we go from the environment and the type system through object orientation, first steps with templates, and exceptions, and close with a C crash course covering pointers, struct alignment, and embedded C idioms. Finish it and the later volumes share a vocabulary with you, which is exactly why it comes first.
 
+Difficulty runs from beginner to intermediate, and you need no prerequisites at all. Read from the top if you're new. Skip the C crash course if C is already home turf — but spend real time on value categories, object orientation, and template basics, because they decide how smooth everything after goes. This volume is being rewritten: chapter order may shift, the topic coverage won't, so don't be surprised by the occasional awkward arrangement.
+
+<a id="v2"></a>
 ### Vol.2 · Modern Features
 
-- **Role**: systematically master the core C++11/14/17 features — the critical watershed between "can write C++" and "can write modern C++".
-- **Key topics**: move semantics & rvalue references · smart pointers & RAII · `constexpr` compile-time computation · lambdas & functional style · type safety (`enum class`/`variant`/`optional`) · structured bindings · `auto`/`decltype` · attributes · `string_view` · `filesystem` · modern error handling (`optional`/`expected`) · user-defined literals.
-- **Level · Prerequisites**: intermediate / Vol.1.
-- **Suggested pacing**: the pivotal turning-point volume — read it carefully; it determines how smoothly every later volume goes.
+The watershed between writing C++ and writing modern C++ sits in [Vol.2](/vol2-modern-features/). Move semantics, rvalue references, smart pointers, and ownership carry the weight. `constexpr`, lambdas, and structured bindings follow at the syntax level. A set of type-safe tools (`enum class`, `variant`, `optional`, `expected`) rounds out the base every later volume builds on.
 
+Intermediate at most, one prerequisite. This one rewards a careful read, and skimming pays poorly. Concurrency, performance, and the domain work later all assume you've internalized move semantics and smart pointers. The content is complete, and we're still polishing wording and examples article by article, so an occasional style mismatch between articles is normal and doesn't affect the material.
+
+<a id="v3"></a>
 ### Vol.3 · Standard Library in Depth
 
-- **Role**: implementation details of STL containers and strings, plus performance and the memory-level machinery underneath.
-- **Key topics**: `vector` three-pointer representation / growth / iterator invalidation · `string` memory model & small-string optimization · `char8_t` & UTF-8 · `array` · `span` · object size & trivial types · custom allocators.
-- **Level · Prerequisites**: intermediate / Vol.1, Vol.2.
-- **Suggested pacing**: short but deep — read it carefully on demand, and come back to it when you do performance-sensitive or embedded work. The volume is now complete; the `vector`/`string`/`char8_t` articles are the most solid and make good entry points.
+[Vol.3](/vol3-standard-library/) covers the machinery under the standard library, and it outgrew containers and strings long ago. We split it into six subdirectories: containers, strings, iterators, and algorithms form the data-structure group, and IO streams, time and numerics, error handling, and utilities form the everyday-development group. Both are complete. How `vector` grows, when iterators invalidate, how `string`'s small-string optimization saves memory — the questions about what the standard library does for you all get answered here.
 
+Intermediate, with Vol.1 and Vol.2 as prerequisites. The volume is substantial now, so reading on demand works best: dig into containers and strings for performance-sensitive work, the IO group if streams are your daily bread. Everything is in place, and any article works as an entry point.
+
+<a id="v4"></a>
 ### Vol.4 · Advanced Topics
 
-- **Role**: C++20/23 frontier features and metaprogramming techniques — a rite of passage for anyone writing libraries or high-performance generic code.
-- **Key topics**: coroutines (basics + scheduler implementation) · Ranges (views + pipeline practice) · three-way comparison `<=>` · empty base optimization · C++ Modules (MSVC) · designated initializers.
-- **Level · Prerequisites**: advanced / Vol.2, Vol.3.
-- **Suggested pacing**: read the three blocks — coroutines, Ranges, three-way comparison — first; the template-fundamentals, concepts-system, and reflection blocks are currently blank — planned, to be filled in as the need arises.
+Writing libraries or high-performance generic code? [Vol.4](/vol4-advanced/) is unavoidable. Coroutine basics and a scheduler implementation sit at the top, alongside three-way comparison, the empty base optimization, and MSVC Modules. Below, three template sublines follow the standards timeline: C++11/14 lay the template foundations, C++17 brings template techniques and Ranges, and C++20/23 is metaprogramming, where concepts, requires expressions, and static reflection all live. A small STL project at the end puts the whole toolbox to work. Design patterns form a separate, independent line, and the classic patterns are all in.
 
+Advanced, gated by Vol.2 and Vol.3. Reading the template sublines in timeline order is the easiest path — concepts and requires are the lingua franca of modern template code, so get comfortable with them before entering metaprogramming. Coroutines, three-way comparison, and Modules you can take à la carte. The table of contents is not the order.
+
+<a id="v5"></a>
 ### Vol.5 · Concurrency
 
-- **Role**: from thread primitives to coroutine-based async — build complete concurrency judgment: correct before performant, locks before lock-free, synchronous before task-based.
-- **Key topics**: thread lifecycle & RAII · mutexes & synchronization primitives (incl. `latch`/`barrier`/`semaphore`) · `atomic` & the six memory orders · lock-free data structures (SPSC/MPMC queues) · `future` & thread pools · coroutines & event loops (the Echo server) · Actor/Channel.
-- **Level · Prerequisites**: intermediate-advanced / Vol.1–Vol.4.
-- **Suggested pacing**: the heaviest-investment, most hands-on volume in the whole tutorial, with Lab 0–5 + a Capstone (Mini Concurrent Runtime). We strongly recommend doing the Labs by hand — don't just read. Right now Lab 0/1 have complete scaffolding code you can pick up directly, while Lab 2–5 and the Capstone have only handbook text for the moment — scaffolding still to come.
+[Vol.5](/vol5-concurrency/) teaches concurrency with a deliberately restrained ordering: correctness before performance, locks before lock-free, synchronization primitives before task queues. Chapters start with concurrency basics and the thread lifecycle, move through `atomic` and the memory model, then pick up concurrent data structures, `future` and thread pools, async IO and coroutines in turn. Actor and Channel each get a chapter, and the last two cover debugging and testing plus the bridge to distributed systems.
 
+This is the most hands-on volume in the tutorial — the Labs and the Capstone all revolve around it, with a companion exercise area. Lab 0/1 come with full scaffolding you can start writing against right away. Lab 2 through the Capstone exist as handbook text only at the moment, and the scaffolding is still to come, so you'd assemble your own. Difficulty is intermediate-advanced, and you'll want Vol.1 through Vol.4 all in place.
+
+<a id="v6"></a>
 ### Vol.6 · Performance
 
-- **Role**: core C++ performance technology — compiler optimization, code-size evaluation, SIMD, and more.
-- **Key topics**: inlining & compiler optimization (debunking the "`inline` = performance switch" myth) · performance & code-size evaluation · AVX/AVX2.
-- **Level · Prerequisites**: intermediate-advanced / Vol.5.
-- **Suggested pacing**: content is expanding; first build up intuition for the cache hierarchy and SIMD, then go deeper topic by topic.
+We rearranged [Vol.6](/vol6-performance/) entirely around measurement methodology: it opens with performance thinking and benchmarking method, moves through CPU microarchitecture, then teaches you to attribute a performance problem to its actual bottleneck, and then to optimize that bottleneck. Multicore performance, the cost of C++ abstraction, and compilers versus code size each get their own chapter.
 
+The habit this volume wants to break is optimizing by feel: algorithmic complexity is not what the hardware experiences, and you need measurement data before your hands touch the tuning knobs. Intermediate-advanced. Read it after Vol.5, and it makes the best reference for the day your code stops being fast.
+
+<a id="v7"></a>
 ### Vol.7 · Engineering Practice
 
-- **Role**: landing C++ software engineering — builds, cross-compilation, linking, debugging, platform development.
-- **Key topics**: CMake & cross-compilation · compiler options · linkers & linker scripts · WSL development · how MSVC debugging works · C++ Modules (VS2026) · file I/O (a file-copier project).
-- **Level · Prerequisites**: intermediate / we recommend reading "Compilation & Linking in Depth" first.
-- **Suggested pacing**: study it alongside [Compilation & Linking](/compilation/), picking chapters to match your current engineering stack.
+[Vol.7](/vol7-engineering/) handles the engineering landing: CMake basics, cross-compilation, compiler options, linkers and linker scripts, then WSL development, how MSVC debugging works, and VS2026 Modules, all under one roof. The file-copier project walks the full path from requirements and framework to the core implementation, and the direction tracks leave an entrance for readers of different stripes.
 
-### Compilation & Linking in Depth
+Intermediate, and the volume is mid-construction. Read it alongside Compilation and Linking in Depth. When the mechanism side and the tool side both line up, engineering problems become tractable.
 
-- **Role**: the low-level mechanics of C/C++ compilation, linking, static/dynamic libraries, and symbol visibility — the foundation of engineering practice.
-- **Key topics**: compilation & linking overview · reuse & the concept of libraries · static libraries · dynamic libraries (design principles / symbol visibility / runtime loading / library search logic / making a dynamic library executable).
-- **Level · Prerequisites**: intermediate / C++ basics.
-- **Suggested pacing**: treat it as the prerequisite to Vol.7 — a must-read before embedded / cross-compilation work. The topics are all in place, but it's still an early import of blog posts, waiting to be rewritten and polished in the project's voice.
+<a id="cmp"></a>
+### Compilation and Linking in Depth
 
+[This volume](/compilation/) answers what the compiler and the linker do behind your back: how source becomes an executable, where static and dynamic libraries differ, how symbols get found and how they fail to, and which step an `undefined reference` actually died at. Static libraries get an article of their own. Dynamic libraries run from design principles through symbol visibility, runtime loading, search logic, and executability. The volume is complete.
+
+Intermediate, and a C++ foundation is all it takes. Before cross-compiling, designing a dynamic library's ABI, or chasing a link error, it's worth a pass, and it works best paired with Vol.7.
+
+<a id="v8"></a>
 ### Vol.8 · Domain Applications
 
-- **Role**: modern C++ in real practice across vertical domains — **the main line is embedded**.
-- **Key topics**: STM32 (**STM32F1 only, e.g. Blue Pill; no F4 yet**) environment setup · three end-to-end flows — LED / buttons / UART (refactored from the C way all the way to C++23 template wrappers) · zero-overhead abstraction · type-safe register access · embedded patterns such as circular buffers / object pools / intrusive containers · interrupt safety; plus a C++ deep dive (the pointer-semantics series). Sub-domains such as networking / GUI / data storage / algorithms are still in planning.
-- **Level · Prerequisites**: intermediate / Vol.1–Vol.7.
-- **Suggested pacing**: embedded is the most complete domain line right now — progress peripheral by peripheral; if you have an STM32F1 board on hand, follow along hands-on.
+Vol.8 puts modern C++ into concrete domains. The subdomains differ wildly in progress, so we take them one completion state at a time.
 
-### Vol.9 · Open Source Projects
+The systems-programming subdomain is complete, and it runs Linux and Windows in parallel: the same topic gets the POSIX treatment on the Linux side and the Win32 treatment on the Windows side, with each article reconciling the two at the end. Processes, memory, file IO, IO multiplexing, terminals, and time are all in place, and cross-platform abstractions and shared utilities close the volume, and the IO multiplexing chapter connects directly to epoll in the networking subdomain.
 
-- **Role**: take industrial-grade open-source projects apart and learn real-world C++ design and implementation.
-- **Key topics**: currently focused on Chromium's `OnceCallback` callback component — from motivation, API design, and the core skeleton to `bind_once`, with interleaved deep dives into prerequisites like C++23 `deducing this` and `move_only_function`. More projects are planned.
-- **Level · Prerequisites**: intermediate-advanced / Vol.1–Vol.7 (especially Vol.4 and Vol.5).
-- **Suggested pacing**: this line is source-reading oriented — we suggest mastering Vol.4's advanced features before coming to read industrial implementations.
+Embedded is where the main line lives, and it's still under construction: the f103 main line is moving, the first articles of ZerOS, a hand-rolled RTOS, are in place, and f407 is a placeholder for now. Networking runs from classic sockets to modern wrappers and on into epoll and the Reactor pattern, with a mini-reactor Lab alongside. TinyML walks you through building an inference engine by hand, and the pointer-semantics and mini-STL deep dives are there when you want to dig. Algorithms, data storage, and GUI hold placeholders, and testing doesn't even have that yet.
 
-### Vol.10 · Courses & Talks
+Entry difficulty is intermediate, but prerequisites differ by subdomain: read systems programming and networking after Vol.1 through Vol.7. For embedded you need a board on your desk, and the peripheral chapters are meant to be followed hands-on.
 
-- **Role**: reading notes and secondary creations from talks at CppCon and other technical conferences.
-- **Key topics**: currently four CppCon 2025 talks — Bjarne Stroustrup's *Concept-based Generic Programming*, Matt Godbolt's *Some Assembly Required* (reading assembly / Compiler Explorer), Mike Shah's *Back to Basics: Ranges*, and Ben Saks's *Back to Basics: Move Semantics*.
-- **Level · Prerequisites**: intermediate / Vol.1–Vol.5.
-- **Suggested pacing**: use it to go deeper — after finishing the matching volume, read the related talk notes to reinforce understanding, interleaved with the main line.
+<a id="v9"></a>
+### Vol.9 · Learning from Open Source
 
-### Weekly Problems
+In [Vol.9](/vol9-open-source-project-learn/) we take industrial-grade source apart, and the current focus is Chromium: the OnceCallback callback design and the WeakPtr weak pointer each have their articles, flat_map and no_destructor have their own pieces, and the prerequisites `deducing this` and `move_only_function` get dedicated deep dives.
 
-- **Role**: an online problem-solving column — one pack of problems a week, written in the browser and judged in the browser, turning what you've read into muscle memory.
-- **Key topics**: a mix of formats — implementation problems (functional / procedural style, compiled online and judged case by case), guess-the-output, concept multiple-choice, bug hunts, and thinking questions; the judging environment is gcc / C++23.
-- **Level · Prerequisites**: marked per problem, ★☆☆–★★★ / you can start once you're into Vol.1, with difficulty rising alongside the volumes.
-- **Suggested pacing**: slot it into the main line as "homework" — after each block you finish, do a pack of problems to stay sharp; progress is stored locally in the browser, so there's no need to rush.
+Intermediate-advanced, with Vol.1 through Vol.7 all as prerequisites, and the foundations from Vol.4 and Vol.5 matter most. It's a source-reading volume: finish templates and concurrency before stepping in.
 
-## Pacing & Advice
+<a id="v10"></a>
+### Vol.10 · Course and Talk Notes
 
-- **Time expectations**: walking the entire main line from zero is a long-term project — don't expect a shortcut. Set milestones by volume and type out each volume's examples by hand.
-- **Recommended order**: following the dependencies Vol.1 → Vol.2 → Vol.3 → Vol.4 → Vol.5 → Vol.6 → Vol.7 → Vol.8 strictly is the safest; with background, cut in via the "three paths".
-- **Skip strategy**: in Vol.1 you can skip the C crash course; Vol.3 and Vol.6 are short or still expanding — read on demand; Vol.9 currently focuses on a single project, so wait until you've built up enough background; slot Vol.10 in after the corresponding volumes as review.
-- **Tie it together with practice**: after each block, go to [hands-on projects](/projects/) and find a matching project to practice on (coroutine server, concurrent runtime, embedded, and so on), kneading scattered knowledge into complete capability.
-- **Stay sharp with problems**: [Weekly Problems](/weekly-problems/) — a pack a week, judged online; you can start right after Vol.1, slotted into the main line as homework.
+[Vol.10](/vol10-open-lecture-notes/) is talk notes and secondary creations, currently drawn from CppCon 2025: Bjarne Stroustrup on concept-based generic programming, Matt Godbolt's *Some Assembly Required* to walk you into reading assembly, Mike Shah on Ranges and Ben Saks on move semantics (both Back to Basics talks), plus sessions on the evolution of `std::optional`, how microbenchmarks lie, and cache-friendly C++.
+
+Intermediate, with prerequisites spanning Vol.1 through Vol.5. Use it for depth: after finishing the matching volume, reading the related notes sets what you learned a shade firmer. Weave it between the main-line volumes — on its own it can't carry the main line.
+
+## Pacing and Advice
+
+Starting from zero, go Quick Start into Vol.1, the path with the least friction. With background, jump in via the paths above. If you'd rather be safe, follow the volume order strictly. The price of skipping is backtracking for prerequisites, and every volume's table of contents doubles as an index when you do.
+
+The whole journey is a long-term project — don't count on a shortcut. We suggest setting goals by volume and typing out every volume's examples by hand, and keep reading and writing at least at one to one.
+
+[Weekly Problems](/weekly-problems/) works as homework: you can start right after Vol.1, a fresh pack arrives each week, you write code in the browser, and the judging happens in that same browser. A pack after each block you finish, and the feel never goes away.
+
+Practice works the same way: finish a block, then pick the matching project from the [hands-on projects](/projects/) index. Build a coroutine server, a concurrent runtime, or an embedded project, and the scattered knowledge turns into something that runs.
 
 ## Companion Resources
 
-- [C++ feature reference cards](/cpp-reference/): quick lookup from C++98 → C++23, organized as two views — by standard version and by feature category — with each card annotated for embedded applicability.
-- [Hands-On Projects: Putting It All Together](/projects/): a project index page that strings together the hands-on work scattered across the volumes (the coroutine Echo server, Mini Concurrent Runtime, the Chromium OnceCallback study, and more); also in planning: a hand-written STL, a mini HTTP server, a mini GUI, and a mini embedded OS.
-- [Community articles](/community/): community submissions and reviewed collections — your contributions are welcome too.
-- [Vol.10 lecture notes](/vol10-open-lecture-notes/): secondary creations built on top-tier talks like CppCon — for going deeper.
-- [Weekly Problems](/weekly-problems/): the online problem-solving column — a pack a week, written and judged right in the browser; problem contributions welcome.
+- [C++ feature reference cards](/cpp-reference/): quick lookup from C++98 to C++26, organized as two views, by standard version and by feature category, with each card annotated for embedded applicability.
+- [Hands-on projects](/projects/): a project index that strings together the practical work scattered across the volumes.
+- [Community articles](/community/): community submissions and reviews, and your contributions are welcome.
+- [Vol.10 talk notes](/vol10-open-lecture-notes/): conference talk notes and secondary creations, for going deeper.
+- [Weekly Problems](/weekly-problems/): the online problem column, a pack a week, with problem contributions welcome.
+- [Crash Lab](/crash-lab/): debugging case files that crash on purpose, each shipping the faulty code, the fixed version, and the diagnosis trail.
+- [Appendix · Glossary](/appendix/): a Chinese–English glossary of technical terms, for when the standard translation of a term won't come to mind.
 
-## Content Maturity and Project Roadmap
+## Content Maturity
 
-The current state of each volume, so you can judge which parts are the most solid (qualitative judgments only — we won't quibble over exact article counts):
+Which volumes are finished and which are still growing — the component below gives one set of qualitative judgments: **done** means the volume is fully in place and safe to read, while **in progress** means content is still being added or rewritten. Plan against it as a state report, not a quality ranking.
 
-- ✓ **Mature and stable**: Vol.2 Modern Features, Vol.3 Standard Library, Vol.5 Concurrency.
-- ✦ **In progress**: Vol.1 Fundamentals (being rewritten as a full-stack introduction), Vol.7 Engineering, Vol.8 Domains (embedded main line complete), Vol.9 Open Source, Vol.10 lecture notes.
-- ◇ **Expanding / being rewritten**: Compilation & Linking in Depth (blog imports awaiting rewrite), Vol.4 Advanced (three blank blocks — templates / concepts / reflection), Vol.6 Performance (expanding).
+<MaturityBoard />
 
-To see **the project's own development plans** (what gets built, release cadence, TODO priorities), that's a separate document:
-
-- 📋 [Project development roadmap (`community/dev/`)](/community/dev/) — maintenance cadence, release governance, site evolution.
-- 📦 [Changelogs (`changelogs/`)](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/changelogs) — what changed in each released version.
-
-> In short: the **learning roadmap** (this page) answers "how should I learn"; the **project roadmap** answers "what is this project doing".
+What the project itself is building and how releases are paced live in two other documents: the [project development roadmap](/community/dev/) covers maintenance cadence, release governance, and site evolution, while the [changelogs](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/changelogs) record what each released version changed.

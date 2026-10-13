@@ -17,6 +17,17 @@ tags:
 - cpp-modern
 - intermediate
 title: C++20-23 新属性：性能导向的编译器提示
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: YukunJ
+    roles: [revision]
+    note:
+      zh: "参与文章内容与示例修订 (PR #38, #39)"
+      en: "Contributed article and example revisions (PR #38, #39)"
 ---
 # C++20-23 新属性：性能导向的编译器提示
 

@@ -1,0 +1,18 @@
+[1] GetConsoleMode(stdin)=0 GetConsoleMode(stdout)=0 GetLastError(后一次)=6
+    stdio 挂的是管道;控制台要用 CONIN$/CONOUT$ 直开
+[2] 出厂态:
+    CONIN$ mode = 0x01f7: PROCESSED_INPUT LINE_INPUT ECHO_INPUT MOUSE_INPUT INSERT_MODE QUICK_EDIT_MODE EXTENDED_FLAGS AUTO_POSITION
+    PROCESSED_INPUT            Ctrl+C 等转成控制事件(信号路)
+    LINE_INPUT                 ReadFile 行缓冲,回车才交货
+    ECHO_INPUT                 输入回显
+    MOUSE_INPUT                投递鼠标事件记录
+    INSERT_MODE                插入/覆盖(EXTENDED 的子开关)
+    QUICK_EDIT_MODE            鼠标选择与右键粘贴(EXTENDED 的子开关)
+    EXTENDED_FLAGS             INSERT/QUICK_EDIT 的总开关
+    AUTO_POSITION              窗口出现的位置由系统决定
+    CONOUT$ mode = 0x0003: PROCESSED_OUTPUT WRAP_AT_EOL_OUTPUT
+    PROCESSED_OUTPUT           处理退格/制表/响铃等控制字符
+    WRAP_AT_EOL_OUTPUT         行尾自动换行
+[3] SetConsoleMode(cin, 0) 后读回:0x0000(全关生效)
+    给 CONOUT$ 开 VT 位后读回:0x0007(VIRTUAL_TERMINAL_PROCESSING=1,默认是关的)
+输入 CP=936 输出 CP=936(本机 936,GBK)

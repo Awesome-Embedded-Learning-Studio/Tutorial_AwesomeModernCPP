@@ -1,0 +1,8 @@
+pid=169910, 文件:/home/charliechen/l05_scratch/e6/contention.bin(ext4), 8 工作进程 × 100 轮,临界区 usleep(10ms),3 轮取中位
+
+模式        r1            r2            r3
+locked      8090.4 ms    8090.5 ms    8091.1 ms  | 中位   8090.5 ms,10113.1 µs/人次
+free        1009.8 ms    1009.9 ms    1009.9 ms  | 中位   1009.9 ms,1262.4 µs/人次
+
+空临界区(纯锁传递开销):8 进程 × 2000 轮 lock/unlock
+micro        252.3 ms     255.7 ms     270.0 ms  | 中位    255.7 ms

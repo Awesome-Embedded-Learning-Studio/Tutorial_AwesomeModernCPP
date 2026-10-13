@@ -1,0 +1,21 @@
+[1] CreateFileW(不存在的文件)失败,立刻装箱
+    返回值是不是 INVALID_HANDLE_VALUE:是
+    ec.value()=2  ec.category().name()=system
+    ec.message() 原始字节(ANSI 代码页):"ϵͳ�Ҳ���ָ�����ļ���"
+    转码后:"系统找不到指定的文件。"
+    win32_category 渲染同一个值:"系统找不到指定的文件。"
+[2] 装箱后,故意插一次会清零槽位的成功 CreateFileW(e2 实测它成功时置 0)
+    此时 GetLastError()=0(成功调用已把槽位清零)
+    但 ec.value() 仍是 2 —— 装箱即冻结,这就是"立即"的意义
+[3] 相等性:同值不同 category 不相等;errc 桥接走 default_error_condition
+    ec == error_code(2, system_category) : 1  (同 category 同值)
+    ec == error_code(2, win32_category)  : 0  (值同,category 不同)
+    ec == errc::no_such_file_or_directory : 1  (system_category 内置映射桥接)
+    合成 error_code(13, system)="数据无效。" == errc::permission_denied : 0
+      (13 在 errno 宇宙才是 EACCES;Win32 13 映射到的是 generic 22/EINVAL)
+      system(13).default_error_condition -> {value=22, category=generic}
+    error_code(2, win32_category) == errc::no_such_file_or_directory : 1  (委托映射)
+[4] 小结(实测口径)
+    system_category:值语义可靠,libstdc++ 内置 win32->errno 映射可桥接 errc,
+                    但 message() 是 ANSI 代码页字节,得自己转码
+    win32_category :message() 直接 UTF-8,异常的 what() 也跟着可读(见 e4)

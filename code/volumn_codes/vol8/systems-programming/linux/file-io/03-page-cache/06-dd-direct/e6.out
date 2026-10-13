@@ -1,0 +1,21 @@
+# 环境: 6.18.33.2-microsoft-standard-WSL2 | AMD Ryzen 7 9700X 8-Core Processor | 数据盘 /dev/sdd ext4 1055762868 65038828 937020568 7% /
+# 口径: dd if=/dev/zero of=... bs=1M count=256,3 轮;吞吐取 dd 自报值
+
+# round 1 buffered: pre_dirty=448kB post_dirty=262296kB dd_report=[1.8 GB/s]
+#   raw: 268435456 bytes (268 MB, 256 MiB) copied, 0.149797 s, 1.8 GB/s
+# round 1 direct: pre_dirty=4kB post_dirty=4kB dd_report=[5.9 GB/s]
+#   raw: 268435456 bytes (268 MB, 256 MiB) copied, 0.0458307 s, 5.9 GB/s
+# round 1 fsync_only: pre_dirty=4kB post_dirty=248kB dd_report=[3.9 GB/s]
+#   raw: 268435456 bytes (268 MB, 256 MiB) copied, 0.0683234 s, 3.9 GB/s
+# round 2 buffered: pre_dirty=248kB post_dirty=262408kB dd_report=[5.9 GB/s]
+#   raw: 268435456 bytes (268 MB, 256 MiB) copied, 0.0456835 s, 5.9 GB/s
+# round 2 direct: pre_dirty=176kB post_dirty=176kB dd_report=[5.1 GB/s]
+#   raw: 268435456 bytes (268 MB, 256 MiB) copied, 0.0521473 s, 5.1 GB/s
+# round 2 fsync_only: pre_dirty=176kB post_dirty=104kB dd_report=[4.5 GB/s]
+#   raw: 268435456 bytes (268 MB, 256 MiB) copied, 0.0599683 s, 4.5 GB/s
+# round 3 buffered: pre_dirty=104kB post_dirty=262248kB dd_report=[6.4 GB/s]
+#   raw: 268435456 bytes (268 MB, 256 MiB) copied, 0.0418753 s, 6.4 GB/s
+# round 3 direct: pre_dirty=40kB post_dirty=156kB dd_report=[5.7 GB/s]
+#   raw: 268435456 bytes (268 MB, 256 MiB) copied, 0.0471287 s, 5.7 GB/s
+# round 3 fsync_only: pre_dirty=156kB post_dirty=100kB dd_report=[4.5 GB/s]
+#   raw: 268435456 bytes (268 MB, 256 MiB) copied, 0.0598843 s, 4.5 GB/s

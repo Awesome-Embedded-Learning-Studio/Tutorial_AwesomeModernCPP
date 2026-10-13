@@ -1,0 +1,9 @@
+t= 151 ms  pipe 收到 5 字节: "hello"
+t= 250 ms  timerfd 第  1 次到期
+t= 401 ms  eventfd 门铃, 本次取走计数 1
+t= 500 ms  timerfd 第  2 次到期
+t= 651 ms  eventfd 门铃, 本次取走计数 2
+t= 750 ms  timerfd 第  3 次到期
+t= 901 ms  pipe 收到 4 字节: "quit"
+
+循环结束: timerfd 3 次, eventfd 2 次, pipe 2 次, 全部由同一个 epoll_wait 分发

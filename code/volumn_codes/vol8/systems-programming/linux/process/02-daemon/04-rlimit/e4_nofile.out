@@ -1,0 +1,9 @@
+== E4a RLIMIT_NOFILE: 压低软限 -> open 报 EMFILE ==
+初始           rlim_cur=1048576    rlim_max=1048576
+setrlimit 后    rlim_cur=4          rlim_max=1048576
+软限=4 且 fd0/1/2 已占 3 个名额 -> 还能开 1 个(fd=3),之后:
+  open #1 -> fd=3(成功)
+  open #2 -> -1, errno=24 = Too many open files
+  open #3 -> -1, errno=24 = Too many open files
+再把软限升回硬限(1048576) -> 成功(软限双向可调)
+恢复后        rlim_cur=1048576    rlim_max=1048576

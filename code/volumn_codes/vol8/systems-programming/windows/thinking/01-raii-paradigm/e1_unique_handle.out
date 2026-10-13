@@ -1,0 +1,25 @@
+[1] 失败值矩阵(各 API 打开/创建注定失败的对象)
+  CreateFileW            -> h=ffffffffffffffff  INVALID_HANDLE_VALUE? 是  NULL? 否  err=2
+  CreateEventW(撞名)   -> h=               0  INVALID_HANDLE_VALUE? 否  NULL? 是  err=6
+  CreateFileMappingW(撞名) -> h=               0  INVALID_HANDLE_VALUE? 否  NULL? 是  err=6
+  OpenProcess(野pid)    -> h=               0  INVALID_HANDLE_VALUE? 否  NULL? 是  err=87
+  CreateFileMappingW(ok) -> h=              f4  INVALID_HANDLE_VALUE? 否  NULL? 否  err=0
+[2] CloseHandle 对哨兵值的反应(先 SetLastError(0) 再观察它写了什么)
+  CloseHandle(NULL)                  -> ret=0 err=6
+  CloseHandle(INVALID_HANDLE_VALUE)  -> ret=1 err=0
+  CloseHandle(有效句柄)第 1 次       -> ret=1 err=0
+  CloseHandle(有效句柄)第 2 次       -> ret=0 err=6  (双重关闭)
+[3] unique_handle 生命周期(数字 = 进程当前句柄数)
+  baseline                       : 61
+  构造 a(接管 CreateFileW)      : 62  bool(a)=1 get=00000000000000f8
+  move 构造 b<-a                 : 62  bool(a)=0 bool(b)=1
+  b.release() 所有权交还         : 62  bool(b)=0 raw=00000000000000f8
+  手动 CloseHandle(raw)          : 61
+  a.reset(新句柄)                : 62  bool(a)=1
+  a.reset() 立即关闭             : 61  bool(a)=0
+  move 赋值 c<-临时              : 62
+  作用域结束(析构全部执行)     : 61  (回到 baseline=61)
+[4] 陷阱:把 CreateEventW 的失败值 NULL 直接塞给 unique_handle
+  bool(bad)=1  —— NULL != INVALID_HANDLE_VALUE,-1 哨兵把它判成了"有效"
+  析构里 CloseHandle(NULL) 留下 err=6(6=ERROR_INVALID_HANDLE,无害但语义错)
+[5] 收尾:mutex 关闭 + 临时文件清理,句柄数=60

@@ -11,6 +11,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # 可运行的可执行文件（含 main 函数）
 add_executable(atomic_default_ctor_verify atomic_default_ctor_verify.cpp)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$")
+    find_package(Threads REQUIRED)
+    add_executable(fence_vs_ordered_benchmark fence_vs_ordered_benchmark.cpp)
+    target_link_libraries(fence_vs_ordered_benchmark PRIVATE Threads::Threads)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(fence_vs_ordered_benchmark PRIVATE -O3 -march=native)
+    endif()
+endif()
+
 # 汇编验证文件（无 main 函数，仅编译为 .s 文件用于指令检查）
 # 使用方式：cmake --build build --target asm_check
 set(ASM_OUTPUT_DIR ${CMAKE_BINARY_DIR}/asm)

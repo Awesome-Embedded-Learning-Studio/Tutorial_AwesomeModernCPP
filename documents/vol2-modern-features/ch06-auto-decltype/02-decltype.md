@@ -23,9 +23,9 @@ title: decltype 与返回类型推导
 
 上一章我们详细讲了 `auto` 的推导规则——默认丢弃引用和顶层 const。但有些时候我们需要的是"原封不动地保留表达式的类型"，包括引用和 const。这就是 `decltype` 的领域。
 
-`decltype` 和 `auto` 最大的区别在于：`auto` 是根据初始化表达式推导一个"新变量"的类型（会丢弃引用和 const），而 `decltype` 是"查询"一个已有表达式的类型（原封不动地返回）。这个区别看似简单，实际使用中有很多微妙之处。
+`decltype` 和 `auto` 最大的区别在于：`auto` 是根据初始化表达式推导一个"新变量"的类型（会丢弃引用和 const），而 `decltype` 是"查询"一个已有表达式的类型（原封不动地返回，所以你真的需要拿到这个类型而且传递出去的时候，才用，听着就很少见了，对吧！）
 
-> 一句话总结：**decltype 查询表达式的精确类型（保留引用和 const），decltype(auto) 则结合了 auto 的简洁和 decltype 的精确。**
+> 但是说真的，可能是我的场景基本简单，甚至我搜了一下我干活的几个项目几乎没有这个玩意，所以从重要性上讲，大伙图一乐看个响就好
 
 ------
 
@@ -249,6 +249,8 @@ static_assert(!has_push_back<int, int>::value);
 
 ### std::declval 的用途
 
+这个蛮冷门的, 甚至是我搜索才知道的= =。
+
 `std::declval<T>()` 是一个只在不求值上下文（unevaluated context）中才能使用的工具函数。它返回一个 `T&&` 的右值引用，不需要 `T` 有默认构造函数。这样你就能在 `decltype`、`sizeof`、`noexcept` 等不求值上下文中构造"假想的"对象来探测类型信息：
 
 ```cpp
@@ -300,7 +302,7 @@ template<typename Range>
 void process_range(Range&& r) {
     for (auto&& elem : r) {
         // elem 的类型是什么？
-        using elem_t = decltype(elem);
+        using elem_t = decltype(elem); // 好没活其实，手动哭笑
         process_element(std::forward<elem_t>(elem));
     }
 }

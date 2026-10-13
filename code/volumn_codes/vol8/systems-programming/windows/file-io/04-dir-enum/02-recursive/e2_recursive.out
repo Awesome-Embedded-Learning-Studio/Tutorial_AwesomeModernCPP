@@ -1,0 +1,101 @@
+mklink /J jn_ext -> rc=0, mklink /J jn_cycle -> rc=0
+  验证 jn_ext:attr=0x410(DIRECTORY=0x10 REPARSE=0x400 命中)
+  验证 jn_cycle:attr=0x410(DIRECTORY=0x10 REPARSE=0x400 命中)
+树形(5 层,每层 1 文件;另有 b/ 与 2 个 junction)
+== 递归枚举(默认:REPARSE_POINT 目录不下钻)DFS 前序:撞到子目录立刻下钻 ==
+a/
+  ab/
+    abc/
+      abcd/
+        abcde/
+          f_abcde.txt
+        f_abcd.txt
+      f_abc.txt
+    f_ab.txt
+  f_a.txt
+b/
+  f_b.txt
+f_root.txt
+jn_cycle [junction]
+jn_ext [junction]
+
+统计:文件 7,真目录 6,链接叶子 2,点项 14
+junction 环 0 圈(不下钻,无环)
+===== follow 模式(跟随 junction,40 层深度闸) =====
+== 递归枚举(follow:跟随 junction,自备 40 层深度闸)DFS 前序:撞到子目录立刻下钻 ==
+a/
+  ab/
+    abc/
+      abcd/
+        abcde/
+          f_abcde.txt
+        f_abcd.txt
+      f_abc.txt
+    f_ab.txt
+  f_a.txt
+b/
+  f_b.txt
+f_root.txt
+jn_cycle [junction]
+  a/
+    ab/
+      abc/
+        abcd/
+          abcde/
+            f_abcde.txt
+          f_abcd.txt
+        f_abc.txt
+      f_ab.txt
+    f_a.txt
+  b/
+    f_b.txt
+  f_root.txt
+  jn_cycle [junction]
+    a/
+      ab/
+        abc/
+          abcd/
+            abcde/
+              f_abcde.txt
+            f_abcd.txt
+          f_abc.txt
+        f_ab.txt
+      f_a.txt
+    b/
+      f_b.txt
+    f_root.txt
+    jn_cycle [junction]
+      a/
+        ab/
+          abc/
+            abcd/
+              abcde/
+                f_abcde.txt
+              f_abcd.txt
+            f_abc.txt
+          f_ab.txt
+        f_a.txt
+      b/
+        f_b.txt
+      f_root.txt
+      jn_cycle [junction]
+        a/
+          ab/
+            abc/
+              abcd/
+                abcde/
+                  f_abcde.txt
+                f_abcd.txt
+              f_abc.txt
+            ……(打印截断,计数继续)
+                                                [打不开:路径 259 字符 err=3]
+                                                [打不开:路径 262 字符 err=3]
+                                            [打不开:路径 259 字符 err=3]
+                                            [打不开:路径 259 字符 err=3]
+                                            [打不开:路径 266 字符 err=3]
+                                            [打不开:路径 264 字符 err=3]
+
+统计:文件 187,真目录 127,链接叶子 44,点项 332
+junction 环共转了 22 圈。结束机制看 .out 尾部:是路径长度撞上 MAX_PATH 的墙
+(259/262/264 字符那批 err=3)先拦住的,40 层深度闸这次没轮上;Linux 侧同样的环
+是内核 40 层 ELOOP 自动刹车——Windows 没有内核兜底,跟随链接的递归只能自备闸

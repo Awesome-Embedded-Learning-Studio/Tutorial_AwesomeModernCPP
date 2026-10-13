@@ -1,0 +1,13 @@
+== E3 两条共享途径对照 ==
+
+== 途径 A:匿名 MAP_SHARED|MAP_ANONYMOUS(fork 前映射,子进程继承)==
+父进程读 fork 前的共享映射:0xC0DE(子进程写的,继承链通了)
+父进程读 fork 后自己建的匿名映射:0x0(子进程那份是另一个实体,匿名没有名字无从相认)
+
+--- 命名对象:server 与 client 是两个独立进程(无 fork 亲缘)---
+[server pid=41045] shm_open 建好 /lm03_two,写消息并置 msg_ready,等 ack(10s 超时)...
+[client pid=41047] 与 server 无亲缘,靠 shm_open("/lm03_two") 相认,读到 "hello-from-server-pid-41045",回 ack
+[server] 收到 ack,消息送达;unlink 收尾
+
+== 附:匿名/任意 shm 实体的 fd 可经 SCM_RIGHTS 跨进程传递(ch03 细讲)==
+子进程 recvmsg 拿到重复出来的新 fd=3(/dev/shm/lm03_fdpass),mmap 后读到 "hello-via-fd"——fd 传到即实体传到

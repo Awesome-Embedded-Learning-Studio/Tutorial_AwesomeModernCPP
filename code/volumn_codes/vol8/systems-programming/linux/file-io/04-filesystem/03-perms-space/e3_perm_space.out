@@ -1,0 +1,31 @@
+== [1] fs::permissions 三步 ==
+  初始            : rw-r--r-- (644)
+  add owner_exec  : rwxr--r-- (744)
+  ::access(X_OK)  : 可执行
+  remove owner_exec: rw-r--r-- (644)
+
+== [2] 符号链接:fs::status(跟随) vs fs::symlink_status(不跟随) ==
+  status(link)          type=1 perms=rw-r--r-- (644)   <- 跟随,看到的是 real.txt
+  symlink_status(link)  type=3 perms=rwxrwxrwx (777)   <- 链接自身,Linux 恒 0777
+  status(dangling)      type=-1 (not_found=-1)  <- 跟随悬空链接 = 文件不存在
+  symlink_status(dangling) type=3 (symlink=3)  <- 不跟随,链接本身在
+  nofollow 改链接自身权限:ec=95 ("Operation not supported")  <- Linux 对 lchmod 的态度
+  目标 real.txt 权限有没有被误伤:rw-r--r-- (644)
+  默认(跟随)remove owner_write 后目标权限:r--r--r-- (444)
+
+== [3] fs::space("/home/charliechen/l04_scratch") ==
+  capacity  = 1081101176832 (1006.85 GiB)
+  free      = 1014503858176 (944.83 GiB)   <- 块总量减已用(含 root 预留)
+  available = 959511502848 (893.61 GiB)   <- 非特权进程能用到的
+  free - available = 54992355328 (5.09%) <- ext4 root 预留的痕迹
+  space(不存在路径): ec=2 ("No such file or directory"), 字段=18446744073709551615(哨兵 uintmax_t(-1))
+
+== [4] 无权限目录 ==
+  directory_iterator(denied, ec): ec.value()=13 (EACCES=13) message="Permission denied"
+  exists(denied/no_such_file) = false, ec=13("Permission denied")  <- EACCES 是错误
+  exists(/no_such_root_file) = false, ec=0("Success")  <- ENOENT 是答案
+  (收尾:属主 chmod 回 0700 后删除,000 挡不住 chmod)
+
+== df 对表(同一路径) ==
+df: total=1081101176832 used=66597920768 avail=959510900736
+(df 的 avail == fs::space().available;total == capacity;free 字段 df 不直接给,等于 avail+root 预留)

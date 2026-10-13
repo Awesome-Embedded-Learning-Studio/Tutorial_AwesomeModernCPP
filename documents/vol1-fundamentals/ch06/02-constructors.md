@@ -19,6 +19,17 @@ tags:
 - 入门
 - 基础
 title: 构造函数
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #228)"
+      en: "Contributed exercise solutions and article revisions (PR #228)"
 ---
 # 构造函数：别让对象揣着垃圾值出生
 

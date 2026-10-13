@@ -1,0 +1,19 @@
+== route 1: predefined macros (compile-time, per target) ==
+  __linux        absent   
+  __linux__      absent   
+  __GLIBC__      absent   MSYS2 用 mingw-w64 crt,不是 glibc
+  _UCRT          DEFINED  MSYS2 UCRT64 环境定义,Universal CRT
+  _WIN32         DEFINED  Win32/Win64 都定义(目标为 Windows)
+  _WIN64         DEFINED  仅 64 位 Windows 目标
+  __MINGW64__    DEFINED  MinGW-w64 工具链
+  __CYGWIN__     absent   
+  __APPLE__      absent   两侧都不该出现,作对照
+  __FreeBSD__    absent   kqueue 的家,本机没有
+== route 2: __has_include probes (compile-time, per toolchain) ==
+  <sys/epoll.h>      ABSENT   
+  <sys/event.h>      ABSENT   Linux 上没有 kqueue
+  <liburing.h>       ABSENT   
+  <windows.h>        present  Win32 全家
+  <sys/inotify.h>    ABSENT   
+== runtime: GetSystemInfo (information macros can never carry) ==
+  processor_architecture=9 number_of_processors=16

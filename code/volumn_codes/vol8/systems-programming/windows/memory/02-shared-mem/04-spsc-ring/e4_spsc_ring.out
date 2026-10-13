@@ -1,0 +1,69 @@
+$ ./e4_spsc_ring.exe spin; echo "exit=$?"
+[E4] 模式=spin 消息数=1000000 槽数=4096(16B/槽) 对象=Local\SysProgShm_E4_7268
+[生产者 pid=7268 cpu2] 1000000 条,3.47 ms,吞吐 28799 万条/s(3.47 ns/条),遇满自旋 12440 次
+[消费者 退出码=0] 1000000 条,核对错误 0 条(值+tag 逐条验),3.48 ms,吞吐 28776 万条/s,睡眠 0 次
+[E4] spin:SetEvent 共 0 次;100 万条零丢失零乱序
+exit=0
+
+$ ./e4_spsc_ring.exe spin; echo "exit=$?"
+[E4] 模式=spin 消息数=1000000 槽数=4096(16B/槽) 对象=Local\SysProgShm_E4_20296
+[生产者 pid=20296 cpu2] 1000000 条,3.43 ms,吞吐 29128 万条/s(3.43 ns/条),遇满自旋 9919 次
+[消费者 退出码=0] 1000000 条,核对错误 0 条(值+tag 逐条验),3.44 ms,吞吐 29105 万条/s,睡眠 0 次
+[E4] spin:SetEvent 共 0 次;100 万条零丢失零乱序
+exit=0
+
+$ ./e4_spsc_ring.exe spin; echo "exit=$?"
+[E4] 模式=spin 消息数=1000000 槽数=4096(16B/槽) 对象=Local\SysProgShm_E4_24724
+[生产者 pid=24724 cpu2] 1000000 条,3.53 ms,吞吐 28293 万条/s(3.53 ns/条),遇满自旋 10352 次
+[消费者 退出码=0] 1000000 条,核对错误 0 条(值+tag 逐条验),3.54 ms,吞吐 28273 万条/s,睡眠 0 次
+[E4] spin:SetEvent 共 0 次;100 万条零丢失零乱序
+exit=0
+
+$ ./e4_spsc_ring.exe hybrid; echo "exit=$?"
+[E4] 模式=hybrid 消息数=1000000 槽数=4096(16B/槽) 对象=Local\SysProgShm_E4_14140
+[生产者 pid=14140 cpu2] 1000000 条,10.69 ms,吞吐 9351 万条/s(10.69 ns/条),遇满自旋 244 次
+[消费者 退出码=0] 1000000 条,核对错误 0 条(值+tag 逐条验),10.69 ms,吞吐 9354 万条/s,睡眠 0 次
+[E4] hybrid:SetEvent 共 0 次;100 万条零丢失零乱序
+exit=0
+
+$ ./e4_spsc_ring.exe hybrid; echo "exit=$?"
+[E4] 模式=hybrid 消息数=1000000 槽数=4096(16B/槽) 对象=Local\SysProgShm_E4_26400
+[生产者 pid=26400 cpu2] 1000000 条,10.77 ms,吞吐 9287 万条/s(10.77 ns/条),遇满自旋 244 次
+[消费者 退出码=0] 1000000 条,核对错误 0 条(值+tag 逐条验),10.77 ms,吞吐 9286 万条/s,睡眠 0 次
+[E4] hybrid:SetEvent 共 0 次;100 万条零丢失零乱序
+exit=0
+
+$ ./e4_spsc_ring.exe hybrid; echo "exit=$?"
+[E4] 模式=hybrid 消息数=1000000 槽数=4096(16B/槽) 对象=Local\SysProgShm_E4_17092
+[生产者 pid=17092 cpu2] 1000000 条,11.06 ms,吞吐 9043 万条/s(11.06 ns/条),遇满自旋 2231 次
+[消费者 退出码=0] 1000000 条,核对错误 0 条(值+tag 逐条验),11.06 ms,吞吐 9043 万条/s,睡眠 0 次
+[E4] hybrid:SetEvent 共 0 次;100 万条零丢失零乱序
+exit=0
+
+$ ./e4_spsc_ring.exe notify; echo "exit=$?"
+[E4] 模式=notify 消息数=1000000 槽数=4096(16B/槽) 对象=Local\SysProgShm_E4_7260
+[生产者 pid=7260 cpu2] 1000000 条,212.86 ms,吞吐 470 万条/s(212.86 ns/条),遇满自旋 244 次
+[消费者 退出码=0] 1000000 条,核对错误 0 条(值+tag 逐条验),212.86 ms,吞吐 470 万条/s,等待 934049 次
+[E4] notify:SetEvent 共 1000000 次;100 万条零丢失零乱序
+exit=0
+
+$ ./e4_spsc_ring.exe notify; echo "exit=$?"
+[E4] 模式=notify 消息数=1000000 槽数=4096(16B/槽) 对象=Local\SysProgShm_E4_18336
+[生产者 pid=18336 cpu2] 1000000 条,207.92 ms,吞吐 481 万条/s(207.92 ns/条),遇满自旋 244 次
+[消费者 退出码=0] 1000000 条,核对错误 0 条(值+tag 逐条验),207.92 ms,吞吐 481 万条/s,等待 916681 次
+[E4] notify:SetEvent 共 1000000 次;100 万条零丢失零乱序
+exit=0
+
+$ ./e4_spsc_ring.exe notify; echo "exit=$?"
+[E4] 模式=notify 消息数=1000000 槽数=4096(16B/槽) 对象=Local\SysProgShm_E4_21560
+[生产者 pid=21560 cpu2] 1000000 条,212.37 ms,吞吐 471 万条/s(212.37 ns/条),遇满自旋 244 次
+[消费者 退出码=0] 1000000 条,核对错误 0 条(值+tag 逐条验),212.37 ms,吞吐 471 万条/s,等待 923162 次
+[E4] notify:SetEvent 共 1000000 次;100 万条零丢失零乱序
+exit=0
+
+$ ./e4_spsc_ring.exe burst; echo "exit=$?"
+[E4] 模式=burst 消息数=1000000 槽数=4096(16B/槽) 对象=Local\SysProgShm_E4_22096
+[生产者 pid=22096 cpu2] 1000000 条,1259.80 ms,吞吐 79 万条/s(1259.80 ns/条),遇满自旋 246 次
+[消费者 退出码=0] 1000000 条,核对错误 0 条(值+tag 逐条验),1259.80 ms,吞吐 79 万条/s,睡眠 197 次
+[E4] burst:SetEvent 共 15552 次;100 万条零丢失零乱序
+exit=0

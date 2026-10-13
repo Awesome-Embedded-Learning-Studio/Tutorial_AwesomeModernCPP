@@ -1,0 +1,39 @@
+$ ./e1_virtualprotect.exe ro-write; echo "exit=$?"
+[ro-write] 视图=0000020506f00000(只读,来自 RW 映射)
+  先试 VirtualProtect(RO->RW) ret=0 err=87 出参=PAGE_NOACCESS(0x01)(失败时无意义)
+  硬写 view[0]='X' ...[unhandled-exception] code=0xC0000005
+  指令地址 ExceptionAddress = 00007ff7bfde1baa
+  ExceptionInformation[0]   = 1  (写访问冲突)
+  ExceptionInformation[1]   = 0000020506f00000  (目标数据地址)
+exit=5
+
+$ ./e1_virtualprotect.exe protect-write; echo "exit=$?"
+[protect-write] 视图=000001f9ddc10000(FILE_MAP_ALL_ACCESS)
+  降到 PAGE_READONLY          ret=1 lpflOldProtect=PAGE_READWRITE(0x04)
+  降到 PAGE_NOACCESS          ret=1 lpflOldProtect=PAGE_READONLY(0x02)
+  升回 PAGE_READWRITE         ret=1 lpflOldProtect=PAGE_NOACCESS(0x01)
+  写 view[0]='X' ...
+  写入后 view[0]=X
+  重开文件读回首字节 = X(0x58,落盘验证)
+  [结论] 授权范围内改保护有效;写入直达后备文件,不是写时复制
+exit=0
+
+$ ./e1_virtualprotect.exe noaccess-read; echo "exit=$?"
+[noaccess-read] 视图=0000025bc24c0000 已改 PAGE_NOACCESS(改前 PAGE_READONLY(0x02)),准备读 view[0] ...
+[unhandled-exception] code=0xC0000005
+  指令地址 ExceptionAddress = 00007ff70b4c20b9
+  ExceptionInformation[0]   = 0  (读访问冲突)
+  ExceptionInformation[1]   = 0000025bc24c0000  (目标数据地址)
+exit=5
+
+$ ./e1_virtualprotect.exe oldprotect; echo "exit=$?"
+[oldprotect] 授权视图(ALL_ACCESS)上链式改保护:RW -> RO -> NOACCESS -> RW
+  改到 PAGE_READONLY(0x02)    ret=1  lpflOldProtect=PAGE_READWRITE(0x04)  err=0
+  改到 PAGE_NOACCESS(0x01)    ret=1  lpflOldProtect=PAGE_READONLY(0x02)  err=0
+  改到 PAGE_READWRITE(0x04)   ret=1  lpflOldProtect=PAGE_NOACCESS(0x01)  err=0
+  (对照:FILE_MAP_READ 只读视图升 RW -> err=87,见 ro-write 阶段输出)
+
+[oldprotect] 越过映射上限:文件 GENERIC_READ 打开 + PAGE_READONLY 映射
+  VirtualProtect(RO 映射视图 -> RW)  ret=0  err=87  lpflOldProtect=PAGE_NOACCESS(0x01)
+  (对照:同样的调用在 RW 映射的只读视图上成功,见 protect-write 阶段)
+exit=0

@@ -1,0 +1,551 @@
+{
+ "version": 1,
+ "id": "sysprog-vdso-free-pass",
+ "title": "vDSO:内核的免票通道",
+ "subtitle": "同一个 clock_gettime,两条路",
+ "source": "projects/vol8-sysprog-overview/02-dsl/sysprog-vdso-free-pass.yaml",
+ "backend": "web",
+ "template": "freeform",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#111521",
+  "bgRaised": "#171D2D",
+  "text": "#F4F6FB",
+  "muted": "#98A2B8",
+  "fill": "#66D9EF",
+  "fillEdge": "#2E9DC2",
+  "emptyEdge": "#43506A",
+  "grow": "#FFB86C",
+  "numOnFill": "#0B1E27",
+  "ok": "#72D49A",
+  "bad": "#FF6B7A",
+  "cardBg": "#1B2234"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "vDSO:内核的免票通道",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.9488,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "同一个 clock_gettime,两条路",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#98A2B8",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.444,
+   "h": 0.272
+  },
+  "show:legend": {
+   "kind": "text",
+   "text": "红 = 普通路:每次都付一次陷入 · 绿 = vDSO 路:免票直达",
+   "x": 0,
+   "y": -3.3,
+   "fs": 0.2,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 6.736,
+   "h": 0.272,
+   "id": "legend"
+  },
+  "show:s_call": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "danger",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.98,
+   "w": 2.9056,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "clock_gettime()",
+     "w": 1.98
+    }
+   ],
+   "cx": -5.0,
+   "cy": 1.35
+  },
+  "show:a_s1": {
+   "kind": "arrow",
+   "x1": -3.3672,
+   "y1": 1.35,
+   "x2": -3.0348,
+   "y2": 1.35,
+   "cx": -3.201,
+   "cy": 1.35,
+   "w": 0.3324,
+   "h": 0.0,
+   "label": {
+    "text": "每次",
+    "x": -3.201,
+    "y": 1.7024,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:s_trap": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "danger",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.584,
+   "w": 2.5096,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "syscall 陷入",
+     "w": 1.584
+    }
+   ],
+   "cx": -1.6,
+   "cy": 1.35
+  },
+  "show:a_s2": {
+   "kind": "arrow",
+   "x1": -0.1652,
+   "y1": 1.35,
+   "x2": 0.1352,
+   "y2": 1.35,
+   "cx": -0.015,
+   "cy": 1.35,
+   "w": 0.3004,
+   "h": 0.0
+  },
+  "show:s_ret": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "danger",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.244,
+   "w": 3.1696,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "内核干活 · sysret",
+     "w": 2.244
+    }
+   ],
+   "cx": 1.9,
+   "cy": 1.35
+  },
+  "show:f_call": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "success",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.98,
+   "w": 2.9056,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "clock_gettime()",
+     "w": 1.98
+    }
+   ],
+   "cx": -5.0,
+   "cy": -1.55
+  },
+  "show:a_f1": {
+   "kind": "arrow",
+   "x1": -3.3672,
+   "y1": -1.55,
+   "x2": -3.1648,
+   "y2": -1.55,
+   "cx": -3.266,
+   "cy": -1.55,
+   "w": 0.2024,
+   "h": 0.0
+  },
+  "show:f_vdso": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "success",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.244,
+   "w": 3.1696,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "vDSO:就在您进程里",
+     "w": 2.244
+    }
+   ],
+   "cx": -1.4,
+   "cy": -1.55
+  },
+  "show:a_f2": {
+   "kind": "arrow",
+   "x1": 0.3648,
+   "y1": -1.55,
+   "x2": 0.4352,
+   "y2": -1.55,
+   "cx": 0.4,
+   "cy": -1.55,
+   "w": 0.0704,
+   "h": 0.0,
+   "label": {
+    "text": "免票",
+    "x": 0.4,
+    "y": -1.1976,
+    "fs": 0.18,
+    "color": "#98A2B8",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:f_ret": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "variant": "success",
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.244,
+   "w": 3.1696,
+   "h": 0.778,
+   "rows": [
+    {
+     "text": "直接返回 · 免陷入",
+     "w": 2.244
+    }
+   ],
+   "cx": 2.2,
+   "cy": -1.55
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "vDSO:内核把代码和数据直接映射进您的进程",
+   "x": 0.0,
+   "y": 0.0882,
+   "fs": 0.24,
+   "color": "#FFB86C",
+   "mono": false,
+   "anchor": "middle",
+   "w": 6.1296,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "高频调用连 trap 都免了,时间那章细讲",
+   "x": 0.0,
+   "y": -0.4882,
+   "fs": 0.24,
+   "color": "#F4F6FB",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.4768,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 2.79,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 1.79
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 1.79,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "显示图例",
+   "note": "",
+   "duration": 2.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:legend",
+     "t": 0.0,
+     "dur": 2.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "亮相 clock_gettime()",
+   "note": "",
+   "duration": 2.55,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:s_call",
+     "cx": -5.0,
+     "cy": 1.35,
+     "t": 0.0,
+     "dur": 2.55
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "连接 每次",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_s1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "亮相 syscall 陷入",
+   "note": "",
+   "duration": 1.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:s_trap",
+     "cx": -1.6,
+     "cy": 1.35,
+     "t": 0.0,
+     "dur": 1.95
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "连接流程",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_s2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "亮相 内核干活 · sysret",
+   "note": "",
+   "duration": 2.31,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:s_ret",
+     "cx": 1.9,
+     "cy": 1.35,
+     "t": 0.0,
+     "dur": 2.31
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "亮相 clock_gettime()",
+   "note": "",
+   "duration": 2.55,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:f_call",
+     "cx": -5.0,
+     "cy": -1.55,
+     "t": 0.0,
+     "dur": 2.55
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "连接流程",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_f1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "亮相 vDSO:就在您进程里",
+   "note": "",
+   "duration": 2.07,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:f_vdso",
+     "cx": -1.4,
+     "cy": -1.55,
+     "t": 0.0,
+     "dur": 2.07
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "连接 免票",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a_f2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "亮相 直接返回 · 免陷入",
+   "note": "",
+   "duration": 1.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:f_ret",
+     "cx": 2.2,
+     "cy": -1.55,
+     "t": 0.0,
+     "dur": 1.95
+    }
+   ]
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 14.1,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:s_call",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a_s1",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:s_trap",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a_s2",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:s_ret",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:f_call",
+     "t": 1.5,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a_f1",
+     "t": 1.8,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:f_vdso",
+     "t": 2.1,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a_f2",
+     "t": 2.4,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:f_ret",
+     "t": 2.7,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 3.0,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 5.75,
+     "dur": 2.4
+    }
+   ]
+  }
+ ]
+}

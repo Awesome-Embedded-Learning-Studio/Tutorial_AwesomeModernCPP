@@ -1,0 +1,15 @@
+== int3
+  [filter] code=0x80000003 flags=0x00000000 STATUS_BREAKPOINT (int3)  fault/raise-at=00007ff7d9661600 nparams=1
+    info[0]=0x0000000000000000
+-> -1
+== RaiseException
+  [filter] code=0xE0001234 flags=0x00000080   fault/raise-at=00007fff83a341ca nparams=4
+    info[0]=0x00000000AAAA1111
+    info[1]=0x00000000AAAA2222
+    info[2]=0x00000000AAAA3333
+    info[3]=0x00000000AAAA4444
+-> -1
+== divide by zero
+  [filter] code=0xC0000094 flags=0x00000000 STATUS_INTEGER_DIVIDE_BY_ZERO  fault/raise-at=00007ff7d9661665 nparams=0
+-> -1
+done

@@ -1,0 +1,18 @@
+== E6: 同一 epoch 值的两种呈现 ==
+默认 TZ      epoch=1791121296.748978340
+               gmtime_r   → 2026-10-04 13:41:36 UTC
+               localtime_r→ 2026-10-04 21:41:36 CST +0800  (TZ=(未设,读 /etc/localtime))
+TZ=UTC0        epoch=1791121296.749025930
+               gmtime_r   → 2026-10-04 13:41:36 UTC
+               localtime_r→ 2026-10-04 13:41:36 UTC +0000  (TZ=UTC0)
+TZ=America/New_York epoch=1791121296.749062289
+               gmtime_r   → 2026-10-04 13:41:36 UTC
+               localtime_r→ 2026-10-04 09:41:36 EDT -0400  (TZ=America/New_York)
+TZ=Asia/Tokyo  epoch=1791121296.749075103
+               gmtime_r   → 2026-10-04 13:41:36 UTC
+               localtime_r→ 2026-10-04 22:41:36 JST +0900  (TZ=Asia/Tokyo)
+
+要点: clock_gettime(CLOCK_REALTIME) 给的是 UTC epoch 秒;
+本地化发生在呈现层(localtime_r + tzset),TZ 换的是规则,不是时间本身。
+时区规则的来源: TZ 环境变量优先,未设则读 /etc/localtime 指向的 zoneinfo 文件。
+下一篇咱们看 C++20 chrono 怎么把这套规则收进类型系统(zoned_time)。

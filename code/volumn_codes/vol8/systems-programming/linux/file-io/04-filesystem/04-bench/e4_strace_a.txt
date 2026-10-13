@@ -1,0 +1,21 @@
+# strace 同口径 ./e4_bench one a   # 手搓 opendir/readdir
+# 注意 glibc 的 opendir 用了 O_NONBLOCK(libstdc++ 没有),syscall 序列其余一致
+close(3)                                = 0
+close(3)                                = 0
+close(3)                                = 0
+close(3)                                = 0
+close(3)                                = 0
+openat(AT_FDCWD, "/home/charliechen/l04_scratch/e4_big", O_RDONLY|O_NONBLOCK|O_CLOEXEC|O_DIRECTORY) = 3
+getdents64(3, 0x5ced9fd5c050 /* 1024 entries */, 32768) = 32752
+getdents64(3, 0x5ced9fd5c050 /* 1024 entries */, 32768) = 32768
+getdents64(3, 0x5ced9fd5c050 /* 1024 entries */, 32768) = 32768
+getdents64(3, 0x5ced9fd5c050 /* 1024 entries */, 32768) = 32768
+getdents64(3, 0x5ced9fd5c050 /* 1024 entries */, 32768) = 32768
+getdents64(3, 0x5ced9fd5c050 /* 1024 entries */, 32768) = 32768
+getdents64(3, 0x5ced9fd5c050 /* 1024 entries */, 32768) = 32768
+getdents64(3, 0x5ced9fd5c050 /* 1024 entries */, 32768) = 32768
+getdents64(3, 0x5ced9fd5c050 /* 1024 entries */, 32768) = 32768
+getdents64(3, 0x5ced9fd5c050 /* 786 entries */, 32768) = 25152
+getdents64(3, 0x5ced9fd5c050 /* 0 entries */, 32768) = 0
+close(3)                                = 0
++++ exited with 0 +++

@@ -1,0 +1,21 @@
+== 10000 文件遍历,/home/charliechen/l04_scratch/e4_big(预热后 3 轮,CLOCK_MONOTONIC) ==
+  a a opendir/readdir(名字)        轮值   2.15   2.16   2.20 ms -> 中位   2.16 ms
+  b b directory_iterator(名字)     轮值   3.40   3.42   3.48 ms -> 中位   3.42 ms
+  c c dir_iter + is_regular_file     轮值   3.42   3.43   3.49 ms -> 中位   3.43 ms
+  d d dir_iter + file_size           轮值  15.97  16.22  17.99 ms -> 中位  16.22 ms
+  (sink=2120000,防优化)
+
+== 10000 文件目录的 readdir 序(ext4 htree 散列序,非字典) ==
+  readdir 前8: f00408 f00721 f02711 f02893 f08519 f03842 f05713 f09678 
+  字典序前8: f00000 f00001 f00002 f00003 f00004 f00005 f00006 f00007 
+  (同一次 readdir 两次调用之间夹了排序,顺序仍稳定:遍历序非随机,是确定的散列序)
+
+== strace 单趟证据(单发模式 ./e4_bench one a|b|d,详见 e4_strace_*.txt) ==
+  openat(e4_big) + getdents64×11 + close:
+    a 手搓 opendir/readdir        getdents64=11  newfstatat=5(基线)
+    b fs::directory_iterator      getdents64=11  newfstatat=5(基线)   <- 与 a 同形同数
+    d dir_iter + file_size        getdents64=11  newfstatat=10005     <- 每条目 +1 stat
+  结论:libstdc++ 的 directory_iterator 底层就是 opendir/readdir(内核侧 getdents64),
+  3.4ms vs 2.2ms 的差价是每条目构造 fs::path(堆分配)的包装成本,不是 syscall 差;
+  c 与 b 同速(is_regular_file 吃 d_type 缓存零 syscall);d 的 4.7 倍全是 per-entry stat。
+  小注:glibc 的 opendir 会加 O_NONBLOCK,libstdc++ 不加 —— 唯一的 flag 差异,无碍语义。

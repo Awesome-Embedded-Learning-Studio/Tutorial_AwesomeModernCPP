@@ -1,0 +1,7 @@
+[1] alignas(32) 静态数组   addr=0x62068e8b5080  %32=0
+    _mm256_load_si256 成功(vmovdqa 吃下对齐地址)
+[2] 对齐块偏移 8 字节       addr=0x6206c0ed8068  %32=8
+    _mm256_loadu_si256 成功(vmovdqu 对任何地址都行)
+[3] 未对齐地址 + _mm256_load_si256(vmovdqa)—— 预期崩:
+  ==> SIGSEGV 捕获! si_code=128(SI_KERNEL) si_addr=(nil)
+  ==> 这不是缺页,是未对齐 vmovdqa 引发的 #GP;内核把通用保护异常报成 si_code=SI_KERNEL(128)、si_addr 通常无意义

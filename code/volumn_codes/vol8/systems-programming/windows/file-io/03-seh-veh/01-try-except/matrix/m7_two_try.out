@@ -1,0 +1,3 @@
+$ g++ ... m7_two_try.cpp(同一 TU 两个 __try1)
+C:\Users\CHARLI~2\AppData\Local\Temp\cclm6llR.s:124: Error: symbol `.l_startw' is already defined
+C:\Users\CHARLI~2\AppData\Local\Temp\cclm6llR.s:141: Error: symbol `.l_endw' is already defined

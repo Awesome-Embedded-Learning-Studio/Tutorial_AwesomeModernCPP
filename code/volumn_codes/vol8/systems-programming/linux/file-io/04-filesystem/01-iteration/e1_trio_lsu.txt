@@ -1,0 +1,18 @@
+# /usr/bin/ls -U(eza 别名会对拍失败,必须用真 ls)
+$ /usr/bin/ls -U /home/charliechen/l04_scratch/e1_tree
+link_mid
+link_zeta
+alpha.txt
+mid
+broken_link
+zeta.txt
+
+$ find /home/charliechen/l04_scratch/e1_tree -maxdepth 1 | sed 's|.*/||'
+e1_tree
+link_mid
+link_zeta
+alpha.txt
+mid
+broken_link
+zeta.txt
+.hidden

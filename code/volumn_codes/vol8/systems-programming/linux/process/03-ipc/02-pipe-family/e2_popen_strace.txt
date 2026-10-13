@@ -1,0 +1,82 @@
+23686 execve("./e2_popen", ["./e2_popen"], 0x7ffd751bfe88 /* 69 vars */) = 0
+23686 close(3)                          = 0
+23686 close(3)                          = 0
+23686 close(3)                          = 0
+23686 close(3)                          = 0
+23686 close(3)                          = 0
+23686 pipe2([3, 4], O_CLOEXEC)          = 0
+23686 clone3({flags=CLONE_VM|CLONE_VFORK|CLONE_CLEAR_SIGHAND, exit_signal=SIGCHLD, stack=0x77470d8e6000, stack_size=0x9000}, 88 <unfinished ...>
+23687 dup2(4, 1)                        = 1
+23687 execve("/bin/sh", ["sh", "-c", "--", "echo popen-hello-from-shell; una"...], 0x7ffe29262838 /* 69 vars */ <unfinished ...>
+23686 <... clone3 resumed>)             = 23687
+23687 <... execve resumed>)             = 0
+23686 close(4)                          = 0
+23687 close(3)                          = 0
+23687 close(3)                          = 0
+23687 close(3)                          = 0
+23687 close(3)                          = 0
+23687 close(3)                          = 0
+23687 close(3)                          = 0
+23687 close(3)                          = 0
+23687 execve("/usr/sbin/uname", ["uname", "-r"], 0x5ede0c718650 /* 69 vars */) = 0
+23687 close(3)                          = 0
+23687 close(3)                          = 0
+23687 close(3)                          = 0
+23687 close(1)                          = 0
+23686 close(3 <unfinished ...>
+23687 close(2 <unfinished ...>
+23686 <... close resumed>)              = 0
+23687 <... close resumed>)              = 0
+23686 wait4(23687 <unfinished ...>
+23687 +++ exited with 0 +++
+23686 <... wait4 resumed>, [{WIFEXITED(s) && WEXITSTATUS(s) == 0}], 0, NULL) = 23687
+23686 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=23687, si_uid=1000, si_status=0, si_utime=0, si_stime=0} ---
+23686 pipe2([3, 4], O_CLOEXEC)          = 0
+23686 clone3({flags=CLONE_VM|CLONE_VFORK|CLONE_CLEAR_SIGHAND, exit_signal=SIGCHLD, stack=0x77470d8e6000, stack_size=0x9000}, 88 <unfinished ...>
+23688 dup2(3, 0)                        = 0
+23688 execve("/bin/sh", ["sh", "-c", "--", "cat"], 0x7ffe29262838 /* 69 vars */ <unfinished ...>
+23686 <... clone3 resumed>)             = 23688
+23688 <... execve resumed>)             = 0
+23686 close(3)                          = 0
+23688 close(3 <unfinished ...>
+23686 close(4 <unfinished ...>
+23688 <... close resumed>)              = 0
+23686 <... close resumed>)              = 0
+23686 wait4(23688 <unfinished ...>
+23688 close(3)                          = 0
+23688 close(3)                          = 0
+23688 close(3)                          = 0
+23688 close(3)                          = 0
+23688 close(3)                          = 0
+23688 close(3)                          = 0
+23688 execve("/usr/sbin/cat", ["cat"], 0x63379777e640 /* 69 vars */) = 0
+23688 close(3)                          = 0
+23688 close(3)                          = 0
+23688 close(3)                          = 0
+23688 pipe2([3, 4], 0)                  = 0
+23688 close(0)                          = 0
+23688 close(1)                          = 0
+23688 close(2)                          = 0
+23688 +++ exited with 0 +++
+23686 <... wait4 resumed>, [{WIFEXITED(s) && WEXITSTATUS(s) == 0}], 0, NULL) = 23688
+23686 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=23688, si_uid=1000, si_status=0, si_utime=0, si_stime=1 /* 0.01 s */} ---
+23686 pipe2([3, 4], O_CLOEXEC)          = 0
+23686 clone3({flags=CLONE_VM|CLONE_VFORK|CLONE_CLEAR_SIGHAND, exit_signal=SIGCHLD, stack=0x77470d8e6000, stack_size=0x9000}, 88 <unfinished ...>
+23690 dup2(4, 1)                        = 1
+23690 execve("/bin/sh", ["sh", "-c", "--", "exit 7"], 0x7ffe29262838 /* 69 vars */ <unfinished ...>
+23686 <... clone3 resumed>)             = 23690
+23690 <... execve resumed>)             = 0
+23686 close(4)                          = 0
+23686 close(3)                          = 0
+23686 wait4(23690 <unfinished ...>
+23690 close(3)                          = 0
+23690 close(3)                          = 0
+23690 close(3)                          = 0
+23690 close(3)                          = 0
+23690 close(3)                          = 0
+23690 close(3)                          = 0
+23690 close(3)                          = 0
+23690 +++ exited with 7 +++
+23686 <... wait4 resumed>, [{WIFEXITED(s) && WEXITSTATUS(s) == 7}], 0, NULL) = 23690
+23686 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=23690, si_uid=1000, si_status=7, si_utime=0, si_stime=0} ---
+23686 +++ exited with 0 +++

@@ -1,0 +1,18 @@
+$ ./m10 -O0(受保护区拆进 noinline 函数:外层带析构也活)
+  [filter] code=0xC0000005
+guarded_probe -> -1 faulted=1 (expect -1/1)
+s still alive: outer has dtors, fine
+done
+exit=0
+
+$ ./m10 -O2(同样代码,-O2 代码生成抽奖:filter 跑了,落地翻车)
+  [filter] code=0xC0000005
+exit=5 (0xC0000005 截断)
+
+$ ./m10b -O2(处理块里加一句 printf 改变代码生成,又活了)
+  [filter] code=0xC0000005
+  [handler] in-block
+guarded_probe -> -1 faulted=1 (expect -1/1)
+s still alive: outer has dtors, fine
+done
+exit=0

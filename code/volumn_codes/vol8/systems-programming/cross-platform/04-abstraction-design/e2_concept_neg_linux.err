@@ -1,0 +1,33 @@
+../e2_concept_negative.cpp: In function ‘int main()’:
+../e2_concept_negative.cpp:43:26: error: no matching function for call to ‘drain(ShortSource&, int)’
+   43 |     std::string s = drain(shorty, 64);   // 这一行注定编不过
+      |                     ~~~~~^~~~~~~~~~~~
+  • there is 1 candidate
+    • candidate 1: ‘template<class S>  requires  ByteSource<S> std::string drain(S&, std::size_t)’
+      ../e2_concept_negative.cpp:28:13:
+         28 | std::string drain(S& src, std::size_t limit)
+            |             ^~~~~
+      • template argument deduction/substitution failed:
+        • constraints not satisfied
+          • ../e2_concept_negative.cpp: In substitution of ‘template<class S>  requires  ByteSource<S> std::string drain(S&, std::size_t) [with S = ShortSource]’:
+          • required from here
+            ../e2_concept_negative.cpp:43:26:   
+               43 |     std::string s = drain(shorty, 64);   // 这一行注定编不过
+                  |                     ~~~~~^~~~~~~~~~~~
+          • required for the satisfaction of ‘ByteSource<S>’ [with S = ShortSource]
+            ../e2_concept_negative.cpp:14:9:   
+               14 | concept ByteSource = requires(S& s, void* buf, std::size_t n) {
+                  |         ^~~~~~~~~~
+          • in requirements with ‘S& s’, ‘void* buf’, ‘std::size_t n’ [with S = ShortSource]
+            ../e2_concept_negative.cpp:14:22:   
+               14 | concept ByteSource = requires(S& s, void* buf, std::size_t n) {
+                  |                      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+               15 |     { s.read_some(buf, n) } -> std::same_as<std::size_t>;
+                  |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+               16 | };
+                  | ~                     
+          • the required expression ‘s.read_some(buf, n)’ is invalid
+            ../e2_concept_negative.cpp:15:18:
+               15 |     { s.read_some(buf, n) } -> std::same_as<std::size_t>;
+                  |       ~~~~~~~~~~~^~~~~~~~
+          • set ‘-fconcepts-diagnostics-depth=’ to at least 2 for more detail

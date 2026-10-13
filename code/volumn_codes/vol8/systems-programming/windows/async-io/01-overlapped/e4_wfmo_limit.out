@@ -1,0 +1,17 @@
+[     0 ms] MAXIMUM_WAIT_OBJECTS 编译期常量 = 64
+[     0 ms] == WaitForMultipleObjects:nCount 从 63 加到 130 ==
+[   203 ms] nCount=  1 → 返回 WAIT_TIMEOUT, gle=0
+[   203 ms] nCount= 63 → 返回 WAIT_OBJECT_0+5 (点名索引 5), gle=0
+[   203 ms] nCount= 64 → 返回 WAIT_OBJECT_0+5 (点名索引 5), gle=0
+[   203 ms] nCount= 65 → 返回 WAIT_FAILED, gle=87(87=ERROR_INVALID_PARAMETER)
+[   203 ms] nCount= 66 → 返回 WAIT_FAILED, gle=87(87=ERROR_INVALID_PARAMETER)
+[   203 ms] nCount=100 → 返回 WAIT_FAILED, gle=87(87=ERROR_INVALID_PARAMETER)
+[   203 ms] nCount=130 → 返回 WAIT_FAILED, gle=87(87=ERROR_INVALID_PARAMETER)
+[   203 ms] == 边界复核:nCount=64、把信号放在最末一枚(索引 63) ==
+[   203 ms] nCount=64、信号在索引 63 → 返回 WAIT_OBJECT_0+63 (点名索引 63)
+[   203 ms] == MsgWaitForMultipleObjectsEx(消息队列占位的那一族):63 与 64 ==
+[   422 ms] nCount=  1 → 返回 WAIT_TIMEOUT, gle=0
+[   422 ms] nCount= 63 → 返回 WAIT_OBJECT_0+5 (点名索引 5), gle=0
+[   422 ms] nCount= 64 → 返回 WAIT_FAILED, gle=87(87=ERROR_INVALID_PARAMETER)
+[   422 ms] 结论注记:WFMO 墙立在 64/65 之间还是 63/64 之间,以上两段各判各的;MsgWait 族的消息队列名额是否坐实,看它俩的差别
+[   422 ms] e4 完

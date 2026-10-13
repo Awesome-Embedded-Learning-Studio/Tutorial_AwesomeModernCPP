@@ -1,0 +1,16 @@
+[    16 ms] 六发在途读按 1..6 投递,全部挂同一端口(写端将按 6..1 投喂,间隔 60ms)
+[    16 ms]   投递#1: ret=0 gle=997
+[    16 ms]   投递#2: ret=0 gle=997
+[    16 ms]   投递#3: ret=0 gle=997
+[    16 ms]   投递#4: ret=0 gle=997
+[    16 ms]   投递#5: ret=0 gle=997
+[    16 ms]   投递#6: ret=0 gle=997
+[    16 ms] 收割循环:单线程 GQCS 六连取
+[    94 ms]   完成第 1 个:是投递#6(GQCS ret=1 bytes=8 key=6 值=6)
+[   172 ms]   完成第 2 个:是投递#5(GQCS ret=1 bytes=8 key=5 值=5)
+[   234 ms]   完成第 3 个:是投递#4(GQCS ret=1 bytes=8 key=4 值=4)
+[   297 ms]   完成第 4 个:是投递#3(GQCS ret=1 bytes=8 key=3 值=3)
+[   344 ms]   完成第 5 个:是投递#2(GQCS ret=1 bytes=8 key=2 值=2)
+[   406 ms]   完成第 6 个:是投递#1(GQCS ret=1 bytes=8 key=1 值=1)
+[   406 ms]  投递序: 1 2 3 4 5 6;完成序: 6 5 4 3 2 1 
+[   406 ms] iocp-e2 完

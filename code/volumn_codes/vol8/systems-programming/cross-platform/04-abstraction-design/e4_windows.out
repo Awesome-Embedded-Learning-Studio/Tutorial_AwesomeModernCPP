@@ -1,0 +1,7 @@
+[A] indirect-virtual(predictable) :   1.04 ns/op  (目标交替,BTB 全命中,最好档)
+[A2] indirect-virtual(shuffled)    :   4.61 ns/op  (mt19937 乱序,预测失效,最坏档)
+[B] static(template)               :   0.75 ns/op  (编译期实例化,直接调用)
+[C] plain function                 :   0.76 ns/op  (普通调用锚,对齐 ch00 口径)
+[D] getpid anchor                  :   1.32 ns/op  (系统调用锚)
+[D2] GetProcessHandleCount anchor  : 157.41 ns/op  (必进内核的真系统调用对照)
+virtual overhead vs plain : best 1.37x worst 6.06x   vs true-syscall : best 1% worst 3%

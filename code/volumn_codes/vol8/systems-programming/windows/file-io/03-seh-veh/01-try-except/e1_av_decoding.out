@@ -1,0 +1,18 @@
+page=00000128a6bc0000 (PAGE_NOACCESS, size=0x1000)
+== round 0: read page
+  [SEH filter] code=0xC0000005 flags=0x00000000 fault-at=00007ff7a09815a3
+    info[0]=0 (READ)  info[1]=0x128A6BC0000
+-> result=-1
+== round 1: write page
+  [SEH filter] code=0xC0000005 flags=0x00000000 fault-at=00007ff7a09815ba
+    info[0]=1 (WRITE)  info[1]=0x128A6BC1234
+-> result=-1
+== round 2: read NULL
+  [SEH filter] code=0xC0000005 flags=0x00000000 fault-at=00007ff7a09815a3
+    info[0]=0 (READ)  info[1]=0x0
+-> result=-1
+== round 3: call into PAGE_READWRITE page (DEP)
+  [SEH filter] code=0xC0000005 flags=0x00000000 fault-at=00000128a6bd0000
+    info[0]=8 (EXEC/DEP)  info[1]=0x128A6BD0000
+-> result=-1
+done

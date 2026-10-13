@@ -1,0 +1,19 @@
+== route 1: predefined macros (compile-time, per target) ==
+  __linux        DEFINED  目标平台为 Linux(编译器声明)
+  __linux__      DEFINED  同上的带尾缀版本(gcc 历史习惯)
+  __GLIBC__      DEFINED  C 库是 glibc(版本见 __GLIBC_MINOR__)
+  _UCRT          absent   
+  _WIN32         absent   
+  _WIN64         absent   
+  __MINGW64__    absent   
+  __CYGWIN__     absent   
+  __APPLE__      absent   两侧都不该出现,作对照
+  __FreeBSD__    absent   kqueue 的家,本机没有
+== route 2: __has_include probes (compile-time, per toolchain) ==
+  <sys/epoll.h>      present  epoll 用户态接口(glibc 提供,内核 2.6 起才有机制)
+  <sys/event.h>      ABSENT   Linux 上没有 kqueue
+  <liburing.h>       present  io_uring 的辅助库(独立安装,非内核附属)
+  <windows.h>        ABSENT   
+  <sys/inotify.h>    present  inotify(Linux 独有)
+== runtime: uname(2) (information macros can never carry) ==
+  sysname=Linux release=6.18.33.2-microsoft-standard-WSL2 machine=x86_64

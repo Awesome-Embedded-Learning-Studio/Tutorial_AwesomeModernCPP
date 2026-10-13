@@ -1,0 +1,47 @@
+$ ./e1_reserve_commit.exe; echo "exit=$?"
+页=4096 字节  分配粒度=65536 字节  用户态上限=00007ffffffeffff
+
+== 步骤1:MEM_RESERVE 1 GiB(只预约地址,不占提交额度)==
+  [采样 预约前 ] WorkingSet=3668 KiB   CommitCharge(PagefileUsage)=536 KiB
+  VirtualAlloc(NULL,1GiB,MEM_RESERVE) = 0000024200000000  耗时 2 微秒
+  [采样 预约后 ] WorkingSet=3676 KiB   CommitCharge(PagefileUsage)=536 KiB
+  [VQ base          ] 0000024200000000..0000024240000000 State=RESERVE Protect=000000 Type=PRIVATE  AllocBase=0000024200000000 RegionSize=0x40000000
+  [VQ base+1GiB-1   ] 000002423ffff000..0000024240000000 State=RESERVE Protect=000000 Type=PRIVATE  AllocBase=0000024200000000 RegionSize=0x00001000
+
+== 步骤2:子区间提交 + 触碰 ==
+  提交 base..base+64KiB(RW) -> 成功
+  提交 base+1MiB..+8KiB(RW) -> 成功
+  [采样 提交后未触碰] WorkingSet=3680 KiB   CommitCharge(PagefileUsage)=616 KiB
+  [VQ base          ] 0000024200000000..0000024200010000 State=COMMIT  Protect=0x0004 Type=PRIVATE  AllocBase=0000024200000000 RegionSize=0x00010000
+  [VQ base+64KiB    ] 0000024200010000..0000024200100000 State=RESERVE Protect=000000 Type=PRIVATE  AllocBase=0000024200000000 RegionSize=0x000f0000
+  [VQ base+1MiB     ] 0000024200100000..0000024200102000 State=COMMIT  Protect=0x0004 Type=PRIVATE  AllocBase=0000024200000000 RegionSize=0x00002000
+  [采样 触碰后 ] WorkingSet=3752 KiB   CommitCharge(PagefileUsage)=616 KiB
+  (提交 +72KiB 在先,WS 只长了被摸过的 ~18 页 —— 提交是承诺,触碰才占物理)
+
+== 步骤3:MEM_COMMIT 直接分配(不预保留)==
+  p1 = 000002426e2d0000
+  p2 = 000002426e500000
+  p3 = 000002426e510000
+  p2-p1=0x230000  p3-p2=0x10000(本轮没连上 —— 中间被别的分配占了空洞)
+  [VQ p1            ] 000002426e2d0000..000002426e2e0000 State=COMMIT  Protect=0x0004 Type=PRIVATE  AllocBase=000002426e2d0000 RegionSize=0x00010000
+  [VQ p2            ] 000002426e500000..000002426e510000 State=COMMIT  Protect=0x0004 Type=PRIVATE  AllocBase=000002426e500000 RegionSize=0x00010000
+  q1=000002426e520000 q2=000002426e530000(各要 1 页,地址仍隔 64KiB)
+  [VQ q1            ] 000002426e520000..000002426e521000 State=COMMIT  Protect=0x0004 Type=PRIVATE  AllocBase=000002426e520000 RegionSize=0x00001000
+  [VQ q1+4KiB       ] 000002426e521000..000002426e530000 State=FREE    Protect=0x0001 Type=-        AllocBase=0000000000000000 RegionSize=0x0000f000
+  [VQ q1+128KiB(下个粒度)] 000002426e540000..00007ff42bcf0000 State=FREE    Protect=0x0001 Type=-        AllocBase=0000000000000000 RegionSize=0x7db1bd7b0000
+
+== 步骤4:释放语义 ==
+  VirtualFree(base+64KiB,64KiB,MEM_RELEASE) -> 失败 GetLastError=87(ERROR_INVALID_PARAMETER)
+  VirtualFree(base,4KiB,MEM_RELEASE)(dwSize 非 0) -> 失败 GetLastError=87(ERROR_INVALID_PARAMETER)
+  VirtualFree(base,64KiB,MEM_DECOMMIT) -> 成功
+  [VQ base(退提交后)] 0000024200000000..0000024200100000 State=RESERVE Protect=000000 Type=PRIVATE  AllocBase=0000024200000000 RegionSize=0x00100000
+  [采样 退提交后] WorkingSet=3704 KiB   CommitCharge(PagefileUsage)=752 KiB
+  再提交 base..+64KiB(退提交可逆) -> 成功
+  [VQ base(再提交后)] 0000024200000000..0000024200010000 State=COMMIT  Protect=0x0004 Type=PRIVATE  AllocBase=0000024200000000 RegionSize=0x00010000
+  VirtualFree(base,0,MEM_RELEASE)(整块归还,含仍在提交的 +1MiB 子区间) -> 成功
+  [VQ base(归还后)] 0000024200000000..000002426e140000 State=FREE    Protect=0x0001 Type=-        AllocBase=0000000000000000 RegionSize=0x6e140000
+  VirtualFree(p1,0,MEM_RELEASE) -> 成功
+  [VQ p1(已 FREE)  ] 000002426e2d0000..000002426e2e0000 State=FREE    Protect=0x0001 Type=-        AllocBase=0000000000000000 RegionSize=0x00010000
+  [VQ p2(仍在)    ] 000002426e500000..000002426e510000 State=COMMIT  Protect=0x0004 Type=PRIVATE  AllocBase=000002426e500000 RegionSize=0x00010000
+  (p1 只放掉自己的 0x10000 —— 每笔 VirtualAlloc 是独立预约,相邻≠一体)
+exit=0

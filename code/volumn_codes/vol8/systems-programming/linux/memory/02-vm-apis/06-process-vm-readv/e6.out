@@ -1,0 +1,5 @@
+parent read child's memory: 32 bytes ->
+   child  has [0xc0de0000 0xc0de0001 .. 0xc0de0007]
+   parent has [0x00000000 0x00000001 .. 0x00000007] (untouched, COW)
+read unmapped remote addr : rc=-1 errno=14 (Bad address)
+read bogus pid            : rc=-1 errno=3 (No such process)

@@ -1,0 +1,16 @@
+  == E4a: 本进程地址空间里的内核映射(/proc/self/maps) ==
+  74ee78792000-74ee78796000 r--p 00000000 00:00 0                          [vvar]
+  74ee78796000-74ee78798000 r--p 00000000 00:00 0                          [vvar_vclock]
+  74ee78798000-74ee7879a000 r-xp 00000000 00:00 0                          [vdso]
+  vdso 一行就是内核提前映射进来的代码与数据;vvar 是它只读的数据页(时钟源的换算参数)
+  
+  == E4b: 每次读取的代价(10000000 次) ==
+  clock_gettime(vDSO)   : 16.6 ns/次
+  syscall(SYS_clock_gettime): 169.1 ns/次(强制真陷入)
+  倍数: 10.2x —— 同一个函数,免陷入的差距就在这里
+  
+  == E4c: 证据链怎么读 ==
+  1) maps 里 [vdso]/[vvar] 在场;
+  2) 代价差出一个数量级上下(与 00-overview 的「一次系统调用≈一两百 ns」对表);
+  3) strace 挂上看不到 clock_gettime 系统调用(t4_vdso_strace.txt:vDSO 版 0 次,
+     syscall 版 2,000,000 次,同一个程序两种编法)。

@@ -1,0 +1,46 @@
+
+==== a) F_GETFD / F_SETFD:fd 标志,一位 FD_CLOEXEC,住 fd 表项 ====
+出生时 F_GETFD      = 0(0,无标志)
+F_SETFD(CLOEXEC) 后   = 1(FD_CLOEXEC 已设)
+F_SETFD(0) 清除后   = 0(0,无标志)
+
+==== b) F_DUPFD(n):dup 的等价物,但可以指定下限 ====
+dup(fd=3)               = 4   (最低空闲)
+fcntl(fd, F_DUPFD, 20)       = 20   (>=20 的最低空闲)
+fcntl(fd, F_DUPFD_CLOEXEC,20)= 21   (一步到位)
+注意此刻原件已把 FD_CLOEXEC 清掉,三者 F_GETFD 应为 0/0/CLOEXEC:
+  d_low F_GETFD        = 0(0,无标志)
+  d_20  F_GETFD        = 0(0,无标志)
+  d_21  F_GETFD        = 1(FD_CLOEXEC 已设)
+
+==== c) F_GETFL:访问模式 + 状态标志,O_ACCMODE 抠出访问模式 ====
+F_GETFL(O_RDWR open)   raw=0100002  accmode=O_RDWR
+F_SETFL 加 O_APPEND 后 raw=0102002  accmode=O_RDWR |O_APPEND
+
+==== d) F_SETFL 是整体覆盖:不先 F_GETFL,O_APPEND 会被冲掉 ====
+F_SETFL(O_NONBLOCK) 后 raw=0104002  accmode=O_RDWR |O_NONBLOCK
+O_APPEND 没了——正确姿势是 F_GETFL 读出来、按位或、再 F_SETFL:
+补救后              raw=0106002  accmode=O_RDWR |O_APPEND |O_NONBLOCK
+
+==== e) F_SETFL 改不动访问模式 ====
+O_RDONLY open 的 F_GETFL raw=0100000  accmode=O_RDONLY
+fcntl(rd, F_SETFL, O_RDWR|O_NONBLOCK) = 0(居然成功)
+再看 F_GETFL         raw=0104000  accmode=O_RDONLY |O_NONBLOCK
+write(rd,...) = -1, errno=9(EBADF)  <- 访问模式纹丝不动,白塞
+
+==== f) 改标志别重开:F_SETFL 动原描述保偏移,重新 open 得到新描述 ====
+fd   当前偏移 lseek(fd,0,SEEK_CUR)   = 10
+fd2  重新 open 的偏移 = 0  <- 各是各的描述,和 fd 的 10 互不相认
+     (fd2 带着 O_APPEND 出生,lseek 看到的偏移要到 write 那刻才被内核挪到文件尾)
+fd   F_SETFL 摘掉 O_APPEND 后偏移      = 10  <- 还是那个描述,偏移没动
+
+==== g) F_SETFL 加 O_NONBLOCK:同一条 read 从阻塞变 -1/EAGAIN(FIFO) ====
+出生(阻塞)         raw=0100002  accmode=O_RDWR
+此时 read 会永远阻塞,咱们不真调;F_SETFL 加 O_NONBLOCK 再看:
+F_SETFL 后            raw=0104002  accmode=O_RDWR |O_NONBLOCK
+read(f,...) = -1, errno=11 = EAGAIN(Linux 上与 EWOULDBLOCK 同值)  <- 没数据就立刻返回,不再等
+
+==== h) 归属总对照:同一个 fd 复制件,两族标志两种待遇 ====
+            f(原件)   g(F_DUPFD 复制件)
+O_NONBLOCK  有      有      <- 状态标志在描述上,两个 fd 共享
+FD_CLOEXEC  有      无      <- fd 标志在表项上,复制件不带走

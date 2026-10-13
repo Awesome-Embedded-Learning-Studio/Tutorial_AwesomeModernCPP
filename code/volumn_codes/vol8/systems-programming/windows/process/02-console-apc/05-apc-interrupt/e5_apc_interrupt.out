@@ -1,0 +1,14 @@
+$ ./e5_apc_interrupt.exe
+[E5] main tid=30648
+[1] w1 卡在可警告等待;main 睡 400ms 后 QueueUserAPC(wake_w1, reason=42)
+[w1] tid=16944 卡进 WaitForSingleObjectEx(never, INFINITE, /*alertable=*/TRUE)
+    [w1 的 APC] t=91862375 在 w1 原线程里跑,reason=42 —— 它把等待掐断
+[w1] t=91862375 提前返回 ret=192(WAIT_IO_COMPLETION=192),原计划等到世界末日,只撑了 407ms
+[w1] 收尾返回 0 —— 自己退的,没人 TerminateThread
+    main 观察:w1 join=0(0=回来了),线程退出码=0,reason_w1=42(42=APC 真跑了)
+[2] 对照 w2 卡在【不可警告】等待;main 排 APC(reason=7)再观察 800ms
+[w2] tid=6800 卡进 WaitForSingleObject(never, INFINITE) —— 不可警告
+    800ms 后:w2 状态=258(258=STILL_WAITING 还卡着),reason_w2=0(0=APC 没跑)
+[w2] t=91863578 醒了 ret=0:唤醒我的是 SetEvent,不是 APC(g_reason_w2 仍是 0)
+    SetEvent 后 w2 join=0 退出码=0,reason_w2=0(仍 0:线程退出时积压 APC 作废)
+[E5] done —— APC 只掐得动可警告等待;线程没进过可警告点就退出,排进去的 APC 白排

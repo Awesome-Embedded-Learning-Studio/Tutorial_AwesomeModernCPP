@@ -1,0 +1,66 @@
+E1 CreateProcessW anatomy | parent pid=21852
+== [0] STARTUPINFOEX + PROC_THREAD_ATTRIBUTE_LIST:句柄白名单继承 ==
+parent opened log_a/log_b both inheritable; whitelist contains ONLY log_a
+    [child] WriteFile(h_a=232) -> 1 (err=0)
+    [child] WriteFile(h_b=236) -> 0 (err=5)
+    -> exit code=9 (0x00000009)
+    log_a (whitelisted) content: "hello from child via inherited handle
+"
+    log_b (NOT whitelisted) content: ""
+
+== [1] lpApplicationName vs lpCommandLine:路径搜索规则 ==
+staged: PATH gets 'plain' dir; CWD='cwd' (empty); parent dir has no fakeecho.exe
+(a) app=NULL, cmdline='fakeecho.exe found_via_path'
+    [child echo] argv[0]    = fakeecho.exe
+    [child echo] real module= C:\Users\CHARLI~2\AppData\Local\Temp\vol8_e1\plain\fakeecho.exe
+    [child echo] GetCommandLineW() = fakeecho.exe echo found_via_path
+    -> exit code=0 (0x00000000)
+(b) app=L'fakeecho.exe' (relative, CWD lacks it)
+    CreateProcessW failed err=2  <-- app name resolves against CWD ONLY, no PATH search
+(c) app=<abs 'with space' path>, cmdline='TOTALLY_FAKE_ARGV0.EXE arg1'
+    [child echo] argv[0]    = TOTALLY_FAKE_ARGV0.EXE
+    [child echo] real module= C:\Users\CHARLI~2\AppData\Local\Temp\vol8_e1\with space\fakeecho.exe
+    [child echo] GetCommandLineW() = TOTALLY_FAKE_ARGV0.EXE echo arg1
+    -> exit code=0 (0x00000000)
+    ^ argv[0] came from cmdline token, NOT from where the exe really loaded
+(d) app=NULL, UNQUOTED '<abs with space> x', WITH decoy 'with.exe' planted (= Program.exe attack)
+    [child dump] argc=3 argv[0]=C:\Users\CHARLI~2\AppData\Local\Temp\vol8_e1\with argv[1]=space\fakeecho.exe
+    [child dump] real module= C:\Users\CHARLI~2\AppData\Local\Temp\vol8_e1\with.exe
+    [child dump] GetCommandLineW() = C:\Users\CHARLI~2\AppData\Local\Temp\vol8_e1\with space\fakeecho.exe x
+    -> exit code=1 (0x00000001)
+(d2) decoy removed, SAME unquoted cmdline
+    [child dump] argc=2 argv[0]=C:\Users\CHARLI~2\AppData\Local\Temp\vol8_e1\with space\fakeecho.exe argv[1]=x
+    [child dump] real module= C:\Users\CHARLI~2\AppData\Local\Temp\vol8_e1\with space\fakeecho.exe
+    [child dump] GetCommandLineW() = "C:\Users\CHARLI~2\AppData\Local\Temp\vol8_e1\with space\fakeecho.exe" x
+    -> exit code=1 (0x00000001)
+(e) app=NULL, cmdline=QUOTED "<abs with space>" x
+    [child echo] argv[0]    = C:\Users\CHARLI~2\AppData\Local\Temp\vol8_e1\with space\fakeecho.exe
+    [child echo] real module= C:\Users\CHARLI~2\AppData\Local\Temp\vol8_e1\with space\fakeecho.exe
+    [child echo] GetCommandLineW() = "C:\Users\CHARLI~2\AppData\Local\Temp\vol8_e1\with space\fakeecho.exe" echo x
+    -> exit code=0 (0x00000000)
+
+== [2] 双句柄分工 + CREATE_SUSPENDED 两段式(先配置再跑) ==
+spawning suspended; token file does NOT exist yet
+phase 1 done: token written while child is still frozen
+phase 2: ResumeThread -> prev suspend count=1
+hThread closed; process keeps running (hProcess still waits)
+    [child config] token read AFTER resume: TOKEN=0xC0FFEE
+exit code=7 (7 = token verified, 13 = missing/bad token)
+
+== [3] lpEnvironment:NULL 继承 vs 自建(替换不合并) ==
+(a) lpEnvironment=NULL -> child inherits parent block
+    [child env] VOL8_E1_MARKER=inherited-from-parent
+    [child env] PATH=(present)
+    [child env] environment entries=46
+    -> exit code=0 (0x00000000)
+(b1) minimal custom block (marker+SYSTEMROOT, NO PATH) -> loader cannot even start us
+    -> exit code=3221225781 (0xC0000135)
+    ^ 0xC0000135 = STATUS_DLL_NOT_FOUND: dynamic exe needs PATH to find ucrt runtime DLLs
+(b2) custom block + PATH hand-carried -> starts, and parent's other vars are GONE
+    [child env] VOL8_E1_MARKER=custom-block-REPLACES
+    [child env] PATH=(present)
+    [child env] environment entries=3
+    -> exit code=0 (0x00000000)
+    ^ entries count = exactly what we put in (no merge); parent marker value REPLACED
+
+E1 done.

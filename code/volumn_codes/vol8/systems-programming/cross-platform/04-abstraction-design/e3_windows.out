@@ -1,0 +1,6 @@
+sizeof: int=4 intptr_t=8 void*=8 HANDLE=8
+raw HANDLE        = 0xb0
+roundtrip HANDLE  = 0xb0  identical=yes
+_open_osfhandle   -> crt fd = 3 (ok)
+_read(crt fd)     -> 26 bytes: 'bridge via _open_osfhandle'
+_get_osfhandle    -> 0xb0  identical=yes

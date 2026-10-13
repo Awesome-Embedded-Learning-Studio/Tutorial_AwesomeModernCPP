@@ -1,0 +1,6 @@
+活着:pid=26437,开始三次注定失败的 exec
+1) execve(路径不存在) 返回 -1,errno=2(No such file or directory)
+2) execv(文件在、没 x 权限) 返回 -1,errno=13(Permission denied)
+3) execlp(PATH 里翻不到) 返回 -1,errno=2(No such file or directory)
+三次失败后我还活着:pid=26437 —— exec 只有成功才有去无回,失败就是普通的函数返回
+所以 exec 后面跟 perror+exit 不是摆设,是失败路径;只有 exec 返回了,才是失败了

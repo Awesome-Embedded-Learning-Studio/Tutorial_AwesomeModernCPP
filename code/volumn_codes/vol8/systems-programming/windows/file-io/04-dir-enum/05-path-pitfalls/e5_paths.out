@@ -1,0 +1,35 @@
+== [1] 长路径:260 的墙与 \\?\ 的梯子 ==
+  本机注册表 HKLM\...\FileSystem\LongPathsEnabled=1,但那是给带清单的应用的;
+  本 exe 无 longPathAware 清单,裸路径仍按 MAX_PATH=260 裁。8 层 × 40 字符下钻:
+    第 5 层倒下:路径 274 字符,err=3(3=ERROR_PATH_NOT_FOUND)
+    \\?\ 前缀把 8 层建完:总长 404 字符(含前缀 4 字符,去掉前缀 400 字符)
+    最深层的第 8 层目录(404 字符):
+    裸路径 GetFileAttributesW       -> attr=0xffffffff err=3
+    \\?\ 前缀 GetFileAttributesW     -> attr=0x10 err=1234
+    裸路径 FindFirstFileW \*        -> 失败 err=3
+    \\?\ 前缀 FindFirstFileW \*      -> 成功(枚举到 "." 与 "..",证明通配符路径也能带前缀)
+
+== [2] 正反斜杠 ==
+    CreateFileW 全正斜杠 C:/.../slash.txt:成功(Win32 层 '/' 与 '\\' 等效)
+    FindFirstFileW 混用 "C:\...\\e5/*":成功 err=1234
+    \\?\ 设备路径里混正斜杠 -> 失败 err=123(123=ERROR_INVALID_NAME,设备路径不归一化)
+
+== [3] 尾部反斜杠 ==
+    CreateDirectoryW "newdir\\"          -> 成功 err=1234(尾杠收下)
+    GetFileAttributesW "dir\\"            -> attr=0x10 err=1234
+    CreateFileW(开目录) "dir\\"          -> 成功 err=0
+    FindFirstFileW "dir\\"(无通配符)     -> 失败 err=2(2=当模式匹配,啥也匹配不上)
+    FindFirstFileW "dir\\\\*"(双杠+通配)   -> 成功 err=1234(冗余分隔符被容忍)
+
+== [4] std::filesystem 对拍(Linux E5 的镜像) ==
+    value_type 宽度 2 字节(Linux 侧是 1 字节 char),native()/c_str() 是 wchar_t 系
+    path("base") / "leaf" = "base\leaf"
+    path("base") / "C:/abs" = "C:/abs"
+    path("base\") / "leaf" = "base\leaf"
+    path("base\\") / "leaf" = "base\\leaf"
+    path("base") / "" = "base\"
+    lexically_normal("./a/../b") = "b"
+    path("C:/x") == path("C:\\x") ? 是(比较前先归一化正斜杠)
+    迭代 path("a/b/") 产: [a] [b] [](Windows 侧迭代器同样带出尾部空元素吗,看上面)
+
+(测试目录已清理;注意:深层目录的删除/创建全程靠 \\?\ 前缀才够得着)

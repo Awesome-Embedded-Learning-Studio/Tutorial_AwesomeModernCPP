@@ -1,0 +1,12 @@
+大父进程已就位:VmRSS=1052516 kB(1 GiB 已逐页触碰)
+--- 大父进程(1 GiB)口径 ---
+fork 仅创建                 min=  30397.1  p50=  31585.5  mean=  31663.4  max=  32643.6  (µs, n=30)
+vfork 仅创建                min=     66.9  p50=     74.8  mean=     76.9  max=    107.3  (µs, n=30)
+fork+exec /bin/true            min=  31189.3  p50=  32117.8  mean=  32226.9  max=  33615.0  (µs, n=30)
+posix_spawn /bin/true          min=    446.2  p50=    480.7  mean=    492.7  max=    689.7  (µs, n=30)
+--- 小父进程(对照组,VmRSS≈几 MB)口径 ---
+小父 fork 仅创建          min=    217.0  p50=    232.6  mean=    234.8  max=    269.1  (µs, n=30)
+小父 vfork 仅创建         min=     66.2  p50=     71.2  mean=     74.2  max=    101.8  (µs, n=30)
+小父 posix_spawn /bin/true   min=    453.6  p50=    486.2  mean=    488.7  max=    558.3  (µs, n=30)
+解读:fork 的成本随父进程已触碰内存线性涨(复制的是页表+RSS 记账,不是页本身);
+      vfork/posix_spawn 不复制页表,对 1 GiB 父进程依然只有几十 µs。

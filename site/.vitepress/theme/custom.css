@@ -1355,8 +1355,8 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
 
 /* ── Features Grid ───────────────────────────────────────────── */
 
-/* VitePress 默认渲染的首页卡网格整体隐藏：16 卡已由 HomePathExplorer 的
-   「全部内容」视图(HomeFeatureGrid,读同一份 frontmatter)接管。
+/* VitePress 默认渲染的首页卡网格整体隐藏：首页卡片已由 HomePathExplorer 的
+   「全部内容」卡片区(HomeFeatureGrid,读同一份 frontmatter)接管。
    .VPHomeFeatures 只在 layout: home 渲染(全仓仅中英两个首页),不影响其他页面;
    隐藏副本仍留在 DOM 中(SEO 无损),但移出 tab 序,交互归自渲染副本。 */
 .VPHomeFeatures {
@@ -2064,4 +2064,14 @@ body.rs-resizing {
    position, 全站 26 张 drawio 共用此修复) */
 .mxgraph {
   position: relative;
+}
+
+/* ── 便签定位高亮(noteDom 的 CSS Custom Highlight,渐进增强) ────── */
+
+::highlight(note-flash) {
+  background-color: rgba(37, 99, 235, 0.22);
+  text-decoration: underline;
+  text-decoration-color: var(--vp-c-brand-1);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
 }

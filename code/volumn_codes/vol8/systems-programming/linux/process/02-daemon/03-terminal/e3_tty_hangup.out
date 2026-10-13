@@ -1,0 +1,15 @@
+== E3 终端死亡 -> SIGHUP ==
+父 pid=13448(旁观者)开了一对 pty:master=4 slave=5
+
+会话长 pid=13449: 控制终端=/dev/pts/10, sid=13449 pgid=13449(前台组),
+  它不装 SIGHUP handler,缺省动作 = 终止
+
+父: 一切就绪,close(master=4) —— 模拟"终端先死"
+[SIGHUP] pid=13451 t=+151ms
+组员 pid=13451: 捕获 SIGHUP 后主动退出(缺省动作本该把我终止)
+[SIGHUP] pid=13450 t=+151ms
+组员 pid=13450: 捕获 SIGHUP 后主动退出(缺省动作本该把我终止)
+
+父: waitpid(会话长) -> 被 Hangup 处决(缺省动作如约而至)
+结论: 终端一死,前台组人人有份 SIGHUP——
+这就是守护进程第一步就 setsid 脱离终端的原因:不做,进程的命就拴在终端上

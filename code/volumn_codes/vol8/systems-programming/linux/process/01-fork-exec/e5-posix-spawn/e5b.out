@@ -1,0 +1,17 @@
+场景一 addopen:子退出码=0,stdout 被换进了文件:
+  /home/charliechen/lp01_scratch/e5b_out1.txt 的内容:场景一:我明明是 echo,输出却进了文件
+场景二 adddup2:子退出码=0(父进程的 fd 3 没动,还是开着的):
+  /home/charliechen/lp01_scratch/e5b_out2.txt 的内容:场景二:输出经父进程开的 fd 落地
+场景三 对照一,不做任何动作,子进程 ls 自己的 fd 清单:
+total 0
+lr-x------ 1 charliechen charliechen 64 Oct  4 11:09 0 -> /dev/null
+l-wx------ 1 charliechen charliechen 64 Oct  4 11:09 1 -> /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/process/01-fork-exec/e5-posix-spawn/e5b.out
+l-wx------ 1 charliechen charliechen 64 Oct  4 11:09 2 -> /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/process/01-fork-exec/e5-posix-spawn/e5b.out
+lr-x------ 1 charliechen charliechen 64 Oct  4 11:09 3 -> /proc/26523/fd
+
+场景三 对照二,addclose(0) 之后,同一清单:fd 0 空出来,被 ls 自己的
+目录句柄按最低空闲号复用(看 0 -> 的链接目标):
+total 0
+lr-x------ 1 charliechen charliechen 64 Oct  4 11:09 0 -> /proc/26524/fd
+l-wx------ 1 charliechen charliechen 64 Oct  4 11:09 1 -> /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/process/01-fork-exec/e5-posix-spawn/e5b.out
+l-wx------ 1 charliechen charliechen 64 Oct  4 11:09 2 -> /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/process/01-fork-exec/e5-posix-spawn/e5b.out

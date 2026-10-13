@@ -1,0 +1,27 @@
+== E5a 环境变量家族 ==
+environ 指针数组条目数 = 69
+maps [stack]: 7fff3886b000-7fff3888d000 rw-p 00000000 00:00 0                          [stack]
+environ 数组本身在     0x7fff3888ad98
+environ[0] 字符串在    0x7fff3888b6ab
+argv[0] 字符串在       0x7fff3888b69e
+main 的局部变量在      0x7fff3888aa0c
+malloc 的堆块在        0x63a8d7c5f920
+判定: environ 数组在 [stack] 内? 是 ; environ[0] 字符串在 [stack] 内? 是
+(exec 时内核把 argv/envp 数组和字符串铺在栈顶,libc 的 environ 就指过去)
+
+遍历 environ 找 PATH(手工 strncmp): environ[17]="PATH=/home/charliechen/.local/bin:/opt/arm-gnu-t..."
+getenv("PATH")            = "/home/charliechen/.local/bin:/opt/arm-gnu-toolch..."
+
+setenv(E5_VAR, "v1", 0)  返回 0(不存在则新建)
+setenv(E5_VAR, "v2", 0) 后 getenv = v1(overwrite=0: 已存在则不动)
+setenv(E5_VAR, "v3", 1) 后 getenv = v3(overwrite=1: 覆盖)
+unsetenv("E5_VAR")   后 getenv = (nil)(不存在时返回 NULL)
+
+putenv 陷阱(man 3 putenv: 字符串归环境所有,glibc 不做拷贝):
+putenv(buf 内容 "E5_PUT=aaa") 后 getenv = aaa
+只把 buf 改成 "E5_PUT=zzz"     后 getenv = zzz  <-- 环境直接引用了 buf
+推论: 传栈上/临时的缓冲区给 putenv,函数返回后 environ 就悬垂了(man 的原话:
+       "the string becomes part of the environment")
+
+setenv/putenv 折腾完: 条目数=70, environ 数组现在在 0x63a8d7c5f940
+判定: 还在 [stack] 内? 否,已搬到堆上(第一次扩容时 libc 在堆上另建了数组)

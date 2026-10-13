@@ -1,0 +1,12 @@
+== E6 memfd_create:匿名内存的 fd 化 ==
+
+[1] memfd_create("lm03_memfd", MFD_CLOEXEC) = fd 3
+[2] ftruncate 4096 + mmap MAP_SHARED + 写入 "hello-memfd" 完成
+  readlink(/proc/self/fd/3) -> /memfd:lm03_memfd (deleted)
+$ ls -l /dev/shm
+total 0
+    ↑ /dev/shm 里没有它:memfd 不占名字空间,名字只是 /proc 里的标签
+[3] 同名再建一个 memfd(fd=4):两个实体互不影响——fd1 处是 "hello-memfd",fd2 处是 "second-object"
+  readlink(/proc/self/fd/4) -> /memfd:lm03_memfd (deleted)
+[4] 收尾:close 两个 fd,引用计数归零对象即消失——没有 shm_unlink 这一步;
+    想给别的进程用就传 fd 本身(SCM_RIGHTS,见 E3 的 fdpass)——ch03 IPC 篇细讲

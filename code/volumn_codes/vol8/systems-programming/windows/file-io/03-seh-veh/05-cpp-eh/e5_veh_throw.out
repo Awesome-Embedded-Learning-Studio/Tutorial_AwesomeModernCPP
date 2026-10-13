@@ -1,0 +1,11 @@
+VEH in place. dispatch_count=0
+== throw std::runtime_error,外面有 catch ==
+  [VEH dispatch #1] code=0x20474343
+  caught: from e5 (dispatch_count=1,应为 1)
+== throw 一个 int ==
+  [VEH dispatch #2] code=0x20474343
+  caught int 42 (dispatch_count=2,还是 1 —— catch 不再产生异常分发)
+== 再 throw 一次(计数应到 2,每次 throw 恰好一次分发)==
+  [VEH dispatch #3] code=0x20474343
+  caught: second (dispatch_count=3)
+done

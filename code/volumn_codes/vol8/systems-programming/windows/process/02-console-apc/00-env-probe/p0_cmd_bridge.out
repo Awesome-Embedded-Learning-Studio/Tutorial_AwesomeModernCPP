@@ -1,0 +1,14 @@
+$ cmd.exe /c C:\msys64\tmp\p0_probe.exe   # cmd 桥接
+pid=18724 main_tid=3652
+GetConsoleWindow=0000000000000000  GetConsoleCP=936
+stdin FileType=3(PIPE)  stdout FileType=3(PIPE)
+GetConsoleProcessList n=2: 18724 17908
+CONIN$ mode=0x1F7 (ENABLE_PROCESSED_INPUT bit=1)
+[send CTRL_C_EVENT(0)] -> 1
+    calls after CTRL_C: 0
+[send CTRL_BREAK_EVENT(1)] -> 1
+    [handler] type=1 tid=8528
+    calls after CTRL_BREAK: 1
+[PROCESSED_INPUT forced ON, resend CTRL_C] -> 1
+    calls after forced-CTRL_C: 0
+total handler calls=1

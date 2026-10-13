@@ -1,0 +1,21 @@
+pid=167262, 文件:/home/charliechen/l05_scratch/e3/locks.bin
+fstat: inode=1690193(十进制), 设备 8:48(十进制) = 08:30(十六进制)
+
+  [     0 ms] 持锁者(pid=167263):flock(LOCK_EX) + F_SETLK W [0,100) 都已上身
+[   300 ms] /proc/locks 中 inode 1690193 的行:
+---- 锁全部在场 + 两个等待者被挡 ----
+19: POSIX  ADVISORY  WRITE 167263 08:30:1690193 0 99
+19: -> POSIX  ADVISORY  WRITE 167265 08:30:1690193 50 149
+20: FLOCK  ADVISORY  WRITE 167263 08:30:1690193 0 EOF
+20: -> FLOCK  ADVISORY  WRITE 167264 08:30:1690193 0 EOF
+    解码: 序号19: 类别=POSIX 性质=ADVISORY 类型=WRITE 属主pid=167263 设备:inode=08:30:1690193 区间=[0, 99]
+    解码: 序号19: 类别=POSIX 性质=ADVISORY 类型=WRITE 属主pid=167265 设备:inode=08:30:1690193 区间=[50, 149]
+    解码: 序号20: 类别=FLOCK 性质=ADVISORY 类型=WRITE 属主pid=167263 设备:inode=08:30:1690193 区间=[0, EOF]
+    解码: 序号20: 类别=FLOCK 性质=ADVISORY 类型=WRITE 属主pid=167264 设备:inode=08:30:1690193 区间=[0, EOF]
+  [  1000 ms] 持锁者:退场(两把锁随进程释放)
+  [   999 ms] F_SETLKW 等待者(pid=167265):拿到 [50,150),退场
+  [   999 ms] flock 等待者(pid=167264):拿到锁,退场
+
+[  1000 ms] 持锁者退场后,两个等待者都拿到了锁(见上)
+---- 全部退场后(应为空) ----
+(没有命中的行)

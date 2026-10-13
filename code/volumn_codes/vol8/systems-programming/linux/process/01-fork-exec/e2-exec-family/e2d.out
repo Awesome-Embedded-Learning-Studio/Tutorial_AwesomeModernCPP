@@ -1,0 +1,9 @@
+[e2d] 代码里调用的包装:execl
+[e2d] 经 execl 到达 echo
+[e2d] 代码里调用的包装:execlp
+[e2d] 经 execlp(PATH 搜到 echo)到达
+[e2d] 代码里调用的包装:execvp
+[e2d] 经 execvp(PATH 搜到 echo)到达
+[e2d] 再看 posix_spawn
+[e2d] 经 posix_spawn 到达
+[e2d] 全部完成:对照 .out 里 strace 记下的系统调用行

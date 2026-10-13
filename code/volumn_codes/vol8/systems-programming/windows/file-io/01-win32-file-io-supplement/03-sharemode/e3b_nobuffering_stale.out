@@ -1,0 +1,13 @@
+$ ./e3b_nobuffering_stale.exe
+[1] 基线:盘上铺满 0xAA
+    NO_BUFFERING 读 4096B -> 4096 字节,首 8 字节 = AA AA AA AA AA AA AA AA  <- AA,一致
+[2] 排列一:缓冲写 0xBB 后新开非缓冲句柄再读
+    WriteFile(缓冲) 写 4096B -> 4096,返回即"已进缓存"
+    新开的 NO_BUFFERING 读 -> 4096 字节,首 8 字节 = BB BB BB BB BB BB BB BB  <- BB,新鲜
+[3] 排列二:非缓冲读句柄先开好,跨过缓冲写在旧句柄上读
+    缓冲写 0xBB(读句柄全程开着,没有重新开门的机会)
+    旧 NO_BUFFERING 句柄读 -> 4096 字节,首 8 字节 = BB BB BB BB BB BB BB BB  <- BB,新鲜
+[4] FlushFileBuffers(写句柄)后复读
+    NO_BUFFERING 读 -> 4096 字节,首 8 字节 = BB BB BB BB BB BB BB BB  <- 刷盘后必然 BB
+
+收尾:临时文件与目录已清理

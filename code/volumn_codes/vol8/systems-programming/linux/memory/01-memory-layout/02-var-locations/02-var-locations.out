@@ -1,0 +1,86 @@
+== 各类变量地址(全部为同一次运行;ASLR 只影响运行之间) ==
+g_init(全局已初始化)                 = 0x64f4ed5941c0
+g_data_buf(64KB 已初始化)            = 0x64f4ed5841c0
+&g_bss_buf[0](1MB 未初始化起点)      = 0x64f4ed594220
+&g_bss_buf[512K](未初始化中段)       = 0x64f4ed614220
+g_bss_small(未初始化 int)            = 0x64f4ed594204
+&g_const(const 常量)                 = 0x64f4ed58163c (值=7,经指针实读)
+g_lit(字符串字面量)                  = 0x64f4ed58113b ("lm01-rodata-literal")
+s_init(static 局部已初始化)          = 0x64f4ed5841a0
+s_bss(static 局部未初始化)           = 0x64f4ed594200
+&stack_var(栈变量)                   = 0x7ffd34d6a97c
+stack_arr(栈数组)                    = 0x7ffd34d6ad60
+malloc(64)                           = 0x64f52aa1e020
+new int                              = 0x64f52aa1e070
+new char[4MB]                        = 0x712c35dff010
+mmap(2MB) 直配                       = 0x712c35a00000
+&probe_target(本程序函数)            = 0x64f4ed57cc60
+&probe_anchor2(本程序函数)           = 0x64f4ed57cc70
+&printf(libc 函数)                   = 0x712c3625b8b0
+
+== 与 /proc/self/maps 对表(地址 → 落在哪个段 → 与预期比对) ==
+g_init 全局已初始化              0x64f4ed5941c0  本程序 rw 段(.data+.bss 尾页)              预期:.data                        一致
+g_data_buf 64KB 已初始化         0x64f4ed5841c0  本程序 rw 段(.data+.bss 尾页)              预期:.data                        一致
+g_bss_buf[0] 1MB 未初始化起点    0x64f4ed594220  本程序 rw 段(.data+.bss 尾页)              预期:.bss(起点可能仍在文件 rw 段尾页)  一致
+g_bss_buf[512K] 1MB 未初始化中段  0x64f4ed614220  匿名 rw 段,紧贴本程序 rw 段 → .bss 接续页  预期:.bss(匿名接续页)             一致
+g_bss_small 未初始化 int         0x64f4ed594204  本程序 rw 段(.data+.bss 尾页)              预期:.bss(小变量,与 .data 同段混居)  一致
+g_const const 常量               0x64f4ed58163c  本程序 .rodata                             预期:.rodata                      一致
+字符串字面量                     0x64f4ed58113b  本程序 .rodata                             预期:.rodata                      一致
+s_init static 局部已初始化       0x64f4ed5841a0  本程序 rw 段(.data+.bss 尾页)              预期:.data                        一致
+s_bss static 局部未初始化        0x64f4ed594200  本程序 rw 段(.data+.bss 尾页)              预期:.bss(与 .data 同段混居)      一致
+stack_var 栈变量                 0x7ffd34d6a97c  [stack] 栈                                 预期:[stack]                      一致
+stack_arr 栈数组                 0x7ffd34d6ad60  [stack] 栈                                 预期:[stack]                      一致
+malloc(64)                       0x64f52aa1e020  [heap] 堆(brk)                             预期:[heap]                       一致
+new int                          0x64f52aa1e070  [heap] 堆(brk)                             预期:[heap]                       一致
+new char[4MB]                    0x712c35dff010  匿名映射(mmap 区)                          预期:匿名 mmap(超 128KiB 阈值)    一致
+mmap(2MB) 直配                   0x712c35a00000  匿名映射(mmap 区)                          预期:匿名 mmap                    一致
+&probe_target 本程序函数         0x64f4ed57cc60  本程序 .text                               预期:.text                        一致
+&printf libc 函数                0x712c3625b8b0  libc .text                                 预期:libc .text                   一致
+&probe_anchor2 本程序函数        0x64f4ed57cc70  本程序 .text                               预期:.text                        一致
+对表结果:18 项中 18 项一致
+
+== 同一次运行的 /proc/self/maps 原文(供逐行核对) ==
+64f4ed578000-64f4ed57a000 r--p 00000000 08:30 1689154                    /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/memory/01-memory-layout/02-var-locations/02-var-locations
+64f4ed57a000-64f4ed581000 r-xp 00002000 08:30 1689154                    /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/memory/01-memory-layout/02-var-locations/02-var-locations
+64f4ed581000-64f4ed583000 r--p 00009000 08:30 1689154                    /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/memory/01-memory-layout/02-var-locations/02-var-locations
+64f4ed583000-64f4ed584000 r--p 0000a000 08:30 1689154                    /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/memory/01-memory-layout/02-var-locations/02-var-locations
+64f4ed584000-64f4ed595000 rw-p 0000b000 08:30 1689154                    /home/charliechen/Tutorial_AwesomeModernCPP/code/volumn_codes/vol8/systems-programming/linux/memory/01-memory-layout/02-var-locations/02-var-locations
+64f4ed595000-64f4ed695000 rw-p 00000000 00:00 0 
+64f52aa0c000-64f52aa3f000 rw-p 00000000 00:00 0                          [heap]
+712c35a00000-712c35c00000 rw-p 00000000 00:00 0 
+712c35dff000-712c36200000 rw-p 00000000 00:00 0 
+712c36200000-712c36224000 r--p 00000000 08:30 1199257                    /usr/lib/libc.so.6
+712c36224000-712c3639f000 r-xp 00024000 08:30 1199257                    /usr/lib/libc.so.6
+712c3639f000-712c36415000 r--p 0019f000 08:30 1199257                    /usr/lib/libc.so.6
+712c36415000-712c36419000 r--p 00214000 08:30 1199257                    /usr/lib/libc.so.6
+712c36419000-712c3641b000 rw-p 00218000 08:30 1199257                    /usr/lib/libc.so.6
+712c3641b000-712c36423000 rw-p 00000000 00:00 0 
+712c365d3000-712c365d7000 r--p 00000000 08:30 1127341                    /usr/lib/libgcc_s.so.1
+712c365d7000-712c365fa000 r-xp 00004000 08:30 1127341                    /usr/lib/libgcc_s.so.1
+712c365fa000-712c365fe000 r--p 00027000 08:30 1127341                    /usr/lib/libgcc_s.so.1
+712c365fe000-712c365ff000 r--p 0002b000 08:30 1127341                    /usr/lib/libgcc_s.so.1
+712c365ff000-712c36600000 rw-p 0002c000 08:30 1127341                    /usr/lib/libgcc_s.so.1
+712c36600000-712c3669a000 r--p 00000000 08:30 1129479                    /usr/lib/libstdc++.so.6.0.36
+712c3669a000-712c3681d000 r-xp 0009a000 08:30 1129479                    /usr/lib/libstdc++.so.6.0.36
+712c3681d000-712c368bd000 r--p 0021d000 08:30 1129479                    /usr/lib/libstdc++.so.6.0.36
+712c368bd000-712c368ce000 r--p 002bc000 08:30 1129479                    /usr/lib/libstdc++.so.6.0.36
+712c368ce000-712c368cf000 rw-p 002cd000 08:30 1129479                    /usr/lib/libstdc++.so.6.0.36
+712c368cf000-712c368d3000 rw-p 00000000 00:00 0 
+712c368f3000-712c368f8000 rw-p 00000000 00:00 0 
+712c368f8000-712c36908000 r--p 00000000 08:30 1199334                    /usr/lib/libm.so.6
+712c36908000-712c369a4000 r-xp 00010000 08:30 1199334                    /usr/lib/libm.so.6
+712c369a4000-712c36a2d000 r--p 000ac000 08:30 1199334                    /usr/lib/libm.so.6
+712c36a2d000-712c36a2e000 r--p 00134000 08:30 1199334                    /usr/lib/libm.so.6
+712c36a2e000-712c36a2f000 rw-p 00135000 08:30 1199334                    /usr/lib/libm.so.6
+712c36a2f000-712c36a31000 rw-p 00000000 00:00 0 
+712c36a31000-712c36a4d000 r--p 00000000 08:30 20857                      /etc/ld.so.cache
+712c36a4d000-712c36a51000 r--p 00000000 00:00 0                          [vvar]
+712c36a51000-712c36a53000 r--p 00000000 00:00 0                          [vvar_vclock]
+712c36a53000-712c36a55000 r-xp 00000000 00:00 0                          [vdso]
+712c36a55000-712c36a56000 r--p 00000000 08:30 1199196                    /usr/lib/ld-linux-x86-64.so.2
+712c36a56000-712c36a83000 r-xp 00001000 08:30 1199196                    /usr/lib/ld-linux-x86-64.so.2
+712c36a83000-712c36a92000 r--p 0002e000 08:30 1199196                    /usr/lib/ld-linux-x86-64.so.2
+712c36a92000-712c36a94000 r--p 0003d000 08:30 1199196                    /usr/lib/ld-linux-x86-64.so.2
+712c36a94000-712c36a95000 rw-p 0003f000 08:30 1199196                    /usr/lib/ld-linux-x86-64.so.2
+712c36a95000-712c36a96000 rw-p 00000000 00:00 0 
+7ffd34d4d000-7ffd34d6f000 rw-p 00000000 00:00 0                          [stack]

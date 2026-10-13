@@ -13,6 +13,17 @@ tags:
   - beginner
   - CMake
 reading_time_minutes: 15
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "参与文章内容与示例修订 (PR #261)"
+      en: "Contributed article and example revisions (PR #261)"
 ---
 
 # 您的第一个 C++ 程序——在 vscode 里跑通 hello

@@ -1,0 +1,7 @@
+shell 里普通后台作业(仍在 shell 的会话/进程组里,吃 shell 的作业控制):
+    PID    PPID    PGID     SID COMMAND
+  13950   13949   13947   13947 sleep
+setsid 启动的作业(自己当了会话长,跟终端和作业控制两清):
+    PID    PPID    PGID     SID COMMAND
+  13951   13949   13951   13951 sleep
+一句话: disown 只是让 shell 不再对这个作业负责(进程哪儿都没挪);setsid 是真搬家(换会话)

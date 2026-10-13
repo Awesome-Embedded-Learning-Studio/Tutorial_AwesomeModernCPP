@@ -18,6 +18,17 @@ tags:
 - intermediate
 - 进阶
 title: 流与下标运算符
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #262)"
+      en: "Contributed exercise solutions and article revisions (PR #262)"
 ---
 # 流与下标运算符：让 cout 认得你的类型
 
@@ -585,7 +596,7 @@ g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
 运行结果:
 
 ```text
-0 1 2 
+0 1 2
 3 4 5
 ```
 

@@ -1,0 +1,12 @@
+# 两种走法各读 200 万次时钟,挂 strace -c -e trace=clock_gettime 观察系统调用条数
+
+$ strace -c -e trace=clock_gettime ./t4_vdso_strace vdso
+done: 2000000 次读取,走法=clock_gettime(vDSO),最后一次=38681.365261548
+
+$ strace -c -e trace=clock_gettime ./t4_vdso_strace syscall
+done: 2000000 次读取,走法=syscall(2) 真陷入,最后一次=38899.933588504
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+100.00   41.354410          20   2000000           clock_gettime
+------ ----------- ----------- --------- --------- ----------------
+100.00   41.354410          20   2000000           total
