@@ -35,7 +35,7 @@ execve("./app", ["./app"], 0x7ffe681792c0 /* 70 vars */) = 0
 
 ## 两阶段:内核只装两个,剩下的归动态链接器
 
-咱们请 gdb 帮个忙:它的 starti 命令,能把进程停在货真价实的第一条指令上,停的位置比 main 早,也比 04 里 Entry 指着的那个入口 _start 早。
+咱们请 gdb 帮个忙:它的 starti 命令,能把进程停在货真价实的第一条指令上,停的位置比 main 早,也比目标文件解剖那篇里 Entry 指着的那个入口 _start 早。
 
 ```text
 $ gdb -q -batch -ex starti ./app
@@ -43,7 +43,7 @@ Program stopped.
 0x00007ffff7fdf7e0 in ?? () from /lib64/ld-linux-x86-64.so.2
 ```
 
-(gdb 自己起跑的几行提示,笔者裁了。)停哪儿了?不在咱们的 app 里,落在了 /lib64/ld-linux-x86-64.so.2 里。您没看错,它就是动态链接器:01 的 file 输出末尾管它叫 interpreter,08 里咱们揭过它的真身。此刻咱们顺手看一眼进程的 maps:
+(gdb 自己起跑的几行提示,笔者裁了。)停哪儿了?不在咱们的 app 里,落在了 /lib64/ld-linux-x86-64.so.2 里。您没看错,它就是动态链接器:开卷那篇的 file 输出末尾管它叫 interpreter,动态库总览那篇里咱们揭过它的真身。此刻咱们顺手看一眼进程的 maps:
 
 ```text
 0x0000555555554000 0x0000555555555000 ... r--p  /tmp/.../lab/app
@@ -52,7 +52,7 @@ Program stopped.
 0x00007ffff7fbf000 0x00007ffff7fec000 ... r-xp  /usr/lib/ld-linux-x86-64.so.2
 ```
 
-(每行中间的 Size、Offset 几列笔者裁掉了,长路径也裁短了,地址是原样的。两个文件各取了头两段,四段里的后两段,笔者也一并裁了。路径您可能留意到:gdb 报的落在 /lib64 下,maps 记的却是 /usr/lib,两副路径指的是同一个文件,前者走的是链接,后者才是解析后的真身。)此刻的进程里,真身只有两个:app 的四段,加动态链接器的四段。剩下的 vvar、vdso 几小段,是内核的东西,08 里咱们点过 vdso 的名。咱们翻遍了,libcalc 的名字不在,libc 的名字也不在,它们的进场,得等动态链接器动了手。装载的两阶段,到这儿也就立住了:内核的阶段只认两个文件,一边是可执行文件的本尊,一边是它头部登记的 interpreter。NEEDED 单子上的其它库,没有一个是归内核管的。第二阶段是动态链接器在用户态跑的,从 trace 的第 2 行起,活就全是它的了,下面贴的,是它装 libcalc 的一段:
+(每行中间的 Size、Offset 几列笔者裁掉了,长路径也裁短了,地址是原样的。两个文件各取了头两段,四段里的后两段,笔者也一并裁了。路径您可能留意到:gdb 报的落在 /lib64 下,maps 记的却是 /usr/lib,两副路径指的是同一个文件,前者走的是链接,后者才是解析后的真身。)此刻的进程里,真身只有两个:app 的四段,加动态链接器的四段。剩下的 vvar、vdso 几小段,是内核的东西,动态库总览那篇里咱们点过 vdso 的名。咱们翻遍了,libcalc 的名字不在,libc 的名字也不在,它们的进场,得等动态链接器动了手。装载的两阶段,到这儿也就立住了:内核的阶段只认两个文件,一边是可执行文件的本尊,一边是它头部登记的 interpreter。NEEDED 单子上的其它库,没有一个是归内核管的。第二阶段是动态链接器在用户态跑的,从 trace 的第 2 行起,活就全是它的了,下面贴的,是它装 libcalc 的一段:
 
 ```text
 openat(AT_FDCWD, "./libcalc.so", O_RDONLY|O_CLOEXEC) = 3
@@ -64,7 +64,7 @@ mmap(0x7e9e759d4000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYW
 close(3)                                = 0
 ```
 
-(找库时它还顺带多试了 glibc-hwcaps 一类的 CPU 特性子目录,都落了空,那两行笔者裁了。openat 与 fstat 之间的 read、getcwd 两行,也一并裁了。搜索次序的完整规则是 10 的内容,咱们只看现象。)后面四条 mmap 的地址一个挨一个,readelf -l 里四条 LOAD 的运行期形态,对的就是它们。程序头表(program header)今天算是正式出场了:04 里咱们拿 readelf -S 读的节表,是给链接器看的切法,程序头表给的则是装载的视角,一条 LOAD 对应的是一次映射。咱们把 app 的读出来:
+(找库时它还顺带多试了 glibc-hwcaps 一类的 CPU 特性子目录,都落了空,那两行笔者裁了。openat 与 fstat 之间的 read、getcwd 两行,也一并裁了。搜索次序的完整规则是库搜索那篇的内容,咱们只看现象。)后面四条 mmap 的地址一个挨一个,readelf -l 里四条 LOAD 的运行期形态,对的就是它们。程序头表(program header)今天算是正式出场了:目标文件解剖那篇里咱们拿 readelf -S 读的节表,是给链接器看的切法,程序头表给的则是装载的视角,一条 LOAD 对应的是一次映射。咱们把 app 的读出来:
 
 ```text
 $ readelf -l app
@@ -79,13 +79,13 @@ Program Headers:
   GNU_RELRO      0x0000000000002dc0 0x0000000000003dc0 0x0000000000003dc0
 ```
 
-(完整的表有十几条,PHDR、四条 LOAD、几条 NOTE 都在笔者手里,裁掉的部分与主线无关,省略号是笔者加的。)INTERP 登记的就是动态链接器的路径,内核要装的第二个文件,就是从它这儿知道的。DYNAMIC 是 .dynamic 节的装载视角,08 里咱们拿 readelf -d 逐行读过,NEEDED 的单子就住在里面。GNU_RELRO 咱们多说半句:名字里的 RELRO 读作 relocation read-only,重定位做完改回只读的意思。trace 里靠后的那几条 mprotect,干的就是这个活,把写过 GOT 的那些页改回只读。09 里咱们看着动态链接器给 GOT 填表,等这几条 mprotect 跑完了,表里的值就都定下来,写过的页也回到了只读。
+(完整的表有十几条,PHDR、四条 LOAD、几条 NOTE 都在笔者手里,裁掉的部分与主线无关,省略号是笔者加的。)INTERP 登记的就是动态链接器的路径,内核要装的第二个文件,就是从它这儿知道的。DYNAMIC 是 .dynamic 节的装载视角,动态库总览那篇里咱们拿 readelf -d 逐行读过,NEEDED 的单子就住在里面。GNU_RELRO 咱们多说半句:名字里的 RELRO 读作 relocation read-only,重定位做完改回只读的意思。trace 里靠后的那几条 mprotect,干的就是这个活,把写过 GOT 的那些页改回只读。位置无关那篇里咱们看着动态链接器给 GOT 填表,等这几条 mprotect 跑完了,表里的值就都定下来,写过的页也回到了只读。
 
 装完了 libcalc 再装 libc,流程是同款的,咱们不重复贴。全都装完了之后,trace 里还有一段 arch_prctl、set_tid_address、getrandom 的调用,那是动态链接器在做初始化:线程局部存储的基址,就备在这儿了。这些都跑完了,往后才是咱们熟悉的输出 start 与 base=100 total=117,一次 write 全送了出去。您看,咱们写的第一行输出,排在一长串准备工作的后面。
 
 ## _start:第一个属于程序的指令
 
-库装完了、表填完了,才轮到咱们程序的入口。04 里咱们看 readelf -h 的时候,Entry 那行指向一个叫 _start 的位置,当时咱们说 main 之前的事归它管。今天咱们拿 nm 一对:Entry 的 0x1070,对应的就是 _start 的地址。
+库装完了、表填完了,才轮到咱们程序的入口。目标文件解剖那篇里咱们看 readelf -h 的时候,Entry 那行指向一个叫 `_start` 的位置,当时咱们说 main 之前的事归它管。今天咱们拿 nm 一对:Entry 的 0x1070,对应的就是 `_start` 的地址。
 
 咱们请 gdb 出场,挂上了三个断点,把次序跑给您看:
 
@@ -133,13 +133,13 @@ End of assembler dump.
 - rsi 和 rdx 装的是 argc 与 argv:pop %rsi 弹出来的是 argc,mov %rsp,%rdx 取的是 argv。内核把命令行按约定摆在了栈顶,是留给进场的人取用的。
 - r9 装的是第六个参数:mov %rdx,%r9 把进场时 rdx 里的原值挪了过去,那是动态链接器托付的收尾函数,回头要挂到退出钩子上的,咱们在讲 exit 的时候还会碰见它。
 
-rcx 和 r8 的清零值得多说两句。翻过老教材的您,八成见过的是另一副长相:rcx 装的是 __libc_csu_init,r8 装的是 __libc_csu_fini,初始化与收尾的活,当时全由它们俩给包办了。咱们这套 glibc 2.44 上不是这样:2.34 起 glibc 把它们删了,main 之前那一串准备活的遍历,挪进了 libc 自己,于是链接器捎带的那几个文件干脆清零交差。教程旧了,对上的号也就乱了,这也是咱们这一篇全程拿实测说话的原因。
+rcx 和 r8 的清零值得多说两句。翻过老教材的您,八成见过的是另一副长相:rcx 装的是 `__libc_csu_init`,r8 装的是 `__libc_csu_fini`,初始化与收尾的活,当时全由它们俩给包办了。咱们这套 glibc 2.44 上不是这样:2.34 起 glibc 把它们删了,main 之前那一串准备活的遍历,挪进了 libc 自己,于是链接器捎带的那几个文件干脆清零交差。教程旧了,对上的号也就乱了,这也是咱们这一篇全程拿实测说话的原因。
 
-末尾的 call *0x2f2b(%rip) 也别放过。它调用 __libc_start_main 的方式,走的是 GOT 的间接一路,目标槽的位置在 0x555555557fc0。咱们拿 readelf -r 一查,这个槽的来历是 R_X86_64_GLOB_DAT,加载期就解析好的那一类。09 的 LD_DEBUG 时间线里咱们亲眼看过,__libc_start_main 的绑定排在 start 打印之前,懒绑定是轮不到它的。道理倒是直白:目标的真身住在 libc 里,链接期的时候没人知道它的落点,走表就成了仅有的写法。
+末尾的 call *0x2f2b(%rip) 也别放过。它调用 __libc_start_main 的方式,走的是 GOT 的间接一路,目标槽的位置在 0x555555557fc0。咱们拿 readelf -r 一查,这个槽的来历是 R_X86_64_GLOB_DAT,加载期就解析好的那一类。位置无关那篇的 LD_DEBUG 时间线里咱们亲眼看过,__libc_start_main 的绑定排在 start 打印之前,懒绑定是轮不到它的。道理倒是直白:目标的真身住在 libc 里,链接期的时候没人知道它的落点,走表就成了仅有的写法。
 
 ## __libc_start_main:接过 main 的地址之后
 
-__libc_start_main 接过 main 的地址,往后它干了什么?咱们想再往深一层,断一个叫 __libc_start_call_main 的函数,却没断成:本机 libc 的符号表里没有这个名字,咱们查的这几个名字里,nm -D 愿意交出来的只有 __libc_start_main 一个,局部符号被剥掉了。咱们退一步,改成了按地址断。把 __libc_start_main 的反汇编翻出来看,它身子里 call 的目标落在 0x7ffff7c27700,断的就是它:
+`__libc_start_main` 接过 main 的地址,往后它干了什么?咱们想再往深一层,断一个叫 `__libc_start_call_main` 的函数,却没断成:本机 libc 的符号表里没有这个名字,咱们查的这几个名字里,nm -D 愿意交出来的只有 `__libc_start_main` 一个,局部符号被剥掉了。咱们退一步,改成了按地址断。把 `__libc_start_main` 的反汇编翻出来看,它身子里 call 的目标落在 0x7ffff7c27700,断的就是它:
 
 ```text
 Breakpoint 2, 0x00007ffff7c27700 in ?? () from /usr/lib/libc.so.6
@@ -151,21 +151,21 @@ rsi            0x1                 1
 rdx            0x7fffffffd438      140737488344120
 ```
 
-(到达之前那几站的重复输出,连同停点的反汇编行与其后的程序输出,笔者一并裁了。名字显示成了 ??,原因就是上面说过的符号被剥。0x7ffff7c27700 这个位置的函数,glibc 的源码里管它叫 __libc_start_call_main,2.34 起从 __libc_start_main 里拆出来的,咱们引用的是源码名。)寄存器里躺着的正是老三样:rdi 的值是 0x555555555169,跟 _start 里 lea 的目标一字不差,装的正是 main 的地址。rsi 是 argc 的 1,rdx 是 argv 的地址。咱们从这里再单步,就进 main 了。
+(到达之前那几站的重复输出,连同停点的反汇编行与其后的程序输出,笔者一并裁了。名字显示成了 ??,原因就是上面说过的符号被剥。0x7ffff7c27700 这个位置的函数,glibc 的源码里管它叫 `__libc_start_call_main`,2.34 起从 `__libc_start_main` 里拆出来的,咱们引用的是源码名。)寄存器里躺着的正是老三样:rdi 的值是 0x555555555169,跟 _start 里 lea 的目标一字不差,装的正是 main 的地址。rsi 是 argc 的 1,rdx 是 argv 的地址。咱们从这里再单步,就进 main 了。
 
-__libc_start_main 自己的活,笔者的反汇编里看到的是:它的开头,把 r9 里那个收尾函数用 __cxa_atexit 登记了。动态链接器的初始化活计,咱们在前面讲两阶段的 trace 末尾已经见过一回,arch_prctl、set_tid_address、getrandom 的调用,说的就是它。接着把 .init_array 的构造表走了一遍,把 main 叫了起来,把返回值交给了 exit——构造表里住着谁,咱们下面专节一个个认。这几步没一样是咱们的代码,可每一样都排在 main 的前面。
+__libc_start_main 自己的活,笔者的反汇编里看到的是:它的开头,把 r9 里那个收尾函数用 `__cxa_atexit` 登记了。动态链接器的初始化活计,咱们在前面讲两阶段的 trace 末尾已经见过一回,arch_prctl、set_tid_address、getrandom 的调用,说的就是它。接着把 .init_array 的构造表走了一遍,把 main 叫了起来,把返回值交给了 exit——构造表里住着谁,咱们下面专节一个个认。这几步没一样是咱们的代码,可每一样都排在 main 的前面。
 
 ## 启动文件那一排:_start 是谁放进来的
 
-05 里咱们留过话:_start 在 main 前头干了什么,启动文件的那一排各管什么,这些话咱们今天来兑现。咱们倒过来问头一个问题:_start 又不是咱们写的,它从哪儿来?
+链接器那篇里咱们留过话:_start 在 main 前头干了什么,启动文件的那一排各管什么,这些话咱们今天来兑现。咱们倒过来问头一个问题:_start 又不是咱们写的,它从哪儿来?
 
-答案就藏在链接的命令行里。咱们给 gcc 挂 -v 重链了一次,把 collect2 的那一行完整地抓了下来。collect2 是 01 里交代过的,链接器 ld 的包装:
+答案就藏在链接的命令行里。咱们给 gcc 挂 -v 重链了一次,把 collect2 的那一行完整地抓了下来。collect2 是开卷第一篇里交代过的,链接器 ld 的包装:
 
 ```text
  /usr/lib/gcc/x86_64-pc-linux-gnu/16/collect2 ... -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie -o app_v /usr/lib/gcc/x86_64-pc-linux-gnu/16/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/16/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/16/crtbeginS.o -L. ... /tmp/ccXT99dK.o -lcalc -lgcc -lgcc_s_asneeded -latomic_asneeded -lc -lgcc -lgcc_s_asneeded /usr/lib/gcc/x86_64-pc-linux-gnu/16/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/16/../../../../lib/crtn.o
 ```
 
-(省略号是笔者加的,裁掉的是 -plugin 一组、--build-id 一组和一串 -L 目录,顺序是原样保留的。)看排布就成了:打头的是 Scrt1.o,跟上的是 crti.o 和 crtbeginS.o,中间才是咱们的目标文件和 -lcalc 一排库,收尾换上的就是 crtendS.o 和 crtn.o。排在这一串里的五个文件,collect2 一个都没跟咱们商量,默默就捎上了,01 里咱们叫过它们 C 运行时的启动文件。顺带您还看到了 -dynamic-linker 的参数。它写的路径就是 ld-linux,落的正是程序头表里的 INTERP。
+(省略号是笔者加的,裁掉的是 -plugin 一组、--build-id 一组和一串 -L 目录,顺序是原样保留的。)看排布就成了:打头的是 Scrt1.o,跟上的是 crti.o 和 crtbeginS.o,中间才是咱们的目标文件和 -lcalc 一排库,收尾换上的就是 crtendS.o 和 crtn.o。排在这一串里的五个文件,collect2 一个都没跟咱们商量,默默就捎上了,开卷那篇里咱们叫过它们 C 运行时的启动文件。顺带您还看到了 -dynamic-linker 的参数。它写的路径就是 ld-linux,落的正是程序头表里的 INTERP。
 
 Scrt1.o 值得咱们细看。它的符号表,nm 亮出来的全在这儿:
 
@@ -180,7 +180,7 @@ $ nm Scrt1.o | grep -v ' [a-z] '
                  U main
 ```
 
-咱们当场就认出了两位老熟人。一位是 U 的 main,另一位是 U 的 __libc_start_main。05 里咱们链 no_main 失败的那回,报错里的 undefined reference to `main`,引用它的正是咱们眼前的这个文件。它的 .text,就是咱们上面看过的十三条指令,差别的部分全落在重定位上:
+咱们当场就认出了两位老熟人。一位是 U 的 main,另一位是 U 的 __libc_start_main。链接器那篇里咱们链 no_main 失败的那回,报错里的 undefined reference to `main`,引用它的正是咱们眼前的这个文件。它的 .text,就是咱们上面看过的十三条指令,差别的部分全落在重定位上:
 
 ```text
 $ readelf -rW Scrt1.o | head -4
@@ -190,11 +190,11 @@ Relocation section '.rela.text' at offset 0x2c8 contains 2 entries:
 0000000000000021  0000000800000029 R_X86_64_GOTPCRELX     0000000000000000 __libc_start_main - 4
 ```
 
-在 .o 的版本里,main 与 __libc_start_main 的取址,走的都是过 GOT 的写法。等到链接成了 09 里认过身份的 PIE,链接器把过 GOT 取 main 的写法,放松成了 lea 直取,咱们在 gdb 里看到的 lea 就是它的成果,而 __libc_start_main 住在 libc 里,倒是放松不动,保持着走表的写法。重定位名字里挂的 GOTPCRELX 后缀,就是给放松留的口子,咱们不展开。
+在 .o 的版本里,main 与 `__libc_start_main` 的取址,走的都是过 GOT 的写法。等到链接成了位置无关那篇里认过身份的 PIE,链接器把过 GOT 取 main 的写法,放松成了 lea 直取,咱们在 gdb 里看到的 lea 就是它的成果,而 `__libc_start_main` 住在 libc 里,倒是放松不动,保持着走表的写法。重定位名字里挂的 GOTPCRELX 后缀,就是给放松留的口子,咱们不展开。
 
 那一排里剩下的四位,咱们一人一句话交代:
 
-- crti.o 里住着 _init 和 _fini 两个函数的开头。05 里咱们见过的 __gmon_start__ 弱符号,它的钩子正身就在 crti.o 的 _init 里。链接完成后的样子,咱们看真的:
+- crti.o 里住着 `_init` 和 `_fini` 两个函数的开头。链接器那篇里咱们见过的 `__gmon_start__` 弱符号,它的钩子正身就在 crti.o 的 `_init` 里。链接完成后的样子,咱们看真的:
 
 ```text
 0000000000001000 <_init>:
@@ -208,7 +208,7 @@ Relocation section '.rela.text' at offset 0x2c8 contains 2 entries:
     101a:	ret
 ```
 
-您品这个结构:开头的 endbr64 和 sub 来自 crti.o,结尾的 add 和 ret 来自 crtn.o,_init 的身子是链接器拿两头的碎片拼出来的。夹在中间的四条,可就不属于两头了,它们是 __gmon_start__ 的钩子:有定义的时候就会调用,查到的值是零,就直接跳了过去。咱们的程序里,它是 w 的未定义弱符号,所以这几条在这里是空转的。等性能剖析的工具链接上了,它就有了用武之地。05 里咱们讲过弱符号留口子的用意,这里看到的是它在启动流程里的落点。
+您品这个结构:开头的 endbr64 和 sub 来自 crti.o,结尾的 add 和 ret 来自 crtn.o,_init 的身子是链接器拿两头的碎片拼出来的。夹在中间的四条,可就不属于两头了,它们是 __gmon_start__ 的钩子:有定义的时候就会调用,查到的值是零,就直接跳了过去。咱们的程序里,它是 w 的未定义弱符号,所以这几条在这里是空转的。等性能剖析的工具链接上了,它就有了用武之地。链接器那篇里咱们讲过弱符号留口子的用意,这里看到的是它在启动流程里的落点。
 
 - crtbeginS.o 贡献的是 .init_array 里的第一项 frame_dummy,和 .fini_array 里的第一项 __do_global_dtors_aux,外加的两个小函数 deregister_tm_clones、register_tm_clones。TM 是事务内存(transactional memory)的缩写,这俩同样是弱引用挂的钩子,没人定义的时候照样跳过。
 - crtendS.o 拿出的是两个边界符号,__FRAME_END__ 和 __TMC_END__,给 crtbeginS 那头数表的时候当终点用。
@@ -259,9 +259,9 @@ $ nm guard | grep -E 'frame_dummy|_GLOBAL__sub_I'
 0000000000001140 t frame_dummy
 ```
 
-十六个字节的 .init_array,咱们按八字一项地数,正好数出了两项。0x1140 的 frame_dummy,是 crtbeginS.o 贡献的。nm 多贴出来的那一行 __frame_dummy_init_array_entry,住的正是表里第一项的位置,链接的时候安放的,frame_dummy 的来路,这一下也就对上了。0x1199 的 _GLOBAL__sub_I_g_guard,则是编译器替 g_guard 生成的构造包装,名字长成了这样,咱们的源码里找不到它,它是编译器造的。libc 启动的时候,挨个地把表里的项调了一遍,调完了才进的 main。__attribute__((constructor)) 标记的函数,塞的也是同一张表。
+十六个字节的 .init_array,咱们按八字一项地数,正好数出了两项。0x1140 的 frame_dummy,是 crtbeginS.o 贡献的。nm 多贴出来的那一行 __frame_dummy_init_array_entry,住的正是表里第一项的位置,链接的时候安放的,frame_dummy 的来路,这一下也就对上了。0x1199 的 `_GLOBAL__sub_I_g_guard`,则是编译器替 g_guard 生成的构造包装,名字长成了这样,咱们的源码里找不到它,它是编译器造的。libc 启动的时候,挨个地把表里的项调了一遍,调完了才进的 main。__attribute__((constructor)) 标记的函数,塞的也是同一张表。
 
-两项的次序也有讲究:排在前面的是 frame_dummy,咱们的那项跟在后面,跟链接行的排布一致,crtbeginS.o 排在咱们的目标文件前面。跨翻译单元的构造顺序,标准是没有规定的,构造次序没担保的风险、函数局部 static 的对策,12 里专门开了一节来讲。咱们这边只认载体:C++ 全局对象的构造时机,机制上说的就是表被走的时机。
+两项的次序也有讲究:排在前面的是 frame_dummy,咱们的那项跟在后面,跟链接行的排布一致,crtbeginS.o 排在咱们的目标文件前面。跨翻译单元的构造顺序,标准是没有规定的,构造次序没担保的风险、函数局部 static 的对策,ABI 那篇里专门开了一节来讲。咱们这边只认载体:C++ 全局对象的构造时机,机制上说的就是表被走的时机。
 
 ## 静态对拍:少一层,少一整段
 
@@ -280,7 +280,7 @@ $ echo $?
 1
 ```
 
-(末尾的 grep 找了个空,退出码回到了 1:INTERP 在程序头表里的类型名 PT_INTERP,在这个文件里已经不存在了,笔者特意用退出码把它点了出来。)Type 变成了 EXEC:04 里欠的那半句话,固定地址的可执行文件则是 EXEC,到这儿兑现了,Entry 的 0x402ea0 也是固定基址段里的地址。更痛快的是 strace 的对照:
+(末尾的 grep 找了个空,退出码回到了 1:INTERP 在程序头表里的类型名 PT_INTERP,在这个文件里已经不存在了,笔者特意用退出码把它点了出来。)Type 变成了 EXEC:目标文件解剖那篇里欠的那半句话,固定地址的可执行文件则是 EXEC,到这儿兑现了,Entry 的 0x402ea0 也是固定基址段里的地址。更痛快的是 strace 的对照:
 
 ```text
 $ strace -o static.strace ./app_static && wc -l static.strace e1.strace
@@ -294,7 +294,7 @@ brk(0x219f4d40)                         = 0x219f4d40
 arch_prctl(ARCH_SET_FS, 0x219f43c0)     = 0
 ```
 
-等 execve 落了地,直接就是 libc 的自身初始化:brk、arch_prctl 的那几条,libc 的代码已经整个烙在文件里了,不用装了。中间的 openat、mmap 一个都没有:ld.so.cache 没影了,库和动态链接器也没影了。19 行对 51 行的对照(咱们数的是写进文件的行数,往终端跑会多一条 ioctl 的查询),少掉的那 32 行,少的就是第二阶段的整段。08 里咱们看过共享库给内存省了什么,这一篇补上的是代价的一面,所以动态装载这一层,是追加在启动路上的一整段流程。
+等 execve 落了地,直接就是 libc 的自身初始化:brk、arch_prctl 的那几条,libc 的代码已经整个烙在文件里了,不用装了。中间的 openat、mmap 一个都没有:ld.so.cache 没影了,库和动态链接器也没影了。19 行对 51 行的对照(咱们数的是写进文件的行数,往终端跑会多一条 ioctl 的查询),少掉的那 32 行,少的就是第二阶段的整段。动态库总览那篇里咱们看过共享库给内存省了什么,这一篇补上的是代价的一面,所以动态装载这一层,是追加在启动路上的一整段流程。
 
 ## main 之后,半眼
 
@@ -325,10 +325,10 @@ $ readelf -h build/app_fixed | grep -E "Type|Entry"
   Entry point address:               0x401050
 ```
 
-两个目标跑了起来,输出的内容一字不差。CMake 交给 GCC 的默认就是 pie,Type 记的是 DYN。挂上 -no-pie 就换回了 EXEC,Entry 也跟着换了,从相对地址换成了 0x401050,回到了 0x40 打头的传统固定基址段。有个容易误会的点,咱们再补一句:app_fixed 的身上依然带着一条 INTERP,它照样动态地链着 libc。-no-pie 动的是地址的写法,链接的方式它一概不碰,您想要静态,那是 -static 的活,两个开关各管各的。运行期找库的那点事,构建侧的入口是 BUILD_RPATH,10 的 CMake 节讲过,咱们不重演。
+两个目标跑了起来,输出的内容一字不差。CMake 交给 GCC 的默认就是 pie,Type 记的是 DYN。挂上 -no-pie 就换回了 EXEC,Entry 也跟着换了,从相对地址换成了 0x401050,回到了 0x40 打头的传统固定基址段。有个容易误会的点,咱们再补一句:app_fixed 的身上依然带着一条 INTERP,它照样动态地链着 libc。-no-pie 动的是地址的写法,链接的方式它一概不碰,您想要静态,那是 -static 的活,两个开关各管各的。运行期找库的那点事,构建侧的入口是 BUILD_RPATH,库搜索那篇的 CMake 节讲过,咱们不重演。
 
 ## 接下来:链接期还能再挤出什么
 
 咱们走到了这儿,从 execve 到 main 的整条路,咱们算是走完了:内核装的是头两个,动态链接器拉起了整棵的依赖树,_start 把 main 递了出去,__libc_start_main 走完了 .init_array,咱们写的第一行代码,到这儿才算是跑了起来。咱们回头数数,这一路用掉的系统调用不过几十条,可每一步都是有名有姓的。
 
-故事到这儿讲完了,咱们留个念想。咱们这一卷读到这儿,编译器的优化始终只看得见单个的翻译单元,链接器倒是一次拿齐了所有的目标文件,可它干的,只是搬位置、接符号的活儿,除了重定位的那点改写,优化的事它一件不干。咱们要是把优化挪到链接期,让它拿着每个翻译单元的完整信息干活,能挤出什么?链接时优化(LTO)说的就是它,这正是 15(LTO 与现代链接器)的正题,咱们下一篇见。
+故事到这儿讲完了,咱们留个念想。咱们这一卷读到这儿,编译器的优化始终只看得见单个的翻译单元,链接器倒是一次拿齐了所有的目标文件,可它干的,只是搬位置、接符号的活儿,除了重定位的那点改写,优化的事它一件不干。咱们要是把优化挪到链接期,让它拿着每个翻译单元的完整信息干活,能挤出什么?链接时优化(LTO)说的就是它,这正是《LTO 与现代链接器:优化的边界挪到链接期》的正题,咱们下一篇见。
