@@ -235,7 +235,6 @@ std::size_t n = boost::asio::read(socket, asio::buffer(buf), ec);
 | 成功        | 返回传输的字节数                        | 同左                                   |
 | 出错（一次调用类） | 抛 `boost::system::system_error` | 返回 0，错误在 `ec` 里                      |
 | 出错（循环到满类） | 抛 `boost::system::system_error` | 返回出错前已传输的字节数（可能是部分值，需要处理），错误在 `ec` 里 |
-| 空缓冲       | 返回 0，不报错                        | 返回 0                                 |
 
 ​
 
