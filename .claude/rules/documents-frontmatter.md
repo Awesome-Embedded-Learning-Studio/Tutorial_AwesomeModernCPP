@@ -34,7 +34,11 @@ globs: documents/**/*.md
 | `reading_time_minutes` | int | — | 预估阅读时长（分钟） |
 | `prerequisites` | list[string] | — | 前置知识章节列表 |
 | `related` | list[string] | — | 相关文章标题 |
+| `contributors` | list[object] | `github`、可选 `name`、`roles` | 独立署名；角色为 `author` / `revision` / `translation` / `review` / `maintain` |
+| `community_category` | string | `learning-notes` / `engineering` / `source-reading` / `qa` | 社区初刊和收录文章的栏目，由维护者补齐 |
 | `current_status` | string \| object | 见下 | 文章当前状态（如「正在打磨」），页面右下角弹 MC 成就风格提示；**默认不写**，状态稳定后应移除 |
+
+社区来稿缺少 `contributors` 时，只显示最早可追溯的 Git 提交来源，不自动赋予默认作者。署名和变更记录由主题组件显示，正文无需重复放置作者栏。英文文章可继承中文源文的署名和栏目。投稿者可先交正文，由维护者完成元数据整理。
 
 ### `current_status` 用法
 

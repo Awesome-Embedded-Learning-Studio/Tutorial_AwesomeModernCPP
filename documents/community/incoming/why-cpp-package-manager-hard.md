@@ -12,6 +12,10 @@ tags:
 difficulty: intermediate
 platform: host
 reading_time_minutes: 12
+community_category: engineering
+contributors:
+  - github: Charliechen114514
+    roles: [author]
 ---
 
 # 为什么 C++ 包管理这么难?

@@ -17,17 +17,18 @@ const installed: Record<HookName, boolean> = {
   onAfterRouteChange: false
 }
 
-export function subscribeBeforeRouteChange(fn: RouteHandler): void {
-  subscribe('onBeforeRouteChange', fn)
+export function subscribeBeforeRouteChange(fn: RouteHandler): () => void {
+  return subscribe('onBeforeRouteChange', fn)
 }
 
-export function subscribeAfterRouteChange(fn: RouteHandler): void {
-  subscribe('onAfterRouteChange', fn)
+export function subscribeAfterRouteChange(fn: RouteHandler): () => void {
+  return subscribe('onAfterRouteChange', fn)
 }
 
-function subscribe(hook: HookName, fn: RouteHandler): void {
+function subscribe(hook: HookName, fn: RouteHandler): () => void {
   subscribers[hook].add(fn)
-  if (installed[hook]) return
+  const unsubscribe = () => { subscribers[hook].delete(fn) }
+  if (installed[hook]) return unsubscribe
   // 必须在 setup 上下文调用（mermaid 的 setupMermaid / 各组件 setup 均满足）。
   const router = useRouter()
   if (hook === 'onBeforeRouteChange') {
@@ -36,6 +37,7 @@ function subscribe(hook: HookName, fn: RouteHandler): void {
     router.onAfterRouteChange = (href) => dispatch(hook, href)
   }
   installed[hook] = true
+  return unsubscribe
 }
 
 function dispatch(hook: HookName, href: string): void {

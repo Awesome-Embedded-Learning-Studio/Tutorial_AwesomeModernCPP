@@ -226,6 +226,7 @@ function generateVolumeConfig(vol: Volume, lang: 'zh' | 'en', absSiteDir: string
   const relSidebar = relative(vpDir, join(MAIN_VP, 'config', 'sidebar')).replace(/\\/g, '/')
   const relTagsManifest = relative(vpDir, join(MAIN_VP, 'config', 'tags-manifest')).replace(/\\/g, '/')
   const relContributors = relative(vpDir, join(MAIN_VP, 'config', 'article-contributors')).replace(/\\/g, '/')
+  const relCommunity = relative(vpDir, join(MAIN_VP, 'config', 'community-manifest')).replace(/\\/g, '/')
 
   return `import { defineConfig } from 'vitepress'
 import withDrawio from '@dhlx/vitepress-plugin-drawio'
@@ -233,13 +234,14 @@ import { sharedBase, ${lang === 'en' ? 'sharedEnThemeConfig' : 'sharedThemeConfi
 import { volumeSidebar } from '${relSidebar}'
 import { applyTagsPageData } from '${relTagsManifest}'
 import { applyArticleContributors } from '${relContributors}'
+import { applyCommunityPageData } from '${relCommunity}'
 
 export default withDrawio(defineConfig({
   ...sharedBase,
   srcDir: '${relSrc.replace(/\\/g, '/')}',
   outDir: '${relOut.replace(/\\/g, '/')}',
   ignoreDeadLinks: true,
-  transformPageData(pageData) { applyTagsPageData(pageData); applyArticleContributors(pageData) },
+  transformPageData(pageData) { applyTagsPageData(pageData); applyArticleContributors(pageData); applyCommunityPageData(pageData) },
   title: '${lang === 'en' ? 'Modern C++ Tutorial' : '现代 C++ 教程'}',
   lang: '${lang === 'en' ? 'en-US' : 'zh-CN'}',
   ${locale}

@@ -3,8 +3,8 @@ title: Contributors
 description: "Thanks to everyone who has contributed to this project"
 translation:
   source: documents/team/index.md
-  source_hash: e63f2cb5a07848da5eccf7e3a8d141e1e39859072dbe15b50c1a5ffbe980f74b
-  translated_at: '2026-10-04T00:00:00+00:00'
+  source_hash: 38256a4780b674fc7822230b1eb0b55f845ce574424332c0c2e6b6b1cbb8f78c
+  translated_at: '2026-10-14T00:00:00+00:00'
   engine: anthropic
   token_count: 2600
 ---
@@ -100,6 +100,15 @@ A huge thank-you to these friends for their PRs and for their support in every o
     <p class="card-role">Getting-Started Tutorial Improvement</p>
     <p class="card-types">📝 💡</p>
     <p class="card-desc">Co-authored the getting-started tutorial's CMake build explanation with Erol Tasci (#258)</p>
+  </div>
+</a>
+<a href="https://github.com/Karl-Heinrich-Marx-520" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/Karl-Heinrich-Marx-520.png?size=96" alt="游翰灵" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">游翰灵 <span class="card-badge pr">PR</span></span>
+    <p class="card-role">Community Tutorial · Boost.Asio Series</p>
+    <p class="card-types">📝 💡</p>
+    <p class="card-desc">Contributed the three-part community Boost.Asio tutorial covering a basic client/server, synchronous reads and writes, and async reads and writes (#290, #291, #292), now in the community incoming section, with all example code compiled and verified locally by the author</p>
   </div>
 </a>
 </div>

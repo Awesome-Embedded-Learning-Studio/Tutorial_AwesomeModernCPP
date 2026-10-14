@@ -5,8 +5,9 @@ withDefaults(defineProps<{ data: ArticleContributions; variant?: 'meta' | 'full'
 </script>
 
 <template>
-  <div v-if="data.contributors.length && variant === 'meta'" class="card-contributors-meta" role="group" :aria-label="data.heading">
-    <span class="card-meta-caption"><span class="card-meta-label">{{ data.metaLabel }}</span><span class="card-meta-count">{{ data.metaCount }}</span></span>
+  <div v-if="(data.contributors.length || data.submission) && variant === 'meta'" class="card-contributors-meta" role="group" :aria-label="data.heading">
+    <span v-if="data.contributors.length" class="card-meta-caption"><span class="card-meta-label">{{ data.metaLabel }}</span><span class="card-meta-count">{{ data.metaCount }}</span></span>
+    <span v-else-if="data.submission" class="card-meta-label">{{ data.submission.label }} · {{ data.submission.names }}</span>
     <div class="card-meta-avatars">
     <a v-for="person in data.contributors" :key="person.github" class="card-avatar-link"
       :href="`#${person.anchor}`" :aria-label="person.tooltip">
@@ -17,9 +18,9 @@ withDefaults(defineProps<{ data: ArticleContributions; variant?: 'meta' | 'full'
     </div>
     <a class="card-meta-more" href="#card-contributors-heading">{{ data.signatureLink }} <span aria-hidden="true">↓</span></a>
   </div>
-  <section v-else-if="data.contributors.length" class="card-article-contributors" aria-labelledby="card-contributors-heading">
+  <section v-else-if="data.contributors.length || data.submission" class="card-article-contributors" aria-labelledby="card-contributors-heading">
     <h2 id="card-contributors-heading" class="card-section-title">{{ data.heading }}</h2>
-    <ul class="card-people">
+    <ul v-if="data.contributors.length" class="card-people">
       <li v-for="person in data.contributors" :id="person.anchor" :key="person.github" class="card-person" tabindex="-1">
         <a class="card-avatar-link" :href="person.profile" target="_blank" rel="noopener noreferrer"
           :aria-label="`${person.name} · ${data.profileLabel}`">
@@ -38,6 +39,14 @@ withDefaults(defineProps<{ data: ArticleContributions; variant?: 'meta' | 'full'
         </div>
       </li>
     </ul>
+    <div v-if="data.submission" class="card-submission">
+      <p class="card-note"><strong>{{ data.submission.label }}</strong> ·
+        <a v-if="data.submission.url" :href="data.submission.url" target="_blank" rel="noopener noreferrer">{{ data.submission.names }}</a>
+        <span v-else>{{ data.submission.names }}</span>
+        <time v-if="data.submission.date" :datetime="data.submission.date"> · {{ data.submission.date }}</time>
+      </p>
+      <p class="card-note">{{ data.submission.hint }}</p>
+    </div>
     <details v-if="data.history.length" class="card-history">
       <summary class="card-history-summary">{{ data.historyHeading }} <span class="card-history-count">{{ data.history.length }}</span></summary>
       <p class="card-history-hint">{{ data.historyHint }}</p>

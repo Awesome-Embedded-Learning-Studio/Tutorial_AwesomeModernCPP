@@ -97,6 +97,15 @@ description: "感谢所有为本项目做出贡献的人"
     <p class="card-desc">以共同作者身份与 Erol Tasci 合作改进起步教程的 CMake 构建讲解（#258）</p>
   </div>
 </a>
+<a href="https://github.com/Karl-Heinrich-Marx-520" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/Karl-Heinrich-Marx-520.png?size=96" alt="游翰灵" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">游翰灵 <span class="card-badge pr">PR</span></span>
+    <p class="card-role">社区投稿 · Boost.Asio 教程</p>
+    <p class="card-types">📝 💡</p>
+    <p class="card-desc">投稿社区 Boost.Asio 学习教程三篇「基础的客户端服务器」「同步读写」「异步读写」（#290、#291、#292），收录进社区来稿初刊区，示例代码均经作者本地编译验证</p>
+  </div>
+</a>
 </div>
 
 这些同志提出的宝贵反馈，同样值得记录，正是你们的反馈让这个项目可以知晓真实的问题，督促我们改进！（继续深鞠躬90°！）

@@ -8,6 +8,7 @@ import {
   type ContributionPerson,
 } from '../theme/utils/article-contributors'
 import { getArticleHistory } from './article-history'
+import { communityArticleStatus } from '../theme/utils/community'
 
 const PROJECT_ROOT = fileURLToPath(new URL('../../../', import.meta.url))
 
@@ -32,26 +33,34 @@ export function validateContributors(value: unknown, where: string): asserts val
 }
 
 /** EN inherits explicitly declared source credits unless its own page overrides them. */
-function sourceContributors(relativePath: string): unknown {
+function sourceContributors(relativePath: string, root = PROJECT_ROOT): unknown {
   if (!relativePath.startsWith('en/')) return undefined
   try {
-    return matter(readFileSync(join(PROJECT_ROOT, 'documents', relativePath.slice(3)), 'utf8')).data.contributors
+    return matter(readFileSync(join(root, 'documents', relativePath.slice(3)), 'utf8')).data.contributors
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
     throw error
   }
 }
 
+/** Community pages may omit authors; Git submission history never becomes an author credit. */
+export function resolveArticleContributors(fm: Record<string, unknown>, relativePath: string, root = PROJECT_ROOT): ContributionPerson[] {
+  const declared = fm.contributors !== undefined ? fm.contributors : sourceContributors(relativePath, root)
+  const community = communityArticleStatus(relativePath)
+  const people = declared ?? (community ? [] : [DEFAULT_CONTRIBUTOR])
+  validateContributors(people, relativePath)
+  return people
+}
+
 export function applyArticleContributors(page: PageData): void {
   const fm = page.frontmatter
   if (fm.weeklyIssue) return // WeeklyPageHeader already renders this issue's acknowledgements.
   // Navigation, home, team and weekly landing pages do not get default author cards.
-  if (fm.contributors === undefined && typeof fm.chapter !== 'number') return
+  if (fm.contributors === undefined && typeof fm.chapter !== 'number' && !communityArticleStatus(page.relativePath)) return
   if (fm.layout && fm.layout !== 'doc') return
-  const people = fm.contributors !== undefined ? fm.contributors
-    : sourceContributors(page.relativePath) ?? [DEFAULT_CONTRIBUTOR]
-  validateContributors(people, page.relativePath)
-  if (!people.length) return
+  const people = resolveArticleContributors(fm, page.relativePath)
+  const community = !!communityArticleStatus(page.relativePath)
+  if (!people.length && !community) return
   const locale = page.relativePath.startsWith('en/') ? 'en' : 'zh'
-  fm.articleContributions = formatArticleContributions(people, getArticleHistory(page.relativePath), locale)
+  fm.articleContributions = formatArticleContributions(people, getArticleHistory(page.relativePath), locale, community)
 }

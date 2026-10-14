@@ -1,0 +1,45 @@
+name: "社区文章投稿 / Community Article Submission"
+description: "提交 Markdown 草稿，维护者协助整理、署名和上线。"
+title: "[社区投稿] "
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        欢迎分享学习笔记、工程经验、源码阅读或问答整理。可以直接粘贴 Markdown 草稿，不必先配置站点元数据。Git 提交来源会自动显示；代投时请另外说明原作者。
+  - type: input
+    id: credit
+    attributes:
+      label: "署名与代投说明"
+      description: "希望显示的作者名字、GitHub 账号（如有）；代投请注明原作者及授权。留空时只显示 Git 提交来源。"
+  - type: dropdown
+    id: category
+    attributes:
+      label: "建议栏目"
+      options:
+        - "学习笔记"
+        - "工程经验"
+        - "源码阅读"
+        - "问答整理"
+        - "暂不确定，由维护者协助选择"
+  - type: textarea
+    id: draft
+    attributes:
+      label: "文章草稿"
+      description: "粘贴 Markdown 正文或提供草稿链接，并说明目标读者；含代码时请注明验证环境。"
+    validations:
+      required: true
+  - type: textarea
+    id: sources
+    attributes:
+      label: "原创、授权与资料来源"
+      description: "说明是否原创；列出引用、图片和代码来源，代投或转载请说明授权情况。"
+    validations:
+      required: true
+  - type: checkboxes
+    id: publication
+    attributes:
+      label: "公开展示"
+      options:
+        - label: "我同意公开展示此稿件，并允许维护者调整标题、格式、放置位置和部分措辞。"
+          required: true

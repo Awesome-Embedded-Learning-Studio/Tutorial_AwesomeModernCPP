@@ -67,7 +67,7 @@ pre-commit 会在运行检查前临时隔离未暂存改动，避免把未准备
 
 文章按卷-章组织，放入对应卷目录：
 
-```
+```text
 documents/vol2-modern-features/     # 卷二目录
 ├── index.md                        # 卷首页
 └── ch01-smart-pointers/            # 章节（可选子目录）
@@ -208,6 +208,10 @@ void process_data(std::span<const uint32_t> data) {
 ## 社区来稿
 
 如果你只是想先投稿一篇文章、笔记、源码阅读或工程经验，可以走更轻量的社区来稿路径。
+
+[投稿指南](documents/community/submit/index.md)提供草稿表单和 PR 入口。[社区首页](documents/community/index.md)展示最近发布的文章，[作者](documents/community/authors/index.md)和[栏目](documents/community/topics/index.md)各有独立入口。文章列表自动生成，无需再手写目录。
+
+社区文章独立展示 Git 提交来源，取最早可追溯的提交身份；提交来源不自动作为原作者署名。需要单独展示作者时，维护者将署名写入 frontmatter 的 `contributors`（角色为 `author`），正文无需重复。未填写作者时只显示提交来源，不使用默认维护者署名。栏目由 `community_category` 指定，可选 `learning-notes`、`engineering`、`source-reading`、`qa`；初刊和已审阅状态由所在目录决定。
 
 社区来稿可以先放入：
 
@@ -355,7 +359,7 @@ QA 不替代正文，只负责解答常见分叉问题和高频误区。
 Sir! This Way!
 
 - 提交 [GitHub Issue](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/issues)
-- 直接对着这个邮箱塞邮件：725610365@qq.com
+- 直接对着这个邮箱塞邮件：<725610365@qq.com>
 
 ---
 
