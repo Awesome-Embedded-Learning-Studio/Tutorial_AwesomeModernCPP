@@ -17,4 +17,5 @@ platform: host
 
 <ChapterNav variant="main">
   <ChapterLink num="1" href="cppcon/">CppCon</ChapterLink>
+  <ChapterLink num="2" href="cpu-book/">CPU 眼里的 C/C++</ChapterLink>
 </ChapterNav>

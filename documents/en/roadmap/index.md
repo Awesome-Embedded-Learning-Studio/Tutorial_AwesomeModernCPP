@@ -38,6 +38,7 @@ The card wall below shows each entry's role, difficulty, prerequisites, and stat
 The entries below are ordered by learning path rather than by volume number: Quick Start first, then Vol.1, with Compilation and Linking in Depth sitting next to Vol.7. Each entry covers role, topics, difficulty, and prerequisites, and closes with my pacing advice. Entry length follows the content — a few volumes wrap up in a couple of lines, others earn more.
 
 <a id="gs"></a>
+
 ### Quick Start
 
 If you're starting from zero, this is the entrance built for you, placed before Vol.1. The volume starts from what an editor and a compiler actually are, walks you through running your first program, then assembles a multi-file project with CMake and gets clangd completion and squiggles working — with real screenshots throughout, so you can follow along click by click. The classic blockers, an environment that won't install and a program that won't run, are all dealt with here.
@@ -45,6 +46,7 @@ If you're starting from zero, this is the entrance built for you, placed before 
 Beginner level, no prerequisites to bring. With a programming background you can skip the volume entirely and come back when your environment misbehaves. Work through it, and the syntax course in Vol.1 won't be hanging in the air.
 
 <a id="v1"></a>
+
 ### Vol.1 · Fundamentals
 
 Vol.1 is the foundation of the whole tutorial: we go from the environment and the type system through object orientation, first steps with templates, and exceptions, and close with a C crash course covering pointers, struct alignment, and embedded C idioms. Finish it and the later volumes share a vocabulary with you, which is exactly why it comes first.
@@ -52,6 +54,7 @@ Vol.1 is the foundation of the whole tutorial: we go from the environment and th
 Difficulty runs from beginner to intermediate, and you need no prerequisites at all. Read from the top if you're new. Skip the C crash course if C is already home turf — but spend real time on value categories, object orientation, and template basics, because they decide how smooth everything after goes. This volume is being rewritten: chapter order may shift, the topic coverage won't, so don't be surprised by the occasional awkward arrangement.
 
 <a id="v2"></a>
+
 ### Vol.2 · Modern Features
 
 The watershed between writing C++ and writing modern C++ sits in [Vol.2](/vol2-modern-features/). Move semantics, rvalue references, smart pointers, and ownership carry the weight. `constexpr`, lambdas, and structured bindings follow at the syntax level. A set of type-safe tools (`enum class`, `variant`, `optional`, `expected`) rounds out the base every later volume builds on.
@@ -59,6 +62,7 @@ The watershed between writing C++ and writing modern C++ sits in [Vol.2](/vol2-m
 Intermediate at most, one prerequisite. This one rewards a careful read, and skimming pays poorly. Concurrency, performance, and the domain work later all assume you've internalized move semantics and smart pointers. The content is complete, and we're still polishing wording and examples article by article, so an occasional style mismatch between articles is normal and doesn't affect the material.
 
 <a id="v3"></a>
+
 ### Vol.3 · Standard Library in Depth
 
 [Vol.3](/vol3-standard-library/) covers the machinery under the standard library, and it outgrew containers and strings long ago. We split it into six subdirectories: containers, strings, iterators, and algorithms form the data-structure group, and IO streams, time and numerics, error handling, and utilities form the everyday-development group. Both are complete. How `vector` grows, when iterators invalidate, how `string`'s small-string optimization saves memory — the questions about what the standard library does for you all get answered here.
@@ -66,6 +70,7 @@ Intermediate at most, one prerequisite. This one rewards a careful read, and ski
 Intermediate, with Vol.1 and Vol.2 as prerequisites. The volume is substantial now, so reading on demand works best: dig into containers and strings for performance-sensitive work, the IO group if streams are your daily bread. Everything is in place, and any article works as an entry point.
 
 <a id="v4"></a>
+
 ### Vol.4 · Advanced Topics
 
 Writing libraries or high-performance generic code? [Vol.4](/vol4-advanced/) is unavoidable. Coroutine basics and a scheduler implementation sit at the top, alongside three-way comparison, the empty base optimization, and MSVC Modules. Below, three template sublines follow the standards timeline: C++11/14 lay the template foundations, C++17 brings template techniques and Ranges, and C++20/23 is metaprogramming, where concepts, requires expressions, and static reflection all live. A small STL project at the end puts the whole toolbox to work. Design patterns form a separate, independent line, and the classic patterns are all in.
@@ -73,6 +78,7 @@ Writing libraries or high-performance generic code? [Vol.4](/vol4-advanced/) is 
 Advanced, gated by Vol.2 and Vol.3. Reading the template sublines in timeline order is the easiest path — concepts and requires are the lingua franca of modern template code, so get comfortable with them before entering metaprogramming. Coroutines, three-way comparison, and Modules you can take à la carte. The table of contents is not the order.
 
 <a id="v5"></a>
+
 ### Vol.5 · Concurrency
 
 [Vol.5](/vol5-concurrency/) teaches concurrency with a deliberately restrained ordering: correctness before performance, locks before lock-free, synchronization primitives before task queues. Chapters start with concurrency basics and the thread lifecycle, move through `atomic` and the memory model, then pick up concurrent data structures, `future` and thread pools, async IO and coroutines in turn. Actor and Channel each get a chapter, and the last two cover debugging and testing plus the bridge to distributed systems.
@@ -80,6 +86,7 @@ Advanced, gated by Vol.2 and Vol.3. Reading the template sublines in timeline or
 This is the most hands-on volume in the tutorial — the Labs and the Capstone all revolve around it, with a companion exercise area. Lab 0/1 come with full scaffolding you can start writing against right away. Lab 2 through the Capstone exist as handbook text only at the moment, and the scaffolding is still to come, so you'd assemble your own. Difficulty is intermediate-advanced, and you'll want Vol.1 through Vol.4 all in place.
 
 <a id="v6"></a>
+
 ### Vol.6 · Performance
 
 We rearranged [Vol.6](/vol6-performance/) entirely around measurement methodology: it opens with performance thinking and benchmarking method, moves through CPU microarchitecture, then teaches you to attribute a performance problem to its actual bottleneck, and then to optimize that bottleneck. Multicore performance, the cost of C++ abstraction, and compilers versus code size each get their own chapter.
@@ -87,6 +94,7 @@ We rearranged [Vol.6](/vol6-performance/) entirely around measurement methodolog
 The habit this volume wants to break is optimizing by feel: algorithmic complexity is not what the hardware experiences, and you need measurement data before your hands touch the tuning knobs. Intermediate-advanced. Read it after Vol.5, and it makes the best reference for the day your code stops being fast.
 
 <a id="v7"></a>
+
 ### Vol.7 · Engineering Practice
 
 [Vol.7](/vol7-engineering/) handles the engineering landing: CMake basics, cross-compilation, compiler options, linkers and linker scripts, then WSL development, how MSVC debugging works, and VS2026 Modules, all under one roof. The file-copier project walks the full path from requirements and framework to the core implementation, and the direction tracks leave an entrance for readers of different stripes.
@@ -94,6 +102,7 @@ The habit this volume wants to break is optimizing by feel: algorithmic complexi
 Intermediate, and the volume is mid-construction. Read it alongside Compilation and Linking in Depth. When the mechanism side and the tool side both line up, engineering problems become tractable.
 
 <a id="cmp"></a>
+
 ### Compilation and Linking in Depth
 
 [This volume](/compilation/) answers what the compiler and the linker do behind your back: how source becomes an executable, where static and dynamic libraries differ, how symbols get found and how they fail to, and which step an `undefined reference` actually died at. Static libraries get an article of their own. Dynamic libraries run from design principles through symbol visibility, runtime loading, search logic, and executability. The volume is complete.
@@ -101,6 +110,7 @@ Intermediate, and the volume is mid-construction. Read it alongside Compilation 
 Intermediate, and a C++ foundation is all it takes. Before cross-compiling, designing a dynamic library's ABI, or chasing a link error, it's worth a pass, and it works best paired with Vol.7.
 
 <a id="v8"></a>
+
 ### Vol.8 · Domain Applications
 
 Vol.8 puts modern C++ into concrete domains. The subdomains differ wildly in progress, so we take them one completion state at a time.
@@ -112,6 +122,7 @@ Embedded is where the main line lives, and it's still under construction: the f1
 Entry difficulty is intermediate, but prerequisites differ by subdomain: read systems programming and networking after Vol.1 through Vol.7. For embedded you need a board on your desk, and the peripheral chapters are meant to be followed hands-on.
 
 <a id="v9"></a>
+
 ### Vol.9 · Learning from Open Source
 
 In [Vol.9](/vol9-open-source-project-learn/) we take industrial-grade source apart, and the current focus is Chromium: the OnceCallback callback design and the WeakPtr weak pointer each have their articles, flat_map and no_destructor have their own pieces, and the prerequisites `deducing this` and `move_only_function` get dedicated deep dives.
@@ -119,6 +130,7 @@ In [Vol.9](/vol9-open-source-project-learn/) we take industrial-grade source apa
 Intermediate-advanced, with Vol.1 through Vol.7 all as prerequisites, and the foundations from Vol.4 and Vol.5 matter most. It's a source-reading volume: finish templates and concurrency before stepping in.
 
 <a id="v10"></a>
+
 ### Vol.10 · Course and Talk Notes
 
 [Vol.10](/vol10-open-lecture-notes/) is talk notes and secondary creations, currently drawn from CppCon 2025: Bjarne Stroustrup on concept-based generic programming, Matt Godbolt's *Some Assembly Required* to walk you into reading assembly, Mike Shah on Ranges and Ben Saks on move semantics (both Back to Basics talks), plus sessions on the evolution of `std::optional`, how microbenchmarks lie, and cache-friendly C++.

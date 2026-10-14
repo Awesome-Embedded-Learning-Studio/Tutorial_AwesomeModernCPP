@@ -10,7 +10,7 @@ difficulty: intermediate
 platform: host
 translation:
   source: documents/vol10-open-lecture-notes/index.md
-  source_hash: ce3427e38dea445282fa13cf53c014ca447f51915dd92dca0662cd4fa56773a9
+  source_hash: 715b486d7d69d01ec99d94010ee78ad13912b1f6de0dd7994de5c2ad7ed34a9d
   translated_at: '2026-09-26T14:53:12+00:00'
   engine: anthropic
   token_count: 100
@@ -24,4 +24,5 @@ This volume gathers our reading notes and derivative write-ups on all kinds of C
 
 <ChapterNav variant="main">
   <ChapterLink num="1" href="cppcon/">CppCon</ChapterLink>
+  <ChapterLink num="2" href="cpu-book/">C/C++ Through the CPU's Eyes</ChapterLink>
 </ChapterNav>
