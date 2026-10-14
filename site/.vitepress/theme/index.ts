@@ -37,6 +37,7 @@ import NoteCapture from './components/NoteCapture.vue'
 import ArticleNotes from './components/ArticleNotes.vue'
 import { setupBookmarkRestore, setupBookmarkAutoTrack } from './composables/useBookmarks'
 import ArticleContributors from './components/ArticleContributors.vue'
+import CommunityExplorer from './components/CommunityExplorer.vue'
 import RoadmapJourney from './components/RoadmapJourney.vue'
 import VolumeCardGrid from './components/VolumeCardGrid.vue'
 import PathChooser from './components/PathChooser.vue'
@@ -91,6 +92,7 @@ export default {
     app.component('QQGroupCard', QQGroupCard)
     app.component('TagExplorer', TagExplorer)
     app.component('ArticleContributors', ArticleContributors)
+    app.component('CommunityExplorer', CommunityExplorer)
     app.component('RoadmapJourney', RoadmapJourney)
     app.component('VolumeCardGrid', VolumeCardGrid)
     app.component('PathChooser', PathChooser)

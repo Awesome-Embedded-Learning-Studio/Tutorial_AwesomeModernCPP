@@ -20,6 +20,8 @@ description: "已通过基础检查、正在接受讨论和审阅的社区投稿
 
 ## 投稿方式
 
+[查看投稿指南](../submit/)：可以交 Markdown 草稿，也可以直接提交 PR。
+
 如果你想投稿，可以提交一个 PR，把 Markdown 文件放到本目录下。文件名建议使用英文小写和连字符，例如：
 
 ```text
@@ -28,7 +30,7 @@ documents/community/incoming/my-first-modern-cpp-note.md
 
 你可以先只提交正文，不必一开始补齐完整 frontmatter、导航和索引。维护者会协助整理。
 
-建议在文章开头写明：
+建议在交稿时提供以下信息，维护者会将作者署名放入独立元数据：
 
 - 标题。
 - 作者或署名方式。
@@ -36,10 +38,4 @@ documents/community/incoming/my-first-modern-cpp-note.md
 - 是否原创。
 - 主要参考资料。
 
-## 当前文章
-
-从下载、ABI、构建系统碎片化到 C++20 modules,讲透为什么 C++ 至今没有一个像 Cargo、npm、pip 那样统一顺手的包管理器。作者 CharlieChen114514。
-
-<ChapterNav variant="sub">
-  <ChapterLink href="why-cpp-package-manager-hard">为什么 C++ 包管理这么难?</ChapterLink>
-</ChapterNav>
+<CommunityExplorer status="incoming" compact />

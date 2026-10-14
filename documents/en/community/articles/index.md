@@ -3,7 +3,7 @@ title: "Reviewed and Included"
 description: "Community articles accepted for long-term inclusion after discussion, revision, and maintainer review"
 translation:
   source: documents/community/articles/index.md
-  source_hash: 711b7bbe0330413d091930ebd2775d17e8ac9c162988a0c3073610a79e5789fb
+  source_hash: 346599176bcfc764b9b385301436d682ee2c3e41ce90d6a101d0e232b4675526
   translated_at: '2026-09-26T16:59:29+00:00'
   engine: anthropic
   token_count: 220
@@ -30,6 +30,4 @@ Some articles may simply stay in the community articles section as supplementary
 
 If an article fits the main tutorial particularly well, the maintainers can, with the author's understanding, give it a second round of editing and fold it into the corresponding volume, chapter, or topic.
 
-## Current Articles
-
-No articles have been included yet.
+<CommunityExplorer status="articles" compact />

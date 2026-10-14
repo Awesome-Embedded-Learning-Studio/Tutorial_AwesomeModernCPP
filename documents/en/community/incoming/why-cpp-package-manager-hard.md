@@ -14,7 +14,7 @@ platform: host
 reading_time_minutes: 12
 translation:
   source: documents/community/incoming/why-cpp-package-manager-hard.md
-  source_hash: 1e573fca8140e3779a5c019af3b72c26d2f868ef6fcbb726b9c90b55b8a724d1
+  source_hash: 43b8c2f7667deea5903022eb8a52b05f84c141ecb1d456e4007ec083e38e3fdd
   translated_at: '2026-09-26T17:05:28+00:00'
   engine: anthropic
   token_count: 8400

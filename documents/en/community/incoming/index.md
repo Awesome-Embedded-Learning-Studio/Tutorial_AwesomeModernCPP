@@ -4,7 +4,7 @@ description: 'Community submissions that have passed basic checks and are under 
   and review'
 translation:
   source: documents/community/incoming/index.md
-  source_hash: 29f2002017e0f863aa2854899397220ae3e1d818b5437c2abe6365825cc0e6e4
+  source_hash: 2204b2310fd0eecde56de4eb4eecb6cb1d91445b966b3e4157ee66db9b170374
   translated_at: '2026-09-26T17:02:14+00:00'
   engine: anthropic
   token_count: 280
@@ -26,6 +26,8 @@ Articles that enter this section usually satisfy the following:
 
 ## How to Contribute
 
+See the [submission guide](../submit/) to send a Markdown draft or open a PR.
+
 If you want to submit an article, you can open a PR and place the Markdown file in this directory. We recommend lowercase English filenames with hyphens, for example:
 
 ```text
@@ -34,7 +36,7 @@ documents/community/incoming/my-first-modern-cpp-note.md
 
 You can submit just the article body first — no need to round out the full frontmatter, navigation, and indexing from the start. Maintainers will help tidy things up.
 
-We suggest stating the following at the top of your article:
+Provide the following when submitting; maintainers will place author credits in independent metadata:
 
 - The title.
 - The author, or how you would like to be credited.
@@ -42,10 +44,4 @@ We suggest stating the following at the top of your article:
 - Whether the content is original.
 - The main reference materials.
 
-## Current Articles
-
-From downloads, ABI, and build-system fragmentation to C++20 modules, this article explains in depth why C++ still has no package manager as unified and smooth as Cargo, npm, or pip. By CharlieChen114514.
-
-<ChapterNav variant="sub">
-  <ChapterLink href="why-cpp-package-manager-hard">Why Is C++ Package Management So Hard?</ChapterLink>
-</ChapterNav>
+<CommunityExplorer status="incoming" compact />

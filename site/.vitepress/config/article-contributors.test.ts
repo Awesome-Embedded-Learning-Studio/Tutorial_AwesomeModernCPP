@@ -38,6 +38,41 @@ test('frontmatter rejects duplicate users, bad roles and partial translations', 
   assert.throws(() => validateContributors(null, 'test'), /array/)
 })
 
+test('community articles without credits show Git submission source without inventing an author', () => {
+  const article = page('community/incoming/boost-asio-01-basic-client-server.md', { chapter: 1 })
+  applyArticleContributors(article)
+  const data = article.frontmatter.articleContributions
+  assert.deepEqual(data.contributors, [])
+  assert.equal(data.submission.label, '提交来源（Git）')
+  assert.ok(data.submission.url?.includes('/commit/'))
+  const uncommitted = page('community/incoming/uncommitted-test.md', { chapter: 1 })
+  applyArticleContributors(uncommitted)
+  assert.deepEqual(uncommitted.frontmatter.articleContributions.contributors, [])
+  assert.equal(uncommitted.frontmatter.articleContributions.submission.names, '暂无可追溯提交')
+})
+
+test('author credit and first Git submission remain separate, later revisions do not replace submission', () => {
+  const history = [
+    { authors: ['Editor'], date: '2026-10-02', commit: 'b'.repeat(40), note: 'Revise' },
+    { authors: ['Submitter', 'Coauthor'], date: '2026-10-01', commit: 'a'.repeat(40), note: 'Submit' },
+  ]
+  const data = formatArticleContributions([{ github: 'OriginalAuthor', roles: ['author'] }], history, 'zh', true)
+  assert.equal(data.contributors[0].name, 'OriginalAuthor')
+  assert.equal(data.submission?.names, 'Submitter')
+  assert.equal(data.submission?.date, '2026-10-01')
+  assert.equal(data.submission?.url?.endsWith('a'.repeat(40)), true)
+})
+
+test('English community credits inherit the source and can be explicitly omitted', () => {
+  const article = page('en/community/incoming/why-cpp-package-manager-hard.md', { chapter: 1 })
+  applyArticleContributors(article)
+  assert.equal(article.frontmatter.articleContributions.contributors[0].github, 'Charliechen114514')
+  const omitted = page(article.relativePath, { chapter: 1, contributors: [] })
+  applyArticleContributors(omitted)
+  assert.deepEqual(omitted.frontmatter.articleContributions.contributors, [])
+  assert.ok(omitted.frontmatter.articleContributions.submission)
+})
+
 test('Git authors and verified coauthors are retained, tool trailers do not become people', () => {
   const history = parseArticleHistory('\x1e' + 'a'.repeat(40) + '\x1f2026-09-21\x1fErol Tasci\x1ftascierol32@gmail.com\x1fExplain build tools (#258)\x1fCo-authored-by: Voyagerroc-Pro <330935573+Voyagerroc-Pro@users.noreply.github.com>\nCo-authored-by: Claude <noreply@anthropic.com>\n')
   assert.deepEqual(history[0].authors, ['Voyagerroc-Lab', 'voyagerroc-pro'])

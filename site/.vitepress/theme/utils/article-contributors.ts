@@ -21,6 +21,7 @@ export interface ContributionHistory {
 }
 
 export interface ArticleContributions {
+  submission?: { label: string; names: string; hint: string; url?: string; date?: string }
   heading: string
   historyHeading: string
   historyHint: string
@@ -62,6 +63,7 @@ export const CONTRIBUTION_REPO = 'https://github.com/Awesome-Embedded-Learning-S
 
 export function formatArticleContributions(
   people: ContributionPerson[], history: ContributionHistory[], locale: ContributionLocale,
+  showSubmission = false,
 ): ArticleContributions {
   const copy = labels[locale]
   const contributors = people.map(person => {
@@ -78,8 +80,21 @@ export function formatArticleContributions(
     }
   })
   const names = new Map(contributors.map(person => [person.github.toLowerCase(), person.name]))
+  const first = history.at(-1)
+  const submitter = first?.authors[0]
+  const submission = showSubmission ? {
+    label: locale === 'zh' ? '提交来源（Git）' : 'Submission source (Git)',
+    names: (submitter ? names.get(submitter.toLowerCase()) ?? submitter : undefined)
+      || (locale === 'zh' ? '暂无可追溯提交' : 'No traceable submission yet'),
+    hint: locale === 'zh' ? '显示最早可追溯的 Git 提交身份；提交人可能是作者，也可能代为投稿或整理。'
+      : 'Identity from the earliest traceable Git commit; this person may have submitted or edited on behalf of the author.',
+    url: first ? `${CONTRIBUTION_REPO}/commit/${first.commit}` : undefined,
+    date: first?.date,
+  } : undefined
   return {
-    heading: copy.heading, historyHeading: copy.historyHeading,
+    submission,
+    heading: showSubmission ? (locale === 'zh' ? '本文署名与提交来源' : 'Article credits and submission source') : copy.heading,
+    historyHeading: copy.historyHeading,
     historyHint: copy.historyHint, historyEmpty: copy.historyEmpty, profileLabel: copy.profileLabel,
     metaLabel: copy.metaLabel, signatureLink: copy.signatureLink,
     metaCount: locale === 'zh' ? `${people.length} 人` : String(people.length),

@@ -25,6 +25,4 @@ description: "经过讨论、修订和维护者审阅后长期收录的社区文
 
 如果某篇文章非常适合主线教程，维护者可以在征得作者理解后，将其二次整理进对应卷、章节或专题。
 
-## 当前文章
-
-暂无已收录文章。
+<CommunityExplorer status="articles" compact />

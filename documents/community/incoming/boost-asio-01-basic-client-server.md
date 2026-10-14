@@ -14,11 +14,16 @@ difficulty: beginner
 platform: host
 cpp_standard: "20"
 reading_time_minutes: 10
+community_category: learning-notes
+contributors:
+  - github: Karl-Heinrich-Marx-520
+    name: 游翰灵
+    roles: [author]
 ---
 
 # Boost.Asio 学习(1)：基础的客户端服务器
 
-> **作者**：游翰灵（Karl-Heinrich-Marx-520） · **原创声明**：本文为本人原创学习笔记整理，示例代码均为本人编写并在本地（MinGW g++ 13.1 + Boost 1.91，C++20）编译运行验证
+> **原创声明**：本文为本人原创学习笔记整理，示例代码均为本人编写并在本地（MinGW g++ 13.1 + Boost 1.91，C++20）编译运行验证
 > **主要参考**：[Boost.Asio 官方文档](https://think-async.com/Asio/)、[cppreference](https://en.cppreference.com/)、[llfc 博客](https://llfc.club/)\
 > **目标读者**：有 socket 基础概念、想入门 Boost.Asio 的现代 C++ 学习者
 > **授权说明**：同意维护者调整标题、格式、放置位置与部分措辞；随仓库以 MIT 许可发布

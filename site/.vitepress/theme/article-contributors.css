@@ -140,6 +140,7 @@
 .card-article-contributors .card-note a { margin-left: 4px; color: var(--vp-c-brand-1); text-decoration: none; }
 .card-article-contributors .card-note a:hover { text-decoration: underline; }
 .card-article-contributors .card-history { margin-top: 16px; }
+.card-article-contributors .card-submission { margin-top: 16px; padding: 10px 12px; border-radius: 8px; background: var(--vp-c-bg-soft); }
 .card-article-contributors .card-history-summary { width: fit-content; max-width: 100%; cursor: pointer; color: var(--vp-c-text-2); font-size: 12px; }
 .card-article-contributors .card-history-count { margin-left: 4px; color: var(--vp-c-text-2); font-variant-numeric: tabular-nums; }
 .card-article-contributors .card-history-hint { margin: 8px 0; color: var(--vp-c-text-2); font-size: 12px; }

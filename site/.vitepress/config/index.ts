@@ -4,6 +4,7 @@ import { navEn } from './nav'
 import { applyWeeklyPageData, generateWeeklyManifest, MANIFEST_REL } from './weekly-manifest'
 import { applyTagsPageData } from './tags-manifest'
 import { applyArticleContributors } from './article-contributors'
+import { applyCommunityPageData } from './community-manifest'
 import { buildSidebar } from './sidebar'
 import { sharedThemeConfig, sharedMarkdown, makeSocialLinks, localSearchBoxAlias } from './shared'
 import { createReadStream, existsSync } from 'node:fs'
@@ -76,6 +77,7 @@ export default withDrawio(defineConfig({
     applyWeeklyPageData(pageData, PROJECT_ROOT)
     applyTagsPageData(pageData)
     applyArticleContributors(pageData)
+    applyCommunityPageData(pageData)
   },
 
   title: '现代 C++ 教程',

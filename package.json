@@ -14,6 +14,7 @@
     "test:pdf": "tsx --test scripts/pdf/test/*.test.ts",
     "test:judge": "tsx --test site/.vitepress/theme/utils/judge.test.ts site/.vitepress/theme/utils/quiz-data.test.ts",
     "test:weekly": "tsx --test site/.vitepress/theme/utils/weekly.test.ts site/.vitepress/theme/utils/cpp-check.test.ts",
+    "test:community": "node --import tsx --test site/.vitepress/config/article-contributors.test.ts site/.vitepress/config/community-manifest.test.ts",
     "preview": "vitepress preview site",
     "hooks:install": "scripts/setup_precommit.sh",
     "coverage": "node scripts/run_python.mjs scripts/coverage.py",
