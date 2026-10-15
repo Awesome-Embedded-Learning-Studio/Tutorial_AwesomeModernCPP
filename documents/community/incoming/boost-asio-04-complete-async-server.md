@@ -14,6 +14,11 @@ difficulty: advanced
 platform: host
 cpp_standard: "20"
 reading_time_minutes: 30
+community_category: learning-notes
+contributors:
+  - github: Karl-Heinrich-Marx-520
+    name: 游翰灵
+    roles: [author]
 ---
 
 # Boost.Asio 学习(4)：一个完备的异步服务器
@@ -795,7 +800,7 @@ public:
 
 private:
     friend class Singleton<AsioThreadPool>;
-    
+
     AsioThreadPool()
     : work_guard_(boost::asio::make_work_guard(io_context_)) {
     const auto thread_count = std::max(1u, std::thread::hardware_concurrency());
