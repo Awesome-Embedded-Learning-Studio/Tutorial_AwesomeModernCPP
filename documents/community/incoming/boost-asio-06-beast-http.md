@@ -16,12 +16,17 @@ platform: host
 cpp_standard: [20]
 reading_time_minutes: 25
 community_category: learning-notes
+contributors:
+  - github: Karl-Heinrich-Marx-520
+    name: 游翰灵
+    roles: [author]
 ---
 
 # Boost.Asio 学习(6)：用 Boost.Beast
 
 > **作者**：游翰灵（Karl-Heinrich-Marx-520） · **原创声明**：本文为本人原创学习笔记整理，示例代码均为本人编写并在本地（MinGW g++ 13.1 + Boost 1.91，C++20）编译运行验证
-> **主要参考**：[Boost.Beast 官方文档](https://www.boost.org/doc/libs/release/libs/beast/)、[Boost.Asio 官方文档](https://think-async.com/Asio/)**目标读者**：读完第 5 篇、想让服务器说 HTTP 而不只是自定义协议的现代 C++ 学习者
+> **主要参考**：[Boost.Beast 官方文档](https://www.boost.org/doc/libs/release/libs/beast/)、[Boost.Asio 官方文档](https://think-async.com/Asio/)\
+> **目标读者**：读完第 5 篇、想让服务器说 HTTP 而不只是自定义协议的现代 C++ 学习者
 > **授权说明**：同意维护者调整标题、格式、放置位置与部分措辞；随仓库以 MIT 许可发布
 
 第 5 篇用协程把回调状态机收回了一个函数，但那台服务器说的还是我们自己定的 id-length-value 协议。换成 HTTP 会怎样？
@@ -285,7 +290,7 @@ receive body is {"email":"test@qq.com"}
 email is test@qq.com
 ```
 
-​
+
 
 ## Beast 的几个核心类型
 
@@ -296,14 +301,14 @@ email is test@qq.com
 | `beast::flat_buffer`   | 给解析器用的读缓冲，内存连续                | 每条连接一个，放在连接类里           |
 | `http::request<Body>`  | 一个 HTTP 请求对象，含方法、路径、版本、头、body | 读进来直接读它的字段              |
 | `http::response<Body>` | 一个 HTTP 响应对象，结构对称             | 填完字段交给 `async_write`    |
-| `http::verb`           | 方法枚举，共 32 个值                  | `switch` 分发             |
+| `http::verb`           | 方法枚举，共 34 个值                  | `switch` 分发             |
 | `http::field`          | 头字段枚举，自动处理标准大小写               | `response.set(...)`     |
 | `http::async_read`     | 一次读完**整条**报文并解析               | 比 `async_read_some` 高一层 |
 | `http::async_write`    | 把报文对象序列化后写出去                  | 写完按需 `shutdown`         |
 
 一句话概括分工：**Asio 管字节怎么收发，Beast 管这些字节是什么意思。**
 
-​
+
 
 ## API 汇总
 
@@ -312,7 +317,7 @@ email is test@qq.com
 | `beast::flat_buffer`                   | 给解析器用的连续内存读缓冲，`8192` 是容量上限                       |
 | `http::request<Body>`                  | 请求对象，方法、路径、版本、头、body 都在里面                        |
 | `http::response<Body>`                 | 响应对象，结构对称，填完交给 `async_write`                     |
-| `http::verb`                           | 方法枚举，共 32 个值，`delete_` 带下划线                      |
+| `http::verb`                           | 方法枚举，共 34 个值，`delete_` 带下划线                      |
 | `http::status`                         | 状态码枚举，`ok`=200、`bad_request`=400、`not_found`=404 |
 | `http::field`                          | 头字段枚举，自动生成标准大小写                                  |
 | `beast::error_code`                    | 就是 `boost::system::error_code` 的别名               |
@@ -355,7 +360,7 @@ void consume(std::size_t n);                     // 从头部丢弃 n 字节
 
 `consume` 你通常不用自己调——`async_read` 内部会消费掉已解析的部分。但长连接场景下 `flat_buffer` **必须在循环外声明**，否则残留的下一个请求数据会被丢掉，这点在协程版里能看到。
 
-​
+
 
 ### request 与 response：报文就是两个对象
 
@@ -368,7 +373,7 @@ unsigned version() const noexcept;           // 版本，11 表示 HTTP/1.1
 Body::value_type& body();                    // body
 ```
 
-`http::verb` 是枚举，常用的有 `get`、`post`、`put`、`delete_`、`head`、`options`、`patch`。注意 **`delete_` 带尾下划线**，因为 `delete` 是 C++ 关键字；整个枚举共 32 个值，包含 WebDAV 用的 `propfind`、`mkcol` 这些。
+`http::verb` 是枚举，常用的有 `get`、`post`、`put`、`delete_`、`head`、`options`、`patch`。注意 **`delete_` 带尾下划线**，因为 `delete` 是 C++ 关键字；整个枚举共 34 个值，包含 WebDAV 用的 `propfind`、`mkcol` 这些。
 
 响应侧是同一个套路，三步走完：设置状态码、设置头字段、写 body：
 
@@ -382,7 +387,7 @@ res.body() = "<html><body>Hello</body></html>";
 
 `set` 和 `insert` 的区别一句话：**`set` 覆盖同名字段，`insert` 追加同名字段**。头字段的大小写不用管，`http::field` 枚举会生成标准写法；自定义头可以直接传字符串，比如 `res.set("X-My-Header", "value")`。
 
-​
+
 
 ### body：同一份报文，几种存法
 
@@ -410,7 +415,7 @@ beast::ostream(response_.body()) << "Hello, world\n";
 
 本篇回调版用 `dynamic_body`、协程版用 `string_body`，就是为了把两种都走一遍。不知道来多大就用 `dynamic_body`，知道是文本就用 `string_body`，后者能直接 `res.body() = ...`，代码短一截。
 
-​
+
 
 ### async\_read：整条报文一次读完
 
@@ -432,7 +437,7 @@ http::async_read(socket_, buffer_, request_,
 
 `buffer` 和 `request_` 必须活到回调结束——它们都是连接类的成员，靠 `shared_from_this()` 保活，这正是第 3 篇讲的生命周期契约。不要对同一个 socket 并行发起多个 `async_read`——报文解析是有序的，并行会乱。读取成功后 `buffer` 里可能残留下一个请求的数据，长连接时千万别把它当成"用完就扔"。
 
-​
+
 
 ### async\_write 与 Content-Length
 
@@ -445,7 +450,7 @@ res.prepare_payload();                                // 自动算
 
 `prepare_payload()` 更省事，它按 body 长度自动填 `Content-Length`，并且不会覆盖你手动设过的值——所以先设 body、再调它，顺序别反。对于长度事先不知道的情况，它会改用 `Transfer-Encoding: chunked`，这两者不能同时出现。
 
-​
+
 
 ### 超时：让计时器和读操作赛跑
 
@@ -468,7 +473,7 @@ self->socket_.shutdown(tcp::socket::shutdown_send, ec);
 self->deadline_.cancel();   // 响应写完，取消超时定时器
 ```
 
-​
+
 
 ### 短连接与长连接：一个连接服务几个请求
 
@@ -624,7 +629,7 @@ int main() {
 }
 ```
 
-​
+
 
 四个成员函数合并成了一个 `for` 循环，逐个对照：
 
@@ -648,7 +653,7 @@ int main() {
 {"email":"test@qq.com","error":0,"msg":"receive email post success"}
 ```
 
-​
+
 
 到这里整个系列就结束了。六篇走下来是同一条线：同步 C/S 认识 Asio 的基本形状，同步读写搞清"读满"和"读一点"的区别，异步读写引入回调和对象保活，第 4 篇把这些攒成一台工程上站得住的服务器，第 5 篇用协程把它收进一个函数，本篇换上 HTTP 让服务器说一种真实协议。**工具链的复杂度是递增的，但每一层解决的问题都是上一层留下的**，这也是这个系列的排布逻辑。
 
