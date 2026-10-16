@@ -84,4 +84,4 @@ Each knob's payoff has to be measured afresh, and the price list will move with 
 
 - [binutils: nm and --size-sort](https://sourceware.org/binutils/docs/binutils/nm.html)
 - [GCC optimize options (-O3/-Os/inline limits)](https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html)
-- [the libestdx repository (the logger module and examples/06_log)](https://github.com/Charliechen114514/libestdx)
+- [the libestdx repository (the logger module and examples/06_log)](https://github.com/Awesome-Embedded-Learning-Studio/libestdx)

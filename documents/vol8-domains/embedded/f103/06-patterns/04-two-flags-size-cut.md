@@ -85,4 +85,4 @@ blinky 只用 `HAL_Init`/`HAL_Delay`，但链接进来的 `stm32f1xx_hal.c` 等�
 - [Microchip：Function-sections Option](https://onlinedocs.microchip.com/guides/content.xhtml?AID=1669576)
 - [MaskRay：Metadata sections, COMDAT and SHF_LINK_ORDER](https://maskray.me/blog/2021-01-31-metadata-sections-comdat-and-shf-link-order)
 - [LLVM Discourse：被 GC 的 section 与调试信息](https://discourse.llvm.org/t/lld-how-to-get-rid-of-debug-info-of-sections-deleted-by-gc-sections/13983)
-- [libestdx 仓库](https://github.com/Charliechen114514/libestdx)
+- [libestdx 仓库](https://github.com/Awesome-Embedded-Learning-Studio/libestdx)

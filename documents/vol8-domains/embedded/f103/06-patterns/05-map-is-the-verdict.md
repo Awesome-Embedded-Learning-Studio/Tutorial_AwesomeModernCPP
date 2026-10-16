@@ -83,4 +83,4 @@ UART 驱动因此新增了 `try_send`：与原 `send`（保持 trap 语义的驱
 
 - [GNU ld 手册：Options（--gc-sections）](https://sourceware.org/binutils/docs/ld/Options.html)
 - [arm-none-eabi binutils：strings / objdump](https://sourceware.org/binutils/docs/binutils/strings.html)
-- [libestdx 仓库（examples/06_log 与 logger 模块）](https://github.com/Charliechen114514/libestdx)
+- [libestdx 仓库（examples/06_log 与 logger 模块）](https://github.com/Awesome-Embedded-Learning-Studio/libestdx)

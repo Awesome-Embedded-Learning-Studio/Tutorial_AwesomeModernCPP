@@ -63,7 +63,7 @@ That covers the basic environment and our library strategy. Now, how to verify.
 Our protagonist libestdx is a public repository: one command pulls it down (`--recursive` also drags in the HAL library it depends on), and once the toolchain is set up, two commands build it:
 
 ```bash
-git clone --recursive https://github.com/Charliechen114514/libestdx.git
+git clone --recursive https://github.com/Awesome-Embedded-Learning-Studio/libestdx.git
 cd libestdx
 
 # Kids, we use our own secret-recipe cmake (quite the eyesore)

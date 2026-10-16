@@ -57,7 +57,7 @@ related:
 咱们的主角 libestdx 是一个公开仓库，一条命令拉下来（`--recursive` 会顺带把它依赖的 HAL 库一起拉齐），配好工具链之后两条命令就能构建：
 
 ```bash
-git clone --recursive https://github.com/Charliechen114514/libestdx.git
+git clone --recursive https://github.com/Awesome-Embedded-Learning-Studio/libestdx.git
 cd libestdx
 
 # 孩子们，要用我们秘制的cmake（难视

@@ -110,7 +110,7 @@ emit_stack.cpp:40:32:void call_it()	376	static
 - 裸机全 RAM 栈模型下无忧；RTOS 定长线程栈才是真约束，`LINE_BYTES` 是旋钮，静态 +fstack-usage 与动态高水位结合是预算的正路；
 - 常量日志行被完全折叠成 `movs #26`——零开销的最后一块拼图。
 
-代码在 [libestdx/logger/](https://github.com/Charliechen114514/libestdx/tree/main/include/libestdx/logger)，`emit` 的实现按本文结论落笔。
+代码在 [libestdx/logger/](https://github.com/Awesome-Embedded-Learning-Studio/libestdx/tree/main/include/libestdx/logger)，`emit` 的实现按本文结论落笔。
 
 ## 参考资源
 
@@ -119,4 +119,4 @@ emit_stack.cpp:40:32:void call_it()	376	static
 - [GCC Developer Options（-fstack-usage / -fcallgraph-info 官方文档）](https://gcc.gnu.org/onlinedocs/gcc/Developer-Options.html)
 - [Measuring Stack Usage the Hard Way — Memfault Interrupt](https://interrupt.memfault.com/blog/measuring-stack-usage-the-hard-way)
 - [puncover — bytewise stack/code analysis](https://github.com/HBehrens/puncover)
-- [libestdx 仓库](https://github.com/Charliechen114514/libestdx)
+- [libestdx 仓库](https://github.com/Awesome-Embedded-Learning-Studio/libestdx)

@@ -89,4 +89,4 @@ That is why the UART driver gained `try_send`: it coexists with the original `se
 
 - [GNU ld manual: Options (--gc-sections)](https://sourceware.org/binutils/docs/ld/Options.html)
 - [arm-none-eabi binutils: strings / objdump](https://sourceware.org/binutils/docs/binutils/strings.html)
-- [libestdx repository (examples/06_log and the logger module)](https://github.com/Charliechen114514/libestdx)
+- [libestdx repository (examples/06_log and the logger module)](https://github.com/Awesome-Embedded-Learning-Studio/libestdx)

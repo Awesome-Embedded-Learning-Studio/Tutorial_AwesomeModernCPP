@@ -116,7 +116,7 @@ The last part of the bill: which budget do these 376 bytes come out of?
 - Under the bare-metal full-RAM stack model there is nothing to worry about; the fixed-size RTOS thread stack is the real constraint, `LINE_BYTES` is the knob, and combining static `-fstack-usage` with dynamic high-water marks is the right road to a budget;
 - A constant logging line folds completely into `movs #26` — the last puzzle piece of zero overhead.
 
-The code lives in [libestdx/logger/](https://github.com/Charliechen114514/libestdx/tree/main/include/libestdx/logger); `emit`'s implementation was written to follow this article's conclusions.
+The code lives in [libestdx/logger/](https://github.com/Awesome-Embedded-Learning-Studio/libestdx/tree/main/include/libestdx/logger); `emit`'s implementation was written to follow this article's conclusions.
 
 ## References
 
@@ -125,4 +125,4 @@ The code lives in [libestdx/logger/](https://github.com/Charliechen114514/libest
 - [GCC Developer Options (official -fstack-usage / -fcallgraph-info documentation)](https://gcc.gnu.org/onlinedocs/gcc/Developer-Options.html)
 - [Measuring Stack Usage the Hard Way — Memfault Interrupt](https://interrupt.memfault.com/blog/measuring-stack-usage-the-hard-way)
 - [puncover — bytewise stack/code analysis](https://github.com/HBehrens/puncover)
-- [the libestdx repository](https://github.com/Charliechen114514/libestdx)
+- [the libestdx repository](https://github.com/Awesome-Embedded-Learning-Studio/libestdx)

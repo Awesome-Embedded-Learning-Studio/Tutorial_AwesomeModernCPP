@@ -1,8 +1,8 @@
 [submodule "third_party/libestdx"]
 	path = third_party/libestdx
-	url = https://github.com/Charliechen114514/libestdx.git
+	url = https://github.com/Awesome-Embedded-Learning-Studio/libestdx.git
 	ignore = dirty
 [submodule "third_party/ZerOS"]
 	path = third_party/ZerOS
-	url = https://github.com/Charliechen114514/ZerOS.git
+	url = https://github.com/Awesome-Embedded-Learning-Studio/ZerOS.git
 	ignore = dirty

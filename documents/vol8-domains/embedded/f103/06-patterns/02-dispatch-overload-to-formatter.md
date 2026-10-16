@@ -216,7 +216,7 @@ Parentheses are required around this expression in a requires clause
 - `Formatter<T>` 特化借了 `std::formatter` 的熟脸：特化集合按构造互斥、拒绝文案各归各位、`LineBuffer` 回到纯字节层，一行前置声明转发的缝；
 - 两个语言细节值得记住：`static_assert` 拒绝必须让条件依赖模板形参；requires 子句给 `!concept<T>` 加括号。
 
-代码在 [libestdx/logger/](https://github.com/Charliechen114514/libestdx/tree/main/include/libestdx/logger)（`buffer.hpp` 字节层 + `format.hpp` Formatter 层），演化过程中的中间版本在这篇文章里永久留档。
+代码在 [libestdx/logger/](https://github.com/Awesome-Embedded-Learning-Studio/libestdx/tree/main/include/libestdx/logger)（`buffer.hpp` 字节层 + `format.hpp` Formatter 层），演化过程中的中间版本在这篇文章里永久留档。
 
 ## 参考资源
 
@@ -224,4 +224,4 @@ Parentheses are required around this expression in a requires clause
 - [P3281: Member customization points (std::execution 社区对 tag_invoke 复杂度的回应)](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2024/p3281r0.html)
 - [Customization point object - cppreference](https://en.cppreference.com/w/cpp/named_req/CustomizationPointObject)
 - [std::formatter - cppreference](https://en.cppreference.com/w/cpp/utility/format/formatter)
-- [libestdx 仓库](https://github.com/Charliechen114514/libestdx)
+- [libestdx 仓库](https://github.com/Awesome-Embedded-Learning-Studio/libestdx)

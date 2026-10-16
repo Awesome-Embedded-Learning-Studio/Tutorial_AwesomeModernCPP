@@ -22,7 +22,7 @@ cpp_standard: [23]
 ## 跟读姿势
 
 ```shell
-git clone https://github.com/Charliechen114514/ZerOS.git
+git clone https://github.com/Awesome-Embedded-Learning-Studio/ZerOS.git
 cd ZerOS
 git submodule update --init
 # 每篇开头会给这一篇的 commit,例如:

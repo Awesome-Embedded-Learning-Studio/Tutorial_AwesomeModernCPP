@@ -34,7 +34,7 @@ translation:
 
 Nobody writes their own logging on the host — install `spdlog` and you already have everything. But on a board like the BluePill with 64KB flash / 20KB RAM, the ledger for the mainstream options reads badly: the `printf` family throws away variadic type safety, and float and locale, if you are not careful, drag several KB into the firmware; `std::format` is elegant, granted, but GCC's implementation pulls in volume on the order of tens of KB — on 64KB of on-chip flash that means paying for every inch of ground in blood; the logging macros in each vendor's SDK are light enough, but their metadata leans on `__FILE__`/`__LINE__`, which grinds against the position that modern C++ does not reach for macros at every turn.
 
-So in [libestdx](https://github.com/Charliechen114514/libestdx) we decided to write our own. The goals were plain: concatenation-style formatting, macro-free metadata, compile-time level trimming, and every "zero overhead" claim verifiable by disassembly or the map file. This article is the uncut record of the first half of that journey (the vocabulary layer + the line-assembly layer) — not "let me teach you to write it this way", but "here are the walls we hit while writing it this way, and how we used compiler output to tear them down". Every pitfall comes with a real error message or real assembly, and you can reproduce each one with the same commands.
+So in [libestdx](https://github.com/Awesome-Embedded-Learning-Studio/libestdx) we decided to write our own. The goals were plain: concatenation-style formatting, macro-free metadata, compile-time level trimming, and every "zero overhead" claim verifiable by disassembly or the map file. This article is the uncut record of the first half of that journey (the vocabulary layer + the line-assembly layer) — not "let me teach you to write it this way", but "here are the walls we hit while writing it this way, and how we used compiler output to tear them down". Every pitfall comes with a real error message or real assembly, and you can reproduce each one with the same commands.
 
 First, the three most important design decisions, laid on the table up front — they determine what every pitfall below looks like:
 
@@ -285,7 +285,7 @@ Our call: **one concept per library, intersection semantics** — `TextSource = 
 - Clamp the copy loop once, then move the whole span: a ~9x instruction difference on the M3, and disassembly is the only acceptance test worth trusting;
 - One concept can be shared only on the premise of "constraints mirror the function body" — two consumers must agree on expression semantics before they share a concept.
 
-The module is still being landed in libestdx piece by piece (this article covers the vocabulary layer and the line-assembly layer; the logger core, sink adaptation, and the full Renode end-to-end verification come in later installments). The code lives at [libestdx/logger/](https://github.com/Charliechen114514/libestdx/tree/main/include/libestdx/logger) — feel free to drop by the construction site.
+The module is still being landed in libestdx piece by piece (this article covers the vocabulary layer and the line-assembly layer; the logger core, sink adaptation, and the full Renode end-to-end verification come in later installments). The code lives at [libestdx/logger/](https://github.com/Awesome-Embedded-Learning-Studio/libestdx/tree/main/include/libestdx/logger) — feel free to drop by the construction site.
 
 ## References
 
@@ -293,4 +293,4 @@ The module is still being landed in libestdx piece by piece (this article covers
 - [Non-terminal variadic template parameters — Corentin Jabot](https://cor3ntin.github.io/2020/06/18/nonterminal/)
 - [Non-Terminal Variadic Parameters and Default Values - C++ Stories](https://www.cppstories.com/2021/non-terminal-variadic/)
 - [std::to_chars - cppreference](https://en.cppreference.com/w/cpp/utility/to_chars)
-- [the libestdx repository](https://github.com/Charliechen114514/libestdx)
+- [the libestdx repository](https://github.com/Awesome-Embedded-Learning-Studio/libestdx)

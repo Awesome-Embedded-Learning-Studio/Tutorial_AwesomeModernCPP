@@ -78,4 +78,4 @@ arm-none-eabi-nm --size-sort -t d build/examples/06_log/log_example | tail -12
 
 - [binutils：nm 与 --size-sort](https://sourceware.org/binutils/docs/binutils/nm.html)
 - [GCC 优化选项（-O3/-Os/inline limits）](https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html)
-- [libestdx 仓库（logger 模块与 examples/06_log）](https://github.com/Charliechen114514/libestdx)
+- [libestdx 仓库（logger 模块与 examples/06_log）](https://github.com/Awesome-Embedded-Learning-Studio/libestdx)

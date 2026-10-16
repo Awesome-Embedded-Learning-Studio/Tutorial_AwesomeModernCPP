@@ -28,7 +28,7 @@ The route advances in commit order: first we get the repository running (project
 ## How to Follow Along
 
 ```shell
-git clone https://github.com/Charliechen114514/ZerOS.git
+git clone https://github.com/Awesome-Embedded-Learning-Studio/ZerOS.git
 cd ZerOS
 git submodule update --init
 # Each article opens with the commit it anchors to, for example:

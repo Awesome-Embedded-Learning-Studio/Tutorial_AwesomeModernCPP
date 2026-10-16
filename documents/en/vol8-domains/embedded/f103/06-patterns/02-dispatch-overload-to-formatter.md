@@ -222,7 +222,7 @@ Our scenario's weights were "tutorial library + embedded readers + rejection err
 - The `Formatter<T>` specialization borrows `std::formatter`'s familiar face: the specialization set is mutually exclusive by construction, rejection messages each fall where they belong, `LineBuffer` returns to a pure byte layer, and the seam is a one-line forward behind a forward declaration;
 - Two language details are worth remembering: a `static_assert` rejection must make the condition depend on a template parameter; and parenthesize `!concept<T>` in a requires clause.
 
-The code lives in [libestdx/logger/](https://github.com/Charliechen114514/libestdx/tree/main/include/libestdx/logger) (`buffer.hpp` for the byte layer + `format.hpp` for the Formatter layer); the intermediate versions from the evolution are permanently archived in this article.
+The code lives in [libestdx/logger/](https://github.com/Awesome-Embedded-Learning-Studio/libestdx/tree/main/include/libestdx/logger) (`buffer.hpp` for the byte layer + `format.hpp` for the Formatter layer); the intermediate versions from the evolution are permanently archived in this article.
 
 ## References
 
@@ -230,4 +230,4 @@ The code lives in [libestdx/logger/](https://github.com/Charliechen114514/libest
 - [P3281: Member customization points (the std::execution community's response to tag_invoke's complexity)](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2024/p3281r0.html)
 - [Customization point object - cppreference](https://en.cppreference.com/w/cpp/named_req/CustomizationPointObject)
 - [std::formatter - cppreference](https://en.cppreference.com/w/cpp/utility/format/formatter)
-- [the libestdx repository](https://github.com/Charliechen114514/libestdx)
+- [the libestdx repository](https://github.com/Awesome-Embedded-Learning-Studio/libestdx)

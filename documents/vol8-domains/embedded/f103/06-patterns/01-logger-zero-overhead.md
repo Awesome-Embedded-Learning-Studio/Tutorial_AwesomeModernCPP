@@ -28,7 +28,7 @@ related:
 
 日志这个东西，host 上没人自己写——`spdlog` 一装什么都有了。但到了 BluePill 这种 64KB flash / 20KB RAM 的板子上，主流方案的账就很不好算：`printf` 家族把变参类型安全丢了，浮点和 locale 一不注意就拖几 KB 进固件；`std::format` 优雅是优雅，GCC 的实现拉进来的体积是数十 KB 量级，对 64KB 的片上 flash 属于"一寸山河一寸血"；各家 SDK 的日志宏倒是轻，但元数据靠 `__FILE__`/`__LINE__`，和"现代 C++ 不动辄上宏"的立场拧着。
 
-所以我们在 [libestdx](https://github.com/Charliechen114514/libestdx) 里决定自己写一个，目标很朴素：**拼接式格式化、无宏元数据、编译期级别裁剪，每一项"零开销"的宣称都要能用反汇编或 map 文件验证**。这篇文章是前半程（词汇层 + 行组装层）的完整实录——不是"我教你这么写"，而是"我们这么写的时候撞了什么墙、怎么用编译器输出把墙拆了"。每个坑都有真实的报错或汇编，你可以拿同样的命令复现。
+所以我们在 [libestdx](https://github.com/Awesome-Embedded-Learning-Studio/libestdx) 里决定自己写一个，目标很朴素：**拼接式格式化、无宏元数据、编译期级别裁剪，每一项"零开销"的宣称都要能用反汇编或 map 文件验证**。这篇文章是前半程（词汇层 + 行组装层）的完整实录——不是"我教你这么写"，而是"我们这么写的时候撞了什么墙、怎么用编译器输出把墙拆了"。每个坑都有真实的报错或汇编，你可以拿同样的命令复现。
 
 先把三个最重要的设计决策摆出来，它们决定了后面所有的坑长什么样：
 
@@ -279,7 +279,7 @@ void append(std::string_view view) {
 - 拷贝循环钳制一次再整段搬，M3 上 ~9 倍指令差，反汇编是唯一可信的验收；
 - 概念统一的前提是"约束镜像函数体"，两个消费方表达式语义一致才共用一个概念。
 
-模块还在 libestdx 里持续落地（本文覆盖词汇层与行组装层，logger 核心、sink 适配与 Renode 全链路验证在后续篇），代码见 [libestdx/logger/](https://github.com/Charliechen114514/libestdx/tree/main/include/libestdx/logger)，欢迎围观施工进度。
+模块还在 libestdx 里持续落地（本文覆盖词汇层与行组装层，logger 核心、sink 适配与 Renode 全链路验证在后续篇），代码见 [libestdx/logger/](https://github.com/Awesome-Embedded-Learning-Studio/libestdx/tree/main/include/libestdx/logger)，欢迎围观施工进度。
 
 ## 参考资源
 
@@ -287,4 +287,4 @@ void append(std::string_view view) {
 - [Non-terminal variadic template parameters — Corentin Jabot](https://cor3ntin.github.io/2020/06/18/nonterminal/)
 - [Non-Terminal Variadic Parameters and Default Values - C++ Stories](https://www.cppstories.com/2021/non-terminal-variadic/)
 - [std::to_chars - cppreference](https://en.cppreference.com/w/cpp/utility/to_chars)
-- [libestdx 仓库](https://github.com/Charliechen114514/libestdx)
+- [libestdx 仓库](https://github.com/Awesome-Embedded-Learning-Studio/libestdx)

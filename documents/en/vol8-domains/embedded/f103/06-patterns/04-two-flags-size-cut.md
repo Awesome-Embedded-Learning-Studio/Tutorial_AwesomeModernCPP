@@ -91,4 +91,4 @@ This batch of data doubles as the logging module's seed capital: in the next art
 - [Microchip: Function-sections Option](https://onlinedocs.microchip.com/guides/content.xhtml?AID=1669576)
 - [MaskRay: Metadata sections, COMDAT and SHF_LINK_ORDER](https://maskray.me/blog/2021-01-31-metadata-sections-comdat-and-shf-link-order)
 - [LLVM Discourse: GC'd sections and debug info](https://discourse.llvm.org/t/lld-how-to-get-rid-of-debug-info-of-sections-deleted-by-gc-sections/13983)
-- [libestdx repository](https://github.com/Charliechen114514/libestdx)
+- [libestdx repository](https://github.com/Awesome-Embedded-Learning-Studio/libestdx)
