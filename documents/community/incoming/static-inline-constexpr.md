@@ -15,6 +15,9 @@ platform: host
 cpp_standard: [11, 14, 17]
 reading_time_minutes: 13
 community_category: learning-notes
+contributors:
+  - github: xiaoshuaijie
+    roles: [author]
 ---
 
 # static、inline 与 constexpr
