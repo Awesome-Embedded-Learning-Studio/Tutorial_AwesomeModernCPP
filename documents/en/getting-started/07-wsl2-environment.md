@@ -16,8 +16,8 @@ reading_time_minutes: 10
 contributors_footer: inline
 translation:
   source: documents/getting-started/07-wsl2-environment.md
-  source_hash: 27a0edb9cd16e7be3bad5522e17f84fd6dfc984d85ec669d871adaaa0f635024
-  translated_at: '2026-10-04T11:31:47+00:00'
+  source_hash: 1e1030fa88ea68ec4dc9d41c1ffb5d20853c8fb6e8c1ef41f8f0c037e4fc59e8
+  translated_at: '2026-10-18T06:52:24+00:00'
   engine: anthropic
   token_count: 7000
 ---
@@ -204,6 +204,34 @@ wsl --terminate RK3506
 ```
 
 This command safely stops the RK3506 distribution without disturbing the others. To shut down every running WSL instance at once, use the `wsl --shutdown` command introduced earlier.
+
+### 3.3.7 Remove a Specific Distribution and WSL
+
+```powershell
+wsl --unregister <distribution-name>
+```
+
+> Caution: this permanently deletes every file, installed package, user setting, and the Linux file system in that distribution. The operation cannot be undone.
+
+For example, to uninstall `Ubuntu-22.04`:
+
+```powershell
+wsl --unregister Ubuntu-22.04
+```
+
+Afterward, run `wsl -l -v` to confirm that the distribution was removed:
+
+```powershell
+wsl -l -v
+```
+
+If `Ubuntu-22.04` is no longer in the list, the uninstall succeeded.
+
+If you no longer want WSL, first remove all distributions and then uninstall WSL. Otherwise, distribution data may remain after WSL is removed, but those distributions will no longer run. Build the habit of removing every distribution before removing WSL:
+
+```powershell
+wsl --uninstall
+```
 
 # 4. Isolating the Windows PATH
 
