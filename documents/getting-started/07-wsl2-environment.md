@@ -12,7 +12,7 @@ tags:
   - 基础
   - beginner
   - 工具链
-reading_time_minutes: 10
+reading_time_minutes: 15
 contributors_footer: inline
 contributors:
   - github: xiaoshuaijie
@@ -209,7 +209,7 @@ wsl --terminate RK3506
 
 这个命令就能在不干扰其他发行版运行的情况下安全停掉RK3506这个发行版。如果要一次关闭所有正在运行的 WSL 实例，可以使用前面介绍过的 `wsl --shutdown`。
 
-### 3.3.7 删除指定发行版和WSL
+### 3.3.7 删除指定发行版和 WSL
 
 ```powershell
 wsl --unregister <发行版名称>
@@ -217,22 +217,23 @@ wsl --unregister <发行版名称>
 
 > 注意：此操作会永久删除该发行版中的所有文件、软件、用户配置和 Linux 文件系统，无法撤销。
 
-比如说，我现在需要卸载`Ubuntu-22.04`
+比如说，我现在需要卸载 `Ubuntu-22.04`：
 
 ```powershell
 wsl --unregister Ubuntu-22.04
 ```
 
-之后，可以执行`wsl -l -v`确认是否卸载成功
+之后可以执行 `wsl -l -v` 确认是否卸载成功：
 
 ```powershell
 wsl -l -v
 ```
 
-如果当你在列表里看到已经没有对应发行版`Ubuntu-22.04`，恭喜你成功完成卸载！
+如果在列表里已经看不到 `Ubuntu-22.04`，恭喜你，卸载成功！
 
-如果你不想要`wsl`了，那么现在教你进行删除:建议先删除所有发行版再进行删除`wsl`的操作，不然的话，你会遇到:你将`wsl`先删除但是忘记删除发行版时，此时的数据通常会保留，但是由于没有`wsl`，发行版将无法正常运行，不过你都选择卸载`wsl`了，干脆养成好习惯:先删除所有发行版再进行删除`wsl`
-删除`wsl`:
+如果你连 `wsl` 也不想要了，那就先把所有发行版删干净，再卸载 `wsl`。顺序反了会遇到这种情况：`wsl` 已经删掉、发行版却还留着，此时数据通常还留在磁盘上，但没有 `wsl` 撑着，发行版已经跑不起来，只剩占空间。既然都决定卸载 `wsl` 了，不如养成习惯：先清空所有发行版，再卸载 `wsl`。
+
+删除 `wsl`：
 
 ```powershell
 wsl --uninstall

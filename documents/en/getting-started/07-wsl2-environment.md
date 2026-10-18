@@ -12,12 +12,12 @@ tags:
   - 基础
   - beginner
   - 工具链
-reading_time_minutes: 10
+reading_time_minutes: 16
 contributors_footer: inline
 translation:
   source: documents/getting-started/07-wsl2-environment.md
-  source_hash: 1e1030fa88ea68ec4dc9d41c1ffb5d20853c8fb6e8c1ef41f8f0c037e4fc59e8
-  translated_at: '2026-10-18T06:52:24+00:00'
+  source_hash: 75073d33a0f175371f2559a907faf9b3a039121ef65c408f87f18466304d492f
+  translated_at: '2026-10-18T07:01:59+00:00'
   engine: anthropic
   token_count: 7000
 ---
