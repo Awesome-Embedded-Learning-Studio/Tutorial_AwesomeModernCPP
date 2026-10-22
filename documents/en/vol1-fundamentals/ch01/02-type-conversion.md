@@ -196,6 +196,8 @@ int main()
 
 `0.1 + 0.2` does not equal `0.3`—because `0.1` and `0.2` cannot be represented exactly in binary floating point, the `double` can only store an approximation. The right approach is to check whether the difference between the two floating-point numbers is smaller than a sufficiently tiny threshold (epsilon).
 
+> A quick side note! A reader asked: is this a mistake? Shouldn't we use `fabs` here? No need — later you will learn about "overloading". As you can see, C++ lets `abs` work on floating-point numbers too~. This is one huge improvement of C++ over C (though it can also be a source of problems :])
+
 ### Integer Overflow — The Consequences of Going Out of Range
 
 ```cpp
