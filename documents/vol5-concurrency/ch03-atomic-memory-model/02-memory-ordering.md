@@ -179,6 +179,23 @@ synchronizes-with 关系会建立 **happens-before** 关系：线程 A 在 relea
 
 回到我们的例子：`data = 42` sequenced-before `ready.store(true, release)`（同一线程内），`ready.store(true, release)` synchronizes-with `ready.load(acquire)` == true（跨线程），`ready.load(acquire)` sequenced-before `use(data)`（同一线程内）。通过传递性，`data = 42` happens-before `use(data)`——所以 `use(data)` 一定能看到 `data == 42`。
 
+我们把这条可见性链画成时序图：
+
+```mermaid
+sequenceDiagram
+    participant P as Producer 线程
+    participant C as Consumer 线程
+
+    P->>P: data = 42（非原子写）
+    Note right of P: sequenced-before（同一线程内）
+    P->>P: ready.store(true, release)
+    P-->>C: ready.load(acquire) 读到 true
+    Note over P,C: synchronizes-with（跨线程）
+    Note left of C: sequenced-before（同一线程内）
+    C->>C: use(data)
+    Note over P,C: 传递性：data = 42 happens-before use(data)，use(data) 一定能看到 data == 42
+```
+
 ### message passing 模式
 
 acquire-release 最经典的应用就是 message passing 模式：一个线程准备数据，然后通过一个原子标志通知另一个线程"数据准备好了"。
