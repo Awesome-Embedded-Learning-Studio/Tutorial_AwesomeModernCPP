@@ -1,0 +1,12 @@
+{
+  "type": "find-bug",
+  "title": "查一下就多了",
+  "stars": 2,
+  "hints": [
+    "`operator[]` 的规矩:键不在,就地默认插入一个值 0 的条目,再把这个 0 交给你——它天生带写入。",
+    "只查不动表,用 `stock.count(name)` 或 `stock.find(name)`;把那一行的条件换掉,size 就停在 2。"
+  ],
+  "bugLines": [
+    9
+  ]
+}

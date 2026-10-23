@@ -1,0 +1,15 @@
+{
+  "type": "judge-assert",
+  "title": "第一个偶数",
+  "stars": 1,
+  "hints": [
+    "循环里遇到第一个偶数就 `return x;`,函数返回类型是 `std::optional<int>`,返回 int 会自动装进 optional。",
+    "循环走完都没遇到,`return std::nullopt;`——optional 表达「没有」。"
+  ],
+  "tests": [
+    "first_even({1, 3, 4, 5}) == 4",
+    "first_even({2}) == 2",
+    "first_even({1, 3, 5}) == std::nullopt",
+    "first_even({}) == std::nullopt"
+  ]
+}

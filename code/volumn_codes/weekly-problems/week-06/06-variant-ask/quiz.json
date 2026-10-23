@@ -1,0 +1,16 @@
+{
+  "type": "judge-assert",
+  "title": "先问再取",
+  "stars": 2,
+  "hints": [
+    "variant 里此刻存的是哪个类型,要问它自己:`std::holds_alternative<int>(v)` 或 `std::get_if<int>(&v)`。",
+    "`get_if` 拿到指针,存的是 int 时非空,解引用就是值;存的是别的就给你 nullptr。"
+  ],
+  "tests": [
+    "fetch_int(42) == 42",
+    "fetch_int(0) == 0",
+    "fetch_int(-7) == -7",
+    "fetch_int(\"hi\") == -1",
+    "fetch_int(\"\") == -1"
+  ]
+}

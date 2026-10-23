@@ -1,0 +1,15 @@
+{
+  "type": "judge-assert",
+  "title": "一字之差",
+  "stars": 1,
+  "hints": [
+    "循环变量写成 `auto`,拿到的是每个元素的拷贝,循环体里怎么乘 2 都碰不到容器本身。",
+    "想动容器里的元素,循环变量要写 `auto&`,乘 2 直接写在它身上。"
+  ],
+  "tests": [
+    "[]{ std::vector<int> v{1, 2, 3}; double_all(v); return v == std::vector<int>({2, 4, 6}); }() == true",
+    "[]{ std::vector<int> v{7}; double_all(v); return v == std::vector<int>({14}); }() == true",
+    "[]{ std::vector<int> v{-1, 0}; double_all(v); return v == std::vector<int>({-2, 0}); }() == true",
+    "[]{ std::vector<int> v{}; double_all(v); return v.empty(); }() == true"
+  ]
+}

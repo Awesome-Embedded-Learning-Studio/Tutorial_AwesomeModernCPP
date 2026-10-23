@@ -1,0 +1,18 @@
+{
+  "type": "choice",
+  "title": "不是引用",
+  "stars": 2,
+  "hints": [
+    "`vector<bool>` 一个比特存一个元素,比特没有地址,给不出 `bool&`。",
+    "它的 `operator[]` 返回 `std::vector<bool>::reference` 代理:给代理赋值会写回容器,读它时转成 bool;`flip()` 是按位取反,0 变 1、1 变 0。"
+  ],
+  "options": [
+    "v[0] 的类型是 bool&,还能对它取地址",
+    "v[0] 的类型是一个代理对象,能当 bool 用,但拿它绑 bool& 编不过",
+    "vector<bool> 从 C++20 起被弃用,编译器会警告",
+    "v.flip() 把元素顺序倒过来,{true, false} 变成 {false, true}"
+  ],
+  "answer": [
+    2
+  ]
+}

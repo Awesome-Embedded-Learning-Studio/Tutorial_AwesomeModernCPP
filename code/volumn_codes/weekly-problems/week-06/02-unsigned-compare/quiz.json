@@ -1,0 +1,17 @@
+{
+  "type": "judge-assert",
+  "title": "负数会变大",
+  "stars": 2,
+  "hints": [
+    "`int` 和 `unsigned` 放在一起比大小,先把 `int` 那边按无符号规则转过去,不是反过来:`-1` 会变成 4294967295。",
+    "`a < 0` 时数学上一定小于任何 `unsigned`,先单独返回 true;`a >= 0` 时把 a 转成 unsigned 再比,值不会变。"
+  ],
+  "tests": [
+    "safe_less(-1, 1u) == true",
+    "safe_less(-1, 0u) == true",
+    "safe_less(0, 0u) == false",
+    "safe_less(1, 1u) == false",
+    "safe_less(3, 2u) == false",
+    "safe_less(5, 10u) == true"
+  ]
+}
