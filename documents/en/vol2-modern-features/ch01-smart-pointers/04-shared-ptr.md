@@ -103,6 +103,32 @@ Let's build our intuition with a simplified diagram:
 
 Seen this way, a `shared_ptr` object itself is `2 * sizeof(void*)` — two pointers. On a 64-bit system that's 16 bytes, twice the size of a `unique_ptr` (8 bytes). The control block's own size depends on the implementation (on x86_64 with GNU libstdc++, the control block header is 16 bytes — one vptr plus two 4-byte counters — and then it stores a pointer to the object; measured with GCC 16.2, the plainest control block for `shared_ptr(new T)` is 24 bytes as a whole).
 
+Let's lay out how shared_ptr, weak_ptr, the control block, and the managed object relate to each other in a class diagram:
+
+```mermaid
+classDiagram
+    class shared_ptr {
+        +T* ptr object pointer
+        +ctrl_block* ctrl control-block pointer
+    }
+    class weak_ptr {
+        +ctrl_block* ctrl control-block pointer
+    }
+    class ControlBlock {
+        +strong_count strong reference count
+        +weak_count weak reference count
+        +deleter custom deleter, optional
+        +allocator custom allocator, optional
+    }
+    class T["the managed object"]
+    shared_ptr "N" o-- "1" ControlBlock : holds a control-block pointer
+    weak_ptr "M" ..> "1" ControlBlock : weak reference, does not extend the object's lifetime
+    ControlBlock --> "1" T : stores a pointer to the object
+    shared_ptr --> "1" T : object pointer
+
+    note for ControlBlock "make_shared: object and control block in one allocation, adjacent\nshared_ptr(new T): two separate allocations"
+```
+
 ## The Advantages of make_shared: One Allocation
 
 As mentioned above, `make_shared` puts the object and the control block into one contiguous chunk of memory. That brings three notable benefits.

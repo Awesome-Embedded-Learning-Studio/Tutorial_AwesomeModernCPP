@@ -108,6 +108,32 @@ void demo_shared() {
 
 这样看，一个 `shared_ptr` 对象本身的大小是 `2 * sizeof(void*)`——两个指针。在 64 位系统上是 16 字节，比 `unique_ptr`（8 字节）大一倍。控制块本身的大小取决于实现（GNU libstdc++ 在 x86_64 上，控制块头部是 16 字节——一个 vptr 加两个 4 字节的计数，再存一个对象指针，`shared_ptr(new T)` 最朴素的控制块整块 24 字节，GCC 16.2 实测）。
 
+咱们再把 shared_ptr、weak_ptr、控制块和被管理对象四个角色之间的关系画成一张类图：
+
+```mermaid
+classDiagram
+    class shared_ptr {
+        +T* ptr 对象指针
+        +ctrl_block* ctrl 控制块指针
+    }
+    class weak_ptr {
+        +ctrl_block* ctrl 控制块指针
+    }
+    class ControlBlock {
+        +strong_count 强引用计数
+        +weak_count 弱引用计数
+        +deleter 自定义删除器，可选
+        +allocator 自定义分配器，可选
+    }
+    class T["被管理对象"]
+    shared_ptr "N" o-- "1" ControlBlock : 持有控制块指针
+    weak_ptr "M" ..> "1" ControlBlock : 弱引用，不延长对象生命周期
+    ControlBlock --> "1" T : 存有对象指针
+    shared_ptr --> "1" T : 对象指针
+
+    note for ControlBlock "make_shared：对象与控制块同一次分配，紧挨在一起\nshared_ptr(new T)：对象与控制块两次独立分配"
+```
+
 ## make_shared 的优势：单次分配
 
 前面提到，`make_shared` 把对象和控制块放在一个连续的内存块里。这带来了三个显著的好处。

@@ -186,6 +186,23 @@ This chain extends further. If operation A happens-before operation B, and opera
 
 Back to our example: `data = 42` is sequenced-before `ready.store(true, release)` (within the same thread), `ready.store(true, release)` synchronizes-with `ready.load(acquire)` == true (across threads), and `ready.load(acquire)` is sequenced-before `use(data)` (within the same thread). By transitivity, `data = 42` happens-before `use(data)`—so `use(data)` is guaranteed to see `data == 42`.
 
+Let's draw this visibility chain as a sequence diagram:
+
+```mermaid
+sequenceDiagram
+    participant P as Producer thread
+    participant C as Consumer thread
+
+    P->>P: data = 42 (non-atomic write)
+    Note right of P: sequenced-before (same thread)
+    P->>P: ready.store(true, release)
+    P-->>C: ready.load(acquire) reads true
+    Note over P,C: synchronizes-with (across threads)
+    Note left of C: sequenced-before (same thread)
+    C->>C: use(data)
+    Note over P,C: transitivity: data = 42 happens-before use(data), so use(data) is guaranteed to see data == 42
+```
+
 ### The message passing pattern
 
 The most classic application of acquire-release is the message passing pattern: one thread prepares data and then notifies another thread that "the data is ready" through an atomic flag.
