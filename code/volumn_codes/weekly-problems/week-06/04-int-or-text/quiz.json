@@ -1,0 +1,31 @@
+{
+  "type": "judge-io",
+  "title": "数字还是文本",
+  "stars": 2,
+  "hints": [
+    "`fgets` 读整行(含换行),先剥掉行尾的换行再判;空行不是整数。",
+    "开头最多一个负号:第一个字符是负号且后面还有字符时跳过它,其余字符必须全是数字——单独一个 `-` 不算整数。"
+  ],
+  "tests": [
+    {
+      "in": "42\nhello\n",
+      "out": "int 42\ntext hello\n"
+    },
+    {
+      "in": "-3\n3a\n",
+      "out": "int -3\ntext 3a\n"
+    },
+    {
+      "in": "007\n",
+      "out": "int 7\n"
+    },
+    {
+      "in": "abc\n123456\n",
+      "out": "text abc\nint 123456\n"
+    },
+    {
+      "in": "-\n",
+      "out": "text -\n"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "type": "judge-assert",
+  "title": "先提升再运算",
+  "stars": 2,
+  "hints": [
+    "`b << 1` 里的 b 先提升成 int,255 左移一位是 510,没有回绕。",
+    "`narrow_shift` 同样算出 510,存回 unsigned char 时按 256 取模,折成 254。返回类型说了算。"
+  ],
+  "tests": [
+    "wide_shift(0xFF) == 510",
+    "narrow_shift(0xFF) == 254",
+    "wide_shift(0x7F) == 254",
+    "narrow_shift(0x80) == 0"
+  ]
+}

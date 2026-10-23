@@ -1,0 +1,18 @@
+{
+  "type": "choice",
+  "title": "哪句编不过",
+  "stars": 1,
+  "hints": [
+    "老式 enum 的枚举值一出身就能当整数用;`enum class` 把这条隐式通道关了,不许类型之间乱串。",
+    "想要 `enum class` 枚举值的整数,必须显式写 `static_cast<int>`,第 2 句就是这么写的。"
+  ],
+  "options": [
+    "int a = RED;",
+    "int b = static_cast<int>(Fruit::APPLE);",
+    "int c = Fruit::PEAR;",
+    "Color d = GREEN;"
+  ],
+  "answer": [
+    3
+  ]
+}
