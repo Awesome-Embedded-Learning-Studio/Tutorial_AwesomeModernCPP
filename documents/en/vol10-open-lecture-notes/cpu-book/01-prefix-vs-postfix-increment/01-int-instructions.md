@@ -189,6 +189,10 @@ _Z7use_prei:
 
 `leal 1(%rax), %edx` and the `lea edx, 1[rax]` above are the same thing, matching one to one instruction for instruction, only written in the opposite direction. From the next group of experiments on, we settle on AT&T. It's the toolchain default and the style you'll see whenever you read assembly with objdump, so this is where Intel exits.
 
+A paper comparison isn't quite enough, so we moved the machine code of these two functions into the page. The executor below loads the full scene of use_post(41) and use_pre(41): single-step through use_post and watch the old value 41 get carried into eax while 42 is written back to memory, then walk use_pre and see addl do it in one stroke. The only difference from GCC's output above is the symbol names: in the executor they read use_post and use_pre, without the _Z8use_posti mangling. As you go, keep an eye on where sink lands after each call: once it receives 41, once 42, sourced from the carried-off old value and the freshly incremented one respectively.
+
+<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/i_postfix_prefix.json" />
+
 ## When Nobody Wants the Old Value: Even -O0 Shows No Difference
 
 In the experiment above, x took the increment's value. What about when nobody wants it? Let's guess first: with a lone `i++;`, the old value is about to be thrown away, but manufacturing it still costs a step of work, so postfix ought to be doing extra work, right? Let's swap the source for two separate functions:

@@ -1,0 +1,5 @@
+# 场景构建产物（build.py 生成，源文件入库）
+*.o
+*.elf
+initial.json
+payload.json

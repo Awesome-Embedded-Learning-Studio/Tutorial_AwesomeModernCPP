@@ -173,6 +173,10 @@ Backtrace stopped: previous frame identical to this frame (corrupt stack?)
 
 咱们把关键几处对上。返回前的 info frame 报 `saved rip = 0x555501234567`，它本来是 main 里的地址（0x5555555552xx 一带），低 32 位被载荷 0x01234567 顶掉了，高 32 位还是原来的 0x00005555，这正是只写了 4 字节 int、坏掉半条返回地址的现场。内存里也看得一清二楚：0x...d078 与 0x...d088 两行拼出 arr 的 1、2、3、4，0x...d090 是完好的 saved rbp（0x00007fffffffd0b0），紧挨着的 0x...d098 是被写坏的返回地址槽 0x0000555501234567。continue 之后程序收到了 SIGSEGV，崩溃现场的 rip 逐字等于写进去的坏地址，bt 已经回溯不动了（`corrupt stack?`）。控制流被劫走的样子，没有比这更直白的证据了。
 
+真进程里这场劫持以 SIGSEGV 收场，复现一次成本不低。咱们把它做成了可控的版本搬进页面：下面的执行器加载的是去保护构建的 f，arr[6] 的越界写把 boom 的地址盖进返回地址槽，f 的 ret 弹出的不再是 main 的下一条指令。为了收场干净，main 在 call 之前预先压了一个出口地址，boom 干完活顺着它落在守卫前，rax 里留着 99。与文章现场的差别有两条：真程序写坏的是低 32 位、跳向野地址，这里整条地址都换成了有效的 boom；金丝雀版本依赖 fs 段寻址，执行器不仿真，场景只含去保护版。您单步到 f 的 ret 那条指令，先看栈窗口顶上那个槽已经变成 boom 的地址，再走一步，看 rip 落到哪。
+
+<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/smash_return.json" />
+
 ## 打到 saved rbp：崩在调用者身上
 
 ```text

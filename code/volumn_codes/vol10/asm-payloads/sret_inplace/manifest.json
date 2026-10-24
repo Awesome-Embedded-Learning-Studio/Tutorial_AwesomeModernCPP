@@ -1,0 +1,5 @@
+{
+  "title": "sret：返回值原地构造，rax 只报地址",
+  "entry": "main",
+  "sources": ["sret_inplace.s"]
+}

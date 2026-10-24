@@ -1,0 +1,5 @@
+{
+  "title": "delete 的两步与 placement new",
+  "entry": "main",
+  "sources": ["delete_two_steps.s"]
+}

@@ -5,9 +5,10 @@
   "type": "module",
   "packageManager": "pnpm@11.18.0",
   "scripts": {
-    "dev": "vitepress dev site",
+    "dev": "tsx scripts/build_asm_playground.ts && vitepress dev site",
     "check:links": "node scripts/run_python.mjs scripts/check_links.py",
-    "build": "pnpm check:links && tsx scripts/build.ts",
+    "build:asm": "tsx scripts/build_asm_playground.ts",
+    "build": "pnpm check:links && pnpm build:asm && tsx scripts/build.ts",
     "build:single": "pnpm check:links && vitepress build site",
     "pdf": "tsx scripts/pdf/cli.ts",
     "pdf:list": "tsx scripts/pdf/cli.ts --list",

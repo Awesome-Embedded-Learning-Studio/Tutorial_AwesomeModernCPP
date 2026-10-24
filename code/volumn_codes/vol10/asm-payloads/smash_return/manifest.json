@@ -1,0 +1,6 @@
+{
+  "title": "越界写盖住返回地址：ret 的目的地被换了",
+  "entry": "main",
+  "stop_before": "__stop_guard",
+  "sources": ["smash_return.s"]
+}

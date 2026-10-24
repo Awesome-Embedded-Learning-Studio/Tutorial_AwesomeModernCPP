@@ -43,6 +43,9 @@ import VolumeCardGrid from './components/VolumeCardGrid.vue'
 import PathChooser from './components/PathChooser.vue'
 import MaturityBoard from './components/MaturityBoard.vue'
 import { setupDevFakeLag } from './dev-fake-lag'
+import { withBase } from 'vitepress'
+import { AsmExecutorPlugin } from './vendor/asm-playground/index.js'
+import './vendor/asm-playground/asm-playground.css'
 import './custom.css'
 import './article-code.css'
 import './article-quote.css'
@@ -99,5 +102,6 @@ export default {
     app.component('MaturityBoard', MaturityBoard)
     app.component('Anim', Anim)
     app.component('BookmarkList', BookmarkList)
+    app.use(AsmExecutorPlugin, { workerUrl: withBase('/asm-engine/executor-worker.js') })
   }
 } satisfies Theme

@@ -219,4 +219,8 @@ One more note, about the syntax flavor. The series' first piece used Intel synta
 
 Same batch of instructions, only with the operands on swapped sides. One version difference deserves a warning: GCC 16 puts quotes around symbol names in Intel mode, which is where the `call "..."` spelling comes from. Older references show no such quotes, so if you meet them, your build isn't wrong.
 
+Seeing each side write its own version is one thing, so we moved both calls' machine code into the page. In the executor below, the member function translate and the free function point_translate share one stage, with p starting at (10, 20) and the two calls carrying (3, 4) and (5, 6). Symbol names lose their mangling, `translate` is not `_ZN5Point9translateEii`. Single-step through it and you will find the two function bodies' instructions identical, this and Point* both travel in rdi, and member access always goes through this+0 and this+4: the object really holds nothing but offsets.
+
+<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/this_offsets.json" />
+
 That covers this and member offsets, both on record. What the constructor and destructor calls that the compiler inserts for you look like is what the next piece takes up.

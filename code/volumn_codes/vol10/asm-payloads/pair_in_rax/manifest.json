@@ -1,0 +1,5 @@
+{
+  "title": "pair 进 rax：一个寄存器装下两个 int",
+  "entry": "main",
+  "sources": ["pair_in_rax.s"]
+}

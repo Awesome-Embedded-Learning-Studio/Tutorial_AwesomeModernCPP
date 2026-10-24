@@ -362,4 +362,8 @@ main:
 
 两条 `leaq` 各写各的：b 的 vptr 装的是 `_ZTV4Base` 加 16，d 的装的是 `_ZTV7Derived` 加 16。往后两个对象一前一后地送进了同一个 `call _Z8call_whoP4Base`，执行的指令一条不差，唯一不同的就是对象头部那 8 字节。三步走查到这里就齐了：多态在机器层面是一次数据驱动的分支，分支的条件压根不走 cmp 指令，它就是 vptr 里存的地址。这一段里 Base 和 Derived 用的是隐式构造函数，-O0 没有独立的构造函数可 call，编译器直接在定义点把 vptr 写进了对象，这跟 e4 构造函数里的做法互为印证：构造函数进门第一件正事装的是 vptr，不管您写的是哪种，vptr 都在构造的时候写定。
 
+三步走查不必停在纸上。下面的执行器把这两个对象和两张虚表原样搬进了页面，同一个 call_who 调用点走两次，第一次 rdx 里装的是 base_who 的地址，第二次换成 derived_who，执行的指令一条不差。与上面的 GCC 输出有两处差别：符号名去掉了修饰，虚表省掉了开头的 offset-to-top 与 RTTI 两个槽，vptr 直接指向槽 0，分派的三步不受影响。您单步到 call *%rdx 那条指令时，可以先看 rdx 里的值再走下一步，两次对比着看。
+
+<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/vtable_dispatch.json" />
+
 这次拐了弯的 call 贵不贵、-O2 拿它有没有办法，咱们下一篇接着看。

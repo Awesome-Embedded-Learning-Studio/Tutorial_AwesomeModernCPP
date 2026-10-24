@@ -291,4 +291,8 @@ an object or to call a deallocation function.
 
 nothrow 版失败的时候，分配函数返回的是空指针，new 表达式立即就收了场，初始化对象与调释放函数的步骤都会被跳过。咱们再看它与常规版的差别，差别只在失败的表示方式上：一个抛异常，一个给的是空指针，头一步的失败都会让第二步免谈，这一点两边是一致的。
 
+这两步拆解您可以亲手走。下面的执行器把 main 的完整流程搬了进来，operator new 与 operator delete 用最小桩顶替：分配函数固定返回 .data 里的一块静态缓冲，释放函数只记调用次数。桩之外的一切照文章现场：先 call 分配、rbx 接住块地址，再 call 构造，连那段恒为零的异常清理死代码都原样保留。您单步到 delete 的空指针检查之后，看 rsi 里装的 8，那是 sized delete 带的尺寸参数。
+
+<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/new_two_steps.json" />
+
 还有一种失败咱们还没遇到：内存到手了，构造函数半路抛了异常。那时内存已经在咱们名下，善后的活再也不能省。岔路口的应急代码长什么样，咱们在[下一篇](02-delete-two-steps-and-placement-new.md)正好会路过它。

@@ -251,4 +251,10 @@ main:
 	ret
 ```
 
-Construction, the addition, and the volatile consume are all computed away at compile time; the 7 in `movl $7` is exactly 3 plus 4. If you want to reproduce any listing in this piece yourself, hold on to the -O0 setting; at -O2 there is nothing left to see. That wraps up the placement new variant. The second variant, new[], keeps the element count in a small header in front of the block, and in the [next piece](03-array-new-cookie-and-reverse-destruction.md) we go read it out.
+Construction, the addition, and the volatile consume are all computed away at compile time; the 7 in `movl $7` is exactly 3 plus 4. If you want to reproduce any listing in this piece yourself, hold on to the -O0 setting; at -O2 there is nothing left to see. That wraps up the placement new variant.
+
+The four-step symmetry also moved into the executor. The scene below runs from operator new to operator delete: allocate, construct, destruct, release, four calls in order, the destructor carrying a counter so the delete side's first step is there to see. At the end comes a small stretch of placement new, a buffer prepared on the stack and the constructor called against it directly, the allocation step never happening at all. The stubs and the dead code are accounted for the same way as the previous scene.
+
+<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/delete_two_steps.json" />
+
+The second variant, new[], keeps the element count in a small header in front of the block, and in the [next piece](03-array-new-cookie-and-reverse-destruction.md) we go read it out.

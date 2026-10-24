@@ -1,0 +1,5 @@
+{
+  "title": "第七、第八个参数走栈：装货与收货",
+  "entry": "main",
+  "sources": ["stack_args_8.s"]
+}
