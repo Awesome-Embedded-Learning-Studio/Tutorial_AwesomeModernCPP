@@ -1,0 +1,5 @@
+{
+  "title": "去虚化：间接 call 消失，直接 call 登场",
+  "entry": "main",
+  "sources": ["devirt_direct.s"]
+}

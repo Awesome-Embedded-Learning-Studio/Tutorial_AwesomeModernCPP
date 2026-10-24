@@ -249,4 +249,8 @@ _Z14unknown_targetv:
 
 想再往深走的读者，去处咱们指几个。类与对象的语言层讲法在[卷一类的定义](../../../vol1-fundamentals/ch06/01-class-basics.md)，this 指针的常规用法在[同卷的 this 与链式调用](../../../vol1-fundamentals/ch06/06-this-and-cascading.md)，虚函数与多态的系统讲法在[虚函数与多态一篇](../../../vol1-fundamentals/ch08/03-virtual-functions.md)。咱们这个系列里，02 与 03 把普通函数调用的骨架和传参讲完了，咱们这几篇把对象语法接了上去，下一步咱们去内存那一侧看页表。
 
+两副输出的对照也搬进了执行器。下面的场景把 -O0 与 -O2 两个版本的 seen_through 放进同一个 main：o0 版您会走到 `call *%rdx`，前三步一样不少，rdx 里装着槽位取出的目标地址；o2 版三步全没了，只剩一个直奔 d_poke 的 `call`。两边返回的都是 42，省下的指令数单步一数就出来。符号名去掉了修饰，vptr 直接指向槽 0，与前面的场景同一套简化。
+
+<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/devirt_direct.json" />
+
 收尾把最省事的自证留给您：拿 e7.cc 编三个版本，-O0 的、-O2 的、-O2 加 `-fno-devirtualize-speculatively` 的，咱们只看 `unknown_target` 一个函数。第一回您会看到三步齐全的间接 call，第二回是比对阶梯加兜底的形态，第三回是两条指令的干净版。等您把三个版本摆开，编译器对同一个虚调用的三种态度就都在眼前了。

@@ -296,4 +296,8 @@ an object or to call a deallocation function.
 
 When the nothrow variant fails, the allocation function returns a null pointer and the new expression ends on the spot; both the object initialization and the deallocation call are skipped. Line it up against the regular version and the difference is only how failure is reported: one throws an exception, the other hands back a null pointer. In both, a failure in the first step rules out the second, and on that point the two agree.
 
-One more failure we have not met yet: the memory is already in hand and the constructor throws midway. At that point the memory is on our account, and the cleanup can no longer be skipped. What the emergency code at that fork looks like is something we will walk right past in the [next piece](02-delete-two-steps-and-placement-new.md).
+One more failure we have not met yet: the memory is already in hand and the constructor throws midway. At that point the memory is on our account, and the cleanup can no longer be skipped. You can walk this two-step breakdown by hand. The executor below carries main's full flow, with operator new and operator delete replaced by minimal stubs: the allocator hands back a fixed static buffer from .data, and the deallocator only counts its calls. Everything outside the stubs follows the article's scene: first the allocating call, rbx receives the block address, then the constructing call, and even the dead always-taken exception-cleanup code is kept as printed. Single-step past delete's null check and look at rsi holding 8, the size argument that sized delete carries.
+
+<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/new_two_steps.json" />
+
+What the emergency code at that fork looks like is something we will walk right past in the [next piece](02-delete-two-steps-and-placement-new.md).

@@ -1,0 +1,5 @@
+{
+  "title": "new[] 的块头 cookie 与逆序析构",
+  "entry": "main",
+  "sources": ["array_new_cookie.s"]
+}

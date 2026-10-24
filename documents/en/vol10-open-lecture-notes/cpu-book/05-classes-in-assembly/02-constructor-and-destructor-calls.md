@@ -335,4 +335,8 @@ The two objects buy us two `call _ZN6TracerD1Ev` instructions here, one per obje
 
 RAII dares to stake resource safety on destructors because of exactly this insertion machinery: whichever exit you leave the scope through, the fall-through exit or the early-return exit, the control flow has to pass through the destructor calls the compiler placed. That is the rule [vol1's piece on destructors and resource management](../../../vol1-fundamentals/ch06/03-destructors.md) states at the language level; today you have seen what it looks like at the instruction level.
 
+You can walk this insertion machinery by hand. In the executor below, p(1, 2) and q(3, 4) get constructed on the stack one after the other, and at the end of the scope the destructor calls come in, in reverse order, q first and p after. Two things differ from the article's scene: the heap-object half depends on operator new going through the PLT, which the executor does not emulate, so the scene carries only stack objects, and an int member's destructor is an empty shell, so the scene adds one line of counting to make each destructor call leave a visible trace. Single-step and count the calls: two constructions, two destructions, not one more.
+
+<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/ctor_dtor_order.json" />
+
 That wraps up construction and destruction. In the next piece we put virtual functions into the assembly too, the last piece of real machinery an object carries.

@@ -271,4 +271,10 @@ SUMMARY: AddressSanitizer: stack-overflow /tmp/cpu-book-02/b6_countdown.cpp:2 in
 ==97889==ABORTING
 ```
 
-ASan 直接把 stack-overflow 的判定写在报告第一行，比裸段错误的一行 SIGSEGV 更容易读出病因，进程的收尾是 ABORTING，退出码停在了 1。这一场栈溢出咱们用两条路都拿到了证据：裸版本每层 24 字节、能叠到约 26 万层，ASan 版本约 247 层就触了顶。想把崩溃取证练成手艺的您，可以移步 [crash-lab 的崩溃现场实战](../../../crash-lab/a-memory-safety/01-null-deref.md)。系列下一篇咱们讲参数装货：`movl $3, %edi` 与 `movl $4, %esi` 背后是同一套传参约定，更多的参数往哪放，咱们到那里接着拿实验说话。
+ASan 直接把 stack-overflow 的判定写在报告第一行，比裸段错误的一行 SIGSEGV 更容易读出病因，进程的收尾是 ABORTING，退出码停在了 1。这一场栈溢出咱们用两条路都拿到了证据：裸版本每层 24 字节、能叠到约 26 万层，ASan 版本约 247 层就触了顶。
+
+真把 8 MiB 栈叠满不适合在浏览器里演，咱们取它前几层看结构。下面的执行器加载的是 -O0 风格的 fib(5)，每层递归 push rbp、压返回地址、sub 出局部区，栈窗口一层一层向低地址叠上去，ret 时再一层层拆回来。全部走完是 15 次 call、两百多步，您也可以只单步前两层，看清每层帧叠上的三样东西：返回地址、saved rbp、参数槽。符号名去掉了修饰，fib 不叫 _Z3fibi。
+
+<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/recursion_frames.json" />
+
+想把崩溃取证练成手艺的您，可以移步 [crash-lab 的崩溃现场实战](../../../crash-lab/a-memory-safety/01-null-deref.md)。系列下一篇咱们讲参数装货：`movl $3, %edi` 与 `movl $4, %esi` 背后是同一套传参约定，更多的参数往哪放，咱们到那里接着拿实验说话。

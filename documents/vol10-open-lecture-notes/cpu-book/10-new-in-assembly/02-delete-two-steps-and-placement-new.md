@@ -246,4 +246,10 @@ main:
 	ret
 ```
 
-构造、求和、sink 的消费全部被编译期算掉了，`movl $7` 里那个 7 就是 3 加 4 的和。您要自己复现本篇的任何一块汇编，就请守住 -O0 的档位，-O2 下什么都看不见。placement 这个变体咱们到此看完，第二个变体 new[] 的块头里存着元素的个数，[下一篇](03-array-new-cookie-and-reverse-destruction.md)咱们去把它读出来。
+构造、求和、sink 的消费全部被编译期算掉了，`movl $7` 里那个 7 就是 3 加 4 的和。您要自己复现本篇的任何一块汇编，就请守住 -O0 的档位，-O2 下什么都看不见。
+
+四步对称也搬进了执行器。下面的场景从 operator new 走到 operator delete：分配、构造、析构、释放四个 call 依序登场，析构里带了计数，删除侧的第一步看得见摸得着。段末还有一小段 placement new，栈上备好缓冲后直接调构造，分配那一步压根不出现。桩与死代码的交代跟上一篇场景相同。
+
+<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/delete_two_steps.json" />
+
+placement 这个变体咱们到此看完，第二个变体 new[] 的块头里存着元素的个数，[下一篇](03-array-new-cookie-and-reverse-destruction.md)咱们去把它读出来。

@@ -226,4 +226,8 @@ main:
 	.section	.note.GNU-stack,"",@progbits
 ```
 
-Look at main this time: it has opened a 24-byte frame, which it never did in any earlier listing. `leaq _Z3addii(%rip), %rax` computes the function's entry address, `movq %rax, 8(%rsp)` stores it into the volatile function pointer (which must land in memory), and the `call *8(%rsp)` after that is an indirect call: the target address is read out of memory. volatile's semantics forced this round trip through memory, and add's body had to be generated too, because its address has been taken. Take one address, and both the call site and the body are left standing.
+Look at main this time: it has opened a 24-byte frame, which it never did in any earlier listing. `leaq _Z3addii(%rip), %rax` computes the function's entry address, `movq %rax, 8(%rsp)` stores it into the volatile function pointer (which must land in memory), and the `call *8(%rsp)` after that is an indirect call: the target address is read out of memory. volatile's semantics forced this round trip through memory, and add's body had to be generated too, because its address has been taken. These two forms side by side are easiest to see while single-stepping. The executor below holds -O0's three, which honestly pushes rbp, sets up a frame, spills 1, 2, 3 to the stack and carries them back to add them up, next to add_fast, the slimmed-down body after optimization: one leal addition and a ret to finish, no frame opened at all. Step through each and count the actions in the stack window, and the cost of a frame is right in front of you. Symbol names lose their mangling, everything else matches the output above instruction for instruction.
+
+<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/leaf_vs_plain.json" />
+
+Take one address, and both the call site and the body are left standing.

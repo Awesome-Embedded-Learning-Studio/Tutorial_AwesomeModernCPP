@@ -213,3 +213,7 @@ namedvar reception: +2
 这一篇收的线，往前接的是 01 与 03。[01 里教科书说两次、汇编见一次的那桩怪事](../01-prefix-vs-postfix-increment/02-class-type-cost.md)，咱们如今有了四件套的答案，帧里没有 p 的座位，构造的 this 就是 sret 地址，return p 编译成了一条 movq，计数报的是 0。[03 演过机制的隐藏首参数](../03-arguments-in-registers/02-stack-args-and-return-values.md)，这一篇请出了规则原文与返回侧的名册，还补了 03 没讲过的非平凡例外，顺带把 sret 这个名字正式介绍给您。更远处的线头也能接上：02 的 call 与 ret 是这些回家路的载体，05 的构造函数在这里把 this 落在了调用方的栈上，07 的 volatile sink 是咱们全系列赖以观察的手段。您要是想顺着性能的方向继续走，vol6 有一篇 [RVO、NRVO 与 move 的真实成本](../../../vol6-performance/ch06-cpp-abstraction-cost/06-05-rvo-move.md)，拿会计数的 Tracked 类型量了按值返回的成本，还把 `return std::move(局部)` 这个反模式的真实代价数了出来，与本篇的计数法一脉相承。
 
 最后摆一件最小的证据，算这篇的落点。-O2 之下的版本里，make_ipair 整个函数体就只剩 `salq`、`movl`、`orq` 的三条指令，两个 int 当场拼进了同一个 rax。返回值的回家路，编译器替您安排到了什么程度，它们就是编译器的态度。
+
+这两个版本也搬进了执行器。下面的场景把 -O0 与 -O2 的 make_ipair 放进同一个 main：O0 版先在栈上构造 pair，再用一条 movq 把整个 8 字节装进 rax；O2 版三条指令现场打包，连栈都不碰。您单步走完 O2 版再抬头看 rax，低 32 位是 first，高 32 位是 second，shr 一下就能拆开。场景去掉了文章里的金丝雀段寻址，其余指令一一对应。
+
+<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/pair_in_rax.json" />

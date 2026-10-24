@@ -234,3 +234,7 @@ copy/move constructors and destructors are not portable.
 ```
 
 Translated: some compilers do not perform the elision in every situation where it is allowed, debug mode being the example, and a program that relies on the side effects of copy constructors, move constructors or destructors is not portable. Read the other way, it tells us not to hang our logic on how many times the copy constructor runs. Today's GCC elides even at -O0, and as the reproduction notes in topic 01 already said, older compilers skip NRVO at -O0, and then the very same program counts out 2. That does not mean the program is wrong; it counts as a difference between versions. And with that we have seen the whole of the elision machinery.
+
+This machinery also moved into the executor, so you can see what "no movement" looks like. The scene below is make_point(7): main prepares a 16-byte slot at rbp-32 first, the slot's address travels in through rdi, the callee calls the constructor against the slot directly, and all rax hands back is the slot's address. Single-step into make_point and keep your eye on rdi, which points into main's stack from start to finish, with not one step moving the object itself. At the end main reads x=14 and y=7 straight out of the slot and adds them up to 21.
+
+<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/sret_inplace.json" />

@@ -1,0 +1,5 @@
+{
+  "title": "六个整数参数的寄存器分配",
+  "entry": "main",
+  "sources": ["reg_args_7.s"]
+}

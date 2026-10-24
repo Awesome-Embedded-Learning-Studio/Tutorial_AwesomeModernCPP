@@ -106,7 +106,9 @@ The `_Z3addii` in the output is the symbol name `add(int, int)` gets after C++ n
 
 In this listing only two instructions matter: `call _Z3addii` in main, and `ret` at the end of add. call does two things: push the return address onto the stack, then jump to the start of add. ret is the reverse: pop the return address off the top of the stack, then jump back to that address. That sounds like two dry definitions, so next we put gdb on the top of the stack and verify that the return address really is sitting there. Before we start, one thing about how to read this assembly, otherwise you can easily read it backwards on a first pass: this is AT&T syntax, the default throughout this piece. The previous piece's assembly was in Intel syntax, where the two operands sit the other way around, so watch for that when you compare the two. In `movq %rsp, %rbp` the source operand is on the left and the destination on the right; names starting with `%` are registers, names starting with `$` are immediates. The parenthesized form `-4(%rbp)` denotes a memory address: the memory at the location that is rbp's value minus 4.
 
-The stack hasn't introduced itself to us yet; the next section brings it on stage.
+Reading assembly on paper keeps it at one remove, so we moved the machine code of that call into the page. The executor below loads the full scene of add(3, 4): starting from main's first instruction, you can single-step or run automatically, with registers and the stack on display after every step. It differs from GCC's output above in one place only: in the executor the function symbol is just add, without the _Z3addii mangling, so you can match it up at a glance. Feel free to play with it now, and keep an eye on the top of the stack right around call. As for the stack itself, the next section brings it on stage.
+
+<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/b1_add.json" />
 
 ## What call Actually Pushes
 

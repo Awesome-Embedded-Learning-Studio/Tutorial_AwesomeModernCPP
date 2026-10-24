@@ -195,4 +195,8 @@ $5 = 5
 $6 = 6
 ```
 
-The six registers report 1 through 6, matching the arguments one for one, and on the side gdb's own debug information spells out `sum6 (a=1, b=2, ...)`, so we are holding two routes of evidence that agree. Counting up to the 6th argument, the integer register slots run out exactly. So what happens when the 7th argument arrives? The answer is in the next piece.
+The six registers report 1 through 6, matching the arguments one for one, and on the side gdb's own debug information spells out `sum6 (a=1, b=2, ...)`, so we are holding two routes of evidence that agree. Counting up to the 6th argument, the integer register slots run out exactly. Beyond gdb's evidence there is a third route: the one you walk yourself. The executor below loads the scene of add(11, 22) and sum6(1..6). Single-step to just before `call sum6` and look up at the register panel: edi, esi, edx, ecx, r8d, r9d hold 1 through 6, and the loading order runs backwards, the 6th argument entering r9d first. Symbol names lose their mangling, sum6 is not _Z4sum6iiiiii, and the instructions themselves correspond to the listing above.
+
+<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/reg_args_7.json" />
+
+So what happens when the 7th argument arrives? The answer is in the next piece.

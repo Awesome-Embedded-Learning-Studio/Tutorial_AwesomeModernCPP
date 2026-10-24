@@ -1,0 +1,5 @@
+{
+  "title": "老实栈帧与 leal 极简叶子",
+  "entry": "main",
+  "sources": ["leaf_vs_plain.s"]
+}

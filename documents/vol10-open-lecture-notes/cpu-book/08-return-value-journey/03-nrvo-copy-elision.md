@@ -229,3 +229,7 @@ copy/move constructors and destructors are not portable.
 ```
 
 翻译过来：有的编译器并不是在每个允许省略的场景都做省略，比如调试模式的场景，依赖拷贝、移动构造函数或析构函数副作用的程序是不可移植的。咱们反过来读它，别把逻辑挂在拷贝构造的执行次数上，今天的 GCC 连 -O0 都做省略，01 的复现提示里也说过，更老的编译器在 -O0 不做 NRVO，同一个程序数出来的就是 2，那并不代表程序错了，只能算版本上的差异。省略的机制，咱们到这儿就看全了。
+
+这套机制搬进了执行器，您可以看到"没有搬运"长什么样。下面的场景是 make_point(7)：main 先在 rbp-32 备好 16 字节的槽，槽地址经 rdi 传进去，被调方对着槽直接调构造，rax 里还回来的只是槽地址。您单步进 make_point，重点看 rdi——它从头到尾指着 main 的栈，没有任何一步在搬运对象本体。最后 main 直接从槽里读出 x=14、y=7 相加得 21。
+
+<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/sret_inplace.json" />

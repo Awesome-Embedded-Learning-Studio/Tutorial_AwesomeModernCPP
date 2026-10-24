@@ -251,3 +251,7 @@ cookie 的存在还顺带回答了一个老问题，就是 new[] 的指针为什
 想往语言层深走的读者，去处咱们指几个。new 与 delete 的语义、失败处理和 placement new 的完整讲法在[卷一的动态内存管理一篇](../../../vol1-fundamentals/ch12/02-new-delete.md)，析构函数与资源管理的关系在[卷一的析构函数一篇](../../../vol1-fundamentals/ch06/03-destructors.md)。在本系列的篇目里，05 给您看过 this 的出身和构造调用的插入点，09 带您靠 unwind 表爬过调用链，今天咱们把两者之间的交接也补上了。
 
 收尾把最省事的自证留给您。咱们开一个 gdb 的会话，加载第一篇 N1 的程序，断点的写法要照全签名 `break operator new(unsigned long)`，等断点命中了就 `finish`，用 `p/x $rax` 记下当时的地址，再下 `break Point::Point` 的断点继续运行，看断点报告里的 this。两处的值会一模一样，就像咱们那场会话里的 0x55555556b020。接着您再跑一遍 N6，在 sink 的那一行停下，用内存窗口看 w 前面的 8 字节，第一个 64 位字写的就是 3。两个数字到了手，两步走的交接和块头的 cookie 就都不再是别人说的了，是您自己拍下来的。
+
+不想开 gdb 的话，执行器里也有一份可以单步的现场。下面的场景把 new[] 的全过程搬了进来：您先看传给分配函数的立即数是 20 不是 12，cookie 那 8 字节就藏在差值里。构造循环走完后，delete[] 读回块头的 3，从最后一个元素往前收，析构的调用逐个落下来。分配函数依旧是 .data 桩顶替，栈寄存器的用法照文章：数组首元素地址装在被调用者保存的 r12 里，循环下标住在栈槽上。
+
+<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/array_new_cookie.json" />

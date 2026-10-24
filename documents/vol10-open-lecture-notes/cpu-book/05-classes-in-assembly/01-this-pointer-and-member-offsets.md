@@ -213,4 +213,8 @@ diff 的输出一行都没有，退出码是干净的 0。这就是本篇最省�
 
 用的指令还是同一批，只是操作数两边掉了位置。有一个版本差异得提醒您：GCC 16 在 Intel 模式下会给符号名加上引号，`call "..."` 的写法就是这么来的，旧版的资料里可没有这对引号，不是您编错了。
 
+光看两边各写各的还不够过瘾，咱们把这两段调用的机器码搬进了页面。下面的执行器里，成员函数 translate 与自由函数 point_translate 同场，p 的初值是 (10, 20)，两次调用分别给 (3, 4) 与 (5, 6)。符号名去掉了修饰，translate 不叫 `_ZN5Point9translateEii`。您单步走一遍就会发现，两份函数体的指令一模一样，this 与 Point* 用的都是 rdi，成员访问走的都是 this+0 与 this+4，对象里确实只有偏移。
+
+<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/this_offsets.json" />
+
 this 和成员偏移到这里都认下了。编译器替您插的构造与析构调用长什么样，咱们下一篇接着看。

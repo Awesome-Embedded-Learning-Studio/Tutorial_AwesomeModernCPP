@@ -1,0 +1,5 @@
+{
+  "title": "new 的两步：先要内存，再调构造",
+  "entry": "main",
+  "sources": ["new_two_steps.s"]
+}

@@ -1,0 +1,5 @@
+{
+  "title": "构造与析构：编译器插进来的 call",
+  "entry": "main",
+  "sources": ["ctor_dtor_order.s"]
+}
