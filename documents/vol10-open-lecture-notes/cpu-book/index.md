@@ -24,3 +24,7 @@ description: "从一行代码钻到指令、栈帧与页表——把 C++ 的每�
   <ChapterLink href="10-new-in-assembly/">new 在汇编里的两步走：一次分配的完整旅程</ChapterLink>
   <ChapterLink href="11-template-instantiation/">模板实例化的对照：编译器替你写的代码长什么样</ChapterLink>
 </ChapterNav>
+
+## 鸣谢
+
+> 非常感谢@owollz4大佬推介的书籍《CPU眼里的C/C++》，这个系列卷是对这个主题一些探索和思考而非照搬~。如果这个卷出现并不妥当的内容或者涉及侵权，速速联系 @Charliechen114514，会拔掉这个卷的内容~
