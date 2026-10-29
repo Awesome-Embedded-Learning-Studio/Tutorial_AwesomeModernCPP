@@ -18,3 +18,8 @@ tamcpp_add_exec(test_vector_visit_oob test_vector_visit_oob.cpp)
 add_test(NAME vector.visit_at_oob
     COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/expect_check_death.sh
             $<TARGET_FILE:test_vector_visit_oob>)
+
+tamcpp_add_exec(test_vector_move_if_noexcept test_vector_move_if_noexcept.cpp)
+# 第二场细验收:扩容搬迁对元素的分派对齐 std::move_if_noexcept。
+# 当前预期红(Relocate 只看"能不能移动",没看"抛不抛"),分派修正后转绿。
+add_test(NAME vector.move_if_noexcept COMMAND test_vector_move_if_noexcept)
