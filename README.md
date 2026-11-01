@@ -87,6 +87,8 @@ pnpm dev
 
 生产构建与预览：
 
+> HINT: **网站目前不计划检查 Windows 下的构建，意味着你极大可能无法在 Windows 下完成我们项目的构建。如果需要支持，请 Issue 摇我们，或者自行fork修复。**
+
 ```bash
 # 如果您的CPU核心大于4，我们推介加速构建，默认的构建脚本是为CI服务的，Github分配的机器有点小qaq
 BUILD_CONCURRENCY=8 pnpm build
