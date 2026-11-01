@@ -1,6 +1,6 @@
 ---
 title: "mini STL 实战(四):RingBuffer,最短的环形入门"
-description: "固定容量的先进先出队列:单调读写指针只增不减,判空判满一次减法出结果,2 的幂把取模变成一条位与。汇编实测三种取模的机器码,覆盖式 push 的 Census 配平,还有连续区间版析构在环形布局上漏掉的那半圈。"
+description: "固定容量的循环队列:单调读写指针只增不减,判空判满一次减法出结果,2 的幂把取模变成一条位与。汇编实测三种取模的机器码,覆盖式 push 的 Census 配平,还有连续区间版析构在环形布局上漏掉的那半圈。"
 chapter: 4
 order: 4
 tags:
@@ -23,7 +23,7 @@ related:
 
 # mini STL 实战(四):RingBuffer,最短的环形入门
 
-上一篇结尾说,`% N` 这一步的取舍,Chromium 那边连“多取一次模都嫌贵”的注释都写好了。这不是笔者的转述,原文就在 `base/containers/ring_buffer.h` 里:
+上一篇结尾说,`% N` 这一步的取舍,Chromium 那边连“多取一次模都嫌贵”的注释都写好了。这话不是笔者转述的,咱们把原文请出来,它就在 `base/containers/ring_buffer.h` 里:
 
 ```cpp
   // This specialization of |IsFilledIndex| is a micro-optimization that enables
@@ -32,7 +32,7 @@ related:
   // micro-scale.
 ```
 
-翻成大白话:`BufferIndex` 里带着一个取模,在微观尺度上并不免费,所以人家宁可加一个小特化,也不肯在一次访问里把模取两遍。这份文件 2013 年就进了 Chromium,139 行,比咱们的第一面镜子 `vector_buffer.h` 还短。这一篇咱们顺着这个取模,把系列里最短的一件容器搓出来:`RingBuffer`,固定容量,先进先出,满了就挤掉最老的。
+翻成大白话:`BufferIndex` 里带着一个取模,在微观尺度上开销是实打实的,所以人家宁可加一个小特化,也不肯在一次访问里把模取两遍。`ring_buffer.h` 在 2013 年就进了 Chromium,139 行,比咱们的第一面镜子 `vector_buffer.h` 还短。这一篇咱们顺着这个取模,把系列里最短的一件容器搓出来:`RingBuffer`,固定容量,早进来的早出去,满了就挤掉最老的。
 
 ## 队列的两端都该是 O(1)
 
@@ -72,7 +72,7 @@ Chromium 的 `RingBuffer` 就是覆盖式的现成参照。它的成员只有一
 
 ## 2 的幂:取模写成位与
 
-当 N 是 2 的幂,x % N 与 x & (N - 1) 对非负的 x 恒等。道理不深:N = 8 的二进制是 1000,N - 1 是 0111,拿它做位与,留下的恰好是 x 的低三位,而低三位正是 x 除以 8 的余数。咱们的序号永远非负,前提天然成立。于是 RingBuffer 把 N 定成模板参数,还在类里拦了一道:
+当 N 是 2 的幂,x % N 与 x & (N - 1) 对非负的 x 恒等。道理不深,咱们拿二进制过一遍:N = 8 的二进制是 1000,N - 1 是 0111,拿它做位与,留下的恰好是 x 的低三位,而低三位正是 x 除以 8 的余数。咱们不用操心负数,序号永远往前走,前提天然成立。于是咱们把 N 定成 RingBuffer 的模板参数,还在类里拦了一道:
 
 ```cpp
 template <typename Sources, std::size_t N> class RingBuffer {
@@ -80,7 +80,7 @@ template <typename Sources, std::size_t N> class RingBuffer {
     static_assert(N != 0 && (N & (N - 1)) == 0, "N must be a power of two");
 ```
 
-您可能想问,编译器看见 `x % 8` 这样的常量取模,难道不会自己优化吗?会,而且咱们马上用汇编眼见为实。那为什么还手写 `& (N - 1)`?手写把依赖写在明面上:读代码的人一眼看出这里的等价性依赖 N 是 2 的幂,哪天想放宽约束,这一处跑不掉。Chromium 的选择正相反,`ring_buffer.h` 对 kSize 没有任何 2 的幂要求,人家直接写 `% kSize`,优化全交给编译器。两种立场都成立,咱们把理由摆出来,您站哪边都行。
+您可能想问,编译器看见 `x % 8` 这样的常量取模,难道不会自己优化吗?会,而且咱们马上用汇编眼见为实。那为什么还手写 `& (N - 1)`?手写把依赖写在明面上:读代码的人一眼看出这里的等价性依赖 N 是 2 的幂,哪天想放宽约束,咱们一眼就能找到它。Chromium 的选择正相反,`ring_buffer.h` 对 kSize 没有任何 2 的幂要求,人家直接写 `% kSize`,优化全交给编译器。两种立场都成立,咱们把理由摆出来,您站哪边都行。
 
 ## 汇编小实验,三种取模的下场
 
@@ -109,7 +109,7 @@ andl	$7, %eax
 ret
 ```
 
-`mod_other` 的场面就复杂了:
+咱们再看 `mod_other`,场面就复杂了:
 
 ```asm
 movabsq	$-6148914691236517205, %rax
@@ -133,11 +133,11 @@ movq	%rdx, %rax
 ret
 ```
 
-64 位除法在 x86-64 上是出了名的慢,Agner Fog 的指令表里,Skylake 一代 64 位 div 的延迟要几十个周期起步,位与只要一个周期上下。三种下场摆在眼前,咱们的处境其实最舒服:N 是模板参数,常量的特权全占,写 `% N` 和写 `& (N - 1)` 生成的都是同一条 and。手写位与的意义剩下一条,把约定写进代码,给读的人看。
+64 位除法在 x86-64 上是出了名的慢,Agner Fog 的指令表里,Skylake 一代 64 位 div 的延迟要几十个周期起步,位与只要一个周期上下。三种下场摆在眼前,咱们占了个大便宜:N 是模板参数,常量的特权全占,写 `% N` 和写 `& (N - 1)` 生成的都是同一条 and。手写位与的意义剩下一条,把约定写进代码,给读的人看。
 
 ## 单文件版 RingBuffer,一条命令编出来
 
-stage2 的工程版按系列惯例由作者亲手搓,施工讲义已经躺在配套目录里。文章这边咱们把教学版做成自洽的单文件,下面三段代码按顺序拼起来,就是完整的 `ring_buffer_demo.cpp`。头部是 `Check`,stage1 的崩溃式检查原样搬来:
+stage2 的工程版由笔者亲手搓,施工讲义已经躺在配套目录里。文章这边咱们把教学版做成自洽的单文件,下面三段代码按顺序拼起来,就是完整的 `ring_buffer_demo.cpp`。头部是 `Check`,stage1 的崩溃式检查原样搬来:
 
 ```cpp
 // ring_buffer_demo.cpp - RingBuffer 教学单文件版
@@ -150,8 +150,7 @@ stage2 的工程版按系列惯例由作者亲手搓,施工讲义已经躺在配
 #include <source_location>
 #include <utility>
 
-namespace tamcpp::ministl {
-namespace debug {
+namespace tamcpp::ministl::debug {
 // 崩溃式检查,stage1 的 check.hpp 原样搬来
 static inline void Check(bool IsExpectedTrue, const char* msg,
                          std::source_location loc = std::source_location::current()) {
@@ -165,7 +164,7 @@ static inline void Check(bool IsExpectedTrue, const char* msg,
 } // namespace tamcpp::ministl::debug
 ```
 
-主角全貌如下,查询、push、pop、front、visit_at、clear 一件不缺:
+咱们把主角整个摆出来,查询、push、pop、front、visit_at、clear 一件不缺:
 
 ```cpp
 namespace tamcpp::ministl {
@@ -250,18 +249,18 @@ template <typename Sources, std::size_t N> class RingBuffer {
 } // namespace tamcpp::ministl
 ```
 
-内存照 stage1 的路子,`::operator new` 圈 N 格,只管容量不管对象。查询三件全是减法和比较,额外状态一点没存。push 承载着覆盖语义:缓冲没满时,构造、推进,和 Vector 的 push_back 一样轻。满了的时候,最老的元素就站在 read_pos 指到的格子里,咱们析构它,把 read_pos 推一格,腾出来的位置正好接新的。顺序是析构最老、推进读指针、构造新的、推进写指针,一步都不能乱,乱了 Census 的计数就配不平,验收那节见分晓。异常安全顺带说一句:构造排在推进前面,非满时构造要是抛了,序号还站在原地,缓冲纹丝不动。满了时最老的已经让位,新的构造要是失败,它就真的丢了,这是覆盖式接受的代价。
+内存照 stage1 的路子,`::operator new` 圈 N 格,只管容量不管对象。查询三件全是减法和比较,额外状态一点没存。覆盖语义全在 push 一件事上:缓冲没满时,构造、推进,和 Vector 的 push_back 一样轻。满了的时候,最老的元素就站在 read_pos 指到的格子里,咱们析构它,把 read_pos 推一格,腾出来的位置正好接新的。顺序是析构最老、推进读指针、构造新的、推进写指针,一步都不能乱,乱了 Census 的计数就配不平(这个类型 03 篇见过,出生加一、死亡减一),咱们到验收见分晓。异常安全也在这段里交代:构造排在推进前面,非满时构造要是抛了,序号还站在原地,缓冲纹丝不动。满了时最老的已经让位,新的构造要是失败,它就真的丢了,这是覆盖式接受的代价。
 
 pop 的返回类型是 void,出队想要值,得另走 front。这个别扭是故意的。假如 pop 按值返回元素,返回时的拷贝构造一旦抛出,元素已经从缓冲里删了,数据就这么丢了。拆成 front 加 pop,取值和出队各走各的,哪一步都出得起异常。标准库的 `std::queue::pop` 同款返回 void,您可以在 cppreference 核对签名。
 
-pop 空缓冲那行 Check,遵循系列导论立的分工:照谁的镜子,错误处理就跟谁。RingBuffer 照的是 Chromium,前置条件违反就当场崩,不抛异常给调用方接。std 家的 `std::vector::at` 是另一队,越界抛 `std::out_of_range`,调用方接得住、能恢复。front 空、visit_at 越界,在咱们这边全是 Check 的统一待遇。visit_at 的界也有讲究,是 size 不是 N,空着的格子里对象根本没出生,访问它们是未定义行为,Check 得拦在前面。
+pop 空缓冲那行 Check,遵循系列导论立的分工:照谁的镜子,错误处理就跟谁。咱们把两边的做法摆在一起:RingBuffer 照的是 Chromium,前置条件违反就当场崩,不抛异常给调用方接。std 家的 `std::vector::at` 是另一队,越界抛 `std::out_of_range`,调用方接得住、能恢复。front 空、visit_at 越界,在咱们这边全是 Check 的统一待遇。您要是问 visit_at 的界为什么是 size 不是 N,想想格子里有什么就有答案:空着的格子里对象根本没出生,访问它们是未定义行为,Check 得拦在前面。
 
 ## 覆盖与绕回,Census 验收
 
-第三段代码是计数类型和 main,拼上它整个文件就齐了:
+咱们把第三段代码接上,计数类型和 main,拼完整个文件就齐了:
 
 ```cpp
-// 出生 +1、死亡 -1 的计数类型,01 篇的 Census
+// 出生 +1、死亡 -1 的计数类型,Census 在 03 篇登过场
 struct Census {
     inline static int alive = 0;
     int tag;
@@ -304,14 +303,14 @@ int main() {
 }
 ```
 
-第一轮拿 int 验顺序,压 1 到 13 再一口气出队,真实输出:
+咱们第一轮拿 int 验顺序,压 1 到 13 再一口气出队,真实输出:
 
 ```text
 size=8 front=6 (期望 6)
 出队顺序: 6 7 8 9 10 11 12 13
 ```
 
-13 个进来,活下来的是 6 到 13,先进先出的序一点没乱,front 正是第 6 个进来的。第二轮的 Census 输出:
+咱们看这轮结果:13 个进来,活下来的是 6 到 13,早进来的早出来,次序一点没乱,front 正是第 6 个进来的。第二轮咱们换 Census 上场:
 
 ```text
 压入 13 个 Census,活着 8 个(期望 8)
@@ -320,7 +319,7 @@ size=8 front=6 (期望 6)
 作用域结束,活着 0 个(期望 0)
 ```
 
-覆盖时被挤掉的 5 个、出队的 3 个、析构掉的 8 个,每次死亡都有对应的出生,数字全部对得上。tag 那两行顺带验证了访问:pop 过 3 个之后,front 是 tag 为 8 的元素,也就是第 9 个进来的,`visit_at(3)` 从它再往后数三个。
+咱们把三笔数字对一对:覆盖时被挤掉的 5 个、出队的 3 个、作用域收尾析构的 5 个,每次死亡都有对应的出生,5 加 3 加 5 正好 13,全部对得上。tag 那两行验证了访问,咱们数一遍:pop 过 3 个之后,front 是 tag 为 8 的元素,也就是第 9 个进来的,`visit_at(3)` 从它再往后数三个。
 
 ## 析构绕圈,连续区间的假设失效
 
@@ -348,7 +347,14 @@ std::printf("补杀 7 号格,活着 %d 个\n", Census::alive);
 
 ## 死法用例与编译期拦截
 
-死法用例照 stage1 的老办法:pop 一个空缓冲,正确结局是当场崩。把 main 换成三行,重新编译运行,真实输出:
+死法用例照 stage1 的老办法,咱们 pop 一个空缓冲,正确结局是当场崩。把 main 换成下面三行,存成 `ring_buffer_death.cpp`,和前面的类型定义拼在一起重新编译运行,真实输出:
+
+```cpp
+int main() {
+    tamcpp::ministl::RingBuffer<int, 8> rb;
+    rb.pop(); // 空缓冲上出队,Check 当场收场
+}
+```
 
 ```text
 [TAMCPP Check Crash]ring_buffer_death.cpp-66(void tamcpp::ministl::RingBuffer<Sources, N>::pop() [with Sources = int; long unsigned int N = 8]): pop on empty RingBuffer
@@ -367,7 +373,7 @@ error: static assertion failed: N must be a power of two
 
 GCC 连 N 取 6 时 `N & (N - 1)` 算出 4 都替您展示出来了。编译期的拦截比运行时崩溃更早,错误连进程都起不来。
 
-到这里,单文件版的 RingBuffer 能进能出、能覆盖能绕圈,验收数字全部对得上。工程版落进 `stage2_ring_buffer/` 之后,五件套补齐,黑盒测试再把这一切独立地重来一遍。下一篇的 CircularDeque 要可变容量、要迭代器,牺牲一格的判满方案在那边等咱们,解环搬迁的手艺也一并开工。
+到这里,单文件版的 RingBuffer 能进能出、能覆盖能绕圈,验收数字全部对得上。工程版落进 `stage2_ring_buffer/` 之后,五件套补齐,黑盒测试再把这一切独立地重来一遍。后面的 CircularDeque 要可变容量、要迭代器,牺牲一格的判满方案在那边等咱们,解环搬迁的手艺也紧跟着开工。
 
 ## 构建与复现
 
@@ -375,7 +381,7 @@ GCC 连 N 取 6 时 `N & (N - 1)` 算出 4 都替您展示出来了。编译期�
 # 单文件教学版,本篇三段代码按顺序拼成 ring_buffer_demo.cpp
 g++ -std=c++20 ring_buffer_demo.cpp -o ring_buffer_demo
 ./ring_buffer_demo                          # FIFO 绕回 + Census 配平
-# 死法用例:main 换成三行重新编译
+# 死法用例:main 换成上面那三行重新编译
 g++ -std=c++20 ring_buffer_death.cpp -o ring_buffer_death
 ./ring_buffer_death                         # 期望 Check 崩溃,退出码 134
 # 析构绕圈实验
@@ -384,7 +390,7 @@ g++ -std=c++20 destroy_wrap_demo.cpp -o destroy_wrap_demo && ./destroy_wrap_demo
 g++ -std=c++20 -O2 -S mod.cpp -o mod.s      # 三种取模的机器码都在 mod.s 里
 ```
 
-配套工程目录 `code/volumn_codes/vol8-labs/ministl/stage2_ring_buffer/`,施工讲义 `HANDBOOK.md` 已就位,工程版头文件 `include/tamcpp_ministl/ring_buffer.hpp` 由作者按讲义推进。
+配套工程目录 `code/volumn_codes/vol8-labs/ministl/stage2_ring_buffer/` 咱们已经建好,施工讲义 `HANDBOOK.md` 就位,工程版头文件 `include/tamcpp_ministl/ring_buffer.hpp` 等笔者按讲义把它搓出来。
 
 ## 参考资源
 
