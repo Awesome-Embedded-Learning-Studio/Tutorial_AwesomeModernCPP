@@ -12,7 +12,7 @@ tags:
 difficulty: intermediate
 platform: stm32f1
 cpp_standard: [20]
-reading_time_minutes: 10
+reading_time_minutes: 23
 prerequisites:
   - "把配置写进类型：Gpio 模板与编译期的验证"
   - "时钟门控：灯不亮，从时钟查起"

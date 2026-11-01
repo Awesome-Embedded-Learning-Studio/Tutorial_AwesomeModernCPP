@@ -105,7 +105,7 @@ for (std::uint32_t n = 1;; ++n) {
 - 字段词汇表一共三样：`{}` 任意可格式化值，`{:x}` 整数十六进制，`{:N}` 定宽。
 - `{:x}` 内部包成 `Hex`，输出 `0x` 加小写、不补零，日志流里的 `hex=0xa` 就是它打的。
 - `{:N}` 只补空格、从不截断。
-- `{{`、`}}` 是字面量大括号的转义。
+- <span v-pre>`{{`</span>、<span v-pre>`}}`</span> 是字面量大括号的转义。
 
 底下是不是同一套底座？咱们在源码里对上了。格式串的 `format_to` 走的仍是 `Formatter` 分发：两边字面量的最后归宿都是同一个 `append(string_view)`。咱们看到拼接式落的是 `"blink="`，格式串落的也是字面量块。两种写法为什么共用同一套？这套分发机制[《从重载集到 Formatter 特化》](02-dispatch-overload-to-formatter.md)里咱们拆过一遍。
 
@@ -130,7 +130,7 @@ for (std::uint32_t n = 1;; ++n) {
 | `[501ms]` | 毫秒时间戳 | `AClock::now_ms()`，示例是 `HalTickClock`（包 `HAL_GetTick`） |
 | `[Info ]` | 级别，定宽 5 | `LevelName` 加 `{:5}`，短名右侧补空格 |
 | `[led]` | tag | `Tag("led")` 的文本 |
-| ` ` | 一个空格 | 头部与 payload 的分界 |
+| `(space)` | 一个空格 | 头部与 payload 的分界 |
 | `blink=1` | payload | 两种写法各自的装配结果 |
 | `\r\n` | 行尾 | 固定 CRLF |
 

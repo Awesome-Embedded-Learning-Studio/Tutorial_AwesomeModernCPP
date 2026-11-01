@@ -12,7 +12,7 @@ tags:
 difficulty: intermediate
 platform: stm32f1
 cpp_standard: [20, 23]
-reading_time_minutes: 11
+reading_time_minutes: 23
 prerequisites:
   - "谁打断谁：NVIC 抢占等级怎么排"
 related:

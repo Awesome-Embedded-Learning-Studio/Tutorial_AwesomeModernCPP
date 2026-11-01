@@ -13,7 +13,7 @@ tags:
 difficulty: intermediate
 platform: stm32f1
 cpp_standard: [23]
-reading_time_minutes: 10
+reading_time_minutes: 26
 prerequisites:
   - "一串抖动，两条链：轮询消抖与 EXTI 边沿的对拍"
 related:

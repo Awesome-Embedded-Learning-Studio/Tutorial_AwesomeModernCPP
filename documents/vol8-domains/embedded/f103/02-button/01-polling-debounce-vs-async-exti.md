@@ -13,7 +13,7 @@ tags:
 difficulty: intermediate
 platform: stm32f1
 cpp_standard: [23]
-reading_time_minutes: 9
+reading_time_minutes: 23
 prerequisites:
   - "把配置写进类型：Gpio 模板与编译期的验证"
 related:

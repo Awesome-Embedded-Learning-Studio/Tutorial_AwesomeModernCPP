@@ -13,7 +13,7 @@ tags:
 difficulty: intermediate
 platform: stm32f1
 cpp_standard: [23]
-reading_time_minutes: 12
+reading_time_minutes: 26
 prerequisites:
   - "阻塞收发的命令控制台：UART 帧的分频算术与 48 字节行缓冲"
 related:
