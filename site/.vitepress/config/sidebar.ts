@@ -78,7 +78,7 @@ function scanDir(dir: string, urlPrefix: string, depth = 0): SidebarItem[] {
     if (a.order !== undefined && b.order !== undefined) return a.order - b.order
     if (a.order !== undefined) return -1
     if (b.order !== undefined) return 1
-    return a.name.localeCompare(b.name, 'zh-CN')
+    return a.name.localeCompare(b.name, 'zh-CN',{ numeric: true })
   })
   entries = ordered.map(e => e.name)
   const items: SidebarItem[] = []
