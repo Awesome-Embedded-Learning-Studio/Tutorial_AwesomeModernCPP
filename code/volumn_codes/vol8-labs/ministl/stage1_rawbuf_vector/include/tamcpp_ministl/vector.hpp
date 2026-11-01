@@ -16,7 +16,7 @@ template <typename Sources> class Vector {
     Vector() = default;
     explicit Vector(std::size_t capacity) : buffer_(capacity) {}
     Vector(std::initializer_list<Sources> init_lists_src) {
-        // 触发 Move 进来
+        // initializer_list 只发 const 引用，没得 Move，我们只能逐个拷贝进来
         const auto sz = init_lists_src.size();
         reserve(sz);
 
