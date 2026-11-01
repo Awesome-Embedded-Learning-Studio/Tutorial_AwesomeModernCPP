@@ -231,7 +231,7 @@ void HAL_NVIC_SetPriority(IRQn_Type IRQn, uint32_t PreemptPriority, uint32_t Sub
 | 4 | NVIC_PRIORITYGROUP_3 | 3 | 1 | 0x40 | 0x50 | 0x20 |
 | 7 | NVIC_PRIORITYGROUP_0 | 0 | 4 | 0x00(preempt 被扔) | 0x10 | 0x20 |
 
-头两行咱们放在一起看。复位默认的 PRIGROUP=0 与 GROUP_4 的 PRIGROUP=3 在 4 位实现上是逐位等价的，咱们翻遍库树也没找到一处对 `HAL_NVIC_SetPriorityGrouping` 的调用，AIRCR 保持的就是复位值，于是两条路线（HAL 那边 sub 恒 0）写出的 IP 相同。前提就是咱们守着这个默认，一旦有谁改了分组，两边写出的 IP 就岔开了。
+头两行咱们放在一起看。复位默认的 PRIGROUP=0 与 GROUP_4 的 PRIGROUP=3 在 4 位实现上是逐位等价的。库树里确实没有一处对 `HAL_NVIC_SetPriorityGrouping` 的调用，运行时摆这个寄存器的是固件开机第一步：`HAL_Init`（stm32f1xx_hal.c:157）把分组摆成 GROUP_4，AIRCR 落在 GROUP_4 那一档。无论按复位值还是按 GROUP_4 算，两档逐位等价，两条路线（HAL 那边 sub 恒 0）写出的 IP 相同。前提就是分组停在 GROUP_4 或与它逐位等价的复位值上，一旦有谁改了分组，两边写出的 IP 就岔开了。
 
 第三行是 `NVIC_PRIORITYGROUP_3`（3 位抢占 1 位子）的分组。CMSIS 单参路线写下的还是 `preempt<<4`，但在这个分组下读回的抢占级得按 `IP>>5` 算。咱们写 2 进去，IP 就成了 0x20，读回的抢占级是 1。写的还是同一个 2，分组换了一次，含义从抢占级 2 漂成了抢占级 1 加子级别 0。数字本身是一个都没变的，变的只是硬件拿哪几位当抢占位。
 
@@ -271,7 +271,7 @@ HAL 的时基里住着 SysTick，HAL_Init 里配的那个 1ms 节拍，HAL_GetTi
 |---|---|---|
 | 抢占等级填了 16 或更大，本想配最低，行为反而成了最高、到处打断别人 | (16<<4)&0xFF=0x00，出界值回卷，CMSIS 与 HAL 都没有 bounds 检查 | 只用 0 到 15；配完拿 NVIC_GetPriority 读回对数 |
 | HAL 双参配的数与 CMSIS 单参的读回对不上 | HAL 按运行时 AIRCR 分组编码，CMSIS 单参恒 preempt<<4，分组一改两边含义就分岔 | 用 NVIC_GetPriorityGrouping 查实况，对照分组阶梯表重算 |
-| 从别的工程搬来的抢占等级数字，行为全变了 | 原工程调过 HAL_NVIC_SetPriorityGrouping，分组不同，同一个 IP 读回的抢占级不同 | 按当前分组重排数字；本库不调分组，靠的是复位默认 |
+| 从别的工程搬来的抢占等级数字，行为全变了 | 原工程调过 HAL_NVIC_SetPriorityGrouping，分组不同，同一个 IP 读回的抢占级不同 | 按当前分组重排数字；本库不调分组，运行时停在 HAL_Init 摆的 GROUP_4，与复位默认逐位等价 |
 | ISR 里调 HAL_Delay 或忙等 HAL_GetTick，卡死在里面 | SysTick 被 HAL 排最低 0x0F，抢占级更高的 ISR 把节拍压住，计数不走 | 时钟重配后 NVIC_SetPriority(SysTick_IRQn, 0U)；长活儿移出 ISR |
 | 想靠子优先级让一个中断打断另一个 | 子优先级只排同时挂起的先后，不产生嵌套，嵌套只看抢占位 | 要嵌套就给不同的抢占级 |
 | 同级中断的长 handler 期间，另一个中断迟到一拍才跑，担心丢 | 同级不嵌套，到期进挂起位，handler 出门后追发，一次到期一次服务 | 不丢只迟；窗口长的活儿别放 ISR |

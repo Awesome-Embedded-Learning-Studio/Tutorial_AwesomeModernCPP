@@ -38,28 +38,28 @@ related:
 HAL 的 GPIO 模块为 EXTI 备了一个包装函数，咱们把 `stm32f1xx_hal_gpio.c` 里的原文搬过来<RefLink :id="3" preview="STMicroelectronics, stm32f1xx_hal_gpio.c" />：
 
 ```c
-   ```c
-   void HAL_GPIO_EXTI_IRQHandler(uint16_t GPIO_Pin)
-   {
-     /* EXTI line interrupt detected */
-     if (__HAL_GPIO_EXTI_GET_IT(GPIO_Pin) != 0x00u)
-     {
-       __HAL_GPIO_EXTI_CLEAR_IT(GPIO_Pin);
-       HAL_GPIO_EXTI_Callback(GPIO_Pin);
-     }
+void HAL_GPIO_EXTI_IRQHandler(uint16_t GPIO_Pin)
+{
+  /* EXTI line interrupt detected */
+  if (__HAL_GPIO_EXTI_GET_IT(GPIO_Pin) != 0x00u)
+  {
+    __HAL_GPIO_EXTI_CLEAR_IT(GPIO_Pin);
+    HAL_GPIO_EXTI_Callback(GPIO_Pin);
+  }
+}
 ```
 
 它做的事咱们念一遍：查到了挂起位就清掉，然后把引脚号交给了回调。干活的回调在同文件里，它的定义带着 `__weak`：
 
 ```c
-   ```c
-   __weak void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-   {
-     /* Prevent unused argument(s) compilation warning */
-     UNUSED(GPIO_Pin);
-     /* NOTE: This function Should not be modified, when the callback is needed,
-              the HAL_GPIO_EXTI_Callback could be implemented in the user file
-      */
+__weak void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  /* Prevent unused argument(s) compilation warning */
+  UNUSED(GPIO_Pin);
+  /* NOTE: This function Should not be modified, when the callback is needed,
+           the HAL_GPIO_EXTI_Callback could be implemented in the user file
+   */
+}
 ```
 
 函数体是空的，条文的要点全在 NOTE 注释里。要紧的就一句，咱们原样抄：`the HAL_GPIO_EXTI_Callback could be implemented in the user file`。咱们把英文翻过来，意思是您别改这个函数。您想要回调的时候，就在自己的文件里写一份同名的。
@@ -82,6 +82,7 @@ assembler and linker."
 
 用户侧的接法照着 NOTE 注释做：您在自己的文件里写一个不带 `__weak` 的同名 `HAL_GPIO_EXTI_Callback`，它就成了强符号，链接时把库里的弱空体顶掉。进门的 `switch (GPIO_Pin)` 还得问一句来路，因为 HAL 的回调不分线：任何一条 EXTI 线的中断，走完包装函数汇进的都是同一个名字，函数得拿引脚号分清是谁来的，再各走各的处理。E1 蒸馏实验里的 `gen1a_user.c` 蒸的就是它。
 蒸馏的意思咱们交代一句：把真源的最小形状抽成几个小源文件单独编译，看的只有尺寸和反汇编，数字才是对得齐的。整个 E1 都是拿 `arm-none-eabi-gcc 16.2.0` 按 `-O2` 编 `cortex-m3` 的。
+
 ### 编译单元的边界就是内联的边界
 
 编译单元就是咱们平常说的 TU：一个源文件独立编译出来的目标文件。放到回调的链上看，单元的边界同时就是内联的边界。E1 给了两份对照，咱们把数字和读法都摆出来：
@@ -116,15 +117,17 @@ assembler and linker."
 ### 不开 gc-sections，死弱随固件出厂
 
 死弱占着的 4 个字节还有下文。E1 补了一组对照：同样的两单元源，咱们加上 `-ffunction-sections` 和 `--gc-sections`，把 `EXTI0_IRQHandler` 定成回收的根，text 从 76 降到了 44。被收走的是死弱定义和没人调用的包装函数体，活下来的是向量函数（判挂起、清挂起已经内联在它体内）加用户强符号。口径咱们说明白：拿到的数字是蒸馏源的实测。真源工程的 gc-sections 开不开、能收回来多少，得看工程自己的形状，咱们不把 44 外推过去。弱符号一代的检查时机，咱们看到这儿就清楚了：链接器把上场的名额定了，顶掉的时候零提示。签名对不上的时候链接器一声也不吭，非得等回调真的被调起来才露馅。全部的约束，到头来就只剩同名了。
+
 ## 注册指针：运行期填表
 
 第二种接法在 EXTI 自己的模块里。`stm32f1xx_hal_exti.h` 的 `EXTI_HandleTypeDef` 是个 handle 结构，咱们看它的字段<RefLink :id="3" preview="STMicroelectronics, stm32f1xx_hal_exti.h" />：
 
 ```c
-   ```c
-   {
-     uint32_t Line;                    /*!<  Exti line number */
-     void (* PendingCallback)(void);   /*!<  Exti pending callback */
+typedef struct
+{
+  uint32_t Line;                    /*!<  Exti line number */
+  void (* PendingCallback)(void);   /*!<  Exti pending callback */
+} EXTI_HandleTypeDef;
 ```
 
 `Line` 之外咱们多看到了一个 `PendingCallback`，它的类型是函数指针。函数指针的白话：存函数地址的变量，调用它就是跳到存的那个地址去执行。回调的连接从链接期的同名顶掉，变成了运行期往这个字段里填地址。身份的枚举 `EXTI_CallbackIDTypeDef` 只有一档 `HAL_EXTI_COMMON_CB_ID`，F1 的头文件里就这么一个身份。
@@ -217,14 +220,19 @@ concept 是 C++20 起的编译期判断题，给类型出一道是或不是的�
 咱们照着源码念它的次序：“判 PR、清 PR、调 `Handler::operator()()`”。`Handler` 是 `Exti` 的模板参数，回调是谁在实例化的时候就定下了，查表与问来路的动作在中断里都没有。用户侧就是 07 示例的那几行：
 
 ```cpp
-   ```cpp
-   struct OnTouch {
-       static void operator()() { edge_queue.push(HAL_GetTick()); }
-   };
-   using KeyEvent = estdx::stm32f1::Exti<KeyPin, estdx::stm32f1::ExtiEdge::Rising,
-   ```cpp
-   extern "C" void EXTI0_IRQHandler() {
-       KeyEvent::irq();
+struct OnTouch {
+    static void operator()() { edge_queue.push(HAL_GetTick()); }
+};
+using KeyEvent = estdx::stm32f1::Exti<KeyPin, estdx::stm32f1::ExtiEdge::Rising,
+                                      OnTouch>;
+```
+
+向量函数也在同一个文件里：
+
+```cpp
+extern "C" void EXTI0_IRQHandler() {
+    KeyEvent::irq();
+}
 ```
 
 `OnTouch` 把推队列写成了一个类型，`KeyEvent` 把引脚、边沿、处理器拧在了一行别名里，向量函数就剩下了三行。上一篇咱们看它们是为了装配，本篇咱们再看一遍，看到的是另一件事：回调的连接在这里既不靠链接器的同名顶掉，也不靠运行期的表，它已经是类型的一部分了。
