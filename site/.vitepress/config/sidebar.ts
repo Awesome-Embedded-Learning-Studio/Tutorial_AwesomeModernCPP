@@ -154,6 +154,7 @@ export function buildSidebar(): DefaultTheme.Sidebar {
     '/appendix/': [
       { text: '附录', link: '/appendix/' },
       { text: '术语表', link: '/appendix/terminology' },
+      { text: '整活', link: '/appendix/fun/' },
     ],
     '/team/': [
       { text: '贡献者', link: '/team/' },
