@@ -14,3 +14,11 @@ description: "辅助参考内容与术语表"
 </ChapterNav>
 
 中英文技术术语标准翻译对照表
+
+## 整活
+
+<ChapterNav variant="sub">
+  <ChapterLink href="fun/">整活角</ChapterLink>
+</ChapterNav>
+
+社区整活投稿，图一乐，别当技术立场

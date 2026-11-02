@@ -41,7 +41,7 @@ CATEGORIES = [
 
 # Directories that are intentionally published in Chinese first and should not
 # affect English translation coverage.
-TRANSLATION_EXEMPT_DIRS = {'community'}
+TRANSLATION_EXEMPT_DIRS = {'community', 'fun'}
 
 EXCLUDE_DIRS = {
     'images',
