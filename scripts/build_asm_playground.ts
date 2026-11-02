@@ -13,15 +13,18 @@ const VENDOR = join(ROOT, 'site/.vitepress/theme/vendor/asm-playground')
 const ENGINE_DIR = join(ROOT, 'documents/public/asm-engine')
 const PAYLOADS_DIR = join(ROOT, 'documents/public/payloads')
 const SCENES_DIR = join(ROOT, 'code/volumn_codes/vol10/asm-payloads')
+const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 
 function run(command: string, args: string[], cwd: string) {
-  execFileSync(command, args, { cwd, stdio: 'inherit' })
+  // Windows 的 npm 是 .cmd 脚本，Node 需要通过 shell 启动；Linux/WSL 直接执行 npm。
+  const shell = process.platform === 'win32' && command.endsWith('.cmd')
+  execFileSync(command, args, { cwd, stdio: 'inherit', shell })
 }
 
 // 1) 组件与 worker：node_modules 缺失时先 ci，随后构建并跑产物自检
-if (!existsSync(join(TOOL, 'node_modules'))) run('npm', ['ci', '--ignore-scripts'], TOOL)
-run('npm', ['run', 'build'], TOOL)
-run('npm', ['run', 'verify:dist'], TOOL)
+if (!existsSync(join(TOOL, 'node_modules'))) run(npmCommand, ['ci', '--ignore-scripts'], TOOL)
+run(npmCommand, ['run', 'build'], TOOL)
+run(npmCommand, ['run', 'verify:dist'], TOOL)
 
 // 2) vendor 装配：清旧拷新，保留动态导入的 chunk、CSS 与 LICENSE
 rmSync(VENDOR, { recursive: true, force: true })
@@ -33,8 +36,11 @@ mkdirSync(ENGINE_DIR, { recursive: true })
 cpSync(join(TOOL, 'dist/engine/executor-worker.js'), join(ENGINE_DIR, 'executor-worker.js'))
 
 // 4) 负载：每个带 manifest.json 的场景目录经统一构建器生成 payload.json
-const venvPython = join(ROOT, '.venv/bin/python')
-const python = existsSync(venvPython) ? venvPython : 'python3'
+const venvPythonCandidates = process.platform === 'win32'
+  ? [join(ROOT, '.venv', 'Scripts', 'python.exe'), join(ROOT, '.venv', 'bin', 'python')]
+  : [join(ROOT, '.venv', 'bin', 'python')]
+const venvPython = venvPythonCandidates.find(existsSync)
+const python = venvPython ?? (process.platform === 'win32' ? 'python' : 'python3')
 mkdirSync(PAYLOADS_DIR, { recursive: true })
 for (const entry of readdirSync(SCENES_DIR, { withFileTypes: true })) {
   if (!entry.isDirectory() || entry.name.startsWith('_')) continue

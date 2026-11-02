@@ -30,7 +30,7 @@ def nm_addr(elf: Path, symbol: str) -> int:
 
 
 def build(scene: Path) -> None:
-    manifest = json.loads((scene / 'manifest.json').read_text())
+    manifest = json.loads((scene / 'manifest.json').read_text(encoding='utf-8'))
     entry = manifest.get('entry', 'main')
     stop = manifest.get('stop_before', '__stop')
 
@@ -54,7 +54,7 @@ def build(scene: Path) -> None:
         'regs': regs,
         'memory': [{'addr': STACK['map'], 'size': STACK['size'], 'perms': 'rw',
                     'bytes': base64.b64encode(stack).decode()}],
-    }, indent=2) + '\n')
+    }, indent=2) + '\n', encoding='utf-8')
 
     subprocess.run([
         sys.executable, '-m', 'tools.make_payload',
