@@ -18,6 +18,11 @@ prerequisites:
   - "谁最急,谁上场:就绪位图、任务三态与选人仲裁"
 related:
   - "CPU 归谁:从就绪位图到中断唤醒"
+current_status:
+  title: ZerOS的篇章正在打磨ing
+  detail: PendSV 首切 · 等你验收
+  variant: polishing
+  icon: 🪄
 ---
 
 # 在栈顶伪造出生证明:PendSV、SVC 与第一次切换

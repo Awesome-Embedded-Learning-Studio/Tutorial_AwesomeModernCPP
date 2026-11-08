@@ -17,6 +17,11 @@ prerequisites:
   - "一幕一房:demo 注册中心、任务创建三条路与遗言成义务"
 related:
   - "芯片死前立遗嘱:HardFault 现场、栈金丝雀与零分配日志"
+current_status:
+  title: ZerOS的篇章正在打磨ing
+  detail: CI 冒烟与体积闸门 · 等你验收
+  variant: polishing
+  icon: 🚦
 ---
 
 # 跑五秒,说出你的台词:CI 冒烟、include 防火墙与体积闸门

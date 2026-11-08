@@ -18,6 +18,11 @@ prerequisites:
 related:
   - "在栈顶伪造出生证明:PendSV、SVC 与第一次切换"
   - "中断只递条子:环形队列、工作者线程与底半推迟"
+current_status:
+  title: ZerOS的篇章正在打磨ing
+  detail: 时间片轮转 · 等你验收
+  variant: polishing
+  icon: 🤝
 ---
 
 # 数到十就换人:同级时间片与不继承的切片债

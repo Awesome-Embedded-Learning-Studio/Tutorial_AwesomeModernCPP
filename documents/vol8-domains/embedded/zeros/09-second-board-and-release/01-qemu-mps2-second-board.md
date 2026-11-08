@@ -18,6 +18,11 @@ prerequisites:
 related:
   - "跑五秒,说出你的台词:CI 冒烟、include 防火墙与体积闸门"
   - "拔掉心跳做实验:NO_TICK、僵尸任务与以 patch 随库的探针"
+current_status:
+  title: ZerOS的篇章正在打磨ing
+  detail: QEMU mps2 · 等你验收
+  variant: polishing
+  icon: 🖥
 ---
 
 # QEMU 里的同款心跳:第二块板零改,兑现薄 port

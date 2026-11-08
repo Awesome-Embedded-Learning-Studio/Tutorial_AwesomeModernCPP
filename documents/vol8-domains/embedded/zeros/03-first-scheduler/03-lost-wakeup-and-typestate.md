@@ -18,6 +18,11 @@ prerequisites:
   - "在栈顶伪造出生证明:PendSV、SVC 与第一次切换"
 related:
   - "CPU 归谁:从就绪位图到中断唤醒"
+current_status:
+  title: ZerOS的篇章正在打磨ing
+  detail: park_for 与类型状态 · 等你验收
+  variant: polishing
+  icon: 💤
 ---
 
 # 睡死那个 bug:丢唤醒、park_for 与让错误用法编不过的建造者链

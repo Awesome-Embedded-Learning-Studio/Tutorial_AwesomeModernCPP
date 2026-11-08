@@ -17,6 +17,11 @@ prerequisites:
   - "没有堆的世界·第 4 篇:Make/Destroy:类型化的出生入死与编译期防线"
 related:
   - "没有堆的世界:先把内存发对"
+current_status:
+  title: ZerOS的篇章正在打磨ing
+  detail: Ticks 值类型 · 四道走查全绿 · 等你验收
+  variant: polishing
+  icon: ⏱
 ---
 
 # 一秒钟的定义权:tick、回绕算术与到期队列

@@ -16,6 +16,11 @@ prerequisites:
   - "给内核一秒钟·第 1 篇:一秒钟的定义权"
 related:
   - "一秒钟的定义权:tick、回绕算术与到期队列"
+current_status:
+  title: ZerOS的篇章正在打磨ing
+  detail: core_cm3.h 的 0xF0 之谜已破 · 等你验收
+  variant: polishing
+  icon: 🔍
 ---
 
 # 注释写 Lowest,硅片判 Highest:拆掉 CMSIS 的优先级移位

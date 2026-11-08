@@ -16,6 +16,11 @@ prerequisites:
   - "睡着就调慢心跳:tickless、读清竞态与 24 位分期续杯"
 related:
   - "跑五秒,说出你的台词:CI 冒烟、include 防火墙与体积闸门"
+current_status:
+  title: ZerOS的篇章正在打磨ing
+  detail: 全链路终验 · 等你验收
+  variant: polishing
+  icon: 🎉
 ---
 
 # 挂牌 v0.1.0:README 即大门,四个考场挨个走到

@@ -18,6 +18,11 @@ prerequisites:
 related:
   - "在栈顶伪造出生证明:PendSV、SVC 与第一次切换"
   - "教科书输给预取缓冲器:.ramfunc 反转与一本诚实的实验册"
+current_status:
+  title: ZerOS的篇章正在打磨ing
+  detail: 时钟树与第一刀切换 · 等你验收
+  variant: polishing
+  icon: ⏱
 ---
 
 # 把秒表焊进硅片:时钟树爬上 72MHz,量第一刀切换

@@ -18,6 +18,11 @@ prerequisites:
   - "等三百毫秒,不养一个任务:软件定时器与 fn+void* 硬通货"
 related:
   - "把栈刷满魔法数:金丝雀涂满全栈,栈深按证据定"
+current_status:
+  title: ZerOS的篇章正在打磨ing
+  detail: tickless · 等你验收
+  variant: polishing
+  icon: 🌙
 ---
 
 # 睡着就调慢心跳:tickless、读清竞态与 24 位分期续杯

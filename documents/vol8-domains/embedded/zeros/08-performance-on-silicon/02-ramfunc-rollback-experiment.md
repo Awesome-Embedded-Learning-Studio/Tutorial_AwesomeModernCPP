@@ -16,6 +16,11 @@ prerequisites:
   - "把秒表焊进硅片"
 related:
   - "拔掉心跳做实验:NO_TICK、僵尸任务与以 patch 随库的探针"
+current_status:
+  title: ZerOS的篇章正在打磨ing
+  detail: .ramfunc 反转 · 等你验收
+  variant: polishing
+  icon: 📚
 ---
 
 # 教科书输给预取缓冲器:.ramfunc 反转与一本诚实的实验册

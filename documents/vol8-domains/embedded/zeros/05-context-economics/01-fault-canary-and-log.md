@@ -18,6 +18,11 @@ prerequisites:
 related:
   - "中断只递条子:环形队列、工作者线程与底半推迟"
   - "等三百毫秒,不养一个任务:软件定时器与 fn+void* 硬通货"
+current_status:
+  title: ZerOS的篇章正在打磨ing
+  detail: HardFault 现场与金丝雀 · 等你验收
+  variant: polishing
+  icon: 🪦
 ---
 
 # 芯片死前立遗嘱：HardFault 现场、栈金丝雀与零分配日志

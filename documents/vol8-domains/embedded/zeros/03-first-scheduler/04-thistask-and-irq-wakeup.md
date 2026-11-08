@@ -18,6 +18,11 @@ prerequisites:
   - "在栈顶伪造出生证明:PendSV、SVC 与第一次切换"
 related:
   - "睡死那个 bug:丢唤醒、park_for 与让错误用法编不过的建造者链"
+current_status:
+  title: ZerOS的篇章正在打磨ing
+  detail: ThisTask 与唤醒链路 · 等你验收
+  variant: polishing
+  icon: 🔔
 ---
 
 # 配平中断优先级,再让中断敲门:ThisTask 与第一条唤醒链路

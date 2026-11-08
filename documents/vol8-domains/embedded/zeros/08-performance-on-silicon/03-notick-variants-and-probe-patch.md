@@ -19,6 +19,11 @@ related:
   - "数到十就换人:同级时间片与不继承的切片债"
   - "叫醒所有人,各自重查真相:事件组、直接通知与满环背压"
   - "一秒钟的定义权:tick、回绕算术与到期队列"
+current_status:
+  title: ZerOS的篇章正在打磨ing
+  detail: NO_TICK 与探针 patch · 等你验收
+  variant: polishing
+  icon: 🧟
 ---
 
 # 拔掉心跳做实验:NO_TICK、僵尸任务与以 patch 随库的探针

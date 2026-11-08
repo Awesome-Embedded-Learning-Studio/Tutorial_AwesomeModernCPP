@@ -18,6 +18,11 @@ prerequisites:
   - "睡死那个 bug:丢唤醒、park_for 与让错误用法编不过的建造者链"
 related:
   - "事件来得再早也不许丢:计数信号量与八操作的 SystemContext 接缝"
+current_status:
+  title: ZerOS的篇章正在打磨ing
+  detail: 优先级继承 · 等你验收
+  variant: polishing
+  icon: 🎭
 ---
 
 # 看 M 闭嘴那三秒:互斥锁、优先级继承与所有权移交

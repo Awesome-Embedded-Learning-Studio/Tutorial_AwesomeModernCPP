@@ -18,6 +18,11 @@ prerequisites:
   - "CPU 归谁:从就绪位图到中断唤醒"
 related:
   - "看 M 闭嘴那三秒:互斥锁、优先级继承与所有权移交"
+current_status:
+  title: ZerOS的篇章正在打磨ing
+  detail: 计数信号量与接缝 · 等你验收
+  variant: polishing
+  icon: 🎟
 ---
 
 # 事件来得再早也不许丢:计数信号量与八操作的 SystemContext 接缝

@@ -17,6 +17,11 @@ prerequisites:
   - "一秒钟的定义权:tick、回绕算术与到期队列"
 related:
   - "在栈顶伪造出生证明:PendSV、SVC 与第一次切换"
+current_status:
+  title: ZerOS的篇章正在打磨ing
+  detail: 就绪位图仲裁 · 等你验收
+  variant: polishing
+  icon: 👑
 ---
 
 # 谁最急,谁上场:就绪位图、任务三态与选人仲裁
