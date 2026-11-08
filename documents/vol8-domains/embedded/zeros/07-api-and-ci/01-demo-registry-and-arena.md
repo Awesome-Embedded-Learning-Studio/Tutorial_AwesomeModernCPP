@@ -60,7 +60,7 @@ constinit ZerOS::sched::TCBStorage tcb_c{};
 # the one-liner:  zeros_add_demo(<name>)
 ```
 
-(Registrytion 又是一个照原样引的拼写,文件头把它拼错了,咱们不替作者改。)主张的落地是一个 CMake 函数:
+(Registrytion 又是一个照原样引的拼写,文件头把它拼错了,咱们不替作者改。)主张的落地是一个 CMake 函数。函数的活儿咱们在念代码之前立住:一间 demo 的屋子要跑起来,背后跟着一整套固定的开销,可执行目标要把这一幕的 main.cpp 加上公共的内核源一起编出来,链接要喂进板子的链接脚本,要用 gc-sections 裁掉没用到的段,要留下一份查符号用的 map 文件,编完要报一次体积的读数,本地想复跑的话,还得有一个把 ELF 喂给 Renode 的仿真目标。没有这个函数的话,这一整套就得在每个子目录的 CMakeLists 里原样写上八遍,链接选项哪天改了,八间屋的 CMakeLists 就得挨个跟着改。`zeros_add_demo` 把这一套收进了一个函数,咱们分作三段看它:
 
 ```cmake
 function(zeros_add_demo name)
@@ -75,12 +75,22 @@ function(zeros_add_demo name)
         -Wl,--print-memory-usage
         -Wl,-Map,${CMAKE_BINARY_DIR}/demo-${name}.map
     )
+```
+
+固件的目标在咱们眼前这一段成形:`zeros-demo-<name>` 把这一幕自己的 main.cpp 和 `${ZEROS_DEMO_COMMON_SOURCES}` 里的公共内核源一起编了出来,挂上了 `zeros_common`。链接的选项是一次配齐的:标准库是不带的,链接脚本用的是上一层目录的 `link.ld`,gc-sections 裁掉了没用到的段,内存的使用情况编完当场打印,map 文件落在了构建目录里备查。
+
+```cmake
     add_custom_command(
         TARGET zeros-demo-${name}
         POST_BUILD
         COMMAND arm-none-eabi-size $<TARGET_FILE:zeros-demo-${name}>
         COMMENT "size report: demo-${name}"
     )
+```
+
+编译收尾的时候,`arm-none-eabi-size` 就把体积当场报了出来,咱们验收一节看到的八个 demo 体积表,数就是它打出来的。
+
+```cmake
     add_custom_target(
         run-${name}
         COMMAND ${CMAKE_COMMAND}
@@ -95,7 +105,9 @@ function(zeros_add_demo name)
 endfunction()
 ```
 
-include 路径的几行被我抽掉了,原文件里它们替每个 demo 补上内核头、板卡头和 CMSIS 的搜索路径,咱们今天不展开它。留下的部分才是注册中心的价值:您注册一个名字,函数就替您生成 `zeros-demo-<name>` 的固件目标,链接脚本、裁掉没用的段、体积报告、map 文件全都配好了,然后再生成一个 `run-<name>` 的仿真目标,它调的是 `run-renode.cmake`,把 ELF 喂给了 Renode,跑满 `ZEROS_SIM_SECONDS` 秒的时间(默认是 5 秒的值,是配置时能改的缓存变量,您想看久一点就改它)再退出。每个 demo 子目录里的 `CMakeLists.txt` 因此只剩一行,heartbeat 的全文就是:
+最后的一个成员是仿真目标 `run-<name>`:它把固件与仿真脚本的路径递给了 `run-renode.cmake`,由它把 ELF 喂给了 Renode,`DEPENDS` 保证了固件是编好了的,仿真跑满了 `ZEROS_SIM_SECONDS` 秒才退出来,这个秒数的默认值是 5 秒,是配置时能改的缓存变量,您想看久一点就改它。
+
+include 路径的几行被我抽掉了,原文件里它们替每个 demo 补上内核头、板卡头和 CMSIS 的搜索路径,咱们今天不展开它。三段合起来的效果,就是您注册一个名字,固件和仿真目标就一并到位了。每个 demo 子目录里的 `CMakeLists.txt` 因此只剩一行,heartbeat 的全文就是:
 
 ```cmake
 zeros_add_demo(heartbeat)
@@ -138,7 +150,7 @@ demo 分了家,创建任务的老办法就该跟着升级了,因为床、盒子�
 
 ### slot 路:盒子和床合成了一个类型
 
-第二条路解决的是床和盒子分了家的麻烦,咱们看 `include/ZerOS/kernel/sched/stack.hpp` 交出的新类型:
+第二条路解决的是床和盒子分了家的麻烦。床的身上还带着一桩旧病,咱们把它交代在类型的前面:裸的 `uint32_t` 数组只保证 4 字节对齐,而 AAPCS(ARM 的过程调用标准)要求公共接口处的栈指针 8 字节对齐,任务起在一个歪了的栈顶上,死相是莫名其妙的。`include/ZerOS/kernel/sched/stack.hpp` 交出的新类型,办的就是把对齐的事从您要记得,变成编译替您把关,咱们看:
 
 ```cpp
 template <std::size_t Words>
@@ -153,7 +165,7 @@ struct TaskStack {
 static_assert(alignof(TaskStack<8>) == 8);
 ```
 
-文件头的注释把动机交代得清楚:裸的 `uint32_t` 数组只保证 4 字节对齐,而 AAPCS(ARM 的过程调用标准)要求公共接口处的栈指针 8 字节对齐,任务起在一个歪了的栈顶上,死相是莫名其妙的。咱们把它的解法看明白:字数取了偶数,栈顶就恒是 8 对齐的,对齐的事就从用户要记得,变成了类型替您保证,谁写了奇数字数,编译当场就拦下了。
+解法看明白了:字数取了偶数,栈顶就恒是 8 对齐的,谁写了奇数字数,编译当场就拦下了,对齐的事,从用户要记得的,变成了类型替您保证的。
 
 接着咱们看 `task.hpp`,它再让盒子和床合了体:
 

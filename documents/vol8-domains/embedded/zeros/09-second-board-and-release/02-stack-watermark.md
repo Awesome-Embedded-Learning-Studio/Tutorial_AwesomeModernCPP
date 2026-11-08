@@ -125,7 +125,7 @@ TEST_CASE("untouched task reports full capacity free", "[watermark]") {
 }
 ```
 
-咱们看空载的情形:任务从没跑过的情况下,余量就该是满的,24 对上了 24,容量与余量在空载时重合了,口径也就咬合上了。第三张是其中的主角,它验的是水位只降不升的脾气:
+咱们看空载的情形:任务从没跑过的情况下,余量就该是满的,24 对上了 24,容量与余量在空载时重合了,口径也就咬合上了。第三张是其中的主角,它验的是水位只降不升的脾气,咱们跟着任务活一回,代码咱们分两段贴:
 
 ```cpp
 TEST_CASE("pushing from the top eats the margin, deepest push wins", "[watermark]") {
@@ -137,7 +137,11 @@ TEST_CASE("pushing from the top eats the margin, deepest push wins", "[watermark
         v[i] = 0;
     }
     REQUIRE(TaskGuardHelper::watermark_free_words(p.task) == 24 - 4);
+```
 
+剧情咱们捋一遍。任务浅浅地压了四个词,余量报了 20,是准的。
+
+```cpp
     // deeper push later in life: down to word 12 (inclusive) — the
     // watermark only ever goes DOWN, old shallower writes stay counted
     for (std::size_t i = 12; i < v.size(); ++i) {
@@ -151,7 +155,7 @@ TEST_CASE("pushing from the top eats the margin, deepest push wins", "[watermark
 }
 ```
 
-剧情咱们捋一遍。任务浅浅地压了四个词,余量报了 20,是准的。后来它活到了更深的世面,压到了词 12(含),余量跟着降到了 4,注释把脾气写死了:watermark only ever goes DOWN(水位只会往下走),浅过的那一波不会被新的浅读数抹回来。末了的断言查的是金丝雀区的完好,`fast_check_stack` 如约交回了 false,也就是没溢出的意思,金丝雀还好好地活着,注释顺路说明了金丝雀区为什么不计入余量。水位回答的问题从来都是它一生最深到过哪。咱们也别把两个函数的分工混了,查完好性的是 `fast_check_stack`,报极值的 `eaten_length` 得等出了事才数。
+后来它活到了更深的世面,压到了词 12(含),余量跟着降到了 4,注释把脾气写死了:watermark only ever goes DOWN(水位只会往下走),浅过的那一波不会被新的浅读数抹回来。末了的断言查的是金丝雀区的完好,`fast_check_stack` 如约交回了 false,也就是没溢出的意思,金丝雀还好好地活着,注释顺路说明了金丝雀区为什么不计入余量。水位回答的问题从来都是它一生最深到过哪。咱们也别把两个函数的分工混了,查完好性的是 `fast_check_stack`,报极值的 `eaten_length` 得等出了事才数。
 
 ## 量不准的路,仓库自己写了界
 

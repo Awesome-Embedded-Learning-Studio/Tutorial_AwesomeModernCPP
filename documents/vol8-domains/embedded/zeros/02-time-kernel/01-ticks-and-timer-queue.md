@@ -59,7 +59,9 @@ note: '... BitmapPool() ' is not a constant expression because it refers
 
 ## Ticks:把一秒钟装进一个类型
 
-咱们新建的 `include/ZerOS/kernel/clock/ticks.hpp` 全文就 33 行:
+咱们要立的新类型叫 Ticks,它的新家是 `include/ZerOS/kernel/clock/ticks.hpp`,整个文件的行数是 33 行,咱们把它拆成三段,一段一段地过。不过在进文件之前,有三个问题是得立在前面的,它们就是这个类型存在的理由。头一个问题:一秒钟在芯片上是什么?芯片上是没有钟表的,定时器硬件会做的事只有数拍子一件,咱们给时钟配一个节拍,数出来的每一个 tick 就是一段定死的时长,所以咱们嘴里的“一秒”,数到底是一千拍的约定,数拍子的活,归咱们的新类型 Ticks 管。第二个问题:裸的 `uint32_t` 会在哪儿出事?它的毛病是不记自己的身份,装的是时刻还是一段跨度,从数值上是看不出来的,用的人只能靠注释跟人脑来记。
+
+第三个问题:为什么这个错一到回绕就变成难查的病?数拍子的计数器是 32 位的,数到顶了就会归零,所以回绕这件事躲不掉,回绕之后谁早谁晚的判断要怎么才靠得住,这就是咱们交给 `is_after` 的题,这道题的答案,咱们放到回绕那一段里细讲。三个问题立住了,咱们进文件,头一段是类型的外壳,咱们连同头注释一起看:
 
 ```cpp
 #pragma once
@@ -77,7 +79,17 @@ struct Ticks {
 
     constexpr Ticks() = default;
     constexpr Ticks(tick_t tick) : tick_(tick) {}
+```
 
+头注释第一句就把大问题摆上了桌:时钟每时每刻都在走,那到底多长算一秒呢?咱们给它配 1 kHz 的节拍,数出来一个 tick 就是一毫秒了。咱们换成 100 Hz,它就是十毫秒了。类型管的只是把若干个 tick 记清楚,周期定成多少是使用它的人的事。
+
+类型本身有个立场值得您留意:裸的 `uint32_t` 不让直接满天飞,咱们想表达“过了 500 拍”,就得写 `Ticks{500}` 这样的代码。好处在调用点就看得出来了,`call_after_span(w, 1000)` 这样的代码,读的人知道 1000 的单位是 tick,连注释都省了。`tick_t` 和 `tick_diff_t` 是成对出现的两个别名,一个是 32 位无符号的计数值,一个是 32 位有符号的差值,该配哪个的问题,拆到下一段的 `is_after` 咱们马上见分晓。
+
+### 回绕:寄存器宽度替咱们做的决定
+
+tick 计数为什么非得回绕?因为硬件定时器是 32 位的,数到 `0xFFFFFFFF` 之后再走一步就归了零,寄存器宽度替咱们做了这个决定。代码里那行注释写得倒是直白,“Register can be Overflow”。谜底咱们就在下面这一段里揭开:
+
+```cpp
     // Or, we say is_due, but i think this is much hard to understand :(
     constexpr bool is_after(Ticks now) const noexcept {
         // We say, if the now ROLL back to 0(Register can be Overflow)
@@ -85,7 +97,21 @@ struct Ticks {
     }
 
     void forward(tick_t step) noexcept { tick_ += step; }
+```
 
+归零了倒不可怕,可怕的是归零之后“谁早谁晚”就没法比了。咱们把 `is_after` 的机制走一遍。它回答的是一个问题:现在这一刻算不算已经到了或者越过了这个截止时刻?留意一下方向:差值是拿 `now` 减 `deadline` 得到的,大于等于零的时候才算到点。麻烦在于 `now.tick_ - tick_` 是无符号的减法,如果 deadline 在前、now 归了零,减出来的就是一个巨大的数。
+
+`static_cast<tick_diff_t>` 干的就是把这个巨大的数重新解读成有符号数。咱们拿真数字走一遍:deadline 存的是 `0xFFFFFFFC`,now 已经回绕到了 `0x00000002`。咱们拿无符号减法一算:`0x00000002 - 0xFFFFFFFC` 按 32 位取模得到了 6,把它按 `int32_t` 解读出来的值还是 6,结果是个大于等于零的数,咱们就判它到点了。咱们反过来试 now 等于 `0xFFFFFFFB` 的情形,它还没到回绕的时候,算出来的差值是 -1,咱们就判它没到了。所以真实的次序间隔只要不超过 `int32_t` 能表达的范围,这套比较在回绕前后给出的答案是一致的。
+
+这个范围咱们算一下:1 kHz 的节拍下,`int32_t` 的正半轴装得下 2147483647 个 tick,折下来咱们得到约 24.8 天。两个截止时刻彼此隔得比 24.8 天近的时候,咱们比较它们的早晚就不会出错,比如一个排在 20 天后、另一个排在 40 天后的两个时刻,中间隔了 20 天,判断照常是成立的。真实间隔一旦超过了 24.8 天,差值就绕回负数了,后来的那个时刻在插入队列的时候就被判成了“已经过期”,还没等到点就被咱们弹出来执行,这才是出事的机理。嵌入式系统里咱们很少让任务等这么久,这个边界咱们记在心里就够了,不用咱们写代码去防。
+
+旁边的 `forward` 咱们也顺带看一眼,它做的事是拿一个步长把计数往前拨,后面 Clock 推时钟用的就是它。
+
+序列号算术这个套路在协议栈里也是常见的,TCP 的序号比较走的是同一条路。咱们在这里把它头一次写进自己的内核,后面的调度器、看门狗都靠它。
+
+文件的尾巴还剩一小段,咱们把它收了:
+
+```cpp
   public:
     tick_t tick_;
 };
@@ -97,27 +123,11 @@ constexpr Ticks operator+(Ticks ticks, Ticks::tick_t move_steps) {
 } // namespace ZerOS::clock
 ```
 
-头注释第一句就把大问题摆上了桌:时钟每时每刻都在走,那到底多长算一秒呢?咱们给它配 1 kHz 的节拍,数出来一个 tick 就是一毫秒了。咱们换成 100 Hz,它就是十毫秒了。类型管的只是把若干个 tick 记清楚,周期定成多少是使用它的人的事。
-
-类型本身有个立场值得您留意:裸的 `uint32_t` 不让直接满天飞,咱们想表达“过了 500 拍”,就得写 `Ticks{500}` 这样的代码。好处在调用点就看得出来了,`call_after_span(w, 1000)` 这样的代码,读的人知道 1000 的单位是 tick,连注释都省了。`tick_t` 和 `tick_diff_t` 是成对出现的两个别名,一个是 32 位无符号的计数值,一个是 32 位有符号的差值,该配哪个咱们后面马上见分晓。
-
 末尾那个 `operator+` 写成了自由函数,它标的是 `constexpr`,表示的是拿当前时刻加一段跨度,`clock_.current() + span` 得出一个新的截止时刻,左边的值是不动的。咱们把这个函数放在类型外面,左边 `Ticks`、右边裸 `tick_t` 的混合运算就顺理成章了,咱们不用在类里再开一堆重载。
-
-### 回绕:寄存器宽度替咱们做的决定
-
-tick 计数为什么非得回绕?因为硬件定时器是 32 位的,数到 `0xFFFFFFFF` 之后再走一步就归了零,寄存器宽度替咱们做了这个决定。代码里那行注释写得倒是直白,“Register can be Overflow”。
-
-归零了倒不可怕,可怕的是归零之后“谁早谁晚”就没法比了。咱们把 `is_after` 的机制走一遍。它回答的是一个问题:现在这一刻算不算已经到了或者越过了这个截止时刻?留意一下方向:差值是拿 `now` 减 `deadline` 得到的,大于等于零的时候才算到点。麻烦在于 `now.tick_ - tick_` 是无符号的减法,如果 deadline 在前、now 归了零,减出来的就是一个巨大的数。
-
-`static_cast<tick_diff_t>` 干的就是把这个巨大的数重新解读成有符号数。咱们拿真数字走一遍:deadline 存的是 `0xFFFFFFFC`,now 已经回绕到了 `0x00000002`。咱们拿无符号减法一算:`0x00000002 - 0xFFFFFFFC` 按 32 位取模得到了 6,把它按 `int32_t` 解读出来的值还是 6,结果是个大于等于零的数,咱们就判它到点了。咱们反过来试 now 等于 `0xFFFFFFFB` 的情形,它还没到回绕的时候,算出来的差值是 -1,咱们就判它没到了。所以真实的次序间隔只要不超过 `int32_t` 能表达的范围,这套比较在回绕前后给出的答案是一致的。
-
-这个范围咱们算一下:1 kHz 的节拍下,`int32_t` 的正半轴装得下 2147483647 个 tick,折下来咱们得到约 24.8 天。两个截止时刻彼此隔得比 24.8 天近的时候,咱们比较它们的早晚就不会出错,比如一个排在 20 天后、另一个排在 40 天后的两个时刻,中间隔了 20 天,判断照常是成立的。真实间隔一旦超过了 24.8 天,差值就绕回负数了,后来的那个时刻在插入队列的时候就被判成了“已经过期”,还没等到点就被咱们弹出来执行,这才是出事的机理。嵌入式系统里咱们很少让任务等这么久,这个边界咱们记在心里就够了,不用咱们写代码去防。
-
-序列号算术这个套路在协议栈里也是常见的,TCP 的序号比较走的是同一条路。咱们在这里把它头一次写进自己的内核,后面的调度器、看门狗都靠它。
 
 ## Clock 与 TimeWaiter:当前时刻与何时行动
 
-同一个目录下的 `clock.hpp`,54817f3 给了咱们两个角色:
+Ticks 把一拍装进了类型,时间内核还缺的东西有两样,一样回答的是现在几点了,另一样记的是到点该做什么。同一个目录下的 `clock.hpp`,54817f3 在这里交了两个角色,Clock 托着当前的 Ticks,时刻的答案都在它手里,TimeWaiter 的身上写着截止时刻,还挂着到点要执行的动作,往后排进队里的全是它。咱们把文件拆成两段,头一段咱们看 Clock:
 
 ```cpp
 #pragma once
@@ -138,6 +148,13 @@ struct Clock {
   private:
     Ticks now_{};
 };
+```
+
+咱们看 `Clock`,它是个小得像一个变量的类型,管的事只有一件:现在几点了。`current()` 返回的是 `Ticks`,上面挂了一句自定义的弃置警告,`[[nodiscard("Hey boy, dont throw me away!")]]`。为什么这么严厉?咱们想一下,取了当前时刻却不接住返回值,这样的调用就没有任何意义,让编译器在丢弃返回值的地方喊一声,比咱们事后查 bug 便宜得多。
+
+轮到 TimeWaiter 了,咱们看它的样子:
+
+```cpp
 
 // Wait... oh it's time to take action!
 struct TimeWaiter : public base::SelfNode<TimeWaiter> {
@@ -152,8 +169,6 @@ struct TimeWaiter : public base::SelfNode<TimeWaiter> {
 
 } // namespace ZerOS::clock
 ```
-
-咱们看 `Clock`,它是个小得像一个变量的类型,管的事只有一件:现在几点了。`current()` 返回的是 `Ticks`,上面挂了一句自定义的弃置警告,`[[nodiscard("Hey boy, dont throw me away!")]]`。为什么这么严厉?咱们想一下,取了当前时刻却不接住返回值,这样的调用就没有任何意义,让编译器在丢弃返回值的地方喊一声,比咱们事后查 bug 便宜得多。
 
 `TimeWaiter` 是到期记录上的一行:一个截止时刻,加一个到点后要执行的动作。有两处设计咱们分别看。一是它继承了 `SelfNode<TimeWaiter>`,把自己的 `next_` 指针背在身上,这就是侵入式容器的入伙仪式,后面的 `SelfList` 不用额外给节点分配包装内存。二是回调写成 `void (*)(BorrowedPtr<TimeWaiter>)` 的裸函数指针,`std::function` 在咱们这儿用不了,因为它可能分配堆而咱们整个内核没有堆。裸指针加无捕获 lambda 的组合正好能转成函数指针,零开销的搭配在后面的例子里您就能见到。
 
@@ -261,7 +276,7 @@ static_assert(sizeof(SelfList<zeros_impl::Probe>) == sizeof(zeros_impl::Probe*),
 
 断言本身证明 `SelfList` 就是一个裸指针的大小,连空基类优化的痕迹都替咱们查了,策略对象用 `[[no_unique_address]]` 挤了进来,不占自己的格子。失败文案倒是写着 “not Zero cost”,您细品这个幽默:您要是不信这个邪,编译器就当面回您一句 SelfList 不是零开销的,证据您在上一条断言里就能找到。
 
-`TimerQueue` 在它上面套了一层语义,咱们看 `include/ZerOS/kernel/clock/timequeue.hpp`:
+SelfList 给的是“怎么排”的机制,至于排成什么样子、什么时候出队,咱们得找 `TimerQueue` 要答案。它要答的问题有两个,咱们一个个看:一个是两个截止时刻谁更早的问题,咱们的答案得经得住回绕,另一个是队头的时刻到了没有,到了的时候才交节点,没到的时候交回空。头一个答案是 `DeadLineOrder` 给的,咱们看它的样子:
 
 ```cpp
 struct TimerQueue {
@@ -270,6 +285,13 @@ struct TimerQueue {
             return static_cast<Ticks::tick_diff_t>(rhs.deadline_.tick_ - lhs.deadline_.tick_) > 0;
         }
     };
+```
+
+`DeadLineOrder` 就是回绕算术的第二次上岗:咱们把差值转成 `tick_diff_t` 再判符号,和 `Ticks::is_after` 走的是同一个思路。所以咱们看到的队头永远是真实意义上最早的截止时刻,哪怕最近刚回绕过了。同截止时间的次序也有讲究,比较器对相等的两个时刻是返回 false 的,插入的 while 循环就继续往后走,新节点排在所有等值节点的尾巴上,早来的就排在了前面。
+
+出口上的另一个答案,咱们一起看剩下的部分:
+
+```cpp
 
     void insert(base::BorrowedPtr<TimeWaiter> timer_task) { list_.insert(timer_task); }
     [[nodiscard]] base::BorrowedPtr<TimeWaiter> head() const { return list_.head(); }
@@ -287,8 +309,6 @@ struct TimerQueue {
     base::SelfList<TimeWaiter, DeadLineOrder> list_;
 };
 ```
-
-`DeadLineOrder` 就是回绕算术的第二次上岗:咱们把差值转成 `tick_diff_t` 再判符号,和 `Ticks::is_after` 走的是同一个思路。所以咱们看到的队头永远是真实意义上最早的截止时刻,哪怕最近刚回绕过了。同截止时间的次序也有讲究,比较器对相等的两个时刻是返回 false 的,插入的 while 循环就继续往后走,新节点排在所有等值节点的尾巴上,早来的就排在了前面。
 
 `pop_due` 定下的做法是只从队头出队:队头的截止时刻到了咱们才弹,没到的时候交回的是空指针。因为链表是有序的,咱们判断一个就够,全队是不用扫的。
 
@@ -310,7 +330,7 @@ struct TimerQueue {
 
 ## Kernel\<Driver\>:一套模板,两个世界
 
-4f12867 在同一天上午 10:10 交了上来,subject 写的是 “feat: clock subsys finished”,时间子系统就在这个 commit 里成了形。咱们要看的主件是 `include/ZerOS/kernel/clock/kernel.hpp` 的 `Kernel<Driver>` 模板,咱们从合同看到实现。
+4f12867 在同一天上午 10:10 交了上来,subject 写的是 “feat: clock subsys finished”,时间子系统就在这个 commit 里成了形。咱们要看的主件是 `include/ZerOS/kernel/clock/kernel.hpp` 的 `Kernel<Driver>` 模板。为什么内核要做成模板?因为咱们要它在两个世界里跑同一份代码,咱们开发用的电脑是一个世界,另一个世界是 Blue Pill 所在的那一头,两个世界给时间的方式不一样,内核能信的办法,是把布防与关中断的动作交给一个可替换的驱动参数,内核自己是一行都不用改的。参数不是随便给的,它的准入条件就是 `TimePortable`,不满足的驱动连编译都过不去,咱们从合同看到实现。
 
 ### 合同写在前头
 
@@ -329,7 +349,7 @@ concept TimePortable = Armable<IsTimePort> && irq::CriticalSection<IsTimePort>;
 
 ### 临界区:嵌套计数的 BASEPRI
 
-咱们看合同的后半截,它的家在 `include/ZerOS/kernel/irq/critical_section.hpp` 这个文件里:
+咱们看合同的后半截,它的家在 `include/ZerOS/kernel/irq/critical_section.hpp` 这个文件里。lock 与 unlock 伺候的是时间内核的另一类麻烦:`now`、到期队列、布防状态都是任务侧和中断侧两边要一起动的状态,而 tick 中断随时可能切进来,改到一半的状态被它看见了,队列就乱了,所以内核需要一段谁也打断不了的临界区,进去的时候把中断挡在外面,出来的时候再放行。
 
 ```cpp
 template <typename IsCriticalSection>
@@ -353,7 +373,7 @@ template <CriticalSection Lockable> class CriticalGuard {
 
 这是一个 RAII 守卫的样板:构造的时候上锁,析构的时候解锁,拷贝和移动全删掉了,锁的持有权不许被复制走。`[[nodiscard]]` 挂在了构造函数上,防您写个临时对象把守卫当场析构掉。
 
-咱们再看 CM3 的实现,它住的房子是 `include/ZerOS/arch/arm_cortex_m3/cm3_irq.hpp`:
+咱们再看 CM3 的实现,它住的房子是 `include/ZerOS/arch/arm_cortex_m3/cm3_irq.hpp`。CM3 给了咱们两个关中断的开关,这里挑的是做选择性掩蔽的 BASEPRI,为什么不用一刀切的 PRIMASK,咱们看完代码再说:
 
 ```cpp
 struct CortexM3CriticalSection {
@@ -378,11 +398,13 @@ struct CortexM3CriticalSection {
 static_assert(ZerOS::irq::CriticalSection<CortexM3CriticalSection>);
 ```
 
-CM3 给咱们准备了两个关中断的开关,这段代码用的是 BASEPRI 而没有动 PRIMASK。BASEPRI 是个做选择性掩蔽的寄存器,咱们往里写 `0x40`,中断级别数值上大于等于 `0x40` 的全被挡住,数值更小的照常进来,所以最急的那批中断还进得来。PRIMASK 就不一样了,它是一刀切的做法,连最急的中断也被咱们拖住了,所以咱们选了 BASEPRI 给紧急中断留路。不过 BASEPRI 掩不住级别为 0 的中断,这一句咱们记在心里,下一篇的对质要用到它。
+这段代码用的是 BASEPRI 而没有动 PRIMASK。BASEPRI 是个做选择性掩蔽的寄存器,咱们往里写 `0x40`,中断级别数值上大于等于 `0x40` 的全被挡住,数值更小的照常进来,所以最急的那批中断还进得来。PRIMASK 就不一样了,它是一刀切的做法,连最急的中断也被咱们拖住了,所以咱们选了 BASEPRI 给紧急中断留路。不过 BASEPRI 掩不住级别为 0 的中断,这一句咱们记在心里,下一篇的对质要用到它。
 
 嵌套计数 `nest_` 解决的是锁中锁,而锁中锁在这个内核里真会发生:板上 ticker 的回调是在 `on_elapsed` 的临界区里执行的,回调又去调了 `call_after_span`,后者自己开了守卫,一层套一层地嵌下去。咱们要是不在上锁时分层,内层守卫析构时就会把锁全放掉了,外层还当自己是待在临界区里的。所以 lock 只在计数从 0 变 1 的时候动硬件,并把旧的 BASEPRI 存了起来。unlock 只在计数减回 0 的时候恢复原值。恢复的是保存的那个值而不是写 0,这个细节在嵌套的场合也站得住:外层如果本来就在更高的掩蔽级里,内层退出之后就不该把掩蔽给降下去了。
 
 ### Kernel 本体
+
+合同验完了,咱们看 `Kernel<Driver>` 的本体。它对外管的是排定时、取消、问时刻这样三件事,对内还留着 ISR 侧的入口,给中断服务程序推时钟用的是 `on_elapsed`。任务侧的三个动作,咱们看代码:
 
 ```cpp
 template <TimePortable Driver> struct Kernel {
@@ -405,6 +427,13 @@ template <TimePortable Driver> struct Kernel {
     }
 
     Ticks current() const { return clock_.current(); }
+```
+
+公开的动作有三个,咱们顺着调用现场讲。`call_after_span` 是任务侧的入口:在临界区里拿当前时刻加跨度定下截止时刻并把它放进了到期记录,接下来要考虑的才是动不动硬件。咱们把队列操作圈进临界区,防的就是中断切进来的场面,任务这边读到一半的队列状态就是 ISR 眼里的真相,队列状态就乱了。
+
+中断那边的入口,咱们交给 `on_elapsed`:
+
+```cpp
 
     // ISR side call
     void on_elapsed(Ticks::tick_t n) {
@@ -420,13 +449,13 @@ template <TimePortable Driver> struct Kernel {
     }
 ```
 
-公开的动作有三个,咱们顺着调用现场讲。`call_after_span` 是任务侧的入口:在临界区里拿当前时刻加跨度定下截止时刻并把它放进了到期记录,接下来要考虑的才是动不动硬件。为什么要临界区?因为 `now`、队列、布防状态是 ISR 和任务两边共享的,tick 中断是随时可能切进来的,咱们不加锁,任务这边读到一半的队列状态就是 ISR 眼里的真相,队列状态就乱了。
-
 `on_elapsed` 是 ISR 侧的入口,函数名的意思是“过去了 n 拍”。它把时钟往前推了 n 拍,把到期记录上所有到期的节点一个个弹出来执行,然后仍然走一遍 `update_alarm` 的流程。`n == 0` 的提前返回放在拿锁之前,零拍不值得咱们动锁。
 
 回调签名那个 `due->OnTime(due)` 值得咱们停一下:到了点执行的时候,它把节点自己的 BorrowedPtr 递回给回调。这一下成就了板端 demo 的自重挂模式,回调里拿着自己就能再排下一个周期了,全局变量都省了。
 
 ### 贪婪布防:update_alarm 的分寸
+
+布防的策略落在 `update_alarm` 这个私有函数里,它回答的问题很实在:到期队列是活的,更早的截止时刻随时会被任务插进来,取消的时候也是说来就来,硬件闹钟什么时候值得重新编程?朴素的做法是队列每动一次就重布一次防,可重编程有实打实的代价,写寄存器、清计数的过程,每一步都是实打实的开销,布防的次数一多,下一拍的精度还会被管理开销吃掉。这里的答案叫贪婪布防,每次只认当前最早的截止时刻,已布的闹钟还作数,就不动硬件了。咱们把它分成两半看,头一半是队列空了的时候:
 
 ```cpp
   private:
@@ -439,6 +468,11 @@ template <TimePortable Driver> struct Kernel {
             }
             return;
         }
+```
+
+队头不存在的时候它就撤防,`arm_valid_` 保证的是撤防只做一次。剩下的那一半是队头存在的时候,咱们接着看:
+
+```cpp
 
         const auto now = clock_.current().tick_;
         bool armed_pending =
@@ -460,9 +494,7 @@ template <TimePortable Driver> struct Kernel {
     }
 ```
 
-这个函数是布防策略的落点,咱们把它的判断链完整走一遍。队头不存在的时候它就撤防,`arm_valid_` 保证的是撤防只做一次。队头存在的时候,它要算的布尔有两个:`armed_pending` 问的是已布的防还作不作数(已布的闹钟还在未来吗),`head_earlier` 问的是新队头是不是比已布的更早。已布的防还有效、新队头又不比它早的时候,函数就直接返回了,硬件定时器是一个字都不会动的。
-
-为什么要这么省?因为重编程硬件定时器有实打实的代价,写寄存器清计数的过程都是开销,更麻烦的是频繁重设会让“下一拍”的精度被管理开销吃掉。已布的闹钟够用就让它响,响完 `on_elapsed` 末尾自然会为新的队头重新布防。只有出现更早的截止时刻,才值得咱们改写闹钟。所谓的“贪婪”,意思就是每次都布当前最早的,但绝不为更晚的重布。
+队头存在的时候,它要算的布尔有两个:`armed_pending` 问的是已布的防还作不作数(已布的闹钟还在未来吗),`head_earlier` 问的是新队头是不是比已布的更早。已布的防还有效、新队头又不比它早的时候,函数就直接返回了,硬件定时器是一个字都不会动的。已布的闹钟够用就让它响,响完 `on_elapsed` 末尾自然会为新的队头重新布防,只有出现更早的截止时刻,才值得咱们改写闹钟,这就是咱们开头说的那个贪婪:每次都布当前最早的,绝不为更晚的重布。
 
 注释里的那句 “Clamp to 1, call it next” 在咱们眼里是另一个分寸:队头其实已经过期(剩余时间小于 1)的时候,布防值被钳到了 1,这样的布防值等于下一拍就叫它。过期的任务是不会被丢弃的,顺延了一拍再执行,超时回调还是会得到执行的,只是晚了一拍。
 

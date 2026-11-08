@@ -184,7 +184,7 @@ TEST_CASE("a zero-span sleep still wakes: no gap between arm and block", "[sched
 
 ## 建造者链:跳一步就编不过
 
-修完了竞态,6308dd0 转过头来收拾了另一件更隐蔽的事,咱们也跟着它看:TCB 的字段谁都能写。上一站的代码里,example 逐个地给 `tcb_a.task_priority_`、`tcb_a.name_` 赋了值,字段全是公开的,顺序写错了、漏写了一个,而编译器一声不吭,炸点就被推到了运行时。6308dd0 给出的回答分了三层:最外面的一层是类型状态的建造者链,中间的一层是 placement new 的出生仪式,最里面的一层是收走字段写权的 friend 钥匙孔,咱们一层一层看。最外面的一层是新的 `include/ZerOS/kernel/sched/task.hpp`,它是一个类型状态的建造者链:
+修完了竞态,6308dd0 转过头来收拾了另一件更隐蔽的事,咱们也跟着它看:TCB 的字段谁都能写。上一站的代码里,example 逐个地给 `tcb_a.task_priority_`、`tcb_a.name_` 赋了值,字段全是公开的,顺序写错了、漏写了一个,而编译器一声不吭,炸点就被推到了运行时。6308dd0 给出的回答分了三层:最外面的一层是类型状态的建造者链,中间的一层是 placement new 的出生仪式,最里面的一层是收走字段写权的 friend 钥匙孔,咱们一层一层看。最外面的一层是新的 `include/ZerOS/kernel/sched/task.hpp`,它是一个类型状态的建造者链。类型状态的玩法用白话说,就是让类型把进度背在身上的一套写法:每填一步、函数交回来的就是一个新的类型,下一步认的也只有那个新类型,跳掉的步骤没有类型可接,编译当场就停了。咱们看这个文件:
 
 ```cpp
 #pragma once
@@ -307,7 +307,7 @@ constinit ZerOS::sched::TCBStorage tcb_b{};
 
 ## 出生仪式:placement new 与四条核对
 
-出生仪式的舞台 TCBStorage,它的定义与守卫都住在 `task_control_block.hpp` 里,咱们一起看:
+出生仪式的舞台 `TCBStorage`,它的定义与守卫都住在 `task_control_block.hpp` 里。出生总得有一块能落脚的内存,而声明一个 TCB 出来再逐个字段填的老路,留得出造到一半的状态,名字有了、栈还没配齐,这样的半成品要是被调度器拿了去,事故就埋下了。仓库的答案是把出生的地点和出生的手续分开,地点是一段没有意义的裸字节,办手续的是工厂,半成品在设计上就不存在了。咱们一起看:
 
 ```cpp
 // Meaning-free RAM: zero it, park it. The only pen that writes meaning
@@ -315,7 +315,11 @@ constinit ZerOS::sched::TCBStorage tcb_b{};
 struct TCBStorage {
     alignas(alignof(TCB)) std::byte bytes[sizeof(TCB)];
 };
+```
 
+`TCBStorage` 是一段裸的字节,咱们看注释,它说得够直白的,`meaning-free RAM`,零化了它、放着它。字节本身是没有意义的,意义得等有资格的笔来写,写意义的笔就是下面的 `TCBCreator`:
+
+```cpp
 // The factory's final word: every field is in, now it may write a TCB.
 // The chain fills it, spawn_into spends it.
 class TCBCreator {
@@ -338,7 +342,7 @@ class TCBCreator {
 };
 ```
 
-咱们看 `TCBStorage`,它是一段裸的字节,注释说得够直白的,`meaning-free RAM`,零化了它、放着它。字节本身是没有意义的,唯一往里写意义的笔是 `spawn_into`,所以“造了一半的任务”这样的东西在设计上就不存在。`spawn_into` 里那行 `new (storage.bytes) TCB{}` 就是 placement new(在给定的地址上构造对象、而不分配内存的 new 用法),它在这套代码里的角色是出生仪式:对象被正式地构造了出来,而非被人赋值拼凑。为什么非要这么办?因为 TCB 的字段马上要全私有化,而 TCB 又有内嵌成员与对齐的讲究,咱们拿裸字节存着、到点就地构造,对齐的事由 `alignas(alignof(TCB))` 担着,出生的事由构造函数担着,两条腿就都齐了。
+`spawn_into` 里那行 `new (storage.bytes) TCB{}` 就是 placement new(在给定的地址上构造对象、而不分配内存的 new 用法),它在这套代码里的角色是出生仪式:对象被正式地构造了出来,而非被人赋值拼凑。为什么非要这么办?因为 TCB 的字段马上要全私有化,而 TCB 又有内嵌成员与对齐的讲究,咱们拿裸字节存着、到点就地构造,对齐的事由 `alignas(alignof(TCB))` 担着,出生的事由构造函数担着,两条腿就都齐了。
 
 文件的末尾有一组 `static_assert`,咱们把它们全看一遍:
 

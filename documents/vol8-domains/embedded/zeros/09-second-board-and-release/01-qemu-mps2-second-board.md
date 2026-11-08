@@ -72,7 +72,7 @@ set(ZEROS_DEMO_COMMON_SOURCES
 
 ## CMSDK UART:另一种长相的串口
 
-换板换的最多的就是串口。mps2 板上的 UART0 用的是 CMSDK APB UART,CMSDK 是 Arm 为 Cortex-M 系统定下的一套标准外设模板,APB UART 是其中的一种。咱们看它的 `uart.cpp`,设备的家安在 0x40004000:
+换板换的最多的就是串口。mps2 板上的 UART0 用的是 CMSDK APB UART,CMSDK 是 Arm 为 Cortex-M 系统定下的一套标准外设模板,APB UART 是其中的一种。咱们分三段看它的 `uart.cpp`,设备的家安在 0x40004000,头一段认的是寄存器的门牌:
 
 ```cpp
 namespace {
@@ -85,23 +85,31 @@ auto* const kBaudDiv = reinterpret_cast<volatile std::uint32_t*>(0x40004010);
 constexpr std::uint32_t kStateTxBufferFull = (1u << 0);
 constexpr std::uint32_t kCtrlTxEnable      = (1u << 0);
 } // namespace
+```
 
+见过 bluepill 那套 USART 的您一眼就能看出差别有多深。STM32 的 USART 上电是睡着的,咱们得开时钟门控,得配引脚的复用,它的状态位藏在 SR 里,而使能位藏在 CR1 里,寄存器一家子各有各的住处。CMSDK APB UART 是另一副长相:DATA、STATE、CTRL、BAUDDIV 四个字对齐的寄存器一字排开,发送前看一眼 STATE 的 TXBF 位,空了就往 DATA 写一个字节,就算完事了。
+
+门牌认完了,咱们看初始化:
+
+```cpp
 void uart0_init() {
     // 无引脚无时钟门控可配——QEMU 的外设上电即在;只喂分频与使能
     *kBaudDiv = 1;          // 全速:QEMU 模型对 chardev 直通,分频不构成节流
     *kCtrl = kCtrlTxEnable; // TXEN(接 RX 中断时再补 RXEN 与 NVIC)
 }
+```
 
+`uart0_init` 里的两行把初始化说全了:咱们往 BAUDDIV 写 1 就够了,QEMU 的模型对字符设备直通,分频担不了节流的差事,再往 CTRL 置上了 TXEN,发送就算使能了。寄存器的型号与基址,注释里交代了出处:取自 QEMU 11.0.3 的 info qtree,设备的名号是 cmsdk-apb-uart。作者认的是仿真器给的地皮,不认任何手册上的假定,在它的世界里,最终的裁决就是 QEMU 自己。咱们写 QEMU 的板包,这套习惯咱们值得记着,手册上查不到的东西,仿真器的检查命令就是手册。
+
+发送的一个字节怎么出去,咱们看 `uart0_putc`:
+
+```cpp
 void uart0_putc(char c) {
     while ((*kState & kStateTxBufferFull) != 0) {
     }
     *kData = static_cast<std::uint8_t>(c);
 }
 ```
-
-见过 bluepill 那套 USART 的您一眼就能看出差别有多深。STM32 的 USART 上电是睡着的,咱们得开时钟门控,得配引脚的复用,它的状态位藏在 SR 里,而使能位藏在 CR1 里,寄存器一家子各有各的住处。CMSDK APB UART 是另一副长相:DATA、STATE、CTRL、BAUDDIV 四个字对齐的寄存器一字排开,发送前看一眼 STATE 的 TXBF 位,空了就往 DATA 写一个字节,就算完事了。`uart0_init` 里的两行把初始化说全了:咱们往 BAUDDIV 写 1 就够了,QEMU 的模型对字符设备直通,分频担不了节流的差事,再往 CTRL 置上了 TXEN,发送就算使能了。
-
-寄存器的型号与基址,注释里交代了出处:取自 QEMU 11.0.3 的 info qtree,设备的名号是 cmsdk-apb-uart。作者认的是仿真器给的地皮,不认任何手册上的假定,在它的世界里,最终的裁决就是 QEMU 自己。咱们写 QEMU 的板包,这套习惯咱们值得记着,手册上查不到的东西,仿真器的检查命令就是手册。
 
 发送本身是轮询的,咱们忙着等 TXBF 清零再写。注释里写着它的适用范围,任务、ISR、遗言的现场它都在场。轮询是要占着 CPU 的,这就是它的代价,换来的好处是不依赖任何中断,fault 的现场照样能把最后几个字打印出去。《芯片死前立遗嘱:HardFault 现场、栈金丝雀与零分配日志》里装的遗言机制,靠的正是这样的通道。
 

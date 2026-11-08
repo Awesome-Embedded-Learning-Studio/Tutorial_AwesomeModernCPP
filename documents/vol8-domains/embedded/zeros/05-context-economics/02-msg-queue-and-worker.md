@@ -52,7 +52,9 @@ constinit ZerOS::sync::Queue<char, 16> g_rx_queue{};
 
 ## 定容环形缓冲:容量在编译期就被定成了 2 的幂
 
-队列的真身在 `include/ZerOS/kernel/sync/msg_queue.hpp` 里,咱们把它的骨架搬出来:
+邮箱从一格扩到了十六格,摆格子的问题也就跟着来了。顺着数组的朴素摆法,是每取走头部的一个字节,就把身后的元素整体往前挪一格,取一个挪一格的代价搁在字节源源不断的串口路径上,是咱们养不起的常态。环形摆法把数组的首尾接了起来,取过的格子转一圈回来接着用,留在格子里的元素从头到尾一动不动,绕回开头靠的只是简单的算术。
+
+`3570f27` 的队列走的就是环形,它的真身住在 `include/ZerOS/kernel/sync/msg_queue.hpp` 里,咱们把它的骨架搬出来:
 
 ```cpp
 // messages cross the ring by memcpy

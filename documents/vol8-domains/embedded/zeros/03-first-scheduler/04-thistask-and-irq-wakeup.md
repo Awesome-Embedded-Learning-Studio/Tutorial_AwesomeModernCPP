@@ -76,7 +76,7 @@ using ThisTask = BasicThisTask<detail::SystemTaskBackend>;
 
 ## concept 检查落在后端完备的地方
 
-模板的本体不在公共头里,咱们在 `src/system/this_task_impl.hpp` 找到了它,这个文件是私有的,只有目标的 `.cpp` 和内核内部的测试会碰它:
+模板的本体不在公共头里,咱们在 `src/system/this_task_impl.hpp` 找到了它,这个文件是私有的,只有目标的 `.cpp` 和内核内部的测试会碰它。私有这件事是带着设计意图的:检查后端的 concept,得等后端的真身可见了才有意义。公共头里的 `SystemTaskBackend` 只有一句前向声明,什么都没交代,检查要是放在那儿的话,concept 就只能判它不合格了,咱们得到的报错跟真问题一点关系都没有。检查挪到了后端完备的实现头里,哪个函数签名写错了、哪个 `noexcept` 漏了,报错就直接落在具体的那一行上。头一截是验收用的 concept:
 
 ```cpp
 #pragma once
@@ -99,7 +99,13 @@ concept TaskBackend = requires(Milliseconds delay) {
     { B::block() } noexcept -> std::same_as<void>;
 };
 } // namespace detail
+```
 
+咱们看这个 `TaskBackend`,它要求后端会做的是三件事,而且三个签名都得是 `noexcept` 的。这个取舍跟仲裁面那篇把 concept 当接口文档的思路是同一条路的两半,那篇用 concept 写给人看的合同,这一篇管的是报错报在哪儿。
+
+跟在后面的是三个模板体,写法是同一个模子倒出来的,咱们过一眼:
+
+```cpp
 template <class B>
 void BasicThisTask<B>::sleep_for(Milliseconds delay) noexcept {
     static_assert(detail::TaskBackend<B>);
@@ -121,13 +127,11 @@ void BasicThisTask<B>::block() noexcept {
 } // namespace ZerOS
 ```
 
-咱们看这个 `TaskBackend`,它要求后端会做的是三件事,而且三个签名都得是 `noexcept` 的。有意思的地方是检查的位置,注释里的 “the concept fires HERE” 是带着设计意图来的:`static_assert` 不写在公共头的声明上,而是写在模板体定义的地方,也就是后端已经完备、真身可见的实现头里。为什么这样安排?在公共头上做检查的话,前向声明的 `SystemTaskBackend` 什么都没交代,concept 也只能判它不合格了,咱们得到的报错跟真问题一点关系都没有。把检查挪到后端可见的地方,哪个函数签名写错了、哪个 `noexcept` 漏了,报错就会直接落在具体的那一行上。这个取舍跟仲裁面那篇把 concept 当接口文档的思路是同一条路的两半,那篇用 concept 写给人看的合同,这一篇管的是报错报在哪儿。
-
-三个模板体的写法是一个模子:`static_assert` 守了一次门,然后咱们把调用转给后端。业务代码调用 `ThisTask::sleep_for` 生成的,就是对外部符号的一次普通调用,头文件里没有任何目标相关的知识。
+`static_assert` 守了一次门,然后咱们把调用转给后端。业务代码调用 `ThisTask::sleep_for` 生成的,就是对外部符号的一次普通调用,头文件里没有任何目标相关的知识。
 
 ## 接线与后端:每一个目标一份
 
-真身的家安在 `src/arch/arm_cortex_m3/this_task.cpp` 里,咱们整篇看:
+真身的家安在 `src/arch/arm_cortex_m3/this_task.cpp` 里。它独占的知识是接线:两个单例住在哪儿、睡着的任务怎么被叫醒,后端要办的三件事全得靠这样的知识串起来,这样的知识一个目标配一份。咱们从头看,头一截是 include 和匿名的唤醒函数:
 
 ```cpp
 // The Cortex-M3 answer to the ThisTask face: owns the wiring knowledge
@@ -150,7 +154,13 @@ void wake_from_sleep(ZerOS::base::BorrowedPtr<ZerOS::clock::TimeWaiter> waiter) 
 }
 
 } // namespace
+```
 
+`wake_from_sleep` 其实是咱们见过的老朋友,它起初在 example 里是咱们手搓的函数,上一篇把它收进了 arch 层的 `switch.cpp`,这一篇跟着接线知识一起搬进了 `this_task.cpp`,借着 `owner_of` 的指针减法从内嵌的 `TimeWaiter` 反推回 TCB 的活儿没有变,两个单例的知识也让后端接走了。
+
+中间是干后端活的本尊,咱们看它:
+
+```cpp
 namespace ZerOS::detail {
 
 struct SystemTaskBackend {
@@ -169,14 +179,18 @@ struct SystemTaskBackend {
 };
 
 } // namespace ZerOS::detail
+```
 
+咱们看 `sleep_for` 的后端,它调的是调度器自己的 `sleep_for`,也就是上一篇用 `park_for` 把布防和阻塞关进同一个临界区的那个版本,手搓竞态的土壤从应用面上消失了。`yield` 和 `block` 是直通的调用,`block` 拿当前任务亲手交给了调度器,任务睡了下去之后,叫醒它的 `ready` 什么时候来,它也就什么时候回来了。
+
+最后是盖章的一行,咱们看它:
+
+```cpp
 namespace ZerOS {
 // stamp the face for THIS program; business .o files link plain calls
 template struct BasicThisTask<detail::SystemTaskBackend>;
 } // namespace ZerOS
 ```
-
-文件顶上的注释交代了它独占的知识,就是两个单例加一个唤醒反应的清单。`wake_from_sleep` 其实是咱们见过的老朋友,它起初在 example 里是咱们手搓的函数,上一篇把它收进了 arch 层的 `switch.cpp`,这一篇跟着接线知识一起搬进了 `this_task.cpp`,借着 `owner_of` 的指针减法从内嵌的 `TimeWaiter` 反推回 TCB 的活儿没有变,两个单例的知识也让后端接走了。`sleep_for` 的后端调的是调度器自己的 `sleep_for`,也就是上一篇用 `park_for` 把布防和阻塞关进同一个临界区的那个版本,手搓竞态的土壤从应用面上消失了。`yield` 和 `block` 是直通的调用,`block` 拿当前任务亲手交给了调度器,任务睡了下去之后,叫醒它的 `ready` 什么时候来,它也就什么时候回来了。
 
 末尾那行 `template struct BasicThisTask<detail::SystemTaskBackend>;` 是显式实例化的定义,注释里的 “stamp” 用得形象:这个编译单元替本程序把脸盖了一个章,别的 `.o` 文件只管调用,链接器自然就把两半接上了。这套模式的收益在换板子的时候才显得出来,哪天咱们把这个内核搬到第二块板上,新的 `this_task.cpp` 照着同样的结构写一份、换掉两个单例的名字就行,咱们一行应用代码都不用动。
 
@@ -211,7 +225,7 @@ PA10 换成了浮空输入(`CNF10_0` 只把 CNF 的最低位置 1,MODE10 保持�
 
 中间那两行是全 commit 最值钱的一课,注释自己把道理写完了,咱们下一节专门展开。NVIC 的优先级寄存器是一字一个中断的数组,基址落在了 0xE000E400,USART1 的中断编号是 37,咱们直接往第 37 个字节写了 0x80。使能位的家在 ISER1,它的管辖区是 IRQ32 到 63,37 减 32 得到了 5,写的是 bit5。这些都是绕开 CMSIS 的裸寄存器写法,上一站那篇拆 CMSIS 移位公式的判断在这里延续着:源码里的数字,就是寄存器里躺着的数字,中间没有人替咱们换算。
 
-向量表也跟着扩了。`startup.cpp` 里的 `vectors` 数组从 16 个槽扩到了 54 个,咱们看扩出来的那一段(注释里的 P4 也是仓库内部的设计文档编号,跟 D20 是同一个系列的记号):
+向量表也跟着扩了。`startup.cpp` 里的 `vectors` 数组从 16 个槽扩到了 54 个,扩出来的是片上外设的座位,USART1 的中断想在表里有自己的处理程序,表里就得有它的座位。座位要是空着的话,误触发的中断连一句可供排查的话都不给咱们留,所以新扩的槽全挂了同一个兜底的 `fault_handler`。咱们一段一段看扩出来的那部分(注释里的 P4 也是仓库内部的设计文档编号,跟 D20 是同一个系列的记号),头 16 个新座位挂的全是兜底:
 
 ```cpp
     // 16-52 片上外设槽:未使能不会来;万一误触发,兜底打印比 nullptr 的 lockup 好查(P4)
@@ -231,6 +245,13 @@ PA10 换成了浮空输入(`CNF10_0` 只把 CNF 的最低位置 1,MODE10 保持�
     &fault_handler,
     &fault_handler,
     &fault_handler, // 24-31
+```
+
+从 16 到 52 的 37 个空槽全挂了同一个 `fault_handler`,它做的事不多,打印一行 `[FAULT] halted` 就停机了。注释把理由讲了:没使能的中断不会来,可万一有误触发的话,`nullptr` 槽在 Cortex-M3 上的下场是 lockup(取到一个无效地址,内核也就直接停摆了,什么痕迹都不留),兜底打印好歹给咱们留了一句话查。`fault_handler` 本身是 `extern "C"` 里的一个死循环加 WFI,咱们就不另贴了。
+
+接着的 16 个座位也是兜底,咱们照原样看:
+
+```cpp
     &fault_handler,
     &fault_handler,
     &fault_handler,
@@ -247,6 +268,13 @@ PA10 换成了浮空输入(`CNF10_0` 只把 CNF 的最低位置 1,MODE10 保持�
     &fault_handler,
     &fault_handler,
     &fault_handler, // 40-47
+```
+
+座位的算法是统一的,Cortex-M3 的向量表头 16 个槽是内核异常的,片上外设的中断从槽 16 编起,咱们给外设的 IRQ 编号加上 16,才是它在表里的座位号。
+
+表尾的最后几个座位,坐的才是真处理程序,咱们看:
+
+```cpp
     &fault_handler,
     &fault_handler,
     &fault_handler,
@@ -256,7 +284,7 @@ PA10 换成了浮空输入(`CNF10_0` 只把 CNF 的最低位置 1,MODE10 保持�
 };
 ```
 
-Cortex-M3 的向量表头 16 个槽是内核异常,片上外设的中断从槽 16 编起,咱们把 USART1 的 IRQ 37 加上 16,就得到了槽 53 的座位。中间 37 个空槽全挂了 `fault_handler`,它做的事不多,打印一行 `[FAULT] halted` 就停机了。注释把理由讲了:没使能的中断不会来,可万一有误触发的话,`nullptr` 槽在 Cortex-M3 上的下场是 lockup(取到一个无效地址,内核也就直接停摆了,什么痕迹都不留),兜底打印好歹给咱们留了一句话查。`fault_handler` 本身是 `extern "C"` 里的一个死循环加 WFI,咱们就不另贴了。
+USART1 的座位是这么算的:它的全局中断编号是 IRQ 37,加上头部的 16 个槽,得的就是 53 号,表尾的这个座位是它的,咱们看最后一行,坐进去的正是 `USART1_IRQHandler`。
 
 ## 配平:0x80 与 0x40 的关系
 

@@ -132,14 +132,20 @@ xPSR 除 Thumb 位之外还有别的字段(条件标志、中断号这样的),�
 
 ## start_scheduler:武装与首切,一去不回
 
-会造现场了,咱们来看它是怎么被点燃的,代码就在 `switch.cpp` 的末尾:
+会造现场了,咱们来看它是怎么被点燃的。要一个从没跑过的任务上 CPU,最直白的想法是在 C++ 里直接调它的函数,可这么干的话,跑着的还是 main 的现场:用的栈是 main 的栈,寄存器是 main 的寄存器,任务自己的栈一步都没沾上,咱们要的切换就根本没发生过。仓库的办法是把点火交给一场异常,为什么偏偏是异常,咱们看完代码细说。代码就在 `switch.cpp` 的末尾,头一截是负责装配的 `spawn`:
 
 ```cpp
 void spawn(ZerOS::sched::TCB& t) {
     fabricate_frame(t);
     system_sched.add(&t);
 }
+```
 
+头文件里的声明挂着中文注释,`spawn` 的那一句写的是“伪造帧 + add”,咱们看函数体,干的就是这两件事:替任务把现场伪造好、再交给调度器入队。
+
+点火的半截是 `start_scheduler`,咱们看它:
+
+```cpp
 void start_scheduler(std::span<std::uint32_t> idle_stack) {
     auto idle = system_sched.fetch_idle_task();
     idle->task_wrapper_ = {+[](void*) {
@@ -158,9 +164,7 @@ void start_scheduler(std::span<std::uint32_t> idle_stack) {
 }
 ```
 
-头文件里的声明挂着两句中文注释,我把它们引给您,这就是函数的自我介绍:`spawn` 的注释写的是“伪造帧 + add”,`start_scheduler` 的注释写的是“武装 + 首切,一去不回”。您看它还标了 `[[noreturn]]`,调度器开跑之后 `main` 就再也回不了头了,末尾的空循环其实是到不了的,摆在那里是为了让编译器安心。
-
-函数里的事情,咱们按次序过:idle 的任务体被装成了一个 `wfi` 的循环(没活干的时刻让 CPU 睡着等中断),栈给它配上了,现场也给 idle 伪造了一副。PendSV 的优先级写在后面,伏笔的节里咱们再讲。最后落的是 `svc 0`,首切的引线就从这里点着了。
+它的注释写的是“武装 + 首切,一去不回”,您看它还标了 `[[noreturn]]`,调度器开跑之后 `main` 就再也回不了头了,末尾的空循环其实是到不了的,摆在那里是为了让编译器安心。函数里的事情,咱们按次序过:idle 的任务体被装成了一个 `wfi` 的循环(没活干的时刻让 CPU 睡着等中断),栈给它配上了,现场也给 idle 伪造了一副。PendSV 的优先级写在后面,伏笔的节里咱们再讲。最后落的是 `svc 0`,首切的引线就从这里点着了。
 
 `svc` 是 Supervisor Call 的指令,它当场就触发了一个 SVC 异常,向量表的 11 号槽住着它的处理程序。您也许要问,首切为什么不写成一个直接的函数调用,非要绕道异常?因为异常返回是咱们手里唯一能把“任意的现场”装进 CPU 的通道:`svc` 进来的时候,硬件在 MSP 上压了 main 的现场(main 的现场咱们是不要的),处理程序干完了活就做一次异常返回,返回到哪里、用哪根栈都由咱们在处理程序里布置。main 在 MSP 上留下的栈从此就没人再碰了,MSP 留给了中断,任务都搬去了 PSP,分家就在 `svc 0` 的这一下完成。
 
@@ -249,7 +253,7 @@ SysTick 跟它是同级的,是因为时基的心跳不能戳进切换的肚子�
 
 ## 板上 demo:两个任务轮流醒来
 
-机制说完了,咱们看它跑起来是什么样。`example/main.cpp` 从单 ticker 升级成了双任务,骨架是下面的样子:
+机制说完了,咱们看它跑起来是什么样。验收一个调度器的话,单任务是看不出切换的,打印的图案要对得上一张时间表,场上就得有两个节奏错开的任务。仓库把 `example/main.cpp` 从单 ticker 升级成了双任务,骨架咱们分两截看,头一截是栈和 TCB 的静态声明:
 
 ```cpp
 alignas(8) constinit std::uint32_t stack_a[64] = {};
@@ -258,7 +262,13 @@ alignas(8) constinit std::uint32_t idle_stack[32] = {};
 
 constinit ZerOS::sched::TCB tcb_a{};
 constinit ZerOS::sched::TCB tcb_b{};
+```
 
+栈和 TCB 全是 `constinit` 的静态对象,零堆的纪律咱们延续着。
+
+栈和 TCB 备齐了,接着上场的才是干活的两个任务体,咱们看:
+
+```cpp
 void task_a(void*) {
     for (;;) {
         ZerOS::board::print("A\r\n");
@@ -274,7 +284,7 @@ void task_b(void*) {
 }
 ```
 
-栈和 TCB 全是 `constinit` 的静态对象,零堆的纪律咱们延续着。两个任务体是对称的,干的都是打一个字母就睡一觉的循环。A 睡 1000ms 的话,B 睡的是 700ms,所以打印的节奏注定是交错的。
+两个任务体是对称的,干的都是打一个字母就睡一觉的循环。A 睡 1000ms 的话,B 睡的是 700ms,所以咱们看打印的节奏,注定就是交错的。
 
 `task_sleep` 是在 example 里手搓的,咱们把它单独拎出来看,因为下一篇文章的主角就藏在里面:
 

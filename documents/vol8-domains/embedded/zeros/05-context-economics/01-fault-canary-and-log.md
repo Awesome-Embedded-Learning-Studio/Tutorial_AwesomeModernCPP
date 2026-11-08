@@ -28,7 +28,7 @@ commit `feef8fb` 把欠着的现场兑现了，subject 写的是 “feat: fault_
 
 ## naked 的捕获口：现场一个字节都不许动
 
-遗言的声明面住在 `include/ZerOS/arch/arm_cortex_m3/fault.hpp` 里，作者自己的注释就把比喻定下了，我原样搬给您：
+一份合格的遗言该是什么样子，咱们得在亮代码前把它说定。芯片猝死的那一下，出事的时候谁在跑、死在哪一行、死因是什么，缺了哪一样都算不上遗嘱，而旧的 `fault_handler` 只留下一行 `[FAULT] halted` 就把人打发走了。遗言的形态也就此定下来了：它得是一份只装数据的报告，内核负责的是把现场收进报告里，打印的事归板级登记的口子，两边各干各的。遗言的声明面住在 `include/ZerOS/arch/arm_cortex_m3/fault.hpp` 里，作者自己的注释就把比喻定下了，我原样搬给您，头一段是遗嘱的正文：
 
 ```cpp
 #pragma once
@@ -47,14 +47,20 @@ struct FaultReport {
     std::uint8_t task_prio;
     const std::uint32_t* frame;                      // stack top, for dumping
 };
+```
 
+`FaultReport` 就是遗嘱的正文了，报的是三个来源的东西：硬件替咱们压好的八字现场（r0 到 xpsr，《在栈顶伪造出生证明》里伪造帧时咱们逐个打过交道），SCB 里三个故障状态寄存器的值，还有当时正在跑的任务的名字与优先级。
+
+遗嘱的正文立住了，接下来要登记的是接收的口子，咱们看头文件的另一半：
+
+```cpp
 using FaultSink = void (*)(const FaultReport&);
 inline FaultSink fault_sink{nullptr}; // the board wires its printer here
 
 } // namespace ZerOS::arch::cortex_m3
 ```
 
-`FaultReport` 就是遗嘱的正文了，报的是三个来源的东西：硬件替咱们压好的八字现场（r0 到 xpsr，《在栈顶伪造出生证明》里伪造帧时咱们逐个打过交道），SCB 里三个故障状态寄存器的值，还有当时正在跑的任务的名字与优先级。`FaultSink` 是个裸的函数指针，内核只负责把 `FaultReport` 填好了递出去，打不打印、打到哪儿去的问题，都是板级说了算的。您细想就会看出，这样的分工让内核保持了沉默。
+`FaultSink` 是个裸的函数指针，内核只负责把 `FaultReport` 填好了递出去，打不打印、打到哪儿去的问题，都是板级说了算的。您细想就会看出，这样的分工让内核保持了沉默。
 
 声明面顶上的 `—` 我留着没改，因为它是仓库的原话。捕获的本体在 `src/arch/arm_cortex_m3/fault.cpp`，开场的那段汇编值得您一个字一个字地读：
 
@@ -177,7 +183,11 @@ extern "C" std::uint32_t* context_switch(std::uint32_t* saved_sp) {
 
 ## 零分配格式化器：类型当文法，重载当扩展点
 
-遗言要能打出来的话，咱们得有办法把十六进制和十进制变成字符。开局那几篇里的 `printdec` 干过十进制的活，手搓的逆序取余数循环，《一秒钟的定义权》的 ticker 也一直在用它。它有的只有十进制一个本领，可遗言要的是 `pc=0x08000460` 这样的带格式的行，`printdec` 就接不住了。`feef8fb` 让它退了役，换上来的是 `include/ZerOS/log/format.hpp`：
+遗言要能打出来的话，咱们得有办法把十六进制和十进制变成字符。开局那几篇里的 `printdec` 干过十进制的活，手搓的逆序取余数循环，《一秒钟的定义权》的 ticker 也一直在用它。它有的只有十进制一个本领，可遗言要的是 `pc=0x08000460` 这样的带格式的行，`printdec` 就接不住了。`feef8fb` 让它退了役，换上来的是 `include/ZerOS/log/format.hpp`。
+
+接替的路数，摆在咱们面前的本来有两条，而且是两条走不通的。沿着 printdec 的老路走下去，十进制之外的每种格式都得再手搓一个印数的函数，遗言的格式每变一回，内核里的代码就得跟着回炉了。立一套格式串文法的路也摆在那里，printf 认 `%08x` 的那套花样就是现成的样子，可文法离了解析器是转不动的。`feef8fb` 的答案两条都没有走，每个值带着自己的类型进场，怎么印由类型自己说了算。
+
+咱们把头文件分两段看，头一段装的是门面与立场：
 
 ```cpp
 #pragma once
@@ -194,7 +204,13 @@ extern "C" std::uint32_t* context_switch(std::uint32_t* saved_sp) {
 #include "ZerOS/log/format_impl.hpp"
 
 namespace ZerOS::log {
+```
 
+设计的底线写在注释里了，咱们对着代码看。您看，占位符就只有 `{}` 这么一个，文法由类型说了算：传 `Hex` 就打八位的大写十六进制，传 `Dec` 打的就是十进制，格式串里没有 `%08x` 那样的花样，也就不需要解析器了。
+
+门面立住了，咱们接着看干活的模板本体，无分配的声明就压在它的头顶：
+
+```cpp
 // No allocation, no state, no locks → safe from tasks, ISRs and fault
 // handlers. Returns the number of chars written (truncates at out.size()).
 template <typename... Args>
@@ -216,7 +232,7 @@ std::size_t format_to(std::span<char> out, const char* fmt, Args... args) {
 } // namespace ZerOS::log
 ```
 
-设计的底线写在注释里了，咱们对着代码看。您看，占位符就只有 `{}` 这么一个，文法由类型说了算：传 `Hex` 就打八位的大写十六进制，传 `Dec` 打的就是十进制，格式串里没有 `%08x` 那样的花样，也就不需要解析器了。它是无分配、无状态、也无锁的，所以在任务里、中断里、fault 处理里都敢用，遗言恰恰必须在不能碰堆的地方打出来，无分配对它而言是入场的资格，美德就谈不上了。缓冲区满了就截断，随行的还有 `cursor` 与 `limit`，越界的东西是写不出去的。
+它是无分配、无状态、也无锁的，所以咱们在任务里、中断里、fault 处理里都敢用，遗言恰恰必须在不能碰堆的地方打出来，无分配对它而言是入场的资格，美德就谈不上了。缓冲区满了就截断，随行的还有 `cursor` 与 `limit`，越界的东西是写不出去的。
 
 `(print_arg(args), ...)` 是 C++17 的折叠表达式，参数包按着次序展开了，每个实参问的问题是格式串里还有没有占位符等着它，有才把自己的值交给 `emit_value`（代码注释里的那句 “a plain call, one body” 咱们下面马上用上）。多出来的实参安静地被略过，占位符多出来的部分原样留在输出里，两个方向的失配都不炸。
 

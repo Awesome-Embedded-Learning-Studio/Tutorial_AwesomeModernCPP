@@ -100,7 +100,7 @@ extern "C" [[noreturn]] void Trap() {
 
 ## deadline 的回绕:近似 forever 变成立刻醒
 
-第二个 bug 的住处离时间内核更近。`wait_notify` 带超时的版本本体就住在 `system.cpp` 里,咱们把循环的骨架搬来看:
+第二个 bug 的住处离时间内核更近。带超时的等待,咱们记下一个 deadline,每一圈醒来的头一件事就是翻一遍邮箱、算一算余量,余量尽了就报超时,信到了就收信,`wait_notify` 带超时的版本本体就住在 `system.cpp` 里,走的就是这套循环,咱们把它搬来看,您读的时候留意算 `ddl` 的那一步加法,毛病就出在它的身上。
 
 ```cpp
 std::expected<std::uint32_t, sync::SyncError>

@@ -65,7 +65,9 @@ void task_c(void*) {
 
 ## SystemContext:把“系统是什么”收进八组操作
 
-信号量的代码要办的事,有睡下一个人的,有叫醒一个人的,也有问出现在几点的,这些活它自己一样都干不了,所以它要找的对象,就是系统这个东西了。可是系统是什么?在真正的开发板上,它是调度器加时间内核两个单例的组合,到了 host 的测试里,替身就换成了另一套。`5c62c0d` 把什么才算系统的问题写成了一个概念,它住的地方是 `include/ZerOS/kernel/system_concept.hpp`,全文咱们整段看:
+信号量的代码要办的事,有睡下一个人的,有叫醒一个人的,也有问出现在几点的,这些活它自己一样都干不了,所以它要找的对象,就是系统这个东西了。可是系统是什么?在真正的开发板上,它是调度器加时间内核两个单例的组合,到了 host 的测试里,替身就换成了另一套。`5c62c0d` 把什么才算系统的问题写成了一个概念,它住的地方是 `include/ZerOS/kernel/system_concept.hpp`,咱们读懂了它,后面的代码才读得动。
+
+按朴素的思路,信号量的头文件直接伸手去够调度器与时间内核两个单例,认的是 `system_sched` 与 `system_time` 的名字。后果咱们在上一站已经见过一遍了,`this_task.cpp` 走的就是上面的思路,它自己认识两个单例、自己装配叫醒的反应,换一个世界就得改一遍认识的名单,泛型的同步代码和具体的板绑在一起,同一份实现就两头跑不成了。这个概念把认路的方向倒了过来,同步原语不指名道姓地找谁,开出的是一份要求清单,满足清单的,就是它认的系统。写法咱们这就看:
 
 ```cpp
 template <typename System>
@@ -107,11 +109,15 @@ class CortexM3System {
     // other lock in the family
     CortexM3CriticalSection guard_{};
 };
+```
 
+类的骨架过完一遍,咱们能看见的就是一行行的声明,八个动作里没有一个带着身子的,方法体的老家全在 `system.cpp` 里,头文件的注释自己也是这么交代的,类只是声明的集合,寄存器与单例的秘密就漏不出这颗头文件了。断言跟在类的后面,它值得咱们单独看一眼:
+
+```cpp
 static_assert(ZerOS::system::SystemContext<CortexM3System>);
 ```
 
-答卷的末尾有一条 `static_assert`,它是我最喜欢的一行,类是不是真满足了八组操作,编译器在编译期就替咱们验收了,少写了任何一个函数,固件连编译都过不去的。声明脸的做法还有一层用意,头文件的注释里写着,类只是声明的集合,每个方法体的老家都在 `system.cpp` 里,寄存器与单例的秘密也就漏不出这颗头文件了。`system.cpp` 的开头也把话挑明了,它是全仓库唯一一个同时伸手够两个单例的地方:
+它是我最喜欢的一行,类是不是真满足了八组操作,编译器在编译期就替咱们验收了,少写了任何一个函数,固件连编译都过不去的。`system.cpp` 的开头也把话挑明了,它是全仓库唯一一个同时伸手够两个单例的地方:
 
 ```cpp
 // defined in switch.cpp / time_kernel_cm3.cpp, declared no further
@@ -171,6 +177,8 @@ using Semaphore = SemaphoreBase<arch::cortex_m3::CortexM3System>;
 
 ## P/V:计数器是唯一的真相
 
+动代码之前咱们把要办的事说清,说清了代码就好读了。标题里的 P 与 V 是信号量的老名字,P 对应的就是 `acquire`,干的活是从计数器里取走一个单位,V 对应的就是 `release`,它干的事是把一个单位放回计数器,文章开头要的“把发生过的事实记成一个数目”,落到代码上就是它们两个的配合。难办的是取的那一半,计数的值还是零,取的人就得睡下去等人放回。朴素的写法是“查一眼,没货就睡”,拆成了两个自由的动作,查与睡的中间就留出了缝隙,查的时刻单位还在,睡下去的前一刻单位被别人领走了,叫醒就落了空,文章开头丢字节的事故就是从这个缝隙里来的。所以取单位得握着临界区办,咱们让查计数、扣单位、挂等待链、睡下去四步全在同一个临界区里完成,而且睡醒不算拿到,醒来的人得重新查计数,查到了才算数,这里头的讲究,咱们到 `release` 那一段就看明白了。
+
 主角登场了,它是 `include/ZerOS/kernel/sync/semaphore.hpp` 里的 `acquire`,咱们整段看:
 
 ```cpp
@@ -216,7 +224,7 @@ using Semaphore = SemaphoreBase<arch::cortex_m3::CortexM3System>;
 
 ## 限时等待:按剩余的量重挂,不攒漂移
 
-无限等讲完了,带期限的等待是同一个循环再加一把闹钟,咱们看 `try_acquire` 带时长的版本:
+无限等讲完了,带期限的等待是同一个循环再加一把闹钟。朴素的做法是把闹钟上成参数里的原值,睡下去被打断了一回,它就照原值把整段的时长再睡一遍,重演了两回,实际的等待就奔着十毫秒去了(拿用例里的五毫秒来说,数字是假想的)。仓库的答法是给等待定一个截止点,进函数的时刻加时长,往后每一轮睡的都只是剩下的量,截止点从头到尾是不动的,漂移就没有攒起来的地方,它的名字咱们在标题里也见过了:“按剩余的量重挂”。函数的头部把截止点定下来,咱们看:
 
 ```cpp
     SyncError try_acquire(const clock::Milliseconds t) noexcept {
@@ -224,7 +232,11 @@ using Semaphore = SemaphoreBase<arch::cortex_m3::CortexM3System>;
         const auto& current_task_ = system.current_task();
         SemaWaiter me{current_task_.get()};
         const auto ddl = system.now().tick_ + t.count;
+```
 
+`ddl` 在进函数的时刻就算定了,它记的是“此刻加时长”的截止点,往后是不动的。不过它只是个终点,循环里的每一轮要睡多久,咱们得看此刻离截止点还剩多少,算剩余量的事全在循环里,咱们接着往下看:
+
+```cpp
         while (1) {
             ZerOS::irq::CriticalGuard g{system};
             if (count_ > 0) {
@@ -243,7 +255,7 @@ using Semaphore = SemaphoreBase<arch::cortex_m3::CortexM3System>;
     }
 ```
 
-期限的算法藏在 `ddl` 与 `left` 两个量里,咱们把它说清。进函数的时候,咱们拿“此刻加时长”把截止点算好了,之后的每一轮循环,睡的时长已经缩到了剩下的部分,它算出来的,是截止点减此刻的剩余量。为什么非要这么算?因为一轮等待可能被中途打断,单位是没有来的,任务却被系统叫醒了(可能是别人 `release` 的时候把它一起唤的,也可能是别的原因把它从睡眠里捞了出来),它回到循环的开头一查,计数的值还是零,这时候它重新睡下去的时长要是照原始参数再来一遍,总期限就被悄悄拉长了,打断的次数一多,攒下来的误差就越来越大了。按剩余量重挂的意思就是,无论中间被捞起来了多少回,截止点都是一动不动的,到期的判定永远是 `left <= 0`,漂移就没有累积的地方了。
+循环里 `left` 算的就是剩余量,咱们看它的算式:拿截止点减此刻,睡下去的时长缩到了剩下的部分。为什么非要按剩余量算?因为一轮等待可能被中途打断,单位是没有来的,任务却被系统叫醒了(可能是别人 `release` 的时候把它一起唤的,也可能是别的原因把它从睡眠里捞了出来),它回到循环的开头一查,计数的值还是零,这时候它重新睡下去的时长要是照原始参数再来一遍,总期限就被悄悄拉长了,打断的次数一多,攒下来的误差就越来越大了。按剩余量重挂的意思就是,无论中间被捞起来了多少回,截止点都是一动不动的,到期的判定永远是 `left <= 0`,漂移就没有累积的地方了。
 
 循环里还剩一处没有讲的,它和本 commit 的另一行改动配着看。时间内核的 `enqueue_locked` 在这个 commit 里多了一行,我从 diff 里把相关的几行照原样搬给您,签名的形态您一眼就能对上仓库:
 
@@ -351,7 +363,7 @@ TEST_CASE("timed acquire times out through the alarm", "[sync]") {
 
 ## Renode:串口回声换成信号量驱动
 
-机制的验收做完了,咱们到 Renode 里跑板上的部分。example 的 `main.cpp` 在这个 commit 里多出了第三个任务,咱们看它的任务体与中断:
+机制的验收做完了,咱们到 Renode 里跑板上的部分。example 的 `main.cpp` 在这个 commit 里多出了第三个任务,咱们把它分成三段看,头一段是全局的家当,事件与载荷的登记处:
 
 ```cpp
 // the event side lives in the semaphore (a unit arriving BEFORE the task
@@ -360,7 +372,11 @@ TEST_CASE("timed acquire times out through the alarm", "[sync]") {
 constinit ZerOS::sync::Semaphore g_rx_sem{0};
 constinit ZerOS::arch::cortex_m3::CortexM3CriticalSection mailbox_lock{};
 char g_rx_byte = 0;
+```
 
+事件与载荷在这里分了家,事件归了信号量,字节本身还是一格的邮箱,分工在开头那三行注释里就写清楚了。登记处齐了,咱们看取货的人:
+
+```cpp
 // event-sleeper: woken by the RX interrupt, not by the clock
 void task_c(void*) {
     for (;;) {
@@ -375,7 +391,11 @@ void task_c(void*) {
         ZerOS::board::print("'\r\n");
     }
 }
+```
 
+它 `acquire` 到了单位才去邮箱里取货,取货的时刻,咱们拿临界区护住,取完了把字节原样回显出去。剩下的问题是中断那一头,它凭什么可以放心地调 `release`?咱们看:
+
+```cpp
 // RXNE (and ORE, sharing RXNEIE): park the byte, hand the event over.
 // release() is ISR-safe by construction (BASEPRI inside, switch pended,
 // never switched here)
@@ -392,7 +412,7 @@ extern "C" void USART1_IRQHandler() {
 }
 ```
 
-事件与载荷在这里分了家,事件归了信号量,字节本身还是一格的邮箱。中断把字节停进了邮箱,再 `release` 一个单位的量,任务 `acquire` 到了单位才去邮箱里取货,取货的时刻,咱们拿临界区护住。中断里的 `release` 为什么安全?注释给了理由,锁是 BASEPRI 实现的,切换是挂起给 PendSV 的,ISR 里是从来不真的切任务的。还有一层是咱们正文里说过的,`release` 的单位落进计数器在唤醒之前,所以哪怕字节到达的时刻任务还在跑别的、还没睡进 `acquire`,单位也就在计数器里等着它了,一条都丢不了。
+注释里给了答案,锁是 BASEPRI 实现的,切换是挂起给 PendSV 的,ISR 里是从来不真的切任务的。它把字节停进了邮箱,再 `release` 一个单位的量,事件的登记就算完成了。还有一层是咱们正文里说过的,`release` 的单位落进计数器在唤醒之前,所以哪怕字节到达的时刻任务还在跑别的、还没睡进 `acquire`,单位也就在计数器里等着它了,一条都丢不了。
 
 我把仓库用 `git archive 5c62c0d` 导到 /tmp 的副本里,配上交叉的工具链构建固件:
 

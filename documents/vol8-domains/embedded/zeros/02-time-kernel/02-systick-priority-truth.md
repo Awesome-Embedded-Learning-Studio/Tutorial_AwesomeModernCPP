@@ -15,7 +15,7 @@ reading_time_minutes: 18
 prerequisites:
   - "给内核一秒钟·第 1 篇:一秒钟的定义权"
 related:
-  - "一秒钟的定义权:tick、回绕算术与时间账本"
+  - "一秒钟的定义权:tick、回绕算术与到期队列"
 ---
 
 # 注释写 Lowest,硅片判 Highest:拆掉 CMSIS 的优先级移位
@@ -43,7 +43,7 @@ related:
 
 ## 临界区换引擎:从 CMSIS 宏到内联汇编
 
-咱们从 `cm3_irq.hpp` 看起,下面是它在 commit 之后的全文:
+咱们从 `cm3_irq.hpp` 看起,它是临界区的家。上一站咱们用它写出了 BASEPRI 嵌套临界区,锁的开关走的是 CMSIS 的 `__get_BASEPRI` 与 `__set_BASEPRI`,这一篇要把它们换成咱们自己手写的内联汇编。为什么要自己动手?BASEPRI 这样的特殊寄存器,不在普通的内存里待着,`volatile` 指针是够不着它的,摸到它的路子只有一对指令,也就是咱们要自己写的 `mrs` 与 `msr`,而 CMSIS 把这对指令包在了一整棵 ST 的头文件树里,arch 层想跟 ST 断干净的话,就得把它们接到咱们自己手里。咱们把新文件拆成两段,头一段咱们看两个汇编函数:
 
 ```cpp
 #pragma once
@@ -62,6 +62,17 @@ inline std::uint32_t read_basepri() {
 inline void write_basepri(std::uint32_t value) {
     asm volatile("msr basepri, %0" ::"r"(value) : "memory");
 }
+```
+
+`mrs` 和 `msr` 就是咱们说的那对专用指令,`mrs` 负责的是读出,而 `msr` 把值写回去,一读一写正好对上 `read_basepri` 与 `write_basepri` 两个函数的名字。约束写法咱们看仔细:`"=r"(value)` 声明的输出交给 `value` 这个变量,`"r"(value)` 声明的输入从 `value` 里取,寄存器都让编译器自己挑它的。
+
+真正值得您停一下的,是写侧末尾的那个 `"memory"`。它的作用是告诉编译器,这段汇编动的是内存,您别把临界区里前后的访存指令重排到锁外面去。读侧为什么不带?因为读 BASEPRI 没有任何可观察的副作用,读的动作只是把一个值搬进通用寄存器,编译器把它挪到哪一步去执行都是允许的,而程序的可见行为一丝不变,所以读侧不需要 clobber 护着。写侧就不一样了,改的对象是“哪些内存访问被挡住”的这个状态,因此谁在锁内、谁在锁外也就跟着变了,所以重排一次,行为也就跟着变一次了,咱们才必须用 `"memory"` 把访存顺序看住。
+
+我顺手把旧版带进来的 `<assert.h>` 也清掉了。arch 层从此不碰 ST 的东西,编译的时候不再拖一整棵 CMSIS 的 include 树。
+
+文件的后半截是临界区结构的本体,咱们接下去看:
+
+```cpp
 
 // For simple and toy, ARM and disarm currently using systicks
 struct CortexM3CriticalSection {
@@ -88,13 +99,7 @@ static_assert(ZerOS::irq::CriticalSection<CortexM3CriticalSection>);
 } // namespace ZerOS::arch::cortex_m3
 ```
 
-结构跟上一站一模一样:嵌套的计数还在,保存恢复的路子也在,`kMaskLevel` 还是 0x40 的老值,一个字也没被咱们动过。动的是底下的引擎。旧版这里 include 了 `"stm32f1xx.h"` 和 `<assert.h>`,锁的开关走 CMSIS 的 `__get_BASEPRI`/`__set_BASEPRI`。新版把两个函数换成了咱们自己手写的内联汇编,外来的头只剩一个 `<cstdint>`。
-
-`mrs` 和 `msr` 是 Cortex-M 上访问特殊寄存器的两条指令:`mrs` 负责读出,而 `msr` 把值写回去。BASEPRI 不在普通的内存里待着,咱们用 `volatile` 指针也够不着它,只有走 `mrs`/`msr` 这对指令的路子才摸得到。约束写法咱们看仔细:`"=r"(value)` 声明的输出交给 `value` 这个变量,`"r"(value)` 声明的输入从 `value` 里取,寄存器都让编译器自己挑它的。
-
-真正值得您停一下的,是写侧末尾的那个 `"memory"`。它的作用是告诉编译器,这段汇编动的是内存,您别把临界区里前后的访存指令重排到锁外面去。读侧为什么不带?因为读 BASEPRI 没有任何可观察的副作用,读的动作只是把一个值搬进通用寄存器,编译器把它挪到哪一步去执行都是允许的,而程序的可见行为一丝不变,所以读侧不需要 clobber 护着。写侧就不一样了,改的对象是“哪些内存访问被挡住”的这个状态,因此谁在锁内、谁在锁外也就跟着变了,所以重排一次,行为也就跟着变一次了,咱们才必须用 `"memory"` 把访存顺序看住。
-
-我顺手把旧版带进来的 `<assert.h>` 也清掉了。arch 层从此不碰 ST 的东西,编译的时候不再拖一整棵 CMSIS 的 include 树。
+结构跟上一站是一模一样的:嵌套的计数还在,保存恢复的路子也在,`kMaskLevel` 还是 0x40 的老值,一个字也没被咱们动过,动的只有底下的引擎,`lock` 与 `unlock` 里的调用点换成了上面那对函数。include 的变动也在文件头上:旧版拖着 `"stm32f1xx.h"` 和 `<assert.h>`,新版剩下的外来头只有一个 `<cstdint>`。
 
 ## 直写三寄存器
 
@@ -118,7 +123,7 @@ extern "C" void SysTick_Handler() {
 }
 ```
 
-雷就埋在这两行的里面,咱们把 `NVIC_SetPriority` 和 `SysTick_Config` 各看一眼,上一篇的伏笔就在这里。commit 之后咱们看到的同一个函数,换成了下面这副新的模样:
+雷就埋在这两行的里面,咱们把 `NVIC_SetPriority` 和 `SysTick_Config` 各看一眼,上一篇的伏笔就在这里。commit 之后的同一个函数,换成了直写的版本,新文件咱们拆成两段看,头一段是寄存器地址与位常量的声明区:
 
 ```cpp
 #include "ZerOS/arch/arm_cortex_m3/time_kernel_cm3.hpp"
@@ -138,7 +143,13 @@ constexpr std::uint32_t kSystEnable = 1u;
 constexpr std::uint32_t kSystTickInt = 2u;
 constexpr std::uint32_t kSystClkSource = 4u;
 } // namespace
+```
 
+咱们从上往下看这段:四个地址集中在匿名的命名空间里。匿名命名空间给了它们内部链接的身份,编译单元之外的代码谁也看不见它们。`volatile std::uint32_t*` 让每一次读写都真的落到总线上去,编译器不许缓存它们的值、不许合并它们的访问。三个位常量也全都具了名:`ENABLE` 占的是第 0 位,`TICKINT` 占的是第 1 位,`CLKSOURCE` 占的是第 2 位,`0xE000E010` 这个 CSR 寄存器就是靠它们三个开起来的。
+
+地址备齐了,函数本体咱们接着看:
+
+```cpp
 void ZerOS::arch::cortex_m3::init_time(std::uint32_t cycles_per_tick) {
     *kScbShpr3 = (*kScbShpr3 & 0x00FFFFFFu) | (0xF0u << 24);
     *kSystRvr = cycles_per_tick - 1;
@@ -150,8 +161,6 @@ extern "C" void SysTick_Handler() {
     ZerOS::arch::cortex_m3::system_time.on_elapsed(1);
 }
 ```
-
-咱们从上往下看这段:四个地址集中在匿名的命名空间里。匿名命名空间给了它们内部链接的身份,编译单元之外的代码谁也看不见它们。`volatile std::uint32_t*` 让每一次读写都真的落到总线上去,编译器不许缓存它们的值、不许合并它们的访问。三个位常量也全都具了名:`ENABLE` 占的是第 0 位,`TICKINT` 占的是第 1 位,`CLKSOURCE` 占的是第 2 位,`0xE000E010` 这个 CSR 寄存器就是靠它们三个开起来的。
 
 `init_time` 的函数体一共四行,咱们一行一行对着看。最后的一行是 `CSR = kSystEnable | kSystTickInt | kSystClkSource`,三个常量合出 0b111 的值,也就是 SysTick 的时钟、中断两个开关全开,时钟源选的处理器时钟,一次就全开到位了。`RVR` 这一行写的是 `cycles_per_tick - 1`,这个减一是硬件的规定,重装的值数到它就回卷,所以给进去的要 N-1。`CVR` 这一行写的是 0,它把当前的计数值清了零,等下一次的时钟沿一来,它就立刻从 RVR 重装了,周期从此就对得整整齐齐了。
 

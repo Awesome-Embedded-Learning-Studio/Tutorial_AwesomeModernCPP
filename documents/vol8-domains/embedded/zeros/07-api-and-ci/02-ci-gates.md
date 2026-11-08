@@ -106,7 +106,7 @@ check_host() {
 
 ## 第二道检查:grep 当 include 防火墙
 
-第二道检查的名字叫 hygiene,它防的东西有意思,咱们看代码:
+第二道检查的名字叫 hygiene,它防的东西有意思,是 include 的方向。它的三条检查各有各的 grep:内核的头不得认识任何的板卡与厂商,内核的单测不得伸手抓架构的头,`include/ZerOS/` 的根目录必须保持为空。方向上的毛病,编译是不报的,测试也是不报的,坏掉的却是架构,所以它得拿文本的事实来守,咱们看代码:
 
 ```bash
 check_hygiene() {
@@ -127,7 +127,7 @@ check_hygiene() {
 }
 ```
 
-头一条 grep 查的是 `include/ZerOS/kernel/` 底下的每一个头文件,只要 `#include` 的行里出现了 `src/board`、`third_party` 或者 `stm32` 的字样,检查就把咱们的构建拦下来。它守的是依赖的方向:内核的头不得认识任何一块板卡、任何一家厂商。您回想咱们看过的互斥剧场、队列与定时器,内核的代码从头到尾没出现过 Blue Pill 的名字,板级的东西全部住在 `src/board/` 里,靠的是函数指针与板包接线跟内核对话。方向一旦反了,比如哪个内核头图省事 include 了板上的头,内核就再也搬不到第二块板子上了,而且这样的改动在编译上往往没有症状,host 上编得过它的,板上也编得过它的,坏掉的却是架构。grep 把它变成了文本事实的检查,它花不了咱们几个字,而且不依赖任何编译器的选项。
+头一条 grep 查的是 `include/ZerOS/kernel/` 底下的每一个头文件,只要 `#include` 的行里出现了 `src/board`、`third_party` 或者 `stm32` 的字样,检查就把咱们的构建拦下来。它守的是依赖的方向:内核的头不得认识任何一块板卡、任何一家厂商。您回想咱们看过的互斥剧场、队列与定时器,内核的代码从头到尾没出现过 Blue Pill 的名字,板级的东西全部住在 `src/board/` 里,靠的是函数指针与板包接线跟内核对话。方向一旦反了,比如哪个内核头图省事 include 了板上的头,内核就再也搬不到第二块板子上了,而且这样的改动在编译上往往没有症状,host 上编得过它的,板上也编得过它的,坏掉的却是架构。这道检查花不了咱们几个字,而且不依赖任何编译器的选项。
 
 第二条管的是 host 测试的纯洁性:`test/` 底下不许出现 `ZerOS/arch/` 的引用。咱们要内核的单测跟架构解耦,它测的对象是位图、队列、调度器的逻辑,某颗核的汇编不在它的射程里。测试文件一旦伸手去抓 arch 的头,它就只能活在某一种架构上了,host 考场也就名存实亡了。
 
@@ -252,7 +252,7 @@ size 检查里还有同款的一行。它的用意是省日志:构建的输出�
 
 ### 孤儿 gitlink:sparse 之后留下的洞
 
-workflow 里最特殊的一步,做的是给 submodule 瘦身的活,咱们看:
+workflow 里最特殊的一步,做的是给 submodule 瘦身的活。官方 SDK 的整个 submodule 在开仓库的时候被埋了进去,档案记的约数是 131MB,固件真正用到的只有 CMSIS 的头。瘦身的工具是 git 的 sparse-checkout,咱们照中文的习惯叫它稀疏检出:仓库照常整个克隆,工作树里只摆出您指定的路径,其余的不检出。咱们看它怎么设:
 
 ```yaml
       - name: sparse the submodule to CMSIS only + fetch the orphaned gitlink
@@ -263,7 +263,7 @@ workflow 里最特殊的一步,做的是给 submodule 瘦身的活,咱们看:
           git checkout
 ```
 
-开仓库的时候,官方 SDK 的整个 submodule 被埋了进去,档案记的约数是 131MB,固件真正用到的只有 CMSIS 的头,瘦身了之后约剩 13MB。咱们把 sparse-checkout 一设,仓库里只检出 CMSIS 的 Include、Device 与许可证三样,CI 克隆的开销立减了一个数量级。瘦身要立得住的话,还得看用头文件的地方认不认,同一次的改动里,example 的 CMakeLists 把 include 路径从 `${CMSIS}` 变量改成了显式的 submodule 路径,`Drivers/CMSIS/Include` 与 `Drivers/CMSIS/Device/ST/STM32F1xx/Include` 两处给直写了,跟 sparse 留下的两样东西一一对应,路径的收窄与检出的收窄是相干的。
+咱们把 sparse-checkout 一设,仓库里就只检出 CMSIS 的 Include、Device 与许可证三样,CI 克隆的开销立减了一个数量级,瘦身了之后约剩 13MB。瘦身要立得住的话,还得看用头文件的地方认不认,同一次的改动里,example 的 CMakeLists 把 include 路径从 `${CMSIS}` 变量改成了显式的 submodule 路径,`Drivers/CMSIS/Include` 与 `Drivers/CMSIS/Device/ST/STM32F1xx/Include` 两处给直写了,跟 sparse 留下的两样东西一一对应,路径的收窄与检出的收窄是相干的。
 
 不过这一步的名字里挂着另一个词,`orphaned gitlink`,它就是咱们说的第三条教训。`Drivers/CMSIS/Device/ST/STM32F1xx` 在上游的 `.gitmodules` 里没有映射,是个没人认领的孤儿 gitlink,咱们用 `git submodule update --init` 拉不动它,sparse 了之后,那个位置就成了一个空洞,编译找 CMSIS 设备头的时候直接失败。workflow 的补救是手动把它拉回来:
 

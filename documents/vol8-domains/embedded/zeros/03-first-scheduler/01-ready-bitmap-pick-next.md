@@ -27,7 +27,9 @@ related:
 
 ## 任务的三种状态和它的档案卡
 
-咱们新建的 `types.hpp` 全文只有 11 行,它的职责是给任务的状态定下词汇:
+调度器上了场,咱们要它回答的问题始终是同一个,CPU 的下一刻归谁。答案要答得可靠的话,咱们就得说得清每个任务此刻的处境:是排好了队等着上场,是占着 CPU 干活的,还是在等一件没发生的事。
+
+最省事的记法是一个 bool,占着 CPU 的记 true,不占的记 false。可是 false 分不出两种没在跑的人,一种是能跑而还没轮上的,另一种是等一件事发生才动得了的,调度器安置这两拨人的办法并不相同,所以一个 bool 装不下它们,词就有了三个。咱们新建的 `types.hpp` 全文只有 11 行,它的职责是给任务的状态定下词汇:
 
 ```cpp
 #pragma once
@@ -45,7 +47,7 @@ using TaskPriority_t = std::uint8_t;
 
 这里一共列了三种状态,咱们一个个说清它们各管什么。`Ready` 表示任务万事俱备了,就差一个空出来的 CPU。`Running` 表示它此刻真的在 CPU 上跑着。`Blocked` 表示它在等一件没发生的事,比如等时间到了再干活,或者等一个字节的到来,就算 CPU 闲下来了也不归它。`TaskPriority_t` 用的是 `std::uint8_t`,一个字节的优先级编号,数值越小的越紧急,咱们把这个约定记牢,后面所有的判断都建立在它上面。
 
-状态得挂在什么东西上,咱们看 `task_control_block.hpp` 里的 TCB(Task Control Block,任务在内核里的档案卡,咱们后面都叫它 TCB):
+调度器做的每个决定都要能查到依据,这个任务是谁、它有多急、它此刻是三种状态里的哪一种。最直白的做法是给每样信息配一组全局变量,任务一多的话,名字各起各的,选人的代码就得认得每一份,加一个任务的时候就要多改几处。仓库的答案是档案卡,一个任务的所有随身信息都住在同一个结构体里,调度器手里攥着它的地址,它的一切就都在眼前了。状态得挂在什么东西上,咱们看 `task_control_block.hpp` 里的 TCB(Task Control Block,任务在内核里的档案卡,咱们后面都叫它 TCB):
 
 ```cpp
 struct TCB : public base::SelfNode<TCB> {
@@ -94,7 +96,7 @@ struct UserTaskWrapper {
 
 ## 给调度器立的合同:两个 concept
 
-调度器的正式名字是 `Scheduler<Driver>`,它对送进来的驱动有两份要求。咱们打开 `is_scheduler.hpp` 看:
+调度器的正式名字是 `Scheduler<Driver>`,尖括号里的 Driver 是它要借力的那件东西,关中断、请求切换这些活都得借它的手。借力就有借不上的时候,仓库的答案是 C++ 的 concept:一份写成人话的要求清单,编译器替咱们逐条验收,不合手的驱动连编译都过不去。炸点拦在了编译期,板子上的试错就省了。它对送进来的驱动有两份要求,咱们打开 `is_scheduler.hpp` 看:
 
 ```cpp
 template <typename SwitchPort>
@@ -119,7 +121,7 @@ concept IsScheduler = requires(Stuff& stuff, base::BorrowedPtr<TCB> aTask) {
 
 ## 32 级就绪队列:一张位图加 32 条 FIFO
 
-合同立好了,咱们看 `scheduler.hpp` 的家底:
+合同立好了,咱们来看调度器的家底。选人是调度器每天都要答很多遍的问题,答案的快慢,全看就绪的任务待在一个什么样的结构里。最直白的想法是把就绪的任务串成一条链,选人的时候从链头翻到链尾,谁的优先级数值小谁出场,任务一多的话,每次选人都是一场全量的翻找,选人的速度就上不去了。咱们看 `scheduler.hpp` 是怎么答的,头几行是定盘用的常数,外加一条编译期的守卫:
 
 ```cpp
     static constexpr TaskPriority_t kPriorityLevels = 32;
@@ -128,7 +130,25 @@ concept IsScheduler = requires(Stuff& stuff, base::BorrowedPtr<TCB> aTask) {
     static constexpr TaskPriority_t kIdlePrio = 0xFF;
 
     DISABLE_COPY_MOVE(Scheduler);
+```
 
+`static_assert` 的那句话值得咱们停一下:位图快路径要求级数不超过 32,因为一张机器字正好装下了全部标记。作者把设计的前提写成了编译期断言,哪天有人把级数扩到了 64,编译器就当场拦住了他,改掉快路径的事就躲不掉了,设计约束和实现绑在了一根绳上。
+
+往下是就绪结构的两个大件,咱们一层一层来看:
+
+```cpp
+    TCB idle_{};
+    TCB* current_{nullptr};
+    base::Bitmap<kPriorityLevels> present_{};
+    base::SelfList<TCB> fifo_[kPriorityLevels]{};
+    [[no_unique_address]] Driver driver_{};
+```
+
+底层的 `fifo_` 是一张表,里面装了 32 条 `SelfList<TCB>`,一条对应的是一个优先级。`SelfList` 咱们上一站讲过,不指定比较策略的时候它就是纯 FIFO,早来的排在前面,所以同级的任务按到达次序轮。上层的 `present_` 是一张 32 位的 `Bitmap`,某个级的队列里有人的时候位就是 1,空了就清 0。咱们要找还剩哪些级有人的时候,咱们不用把 32 条链挨个问一遍,位图一句话就回答了咱们,选人能快的全部底细就在这里。家底里剩下的三位,`idle_` 是内嵌的空闲任务,`current_` 记着此刻占着 CPU 的是谁,`driver_` 正是合同要来干活的驱动,咱们到选人的地方再细看。
+
+`push_back` 是任务进就绪队列的入口,咱们看它:
+
+```cpp
     void push_back(TCB* t) {
         if (t->task_priority_ >= kMaxPrio) {
             return;
@@ -137,17 +157,7 @@ concept IsScheduler = requires(Stuff& stuff, base::BorrowedPtr<TCB> aTask) {
         fifo_[t->task_priority_].insert(t);
         present_.set(t->task_priority_);
     }
-
-    TCB idle_{};
-    TCB* current_{nullptr};
-    base::Bitmap<kPriorityLevels> present_{};
-    base::SelfList<TCB> fifo_[kPriorityLevels]{};
-    [[no_unique_address]] Driver driver_{};
 ```
-
-就绪结构分了两层,咱们一层一层来看。底层的 `fifo_` 是一张表,里面装了 32 条 `SelfList<TCB>`,一条对应的是一个优先级。`SelfList` 咱们上一站讲过,不指定比较策略的时候它就是纯 FIFO,早来的排在前面,所以同级的任务按到达次序轮。上层的 `present_` 是一张 32 位的 `Bitmap`,某个级的队列里有人的时候位就是 1,空了就清 0。咱们要找还剩哪些级有人的时候,咱们不用把 32 条链挨个问一遍,位图一句话就回答了咱们,选人能快的全部底细就在这里。
-
-`static_assert` 的那句话值得咱们停一下:位图快路径要求级数不超过 32,因为一张机器字正好装下了全部标记。作者把设计的前提写成了编译期断言,哪天有人把级数扩到了 64,编译器就当场拦住了他,改掉快路径的事就躲不掉了,设计约束和实现绑在了一根绳上。
 
 `push_back` 开头的判断是 idle 任务剧本的关键。idle 是调度器自己内嵌的任务,优先级给的是 `0xFF`,不小于 32 的优先级都会在 `push_back` 被拒收,所以 idle 永远进不了就绪队列。它出现在哪?咱们看选人:
 
@@ -209,7 +219,9 @@ concept IsScheduler = requires(Stuff& stuff, base::BorrowedPtr<TCB> aTask) {
 
 ## pick_next:被抢占的回队头,让出去的排队尾
 
-咱们的主角登场了,咱们把 `pick_next` 和 `yield` 摆在一起看,它们俩合起来才是公平性设计的本体:
+咱们的主角登场了。仲裁面最讲究的一件事是公平,同级任务的轮流全看回来的人站哪儿。要是回来的人都去队尾,让出去的人没话说,被抢的人就冤了,它什么都没做错,只是被更急的人顶下来,回来了还得从头排起。要是回来的人都回队头,让出去的人转身就又轮到了自己,同级的伙伴永远轮不上,活活地饿肚子。仓库的答案是让回来的位置由回来的原因决定,`pick_next` 和 `yield` 合起来才是这个设计的本体,咱们把它们分开看。
+
+`pick_next` 的身上压着被抢占的那一半,咱们看它:
 
 ```cpp
     [[nodiscard]] base::BorrowedPtr<TCB> pick_next() {
@@ -225,7 +237,13 @@ concept IsScheduler = requires(Stuff& stuff, base::BorrowedPtr<TCB> aTask) {
         next->state_ = TaskState::Running;
         return next;
     }
+```
 
+`pick_next` 开头的判断就是不对称的来源。当前任务的状态还是 `Running`,说明它自己没有让出 CPU 的意思,是被人抢了位子,咱们把它 `push_front` 塞回它那个级的队头,轮到它的时候它就接着原来的位置跑,什么都不用重算。
+
+`yield` 走的是让出的那一半,咱们看它:
+
+```cpp
     void yield() {
         irq::CriticalGuard guard{driver_};
         if (current_ == nullptr || current_ == &idle_) {
@@ -236,7 +254,7 @@ concept IsScheduler = requires(Stuff& stuff, base::BorrowedPtr<TCB> aTask) {
     }
 ```
 
-`pick_next` 开头的判断就是不对称的来源。当前任务的状态还是 `Running`,说明它自己没有让出 CPU 的意思,是被人抢了位子,咱们把它 `push_front` 塞回它那个级的队头,轮到它的时候它就接着原来的位置跑,什么都不用重算。而 `yield` 里当前任务走的是 `push_back` 去队尾,同级的伙伴按次序一个一个轮,让出去一次就排到了最后。回来的位置完全由回来的原因决定,同样都是回到就绪队列的,被抢占者接着干它的活,让出者就得重新排队了。
+咱们再看 `yield`,当前任务走的是 `push_back` 去队尾,同级的伙伴按次序一个一个轮,让出去一次就排到了最后。回来的位置完全由回来的原因决定,同样都是回到就绪队列的,被抢占者接着干它的活,让出者就得重新排队了。
 
 `push_front` 本身是 `0bf9461` 新增的,咱们查过 diff,`self_list.hpp` 在这个 commit 里就多了这 5 行:
 
@@ -251,7 +269,7 @@ concept IsScheduler = requires(Stuff& stuff, base::BorrowedPtr<TCB> aTask) {
 
 选人的决定做完了,切换呢?您留意 `pick_next` 和 `yield` 全程没有碰过任何寄存器,它们最多调了一下 `driver_.request_switch()`,而板上的这个函数只是把 PendSV 的挂起位写 1。调度 API 在咱们这儿从来不在调用点直接切,真正的切换被推迟到了 PendSV 异常里执行,这样任何调用点(包括中断服务程序在内的调用点)都只发出了请求,不在别人的栈上动手。汇编那边的事归《在栈顶伪造出生证明》,咱们今天只要知道请求是安全的就够了。
 
-`add`、`ready`、`block` 三个原语咱们快速过一遍,它们的判断条件各有讲究:
+`add`、`ready`、`block` 是三态词汇表配的三个动词:`add` 把新来的任务放进就绪队列,`ready` 把睡着的任务放回来,`block` 把当前跑着的任务送去睡觉。三个动词咱们快速过一遍,它们的判断条件各有讲究,头一个咱们看 `add`:
 
 ```cpp
     void add(base::BorrowedPtr<TCB> t) {
@@ -264,7 +282,13 @@ concept IsScheduler = requires(Stuff& stuff, base::BorrowedPtr<TCB> aTask) {
             driver_.request_switch();
         }
     }
+```
 
+`add` 入队之后要看一眼的是当前在跑的任务,新来的比当前的更紧急,切换的请求就发出去,不紧急的时候就只入队,咱们不惊动任何人。
+
+`ready` 负责把睡着的任务放回来,咱们看它:
+
+```cpp
     void ready(base::BorrowedPtr<TCB> t) {
         irq::CriticalGuard guard{driver_};
         if (!t || t->state_ != TaskState::Blocked) {
@@ -275,7 +299,13 @@ concept IsScheduler = requires(Stuff& stuff, base::BorrowedPtr<TCB> aTask) {
             driver_.request_switch();
         }
     }
+```
 
+三个函数都握住了临界区再动队列,咱们得想一下为什么要这样:`ready` 会从中断里被调,ISR 和任务两边共享的是位图和 FIFO,不加锁的队列迟早会被写坏。`ready` 开头只收 `Blocked` 态的任务,没睡的任务来 `ready` 一律不理,这个判断往后还有个重要的故事:它挡住的场景里恰好埋着一个真正的丢唤醒竞态,咱们在讲丢唤醒的那一篇,也就是《睡死那个 bug:丢唤醒、park_for 与让错误用法编不过的建造者链》里,当着它的面把它复现出来再修掉。
+
+`block` 干的是反向的事,咱们看它:
+
+```cpp
     void block(base::BorrowedPtr<TCB> t) {
         irq::CriticalGuard guard{driver_};
         if (!t) {
@@ -288,7 +318,7 @@ concept IsScheduler = requires(Stuff& stuff, base::BorrowedPtr<TCB> aTask) {
     }
 ```
 
-三个函数都握住了临界区再动队列,咱们得想一下为什么要这样:`ready` 会从中断里被调,ISR 和任务两边共享的是位图和 FIFO,不加锁的队列迟早会被写坏。`ready` 开头只收 `Blocked` 态的任务,没睡的任务来 `ready` 一律不理,这个判断往后还有个重要的故事:它挡住的场景里恰好埋着一个真正的丢唤醒竞态,咱们在讲丢唤醒的那一篇,也就是《睡死那个 bug:丢唤醒、park_for 与让错误用法编不过的建造者链》里,当着它的面把它复现出来再修掉。`request_switch` 的条件三处都是同一个逻辑,新来的比当前的紧急,或者睡的是当前自己,才轮得到一次切换的请求。不紧急的时候就只入队,切换的请求咱们就不发了。能不切的时候咱们就不切,毕竟每次切换都是有代价的。
+`block` 的判断是睡的得是当前自己,睡的是别人的话,只是队列里少了它一个,切换的请求就不用发了。三处的 `request_switch` 是同一个逻辑,新来的比当前的紧急,或者睡下去的是当前自己,才有一次切换的请求可发。能不切的时候咱们就不切,毕竟每次切换都是有代价的。
 
 ## 坦白:commit 说 OK,host 测试当时编不过
 
