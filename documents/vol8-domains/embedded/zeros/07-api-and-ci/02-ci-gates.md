@@ -23,7 +23,7 @@ related:
 
 前面讲调度器、互斥、队列与事件组的文章,验收段落写的都是同一类活:您 checkout 到某个 commit,配一遍咱们的构建,敲上了几条命令,把串口日志里的数字跟文章对上一遍。全是手动的。我在《一幕一房:demo 注册中心、任务创建三条路与遗言成义务》里跟您一起,把 342 行的单体 example 拆成了八个一幕一房的 demo,拆完了之后,手动的验收就该退休了,因为要手动对的东西从一份日志涨到了八份。commit `d48f5a3` 干的就是这件事,它把四道检查收进了一个脚本,交给云端的 CI 去跑,而同一个脚本咱们在本地也能跑,咱们这一篇就把它从头到尾导览一遍。
 
-头一件咱们照实交代:这个 commit 的 subject 写的是 “Merge pull request #1 from Charliechen114514/feat/ci_ready”,GitHub 把 PR 压平之后合进了 main,git 对象里只剩下了 `0054cf8` 一个 parent,`feat/ci_ready` 分支上的原始提交也就没有留下来。我在本机的仓库里按档案记下的 `9dd03a8` 与 `6aa1e96` 找过,git 直接报了 unknown revision。所以这一篇没有可以逐行走的 diff,咱们按系统导览来讲:落地的改动是 8 个文件、237 行新增、11 行删除,咱们要读的,是 `.github/workflows/ci.yml` 加 `scripts/ci.sh` 里的四道检查,每一处我引用的文件,都是拿 `git show d48f5a3:<路径>` 对着真实内容核过的。
+有一处咱们照实交代:这个 commit 的 subject 写的是 “Merge pull request #1 from Charliechen114514/feat/ci_ready”,GitHub 把 PR 压平之后合进了 main,git 对象里只剩下了 `0054cf8` 一个 parent,`feat/ci_ready` 分支上的原始提交也就没有留下来。我在本机的仓库里,按我手边的 commit 解剖档案记下的 `9dd03a8` 与 `6aa1e96` 找过(档案住在我自己的工作笔记里,仓库里没有它的原件,您也看不到,我这里照实交代),git 直接报了 unknown revision。所以这一篇没有可以逐行走的 diff,咱们按系统导览来讲:落地的改动是 8 个文件、237 行新增、11 行删除,咱们要读的,是 `.github/workflows/ci.yml` 加 `scripts/ci.sh` 里的四道检查,每一处我引用的文件,都是拿 `git show d48f5a3:<路径>` 对着真实内容核过的。
 
 ## 一套脚本,两个运行现场
 
@@ -59,11 +59,13 @@ jobs:
         run: ./scripts/ci.sh smoke
 ```
 
-一行注释把这么写的理由带了出来:`-- one step per check: Actions UI folds each into its own section --`。GitHub Actions 的页面会按 step 折叠日志,一道检查占了一个 step,绿了黄了,您一眼就能看出来。哪道检查把构建拦下了,页面直接告诉您,您点进去看失败的时候,也不用咱们在日志墙里翻。
+一行注释把这么写的理由带了出来:`# -- one step per check: Actions UI folds each into its own section --`,它原样躺在 workflow 的注释里。GitHub Actions 的页面会按 step 折叠日志,一道检查占了一个 step,绿了黄了,您一眼就能看出来。哪道检查把构建拦下了,页面直接告诉您,您点进去看失败的时候,也不用咱们在日志墙里翻。
 
 工具链的版本是照着现实确定下来的。workflow 顶部的注释我原样搬给您,它是作者给自己写的备忘,也给每个来看 CI 的人交了底:
 
 ```yaml
+# ZerOS CI — runs ./scripts/ci.sh on a Linux runner, one step per check.
+#
 # Toolchain reality check (2026-09-06):
 #   xPack has NOT released GCC 16 yet (latest: arm 15.2.1, host 15.2.0).
 #   Local dev uses Arch GCC 16.1 — but no 16-specific features are used
@@ -85,7 +87,7 @@ jobs:
 # runs this same script on a clean checkout.
 ```
 
-`set -euo pipefail` 站在了门口,任何一道检查失败了,退出码就到了非零,workflow 的 step 跟着变红。您单独跑每道检查也行,您敲 `./scripts/ci.sh host`,得到的就是只跑 host 单测。咱们在验收的段落会真的把整份脚本跑一遍,那里有全部的真实输出。
+`set -euo pipefail` 站在了门口,任何一道检查失败了,退出码就变成了非零,workflow 的 step 跟着变红。您单独跑每道检查也行,您敲 `./scripts/ci.sh host`,得到的就是只跑 host 单测。咱们在验收的段落会真的把整份脚本跑一遍,那里有全部的真实输出。
 
 ## 头一道检查:host 上的单测
 
@@ -145,7 +147,7 @@ RAM_LIMIT=6144
 
 脚本一开场就把天花板的口径写清了,咱们值得把这段注释念完。它划清了两件事的边界:D12 是本项目给内核体积定的预算编号,要按预算查内核的话,得做符号级的拆分,这道检查干不了,它抓的是另一件事,每个 demo 的整镜像回归。flash 12KB、RAM 6KB 的数字是怎么来的,注释也交了底:2026 年 9 月 6 日当天,八个 demo 里最大的一个约是 flash 5.3KB、RAM 2.6KB,在这上面留出大约一倍的余量,天花板就定在了 12288 与 6144 字节上。
 
-余量为什么留一倍,而不是贴着基线卡线?因为它的职责是抓回归,超支的检查轮不到它管。谁的改动让某个 demo 的镜像涨了二百字节,大概率是一次不小心的内联或者一张忘删的表,天花板立刻就红了,作者在合并之前就得解释这二百字节花在了哪里。咱们要是把线画在 5.3KB 上,正常的波动天天误报,警报很快就没人在听了。留了一倍,误报归了零,真正的回归照样当天现形。
+余量为什么留一倍,而不是贴着基线卡线?因为它的职责是抓回归,按预算逐项审内核的那类检查,它就管不着了。谁的改动让某个 demo 的镜像涨了二百字节,大概率是一次不小心的内联或者一张忘删的表,天花板立刻就红了,作者在合并之前就得解释这二百字节花在了哪里。咱们要是把线画在 5.3KB 上,正常的波动天天误报,警报很快就没人在听了。留了一倍,误报归了零,真正的回归照样当天现形。
 
 量体积的办法在检查的本体里,咱们看:
 
@@ -182,7 +184,7 @@ RAM_LIMIT=6144
     )
 ```
 
-脚本顶上的注释把台词表的性质说了:`the one string each demo owes us when it works`,demo 正常的时候欠咱们的字符串。八个 demo 的台词我都能对回前面的文章:heartbeats 的招呼是 `Hello! ZerOS`,inversion 剧场里 H 在 L 放锁之后拿到的就是那句 `inheritance paid off`,bottom_half 的 `job #1 done`、timers 的一枪、events_notify 的双钥匙、round_robin 的第二声,都是咱们在各自的剧场里亲眼见过的行。行为级的验收就这样被压成了一条 grep:仿真跑五秒,demo 没把自己的台词说出口,咱们的检查就挂了。
+脚本顶上的注释把台词表的性质说了:`the one string each demo owes us when it works`,demo 正常的时候欠咱们的字符串。八个 demo 的台词我都能对回前面的文章:heartbeat 的招呼是 `Hello! ZerOS`,inversion 剧场里 H 在 L 放锁之后拿到的就是那句 `inheritance paid off`,bottom_half 的 `job #1 done`、timers 的一枪、events_notify 的双钥匙、round_robin 的第二声,都是咱们在各自的剧场里亲眼见过的行。行为级的验收就这样被压成了一条 grep:仿真跑五秒,demo 没把自己的台词说出口,咱们的检查就挂了。
 
 `testaments` 的台词只有一句 `alive`,它的注释交代了原因,咱们看:
 
@@ -234,7 +236,7 @@ endif()
 
 ### 串行是逼出来的
 
-冒烟段落的注释把答案写在了那里:runner 的核数只有 2 到 4 个,八个并发的 Renode 互相饿死,虚拟时间几乎走不动了。档案记的经过是,PR 里前前后后六个 fix commit 才把这个事实摸实:一开始大概是并发跑的,虚拟时间不走了,仿真超了时,作者以为 Renode 挂了,试了各种参数,末了才承认是自己的并发在挨饿。六个 fix commit 的现场我核不到,这话您听着得打个折,不过现存的代码支持档案的说法:预构建的循环注释写着 `sequential, no lock contention`,仿真的循环注释写着 `simulate sequentially`,两个地方都特意标注了串行,像是作者跟后来的咱们打了招呼,提醒着咱们,谁也别走了“好心”改回并发的老路。
+冒烟段落的注释把答案写在了那里:runner 的核数只有 2 到 4 个,八个并发的 Renode 互相饿死,虚拟时间几乎走不动了。档案记的经过是,PR 里前前后后六个 fix commit 才把这个事实摸实:一开始大概是并发跑的,虚拟时间不走了,仿真超了时,作者以为 Renode 挂了,试了各种参数,末了才承认是自己的并发在挨饿。六个 fix commit 的现场我核不到,这话您听着得打个折,不过现存的代码支持档案的说法:预构建的循环注释写着 `sequential, no lock contention`,仿真的循环注释写着 `simulate sequentially`,两个地方都特意标注了串行,像是作者跟后来的咱们打了招呼,提醒着咱们,别走了“好心”改回并发去的老路。
 
 ### grep 过滤日志,真错误跟着一起被滤掉了
 
@@ -261,7 +263,7 @@ workflow 里最特殊的一步,做的是给 submodule 瘦身的活,咱们看:
           git checkout
 ```
 
-开仓库的时候,官方 SDK 的整个 submodule 被埋了进去,档案记的约数是 131MB,固件真正用到的只有 CMSIS 的头,瘦身了之后约剩 13MB。咱们把 sparse-checkout 一设,仓库里只检出 CMSIS 的 Include、Device 与许可证三样,CI 克隆的开销立减了一个数量级。
+开仓库的时候,官方 SDK 的整个 submodule 被埋了进去,档案记的约数是 131MB,固件真正用到的只有 CMSIS 的头,瘦身了之后约剩 13MB。咱们把 sparse-checkout 一设,仓库里只检出 CMSIS 的 Include、Device 与许可证三样,CI 克隆的开销立减了一个数量级。瘦身要立得住的话,还得看用头文件的地方认不认,同一次的改动里,example 的 CMakeLists 把 include 路径从 `${CMSIS}` 变量改成了显式的 submodule 路径,`Drivers/CMSIS/Include` 与 `Drivers/CMSIS/Device/ST/STM32F1xx/Include` 两处给直写了,跟 sparse 留下的两样东西一一对应,路径的收窄与检出的收窄是相干的。
 
 不过这一步的名字里挂着另一个词,`orphaned gitlink`,它就是咱们说的第三条教训。`Drivers/CMSIS/Device/ST/STM32F1xx` 在上游的 `.gitmodules` 里没有映射,是个没人认领的孤儿 gitlink,咱们用 `git submodule update --init` 拉不动它,sparse 了之后,那个位置就成了一个空洞,编译找 CMSIS 设备头的时候直接失败。workflow 的补救是手动把它拉回来:
 
@@ -273,7 +275,7 @@ workflow 里最特殊的一步,做的是给 submodule 瘦身的活,咱们看:
           git -C Drivers/CMSIS/Device/ST/STM32F1xx checkout c8e9a4a4
 ```
 
-单克隆上游的 cmsis-device-f1 仓库,`--filter=blob:none` 不下载文件的内容,`--depth 1` 只取了一层历史,checkout 到了 `c8e9a4a4`,跟仓库记录的版本一致。这套手动步骤不止写在了 workflow 里,`third_party/README.md` 也写了完整的一份,它的标题就是“孤儿 gitlink”,咱们在自己机器上复现的时候照着敲就行。给 AI 写的步骤与给人写的步骤是同一步,这算是稀罕的好习惯。
+单克隆上游的 cmsis-device-f1 仓库,`--filter=blob:none` 不下载文件的内容,`--depth 1` 只取了一层历史,checkout 到了 `c8e9a4a4`,跟 third_party/README.md 记下的版本一致。这套手动步骤不止写在了 workflow 里,`third_party/README.md` 也写了完整的一份,它的标题就是“孤儿 gitlink”,咱们在自己机器上复现的时候照着敲就行。给 AI 写的步骤与给人写的步骤是同一步,这算是稀罕的好习惯。
 
 ## 本地实测:同一套检查,咱们自己跑一遍
 
@@ -308,7 +310,7 @@ zeros-demo-testaments        flash=4592   ram=2476
 zeros-demo-timers            flash=3428   ram=444
 ```
 
-咱们拿天花板对一下:最大的 flash 是 bottom_half 的 5068 字节,离 12288 的线还有一倍多的余量,最大的 RAM 是 events_notify 的 2540 字节,离 6144 的线也远。跟脚本注释记的 9 月 6 日基线(约 5.3KB flash、2.6KB RAM)再对一下,今天的数字就贴着基线,说明这个仓库从那以后就没有悄悄胖过了。第四道的输出是一排期待值:
+咱们拿天花板对一下:最大的 flash 是 bottom_half 的 5068 字节,离 12288 的线还有一倍多的余量,最大的 RAM 是 events_notify 的 2540 字节,离 6144 的线也远。跟脚本注释记的 9 月 6 日基线(约 5.3KB flash、2.6KB RAM)再对一下,今天的数字在量级上贴着基线,咱们看不出大幅膨胀的迹象。不过话说回来,基线出自 CI 的 GCC 15.2.1,我的数字出自本机的 16.2.0,跨编译器的对比是有保留的,说到这个仓库有没有悄悄胖过的问题,咱们给的只是强迹象,给不出的是定论。第四道的输出是一排期待值:
 
 ```text
 --- run-bottom_half (expect: job #1 done)
@@ -328,7 +330,7 @@ all 8 demos spoke their lines
 
 咱们把本篇的可查证事实归拢成三件。
 
-头一件是本地的复现。您 checkout 到 `d48f5a3`,给 third_party 备好 CMSIS 的 Include 与 Device 两样(README 里的孤儿 gitlink 步骤就是为它写的),然后跑了 `./scripts/ci.sh`。host 该给您的是 14 个目标全部通过,hygiene 报出来的该是 `clean: kernel purity / test purity / layout`,size 打出来的八个 demo 的体重,都得在咱们的 12288 与 6144 以内,smoke 的收场该是 `all 8 demos spoke their lines` 加一句 `ALL CHECKS PASSED`。我本机 GCC 16.2.0 加 Renode 1.17.0 跑出来的,就是上面贴的这些。i2c 两个节点的注释处理,您要是 Renode 1.16.1 就不需要了,CI 用的版本认得那个类型。
+头一件是本地的复现。您 checkout 到 `d48f5a3`,给 third_party 备好 CMSIS 的 Include 与 Device 两样,您照 `third_party/README.md` 的两段走,头一段是初始化的,给了咱们 submodule init 加 sparse set,再是孤儿 gitlink 的一段,给的是设备头仓库的手动拉取,咱们两处都走到了,然后跑了 `./scripts/ci.sh`。host 该给您的是 14 个目标全部通过,hygiene 报出来的该是 `clean: kernel purity / test purity / layout`,size 打出来的八个 demo 的体重,都得在咱们的 12288 与 6144 以内,smoke 的收场该是 `all 8 demos spoke their lines` 加一句 `ALL CHECKS PASSED`。我本机 GCC 16.2.0 加 Renode 1.17.0 跑出来的,就是上面贴的这些。i2c 两个节点的注释处理,您要是 Renode 1.16.1 就不需要了才对。不过我照实说,CI 在云端跑没跑过、1.16.1 认不认得 i2c 的类型,两件事我没验过,我的推断是,作者多半在 1.16.1 上跑通过了它,不然他自己的冒烟就过不去了,这个推断的帽子我戴着,您自己取舍。
 
 第二件是每道检查防什么,咱们对回脚本就能查。host 检查跑的是 `ctest`,防的是逻辑回归。hygiene 的三条 grep,防的是 include 的方向,也是 host 测试的架构纯洁性,还有根目录的堆放。size 检查按 `flash=text+data`、`ram=data+bss` 的口径给每个 demo 过秤,防的是整镜像的体积回归。smoke 检查让每个 demo 跑了五秒,grep 各自的台词,防的是行为回归。四道各管了一面,咱们把它们合起来,得到的才是完整的含义。咱们手里的一套代码,得在 host 单测、交叉构建与仿真行为的三层里全部通过,这句话才算落了地。
 
@@ -336,4 +338,4 @@ all 8 demos spoke their lines
 
 ## 下一篇
 
-安全网立起来了,咱们后面动刀才有底气。`e2b7dc0` 与 `fe270d9` 两次砍调度热路径的时候,smoke 与 size 就是回归的判据,改完了跑一遍 `./scripts/ci.sh`,四个 banner 全部通过了,咱们的刀就没砍偏。性能测量的 demo 后来也进了 CI,咱们把它当成了普通公民,测量的开关默认关着,也不拖累咱们每个人的五秒。咱们就去看砍的是什么,热路径上省出来的每一微秒,怎么拿 Renode 的虚拟时间量出来。
+安全网立起来了,咱们后面动刀才有底气。按解剖档案记的口径,`e2b7dc0` 与 `fe270d9` 两次砍调度热路径的时候,当时的记录是 smoke 与 size 当了回归的判据,改完了跑一遍 `./scripts/ci.sh`,四个 banner 全部通过了,咱们的刀就没砍偏。性能测量的 demo 后来也进了 CI,咱们把它当成了普通公民。照实地说,它进的是构建加体积的检查,拿 `d48f5a3` 的脚本对一眼,冒烟台词表里没有它的名字,测量的开关默认关着,也不拖累咱们每个人的五秒。咱们就去看砍的是什么,热路径上省出来的每一微秒,怎么拿 Renode 的虚拟时间量出来。
