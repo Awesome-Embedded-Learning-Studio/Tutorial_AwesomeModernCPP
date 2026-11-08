@@ -39,6 +39,7 @@ git submodule update --init
   <ChapterLink num="0" href="00-why-rtos/">为什么是 RTOS:从超级循环到 ZerOS</ChapterLink>
   <ChapterLink num="1" href="01-heapless-memory/">没有堆的世界:先把内存发对</ChapterLink>
   <ChapterLink num="2" href="02-time-kernel/">给内核一秒钟:时间与临界区</ChapterLink>
+  <ChapterLink num="3" href="03-first-scheduler/">CPU 归谁:从就绪位图到中断唤醒</ChapterLink>
 </ChapterNav>
 
-后续的站点(调度器、同步原语、内核服务、demo 与 CI、真正的开发板性能、第二块板与发布)会陆续上线,咱们写完一站发一站,您可以从已发布的部分跟起。
+后续的站点(同步原语、内核服务、demo 与 CI、真正的开发板性能、第二块板与发布)会陆续上线,咱们写完一站发一站,您可以从已发布的部分跟起。
