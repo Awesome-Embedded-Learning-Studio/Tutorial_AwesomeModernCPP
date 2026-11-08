@@ -16,7 +16,7 @@ cpp_standard: [23]
 
 # CPU 归谁:从就绪位图到中断唤醒
 
-> 咱们写完一篇发一篇,到今天已经上线两篇了。
+> 咱们写完一篇发一篇,到今天已经上线三篇了。
 
 ## 概述
 
@@ -27,6 +27,7 @@ cpp_standard: [23]
 <ChapterNav variant="sub">
   <ChapterLink href="01-ready-bitmap-pick-next">谁最急,谁上场:就绪位图、任务三态与选人仲裁</ChapterLink>
   <ChapterLink href="02-pendsv-first-switch">在栈顶伪造出生证明:PendSV、SVC 与第一次切换</ChapterLink>
+  <ChapterLink href="03-lost-wakeup-and-typestate">睡死那个 bug:丢唤醒、park_for 与让错误用法编不过的建造者链</ChapterLink>
 </ChapterNav>
 
-调度器能切了,手搓 task_sleep 会遇上的丢唤醒竞态,和中断把睡着的任务叫醒的第一条链路,还在后面的篇目里等着咱们,咱们写好一篇就挂一篇。
+调度器能切了,丢唤醒的竞态咱们也当面复现过、修掉了,还剩中断把睡着的任务叫醒的第一条链路,它在收尾的篇目里等着您,咱们写好一篇就挂一篇。
