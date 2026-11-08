@@ -308,7 +308,7 @@ struct TimerQueue {
 
 咱们的验收 checkpoint 定在 4f12867,您往下读到验收节,就知道它是怎么凑齐的。
 
-## Kernel<Driver>:一套模板,两个世界
+## Kernel\<Driver\>:一套模板,两个世界
 
 4f12867 在同一天上午 10:10 交了上来,subject 写的是 “feat: clock subsys finished”,时间子系统就在这个 commit 里成了形。咱们要看的主件是 `include/ZerOS/kernel/clock/kernel.hpp` 的 `Kernel<Driver>` 模板,咱们从合同看到实现。
 
