@@ -1,6 +1,6 @@
 ---
 title: "一秒钟的定义权:tick、回绕算术与到期队列"
-description: "咱们在 host 上做一个 constinit 的常量初始化实验,GCC 与 clang 给出不同答案,这个实验往后搬板那一站会长成完整的一篇;这一篇写时间子系统:Ticks 值类型用带符号差值让 uint32 回绕后照样比早晚,SelfList 侵入式链表按截止时间排序、同期限 FIFO,Kernel<Driver> 模板配 BASEPRI 嵌套临界区,同一份代码在 host mock 与 Blue Pill 上各跑一遍;坦白 54817f3 那站 host 测试因缺 self_list.hpp 编不过,checkout 4f12867 后 340 行时间测试全部通过,Renode 里周期 ticker 仿真时间每秒打印一行"
+description: "这一篇写时间子系统:Ticks 值类型用带符号差值让 uint32 回绕后照样比早晚,SelfList 侵入式链表按截止时间排序、同期限 FIFO,Kernel<Driver> 模板配 BASEPRI 嵌套临界区,同一份代码在 host mock 与 Blue Pill 上各跑一遍;坦白 54817f3 那站 host 测试因缺 self_list.hpp 编不过,checkout 4f12867 后 340 行时间测试全部通过,Renode 里周期 ticker 仿真时间每秒打印一行"
 chapter: 2
 order: 1
 tags:
@@ -21,41 +21,9 @@ related:
 
 # 一秒钟的定义权:tick、回绕算术与到期队列
 
+内存的悬念上一站就收了尾:咱们给 `buffer_` 补了一对花括号,`constinit` 的悬念也就随之放行了,实验的全文留在了上一站的收尾里。从本站起咱们进入正题。内存管的是“东西放在哪”,内核接下来要回答的是“什么时候做”。这一篇咱们把时间子系统的两块地基立起来:一块是 tick,咱们把“一秒”的定义权收进一个值类型里。另一块就是咱们的到期队列,咱们让一批截止时间排好了队,回绕了也不乱。
+
 内存有了,内核的下一个真实职责是时间。不过动笔谈时间之前,咱们在手边做一个小实验,它牵着内存栈收尾的一个尾巴,咱们把它做完了再进入正题,因为实验里那个问题正好由这篇要交的代码给出答案。
-
-## 一对方括号的实验:constinit 为什么编不过
-
-咱们来复现一个现象。上一篇的内存栈里,`BitmapPool` 的存储数组 `buffer_` 一直没带初始化,咱们在 host 上试着给一个全局的池对象挂 `constinit`,GCC 16.2.1 给了咱们一个红字:
-
-```cpp
-#include "ZerOS/kernel/mem/bitmap_allocate.hpp"
-
-constinit ZerOS::memory::BitmapPool<64, 8, true> pool;   // GCC 在这一行报错
-
-int main() { return 0; }
-```
-
-咱们跑一遍,报错是这样的:
-
-```text
-error: variable does not have a constant initializer
-note: '... BitmapPool() ' is not a constant expression because it refers
-      to an incompletely initialized variable
-```
-
-报错最后一行把因果说全了:`constinit` 要求变量走常量初始化,咱们那个显式标了 `constexpr` 的默认构造,碰上没初始化的 `buffer_` 就调不出常量表达式,因为常量求值容不下一个值不定的字节。修法其实只要一对花括号,咱们把 `bitmap_allocate.hpp` 里的数组声明改成下面这样,clang-format 之外就动了一个字符:
-
-```diff
-     // Buffer Locations here, as it request all baasic
--    ALL_ALIGNED std::byte buffer_[BUFFER_SIZE];
-+    ALL_ALIGNED std::byte buffer_[BUFFER_SIZE]{};
-```
-
-咱们补上 `{}` 之后,数组有了全零的默认成员初始化,常量求值走得通了,`constinit` 也随即放行了,咱们实测通过。还有一点照实说:clang 对改动前的写法是放行的,倒是 GCC 才把它拦下来,所以这个现象只在 GCC 系工具链上现形,咱们板子用的 arm-none-eabi-g++ 恰好就是这一系。
-
-实验到这里可以收场了。零初始化的内容直接落进 `.bss`,不占 flash 的空间,咱们等于给后面所有内核全局对象定了调,system_time 和调度队列往后都照 `constinit` 的路子出生。这个实验在往后的搬板一站里还会被完整展开,因为 `-nostdlib` 的板子上它还有另一副面孔,咱们到那时接着算。
-
-旧问题收掉了,咱们进入正题。内存管的是“东西放在哪”,内核接下来要回答的是“什么时候做”。这一篇咱们把时间子系统的两块地基立起来:一块是 tick,咱们把“一秒”的定义权收进一个值类型里。另一块就是咱们的到期队列,咱们让一批截止时间排好了队,回绕了也不乱。
 
 ## Ticks:把一秒钟装进一个类型
 
@@ -596,7 +564,7 @@ constexpr auto on_tick = +[](ZerOS::base::BorrowedPtr<ZerOS::clock::TimeWaiter> 
 constinit ZerOS::clock::TimeWaiter ticker{ZerOS::clock::Ticks{0}, on_tick};
 ```
 
-这就是前面埋的两处伏笔合体:一元 `+` 把无捕获 lambda 褪成一个裸函数指针,正好塞进了 `OnTimeAction` 那个函数指针槽,堆是没有的,也不见 `std::function` 的影子。`call_after_span(w, 1000)` 里那个 `w` 就是回调收到的自己,咱们拿着它再排下一个 1000 拍,周期定时器就这样自转起来了,内核里并没有专门的周期定时器类型。`ticker` 本身是 `constinit` 的,编译期就各就各位了,咱们在实验里定下的纪律在这里用到了时间对象上。
+这就是前面埋的两处伏笔合体:一元 `+` 把无捕获 lambda 褪成一个裸函数指针,正好塞进了 `OnTimeAction` 那个函数指针槽,堆是没有的,也不见 `std::function` 的影子。`call_after_span(w, 1000)` 里那个 `w` 就是回调收到的自己,咱们拿着它再排下一个 1000 拍,周期定时器就这样自转起来了,内核里并没有专门的周期定时器类型。`ticker` 本身是 `constinit` 的,编译期就各就各位了,上一站实验里定下的纪律在这里用到了时间对象上。
 
 初始化和 ISR 的代码各是一行,咱们打开 `src/arch/arm_cortex_m3/time_kernel_cm3.cpp`:
 
@@ -655,7 +623,7 @@ All tests passed (27 assertions in 10 test cases)     # test_time_kernel,187 行
     752	     16	     28	    796	    31c
 ```
 
-时间内核连同 demo 全须全尾地住进去了,flash 才用掉了 768 字节,RAM 占的也只有 44 字节,运行期的状态大多在 bss 那 28 字节里,因为内核的全局对象是 `constinit`,零初始化的东西不占 flash,咱们在实验里说的那笔开销直觉在这里有了数字。
+时间内核连同 demo 全须全尾地住进去了,flash 才用掉了 768 字节,RAM 占的也只有 44 字节,运行期的状态大多在 bss 那 28 字节里,因为内核的全局对象是 `constinit`,零初始化的东西不占 flash,上一站实验里咱们说过的那笔开销直觉,在这里有了数字。
 
 然后咱们再上 Renode,咱们把仿真跑上 6 秒,串口窗的输出如下:
 
