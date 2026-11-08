@@ -45,6 +45,7 @@ git submodule update --init
   <ChapterLink num="6" href="06-fairness-and-closure/">公平与收束:时间片、事件组与直接通知</ChapterLink>
   <ChapterLink num="7" href="07-api-and-ci/">收口与门禁:demo 注册中心与 CI</ChapterLink>
   <ChapterLink num="8" href="08-performance-on-silicon/">真硅秒表:切换到底多贵</ChapterLink>
+  <ChapterLink num="9" href="09-second-board-and-release/">第二块板与出门:QEMU、tickless、v0.1.0</ChapterLink>
 </ChapterNav>
 
-后续的站点(第二块板与发布)会陆续上线,咱们写完一站发一站,您可以从已发布的部分跟起。
+十个站点全部上线了,咱们从超级循环一路写到了挂牌出门,您可以从头跟起,也可以挑自己感兴趣的站看起来。
