@@ -42,6 +42,7 @@ git submodule update --init
   <ChapterLink num="3" href="03-first-scheduler/">CPU 归谁:从就绪位图到中断唤醒</ChapterLink>
   <ChapterLink num="4" href="04-sync-and-inheritance/">正确的等待:计数信号量与优先级继承</ChapterLink>
   <ChapterLink num="5" href="05-context-economics/">谁的上下文:遗言、底半与定时器</ChapterLink>
+  <ChapterLink num="6" href="06-fairness-and-closure/">公平与收束:时间片、事件组与直接通知</ChapterLink>
 </ChapterNav>
 
 后续的站点(demo 与 CI、真正的开发板性能、第二块板与发布)会陆续上线,咱们写完一站发一站,您可以从已发布的部分跟起。
