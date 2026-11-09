@@ -18,8 +18,8 @@ prerequisites:
 related:
   - "芯片死前立遗嘱:HardFault 现场、栈金丝雀与零分配日志"
 current_status:
-  title: ZerOS的篇章正在打磨ing
-  detail: CI 冒烟与体积闸门 · 等你验收
+  title: 四道检查立起来了
+  detail: ZerOS的篇章正在打磨ing
   variant: polishing
   icon: 🚦
 ---

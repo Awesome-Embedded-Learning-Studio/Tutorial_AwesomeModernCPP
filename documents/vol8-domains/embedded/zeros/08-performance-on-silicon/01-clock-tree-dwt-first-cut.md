@@ -19,8 +19,8 @@ related:
   - "在栈顶伪造出生证明:PendSV、SVC 与第一次切换"
   - "教科书输给预取缓冲器:.ramfunc 反转与一本诚实的实验册"
 current_status:
-  title: ZerOS的篇章正在打磨ing
-  detail: 时钟树与第一刀切换 · 等你验收
+  title: 秒表装进硅片
+  detail: ZerOS的篇章正在打磨ing
   variant: polishing
   icon: ⏱
 ---

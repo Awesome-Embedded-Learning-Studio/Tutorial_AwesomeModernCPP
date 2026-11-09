@@ -19,8 +19,8 @@ prerequisites:
 related:
   - "看 M 闭嘴那三秒:互斥锁、优先级继承与所有权移交"
 current_status:
-  title: ZerOS的篇章正在打磨ing
-  detail: 计数信号量与接缝 · 等你验收
+  title: 事件不再丢包
+  detail: ZerOS的篇章正在打磨ing
   variant: polishing
   icon: 🎟
 ---

@@ -18,8 +18,8 @@ prerequisites:
 related:
   - "在栈顶伪造出生证明:PendSV、SVC 与第一次切换"
 current_status:
-  title: ZerOS的篇章正在打磨ing
-  detail: 就绪位图仲裁 · 等你验收
+  title: CPU 归谁有了答案
+  detail: ZerOS的篇章正在打磨ing
   variant: polishing
   icon: 👑
 ---

@@ -18,8 +18,8 @@ prerequisites:
 related:
   - "没有堆的世界:先把内存发对"
 current_status:
-  title: ZerOS的篇章正在打磨ing
-  detail: Ticks 值类型 · 四道走查全绿 · 等你验收
+  title: 一秒钟有了户籍
+  detail: ZerOS的篇章正在打磨ing
   variant: polishing
   icon: ⏱
 ---

@@ -19,8 +19,8 @@ prerequisites:
 related:
   - "睡死那个 bug:丢唤醒、park_for 与让错误用法编不过的建造者链"
 current_status:
-  title: ZerOS的篇章正在打磨ing
-  detail: ThisTask 与唤醒链路 · 等你验收
+  title: 中断学会敲门了
+  detail: ZerOS的篇章正在打磨ing
   variant: polishing
   icon: 🔔
 ---

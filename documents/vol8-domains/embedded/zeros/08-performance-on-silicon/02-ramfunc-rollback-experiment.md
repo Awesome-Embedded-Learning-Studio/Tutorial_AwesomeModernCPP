@@ -17,8 +17,8 @@ prerequisites:
 related:
   - "拔掉心跳做实验:NO_TICK、僵尸任务与以 patch 随库的探针"
 current_status:
-  title: ZerOS的篇章正在打磨ing
-  detail: .ramfunc 反转 · 等你验收
+  title: 教科书被实验册反驳
+  detail: ZerOS的篇章正在打磨ing
   variant: polishing
   icon: 📚
 ---

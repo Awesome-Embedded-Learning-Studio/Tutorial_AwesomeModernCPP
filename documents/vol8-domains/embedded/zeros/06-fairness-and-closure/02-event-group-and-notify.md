@@ -20,8 +20,8 @@ related:
   - "数到十就换人:同级时间片与不继承的切片债"
   - "芯片死前立遗嘱:HardFault 现场、栈金丝雀与零分配日志"
 current_status:
-  title: ZerOS的篇章正在打磨ing
-  detail: 事件组与直接通知 · 等你验收
+  title: 各自重查真相
+  detail: ZerOS的篇章正在打磨ing
   variant: polishing
   icon: 📣
 ---

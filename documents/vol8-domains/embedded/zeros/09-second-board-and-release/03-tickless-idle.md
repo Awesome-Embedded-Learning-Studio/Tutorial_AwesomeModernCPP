@@ -19,8 +19,8 @@ prerequisites:
 related:
   - "把栈刷满魔法数:金丝雀涂满全栈,栈深按证据定"
 current_status:
-  title: ZerOS的篇章正在打磨ing
-  detail: tickless · 等你验收
+  title: 心跳学会打盹
+  detail: ZerOS的篇章正在打磨ing
   variant: polishing
   icon: 🌙
 ---

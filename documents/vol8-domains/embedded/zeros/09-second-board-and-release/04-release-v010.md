@@ -17,8 +17,8 @@ prerequisites:
 related:
   - "跑五秒,说出你的台词:CI 冒烟、include 防火墙与体积闸门"
 current_status:
-  title: ZerOS的篇章正在打磨ing
-  detail: 全链路终验 · 等你验收
+  title: v0.1.0 挂牌出门
+  detail: ZerOS的篇章正在打磨ing
   variant: polishing
   icon: 🎉
 ---

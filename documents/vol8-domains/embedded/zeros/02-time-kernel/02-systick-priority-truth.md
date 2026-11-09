@@ -17,8 +17,8 @@ prerequisites:
 related:
   - "一秒钟的定义权:tick、回绕算术与到期队列"
 current_status:
-  title: ZerOS的篇章正在打磨ing
-  detail: core_cm3.h 的 0xF0 之谜已破 · 等你验收
+  title: 当庭对质获胜
+  detail: ZerOS的篇章正在打磨ing
   variant: polishing
   icon: 🔍
 ---

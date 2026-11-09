@@ -18,8 +18,8 @@ related:
   - "叫醒所有人,各自重查真相:事件组、直接通知与满环背压"
   - "芯片死前立遗嘱:HardFault 现场、栈金丝雀与零分配日志"
 current_status:
-  title: ZerOS的篇章正在打磨ing
-  detail: 栈水印 · 等你验收
+  title: 栈深有据可查
+  detail: ZerOS的篇章正在打磨ing
   variant: polishing
   icon: 📏
 ---

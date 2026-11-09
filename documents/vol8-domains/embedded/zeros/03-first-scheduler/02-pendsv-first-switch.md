@@ -19,8 +19,8 @@ prerequisites:
 related:
   - "CPU 归谁:从就绪位图到中断唤醒"
 current_status:
-  title: ZerOS的篇章正在打磨ing
-  detail: PendSV 首切 · 等你验收
+  title: 出生证明伪造指南
+  detail: ZerOS的篇章正在打磨ing
   variant: polishing
   icon: 🪄
 ---

@@ -19,8 +19,8 @@ prerequisites:
 related:
   - "CPU 归谁:从就绪位图到中断唤醒"
 current_status:
-  title: ZerOS的篇章正在打磨ing
-  detail: park_for 与类型状态 · 等你验收
+  title: 睡死 bug 已法办
+  detail: ZerOS的篇章正在打磨ing
   variant: polishing
   icon: 💤
 ---

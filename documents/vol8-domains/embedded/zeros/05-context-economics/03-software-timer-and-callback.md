@@ -20,8 +20,8 @@ related:
   - "芯片死前立遗嘱:HardFault 现场、栈金丝雀与零分配日志"
   - "中断只递条子:环形队列、工作者线程与底半推迟"
 current_status:
-  title: ZerOS的篇章正在打磨ing
-  detail: 软件定时器 · 等你验收
+  title: 三百毫秒不用养任务
+  detail: ZerOS的篇章正在打磨ing
   variant: polishing
   icon: ⏰
 ---

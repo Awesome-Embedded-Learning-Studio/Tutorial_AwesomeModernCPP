@@ -21,8 +21,8 @@ related:
   - "数到十就换人:同级时间片与不继承的切片债"
   - "跑五秒,说出你的台词:CI 冒烟、include 防火墙与体积闸门"
 current_status:
-  title: ZerOS的篇章正在打磨ing
-  detail: demo 注册中心 · 等你验收
+  title: 八间屋分家完成
+  detail: ZerOS的篇章正在打磨ing
   variant: polishing
   icon: 🏠
 ---

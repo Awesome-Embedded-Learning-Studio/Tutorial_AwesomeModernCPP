@@ -19,8 +19,8 @@ prerequisites:
 related:
   - "事件来得再早也不许丢:计数信号量与八操作的 SystemContext 接缝"
 current_status:
-  title: ZerOS的篇章正在打磨ing
-  detail: 优先级继承 · 等你验收
+  title: M 闭嘴三秒演出成功
+  detail: ZerOS的篇章正在打磨ing
   variant: polishing
   icon: 🎭
 ---
