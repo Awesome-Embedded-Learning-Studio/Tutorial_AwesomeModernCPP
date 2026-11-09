@@ -13,11 +13,11 @@ cpp_standard: [23]
 
 # 手搓 ZerOS:按 commit 时序,从裸机到 RTOS
 
-之前的 F103 教程走下来,您已经能在 libestdx 之上把裸机应用写得很顺手,`third_party` 里还挂着一个 ZerOS 当现成依赖用。这条线要做的事,就是把这份依赖的内部亲手实现一遍:ZerOS 是一个 C++23 裸机 RTOS,无堆、无 RTTI、无异常、无 C ABI,真机就是您手边那块 Blue Pill(STM32F103C8T6)。
+之前的 F103 教程走下来,您已经能在 libestdx 之上把裸机应用写得很顺手,`third_party` 里还挂着一个 ZerOS 当现成的依赖用。咱们要做的,就是把它的内部亲手实现一遍。ZerOS 是一个 C++23 的裸机 RTOS,它把堆、RTTI、异常与 C ABI 都关在了门外。真正的开发板,就是您手边的 Blue Pill(STM32F103C8T6)。
 
-教程不另写一份教学版代码,而是沿着仓库真实的 26 个 commit 讲:每一篇锚定一个或几个状态,您在自己的目录里把代码亲手复现出来,写出来的文件和参考答案一字不差;仓库降级成参考答案,卡住了或想对 diff,随时 checkout 对应状态翻看。同一份内核代码在四个环境验证——host 桌面单测、Renode 仿真、QEMU mps2-an385、真机,每一篇都在其中至少一个环境里验收,Renode 串口窗是全程的主要验收手段。
+咱们不另写一份教学版代码,而是沿着仓库真实的 26 个 commit 讲。而每一篇锚定一个或几个状态,您在自己的目录里把代码亲手复现出来,写出来的文件和参考答案一字不差。仓库降级成了参考答案,您卡住了或想对 diff,随时 checkout 对应的状态翻看。同一份内核代码咱们在 host 桌面单测、Renode 仿真、QEMU mps2-an385 与真正的开发板四个环境里验证,而每一篇都在其中至少一个环境里验收,Renode 的串口窗是全程主要的验收手段。
 
-路线按 commit 时序推进:咱们先把仓库跑起来(工程搭建、无堆内存、时间与临界区),然后是调度器与第一次上下文切换,接着是同步原语与内核服务(信号量、互斥锁、队列、定时器、事件组),最后是性能实测、第二块板和 v0.1.0 发布。内容写完一站发一站,没写的站点不挂链接。
+咱们的路线按 commit 时序推进:咱们把仓库跑起来(工程搭建、无堆内存、时间与临界区),然后走调度器与第一次的上下文切换,再进同步原语与内核服务的部分(信号量、互斥锁、队列、定时器、事件组),最后做性能实测、第二块板和 v0.1.0 的发布。咱们的内容写完一站就发一站,没写的站点不挂链接。
 
 ## 跟读姿势
 
@@ -29,15 +29,23 @@ git submodule update --init
 # git checkout fe5a0e8
 ```
 
-有些事得提前说清,免得您半路怀疑是自己 clone 坏了。其一,个别中间 commit 在 host 上编不过——先交接口、后交实现是真实节奏,对应文章会写明 checkout 到哪个 commit 才能跑绿,甚至有补两个空函数的练习。其二,性能那一站要上真芯片(Blue Pill + ST-Link/OpenOCD);没有板子,host、Renode、QEMU 三个环境足够跟完整条线,真机相关的数字文中会标注只在真芯片上验证过。
+有些事咱们得提前说清,免得您半路怀疑是自己 clone 坏了。个别中间 commit 在 host 上是编不过的,因为接口在前、实现在后是真实的节奏,对应的文章会写明 checkout 到哪个 commit 才能跑绿,甚至有补两个空函数的练习留给您。性能的倒数第二站要上真芯片(Blue Pill + ST-Link/OpenOCD),不过 host、Renode、QEMU 三个环境足够您跟完整条线,而真芯片上的数字,咱们会在文中标注它们只在真芯片上验证过。
 
-您跟过前面 F103 教程的起步篇,再来这条线最顺,工具链、Renode、交叉构建都是旧识,相关文章只讲 ZerOS 的不同处;没跟过也能进,把起步篇当参考随用随查。
+您跟过前面 F103 教程的起步篇,进咱们的手搓线就会最顺,工具链、Renode、交叉构建都是您的旧识,相关的文章只讲 ZerOS 的不同处。没跟过的也能进,把起步篇当成随用随查的参考。
 
 ## 站点导航
 
 <ChapterNav>
   <ChapterLink num="0" href="00-why-rtos/">为什么是 RTOS:从超级循环到 ZerOS</ChapterLink>
   <ChapterLink num="1" href="01-heapless-memory/">没有堆的世界:先把内存发对</ChapterLink>
+  <ChapterLink num="2" href="02-time-kernel/">给内核一秒钟:时间与临界区</ChapterLink>
+  <ChapterLink num="3" href="03-first-scheduler/">CPU 归谁:从就绪位图到中断唤醒</ChapterLink>
+  <ChapterLink num="4" href="04-sync-and-inheritance/">正确的等待:计数信号量与优先级继承</ChapterLink>
+  <ChapterLink num="5" href="05-context-economics/">谁的上下文:遗言、底半与定时器</ChapterLink>
+  <ChapterLink num="6" href="06-fairness-and-closure/">公平与收束:时间片、事件组与直接通知</ChapterLink>
+  <ChapterLink num="7" href="07-api-and-ci/">收口与门禁:demo 注册中心与 CI</ChapterLink>
+  <ChapterLink num="8" href="08-performance-on-silicon/">真硅秒表:切换到底多贵</ChapterLink>
+  <ChapterLink num="9" href="09-second-board-and-release/">第二块板与出门:QEMU、tickless、v0.1.0</ChapterLink>
 </ChapterNav>
 
-后续站点(时间与临界区、调度器、同步原语、内核服务、demo 与 CI、真机性能、第二块板与发布)陆续上线,您可以先从已发布的部分跟起。
+十个站点全部上线了,咱们从超级循环一路写到了挂牌出门,您可以从头跟起,也可以挑自己感兴趣的站看起来。

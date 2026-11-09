@@ -497,6 +497,38 @@ All tests passed (102 assertions in 11 test cases)
 
 体积上的直觉也提前给您:这套内存栈编译进固件,额外开销趋近于零——位图全零默认态落 `.bss`,池的构造是 `constexpr`,这些数字下一篇上了板子您亲眼验。
 
+## 一对方括号的实验:constinit 为什么编不过
+
+咱们来复现一个现象。上一篇的内存栈里,`BitmapPool` 的存储数组 `buffer_` 一直没带初始化,咱们在 host 上试着给一个全局的池对象挂 `constinit`,GCC 16.2.1 给了咱们一个红字:
+
+```cpp
+#include "ZerOS/kernel/mem/bitmap_allocate.hpp"
+
+constinit ZerOS::memory::BitmapPool<64, 8, true> pool;   // GCC 在这一行报错
+
+int main() { return 0; }
+```
+
+咱们跑一遍,报错是这样的:
+
+```text
+error: variable does not have a constant initializer
+note: '... BitmapPool() ' is not a constant expression because it refers
+      to an incompletely initialized variable
+```
+
+报错最后一行把因果说全了:`constinit` 要求变量走常量初始化,咱们那个显式标了 `constexpr` 的默认构造,碰上没初始化的 `buffer_` 就调不出常量表达式,因为常量求值容不下一个值不定的字节。修法其实只要一对花括号,咱们把 `bitmap_allocate.hpp` 里的数组声明改成下面这样,clang-format 之外就动了一个字符:
+
+```diff
+     // Buffer Locations here, as it request all baasic
+-    ALL_ALIGNED std::byte buffer_[BUFFER_SIZE];
++    ALL_ALIGNED std::byte buffer_[BUFFER_SIZE]{};
+```
+
+咱们补上 `{}` 之后,数组有了全零的默认成员初始化,常量求值走得通了,`constinit` 也随即放行了,咱们实测通过。还有一点照实说:clang 对改动前的写法是放行的,倒是 GCC 才把它拦下来,所以这个现象只在 GCC 系工具链上现形,咱们板子用的 arm-none-eabi-g++ 恰好就是这一系。
+
+实验到这里可以收场了。零初始化的内容直接落进 `.bss`,不占 flash 的空间,刚才体积直觉里说的那一笔,根子就在这里。往后所有内核全局对象都照 `constinit` 的路子出生,system_time 和调度队列也不例外。这个实验在往后的搬板一站里还会被完整展开,因为 `-nostdlib` 的板子上它还有另一副面孔,咱们到那时接着算。
+
 ## 下一篇
 
 host 上写稳了,下一篇把这整套内存栈搬上 `-nostdlib` 的板子。会撞墙,一撞就是三面:`memset` 会突然失踪(链接器报 undefined reference,行号精确到毒化那一行)、全局构造没人埋单(`.init_array` 从此立法禁止)、函数局部 `static` 拖家带口的 `__cxa_guard_*` 也没了着落。一面一面撞过去,撞完您手里的池子就真的在 Blue Pill 上活了。参考答案照旧在仓库里,`b4a5daf`。

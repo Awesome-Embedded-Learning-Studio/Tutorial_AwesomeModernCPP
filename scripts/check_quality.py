@@ -120,6 +120,33 @@ def extract_links(content: str) -> List[Tuple[int, str, str]]:
     return links
 
 
+def extract_images(content: str) -> List[Tuple[int, str, str]]:
+    """Extract (line_number, alt, url) from markdown images, skipping code.
+
+    Quoted markdown is text, not markup: an article that shows a README's
+    ``![banner](documents/assets/banner.svg)`` line inside inline code is
+    describing that line, not embedding the image, so the path must not be
+    resolved against this repo.
+    """
+    images = []
+    in_code_block = False
+    pattern = r'!\[([^\]]*)\]\(([^)]+)\)'
+
+    for line_num, line in enumerate(content.split('\n'), 1):
+        stripped = line.strip()
+        if stripped.startswith('```') or stripped.startswith('~~~'):
+            in_code_block = not in_code_block
+            continue
+        if in_code_block:
+            continue
+
+        cleaned = re.sub(r'``.*?``|`[^`]*`', '', line)
+        for m in re.finditer(pattern, cleaned):
+            images.append((line_num, m.group(1), m.group(2)))
+
+    return images
+
+
 def extract_html_asset_refs(content: str) -> List[Tuple[int, str, str]]:
     """Extract (line_number, tag, src) from HTML media tags, skipping code blocks.
 
@@ -337,19 +364,15 @@ class TagConsistencyChecker(QualityChecker):
 class ImageReferenceChecker(QualityChecker):
     """Check image references exist, have valid format, and reasonable size."""
 
-    IMG_RE = re.compile(r'!\[([^\]]*)\]\(([^)]+)\)')
-
     def __init__(self, root: Path):
         self.root = root
 
     def check(self, filepath: Path, content: str,
               frontmatter: Dict, report: Report) -> None:
-        for m in self.IMG_RE.finditer(content):
-            alt, url = m.group(1), m.group(2)
+        for line, alt, url in extract_images(content):
             if url.startswith(('http://', 'https://')):
                 continue
 
-            line = content[:m.start()].count('\n') + 1
             normalized = normalize_link(url, filepath, self.root)
             if not normalized:
                 continue
