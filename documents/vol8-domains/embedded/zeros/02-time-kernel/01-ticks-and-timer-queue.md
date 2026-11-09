@@ -17,22 +17,19 @@ prerequisites:
   - "没有堆的世界·第 4 篇:Make/Destroy:类型化的出生入死与编译期防线"
 related:
   - "没有堆的世界:先把内存发对"
-current_status:
-  title: 一秒钟有了户籍
-  detail: ZerOS的篇章正在打磨ing
-  variant: polishing
-  icon: ⏱
 ---
 
 # 一秒钟的定义权:tick、回绕算术与到期队列
 
-内存的悬念上一站就收了尾:咱们给 `buffer_` 补了一对花括号,`constinit` 的悬念也就随之放行了,实验的全文留在了上一站的收尾里。从本站起咱们进入正题。内存管的是“东西放在哪”,内核接下来要回答的是“什么时候做”。这一篇咱们把时间子系统的两块地基立起来:一块是 tick,咱们把“一秒”的定义权收进一个值类型里。另一块就是咱们的到期队列,咱们让一批截止时间排好了队,回绕了也不乱。
-
-内存有了,内核的下一个真实职责是时间。不过动笔谈时间之前,咱们在手边做一个小实验,它牵着内存栈收尾的一个尾巴,咱们把它做完了再进入正题,因为实验里那个问题正好由这篇要交的代码给出答案。
+咱们下一步其实要整的是时间。咱们想想，RTOS的调度器肯定会问一下：嘿我的硬件朋友，你跟我说说，现在到没到用我的人设定的**200ms的时间**的时候，你不能哑口无言。对吧。所以内存有了,内核的下一个真实职责是时间。不过动笔谈时间之前,咱们在手边做一个小实验,它牵着内存栈收尾的一个尾巴,咱们把它做完了再进入正题,因为实验里那个问题正好由这篇要交的代码给出答案。
 
 ## Ticks:把一秒钟装进一个类型
 
-咱们要立的新类型叫 Ticks,它的新家是 `include/ZerOS/kernel/clock/ticks.hpp`,整个文件的行数是 33 行,咱们把它拆成三段,一段一段地过。不过在进文件之前,有三个问题是得立在前面的,它们就是这个类型存在的理由。头一个问题:一秒钟在芯片上是什么?芯片上是没有钟表的,定时器硬件会做的事只有数拍子一件,咱们给时钟配一个节拍,数出来的每一个 tick 就是一段定死的时长,所以咱们嘴里的“一秒”,数到底是一千拍的约定,数拍子的活,归咱们的新类型 Ticks 管。第二个问题:裸的 `uint32_t` 会在哪儿出事?它的毛病是不记自己的身份,装的是时刻还是一段跨度,从数值上是看不出来的,用的人只能靠注释跟人脑来记。
+咱们要立的新类型叫 Ticks,它的新家是 `include/ZerOS/kernel/clock/ticks.hpp`,整个文件的行数是 33 行,咱们把它拆成三段,一段一段地过。不过在进文件之前,有三个问题是得立在前面的,它们就是这个类型存在的理由。
+
+头一个问题:一秒钟在芯片上是什么?芯片上是没有钟表的,定时器硬件会做的事只有数拍子一件,咱们给时钟配一个节拍,数出来的每一个 tick 就是一段定死的时长,所以咱们嘴里的“一秒”,数到底是一千拍的约定,数拍子的活,归咱们的新类型 Ticks 管。
+
+第二个问题:裸的 `uint32_t` 会在哪儿出事?它的毛病是**不记自己的身份**,装的是时刻还是一段跨度,从数值上是看不出来的,用的人只能靠注释跟人脑来记。
 
 第三个问题:为什么这个错一到回绕就变成难查的病?数拍子的计数器是 32 位的,数到顶了就会归零,所以回绕这件事躲不掉,回绕之后谁早谁晚的判断要怎么才靠得住,这就是咱们交给 `is_after` 的题,这道题的答案,咱们放到回绕那一段里细讲。三个问题立住了,咱们进文件,头一段是类型的外壳,咱们连同头注释一起看:
 
@@ -207,7 +204,7 @@ inline constexpr void Check(bool ShouldBeTrue, [[maybe_unused]] const char* msg,
 
 到期记录的容器是 `SelfList`,一个带策略比较器的侵入式链表。这个头文件身上的插曲,咱们放在这里讲,因为它直接决定了咱们的验收怎么算。
 
-咱们看接口(摘录,完整的在 4f12867 的 `include/ZerOS/base/self_list.hpp`):
+咱们看接口：
 
 ```cpp
 template <typename Stuff> struct SelfNode {
@@ -284,22 +281,6 @@ struct TimerQueue {
 ```
 
 `pop_due` 定下的做法是只从队头出队:队头的截止时刻到了咱们才弹,没到的时候交回的是空指针。因为链表是有序的,咱们判断一个就够,全队是不用扫的。
-
-## 一段要坦白的事:54817f3 编不过
-
-上面这套 `SelfList` 是咱们从 4f12867 引的。可是到了 54817f3 那个 commit,`clock.hpp` 和 `test_self_list.cpp` 都 include 了 `base/self_list.hpp`,咱们拿 `git ls-tree` 去那个 commit 的树里查过,`include/ZerOS/base/` 底下是找不到这个文件的。
-
-后果是实打实的,咱们 checkout 54817f3 现场跑了一遍 host 测试构建,卡在了这里:
-
-```text
-/tmp/zeros-t548/test/test_self_list.cpp:6:10: fatal error:
-    ZerOS/base/self_list.hpp: No such file or directory
-    6 | #include "ZerOS/base/self_list.hpp"
-```
-
-`test/CMakeLists.txt` 里 `zeros_add_test(test_self_list)` 已经挂上了,148 行的测试文件也交了,实现倒是得等下一个 commit 来补,咱们拿到手的就是这样的半成品。接口和测试交在前头、实现跟在后面的做法,是真实的开发节奏,提交者自己也没掩饰的打算:接口定了下来,测试写好了当作规格书,实现紧跟着就补上了。所以您要是 checkout 到 54817f3 就跑 `-DZEROS_BUILD_TESTS=ON`,编不过是预期内的现象,和您 clone 得对不对没有关系。
-
-咱们的验收 checkpoint 定在 4f12867,您往下读到验收节,就知道它是怎么凑齐的。
 
 ## Kernel\<Driver\>:一套模板,两个世界
 
@@ -590,34 +571,7 @@ extern "C" void SysTick_Handler() {
 
 板级 CMake 同步动了,`src/arch/arm_cortex_m3/time_kernel_cm3.cpp` 进了固件目标的源文件列表,咱们在 `src/board/stm32f103_bluepill/CMakeLists.txt` 里能对上。
 
-## 验收
-
-验收分的是两头,咱们从 host 端做起,做完了再到真正的开发板上跑。
-
-host 这边咱们 checkout 到 4f12867,命令用的还是上面的三条:
-
-```shell
-cmake -B build-host -DZEROS_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
-cmake --build build-host
-ctest --test-dir build-host --output-on-failure
-```
-
-笔者本机 GCC 16.2.1 的真实输出,六个目标是全部通过的:
-
-```text
-100% tests passed out of 6
-
-Total Test time (real) =   0.16 sec
-```
-
-咱们再看两个时间测试的成绩单:
-
-```text
-All tests passed (32 assertions in 8 test cases)      # test_timequeue,153 行
-All tests passed (27 assertions in 10 test cases)     # test_time_kernel,187 行
-```
-
-咱们把两个数加一下,153 加 187 得到的正是 340 行,18 个用例、59 条断言这样的成绩是全部通过的。用例是死的,您跑出来应该一字不差。
+## 试试看效果？
 
 板上这边咱们交叉编译固件:
 
@@ -643,9 +597,3 @@ All tests passed (27 assertions in 10 test cases)     # test_time_kernel,187 行
 ```
 
 您看 virt 那一栏,仿真时间每走满了一秒就打一行 tick,咱们要的验收就是这个节奏。照实说一句吧:我本机的 Renode 1.17.0 不认 `bluepill.repl` 里的 `I2C.STM32F4_I2C` 这个外设类型,挂在 i2c1、i2c2 两个节点上的 `EventInterrupt`、`ErrorInterrupt` 连线也跟着它一起报错,咱们把两个 i2c 节点整块注释掉,仿真就起来了。exti、gpio 的连线我这版没有动,它们是报不出错的。demo 的 SysTick 和 UART1 都不经过 i2c,行为是不受影响的。您要是也在这个版本上遇到同样的报错,照同样的办法注释掉两个 i2c 节点就行。
-
-到了这里,咱们把验收凑齐了:54817f3 交的是骨架,4f12867 补的是实现,host 的 340 行时间测试全部通过,板上的 ticker 一秒一行。
-
-## 下一篇
-
-时间内核跑通了,但是有一根刺没拔:`init_time` 里那行 `NVIC_SetPriority(SysTick_IRQn, 0xF0)`,注释写的是 Lowest Level,注释说的是真话吗?下一篇咱们把 CMSIS 从 arch 层清出去,SysTick 的三寄存器改成直写,拿仓库自带的 `core_cm3.h` 当庭对质,移位算完您会发现这行注释骗了咱们多久,还有 BASEPRI 临界区这几个月到底防住了谁。参考答案在 `e63067e` 等着咱们,咱们那儿见。
