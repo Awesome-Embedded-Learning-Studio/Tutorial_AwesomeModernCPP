@@ -33,8 +33,9 @@ withDefaults(defineProps<{ data: ArticleContributions; variant?: 'meta' | 'full'
             <a class="card-name" :href="person.profile" target="_blank" rel="noopener noreferrer">{{ person.name }}</a>
             <span class="card-roles"><span v-for="role in person.roles" :key="role" class="card-role">{{ role }}</span></span>
           </div>
-          <p v-if="person.note || person.prUrl" class="card-note">{{ person.note }}
+          <p v-if="person.note || person.prUrl || person.issueUrl" class="card-note">{{ person.note }}
             <a v-if="person.prUrl" :href="person.prUrl" target="_blank" rel="noopener noreferrer">PR #{{ person.pr }}</a>
+            <a v-if="person.issueUrl" :href="person.issueUrl" target="_blank" rel="noopener noreferrer">Issue #{{ person.issue }}</a>
           </p>
         </div>
       </li>

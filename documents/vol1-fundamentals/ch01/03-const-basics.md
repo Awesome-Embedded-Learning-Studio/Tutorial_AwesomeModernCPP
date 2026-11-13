@@ -30,6 +30,12 @@ contributors:
     note:
       zh: "补充练习参考答案与修订正文 (PR #171)"
       en: "Contributed exercise solutions and article revisions (PR #171)"
+  - github: owollz4
+    roles: [idea]
+    issue: 326
+    note:
+      zh: "提出内容审查报告，推动引用与 constexpr 章节修订"
+      en: "Filed the review report behind the reference and constexpr revisions"
 ---
 # 哟哟哟！这不 const 吗？几天不见这么不可变了
 
