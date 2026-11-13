@@ -17,18 +17,11 @@ prerequisites:
   - "一秒钟的定义权:tick、回绕算术与到期队列"
 related:
   - "在栈顶伪造出生证明:PendSV、SVC 与第一次切换"
-current_status:
-  title: CPU 归谁有了答案
-  detail: ZerOS的篇章正在打磨ing
-  variant: polishing
-  icon: 👑
 ---
 
-# 谁最急,谁上场:就绪位图、任务三态与选人仲裁
+# 调度器来咯！就绪位图、任务三态与选人仲裁
 
 上一站收尾的时候,时间内核已经在 host 和板子两头都跑通了,Renode 里的 ticker 每秒给咱们打一行。不过您把当时的 `main` 再回想一遍,就会发现一个事实:周期到了要干什么,是回调函数直接在 SysTick 的中断上下文里执行的,程序里没有任务的概念,CPU 打印完了就回 `main` 待着。谁在用 CPU 的答案,咱们在当时的代码里找不出一个主人来。
-
-`0bf9461` 把这个答案改掉了。它一口气交了 15 个文件,新增了 674 行,删除了 31 行,subject 写的是 “feat: Sched OK”,调度器内核从此进了场,仓库从时钟库变成 RTOS 的改变就发生在咱们眼前。它交的东西太多,咱们把同一份 diff 分成两篇来讲:咱们今天管仲裁面,看下一个 CPU 归谁的决定是怎么做出来的。决定做好了之后硬件怎么真的切过去,伪造栈帧、PendSV、SVC 这些汇编的活儿,归的是下一篇《在栈顶伪造出生证明》。开讲之前有一个事实咱们得摆在桌面上,这个 commit 的 host 测试当时是编不过的,咱们会现场复现它,再照仓库自己的修法补好,最后把测试跑绿了。
 
 ## 任务的三种状态和它的档案卡
 
@@ -76,7 +69,9 @@ static_assert(offsetof(TCB, stack_pointer_) == sizeof(base::SelfNode<TCB>),
 #pragma GCC diagnostic pop
 ```
 
-咱们从上往下过一遍成员,每个都有它的用处。`stack_pointer_` 是任务的栈指针,注释喊出的口号是“always be the first”,下面的 `static_assert` 把它的位置定在了 TCB 的开头:它必须紧跟在 SelfNode 基类后面,而 SelfNode 就是那个背在自己身上的 `next_` 指针。作者为什么这么狠?因为 PendSV 切换的汇编代码要按固定偏移摸到栈指针,布局错了汇编不会报错,任务就死得莫名其妙了,所以咱们让编译器替咱们守着布局,谁动了字段顺序,固件就连编译都过不去了。
+咱们从上往下过一遍成员,每个都有它的用处。`stack_pointer_` 是任务的栈指针,注释喊出的口号是“always be the first”,下面的 `static_assert` 把它的位置定在了 TCB 的开头:它必须紧跟在 SelfNode 基类后面,而 SelfNode 就是那个背在自己身上的 `next_` 指针。这个时候有人问了，这个咱们的static_assert的这波操作，是何意味？
+
+那是因为 PendSV 切换的汇编代码要按固定偏移摸到栈指针,布局错了汇编不会报错,任务就死得莫名其妙了,所以咱们让编译器替咱们守着布局,谁动了字段顺序,固件就连编译都过不去了。
 
 `task_priority_` 和 `state_` 就是上面两个类型的落地。`name_` 是给调试用的常量字符串。`action` 的类型咱们上一站见过,是个 `TimeWaiter`:任务要睡觉的时候,咱们把它内嵌的等待者挂进时间内核的到期队列,时间到了回调就把任务叫醒。内存布局上它就长在 TCB 的身上,所以从到期记录反推任务只是一次指针减法,不用额外的映射表,咱们在验收的时候还会见到这个反推的手法。
 
@@ -126,7 +121,7 @@ concept IsScheduler = requires(Stuff& stuff, base::BorrowedPtr<TCB> aTask) {
 
 ## 32 级就绪队列:一张位图加 32 条 FIFO
 
-合同立好了,咱们来看调度器的家底。选人是调度器每天都要答很多遍的问题,答案的快慢,全看就绪的任务待在一个什么样的结构里。最直白的想法是把就绪的任务串成一条链,选人的时候从链头翻到链尾,谁的优先级数值小谁出场,任务一多的话,每次选人都是一场全量的翻找,选人的速度就上不去了。咱们看 `scheduler.hpp` 是怎么答的,头几行是定盘用的常数,外加一条编译期的守卫:
+concept 立好！咱们来看调度器的家底。选人是调度器每天都要答很多遍的问题,答案的快慢,全看就绪的任务待在一个什么样的结构里。最直白的想法是把就绪的任务串成一条链,选人的时候从链头翻到链尾,谁的优先级数值小谁出场,任务一多的话,每次选人都是一场全量的翻找,选人的速度就上不去了。咱们看 `scheduler.hpp` 是怎么答的,头几行是定盘用的常数,外加一条编译期的守卫:
 
 ```cpp
     static constexpr TaskPriority_t kPriorityLevels = 32;
@@ -261,8 +256,6 @@ concept IsScheduler = requires(Stuff& stuff, base::BorrowedPtr<TCB> aTask) {
 
 咱们再看 `yield`,当前任务走的是 `push_back` 去队尾,同级的伙伴按次序一个一个轮,让出去一次就排到了最后。回来的位置完全由回来的原因决定,同样都是回到就绪队列的,被抢占者接着干它的活,让出者就得重新排队了。
 
-`push_front` 本身是 `0bf9461` 新增的,咱们查过 diff,`self_list.hpp` 在这个 commit 里就多了这 5 行:
-
 ```cpp
     void push_front(BorrowedPtr<Stuff> new_stuff) {
         new_stuff->next_ = stuff;
@@ -324,66 +317,6 @@ concept IsScheduler = requires(Stuff& stuff, base::BorrowedPtr<TCB> aTask) {
 ```
 
 `block` 的判断是睡的得是当前自己,睡的是别人的话,只是队列里少了它一个,切换的请求就不用发了。三处的 `request_switch` 是同一个逻辑,新来的比当前的紧急,或者睡下去的是当前自己,才有一次切换的请求可发。能不切的时候咱们就不切,毕竟每次切换都是有代价的。
-
-## 坦白:commit 说 OK,host 测试当时编不过
-
-这里有一段必须照实交代的事。仓库的提交信息写着 “Sched OK”,可是咱们 checkout 到 `0bf9461` 之后按 README 的路子配 host 测试构建,咱们看到的第一个报错来得又快又直接:
-
-```text
-/tmp/zeros-t0bf9/test/test_sched.cpp:33:15: error: static assertion failed
-   33 | static_assert(Switchable<HostSwitchPort>);
-      |               ^~~~~~~~~~~~~~~~~~~~~~~~~~
-  • constraints not satisfied
-    • required for the satisfaction of ‘CriticalSection<SwitchPort>’
-      [with SwitchPort = <unnamed>::HostSwitchPort]
-    • the required expression ‘t.lock()’ is invalid
-```
-
-原因咱们对着源码就能看清,测试文件里的替身端口只写了切换要用的部分:
-
-```cpp
-struct HostSwitchPort {
-    void request_switch() { ++g_switch_requests; }
-};
-```
-
-而 `Switchable` 的要求是复合的,咱们还得给替身写上 `lock` 和 `unlock` 两个函数,当时的替身一个都没写。concept 的检查就在 `static_assert` 那一行把编译拦下了,后面 `Scheduler<HostSwitchPort>` 的每一处使用跟着全炸。我本机的 GCC 16.2.1 给出的完整报错里,这样的约束失败重复了四处,连带 `s.add` 被推断成 `int` 类型的一串误会,报错刷了小半屏。
-
-咱们得说句公道话,仓库其实没有坏,坏掉的是时间线本身:替身的 `lock` 和 `unlock` 要到下一个 commit(`6308dd0`)才补上,“Sched OK” 那天验证的对象是真正的开发板上那套 PendSV 路径,host 测试当时就是编译不过的半成品。工程的真实节奏有时候就是这样,commit message 里的 OK 说的是板子,咱们不能替它扩写成“全部绿灯”。
-
-咱们要自己走通,修法就照下一个 commit 的官方答案:给替身补两个空函数。host 上咱们用不着真锁,函数形状对了,concept 就放行了:
-
-```diff
- struct HostSwitchPort {
-     void request_switch() { ++g_switch_requests; }
-+    void lock() {}
-+    void unlock() {}
- };
-```
-
-咱们重新构建,再跑一遍全部的测试:
-
-```shell
-cmake -B build-host -DZEROS_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
-cmake --build build-host
-ctest --test-dir build-host --output-on-failure
-```
-
-我本机还是那套 GCC 16.2.1,跑出来的真实结果里,七个目标全部通过了:
-
-```text
-100% tests passed out of 7
-
-Total Test time (real) =   0.12 sec
-```
-
-调度测试自己的成绩单,咱们看一眼:
-
-```text
-All tests passed (42 assertions in 9 test cases)
-```
-
-234 行的测试文件,9 个用例、42 条断言都照原样跑了下来,咱们补的两个空函数没有改任何断言,跑出来的就是仓库自己写的验收。
 
 ## host 考场:三个用例对证仲裁面
 
@@ -461,16 +394,6 @@ TEST_CASE("same level round-robins via yield-to-tail", "[sched]") {
 ```
 
 咱们把剧情捋一遍:a 的优先级是 1,它已经在 CPU 上了,0 号的 c 被 `ready` 唤醒了,切换请求计了 1 次,因为新来的更紧急,抢是应该的。a 被 `pick_next` 塞回了队头,所以 c 睡了之后下一个还是 a,而且它的状态断言是 `Running`,它在 CPU 上接着自己原来的位置跑。9 个用例里还覆盖了唤醒同级不请求切换、全阻塞时 idle 接管的场景,也有只阻塞非当前任务不请求切换的边角。剩下的用例里还有一个专门验睡眠唤醒的,咱们在里面拿 owner_of 的指针减法把到期记录反推回了 TCB,档案卡一节留下的承诺在这里兑现了。更细的咱们就不逐个念了,您跑一遍就能全见着。
-
-## 验收
-
-咱们把本篇的可查证事实归拢一下,一共归出了三件,咱们一件一件来。
-
-第一件是编译破的复现与修复。您 checkout 到 `0bf9461`,按上面的三条命令配好 host 构建,第一个报错应该和坦白段落贴的原文一字不差。补上了两个空函数之后,您的 `ctest` 应该给出 7 个全部通过。您跑出来的数字应该跟我的一样,调度测试给出的就是 9 个用例、42 条断言。
-
-第二件是 RBIT 加 CLZ 的对质。注释的说法在 `bitmap.hpp` 里,注释里写的那句 “GCC/Clang lower this to RBIT+CLZ” 是仓库自己的话,后面还注明了平台是 Cortex-M3/M4。咱们拿 arm-none-eabi-g++ 16.2.0 以 `-mcpu=cortex-m3 -mthumb -O2` 编了最小的 `__builtin_ctz` 函数,objdump 给咱们出来的是三条指令,干活的是 rbit 加 clz 两条,反汇编原文在位图的段落里,您拿同样的命令就能复现同样的输出。
-
-第三件是本篇没验的东西,我也照实说:仲裁的决定做出来了,但任务真的被切过去这件事,咱们在 host 替身里是验不到的,那里的 `request_switch` 只是计数器加一而已。伪造异常帧、PendSV 里的汇编保存恢复,这些要等咱们下一篇在 Renode 里看 A、B 两个任务按 1000 毫秒和 700 毫秒的节奏交错打印,咱们才算验完。仲裁面和机制面合在一起的时候,才是 `0bf9461` 的完整验收。
 
 ## 下一篇
 
