@@ -29,6 +29,7 @@ export function validateContributors(value: unknown, where: string): asserts val
         || ['zh', 'en'].some(lang => typeof (person.note as Record<string, unknown>)[lang] !== 'string'))) fail(`invalid note for ${person.github}`)
     if (person.name !== undefined && (typeof person.name !== 'string' || !person.name.trim())) fail('invalid display name')
     if (person.pr !== undefined && (!Number.isInteger(person.pr) || person.pr <= 0)) fail('invalid PR number')
+    if (person.issue !== undefined && (!Number.isInteger(person.issue) || person.issue <= 0)) fail('invalid issue number')
   }
 }
 

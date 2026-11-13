@@ -33,7 +33,7 @@ contributors:
     roles: [author]
 ```
 
-Available roles are `author`, `revision`, `translation`, `review` and `maintain`. The [authors page](../authors/) displays GitHub avatars and articles for people credited as `author`. Submission sources and revision history are shown separately.
+Available roles are `author`, `revision`, `translation`, `review`, `maintain` and `idea` (for example, someone whose issue suggestion was adopted). The [authors page](../authors/) displays GitHub avatars and articles for people credited as `author`. Submission sources and revision history are shown separately.
 
 ## Sections and Review Status
 
