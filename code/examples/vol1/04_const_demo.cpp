@@ -10,6 +10,7 @@ constexpr int square(int x) {
 int main() {
     // --- const 变量 ---
     const int kMaxSize = 100;
+    // kMaxSize = 200;                        // 取消注释会编译错误
     std::cout << "kMaxSize = " << kMaxSize << std::endl;
 
     // --- constexpr ---
@@ -20,23 +21,33 @@ int main() {
     int a = 10;
     int b = 20;
     const int* p_to_const = &a;
+    // *p_to_const = 100;                      // 取消注释会编译错误
     p_to_const = &b; // 没问题，指针可以改指向
     std::cout << "*p_to_const = " << *p_to_const << std::endl;
 
     // --- 常量指针 ---
     int* const const_p = &a;
     *const_p = 100; // 没问题，可以改数据
+    // const_p = &b;                           // 取消注释会编译错误
     std::cout << "*const_p = " << *const_p << std::endl;
 
     // --- 两个都 const ---
     const int* const double_const = &a;
+    // *double_const = 1;                      // 编译错误
+    // double_const = &b;                      // 编译错误
     std::cout << "*double_const = " << *double_const << std::endl;
 
-    // --- const 引用 ---
+    // --- 引用 ---
     int x = 42;
+    int& ref2 = x;                         // ref2 是 x 的别名
+    ref2 = 100;                            // 通过别名改，等价于 x = 100
+    std::cout << "x = " << x << std::endl; // 输出 100
+
+    // --- const 引用 ---
     const int& ref = x;
-    x = 100;                                   // 直接改 x 是可以的
-    std::cout << "ref = " << ref << std::endl; // 输出 100
+    // ref = 200;                              // 编译错误！通过 const 引用改不动
+    x = 200;                                   // 直接改 x 是可以的
+    std::cout << "ref = " << ref << std::endl; // 输出 200
 
     return 0;
 }
