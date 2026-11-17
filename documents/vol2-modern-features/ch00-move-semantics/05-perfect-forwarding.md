@@ -257,9 +257,11 @@ decltype(auto) bad_return(T&& x)
 }
 ```
 
-这里的 `decltype(auto)` 会根据 `return` 表达式推导返回类型，所以返回类型取决于 `std::forward<T>(x)` 的结果。当您传入一个右值时，`T` 被推导为非引用类型（比如 `std::string`），`std::forward<std::string>(x)` 返回 `std::string&&`，`decltype(auto)` 推导出的返回类型就是 `std::string&&`。但这个右值引用指向的是函数参数 `x`，`x` 在函数返回时就销毁了。调用者拿到的引用指向了一块已经不存在的内存，经典的悬空引用，GCC 的 `-Wdangling-reference` 会对此发出警告<RefLink :id="4" preview="GCC Warning Options — -Wdangling-reference" />。
+这里的 `decltype(auto)` 会根据 `return` 表达式推导返回类型，所以返回类型取决于 `std::forward<T>(x)` 的结果。推导本身没有歧义：传入左值时 `T` 被推导为 `U&`（比如 `std::string&`），`std::forward<std::string&>(x)` 通过引用折叠返回 `std::string&`，引用链最终指向调用者的原始变量，只要那个变量活着就安全。传入 `std::move(u)` 这样的亡值时，返回的 `std::string&&` 指向的也是 `u` 这个调用方的对象，同样跟着 `u` 的寿命走。
 
-传入左值时 `T` 被推导为 `U&`（比如 `std::string&`），`std::forward<std::string&>(x)` 通过引用折叠返回 `std::string&`，引用链最终指向调用者的原始变量，仍然存活，所以是安全的。但问题在于这个函数模板对左值安全、对右值危险，而 `decltype(auto)` 又无法在签名中体现这种区分，非常容易在维护时被误用。
+真正的危险在纯右值：传入 `std::string{}` 时，`T` 被推导为非引用类型，`std::forward<std::string>(x)` 返回 `std::string&&`，`decltype(auto)` 推导出的返回类型就是 `std::string&&`。注意这条引用指向的不是函数参数 `x`——引用形参只是个别名——而是实参物化出来的临时对象（C++20 [class.temporary]）。这个临时对象活到**包含这次函数调用的完整表达式结束**（通常就是那条语句末尾的分号），不是函数返回的那一刻。所以 `auto s = bad_return(std::string{});` 是安全的：`s` 在分号之前就从临时对象移动构造完成了。真正的悬垂发生在把返回值存成引用再跨语句去用，比如 `auto&& r = bad_return(std::string{});`——分号一到临时对象销毁，`r` 就悬空了。麻烦在于编译器帮不上忙：`-Wdangling-reference` 盯的是"返回指向函数内局部左值引用"的形状，转发引用加 `decltype(auto)` 这个组合不在它的射程里，实测（GCC 16，显式开启该警告）静默通过，只能靠人眼识别。
+
+所以这个函数模板的准确画像是对左值和亡值安全，对纯右值是否安全取决于调用者怎么接住返回值，而 `decltype(auto)` 无法在签名中体现这些区分，非常容易在维护时被误用。
 
 如果您真的需要在返回语句中做转发，确保返回类型是值类型（`T` 而不是 `decltype(auto)`），这样右值场景下会触发移动构造而不是返回引用。下一节缓存包装器中的 `emplace_get` 就是一个正确的例子：它返回 `Value&`（固定类型，不是转发来的），只对参数使用 `std::forward`。
 
@@ -491,12 +493,5 @@ int main()
     author="cppreference.com"
     title="std::forward"
     url="https://en.cppreference.com/w/cpp/utility/forward"
-  />
-  <ReferenceItem
-    :id="4"
-    author="GCC"
-    title="Warning Options (-Wdangling-reference)"
-    publisher="gcc.gnu.org"
-    url="https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html"
   />
 </ReferenceCard>
