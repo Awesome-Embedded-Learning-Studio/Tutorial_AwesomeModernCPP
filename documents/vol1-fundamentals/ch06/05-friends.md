@@ -134,16 +134,7 @@ public:
 您要是觉得"友元类授权太宽泛"，C++ 还提供了更精细的控制：只授权另一个类的**某一个**成员函数：
 
 ```cpp
-class Vector;  // 前向声明
-
-class Matrix {
-private:
-    float data[3][3];
-public:
-    Matrix();
-    // 只授权 Vector::transform 这一个成员函数
-    friend Vector Vector::transform(const Matrix& m);
-};
+class Matrix;  // 前向声明
 
 class Vector {
 private:
@@ -152,7 +143,17 @@ private:
 public:
     Vector(float x, float y, float z) : x(x), y(y), z(z) {}
 
-    Vector transform(const Matrix& m);
+    Vector transform(const Matrix& m); // 只需要声明, 定义在Matrix之后
+};
+
+class Matrix {
+private:
+    float data[3][3];
+public:
+    Matrix();
+    // 只授权 Vector::transform 这一个成员函数
+    // 这个时候, Vector的定义已经完整, 编译器可以认得出来transform是他的成员.
+    friend Vector Vector::transform(const Matrix& m);
 };
 ```
 
