@@ -25,70 +25,13 @@ current_status:
 
 我搭了个最小现场，把转圈量了一遍：一条线程算 100 毫秒的活，算完把 `done` 立起来，另一条线程就等 `done`。四种等法各写成一个回调，交给同一套架子。同一份程序跑两遍，每遍四种等法各跑一次。
 
-```cpp
-#include <atomic>
-#include <chrono>
-#include <condition_variable>
-#include <cstdio>
-#include <ctime>
-#include <mutex>
-#include <thread>
-
-using namespace std::chrono_literals;
-using Clock = std::chrono::steady_clock;
-
-std::atomic<int> done{0};
-std::atomic<long long> finished_at{0};
-std::mutex m;
-std::condition_variable cv;
-
-long long now_ns() {
-  return std::chrono::duration_cast<std::chrono::nanoseconds>(
-             Clock::now().time_since_epoch()).count();
-}
-
-template <class Wait>
-void run(const char* name, Wait wait) {
-  done = 0;
-  finished_at = 0;
-  std::thread worker([] {
-    std::this_thread::sleep_for(100ms);   // 顶替“算完”那段耗时
-    finished_at = now_ns();
-    { std::lock_guard<std::mutex> g(m); done = 1; }
-    cv.notify_one();
-  });
-  std::this_thread::sleep_for(10ms);      // 让 worker 睡下，主线程再开始等
-  std::clock_t c0 = std::clock();
-  long long rounds = 0;
-  wait(rounds);
-  std::clock_t c1 = std::clock();
-  long long seen = now_ns();
-  worker.join();
-  std::printf("%-8s rounds=%9lld  cpu=%7.2f ms  delay=%9.1f us\n", name, rounds,
-              1000.0 * (c1 - c0) / CLOCKS_PER_SEC,
-              (seen - finished_at.load()) / 1000.0);
-}
-
-int main() {
-  for (int pass = 1; pass <= 2; ++pass) {
-    std::printf("--- pass %d ---\n", pass);
-    run("spin", [](long long& r) {
-      while (done.load(std::memory_order_relaxed) == 0) ++r;
-    });
-    run("sleep1", [](long long& r) {
-      while (done.load() == 0) { ++r; std::this_thread::sleep_for(1ms); }
-    });
-    run("sleep20", [](long long& r) {
-      while (done.load() == 0) { ++r; std::this_thread::sleep_for(20ms); }
-    });
-    run("cv", [](long long&) {
-      std::unique_lock<std::mutex> lk(m);
-      cv.wait(lk, [] { return done.load() == 1; });
-    });
-  }
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="轮询的代价：空转、两种睡眠轮询、条件变量同场量一遍"
+  source-path="code/examples/vol5/chapter03/01_polling_cost.cpp"
+  description="原实验原样抽出：四种等法各量一遍 CPU 时间与见到标志的延迟，忙等的核全烧在空转上。读数每次运行会动，量级不变。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 咱们把两遍的读数整理成表，同一格里斜杠前是第一遍，斜杠后是第二遍：
 
@@ -109,29 +52,13 @@ int main() {
 
 条件变量管的就是这类等待：条件还没成立的时候，咱们让线程睡下去，不占 CPU。条件成立以后，改条件的那一方把它叫醒。能跑的最小版本长这样：
 
-```cpp
-#include <condition_variable>
-#include <mutex>
-
-std::mutex m;
-std::condition_variable cv;
-bool done = false;   // 由 m 保护
-
-void worker() {
-  // 干活
-  {
-    std::lock_guard<std::mutex> g(m);
-    done = true;
-  }
-  cv.notify_one();
-}
-
-void waiter() {
-  std::unique_lock<std::mutex> lk(m);
-  cv.wait(lk, [] { return done; });
-  // 到这里 done 一定是 true，锁还在手里
-}
-```
+<OnlineCompilerDemo
+  title="条件变量的最小版本：worker 改条件，waiter 等到成立"
+  source-path="code/examples/vol5/chapter03/02_cv_minimal.cpp"
+  description="正文片段拼成完整程序：main 先让 waiter 睡下去，50 毫秒后 worker 把 done 立起来再 notify，waiter 醒来时条件一定成立。片段部分原样保留。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 `std::condition_variable` 从 C++11 起就在 `<condition_variable>` 里，标准只让它接受 `unique_lock<std::mutex>`，换来更轻的实现。您手里的锁要是别的类型，就得请它的通用版本出场，那部分放在本篇末尾的扩展节，可以跳过。
 
@@ -153,52 +80,13 @@ void waiter() {
 
 下面这段是个替代演示。真的虚假唤醒我弄不出来，就拿一次“条件没变就发的通知”顶上，让等待线程醒在一个条件不成立的时刻。两者对代码的要求一样：醒来必须重看条件。您看第一段，等待中的线程被叫醒，靠的是 `main` 发的那次通知，可那次通知什么也没改。
 
-```cpp
-#include <chrono>
-#include <condition_variable>
-#include <cstdio>
-#include <mutex>
-#include <thread>
-
-using namespace std::chrono_literals;
-
-std::mutex m;
-std::condition_variable cv;
-bool data_ready = false;
-
-int main() {
-  {
-    std::thread waiter([] {
-      std::unique_lock<std::mutex> lk(m);
-      cv.wait(lk);  // 裸 wait，醒来不查条件
-      std::printf("[bare] 醒来时 data_ready = %d\n", data_ready ? 1 : 0);
-    });
-    std::this_thread::sleep_for(50ms);
-    cv.notify_one();  // 什么也没改，只发一次通知
-    waiter.join();
-  }
-
-  data_ready = false;
-  {
-    std::thread waiter([] {
-      std::unique_lock<std::mutex> lk(m);
-      cv.wait(lk, [] { return data_ready; });
-      std::printf("[pred] 醒来时 data_ready = %d\n", data_ready ? 1 : 0);
-    });
-    std::this_thread::sleep_for(50ms);
-    cv.notify_one();
-    std::this_thread::sleep_for(50ms);
-    std::printf("[main] 第一次通知之后，等待线程还睡着\n");
-    {
-      std::lock_guard<std::mutex> g(m);
-      data_ready = true;
-    }
-    cv.notify_one();
-    waiter.join();
-  }
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="裸 wait 与谓词 wait 各接一次空通知"
+  source-path="code/examples/vol5/chapter03/03_bare_wait_vs_pred.cpp"
+  description="一次条件没变的通知：裸 wait 的线程醒来一看条件不成立，回去接着睡；带谓词的 wait 自己重验条件。醒来那一刻各自报出 data_ready 的值。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 [bare] 醒来时 data_ready = 0
@@ -218,41 +106,13 @@ int main() {
 
 反过来的情形更难查：通知是真的，可它来的时候还没人等着。咱们把通知挪到等待之前，看看会怎样。
 
-```cpp
-#include <chrono>
-#include <condition_variable>
-#include <cstdio>
-#include <mutex>
-#include <thread>
-
-using namespace std::chrono_literals;
-
-std::mutex m;
-std::condition_variable cv;
-bool ready = false;
-
-int main() {
-  std::thread worker([] {
-    std::this_thread::sleep_for(200ms);   // 起来得比通知晚
-    std::unique_lock<std::mutex> lk(m);
-    cv.wait(lk);                          // 裸 wait，醒来不查条件
-    std::printf("worker: 醒来了，ready = %d\n", ready ? 1 : 0);
-  });
-
-  std::this_thread::sleep_for(50ms);
-  {
-    std::lock_guard<std::mutex> g(m);
-    ready = true;
-  }
-  cv.notify_one();                        // 这一刻 cv 上还没有人
-  std::printf("main: 通知发完了\n");
-  std::fflush(stdout);
-
-  worker.join();
-  std::printf("main: 走到底了\n");
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="丢失唤醒现场：通知发在等待之前"
+  source-path="code/examples/vol5/chapter03/04_lost_wakeup.cpp"
+  description="通知走在等待前面就蒸发了，worker 从此睡到永远。这个演示故意不退出，点运行后靠运行器的时限收场，不会自己停，属预期行为。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 咱们让 `worker` 睡满 200 毫秒才起来，`main` 在第 50 毫秒就改掉 `ready`、发了通知，通知比 `worker` 起床早 150 毫秒。发完 `main` 就 `join`，等它。
 
@@ -269,9 +129,13 @@ $ echo $?
 
 修法是上一节那个谓词，您整个程序只改一行：
 
-```cpp
-    cv.wait(lk, [] { return ready; });    // 谓词在 wait 之前就要算一遍
-```
+<OnlineCompilerDemo
+  title="丢失唤醒的修法：只改一行的谓词 wait"
+  source-path="code/examples/vol5/chapter03/05_lost_wakeup_fixed.cpp"
+  description="与上一个程序只差一行：裸 wait 换成带谓词的 wait，先查条件再睡，错过的通知不再致命，worker 照常把活干完退出。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 main: 通知发完了
@@ -289,64 +153,13 @@ main: 走到底了
 
 两条线程等两种条件、睡在同一个 `cv` 上，咱们就能看见这件事露出来。
 
-```cpp
-#include <atomic>
-#include <chrono>
-#include <condition_variable>
-#include <cstdio>
-#include <mutex>
-#include <thread>
-
-using namespace std::chrono_literals;
-
-std::mutex m;
-std::condition_variable cv;
-bool stop = false;
-bool data_ready = false;
-std::atomic<int> parked{0};
-std::atomic<bool> taker_got{false};
-
-int main() {
-  std::thread closer([] {
-    std::unique_lock<std::mutex> lk(m);
-    ++parked;
-    cv.wait(lk, [] { return stop; });
-    std::printf("closer: 收到 stop\n");
-  });
-  while (parked.load() < 1) std::this_thread::sleep_for(1ms);
-  std::this_thread::sleep_for(20ms);
-
-  std::thread taker([] {
-    std::unique_lock<std::mutex> lk(m);
-    ++parked;
-    cv.wait(lk, [] { return data_ready; });
-    taker_got = true;
-    std::printf("taker: 拿到数据\n");
-  });
-  while (parked.load() < 2) std::this_thread::sleep_for(1ms);
-  std::this_thread::sleep_for(20ms);
-
-  {
-    std::lock_guard<std::mutex> g(m);
-    data_ready = true;
-  }
-  cv.notify_one();
-
-  std::this_thread::sleep_for(200ms);
-  std::printf("main: 200 ms 过去，taker %s\n",
-              taker_got.load() ? "已经拿到数据" : "还没醒过来");
-
-  {
-    std::lock_guard<std::mutex> g(m);
-    stop = true;
-  }
-  cv.notify_all();
-  closer.join();
-  taker.join();
-  std::printf("main: 收工\n");
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="notify_one 叫错人：通知被同向等待者收走"
+  source-path="code/examples/vol5/chapter03/06_notify_one_wrong_thread.cpp"
+  description="一把 cv 上睡两拨人，notify_one 挑人不看条件：叫醒的是早睡的 closer，taker 错过这趟通知。输出里能看见谁醒了、谁没醒。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 main: 200 ms 过去，taker 还没醒过来
@@ -361,48 +174,13 @@ main: 收工
 
 修法要看您怎么组织条件。条件本来就该分开，那就一个条件配一个 `condition_variable`，各叫各的。条件只有一个，比如“整批开始”，所有等它的人都该往下走，那就 `notify_all`。
 
-```cpp
-#include <atomic>
-#include <chrono>
-#include <condition_variable>
-#include <cstdio>
-#include <mutex>
-#include <thread>
-#include <vector>
-
-using namespace std::chrono_literals;
-
-int main() {
-  std::mutex m;
-  std::condition_variable cv;
-  bool go = false;
-  std::atomic<int> started{0};
-  std::atomic<int> woken{0};
-  std::vector<std::thread> ws;
-  for (int i = 0; i < 3; ++i) {
-    ws.emplace_back([&, i] {
-      std::unique_lock<std::mutex> lk(m);
-      ++started;
-      cv.wait(lk, [&] { return go; });
-      ++woken;
-      std::printf("worker %d: 出发\n", i);
-    });
-  }
-  while (started.load() < 3) std::this_thread::sleep_for(1ms);
-  std::this_thread::sleep_for(20ms);
-  {
-    std::lock_guard<std::mutex> g(m);
-    go = true;
-  }
-  cv.notify_one();
-  std::this_thread::sleep_for(100ms);
-  std::printf("main: notify_one 之后，醒来的有 %d 条\n", woken.load());
-  cv.notify_all();
-  for (auto& t : ws) t.join();
-  std::printf("main: notify_all 之后，醒来的有 %d 条\n", woken.load());
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="notify_all 兜底：三缺一改成三全放"
+  source-path="code/examples/vol5/chapter03/07_notify_one_then_all.cpp"
+  description="三条线程等同一个 go：notify_one 只放行一条，notify_all 全部放行，两种通知方式各跑一遍，输出对照着看。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 worker 0: 出发
@@ -433,97 +211,13 @@ main: notify_all 之后，醒来的有 3 条
 
 咱们把六种情形摆在一起跑：
 
-```cpp
-#include <chrono>
-#include <condition_variable>
-#include <cstdio>
-#include <mutex>
-#include <thread>
-
-using namespace std::chrono_literals;
-using Clock = std::chrono::steady_clock;
-
-double ms_since(Clock::time_point t0) {
-  return std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
-}
-
-const char* name_of(std::cv_status s) {
-  return s == std::cv_status::timeout ? "timeout" : "no_timeout";
-}
-
-int main() {
-  {
-    std::mutex m;
-    std::condition_variable cv;
-    bool ready = true;
-    std::unique_lock<std::mutex> lk(m);
-    auto t0 = Clock::now();
-    bool ok = cv.wait_for(lk, 200ms, [&] { return ready; });
-    std::printf("A pred 本来成立   -> %d, %.3f ms\n", ok, ms_since(t0));
-  }
-  {
-    std::mutex m;
-    std::condition_variable cv;
-    bool ready = false;
-    std::thread t([&] {
-      std::this_thread::sleep_for(30ms);
-      { std::lock_guard<std::mutex> g(m); ready = true; }
-      cv.notify_one();
-    });
-    std::unique_lock<std::mutex> lk(m);
-    auto t0 = Clock::now();
-    bool ok = cv.wait_for(lk, 200ms, [&] { return ready; });
-    double e = ms_since(t0);
-    lk.unlock();
-    t.join();
-    std::printf("B 30 ms 被通知    -> %d, %.3f ms\n", ok, e);
-  }
-  {
-    std::mutex m;
-    std::condition_variable cv;
-    bool ready = false;
-    std::unique_lock<std::mutex> lk(m);
-    auto t0 = Clock::now();
-    bool ok = cv.wait_for(lk, 60ms, [&] { return ready; });
-    std::printf("C 60 ms 到期      -> %d, %.3f ms\n", ok, ms_since(t0));
-  }
-  {
-    std::mutex m;
-    std::condition_variable cv;
-    bool ready = false;
-    std::thread t([&] {
-      std::this_thread::sleep_for(30ms);
-      { std::lock_guard<std::mutex> g(m); ready = true; }
-      cv.notify_one();
-    });
-    std::unique_lock<std::mutex> lk(m);
-    auto t0 = Clock::now();
-    std::cv_status st = cv.wait_for(lk, 200ms);
-    double e = ms_since(t0);
-    lk.unlock();
-    t.join();
-    std::printf("D 无谓词，30 ms 通知 -> %s, %.3f ms\n", name_of(st), e);
-  }
-  {
-    std::mutex m;
-    std::condition_variable cv;
-    std::unique_lock<std::mutex> lk(m);
-    auto t0 = Clock::now();
-    std::cv_status st = cv.wait_for(lk, 60ms);
-    std::printf("E 无谓词，没人通知   -> %s, %.3f ms\n", name_of(st), ms_since(t0));
-  }
-  {
-    std::mutex m;
-    std::condition_variable cv;
-    bool ready = true;
-    std::unique_lock<std::mutex> lk(m);
-    auto t0 = Clock::now();
-    bool ok = cv.wait_for(lk, -1ms, [&] { return ready; });
-    std::printf("F 时限已过但 pred 成立 -> %d, %.3f ms\n", ok, ms_since(t0));
-  }
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="wait_for 六种情形：带谓词与不带谓词各三种"
+  source-path="code/examples/vol5/chapter03/08_wait_for_six_cases.cpp"
+  description="时限内等到、时限到头没等到、等待前条件已成立……六种情形摆在一个程序里跑，返回值只报谓词真假。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 A pred 本来成立   -> 1, 0.000 ms
@@ -554,44 +248,13 @@ F 把时限设成过去的 `-1ms`，谓词成立，您照样立刻拿到 1。它
 
 最典型的场景是几条读线程等一份配置发布。`std::shared_mutex` 从 C++17 才有，您得用 C++17 以上的标准编译这段例子：
 
-```cpp
-#include <chrono>
-#include <condition_variable>
-#include <cstdio>
-#include <mutex>
-#include <shared_mutex>
-#include <string>
-#include <thread>
-#include <vector>
-
-using namespace std::chrono_literals;
-
-std::shared_mutex rm;
-std::condition_variable_any cv;
-bool published = false;
-std::string config;
-
-int main() {
-  std::vector<std::thread> readers;
-  for (int i = 0; i < 3; ++i) {
-    readers.emplace_back([i] {
-      std::shared_lock<std::shared_mutex> lk(rm);   // 共享锁，几个人同时读
-      cv.wait(lk, [] { return published; });
-      std::printf("reader %d: %s\n", i, config.c_str());
-    });
-  }
-  std::this_thread::sleep_for(50ms);
-  {
-    std::unique_lock<std::shared_mutex> lk(rm);     // 写的时候独占
-    config = "level = 3";
-    published = true;
-  }
-  cv.notify_all();
-  for (auto& t : readers) t.join();
-  std::printf("main: 三条读线程读到的都是 level = 3\n");
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="condition_variable_any 配 shared_lock：读线程等配置发布"
+  source-path="code/examples/vol5/chapter03/09_cv_any_shared_lock.cpp"
+  description="通用版条件变量接受任意可锁对象，三条读线程拿 shared_lock 等一份配置发布，发布之后各自读自己的那份。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 reader 0: level = 3

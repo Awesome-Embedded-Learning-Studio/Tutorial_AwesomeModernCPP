@@ -31,47 +31,13 @@ C++20 为这类等待备了三件专门的工具：`std::latch`、`std::barrier`
 
 咱们跑一段程序，把两面都演到。第一幕是启动初始化：三件活分给三条线程，主线程等它们全部就绪。第二幕把次序倒过来，递减走在等待前面，看看 `wait` 还睡不睡：
 
-```cpp
-// demo_latch.cpp —— 一次性倒计时：三件初始化活，一个等待方
-#include <chrono>
-#include <cstdio>
-#include <latch>
-#include <thread>
-#include <vector>
-
-using namespace std::chrono_literals;
-using Clock = std::chrono::steady_clock;
-
-double ms_since(Clock::time_point t0) {
-  return std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
-}
-
-int main() {
-  std::latch ready(3);
-  const char* names[3] = {"logger", "config", "network"};
-  std::vector<std::thread> inits;
-  for (int i = 0; i < 3; ++i) {
-    inits.emplace_back([&ready, i, &names] {
-      std::this_thread::sleep_for(50ms * (3 - i));   // 各自耗时 150/100/50 ms
-      std::printf("[%s] 就绪\n", names[i]);
-      std::fflush(stdout);
-      ready.count_down();
-    });
-  }
-  auto t0 = Clock::now();
-  ready.wait();
-  std::printf("main   : %5.1f ms 全部就绪，业务开始\n", ms_since(t0));
-  for (auto& t : inits) t.join();
-
-  std::latch fired(1);
-  fired.count_down();   // 递减发生在等待之前
-  auto t1 = Clock::now();
-  fired.wait();         // 计数已经是 0，当场返回
-  std::printf("main   : count_down 走在 wait 前面，wait 用时 %.3f ms\n",
-              ms_since(t1));
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="latch：三件初始化活齐了再走"
+  source-path="code/examples/vol5/chapter03/24_demo_latch.cpp"
+  description="count_down 三声、wait 一等，等待耗时落在最慢那件上；末尾补一段 count_down 走在 wait 前面的情形，计数已是 0，当场返回。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 [network] 就绪
@@ -97,45 +63,13 @@ latch 的一次性是它的定位带来的。等一轮计数只需要发生一�
 
 咱们拿四条线程跑三轮，每轮的活快慢不同，完成函数负责汇轮数，顺带报出它自己在哪条线程身上执行。1.3 量交错输出的时候遇过一个麻烦：几条线程往 `cout` 里写字，一行会被人从中间插进来。demo_latch 那边每行都是一次 printf 写完的整行，worker 打完顺手 fflush，不碍事。这里一行要分好几段拼出来，咱们请 C++20 的 `std::osyncstream` 应付，它把一条线程的多段输出攒成整行再落进 `cout`，下面的输出因此行行完整：
 
-```cpp
-// demo_barrier.cpp —— 可重用的阶段同步：四条线程三轮齐步，完成函数汇轮数
-#include <barrier>
-#include <chrono>
-#include <cstdio>
-#include <iostream>
-#include <syncstream>
-#include <thread>
-#include <vector>
-
-using namespace std::chrono_literals;
-
-int main() {
-  constexpr int kWorkers = 4;
-  int round = 0;
-  std::barrier sync(kWorkers, [&round]() noexcept {
-    ++round;
-    std::osyncstream(std::cout)
-        << "barrier  : 第 " << round << " 轮全员到齐，完成函数在线程 "
-        << std::this_thread::get_id() << " 身上执行\n";
-  });
-
-  std::vector<std::thread> workers;
-  for (int i = 0; i < kWorkers; ++i) {
-    workers.emplace_back([&, i] {
-      std::osyncstream(std::cout)
-          << "worker " << i << " : 线程 " << std::this_thread::get_id()
-          << " 进场\n";
-      for (int p = 1; p <= 3; ++p) {
-        std::this_thread::sleep_for(20ms * (p + i));   // 各人快慢不同
-        sync.arrive_and_wait();
-      }
-    });
-  }
-  for (auto& t : workers) t.join();
-  std::printf("main     : 三轮走完\n");
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="barrier：四条线程三轮齐步"
+  source-path="code/examples/vol5/chapter03/25_demo_barrier.cpp"
+  description="每轮等的是最慢到场的线程，完成函数汇轮数、报出自己跑在哪条线程身上；一行分几段拼出来的输出靠 osyncstream 保持完整。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 worker 0 : 线程 136740459247296 进场
@@ -162,51 +96,13 @@ main     : 三轮走完
 
 咱们让 8 个任务抢 3 个名额，顺便把“在场人数的峰值”量出来，再补一次超时的观察。demo 写的是 `std::counting_semaphore<>`，尖括号空着，用的就是实现的默认模板实参，标准把它标成 implementation-defined，咱们不依赖它的具体值，只要它装得下 3：
 
-```cpp
-// demo_semaphore.cpp —— 计数信号量：8 个任务抢 3 个名额，外加一次超时
-#include <atomic>
-#include <chrono>
-#include <cstdio>
-#include <iostream>
-#include <semaphore>
-#include <syncstream>
-#include <thread>
-#include <vector>
-
-using namespace std::chrono_literals;
-using Clock = std::chrono::steady_clock;
-
-int main() {
-  std::counting_semaphore<> slots(3);   // 3 个名额
-  std::atomic<int> inside{0};
-  std::atomic<int> peak{0};
-
-  std::vector<std::thread> tasks;
-  for (int i = 0; i < 8; ++i) {
-    tasks.emplace_back([&, i] {
-      slots.acquire();                  // 没名额就睡，等到 release 才回
-      int now = ++inside;
-      int old = peak.load();
-      while (now > old && !peak.compare_exchange_weak(old, now)) {}
-      std::this_thread::sleep_for(100ms);
-      --inside;
-      slots.release();
-      std::osyncstream(std::cout)
-          << "task " << i << " : 活干完，名额还回去\n";
-    });
-  }
-  for (auto& t : tasks) t.join();
-  std::printf("main: 8 个任务全做完，同时在场的峰值 %d（上限 3）\n", peak.load());
-
-  std::counting_semaphore<> none(0);
-  auto t0 = Clock::now();
-  bool got = none.try_acquire_for(50ms);
-  double ms = std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
-  std::printf("main: 计数 0 上等名额，try_acquire_for 返回 %d，耗时 %.1f ms\n",
-              got ? 1 : 0, ms);
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="计数信号量：8 个任务抢 3 个名额"
+  source-path="code/examples/vol5/chapter03/26_demo_semaphore.cpp"
+  description="acquire 没名额就睡，release 把名额还回去；量出同时在场的峰值不超 3，末尾补一次计数 0 上的 try_acquire_for，50 毫秒后空手而回。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 task 2 : 活干完，名额还回去
@@ -233,29 +129,13 @@ main: 计数 0 上等名额，try_acquire_for 返回 0，耗时 50.2 ms
 
 `std::binary_semaphore` 是 `std::counting_semaphore<1>` 的别名，cppreference 的页面把两个名字写在同一页。咱们把计数压到 0 和 1 两个值，当配额用太挤，它更多的用场是当信号：构造时给 0，`release` 那一手是交货，`acquire` 那一手是收货。
 
-```cpp
-// demo_binary.cpp —— binary_semaphore 当信号用：release 一方交货，acquire 一方收
-#include <cstdio>
-#include <semaphore>
-#include <thread>
-
-int main() {
-  int payload = 0;
-  std::binary_semaphore delivered{0};
-
-  std::thread sender([&] {
-    payload = 42;          // release 之前写的值
-    delivered.release();   // 交货，计数从 0 到 1
-  });
-  std::thread receiver([&] {
-    delivered.acquire();   // 没货就睡，拿到信号才回
-    std::printf("receiver: 读到 payload = %d\n", payload);
-  });
-  sender.join();
-  receiver.join();
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="binary_semaphore 当信号：release 交货，acquire 收"
+  source-path="code/examples/vol5/chapter03/27_demo_binary.cpp"
+  description="sender 先写 payload 再 release，receiver acquire 之后读到的必是 42：release 之前的写对 acquire 之后可见，信号之外不用另加锁。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 receiver: 读到 payload = 42
@@ -304,139 +184,13 @@ CountingSemaphoreSim 咱们几行就立住了：谓词就是 `counter_ > 0`，ac
 
 三个类加一段把三个模拟各验收一遍的驱动，全文贴在下面，您在本地拼成单个文件就能复跑：
 
-```cpp
-// demo_simulation.cpp —— mutex + 条件变量模拟三个工具，各跑一遍验收
-#include <atomic>
-#include <condition_variable>
-#include <cstdio>
-#include <iostream>
-#include <mutex>
-#include <syncstream>
-#include <thread>
-#include <vector>
-
-using namespace std::chrono_literals;
-
-class LatchSim {
-public:
-  explicit LatchSim(std::ptrdiff_t count) : count_(count) {}
-  void count_down(std::ptrdiff_t update = 1) {
-    {
-      std::lock_guard<std::mutex> lock(mutex_);
-      count_ -= update;
-    }
-    if (count_ <= 0) cv_.notify_all();   // 归零才叫，锁外叫醒
-  }
-  void wait() {
-    std::unique_lock<std::mutex> lock(mutex_);
-    cv_.wait(lock, [this] { return count_ <= 0; });
-  }
-private:
-  std::mutex mutex_;
-  std::condition_variable cv_;
-  std::ptrdiff_t count_;
-};
-
-class BarrierSim {
-public:
-  explicit BarrierSim(std::ptrdiff_t expected)
-      : initial_(expected), count_(expected) {}
-  void arrive_and_wait() {
-    std::unique_lock<std::mutex> lock(mutex_);
-    std::size_t gen = generation_;       // 锁内记住自己属于哪一代
-    if (--count_ == 0) {
-      ++generation_;
-      count_ = initial_;
-      lock.unlock();
-      cv_.notify_all();
-    } else {
-      cv_.wait(lock, [&] { return gen != generation_; });
-    }
-  }
-private:
-  std::mutex mutex_;
-  std::condition_variable cv_;
-  std::ptrdiff_t initial_;
-  std::ptrdiff_t count_;
-  std::size_t generation_ = 0;
-};
-
-class CountingSemaphoreSim {
-public:
-  explicit CountingSemaphoreSim(std::ptrdiff_t desired) : counter_(desired) {}
-  void acquire() {
-    std::unique_lock<std::mutex> lock(mutex_);
-    cv_.wait(lock, [this] { return counter_ > 0; });
-    --counter_;
-  }
-  void release(std::ptrdiff_t update = 1) {
-    {
-      std::lock_guard<std::mutex> lock(mutex_);
-      counter_ += update;
-    }
-    cv_.notify_all();
-  }
-private:
-  std::mutex mutex_;
-  std::condition_variable cv_;
-  std::ptrdiff_t counter_;
-};
-
-int main() {
-  {   // LatchSim：三件初始化活，一个等待方
-    LatchSim ready(3);
-    std::vector<std::thread> inits;
-    for (int i = 0; i < 3; ++i) {
-      inits.emplace_back([&ready, i] {
-        std::this_thread::sleep_for(10ms * (3 - i));
-        std::osyncstream(std::cout) << "[latch sim] 活 " << i << " 完成\n";
-        ready.count_down();
-      });
-    }
-    ready.wait();
-    std::printf("[latch sim] 三件活齐了，往下走\n");
-    for (auto& t : inits) t.join();
-  }
-
-  {   // BarrierSim：两条线程两轮齐步
-    BarrierSim sync(2);
-    std::vector<std::thread> workers;
-    for (int i = 0; i < 2; ++i) {
-      workers.emplace_back([&sync, i] {
-        for (int p = 1; p <= 2; ++p) {
-          std::this_thread::sleep_for(10ms * (p + i));
-          sync.arrive_and_wait();
-          std::osyncstream(std::cout)
-              << "[barrier sim] worker " << i << " 第 " << p << " 轮过线\n";
-        }
-      });
-    }
-    for (auto& t : workers) t.join();
-    std::printf("[barrier sim] 两轮走完\n");
-  }
-
-  {   // CountingSemaphoreSim：8 抢 3，量峰值
-    CountingSemaphoreSim slots(3);
-    std::atomic<int> inside{0};
-    std::atomic<int> peak{0};
-    std::vector<std::thread> tasks;
-    for (int i = 0; i < 8; ++i) {
-      tasks.emplace_back([&] {
-        slots.acquire();
-        int now = ++inside;
-        int old = peak.load();
-        while (now > old && !peak.compare_exchange_weak(old, now)) {}
-        std::this_thread::sleep_for(10ms);
-        --inside;
-        slots.release();
-      });
-    }
-    for (auto& t : tasks) t.join();
-    std::printf("[semaphore sim] 8 个任务做完，峰值 %d（上限 3）\n", peak.load());
-  }
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="mutex + 条件变量模拟 latch、barrier、信号量"
+  source-path="code/examples/vol5/chapter03/28_demo_simulation.cpp"
+  description="三个工具各搭一个朴素版跑验收：倒计时归零放行、按代数轮换的屏障、8 抢 3 的名额。模拟器只为看清语义，正文拿它们对照库工具。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 [latch sim] 活 2 完成
@@ -473,7 +227,7 @@ int main() {
 
 ## 参考资源
 
-本篇的五个实验在临时目录 /tmp/concurrency-u3/ 里编译运行（WSL2，16 逻辑核，GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，2026-11-16），没有进仓库。临时目录系统会清，正文里的代码块就是全部内容，每个 demo 拼成单个 .cpp 文件即可复跑。并发读数每次运行都会动，进场行、还名额行的次序由调度排，完成函数落在哪条线程身上也会换人，正文引用的是当天那一遍。峰值、超时的返回值与耗时、binary 的读数这些结构性的结果每次一致。latch、barrier、信号量的条款一律按 eel.is 上的现行工作草案引，小节名跟正式标准一致，段号可能挪。cppreference 的 latch、barrier、counting_semaphore 三页本回都抓到了全文，与草案核对无出入，LeastMaxValue 标着 implementation-defined，barrier 完成函数的默认类型，草案只写 unspecified，cppreference 写 see below，本篇没有依赖它们的具体值。推进顺序参照了 Anthony Williams 的《C++ Concurrency in Action》，例子与文字都是我自己写的。
+本篇的五个实验（WSL2，16 逻辑核，GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，2026-11-16）收在 code/examples/vol5/chapter03/，可在本页直接运行，抽成独立文件时用同机 GCC 16.2.1 复验过，2026-11-19。并发读数每次运行都会动，进场行、还名额行的次序由调度排，完成函数落在哪条线程身上也会换人，正文引用的是当天那一遍。峰值、超时的返回值与耗时、binary 的读数这些结构性的结果每次一致。latch、barrier、信号量的条款一律按 eel.is 上的现行工作草案引，小节名跟正式标准一致，段号可能挪。cppreference 的 latch、barrier、counting_semaphore 三页本回都抓到了全文，与草案核对无出入，LeastMaxValue 标着 implementation-defined，barrier 完成函数的默认类型，草案只写 unspecified，cppreference 写 see below，本篇没有依赖它们的具体值。推进顺序参照了 Anthony Williams 的《C++ Concurrency in Action》，例子与文字都是我自己写的。
 
 - [std::latch（cppreference）][cppref-latch]，C++20 起，单次使用，没有超时等待。
 - [std::barrier（cppreference）][cppref-barrier]，C++20 起，phase 模型与完成函数。

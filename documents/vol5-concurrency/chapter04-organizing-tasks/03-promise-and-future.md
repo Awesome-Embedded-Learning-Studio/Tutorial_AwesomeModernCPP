@@ -31,43 +31,13 @@ current_status:
 
 咱们把最小的一对搭起来。main 建好 promise，`get_future` 拿到 future 留在自己手里，promise 用 `std::move` 移交给干活的线程，线程干完活调 `set_value` 把结果供进去，main 的 `get` 等到值，返回：
 
-```cpp
-// demo_pair.cpp —— promise 供值，future 取值：两端都在咱们手里
-#include <cstdio>
-#include <future>
-#include <thread>
-#include <vector>
-
-int count_even(const std::vector<int>& xs) {
-  int n = 0;
-  for (int x : xs) {
-    if (x % 2 == 0) ++n;
-  }
-  return n;
-}
-
-void worker(std::promise<int> out) {
-  std::vector<int> xs{7, 2, 9, 4, 6, 1, 8, 3};
-  out.set_value(count_even(xs));   // 干完活，把结果供进 promise
-}
-
-int main() {
-  std::promise<int> p;
-  std::future<int> f = p.get_future();   // 供值端移动给线程，future 留在 main
-  std::thread t(worker, std::move(p));
-
-  int n = f.get();
-  std::printf("main: get 到 %d 个偶数，valid() = %d\n", n, f.valid() ? 1 : 0);
-  t.join();
-
-  // 供值端不开线程也能用：当场供、当场取
-  std::promise<int> here;
-  std::future<int> fh = here.get_future();
-  here.set_value(42);
-  std::printf("main: 当场供的值 %d，全程没动过一条线程\n", fh.get());
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="promise 供值，future 取值：两端都在咱们手里"
+  source-path="code/examples/vol5/chapter04/13_demo_pair.cpp"
+  description="worker 线程数完偶数调 set_value 供进 promise，main 的 get 等到值返回；后半段 promise 不移交线程，当场供、当场取，全程没有第二条线程。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 main: get 到 4 个偶数，valid() = 0
@@ -80,35 +50,13 @@ main: 当场供的值 42，全程没动过一条线程
 
 两端的额度都有标准看着。`get_future` 一回，`set_value` 一回，超了都会抛 `future_error`。我把探针跑了：
 
-```cpp
-// probe_rules.cpp —— get_future 与 set_value 都只有一回的额度
-#include <cstdio>
-#include <future>
-
-int main() {
-  std::promise<int> p;
-  std::future<int> f = p.get_future();
-  (void)f;
-  try {
-    std::future<int> again = p.get_future();   // 第二回
-    (void)again;
-  } catch (const std::future_error& e) {
-    std::printf("第二回 get_future 抛 future_error：%s（future_already_retrieved？%s）\n",
-                e.what(),
-                e.code() == std::future_errc::future_already_retrieved ? "是" : "否");
-  }
-
-  p.set_value(1);
-  try {
-    p.set_value(2);                            // 第二回
-  } catch (const std::future_error& e) {
-    std::printf("第二回 set_value 抛 future_error：%s（promise_already_satisfied？%s）\n",
-                e.what(),
-                e.code() == std::future_errc::promise_already_satisfied ? "是" : "否");
-  }
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="get_future 与 set_value 都只有一回的额度"
+  source-path="code/examples/vol5/chapter04/14_probe_rules.cpp"
+  description="第二回 get_future 抛 future_already_retrieved，第二回 set_value 抛 promise_already_satisfied，libstdc++ 的两条消息都把事由说清了。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 第二回 get_future 抛 future_error：std::future_error: Future already retrieved（future_already_retrieved？是）
@@ -127,43 +75,13 @@ promise 也是只移动的类型。拷贝构造在类定义里标着 `= delete`�
 
 咱们接着拿除法当靶子，异常消息沿用 4.1 的演示，好让两篇的输出能对上：
 
-```cpp
-// demo_exception.cpp —— set_exception：失败从工作线程走到 get 手里
-#include <cstdio>
-#include <exception>
-#include <future>
-#include <stdexcept>
-#include <thread>
-
-void divide(std::promise<int> out, int a, int b) {
-  try {
-    if (b == 0) {
-      throw std::invalid_argument("除数为零，除法做不下去");
-    }
-    out.set_value(a / b);
-  } catch (...) {
-    out.set_exception(std::current_exception());   // 手里的异常原样装进共享状态
-  }
-}
-
-void run(const char* tag, int a, int b) {
-  std::promise<int> p;
-  std::future<int> f = p.get_future();
-  std::thread t(divide, std::move(p), a, b);
-  try {
-    std::printf("%s: %d / %d = %d\n", tag, a, b, f.get());
-  } catch (const std::invalid_argument& e) {
-    std::printf("%s: 捕获 invalid_argument，what() = %s\n", tag, e.what());
-  }
-  t.join();
-}
-
-int main() {
-  run("坏除法", 6, 0);
-  run("好除法", 6, 3);
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="set_exception：失败从工作线程走到 get 手里"
+  source-path="code/examples/vol5/chapter04/15_demo_exception.cpp"
+  description="坏除法在 worker 里抛的 invalid_argument 经 current_exception 装进共享状态，在 get 的调用点原样重抛，消息一字不差；好除法照常供值。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 坏除法: 捕获 invalid_argument，what() = 除数为零，除法做不下去
@@ -186,42 +104,13 @@ int main() {
 
 链的形状咱们直接摆出来。A 阶段供一组数据，B 阶段一手接 A 的 future、一手供 C 的 promise，C 阶段收尾打印：
 
-```cpp
-// demo_chain.cpp —— 结果传递链：A 供数据，B 接上算总和，C 收尾打印
-#include <cstdio>
-#include <future>
-#include <numeric>
-#include <thread>
-#include <vector>
-
-void stage_a(std::promise<std::vector<int>> out) {
-  out.set_value(std::vector<int>{3, 1, 4, 1, 5, 9, 2, 6});
-}
-
-void stage_b(std::future<std::vector<int>> in, std::promise<int> out) {
-  std::vector<int> xs = in.get();   // 一手接上游的 future
-  out.set_value(std::accumulate(xs.begin(), xs.end(), 0));   // 一手供下游的 promise
-}
-
-void stage_c(std::future<int> in) {
-  std::printf("stage C: 收到总和 %d\n", in.get());
-}
-
-int main() {
-  std::promise<std::vector<int>> ab;
-  std::future<std::vector<int>> f_ab = ab.get_future();
-  std::promise<int> bc;
-  std::future<int> f_bc = bc.get_future();
-
-  std::thread ta(stage_a, std::move(ab));
-  std::thread tb(stage_b, std::move(f_ab), std::move(bc));
-  std::thread tc(stage_c, std::move(f_bc));
-  ta.join();
-  tb.join();
-  tc.join();
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="结果传递链：A 供数据，B 接上算总和，C 收尾打印"
+  source-path="code/examples/vol5/chapter04/16_demo_chain.cpp"
+  description="三条线程两个共享状态：B 的 get 天生等 A，C 的 get 天生等 B，main 只管起齐 join 齐，锁与通知一概没有出场。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 stage C: 收到总和 31
@@ -237,35 +126,13 @@ stage C: 收到总和 31
 
 shared_future 的取值规则 4.1 交代过：可拷贝，`get` 交 const 引用，取完还在，异常照重抛。供值的一端当时是 async 的任务，现在换成您手里的 promise，场面立刻完整：一处供值，多处取用，供值的时刻由您定。
 
-```cpp
-// demo_broadcast.cpp —— 一处供值，多处取用：promise 配 shared_future
-#include <chrono>
-#include <cstdio>
-#include <future>
-#include <string>
-#include <thread>
-#include <vector>
-
-using namespace std::chrono_literals;
-
-int main() {
-  std::promise<std::string> ready;
-  std::shared_future<std::string> config = ready.get_future().share();
-
-  std::vector<std::thread> pool;
-  for (int i = 0; i < 3; ++i) {
-    pool.emplace_back([config, i] {            // 每条线程一份自己的拷贝
-      const std::string& line = config.get();  // 没就绪就等，就绪了一起醒
-      std::printf("worker %d: 读到 %s\n", i, line.c_str());
-    });
-  }
-
-  std::this_thread::sleep_for(150ms);   // 顶替一段准备工作
-  ready.set_value("pool_size = 4");     // 供值端在 main 手里，什么时候给由咱们定
-  for (auto& t : pool) t.join();
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="一处供值，多处取用：promise 配 shared_future"
+  source-path="code/examples/vol5/chapter04/17_demo_broadcast.cpp"
+  description="三条 worker 各攥一份 shared_future 拷贝去 get，promise 留在 main 手里，set_value 一落三个等的人一起醒。worker 三行的次序由调度排。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 worker 0: 读到 pool_size = 4
@@ -303,7 +170,7 @@ packaged_task 的去留也交代清楚。它站在 promise 的肩膀上，把您
 
 ## 参考资源
 
-写本篇的时候，推进顺序参照了 Anthony Williams 的《C++ Concurrency in Action》，promise 与 packaged_task 相邻成章的安排给本篇的取舍做了参照，packaged_task 划去 4.4 的边界则是既定的分工。例子与文字都是我自己写的。五段代码在临时目录 /tmp/concurrency-u4/ 里编译运行，没有进仓库，编译器是 GCC 16.2.1，命令 `g++ -std=c++20 -O2 -pthread`，另加 `-Wall -Wextra` 无警告，机器是 WSL2 内核 6.18.33.2，16 逻辑核，日期 2026-11-16。临时目录系统会清，正文里的代码块就是全部内容，每个 demo 拼成单个 .cpp 文件即可复跑。探针里 libstdc++ 的两条 `future_error` 消息是本机实现给的，别的实现可以措辞不同，错误条件的比对才是标准保的。demo_broadcast 里 worker 三行的次序由调度排，我累计跑了十三遍，正文引的头三遍读到 0、1、2 与 0、2、1 两种排法，修订时补跑的十遍全部读到 0、1、2，三行都堵到 `set_value` 放行才出来，worker 0 十三遍都在最前，仅为本机观察。涉及标准行为的断言按 eel.is 上的现行工作草案核对，方括号里是小节名，斜杠后面是段号，小节名跟正式标准一致，段号可能挪。cppreference 的 promise 与 future_errc 两页抓到了全文，与草案对读无出入。shared_future 的组合条款按草案 [futures.shared.future] 核对，4.1 核过的取值规则没有重核。`future::get` 重抛异常的条款沿用 4.1 的核对。旧目录 ch05 的《promise 与 packaged_task》是本篇的素材底子，例子、实验与条款核对都是重新做的，packaged_task 的部分留给 4.4。
+写本篇的时候，推进顺序参照了 Anthony Williams 的《C++ Concurrency in Action》，promise 与 packaged_task 相邻成章的安排给本篇的取舍做了参照，packaged_task 划去 4.4 的边界则是既定的分工。例子与文字都是我自己写的。五段代码收在 `code/examples/vol5/chapter04/`，可在本页直接运行，编译器是 GCC 16.2.1，命令 `g++ -std=c++20 -O2 -pthread`，另加 `-Wall -Wextra` 无警告，机器是 WSL2 内核 6.18.33.2，16 逻辑核，初验日期 2026-11-16，抽成独立文件时复验过。探针里 libstdc++ 的两条 `future_error` 消息是本机实现给的，别的实现可以措辞不同，错误条件的比对才是标准保的。demo_broadcast 里 worker 三行的次序由调度排，我累计跑了十三遍，正文引的头三遍读到 0、1、2 与 0、2、1 两种排法，修订时补跑的十遍全部读到 0、1、2，三行都堵到 `set_value` 放行才出来，worker 0 十三遍都在最前，仅为本机观察。涉及标准行为的断言按 eel.is 上的现行工作草案核对，方括号里是小节名，斜杠后面是段号，小节名跟正式标准一致，段号可能挪。cppreference 的 promise 与 future_errc 两页抓到了全文，与草案对读无出入。shared_future 的组合条款按草案 [futures.shared.future] 核对，4.1 核过的取值规则没有重核。`future::get` 重抛异常的条款沿用 4.1 的核对。旧目录 ch05 的《promise 与 packaged_task》是本篇的素材底子，例子、实验与条款核对都是重新做的，packaged_task 的部分留给 4.4。
 
 - [std::promise（cppreference）][cppref-promise]，C++11 起，只移动，供值端，存值与等待返回之间的同步关系。
 - [std::future_errc（cppreference）][cppref-errc]，四个错误码：broken_promise、future_already_retrieved、promise_already_satisfied、no_state。

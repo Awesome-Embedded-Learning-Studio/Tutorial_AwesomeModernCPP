@@ -25,7 +25,7 @@ current_status:
 
 素材来自旧目录 exercises 的《[Capstone: Mini Concurrent Runtime](../exercises/06-capstone-mini-runtime)》，它让读者拼一个 mini 并发运行时，epoll、Channel、线程池、协程调度器，全家桶一起上。改造的方向咱们定过：业务只留对一批数据做计算，网络与事件循环的复杂度全部撤掉，旧文的指标采集也一起撤了，把练习时间留给并发设计本身。收益的测量不跟着旧文走，归 8.4 的计时架。旧文追问的三个工程问题倒是一直保留：组件之间怎么连接、系统怎么停止、错误怎么传播，它们换了一身衣服，住进本篇的行为要求里。
 
-本篇是题目篇，正文不带实现。接口骨架与对照程序我都放在临时目录 /tmp/concurrency-u8/ 里编译运行过（WSL2，16 逻辑核，GCC 16.2.1 20260810，2026-11-17）：骨架用 `g++ -std=c++20 -pthread -c` 只求编译通过，对照程序用 `g++ -std=c++20 -O2 -pthread` 跑出读数。工具版本的断言我按 cppreference 核对过（2026-11-17 访问），出处收在参考资源里。
+本篇是题目篇，正文不带实现。接口骨架与对照程序都收在 `code/examples/vol5/chapter08/`，可在本页直接运行（WSL2，16 逻辑核，GCC 16.2.1 20260810，2026-11-17）：骨架只求编译通过，对照程序用 `g++ -std=c++20 -O2 -pthread` 跑出读数。工具版本的断言我按 cppreference 核对过（2026-11-17 访问），出处收在参考资源里。
 
 ## 题目：一个小型任务处理程序
 
@@ -37,13 +37,13 @@ current_status:
 
 任务内容考卷给定，您跟别的读者拿的是同一张考卷：
 
-```cpp
-// compute(i) —— 考卷给定的任务内容：编号 i 成功算 i*i，13 的正倍数抛异常
-long long compute(int i) {
-  if (i % 13 == 0 && i > 0) throw std::runtime_error("编号 13 的倍数注定失败");
-  return static_cast<long long>(i) * i;
-}
-```
+<OnlineCompilerDemo
+  title="compute(i)：考卷给定的任务内容"
+  source-path="code/examples/vol5/chapter08/01_compute_task.cpp"
+  description="编号 i 成功算 i*i 交回 long long；凡是 13 的正倍数一跑就抛 runtime_error。程序里挑了几个成功样例与三个注定失败的样例，catch 住打给您看。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 编过没跑过的代码，咱们不往正文里放。上面几行跟后面的对照程序是同一份考卷，验证交代在开头。
 
@@ -79,22 +79,15 @@ total 是成功结果的累加值。success 是成功的任务数，failed 是�
 
 对照的算法咱们不藏着，expected.cpp 的核心就是下面十几行，串行一遍跑到底，失败只计数，不进总数：
 
-```cpp
-// expected.cpp 的核心计算：串行把同批编号逐个算一遍，失败只计数，不进总数
-long long total = 0;
-long long success = 0;
-long long failed = 0;
-for (int i = 0; i < n; ++i) {
-  try {
-    total += compute(i);
-    ++success;
-  } catch (const std::exception&) {
-    ++failed;
-  }
-}
-```
+<OnlineCompilerDemo
+  title="expected.cpp：串行对照程序"
+  source-path="code/examples/vol5/chapter08/02_expected_serial.cpp"
+  description="同批编号串行算一遍，失败只计数不进总数。不带参数默认 n=10000，打出的正是下面那行读数；本地也可以命令行传别的 n。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
-完整文件不随文发布，上面这段就是它的全部算法，您照着敲一遍，手里的核对工具就跟咱们用的是同一套。
+完整文件收在 `code/examples/vol5/chapter08/`，可在本页直接运行，您手里的核对工具跟咱们用的是同一套。
 
 并发自己的正确性再叠一层：同一份程序、同一批输入，重复跑若干轮，汇总轮轮一致。道理单元六讲过，调度器每轮交出来的交错都不同，一次全对说明不了什么（见[《怎样寻找并发错误》](../chapter06-validating-designs/01-finding-concurrency-bugs)）。轮数与工具归 8.4 安排，手法是重复测试加 ThreadSanitizer。写程序的您不用自己跑满轮数，但写法得让它们跑得过：共享的地方要么有锁护着，要么有原子护着，要么干脆不共享，选了哪条路、为什么，8.2 的设计说明交代。
 
@@ -142,57 +135,15 @@ for (int i = 0; i < n; ++i) {
 - failures 返回拷贝，消息用 `std::string` 存值。异常对象销毁之后消息还得活着，悬垂指针进汇总报告是常见险情。
 - request_stop 标了 `noexcept`。提出停止的动作本身不该失败，它也不抛，收场的等待交给 wait，两个入口的分工在接口上就分开了。
 
-```cpp
-// batch_processor.hpp —— 接口骨架：形状参考，不是规定。实现从 8.2 起由您自己补
-#ifndef BATCH_PROCESSOR_HPP
-#define BATCH_PROCESSOR_HPP
+<OnlineCompilerDemo
+  title="batch_processor 接口骨架：只验证形状"
+  source-path="code/examples/vol5/chapter08/03_batch_processor_skeleton.cpp"
+  description="Job、Failure 与 BatchProcessor 的声明原样在内，main 只证明编得过一个翻译单元。成员函数一个都还没实现，没有代码引用它们，实现从 8.2 起归您。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
-#include <cstddef>
-#include <string>
-#include <vector>
-
-// 一项任务的输入与结果，普通数据，处理程序不问业务含义
-struct Job {
-  int input{};          // 交给任务的编号
-  long long output{};   // 任务算完写回的结果
-};
-
-// 一条失败记录：哪一项、抛了什么消息
-struct Failure {
-  int input{};
-  std::string reason{}; // 异常消息的拷贝，异常对象没了消息还在
-};
-
-class BatchProcessor {
-public:
-  explicit BatchProcessor(unsigned worker_count);  // 工作线程数量由调用方定
-  ~BatchProcessor();
-
-  BatchProcessor(const BatchProcessor&) = delete;
-  BatchProcessor& operator=(const BatchProcessor&) = delete;
-
-  void submit(Job job);           // 提交一项任务，排队等工作线程领走
-  void request_stop() noexcept;   // 提出停止：还没开跑的不再做，在跑的跑完
-  void wait();                    // 等全部收场：线程退出，计数站得住
-
-  long long total() const;                // 成功结果的累加值
-  std::size_t success_count() const;      // 成功的任务数
-  std::size_t failed_count() const;       // 失败的任务数
-  std::size_t skipped_count() const;      // 停止后没轮到做的任务数
-  std::vector<Failure> failures() const;  // 失败清单，能对上号
-};
-
-#endif
-```
-
-骨架我在临时目录里编过一遍。翻译单元只有几行，跟头文件放在同一目录：
-
-```cpp
-// tu_skeleton.cpp —— 骨架编译验证：只包含头文件，编一个翻译单元，不链接不运行
-#include "batch_processor.hpp"
-
-int main() { return 0; }
-```
+骨架收在 `code/examples/vol5/chapter08/`，可在本页直接运行。翻译单元只有几行，跟头文件放在同一目录：
 
 ```bash
 g++ -std=c++20 -pthread -c tu_skeleton.cpp -o tu_skeleton.o
@@ -218,7 +169,7 @@ g++ -std=c++20 -pthread -c tu_skeleton.cpp -o tu_skeleton.o
 
 ## 参考资源
 
-本篇的素材来自旧目录 exercises 的《[Capstone: Mini Concurrent Runtime](../exercises/06-capstone-mini-runtime)》，题目按定好的边界改造，例子与文字全部重写。接口骨架与对照程序我都放在临时目录里编译运行过，编译器是 GCC 16.2.1，日期 2026-11-17，配方见开头的验证交代。工具版本的断言我按 cppreference 核对过，访问日期 2026-11-17。
+本篇的素材来自旧目录 exercises 的《[Capstone: Mini Concurrent Runtime](../exercises/06-capstone-mini-runtime)》，题目按定好的边界改造，例子与文字全部重写。接口骨架与对照程序收在 `code/examples/vol5/chapter08/`，可在本页直接运行，编译器是 GCC 16.2.1，日期 2026-11-17，配方见开头的验证交代，抽成独立文件时复验过。工具版本的断言我按 cppreference 核对过，访问日期 2026-11-17。
 
 - [std::jthread（cppreference）][cppref-jthread]，C++20 的自动 join 线程，析构时若 joinable 会提出停止并等待。
 - [std::stop_token（cppreference）][cppref-stoptoken]，协作式停止的查询端，stop_requested 的语义。

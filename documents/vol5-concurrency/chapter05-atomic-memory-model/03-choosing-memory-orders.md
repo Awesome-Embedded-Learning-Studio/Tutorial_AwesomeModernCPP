@@ -25,7 +25,7 @@ current_status:
 
 欠着的几笔，咱们在本篇一起清。5.1 讲 `atomic_flag` 的时候留了话，`test_and_set` 与 `clear` 后面的 acquire 与 release 归本篇专讲。5.2 的 litmus 架子借了 release 与 acquire 的握手，也留了话，正式讲在这篇。5.2 结尾那句“隔着的几档内存序各保什么、各花多少”，本篇拿指令对照来回答。1.5《[让工作有序结束](../chapter01-start-concurrency/05-jthread-and-stopping)》讲停止标志时提过 relaxed 连可见性都不保证，5.2 数出它桥一节不搭，修法也在本篇给。
 
-照例交代实验。文中的程序，咱们都放进临时目录 /tmp/concurrency-u5/，在同一次调用里编译、运行（GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，WSL2 内核 6.18.33.2，16 逻辑核，2026-11-16）。litmus 的三档我各跑了两遍，篇末动手题里给 litmus 加的那一档，我也预跑过，读数都写进正文，多线程读数都是单次运行的读数。涉及标准行为的断言，我按 eel.is 上的现行工作草案与 cppreference 核对，条款名都带着，段号随草案版本会挪。
+照例交代实验。文中的程序收在 code/examples/vol5/chapter05/，可在本页直接运行（GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，WSL2 内核 6.18.33.2，16 逻辑核，2026-11-16）。litmus 的三档我各跑了两遍，篇末动手题里给 litmus 加的那一档，我也预跑过，读数都写进正文，多线程读数都是单次运行的读数。涉及标准行为的断言，我按 eel.is 上的现行工作草案与 cppreference 核对，条款名都带着，段号随草案版本会挪。
 
 ## 从顺序一致性出发
 
@@ -45,98 +45,13 @@ current_status:
 
 光说不够，咱们量一把。我把 5.2 的 litmus 原架搬来，动作对单独装进一个函数，内存序做成编译期三选一，relaxed 一档，release 配 acquire 一档，seq_cst 一档。
 
-```cpp
-// litmus_acqrel.cpp —— 两条线程互测 x、y 两端的读写次序，内存序编译期三选一
-// 架子与 5.2 的 litmus 相同：放行哨兵、应答只增不减、重置压在放行之前、绑核 0 与 8
-// 用法: g++ -std=c++20 -O2 -pthread -DORDER_MODE=0|1|2 litmus_acqrel.cpp
-// 0 = relaxed   1 = release/acquire   2 = seq_cst
-#include <atomic>
-#include <cstdio>
-#include <pthread.h>
-#include <thread>
-
-#if ORDER_MODE == 0
-#define SORD std::memory_order_relaxed
-#define LORD std::memory_order_relaxed
-#define NAME "relaxed"
-#elif ORDER_MODE == 1
-#define SORD std::memory_order_release
-#define LORD std::memory_order_acquire
-#define NAME "release/acquire"
-#elif ORDER_MODE == 2
-#define SORD std::memory_order_seq_cst
-#define LORD std::memory_order_seq_cst
-#define NAME "seq_cst"
-#endif
-
-struct alignas(64) Slot { std::atomic<int> v{0}; };   // x、y 各住一条缓存行
-static Slot sx, sy;
-static std::atomic<int>& x = sx.v;
-static std::atomic<int>& y = sy.v;
-
-// 动作对单独装一个函数，objdump 对照三版指令时一眼可见
-__attribute__((noinline)) int probe(std::atomic<int>& w, std::atomic<int>& r) {
-  w.store(1, SORD);
-  return r.load(LORD);
-}
-
-struct alignas(64) Hand {
-  std::atomic<long> round{1};   // 放行哨兵，主线程每轮推一号，唯一的起跑口
-  std::atomic<long> ack{0};     // 应答，2r 表示读到 1，2r+1 表示读到 0，只增不减
-};
-static Hand ha, hb;
-
-static void pin(std::thread& t, int cpu) {   // glibc 绑核接口（_np，不可移植），固定实验条件用
-  cpu_set_t set;
-  CPU_ZERO(&set);
-  CPU_SET(cpu, &set);
-  pthread_setaffinity_np(t.native_handle(), sizeof(set), &set);
-}
-
-int main() {
-  const long kTrials = 10000000;
-  long hits = 0;
-
-  std::thread ta([&] {
-    for (long r = 1; r <= kTrials; ) {
-      if (ha.round.load(std::memory_order_relaxed) < r) continue;
-      int got = probe(x, y);              // 写 x，读 y
-      ha.ack.store(2 * r + (got == 0 ? 1 : 0), std::memory_order_release);
-      ++r;
-    }
-  });
-  std::thread tb([&] {
-    for (long r = 1; r <= kTrials; ) {
-      if (hb.round.load(std::memory_order_relaxed) < r) continue;
-      int got = probe(y, x);              // 写 y，读 x
-      hb.ack.store(2 * r + (got == 0 ? 1 : 0), std::memory_order_release);
-      ++r;
-    }
-  });
-
-  pin(ta, 0);
-  pin(tb, 8);
-
-  for (long r = 1; r <= kTrials; ++r) {
-    if (r > 1) {   // 上一轮应答收齐才开下一轮，重置压在放行之前
-      while (ha.ack.load(std::memory_order_acquire) < 2 * (r - 1)) {}
-      while (hb.ack.load(std::memory_order_acquire) < 2 * (r - 1)) {}
-    }
-    x.store(0, std::memory_order_relaxed);
-    y.store(0, std::memory_order_relaxed);
-    ha.round.store(r, std::memory_order_seq_cst);
-    hb.round.store(r, std::memory_order_seq_cst);
-    long aa = 0, ba = 0;
-    while ((aa = ha.ack.load(std::memory_order_acquire)) < 2 * r) {}
-    while ((ba = hb.ack.load(std::memory_order_acquire)) < 2 * r) {}
-    if ((aa & 1) && (ba & 1)) ++hits;   // 两边同时读到旧值 0 才记命中
-  }
-
-  ta.join();
-  tb.join();
-  std::printf("%s: %ld of %ld rounds saw r1=0 and r2=0\n", NAME, hits, kTrials);
-}
-```
+<OnlineCompilerDemo
+  title="litmus 三档：relaxed、release 配 acquire、seq_cst"
+  source-path="code/examples/vol5/chapter05/13_litmus_acqrel.cpp"
+  description="内存序编译期三选一，默认 -DORDER_MODE=0 是 relaxed 档，命中数万次；换成 1 或 2 重编（命令与读数见下方）。"
+  run-options="-O2 -std=c++20 -pthread -DORDER_MODE=0"
+  allow-run
+/>
 
 读数摆在下面，咱们三档各跑了两遍，都是单次运行的读数：
 
@@ -184,27 +99,13 @@ relaxed 的承诺清单最短，值钱的也正在这里，咱们一条一条看
 
 咱们拿计数器量一遍它的底：
 
-```cpp
-// counter_relaxed.cpp —— relaxed 只保原子性：四条线程各加 100 万次
-#include <atomic>
-#include <cstdio>
-#include <thread>
-
-std::atomic<long long> served{0};
-
-void work(int rounds) {
-  for (int i = 0; i < rounds; ++i) {
-    served.fetch_add(1, std::memory_order_relaxed);   // 只保原子性，不搭桥
-  }
-}
-
-int main() {
-  std::thread ts[4];
-  for (int i = 0; i < 4; ++i) ts[i] = std::thread(work, 1000000);
-  for (auto& t : ts) t.join();
-  std::printf("4 条线程各加 100 万次，relaxed 读数 %lld\n", served.load(std::memory_order_relaxed));
-}
-```
+<OnlineCompilerDemo
+  title="relaxed 计数器：只保原子性也分毫不差"
+  source-path="code/examples/vol5/chapter05/14_counter_relaxed.cpp"
+  description="四条线程各加 100 万次，relaxed 读数 4000000；数值本身就是目的，旁边没有货要过桥，这就是它的用场。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 4 条线程各加 100 万次，relaxed 读数 4000000
@@ -234,34 +135,13 @@ consume 当初的算盘比 acquire 精细，咱们把它摆开看。acquire 是�
 
 1.5 讲协作式停止之前，轮询标志是人人写过的版本。工作线程反复看标志，主线程置标志，多数时候标志旁边还有一起更新的配置。5.2 数出 relaxed 版桥一节不搭，咱们把修法写成 demo，relaxed 的对照留给篇末动手题：
 
-```cpp
-// stop_flag.cpp —— 停止标志：release 置、acquire 读，标志旁边的数据跟着过桥
-#include <atomic>
-#include <chrono>
-#include <cstdio>
-#include <thread>
-
-std::atomic<bool> stop_flag{false};
-int batch_size = 8;              // 标志旁边共享的配置，普通变量
-
-int config_after_stop = 0;
-
-void worker() {
-  while (!stop_flag.load(std::memory_order_acquire)) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
-  }
-  config_after_stop = batch_size;   // 看到停止之后读配置
-}
-
-int main() {
-  std::thread w(worker);
-  std::this_thread::sleep_for(std::chrono::milliseconds(50));
-  batch_size = 64;                  // 配置更新压在置标志之前
-  stop_flag.store(true, std::memory_order_release);
-  w.join();
-  std::printf("worker 看到停止后读到的 batch_size=%d\n", config_after_stop);
-}
-```
+<OnlineCompilerDemo
+  title="停止标志：release 置、acquire 读，配置跟着过桥"
+  source-path="code/examples/vol5/chapter05/15_stop_flag.cpp"
+  description="main 先改 batch_size 再用 release 置标志，worker 用 acquire 看到停止后读配置，读到的是 64 不是旧值 8。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 worker 看到停止后读到的 batch_size=64
@@ -275,24 +155,13 @@ worker 看到停止后读到的 batch_size=64
 
 引用计数是 relaxed 与 acq_rel 同框的样板。完整的侵入式指针，旧目录 ch03 的素材文《原子操作模式》有全本，这里咱们只留两个成员函数，内存序才是主角：
 
-```cpp
-// refcount_core.cpp —— 引用计数两个成员的内存序搭配
-#include <atomic>
-
-struct Counted {
-  std::atomic<int> refs{1};
-
-  void add_ref() {
-    refs.fetch_add(1, std::memory_order_relaxed);   // 只要动作完整
-  }
-
-  bool release_ref() {
-    // 减到零的线程要销毁对象。读的一头接住别的线程的使用（acquire），
-    // 写的一头把自己的使用压在减法之前（release）。
-    return refs.fetch_sub(1, std::memory_order_acq_rel) == 1;
-  }
-};
-```
+<OnlineCompilerDemo
+  title="引用计数：增用 relaxed，减用 acq_rel"
+  source-path="code/examples/vol5/chapter05/16_refcount_core.cpp"
+  description="正文那两个成员函数原样在 Counted 里，main 补成可运行：refs 从 1 加到 3，再逐个放手，减到零的那一次 release_ref 返回 true。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 判据咱们两头数。减法那一头：减到零的人要销毁对象，销毁要看见别的线程对对象的全部使用，所以减法的读得是 acquire，接住上游。同时每个使用过对象的人，自己的访问得压在减法之前，所以减法的写得是 release，向下游发布。两头都接链，acq_rel。加法那一头：增引用的人只关心自己拿到引用这件事成立，动作完整就够，relaxed。增与减的待遇不一样，这句概括是咱们自己下的，上面两个成员函数就是它的落点。
 
@@ -300,54 +169,13 @@ struct Counted {
 
 假设您手上有一个初始化很贵的对象，配置要读文件，连接要握手，多数调用其实只想拿现成的。每次访问都加锁当然对，可锁的开销全摊在快路径上，九成九的调用都在替百分之一的初始化买单。检查、加锁、再检查，把锁往后挪，这就是双重检查锁定（double-checked locking pattern，简称 DCLP）的形状。它在 C++11 之前没法正确实现，Scott Meyers 与 Andrei Alexandrescu 2004 年的分析文章把旧标准的难处写全了，C++11 的内存模型给它补上了地基。咱们看能用的写法：
 
-```cpp
-// dclp.cpp —— 双重检查锁定：外层 acquire，锁内 relaxed，发布 release
-#include <atomic>
-#include <cstdio>
-#include <mutex>
-#include <thread>
-
-struct Config { int id; int value; };
-Config* raw_instance = nullptr;              // 真正的对象
-std::atomic<Config*> published{nullptr};     // 发布口
-std::mutex init_mutex;
-
-__attribute__((noinline)) Config* instance() {
-  Config* p = published.load(std::memory_order_acquire);        // 外层检查，acquire
-  if (p == nullptr) {
-    std::lock_guard<std::mutex> lock(init_mutex);
-    p = published.load(std::memory_order_relaxed);              // 锁内复查，已持锁，relaxed 就够
-    if (p == nullptr) {
-      raw_instance = new Config{1, 42};                         // 构造全部完成才发布
-      published.store(raw_instance, std::memory_order_release); // 桥从这里搭
-      p = raw_instance;      // 发布后把指针带回来；第一版漏了这行，抢到锁的线程拿着 nullptr 回去
-    }
-  }
-  return p;
-}
-
-const Config* seen[8] = {};
-
-int main() {
-  std::thread ts[8];
-  for (int i = 0; i < 8; ++i) {
-    ts[i] = std::thread([i] {                  // seen 是全局数组，lambda 里直接可见，不用捕获
-      for (int k = 0; k < 100000; ++k) {
-        const Config* p = instance();
-        if (p->id != 1 || p->value != 42) {
-          std::printf("线程 %d 读到不一致的对象\n", i);
-        }
-        seen[i] = p;
-      }
-    });
-  }
-  for (auto& t : ts) t.join();
-  bool all_same = true;
-  for (int i = 1; i < 8; ++i) if (seen[i] != seen[0]) all_same = false;
-  std::printf("8 条线程各取 10 万次：指针一致=%d，id=%d value=%d\n",
-              all_same ? 1 : 0, seen[0]->id, seen[0]->value);
-}
-```
+<OnlineCompilerDemo
+  title="双重检查锁定：外层 acquire，锁内 relaxed，发布 release"
+  source-path="code/examples/vol5/chapter05/17_dclp.cpp"
+  description="八条线程各取 10 万次，指针一致、字段齐全；漏写发布后带回指针那一行的翻车现场见下方 AddressSanitizer 的回话。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 8 条线程各取 10 万次：指针一致=1，id=1 value=42
@@ -368,12 +196,13 @@ int main() {
 
 Meyers 单例在旁边等着收尾。块级 static 的初始化，标准替咱们管了并发（[stmt.dcl] 第 3 段：并发进入声明时，并发执行要等待初始化完成）：
 
-```cpp
-Config& config() {
-  static Config inst{1, 42};   // 并发初始化由标准担保
-  return inst;
-}
-```
+<OnlineCompilerDemo
+  title="块级 static：并发初始化由标准担保"
+  source-path="code/examples/vol5/chapter05/18_meyers_singleton.cpp"
+  description="config() 两次调用取到同一个对象，字段齐全；能写成块级 static 就不必手搓 DCLP，Config 沿用 dclp.cpp 的定义。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 您能写成块级 static 的，就别手搓 DCLP。DCLP 的价值在形状本身，检查、加锁、再检查，延迟初始化任何资源都用得上，单例只是它最有名的雇主。
 
@@ -381,42 +210,13 @@ Config& config() {
 
 本节带（扩展）标记，跳过它不影响主线。大伙想看进度，可以。可见性这一层，得由完成标志来扛，您 acquire 到 true，货才算真的到手。分工摆出来，就是 relaxed 与 acquire-release 同框的另一处：
 
-```cpp
-// pubsub.cpp —— 发布订阅：relaxed 计数只报进度，acquire/release 标志承担可见性
-#include <atomic>
-#include <cstdio>
-#include <thread>
-
-std::atomic<int> finished{0};    // 进度计数，relaxed
-std::atomic<bool> done{false};   // 完成标志，release/acquire
-int goods[3] = {0, 0, 0};        // 生产的三份货，普通变量
-
-void producer() {
-  for (int i = 0; i < 3; ++i) {
-    goods[i] = 100 + i;
-    finished.fetch_add(1, std::memory_order_relaxed);   // 只报进度
-  }
-  done.store(true, std::memory_order_release);          // 桥在这里搭
-}
-
-int seen_count = -1;
-int seen_goods[3] = {0, 0, 0};
-
-void consumer() {
-  while (!done.load(std::memory_order_acquire)) {}      // 读到 release 写的值，桥接通
-  seen_count = finished.load(std::memory_order_relaxed); // 桥接通后，读进度连 relaxed 都够
-  for (int i = 0; i < 3; ++i) seen_goods[i] = goods[i];
-}
-
-int main() {
-  std::thread p(producer);
-  std::thread c(consumer);
-  p.join();
-  c.join();
-  std::printf("消费者看到的计数=%d，货物=%d,%d,%d\n",
-              seen_count, seen_goods[0], seen_goods[1], seen_goods[2]);
-}
-```
+<OnlineCompilerDemo
+  title="发布订阅：relaxed 计数只报进度，可见性归标志"
+  source-path="code/examples/vol5/chapter05/19_pubsub.cpp"
+  description="done 的 release 与 acquire 把三份普通货物送过桥，消费者看到计数 3、货物 100、101、102；桥接通后读进度连 relaxed 都够。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 消费者看到的计数=3，货物=100,101,102
@@ -432,37 +232,13 @@ int main() {
 
 咱们只讲两端都挂 fence 的接法。cppreference 在 `atomic_thread_fence` 的页上列了三种接法，fence 对原子、原子对 fence、fence 对 fence，demo 用的是 fence 对 fence。条件咱们数全：写端把 release fence 排在一个原子写之前，原子写用什么内存序都行。读端用 relaxed 读拿到值，再把 acquire fence 排在读的后面。两端凑齐，桥就接通，写端 fence 之前的写对读端 fence 之后的读可见。
 
-```cpp
-// fence_demo.cpp —— fence-fence 同步：两端各挂一条 fence，排序约束从原子操作挪到 fence 上
-#include <atomic>
-#include <cstdio>
-#include <thread>
-
-int payload = 0;                 // 普通变量，可见性靠 fence 与 flag 共同垫起来
-std::atomic<int> flag{0};
-
-__attribute__((noinline)) void publish() {
-  payload = 42;
-  std::atomic_thread_fence(std::memory_order_release);   // 独立 fence 承担排序
-  flag.store(1, std::memory_order_relaxed);              // relaxed store 就够
-}
-
-int received = 0;
-
-__attribute__((noinline)) void subscribe() {
-  while (flag.load(std::memory_order_relaxed) != 1) {}
-  std::atomic_thread_fence(std::memory_order_acquire);
-  received = payload;                                     // 依据标准语义，此处读到 42
-}
-
-int main() {
-  std::thread p(publish);
-  std::thread c(subscribe);
-  p.join();
-  c.join();
-  std::printf("消费者读到的 payload=%d\n", received);
-}
-```
+<OnlineCompilerDemo
+  title="fence 对 fence：排序约束从原子操作挪到 fence 上"
+  source-path="code/examples/vol5/chapter05/20_fence_demo.cpp"
+  description="发布端挂 release fence、订阅端挂 acquire fence，flag 的读写都降成 relaxed，消费者照样读到 payload=42。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 消费者读到的 payload=42
@@ -526,7 +302,7 @@ volatile 的边界 5.1 判过一半，咱们在这里收拢。volatile 承诺的
 
 ## 参考资源
 
-本篇的实验都在临时目录 /tmp/concurrency-u5/ 里编译运行，没有进仓库（GCC 16.2.1 20260810，`g++ -std=c++20 -O2 -pthread`，WSL2 内核 6.18.33.2，16 逻辑核，2026-11-16）。litmus 三档我各跑了两遍，更早一轮预跑的同为三档（relaxed、release 配 acquire、seq_cst），读数量级相同，seq_cst 全部零命中。篇末动手题的那一档，我也预跑了两遍。counter_relaxed 的 4000000、fence_demo 的 42、stop_flag 的 64、pubsub 的 3 与 100、101、102，每次运行读数一致。DCLP 的两遍读数一致，翻车现场由 AddressSanitizer 定位。指令对照来自 objdump，地址列截掉。litmus 的架子与 5.2 相同，放行哨兵、应答只增不减、重置压在放行之前、绑核 0 与 8 号逻辑核。
+本篇的实验收在 code/examples/vol5/chapter05/，可在本页直接运行（GCC 16.2.1 20260810，`g++ -std=c++20 -O2 -pthread`，WSL2 内核 6.18.33.2，16 逻辑核，2026-11-16，抽成独立文件时复验过）。litmus 三档我各跑了两遍，更早一轮预跑的同为三档（relaxed、release 配 acquire、seq_cst），读数量级相同，seq_cst 全部零命中。篇末动手题的那一档，我也预跑了两遍。counter_relaxed 的 4000000、fence_demo 的 42、stop_flag 的 64、pubsub 的 3 与 100、101、102，每次运行读数一致。DCLP 的两遍读数一致，翻车现场由 AddressSanitizer 定位。指令对照来自 objdump，地址列截掉。litmus 的架子与 5.2 相同，放行哨兵、应答只增不减、重置压在放行之前、绑核 0 与 8 号逻辑核。
 
 涉及标准行为的断言，我按 eel.is 的现行工作草案与 cppreference 核对，草案是 2026-11-16 抓的。[atomics.order] 核了枚举、release 与 acquire 的同步关系、释放序列、seq_cst 总序与掺弱作废的注，现行草案的枚举里没有 consume。[stmt.dcl] 核了块级 static 并发初始化的等待条款。[intro.races] 的 data race 判定 5.2 已核，本篇复用。fence 的三种同步模式、x86 不发指令的 Notes 与信箱扫描的例子，按 cppreference 的 `atomic_thread_fence` 页核对。consume 的弃用状态核对过两处。一处是 cppreference 条目表的 C++26 标记，另一处是 libstdc++ 的合入记录。推进顺序参照了 Anthony Williams 的《C++ Concurrency in Action》，取的是单元排布与例子设计的思路。DCLP 的写法参考了两份材料，Jeff Preshing 的文章是一份，Meyers 与 Alexandrescu 2004 年的分析是另一份。借的是结构与讲法，例子和文字都是我自己写的。
 

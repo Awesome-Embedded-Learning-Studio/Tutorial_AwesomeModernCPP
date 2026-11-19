@@ -21,7 +21,7 @@ current_status:
 
 单元八走到了收官。8.1《[题目与行为要求](01-requirements)》把考卷立起来，8.2《[自行完成并发设计](02-design)》交了示范设计，8.3《[处理完整的运行过程](03-full-run)》把设计长成完整程序 full_run.cpp：命令行收 n 与 w，失败清单全量输出，停止在四个时机注入实测。轮到本篇交卷：8.1 立考卷的时候给过一张验收归属表，七行要求每行配了验收手段，咱们把七行一行一行兑成读数。兑完再把并发版与串行版的计时摆上桌，量级说话，不抠尾数。读数交完，还有一份说明要交代：您自己交作业的时候，设计说明该装什么。
 
-读数全部出自临时目录 /tmp/concurrency-u8/ 的编译运行（WSL2，16 逻辑核，GCC 16.2.1 20260810，2026-11-18）。普通版配方 `g++ -std=c++20 -O2 -pthread`，插桩版配方 `g++ -std=c++20 -O1 -g -pthread -fsanitize=thread`，跟单元六用的是同一套（见《[怎样寻找并发错误](../chapter06-validating-designs/01-finding-concurrency-bugs)》）。驱动包含的头文件装的是 8.2 示范去掉 main 的全文：compute、Job、Failure 与 BatchProcessor 四件，原样搬入，只加了包含保护，其余一行没动。计时用的是 `std::chrono::steady_clock`（C++11 起的单调时钟，适合测量间隔），定位我按 cppreference 当日复核过，出处收在参考资源里。多线程读数都是单次运行的读数，几轮原始读数我全列出来，量级当真、尾数不当真，立场与 6.2《[怎样衡量并发带来的收益](../chapter06-validating-designs/02-measuring-benefits)》一致。
+读数全部出自收在 `code/examples/vol5/chapter08/` 的程序（可在本页直接运行；WSL2，16 逻辑核，GCC 16.2.1 20260810，2026-11-18，抽成独立文件时复验过）。普通版配方 `g++ -std=c++20 -O2 -pthread`，插桩版配方 `g++ -std=c++20 -O1 -g -pthread -fsanitize=thread`，跟单元六用的是同一套（见《[怎样寻找并发错误](../chapter06-validating-designs/01-finding-concurrency-bugs)》）。驱动包含的头文件装的是 8.2 示范去掉 main 的全文：compute、Job、Failure 与 BatchProcessor 四件，原样搬入，只加了包含保护，其余一行没动。计时用的是 `std::chrono::steady_clock`（C++11 起的单调时钟，适合测量间隔），定位我按 cppreference 当日复核过，出处收在参考资源里。多线程读数都是单次运行的读数，几轮原始读数我全列出来，量级当真、尾数不当真，立场与 6.2《[怎样衡量并发带来的收益](../chapter06-validating-designs/02-measuring-benefits)》一致。
 
 ## 一套驱动，把检查装进一个程序
 
@@ -29,120 +29,13 @@ current_status:
 
 驱动的正确性部分我贴在下面。串行对照沿用 8.1 的 expected 算法，守恒与失败清单做成每轮必查的检查，停止时机做成参数，一轮一个注入点：
 
-```cpp
-// verify_all.cpp 的正确性部分（计时代码在串行对比一节，从略只交读数，main 与参数解析是几行胶水）
-#include "batch_design.hpp"   // 8.2 示范去掉 main 的全文（compute、Job、Failure、BatchProcessor），只加包含保护
-
-int g_failed_checks = 0;
-
-void check(bool ok, const std::string& what) {
-  if (!ok) {
-    std::printf("CHECK FAILED: %s\n", what.c_str());
-    ++g_failed_checks;
-  }
-}
-
-struct Summary {
-  long long total = 0;
-  std::size_t success = 0, failed = 0, skipped = 0;
-  bool same_as(const Summary& o) const {
-    return total == o.total && success == o.success
-        && failed == o.failed && skipped == o.skipped;
-  }
-};
-
-// 串行对照：8.1 expected.cpp 的算法原样，失败只计数，不进总数
-Summary run_serial(int n) {
-  Summary s;
-  for (int i = 0; i < n; ++i) {
-    try { s.total += compute(i); ++s.success; }
-    catch (const std::exception&) { ++s.failed; }
-  }
-  return s;
-}
-
-// 守恒与失败清单，每一轮都查
-void check_invariants(const BatchProcessor& bp, const Summary& s, int n, const char* tag) {
-  check(s.success + s.failed + s.skipped == static_cast<std::size_t>(n),
-        std::string(tag) + ": 守恒 提交数 = 成功 + 失败 + 没做");
-  auto fs = bp.failures();
-  check(fs.size() == s.failed, std::string(tag) + ": 失败清单条数 = failed 计数");
-  bool all_thirteen = true, all_msg = true;
-  for (const auto& f : fs) {
-    if (f.input <= 0 || f.input >= n || f.input % 13 != 0) all_thirteen = false;
-    if (f.reason != "编号 13 的倍数注定失败") all_msg = false;
-  }
-  check(all_thirteen, std::string(tag) + ": 失败清单每条都是 13 的正倍数");
-  check(all_msg, std::string(tag) + ": 失败消息与考卷原文一字不差");
-}
-
-// 正常收场一轮：生产者单独线程逐项提交，交完喊收工，wait 等全部退场
-Summary run_normal(int n, unsigned w) {
-  BatchProcessor bp(w);
-  std::thread producer([&] {
-    for (int i = 0; i < n; ++i) bp.submit(Job{i, 0});
-    bp.submissions_done();
-  });
-  producer.join();
-  bp.wait();
-  Summary s;
-  s.total = bp.total();
-  s.success = bp.success_count();
-  s.failed = bp.failed_count();
-  s.skipped = bp.skipped_count();
-  check_invariants(bp, s, n, "normal");
-  return s;
-}
-
-// 停止注入一轮：提交进行到第 stop_at 项时提出停止，stop_at == n 表示全部交完才停
-Summary run_stop(int n, unsigned w, int stop_at, const char* tag) {
-  BatchProcessor bp(w);
-  std::thread producer([&] {
-    for (int i = 0; i < n; ++i) {
-      if (i == stop_at) bp.request_stop();
-      bp.submit(Job{i, 0});
-    }
-    if (stop_at >= n) bp.request_stop();
-    bp.submissions_done();
-  });
-  producer.join();
-  bp.wait();
-  Summary s;
-  s.total = bp.total();
-  s.success = bp.success_count();
-  s.failed = bp.failed_count();
-  s.skipped = bp.skipped_count();
-  check_invariants(bp, s, n, tag);
-  return s;
-}
-
-// verify 模式：串行对照、重复轮一致性、停止多时机，全查
-int mode_verify(int rounds, int n, unsigned w) {
-  const Summary ref = run_serial(n);
-  print_summary("serial-ref", ref);
-  int mismatch = 0;
-  Summary last;
-  for (int r = 0; r < rounds; ++r) {
-    Summary s = run_normal(n, w);
-    if (!s.same_as(ref)) ++mismatch;
-    last = s;
-  }
-  print_summary("normal-last", last);
-  std::printf("rounds=%d mismatch=%d\n", rounds, mismatch);
-  check(mismatch == 0, "重复轮汇总轮轮一致");
-
-  struct Timing { int at; const char* tag; };
-  const Timing timings[] = {
-      {0, "stop@0%"}, {n / 10, "stop@10%"}, {n / 2, "stop@50%"},
-      {n * 9 / 10, "stop@90%"}, {n, "stop@done"}};
-  for (const Timing& t : timings) {
-    Summary s = run_stop(n, w, t.at, t.tag);
-    print_summary(t.tag, s);
-  }
-  check(run_normal(n, w).same_as(ref), "时机组跑完后再跑正常轮仍与串行一致");
-  return g_failed_checks;
-}
-```
+<OnlineCompilerDemo
+  title="verify_all.cpp：正确性检查的完整驱动"
+  source-path="code/examples/vol5/chapter08/06_verify_all.cpp"
+  description="8.2 示范全文内联，verify 模式逐字在内：串行对照、守恒与失败清单每轮必查、五个停止时机注入。默认 20 轮 n=10000 直接出读数；本地 v <rounds> <n> <w> 换轮数，b <n> <w> 进 bench 模式量计时。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 有两处细节，我单独交代。检查失败只计数不中断，程序收尾用退出码报告，全部检查通过退出码才是 0，8.1 要求的正常路径退出码，驱动自己也守着。守恒的检查有两道，wait() 里住着 8.2 写下的断言，驱动在外面再查一遍，一内一外互不替对方作数，断言是活的，配方里没有定义 NDEBUG。
 
@@ -269,21 +162,13 @@ parallel n=1000000 w=16 round=2 48992.412 ms
 
 8.2 预留过批量提交、批量领取的路，说等读数指认协调是瓶颈再动。读数指认了，我就动给它看。变体的做法是在头文件副本上加一个 submit_batch，整批任务一次进锁，锁外 notify_all 一声，其余一行没动：
 
-```cpp
-// batch_design_batched.hpp 相对 batch_design.hpp 的新增方法
-void submit_batch(const std::vector<Job>& jobs) {
-  {
-    std::lock_guard<std::mutex> lk(mu_);
-    assert(!closed_ && "submissions_done 之后再提交是调用方违约");
-    for (const Job& j : jobs) {
-      ++submitted_;
-      if (done_) { ++skipped_; }
-      else { queue_.push_back(j); }
-    }
-  }
-  if (!done_) cv_any_.notify_all();
-}
-```
+<OnlineCompilerDemo
+  title="批量提交变体：submit_batch"
+  source-path="code/examples/vol5/chapter08/07_batched_submit.cpp"
+  description="头文件副本上只加这一个方法：整批一次进锁，锁外 notify_all 一声，其余一行没动。整批提交一轮，汇总与串行对照逐项对上；计时读数（每项约 46 微秒压到半微秒）在正文。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 变体的读数我量在下面（n=10000，w=16）：
 
@@ -300,16 +185,13 @@ parallel n=10000 w=16 round=2 4.211 ms
 
 最后一组把活加重，我拿设计一行不动的办法：compute 换成带权重的循环版（每项任务做 iters 次乘加，权重由命令行给），失败路径照旧。循环的结果交给 do_not_optimize 看一眼，该函数承 6.2 计时架子的写法，随头文件住进来，防编译器把加重循环整个删掉：
 
-```cpp
-// heavy 变体相对 batch_design.hpp 唯一的差异，iters 由命令行传入
-inline long long compute(int i) {
-  if (i % 13 == 0 && i > 0) throw std::runtime_error("编号 13 的倍数注定失败");
-  long long s = 0;
-  for (long long k = 1; k <= g_heavy_iters; ++k) s += (i * k) % 7;
-  do_not_optimize(s);
-  return s;
-}
-```
+<OnlineCompilerDemo
+  title="重活变体：compute 换带权重的循环版"
+  source-path="code/examples/vol5/chapter08/08_heavy_variant.cpp"
+  description="设计一行不动，compute 每项做 iters 次乘加，结果交给 do_not_optimize 防删。默认 iters=200000：串行约一秒，并发约零点一到零点四秒，天平翻过来；本地可传更大的 iters 接着加码。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 [heavy variant, iters=200000 per task]

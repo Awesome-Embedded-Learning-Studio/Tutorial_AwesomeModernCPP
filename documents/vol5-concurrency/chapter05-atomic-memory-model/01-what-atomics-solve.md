@@ -24,7 +24,7 @@ current_status:
 
 本篇是单元开篇，我给自己划的活儿只有一件：把原子操作能担保的与不能担保的画成一条边界。类型与操作占头两节，CAS 与 `atomic_flag` 各占一节，单次动作与多步业务的分界是一节新写的，常见的几种误认承旧目录 ch03 的素材文《atomic 操作》收拢，末尾的浮点与自定义类型带（扩展）标记，跳过它不影响主线。内存序的词眼在正文里露了几次面，默认的 `memory_order_seq_cst`，`atomic_flag` 演示里的 acquire 与 release，误区节里的 relaxed，咱们都只认名字不展开，为什么读写次序还需要另一套理论，归 5.2《[一个线程怎样观察另一个线程的修改](02-happens-before)》，已经写好。
 
-文中的程序，咱们都放进临时目录 /tmp/concurrency-u5/，在同一次调用里编译、运行（GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，WSL2 内核 6.18.33.2，16 逻辑核，2026-11-16）。多数 demo 是编排好的确定场面，谁读、谁睡、谁动手，次序写死在代码里，您重跑读数也一致。涉及标准行为的断言，我按 eel.is 上的现行草案与 cppreference 核对过，链接收在参考资源。
+文中的程序收在 code/examples/vol5/chapter05/，可在本页直接运行（GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，WSL2 内核 6.18.33.2，16 逻辑核，2026-11-16）。多数 demo 是编排好的确定场面，谁读、谁睡、谁动手，次序写死在代码里，您重跑读数也一致。涉及标准行为的断言，我按 eel.is 上的现行草案与 cppreference 核对过，链接收在参考资源。
 
 ## std::atomic 认哪些类型，配哪些操作
 
@@ -42,34 +42,13 @@ current_status:
 
 操作面上，`fetch_` 系列把读、算、写当成一次动作做，交回的是运算之前的旧值。咱们跑一段最小的：
 
-```cpp
-// demo_ops.cpp —— load/store/exchange/fetch_add 与运算符形式
-#include <atomic>
-#include <cstdio>
-
-int main() {
-  std::atomic<int> counter{0};
-
-  counter.store(10);
-  std::printf("store(10) 之后 load      : %d\n", counter.load());
-
-  int old = counter.exchange(3);
-  std::printf("exchange(3) 交回旧值     : %d，现在 %d\n", old, counter.load());
-
-  old = counter.fetch_add(5);
-  std::printf("fetch_add(5) 交回旧值    : %d，现在 %d\n", old, counter.load());
-
-  old = counter++;                  // 后置自增：返回加之前的值
-  std::printf("counter++ 交回旧值       : %d，现在 %d\n", old, counter.load());
-
-  int now = ++counter;              // 前置自增：返回加完之后的值
-  std::printf("++counter 交回新值       : %d，现在 %d\n", now, counter.load());
-
-  counter += 4;                     // 运算符形式，等价 fetch_add(4)
-  std::printf("+= 4 之后                : %d\n", counter.load());
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="load、exchange、fetch_add 与运算符各交回什么"
+  source-path="code/examples/vol5/chapter05/01_demo_ops.cpp"
+  description="在一个 atomic<int> 上依次跑 store、exchange、fetch_add、前后置 ++ 与 +=，每个动作打印交回值与当前值。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 store(10) 之后 load      : 10
@@ -88,30 +67,13 @@ counter++ 交回旧值       : 8，现在 9
 
 标准库给了两个查询口。`is_always_lock_free` 是编译期常量（C++17 起），true 表示该类型的原子操作在这个平台上永远无锁。`is_lock_free()` 是运行时查询。咱们在本机 x86-64 上跑：
 
-```cpp
-// demo_lockfree.cpp —— is_lock_free 与 is_always_lock_free
-#include <atomic>
-#include <cstdio>
-
-struct Wide {                       // 16 个字节
-  long long a;
-  long long b;
-};
-
-int main() {
-  std::atomic<int> ai{};
-  std::atomic<long long> all{};
-  std::atomic<Wide> aw{};
-
-  std::printf("atomic<int>        is_always_lock_free=%d  is_lock_free=%d\n",
-              (int)std::atomic<int>::is_always_lock_free, (int)ai.is_lock_free());
-  std::printf("atomic<long long>  is_always_lock_free=%d  is_lock_free=%d\n",
-              (int)std::atomic<long long>::is_always_lock_free, (int)all.is_lock_free());
-  std::printf("atomic<Wide>(16B)  is_always_lock_free=%d  is_lock_free=%d\n",
-              (int)std::atomic<Wide>::is_always_lock_free, (int)aw.is_lock_free());
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="is_lock_free 与 is_always_lock_free：宽类型不是无锁"
+  source-path="code/examples/vol5/chapter05/02_demo_lockfree.cpp"
+  description="atomic<int> 与 atomic<long long> 两个查询都是 1，16 字节的 atomic<Wide> 都是 0，它的动作落在内部锁上。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 atomic<int>        is_always_lock_free=1  is_lock_free=1
@@ -127,50 +89,13 @@ fetch 系列只覆盖加减与位运算，形状不合的读改写，比如“�
 
 CAS 失败的时候，有个容易漏的细节，expected 会被覆盖。我拿 `std::atomic<int>` 摆了两个场面。一个用 expected=99 去 CAS 值为 10 的变量，返回 false，expected 被覆盖成 10。另一个是加 5 的 CAS 循环，半路埋了个人改值，失败一轮、重算一轮、成功：
 
-```cpp
-// demo_cas.cpp —— CAS 的两条路：expected 被覆盖，失败之后重算重试
-#include <atomic>
-#include <chrono>
-#include <cstdio>
-#include <thread>
-
-using namespace std::chrono_literals;
-
-std::atomic<int> quota{10};      // 咱们想往当前值上再叠加 5，前提是没人动过
-
-void meddler() {                 // 半路把值改掉的人
-  std::this_thread::sleep_for(50ms);
-  quota.store(100);
-}
-
-int main() {
-  // 第一步：值对不上，CAS 返回 false，顺带把当前值写回 expected
-  std::atomic<int> v{10};
-  int expected = 99;
-  bool ok = v.compare_exchange_strong(expected, 20);
-  std::printf("expected=99 去 CAS：ok=%d，v 还是 %d，expected 被覆盖成 %d\n",
-              ok ? 1 : 0, v.load(), expected);
-
-  // 第二步：读改写拆成 CAS 循环，中途值被改，失败一轮后重算成功
-  std::thread m(meddler);
-  expected = quota.load();                 // 读到 10
-  std::this_thread::sleep_for(100ms);      // 故意把窗口拉开，让 meddler 赶在动手之前改值
-  m.join();
-
-  int attempts = 0;
-  while (true) {
-    int desired = expected + 5;
-    if (quota.compare_exchange_strong(expected, desired)) {
-      std::printf("第 %d 次尝试成功：%d + 5 -> %d\n", attempts + 1, expected, quota.load());
-      break;
-    }
-    ++attempts;
-    std::printf("第 %d 次尝试失败：值已经是 %d（expected 也被覆盖成它），拿它重算\n",
-                attempts, expected);
-  }
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="CAS 失败时 expected 被覆盖，重算重试"
+  source-path="code/examples/vol5/chapter05/03_demo_cas.cpp"
+  description="值对不上时 CAS 返回 false 并把当前值写回 expected；往 quota 加 5 的循环半路被人改值，失败一轮后拿新值重算成功。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 expected=99 去 CAS：ok=0，v 还是 10，expected 被覆盖成 10
@@ -190,146 +115,13 @@ expected=99 去 CAS：ok=0，v 还是 10，expected 被覆盖成 10
 
 CAS 比较的是值表示，值相等就放行。它不问的问题是，这个值在中间变过没有。变过去又变回来，CAS 照样成功，这就是 ABA。空口说没有分量，我把它编排成确定复现的场面，一个用槽位数组搭的栈，head 存槽位号，出栈的人读完 head、睡 150 毫秒再 CAS。睡的空当里 main 把两个节点都弹走，再把新值塞进腾出来的槽 1，head 指回 1。另一版把版本号打进 head，咱们看看下场差在哪：
 
-```cpp
-// demo_aba.cpp —— CAS 只认值，不认历史：一次可复现的 ABA，和版本号的修法
-#include <atomic>
-#include <chrono>
-#include <cstdio>
-#include <thread>
-
-using namespace std::chrono_literals;
-
-constexpr int kEmpty = -1;
-
-struct Node { int value; int next; };
-
-// 版本一：head 只存槽位号，CAS 只问“号码对不对”
-struct NaiveStack {
-  std::atomic<int> head{kEmpty};
-  Node slots[3] = {};
-
-  void init() {
-    slots[1] = {100, 2};              // 槽 1：值 100，下一个是槽 2
-    slots[2] = {200, kEmpty};
-    head.store(1);
-  }
-  int pop_with_window() {             // 出栈：读完 head 故意留一个窗口再 CAS
-    int cur = head.load();
-    if (cur == kEmpty) return kEmpty;
-    int nxt = slots[cur].next;
-    std::this_thread::sleep_for(150ms);
-    if (!head.compare_exchange_strong(cur, nxt)) return kEmpty;
-    return slots[cur].value;
-  }
-  void push(int idx, int value) {
-    slots[idx] = {value, head.load()};
-    head.store(idx);
-  }
-};
-
-// 版本二：head 把版本号和槽位号打包，动一次版本涨一次
-struct VersionStack {
-  static unsigned long long pack(int idx, unsigned long long ver) {
-    return (ver << 8) | (unsigned long long)(unsigned char)idx;
-  }
-  std::atomic<unsigned long long> head{pack(kEmpty, 0)};
-  Node slots[3] = {};
-
-  void init() {
-    slots[1] = {100, 2};
-    slots[2] = {200, kEmpty};
-    head.store(pack(1, 0));
-  }
-  int pop_with_window() {
-    unsigned long long cur = head.load();
-    int idx = (int)(cur & 0xFF);
-    if (idx == kEmpty) return kEmpty;
-    int nxt = slots[idx].next;
-    std::this_thread::sleep_for(150ms);
-    for (int attempt = 1; ; ++attempt) {
-      unsigned long long want = pack(nxt, (cur >> 8) + 1);
-      unsigned long long stale = cur;
-      if (head.compare_exchange_strong(cur, want))
-        return slots[idx].value;
-      cur = head.load();
-      std::printf("    A 第 %d 次 CAS 失败：手里的 head=%llu，现在已经是 %llu\n",
-                  attempt, stale, cur);
-      idx = (int)(cur & 0xFF);
-      if (idx == kEmpty) return kEmpty;
-      nxt = slots[idx].next;
-    }
-  }
-  void push(int idx, int value) {
-    unsigned long long cur = head.load();
-    slots[idx] = {value, (int)(cur & 0xFF)};
-    head.store(pack(idx, (cur >> 8) + 1));
-  }
-};
-
-std::atomic<bool> a_read{false};
-
-void wait_for_a() {                   // 手动轮询等 A 读完（demo 有意不用 wait/notify）
-  while (!a_read.load()) {}
-}
-
-void run_naive() {
-  NaiveStack s;
-  s.init();
-  std::thread a([&] {
-    int cur = s.head.load();
-    int nxt = s.slots[cur].next;
-    std::printf("[naive  ] A 读完：head=%d，下一个是槽 %d，随后睡 150 ms\n", cur, nxt);
-    a_read.store(true);
-    int got = s.pop_with_window();
-    std::printf("[naive  ] A 的 CAS(head: 1 -> 2) 成功，它报告 pop 到了 %d\n", got);
-  });
-  wait_for_a();
-  std::this_thread::sleep_for(10ms);
-  int first = s.slots[1].value;
-  s.head.store(s.slots[1].next);      // main 的第一次 pop：head 1 -> 2
-  std::printf("[naive  ] main: pop 收到 %d\n", first);
-  int second = s.slots[2].value;
-  s.head.store(s.slots[2].next);      // 第二次 pop：head 2 -> 空
-  std::printf("[naive  ] main: pop 收到 %d\n", second);
-  s.push(1, 300);                     // 复用槽 1，head 指回 1
-  std::printf("[naive  ] main: 把 300 放进槽 1，head 指回 1\n");
-  a.join();
-  int top = s.head.load();
-  std::printf("[naive  ] main 清点：head=%d，栈里只剩值 %d。300 不见了，200 已经交过一回货\n",
-              top, s.slots[top].value);
-}
-
-void run_version() {
-  VersionStack s;
-  s.init();
-  std::thread a([&] {
-    unsigned long long cur = s.head.load();
-    std::printf("[version] A 读完：head=%llu（版本 %llu，槽 %llu），随后睡 150 ms\n",
-                cur, cur >> 8, cur & 0xFF);
-    a_read.store(true);
-    int got = s.pop_with_window();
-    std::printf("[version] A 最终 pop 到 %d\n", got);
-  });
-  wait_for_a();
-  std::this_thread::sleep_for(10ms);
-  s.head.store(VersionStack::pack(s.slots[1].next, 1));
-  std::printf("[version] main: pop 收到 %d\n", s.slots[1].value);
-  s.head.store(VersionStack::pack(s.slots[2].next, 2));
-  std::printf("[version] main: pop 收到 %d\n", s.slots[2].value);
-  s.push(1, 300);
-  std::printf("[version] main: 把 300 放进槽 1，head=%llu（版本 3，槽 1）\n", s.head.load());
-  a.join();
-  std::printf("[version] main 清点：head=%llu，槽位是空标记，栈空了。300 交给 A，数目一致\n",
-              s.head.load());
-}
-
-int main() {
-  run_naive();
-  a_read.store(false);
-  run_version();
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="CAS 只认值不认历史：可复现的 ABA 与版本号修法"
+  source-path="code/examples/vol5/chapter05/04_demo_aba.cpp"
+  description="前半场 head 被弄回旧槽位，出栈线程的 CAS 照样放行，300 不见；后半场版本号打进 head，CAS 当场拦下。演示用，槽位数组只靠时间窗编排，存在数据竞争。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 [naive  ] A 读完：head=1，下一个是槽 2，随后睡 150 ms
@@ -357,37 +149,13 @@ version 是修法，咱们给 head 升级，从 int 涨到 64 位，低 8 位装
 
 它的经典用场是一把手工自旋锁，[《从错误程序认识竞争》](../chapter02-sharing-data/01-from-wrong-programs)的饥饿演示里咱们已经见过它的形状（那边用的 `ATOMIC_FLAG_INIT` 写法），现在咱们把它单独跑一遍，两条线程各自加 100000 次：
 
-```cpp
-// demo_flag.cpp —— atomic_flag 自旋锁：标准唯一保证无锁的原子类型
-#include <atomic>
-#include <cstdio>
-#include <thread>
-
-std::atomic_flag busy{};      // C++20 起默认构造就是清除态；C++11 得写 ATOMIC_FLAG_INIT
-
-void lock_flag() { while (busy.test_and_set(std::memory_order_acquire)) {} }
-void unlock_flag() { busy.clear(std::memory_order_release); }
-
-long long guarded = 0;        // 普通变量，保护全靠上面那把自旋锁
-
-void work(int rounds) {
-  for (int i = 0; i < rounds; ++i) {
-    lock_flag();
-    ++guarded;
-    unlock_flag();
-  }
-}
-
-int main() {
-  std::printf("flag 默认构造后 test(): %d\n", busy.test() ? 1 : 0);
-  std::thread a(work, 100000);
-  std::thread b(work, 100000);
-  a.join();
-  b.join();
-  std::printf("两条线程各加 100000 次，结果 %lld\n", guarded);
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="atomic_flag 自旋锁：test_and_set 拿锁，clear 放锁"
+  source-path="code/examples/vol5/chapter05/05_demo_flag.cpp"
+  description="默认构造后 test() 读到 0，两条线程各加 100000 次，guarded 分毫不差地落在 200000。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 flag 默认构造后 test(): 0
@@ -408,72 +176,13 @@ flag 默认构造后 test(): 0
 
 咱们把场面摆回 2.3 的货架，只剩一件货，两位买家。库存换成 `std::atomic<int>`，每一步都原子，检查是一次 load，扣减是一次 load 接一次 store。编排好的窗口里，两位买家都看到 1，都动手：
 
-```cpp
-// demo_boundary.cpp —— 检查和动手分成两次原子操作，货照样卖超
-#include <atomic>
-#include <chrono>
-#include <cstdio>
-#include <thread>
-
-using namespace std::chrono_literals;
-
-std::atomic<int> stock{1};
-std::atomic<bool> a_checked{false};
-
-void stage_naive() {
-  stock.store(1);
-  std::thread a([&] {
-    if (stock.load() > 0) {                 // 检查：一次原子读
-      a_checked.store(true);
-      std::this_thread::sleep_for(100ms);   // 窗口
-      stock.store(stock.load() - 1);        // 动手：读一次、写一次，各自原子
-      std::printf("[naive  ] buyer A 动手，结余 %d\n", stock.load());
-    }
-  });
-  while (!a_checked.load()) {}              // 手动轮询等 A 查完
-  std::this_thread::sleep_for(10ms);
-  if (stock.load() > 0) {                   // buyer B：也看到了 1
-    stock.store(stock.load() - 1);
-    std::printf("[naive  ] buyer B 动手，结余 %d\n", stock.load());
-  }
-  a.join();
-}
-
-bool try_buy_cas() {                        // 判断和扣减压进一次读改写
-  int old = stock.load();
-  while (old > 0) {
-    if (stock.compare_exchange_weak(old, old - 1)) return true;
-  }
-  return false;
-}
-
-void stage_cas() {
-  stock.store(1);
-  a_checked.store(false);
-  std::thread a([&] {
-    int old = stock.load();
-    if (old > 0) {
-      a_checked.store(true);
-      std::this_thread::sleep_for(100ms);
-      if (try_buy_cas())
-        std::printf("[cas    ] buyer A 动手，结余 %d\n", stock.load());
-      else
-        std::printf("[cas    ] buyer A 重试看见 0，放弃\n");
-    }
-  });
-  while (!a_checked.load()) {}
-  std::this_thread::sleep_for(10ms);
-  if (try_buy_cas())
-    std::printf("[cas    ] buyer B 动手，结余 %d\n", stock.load());
-  a.join();
-}
-
-int main() {
-  stage_naive();
-  stage_cas();
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="检查与动手分成两次原子操作，货照样卖超"
+  source-path="code/examples/vol5/chapter05/06_demo_boundary.cpp"
+  description="库存换成 atomic<int>，两位买家都看到 1 都动手，结余 -1；CAS 循环把判断和扣压抑进一次读改写，一件货只一个人拿走。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 [naive  ] buyer B 动手，结余 0
@@ -490,11 +199,13 @@ int main() {
 
 3.4《按协作需求选择工具》量峰值的仪表，咱们现在能读懂了：
 
-```cpp
-int now = ++inside;
-int old = peak.load();
-while (now > old && !peak.compare_exchange_weak(old, now)) {}
-```
+<OnlineCompilerDemo
+  title="峰值仪表：只许涨不许跌的 CAS 循环"
+  source-path="code/examples/vol5/chapter05/07_peak_gauge.cpp"
+  description="正文那三行原样长在 task 里：inside 记当前同时在线的任务数，量到更大 now 的人把 peak 顶上去。跑完 inside 归 0，峰值 4。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 peak 只许涨不许跌，谁量到更大的 now，谁用 CAS 把它顶上去，输的人拿到最新的 peak，下一轮接着比。咱们数一遍这几行的动作，一次读改写加循环保完整，锁都不用请。
 
@@ -527,19 +238,13 @@ probe_str.cpp:3:26:   required from here
 
 咱们实测一眼：
 
-```cpp
-// demo_init.cpp —— C++20 起默认构造把原子值初始化
-#include <atomic>
-#include <cstdio>
-
-int main() {
-  std::atomic<int> zero;
-  std::atomic_flag flag;
-  std::printf("atomic<int> 默认构造 load: %d\n", zero.load());
-  std::printf("atomic_flag 默认构造 test: %d\n", flag.test() ? 1 : 0);
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="C++20 起默认构造拿到确定的零值"
+  source-path="code/examples/vol5/chapter05/08_demo_init.cpp"
+  description="atomic<int> 默认构造后 load 出 0，atomic_flag 默认构造后 test() 出 0，都是 C++20 才有的确定起点。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 atomic<int> 默认构造 load: 0
@@ -560,36 +265,13 @@ atomic_flag 默认构造 test: 0
 
 C++20 给 `atomic<float>`、`atomic<double>`、`atomic<long double>` 配了 fetch_add 与 fetch_sub，乘除没有。咱们把语义上的关键放在舍入上，每次 fetch_add 都按浮点加法算一遍，再舍入一次。demo 从 2 的 24 次方减 1 起步：
 
-```cpp
-// demo_float.cpp —— 浮点原子加法：每一步都完整，合起来数字没动
-#include <atomic>
-#include <cstdio>
-#include <thread>
-#include <vector>
-
-int main() {
-  std::atomic<float> f{16777215.0f};          // 2 的 24 次方减 1
-  float r1 = f.fetch_add(1.0f);
-  std::printf("16777215 + 1 -> %.0f（交回旧值 %.0f），这一步动了\n", f.load(), r1);
-  for (int i = 0; i < 100; ++i) f.fetch_add(1.0f);
-  std::printf("再原子加 100 次 1.0 -> %.0f，卡住了\n", f.load());
-
-  std::atomic<float> acc{16777216.0f};        // 四条线程各加 100 万次 1.0
-  std::atomic<long long> ref{16777216LL};
-  std::vector<std::thread> ts;
-  for (int t = 0; t < 4; ++t) {
-    ts.emplace_back([&] {
-      for (int i = 0; i < 1000000; ++i) {
-        acc.fetch_add(1.0f);
-        ref.fetch_add(1);
-      }
-    });
-  }
-  for (auto& t : ts) t.join();
-  std::printf("4 条线程各加 100 万次后：float=%.0f   long long=%lld\n", acc.load(), ref.load());
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="浮点原子加法：每一步都完整，合起来数字没动"
+  source-path="code/examples/vol5/chapter05/09_demo_float.cpp"
+  description="从 16777215 加 1 动了一步，再原子加 100 次原地不动；四条线程各加 100 万次的对照段里 float 卡住，long long 数满。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 16777215 + 1 -> 16777216（交回旧值 16777215），这一步动了
@@ -605,12 +287,13 @@ int main() {
 
 咱们拿 `Tick` 开刀，它长这样：
 
-```cpp
-struct Tick {
-  std::uint32_t seq;        // 序号
-  std::uint64_t stamp_ns;   // 纳秒时间戳
-};
-```
+<OnlineCompilerDemo
+  title="自定义类型过了可平凡复制，只剩四个操作"
+  source-path="code/examples/vol5/chapter05/10_atomic_tick.cpp"
+  description="Tick 过了可平凡复制这一关，atomic<Tick> 能构造，load、store、exchange、CAS 逐一在跑；fetch_add 编不过，探针回话见下方。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 两个字段，可平凡复制，static_assert 通过，`std::atomic<Tick>` 能构造，操作面就是前面数过的四个，load、store、exchange、CAS。想给它来一手 fetch_add，比如推进 seq，咱们把探针喂给编译器，回话在下面：
 
@@ -643,7 +326,7 @@ probe_fetch.cpp:12:16: error: ‘struct std::atomic<Tick>’ has no member named
 
 ## 参考资源
 
-本篇八个实验与两个编译探针在临时目录 /tmp/concurrency-u5/ 里编译运行，没有进仓库（GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，WSL2 内核 6.18.33.2，16 逻辑核，2026-11-16）。ABA 与卖超两个 demo 的场面是编排出来的，线程次序写死，读数可复现。demo_flag 的 200000、demo_float 的整型对照与卡住的读数、demo_init 的零值、demo_lockfree 的查询结果，每次运行都一致。demo_cas 的成功行落在第 2 次尝试，由 50 毫秒与 100 毫秒两个时长定死。涉及标准行为的断言，我按 eel.is 上的现行工作草案核对，方括号里是小节名，小节名跟正式标准一致，段号可能挪。cppreference 的 atomic、atomic_flag、compare_exchange、fetch_add、构造函数、ATOMIC_FLAG_INIT 六页都抓到了全文，与草案对读无出入。推进顺序参照了 Anthony Williams 的《C++ Concurrency in Action》，例子与文字都是我自己写的。
+本篇八个实验与两处片段的补全收在 code/examples/vol5/chapter05/，可在本页直接运行（GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，WSL2 内核 6.18.33.2，16 逻辑核，2026-11-16，抽成独立文件时复验过），两个编译探针的回话照录在上文。ABA 与卖超两个 demo 的场面是编排出来的，线程次序写死，读数可复现。demo_flag 的 200000、demo_float 的整型对照与卡住的读数、demo_init 的零值、demo_lockfree 的查询结果，每次运行都一致。demo_cas 的成功行落在第 2 次尝试，由 50 毫秒与 100 毫秒两个时长定死。涉及标准行为的断言，我按 eel.is 上的现行工作草案核对，方括号里是小节名，小节名跟正式标准一致，段号可能挪。cppreference 的 atomic、atomic_flag、compare_exchange、fetch_add、构造函数、ATOMIC_FLAG_INIT 六页都抓到了全文，与草案对读无出入。推进顺序参照了 Anthony Williams 的《C++ Concurrency in Action》，例子与文字都是我自己写的。
 
 - [std::atomic（cppreference）][cppref-atomic]，特化分档、操作面与 C++17 的 is_always_lock_free。
 - [std::atomic_flag（cppreference）][cppref-flag]，保证无锁的说明，C++20 的 test 与 wait/notify。

@@ -25,43 +25,19 @@ current_status:
 
 本篇是第二单元的开篇，我只做一件事：让您亲手跑出一个会算错的程序，再把“错”分成几类。主线不做修复，扩展节只讲机制。下一篇讲互斥量，减少共享的做法分两处讲：每个线程各持一份数据在下一篇，独立持有、传递结果、共同修改的取舍和锁顺序这类死锁预防，归讲死锁与减少共享的那一篇。
 
-咱们把文中的程序都放在临时目录里编译跑过（GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，WSL2，16 逻辑核，2026-11-14）。有一处我特意编了两版，`-O0` 一版、`-O2` 一版，因为优化级别一换，同一份源码跑出来的结果就变了，这一点您在本篇里会亲眼看到。标准条款按 eel.is 上的现行草案与 cppreference 核对过，链接收在参考资源里。
+咱们把文中的程序都收在 `code/examples/vol5/chapter02/`，可在各篇页面直接运行（GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，WSL2，16 逻辑核，2026-11-14，抽成独立文件时复验过）。有一处我特意编了两版，`-O0` 一版、`-O2` 一版，因为优化级别一换，同一份源码跑出来的结果就变了，这一点您在本篇里会亲眼看到。标准条款按 eel.is 上的现行草案与 cppreference 核对过，链接收在参考资源里。
 
 ## 第一手实验：丢失的计数与偶发的失败
 
 咱们从一个最朴素的错误入手。两条线程，各自把一个全局变量加 160000 次，加完主线程读总数，期望是 320000。
 
-```cpp
-#include <cstdio>
-#include <thread>
-
-long long counter = 0;
-
-void work(int rounds) {
-  for (int i = 0; i < rounds; ++i) ++counter;
-}
-
-int main() {
-  const int kRounds = 160000;
-  const int kTrials = 30;
-  int correct = 0;
-  for (int t = 0; t < kTrials; ++t) {
-    counter = 0;
-    std::thread a(work, kRounds);
-    std::thread b(work, kRounds);
-    a.join();
-    b.join();
-    if (counter == 2LL * kRounds) {
-      ++correct;
-    } else {
-      std::printf("trial %2d: printed %lld, lost %lld\n",
-                  t, counter, 2LL * kRounds - counter);
-    }
-  }
-  std::printf("%d of %d trials printed the expected %d\n",
-              correct, kTrials, 2 * kRounds);
-}
-```
+<OnlineCompilerDemo
+  title="两条线程各加 160000 次，30 轮里丢多少"
+  source-path="code/examples/vol5/chapter02/01_demo_lost_updates.cpp"
+  description="期望 320000，30 轮里总有几轮对不上，丢掉的数从两百多到十几万都见过。演示 data race 的未定义行为：换优化级别、换机器，读数都会变。"
+  run-options="-O0 -std=c++20 -pthread"
+  allow-run
+/>
 
 我让这段程序跑 30 轮，每轮把 `counter` 清零，重新起两条线程。编译成 `-O0`，咱们跑出来是这样：
 
@@ -123,27 +99,13 @@ race condition 不是标准里的术语。您在标准草案里查不到它，�
 
 我搭了一个程序，里面一条 data race 都没有。共享变量是 `std::atomic<int>`（C++11 起），每一次读、每一次写各自完整，标准不会判它未定义行为。
 
-```cpp
-#include <atomic>
-#include <cstdio>
-#include <thread>
-
-std::atomic<int> counter{0};
-
-void work() {
-  for (int i = 0; i < 100000; ++i) {
-    counter = counter.load() + 1;
-  }
-}
-
-int main() {
-  std::thread a(work);
-  std::thread b(work);
-  a.join();
-  b.join();
-  std::printf("%d\n", counter.load());
-}
-```
+<OnlineCompilerDemo
+  title="没有 data race，照样丢计数：原子上的读改写"
+  source-path="code/examples/vol5/chapter02/02_demo_race_condition.cpp"
+  description="每次读写各自完整原子，但读、加、写回三步会被打断：期望 200000，每次都差一截。标准不判它未定义行为，毛病在设计层的次序上。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 咱们跑 8 次，结果如下：
 
@@ -205,40 +167,13 @@ WARNING: ThreadSanitizer: data race (pid=58)
 
 样本里用了 `std::lock_guard`，您只要知道它构造时拿锁、析构时放锁。后面活锁那段用的 `std::unique_lock` 也是这么办的，配 `std::try_to_lock` 时改成拿不到就立刻返回、不阻塞。这些细节归本单元讲互斥量的那一篇，这里只看它们把线程拦在哪儿。
 
-```cpp
-#include <chrono>
-#include <cstdio>
-#include <mutex>
-#include <thread>
-
-using namespace std::chrono_literals;
-
-std::mutex m1, m2;
-
-void route_one() {
-  std::lock_guard<std::mutex> a(m1);
-  std::puts("[one] holds m1");
-  std::this_thread::sleep_for(50ms);
-  std::lock_guard<std::mutex> b(m2);
-  std::puts("[one] got m2 as well");
-}
-
-void route_two() {
-  std::lock_guard<std::mutex> b(m2);
-  std::puts("[two] holds m2");
-  std::this_thread::sleep_for(50ms);
-  std::lock_guard<std::mutex> a(m1);
-  std::puts("[two] got m1 as well");
-}
-
-int main() {
-  std::thread t1(route_one);
-  std::thread t2(route_two);
-  t1.join();
-  t2.join();
-  std::puts("both finished");
-}
-```
+<OnlineCompilerDemo
+  title="死锁：各持一把锁，等对方松手"
+  source-path="code/examples/vol5/chapter02/03_demo_deadlock.cpp"
+  description="打印两行 [one]/[two] holds 之后进程就停住不走了（在线运行有超时会替您收场，本地得 Ctrl-C）。死锁一旦成立就是稳定的，不是概率。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 咱们跑出来两行，然后就没了：
 
@@ -259,40 +194,13 @@ int main() {
 
 下面是活锁的样本，借了 `std::mutex` 和 C++20 的 `std::barrier`。您看每一轮开头，两条线程各锁住自己那把，`arrive_and_wait()` 是一个同步点，等两条线程都到齐才一起往下走，构造里的 `2` 就是参与的线程数。互斥量的细节归本单元讲互斥量的那一篇，同步原语的用法归讲同步原语与等待的那几篇，这里只用它们把节拍对齐。
 
-```cpp
-#include <barrier>
-#include <cstdio>
-#include <mutex>
-#include <thread>
-
-std::mutex m1, m2;
-std::barrier sync(2);
-
-void polite(const char* name, std::mutex& mine, std::mutex& theirs) {
-  int giveups = 0;
-  for (int round = 1; round <= 3; ++round) {
-    std::unique_lock<std::mutex> held(mine);
-    sync.arrive_and_wait();              // 两边都拿稳自己那把
-    std::unique_lock<std::mutex> other(theirs, std::try_to_lock);
-    sync.arrive_and_wait();              // 两边都试过了，谁也没过去
-    if (other.owns_lock()) {
-      std::printf("%s goes through in round %d\n", name, round);
-      return;
-    }
-    std::printf("%s backs off in round %d\n", name, round);
-    ++giveups;
-  }
-  std::printf("%s gave up %d times, moved no work forward\n", name, giveups);
-}
-
-int main() {
-  std::thread a(polite, "one", std::ref(m1), std::ref(m2));
-  std::thread b(polite, "two", std::ref(m2), std::ref(m1));
-  a.join();
-  b.join();
-  std::puts("both threads finished");
-}
-```
+<OnlineCompilerDemo
+  title="活锁：都在动，谁也没前进"
+  source-path="code/examples/vol5/chapter02/04_demo_livelock.cpp"
+  description="两条线程借 barrier 对齐节拍，同步地松手、同步地伸手，三轮全部 backs off，谁也没把活干前进。CPU 在烧，正经活一件没干。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 one backs off in round 1
@@ -314,58 +222,13 @@ both threads finished
 
 饥饿是另一回事。您看整个系统在往前走，只是某个线程一直拿不到资源。这段代码用 `std::atomic_flag` 当一把手工锁，`test_and_set` 与 `clear` 后面括号里是内存序参数。原子标志与内存序的细节归讲原子操作与内存模型的那几篇，不影响您看这几行数字。
 
-```cpp
-#include <atomic>
-#include <chrono>
-#include <cstdio>
-#include <thread>
-#include <vector>
-
-using namespace std::chrono_literals;
-
-std::atomic_flag busy = ATOMIC_FLAG_INIT;
-
-void lock() { while (busy.test_and_set(std::memory_order_acquire)) {} }
-void unlock() { busy.clear(std::memory_order_release); }
-
-int main() {
-  std::atomic<long> hog_turns{0};
-  std::atomic<long> victim_turns{0};
-  std::atomic<bool> stop{false};
-
-  std::vector<std::thread> hogs;
-  for (int i = 0; i < 8; ++i) {
-    hogs.emplace_back([&] {
-      while (!stop.load(std::memory_order_relaxed)) {
-        lock();
-        hog_turns.fetch_add(1, std::memory_order_relaxed);
-        unlock();
-      }
-    });
-  }
-  std::this_thread::sleep_for(50ms);
-
-  auto deadline = std::chrono::steady_clock::now() + 200ms;
-  const long hog_before = hog_turns.load();   // 窗口开头的快照
-  long worst_us = 0;
-  while (std::chrono::steady_clock::now() < deadline) {
-    auto t0 = std::chrono::steady_clock::now();
-    lock();
-    auto us = std::chrono::duration_cast<std::chrono::microseconds>(
-        std::chrono::steady_clock::now() - t0).count();
-    if (us > worst_us) worst_us = us;
-    victim_turns.fetch_add(1, std::memory_order_relaxed);
-    unlock();
-  }
-  const long hog_during = hog_turns.load() - hog_before;
-
-  stop.store(true);
-  for (auto& t : hogs) t.join();
-  std::printf("in 200 ms: 8 threads took the lock %ld times, the other %ld times\n",
-              hog_during, victim_turns.load());
-  std::printf("its longest single wait: %ld us\n", worst_us);
-}
-```
+<OnlineCompilerDemo
+  title="饥饿：锁不排队，谁手快谁拿"
+  source-path="code/examples/vol5/chapter02/05_demo_starvation.cpp"
+  description="八条线程 200 毫秒里抢到一百多万次，被观察的线程只拿到一两万次，最慢一次等了若干毫秒。标准对互斥量只要求互斥，没答应过排队。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 我跑了三次：
 

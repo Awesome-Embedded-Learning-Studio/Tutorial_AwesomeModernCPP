@@ -33,41 +33,13 @@ current_status:
 
 咱们把代码摆出来看。任务还是那个顶替真实计算的老办法：睡 300 毫秒，返回一个平方数。咱们让 `main` 发起以后不闲着，自己干五段 10 毫秒的小活，然后来取结果：
 
-```cpp
-// demo_get.cpp —— 发起、自己干一小段活、get 把结果等回来
-#include <chrono>
-#include <cstdio>
-#include <future>
-#include <thread>
-
-using Clock = std::chrono::steady_clock;
-using namespace std::chrono_literals;
-
-double ms_since(Clock::time_point t0) {
-  return std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
-}
-
-int square(int x) {
-  std::this_thread::sleep_for(300ms);   // 顶替一段真实的计算
-  return x * x;
-}
-
-int main() {
-  auto t0 = Clock::now();
-  std::future<int> result = std::async(square, 21);
-  std::printf("main  : %5.1f ms 计算发起，future 在手\n", ms_since(t0));
-
-  for (int i = 0; i < 5; ++i) {         // main 自己的一小段活
-    std::this_thread::sleep_for(10ms);
-  }
-  std::printf("main  : %5.1f ms 自己的活干完，来取结果\n", ms_since(t0));
-
-  int value = result.get();             // 结果没就绪就等，就绪才返回
-  std::printf("main  : %5.1f ms get 返回，square(21) = %d\n", ms_since(t0), value);
-  std::printf("main  : get 之后 valid() = %d\n", result.valid() ? 1 : 0);
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="发起、自己干一小段活、get 把结果等回来"
+  source-path="code/examples/vol5/chapter04/01_demo_get.cpp"
+  description="async 发起 square(21)，main 干五段 10 毫秒的小活，get 一直等到 300 毫秒的结果就绪才返回。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 main  :   0.1 ms 计算发起，future 在手
@@ -88,33 +60,13 @@ main  : get 之后 valid() = 0
 
 失败的那一头也得有人接。咱们让 `divide` 在除数为零时抛 `invalid_argument`，`main` 这头照常 `try` 加 `catch`：
 
-```cpp
-// demo_exception.cpp —— 任务里抛的异常，get 在调用线程重抛
-#include <cstdio>
-#include <future>
-#include <stdexcept>
-
-int divide(int a, int b) {
-  if (b == 0) {
-    throw std::invalid_argument("除数为零，除法做不下去");
-  }
-  return a / b;
-}
-
-int main() {
-  std::future<int> bad = std::async(divide, 6, 0);
-  try {
-    int value = bad.get();              // 这一行抛出任务里存下的那个异常
-    std::printf("main: 拿到 %d\n", value);
-  } catch (const std::invalid_argument& e) {
-    std::printf("main: 捕获 invalid_argument，what() = %s\n", e.what());
-  }
-
-  std::future<int> good = std::async(divide, 6, 3);
-  std::printf("main: divide(6, 3) = %d\n", good.get());
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="任务里抛的异常，get 在调用线程重抛"
+  source-path="code/examples/vol5/chapter04/02_demo_exception.cpp"
+  description="divide 在除数为零时抛 invalid_argument，main 的 catch 经 get 接到的是同一个异常，消息原样；除数正常时值照常从 get 出来。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 main: 捕获 invalid_argument，what() = 除数为零，除法做不下去
@@ -135,25 +87,13 @@ future 这个名字容易让人生出能反复读的念头。标准的类定义�
 
 未定义行为演示不出来，能演示的是咱们手头的机器碰上它时干了什么。标准在同一处留了推荐做法：实现应当查出这类调用，抛一个 `std::future_error`，错误条件是 `no_state`（/3 的 Recommended practice）。我把探针跑了：
 
-```cpp
-// probe_double_get.cpp —— get 过一次的 future，再 get 一次会怎样
-#include <cstdio>
-#include <future>
-
-int answer() { return 42; }
-
-int main() {
-  std::future<int> f = std::async(answer);
-  int first = f.get();
-  std::printf("第一回 get = %d，valid() = %d\n", first, f.valid() ? 1 : 0);
-  try {
-    std::printf("第二回 get = %d\n", f.get());   // 标准层面是未定义行为
-  } catch (const std::exception& e) {
-    std::printf("第二回 get 抛了异常：%s\n", e.what());
-  }
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="get 过一次的 future，再 get 一次会怎样"
+  source-path="code/examples/vol5/chapter04/03_probe_double_get.cpp"
+  description="第二回 get 在标准层面是未定义行为；本机的 libstdc++ 按标准的推荐做法抛 future_error，消息是 No associated state。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 第一回 get = 42，valid() = 0
@@ -168,46 +108,25 @@ int main() {
 
 场面咱们常碰：一份结果，几条线程都要。future 独占，复制不过去，硬把同一个 future 移动给几个人，前一个拿到手的已经空了。库给的答案是 `std::shared_future`，同样从 C++11 起。它的类定义与 future 只差一个词：多了一个“可以”，它可以与其他异步返回对象共享自己的共享状态（[futures.shared.future]/1）。拷贝构造是正经成员，拷出来的每一份都指向同一段共享状态（/8）。
 
-咱们要换过去，路有两条。`future::share()` 把手里的共享状态交出去，返回一个 `shared_future`，自己变成无效（[futures.unique.future]/13、/14）。`shared_future` 也有从 future 右值转换构造的入口（[futures.shared.future]/10），`std::shared_future<std::string> sf = std::async(load_config);` 这样的写法直接成立，我用探针验过。
+咱们要换过去，路有两条。`future::share()` 把手里的共享状态交出去，返回一个 `shared_future`，自己变成无效（[futures.unique.future]/13、/14）。`shared_future` 也有从 future 右值转换构造的入口（[futures.shared.future]/10），`std::shared_future<std::string> sf = std::async(load_config);` 这样的写法直接成立，我用探针验过：
+
+<OnlineCompilerDemo
+  title="shared_future 直接从 async 的返回值构造"
+  source-path="code/examples/vol5/chapter04/04_probe_shared_from_async.cpp"
+  description="不经 share()，async 返回的 future 右值直接转换构造出 shared_future，同一份拷贝连取两回都拿得到结果。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 三条线程分食一份配置的现场，咱们直接看。`main` 发起读取，`share` 出去，三条 reader 各拿一份拷贝，各自 `get`：
 
-```cpp
-// demo_shared.cpp —— 一份配置，三条线程都要：shared_future
-#include <chrono>
-#include <cstdio>
-#include <future>
-#include <string>
-#include <thread>
-#include <vector>
-
-using namespace std::chrono_literals;
-
-std::string load_config() {
-  std::this_thread::sleep_for(150ms);   // 顶替一次真实的读取
-  return "port = 8080";
-}
-
-int main() {
-  std::future<std::string> one_shot = std::async(load_config);
-  std::shared_future<std::string> config = one_shot.share();
-  std::printf("main: share 之后，future 的 valid() = %d\n",
-              one_shot.valid() ? 1 : 0);
-
-  std::vector<std::thread> readers;
-  for (int i = 0; i < 3; ++i) {
-    readers.emplace_back([config, i] {          // 按值拷进线程，一人一份
-      const std::string& line = config.get();   // 各自的拷贝，各自 get
-      std::printf("reader %d: %s\n", i, line.c_str());
-    });
-  }
-  for (auto& t : readers) t.join();
-
-  std::printf("main: 第一回 get 到 %s\n", config.get().c_str());
-  std::printf("main: 第二回 get 到 %s\n", config.get().c_str());
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="一份配置，三条线程都要：shared_future"
+  source-path="code/examples/vol5/chapter04/05_demo_shared.cpp"
+  description="share 之后原 future 的 valid() 变 0，三条 reader 各拿 shared_future 的拷贝各自 get，末尾同一份拷贝连取两回。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 main: share 之后，future 的 valid() = 0
@@ -242,7 +161,7 @@ main: 第二回 get 到 port = 8080
 
 ## 参考资源
 
-五段代码在临时目录 /tmp/concurrency-u4/ 里编译运行，没有进仓库。编译器是 GCC 16.2.1，命令 `g++ -std=c++20 -O2 -pthread`，另加 `-Wall -Wextra` 无警告，机器是 WSL2，16 逻辑核，日期 2026-11-16。临时目录系统会清，正文里的代码块就是全部内容，每个 demo 拼成单个 .cpp 文件即可复跑。正文印出其中四段，`shared_future` 直接从 async 返回值构造那句，是第五段探针单独验的。demo_get 里 get 返回的读数落在 300 毫秒上下，我重跑过一遍，读到 300.5，零头是唤醒与调度。reader 三行的次序由调度排，两遍分别读到 1、0、2 与 0、1、2。结构性的结果每次一致，它们是 valid 的翻转、异常的类型与消息，还有 `shared_future` 的多路取值。二次 get 在标准层面是未定义行为，本机的 libstdc++ 按推荐做法抛 `std::future_error`，别的实现可以另作选择。条款一律按 eel.is 上的现行工作草案核对，小节名跟正式标准一致，段号可能挪。cppreference 的 async 与 shared_future 两页本回抓到了全文，与草案核对无出入。版本标注按它写的来，async、future、shared_future 都是 C++11。推进顺序参照了 Anthony Williams 的《C++ Concurrency in Action》，例子与文字都是我自己写的。
+五段代码收在 `code/examples/vol5/chapter04/`，可在本页直接运行。编译器是 GCC 16.2.1，命令 `g++ -std=c++20 -O2 -pthread`，另加 `-Wall -Wextra` 无警告，机器是 WSL2，16 逻辑核，初验日期 2026-11-16，抽成独立文件时复验过。正文挂出其中四段，`shared_future` 直接从 async 返回值构造那句，是第五段探针单独验的，也一并收在示例里。demo_get 里 get 返回的读数落在 300 毫秒上下，我重跑过一遍，读到 300.5，零头是唤醒与调度。reader 三行的次序由调度排，两遍分别读到 1、0、2 与 0、1、2。结构性的结果每次一致，它们是 valid 的翻转、异常的类型与消息，还有 `shared_future` 的多路取值。二次 get 在标准层面是未定义行为，本机的 libstdc++ 按推荐做法抛 `std::future_error`，别的实现可以另作选择。条款一律按 eel.is 上的现行工作草案核对，小节名跟正式标准一致，段号可能挪。cppreference 的 async 与 shared_future 两页本回抓到了全文，与草案核对无出入。版本标注按它写的来，async、future、shared_future 都是 C++11。推进顺序参照了 Anthony Williams 的《C++ Concurrency in Action》，例子与文字都是我自己写的。
 
 - [std::async（cppreference）][cppref-async]，C++11 起，默认写法等效 async 与 deferred 的组合。
 - [std::future（cppreference）][cppref-future]，C++11 起，只移动。

@@ -21,7 +21,7 @@ current_status:
 
 单元六走到本篇，[《怎样寻找并发错误》](01-finding-concurrency-bugs)管程序对不对，[《怎样衡量并发带来的收益》](02-measuring-benefits)管并发值不值。读数到了您手里之后，还剩后一步，把读数变成改动。6.2 结尾留过两处话，一处说 false sharing 与缓存行、锁竞争、任务过细、共享过多各自的识别办法和调整的顺序都归本篇管，另一处说动哪一处，读数说了算。两处话本篇一起兑现，单元六也在这里收束。
 
-实验照旧放在临时目录（`/tmp/concurrency-u6/`），编译跑过（GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，WSL2 内核 6.18.33.2，AMD Ryzen 7 9700X，8 核 16 线程，2026-11-17），机器跟前两篇是同一台。多线程读数都是单次运行的读数，几轮原始读数我原样列出，不挑最好看的一轮。我给设计动手脚的时候，走的就是本篇要讲的顺序：量出瓶颈，对症下药，复测确认，每一步都有读数作证。
+实验的程序收在 `code/examples/vol5/chapter06/`，可在本页直接运行，编译跑过（GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，WSL2 内核 6.18.33.2，AMD Ryzen 7 9700X，8 核 16 线程，2026-11-17，抽成独立文件时复验过），机器跟前两篇是同一台。多线程读数都是单次运行的读数，几轮原始读数我原样列出，不挑最好看的一轮。我给设计动手脚的时候，走的就是本篇要讲的顺序：量出瓶颈，对症下药，复测确认，每一步都有读数作证。
 
 ## 缓存行：假共享从哪里来
 
@@ -45,93 +45,13 @@ warning: ‘++’ expression of ‘volatile’-qualified type is deprecated [-Wv
 
 所以实验里写的是 `v = v + 1`，咱们把读写分开，各算各的。闸门咱们用的是 ready 与 go 两扇门，`ready` 数工作线程报到，`go` 由主线程按一下放行，秒表卡在放行那一下（为什么是两扇门，调整顺序一节有个病例交代）。
 
-```cpp
-// exp_g_falsesharing.cpp —— 各写各的两个计数器，挤一条行对一人一条行
-#include <array>
-#include <chrono>
-#include <cstddef>
-#include <cstdio>
-#include <cstdlib>
-#include <latch>
-#include <new>
-#include <thread>
-#include <vector>
-
-template <class T>
-inline void do_not_optimize(T& value) {
-  asm volatile("" : "+m,r"(value) : : "memory");
-}
-
-constexpr long long kPerThread = 20000000LL;   // 每线程两千万次加一
-
-struct alignas(64) Packed { volatile long long a = 0; volatile long long b = 0; };
-struct alignas(64) Slot   { volatile long long v = 0; };
-
-template <class F, class G>
-double run_two(F&& body1, G&& body2) {
-  using clock = std::chrono::steady_clock;
-  std::latch ready{2};
-  std::latch go{1};
-  std::thread t1([&] { ready.count_down(); go.wait(); body1(); });
-  std::thread t2([&] { ready.count_down(); go.wait(); body2(); });
-  ready.wait();
-  auto t0 = clock::now();
-  go.count_down();
-  t1.join();
-  t2.join();
-  auto t1c = clock::now();
-  return std::chrono::duration<double, std::milli>(t1c - t0).count();
-}
-
-int main(int argc, char** argv) {
-  std::printf("sizeof(Packed)=%zu sizeof(Slot)=%zu\n", sizeof(Packed), sizeof(Slot));
-  Packed paddr{};
-  std::array<Slot, 2> saddr{};
-  std::printf("packed a->b delta=%lld  slot0->slot1 delta=%lld\n",
-      (long long)((char*)&paddr.b - (char*)&paddr.a),
-      (long long)((char*)&saddr[1].v - (char*)&saddr[0].v));
-  bool do_serial = true, do_packed = true, do_slot = true;
-  int rounds = 3;
-  if (argc > 1) {   // 单发模式留给 perf c2c 一类的工具
-    do_serial = do_packed = do_slot = false;
-    if (argv[1][0] == 's' && argv[1][1] == 'e') do_serial = true;
-    else if (argv[1][0] == 'p') do_packed = true;
-    else if (argv[1][0] == 's') do_slot = true;
-    if (argc > 2) rounds = std::atoi(argv[2]);
-  }
-  if (do_serial) {
-    for (int r = 0; r < rounds; ++r) {
-      Packed packed{};
-      auto t0 = std::chrono::steady_clock::now();
-      for (long long i = 0; i < kPerThread; ++i) packed.a = packed.a + 1;
-      for (long long i = 0; i < kPerThread; ++i) packed.b = packed.b + 1;
-      auto t1 = std::chrono::steady_clock::now();
-      std::printf("serial round=%d %.2fms\n", r,
-                  std::chrono::duration<double, std::milli>(t1 - t0).count());
-      do_not_optimize(packed.a); do_not_optimize(packed.b);
-    }
-  }
-  if (do_packed) {
-    for (int r = 0; r < rounds; ++r) {
-      Packed packed{};
-      double ms = run_two([&] { for (long long i = 0; i < kPerThread; ++i) packed.a = packed.a + 1; },
-                          [&] { for (long long i = 0; i < kPerThread; ++i) packed.b = packed.b + 1; });
-      std::printf("packed round=%d %.2fms\n", r, ms);
-      do_not_optimize(packed.a); do_not_optimize(packed.b);
-    }
-  }
-  if (do_slot) {
-    for (int r = 0; r < rounds; ++r) {
-      std::array<Slot, 2> slots{};
-      double ms = run_two([&] { for (long long i = 0; i < kPerThread; ++i) slots[0].v = slots[0].v + 1; },
-                          [&] { for (long long i = 0; i < kPerThread; ++i) slots[1].v = slots[1].v + 1; });
-      std::printf("slot   round=%d %.2fms\n", r, ms);
-      do_not_optimize(slots[0].v); do_not_optimize(slots[1].v);
-    }
-  }
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="假共享实测：挤一条行对一人一条行"
+  source-path="code/examples/vol5/chapter06/16_exp_g_falsesharing.cpp"
+  description="两个计数器各归各的线程写：Packed 版两地址差 8 字节、Slot 版差 64 字节，串行、packed、slot 三组各三轮读数原样列出（本机若把两条线程排在同一处核上，差距会缩小，机制见正文）。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```bash
 g++ -std=c++20 -O2 -pthread exp_g_falsesharing.cpp -o exp_g_falsesharing
@@ -158,26 +78,23 @@ slot   round=2 3.77ms
 
 修法直白：把热路径上并发写的变量隔开，一人一条行。padding 也能干活，垫多少字节得您自己算。还有一层得您知道：Padded 自己的对齐要求仍是 8，行边界落在哪里不由咱们定，一行里挨着谁也不由咱们定，尺寸还得手工算，字段一加就错位，所以咱们干脆用 `alignas` 把对齐要求提到 64，边界落得稳：
 
-```cpp
-struct alignas(64) Slot   { long long v = 0; };      // 一人一条行
-struct Padded             { long long v = 0; char pad[56]; };   // 手工垫满，也能用
-```
+<OnlineCompilerDemo
+  title="alignas(64) 与手工垫字节：尺寸都对，对齐不同"
+  source-path="code/examples/vol5/chapter06/17_slot_vs_padded.cpp"
+  description="Slot 与 Padded 的 sizeof 都是 64，alignof 一个是 64、一个是 8：手工垫满能到尺寸，行边界落在哪里仍不由咱们定。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 对齐的值别手写 64，用标准常量。本机两个编译器都给出 64（GCC 16.2.1 与 clang 23.1.3，2026-11-17 实测，feature 宏 `__cpp_lib_hardware_interference_size` 的值是 201703L）。旧目录的《[CPU cache 与 OS 线程](../ch00-concurrency-fundamentals/03-cpu-cache-and-os-threads)》写作时 Clang 还没实现它，当时引的是 LLVM 的 60174 号追踪单，如今能用了，我来复核，把变化如实记在这里。
 
-```cpp
-#include <cstddef>
-#include <cstdio>
-#include <new>
-
-int main() {
-#ifdef __cpp_lib_hardware_interference_size
-  std::printf("%zu\n", std::hardware_destructive_interference_size);
-#else
-  std::printf("constant unavailable\n");
-#endif
-}
-```
+<OnlineCompilerDemo
+  title="标准常量 hardware_destructive_interference_size 的本机答数"
+  source-path="code/examples/vol5/chapter06/18_interference_size.cpp"
+  description="C++17 起的最小反假共享间隔，本机 g++ 与 clang++ 都报 64；实现没提供这个常量时打印 constant unavailable。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 空间的代价我也交代一句：`alignas(64)` 让一个 8 字节的计数器占一整条行，行里剩下 56 个字节空着。空着也要占，因为邻居会打脸。56 个字节换十几倍的读数，热路径上划算，冷数据就别浪费了。
 
@@ -220,56 +137,13 @@ round=2 17.92ms total=599999994
 
 咱们把总量固定下来：四十万次加一，跟线程数无关，全落在同一把 `std::mutex` 后面，每次加一都进锁。线程数 1、2、4、8，咱们各跑三轮：
 
-```cpp
-// exp_h_fixedtotal.cpp —— 总量固定四十万次，每次加一都进同一把锁
-#include <chrono>
-#include <cstdio>
-#include <latch>
-#include <mutex>
-#include <thread>
-#include <vector>
-
-long long counter = 0;
-std::mutex mu;
-
-constexpr long long kTotal = 400000LL;
-
-void op_lock(int threads) {
-  const long long n = kTotal / threads;
-  for (long long i = 0; i < n; ++i) {
-    std::lock_guard<std::mutex> lk(mu);
-    ++counter;
-  }
-}
-
-template <class F>
-double run_gated(int threads, F&& op) {
-  using clock = std::chrono::steady_clock;
-  std::latch ready{threads};
-  std::latch go{1};
-  std::vector<std::thread> pool;
-  for (int t = 0; t < threads; ++t)
-    pool.emplace_back([&] { ready.count_down(); go.wait(); op(threads); });
-  ready.wait();
-  auto t0 = clock::now();
-  go.count_down();
-  for (auto& t : pool) t.join();
-  auto t1 = clock::now();
-  return std::chrono::duration<double, std::milli>(t1 - t0).count();
-}
-
-int main() {
-  for (int nt : {1, 2, 4, 8}) {
-    for (int r = 0; r < 3; ++r) {
-      counter = 0;
-      double ms = run_gated(nt, op_lock);
-      std::printf("threads=%d round=%d %.2fms per_op=%.0fns counter=%lld\n",
-                  nt, r, ms, ms * 1e6 / kTotal, counter);
-    }
-  }
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="锁竞争：总量固定，线程越多越慢"
+  source-path="code/examples/vol5/chapter06/19_exp_h_fixedtotal.cpp"
+  description="四十万次加一全进同一把锁，线程数 1 到 8 各三轮：总耗时从 4ms 一路涨到 17ms 上下，单次进锁从 11 纳秒涨到 44 纳秒。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 threads=1 round=0 3.31ms per_op=8ns counter=400000
@@ -290,15 +164,13 @@ threads=8 round=2 10.27ms per_op=26ns counter=400000
 
 咱们给同一份总量换一种摆法做对照：每条线程把加法做在自己的局部变量上，收工进一次锁合并。改动就几行：
 
-```cpp
-void op_merge(int threads) {
-  const long long n = kTotal / threads;
-  long long local = 0;
-  for (long long i = 0; i < n; ++i) ++local;
-  std::lock_guard<std::mutex> lk(mu);
-  counter += local;
-}
-```
+<OnlineCompilerDemo
+  title="锁外合并：同一份总量，几十倍的差距"
+  source-path="code/examples/vol5/chapter06/20_exp_h_merge.cpp"
+  description="每线程局部累加、收工进一次锁合并，同样 1 到 8 线程：读数落回零点几毫秒，与逐次进锁的十几毫秒差出两个数量级。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 threads=1 round=0 0.09ms counter=400000

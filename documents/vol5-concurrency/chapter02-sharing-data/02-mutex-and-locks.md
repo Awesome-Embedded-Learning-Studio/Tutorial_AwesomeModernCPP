@@ -25,43 +25,19 @@ current_status:
 
 范围怎么划？死锁这一块，本篇只把 `std::scoped_lock` 交到您手里，用它收掉上一篇里加锁顺序相反的死锁样本。锁顺序和通用的死锁预防，归讲死锁与减少共享的那一篇。检查之后动手、跨数据的不变量、并发接口怎么设计，归讲一次操作边界的那一篇。
 
-实验都在临时目录里编译跑过（GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，WSL2，16 逻辑核，2026-11-14）。除计数对照一段用 `-O0` 外，其余实验都用 `-O2`。计数对照要和上一篇的读数放在同一档优化级别上，所以咱们单独退到 `-O0`，理由在第一节交代。`std::mutex`、`std::lock_guard`、`std::unique_lock` 和 `thread_local` 是 C++11 起的设施，`std::scoped_lock` 是 C++17 起的。文中的标准行为按 eel.is 上的草案条款与 cppreference 核对过，条款都收在参考资源里。输出都是单次运行的读数，换台机器，毫秒数会动。
+实验都在 `code/examples/vol5/chapter02/` 收录并可在本页直接运行（GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，WSL2，16 逻辑核，2026-11-14，抽成独立文件时复验过）。除计数对照一段用 `-O0` 外，其余实验都用 `-O2`。计数对照要和上一篇的读数放在同一档优化级别上，所以咱们单独退到 `-O0`，理由在第一节交代。`std::mutex`、`std::lock_guard`、`std::unique_lock` 和 `thread_local` 是 C++11 起的设施，`std::scoped_lock` 是 C++17 起的。文中的标准行为按 eel.is 上的草案条款与 cppreference 核对过，条款都收在参考资源里。输出都是单次运行的读数，换台机器，毫秒数会动。
 
 ## 给计数器配一把锁
 
 给计数器配锁，咱们只加两样东西：一把 `std::mutex`，还有进入临界区时构造的 `std::lock_guard`。临界区，也就是这段只让一条线程进来的代码。
 
-```cpp
-#include <cstdio>
-#include <mutex>
-#include <thread>
-
-long long counter = 0;
-std::mutex counter_mutex;
-
-void work(int rounds) {
-  for (int i = 0; i < rounds; ++i) {
-    std::lock_guard<std::mutex> lock(counter_mutex);
-    ++counter;
-  }
-}
-
-int main() {
-  const int kRounds = 160000;
-  const int kTrials = 30;
-  int correct = 0;
-  for (int t = 0; t < kTrials; ++t) {
-    counter = 0;
-    std::thread a(work, kRounds);
-    std::thread b(work, kRounds);
-    a.join();
-    b.join();
-    if (counter == 2LL * kRounds) ++correct;
-  }
-  std::printf("%d of %d trials printed the expected %d\n",
-              correct, kTrials, 2 * kRounds);
-}
-```
+<OnlineCompilerDemo
+  title="给上一篇丢数的计数器配一把锁"
+  source-path="code/examples/vol5/chapter02/06_demo_mutex_counter.cpp"
+  description="一把 mutex 配 lock_guard：30 轮一次没丢，全部 320000。锁让读、加、写回在临界区里连成不被打断的一串。"
+  run-options="-O0 -std=c++20 -pthread"
+  allow-run
+/>
 
 咱们跑出来：
 
@@ -87,13 +63,13 @@ int main() {
 
 接手别人的代码时，您最容易读到的就是两行直白调用：
 
-```cpp
-void work() {
-  gate.lock();
-  throw std::runtime_error("boom");
-  gate.unlock();
-}
-```
+<OnlineCompilerDemo
+  title="手动 lock/unlock：异常一抛，锁留在原地"
+  source-path="code/examples/vol5/chapter02/07_demo_manual_lock_ub.cpp"
+  description="工作线程在临界区里抛异常并捕获退出，锁还挂在它名下，主线程随后一直等（在线运行有超时收场，本地得 Ctrl-C）。线程退出时仍持有互斥量是未定义行为。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 这里我故意让异常在解锁之前抛出来。咱们让工作线程捕获它，主线程随后去拿同一把锁，跑起来是这样（`timeout 2` 收尾）：
 
@@ -113,12 +89,13 @@ RAII 的做法是把锁的生命周期绑给作用域。`std::lock_guard` 是 C+
 
 同一段代码，咱们换成 `lock_guard`：
 
-```cpp
-void work() {
-  std::lock_guard<std::mutex> lock(gate);
-  throw std::runtime_error("boom");
-}
-```
+<OnlineCompilerDemo
+  title="换成 lock_guard：异常路上就把锁放了"
+  source-path="code/examples/vol5/chapter02/08_demo_lock_guard_raii.cpp"
+  description="同一个场景，锁的生命周期绑给作用域：栈展开带着析构走，锁在异常离开作用域的路上放掉，主线程随后拿到锁打印 got it。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 [worker] caught boom
@@ -130,12 +107,13 @@ void work() {
 
 有一个写法，我得单独说，因为它看起来像用了 RAII：
 
-```cpp
-for (int i = 0; i < rounds; ++i) {
-  std::lock_guard<std::mutex>{counter_mutex};
-  ++counter;
-}
-```
+<OnlineCompilerDemo
+  title="没有名字的 lock_guard：看起来像用了 RAII，其实没有"
+  source-path="code/examples/vol5/chapter02/09_demo_unnamed_guard.cpp"
+  description="临时对象语句结束即析构，锁在 ++counter 之前就放掉了：30 轮一轮都没对。本地加 -Wall 会看到 nodiscard 警告，正是正文讲的那一条。"
+  run-options="-O0 -std=c++20 -pthread"
+  allow-run
+/>
 
 花括号里构造的是一个没有名字的临时对象。语句结束，临时对象析构，锁在 `++counter` 之前就放掉了。您把上一篇的实验换成没有名字的写法，在 `-O0` 下 30 轮跑出来：
 
@@ -160,36 +138,13 @@ C++ Core Guidelines 的 CP.20 把做法写成了规范：用 RAII，不要直接
 
 提前解锁能省多少等待，咱们量一次。代码里 holder 线程拿锁、拷一份十万个整数的快照，然后做一件耗时的事。两种做法：一直拿着锁做完，或者拷完就放、出了锁再做。主线程在 5 毫秒后去拿同一把锁，量它等了多久：
 
-```cpp
-using clock_type = std::chrono::steady_clock;
-using namespace std::chrono_literals;
-
-long long run(bool unlock_after_copy) {
-  std::mutex m;
-  std::vector<int> shared(100000, 1);
-  long long waited = -1;
-
-  std::thread holder([&] {
-    std::unique_lock<std::mutex> lock(m);
-    auto snapshot = shared;
-    if (unlock_after_copy) lock.unlock();
-    std::this_thread::sleep_for(50ms);   // 顶替耗时的活
-    long long sink = 0;
-    for (int v : snapshot) sink += v;
-    if (sink < 0) std::puts("unreachable");
-  });
-
-  std::this_thread::sleep_for(5ms);
-  auto t0 = clock_type::now();
-  {
-    std::lock_guard<std::mutex> lock(m);
-    waited = std::chrono::duration_cast<std::chrono::milliseconds>(
-                 clock_type::now() - t0).count();
-  }
-  holder.join();
-  return waited;
-}
-```
+<OnlineCompilerDemo
+  title="拷完快照就放锁：主线程少等 45 毫秒"
+  source-path="code/examples/vol5/chapter02/10_demo_unlock_early.cpp"
+  description="holder 线程拷一份十万个整数的快照再做 50 毫秒的耗时活：一直持锁主线程等 45 毫秒，unique_lock 拷完就 unlock 主线程立刻进去。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 lock held through the work: waited 45 ms
@@ -210,23 +165,13 @@ unlock after the copy:     waited 0 ms
 
 手上同时有两把锁的时候，您嵌套 `lock_guard` 就会重演上一篇里加锁顺序相反的死锁。两个对象，各有一把锁和一个数值，两边都要动两个对象，加锁顺序相反：
 
-```cpp
-using namespace std::chrono_literals;
-
-struct Item {
-  std::mutex m;
-  long long value = 1000000;
-};
-
-void move(Item& from, Item& to, long long amount) {
-  std::lock_guard<std::mutex> a(from.m);
-  std::printf("holding one side\n");
-  std::this_thread::sleep_for(50ms);
-  std::lock_guard<std::mutex> b(to.m);
-  from.value -= amount;
-  to.value += amount;
-}
-```
+<OnlineCompilerDemo
+  title="两把锁嵌套着拿：死锁重现"
+  source-path="code/examples/vol5/chapter02/11_demo_two_locks_deadlock.cpp"
+  description="两条线程各拿一边的锁再要对方那把，两行 holding one side 之后进程停住（在线运行有超时收场）。上一篇的死锁换了件外衣又来了。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 holding one side
@@ -240,13 +185,13 @@ exit=124
 
 把它换成 `std::scoped_lock`（C++17 起），您看，只改加锁那一行：
 
-```cpp
-void move(Item& from, Item& to, long long amount) {
-  std::scoped_lock lock(from.m, to.m);
-  from.value -= amount;
-  to.value += amount;
-}
-```
+<OnlineCompilerDemo
+  title="scoped_lock 一趟拿两把：死锁不再来"
+  source-path="code/examples/vol5/chapter02/12_demo_scoped_lock_transfer.cpp"
+  description="只改加锁那一行：两条线程各跑 200000 次对向转账，一个方向减 1 另一个方向加 2，总和始终 2000000，一次也没卡住。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 咱们让两条线程各跑 200000 次，一个方向减 1，另一个方向加 2：
 
@@ -282,24 +227,13 @@ sum = 2000000, x = 1200000, y = 800000
 
 我习惯把锁和它保护的数据放进同一个类，数据设成私有，外面只留操作：
 
-```cpp
-class Counter {
-public:
-  void add(int n) {
-    std::lock_guard<std::mutex> lock(m_);
-    value_ += n;
-  }
-
-  long long value() const {
-    std::lock_guard<std::mutex> lock(m_);
-    return value_;
-  }
-
-private:
-  mutable std::mutex m_;
-  long long value_ = 0;
-};
-```
+<OnlineCompilerDemo
+  title="锁和数据住进同一个类，外面只留操作"
+  source-path="code/examples/vol5/chapter02/13_demo_counter_class.cpp"
+  description="Counter 把 mutex 和 value_ 藏成私有成员，公开的 add 与 value 各自加锁：想绕过锁碰数据，得先穿过访问控制。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 `add` 和 `value` 都拿同一把锁，`value_` 是私有的，调用者拿不到它的引用，也绕不过锁。`m_` 标成 `mutable`，因为 `value() const` 也要加锁。咱们把锁和数据放进同一个类，锁的生命周期跟着对象走，锁与被保护的数据同生同灭。
 
@@ -319,30 +253,13 @@ TSan 报的内容是：`add` 里的写和 `value()` 里的读之间，有一条 
 
 返回引用是个容易忽略的出口。您看下面 `Box` 的实现：
 
-```cpp
-class Box {
-public:
-  int& ref() {
-    std::lock_guard<std::mutex> lock(m_);
-    return value_;
-  }
-  void set(int v) {
-    std::lock_guard<std::mutex> lock(m_);
-    value_ = v;
-  }
-
-private:
-  std::mutex m_;
-  int value_ = 0;
-};
-
-int main() {
-  Box box;
-  int& r = box.ref();
-  box.set(42);
-  std::printf("through the escaped reference: %d\n", r);
-}
-```
+<OnlineCompilerDemo
+  title="ref() 加了锁，交出去的引用不归锁管"
+  source-path="code/examples/vol5/chapter02/14_demo_escaped_reference.cpp"
+  description="拿到的引用在锁外飘着：set(42) 落锁里，读引用不落。另一条线程此刻调 set，这次读与那次写之间就是一条 data race，接口自己把锁绕开了。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 through the escaped reference: 42
@@ -366,30 +283,13 @@ through the escaped reference: 42
 
 量您自己的代码的临界区时，您可以用一次实验看清代价，再决定拆不拆。四条线程各把四个计数器中的一个加两百万次，一种做法是四个计数器共用一把锁，另一种是每个计数器一把：
 
-```cpp
-using clock_type = std::chrono::steady_clock;
-
-long long run(int lock_count) {
-  const int kThreads = 4;
-  const int kIters = 2000000;
-  std::vector<std::mutex> locks(lock_count);
-  std::vector<long long> counters(lock_count, 0);
-  auto t0 = clock_type::now();
-  std::vector<std::thread> threads;
-  for (int i = 0; i < kThreads; ++i) {
-    const int slot = (lock_count == 1) ? 0 : i;
-    threads.emplace_back([&, slot] {
-      for (int j = 0; j < kIters; ++j) {
-        std::lock_guard<std::mutex> lock(locks[slot]);
-        ++counters[slot];
-      }
-    });
-  }
-  for (auto& t : threads) t.join();
-  return std::chrono::duration_cast<std::chrono::milliseconds>(
-             clock_type::now() - t0).count();
-}
-```
+<OnlineCompilerDemo
+  title="四把锁比一把锁快多少"
+  source-path="code/examples/vol5/chapter02/15_demo_lock_granularity.cpp"
+  description="四条线程各把四个计数器中的一个加两百万次：共用一把锁轮流进去，每计数器一把锁四个核各干各的，快了三成上下。数字只在当前机器当前负载下成立。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 one lock for four counters: 216 ms
@@ -418,16 +318,13 @@ C++11 给了咱们 `thread_local`：给每个线程一份独立的对象，存�
 
 把上一篇的计数器改成线程本地版本，咱们看：
 
-```cpp
-thread_local long long local_counter = 0;
-
-void work(int rounds, long long* slot, const char* name) {
-  for (int i = 0; i < rounds; ++i) ++local_counter;
-  std::printf("%s: value %lld at %p\n", name, local_counter,
-              static_cast<void*>(&local_counter));
-  *slot = local_counter;
-}
-```
+<OnlineCompilerDemo
+  title="thread_local：每条线程一份计数，最后汇总，锁退场"
+  source-path="code/examples/vol5/chapter02/16_demo_thread_local_counter.cpp"
+  description="两条线程各加 160000 次跑 30 轮，两个地址不一样、每轮相加都是 320000、主线程自己的副本仍是 0。数据所有权跟着线程走，锁不需要了。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 咱们让两条线程各加 160000 次，跑 30 轮：
 
@@ -454,15 +351,13 @@ main's own copy: 0
 
 换一条路，咱们把结果放进各自的位置，主线程最后汇总。准备一个长度 2 的 `std::vector<long long>`，两条线程分别写 `partial[0]` 和 `partial[1]`，没有任何锁：
 
-```cpp
-std::vector<long long> partial(2, 0);
-const int rounds = 160000;
-std::thread a([&] { for (int i = 0; i < rounds; ++i) ++partial[0]; });
-std::thread b([&] { for (int i = 0; i < rounds; ++i) ++partial[1]; });
-a.join();
-b.join();
-std::printf("total = %lld\n", partial[0] + partial[1]);
-```
+<OnlineCompilerDemo
+  title="各写各的元素，join 之后汇总，全程无锁"
+  source-path="code/examples/vol5/chapter02/17_demo_partial_slots.cpp"
+  description="两条线程分别写 partial[0] 和 partial[1]，被写的元素各自独占，join 建立顺序后再相加：total = 320000，30 轮全对。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 两个线程各写各的元素，被写的元素各自独占。容器本身仍然是共享的，标准允许不同元素并发修改（[container.requirements.dataraces]/2），`vector<bool>` 除外。join 之后主线程再相加，顺序由 join 建立。这段程序我也跑了 30 轮，每轮都加到 320000，TSan 没有报告。
 

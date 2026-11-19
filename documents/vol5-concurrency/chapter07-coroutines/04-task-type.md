@@ -34,94 +34,13 @@ current_status:
 
 下面是 Task 的全貌，exp_h_task.cpp 的骨架部分，逐行讲在后面，您也可以停下来通读一遍：
 
-```cpp
-// exp_h_task.cpp —— 教学版 Task<int>：结果怎么回、异常怎么传、协程帧怎么收回
-#include <coroutine>
-#include <cstdio>
-#include <exception>
-#include <new>
-#include <stdexcept>
-#include <utility>
-
-int g_frames = 0;   // 协程帧的在册计数，教学演示销毁时机用，非线程安全
-
-template <typename T>
-class Task {
-public:
-  struct promise_type {
-    T result{};
-    std::exception_ptr failure{};
-    std::coroutine_handle<> continuation{};   // 等我做完的上一级协程，根 Task 手里没有
-
-    Task get_return_object() {
-      return Task{std::coroutine_handle<promise_type>::from_promise(*this)};
-    }
-    std::suspend_always initial_suspend() noexcept { return {}; }   // 懒启动：创建时不跑
-    void return_value(T value) { result = std::move(value); }
-    void unhandled_exception() { failure = std::current_exception(); }
-
-    // 最终挂起点的交接，sym 姿势：有人等就交回去，没人是根，交还最初的恢复者
-    auto final_suspend() noexcept {
-      struct Done {
-        bool await_ready() noexcept { return false; }
-        std::coroutine_handle<> await_suspend(
-            std::coroutine_handle<promise_type> me) noexcept {
-          auto c = me.promise().continuation;
-          if (!c) return std::noop_coroutine();
-          return c;
-        }
-        void await_resume() noexcept {}
-      };
-      return Done{};
-    }
-
-    // 帧计数，7.2 frame_alloc 的同款手法
-    void* operator new(std::size_t size) {
-      ++g_frames;
-      return ::operator new(size);
-    }
-    void operator delete(void* ptr, std::size_t size) {
-      --g_frames;
-      ::operator delete(ptr, size);
-    }
-  };
-
-  explicit Task(std::coroutine_handle<promise_type> h) : h_(h) {}
-  ~Task() { if (h_) h_.destroy(); }   // RAII：帧的收回交给析构函数
-  Task(const Task&) = delete;
-  Task& operator=(const Task&) = delete;
-  Task(Task&& o) noexcept : h_(o.h_) { o.h_ = {}; }
-  Task& operator=(Task&& o) noexcept {
-    if (this != &o) {
-      if (h_) h_.destroy();
-      h_ = o.h_;
-      o.h_ = {};
-    }
-    return *this;
-  }
-
-  // 三件套：Task 自己就是 awaiter，co_await 一个 Task 就是在等它做完
-  bool await_ready() noexcept { return false; }
-  std::coroutine_handle<> await_suspend(std::coroutine_handle<> waiter) noexcept {
-    h_.promise().continuation = waiter;   // 登记在前
-    return h_;                            // 启动在后，sym 姿势把子协程跑起来
-  }
-  T await_resume() { return take_result(); }
-
-  void start() { h_.resume(); }   // 根 Task 的启动口：谁调它，协程体就在谁的线程上跑
-  T result() { return take_result(); }
-  std::coroutine_handle<promise_type> handle() const { return h_; }   // 交给调度器用
-
-private:
-  T take_result() {
-    if (h_.promise().failure)
-      std::rethrow_exception(h_.promise().failure);
-    return std::move(h_.promise().result);
-  }
-
-  std::coroutine_handle<promise_type> h_;
-};
-```
+<OnlineCompilerDemo
+  title="教学版 Task 的骨架：结果、异常、销毁三路交接"
+  source-path="code/examples/vol5/chapter07/11_task_skeleton.cpp"
+  description="骨架配了最小演示 main，trivial 协程 co_return 42，start 启动、result 取回，帧计数显示析构前在册 1 帧。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 promise 身上三个成员，result、failure、continuation，各扛一路交接。`co_return 40;` 执行时编译器调 `return_value`，值搬进 result，跟着协程帧同生共死。等待者恢复后从 `await_resume` 进来，`take_result` 把值从 promise 搬出去，结果的全程就这两步，存放点与 7.2 的 Generator 一模一样。`co_return` 的落点 7.2 已经交代过，本篇补一条纪律：C++20 里 `return_value` 与 `return_void` 互斥，教学版按带值的一路走，示例协程的每条路径都写了 `co_return`。函数体走到底没写的后果 7.2 量过，未定义行为，编译器一声不吭，咱们在纪律里躲开它。
 
@@ -143,62 +62,13 @@ promise 身上三个成员，result、failure、continuation，各扛一路交�
 
 道理讲完了，咱们让三条路径都跑出输出。实验协程是两条链。pipeline 串起 leaf 与 middle，是无事的链。top 经 relay 到 boom 的链上，三级都不接异常：
 
-```cpp
-Task<int> leaf(int x) {
-  co_return x * 2;
-}
-
-Task<int> middle(int x) {
-  int v = co_await leaf(x);
-  co_return v + 1;
-}
-
-Task<int> pipeline() {
-  int v = co_await middle(20);
-  co_return v;
-}
-
-Task<int> boom(int x) {
-  if (x == 13) throw std::runtime_error("叶子协程抛出的运行时错误");
-  co_return x;
-}
-
-Task<int> relay(int x) {
-  int v = co_await boom(x);   // boom 的异常在 co_await 这里重新浮出，relay 没接，存进自己的 promise
-  co_return v;
-}
-
-Task<int> top(int x) {
-  int v = co_await relay(x);  // relay 的异常在 co_await 这里重新浮出，top 也没接
-  co_return v;
-}
-
-int main() {
-  { // 路径一：结果沿链传回
-    Task<int> t = pipeline();
-    t.start();
-    std::printf("路径一 结果: %d\n", t.result());
-  }
-  { // 路径二：异常逐级接力，在取结果的地方重新抛出
-    Task<int> t = top(13);
-    t.start();   // start 正常返回，异常不当场冒出来
-    try {
-      (void)t.result();
-    } catch (const std::exception& e) {
-      std::printf("路径二 异常: %s\n", e.what());
-    }
-  }
-  { // 路径三：跑完的帧与没跑的帧，都由析构收回
-    Task<int> run = pipeline();
-    run.start();
-    (void)run.result();
-    Task<int> never = pipeline();   // 创建了，没 start，析构直接收帧
-    std::printf("路径三 两个 Task 还在册的帧数: %d\n", g_frames);
-  }
-  std::printf("路径三 全部析构后在册帧数: %d\n", g_frames);
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="三条路径实测：结果回传、异常接力、帧全数收回"
+  source-path="code/examples/vol5/chapter07/12_exp_h_task.cpp"
+  description="路径一 41 沿链传回，路径二异常存在三级 promise 里接力、取结果时才浮出，路径三跑完的与没跑的帧都由析构收回，计数归零。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```bash
 g++ -std=c++20 -O2 -pthread exp_h_task.cpp -o exp_h_task
@@ -234,76 +104,13 @@ g++ -std=c++20 -O2 -pthread exp_h_task.cpp -o exp_h_task
 
 咱们让两段流水线排队跑，pipeline 串起 fetch 与 process 两站，每站干完一段活就让出一轮。Task 沿用本篇第一节的代码，Loop、Yield 与三个协程是新增的：
 
-```cpp
-// exp_i_loop.cpp —— 最小调度器：就绪队列加单线程循环，两段流水线排队跑
-// Task 与 exp_h_task.cpp 相同，拼接在本文件顶部即可编译
-#include <coroutine>
-#include <cstdio>
-#include <deque>
-#include <exception>
-#include <string>
-#include <utility>
-
-class Loop {
-public:
-  void schedule(std::coroutine_handle<> h) { ready_.push_back(h); }
-  void run() {
-    while (!ready_.empty()) {
-      auto h = ready_.front();
-      ready_.pop_front();
-      h.resume();   // 谁调 run，队列里的协程就在谁的线程上跑
-    }
-  }
-
-private:
-  std::deque<std::coroutine_handle<>> ready_;
-};
-
-// 让出：挂起，把自己放回队尾，轮到排在后面的协程
-struct Yield {
-  explicit Yield(Loop& loop) : loop_(loop) {}
-  bool await_ready() noexcept { return false; }
-  void await_suspend(std::coroutine_handle<> h) { loop_.schedule(h); }
-  void await_resume() noexcept {}
-
-private:
-  Loop& loop_;
-};
-
-Task<std::string> fetch(Loop& loop, int id) {
-  std::printf("  fetch(%d): 开始取数\n", id);
-  co_await Yield{loop};
-  std::printf("  fetch(%d): 取到了\n", id);
-  co_return "数据" + std::to_string(id);
-}
-
-Task<std::string> process(Loop& loop, std::string data, int id) {
-  std::printf("  process(%d): 拿到 %s，开始加工\n", id, data.c_str());
-  co_await Yield{loop};
-  std::printf("  process(%d): 加工完成\n", id);
-  co_return data + "(已加工)";
-}
-
-Task<std::string> pipeline(Loop& loop, int id) {
-  std::string data = co_await fetch(loop, id);
-  std::string out = co_await process(loop, data, id);
-  co_return out;
-}
-
-int main() {
-  Loop loop;
-  Task<std::string> a = pipeline(loop, 1);
-  Task<std::string> b = pipeline(loop, 2);
-  loop.schedule(a.handle());
-  loop.schedule(b.handle());
-  std::printf("== 循环开跑 ==\n");
-  loop.run();
-  std::printf("== 队列空了 ==\n");
-  std::printf("a = %s\n", a.result().c_str());
-  std::printf("b = %s\n", b.result().c_str());
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="最小调度器：就绪队列加单线程循环"
+  source-path="code/examples/vol5/chapter07/13_exp_i_loop.cpp"
+  description="两段流水线排队跑，Yield 让出的协程排回队尾，链上的完工交接抄近路，一条线程把六个协程全伺候完。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```bash
 g++ -std=c++20 -O2 -pthread exp_i_loop.cpp -o exp_i_loop
@@ -337,75 +144,13 @@ b = 数据2(已加工)
 
 三幕实验把立场量给您看。幕一 main 自己 start，幕二 start 交给一条 driver 线程，幕三任务在 main 创建、循环却搬上另一条 driver 跑：
 
-```cpp
-// exp_j_threads.cpp —— 谁在哪个线程上恢复：谁调 resume，协程体就在谁的线程上接着跑
-// Task 与 exp_h_task.cpp 相同（handle() 访问器用上了），Loop 与 exp_i_loop.cpp 相同
-#include <coroutine>
-#include <cstdio>
-#include <deque>
-#include <exception>
-#include <sstream>
-#include <string>
-#include <thread>
-#include <utility>
-
-class Loop {
-public:
-  void schedule(std::coroutine_handle<> h) { ready_.push_back(h); }
-  void run() {
-    while (!ready_.empty()) {
-      auto h = ready_.front();
-      ready_.pop_front();
-      h.resume();
-    }
-  }
-
-private:
-  std::deque<std::coroutine_handle<>> ready_;
-};
-
-static std::string tid() {
-  std::ostringstream oss;
-  oss << std::this_thread::get_id();
-  return oss.str();
-}
-
-Task<int> leaf(int x) {
-  std::printf("  leaf(%d)       在线程 %s\n", x, tid().c_str());
-  co_return x + 1;
-}
-
-Task<int> root(int x) {
-  std::printf("  root 前半      在线程 %s\n", tid().c_str());
-  int v = co_await leaf(x);
-  std::printf("  root 后半 v=%d 在线程 %s\n", v, tid().c_str());
-  co_return v;
-}
-
-int main() {
-  std::printf("main 在线程 %s\n", tid().c_str());
-  { // 幕一：main 自己启动
-    Task<int> t = root(10);
-    t.start();
-    std::printf("幕一 result=%d\n", t.result());
-  }
-  { // 幕二：start 交给 driver 线程
-    Task<int> t = root(20);
-    std::thread driver([&t] { t.start(); });
-    driver.join();
-    std::printf("幕二 result=%d\n", t.result());
-  }
-  { // 幕三：任务在 main 创建，恢复发生在跑循环的 driver 线程上
-    Loop loop;
-    Task<int> t = root(30);
-    loop.schedule(t.handle());
-    std::thread driver([&loop] { loop.run(); });
-    driver.join();
-    std::printf("幕三 result=%d\n", t.result());
-  }
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="谁调 resume，协程体就在谁的线程上跑"
+  source-path="code/examples/vol5/chapter07/14_exp_j_threads.cpp"
+  description="三幕实验换恢复入口：main 自己 start、driver 线程 start、循环搬上 driver，root 前后半与 leaf 的线程标识跟着恢复入口走。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```bash
 g++ -std=c++20 -O2 -pthread exp_j_threads.cpp -o exp_j_threads
@@ -447,7 +192,7 @@ main 在线程 130680546568064
 
 ## 参考资源
 
-本篇的素材来自旧目录 ch06 的《[promise_type 与 awaitable](../ch06-async-io-coroutine/03-promise-type-and-awaitable)》，SimpleTask、SafeTask 与调度器在旧文里已有雏形，例子与文字全部重写。三个实验都在开头交代的临时目录里编译运行，另拿 `-fsanitize=address,undefined` 各复跑一遍，没有报告。exp_i 与 exp_j 复用本篇第一节的 Task，拼接位置写在文件头注释里，正文代码块加上本篇第一节的 Task 就是完整可编译的文件。推进思路参照 Lewis Baker 的协程系列，例子与文字都是我自己写的。语言机制的断言按 eel.is 上的现行工作草案与 cppreference 核对（2026-11-17 访问），条款号与段号可能随草案更新挪动。
+本篇的素材来自旧目录 ch06 的《[promise_type 与 awaitable](../ch06-async-io-coroutine/03-promise-type-and-awaitable)》，SimpleTask、SafeTask 与调度器在旧文里已有雏形，例子与文字全部重写。三个实验初验在开头交代的临时目录里编译运行，另拿 `-fsanitize=address,undefined` 各复跑一遍，没有报告，现在收在 code/examples/vol5/chapter07/，可在本页直接运行，抽成独立文件时复验过，消毒器同样没有报告。exp_i 与 exp_j 的独立文件已把第一节的 Task 拼进文件顶部，各自是完整可编译的单文件。推进思路参照 Lewis Baker 的协程系列，例子与文字都是我自己写的。语言机制的断言按 eel.is 上的现行工作草案与 cppreference 核对（2026-11-17 访问），条款号与段号可能随草案更新挪动。
 
 - [Await expression（现行草案 expr.await）][draft-await]，await_suspend 的三种返回类型、句柄返回值的接力恢复注。
 - [Coroutine definitions（现行草案 dcl.fct.def.coroutine）][draft-def]，resumer 的命名、final_suspend 的 noexcept 要求、协程状态的销毁次序。

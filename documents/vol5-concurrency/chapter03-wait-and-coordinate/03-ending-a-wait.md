@@ -29,106 +29,13 @@ current_status:
 
 现场是咱们搭的一个最小货台：一把锁、一个条件变量、一条空队列，一条线程等第一件货。四种结束方式各跑一遍，起点都是等待线程睡下：
 
-```cpp
-// exits.cpp —— 同一处等待，四种结束方式，各留一个可观察的现场
-#include <atomic>
-#include <chrono>
-#include <condition_variable>
-#include <cstdio>
-#include <mutex>
-#include <queue>
-#include <stop_token>
-#include <thread>
-
-using namespace std::chrono_literals;
-using Clock = std::chrono::steady_clock;
-
-struct Bay {
-  std::mutex m;
-  std::condition_variable_any cv;   // 通用版：C 一幕要接停止请求
-  std::queue<int> q;
-  bool closed = false;
-  bool failed = false;
-  std::atomic<int> parked{0};
-};
-
-double ms_since(Clock::time_point t0) {
-  return std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
-}
-
-int main() {
-  { // A 关闭：没人再来放货，收盘的一方把 closed 立起来
-    Bay bay;
-    auto t0 = Clock::now();
-    std::thread waiter([&] {
-      std::unique_lock<std::mutex> lk(bay.m);
-      ++bay.parked;
-      bay.cv.wait(lk, [&] { return !bay.q.empty() || bay.closed; });
-      std::printf("A 关闭 : %5.1f ms 返回，队列空着，谓词翻正靠的是 closed\n",
-                  ms_since(t0));
-    });
-    while (bay.parked.load() < 1) std::this_thread::sleep_for(1ms);
-    std::this_thread::sleep_for(60ms);
-    { std::lock_guard<std::mutex> g(bay.m); bay.closed = true; }
-    bay.cv.notify_all();
-    waiter.join();
-  }
-
-  { // B 超时：时限 120 ms，谁也没来
-    Bay bay;
-    auto t0 = Clock::now();
-    std::thread waiter([&] {
-      std::unique_lock<std::mutex> lk(bay.m);
-      ++bay.parked;
-      bool got = bay.cv.wait_for(lk, 120ms,
-                                 [&] { return !bay.q.empty() || bay.closed; });
-      std::printf("B 超时 : %5.1f ms 返回，返回值 %d，时限内没等到货\n",
-                  ms_since(t0), got ? 1 : 0);
-    });
-    while (bay.parked.load() < 1) std::this_thread::sleep_for(1ms);
-    waiter.join();
-  }
-
-  { // C 停止：停止请求在 60 ms 到，等待当场结束
-    Bay bay;
-    std::stop_source source;
-    auto token = source.get_token();
-    auto t0 = Clock::now();
-    std::thread waiter([&] {
-      std::unique_lock<std::mutex> lk(bay.m);
-      ++bay.parked;
-      bool got = bay.cv.wait(lk, token, [&] { return !bay.q.empty(); });
-      std::printf("C 停止 : %5.1f ms 返回，返回值 %d，谓词没成立\n",
-                  ms_since(t0), got ? 1 : 0);
-    });
-    while (bay.parked.load() < 1) std::this_thread::sleep_for(1ms);
-    std::this_thread::sleep_for(60ms);
-    std::printf("main   : %5.1f ms 发出停止请求\n", ms_since(t0));
-    std::fflush(stdout);
-    std::this_thread::sleep_for(2ms);
-    source.request_stop();
-    waiter.join();
-  }
-
-  { // D 失败：上游干砸了，把 failed 记下来再散场
-    Bay bay;
-    auto t0 = Clock::now();
-    std::thread waiter([&] {
-      std::unique_lock<std::mutex> lk(bay.m);
-      ++bay.parked;
-      bay.cv.wait(lk, [&] { return !bay.q.empty() || bay.failed; });
-      std::printf("D 失败 : %5.1f ms 返回，货没等到，谓词翻正靠的是 failed\n",
-                  ms_since(t0));
-    });
-    while (bay.parked.load() < 1) std::this_thread::sleep_for(1ms);
-    std::this_thread::sleep_for(70ms);
-    { std::lock_guard<std::mutex> g(bay.m); bay.failed = true; }
-    bay.cv.notify_all();
-    waiter.join();
-  }
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="四种结束方式：关闭、超时、停止、失败各留现场"
+  source-path="code/examples/vol5/chapter03/20_exits.cpp"
+  description="同一处等待跑四幕：closed 立起来、120ms 时限到头、停止请求 60ms 到、failed 认输。每一幕报出返回时刻与谓词靠什么翻正，毫秒数每次略差。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 A 关闭 :  61.4 ms 返回，队列空着，谓词翻正靠的是 closed
@@ -154,77 +61,13 @@ D 是失败，四条里最容易被漏掉的就是它。上游干砸了、做不
 
 我把两幕放进一个程序里跑，consumer 换成 `std::jthread`，析构时它会自己请求停止再 `join`，等待接了 token，这次请求正好把它叫醒。第一幕队列空着。第二幕有货，通知故意不发，让停止请求来当叫醒的那一方。`parked` 还是 3.1 里那个停车计数，等的人挂稳之后 `main` 才动手：
 
-```cpp
-// stop_wake.cpp —— stop_token 进等待：第一幕空手走，第二幕货照交
-#include <atomic>
-#include <chrono>
-#include <condition_variable>
-#include <cstdio>
-#include <mutex>
-#include <queue>
-#include <stop_token>
-#include <thread>
-
-using namespace std::chrono_literals;
-using Clock = std::chrono::steady_clock;
-
-std::mutex m;
-std::condition_variable_any cv;
-std::queue<int> q;
-std::atomic<int> parked{0};
-
-double ms_since(Clock::time_point t0) {
-  return std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
-}
-
-int main() {
-  auto t0 = Clock::now();
-
-  { // 第一幕：队列空着，叫醒它的是停止请求
-    std::jthread consumer([&](std::stop_token st) {
-      std::unique_lock<std::mutex> lk(m);
-      ++parked;
-      bool got = cv.wait(lk, st, [] { return !q.empty(); });
-      std::printf("consumer: %5.1f ms 离开等待，返回值 %d（队列是空的）\n",
-                  ms_since(t0), got ? 1 : 0);
-    });
-    while (parked.load() < 1) std::this_thread::sleep_for(1ms);
-    std::this_thread::sleep_for(60ms);
-    std::printf("main    : %5.1f ms 请求停止\n", ms_since(t0));
-    std::fflush(stdout);
-    std::this_thread::sleep_for(2ms);
-    consumer.request_stop();
-  }   // jthread 析构：停止已经请求过，这里只剩 join
-
-  while (!q.empty()) q.pop();
-  parked = 0;
-  auto t1 = Clock::now();
-
-  { // 第二幕：货到了，通知故意不发，停止请求负责叫醒
-    std::jthread consumer([&](std::stop_token st) {
-      std::unique_lock<std::mutex> lk(m);
-      ++parked;
-      bool got = cv.wait(lk, st, [] { return !q.empty(); });
-      if (got) {
-        int v = q.front();
-        q.pop();
-        std::printf("consumer: %5.1f ms 拿到 %d，此刻 stop_requested = %d\n",
-                    ms_since(t1), v, st.stop_requested() ? 1 : 0);
-      } else {
-        std::printf("consumer: %5.1f ms 空手离开，返回值 false\n", ms_since(t1));
-      }
-    });
-    while (parked.load() < 1) std::this_thread::sleep_for(1ms);
-    { std::lock_guard<std::mutex> g(m); q.push(42); }  // 故意不 notify
-    std::this_thread::sleep_for(60ms);
-    std::printf("main    : %5.1f ms 请求停止\n", ms_since(t1));
-    std::fflush(stdout);
-    std::this_thread::sleep_for(2ms);
-    consumer.request_stop();
-  }
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="stop_token 进等待：第一幕空手走，第二幕货照交"
+  source-path="code/examples/vol5/chapter03/21_stop_wake.cpp"
+  description="condition_variable_any 带 stop_token 的 wait：jthread 析构时请求停止。空队列那一幕被停止请求叫醒、返回 false；有货那一幕通知故意不发，停止请求照样让货交出去。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 main    :  61.6 ms 请求停止
@@ -239,58 +82,13 @@ consumer:  63.6 ms 拿到 42，此刻 stop_requested = 1
 
 手头只有 `condition_variable` 的场合，桥咱们自己搭。《让工作有序结束》留过一句“等待与通知的细节归后面讲等待的单元”，说的就是这里。搭法三句话：注册一个 `stop_callback`，回调里 `notify_all`。谓词把 `token.stop_requested()` 算进去。注册赶在拿锁与 `wait` 之前，因为“两头”是两种时序。注册那一刻请求已经立着，回调当场就在注册线程执行（[stoptoken.concepts]），这时它要拿同一把 m，而您手里可能已经锁着 lk，同一条线程再进一次非递归的 mutex，就地僵住。注册放在拿锁前面，这一路回调拿到的是把空锁，通知落空也无妨，waiter 拿锁之后谓词看见 `stop_requested()` 已经立着，压根不睡。另一路是请求在等待中到达，回调跑在请求方线程上，靠拿同一把锁挡缝，下一段推演的就是它。
 
-```cpp
-// bridge.cpp —— 手头只有 condition_variable 时，用 stop_callback 搭桥
-#include <atomic>
-#include <chrono>
-#include <condition_variable>
-#include <cstdio>
-#include <mutex>
-#include <stop_token>
-#include <thread>
-
-using namespace std::chrono_literals;
-using Clock = std::chrono::steady_clock;
-
-std::mutex m;
-std::condition_variable cv;
-bool closed = false;
-std::atomic<int> parked{0};
-
-double ms_since(Clock::time_point t0) {
-  return std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
-}
-
-int main() {
-  auto t0 = Clock::now();
-  std::stop_source source;
-  auto token = source.get_token();
-
-  std::thread waiter([&] {
-    // 桥：注册赶在拿锁之前，两头都罩得住
-    // 注册时已立：回调当场在注册线程执行，此时 m 还空着，不会自己卡自己
-    // 等待中到达：回调跑在请求方线程，拿同一把锁挡缝
-    std::stop_callback cb(token, [&] {
-      { std::lock_guard<std::mutex> g(m); }   // 拿同一把锁，挡住检查与入睡之间的缝
-      cv.notify_all();
-    });
-    std::unique_lock<std::mutex> lk(m);
-    ++parked;
-    cv.wait(lk, [&] { return closed || token.stop_requested(); });
-    std::printf("waiter: %5.1f ms 离开等待，closed = %d\n",
-                ms_since(t0), closed ? 1 : 0);
-  });
-
-  while (parked.load() < 1) std::this_thread::sleep_for(1ms);
-  std::this_thread::sleep_for(60ms);
-  std::printf("main  : %5.1f ms 请求停止\n", ms_since(t0));
-  std::fflush(stdout);
-  std::this_thread::sleep_for(2ms);
-  source.request_stop();
-  waiter.join();
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="手头只有 condition_variable：stop_callback 搭桥"
+  source-path="code/examples/vol5/chapter03/22_bridge.cpp"
+  description="注册赶在拿锁之前：停止请求到达时回调先拿同一把锁挡住检查与入睡之间的缝，再 notify_all，等待者读 stop_requested 翻正条件。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 main  :  61.3 ms 请求停止
@@ -303,58 +101,13 @@ waiter:  63.6 ms 离开等待，closed = 0
 
 超时和停止还能拼进同一次调用，咱们让它们同场跑一回。`wait_until` 的 `stop_token` 版收一个时间点加一个 token，谓词只有一条，写业务条件本身，别把 `stop_requested()` 塞进去，返回 `false` 之后再用它分辨是谁叫醒的：
 
-```cpp
-// deadline.cpp —— 超时和停止拼进同一次调用
-#include <atomic>
-#include <chrono>
-#include <condition_variable>
-#include <cstdio>
-#include <mutex>
-#include <stop_token>
-#include <thread>
-
-using namespace std::chrono_literals;
-using Clock = std::chrono::steady_clock;
-
-std::mutex m;
-std::condition_variable_any cv;
-bool done = false;
-std::atomic<int> parked{0};
-
-double ms_since(Clock::time_point t0) {
-  return std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
-}
-
-int main() {
-  auto t0 = Clock::now();
-  std::stop_source source;
-  auto token = source.get_token();
-  auto deadline = Clock::now() + 300ms;   // 时限从调用方来
-
-  {
-    std::jthread waiter([&] {
-      std::unique_lock<std::mutex> lk(m);
-      ++parked;
-      bool ok = cv.wait_until(lk, token, deadline, [&] { return done; });
-      if (ok) {
-        std::printf("waiter: %5.1f ms 返回，done 成了\n", ms_since(t0));
-      } else if (token.stop_requested()) {
-        std::printf("waiter: %5.1f ms 返回，返回值 false，叫醒它的是停止请求\n",
-                    ms_since(t0));
-      } else {
-        std::printf("waiter: %5.1f ms 返回，返回值 false，时限到头\n", ms_since(t0));
-      }
-    });
-    while (parked.load() < 1) std::this_thread::sleep_for(1ms);
-    std::this_thread::sleep_for(60ms);
-    std::printf("main  : %5.1f ms 请求停止（时限其实还没到）\n", ms_since(t0));
-    std::fflush(stdout);
-    std::this_thread::sleep_for(2ms);
-    source.request_stop();
-  }   // jthread 析构：停止已请求过，这里只剩 join
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="超时与停止拼进同一次 wait_until"
+  source-path="code/examples/vol5/chapter03/23_deadline.cpp"
+  description="时限 300ms、停止请求 60ms 到：wait_until 带 token 提前返回，返回值 false，之后靠 stop_requested 区分是被停止叫醒还是到点了。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 main  :  61.4 ms 请求停止（时限其实还没到）
@@ -385,7 +138,7 @@ waiter:  63.7 ms 返回，返回值 false，叫醒它的是停止请求
 
 ## 参考资源
 
-本篇的推进顺序照旧参照《C++ Concurrency in Action》（Anthony Williams，Manning）里队列与协作取消的章节安排，例子和文字都是我自己写的。实验在本机 GCC 16.2.1 上编译实测（`g++ -std=c++20 -O2 -pthread`，WSL2，16 逻辑核，2026-11-16），四份源码在临时目录 `/tmp/concurrency-u3/` 里编译运行，没有进仓库。文中的输出都是单次运行的读数，毫秒那一列重跑会差，我重跑过一遍，B 落在 120.6 毫秒，其余各处差别在一两毫秒之内。标准行为的断言按 eel.is 上的现行工作草案核对，条款附在正文与条目后面。`condition_variable_any` 内部实现那一段，出处是本机头文件，没有网页可引。cppreference 的页面以它标注的版本为准。
+本篇的推进顺序照旧参照《C++ Concurrency in Action》（Anthony Williams，Manning）里队列与协作取消的章节安排，例子和文字都是我自己写的。实验在本机 GCC 16.2.1 上编译实测（`g++ -std=c++20 -O2 -pthread`，WSL2，16 逻辑核，2026-11-16），四份源码收在 code/examples/vol5/chapter03/，可在本页直接运行，抽成独立文件时用同机 GCC 16.2.1 复验过，2026-11-19。文中的输出都是单次运行的读数，毫秒那一列重跑会差，我重跑过一遍，B 落在 120.6 毫秒，其余各处差别在一两毫秒之内。标准行为的断言按 eel.is 上的现行工作草案核对，条款附在正文与条目后面。`condition_variable_any` 内部实现那一段，出处是本机头文件，没有网页可引。cppreference 的页面以它标注的版本为准。
 
 - [std::condition_variable_any（cppreference）][cvany]，C++11 起的通用版本，C++20 加了 `stop_token` 等待。
 - [std::condition_variable_any::wait（cppreference）][cvany-wait]，三个重载与 `stop_token` 版的等效代码。

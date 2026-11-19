@@ -25,7 +25,7 @@ current_status:
 
 素材从旧目录 ch08 的《并发性能测试与基准》来，例子全部重写，读数全部重测。并发读数对量级不对尾数，报告时把测量条件一起交出来，咱们一路在用，3.2《[写一个有容量限制的任务队列](../chapter03-wait-and-coordinate/02-bounded-queue)》收尾也交代过。本篇把它正式铺成三步做法。
 
-实验都在临时目录里编译跑过（GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，WSL2 内核 6.18.33.2，AMD Ryzen 7 9700X，8 核 16 线程，2026-11-17），机器跟第二单元、第五单元是同一台。多线程的读数都是单次运行的读数，咱们要跑几轮，就把几轮的原始读数全部列出来，不挑最好看的一轮。Google Benchmark 在我机器上没有安装，它的用法按 v1.10.0 用户指南核对，本篇的读数出自咱们自己搭的计时架子，架子在后面 Google Benchmark 入门一节交代。
+实验的程序收在 `code/examples/vol5/chapter06/`，可在本页直接运行，编译跑过（GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，WSL2 内核 6.18.33.2，AMD Ryzen 7 9700X，8 核 16 线程，2026-11-17，抽成独立文件时复验过），机器跟第二单元、第五单元是同一台。多线程的读数都是单次运行的读数，咱们要跑几轮，就把几轮的原始读数全部列出来，不挑最好看的一轮。Google Benchmark 在我机器上没有安装，它的用法按 v1.10.0 用户指南核对，本篇的读数出自咱们自己搭的计时架子，架子在后面 Google Benchmark 入门一节交代。
 
 ## 为什么要有一条串行基线
 
@@ -33,14 +33,13 @@ current_status:
 
 咱们拿同一个求和活做示范。程序对从 0 到 n 减 1 的每个整数累加 `i % 7`，串行版一遍算完，并发版把区间切成若干块，8 条线程用原子下标动态领活，谁空谁领。两边的加法次数一样，代码在后面各节反复出现。代码里的 `do_not_optimize` 是防编译器删结果的函数，防的什么事，架子小节里交底。
 
-```cpp
-long long sum_range(long long from, long long to) {
-  long long s = 0;
-  for (long long i = from; i < to; ++i) s += i % 7;
-  do_not_optimize(s);
-  return s;
-}
-```
+<OnlineCompilerDemo
+  title="串行基线对 8 线程动态领活：小数据的第一课"
+  source-path="code/examples/vol5/chapter06/12_sum_range.cpp"
+  description="n 取一百万，同一份求和活三轮：串行半毫秒上下，8 线程第一轮常比串行慢（进出场比活贵），后两轮才回到两倍上下——加速比只看量级不看尾数。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 小数据的读数给咱们上了第一课。n 等于一百万，串行半毫秒，8 条线程进出场，三轮读数排在一起：
 
@@ -84,20 +83,13 @@ n=100000000 round=2 serial=51.55ms parallel8=11.88ms speedup=4.34x
 
 咱们真删一次给它看。两个函数，循环一模一样，区别只在结果怎么处置：
 
-```cpp
-static long long sum_ignored(long long n) {
-  long long s = 0;
-  for (long long i = 0; i < n; ++i) s += i % 7;
-  return s;                          // 调用方不要返回值
-}
-
-static long long sum_kept(long long n) {
-  long long s = 0;
-  for (long long i = 0; i < n; ++i) s += i % 7;
-  do_not_optimize(s);                // 结果交给防优化函数看一眼
-  return s;
-}
-```
+<OnlineCompilerDemo
+  title="编译器把没人看的基准删成 0.000 毫秒"
+  source-path="code/examples/vol5/chapter06/13_sum_ignored_kept.cpp"
+  description="两个循环一模一样的函数，返回值没人看的那个被 -O2 整段删掉，三轮都是 0.000ms；结果交给 do_not_optimize 看一眼的照跑，50ms 上下。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 咱们在调用处对 `sum_ignored` 的返回值看都不看。一亿次的循环，三轮读数：
 
@@ -235,36 +227,13 @@ BENCHMARK(bm_parallel_sum)->ThreadRange(1, 16)->UseRealTime();
 
 我的机器上没有装 Google Benchmark 库，本篇的读数全部出自一个手搓的计时架子。架子很小，全貌如下，概念跟框架对得上，您装好了库，随时可以换回去：
 
-```cpp
-#pragma once
-#include <chrono>
-#include <vector>
-
-// 对应 benchmark::DoNotOptimize 的 v1.10.0 写法：非 const 引用，读写约束
-template <class T>
-inline void do_not_optimize(T& value) {
-  asm volatile("" : "+m,r"(value) : : "memory");
-}
-
-// 官方 v1.10.0 已把 ClobberMemory 改成 atomic_signal_fence（只约束信号处理器那一路内存次序的栅栏），这里摆的是旧式空汇编写法
-inline void clobber_memory() {
-  asm volatile("" ::: "memory");
-}
-
-// 跑 reps 轮，交回每一轮的毫秒数
-template <class F>
-std::vector<double> measure_ms(F&& f, int reps) {
-  using clock = std::chrono::steady_clock;
-  std::vector<double> out;
-  for (int r = 0; r < reps; ++r) {
-    auto t0 = clock::now();
-    f();
-    auto t1 = clock::now();
-    out.push_back(std::chrono::duration<double, std::milli>(t1 - t0).count());
-  }
-  return out;
-}
-```
+<OnlineCompilerDemo
+  title="手搓计时架子：一次一轮，读数逐轮交出"
+  source-path="code/examples/vol5/chapter06/14_timing_harness.cpp"
+  description="do_not_optimize、clobber_memory 与 measure_ms 三件套，配一亿次求和连跑六轮的 main，每轮毫秒数原样打印，不做平均。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 架子的计时循环一次一轮，多轮由调用方排，读数逐轮交出，不做平均，咱们挑它就是为了把每一轮的原始读数都拿到手。`do_not_optimize` 跟 `benchmark::DoNotOptimize` 对应，咱们照 v1.10.0 的写法摆的非 const 引用加读写约束。`clobber_memory` 对应 `benchmark::ClobberMemory`，官方在 v1.10.0 把它改成了 `atomic_signal_fence`，也就是只约束信号处理器那一路内存次序的栅栏，咱们摆的还是旧式空汇编写法。它没有框架的动态迭代，预热这一档干脆没有，换来的是每一轮读数都看得见，这正是本篇要的：原始读数列全，量级自己说话。
 
@@ -339,21 +308,13 @@ threads=16 round=2 19.0ms
 
 咱们给 perf 准备两个对照程序，都是 8 条线程各做 625 万次加一，总共五千万次。一个各写各的，每条线程的累加结果放进自己独占的 64 字节槽位，64 字节是常见缓存行的宽度，`alignas(64)` 把相邻线程的计数器隔开，谁也不会跟谁挤在同一条缓存行上（挤在一起的后果归 6.3《[怎样调整设计](03-adjusting-design)》，那里专门讲 false sharing）。另一个让全部线程抢同一个 `std::atomic<long long>`，用 relaxed 的 `fetch_add`，内存序的道理 5.3《[选择内存序需要什么依据](../chapter05-atomic-memory-model/03-choosing-memory-orders)》讲过。写法上我把两个程序合在一个可执行文件里，用命令行参数切换，源码在下面：
 
-```cpp
-struct alignas(64) Slot { long long v = 0; };
-
-constexpr long long kPerThread = 6250000LL;   // 每线程 625 万次，八条共五千万
-std::atomic<long long> shared{0};
-std::vector<Slot> slots(8);
-std::latch go{1};
-bool use_shared = (argc > 1 && argv[1][0] == 's');
-// 每条线程：
-long long s = 0;
-for (long long i = 0; i < kPerThread; ++i) {
-  if (use_shared) shared.fetch_add(1, std::memory_order_relaxed);
-  else { s += 1; do_not_optimize(s); }   // 不加它，编译器把整段循环折成常量
-}
-```
+<OnlineCompilerDemo
+  title="perf stat 的两个对照：各写各的对抢同一个原子"
+  source-path="code/examples/vol5/chapter06/15_exp_f_counter.cpp"
+  description="8 条线程各 625 万次加一：不带参数（或 p）走独占 64 字节槽位，毫秒级；带 s 走抢同一个 atomic，慢两个量级；perf stat 的计数读数见正文表格。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 把片段连同架子的头文件编成 `exp_f_counter`（`g++ -std=c++20 -O2 -pthread exp_f_counter.cpp -o exp_f_counter`，main 函数与线程收拢的部分按片段补全），命令行参数 p 走各写各的，s 走抢共享的。咱们跑起来，读数如下：
 
@@ -408,7 +369,7 @@ perf 与基准框架也能联动。较新的 Google Benchmark 提供 `--benchmar
 
 ## 轮到您动手的时候
 
-架子与全套实验我跑在临时目录里，您把自己的活交进去，几步就够：
+架子与全套实验收在 `code/examples/vol5/chapter06/`，可在本页直接运行，您把自己的活交进去，几步就够：
 
 1. 把您程序里最贵的一段活写成函数，给它配一个串行版本，两边用同一组编译选项。
 2. 用 `measure_ms` 或者装好的 Google Benchmark 量三轮起步，原始读数全部记下，连同机器、核数、日期一起写进记录。

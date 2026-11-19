@@ -23,7 +23,7 @@ current_status:
 
 咱们没法用代码行数来量锁的边界。这次操作向调用者承诺了什么结果，锁就得盖住产生承诺结果所需的全部步骤和数据。承诺之外的事，不必塞进临界区。这一篇看三种把边界划错的地方：检查与动手分开，一条不变量跨了两个对象（一次操作过程中任何时刻都得成立的关系），接口把内部状态交了出去。
 
-文中程序都在临时目录里编译跑过（GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，WSL2，16 逻辑核，2026-11-14）。有两处改用 `-O1 -fsanitize=thread`（ThreadSanitizer，简称 TSan）编译，另有一处用地址检测器编译。它们能报出普通运行看不见的竞争和内存错误，您会看到。咱们把标准条款按 eel.is 上的现行草案与 cppreference 核对过，链接都收在参考资源里了。文中的代码片段只留关键部分，完整程序补上对应头文件就能编译运行。`std::mutex` 和 `std::lock_guard` 是 C++11 起的设施，`std::scoped_lock` 是 C++17 起，版本标注咱们沿用上一篇。输出都是单次运行的读数，换台机器，数字会动。
+文中程序都收在 `code/examples/vol5/chapter02/`，可在本页直接运行（GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，WSL2，16 逻辑核，2026-11-14，抽成独立文件时复验过）。有两处改用 `-O1 -fsanitize=thread`（ThreadSanitizer，简称 TSan）编译，另有一处用地址检测器编译。它们能报出普通运行看不见的竞争和内存错误，您会看到。咱们把标准条款按 eel.is 上的现行草案与 cppreference 核对过，链接都收在参考资源里了。`std::mutex` 和 `std::lock_guard` 是 C++11 起的设施，`std::scoped_lock` 是 C++17 起，版本标注咱们沿用上一篇。输出都是单次运行的读数，换台机器，数字会动。
 
 ## 检查通过了，动手的时候条件已经变了
 
@@ -31,36 +31,21 @@ current_status:
 
 我在实验里摆了一个货架，货架上只剩一件货了，偏偏两条线程同时来买：
 
-```cpp
-struct Shelf {
-  std::mutex m;
-  int stock = 1;
+<OnlineCompilerDemo
+  title="货架坏版：检查与动手分开，一件货卖两位"
+  source-path="code/examples/vol5/chapter02/18_demo_shelf_check_then_act.cpp"
+  description="has_one 与 take_one 各自加锁，中间的窗口敞着：两位买家都 sees stock = 1、都 takes one，三轮全都是 stock left -1, sold 2。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
-  bool has_one() {
-    std::lock_guard<std::mutex> lock(m);
-    return stock > 0;
-  }
-  void take_one() {
-    std::lock_guard<std::mutex> lock(m);
-    --stock;
-  }
-};
-```
-
-```cpp
-using namespace std::chrono_literals;
-
-void buy(const char* who) {
-  if (!shelf.has_one()) {
-    std::printf("%s: sold out\n", who);
-    return;
-  }
-  std::printf("%s: sees stock = 1\n", who);
-  std::this_thread::sleep_for(50ms);   // 把检查与动手之间的窗口放大
-  shelf.take_one();
-  std::printf("%s: takes one\n", who);
-}
-```
+<OnlineCompilerDemo
+  title="buy()：两次临界区之间的一段敞开"
+  source-path="code/examples/vol5/chapter02/18_demo_shelf_check_then_act.cpp"
+  description="同上一个程序：检查走 has_one()，动手走 take_one()，中间 50 毫秒只是把窗口放大。真实的程序里窗口由调度凑出来，不需要谁真睡。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 `sleep_for` 是我加的，只为把窗口放大。真实的程序里，这段窗口由调度和两条线程各自的执行时间凑出来，不需要谁真的睡 50 毫秒。咱们跑了三轮，结果都一样：库存 -1、卖出 2。打印顺序由调度定，可能换过来。
 
@@ -78,15 +63,13 @@ round 1: stock left -1, sold 2
 
 咱们只需要改一处：让锁盖住整次操作。
 
-```cpp
-// Shelf 的成员函数
-bool try_take() {
-  std::lock_guard<std::mutex> lock(m);
-  if (stock == 0) return false;
-  --stock;
-  return true;
-}
-```
+<OnlineCompilerDemo
+  title="货架修版：判断与扣减进同一个临界区"
+  source-path="code/examples/vol5/chapter02/19_demo_shelf_try_take.cpp"
+  description="只改一处，try_take() 一次调用完成判断和扣减：三轮都是一人 takes the last one、另一人 finds none left，stock left 0, sold 1。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 咱们把 `buy()` 里的 `has_one()` 和 `take_one()` 换成了一次 `try_take()`，判断和扣减就在同一个临界区里完成了。我跑了三轮，结果都是：
 
@@ -108,44 +91,23 @@ round 1: stock left 0, sold 1
 
 另一种边界划错，出在一条跨了两个对象的关系上。我拿两个钱包做例子（`Wallet`，分锁的版本），A 里有 700，B 里有 300，两边加起来 1000。操作是从 A 挪 10 到 B。要求很朴素：任何时刻两边加起来都得是 1000。
 
-```cpp
-using namespace std::chrono_literals;
-
-struct Wallet {
-  std::mutex m;
-  long balance;
-};
-
-void move(Wallet& from, Wallet& to, long amount) {
-  {
-    std::lock_guard<std::mutex> lock(from.m);
-    from.balance -= amount;
-  }
-  std::this_thread::sleep_for(1ms);   // 把两步之间的窗口放大
-  {
-    std::lock_guard<std::mutex> lock(to.m);
-    to.balance += amount;
-  }
-  std::this_thread::sleep_for(1ms);   // 让完整状态也占一段窗口
-}
-```
+<OnlineCompilerDemo
+  title="分锁钱包：每个钱包一把锁，和不变量没人管"
+  source-path="code/examples/vol5/chapter02/20_demo_wallet_split_locks.cpp"
+  description="两步各自加锁、中间放锁：观察线程近一半采样读到 990（A 减了 10、B 还没加上）。每回挪 40 次跑两回，final 行两边加起来仍是 1000。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 每一步都锁了，每个钱包的余额也从来没被两条线程同时碰过。可这次操作有两步，两步之间放锁，别的线程就能看见“A 少了 10，B 还没多”。我加了一条观察线程，它按同样的办法读两边：
 
-```cpp
-long total(Wallet& a, Wallet& b) {
-  long sum = 0;
-  {
-    std::lock_guard<std::mutex> lock(a.m);
-    sum += a.balance;
-  }
-  {
-    std::lock_guard<std::mutex> lock(b.m);
-    sum += b.balance;
-  }
-  return sum;
-}
-```
+<OnlineCompilerDemo
+  title="观察线程的 total()：同样的办法分开读两边"
+  source-path="code/examples/vol5/chapter02/20_demo_wallet_split_locks.cpp"
+  description="同一个程序：total() 先锁 a 再锁 b 分开读，move() 停在两步中间时它也正好读到 990。坏采样计数就是它攒出来的。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 观察线程读两边的时候，`move()` 也可能正停在两步中间。我让 `move()` 两步之间睡 1 毫秒，挪完再睡 1 毫秒，让两种状态各占一段时间。每一回挪 40 次，跑两回。观察线程从挪动开始跟着采，最多 100 毫秒，挪动结束就停。下面是第一回的前四个坏采样和两回的汇总：
 
@@ -164,23 +126,13 @@ round 2 final: A = 300, B = 700, total = 1000
 
 咱们把修法收在一处：把不变量放进同一把锁。不变量说的是 A 和 B 的和，那就让一把锁盖住 A 和 B。换成 `Ledger`（合锁的版本）：
 
-```cpp
-struct Ledger {
-  std::mutex m;
-  long a = 700;
-  long b = 300;
-
-  void transfer(long amount) {
-    std::lock_guard<std::mutex> lock(m);
-    a -= amount;
-    b += amount;
-  }
-  long total() {
-    std::lock_guard<std::mutex> lock(m);
-    return a + b;
-  }
-};
-```
+<OnlineCompilerDemo
+  title="合锁账本：一把锁盖住两边，零次读到 990"
+  source-path="code/examples/vol5/chapter02/21_demo_ledger_one_lock.cpp"
+  description="Ledger 的 transfer 与 total 共用一把锁，transfer 里两次修改在同一个临界区。同一套采样窗口再跑两回：零个采样偏离 1000。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 `transfer()` 里两次修改在同一个临界区里，`total()` 也用同一把锁。咱们用同一套采样窗口再跑两回。实验里的调用方在每次 `transfer()` 之后睡 1 毫秒，和 Wallet 版的节奏对齐，零次读到 990：
 
@@ -203,38 +155,23 @@ round 2 final: A = 300, B = 700, total = 1000
 
 我另写了一个 `Gauge`（仪表），`set()` 和 `value()` 都加锁，只把 `value()` 的返回类型写成 `const int&`：
 
-```cpp
-class Gauge {
- public:
-  void set(int v) {
-    std::lock_guard<std::mutex> lock(m_);
-    value_ = v;
-  }
-  const int& value() const {
-    std::lock_guard<std::mutex> lock(m_);
-    return value_;
-  }
-
- private:
-  mutable std::mutex m_;
-  int value_ = 0;
-};
-```
+<OnlineCompilerDemo
+  title="Gauge 坏版：value() 返回 const int&"
+  source-path="code/examples/vol5/chapter02/22_demo_gauge_const_ref.cpp"
+  description="set 与 value 都加了锁，可锁在函数返回时就放了：主线程拿着引用在锁外读，写线程在锁里写。用 -O1 -fsanitize=thread 编译，报的正是正文那条 data race。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 `value()` 里确实加了锁，可锁在函数返回时就放了。调用者拿到的引用，读发生在锁外面。咱们让主线程拿着引用读，另一条线程不停 `set()`：
 
-```cpp
-Gauge gauge;
-std::atomic<bool> done{false};
-std::thread writer([&] {
-  for (int i = 1; i <= 100000; ++i) gauge.set(i);
-  done.store(true);
-});
-
-long long sum = 0;
-while (!done.load()) sum += gauge.value();
-writer.join();
-```
+<OnlineCompilerDemo
+  title="读引用的循环：另一条线程不停 set()"
+  source-path="code/examples/vol5/chapter02/22_demo_gauge_const_ref.cpp"
+  description="同一个程序：写线程十万个 set，主线程的 while 循环拿着 value() 交出来的引用在锁外累加。TSan 报告里写的一方拿着锁（M0），读的一方没有。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 咱们用 TSan 编一版，一回跑出来的报告是：
 
@@ -251,53 +188,35 @@ WARNING: ThreadSanitizer: data race (pid=37)
 
 咱们把返回值改成按值的：
 
-```cpp
-int value() const {
-  std::lock_guard<std::mutex> lock(m_);
-  return value_;
-}
-```
+<OnlineCompilerDemo
+  title="Gauge 修版：返回按值，读在锁里完成"
+  source-path="code/examples/vol5/chapter02/23_demo_gauge_by_value.cpp"
+  description="返回类型从 const int& 改成 int：每次读都进一次临界区，TSan 不再报。代价是大对象每次读都得复制一份。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 我换回按值返回，再编一次，TSan 不再报。读循环读到的每个数，都是某个完整时刻的值，代价是每次读都要进一次临界区，大对象还得复制一份。
 
 迭代器还会交出位置。咱们看一个带 `begin()` 的容器：
 
-```cpp
-class History {
- public:
-  void add(int v) {
-    std::lock_guard<std::mutex> lock(m_);
-    items_.push_back(v);
-  }
-  void set(std::size_t i, int v) {
-    std::lock_guard<std::mutex> lock(m_);
-    items_[i] = v;
-  }
-  std::vector<int>::iterator begin() {
-    std::lock_guard<std::mutex> lock(m_);
-    return items_.begin();
-  }
-  std::vector<int>::iterator end() {
-    std::lock_guard<std::mutex> lock(m_);
-    return items_.end();
-  }
-
- private:
-  mutable std::mutex m_;
-  std::vector<int> items_;
-};
-```
+<OnlineCompilerDemo
+  title="History：begin() 交出去的是位置"
+  source-path="code/examples/vol5/chapter02/24_demo_history_iterators.cpp"
+  description="add 与 begin 都加了锁，可调用者拿到迭代器以后锁早就放了。单线程加一个元素就能让 begin() 拿到的迭代器失效（ASan 报 heap-use-after-free），多线程读它再碰上写同一个元素就是 data race（TSan 报）。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 调用者拿到迭代器以后，锁早就放了。咱们单线程跑一遍也能踩中：
 
-```cpp
-History history;
-history.add(1);
-history.add(2);
-auto it = history.begin();   // 锁在 begin() 返回时放了
-history.add(3);              // 容量不够，重新分配，迭代器失效
-int x = *it;                 // 读的是已经释放的内存
-```
+<OnlineCompilerDemo
+  title="单线程踩中失效迭代器，多线程踩中 data race"
+  source-path="code/examples/vol5/chapter02/24_demo_history_iterators.cpp"
+  description="前半段单线程：begin() 之后 add(3) 触发重新分配，*it 读已释放的内存。后半段多线程：另一条线程不停 set(0, i)，主线程在锁外读 *rit。两种检测器各报各的。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 `push_back` 触发重新分配时，所有指向元素的引用、指针和迭代器全部失效（[vector.modifiers]/2，现行草案）。我用 AddressSanitizer（ASan）编了一次，选项是 `-O1 -fsanitize=address`：
 
@@ -309,16 +228,13 @@ READ of size 4 ... thread T0
 
 多线程还多一层。咱们分开看。没有重新分配、也没有别人写同一个元素时，读 `*it` 本身不冲突。另一个线程一旦写同一个元素，锁外的读和锁里的写之间没有 happens-before，TSan 会报 data race：
 
-```cpp
-History history;
-history.add(10);
-history.add(20);
-auto it = history.begin();   // 锁在 begin() 返回时放了
-std::atomic<bool> done{false};
-// 另一条线程不停 history.set(0, i)，结束时把 done 置真
-long long sum = 0;
-while (!done) sum += *it;    // 锁外的读
-```
+<OnlineCompilerDemo
+  title="多线程：锁外的读碰上锁里的写"
+  source-path="code/examples/vol5/chapter02/24_demo_history_iterators.cpp"
+  description="同一个程序的后半段：写线程拿着 set() 的锁改首元素，主线程拿着 begin() 交出的迭代器在锁外读——TSan 报的写方带 M0、读方两手空空。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 WARNING: ThreadSanitizer: data race (pid=21)
@@ -332,38 +248,35 @@ WARNING: ThreadSanitizer: data race (pid=21)
 
 咱们要交，就交一份副本。锁里把容器复制出来，锁外随便用：
 
-```cpp
-std::vector<int> snapshot() const {
-  std::lock_guard<std::mutex> lock(m_);
-  return items_;
-}
-```
+<OnlineCompilerDemo
+  title="要交就交一份副本"
+  source-path="code/examples/vol5/chapter02/25_demo_history_snapshot.cpp"
+  description="锁里把容器复制出来，锁外随便用：快照之后再 add 也不影响手里的副本。元素多的时候拷贝不便宜，这笔代价得认下。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 在 `History` 的接口上，副本有代价，元素多的时候拷贝不便宜。咱们得认下这样的代价：要么让调用者拿副本在锁外慢慢看，要么在锁里把要用的结果算完再交出去。大的对象，还可以返回指向快照副本的 `shared_ptr`，或者干脆不交数据、只交操作。
 
 咱们看回调，它是同一类出口的另一种形式。锁里调用调用者给的函数，调用者那段代码就在锁里跑，还能拿到内部元素的引用：
 
-```cpp
-template <class F>
-void for_each(F f) {              // 回调在锁里跑
-  std::lock_guard<std::mutex> lock(m_);
-  for (auto& item : items_) f(item);
-}
-```
+<OnlineCompilerDemo
+  title="回调在锁里跑：引用存下来就漏出去了"
+  source-path="code/examples/vol5/chapter02/26_demo_callback_in_lock.cpp"
+  description="for_each 在锁里调调用者给的函数，回调收到 int&，可以把位置存进自己的容器。锁一放，位置还在：随后 100 次 add 触发重新分配，存下的位置全失效。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 回调收到的是 `int&`，它可以把引用存进自己的容器。咱们把锁一放，引用还在，回调什么时候用就管不着了。修法还是那句，锁里把要交出去的数据取出来，出了临界区再把副本交给回调：
 
-```cpp
-template <class F>
-void for_each(F f) const {
-  std::vector<int> copy;
-  {
-    std::lock_guard<std::mutex> lock(m_);
-    copy = items_;
-  }
-  for (const auto& item : copy) f(item);
-}
-```
+<OnlineCompilerDemo
+  title="锁里取副本，锁外喂给回调"
+  source-path="code/examples/vol5/chapter02/27_demo_callback_outside.cpp"
+  description="副本在锁里攒好，回调在锁外跑：回调拿到的引用只指向副本，容器之后怎么动都不影响。回调要把引用留到调用之后，得自己复制一份。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 咱们把副本交给回调，回调的签名也跟着改成只读值或只读引用。副本在 `for_each` 活着的时候有效。回调要把引用留到调用之后，得自己复制一份，这一层约定得写进接口说明里。
 

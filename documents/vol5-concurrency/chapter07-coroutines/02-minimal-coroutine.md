@@ -63,65 +63,13 @@ Park 身上的 `await_ready`、`await_suspend`、`await_resume` 三件套，协�
 
 替换体的链条，咱们拿一个会打印的协程真跑一遍。Trace 的协程体只有两行打印，promise 的 `initial_suspend` 与 `final_suspend` 都是 `suspend_always`，两个挂起点的入口都插了打印，析构函数调 destroy 时也打印一声：
 
-```cpp
-// lazy_start.cpp —— 懒启动与终点站：协程体什么时候真的跑，帧什么时候收回
-#include <coroutine>
-#include <cstdio>
-#include <exception>
-
-struct Trace {
-  struct promise_type {
-    Trace get_return_object() {
-      return Trace{std::coroutine_handle<promise_type>::from_promise(*this)};
-    }
-    std::suspend_always initial_suspend() noexcept {
-      std::printf("  [协程] initial_suspend 挂起，控制权交回调用者\n");
-      return {};
-    }
-    std::suspend_always final_suspend() noexcept {
-      std::printf("  [协程] final_suspend 挂起，等 destroy\n");
-      return {};
-    }
-    void return_void() noexcept {}
-    void unhandled_exception() { std::terminate(); }
-  };
-
-  explicit Trace(std::coroutine_handle<promise_type> h) : handle_(h) {}
-  ~Trace() {
-    if (handle_) {
-      std::printf("  [main ] Trace 析构，调 destroy 收回协程帧\n");
-      handle_.destroy();
-    }
-  }
-  Trace(const Trace&) = delete;
-  Trace& operator=(const Trace&) = delete;
-
-  void resume() { handle_.resume(); }
-  bool done() const { return handle_.done(); }
-
-private:
-  std::coroutine_handle<promise_type> handle_;
-};
-
-Trace demo() {
-  std::printf("  [协程] 函数体第一行\n");
-  std::printf("  [协程] 函数体第二行\n");
-  co_return;
-}
-
-int main() {
-  std::printf("[main ] 调用 demo()\n");
-  {
-    Trace t = demo();
-    std::printf("[main ] 拿到返回对象，函数体一行没跑，done=%d\n", t.done() ? 1 : 0);
-    std::printf("[main ] 第一次 resume\n");
-    t.resume();
-    std::printf("[main ] 回到 main，done=%d\n", t.done() ? 1 : 0);
-  }
-  std::printf("[main ] Trace 析构完，程序结束\n");
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="懒启动与终点站：协程从生到死的每一步"
+  source-path="code/examples/vol5/chapter07/03_lazy_start.cpp"
+  description="demo() 被调用时函数体一行没跑，第一次 resume 才开工，co_return 之后挂在最终挂起点等 destroy，帧的收回也有打印。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 咱们看实跑输出：
 
@@ -152,91 +100,13 @@ int main() {
 
 cppreference 还交代了一层：堆上的分配有可能被实现直接省掉。条件有两个，协程状态的生命周期严格嵌套在调用者的生命周期之内，大小在调用点可以算出来。满足的话，帧可以住进调用者的栈帧里，`operator new` 一次都不调。省掉堆分配的优化有名字，叫堆分配省略（heap allocation elision，业界常缩写成 HALO）。我拿 frame_alloc 数了数，读数在下面。
 
-```cpp
-// frame_alloc.cpp —— 数一数协程状态的分配与释放，-O2 与 -O0 各跑一遍
-#include <coroutine>
-#include <cstdio>
-#include <exception>
-#include <new>
-
-int g_allocs = 0;
-int g_deallocs = 0;
-
-template <typename T>
-class Generator {
-public:
-  struct promise_type {
-    T current_value;
-
-    Generator get_return_object() {
-      return Generator{std::coroutine_handle<promise_type>::from_promise(*this)};
-    }
-    std::suspend_always initial_suspend() noexcept { return {}; }
-    std::suspend_always final_suspend() noexcept { return {}; }
-    std::suspend_always yield_value(T value) noexcept {
-      current_value = value;
-      return {};
-    }
-    void return_void() noexcept {}
-    void unhandled_exception() { std::terminate(); }
-
-    // promise 作用域里的分配函数，标准从这里找起
-    void* operator new(std::size_t size) {
-      ++g_allocs;
-      return ::operator new(size);
-    }
-    void operator delete(void* ptr, std::size_t size) {
-      ++g_deallocs;
-      ::operator delete(ptr, size);
-    }
-  };
-
-  explicit Generator(std::coroutine_handle<promise_type> h) : handle_(h) {}
-  ~Generator() { if (handle_) handle_.destroy(); }
-  Generator(const Generator&) = delete;
-  Generator& operator=(const Generator&) = delete;
-
-  bool next() {
-    handle_.resume();
-    return !handle_.done();
-  }
-  T value() const { return handle_.promise().current_value; }
-
-private:
-  std::coroutine_handle<promise_type> handle_;
-};
-
-Generator<int> seq(int limit) {
-  for (int i = 1; i <= limit; ++i) co_yield i;
-}
-
-// 嵌套场景：三个生成器都活不到 run_nested 返回之后
-void run_nested() {
-  Generator<int> a = seq(2);
-  Generator<int> b = seq(2);
-  Generator<int> c = seq(2);
-  while (a.next()) (void)a.value();
-  while (b.next()) (void)b.value();
-  while (c.next()) (void)c.value();
-}
-
-// 逃逸场景：生成器活着离开 make_escape，协程状态比调用者命长
-Generator<int> make_escape() { return seq(2); }
-
-int main() {
-  run_nested();
-  std::printf("嵌套场景之后：operator new %d 次，operator delete %d 次\n", g_allocs, g_deallocs);
-
-  {
-    Generator<int> g = make_escape();
-    int taken = 0;
-    while (g.next()) { ++taken; (void)g.value(); }
-    std::printf("逃逸场景取到 %d 个值，随后：", taken);
-  }
-  std::printf("operator new %d 次，operator delete %d 次\n", g_allocs, g_deallocs);
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="数协程帧的分配与释放"
+  source-path="code/examples/vol5/chapter07/04_frame_alloc.cpp"
+  description="promise 作用域里的 operator new 与 delete 各计一次数，嵌套场景 3 次、逃逸场景再加 1 次，-O0 与 -O2 读数相同。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 咱们在 -O2 与 -O0 各跑一遍，读数相同：
 
@@ -288,69 +158,13 @@ promise 这个名字容易让人想到第四单元的 `std::promise`。cpprefere
 
 机制都齐了，咱们把它们拼成一个真的组件。目标是做出如下生成器：协程用 `co_yield` 产出整数序列，调用方 `next()` 一次取一个，值从 promise 身上读，用完析构函数收帧。上一篇说的能暂停的工作，落到代码上长成的就是它。
 
-```cpp
-// gen_min.cpp —— 能跑通的最小生成器，co_yield 产出平方数
-#include <coroutine>
-#include <cstdio>
-#include <exception>
-
-template <typename T>
-class Generator {
-public:
-  struct promise_type {
-    T current_value;
-    std::exception_ptr failure;
-
-    Generator get_return_object() {
-      return Generator{std::coroutine_handle<promise_type>::from_promise(*this)};
-    }
-    std::suspend_always initial_suspend() noexcept { return {}; }
-    std::suspend_always final_suspend() noexcept { return {}; }
-    std::suspend_always yield_value(T value) noexcept {
-      current_value = value;
-      return {};
-    }
-    void return_void() noexcept {}
-    void unhandled_exception() { failure = std::current_exception(); }
-  };
-
-  explicit Generator(std::coroutine_handle<promise_type> handle) : handle_(handle) {}
-  ~Generator() {
-    if (handle_) handle_.destroy();
-  }
-  Generator(const Generator&) = delete;
-  Generator& operator=(const Generator&) = delete;
-
-  bool next() {
-    handle_.resume();
-    if (handle_.promise().failure) {
-      std::rethrow_exception(handle_.promise().failure);
-    }
-    return !handle_.done();
-  }
-
-  T value() const { return handle_.promise().current_value; }
-
-private:
-  std::coroutine_handle<promise_type> handle_;
-};
-
-Generator<int> squares(int limit) {
-  for (int i = 1; i <= limit; ++i) {
-    co_yield i * i;
-  }
-}
-
-int main() {
-  std::printf("创建 squares(5)，此刻函数体一行没跑\n");
-  Generator<int> gen = squares(5);
-  while (gen.next()) {
-    std::printf("拿到 %d\n", gen.value());
-  }
-  std::printf("生成器耗尽，destroy 交给析构函数\n");
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="最小生成器：co_yield 产出平方数"
+  source-path="code/examples/vol5/chapter07/05_gen_min.cpp"
+  description="squares(5) 创建时函数体一行没跑，next() 一次产出一个平方数，五个取完后 done 翻 true，析构函数收帧。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 咱们看实跑输出：
 
@@ -393,7 +207,7 @@ int main() {
 
 ## 参考资源
 
-本篇的三个实验都在开头交代的临时目录与编译选项下运行，frame_alloc 额外在 -O0 下跑了一遍做对照，没有进仓库，正文里的代码块就是全部内容，拼成单个 .cpp 文件即可复跑。return_void 缺失、显式拦截与双声明的验证出自修订用的另一段探针，单独验的，没有进正文，也不计入三个实验的计数，读数随实现与选项走。行为断言按 eel.is 上的现行工作草案核对，条款号与段号可能随草案更新挪动。cppreference 的 coroutines 页抓到了全文，与草案核对无出入。旧目录 ch06 的《C++20 协程基础》与《promise_type 与 awaitable》是本篇的素材，例子与文字全部重写。推进思路参照了 Lewis Baker 的协程系列，例子与文字都是我自己写的。
+本篇的三个实验初验在开头交代的临时目录与编译选项下完成，frame_alloc 额外在 -O0 下跑了一遍做对照，现在收在 code/examples/vol5/chapter07/，可在本页直接运行，抽成独立文件时复验过。return_void 缺失、显式拦截与双声明的验证出自修订用的另一段探针，单独验的，没有进正文，也不计入三个实验的计数，读数随实现与选项走。行为断言按 eel.is 上的现行工作草案核对，条款号与段号可能随草案更新挪动。cppreference 的 coroutines 页抓到了全文，与草案核对无出入。旧目录 ch06 的《C++20 协程基础》与《promise_type 与 awaitable》是本篇的素材，例子与文字全部重写。推进思路参照了 Lewis Baker 的协程系列，例子与文字都是我自己写的。
 
 - [Coroutines (C++20)（cppreference）][cppref-coro]，协程定义、限制、协程状态的四样内容、参数拷贝与悬垂示例、分配的省略条件、promise_type 的推导、co_return 语义的出处。
 - [Coroutine definitions（现行草案 dcl.fct.def.coroutine）][draft-def]，替换体的结构、get_return_object 的时序、分配与释放函数的查找规则、get_return_object_on_allocation_failure、参数拷贝规则、final_suspend 的 noexcept 要求。

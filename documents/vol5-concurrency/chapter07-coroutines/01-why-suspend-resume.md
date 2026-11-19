@@ -25,7 +25,7 @@ current_status:
 
 本篇按三步走。场景摆前面，一千个并发连接，把等待压在线程身上的代价量给您看。接着是三种模型对同一道题的答法，回调、future 链、协程，各付各的代价。收尾回答一个容易被误解的问题：协程改变的是程序组织，不是线程数量，咱们拿读数作证。
 
-两个小实验放在临时目录里编译跑过（`/tmp/concurrency-u7/`，GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，WSL2 内核 6.18.33.2，16 逻辑核，2026-11-17）。读数都是单次运行的读数，换台机器数字会漂，量级和判断不会。协程语言机制的断言，我按 cppreference 与现行草案核对过（2026-11-17 访问），出处收在参考资源里。
+两个小实验收在 `code/examples/vol5/chapter07/`，可在各篇页面直接运行（GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，WSL2 内核 6.18.33.2，16 逻辑核，2026-11-17，抽成独立文件时复验过）。读数都是单次运行的读数，换台机器数字会漂，量级和判断不会。协程语言机制的断言，我按 cppreference 与现行草案核对过（2026-11-17 访问），出处收在参考资源里。
 
 ## 一千个并发连接的场景
 
@@ -33,67 +33,13 @@ current_status:
 
 最直觉的方案您在单元一就备齐了零件：来一个连接，开一条线程，`std::thread` 一包，让它从头伺候到尾。写起来直白，每个连接的执行现场就是一条线程的栈，逻辑顺着往下走。代价咱们量：
 
-```cpp
-// exp_a_threads.cpp —— 一千条"一连接一线程"的线程：量地址空间、物理内存与线程数
-#include <atomic>
-#include <chrono>
-#include <cstdio>
-#include <cstring>
-#include <thread>
-#include <vector>
-
-// 从 /proc/self/status 抄一行出来，VmSize 与 VmRSS 单位是 kB
-static bool status_line(const char* prefix, char* out, size_t n) {
-  FILE* f = std::fopen("/proc/self/status", "r");
-  if (!f) return false;
-  bool found = false;
-  char line[256];
-  while (std::fgets(line, sizeof line, f)) {
-    if (std::strncmp(line, prefix, std::strlen(prefix)) == 0) {
-      std::snprintf(out, n, "%s", line);
-      found = true;
-      break;
-    }
-  }
-  std::fclose(f);
-  return found;
-}
-
-static void report(const char* tag) {
-  char line[256];
-  if (status_line("Threads:", line, sizeof line))
-    std::printf("%s %s", tag, line);
-  if (status_line("VmSize:", line, sizeof line))
-    std::printf("%s %s", tag, line);
-  if (status_line("VmRSS:", line, sizeof line))
-    std::printf("%s %s", tag, line);
-}
-
-int main() {
-  constexpr int kN = 1000;
-  std::printf("== before ==\n");
-  report("");
-
-  std::atomic<int> started{0};
-  std::vector<std::thread> pool;
-  pool.reserve(kN);
-  for (int i = 0; i < kN; ++i) {
-    pool.emplace_back([&started] {
-      ++started;
-      // 睡着等事件，模拟一条正在等 I/O 的连接线程
-      std::this_thread::sleep_for(std::chrono::seconds(3));
-    });
-  }
-  while (started.load() < kN)
-    std::this_thread::sleep_for(std::chrono::milliseconds(2));
-
-  std::printf("== %d threads parked ==\n", kN);
-  report("");
-
-  for (auto& t : pool) t.join();
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="一连接一线程：一千条线程的地址空间与物理内存"
+  source-path="code/examples/vol5/chapter07/01_exp_a_threads.cpp"
+  description="一千条线程各自睡 3 秒模拟等 I/O，/proc/self/status 报出线程数 1001、VmSize 涨到约 8 GB 量级，物理内存只涨一小截。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```bash
 g++ -std=c++20 -O2 -pthread exp_a_threads.cpp -o exp_a_threads
@@ -157,130 +103,13 @@ C++20 把协程带进语言，三个关键字咱们挨个认：`co_await` 挂起
 
 “可以暂停的工作”落到程序上长什么样，咱们跑一段看。程序做两幕。一幕：一个协程干一件“要等”的活，干到一半挂起，由另一条线程把它恢复。二幕：一千个协程全部挂起，全程只有主线程，量内存。`Task` 类型的零件本篇不当主角，《[一个最小协程怎样成立](02-minimal-coroutine)》逐个讲，您只要认得 `co_await` 的挂起与 `resume()` 的恢复：
 
-```cpp
-// exp_b_suspend.cpp —— 协程的暂停与恢复：谁恢复它，它就在谁的线程上跑
-// 二幕：一千个挂起的协程，一条线程，量地址空间与物理内存
-#include <atomic>
-#include <chrono>
-#include <coroutine>
-#include <cstdio>
-#include <cstring>
-#include <sstream>
-#include <string>
-#include <thread>
-#include <vector>
-
-static std::string tid() {
-  std::ostringstream oss;
-  oss << std::this_thread::get_id();
-  return oss.str();
-}
-
-// 从 /proc/self/status 抄一行出来，VmSize 与 VmRSS 单位是 kB
-static bool status_line(const char* prefix, char* out, size_t n) {
-  FILE* f = std::fopen("/proc/self/status", "r");
-  if (!f) return false;
-  bool found = false;
-  char line[256];
-  while (std::fgets(line, sizeof line, f)) {
-    if (std::strncmp(line, prefix, std::strlen(prefix)) == 0) {
-      std::snprintf(out, n, "%s", line);
-      found = true;
-      break;
-    }
-  }
-  std::fclose(f);
-  return found;
-}
-
-static void report(const char* tag) {
-  char line[256];
-  if (status_line("Threads:", line, sizeof line))
-    std::printf("%s %s", tag, line);
-  if (status_line("VmSize:", line, sizeof line))
-    std::printf("%s %s", tag, line);
-  if (status_line("VmRSS:", line, sizeof line))
-    std::printf("%s %s", tag, line);
-}
-
-// awaiter：挂起，把句柄登记进列表，等别人来恢复
-struct Park {
-  static std::vector<std::coroutine_handle<>> parked;
-  bool await_ready() { return false; }
-  void await_suspend(std::coroutine_handle<> h) { parked.push_back(h); }
-  void await_resume() {}
-};
-std::vector<std::coroutine_handle<>> Park::parked;
-
-// 最小任务类型。零件各自干什么归 7.2，本篇只要它撑起 co_await
-struct Task {
-  struct promise_type {
-    Task get_return_object() {
-      return Task{std::coroutine_handle<promise_type>::from_promise(*this)};
-    }
-    std::suspend_never initial_suspend() { return {}; }
-    std::suspend_always final_suspend() noexcept { return {}; }
-    void return_void() {}
-    void unhandled_exception() { std::terminate(); }
-  };
-
-  std::coroutine_handle<> h;
-  explicit Task(std::coroutine_handle<> hh) : h(hh) {}
-  Task(const Task&) = delete;
-  Task& operator=(const Task&) = delete;
-  Task(Task&& o) noexcept : h(o.h) { o.h = {}; }
-  Task& operator=(Task&& o) noexcept {
-    if (this != &o) {
-      if (h) h.destroy();
-      h = o.h;
-      o.h = {};
-    }
-    return *this;
-  }
-  ~Task() { if (h) h.destroy(); }
-};
-
-// 处理一件"要等"的活：stage 1，挂起等事件，恢复后 stage 2
-// done 非空时是安静模式，只计数不打印
-Task worker(int id, std::atomic<int>* done) {
-  if (done == nullptr)
-    std::printf("  worker %d stage1 on thread %s, suspend\n", id, tid().c_str());
-  co_await Park{};
-  if (done != nullptr)
-    ++*done;
-  else
-    std::printf("  worker %d stage2 on thread %s, finished\n", id, tid().c_str());
-}
-
-int main() {
-  { // 一幕：同一个协程体分两段跑，谁恢复它，它就在谁的线程上继续
-    Task t = worker(0, nullptr);
-    std::printf("main: worker suspended, parked=%zu\n", Park::parked.size());
-    std::thread driver([] { Park::parked.back().resume(); });
-    driver.join();
-    std::printf("main: worker finished\n");
-  }
-  Park::parked.clear();
-
-  { // 二幕：一千个挂起的协程，全程只有主线程
-    constexpr int kN = 1000;
-    std::atomic<int> done{0};
-    std::printf("== before %d workers ==\n", kN);
-    report("");
-    std::vector<Task> tasks;
-    tasks.reserve(kN);
-    for (int i = 0; i < kN; ++i)
-      tasks.emplace_back(worker(i, &done));
-    while (static_cast<int>(Park::parked.size()) < kN)
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    std::printf("== %d coroutines suspended ==\n", kN);
-    report("");
-    for (auto& h : Park::parked) h.resume();
-    std::printf("== resumed, done=%d ==\n", done.load());
-  }
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="协程挂起与恢复：一千个挂起的协程只占一条线程"
+  source-path="code/examples/vol5/chapter07/02_exp_b_suspend.cpp"
+  description="一幕里同一段协程体分两段跑，线程标识跟着恢复者换人，二幕一千个协程全部挂起，线程数始终是 1，物理内存只涨几十 kB。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```bash
 g++ -std=c++20 -O2 -pthread exp_b_suspend.cpp -o exp_b_suspend

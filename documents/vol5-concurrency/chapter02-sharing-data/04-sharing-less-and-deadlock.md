@@ -21,42 +21,13 @@ current_status:
 
 这段挪钱的程序我跑了几遍，每一遍都只打出两行，然后停住不动。
 
-```cpp
-#include <chrono>
-#include <cstdio>
-#include <mutex>
-#include <thread>
-
-using namespace std::chrono_literals;
-
-struct Wallet {
-  Wallet(int number, long long b) : id(number), balance(b) {}
-  std::mutex m;
-  int id;
-  long long balance;
-};
-
-// 按 from 然后 to 的次序拿锁。方向反过来，锁的次序也跟着反过来。
-void pay(Wallet& from, Wallet& to, long long amount, const char* name) {
-  std::lock_guard<std::mutex> first(from.m);
-  std::printf("%s: holds the first wallet, asking for the second\n", name);
-  std::fflush(stdout);
-  std::this_thread::sleep_for(100ms);  // 把两条线程都停在"手里一把"的位置
-  std::lock_guard<std::mutex> second(to.m);
-  from.balance -= amount;
-  to.balance += amount;
-}
-
-int main() {
-  Wallet a(1, 700);
-  Wallet b(2, 300);
-  std::thread t1(pay, std::ref(a), std::ref(b), 10LL, "t1");
-  std::thread t2(pay, std::ref(b), std::ref(a), 10LL, "t2");
-  t1.join();
-  t2.join();
-  std::printf("a = %lld, b = %lld\n", a.balance, b.balance);
-}
-```
+<OnlineCompilerDemo
+  title="AB-BA 反转：方向相反的两次挪钱把进程卡死"
+  source-path="code/examples/vol5/chapter02/28_demo_abba_deadlock.cpp"
+  description="两条线程各打出 holds the first wallet 之后一起停住（在线运行有超时会替您收场，本地得 Ctrl-C）。fflush 是给重定向留的，否则被杀进程的缓冲会让两行都丢掉。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 两个钱包，各一把锁和一份余额。一条线程从 A 挪十块给 B，另一条从 B 挪十块给 A。您要是读过上一篇，会认出它来：上一篇的钱包只有锁和余额，这次我给它加上编号，余额换成 `long long`。
 
@@ -94,19 +65,13 @@ exit=124
 
 能拿到手上的证据，是在里面待着的线程数，同一时刻最多一条。我在锁里放了个计数，进去加一、出来减一，记下出现过的最大值：
 
-```cpp
-std::mutex m;
-int inside = 0;
-int peak = 0;
-
-void visit() {
-  std::lock_guard<std::mutex> lock(m);
-  ++inside;
-  if (inside > peak) peak = inside;
-  std::this_thread::sleep_for(1ms);
-  --inside;
-}
-```
+<OnlineCompilerDemo
+  title="互斥的证据：锁里至多一条线程"
+  source-path="code/examples/vol5/chapter02/29_demo_peak_inside.cpp"
+  description="锁里放个计数，进去加一、出来减一，记下出现过的最大值：四条线程各进一次，peak inside = 1。把 lock_guard 删掉再跑，峰值就会往上走。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 我让四条线程各进一次，跑出来是：
 
@@ -142,23 +107,15 @@ peak inside = 1, left inside = 0
 
 咱们给钱包编号。编号在创建时定下来，之后不再变。任何一次挪动，不管钱往哪个方向走，都按编号从小到大拿锁：
 
-```cpp
-void move(Wallet& from, Wallet& to, long long amount) {
-  Wallet& low  = from.id < to.id ? from : to;
-  Wallet& high = from.id < to.id ? to : from;
-  std::lock_guard<std::mutex> a(low.m);
-  std::lock_guard<std::mutex> b(high.m);
-  from.balance -= amount;
-  to.balance += amount;
-}
-```
+<OnlineCompilerDemo
+  title="按编号拿锁：200000 次对向挪动，一次没卡"
+  source-path="code/examples/vol5/chapter02/30_demo_lock_order_by_id.cpp"
+  description="不管钱往哪个方向走，都按编号从小到大拿。前半程只跑挪动：sum 稳在 1000、退出码 0；后半程另开观察线程一把一把地读，跨挪动拼接出的和会偏离 1000——要读到真实时刻得同时拿住两把。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
-我让两条线程各跑 200000 次，一个从 A 挪给 B，一个反过来：
-
-```cpp
-std::thread t1([&] { for (int i = 0; i < 200000; ++i) move(a, b, 1); });
-std::thread t2([&] { for (int i = 0; i < 200000; ++i) move(b, a, 1); });
-```
+咱们让两条线程各跑 200000 次，一个从 A 挪给 B，一个反过来：
 
 ```text
 by id: a = 700, b = 300, sum = 1000
@@ -189,16 +146,13 @@ after join: a = 700, b = 300, sum = 1000
 
 动态创建的对象，不方便提前编号。咱们可以按对象的地址排，前提是用 `std::less`，别用内建的 `<`：
 
-```cpp
-void move(Wallet& from, Wallet& to, long long amount) {
-  Wallet& low  = std::less<Wallet*>{}(&from, &to) ? from : to;
-  Wallet& high = std::less<Wallet*>{}(&from, &to) ? to : from;
-  std::lock_guard<std::mutex> a(low.m);
-  std::lock_guard<std::mutex> b(high.m);
-  from.balance -= amount;
-  to.balance += amount;
-}
-```
+<OnlineCompilerDemo
+  title="没有编号的时候，按地址排"
+  source-path="code/examples/vol5/chapter02/31_demo_lock_order_by_address.cpp"
+  description="动态创建的对象用 std::less<Wallet*> 排出全序，同样 200000 次来回 sum 稳在 1000。别用内建的 <：指向不同对象的指针比大小，标准说结果未指定，当不得全序。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 我把同一份程序换成按地址的写法，也是 200000 次来回，结果一样：
 
@@ -216,48 +170,13 @@ by address: a = 700, b = 300, sum = 1000
 
 分层不靠注释。咱们把层级交给锁自己记：每把锁带一个编号，每条线程记着自己现在停在哪一层，`lock()` 进来的时候比一次，反着拿就抛 `std::logic_error`，写反的人当场知道。
 
-```cpp
-#include <climits>
-#include <mutex>
-#include <stdexcept>
-
-class LevelMutex {
- public:
-  explicit LevelMutex(int level) : level_(level) {}
-
-  void lock() {
-    check();
-    m_.lock();
-    previous_ = current_level_;
-    current_level_ = level_;
-  }
-  void unlock() {
-    current_level_ = previous_;
-    m_.unlock();
-  }
-  bool try_lock() {
-    check();
-    if (!m_.try_lock()) return false;
-    previous_ = current_level_;
-    current_level_ = level_;
-    return true;
-  }
-
- private:
-  void check() const {
-    if (level_ >= current_level_) {
-      throw std::logic_error("lock level goes the wrong way");
-    }
-  }
-
-  static thread_local int current_level_;
-  std::mutex m_;
-  int level_;
-  int previous_ = 0;
-};
-
-thread_local int LevelMutex::current_level_ = INT_MAX;
-```
+<OnlineCompilerDemo
+  title="LevelMutex：每把锁记着自己的层级"
+  source-path="code/examples/vol5/chapter02/32_demo_level_mutex.cpp"
+  description="lock() 进来先 check()：要拿的层不比当前层低就抛 logic_error。previous_ 记着上一层，unlock() 时还原。current_level_ 是 thread_local，每条线程各一份。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 您看 `current_level_`，它是 `thread_local`（C++11 起）的，每条线程各有一份，互不干扰。谁也没拿锁的时候它是 `INT_MAX`，任何一层都能进。
 
@@ -265,40 +184,23 @@ thread_local int LevelMutex::current_level_ = INT_MAX;
 
 咱们拿三层试一下：配置层编号 300，缓存层 200，设备层 100。一次正常的调用从配置层往下走：
 
-```cpp
-LevelMutex config(300);   // 越靠上层，编号越大
-LevelMutex cache(200);
-LevelMutex device(100);
+<OnlineCompilerDemo
+  title="分层互斥：拿反了当场抛，不进锁里等"
+  source-path="code/examples/vol5/chapter02/32_demo_level_mutex.cpp"
+  description="配置层 300、缓存层 200、设备层 100：从上往下正常走，反向在进临界区之前就被 check() 拦下 logic_error。current_level_ 是 thread_local，同一层进第二次也拦。教学实现，不是库。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
-void read_device() {
-  std::lock_guard<LevelMutex> g(device);
-  std::printf("device: level 100\n");
-}
-void read_cache() {
-  std::lock_guard<LevelMutex> g(cache);
-  std::printf("cache: level 200, going down to device\n");
-  read_device();
-}
-void read_all() {
-  std::lock_guard<LevelMutex> g(config);
-  std::printf("config: level 300, going down to cache\n");
-  read_cache();
-}
-```
+<OnlineCompilerDemo
+  title="三层往下走与反向往上拿"
+  source-path="code/examples/vol5/chapter02/32_demo_level_mutex.cpp"
+  description="同一个程序：read_all 从 300 走到 100 三行顺序输出；read_upward 拿着设备层去拿缓存层，lock level goes the wrong way，两条线程都正常结束。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 我另开一条线程跑 `read_all()`，再开一条，让它从设备层反着往上拿缓存层：
-
-```cpp
-void read_upward() {
-  std::lock_guard<LevelMutex> g(device);
-  try {
-    std::lock_guard<LevelMutex> up(cache);   // 层级不对，进来之前就抛
-    std::printf("upward: got cache as well\n");
-  } catch (const std::logic_error& e) {
-    std::printf("upward: %s\n", e.what());
-  }
-}
-```
 
 ```text
 config: level 300, going down to cache
@@ -330,26 +232,13 @@ C++17 的 `std::scoped_lock` 接过两把以上的锁时，构造函数调的就
 
 您可以把 `std::try_lock` 看成这套思路的非阻塞版，一件事试一轮就回来。它按参数顺序逐个 `try_lock`，中间有一把失败，就把前面拿到的都 `unlock`，然后返回失败项的零基下标，全部成功则返回 -1（[thread.lock.algorithm]/2、/3）。
 
-```cpp
-std::mutex m1, m2;
-
-std::thread holder([&] {
-  std::lock_guard<std::mutex> lock(m1);
-  std::printf("holder: m1 taken, keeping it for 300 ms\n");
-  std::fflush(stdout);
-  std::this_thread::sleep_for(300ms);
-});
-
-std::this_thread::sleep_for(50ms);
-
-// 参数次序是 m2、m1。m2 本来是空的，所以它会拿到 m2，再去试 m1。
-int index = std::try_lock(m2, m1);
-std::printf("main: try_lock(m2, m1) returned %d\n", index);
-
-// 失败以后 m2 应该已经被放回去了，咱们试着拿一下看看。
-bool got_m2 = m2.try_lock();
-std::printf("main: m2 is %s\n", got_m2 ? "free" : "still held");
-```
+<OnlineCompilerDemo
+  title="std::try_lock：试不上就把拿到的全放回去"
+  source-path="code/examples/vol5/chapter02/33_demo_try_lock_backoff.cpp"
+  description="holder 拿着 m1 睡 300 毫秒；main 的 try_lock(m2, m1) 拿到 m2、试不上 m1，返回 1，顺手把 m2 放回去——紧接着 m2.try_lock() 证明它是空的。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 holder: m1 taken, keeping it for 300 ms
@@ -374,81 +263,43 @@ exit=0
 
 活很简单：3000 万个整数，求平方和，咱们让四条线程分着算。数据是 `data[i] = i % 1000` 从前往后填满的，数就落在 0 到 999 之间。
 
-```cpp
-constexpr int kThreads = 4;
-
-long long sum_range(const std::vector<int>& data, int lo, int hi) {
-  long long s = 0;
-  for (int i = lo; i < hi; ++i) s += static_cast<long long>(data[i]) * data[i];
-  return s;
-}
-```
+<OnlineCompilerDemo
+  title="四种写法同台：独立持有、传递结果、共同修改、每数一锁"
+  source-path="code/examples/vol5/chapter02/34_demo_three_designs.cpp"
+  description="3000 万个整数求平方和，四条线程分着算：A 各写各的槽位、B 用 promise/future 交结果、C 每块 1024 个数进一次锁、D 每个数进一次锁。三轮读数加锁次统计——A/B/C 打平，D 差两个数量级，因为锁了 3000 万次。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 独立持有的写法，您看主线程的动作：给每条线程准备一格，线程只写自己分到的槽位，跑完再合并。
 
-```cpp
-long long design_a(const std::vector<int>& data) {
-  std::vector<long long> parts(kThreads, 0);
-  std::vector<std::thread> threads;
-  int step = static_cast<int>(data.size()) / kThreads;
-  for (int t = 0; t < kThreads; ++t) {
-    long long* slot = &parts[t];           // 每条线程只碰自己的槽位
-    threads.emplace_back([&data, slot, t, step] {
-      *slot = sum_range(data, t * step, (t + 1) * step);
-    });
-  }
-  for (auto& th : threads) th.join();
-  long long total = 0;
-  for (long long v : parts) total += v;
-  return total;
-}
-```
+<OnlineCompilerDemo
+  title="design_a：线程只写自己的槽位"
+  source-path="code/examples/vol5/chapter02/34_demo_three_designs.cpp"
+  description="同一个程序里的 design_a：主线程给每条线程准备一格 parts[t]，线程只碰自己那格，join 之后主线程合并。运行期间没有共享写，锁一把都没有。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 换成传递结果，每条线程算完把最终值交出去，自己不留下任何能改的东西。这里我借了 `std::promise` 和 `std::future`：第四单元 4.3《自行传递结果：`std::promise` 与 `std::future`》讲，本篇只用它们做一次交接。
 
-```cpp
-long long design_b(const std::vector<int>& data) {
-  std::vector<std::promise<long long>> boxes(kThreads);
-  std::vector<std::future<long long>> futs;
-  for (auto& box : boxes) futs.push_back(box.get_future());
-  std::vector<std::thread> threads;
-  int step = static_cast<int>(data.size()) / kThreads;
-  for (int t = 0; t < kThreads; ++t) {
-    threads.emplace_back([&data, &boxes, t, step] {
-      boxes[t].set_value(sum_range(data, t * step, (t + 1) * step));
-    });
-  }
-  long long total = 0;
-  for (auto& f : futs) total += f.get();   // 算完一条，收一条
-  for (auto& th : threads) th.join();
-  return total;
-}
-```
+<OnlineCompilerDemo
+  title="design_b：算完把最终值交出去"
+  source-path="code/examples/vol5/chapter02/34_demo_three_designs.cpp"
+  description="同一个程序里的 design_b：每条线程把最终和 set_value 给自己的 promise，主线程逐个 f.get() 收——算完一条，收一条。线程自己不留下任何能改的东西。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 共同修改是另一条路：总额只有一份，四条线程都改它，靠锁保护。您看锁里只放了一次加法，算数的活全在外面。
 
-```cpp
-long long design_c(const std::vector<int>& data, int block) {
-  std::mutex m;
-  long long total = 0;
-  std::vector<std::thread> threads;
-  int step = static_cast<int>(data.size()) / kThreads;
-  for (int t = 0; t < kThreads; ++t) {
-    threads.emplace_back([&, t] {
-      int lo = t * step;
-      int hi = (t + 1) * step;
-      for (int begin = lo; begin < hi; begin += block) {
-        int end = begin + block < hi ? begin + block : hi;
-        long long part = sum_range(data, begin, end);
-        std::lock_guard<std::mutex> lock(m);   // 锁里只有一次加法
-        total += part;
-      }
-    });
-  }
-  for (auto& th : threads) th.join();
-  return total;
-}
-```
+<OnlineCompilerDemo
+  title="design_c：锁里只放一次加法"
+  source-path="code/examples/vol5/chapter02/34_demo_three_designs.cpp"
+  description="同一个程序里的 design_c：总额只有一份，四条线程都改它。每块 1024 个数算完才进一次锁，锁里只有 total += part 一行；把 block 换成 1 就是对照组 D。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 三份都跑三轮，C 用 `block = 1024` 调。再补一个对照组，把 `block` 改成 1，也就是每加一个数就锁一次。读数里 A 是 `design_a`（独立持有），B 是传递结果，C 是共同修改，D 就是这个对照组，锁的次数我在函数里另加了一个计数。《用互斥保护共享状态》里的计数器也是每加一次锁一次，D 就是照它写的。
 

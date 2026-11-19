@@ -23,7 +23,7 @@ current_status:
 
 5.3 收尾留过一句话（见 [《选择内存序需要什么依据》](../chapter05-atomic-memory-model/03-choosing-memory-orders)），说本机看不出的事，工具替您把证据拿到手。兑现的事，本篇就把工具一个个请出来。手段我按三类铺开：一类是重复压的办法，咱们把同一份程序按轮数往机器上送，看偶发的现形落在哪个轮次。另一类是工具查的办法，让插桩与静态检查，替咱们扫跑不到、看不出的地方。异常注入与停止路径的测试是第三类，它压的对象不一样，压的是程序结束的那些小路。三个扩展节留给了运行时的诊断，GDB 附加、Helgrind、结构化日志就是里面的三件。
 
-文中的程序都放在临时目录里（`/tmp/concurrency-u6/`），编译跑过（GCC 16.2.1，普通版配方 `g++ -std=c++20 -O2 -pthread`，插桩版配方 `g++ -std=c++20 -O1 -g -fsanitize=thread -pthread`，WSL2 内核 6.18.33.2，16 逻辑核，2026-11-17）。每个用 gcc 编的实验，我都标了用的是哪一组配方。Thread Safety Analysis 一节，用 clang 23.1.3 实测，GCC 对它的态度我也当场试给您看。写稿环境的 ptrace 受限，GDB 附加没能在我这里跑通，扩展节里如实注明，没有编造输出。涉及工具行为的断言，按 clang 手册、GCC 手册与 Valgrind 手册核对过，链接收在参考资源里。输出都是单次运行的读数，换台机器，数字会动。
+文中的程序收在 `code/examples/vol5/chapter06/`，可在本页直接运行，编译跑过（GCC 16.2.1，普通版配方 `g++ -std=c++20 -O2 -pthread`，插桩版配方 `g++ -std=c++20 -O1 -g -fsanitize=thread -pthread`，WSL2 内核 6.18.33.2，16 逻辑核，2026-11-17，抽成独立文件时复验过）。每个用 gcc 编的实验，我都标了用的是哪一组配方。Thread Safety Analysis 一节，用 clang 23.1.3 实测，GCC 对它的态度我也当场试给您看。写稿环境的 ptrace 受限，GDB 附加没能在我这里跑通，扩展节里如实注明，没有编造输出。涉及工具行为的断言，按 clang 手册、GCC 手册与 Valgrind 手册核对过，链接收在参考资源里。输出都是单次运行的读数，换台机器，数字会动。
 
 ## 重复测试：把偶发换成读数
 
@@ -31,42 +31,13 @@ current_status:
 
 咱们做一个更细的实验。两条线程，各把一个普通 `int` 加一次，一轮下来 `counter` 应当恰好等于 2。tight 档把读写挤在一起，wide 档把动作摊开：读进局部变量、睡 50 微秒、再写回。窗口宽度不同，命中机会就不同，读数您往下看。
 
-```cpp
-#include <chrono>
-#include <cstdio>
-#include <cstdlib>
-#include <thread>
-
-int counter = 0;   // 故意不用 std::atomic，本实验就是要它出错
-
-static void bump_once(bool wide) {
-  if (wide) {
-    int local = counter;                                   // 读
-    std::this_thread::sleep_for(std::chrono::microseconds(50));
-    counter = local + 1;                                   // 写
-  } else {
-    ++counter;                                             // 读写挤在一条指令附近
-  }
-}
-
-int main(int argc, char** argv) {
-  if (argc < 2) { std::printf("usage: %s rounds [wide]\n", argv[0]); return 1; }
-  const int rounds = std::atoi(argv[1]);
-  const bool wide = argc > 2;
-  int bad = 0;
-  for (int r = 0; r < rounds; ++r) {
-    counter = 0;
-    std::thread a([&] { bump_once(wide); });
-    std::thread b([&] { bump_once(wide); });
-    a.join();
-    b.join();
-    if (counter != 2) ++bad;
-  }
-  std::printf("%s: %d of %d rounds lost an increment\n",
-              wide ? "wide" : "tight", bad, rounds);
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="重复压测：tight 档 30000 轮不丢，wide 档几乎轮轮丢"
+  source-path="code/examples/vol5/chapter06/01_stress.cpp"
+  description="演示用，存在数据竞争：两条线程读写同一个普通 int。tight 档三万轮可能一次不丢，wide 档（读、睡 50 微秒、写）三千轮几乎轮轮丢增量；程序要带轮数参数，站内直接运行只打印用法，本地按下方命令跑。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```bash
 g++ -std=c++20 -O2 -pthread stress.cpp -o stress   # 普通版配方
@@ -101,24 +72,13 @@ TSan 的原理我一句话摆出来：编译时在每个内存访问处插桩，
 
 实验程序咱们安排四条线程，每条把一个普通的 `long long` 加十万次：
 
-```cpp
-#include <cstdio>
-#include <thread>
-
-long long counter = 0;
-
-void work() {
-  for (int i = 0; i < 100000; ++i) ++counter;
-}
-
-int main() {
-  std::thread t[4];
-  for (auto& x : t) x = std::thread(work);
-  for (auto& x : t) x.join();
-  std::printf("counter=%lld (expected 400000)\n", counter);
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="读数全对，ThreadSanitizer 照样报 data race"
+  source-path="code/examples/vol5/chapter06/02_tsan_race.cpp"
+  description="演示用，存在数据竞争：四条线程各十万次自增同一个普通 long long。标准输出 counter=400000 全对，竞争报告在标准错误流；本地复跑按下方 TSan 配方编译即可看到报告。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```bash
 g++ -std=c++20 -O1 -g -fsanitize=thread -pthread tsan_race.cpp -o tsan_race   # 插桩版配方
@@ -170,41 +130,13 @@ TSan 只看跑到的路径，这点咱们在 2.1 就见识过：它报的，是�
 
 再看逻辑层。工具认的是内存级的 data race，逻辑上的漏洞它不判。咱们拿全原子的 check-then-act 试它一遍：
 
-```cpp
-#include <atomic>
-#include <cstdio>
-#include <thread>
-
-std::atomic<bool> go{false};
-std::atomic<bool> reserved{false};
-std::atomic<int> winners{0};
-
-void contender() {
-  while (!go.load(std::memory_order_relaxed)) {}
-  if (!reserved.load(std::memory_order_relaxed)) {
-    reserved.store(true, std::memory_order_relaxed);
-    winners.fetch_add(1, std::memory_order_relaxed);
-  }
-}
-
-int main() {
-  const int kRounds = 10000;
-  int double_wins = 0;
-  for (int r = 0; r < kRounds; ++r) {
-    reserved.store(false);
-    winners.store(0);
-    go.store(false);
-    std::thread a(contender);
-    std::thread b(contender);
-    go.store(true);
-    a.join();
-    b.join();
-    if (winners.load() == 2) ++double_wins;
-  }
-  std::printf("double wins: %d of %d rounds\n", double_wins, kRounds);
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="全原子的 check-then-act：TSan 不报，逻辑照错"
+  source-path="code/examples/vol5/chapter06/03_logical_race.cpp"
+  description="每一步都是原子操作，TSan 复跑警告为零；一万轮里仍有几十轮双赢，检查与写入之间的窗口，原子操作堵不上。本地复跑加 -fsanitize=thread。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```bash
 g++ -std=c++20 -O1 -g -fsanitize=thread -pthread logical_race.cpp -o logical_race   # 插桩版配方
@@ -241,51 +173,13 @@ g++: error: unrecognized command-line option ‘-Wthread-safety’
 
 示例的一组最小注解，咱们摆出来：
 
-```cpp
-#include <mutex>
-
-class __attribute__((capability("mutex"))) TicketMutex {
- public:
-  void lock() __attribute__((acquire_capability())) { m_.lock(); }
-  void unlock() __attribute__((release_capability())) { m_.unlock(); }
- private:
-  std::mutex m_;
-};
-
-class __attribute__((scoped_lockable)) TicketLock {
- public:
-  explicit TicketLock(TicketMutex& mu) __attribute__((acquire_capability(mu)))
-      : mu_(&mu) { mu_->lock(); }
-  ~TicketLock() __attribute__((release_capability())) { mu_->unlock(); }
-  TicketLock(const TicketLock&) = delete;
-  TicketLock& operator=(const TicketLock&) = delete;
- private:
-  TicketMutex* mu_;
-};
-
-class Ledger {
- public:
-  void add(int n) {
-    TicketLock lk(mu_);
-    total_ += n;
-  }
-  int broken_read() {           // 忘了拿锁，等编译器拦
-    return total_;
-  }
-  int peek_locked() __attribute__((requires_capability(mu_))) {
-    return total_;
-  }
- private:
-  TicketMutex mu_;
-  int total_ __attribute__((guarded_by(mu_))) = 0;
-};
-
-int use_bad() {
-  Ledger led;
-  led.add(1);
-  return led.broken_read() + led.peek_locked();
-}
-```
+<OnlineCompilerDemo
+  title="Thread Safety Analysis：忘了拿锁，编译期就拦"
+  source-path="code/examples/vol5/chapter06/04_tsa_demo.cpp"
+  description="clang 扩展：broken_read 没拿锁读 total_、无锁调 peek_locked，clang++ -Wthread-safety 各报一条警告（命令在下方，行号对得上）；g++ 不认这些属性，站内运行只看得到属性被忽略的编译告警。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```bash
 # clang 23.1.3
@@ -314,18 +208,13 @@ tsa_demo.cpp:42:34: warning: calling function 'peek_locked' requires holding mut
 
 线程函数的异常走不出线程，咱们做个实验：
 
-```cpp
-#include <cstdio>
-#include <stdexcept>
-#include <thread>
-
-int main() {
-  std::thread t([] { throw std::runtime_error("job failed"); });
-  t.join();
-  std::printf("never reached\n");
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="异常逃出线程函数，进程当场被 terminate 收走"
+  source-path="code/examples/vol5/chapter06/05_throw_thread.cpp"
+  description="线程里抛出的 runtime_error 没人接，std::terminate 收走进程，尾部的 printf 永远到不了；运行会看到 terminate called 与 what() 消息，退出码 134。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```bash
 g++ -std=c++20 -O0 -pthread throw_thread.cpp -o throw_thread   # 普通版配方，-O0 让栈好读
@@ -342,22 +231,13 @@ exit=134
 
 递出去的路，4.1 咱们铺过一条（[《用 `std::async` 执行计算》](../chapter04-organizing-tasks/01-launch-with-async)）：任务抛出的异常存进共享状态，future.get() 在取结果的线程里重新抛出。失败的现场不变，咱们给它换一条递送的路：
 
-```cpp
-#include <cstdio>
-#include <future>
-#include <stdexcept>
-
-int main() {
-  auto f = std::async(std::launch::async,
-                      []() -> int { throw std::runtime_error("task failed"); });
-  try {
-    f.get();
-  } catch (const std::runtime_error& e) {
-    std::printf("caught from future: %s\n", e.what());
-  }
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="async 任务的异常，经 future.get() 在调用线程重抛"
+  source-path="code/examples/vol5/chapter06/06_async_throw.cpp"
+  description="任务抛出的异常存进共享状态，main 的 catch 经 get() 接到同一个异常，消息完整，进程退出码 0；对照上一件演示，这条路没人被 terminate。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```bash
 g++ -std=c++20 -O0 async_throw.cpp -o async_throw   # 普通版配方，-O0 且未加 -pthread
@@ -373,56 +253,13 @@ exit=0
 
 注入实验咱们给失败找一个真正的入口：生产者装货装到第三件的时候抛一场异常，看消费者的一侧能不能收到通知，并且干净地退出。
 
-```cpp
-#include <condition_variable>
-#include <cstdio>
-#include <deque>
-#include <mutex>
-#include <stdexcept>
-#include <thread>
-
-std::deque<int> items;
-std::mutex m;
-std::condition_variable cv;
-bool closed = false;
-bool failed = false;
-
-int main() {
-  std::thread producer([] {
-    try {
-      for (int i = 1; i <= 5; ++i) {
-        if (i == 3) throw std::runtime_error("device busy while packing item 3");
-        {
-          std::lock_guard lk(m);
-          items.push_back(i);
-        }
-        cv.notify_one();
-      }
-    } catch (...) {
-      std::lock_guard lk(m);
-      failed = true;
-      cv.notify_all();
-    }
-  });
-  std::thread consumer([] {
-    int got = 0;
-    for (;;) {
-      std::unique_lock lk(m);
-      cv.wait(lk, [] { return !items.empty() || failed; });
-      if (!items.empty()) {
-        items.pop_front();
-        ++got;
-        continue;
-      }
-      std::printf("consumer received %d items, then the failure notice\n", got);
-      break;
-    }
-  });
-  producer.join();
-  consumer.join();
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="异常注入：生产者第三件装货抛异常，消费者收通知退出"
+  source-path="code/examples/vol5/chapter06/07_inject_fail.cpp"
+  description="生产者装到第三件抛异常，置失败标志并 notify_all；消费者收讫两件后收到失败通知，干净退出，没人卡在 wait 里。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```bash
 g++ -std=c++20 -O1 -pthread inject_fail.cpp -o inject_fail   # 普通版配方，-O1 折中
@@ -437,61 +274,13 @@ consumer received 2 items, then the failure notice
 
 停止路径咱们用 C++20 的停止协议来测。1.5 立过停止三件套（`stop_source`、`stop_token`、`stop_callback`，[《让工作有序结束》](../chapter01-start-concurrency/05-jthread-and-stopping)），3.3 讲过等待的结束方式（[《等待也需要结束路径》](../chapter03-wait-and-coordinate/03-ending-a-wait)），`condition_variable_any` 的 `wait` 能收 `stop_token`（C++20 起，见 [cppreference][cppref-cv-wait]），停止请求一到它就被从睡梦里叫醒了：
 
-```cpp
-#include <chrono>
-#include <condition_variable>
-#include <cstdio>
-#include <deque>
-#include <mutex>
-#include <string>
-#include <thread>
-
-std::deque<int> items;
-std::mutex m;
-std::condition_variable_any cv_any;
-bool closed = false;
-
-static std::string exit_reason(bool stop_seen) {
-  if (stop_seen) return "stop requested";
-  if (closed) return "closed";
-  return "items left";
-}
-
-int main() {
-  std::jthread b([](std::stop_token st) {
-    std::unique_lock lk(m);
-    cv_any.wait(lk, st, [&] { return !items.empty() || closed; });
-    std::printf("consumer B exits on: %s\n",
-                exit_reason(st.stop_requested()).c_str());
-  });
-  std::jthread a([](std::stop_token st) {
-    std::unique_lock lk(m);
-    cv_any.wait(lk, st, [&] { return !items.empty() || closed; });
-    std::printf("consumer A exits on: %s\n",
-                exit_reason(st.stop_requested()).c_str());
-  });
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-  auto t0 = std::chrono::steady_clock::now();
-  b.request_stop();
-  b.join();
-  auto ms_b = std::chrono::duration_cast<std::chrono::milliseconds>(
-      std::chrono::steady_clock::now() - t0).count();
-  std::printf("request_stop() to B exit: %lld ms\n", (long long)ms_b);
-
-  auto t1 = std::chrono::steady_clock::now();
-  {
-    std::lock_guard lk(m);
-    closed = true;
-  }
-  cv_any.notify_all();
-  a.join();
-  auto ms_a = std::chrono::duration_cast<std::chrono::milliseconds>(
-      std::chrono::steady_clock::now() - t1).count();
-  std::printf("close() to A exit: %lld ms\n", (long long)ms_a);
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="停止路径：request_stop 与 close 都能把等待叫醒"
+  source-path="code/examples/vol5/chapter06/08_stop_paths.cpp"
+  description="condition_variable_any 的 wait 收 stop_token：B 被 request_stop 叫醒，A 被置位 closed 加 notify_all 叫醒，两条路的退出耗时都是毫秒级读数。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```bash
 g++ -std=c++20 -O1 -g -pthread stop_paths.cpp -o stop_paths   # 普通版配方，-O1 折中，-g 让栈好定位
@@ -513,37 +302,13 @@ close() to A exit: 0 ms
 
 实验程序咱们搬来 2.4 里 AB-BA 反转的最小版（[《减少共享与避免死锁》](../chapter02-sharing-data/04-sharing-less-and-deadlock)）：
 
-```cpp
-#include <chrono>
-#include <cstdio>
-#include <mutex>
-#include <thread>
-
-std::mutex ma;
-std::mutex mb;
-
-void work_a() {
-  std::lock_guard<std::mutex> la(ma);
-  std::this_thread::sleep_for(std::chrono::milliseconds(200));
-  std::lock_guard<std::mutex> lb(mb);   // A 后 B 的次序
-  std::printf("a got both\n");
-}
-
-void work_b() {
-  std::lock_guard<std::mutex> lb(mb);
-  std::this_thread::sleep_for(std::chrono::milliseconds(200));
-  std::lock_guard<std::mutex> la(ma);   // B 后 A 的次序
-  std::printf("b got both\n");
-}
-
-int main() {
-  std::thread a(work_a);
-  std::thread b(work_b);
-  a.join();
-  b.join();
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="AB-BA 反转的最小死锁现场"
+  source-path="code/examples/vol5/chapter06/09_deadlock.cpp"
+  description="演示用，故意死锁：两条线程以相反次序拿两把锁，程序卡住不退出，正好留给 GDB 附加看线程栈（命令在下方）；站内运行会一直挂到超时，本地复跑请配 timeout。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```bash
 g++ -std=c++20 -O0 -g -pthread deadlock.cpp -o deadlock   # 普通版配方，-O0 加 -g，栈好读
@@ -564,25 +329,13 @@ valgrind --tool=helgrind ./your_program
 
 手册列了三类检查。头一类是 pthread 接口的误用，解锁没锁过的锁、销毁带锁的锁都算。第二类是锁顺序的不一致，它的内部维护一张锁顺序图，图里出现了环，就报潜在的死锁，死锁哪怕一次都没真的发生。数据竞争的判定是第三类，靠的是 happens-before 加锁集。咱们拿两条线程各加两万次的小程序实测：
 
-```cpp
-#include <cstdio>
-#include <thread>
-
-long long counter = 0;
-
-void work() {
-  for (int i = 0; i < 20000; ++i) ++counter;
-}
-
-int main() {
-  std::thread a(work);
-  std::thread b(work);
-  a.join();
-  b.join();
-  std::printf("counter=%lld (expected 40000)\n", counter);
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="Helgrind 的口粮：两条线程各加两万次的竞争"
+  source-path="code/examples/vol5/chapter06/10_hg_race.cpp"
+  description="演示用，存在数据竞争：普通 long long 被两条线程自增，读数 counter=40000 全对，Valgrind Helgrind 按下方命令报 possible data race。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```bash
 g++ -std=c++20 -O1 -g -pthread hg_race.cpp -o hg_race   # 普通版配方，-O1 折中，-g 对行号
@@ -616,53 +369,13 @@ valgrind --tool=helgrind ./hg_race
 
 最小的方案，咱们立三条。每行的日志在局部拼成完整的一串，写的时候只加一次锁。时间戳用 `steady_clock` 的纳秒数，线程的标识也带上。格式化留在锁的外面，锁里只做一次写出的动作，等的人排的是写出，排版的事不归锁管。
 
-```cpp
-#include <chrono>
-#include <cstdio>
-#include <iomanip>
-#include <mutex>
-#include <sstream>
-#include <string>
-#include <thread>
-
-std::mutex log_mu;
-
-static long long now_ns() {
-  return std::chrono::duration_cast<std::chrono::nanoseconds>(
-             std::chrono::steady_clock::now().time_since_epoch())
-      .count();
-}
-
-static void log_line(const std::string& event) {
-  std::ostringstream line;
-  line << '[' << std::setw(18) << now_ns() << " ns] [thread "
-       << std::this_thread::get_id() << "] " << event << '\n';
-  std::string s = line.str();
-  std::lock_guard<std::mutex> lk(log_mu);
-  std::fwrite(s.data(), 1, s.size(), stdout);
-}
-
-int main() {
-  std::thread t1([] {
-    log_line("t1 begin");
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
-    log_line("t1 halfway");
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
-    log_line("t1 done");
-  });
-  std::thread t2([] {
-    log_line("t2 begin");
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
-    log_line("t2 halfway");
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
-    log_line("t2 done");
-  });
-  t1.join();
-  t2.join();
-  log_line("main: both workers joined");
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="结构化日志：整行拼好、锁里只做一次写出"
+  source-path="code/examples/vol5/chapter06/11_logger.cpp"
+  description="每行日志带 steady_clock 纳秒时间戳与线程号，格式化在锁外、写出在锁内，两条线程各打三行，行行完整不撕开。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```bash
 g++ -std=c++20 -O2 -pthread logger.cpp -o logger   # 普通版配方

@@ -25,42 +25,13 @@ current_status:
 
 队列里住着两个方向的等待。空了，消费者等的是“不空”。满了，生产者等的是“不满”。改“不空”的正好是生产者，改“不满”的正好是消费者，两边互不掺和，咱们就让它们各占一把条件变量：
 
-```cpp
-#include <condition_variable>
-#include <mutex>
-#include <queue>
-#include <cstddef>
-#include <utility>
-
-template <typename T>
-class BoundedQueue {
-public:
-  explicit BoundedQueue(std::size_t capacity) : capacity_(capacity) {}
-
-  void push(T value) {
-    std::unique_lock<std::mutex> lock(mutex_);
-    not_full_.wait(lock, [this] { return queue_.size() < capacity_; });
-    queue_.push(std::move(value));
-    not_empty_.notify_one();
-  }
-
-  T pop() {
-    std::unique_lock<std::mutex> lock(mutex_);
-    not_empty_.wait(lock, [this] { return !queue_.empty(); });
-    T value = std::move(queue_.front());
-    queue_.pop();
-    not_full_.notify_one();
-    return value;
-  }
-
-private:
-  std::queue<T> queue_;
-  std::size_t capacity_;
-  std::mutex mutex_;
-  std::condition_variable not_full_;   // 等有位的，是生产者
-  std::condition_variable not_empty_;  // 等有货的，是消费者
-};
-```
+<OnlineCompilerDemo
+  title="教学版有界队列：空了 pop 等，满了 push 等"
+  source-path="code/examples/vol5/chapter03/10_bounded_queue_teaching.cpp"
+  description="正文的教学版队列类原样抽出，补了一个 main：容量 2 放 3 件，生产者等一回位置，消费者把三件按序取走。两把条件变量各管一个方向。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 成员五个，您一个一个认。`std::queue` 存货，默认底层容器是 `deque`（[queue.defn]/1），容量记一个数，互斥量一把，条件变量两把。名字起得直白：睡在 `not_full_` 上的全是生产者，睡在 `not_empty_` 上的全是消费者。两处等待都带谓词，3.1 讲过的虚假唤醒与丢失唤醒两道防线就在这里落地，不再重复。
 
@@ -70,51 +41,13 @@ private:
 
 两个方向的行为就是两句大白话：队列空着，`pop` 睡。队列满了，`push` 睡。话好说，睡多久归现场。我写了个小实验：容量 2，消费者每件歇 100 毫秒，生产者连放 4 件，每一回 push 计一次时。然后倒过来，队列空着，消费者进 pop，生产者 80 毫秒后才放一件，pop 也计一次时。本篇多数实验跑在头文件 `queue.hpp` 上，它是全文搭完的最终形状，接口在后面几节才逐一登场，个别实验用的变体在正文交代，您在这里只当 `push`、`pop` 已经能用就行：
 
-```cpp
-#include <chrono>
-#include <cstdio>
-#include <thread>
-#include "queue.hpp"
-
-using Clock = std::chrono::steady_clock;
-
-double ms_since(Clock::time_point t0) {
-  return std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
-}
-
-int main() {
-  BoundedQueue<int> q(2);
-
-  std::printf("--- 满的方向：容量 2，消费每件歇 100 ms ---\n");
-  std::thread consumer([&q] {
-    for (int i = 0; i < 4; ++i) {
-      int v = 0;
-      q.pop(v);
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-  });
-  std::this_thread::sleep_for(std::chrono::milliseconds(20));  // 让消费者进 pop 等着
-  for (int i = 0; i < 4; ++i) {
-    auto t0 = Clock::now();
-    q.push(i);
-    std::printf("push #%d 用时 %6.1f ms\n", i, ms_since(t0));
-  }
-  consumer.join();
-
-  std::printf("--- 空的方向：队列空着，生产者 80 ms 后才来一件 ---\n");
-  std::thread producer([&q] {
-    std::this_thread::sleep_for(std::chrono::milliseconds(80));
-    q.push(99);
-  });
-  std::this_thread::sleep_for(std::chrono::milliseconds(20));
-  auto t0 = Clock::now();
-  int v = 0;
-  q.pop(v);
-  std::printf("pop 用时 %6.1f ms，拿到 %d\n", ms_since(t0), v);
-  producer.join();
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="队列空了、满了：两个方向的阻塞各量一次"
+  source-path="code/examples/vol5/chapter03/11_queue_full_empty.cpp"
+  description="容量 2、消费者每件歇 100 毫秒，生产者连放 4 件，每回 push 计时；再倒过来量 pop 等货的时长。原实验基于头文件 queue.hpp，这里把最终形状的队列内联进同一个文件。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 --- 满的方向：容量 2，消费每件歇 100 ms ---
@@ -146,19 +79,13 @@ pop 用时   59.7 ms，拿到 99
 
 白跑能数出来，咱们把它写进等待循环。负载是这样的：容量 4，2 个生产者各放 4000 件，2 个消费者各取 4000 件，取到就算完，不加工。数法就是 `wait` 返回之后再看一遍条件，还不成立就计一次：
 
-```cpp
-int pop() {
-  std::unique_lock<std::mutex> lk(m);
-  while (q.empty()) {
-    cv.wait(lk);
-    if (q.empty()) ++wasted;   // 醒了，条件还不成立，白跑一趟
-  }
-  int v = q.front();
-  q.pop();
-  cv.notify_one();
-  return v;
-}
-```
+<OnlineCompilerDemo
+  title="一把 cv 的白跑账：醒来条件还不成立就计一次"
+  source-path="code/examples/vol5/chapter03/12_one_cv_wasted.cpp"
+  description="正文片段补成完整队列：wait 返回再看一遍条件，还不成立就计一次。片段里生产消费共用一个 wasted 计数，这里分成两侧各数各的，负载照旧：容量 4、2×4000 件。白跑次数每次都不同。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 一把 cv 的队列与两把 cv 的队列，除了通知对象与等待对象不同，形状完全一样。咱们让它们各跑三遍：
 
@@ -189,66 +116,13 @@ int pop() {
 
 正确性不能靠感觉。我搭了一场全编制的验收：4 个生产者各放 2500 件，编号按“生产者序号乘 2500 加件号”排，全程唯一。4 个消费者各取 2500 件，容量压到 8，逼两边频繁地睡与醒。验收查三样：总入队与总出队对得上，没有谁被取到两次，全部件号加起来的校验和等于 0 加到 9999 的总和 49995000：
 
-```cpp
-#include <atomic>
-#include <cstdio>
-#include <memory>
-#include <thread>
-#include <vector>
-#include "queue.hpp"
-
-constexpr int kProducers = 4;
-constexpr int kConsumers = 4;
-constexpr int kPerProducer = 2500;
-constexpr int kTotal = kProducers * kPerProducer;
-
-int main() {
-  BoundedQueue<int> q(8);
-  std::atomic<long long> pushed{0};
-  std::atomic<long long> popped{0};
-  std::atomic<long long> sum{0};
-  std::atomic<long long> duplicates{0};
-  std::unique_ptr<std::atomic<uint8_t>[]> seen(new std::atomic<uint8_t>[kTotal]);
-  for (int i = 0; i < kTotal; ++i) seen[i].store(0, std::memory_order_relaxed);
-
-  std::vector<std::thread> threads;
-  for (int i = 0; i < kConsumers; ++i) {
-    threads.emplace_back([&, i] {
-      for (int k = 0; k < kTotal / kConsumers; ++k) {
-        int v = -1;
-        if (q.pop(v) != QueueStatus::kOk) {
-          std::printf("consumer %d: 提前收到 kClosed!\n", i);
-          return;
-        }
-        if (seen[v].exchange(1, std::memory_order_relaxed)) {
-          duplicates.fetch_add(1, std::memory_order_relaxed);
-        }
-        sum.fetch_add(v, std::memory_order_relaxed);
-        popped.fetch_add(1, std::memory_order_relaxed);
-      }
-    });
-  }
-  for (int i = 0; i < kProducers; ++i) {
-    threads.emplace_back([&, i] {
-      for (int k = 0; k < kPerProducer; ++k) {
-        int v = i * kPerProducer + k;  // 0..9999，每件恰好出现一次
-        if (q.push(v) == QueueStatus::kOk) {
-          pushed.fetch_add(1, std::memory_order_relaxed);
-        }
-      }
-    });
-  }
-  for (auto& t : threads) t.join();
-
-  long long expect_sum = static_cast<long long>(kTotal - 1) * kTotal / 2;
-  std::printf("总入队 %lld  总出队 %lld\n", pushed.load(), popped.load());
-  std::printf("重复取到 %lld 件  校验和 %lld（应为 %lld，%s）\n",
-              duplicates.load(), sum.load(), expect_sum,
-              sum.load() == expect_sum ? "一致" : "不一致");
-  std::printf("收尾时 size = %zu\n", q.size());
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="多生产者多消费者验收：件数、重复、校验和"
+  source-path="code/examples/vol5/chapter03/13_queue_acceptance.cpp"
+  description="4 个生产者各放 2500 件、4 个消费者各取 2500 件、容量压到 8：总入队出队对得上、没有谁被取到两次、校验和等于 0 加到 9999。queue.hpp 已内联。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 总入队 10000  总出队 10000
@@ -264,65 +138,13 @@ int main() {
 
 设计是一个 `closed_` 标志，咱们让它进两个谓词，顺带改两个方法的签名：
 
-```cpp
-#include <condition_variable>
-#include <cstddef>
-#include <mutex>
-#include <queue>
-#include <utility>
-
-enum class QueueStatus {
-  kOk,
-  kClosed,
-};
-
-template <typename T>
-class BoundedQueue {
-public:
-  explicit BoundedQueue(std::size_t capacity) : capacity_(capacity) {}
-
-  QueueStatus push(T value) {
-    std::unique_lock<std::mutex> lock(mutex_);
-    not_full_.wait(lock, [this] { return queue_.size() < capacity_ || closed_; });
-    if (closed_) return QueueStatus::kClosed;   // 关了，货不收
-    queue_.push(std::move(value));
-    not_empty_.notify_one();
-    return QueueStatus::kOk;
-  }
-
-  QueueStatus pop(T& out) {
-    std::unique_lock<std::mutex> lock(mutex_);
-    not_empty_.wait(lock, [this] { return !queue_.empty() || closed_; });
-    if (queue_.empty()) return QueueStatus::kClosed;  // 关了且取空了
-    out = std::move(queue_.front());
-    queue_.pop();
-    not_full_.notify_one();
-    return QueueStatus::kOk;
-  }
-
-  void close() {
-    {
-      std::lock_guard<std::mutex> lock(mutex_);
-      closed_ = true;
-    }
-    not_full_.notify_all();
-    not_empty_.notify_all();
-  }
-
-  std::size_t size() const {
-    std::lock_guard<std::mutex> lock(mutex_);
-    return queue_.size();
-  }
-
-private:
-  std::queue<T> queue_;
-  std::size_t capacity_;
-  bool closed_ = false;
-  mutable std::mutex mutex_;
-  std::condition_variable not_full_;
-  std::condition_variable not_empty_;
-};
-```
+<OnlineCompilerDemo
+  title="带关闭语义的队列：close 之后 push 拒收、pop 先 drain"
+  source-path="code/examples/vol5/chapter03/14_bounded_queue_close.cpp"
+  description="正文 close 版队列类原样抽出，main 把关闭后的行为各验一遍：push 收到 kClosed，pop 先把剩下的货取干净、取空之后才报 kClosed。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 签名为什么变，值得停一下，您想想“空且已关”的时刻。教学版 `T pop()` 拿不出值来返回，返回值通道堵死。改成 `QueueStatus pop(T& out)`，值走引用出去，状态走返回值回来。`push` 同样改回 `QueueStatus`，生产者放货被拒时能收到 `kClosed`，不至于蒙在鼓里。
 
@@ -334,66 +156,13 @@ private:
 
 实验把这些行为一次验掉，咱们安排的次序是这样。消费者比生产者早起步，有人睡在空队列上。生产者放完 200 件退出，主线程 close，消费者一直取到收到 `kClosed` 为止：
 
-```cpp
-#include <atomic>
-#include <cstdio>
-#include <thread>
-#include <vector>
-#include "queue.hpp"
-
-constexpr int kPerProducer = 100;
-constexpr int kProducers = 2;
-
-int main() {
-  BoundedQueue<int> q(4);
-  std::atomic<int> total{0};
-
-  std::vector<std::thread> consumers;
-  std::vector<int> consumed(3, 0);
-  std::vector<int> exit_way(3, -1);
-  for (int i = 0; i < 3; ++i) {
-    consumers.emplace_back([&, i] {
-      while (true) {
-        int v = 0;
-        QueueStatus st = q.pop(v);
-        if (st == QueueStatus::kClosed) {
-          exit_way[i] = 0;
-          break;
-        }
-        ++consumed[i];
-        total.fetch_add(1);
-      }
-    });
-  }
-
-  std::vector<std::thread> producers;
-  for (int i = 0; i < kProducers; ++i) {
-    producers.emplace_back([&] {
-      for (int k = 0; k < kPerProducer; ++k) q.push(k);
-    });
-  }
-  for (auto& t : producers) t.join();
-  q.close();
-  for (auto& t : consumers) t.join();
-
-  std::printf("总入队 %d  总出队 %d（应为 %d）\n", kPerProducer * kProducers,
-              total.load(), kPerProducer * kProducers);
-  for (int i = 0; i < 3; ++i) {
-    std::printf("consumer %d: 消费 %3d 件，以 %s 退出\n", i, consumed[i],
-                exit_way[i] == 0 ? "kClosed" : "???");
-  }
-  std::printf("关停后 size = %zu\n", q.size());
-
-  QueueStatus st = q.push(1);
-  std::printf("关闭后再 push -> %s\n",
-              st == QueueStatus::kClosed ? "kClosed" : "kOk");
-  int v = 0;
-  st = q.pop(v);
-  std::printf("关闭且空了再 pop -> %s\n",
-              st == QueueStatus::kClosed ? "kClosed" : "kOk");
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="关闭实验：notify_all 把睡着的消费者叫醒去 drain"
+  source-path="code/examples/vol5/chapter03/15_queue_close_experiment.cpp"
+  description="三个消费者先睡在空队列上，两个生产者各放 100 件后 close：200 件一件不丢，三位消费者取干净并以 kClosed 退出。queue.hpp 已内联。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
 总入队 200  总出队 200（应为 200）
@@ -411,32 +180,13 @@ consumer 2: 消费  45 件，以 kClosed 退出
 
 阻塞把压力顶回上游，这是默认答案，不是唯一答案。下游消费太慢，上游整批卡住，有的场景宁可丢。咱们把选项摆开。
 
-```cpp
-bool try_push(T value) {   // 拒绝：满了立即返回，决定权交给调用者
-  {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (closed_ || queue_.size() >= capacity_) return false;
-    queue_.push(std::move(value));
-  }
-  not_empty_.notify_one();
-  return true;
-}
-
-bool push_replace_oldest(T value, bool& evicted) {  // 覆盖：挤掉最老的，新来的必进
-  evicted = false;
-  {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (closed_) return false;
-    if (queue_.size() >= capacity_) {
-      queue_.pop();          // 挤掉队头最老的一件
-      evicted = true;
-    }
-    queue_.push(std::move(value));
-  }
-  not_empty_.notify_one();
-  return true;
-}
-```
+<OnlineCompilerDemo
+  title="背压的两条出路：try_push 拒绝、挤掉最老的"
+  source-path="code/examples/vol5/chapter03/16_backpressure_variants.cpp"
+  description="正文两个成员函数原样收进最终形状的队列类，main 验行为：满了 try_push 立即返回 false，push_replace_oldest 挤掉队头最老的一件，新来的必进。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 拒绝版 `try_push` 锁内查满，满了立即返回 `false`，接下去怎么走由您定：重试、降级、记一笔日志，都是您的自由。丢弃新来的版本不另写代码，把 `try_push` 的失败瞒住不报，就是丢弃，队列边界上两个策略是同一个动作，差别只在知情权。覆盖版 `push_replace_oldest` 反着来，满的时候挤掉队头最老的一件，新来的永远进得去。
 
@@ -465,34 +215,23 @@ bool push_replace_oldest(T value, bool& evicted) {  // 覆盖：挤掉最老的�
 
 `push` 的路。按值收参，调用者传左值时，拷贝发生在进函数体之前。我造了一个拷贝构造从第 3 次起必抛的类型，看看队列被波及了没有：
 
-```cpp
-// 拷贝构造从第 3 次起必抛，移动操作不抛
-struct FlakyCopy {
-  int v;
-  inline static int copies = 0;
-  explicit FlakyCopy(int x) : v(x) {}
-  FlakyCopy(FlakyCopy&&) noexcept = default;
-  FlakyCopy& operator=(FlakyCopy&&) noexcept = default;
-  FlakyCopy(const FlakyCopy& o) : v(o.v) {
-    if (++copies >= 3) throw std::runtime_error("copy #3 爆了");
-  }
-};
-```
+<OnlineCompilerDemo
+  title="拷贝必抛的 FlakyCopy：类型定义在完整实验文件里"
+  source-path="code/examples/vol5/chapter03/17_flaky_copy_push.cpp"
+  description="拷贝构造从第 3 次起必抛、移动不抛的类型定义，与下一次演示共用同一个文件 flaky_copy_push.cpp：队列与驱动都在里面，这里先认类型本身。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 驱动它的调用序列不长，您照着摆一遍就能对上输出：
 
-```cpp
-BoundedQueue<FlakyCopy> q(8);
-FlakyCopy a{1}, b{2}, c{3};
-q.push(a);            // 第 1 次拷贝，花在进参数上
-q.push(b);            // 第 2 次
-try {
-  q.push(c);          // 第 3 次，抛在进函数体之前
-} catch (const std::runtime_error& e) {
-  std::printf("push(c) 抛出：%s\n", e.what());
-}
-q.push(FlakyCopy{4}); // 右值：一路移动，不碰拷贝构造
-```
+<OnlineCompilerDemo
+  title="push(c) 抛在进函数体之前：队列原地不动"
+  source-path="code/examples/vol5/chapter03/17_flaky_copy_push.cpp"
+  description="前两件左值各花一次拷贝，第 3 件的拷贝在进 push 之前抛出：队列停在 2 件，之后右值照常进队，三件按序取干净。FlakyCopy 与队列都在同一文件里。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 前两件以左值 push，各花掉一次拷贝，花在进参数的动作上。第 3 件的拷贝在进函数体之前抛出，咱们看输出：
 
@@ -512,27 +251,13 @@ pop -> 4
 
 `pop` 的路更险。`out = std::move(queue_.front())` 把货从队头搬出来，之后才 `queue_.pop()`。移动构造要是抛了呢？元素还躺在队列里，调用者没拿到，队列也没删，下次 pop 遇上的还是它。我用一个从第 2 次移动起必抛的类型跑了实证。为了让这道闸不拦路，我另搭了一个副本装它，起名 NaiveQueue，形状就是第 1 节的教学版，`pop` 还是按值返回的旧签名：
 
-```cpp
-// 移动构造从第 2 次起必抛
-struct Fragile {
-  int v;
-  inline static int moves = 0;
-  explicit Fragile(int x) : v(x) {}
-  Fragile(const Fragile&) = delete;
-  Fragile(Fragile&& o) : v(o.v) {
-    if (++moves >= 2) throw std::runtime_error("第 2 次移动起，一搬就爆");
-  }
-};
-
-NaiveQueue<Fragile> nq(4);
-nq.push(Fragile{7});
-try {
-  Fragile got = nq.pop();  // 从队列往外搬的那次移动
-  std::printf("pop -> %d\n", got.v);
-} catch (const std::runtime_error& e) {
-  std::printf("pop 抛出：%s\n", e.what());
-}
-```
+<OnlineCompilerDemo
+  title="移动必抛的 Fragile：元素永远卡在队头"
+  source-path="code/examples/vol5/chapter03/18_fragile_move_pop.cpp"
+  description="入队靠省略少走一次移动，从队头搬出的那次必抛：元素卡在队里，每回 pop 在同一处摔倒。装它的是教学版形状的 NaiveQueue，pop 仍是按值返回的旧签名。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 push 能成功，因为 C++17 的省略规则让入参少走一次移动，进容器的是第 1 次。从队列往外搬是第 2 次，咱们看它撑不撑得住：
 
@@ -546,16 +271,13 @@ pop 抛出：第 2 次移动起，一搬就爆
 
 那 1 件永远取不出来，每回 pop 都在同一处摔倒。标准对这类局面不给承诺，咱们自己给：把 T 的移动构造与移动赋值都要求不抛，写进 `static_assert`，编译期就把不合格的类型拦下：
 
-```cpp
-template <typename T>
-class BoundedQueue {
-  static_assert(std::is_nothrow_move_constructible_v<T>,
-                "T must be nothrow move constructible");
-  static_assert(std::is_nothrow_move_assignable_v<T>,
-                "T must be nothrow move assignable");
-  // ...
-};
-```
+<OnlineCompilerDemo
+  title="static_assert 两道闸：会抛的移动编译期就拦下"
+  source-path="code/examples/vol5/chapter03/19_queue_static_assert.cpp"
+  description="正文的两条 static_assert 收进完整队列类：移动构造、移动赋值都得承诺不抛。int 过闸跑一遍；BrokenMove 那次编译失败留在正文的输出块里。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 第二道拦的是另一条缝：您复用 `out` 连续取件时，赋值要是抛了，元素同样卡在队头。咱们拿一个能移动但不承诺不抛的类型，起名 BrokenMove，单独喂给编译器一个最小翻译单元，f3_static_fail.cpp，内容只有类型定义加一行实例化：
 
@@ -591,7 +313,7 @@ queue.hpp:16:22: error: static assertion failed: T must be nothrow move construc
 
 ## 参考资源
 
-本篇的六组实验都在同一台电脑上编译实测（WSL2，16 逻辑核），GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，2026-11-16。源码连同头文件 `queue.hpp` 一起放在 /tmp/concurrency-u3/ 下，临时目录系统会清，正文里的代码块就是全部内容，把片段拼回队列类、补上 `cstdio` 与 `stdexcept` 这类头文件即可复跑。并发读数每次运行都会动，正文引用的数字是当天那一遍，量级比具体值可靠，您复跑时对量级、不对尾数。条件变量与容器的条款一律按 eel.is 上的现行工作草案引，小节名与正式标准一致，段号可能挪动。cppreference 本回抓到了 `std::queue` 与 `std::condition_variable` 两页全文，与草案核对无出入。推进顺序参照了 Anthony Williams 的《C++ Concurrency in Action》，例子与文字都是我自己写的。
+本篇的六组实验都在同一台电脑上编译实测（WSL2，16 逻辑核），GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，2026-11-16。全部示例收在 code/examples/vol5/chapter03/，可在本页直接运行；各实验原先跑在头文件 queue.hpp 上，它的最终形状已内联进示例文件，正文片段抽成独立文件时用同机 GCC 16.2.1 复验过，2026-11-19。并发读数每次运行都会动，正文引用的数字是当天那一遍，量级比具体值可靠，您复跑时对量级、不对尾数。条件变量与容器的条款一律按 eel.is 上的现行工作草案引，小节名与正式标准一致，段号可能挪动。cppreference 本回抓到了 `std::queue` 与 `std::condition_variable` 两页全文，与草案核对无出入。推进顺序参照了 Anthony Williams 的《C++ Concurrency in Action》，例子与文字都是我自己写的。
 
 - [std::condition_variable（cppreference）][cppref-cv]，C++11 起。
 - [std::queue（cppreference）][cppref-queue]，容器适配器，默认底层容器是 `deque`。

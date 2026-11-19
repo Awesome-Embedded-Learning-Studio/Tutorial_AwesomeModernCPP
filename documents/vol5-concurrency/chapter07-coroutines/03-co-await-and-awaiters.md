@@ -43,14 +43,13 @@ current_status:
 
 零件摆齐了，回头把 7.1 的 Park 请出来，现在您可以逐行读它：
 
-```cpp
-struct Park {
-  static std::vector<std::coroutine_handle<>> parked;
-  bool await_ready() { return false; }
-  void await_suspend(std::coroutine_handle<> h) { parked.push_back(h); }
-  void await_resume() {}
-};
-```
+<OnlineCompilerDemo
+  title="Park 的三件套：挂起登记，等别人来恢复"
+  source-path="code/examples/vol5/chapter07/06_park_awaiter.cpp"
+  description="片段补全成可运行文件：worker 跑到 co_await Park{} 挂起登记，main 数完句柄把它恢复，worker 从挂起点接着跑完。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 三行成员，正好是三问的答案，咱们挨个对。`await_ready` 永远返回 false，Park 不知道事情什么时候来，干脆每次都挂。`await_suspend` 把句柄登记进列表，登记完什么都不做，控制流交回恢复者，协程就在列表里睡着。`await_resume` 空空如也，Park 等的只是“轮到我了”，再没有别的要带。7.1 一幕里恢复它的是 driver 线程，谁恢复、什么时候恢复，Park 一概不管。void 返回类型的用法就在这里：交接完全交给外面。
 
@@ -64,75 +63,13 @@ bool 返回类型也不是怪口味，它有正当的活干。咱们看一个典
 
 协议读熟了，咱们亲手写一个会等东西的对象。目标定得小：一扇带值的门。`co_await gate` 的协程，门里没值就挂起登记，值来了被叫醒，醒来手里拿着值。门里提前有值，走快路径，根本不挂。
 
-```cpp
-// exp_c_gate.cpp —— 最小可等待对象：一扇带值的门
-#include <coroutine>
-#include <cstdio>
-#include <exception>
-#include <optional>
-
-// 门：还没有值时，co_await 它的协程挂起登记，有值了，恢复时把值带回来
-struct Gate {
-  std::optional<int> value;            // 门里的值
-  std::coroutine_handle<> waiter{};    // 登记在门口的协程，至多一位
-
-  bool await_ready() { return value.has_value(); }  // 值已经在，不必挂起
-  void await_suspend(std::coroutine_handle<> h) { waiter = h; }
-  int await_resume() { return *value; }             // 恢复时把门里的值带回去
-
-  void set(int v) {  // 送值进门，顺路叫醒登记的人
-    value = v;
-    if (waiter) {
-      auto w = waiter;
-      waiter = {};
-      w.resume();
-    }
-  }
-};
-
-struct Task {
-  struct promise_type {
-    Task get_return_object() {
-      return Task{std::coroutine_handle<promise_type>::from_promise(*this)};
-    }
-    std::suspend_never initial_suspend() noexcept { return {}; }
-    std::suspend_always final_suspend() noexcept { return {}; }
-    void return_void() noexcept {}
-    void unhandled_exception() noexcept { std::terminate(); }
-  };
-
-  std::coroutine_handle<> h;
-  explicit Task(std::coroutine_handle<promise_type> hh) : h(hh) {}
-  Task(const Task&) = delete;
-  Task& operator=(const Task&) = delete;
-  ~Task() { if (h) h.destroy(); }
-};
-
-Task consumer(Gate& gate) {
-  std::printf("  consumer: 来到门口，准备等一个值\n");
-  int v = co_await gate;
-  std::printf("  consumer: 恢复了，从 await_resume 拿到 %d\n", v);
-}
-
-int main() {
-  { // 幕一：值后到，协程挂起登记，set 把它叫醒
-    Gate gate;
-    Task t = consumer(gate);
-    std::printf("main: consumer 登记了吗？waiter=%s\n", gate.waiter ? "有" : "没有");
-    std::printf("main: 送 42 进门\n");
-    gate.set(42);
-    std::printf("main: 回到 main，一幕结束\n");
-  }
-  { // 幕二：值提前在门里，await_ready 走快路径，协程根本不挂起
-    Gate gate;
-    gate.set(7);
-    std::printf("main: 幕二开场，7 已经在门里\n");
-    Task t = consumer(gate);
-    std::printf("main: 幕二结束，waiter=%s\n", gate.waiter ? "有" : "没有");
-  }
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="一扇带值的门：最小可等待对象 Gate"
+  source-path="code/examples/vol5/chapter07/07_exp_c_gate.cpp"
+  description="幕一值后到，consumer 挂起登记，set(42) 把它叫醒并把值从 await_resume 带回，幕二值提前在门里，await_ready 走快路径根本不挂。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```bash
 g++ -std=c++20 -O2 -pthread exp_c_gate.cpp -o exp_c_gate
@@ -171,61 +108,13 @@ main: 幕二结束，waiter=没有
 
 咱们拿一个装不进定制点的类型试非成员版。场景是假的，机制是真的：vendor 命名空间里有个排队的 Ticket，假装它是别人的库，源码动不了。给它配等待的办法，是回到它的命名空间里放一个自由的 operator co_await，返回一个带三件套的 awaiter：
 
-```cpp
-// exp_e_adl.cpp —— 给改不了的第三方类型配 operator co_await
-#include <coroutine>
-#include <cstdio>
-#include <exception>
-
-namespace vendor {  // 假装这是别人的库，源码动不了
-  struct Ticket {
-    int number;
-    explicit Ticket(int n) : number(n) {}
-  };
-
-  struct TicketAwaiter {
-    Ticket t;
-    bool await_ready() { return false; }
-    void await_suspend(std::coroutine_handle<> h) {
-      std::printf("  [awaiter] 协程挂好了，真异步在这里交给调度器\n");
-      h.resume();   // 演示从简：登记完当场恢复
-    }
-    int await_resume() { return t.number; }
-  };
-
-  // 定制点住进 vendor 命名空间，ADL 顺着 Ticket 的来路就找到它
-  TicketAwaiter operator co_await(Ticket t) { return TicketAwaiter{t}; }
-}
-
-struct Task {
-  struct promise_type {
-    Task get_return_object() {
-      return Task{std::coroutine_handle<promise_type>::from_promise(*this)};
-    }
-    std::suspend_never initial_suspend() noexcept { return {}; }
-    std::suspend_always final_suspend() noexcept { return {}; }
-    void return_void() noexcept {}
-    void unhandled_exception() noexcept { std::terminate(); }
-  };
-  std::coroutine_handle<> h;
-  explicit Task(std::coroutine_handle<promise_type> hh) : h(hh) {}
-  Task(const Task&) = delete;
-  Task& operator=(const Task&) = delete;
-  ~Task() { if (h) h.destroy(); }
-};
-
-Task caller() {
-  std::printf("  caller: 写下 co_await vendor::Ticket(7)\n");
-  int n = co_await vendor::Ticket(7);
-  std::printf("  caller: await_resume 把排队号 %d 带了回来\n", n);
-}
-
-int main() {
-  Task t = caller();
-  std::printf("main: 回到 main\n");
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="给改不了的第三方类型配 operator co_await"
+  source-path="code/examples/vol5/chapter07/08_exp_e_adl.cpp"
+  description="vendor 命名空间里的 Ticket 动不了源码，自由的 operator co_await 顺着 ADL 被找到，TicketAwaiter 接手三件套，排队号 7 从 await_resume 带回来。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
   caller: 写下 co_await vendor::Ticket(7)
@@ -238,54 +127,13 @@ main: 回到 main
 
 两个边角我也探过，都拿探针验的。成员与非成员同时在场，两边都匹配，重载决议直接判歧义，程序不合法，GCC 的报错是 `ambiguous overload for ‘operator co_await’`。另一个是对基本类型的等待，`co_await 1000` 编不过：int 既没有类作用域放成员版本，也没有关联命名空间放非成员版本，操作数自己又没有三件套，GCC 的报错是 `awaitable type ‘int’ is not a structure`。想让 `co_await 250` 成立，落点回到协议第 1 环的 await_transform，promise 定义它，int 过它的手，变成一个 awaiter。
 
-```cpp
-// exp_g_transform.cpp —— promise 配了 await_transform，co_await 一个 int 就有了落点
-#include <coroutine>
-#include <cstdio>
-#include <exception>
-
-struct SleepAwaiter {
-  int ms;
-  bool await_ready() { return false; }
-  void await_suspend(std::coroutine_handle<> h) {
-    std::printf("  [awaiter] 该等 %d 毫秒，真异步在这里交给定时器\n", ms);
-    h.resume();   // 演示从简：登记完当场恢复
-  }
-  void await_resume() {}
-};
-
-struct Task {
-  struct promise_type {
-    Task get_return_object() {
-      return Task{std::coroutine_handle<promise_type>::from_promise(*this)};
-    }
-    std::suspend_never initial_suspend() noexcept { return {}; }
-    std::suspend_always final_suspend() noexcept { return {}; }
-    void return_void() noexcept {}
-    void unhandled_exception() noexcept { std::terminate(); }
-    SleepAwaiter await_transform(int ms) { return SleepAwaiter{ms}; }
-  };
-  std::coroutine_handle<> h;
-  explicit Task(std::coroutine_handle<promise_type> hh) : h(hh) {}
-  Task(const Task&) = delete;
-  Task& operator=(const Task&) = delete;
-  ~Task() { if (h) h.destroy(); }
-};
-
-Task countdown() {
-  for (int i = 3; i > 0; --i) {
-    std::printf("  倒计时 %d\n", i);
-    co_await 250;
-  }
-  std::printf("  点火\n");
-}
-
-int main() {
-  Task t = countdown();
-  std::printf("main: 回到 main\n");
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="await_transform：让 co_await 一个 int 有了落点"
+  source-path="code/examples/vol5/chapter07/09_exp_g_transform.cpp"
+  description="promise 定义了 await_transform，co_await 250 被翻译成 SleepAwaiter，倒计时三轮后点火。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 ```text
   倒计时 3
@@ -308,86 +156,13 @@ await_transform 还有另一面，咱们接着看。promise 一旦定义了它�
 
 咱们把麻烦造出来量一遍。写一条链：chain(N) 等 chain(N-1)，一路等到 chain(0)。交接的姿势做成开关，一份代码带两种形状：
 
-```cpp
-// exp_d_chain.cpp —— 深链协程：两种控制权交接姿势，量栈的读数
-// 用法：./exp_d_chain <naive|sym> <链深>
-#include <coroutine>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <exception>
-
-static bool g_sym = false;   // sym：await_suspend 返回句柄；naive：当场 resume
-
-struct ChainTask {
-  struct promise_type {
-    std::coroutine_handle<> continuation{};   // 等我做完的上一级协程，根协程没有
-
-    ChainTask get_return_object() {
-      return ChainTask{std::coroutine_handle<promise_type>::from_promise(*this)};
-    }
-    std::suspend_always initial_suspend() noexcept { return {}; }
-    void return_void() noexcept {}
-    void unhandled_exception() noexcept { std::terminate(); }
-
-    // 完成时的交接：有人等就把控制权交回去，没人是根，就交还给最初的恢复者
-    auto final_suspend() noexcept {
-      struct Done {
-        bool await_ready() noexcept { return false; }
-        std::coroutine_handle<> await_suspend(
-            std::coroutine_handle<promise_type> me) noexcept {
-          auto c = me.promise().continuation;
-          if (!c) return std::noop_coroutine();
-          if (g_sym) return c;
-          c.resume();                // naive：上一级在栈的更深处接着跑
-          return std::noop_coroutine();
-        }
-        void await_resume() noexcept {}
-      };
-      return Done{};
-    }
-  };
-
-  std::coroutine_handle<promise_type> h;
-  explicit ChainTask(std::coroutine_handle<promise_type> hh) : h(hh) {}
-  ChainTask(const ChainTask&) = delete;
-  ChainTask& operator=(const ChainTask&) = delete;
-  ~ChainTask() { if (h) h.destroy(); }
-
-  bool await_ready() noexcept { return false; }
-  std::coroutine_handle<> await_suspend(std::coroutine_handle<> waiter) noexcept {
-    h.promise().continuation = waiter;
-    if (g_sym) return h;   // sym：挂起自己，把句柄交出去，让编译器接手
-    h.resume();            // naive：当场把子协程跑完，才回到这里
-    return std::noop_coroutine();
-  }
-  void await_resume() noexcept {}
-};
-
-ChainTask chain(int depth) {
-  if (depth % 100000 == 0) {
-    std::printf("    到达深度 %d\n", depth);
-    std::fflush(stdout);
-  }
-  if (depth > 0) {
-    co_await chain(depth - 1);
-  }
-}
-
-int main(int argc, char** argv) {
-  if (argc < 3) {
-    std::printf("用法: %s <naive|sym> <链深>\n", argv[0]);
-    return 1;
-  }
-  g_sym = (std::strcmp(argv[1], "sym") == 0);
-  int depth = std::atoi(argv[2]);
-  std::printf("== %s 模式，链深 %d ==\n", g_sym ? "sym" : "naive", depth);
-  ChainTask root = chain(depth);
-  root.h.resume();
-  std::printf("== 根协程完工，控制权回到 main ==\n");
-  return 0;
-}
-```
+<OnlineCompilerDemo
+  title="深链协程：naive 与 sym 两种交接姿势"
+  source-path="code/examples/vol5/chapter07/10_exp_d_chain.cpp"
+  description="程序要两个命令行参数（naive 或 sym 加链深），页面直接运行不带参数时打印用法，文章里的五组读数是带参数跑出来的。"
+  run-options="-O2 -std=c++20 -pthread"
+  allow-run
+/>
 
 三处值得咱们慢看。第一处是 awaiter 的 `await_suspend`，它有两个分支，naive 分支当场 `h.resume()`，把子协程跑完才回到这里。sym 分支把句柄交出去就返回。第二处是 promise 的 `final_suspend`，它返回的 Done 也是一个 awaiter：协程完工挂进终点站时，Done 把控制权交回等待它的上一级，有人等就交接，没人是根协程，就交 `std::noop_coroutine()`。noop 句柄的 resume 是个空操作（[coroutine.handle.noop]），等于把控制流还给最初的恢复者。第三处是 ChainTask 自己带三件套，没写 operator co_await，`co_await chain(depth - 1)` 走的是“操作数自己就是 awaiter”的路。
 
@@ -472,7 +247,7 @@ sym 一百万层卡在 90 万层里程碑后面，同样是段错误，退出码
 
 ## 参考资源
 
-本篇的素材来自旧目录 ch06 的《[promise_type 与 awaitable](../ch06-async-io-coroutine/03-promise-type-and-awaitable)》，awaiter 协议、operator co_await 与 await_transform 在那里已有一版讲解，咱们把例子全部重写，行为断言按现行草案重核。推进思路参照 Lewis Baker 协程系列的两篇，operator co_await 与对称转移，例子与文字都是我自己写的。四个实验都在开头交代的临时目录里编译运行，正文里的代码块就是全部内容。两个探针只求报错信息，报错原文已经贴在正文里，没有可运行的输出。语言机制的断言按 eel.is 上的现行工作草案核对（2026-11-17 访问），条款号与段号可能随草案更新挪动。
+本篇的素材来自旧目录 ch06 的《[promise_type 与 awaitable](../ch06-async-io-coroutine/03-promise-type-and-awaitable)》，awaiter 协议、operator co_await 与 await_transform 在那里已有一版讲解，咱们把例子全部重写，行为断言按现行草案重核。推进思路参照 Lewis Baker 协程系列的两篇，operator co_await 与对称转移，例子与文字都是我自己写的。四个实验初验在开头交代的临时目录里编译运行，现在收在 code/examples/vol5/chapter07/，可在本页直接运行，抽成独立文件时复验过。两个探针只求报错信息，报错原文已经贴在正文里，没有可运行的输出。语言机制的断言按 eel.is 上的现行工作草案核对（2026-11-17 访问），条款号与段号可能随草案更新挪动。
 
 - [Await expression（现行草案 expr.await）][draft-await]，三问的展开步骤、await_suspend 的三种返回类型、抛异常时协程恢复并立即重抛、表达式类型与 await_resume 一致、接力恢复的注。
 - [Operators in expressions（现行草案 over.match.oper）][draft-oper]，operator co_await 的成员候选、普通查找与 ADL 的非成员候选怎样合成一场重载决议。

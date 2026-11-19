@@ -25,30 +25,19 @@ current_status:
 
 内存序的挑选归下一篇 5.3《[选择内存序需要什么依据](03-choosing-memory-orders)》。咱们测的是 `x`、`y` 两端的读写次序，两端分别配 relaxed 与 seq_cst，一个不搭桥，一个全加满。中间的档位留给 5.3，本篇摆出来的是两端。
 
-实验都在临时目录里编译跑过（GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，WSL2，16 逻辑核，2026-11-16）。多线程的读数都是单次运行的读数。litmus 实验我跑了两遍，锁住的计数器与死循环程序的 `-O0` 档也各跑了两遍，读数都写进正文。标准条款按 eel.is 上的现行草案核对，段号随草案版本会挪，引用时条款名都带着。
+实验的程序收在 code/examples/vol5/chapter05/，可在本页直接运行（GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，WSL2，16 逻辑核，2026-11-16）。多线程的读数都是单次运行的读数。litmus 实验我跑了两遍，锁住的计数器与死循环程序的 `-O0` 档也各跑了两遍，读数都写进正文。标准条款按 eel.is 上的现行草案核对，段号随草案版本会挪，引用时条款名都带着。
 
 ## 为什么会重排：编译器与 CPU
 
 咱们从编译器看起。下面的程序只干一件事：工作线程反复查看一个 `bool`，主线程过 200 毫秒把它改成 `true`。
 
-```cpp
-#include <chrono>
-#include <cstdio>
-#include <thread>
-
-bool stop = false;   // 故意不用 std::atomic<bool>，本节只做演示
-
-int main() {
-  long long spins = 0;
-  std::thread t([&] {
-    while (!stop) ++spins;
-  });
-  std::this_thread::sleep_for(std::chrono::milliseconds(200));
-  stop = true;
-  t.join();
-  std::printf("main set stop, thread saw it, spins=%lld\n", spins);
-}
-```
+<OnlineCompilerDemo
+  title="普通布尔做停止标志：-O0 收场，-O2 死循环"
+  source-path="code/examples/vol5/chapter05/11_stop_bool.cpp"
+  description="-O0 编出来 200 毫秒后正常退出并打印 spins 一行；换成 -O2 重编再跑，工作线程永远出不来。演示用，stop 上的跨线程读写是数据竞争。"
+  run-options="-O0 -std=c++20 -pthread"
+  allow-run
+/>
 
 `-O0` 编出来，程序正常收场。我跑了两遍，工作线程分别转了三亿五千多万与五亿二千万圈，都看见 `stop` 翻转，打印一行退出。同一份源码换 `-O2`，工作线程出不来了。我用 `timeout 2` 跑，两秒后进程被杀掉，退出码 124，`spins` 一行始终没出现。
 
@@ -72,85 +61,13 @@ x86-64 的内存模型常被业界称作 TSO（Total Store Order，全存储排�
 
 完整程序在两处费了笔墨，我交代一下。起跑对齐是一处：两条线程得在同一瞬出发，我用一个逐轮递增的放行哨兵，让它们自旋等同一轮再动手。结算与重置的次序是另一处：主线程收齐双方的应答才开下一轮，每一轮的重置压在放行之前。不是随便写的，后面有一段排查会回到这里。架子自身的握手也借原子操作搭桥，用 release 与 acquire 配对，后文讲 happens-before 的表里，最后一行就是它们。握手不是要测的对象，测的始终是 `x`、`y` 两端。内存序本身怎么挑，归 5.3。
 
-```cpp
-#include <atomic>
-#include <cstdio>
-#include <pthread.h>
-#include <sched.h>
-#include <thread>
-
-#ifndef USE_RELAXED
-#define USE_RELAXED 0
-#endif
-constexpr bool kRelaxed = USE_RELAXED;
-
-struct alignas(64) Slot { std::atomic<int> v{0}; };   // x、y 各住一条缓存行
-static Slot sx, sy;
-static std::atomic<int>& x = sx.v;
-static std::atomic<int>& y = sy.v;
-
-struct alignas(64) Hand {
-  std::atomic<long> round{1};   // 主线程每轮推一号，是唯一放行口
-  std::atomic<long> ack{0};     // 回 2r（读到 1）或 2r+1（读到 0），只增不减
-};
-static Hand ha, hb;
-
-static void pin(std::thread& t, int cpu) {   // glibc 的绑核接口（_np，不可移植），拿来固定实验条件
-  cpu_set_t set;
-  CPU_ZERO(&set);
-  CPU_SET(cpu, &set);
-  pthread_setaffinity_np(t.native_handle(), sizeof(set), &set);
-}
-
-int main() {
-  const auto ord = kRelaxed ? std::memory_order_relaxed
-                            : std::memory_order_seq_cst;
-  const long kTrials = 10000000;
-  long hits = 0;
-
-  std::thread ta([&] {
-    for (long r = 1; r <= kTrials; ) {
-      if (ha.round.load(std::memory_order_relaxed) < r) continue;
-      x.store(1, ord);
-      int got = y.load(ord);
-      ha.ack.store(2 * r + (got == 0 ? 1 : 0), std::memory_order_release);
-      ++r;
-    }
-  });
-  std::thread tb([&] {
-    for (long r = 1; r <= kTrials; ) {
-      if (hb.round.load(std::memory_order_relaxed) < r) continue;
-      y.store(1, ord);
-      int got = x.load(ord);
-      hb.ack.store(2 * r + (got == 0 ? 1 : 0), std::memory_order_release);
-      ++r;
-    }
-  });
-
-  pin(ta, 0);   // 0 号与 8 号逻辑核，本机拓扑分属物理核 0 与 4
-  pin(tb, 8);
-
-  for (long r = 1; r <= kTrials; ++r) {
-    if (r > 1) {   // 上一轮的应答收讫，才轮到重置与放行
-      while (ha.ack.load(std::memory_order_acquire) < 2 * (r - 1)) {}
-      while (hb.ack.load(std::memory_order_acquire) < 2 * (r - 1)) {}
-    }
-    x.store(0, std::memory_order_relaxed);
-    y.store(0, std::memory_order_relaxed);
-    ha.round.store(r, std::memory_order_seq_cst);   // 放行，顺带把重置压出去
-    hb.round.store(r, std::memory_order_seq_cst);
-    long aa = 0, ba = 0;
-    while ((aa = ha.ack.load(std::memory_order_acquire)) < 2 * r) {}
-    while ((ba = hb.ack.load(std::memory_order_acquire)) < 2 * r) {}
-    if ((aa & 1) && (ba & 1)) ++hits;
-  }
-
-  ta.join();
-  tb.join();
-  std::printf("%s: %ld of %ld rounds saw r1=0 and r2=0\n",
-              kRelaxed ? "relaxed" : "seq_cst", hits, kTrials);
-}
-```
+<OnlineCompilerDemo
+  title="litmus：两条线程互测 x、y 两端的读写次序"
+  source-path="code/examples/vol5/chapter05/12_litmus.cpp"
+  description="默认按 seq_cst 档编译，一千万轮零命中；按下方命令加 -DUSE_RELAXED=1 重编才见命中，两份读数都收在正文。"
+  run-options="-O2 -std=c++20 -pthread -DUSE_RELAXED=0"
+  allow-run
+/>
 
 两种编译命令给您，内存序是编译期选的：
 
