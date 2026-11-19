@@ -1,0 +1,401 @@
+---
+title: "提交验证与设计说明"
+description: "结课收官：验收表的七行逐行兑成读数，串行对比量出协调的价钱，设计说明的写法与前七个单元的工具清单在此收拢。"
+chapter: 5
+order: 4
+tags:
+  - host
+  - cpp-modern
+  - intermediate
+  - 异步编程
+difficulty: intermediate
+platform: host
+cpp_standard: [11, 20]
+current_status:
+  title: 正在进行打磨
+  detail: 现在是LLM写好的初级稿件，引入是为了初步公开 + 希望收集反馈
+  variant: polishing
+---
+
+# 提交验证与设计说明
+
+单元八走到了收官。8.1《[题目与行为要求](01-requirements)》把考卷立起来，8.2《[自行完成并发设计](02-design)》交了示范设计，8.3《[处理完整的运行过程](03-full-run)》把设计长成完整程序 full_run.cpp：命令行收 n 与 w，失败清单全量输出，停止在四个时机注入实测。轮到本篇交卷：8.1 立考卷的时候给过一张验收归属表，七行要求每行配了验收手段，咱们把七行一行一行兑成读数。兑完再把并发版与串行版的计时摆上桌，量级说话，不抠尾数。读数交完，还有一份说明要交代：您自己交作业的时候，设计说明该装什么。
+
+读数全部出自临时目录 /tmp/concurrency-u8/ 的编译运行（WSL2，16 逻辑核，GCC 16.2.1 20260810，2026-11-18）。普通版配方 `g++ -std=c++20 -O2 -pthread`，插桩版配方 `g++ -std=c++20 -O1 -g -pthread -fsanitize=thread`，跟单元六用的是同一套（见《[怎样寻找并发错误](../chapter06-validating-designs/01-finding-concurrency-bugs)》）。驱动包含的头文件装的是 8.2 示范去掉 main 的全文：compute、Job、Failure 与 BatchProcessor 四件，原样搬入，只加了包含保护，其余一行没动。计时用的是 `std::chrono::steady_clock`（C++11 起的单调时钟，适合测量间隔），定位我按 cppreference 当日复核过，出处收在参考资源里。多线程读数都是单次运行的读数，几轮原始读数我全列出来，量级当真、尾数不当真，立场与 6.2《[怎样衡量并发带来的收益](../chapter06-validating-designs/02-measuring-benefits)》一致。
+
+## 一套驱动，把检查装进一个程序
+
+验收的手法在单元六都讲过原理，本篇把它们装配起来。8.3 的结尾把三件事记到了本篇名下：满轮数的重复测试、插桩工具的全量复跑、并发对串行的计时对比，咱们逐件来。我写了一个验证驱动 verify_all.cpp：对不对归 verify 模式管，快不快归 bench 模式管，bench 的代码不占正文，读数在串行对比一节交。您交作业的时候可以原样拿它跑自己的实现，把驱动包含的头文件换成您的处理器入口，读数的形状应当一致。该驱动的头一位用户是 8.2 的示范处理器，200 轮正确性读数与计时对照的累加版出自它。第二位是逐项留档版：我在头文件副本上按 8.3 口子三的形状补了三行（成员、入列、访问器），换进驱动的 bench 模式跑了计时对照，读数在串行对比里。8.3 的口子三给了逐项留档的核对路，驱动的守恒与失败清单两道检查跟它互补。
+
+驱动的正确性部分我贴在下面。串行对照沿用 8.1 的 expected 算法，守恒与失败清单做成每轮必查的检查，停止时机做成参数，一轮一个注入点：
+
+```cpp
+// verify_all.cpp 的正确性部分（计时代码在串行对比一节，从略只交读数，main 与参数解析是几行胶水）
+#include "batch_design.hpp"   // 8.2 示范去掉 main 的全文（compute、Job、Failure、BatchProcessor），只加包含保护
+
+int g_failed_checks = 0;
+
+void check(bool ok, const std::string& what) {
+  if (!ok) {
+    std::printf("CHECK FAILED: %s\n", what.c_str());
+    ++g_failed_checks;
+  }
+}
+
+struct Summary {
+  long long total = 0;
+  std::size_t success = 0, failed = 0, skipped = 0;
+  bool same_as(const Summary& o) const {
+    return total == o.total && success == o.success
+        && failed == o.failed && skipped == o.skipped;
+  }
+};
+
+// 串行对照：8.1 expected.cpp 的算法原样，失败只计数，不进总数
+Summary run_serial(int n) {
+  Summary s;
+  for (int i = 0; i < n; ++i) {
+    try { s.total += compute(i); ++s.success; }
+    catch (const std::exception&) { ++s.failed; }
+  }
+  return s;
+}
+
+// 守恒与失败清单，每一轮都查
+void check_invariants(const BatchProcessor& bp, const Summary& s, int n, const char* tag) {
+  check(s.success + s.failed + s.skipped == static_cast<std::size_t>(n),
+        std::string(tag) + ": 守恒 提交数 = 成功 + 失败 + 没做");
+  auto fs = bp.failures();
+  check(fs.size() == s.failed, std::string(tag) + ": 失败清单条数 = failed 计数");
+  bool all_thirteen = true, all_msg = true;
+  for (const auto& f : fs) {
+    if (f.input <= 0 || f.input >= n || f.input % 13 != 0) all_thirteen = false;
+    if (f.reason != "编号 13 的倍数注定失败") all_msg = false;
+  }
+  check(all_thirteen, std::string(tag) + ": 失败清单每条都是 13 的正倍数");
+  check(all_msg, std::string(tag) + ": 失败消息与考卷原文一字不差");
+}
+
+// 正常收场一轮：生产者单独线程逐项提交，交完喊收工，wait 等全部退场
+Summary run_normal(int n, unsigned w) {
+  BatchProcessor bp(w);
+  std::thread producer([&] {
+    for (int i = 0; i < n; ++i) bp.submit(Job{i, 0});
+    bp.submissions_done();
+  });
+  producer.join();
+  bp.wait();
+  Summary s;
+  s.total = bp.total();
+  s.success = bp.success_count();
+  s.failed = bp.failed_count();
+  s.skipped = bp.skipped_count();
+  check_invariants(bp, s, n, "normal");
+  return s;
+}
+
+// 停止注入一轮：提交进行到第 stop_at 项时提出停止，stop_at == n 表示全部交完才停
+Summary run_stop(int n, unsigned w, int stop_at, const char* tag) {
+  BatchProcessor bp(w);
+  std::thread producer([&] {
+    for (int i = 0; i < n; ++i) {
+      if (i == stop_at) bp.request_stop();
+      bp.submit(Job{i, 0});
+    }
+    if (stop_at >= n) bp.request_stop();
+    bp.submissions_done();
+  });
+  producer.join();
+  bp.wait();
+  Summary s;
+  s.total = bp.total();
+  s.success = bp.success_count();
+  s.failed = bp.failed_count();
+  s.skipped = bp.skipped_count();
+  check_invariants(bp, s, n, tag);
+  return s;
+}
+
+// verify 模式：串行对照、重复轮一致性、停止多时机，全查
+int mode_verify(int rounds, int n, unsigned w) {
+  const Summary ref = run_serial(n);
+  print_summary("serial-ref", ref);
+  int mismatch = 0;
+  Summary last;
+  for (int r = 0; r < rounds; ++r) {
+    Summary s = run_normal(n, w);
+    if (!s.same_as(ref)) ++mismatch;
+    last = s;
+  }
+  print_summary("normal-last", last);
+  std::printf("rounds=%d mismatch=%d\n", rounds, mismatch);
+  check(mismatch == 0, "重复轮汇总轮轮一致");
+
+  struct Timing { int at; const char* tag; };
+  const Timing timings[] = {
+      {0, "stop@0%"}, {n / 10, "stop@10%"}, {n / 2, "stop@50%"},
+      {n * 9 / 10, "stop@90%"}, {n, "stop@done"}};
+  for (const Timing& t : timings) {
+    Summary s = run_stop(n, w, t.at, t.tag);
+    print_summary(t.tag, s);
+  }
+  check(run_normal(n, w).same_as(ref), "时机组跑完后再跑正常轮仍与串行一致");
+  return g_failed_checks;
+}
+```
+
+有两处细节，我单独交代。检查失败只计数不中断，程序收尾用退出码报告，全部检查通过退出码才是 0，8.1 要求的正常路径退出码，驱动自己也守着。守恒的检查有两道，wait() 里住着 8.2 写下的断言，驱动在外面再查一遍，一内一外互不替对方作数，断言是活的，配方里没有定义 NDEBUG。
+
+## 正确性检查：七行要求一行一份读数
+
+8.1 的验收归属表我照原样搬过来，右面添上读数的落点。七行要求，咱们一行一行交证据：
+
+| 8.1 的行为要求 | 本篇的读数 | 落点 |
+|---|---|---|
+| 汇总与失败数目对上串行 | 对照值 total=307615387695、success=9231、failed=769，逐项对上 | 下文串行对照 |
+| 计数守恒 | 200 轮加五个停止时机，守恒断言全程没响 | 下文守恒 |
+| 重复运行结果一致 | 200 轮 mismatch=0，命中率 0 | 下文重复轮 |
+| 数据竞争查得干净 | 插桩版复跑全部用例种类，标准错误流零行 | 下文插桩工具 |
+| 停止语义句句成立 | 五个时机注入，句句对得上 | 下文停止时机 |
+| 失败隔离、能对上号 | 清单 769 条，全是 13 的正倍数，消息一字不差 | 下文失败清单 |
+| 收益有读数 | 量级读数见下一节 | 串行对比 |
+
+### 串行对照与守恒
+
+verify 模式我用普通版跑了 200 轮，串行对照与并发轮的读数如下：
+
+```text
+serial-ref total=307615387695 success=9231 failed=769 skipped=0
+normal-last total=307615387695 success=9231 failed=769 skipped=0
+rounds=200 mismatch=0
+```
+
+串行对照的三个数，咱们跟 8.1 交代的对照值核过，一字不差，对照出自 8.1 的 expected.cpp。并发轮跑完的汇总跟它逐项对上，200 轮里轮轮如此。守恒断言 200 轮加五个停止时机全程没响，提交数等于成功加失败加没做，任务一个都没有少。
+
+### 重复轮一致
+
+轮数与命中率，咱们按 8.1 表里的要求报出来：轮数 200，命中率 0。调度器每轮交出的交错都不同，200 个样本比 1 个样本可信得多，可它仍旧是样本，200 次成功也不构成证明，所以往证据上再叠两层：插桩工具复跑一遍，停止路径逐时机测到，三层证据叠在一起才敢说查得干净。
+
+### 插桩工具复跑
+
+插桩版把同一套用例复跑了一遍：正常轮收窄到 20 轮（插桩慢，用例的种类一个不落，正常、五个停止时机、失败清单核对全都进了），标准输出与普通版同形，标准错误流零行，退出码 0。8.3 已经在插桩版下跑过它的五个模式，零报告。用例种类配齐、轮数加够，插桩版再复跑一遍，两份记录互为旁证。工具没说话不等于没有错误，能力边界 6.1 交代过，咱们拿它当强信号，不当证明。
+
+### 停止时机
+
+五个时机我各注了一回，读数如下（普通版，单轮）：
+
+```text
+stop@0% total=0 success=0 failed=0 skipped=10000
+stop@10% total=305620301 success=922 failed=76 skipped=9002
+stop@50% total=38451928460 success=4616 failed=384 skipped=5000
+stop@90% total=224251622310 success=8308 failed=692 skipped=1000
+stop@done total=307615387695 success=9231 failed=769 skipped=0
+```
+
+对着 8.1 的停止语义，咱们逐句核。还没开跑的不执行、计 skipped：stop@0% 全部 10000 项都进了 skipped，没有一项开跑，停止之后生产者继续提交的任务走的也是 skipped 分支。已开跑的跑完、结果与失败照常进汇总：四个有任务开跑的时机里 success 与 failed 都非零，执行过的部分把结果与失败都交了上来。全部收场守恒、退出码 0：每轮守恒断言没响，程序退出码 0。
+
+保留意见跟着读数走。skipped 取决于停止落地时队列里还压着多少活，换个时机、换台机器就会动，我交的是单轮读数。插桩版的五个时机同样全过，读数形状相同、数值不同，交错不同本来就该数值不同，咱们看形状不看尾数。
+
+时机的选点，咱们跟 8.3 的四个模式对个表：stop@10% 对它的 early，stop@50% 对 mid，stop@90% 对 tail，stop@done 对它的 backlog，stop@0% 是驱动加测的全停点，两边各自实测，互不代替。
+
+### 失败清单
+
+失败隔离与对号，咱们拿正常轮的读数来核：failed=769，13 的正倍数从 13 到 9999 恰好 769 个，与计数对上。清单逐项核对，每条编号都是 13 的正倍数，消息与考卷原文一字不差，条数与 failed 计数相等。别的任务照常完成，success=9231 恰好是 10000 减 769，一条失败没有拖累别人。
+
+## 串行对比：把协调的价钱量出来
+
+对比的安排承 6.2：串行基线与并发版跑同一批编号、同一组编译选项，计时取 steady_clock 的间隔。边界我要交代清楚：并发读数是端到端的，含线程池的建与收、生产者线程的提交与收场。串行基线没有线程，一个循环算到底。两边不对称的部分就在线程上，我把它单独立出来量。
+
+考卷原题（compute 一次乘法，n=10000，w=16），我量了三轮，外加一组进场开销：
+
+```text
+serial   n=10000 round=0 0.278 ms
+serial   n=10000 round=1 0.247 ms
+serial   n=10000 round=2 0.249 ms
+parallel n=10000 w=16 round=0 459.814 ms
+parallel n=10000 w=16 round=1 467.063 ms
+parallel n=10000 w=16 round=2 478.077 ms
+pool-cost w=16 round=0 1.383 ms
+pool-cost w=16 round=1 1.494 ms
+pool-cost w=16 round=2 1.367 ms
+pool-cost w=16 round=3 1.385 ms
+pool-cost w=16 round=4 1.471 ms
+```
+
+串行三轮挤在 0.25 毫秒上下，摊到每项任务 25 纳秒。并发三轮挤在 460 到 480 毫秒，摊到每项任务约 46 微秒。头一眼看到 460 毫秒，我以为驱动写错了，回头把配方核了两遍才认下，就是这么慢。协调比活贵了三个数量级往上。8.2 当时只交了推断，本篇把读数量出来了，推断成了实情。pool-cost 是单独量的：只建 16 条工作线程再收场，什么都不提交，五轮挤在 1.37 到 1.49 毫秒。它是并发的地板价，比考卷的活本身贵了五倍还多，协调就算全免，进场也把活淹了。
+
+8.3 把两种形状留给需求，开销差它交给读者自量，本篇顺手把读数量了出来，累加版与逐项留档版同场各量三轮（n=10000，w=16）：
+
+```text
+[plain, 8.2 累加版]
+parallel n=10000 w=16 round=0 478.359 ms
+parallel n=10000 w=16 round=1 475.789 ms
+parallel n=10000 w=16 round=2 489.389 ms
+[results, 8.3 逐项留档版]
+parallel n=10000 w=16 round=0 473.719 ms
+parallel n=10000 w=16 round=1 474.645 ms
+parallel n=10000 w=16 round=2 480.657 ms
+```
+
+留档版每项成功多一次拷贝入列，可咱们把两版摆在一起看，差落在轮间抖动里面，读数上看不出留档的价钱：46 微秒的协调税把留档的开销整个吞了。该轮读数比前一组整体挪高了约二十毫秒，负载有漂，量级不动，6.2 的老话。留档的代价不在时间，在内存驻留（8.3 量过，n 等于 10000 时逐项清单约 160 KB），换来的是第二条核对路。
+
+8.2 的练习 3 另外托付了一组对照：统计挪成各线程私有、wait 时合并，拿它跟共享统计版对计时。我把该变体补出来量了：领取照旧在锁内，compute 照旧在锁外，回写不加锁，四个数与失败清单各回各的线程格，wait 收场合并，守恒断言跟着挪到合并点。练习 3 的验收条件是正常轮读数不变，私有版跑过 200 轮正确性套件，mismatch=0，汇总与串行对照一字不差。计时读数如下（n=10000，w=16）：
+
+```text
+[shared stats, 8.2 累加版]
+parallel n=10000 w=16 round=0 497.538 ms
+parallel n=10000 w=16 round=1 494.274 ms
+parallel n=10000 w=16 round=2 493.945 ms
+[private stats, 8.2 练习 3 变体]
+parallel n=10000 w=16 round=0 497.160 ms
+parallel n=10000 w=16 round=1 501.037 ms
+parallel n=10000 w=16 round=2 504.347 ms
+```
+
+私有版省的是每项一次回写的加锁解锁，可咱们看到两版读数落在同一档，差在轮间抖动里面。道理就藏在瓶颈的分布里：考卷的瓶颈是领取加唤醒的约 46 微秒往返，回写的价钱沉在它底下。私有统计的入场条件 8.2 立过，任务重、锁竞争可测的时候才值得进场，考卷够不着该条件，练习 3 的答案就是该组读数。
+
+规模放大一档（n=1000000），咱们接着量：
+
+```text
+serial   n=1000000 round=0 26.786 ms
+serial   n=1000000 round=1 26.374 ms
+serial   n=1000000 round=2 25.926 ms
+parallel n=1000000 w=16 round=0 48885.145 ms
+parallel n=1000000 w=16 round=1 48754.522 ms
+parallel n=1000000 w=16 round=2 48992.412 ms
+```
+
+规模放大一百倍，串行到了 26 毫秒，并发到了约 49 秒，比值还是约一千八百倍。咱们看到按任务收的税跟着任务数一起放大，规模救不了它。
+
+8.2 预留过批量提交、批量领取的路，说等读数指认协调是瓶颈再动。读数指认了，我就动给它看。变体的做法是在头文件副本上加一个 submit_batch，整批任务一次进锁，锁外 notify_all 一声，其余一行没动：
+
+```cpp
+// batch_design_batched.hpp 相对 batch_design.hpp 的新增方法
+void submit_batch(const std::vector<Job>& jobs) {
+  {
+    std::lock_guard<std::mutex> lk(mu_);
+    assert(!closed_ && "submissions_done 之后再提交是调用方违约");
+    for (const Job& j : jobs) {
+      ++submitted_;
+      if (done_) { ++skipped_; }
+      else { queue_.push_back(j); }
+    }
+  }
+  if (!done_) cv_any_.notify_all();
+}
+```
+
+变体的读数我量在下面（n=10000，w=16）：
+
+```text
+serial   n=10000 round=0 0.262 ms
+serial   n=10000 round=1 0.302 ms
+serial   n=10000 round=2 0.251 ms
+parallel n=10000 w=16 round=0 5.243 ms
+parallel n=10000 w=16 round=1 4.681 ms
+parallel n=10000 w=16 round=2 4.211 ms
+```
+
+每项任务的税从约 46 微秒压到半微秒上下，总耗时从约 460 毫秒落到 4 到 5 毫秒，压掉的是逐项通知加唤醒的往返。可咱们把它跟串行摆在一起，还是慢约十八倍：0.25 毫秒的活，付不起 4 到 5 毫秒的组织费，地板价的 1.4 毫秒也还在里面。变体同样过了 20 轮正确性套件，守恒与失败清单在批量入口下照常成立。考卷要求逐项提交，批量版不交卷，它交的是读数：协调税能省，省完也翻不了身，活太轻。
+
+最后一组把活加重，我拿设计一行不动的办法：compute 换成带权重的循环版（每项任务做 iters 次乘加，权重由命令行给），失败路径照旧。循环的结果交给 do_not_optimize 看一眼，该函数承 6.2 计时架子的写法，随头文件住进来，防编译器把加重循环整个删掉：
+
+```cpp
+// heavy 变体相对 batch_design.hpp 唯一的差异，iters 由命令行传入
+inline long long compute(int i) {
+  if (i % 13 == 0 && i > 0) throw std::runtime_error("编号 13 的倍数注定失败");
+  long long s = 0;
+  for (long long k = 1; k <= g_heavy_iters; ++k) s += (i * k) % 7;
+  do_not_optimize(s);
+  return s;
+}
+```
+
+```text
+[heavy variant, iters=200000 per task]
+serial   n=10000 round=0 1039.041 ms
+serial   n=10000 round=1 1029.602 ms
+serial   n=10000 round=2 1074.635 ms
+parallel n=10000 w=16 round=0 395.319 ms
+parallel n=10000 w=16 round=1 158.057 ms
+parallel n=10000 w=16 round=2 178.917 ms
+```
+
+活重到每项约 0.1 毫秒，天平翻过来了：串行约 1.04 秒，并发首轮 395 毫秒、后两轮 158 与 179 毫秒。三轮合看快约两倍半到六倍半，剔除冷启动的首轮，后两轮对串行是六倍半上下，首轮的抖是冷启动，6.2 的预热与尾差讲过，咱们把它单独立出来，不混进判断。我接着加重一档：
+
+```text
+[heavy variant, iters=2000000 per task]
+serial   n=10000 round=0 10294.872 ms
+serial   n=10000 round=1 10240.402 ms
+serial   n=10000 round=2 10262.966 ms
+parallel n=10000 w=16 round=0 1277.484 ms
+parallel n=10000 w=16 round=1 1286.200 ms
+parallel n=10000 w=16 round=2 1311.418 ms
+```
+
+每项约 1 毫秒，咱们看到串行约 10.3 秒，并发稳定在 1.28 到 1.31 秒，快约八倍，轮间不再乱跳。协调的价钱接近常数，活越重它占的比例越小，收益就越大。
+
+活轻，并发全赔。考卷的活是一次乘法，考的是组织与验证，收益对比量出来是负的——并发比串行慢——咱们照实交。不预设并发版本一定更快，是咱们立过的立场，落到读数上就是它。
+
+两档读数都在几倍量级。门槛的下沿落在哪里，咱们没有测量，读数只够说到每项百微秒上下已经翻身，再往低外推就是猜。
+
+两点保留跟着读数一起交。46 微秒的构成，锁占几成、唤醒占几成，我没有细分。全部读数出自本机 WSL2 单机单次，换台机器尾数全动，量级判断请连着测量条件一起拿走。
+
+## 设计说明怎么写：选择、理由、验证结果
+
+您交的作业里，程序与读数之外的第三份东西是设计说明。评作业的人不在您桌边，纸面得替您把为什么交代全。本卷把它定成三块：
+
+- 选择：用了哪些工具，哪些没用，替代方案各自在什么条件下值得进场。8.2 的“可以不一样”一节是现成的样板，每条替代路都标了入场条件。
+- 理由：每个决定回指判据的出处。8.2 的示范里，一把锁的拍板回指 2.3 的多对象不变量，原子的缺席回指 5.3 的数桥三问，您的说明照该样子写，评的人能顺着链接查到依据。
+- 验证结果：正确性的读数（对照、守恒、重复轮、插桩工具、停止时机、失败清单）加收益的读数（计时对比加测量条件）。
+
+测量条件咱们照 6.2 的清单交：机器、核数、编译选项、数据规模、轮次、日期，缺一样，读数就少一分可信。读数是单次的就写单次的。归因没有验证的，比如说 46 微秒里锁与唤醒各占几成，就写“候选解释，没有验证”，别把猜测写成已经量过的东西。
+
+设计说明有现成的骨架可套：8.1 的验收表七行当目录，一行配一份读数。工具取舍当正文，一条配一条判据。写完您自己查一遍：每个选择找得到理由吗？每条理由找得到判据出处吗？每个判据配了读数吗？三问都过，说明就立住了。
+
+## 全卷收官：前七个单元的工具清点
+
+卷五的正文到这里走完。收官之前，咱们把前七个单元各自交出来的东西清点一遍，您手里存的应当是下面的清单：
+
+| 单元 | 交出来的东西 |
+|---|---|
+| 一 | `std::thread`、join 与 detach、RAII 生命周期、`jthread` 与协作式停止 |
+| 二 | `std::mutex` 与作用域锁、保护域与不变量、锁的粒度、死锁的避免 |
+| 三 | 条件变量与谓词、有界队列、`latch`、`barrier`、信号量、等待的结束路径 |
+| 四 | `std::async` 与 `future`、`promise`、异常与结果的传递 |
+| 五 | `std::atomic`、内存序、happens-before |
+| 六 | 重复测试、ThreadSanitizer、编译期注解、串行基线与测量条件 |
+| 七 | 协程、`co_await`、教学版 Task |
+
+结课作品把它们摆上桌。示范设计只请了三样：互斥、条件变量、停止协议。原子是我拿 5.3 的数桥三问数出局的：读写全在锁内互相排他，锁已经把同步接好，原子档位成了重复的保护。future 缺席的理由也站得住，逐项配共享状态的重量，考卷没有要求。判据不止管选工具，还管动手的时机，批量提交变体就是照判据动的手：8.2 说读数指认协调是瓶颈再动，本篇读数指认了，我就动了手。选择、理由、读数，上一节自检的三问就是工具的验收标准，答不上任何一问，您别把它请进门。验收手法同样如此，七行读数没有一行靠感觉，全靠驱动里的检查与量出来的数字。
+
+并发程序从立题到交验证要走多远，本卷用结课作品量了一遍：8.1 立题目与行为要求，8.2 交设计与理由，8.3 把运行过程跑通，本篇交验证与说明。往后您接手任何并发程序，要答的还是四类问题。它该做什么，为什么这么组织，跑起来什么样，证据在哪里。答的样板就在动手清单的头一项：把自己的实现喂进驱动，跑 verify 200 轮，对照值与退出码当场替您回答证据在哪里。
+
+协程综合扩展还在选做里，材料在单元七（见《[把协程组织成可完成的任务](../chapter07-coroutines/04-task-type)》）。做完它您会多出一份对照材料：同一道考卷，线程版与协程版谁在等待、组织差在哪里，正好写进设计说明的选择块。
+
+## 轮到您动手的时候
+
+1. 把自己的实现喂进这套驱动：替换驱动包含的头文件，跑 verify 200 轮，对照值应当还是 307615387695、9231、769、0，退出码 0。
+2. 线程数量扫一遍：w 取 1、2、4、8、16 各跑考卷原题，看每项任务的协调价钱随 w 怎么动，读数写进设计说明的验证块。
+3. 给批量提交变体补停止路径测试：五个时机照跑一遍，守恒在批量入口下应当照样成立，找出哪个时机的 skipped 读数会与逐项版不同。
+4. 把加重对照补成三档曲线：每任务约 10 微秒、0.1 毫秒、1 毫秒各量一组，量出收益翻身的门槛落在哪里。
+
+## 下一步
+
+卷五的正文到这里收尾，咱们把去向交代清楚。cookbook 配方区正在迁移，迁完之后查 API 配方与主题选读就去那里。旧目录 ch00 到 ch09 与 exercises 在迁移完成后移出站点。英文镜像在中文迁完之后补。结课作品交齐四份（您的实现、驱动跑出的读数、测量条件、设计说明），本卷的旅程就到站了。
+
+## 参考资源
+
+推进思路承单元六两篇的手法与 8.1、8.2 的铺垫，例子、驱动与文字都是我自己写的，读数在文中交代的机器上实测。语言与库的断言按 cppreference 核对，steady_clock 的定位是本篇当日（2026-11-18）复核的，stop 集成与唤醒语义承 8.2 的核对：
+
+- [std::chrono::steady_clock（cppreference）][cppref-steady]，C++11 起的单调时钟，测量间隔用它。
+- [condition_variable_any::wait（cppreference）][cppref-cva-wait]，带 stop_token 的等待重载自 C++20 起，停止请求唤醒等待者的出处。
+- [std::stop_source（cppreference）][cppref-stop]，协作式停止的请求端，1.5 的工具。
+- [GCC 插桩选项（gcc.gnu.org）][gcc-instrument]，`-fsanitize=thread` 的出处，单元六的配方。
+- [C++ Concurrency in Action, 2nd Edition（Anthony Williams）][williams]，验证与测量章节的组织参照。
+
+[cppref-steady]: https://en.cppreference.com/w/cpp/chrono/steady_clock
+[cppref-cva-wait]: https://en.cppreference.com/w/cpp/thread/condition_variable_any/wait
+[cppref-stop]: https://en.cppreference.com/w/cpp/thread/stop_source
+[gcc-instrument]: https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html
+[williams]: https://www.manning.com/books/c-plus-plus-concurrency-in-action-second-edition
