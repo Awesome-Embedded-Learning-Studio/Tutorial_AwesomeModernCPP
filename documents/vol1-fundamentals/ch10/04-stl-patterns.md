@@ -234,14 +234,16 @@ void filter_outliers(std::vector<Reading>& readings, double k_sigma)
 }
 
 /// 为每个传感器生成分析报告
-std::vector<Report> generate_reports(std::vector<Reading>& readings)
+std::vector<Report> generate_reports(const std::vector<Reading>& readings)
 {
     // 用 unordered_map 按传感器分组（不需要有序遍历，O(1) 查找）
     std::unordered_map<std::string, std::vector<Reading>> groups;
     groups.reserve(16);  // 预分配，减少 rehash
 
-    for (auto& r : readings) {
-        groups[r.sensor_id].push_back(std::move(r));
+    // 只读分析：push_back 直接拷贝。别写 std::move(r)——
+    // 那会把调用方 readings 里每个元素的 sensor_id 都移走
+    for (const auto& r : readings) {
+        groups[r.sensor_id].push_back(r);
     }
 
     std::vector<Report> reports;
@@ -382,7 +384,7 @@ int main()
 
 异常值过滤的关键设计是**按传感器分组计算统计量**。不同传感器的量纲和数值范围差异巨大（温度约 22-23°C，气压约 1013 hPa），咱们要是把所有读数混在一起计算均值和标准差，任何单个值都不会被视为异常。所以 `filter_outliers` 先按 `sensor_id` 分组，再对每组独立计算均值和标准差，这样温度传感器中的 85.0°C 和气压传感器中的 12.0 hPa 才能被正确识别为异常值。
 
-咱们的分组部分选择 `unordered_map<string, vector<Reading>>`，同样是因为不需要按 key 有序遍历。`reserve(16)` 是一个经验性的预分配——传感器数量通常不多，一次分配避免后续 rehash。过滤异常值用的是 `remove_if` + `erase`，而不是在遍历中直接删除，这样既安全又清晰。统计部分全部用 STL 算法完成：`minmax_element` 一趟找到最大最小值，`accumulate` 求和，没有手写循环。
+咱们的分组部分选择 `unordered_map<string, vector<Reading>>`，同样是因为不需要按 key 有序遍历。`reserve(16)` 是一个经验性的预分配——传感器数量通常不多，一次分配避免后续 rehash。也留意一下签名：`generate_reports` 拿的是 `const` 引用，因为它是纯粹的只读分析；前面的 `deduplicate` 和 `filter_outliers` 真的要用 remove-erase 改写 `readings`，才拿非 const 引用。谁动数据、谁不动，签名上一眼可辨。过滤异常值用的是 `remove_if` + `erase`，而不是在遍历中直接删除，这样既安全又清晰。统计部分全部用 STL 算法完成：`minmax_element` 一趟找到最大最小值，`accumulate` 求和，没有手写循环。
 
 ## 动手试试——练习题
 
