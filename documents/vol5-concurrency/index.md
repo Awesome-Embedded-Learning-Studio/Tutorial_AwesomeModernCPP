@@ -10,9 +10,29 @@ tags:
 
 # 卷五：并发编程
 
-从线程原语到协程异步，从锁到无锁，从同步到任务——卷五帮你建立完整的并发判断力。我们的原则是：**先正确性，再性能；先锁，再无锁；先同步，再任务**。
+这一卷，我们聊的是各个领域编程中难以绕过的一部分，也就是并发编程。
+
+需要说明的是，这个章节正在进行如火如荼的重构和建设。新版本和旧版本的目录会并存一段时间。直到新版本的并发编程章节完全可以发布后，旧版本的目录才会撤下。
 
 ## 章节导航
+
+这是新版本的并发编程，目前八关，此外还有一个 cookbook，是给懂并发编程懒得听笔者碎碎念的朋友看的
+
+<ChapterNav variant="sub">
+  <ChapterLink href="chapter01-start-concurrency">第一关 · 让程序开始并发执行</ChapterLink>
+  <ChapterLink href="chapter02-sharing-data">第二关 · 多个任务怎样共同使用数据</ChapterLink>
+  <ChapterLink href="chapter03-wait-and-coordinate">第三关 · 任务之间怎样等待和协调</ChapterLink>
+  <ChapterLink href="chapter04-organizing-tasks">第四关 · 从管理线程走向组织任务</ChapterLink>
+  <ChapterLink href="chapter05-atomic-memory-model">第五关 · 理解原子操作与内存模型</ChapterLink>
+  <ChapterLink href="chapter06-validating-designs">第六关 · 怎样判断并发设计是否有效</ChapterLink>
+  <ChapterLink href="chapter07-coroutines">第七关 · 用协程表达可以暂停的工作</ChapterLink>
+  <ChapterLink href="chapter08-capstone">第八关 · 结课作品：一个小型任务处理程序</ChapterLink>
+  <ChapterLink href="cookbook">cookbook · 卷五的速查区</ChapterLink>
+</ChapterNav>
+
+## 旧版目录
+
+迁移过渡期旧目录保留作素材，迁移完成后移出站点。
 
 <ChapterNav variant="sub">
   <ChapterLink href="ch00-concurrency-fundamentals">ch00 · 并发思维与基础</ChapterLink>
