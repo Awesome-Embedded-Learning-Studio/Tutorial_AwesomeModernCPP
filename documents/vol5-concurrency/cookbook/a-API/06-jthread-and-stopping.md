@@ -61,7 +61,7 @@ worker exits after 6 rounds
 - 三件套共享一个停止状态：`stop_source` 是写端（`request_stop`），`stop_token` 是读端（`stop_requested`、`stop_possible`），`stop_callback` 注册回调。`request_stop()` 只有第一次调用返回 true。
 - `stop_callback` 的回调在调用 request_stop 的线程上同步执行。注册时停止已发生的话，回调立即在该线程执行，所以回调里别做耗时的事，卡住的是提出停止的人。
 - 一个 stop_source 可以派生多个 token，一份请求同时停多条线程。`t.get_stop_source()` 取写端，`t.get_stop_token()` 取读端。
-- 正阻塞在睡眠或条件变量上的线程不会因为 request_stop 而醒来，除非等的接口收 stop_token（例如 condition_variable_any 的带 token 重载，正文[《等待也需要结束路径》](../../chapter03-wait-and-coordinate/03-ending-a-wait)处理过）。
+- 正阻塞在睡眠或条件变量上的线程不会因为 request_stop 而醒来，除非等的接口收 stop_token（例如 condition_variable_any 的带 token 重载，正文[《等待也需要结束路径》](../../chapter03-wait-and-coordinate/06-ending-a-wait)处理过）。
 
 ## 常见错误
 
@@ -72,4 +72,4 @@ worker exits after 6 rounds
 
 ## 链回正文
 
-三件套的注册竞态与退出路径检查表，正文备全了。对应篇是《让工作有序结束：std::jthread 与协作式停止》，您点[链接](../../chapter01-start-concurrency/05-jthread-and-stopping) 过去。
+三件套的注册竞态与退出路径检查表，正文备全了。对应篇是《让工作有序结束：std::jthread 与协作式停止》，您点[链接](../../chapter01-start-concurrency/06-jthread-and-stopping) 过去。

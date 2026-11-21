@@ -15,9 +15,9 @@ cpp_standard: [11]
 
 # SeqLock 与自旋锁
 
-本篇是旧卷《原子操作模式》的分篇。素材原本一篇打包了七个模式，正文迁移时做了拆分：停止标志、引用计数与双重检查锁定归第五单元的[《选择内存序需要什么依据》](../../chapter05-atomic-memory-model/03-choosing-memory-orders)，发布-订阅标志也在那里（扩展节），无锁最大值追踪不单独留篇，CAS 循环的重试写法在[《原子操作解决到哪一步》](../../chapter05-atomic-memory-model/01-what-atomics-solve)讲过。选读区留下 SeqLock 与自旋锁两样，它们超出必修线的判断法很直接：不看它们，第五单元的主线（原子操作、内存序判据）仍然完整，剩下的是读多写少与极短临界区两类专门场景的专用设计，咱们把它们收进选读区。
+本篇是旧卷《原子操作模式》的分篇。素材原本一篇打包了七个模式，正文迁移时做了拆分：停止标志、引用计数与双重检查锁定归第五单元的[《内存序的四档：从顺序一致性到 relaxed》](../../chapter05-atomic-memory-model/04-choosing-memory-orders)，发布-订阅标志也在那里（扩展节），无锁最大值追踪不单独留篇，CAS 循环的重试写法在[《原子操作解决到哪一步》](../../chapter05-atomic-memory-model/01-what-atomics-solve)讲过。选读区留下 SeqLock 与自旋锁两样，它们超出必修线的判断法很直接：不看它们，第五单元的主线（原子操作、内存序判据）仍然完整，剩下的是读多写少与极短临界区两类专门场景的专用设计，咱们把它们收进选读区。
 
-读它之前，您需要 happens-before 与 acquire/release 的判据（[《一个线程怎样观察另一个线程的修改》](../../chapter05-atomic-memory-model/02-happens-before)与[《选择内存序需要什么依据》](../../chapter05-atomic-memory-model/03-choosing-memory-orders)），CAS 与 `atomic_flag` 的操作语义在[《原子操作解决到哪一步》](../../chapter05-atomic-memory-model/01-what-atomics-solve)。
+读它之前，您需要 happens-before 与 acquire/release 的判据（[《一个线程怎样观察另一个线程的修改》](../../chapter05-atomic-memory-model/03-happens-before)与[《内存序的四档：从顺序一致性到 relaxed》](../../chapter05-atomic-memory-model/04-choosing-memory-orders)），CAS 与 `atomic_flag` 的操作语义在[《原子操作解决到哪一步》](../../chapter05-atomic-memory-model/01-what-atomics-solve)。
 
 平移来路：机制讲解与代码原样保留，练习只迁了 SeqLock 一道，另加一道自旋锁计时题，我改动的只有编号、frontmatter、指向正文的交叉引用，外加判死词表清理。素材没有声称实测读数，涉及的内核行为（`seqlock_t`）是引用 Linux 内核的公开事实，出处收在参考资源。
 
@@ -250,11 +250,11 @@ private:
 
 两个模式放在一起看，咱们把选择的判据落得具体一些。
 
-如果临界区只是一个简单的变量读取或更新（一个计数器、一个标志、一个最大值），直接用 `std::atomic` 的读改写操作（`fetch_add`、CAS 等）就够了，不需要 mutex，也不需要自旋锁。这是最轻量的选择。内存序怎么挑，咱们在[《选择内存序需要什么依据》](../../chapter05-atomic-memory-model/03-choosing-memory-orders)备了整套判据。
+如果临界区只是一个简单的变量读取或更新（一个计数器、一个标志、一个最大值），直接用 `std::atomic` 的读改写操作（`fetch_add`、CAS 等）就够了，不需要 mutex，也不需要自旋锁。这是最轻量的选择。内存序怎么挑，咱们在[《内存序的四档：从顺序一致性到 relaxed》](../../chapter05-atomic-memory-model/04-choosing-memory-orders)备了整套判据。
 
 如果临界区包含多个变量的协同修改（比如向一个 map 中插入元素，同时更新计数器），那 `std::atomic` 就不够用了，除非您能把多个变量打包成一个用 CAS 更新的结构体，否则老老实实用 `std::mutex`。mutex 虽然有上下文切换的开销，但它保证正确性，且在竞争不激烈时开销很低，Linux 的 futex 在无竞争时完全在用户空间完成。
 
-如果读取频率远高于写入频率，且数据是 trivially copyable 的，SeqLock 是一个好选择，它让读取者完全无锁，代价只是偶尔重试，Linux 内核在很多高频读取场景下使用它。而自旋锁的位置在 mutex 与 atomic 之间：临界区短到 mutex 的上下文切换都嫌贵，又长到单条原子指令包不住的时候，它才有出场机会。日常工程里，咱们建议您量出锁竞争真是瓶颈，再考虑它（[《怎样调整设计》](../../chapter06-validating-designs/03-adjusting-design)）。
+如果读取频率远高于写入频率，且数据是 trivially copyable 的，SeqLock 是一个好选择，它让读取者完全无锁，代价只是偶尔重试，Linux 内核在很多高频读取场景下使用它。而自旋锁的位置在 mutex 与 atomic 之间：临界区短到 mutex 的上下文切换都嫌贵，又长到单条原子指令包不住的时候，它才有出场机会。日常工程里，咱们建议您量出锁竞争真是瓶颈，再考虑它（[《怎样调整设计》](../../chapter06-validating-designs/05-adjusting-design)）。
 
 ## 动手题
 

@@ -2,7 +2,7 @@
 title: "线程在机器上是什么"
 description: "从 std::thread 下到内核线程，看清 1:1 模型与线程的真实开销，看 Linux 的 pthread、clone 与 futex 怎么配合，比较三种线程模型，再看调度怎么排、跑多久。"
 chapter: 5
-order: 2
+order: 9
 tags:
   - host
   - cpp-modern
@@ -11,21 +11,17 @@ tags:
 difficulty: intermediate
 platform: host
 cpp_standard: [11, 20, 23]
-current_status:
-  title: 正在进行打磨
-  detail: 现在是LLM写好的初级稿件，引入是为了初步公开 + 希望收集反馈
-  variant: polishing
 ---
 
 # 线程在机器上是什么
 
-上一篇咱们把《什么时候值得引入并发》的判断立住了。判断说值得，接下来就要动笔，而动笔之前有一个问题值得问清楚：您写下 `std::thread` 的时候，机器上到底多了个什么东西。它不是语言层面的一种说法，在 Linux 上，它是一条真实的内核调度实体，带着自己的栈和寄存器状态，由操作系统的调度器安排着跑。写线程之前知道了它是什么，后面每一行代码您都知道自己买到了什么、付的是什么。
+> 这一篇，是笔者自己给那些希望初步了解一下 `std::thread` 黑盒后到底是什么的朋友写的一些文章！
 
-答案咱们不凭印象说。文中的小实验都收在本页的在线示例里，您点开就能直接运行；我们本地实测的配方是 GCC 16.2.1、`g++ -std=c++20 -pthread`、WSL2（2026-11-14），系统调用层面用 strace（跟踪进程发出的每个系统调用的工具）观察过，涉及 Linux 行为的断言查证过对应的手册页。实验换到您的机器上再跑，地址和编号会变，机制不会变。
+咱们已经写过 `std::thread`，也画过线程轮流用 CPU 的图。那一行代码在 Linux 上究竟做了什么？这篇选读陪您往下追，追到底您会看到一件有点反直觉的事：内核里其实没有"线程"这个特殊物种。系统调用层面咱们用 strace（跟踪进程发出的每个系统调用的工具）观察过，涉及 Linux 行为的断言查证过对应的手册页。
 
 ## 从 `std::thread` 到内核线程：1:1 模型
 
-咱们从最小的一段代码开始。
+从最小的一段代码追起：
 
 <OnlineCompilerDemo
   title="最小的 std::thread 程序"
@@ -33,7 +29,24 @@ current_status:
   description="构造即启动：声明 std::thread 的那一行执行完，系统里多了一条执行流，join 等它结束。"
   run-options="-O2 -std=c++23 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// 最小的 std::thread 程序:构造即启动,join 等待
+#include <print>
+#include <thread>
+
+void work() {
+    std::println("working");
+}
+
+int main() {
+    std::thread t(work); // 这一行执行完，系统里多了一条执行流
+    t.join();
+}
+```
+
+</OnlineCompilerDemo>
 
 构造即启动。`std::thread` 的构造函数（C++11 起）拿到工作函数之后，不是登记了再排队，而是当场创建一条新的执行流，新线程立刻开始跑 `work`。空口无凭，咱们用 strace 跟了一趟 `std::thread t(work);`，看它触发了什么（输出有删节，地址因机器而异，长行折了行）：
 
@@ -53,7 +66,29 @@ clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|
   description="主线程与两条工作线程报告各自的进程号与线程编号——进程号相同、tid 各异，线程是 CPU 调度的基本单位。"
   run-options="-O2 -std=c++23 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// 线程与进程编号:同一个进程里的多条执行流,tid 各不相同
+#include <print>
+#include <sys/syscall.h>
+#include <thread>
+#include <unistd.h>
+
+static long my_tid() {
+    return syscall(SYS_gettid);
+}
+
+int main() {
+    std::println("main    : getpid = {}, tid = {}", getpid(), my_tid());
+    std::thread t1([] { std::println("worker-1: getpid = {}, tid = {}", getpid(), my_tid()); });
+    std::thread t2([] { std::println("worker-2: getpid = {}, tid = {}", getpid(), my_tid()); });
+    t1.join();
+    t2.join();
+}
+```
+
+</OnlineCompilerDemo>
 
 ```text
 main    : getpid = 46, tid = 46
@@ -73,14 +108,40 @@ worker-2: getpid = 46, tid = 48
   description="用 pthread_getattr_np 查主线程与工作线程的栈大小，这个数是查出来的，不是猜的。"
   run-options="-O2 -std=c++23 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// 每条线程的栈有多大:pthread_getattr_np 查实际栈大小
+#include <cstddef>
+#include <print>
+#include <pthread.h>
+#include <thread>
+
+static void report(const char* who) {
+    pthread_attr_t attr;
+    void* addr = nullptr;
+    size_t size = 0;
+    pthread_getattr_np(pthread_self(), &attr);
+    pthread_attr_getstack(&attr, &addr, &size);
+    std::println("{} stack size = {} KB", who, size / 1024);
+    pthread_attr_destroy(&attr);
+}
+
+int main() {
+    report("main  ");
+    std::thread t([] { report("worker"); });
+    t.join();
+}
+```
+
+</OnlineCompilerDemo>
 
 ```text
 main   stack size = 8184 KB
 worker stack size = 8192 KB
 ```
 
-新线程的栈是 8192 KB，也就是 8 MB，正好等于咱们机器 `ulimit -s` 的值。这不是巧合，pthreads（POSIX 线程接口，下一节细讲）的手册页写明：只要栈大小的软限制（`RLIMIT_STACK`）不是 unlimited，它就决定新线程的默认栈大小。所以“Linux 默认线程栈 8 MB”这句话只对默认配置成立，您拿 `ulimit -s` 对一下自己机器的数就知道了。
+新线程的栈是 8192 KB，也就是 8 MB，正好等于咱们机器 `ulimit -s` 的值。这是因为 pthreads 的手册页写明：只要栈大小的软限制（`RLIMIT_STACK`）不是 unlimited，它就决定新线程的默认栈大小。所以“Linux 默认线程栈 8 MB”这句话只对默认配置成立，您拿 `ulimit -s` 对一下自己机器的数就知道了。
 
 输出里 main 报的 8184 KB 是进程自己的栈，来历不同，咱们看一眼就好，不用管它。还有一个细节要交代准确：8 MB 是预留的虚拟地址空间，物理内存按实际用到的页增长，一条刚出生的线程并没有真的占掉 8 MB 内存。但这个预留本身就是约束，开一万条线程会怎样，咱们摆一下数：光栈的预留就是 80 GB 的地址空间，加上内核要为每条线程维护的调度信息，量级告诉您 `std::thread` 不是拿来撒的。
 
@@ -92,7 +153,47 @@ worker stack size = 8192 KB
   description="两个线程用互斥锁加条件变量互相通知，十万次往返计时，量出唤醒与切换的开销。"
   run-options="-O2 -std=c++23 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// 条件变量乒乓:两个线程互相通知十万次,量一次唤醒往返的开销
+#include <chrono>
+#include <condition_variable>
+#include <mutex>
+#include <print>
+#include <thread>
+
+int main() {
+    std::mutex m;
+    std::condition_variable cv;
+    int turn = 0;
+    constexpr long kRounds = 100000;
+    std::thread worker([&] {
+        std::unique_lock<std::mutex> lk(m);
+        for (long i = 0; i < kRounds; ++i) {
+            cv.wait(lk, [&] { return turn == 1; });
+            turn = 0;
+            cv.notify_one();
+        }
+    });
+    auto start = std::chrono::steady_clock::now();
+    {
+        std::unique_lock<std::mutex> lk(m);
+        for (long i = 0; i < kRounds; ++i) {
+            turn = 1;
+            cv.notify_one();
+            cv.wait(lk, [&] { return turn == 0; });
+        }
+    }
+    auto end = std::chrono::steady_clock::now();
+    worker.join();
+    const long us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    std::println("rounds = {}, total = {} us, per round trip = {} us", kRounds, us,
+                 static_cast<double>(us) / kRounds);
+}
+```
+
+</OnlineCompilerDemo>
 
 ```text
 rounds = 100000, total = 5634019 us, per round trip = 56.3402 us
@@ -100,7 +201,7 @@ rounds = 100000, total = 5641756 us, per round trip = 56.4176 us
 rounds = 100000, total = 5764721 us, per round trip = 57.6472 us
 ```
 
-咱们跑了三遍，都在 56 到 58 微秒（WSL2 虚拟化环境，裸机多半更低）。一次往返里装着两次睡眠与唤醒、两次线程切换，还有锁自身的开销，所以它给的是切换成本的一个偏高的口径。咱们按几十微秒一次来估，切换是真实的钱。第一篇讲任务粒度时说太碎的任务会被开销吃掉，钱花在哪，花在这里。
+咱们跑了三遍，都在 56 到 58 微秒（WSL2 虚拟化环境，裸机多半更低）。一次往返里装着两次睡眠与唤醒、两次线程切换，还有锁自身的开销，所以它给的是切换成本的一个偏高的口径。咱们按几十微秒一次来估，切换是真实的钱。我们曾经讲过：任务分得太碎，收益就可能被开销吃掉。钱花在哪，花在这里。
 
 ## Linux 的实现：pthread、clone 与 futex
 
@@ -108,7 +209,7 @@ rounds = 100000, total = 5764721 us, per round trip = 57.6472 us
 
 clone 是 Linux 最底层的创建执行流的原语。`fork()` 创建一个全新的进程，父子什么都不共享。clone 让调用者逐项指定共享哪些。地址空间、文件描述符表、信号处置、文件系统信息（当前目录、umask 这些），都可以单列进去。有一个说法值得转过来：内核内部其实没有“线程”这个特殊物种，它调度的是一条条任务，进程与线程的差别只是共享了多少。共享清单开得越多，新执行流越像线程。一项都不共享，它就是一个传统进程。pthread_create 要的是大部分共享的那一档，咱们在上一节 strace 里看到的那个 flags 串就是清单本身：`CLONE_VM` 共享地址空间，`CLONE_FILES` 共享文件描述符表，`CLONE_SIGHAND` 共享信号处置，`CLONE_THREAD` 把新执行流放进同一个线程组，让三条线程共用同一个进程编号。清单末尾的 `CLONE_CHILD_CLEARTID` 平时不起眼，值得单独看一眼，它跟线程的结束有关，讲到 futex 的时候咱们回头把它接上。
 
-创建说完了，咱们接着说同步。互斥锁有个天然的难题：锁没有被争抢的时候，加锁解锁要不要跑一趟内核？Linux 的答案是 futex（fast userspace mutex，快速用户态互斥锁），思路一句话：没有竞争，全程留在用户态，几条原子指令完事。真有竞争，才进内核，让内核把等锁的线程挂起，等持有者释放时再把它唤醒。手册页 futex(7) 的原话翻译过来是“无竞争时整个操作都在用户空间完成”，内核只在有竞争的时候才出场。
+创建追完了，接着追同步。互斥锁有个天然的难题：锁没有被争抢的时候，加锁解锁要不要跑一趟内核？Linux 的答案是 futex（fast userspace mutex，快速用户态互斥锁），思路一句话：没有竞争，全程留在用户态，几条原子指令完事。真有竞争，才进内核，让内核把等锁的线程挂起，等持有者释放时再把它唤醒。手册页 futex(7) 的原话翻译过来是“无竞争时整个操作都在用户空间完成”，内核只在有竞争的时候才出场。
 
 咱们把两条路径都实测了一遍。第一趟，主线程独自对一把没人争的 mutex 加锁解锁一百万次，用 `strace -c` 数系统调用（`strace -c` 输出截取）：
 
@@ -138,13 +239,13 @@ N:1 是一个极端：多条用户线程全部挂在一个内核线程上。创�
 
 M:N 试图两头都占：M 条用户线程映射到 N 条内核线程上，M 通常远大于 N。调度器运行在用户态，把用户线程分配到内核线程上执行，用户线程保持轻量，内核线程的数量又足以铺开到多个核心。Go 的 goroutine 是这个模型的代表，它的初始栈只有几 KB，由 Go 运行时的调度器安排到少量操作系统线程上。代价是运行时自身的复杂度：抢占、系统调用的包装、两级栈的管理，都要运行时自己处理，这些恰好是内核本来替 1:1 模型做的事情。咱们在 C++ 里一般不碰这个复杂度，除非自己做运行时。
 
-C++ 的位置在 1:1。`std::thread` 在主流平台的标准实现里都落在操作系统的原生线程接口上（Linux 语境咱们已经实测过，直接到 clone），所以前面两节的开销分析对它逐条成立。当任务数量远超核数、每个任务又很轻时，一条任务一条线程就不经济了，现成的路有两条。线程池用固定数量的工作线程加任务队列，把线程创建的成本摊销掉。线程池的教学级完整版本，我计划写进 cookbook 的选读区，写好后在参考资源补链接。协程把“可以暂停的工作”作为语言机制，本卷后面讲协程的单元会专门展开。两者本质上都是在 1:1 之上构建的调度策略，把“接下来跑哪条”的决定从内核拿回来一部分，由库或者您自己掌控。第一篇讲过“您需要的是异步 I/O”的情形，协程正是其中一条路。
+C++ 的位置在 1:1。`std::thread` 在主流平台的标准实现里都落在操作系统的原生线程接口上（Linux 语境咱们已经实测过，直接到 clone），所以前面两节的开销分析对它逐条成立。当任务数量远超核数、每个任务又很轻时，一条任务一条线程就不经济了，现成的路有两条。线程池用固定数量的工作线程加任务队列，把线程创建的成本摊销掉。线程池的教学级完整版本，我计划写进 cookbook 的选读区，写好后在参考资源补链接。协程把“可以暂停的工作”作为语言机制，本卷后面讲协程的单元会专门展开。两者本质上都是在 1:1 之上构建的调度策略，把“接下来跑哪条”的决定从内核拿回来一部分，由库或者您自己掌控。《什么时候值得引入并发》讲过“您需要的是异步 I/O”的情形，协程正是其中一条路。
 
 ## 调度：怎么排，跑多久
 
-线程创建好了，接下来是操作系统的日常：机器上几千条线程，十几个核心，怎么排，每条跑多久。咱们写并发程序时看不到这个决定的过程，但它决定了程序表现出来的全部时间性质，值得认识一下它的脾气。
+最后一站是操作系统的日常：机器上几千条线程，十几个核心，怎么排，每条跑多久。咱们写并发程序时看不到这个决定的过程，但它决定了程序表现出来的全部时间性质，值得认识一下它的脾气。
 
-现代操作系统对普通线程普遍采用抢占式调度：调度器给线程分配一小段 CPU 时间，时间用完了就换人，不管当前线程愿不愿意。Linux 手册的措辞是，所有调度都是抢占式的。抢占保证任何一条线程都霸占不了 CPU，代价是切换发生的时刻您无法预测。这个无法预测是并发程序大量怪异行为的源头，下一篇您会亲眼看到几条线程的输出交错在一起，后面讲并发基本问题的那一篇里，数据竞争也扎根在这里。
+现代操作系统可以抢占正在运行的线程，把 CPU 交给另一条线程。具体什么时候换人，由调度策略决定。咱们在《第一个 std::thread 程序》里见过几条线程的输出交错在一起，回头再看，您现在有了更具体的解释。
 
 时间片这个词您会常看到，教科书讲抢占式时用它称呼“分给一条线程的那一小段时间”。Linux 的普通调度器没有固定的时间片，咱们把它的实际做法说清楚。平时创建的线程全部默认属于 SCHED_OTHER 策略（内核源码里叫 SCHED_NORMAL），实现这个策略的调度器从 2.6.23 起是 CFS（完全公平调度器），思路是给每条线程记录一个虚拟运行时间，虚拟运行时间落后的一条下一个上，让同优先级的线程公平地分到 CPU。内核 6.6 起换成了 EEVDF，公平的目标没变，选下一条线程时再按虚拟截止时间排序，对响应敏感的任务可以申请更短的时间片。CFS 和 EEVDF 两个名字，您知道到这个程度就够，SCHED_OTHER 的语义在两个实现之间是稳定的，咱们写的程序不需要区分底下是谁。
 
@@ -158,7 +259,35 @@ C++ 的位置在 1:1。`std::thread` 在主流平台的标准实现里都落在�
   description="经 native_handle 拿到 pthread_t，用 POSIX 接口把线程绑到固定核心。在线沙箱仅 2 核，示例绑 cpu 0，本地机器可改绑其他核心。"
   run-options="-O2 -std=c++23 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// sched_setaffinity 绑核:经 native_handle 拿 pthread_t,用 POSIX 接口绑固定核心
+// 在线沙箱只有 2 个逻辑核,这里绑 cpu 0;本地机器可改绑其他核心
+#ifndef _GNU_SOURCE
+#    define _GNU_SOURCE
+#endif
+#include <print>
+#include <pthread.h>
+#include <sched.h>
+#include <thread>
+
+int main() {
+    std::thread t([] {
+        for (int i = 0; i < 3; ++i)
+            std::println("worker on cpu {}", sched_getcpu());
+    });
+    cpu_set_t set;
+    CPU_ZERO(&set);
+    CPU_SET(0, &set);
+    pthread_t native = t.native_handle();
+    int rc = pthread_setaffinity_np(native, sizeof(set), &set);
+    std::println("pin worker to cpu 0 via native_handle, rc = {}", rc);
+    t.join();
+}
+```
+
+</OnlineCompilerDemo>
 
 ```text
 pin worker to cpu 5 via native_handle, rc = 0
@@ -171,7 +300,7 @@ worker on cpu 5
 
 ## 下一步
 
-这一篇回答了“线程是什么”。它是一条真实的内核调度实体，带着自己的栈，在 Linux 上由 clone 创建，futex 配合同步与结束，调度器排它上核心的时间。下一篇《第一个 `std::thread` 程序》回到代码上，您亲手启动几条执行流，看它们交错输出、互相争抢，亲眼看一遍调度的不确定性长什么样。认识了机器上的线程，写起 `std::thread` 来，每一行您都知道自己落到了哪里。
+咱们看过调度器怎么给线程安排时间了。回到 C++ 程序里，两条线程换一种次序执行，结果也得对。下一单元从一个算错的计数器入手，看看同一份数据被两条线程碰到时，会出什么问题。 [同一个计数器，两条线程为什么算不对？](../chapter02-sharing-data/01-from-wrong-programs)
 
 ## 参考资源
 

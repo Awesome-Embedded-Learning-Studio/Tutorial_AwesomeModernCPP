@@ -17,7 +17,7 @@ cpp_standard: [17]
 
 本篇与[《Actor 模型与 Supervisor 策略》](08-actor-model)是一对：两个流派都主张“不共享内存”，但走法不同。它们不进必修单元，咱们把这一对整篇平移住进选读区。
 
-读它之前，您需要读过 [《Actor 模型与 Supervisor 策略》](08-actor-model)（对比双方才立得住），会用 mutex 与条件变量组织生产者-消费者（[《用互斥保护共享状态》](../../chapter02-sharing-data/02-mutex-and-locks)、[《等待一个条件成立》](../../chapter03-wait-and-coordinate/01-wait-for-a-condition)），见过队列的关闭语义（[《写一个有容量限制的任务队列》](../../chapter03-wait-and-coordinate/02-bounded-queue)）。
+读它之前，您需要读过 [《Actor 模型与 Supervisor 策略》](08-actor-model)（对比双方才立得住），会用 mutex 与条件变量组织生产者-消费者（[《丢掉的数怎么收回来？——std::mutex 与三种作用域锁》](../../chapter02-sharing-data/02-mutex-and-locks)、[《等一个条件：从轮询到条件变量》](../../chapter03-wait-and-coordinate/01-wait-for-a-condition)），见过队列的关闭语义（[《队列关不上会怎样：关闭与背压》](../../chapter03-wait-and-coordinate/04-queue-close-and-backpressure)）。
 
 平移来路：机制讲解、代码与练习原样保留，我改动的只有编号、frontmatter、指向正文的交叉引用，外加判死词表清理。素材声称的编译环境（GCC 12+ / Clang 15+ / MSVC 2022+，`-std=c++17 -pthread -O2`）原样保留，本轮我没有重新编译验证。
 
@@ -178,7 +178,7 @@ private:
 
 ### 有缓冲 Channel
 
-有缓冲 channel 内部就是一个线程安全队列，咱们在[《写一个有容量限制的任务队列》](../../chapter03-wait-and-coordinate/02-bounded-queue)已经非常熟悉了。缓冲区未满时，发送方直接入队就返回。缓冲区满时，发送方阻塞等待有空位。关闭后，接收方可以继续消费队列里的剩余数据，队列空了才返回 `std::nullopt`。
+有缓冲 channel 内部就是一个线程安全队列，咱们在[《有容量的队列：先让它站得住》](../../chapter03-wait-and-coordinate/03-bounded-queue)已经非常熟悉了。缓冲区未满时，发送方直接入队就返回。缓冲区满时，发送方阻塞等待有空位。关闭后，接收方可以继续消费队列里的剩余数据，队列空了才返回 `std::nullopt`。
 
 ```cpp
 template <typename T>
@@ -785,7 +785,7 @@ Go 的博客里有一个经典的例子，用管道实现并发 MD5 哈希计算
 
 到这里，选读区“不共享内存”这对篇目就齐了。咱们用了两篇的篇幅来探讨不用共享内存的并发范式，Actor 模型和 CSP 模型。它们都追求同一个目标，消除共享状态带来的复杂性，但走了不同的路，Actor 用身份和邮箱来解耦，CSP 用匿名的 channel 来解耦。在实际工程中，两种模型经常会混合使用，比如在一个 Actor 系统内部，Actor 之间的通信可能就是靠 channel 来实现的。
 
-想回到必修线的话，下一个大话题是并发设计的验证：您的并发程序出了问题时怎么定位和修复，收益怎么量，设计怎么调，第六单元的[《怎样寻找并发错误》](../../chapter06-validating-designs/01-finding-concurrency-bugs)、[《怎样衡量并发带来的收益》](../../chapter06-validating-designs/02-measuring-benefits)与[《怎样调整设计》](../../chapter06-validating-designs/03-adjusting-design)，三篇连起来讲完整套方法，您可以接着读。
+想回到必修线的话，下一个大话题是并发设计的验证：您的并发程序出了问题时怎么定位和修复，收益怎么量，设计怎么调，第六单元的[《竞争找出来：重复测试与 TSan》](../../chapter06-validating-designs/01-finding-concurrency-bugs)、[《量之前，先把条件立住：串行基线与测量的陷阱》](../../chapter06-validating-designs/03-measuring-benefits)与[《怎样调整设计》](../../chapter06-validating-designs/05-adjusting-design)，三篇连起来讲完整套方法，您可以接着读。
 
 > 完整示例代码在 [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)，您可以到 `code/volumn_codes/vol5/ch07-actor-channel/` 取用。
 

@@ -19,9 +19,7 @@ current_status:
 
 # 任务什么时候执行：启动策略与等待行为
 
-上一篇 4.1《用 `std::async` 执行计算》把发起和取结果讲完了：任务交给 `std::async`，结果从 `future` 里取，异常也顺着它传回来。4.1 的演示从头到尾用的都是不带策略的默认写法，标准写的“可能在新线程上发起”，咱们也一直没展开。还剩一个疑问咱们没有碰：您把任务交出去以后，它到底什么时候开工？
-
-答案有三种，而且标准把其中一种的选择权交给了实现。启动策略（launch policy）就是 `std::async` 的启动参数，任务什么时候开工归它管。咱们把三种策略逐一跑一遍，把 deferred 的三个陷阱用实验摆出来。随后是第一个扩展节（deferred 什么时候值得主动选），再回主线讲析构的等待行为，最后是第二个扩展节（析构为什么等）。
+答案有三种，而且标准把其中一种的选择权交给了实现。**启动策略**（launch policy）就是 `std::async` 的启动参数，任务什么时候开工归它管。
 
 ## async、deferred 与默认策略
 
@@ -29,7 +27,7 @@ current_status:
 
 `std::launch::async` 的意思是：`std::async` 的调用会在新的执行线程里把函数调起来，返回值和异常存进共享状态。条款里有一句补充，请您留意：线程对象本身，也存进共享状态（[futures.async]/3.1）。眼下看不出用途，扩展节里它是答案的一半。措辞上还有一处值得细看，标准形容异步执行，原话是“像在一个由 thread 对象代表的新执行线程里”。咱们照字面读，thread 对象意味着每回都是老老实实的一条新线程，不是从线程池里捞出来的。cppreference 首句的概述是 might be a part of a thread pool，页面给实现留了线程池的可能，您翻引用页时会看见两个说法。条文按 thread 对象写，咱们照条文读。本机走哪条路，后面的源码节选会摆出来，每回都是新起的一条线程。
 
-`std::launch::deferred` 则相反：函数和实参被存进共享状态，谁也不动它们。第一次对返回的 future 调用非计时等待函数（`wait` 和 `get` 都算）时，函数才在调用等待函数的线程里执行（[futures.async]/3.2）。您不给它这一天，它就一直存着。
+`std::launch::deferred` 则相反：函数和实参被存进共享状态，谁也不动它们。第一次对返回的 future 调用非计时等待函数（`wait` 和 `get` 都算）时，函数才在调用等待函数的线程里执行（[futures.async]/3.2）。您始终不调，它就一直存着。
 
 两个旗标都写上的时候，标准没有规定实现选哪种，只留了一句推荐实践：并发已经用不上的时候，实现应当推迟执行，或者推迟选择（[futures.async]/3.2 的 Recommended practice）。cppreference 的 Notes 里还提到，个别实现会给默认策略添自己的位，举过 sync 和 task 两种自定义策略的例子。咱们读到这儿就记下：选哪个，是实现的自由。
 
@@ -38,10 +36,55 @@ current_status:
 <OnlineCompilerDemo
   title="同一任务三种策略各跑一遍，看线程号和时刻"
   source-path="code/examples/vol5/chapter04/06_demo_three_policies.cpp"
-  description="任务睡 50 毫秒后打印自己所在的线程号与时刻；async 组换线程立刻开工，deferred 组等 get 才在 main 线程里跑，default 组在本机长得跟 async 一样。"
+  description="任务睡 50 毫秒后打印自己所在的线程号与时刻，async 组换线程立刻开工，deferred 组等 get 才在 main 线程里跑，default 组在本机长得跟 async 一样。"
   run-options="-O2 -std=c++20 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// demo_three_policies.cpp —— 同一任务三种策略各跑一遍，看线程号和时刻
+#include <chrono>
+#include <cstdio>
+#include <functional>
+#include <future>
+#include <thread>
+
+using namespace std::chrono_literals;
+using Clock = std::chrono::steady_clock;
+
+std::size_t id_of() {
+  return std::hash<std::thread::id>{}(std::this_thread::get_id());
+}
+
+double since(Clock::time_point t0) {
+  return std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
+}
+
+void probe(const char* tag, Clock::time_point t0) {
+  std::this_thread::sleep_for(50ms);   // 任务本体算作 50 ms 的活
+  std::printf("  %s 在线程 %zu 上执行，距 async 返回 %.1f ms\n",
+              tag, id_of(), since(t0));
+}
+
+void case_of(const char* tag, std::launch policy) {
+  std::printf("[%s] main 线程是 %zu\n", tag, id_of());
+  auto t0 = Clock::now();
+  std::future<void> f = std::async(policy, probe, tag, t0);
+  std::this_thread::sleep_for(100ms);  // 给后台任务留出 100 ms 的窗口
+  std::printf("[%s] main 睡了 100 ms，现在调 get\n", tag);
+  f.get();
+  std::printf("[%s] get 返回，全程 %.1f ms\n\n", tag, since(t0));
+}
+
+int main() {
+  case_of("async   ", std::launch::async);
+  case_of("deferred", std::launch::deferred);
+  case_of("default ", std::launch::async | std::launch::deferred);
+  return 0;
+}
+```
+
+</OnlineCompilerDemo>
 
 ```text
 [async   ] main 线程是 12072240331452761199
@@ -64,7 +107,7 @@ current_status:
 
 > default 组的线程号跟 async 组完全相同，您要是多看一眼就会发问。前一条线程早已结束，系统把线程号收回去复用了，咱们看到的不是同一条线程还活着。
 
-本机默认策略选了 async，这是 libstdc++ 的做法，不是标准的要求。选择逻辑写在咱们跑实验的电脑自带的 `/usr/include/c++/16/future` 里：
+本机默认策略选了 async，这是 libstdc++ 的做法，标准没作要求。选择逻辑写在咱们跑实验的电脑自带的 `/usr/include/c++/16/future` 里：
 
 ```cpp
 // /usr/include/c++/16/future（节选，注释为笔者所加；try 为原文内部宏 __try 的展开式，异常宏分支省略）
@@ -89,7 +132,7 @@ if (!__state)
 
 ## deferred 的陷阱
 
-deferred 的行为每一条都写在标准里，标准本身没有含糊的地方。会含糊的是咱们的预期，我把它分成三个陷阱，每个都配了实验。
+deferred 的行为每一条都写在标准里，标准本身没有含糊的地方。会含糊的是咱们的预期，笔者把它分成三个陷阱，每个都配了实验。
 
 ### 陷阱一：不调用就永不执行
 
@@ -100,10 +143,49 @@ deferred 的任务不占任何线程。它就是共享状态里存着的函数�
 <OnlineCompilerDemo
   title="deferred 不调用就永不执行，析构也不补跑"
   source-path="code/examples/vol5/chapter04/07_demo_deferred_never_runs.cpp"
-  description="deferred 的 future 拿在手里 0.0 毫秒走完，面包从头到尾没进过烤箱；async 只丢弃临时 future，析构却等了 200 毫秒。本地加 -Wall 会看到 nodiscard 告警，正文析构一节专门讲它。"
+  description="deferred 的 future 拿在手里 0.0 毫秒走完，面包从头到尾没进过烤箱，async 只丢弃临时 future，析构却等了 200 毫秒。本地加 -Wall 会看到 nodiscard 告警，正文析构一节专门讲它。"
   run-options="-O2 -std=c++20 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// demo_deferred_never_runs.cpp —— deferred 不调用就永不执行，析构也不补跑
+#include <chrono>
+#include <cstdio>
+#include <future>
+#include <thread>
+
+using namespace std::chrono_literals;
+using Clock = std::chrono::steady_clock;
+
+double since(Clock::time_point t0) {
+  return std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
+}
+
+void bake() {
+  std::this_thread::sleep_for(200ms);
+  std::printf("  bake: 面包出炉了\n");
+}
+
+int main() {
+  {
+    auto t0 = Clock::now();
+    std::future<void> f = std::async(std::launch::deferred, bake);
+    std::printf("[deferred] future 一直在手里，没调 get 也没调 wait\n");
+    std::printf("[deferred] 到作用域结尾丢弃，共 %.1f ms，上面没有 bake 的输出\n",
+                since(t0));
+  }
+  {
+    auto t0 = Clock::now();
+    std::async(std::launch::async, bake);   // 临时 future 在分号处析构
+    std::printf("[async] 丢弃临时 future，整个表达式 %.1f ms\n", since(t0));
+  }
+  std::printf("main 到头了，bake 只烤成过一次\n");
+  return 0;
+}
+```
+
+</OnlineCompilerDemo>
 
 ```text
 [deferred] future 一直在手里，没调 get 也没调 wait
@@ -127,7 +209,49 @@ deferred 组里，bake 的输出一行都没有。future 一直在手里也好�
   description="三次 wait_for(100ms) 各花 0.000 毫秒、都返回 deferred，改用 get() 任务这才执行。拿它写超时轮询会空转烧满一个核。"
   run-options="-O2 -std=c++20 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// demo_wait_for_spins.cpp —— deferred 的 wait_for 立刻返回，不执行也不等待
+#include <chrono>
+#include <cstdio>
+#include <future>
+#include <thread>
+
+using namespace std::chrono_literals;
+using Clock = std::chrono::steady_clock;
+
+double since(Clock::time_point t0) {
+  return std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
+}
+
+const char* name_of(std::future_status s) {
+  switch (s) {
+    case std::future_status::deferred: return "deferred";
+    case std::future_status::ready:    return "ready";
+    default:                           return "timeout";
+  }
+}
+
+int work() {
+  std::this_thread::sleep_for(50ms);
+  return 7;
+}
+
+int main() {
+  std::future<int> f = std::async(std::launch::deferred, work);
+  for (int i = 1; i <= 3; ++i) {
+    auto t0 = Clock::now();
+    std::future_status st = f.wait_for(100ms);
+    std::printf("第 %d 次 wait_for(100ms) -> %-8s 实际用时 %.3f ms\n",
+                i, name_of(st), since(t0));
+  }
+  std::printf("改用 get()，任务这才执行 -> %d\n", f.get());
+  return 0;
+}
+```
+
+</OnlineCompilerDemo>
 
 ```text
 第 1 次 wait_for(100ms) -> deferred 实际用时 0.000 ms
@@ -150,7 +274,41 @@ deferred 在调用等待函数的线程里执行。调用等待函数的线程�
   description="同一个 bump：async 版在新线程从零算到 1，deferred 版在 main 的 get 里执行，看见 main 已加到 3 的实例算到 4，main 手里的 counter 跟着变 4。"
   run-options="-O2 -std=c++20 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// demo_deferred_thread_local.cpp —— deferred 在调用 get 的线程里跑，thread_local 踩空
+#include <cstdio>
+#include <functional>
+#include <future>
+#include <thread>
+
+thread_local int counter = 0;   // 每条线程各有一份
+
+std::size_t id_of() {
+  return std::hash<std::thread::id>{}(std::this_thread::get_id());
+}
+
+int bump() {
+  counter += 1;
+  std::printf("  bump 在线程 %zu 上，counter 算到 %d\n", id_of(), counter);
+  return counter;
+}
+
+int main() {
+  std::printf("main 线程是 %zu，counter 加到 3\n", id_of());
+  counter = 3;
+  std::future<int> fa = std::async(std::launch::async, bump);
+  std::future<int> fd = std::async(std::launch::deferred, bump);
+  int a = fa.get();
+  int d = fd.get();
+  std::printf("async 的答案 %d，deferred 的答案 %d\n", a, d);
+  std::printf("main 手里的 counter 是 %d\n", counter);
+  return 0;
+}
+```
+
+</OnlineCompilerDemo>
 
 ```text
 main 线程是 1278684541068337386，counter 加到 3
@@ -166,11 +324,11 @@ thread_local 的实例跟着线程走，其余依赖线程身份的代码也一�
 
 ## deferred 的合理用法（扩展）
 
-> 本节是扩展，您跳过它不影响主线。陷阱讲完了，剩下的内容是 deferred 什么时候值得主动选，看完再回主线讲析构。
+> 本节是扩展，您跳过它不影响主线。剩下的内容是 deferred 什么时候值得主动选。
 
 咱们把陷阱反过来读。deferred 的每个陷阱，换个场景都是特性。不调用就不执行，懒求值要的正是这个。任务在调用线程里跑，起线程的开销也跟着省了。至于 `wait_for` 立刻返回 deferred，您正好拿它探测一个还没开始跑的任务。
 
-我见它好用有两种场合。
+笔者见它好用有两种场合。
 
 一是懒求值。解析一份配置文件要几百毫秒，程序里只有某个分支才用到它。您把它包成 deferred，真走到用它的地方才 `get`，没走到就一分钱不花：
 
@@ -193,17 +351,70 @@ if (mode == Mode::Fancy) {
 
 ## 返回 future 的析构行为
 
-咱们回到主线。陷阱一里丢弃 deferred，future 析构 0 毫秒。换成 `launch::async`，同一个丢弃动作变成了等待。本节把等待的条件和行为讲清楚。
-
 规则的原文在 [futures.state]/5，咱们从骨架看起。future（以及其他异步对象）析构时“释放”共享状态，一般是放手就走。例外要三个条件同时成立：状态由 `std::async` 创建，状态还没就绪，放手的是最后一个引用。三者凑齐，释放可能阻塞。[futures.async]/5 的注补了一句人话：从 async 拿到的 future 如果被移出局部作用域，它的析构可能为了等共享状态就绪而阻塞。cppreference 把另一半也写了：别的途径拿到的 future，析构从不阻塞。
 
 <OnlineCompilerDemo
   title="丢弃式 async 逐个等待，启动完再收集才并行"
   source-path="code/examples/vol5/chapter04/10_demo_dtor_blocks.cpp"
-  description="丢弃式三行各自等满 300 毫秒累计 900 多毫秒；future 存进容器全部启动完再统一 get，三个一起只要 300 毫秒。deferred 丢弃与 promise 的 future 析构都是 0.0 毫秒谁也不等。"
+  description="丢弃式三行各自等满 300 毫秒累计 900 多毫秒，future 存进容器全部启动完再统一 get，三个一起只要 300 毫秒。deferred 丢弃与 promise 的 future 析构都是 0.0 毫秒谁也不等。"
   run-options="-O2 -std=c++20 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// demo_dtor_blocks.cpp —— 丢弃式 async 逐个等待，启动完再收集才并行
+#include <chrono>
+#include <cstdio>
+#include <future>
+#include <thread>
+#include <vector>
+
+using namespace std::chrono_literals;
+using Clock = std::chrono::steady_clock;
+
+double since(Clock::time_point t0) {
+  return std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
+}
+
+void nap(const char* tag) {
+  std::this_thread::sleep_for(300ms);
+  std::printf("  %s 干完了\n", tag);
+}
+
+int main() {
+  auto t0 = Clock::now();
+  std::async(std::launch::async, nap, "A1");
+  double a1 = since(t0);
+  std::async(std::launch::async, nap, "A2");
+  double a2 = since(t0);
+  std::async(std::launch::async, nap, "A3");
+  std::printf("[丢弃式] A1 用 %.1f ms，A2 累计 %.1f ms，A3 累计 %.1f ms\n",
+              a1, a2, since(t0));
+
+  t0 = Clock::now();
+  std::vector<std::future<void>> fs;
+  for (const char* tag : {"B1", "B2", "B3"}) {
+    fs.push_back(std::async(std::launch::async, nap, tag));
+  }
+  for (auto& f : fs) f.get();
+  std::printf("[启动完再收集] 三个一起 %.1f ms\n", since(t0));
+
+  t0 = Clock::now();
+  std::async(std::launch::deferred, nap, "C");
+  std::printf("[deferred 丢弃] %.1f ms，上面没有 C 干完的输出\n", since(t0));
+
+  t0 = Clock::now();
+  {
+    std::promise<void> p;   // promise 是 4.3《自行传递结果》的主角，这里只借它的 future 当对照
+    std::future<void> f = p.get_future();
+    (void)f;
+  }
+  std::printf("[promise 的 future 析构] %.1f ms，谁也不等\n", since(t0));
+  return 0;
+}
+```
+
+</OnlineCompilerDemo>
 
 ```text
   A1 干完了
@@ -220,7 +431,7 @@ if (mode == Mode::Fancy) {
 
 丢弃式三行，每行各自等满 300 毫秒，累计 904.7 毫秒，A1 到 A3 的输出按顺序排队。咱们眼睛看着是三行并排的代码，机器执行是严格串行：前一个临时 future 析构完，后一个任务才起。想让任务并行，就把 future 存进容器，全部启动完再统一 `get`，B 组三个一起只花了 300.6 毫秒。
 
-4.1 收尾留过一句话，任务抛出的异常还会不会被任何人看见，也系在析构的等待行为上。咱们现在能答了：丢弃式 async 里任务抛了异常，析构等到任务完成，异常存进共享状态，最后一个引用放手，状态销毁，异常跟着一起没了（[futures.state]/5.1）。想让它被看见，就得有人来 `get`。该推论我从条款读出来，没有单独立实验，异常确实存进共享状态这一半，4.1 已经验过，咱们这里补的只是销毁那一步。
+4.1 收尾留过一句话，任务抛出的异常还会不会被任何人看见，也系在析构的等待行为上。咱们现在能答了：丢弃式 async 里任务抛了异常，析构等到任务完成，异常存进共享状态，最后一个引用放手，状态销毁，异常跟着一起没了（[futures.state]/5.1）。想让它被看见，就得有人来 `get`。该推论笔者从条款读出来，没有单独立实验，存异常的动作 4.1 已经验过，咱们这里补的只是销毁的环节。
 
 deferred 丢弃 0.0 毫秒，跟陷阱一的读数一致。promise 的 future 析构也是 0.0 毫秒，谁也不等。promise 是 4.3《自行传递结果：`std::promise` 与 `std::future`》的主角，这里只借它当对照。咱们对照完就能说：同样是 future 类型，出身不同，析构的性格就不同。
 
@@ -232,7 +443,45 @@ deferred 丢弃 0.0 毫秒，跟陷阱一的读数一致。promise 的 future �
   description="多出来的副本析构 0 毫秒，放掉一个引用 0 毫秒，最后一个引用放手时才等满 300 毫秒：等待挂在引用计数清零上。"
   run-options="-O2 -std=c++20 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// demo_last_reference.cpp —— 等待发生在最后一个引用放手时，不在每一次析构
+#include <chrono>
+#include <cstdio>
+#include <future>
+#include <thread>
+
+using namespace std::chrono_literals;
+using Clock = std::chrono::steady_clock;
+
+double since(Clock::time_point t0) {
+  return std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
+}
+
+void nap() { std::this_thread::sleep_for(300ms); }
+
+int main() {
+  std::future<void> f = std::async(std::launch::async, nap);
+  std::shared_future<void> s1 = f.share();
+  std::shared_future<void> s2 = s1;   // 同一状态现在挂在两个 shared_future 上
+
+  auto t0 = Clock::now();
+  { std::shared_future<void> s3 = s2; }
+  std::printf("多出来的副本析构 %.3f ms\n", since(t0));
+
+  t0 = Clock::now();
+  s2 = std::shared_future<void>();    // 放掉一个引用，手里还剩 s1
+  std::printf("放掉一个引用 %.3f ms\n", since(t0));
+
+  t0 = Clock::now();
+  s1 = std::shared_future<void>();    // 最后一个引用走人，析构开始等
+  std::printf("最后一个引用 %.1f ms\n", since(t0));
+  return 0;
+}
+```
+
+</OnlineCompilerDemo>
 
 ```text
 多出来的副本析构 0.000 ms
@@ -249,7 +498,7 @@ warning: ignoring return value of 'std::future<...> std::async(launch, _Fn&&, _A
     declared with attribute 'nodiscard' [-Wunused-result]
 ```
 
-告警文本我做了截断，原样贴出来会占满半屏。它提醒的正是丢弃式 async：返回值带着 nodiscard，您扔掉它，编译器会出声。看到告警，别急着拿 `(void)` 压下去，想想任务是您想等，还是您忘了等。还有一条判断从条款里直接读得出来：`get` 完以后状态已经就绪，之后再析构就落在例外条件之外，放手即走，“还没就绪”就是门槛（[futures.state]/5.3）。该推论我没有单独立实验，是从条款读出来的。
+告警文本笔者做了截断，原样贴出来会占满半屏。它提醒的正是丢弃式 async：返回值带着 nodiscard，您扔掉它，编译器会出声。看到告警，别急着拿 `(void)` 压下去，想想任务是您想等，还是您忘了等。还有一条判断从条款里直接读得出来：`get` 完以后状态已经就绪，之后再析构就落在例外条件之外，放手即走，“还没就绪”就是门槛（[futures.state]/5.3）。该判断同样只从条款读出，没有单独立实验。
 
 ## 析构为什么会等：共享状态的引用与释放时机（扩展）
 
@@ -272,11 +521,11 @@ libstdc++ 的源码跟上面的推理对得上，咱们对着看。`_Async_state
 }
 ```
 
-析构上方的原注释我也念给您听，意思是：任务没跑完之前不能销毁存结果和存函数的成员，这里直接调 `join` 而不走带 `call_once` 的 `_M_join`，因为状态销毁时不会再有别的线程引用它。引用计数的实现就是 `shared_ptr`，future 持有的是 `std::shared_ptr<_State_base>`。咱们把 future 存进 vector，引用跟着 future 活着，B 组的任务因此敢一起跑。真要把引用摊成多份持有者，靠的是 `shared_future` 的拷贝，实验里副本析构 0 毫秒对应的就是它。
+析构上方的原注释笔者也念给您听，意思是：任务没跑完之前不能销毁存结果和存函数的成员，这里直接调 `join` 而不走带 `call_once` 的 `_M_join`，因为状态销毁时不会再有别的线程引用它。引用计数的实现就是 `shared_ptr`，future 持有的是 `std::shared_ptr<_State_base>`。咱们把 future 存进 vector，引用跟着 future 活着，B 组的任务因此敢一起跑。真要把引用摊成多份持有者，靠的是 `shared_future` 的拷贝，实验里副本析构 0 毫秒对应的就是它。
 
 deferred 的状态对象里没有线程成员，咱们翻头文件就能确认：`_Deferred_state` 的数据成员就两样，存函数的和存结果的。没有线程要收，析构自然 0 毫秒。
 
-promise 供值的一侧也值得看一眼，它给“别的 future 从不阻塞”补上最后一块。往共享状态里放结果的对象，4.1 认过标准起的名字：异步提供者（[futures.state]/4）。promise 就是提供者。提供者销毁而状态还没就绪，标准定义为弃掉（abandon）：把一个 `future_error`、错误条件 `broken_promise` 存进状态，再把状态变就绪（[futures.state]/7）。咱们跑一段：
+promise 供值的一侧也值得看一眼，它给“别的 future 从不阻塞”补上最后一块。往共享状态里放结果的对象，4.1 认过标准起的名字：异步提供者（[futures.state]/4）。promise 就是提供者。提供者销毁而状态还没就绪，标准管它叫**弃掉**（abandon），做法是把一个 `future_error`、错误条件 `broken_promise` 存进状态，再把状态变就绪（[futures.state]/7）。咱们跑一段：
 
 <OnlineCompilerDemo
   title="promise 没给值就销毁，get 收到 broken_promise"
@@ -284,7 +533,30 @@ promise 供值的一侧也值得看一眼，它给“别的 future 从不阻塞�
   description="promise 没兑现就销毁，共享状态被弃反而变就绪，get 抛出 future_error：Broken promise。"
   run-options="-O2 -std=c++20 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// probe_broken_promise.cpp —— promise 没给值就销毁，get 收到 broken_promise
+#include <cstdio>
+#include <future>
+
+int main() {
+  std::future<int> f;
+  {
+    std::promise<int> p;
+    f = p.get_future();
+  }   // promise 没给值就销毁，共享状态被弃
+  try {
+    f.get();
+  } catch (const std::future_error& e) {
+    std::printf("get 抛了 future_error：%s（broken_promise？%s）\n", e.what(),
+                e.code() == std::future_errc::broken_promise ? "是" : "否");
+  }
+  return 0;
+}
+```
+
+</OnlineCompilerDemo>
 
 ```text
 get 抛了 future_error：std::future_error: Broken promise（broken_promise？是）
@@ -294,7 +566,7 @@ get 抛了 future_error：std::future_error: Broken promise（broken_promise？�
 
 ## 轮到您动手的时候
 
-写下一处 async 之前，我会把这几个问题过一遍：
+写下一处 async 之前，笔者会把下面几个问题过一遍：
 
 1. 您的 async 调用写了策略吗？没写，您就是在赌实现此刻的选择。
 2. 拿到 future 以后，有没有一条确定会走到 `get` 或 `wait` 的路径？一条都没有的任务永远不会跑。
@@ -302,13 +574,9 @@ get 抛了 future_error：std::future_error: Broken promise（broken_promise？�
 4. 任务里有没有 thread_local、thread::id，或者“后台线程”的假设？deferred 会把依赖落到调用等待函数的线程上。
 5. 丢弃式 async 是您想要的效果吗？真想并行，就把 future 存进容器，全部启动完再统一 `get`。
 
-## 下一步
-
-策略、陷阱、析构，每一条都有实验和条款对上了。下一篇是 4.3《自行传递结果：`std::promise` 与 `std::future`》。提供者到台前，轮到它回答谁执行工作、谁提供结果、失败怎么传。咱们在上文借 promise 当过对照，下一篇它当主角。
-
 ## 参考资源
 
-写本篇的时候，推进顺序参照了 Anthony Williams 的《C++ Concurrency in Action》，async 与 future 合在一起讲的安排跟咱们这里最接近。例子和文字都是我自己写的，实验在本机真跑过（GCC 16.2.1，`g++ -std=c++20 -O2 -pthread`，WSL2 内核 6.18.33.2，16 逻辑核，2026-11-16），输出照原样贴在正文里，计时数字每次运行都会差一点，线程号是哈希值，每回都不同。涉及标准行为的断言，按文中标注的条款核对过 eel.is 上的现行工作草案，方括号里是小节名，斜杠后面是段号，小节名跟正式标准一致，段号可能挪动。cppreference 的 `std::async` 页面抓到了全文，丢弃式 async 和“别的 future 从不阻塞”两种说法，都能跟它的 Notes 对上。libstdc++ 的实现细节读的是本机 GCC 16 自带的 `<future>`（路径 `/usr/include/c++/16/future`），没有网页可引。旧目录 ch05 的对应篇目，第一篇《std::async 与 future》，把默认策略的风险讲过一遍，本篇的实验与条款核对都是重新做的。
+写本篇的时候，推进顺序参照了 Anthony Williams 的《C++ Concurrency in Action》，async 与 future 合在一起讲的安排跟咱们这里最接近。例子和文字都是笔者自己写的，输出照原样贴在正文里，线程号是哈希值，每回都不同。文中条款的引用格式是方括号里放小节名，斜杠后面放段号，小节名跟正式标准一致，段号可能挪动。cppreference 的 `std::async` 页面抓到了全文，丢弃式 async 和“别的 future 从不阻塞”两种说法，都能跟它的 Notes 对上。libstdc++ 的实现细节读的是本机 GCC 16 自带的 `<future>`（路径 `/usr/include/c++/16/future`），没有网页可引。旧目录 ch05 的对应篇目，第一篇《std::async 与 future》，把默认策略的风险讲过一遍，本篇的实验与条款核对都是重新做的。
 
 - [std::async（cppreference）][cppref-async]，两个重载与默认策略、策略选择的边界、丢弃式 async 的 Notes，以及缺陷决议表里的 LWG 2078。
 - [LWG 2078（标准库工作组议题）][lwg-2078]，起不来线程时抛 `system_error` 的边界收窄到 policy == `launch::async` 的决议。

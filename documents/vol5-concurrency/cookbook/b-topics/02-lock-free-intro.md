@@ -16,7 +16,7 @@ cpp_standard: [11, 20, 26]
 
 # 无锁入门：CAS 循环、ABA、内存回收
 
-本篇是选读区的无锁入门。卷五第五单元把 `std::atomic` 讲到必修深度：[《原子操作解决到哪一步》](../../chapter05-atomic-memory-model/01-what-atomics-solve)给出操作面与 CAS 的重试语义，[《一个线程怎样观察另一个线程的修改》](../../chapter05-atomic-memory-model/02-happens-before)与[《选择内存序需要什么依据》](../../chapter05-atomic-memory-model/03-choosing-memory-orders)一起，把六种内存序铺开。但写出无锁容器不算入门验收，复杂无锁数据结构不进必修。咱们把超出必修的这部分整篇平移进选读区。
+本篇是选读区的无锁入门。卷五第五单元把 `std::atomic` 讲到必修深度：[《原子操作解决到哪一步》](../../chapter05-atomic-memory-model/01-what-atomics-solve)给出操作面与 CAS 的重试语义，[《一个线程怎样观察另一个线程的修改》](../../chapter05-atomic-memory-model/03-happens-before)与[《内存序的四档：从顺序一致性到 relaxed》](../../chapter05-atomic-memory-model/04-choosing-memory-orders)一起，把六种内存序铺开。但写出无锁容器不算入门验收，复杂无锁数据结构不进必修。咱们把超出必修的这部分整篇平移进选读区。
 
 读它之前，您需要掌握第五单元的全部内容：CAS 的 weak 与 strong 之别，acquire/release 建立的同步关系，relaxed 的适用范围。旧卷素材里与 SeqLock、自旋锁、双重检查锁定等模式相关的内容已分篇处理，归入[《SeqLock 与自旋锁》](05-seqlock-spinlock)与第五单元正文，本篇专心讲无锁。
 
@@ -338,7 +338,7 @@ Epoch-based Reclamation 的思路，咱们这样理解：把时间分成若干�
 
 ### Benchmark：别猜，量一下
 
-任何关于“无锁更快”或“mutex 更快”的断言，在没有具体 benchmark 数据的情况下都是空谈。我见过太多“理论上无锁更快”，实际上却因为缓存一致性开销、CAS 重试风暴、伪共享这类原因，跑得反而更慢的案例。并发性能的瓶颈，往往在您意想不到的地方。量测设计的完整方法，[《怎样衡量并发带来的收益》](../../chapter06-validating-designs/02-measuring-benefits)整篇都在讲。
+任何关于“无锁更快”或“mutex 更快”的断言，在没有具体 benchmark 数据的情况下都是空谈。我见过太多“理论上无锁更快”，实际上却因为缓存一致性开销、CAS 重试风暴、伪共享这类原因，跑得反而更慢的案例。并发性能的瓶颈，往往在您意想不到的地方。量测设计的完整方法，[《量之前，先把条件立住：串行基线与测量的陷阱》](../../chapter06-validating-designs/03-measuring-benefits)整篇都在讲。
 
 您组织一个基本的 benchmark 框架，应该包括：不同线程数（1、2、4、8、16）下的吞吐量测试，不同操作比例（纯 push、纯 pop、混合）下的延迟分布（p50、p99、p999），以及不同硬件上的结果对比。[《SPSC 与 MPMC 无锁队列》](03-lock-free-queues)里有一组完整的 benchmark 对比，涵盖 SPSC、mutex 队列和 MPMC。
 

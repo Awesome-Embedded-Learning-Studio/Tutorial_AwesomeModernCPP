@@ -18,7 +18,7 @@ cpp_standard: [17, 20]
 
 线程池在卷五被明确划出必修线——生产级线程池及其完整调度、资源控制与维护要求不进必修。整篇平移住进选读区，咱们把它当教学级的完整实现来讲，五步演进，每步只加一个能力。
 
-读它之前，您需要第四单元的异步基础设施：[《用 std::async 执行计算》](../../chapter04-organizing-tasks/01-launch-with-async)的 future 用法、[《自行传递结果：std::promise 与 std::future》](../../chapter04-organizing-tasks/03-promise-and-future)的结果传递，`std::packaged_task` 的专篇（承同一节素材）还没成篇，本篇用到它的地方会把用法当场交代。第三单元的条件变量（[《等待一个条件成立》](../../chapter03-wait-and-coordinate/01-wait-for-a-condition)），第一单元的 [jthread 与停止协议](../../chapter01-start-concurrency/05-jthread-and-stopping)，也都要在手边。
+读它之前，您需要第四单元的异步基础设施：[《用 std::async 执行计算》](../../chapter04-organizing-tasks/01-launch-with-async)的 future 用法、[《自行传递结果：std::promise 与 std::future》](../../chapter04-organizing-tasks/03-promise-and-future)的结果传递，`std::packaged_task` 的专篇（承同一节素材）还没成篇，本篇用到它的地方会把用法当场交代。第三单元的条件变量（[《等一个条件：从轮询到条件变量》](../../chapter03-wait-and-coordinate/01-wait-for-a-condition)），第一单元的 [jthread 与停止协议](../../chapter01-start-concurrency/06-jthread-and-stopping)，也都要在手边。
 
 平移来路：机制讲解、代码与练习原样保留，我改动的只有编号、frontmatter、指向正文的交叉引用，外加判死词表清理。素材的环境说明与“测试通过”声明原样保留在文中，本轮我没有重新编译验证。
 
@@ -502,7 +502,7 @@ private:
 
 事情到这里您会发现，C++20 的 stop_token 机制虽然好用，但跟线程池的交互并不像想象中那么简单，`jthread` 自动管理的 `stop_source` 和咱们手动创建的 `stop_source_` 各管各的，需要咱们在析构函数里手动协调两者的时序。
 
-我的建议是：如果您的项目还在用 C++17 或更早版本，用 `std::thread` + 手动 `stop_` 标志的方式完全没问题，不要为了用新特性而引入不必要的复杂度。C++11 时代奠定的线程 + mutex + condition_variable 组合已经经过了十余年的实战检验，出 bug 的概率远低于您跟 C++20 新特性较劲的时候。如果您已经全面使用 C++20，并且 `jthread` 和 `stop_source` 在您的项目中已经被广泛使用，那么用它们来管理线程池的停止状态是合理的，但一定要注意上面提到的“两个 stop_source”问题。jthread 与 stop_token 的完整协议，第一单元的[《让工作有序结束》](../../chapter01-start-concurrency/05-jthread-and-stopping)是正篇。
+我的建议是：如果您的项目还在用 C++17 或更早版本，用 `std::thread` + 手动 `stop_` 标志的方式完全没问题，不要为了用新特性而引入不必要的复杂度。C++11 时代奠定的线程 + mutex + condition_variable 组合已经经过了十余年的实战检验，出 bug 的概率远低于您跟 C++20 新特性较劲的时候。如果您已经全面使用 C++20，并且 `jthread` 和 `stop_source` 在您的项目中已经被广泛使用，那么用它们来管理线程池的停止状态是合理的，但一定要注意上面提到的“两个 stop_source”问题。jthread 与 stop_token 的完整协议，第一单元的[《让工作有序结束》](../../chapter01-start-concurrency/06-jthread-and-stopping)是正篇。
 
 咱们给出一个完整的、经过实战检验的 C++17 版本，它不依赖 C++20 的 `jthread` 和 `stop_token`，但结构清晰、功能完整：
 

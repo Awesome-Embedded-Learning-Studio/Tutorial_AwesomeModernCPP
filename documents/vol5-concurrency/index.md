@@ -14,6 +14,10 @@ tags:
 
 需要说明的是，这个章节正在进行如火如荼的重构和建设。新版本和旧版本的目录会并存一段时间。直到新版本的并发编程章节完全可以发布后，旧版本的目录才会撤下。
 
+## 实验与查证
+
+本卷的实验程序都收在 `code/examples/vol5/` 和所在页的在线示例里，您点开就能直接运行。原实验在 GCC 16.2.1、WSL2（16 逻辑核，2026-11-14）下实测过，抽成独立文件时复验过。涉及 C++ 标准库的行为查过 cppreference 和 eel.is 上的现行草案，条款链接收在各篇的参考资源里。不同运行里的输出顺序可能变化，耗时则会随机器漂，量级、编号和机制不变。
+
 ## 章节导航
 
 这是新版本的并发编程，目前八关，此外还有一个 cookbook，是给懂并发编程懒得听笔者碎碎念的朋友看的
@@ -26,7 +30,6 @@ tags:
   <ChapterLink href="chapter05-atomic-memory-model">第五关 · 理解原子操作与内存模型</ChapterLink>
   <ChapterLink href="chapter06-validating-designs">第六关 · 怎样判断并发设计是否有效</ChapterLink>
   <ChapterLink href="chapter07-coroutines">第七关 · 用协程表达可以暂停的工作</ChapterLink>
-  <ChapterLink href="chapter08-capstone">第八关 · 结课作品：一个小型任务处理程序</ChapterLink>
   <ChapterLink href="cookbook">cookbook · 卷五的速查区</ChapterLink>
 </ChapterNav>
 

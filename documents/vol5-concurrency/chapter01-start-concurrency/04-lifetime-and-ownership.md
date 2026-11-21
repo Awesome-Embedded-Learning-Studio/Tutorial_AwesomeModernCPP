@@ -1,6 +1,6 @@
 ---
-title: "谁负责线程和数据的生命周期"
-description: "看清 std::thread 参数的 decay-copy 与 move-only 传法，认识悬垂引用的两种修复路径，用 thread_guard 与 joining_thread 把 join 的责任交给析构函数。"
+title: "谁负责数据的生命周期"
+description: "看清 std::thread 参数的 decay-copy 与 move-only 传法，认识悬垂引用的两种修复路径。"
 chapter: 5
 order: 4
 tags:
@@ -11,17 +11,11 @@ tags:
 difficulty: intermediate
 platform: host
 cpp_standard: [11, 14, 17, 20]
-current_status:
-  title: 正在进行打磨
-  detail: 现在是LLM写好的初级稿件，引入是为了初步公开 + 希望收集反馈
-  variant: polishing
 ---
 
-# 谁负责线程和数据的生命周期
+# 谁负责数据的生命周期
 
-上一篇《第一个 std::thread 程序》结尾咱们许诺的事，这一篇兑现：参数复制怎么发生，引用什么时候悬垂，join 的责任怎么从您的记性里接出去。三件事背后立着同一个问题，写多线程程序的人迟早要在代码评审里被问到：线程起来之后，谁负责它和它手里数据的生命周期？落到每一条执行流上，要回答的是它的数据是谁给的，这些数据活到什么时候，收尾由谁兜底。上一篇您已经见过不收尾的下场，一个还关联着线程（joinable）的线程对象析构时整个程序直接终止。这一篇把收尾写进析构函数，让它不再靠您记得调用。
-
-文中全部示例都收在本页的在线示例里，您点开就能直接运行；我们本地实测的配方是 GCC 16.2.1、`g++ -std=c++20 -O2 -pthread`、WSL2（2026-11-14），涉及标准库行为的断言都查过 cppreference，版本按段标注，没有逐条标注的见参考资源。悬垂引用这类未定义行为的实验，跑出来的样子跟机器、调度和优化档都有关系，咱们把真实输出原样放在您面前，包括那些看起来毫无异常的运行，那恰好是这类问题最阴险的部分。
+OI，开单要兑现，对吧，在上一篇结尾咱们许诺的事，这一篇兑现两件：参数复制怎么发生，引用什么时候悬垂。join 的责任怎么从您的记性里接出去，留给下一篇。
 
 ## 参数怎么传：decay-copy 与 move-only 类型
 
@@ -34,9 +28,15 @@ INVOKE(decay-copy(std::forward<F>(f)),
        decay-copy(std::forward<Args>(args))...)
 ```
 
-decay-copy，退化复制，是这里的正式名目。它的意思用白话说就是：每个实参都按函数模板传递参数的路数处理一遍，引用剥掉，顶层的 const 和 volatile 丢掉，数组退成指针，函数退成函数指针。同一页还有一句要紧的话：这些复制发生在当前线程，也就是您发起线程的那一侧，复制或者移动参数时抛出的异常都留在发起线程，新线程根本不会因为复制失败而启动。C++23 起标准把这里的写法换成按 auto 的规则生成参数副本，名字变了，规定没变，参数照旧在发起线程里定下来，异常照旧留在发起线程，这里只是措辞说明，本篇示例照旧按 C++20 编译。
+INVOKE 是调用的英文，说白了意思就是发起一个线程准备跑东西。跑啥呢？跑的东西又需要什么呢？自然需要的就是函数，和函数执行所需要的参数。这样看，我们解释到的位置是：`INVOKE(f, args)`，std::forward并不奇怪，表达的是维持左右值的转发，维度需要注意一下的是`decay-copy`。
 
-空口无凭，咱们让拷贝构造函数自己报一下它在哪个线程干活、拷出来的对象放在哪：
+decay-copy是退化复制的意思，是这里的正式名目。它的意思用白话说就是：每个实参都按函数模板传递参数的路数处理一遍，**引用剥掉，顶层的 const 和 volatile 丢掉，数组退成指针，函数退成函数指针**。
+
+好，我知道有小朋友问了，尽管0人问我。喂我说这标准库的人都是吃干饭的？有病啊套一层这个，嫌C++太麻烦了嘛？
+
+并不是的，我们要始终回扣到之前我们提到的，现在开始，我们的代码不再按照同步的方式运作了，您使用的这些变量，您自己也不知道什么时候才会使用。换而言之：“**我们的变量的生命周期，要不不是按照decay-copy的方式传递的话，我们没办法保证自己程序的运行安全**”，我们的`arg` 所在的函数随时可能返回，变量随时可能销毁，而新线程要到真正跑起来才用得上参数，中间隔着一段没人担保的时间。所以**默认动作是当场复制一份，存进线程对象的内部存储，新线程从头到尾只用自己的副本**。默认按值是安全默认，您不想复制、想共享，就得显式写出 `std::ref`，下一小节讲。
+
+复制解释了，退化呢？因为有两类东西“按值复制”这件事本身做不到。数组没有值语义，您没法把一个数组按值传给任何函数，也没法用一个数组去初始化另一个（咱们试过，编译器当场拒绝），函数类型连对象都算不上，能存下来的是函数指针，能复制的最接近替代就是退化出来的指针。引用则必须先剥掉，不然存进内部存储的就是引用本身，发起线程的对象一销毁，悬垂跟着进来，这份复制等于白做。
 
 <OnlineCompilerDemo
   title="decay-copy：传进线程的是副本"
@@ -44,7 +44,53 @@ decay-copy，退化复制，是这里的正式名目。它的意思用白话说�
   description="拷贝构造在线程一侧执行、副本地址各不相同；指针传的只是地址，数组不会被复制。"
   run-options="-O2 -std=c++23 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// decay-copy:传给线程的对象是副本,指针和引用传的是地址本身
+#include <cstddef>
+#include <print>
+#include <thread>
+
+class Tracker {
+  public:
+    explicit Tracker(int v) : value_(v) {}
+    Tracker(const Tracker& other) : value_(other.value_) {
+        std::println("  copy ctor on thread {}, copy lives at {}", std::this_thread::get_id(),
+                     (const void*)this);
+    }
+    int value() const { return value_; }
+
+  private:
+    int value_;
+};
+
+void work(Tracker t) {
+    std::println("  worker got its own object at {}, value {}", (const void*)&t, t.value());
+}
+
+void read_array(int* data, std::size_t n) {
+    std::println("  worker sees an int* holding {} elements", n);
+    long long s = 0;
+    for (std::size_t i = 0; i < n; ++i)
+        s += data[i];
+    std::println("  sum {}", s);
+}
+
+int main() {
+    Tracker original(7);
+    std::println("main thread id {}", std::this_thread::get_id());
+    std::println("original lives at {}", (const void*)&original);
+    std::thread t(work, original);
+    t.join();
+
+    int arr[5] = {1, 2, 3, 4, 5};
+    std::thread t2(read_array, arr, 5);
+    t2.join();
+}
+```
+
+</OnlineCompilerDemo>
 
 咱们跑出来的输出如下，线程编号是咱们机器上的值，您那里会不同，地址也会变：
 
@@ -72,11 +118,29 @@ original lives at 0x7fff145e0bb4
   description="decay-copy 后的副本绑不回非常量引用，编译器直接拒绝；错误写法留在注释里，报错见正文，正确写法用 std::ref。"
   run-options="-O2 -std=c++23 -pthread"
   allow-run
-/>
+>
+
+```cpp
+#include <print>
+#include <thread>
+
+void update_value(int& x) {
+    x = 42;
+}
+
+int main() {
+    int value = 0;
+    // std::thread t(update_value, value);  // 编译不过
+    std::thread t(update_value, std::ref(value));
+    t.join();
+    std::println("value = {}", value);
+}
+```
+
+</OnlineCompilerDemo>
 
 ```text
-error: static assertion failed: std::thread arguments must be invocable after
-conversion to rvalues
+error: static assertion failed: std::thread arguments must be invocable after conversion to rvalues
 ```
 
 `update_value` 想要 `int&`，退化复制之后线程手里只有一份 `int` 的右值，右值绑定不上非 const 引用（报错的是 libstdc++ 16.2.1 的 static_assert，其余几行报错都是它带出来的连锁）。这个编译错误是标准库在执行“默认按值”的立场：共享是危险动作，您想共享，就得在代码里写出共享两个字，让审查代码的人一眼看见。写出来的工具是 `std::ref` 和 `std::cref`（都是 C++11 起，定义在 `<functional>`）：它们把引用包成一个可以复制的 reference_wrapper（引用包装器），线程调用函数时把包装解掉，函数收到的还是对原始对象的引用。
@@ -87,7 +151,31 @@ conversion to rvalues
   description="用引用包装器之后，worker 摸到的就是 main 的同一个对象，地址一致、修改可见。"
   run-options="-O2 -std=c++23 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// std::ref 与 std::cref:让线程真的引用主线程的对象
+#include <functional>
+#include <print>
+#include <string>
+#include <thread>
+
+void append_suffix(std::string& str, const std::string& suffix) {
+    std::println("  worker touches str at {}", (void*)&str);
+    str += suffix;
+}
+
+int main() {
+    std::string message = "Hello";
+    std::string suffix = " World";
+    std::println("main's message lives at {}", (void*)&message);
+    std::thread t(append_suffix, std::ref(message), std::cref(suffix));
+    t.join();
+    std::println("message = {}", message);
+}
+```
+
+</OnlineCompilerDemo>
 
 咱们跑出来 `worker touches str at` 和 `main's message lives at` 两行地址完全相同，`message` 也真的变成了 `Hello World`，线程改的就是 main 里那个对象。这个例子安全，因为 `join()` 在场，线程用 `message` 的时候它还活着。要是把 join 换成 detach，线程对 `message` 的引用什么时候过期就没有人管了，下一节解剖的悬垂引用正是这类事。
 
@@ -101,7 +189,33 @@ conversion to rvalues
   description="所有权随 std::move 交进线程，main 侧变空指针，各归各的活。"
   run-options="-O2 -std=c++23 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// move-only 类型:unique_ptr 的所有权随 std::move 交进线程
+#include <cstddef>
+#include <memory>
+#include <print>
+#include <thread>
+
+void process_data(std::unique_ptr<int[]> data, std::size_t size) {
+    for (std::size_t i = 0; i < size; ++i)
+        data[i] *= 2;
+    std::println("  worker: data[0] = {}", data[0]);
+}
+
+int main() {
+    constexpr std::size_t kSize = 5;
+    auto data = std::make_unique<int[]>(kSize);
+    for (std::size_t i = 0; i < kSize; ++i)
+        data[i] = static_cast<int>(i + 1);
+    std::thread t(process_data, std::move(data), kSize);
+    std::println("main: data after move is {}", data ? "not null" : "null");
+    t.join();
+}
+```
+
+</OnlineCompilerDemo>
 
 咱们跑出来 `main: data after move is null`，`std::move(data)` 把整块内存的所有权转进了线程的内部存储，main 手里的指针当场变空，worker 那边正常改完数据。线程函数 `process_data` 独占转进线程的整块数据，用完不用交接，函数返回时 `unique_ptr` 自动释放。在这段代码里，线程是这块数据的唯一持有者，没有第二个执行流读写它。
 
@@ -117,7 +231,38 @@ conversion to rvalues
   description="按引用捕获活不过函数的局部变量，函数返回后栈被覆盖，线程读到什么全看运气——这也可能看起来毫无异常。"
   run-options="-O2 -std=c++23 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// 悬垂引用:按引用捕获活不过本函数的局部变量,线程读到的是旧栈上的垃圾
+#include <chrono>
+#include <cstring>
+#include <print>
+#include <thread>
+
+void burn_stack() { // 往栈上灌别的数据，看能不能把旧值覆盖出来
+    volatile char area[16384];
+    std::memset(const_cast<char*>(area), '#', sizeof(area));
+}
+
+void spawn() {
+    int local_value = 42;
+    std::thread t([&local_value] { // 按引用捕获一个活不过本函数的局部变量
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+        std::println("thread reads: {}", local_value);
+    });
+    t.detach();
+}
+
+int main() {
+    spawn();
+    burn_stack();
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    std::println("main exits");
+}
+```
+
+</OnlineCompilerDemo>
 
 `spawn` 里的 `local_value` 是栈上的局部变量，lambda 按引用捕获它，线程被 detach 带走了。`spawn` 一返回，`local_value` 就销毁了，而分离出去的线程还要在 150 毫秒后读它。main 那侧咱们安排了 `burn_stack`，故意往栈上灌一万六千字节的别的数据。
 
@@ -133,7 +278,41 @@ conversion to rvalues
   description="线程攥着对象指针跑，对象先走一步。读到垃圾、看似正常或崩溃都是它的样子。"
   run-options="-O2 -std=c++23 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// 捕获 this 指针后销毁对象:未定义行为,读到垃圾或崩溃都是它的样子
+#include <chrono>
+#include <print>
+#include <thread>
+
+class Worker {
+  public:
+    void start() {
+        t_ = std::thread([this] { // 捕获的是指针，不是对象
+            for (int i = 0; i < 8; ++i) {
+                std::println("tick {}, sees running_ = {}", i, running_);
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+        });
+        t_.detach();
+    }
+
+  private:
+    bool running_ = true;
+    std::thread t_;
+};
+
+int main() {
+    Worker* w = new Worker;
+    w->start();
+    delete w; // 对象立刻销毁，线程还在跑
+    std::this_thread::sleep_for(std::chrono::milliseconds(1200));
+    std::println("main exits");
+}
+```
+
+</OnlineCompilerDemo>
 
 这个程序是故意写错的，咱们跑它属于观察错误的形态。`start` 之后立刻 `delete w`，线程手里只剩一个指向已销毁对象的 `this`。咱们跑了三回，每回八行输出里 `running_` 的读数是这样的：一回是 114，一回是 39，一回是 82，同一回内部稳定，跨回不同。`running_` 的真值是 `true`，正常读出来应该是 1，三个数字没一个是 1，线程读到的是 `delete` 之后被分配器另作他用的内存。至于谁写的 114、谁写的 39，不知道也不需要知道，反正那已经不是您的对象了。
 
@@ -151,7 +330,32 @@ conversion to rvalues
   description="同样的场景改成值捕获，父函数先返回也不怕，线程打印完整如初。"
   run-options="-O2 -std=c++23 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// 值捕获修复悬垂:线程拿自己的副本,父函数先走也不怕
+#include <chrono>
+#include <print>
+#include <string>
+#include <thread>
+
+void safe_version() {
+    std::string message = "Hello from parent";
+    std::thread t([message] { // 值捕获：线程拿自己的副本
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::println("thread sees: {}", message);
+    });
+    t.detach();
+}
+
+int main() {
+    safe_version();
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    std::println("main exits");
+}
+```
+
+</OnlineCompilerDemo>
 
 `[message]` 值捕获，lambda 自己持有一份副本，`std::thread` 构造时又把整个闭包对象退化复制进内部存储。线程读的从头到尾都是自己的数据，外面的 `message` 销毁与它无关，detach 在这里就是安全的。咱们跑了三回，三回都是 `thread sees: Hello from parent`。
 
@@ -167,7 +371,50 @@ conversion to rvalues
   description="对象销毁后线程靠共享的停止标志干净退出，引用计数替您管好了生命周期。"
   run-options="-O2 -std=c++23 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// shared_ptr 加 atomic 标志:对象销毁后线程仍能安全收场
+#include <atomic>
+#include <chrono>
+#include <memory>
+#include <print>
+#include <thread>
+
+class BackgroundWorker {
+  public:
+    BackgroundWorker() : running_(std::make_shared<std::atomic<bool>>(true)) {}
+
+    void start() {
+        auto running = running_; // 复制 shared_ptr，引用计数加一
+        std::thread t([running] {
+            while (running->load()) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            }
+            std::println("worker exits cleanly");
+        });
+        t.detach();
+    }
+
+    void stop() { running_->store(false); }
+    ~BackgroundWorker() { stop(); }
+
+  private:
+    std::shared_ptr<std::atomic<bool>> running_;
+};
+
+int main() {
+    {
+        BackgroundWorker worker;
+        worker.start();
+    }
+    std::println("worker object already destroyed");
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::println("main exits");
+}
+```
+
+</OnlineCompilerDemo>
 
 咱们那一回跑出来的三行长这样：
 
@@ -197,182 +444,22 @@ warning: implicit capture of ‘this’ via ‘[=]’ is deprecated in C++20 [-W
 note: add explicit ‘this’ or ‘*this’ capture
 ```
 
-语法怎么变，背后的原则只有一条：被引用的对象必须活到线程用完它为止。两条修复路径是您手工维持这句话成立的办法，下一节的 RAII 把这件事交给析构函数自动做。
-
-## 所有权与 RAII：thread_guard 与异常安全
-
-RAII（资源获取即初始化）您在卷二讲 RAII 的部分用过，一句话重申：把资源的收尾写进析构函数，对象离开作用域时自动执行，正常返回和异常退出都不漏。咱们下面就把线程当作资源来管。
-
-### 线程对象自己也是资源
-
-管线程之前，要看清 `std::thread` 对象本身是什么：它是底层线程的唯一所有者，而这个所有权只能 move，不能拷贝。咱们试着拷贝了一回：
-
-<OnlineCompilerDemo
-  title="std::thread 不可拷贝"
-  source-path="code/examples/vol5/chapter01/30_thread_not_copyable.cpp"
-  description="拷贝构造被删除，编译不过；错误写法留在注释里，所有权只能 std::move。"
-  run-options="-O2 -std=c++23 -pthread"
-  allow-run
-/>
-
-```text
-error: use of deleted function ‘std::thread::thread(const std::thread&)’
-```
-
-拷贝构造被删除是刻意设计，咱们把理由说清：一条操作系统线程同一时刻只能被一个对象管理，允许拷贝就会出现两个对象抢着 join 同一条线程的混乱局面。move 是唯一的所有权转移方式，move 之后的源对象不再关联任何线程：
-
-<OnlineCompilerDemo
-  title="joinable 与 move：转移后源为空"
-  source-path="code/examples/vol5/chapter01/31_joinable_move.cpp"
-  description="move 之后再问 joinable，源线程已是 false，新对象接管执行流。"
-  run-options="-O2 -std=c++23 -pthread"
-  allow-run
-/>
-
-咱们跑出来 `t1 joinable: 1`，move 之后 `t1 joinable 0`、`t2 joinable 1`。这套唯一所有者加 move 的形状，和 `std::unique_ptr` 相似，差别在收尾：`unique_ptr` 赋值时释放旧资源，`std::thread` 在目标还 joinable 时直接 terminate。标准库里的 `std::fstream`、`std::future` 也是这套唯一所有者的思路。
-
-### 异常路径上的 join：thread_guard
-
-上一篇咱们见过没 join 的 terminate，也见过线程函数里抛异常的 terminate，但主线程自己抛异常、把写在后面的 join 跳过的例子还没有。函数中途抛异常，写在后面的 `join()` 永远执行不到，栈展开（异常沿调用栈逐层退出、沿途析构局部对象的过程）析构到还没 join 的线程对象，程序照样终止。
-
-解法是上一篇说的那类包装器，这里给持有引用、不拥有线程的版本（默认在析构里 join）。书里管它叫 thread_guard，咱们代码里写成 ThreadGuard，是同一个东西的两种拼法。Anthony Williams 的《C++ Concurrency in Action》给过这个经典形态，咱们照它的推进思路写了自己的版本，连同验证程序一起放在这里：
-
-<OnlineCompilerDemo
-  title="ThreadGuard：异常也收得了场"
-  source-path="code/examples/vol5/chapter01/32_thread_guard.cpp"
-  description="栈展开时守卫对象的析构函数替您 join，异常穿过也不丢线程。"
-  run-options="-O2 -std=c++23 -pthread"
-  allow-run
-/>
-
-咱们跑出来三行，次序值得您读一遍：
-
-```text
-  worker finished its work
-caught: boom
-main continues normally
-```
-
-`risky()` 抛出异常，`run_with_guard` 的栈开始展开，`guard` 的析构函数被调用，join 阻塞了 150 毫秒等 worker 干完活，然后异常才被 main 的 catch 接住。要是把 guard 拿掉，这个程序会以 terminate 收场，worker 的输出都没有机会打出来。您靠着 guard，把异常路径上的 join 写进了析构函数，它不再靠您记得调用，作用域退出时析构函数自己执行。
-
-这个版本是个半成品，咱们把两个弱点摆出来。guard 持有的是引用，线程的所有权还在外面的 `t` 手里，`t` 和 `guard` 谁管收尾，代码里没有答案。被引用的 thread 对象必须比 guard 活得久，它要是早一步销毁（堆上 delete、成员销毁顺序之类），还 joinable 的话，thread 自己的析构当场 terminate，轮不到 guard 析构。已经 join 过或 detach 过的话，guard 的析构去读的就是已经销毁的对象，未定义行为。这一版证明析构函数接得住 join，所有权还没着落，下一节的包装器补的就是这一块。
-
-### join 自己也会抛
-
-join 自己就万无一失了吗？它本身可能抛异常。cppreference 在 [join 的页面][cppref-join] 写明，出错时抛 `std::system_error`（装着错误码的异常，`code()` 取出错误码，`message()` 给出文字），并列出三种条件：`joinable()` 为假（`invalid_argument`）、线程不存在（`no_such_process`）、线程 join 自己（`resource_deadlock_would_occur`）。咱们把其中两种实测了：
-
-<OnlineCompilerDemo
-  title="join 的错误路径：system_error"
-  source-path="code/examples/vol5/chapter01/33_join_throws.cpp"
-  description="join 自己抛 resource_deadlock_would_occur，重复 join 抛 invalid_argument，都能接住。"
-  run-options="-O2 -std=c++23 -pthread"
-  allow-run
-/>
-
-```text
-  second join threw: Invalid argument
-  self join threw: Resource deadlock avoided
-main continues
-```
-
-第二条消息是 EDEADLK 这个 errno 的字面译文（资源死锁已避免），线程 join 自己被实现当场拦下。麻烦在于咱们把 join 写进析构时，析构不该往外抛异常，析构执行中再有异常逸出就是 terminate，所以务实的写法是在析构里把 join 包进 try，失败记一笔，不往外抛。下一节包装器的析构函数就是这么写的，`thread_` 是它手里那个 `std::thread`：
-
-<OnlineCompilerDemo
-  title="JoiningThread 的析构：聚焦"
-  source-path="code/examples/vol5/chapter01/34_joining_thread_dtor.cpp"
-  description="joinable 才 join，失败也不让异常逃出析构函数——自动 join 的全部要点在这几行。"
-  run-options="-O2 -std=c++23 -pthread"
-  allow-run
-/>
-
-### 裸 thread 的 move 赋值是 terminate
-
-所有权转移还有一处意外在赋值上。cppreference 在 [operator= 的页面][cppref-opassign] 写明（C++11 起）：如果赋值目标还关联着一条线程（`joinable() == true`），就调用 `std::terminate()`。咱们实测：
-
-<OnlineCompilerDemo
-  title="move 赋值给已关联的线程：terminate"
-  source-path="code/examples/vol5/chapter01/35_move_assign_terminate.cpp"
-  description="目标对象还 joinable 就被赋值，std::terminate 直接收场，本示例预期崩溃。"
-  run-options="-O2 -std=c++23 -pthread"
-  allow-run
-/>
-
-咱们编译运行，标准错误一行，退出码 134（进程被 SIGABRT 终止，上一篇咱们算过 128 加 6 这笔数）：
-
-```text
-terminate called without an active exception
-```
-
-裸 `std::thread` 的所有权交接到这里露全了面：move 构造畅通，move 赋值给一个还没收尾的对象就直接终止程序。我在这件事上选包装器的路：接新的那一步，把手里旧的 join 完再 move，下一节的包装器就写这一行。它的约定说全：join 失败时记录一笔，然后 terminate，这是这套写法的边界。
-
-## joining_thread：接管所有权的手写方案（扩展）
-
-本节带（扩展）标记，跳过它不影响本篇主线。读法按上一篇的约定：您照行为要求自己写一版，再回来对照，写了，下一篇的 `std::jthread` 对您就是旧相识。名字这里对齐一次：书里管这类包装器叫 joining_thread，C++ Core Guidelines 的 CP.25 建议优先用这类自动 join 的包装器，GSL（Guidelines Support Library）的 README 注明它尚未实现，所以咱们手写一版 JoiningThread，同一个思路。
-
-设计一句话就能说完：让包装器直接拥有线程，析构时自动 join，move 赋值时把手里旧的收掉再接新的。完整实现如下，咱们把每个决定都写了注释：
-
-<OnlineCompilerDemo
-  title="JoiningThread：接管所有权的完整写法"
-  source-path="code/examples/vol5/chapter01/36_joining_thread.cpp"
-  description="构造接管、析构自动 join、move 赋值先收旧的，容器里放一排也各归各的场。"
-  run-options="-O2 -std=c++23 -pthread"
-  allow-run
-/>
-
-move 赋值里那句把旧的 join 完再接手，对着的正是裸 `std::thread` 在同一位置的 terminate，标准选了响的，包装器选了顺的，哪边合理，看您程序自己的退出策略。join 自己也会抛，道理前面讲过了。析构和 move 赋值里的两个 try 落实的正是它，join 抛了就记一笔，绝不让异常从 noexcept 函数里逸出。错误记下来之后，失败路径的结局仍是 terminate：move 赋值下一步一执行，目标 `thread_` 还 joinable，赋值就 terminate。析构体走完，成员 `thread_` 还 joinable，成员析构也 terminate。两条路径咱们都实测过，以 134 收场。五回重跑走的是正常路径，失败边界没人踩到，但它在约定里。模板构造函数把参数原样转发，用法上没有多出接口，行为上多了两件：析构自动 join，move 赋值收旧的再接新的。咱们跑了五回，下面是其中一回的完整输出：
-
-```text
--- phase 1: two threads, nobody calls join by hand
-task 1 done
-task 2 done
--- phase 2: reassignment joins the old thread first
-task 4 done
-task 3 done
--- phase 3: a vector of JoiningThread
-task 5 done
-task 6 done
-task 8 done
-task 7 done
-main exits, every thread was joined by destructors
-```
-
-Phase 1 没有人手动 join，咱们看到两个任务都被析构收掉。两行打印的次序五回里三回 task 1 在前、两回 task 2 在前，两个任务几乎同时收工，打印发生在各自的线程里，谁在前头由调度定。
-
-Phase 2 的机制是咱们写死在代码里的：`t = JoiningThread(task, 4)` 这一句，右边的临时对象在赋值发生前就构造完，task 4 的线程已经启动，赋值动作把旧的 task 3 join 完才接管 task 4。五回里两回 task 3 在前、三回 task 4 在前，打印次序没有保证。能担保的是正常路径上包装器的代码把旧的 join 完才接管，对照的裸 `std::thread` 在同一位置直接 terminate。
-
-Phase 3 是 `std::vector<JoiningThread>`，`reserve` 预留好空间之后逐个 `emplace_back`，作用域结束时每个元素析构时各自 join，四条线程五回全部收掉，没有落下任何一个。四行完成的次序五回里出现了四种，vector 元素的析构次序标准没有规定，咱们也不押它，可靠的是每个元素析构都会 join。
-
-> Phase 3 还贡献过一行碎输出，`task task 65 done` 连着半行 done，两行打印绞在了一起。`std::cout` 的竞争上一篇您已经见识过。
-
-咱们往标准库看一眼。C++20 的 `std::jthread` 就是这套设计收编后的正式版本：构造、move、析构的特殊成员形状与咱们的 `JoiningThread` 一致，析构自动 join，move 赋值收掉旧的再接新的，另外多出一套协作式停止的协议（`stop_source`、`stop_token`、`stop_callback`）。咱们下一篇专门讲多出来的那一套。
+语法怎么变，背后的原则只有一条：被引用的对象必须活到线程用完它为止。两条修复路径是您手工维持这句话成立的办法，把这份维持交给析构函数自动做，是下一篇《谁负责线程的生命周期》的主题。
 
 ## 下一步
 
-这一篇把生命周期问题的答案落在了数据与线程两侧。数据这一侧，要么复制进线程（默认的退化复制一直在做这件事），要么用 `shared_ptr` 把生命周期延到最后一份共享指针消失。线程这一侧，所有权只能 move，join 写进析构函数，不再靠您记得调用。您手里现在有可检验的东西：一个 ThreadGuard、一个 JoiningThread，外加两段修复代码，都能搬进您自己的程序里跑。还差一类角色没安排：循环一直跑到被叫停的 worker，`JoiningThread` 析构时能等它，却没法通知它该收了，等一个不知道要跑多久的循环，析构就变成无限期阻塞。让工作有机会被通知结束，是下一篇《让工作有序结束》的主题，`std::jthread` 与协作式停止协议在那里等着您。
+这一篇把数据这一侧收拢了：要么复制进线程（默认的退化复制一直在做这件事），要么用 `shared_ptr` 把生命周期延到最后一份共享指针消失。您手里现在有两段修复代码，都能搬进您自己的程序里跑。数据安顿好了，线程自己还悬着：join 写在函数末尾，异常一来就被跳过，谁来兜底。把 join 的责任从您的记性里接出去、交给析构函数，是下一篇《谁负责线程的生命周期》的主题，thread_guard 与手写的 JoiningThread 在那里等您。
 
 ## 参考资源
 
-本篇写作时对照借鉴了 Anthony Williams 的《C++ Concurrency in Action》（Manning 出的第二版），thread_guard 的推进思路借自它。joining_thread 也是照它的路子写出来的，例子与文字都是我自己写的。涉及 C++ 行为的断言，均按文中标注编译实测或查证 cppreference，std::thread、ref/cref、shared_ptr 自 C++11 起可用，make_unique 是 C++14，[=,*this] 是 C++17，jthread 与停止协议是 C++20。悬垂引用的输出按真实运行记录，未定义行为的运行结果在您的机器上可能不同。
+本篇写作时对照借鉴了 Anthony Williams 的《C++ Concurrency in Action》（Manning 出的第二版），例子与文字都是我自己写的。涉及 C++ 行为的断言，均按文中标注编译实测或查证 cppreference，std::thread、ref/cref、shared_ptr 自 C++11 起可用，make_unique 是 C++14，[=,*this] 是 C++17，`[=]` 隐式捕获 this 的废弃是 C++20。悬垂引用的输出按真实运行记录，未定义行为的运行结果在您的机器上可能不同。
 
 - [std::thread::thread（cppreference）][cppref-ctor]，构造语义，退化复制在发起线程求值的规定。
-- [std::thread::~thread（cppreference）][cppref-dtor]，joinable 状态下析构调用 terminate 的规定。
-- [std::thread::join（cppreference）][cppref-join]，同步保证与 system_error 的三种错误条件。
-- [std::thread::operator=（cppreference）][cppref-opassign]，joinable 状态下 move 赋值调用 terminate 的规定。
-- [std::thread::detach（cppreference）][cppref-detach]，分离语义。
 - [std::ref 与 std::cref（cppreference）][cppref-ref]，reference_wrapper 的生成与拆包。
 - [std::shared_ptr（cppreference）][cppref-shrptr]，并发调用与引用计数的保证范围。
-- [std::jthread（cppreference）][cppref-jthread]，C++20 的自动 join 线程与停止协议。
 - [P0806: Deprecate Implicit Capture of this][p0806]，C++20 废弃 `[=]` 隐式捕获 this 的提案。
-- [C++ Core Guidelines CP.24][cp24]与[CP.25][cp25]，把线程当作全局容器看待、优先 gsl::joining_thread 的两条工程建议，与咱们手写的 JoiningThread 是同一个思路（GSL 的 README 注明该类型尚未实现）。
 
 [cppref-ctor]: https://en.cppreference.com/w/cpp/thread/thread/thread
-[cppref-dtor]: https://en.cppreference.com/w/cpp/thread/thread/~thread
-[cppref-join]: https://en.cppreference.com/w/cpp/thread/thread/join
-[cppref-opassign]: https://en.cppreference.com/w/cpp/thread/thread/operator%3D
-[cppref-detach]: https://en.cppreference.com/w/cpp/thread/thread/detach
 [cppref-ref]: https://en.cppreference.com/w/cpp/utility/functional/ref
 [cppref-shrptr]: https://en.cppreference.com/w/cpp/memory/shared_ptr
-[cppref-jthread]: https://en.cppreference.com/w/cpp/thread/jthread
 [p0806]: https://www.open-std.org/jtc1/SC22/wg21/docs/papers/2017/p0806r0.html
-[cp24]: https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#cp24-think-of-a-thread-as-a-global-container
-[cp25]: https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#cp25-prefer-gsljoining_thread-over-stdthread

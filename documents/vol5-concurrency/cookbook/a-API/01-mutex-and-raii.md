@@ -87,4 +87,4 @@ counter 3
 
 ## 链回正文
 
-mutex 家族、锁与数据的对应关系、锁粒度，正文《用互斥保护共享状态》都替您铺好了：[《用互斥保护共享状态》](../../chapter02-sharing-data/02-mutex-and-locks)。
+mutex 家族、锁与数据的对应关系、锁粒度，正文《丢掉的数怎么收回来？——std::mutex 与三种作用域锁》都替您铺好了：[《丢掉的数怎么收回来？——std::mutex 与三种作用域锁》](../../chapter02-sharing-data/02-mutex-and-locks)。

@@ -79,4 +79,4 @@ attempts 2, value 42
 
 ## 链回正文
 
-Meyers singleton 与双重检查锁定的取舍，正文写得完整。您移步正文的双重检查锁定（DCLP）一节，就在[《选择内存序需要什么依据》](../../chapter05-atomic-memory-model/03-choosing-memory-orders) 里。
+Meyers singleton 与双重检查锁定的取舍，正文写得完整。您移步正文的双重检查锁定（DCLP）一节，就在[《内存序的四档：从顺序一致性到 relaxed》](../../chapter05-atomic-memory-model/04-choosing-memory-orders) 里。

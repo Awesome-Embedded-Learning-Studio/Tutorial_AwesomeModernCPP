@@ -89,4 +89,4 @@ mode = prod
 
 ## 链回正文
 
-shared_lock 配条件变量的等待，正文讲过 condition_variable_any。您翻到正文：《等待一个条件成立》（[链接](../../chapter03-wait-and-coordinate/01-wait-for-a-condition)）。
+shared_lock 配条件变量的等待，正文讲过 condition_variable_any。您翻到正文：《等一个条件：从轮询到条件变量》（[链接](../../chapter03-wait-and-coordinate/01-wait-for-a-condition)）。

@@ -77,4 +77,4 @@ timed out
 
 ## 链回正文
 
-正文表外专门交代过两个变体的去处，说好的配方就在这里，您对照着读：《用互斥保护共享状态》（[链接](../../chapter02-sharing-data/02-mutex-and-locks)）。
+正文表外专门交代过两个变体的去处，说好的配方就在这里，您对照着读：《丢掉的数怎么收回来？——std::mutex 与三种作用域锁》（[链接](../../chapter02-sharing-data/02-mutex-and-locks)）。

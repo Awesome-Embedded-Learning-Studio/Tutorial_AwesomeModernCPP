@@ -2,7 +2,7 @@
 title: "什么时候值得引入并发"
 description: "区分并发、并行与异步三个词各管什么，看清吞吐量与延迟两类收益的来源，列出不该引入并发的情形，并给出 Amdahl 与 Gustafson 两种加速比的估算方法。"
 chapter: 5
-order: 1
+order: 8
 tags:
   - host
   - cpp-modern
@@ -11,19 +11,13 @@ tags:
 difficulty: intermediate
 platform: host
 cpp_standard: [11, 20, 23]
-current_status:
-  title: 正在进行打磨
-  detail: 现在是LLM写好的初级稿件，引入是为了初步公开 + 希望收集反馈
-  variant: polishing
 ---
 
 # 什么时候值得引入并发
 
-上一篇把背景立住了：硬件不再白送性能，多核的算力要程序自己伸手去拿，躲是躲不开的。可真轮到动手，还得问一句值不值。程序嫌慢的时候，再开几个线程让它们同时干活，是很自然的念头，我自己也经常这么反应，但这个念头值得往后放一放。开线程是有成本的，本篇就陪您把这个问题问透：引入并发到底买到了什么，哪些情况下买了是亏的。
+咱们已经写过第一个线程程序，也知道怎么让它收尾了。现在碰到一个嫌慢的程序，您脑子里大概会冒出一个念头：再开几个线程一起干，能快多少？能快，但开线程本身是要付成本的，这篇就陪您掂量掂量，什么时候赚、什么时候亏。
 
-这是第一单元的第二篇。接口和用法留给后面的篇目，这一篇咱们把判断立起来：并发、并行、异步三个词各管什么，收益从哪些渠道来，什么时候不该用并发，投入之前怎么估算加速比。
-
-文中的实验代码都收在本页的在线示例里，您点开就能直接运行。我们本地实测的配方是 GCC 16.2.1、`g++ -std=c++20 -O2 -pthread`、WSL2（2026-11-14），涉及的 C++ 标准库行为也查过 cppreference 并标了版本。实验换到您的机器上再跑，绝对数字多半会漂，量级和判断不会变。
+> 这是本单元的选读，概念为主，最后留了两个估加速比的公式，供您真要拍板的时候用。
 
 ## 并发、并行、异步三个词各管什么
 
@@ -45,7 +39,19 @@ C++ 里表达并发结构的机制您后面全会学到：`std::thread`、`std::
   description="hardware_concurrency 返回实现支持的并发线程数，算不出来时返回 0，结果跟 nproc 对得上。"
   run-options="-O2 -std=c++23 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// 查询机器的并发能力:hardware_concurrency 返回实现支持的并发线程数
+#include <print>
+#include <thread>
+
+int main() {
+    std::println("{}", std::thread::hardware_concurrency());
+}
+```
+
+</OnlineCompilerDemo>
 
 咱们在自己的机器上跑出来是 16，跟 `nproc` 一致。
 
@@ -73,7 +79,48 @@ C++ 里有一个现成例子，特别适合把异步跟并行拉开距离：`std
   description="同一套 std::async，两种启动策略：deferred 把执行推迟到 get() 且跑在调用线程上，async 真正另起线程。"
   run-options="-O2 -std=c++23 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// deferred 与 async 两种启动策略:谁在哪个线程上跑、耗时落在哪一步
+#include <chrono>
+#include <future>
+#include <print>
+#include <sstream>
+#include <thread>
+
+using namespace std::chrono;
+
+std::string id_str() {
+    std::ostringstream oss;
+    oss << std::this_thread::get_id();
+    return oss.str();
+}
+
+int main() {
+    const std::string main_id = id_str();
+
+    auto t0 = steady_clock::now();
+    auto fut = std::async(std::launch::deferred, [] {
+        std::this_thread::sleep_for(milliseconds(300));
+        return id_str();
+    });
+    auto t1 = steady_clock::now();
+    const std::string who = fut.get();
+    auto t2 = steady_clock::now();
+
+    std::println("async() call spent: {} ms", duration_cast<milliseconds>(t1 - t0).count());
+    std::println("get()   spent    : {} ms", duration_cast<milliseconds>(t2 - t1).count());
+    std::println("deferred task ran on {}",
+                 who == main_id ? "the calling thread" : "another thread");
+
+    auto af = std::async(std::launch::async, [] { return id_str(); });
+    std::println("std::launch::async task ran on {}",
+                 af.get() == main_id ? "the calling thread" : "another thread");
+}
+```
+
+</OnlineCompilerDemo>
 
 咱们跑出来的四行如下（线程编号因机器而异）：
 
@@ -102,7 +149,45 @@ std::launch::async task ran on another thread
   description="把可划分的纯计算分给两个核心，从读数里看加速比与任务划分的开销。在线沙箱核数与 CPU 配额受限，加速比请以本地实测为准。"
   run-options="-O2 -std=c++23 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// 4 亿整数求和:串行对双线程,观察多核加速比与划分开销
+#include <chrono>
+#include <cstdint>
+#include <print>
+#include <thread>
+
+using namespace std::chrono;
+
+long long sum_range(long long from, long long to) {
+    long long s = 0;
+    for (long long i = from; i < to; ++i)
+        s += i % 1000;
+    return s;
+}
+
+int main() {
+    const long long n = 400000000LL;
+
+    auto t0 = steady_clock::now();
+    long long s1 = sum_range(0, n);
+    auto t1 = steady_clock::now();
+    std::println("serial    : {} ms, sum {}", duration_cast<milliseconds>(t1 - t0).count(), s1);
+
+    long long sa = 0, sb = 0;
+    t0 = steady_clock::now();
+    std::thread ta([&] { sa = sum_range(0, n / 2); });
+    std::thread tb([&] { sb = sum_range(n / 2, n); });
+    ta.join(); // join 等待该线程结束
+    tb.join();
+    t1 = steady_clock::now();
+    std::println("two threads: {} ms, sum {}", duration_cast<milliseconds>(t1 - t0).count(),
+                 sa + sb);
+}
+```
+
+</OnlineCompilerDemo>
 
 ```text
 serial    : 194 ms, sum 199800000000
@@ -141,7 +226,51 @@ two threads: 109 ms, sum 199800000000
   description="串行循环对每任务开一个线程，线程开销是计算量的几百上千倍。在线沙箱限制并发线程数，示例收窄为 8 个任务；正文读数来自本地 2000 任务实测。"
   run-options="-O2 -std=c++23 -pthread"
   allow-run
-/>
+>
+
+```cpp
+// 任务太细的代价:微任务串行循环对一任务一线程
+// 在线沙箱限制并发线程数,这里收窄为 8 个任务演示开销量级;正文读数来自本地 2000 任务实测
+#include <chrono>
+#include <print>
+#include <thread>
+#include <vector>
+
+using namespace std::chrono;
+
+long long tiny_task(int base) {
+    long long s = 0;
+    for (int i = 0; i < 100; ++i)
+        s += (base + i) % 64;
+    return s;
+}
+
+int main() {
+    constexpr int kTasks = 8;
+    std::vector<long long> results(kTasks);
+
+    // 串行:一个循环做完所有任务
+    auto t0 = steady_clock::now();
+    for (int k = 0; k < kTasks; ++k)
+        results[k] = tiny_task(k);
+    auto t1 = steady_clock::now();
+    std::println("serial loop             : {} us", duration_cast<microseconds>(t1 - t0).count());
+
+    // 每个任务单独开一个线程
+    t0 = steady_clock::now();
+    std::vector<std::thread> threads;
+    threads.reserve(kTasks);
+    for (int k = 0; k < kTasks; ++k) {
+        threads.emplace_back([&results, k] { results[k] = tiny_task(k); });
+    }
+    for (auto& t : threads)
+        t.join();
+    t1 = steady_clock::now();
+    std::println("one thread per tiny task: {} us", duration_cast<microseconds>(t1 - t0).count());
+}
+```
+
+</OnlineCompilerDemo>
 
 ```text
 serial loop             : 26 us
@@ -150,7 +279,9 @@ one thread per tiny task: 144306 us
 
 串行循环把 2000 个任务全做完用了 26 微秒，给每个任务单独开线程则花了约 144 毫秒。咱们把 144 毫秒摊到 2000 个线程上，每个大约 70 微秒，而单个任务的计算量只够跑十几纳秒，开销是计算量的几千倍。
 
-这组数字是刻意选的极端，真实的任务不会这么小，但您能带走一个量级判断：单个任务的计算量至少要明显高于它的调度开销才值得单独派发，我建议的门槛是十倍起步。真实阈值随硬件和运行时变，您拿不准就回到测量。太细的任务攒成一批交给一个线程，比硬开线程好。但另一头也有风险，整摊活全塞给一个线程，就跟单线程没有区别，多出来的核心白白闲着。任务的粒度，也就是您把工作划成多大的块，就在这两头之间找。线程池把创建成本摊销掉，是这件事的进阶写法，我计划把它写进 cookbook 的选读区，写好后在参考资源补链接。
+这组数字是刻意选的极端，真实的任务不会这么小，但您能带走一个量级判断：单个任务的计算量至少要明显高于它的调度开销才值得单独派发。
+
+真实阈值随硬件和运行时变，您拿不准就回到测量（是的，找一台典型的机器测试，并发编程中如果谈论详细的受益，一定推介测量说结论，而不是臆想！）。太细的任务攒成一批交给一个线程，比硬开线程好。但另一头也有风险，整摊活全塞给一个线程，就跟单线程没有区别，多出来的核心白白闲着。任务的粒度，也就是您把工作划成多大的块，就在这两头之间找。线程池把创建成本摊销掉，是这件事的进阶写法，我计划把它写进 cookbook 的选读区，写好后在参考资源补链接。
 
 ### 已经够快了
 
@@ -170,7 +301,7 @@ one thread per tiny task: 144306 us
 
 ## Amdahl 与 Gustafson：加速比怎么估（扩展）
 
-本节带（扩展）标记，跳过它不影响本篇主线。但您如果已经在心里盘算“加 N 个线程能快多少”，两个估算公式能帮您把直觉换成数字，建议读完。
+您如果已经在心里盘算“加 N 个线程能快多少”，两个估算公式能帮您把直觉换成数字，建议读完。
 
 ### Amdahl 定律：固定负载下的加速上限
 
@@ -196,7 +327,7 @@ $$S(N) = \alpha + (1 - \alpha) \cdot N$$
 
 ## 下一步
 
-这一篇立好了判断。下一篇《线程在机器上是什么》下到系统层，看一条执行流在内核与库里对应什么，调度怎么排。再下一篇《第一个 `std::thread` 程序》动手，您亲手启动几条执行流，亲眼看它们的输出绞在一起、互相争抢，回头再想上一篇那句“这个变量现在是什么值”，您会知道它为什么需要证明。
+如果您想知道线程的开销具体花在了哪里，可以接着看 Linux 上的一条线程是怎么建起来的。 [线程在机器上是什么](./09-what-is-a-thread)
 
 ## 参考资源
 

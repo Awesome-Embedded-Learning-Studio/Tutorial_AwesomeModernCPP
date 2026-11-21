@@ -11,27 +11,87 @@ tags:
 difficulty: intermediate
 platform: host
 cpp_standard: [11, 20, 23]
-current_status:
-  title: 正在进行打磨
-  detail: 现在是LLM写好的初级稿件，引入是为了初步公开 + 希望收集反馈
-  variant: polishing
 ---
 
 # 第一个 `std::thread` 程序
 
-前两篇都在为这一篇做准备。第一篇《什么时候值得引入并发》立了判断，单线程不够用才值得引入并发。上一篇《线程在机器上是什么》下到了系统层，讲了 `std::thread` 经 pthread 落到内核的对应关系，还有调度怎么排。这一篇轮到您自己的程序动手。咱们从最短的一个 `std::thread` 对象开始，把启动、等待、收尾各走一遍，再让几个线程同时往屏幕上写，看看您写单线程代码时从未见过的两种现象：两段输出绞在一起，同一份程序每次跑结果还不一样。
+喂喂喂！怎么回事啊！一下子冲进来写代码了！是的，笔者之前也强调了程序设计要的就是你动手。哈哈！之前我相信你大致懵懵懂懂的听说了并发编程设计的一些要点。You got it。
 
-文中的实验全部收在本页的在线示例里，您点开就能直接运行；我们本地实测的配方是 GCC 16.2.1、`g++ -std=c++20 -O2 -pthread`、WSL2（16 逻辑核，2026-11-14），涉及标准库行为的断言也查过 cppreference 并标了版本。输出类实验，您在机器上跑出来的样子每次都会变，这是实验本身要教给您的第一课，耗时类的数字则会随机器漂。
+## 先让两条线程各做一件事
+
+首先，请让我们请出来`std::println`（C++23），咱们上一个卷已经介绍过的东西，大概。来打印点东西。再使用`std::thread`（哦吼这就是我们的主角了）启动一条工作线程干活，干的就是你`finish_download`
+
+> 当然如果您使用的库比较老（我说的是大致Release时间是2026年1月1日前的！），可能需要开启实验特性，当然如果你是新的gcc，您当然完全不需要！
+
+好了。猜猜哪行会最后出现。
+
+```cpp
+#include <print>
+#include <thread>
+
+void finish_download() {
+    std::println("Download finished"); // Wow
+}
+
+int main() {
+    std::thread worker(finish_download);
+    std::println("List scrolled");
+    worker.join();
+    std::println("Showing the completion message");
+}
+```
+
+<OnlineCompilerDemo
+  title="启动一条工作线程，再等它结束"
+  source-path="code/examples/vol5/chapter01/00_first_thread.cpp"
+  run-options="-O2 -std=c++23 -pthread"
+  allow-run
+/>
+
+好了多点两下！我知道你肯定只点击了一下的！
+
+感谢AI，我要求 LLM 自己拉可执行文件跑了250次（实在是懒得写脚本和统计）。他兴冲冲的向我汇报
+
+> 咱们用 GCC 16.2.1 按 `-O2 -std=c++23 -pthread` 编译，连跑了 250 次。其中 249 次是下面这个顺序，还有一次前两行换了位置。
+
+一次典型的输出如下：
+
+```text
+List scrolled
+Download finished
+Showing the completion message
+```
+
+> 对程序感到困惑嘛？没关系！咱们还是沿着 `main` 走。第一句交给工作线程一件事，让它去执行 `finish_download` 里的代码。主线程可以接着往下打印 `List scrolled`。到 `worker.join()`（C++11 起）这一句，要是工作线程还在干活，主线程就在这里等它结束。等完再往下走，才能打印完成提示。
+
+最后那条消息为什么能留在末尾？您回头找找，是哪一行让主线程等工作线程结束了再往下走。就是 `join()`。前面咱们在纸上画了根箭头，现在您把这个先后关系写进程序里了。 [C++ 标准草案的线程等待条款](https://eel.is/c++draft/thread.thread.member)
+
+接下来的实验也可以直接在线运行。原实验在 GCC 16.2.1、WSL2（16 逻辑核，2026-11-14）下实测过。涉及标准库的行为查过 cppreference，也标了版本。不同运行里的输出顺序可能变化，耗时则会随机器漂。
 
 ## 三种方式构造线程
 
-`std::thread` 是 C++11 起的标准库类，定义在 `<thread>` 头文件里。它最常用的构造函数接受一个可调用对象，再加一组传给这个对象的参数。您给它什么，它就在一个新的执行流里调用什么。至于新的执行流底下怎么落到内核，上一篇讲过对应关系，本篇只在用到的地方碰一下。
+`std::thread` 是 C++11 起的标准库类，定义在 `<thread>` 头文件里。它最常用的构造函数接受一个可调用对象，再加一组传给这个对象的参数。您给它什么，它就在一个新的执行流里调用什么。如果您想再往机器里追一层，可以在做完实验后读本单元的选读。 [线程在机器上是什么](./09-what-is-a-thread)
 
 表达“可调用”的方式不止一种，咱们按从朴素到能携带状态的顺序，把三种都跑一遍。
 
-### 最朴素的起点：函数指针
+### 第一关：函数指针
 
 咱们给它一个普通函数，再给一组参数，线程就起来了：
+
+```cpp
+// 三种构造方式之一:函数指针
+#include <print>
+#include <thread>
+
+void print_hello(int id) {
+    std::println("hello from thread {}", id);
+}
+
+int main() {
+    std::thread t(print_hello, 42); // 传递了函数指针，还有他需要的参数
+    t.join();
+}
+```
 
 <OnlineCompilerDemo
   title="三种构造方式之一：函数指针"
@@ -41,11 +101,32 @@ current_status:
   allow-run
 />
 
-咱们跑出来一行 `hello from thread 42`。`std::thread t(print_hello, 42)` 这一句做了三件事：把函数和参数打包存进线程对象的内部存储，向操作系统要一条新的执行流，新执行流拿存好的参数去调用 `print_hello(42)`。参数是复制进去的，复制发生在发起线程里，发起线程此刻就是执行 `main` 的主线程，复制失败抛的异常也留在它这里。至于复制怎么发生、引用怎么传过去，是下一篇《谁负责线程和数据的生命周期》的主题，这里把“参数被复制”这个事实接住，就够往下走了。
+咱们跑出来一行 `hello from thread 42`。`std::thread t(print_hello, 42)` 这一句做了三件事：把函数和参数打包存进线程对象的内部存储，向操作系统要一条新的执行流，新执行流拿存好的参数去调用 `print_hello(42)`。
 
-### 日常主力：lambda
+参数是**复制进去**的，复制发生在发起线程里，发起线程此刻就是执行 `main` 的主线程，复制失败抛的异常也留在它这里。至于复制怎么发生、引用怎么传过去，是下一篇《谁负责数据的生命周期》的主题，这里把“参数被复制”这个事实接住，就够往下走了。
 
-实际工程里我写线程，绝大多数时候用的是 lambda，因为要做的事就在调用点，不用专门声明一个函数：
+### 第二关：lambda
+
+啊，还可以是lambda，这个并不新鲜。笔者有时候一瞅这个活可以直接塞进去一个lambda，那就偷个懒咯~
+
+```cpp
+// 三种构造方式之二:lambda,按引用捕获要在 join 之后才能读结果
+#include <print>
+#include <thread>
+#include <vector>
+
+int main() {
+    std::vector<int> data = {1, 2, 3, 4, 5};
+    long long sum = 0;
+
+    std::thread t([&data, &sum] {
+        for (int v : data)
+            sum += v;
+    });
+    t.join();
+    std::println("sum = {}", sum);
+}
+```
 
 <OnlineCompilerDemo
   title="三种构造方式之二：lambda"
@@ -63,6 +144,31 @@ current_status:
 
 咱们给的第三样东西是一个重载了 `operator()` 的对象，任务复杂、要携带自己的状态时用得上：
 
+```cpp
+class Accumulator {
+  public:
+    explicit Accumulator(const std::vector<int>& data) : data_(data) {}
+
+    void operator()() const {
+        long long s = 0;
+        for (int v : data_)
+            s += v;
+        std::println("functor: sum = {}", s);
+    }
+
+  private:
+    const std::vector<int>& data_; // 引用成员：拷贝进线程的只是引用本身
+};
+
+int main() {
+    std::vector<int> data = {1, 2, 3, 4, 5};
+
+    Accumulator acc(data);
+    std::thread t(acc); // acc 被复制一份进线程
+    t.join();
+}
+```
+
 <OnlineCompilerDemo
   title="三种构造方式之三：函数对象"
   source-path="code/examples/vol5/chapter01/12_functor_thread.cpp"
@@ -75,6 +181,19 @@ current_status:
 
 写函数对象这一路还有个 C++ 的老语法现象等着您。假如您把最后两步合成一句：
 
+```cpp
+int main() {
+    std::vector<int> data = {1, 2, 3, 4, 5};
+
+    // std::thread t(Accumulator(data)); // 这一行声明的是名叫 t 的函数,不是线程对象
+
+    std::thread t{Accumulator(data)}; // 花括号统一初始化,才是线程对象
+    t.join();
+}
+```
+
+> 把圆括号版本写成编译器看到的样子，就是 `std::thread t(Accumulator data);`：`Accumulator(data)` 在这里读作一个参数声明，类型是 `Accumulator`，参数名恰好也叫 `data`，名字外面包着一层多余的括号。于是 `t` 成了函数的名字，这个函数收一个 `Accumulator`、返回一个 `std::thread`，只有声明没有定义，线程根本没有启动。
+
 <OnlineCompilerDemo
   title="最易错解析：圆括号还是花括号"
   source-path="code/examples/vol5/chapter01/13_vexing_parse.cpp"
@@ -83,7 +202,7 @@ current_status:
   allow-run
 />
 
-这一句在编译器眼里不是“构造一个线程对象”，而是“声明一个名叫 `t` 的函数”。这是所谓“最令人头疼的解析”（most vexing parse）：凡是长得像函数声明的东西，一律按函数声明处理。咱们在 GCC 16.2.1 下编译了这一句，编译器给一个警告，下一行再用 `t` 就报错：
+这就是所谓“最令人头疼的解析”（most vexing parse）：凡是长得像函数声明的东西，一律按函数声明处理（[\[dcl.ambig.res\]/1](https://eel.is/c++draft/dcl.ambig.res)）。咱们在 GCC 16.2.1 下编译了这一句，编译器给一个警告，下一行再用 `t` 就报错：
 
 ```text
 warning: parentheses were disambiguated as a function declaration [-Wvexing-parse]
@@ -103,6 +222,27 @@ error: request for member 'join' in 't',
 ### join：等它收工
 
 `join()` 是阻塞调用，当前线程停在原地，等目标线程跑完才继续往下走。咱们看一个带时间线的例子：
+
+```cpp
+// join:发起线程的一方等它收工,再继续往下走
+#include <chrono>
+#include <print>
+#include <thread>
+
+void slow_work() {
+    std::println("worker  : starting");
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    std::println("worker  : done");
+}
+
+int main() {
+    std::println("main    : launching a thread");
+    std::thread t(slow_work);
+    std::println("main    : waiting");
+    t.join();
+    std::println("main    : thread finished, continuing");
+}
+```
 
 <OnlineCompilerDemo
   title="join：等它收工"
@@ -128,6 +268,25 @@ main    : thread finished, continuing
 
 `detach()` 走另一条路，它把执行流从线程对象上分离出去，线程继续在后台跑，对象从此不再关联任何线程（cppreference 的说法是分离后 `*this` 不再拥有任何线程，见 [detach 的 cppreference 页面][cppref-detach]，C++11 起）。咱们看这个例子：
 
+```cpp
+// detach:放开线程自己收尾,主线程先走,进程等全部线程结束才退
+#include <chrono>
+#include <print>
+#include <thread>
+
+void background_task() {
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::println("background task finished");
+}
+
+int main() {
+    std::thread t(background_task);
+    t.detach();
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    std::println("main: exiting");
+}
+```
+
 <OnlineCompilerDemo
   title="detach：放开线程自己收尾"
   source-path="code/examples/vol5/chapter01/15_detach.cpp"
@@ -143,6 +302,21 @@ main    : thread finished, continuing
 ### 两条路都不走：std::terminate
 
 join 和 detach 您可以都不调用，代价标准早就定好了。咱们把前面每个例子里都有的那行收尾拿掉，构造完直接走出 `main`，看看会发生什么：
+
+```cpp
+// 既不 join 也不 detach:线程对象析构时 std::terminate 直接收走整个进程
+#include <print>
+#include <thread>
+
+void some_work() {
+    std::println("working...");
+}
+
+int main() {
+    std::thread t(some_work);
+    // 既不 join 也不 detach
+}
+```
 
 <OnlineCompilerDemo
   title="既不 join 也不 detach：进程被收走"
@@ -169,6 +343,27 @@ terminate called without an active exception
 ### 四个线程一起往屏幕上写
 
 咱们来最直觉的版本，四个线程各打四行日志，主线程等它们全部收工：
+
+```cpp
+using namespace std::chrono_literals; // C++14 起的时间字面量（如 30ms），靠这行 using 声明引入
+
+void work(int id) {
+    for (int step = 0; step < 4; ++step) {
+        std::println("worker {} step {}", id, step);
+        std::this_thread::sleep_for(30ms);
+    }
+}
+
+int main() {
+    std::vector<std::thread> threads;
+    for (int id = 1; id <= 4; ++id) {
+        threads.emplace_back(work, id);
+    }
+    for (auto& t : threads) {
+        t.join();
+    }
+}
+```
 
 <OnlineCompilerDemo
   title="四条线程各走各的进度"
@@ -205,9 +400,33 @@ worker 1 step 3
 
 ### 每次运行都不一样
 
-乱的根源值得咱们说清。`std::cout` 是全程序共享的一个对象，四个线程都在往它身上写。一条输出语句里连着几个 `<<`，标准并不保证它们拼成一个不可分割的整体，谁写完一小段，谁就可能被别人插进来一截。所以您看到的现象，行序会变，行内会碎，内容一条都没有少，都是同一件事的表现：多个执行流写同一个对象，中间没有同步，写出来的字节流就是交错的。
+什么叫每一次运行的结果，都不一样？！是的，这就是并发编程验证的魔盒。可能你跑几百次，几千次都对，但是就会在某一次出错。或者是错乱的并不太一样。我相信如果大家有搞性能提升时的vibe coding，时常会注意到这一点。
+
+这里笔者不卖关子了，直接说：`std::cout` 是全程序共享的一个对象，四个线程都在往它身上写。一条输出语句里连着几个 `<<`，标准并不保证它们拼成一个不可分割的整体，谁写完一小段，谁就可能被别人插进来一截。所以您看到的现象，行序会变，行内会碎，内容一条都没有少，都是同一件事的表现：多个执行流写同一个对象，中间没有同步，写出来的字节流就是交错的。
 
 咱们又换了个写法验证“插进来”这件事本身。让三个线程各自睡满 50 毫秒后同时开写，每个片段不带换行，全部写完才打一个换行：
+
+```cpp
+using namespace std::chrono_literals;
+
+void chatter(int id) {
+    std::this_thread::sleep_for(50ms); // 让三个线程几乎同时醒来
+    for (int step = 0; step < 6; ++step) {
+        std::print("[w{}:{}]", id, step);
+    }
+    std::println("");
+}
+
+int main() {
+    std::vector<std::thread> threads;
+    for (int id = 1; id <= 3; ++id) {
+        threads.emplace_back(chatter, id);
+    }
+    for (auto& t : threads) {
+        t.join();
+    }
+}
+```
 
 <OnlineCompilerDemo
   title="交错输出：结果不确定"
@@ -217,7 +436,7 @@ worker 1 step 3
   allow-run
 />
 
-按您单线程的直觉，这该是三行整齐的片段。咱们跑了上千轮，乱起来的样子像下面这样，这是其中一次：
+按您单线程的直觉，这该是三行整齐的片段。咱们跑了上千轮，乱起来的样子像下面这样，这是其中的某一次抽奖抽出来的结果：
 
 ```text
 [w[w1:0][w1:1][w1:2][w1:3][w1:4][w1:5]
@@ -227,54 +446,31 @@ worker 1 step 3
 
 专门数过一遍：四百轮里八十五轮是乱的，剩下那些轮次都是三行整齐的。咱们按行看这次捕获的样本。worker 2 的第一个片段才写出 `[w` 两个字符，worker 1 的整行连着换行插了进来，随后 worker 2 从 `2:0]` 接着写完了自己剩下的片段。三个换行倒是都待在自己内容的末尾，穿插进来的是整行内容。什么时候乱、乱成什么样，每次跑都可能不同，这就是第一篇开头那句话的现场版：并发程序里“这个变量现在是什么值”需要证明，`std::cout` 的输出只是它最容易亲眼看到的样子。
 
-把输出修回人能读的样子，办法是把一段完整输出用锁包起来，一次只放一个线程进去写。锁（`std::mutex` 这类工具）是后面讲互斥那一篇的主题，这里知道症结在哪就够。您以后写多线程日志时看到的每一行乱码，根源都是咱们今天做过的实验。
-
-### 机器有几核
-
-乱见过了，咱们顺手把机器的家底查一下。`std::thread::hardware_concurrency()` 是个静态成员函数（C++11 起），返回实现支持的并发线程数：
-
-<OnlineCompilerDemo
-  title="机器有几核"
-  source-path="code/examples/vol5/chapter01/01_hardware_concurrency.cpp"
-  description="hardware_concurrency 返回实现支持的并发线程数，只是提示，算不出来返回 0。"
-  run-options="-O2 -std=c++23 -pthread"
-  allow-run
-/>
-
-咱们跑出来是 16，跟命令行的 `nproc` 一致，数的就是咱们本机逻辑核。cppreference 在 [hardware_concurrency 的页面][cppref-hw] 写着，这个值只当提示用，算不出来时返回 0。它最常见的一个用途是给第一篇里把求和拆给多核的那类并行决定开多少个线程，用之前值得检查一下是不是 0，也别把它当精确承诺，容器（Docker 这类限制核数的运行环境）里的程序拿到什么值，要看环境分到几个核。
-
-## 线程是谁：标识与查询（扩展）
-
-本节带（扩展）标记，跳过它不影响本篇主线。不过它很短，而且您调多线程的 bug 时大概率会用上，建议读完。
-
-每个线程有一个自己的标识，类型是 `std::thread::id`（C++11 起）。从线程对象身上拿叫 `get_id()`，线程在自己内部拿自己的，叫 `std::this_thread::get_id()`。咱们把两条路都走了一遍：
-
-<OnlineCompilerDemo
-  title="线程标识：get_id 的报告与归零"
-  source-path="code/examples/vol5/chapter01/19_thread_id.cpp"
-  description="主线程与工作线程的 id 各自可见，join 之后线程对象给出的是非执行线程的 id。"
-  run-options="-O2 -std=c++23 -pthread"
-  allow-run
-/>
-
-咱们这次跑出来：
-
-```text
-from main   : worker id is 132837468534464
-from main   : main id is 132837476218752
-inside worker: my id is 132837468534464
-after join  : get_id gives thread::id of a non-executing thread
-```
-
-第一行和第三行对上了：主线程手里 `t.get_id()` 拿到的编号，跟 worker 内部自报的编号是同一个，线程只有一条身份。第二行是主线程自己的编号，它没有对照对象，放在这儿只是给您看个参照。第四行，join 之后再问 `t.get_id()`，对象已经不关联任何线程，返回的是不指向任何执行的默认值，咱们机器上的 libstdc++ 把它打印成一句话。
-
-> 这个类型还有两条用法上的事要交代。id 的具体样式是各实现自己定的，咱们这里是数字，别的编译器可能是十六进制地址，所以拿它打日志可以，拿它做逻辑判断不行。它支持比较，也能当哈希表的键，给每条线程配一份独立资源时用得上。
-
-标准库还留了一个通向底层的口子：`native_handle()`（C++11 起）。它返回实现定义的原生线程句柄，Linux 上就是 pthread 句柄，拿它可以做标准库没覆盖的事，比如设优先级、绑 CPU 亲和性。这些平台相关的话题归上一篇讲 pthread 的部分，本篇不走进去，您知道有这么个口子就行。
+> 啥你问我怎么修，等等等等等下后面介绍锁的概念的时候说。
 
 ## 线程函数里抛异常会怎样
 
-本篇还有一条必须遵守的规则：异常不能逃出线程函数。咱们直接跑一个违反它的程序：
+异常不能逃出线程函数。咱们直接跑一个违反它的程序：
+
+```cpp
+// 异常逃出线程函数:main 的 try 接不住,std::terminate 收走整个进程
+#include <print>
+#include <stdexcept>
+#include <thread>
+
+void unsafe_worker() {
+    throw std::runtime_error("oops, something went wrong");
+}
+
+int main() {
+    try {
+        std::thread t(unsafe_worker);
+        t.join();
+    } catch (const std::exception& e) {
+        std::println("caught: {}", e.what());
+    }
+}
+```
 
 <OnlineCompilerDemo
   title="异常逃出线程函数：接不住"
@@ -293,6 +489,29 @@ terminate called after throwing an instance of 'std::runtime_error'
 
 `catch` 一行都没执行。每个线程有自己独立的调用栈，异常处理只在当前线程的栈里展开，栈展开就是前面说的那个逐层退出、沿途析构的过程，worker 抛出的异常在 worker 的栈里找不到任何能接住它的 `catch`，就触发 `std::terminate()`。主线程的 `try` 跟它隔着一整条线程，够不着。咱们把同样的程序改成在线程内部把异常处理掉，就能正常收场：
 
+```cpp
+// 异常在线程函数内部接住:main 正常继续
+#include <print>
+#include <stdexcept>
+#include <thread>
+
+void safe_worker() {
+    try {
+        throw std::runtime_error("oops, something went wrong");
+    } catch (const std::exception& e) {
+        std::println("worker caught: {}", e.what());
+    } catch (...) {
+        std::println("worker caught unknown exception");
+    }
+}
+
+int main() {
+    std::thread t(safe_worker);
+    t.join();
+    std::println("main continues normally");
+}
+```
+
 <OnlineCompilerDemo
   title="异常在线程内接住"
   source-path="code/examples/vol5/chapter01/21_exception_caught.cpp"
@@ -305,7 +524,7 @@ terminate called after throwing an instance of 'std::runtime_error'
 
 ## 下一步
 
-今天这些程序咱们全程守着手动档：起线程靠构造，收尾靠 join 或 detach，异常路径上漏一次 join 就是 terminate，屏幕乱了也只能等后面讲互斥那一篇的锁来管。下一篇《谁负责线程和数据的生命周期》把这些手动档换成有设计的写法，参数怎么传，引用什么时候悬垂，还有怎么用 RAII 把 join 的责任从您的记性里接过去，那个包装器就是前面说的在析构里自动等待的东西，到时候您亲手写一遍。您手里现在有了第一手的现象，今天看到的这些乱序和终止，后面讲竞争讲同步时都会回来。
+今天这些程序咱们全程守着手动档：起线程靠构造，收尾靠 join 或 detach，异常路径上漏一次 join 就是 terminate，屏幕乱了也只能等后面讲互斥那一篇的锁来管。接下来两篇把这些手动档换成有设计的写法：《谁负责数据的生命周期》讲参数怎么传、引用什么时候悬垂，《谁负责线程的生命周期》讲怎么用 RAII 把 join 的责任从您的记性里接过去，那个包装器就是前面说的在析构里自动等待的东西，到时候您亲手写一遍。您手里现在有了第一手的现象，今天看到的这些乱序和终止，后面讲竞争讲同步时都会回来。
 
 ## 参考资源
 

@@ -89,4 +89,4 @@ try_both succeeded: 1
 
 ## 链回正文
 
-死锁的成因、锁顺序与分层策略，正文《减少共享与避免死锁》完整推演过，您接着往下读就行：[《减少共享与避免死锁》](../../chapter02-sharing-data/04-sharing-less-and-deadlock)。
+死锁的成因、锁顺序与分层策略，正文《谁也不松手，怎么办》完整推演过，您接着往下读就行：[《谁也不松手，怎么办》](../../chapter02-sharing-data/06-deadlock-defenses)。

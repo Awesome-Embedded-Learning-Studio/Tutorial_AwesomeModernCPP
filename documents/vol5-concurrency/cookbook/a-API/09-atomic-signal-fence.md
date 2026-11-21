@@ -72,4 +72,4 @@ snapshot 42
 
 ## 链回正文
 
-fence 的三种接法、x86 指令对照与 volatile 边界，正文有一节等着您：《选择内存序需要什么依据》（[链接](../../chapter05-atomic-memory-model/03-choosing-memory-orders)）。
+fence 的三种接法、x86 指令对照与 volatile 边界，正文有一节等着您：《内存序的四档：从顺序一致性到 relaxed》（[链接](../../chapter05-atomic-memory-model/04-choosing-memory-orders)）。

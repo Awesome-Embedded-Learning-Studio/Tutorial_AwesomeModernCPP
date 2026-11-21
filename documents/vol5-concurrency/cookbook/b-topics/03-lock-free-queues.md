@@ -17,7 +17,7 @@ cpp_standard: [11, 17]
 
 # SPSC 与 MPMC 无锁队列
 
-本篇接着 [《无锁入门》](02-lock-free-intro)往实用方向走，同样是选读区的平移篇：无锁容器不在卷五必修线内，写出无锁容器不算入门验收，想深入的主题都住这里。咱们动笔前把前置备齐：《无锁入门》的 CAS 循环、ABA 与内存回收，再加上第五单元正文的内存序判据（[《选择内存序需要什么依据》](../../chapter05-atomic-memory-model/03-choosing-memory-orders)）。
+本篇接着 [《无锁入门》](02-lock-free-intro)往实用方向走，同样是选读区的平移篇：无锁容器不在卷五必修线内，写出无锁容器不算入门验收，想深入的主题都住这里。咱们动笔前把前置备齐：《无锁入门》的 CAS 循环、ABA 与内存回收，再加上第五单元正文的内存序判据（[《内存序的四档：从顺序一致性到 relaxed》](../../chapter05-atomic-memory-model/04-choosing-memory-orders)）。
 
 平移来路交代清楚：机制讲解、代码、benchmark 读数与练习原样保留，我改动的只有编号、frontmatter、指向正文的交叉引用，外加判死词表清理。文末 benchmark 的读数沿用素材当年的记录（环境标注在数据前面），本轮我没有重新测量，您复跑时数字会漂，量级和相对关系应当站得住。
 
@@ -55,7 +55,7 @@ private:
 };
 ```
 
-结构里有三个成员：`write_idx_`、`read_idx_` 和 `buffer_`。咱们注意，`write_idx_` 和 `read_idx_` 各自带了 `alignas(64)`——这是**缓存行填充（cache line padding）**，整篇最重要的优化之一。现代 CPU 的缓存以缓存行（通常 64 字节）为单位在核心之间传输。假如 `write_idx_` 和 `read_idx_` 碰巧落在同一个缓存行里（它们是相邻的成员变量，很可能如此），生产者每次写 `write_idx_` 都会使消费者核心上的缓存行失效，消费者每次读 `read_idx_` 也会使生产者核心上的缓存行失效，这就是**伪共享（false sharing）**。在高频操作下，伪共享可以把性能打掉一到两个数量级。`alignas(64)` 确保每个索引独占一个缓存行，消除伪共享。伪共享与缓存行的机制背景，第六单元的[《怎样调整设计》](../../chapter06-validating-designs/03-adjusting-design)有更完整的展开。
+结构里有三个成员：`write_idx_`、`read_idx_` 和 `buffer_`。咱们注意，`write_idx_` 和 `read_idx_` 各自带了 `alignas(64)`——这是**缓存行填充（cache line padding）**，整篇最重要的优化之一。现代 CPU 的缓存以缓存行（通常 64 字节）为单位在核心之间传输。假如 `write_idx_` 和 `read_idx_` 碰巧落在同一个缓存行里（它们是相邻的成员变量，很可能如此），生产者每次写 `write_idx_` 都会使消费者核心上的缓存行失效，消费者每次读 `read_idx_` 也会使生产者核心上的缓存行失效，这就是**伪共享（false sharing）**。在高频操作下，伪共享可以把性能打掉一到两个数量级。`alignas(64)` 确保每个索引独占一个缓存行，消除伪共享。伪共享与缓存行的机制背景，第六单元的[《怎样调整设计》](../../chapter06-validating-designs/05-adjusting-design)有更完整的展开。
 
 > 别急着往下走——如果您想在后面的练习里直观感受伪共享的威力，试着把 `alignas(64)` 去掉再跑一遍 benchmark。您大概率会看到吞吐量掉一半甚至更多，尤其是在 ARM 平台上差异更夸张。这个优化在所有高性能并发数据结构里几乎是标配，别偷懒省掉它。
 
@@ -468,7 +468,7 @@ std::size_t batch_push(SPSCQueue<T, Capacity>& queue,
 
 ## Benchmark：SPSC vs Mutex Queue vs MPMC
 
-理论分析说得再好听也得看实际数据，接下来咱们跑一组 benchmark 来直观感受一下不同实现的性能差距。我的测试环境是：Intel i7-12700K，Ubuntu 22.04，GCC 13.2，编译选项 `-O2 -march=native`。队列容量 1024，每个测试执行 10,000,000 次 push + pop 操作。（测量条件控制的通用方法，[《怎样衡量并发带来的收益》](../../chapter06-validating-designs/02-measuring-benefits)整篇都在讲。）
+理论分析说得再好听也得看实际数据，接下来咱们跑一组 benchmark 来直观感受一下不同实现的性能差距。我的测试环境是：Intel i7-12700K，Ubuntu 22.04，GCC 13.2，编译选项 `-O2 -march=native`。队列容量 1024，每个测试执行 10,000,000 次 push + pop 操作。（测量条件控制的通用方法，[《量之前，先把条件立住：串行基线与测量的陷阱》](../../chapter06-validating-designs/03-measuring-benefits)整篇都在讲。）
 
 ### 单生产者单消费者（SPSC）
 
@@ -554,7 +554,7 @@ if (q.wait_dequeue_timed(item, std::chrono::milliseconds(100))) {
 }
 ```
 
-选择建议：如果您的场景是严格的 SPSC，手写 ring buffer 是最快的，moodycamel 反而有点杀鸡用牛刀。如果是 MPSC 或 MPMC 且性能要求高，直接上 moodycamel，别自己造轮子。如果您需要一个可以关闭、支持超时的阻塞队列，用[《写一个有容量限制的任务队列》](../../chapter03-wait-and-coordinate/02-bounded-queue)里的 `BoundedQueue` 或者 `moodycamel::BlockingConcurrentQueue`。
+选择建议：如果您的场景是严格的 SPSC，手写 ring buffer 是最快的，moodycamel 反而有点杀鸡用牛刀。如果是 MPSC 或 MPMC 且性能要求高，直接上 moodycamel，别自己造轮子。如果您需要一个可以关闭、支持超时的阻塞队列，用[《有容量的队列：先让它站得住》](../../chapter03-wait-and-coordinate/03-bounded-queue)里的 `BoundedQueue` 或者 `moodycamel::BlockingConcurrentQueue`。
 
 ## 练习
 

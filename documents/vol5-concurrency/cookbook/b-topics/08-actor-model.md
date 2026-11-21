@@ -17,7 +17,7 @@ cpp_standard: [17]
 
 本篇是选读区的第一篇“换范式”：卷五必修线自始至终走的是共享内存加锁的路（第二单元的互斥、第三单元的等待、第四单元的任务组织），Actor 模型代表的是另一条路，不共享内存，用消息传递组织并发。它不进任何必修单元，超出必修的内容都住选读区，它和下一篇 [《Channel 与 CSP：Select、管道》](09-channel-csp)是一对，讲的是同一个目标的两条实现路径，咱们把它们当成一对来读。
 
-读它之前，您需要会用线程、mutex 与条件变量（[《第一个 std::thread 程序》](../../chapter01-start-concurrency/03-first-std-thread)、[《用互斥保护共享状态》](../../chapter02-sharing-data/02-mutex-and-locks)），并且最好读过队列的关闭语义（[《写一个有容量限制的任务队列》](../../chapter03-wait-and-coordinate/02-bounded-queue)），Actor 的邮箱就是那个模式的直接复用。`std::variant` 与 `std::visit` 用到时当场解释，不要求提前会。
+读它之前，您需要会用线程、mutex 与条件变量（[《第一个 std::thread 程序》](../../chapter01-start-concurrency/03-first-std-thread)、[《丢掉的数怎么收回来？——std::mutex 与三种作用域锁》](../../chapter02-sharing-data/02-mutex-and-locks)），并且最好读过队列的关闭语义（[《队列关不上会怎样：关闭与背压》](../../chapter03-wait-and-coordinate/04-queue-close-and-backpressure)），Actor 的邮箱就是那个模式的直接复用。`std::variant` 与 `std::visit` 用到时当场解释，不要求提前会。
 
 平移来路：机制讲解、代码与练习原样保留，我改动的只有编号、frontmatter、指向正文的交叉引用，外加判死词表清理。素材声称的编译环境（GCC 12+ / Clang 15+ / MSVC 2022+，`-std=c++17 -pthread -O2`）原样保留，本轮我没有重新编译验证。
 
@@ -137,7 +137,7 @@ using Message = std::variant<
 
 ### 邮箱：线程安全队列
 
-邮箱就是一个线程安全队列。如果您读过了[《写一个有容量限制的任务队列》](../../chapter03-wait-and-coordinate/02-bounded-queue)，那您已经见过这个模式了。这里咱们给出一个简洁的实现：
+邮箱就是一个线程安全队列。如果您读过了[《有容量的队列：先让它站得住》](../../chapter03-wait-and-coordinate/03-bounded-queue)，那您已经见过这个模式了。这里咱们给出一个简洁的实现：
 
 ```cpp
 #pragma once
