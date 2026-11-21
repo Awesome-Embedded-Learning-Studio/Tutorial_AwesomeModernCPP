@@ -96,7 +96,7 @@ ErrorCode init_board();
 `[[nodiscard]]` 还可以放在类或枚举的定义上。这样所有返回该类型的函数都自动带有 nodiscard 语义：
 
 ```cpp
-[[nodiscard]] enum class ErrorCode {
+enum class [[nodiscard]] ErrorCode {
     Ok,
     InvalidParam,
     Timeout,
