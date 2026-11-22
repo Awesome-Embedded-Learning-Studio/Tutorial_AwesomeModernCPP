@@ -1,5 +1,5 @@
 // Shared types; UI labels and role names are formatted before reaching the browser.
-export const CONTRIBUTION_ROLES = ['author', 'revision', 'translation', 'review', 'maintain'] as const
+export const CONTRIBUTION_ROLES = ['author', 'revision', 'translation', 'review', 'maintain', 'idea'] as const
 export type ContributionRole = typeof CONTRIBUTION_ROLES[number]
 export type ContributionLocale = 'zh' | 'en'
 export type ContributionText = string | Record<ContributionLocale, string>
@@ -10,6 +10,7 @@ export interface ContributionPerson {
   roles: ContributionRole[]
   note?: ContributionText
   pr?: number
+  issue?: number
 }
 
 export interface ContributionHistory {
@@ -32,7 +33,7 @@ export interface ArticleContributions {
   signatureLink: string
   contributors: Array<{
     github: string; name: string; roles: string[]; note: string
-    avatar: string; profile: string; anchor: string; tooltip: string; pr?: number; prUrl?: string
+    avatar: string; profile: string; anchor: string; tooltip: string; pr?: number; prUrl?: string; issue?: number; issueUrl?: string
   }>
   history: Array<{ names: string; note: string; date: string; pr?: number; url?: string; commit: string; commitUrl: string }>
 }
@@ -48,14 +49,14 @@ const labels = {
     historyHint: '来自 Git，按时间由近到远排列；提交说明保留原文。',
     historyEmpty: '本文尚无已提交的 Git 变更记录。', profileLabel: '访问 GitHub 主页',
     metaLabel: '本文贡献者', signatureLink: '查看署名',
-    roles: { author: '撰写', revision: '修订', translation: '翻译', review: '审校', maintain: '维护' },
+    roles: { author: '撰写', revision: '修订', translation: '翻译', review: '审校', maintain: '维护', idea: '提案' },
   },
   en: {
     heading: 'Contributors of This Article', historyHeading: 'Contribution history',
     historyHint: 'From Git, newest first. Commit messages keep their original wording.',
     historyEmpty: 'No committed Git history for this article yet.', profileLabel: 'Visit GitHub profile',
     metaLabel: 'Contributors', signatureLink: 'Credits',
-    roles: { author: 'Author', revision: 'Revision', translation: 'Translation', review: 'Review', maintain: 'Maintain' },
+    roles: { author: 'Author', revision: 'Revision', translation: 'Translation', review: 'Review', maintain: 'Maintain', idea: 'Idea' },
   },
 } as const
 
@@ -77,6 +78,7 @@ export function formatArticleContributions(
       anchor: `card-contributor-${person.github.toLowerCase()}`,
       tooltip: `${name} · ${roles.join(' · ')}`,
       pr: person.pr, prUrl: person.pr ? `${CONTRIBUTION_REPO}/pull/${person.pr}` : undefined,
+      issue: person.issue, issueUrl: person.issue ? `${CONTRIBUTION_REPO}/issues/${person.issue}` : undefined,
     }
   })
   const names = new Map(contributors.map(person => [person.github.toLowerCase(), person.name]))

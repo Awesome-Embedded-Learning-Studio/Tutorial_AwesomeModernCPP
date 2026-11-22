@@ -240,14 +240,16 @@ void filter_outliers(std::vector<Reading>& readings, double k_sigma)
 }
 
 /// Generate an analysis report for each sensor
-std::vector<Report> generate_reports(std::vector<Reading>& readings)
+std::vector<Report> generate_reports(const std::vector<Reading>& readings)
 {
     // Group by sensor with an unordered_map (no ordered traversal needed, O(1) lookup)
     std::unordered_map<std::string, std::vector<Reading>> groups;
     groups.reserve(16);  // pre-allocate to reduce rehashes
 
-    for (auto& r : readings) {
-        groups[r.sensor_id].push_back(std::move(r));
+    // Read-only analysis: push_back copies. Don't write std::move(r) here—
+    // that would strip the sensor_id out of every element in the caller's readings
+    for (const auto& r : readings) {
+        groups[r.sensor_id].push_back(r);
     }
 
     std::vector<Report> reports;
@@ -388,7 +390,7 @@ Let's unpack this program's design decisions layer by layer. The deduplication s
 
 The key design in outlier filtering is **computing the statistics per sensor group**. Different sensors differ wildly in dimension and value range (temperature around 22–23 °C, pressure around 1013 hPa); if we mix every reading together into one mean and standard deviation, no single value will ever register as an outlier. So `filter_outliers` first groups by `sensor_id`, then computes the mean and standard deviation for each group independently—only that way do the 85.0 °C in the temperature sensor and the 12.0 hPa in the pressure sensor get correctly identified as outliers.
 
-The grouping stage picks `unordered_map<string, vector<Reading>>`, again because no ordered traversal by key is needed. `reserve(16)` is a rule-of-thumb pre-allocation—sensor counts are usually small, and one allocation avoids later rehashes. Outlier filtering uses `remove_if` + `erase` rather than erasing mid-traversal, which is both safe and clear. The statistics are all done with STL algorithms: `minmax_element` finds the minimum and maximum in a single pass, `accumulate` sums—no hand-written loops anywhere.
+The grouping stage picks `unordered_map<string, vector<Reading>>`, again because no ordered traversal by key is needed. `reserve(16)` is a rule-of-thumb pre-allocation—sensor counts are usually small, and one allocation avoids later rehashes. Note the signature too: `generate_reports` takes a `const` reference because it is a pure read-only analysis; `deduplicate` and `filter_outliers` take a non-const reference only because they genuinely rewrite `readings` with remove-erase. Who mutates the data and who doesn't is legible from the signature alone. Outlier filtering uses `remove_if` + `erase` rather than erasing mid-traversal, which is both safe and clear. The statistics are all done with STL algorithms: `minmax_element` finds the minimum and maximum in a single pass, `accumulate` sums—no hand-written loops anywhere.
 
 ## Time to Practice — Exercises
 

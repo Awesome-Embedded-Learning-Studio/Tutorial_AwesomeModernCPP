@@ -129,16 +129,7 @@ public:
 If you feel that friend-class authorization is too broad, C++ offers finer-grained control: authorize only **one specific** member function of another class:
 
 ```cpp
-class Vector;  // Forward declaration
-
-class Matrix {
-private:
-    float data[3][3];
-public:
-    Matrix();
-    // Authorize only this one member function: Vector::transform
-    friend Vector Vector::transform(const Matrix& m);
-};
+class Matrix;  // Forward declaration
 
 class Vector {
 private:
@@ -148,6 +139,15 @@ public:
     Vector(float x, float y, float z) : x(x), y(y), z(z) {}
 
     Vector transform(const Matrix& m);
+};
+
+class Matrix {
+private:
+    float data[3][3];
+public:
+    Matrix();
+    // Authorize only this one member function: Vector::transform
+    friend Vector Vector::transform(const Matrix& m);
 };
 ```
 

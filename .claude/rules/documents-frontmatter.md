@@ -34,7 +34,7 @@ globs: documents/**/*.md
 | `reading_time_minutes` | int | — | 预估阅读时长（分钟） |
 | `prerequisites` | list[string] | — | 前置知识章节列表 |
 | `related` | list[string] | — | 相关文章标题 |
-| `contributors` | list[object] | `github`、可选 `name`、`roles` | 独立署名；角色为 `author` / `revision` / `translation` / `review` / `maintain` |
+| `contributors` | list[object] | `github`、可选 `name`、`roles` | 独立署名；角色为 `author` / `revision` / `translation` / `review` / `maintain` / `idea`（提案，如 issue 提出改进建议并被采纳） |
 | `community_category` | string | `learning-notes` / `engineering` / `source-reading` / `qa` | 社区初刊和收录文章的栏目，由维护者补齐 |
 | `current_status` | string \| object | 见下 | 文章当前状态（如「正在打磨」），页面右下角弹 MC 成就风格提示；**默认不写**，状态稳定后应移除 |
 

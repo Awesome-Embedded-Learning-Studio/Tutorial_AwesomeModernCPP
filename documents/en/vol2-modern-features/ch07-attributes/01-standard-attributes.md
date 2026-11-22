@@ -102,7 +102,7 @@ If a caller writes `init_board();` without checking the return value, the compil
 `[[nodiscard]]` can also be placed on the definition of a class or enumeration. Every function returning that type then automatically carries nodiscard semantics:
 
 ```cpp
-[[nodiscard]] enum class ErrorCode {
+enum class [[nodiscard]] ErrorCode {
     Ok,
     InvalidParam,
     Timeout,

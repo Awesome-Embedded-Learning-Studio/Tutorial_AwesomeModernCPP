@@ -30,7 +30,7 @@ contributors:
     roles: [author]
 ```
 
-撰写、修订、翻译、审校、维护分别使用 `author`、`revision`、`translation`、`review`、`maintain`。[作者页](../authors/)展示作者的 GitHub 头像和文章，只统计 `author` 署名；提交来源和变更记录单独展示。
+撰写、修订、翻译、审校、维护、提案分别使用 `author`、`revision`、`translation`、`review`、`maintain`、`idea`。[作者页](../authors/)展示作者的 GitHub 头像和文章，只统计 `author` 署名；提交来源和变更记录单独展示。
 
 ## 栏目和收录状态
 

@@ -63,13 +63,15 @@ void filter_outliers(std::vector<Reading>& readings, double k_sigma) {
 }
 
 /// 为每个传感器生成分析报告
-std::vector<Report> generate_reports(std::vector<Reading>& readings) {
+std::vector<Report> generate_reports(const std::vector<Reading>& readings) {
     // 用 unordered_map 按传感器分组（不需要有序遍历，O(1) 查找）
     std::unordered_map<std::string, std::vector<Reading>> groups;
     groups.reserve(16); // 预分配，减少 rehash
 
-    for (auto& r : readings) {
-        groups[r.sensor_id].push_back(std::move(r));
+    // 只读分析：push_back 直接拷贝。别写 std::move(r)——
+    // 那会把调用方 readings 里每个元素的 sensor_id 都移走
+    for (const auto& r : readings) {
+        groups[r.sensor_id].push_back(r);
     }
 
     std::vector<Report> reports;

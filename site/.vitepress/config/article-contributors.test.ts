@@ -20,6 +20,17 @@ test('multiple roles produce one person, with localized roles and safe profile U
   assert.equal(data.contributors[0].avatar, 'https://github.com/xiaoshuaijie.png?size=96')
 })
 
+test('idea role and issue links render, invalid issue numbers are rejected', () => {
+  const data = formatArticleContributions(
+    [{ github: 'IdeaGiver', roles: ['idea'], issue: 326, note: { zh: '提出改进建议', en: 'Suggested the improvement' } }],
+    [], 'zh',
+  )
+  assert.deepEqual(data.contributors[0].roles, ['提案'])
+  assert.equal(data.contributors[0].issueUrl, 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/issues/326')
+  assert.equal(data.contributors[0].tooltip, 'IdeaGiver · 提案')
+  assert.throws(() => validateContributors([{ github: 'IdeaGiver', roles: ['author'], issue: -1 }], 'test'), /invalid issue number/)
+})
+
 test('defaults apply to articles, navigation and explicit opt-outs remain empty', () => {
   const article = page('missing-test-article.md', { chapter: 1 })
   applyArticleContributors(article)
