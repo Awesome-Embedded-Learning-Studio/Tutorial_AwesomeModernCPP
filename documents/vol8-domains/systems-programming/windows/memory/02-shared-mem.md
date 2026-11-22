@@ -234,7 +234,7 @@ exit=0
 
 ## 招牌实验:SPSC 环形队列住进共享内存
 
-同步讲完了,咱们把这一章攒下的工具全部用上,做一件真东西:一条跨进程的消息队列。队列的本体是 SPSC 环形缓冲(SPSC 是 Single Producer Single Consumer 的缩写,单生产者对单消费者的结构),无锁版本的理论与内存序,vol5 的 [SPSC 与 MPMC 队列](../../../../vol5-concurrency/ch04-concurrent-data-structures/04-lock-free-queues.md)已经完整讲过,咱们这里只做工程落地:把环搬进页文件后备的对象,生产者与消费者是两个分开的进程,两边各钉了一颗核。
+同步讲完了,咱们把这一章攒下的工具全部用上,做一件真东西:一条跨进程的消息队列。队列的本体是 SPSC 环形缓冲(SPSC 是 Single Producer Single Consumer 的缩写,单生产者对单消费者的结构),无锁版本的理论与内存序,vol5 的 [SPSC 与 MPMC 队列](../../../../vol5-concurrency/cookbook/b-topics/03-lock-free-queues.md)已经完整讲过,咱们这里只做工程落地:把环搬进页文件后备的对象,生产者与消费者是两个分开的进程,两边各钉了一颗核。
 
 环的布局咱们全部定在共享内存里,开头的 4KB 是队列头:
 

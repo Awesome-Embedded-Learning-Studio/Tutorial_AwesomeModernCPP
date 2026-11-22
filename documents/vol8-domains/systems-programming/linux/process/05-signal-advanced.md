@@ -163,7 +163,7 @@ signalfd 上读到的不是字节流。它给出的是一条条定长的 `signal
     (同一循环里定时器与信号各自就位——self-pipe 的内核原生版)
 ```
 
-您看 151、202、301、402 这几拍,是定时器与信号在同一个循环里交错就位的记录、谁也不打断谁。上篇 self-pipe 要 handler、要管道、要字节编码才做到的事,这里一张 poll 表就收下了。poll 在咱们这儿只是最朴素的一档,epoll 的全景与事件循环的架构是多路复用篇的正题,vol5 的[异步 IO 与事件循环](../../../../vol5-concurrency/ch06-async-io-coroutine/04-async-io-and-event-loop.md)也早就铺过路,咱们在这儿不重开课、只留一句:信号到了 signalfd 这里,就已经和 timerfd 一样是能 poll 的 fd 了。
+您看 151、202、301、402 这几拍,是定时器与信号在同一个循环里交错就位的记录、谁也不打断谁。上篇 self-pipe 要 handler、要管道、要字节编码才做到的事,这里一张 poll 表就收下了。poll 在咱们这儿只是最朴素的一档,epoll 的全景与事件循环的架构是多路复用篇的正题,vol5 的[异步 IO 与事件循环](../../../../vol5-concurrency/cookbook/b-topics/06-async-io-event-loop.md)也早就铺过路,咱们在这儿不重开课、只留一句:信号到了 signalfd 这里,就已经和 timerfd 一样是能 poll 的 fd 了。
 
 [e] 场景补一个使用细节:掩码是活的。对已有的 sfd 再调一次 `signalfd(sfd, &mask, flags)`,往集合里加号就行了,fd 也不用换新的,实验里新加的 SIGRTMIN+4 一发即中。flags 的实测行为也值得记一笔,笔者拿 fcntl 单独探过:创建的时候带 SFD_CLOEXEC、改掩码那次不带,`FD_CLOEXEC` 的位还在,创建的时候不带、改掩码的时候带上,补上的事也没有发生。close-on-exec 的属性在创建那一刻就定了性,改掩码是动不了它的,您写代码的时候按创建的意图给足 flags 就好、别指望后补。
 

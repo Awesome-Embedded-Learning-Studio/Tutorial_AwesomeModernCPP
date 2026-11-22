@@ -76,7 +76,7 @@ int main() {
 
 ## 另见
 
-- [教程：互斥锁与 RAII 守卫](../../vol5-concurrency/ch02-mutex-condition-sync/01-mutex-and-raii-guards.md)
+- [教程：互斥锁与 RAII 守卫](../../vol5-concurrency/chapter02-sharing-data/02-mutex-and-locks.md)
 - [cppreference: std::mutex](https://en.cppreference.com/w/cpp/thread/mutex)
 
 ---

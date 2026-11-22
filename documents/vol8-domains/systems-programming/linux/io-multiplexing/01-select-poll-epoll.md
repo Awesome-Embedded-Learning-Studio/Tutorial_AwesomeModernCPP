@@ -35,7 +35,7 @@ Linux 手里的等待 API 前后有三代,咱们按资历念就是 select、poll
 
 [上一篇](../process/05-signal-advanced.md)咱们把信号的消费走到了 signalfd 与 pidfd 手里:信号、定时器、子进程的退出,统统化成了 fd,挤进了同一张 poll 表,上一篇的 mini prefork echo 服务器,优雅关闭的状态机跑的正是它。表里各路 fd 都到齐了,负责等的那个调用自身长什么样,咱们当时一句带过。本篇就把它请到了台前:同样一批管道 fd,分别交到三代 API 的手里,咱们看行为的边界各在哪儿,每轮的成本各怎么长。
 
-材料与边界的交代放在前面。本篇实验的 fd 源一概是 pipe,socket 咱们一个都不用:管道的脾气,咱们在[进程间通信一篇](../process/03-ipc.md)实测过了,65536 的容量、写满停住的时序、读端全关的 SIGPIPE 都收在那边了,E5 直接要用的就是头一件。epoll 的机制课也不重开:[网络卷的 epoll 一篇](../../../networking/02-epoll-io-multiplexing.md)从 poll 的瓶颈一路讲到了兴趣表(注册进内核的 fd 清单)、就绪队列与等待队列,C10K 的来龙去脉也在那边,水平触发 LT 与边缘触发 ET 的内核层差异同样是那边的正课。本篇守在 API 行为的层面上,E5 的 LT/ET 也只做管道版的行为对照。事件循环的架构与协程的衔接,[vol5 的异步 I/O 与事件循环](../../../../vol5-concurrency/ch06-async-io-coroutine/04-async-io-and-event-loop.md)一篇讲过,咱们不越过去。
+材料与边界的交代放在前面。本篇实验的 fd 源一概是 pipe,socket 咱们一个都不用:管道的脾气,咱们在[进程间通信一篇](../process/03-ipc.md)实测过了,65536 的容量、写满停住的时序、读端全关的 SIGPIPE 都收在那边了,E5 直接要用的就是头一件。epoll 的机制课也不重开:[网络卷的 epoll 一篇](../../../networking/02-epoll-io-multiplexing.md)从 poll 的瓶颈一路讲到了兴趣表(注册进内核的 fd 清单)、就绪队列与等待队列,C10K 的来龙去脉也在那边,水平触发 LT 与边缘触发 ET 的内核层差异同样是那边的正课。本篇守在 API 行为的层面上,E5 的 LT/ET 也只做管道版的行为对照。事件循环的架构与协程的衔接,[vol5 的异步 I/O 与事件循环](../../../../vol5-concurrency/cookbook/b-topics/06-async-io-event-loop.md)一篇讲过,咱们不越过去。
 
 实验的编号 E1 到 E6,对应的存档是仓库 `code/volumn_codes/vol8/systems-programming/linux/io-multiplexing/01-select-poll-epoll/` 下的 e1 到 e6 六组文件,代码连同逐字的输出都收在里面,README 里还写了逐组的编译与复现命令,您随时能对表。正文里的输出块有节选,删掉的行以 `...` 标出,对表的时候请您以存档为准。本目录的后面还有两篇,一篇讲的是 timerfd 与 eventfd,另一篇讲的是 io_uring,它们各自的 E 系编号与咱们这里的同号互不相干(timerfd 篇的编号到 E5,io_uring 篇的到 E6),您翻存档的时候认目录就好,存档文件名的 e、t、u 前缀也是给这件事兜底的。系列的公共工具 `unique_fd`、`sys_call`、`errno_code`,咱们这回一次都没让它们出场:要看清的恰恰是三个等待调用自身的姿势,咱们一件封装都没带,实验代码清一色的裸调用。
 

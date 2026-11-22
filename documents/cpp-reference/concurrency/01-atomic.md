@@ -74,7 +74,7 @@ int main() {
 
 ## 另见
 
-- [教程：对应章节](../../vol5-concurrency/ch03-atomic-memory-model/01-atomic-operations.md)
+- [教程：对应章节](../../vol5-concurrency/chapter05-atomic-memory-model/01-what-atomics-solve.md)
 - [cppreference: std::atomic](https://en.cppreference.com/w/cpp/atomic/atomic)
 
 ---
