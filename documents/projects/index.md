@@ -16,8 +16,7 @@ tags:
 
 这些项目在其它卷里已经有了教程或可运行骨架，从这里可以顺藤摸瓜深入：
 
-- **协程 Echo 服务器**：在 [卷五·协程 Echo 服务器](../vol5-concurrency/ch06-async-io-coroutine/05-coroutine-echo-server.md) 里，从 `co_await` 一路搭到了一个能收发的回显服务，是理解协程调度最实在的练手项目。
-- **迷你并发运行时（capstone）**：[卷五·迷你运行时 capstone](../vol5-concurrency/exercises/06-capstone-mini-runtime.md) 把线程池、定时器、任务队列揉成一个最小调度器，是后续做 "Mini Concurrent Runtime" 的现成起点。
+- **协程 Echo 服务器**：在 [卷五·协程 Echo 服务器](../vol5-concurrency/chapter07-coroutines/08-echo-server.md) 里，从 `co_await` 一路搭到了一个能收发的回显服务，是理解协程调度最实在的练手项目。
 - **OnceCallback 组件研读**：[卷九·OnceCallback](../vol9-open-source-project-learn/chrome/01_once_callback/index.md) 用 16 篇文章手撕了 Chromium 的回调机制，是从读源码走向 "自己设计工业级组件" 的范例。
 - **INI 解析器**：作为 C++ 工程化的第一个完整项目，放在独立仓库 [Tutorial_cpp_SimpleIniParser](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_cpp_SimpleIniParser)——从词法分析到错误处理，适合跟着做一遍。
 

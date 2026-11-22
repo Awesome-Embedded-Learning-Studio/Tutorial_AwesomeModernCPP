@@ -249,7 +249,7 @@ mov    0x2c66(%rip),%edx        # sx     ← 读
 
 relaxed 呢，咱们在 litmus 里已经见过它的样子：每步完整，桥一节都不搭，两边读 0 读得整整齐齐。条款给它的定义是“不安排任何内存次序”（[atomics.order] 第 1 段），不过它仍是原子操作，不产生 data race（[intro.races] 第 3 段的注）。原子加什么样的序才搭桥、搭多大，归 5.4，咱们在那里接着对。[《让工作有序结束》](../chapter01-start-concurrency/06-jthread-and-stopping)讲停止标志时那句 relaxed，连可见性都不保证，咱们按判据数一遍就清楚：标志 relaxed，桥一节不搭。
 
-还有一道许诺要兑现。[《按协作需求选择工具》](../chapter03-wait-and-coordinate/04-choosing-tools)借屏障的完成函数垫过一句“强发生”（strongly happens before），当时说它是内存模型的正式关系，第五单元专门讲。咱们现在就在第五单元，把它摆正。**强发生**是比 happens-before 更紧的一条关系（[intro.races] 第 8 段）：同一线程内部的 sequenced-before，都算强发生。跨线程搭桥的，桥的两端都得是 seq_cst 原子操作才谈得上强发生，或者“同线程的顺序、桥、再同线程的顺序”整段连起来也行。barrier 的完成步，标准立的正是更强的档位：`arrive` 强发生在本轮完成步开始之前（[thread.barrier.class]/14），完成步的结束强发生在被放行线程返回之前（同条款 /3）。3.7 那句白话照旧成立：完成步里写的任何东西，放行之后读都读得到，完成函数读各线程刚写好的数据不用加锁，靠的正是更紧的承诺。强发生与 happens-before 平常差在哪儿？差在桥上 seq_cst 的门槛，门槛后面的事归 5.4。
+还有一道许诺要兑现。[《按协作需求选择工具》](../chapter03-wait-and-coordinate/07-choosing-tools)借屏障的完成函数垫过一句“强发生”（strongly happens before），当时说它是内存模型的正式关系，第五单元专门讲。咱们现在就在第五单元，把它摆正。**强发生**是比 happens-before 更紧的一条关系（[intro.races] 第 8 段）：同一线程内部的 sequenced-before，都算强发生。跨线程搭桥的，桥的两端都得是 seq_cst 原子操作才谈得上强发生，或者“同线程的顺序、桥、再同线程的顺序”整段连起来也行。barrier 的完成步，标准立的正是更强的档位：`arrive` 强发生在本轮完成步开始之前（[thread.barrier.class]/14），完成步的结束强发生在被放行线程返回之前（同条款 /3）。3.7 那句白话照旧成立：完成步里写的任何东西，放行之后读都读得到，完成函数读各线程刚写好的数据不用加锁，靠的正是更紧的承诺。强发生与 happens-before 平常差在哪儿？差在桥上 seq_cst 的门槛，门槛后面的事归 5.4。
 
 ## 用 happens-before 重新理解前面的锁与条件变量
 

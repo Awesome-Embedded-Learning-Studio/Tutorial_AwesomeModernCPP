@@ -229,7 +229,7 @@ struct Msg { uint64_t seq; uint64_t checksum; uint64_t payload[2]; };
 static_assert(std::atomic<uint64_t>::is_always_lock_free);
 ```
 
-head 的写权只归生产者,tail 的写权只归消费者,这是 SPSC 全部正确性的地基:每个计数器永远只有一个写者。双方的沟通全靠内存序:生产者写完槽,以 release 的语义存 head,等于宣布消息齐了,消费者拿 acquire 的语义读 head,读到的 head 之前的槽,保证已经写完了。反方向的 tail 同理。acquire/release 到底保证了什么,vol5 并发卷的[内存序详解](../../../../vol5-concurrency/ch03-atomic-memory-model/02-memory-ordering.md) 从头讲过,咱们这里只做工程落地,不重开理论课了。跨进程的路子上,还有一条硬性的前提,就是代码里的 static_assert:某个平台要是把 atomic 实现成带内部锁的,锁就放在了库自己的地界,另一个进程是根本够不着的,只有 lock-free 的原子操作是地址无关的,同一片内存在两个进程里地址不同,它也是照样能工作的。
+head 的写权只归生产者,tail 的写权只归消费者,这是 SPSC 全部正确性的地基:每个计数器永远只有一个写者。双方的沟通全靠内存序:生产者写完槽,以 release 的语义存 head,等于宣布消息齐了,消费者拿 acquire 的语义读 head,读到的 head 之前的槽,保证已经写完了。反方向的 tail 同理。acquire/release 到底保证了什么,vol5 并发卷的[内存序详解](../../../../vol5-concurrency/chapter05-atomic-memory-model/04-choosing-memory-orders.md) 从头讲过,咱们这里只做工程落地,不重开理论课了。跨进程的路子上,还有一条硬性的前提,就是代码里的 static_assert:某个平台要是把 atomic 实现成带内部锁的,锁就放在了库自己的地界,另一个进程是根本够不着的,只有 lock-free 的原子操作是地址无关的,同一片内存在两个进程里地址不同,它也是照样能工作的。
 
 两边的核心循环,咱们连着背压策略一起看:
 

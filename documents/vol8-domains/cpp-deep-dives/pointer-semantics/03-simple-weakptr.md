@@ -210,4 +210,4 @@ sequenceDiagram
 
 - [std::shared_ptr - cppreference](https://en.cppreference.com/w/cpp/memory/shared_ptr)
 - [std::atomic - cppreference](https://en.cppreference.com/w/cpp/atomic/atomic)
-- [C++ Memory Order 详解](../../../vol5-concurrency/ch03-atomic-memory-model/02-memory-ordering.md) — 本教程卷五深入讨论了 memory order
+- [C++ Memory Order 详解](../../../vol5-concurrency/chapter05-atomic-memory-model/04-choosing-memory-orders.md) — 本教程卷五深入讨论了 memory order

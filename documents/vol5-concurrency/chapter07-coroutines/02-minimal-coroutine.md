@@ -300,7 +300,7 @@ promise 这个名字容易让人想到单元四的 `std::promise`。cppreference
 
 协程句柄 `std::coroutine_handle<Promise>` 是从外部操作协程的入口，cppreference 给它的定位是非拥有句柄：它指向协程状态，不拥有它。常用的成员不多。`resume()`（还有个等价的 `operator()`）让挂起的协程继续跑。`done()` 报告协程是否挂在最终挂起点。`destroy()` 销毁协程状态。`promise()` 拿到帧内 promise 对象的引用。静态的 `from_promise(promise)` 反向从 promise 引用造出句柄，您在 `get_return_object` 里写的那句 `from_promise(*this)` 正是这么用的。
 
-标准给恢复动作起了名字，调用恢复成员函数的求值动作叫 resumer（[dcl.fct.def.coroutine]/8）。协程不自带线程，谁调 resume，协程体就接着跑在谁的调用栈上。单元三的《[按协作需求选择工具](../chapter03-wait-and-coordinate/04-choosing-tools)》讲 barrier 完成函数的时候咱们认过一回事：完成函数跑在某条到达线程身上，不额外占一条线程。协程的恢复是同一门亲戚。跨线程恢复有一条边界值得交代。在不挂起它的执行代理上 resume 或 destroy，行为由实现定义，除非参与的都是 `std::thread`、`std::jthread` 实例，或者执行 main 的线程（[coroutine.handle.resumption]/1）。谁恢复谁负责，第四篇《把结果包起来：教学版 Task》讲任务类型的时候还要回来。
+标准给恢复动作起了名字，调用恢复成员函数的求值动作叫 resumer（[dcl.fct.def.coroutine]/8）。协程不自带线程，谁调 resume，协程体就接着跑在谁的调用栈上。单元三的《[按协作需求选择工具](../chapter03-wait-and-coordinate/07-choosing-tools)》讲 barrier 完成函数的时候咱们认过一回事：完成函数跑在某条到达线程身上，不额外占一条线程。协程的恢复是同一门亲戚。跨线程恢复有一条边界值得交代。在不挂起它的执行代理上 resume 或 destroy，行为由实现定义，除非参与的都是 `std::thread`、`std::jthread` 实例，或者执行 main 的线程（[coroutine.handle.resumption]/1）。谁恢复谁负责，第四篇《把结果包起来：教学版 Task》讲任务类型的时候还要回来。
 
 ## 第一个完整例子：Generator
 

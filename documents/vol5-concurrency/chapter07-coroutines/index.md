@@ -14,6 +14,8 @@ description: "从前六个单元的线程级工具，走到可以暂停的工作
   <ChapterLink href="02-minimal-coroutine">一个最小协程怎样成立</ChapterLink>
   <ChapterLink href="03-co-await-and-awaiters">`co_await` 怎样参与等待</ChapterLink>
   <ChapterLink href="04-task-type">把结果包起来：教学版 Task</ChapterLink>
-  <ChapterLink href="05-task-scheduler">让协程排队跑起来：最小调度器与两条恢复路线</ChapterLink>
-  <ChapterLink href="06-echo-server">选读：用调度器伺候一个 Echo-Server</ChapterLink>
+  <ChapterLink href="05-task-scheduler">让协程排队跑起来：单例、spawn 与睡眠</ChapterLink>
+  <ChapterLink href="06-resumption-routes">两条恢复路线：把 Task 接上调度器</ChapterLink>
+  <ChapterLink href="07-echo-io-manager">选读：给调度器接上 IO——Epoll 与 IOManager</ChapterLink>
+  <ChapterLink href="08-echo-server">选读：三块积木拼出 Echo-Server</ChapterLink>
 </ChapterNav>

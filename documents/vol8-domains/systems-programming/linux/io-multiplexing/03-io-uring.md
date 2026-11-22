@@ -33,7 +33,7 @@ current_status:
 
 [L02](./02-timerfd-eventfd.md) 收尾的时候,咱们的循环已经相当体面:pipe、eventfd、timerfd 全变成了 fd,挂进了同一张 epoll 表里,一个 epoll_wait 就把收发全打理了。可您往深处追问一句,就会发现表管的只是等。epoll 报的是哪个 fd 能动了,动手的还是咱们自己,read 照样得您亲自去调,而调用本身是同步的,数据没就位的话内核就把您按在 read 上。那咱们把问题推到底:I/O 这个动作本身,能不能整个地交给内核,您只管回头收完成的通知?
 
-这就是 Reactor 与 Proactor 的分野,而且差别落在一个非常具体的地方:等的是就绪,还是等的是完成。Reactor(反应器)等的是就绪,epoll_wait 醒了过来,读的活儿仍由您亲手做。Proactor(完成器)等的是完成:您把读请求连同缓冲的地址一并交出去,内核做完了就往一个地方放完成记录,您再去收割。工程展开的课,网络卷的 [Reactor 篇](../../../networking/03-reactor-pattern.md)与 vol5 的[异步 I/O 与事件循环](../../../../vol5-concurrency/ch06-async-io-coroutine/04-async-io-and-event-loop.md)都已经讲过,咱们这里只对照行为,模式课就不重开了。socket 场景的工程展开,网络卷的路线里还留着它自己的一篇 io_uring,与本篇的文件和管道场景各管一段。
+这就是 Reactor 与 Proactor 的分野,而且差别落在一个非常具体的地方:等的是就绪,还是等的是完成。Reactor(反应器)等的是就绪,epoll_wait 醒了过来,读的活儿仍由您亲手做。Proactor(完成器)等的是完成:您把读请求连同缓冲的地址一并交出去,内核做完了就往一个地方放完成记录,您再去收割。工程展开的课,网络卷的 [Reactor 篇](../../../networking/03-reactor-pattern.md)与 vol5 的[异步 I/O 与事件循环](../../../../vol5-concurrency/cookbook/b-topics/06-async-io-event-loop.md)都已经讲过,咱们这里只对照行为,模式课就不重开了。socket 场景的工程展开,网络卷的路线里还留着它自己的一篇 io_uring,与本篇的文件和管道场景各管一段。
 
 Linux 给咱们的答案叫 io_uring,2019 年 5 月随 5.1 进了主线,作者是块层的维护者 Jens Axboe。名字里的 ring 就是字面的意思:两枚用户态与内核共享的环形缓冲,一枚装的是提交队列(SQ、submission queue),一枚装的是完成队列(CQ、completion queue)。队列里装的一项一项也有自己的名字,提交侧的叫 SQE(submission queue entry),一条提交请求的意思,完成侧的叫 CQE(completion queue entry),一条完成记录的意思。其实在它以前,Linux 就试过两条异步的路。POSIX AIO 在 glibc 那头是用线程池仿出来的,请求并没有真的走进内核的异步路径。原生 AIO(io_setup 与 io_submit 那一套)倒是进了内核,可它的脾气怪,不配 O_DIRECT(读写绕过页缓存、直抵磁盘的模式)的话基本做不出异步的效果,用的人不多,活下来的更少。咱们再看 io_uring 的思路,就跟它们都不一样了:它不再为每个操作单配一条进内核的调用,而是把提交与完成这两件事本身做成共享的内存,等 I/O 就从调用变成了收割。
 
