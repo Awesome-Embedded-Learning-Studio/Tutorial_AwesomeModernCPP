@@ -3,7 +3,7 @@ title: Contributors
 description: "Thanks to everyone who has contributed to this project"
 translation:
   source: documents/team/index.md
-  source_hash: 38256a4780b674fc7822230b1eb0b55f845ce574424332c0c2e6b6b1cbb8f78c
+  source_hash: eff1eccde5eaa2ae21dc5b3da61d67f824d7a9b0631c14bca16c05bf30bc7fbc
   translated_at: '2026-10-14T00:00:00+00:00'
   engine: anthropic
   token_count: 2600
@@ -111,6 +111,24 @@ A huge thank-you to these friends for their PRs and for their support in every o
     <p class="card-desc">Contributed the three-part community Boost.Asio tutorial covering a basic client/server, synchronous reads and writes, and async reads and writes (#290, #291, #292), now in the community incoming section, with all example code compiled and verified locally by the author</p>
   </div>
 </a>
+<a href="https://github.com/TianShuai-NUIST" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/TianShuai-NUIST.png?size=96" alt="TianShuai-NUIST" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">TianShuai-NUIST <span class="card-badge pr">PR</span></span>
+    <p class="card-role">Content Fixes</p>
+    <p class="card-types">🐛 💡</p>
+    <p class="card-desc">Submitted PRs fixing the declaration order in the friend member function example (#332) and the order of attribute specifiers in the enumeration example (#337)</p>
+  </div>
+</a>
+<a href="https://github.com/1608735260" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/1608735260.png?size=96" alt="1608735260" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">1608735260 <span class="card-badge pr">PR</span></span>
+    <p class="card-role">Site Fixes</p>
+    <p class="card-types">🐛</p>
+    <p class="card-desc">Submitted a PR fixing the English sidebar so volume entries sort numerically (#319)</p>
+  </div>
+</a>
 </div>
 
 The valuable feedback from these folks deserves recording just as much — it's your reports that surface real problems and push us to improve! (Another deep 90-degree bow!)
@@ -195,6 +213,51 @@ The valuable feedback from these folks deserves recording just as much — it's 
     <p class="card-role">Bug Reports · Site Experience</p>
     <p class="card-types">🐛</p>
     <p class="card-desc">Reported 404s on the getting-started page and broken navigation redirects (#151), which led to fixes</p>
+  </div>
+</a>
+<a href="https://github.com/sweetheartzj" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/sweetheartzj.png?size=96" alt="sweetheartzj" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">sweetheartzj <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">Bug Reports · Content Errata</p>
+    <p class="card-types">🐛 💡</p>
+    <p class="card-desc">Reported problems in the hands-on exercise code of the "Common STL Patterns" chapter (#335), which led to fixes</p>
+  </div>
+</a>
+<a href="https://github.com/FGTFH" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/FGTFH.png?size=96" alt="FGTFH" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">FGTFH <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">Bug Reports · Content Errata</p>
+    <p class="card-types">🐛 💡</p>
+    <p class="card-desc">Reported a problematic description of the exact behavior of universal references + std::forward + decltype(auto) (#329), which led to fixes</p>
+  </div>
+</a>
+<a href="https://github.com/Share1dpTr" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/Share1dpTr.png?size=96" alt="Share1dpTr" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">Share1dpTr <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">Bug Reports · Content Errata</p>
+    <p class="card-types">🐛 💡</p>
+    <p class="card-desc">Reported that std::latch::arrive_and_wait() can miss a wakeup (#328), which led to fixes</p>
+  </div>
+</a>
+<a href="https://github.com/Melaine-iceberg" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/Melaine-iceberg.png?size=96" alt="Melaine-iceberg" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">Melaine-iceberg <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">Bug Reports · Content Errata</p>
+    <p class="card-types">🐛 💡</p>
+    <p class="card-desc">Pointed out that reinterpret_cast from float to uint32_t violates strict aliasing and suggested std::bit_cast instead (#323), which led to fixes</p>
+  </div>
+</a>
+<a href="https://github.com/SenyFish" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/SenyFish.png?size=96" alt="SenyFish" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">SenyFish <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">Feature Proposal</p>
+    <p class="card-types">📝</p>
+    <p class="card-desc">Proposed adding a bookmark system to the site (#280)</p>
   </div>
 </a>
 </div>

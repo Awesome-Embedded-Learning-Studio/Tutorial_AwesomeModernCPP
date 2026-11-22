@@ -174,7 +174,9 @@ main continues normally
 
 ### join 自己也会抛
 
-第二处：join 自己会抛。您可能觉得，join 不就是等吗，等还能等出事？还真能。cppreference 在 [join 的页面][cppref-join] 写明，出错时抛 `std::system_error`（装着错误码的异常，`code()` 取出错误码，`message()` 给出文字）。它列了三种条件，`joinable()` 为假、线程不存在、线程 join 自己。最后这个最扎眼，条件名叫 `resource_deadlock_would_occur`。三种里咱们挑两种实测：重复 join 一种，join 自己一种：
+第二处：join 自己会抛。您可能觉得，join 不就是等吗，等还能等出事？
+
+Man！还真能。cppreference 在 [join 的页面][cppref-join] 写明，出错时抛 `std::system_error`（装着错误码的异常，`code()` 取出错误码，`message()` 给出文字）。它列了三种条件，`joinable()` 为假、线程不存在、线程 join 自己。最后这个最扎眼，条件名叫 `resource_deadlock_would_occur`。三种里咱们挑两种实测：重复 join 一种，join 自己一种：
 
 <OnlineCompilerDemo
   title="join 的错误路径：system_error"

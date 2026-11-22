@@ -132,3 +132,45 @@
 **贡献类型**：📝 💡
 **贡献渠道**：GitHub
 **贡献说明**：投稿社区 Boost.Asio 学习教程三篇「基础的客户端服务器」「同步读写」「异步读写」（#290、#291、#292），收录进社区来稿初刊区。示例代码均经作者本地编译验证
+
+### [TianShuai-NUIST](https://github.com/TianShuai-NUIST)
+
+**贡献类型**：🐛 💡
+**贡献渠道**：GitHub
+**贡献说明**：提交 PR 修正友元成员函数示例的声明顺序（#332）与枚举类型示例中属性修饰符的顺序（#337）
+
+### [1608735260](https://github.com/1608735260)
+
+**贡献类型**：🐛
+**贡献渠道**：GitHub
+**贡献说明**：提交 PR 修复英文版侧边栏卷条目未按数字排序的问题（#319）
+
+### [sweetheartzj](https://github.com/sweetheartzj)
+
+**贡献类型**：🐛 💡
+**贡献渠道**：GitHub
+**贡献说明**：反馈「STL 常用模式」章节实战演练代码的问题（#335），促成修正
+
+### [FGTFH](https://github.com/FGTFH)
+
+**贡献类型**：🐛 💡
+**贡献渠道**：GitHub
+**贡献说明**：反馈万能引用 + std::forward + decltype(auto) 具体行为的表述问题（#329），促成修正
+
+### [Share1dpTr](https://github.com/Share1dpTr)
+
+**贡献类型**：🐛 💡
+**贡献渠道**：GitHub
+**贡献说明**：反馈 std::latch::arrive_and_wait() 可能错过唤醒的问题（#328），促成修正
+
+### [Melaine-iceberg](https://github.com/Melaine-iceberg)
+
+**贡献类型**：🐛 💡
+**贡献渠道**：GitHub
+**贡献说明**：指出 float 经 reinterpret_cast 转 uint32_t 违反严格别名规则，建议改用 std::bit_cast（#323），促成修正
+
+### [SenyFish](https://github.com/SenyFish)
+
+**贡献类型**：📝
+**贡献渠道**：GitHub
+**贡献说明**：提出为站点添加书签系统的功能提案（#280）

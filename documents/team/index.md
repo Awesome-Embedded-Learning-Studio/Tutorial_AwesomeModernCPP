@@ -106,6 +106,24 @@ description: "感谢所有为本项目做出贡献的人"
     <p class="card-desc">投稿社区 Boost.Asio 学习教程三篇「基础的客户端服务器」「同步读写」「异步读写」（#290、#291、#292），收录进社区来稿初刊区，示例代码均经作者本地编译验证</p>
   </div>
 </a>
+<a href="https://github.com/TianShuai-NUIST" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/TianShuai-NUIST.png?size=96" alt="TianShuai-NUIST" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">TianShuai-NUIST <span class="card-badge pr">PR</span></span>
+    <p class="card-role">内容修复</p>
+    <p class="card-types">🐛 💡</p>
+    <p class="card-desc">提交 PR 修正友元成员函数示例的声明顺序（#332）与枚举类型示例中属性修饰符的顺序（#337）</p>
+  </div>
+</a>
+<a href="https://github.com/1608735260" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/1608735260.png?size=96" alt="1608735260" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">1608735260 <span class="card-badge pr">PR</span></span>
+    <p class="card-role">站点修复</p>
+    <p class="card-types">🐛</p>
+    <p class="card-desc">提交 PR 修复英文版侧边栏卷条目未按数字排序的问题（#319）</p>
+  </div>
+</a>
 </div>
 
 这些同志提出的宝贵反馈，同样值得记录，正是你们的反馈让这个项目可以知晓真实的问题，督促我们改进！（继续深鞠躬90°！）
@@ -190,6 +208,51 @@ description: "感谢所有为本项目做出贡献的人"
     <p class="card-role">问题反馈 · 站点体验</p>
     <p class="card-types">🐛</p>
     <p class="card-desc">反馈新手起步页面 404 与导航跳转异常的问题（#151），促成修复</p>
+  </div>
+</a>
+<a href="https://github.com/sweetheartzj" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/sweetheartzj.png?size=96" alt="sweetheartzj" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">sweetheartzj <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">内容勘误</p>
+    <p class="card-types">🐛 💡</p>
+    <p class="card-desc">反馈「STL 常用模式」章节实战演练代码的问题（#335），促成修正</p>
+  </div>
+</a>
+<a href="https://github.com/FGTFH" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/FGTFH.png?size=96" alt="FGTFH" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">FGTFH <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">内容勘误</p>
+    <p class="card-types">🐛 💡</p>
+    <p class="card-desc">反馈万能引用 + std::forward + decltype(auto) 具体行为的表述问题（#329），促成修正</p>
+  </div>
+</a>
+<a href="https://github.com/Share1dpTr" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/Share1dpTr.png?size=96" alt="Share1dpTr" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">Share1dpTr <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">内容勘误</p>
+    <p class="card-types">🐛 💡</p>
+    <p class="card-desc">反馈 std::latch::arrive_and_wait() 可能错过唤醒的问题（#328），促成修正</p>
+  </div>
+</a>
+<a href="https://github.com/Melaine-iceberg" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/Melaine-iceberg.png?size=96" alt="Melaine-iceberg" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">Melaine-iceberg <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">内容勘误</p>
+    <p class="card-types">🐛 💡</p>
+    <p class="card-desc">指出 float 经 reinterpret_cast 转 uint32_t 违反严格别名规则，建议改用 std::bit_cast（#323），促成修正</p>
+  </div>
+</a>
+<a href="https://github.com/SenyFish" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/SenyFish.png?size=96" alt="SenyFish" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">SenyFish <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">提案感谢</p>
+    <p class="card-types">📝</p>
+    <p class="card-desc">提出为站点添加书签系统的功能提案（#280）</p>
   </div>
 </a>
 </div>
