@@ -19,7 +19,7 @@ current_status:
 
 # 两条恢复路线：把 Task 接上调度器
 
-旧文的调度器雏形是就绪队列加 run 循环，住在旧目录的《[promise_type 与 awaitable](./../ch06-async-io-coroutine/03-promise-type-and-awaitable)》里。咱们把它重写并接上 Task。分工摆出来就三句话。Task 管一段工作的一生，从创建到销毁。Loop 管排队，决定下一个跑谁。Yield 管让出，协程自己把位置让出来排到队尾。把工作的一生与执行的位置分开，是调度器能成立的前提，也是单元七想交给您的组织方式。
+旧文的调度器雏形是就绪队列加 run 循环，住在旧目录的《promise_type 与 awaitable》里。咱们把它重写并接上 Task。分工摆出来就三句话。Task 管一段工作的一生，从创建到销毁。Loop 管排队，决定下一个跑谁。Yield 管让出，协程自己把位置让出来排到队尾。把工作的一生与执行的位置分开，是调度器能成立的前提，也是单元七想交给您的组织方式。
 
 咱们让两段流水线排队跑，pipeline 串起 fetch 与 process 两站，每站干完一段活就让出一轮。Task 沿用上一篇《把结果包起来》的教学版 Task，Loop、Yield 与三个协程是新增的：
 
@@ -287,7 +287,7 @@ main 在线程 130680546568064
 
 ## 参考资源
 
-本篇的调度器讲解由笔者 2025 年 10 月的博客《理解 C++20 的革命特性——协程支持 2：编写简单的协程调度器》扩写而来，单例模板与睡眠 awaiter 的讲法照博客原文平移。素材的另一路来自旧目录 ch06 的《[promise_type 与 awaitable](./../ch06-async-io-coroutine/03-promise-type-and-awaitable)》，SimpleTask、SafeTask 与调度器在旧文里已有雏形，例子与文字全部重写。三个实验另拿 -fsanitize=address,undefined 各复跑一遍，消毒器没有报告。语言机制的断言按 eel.is 上的现行工作草案与 cppreference 核对（2026-11-17 访问），条款号与段号可能随草案更新挪动。
+本篇的调度器讲解由笔者 2025 年 10 月的博客《理解 C++20 的革命特性——协程支持 2：编写简单的协程调度器》扩写而来，单例模板与睡眠 awaiter 的讲法照博客原文平移。素材的另一路来自旧目录 ch06 的《promise_type 与 awaitable》，SimpleTask、SafeTask 与调度器在旧文里已有雏形，例子与文字全部重写。三个实验另拿 -fsanitize=address,undefined 各复跑一遍，消毒器没有报告。语言机制的断言按 eel.is 上的现行工作草案与 cppreference 核对（2026-11-17 访问），条款号与段号可能随草案更新挪动。
 
 - [Await expression（现行草案 expr.await）](https://eel.is/c++draft/expr.await)，await_suspend 的三种返回类型、句柄返回值的接力恢复注。
 - [Coroutine definitions（现行草案 dcl.fct.def.coroutine）](https://eel.is/c++draft/dcl.fct.def.coroutine)，resumer 的命名、final_suspend 的 noexcept 要求、协程状态的销毁次序。

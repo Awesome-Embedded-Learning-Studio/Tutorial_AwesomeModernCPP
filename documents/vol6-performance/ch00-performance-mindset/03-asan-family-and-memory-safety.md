@@ -174,7 +174,7 @@ ASan 其实只是一个家族的成员。这套工具最早是 Google 的工程�
 | **TSan**(ThreadSanitizer) | `-fsanitize=thread` | 数据竞争(data race)、死锁 | 5-15x 减速 |
 | **UBSan**(UndefinedBehaviorSanitizer) | `-fsanitize=undefined` | 未定义行为(有符号溢出、空指针解引用、位移越界等) | 可配置,多数子项开销很小 |
 
-五兄弟里,ASan 是主力,日常开发几乎必备;LSan 默认会随 ASan 一起启用(GCC/Clang 在支持的环境下);MSan 只在 Clang 上完整可用、且必须**全程序**都编译成 MSan 版本(连 libc 都要 MSan 版,否则误报满天飞);TSan 专门盯并发,我们在 vol5 的 [并发程序调试技巧](../../vol5-concurrency/ch08-debug-testing-perf/01-debugging-concurrency.md) 里专门讲过;UBSan 是个"补刀手",开销小、可以和别的组合。
+五兄弟里,ASan 是主力,日常开发几乎必备;LSan 默认会随 ASan 一起启用(GCC/Clang 在支持的环境下);MSan 只在 Clang 上完整可用、且必须**全程序**都编译成 MSan 版本(连 libc 都要 MSan 版,否则误报满天飞);TSan 专门盯并发,我们在 vol5 的 [并发程序调试技巧](../../vol5-concurrency/chapter06-validating-designs/01-finding-concurrency-bugs.md) 里专门讲过;UBSan 是个"补刀手",开销小、可以和别的组合。
 
 ### ASan 和 TSan 互斥:一条铁律
 

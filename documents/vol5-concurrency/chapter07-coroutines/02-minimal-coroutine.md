@@ -406,6 +406,171 @@ int main() {
 
 输出那边，咱们看着五个平方数依次出来，随后 `next()` 里 `done()` 翻成 true，循环收束，gen 析构收帧。`squares(5)` 想产出多少个值由协程自己的循环决定，调用方要几个取几个，不想要了析构函数随时收场。上一篇讲的暂停与恢复，落到代码上就是三个环节的配合：`co_yield` 挂起，句柄恢复，析构销毁。
 
+## range-for 迭代器与无限序列（扩展）
+
+本节带（扩展）标记，讲两件事：给上面的 Generator 补上 range-for 迭代器，让它能直接写进 `for (int val : gen)` 这种把遍历交给编译器展开的循环；再生成一个无限的斐波那契序列。跳过本节不影响本篇主线，下一篇的 awaiter 不依赖这里的代码。代码块就是全部内容，您拼成单个 .cpp 文件即可复跑，编译命令与三个实验相同。
+
+gen_min 的消费方式是调用方一步一步要：`next()` 推一次，`value()` 读一个，循环自己写。这个形状把节奏全交给调用方，写起来却啰嗦。C++ 备好了顺手的消费口 range-for，一行循环，begin、比较、前进、取值四个动作编译器替您排好。生成器想走这个口，欠的东西拢共三样：一个迭代器类型，一个 `begin()`，一个 `end()`。咱们这就补上。
+
+迭代器加在 Generator 的公开段，`begin()` 与 `end()` 跟在 `value()` 后面。完整文件摆出来，您拼成单个 .cpp 就能复跑：
+
+```cpp
+// gen_range.cpp —— 生成器补上迭代器：range-for 遍历平方数，再取无限的斐波那契
+#include <coroutine>
+#include <cstdio>
+#include <exception>
+#include <iterator>
+
+template <typename T>
+class Generator {
+public:
+  struct promise_type {
+    T current_value;
+    std::exception_ptr failure;
+
+    Generator get_return_object() {
+      return Generator{std::coroutine_handle<promise_type>::from_promise(*this)};
+    }
+    std::suspend_always initial_suspend() noexcept { return {}; }
+    std::suspend_always final_suspend() noexcept { return {}; }
+    std::suspend_always yield_value(T value) noexcept {
+      current_value = value;
+      return {};
+    }
+    void return_void() noexcept {}
+    void unhandled_exception() { failure = std::current_exception(); }
+  };
+
+  explicit Generator(std::coroutine_handle<promise_type> handle) : handle_(handle) {}
+  ~Generator() {
+    if (handle_) handle_.destroy();
+  }
+  Generator(const Generator&) = delete;
+  Generator& operator=(const Generator&) = delete;
+
+  bool next() {
+    handle_.resume();
+    if (handle_.promise().failure) {
+      std::rethrow_exception(handle_.promise().failure);
+    }
+    return !handle_.done();
+  }
+
+  T value() const { return handle_.promise().current_value; }
+
+  class Iterator {
+  public:
+    using iterator_category = std::input_iterator_tag;
+    using value_type = T;
+    using difference_type = std::ptrdiff_t;
+    using pointer = T*;
+    using reference = T&;
+
+    Iterator() : generator_(nullptr) {}
+    explicit Iterator(Generator* gen) : generator_(gen) { advance(); }
+
+    T operator*() const { return generator_->value(); }
+
+    Iterator& operator++() {
+      advance();
+      return *this;
+    }
+    void operator++(int) { advance(); }
+
+    bool operator==(const Iterator& other) const { return generator_ == other.generator_; }
+    bool operator!=(const Iterator& other) const { return !(*this == other); }
+
+  private:
+    Generator* generator_;
+
+    void advance() {
+      if (!generator_->next()) {
+        generator_ = nullptr;   // 下一个值取不到了，迭代器变成 end
+      }
+    }
+  };
+
+  Iterator begin() { return Iterator(this); }
+  Iterator end() { return Iterator(); }
+
+private:
+  std::coroutine_handle<promise_type> handle_;
+};
+
+Generator<int> squares(int limit) {
+  for (int i = 1; i <= limit; ++i) {
+    co_yield i * i;
+  }
+}
+
+// 无限序列：while (true) 里不停产出，函数体永远走不到底
+Generator<int> fibonacci() {
+  int a = 0, b = 1;
+  while (true) {
+    co_yield a;
+    int next = a + b;
+    a = b;
+    b = next;
+  }
+}
+
+int main() {
+  std::printf("前 8 个完全平方数，range-for 直接遍历:\n");
+  for (int val : squares(8)) {
+    std::printf("  %d\n", val);
+  }
+
+  std::printf("斐波那契前 15 项，取多少算多少:\n");
+  Generator<int> fib = fibonacci();
+  int taken = 0;
+  for (int val : fib) {
+    std::printf("  fib(%d) = %d\n", taken, val);
+    if (++taken == 15) break;   // 无限序列，取够就 break，不然取不完
+  }
+  return 0;
+}
+```
+
+本机 GCC 16.2.1，`-Wall -Wextra` 编译干净，实跑输出：
+
+```text
+前 8 个完全平方数，range-for 直接遍历:
+  1
+  4
+  9
+  16
+  25
+  36
+  49
+  64
+斐波那契前 15 项，取多少算多少:
+  fib(0) = 0
+  fib(1) = 1
+  fib(2) = 1
+  fib(3) = 2
+  fib(4) = 3
+  fib(5) = 5
+  fib(6) = 8
+  fib(7) = 13
+  fib(8) = 21
+  fib(9) = 34
+  fib(10) = 55
+  fib(11) = 89
+  fib(12) = 144
+  fib(13) = 233
+  fib(14) = 377
+```
+
+咱们对着代码走一遍。迭代器先报家门：五个 using 别名，`iterator_category` 填 `std::input_iterator_tag`，声明这是单趟的输入迭代器，`value_type` 报它读出来的类型。这五个别名住在 `<iterator>` 头文件里。笔者头一回拼这个文件时漏了它，g++ 当场把 `input_iterator_tag` 报成不认识的类型，补上 include 才过。range-for 本身不查这些别名，查它们的是算法那一边，算法靠 iterator_traits 认迭代器，这五个别名就是身份登记。
+
+begin() 的动作藏在 Iterator 的构造函数里，构造时立刻 advance() 一次。Generator 是懒启动的，创建时函数体一行没跑，begin() 这一下把它推到第一个 `co_yield`，头一个值已经落进 promise，`operator*` 读到的正是它。往后每走一步 `operator++`，advance() 里就是一句 `next()`。取不到下一个值，generator_ 指针置成空，迭代器从此与 `end()` 相等，range-for 的 `!=` 不再成立，循环收束。相等比较比的是两个迭代器手里的 Generator 指针，一个 nullptr 一个不是，一次比较就有结论。迭代器指着生成器本体，生成器在整个循环期间活着，指针就悬垂不了。
+
+有一条限制要向您交代在明处：这个迭代器是单次使用的，迭代一遍之后不能回头。原因在句柄的能力清单里，`coroutine_handle` 的成员只有 resume、destroy、done 这一撮，恢复永远从当前挂起点往前走，没有回到上一挂起点的入口。您迭代一遍想回头，句柄没有给您回去的路。标准按能力给迭代器分级，input 是最基础的一档，往上依次是 forward、bidirectional，再往上才是 random access。`std::sort` 的页面写明它要的就是 random access 这一档（RandomIt 得满足 LegacyRandomAccessIterator），中间隔着两级，喂进去没有行为可指望。真要排序，先把值收进 `std::vector`，再对 vector 排。想再遍历一遍，就重新造一个生成器。
+
+迭代器齐了，无限序列咱们顺手就来。squares 是有限序列，函数体走到循环尽头自然结束，隐式的 `co_return` 在末尾等着。把循环条件换成 `while (true)`，协程就成了无限序列的提供者，函数体永远走不到底，`co_return` 永远不来，文件下半段的 `fibonacci()` 就是这么写的。
+
+fibonacci() 的帧里您看不到数组，只住着两个 int，a 和 b。序列有无限多项，帧只要这么两格，因为值是请求时才算的：`co_yield` 交出一项，协程挂起，下一项等调用方再要时才推出来。这就是惰性求值（lazy evaluation），值按需产出，不算也不存。无限多项没法预先装进任何容器，按需产出在这里是唯一的路子。有限序列同样沾光，调用方只要前 15 项，协程体就只推进 15 步，第 16 项一个都不算。main 里取够 15 项就 break，fib 析构，destroy 把帧收回，这个无限序列离开时一点不占内存。
+
 ## 轮到您动手的时候
 
 1. 把 `squares` 换成您自己的序列，斐波那契、读文件的行都行，跑通后把 limit 换成一个大数，体会值按需产出的意思。

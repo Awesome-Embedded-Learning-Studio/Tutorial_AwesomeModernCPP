@@ -558,7 +558,7 @@ sym 一百万层卡在 90 万层里程碑后面，同样是段错误，退出码
 
 ## 参考资源
 
-本篇的素材来自旧目录 ch06 的《[promise_type 与 awaitable](../ch06-async-io-coroutine/03-promise-type-and-awaitable)》，awaiter 协议、operator co_await 与 await_transform 在那里已有一版讲解，咱们把例子全部重写，行为断言按现行草案重核。推进思路参照 Lewis Baker 协程系列的两篇，operator co_await 与对称转移，例子与文字都是笔者自己写的。语言机制的断言按 eel.is 上的现行工作草案核对（2026-11-17 访问），条款号与段号可能随草案更新挪动。
+本篇的素材来自旧目录 ch06 的《promise_type 与 awaitable》，awaiter 协议、operator co_await 与 await_transform 在那里已有一版讲解，咱们把例子全部重写，行为断言按现行草案重核。推进思路参照 Lewis Baker 协程系列的两篇，operator co_await 与对称转移，例子与文字都是笔者自己写的。语言机制的断言按 eel.is 上的现行工作草案核对（2026-11-17 访问），条款号与段号可能随草案更新挪动。
 
 - [Await expression（现行草案 expr.await）][draft-await]，三问的展开步骤、await_suspend 的三种返回类型、抛异常时协程恢复并立即重抛、表达式类型与 await_resume 一致、接力恢复的注。
 - [Operators in expressions（现行草案 over.match.oper）][draft-oper]，operator co_await 的成员候选、普通查找与 ADL 的非成员候选怎样合成一场重载决议。

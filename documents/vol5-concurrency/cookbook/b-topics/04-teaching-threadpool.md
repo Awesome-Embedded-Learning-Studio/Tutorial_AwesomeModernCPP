@@ -12,13 +12,17 @@ tags:
 difficulty: advanced
 platform: host
 cpp_standard: [17, 20]
+current_status:
+  title: 正在进行打磨
+  detail: 现在是LLM写好的初级稿件，引入是为了初步公开 + 希望收集反馈
+  variant: polishing
 ---
 
 # 教学级线程池：五步演进
 
 线程池在卷五被明确划出必修线——生产级线程池及其完整调度、资源控制与维护要求不进必修。整篇平移住进选读区，咱们把它当教学级的完整实现来讲，五步演进，每步只加一个能力。
 
-读它之前，您需要第四单元的异步基础设施：[《用 std::async 执行计算》](../../chapter04-organizing-tasks/01-launch-with-async)的 future 用法、[《自行传递结果：std::promise 与 std::future》](../../chapter04-organizing-tasks/03-promise-and-future)的结果传递，`std::packaged_task` 的专篇（承同一节素材）还没成篇，本篇用到它的地方会把用法当场交代。第三单元的条件变量（[《等一个条件：从轮询到条件变量》](../../chapter03-wait-and-coordinate/01-wait-for-a-condition)），第一单元的 [jthread 与停止协议](../../chapter01-start-concurrency/06-jthread-and-stopping)，也都要在手边。
+读它之前，您需要第四单元的异步基础设施：[《用 std::async 执行计算》](../../chapter04-organizing-tasks/01-launch-with-async)的 future 用法、[《自行传递结果：std::promise 与 std::future》](../../chapter04-organizing-tasks/03-promise-and-future)的结果传递，`std::packaged_task` 的专篇（承同一节素材）见 [《把计算包装成可存储分发的任务》](../../chapter04-organizing-tasks/04-packaged-task)。第三单元的条件变量（[《等一个条件：从轮询到条件变量》](../../chapter03-wait-and-coordinate/01-wait-for-a-condition)），第一单元的 [jthread 与停止协议](../../chapter01-start-concurrency/06-jthread-and-stopping)，也都要在手边。
 
 平移来路：机制讲解、代码与练习原样保留，我改动的只有编号、frontmatter、指向正文的交叉引用，外加判死词表清理。素材的环境说明与“测试通过”声明原样保留在文中，本轮我没有重新编译验证。
 

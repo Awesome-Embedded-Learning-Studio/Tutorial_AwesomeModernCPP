@@ -32,20 +32,3 @@ tags:
   <ChapterLink href="chapter07-coroutines">第七关 · 用协程表达可以暂停的工作</ChapterLink>
   <ChapterLink href="cookbook">cookbook · 卷五的速查区</ChapterLink>
 </ChapterNav>
-
-## 旧版目录
-
-迁移过渡期旧目录保留作素材，迁移完成后移出站点。
-
-<ChapterNav variant="sub">
-  <ChapterLink href="ch00-concurrency-fundamentals">ch00 · 并发思维与基础</ChapterLink>
-  <ChapterLink href="ch01-thread-lifecycle-raii">ch01 · 线程生命周期与 RAII</ChapterLink>
-  <ChapterLink href="ch02-mutex-condition-sync">ch02 · 互斥量、条件变量与同步原语</ChapterLink>
-  <ChapterLink href="ch03-atomic-memory-model">ch03 · 原子操作与内存模型</ChapterLink>
-  <ChapterLink href="ch04-concurrent-data-structures">ch04 · 并发数据结构</ChapterLink>
-  <ChapterLink href="ch05-future-task-threadpool">ch05 · future、任务与线程池</ChapterLink>
-  <ChapterLink href="ch06-async-io-coroutine">ch06 · 异步 I/O 与协程</ChapterLink>
-  <ChapterLink href="ch07-actor-channel">ch07 · Actor 与 Channel</ChapterLink>
-  <ChapterLink href="ch08-debug-testing-perf">ch08 · 调试、测试与性能</ChapterLink>
-  <ChapterLink href="ch09-distributed-bridge">ch09 · 分布式桥接附录</ChapterLink>
-</ChapterNav>

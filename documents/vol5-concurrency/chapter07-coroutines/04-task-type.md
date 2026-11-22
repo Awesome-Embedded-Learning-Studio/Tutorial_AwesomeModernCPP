@@ -558,7 +558,7 @@ int main() {
 
 ## 参考资源
 
-本篇的 Task 本体素材来自旧目录 ch06 的《[promise_type 与 awaitable](../ch06-async-io-coroutine/03-promise-type-and-awaitable)》，SimpleTask、SafeTask 与调度器雏形在旧文里已有，例子与文字全部重写。亲手题一节由笔者 2025 年 10 月的博客《理解 C++20 的革命特性——协程支持》系列扩写而来，派活、调用代码与参考实现照博客原文收编，调度器与"谁在哪个线程上恢复"两节挪去了下一篇《[让协程排队跑起来：最小调度器与两条恢复路线](05-task-scheduler)》。两个实验另拿 `-fsanitize=address,undefined` 各复跑一遍，消毒器没有报告。推进思路参照 Lewis Baker 的协程系列，例子与文字都是笔者自己写的。语言机制的断言按 eel.is 上的现行工作草案与 cppreference 核对（2026-11-17 访问），条款号与段号可能随草案更新挪动。
+本篇的 Task 本体素材来自旧目录 ch06 的《promise_type 与 awaitable》，SimpleTask、SafeTask 与调度器雏形在旧文里已有，例子与文字全部重写。亲手题一节由笔者 2025 年 10 月的博客《理解 C++20 的革命特性——协程支持》系列扩写而来，派活、调用代码与参考实现照博客原文收编，调度器与"谁在哪个线程上恢复"两节挪去了下一篇《[让协程排队跑起来：最小调度器与两条恢复路线](05-task-scheduler)》。两个实验另拿 `-fsanitize=address,undefined` 各复跑一遍，消毒器没有报告。推进思路参照 Lewis Baker 的协程系列，例子与文字都是笔者自己写的。语言机制的断言按 eel.is 上的现行工作草案与 cppreference 核对（2026-11-17 访问），条款号与段号可能随草案更新挪动。
 
 - [Await expression（现行草案 expr.await）][draft-await]，await_suspend 的三种返回类型、句柄返回值的接力恢复注。
 - [Coroutine definitions（现行草案 dcl.fct.def.coroutine）][draft-def]，final_suspend 的 noexcept 要求、协程状态的销毁次序。

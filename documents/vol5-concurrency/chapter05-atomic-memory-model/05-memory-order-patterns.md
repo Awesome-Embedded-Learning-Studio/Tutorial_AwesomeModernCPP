@@ -366,6 +366,125 @@ cppreference 在 Notes 里写明，x86 上 `atomic_thread_fence` 除 seq_cst 外
 
 volatile 的边界 5.2 判过一半，咱们在这里收拢。volatile 承诺的只有一件事：每次访问真的发生，编译器不合并不删。它的本职在硬件寄存器映射与信号处理。它不保证动作完整，不安排次序，不搭桥，跨线程的标志与计数用它，按 [intro.races] 第 17 段就是 data race。MSVC 历史上给 volatile 添了 acquire 与 release 语义，非标准扩展，代码要跨编译器就别依赖。跨线程的场面您现在有整套工具：动作完整找 atomic，次序找内存序，volatile 请回它的寄存器与信号处理。
 
+## fence 的三种接法与指令细节（扩展）
+
+本节带（扩展）标记，跳过它不影响主线，判据不靠这一节撑。跳过的话，您少看到的是另外两种接法的完整代码、一组双线程基准的读数，还有 fence 在编译器与 CPU 两个层面各对应什么的细节。正文那节只展开了 fence 对 fence 一种接法，咱们把 cppreference 列的三种凑齐，再往下落一层，看 fence 编成指令是什么模样。出处分清楚，接法代码、基准读数与平台指令的讲解承自旧目录 ch03 的素材文《fence 与编译器屏障》，素材里的基准源码笔者复制了一份入库，下文引用以这份为准。
+
+### fence-atomic：写端挂 release fence，读端照旧 acquire 读
+
+条件的数法与正文同一套，桥的两端换样：写端一条 release fence 排在原子写之前，原子写用什么内存序都行，素材文里降成了 relaxed。读端直接用 acquire 读，拿到写端写下的值，桥就接通，写端 fence 之前的非原子写与 relaxed 原子写，对读端之后的读全部可见。跟正文 release 置、acquire 读放在一起看，差别只剩一处，release 的约束由 store 前面一条独立 fence 扛着，store 本身降到 relaxed：
+
+```cpp
+#include <atomic>
+#include <string>
+
+std::atomic<int> flag{0};
+int payload = 0;
+
+void producer()
+{
+    payload = 42;  // 非原子写入
+    // release fence：保证上面的写入不会被重排到下面任何 store 之后
+    std::atomic_thread_fence(std::memory_order_release);
+    flag.store(1, std::memory_order_relaxed);  // relaxed store 即可
+}
+
+void consumer()
+{
+    // 等待 flag 变为 1，读端是 acquire 读，不需要独立的 fence
+    while (flag.load(std::memory_order_acquire) != 1) {
+        // spin
+    }
+    // 一定能看到 payload == 42
+    int local = payload;
+}
+```
+
+素材文这一段的读端原本写成 relaxed 读接一条 acquire fence，那个形状跟正文 demo 一样，数出来是 fence 对 fence。cppreference 给 fence-atomic 开的条件是读端必须是 acquire 操作，笔者按条件把读端改回 acquire 读，这一段才名实相符。这段与下面信箱扫描都是示意片段，没有配可运行的 demo，能跑能验证的样板在正文 fence 对 fence 那一处。
+
+### atomic-fence：信箱扫描，命中才插 acquire fence
+
+这一种把分工反过来，写端照旧用 release 写，读端把 acquire 从 load 上挪下来，改成命中之后再插 fence。素材文配的场面是信箱扫描，正文那节预告过的就是这段，32 个信箱逐个 relaxed 读，只有读到属于自己的格子才插 acquire fence，没命中的格子不花搭桥的钱：
+
+```cpp
+#include <atomic>
+#include <string>
+
+constexpr int kNumMailboxes = 32;
+
+std::atomic<int> mailbox_receiver[kNumMailboxes];
+std::string mailbox_data[kNumMailboxes];
+
+// 写入线程 i
+void write_mailbox(int i, int receiver_id, const std::string& msg)
+{
+    mailbox_data[i] = msg;
+    std::atomic_store_explicit(&mailbox_receiver[i],
+                               receiver_id,
+                               std::memory_order_release);
+}
+
+// 读取线程：扫描所有邮箱，只跟包含自己数据的邮箱同步
+void read_my_mail(int my_id)
+{
+    for (int i = 0; i < kNumMailboxes; ++i) {
+        if (std::atomic_load_explicit(&mailbox_receiver[i],
+                                       std::memory_order_relaxed) == my_id) {
+            // 只在匹配时插入 acquire fence
+            std::atomic_thread_fence(std::memory_order_acquire);
+            // 现在能安全地读取 mailbox_data[i]
+            process(mailbox_data[i]);
+        }
+    }
+}
+```
+
+带内存序的原子操作做不到这个分工，acquire 长在读上，读一次桥钱就付一次，32 个信箱一趟扫描就是 32 次。fence 版没命中的格子只付 relaxed 读的钱，relaxed 读仍有原子读与缓存访问的成本，省下来的只是搭桥那部分。省多少源码上断言不了，acquire load 也未必真的生成单独的屏障指令，要比较就得实测，下一小节正好有一组读数。
+
+### 一组基准读数：fence 加 relaxed 对逐字段 release/acquire
+
+基准的架子咱们先交代一遍。生产者每轮写三个普通数据，再发布三个原子标志，消费者轮询等三个标志齐了读走数据，再用另一个原子变量回一个确认，生产者收到确认才进下一轮。两版只改发布与读取的内存序，一版逐字段 release store 配 acquire load，一版一对 release 与 acquire fence 配三个 relaxed store 与 load。源码在 code/examples/vol5/chapter05/fence_vs_ordered_benchmark.cpp，笔者从素材文复制入库的。
+
+读数来自 WSL2 上的 Intel Core i5-12400（x86-64），CMake 3.20.5 与 GCC 16.2 构建，编译选项 -O3 -march=native，生产者绑 CPU 0，消费者绑 CPU 2，每次测试 200 万轮，每种写法跑 7 次取中位数：
+
+| 写法 | 7 次中位数 |
+| --- | ---: |
+| 逐字段 release / acquire | 124.8 ns/轮 |
+| fence + relaxed | 117.4 ns/轮 |
+
+这一轮 fence 版的中位数略低，边界笔者交代全。单次结果波动明显，量的是完整交接，轮询、缓存通信与确认全在内，单条 fence 指令的延迟只占其中一小块。x86-64 上两版编出来的机器指令是同一套，release 与 acquire fence 一条指令都不生成，release store 与 acquire load 就是普通 mov，正文那节的 objdump 读数对的是同一件事。两个中位数的差落在运行波动与代码布局上，不反映写法本身的差别，这组读数不能证明 fence 稳定更快。真要测两种写法的差别，得去生成指令确实不同的平台，比如 ARM。想在本机复跑的话，仓库根目录一行编出来：
+
+```bash
+g++ -std=c++20 -O3 -march=native -pthread \
+  code/examples/vol5/chapter05/fence_vs_ordered_benchmark.cpp \
+  -o /tmp/fence_vs_ordered_benchmark
+/tmp/fence_vs_ordered_benchmark
+```
+
+要求 Linux x86-64。源码开头把绑核写成了常量，CPU 0 与 CPU 2，核数不够的机器改开头两个常量再跑。
+
+### 编译器屏障：asm volatile 与 atomic_signal_fence 的底层对应
+
+指令层面的第一层其实不发指令。GCC 与 Clang 里最底层的编译器屏障是这一行内联汇编：
+
+```cpp
+asm volatile("" ::: "memory");
+```
+
+汇编模板是空的，机器码里不添任何指令。`volatile` 保证这一行本身不被优化掉，也不跟别的语句合并。末尾的 `"memory"` 告诉编译器这次操作可能读写内存，编译器只能假设它前后的所有访存都可能被它影响，谁也不能跨过这个点重排。它防的是优化器搬动访存的手，CPU 的乱序执行管不着。
+
+这一行正是 `std::atomic_signal_fence(std::memory_order_seq_cst)` 在多数平台上的底层模样。`atomic_signal_fence` 只管同一个线程里普通代码与信号处理器之间的排序，信号处理器跟被中断的线程跑在同一个核上，寄存器与缓存是同一套，CPU 层面没有一致性问题要防，要防的只有编译器把访存挪过界，所以它一条 CPU 指令都不发，是纯粹的编译器屏障。边界也在这里，线程间同步不能指望信号 fence，弱内存模型的机器上它保证不了任何可见性，线程间请回 `atomic_thread_fence`。
+
+### CPU 屏障指令：x86 的 mfence、sfence、lfence 与 ARM 的 dmb、dsb、isb
+
+第二层是 CPU 自己的乱序执行，屏障在这一层是架构专属指令，两家长得完全不一样。
+
+x86/x86-64 的内存模型叫 TSO（Total Store Ordering，全存储排序）。它的约束用白话说，store 与 store 之间、load 与 load 之间的先后都由硬件保证，store 也不会被挪到它前面的 load 之后。唯一放行的重排是 store-load，一个 store 后面跟着一条 load，CPU 可以先执行 load 再执行 store。acquire 与 release 在这套模型下几乎是白送的，正文那节抓到的 fence_release 与 fence_acquire 编出来只剩一条 ret，原因就在这。需要真发指令的只有 seq_cst，它要拦的恰是唯一放行的 store-load。GCC 通常不编 mfence，而是 `lock orq $0, (%rsp)`，对栈顶做一次值为 0 的原子 OR，LOCK 前缀本身就是全向屏障，部分微架构上比 mfence 还快，语义等价。x86 的三条屏障指令各有分工，mfence 全向，sfence 管 store 一侧，lfence 管 load 一侧。lfence 加 sfence 并不等价于 mfence，两条加起来拦住了 load-load 与 store-store，唯独放过了 store-load，而那恰是 x86 唯一放行的重排，全向屏障拼不出来，得用 mfence 或带 LOCK 前缀的指令。
+
+ARM 是弱序架构，x86 拦下的那几种重排它大多放行，store-store、load-load、store-load、load-store 都可能被重排，屏障在 ARM 上是并发编程的日常，写多核代码绕不开。常用的是三条屏障指令。DMB（Data Memory Barrier，数据内存屏障）保证它之前的内存访问都排在它之后的访问之前完成。DSB（Data Synchronization Barrier，数据同步屏障）更强，不但排序，还要等访存真正到达目的地才算完。ISB（Instruction Synchronization Barrier，指令同步屏障）刷流水线，改系统寄存器之后要用，比如切页表。DMB 还带后缀，ST 只管 store，LD 只管 load，ISH 指 inner shareable 域（多核之间共享的域，最常用）。release fence 在 ARM 上通常编成 DMB ISH，acquire fence 编成更轻的 DMB ISHLD，只对 load 方向设卡。这两条对应关系出自素材文按 Arm 文档做的核对，本篇手上没有 ARM 机器，笔者给不出实测读数，您在那边的机器上验证时，先看汇编再计时。
+
+这些指令平时不用手写，标准库的 `atomic_thread_fence` 与带内存序的原子操作把选择封装好了。要记的是内存序与指令之间没有固定换算表，x86 的 seq_cst fence 都可能绕开 mfence，ARM 上带序原子操作与独立 fence 各编出什么指令同样看架构与编译器，比较之前先看汇编，再在目标平台上实测。
+
 ## 挑档的判据，摆在一起
 
 标题的问题该正面回答了。判据三问，每问一个完整句，您对着自己的代码逐个过：

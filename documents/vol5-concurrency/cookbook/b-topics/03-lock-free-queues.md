@@ -13,6 +13,10 @@ tags:
 difficulty: advanced
 platform: host
 cpp_standard: [11, 17]
+current_status:
+  title: 正在进行打磨
+  detail: 现在是LLM写好的初级稿件，引入是为了初步公开 + 希望收集反馈
+  variant: polishing
 ---
 
 # SPSC 与 MPMC 无锁队列

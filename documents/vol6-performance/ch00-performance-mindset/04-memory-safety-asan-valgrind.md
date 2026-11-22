@@ -82,7 +82,7 @@ Valgrind 的精髓是「框架 + 工具」。core 负责翻译和调度，具体
 
 **Cachegrind**：缓存 profiler。它模拟 CPU 的 I1/D1/L2 缓存，精确指出程序里 cache miss 和命中的位置，能给你每行代码、每个函数、每个模块产生了多少次 miss、多少条指令。想压缓存性能用它。
 
-**Helgrind 和 DRD**：这俩都是**线程错误检测器**，抓数据竞争、锁顺序不一致、POSIX 线程 API 误用。源笔记把 Helgrind 写成「仍然处于实验阶段」，这个说法**早就过时了**，2026 年的官方手册里 Helgrind 和 DRD 都是正式列出的稳定工具，各有独立的章节（手册第 8、9 章），不是实验功能。顺带提一句：源笔记只提了 Helgrind，**漏了 DRD**，它俩目的相同（抓线程 bug）但算法不同，DRD 通常更快、对某些场景（比如大量小对象、Boost.Thread、OpenMP）支持更好。线程错误这块我在卷五的[并发程序调试技巧](../../vol5-concurrency/ch08-debug-testing-perf/01-debugging-concurrency.md)里专门讲过 TSan/Helgrind 的实战，这篇不重复，记住「线程类 bug 找 helgrind/drd、或更现代的 TSan」就行。
+**Helgrind 和 DRD**：这俩都是**线程错误检测器**，抓数据竞争、锁顺序不一致、POSIX 线程 API 误用。源笔记把 Helgrind 写成「仍然处于实验阶段」，这个说法**早就过时了**，2026 年的官方手册里 Helgrind 和 DRD 都是正式列出的稳定工具，各有独立的章节（手册第 8、9 章），不是实验功能。顺带提一句：源笔记只提了 Helgrind，**漏了 DRD**，它俩目的相同（抓线程 bug）但算法不同，DRD 通常更快、对某些场景（比如大量小对象、Boost.Thread、OpenMP）支持更好。线程错误这块我在卷五的[并发程序调试技巧](../../vol5-concurrency/chapter06-validating-designs/01-finding-concurrency-bugs.md)里专门讲过 TSan/Helgrind 的实战，这篇不重复，记住「线程类 bug 找 helgrind/drd、或更现代的 TSan」就行。
 
 **Massif**：堆 profiler。测程序在堆上到底吃了多少内存，给你堆块、堆管理结构、栈的增长曲线。想给程序「瘦身」、找 RSS 大户用它。
 
@@ -142,7 +142,7 @@ Shadow byte legend (one shadow byte represents 8 application bytes):
 
 也就是说，ASan 走的是另一条路：memcheck 逐字节记账地址合法性，ASan 则在合法区域外围铺红区，靠红区来界定边界。这套机制对越界和 UAF 极其有效，但**它没有 V-bit**，所以 ASan 抓不了未初始化读取。这块缺口得用 MSan（MemorySanitizer，`-fsanitize=memory`）补，而 MSan 只有 Clang 实现，**GCC 到 16.1.1 都不支持 `-fsanitize=memory`**（本机实测 `unrecognized argument`）。这是 ASan 路线相对 memcheck 的一个真实短板。
 
-> **踩坑预警**：ASan 和别的 sanitizer 是「一次只能开一类」的关系。`-fsanitize=address` 和 `-fsanitize=thread`（TSan）**不能同时开**：它们对影子内存的布局假设不同，混用会直接报错或行为异常。所以抓内存错误时开 ASan，抓并发数据竞争时单独开 TSan，别想着「一把梭」。线程错误该怎么查，见[卷五的并发调试篇](../../vol5-concurrency/ch08-debug-testing-perf/01-debugging-concurrency.md)。
+> **踩坑预警**：ASan 和别的 sanitizer 是「一次只能开一类」的关系。`-fsanitize=address` 和 `-fsanitize=thread`（TSan）**不能同时开**：它们对影子内存的布局假设不同，混用会直接报错或行为异常。所以抓内存错误时开 ASan，抓并发数据竞争时单独开 TSan，别想着「一把梭」。线程错误该怎么查，见[卷五的并发调试篇](../../vol5-concurrency/chapter06-validating-designs/01-finding-concurrency-bugs.md)。
 
 ## 四、上手跑一跑：六类经典错误，ASan 真实输出
 

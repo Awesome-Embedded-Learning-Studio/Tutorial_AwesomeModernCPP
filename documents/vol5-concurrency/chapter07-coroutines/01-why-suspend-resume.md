@@ -127,7 +127,7 @@ g++ -std=c++20 -O2 -pthread exp_a_threads.cpp -o exp_a_threads
 
 ## 三种模型，同一道题的三种答法
 
-题目只有一句：流程走到一半要等 I/O，等的时候能不能不占着一条线程。咱们把三种模型的取舍各压缩成一段，演进的完整通史住在旧目录（卷五改版前的旧章节，迁移完成后会撤下）的《[异步编程演进：从回调地狱到协程](../ch06-async-io-coroutine/01-async-programming-evolution)》里，本篇例子全部重写，取舍两边一致。
+题目只有一句：流程走到一半要等 I/O，等的时候能不能不占着一条线程。咱们把三种模型的取舍各压缩成一段，演进的通史本篇不铺，三条路挨个看过去，最后摆成一张表对照。
 
 ### 回调：把“接下来做什么”交出去
 
@@ -331,7 +331,7 @@ main: worker finished
 
 便宜有边界，咱们认下。协程省的是等待占住的线程，计算还是要真线程干，事件到达时得有几条线程把挂起的协程挨个恢复起来。谁来恢复、什么时候恢复，标准不管，语言机制给到协程状态与句柄为止，调度归您自己的程序组织，事件循环或者线程池都能当恢复的执行者。事件循环与 Echo-Server 有了正主，本单元 07、08 两篇选读就是它们。
 
-> 正主就在本单元：[《选读：给调度器接上 IO——Epoll 与 IOManager》](07-echo-io-manager) 与 [《选读：三块积木拼出 Echo-Server》](08-echo-server)，调度器接上 epoll 伺候回声服务器。想看更铺开的版本，旧目录里还有现成的两篇：头一篇，[《异步 I/O 与事件循环》][ch06-io]，讲事件循环的骨架。后一篇，[《协程 echo server》][ch06-echo]，讲的是拿协程写回声服务器。
+> 正主就在本单元：[《选读：给调度器接上 IO——Epoll 与 IOManager》](07-echo-io-manager) 与 [《选读：三块积木拼出 Echo-Server》](08-echo-server)，调度器接上 epoll 伺候回声服务器。
 
 挂起之后没人恢复、没人销毁的协程，跟睡死在 `wait` 上没人叫的线程是亲戚，咱们在这里把对照收个尾。等待需要结束路径的问题，协程一样要答，功课在《[等待也需要结束路径](../chapter03-wait-and-coordinate/06-ending-a-wait)》里做过一遍。本篇立了需求，还没有给零件。
 
@@ -344,7 +344,7 @@ main: worker finished
 
 ## 参考资源
 
-场景与三种模型的取舍，咱们压缩自旧目录的《[异步编程演进：从回调地狱到协程](../ch06-async-io-coroutine/01-async-programming-evolution)》，例子全部重写，文字是新的。协程语言机制的断言，笔者按下列出处核对过（2026-11-17 访问）。线程栈默认值、地址空间与物理内存的读数以本机实测为准，字段的出处见 proc_pid_status(5) 手册，proc(5) 后来分了册，status 字段住进了该分册。
+场景与三种模型的取舍是本篇自己压出来的。协程语言机制的断言，笔者按下列出处核对过（2026-11-17 访问）。线程栈默认值、地址空间与物理内存的读数以本机实测为准，字段的出处见 proc_pid_status(5) 手册，proc(5) 后来分了册，status 字段住进了该分册。
 
 - [协程（C++20），cppreference][cppref-coroutines]，三关键字判定、协程状态的组成、动态分配与省略、跨线程恢复例子的出处。
 - [std::future，cppreference][cppref-future]，成员函数清单，`then` 不在标准 `std::future` 里的出处。
@@ -361,5 +361,3 @@ main: worker finished
 [draft-support]: https://eel.is/c++draft/support.coroutine
 [draft-handle-resumption]: https://eel.is/c++draft/coroutine.handle.resumption
 [man-proc]: https://man7.org/linux/man-pages/man5/proc_pid_status.5.html
-[ch06-io]: ../ch06-async-io-coroutine/04-async-io-and-event-loop
-[ch06-echo]: ../ch06-async-io-coroutine/05-coroutine-echo-server

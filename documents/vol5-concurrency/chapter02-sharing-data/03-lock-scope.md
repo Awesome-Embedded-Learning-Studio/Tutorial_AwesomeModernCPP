@@ -11,6 +11,10 @@ tags:
 difficulty: intermediate
 platform: host
 cpp_standard: [11, 17]
+current_status:
+  title: 正在进行打磨
+  detail: 现在是LLM写好的初级稿件，引入是为了初步公开 + 希望收集反馈
+  variant: polishing
 ---
 
 # 锁盖多大才算够：保护范围、粒度与少共享

@@ -15,4 +15,5 @@ description: "从 std::async 的发起与取结果，到启动策略与析构等
   <ChapterLink href="01-launch-with-async">用 std::async 执行计算</ChapterLink>
   <ChapterLink href="02-launch-policies">任务什么时候执行：启动策略与等待行为</ChapterLink>
   <ChapterLink href="03-promise-and-future">自行传递结果：`std::promise` 与 `std::future`</ChapterLink>
+  <ChapterLink href="04-packaged-task">把计算包装成可存储分发的任务</ChapterLink>
 </ChapterNav>

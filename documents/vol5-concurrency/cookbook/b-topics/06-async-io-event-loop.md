@@ -12,6 +12,10 @@ tags:
 difficulty: advanced
 platform: host
 cpp_standard: [20]
+current_status:
+  title: 正在进行打磨
+  detail: 现在是LLM写好的初级稿件，引入是为了初步公开 + 希望收集反馈
+  variant: polishing
 ---
 
 # 异步 I/O 与事件循环

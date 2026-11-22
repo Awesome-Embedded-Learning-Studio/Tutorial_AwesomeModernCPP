@@ -11,6 +11,10 @@ tags:
 difficulty: intermediate
 platform: host
 cpp_standard: [20]
+current_status:
+  title: 正在进行打磨
+  detail: 现在是LLM写好的初级稿件，引入是为了初步公开 + 希望收集反馈
+  variant: polishing
 ---
 
 # jthread 与停止协议速查

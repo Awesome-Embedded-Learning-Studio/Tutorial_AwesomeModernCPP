@@ -266,7 +266,7 @@ int main() {
 <OnlineCompilerDemo
   title="单线程踩中失效迭代器，多线程踩中 data race"
   source-path="code/examples/vol5/chapter02/24_demo_history_iterators.cpp"
-  description="前半段单线程：begin() 之后 add(3) 触发重新分配，it 读已释放的内存。后半段多线程：另一条线程不停 set(0, i)，主线程在锁外读 *rit。两种检测器各报各的。"
+  description="前半段单线程：begin() 之后 add(3) 触发重新分配，it 读已释放的内存。后半段多线程：另一条线程不停 set(0, i)，主线程在锁外读 `*rit`。两种检测器各报各的。"
   run-options="-O2 -std=c++20 -pthread"
   allow-run
 >

@@ -190,7 +190,7 @@ int main() {
 
 </OnlineCompilerDemo>
 
-对齐的值别手写 64，用标准常量。本机两个编译器都给出 64（GCC 16.2.1 与 clang 23.1.3，2026-11-17 实测，feature 宏 `__cpp_lib_hardware_interference_size` 的值是 201703L）。旧目录的《[CPU cache 与 OS 线程](../ch00-concurrency-fundamentals/03-cpu-cache-and-os-threads)》写作时 Clang 还没实现它，当时引的是 LLVM 的 60174 号追踪单，如今能用了，笔者来复核，把变化如实记在这里。
+对齐的值别手写 64，用标准常量。本机两个编译器都给出 64（GCC 16.2.1 与 clang 23.1.3，2026-11-17 实测，feature 宏 `__cpp_lib_hardware_interference_size` 的值是 201703L）。Clang 起初没实现它（LLVM 的 60174 号追踪单记着这段），如今能用了，笔者来复核，把变化如实记在这里。
 
 <OnlineCompilerDemo
   title="标准常量 hardware_destructive_interference_size 的本机答数"

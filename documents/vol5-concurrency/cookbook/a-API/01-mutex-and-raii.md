@@ -12,6 +12,10 @@ tags:
 difficulty: intermediate
 platform: host
 cpp_standard: [11, 17]
+current_status:
+  title: 正在进行打磨
+  detail: 现在是LLM写好的初级稿件，引入是为了初步公开 + 希望收集反馈
+  variant: polishing
 ---
 
 # mutex 与 RAII 锁的选择：lock_guard、unique_lock、scoped_lock

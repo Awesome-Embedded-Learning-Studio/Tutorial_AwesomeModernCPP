@@ -434,7 +434,7 @@ int main() {
 <OnlineCompilerDemo
   title="分层互斥：拿反了当场抛，不进锁里等"
   source-path="code/examples/vol5/chapter02/32_demo_level_mutex.cpp"
-  description="配置层 300、缓存层 200、设备层 100：从上往下正常走，反向在进临界区之前就被 check() 拦下 logic_error。current_level_ 是 thread_local，同一层进第二次也拦。教学实现，别当库用。"
+  description="配置层 300、缓存层 200、设备层 100：从上往下正常走，反向在进临界区之前就被 check() 拦下 logic_error。`current_level_` 是 thread_local，同一层进第二次也拦。教学实现，别当库用。"
   run-options="-O2 -std=c++20 -pthread"
   allow-run
 >
