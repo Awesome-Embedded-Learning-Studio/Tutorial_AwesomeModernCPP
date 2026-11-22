@@ -95,7 +95,7 @@ main   : count_down 走在 wait 前面，wait 用时 0.000 ms
 
 `count_down(update)` 有一道前置条件，update 不许超过当前计数（[thread.latch.class]/7），值得您留神。初始化的活写四条线程，latch 却构造成 3，第四个 `count_down` 会把计数减成负数，前置条件违反，未定义行为。标准不替咱们查，编译器也不拦，构造处写的数、调用 `count_down` 的线程数，两处对得上，得靠您自己过一遍。
 
-想“干完自己的活，再等大伙到齐”，咱们用 `arrive_and_wait()`，它等价于 `count_down(update)` 接 `wait()`（[thread.latch.class]/16）。职责分离的场合，比如干活的不等、汇总的只等，您就照 demo 里这样分开调。
+想“干完自己的活，再等大伙到齐”，咱们用 `arrive_and_wait()`，它等价于 `count_down(update)` 接 `wait()`（[thread.latch.class]/16）。职责分离的场合，比如干活的不等、汇总的只等，您就照 demo 里这样分开调。您要是拿 3.2 的丢失唤醒来担心——“递减发生在等待之前，会不会像通知一样丢掉？”——这里丢不了：`wait()` 是状态型等待，进 `wait()` 时先查计数，归零就立刻放行；计数只减不加，零是不可逆的终态，哪怕递减和等待分两步走，状态也不会丢。
 
 latch 的一次性是它的定位带来的。等一轮计数只需要发生一次，接口因此极简，咱们把成员函数拢共数出五个：count_down、try_wait、wait、arrive_and_wait，再加查上限的 max。您要是拿 barrier 的成员名单来对，会发现 latch 这里没有单叫 arrive 的成员，减一格的活由 count_down 一个人干。需要反复齐步的场合，每轮新造一个 latch 也能做，参与人数一多就乱，反复齐步的活归下一节的 barrier。
 
