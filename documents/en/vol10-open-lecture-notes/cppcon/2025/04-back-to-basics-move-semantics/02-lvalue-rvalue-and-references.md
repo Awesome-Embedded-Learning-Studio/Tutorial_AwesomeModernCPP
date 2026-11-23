@@ -23,9 +23,9 @@ video_youtube: https://www.youtube.com/watch?v=szU5b972F7E
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/04-back-to-basics-move-semantics/02-lvalue-rvalue-and-references.md
   source_hash: 4894c9d47838c8996a6eaef3f4d0316c53573bb1002d56159c070b0cd9824e4a
-  translated_at: '2026-09-26T16:09:51+00:00'
-  engine: anthropic
-  token_count: 5700
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 14922
 ---
 # Lvalues, Rvalues, and References: The Type System Foundations of Move Semantics
 
@@ -46,9 +46,9 @@ That is the original intuition: **an lvalue = something that can appear on the l
 Take the simplest example:
 
 ```cpp
-int n = 1;   // OK: n is an lvalue, 1 is an rvalue
-n = 2;       // OK: n is an lvalue, it can appear on the left of an assignment
-// 1 = n;    // Error! 1 is an rvalue, it cannot appear on the left of an assignment
+int n = 1;   // OK: n 是左值，1 是右值
+n = 2;       // OK: n 是左值，可以出现在赋值左边
+// 1 = n;    // 错误！1 是右值，不能出现在赋值左边
 ```
 
 `n` is a named variable with a definite location in memory; the compiler knows its address, so it can write values into it. The literals `1` and `2`, on the other hand, are pure values—the compiler does not allocate a memory address that you can write to for them. You cannot tell the compiler "please write n's value into the number 1", because the number 1 simply has no concept of an "inside".
@@ -73,8 +73,8 @@ Now the problem arrives. Look at this code:
 
 ```cpp
 const int max = 100;
-// max = 200;    // Error! max is const, cannot be assigned
-printf("&max = %p\n", (void*)&max);  // but max has an address!
+// max = 200;    // 错误！max 是 const，不能赋值
+printf("&max = %p\n", (void*)&max);  // 但 max 有地址！
 ```
 
 `max` is a const object. You cannot assign to it—`max = 200` is a compile error. By K&R's definition of "lvalue = can appear on the left of an assignment", `max` should not be an lvalue. In reality, though, `max` does have a memory address: you can take its pointer (`&max` is legal), and you can read its value through that pointer.
@@ -104,7 +104,7 @@ struct Widget
     int value;
     void f()
     {
-        // this points to the address of the object the function is invoked on
+        // this 指向调用对象的地址
         printf("Widget::f(), value = %d, this = %p\n", value, (void*)this);
     }
 };
@@ -115,8 +115,8 @@ There are two ways to obtain a class-type rvalue. The first is a function return
 The interesting part is this: **you can call member functions on a class rvalue**.
 
 ```cpp
-Widget(7).f();       // OK! Calling f() on a temporary Widget
-make_widget(42).f(); // OK! Calling f() on the temporary returned by the function
+Widget(7).f();       // OK！在临时 Widget 上调用 f()
+make_widget(42).f(); // OK！在函数返回的临时对象上调用 f()
 ```
 
 This looks a bit strange—aren't rvalues "address-less"? How can you call a member function on something without an address? The answer is that the compiler does something behind the scenes: it allocates a location in memory for this temporary object—the standard calls this process the **temporary materialization conversion**<RefLink :id="2" preview="C++ Standard, [conv.rval] — temporary materialization conversion" />. The `this` pointer points at that temporarily allocated memory location.
@@ -148,8 +148,8 @@ Now we enter the world of references. Before C++11 introduced rvalue references,
 
 ```cpp
 int n = 10;
-int& ri = n;       // OK: ri binds to the lvalue n
-// int& ri2 = 10;  // Error! Cannot bind an lvalue reference to an rvalue (a literal)
+int& ri = n;       // OK: ri 绑定到左值 n
+// int& ri2 = 10;  // 错误！不能把左值引用绑定到右值（字面量）
 ```
 
 Why is `int& ri = 10` wrong? Because `10` is an rvalue, and it has no persistent memory location. A reference needs to know the address of the thing it refers to, but an rvalue has no address—there is the contradiction.
@@ -157,8 +157,8 @@ Why is `int& ri = 10` wrong? Because `10` is an rvalue, and it has no persistent
 But there is a very important exception here: **a const lvalue reference can bind to an rvalue**.
 
 ```cpp
-const int& cri = 10;    // OK! A const reference can bind to an rvalue
-const int& cri2 = 3.14; // OK! It can even bind to a different type (double -> int conversion)
+const int& cri = 10;    // OK！const 引用可以绑定到右值
+const int& cri2 = 3.14; // OK！甚至可以绑定到不同类型（double -> int 转换）
 ```
 
 The mechanism behind this: the compiler quietly creates a temporary `int` object to hold that value (or the converted value), and then binds the const reference to this temporary object. For `const int& cri2 = 3.14;`, the compiler first performs the `double`-to-`int` conversion (3.14 becomes 3), creates a temporary `int` holding 3, and then binds `cri2` to this temporary. That is why I saw `const lvalue ref to converted: 3` in GCC's output—3.14 got truncated.
@@ -173,8 +173,8 @@ Let's give a concrete example of how much this matters. Suppose you write a func
 std::string get_name() { return "hello"; }
 
 const std::string& name = get_name();
-// name is still valid here! The temporary's lifetime has been extended
-printf("%s\n", name.c_str());  // safe
+// name 在这里仍然有效！临时对象的生命周期被延长了
+printf("%s\n", name.c_str());  // 安全
 ```
 
 Without the lifetime-extension rule for const references, the temporary `std::string` returned by `get_name()` would be destroyed at the end of the statement, and `name` would become a dangling reference. But because `const std::string&` binds to this temporary, the compiler guarantees that the temporary lives at least until `name` leaves scope.
@@ -190,8 +190,8 @@ Note: the rvalue reference `T&&` likewise extends a temporary object's lifetime.
 C++11 introduced a new kind of reference—the rvalue reference, written with the double `&&` syntax.
 
 ```cpp
-int&& ri = 10;     // OK: an rvalue reference bound to an rvalue (the literal 10)
-// int&& ri2 = n;  // Error! An rvalue reference cannot bind to an lvalue
+int&& ri = 10;     // OK: 右值引用绑定到右值（字面量 10）
+// int&& ri2 = n;  // 错误！右值引用不能绑定到左值
 ```
 
 The binding rule for rvalue references is exactly the "reverse" of lvalue references: `int&&` can only bind to an rvalue of type `int`. `int&& ri2 = n` is a compile error, because `n` is an lvalue.
@@ -203,8 +203,8 @@ Even a `const int&&` binds only to rvalues—adding const to an rvalue reference
 What are rvalue references actually for? The key lies here: **through an rvalue reference, we can modify a temporary object**.
 
 ```cpp
-int&& ri = 10;  // The compiler creates a temporary int object for the literal 10
-ri = 20;        // OK! We modified this temporary object
+int&& ri = 10;  // 编译器为字面量 10 创建一个临时 int 对象
+ri = 20;        // OK！我们修改了这个临时对象
 ```
 
 For a simple type like `int`, this has no practical significance. But when we talk about class types—picture a `MyString&&` bound to a temporary `MyString` object, and that temporary holds a dynamically allocated character array inside. Through this rvalue reference, we can "steal" the pointer to that array outright, set the temporary's pointer to `nullptr`, and then have the temporary's destructor do nothing.
@@ -230,7 +230,7 @@ The new taxonomy works like this. First, all expressions are classified along tw
 On top of that there are two umbrella concepts: **glvalue** (generalized lvalue) = lvalue + xvalue, and **rvalue** = xvalue + prvalue. As a diagram:
 
 ```text
-            Expression
+            表达式
            /      \
       glvalue    rvalue
       /     \    /    \
@@ -285,13 +285,13 @@ int main()
 {
     int n = 10;
 
-    printf("decltype((n)):\n");          // n is an lvalue
+    printf("decltype((n)):\n");          // n 是 lvalue
     print_category<decltype((n))>();     // int& → lvalue ref: yes
 
-    printf("decltype(10):\n");           // 10 is a prvalue
-    print_category<decltype(10)>();      // int → neither kind of reference
+    printf("decltype(10):\n");           // 10 是 prvalue
+    print_category<decltype(10)>();      // int → 都不是引用
 
-    printf("decltype(std::move(n)):\n"); // std::move(n) is an xvalue
+    printf("decltype(std::move(n)):\n"); // std::move(n) 是 xvalue
     print_category<decltype(std::move(n))>(); // int&& → rvalue ref: yes
 
     return 0;
@@ -323,7 +323,7 @@ Consider a function that takes an rvalue reference:
 ```cpp
 void process(MyString&& s)
 {
-    // Here, is s an lvalue or an rvalue?
+    // 在这里，s 是左值还是右值？
 }
 ```
 
@@ -334,8 +334,8 @@ What does that mean? If you want to move resources out of `s` again inside the f
 ```cpp
 void process(MyString&& s)
 {
-    MyString copy(s);            // Copy! Because s is an lvalue here
-    MyString moved(std::move(s)); // Move! std::move turns s into an rvalue
+    MyString copy(s);            // 拷贝！因为 s 在这里是左值
+    MyString moved(std::move(s)); // 移动！std::move 把 s 转为右值
 }
 ```
 

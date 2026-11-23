@@ -20,10 +20,10 @@ tags:
   - 异步编程
 translation:
   source: documents/vol8-domains/networking/02-epoll-io-multiplexing.md
-  source_hash: c1ede85b42a4e7570544e9add6d713510bf986f9581249c2a85c4b08985410d2
-  translated_at: '2026-09-26T04:38:27+00:00'
-  engine: anthropic
-  token_count: 3400
+  source_hash: e53fade57e2d9a5856193b6a31907ca0f26558888ee7f9358ce0c73e33423e04
+  translated_at: '2026-11-22T16:48:19+00:00'
+  engine: glm-5.3-refresh
+  token_count: 8311
 ---
 
 # epoll: Linux I/O multiplexing — from poll's bottleneck to the interest list and ready list
@@ -41,10 +41,10 @@ On this machine with GCC 16.1.1, all the code compiles and runs under `-std=c++2
 Taking poll as the example, the pseudocode looks like this:
 
 ```cpp
-std::vector<pollfd> fds;                 // every fd you care about; 10k connections means 10k entries
+std::vector<pollfd> fds;                 // 你关心的所有 fd,1 万个连接就是 1 万个
 for (;;) {
-    int n = ::poll(fds.data(), fds.size(), -1);   // pass all 10k fds into the kernel
-    for (int i = 0; i < fds.size(); ++i) {        // ★O(n) walk to find the ready ones
+    int n = ::poll(fds.data(), fds.size(), -1);   // 把 1 万个 fd 全传进内核
+    for (int i = 0; i < fds.size(); ++i) {        // ★O(n) 遍历找就绪的
         if (fds[i].revents & POLLIN) handle(fds[i].fd);
     }
 }
@@ -67,25 +67,25 @@ So how does an fd travel from the "interest list" into the "ready list"? Through
 
 ```mermaid
 flowchart LR
-    subgraph Register["epoll_ctl(ADD/MOD/DEL) — done once"]
-        A["fd 5: interested in EPOLLIN"] --> RBT[("interest list<br/>(red-black tree, O(log n) add/remove)")]
-        B["fd 7: interested in EPOLLIN"] --> RBT
+    subgraph 注册["epoll_ctl(ADD/MOD/DEL) —— 一次性"]
+        A["fd 5: 关心 EPOLLIN"] --> RBT[("兴趣表<br/>(红黑树, O(log n) 增删)")]
+        B["fd 7: 关心 EPOLLIN"] --> RBT
     end
-    NET["NIC receives data<br/>the fd's buffer becomes readable"] -->|"state change fires<br/>wait queue callback"| RDY[("ready list")]
-    RBT -.->|"fd on the books, kernel watches it for you"| NET
-    RDY --> W["epoll_wait()<br/>takes fds from the ready list for you<br/>(returns only ready ones, no full scan)"]
+    NET["网卡收到数据<br/>fd 的缓冲区变可读"] -->|"状态变化触发<br/>wait queue 回调"| RDY[("就绪队列<br/>(ready list)")]
+    RBT -.->|"fd 在册,内核帮你盯"| NET
+    RDY --> W["epoll_wait()<br/>从就绪队列取 fd 给你<br/>(只返回就绪的, 不扫全表)"]
 ```
 
 The three APIs line up with these three jobs:
 
 ```cpp
-int ep = ::epoll_create1(0);                 // create an epoll instance (kernel allocates the interest list + ready list)
+int ep = ::epoll_create1(0);                 // 建一个 epoll 实例(内核分配兴趣表+就绪队列)
 
 epoll_event ev{}; ev.events = EPOLLIN; ev.data.fd = fd;
-::epoll_ctl(ep, EPOLL_CTL_ADD, fd, &ev);     // add the fd to the interest list, declaring interest in EPOLLIN
+::epoll_ctl(ep, EPOLL_CTL_ADD, fd, &ev);     // 把 fd 加进兴趣表,声明关心 EPOLLIN
 
 std::array<epoll_event, 128> evs;
-int n = ::epoll_wait(ep, evs.data(), evs.size(), -1);   // fetch the ready ones (blocking wait)
+int n = ::epoll_wait(ep, evs.data(), evs.size(), -1);   // 取就绪的(阻塞等)
 ```
 
 Contrast with poll: every round, poll passes all fds into the kernel to be scanned; epoll **registers once and stays on the books**, and `epoll_wait` takes only the ready ones — **cost proportional to the number of ready fds, independent of the total number of fds**. That is the arithmetic reason epoll holds up under C10K.
@@ -129,11 +129,11 @@ Now look clearly at what happened inside one `epoll_wait` event: round one read 
 Let's reproduce ET's trap for real. Write an ET server that **deliberately does only one `read` per event** (this is exactly how many notes circulating online copied it wrong):
 
 ```cpp
-// register the connection as ET
+// 连接注册成 ET
 epoll_event e{}; e.events = EPOLLIN | EPOLLET; e.data.fd = c;
 ::epoll_ctl(ep, EPOLL_CTL_ADD, c, &e);
-// ...when an event arrives:
-ssize_t r = ::read(fd, buf.data(), buf.size());   // ★BUG: reads only once, no loop-until-EAGAIN
+// ...收到事件时:
+ssize_t r = ::read(fd, buf.data(), buf.size());   // ★BUG:只读一次,没循环到 EAGAIN
 ```
 
 Then write a burst client that fires 100KB in one shot, reads the echo back, and tallies the bytes. First run the **correct LT server** (loop reads to EAGAIN), then the **ET-read-once server**:
@@ -141,12 +141,12 @@ Then write a burst client that fires 100KB in one shot, reads the echo back, and
 ```text
 === run A: LT server (correct, loop-read to EAGAIN) ===
 sent 100000 bytes to :13014
-got back 100000 bytes (expected 100000)        ← full echo
+got back 100000 bytes (expected 100000)        ← 全量回显
 
 === run B: ET read-once server (the trap) ===
 sent 100000 bytes to :13015
 got back 12288 bytes (expected 100000)
->>> LOST 87712 bytes — this is the ET read-once trap   ← lost 87KB!
+>>> LOST 87712 bytes — this is the ET read-once trap   ← 丢了 87KB!
 ```
 
 The LT version echoed the full 100000 bytes; the ET-read-once version echoed only 12288 — **the remaining 87712 bytes are stuck forever in the server's socket receive buffer**. Because ET notified exactly once, on the "data arrived" edge, the server did its read (a few reads within that edge, 12288 bytes in all) and was done; 87KB still sat in the buffer, but **no new "data arrived" edge ever came to trigger another notification**, and the server never noticed a thing. The client waited 2 seconds (its timeout), the rest never arrived, and all it could do was report LOST.

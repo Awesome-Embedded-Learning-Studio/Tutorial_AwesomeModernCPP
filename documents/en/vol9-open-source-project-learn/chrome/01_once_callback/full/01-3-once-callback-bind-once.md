@@ -23,10 +23,10 @@ tags:
 title: "OnceCallback hands-on (III): implementing bind_once"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/01-3-once-callback-bind-once.md
-  source_hash: 0038fe2a0717889372b29e8d4a56b562c78052172fb0a155352130e171cdbbea
-  translated_at: '2026-09-26T00:28:59+00:00'
-  engine: anthropic
-  token_count: 2900
+  source_hash: 26c93656a07baa5d7e7c669bd158ad326f039478c59e0a293548fe5d85a59bbd
+  translated_at: '2026-11-22T16:41:57.368901+00:00'
+  engine: glm-5.3-refresh
+  token_count: 5515
 ---
 # OnceCallback hands-on (III): implementing bind_once
 
@@ -41,7 +41,7 @@ int compute(int x, int y, int z) {
     return x + y + z;
 }
 
-// Without bind_once: every call has to pass all three arguments
+// 没有 bind_once：每次调用都得传三个参数
 auto cb = OnceCallback<int(int, int, int)>(compute);
 int r = std::move(cb).run(10, 20, 30);  // r == 60
 ```

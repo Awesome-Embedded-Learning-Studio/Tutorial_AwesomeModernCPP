@@ -19,9 +19,9 @@ title: constexpr
 translation:
   source: documents/cpp-reference/core-language/01-constexpr.md
   source_hash: 20f317af5e1e6a4d16cf8cc1641cc54d6feddc797f675493f822b067b4a6048f
-  translated_at: '2026-09-27T01:29:27+00:00'
-  engine: anthropic
-  token_count: 500
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 1500
 ---
 # constexpr (C++11)
 
@@ -56,10 +56,10 @@ constexpr int factorial(int n) {
 }
 
 int main() {
-    constexpr int val = factorial(5); // Compile-time evaluation
-    std::cout << val << '\n';         // Output: 120
+    constexpr int val = factorial(5); // 编译期计算
+    std::cout << val << '\n';         // 输出: 120
     int k = 4;
-    std::cout << factorial(k) << '\n';// Runtime evaluation: 24
+    std::cout << factorial(k) << '\n';// 运行期计算: 24
 }
 ```
 

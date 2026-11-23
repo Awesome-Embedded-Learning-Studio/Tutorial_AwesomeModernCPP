@@ -22,10 +22,10 @@ tags:
 title: 'Pipeline, ILP, and branch prediction: same data, several-fold differences depending on how you execute it'
 translation:
   source: documents/vol6-performance/ch02-cpu-microarchitecture/02-03-pipeline-ilp-branch.md
-  source_hash: ff71a74f8f884866fff5246e94238587c8a284ac1319cdf25076c3a34e34caa7
-  translated_at: '2026-09-26T05:57:33+00:00'
-  engine: anthropic
-  token_count: 8600
+  source_hash: 492cfb8c4b1d0d74749678fcd92bb129c0e12c0722c1f1e99313d4710926e2d5
+  translated_at: '2026-11-22T16:43:35+00:00'
+  engine: glm-5.3-refresh
+  token_count: 6708
 ---
 # Pipeline, ILP, and branch prediction: same data, several-fold differences depending on how you execute it
 
@@ -52,7 +52,7 @@ Flip that around: if you write one long **dependency chain**, where every instru
 ```cpp
 float dot1(const float* a, const float* b) {
     float acc = 0.0f;
-    for (int i = 0; i < N; ++i) acc += a[i] * b[i]; // every iteration depends on the previous acc
+    for (int i = 0; i < N; ++i) acc += a[i] * b[i]; // 每次循环都依赖上次的 acc
     return acc;
 }
 ```
@@ -65,10 +65,10 @@ The classic way to break this chain is **multiple accumulators**: use several in
 float dot4(const float* a, const float* b) {
     float a0 = 0, a1 = 0, a2 = 0, a3 = 0;
     for (int i = 0; i < N; i += 4) {
-        a0 += a[i] * b[i];       // chain 0
-        a1 += a[i + 1] * b[i + 1]; // chain 1, independent of chain 0
-        a2 += a[i + 2] * b[i + 2]; // chain 2
-        a3 += a[i + 3] * b[i + 3]; // chain 3
+        a0 += a[i] * b[i];       // 链 0
+        a1 += a[i + 1] * b[i + 1]; // 链 1,与链 0 互不依赖
+        a2 += a[i + 2] * b[i + 2]; // 链 2
+        a3 += a[i + 3] * b[i + 3]; // 链 3
     }
     return a0 + a1 + a2 + a3;
 }
@@ -86,15 +86,15 @@ Four accumulators are four independent chains, and the CPU dispatches them to di
 **Same multiply-add count, and 4 accumulators run nearly 3x faster than 1.** That is ILP caught in the act. The assembly gives it away too:
 
 ```text
-; dot1: one serial chain
-    mulss  (%rsi,%rax), %xmm0      ; computes a[i]*b[i] → xmm0
-    addss  %xmm0, %xmm1            ; acc += xmm0; the next iteration's add depends on this xmm1
+; dot1:一条串行链
+    mulss  (%rsi,%rax), %xmm0      ; 算 a[i]*b[i] → xmm0
+    addss  %xmm0, %xmm1            ; acc += xmm0,下次循环的 add 依赖这里的 xmm1
 
-; dot4: four independent chains (accumulators xmm1/xmm4/xmm3/xmm2 are mutually independent)
+; dot4:四条独立链(累加器 xmm1/xmm4/xmm3/xmm2 互不依赖)
     mulss  (%rsi),       %xmm0 ; addss %xmm0, %xmm1
-    mulss  -12(%rsi),    %xmm0 ; addss %xmm0, %xmm4   ← independent of xmm1
-    mulss  -8(%rsi),     %xmm0 ; addss %xmm0, %xmm3   ← independent of xmm1/xmm4
-    mulss  -4(%rsi),     %xmm0 ; addss %xmm0, %xmm2   ← independent of the three above
+    mulss  -12(%rsi),    %xmm0 ; addss %xmm0, %xmm4   ← 独立于 xmm1
+    mulss  -8(%rsi),     %xmm0 ; addss %xmm0, %xmm3   ← 独立于 xmm1/xmm4
+    mulss  -4(%rsi),     %xmm0 ; addss %xmm0, %xmm2   ← 独立于上面三条
 ```
 
 Every `addss` in dot1 must wait for the previous write-back to `%xmm1`; in dot4 the four additions write to four different registers, and the out-of-order engine issues the whole batch at once. This lesson gets a dedicated treatment in ch04-02, *Loop and compute optimization*, under the names **multiple accumulators** / **breaking the dependency chain** — one of the easiest performance dividends to pick up in scientific computing, reductions, and dot-product-style code.
@@ -111,7 +111,7 @@ Which brings us to a counterintuitive but hugely important conclusion: **a branc
 uint64_t sum_gt128(const std::vector<uint8_t>& d) {
     uint64_t s = 0;
     for (int i = 0; i < N; ++i) {
-        if (d[i] >= 128) s += d[i];   // a two-way branch
+        if (d[i] >= 128) s += d[i];   // 一个二分分支
     }
     return s;
 }
@@ -153,7 +153,7 @@ With this article, ch02's single-core hardware groundwork is complete: the memor
 
 ## References
 
-- Agner Fog, *The microarchitecture of Intel, AMD and VIA CPUs*, §22 *AMD Ryzen*: Zen-family pipeline widths (4-wide decode, 6 µops/clock dispatch, 8 µops/clock retire), branch throughput (taken 1/2 clock, not-taken 2/clock), the µop cache, execution-unit counts. Local copy: `.claude/drafts/books/optimazation_in_cpp/microarchitecture.md`
+- Agner Fog, *The microarchitecture of Intel, AMD and VIA CPUs*, §22 *AMD Ryzen*: Zen-family pipeline widths (4-wide decode, 6 µops/clock dispatch, 8 µops/clock retire), branch throughput (taken 1/2 clock, not-taken 2/clock), the µop cache, execution-unit counts: `.claude/drafts/books/optimazation_in_cpp/microarchitecture.md`
 - Bryant & O'Hallaron, *CSAPP*, Chapter 4 *Processor Architecture* (concept-level definitions of the pipeline and hazards) and Chapter 5 *Optimizing Program Performance* (the classic derivations of loop unrolling, multiple accumulators, and reassociation)
 - The legendary Stack Overflow question *Why is processing a sorted array faster than processing an unsorted array?* (the origin of the branch-prediction experiment; muffinista / Mysticial's classic answer)
 - The measurement code for this article: `code/volumn_codes/vol6-performance/ch02/pipeline_branch_ilp.cpp`

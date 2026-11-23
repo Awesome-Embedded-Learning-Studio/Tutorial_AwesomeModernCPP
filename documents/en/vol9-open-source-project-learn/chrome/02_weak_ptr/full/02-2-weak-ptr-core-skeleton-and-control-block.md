@@ -27,9 +27,9 @@ title: "WeakPtr hands-on (II): the core skeleton and control block"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/02_weak_ptr/full/02-2-weak-ptr-core-skeleton-and-control-block.md
   source_hash: 4839f9100f86b12db7459ecafddd0e24668c11baf8d696746c9ab4b502915c5f
-  translated_at: '2026-09-26T01:43:59+00:00'
-  engine: anthropic
-  token_count: 4800
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 11309
 ---
 # WeakPtr hands-on (II): the core skeleton and control block
 
@@ -41,9 +41,9 @@ Following the diagram from [02-1](./02-1-weak-ptr-motivation-and-api-design.md),
 
 ```mermaid
 flowchart TB
-    subgraph WP["WeakPtr&lt;T&gt; — the handle users pass around / dereference"]
-        subgraph WR["WeakReference — the reference side, holds scoped_refptr&lt;Flag&gt;"]
-            Flag["Flag — refcounted + atomic liveness"]
+    subgraph WP["WeakPtr&lt;T&gt; — 用户传递/解引用的句柄"]
+        subgraph WR["WeakReference — 引用侧,持 scoped_refptr&lt;Flag&gt;"]
+            Flag["Flag — refcounted + 原子的 liveness"]
         end
     end
 ```
@@ -67,7 +67,7 @@ Stack those three requirements together and you get exactly [prerequisite (I)](.
 
 namespace tamcpp::chrome::internal {
 
-// Cross-sequence-safe intrusive reference-counting base class (a simplified RefCountedThreadSafe)
+// 跨序列安全的侵入式引用计数基类(简化版 RefCountedThreadSafe)
 class RefCountedThreadSafe {
 public:
     void add_ref() const noexcept {
@@ -75,7 +75,7 @@ public:
     }
     bool release() const noexcept {
         if (ref_count_.fetch_sub(1, std::memory_order_acq_rel) == 1) {
-            return true;    // the caller is responsible for delete this
+            return true;    // 调用方负责 delete this
         }
         return false;
     }
@@ -89,7 +89,7 @@ private:
     mutable std::atomic<int> ref_count_{0};
 };
 
-// Mirrors Chromium's base::AtomicFlag: a one-shot, release/acquire boolean flag
+// 对应 Chromium 的 base::AtomicFlag:一次性、release/acquire 的布尔标志
 class AtomicFlag {
 public:
     void Set() noexcept {
@@ -115,25 +115,25 @@ class Flag : public RefCountedThreadSafe {
 public:
     Flag() = default;
 
-    // Invalidation: the release-store publishes the "object has entered the invalidated state" message together with all prior writes
+    // 失效:release-store 把"对象进入失效态"这条消息连同之前的写一起发布
     void Invalidate() noexcept {
-        // The teaching version omits the sequence check; Chromium DCHECKs (seq || HasOneRef()) here
+        // 教学版省略序列检查;Chromium 在此 DCHECK(seq || HasOneRef())
         invalidated_.Set();
     }
 
-    // Liveness check (same-sequence contract): an acquire-load
+    // 判活(同序列契约):acquire-load
     bool IsValid() const noexcept {
         return !invalidated_.IsSet();
     }
 
-    // Liveness check (cross-sequence hint): also an acquire-load, but the caller owns the risk that a positive answer may not be trustworthy
+    // 判活(跨序列 hint):同样是 acquire-load,但调用方自行承担正面结果不可信
     bool MaybeValid() const noexcept {
         return !invalidated_.IsSet();
     }
 
 private:
-    template <typename> friend class scoped_refptr;   // allows delete once the count hits zero
-    ~Flag() = default;                   // private: outsiders cannot delete directly
+    template <typename> friend class scoped_refptr;   // 允许计数归零时 delete
+    ~Flag() = default;                   // private:外部不能直接 delete
     AtomicFlag invalidated_;
 };
 
@@ -154,7 +154,7 @@ One layer up sits `WeakReference`. Frankly it is `scoped_refptr<const Flag>` wea
 // Platform: host | C++ Standard: C++17
 namespace tamcpp::chrome::internal {
 
-// Simplified scoped_refptr (see pre-01 for the full version)
+// 简化版 scoped_refptr(见 pre-01 完整版)
 template <typename T>
 class scoped_refptr {
 public:
@@ -202,7 +202,7 @@ At the top layer, `WeakPtr<T>` adds one more piece on top of `WeakReference`: a 
 
 namespace tamcpp::chrome {
 
-template <typename T> class WeakPtrFactory;   // forward declaration
+template <typename T> class WeakPtrFactory;   // 前向声明
 
 template <typename T>
 class [[clang::trivial_abi]] WeakPtr {
@@ -210,7 +210,7 @@ public:
     WeakPtr() = default;
     WeakPtr(std::nullptr_t) noexcept {}    // NOLINT(google-explicit-constructor)
 
-    // Upcast converting constructor (see pre-04)
+    // 向上转型转换构造(见 pre-04)
     template <typename U>
         requires(std::convertible_to<U*, T*>)
     WeakPtr(const WeakPtr<U>& other) noexcept
@@ -221,10 +221,10 @@ public:
     WeakPtr(WeakPtr<U>&& other) noexcept
         : ref_(std::move(other.ref_)), ptr_(other.ptr_) {}
 
-    // Liveness check + dereference, in two postures
+    // 判活 + 解引用的两种姿态
     T* get() const noexcept { return ref_.IsValid() ? ptr_ : nullptr; }
 
-    T& operator*() const { assert(ref_.IsValid()); return *ptr_; }   // the teaching version uses assert; Chromium uses CHECK
+    T& operator*() const { assert(ref_.IsValid()); return *ptr_; }   // 教学版用 assert;Chromium 用 CHECK
     T* operator->() const { assert(ref_.IsValid()); return ptr_; }
 
     explicit operator bool() const noexcept { return get() != nullptr; }
@@ -241,14 +241,14 @@ private:
     template <typename U> friend class WeakPtr;
     friend class WeakPtrFactory<T>;
 
-    // Only the factory can call this: used at minting time
+    // 只有 factory 能调:铸币时用
     WeakPtr(internal::WeakReference&& ref, T* ptr) noexcept
         : ref_(std::move(ref)), ptr_(ptr) {
         assert(ptr);
     }
 
     internal::WeakReference ref_;
-    T* ptr_ = nullptr;     // RAW_PTR_EXCLUSION: dangling is allowed; ref_ gates the deref
+    T* ptr_ = nullptr;     // RAW_PTR_EXCLUSION:允许悬垂,deref 前由 ref_ 守门
 };
 
 }  // namespace tamcpp::chrome
@@ -299,16 +299,16 @@ int main() {
 
     Foo foo;
 
-    // Hand-assemble a Flag + WeakReference (simulating the factory's minting; 02-3 will wrap it up)
+    // 手工拼一个 Flag + WeakReference(模拟 factory 铸币,02-3 会封装)
     auto* flag = new Flag();
     scoped_refptr<Flag> flag_ref(flag);                 // ref_count = 1
     WeakReference ref(flag_ref);                        // ref_count = 2
-    WeakPtr<Foo> wp(std::move(ref), &foo);              // holds ref + &foo
+    WeakPtr<Foo> wp(std::move(ref), &foo);              // 持 ref + &foo
 
     std::cout << (wp ? "alive" : "dead") << '\n';       // alive
     std::cout << wp->x << '\n';                         // 42
 
-    flag->Invalidate();                                 // simulate the invalidation before the object destructs
+    flag->Invalidate();                                 // 模拟对象析构前的作废
     std::cout << (wp ? "alive" : "dead") << '\n';       // dead
     std::cout << wp.get() << '\n';                      // 0(nullptr)
 

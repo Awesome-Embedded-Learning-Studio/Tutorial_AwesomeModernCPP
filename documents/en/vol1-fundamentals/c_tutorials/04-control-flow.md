@@ -18,10 +18,10 @@ tags:
 title: 'Control Flow: Teaching Programs to Choose and Repeat'
 translation:
   source: documents/vol1-fundamentals/c_tutorials/04-control-flow.md
-  source_hash: 8fa2fc6d9cf8d8523478289fe456f6a549d46dce3dcb5e9e8b52e08eee0fa5f0
-  translated_at: '2026-09-25T12:57:51+00:00'
-  engine: anthropic
-  token_count: 8300
+  source_hash: 9f0988e17a819902fc12a49626f7a4163413a2e0df93d38abf0394fd4171ff64
+  translated_at: '2026-11-22T16:39:42+00:00'
+  engine: glm-5.3-refresh
+  token_count: 12943
 ---
 # Control Flow: Teaching Programs to Choose and Repeat
 
@@ -120,7 +120,7 @@ The `break` at the end of each `case` branch exits the `switch`. Forget to write
 switch (cmd) {
     case kCmdStart:
         start_operation();
-        // Forgot the break! Falls through into the kCmdStop logic
+        // 忘了 break！会穿透到 kCmdStop 的逻辑
     case kCmdStop:
         stop_operation();
         break;
@@ -193,7 +193,7 @@ A `while` loop checks the condition first; if it is false from the very start, t
 
 ```c
 while (!uart_data_available()) {
-    // Busy-waiting — a real project needs a timeout mechanism here
+    // 空转等待——实际项目中要加超时机制
 }
 ```
 
@@ -219,13 +219,13 @@ int main(void)
 {
     int count = 0;
 
-    // while: the condition is false from the start, so the body never runs
+    // while：条件一开始就是假，不执行
     while (count > 0) {
         printf("while: 不会打印这行\n");
         count--;
     }
 
-    // do-while: runs at least once
+    // do-while：至少执行一次
     count = 0;
     do {
         printf("do-while: count = %d\n", count);
@@ -257,7 +257,7 @@ for (int i = 0; i < rows; i++) {
     for (int j = 0; j < cols; j++) {
         if (matrix[i][j] == target) {
             printf("Found at [%d][%d]\n", i, j);
-            break;  // only breaks out of the inner j loop; the outer i loop keeps going
+            break;  // 只跳出内层 j 循环，外层 i 循环继续
         }
     }
 }
@@ -270,7 +270,7 @@ for (int i = 0; i < rows; i++) {
 ```c
 for (int i = 0; i < count; i++) {
     if (data[i] == kInvalidMarker) {
-        continue;  // skip invalid data
+        continue;  // 跳过无效数据
     }
     process_valid_data(data[i]);
 }
@@ -312,19 +312,19 @@ Let's implement a simple communication protocol parser. Suppose the frame format
 
 ```c
 typedef enum {
-    kStateIdle,      // Idle: waiting for the 0xAA frame header
-    kStateHeader,    // Header: header received, now waiting for the length byte
-    kStatePayload,   // Payload: currently receiving data
-    kStateChecksum,  // Checksum: about to verify the data
-    kStateDone,      // Done: one frame parsed successfully
-    kStateError      // Error: something is wrong (e.g., length over the limit or checksum mismatch)
+    kStateIdle,      // 空闲态：等待帧头 0xAA
+    kStateHeader,    // 帧头态：帧头已收完，接下来等长度字节
+    kStatePayload,   // 负载态：正在接收数据
+    kStateChecksum,  // 校验态：准备校验数据
+    kStateDone,      // 完成态：一帧解析成功
+    kStateError      // 错误态：数据不对（比如长度超限或校验失败）
 } ParseState;
 
 typedef struct {
-    ParseState state;            // records the current state
-    unsigned char payload[64];   // the warehouse: stores the received payload data
-    unsigned char payload_len;   // records how many payload bytes this frame expects
-    unsigned char index;         // counter: how many bytes have been received so far
+    ParseState state;            // 记录当前状态
+    unsigned char payload[64];   // 仓库：存放接收到的负载数据
+    unsigned char payload_len;   // 记录：这帧要收多少个字节的负载
+    unsigned char index;         // 计数器：当前已经收到了几个字节
 } Parser;
 
 void parser_init(Parser* p) {
@@ -336,42 +336,42 @@ void parser_init(Parser* p) {
 ParseState parser_feed(Parser* p, unsigned char byte) {
     switch (p->state) {
         case kStateIdle:
-            if (byte == 0xAA) {       // Did we see the frame header?
-                p->state = kStateHeader; // Yes — move on to the next state (waiting for length)
+            if (byte == 0xAA) {       // 看到帧头了吗？
+                p->state = kStateHeader; // 看到了，进入下一个状态（等长度）
             }
             break;
 
         case kStateHeader:
-            p->payload_len = byte;    // treat this received byte as the length and store it
-            if (p->payload_len > 64) { // Length too big — what if it won't fit in the warehouse?
-                p->state = kStateError; // Error!
+            p->payload_len = byte;    // 把收到的这个字节当作长度存起来
+            if (p->payload_len > 64) { // 长度太大了，仓库装不下怎么办？
+                p->state = kStateError; // 报错！
             } else {
-                p->index = 0;         // about to receive data; reset the counter
-                p->state = kStatePayload; // enter the payload-receiving state
+                p->index = 0;         // 准备开始收数据，计数器清零
+                p->state = kStatePayload; // 进入接收负载的状态
             }
             break;
 
         case kStatePayload:
-            p->payload[p->index++] = byte; // store the byte in the warehouse and bump the counter
-            if (p->index >= p->payload_len) { // Received enough yet?
-                p->state = kStateChecksum; // Yes — enter the checksum state
+            p->payload[p->index++] = byte; // 把字节存进仓库，并且计数器+1
+            if (p->index >= p->payload_len) { // 收够了吗？
+                p->state = kStateChecksum; // 收够了，进入校验状态
             }
             break;
 
         case kStateChecksum: {
             unsigned char calc = 0;
             for (int i = 0; i < p->payload_len; i++) {
-                calc ^= p->payload[i]; // XOR all the received data together, bit by bit
+                calc ^= p->payload[i]; // 把收到的所有数据按位异或一遍
             }
-            p->state = (calc == byte) ? kStateDone : kStateError; // compare the computed value against the received checksum
+            p->state = (calc == byte) ? kStateDone : kStateError; // 算出来的和收到的校验码对比
             break;
         }
 
         case kStateDone:
         case kStateError:
-            break; // do nothing
+            break; // 什么都不做
     }
-    return p->state; // tell the caller what state we're in
+    return p->state; // 把当前状态告诉外面的人
 }
 ```
 
@@ -385,13 +385,13 @@ int main(void)
     Parser p;
     parser_init(&p);
 
-    // Header 0xAA, length 3, payload {0x01, 0x02, 0x03}, checksum 0x00
+    // 帧头 0xAA，长度 3，负载 {0x01, 0x02, 0x03}，校验 0x00
     unsigned char frame[] = {0xAA, 0x03, 0x01, 0x02, 0x03, 0x00};
     for (int i = 0; i < (int)sizeof(frame); i++) {
         ParseState s = parser_feed(&p, frame[i]);
         printf("Byte 0x%02X → State %d\n", frame[i], s);
         if (s == kStateDone) {
-            // If the parser says "done", print out the received data
+            // 如果解析器说“完成”，就把收到的数据打印出来
             printf("Frame OK, payload: ");
             for (int j = 0; j < p.payload_len; j++) {
                 printf("0x%02X ", p.payload[j]);
@@ -399,7 +399,7 @@ int main(void)
             printf("\n");
             break;
         } else if (s == kStateError) {
-            // If the parser reports an error, stop as well
+            // 如果解析器报错，也停止
             printf("Parse error at byte %d\n", i);
             break;
         }
@@ -437,7 +437,7 @@ int arr[] = {1, 2, 3, 4, 5};
 for (int x : arr) {
     std::cout << x << " ";
 }
-// No manual index management, bounds checking, or counter incrementing needed
+// 不需要手动管理索引、判断边界、递增计数器
 ```
 
 C++17 introduced `if constexpr`, which evaluates its condition at compile time and simply strips the untaken branch out of the code. And there is `std::variant` + `std::visit`, a type-safe replacement for the traditional `switch`—the compiler checks that you have handled every type; miss one and it's a straight compile error.
@@ -500,7 +500,7 @@ The end of this post demonstrated a byte-by-byte driven serial protocol state ma
 
 typedef enum { STATE_IDLE, STATE_LEN, STATE_PAYLOAD, STATE_DONE } FrameState;
 
-/// @brief Feed in one byte at a time; returns 1 when a complete frame (including the end marker) is received, otherwise 0
+/// @brief 逐字节喂入；收到完整一帧（含结束符）时返回 1，否则返回 0
 int frame_feed(uint8_t byte);
 ```
 
@@ -524,14 +524,14 @@ static uint8_t payload_idx = 0;
 int frame_feed(uint8_t byte) {
     switch (state) {
         case STATE_IDLE:
-            if (byte == 0xAA) {         // only move to the next state once the start marker arrives
+            if (byte == 0xAA) {         // 等到起始符才进入下一状态
                 payload_idx = 0;
                 payload_len = 0;
                 state = STATE_LEN;
             }
             break;
         case STATE_LEN:
-            // Defense: the length field may be tampered with; clamp it to the buffer capacity to avoid an out-of-bounds write later
+            // 防御：长度字段可能被篡改，钳到缓冲区上限，避免后面越界写
             payload_len = (byte <= MAX_PAYLOAD) ? byte : MAX_PAYLOAD;
             state = (payload_len == 0) ? STATE_DONE : STATE_PAYLOAD;
             break;
@@ -542,7 +542,7 @@ int frame_feed(uint8_t byte) {
             }
             break;
         case STATE_DONE:
-            if (byte == 0x55) {         // the normal end marker
+            if (byte == 0x55) {         // 正常结束符
                 printf("Frame OK (%u bytes):", payload_len);
                 for (uint8_t i = 0; i < payload_len; i++) {
                     printf(" %02X", payload[i]);
@@ -551,7 +551,7 @@ int frame_feed(uint8_t byte) {
                 state = STATE_IDLE;
                 return 1;
             }
-            state = STATE_IDLE;         // the end marker never arrived — the frame is broken, go idle and wait for 0xAA again
+            state = STATE_IDLE;         // 没等到结束符，帧出错，回空闲重新等 0xAA
             break;
     }
     return 0;

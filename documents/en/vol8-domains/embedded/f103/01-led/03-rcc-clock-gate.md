@@ -13,9 +13,9 @@ platform: stm32f1
 translation:
   source: documents/vol8-domains/embedded/f103/01-led/03-rcc-clock-gate.md
   source_hash: 13e218b549a959beb5779b38d0cb70b4ada0cbae2cd89f356d32a9ea60089e58
-  translated_at: '2026-09-27T05:44:57+00:00'
-  engine: anthropic
-  token_count: 2800
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6722
 ---
 
 # Clock gating: when the LED will not light, start from the clock
@@ -37,7 +37,7 @@ The module in charge of these gates is called the **RCC** (Reset and Clock Contr
 The gate registers are split by bus: peripherals on the APB2 bus answer to `RCC_APB2ENR` (offset `0x18`, address `0x40021018`), those on APB1 to `RCC_APB1ENR`. GPIOs across the whole family all hang off APB2, so when we enable GPIOC's clock, this is the one we touch:
 
 ```cpp
-RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;  // close GPIOC's breaker
+RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;  // 给 GPIOC 合闸
 ```
 
 Let's go find `IOPCEN`'s definition in the device header (`stm32f103xb.h` L1287-L1289):
@@ -83,9 +83,9 @@ We will hear each of them out. **The manual's answer**: the value you write does
 --- APB2ENR (expect 0x00000000):
 0x00000000
 --- manual write 0x33333333 to CRH(0x40011004), then read back:
-0x33333333        ← the write went in??
+0x33333333        ← 写进去了？？
 --- manual write 0x00002000 to BSRR(0x40011010), ODR(0x4001100C) after:
-0x00002000        ← ODR really did flip
+0x00002000        ← ODR 还真翻了
 ```
 
 With the clock off, we write CRH and read back exactly `0x33333333` — the write took effect. When we write BSRR, ODR flips just as obediently. We then close bit 4 by hand and run it all over again, and the behavior is truly identical: **Renode's STM32F1 GPIO model, as it turns out, does not simulate clock gating at all**.
@@ -97,10 +97,10 @@ This deviation arrives at a useful moment — it hands us a reminder. The simula
 The current flowing behind the gates is the clock signal itself — where it comes from, and at how many volts and how many hertz, deserves a look too. In `01_blinky`, `SystemClock_Config` sets it up like this (an excerpt from `main.cpp`; five of the comments are verbatim from the project, the other two are notes the author added):
 
 ```cpp
-osc.OscillatorType   = RCC_OSCILLATORTYPE_HSI;      // on-chip 8 MHz RC oscillator
-osc.PLL.PLLSource    = RCC_PLLSOURCE_HSI_DIV2;      // 8M/2 = 4M into the PLL
+osc.OscillatorType   = RCC_OSCILLATORTYPE_HSI;      // 片内 8MHz RC 振荡器
+osc.PLL.PLLSource    = RCC_PLLSOURCE_HSI_DIV2;      // 8M/2 = 4M 进 PLL
 osc.PLL.PLLMUL       = RCC_PLL_MUL16;               // 4M × 16 = 64M
-clk.SYSCLKSource     = RCC_SYSCLKSOURCE_PLLCLK;     // PLL output as the system master clock
+clk.SYSCLKSource     = RCC_SYSCLKSOURCE_PLLCLK;     // PLL 输出当系统主钟
 clk.AHBCLKDivider    = RCC_SYSCLK_DIV1;             // HCLK  = 64M
 clk.APB1CLKDivider   = RCC_HCLK_DIV2;               // APB1  = 32M
 clk.APB2CLKDivider   = RCC_HCLK_DIV1;               // APB2  = 64M

@@ -21,12 +21,23 @@ tags:
 - 入门
 - 基础
 title: Overloading and Default Parameters
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #203)"
+      en: "Contributed exercise solutions and article revisions (PR #203)"
 translation:
   source: documents/vol1-fundamentals/ch03/03-overloading-default.md
-  source_hash: bf916b462b1dbc6481b0ad8276693ed87dd5bd7224cfae3f0e1b469a4e22c060
-  translated_at: '2026-09-25T10:24:51+00:00'
-  engine: anthropic
-  token_count: 3500
+  source_hash: e529820d108bc1c4b439a4939d99409f3b4f9bbb88fa94c2d318439612f7d159
+  translated_at: '2026-11-22T16:40:19+00:00'
+  engine: glm-5.3-refresh
+  token_count: 11280
 ---
 # Overloading and Default Parameters: One Name, Many Roles
 
@@ -66,9 +77,9 @@ void print(const char* str)
 When we call them, the compiler automatically picks the matching version based on the type of each argument:
 
 ```cpp
-print(42);       // calls print(int)
-print(3.14);     // calls print(double)
-print("Hello");  // calls print(const char*)
+print(42);       // 调用 print(int)
+print(3.14);     // 调用 print(double)
+print("Hello");  // 调用 print(const char*)
 ```
 
 To achieve the same effect in C, you need three functions with three names, and at every call you have to decide which one to use. By contrast, the API-design advantage of overloading is plain to see: one name is all we need to remember.
@@ -78,12 +89,12 @@ A different number of parameters also constitutes overloading. You will see this
 ```cpp
 void init_uart(int baudrate)
 {
-    // Use the default configuration: 8 data bits, 1 stop bit, no parity
+    // 使用默认配置：8 数据位、1 停止位、无校验
 }
 
 void init_uart(int baudrate, int databits, int stopbits, char parity)
 {
-    // Use a custom configuration
+    // 使用自定义配置
 }
 ```
 
@@ -122,17 +133,17 @@ void configure_uart(int baudrate,
                     int stopbits = 1,
                     char parity = 'N')
 {
-    // Configure the UART
+    // 配置 UART
 }
 ```
 
 In the most common call form, only the one parameter we actually care about remains:
 
 ```cpp
-configure_uart(115200);              // Only specify the baud rate; everything else defaults
-configure_uart(115200, 8);           // Only change the data bits
-configure_uart(115200, 8, 2);        // Change data bits and stop bits
-configure_uart(115200, 8, 2, 'E');   // Fully custom
+configure_uart(115200);              // 只指定波特率，其余全部默认
+configure_uart(115200, 8);           // 只改数据位
+configure_uart(115200, 8, 2);        // 改数据位和停止位
+configure_uart(115200, 8, 2, 'E');   // 全部自定义
 ```
 
 From an interface-design perspective, this is a very gentle form of forward compatibility: we can keep appending new optional capabilities on the right side of the function without breaking existing code.
@@ -142,23 +153,23 @@ The syntax of default parameters looks simple, but the rules are actually very s
 **Parameters with default values can only appear consecutively at the end of the parameter list.** Read the parameter list from left to right: once any parameter carries a default value, every parameter to its right must carry one too—no gaps allowed. The reason lies in the call syntax: arguments are slotted into parameters from left to right, and the compiler can only decide which values take their defaults by "omitting trailing arguments". So we cannot skip a middle parameter: to pass a value for the third parameter, all preceding parameters must be given explicitly. Applied to interface design, parameter ordering becomes important: **put the parameters you most often need to customize on the far left, and the ones that almost never change on the far right**.
 
 ```cpp
-// Correct: default parameters appear consecutively at the end of the parameter list
+// 正确：默认参数连续出现在参数列表末尾
 void init_spi(int freq, int mode = 0, int bits = 8);
 
-// Wrong: a non-default parameter cannot appear after a default parameter
-// void bad_init(int freq = 1000000, int mode, int bits);  // compile error
+// 错误：非默认参数不能出现在默认参数后面
+// void bad_init(int freq = 1000000, int mode, int bits);  // 编译错误
 ```
 
 **A default parameter may be specified only once, and that specification belongs in the declaration.** This point matters especially in projects that separate headers from source files. The default value is part of the interface; if we write the default arguments yet again in the `.cpp`, the compiler treats it as redefining the rules and reports an error outright.
 
 ```cpp
-// uart.h — specify the default parameters in the declaration
+// uart.h —— 声明时指定默认参数
 void configure_uart(int baudrate, int databits = 8, int stopbits = 1);
 
-// uart.cpp — do not repeat the default parameters in the definition
+// uart.cpp —— 定义时不要重复默认参数
 void configure_uart(int baudrate, int databits, int stopbits)
 {
-    // Implementation
+    // 实现
 }
 ```
 
@@ -185,7 +196,7 @@ void process(int value, int factor = 2)
     std::printf("Scaled: %d\n", value * factor);
 }
 
-process(10);  // Ambiguous! Call the first? Or the second (using its default parameter)?
+process(10);  // 歧义！调用第一个？还是第二个（使用默认参数）？
 ```
 
 Look at the compiler's predicament when facing `process(10)`: both versions match. The first is an exact match; so is the second (its second argument just takes the default value). Both sides cost exactly the same, the compiler cannot choose, and it reports an ambiguity error outright.
@@ -205,7 +216,7 @@ Let's consolidate the earlier usage into one complete program, demonstrating mul
 #include <cstdio>
 #include <cstring>
 
-// ---- Multiple print overloads ----
+// ---- 多个 print 重载 ----
 
 void print(int value)
 {
@@ -222,7 +233,7 @@ void print(const char* str)
     std::printf("string: %s\n", str);
 }
 
-// ---- Default parameter example ----
+// ---- 默认参数示例 ----
 
 void draw_rect(int width, int height, bool fill = false,
                char brush = '#')
@@ -233,7 +244,7 @@ void draw_rect(int width, int height, bool fill = false,
                 brush);
 }
 
-// ---- Fixing the ambiguity: different function names instead of mixing ----
+// ---- 修复歧义：用不同的函数名替代混搭 ----
 
 void scale_value(int value)
 {
@@ -247,19 +258,19 @@ void scale_value(int value, int factor)
 
 int main()
 {
-    // Demonstrate overloading
+    // 演示重载
     std::printf("=== 函数重载 ===\n");
     print(42);
     print(3.14159);
     print("Hello, overloading!");
 
-    // Demonstrate default parameters
+    // 演示默认参数
     std::printf("\n=== 默认参数 ===\n");
     draw_rect(10, 5);                  // fill=false, brush='#'
     draw_rect(10, 5, true);            // fill=true,  brush='#'
-    draw_rect(10, 5, true, '*');       // Fully custom
+    draw_rect(10, 5, true, '*');       // 全部自定义
 
-    // Demonstrate the fixed "overloading + different parameter counts"
+    // 演示修复后的"重载 + 不同参数数量"
     std::printf("\n=== 不同参数数量 ===\n");
     scale_value(7);
     scale_value(7, 3);
@@ -383,7 +394,7 @@ void log_message(const char *text, const char *level = "INFO", bool show_timesta
 
 int main()
 {
-    // Demonstrate default parameters with different argument combinations.
+    // 使用不同的参数组合演示默认参数。
     log_message("应用程序已启动");
     log_message("配置已加载", "DEBUG");
     log_message("计划任务正在运行", "INFO", true);
@@ -396,7 +407,7 @@ void log_message(const char *text, const char *level, bool show_timestamp)
 {
     if (show_timestamp)
     {
-        // system_clock represents wall-clock time, suitable for log timestamps.
+        // system_clock 表示墙上时间，适合生成日志时间戳。
         const auto now = std::chrono::system_clock::now();
         const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
                                    now.time_since_epoch())
@@ -437,7 +448,7 @@ void func(short x) { }
 
 int main()
 {
-    func('A');  // Ambiguous? Or does it compile?
+    func('A');  // 歧义？还是能编译？
     return 0;
 }
 ```
@@ -453,7 +464,7 @@ void func(short x);
 
 int main()
 {
-    func('A'); // Ambiguous? Or does it compile?
+    func('A'); // 歧义？还是能编译？
     return 0;
 }
 void func(int x)

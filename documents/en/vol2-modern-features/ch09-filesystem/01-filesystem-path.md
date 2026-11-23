@@ -18,10 +18,10 @@ tags:
 title: 'Path Operations: Cross-Platform Path Handling'
 translation:
   source: documents/vol2-modern-features/ch09-filesystem/01-filesystem-path.md
-  source_hash: 4d95f73b3f8b4cd666ae8d9051874c9f723fb825254e718e50270ae4f16d8f2c
-  translated_at: '2026-09-27T05:12:39+00:00'
-  engine: anthropic
-  token_count: 4000
+  source_hash: f9360406745705a87a8a616ef9fd635128157db2d84d86e75b3cb4342e7c10b5
+  translated_at: '2026-11-23T01:10:31+00:00'
+  engine: glm-5.3-refresh
+  token_count: 11183
 ---
 # Path Operations: Cross-Platform Path Handling
 
@@ -51,15 +51,15 @@ A `path` can be constructed from many kinds of sources. The most direct one is c
 namespace fs = std::filesystem;
 
 int main() {
-    // Construct from a C string
+    // 从 C 字符串构造
     fs::path p1 = "/usr/local/bin";
-    // Construct from std::string
+    // 从 std::string 构造
     std::string str = "/home/user/docs";
     fs::path p2(str);
-    // Construct from a literal
-    fs::path p3 = "C:\\Users\\Alice\\Documents";  // a Windows path works too
-    // On Linux, the backslashes become part of the filename (\ is not a separator there)
-    // but on Windows they are correctly recognized as separators
+    // 从字面量构造
+    fs::path p3 = "C:\\Users\\Alice\\Documents";  // Windows 路径也可以
+    // 在 Linux 上，反斜杠会被当作文件名的一部分（因为 \ 不是分隔符）
+    // 但在 Windows 上会被正确识别为分隔符
 
     std::cout << "p1: " << p1 << "\n";
     std::cout << "p2: " << p2 << "\n";
@@ -84,7 +84,7 @@ The `path` constructors accept `std::string_view` (since C++17). You can pass a 
 
 ```cpp
 std::string_view sv = "/tmp/test";
-fs::path p(sv);  // use the string_view directly
+fs::path p(sv);  // 直接使用 string_view
 ```
 
 That said, due to template deduction rules, some complicated scenarios may require spelling out the type explicitly or converting to `std::string` first.
@@ -158,8 +158,8 @@ fs::path p3 = "/home/user/README";
 auto p4 = p3.replace_extension(".md");
 // p4 = "/home/user/README.md"
 
-// replace_extension does not modify the original object
-std::cout << p << "\n";   // still "report.pdf"
+// replace_extension 不改变原始对象
+std::cout << p << "\n";   // 仍然是 "report.pdf"
 std::cout << p2 << "\n";  // "report.txt"
 ```
 
@@ -184,10 +184,10 @@ fs::path base = "/usr/local";
 auto full = base / "bin" / "gcc";
 // full = "/usr/local/bin/gcc"
 
-// If the right-hand side is an absolute path, the left is discarded
+// 如果右边是绝对路径，左边被丢弃
 fs::path p = "/home/user";
 auto result = p / "/tmp/file";
-// result = "/tmp/file" (not "/home/user/tmp/file")
+// result = "/tmp/file"（不是 "/home/user/tmp/file"）
 ```
 
 `operator+=` and `concat` are string concatenation operations: they append the right-hand characters directly onto the end of the path string, with no path semantics involved at all:
@@ -195,12 +195,12 @@ auto result = p / "/tmp/file";
 ```cpp
 fs::path p = "file";
 p += ".txt";
-// p = "file.txt" — this is plain string concatenation
+// p = "file.txt"——这就是简单的字符串拼接
 
-// The difference: if we use append instead
+// 区别：如果用 append
 fs::path p2 = "file";
 p2 /= ".txt";
-// p2 = "file/.txt" — append treats ".txt" as a separate path component
+// p2 = "file/.txt"——append 把 ".txt" 当成一个独立的路径组件
 ```
 
 So the difference between `+=` and `/=` comes down to this: `+=` is pure string concatenation (with no regard for path semantics), while `/=` appends a path component (following the path-joining rules). Most of the time you should use `/=`; reach for `+=` only when you know exactly what you are doing.
@@ -214,13 +214,13 @@ The cross-platform capability of `path` shows up in two places: automatic conver
 Internally, `path` uses the forward slash `/` as its generic separator (the generic format), and at construction it automatically converts the platform's native separator into the generic format. When you need the platform-native format instead, call `native()` or `string()`:
 
 ```cpp
-// This code works correctly on both Windows and Linux
+// 这段代码在 Windows 和 Linux 上都能正确工作
 fs::path p = "dir/subdir/file.txt";
 
-// Generic format (always forward slashes)
+// 通用格式（总是正斜杠）
 std::cout << p.generic_string() << "\n";  // "dir/subdir/file.txt"
 
-// Platform-native format
+// 平台原生格式
 // Linux: "dir/subdir/file.txt"
 // Windows: "dir\\subdir\\file.txt"
 std::cout << p.string() << "\n";
@@ -231,7 +231,7 @@ This means you can write paths with forward slashes uniformly and stop worrying 
 ```cpp
 fs::path config_dir = "/etc/myapp";
 fs::path config_file = config_dir / "config.ini";
-// Constructs the path correctly on every platform
+// 在所有平台上都能正确构造路径
 ```
 
 ### Absolute and Relative Paths
@@ -239,9 +239,9 @@ fs::path config_file = config_dir / "config.ini";
 `path` provides `is_absolute()` and `is_relative()` to tell whether a path is absolute or relative. Note that absolute-versus-relative depends on the platform — on Linux, anything starting with `/` is an absolute path; on Windows, the path has to start with a drive letter (`C:\...`) or with `\\` (a UNC path).
 
 ```cpp
-fs::path p1 = "/usr/local";     // Linux: absolute, Windows: relative (no drive letter)
-fs::path p2 = "C:\\Windows";    // Windows: absolute, Linux: relative (treated as an ordinary directory name)
-fs::path p3 = "../config.ini";  // all platforms: relative
+fs::path p1 = "/usr/local";     // Linux: absolute, Windows: relative（没有驱动器号）
+fs::path p2 = "C:\\Windows";    // Windows: absolute, Linux: relative（被当成普通目录名）
+fs::path p3 = "../config.ini";  // 所有平台: relative
 
 std::cout << std::boolalpha;
 std::cout << "p1 is_absolute: " << p1.is_absolute() << "\n";  // true on Linux
@@ -258,20 +258,20 @@ Converting between `path` and `string` is a high-frequency operation, and `path`
 ```cpp
 fs::path p = "/usr/local/bin";
 
-// Convert to std::string (platform-native encoding)
+// 转为 std::string（平台原生编码）
 std::string s = p.string();
 
-// Convert to a generic-format string (always forward slashes)
+// 转为通用格式 string（总是正斜杠）
 std::string gs = p.generic_string();
 
-// Get the native format (returns const string_type&, zero-copy)
-const auto& native = p.native();  // std::wstring on Windows
+// 获取原生格式（返回 const string_type&，零拷贝）
+const auto& native = p.native();  // Windows 上是 std::wstring
 
-// Convert from string to path
+// 从 string 转 path
 fs::path from_str = fs::path(s);
 
-// C-style string
-const char* c = p.c_str();  // const wchar_t* on Windows
+// C 风格字符串
+const char* c = p.c_str();  // Windows 上是 const wchar_t*
 ```
 
 On Windows, `path` uses `wchar_t` (UTF-16) internally, so `string()` returns a UTF-8 or ANSI string converted from UTF-16, and `native()` returns a `std::wstring`. On Linux/macOS, `path` uses `char` (UTF-8) internally, so there is no such conversion issue.
@@ -287,7 +287,7 @@ fs::path p3 = "/usr/local/bin/";
 
 std::cout << std::boolalpha;
 std::cout << (p1 == p2) << "\n";  // true
-std::cout << (p1 == p3) << "\n";  // false (the difference is the trailing /)
+std::cout << (p1 == p3) << "\n";  // false（末尾有 / 的差异）
 ```
 
 `path` also supports iterators, so you can visit each component of the path one by one:
@@ -299,7 +299,7 @@ for (const auto& component : p) {
     std::cout << "[" << component << "] ";
 }
 std::cout << "\n";
-// Output: [/] [usr] [local] [bin] [gcc]
+// 输出: [/] [usr] [local] [bin] [gcc]
 ```
 
 The iterator skips empty components and returns each segment between separators as an independent `path` object. The root_directory (`/`) is returned as a component too.
@@ -316,10 +316,10 @@ Let's combine what we have learned and write a practical utility function: find 
 
 namespace fs = std::filesystem;
 
-/// @brief Find all files matching a given extension under a directory
-/// @param dir the directory to search
-/// @param ext the target extension (e.g. ".cpp")
-/// @return the list of matching file paths
+/// @brief 在指定目录下查找所有匹配扩展名的文件
+/// @param dir 搜索目录
+/// @param ext 目标扩展名（如 ".cpp"）
+/// @return 匹配的文件路径列表
 std::vector<fs::path> find_by_extension(const fs::path& dir,
                                           const std::string& ext) {
     std::vector<fs::path> results;
@@ -333,7 +333,7 @@ std::vector<fs::path> find_by_extension(const fs::path& dir,
     for (const auto& entry : fs::directory_iterator(dir)) {
         if (entry.is_regular_file()) {
             auto path_ext = entry.path().extension().string();
-            // Compare in lowercase uniformly, to handle .CPP versus .cpp
+            // 统一转小写比较，应对 .CPP 和 .cpp
             std::transform(path_ext.begin(), path_ext.end(),
                            path_ext.begin(), ::tolower);
             if (path_ext == lower_ext) {
@@ -342,7 +342,7 @@ std::vector<fs::path> find_by_extension(const fs::path& dir,
         }
     }
 
-    // Sort by filename
+    // 按文件名排序
     std::sort(results.begin(), results.end());
     return results;
 }

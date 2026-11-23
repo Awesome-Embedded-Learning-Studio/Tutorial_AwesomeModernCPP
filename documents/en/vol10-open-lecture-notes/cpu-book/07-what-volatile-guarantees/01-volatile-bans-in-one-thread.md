@@ -10,9 +10,10 @@ description: "Starts from a loop where ten reads get merged into a single load, 
 reading_time_minutes: 9
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/07-what-volatile-guarantees/01-volatile-bans-in-one-thread.md
-  source_hash: 1b3bf8c7561c124ce97afe47ff15667d44095b6681f25cb9171e2233308548be
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: c9e29c229bc4b53a7521eb3c7c3c97ead774ade562cb8cbd09b4574fbdb9f4fe
+  translated_at: '2026-11-22T16:44:07Z'
+  engine: glm-5.3-refresh
+  token_count: 7105
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -53,8 +54,8 @@ Every experiment in this piece runs in WSL2, on a machine with 16 logical cores,
 Let's start from the plainest scenario there is: a function whose loop reads the same global variable over and over, and -O2 merges the repeated loads away. A load is exactly what the word says in the assembly, reading a value from memory into a register. The source we want to look at is only a few lines:
 
 ```cpp
-// v1_loop_plain.cpp: plain global, read 10 times in a loop and summed. Watch whether -O2 merges the repeated loads
-int g;  // plain global, never written within this translation unit
+// v1_loop_plain.cpp: 普通全局变量,循环读 10 次累加 —— 观察 -O2 是否合并重复装载
+int g;  // 普通全局,本翻译单元内无写入
 
 int sum10() {
     int s = 0;
@@ -84,7 +85,7 @@ The 10 `s += g` in the source stand for 10 loads. The assembly has only the one 
 Now we change one word at the declaration, plain int to volatile int, and leave every other character of the function body alone:
 
 ```cpp
-// v2_loop_volatile.cpp: same code as v1, variable now volatile. Contrast: a fresh load on every iteration
+// v2_loop_volatile.cpp: 与 v1 相同的代码,变量改 volatile —— 对照:每次迭代都重新装载
 volatile int g;
 
 int sum10() {
@@ -120,12 +121,12 @@ The loop is back. The opening two instructions are setup: `movl $10, %eax` loads
 Besides merging, the compiler has two more direct moves: one deletes a read whose value nobody consumes, the other deletes a store that gets overwritten immediately. Four small functions put both moves to the test:
 
 ```cpp
-// v3_dead.cpp: dead read elimination and dead store elimination, plain variables vs volatile
-int g;             // plain global
-volatile int vg;   // volatile global
+// v3_dead.cpp: 死读消除与死写消除 —— 普通变量 vs volatile
+int g;             // 普通全局
+volatile int vg;   // volatile 全局
 
 void dead_read_plain() {
-    int x = g;   // nobody consumes the value we read
+    int x = g;   // 读到的值没人消费
     (void)x;
 }
 
@@ -135,7 +136,7 @@ void dead_read_volatile() {
 }
 
 void dead_store_plain() {
-    g = 1;   // overwritten immediately after, so this store is dead
+    g = 1;   // 后面立即覆盖,这次写是死写
     g = 2;
 }
 
@@ -186,15 +187,15 @@ Let's read them one function at a time. All that is left of `dead_read_plain` is
 The last ban is the subtlest, and it governs order. Between the reads and writes of plain variables, as long as there is no data dependency between the two ends, the compiler may swap their positions. When the accesses are volatile, no two of them may trade places. Order rearrangement is a thin thing to assert in words alone, and you would be forgiven for not feeling it, so here is a group of experiments where the swap is visible in the assembly:
 
 ```cpp
-// v3_reorder.cpp: moving reads and stores around, plain variables vs volatile
-// Case 1: a read of a and a store to b with no dependency between them, read first in source order. Watch whether the compiler swaps them
-// Case 2: storing to the same variable on every loop iteration. Watch whether the stores get merged or carried out of the loop
+// v3_reorder.cpp: 读写搬动 —— 普通变量 vs volatile
+// 例1: 无依赖的"读 a、写 b",源顺序读在前 —— 观察编译器是否交换
+// 例2: 循环内每次写同一变量 —— 观察写是否被合并/搬出循环
 int a, b;
 volatile int va, vb;
 
 int ld_st_plain() {
-    int v = a;   // read a
-    b = 42;      // store to b, no dependency on the read of a
+    int v = a;   // 读 a
+    b = 42;      // 写 b,与读 a 无依赖
     return v;
 }
 
@@ -206,7 +207,7 @@ int ld_st_volatile() {
 
 void store_loop_plain(int n) {
     for (int i = 0; i != n; ++i)
-        a = i;   // n stores, only the last one is visible
+        a = i;   // n 次写,只有最后一次可见
 }
 
 void store_loop_volatile(int n) {

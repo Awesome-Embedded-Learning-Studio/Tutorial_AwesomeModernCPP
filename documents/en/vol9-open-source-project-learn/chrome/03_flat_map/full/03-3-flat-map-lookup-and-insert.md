@@ -24,9 +24,9 @@ title: 'flat_map hands-on (III): lookup and insert'
 translation:
   source: documents/vol9-open-source-project-learn/chrome/03_flat_map/full/03-3-flat-map-lookup-and-insert.md
   source_hash: c0b3dba58e2a891fbd316c18d1eb807e7b89b6a981a2129d68dcf671889d975d
-  translated_at: '2026-09-26T02:32:13+00:00'
-  engine: anthropic
-  token_count: 6200
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 8139
 ---
 # flat_map hands-on (III): lookup and insert
 
@@ -39,11 +39,11 @@ flat_map does lookup beautifully. The data is already contiguous and sorted, so 
 flat_tree has a whole pile of lookup interfaces (`find`/`contains`/`lower_bound`/`equal_range`), and underneath they all converge on the same thing: a binary search. Chromium uses `std::ranges::lower_bound` together with a `KeyValueCompare` comparator object (flat_tree.h:1027) to find, on the sorted array, the first position not less than the key:
 
 ```cpp
-// Core of flat_tree::find (simplified; passes a single binary comparator (value,key)->bool)
+// flat_tree::find 的核心(简化;只传一个二元比较器 (value,key)->bool)
 const_iterator find(const Key& key) const {
     auto it = std::lower_bound(body_.begin(), body_.end(), key,
         [&](const value_type& v, const Key& k) { return comp_(GetKeyFromValue{}(v), k); });
-    // lower_bound gives us "the first not less than key"; we still have to confirm it is truly equal
+    // lower_bound 给的是"第一个不小于 key 的",还要确认是否真的相等
     if (it != body_.end() && !comp_(key, GetKeyFromValue{}(*it))) return it;
     return body_.end();
 }
@@ -62,15 +62,15 @@ The remaining interfaces are all easy to reason about. `contains(key)` is just `
 Single-element insert (`insert`/`emplace`) goes through this path (flat_tree.h:1060, `unsafe_emplace`):
 
 ```cpp
-// Core of flat_tree::insert (simplified)
+// flat_tree::insert 的核心(简化)
 std::pair<iterator, bool> insert(const value_type& value) {
     const Key& key = GetKeyFromValue{}(value);
     auto it = std::lower_bound(body_.begin(), body_.end(), key,
-        [&](const value_type& v, const Key& k) { return comp_(GetKeyFromValue{}(v), k); });   // 1. find the position, O(log n)
+        [&](const value_type& v, const Key& k) { return comp_(GetKeyFromValue{}(v), k); });   // 1. 找位置 O(log n)
     if (it != body_.end() && !comp_(key, GetKeyFromValue{}(*it))) {
-        return {it, false};   // key already present, don't insert (unique-key invariant)
+        return {it, false};   // key 已存在,不插入(唯一 key 不变量)
     }
-    auto inserted = body_.emplace(it, value);               // 2. insert, O(n) shift
+    auto inserted = body_.emplace(it, value);               // 2. 插入,O(n) shift
     return {inserted, true};
 }
 ```
@@ -89,9 +89,9 @@ flat_tree itself is generic; flat_map layers a few map-specific operations on to
 
 ```cpp
 mapped_type& operator[](const Key& key) {
-    auto it = lower_bound(key);              // find the position
+    auto it = lower_bound(key);              // 找位置
     if (it == end() || comp_(key, GetKeyFromValue{}(*it))) {
-        it = unsafe_emplace(it, ...);        // not present -> insert a default-constructed mapped
+        it = unsafe_emplace(it, ...);        // 不存在 → 插入默认构造的 mapped
     }
     return it->second;
 }
@@ -104,10 +104,10 @@ What `m[key]` does: look the key up; if it doesn't exist, insert a default-const
 ```cpp
 template <class M>
 std::pair<iterator, bool> insert_or_assign(const Key& key, M&& obj) {
-    auto result = emplace_key_args(key, std::forward<M>(obj));   // try inserting first
+    auto result = emplace_key_args(key, std::forward<M>(obj));   // 先试插
     if (!result.second) {
-        // key already present -> overwrite mapped
-        result.first->second = std::forward<M>(obj);             // assignment (needs pair<K,V> to be non-const!)
+        // key 已存在 → 覆写 mapped
+        result.first->second = std::forward<M>(obj);             // 赋值(需要 pair<K,V> 非 const!)
     }
     return result;
 }
@@ -122,7 +122,7 @@ When we first read the source, what actually tripped us up was that overwrite li
 ```cpp
 template <class... Args>
 std::pair<iterator, bool> try_emplace(const Key& key, Args&&... args) {
-    // Only construct mapped(args...) when the key is absent
+    // 只在 key 不存在时才构造 mapped(args...)
     auto [it, inserted] = emplace_key_args(key, std::piecewise_construct,
                                            std::forward_as_tuple(key),
                                            std::forward_as_tuple(std::forward<Args>(args)...));
@@ -140,7 +140,7 @@ Don't fixate on insert—erase is `O(n)` too. It's the symmetric cost of contigu
 
 ```cpp
 iterator erase(const_iterator pos) {
-    return body_.erase(pos);   // vector::erase, shifts the following elements forward by one slot, O(n)
+    return body_.erase(pos);   // vector::erase,把后面元素往前挪一格,O(n)
 }
 ```
 
@@ -161,7 +161,7 @@ Just saying `O(n)` probably gives you a feel for it, but not the pain. Let's run
 int main() {
     constexpr int N = 100'000;
 
-    // Head insertion: O(n) shift every time
+    // 头部插入:每次 O(n) shift
     std::vector<int> a;
     auto t1 = std::chrono::steady_clock::now();
     for (int i = 0; i < N; ++i) a.emplace(a.begin(), i);
@@ -170,7 +170,7 @@ int main() {
               << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
               << " ms\n";
 
-    // Tail insertion: amortized O(1)
+    // 尾部插入:摊还 O(1)
     std::vector<int> b;
     auto t3 = std::chrono::steady_clock::now();
     for (int i = 0; i < N; ++i) b.push_back(i);
@@ -198,16 +198,16 @@ So why do the earlier pieces keep droning on about the "read-heavy, write-light"
 ## Tying it together: a complete lookup-and-insert example
 
 ```cpp
-// Using the mini_flat_map from 03-2
+// 用 03-2 的 mini_flat_map
 mini_flat_map<int, std::string> m{std::vector<std::pair<int, std::string>>{
     {1, "one"}, {3, "three"}, {5, "five"}}};
 
 auto it = m.find(3);
 if (it != m.end()) std::cout << it->second << "\n";   // three
 
-// Insert (the sorted position is decided automatically, O(n) shift)
-// Shown here with flat_tree's insert (simplified)
-// m.insert({4, "four"});  // inserts between 3 and 5, shifting 5
+// 插入(有序位置自动确定,O(n) shift)
+// 这里用 flat_tree 的 insert(简化展示)
+// m.insert({4, "four"});  // 插在 3 和 5 之间,挪动 5
 ```
 
 flat_map's zero-cost construction is left for later—how `sorted_unique` skips the sort_and_unique step.

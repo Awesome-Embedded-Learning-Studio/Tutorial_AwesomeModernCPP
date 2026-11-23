@@ -16,10 +16,10 @@ related:
   - "When to use C++"
 translation:
   source: documents/vol8-domains/embedded/f103/00-env-setup/00-why-cpp.md
-  source_hash: e4cc5e5973ff600956f60095fad16ff28f089a9d1bc64e361c6fb7949db957a2
-  translated_at: '2026-09-27T05:27:24+00:00'
-  engine: anthropic
-  token_count: 11700
+  source_hash: 0f897a3d3df376db708017989baaab397f0a94c0690616ee2be7c8fad16a9314
+  translated_at: '2026-11-22T16:41:26+00:00'
+  engine: glm-5.3-refresh
+  token_count: 13626
 ---
 
 # Why C++, and by what right?
@@ -66,7 +66,7 @@ Our protagonist libestdx is a public repository: one command pulls it down (`--r
 git clone --recursive https://github.com/Awesome-Embedded-Learning-Studio/libestdx.git
 cd libestdx
 
-# Kids, we use our own secret-recipe cmake (quite the eyesore)
+# 孩子们，要用我们秘制的cmake（难视
 cmake -B build -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/arch/stm32f103c8t6.cmake
 cmake --build build
 ```
@@ -81,18 +81,18 @@ Ahem — show the project! We are all outstanding engineers here; we don't trust
 The heart of the skeleton is `clock.hpp` — the name says it, it initializes the clock. All four firmwares share it letter for letter; here it is in full:
 
 ```cpp
-// clock.hpp —— clock configuration: pull the chip from the power-on default internal 8 MHz up to PLL 64 MHz
+// clock.hpp —— 时钟配置:把芯片从上电默认的内置 8 MHz 拉到 PLL 64 MHz
 #pragma once
 #include "stm32f1xx_hal.h"
 
-// HSI 8M ÷2 ×16 = 64M PLL,APB1 ÷2,flash latency 2
+// HSI 8M ÷2 ×16 = 64M PLL,APB1 ÷2,flash 延迟 2
 static void SystemClock_Config() {
     RCC_OscInitTypeDef osc{};
     osc.OscillatorType = RCC_OSCILLATORTYPE_HSI;
     osc.HSIState = RCC_HSI_ON;
     osc.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
     osc.PLL.PLLState = RCC_PLL_ON;
-    osc.PLL.PLLSource = RCC_PLLSOURCE_HSI_DIV2; // 8M/2 = 4M feeds the PLL
+    osc.PLL.PLLSource = RCC_PLLSOURCE_HSI_DIV2; // 8M/2 = 4M 进 PLL
     osc.PLL.PLLMUL = RCC_PLL_MUL16;             // 4M × 16 = 64M
     HAL_RCC_OscConfig(&osc);
 
@@ -115,9 +115,9 @@ The shape of `main` is identical in all four too; the differences we want to com
 int main() {
     HAL_Init();
     SystemClock_Config();
-    // ← difference #1: how PC13 gets configured as an output
+    // ← 差异点一:怎么把 PC13 配成输出
     for (;;) {
-        // ← difference #2: how to toggle it (on/off 500 milliseconds each, delays all via HAL_Delay)
+        // ← 差异点二:怎么翻转它(亮/灭各 500 毫秒,延时都用 HAL_Delay)
     }
 }
 ```
@@ -127,10 +127,10 @@ Apart from those two difference points, the remaining files of the four firmware
 ```cpp
 /**
  * @file  stm32f1xx_it.c
- * @brief The interrupt service routines for 01_blinky: which handlers exist is decided by this firmware.
+ * @brief 01_blinky 的中断服务程序:哪些 handler 存在由这份固件决定。
  *
- * HAL_Init() configures SysTick to interrupt once every 1 ms; HAL_Delay/HAL_GetTick
- * both feed off HAL_IncTick(). Without this, every blocking API hangs forever.
+ * HAL_Init() 把 SysTick 配成 1ms 一次中断,HAL_Delay/HAL_GetTick
+ * 都指着 HAL_IncTick() 喂数,不写这个所有阻塞 API 永远卡死。
  */
 #include "stm32f1xx_hal.h"
 
@@ -146,10 +146,10 @@ Just one function — friends who know HAL will recognize it as nothing more tha
 ```cpp
 /**
  * @file  syscalls.c
- * @brief newlib runtime stubs.
+ * @brief newlib 运行时桩。
  *
- * -nostartfiles drops the default _init/_fini from crt, while newlib's
- * __libc_init_array (the initiator of global constructors) calls them; without these stubs the link simply fails.
+ * -nostartfiles 丢了 crt 里默认的 _init/_fini,而 newlib 的
+ * __libc_init_array(全局构造的发起者)会调用它们,不给桩直接链接失败。
  */
 void _init(void) {}
 void _fini(void) {}
@@ -162,15 +162,15 @@ Our build conditions are unified too: the same CMake toolchain file (which expli
 **Alright! Everyone sit up!** I shall now, humbly, present the differences. Bachelor No. 1 chose to go straight all-in on bare registers! Ribbit! A true embedded hotshot, yes sir!
 
 ```cpp
-RCC->APB2ENR |= RCC_APB2ENR_IOPCEN; // Enable GPIOC's clock
-// PC13's configuration lives in bits [23:20] of the CRH register:
-// CNF=00 general-purpose push-pull, MODE=10 output mode 2MHz
+RCC->APB2ENR |= RCC_APB2ENR_IOPCEN; // 开 GPIOC 的时钟
+// PC13 的配置在 CRH 寄存器的 [23:20] 这四位:
+// CNF=00 通用推挽,MODE=10 输出模式 2MHz
 GPIOC->CRH = (GPIOC->CRH & ~(0xFu << 20)) | (0x2u << 20);
 
 for (;;) {
-    GPIOC->BSRR = 1u << 29; // bit29 = reset PC13, output low, LED on
+    GPIOC->BSRR = 1u << 29; // bit29 = 复位 PC13,输出低电平,灯亮
     HAL_Delay(500);
-    GPIOC->BSRR = 1u << 13; // bit13 = set PC13, output high, LED off
+    GPIOC->BSRR = 1u << 13; // bit13 = 置位 PC13,输出高电平,灯灭
     HAL_Delay(500);
 }
 ```
@@ -180,7 +180,7 @@ First let's be clear about what names like `RCC` and `GPIOC` are: not functions,
 Bachelor No. 2 is the HAL version — this is how I wrote things back in my traditionalist days. The answer to "why" is that this is the ST official library's standard usage; a project you generate by clicking around in CubeMX basically looks exactly like this:
 
 ```cpp
-// This part here, you see, I trimmed down a bit — CubeIDE has its mandatory comment structure, all very cluttered, so I just tossed it out~
+// 这个部分捏，是笔者稍微化简了一下，CubeIDE有他必须要有的注释结构，很繁杂，我就给他丢掉惹~
 __HAL_RCC_GPIOC_CLK_ENABLE();
 
 GPIO_InitTypeDef led{};
@@ -191,9 +191,9 @@ led.Speed = GPIO_SPEED_FREQ_LOW;
 HAL_GPIO_Init(GPIOC, &led);
 
 for (;;) {
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET); // LED on
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET); // 灯亮
     HAL_Delay(500);
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);   // LED off
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);   // 灯灭
     HAL_Delay(500);
 }
 ```
@@ -203,9 +203,9 @@ Bachelor No. 3 is this tutorial's protagonist libestdx, in modern C++ template s
 ```cpp
 using LedPin = estdx::stm32f1::Gpio<estdx::stm32f1::GpioPort::C, GPIO_PIN_13,
                                     estdx::gpio::GpioDirection::Output>;
-using Led = estdx::device::LED<LedPin, estdx::gpio::GpioPolarity::ActiveLow>; // on-board LED lights on low level
+using Led = estdx::device::LED<LedPin, estdx::gpio::GpioPolarity::ActiveLow>; // 板载灯低电平亮
 
-static_assert(estdx::gpio::GPIOOutputPin<LedPin>); // compiler: 🤔 hmm... this is indeed an output pin, you may pass!
+static_assert(estdx::gpio::GPIOOutputPin<LedPin>); // 编译器:🤔嗯。。。这确实是个输出引脚，放你过去！
 
 int main() {
     HAL_Init();
@@ -213,11 +213,11 @@ int main() {
     LedPin::init();
 
     for (;;) {
-        Led::on(); // one blink
+        Led::on(); // 一闪
         HAL_Delay(500);
-        Led::off(); // one blink
+        Led::off(); // 一闪
         HAL_Delay(500);
-    } // sparkly
+    } // 亮晶晶
 }
 ```
 
@@ -233,7 +233,7 @@ struct IGpio {
     virtual ~IGpio() = default;
 };
 
-struct GpioPin final : IGpio { // Kids, this is the most concrete GPIO of all; no more fancy tricks on my watch
+struct GpioPin final : IGpio { // 孩子们，这就是最具体的GPIO了，别再给我整花活了
     GpioPin(GPIO_TypeDef* port, uint16_t mask) : port_(port), mask_(mask) {}
     void set() override { HAL_GPIO_WritePin(port_, mask_, GPIO_PIN_SET); }
     void reset() override { HAL_GPIO_WritePin(port_, mask_, GPIO_PIN_RESET); }
@@ -257,8 +257,8 @@ I verified all four in the simulator by sampling on virtual time; the output reg
 You scared the "think" tags right out of me. No rush: the four firmwares are built inside a separate comparison project I set up (the library ships no ready-made bare-register or OOP versions); we just point it at the path of the cloned library:
 
 ```bash
-# <libestdx> is where you cloned libestdx, by the way
-# Run this inside the comparison project directory, not inside the libestdx repo
+# <libestdx> 是您克隆了libestdx的位置哈
+# 在对照工程目录里跑,不是在 libestdx 仓库里
 cmake -B build -G Ninja \
   -DCMAKE_TOOLCHAIN_FILE=<libestdx>/cmake/arch/stm32f103c8t6.cmake \
   -DCMAKE_BUILD_TYPE=Release
@@ -276,11 +276,11 @@ $ arm-none-eabi-size build/bare
 The columns to watch are the first three: `text` is code and constants, living in Flash; `data` is initialized globals — the initial values live in Flash and get moved to SRAM at power-on; `bss` is the zero-initialized section, occupying only SRAM. Weigh each of the four and copy the results side by side — there is the outcome:
 
 ```text
-Version           text    data    bss
-Bare registers     5492      12       4
-HAL                5520      12       4
-libestdx template  5520      12       4
-OOP                5520      12       4
+版本              text    data    bss
+裸寄存器          5492      12       4
+HAL              5520      12       4
+libestdx 模板    5520      12       4
+OOP 版           5520      12       4
 ```
 
 The template version and the HAL version are **identical to the byte** — the row in this whole table that deserves our extra glance. That template wrapping — "the port is a type parameter, the pin is a type parameter, the direction is a type parameter, and the polarity is still a type parameter" — costs zero size in the final firmware. The bare-register version saves 28 bytes; that difference comes from it not calling `HAL_GPIO_Init` and `HAL_GPIO_WritePin`, so the linker simply strips those two unreferenced functions out of the firmware. A 5.4 KB Flash footprint (text 5520 + data 12) may sound like a lot, but the C8T6 has 64 KB, and the bulk of that 5.4 KB is the shared skeleton — clock configuration, `HAL_Delay`, the serial stubs — none of which has anything to do with how you blink an LED.
@@ -296,7 +296,7 @@ arm-none-eabi-objdump -d build/estdx --disassemble=main
 Every instruction we paste below is taken from the main-loop section of that kind of output. In the bare-register version, the single action "LED on" is exactly one instruction:
 
 ```text
-8000174: 6125    str r5, [r4, #16]   ; r5=0x20000000(1<<29), write GPIOC->BSRR
+8000174: 6125    str r5, [r4, #16]   ; r5=0x20000000(1<<29), 写 GPIOC->BSRR
 ```
 
 The compiler computed `1u << 29` ahead of time into a register; inside the loop, all that is left for us to execute is writing one word to BSRR's address. The theoretical floor: a 4-byte instruction.
@@ -306,7 +306,7 @@ And the HAL and template versions? Let's paste both complete loop bodies so you 
 ```text
 800017e: 2200        movs r2, #0            ; GPIO_PIN_RESET
 8000180: f44f 5100   mov.w r1, #8192        ; GPIO_PIN_13 = 0x2000 = 1<<13
-8000184: 4809        ldr  r0, [pc, #36]     ; GPIOC base address 0x40011000
+8000184: 4809        ldr  r0, [pc, #36]     ; GPIOC 基址 0x40011000
 8000186: f001 f98f   bl   HAL_GPIO_WritePin
 800018a: f44f 70fa   mov.w r0, #500
 800018e: f000 f8e9   bl   HAL_Delay
@@ -317,9 +317,9 @@ Now! Watch closely! Fix your eyes on the few characters `Led::on()`: after compi
 So how much more expensive is the HAL path than bare registers? We `bl` over there to look: the function body itself is four instructions:
 
 ```text
-80014a8: b902    cbnz r2, ...    ; is the argument SET or RESET?
-80014aa: 0409    lsls r1, r1, #16 ; it is RESET: shift the mask left 16 bits, landing in BSRR's reset half
-80014ac: 6101    str  r1, [r0, #16] ; write BSRR
+80014a8: b902    cbnz r2, ...    ; 参数是 SET 还是 RESET?
+80014aa: 0409    lsls r1, r1, #16 ; 是 RESET:掩码左移 16 位,落到 BSRR 的复位半区
+80014ac: 6101    str  r1, [r0, #16] ; 写 BSRR
 80014ae: 4770    bx   lr
 ```
 
@@ -330,8 +330,8 @@ One call plus four instructions — and what we buy with it is not having to mem
 There is a fourth row in the size table worth stopping on: the OOP version is also 5520, identical to the HAL version to the byte. A little counterintuitive, no? Don't virtual functions have to go through indirect calls and drag a vtable along? Let's check the vtable in the fourth firmware:
 
 ```text
-arm-none-eabi-nm build/virtual | grep _ZTV    # _ZTV = vtable symbol prefix
-# (output is empty: the vtable never made it into the firmware at all)
+arm-none-eabi-nm build/virtual | grep _ZTV    # _ZTV = vtable 符号前缀
+# (输出为空:vtable 根本没进固件)
 ```
 
 No vtable. Because the object `pc13` is constructed in place inside `main`, the compiler can see its complete type — and where it can see, there is no such thing as "not knowing who gets called until runtime": GCC rewrote the virtual call into a direct call to `GpioPin::reset`, then inlined it into the HAL call as usual; nobody referenced the vtable, so the linker's `--gc-sections` recycled it. This optimization is called devirtualization; it is no new trick, but among my friends who have written C++ for years, not many have seen it with their own eyes.
@@ -341,10 +341,10 @@ No vtable. Because the object `pc13` is constructed in place inside `main`, the 
 So when do virtual functions actually charge you RAM? Let's build a fifth firmware to find out: when **which object it is only becomes known at runtime**. Two pin objects hide in **another translation unit (that is, a different C++ file)**; `main` receives only a base-class reference, and which pin gets picked is decided by a runtime condition:
 
 ```text
-8000198: f000 f848  bl   _Z4pickb        ; pick the object at runtime, returns IGpio&
-800019c: 6803        ldr  r3, [r0, #0]   ; read the vptr from the object's head
-80001a0: 681b        ldr  r3, [r3, #0]   ; fetch the target function's slot from the vtable
-80001a2: 4798        blx  r3             ; indirect call
+8000198: f000 f848  bl   _Z4pickb        ; 运行期选出对象,返回 IGpio&
+800019c: 6803        ldr  r3, [r0, #0]   ; 从对象头部读出 vptr
+80001a0: 681b        ldr  r3, [r3, #0]   ; 从 vtable 取目标函数的槽位
+80001a2: 4798        blx  r3             ; 间接调用
 ```
 
 This time the vtable really is in the firmware (`_ZTV7GpioPin`, sitting right there in Flash); every object grows an extra 4-byte vptr at its head, and every call costs two extra memory reads plus an indirect jump. This firmware's text climbs to 5964, and data from 12 to 96 — those extra bytes we pay are the true cost of virtual functions.
@@ -368,7 +368,7 @@ What happens to the HAL version written wrong this way? Fill `GPIO_InitTypeDef`'
 ```text
 arm-none-eabi-g++ -Wall -Wextra ... -c hal_broken.cpp
 echo $?
-0                          # compiles clean, not a single warning
+0                          # 编译通过,一个警告都没有
 ```
 
 Zero warnings. This error stays hidden until the firmware is flashed onto the board, the LED does not light, and you are paging through registers one notch at a time with a debugger. In HAL's API design, `GPIO_InitTypeDef` is a struct filled in at runtime and `Mode` is a plain integer — the compiler has no standing to intervene.

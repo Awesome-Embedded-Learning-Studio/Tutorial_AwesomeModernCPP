@@ -23,10 +23,10 @@ tags:
 title: 'Move Semantics in Practice: Standard Library Containers and Performance Benchmarks'
 translation:
   source: documents/vol2-modern-features/ch00-move-semantics/06-move-and-stl.md
-  source_hash: f11f44ba7094361275955b1cdd0b0f1b19121b2abd4dacaaf87d46473eff4c8f
-  translated_at: '2026-09-27T04:42:54+00:00'
-  engine: anthropic
-  token_count: 7000
+  source_hash: 7db741299ac616623e4409b5a4c8334f6604afc0dd418ad369fb9876eb5b2116
+  translated_at: '2026-11-22T16:36:41+00:00'
+  engine: glm-5.3-refresh
+  token_count: 14114
 ---
 # Move Semantics in Practice: From the STL to Your Own Types
 
@@ -121,15 +121,15 @@ The performance ranking of the three is: `emplace_back` > `push_back(std::move(.
 Since C++11, `std::swap` has been reimplemented on top of move semantics<RefLink :id="2" preview="cppreference std::swap — three moves, conditionally noexcept since C++11" />. The core logic exchanges the contents of two objects through three moves:
 
 ```cpp
-// Simplified implementation of std::swap (since C++11)
+// std::swap 的简化实现（C++11 之后）
 template<typename T>
 void swap(T& a, T& b) noexcept(
     std::is_nothrow_move_constructible_v<T> &&
     std::is_nothrow_move_assignable_v<T>)
 {
-    T temp = std::move(a);   // move-construct temp
-    a = std::move(b);        // move assignment
-    b = std::move(temp);     // move assignment
+    T temp = std::move(a);   // 移动构造 temp
+    a = std::move(b);        // 移动赋值
+    b = std::move(temp);     // 移动赋值
 }
 ```
 
@@ -138,8 +138,8 @@ Three move operations swap the two objects. For classes that manage resources in
 In sorting algorithms, swap is one of the most frequent operations. `std::sort` calls swap heavily internally to shuffle elements into position, and efficient moves drive the cost of each such adjustment during the sort from O(n) down to O(1). One point deserves special mention: `noexcept` has no direct effect on `std::sort` itself—sort uses `std::move` and `std::swap` directly and does not care whether the move operations are `noexcept` (it only requires the type to be move-constructible and move-assignable). The scenario where `noexcept` truly matters is `std::vector` reallocation: when a vector has to relocate its old elements into new memory, it picks its strategy through `std::move_if_noexcept`—if the move operations are `noexcept`, it moves; otherwise it falls back to copying, to preserve the strong exception guarantee<RefLink :id="3" preview="cppreference std::move_if_noexcept — move unless the move ctor may throw" />. Let's prove it with the verification program below:
 
 ```cpp
-// noexcept_sort_vs_realloc_verify.cpp -- verify how noexcept affects sort and vector reallocation
-// The fully compilable version is at code/examples/vol2/noexcept_sort_vs_realloc.cpp
+// noexcept_sort_vs_realloc_verify.cpp -- 验证 noexcept 对 sort 和 vector 扩容的影响
+// 完整可编译版本见 code/examples/vol2/noexcept_sort_vs_realloc.cpp
 
 #include <iostream>
 #include <vector>
@@ -186,7 +186,7 @@ struct NoexceptType
 int NoexceptType::copy_count = 0;
 int NoexceptType::move_count = 0;
 
-// ThrowingType is identical to NoexceptType; the only difference is that its move operations lack noexcept
+// ThrowingType 与 NoexceptType 完全相同，唯一区别是移动操作没有 noexcept
 struct ThrowingType
 {
     std::string payload;
@@ -198,13 +198,13 @@ struct ThrowingType
     ThrowingType(int v) : payload("data"), value(v) {}
     ThrowingType(const ThrowingType& o)
         : payload(o.payload + "_c"), value(o.value) { ++copy_count; }
-    ThrowingType(ThrowingType&& o) // note: no noexcept
+    ThrowingType(ThrowingType&& o) // 注意：没有 noexcept
         : payload(std::move(o.payload)), value(o.value)
     {
         o.payload = "(moved)";
         ++move_count;
     }
-    ThrowingType& operator=(ThrowingType&& o) // note: no noexcept
+    ThrowingType& operator=(ThrowingType&& o) // 注意：没有 noexcept
     {
         payload = std::move(o.payload);
         value = o.value;
@@ -230,7 +230,7 @@ int main()
 {
     const int kCount = 5000;
 
-    // Test 1: std::sort (noexcept type)
+    // Test 1: std::sort（noexcept 类型）
     {
         std::vector<NoexceptType> vec;
         vec.reserve(kCount);
@@ -241,7 +241,7 @@ int main()
                   << " 移动=" << NoexceptType::move_count << "\n";
     }
 
-    // Test 2: std::sort (non-noexcept type)
+    // Test 2: std::sort（非 noexcept 类型）
     {
         std::vector<ThrowingType> vec;
         vec.reserve(kCount);
@@ -254,7 +254,7 @@ int main()
 
     std::cout << "\n";
 
-    // Test 3: vector reallocation (noexcept type, no reserve)
+    // Test 3: vector 扩容（noexcept 类型，无 reserve）
     {
         NoexceptType::reset();
         std::vector<NoexceptType> vec;
@@ -263,8 +263,8 @@ int main()
                   << " 移动=" << NoexceptType::move_count << "\n";
     }
 
-    // Test 4: vector reallocation (non-noexcept type, no reserve)
-    // ThrowingType's reallocation falls back to copying, because move_if_noexcept does not select its move
+    // Test 4: vector 扩容（非 noexcept 类型，无 reserve）
+    // ThrowingType 的扩容会退回拷贝，因为 move_if_noexcept 不选中它的移动
     {
         ThrowingType::reset();
         std::vector<ThrowingType> vec;
@@ -339,7 +339,7 @@ Here we used the copy-and-swap idiom to implement the assignment operator, and a
 We've laid on plenty of theory; numbers persuade best. Let's build a benchmark comparing the actual time cost of copying versus moving. This time we separate the construction overhead out on its own, so you can see just how fast a pure move operation really is.
 
 ```cpp
-// move_benchmark.cpp -- copy vs move performance comparison (construction overhead separated out)
+// move_benchmark.cpp -- 拷贝 vs 移动性能对比（分离构造开销）
 // Standard: C++17
 
 #include <iostream>
@@ -364,7 +364,7 @@ public:
     BigData& operator=(BigData&&) noexcept = default;
 };
 
-/// @brief Helper template that measures a function's execution time
+/// @brief 测量函数执行时间的辅助模板
 template<typename Func>
 double measure_ms(Func&& func, int iterations)
 {
@@ -378,14 +378,14 @@ double measure_ms(Func&& func, int iterations)
 
 int main()
 {
-    constexpr std::size_t kDataSize = 1000000;   // 1 million doubles, about 8MB
+    constexpr std::size_t kDataSize = 1000000;   // 100 万个 double，约 8MB
     constexpr int kIterations = 100;
 
     std::cout << "数据大小: " << kDataSize * sizeof(double) / 1024
               << " KB\n";
     std::cout << "迭代次数: " << kIterations << "\n\n";
 
-    // Test 0: construction only (baseline)
+    // 测试 0：仅构造（baseline）
     auto construct_time = measure_ms([&]() {
         BigData source(kDataSize);
         (void)source;
@@ -393,25 +393,25 @@ int main()
 
     std::cout << "仅构造（baseline）: " << construct_time << " ms\n";
 
-    // Test 1: construct + copy
+    // 测试 1：构造 + 拷贝
     auto copy_time = measure_ms([&]() {
         BigData source(kDataSize);
-        BigData copy = source;  // copy construction
+        BigData copy = source;  // 拷贝构造
         (void)copy;
     }, kIterations);
 
     std::cout << "构造 + 拷贝:        " << copy_time << " ms\n";
 
-    // Test 2: construct + move
+    // 测试 2：构造 + 移动
     auto move_time = measure_ms([&]() {
         BigData source(kDataSize);
-        BigData moved = std::move(source);  // move construction
+        BigData moved = std::move(source);  // 移动构造
         (void)moved;
     }, kIterations);
 
     std::cout << "构造 + 移动:        " << move_time << " ms\n\n";
 
-    // Isolate the pure copy/move cost
+    // 分离出纯粹的拷贝/移动耗时
     double actual_copy = copy_time - construct_time;
     double actual_move = move_time - construct_time;
 

@@ -27,9 +27,9 @@ title: "WeakPtr hands-on (IV): sequence affinity and lazy binding"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/02_weak_ptr/full/02-4-weak-ptr-sequence-affinity-and-lazy-binding.md
   source_hash: 6f4f745966f17db353ced3e2728c5070def4a180942420103e6bf252aa8c3f25
-  translated_at: '2026-09-26T01:46:24+00:00'
-  engine: anthropic
-  token_count: 7300
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7807
 ---
 # WeakPtr hands-on (IV): sequence affinity and lazy binding
 
@@ -70,7 +70,7 @@ WeakReference::Flag::Flag() {
 
 ```cpp
 bool WeakReference::Flag::IsValid() const {
-    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);   // first touch → bind; afterwards → verify
+    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);   // 首次触碰 → 绑定;之后 → 校验
     return !invalidated_.IsSet();
 }
 ```
@@ -84,7 +84,7 @@ WeakReference WeakReferenceOwner::GetRef() const {
 #if DCHECK_IS_ON()
     DCHECK(flag_);
     if (!HasRefs()) {
-        flag_->DetachFromSequence();   // no holders → unbind; can bind to another sequence next time
+        flag_->DetachFromSequence();   // 没人持有 → 解绑,下次可绑到别的序列
     }
 #endif
     return WeakReference(flag_);
@@ -111,7 +111,7 @@ Take `IsValid` first: it performs a sequence assertion — you must call it on t
 
 ```cpp
 bool WeakReference::Flag::IsValid() const {
-    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);   // same-sequence contract
+    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);   // 同序列契约
     return !invalidated_.IsSet();
 }
 ```
@@ -124,7 +124,7 @@ Burn the asymmetry of its return value into memory. A `false` return is trustwor
 
 ```cpp
 bool WeakReference::Flag::MaybeValid() const {
-    return !invalidated_.IsSet();   // no sequence assertion; callable from any sequence
+    return !invalidated_.IsSet();   // 无序列断言,任意序列可调
 }
 ```
 
@@ -144,9 +144,9 @@ This distinction becomes a major tool in the next piece (02-5, the BindOnce inte
 Next, let us retrofit the `Flag` from 02-2 with sequence checks. The teaching version uses a simplified `SequenceChecker` that records the thread id in debug builds:
 
 ```cpp
-// Platform: host | C++ Standard: C++17  (debug-only checks)
+// Platform: host | C++ Standard: C++17  (debug-only 检查)
 #if defined(NDEBUG)
-// release: all no-op, zero bytes, zero overhead
+// release:全部 no-op,零字节、零开销
 class SequenceChecker {
 public:
     void detach_from_sequence() noexcept {}
@@ -154,13 +154,13 @@ public:
 };
 #else
 #include <thread>
-// debug: record the bound thread, abort on violation
+// debug:记录绑定线程,违规即 abort
 class SequenceChecker {
 public:
     void detach_from_sequence() noexcept { bound_thread_ = std::thread::id{}; }
     bool called_on_valid_sequence() const noexcept {
         if (bound_thread_ == std::thread::id{}) {
-            bound_thread_ = std::this_thread::get_id();   // lazy binding
+            bound_thread_ = std::this_thread::get_id();   // lazy 绑定
             return true;
         }
         return bound_thread_ == std::this_thread::get_id();
@@ -178,19 +178,19 @@ Then `Flag` wires it in:
 ```cpp
 class Flag : public RefCountedThreadSafe {
 public:
-    Flag() { seq_.detach_from_sequence(); }                 // construction: unbound
+    Flag() { seq_.detach_from_sequence(); }                 // 构造:未绑定
 
     void Invalidate() noexcept {
-        // DCHECK: same sequence, or only one ref left (may be destroyed cross-thread)
+        // DCHECK:同序列,或只剩自己一个引用(可跨线程析构)
         assert(seq_.called_on_valid_sequence() || has_one_ref());
         invalidated_.Set();
     }
     bool IsValid() const noexcept {
-        assert(seq_.called_on_valid_sequence());            // first touch → bind
+        assert(seq_.called_on_valid_sequence());            // 首次触碰 → 绑定
         return !invalidated_.IsSet();
     }
     bool MaybeValid() const noexcept {
-        return !invalidated_.IsSet();                       // does not touch seq_, does not bind
+        return !invalidated_.IsSet();                       // 不碰 seq_,不绑定
     }
 private:
     // ...

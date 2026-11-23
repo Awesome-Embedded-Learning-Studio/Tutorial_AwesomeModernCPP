@@ -24,9 +24,9 @@ title: 'Static Reflection Basics: The Reflection Operator and Splice Recompositi
 translation:
   source: documents/vol4-advanced/vol3-metaprogramming-cpp20-23/06-static-reflection-basics.md
   source_hash: 3cd6650c8dd94ab28efb3fe42bd525793eb2aa22b4e4bcbcb05971bc049a9cc9
-  translated_at: '2026-09-26T04:52:48+00:00'
-  engine: anthropic
-  token_count: 4600
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5141
 ---
 # Static Reflection Basics: The Reflection Operator and Splice Recomposition
 
@@ -45,7 +45,7 @@ The core of P2996 is two pieces of new syntax. The first is the reflection opera
 
 struct Point { int x; int y; };
 
-constexpr auto refl = ^^Point;   // refl is a std::meta::info, pointing at the type Point
+constexpr auto refl = ^^Point;   // refl 是 std::meta::info,指向 Point 这个类型
 ```
 
 `^^Point` evaluates to a compile-time `info` value; you can treat it as "metadata about the type `Point`." Only once you hold this `info` can you go on to ask "what's your name" and "which members do you have."

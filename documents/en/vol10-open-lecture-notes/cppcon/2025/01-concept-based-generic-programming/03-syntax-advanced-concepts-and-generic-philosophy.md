@@ -22,9 +22,9 @@ video_youtube: https://www.youtube.com/watch?v=VMGB75hsDQo
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/01-concept-based-generic-programming/03-syntax-advanced-concepts-and-generic-philosophy.md
   source_hash: a5e8794c36e62e51a93b0c85de18727690686fa3a62b7f61d4e772240495c0d4
-  translated_at: '2026-09-26T15:17:51+00:00'
-  engine: anthropic
-  token_count: 11000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 29573
 ---
 # Syntax Uniformity Might Matter Far More Than We Think
 
@@ -45,7 +45,7 @@ Think about it: the semantics of `operator->` is "access a member through a poin
 #include <concepts>
 #include <string>
 
-// Define a concept: T must be a class type (struct counts too)
+// 定义一个 concept：T 必须是 class 类型（包含 struct）
 template<typename T>
 concept HasMembers = std::is_class_v<T>;
 
@@ -56,36 +56,36 @@ public:
     explicit SmartPtr(T* p = nullptr) : ptr_(p) {}
     ~SmartPtr() { delete ptr_; }
 
-    // Copying disabled, to keep the example simple
+    // 禁止拷贝，简化示例
     SmartPtr(const SmartPtr&) = delete;
     SmartPtr& operator=(const SmartPtr&) = delete;
 
-    // operator* is available for all types
+    // operator* 对所有类型都可用
     T& operator*() const {
         return *ptr_;
     }
 
-    // operator-> exists only when T is a class type
-    // If you try to call -> on a SmartPtr<int>, the compiler flat-out tells you the
-    // member function doesn't exist, instead of dumping template instantiation errors
+    // operator-> 只在 T 是 class 类型时才存在
+    // 如果你试图对 SmartPtr<int> 调用 ->，编译器直接告诉你这个成员函数不存在
+    // 而不是给你一堆模板实例化的天书报错
     T* operator->() const requires HasMembers<T> {
         return ptr_;
     }
 };
 
-// Test: for class types, both operators are available
+// 测试：对 class 类型，两个操作符都可用
 void test_with_class() {
     SmartPtr<std::string> sp(new std::string("hello"));
-    std::cout << *sp << std::endl;       // OK, operator*
-    std::cout << sp->size() << std::endl; // OK, operator->, because string is a class
+    std::cout << *sp << std::endl;       // OK，operator*
+    std::cout << sp->size() << std::endl; // OK，operator->，因为 string 是 class
 }
 
-// Test: for int, only operator* is available
+// 测试：对 int，只有 operator* 可用
 void test_with_int() {
     SmartPtr<int> sp(new int(42));
-    std::cout << *sp << std::endl;  // OK, operator*
-    // std::cout << sp->  // compile error! SmartPtr<int> has no operator->
-    // The error message is crystal clear: no member named 'operator->'
+    std::cout << *sp << std::endl;  // OK，operator*
+    // std::cout << sp->  // 编译错误！SmartPtr<int> 没有 operator->
+    // 报错信息很清晰：没有名为 'operator->' 的成员
 }
 ```
 
@@ -105,10 +105,10 @@ But look closer and there's a problem: this conversion is an ordinary implicit c
 
 void test_std_pair_narrowing() {
     std::pair<double, double> src{3.14, 2.718};
-    // This line compiles! 3.14 becomes 3, 2.718 becomes 2
-    // Not a single warning; the data is silently lost
+    // 这行代码能编译通过！3.14 变成 3，2.718 变成 2
+    // 没有任何警告，数据静默丢失
     std::pair<int, int> dst = src;
-    std::cout << dst.first << ", " << dst.second << std::endl; // Output: 3, 2
+    std::cout << dst.first << ", " << dst.second << std::endl; // 输出: 3, 2
 }
 ```
 
@@ -124,12 +124,12 @@ We already discussed detection mechanisms for narrowing conversions in depth in 
 #include <type_traits>
 #include <stdexcept>
 
-// A concept: A can be converted to B without narrowing
-// Key idea: detect it with brace initialization, because brace initialization forbids narrowing
+// 一个 concept：A 可以非窄化地转换为 B
+// 核心思路：用花括号初始化来检测，因为花括号初始化禁止 narrowing
 template<typename A, typename B>
 concept NonNarrowConvertible = requires(A a) {
-    // If this line compiles, there is no narrowing from A to B
-    // because brace initialization rejects narrowing conversions
+    // 如果这行能编译通过，说明 A 到 B 不存在 narrowing
+    // 因为花括号初始化会拒绝 narrowing conversion
     B{static_cast<A>(a)};
 };
 
@@ -142,8 +142,8 @@ public:
     SafePair() : first{}, second{} {}
     SafePair(T1 f, T2 s) : first(f), second(s) {}
 
-    // The core part: copy-constructing from another SafePair
-    // requires both members to be NonNarrowConvertible
+    // 核心部分：从另一个 SafePair 拷贝构造
+    // 要求两个维度都是 NonNarrowConvertible
     template<typename U1, typename U2>
     requires NonNarrowConvertible<U1, T1> && NonNarrowConvertible<U2, T2>
     SafePair(const SafePair<U1, U2>& other)
@@ -155,11 +155,11 @@ public:
 void test_safe_pair_no_narrowing() {
     SafePair<double, double> src{3.14, 2.718};
 
-    // This line fails to compile! double -> int is narrowing
-    // The error message will point at the unsatisfied NonNarrowConvertible concept
-    // SafePair<int, int> dst = src;  // uncommenting this errors out
+    // 这行会编译失败！double -> int 是 narrowing
+    // 错误信息会指向 NonNarrowConvertible concept 不满足
+    // SafePair<int, int> dst = src;  // 取消注释会报错
 
-    // This one is fine; int -> double is not narrowing
+    // 这个没问题，int -> double 不是 narrowing
     SafePair<int, int> src2{3, 2};
     SafePair<double, double> dst2 = src2;  // OK
     std::cout << dst2.first << ", " << dst2.second << std::endl; // 3, 2
@@ -181,37 +181,37 @@ The speaker was also honest about one caveat, though: don't confuse this special
 At the very end, the talk showed off something that would have been "completely impossible five years ago" — static reflection (P2996). Before C++26, if you needed to know which members a struct has, what each member is called, what its type is, and what its offset in memory is, macros were your only option — one typo and it fails silently, and you debug until you question your life choices. C++26 static reflection finally lets us ask the compiler directly, "what does this type look like?"
 
 ```cpp
-// Written against the C++26 static reflection proposal P2996 R12
-// Note: as of early 2026, no mainstream compiler fully implements this proposal; this code is for study reference
+// 基于 C++26 静态反射提案 P2996 R12 编写
+// 注意：截至 2026 年初，尚无主流编译器完整实现此提案，此代码供学习参考
 #include <meta>
 #include <string_view>
 #include <print>
 #include <cstddef>
 #include <array>
 
-// Member descriptor: records the meta-information of one member
+// 成员描述符：记录一个成员的元信息
 struct member_descriptor {
-    std::string_view name;   // the member's name
-    std::size_t offset;      // offset within the object
-    std::size_t size;        // bytes this member occupies
+    std::string_view name;   // 成员名字
+    std::size_t offset;      // 在对象内的偏移量
+    std::size_t size;        // 该成员占的字节数
 };
 
-// The core magic: generate an array of member descriptors for any type
+// 核心魔法：为任意类型生成成员描述符数组
 template<typename T>
 consteval auto get_layout() {
-    // ^^T is the reflection operator: asks the compiler for T's meta-information
-    // nonstatic_data_members_of returns std::vector<std::meta::info>
+    // ^^T 是反射运算符：向编译器请求类型 T 的元信息
+    // nonstatic_data_members_of 返回 std::vector<std::meta::info>
     auto members = std::meta::nonstatic_data_members_of(^^T);
     constexpr size_t N = members.size();
 
     std::array<member_descriptor, N> layout{};
     for (size_t i = 0; i < N; ++i) {
         layout[i] = {
-            // identifier_of fetches the member name (provided the member has an identifier)
+            // identifier_of 获取成员名（前提是该成员有标识符）
             .name   = std::meta::identifier_of(members[i]),
-            // offset_of returns a member_offset struct; .bytes gives the byte offset
+            // offset_of 返回 member_offset 结构体，.bytes 取偏移字节数
             .offset = static_cast<std::size_t>(std::meta::offset_of(members[i]).bytes),
-            // size_of returns the number of bytes this member occupies
+            // size_of 返回该成员占的字节数
             .size   = std::meta::size_of(members[i])
         };
     }
@@ -219,7 +219,7 @@ consteval auto get_layout() {
     return layout;
 }
 
-// A struct for testing
+// 测试用的结构体
 struct Player {
     int id;
     float x;
@@ -282,19 +282,19 @@ Here's a concrete example. Suppose I'm writing a serialization library and I nee
 ```cpp
 template<typename T, typename Buffer>
 concept SerializableTo = requires(T value, Buffer& buf) {
-    // Buffer must have a write method that can accept T's serialized result
+    // 要求 Buffer 有 write 方法，能接受 T 的序列化结果
     { buf.write(std::declval<const char*>(), std::declval<std::size_t>()) }
         -> std::same_as<std::size_t>;
-    // It must be possible to compute the byte size of T once serialized
+    // 要求能计算出 T 序列化后的字节大小
     { serialized_size(value) } -> std::convertible_to<std::size_t>;
 };
 
-// In use, the two types are constrained together
+// 使用的时候，两个类型被绑在一起约束
 template<typename T, typename Buffer>
     requires SerializableTo<T, Buffer>
 void serialize(const T& value, Buffer& buf) {
     auto size = serialized_size(value);
-    // ... actual serialization logic
+    // ... 实际序列化逻辑
 }
 ```
 
@@ -311,20 +311,20 @@ Suppose I'm writing network-related code and need a buffer with two hard require
 #include <cstdint>
 #include <type_traits>
 
-// An ordinary compile-time function that checks for a power of two
-// Key point: consteval means it can only run at compile time
+// 一个普通的编译期函数，判断是不是 2 的幂
+// 关键：consteval 让它只能在编译期执行
 consteval bool is_power_of_two(std::size_t n) {
     return n > 0 && (n & (n - 1)) == 0;
 }
 
-// The concept takes a type parameter S and a value parameter k
+// concept 接受一个类型参数 S 和一个值参数 k
 template<typename S, std::size_t k>
 concept BufferSpace = requires(S buf) {
-    // S must have a size() method returning something convertible to size_t
+    // S 必须有 size() 方法返回能转成 size_t 的东西
     { buf.size() } -> std::convertible_to<std::size_t>;
-    // Value constraint 1: the size is at least k
+    // 值约束1：大小至少是 k
     requires (S::size_value >= k);
-    // Value constraint 2: the size must be a power of two
+    // 值约束2：大小必须是 2 的幂
     requires is_power_of_two(S::size_value);
 };
 ```
@@ -332,19 +332,19 @@ concept BufferSpace = requires(S buf) {
 Then I define a few buffer types to test with:
 
 ```cpp
-// A buffer of size 64 (64 is a power of two)
+// 大小为 64 的缓冲区（64 是 2 的幂）
 struct SmallBuffer {
     static constexpr std::size_t size_value = 64;
     constexpr std::size_t size() const { return size_value; }
 };
 
-// A buffer of size 100 (100 is not a power of two)
+// 大小为 100 的缓冲区（100 不是 2 的幂）
 struct WeirdBuffer {
     static constexpr std::size_t size_value = 100;
     constexpr std::size_t size() const { return size_value; }
 };
 
-// A buffer of size 1024 (1024 is a power of two)
+// 大小为 1024 的缓冲区（1024 是 2 的幂）
 struct NetworkBuffer {
     static constexpr std::size_t size_value = 1024;
     constexpr std::size_t size() const { return size_value; }
@@ -357,13 +357,13 @@ Now let's constrain a template function with this concept:
 template<typename S>
     requires BufferSpace<S, 128>
 void process_buffer(S& buf) {
-    // At this point the compiler has already guaranteed:
-    // 1. S has a size() method
-    // 2. The size is >= 128
-    // 3. The size is a power of two
-    // So we can safely use bitwise AND as modulo here
+    // 到这里编译器已经保证了：
+    // 1. S 有 size() 方法
+    // 2. 大小 >= 128
+    // 3. 大小是 2 的幂
+    // 所以这里可以放心用位与做取模
     constexpr std::size_t mask = S::size_value - 1;
-    // ... actual processing logic
+    // ... 实际处理逻辑
 }
 ```
 
@@ -372,13 +372,13 @@ Come on, let's run it and see how clear the error messages are:
 ```cpp
 int main() {
     SmallBuffer small;
-    // process_buffer(small);  // compile error: size_value(64) < 128
+    // process_buffer(small);  // 编译错误：size_value(64) < 128
 
     WeirdBuffer weird;
-    // process_buffer(weird);  // compile error: 100 is not a power of two
+    // process_buffer(weird);  // 编译错误：100 不是 2 的幂
 
     NetworkBuffer net;
-    process_buffer(net);       // compiles: 1024 >= 128 and 1024 is a power of two
+    process_buffer(net);       // 编译通过：1024 >= 128 且 1024 是 2 的幂
 }
 ```
 
@@ -408,24 +408,24 @@ I had always thought the bit-trick way to test for a power of two was the classi
 #include <iostream>
 #include <bitset>
 
-// Test for a power of two by right-shifting
-// Idea: a power of two has exactly one 1 in its binary representation
+// 用右移来判断是不是 2 的幂
+// 思路：2 的幂的二进制表示有且仅有一个 1
 bool is_power_of_two_shift(unsigned int n) {
-    if (n == 0) return false;  // 0 is not a power of two
+    if (n == 0) return false;  // 0 不是 2 的幂
 
     int count = 0;
     while (n > 0) {
-        // Check whether the last bit is 1
+        // 检查最后一位是不是 1
         if (n & 1u) {
             count++;
-            if (count > 1) return false;  // more than one 1, not a power of two
+            if (count > 1) return false;  // 超过一个 1，不是 2 的幂
         }
-        n >>= 1;  // shift right, discard the last bit
+        n >>= 1;  // 右移，扔掉最后一位
     }
     return count == 1;
 }
 
-// The classic n & (n-1) version; note 0 must be excluded
+// 经典的 n & (n-1) 写法，注意要排除 0
 bool is_power_of_two_classic(unsigned int n) {
     return n != 0 && (n & (n - 1)) == 0;
 }
@@ -463,7 +463,7 @@ That "no indirect function calls" part is crucial. OOP polymorphism is implement
 Speaking of OOP's limits, I have to vent about a pit I dug myself. On a small project I once wanted to manage different container types uniformly, so quite naturally I thought: let me define a `Container` base class, and have `MyList` and `MyVector` inherit from it.
 
 ```cpp
-// The "ideal" code I wrote back then — it never actually ran
+// 我当时写的"理想"代码，但从来没能真正跑通
 class Container {
 public:
     virtual int size() const = 0;
@@ -486,7 +486,7 @@ After days of wrestling, the endgame was either a big-everything interface (a pi
 #include <concepts>
 #include <print>
 
-// Constraints for vector: needs random access, and can reserve
+// 对 vector 的约束：需要随机访问，可以做 reserve
 template <typename T>
 concept RandomAccessContainer = requires(T t, typename T::value_type v, size_t n) {
     { t.size() } -> std::convertible_to<size_t>;
@@ -494,9 +494,9 @@ concept RandomAccessContainer = requires(T t, typename T::value_type v, size_t n
     { t.reserve(n) };
 };
 
-// Constraints for list: no random access needed, but push_back and splice capabilities required
-// Note the !RandomAccessContainer<T> here — since std::vector satisfies both concepts,
-// without the mutual exclusion, calling process_container(vec) would be an ambiguous overload
+// 对 list 的约束：不需要随机访问，但需要 push_back 和 splice 能力
+// 注意这里的 !RandomAccessContainer<T> —— 因为 std::vector 同时满足两个 concept，
+// 不加互斥条件的话，调用 process_container(vec) 会导致重载歧义
 template <typename T>
 concept SequenceContainer = !RandomAccessContainer<T> && requires(T t, typename T::value_type v) {
     { t.size() } -> std::convertible_to<size_t>;
@@ -504,19 +504,19 @@ concept SequenceContainer = !RandomAccessContainer<T> && requires(T t, typename 
     { t.front() } -> std::same_as<typename T::reference>;
 };
 
-// Handling for random access containers
+// 针对随机访问容器的处理
 void process_container(const RandomAccessContainer auto& c) {
     std::println("处理随机访问容器，大小: {}", c.size());
-    // Subscript access works
+    // 可以用下标访问
     if (!c.empty()) {
         std::println("  第一个元素: {}", c[0]);
     }
 }
 
-// Handling for sequence containers
+// 针对序列容器的处理
 void process_container(const SequenceContainer auto& c) {
     std::println("处理序列容器，大小: {}", c.size());
-    // Access via front()
+    // 用 front() 访问
     if (!c.empty()) {
         std::println("  第一个元素: {}", c.front());
     }
@@ -526,8 +526,8 @@ int main() {
     std::vector<int> vec{1, 2, 3, 4, 5};
     std::list<int> lst{10, 20, 30};
 
-    process_container(vec);  // matches RandomAccessContainer
-    process_container(lst);  // matches SequenceContainer
+    process_container(vec);  // 匹配 RandomAccessContainer
+    process_container(lst);  // 匹配 SequenceContainer
 
     return 0;
 }
@@ -552,7 +552,7 @@ To verify this understanding, I wrote the classic "draw all the shapes" example 
 #include <concepts>
 #include <print>
 
-// ============ The object-oriented way ============
+// ============ 面向对象的方式 ============
 class Shape {
 public:
     virtual ~Shape() = default;
@@ -573,16 +573,16 @@ public:
     }
 };
 
-// The OOP draw_all: takes a range of Shape pointers
+// 面向对象的 draw_all：接受 Shape 指针的 range
 void draw_all_oop(const std::vector<std::unique_ptr<Shape>>& shapes) {
     for (const auto& s : shapes) {
-        s->draw();  // virtual call — an indirect call
+        s->draw();  // 虚函数调用，间接调用
     }
 }
 
-// ============ The generic programming way ============
+// ============ 泛型编程的方式 ============
 
-// Shape types that inherit from no base class at all
+// 不需要继承任何基类的图形类型
 struct Triangle {
     void draw() const {
         std::println("Generic: 绘制三角形");
@@ -595,18 +595,18 @@ struct Star {
     }
 };
 
-// Define a concept: all you need is a draw member function
+// 定义 concept：只要你有 draw 成员函数就行
 template <typename T>
 concept Drawable = requires(const T& t) {
     { t.draw() };
 };
 
-// The generic draw_all: takes a range of any type that has draw()
+// 泛型的 draw_all：接受任何有 draw() 的类型的 range
 template <std::ranges::range R>
     requires Drawable<std::ranges::range_value_t<R>>
 void draw_all_generic(const R& items) {
     for (const auto& item : items) {
-        item.draw();  // direct call, resolved at compile time, inlinable
+        item.draw();  // 直接调用，编译期确定，可以内联
     }
 }
 
@@ -623,10 +623,10 @@ int main() {
     draw_all_generic(triangles);
     draw_all_generic(stars);
 
-    // Key point: the generic way handles types with virtual functions too!
+    // 关键点：泛型方式也能处理有虚函数的类型！
     std::println("\n=== 泛型方式处理 OOP 类型 ===");
     std::vector<Circle> circles{Circle{}, Circle{}};
-    draw_all_generic(circles);  // totally fine; Circle has draw()
+    draw_all_generic(circles);  // 完全可以，Circle 有 draw()
 
     return 0;
 }
@@ -672,8 +672,8 @@ For the full implementation of `Number<T>` and an in-depth discussion, see [the 
 #include <concepts>
 #include <type_traits>
 
-// Version one: only constrain the operations I actually use right now
-// No copy, no move, no default construction — I don't need those yet
+// 第一版：只约束我当前真正用到的操作
+// 不加拷贝、不加移动、不加默认构造——那些我暂时不需要
 template<typename T>
 concept Number = requires(T a, T b) {
     { a + b } -> std::convertible_to<T>;
@@ -683,7 +683,7 @@ concept Number = requires(T a, T b) {
     { -a }    -> std::convertible_to<T>;
 };
 
-// A function that only uses addition and subtraction — it needs only part of Number's capabilities
+// 一个只用了加减法的函数——它只需要 Number 的部分能力
 template<Number T>
 T compute(T x, T y) {
     return (x + y) * 2 - y;
@@ -695,7 +695,7 @@ Look at it: this `Number` concept leaves out a pile of things — no constraints
 Suppose that later I genuinely need a more complete notion of a number: I can extend the existing `Number` rather than tearing it down and starting over:
 
 ```cpp
-// Version two: extend on top of Number; add comparison when it's needed
+// 第二版：在 Number 基础上扩展，需要比较能力的时候再加
 template<typename T>
 concept ComparableNumber = Number<T> && requires(T a, T b) {
     { a == b } -> std::convertible_to<bool>;
@@ -756,7 +756,7 @@ Following the traditional template line of thinking, you'd probably write:
 #include <type_traits>
 #include <iostream>
 
-// The traditional way: std::enable_if or static_assert
+// 传统写法：用 std::enable_if 或者 static_assert
 template <typename T>
 void process_old(T val) {
     static_assert(std::is_integral_v<T>, "T must be an integral type");
@@ -765,7 +765,7 @@ void process_old(T val) {
 
 int main() {
     process_old(42);       // OK
-    process_old(3.14);     // fails to compile, with a long, ugly error message
+    process_old(3.14);     // 编译失败，但错误信息又长又丑
 }
 ```
 
@@ -777,15 +777,15 @@ Now switch to the concept way of thinking — and here's the key — **I don't h
 #include <concepts>
 #include <iostream>
 
-// Constrain a plain function's parameter with a concept, directly!
+// 直接用 concept 约束普通函数的参数！
 void process(std::integral auto val) {
     std::cout << "processing: " << val << "\n";
 }
 
 int main() {
-    process(42);       // OK, int satisfies std::integral
-    process(42L);      // OK, long satisfies std::integral
-    // process(3.14);  // compile error, double doesn't satisfy std::integral
+    process(42);       // OK，int 满足 std::integral
+    process(42L);      // OK，long 满足 std::integral
+    // process(3.14);  // 编译错误，double 不满足 std::integral
 }
 ```
 
@@ -799,13 +799,13 @@ Of course you can also write it in template form; the effect is equivalent:
 #include <concepts>
 #include <iostream>
 
-// The template form, same effect
+// 模板写法，效果一样
 template <std::integral T>
 void process_template(T val) {
     std::cout << "processing: " << val << "\n";
 }
 
-// The non-template form
+// 非模板写法
 void process_plain(std::integral auto val) {
     std::cout << "processing: " << val << "\n";
 }
@@ -813,7 +813,7 @@ void process_plain(std::integral auto val) {
 int main() {
     process_template(42);
     process_plain(42);
-    // The compiler handles both calls in almost exactly the same way
+    // 两个调用在编译器内部的处理方式几乎一样
 }
 ```
 
@@ -827,15 +827,15 @@ One little pitfall to warn you about, though: with the non-template form, you ca
 #include <typeinfo>
 
 void process(std::integral auto val) {
-    // There's no T here, so we need auto or decltype
+    // 这里没有 T，所以需要用 auto 或 decltype
     auto doubled = val * 2;
     std::cout << "type: " << typeid(doubled).name()
               << ", value: " << doubled << "\n";
 }
 
 int main() {
-    process(42);   // pass an int; doubled is an int too
-    process(42L);  // pass a long; doubled is a long too
+    process(42);   // 传入 int，doubled 也是 int
+    process(42L);  // 传入 long，doubled 也是 long
 }
 ```
 
@@ -852,7 +852,7 @@ Let's look at an example that simulates this scenario. Suppose I have a simplifi
 #include <vector>
 #include <list>
 
-// The textbook version: clean, but not enough
+// 教科书版本：干净但不够用
 template <typename Iter>
 void advance_by_2(Iter& it) {
     ++it;
@@ -868,14 +868,14 @@ Now back to the feature that concepts aren't limited to template parameters. If 
 #include <list>
 #include <concepts>
 
-// Constrain the parameter with a concept, stating plainly "this function takes random access iterators"
+// 用 concept 约束参数，明确表达"这个函数接受随机访问迭代器"
 void advance_by_2(std::random_access_iterator auto& it) {
-    it += 2;  // random access iterators support += directly
+    it += 2;  // 随机访问迭代器可以直接 +=
 }
 
-// Same-named function taking input iterators (which can only step one at a time)
-// Note: random access iterators must be excluded; otherwise, when std::random_access_iterator<T> holds,
-// both overloads match and we get ambiguity
+// 同名函数，接受输入迭代器（只能一步步走）
+// 注意：必须排除随机访问迭代器，否则 std::random_access_iterator<T> 满足时
+// 两个重载都会匹配，导致歧义
 template <typename T>
     requires std::input_iterator<T> && (!std::random_access_iterator<T>)
 void advance_by_2(T& it) {
@@ -890,11 +890,11 @@ int main() {
     auto vit = vec.begin();
     auto lit = lst.begin();
 
-    advance_by_2(vit);  // calls the random access version
-    advance_by_2(lit);  // calls the input iterator version
+    advance_by_2(vit);  // 调用随机访问版本
+    advance_by_2(lit);  // 调用输入迭代器版本
 
-    std::cout << *vit << "\n";  // prints 3
-    std::cout << *lit << "\n";  // prints 3
+    std::cout << *vit << "\n";  // 输出 3
+    std::cout << *lit << "\n";  // 输出 3
 }
 ```
 

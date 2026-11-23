@@ -20,9 +20,9 @@ related:
 translation:
   source: documents/vol8-domains/embedded/f103/00-env-setup/07-clangd.md
   source_hash: 00d17c606903c61729c0cdbb19d3bc60ca9a4b006fcb9db73868356ae902e7fb
-  translated_at: '2026-09-27T05:35:36+00:00'
-  engine: anthropic
-  token_count: 6500
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 9053
 ---
 
 # Hey, hey — you were having quite a lot of fun just now
@@ -42,11 +42,11 @@ String the whole chain together: every time you change a piece of code, what hap
 ```mermaid
 sequenceDiagram
     participant V as VSCode
-    participant C as clangd process
-    V->>C: textDocument/didChange (which bytes changed)
-    C->>C: the Clang frontend runs over the whole file
-    C-->>V: textDocument/publishDiagnostics (diagnostics list)
-    V->>V: draw red squiggles by range
+    participant C as clangd 进程
+    V->>C: textDocument/didChange(改了哪几个字节)
+    C->>C: Clang 前端把整个文件过一遍
+    C-->>V: textDocument/publishDiagnostics(诊断列表)
+    V->>V: 按 range 画红波浪线
 ```
 
 So what does clangd use to judge right from wrong? One sentence from the official site says it most plainly: "clangd runs the clang compiler on your code as you type"<RefLink :id="3" preview="clangd.llvm.org: Features — errors and warnings" />.
@@ -128,12 +128,10 @@ The first sits in `third_party/libestdx/.vscode/settings.json`:
 
 ```json
 {
-    // For the arm-none-eabi target clangd guesses a libc++ layout (c++/v1) by
-    // default; this machine's toolchain actually uses the libstdc++ layout
-    // (c++/<version>), and without asking the real compiler, standard headers
-    // like <cstdint> can't be found. --query-driver allows the arm gcc/g++
-    // (installed in /usr/sbin), letting clangd probe the real system header
-    // paths. It's a process flag, it can't go into .clangd — this is its only home.
+    // clangd 对 arm-none-eabi 目标默认猜 libc++ 布局(c++/v1),本机工具链
+    // 实为 libstdc++ 布局(c++/<版本>),不问真编译器就找不到 <cstdint>
+    // 等标准头。--query-driver 放行 arm gcc/g++(装在 /usr/sbin),让
+    // clangd 探测真实系统头路径。它是进程旗标,进不了 .clangd,只能放这。
     "clangd.arguments": [
         "--query-driver=**/arm-none-eabi-g*"
     ]
@@ -162,7 +160,7 @@ CompileFlags:
 The last one lives in CMake. Look at the end of `cmake/arch/stm32f103c8t6.cmake` — the comment states its purpose outright:
 
 ```cmake
-# for clangd / the IDE
+# 给 clangd / IDE 用
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 ```
 
@@ -173,7 +171,7 @@ It makes CMake generate `compile_commands.json` in the build directory, register
 We've already tested the command line — two commands, one red and one green — and you can reproduce both from the repo root:
 
 ```bash
-clangd --check=include/libestdx/gpio/gpio_base.hpp                            # reproduce the screenful of errors
+clangd --check=include/libestdx/gpio/gpio_base.hpp                            # 复现满屏报错
 clangd --check=include/libestdx/gpio/gpio_base.hpp --query-driver='**/arm-none-eabi-g*'   # 0 errors
 ```
 

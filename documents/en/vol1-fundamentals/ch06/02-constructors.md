@@ -20,12 +20,23 @@ tags:
 - 入门
 - 基础
 title: Constructors
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #228)"
+      en: "Contributed exercise solutions and article revisions (PR #228)"
 translation:
   source: documents/vol1-fundamentals/ch06/02-constructors.md
-  source_hash: aa1b6c49dd092be1bc2eb44bcd24f4cfc9dc1b6fa752942d4a5cd3178a00af51
-  translated_at: '2026-09-25T11:02:02+00:00'
-  engine: anthropic
-  token_count: 9000
+  source_hash: a2cbe45d731c4cb7fb5e947d6f34b948deccc3b8ab3f3f4117f0d7aa2e2cbf83
+  translated_at: '2026-11-22T16:40:19+00:00'
+  engine: glm-5.3-refresh
+  token_count: 13646
 ---
 # Constructors: Don't Let Your Objects Be Born Carrying Garbage Values
 
@@ -65,7 +76,7 @@ private:
     double y_;
 
 public:
-    Point() = default;                      // Let the compiler generate the default constructor
+    Point() = default;                      // 让编译器生成默认构造
     Point(double x, double y) : x_(x), y_(y) {}
 };
 ```
@@ -103,7 +114,7 @@ public:
 
 void set_active(PWMChannel ch);
 
-set_active(3);  // Compiles! The int is implicitly converted to PWMChannel(3)
+set_active(3);  // 编译通过！int 被隐式转换为 PWMChannel(3)
 ```
 
 In the call `set_active(3)`, the function signature asks for a `PWMChannel`, we pass an `int`, and the compiler helpfully invokes the constructor to perform an implicit conversion. In a tiny example this looks harmless, but in a large project such implicit conversions manufacture hard-to-track-down bugs—we may simply have written the wrong parameter type, and instead of complaining, the compiler "kindly" makes things worse.
@@ -121,8 +132,8 @@ public:
 
 void set_active(PWMChannel ch);
 
-// set_active(3);               // Compile error! No implicit conversion
-set_active(PWMChannel(3));      // OK, explicit construction
+// set_active(3);               // 编译错误！不能隐式转换
+set_active(PWMChannel(3));      // OK，显式构造
 ```
 
 My recommendation: **every single-argument constructor should be marked `explicit`**, unless you have a very clear reason to want the implicit conversion. It is a defensive measure that costs practically nothing.
@@ -148,13 +159,13 @@ public:
 You might ask: why not just assign inside the constructor body? Why bother with a dedicated initializer list?
 
 ```cpp
-// Approach 1: the initializer list (recommended)
+// 方式一：初始化列表（推荐）
 Sensor(int pin, double threshold)
     : pin_(pin), threshold_(threshold) {}
 
-// Approach 2: assigning inside the constructor body (compiles, but not recommended)
+// 方式二：构造函数体内赋值（能编译，但不推荐）
 Sensor(int pin, double threshold) {
-    pin_ = pin;           // This is not "initialization"; it is "assignment"
+    pin_ = pin;           // 这不是"初始化"，而是"赋值"
     threshold_ = threshold;
 }
 ```
@@ -168,14 +179,14 @@ private:
     int& counter_ref;
 
 public:
-    // The only legal way: the initializer list
+    // 唯一合法的方式：初始化列表
     Config(int max, int& ref)
         : kMaxRetry(max), counter_ref(ref) {}
 
-    // The version below blows up at compile time:
+    // 下面这个版本编译直接炸：
     // Config(int max, int& ref) {
-    //     kMaxRetry = max;      // Compile error! const members cannot be assigned
-    //     counter_ref = ref;    // Compile error! a reference must be bound at initialization
+    //     kMaxRetry = max;      // 编译错误！const 不能赋值
+    //     counter_ref = ref;    // 编译错误！引用必须在初始化时绑定
     // }
 };
 ```
@@ -197,13 +208,13 @@ private:
 public:
     Point(double x, double y) : x_(x), y_(y) {}
 
-    // Copy constructor
+    // 拷贝构造函数
     Point(const Point& other) : x_(other.x_), y_(other.y_) {}
 };
 
 Point a(1.0, 2.0);
-Point b = a;   // Invokes the copy constructor
-Point c(a);    // Also invokes the copy constructor
+Point b = a;   // 调用拷贝构造函数
+Point c(a);    // 也是调用拷贝构造函数
 ```
 
 We run into three scenarios where the copy constructor gets called: copy initialization (`Point b = a;`), passing arguments by value (the parameter is created via copy construction), and returning by value (the return value is copied via copy construction—though modern compilers usually elide that copy with RVO).
@@ -221,8 +232,8 @@ private:
 public:
     Buffer(std::size_t size) : size_(size), data_(new int[size]()) {}
 
-    // Without a hand-written copy constructor, the default one copies only the pointer's address
-    // Both objects then delete the same memory at destruction—boom
+    // 不写拷贝构造函数时，默认版本只复制指针地址
+    // 两个对象析构时对同一块内存 delete 两次——boom
 };
 ```
 
@@ -239,10 +250,10 @@ private:
     double y_;
 
 public:
-    // The "primary" constructor: does all the work
+    // "主"构造函数：干所有的活
     Point(double x, double y) : x_(x), y_(y) {}
 
-    // Default constructor: delegates to the primary constructor above
+    // 默认构造函数：委托给上面的主构造函数
     Point() : Point(0.0, 0.0) {}
 };
 ```
@@ -259,7 +270,7 @@ Let's fold every constructor type from this chapter into one `Student` class and
 
 ```cpp
 // constructors.cpp
-// Constructor showcase: default, parameterized, copy, and delegating construction
+// 构造函数综合演练：默认构造、参数化构造、拷贝构造、委托构造
 
 #include <iostream>
 #include <string>
@@ -284,7 +295,7 @@ public:
                   << age_ << " 岁, " << score_ << " 分" << std::endl;
     }
 
-    // Delegating constructor: takes only a name, delegates the rest to the parameterized constructor above
+    // 委托构造：只用名字，其余委托给上面的参数化构造
     Student(const std::string& name) : Student(name, 18, 0.0)
     {
         std::cout << "[委托构造] 只指定姓名" << std::endl;
@@ -303,7 +314,7 @@ public:
     }
 };
 
-/// @brief Pass by value; triggers the copy constructor
+/// @brief 按值传递，触发拷贝构造
 void enroll(Student s)
 {
     std::cout << "  注册: ";
@@ -383,7 +394,7 @@ private:
     int day_;
 
 public:
-    // Default constructor
+    // 默认构造函数
     Date() : year_(2000), month_(1), day_(1)
     {
         std::cout << "[默认构造] "
@@ -391,11 +402,11 @@ public:
                   << std::endl;
     }
 
-    // Parameterized constructor
+    // 参数化构造函数
     Date(int year, int month, int day)
         : year_(year), month_(month), day_(day)
     {
-        // Check the month first
+        // 先判断月份
         if (month_ < 1 || month_ > 12)
         {
             year_ = 2000;
@@ -406,12 +417,12 @@ public:
             return;
         }
 
-        // Determine the valid day range based on the month
+        // 根据月份判断日期是否合法
         int max_day = 0;
 
         switch (month_)
         {
-        // Months with 31 days
+        // 31 天的月份
         case 1:
         case 3:
         case 5:
@@ -422,7 +433,7 @@ public:
             max_day = 31;
             break;
 
-        // Months with 30 days
+        // 30 天的月份
         case 4:
         case 6:
         case 9:
@@ -430,9 +441,9 @@ public:
             max_day = 30;
             break;
 
-        // February
+        // 2 月
         case 2:
-            // Leap year: 29 days
+            // 闰年：29 天
             if ((year_ % 400 == 0) ||
                 (year_ % 4 == 0 && year_ % 100 != 0))
             {
@@ -445,7 +456,7 @@ public:
             break;
         }
 
-        // Validate the day
+        // 判断日期
         if (day_ < 1 || day_ > max_day)
         {
             year_ = 2000;
@@ -464,7 +475,7 @@ public:
                   << std::endl;
     }
 
-    // Print the date
+    // 打印日期
     void print() const
     {
         std::cout << year_ << "-"
@@ -488,19 +499,19 @@ int main()
     Date d4(2023, 5, 32);
     d4.print();
 
-    // February has 28 days
+    // 2 月 28 天
     Date d5(2023, 2, 28);
     d5.print();
 
-    // 2023 is not a leap year, so Feb 29 is invalid
+    // 2023 年不是闰年，2 月 29 日非法
     Date d6(2023, 2, 29);
     d6.print();
 
-    // 2024 is a leap year, so Feb 29 is valid
+    // 2024 年是闰年，2 月 29 日合法
     Date d7(2024, 2, 29);
     d7.print();
 
-    // April has only 30 days
+    // 4 月只有 30 天
     Date d8(2024, 4, 31);
     d8.print();
 
@@ -557,7 +568,7 @@ private:
     double z_;
 
 public:
-    // Parameterized constructor
+    // 参数化构造函数
     Vector3D(double x, double y, double z)
         : x_(x), y_(y), z_(z)
     {
@@ -568,8 +579,8 @@ public:
                   << std::endl;
     }
 
-    // Delegating constructor
-    // Delegates to Vector3D(0.0, 0.0, 0.0)
+    // 委托构造函数
+    // 委托给 Vector3D(0.0, 0.0, 0.0)
     Vector3D()
         : Vector3D(0.0, 0.0, 0.0)
     {
@@ -577,14 +588,14 @@ public:
                   << std::endl;
     }
 
-    // Copy constructor
+    // 拷贝构造函数
     Vector3D(const Vector3D& other)
         : x_(other.x_), y_(other.y_), z_(other.z_)
     {
         std::cout << "[拷贝构造]" << std::endl;
     }
 
-    // Return the vector's magnitude
+    // 返回向量的模
     double length() const
     {
         return std::sqrt(x_ * x_ +
@@ -592,7 +603,7 @@ public:
                          z_ * z_);
     }
 
-    // Print the vector
+    // 打印向量
     void print() const
     {
         std::cout << "三维向量 Vector3D("

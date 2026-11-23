@@ -10,9 +10,10 @@ description: "The compiler plants the constructor call right where the object is
 reading_time_minutes: 10
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/05-classes-in-assembly/02-constructor-and-destructor-calls.md
-  source_hash: 6bc8e042e2c3e459308423e5e1dc068123a1722118906056c53beae971abe5d4
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: 89979369827a3d29b7960c201594159a956dd875e8ef3f4093da6afb587825b4
+  translated_at: '2026-11-22T16:44:07Z'
+  engine: glm-5.3-refresh
+  token_count: 9296
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -24,7 +25,7 @@ current_status:
 The environment, the tools, and how to read the listings are all the same as in the [previous piece](01-this-pointer-and-member-offsets.md); follow that one if you want to rerun anything. Now that we know our way around `this`, the constructor is next. Plenty of textbooks say "the constructor runs automatically when the object is created". That statement isn't wrong, but the word "automatically" says nothing about what the mechanism actually is. Down in the assembly, it is an ordinary call, one the compiler plants at the spot where the object is defined. Let's verify this with two objects, one living on the stack and one put on the heap with new:
 
 ```cpp
-// e2.cc -- constructor insertion points: a local object and a new object
+// e2.cc —— 构造函数的插入点：局部对象与 new 对象
 struct Point {
     int x;
     int y;
@@ -33,11 +34,11 @@ struct Point {
 };
 
 int main() {
-    Point p(1, 2);  // (a) local object: allocated on the stack, constructor called directly
+    Point p(1, 2);  // (a) 局部对象：栈上分配，直接 call 构造
     volatile int s1 = p.x + p.y;
     (void)s1;
 
-    Point* q = new Point(3, 4);  // (b) heap object: operator new grabs the memory, then the constructor runs
+    Point* q = new Point(3, 4);  // (b) 堆对象：operator new 拿内存，再 call 构造
     volatile int s2 = q->x + q->y;
     (void)s2;
 
@@ -53,19 +54,19 @@ $ g++ -O0 -fno-asynchronous-unwind-tables -S e2.cc -o e2.s
 In `main` of `e2.s`, here are the two insertion points (the two key stretches excerpted from lines 50 to 66, with the stack protector lines and the redundant reloads around the volatile consumes left out):
 
 ```asm
-	leaq	-32(%rbp), %rax      # (a) &p, p lives on the stack at rbp-32
+	leaq	-32(%rbp), %rax      # (a) &p，p 在栈上 rbp-32
 	movl	$2, %edx             # b = 2 → rdx
 	movl	$1, %esi             # a = 1 → rsi
 	movq	%rax, %rdi           # this=&p → rdi
-	call	_ZN5PointC1Eii       # ← the constructor call the compiler inserted
+	call	_ZN5PointC1Eii       # ← 编译器插入的构造调用
 
 	movl	$8, %edi             # (b) sizeof(Point)=8 → rdi
-	call	_Znwm@PLT            # operator new(8): grab 8 bytes of memory, return value in rax
-	movq	%rax, %rbx           # stash the new memory's address in rbx
+	call	_Znwm@PLT            # operator new(8)：拿 8 字节内存，返回值在 rax
+	movq	%rax, %rbx           # 新内存地址存进 rbx
 	movl	$4, %edx             # b = 4
 	movl	$3, %esi             # a = 3
-	movq	%rbx, %rdi           # this=new memory → rdi
-	call	_ZN5PointC1Eii       # ← step two: run the constructor on the new memory
+	movq	%rbx, %rdi           # this=新内存 → rdi
+	call	_ZN5PointC1Eii       # ← 第二步：对着新内存调构造
 ```
 
 On the stack route, the spot where the source says `Point p(1, 2);` comes out in assembly as four loads plus one `call _ZN5PointC1Eii`. Nobody has to request p's memory; it simply is the 8 bytes starting at rbp-32 on the stack, and the this pointer the constructor receives points right there. Lay this stretch next to the `p.translate` call site from the previous piece and you'll see that defining an object and calling a function are two spellings of the same thing at the machine level.
@@ -119,7 +120,7 @@ One more small stretch in main tends to trip readers up, so let's flag it before
 	je	.L3
 	movl	$8, %esi
 	movq	%rbx, %rdi
-	call	_ZdlPvm@PLT          # this delete is never reached
+	call	_ZdlPvm@PLT          # 这条 delete 永远执行不到
 .L3:
 ```
 
@@ -130,13 +131,13 @@ One more small stretch in main tends to trip readers up, so let's flag it before
 The destructor is the mirror image of the constructor, with one extra problem: what happens when return has more than one exit? The rule at the language level is that an object lives to the end of its scope, so on the early-return route the destructor can't be dodged either. Let's verify this with a function that returns early:
 
 ```cpp
-// e3.cc -- destructor insertion points: the early-return path and the path that falls through to the end
+// e3.cc —— 析构函数的插入点：提前 return 路径与正常落到底的路径
 struct Tracer {
     int id;
 
     explicit Tracer(int i) : id(i) {}
     ~Tracer() {
-        volatile int sink = id;  // give the destructor an observable body
+        volatile int sink = id;  // 给析构函数一个可观察的函数体
         (void)sink;
     }
 };
@@ -145,16 +146,16 @@ int work(int mode) {
     Tracer t(5);
 
     if (mode == 1) {
-        return 10;  // early return: t still gets destroyed first
+        return 10;  // 提前返回路径：也要先析构 t
     }
 
     volatile int s = t.id;
     (void)s;
-    return 20;  // the normal fall-through return: destroys t
+    return 20;  // 正常落到底的返回路径：析构 t
 }
 
 int main(int argc, char**) {
-    volatile int mode = argc - 1;  // which path we take is only known at runtime
+    volatile int mode = argc - 1;  // 运行时才知道走哪条路
     return work(mode);
 }
 ```
@@ -189,20 +190,20 @@ _Z4worki:
 	leaq	-32(%rbp), %rax
 	movl	$5, %esi
 	movq	%rax, %rdi
-	call	_ZN6TracerC1Ei         # construct t
+	call	_ZN6TracerC1Ei         # 构造 t
 	cmpl	$1, -36(%rbp)
 	jne	.L4
-	movl	$10, %ebx              # early return: stash the return value in ebx first
-	jmp	.L5                    # ┐ jump to the shared cleanup
+	movl	$10, %ebx              # 提前返回：返回值先放 ebx
+	jmp	.L5                    # ┐ 跳去公共收尾
 .L4:                                   # │
-	movl	-32(%rbp), %eax       # │ normal path: the volatile consume of t.id
+	movl	-32(%rbp), %eax       # │ 正常路径：volatile 消费 t.id
 	movl	%eax, -28(%rbp)       # │
 	movl	-28(%rbp), %eax       # │
-	movl	$20, %ebx              # │ return value into ebx
-.L5:                                   # ┘ both paths arrive here
+	movl	$20, %ebx              # │ 返回值放 ebx
+.L5:                                   # ┘ 两条路都到这
 	leaq	-32(%rbp), %rax
 	movq	%rax, %rdi
-	call	_ZN6TracerD1Ev         # ← destroy t: the single merge point of both exit paths
+	call	_ZN6TracerD1Ev         # ← 析构 t：两条退出路径唯一的汇合点
 	movl	%ebx, %eax
 	movq	-24(%rbp), %rdx
 	subq	%fs:40, %rdx
@@ -221,7 +222,7 @@ There's a detail hiding here that disagrees with plenty of write-ups, so let's g
 So what do multiple destructor call sites look like, and where do we go to see them? It takes more than one object to tell. Let's move to a version with nested scopes, and fit the destructor with a runtime counter, so that the number of destructor runs each path performs becomes a number we can print:
 
 ```cpp
-// e3b.cc -- destructor insertion points: nested scopes + early return, countable at runtime
+// e3b.cc —— 析构插入点：嵌套作用域 + 提前 return，运行时可数
 #include <cstdio>
 
 volatile int dtor_calls = 0;
@@ -231,7 +232,7 @@ struct Tracer {
 
     explicit Tracer(int i) : id(i) {}
     ~Tracer() {
-        volatile int keep = id;  // give the destructor an observable body
+        volatile int keep = id;  // 给析构函数一个可观察的函数体
         (void)keep;
         dtor_calls = dtor_calls + 1;
     }
@@ -242,12 +243,12 @@ int work(int mode) {
     {
         Tracer inner(2);
         if (mode == 1) {
-            return 10;  // early return: this path destroys inner, then outer
+            return 10;  // 提前返回：这条路上要析构 inner，再析构 outer
         }
-    }  // the inner scope ends: destroys inner
+    }  // 内层作用域结束：析构 inner
     volatile int s = outer.id;
     (void)s;
-    return 20;  // normal path: only outer gets destroyed
+    return 20;  // 正常路径：只析构 outer
 }
 
 int main(int argc, char**) {
@@ -289,24 +290,24 @@ _Z4worki:
 	leaq	-32(%rbp), %rax
 	movl	$1, %esi
 	movq	%rax, %rdi
-	call	_ZN6TracerC1Ei         # construct outer (rbp-32)
+	call	_ZN6TracerC1Ei         # 构造 outer (rbp-32)
 	leaq	-28(%rbp), %rax
 	movl	$2, %esi
 	movq	%rax, %rdi
-	call	_ZN6TracerC1Ei         # construct inner (rbp-28)
+	call	_ZN6TracerC1Ei         # 构造 inner (rbp-28)
 	cmpl	$1, -36(%rbp)
 	jne	.L4
 	movl	$10, %r12d
-	movl	$0, %ebx               # ebx=0: remember we took the early return
+	movl	$0, %ebx               # ebx=0：记住走的是提前返回
 	jmp	.L5
 .L4:
-	movl	$1, %ebx               # ebx=1: the normal path
+	movl	$1, %ebx               # ebx=1：正常路径
 .L5:
 	leaq	-28(%rbp), %rax
 	movq	%rax, %rdi
-	call	_ZN6TracerD1Ev         # ← inner's destructor: early return and end-of-scope merge here
+	call	_ZN6TracerD1Ev         # ← inner 的析构：提前返回与作用域结束在此汇合
 	cmpl	$1, %ebx
-	jne	.L7                    # early return: skip the outer-only statements
+	jne	.L7                    # 提前返回：跳过 outer 专属语句
 	nop
 	movl	-32(%rbp), %eax
 	movl	%eax, -28(%rbp)
@@ -315,7 +316,7 @@ _Z4worki:
 .L7:
 	leaq	-32(%rbp), %rax
 	movq	%rax, %rdi
-	call	_ZN6TracerD1Ev         # ← outer's destructor: both paths pass through it in the end
+	call	_ZN6TracerD1Ev         # ← outer 的析构：两条路径最终都经过
 	movl	%r12d, %eax
 	movq	-24(%rbp), %rdx
 	subq	%fs:40, %rdx

@@ -26,9 +26,9 @@ title: 'Perfect Forwarding: Forwarding References and Reference Collapsing'
 translation:
   source: documents/vol4-advanced/vol2-modern-cpp17/03-perfect-forwarding.md
   source_hash: bb3b0f0b7336867f2c312f2115f15028fb3ece204c3636ab9234fa366310d634
-  translated_at: '2026-09-26T03:10:16+00:00'
-  engine: anthropic
-  token_count: 7000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 10982
 ---
 # Perfect Forwarding: Forwarding References and Reference Collapsing
 
@@ -58,9 +58,9 @@ void show(T&& x) {
 }
 
 int a = 10;
-show(a);              // pass an lvalue
-show(20);             // pass an rvalue
-show(std::move(a));   // pass an rvalue
+show(a);              // 传左值
+show(20);             // 传右值
+show(std::move(a));   // 传右值
 ```
 
 <OnlineCompilerDemo allow-run
@@ -108,7 +108,7 @@ Look back at the deduction above. Pass the lvalue `a`: `T` deduces to `int&`, th
 template <typename T> using lref = T&;
 template <typename T> using rref = T&&;
 
-// Results of is_lvalue_reference_v / is_rvalue_reference_v
+// is_lvalue_reference_v / is_rvalue_reference_v 的结果
 // lref<int&>   -> lvalue_ref=1 rvalue_ref=0   (int& &  -> int&)
 // rref<int&>   -> lvalue_ref=1 rvalue_ref=0   (int& && -> int&)
 // lref<int&&>  -> lvalue_ref=1 rvalue_ref=0   (int&& & -> int&)
@@ -155,9 +155,9 @@ void wrap(T&& x) {
 }
 
 std::string s = "hello";
-wrap(s);                 // lvalue: expect the lvalue overload
-wrap(std::string("world")); // rvalue: expect the rvalue overload
-wrap(std::move(s));      // rvalue
+wrap(s);                 // 传左值,期望走左值重载
+wrap(std::string("world")); // 传右值,期望走右值重载
+wrap(std::move(s));      // 传右值
 ```
 
 <OnlineCompilerDemo allow-run
@@ -191,17 +191,17 @@ And what happens if, inside a generic forwarder, you write `std::move(x)` instea
 
 ```cpp
 template <typename T>
-void wrap_move(T&& x)    { consume(std::move(x)); }        // unconditional cast to rvalue
+void wrap_move(T&& x)    { consume(std::move(x)); }        // 无条件转右值
 template <typename T>
-void wrap_forward(T&& x) { consume(std::forward<T>(x)); }  // conditional forwarding
+void wrap_forward(T&& x) { consume(std::forward<T>(x)); }  // 条件转发
 
 Box a("hello");
-wrap_forward(a);   // lvalue: forward keeps it an lvalue, consume takes the lvalue overload, no move
-std::cout << a.raw();   // still "hello"
+wrap_forward(a);   // 左值:forward 保持左值,consume 走左值重载,不搬
+std::cout << a.raw();   // 仍是 "hello"
 
 Box b("hello");
-wrap_move(b);      // lvalue: move wrongly casts it to an rvalue, consume takes the rvalue overload and empties b
-std::cout << b.raw();   // becomes "<空>"
+wrap_move(b);      // 左值:move 错误地转成右值,consume 走右值重载,把 b 搬空
+std::cout << b.raw();   // 变成 "<空>"
 ```
 
 <OnlineCompilerDemo allow-run
@@ -243,8 +243,8 @@ void tag(T&&) {
 }
 
 Widget w{1};
-tag(w);            // lvalue: intuition says const Widget&
-tag(Widget{2});    // rvalue
+tag(w);            // 传左值,直觉该走 const Widget&
+tag(Widget{2});    // 传右值
 ```
 
 <OnlineCompilerDemo allow-run
@@ -278,9 +278,9 @@ Finally, let's knock out `auto&&` as well—it is the forwarding reference's maj
 
 ```cpp
 int a = 1;
-auto&& r1 = a;              // a is an lvalue, auto=int&, r1's type int& && -> int&
-auto&& r2 = std::move(a);   // rvalue, auto=int, r2's type int&&
-auto&& r3 = 42;             // rvalue, auto=int, r3's type int&&
+auto&& r1 = a;              // a 是左值,auto=int&, r1 类型 int& && -> int&
+auto&& r2 = std::move(a);   // 右值,auto=int, r2 类型 int&&
+auto&& r3 = 42;             // 右值,auto=int, r3 类型 int&&
 ```
 
 Run it and `r1` comes out an lvalue reference while `r2` and `r3` come out rvalue references—same as the template version. The most common uses of `auto&&` are capturing arguments of any value category in range-based for loops and in generic lambdas: write a generic lambda `[](auto&& x){ ... }` and `x` is a forwarding reference; pass `std::forward<decltype(x)>(x)` to the next layer and the value category survives the whole way down. Inside the standard library, the implementations of `std::bind` and `std::invoke`, along with all manner of "perfect-forwarding invokers", rely on this same combination of `auto&&` plus `std::forward<decltype(...)>(...)`.
@@ -295,7 +295,7 @@ The first kind is the **braced-init-list**. `{1, 2, 3}` has no type of its own, 
 template <typename T, typename... Args>
 void relay(Args&&... args) { auto p = std::make_unique<T>(std::forward<Args>(args)...); }
 
-relay<std::vector<int>>({1, 2, 3});   // compile error: {1,2,3} cannot deduce Args
+relay<std::vector<int>>({1, 2, 3});   // 编译错:{1,2,3} 推不出 Args
 ```
 
 GCC's message is `too many arguments to function ... Args = {}`, which means that braced bundle never took part in deduction at all and `Args` deduced to an empty pack. The fix is to build the temporary `std::vector<int>{1,2,3}` in the outer layer first and pass it in as an rvalue, rather than expecting the forwarder to construct it for you.
@@ -303,8 +303,8 @@ GCC's message is `too many arguments to function ... Args = {}`, which means tha
 The second kind is **the integer 0 standing in for a pointer**. You mean to pass a null pointer to some function accepting `char*`, so you write `0` or `NULL`—and template deduction deduces the `0` as `int`, not as a pointer type:
 
 ```cpp
-auto lam = [](auto&& x) { using T = std::decay_t<decltype(x)>; /* see what T is */ };
-lam(0);    // T deduces to int, not char*/nullptr
+auto lam = [](auto&& x) { using T = std::decay_t<decltype(x)>; /* 看 T 是什么 */ };
+lam(0);    // T 推成 int,不是 char*/nullptr
 ```
 
 Once it is deduced as `int`, forwarding it to a target accepting `char*` no longer type-checks—you either get an error or land on an unexpected overload. To pass a null pointer, write `nullptr` directly: its type is `std::nullptr_t`, and both deduction and overload resolution do the right thing.

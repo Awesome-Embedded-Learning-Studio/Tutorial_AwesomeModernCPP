@@ -18,10 +18,10 @@ tags:
   - 基础
 translation:
   source: documents/vol8-domains/ai/tiny_ml/stage0/scaffold.md
-  source_hash: acb2721f3283507f790d74021f4870b862a60ccb9c6cc5855c860274436cb656
-  translated_at: '2026-09-26T03:50:25+00:00'
-  engine: anthropic
-  token_count: 2900
+  source_hash: 0272dca6b897f69eb52dbeee36f68ccfacaa34f3654c045ded21bba50879cbb4
+  translated_at: '2026-11-22T16:40:21+00:00'
+  engine: glm-5.3-refresh
+  token_count: 5079
 ---
 
 # Project scaffold — pour the toolchain foundation
@@ -38,10 +38,10 @@ A standalone CMake project — the directory holds just these few things:
 
 ```text
 stage0/
-├── CMakeLists.txt          # standalone, FetchContent Catch2 v3.5.0
+├── CMakeLists.txt          # standalone,FetchContent Catch2 v3.5.0
 ├── .gitignore              # build/ + .cache/
-├── tests/smoke.cpp         # toolchain smoke test
-└── logs/                   # pitfall ledger (evidence; see common pitfalls below)
+├── tests/smoke.cpp         # 工具链冒烟
+└── logs/                   # 踩坑账本(实证,见后面常见坑)
 ```
 
 ## The CMake skeleton
@@ -114,7 +114,7 @@ A smoke test's whole purpose is proving the chain is connected, so it pays to pi
 ## Verification
 
 ```bash
-cmake -S . -B build           # first configure: FetchContent pulls Catch2, network needed
+cmake -S . -B build           # 首次 FetchContent 拉 Catch2,需联网
 cmake --build build -j
 ./build/smoke_catch2
 ```

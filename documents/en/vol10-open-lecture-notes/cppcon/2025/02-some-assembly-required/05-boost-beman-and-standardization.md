@@ -22,9 +22,9 @@ video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/02-some-assembly-required/05-boost-beman-and-standardization.md
   source_hash: 44f3bf88b72a14b5055e10785b3bdad49cbc74b8d226e3f7a0b21fbd2fb7312a
-  translated_at: '2026-09-26T15:36:50+00:00'
-  engine: anthropic
-  token_count: 4400
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 16420
 ---
 # Boost: So This Is What the C++ Standard Library's "Backyard" Looks Like
 
@@ -55,25 +55,25 @@ Talk is cheap, so let's run some code and get a feel for it. The local environme
 Start with the most classic example: `shared_ptr`. The Boost version and the standard library version have nearly identical interfaces—and that is no coincidence, because the standard library version was copied from the Boost version:
 
 ```cpp
-// File: shared_ptr_compare.cpp
-// Compile: g++ -std=c++20 shared_ptr_compare.cpp -o sp
+// 文件: shared_ptr_compare.cpp
+// 编译: g++ -std=c++20 shared_ptr_compare.cpp -o sp
 
 #include <iostream>
-#include <memory>       // the standard library's shared_ptr
-// #include <boost/shared_ptr.hpp>  // Boost's shared_ptr
+#include <memory>       // 标准库的 shared_ptr
+// #include <boost/shared_ptr.hpp>  // Boost 的 shared_ptr
 
 int main() {
-    // Standard library version
+    // 标准库版本
     auto p1 = std::make_shared<int>(42);
     std::cout << "use_count: " << p1.use_count() << "\n";
     std::cout << "value: " << *p1 << "\n";
 
-    // If you uncomment the Boost include above,
-    // the lines below compile as-is — the interface is exactly the same:
+    // 如果你把上面 Boost 的头文件取消注释，
+    // 下面这行就能编译，接口完全一样：
     // auto p2 = boost::make_shared<int>(42);
     // std::cout << "boost use_count: " << p2.use_count() << "\n";
 
-    auto p3 = p1;  // reference count +1
+    auto p3 = p1;  // 引用计数 +1
     std::cout << "after copy, use_count: " << p1.use_count() << "\n";
 
     return 0;
@@ -93,33 +93,33 @@ There is nothing technically deep about this example, but that is exactly where 
 Now for a more interesting example: `boost::filesystem` versus `std::filesystem`. The Boost version showed up much earlier—the filesystem library didn't enter the standard until C++17. The program below compares how the two differ in use:
 
 ```cpp
-// File: fs_compare.cpp
-// Compile: g++ -std=c++20 fs_compare.cpp -o fs
+// 文件: fs_compare.cpp
+// 编译: g++ -std=c++20 fs_compare.cpp -o fs
 
 #include <iostream>
 #include <filesystem>
 namespace fs = std::filesystem;
 
-// If you want the Boost version, you only need to change one line:
+// 如果你用 Boost 版本，只需要改一行：
 // #include <boost/filesystem.hpp>
 // namespace fs = boost::filesystem;
 
 int main() {
     fs::path p = "/tmp/test_dir";
 
-    // Create the directory
+    // 创建目录
     if (!fs::exists(p)) {
         fs::create_directories(p);
         std::cout << "created: " << p << "\n";
     }
 
-    // Iterate the directory
+    // 遍历目录
     for (const auto& entry : fs::directory_iterator(p)) {
         std::cout << "  " << entry.path().filename()
                   << " | size: " << entry.file_size() << "\n";
     }
 
-    // Clean up
+    // 清理
     fs::remove_all(p);
     std::cout << "removed: " << p << "\n";
 
@@ -183,7 +183,7 @@ struct UserInfo {
     std::string email;
 };
 
-// Simulate a lookup that may fail to find the user
+// 模拟一个可能查不到用户的查询
 std::optional<UserInfo> find_user(int user_id) {
     if (user_id == 42) {
         return UserInfo{.email = "alice@example.com"};
@@ -191,7 +191,7 @@ std::optional<UserInfo> find_user(int user_id) {
     return std::nullopt;
 }
 
-// Extract the email from the user info; the email may be empty
+// 从用户信息里提取邮箱，但邮箱可能为空
 std::optional<std::string> extract_email(const UserInfo& user) {
     if (user.email.empty()) {
         return std::nullopt;
@@ -202,7 +202,7 @@ std::optional<std::string> extract_email(const UserInfo& user) {
 int main() {
     int input_id = 42;
 
-    // The old way: manual checks layer by layer, nested ifs — tiring just to look at
+    // 以前的写法：一层一层手动检查，嵌套 if，看着就累
     std::optional<std::string> result;
     auto user_opt = find_user(input_id);
     if (user_opt) {
@@ -252,11 +252,11 @@ std::optional<std::string> extract_email(const UserInfo& user) {
 int main() {
     int input_id = 42;
 
-    // With and_then: chained calls, so much cleaner
+    // 有了 and_then 之后，链式调用，清爽多了
     auto result = find_user(input_id)
         .and_then(extract_email);
 
-    // transform can map over the value without unwrapping it
+    // transform 可以在不解包的情况下对值做变换
     auto upper_result = result.transform([](const std::string& email) {
         std::string upper = email;
         for (char& c : upper) c = std::toupper(c);
@@ -291,10 +291,10 @@ Then come `std::span` (C++20) and `std::mdspan` (C++23)<RefLink :id="12" preview
 #include <cstdint>
 #include <iostream>
 
-// The old way: the caller had to keep data and len in sync — the compiler can't help you
+// 以前这么写，调用方必须保证 data 和 len 匹配，编译器帮不了你
 // void process(uint8_t* data, size_t len);
 
-// The new way: span carries its length with it, and converts implicitly from vector, array, and C arrays
+// 现在这样写，span 自带长度信息，而且可以隐式从 vector、array、C 数组转换
 void process(std::span<const uint8_t> data) {
     std::cout << "收到 " << data.size() << " 字节数据\n";
     for (size_t i = 0; i < data.size(); ++i) {
@@ -306,13 +306,13 @@ void process(std::span<const uint8_t> data) {
 int main() {
     std::vector<uint8_t> vec = {1, 2, 3, 4, 5};
 
-    // Pass the vector straight in — perfect
+    // vector 直接传，完美
     process(vec);
 
-    // Taking a subspan is just as easy
+    // 取子范围也方便
     process(std::span<uint8_t>(vec).subspan(1, 3));
 
-    // C arrays work too
+    // C 数组也行
     uint8_t arr[] = {10, 20, 30};
     process(arr);
 

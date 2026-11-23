@@ -26,10 +26,10 @@ tags:
 title: Linking performance, multi-compiler comparison, and compile-time metaprogramming
 translation:
   source: documents/vol6-performance/ch07-compiler-and-size/07-03-linking-and-compilers.md
-  source_hash: 037748bacea5c92cef655da38c5d80b0162beebf433c5cea79ec39fc054101df
-  translated_at: '2026-09-26T07:04:44+00:00'
-  engine: anthropic
-  token_count: 3200
+  source_hash: f6fa9852484a1cf25a453e8dac2972bed8166c38db64ac82e4ceb40803c32322
+  translated_at: '2026-11-22T16:43:35+00:00'
+  engine: glm-5.3-refresh
+  token_count: 3432
   notes: '原文一处明显笔误按正确拼写译出：中文源第 85 行 `-fpic`/`-fpic` 原文疑为 `-fpic`/`-fPIC`。'
 ---
 # Linking performance, multi-compiler comparison, and compile-time metaprogramming
@@ -91,7 +91,7 @@ The practical tradeoff: **for small computations on the hot path, push them to c
 ## References
 
 - CSAPP Chapter 7, *Linking* — the mechanics of static/dynamic linking, GOT/PLT, symbol resolution
-- Agner Fog, *Optimizing software in C++*, §8 "Different C++ compilers" (compiler comparison) + §15 "Metaprogramming" (the size side of compile-time metaprogramming). Local copy
+- Agner Fog, *Optimizing software in C++*, §8 "Different C++ compilers" (compiler comparison) + §15 "Metaprogramming" (the size side of compile-time metaprogramming)
 - GCC/Clang/MSVC documentation for their respective `-O` behavior, `-fpic`/`-fPIC`, and `constexpr` support
 - ch07-04 size optimization (this volume, counters to template bloat)
 

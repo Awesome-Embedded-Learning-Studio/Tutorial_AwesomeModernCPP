@@ -27,9 +27,9 @@ title: 'OnceCallback hands-on (II): building the core skeleton'
 translation:
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/01-2-once-callback-core-skeleton.md
   source_hash: 22fe59868b64d68c749c1c74ea447877b248b142d9fe05418100bb53e1981224
-  translated_at: '2026-09-26T00:28:08+00:00'
-  engine: anthropic
-  token_count: 5800
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 9653
 ---
 # OnceCallback hands-on (II): building the core skeleton
 
@@ -44,15 +44,15 @@ The "function type + template partial specialization" pattern from Prerequisite 
 ```cpp
 namespace tamcpp::chrome {
 
-// Primary template: declaration only, no definition
-// If someone writes OnceCallback<int> (a non-function type), the compiler reports an error
+// 主模板：只有声明，没有定义
+// 如果有人写了 OnceCallback<int>（传了非函数类型），编译器会报错
 template<typename FuncSignature>
 class OnceCallback;
 
-// Partial specialization: matches when FuncSignature is a function type of the form R(Args...)
+// 偏特化：FuncSignature 是 R(Args...) 形式的函数类型时匹配
 template<typename ReturnType, typename... FuncArgs>
 class OnceCallback<ReturnType(FuncArgs...)> {
-    // All the real code lives in this partial specialization
+    // 所有真正的代码都在这个偏特化里
 public:
     using FuncSig = ReturnType(FuncArgs...);
     // ...
@@ -77,13 +77,13 @@ public:
 
 private:
     enum class Status : uint8_t {
-        kEmpty,     // never assigned (default-constructed)
-        kValid,     // holds a valid callable
-        kConsumed   // already consumed by run()
+        kEmpty,     // 从未被赋值（默认构造）
+        kValid,     // 持有有效的可调用对象
+        kConsumed   // 已被 run() 调用过
     } status_ = Status::kEmpty;
 
-    std::move_only_function<FuncSig> func_;          // type-erased callable
-    std::shared_ptr<CancelableToken> token_;         // optional cancellation token
+    std::move_only_function<FuncSig> func_;          // 类型擦除的可调用对象
+    std::shared_ptr<CancelableToken> token_;         // 可选的取消令牌
 };
 ```
 
@@ -100,29 +100,29 @@ The one that deserves a few more words is the three-state enum `status_`. You mi
 With the data members seated, we give the class its constructors. There is an old trap with template constructors here: during overload resolution they steal the move constructor's job, and a `requires` constraint has to head them off. Prerequisite (IV) explained the principle; here we watch it land.
 
 ```cpp
-// not_the_same_t concept: F, after decay, is not T
+// not_the_same_t concept：F 退化后不是 T
 template<typename F, typename T>
 concept not_the_same_t = !std::is_same_v<std::decay_t<F>, T>;
 
 template<typename ReturnType, typename... FuncArgs>
 class OnceCallback<ReturnType(FuncArgs...)> {
-    // ... data members ...
+    // ... 数据成员 ...
 
-    // Copying is forbidden
+    // 禁止拷贝
     OnceCallback(const OnceCallback&) = delete;
     OnceCallback& operator=(const OnceCallback&) = delete;
 
 public:
-    // Template constructor: accepts any callable
+    // 模板构造函数：接受任意可调用对象
     template<typename Functor>
         requires not_the_same_t<Functor, OnceCallback>
     explicit OnceCallback(Functor&& function)
         : status_(Status::kValid), func_(std::move(function)) {}
 
-    // Default constructor: creates an empty callback
+    // 默认构造：创建空回调
     explicit OnceCallback() = default;
 
-    // Move constructor
+    // 移动构造
     OnceCallback(OnceCallback&& other) noexcept
         : status_(other.status_),
           func_(std::move(other.func_)),
@@ -130,7 +130,7 @@ public:
         other.status_ = Status::kEmpty;
     }
 
-    // Move assignment
+    // 移动赋值
     OnceCallback& operator=(OnceCallback&& other) noexcept {
         if (this != &other) {
             status_ = other.status_;
@@ -156,11 +156,11 @@ The move constructor carries one deliberate trade-off. `func_` and `token_` tran
 In this step we pin the "runs only once" contract onto call sites with compile-time machinery. Through deducing this, `run()` intercepts lvalue calls at compile time; only rvalues (that is, `std::move(cb).run(...)`) get through, forwarded to the internal `impl_run()`.
 
 ```cpp
-// Declaration (inside the class body)
+// 声明（在类体内）
 template<typename Self>
 auto run(this Self&& self, FuncArgs&&... args) -> ReturnType;
 
-// Implementation (outside the class body, in once_callback_impl.hpp)
+// 实现（在类体外，once_callback_impl.hpp 中）
 template<typename ReturnType, typename... FuncArgs>
 template<typename Self>
 auto OnceCallback<ReturnType(FuncArgs...)>::run(this Self&& self, FuncArgs&&... args)
@@ -181,7 +181,7 @@ template<typename ReturnType, typename... FuncArgs>
 ReturnType OnceCallback<ReturnType(FuncArgs...)>::impl_run(FuncArgs... args) {
     assert(status_ == Status::kValid);
 
-    // Cancellation check: consume but do not execute
+    // 取消检查：消费但不执行
     if (token_ && !token_->is_valid()) {
         status_ = Status::kConsumed;
         func_ = nullptr;
@@ -192,7 +192,7 @@ ReturnType OnceCallback<ReturnType(FuncArgs...)>::impl_run(FuncArgs... args) {
         }
     }
 
-    // Consume: pull func_ out first, then update the state, then execute
+    // 消费：先把 func_ 拿出来，再更新状态，最后执行
     auto functor = std::move(func_);
     func_ = nullptr;
     status_ = Status::kConsumed;
@@ -261,26 +261,26 @@ With the skeleton built, our habit is to first push on a few of the plainest sce
 int main() {
     using namespace tamcpp::chrome;
 
-    // 1. Non-void return
+    // 1. 非 void 返回
     OnceCallback<int(int, int)> add([](int a, int b) { return a + b; });
     assert(std::move(add).run(3, 4) == 7);
 
-    // 2. Void return
+    // 2. void 返回
     bool called = false;
     OnceCallback<void()> side_effect([&called] { called = true; });
     std::move(side_effect).run();
     assert(called);
 
-    // 3. Move-only capture
+    // 3. move-only 捕获
     auto ptr = std::make_unique<int>(42);
     OnceCallback<int()> capture_move([p = std::move(ptr)] { return *p; });
     assert(std::move(capture_move).run() == 42);
 
-    // 4. Move semantics
+    // 4. 移动语义
     OnceCallback<int()> movable([] { return 1; });
     OnceCallback<int()> moved_to = std::move(movable);
-    assert(movable.is_null());            // source goes empty
-    assert(std::move(moved_to).run() == 1);  // target is valid
+    assert(movable.is_null());            // 源对象变空
+    assert(std::move(moved_to).run() == 1);  // 目标对象有效
 
     return 0;
 }

@@ -23,9 +23,9 @@ title: 'CTAD: Class Template Argument Deduction'
 translation:
   source: documents/vol4-advanced/vol2-modern-cpp17/04-ctad.md
   source_hash: 508922d5235eb0a87f9248c4ea7771767e04b69dfc17593d4fb1ca539e58d060
-  translated_at: '2026-09-26T03:29:05+00:00'
-  engine: anthropic
-  token_count: 4800
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 8029
 ---
 # CTAD: Class Template Argument Deduction
 
@@ -38,12 +38,12 @@ In this piece we walk through CTAD from start to finish: where the deduction com
 Straight to the effect. The code below drops every angle bracket, and the compiler still deduces the right types:
 
 ```cpp
-std::pair p(1, 2.5);                       // deduces pair<int, double>
-std::pair p2(1, 2);                        // deduces pair<int, int>
-std::tuple t(1, 2.5, "hi");                // deduces tuple<int, double, const char*>
-std::vector v{1, 2, 3};                    // deduces vector<int>
+std::pair p(1, 2.5);                       // 推 pair<int, double>
+std::pair p2(1, 2);                        // 推 pair<int, int>
+std::tuple t(1, 2.5, "hi");                // 推 tuple<int, double, const char*>
+std::vector v{1, 2, 3};                    // 推 vector<int>
 std::mutex m;
-std::lock_guard lk(m);                     // deduces lock_guard<std::mutex>
+std::lock_guard lk(m);                     // 推 lock_guard<std::mutex>
 ```
 
 <OnlineCompilerDemo allow-run
@@ -74,7 +74,7 @@ struct Box {
     Box(T v) : value(v) {}
 };
 
-Box b(42);      // implicit guide: Box(T) -> Box<T>, the argument is int, deduce Box<int>
+Box b(42);      // 隐式指南:Box(T) -> Box<T>,实参是 int,推出 Box<int>
 ```
 
 `Box` has one constructor, `Box(T v)`, and from it the compiler implicitly generates the deduction guide `Box(T) -> Box<T>` (what follows the arrow is the deduced template instantiation). You write `Box b(42)`; the compiler matches the argument `42` (of type `int`) against this guide, gets `T = int`, and deduces `Box<int>`. The whole process is equivalent to you writing `Box<int> b(42)` by hand.
@@ -94,7 +94,7 @@ struct NoGuide {
     NoGuide(T v) { for (std::size_t i = 0; i < N; ++i) data[i] = v; }
 };
 
-NoGuide ng(42);   // T=int deduces fine, but what is N? No way to deduce it
+NoGuide ng(42);   // T=int 推得出来,N 是多少?推不出
 ```
 
 Only `T` ever appears in the `NoGuide(T v)` constructor; `N` is completely absent from the signature. The compiler's implicitly generated guide is `NoGuide(T) -> NoGuide<T, N>`, but `N` has no source, so deduction fails outright. The core of what GCC 16.1.1 reports is this:
@@ -117,12 +117,12 @@ struct MyArray {
     }
 };
 
-// Hand-written deduction guide: recover the element type and size from a reference to a C array
+// 手写推导指南:从 C 数组的引用反推元素类型和大小
 template <typename U, std::size_t N>
 MyArray(const U (&)[N]) -> MyArray<U, N>;
 
 int raw[] = {1, 2, 3, 4};
-MyArray ma(raw);   // the guide steps in: MyArray<int, 4>
+MyArray ma(raw);   // 指南出手:MyArray<int, 4>
 ```
 
 The syntax of a guide is `TemplateName(parameter pattern) -> Name<deduced arguments>`. This guide's parameter pattern is `const U (&)[N]` — a reference to an array of `U` with length `N`. Pass an `int raw[4]` in, and the compiler simultaneously deduces `U = int` and `N = 4` from the array type, so `MyArray ma(raw)` ends up with `MyArray<int, 4>`. The non-type parameter `N`, hidden until now, gets dug out of the array's size by this guide.
@@ -153,13 +153,13 @@ struct Scaled {
     constexpr Scaled(T v) : value(v * Scale) {}
 };
 
-// Guide: sees only T, Scale is pinned to 1
+// 指南:只看见 T,Scale 固定成 1
 template <typename T>
 Scaled(T) -> Scaled<T, 1>;
 
-constexpr Scaled s(42);    // Scaled<int, 1>, value = 42
+constexpr Scaled s(42);    // Scaled<int, 1>,value = 42
 Scaled d(2.5);             // Scaled<double, 1>
-Scaled<int, 10> big(5);    // Scale given explicitly, value = 50
+Scaled<int, 10> big(5);    // 显式指定 Scale,value = 50
 ```
 
 The guide `Scaled(T) -> Scaled<T, 1>` tells the compiler: when you see `Scaled(some value of type T)`, deduce `Scaled<T, 1>`, pinning `Scale` to `1`. If you want a different `Scale`, just bypass CTAD and write the angle brackets out in full — `Scaled<int, 10> big(5)` is not constrained by the guide. What a guide provides is "the most commonly used default path", not the only entrance.
@@ -188,8 +188,8 @@ CTAD speeds you up quickly once you get the hang of it, but a few pits are worth
 **First, parentheses and braces do not mean the same thing.** This is the most treacherous part of CTAD, because it hooks directly into constructor overload resolution. The same `std::vector`, written two different ways, gives completely different results:
 
 ```cpp
-std::vector a(10, 0);     // (count, value): ten 0s
-std::vector b{10, 0};     // {initializer_list}: two elements, 10 and 0
+std::vector a(10, 0);     // (count, value):10 个 0
+std::vector b{10, 0};     // {initializer_list}:两个元素 10 和 0
 ```
 
 `a` has size 10 with every element 0; `b` has size 2, holding the two values 10 and 0. The parentheses take the `(count, value)` constructor; the braces prefer to match the `initializer_list` constructor. CTAD itself hasn't changed — what changed is "which construction path the compiler picked", and the deduction result follows along differently.
@@ -197,7 +197,7 @@ std::vector b{10, 0};     // {initializer_list}: two elements, 10 and 0
 **Second, initializer_list deduction takes the "common type", not the first element's type.** This is a place I guessed wrong at first, so it deserves a dedicated word. Look:
 
 ```cpp
-std::vector same_int{1, 2, 3};    // all int -> vector<int>
+std::vector same_int{1, 2, 3};    // 全 int -> vector<int>
 std::vector mix{1, 2.5};          // int+double -> vector<double>
 ```
 
@@ -206,7 +206,7 @@ What `mix` deduces is `vector<double>`, not `vector<int>`. The reason is that `s
 If you force in a pair of types that cannot converge without narrowing, deduction fails. For example:
 
 ```cpp
-std::vector bad{1, 2, 3, 100000000000LL};   // int and long long have no non-narrowing common type
+std::vector bad{1, 2, 3, 100000000000LL};   // int 与 long long 没有非窄化公共类型
 ```
 
 GCC 16.1.1 reports:
@@ -222,7 +222,7 @@ error: no matching function for call to 'vector(int, int, int, long long int)'
 
 ```cpp
 std::vector<int> src{1, 2, 3};
-std::vector cpy(src);    // copy-construction deduction, deduces vector<int>
+std::vector cpy(src);    // 复制构造推导,推 vector<int>
 ```
 
 What runs here is the copy constructor's implicit guide: the source is `vector<int>`, so the target deduces to `vector<int>` as well. The difference from the brace rule above is that the copy constructor's argument is already a `vector<int>` whose element type is fixed — the "take the common type" step never happens.

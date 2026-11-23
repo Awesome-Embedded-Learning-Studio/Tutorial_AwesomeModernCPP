@@ -22,10 +22,10 @@ tags:
 title: Deep Dive into Lambda Capture
 translation:
   source: documents/vol2-modern-features/ch03-lambda/02-lambda-capture.md
-  source_hash: 96ff96341246516c78f4896150ac93b9b635a4433394023ab28057adeb8bc492
-  translated_at: '2026-09-27T10:30:22+00:00'
-  engine: anthropic
-  token_count: 3600
+  source_hash: 99db30bae34c95ab8f9cae34c7d524cc114af42baefb4bd95e8e79d142cdd15d
+  translated_at: '2026-11-22T16:36:41+00:00'
+  engine: glm-5.3-refresh
+  token_count: 13453
 ---
 # Deep Dive into Lambda Capture
 
@@ -41,13 +41,13 @@ The semantics of capture by value are dead simple: the moment the lambda is crea
 void demo_value_capture() {
     int threshold = 100;
 
-    // threshold is copied into the closure object
+    // threshold 被复制到闭包对象中
     auto is_high = [threshold](int value) {
         return value > threshold;
     };
 
-    threshold = 200;             // modify the outer variable
-    bool result = is_high(150);  // true; the threshold inside the lambda is still the copy holding 100
+    threshold = 200;             // 修改外部变量
+    bool result = is_high(150);  // true，lambda 里的 threshold 还是 100 副本
 }
 ```
 
@@ -55,14 +55,14 @@ From the compiler's point of view, the lambda we wrote above gets translated rou
 
 ```cpp
 struct ClosureType {
-    int threshold;  // the captured variable became a member
+    int threshold;  // 被捕获的变量变成了成员
 
     bool operator()(int value) const {
         return value > threshold;
     }
 };
 
-auto is_high = ClosureType{100};  // threshold is copied at construction
+auto is_high = ClosureType{100};  // 构造时复制 threshold
 ```
 
 Note that `const`: members brought in by value capture are `const` inside `operator()` by default, and you can't modify them. If you really do need to modify the captured copy inside the lambda, it's time to bring out the `mutable` keyword:
@@ -70,17 +70,17 @@ Note that `const`: members brought in by value capture are `const` inside `opera
 ```cpp
 int counter = 0;
 
-// Compile error: counter is a const int inside the lambda
+// 编译错误：counter 在 lambda 内是 const int
 // auto bad = [counter]() { counter++; };
 
-// Add mutable: modifying the copy inside the lambda is now allowed
+// 加 mutable：允许修改 lambda 内部的副本
 auto make_counter = [counter]() mutable {
-    return ++counter;   // modifies the closure object's own counter, not the outer one
+    return ++counter;   // 修改的是闭包对象自己的 counter，不是外部的
 };
 
 std::cout << make_counter() << "\n";  // 1
 std::cout << make_counter() << "\n";  // 2
-std::cout << counter << "\n";         // 0 — the outer counter was never touched
+std::cout << counter << "\n";         // 0——外部的 counter 没有被碰过
 ```
 
 Adding `mutable` is our way of telling the compiler: this lambda's `operator()` is no longer `const`, and every call may touch the state inside the closure object. That's why each call to `make_counter()` increments — the closure object maintains its own independent state, and the outer `counter` is never touched from beginning to end.
@@ -96,7 +96,7 @@ void demo_ref_capture() {
     int sum = 0;
 
     auto accumulate = [&sum](int value) {
-        sum += value;   // directly modifies the outer sum
+        sum += value;   // 直接修改外部的 sum
     };
 
     accumulate(10);
@@ -110,10 +110,10 @@ Let's translate this one into a closure type as well:
 
 ```cpp
 struct ClosureType {
-    int& sum;  // what gets stored is a reference
+    int& sum;  // 存储的是引用
 
     void operator()(int value) const {
-        sum += value;  // modifies the outer variable through the reference
+        sum += value;  // 通过引用修改外部变量
     }
 };
 ```
@@ -146,10 +146,10 @@ Once the list of variables to capture grows long, listing them one by one stops 
 void demo_default_capture() {
     int a = 1, b = 2, c = 3;
 
-    // capture everything by value
+    // 全值捕获
     auto sum = [=]() { return a + b + c; };   // 6
 
-    // capture everything by reference
+    // 全引用捕获
     auto increment = [&]() { a++; b++; c++; };
     increment();   // a=2, b=3, c=4
 }
@@ -163,7 +163,7 @@ void demo_mixed_capture() {
     int count = 0;
     double factor = 1.5;
 
-    // default capture by value, but count is captured by reference
+    // 默认值捕获，但 count 按引用捕获
     auto process = [=, &count](int value) {
         if (value > threshold) {
             count++;
@@ -200,7 +200,7 @@ C++14 introduced init capture; we sometimes also call it generalized lambda capt
 void demo_init_capture() {
     int base = 10;
 
-    // capture the result of base + 5, not base itself
+    // 捕获 base + 5 的结果，而不是 base 本身
     auto lam = [value = base + 5]() {
         return value * 2;   // value == 15
     };
@@ -215,9 +215,9 @@ The most useful scenario for init capture is **move capture**: we can move move-
 auto make_handler() {
     auto ptr = std::make_unique<int>(42);
 
-    // move the unique_ptr into the lambda
+    // 把 unique_ptr 移入 lambda
     return [p = std::move(ptr)]() {
-        return *p;   // p is owned exclusively by the lambda
+        return *p;   // p 是 lambda 独占的
     };
 }
 ```
@@ -227,11 +227,11 @@ In C++11, to get the same effect you had to hand-write a functor class and make 
 Another common use is replacing the `mutable` counter with init capture — the semantics come out much clearer:
 
 ```cpp
-// C++11 style: mutable required
+// C++11 风格：需要 mutable
 int x = 0;
 auto counter_old = [x]() mutable { return ++x; };
 
-// C++14 style: init capture, clearer semantics
+// C++14 风格：初始化捕获，语义更明确
 auto counter_new = [count = 0]() mutable { return ++count; };
 ```
 
@@ -256,17 +256,17 @@ public:
     explicit Sensor(std::string name) : name_(std::move(name)) {}
 
     std::function<int()> make_reader() {
-        // [*this]: copies the entire Sensor object into the closure
-        // even if the original Sensor is destroyed, the lambda stays safe
+        // [*this]：复制整个 Sensor 对象到闭包中
+        // 即使原始 Sensor 被销毁，lambda 仍然安全
         return [*this]() mutable {
             return ++reading_;
         };
     }
 
     std::function<int()> make_reader_unsafe() {
-        // [this]: stores only the pointer; it dangles once the object is destroyed
+        // [this]：只存指针，对象销毁后变成悬垂指针
         return [this]() {
-            return ++reading_;   // danger!
+            return ++reading_;   // 危险！
         };
     }
 };
@@ -276,12 +276,12 @@ void demo_star_this() {
 
     {
         Sensor s("temperature");
-        reader = s.make_reader();      // [*this]: safe
-        // reader_unsafe = s.make_reader_unsafe();  // [this]: dangerous
+        reader = s.make_reader();      // [*this]：安全
+        // reader_unsafe = s.make_reader_unsafe();  // [this]：危险
     }
-    // s has been destroyed
+    // s 已经销毁
 
-    std::cout << reader() << "\n";     // safe: the lambda holds a copy of s
+    std::cout << reader() << "\n";     // 安全：lambda 持有 s 的副本
     std::cout << reader() << "\n";     // 2
 }
 ```
@@ -299,15 +299,15 @@ The most common and most headache-inducing source of bugs in the capture mechani
 ### Returning a Lambda That Captures by Reference
 
 ```cpp
-// Classic trap: returning a lambda that references a local variable
+// 经典陷阱：返回引用了局部变量的 lambda
 auto make_dangling() {
     int count = 0;
     return [&count]() { return ++count; };
-    // count is destroyed after the function returns; the lambda holds a dangling reference
+    // count 在函数返回后销毁，lambda 持有的是悬垂引用
 }
 
 auto bad = make_dangling();
-// bad() is undefined behavior!
+// bad() 是未定义行为！
 ```
 
 The fix is straightforward: replace reference capture with value capture or init capture:
@@ -315,11 +315,11 @@ The fix is straightforward: replace reference capture with value capture or init
 ```cpp
 auto make_safe() {
     int count = 0;
-    return [count]() mutable { return ++count; };    // value capture: safe
+    return [count]() mutable { return ++count; };    // 值捕获：安全
 }
 
 auto make_safe2() {
-    return [count = 0]() mutable { return ++count; }; // init capture: even clearer
+    return [count = 0]() mutable { return ++count; }; // 初始化捕获：更清晰
 }
 ```
 
@@ -335,18 +335,18 @@ std::vector<std::function<void()>> handlers;
 
 void demo_loop_trap() {
     for (int i = 0; i < 5; ++i) {
-        // Wrong: all the lambdas reference the same i, which died with the loop
+        // 错误：所有 lambda 引用同一个 i，i 已随循环结束销毁
         handlers.push_back([&i]() {
-            std::cout << i << " ";   // calling them later hits a dangling reference; in practice this often prints garbage
+            std::cout << i << " ";   // 此时再调用是悬垂引用，实测常见输出垃圾值
         });
     }
 
     handlers.clear();
 
     for (int i = 0; i < 5; ++i) {
-        // Correct: each lambda gets its own copy of i
+        // 正确：每个 lambda 有自己的 i 副本
         handlers.push_back([i]() {
-            std::cout << i << " ";   // prints 0 1 2 3 4
+            std::cout << i << " ";   // 输出 0 1 2 3 4
         });
     }
 }
@@ -366,16 +366,16 @@ class Device {
 
 public:
     auto get_handler() {
-        // If the Device object is destroyed before the lambda runs, this dangles
+        // 如果 Device 对象在 lambda 执行前被销毁，this 就悬垂了
         return [this]() { return name_; };
     }
 
-    // Safer: capture the members you need, not this
+    // 更安全的做法：捕获需要的成员，而不是 this
     auto get_handler_safe() {
         return [name = name_]() { return name; };
     }
 
-    // C++17, safest: capture the entire object by value
+    // C++17 最安全：按值捕获整个对象
     auto get_handler_safest() {
         return [*this]() { return name_; };
     }
@@ -402,16 +402,16 @@ void demo_closure_size() {
     auto capture_both = [a, &b]() { return a + b; };
 
     std::cout << "no_capture:    " << sizeof(no_capture) << " bytes\n";
-    // usually 1 byte (the empty-class special case)
+    // 通常 1 byte（空类特例）
 
     std::cout << "capture_int:   " << sizeof(capture_int) << " bytes\n";
-    // usually 4 bytes (one int)
+    // 通常 4 bytes（一个 int）
 
     std::cout << "capture_ref:   " << sizeof(capture_ref) << " bytes\n";
-    // usually 8 bytes (one pointer, on a 64-bit system)
+    // 通常 8 bytes（一个指针，64 位系统）
 
     std::cout << "capture_both:  " << sizeof(capture_both) << " bytes\n";
-    // usually 16 bytes (int + a double reference/pointer, with alignment)
+    // 通常 16 bytes（int + double 引用/指针，考虑对齐）
 }
 ```
 
@@ -448,7 +448,7 @@ void benchmark_lambda_styles() {
     std::vector<int> data(1'000'000);
     int threshold = 50;
 
-    // Style 1: auto + the algorithm's template parameter — fully inlined
+    // 风格 1：auto + 算法模板参数——完全内联
     auto start = std::chrono::high_resolution_clock::now();
     auto count1 = std::count_if(data.begin(), data.end(),
                                [threshold](int x) { return x > threshold; });
@@ -457,7 +457,7 @@ void benchmark_lambda_styles() {
               << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()
               << " us\n";
 
-    // Style 2: std::function — indirect-call overhead
+    // 风格 2：std::function——有间接调用开销
     std::function<bool(int)> pred = [threshold](int x) { return x > threshold; };
     start = std::chrono::high_resolution_clock::now();
     auto count2 = std::count_if(data.begin(), data.end(), pred);

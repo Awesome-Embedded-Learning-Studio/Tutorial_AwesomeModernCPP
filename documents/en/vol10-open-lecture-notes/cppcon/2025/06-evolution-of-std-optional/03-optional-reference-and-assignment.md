@@ -24,9 +24,9 @@ related:
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/06-evolution-of-std-optional/03-optional-reference-and-assignment.md
   source_hash: af0e543d7e0ec86e29e94731eb9b66996bc0175ea990a87436a3808944a0a3d8
-  translated_at: '2026-09-26T16:21:41+00:00'
-  engine: anthropic
-  token_count: 2600
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7787
 ---
 
 # What an Optional Reference Is, and Why Assignment Is Always a Rebind
@@ -50,7 +50,7 @@ std::map<std::string, int> enemy_hp{{"goblin", 30}, {"dragon", 500}};
 
 auto it = enemy_hp.find("dragon");
 if (it != enemy_hp.end()) {
-    it->second -= 50;   // to modify the value, you have to write .second
+    it->second -= 50;   // 想改 value，得写 .second
 }
 ```
 
@@ -79,7 +79,7 @@ int main() {
     std::unordered_map<std::string, int> scores{{"Alice", 95}, {"Bob", 87}};
 
     if (auto r = try_get(scores, "Alice")) {
-        r->get() += 5;                       // got the reference — modifying the value inside the map
+        r->get() += 5;                       // 拿到引用，改的是 map 里的值
         std::cout << "Alice=" << scores["Alice"] << "\n";
     }
     if (auto r = try_get(scores, "Charlie")) {
@@ -103,8 +103,8 @@ Alice's score went from 95 to 100; Charlie was not found, but no exception was t
 `optional<T&>` is also interesting as a function parameter. I used to think passing a pointer and passing a reference express roughly the same intent, but think it through and a pointer's semantics are hopelessly vague.
 
 ```cpp
-void process(Logger* logger);                     // will this function delete it? stash it away for later? the caller cannot tell
-void process(std::optional<Logger&> logger);      // the intent is far clearer
+void process(Logger* logger);                     // 这个函数会不会 delete 它？会不会存下来以后用？调用者不知道
+void process(std::optional<Logger&> logger);      // 意图清晰得多
 ```
 
 Describing the logger as `optional<Logger&>` tells the function receiving it: I will not own it (no delete), and I will not still be holding a reference to it after the function returns; your only obligation is to keep it alive for the duration of the call. That is not a formal contract, but within what C++ can express, it already counts as a clear statement of intent. An optional parameter also supports "not passing one" for free: pass no logger, and inside the function a quick `if (logger)` check skips the logging logic. Steve Downey calls this a minimalist dependency-injection framework, and I think that description is spot on.
@@ -119,11 +119,11 @@ struct Cat { std::string name; Cat(std::string n) : name(std::move(n)) {} };
 Cat finn{"Finn"};
 Cat loki{"Loki"};
 
-std::optional<Cat&> a;            // empty
-std::optional<Cat&> b = loki;     // already bound to loki
+std::optional<Cat&> a;            // 空
+std::optional<Cat&> b = loki;     // 已经绑定 loki
 
 a = finn;     // ?
-b = finn;     // ?  b is already bound to loki — does this rename loki, or rebind b to finn?
+b = finn;     // ?  b 已经绑着 loki，这是改 loki 的名字，还是让 b 改绑 finn？
 ```
 
 You might think there is nothing to ask about assignment. But `b` is already bound to loki, and now we assign finn to it: does that change loki's name to "Finn", or does it make b reference finn instead? By analogy with `optional<T>`, where assignment is a value copy, the answer should be the former. That reading is wrong. Run it:
@@ -139,11 +139,11 @@ struct Cat { std::string name; Cat(std::string n) : name(std::move(n)) {} };
 
 int main() {
     Cat finn{"Finn"}, loki{"Loki"};
-    std::optional<Cat&> a;            // empty
-    std::optional<Cat&> b = loki;     // bound to loki
+    std::optional<Cat&> a;            // 空
+    std::optional<Cat&> b = loki;     // 绑定 loki
 
-    a = finn;     // rebinds a -> finn
-    b = finn;     // rebinds b -> finn (not modifying loki)
+    a = finn;     // 重绑定 a -> finn
+    b = finn;     // 重绑定 b -> finn（不是改 loki）
 
     std::cout << "a has_value=" << a.has_value() << " a->name=" << a->name << "\n";
     std::cout << "b->name=" << b->name << " loki.name=" << loki.name << "\n";
@@ -195,9 +195,9 @@ With assignment semantics settled, there are two more traps that are especially 
 
 int main() {
     int x = 42;
-    auto o1 = std::make_optional(x);     // always optional<int>
-    std::optional<int&> o2 = x;           // only the explicit spelling gives optional<int&>
-    std::optional o3{x};                  // what does CTAD actually deduce?
+    auto o1 = std::make_optional(x);     // 一定 optional<int>
+    std::optional<int&> o2 = x;           // 显式写才是 optional<int&>
+    std::optional o3{x};                  // CTAD 到底推成什么？
 
     x = 99;
     std::cout << "make_optional 随 x 变？ " << (*o1 == 99) << " (0=拷贝)\n";

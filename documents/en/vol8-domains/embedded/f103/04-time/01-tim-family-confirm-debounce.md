@@ -20,10 +20,10 @@ related:
   - 'Putting the logger to work: two ways to write it and two surfaces to read it'
 translation:
   source: documents/vol8-domains/embedded/f103/04-time/01-tim-family-confirm-debounce.md
-  source_hash: 5426537b92d9302181a495ef90e67af037d8f2b1642880e3bc746591cc696eb7
-  translated_at: '2026-11-01T03:20:13+00:00'
-  engine: anthropic
-  token_count: 3600
+  source_hash: b1995cfb375d45280eac9884881165b31cefa4daa31e17aa1735ff72c5bf2ef9
+  translated_at: '2026-11-22T16:43:13+00:00'
+  engine: glm-5.3-refresh
+  token_count: 17291
 ---
 
 # The TIM family and confirmation debouncing: from a 1Hz heartbeat to a 20ms confirmation window
@@ -234,7 +234,7 @@ We saw this same ordering last piece on EXTI's PR register: an event arriving mi
 09's first-line comment carries its own point of comparison:
 
 ```cpp
-// 09_tim_heartbeat: TIM2 1Hz interrupt heartbeat, main loop sleeps in WFI; compare with 01_blinky's HAL_Delay polling.
+// 09_tim_heartbeat: TIM2 1Hz 中断心跳, 主循环 WFI 睡眠; 对照 01_blinky 的 HAL_Delay 轮询。
 ```
 
 For the wiring, three things to look at: the work to be done inside the interrupt, the heartbeat template, and the vector function. Here is how `OnBeat` and `Heartbeat` are bound; `TIM2_IRQHandler` takes up just one line in `main.cpp`:
@@ -317,9 +317,9 @@ Let's string the chain together starting from the touch edge. EXTI is configured
 The first-line comment spells out the whole behavioral contract; quoting it as written:
 
 ```cpp
-// 10_button_confirm: confirmation debouncing (full version) — EXTI edges arm a 20ms one-shot confirm window, one sample on expiry fixes the stable level;
-// confirm events + TIM slow tick feed ButtonFsm together (same machine, new sources), main loop WFI throughout.
-// Head-to-head with 07: debouncing no longer leans on polling patience, it leans on confirming with time; bounce = the window defers, a glitch = no event.
+// 10_button_confirm: 确认式消抖(完整版) —— EXTI 沿 arm 20ms 单发确认窗, 到点采样定稳定态;
+// 确认事件 + TIM 慢拍同喂 ButtonFsm(换源不换机), 主循环全程 WFI。
+// 对拍 07: 消抖不再靠轮询耐心, 靠时间确认; 抖动 = 窗顺延, 毛刺 = 无事件。
 ```
 
 The queue's wiring differs from the last piece in one important way; let's lay it out:
@@ -370,8 +370,8 @@ A `Confirmed` that reaches the loop is digested there: `stable_level` is updated
 The injection macros are still the same three: `$press` performs one clean 0.3s touch, `$bounce` is the recipe of four flips at 10ms intervals followed by a 0.9s hold, and `$glitch` is the recipe of a lone 5ms glitch; the log PTY hangs at `/tmp/libestdx-confirm`. Two comments in the resc script are worth quoting as they stand:
 
 ```text
-# Four flips (2 full bounce cycles) then hold for 0.9s before release: the window defers on every edge, only the final stable level is recognized
-# A lone 5ms glitch: by the time the window expires the level has already returned, no event
+# 四连翻(2 完整抖动周期)后摸住 0.9s 再松: 窗每次沿顺延, 只认最终稳定态
+# 5ms 孤立毛刺: 窗到点时电平已回, 无事件
 ```
 
 We inject `$press`, `$bounce`, and `$glitch` in turn; the captured stream is the one quoted in the introduction. Now let's take it apart segment by segment.

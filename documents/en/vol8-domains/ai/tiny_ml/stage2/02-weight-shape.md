@@ -21,9 +21,9 @@ tags:
 translation:
   source: documents/vol8-domains/ai/tiny_ml/stage2/02-weight-shape.md
   source_hash: 226d40eba1c1354cbfc46445be0e2d789e6584bc48485810b5b18fc3298eb9c1
-  translated_at: '2026-09-25T08:48:33+00:00'
-  engine: anthropic
-  token_count: 4500
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 3841
 ---
 
 # Why weights are [Out, In] — the cache ledger under row-major
@@ -37,9 +37,9 @@ You might think it's just an arrangement — mathematically a transpose patches 
 [Stage 1 Part 04](../stage1/04-row-major.md) settled it: our 2D Tensor is row-major — fill row 0 completely, then row 1, one row after another. A weight matrix W of type `Tensor<Out, In>` is a single line in memory that looks like this:
 
 ```text
-index:  0       1       ...  In-1     In      In+1   ...
+下标:    0       1       ...  In-1     In      In+1   ...
       [ W[0,0]  W[0,1]  ... W[0,In-1] W[1,0]  W[1,1] ... ]
-        └──── row 0 (the recipe for output 0) ───┘ └─ row 1 ─┘
+        └─── 第0行(算第0个输出的配方)───┘ └── 第1行 ──┘
 ```
 
 W[o, i] lands at index `o * In + i`. The row-o group — the recipe used to compute output o — sits between indices `o*In` and `o*In + In - 1`: **packed together in memory, contiguous**.
@@ -49,7 +49,7 @@ W[o, i] lands at index `o * In + i`. The row-o group — the recipe used to comp
 Here is the formula from [Part 01](./01-what-is-dense.md) again:
 
 ```text
-y[o] = Σ W[o,i]·x[i]   (i from 0 to In-1)
+y[o] = Σ W[o,i]·x[i]   (i 从 0 到 In-1)
 ```
 
 Computing output o means reading that entire row — `W[o,0]`, `W[o,1]`, ..., `W[o,In-1]` — multiplying each element against the input and summing. And that row, as we just said, sits contiguously in memory.

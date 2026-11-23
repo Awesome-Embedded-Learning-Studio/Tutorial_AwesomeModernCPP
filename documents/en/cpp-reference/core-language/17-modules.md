@@ -16,9 +16,9 @@ title: Modules
 translation:
   source: documents/cpp-reference/core-language/17-modules.md
   source_hash: 18bc407053e4b058d96f1d351fcbe30ebdac9f05adb927ac240805c36279752a
-  translated_at: '2026-09-27T01:49:26+00:00'
-  engine: anthropic
-  token_count: 600
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 1778
 ---
 <!--
 Reference Card Template
@@ -58,14 +58,14 @@ None (a language feature that uses new file types and keywords)
 
 ```cpp
 // Standard: C++20
-// --- math.cppm (module interface) ---
+// --- math.cppm (模块接口) ---
 export module math;
 
 export int add(int a, int b) {
     return a + b;
 }
 
-// --- main.cpp (consumer) ---
+// --- main.cpp (使用者) ---
 import math;
 #include <iostream>
 

@@ -22,9 +22,9 @@ title: Function Calls and Type Conversion
 translation:
   source: documents/vol1-fundamentals/ch07/03-call-and-conversion.md
   source_hash: 9ceca71e7a5a52ca9c334045ef675be164124b0f8001541dc89b45902b42c971
-  translated_at: '2026-09-25T11:13:11+00:00'
-  engine: anthropic
-  token_count: 7800
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 10155
 ---
 # Function Calls and Type Conversion: Objects That Can Be Used Like Functions
 
@@ -52,7 +52,7 @@ public:
 };
 
 Multiplier triple(3);
-int result = triple(10);  // 30 — triple acts just like a "multiply by 3" function
+int result = triple(10);  // 30 —— triple 就像一个"乘以 3"的函数
 ```
 
 Here `triple(10)` looks like an ordinary function call, but it is really syntactic sugar for `triple.operator()(10)`. The `Multiplier` instance `triple` is an object, yet it behaves no differently from a function—so we call it a **function object**, or a **functor**.
@@ -79,10 +79,10 @@ int main()
 {
     std::vector<int> data = {3, 1, 4, 1, 5, 9, 2, 6};
 
-    // Pass in a function object to sort in descending order
+    // 传入函数对象，实现降序排序
     std::sort(data.begin(), data.end(), DescendingOrder());
 
-    // data is now {9, 6, 5, 4, 3, 2, 1, 1}
+    // data 现在是 {9, 6, 5, 4, 3, 2, 1, 1}
     return 0;
 }
 ```
@@ -100,8 +100,8 @@ struct CountingComparator {
 CountingComparator comp;
 std::vector<int> v = {5, 2, 8, 1, 9};
 std::sort(v.begin(), v.end(), comp);
-// comp.count is very likely still 0!
-// because sort made its own copy of comp; the comparison count lives in that copy
+// comp.count 很可能仍然是 0！
+// 因为 sort 拷贝了 comp，比较次数记录在拷贝里
 ```
 
 If we truly do need to extract a function object's state from an algorithm, C++11's `std::ref` can help—`std::sort(v.begin(), v.end(), std::ref(comp))` passes in a reference wrapper and dodges the copy. But the better approach is to understand the algorithm's copy semantics and take it into account when designing the function object in the first place.
@@ -124,19 +124,19 @@ public:
     NullableInt(int v) : value_(v), has_value_(true) {}
     NullableInt() : value_(0), has_value_(false) {}
 
-    // Implicit conversion to bool: checks whether it holds a value
+    // 隐式转换为 bool：检查是否有值
     operator bool() const { return has_value_; }
 
-    // Implicit conversion to int: retrieves the value
+    // 隐式转换为 int：获取值
     operator int() const { return value_; }
 };
 
 NullableInt a(42);
-NullableInt b;  // empty value
+NullableInt b;  // 空值
 
 if (a) {
-    // a holds a value, so we end up in here
-    int x = a;  // implicitly converts to int, x = 42
+    // a 有值，进入这里
+    int x = a;  // 隐式转换为 int，x = 42
 }
 ```
 
@@ -148,8 +148,8 @@ But the flip side of convenience is danger. Implicit conversions fire quietly in
 NullableInt a(10);
 NullableInt b(20);
 int result = a + b;
-// We might expect a compile error here — NullableInt doesn't overload operator+
-// But in reality: a implicitly converts to int(10), b to int(20), result = 30
+// 咱们可能以为这是编译错误——NullableInt 没有重载 operator+
+// 但实际上：a 隐式转换为 int(10)，b 隐式转换为 int(20)，result = 30
 ```
 
 If that is the behavior we wanted, fine. But what if one of our `NullableInt`s holds the empty value? `NullableInt() + NullableInt(5)` yields `0 + 5 = 5`—the empty value silently joins the arithmetic as 0, without a single warning. Worse still, if a class provides both `operator int()` and `operator double()`, overload resolution can turn ambiguous: the compiler wavers between the two conversion paths and then emits a thoroughly baffling error.
@@ -173,15 +173,15 @@ public:
 
 SafeBool sb(true);
 
-// Boolean context: implicit use is fine
+// 布尔上下文：可以隐式使用
 if (sb) {
-    // we enter the branch as usual
+    // 正常进入
 }
 
-// Non-boolean context: explicit conversion required
+// 非布尔上下文：必须显式转换
 bool b = static_cast<bool>(sb);  // OK
-// int n = sb;  // Compile error! No implicit conversion allowed
-// int x = sb + 1;  // Compile error! Won't take part in arithmetic
+// int n = sb;  // 编译错误！不能隐式转换
+// int x = sb + 1;  // 编译错误！不会参与算术运算
 ```
 
 Look closely at the last two commented-out lines: had `operator bool()` not been `explicit`, they would compile (even though the semantics would be utterly wrong); with `explicit`, the compiler refuses the dangerous implicit conversion outright. Meanwhile, in a boolean context like `if (sb)`, the `explicit` restriction is automatically relaxed—precisely the behavior we want: test the boolean safely, but refuse any accidental participation in arithmetic.
@@ -198,7 +198,7 @@ Now let's put `operator()` and conversion operators together and write one compl
 #include <cstring>
 #include <string>
 
-/// @brief A threshold-based range-checking function object
+/// @brief 带阈值的范围检查函数对象
 class ThresholdChecker {
 private:
     int min_;
@@ -211,7 +211,7 @@ public:
     {
     }
 
-    /// @brief Checks whether a value is in range; increments the rejection count when it is not
+    /// @brief 检查值是否在范围内，不在范围内则增加拒绝计数
     bool operator()(int value)
     {
         if (value < min_ || value > max_) {
@@ -226,7 +226,7 @@ public:
     void reset() { rejected_count_ = 0; }
 };
 
-/// @brief A safe bool wrapper using explicit operator bool
+/// @brief 安全的布尔包装器，使用 explicit operator bool
 class SafeBool {
 private:
     bool value_;
@@ -237,7 +237,7 @@ public:
     explicit operator bool() const { return value_; }
 };
 
-/// @brief A number stored as a string, supporting explicit conversion to int and const char*
+/// @brief 字符串形式的数值，支持显式转换为 int 和 const char*
 class StringNumber {
 private:
     char buffer_[32];
@@ -256,7 +256,7 @@ public:
 
 int main()
 {
-    // --- ThresholdChecker: function object ---
+    // --- ThresholdChecker: 函数对象 ---
     ThresholdChecker checker(0, 100);
 
     int test_values[] = {50, -1, 75, 200, 30, -5, 88};

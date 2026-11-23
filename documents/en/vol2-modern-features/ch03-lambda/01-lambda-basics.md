@@ -23,10 +23,10 @@ tags:
 title: 'Lambda Basics: Elegant Anonymous Functions'
 translation:
   source: documents/vol2-modern-features/ch03-lambda/01-lambda-basics.md
-  source_hash: 8ce39a4e72bd76b33731c4cf891388d22614fa08bfd39579b4881377863f4060
-  translated_at: '2026-09-27T10:20:12+00:00'
-  engine: anthropic
-  token_count: 3700
+  source_hash: 8863ccc3847ed45baf9df21a42683371c95552684212123d263a4cb04f907a8a
+  translated_at: '2026-11-22T16:36:41+00:00'
+  engine: glm-5.3-refresh
+  token_count: 9770
 ---
 # Lambda Basics: Elegant Anonymous Functions
 
@@ -45,16 +45,16 @@ The complete syntax of a lambda expression looks a little intimidating, but once
 Let's go through them one by one: `capture` is the capture list, and it decides how the lambda accesses variables from the enclosing scope. `parameters` is exactly the parameter list of a normal function. `-> return_type` is the trailing return type; in C++11 you may omit it only under certain conditions, and only when they hold will the compiler agree to deduce it for us (more in the next section). Finally, `body` is just the function body. Let's start from the simplest lambda possible and pile on ingredients step by step:
 
 ```cpp
-// A lambda that does nothing — pure slacking off
+// 什么都不做的 lambda,纯摆烂的
 auto do_nothing = []() {};
 
-// Simply return a value
+// 简单返回一个值
 auto forty_two = []() { return 42; };
 
-// With parameters
+// 带参数
 auto double_it = [](int x) { return x * 2; };
 
-// Actual usage: call it like a normal function
+// 实际使用：像普通函数一样调用
 int result = double_it(21);  // result == 42
 ```
 
@@ -72,10 +72,10 @@ In the C++11 era, the conditions for return type deduction were fairly strict. T
 When the conditions hold, we can leave out `-> return_type`:
 
 ```cpp
-// Deduced as int automatically
+// 自动推导为 int
 auto square = [](int x) { return x * x; };
 
-// Deduced as double (because of the static_cast<double>)
+// 自动推导为 double（因为有 static_cast<double>）
 auto divide = [](int a, int b) {
     return static_cast<double>(a) / b;
 };
@@ -90,11 +90,13 @@ auto classify = [](int x) -> int {
     } else if (x < 0) {
         return -x;
     }
-    return 0;   // Without this line, some compilers may emit a warning
+    return 0;   // 如果没有这条，某些编译器可能报警告
 };
 ```
 
 Our advice: omit the return type for simple lambdas, and write it out explicitly for complex ones. Omitting it makes the code more compact — provided we don't leave the reader guessing for ages what the return type actually is.
+
+> When I hit a spot where I truly need to know what a piece of code does and it hands me an `auto` instead, my PR-review reflex goes: "Hehe, little friend, won't you tell me where your workstation is~?"
 
 ---
 
@@ -110,20 +112,20 @@ Where do we use lambdas the most in day-to-day code? As predicates or operation 
 void process_data() {
     std::vector<int> readings = {12, 45, 23, 67, 34, 89, 56};
 
-    // Find the first reading above the threshold
+    // 找出第一个超过阈值的读数
     auto it = std::find_if(readings.begin(), readings.end(),
                           [](int value) { return value > 50; });
 
-    // Count how many anomalous values there are
+    // 统计有多少个异常值
     int anomaly_count = std::count_if(readings.begin(), readings.end(),
                                      [](int value) { return value > 80; });
     std::cout << "Anomalies: " << anomaly_count << "\n";
 
-    // Double in place
+    // 原地翻倍
     std::transform(readings.begin(), readings.end(), readings.begin(),
                   [](int value) { return value * 2; });
 
-    // Custom sort: descending order
+    // 自定义排序：降序
     std::sort(readings.begin(), readings.end(),
              [](int a, int b) { return a > b; });
 }
@@ -144,13 +146,13 @@ By default, a lambda is a sealed-off thing: it cannot touch the local variables 
 ```cpp
 int threshold = 50;
 
-// Compile error: threshold is not in the lambda's scope
+// 编译错误：threshold 不在 lambda 的作用域内
 // auto check = [](int value) { return value > threshold; };
 
-// Capture by value: copies threshold into the closure object
+// 值捕获：复制一份 threshold 到闭包对象中
 auto by_value = [threshold](int value) { return value > threshold; };
 
-// Capture by reference: refers directly to the outer threshold
+// 引用捕获：直接引用外部的 threshold
 auto by_ref = [&threshold](int value) { return value > threshold; };
 ```
 
@@ -161,14 +163,14 @@ There are also two common default-capture forms: `[=]` captures by value every e
 ```cpp
 int a = 1, b = 2, c = 3;
 
-// Capture everything by value
+// 全值捕获
 auto sum_all = [=]() { return a + b + c; };  // 6
 
-// Capture everything by reference — can modify the outer variables
+// 全引用捕获——可以修改外部变量
 auto increment_all = [&]() { a++; b++; c++; };
 increment_all();  // a=2, b=3, c=4
 
-// Mixed capture: a by value, b by reference
+// 混合捕获：a 值捕获，b 引用捕获
 auto mixed = [a, &b]() { return a + b; };
 ```
 
@@ -179,18 +181,18 @@ auto mixed = [a, &b]() { return a + b; };
 We mentioned earlier that every lambda expression produces a unique, anonymous class type (the closure type). `operator()` is a member function of it, with exactly the parameters and return value you wrote in the lambda. The standard only specifies the behavior; the concrete implementation is up to the compiler. Conceptually, you can understand a lambda as the compiler generating a class like this:
 
 ```cpp
-// The lambda you write
+// 你写的 lambda
 auto greet = [](const std::string& name) -> std::string {
     return "Hello, " + name;
 };
 
-// The class the compiler conceptually generates (simplified)
-struct /* a unique compiler-generated name */ {
+// 编译器概念上生成的类（简化版）
+struct /* 编译器生成的唯一名字 */ {
     std::string operator()(const std::string& name) const {
         return "Hello, " + name;
     }
 };
-auto greet = /* an instance of the class above */{};
+auto greet = /* 上面那个类的实例 */{};
 ```
 
 In a real implementation, the compiler adds the corresponding data members to the closure class based on the capture list, and the `mutable` keyword decides whether `operator()` is const. How these type names get picked is not up to us — each compiler makes its own call: GCC uses `_Z...` mangling, Clang uses names like `$_0...`, and once you cross compilers, consistency is off the table.
@@ -209,7 +211,7 @@ void call_func(Func f) {
     f();
 }
 
-call_func([]() { /* ... */ });  // The type is visible to the compiler; inlining is possible
+call_func([]() { /* ... */ });  // 类型对编译器可见，可能内联
 ```
 
 Let's be precise about this — what we said above is only "possible": whether inlining actually happens depends on the compiler's optimization strategy, the lambda's complexity, the compilation flags, and factors like these. But compared with the runtime indirect call through `std::function`, a template parameter at least gives the compiler the opportunity to optimize.
@@ -246,15 +248,15 @@ private:
     std::array<Handler, 8> handlers_;
 };
 
-// Usage example
+// 使用示例
 void setup_system() {
     EventDispatcher dispatcher;
     int press_count = 0;
     uint32_t last_press_time = 0;
 
-    // Register the key-press callback: capture press_count and last_press_time by reference
+    // 注册按键回调：引用捕获 press_count 和 last_press_time
     dispatcher.on_event(0, [&](uint32_t timestamp) {
-        if (timestamp - last_press_time > 50) {   // 50ms debounce
+        if (timestamp - last_press_time > 50) {   // 50ms 防抖
             press_count++;
             last_press_time = timestamp;
             std::cout << "Press #" << press_count
@@ -262,7 +264,7 @@ void setup_system() {
         }
     });
 
-    // Register the timeout callback: capture threshold by value
+    // 注册超时回调：值捕获 threshold
     uint32_t threshold = 1000;
     dispatcher.on_event(1, [threshold](uint32_t timestamp) {
         if (timestamp > threshold) {
@@ -270,10 +272,10 @@ void setup_system() {
         }
     });
 
-    // Simulate event triggers
+    // 模拟事件触发
     dispatcher.trigger(0, 100);
-    dispatcher.trigger(0, 160);   // 60ms since the last press, passes the debounce
-    dispatcher.trigger(0, 180);   // 20ms since the last press, filtered out by the debounce
+    dispatcher.trigger(0, 160);   // 距上次 60ms，通过防抖
+    dispatcher.trigger(0, 180);   // 距上次 20ms，被防抖过滤
     dispatcher.trigger(1, 1200);
 }
 ```
@@ -297,7 +299,7 @@ As you can see, lambdas work very naturally as callbacks. Look at the key-press 
 C++14 brought lambdas a very practical enhancement: parameter types can be `auto`. The lambda thereby becomes a template function object in our hands — the compiler generates a separate instantiation of `operator()` for each argument type:
 
 ```cpp
-// A generic lambda: accepts any type that supports operator+
+// 泛型 lambda：可以接受任何支持 operator+ 的类型
 auto add = [](auto a, auto b) { return a + b; };
 
 int xi = add(3, 4);              // int operator+(int, int)
@@ -331,16 +333,16 @@ A lambda's strength is in-place definition and compact logic. Once the lambda we
 It has a seat among the most common lambda bugs: a variable captured by reference is already destroyed by the time the lambda executes. The classic scenario is creating a lambda inside a function and then returning it:
 
 ```cpp
-// Dangerous! The returned lambda refers to the local variable local
+// 危险！返回的 lambda 引用了局部变量 local
 auto make_bad_lambda() {
     int local = 42;
-    return [&local]() { return local; };   // local is destroyed after the function returns
+    return [&local]() { return local; };   // local 在函数返回后销毁
 }
 
-// Safe: capture by value
+// 安全：值捕获
 auto make_safe_lambda() {
     int local = 42;
-    return [local]() { return local; };    // the lambda holds a copy
+    return [local]() { return local; };    // lambda 持有副本
 }
 ```
 
@@ -351,10 +353,10 @@ Capture by reference is not wrong in itself, but you must guarantee that the ref
 Unless you need runtime polymorphism (putting callbacks of different types into the same container, say), don't reach for `std::function` to store a lambda. `auto` gets you the closure type itself: the object's size equals the size of the captured data members (a captureless lambda is usually just 1 byte), and it leaves the compiler a chance to inline. `std::function` internally relies on two mechanisms, type erasure and the Small Buffer Optimization, which bring a fixed overhead (32-64 bytes), plus one more indirect jump to pay on every call.
 
 ```cpp
-// Type known at compile time, size = 1 byte (no captures), inlining possible
+// 编译期类型已知，大小=1字节（无捕获），可能内联
 auto f = [](int x) { return x * 2; };
 
-// Type-erased, size = 32 bytes (libstdc++), runtime indirect call
+// 类型擦除，大小=32字节（libstdc++），运行时间接调用
 std::function<int(int)> g = [](int x) { return x * 2; };
 ```
 

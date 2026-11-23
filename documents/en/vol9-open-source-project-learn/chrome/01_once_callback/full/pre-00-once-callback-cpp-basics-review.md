@@ -25,9 +25,9 @@ title: 'OnceCallback prerequisite cheat sheet: a review of C++11/14/17 core feat
 translation:
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/pre-00-once-callback-cpp-basics-review.md
   source_hash: 80368a37a21d333784c060971d915f117ab32fedd4720e1c0b6fabd2063b20ab
-  translated_at: '2026-09-26T00:41:06+00:00'
-  engine: anthropic
-  token_count: 8000
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 10935
 ---
 # OnceCallback prerequisite cheat sheet: a review of C++11/14/17 core features
 
@@ -42,24 +42,24 @@ The entire foundation of OnceCallback sits right here. It is itself a move-only 
 C++11 introduced the rvalue reference `T&&`, which can bind to temporary objects (rvalues). The move constructor `T(T&& other)` carries the semantics of "steal the resources from `other` instead of copying them". After the theft, `other` is left in a "valid but unspecified" state — usually emptied out.
 
 ```cpp
-// A minimal move semantics example
+// 一个最简单的移动语义示例
 class Buffer {
     int* data_;
     std::size_t size_;
 public:
-    // ordinary constructor
+    // 普通构造
     Buffer(std::size_t n) : data_(new int[n]), size_(n) {}
-    // move constructor: steal other's resources
+    // 移动构造：偷走 other 的资源
     Buffer(Buffer&& other) noexcept
         : data_(other.data_), size_(other.size_) {
-        other.data_ = nullptr;   // empty out the source object
+        other.data_ = nullptr;   // 清空源对象
         other.size_ = 0;
     }
     ~Buffer() { delete[] data_; }
 };
 
-Buffer a(100);          // a owns 100 ints
-Buffer b = std::move(a); // b stole a's resources; a is left empty
+Buffer a(100);          // a 拥有 100 个 int
+Buffer b = std::move(a); // b 偷走了 a 的资源，a 变空
 ```
 
 ### What std::move actually moves
@@ -91,13 +91,13 @@ Pass an lvalue `x` (of type `int`), and `T` is deduced as `int&`, with `T&&` col
 ```cpp
 template<typename T>
 void wrapper(T&& arg) {
-    // std::forward preserves arg's original value category
+    // std::forward 保持 arg 的原始值类别
     target(std::forward<T>(arg));
 }
 
 int x = 10;
-wrapper(x);    // arg is an lvalue reference; forward returns an lvalue reference
-wrapper(10);   // arg is an rvalue reference; forward returns an rvalue reference
+wrapper(x);    // arg 是左值引用，forward 返回左值引用
+wrapper(10);   // arg 是右值引用，forward 返回右值引用
 ```
 
 When we first learned this material, we stepped straight into a pit: if you pass `arg` along directly without `std::forward`, `arg` is always an lvalue inside the function (named variables are all lvalues), and the rvalue-ness is simply lost. `std::forward` is what retrieves that information.
@@ -115,10 +115,10 @@ Variadic templates let you write a function or class that accepts any number of 
 ### Basic syntax
 
 ```cpp
-template<typename... Types>  // Types is a parameter pack
+template<typename... Types>  // Types 是参数包
 void print_all(Types... args) {
-    // args... expands here
-    // sizeof...(Types) returns the number of parameters
+    // args... 在这里展开
+    // sizeof...(Types) 返回参数数量
 }
 ```
 
@@ -144,9 +144,9 @@ Only two kinds of smart pointers show up inside OnceCallback; let's take a look 
 
 ```cpp
 auto p = std::make_unique<int>(42);
-// auto p2 = p;             // compile error: not copyable
-auto p3 = std::move(p);    // OK: the move transfers ownership
-// p is nullptr from here on
+// auto p2 = p;             // 编译错误：不可拷贝
+auto p3 = std::move(p);    // OK：移动转移所有权
+// 此后 p 为 nullptr
 ```
 
 Within OnceCallback, the point of `unique_ptr` isn't that we use it directly — it's that OnceCallback must support lambdas that capture move-only objects. If some lambda captures a `unique_ptr`, then the `std::move_only_function` holding that lambda (OnceCallback's internal storage) has to be move-only right along with it. `std::function` can't manage that, and it's one of the reasons we pick `std::move_only_function`.
@@ -157,8 +157,8 @@ Within OnceCallback, the point of `unique_ptr` isn't that we use it directly —
 
 ```cpp
 auto p1 = std::make_shared<int>(42);
-auto p2 = p1;   // OK: a copy; the reference count goes up by one
-// p1 and p2 both point at the same int
+auto p2 = p1;   // OK：拷贝，引用计数 +1
+// p1 和 p2 都指向同一个 int
 ```
 
 Inside OnceCallback, `shared_ptr` manages the cancellation token `CancelableToken`. The token has to be shared between the OnceCallback object and the external controller — the external controller calls `invalidate()` to invalidate the token, and OnceCallback checks the token's state through its own `shared_ptr` copy before executing the callback. The reference count guarantees one thing: as long as anyone still holds the token, the underlying `Flag` object won't be destroyed.
@@ -176,12 +176,12 @@ The cancellation token's internal implementation uses `std::atomic<bool>` togeth
 ```cpp
 std::atomic<bool> flag{true};
 
-// Thread A: write
+// 线程 A：写入
 flag.store(false, std::memory_order_release);
 
-// Thread B: read
+// 线程 B：读取
 if (flag.load(std::memory_order_acquire)) {
-    // flag is still true
+    // flag 仍然为 true
 }
 ```
 
@@ -198,18 +198,18 @@ Applied to OnceCallback's cancellation token: `invalidate()` uses a `release` st
 `enum class` is the scoped enumeration introduced in C++11, and it cures two old ailments of the old-style `enum`: name pollution and implicit conversion.
 
 ```cpp
-// Old-style enum: the names pollute the global namespace, and it implicitly converts to int
+// 老式 enum：名字污染全局命名空间，可以隐式转成 int
 enum Color { Red, Green, Blue };
-int x = Red;  // OK, implicit conversion
+int x = Red;  // OK，隐式转换
 
-// enum class: the names are confined to the enum's scope, no implicit conversion
+// enum class：名字被限定在枚举作用域内，不可隐式转换
 enum class Status : uint8_t {
-    kEmpty,    // never assigned anything
-    kValid,    // holds a valid callable
-    kConsumed  // already consumed by run()
+    kEmpty,    // 从未被赋值
+    kValid,    // 持有有效的可调用对象
+    kConsumed  // 已被 run() 消费
 };
 Status s = Status::kValid;
-// int y = s;  // compile error: no implicit conversion
+// int y = s;  // 编译错误：不可隐式转换
 ```
 
 OnceCallback uses `enum class Status` to distinguish the callback's three states. The underlying type is specified as `uint8_t` to save memory — the whole enum occupies a single byte.
@@ -222,14 +222,14 @@ Lambdas are, for all practical purposes, everywhere in OnceCallback — construc
 
 ```cpp
 auto add = [](int a, int b) { return a + b; };
-// add's type is a unique closure class generated by the compiler
+// add 的类型是编译器生成的唯一闭包类
 
 int x = 10;
-// capture by value: copies x
+// 值捕获：拷贝 x
 auto f1 = [x]() { return x; };
-// capture by reference: refers to x (watch the lifetime)
+// 引用捕获：引用 x（注意生命周期）
 auto f2 = [&x]() { return x; };
-// init capture (C++14): makes move captures possible
+// 初始化捕获（C++14）：可以移动捕获
 auto f3 = [p = std::make_unique<int>(42)]() { return *p; };
 ```
 
@@ -239,7 +239,7 @@ Generic lambdas (since C++14) allow `auto` parameters:
 
 ```cpp
 auto generic = [](auto x, auto y) { return x + y; };
-// the compiler generates a templated version of operator()
+// 编译器为 operator() 生成模板版本
 ```
 
 The lambda inside `bind_once` takes runtime arguments with `(auto&&... call_args)`; here `auto&&` is a forwarding reference (because `auto` behaves like a template parameter).
@@ -253,22 +253,22 @@ Type traits are the tools for querying and manipulating type information at comp
 ```cpp
 #include <type_traits>
 
-// std::decay_t<T>: strips references and const/volatile qualifiers from T, turns arrays into pointers, functions into function pointers
+// std::decay_t<T>：去掉 T 上的引用、const/volatile 限定符，数组变指针，函数变函数指针
 using T1 = std::decay_t<const int&>;       // T1 = int
-using T2 = std::decay_t<OnceCallback&&>;   // T2 = OnceCallback (reference stripped)
+using T2 = std::decay_t<OnceCallback&&>;   // T2 = OnceCallback（去掉引用）
 
-// std::is_same_v<A, B>: whether A and B are the same type
-static_assert(std::is_same_v<int, int>);           // passes
-static_assert(!std::is_same_v<int, double>);       // passes
+// std::is_same_v<A, B>：A 和 B 是否是同一类型
+static_assert(std::is_same_v<int, int>);           // 通过
+static_assert(!std::is_same_v<int, double>);       // 通过
 
-// std::is_lvalue_reference_v<T>: whether T is an lvalue reference type
-static_assert(std::is_lvalue_reference_v<int&>);      // passes
-static_assert(!std::is_lvalue_reference_v<int>);      // passes
-static_assert(!std::is_lvalue_reference_v<int&&>);    // passes
+// std::is_lvalue_reference_v<T>：T 是否是左值引用类型
+static_assert(std::is_lvalue_reference_v<int&>);      // 通过
+static_assert(!std::is_lvalue_reference_v<int>);      // 通过
+static_assert(!std::is_lvalue_reference_v<int&&>);    // 通过
 
-// std::is_void_v<T>: whether T is void
-static_assert(std::is_void_v<void>);            // passes
-static_assert(!std::is_void_v<int>);            // passes
+// std::is_void_v<T>：T 是否是 void
+static_assert(std::is_void_v<void>);            // 通过
+static_assert(!std::is_void_v<int>);            // 通过
 ```
 
 Inside OnceCallback, `std::decay_t` and `std::is_same_v` together build the `not_the_same_t` concept — it checks "whether the template argument, after decay, is the same type as `OnceCallback` itself", blocking the template constructor from hijacking calls meant for the move constructor. `std::is_lvalue_reference_v` appears in the deducing this implementation of `run()`, detecting whether the caller passed an lvalue and firing a `static_assert` error if so. And `std::is_void_v` shows up in `impl_run()` and `then()`, separating the compile-time branches for void and non-void return types.
@@ -283,11 +283,11 @@ Inside OnceCallback, `std::decay_t` and `std::is_same_v` together build the `not
 template<typename R>
 R do_something() {
     if constexpr (std::is_void_v<R>) {
-        // void return: perform the action, return no value
+        // void 返回：执行操作，不 return
         perform_action();
         return;  // void return
     } else {
-        // non-void return: perform the action, return the result
+        // 非 void 返回：执行操作，return 结果
         return perform_action();
     }
 }
@@ -307,8 +307,8 @@ Inside OnceCallback, `if constexpr (std::is_void_v<ReturnType>)` shows up in two
 int x = 10;
 int& ref = x;
 
-auto f1() { return ref; }           // returns int (reference dropped)
-decltype(auto) f2() { return ref; } // returns int& (reference preserved)
+auto f1() { return ref; }           // 返回 int（丢掉了引用）
+decltype(auto) f2() { return ref; } // 返回 int&（保留了引用）
 ```
 
 Inside OnceCallback, the lambdas in `bind_once` and `then()` use `-> decltype(auto)` as their trailing return type. The point of writing it that way is to perfectly forward the callable's return value — if the invoked function returns `int&&`, `decltype(auto)` returns `int&&` too, and not one bit of value category information is lost.
@@ -337,10 +337,10 @@ C++11 lets you attach a reference qualifier (ref-qualifier) to a non-static memb
 class Widget {
 public:
     void process() & {
-        // invocable only through an lvalue: Widget w; w.process();
+        // 只能通过左值调用：Widget w; w.process();
     }
     void process() && {
-        // invocable only through an rvalue: Widget().process(); or std::move(w).process();
+        // 只能通过右值调用：Widget().process(); 或 std::move(w).process();
     }
 };
 ```

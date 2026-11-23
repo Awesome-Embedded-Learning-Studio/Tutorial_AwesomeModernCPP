@@ -20,9 +20,9 @@ related:
 translation:
   source: documents/vol7-engineering/ch00-cmake-fundamentals/02-target-and-usage-requirements.md
   source_hash: 8d5e2ea8cdf1f06ad95fd4e822ff4fc07492411d7122089b2a7d3464cf41c3a4
-  translated_at: '2026-09-26T04:46:03+00:00'
-  engine: anthropic
-  token_count: 12000
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 13204
 ---
 
 # The target mental model — treat a target as an object, PUBLIC/PRIVATE/INTERFACE are usage requirements
@@ -76,7 +76,7 @@ Split these three states along "self-use / others-use" and underneath sits a sim
 
 Memorize this table — it fits every `target_*` command you will ever read.
 
-### A concrete example: fmt is PRIVATE, <string> is INTERFACE
+### A concrete example: fmt is PRIVATE, `<string>` is INTERFACE
 
 Definitions alone are not enough; let's drop down to code. The project below has three targets: a minimal `fmt` (standing in for a third-party formatting library), a `mylib` static library exposed to the outside, and a downstream `app` executable. `mylib`'s implementation uses `fmt::format` internally, but its public header uses nothing but `std::string`.
 
@@ -88,10 +88,10 @@ Definitions alone are not enough; let's drop down to code. The project below has
 
 namespace mylib {
 
-/// @brief Format a greeting into a prefixed string
-/// @note  The return type is std::string — part of mylib's public API,
-///        so the downstream app must also see the full std::string definition,
-///        which makes the include path for <string> an INTERFACE requirement
+/// @brief 把问候语格式化成带前缀的字符串
+/// @note  返回类型用 std::string —— 这是 mylib 公开 API 的一部分,
+///        下游 app 也必须看到完整的 std::string 定义,
+///        所以 <string> 对应的 include 路径属于 INTERFACE 需求
 std::string make_greeting(const std::string& name);
 
 }  // namespace mylib
@@ -107,8 +107,8 @@ std::string make_greeting(const std::string& name);
 namespace mylib {
 
 std::string make_greeting(const std::string& name) {
-    // fmt is an internal implementation detail of mylib; the public header mylib.h shows no trace of it
-    // so downstream never needs to know fmt exists — exactly why fmt should be PRIVATE
+    // fmt 是 mylib 内部实现细节,公开头文件 mylib.h 里看不到 fmt 的痕迹
+    // 所以下游根本不需要知道 fmt 的存在 —— 这正是 fmt 应当为 PRIVATE 的理由
     return fmt::format("hello, {}!", name);
 }
 
@@ -210,7 +210,7 @@ Once target privacy makes sense, look back at old-style CMake and it becomes obv
 Old-style CMake uses directory-level, global commands:
 
 ```cmake
-# Old-style CMake; one sighting in a modern project should trigger a refactor
+# 老式 CMake 写法,现代项目里见一次就该重构
 include_directories(include)
 include_directories(fmt)
 add_definitions(-DUSE_FMT)
@@ -228,11 +228,11 @@ Modern CMake solves both problems with target-level commands. `target_include_di
 Side by side:
 
 ```cmake
-# Old style (directory-level, global pollution)
+# 老式(目录级,全局污染)
 include_directories(include)
 add_definitions(-DMYLIB_EXPORTS)
 
-# Modern (target-level, clean boundaries)
+# 现代(target 级,边界清晰)
 target_include_directories(mylib PUBLIC include)
 target_compile_definitions(mylib PRIVATE MYLIB_EXPORTS)
 ```
@@ -251,14 +251,14 @@ Let's assemble everything from above. We will use a complete, runnable project t
 02-target/
 ├── CMakeLists.txt
 ├── fmt/
-│   ├── fmt.h          # minimal stand-in for a third-party library
+│   ├── fmt.h          # 模拟第三方库的极简实现
 │   └── fmt.cpp
 ├── include/
 │   └── mylib/
-│       └── mylib.h    # mylib's public header
+│       └── mylib.h    # mylib 公开头文件
 ├── src/
-│   └── mylib.cpp      # mylib implementation
-└── main.cpp           # app executable
+│   └── mylib.cpp      # mylib 实现
+└── main.cpp           # app 可执行
 ```
 
 The complete `CMakeLists.txt`:
@@ -271,17 +271,17 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# fmt: a minimal "third-party library" used only inside this project; a real project would use find_package(fmt REQUIRED)
+# fmt:仅在本工程内部使用的极简"第三方库",真实工程会换成 find_package(fmt REQUIRED)
 add_library(fmt STATIC fmt/fmt.cpp)
 target_include_directories(fmt PUBLIC fmt)
 
-# mylib: the library exposed outward; its public header include/mylib/mylib.h uses std::string
+# mylib:对外暴露的库,公开头文件 include/mylib/mylib.h 用了 std::string
 add_library(mylib STATIC src/mylib.cpp)
 target_include_directories(mylib PUBLIC include)
-# fmt is PRIVATE here — mylib.cpp needs it internally, but mylib.h exposes no fmt at all
+# fmt 在这里写成 PRIVATE —— mylib.cpp 内部要用,但 mylib.h 完全不暴露 fmt
 target_link_libraries(mylib PRIVATE fmt)
 
-# app: the downstream executable; links only mylib and knows nothing of fmt
+# app:下游可执行,只链接 mylib,对 fmt 一无所知
 add_executable(app main.cpp)
 target_link_libraries(app PRIVATE mylib)
 ```

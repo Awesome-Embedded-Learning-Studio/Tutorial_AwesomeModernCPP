@@ -19,10 +19,10 @@ tags:
 title: Structures and Memory Alignment
 translation:
   source: documents/vol1-fundamentals/c_tutorials/12-struct-and-memory-alignment.md
-  source_hash: bcedd77b003996534a684d95862f8a14c7940dbb816407dad6ad79f4a4bc02dd
-  translated_at: '2026-09-25T13:26:36+00:00'
-  engine: anthropic
-  token_count: 8000
+  source_hash: 5a3c0af10043fbb579fe1f2c8c95335d5925a3f4ee33ffa613aad75e41586844
+  translated_at: '2026-11-22T16:39:43+00:00'
+  engine: glm-5.3-refresh
+  token_count: 34225
 ---
 # Structures and Memory Alignment
 
@@ -78,11 +78,11 @@ SensorReading r2 = {
     .status = 1
 };
 
-// No need to follow the definition order; you can also initialize only some fields
+// 不需要按定义顺序，也可以只初始化部分字段
 SensorReading r3 = {
     .humidity = 45.0f,
     .status = 0
-    // timestamp and temperature are automatically initialized to 0
+    // timestamp 和 temperature 自动初始化为 0
 };
 ```
 
@@ -92,7 +92,7 @@ Assignment and initialization are two different things for structs. Initializati
 
 ```c
 SensorReading r4;
-r4 = r2;  // Copy every field of r2 into r4
+r4 = r2;  // 把 r2 的所有字段复制到 r4
 ```
 
 But note that struct assignment in C is a **shallow copy**—if the struct has pointer members, after the assignment both structs' pointer fields point at the same memory. This is a classic trap when working with structs that contain dynamically allocated memory.
@@ -109,13 +109,13 @@ SensorReading reading = {
     .status = 1
 };
 
-// Access directly through the variable name — use the dot
+// 通过变量名直接访问——用点号
 reading.temperature = 26.0f;
 
-// Access through a pointer — use the arrow
+// 通过指针访问——用箭头
 SensorReading* ptr = &reading;
 ptr->humidity = 55.0f;
-// Equivalent to (*ptr).humidity = 55.0f
+// 等价于 (*ptr).humidity = 55.0f
 ```
 
 The `->` operator is just syntactic sugar for `(*ptr).`—nothing mysterious about it. But this particular sugar is so heavily used that you'll simply never write `(*ptr).`—in C, whenever a function parameter involves a struct pointer, you're almost certainly using `->`.
@@ -123,13 +123,13 @@ The `->` operator is just syntactic sugar for `(*ptr).`—nothing mysterious abo
 Passing a struct pointer instead of the struct itself in function parameters not only avoids an expensive copy but also allows the function to modify the caller's data. If you don't want the function to modify the data, just add `const`:
 
 ```c
-/// @brief Print a sensor reading (read-only access)
+/// @brief 打印传感器读数（只读访问）
 void print_reading(const SensorReading* r) {
     printf("T=%.1fC H=%.1f%% status=%u\n",
            r->temperature, r->humidity, r->status);
 }
 
-/// @brief Update the sensor status (modifiable)
+/// @brief 更新传感器状态（可修改）
 void update_status(SensorReading* r, uint8_t new_status) {
     r->status = new_status;
 }
@@ -143,9 +143,9 @@ Next we move into the most essential—and most easily confusing—part of this 
 
 ```c
 typedef struct {
-    uint8_t  a;   // 1 byte
-    uint32_t b;   // 4 bytes
-    uint8_t  c;   // 1 byte
+    uint8_t  a;   // 1 字节
+    uint32_t b;   // 4 字节
+    uint8_t  c;   // 1 字节
 } WeirdLayout;
 ```
 
@@ -164,12 +164,12 @@ There are really just two alignment rules, though they take a little patience to
 Now let's return to the `WeirdLayout` example and draw it out byte by byte:
 
 ```text
-Offset 0  1  2  3  4  5  6  7  8  9  10  11
-      [a ][pad pad pad][b         ][c ][pad pad pad]
-       ^              ^           ^
-       |              |           b: offset 4 (multiple of 4, satisfied)
-       |              3 bytes of padding so b aligns to 4
-       a: offset 0 (multiple of 1, satisfied)
+偏移  0  1  2  3  4  5  6  7  8  9  10  11
+     [a ][pad pad pad][b         ][c ][pad pad pad]
+      ^              ^           ^
+      |              |           b: 偏移 4（4 的倍数，满足）
+      |              填充 3 字节让 b 对齐到 4
+      a: 偏移 0（1 的倍数，满足）
 ```
 
 `a` sits at offset 0 and takes 1 byte. `b`'s alignment requirement is 4, but the next available offset is 1—not a multiple of 4—so the compiler fills in 3 bytes of padding and starts `b` at offset 4. `c` lands at offset 8 with an alignment requirement of 1, no problem there. Finally, the struct's strictest alignment requirement is 4 (contributed by `uint32_t b`), so the total size must be a multiple of 4—it currently stands at 9, so it gets padded up to 12.
@@ -182,10 +182,10 @@ The fix is surprisingly simple: **put the fields with larger alignment requireme
 
 ```c
 typedef struct {
-    uint32_t b;   // 4 bytes, offset 0
-    uint8_t  a;   // 1 byte, offset 4
-    uint8_t  c;   // 1 byte, offset 5
-    // 2 bytes of padding (offsets 6-7) so the total size is a multiple of 4
+    uint32_t b;   // 4 字节，偏移 0
+    uint8_t  a;   // 1 字节，偏移 4
+    uint8_t  c;   // 1 字节，偏移 5
+    // 填充 2 字节（偏移 6-7），使总大小为 4 的倍数
 } BetterLayout;
 ```
 
@@ -221,7 +221,7 @@ In the C99 era, if you needed manual control over alignment, you had to rely on 
 
 printf("alignof(uint8_t)  = %zu\n", alignof(uint8_t));   // 1
 printf("alignof(uint32_t) = %zu\n", alignof(uint32_t));  // 4
-printf("alignof(double)   = %zu\n", alignof(double));    // usually 8
+printf("alignof(double)   = %zu\n", alignof(double));    // 通常 8
 printf("alignof(WeirdLayout) = %zu\n", alignof(WeirdLayout)); // 4
 ```
 
@@ -234,13 +234,13 @@ Absent extra alignment specifiers, most ABIs give a struct an alignment requirem
 ```c
 #include <stdalign.h>
 
-// Force the DMA buffer to be 32-byte aligned
+// 强制 DMA 缓冲区 32 字节对齐
 alignas(32) uint8_t dma_buffer[256];
 
-// Force the alignment of a specific member inside a struct
+// 在结构体中强制某个字段的对齐
 typedef struct {
     uint8_t header;
-    alignas(4) uint32_t payload;  // Even with header before it, payload is guaranteed 4-byte aligned
+    alignas(4) uint32_t payload;  // 即使前面有 header，也保证 payload 4 字节对齐
 } AlignedFrame;
 ```
 
@@ -261,21 +261,21 @@ typedef struct {
 } Point3D;
 
 Point3D p1 = {
-    10, 20,        // x=10, y=20 (sequential initialization)
-    .flags = 0xFF  // designated initialization of flags
-    // z is automatically 0
+    10, 20,        // x=10, y=20（顺序初始化）
+    .flags = 0xFF  // 指定初始化 flags
+    // z 自动为 0
 };
 ```
 
 Designated initializers also work in arrays:
 
 ```c
-// Sparse initialization — only initialize the indices you need
+// 稀疏初始化——只初始化需要的下标
 uint8_t lookup[256] = {
     ['A'] = 1,
     ['B'] = 2,
     ['C'] = 3,
-    // everything else is 0
+    // 其余全部为 0
 };
 ```
 
@@ -289,7 +289,7 @@ The flexible array member (Flexible Array Member, FAM for short) is a C99 featur
 typedef struct {
     uint16_t length;
     uint8_t  type;
-    uint8_t  data[];  // Flexible array member; doesn't count toward the struct's size
+    uint8_t  data[];  // 柔性数组成员，不占结构体大小
 } Packet;
 ```
 
@@ -299,9 +299,9 @@ typedef struct {
 #include <stdlib.h>
 #include <string.h>
 
-/// @brief Create a packet with the given payload length
+/// @brief 创建一个指定长度的数据包
 Packet* create_packet(uint8_t type, const uint8_t* payload, uint16_t len) {
-    // Allocate: struct size + data length
+    // 分配：结构体大小 + 数据长度
     Packet* pkt = malloc(sizeof(Packet) + len);
     if (pkt == NULL) {
         return NULL;
@@ -312,10 +312,10 @@ Packet* create_packet(uint8_t type, const uint8_t* payload, uint16_t len) {
     return pkt;
 }
 
-// Usage
+// 使用
 uint8_t payload[] = {0x01, 0x02, 0x03};
 Packet* pkt = create_packet(0x42, payload, sizeof(payload));
-// Access pkt->data[0], pkt->data[1], pkt->data[2]
+// 访问 pkt->data[0], pkt->data[1], pkt->data[2]
 free(pkt);
 ```
 
@@ -335,21 +335,21 @@ typedef struct {
     uint8_t  priority;
 } TaskConfig;
 
-// Initialize an array of structs
+// 初始化一个结构体数组
 TaskConfig config_table[] = {
     {.id = 1, .timeout_ms = 100, .retry_count = 3, .priority = 2},
     {.id = 2, .timeout_ms = 200, .retry_count = 5, .priority = 1},
     {.id = 3, .timeout_ms = 50,  .retry_count = 1, .priority = 3},
 };
 
-// Get the number of elements in the array
+// 获取数组元素个数
 size_t task_count = sizeof(config_table) / sizeof(config_table[0]);
 ```
 
 Iterating over an array of structs works just like a plain array—you can use subscripts or pointers:
 
 ```c
-/// @brief Find the ID of the highest-priority task
+/// @brief 按优先级查找最高优先级任务的 ID
 uint8_t find_highest_priority(const TaskConfig* tasks, size_t count) {
     uint8_t max_priority = 0;
     uint8_t result_id = 0;
@@ -390,13 +390,13 @@ With this attribute, `sizeof(PackedFrame)` is a clean 1 + 2 + 1 + 4 = 8 bytes, w
 In C, a `struct` can contain only data members—no member functions, no access control, no inheritance. C++ keeps the `struct` keyword but grants it nearly the same capabilities as `class`. The only difference lies in the default access level: members of a `struct` default to `public`, members of a `class` default to `private`. Beyond that, a C++ `struct` can have constructors, destructors, member functions, inheritance, virtual functions—it can do everything.
 
 ```cpp
-// A struct in C++ — member functions allowed
+// C++ 中的 struct——可以有成员函数
 struct SensorReading {
     uint32_t timestamp;
     float temperature;
     float humidity;
 
-    // Member functions
+    // 成员函数
     bool is_overheating() const {
         return temperature > 85.0f;
     }
@@ -422,10 +422,10 @@ The C++ standard library provides `std::aligned_storage` (since C++11, supersede
 ```cpp
 #include <type_traits>
 
-// Allocate a block of raw memory aligned to 64 bytes
+// 分配一块 64 字节对齐的原始内存
 alignas(64) std::byte storage[sizeof(MyStruct)];
 
-// Or use std::aligned_storage (the pre-C++23 approach)
+// 或者使用 std::aligned_storage（C++23 前的做法）
 using AlignedStorage = std::aligned_storage_t<sizeof(MyStruct), alignof(MyStruct)>;
 ```
 
@@ -678,15 +678,15 @@ uint16_t Get_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength,
 
 #include <stddef.h>
 
-/* The CRC lookup tables and interface naming are adapted from the official RoboMaster example; the original names are kept for easy side-by-side comparison. */
+/* CRC 查表和接口命名改编自 RoboMaster 官方例程；为便于对照保留原命名。 */
 
-// Table-driven CRC
+// 查表法 CRC
 
-// Initial value used by CRC8.
+// CRC8 使用的初始值。
 static const uint8_t k_crc8_init = 0xffu;
 
-// CRC8 precomputed state-transition table.
-// Each round uses current_crc ^ next_byte as the index; the table entry is the next CRC state after folding in that byte.
+// CRC8 预计算状态转移表。
+// 每轮使用 current_crc ^ next_byte 作为索引，表项就是折叠该字节后的下一 CRC 状态。
 static const uint8_t k_crc8_tab[256] = {
     0x00, 0x5e, 0xbc, 0xe2, 0x61, 0x3f, 0xdd, 0x83, 0xc2, 0x9c, 0x7e, 0x20,
     0xa3, 0xfd, 0x1f, 0x41, 0x9d, 0xc3, 0x21, 0x7f, 0xfc, 0xa2, 0x40, 0x1e,
@@ -712,10 +712,10 @@ static const uint8_t k_crc8_tab[256] = {
     0xd7, 0x89, 0x6b, 0x35,
 };
 
-// Initial value used by the system's whole-frame CRC16.
+// 系统整帧 CRC16 使用的初始值。
 static const uint16_t k_crc16_init = 0xffffu;
 
-// CRC16 precomputed state-transition table.
+// CRC16 预计算状态转移表。
 static const uint16_t k_crc16_tab[256] = {
     0x0000, 0x1189, 0x2312, 0x329b, 0x4624, 0x57ad, 0x6536, 0x74bf, 0x8c48,
     0x9dc1, 0xaf5a, 0xbed3, 0xca6c, 0xdbe5, 0xe97e, 0xf8f7, 0x1081, 0x0108,
@@ -748,13 +748,13 @@ static const uint16_t k_crc16_tab[256] = {
     0x3de3, 0x2c6a, 0x1ef1, 0x0f78,
 };
 
-// Compute the CRC8 over a run of contiguous bytes.
+// 计算一段连续字节的 CRC8。
 uint8_t Get_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength,
                            uint8_t ucCRC8)
 {
   uint8_t ucIndex = 0u;
 
-  // Each iteration consumes 1 byte and folds it into the current CRC state.
+  // 每轮消耗 1 字节，并把该字节折叠进当前 CRC 状态。
   while (dwLength-- != 0u)
   {
     ucIndex = ucCRC8 ^ (*pchMessage++);
@@ -763,38 +763,38 @@ uint8_t Get_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength,
   return ucCRC8;
 }
 
-// Verify the CRC8 already stored at the end of the buffer.
+// 校验缓冲区末尾已保存的 CRC8。
 bool Verify_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength)
 {
   uint8_t expected = 0u;
 
-  // The system frame header must contain at least the valid fields plus the 1-byte CRC8.
+  // 系统帧头至少要包含有效字段和 1 字节 CRC8。
   if ((pchMessage == NULL) || (dwLength <= 2u))
   {
     return false;
   }
 
-  // The computation window excludes the CRC8 byte already stored at the end.
+  // 计算窗口排除末尾已经保存的 CRC8 字节。
   expected = Get_CRC8_Check_Sum(pchMessage, (uint16_t)(dwLength - 1u),
                                 k_crc8_init);
   return expected == pchMessage[dwLength - 1u];
 }
 
-// Write the freshly recomputed CRC8 to the end of the buffer.
+// 把重新计算得到的 CRC8 写入缓冲区末尾。
 void Append_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength)
 {
-  // Don't write to a null pointer or an undersized buffer.
+  // 不向空指针或长度不足的缓冲区写入。
   if ((pchMessage == NULL) || (dwLength <= 2u))
   {
     return;
   }
 
-  // The check byte itself does not take part in this CRC8 computation.
+  // 校验字节本身不参与本轮 CRC8 计算。
   pchMessage[dwLength - 1u] =
       Get_CRC8_Check_Sum(pchMessage, (uint16_t)(dwLength - 1u), k_crc8_init);
 }
 
-// Compute the CRC16 over a run of contiguous bytes.
+// 计算一段连续字节的 CRC16。
 uint16_t Get_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength,
                              uint16_t wCRC)
 {
@@ -805,7 +805,7 @@ uint16_t Get_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength,
     return 0xffffu;
   }
 
-  // Fold each input byte into the low bits of the CRC, then advance to the next state via the table.
+  // 将每个输入字节折叠到 CRC 低位，再通过查表推进到下一状态。
   while (dwLength-- != 0u)
   {
     chData = *pchMessage++;
@@ -815,36 +815,36 @@ uint16_t Get_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength,
   return wCRC;
 }
 
-// Verify the CRC16 stored in the last 2 bytes of a complete frame.
+// 校验完整帧末尾 2 字节保存的 CRC16。
 
 bool Verify_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength)
 {
   uint16_t expected = 0u;
 
-  // A complete frame must contain at least the protected data plus the 2-byte CRC16.
+  // 完整帧至少要包含受保护数据和 2 字节 CRC16。
   if ((pchMessage == NULL) || (dwLength <= 2u))
   {
     return false;
   }
 
-  // Recompute only the protected payload/header region; the trailing CRC16 is not part of the computation.
+  // 只重算受保护的载荷/帧头区域，末尾 CRC16 不参与计算。
   expected = Get_CRC16_Check_Sum(pchMessage, dwLength - 2u, k_crc16_init);
   return (((expected & 0x00ffu) == pchMessage[dwLength - 2u]) &&
           (((expected >> 8u) & 0x00ffu) == pchMessage[dwLength - 1u]));
 }
 
-// Append the CRC16 to the last 2 bytes of a complete frame buffer.
+// 把 CRC16 追加到完整帧缓冲区末尾 2 字节。
 void Append_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength)
 {
   uint16_t wCRC = 0u;
 
-  // Don't write to a null pointer or an undersized frame buffer.
+  // 不向空指针或长度不足的帧缓冲区写入。
   if ((pchMessage == NULL) || (dwLength <= 2u))
   {
     return;
   }
 
-  // Little-endian protocol: low byte first, high byte second.
+  // 小端协议：低字节在前，高字节在后。
   wCRC = Get_CRC16_Check_Sum(pchMessage, dwLength - 2u, k_crc16_init);
   pchMessage[dwLength - 2u] = (uint8_t)(wCRC & 0x00ffu);
   pchMessage[dwLength - 1u] = (uint8_t)((wCRC >> 8u) & 0x00ffu);
@@ -864,25 +864,23 @@ void Append_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength)
 
 #include "crc_ref.h"
 
-#define FRAME_START_BYTE 0xA5u /* Fixed header byte, used by the receiver to find the start of a frame. */
-#define FRAME_CRC16_SIZE 2u    /* The CRC16 occupies two on-wire bytes. */
+#define FRAME_START_BYTE 0xA5u /* 固定帧头，用于接收端寻找一帧的开始。 */
+#define FRAME_CRC16_SIZE 2u    /* CRC16 占两个线上字节。 */
 
 /*
- * On-wire frame format (all offsets are relative to the start address of protocol_frame_t):
+ * 线上帧格式（所有偏移量均相对于 protocol_frame_t 起始地址）：
  *
- *   Offset 0      start              Header byte, 1 byte
- *   Offset 1      type               Category, 1 byte
- *   Offset 2..3   payload_length     Length of the payload, 2 bytes, little-endian
- *   Offset 4..7   timestamp          Timestamp, 4 bytes, little-endian
- *   Offset 8      header_crc8        Header CRC8, 1 byte
- *   Offset 9..    payload            Variable-length application data
- *   Last 2 bytes  crc16              Whole-frame CRC16, low byte first
+ *   偏移 0       start              帧头，1 字节
+ *   偏移 1       type               所属分类，1 字节
+ *   偏移 2..3    payload_length     payload 长度，2 字节，小端序
+ *   偏移 4..7    timestamp          时间戳，4 字节，小端序
+ *   偏移 8       header_crc8        帧头 CRC8，1 字节
+ *   偏移 9..     payload            可变长度的业务数据
+ *   最后 2 字节  crc16              整帧 CRC16，低字节在前
  *
- * The payload is the protocol's variable-length region. A flexible array member must be the
- * last member of the struct, so the CRC16 tail is placed after the payload through extra
- * space in the same allocation. Multi-byte fields are stored as byte arrays and explicitly
- * read and written in the protocol's byte order, so that struct padding and host byte order
- * cannot influence the on-wire format.
+ * payload 是协议中的可变长度区域。柔性数组成员必须是结构体的最后一个成员，
+ * 因此 CRC16 尾部通过同一次分配的额外空间放在 payload 后面。多字节字段使用
+ * 字节数组保存，再显式按协议字节序读写，避免结构体填充和主机字节序影响线上格式。
  */
 typedef struct {
     uint8_t start;
@@ -894,23 +892,22 @@ typedef struct {
 } protocol_frame_t;
 
 enum {
-    FRAME_START_OFFSET = offsetof(protocol_frame_t, start), // Offset of the header byte
-    FRAME_TYPE_OFFSET = offsetof(protocol_frame_t, type), // Offset of the frame type
-    FRAME_PAYLOAD_LENGTH_OFFSET = offsetof(protocol_frame_t, payload_length), // Offset of the payload length
-    FRAME_TIMESTAMP_OFFSET = offsetof(protocol_frame_t, timestamp), // Offset of the timestamp
-    FRAME_HEADER_CRC8_OFFSET = offsetof(protocol_frame_t, header_crc8), // Offset of the header CRC8
-    FRAME_PAYLOAD_OFFSET = offsetof(protocol_frame_t, payload), // Offset of the variable-length data
-    FRAME_HEADER_SIZE = offsetof(protocol_frame_t, payload) // Length of the fixed on-wire header
+    FRAME_START_OFFSET = offsetof(protocol_frame_t, start), // 帧头偏移
+    FRAME_TYPE_OFFSET = offsetof(protocol_frame_t, type), // 帧类型偏移
+    FRAME_PAYLOAD_LENGTH_OFFSET = offsetof(protocol_frame_t, payload_length), // 帧负载长度偏移
+    FRAME_TIMESTAMP_OFFSET = offsetof(protocol_frame_t, timestamp), // 时间戳偏移
+    FRAME_HEADER_CRC8_OFFSET = offsetof(protocol_frame_t, header_crc8), // 帧头 CRC8 偏移
+    FRAME_PAYLOAD_OFFSET = offsetof(protocol_frame_t, payload), // 可变长度数据的偏移
+    FRAME_HEADER_SIZE = offsetof(protocol_frame_t, payload) // 固定线上帧头长度
 };
 
 /*
- * Write a 16-bit integer into the on-wire buffer in the chosen byte order.
+ * 按指定字节序把 16 位整数写入线上缓冲区。
  *
- * big_endian == true: big-endian, high byte first;
- * big_endian == false: little-endian, low byte first.
- * C has no optional default parameters, so false is the default choice a caller
- * should use, and it must be passed explicitly at every call site. The current
- * protocol's call sites uniformly pass false, i.e. little-endian.
+ * big_endian == true：大端序，高字节在前；
+ * big_endian == false：小端序，低字节在前。
+ * C 语言没有可省略的默认参数，因此 false 是调用者应使用的默认选择，
+ * 必须在调用处显式传入。当前协议的调用点统一传入 false，使用小端序。
  */
 static void write_u16(uint8_t *destination, uint16_t value,
                          bool big_endian) {
@@ -923,7 +920,7 @@ static void write_u16(uint8_t *destination, uint16_t value,
     }
 }
 
-/* Write a 32-bit integer into the on-wire buffer in the byte order selected by big_endian. */
+/* 按 big_endian 选择的字节序把 32 位整数写入线上缓冲区。 */
 static void write_u32(uint8_t *destination, uint32_t value,
                          bool big_endian) {
     if (big_endian) {
@@ -939,7 +936,7 @@ static void write_u32(uint8_t *destination, uint32_t value,
     }
 }
 
-/* Read a 16-bit integer from the on-wire buffer in the byte order selected by big_endian. */
+/* 按 big_endian 选择的字节序从线上缓冲区读取 16 位整数。 */
 static uint16_t read_u16(const uint8_t *source, bool big_endian) {
     if (big_endian) {
         return (uint16_t)(((uint16_t)source[0] << 8u) |
@@ -950,7 +947,7 @@ static uint16_t read_u16(const uint8_t *source, bool big_endian) {
                       ((uint16_t)source[1] << 8u));
 }
 
-/* Read a 32-bit integer from the on-wire buffer in the byte order selected by big_endian. */
+/* 按 big_endian 选择的字节序从线上缓冲区读取 32 位整数。 */
 static uint32_t read_u32(const uint8_t *source, bool big_endian) {
     if (big_endian) {
         return ((uint32_t)source[0] << 24u) |
@@ -966,20 +963,19 @@ static uint32_t read_u32(const uint8_t *source, bool big_endian) {
 }
 
 /*
- * Assemble one complete on-wire frame.
+ * 组装一帧完整的线上数据。
  *
- * The function first validates lengths and pointers, then allocates space; after that it
- * serializes the fields per the protocol and copies the payload, and finally computes the
- * CRC8 and CRC16. That way the CRCs cover the exact bytes that will actually be sent.
+ * 函数先检查长度和指针，再分配空间；之后按协议序列化字段、复制 payload，
+ * 最后计算 CRC8 和 CRC16。这样 CRC 覆盖的是最终真正要发送的字节。
  */
 static bool data_process(uint8_t type, uint32_t timestamp,
                         const uint8_t *payload, size_t payload_size,
                         protocol_frame_t **frame_out,
                         uint32_t *frame_size_out) {
-    size_t calculated_frame_size; // Calculated frame size
-    protocol_frame_t *frame; // The allocated frame buffer
+    size_t calculated_frame_size; // 计算的帧大小
+    protocol_frame_t *frame; // 分配的帧缓冲区
 
-    /* Results cannot be written back when output parameters are invalid. */
+    /* 输出参数无效时不能写回结果。 */
     if ((frame_out == NULL) || (frame_size_out == NULL)) {
         return false;
     }
@@ -987,17 +983,17 @@ static bool data_process(uint8_t type, uint32_t timestamp,
     *frame_out = NULL;
     *frame_size_out = 0u;
 
-    /* payload_length is only 16 bits; beyond that, the forced conversion would truncate. */
+    /* payload_length 只有 16 位，超出后强制转换会发生截断。 */
     if (payload_size > UINT16_MAX) {
         fputs("Payload is too large for the 16-bit length field.\n", stderr);
         return false;
     }
-    /* A NULL payload pointer is allowed only for an empty payload. */
+    /* 只有空 payload 才允许 payload 指针为 NULL。 */
     if ((payload == NULL) && (payload_size != 0u)) {
         fputs("Payload pointer is NULL for a non-empty payload.\n", stderr);
         return false;
     }
-    /* Check the addition before computing the total length, to guard against size_t overflow. */
+    /* 先检查加法，再计算总长度，防止 size_t 溢出。 */
     if (payload_size > SIZE_MAX - sizeof(protocol_frame_t) - FRAME_CRC16_SIZE) {
         fputs("Frame size calculation overflowed size_t.\n", stderr);
         return false;
@@ -1005,7 +1001,7 @@ static bool data_process(uint8_t type, uint32_t timestamp,
 
     calculated_frame_size =
         sizeof(protocol_frame_t) + payload_size + FRAME_CRC16_SIZE;
-    /* payload_size is already capped at uint16_t, so a full frame is at most 65546 bytes and converts safely to uint32_t. */
+    /* payload_size 已限制为 uint16_t，故完整帧最大为 65546 字节，可安全转为 uint32_t。 */
 
     frame = calloc(1u, calculated_frame_size);
     if (frame == NULL) {
@@ -1013,23 +1009,23 @@ static bool data_process(uint8_t type, uint32_t timestamp,
         return false;
     }
 
-    /* Write the fixed fields: ordinary multi-byte fields uniformly use little-endian. */
+    /* 写入固定字段：多字节普通字段统一使用小端序。 */
     frame->start = FRAME_START_BYTE;
     frame->type = type;
-    /* The protocol specifies little-endian for payload_length, so false is passed explicitly here. */
+    /* 协议规定 payload_length 使用小端序，因此这里明确传入 false。 */
     write_u16(frame->payload_length, (uint16_t)payload_size, false);
-    /* The protocol specifies little-endian for timestamp, so false is passed explicitly here. */
+    /* 协议规定 timestamp 使用小端序，因此这里明确传入 false。 */
     write_u32(frame->timestamp, timestamp, false);
     frame->header_crc8 = 0u;
 
-    /* The payload is the variable-length region, immediately after the fixed header. */
+    /* payload 是可变长度区域，紧接在固定帧头之后。 */
     if (payload_size != 0u) {
         memcpy(frame->payload, payload, payload_size);
     }
 
-    /* The CRC8 covers the first 8 header bytes and writes its result to offset 8. */
+    /* CRC8 覆盖前 8 个帧头字节，并把结果写入偏移 8。 */
     Append_CRC8_Check_Sum((uint8_t *)frame, (uint16_t)FRAME_HEADER_SIZE);
-    /* The CRC16 computation covers the header and payload; its result goes into the two CRC16 bytes reserved at the frame tail. */
+    /* CRC16 计算覆盖帧头和 payload；计算结果写入帧尾预留的两个 CRC16 字节。 */
     Append_CRC16_Check_Sum((uint8_t *)frame, (uint32_t)calculated_frame_size);
 
     *frame_out = frame;
@@ -1048,23 +1044,23 @@ static void print_layout(void) {
 
 int main(void) {
     uint8_t crc_test_vector[] = "123456789";
-    /* Sample payload; in a real project, replace it with the application data to send. */
+    /* 示例 payload；实际项目中可替换为待发送的业务数据。 */
     const uint8_t sample_payload[] = {0x10u, 0x20u, 0x30u, 0x40u};
     const size_t payload_size = sizeof(sample_payload);
     protocol_frame_t *frame = NULL;
     uint32_t frame_size = 0u;
     const uint8_t *crc16;
 
-    /* type=0x01 marks a sample application category; the timestamp is fixed at 0x12345678. */
+    /* type=0x01 表示一个示例业务分类，时间戳固定为 0x12345678。 */
     if (data_process(0x01u, 0x12345678u, sample_payload,
                      payload_size, &frame, &frame_size) == false) {
         return EXIT_FAILURE;
     }
 
-    /* The CRC16 sits after the payload, so its starting offset varies with the payload length. */
+    /* CRC16 位于 payload 后面，因此它的起始偏移随 payload 长度变化。 */
     crc16 = &frame->payload[payload_size];
 
-    /* The fixed test vector locks in the current CRC parameters, guarding against accidental edits to the lookup tables or initial values. */
+    /* 固定测试向量锁定当前 CRC 参数，防止查找表或初值被误改。 */
     if ((Get_CRC8_Check_Sum(crc_test_vector, 9u, 0xffu) != 0x0bu) ||
         (Get_CRC16_Check_Sum(crc_test_vector, 9u, 0xffffu) != 0x6f91u)) {
         fputs("CRC test vector check failed.\n", stderr);
@@ -1077,7 +1073,7 @@ int main(void) {
     printf("crc16 offset:          %u\n",
            (unsigned int)(crc16 - (const uint8_t *)frame));
     printf("total frame size:      %u bytes\n", (unsigned int)frame_size);
-    /* Read the on-wire fields through the decode functions to verify both byte order and values. */
+    /* 通过解码函数读取线上字段，验证字节序与数值均正确。 */
     printf("payload length:        %u\n",
            (unsigned int)read_u16(frame->payload_length, false));
     printf("timestamp:             0x%08X\n",

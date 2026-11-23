@@ -24,9 +24,9 @@ title: 'Templates and Exception Safety: move_if_noexcept and Reallocation'
 translation:
   source: documents/vol4-advanced/vol3-metaprogramming-cpp20-23/08-templates-and-exception-safety.md
   source_hash: 3b3ac4f349bb0081ace0b94aa94d1723c3825279c61f223c804068c1b006de80
-  translated_at: '2026-09-26T04:50:24+00:00'
-  engine: anthropic
-  token_count: 1700
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6020
 ---
 # Templates and Exception Safety: move_if_noexcept and Reallocation
 
@@ -53,7 +53,7 @@ The optimization that matters most in this piece: only a `noexcept` move may be 
 C++11 gave us a tool, `std::move_if_noexcept`, which folds the tension between "move" and "the strong exception guarantee" into a single function. The behavior is plain: if `T`'s move constructor is `noexcept`, it returns an rvalue reference (move); otherwise it returns a const lvalue reference (copy).
 
 ```cpp
-// The gist (the standard library's real implementation is equivalent to this check)
+// 大意(标准库的真实实现等价于这个判断)
 template <typename T>
 conditional_t<is_nothrow_move_constructible_v<T> && !is_lvalue_reference_v<T>,
               T&&, const T&>
@@ -135,14 +135,14 @@ Of course, not every move can be `noexcept`. If a move has to allocate memory in
 A template function has no way to know whether the type `T` it operates on might throw, but it can "inherit" that information, thanks to **conditional noexcept**: `noexcept(noexcept(expression))`. The outer `noexcept` is the specifier; the inner `noexcept(...)` is the operator (evaluated at compile time, asking "is this expression `noexcept`"). Together they say: "my function's noexcept-ness equals the noexcept-ness of that underlying expression."
 
 ```cpp
-// No noexcept marked: the caller can only conservatively assume it may throw
+// 没标 noexcept:调用方只能保守地认为它可能抛
 template <typename T>
 void uncond_op(T& x) {
     T tmp(std::move(x));
     x = std::move(tmp);
 }
 
-// Conditional noexcept: inherit whether T's move construction is noexcept
+// 条件 noexcept:继承 T 的 move 构造是否 noexcept
 template <typename T>
 void cond_op(T& x) noexcept(noexcept(T(std::move(x)))) {
     T tmp(std::move(x));

@@ -23,9 +23,9 @@ title: "NoDestructor prerequisite (I): placement new and aligned storage"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/04_no_destructor/full/pre-01-placement-new-and-aligned-storage.md
   source_hash: 856b38c2422527c141d890c916051d9df21a4ca61c7a11d5f7a6b88f3c3ac2e5
-  translated_at: '2026-09-26T03:17:04+00:00'
-  engine: anthropic
-  token_count: 1800
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5789
 ---
 # NoDestructor prerequisite (I): placement new and aligned storage
 
@@ -42,10 +42,10 @@ An ordinary `new T(args)` is really two steps folded into one: first `operator n
 The syntax just stuffs an extra `(addr)` after `new`, telling it where to construct: `new (addr) T(args)`.
 
 ```cpp
-#include <new>   // required for placement new
+#include <new>   // placement new 需要
 
-alignas(int) unsigned char buf[sizeof(int)];   // existing memory (a char array)
-int* p = new (buf) int(42);                      // construct the int in buf, no allocation!
+alignas(int) unsigned char buf[sizeof(int)];   // 已有内存(一段 char 数组)
+int* p = new (buf) int(42);                      // 在 buf 上构造 int,不分配!
 *p == 42;
 ```
 
@@ -56,8 +56,8 @@ On the destruction side you have to do it yourself — call the destructor manua
 ```cpp
 using I = int;
 I* p = new (buf) I(42);
-p->~I();        // manual destruction (really unnecessary for a trivial type like int, but that's the mechanism)
-// buf itself is a stack array, reclaimed automatically — none of placement new's business
+p->~I();        // 手动析构(对 int 这种平凡类型其实没必要,但机制如此)
+// buf 本身是栈数组,自动回收,不归 placement new 管
 ```
 
 (A small compiler gotcha hides here: for a bare built-in type name, the pseudo-destructor call has to go through a typedef alias — mainstream compilers reject `p->~int()`; you must write `using I=int; p->~I();`. The first time we ran into that, we stared at it for a good while.)
@@ -75,8 +75,8 @@ Two keywords split the work. `alignof(T)` queries how many bytes `T`'s alignment
 If you hand placement new an unaligned address, the behavior is undefined:
 
 ```cpp
-unsigned char buf[13];           // the address may not be 4-byte aligned
-new (buf) int(42);               // UB! buf's alignment may not be enough for int
+unsigned char buf[13];           // 地址可能不是 4 字节对齐
+new (buf) int(42);               // UB!buf 的对齐可能不够 int
 ```
 
 So in this hand-over-the-memory step, the alignment must satisfy `T`. Non-negotiable.
@@ -135,7 +135,7 @@ public:
     explicit MiniNoDestructor(Args&&... args) {
         new (storage_) T(std::forward<Args>(args)...);   // placement new
     }
-    ~MiniNoDestructor() = default;   // does not call ~T()!
+    ~MiniNoDestructor() = default;   // 不调 ~T()!
     MiniNoDestructor(const MiniNoDestructor&) = delete;
 
     T& operator*() { return *get(); }
@@ -148,13 +148,13 @@ private:
 
 struct Noisy {
     Noisy() { std::puts("Noisy()"); }
-    ~Noisy() { std::puts("~Noisy()"); }   // this destructor never runs
+    ~Noisy() { std::puts("~Noisy()"); }   // 这个析构永远不跑
 };
 
 int main() {
     {
-        static const MiniNoDestructor<Noisy> nd;   // constructed once
-        // leaving scope / program exit: ~MiniNoDestructor runs (trivial), ~Noisy does not
+        static const MiniNoDestructor<Noisy> nd;   // 构造一次
+        // 离开作用域/程序退出:~MiniNoDestructor 跑(平凡),~Noisy 不跑
     }
     std::puts("(程序退出前 ~Noisy 不会打印)");
     return 0;

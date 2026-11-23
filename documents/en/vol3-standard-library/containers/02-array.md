@@ -25,9 +25,9 @@ title: 'array: An Aggregate Container with a Compile-Time Fixed Size'
 translation:
   source: documents/vol3-standard-library/containers/02-array.md
   source_hash: 7c61645f47239ac6cb379c18978d92de85382501523cd72c6e30c51e6cec442d
-  translated_at: '2026-09-26T02:16:28+00:00'
-  engine: anthropic
-  token_count: 4500
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5333
 ---
 # array: An Aggregate Container with a Compile-Time Fixed Size
 
@@ -36,10 +36,10 @@ translation:
 `std::array` is the "modern shell" C++11 fitted onto C arrays. C arrays `T[N]` come with a batch of old ailments: they decay to a pointer when passed to a function (dropping the length), there is no `.size()`, no whole-object copy assignment, and no way to return one from a function. `std::array<T, N>` wraps that contiguous block of memory in a class template and adds the STL interfaces — and this is the key — **it is an aggregate type, with no extra overhead whatsoever**: `sizeof` is identical to the C array, with no virtual functions, no vtable pointer, and no extra members.
 
 ```cpp
-std::array<int, 5> a = {1, 2, 3, 4, 5};   // size 5 is nailed down at compile time
+std::array<int, 5> a = {1, 2, 3, 4, 5};   // 大小 5 在编译期定死
 a.size();        // 5
-a[0];            // 1, O(1)
-a.data();        // int*, pointing at the underlying contiguous memory
+a[0];            // 1，O(1)
+a.data();        // int*，指向底层连续内存
 ```
 
 That `N` is a template parameter, a compile-time constant. It means the array's size is part of its type — `std::array<int, 5>` and `std::array<int, 6>` are two different types and cannot be assigned to each other. What that cost buys is zero dynamic allocation: the memory an array occupies is exactly that contiguous block of data, living on the stack or in static storage, never touching the heap.
@@ -49,10 +49,10 @@ That `N` is a template parameter, a compile-time constant. It means the array's 
 Let's count out array's improvements over C arrays one by one. First, **no decay to a pointer**: pass a C array to a function and it decays into `T*`, dropping the length; array is an object, and passing it preserves the full type (N included) — you either pass a `const std::array<T, N>&`, or call `.data()` explicitly to hand a pointer to a C interface. Second, **it has the STL interfaces**: `.size()`, `.empty()`, `.begin()` / `.end()`, `.data()`, `operator[]`, `.at()` — it feeds straight into `<algorithm>` and range-based for. Third, **whole-object copy and assignment**: `auto b = a;` is an element-by-element copy, and an array can also serve as a function return value or a class member — none of which a C array can do.
 
 ```cpp
-std::array<int, 4> make() { return {1, 2, 3, 4}; }   // a C array cannot do this
+std::array<int, 4> make() { return {1, 2, 3, 4}; }   // C 数组做不到
 auto a = make();
-auto b = a;        // whole-object copy, a C array cannot do this
-b.fill(0);         // zeroed in one shot
+auto b = a;        // 整体拷贝，C 数组做不到
+b.fill(0);         // 一把清零
 ```
 
 But underneath, it is still that same contiguous block of memory. The standard guarantees that array is an aggregate, so `sizeof(std::array<T, N>)` is exactly `sizeof(T) * N` (no extra members, no waste beyond tail padding). There is no added overhead — only added interfaces and type safety.
@@ -69,8 +69,8 @@ array is an aggregate, and that earns it a "tuple-like" dividend beyond what C a
 
 ```cpp
 std::array<int, 3> a = {10, 20, 30};
-std::get<1>(a);            // 20, compile-time index, type-safe
-auto [x, y, z] = a;        // structured bindings: x=10, y=20, z=30
+std::get<1>(a);            // 20，编译期下标，类型安全
+auto [x, y, z] = a;        // 结构化绑定：x=10, y=20, z=30
 static_assert(std::tuple_size_v<decltype(a)> == 3);
 ```
 
@@ -134,10 +134,10 @@ constexpr std::array<uint32_t, 256> make_crc_table()
     return t;
 }
 
-// computed at compile time, lands in the read-only section; zero runtime cost
+// 编译期算完，进只读段；运行时零开销
 constexpr auto crc_table = make_crc_table();
 static_assert(crc_table.size() == 256);
-static_assert(crc_table[0] == 0x00000000u);   // input 0 gives result 0
+static_assert(crc_table[0] == 0x00000000u);   // 输入 0，结果 0
 ```
 
 This 256-entry table is fully computed by the time compilation ends; at runtime the program reads it straight from the read-only section, spending neither RAM nor CPU cycles. This "compile-time lookup table" is the golden array + constexpr combination — a C array with constexpr cannot get this clean (especially once returning by copy is involved).

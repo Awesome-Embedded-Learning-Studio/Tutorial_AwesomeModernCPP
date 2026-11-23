@@ -25,9 +25,9 @@ title: 'OnceCallback hands-on (IV): designing the cancellation token'
 translation:
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/01-4-once-callback-cancellation-token.md
   source_hash: 0635aad9ae5b7bd7184cc93c2191513f47a3caaccfcb5e558f4aeb8fbfee1c31
-  translated_at: '2026-09-26T00:30:44+00:00'
-  engine: anthropic
-  token_count: 2243
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6116
 ---
 # OnceCallback hands-on (IV): designing the cancellation token
 
@@ -85,10 +85,10 @@ Just saying "shared on copy" may still feel abstract. Look at the snippet below:
 
 ```cpp
 auto token1 = std::make_shared<CancelableToken>();
-auto token2 = token1;  // shares the same Flag
+auto token2 = token1;  // 共享同一个 Flag
 
 token1->invalidate();
-assert(!token2->is_valid());  // token2 sees the invalidation too
+assert(!token2->is_valid());  // token2 也看到了失效
 ```
 
 One caution is worth sounding here: the example wraps an extra `shared_ptr<CancelableToken>` around the outside purely to keep the snippet short. The real usage is to copy `CancelableToken` itself by value (it already shares state via its internal `shared_ptr`); there is no need to wrap another layer of smart pointer around it.
@@ -129,7 +129,7 @@ This check does not look at the token alone. It first glances at the callback's 
 ReturnType impl_run(FuncArgs... args) {
     assert(status_ == Status::kValid);
 
-    // Cancellation check before execution
+    // 取消检查在执行前
     if (token_ && !token_->is_valid()) {
         status_ = Status::kConsumed;
         func_ = nullptr;
@@ -140,7 +140,7 @@ ReturnType impl_run(FuncArgs... args) {
         }
     }
 
-    // Normal consumption flow...
+    // 正常消费流程...
 }
 ```
 
@@ -161,27 +161,27 @@ Chromium's choice is harsher still: it `CHECK`-fails and terminates the process 
 ```cpp
 using namespace tamcpp::chrome;
 
-// Create the token and the callback
+// 创建令牌和回调
 auto token = std::make_shared<CancelableToken>();
 bool executed = false;
 
 OnceCallback<void()> cb([&executed] { executed = true; });
 cb.set_token(token);
 
-// With a valid token, the callback executes normally
+// 令牌有效时，正常执行
 assert(!cb.is_cancelled());
 std::move(cb).run();
-assert(executed);  // the callback executed
+assert(executed);  // 回调被执行了
 
-// Create another callback, this time invalidate the token first
+// 创建另一个回调，这次先取消令牌
 executed = false;
 auto cb2 = OnceCallback<void()>([&executed] { executed = true; });
 cb2.set_token(token);
-token->invalidate();  // void the token
+token->invalidate();  // 作废令牌
 
 assert(cb2.is_cancelled());
-std::move(cb2).run();  // a cancelled void callback does not execute and does not throw
-assert(!executed);     // the callback did not execute
+std::move(cb2).run();  // 取消的 void 回调不执行，不抛异常
+assert(!executed);     // 回调没有被执行
 ```
 
 Read the second example carefully: `cb2.run()` really was called, but not a single line of the lambda inside ran. `impl_run()` ran into the invalidated token before executing, consumed the callback on the spot, and `return`ed — so `executed` is still `false`. That is the transparent semantics of a cancelled void callback.

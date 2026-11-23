@@ -16,9 +16,9 @@ cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/compilation/10-library-search-logic.md
   source_hash: b6180b309d0f57fe8e0ed4a91f73bf41de6a58d1a6f8a656aeba1360ccf352f5
-  translated_at: '2026-10-13T04:13:54+00:00'
-  engine: anthropic
-  token_count: 8600
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 15113
 ---
 
 # Library Search Logic: How Libraries Are Found at Link Time and Run Time
@@ -28,7 +28,7 @@ At the close of part 09 we handed over to today three questions that come up on 
 For the specimen we keep the name calc, but swap the contents for a setup that reports its own identity: the function inside the library is simply called answer, and whichever library got linked in, whichever got loaded in, the return value announces its number on the spot:
 
 ```c
-// main.c — the caller: whichever number answer returns, that is the library that got picked
+// main.c —— 调用方:answer 返回几,选中的就是几号库
 #include <stdio.h>
 extern int answer(void);
 int main(void) { printf("answer=%d\n", answer()); return 0; }
@@ -41,8 +41,8 @@ I have a whole row of these libraries prepared, with answer running from 1 up to
 The linker holds a ready-made list: every -L you write adds one directory to the list, ranked just as they were written down. Don't take my word for it — let's set out two same-named libraries with different contents:
 
 ```text
-$ ar rcs dir_a/libcalc.a calc_a.o      # answer returns 1
-$ ar rcs dir_b/libcalc.a calc_b.o      # answer returns 2
+$ ar rcs dir_a/libcalc.a calc_a.o      # answer 返回 1
+$ ar rcs dir_b/libcalc.a calc_b.o      # answer 返回 2
 $ gcc main.o -Ldir_a -Ldir_b -lcalc -o app_a && ./app_a
 answer=1
 $ gcc main.o -Ldir_b -Ldir_a -lcalc -o app_b && ./app_b
@@ -70,7 +70,7 @@ With the directory settled, the files inside one and the same directory have the
 
 ```text
 $ cp dir_a/libcalc.a mixed/libcalc.a
-$ gcc -shared -fPIC -o mixed/libcalc.so calc_so.c    # answer returns 7
+$ gcc -shared -fPIC -o mixed/libcalc.so calc_so.c    # answer 返回 7
 $ gcc main.o -Lmixed -lcalc -o app_mixed && LD_LIBRARY_PATH=mixed ./app_mixed
 answer=7
 $ readelf -d app_mixed | grep libcalc
@@ -280,7 +280,7 @@ target_link_libraries(app PRIVATE ${CALC_LIB})
 ```
 
 ```text
--- find_library got: /tmp/…/libs/libcalc.so
+-- find_library 拿到: /tmp/…/libs/libcalc.so
 $ cmake --build build --verbose 2>&1 | grep "cc .*-o app"
 /usr/sbin/cc … main_c.c.o -o app  -Wl,-rpath,/tmp/…/libs /tmp/…/libs/libcalc.so
 ```

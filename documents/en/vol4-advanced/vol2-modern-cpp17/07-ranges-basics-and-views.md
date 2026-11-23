@@ -21,9 +21,9 @@ title: 'C++20 Ranges: Ranges and Views'
 translation:
   source: documents/vol4-advanced/vol2-modern-cpp17/07-ranges-basics-and-views.md
   source_hash: 99b8287145b4dbb3100c666744484c732941d2aa906389cb56751652f55af273
-  translated_at: '2026-09-26T03:28:19+00:00'
-  engine: anthropic
-  token_count: 6000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7633
 ---
 # C++20 Ranges: Ranges and Views
 
@@ -44,7 +44,7 @@ std::sort(vec.begin(), vec.end());
 C++20 just takes the whole container:
 
 ```cpp
-std::ranges::sort(vec);   // the whole range goes in
+std::ranges::sort(vec);   // 整个 range 丢进去
 ```
 
 That is only the surface sugar; the real firepower sits in the set of view factories inside the `<ranges>` header. Let's draw the two concepts apart first:
@@ -107,19 +107,19 @@ There is a counterintuitive pitfall worth flagging early. Saying a view **refere
 ```cpp
 std::vector<int> data = {120, 45, 230, 67, 340, 89, 56, 180};
 
-// filter: keep only readings within [50,300]
+// filter:只保留落在 [50,300] 的读数
 auto valid = data | std::views::filter([](int v){ return v >= 50 && v <= 300; });
 
-// transform: convert a 12-bit ADC raw value to voltage (mV scale)
+// transform:12 位 ADC 原值转电压(mV 量级)
 auto mv = std::views::transform(data, [](int adc){ return adc * 3300 / 4095; });
 
-// take / drop: slice the head/tail of a data frame
+// take / drop:切数据帧的头部/尾部
 auto seq = std::views::iota(0, 10);
 auto first3 = seq | std::views::take(3);             // 0 1 2
 auto rest    = std::views::iota(0, 10) | std::views::drop(3);   // 3..9
 auto middle  = std::views::iota(0, 10) | std::views::drop(2) | std::views::take(4);  // 2 3 4 5
 
-// iota: generate ADC channel numbers 0..15, using no storage
+// iota:生成 ADC 通道编号 0..15,不占任何存储
 auto adc_channels = std::views::iota(0, 16);
 ```
 
@@ -130,7 +130,7 @@ For string parsing there is also `split`, which cuts on a delimiter. "Comma- or 
 ```cpp
 std::string raw = "sensor1=25,sensor2=30,sensor3=28";
 for (auto sub : raw | std::views::split(',')) {
-    std::string_view sv{sub.begin(), sub.end()};   // sub is not a string; convert to string_view to use it
+    std::string_view sv{sub.begin(), sub.end()};   // sub 不是 string,转成 string_view 用
     // [sensor1=25] [sensor2=30] [sensor3=28]
 }
 ```
@@ -222,7 +222,7 @@ Notice that `999` and `-200` never appeared in any intermediate buffer at any po
 A view holds no data — flip that advantage over and you get its biggest pitfall: **once the source container is gone, the view dangles**. The most common way to hit it is returning a view from a function while the view references a local variable of that function:
 
 ```cpp
-// Counter-example: local is destroyed when the function returns; the returned view dangles immediately
+// 反例:local 在函数返回时析构,返回的视图立刻悬空
 auto make_bad_view() {
     std::vector<int> local = {1, 2, 3, 4, 5};
     return local | std::views::filter([](int x){ return x > 2; });

@@ -28,9 +28,9 @@ title: 'chrono: duration, Clocks, and C++20 Calendars'
 translation:
   source: documents/vol3-standard-library/time-numeric/58-chrono.md
   source_hash: 2f42ec4087ce9706e85098e230750972376d1a55a7da54bc6501aca73bffb3d3
-  translated_at: '2026-09-26T00:06:46+00:00'
-  engine: anthropic
-  token_count: 8200
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 24319
 ---
 
 # chrono: duration, Clocks, and C++20 Calendars
@@ -46,10 +46,10 @@ In this article we take chrono apart down to the gears: first, how `duration` us
 `duration` is chrono's foundation. The one-sentence definition: **a number of ticks (the count) times a tick period (the period)**. `period` is a `std::ratio`—a compile-time fraction describing "how many seconds one tick equals".
 
 ```cpp
-// The real thing in the standard library (simplified)
+// 标准库里的真身（简化）
 template <typename Rep, typename Period = std::ratio<1>>
 class duration {
-    Rep rep_;   // the tick count, usually int/long long/double
+    Rep rep_;   // 刻度数，通常是 int/long long/double
 };
 ```
 
@@ -67,7 +67,7 @@ using namespace std::chrono;
 int main() {
     auto half_hour = 30min;     // duration<...minutes>
     auto one_sec   = 1s;        // duration<...seconds>
-    auto frame     = 16ms;      // 16 milliseconds, a typical frame time
+    auto frame     = 16ms;      // 16 毫秒，常见帧时间
     std::cout << "30min = " << half_hour.count() << " min\n";
     std::cout << "1s    = " << one_sec.count() << " s\n";
     std::cout << "16ms  = " << frame.count() << " ms\n";
@@ -95,12 +95,12 @@ What really shows off chrono's design chops is `Period`'s fractional arithmetic.
 
 using namespace std::chrono;
 
-// the period of 1.5Hz = 2/3 s
+// 1.5Hz 的周期 = 2/3 秒
 using frame_period   = std::ratio<2, 3>;
 using frame_duration = duration<long long, frame_period>;
 
 int main() {
-    frame_duration fd{1};   // 1 tick, which is exactly 2/3 s
+    frame_duration fd{1};   // 1 个 tick，恰好是 2/3 秒
     std::cout << "1 tick of (2/3)s\n";
     std::cout << "  as seconds (trunc) = "
               << duration_cast<seconds>(fd).count() << " s\n";
@@ -125,7 +125,7 @@ Add `duration`s with different periods, and the result's period automatically la
 
 ```cpp
 auto sum = seconds{1} + milliseconds{500};
-// sum's type is milliseconds, count() == 1500
+// sum 的类型是 milliseconds，count() == 1500
 ```
 
 This compile-time fractional arithmetic is the fundamental thing separating chrono from the naive "store a `double` count of seconds" scheme: **all unit conversion happens at the type level, integer arithmetic preserves precision, and the compiler computes the common denominator for you**. The price is ugly template error messages; the payoff is type safety.
@@ -139,7 +139,7 @@ Implicit conversion between durations obeys one hard rule: **only the "lossless"
 #include <chrono>
 using namespace std::chrono;
 int main() {
-    seconds s = milliseconds{500};   // 500ms -> seconds: not evenly divisible, precision would be lost
+    seconds s = milliseconds{500};   // 500ms -> seconds，不能整除，会丢精度
     (void)s;
     return 0;
 }
@@ -177,7 +177,7 @@ int main() {
     std::cout << "  round<seconds>         = "
               << round<seconds>(ms).count() << " s\n";
 
-    milliseconds ms2{1250};  // 1.25s, exactly half; watch how round handles it
+    milliseconds ms2{1250};  // 1.25s，正好半秒，看 round 怎么处理
     std::cout << "\n1250ms:\n";
     std::cout << "  floor<seconds> = " << floor<seconds>(ms2).count() << " s\n";
     std::cout << "  ceil<seconds>  = " << ceil<seconds>(ms2).count() << " s\n";
@@ -208,7 +208,7 @@ There is also one way around integer truncation: make `double` the `Rep`. `durat
 `duration` is "a span of time"; `time_point` is "a moment". Its definition is just as simple: **some clock's epoch, plus a duration**.
 
 ```cpp
-// simplified
+// 简化
 template <typename Clock, typename Duration = typename Clock::duration>
 class time_point {
     Duration since_epoch_;
@@ -348,11 +348,11 @@ int main() {
     auto ymd = 2026y / June / 22d;          // year_month_day
     std::cout << "ymd.ok()? " << ymd.ok() << '\n';
 
-    // year_month_day -> sys_days (C++20's "days-granularity time_point")
+    // year_month_day -> sys_days（C++20 的「天数级别 time_point」）
     auto sys = sys_days{ymd};
     std::cout << "2026-06-22 = " << sys << '\n';
 
-    // which day of the week is it?
+    // 算星期几
     weekday wd{sys};
     std::cout << "weekday: " << wd
               << " (ISO 编码 " << wd.iso_encoding() << ")\n";
@@ -412,11 +412,11 @@ The most elegant piece of the C++20 calendar is `last`. Plenty of business requi
 using namespace std::chrono;
 
 int main() {
-    // the last Sunday of June 2026
+    // 2026 年 6 月最后一个周日
     auto last_sun_june = year{2026} / June / Sunday[last];
     std::cout << "2026/June/Sunday[last] = " << sys_days{last_sun_june} << '\n';
 
-    // the last day of the month
+    // 每月最后一天
     auto last_day = year{2026} / February / last;
     std::cout << "2026/February/last = " << sys_days{last_day} << '\n';
     return 0;
@@ -482,7 +482,7 @@ int main() {
         auto now = system_clock::now();
         std::cout << "current_zone: " << current_zone()->name() << '\n';
 
-        // the same time point, mapped into different time zones
+        // 同一个时间点，映射到不同时区
         auto sh = locate_zone("Asia/Shanghai");
         auto ny = locate_zone("America/New_York");
         auto utc = locate_zone("UTC");
@@ -530,13 +530,13 @@ int main() {
     std::cout << std::format("{:%A %B %d, %Y}\n", sys);      // Monday June 22, 2026
     std::cout << std::format("{:%Y年%m月%d日}\n", sys);       // 2026年06月22日
 
-    // a time_point with a time of day
+    // 带时间的 time_point
     auto tp = sys + 15h + 30min + 7s;
     std::cout << std::format("{:%Y-%m-%d %H:%M:%S}\n", tp);  // 2026-06-22 15:30:07
     std::cout << std::format("{:%F %T}\n", tp);              // %F=%Y-%m-%d, %T=%H:%M:%S
     std::cout << std::format("{:%R}\n", tp);                 // %H:%M -> 15:30
 
-    // 12-hour clock
+    // 12 小时制
     auto pm = sys + 21h + 5min;
     std::cout << std::format("{:%I:%M %p}\n", pm);           // 09:05 PM
     return 0;

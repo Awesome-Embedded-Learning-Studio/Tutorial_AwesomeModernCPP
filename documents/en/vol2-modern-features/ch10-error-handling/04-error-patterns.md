@@ -27,9 +27,9 @@ title: 'Error Handling Patterns: A Selection Guide and Best Practices'
 translation:
   source: documents/vol2-modern-features/ch10-error-handling/04-error-patterns.md
   source_hash: ab1d0b97afa451f4415ac032c0c0c11091b93e29d98ce1a666e5aad040d8faaf
-  translated_at: '2026-09-25T16:45:19+00:00'
-  engine: anthropic
-  token_count: 2750
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 10750
 ---
 # Error Handling Patterns: A Selection Guide and Best Practices
 
@@ -130,8 +130,8 @@ The core idea of functional error handling is: **errors are values, not surprise
 C++ has no built-in `?` operator, but we can simulate one with a macro. It is remarkably handy in functional-style error handling:
 
 ```cpp
-/// TRY macro: if the expression returns an error, propagate it upward immediately
-/// Uses GCC/Clang statement expression syntax
+/// TRY 宏：如果表达式返回错误，直接向上传播
+/// 使用 GCC/Clang 的 statement expression 语法
 #define TRY(expr)                                           \
     ({                                                      \
         auto _result = (expr);                              \
@@ -139,7 +139,7 @@ C++ has no built-in `?` operator, but we can simulate one with a macro. It is re
         std::move(_result.value());                         \
     })
 
-// Usage example
+// 使用示例
 std::expected<std::string, ConfigError> read_file(const std::string& path);
 std::expected<Config, ConfigError> parse_config(const std::string& content);
 std::expected<Config, ConfigError> validate_config(const Config& cfg);
@@ -180,12 +180,12 @@ The macro version is far more concise, and its semantics are clear—`TRY` means
 For compilers that do not support statement expressions, there is a slightly more verbose but portable version:
 
 ```cpp
-// Portable version: the caller declares the variable
+// 可移植版本：需要调用方声明变量
 #define TRY_OUT(result, expr)            \
     auto result = (expr);                \
     if (!result) return std::unexpected(result.error())
 
-// Usage
+// 使用
 std::expected<Config, ConfigError> load_config(const std::string& path) {
     TRY_OUT(content, read_file(path));
     TRY_OUT(config, parse_config(content.value()));
@@ -202,7 +202,7 @@ Functional style also makes retry logic easy to implement. A generic retry wrapp
 #include <chrono>
 #include <thread>
 
-/// Retry wrapper with exponential backoff
+/// 带指数退避的重试包装器
 template <typename F, typename Rep, typename Period>
 auto retry(F&& func, unsigned max_attempts,
            std::chrono::duration<Rep, Period> initial_delay)
@@ -217,16 +217,16 @@ auto retry(F&& func, unsigned max_attempts,
         if (attempt == max_attempts - 1) return result;
 
         std::this_thread::sleep_for(delay);
-        delay *= 2;  // exponential backoff
+        delay *= 2;  // 指数退避
     }
-    return ResultType();  // never reached
+    return ResultType();  // 不会到这里
 }
 
-// Usage
+// 使用
 auto result = retry(
     []() { return fetch_url("https://example.com"); },
-    3,                          // at most 3 attempts
-    std::chrono::milliseconds(100)  // initial delay 100ms
+    3,                          // 最多 3 次
+    std::chrono::milliseconds(100)  // 初始延迟 100ms
 );
 ```
 
@@ -292,14 +292,14 @@ int main() {
 In embedded development we constantly have to work with C APIs. C APIs usually represent errors as integer error codes, while our C++ code uses `expected`. Convert once at the boundary, then stay fully C++-style inside:
 
 ```cpp
-// Suppose the C API looks like this
+// 假设 C API 长这样
 extern "C" {
-    int hal_init(void);       // returns 0 on success
+    int hal_init(void);       // 返回 0 表示成功
     int hal_send(const uint8_t* data, int len);
     int hal_read(uint8_t* buffer, int len);
 }
 
-// C++ wrapper layer
+// C++ 包装层
 enum class HalError {
     kInitFailed,
     kSendFailed,
@@ -324,10 +324,10 @@ std::expected<int, HalError> wrapped_hal_read(
     uint8_t* buffer, int len) {
     int ret = hal_read(buffer, len);
     if (ret < 0) return std::unexpected(HalError::kReadFailed);
-    return ret;  // returns the number of bytes actually read
+    return ret;  // 返回实际读取的字节数
 }
 
-// Now we can organize this in functional style
+// 现在可以用函数式风格组织
 std::expected<void, HalError> send_command(const uint8_t* cmd, int len) {
     TRY_OUT(init_result, wrapped_hal_init());
     TRY_OUT(send_result, wrapped_hal_send(cmd, len));
@@ -374,10 +374,10 @@ With that in place, the compiler emits a warning if the caller ignores the retur
 Low-level functions use simple error types (enums), middle layers enrich the error information during propagation (attaching context), and the top layer does the final logging and user-facing messages. That way the bottom stays generic while the top gets information rich enough to act on:
 
 ```cpp
-// Low level: a simple enum
+// 底层：简单的枚举
 std::expected<int, IoError> read_byte(int fd);
 
-// Middle layer: enrich the error with context
+// 中间层：增强错误信息
 std::expected<Config, AppError> load_config(const std::string& path) {
     auto byte = read_byte(fd)
         .transform_error([path](IoError e) -> AppError {

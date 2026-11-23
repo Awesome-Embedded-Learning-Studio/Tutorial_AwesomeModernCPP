@@ -27,9 +27,9 @@ title: 'NUMA, affinity, and the scalability curve'
 translation:
   source: documents/vol6-performance/ch05-multicore-performance/05-02-numa-scaling.md
   source_hash: cac21f66301af0929ecc4f4194755b9d2a1666352d8637487455663543992bb0
-  translated_at: '2026-09-26T06:32:33+00:00'
-  engine: anthropic
-  token_count: 1250
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 3948
   notes: '原文一处明显笔误按正确拼写译出：中文源第 107 行书名《What Every Programmer Should About Memory》原文疑为 What Every Programmer Should Know About Memory（缺 "Know"）。'
 ---
 # NUMA, affinity, and the scalability curve
@@ -71,9 +71,9 @@ Corollary: "this program scales badly" is a hard defect under Amdahl but may not
 The countermeasure for NUMA is to bind "the thread" and "the data it works on" onto the same socket:
 
 ```bash
-# Bind both the threads and the memory to NUMA node 0
+# 把线程和内存都绑到 NUMA 节点 0
 numactl --cpunodebind=0 --membind=0 ./your_app
-# Or interleave allocation (both nodes share the load evenly, neither saturates first) -- but with a cross-node penalty
+# 或交织分配(让两节点平均承担,避免一边打满)——但有跨节点惩罚
 numactl --interleave=all ./your_app
 ```
 
@@ -86,12 +86,12 @@ At the program level: group the thread pool by NUMA topology (one pool per socke
 Even on a single socket, the OS **migrating** a thread between cores has a cost: after a migration, the thread's L1/L2 caches are entirely cold and have to warm up again. `taskset` (ad-hoc) / `pthread_setaffinity_np` (in-program) **pins a thread to a fixed core** and removes the migration overhead:
 
 ```bash
-# Command line: pin the process to cores 0-3
+# 命令行:把进程绑到核 0-3
 taskset -c 0-3 ./your_app
 ```
 
 ```cpp
-// In-program: pin the thread to a specific core
+// 程序内:把线程绑到特定核
 cpu_set_t cpuset; CPU_ZERO(&cpuset); CPU_SET(core_id, &cpuset);
 pthread_setaffinity_np(thread.native_handle(), sizeof(cpuset), &cpuset);
 ```

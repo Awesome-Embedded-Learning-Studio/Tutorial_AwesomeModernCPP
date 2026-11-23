@@ -20,10 +20,10 @@ tags:
 title: Function Basics and Parameter Passing
 translation:
   source: documents/vol1-fundamentals/c_tutorials/05-function-basics.md
-  source_hash: 141442920fddb75b0c78242b9176e0fb9ccd7c0a472887333905b3be71ad558a
-  translated_at: '2026-09-25T12:58:21+00:00'
-  engine: anthropic
-  token_count: 4500
+  source_hash: a5d0d4a907a24ce7c0e2597f3c3fd06ee73dfe9e5cc4b7ddf491274b160dc1b4
+  translated_at: '2026-11-22T16:39:42+00:00'
+  engine: glm-5.3-refresh
+  token_count: 9056
 ---
 # Function Basics and Parameter Passing
 
@@ -40,7 +40,7 @@ The C compiler processes code from top to bottom. If you call a function inside 
 ```c
 #include <stdio.h>
 
-// Function declaration (prototype)—tell the compiler in advance what this function looks like
+// 函数声明（原型）——提前告诉编译器这个函数长什么样
 int calculate_checksum(const unsigned char* data, unsigned int length);
 
 int main(void) {
@@ -50,7 +50,7 @@ int main(void) {
     return 0;
 }
 
-// Function definition—the actual implementation of the function
+// 函数定义——函数真正的实现
 int calculate_checksum(const unsigned char* data, unsigned int length) {
     int sum = 0;
     for (unsigned int i = 0; i < length; i++) {
@@ -84,13 +84,13 @@ This is the single most important point for understanding C functions: **C has o
 
 ```c
 void try_modify(int x) {
-    x = 100;  // modifies a copy of x
+    x = 100;  // 修改的是 x 的副本
 }
 
 int main(void) {
     int value = 42;
     try_modify(value);
-    printf("%d\n", value);  // still 42
+    printf("%d\n", value);  // 仍然是 42
     return 0;
 }
 ```
@@ -181,9 +181,9 @@ A function calling itself, directly or indirectly, is recursion. The essence of 
 ```c
 int factorial(int n) {
     if (n <= 1) {
-        return 1;  // Base case—the condition that stops the recursion
+        return 1;  // 基准情况——停止递归的条件
     }
-    return n * factorial(n - 1);  // Recursive step
+    return n * factorial(n - 1);  // 递归步骤
 }
 ```
 
@@ -236,7 +236,7 @@ int factorial_tail(int n, int accumulator) {
     if (n <= 1) return accumulator;
     return factorial_tail(n - 1, n * accumulator);
 }
-// Usage: factorial_tail(5, 1) → 120
+// 使用：factorial_tail(5, 1) → 120
 ```
 
 But note: the C standard does not guarantee that the compiler performs this tail-recursion optimization. For deep recursion, manually converting to iteration is safer.
@@ -249,20 +249,20 @@ Some functions take a variable number of arguments—the most classic example is
 #include <stdarg.h>
 #include <stdio.h>
 
-/// @brief Compute the average of any number of integers
-/// @param count the number of integers
-/// @param ... a variable number of int arguments
-/// @return the average
+/// @brief 计算任意数量整数的平均值
+/// @param count 整数的个数
+/// @param ... 可变数量的 int 参数
+/// @return 平均值
 double average(int count, ...) {
     va_list args;
-    va_start(args, count);  // initialization; count is the last fixed parameter
+    va_start(args, count);  // 初始化，count 是最后一个固定参数
 
     double sum = 0.0;
     for (int i = 0; i < count; i++) {
-        sum += va_arg(args, int);  // fetch the arguments one by one, as int
+        sum += va_arg(args, int);  // 逐个取出 int 类型的参数
     }
 
-    va_end(args);  // clean up
+    va_end(args);  // 清理
     return sum / count;
 }
 
@@ -301,9 +301,9 @@ C++ also supports **function overloading**—functions with the same name can ha
 Following the pattern of this post's `average`, implement a variadic function that returns the maximum among all of its integer arguments. The first parameter `count` says how many integers follow:
 
 ```c
-/// @brief Return the maximum of count integers
-/// @param count the number of integer arguments that follow
-/// @return the maximum; returns 0 when count is 0
+/// @brief 返回 count 个整数中的最大值
+/// @param count 后续整数参数的个数
+/// @return 最大值；count 为 0 返回 0
 int max_int(int count, ...);
 ```
 
@@ -371,16 +371,16 @@ int binary_search_recursive(const int* arr, size_t len, int target) {
 }
 
 int binary_search_iterative(const int* arr, size_t len, int target) {
-    size_t lo = 0, hi = len;            // search interval [lo, hi), half-open
+    size_t lo = 0, hi = len;            // 搜索区间 [lo, hi)，左闭右开
     while (lo < hi) {
         size_t mid = lo + (hi - lo) / 2;
         if (arr[mid] == target) {
             return mid;
         }
         if (arr[mid] < target) {
-            lo = mid + 1;               // search the right half; lo only grows, no underflow
+            lo = mid + 1;               // 搜右半边，lo 只增不下溢
         } else {
-            hi = mid;                   // search the left half; hi converges to mid, no underflow
+            hi = mid;                   // 搜左半边，hi 收敛到 mid，不下溢
         }
     }
     printf("%d is not found in index\n", target);
@@ -397,11 +397,11 @@ int binary_search_iterative(const int* arr, size_t len, int target) {
 Implement a function that finds the maximum and the minimum of an array at the same time:
 
 ```c
-/// @brief Find both the minimum and the maximum of an array
-/// @param data the array
-/// @param len the length of the array
-/// @param min_out output pointer for the minimum
-/// @param max_out output pointer for the maximum
+/// @brief 同时找出数组的最大值和最小值
+/// @param data 数组
+/// @param len 数组长度
+/// @param min_out 最小值输出指针
+/// @param max_out 最大值输出指针
 void find_min_max(const int* data, size_t len, int* min_out, int* max_out);
 ```
 

@@ -20,10 +20,10 @@ related:
   - "Two compiler flags cut the firmware by 64%: a field record of function-granularity reclamation with -ffunction-sections"
 translation:
   source: documents/vol8-domains/embedded/f103/06-patterns/06-zero-overhead-price-list.md
-  source_hash: bae48fbfb178024f2df3a34bd6832d498bdf3f0756d127bb77f2e993047fa440
-  translated_at: '2026-09-27T06:00:16+00:00'
-  engine: anthropic
-  token_count: 3000
+  source_hash: b79ca5416137fcd3d9a37a3e3f9b323a9fd7a5035453895664c38706e9fc3f2e
+  translated_at: '2026-11-22T16:43:55+00:00'
+  engine: glm-5.3-refresh
+  token_count: 2929
 ---
 
 # The price list of zero overhead: dissecting the 18,200-byte logger firmware

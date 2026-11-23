@@ -23,9 +23,9 @@ title: OOP in Practice
 translation:
   source: documents/vol1-fundamentals/ch08/06-oop-in-practice.md
   source_hash: 2e777d0f35eef612f64cca8c0b3c9cc7684ef7dd14b73b883a7a87a611372114
-  translated_at: '2026-09-25T11:39:25+00:00'
-  engine: anthropic
-  token_count: 7800
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 12393
 ---
 # OOP in Practice: Building a Shape-Drawing System from Scratch
 
@@ -40,14 +40,14 @@ The easiest mistake to make when designing an inheritance hierarchy is treating 
 Based on the requirements, our class hierarchy looks roughly like this:
 
 ```text
-Shape (abstract base class)
+Shape (抽象基类)
   |-- Circle
   |-- Rectangle
   |-- Triangle
 
-Canvas (manager class, holds vector<unique_ptr<Shape>>)
-ShapeSerializer (utility class, handles serialization)
-ColoredShape (decorator class, holds a Shape by composition)
+Canvas (管理类，持有 vector<unique_ptr<Shape>>)
+ShapeSerializer (工具类，负责序列化)
+ColoredShape (装饰类，组合持有 Shape)
 ```
 
 `Shape` is the abstract base class that defines the interface shared by all shapes. The three concrete shape classes inherit `Shape` and implement their own computation logic. `Canvas` is not a shape—it **contains** shapes, a textbook case of composition rather than inheritance. `ShapeSerializer` uses `Shape`'s polymorphic interface through composition. `ColoredShape` likewise uses composition to add color to any shape; we will unpack it in detail later.
@@ -58,7 +58,7 @@ The root of the class hierarchy is `Shape`. Its responsibility is simple—defin
 
 ```cpp
 // shapes.cpp
-// Compile: g++ -Wall -Wextra -std=c++17 shapes.cpp -o shapes
+// 编译: g++ -Wall -Wextra -std=c++17 shapes.cpp -o shapes
 
 #include <cmath>
 #include <iostream>
@@ -66,7 +66,7 @@ The root of the class hierarchy is `Shape`. Its responsibility is simple—defin
 #include <string>
 #include <vector>
 
-/// @brief Abstract base class for all shapes
+/// @brief 所有图形的抽象基类
 class Shape {
 public:
     virtual ~Shape() = default;
@@ -195,7 +195,7 @@ public:
 
     double area() const override
     {
-        // Cross product formula: |AB x AC| / 2
+        // 叉积公式：|AB x AC| / 2
         double abx = x2_ - x1_;
         double aby = y2_ - y1_;
         double acx = x3_ - x1_;

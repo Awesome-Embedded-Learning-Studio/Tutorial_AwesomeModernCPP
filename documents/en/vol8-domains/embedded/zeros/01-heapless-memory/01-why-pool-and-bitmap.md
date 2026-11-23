@@ -20,9 +20,9 @@ related:
 translation:
   source: documents/vol8-domains/embedded/zeros/01-heapless-memory/01-why-pool-and-bitmap.md
   source_hash: 52b88c326a27641437ca942edcda2b7882a093e100f247054faf4cc86910caa1
-  translated_at: '2026-09-25T08:01:30+00:00'
-  engine: anthropic
-  token_count: 4800
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 10338
 ---
 
 # First Things First: Let's Get Memory Allocation Sorted
@@ -150,12 +150,12 @@ Having decided to issue memory in whole blocks, we next need to record whether e
 The scheme is intuitive: we record one bit per block—`0` means free, `1` means occupied. Below, blocks are drawn in ascending order by block number; note that this is not the usual binary notation with the high bit on the left:
 
 ```text
-Block no.     0 1 2 3 4 5 6 7
-Initial       0 0 0 0 0 0 0 0
-alloc 1       1 0 0 0 0 0 0 0
-alloc 1 more  1 1 0 0 0 0 0 0
-free #0       0 1 0 0 0 0 0 0
-alloc again   1 1 0 0 0 0 0 0
+块号          0 1 2 3 4 5 6 7
+初始          0 0 0 0 0 0 0 0
+申请一块      1 0 0 0 0 0 0 0
+再申请一块    1 1 0 0 0 0 0 0
+归还 0 号     0 1 0 0 0 0 0 0
+再次申请      1 1 0 0 0 0 0 0
 ```
 
 Our strategy is to scan from the lowest block number for the first `0`, so a released block 0 gets reused first. This makes the selection order easy to work through, but it provides no fairness between tasks, nor does it take turns using all blocks.
@@ -226,7 +226,7 @@ Look at the ninth request: what comes back is `OutOfMemory`. After returning blo
 From the tutorial repository root, we run it, with both the source and the executable kept under `/tmp/`:
 
 ```bash
-# Heh, tucked away under /tmp so it stays out of our repo's development!
+# 嘿嘿，丢到/tmp下不打扰咱们的仓库开发！
 g++ -std=c++23 -Wall -Wextra -Werror \
     -I third_party/ZerOS/include \
     /tmp/zeros_pool_intro.cpp -o /tmp/zeros_pool_intro

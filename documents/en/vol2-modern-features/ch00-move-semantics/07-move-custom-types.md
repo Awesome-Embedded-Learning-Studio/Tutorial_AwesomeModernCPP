@@ -23,9 +23,9 @@ tags:
 translation:
   source: documents/vol2-modern-features/ch00-move-semantics/07-move-custom-types.md
   source_hash: feb5c6878070796bf2387c28ee1d1dee1cb1dbaeb01debc880066ab37545ed38
-  translated_at: '2026-09-27T04:43:39+00:00'
-  engine: anthropic
-  token_count: 5000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 13172
 ---
 # Move Semantics in Practice: Custom Types and Resource Handles
 
@@ -51,8 +51,8 @@ struct UserProfile
     std::vector<std::string> permissions;
     int level = 0;
 
-    // The compiler-generated move operations are good enough here
-    // because std::string and std::vector both have noexcept moves
+    // 编译器生成的移动操作已经足够好
+    // 因为 std::string 和 std::vector 都有 noexcept 移动
     ~UserProfile() = default;
     UserProfile(const UserProfile&) = default;
     UserProfile(UserProfile&&) noexcept = default;
@@ -72,15 +72,15 @@ public:
     explicit NetworkConnection(const char* host, int port);
     ~NetworkConnection() { if (socket_fd_ >= 0) close_socket(socket_fd_); }
 
-    // No copying
+    // 禁止拷贝
     NetworkConnection(const NetworkConnection&) = delete;
     NetworkConnection& operator=(const NetworkConnection&) = delete;
 
-    // Moving allowed
+    // 允许移动
     NetworkConnection(NetworkConnection&& other) noexcept
         : socket_fd_(other.socket_fd_)
     {
-        other.socket_fd_ = -1;  // marked as transferred
+        other.socket_fd_ = -1;  // 标记为已转移
     }
 
     NetworkConnection& operator=(NetworkConnection&& other) noexcept
@@ -107,13 +107,13 @@ Below is a simplified but realistic DMA buffer management class, showing how mov
 #include <utility>
 #include <iostream>
 
-/// @brief A simulated DMA buffer manager
-/// In a real embedded project, allocate_dma_buffer and free_dma_buffer
-/// would hook into the actual memory management unit or a memory pool
+/// @brief 模拟的 DMA 缓冲区管理
+/// 在真实嵌入式项目中，allocate_dma_buffer 和 free_dma_buffer
+/// 会对接到实际的内存管理单元或内存池
 class DMABuffer
 {
-    void* buffer_;       // points to the DMA buffer
-    std::size_t size_;   // buffer size
+    void* buffer_;       // 指向 DMA 缓冲区
+    std::size_t size_;   // 缓冲区大小
 
 public:
     explicit DMABuffer(std::size_t size)
@@ -132,11 +132,11 @@ public:
         }
     }
 
-    // No copying: a DMA buffer cannot exist in two copies
+    // 禁止拷贝：DMA 缓冲区不能有两份
     DMABuffer(const DMABuffer&) = delete;
     DMABuffer& operator=(const DMABuffer&) = delete;
 
-    // Moving allowed: ownership can be transferred
+    // 允许移动：所有权可以转移
     DMABuffer(DMABuffer&& other) noexcept
         : buffer_(other.buffer_)
         , size_(other.size_)
@@ -166,26 +166,26 @@ public:
     std::size_t size() const { return size_; }
 };
 
-/// @brief Simulate receiving data from DMA
+/// @brief 模拟从 DMA 接收数据
 DMABuffer receive_dma(std::size_t expected_size)
 {
     DMABuffer buf(expected_size);
-    // In a real system, this would trigger the DMA transfer and wait for completion
-    // The memory buf.data() points to is written directly by the DMA controller
+    // 在真实系统中，这里会触发 DMA 传输并等待完成
+    // buf.data() 指向的内存由 DMA 控制器直接写入
     char msg[] = "DMA data received";
     std::memcpy(buf.data(), msg, sizeof(msg));
-    return buf;  // NRVO or move semantics guarantees a zero-copy return
+    return buf;  // NRVO 或移动语义确保零拷贝返回
 }
 
 int main()
 {
     std::cout << "=== 嵌入式 DMA 缓冲区管理 ===\n\n";
 
-    // Receive data from DMA—buffer ownership moves from the function into main
+    // 从 DMA 接收数据——缓冲区所有权从函数转移到 main
     auto rx_buf = receive_dma(1024);
     std::cout << "  接收到: " << static_cast<const char*>(rx_buf.data()) << "\n\n";
 
-    // Hand the buffer over to the processing queue (simulated)
+    // 把缓冲区转移到处理队列（模拟）
     std::cout << "=== 转移到处理队列 ===\n";
     DMABuffer process_buf = std::move(rx_buf);
     std::cout << "  rx_buf 大小: " << rx_buf.size() << "\n";
@@ -217,7 +217,7 @@ The requirements are as follows: the class is named `SimpleVector`, storing its 
 Here is the reference implementation skeleton:
 
 ```cpp
-// simple_vector.cpp -- Exercise: a dynamic array that supports move
+// simple_vector.cpp -- 练习：支持移动的动态数组
 // Standard: C++17
 
 #include <iostream>
@@ -240,11 +240,11 @@ public:
     {
     }
 
-    // TODO: implement the destructor
-    // TODO: implement the copy constructor (deep copy)
-    // TODO: implement the move constructor (pointer transfer + null out the source)
-    // TODO: implement the copy assignment operator
-    // TODO: implement the move assignment operator
+    // TODO: 实现析构函数
+    // TODO: 实现拷贝构造函数（深拷贝）
+    // TODO: 实现移动构造函数（指针转移 + 源对象置空）
+    // TODO: 实现拷贝赋值运算符
+    // TODO: 实现移动赋值运算符
 
     void push_back(int value)
     {
@@ -268,7 +268,7 @@ public:
 
 int main()
 {
-    // Test code
+    // 测试代码
     SimpleVector a;
     for (int i = 0; i < 10; ++i) {
         a.push_back(i * i);
@@ -280,7 +280,7 @@ int main()
     }
     std::cout << "\n";
 
-    // Test copy construction
+    // 测试拷贝构造
     SimpleVector b = a;
     std::cout << "b (拷贝): ";
     for (std::size_t i = 0; i < b.size(); ++i) {
@@ -288,7 +288,7 @@ int main()
     }
     std::cout << "\n";
 
-    // Test move construction
+    // 测试移动构造
     SimpleVector c = std::move(a);
     std::cout << "c (移动): ";
     for (std::size_t i = 0; i < c.size(); ++i) {
@@ -307,7 +307,7 @@ If you get stuck, go look at the `Buffer` class implementation in [Move Construc
 The complete reference implementation:
 
 ```cpp
-// simple_vector_solution.cpp -- exercise reference solution
+// simple_vector_solution.cpp -- 练习参考答案
 // Standard: C++17
 
 #include <iostream>
@@ -335,7 +335,7 @@ public:
         delete[] data_;
     }
 
-    // Copy construction: deep copy
+    // 拷贝构造：深拷贝
     SimpleVector(const SimpleVector& other)
         : data_(other.capacity_ > 0 ? new int[other.capacity_] : nullptr)
         , size_(other.size_)
@@ -346,7 +346,7 @@ public:
         }
     }
 
-    // Move construction: pointer transfer
+    // 移动构造：指针转移
     SimpleVector(SimpleVector&& other) noexcept
         : data_(other.data_)
         , size_(other.size_)
@@ -357,7 +357,7 @@ public:
         other.capacity_ = 0;
     }
 
-    // Copy assignment
+    // 拷贝赋值
     SimpleVector& operator=(const SimpleVector& other)
     {
         if (this != &other) {
@@ -372,7 +372,7 @@ public:
         return *this;
     }
 
-    // Move assignment
+    // 移动赋值
     SimpleVector& operator=(SimpleVector&& other) noexcept
     {
         if (this != &other) {
@@ -422,14 +422,14 @@ int main()
     std::cout << "\n";
     std::cout << "  a.size()=" << a.size() << ", a.capacity()=" << a.capacity() << "\n\n";
 
-    SimpleVector b = a;   // copy construction
+    SimpleVector b = a;   // 拷贝构造
     std::cout << "b (拷贝构造): ";
     for (std::size_t i = 0; i < b.size(); ++i) {
         std::cout << b[i] << " ";
     }
     std::cout << "\n\n";
 
-    SimpleVector c = std::move(a);  // move construction
+    SimpleVector c = std::move(a);  // 移动构造
     std::cout << "c (移动构造): ";
     for (std::size_t i = 0; i < c.size(); ++i) {
         std::cout << c[i] << " ";
@@ -438,8 +438,8 @@ int main()
     std::cout << "  a 移动后: size=" << a.size()
               << ", capacity=" << a.capacity() << "\n\n";
 
-    // Verify that the moved-from a can be used safely
-    a = SimpleVector(5);  // move-assign a fresh object
+    // 验证移动后的 a 可以安全使用
+    a = SimpleVector(5);  // 移动赋值一个新对象
     a.push_back(999);
     std::cout << "a 重新赋值后: ";
     for (std::size_t i = 0; i < a.size(); ++i) {

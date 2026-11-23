@@ -10,9 +10,10 @@ description: "Checks the original cppreference text and P1152R4's deprecation li
 reading_time_minutes: 16
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/07-what-volatile-guarantees/03-standard-deprecation-mmio-and-verdict.md
-  source_hash: 1c6c13026350b2b28929c693273a0a50cbb8ddbe2d2492dea4c706f212228a97
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: c56d4887820a90f1accb6ccb63b0b5bdd8e1ca55b604d143f1076677499d7dc5
+  translated_at: '2026-11-22T16:44:08Z'
+  engine: glm-5.3-refresh
+  token_count: 8251
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -91,20 +92,20 @@ Deprecated does not mean deleted. Compile these spellings today and they still p
 Now the place where volatile stands on solid ground: memory-mapped device registers. The jargon term is MMIO, short for memory-mapped I/O, and the move is to map a device's registers into memory addresses, so that a program reading and writing those addresses is reading and writing the device. Picture a polling loop: in the device's status register, a ready flag gets set by the device itself, and our program reads it lap after lap, waiting for it to change. In this code the thing changing the value has neither another thread nor any line of our own program behind it; it is hardware the compiler cannot see at all. Let's stage the scene with two functions that differ only in pointer type:
 
 ```cpp
-// v6_mmio.cpp -- device status register polling: volatile pointer vs plain pointer, assembly side by side
-// compile only, never run; both functions have external linkage, their bodies must be kept
+// v6_mmio.cpp: 设备状态寄存器轮询 —— volatile 指针 vs 普通指针的汇编对照
+// 只编译不运行;两个函数均为外部链接,函数体必须保留
 
 int poll_volatile(volatile int* status, int n) {
     int s = 0;
     for (int i = 0; i != n; ++i)
-        s += *status;   // volatile read: one load per iteration is the expectation
+        s += *status;   // volatile 读:期望每次迭代一次装载
     return s;
 }
 
 int poll_plain(int* status, int n) {
     int s = 0;
     for (int i = 0; i != n; ++i)
-        s += *status;   // plain read: the load is expected to be hoisted/merged
+        s += *status;   // 普通读:期望装载被外提/合并
     return s;
 }
 ```
@@ -160,7 +161,7 @@ We already know the reasoning behind the plain-pointer version from the first pi
 When the value never changes, do the two versions differ at runtime? Let's add a runnable check to find out: mmap one page of legal memory to stand in for the register, and set the value to 7:
 
 ```cpp
-// v6_mmio_run.cpp -- mmap one page of legal memory to stand in for the "device register", the result consumed through printf
+// v6_mmio_run.cpp: mmap 一页合法内存充当"设备寄存器",行为用 printf 消费
 #include <sys/mman.h>
 #include <unistd.h>
 #include <cstdio>
@@ -189,7 +190,7 @@ int main() {
     }
 
     auto status = static_cast<volatile int*>(page);
-    *status = 7;   // the device sets the status register to 7
+    *status = 7;   // 模拟设备把状态寄存器置为 7
 
     int sv = poll_volatile(status, 10);
     int sp = poll_plain(const_cast<int*>(static_cast<volatile int*>(page)), 10);

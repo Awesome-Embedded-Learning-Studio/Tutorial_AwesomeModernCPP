@@ -23,9 +23,9 @@ title: 'Deep Dive into string: SSO, COW, and resize_and_overwrite'
 translation:
   source: documents/vol3-standard-library/containers/04-string-memory-deep-dive.md
   source_hash: f9e40b036fafae22502d3e3bef9d6836e8dc9c4170e58138d380dd640659de47
-  translated_at: '2026-09-26T02:12:44+00:00'
-  engine: anthropic
-  token_count: 3550
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6637
 ---
 # Deep Dive into string: SSO, COW, and resize_and_overwrite
 
@@ -41,15 +41,15 @@ To understand why today's `string` looks the way it does, we have to wind the cl
 
 ```mermaid
 flowchart LR
-    subgraph COW["COW (old libstdc++)"]
+    subgraph COW["COW（旧 libstdc++）"]
         direction LR
-        RC["refcount (reference count)"] --- BUF["shared read-only buffer (heap)"]
+        RC["refcount 引用计数"] --- BUF["共享只读缓冲（堆）"]
         SA["string A"] --> BUF
         SB["string B"] --> BUF
     end
-    subgraph SSO["SSO (modern implementations)"]
+    subgraph SSO["SSO（现代实现）"]
         direction LR
-        OBJ["string object<br/>sizeof ≈ 32"] --> STORE["inline buffer (short strings)<br/>or heap + size + cap"]
+        OBJ["string 对象<br/>sizeof ≈ 32"] --> STORE["内联缓冲（短串）<br/>或 堆 + size + cap"]
     end
 ```
 
@@ -61,11 +61,11 @@ Then C++11 arrived, and with one stroke of the standard, COW was ruled "non-conf
 
 ```mermaid
 flowchart TD
-    A["non-const operator[] / data()"] --> B{"COW shared buffer?"}
-    B -- "yes" --> C["must unshare (deep copy)<br/>before handing out a writable/contiguous pointer"]
-    C --> D["either invalidate existing references<br/>or become O(n)"]
-    D --> E["violates the [string.require] invalidation rules<br/>⇒ non-conforming since C++11"]
-    B -- "no (SSO)" --> F["returns the object's own buffer directly<br/>no invalidation · O(1) ✓"]
+    A["非 const operator[] / data()"] --> B{"COW 共享缓冲?"}
+    B -- "是" --> C["必须 unshare（深拷贝）<br/>才能给可写/连续指针"]
+    C --> D["要么失效既有引用<br/>要么变 O(n)"]
+    D --> E["违反 [string.require] 失效规则<br/>⇒ C++11 起 non-conforming"]
+    B -- "否（SSO）" --> F["直接返回本对象缓冲<br/>不失效 · O(1) ✓"]
 ```
 
 You see it: COW trying to hold "sharing", "no reference invalidation", "O(1)", and "contiguous null-terminated" all in its arms at once is self-contradictory. The standard decisively chose the latter three, and COW duly became non-conforming. Reality then added its own plot twists: libstdc++, weighed down by ABI-compatibility baggage, held out until **GCC 5 (2015)** before switching to a non-COW implementation through the `_GLIBCXX_USE_CXX11_ABI` toggle (its new inline symbol is `std::__cxx11::basic_string`); libc++ and the MSVC implementation descended from Dinkumware, meanwhile, were SSO from day one and never carried this historical debt at all.
@@ -105,11 +105,11 @@ int main()
 {
     std::cout << "sizeof(std::string) = " << sizeof(std::string) << '\n';
 
-    std::string short_s = "hi";       // very likely SSO
-    std::string long_s(64, 'x');      // past the SSO threshold, goes to the heap
+    std::string short_s = "hi";       // 很可能走 SSO
+    std::string long_s(64, 'x');      // 超过 SSO 阈值，出堆
 
-    std::cout << "short_s.data() in object? " << points_inside_object(short_s) << '\n';  // usually 1
-    std::cout << "long_s.data()  in object? " << points_inside_object(long_s) << '\n';   // usually 0
+    std::cout << "short_s.data() in object? " << points_inside_object(short_s) << '\n';  // 多半是 1
+    std::cout << "long_s.data()  in object? " << points_inside_object(long_s) << '\n';   // 多半是 0
     return 0;
 }
 ```
@@ -123,7 +123,7 @@ Next, `resize_and_overwrite` against the old `resize()` idiom. We have built a "
 #include <iostream>
 #include <string>
 
-// Simulate a C API: write at most n bytes into buf, return the number actually written
+// 模拟一个 C API：向 buf 最多写 n 字节，返回实际写入数
 std::size_t fake_read(char* buf, std::size_t n)
 {
     static const char msg[] = "hello";
@@ -134,17 +134,17 @@ std::size_t fake_read(char* buf, std::size_t n)
 
 int main()
 {
-    // Old way: resize(64) value-initializes (zeroes) all 64 characters first, then they get overwritten
+    // 旧写法：resize(64) 先把 64 个字符全部值初始化（清零），再被覆盖
     std::string old_buf;
     old_buf.resize(64);
     std::size_t got = fake_read(old_buf.data(), old_buf.size());
-    old_buf.resize(got);  // then trim back to the actual length
+    old_buf.resize(got);  // 再截回实际长度
     std::cout << "old: '" << old_buf << "' (len=" << old_buf.size() << ")\n";
 
-    // C++23: resize_and_overwrite skips zeroing the extra characters; the callback reports the actual length
+    // C++23：resize_and_overwrite 不清零多余字符，回调报告实际长度
     std::string buf;
     buf.resize_and_overwrite(64, [](char* p, std::size_t n) noexcept {
-        return fake_read(p, n);  // write only the actual bytes, return the new length
+        return fake_read(p, n);  // 只写实际字节，返回新长度
     });
     std::cout << "new: '" << buf << "' (len=" << buf.size() << ")\n";
     return 0;

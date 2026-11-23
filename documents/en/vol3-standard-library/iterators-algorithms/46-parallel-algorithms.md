@@ -22,9 +22,9 @@ title: 'Parallel Algorithms: execution Policies and When They Actually Get Faste
 translation:
   source: documents/vol3-standard-library/iterators-algorithms/46-parallel-algorithms.md
   source_hash: 63d96d55feb218a2d87b0708ea60cc1b106a3bec7fa5fab3921da8b78e642c8c
-  translated_at: '2026-09-26T01:47:47+00:00'
-  engine: anthropic
-  token_count: 4200
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 15608
 ---
 # Parallel Algorithms: `<execution>` Policies and When They Actually Get Faster
 
@@ -81,7 +81,7 @@ int x = 0;
 std::mutex m;
 int a[] = {1, 2};
 std::for_each(std::execution::par_unseq, std::begin(a), std::end(a), [&](int) {
-    std::lock_guard<std::mutex> guard(m);   // wrong: the constructor calls m.lock(), which is vectorization-unsafe
+    std::lock_guard<std::mutex> guard(m);   // 错误：构造里调 m.lock()，vectorization-unsafe
     ++x;
 });
 ```
@@ -106,19 +106,19 @@ The usage itself is painless — almost every `<algorithm>` algorithm has an ove
 #include <vector>
 
 void demo(std::vector<int>& v) {
-    // sort: parallelism allowed
+    // 排序：允许并行
     std::sort(std::execution::par, v.begin(), v.end());
 
-    // sum: reduce is the parallel-friendly version of accumulate (requires associativity, more on that later)
+    // 累加：reduce 是 accumulate 的并行友好版（要求结合律，后面详谈）
     long sum = std::reduce(std::execution::par, v.begin(), v.end(), 0L);
 
-    // rewrite element by element
+    // 逐元素改写
     std::transform(std::execution::par, v.begin(), v.end(), v.begin(),
                    [](int x) { return x * 2; });
 
-    // run one operation per element (note: order not guaranteed)
+    // 对每个元素执行一个操作（注意：不保证顺序）
     std::for_each(std::execution::par, v.begin(), v.end(),
-                  [](int x) { /* use x */ });
+                  [](int x) { /* 用 x */ });
 }
 ```
 
@@ -341,7 +341,7 @@ int main() {
             x = 2;
         });
     } catch (const std::exception& e) {
-        std::cout << "caught: " << e.what() << "\n";   // this line is never reached
+        std::cout << "caught: " << e.what() << "\n";   // 这行不会被走到
     }
     return 0;
 }
@@ -363,7 +363,7 @@ libstdc++'s parallel algorithms (the PSTL) rely on Intel TBB underneath for thre
 
 ```text
 /usr/bin/ld: ... undefined reference to `tbb::detail::r1::initialize(tbb::detail::d1::task_group_context&)'
-... (dozens of lines of undefined TBB symbols)
+... (几十行 TBB 符号未定义)
 collect2: error: ld returned 1 exit status
 ```
 

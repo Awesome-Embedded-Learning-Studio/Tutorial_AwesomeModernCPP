@@ -23,9 +23,9 @@ title: Building a Singly Linked List from Scratch — A Practical Guide to Point
 translation:
   source: documents/vol1-fundamentals/c_tutorials/advanced_feature/06-handmade-linked-list.md
   source_hash: 1f1f0ba253c6f4a0da688d79549ccdaba14d4e3ee75048ce3d82881b89ee0a48
-  translated_at: '2026-09-25T13:54:14+00:00'
-  engine: anthropic
-  token_count: 5200
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 17298
 ---
 # Building a Singly Linked List from Scratch — A Practical Guide to Pointers and Memory
 
@@ -40,10 +40,10 @@ So this chapter won't do anything fancy. We will steadily build a classic singly
 All code in this chapter was written and tested in the following environment:
 
 ```text
-Platform: Linux (x86_64), WSL2
-Compiler: GCC 13+, flags -Wall -Wextra -std=c17
-Build tool: CMake 3.20+
-Debugging tools: GDB + Valgrind (for memory leak detection)
+平台：Linux (x86_64)，WSL2
+编译器：GCC 13+，编译选项 -Wall -Wextra -std=c17
+构建工具：CMake 3.20+
+调试工具：GDB + Valgrind（用于内存泄漏检测）
 ```
 
 Code style follows the project conventions: functions in `snake_case`, types in `PascalCase`, constants in `kPascalCase`, 4-space indentation, and pointer asterisks kept on the left as in `int* p`. Keep `-Wall -Wextra` enabled at all times—when it comes to null-pointer dereferences and dangling pointers in linked-list code, compiler warnings are often the first thing to catch them.
@@ -57,10 +57,10 @@ Everything starts hard, so let's begin by designing the most basic building bloc
 #include <stdlib.h>
 #include <stdbool.h>
 
-/// @brief Singly linked list node
+/// @brief 单链表节点
 typedef struct ListNode {
-    int data;                // data field
-    struct ListNode* next;   // pointer field: points to the next node
+    int data;                // 数据域
+    struct ListNode* next;   // 指针域：指向下一个节点
 } ListNode;
 ```
 
@@ -72,8 +72,8 @@ Nodes alone aren't enough; we also need a "list" type to manage the metadata of 
 
 ```c
 typedef struct {
-    ListNode* head;    // points to the first node of the list
-    int size;          // list length, for O(1) queries
+    ListNode* head;    // 指向链表第一个节点
+    int size;          // 链表长度，方便 O(1) 查询
 } LinkedList;
 ```
 
@@ -86,7 +86,7 @@ Lifecycle management of a data structure always comes first. By analogy: a linke
 First, creation:
 
 ```c
-/// @brief Create an empty linked list
+/// @brief 创建一个空链表
 LinkedList* linked_list_create(void) {
     LinkedList* list = (LinkedList*)malloc(sizeof(LinkedList));
     if (list == NULL) {
@@ -103,9 +103,9 @@ At creation, set `head` to `NULL` and `size` to 0, and an empty linked list is b
 Next comes a small helper that creates a single node; every insertion operation later will use it:
 
 ```c
-/// @brief Create a new node
-/// @param data the node's data
-/// @return pointer to the new node, NULL on failure
+/// @brief 创建一个新节点
+/// @param data 节点数据
+/// @return 新节点指针，失败返回 NULL
 static ListNode* list_node_create(int data) {
     ListNode* node = (ListNode*)malloc(sizeof(ListNode));
     if (node == NULL) {
@@ -122,7 +122,7 @@ The `static` qualifier marks this function as internal-only, not exposed to outs
 Destroying the list is a fairly easy place to go wrong. We need to walk the nodes one by one and free them, then free the list structure itself. The catch: if you `free` the current node directly, you lose the address of the next node—the chain breaks. So we need a temporary pointer to "save first, delete second":
 
 ```c
-/// @brief Destroy the list and free all memory
+/// @brief 销毁链表，释放所有内存
 void linked_list_destroy(LinkedList* list) {
     if (list == NULL) {
         return;
@@ -130,12 +130,12 @@ void linked_list_destroy(LinkedList* list) {
 
     ListNode* current = list->head;
     while (current != NULL) {
-        ListNode* next = current->next;  // save the next node's address first
-        free(current);                    // then free the current node
-        current = next;                   // move to the next one
+        ListNode* next = current->next;  // 先保存下一个节点的地址
+        free(current);                    // 再释放当前节点
+        current = next;                   // 移动到下一个
     }
 
-    free(list);  // finally free the list structure itself
+    free(list);  // 最后释放链表结构体本身
 }
 ```
 
@@ -148,8 +148,8 @@ If you `free(current)` first and then read `current->next` while destroying the 
 The simplest and most efficient insertion in a linked list is head insertion—put the new node at the very front of the list and point `head` at it. This operation is always O(1), no traversal needed. In train terms: couple one more car in front of the locomotive, then move the head-of-train marker onto the new car.
 
 ```c
-/// @brief Insert an element at the head of the list
-/// @return true on success, false when out of memory
+/// @brief 在链表头部插入元素
+/// @return 成功返回 true，内存不足返回 false
 bool linked_list_push_front(LinkedList* list, int data) {
     if (list == NULL) {
         return false;
@@ -160,8 +160,8 @@ bool linked_list_push_front(LinkedList* list, int data) {
         return false;
     }
 
-    node->next = list->head;  // the new node points to the old first node
-    list->head = node;        // head points to the new node
+    node->next = list->head;  // 新节点指向原来的第一个节点
+    list->head = node;        // head 指向新节点
     list->size++;
     return true;
 }
@@ -171,14 +171,14 @@ Let's draw this out. Suppose the list is `10 -> 20 -> 30` and we insert `5` at t
 
 ```mermaid
 graph LR
-    subgraph "Before insertion"
+    subgraph "插入前"
         H0["head"] --> N10a["10"] --> N20a["20"] --> N30a["30"] --> NULL0["NULL"]
     end
 ```
 
 ```mermaid
 graph LR
-    subgraph "Step 1: create the new node(5)"
+    subgraph "Step 1: 创建新节点 node(5)"
         S1["node(5)<br/>next=NULL"]
     end
 ```
@@ -204,7 +204,7 @@ The whole process changes exactly two pointers, with no traversal, hence O(1). N
 Tail insertion has one extra step over head insertion—you must first find the last node. If the list is empty, appending at the tail is the same as inserting at the head.
 
 ```c
-/// @brief Insert an element at the tail of the list
+/// @brief 在链表尾部插入元素
 bool linked_list_push_back(LinkedList* list, int data) {
     if (list == NULL) {
         return false;
@@ -216,10 +216,10 @@ bool linked_list_push_back(LinkedList* list, int data) {
     }
 
     if (list->head == NULL) {
-        // empty list: the new node is the first node
+        // 空链表：新节点就是第一个节点
         list->head = node;
     } else {
-        // non-empty list: find the last node
+        // 非空链表：找到最后一个节点
         ListNode* tail = list->head;
         while (tail->next != NULL) {
             tail = tail->next;
@@ -241,8 +241,8 @@ Tail insertion is O(n), because of the walk to the end. If you append at the tai
 Head and tail insertion aren't enough; we often need to insert an element at a specific position. Our convention: `index` 0 means insert at the head, `index` equal to `size` means append at the tail, and anything beyond `size` is treated as an illegal operation.
 
 ```c
-/// @brief Insert an element at a specific position
-/// @param index insertion position (0-based)
+/// @brief 在指定位置插入元素
+/// @param index 插入位置（0-based）
 bool linked_list_insert_at(LinkedList* list, int index, int data) {
     if (list == NULL || index < 0 || index > list->size) {
         return false;
@@ -252,7 +252,7 @@ bool linked_list_insert_at(LinkedList* list, int index, int data) {
         return linked_list_push_front(list, data);
     }
 
-    // find the node at index-1 (the predecessor node)
+    // 找到 index-1 位置的节点（前驱节点）
     ListNode* prev = list->head;
     for (int i = 0; i < index - 1; i++) {
         prev = prev->next;
@@ -263,8 +263,8 @@ bool linked_list_insert_at(LinkedList* list, int index, int data) {
         return false;
     }
 
-    node->next = prev->next;  // the new node points to the old node at index
-    prev->next = node;        // the predecessor points to the new node
+    node->next = prev->next;  // 新节点指向原来 index 位置的节点
+    prev->next = node;        // 前驱节点指向新节点
     list->size++;
     return true;
 }
@@ -279,16 +279,16 @@ Deletion and insertion are mirror operations, but deletion is more error-prone, 
 ### Deleting from the Head
 
 ```c
-/// @brief Remove the element at the head of the list
-/// @return true on success
+/// @brief 删除链表头部元素
+/// @return 成功返回 true
 bool linked_list_pop_front(LinkedList* list) {
     if (list == NULL || list->head == NULL) {
         return false;
     }
 
-    ListNode* old_head = list->head;  // save the node to delete first
-    list->head = old_head->next;      // head points to the second node
-    free(old_head);                   // free the old head node
+    ListNode* old_head = list->head;  // 先保存要删除的节点
+    list->head = old_head->next;      // head 指向第二个节点
+    free(old_head);                   // 释放原来的头节点
     list->size--;
     return true;
 }
@@ -301,33 +301,33 @@ The "save first, delete second" pattern again—we must save `old_head` beforeha
 Deleting by value is one of the linked-list operations that demands the most care, because there are quite a few edge cases to handle: an empty list, the node to delete being the head, the node to delete not existing at all...
 
 ```c
-/// @brief Remove the first node whose value is target
-/// @return true if found and removed, false if not found
+/// @brief 删除第一个值为 target 的节点
+/// @return 找到并删除返回 true，未找到返回 false
 bool linked_list_remove(LinkedList* list, int target) {
     if (list == NULL || list->head == NULL) {
         return false;
     }
 
-    // special case: the node to delete is the head
+    // 特殊情况：要删除的是头节点
     if (list->head->data == target) {
         return linked_list_pop_front(list);
     }
 
-    // general case: find the predecessor of the target node
+    // 一般情况：找到目标节点的前驱
     ListNode* prev = list->head;
     while (prev->next != NULL && prev->next->data != target) {
         prev = prev->next;
     }
 
     if (prev->next == NULL) {
-        // walked to the end without finding it
+        // 遍历完了也没找到
         return false;
     }
 
-    // prev->next is the node to delete
+    // prev->next 就是要删除的节点
     ListNode* to_delete = prev->next;
-    prev->next = to_delete->next;  // the predecessor skips over the deleted node
-    free(to_delete);               // free the deleted node
+    prev->next = to_delete->next;  // 前驱跳过被删节点
+    free(to_delete);               // 释放被删节点
     list->size--;
     return true;
 }
@@ -338,7 +338,7 @@ There is a crucial design decision here—while traversing we maintain the **pre
 ### Deleting at a Specific Position
 
 ```c
-/// @brief Remove the node at a specific position
+/// @brief 删除指定位置的节点
 bool linked_list_remove_at(LinkedList* list, int index) {
     if (list == NULL || index < 0 || index >= list->size) {
         return false;
@@ -348,7 +348,7 @@ bool linked_list_remove_at(LinkedList* list, int index) {
         return linked_list_pop_front(list);
     }
 
-    // find the node at index-1 (the predecessor)
+    // 找到 index-1 位置的节点（前驱）
     ListNode* prev = list->head;
     for (int i = 0; i < index - 1; i++) {
         prev = prev->next;
@@ -369,8 +369,8 @@ As with insertion at a specific position, the core is finding the predecessor no
 Search and traversal are the most basic read-only operations on a linked list, and they are also our means of verifying that all the insertions and deletions above are correct.
 
 ```c
-/// @brief Find the position of the first node whose value is target
-/// @return the index (0-based) if found, -1 if not found
+/// @brief 查找值为 target 的第一个节点的位置
+/// @return 找到返回索引（0-based），未找到返回 -1
 int linked_list_find(const LinkedList* list, int target) {
     if (list == NULL) {
         return -1;
@@ -390,7 +390,7 @@ int linked_list_find(const LinkedList* list, int target) {
 ```
 
 ```c
-/// @brief Print the list contents
+/// @brief 打印链表内容
 void linked_list_print(const LinkedList* list) {
     if (list == NULL) {
         printf("[NULL list]\n");
@@ -411,7 +411,7 @@ void linked_list_print(const LinkedList* list) {
 ```
 
 ```c
-/// @brief Get the list length
+/// @brief 获取链表长度
 int linked_list_size(const LinkedList* list) {
     return (list != NULL) ? list->size : 0;
 }
@@ -476,9 +476,9 @@ The list we implemented above has one inelegant aspect—operations involving th
 The sentinel node (dummy head / sentinel node) is the classic trick for eliminating these special cases. The idea is to place a "fake" node at the very front of the list: it stores no real data, it just occupies a slot. You can picture it as an empty car coupled to the front of the train—it carries no passengers, but it turns every "insert in front of some car" operation into a uniform "insert after the predecessor" operation. That way, every real data node has a predecessor—even the first data node's predecessor is the sentinel node. Every operation expressed against "the predecessor" can be handled uniformly, with no special-casing at all.
 
 ```c
-/// @brief Singly linked list with a sentinel node
+/// @brief 带哨兵节点的单链表
 typedef struct {
-    ListNode sentinel;   // sentinel node (embedded directly, not a pointer)
+    ListNode sentinel;   // 哨兵节点（直接嵌入，不是指针）
     int size;
 } SentinelList;
 ```
@@ -486,13 +486,13 @@ typedef struct {
 Here we embed the sentinel node directly in the structure instead of pointing to it—the benefit is one less `malloc`, and the sentinel's lifetime is naturally bound to the list structure's. The sentinel node's `data` field is meaningless; only the `next` field is useful.
 
 ```c
-/// @brief Create a list with a sentinel node
+/// @brief 创建带哨兵节点的链表
 SentinelList* sentinel_list_create(void) {
     SentinelList* list = (SentinelList*)malloc(sizeof(SentinelList));
     if (list == NULL) {
         return NULL;
     }
-    list->sentinel.next = NULL;  // the sentinel's next points to the first real node (NULL when the list is empty)
+    list->sentinel.next = NULL;  // 哨兵的 next 指向第一个真实节点（空链表时为 NULL）
     list->size = 0;
     return list;
 }
@@ -501,13 +501,13 @@ SentinelList* sentinel_list_create(void) {
 Now let's see how concise deletion by value becomes in the sentinel version:
 
 ```c
-/// @brief Remove by value (sentinel version)
+/// @brief 按值删除（哨兵版本）
 bool sentinel_list_remove(SentinelList* list, int target) {
     if (list == NULL) {
         return false;
     }
 
-    // prev starts at the sentinel; no head-node special case needed
+    // prev 从哨兵开始，不需要特判头节点
     ListNode* prev = &list->sentinel;
     while (prev->next != NULL && prev->next->data != target) {
         prev = prev->next;
@@ -560,7 +560,7 @@ In C++, hand-rolling a linked list with raw pointers is doable, but with smart p
 
 struct ListNode {
     int data;
-    std::unique_ptr<ListNode> next;  // exclusive ownership of the next node
+    std::unique_ptr<ListNode> next;  // 独占下一个节点的所有权
 };
 ```
 
@@ -569,11 +569,11 @@ The benefit is that destroying the list becomes automatic—when the head node's
 A list built on `unique_ptr` also changes subtly on insertion and deletion—you can't simply assign pointers; you need `std::move` to transfer ownership:
 
 ```cpp
-// head insertion
+// 头部插入
 void push_front(std::unique_ptr<ListNode>& head, int data) {
     auto new_node = std::make_unique<ListNode>();
     new_node->data = data;
-    new_node->next = std::move(head);  // transfer ownership
+    new_node->next = std::move(head);  // 转移所有权
     head = std::move(new_node);
 }
 ```
@@ -597,8 +597,8 @@ Doing iterators in plain C is more troublesome—no operator overloading, no tem
 Implement a function that reverses a singly linked list in place. The space complexity must be O(1); allocating new nodes is not allowed.
 
 ```c
-/// @brief Reverse the list in place
-/// @param list pointer to the list
+/// @brief 原地反转链表
+/// @param list 链表指针
 void linked_list_reverse(LinkedList* list);
 ```
 
@@ -611,10 +611,10 @@ Hint: maintain three pointers—`prev`, `current`, `next`—and reverse each nod
 Given two lists sorted in ascending order, merge them into one new sorted list.
 
 ```c
-/// @brief Merge two ascending sorted lists
-/// @param a the first sorted list
-/// @param b the second sorted list
-/// @return the new merged list
+/// @brief 合并两个升序链表
+/// @param a 第一个有序链表
+/// @param b 第二个有序链表
+/// @return 合并后的新链表
 LinkedList* linked_list_merge_sorted(const LinkedList* a, const LinkedList* b);
 ```
 
@@ -627,8 +627,8 @@ Hint: walk both lists at the same time, each time taking the smaller of the two 
 Determine whether a list has a cycle (some node's `next` points back to a node that has already appeared earlier).
 
 ```c
-/// @brief Detect whether the list has a cycle
-/// @return true if a cycle exists
+/// @brief 检测链表是否有环
+/// @return 有环返回 true
 bool linked_list_has_cycle(const LinkedList* list);
 ```
 

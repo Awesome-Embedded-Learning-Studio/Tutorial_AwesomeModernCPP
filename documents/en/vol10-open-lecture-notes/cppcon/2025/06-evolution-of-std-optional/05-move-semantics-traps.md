@@ -24,9 +24,9 @@ related:
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/06-evolution-of-std-optional/05-move-semantics-traps.md
   source_hash: b997dd9840e99281ccb82758842dad3205f5e39e3deaccbc2eef4585fe856df7
-  translated_at: '2026-09-26T16:31:45+00:00'
-  engine: anthropic
-  token_count: 2000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 4572
 ---
 # The Move-Semantics Traps Hiding Inside Optional References
 
@@ -62,13 +62,13 @@ struct Cat {
 
 int main() {
     std::optional<Cat> ov = Cat{"Finn"};
-    using Rval = decltype(*std::move(ov));          // value version, rvalue optional
+    using Rval = decltype(*std::move(ov));          // 值版本，右值 optional
     std::cout << "*std::move(optional<Cat>)  是 Cat&& ? "
               << std::is_same_v<Rval, Cat&&> << "\n";
 
     Cat c{"Loki"};
     std::optional<Cat&> or_ = c;
-    using Rref = decltype(*std::move(or_));          // reference version, rvalue optional
+    using Rref = decltype(*std::move(or_));          // 引用版本，右值 optional
     std::cout << "*std::move(optional<Cat&>) 是 Cat&  ? "
               << std::is_same_v<Rref, Cat&> << "\n";
 }
@@ -103,10 +103,10 @@ What does that mean? Drop the thought "I know what this function returns, so I c
 The correct approach: only move objects you are certain you have the right to move, and write the `std::move` on the object itself, not on the outside of the container that holds it.
 
 ```cpp
-// Dangerous: you do not know whether what *rhs dereferences to should be moved at all
+// 危险写法：您不知道 *rhs 解引用出来到底该不该被移动
 some_type dest = *std::move(rhs);
 
-// Safe: dereference first to get the reference, then move that reference
+// 安全写法：先解引用拿到引用，再 move 这个引用
 some_type dest = std::move(*rhs);
 ```
 
@@ -117,8 +117,8 @@ Going one step further: the best `std::move` you can ever write is the one that 
 ```cpp
 Cat make_cat() {
     Cat c{"Finn"};
-    return c;                       // correct — NRVO or implicit move
-    // return std::move(c);         // redundant, and can even block NRVO
+    return c;                       // 正确，NRVO 或隐式移动
+    // return std::move(c);         // 多余，甚至可能阻止 NRVO
 }
 ```
 

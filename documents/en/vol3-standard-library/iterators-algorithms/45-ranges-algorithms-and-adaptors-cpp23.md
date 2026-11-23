@@ -22,9 +22,9 @@ title: 'Ranges Algorithms and the C++23 Newcomers: fold, contains, and New Adapt
 translation:
   source: documents/vol3-standard-library/iterators-algorithms/45-ranges-algorithms-and-adaptors-cpp23.md
   source_hash: 4329b9fe6e95dfddc52c097dd0c5ba66a004182d4b981273784ebe948215fdab
-  translated_at: '2026-09-26T01:50:26+00:00'
-  engine: anthropic
-  token_count: 11000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 20627
 ---
 # Ranges Algorithms and the C++23 Newcomers: fold, contains, and New Adapters
 
@@ -52,14 +52,14 @@ ranges abstracts "the end" into a **sentinel**: a sentinel can have a different 
 #include <vector>
 
 int main() {
-    // Range parameter: one argument covers the whole container
+    // Range 参数:一个参数搞定整个容器
     std::vector<int> v{3, 1, 4, 1, 5, 9, 2, 6};
     std::ranges::sort(v);
     std::cout << "ranges::sort 后: ";
     for (auto x : v) std::cout << x << ' ';
     std::cout << '\n';
 
-    // string_view's end() is a sentinel — a natural fit for "stop at \0"
+    // string_view 的 end() 是哨兵,天然适配「读到 \0 停」
     std::string_view sv = "hello";
     std::cout << "ranges::count(\"hello\", 'l') = "
               << std::ranges::count(sv, 'l') << '\n';
@@ -86,8 +86,8 @@ ranges algorithms move the requirement into the type system with Concepts. Call 
 
 int main() {
     std::list<int> l{3, 1, 4, 1, 5};
-    std::ranges::sort(l);   // the ranges version: rejected right at the Concept layer
-    std::sort(l.begin(), l.end());   // the old version: an operator- error from deep inside the templates
+    std::ranges::sort(l);   // ranges 版:Concept 层直接拒绝
+    std::sort(l.begin(), l.end());   // 老版:模板深处的 operator- 报错
 }
 ```
 
@@ -129,11 +129,11 @@ The one with the biggest practical impact: **Niebloids do not participate in ADL
 
 namespace user {
     struct Tag {};
-    void sort(Tag) {}   // a same-named sort lives in the custom namespace
+    void sort(Tag) {}   // 自定义命名空间里有个同名 sort
 
     void demo() {
         std::vector<int> v{3, 1, 2};
-        sort(v);   // neither using std::ranges, nor pulled in via ADL
+        sort(v);   // 既没 using std::ranges,也没用 ADL 把它拉进来
     }
 }
 ```
@@ -168,13 +168,13 @@ With the ranges-ification covered, we move into the C++23 newcomers. The first o
 #include <vector>
 
 int main() {
-    std::vector<double> vec{1.5, 2.5, 3.5, 4.5};   // true sum = 12.0
+    std::vector<double> vec{1.5, 2.5, 3.5, 4.5};   // 真实和 = 12.0
 
-    // initial value written as 1 (int): the return type is pinned to int, 1.5/2.5... all truncated
+    // 初始值写成 1(int),返回类型被定死成 int,1.5/2.5... 全被截断
     double acc = std::accumulate(vec.begin(), vec.end(), 1);
     std::cout << "accumulate(vec, 1)      = " << acc << '\n';
 
-    // fold_left's return type comes from f(init, *first) — deduced back to double here, no truncation
+    // fold_left 的返回类型由 f(init, *first) 决定,这里推回 double,不截断
     double fl = std::ranges::fold_left(vec, 1, std::plus{});
     std::cout << "fold_left(vec, 1, +)    = " << fl << '\n';
 }
@@ -288,8 +288,8 @@ int main() {
     std::vector<int> v{1, 2, 3, 4, 5};
     std::vector<int> pat{2, 3};
 
-    bool old_way = (std::ranges::find(v, 3) != v.end());   // the old antipattern
-    bool new_way = std::ranges::contains(v, 3);             // one clean line
+    bool old_way = (std::ranges::find(v, 3) != v.end());   // 老反模式
+    bool new_way = std::ranges::contains(v, 3);             // 一句话
 
     std::cout << "find!=end: " << old_way << "  contains: " << new_way << '\n';
     std::cout << "contains_subrange(v, {2,3}): "
@@ -393,7 +393,7 @@ The element reference type of `zip(vi, vs)` is `tuple<int&, string&>` (pointing 
 // Standard: C++23
 std::vector<int> v{1, 2, 3, 4, 5};
 // adjacent<3>: (1,2,3) (2,3,4) (3,4,5)
-// pairwise adjacent differences: 1 1 1 1
+// pairwise 相邻差: 1 1 1 1
 for (auto [a, b] : std::views::pairwise(v)) {
     std::cout << (b - a) << ' ';   // 1 1 1 1
 }
@@ -474,7 +474,7 @@ Even `views::iota(0) | stride(3)` gets you a stepped integer stream like "0, 3, 
 // Standard: C++23
 for (int x : std::views::repeat(7, 3)) std::cout << x << ' ';   // 7 7 7
 std::cout << '\n';
-// the unbounded version must be truncated with take, or the loop never ends
+// 无界版必须 take 截断,否则死循环
 for (int x : std::views::repeat(0) | std::views::take(4)) std::cout << x << ' ';
 std::cout << '\n';   // 0 0 0 0
 ```

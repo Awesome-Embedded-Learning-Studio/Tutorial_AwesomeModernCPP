@@ -21,10 +21,10 @@ tags:
 title: 'SimpleWeakPtr: A Safety Improvement over T* + shared_ptr<Flag>'
 translation:
   source: documents/vol8-domains/cpp-deep-dives/pointer-semantics/03-simple-weakptr.md
-  source_hash: 3d443bcccc8799e49ce033811e33106fd8930b98044a896293a1d650d54934d9
-  translated_at: '2026-09-27T02:43:50+00:00'
-  engine: anthropic
-  token_count: 1240
+  source_hash: 26380cf93f903482691da3153c14f872bdd643dba6997da87a4e1d55f5c19c93
+  translated_at: '2026-11-22T16:41:02+00:00'
+  engine: glm-5.3-refresh
+  token_count: 5738
 ---
 # SimpleWeakPtr: A Safety Improvement over T* + shared_ptr\<Flag\>
 
@@ -40,8 +40,8 @@ First the implementation, then we'll walk through piece by piece why it is desig
 
 ```cpp
 // simple_weak_ptr.h
-// Teaching version of SimpleWeakPtr<T>: T* + shared_ptr<Flag>
-// The control block is managed via shared_ptr, guaranteeing a lifetime independent of the Owner
+// 教学版 SimpleWeakPtr<T>：T* + shared_ptr<Flag>
+// control block 通过 shared_ptr 管理，保证生命周期独立于 Owner
 
 #pragma once
 
@@ -61,14 +61,14 @@ public:
     SimpleWeakPtr(T* ptr, std::shared_ptr<Flag> flag)
         : ptr_(ptr), flag_(std::move(flag)) {}
 
-    // Check whether the object is still valid
-    // Safe: flag_ is a shared_ptr; as long as this WeakPtr is alive, the Flag is guaranteed to be alive
+    // 检查对象是否还有效
+    // 安全：flag_ 是 shared_ptr，只要这个 WeakPtr 还活着，Flag 就一定活着
     bool is_valid() const
     {
         return flag_ && flag_->alive;
     }
 
-    // Get the object pointer; returns nullptr if it has been invalidated
+    // 获取对象指针，已失效则返回 nullptr
     T* get() const
     {
         if (is_valid()) {
@@ -111,7 +111,7 @@ public:
 
 private:
     T* owner_;
-    std::shared_ptr<Flag> flag_;  // The Factory and the WeakPtrs share the same Flag
+    std::shared_ptr<Flag> flag_;  // Factory 和 WeakPtr 共享同一个 Flag
 };
 ```
 
@@ -129,31 +129,31 @@ The lifetime timeline:
 
 ```mermaid
 graph TD
-    subgraph "Phase 1: Owner alive"
+    subgraph "时间段 1：Owner 存活"
         direction TB
         O1["Owner"]
         F1["Factory\nshared_ptr"]
         W1["WeakPtr\nshared_ptr"]
-        FL1["Flag\nalive = true\nref_count = 2\n(heap allocated)"]
+        FL1["Flag\nalive = true\nref_count = 2\n（heap allocated）"]
         O1 --> F1
         F1 --> FL1
         W1 --> FL1
         style FL1 fill:#4CAF50,color:#fff
     end
 
-    subgraph "Phase 2: Owner destroyed"
+    subgraph "时间段 2：Owner 析构后"
         direction TB
-        O2["Owner destroyed"]
-        F2["Factory destroyed\n(shared_ptr destructed)"]
-        W2["WeakPtr (still alive)\nshared_ptr"]
-        FL2["Flag\nalive = false\nref_count = 1\n(still alive!)"]
+        O2["Owner 已销毁"]
+        F2["Factory 已销毁\n（shared_ptr 析构）"]
+        W2["WeakPtr（仍存活）\nshared_ptr"]
+        FL2["Flag\nalive = false\nref_count = 1\n（仍然活着！）"]
         W2 --> FL2
         style FL2 fill:#FF9800,color:#fff
     end
 
-    subgraph "Phase 3: WeakPtr destroyed too"
+    subgraph "时间段 3：WeakPtr 也析构后"
         direction TB
-        FL3["Flag ref_count = 0\nFlag destroyed\nAll is well, no UB"]
+        FL3["Flag ref_count = 0\nFlag 被销毁\n一切正常，无 UB"]
         style FL3 fill:#f44336,color:#fff
     end
 ```
@@ -189,15 +189,15 @@ struct Flag {
 
 ```mermaid
 sequenceDiagram
-    participant A as Thread A
-    participant B as Thread B
+    participant A as 线程 A
+    participant B as 线程 B
 
     A->>A: is_valid() → true
     B->>B: ~Owner() → invalidate()
-    B->>B: destruct T
+    B->>B: 析构 T
     A->>A: get() → T*
-    A->>A: access T's members → UB!
-    Note over A,B: T has been destructed; thread A is holding a dangling pointer
+    A->>A: 访问 T 的成员 → UB！
+    Note over A,B: T 已经被析构，线程 A 持有的是悬垂指针
 ```
 
 `atomic<bool>` fixes the data race on the Flag itself, not the concurrent-access safety of T. We will come back to this in depth in Part 5, when we discuss asynchronous callbacks.
@@ -216,4 +216,4 @@ This is the key step from an "unsafe weak reference" to a "safe weak reference".
 
 - [std::shared_ptr - cppreference](https://en.cppreference.com/w/cpp/memory/shared_ptr)
 - [std::atomic - cppreference](https://en.cppreference.com/w/cpp/atomic/atomic)
-- [A Deep Dive into Memory Ordering](../../../vol5-concurrency/ch03-atomic-memory-model/02-memory-ordering.md) — Volume 5 of this tutorial discusses memory order in depth
+- [A Deep Dive into Memory Ordering](../../../vol5-concurrency/chapter05-atomic-memory-model/04-choosing-memory-orders.md) — Volume 5 of this tutorial discusses memory order in depth

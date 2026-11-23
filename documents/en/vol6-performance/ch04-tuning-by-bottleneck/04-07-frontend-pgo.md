@@ -27,9 +27,9 @@ title: 'Frontend optimization: code layout, PGO, and BOLT'
 translation:
   source: documents/vol6-performance/ch04-tuning-by-bottleneck/04-07-frontend-pgo.md
   source_hash: bd86cf4f23f841406267c39d4e608b15e1aa3431b58faf392ad558771d85d92c
-  translated_at: '2026-09-26T06:30:13+00:00'
-  engine: anthropic
-  token_count: 3300
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 4240
 ---
 # Frontend optimization: code layout, PGO, and BOLT
 
@@ -58,12 +58,12 @@ The first move of frontend optimization is "don't let the code get needlessly bi
 PGO is a three-stage pipeline:
 
 ```bash
-# Stage 1: instrumented build (counters inserted) — note the -o name must exactly match stage 3!
+# 阶段 1:仪器化编译(插计数器)— 注意 -o 的名字要和阶段 3 完全一致!
 g++ -O2 -fprofile-generate app.cpp -o app_pgo
-# Stage 2: run a representative workload to generate the profile (.gcda files whose names embed "the binary that produced them")
+# 阶段 2:跑代表性 workload,生成剖面(.gcda 文件,文件名里含「生成它的二进制名」)
 ./app_pgo <realistic_input>
-# Stage 3: recompile using the profile (-o must match stage 1's name; otherwise the .gcda filenames
-#              don't match, the compiler warns: profile count data file not found, and the profile is not applied)
+# 阶段 3:用剖面重编(-o 必须和阶段 1 同名;否则 .gcda 文件名对不上,
+#              编译器报 warning: profile count data file not found,profile 不会被应用)
 g++ -O2 -fprofile-use app.cpp -o app_pgo
 ```
 

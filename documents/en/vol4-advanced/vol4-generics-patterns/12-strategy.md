@@ -16,10 +16,10 @@ related:
   - 'Singleton Pattern: From Comment-Only Constraints to Meyer''s Singleton'
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/12-strategy.md
-  source_hash: 846240b6ab631e0c07ae784ae0c9ab5d441357ecc6d6603048d1c902110fb101
-  translated_at: '2026-09-26T05:31:56+00:00'
-  engine: anthropic
-  token_count: 6900
+  source_hash: 207dbc9ad3f496f834bda87a1171c36b27b56c27ce10b0a01cbc17a78458a6ed
+  translated_at: '2026-11-22T16:46:03+00:00'
+  engine: glm-5.3-refresh
+  token_count: 18838
 ---
 # Strategy Pattern: From a Heap of if/else to Compile-Time Swappable Policies
 
@@ -53,7 +53,7 @@ std::string format_text(const std::string& s, FormatMode mode) {
             return out;
         }
         case FormatMode::Snake:
-            return to_snake(s);  // assume this already exists
+            return to_snake(s);  // 假设已有
     }
     return s;
 }
@@ -102,7 +102,7 @@ public:
     explicit TextProcessor(std::unique_ptr<IFormatter> f)
         : formatter_(std::move(f)) {}
 
-    void set_formatter(std::unique_ptr<IFormatter> f) {  // replaceable at runtime
+    void set_formatter(std::unique_ptr<IFormatter> f) {  // 运行时可替换
         formatter_ = std::move(f);
     }
 
@@ -209,7 +209,7 @@ int main() {
                   << std::chrono::duration<double, std::milli>(t1 - t0).count()
                   << " ms\n";
     }
-    volatile int sink = acc;  // keep the whole loop from being optimized away
+    volatile int sink = acc;  // 防止整个循环被优化掉
     (void)sink;
 }
 ```
@@ -336,11 +336,11 @@ Now we deliberately write a **bad** strategy—one whose return type is `const c
 
 ```cpp
 struct BadFormatter {
-    static const char* format(std::string s) { return s.c_str(); }  // wrong return type
+    static const char* format(std::string s) { return s.c_str(); }  // 返回类型不对
 };
 
 int main() {
-    TextProcessor<BadFormatter> tp;   // should fail right here
+    TextProcessor<BadFormatter> tp;   // 应该在这里就报
 }
 ```
 
@@ -416,7 +416,7 @@ Abstract talk is hollow, so let's do something that actually runs. The example b
 #include <memory>
 #include <print>
 
-// Strategy carrier: type-erases any "zero-argument, zero-return sound" into one callable
+// 策略载体:把任意「无参无返回的叫声」擦除成一个可调用对象
 struct AnimalSound {
     ~AnimalSound() = default;
 
@@ -429,7 +429,7 @@ private:
     std::function<void()> sound_;
 };
 
-// Context: the animal, holding a shared sound strategy, replaceable at runtime
+// Context:动物,持有一个共享的叫声策略,可在运行时替换
 struct AnimalType {
     virtual ~AnimalType() = default;
 
@@ -468,7 +468,7 @@ int main() {
     AnimalType cat(cat_sound);
     cat.play_sound();                 // Mewo!Mewo!Mewo!
 
-    dog.install_new_sound(cat_sound); // swap the strategy at runtime: dog starts meowing too
+    dog.install_new_sound(cat_sound); // 运行时换策略:dog 也开始喵喵叫
     std::println("What the fuck!");
     dog.play_sound();                 // Mewo!Mewo!Mewo!
 }

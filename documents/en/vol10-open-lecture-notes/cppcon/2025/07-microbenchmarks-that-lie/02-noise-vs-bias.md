@@ -22,9 +22,9 @@ related:
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/07-microbenchmarks-that-lie/02-noise-vs-bias.md
   source_hash: c4eb6c203da3558e0115b80494607d904c9e26366bd0446552e003b00a105549
-  translated_at: '2026-09-26T16:34:13+00:00'
-  engine: anthropic
-  token_count: 2500
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6271
 ---
 
 # Noise Can Be Suppressed: Bias Is the Real Nightmare
@@ -50,7 +50,7 @@ for (int r = 0; r < R; ++r) {
 Plot the 200 samples as a histogram (dropping the 5 most extreme values at each end; the x-axis is elapsed time in microseconds):
 
 ```text
-200 samples (198..259 us after removing extremes), distribution shape:
+200 次采样 (去极端值后 198..259 us), 分布形状:
  197.8 | ######################################## (152)
  200.5 |  (1)
  203.2 | # (4)
@@ -60,13 +60,13 @@ Plot the 200 samples as a histogram (dropping the 5 most extreme values at each 
  213.9 |
  216.6 |  (1)
  219.3 |  (1)
-  ...  |  (a few scattered samples in this range)
+  ...  |  (零星几个采样散布在这一带)
  235.3 |  (3)
  251.4 |  (1)
  259.5 | # (5)
 
 min=197.7  median=199.4  mean=204.8  max=313.8 us
-mean > median, meaning the distribution is right-skewed (long tail on the slow side)
+mean > median, 说明分布右偏 (长尾在慢的那侧)
 ```
 
 Let's stare at this chart for a few seconds. First thing: **152 of the 200 runs are crammed into the fastest bin** (around 197.8us) — that's "under normal conditions, this loop is simply this fast." But a long tail drags out to the right, scattering all the way to 259us, with the extreme value even reaching 313us — roughly 1.6x the fastest value.
@@ -88,7 +88,7 @@ These fluctuations are called **noise**, and their defining trait is being **ran
 Noise is random, so the countermeasure is just as direct: **run more, take statistics.** Run 30 times and take the median; run 200 times and look at the distribution — the influence of the long tail gets pressed down. Computing over those 200 samples above:
 
 ```text
-30 samples (us): min=200.2  median=228.3  mean=242.1  max=458.2  stddev=52.1
+30 次采样 (us): min=200.2  median=228.3  mean=242.1  max=458.2  stddev=52.1
 max/min = 2.29x   stddev/mean = 21.5%
 ```
 

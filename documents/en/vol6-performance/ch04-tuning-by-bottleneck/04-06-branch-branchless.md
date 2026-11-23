@@ -21,10 +21,10 @@ tags:
 title: 'Branches: branchless, predication, and "don''t go branchless blindly"'
 translation:
   source: documents/vol6-performance/ch04-tuning-by-bottleneck/04-06-branch-branchless.md
-  source_hash: 7ade38dd6e5ddb37b7f7494d863b58dd57e394732e08dd0a469aca4c1858f809
-  translated_at: '2026-09-26T06:31:51+00:00'
-  engine: anthropic
-  token_count: 1600
+  source_hash: be14bf895cf2c4b8f56004b304c89c3bd893d255367ca58101120130661498cb
+  translated_at: '2026-11-22T16:43:35+00:00'
+  engine: glm-5.3-refresh
+  token_count: 4424
 ---
 # Branches: branchless, predication, and "don't go branchless blindly"
 
@@ -39,13 +39,13 @@ There are two ways to do that: **branchless** (rewrite the branch into branchles
 The most common branchless rewrites are `std::min`/`std::max`/`std::clamp` and friends: underneath they use the **cmov** (conditional move) instruction — both paths' results are computed, then one is "selected" by condition. No branch jump anywhere, hence no misprediction.
 
 ```cpp
-// Branchy: on unpredictable data, mispredictions flush the pipeline
+// 有分支:不可预测时预测失败冲刷
 int clamp_if(int x, int lo, int hi) {
     if (x < lo) return lo;
     if (x > hi) return hi;
     return x;
 }
-// Branchless (std::min/max compiles to cmov)
+// 无分支(std::min/max 编译成 cmov)
 int clamp_cmov(int x, int lo, int hi) {
     return std::min(std::max(x, lo), hi);
 }
@@ -82,7 +82,7 @@ The cost of predication: total work = the sum of both paths (even though only on
 C++20 standardized `[[likely]]` / `[[unlikely]]` (the old way was GCC's `__builtin_expect`): it hands the compiler a branch-probability hint, so it can lay out the likely path's code together (better icache; see ch04-07 on frontend optimization) and adjust its branch-prediction assumptions.
 
 ```cpp
-if (rare_error) [[unlikely]] { handle_error(); }  // tell the compiler this path is rarely taken
+if (rare_error) [[unlikely]] { handle_error(); }  // 告诉编译器这条路很少走
 ```
 
 Note that the **main payoff of `[[likely]]` is code layout** (cluster the hot path together, push the cold path to the end of the function), which raises the icache hit rate — that is a Frontend optimization. It is **not** "making the branch predictor more accurate" (the hardware predictor does not read your source annotations; it reads runtime history). So `[[likely]]` helps when "the branch is heavily skewed + the function is fairly large", and does basically nothing for "a branch inside a small loop".
@@ -102,7 +102,7 @@ Look back over this article: the remedy for the Bad Speculation bucket is elimin
 
 ## References
 
-- Agner Fog, *The microarchitecture of Intel, AMD and VIA CPUs*, the branch-prediction chapter. Local copy.
+- Agner Fog, *The microarchitecture of Intel, AMD and VIA CPUs*, the branch-prediction chapter
 - Bakhvalov, *Performance Analysis and Tuning on Modern CPUs*, Chapter 9, *Optimizing Bad Speculation*.
 - ch02-03 Pipeline, ILP, and branch prediction (this volume; the source of the measured 4.2x real-branch penalty).
 - This article's measurement code: `code/volumn_codes/vol6-performance/ch04/branchless.cpp`

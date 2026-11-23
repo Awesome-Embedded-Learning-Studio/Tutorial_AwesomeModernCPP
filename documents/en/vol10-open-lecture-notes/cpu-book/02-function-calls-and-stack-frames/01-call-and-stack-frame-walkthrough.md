@@ -10,9 +10,10 @@ description: "A disassembly walkthrough of one minimal function call: call pushi
 reading_time_minutes: 10
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/02-function-calls-and-stack-frames/01-call-and-stack-frame-walkthrough.md
-  source_hash: 4b9d295a61d4780855b1505327bf69e1d0f320c000595abd57b3a99bcbccee66
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: cc0db37bfedc8611818f16d555ab31e4c6dd9d1a0d4726e9ba12a98728b9f668
+  translated_at: '2026-11-22T16:44:07Z'
+  engine: glm-5.3-refresh
+  token_count: 10029
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.

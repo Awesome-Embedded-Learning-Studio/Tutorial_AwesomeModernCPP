@@ -10,9 +10,10 @@ description: "When -O2 can see through a local object's type it turns the virtua
 reading_time_minutes: 8
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/05-classes-in-assembly/04-devirtualization-under-o2.md
-  source_hash: 209b2f39500a5b1d23dbcd184da005c999d4374a6db1d353d84804cd6e8129bc
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: f471f7a330fe0e3b12faf5baa82fb4f9215a08b35c0803f794de0f81e6b5a6b4
+  translated_at: '2026-11-22T16:44:07Z'
+  engine: glm-5.3-refresh
+  token_count: 7857
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -24,7 +25,7 @@ current_status:
 The environment is still the same set as in the [first piece](01-this-pointer-and-member-offsets.md). A three-step virtual call looks expensive on its face: two extra trips to memory, plus a call that takes a detour. The compiler feels the same way, so -O2 has a family of optimizations aimed squarely at it. The name is devirtualization: turning an indirect virtual call back into a direct one, and when things go well, doing away with the vptr load entirely. Whether a call can be devirtualized depends entirely on whether the compiler can see through the object's dynamic type. We designed a pair of functions that stages both situations:
 
 ```cpp
-// e7.cc -- -O2 devirtualization: types the compiler can see through vs. can't
+// e7.cc —— -O2 去虚拟化：编译器看得穿类型 vs 看不穿
 #include <cstdio>
 
 struct B {
@@ -34,27 +35,27 @@ struct D : B {
     int f() override;
 };
 
-volatile int magic_b = 111;  // volatile: the return value cannot be folded into a constant across calls
+volatile int magic_b = 111;  // volatile：返回值无法被跨过程折叠成常量
 volatile int magic_d = 222;
 volatile int sink = 0;
 
-// noinline: keeps devirtualization and inlining apart, so the call instruction stays visible in the assembly
+// noinline：把「去虚拟化」与「内联」两件事分开，保证汇编里还看得见 call 指令
 __attribute__((noinline)) int B::f() { return magic_b; }
 __attribute__((noinline)) int D::f() { return magic_d; }
 
 __attribute__((noinline)) int seen_through() {
-    D d;        // a local object, its type sitting right in front of the compiler
+    D d;        // 局部对象，类型摆在编译器眼前
     B* p = &d;
-    int r = p->f();  // -O2 expectation: a direct call to D::f
+    int r = p->f();  // -O2 预期：直接 call D::f
     sink = r;
     return r;
 }
 
-B* volatile whom = nullptr;  // only known at runtime what it points to
+B* volatile whom = nullptr;  // 运行时才知道指向谁
 
 __attribute__((noinline)) int unknown_target() {
-    B* p = whom;     // a pointer read out of volatile memory
-    int r = p->f();  // -O2 expectation: still an indirect call
+    B* p = whom;     // 从 volatile 内存里读出来的指针
+    int r = p->f();  // -O2 预期：仍是间接 call
     sink = r;
     return r;
 }
@@ -62,7 +63,7 @@ __attribute__((noinline)) int unknown_target() {
 int main(int argc, char**) {
     B b;
     D d;
-    whom = (argc > 1) ? (B*)&b : (B*)&d;  // loaded at runtime
+    whom = (argc > 1) ? (B*)&b : (B*)&d;  // 运行时才装定
 
     std::printf("seen_through()   -> %d\n", seen_through());
     std::printf("unknown_target() -> %d\n", unknown_target());
@@ -85,16 +86,16 @@ _Z12seen_throughv:
 	movq	%fs:40, %rax
 	movq	%rax, -8(%rbp)
 	xorl	%eax, %eax
-	leaq	16+_ZTV1D(%rip), %rax    # building d: writing the vptr (the inlined implicit constructor)
+	leaq	16+_ZTV1D(%rip), %rax    # 构造 d：写 vptr（内联的隐式构造）
 	movq	%rax, -24(%rbp)
 	leaq	-24(%rbp), %rax
 	movq	%rax, -16(%rbp)          # p = &d
 	movq	-16(%rbp), %rax
-	movq	(%rax), %rax             # load the vptr
-	movq	(%rax), %rdx             # fetch the slot
+	movq	(%rax), %rax             # 装 vptr
+	movq	(%rax), %rdx             # 取槽位
 	movq	-16(%rbp), %rax
-	movq	%rax, %rdi               # this goes into rdi
-	call	*%rdx                    # -O0: indirect call, all three steps present
+	movq	%rax, %rdi               # this → rdi
+	call	*%rdx                    # -O0：间接 call，三步齐全
 	movl	%eax, -28(%rbp)
 	movl	-28(%rbp), %eax
 	movl	%eax, sink(%rip)
@@ -113,7 +114,7 @@ _Z12seen_throughv:
 	movq	%fs:40, %rdi
 	movq	%rdi, 8(%rsp)
 	movq	%rsp, %rdi
-	call	_ZN1D1fEv               # -O2: direct call to D::f, no vptr load at all
+	call	_ZN1D1fEv               # -O2：直接 call D::f，连 vptr 都不用装
 	movl	%eax, sink(%rip)
 	movq	8(%rsp), %rdx
 	subq	%fs:40, %rdx
@@ -144,14 +145,14 @@ _Z14unknown_targetv:
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register 6
 	subq	$16, %rsp
-	movq	whom(%rip), %rax        # p = whom (only known at runtime)
+	movq	whom(%rip), %rax        # p = whom（运行时才知）
 	movq	%rax, -8(%rbp)
 	movq	-8(%rbp), %rax
-	movq	(%rax), %rax            # load the vptr
-	movq	(%rax), %rdx            # fetch the slot
+	movq	(%rax), %rax            # 装 vptr
+	movq	(%rax), %rdx            # 取槽位
 	movq	-8(%rbp), %rax
-	movq	%rax, %rdi              # this goes into rdi
-	call	*%rdx                   # indirect call
+	movq	%rax, %rdi              # this → rdi
+	call	*%rdx                   # 间接 call
 	movl	%eax, -12(%rbp)
 	movl	-12(%rbp), %eax
 	movl	%eax, sink(%rip)
@@ -171,14 +172,14 @@ _Z14unknown_targetv:
 	subq	$8, %rsp
 	.cfi_def_cfa_offset 16
 	movq	whom(%rip), %rdi        # p = whom
-	leaq	_ZN1D1fEv(%rip), %rdx   # candidate 1: D::f
-	movq	(%rdi), %rax            # load the vptr
-	movq	(%rax), %rax            # fetch the slot (the address that will actually be called)
+	leaq	_ZN1D1fEv(%rip), %rdx   # 候选一：D::f
+	movq	(%rdi), %rax            # 装 vptr
+	movq	(%rax), %rax            # 取槽位（真正会调的地址）
 	cmpq	%rdx, %rax
-	je	.L13                    # it's D::f, jump to the direct call at .L13
-	leaq	_ZN1B1fEv(%rip), %rdx   # candidate 2: B::f
+	je	.L13                    # 是 D::f → 走 .L13 的直接 call
+	leaq	_ZN1B1fEv(%rip), %rdx   # 候选二：B::f
 	cmpq	%rdx, %rax
-	jne	.L11                    # neither, fall to the fallback indirect call at .L11
+	jne	.L11                    # 都不是 → 走 .L11 的间接 call 兜底
 	call	_ZN1B1fEv
 	movl	%eax, sink(%rip)
 	addq	$8, %rsp
@@ -189,7 +190,7 @@ _Z14unknown_targetv:
 	.p2align 3
 .L11:
 	.cfi_restore_state
-	call	*%rax                   # the fallback indirect call: any target the compiler doesn't recognize comes through here
+	call	*%rax                   # 间接 call 兜底：编译器不认识的任何目标从这走
 	movl	%eax, sink(%rip)
 	addq	$8, %rsp
 	.cfi_remember_state
@@ -235,8 +236,8 @@ _Z14unknown_targetv:
 	subq	$8, %rsp
 	.cfi_def_cfa_offset 16
 	movq	whom(%rip), %rdi        # p = whom
-	movq	(%rdi), %rax            # load the vptr
-	call	*(%rax)                 # slot fetch and indirect call merged: call vtable slot [0]
+	movq	(%rdi), %rax            # 装 vptr
+	call	*(%rax)                 # 取槽位与间接 call 合并：call 虚表 [0] 槽
 	movl	%eax, sink(%rip)
 	addq	$8, %rsp
 	.cfi_def_cfa_offset 8

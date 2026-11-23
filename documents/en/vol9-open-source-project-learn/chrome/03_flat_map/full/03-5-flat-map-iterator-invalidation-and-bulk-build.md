@@ -25,9 +25,9 @@ title: "flat_map hands-on (V): iterator invalidation and bulk construction"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/03_flat_map/full/03-5-flat-map-iterator-invalidation-and-bulk-build.md
   source_hash: 5ff450583a8a25a0b8af6384e490837642de5a6767d93f4fa3c4a93eda6ca588
-  translated_at: '2026-09-26T02:35:27+00:00'
-  engine: anthropic
-  token_count: 5500
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5426
 ---
 # flat_map hands-on (V): iterator invalidation and bulk construction
 
@@ -42,7 +42,7 @@ Our first reaction at the time was to hit the docs and pin down exactly which op
 ```cpp
 std::map<int, Config> m = /* ... */;
 auto it = m.find(3);
-m[99] = load(99);   // insert a new element; it stays valid (the node didn't move)
+m[99] = load(99);   // 插入新元素,it 仍然有效(节点没动)
 it->second;          // OK
 ```
 
@@ -53,8 +53,8 @@ Reference stability is a genuine, tangible benefit of `std::map`: you can hold a
 ```cpp
 flat_map<int, Config> m = /* ... */;
 auto it = m.find(3);
-m[99] = load(99);   // may grow → it invalidated!
-it->second;          // UB! possibly dangling
+m[99] = load(99);   // 可能扩容 → it 失效!
+it->second;          // UB!可能悬垂
 ```
 
 Cache friendliness is paid for with a semantic cost: contiguous storage buys you performance, and the price is that reference stability is gone. Keep that ledger firmly in your head.
@@ -74,7 +74,7 @@ Our first reaction on reading that rule was "isn't that terribly wasteful." When
 Chromium pastes the UB counterexample right into the source comment (flat_map.h:57-60), a single line:
 
 ```cpp
-container["new element"] = it.second;   // UB: operator[] may trigger a grow, it invalidated
+container["new element"] = it.second;   // UB:operator[] 可能触发扩容,it 失效
 ```
 
 This kind of "mutate while iterating" code is flat-out undefined behavior in `flat_map`. flat_tree states the rule bluntly precisely so you never even ask "will this particular mutation grow?" You assume invalidation up front, and this whole class of bug gets choked off at the root.
@@ -88,12 +88,12 @@ Operationally, there are two rules we'd tell you to burn into muscle memory. One
 [03-4](./03-4-flat-map-sorted-unique-construction.md) covered bulk construction already. Here we take the same topic from another angle and look at it once more through the lens of "dodging iterator invalidation." If you want to stuff a batch of elements into a `flat_map`, never iterate-and-insert as you go: every insert invalidates all iterators, and on top of that the complexity rockets to O(N²) — you take the beating from both sides. The right posture is to gather everything into a `vector` first, then move it in, in one shot:
 
 ```cpp
-// 1. Gather into a vector (push_back is amortized O(1), no iterator-invalidation problem — you hold only the vector, not a flat_map iterator)
+// 1. 攒到一个 vector(push_back 摊还 O(1),无迭代器失效问题——只持有 vector,不持有 flat_map 迭代器)
 std::vector<std::pair<int, Config>> batch;
 batch.reserve(N);
 for (...) batch.emplace_back(k, v);
 
-// 2. Move into the flat_map in one shot (bulk construction, one O(N log N) sort)
+// 2. 一次性 move 进 flat_map(批量构造,O(N log N) 排序一次)
 flat_map<int, Config> m(std::move(batch));
 ```
 
@@ -109,7 +109,7 @@ flat_tree gives you two APIs that prop up a "pull the data out, overhaul it, han
 
 ```cpp
 container_type extract() && {
-    return std::exchange(body_, container_type{});   // hands the internal vector out whole, body_ left empty
+    return std::exchange(body_, container_type{});   // 把内部 vector 整个交出来,body_ 清空
 }
 ```
 
@@ -119,8 +119,8 @@ container_type extract() && {
 
 ```cpp
 void replace(container_type&& body) {
-    DCHECK(is_sorted_and_unique(body, comp_));   // verify the new data is sorted and duplicate-free
-    body_ = std::move(body);                      // take over
+    DCHECK(is_sorted_and_unique(body, comp_));   // 校验新数据有序无重复
+    body_ = std::move(body);                      // 接管
 }
 ```
 
@@ -131,17 +131,17 @@ void replace(container_type&& body) {
 ```cpp
 flat_map<int, Config> m = /* ... */;
 
-// 1. extract the vector out (called on an rvalue)
+// 1. extract 出 vector(对 rvalue 调)
 std::vector<std::pair<int, Config>> raw = std::move(m).extract();
 
-// 2. Modify in bulk freely on the vector (no ordering constraint, no shift cost)
+// 2. 在 vector 上自由批量改(没有有序约束,没有 shift 代价)
 for (...) raw.emplace_back(k, v);
 
-// 3. Sort and dedupe
+// 3. 排序去重
 std::sort(raw.begin(), raw.end(), by_key);
 raw.erase(std::unique(raw.begin(), raw.end(), equiv), raw.end());
 
-// 4. replace back into the flat_map (sorted_unique-style check)
+// 4. replace 回 flat_map(sorted_unique 式校验)
 m.replace(std::move(raw));
 ```
 

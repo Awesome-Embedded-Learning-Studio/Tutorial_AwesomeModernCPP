@@ -28,10 +28,10 @@ tags:
 title: 'Backend memory bottlenecks: cache-friendly, AoS/SoA, and prefetch'
 translation:
   source: documents/vol6-performance/ch04-tuning-by-bottleneck/04-01-backend-memory.md
-  source_hash: 606e5c8189143c72cadc8413b47018a834c38ac97ed7933a1d755581f2eca86b
-  translated_at: '2026-09-26T06:21:25+00:00'
-  engine: anthropic
-  token_count: 2900
+  source_hash: c4c90778860b95b8948200c054844d1d3193b3cb4e0a21b0f5ff7aa1bccf85f0
+  translated_at: '2026-11-22T16:43:35+00:00'
+  engine: glm-5.3-refresh
+  token_count: 4980
 ---
 # Backend memory bottlenecks: cache-friendly, AoS/SoA, and prefetch
 
@@ -56,17 +56,17 @@ These three are "free": without touching the algorithm, just adjusting layout an
 This is the most valuable move in all of ch04. Look at a typical "object-oriented" particle struct:
 
 ```cpp
-// AoS: Array of Structures — every field of each particle sits together
-struct Particle { float x, y, z;        // position
-                  float vx, vy, vz; };  // velocity
-Particle ps[N];   // 6 floats = 24 bytes/particle
+// AoS:Array of Structures —— 每个粒子的所有字段挨在一起
+struct Particle { float x, y, z;        // 位置
+                  float vx, vy, vz; };  // 速度
+Particle ps[N];   // 6 个 float = 24 字节/粒子
 ```
 
 Looks perfectly natural — each particle is one object, fields packed tight. **The problem shows up when you only update the position**:
 
 ```cpp
 for (int i = 0; i < N; ++i)
-    ps[i].x += ps[i].vx * 0.016f;   // only touches x, uses vx
+    ps[i].x += ps[i].vx * 0.016f;   // 只动 x,用 vx
 ```
 
 Each iteration only touches `x` and `vx`, but because it's AoS you drag the whole `ps[i]` (along with the unused `y`, `z`, `vy`, `vz`) into cache. Out of a 24-byte particle you use 8 bytes (`x`+`vx`) — **cacheline utilization is just 1/3**, and 2/3 of the bandwidth is wasted for nothing.
@@ -75,11 +75,11 @@ Each iteration only touches `x` and `vx`, but because it's AoS you drag the whol
 
 ```cpp
 struct Particles {
-    std::vector<float> x, y, z, vx, vy, vz;   // 6 separate arrays
+    std::vector<float> x, y, z, vx, vy, vz;   // 6 个独立数组
 };
 Particles ps;
 for (int i = 0; i < N; ++i)
-    ps.x[i] += ps.vx[i] * 0.016f;   // only touches the x array and the vx array
+    ps.x[i] += ps.vx[i] * 0.016f;   // 只碰 x 数组和 vx 数组
 ```
 
 Now you only pull the `x` array and the `vx` array into cache, and cacheline utilization approaches 100%. Our measurement (N = 1 million particles, updating only `x`):
@@ -102,8 +102,8 @@ SoA pays one more dividend: it is **naturally suited to SIMD vectorization** (th
 AoS carries one more hidden cost: **alignment and padding**. Look at these two structs:
 
 ```cpp
-struct ParticleAoS  { float x, y, z, vx, vy, vz; };          // 6 floats = 24 B
-struct ParticleAoS8 { float x, y, z, vx, vy, vz, pad1, pad2; }; // 8 floats = 32 B
+struct ParticleAoS  { float x, y, z, vx, vy, vz; };          // 6 float = 24 B
+struct ParticleAoS8 { float x, y, z, vx, vy, vz, pad1, pad2; }; // 8 float = 32 B
 ```
 
 `sizeof`, measured: the first is 24 bytes, the second 32 bytes (deliberately padded to a multiple of 8). A 64-byte cacheline holds **two** ParticleAoS (2×24=48B, with 16B left over that can't fit a third — waste), or **two** ParticleAoS8 (2×32=64B exactly, no waste).
@@ -124,7 +124,7 @@ The last move is **software prefetch**, `__builtin_prefetch`. The idea: you know
 
 ```cpp
 for (int i = 0; i < N; ++i) {
-    __builtin_prefetch(&data[i + PREFETCH_DIST]);  // prefetch PREFETCH_DIST steps ahead
+    __builtin_prefetch(&data[i + PREFETCH_DIST]);  // 提前 PREFETCH_DIST 步预取
     process(data[i]);
 }
 ```
@@ -140,6 +140,6 @@ In the next article we move the battlefield from "data layout" to "the computati
 ## References
 
 - Fabian, R., *Data-Oriented Design* — the wellspring of DOD thinking; local copy under `.claude/drafts/books/`
-- Agner Fog, *Optimizing software in C++*, §7 *Making containers/objects efficient* — the engineering treatment of AoS/SoA, alignment, and padding; local copy.
+- Agner Fog, *Optimizing software in C++*, §7 *Making containers/objects efficient* — the engineering treatment of AoS/SoA, alignment, and padding
 - Bakhvalov, *Performance Analysis and Tuning on Modern CPUs*, Chapter 9, *Memory Optimizations*.
 - Measured code for this article: `code/volumn_codes/vol6-performance/ch04/backend_memory.cpp`

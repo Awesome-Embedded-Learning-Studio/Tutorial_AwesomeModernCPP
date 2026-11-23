@@ -21,10 +21,10 @@ tags:
 title: C Strings and Buffer Safety
 translation:
   source: documents/vol1-fundamentals/c_tutorials/11-c-strings-and-buffer-safety.md
-  source_hash: 6d54e9be07b4639860afbeebb532b99e1f2728daed2d74fb40a42b7d5ae2396c
-  translated_at: '2026-09-25T13:21:45+00:00'
-  engine: anthropic
-  token_count: 5200
+  source_hash: fd42eecea265a6ec10e079f6facafd105ee930f0aa760003b4db72acdcd56d4d
+  translated_at: '2026-11-22T16:39:43+00:00'
+  engine: glm-5.3-refresh
+  token_count: 17491
 ---
 # C Strings and Buffer Safety
 
@@ -44,10 +44,10 @@ Here's what it actually looks like in memory:
 
 ```c
 char greeting[] = "Hello";
-// Index:   [0] [1] [2] [3] [4] [5]
-// Content: 'H' 'e' 'l' 'l' 'o' '\0'
-// sizeof(greeting) == 6  (terminator included)
-// strlen(greeting) == 5  (terminator not included)
+// 下标：[0] [1] [2] [3] [4] [5]
+// 内容：'H' 'e' 'l' 'l' 'o' '\0'
+// sizeof(greeting) == 6  （包含终止符）
+// strlen(greeting) == 5  （不包含终止符）
 ```
 
 Here's a point people confuse constantly: the difference between `sizeof` and `strlen`. `sizeof` is a compile-time operator that returns the number of bytes the whole array occupies, `\0` included; `strlen` is a runtime function that counts characters from the start until it meets a `\0`, returning the length without the terminator.
@@ -55,14 +55,14 @@ Here's a point people confuse constantly: the difference between `sizeof` and `s
 Now compare three ways of initializing:
 
 ```c
-// Option 1: a string literal gets the \0 added automatically
+// 方式一：字符串字面量自动加 \0
 char a[] = "Hi";              // sizeof == 3, strlen == 2
 
-// Option 2: character-by-character initialization—no automatic \0
-char b[] = {'H', 'i'};        // sizeof == 2, this is NOT a C string!
+// 方式二：逐字符初始化——不会自动加 \0
+char b[] = {'H', 'i'};        // sizeof == 2，这不是 C 字符串！
 
-// Option 3: add the terminator by hand
-char c[] = {'H', 'i', '\0'};  // sizeof == 3, strlen == 2, now it's a valid C string
+// 方式三：手动加终止符
+char c[] = {'H', 'i', '\0'};  // sizeof == 3, strlen == 2，这才是合法的 C 字符串
 ```
 
 Option 2 is a perfectly legal `char` array, but it is **not** a C string—hand it to `strlen` or `printf("%s")` and the call keeps reading memory onward until it happens to stumble upon a zero byte. That is undefined behavior.
@@ -74,11 +74,11 @@ Mixing up `sizeof` and `strlen` is one of the most common beginner mistakes. Rem
 String literals are stored in the program's read-only data segment; modifying one is undefined behavior:
 
 ```c
-const char* s = "Hello";   // s points to "Hello\0" in read-only memory
-// s[0] = 'h';            // undefined behavior! very likely a segfault
+const char* s = "Hello";   // s 指向只读内存中的 "Hello\0"
+// s[0] = 'h';            // 未定义行为！很可能段错误
 
-char t[] = "Hello";        // an array copy; the data is on the stack and modifiable
-t[0] = 'h';               // no problem
+char t[] = "Hello";        // 数组拷贝，数据在栈上，可以修改
+t[0] = 'h';               // 没问题
 ```
 
 `const char* s = "Hello"` makes the pointer refer to the string in the read-only data segment, while `char t[] = "Hello"` copies the string's contents into an array on the stack. The former cannot be modified; the latter can. Mix the two up and debugging later on will be a world of pain.
@@ -101,11 +101,11 @@ t[0] = 'h';               // no problem
 
 int main(void)
 {
-    char src[] = "Hello, World!";  // 13 characters + \0
+    char src[] = "Hello, World!";  // 13 字符 + \0
     char dst[8];
 
-    strncpy(dst, src, sizeof(dst) - 1);  // copies at most 7 characters
-    dst[sizeof(dst) - 1] = '\0';          // guarantee termination manually!
+    strncpy(dst, src, sizeof(dst) - 1);  // 最多复制 7 个字符
+    dst[sizeof(dst) - 1] = '\0';          // 手动保证终止！
 
     printf("dst = \"%s\"\n", dst);
     return 0;
@@ -133,7 +133,7 @@ This pattern shows up again and again in C code: `strncpy` plus a manual `\0` te
 ```c
 char buffer[32] = "Hello";
 strncat(buffer, ", World", sizeof(buffer) - strlen(buffer) - 1);
-// buffer is now "Hello, World"
+// buffer 现在是 "Hello, World"
 ```
 
 `strcmp` compares two strings character by character and returns `0` when they are equal. Using `==` on two strings compares pointer addresses, not contents—a classic beginner mistake.
@@ -159,10 +159,10 @@ int main(void)
     int src[] = {1, 2, 3, 4, 5};
     int dst[5];
 
-    // No overlap involved, so memcpy is fine
+    // 不涉及重叠，用 memcpy
     memcpy(dst, src, sizeof(src));
 
-    // Moving within the same array—overlap involved, must use memmove
+    // 在同一数组内移动——涉及重叠，必须用 memmove
     memmove(src + 1, src, 3 * sizeof(int));
 
     printf("dst: %d %d %d %d %d\n", dst[0], dst[1], dst[2], dst[3], dst[4]);
@@ -234,7 +234,7 @@ The essence of a buffer overflow is simple: more data gets written into a buffer
 void vulnerable_function(const char* user_input)
 {
     char buffer[16];
-    strcpy(buffer, user_input);  // if user_input is >= 16 characters long, overflow!
+    strcpy(buffer, user_input);  // 如果 user_input 长度 >= 16，溢出！
     printf("You said: %s\n", buffer);
 }
 ```
@@ -256,7 +256,7 @@ The second line of defense is compiler flags. `-fstack-protector` inserts a cana
 The third line of defense is AddressSanitizer (`-fsanitize=address`), which pinpoints exactly where each out-of-bounds read or write happens.
 
 ```bash
-# Recommended compile command for development
+# 推荐的开发编译命令
 gcc -std=c17 -Wall -Wextra -g -fsanitize=address -fstack-protector-all your_code.c
 ```
 
@@ -271,8 +271,8 @@ If you've been typing along all the way to this point, you've probably felt how 
 
 std::string s1 = "Hello";
 std::string s2 = "World";
-std::string result = s1 + ", " + s2 + "!";  // grows automatically
-printf("C string: %s\n", result.c_str());    // frictionless interop with C APIs
+std::string result = s1 + ", " + s2 + "!";  // 自动扩容
+printf("C string: %s\n", result.c_str());    // 和 C API 无障碍交互
 ```
 
 `std::string_view` (C++17) does not own the string data; it holds just a pointer and a length—in essence a wrapper around `(const char*, size_t)`. Passing one as an argument is zero-copy, and it accepts both C strings and `std::string`. Just remember that it doesn't own the data: a `string_view` pointing at a temporary is the classic dangling-reference trap.
@@ -300,20 +300,20 @@ Implement two safe string functions that both know the size of the destination b
 ```c
 #include <stddef.h>
 
-/// @brief Safely copy a string into the destination buffer
-/// @param dst destination buffer
-/// @param src source string
-/// @param dst_size total size of the destination buffer (terminator included)
-/// @return the full length of the source string (terminator excluded); a return
-///         value >= dst_size indicates truncation; returns 0 if dst/src is NULL or dst_size is 0
+/// @brief 安全地复制字符串到目标缓冲区
+/// @param dst 目标缓冲区
+/// @param src 源字符串
+/// @param dst_size 目标缓冲区总大小（含终止符）
+/// @return 源字符串的完整长度（不含终止符）；返回值 >= dst_size 表示发生截断；
+///         dst/src 为 NULL 或 dst_size 为 0 时返回 0
 size_t safe_str_copy(char* dst, const char* src, size_t dst_size);
 
-/// @brief Safely concatenate strings
-/// @param dst destination buffer (already holds content)
-/// @param src the string to append
-/// @param dst_size total size of the destination buffer (terminator included)
-/// @return the total length a full concatenation requires (terminator excluded); a
-///         return value >= dst_size indicates truncation; returns 0 if dst/src is NULL or dst_size is 0
+/// @brief 安全地拼接字符串
+/// @param dst 目标缓冲区（已有内容）
+/// @param src 要追加的字符串
+/// @param dst_size 目标缓冲区总大小（含终止符）
+/// @return 完整拼接所需的总长度（不含终止符）；返回值 >= dst_size 表示发生截断；
+///         dst/src 为 NULL 或 dst_size 为 0 时返回 0
 size_t safe_str_cat(char* dst, const char* src, size_t dst_size);
 ```
 
@@ -336,7 +336,7 @@ size_t safe_str_copy(char *dst, const char *src, size_t dst_size)
         return 0;
     }
 
-    // Scan the full source string first: it lets us report truncation and avoids reading overwritten data when copying overlaps.
+    // 先扫描完整源串，既能报告截断，也能避免重叠复制时读取到已覆盖的数据。
     while (src[source_length] != '\0')
     {
         source_length++;
@@ -362,20 +362,20 @@ size_t safe_str_cat(char *dst, const char *src, size_t dst_size)
         return 0;
     }
 
-    // Look for the terminator only within the destination buffer's bounds, avoiding strlen's out-of-bounds read.
+    // 只在目标缓冲区范围内查找终止符，避免 strlen 越界读取。
     while (dst_length < dst_size && dst[dst_length] != '\0')
     {
         dst_length++;
     }
 
-    // If the caller's dst is not a null-terminated string, truncate and terminate it first.
+    // 调用者传入的 dst 不是以空字符结尾的字符串时，先截断并终止它。
     if (dst_length == dst_size)
     {
         dst[dst_size - 1] = '\0';
-        return dst_size; // dst had no terminator; report it as a truncation case
+        return dst_size; // 目标串无终止符，按截断情况报告
     }
 
-    // Finish scanning the source length before writing the destination, so overlapping src/dst never reads freshly written data.
+    // 先完成源串长度扫描，再写目标，避免 src/dst 重叠时读到刚写入的数据。
     while (src[src_length] != '\0')
     {
         src_length++;
@@ -391,25 +391,25 @@ size_t safe_str_cat(char *dst, const char *src, size_t dst_size)
         copy_length = available;
     }
 
-    // memmove supports overlapping source and destination regions; the terminator is not counted in copy_length.
+    // memmove 支持源、目标区域重叠；终止符不计入 copy_length。
     memmove(dst + dst_length, src, copy_length);
     dst[dst_length + copy_length] = '\0';
 
-    return dst_length + src_length; // the full untruncated length (terminator excluded)
+    return dst_length + src_length; // 返回未截断时的完整长度（不含终止符）
 }
 
 int main(void)
 {
-    char copied_text[32]; // destination buffer
-    char short_buffer[8]; // a smaller buffer
-    char combined_text[32] = "STM32"; // destination buffer that already holds content
-    char short_combined[8] = "STM32"; // to demonstrate concatenation truncation
-    char self_combined[16] = "ab"; // to demonstrate overlapping source and destination
-    size_t copied_length; // full length of the source string
-    size_t short_length; // full length of the source string
-    size_t combined_length; // total bytes after concatenation
-    size_t short_combined_length; // length a full concatenation would require
-    size_t self_combined_length; // full length after an overlapping concatenation
+    char copied_text[32]; // 目标缓冲区
+    char short_buffer[8]; // 较小的缓冲区
+    char combined_text[32] = "STM32"; // 已有内容的目标缓冲区
+    char short_combined[8] = "STM32"; // 用于演示拼接截断
+    char self_combined[16] = "ab"; // 用于演示源、目标重叠
+    size_t copied_length; // 源字符串的完整长度
+    size_t short_length; // 源字符串的完整长度
+    size_t combined_length; // 拼接后的总字节数
+    size_t short_combined_length; // 完整拼接所需的长度
+    size_t self_combined_length; // 重叠拼接后的完整长度
 
     copied_length = safe_str_copy(copied_text, "Hello, Embedded!",
                                   sizeof(copied_text));
@@ -481,12 +481,12 @@ therefore indicates truncation. That way, even a source string that exactly fill
 #include <stdarg.h>
 #include <stdio.h>
 
-/// @brief Safely format a string
-/// @param dst destination buffer
-/// @param dst_size total size of the destination buffer (terminator included)
-/// @param format format string
-/// @param ... variable arguments
-/// @return the total length of the formatted string (terminator excluded)
+/// @brief 安全地格式化字符串
+/// @param dst 目标缓冲区
+/// @param dst_size 目标缓冲区总大小（含终止符）
+/// @param format 格式字符串
+/// @param ... 可变参数
+/// @return 格式化后字符串的总长度（不含终止符）
 size_t safe_str_format(char *dst, size_t dst_size, const char *format, ...);
 
 size_t safe_str_format(char *dst, size_t dst_size, const char *format, ...)
@@ -503,20 +503,20 @@ size_t safe_str_format(char *dst, size_t dst_size, const char *format, ...)
     int written = vsnprintf(dst, dst_size, format, args);
     va_end(args);
 
-    // Whether or not formatting succeeds, guarantee the buffer ends with a null character.
+    // 无论格式化是否成功，都保证缓冲区以空字符结尾。
     dst[dst_size - 1] = '\0';
 
-    // Return "the length that would have been written had the buffer been large enough", kept even under truncation.
-    // A negative return means formatting failed; return 0 in that case.
+    // 返回“如果缓冲区足够大本来需要写入的长度”，截断时也保留这个信息。
+    // 返回负数表示格式化失败，此时返回 0。
     return written >= 0 ? (size_t)written : 0;
 }
 
 int main(void)
 {
-    char message[64]; // buffer
-    char short_message[12]; // a smaller buffer
-    size_t message_length; // length of the formatted message
-    size_t short_length; // length of the full formatting result
+    char message[64]; // 缓冲区
+    char short_message[12]; // 较小的缓冲区
+    size_t message_length; // 格式化后消息的长度
+    size_t short_length; // 完整格式化结果的长度
 
     message_length = safe_str_format(message, sizeof(message),
                                      "设备：%s，温度：%d 摄氏度",
@@ -561,13 +561,13 @@ truncation information, so the caller can use a return value `>= dst_size` to de
 Implement a function that splits a string on a delimiter:
 
 ```c
-/// @brief Split a string on a delimiter, returning the start and end positions of each substring
-/// @param input the string to split (the function does not modify input)
-/// @param delim the delimiter character (a single character)
-/// @param out_starts output array: start position of each substring
-/// @param out_lengths output array: length of each substring
-/// @param max_tokens capacity of the out_starts/out_lengths arrays
-/// @return the number of substrings actually found
+/// @brief 将字符串按分隔符切分，返回各子串的起止位置
+/// @param input 待分割的字符串（函数不会修改 input）
+/// @param delim 分隔字符（单字符）
+/// @param out_starts 输出数组：各子串的起始位置
+/// @param out_lengths 输出数组：各子串的长度
+/// @param max_tokens out_starts/out_lengths 数组的容量
+/// @return 实际找到的子串数量
 size_t str_split(
     const char* input,
     char delim,
@@ -597,7 +597,7 @@ size_t str_split(
     size_t max_tokens
 )
 {
-    // Check that the input pointer and output arrays are valid, and ensure the output arrays can hold at least one substring.
+    // 检查输入指针和输出数组是否有效，同时确保输出数组至少能容纳一个子串。
     if (input == NULL || out_starts == NULL ||
         out_lengths == NULL || max_tokens == 0)
     {
@@ -605,27 +605,27 @@ size_t str_split(
     }
 
     size_t token_count = 0;
-    const char* start = input; // start of the current substring
-    const char* end = input;   // current scan position
+    const char* start = input; // 当前子串的起始位置
+    const char* end = input;   // 当前扫描位置
 
-    // Scan the string left to right; stop as soon as the output arrays are full.
+    // 从左向右扫描字符串；输出数组写满后立即停止。
     while (*end != '\0' && token_count < max_tokens)
     {
         if (*end == delim)
         {
-            // Record only the substring's start pointer and length; never copy or modify the original string.
+            // 只记录子串的起始指针和长度，不复制或修改原字符串。
             out_starts[token_count] = start;
             out_lengths[token_count] = (size_t)(end - start);
             token_count++;
 
-            // Skip the current delimiter; the next character is the start of the next segment.
+            // 跳过当前分隔符，下一个字符是下一段的起点。
             start = end + 1;
         }
 
         end++;
     }
 
-    // Record the last field whether or not it's empty (e.g. the trailing empty field in "a,b,").
+    // 无论最后一个字段是否为空，都要记录它（例如 "a,b," 的末尾空字段）。
     if (token_count < max_tokens)
     {
         out_starts[token_count] = start;
@@ -638,11 +638,11 @@ size_t str_split(
 
 int main(void)
 {
-    const char* input = "温度,湿度,气压"; // the original string
-    const char delimiter = ','; // the split character
-    const char* token_starts[16]; // array storing the substrings' start pointers
-    size_t token_lengths[16]; // array storing the substrings' lengths
-    size_t token_count; // number of substrings actually split out
+    const char* input = "温度,湿度,气压"; // 原始字符串
+    const char delimiter = ','; // 分割符号
+    const char* token_starts[16]; // 存储子串起始指针的数组
+    size_t token_lengths[16]; // 存储子串长度的数组
+    size_t token_count; // 实际分割出的子串数量
     size_t i;
 
     token_count = str_split(input, delimiter,

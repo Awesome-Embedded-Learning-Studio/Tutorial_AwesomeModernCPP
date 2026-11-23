@@ -25,9 +25,9 @@ title: 'expected: Value or Error, C++23''s New Error Handling Paradigm'
 translation:
   source: documents/vol3-standard-library/error-utils/64-expected.md
   source_hash: a39b8f18277237fd686faac3e79bc0e9313ac24b6fe7cf8988eb87599b507164
-  translated_at: '2026-09-26T00:53:28+00:00'
-  engine: anthropic
-  token_count: 5600
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 18239
 ---
 # expected: Value or Error, C++23's New Error Handling Paradigm
 
@@ -60,12 +60,12 @@ auto parse_number(std::string_view& str) -> std::expected<double, parse_error>
     double retval = std::strtod(begin, &end);
 
     if (begin == end)
-        return std::unexpected(parse_error::kInvalidInput);   // failure: wrap it in unexpected
+        return std::unexpected(parse_error::kInvalidInput);   // 失败:包成 unexpected
     if (std::isinf(retval))
         return std::unexpected(parse_error::kOverflow);
 
     str.remove_prefix(end - begin);
-    return retval;                                            // success: return the value directly
+    return retval;                                            // 成功:直接返回值
 }
 ```
 
@@ -107,8 +107,8 @@ A successful `expected` takes the value directly; a failed one wraps it in `std:
 
 ```cpp
 // Standard: C++23
-std::expected<int, std::string> ok = 7;                       // success
-std::expected<int, std::string> bad = std::unexpected("disk full");  // failure
+std::expected<int, std::string> ok = 7;                       // 成功
+std::expected<int, std::string> bad = std::unexpected("disk full");  // 失败
 ```
 
 Note the `bad` line — `std::unexpected("disk full")` holds a string literal, but the eventual `E` is `std::string`; this goes through `std::unexpected`'s implicit constructor, and the literal gets converted to `std::string`. This matters: `unexpected` itself forwards whatever you pass in to `E`'s constructor, so you don't have to hand-write `std::string("...")` every time.
@@ -122,7 +122,7 @@ There are three ways to get the value, each with different semantics — on this
 std::expected<int, std::string> ok = 7;
 std::expected<int, std::string> bad = std::unexpected("disk full");
 
-std::cout << "*ok = " << *ok << '\n';              // dereference: unchecked, UB on failure
+std::cout << "*ok = " << *ok << '\n';              // 解引用:不检查,失败时是 UB
 std::cout << "ok.value_or(-1) = " << ok.value_or(-1) << '\n';   // 7
 
 std::cout << "bad.value_or(-1) = " << bad.value_or(-1) << '\n'; // -1
@@ -148,7 +148,7 @@ The exception type `value()` throws deserves a dedicated note — it's not `std:
 // Standard: C++23
 std::expected<int, std::string> bad = std::unexpected("disk full");
 try {
-    (void)bad.value();                          // failure -> throws
+    (void)bad.value();                          // 失败 -> 抛异常
 } catch (const std::bad_expected_access<std::string>& e) {
     std::cout << "value() threw, error=" << e.error() << '\n';
 }
@@ -168,7 +168,7 @@ Nearly everything the value side has, the error side has too. `error()` fetches 
 // Standard: C++23
 std::expected<int, int> ok = 5;
 std::expected<int, int> bad = std::unexpected(7);
-std::cout << "ok.error_or(-99) = " << ok.error_or(-99) << '\n';   // -99 (success state)
+std::cout << "ok.error_or(-99) = " << ok.error_or(-99) << '\n';   // -99(成功态)
 std::cout << "bad.error_or(-99) = " << bad.error_or(-99) << '\n'; // 7
 ```
 
@@ -188,7 +188,7 @@ This is expected's core power, so let's treat it seriously.
 Suppose we need to take a user-input string, first parse it into a dollar amount, then convert that to cents (an integer, avoiding floating point), then format it into a display string. Every step can fail: parse failure, negative amount, formatting... The traditional style is `if` nested inside `if`:
 
 ```cpp
-// Traditional style: layer upon layer of nested ifs
+// 传统写法:层层嵌套 if
 auto s = std::string_view{"42.5"};
 auto parsed = parse_number(s);
 if (!parsed) return error(parsed.error());
@@ -203,7 +203,7 @@ Three steps is tolerable — what about five, or ten? This is the synchronous ed
 // Standard: C++23
 auto to_cents(double dollars) -> std::expected<long, parse_error> {
     if (dollars < 0)
-        return std::unexpected(parse_error::kInvalidInput);  // negative amount -> failure
+        return std::unexpected(parse_error::kInvalidInput);  // 金额为负 -> 失败
     return static_cast<long>(dollars * 100.0);
 }
 
@@ -223,9 +223,9 @@ auto run = [](std::string_view s) {
         std::cout << "ERR: " << static_cast<int>(result.error()) << '\n';
 };
 
-run("42.5");   // success flows all the way through
-run("meow");   // parse fails; the next two steps never run at all
-run("-1");     // parse succeeds (=-1), but to_cents rejects the negative -> failure
+run("42.5");   // 成功一路走到底
+run("meow");   // parse 失败,后面两步根本不执行
+run("-1");     // parse 成功(=-1),但 to_cents 拒绝负数 -> 失败
 ```
 
 ```text
@@ -257,7 +257,7 @@ The success side is easy to grasp; these two on the failure side deserve a dedic
 // Standard: C++23
 auto with_fallback = parse_number("meow")
     .or_else([](parse_error) {
-        return std::expected<double, parse_error>(0.0);   // parsing failed, so fall back to 0
+        return std::expected<double, parse_error>(0.0);   // 解析失败就给 0
     });
 std::cout << "fallback value = " << *with_fallback << '\n';
 ```
@@ -271,12 +271,12 @@ fallback value = 0
 ```cpp
 // Standard: C++23
 auto reworded = parse_number("meow")
-    .transform([](double d) { return d + 1000.0; })       // success branch, but currently in the failure state -> not executed
+    .transform([](double d) { return d + 1000.0; })       // 成功分支,但现在是失败态 -> 不执行
     .transform_error([](parse_error e) {
         return std::string("bad number, code=") +
                std::to_string(static_cast<int>(e));
     });
-// note: at this point E has changed from parse_error to std::string
+// 注意:到这里 E 已经从 parse_error 变成了 std::string
 std::cout << "reworded error = " << reworded.error() << '\n';
 ```
 
@@ -334,8 +334,8 @@ There's a class of operations that return no value at all — all we care about 
 
 ```cpp
 // Standard: C++23
-std::expected<void, int> vok;                              // success
-std::expected<void, int> vbad = std::unexpected(42);       // failure, error 42
+std::expected<void, int> vok;                              // 成功
+std::expected<void, int> vbad = std::unexpected(42);       // 失败,错误 42
 std::cout << "vok.has_value = " << vok.has_value()
           << "  vbad.has_value = " << vbad.has_value()
           << "  vbad.error = " << vbad.error() << '\n';
@@ -367,7 +367,7 @@ First, the happy path — when **everything succeeds and not a single error occu
     if (x < 0) throw std::runtime_error("neg");
     return x * 7 + 3;
 }
-// Each runs 200'000'000 times, always with non-negative input (never fails / never throws)
+// 各跑 200'000'000 次,全部传非负数(永不失败/永不抛)
 ```
 
 Measured (representative value from three runs; absolute values differ across machines — watch the trend):
@@ -382,13 +382,13 @@ The two are nearly tied, with the difference sitting inside measurement noise �
 The real gap is in **failure frequency**. An expected failure is just an ordinary "return an unexpected value" — the cost is no different from a normal return. A throw failure, though, goes through "throw → consult the exception table → stack unwinding → destroy objects along the way → enter the catch", a sequence far more expensive than one ordinary return, and **the more frequent the failures, the more exaggerated the gap**. Keeping that lightweight happy-path function fixed and artificially controlling the failure rate, here is what comes out:
 
 ```text
---- 1/100000 fail rate (rare failures) ---
+--- 1/100000 fail rate (罕见失败) ---
 expected fail-every-100000: 273 ms
 throw    fail-every-100000: 216 ms
---- 1/1000 fail rate (moderate) ---
+--- 1/1000 fail rate (中等) ---
 expected fail-every-1000: 225 ms
 throw    fail-every-1000: 469 ms
---- 1/10 fail rate (frequent failures) ---
+--- 1/10 fail rate (频繁失败) ---
 expected fail-every-10: 491 ms
 throw    fail-every-10: 38037 ms
 ```

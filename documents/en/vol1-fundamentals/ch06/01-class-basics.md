@@ -20,12 +20,23 @@ tags:
 - 入门
 - 基础
 title: Class Definition
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #227, #238)"
+      en: "Contributed exercise solutions and article revisions (PR #227, #238)"
 translation:
   source: documents/vol1-fundamentals/ch06/01-class-basics.md
-  source_hash: 674acce5246522d639b196d94e0fbe71cc0f72002191922296f6349f98dfd0b3
-  translated_at: '2026-09-25T11:02:15+00:00'
-  engine: anthropic
-  token_count: 6900
+  source_hash: 24e2cc3a14dc4a6691f41255b39897954ab88ce2c772c4cd3ca2b49e674bbc5f
+  translated_at: '2026-11-22T16:40:19+00:00'
+  engine: glm-5.3-refresh
+  token_count: 12028
 ---
 # Class Definition: Packaging Data and Operations into Your Own Type
 
@@ -38,7 +49,7 @@ In this chapter we start from C's `struct`, pin down exactly what C++'s `class` 
 In C, we use a `struct` to gather related data fields together—for example, a point on a 2D plane:
 
 ```c
-// C style: data only, no behavior
+// C 风格：只有数据，没有行为
 struct Point {
     double x;
     double y;
@@ -66,7 +77,7 @@ This style works, but it has a fundamental problem: the association between func
 The C++ class solves both problems at once. It pulls the data and the functions that operate on it into the same syntactic unit, and lets us control which members are visible to the outside and which are internal implementation details. In C++, a `struct` can in fact contain member functions too: `struct` and `class` are almost fully equivalent in syntax, and the only difference is the default access level. Let's look at the most basic form first:
 
 ```cpp
-// C++ style: data + behavior bound together
+// C++ 风格：数据 + 行为绑定在一起
 class Point {
 private:
     double x;
@@ -228,13 +239,13 @@ We've said so much about `class`—so what about `struct`? In C++, `struct` and 
 
 ```cpp
 class ClassStyle {
-    int x;      // private by default
-    void foo(); // private by default
+    int x;      // 默认 private
+    void foo(); // 默认 private
 };
 
 struct StructStyle {
-    int x;      // public by default
-    void foo(); // public by default
+    int x;      // 默认 public
+    void foo(); // 默认 public
 };
 ```
 
@@ -252,33 +263,33 @@ Let's combine everything we've learned and write a complete `Point` class, inclu
 #include <iostream>
 #include <string>
 
-/// @brief A point on the 2D plane, demonstrating basic class definition and encapsulation
+/// @brief 二维平面上的点，演示类的基本定义与封装
 class Point {
 private:
     double x_;
     double y_;
 
 public:
-    /// @brief Set the coordinates
-    /// @param new_x The new x coordinate
-    /// @param new_y The new y coordinate
+    /// @brief 设置坐标
+    /// @param new_x 新的 x 坐标
+    /// @param new_y 新的 y 坐标
     void set(double new_x, double new_y)
     {
         x_ = new_x;
         y_ = new_y;
     }
 
-    /// @brief Get the x coordinate
-    /// @return The value of the x coordinate
+    /// @brief 获取 x 坐标
+    /// @return x 坐标的值
     double get_x() const { return x_; }
 
-    /// @brief Get the y coordinate
-    /// @return The value of the y coordinate
+    /// @brief 获取 y 坐标
+    /// @return y 坐标的值
     double get_y() const { return y_; }
 
-    /// @brief Compute the Euclidean distance to another point
-    /// @param other The target point
-    /// @return The distance between the two points
+    /// @brief 计算到另一个点的欧几里得距离
+    /// @param other 目标点
+    /// @return 两点之间的距离
     double distance_to(const Point& other) const
     {
         double dx = x_ - other.x_;
@@ -286,14 +297,14 @@ public:
         return std::sqrt(dx * dx + dy * dy);
     }
 
-    /// @brief Compute the distance to the origin
-    /// @return The distance to the origin (0, 0)
+    /// @brief 计算到原点的距离
+    /// @return 到原点 (0, 0) 的距离
     double distance_to_origin() const
     {
         return std::sqrt(x_ * x_ + y_ * y_);
     }
 
-    /// @brief Print the coordinates to standard output
+    /// @brief 打印坐标到标准输出
     void print() const
     {
         std::cout << "Point(" << x_ << ", " << y_ << ")";
@@ -308,7 +319,7 @@ int main()
     Point p2;
     p2.set(6.0, 8.0);
 
-    // Print the two points
+    // 打印两个点
     std::cout << "p1 = ";
     p1.print();
     std::cout << "\n";
@@ -317,11 +328,11 @@ int main()
     p2.print();
     std::cout << "\n";
 
-    // Compute the distances
+    // 计算距离
     std::cout << "distance(p1, p2) = " << p1.distance_to(p2) << "\n";
     std::cout << "distance(p1, origin) = " << p1.distance_to_origin() << "\n";
 
-    // Try accessing a private member - uncommenting the line below fails to compile
+    // 尝试访问 private 成员——取消下面的注释会编译报错
     // p1.x_ = 100.0;  // error: 'double Point::x_' is private
 
     return 0;
@@ -380,7 +391,7 @@ private:
 public:
     void set_size(double w, double h)
     {
-        // Leave unchanged when an argument is non-positive
+        // 参数非正时不修改
         if (w > 0 && h > 0) {
             width_ = w;
             height_ = h;
@@ -417,9 +428,9 @@ int main()
     std::cout << "面积: " << rect.area() << std::endl;
     std::cout << "周长: " << rect.perimeter() << std::endl;
 
-    // Test the non-positive-argument case (should not modify)
+    // 测试非正参数的情况（不应修改）
     rect.set_size(-5.0, 3.0);
-    rect.print();  // Should still be 10.0, 4.0
+    rect.print();  // 应该保持 10.0, 4.0
 
     return 0;
 }

@@ -27,9 +27,9 @@ title: 'WeakPtr hands-on (V): integrating with callbacks to close the OnceCallba
 translation:
   source: documents/vol9-open-source-project-learn/chrome/02_weak_ptr/full/02-5-weak-ptr-bind-integration.md
   source_hash: 6e4a0acad2c54fbf17acd4ecd925a87753c9ec4300256a128e64a6e00ec38ba0
-  translated_at: '2026-09-26T01:46:34+00:00'
-  engine: anthropic
-  token_count: 7500
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 12288
 ---
 # WeakPtr hands-on (V): integrating with callbacks to close the OnceCallback loop
 
@@ -44,7 +44,7 @@ Now we have a complete `WeakPtr` in hand, and we can wire it into the callback s
 The real idiom in Chromium is not `if (wp) wp->...`. You bind the `WeakPtr` straight into the callback:
 
 ```cpp
-// This task silently drops itself after controller dies — no dangling dereference
+// 这条任务在 controller 死后会自动静默丢弃,不会悬空解引用
 thread_pool.post(
     base::BindOnce(&Controller::on_work_done,
                    controller.weak_factory_.GetWeakPtr()));
@@ -93,11 +93,10 @@ struct InvokeHelper<true, Traits, ReturnType, index_target, index_tail...> {
     static inline void MakeItSo(Functor&& functor, BoundArgsTuple&& bound,
                                 RunArgs&&... args) {
         static_assert(index_target == 0);
-        // Note: the validity of the weak pointer must be tested after Unwrap,
-        // otherwise it creates a race for weak pointer implementations that
-        // allow cross-thread usage and perform Lock() inside Unwrap().
+        // 注意:weak pointer 的有效性必须在 Unwrap 之后再测,
+        // 否则对允许跨线程、在 Unwrap() 里执行 Lock() 的弱指针实现会造成 race。
         const auto& target = Unwrap(std::get<0>(bound));
-        if (!target) {              // ← cancellation point: after the object dies, return here; the callback silently no-ops
+        if (!target) {              // ← 取消点:对象死后这里 return,回调静默 no-op
             return;
         }
         Traits::Invoke(
@@ -117,7 +116,7 @@ if (!target)
   → target.operator bool()
   → target.get()
   → target.ref_.IsValid()
-  → flag_ && flag_->IsValid()         ← DCHECK same-sequence + acquire-load
+  → flag_ && flag_->IsValid()         ← DCHECK 同序列 + acquire-load
 ```
 
 So the cancellation check in a weak call bottoms out at exactly that same-sequence, 100%-accurate `IsValid` we covered in [02-4](./02-4-weak-ptr-sequence-affinity-and-lazy-binding.md). The moment the object dies, `get()` hands back `nullptr`, `operator bool` flips to false, and `MakeItSo` returns on the spot — the callback silently no-ops, and nobody so much as lays a finger on the dangling pointer.
@@ -138,12 +137,12 @@ struct CallbackCancellationTraits<Functor, std::tuple<BoundArgs...>> {
 
     template <typename Receiver, typename... Args>
     static bool IsCancelled(const Functor&, const Receiver& receiver, const Args&...) {
-        return !receiver;                    // same-sequence, via IsValid, accurate
+        return !receiver;                    // 同序列、走 IsValid,准确
     }
 
     template <typename Receiver, typename... Args>
     static bool MaybeValid(const Functor&, const Receiver& receiver, const Args&...) {
-        return MaybeValidTraits<Receiver>::MaybeValid(receiver);  // cross-sequence, via WeakPtr::MaybeValid
+        return MaybeValidTraits<Receiver>::MaybeValid(receiver);  // 跨序列、走 WeakPtr::MaybeValid
     }
 };
 ```
@@ -162,7 +161,7 @@ The weak branch hides one more small constraint, tucked into `MakeItSo`'s return
 
 ```cpp
 if constexpr (WeakCallReturnsVoid<kIsWeakCall>::value) {
-    // take the InvokeHelper<kIsWeakCall>::MakeItSo path
+    // 走 InvokeHelper<kIsWeakCall>::MakeItSo
 }
 ```
 
@@ -196,7 +195,7 @@ struct InvokeHelper<false, Traits, ReturnType, indices...> {
             Unwrap(std::forward<Functor>(functor)),
             Unwrap(std::get<indices>(std::forward<BoundArgsTuple>(bound)))...,
             std::forward<RunArgs>(args)...);
-        // no if (!target) return; -- Run() after the object dies is a dangling dereference
+        // 没有 if (!target) return; —— 对象死了还 Run() 就是悬垂解引用
     }
 };
 ```
@@ -217,10 +216,9 @@ Let's boil the industrial machinery down to a concentrate, shape it into a teach
 
 ```cpp
 // Platform: host | C++ Standard: C++20
-// Simplified: bind a member method + WeakPtr<T> into a void() callback
-// (Here the 01 series' OnceCallback serves as the return type; the accompanying
-//  standalone-compilable 18_bind_weakptr_cancel.cpp substitutes std::function,
-//  same logic.)
+// 简化:把成员方法 + WeakPtr<T> 绑成一个 void() 回调
+// (这里用 01 系列的 OnceCallback 作返回类型;配套可独立编译的 18_bind_weakptr_cancel.cpp
+//  用 std::function 代替,逻辑一致)
 template <typename T, typename... Bound>
 auto bind_weak_once(void (T::*method)(Bound...),
                     WeakPtr<T> receiver,
@@ -228,7 +226,7 @@ auto bind_weak_once(void (T::*method)(Bound...),
     return OnceCallback<void()>(
         [method, receiver = std::move(receiver),
          bound = std::make_tuple(std::move(bound_args)...)]() mutable {
-            if (!receiver) return;     // ← corresponds to the cancellation point in InvokeHelper<true>::MakeItSo
+            if (!receiver) return;     // ← 对应 InvokeHelper<true>::MakeItSo 的取消点
             std::apply(
                 [&](auto&&... args) { (receiver.get()->*method)(args...); },
                 bound);
@@ -245,28 +243,27 @@ public:
     WeakPtr<Controller> get_weak() { return weak_factory_.get_weak_ptr(); }
 private:
     std::vector<int> buf_;
-    WeakPtrFactory<Controller> weak_factory_{this};   // last member
+    WeakPtrFactory<Controller> weak_factory_{this};   // 最后成员
 };
 
 int main() {
     WeakPtr<Controller> alive_marker;
     {
         Controller c;
-        // Bind a callback whose receiver is c's WeakPtr
+        // 绑一条回调,receiver 是 c 的 WeakPtr
         auto task = bind_weak_once(&Controller::on_work_done, c.get_weak(), 42);
 
-        // Run while c is still alive → calls on_work_done
+        // 在 c 还活着时跑 → 调用 on_work_done
         std::move(task).run();                  // got 42
-    }   // c destructs → weak_factory_ invalidates all WeakPtrs first → only then does buf_ destruct
+    }   // c 析构 → weak_factory_ 先失效所有 WeakPtr → buf_ 才析构
 
-    // Now bind a fresh one and run it after c is dead
+    // 现在重新绑一条,在 c 死后跑
     auto task2 = [&] {
-        // Pretend we obtained an already-invalidated WeakPtr from elsewhere
-        // (simulating the object destructing while the task still sits in the queue)
+        // 这里假设从别处拿到一个已失效的 WeakPtr(模拟任务还在队列时对象析构)
         return bind_weak_once(&Controller::on_work_done,
-                              WeakPtr<Controller>{}, 99);   // empty WeakPtr
+                              WeakPtr<Controller>{}, 99);   // 空 WeakPtr
     }();
-    std::move(task2).run();                     // silent no-op, prints nothing
+    std::move(task2).run();                     // 静默 no-op,什么都不打印
     return 0;
 }
 ```

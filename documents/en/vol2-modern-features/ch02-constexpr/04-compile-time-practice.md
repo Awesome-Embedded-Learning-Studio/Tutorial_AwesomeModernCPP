@@ -28,9 +28,9 @@ title: 'Compile-Time Computation in Practice: From Lookup Tables to Compile-Time
 translation:
   source: documents/vol2-modern-features/ch02-constexpr/04-compile-time-practice.md
   source_hash: 4b5eef0108ba1728a5faf7445bd855d5ffa5214247b224d94dd78cae830daaaa
-  translated_at: '2026-09-27T10:20:11+00:00'
-  engine: anthropic
-  token_count: 4600
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 17023
 ---
 # Compile-Time Computation in Practice: From Lookup Tables to Compile-Time Strings
 
@@ -65,15 +65,15 @@ constexpr std::array<std::uint32_t, 256> make_crc32_table()
     return table;
 }
 
-// Generate the complete CRC-32 lookup table at compile time
+// 编译期生成完整的 CRC-32 查找表
 constexpr auto kCrc32Table = make_crc32_table();
 
-// Verify the first few table entries at compile time
+// 编译期校验表的前几项是否正确
 static_assert(kCrc32Table[0] == 0x00000000u, "CRC table entry 0 should be 0");
 static_assert(kCrc32Table[1] == 0x77073096u, "CRC table entry 1 mismatch");
 static_assert(kCrc32Table[255] == 0x2D02EF8Du, "CRC table entry 255 mismatch");
 
-// Runtime CRC computation: just a table lookup + XOR
+// 运行时 CRC 计算：只需做查表 + XOR
 constexpr std::uint32_t crc32(const std::uint8_t* data, std::size_t length)
 {
     std::uint32_t crc = 0xFFFFFFFFu;
@@ -108,12 +108,12 @@ constexpr std::array<float, N> make_sin_table()
     for (std::size_t i = 0; i < N; ++i) {
         double angle = 2.0 * kPi * static_cast<double>(i) / static_cast<double>(N);
 
-        // Taylor expansion approximating sin(x) - use the first 5 terms (up to x^9/9!)
+        // 泰勒展开近似 sin(x) - 使用前5项（最高到 x^9/9!）
         // sin(x) ≈ x - x^3/3! + x^5/5! - x^7/7! + x^9/9!
         double x = angle;
         double term = x;
         double sum = term;
-        for (int n = 1; n <= 4; ++n) {  // 4 iterations compute terms 2-5
+        for (int n = 1; n <= 4; ++n) {  // 4次迭代计算第2-5项
             term *= -x * x / static_cast<double>((2 * n) * (2 * n + 1));
             sum += term;
         }
@@ -122,7 +122,7 @@ constexpr std::array<float, N> make_sin_table()
     return table;
 }
 
-// Generate a 256-point sine lookup table at compile time
+// 编译期生成 256 点正弦查表
 constexpr auto kSinTable = make_sin_table<256>();
 
 static_assert(kSinTable[0] < 0.001f && kSinTable[0] > -0.001f,
@@ -130,7 +130,7 @@ static_assert(kSinTable[0] < 0.001f && kSinTable[0] > -0.001f,
 static_assert(kSinTable[64] > 0.99f && kSinTable[64] < 1.01f,
               "sin(π/2) should be approximately 1");
 
-// Fast sin lookup (angle range [0, 2π) mapped to [0, 255])
+// 快速 sin 查表（角度范围 [0, 2π) 映射到 [0, 255]）
 constexpr float fast_sin_index(std::size_t index)
 {
     return kSinTable[index & 0xFF];
@@ -151,7 +151,7 @@ C++'s `switch` statement can't take a string as its condition directly. The clas
 #include <cstdint>
 #include <cstddef>
 
-// FNV-1a hash: simple, evenly distributed, widely used
+// FNV-1a 哈希：简单、分布均匀、广泛使用
 constexpr std::uint32_t fnv1a32(const char* str, std::size_t len)
 {
     std::uint32_t hash = 0x811c9dc5u;
@@ -162,26 +162,26 @@ constexpr std::uint32_t fnv1a32(const char* str, std::size_t len)
     return hash;
 }
 
-// Deduce the length from a string literal
+// 从字符串字面量推导长度
 template <std::size_t N>
 constexpr std::uint32_t str_hash(const char (&s)[N])
 {
-    return fnv1a32(s, N - 1);  // N - 1 excludes the trailing '\0'
+    return fnv1a32(s, N - 1);  // N - 1 排除末尾的 '\0'
 }
 
-// Generate the hash values of all commands at compile time
+// 编译期生成所有命令的哈希值
 constexpr auto kHashInit   = str_hash("INIT");
 constexpr auto kHashStart  = str_hash("START");
 constexpr auto kHashStop   = str_hash("STOP");
 constexpr auto kHashReset  = str_hash("RESET");
 
-// Compile-time collision detection
+// 编译期冲突检测
 static_assert(kHashInit != kHashStart, "Hash collision detected");
 static_assert(kHashInit != kHashStop, "Hash collision detected");
 static_assert(kHashStart != kHashStop, "Hash collision detected");
 static_assert(kHashStart != kHashReset, "Hash collision detected");
 
-// Runtime command dispatch
+// 运行时命令分派
 #include <cstring>
 void dispatch_command(const char* cmd)
 {
@@ -212,14 +212,14 @@ State machines are one of the most used design patterns in embedded development.
 enum class State : std::uint8_t { Idle, Debouncing, Pressed, Count };
 enum class Event : std::uint8_t { Press, Release, Timeout, Count };
 
-// A state transition entry
+// 状态转移条目
 struct Transition {
     State from;
     Event trigger;
     State to;
 };
 
-// Compile-time transition table
+// 编译期转移表
 constexpr std::array<Transition, 5> kDebounceTable = {{
     {State::Idle,       Event::Press,   State::Debouncing},
     {State::Debouncing, Event::Timeout, State::Pressed},
@@ -234,7 +234,7 @@ constexpr std::array<Transition, 5> kDebounceTable = {{
 With the transition table in hand, we can run all kinds of checks at compile time. For example, we can look for a state with not a single outgoing transition — a so-called "dead state" — or for duplicate `(from, trigger)` pairs.
 
 ```cpp
-// Check for duplicate (state, event) combinations
+// 检查是否有重复的 (state, event) 组合
 template <std::size_t N>
 constexpr bool has_duplicate_transitions(const std::array<Transition, N>& table)
 {
@@ -249,7 +249,7 @@ constexpr bool has_duplicate_transitions(const std::array<Transition, N>& table)
     return false;
 }
 
-// Check that every state has at least one outgoing transition (excluding the Count sentinel)
+// 检查所有状态是否都至少有一个出转移（排除 Count 哨兵值）
 template <std::size_t N>
 constexpr bool all_states_have_transitions(const std::array<Transition, N>& table)
 {
@@ -289,7 +289,7 @@ public:
                 return;
             }
         }
-        // No matching transition found: ignore the event (or fire an assertion)
+        // 未找到匹配的转移：忽略事件（或者触发断言）
     }
 
     constexpr State current_state() const { return state_; }
@@ -314,7 +314,7 @@ We turned the table-lookup that `fsm.handle()` performs after receiving an event
 The Strategy Pattern usually dispatches through virtual functions or function pointers, making the decision at runtime. But if the strategy can be pinned down at compile time, we can use templates plus `constexpr` to eliminate the dispatch entirely and get zero-overhead strategy selection.
 
 ```cpp
-// CRC-32 strategy
+// CRC-32 策略
 struct Crc32Strategy {
     static constexpr const char* name = "CRC-32";
 
@@ -334,7 +334,7 @@ struct Crc32Strategy {
     }
 };
 
-// CRC-16-CCITT strategy
+// CRC-16-CCITT 策略
 struct Crc16CcittStrategy {
     static constexpr const char* name = "CRC-16-CCITT";
 
@@ -352,7 +352,7 @@ struct Crc16CcittStrategy {
     }
 };
 
-// Compile-time strategy selection — zero vtables, zero runtime dispatch
+// 编译期策略选择——零虚函数表、零运行时分派
 template <typename Strategy>
 constexpr auto checksum(const std::uint8_t* data, std::size_t len)
 {
@@ -374,7 +374,7 @@ constexpr std::uint8_t xor_checksum(const std::uint8_t* data, std::size_t len)
     return sum;
 }
 
-// Compile-time verification
+// 编译期验证
 constexpr std::uint8_t kTestData[] = {0x01, 0x02, 0x03, 0x04};
 static_assert(xor_checksum(kTestData, 4) == 0x04, "XOR checksum mismatch");
 ```
@@ -401,12 +401,12 @@ struct PeripheralBase {
     }
 };
 
-// Peripheral base address definitions
+// 外设基地址定义
 constexpr PeripheralBase kGpioA{0x40010800};
 constexpr PeripheralBase kUsart1{0x40013800};
 constexpr PeripheralBase kTimer1{0x40012C00};
 
-// Register offsets
+// 寄存器偏移
 struct GpioReg {
     static constexpr std::uint32_t kCrl  = 0x00;
     static constexpr std::uint32_t kCrh  = 0x04;
@@ -414,7 +414,7 @@ struct GpioReg {
     static constexpr std::uint32_t kOdr  = 0x0C;
 };
 
-// Compile-time address calculation
+// 编译期地址计算
 constexpr std::uint32_t kGpioA_Crl = kGpioA.offset(GpioReg::kCrl);   // 0x40010800
 constexpr std::uint32_t kGpioA_Odr = kGpioA.offset(GpioReg::kOdr);   // 0x4001080C
 
@@ -430,10 +430,10 @@ In embedded projects, the constraints among configuration parameters are often i
 
 ```cpp
 struct ClockConfig {
-    std::uint32_t hse_freq;      // External crystal frequency
-    std::uint32_t pll_mul;       // PLL multiplication factor
-    std::uint32_t ahb_div;       // AHB divider
-    std::uint32_t apb1_div;      // APB1 divider
+    std::uint32_t hse_freq;      // 外部晶振频率
+    std::uint32_t pll_mul;       // PLL 倍频系数
+    std::uint32_t ahb_div;       // AHB 分频系数
+    std::uint32_t apb1_div;      // APB1 分频系数
 
     constexpr ClockConfig(std::uint32_t hse, std::uint32_t mul,
                           std::uint32_t ahb, std::uint32_t apb1)
@@ -445,7 +445,7 @@ struct ClockConfig {
 
     constexpr bool is_valid() const
     {
-        // Typical STM32F1 constraints
+        // STM32F1 的典型约束
         if (sys_clock() > 72000000u) return false;     // SYSCLK <= 72MHz
         if (apb1_clock() > 36000000u) return false;    // APB1 <= 36MHz
         if (pll_mul < 2 || pll_mul > 16) return false;
@@ -460,9 +460,9 @@ static_assert(kStandardClock.is_valid(), "Invalid clock configuration");
 static_assert(kStandardClock.sys_clock() == 72000000u);
 static_assert(kStandardClock.apb1_clock() == 36000000u);
 
-// A bad configuration is caught at compile time:
+// 错误配置在编译期被拦截：
 // constexpr ClockConfig kBadClock{8000000, 18, 1, 1};
-// static_assert(kBadClock.is_valid());  // Compile error! SYSCLK = 144MHz > 72MHz
+// static_assert(kBadClock.is_valid());  // 编译错误！SYSCLK = 144MHz > 72MHz
 ```
 
 > Let's decode the abbreviations in the comments while we're at it: HSE is the high-speed external crystal, PLL is the phase-locked-loop frequency multiplier, and AHB and APB1 are the chip's two internal buses — one hosting high-speed devices, the other low-speed peripherals.
@@ -492,8 +492,8 @@ struct BaudRateConfig {
 
     constexpr double error_percent() const
     {
-        // Note: this assumes the baud rate register value is used directly as the divider
-        // A real USART configuration must also account for oversampling (8 or 16)
+        // 注意：这里假设波特率寄存器值直接作为分频系数
+        // 实际的USART配置还需要考虑过采样倍数（8或16）
         std::uint32_t brr = brr_value();
         double actual = static_cast<double>(clock_freq) / static_cast<double>(brr);
         double target = static_cast<double>(target_baud);
@@ -503,7 +503,7 @@ struct BaudRateConfig {
     constexpr bool is_acceptable() const
     {
         double err = error_percent();
-        return err > -3.0 && err < 3.0;  // Baud rate error should stay within ±3%
+        return err > -3.0 && err < 3.0;  // 波特率误差应在 ±3% 以内
     }
 };
 

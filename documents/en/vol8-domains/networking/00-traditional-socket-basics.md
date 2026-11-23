@@ -17,10 +17,10 @@ tags:
   - 网络编程
 translation:
   source: documents/vol8-domains/networking/00-traditional-socket-basics.md
-  source_hash: 6b0de19ae50a44156023de7142e98c25db1f6d12746717ff1750f2d703bd9396
-  translated_at: '2026-09-26T04:35:31+00:00'
-  engine: anthropic
-  token_count: 10300
+  source_hash: a8c81f92d7bcf9cac7f99cd170b4472a728cbe0ec0da662fd6744b38e3625fd9
+  translated_at: '2026-11-22T16:47:35+00:00'
+  engine: glm-5.3-refresh
+  token_count: 11943
 ---
 
 # Traditional socket programming: the server's five steps and TCP connection setup — the classic style we learned from Stevens
@@ -59,14 +59,14 @@ An fd alone can't receive connections yet; you have to tell the kernel "which ad
 struct sockaddr_in addr;
 memset(&addr, 0, sizeof(addr));
 addr.sin_family      = AF_INET;
-addr.sin_addr.s_addr = htonl(INADDR_ANY);   /* listen on all NICs */
+addr.sin_addr.s_addr = htonl(INADDR_ANY);   /* 监听所有网卡 */
 addr.sin_port        = htons(PORT);          /* 13013 */
 bind(lfd, (struct sockaddr *)&addr, sizeof(addr));
 ```
 
 `sockaddr_in` is the "IPv4 address" struct, with three fields to fill in: the protocol family (`sin_family = AF_INET`), the IP address (`sin_addr`), and the port (`sin_port`). `INADDR_ANY` is a special value meaning "listen on every NIC's IP on this machine" — your machine may well have several IPs across lo (127.0.0.1), eth0 (192.168.x.x), wlan0, and so on, and `INADDR_ANY` covers them all in one shot; fill in one specific IP instead, and you listen only on that NIC.
 
-Here's a **byte-order pitfall every newcomer steps in**, worth pausing over. Notice the two calls `htonl(INADDR_ANY)` and `htons(PORT)` — they are not decoration. TCP/IP mandates that multi-byte values on the wire use **big-endian**, called network byte order; your x86/ARM CPU, meanwhile, is little-endian. Port 13013 sits in little-endian machine memory as `D5 32 00 00` (low byte first), and in big-endian as `00 00 32 D5` — stuff the host-order port straight into `sin_port`, and the kernel and the peer both parse it as network order, so the port comes out completely wrong. `htonl` (host to network long, 32-bit, for the IP) and `htons` (host to network short, 16-bit, for the port) exist to do exactly this byte flip: a no-op on big-endian machines, a swap on little-endian ones, so writing them is **correct no matter the CPU**.
+Here's a **byte-order pitfall every newcomer steps in**, worth pausing over. Notice the two calls `htonl(INADDR_ANY)` and `htons(PORT)` — they are not decoration. TCP/IP mandates that multi-byte values on the wire use **big-endian**, called network byte order; your x86/ARM CPU, meanwhile, is little-endian. Port 13013 (= 0x32D5) sits in little-endian machine memory as `D5 32 00 00` (low byte first), and in big-endian as `00 00 32 D5` — stuff the host-order port straight into `sin_port`, and the kernel and the peer both parse it as network order, so the port comes out completely wrong. `htonl` (host to network long, 32-bit, for the IP) and `htons` (host to network short, 16-bit, for the port) exist to do exactly this byte flip: a no-op on big-endian machines, a swap on little-endian ones, so writing them is **correct no matter the CPU**.
 
 Hence a rule of thumb that practically writes itself: **every multi-byte integer (IP, port) going into a `sockaddr_in` goes through `htonl`/`htons` first** — never jam in a raw host-order value. In the other direction, reading values out of the kernel for human eyes, flip them back with `ntohl`/`ntohs` (network to host).
 
@@ -75,7 +75,7 @@ Hence a rule of thumb that practically writes itself: **every multi-byte integer
 After `bind`, this socket still can't take connections — so far it's merely "tied to an address". `listen` is what turns it into a **passive listening** socket, telling the kernel "start accepting connections initiated toward this address":
 
 ```c
-listen(lfd, 64);   /* the second argument is the backlog */
+listen(lfd, 64);   /* 第二个参数是 backlog */
 ```
 
 What's genuinely worth explaining about `listen` is its second argument, **backlog**, and the **two queues** the kernel maintains behind it. This is the single most misread point in socket programming.
@@ -111,8 +111,8 @@ Once you hold `cfd`, it's just "an fd you can read and write" — the very same 
 
 ```c
 char buf[4096];
-ssize_t n = read(cfd, buf, sizeof(buf));   /* read what the peer sent */
-write(cfd, buf, n);                         /* write it right back (echo) */
+ssize_t n = read(cfd, buf, sizeof(buf));   /* 读对方发来的 */
+write(cfd, buf, n);                         /* 原样回写(echo) */
 ```
 
 `read` returns **the number of bytes actually read**; a return of `0` means **the peer closed the connection normally** (TCP's FIN has run its course — that's the "end of stream" signal, not an error); `-1` means something went wrong. `write` sends the data back, and it too may write only part of it (especially when non-blocking or moving large volumes); the teaching version here simplifies that away, and you'll see the full loop in the next section.
@@ -138,7 +138,7 @@ Notice that steps 2–4 happen **entirely inside the kernel — your server prog
 Stitch the five steps above together and you have a complete, classic echo server. We write it in the plainest C style — raw fds, manual `close`, `errno` + `perror`:
 
 ```c
-/* Traditional C-style echo server: raw fds, manual close, errno + perror */
+/* 传统 C 风格 echo server:裸 fd、手动 close、errno + perror */
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -153,9 +153,9 @@ Stitch the five steps above together and you have a complete, classic echo serve
 #define BUFSZ   4096
 
 int main(void) {
-    signal(SIGPIPE, SIG_IGN);   /* see "two details that bite" below */
+    signal(SIGPIPE, SIG_IGN);   /* 见下方"两个咬人的细节" */
 
-    int lfd = socket(AF_INET, SOCK_STREAM, 0);          /* step 1 */
+    int lfd = socket(AF_INET, SOCK_STREAM, 0);          /* 第一步 */
     if (lfd < 0) { perror("socket"); return 1; }
 
     int yes = 1;
@@ -166,24 +166,24 @@ int main(void) {
     addr.sin_family      = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     addr.sin_port        = htons(PORT);
-    if (bind(lfd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {  /* step 2 */
+    if (bind(lfd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {  /* 第二步 */
         perror("bind"); return 1;
     }
-    if (listen(lfd, BACKLOG) < 0) { perror("listen"); return 1; } /* step 3 */
+    if (listen(lfd, BACKLOG) < 0) { perror("listen"); return 1; } /* 第三步 */
 
     printf("classic echo server on 0.0.0.0:%d (pid %d)\n", PORT, getpid());
 
     for (;;) {
-        int cfd = accept(lfd, NULL, NULL);               /* step 4 */
+        int cfd = accept(lfd, NULL, NULL);               /* 第四步 */
         if (cfd < 0) { if (errno == EINTR) continue; perror("accept"); continue; }
 
         char buf[BUFSZ];
-        for (;;) {                                        /* step 5 */
+        for (;;) {                                        /* 第五步 */
             ssize_t n = read(cfd, buf, BUFSZ);
-            if (n <= 0) break;        /* 0 = peer closed, <0 = error */
+            if (n <= 0) break;        /* 0=对端关, <0=出错 */
             write(cfd, buf, n);
         }
-        close(cfd);                   /* ★ manual close — miss it and the fd leaks */
+        close(cfd);                   /* ★手动 close,漏了就泄漏 fd */
     }
 }
 ```
@@ -211,10 +211,10 @@ The complete code for this article lives in `code/volumn_codes/vol8/networking/0
 
 ```bash
 cd code/volumn_codes/vol8/networking/00-traditional-socket
-# Option A: one-line gcc (what this article uses)
+# 方式 A:一行 gcc(文章里就是这套)
 gcc -O2 -Wall -Wextra classic_server.c -o echo_server
 gcc -O2 -Wall -Wextra classic_client.c -o echo_client
-# Option B: CMake
+# 方式 B:CMake
 cmake -S . -B build && cmake --build build
 ```
 

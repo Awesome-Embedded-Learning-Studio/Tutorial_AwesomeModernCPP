@@ -19,9 +19,9 @@ prerequisites:
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/13-command.md
   source_hash: a188fc4959e344434c1f602a173343a066b544f1bc6428793b8a526867cb9536
-  translated_at: '2026-09-26T05:32:48+00:00'
-  engine: anthropic
-  token_count: 4900
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 12623
 ---
 
 # Command Pattern: Turning Actions into Undoable Objects
@@ -73,7 +73,7 @@ We start by defining a uniform interface that every "thing to be done" satisfies
 struct Command {
     virtual ~Command() = default;
     virtual void execute() = 0;
-    virtual void undo() = 0;   // Think through how to undo, from day one
+    virtual void undo() = 0;   // 从第一天起就要想好怎么撤销
 };
 ```
 
@@ -91,8 +91,8 @@ public:
     void undo() override    { editor_.erase_tail(text_.size()); }
 
 private:
-    TextEditor& editor_;   // The receiver: the one doing the real work
-    std::string text_;     // The parameter: the text this command inserts
+    TextEditor& editor_;   // 接收者:真正干活的家伙
+    std::string text_;     // 参数:这个命令要插的文本
 };
 ```
 
@@ -128,7 +128,7 @@ class UndoStack {
 public:
     void execute(std::unique_ptr<Command> c) {
         c->execute();
-        history_.push_back(std::move(c));   // Onto the stack only after successful execution
+        history_.push_back(std::move(c));   // 执行成功才入栈
     }
     void undo() {
         if (history_.empty()) return;
@@ -164,11 +164,11 @@ public:
     void add(std::unique_ptr<Command> c) { subs_.push_back(std::move(c)); }
 
     void execute() override {
-        for (auto& c : subs_) c->execute();        // Execute in order
+        for (auto& c : subs_) c->execute();        // 正序执行
     }
     void undo() override {
         for (auto it = subs_.rbegin(); it != subs_.rend(); ++it)
-            (*it)->undo();                          // Undo in reverse order
+            (*it)->undo();                          // 逆序撤销
     }
 private:
     std::vector<std::unique_ptr<Command>> subs_;
@@ -201,7 +201,7 @@ struct TextEditor {
             if (command->get_type() == Type::REMOVE) {
                 pop_text_once();
             } else {
-                // Use dynamic_cast to get back the text inside AppendCommand
+                // 用 dynamic_cast 取回 AppendCommand 里的 text
                 AddCommand* adder = dynamic_cast<AddCommand*>(command.get());
                 if (adder) append_text(adder->append);
             }
@@ -245,7 +245,7 @@ class FunctionalUndoStack {
 public:
     void execute(std::move_only_function<void()> do_it,
                  std::move_only_function<void()> undo_it) {
-        do_it();                                   // Execute first
+        do_it();                                   // 先执行
         history_.push_back({std::move(do_it), std::move(undo_it)});
     }
     void undo() {
@@ -270,8 +270,8 @@ FunctionalUndoStack stack;
 std::string chunk = "World";
 
 stack.execute(
-    [&buf, chunk] { buf.append(chunk); },          // Execute: insert
-    [&buf, chunk] { buf.erase_tail(chunk.size()); } // Undo: chop off the equal-length tail
+    [&buf, chunk] { buf.append(chunk); },          // 执行:插入
+    [&buf, chunk] { buf.erase_tail(chunk.size()); } // 撤销:砍掉等长尾部
 );
 ```
 
@@ -299,7 +299,7 @@ void simplify() {
         if (!result.empty()
             && result.back()->get_type() == Type::APPEND
             && cmd->get_type() == Type::REMOVE) {
-            result.pop_back();        // insert + delete = did nothing; they cancel
+            result.pop_back();        // 插入 + 删除 = 啥也没干,抵消
         } else {
             result.push_back(cmd);
         }

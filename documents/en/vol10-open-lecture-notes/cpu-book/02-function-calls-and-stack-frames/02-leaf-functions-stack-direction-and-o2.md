@@ -15,9 +15,10 @@ description: "Leaf functions skip the sub rsp thanks to the red zone; addresses 
 reading_time_minutes: 8
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/02-function-calls-and-stack-frames/02-leaf-functions-stack-direction-and-o2.md
-  source_hash: 74b9033d7c8538362733dbd96cabaef5ffdfdde506df7e17743aeaa077fc06d4
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: d1478909649615f49df2fe991a6bc9eea2d4d5da59d4541b5d515956e65c70c0
+  translated_at: '2026-11-22T16:44:46Z'
+  engine: glm-5.3-refresh
+  token_count: 5891
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -26,7 +27,7 @@ current_status:
 
 # Leaf Functions, Stack Direction, and Call Sites at -O2
 
-When we walked through three in [the previous piece](01-call-and-stack-frame-walkthrough.md), the ending left a loose thread: functions like consume and add that never call anybody else finish with a bare pop rbp. That is where this piece picks up, to see how small the stack frame of a function that calls nothing can get. The assembly in this piece runs in the same environment as [the previous one](01-call-and-stack-frame-walkthrough.md).
+When we walked through three in the previous piece, the ending left a loose thread: functions like consume and add that never call anybody else finish with a bare pop rbp. That is where this piece picks up, to see how small the stack frame of a function that calls nothing can get. The assembly in this piece runs in the same environment as [the previous one](01-call-and-stack-frame-walkthrough.md).
 
 ## The Leaf Function With No Third Step
 
@@ -170,6 +171,10 @@ main has no call left in it. `add(3, 4)` was computed into 7 at compile time, an
 
 Inlining is an optimization where the compiler expands a function's body directly into the call site, which is how the call gets saved. The interesting part is that in this assembly inline never got its turn at all. Now look at the other side: add's body is still there. `_Z3addii` still carries its `.globl` export marker, the body's instructions have been trimmed to a single `leal (%rdi,%rsi), %eax` plus `ret`, and push rbp and the frame are both gone. The reason hides in linkage: add has external linkage, other translation units might reference it, so GCC has to keep the body around. The precise way to say it is this: what -O2 removes is the call site inside main; the function's body has not disappeared, there is simply not one instruction calling it anywhere in the whole output. So "once something is inlined, the function is gone" is saying too much. When you run into claims like that from now on, look twice.
 
+These two forms side by side are easiest to see while single-stepping. The executor below holds -O0's three, which honestly pushes rbp, sets up a frame, spills 1, 2, 3 to the stack and carries them back to add them up, next to add_fast, the slimmed-down body after optimization: one leal addition and a ret to finish, no frame opened at all. Step through each and count the actions in the stack window, and the cost of a frame is right in front of you. Symbol names lose their mangling, everything else matches the output above instruction for instruction.
+
+<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/leaf_vs_plain.json" />
+
 ## Take the Function's Address and the Body Must Be Generated
 
 A call site can only vanish when the compiler can see its target clearly. Take the function's address and call through a function pointer instead, and at compile time there is no telling who the pointer points at; the function's body has to be generated. Here is the code:
@@ -226,8 +231,4 @@ main:
 	.section	.note.GNU-stack,"",@progbits
 ```
 
-Look at main this time: it has opened a 24-byte frame, which it never did in any earlier listing. `leaq _Z3addii(%rip), %rax` computes the function's entry address, `movq %rax, 8(%rsp)` stores it into the volatile function pointer (which must land in memory), and the `call *8(%rsp)` after that is an indirect call: the target address is read out of memory. volatile's semantics forced this round trip through memory, and add's body had to be generated too, because its address has been taken. These two forms side by side are easiest to see while single-stepping. The executor below holds -O0's three, which honestly pushes rbp, sets up a frame, spills 1, 2, 3 to the stack and carries them back to add them up, next to add_fast, the slimmed-down body after optimization: one leal addition and a ret to finish, no frame opened at all. Step through each and count the actions in the stack window, and the cost of a frame is right in front of you. Symbol names lose their mangling, everything else matches the output above instruction for instruction.
-
-<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/leaf_vs_plain.json" />
-
-Take one address, and both the call site and the body are left standing.
+Look at main this time: it has opened a 24-byte frame, which it never did in any earlier listing. `leaq _Z3addii(%rip), %rax` computes the function's entry address, `movq %rax, 8(%rsp)` stores it into the volatile function pointer (which must land in memory), and the `call *8(%rsp)` after that is an indirect call: the target address is read out of memory. volatile's semantics forced this round trip through memory, and add's body had to be generated too, because its address has been taken. Take one address, and both the call site and the body are left standing.

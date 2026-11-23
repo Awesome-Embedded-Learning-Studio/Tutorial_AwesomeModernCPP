@@ -21,9 +21,9 @@ tags:
 translation:
   source: documents/vol8-domains/ai/tiny_ml/stage2/01-what-is-dense.md
   source_hash: 9dfbf349bed3c2af07f788f49a7b42cb4a9c9922130f3a6e482284ade9e492f9
-  translated_at: '2026-09-25T08:48:34+00:00'
-  engine: anthropic
-  token_count: 1800
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 2612
 ---
 
 # What Dense computes — one multiply-add, broken down per output
@@ -67,7 +67,7 @@ The pattern is on the table now: each output corresponds to one row of the weigh
 Let's distill the pattern above. A `Dense(In, Out)` produces Out outputs; the o-th output is:
 
 ```text
-y[o] = Σ W[o,i]·x[i]  +  b[o]        (i from 0 to In-1)
+y[o] = Σ W[o,i]·x[i]  +  b[o]        (i 从 0 到 In-1)
 ```
 
 That's the whole line. Row o of the weights, `W[o,:]`, decides "at what ratio each input gets mixed in when computing output o"; the o-th bias `b[o]` decides "how much the whole thing gets lifted after mixing". Out outputs means Out sets of such recipes, each computing its own.

@@ -12,10 +12,10 @@ title: Up and Running with C++ Modules in VS2026 — A Complete Hands-On Guide
 description: ''
 translation:
   source: documents/vol7-engineering/cpp-modules-on-vs2026.md
-  source_hash: a86a0e8615636b9b711f199c8b5490f79cf3f0d7dac9061cf5a3f7d3df6689d3
-  translated_at: '2026-09-27T02:37:40+00:00'
-  engine: anthropic
-  token_count: 2000
+  source_hash: cb4aac7d661112321bbf588ebdc4327e32c5193051b49912d906ab2bcd3ece85
+  translated_at: '2026-11-22T16:43:36+00:00'
+  engine: glm-5.3-refresh
+  token_count: 2504
 ---
 # Up and Running with C++ Modules in VS2026 — A Complete Hands-On Guide
 

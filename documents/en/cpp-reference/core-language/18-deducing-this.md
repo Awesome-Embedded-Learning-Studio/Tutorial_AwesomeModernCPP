@@ -14,9 +14,9 @@ title: Deducing this
 translation:
   source: documents/cpp-reference/core-language/18-deducing-this.md
   source_hash: 4390c71b51c4db98a286c470411528823593f770c902c4f3f12ca61e708a26ce
-  translated_at: '2026-09-27T01:49:21+00:00'
-  engine: anthropic
-  token_count: 490
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 2041
 ---
 <!--
 Reference Card Template
@@ -61,7 +61,7 @@ None (language feature)
 struct Wrapper {
     int value;
 
-    // One function covers all three scenarios: const / non-const / rvalue
+    // 一个函数覆盖 const/非 const/右值三种场景
     template <typename Self>
     auto&& get(this Self&& self) {
         return std::forward<Self>(self).value;
@@ -72,9 +72,9 @@ int main() {
     Wrapper w{42};
     const Wrapper cw{99};
 
-    std::cout << w.get() << "\n";   // 42 (non-const lvalue)
-    std::cout << cw.get() << "\n";  // 99 (const lvalue)
-    std::cout << Wrapper{7}.get() << "\n"; // 7 (rvalue)
+    std::cout << w.get() << "\n";   // 42 (非 const 左值)
+    std::cout << cw.get() << "\n";  // 99 (const 左值)
+    std::cout << Wrapper{7}.get() << "\n"; // 7 (右值)
 }
 ```
 

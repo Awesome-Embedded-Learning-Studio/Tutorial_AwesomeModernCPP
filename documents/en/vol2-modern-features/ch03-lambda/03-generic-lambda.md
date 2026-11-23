@@ -24,10 +24,10 @@ tags:
 title: Generic Lambdas and Template Lambdas
 translation:
   source: documents/vol2-modern-features/ch03-lambda/03-generic-lambda.md
-  source_hash: 15d41db6ee522f1d2c0d18c7a82c3f934a7bcf0a33d4404e1fc6260b58ccd0cb
-  translated_at: '2026-09-27T10:26:25+00:00'
-  engine: anthropic
-  token_count: 4600
+  source_hash: 2beeb8f1783b9e892dbd6fcac0e0cb5e7e008f4f7d539f226f18c61a08ba56d3
+  translated_at: '2026-11-22T16:36:41+00:00'
+  engine: glm-5.3-refresh
+  token_count: 13191
 ---
 # Generic Lambdas and Template Lambdas
 
@@ -40,7 +40,7 @@ Along the main line of the previous two articles, most of the lambdas we wrote p
 You remember that `add` from the first article, right: its parameters were written plainly as `auto`. The standard gives this kind of lambda a formal name — we call it a generic lambda. The `auto` parameter is syntax C++14 introduced, and from where we callers stand it behaves exactly like a function template: whenever arguments of different types come in, the compiler instantiates a separate copy of `operator()` for each type.
 
 ```cpp
-// A generic lambda: accepts any type that supports operator+
+// 泛型 lambda：接受任何支持 operator+ 的类型
 auto add = [](auto a, auto b) {
     return a + b;
 };
@@ -61,10 +61,10 @@ We drew out the correspondence between a lambda object and its `operator()` inst
 So what does the closure type — the thing the compiler translates the lambda into behind the scenes — look like? Let's look at a simplified version (the closure type is the class the compiler generates on behalf of each lambda):
 
 ```cpp
-// What you wrote
+// 你写的
 auto add = [](auto a, auto b) { return a + b; };
 
-// What the compiler generates (simplified)
+// 编译器生成的（简化）
 struct ClosureType {
     template<typename T1, typename T2>
     auto operator()(T1 a, T2 b) const {
@@ -136,14 +136,14 @@ A more practical scenario is handling different iterator types: random-access it
 The `auto` parameters of generic lambdas are genuinely convenient, but `auto` has a few awkward corners: there is no way for you to write down the name of the concrete type that gets deduced. You cannot impose constraints on the template parameters, and you cannot reference the deduced type inside the lambda to declare other variables. C++20 simply gave lambdas explicit template parameter lists and solved all of these problems in one stroke:
 
 ```cpp
-// C++20 template lambda: explicitly declares template parameters
+// C++20 模板 lambda：显式声明模板参数
 auto add_explicit = []<typename T>(T a, T b) {
     return a + b;
 };
 
 add_explicit(3, 4);       // T = int
 add_explicit(3.0, 4.0);   // T = double
-// add_explicit(3, 4.0);  // compile error: T cannot be both int and double
+// add_explicit(3, 4.0);  // 编译错误：T 不能同时是 int 和 double
 ```
 
 Look at that `<typename T>` hanging off the square brackets: the syntax is identical to an ordinary template parameter list — however you usually write a function template is exactly how you write it here. With both parameters declared as `T`, a call must pass the same type for both. See the commented-out `add_explicit(3, 4.0)` line: that is the case that fails to compile. C++14's `auto` parameters, as it happens, cannot express this same-type constraint.
@@ -156,7 +156,7 @@ With the template parameter name `T` in hand, we can use it inside the lambda bo
 #include <vector>
 #include <iostream>
 
-// Use the template parameter name to create containers or variables of the same type
+// 用模板参数名创建同类型的容器或变量
 auto transform_to_vector = []<typename T>(const std::vector<T>& input) {
     std::vector<T> result;
     result.reserve(input.size());
@@ -188,17 +188,17 @@ C++20 concepts (the mechanism for adding compile-time constraints to template pa
 #include <sstream>
 #include <string>
 
-// Accepts integer types only
+// 只接受整数类型
 auto int_only = []<std::integral T>(T a, T b) {
     return a + b;
 };
 
-// Accepts floating-point types only
+// 只接受浮点类型
 auto float_only = []<std::floating_point T>(T a, T b) {
     return a + b;
 };
 
-// Custom concept: types that support serialization
+// 自定义概念：支持序列化的类型
 template<typename T>
 concept Serializable = requires(T t, std::ostream& os) {
     { serialize(t, os) } -> std::same_as<void>;
@@ -212,10 +212,10 @@ auto serialize_and_log = []<Serializable T>(const T& obj) {
 
 void demo_concepts() {
     int_only(1, 2);         // OK
-    // int_only(1.0, 2.0); // compile error: double does not satisfy std::integral
+    // int_only(1.0, 2.0); // 编译错误：double 不满足 std::integral
 
     float_only(1.0, 2.0);   // OK
-    // float_only(1, 2);   // compile error: int does not satisfy std::floating_point
+    // float_only(1, 2);   // 编译错误：int 不满足 std::floating_point
 }
 ```
 
@@ -236,10 +236,10 @@ Sometimes you do not want the compiler to deduce the template parameter — you 
 ```cpp
 auto identity = []<typename T>(T x) { return x; };
 
-// Normal call, the compiler deduces T = int
+// 正常调用，编译器推导 T = int
 auto r1 = identity(42);
 
-// Explicitly specifying the template parameter
+// 显式指定模板参数
 auto r2 = identity.template operator()<int>(42);
 ```
 
@@ -278,7 +278,7 @@ A more efficient approach exploits the generic lambda's properties: pass the "se
 ```cpp
 #include <iostream>
 
-// Y combinator helper: takes a higher-order function and returns its fixed point
+// Y 组合子辅助函数：接受一个高阶函数，返回它的不动点
 template<typename F>
 class YCombinator {
     F f_;
@@ -352,7 +352,7 @@ Let's start with comparators. All `std::sort` asks for is a function that can co
 #include <vector>
 #include <string>
 
-// A generic comparator: sort by any field
+// 通用比较器：按任意字段排序
 template<typename Projection>
 auto make_comparator(Projection proj) {
     return [proj = std::move(proj)](const auto& a, const auto& b) {
@@ -373,15 +373,15 @@ void demo_generic_comparator() {
         {"Charlie", 35, 92000.0},
     };
 
-    // Sort by age
+    // 按年龄排序
     std::sort(employees.begin(), employees.end(),
              make_comparator([](const auto& e) { return e.age; }));
 
-    // Sort by salary, descending
+    // 按薪资降序排序
     std::sort(employees.begin(), employees.end(),
              make_comparator([](const auto& e) { return -e.salary; }));
 
-    // Sort by name
+    // 按名字排序
     std::sort(employees.begin(), employees.end(),
              make_comparator([](const auto& e) -> const auto& { return e.name; }));
 }
@@ -396,7 +396,7 @@ With transformers we push even further: even "what to do to the container" itsel
 #include <algorithm>
 #include <iterator>
 
-// A generic transform: apply the transformation function to every element of the container
+// 通用变换：对容器中的每个元素应用变换函数
 auto make_transformer = [](auto func) {
     return [f = std::move(func)](auto& container) {
         std::transform(container.begin(), container.end(),
@@ -405,11 +405,11 @@ auto make_transformer = [](auto func) {
     };
 };
 
-// Chained transforms
+// 链式变换
 auto make_pipeline = [](auto... transforms) {
     return [=](auto input) {
         auto current = std::move(input);
-        // Apply each transform in turn (C++17 fold expression)
+        // 依次应用每个变换（C++17 fold expression）
         ((current = transforms(current)), ...);
         return current;
     };

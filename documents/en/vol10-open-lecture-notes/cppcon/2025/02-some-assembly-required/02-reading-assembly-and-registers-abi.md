@@ -22,9 +22,9 @@ video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/02-some-assembly-required/02-reading-assembly-and-registers-abi.md
   source_hash: 6ced5414af699993bbf643bbbe0d2f11aaca5bc7c94e42dc6172f2400685efb2
-  translated_at: '2026-09-26T15:37:27+00:00'
-  engine: anthropic
-  token_count: 8500
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 22289
 ---
 # Reading Assembly: Building Intuition from Scratch
 
@@ -131,7 +131,7 @@ int square(int n) {
 Then compile it with gcc into an object file — no linking — and look at just the assembly:
 
 ```bash
-# My environment: Arch Linux WSL, x86-64, gcc 16.1.1
+# 我的环境：Arch Linux WSL, x86-64, gcc 16.1.1
 g++ -c -O0 square.cpp -o square.o
 objdump -d -M intel square.o
 ```
@@ -196,7 +196,7 @@ So here is the question: across different architectures, how big is the "felt" d
 ARM64 (AArch64) first. One might assume ARM assembly is roughly x86 with different instruction names and nothing more. Actually open objdump, and the differences far exceed expectations.
 
 ```cpp
-// square.cpp — just this trivial function
+// square.cpp —— 就这么个简单函数
 int square(int value) {
     return value * value;
 }
@@ -334,9 +334,9 @@ A simple diagram to illustrate:
 So when we see code like this in assembly, there is no need to panic:
 
 ```asm
-mov rax, rdi      ; put the 64-bit argument into rax for computation
-shr rax, 32       ; shift right by 32 bits
-mov eax, eax      ; keep only the low 32 bits as the return value
+mov rax, rdi      ; 把 64 位参数放进 rax 做计算
+shr rax, 32       ; 右移 32 位
+mov eax, eax      ; 只保留低 32 位作为返回值
 ```
 
 Switching from rax to eax here is not data being shuffled between two registers — it is the compiler saying "the computation is done, only the low 32 bits matter now". The type information in the C++ source (say, an `int64_t` parameter but an `int32_t` return value) maps directly onto which name of the same register the assembly uses. Once type information disappears, this is how it "survives" in the assembly.
@@ -358,12 +358,12 @@ The ABI specifies a great deal, but from a reading-assembly standpoint, exactly 
 Take Linux (the System V AMD64 ABI). The first six integer arguments (pointers included) go, in order, into these registers:
 
 ```text
-1st argument → RDI
-2nd argument → RSI
-3rd argument → RDX
-4th argument → RCX
-5th argument → R8
-6th argument → R9
+第 1 个参数 → RDI
+第 2 个参数 → RSI
+第 3 个参数 → RDX
+第 4 个参数 → RCX
+第 5 个参数 → R8
+第 6 个参数 → R9
 ```
 
 Arguments beyond six can only be pushed onto the stack, accessed through stack-pointer offsets. When using `std::forward` for perfect forwarding with a particularly large number of arguments, the assembly will show heavy stack traffic, because forwarding can "expand" the arguments — and the count instantly exceeds what six registers can hold.
@@ -377,10 +377,10 @@ Floating-point arguments are slightly more involved — they go through a separa
 On Windows with MSVC, things look different. The Windows x64 ABI allots only four registers for passing arguments:
 
 ```text
-1st argument → RCX
-2nd argument → RDX
-3rd argument → R8
-4th argument → R9
+第 1 个参数 → RCX
+第 2 个参数 → RDX
+第 3 个参数 → R8
+第 4 个参数 → R9
 ```
 
 Note that both the order and the names differ from Linux. This means that the very same function keeps all six arguments in registers on Linux, while on Windows the fifth and sixth are already being pushed onto the stack. When debugging performance issues across platforms, the same C++ code producing completely different assembly on each side is often exactly this ABI divergence at work.
@@ -392,8 +392,8 @@ This difference actually has a subtle influence on API design, too: knowing that
 All talk and no action gets us nowhere — drop the simplest function into Compiler Explorer and see:
 
 ```cpp
-// Compile options: -O1 -m64
-// Platform: x86-64 Linux (GCC)
+// 编译选项：-O1 -m64
+// 平台：x86-64 Linux (GCC)
 
 long add_three(long a, long b, long c) {
     return a + b + c;
@@ -429,7 +429,7 @@ sum_seven(long, long, long, long, long, long, long):
     add rax, rcx               ; + d
     add rax, r8                ; + e
     add rax, r9                ; + f
-    add rax, QWORD PTR [rsp+8] ; + g, fetched from the stack! Note the +8 offset: [rsp] holds the return address pushed by call
+    add rax, QWORD PTR [rsp+8] ; + g，从栈上取！注意偏移 +8，因为 [rsp] 是 call 压入的返回地址
     ret
 ```
 
@@ -486,8 +486,8 @@ add:
     add a0, a0, a5    # a0 += a5
     add a0, a0, a6    # a0 += a6
     add a0, a0, a7    # a0 += a7
-    ld  a1, 0(sp)     # the 9th argument is on the stack; load it into a1
-    add a0, a0, a1    # a0 += the stack-passed argument
+    ld  a1, 0(sp)     # 第9个参数在栈上，加载到 a1
+    add a0, a0, a1    # a0 += 栈上的参数
     ret
 ```
 
@@ -511,8 +511,8 @@ long caller() {
     register long temp __asm__("t0") = 42;
     register long saved __asm__("s1") = 99;
     long result = callee();
-    // temp may already have been clobbered by callee
-    // saved is guaranteed to still be 99
+    // temp 可能已经被 callee 破坏了
+    // saved 一定还是 99
     return temp + saved + result;
 }
 ```
@@ -520,9 +520,9 @@ long caller() {
 ```cpp
 // callee.cpp
 extern "C" long callee() {
-    // deliberately writes t0 — this is perfectly legal
+    // 故意写 t0，这是合法的
     register long t0_val __asm__("t0") = 0;
-    // deliberately writes s1 — but it must be restored
+    // 故意写 s1，但必须恢复
     register long s1_val __asm__("s1") = 0;
     __asm__ volatile("" : "=r"(t0_val) : "0"(t0_val));
     __asm__ volatile("" : "=r"(s1_val) : "0"(s1_val));
@@ -568,14 +568,14 @@ struct Foo {
     long bar(long y) { return x + y; }
 };
 
-// Looking at the assembly after compiling, bar's signature is equivalent to:
+// 编译后看汇编，bar 的签名等价于：
 // long Foo_bar(Foo* this, long y)
 // a0 = this, a1 = y
 ```
 
 ```asm
 _ZN3Foo3barEl:
-    ld    a0, 0(a0)     # load the value from this->x into a0
+    ld    a0, 0(a0)     # 从 this->x 加载值到 a0
     add   a0, a0, a1    # a0 += y
     ret
 ```
@@ -601,7 +601,7 @@ Big make_big(long a, long b) {
 
 ```asm
 _Z9make_bigll:
-    # a0 = the hidden return-buffer address
+    # a0 = 隐式的返回值缓冲区地址
     # a1 = a, a2 = b
     sd    a1, 0(a0)     # result.data[0] = a
     sd    a2, 8(a0)     # result.data[1] = b
@@ -613,13 +613,13 @@ _Z9make_bigll:
 The assembly at the call site looks roughly like this:
 
 ```asm
-    # the caller reserves 32 bytes on the stack
+    # 调用者在栈上预留 32 字节
     addi  sp, sp, -32
-    mv    a0, sp        # pass the buffer address as the first argument
-    mv    a1, ...       # the real argument a
-    mv    a2, ...       # the real argument b
+    mv    a0, sp        # 把缓冲区地址作为第一个参数
+    mv    a1, ...       # 真正的参数 a
+    mv    a2, ...       # 真正的参数 b
     call  _Z9make_bigll
-    # where sp now points is the constructed Big object
+    # 现在 sp 指向的位置就是构造好的 Big 对象
 ```
 
 Seeing this for the first time is easily confusing — why is every argument shifted over by one slot? The reason is that a hidden pointer argument was inserted at the very front. This is the kind of thing nobody ever notices without reading the assembly — but once it shows up, not understanding it can eat an entire day of debugging.

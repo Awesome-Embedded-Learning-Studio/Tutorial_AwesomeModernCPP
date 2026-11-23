@@ -18,10 +18,10 @@ tags:
 title: File and Directory Operations
 translation:
   source: documents/vol2-modern-features/ch09-filesystem/02-filesystem-ops.md
-  source_hash: 9362ed2535b4ff9ef74aa8b9954f86f0d1d782480f8f68dbd3ee0ddb134f2bdd
-  translated_at: '2026-09-25T16:16:36+00:00'
-  engine: anthropic
-  token_count: 7800
+  source_hash: 327c5d6ed6d0098976dc34c77b8871ebe15c4241b5006423b725fead6b4af8f8
+  translated_at: '2026-11-23T01:10:31+00:00'
+  engine: glm-5.3-refresh
+  token_count: 13117
 ---
 # File and Directory Operations: This Time We Actually Touch the Disk
 
@@ -101,7 +101,7 @@ namespace fs = std::filesystem;
 void print_file_info(const fs::path& p) {
     std::error_code ec;
 
-    // File size (bytes)
+    // 文件大小（字节）
     auto size = fs::file_size(p, ec);
     if (!ec) {
         std::cout << "大小: " << size << " 字节\n";
@@ -114,10 +114,10 @@ void print_file_info(const fs::path& p) {
         }
     }
 
-    // Last modification time
+    // 最后修改时间
     auto ftime = fs::last_write_time(p, ec);
     if (!ec) {
-        // Before C++20: we must convert to time_t for display
+        // C++20 之前：需要转换成 time_t 来显示
         auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
             ftime - fs::file_time_type::clock::now() + std::chrono::system_clock::now()
         );
@@ -126,7 +126,7 @@ void print_file_info(const fs::path& p) {
                   << std::ctime(&time_t_val);
     }
 
-    // File status (permissions etc.)
+    // 文件状态（权限等）
     auto status = fs::status(p, ec);
     if (!ec) {
         std::cout << "类型: " << static_cast<int>(status.type()) << "\n";
@@ -161,7 +161,7 @@ If you need to create a multi-level directory (say `/tmp/a/b/c`, where neither `
 
 ```cpp
 fs::path deep_dir = "/tmp/myapp/data/cache/tmp";
-fs::create_directories(deep_dir);  // Creates all intermediate directories automatically
+fs::create_directories(deep_dir);  // 自动创建所有中间目录
 std::cout << "创建完成\n";
 ```
 
@@ -174,10 +174,10 @@ std::cout << "创建完成\n";
 `fs::copy(from, to)` is a multi-purpose copy function. Its behavior depends on the type of `from` and on whether `copy_options` are given:
 
 ```cpp
-// Default behavior:
-// - If from is a regular file, copy the file to to
-// - If from is a directory, copy the directory structure to to (contents are not copied recursively)
-// - If from is a symbolic link, copy the link itself
+// 默认行为：
+// - 如果 from 是普通文件，复制文件到 to
+// - 如果 from 是目录，复制目录结构到 to（不递归复制内容）
+// - 如果 from 是符号链接，复制链接本身
 
 fs::path src = "/tmp/source.txt";
 fs::path dst = "/tmp/dest.txt";
@@ -200,7 +200,7 @@ if (ec) {
 `fs::copy_options::copy_symlinks` — copy the symbolic link itself (rather than following the link and copying the file it points to).
 
 ```cpp
-// Recursively copy an entire directory
+// 递归复制整个目录
 fs::copy("/tmp/source_dir", "/tmp/dest_dir",
          fs::copy_options::recursive |
          fs::copy_options::overwrite_existing);
@@ -209,16 +209,16 @@ fs::copy("/tmp/source_dir", "/tmp/dest_dir",
 `fs::copy_file(from, to, options)` is a function dedicated to copying files. The difference from `copy`: `copy_file` only handles regular files, and it offers finer control. Note: `copy_file` **provides no atomicity guarantee** — if the copy fails partway through (out of disk space, power loss, and so on), the destination may be left partially written. If you need atomicity, use the "copy to a temporary file + atomic rename" pattern. (See the `safe_write_file` example in the "Temporary File Handling" section.)
 
 ```cpp
-// Unsafe file copy (no atomicity guarantee)
+// 不安全的文件复制（无原子性保证）
 fs::path src = "/data/important_config.yaml";
 fs::path dst = "/backup/important_config.yaml";
 
 std::error_code ec;
 fs::copy_file(src, dst,
               fs::copy_options::overwrite_existing, ec);
-// Possibility 1: if dst already exists, its contents may be overwritten step by step
-// during the copy, so other processes can observe a partially copied file
-// Possibility 2: if the machine loses power mid-copy, dst may end up incomplete or even corrupted
+// 可能性1. 如果 dst 已经存在, 复制过程中内容可能会被逐步覆盖,
+// 从而导致其他进程看到一个被部分复制的文件
+// 可能性2. 如果复制中途停电宕机, dst文件可能处于不完整甚至损坏的状态
 if (ec) {
     std::cerr << "复制失败: " << ec.message() << "\n";
 } else {
@@ -269,16 +269,16 @@ if (ec) {
 ```cpp
 fs::path script = "/tmp/my_script.sh";
 
-// Set to rwxr-xr-x (755)
+// 设置为 rwxr-xr-x (755)
 fs::permissions(script,
     fs::perms::owner_read | fs::perms::owner_write | fs::perms::owner_exec |
     fs::perms::group_read | fs::perms::group_exec |
     fs::perms::others_read | fs::perms::others_exec);
 
-// Or use perm_options to control how the bits are modified
+// 或者用 perm_options 控制修改方式
 fs::permissions(script,
-    fs::perms::owner_exec,     // Modify only the owner_exec bit
-    fs::perm_options::add);    // Add it (other bits unaffected)
+    fs::perms::owner_exec,     // 只修改 owner_exec 位
+    fs::perm_options::add);    // 添加（不影响其他位）
 ```
 
 The third parameter, `perm_options`, can be `replace` (replace all permissions — the default behavior), `add` (add the specified permission bits), or `remove` (remove the specified permission bits). When you only need to modify one or two bits, this is more convenient than replacing the whole permission set.
@@ -313,12 +313,12 @@ C++ provides no standard API for "creating a temporary file" directly (C++23's `
 
 namespace fs = std::filesystem;
 
-/// @brief Create a unique temporary file path
-/// @return The temporary file's path (the file is not created yet)
+/// @brief 创建一个唯一的临时文件路径
+/// @return 临时文件的路径（文件尚未创建）
 fs::path make_temp_file() {
     auto temp_dir = fs::temp_directory_path();
 
-    // Generate a random suffix
+    // 生成随机后缀
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<int> dist(0, 999999);
@@ -328,14 +328,14 @@ fs::path make_temp_file() {
     return temp_path;
 }
 
-/// @brief Safely write data to a temporary file, then atomically rename it to the target file
-/// @param target Target file path
-/// @param data The data to write
-/// @return Whether it succeeded
+/// @brief 安全地将数据写入临时文件，然后原子性地重命名为目标文件
+/// @param target 目标文件路径
+/// @param data 要写入的数据
+/// @return 是否成功
 bool safe_write_file(const fs::path& target, const std::string& data) {
     auto temp = make_temp_file();
 
-    // Write to the temporary file first
+    // 先写入临时文件
     {
         std::ofstream out(temp);
         if (!out) return false;
@@ -347,11 +347,11 @@ bool safe_write_file(const fs::path& target, const std::string& data) {
         }
     }
 
-    // Atomic rename
+    // 原子性重命名
     std::error_code ec;
     fs::rename(temp, target, ec);
     if (ec) {
-        fs::remove(temp);  // Clean up the temporary file
+        fs::remove(temp);  // 清理临时文件
         return false;
     }
     return true;
@@ -374,16 +374,16 @@ Let's combine everything from this article and write a practical log rotation to
 
 namespace fs = std::filesystem;
 
-/// @brief Perform a log rotation
-/// @param log_path Log file path
-/// @param max_size Maximum file size (bytes)
-/// @param max_backups Maximum number of backups
+/// @brief 执行日志轮转
+/// @param log_path 日志文件路径
+/// @param max_size 最大文件大小（字节）
+/// @param max_backups 最大备份数量
 void rotate_log(const fs::path& log_path,
                 std::uintmax_t max_size,
                 int max_backups) {
     std::error_code ec;
 
-    // Check whether the log file exists and exceeds the size limit
+    // 检查日志文件是否存在且超过大小限制
     if (!fs::exists(log_path, ec) || ec) return;
     auto size = fs::file_size(log_path, ec);
     if (ec || size < max_size) return;
@@ -392,7 +392,7 @@ void rotate_log(const fs::path& log_path,
     auto ext = log_path.extension().string();
     auto parent = log_path.parent_path();
 
-    // Collect the existing backup files
+    // 收集已有的备份文件
     std::vector<fs::path> backups;
     for (int i = 1; i <= max_backups + 1; ++i) {
         auto backup_name = stem + "." + std::to_string(i) + ext;
@@ -402,32 +402,32 @@ void rotate_log(const fs::path& log_path,
         }
     }
 
-    // Delete old backups beyond the count limit
+    // 删除超出数量限制的旧备份
     std::sort(backups.begin(), backups.end());
     while (static_cast<int>(backups.size()) >= max_backups) {
         fs::remove(backups.back(), ec);
         backups.pop_back();
     }
 
-    // Shift existing backup sequence numbers up by one
+    // 将现有备份序号 +1
     for (int i = static_cast<int>(backups.size()); i >= 1; --i) {
         auto old_name = stem + "." + std::to_string(i) + ext;
         auto new_name = stem + "." + std::to_string(i + 1) + ext;
         fs::rename(parent / old_name, parent / new_name, ec);
     }
 
-    // Rename the current log to the .1 backup
+    // 将当前日志重命名为 .1 备份
     auto first_backup = parent / (stem + ".1" + ext);
     fs::rename(log_path, first_backup, ec);
 
-    // Create a new empty log file
+    // 创建新的空日志文件
     std::ofstream(log_path).close();
 
     std::cout << "日志轮转完成: " << log_path << "\n";
 }
 
 int main() {
-    // Example: rotate app.log when it exceeds 1 MB, keeping at most 5 backups
+    // 示例：当 app.log 超过 1MB 时轮转，最多保留 5 个备份
     rotate_log("/tmp/app.log", 1024 * 1024, 5);
     return 0;
 }
@@ -436,11 +436,11 @@ int main() {
 After it runs, the files under `/tmp/` will look like this:
 
 ```text
-app.log         ← the new empty log file
-app.1.log       ← the previous log
-app.2.log       ← the log from two rotations ago
+app.log         ← 新的空日志文件
+app.1.log       ← 上一次的日志
+app.2.log       ← 上上次的日志
 ...
-app.5.log       ← the oldest backup
+app.5.log       ← 最老的备份
 ```
 
 This rotation tool uses `exists`, `file_size`, `rename`, `remove` — essentially every core operation from this article. The "atomic rename" guarantees that no log data is lost during rotation — even if the program crashes mid-rename, at worst one backup file doesn't finish renaming, and the next rotation sorts it out automatically.
@@ -452,14 +452,14 @@ Throughout this article, I have been handling errors in two ways: throwing excep
 Most `fs::xxx()` functions come in two overloads: one that throws a `fs::filesystem_error` exception on failure, and another that takes a `std::error_code&` parameter and reports the error code through it on failure. Which one to pick depends on your situation:
 
 ```cpp
-// Pattern 1: throw (for operations that "should not fail")
+// 模式一：抛异常（适合"不应该失败"的操作）
 fs::create_directories("/tmp/myapp/data");
 
-// Pattern 2: error_code (for operations that "might fail")
+// 模式二：error_code（适合"可能失败"的操作）
 std::error_code ec;
 fs::copy(src, dst, ec);
 if (ec) {
-    // Handle the error
+    // 处理错误
 }
 ```
 

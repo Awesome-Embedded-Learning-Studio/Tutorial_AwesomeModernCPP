@@ -21,10 +21,10 @@ tags:
 title: The real cost of RVO, NRVO, and move
 translation:
   source: documents/vol6-performance/ch06-cpp-abstraction-cost/06-05-rvo-move.md
-  source_hash: df61a891aa680946e318fe0137e288b6eb627bc81fcd528ca7c1383bf422b090
-  translated_at: '2026-09-26T06:55:20+00:00'
-  engine: anthropic
-  token_count: 3300
+  source_hash: 85d70c79db85c4ae989a40ddd18d8d11e69b5920b174d941e87e5203f9a599b9
+  translated_at: '2026-11-22T16:43:35+00:00'
+  engine: glm-5.3-refresh
+  token_count: 4584
 ---
 # The real cost of RVO, NRVO, and move
 
@@ -43,19 +43,19 @@ struct Tracked {
     int v;
     static int64_t copies, moves;
     Tracked(int x) : v(x) {}
-    Tracked(const Tracked& o) : v(o.v) { ++copies; }              // counts copies
-    Tracked(Tracked&& o) noexcept : v(o.v) { ++moves; o.v = -1; } // counts moves
+    Tracked(const Tracked& o) : v(o.v) { ++copies; }              // 计拷贝
+    Tracked(Tracked&& o) noexcept : v(o.v) { ++moves; o.v = -1; } // 计移动
 };
 ```
 
 Then measure four ways of "returning", checking the copies/moves count for each:
 
 ```text
-===== Copy/move counts for RVO/NRVO/move/copy =====
-  URVO return Tracked(1):      copies=0  moves=0  → zero copies, zero moves
-  NRVO return t (named local): copies=0  moves=0  → zero copies, zero moves
-  return std::move(t):         copies=0  moves=1  → forced into 1 move (you disabled NRVO)
-  return g_global (lvalue):    copies=1  moves=0  → 1 copy (RVO not possible)
+===== RVO/NRVO/move/copy 的拷贝/移动计数 =====
+  URVO return Tracked(1):     copies=0  moves=0  → 零拷贝零移动
+  NRVO return t(有名局部):   copies=0  moves=0  → 零拷贝零移动
+  return std::move(t):        copies=0  moves=1  → 被强制 1 次 move(NRVO 被你禁了)
+  return g_global(lvalue):    copies=1  moves=0  → 1 次拷贝(不能 RVO)
 ```
 
 This table is the gold standard for teaching RVO (no timers involved, nothing for the compiler to punch through):
@@ -70,11 +70,11 @@ This table is the gold standard for teaching RVO (no timers involved, nothing fo
 GCC has a flag, `-fno-elide-constructors`, that turns copy elision off (used to reproduce old C++ behavior or for debugging). Rebuild with it added:
 
 ```text
-(with -fno-elide-constructors:)
-  URVO return Tracked(1):      copies=0  moves=0   ← C++17 guaranteed, can't be turned off
-  NRVO return t (named local): copies=0  moves=1   ← NRVO off, degrades to 1 move
-  return std::move(t):         copies=0  moves=1
-  return g_global:             copies=1  moves=0
+(加 -fno-elide-constructors:)
+  URVO return Tracked(1):     copies=0  moves=0   ← C++17 guaranteed,关不掉
+  NRVO return t(有名局部):   copies=0  moves=1   ← NRVO 被关,退化成 1 次 move
+  return std::move(t):        copies=0  moves=1
+  return g_global:            copies=1  moves=0
 ```
 
 Two things to read off:
@@ -87,9 +87,9 @@ Two things to read off:
 `std::move` itself does nothing (it's just a cast to an rvalue); the real work is done by the **move constructor**. For types that manage dynamic memory, like `vector`/`string`, a move is a **pointer swap** (O(1)), while a copy is a **deep copy** (O(n)):
 
 ```cpp
-// vector's move constructor: O(1) pointer swap (note the parameter is vector&&, not const vector&& — move needs to modify the source)
+// vector 的 move 构造:O(1) 指针交换(注意参数是 vector&&,不是 const vector&&——move 要改源)
 vector(vector&& o) noexcept : data_(o.data_), size_(o.size_) { o.data_ = nullptr; o.size_ = 0; }
-// vector's copy constructor: O(n) deep copy
+// vector 的 copy 构造:O(n) 深拷贝
 vector(const vector& o) : data_(new T[o.size()]) { copy o.data_ → data_; }
 ```
 
@@ -115,5 +115,5 @@ One-sentence wrap-up: RVO/NRVO makes returning by value zero-cost (URVO is manda
 
 - cppreference, *Copy elision* (the C++17 guaranteed-elision rules)
 - Meyer, S., *Effective Modern C++* Item 25 (the reverse: overloading on rvalue references vs reference qualification) — engineering usage of move semantics
-- Agner Fog, *Optimizing software in C++*, §7.16 *Returning objects*. Local copy.
+- Agner Fog, *Optimizing software in C++*, §7.16 *Returning objects*
 - This article's measurement code: `code/volumn_codes/vol6-performance/ch06/rvo_move.cpp` (includes the -fno-elide-constructors comparison)

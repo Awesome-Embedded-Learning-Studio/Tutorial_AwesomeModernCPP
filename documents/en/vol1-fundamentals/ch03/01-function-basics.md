@@ -20,12 +20,23 @@ tags:
 - 入门
 - 基础
 title: Function Basics
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #186)"
+      en: "Contributed exercise solutions and article revisions (PR #186)"
 translation:
   source: documents/vol1-fundamentals/ch03/01-function-basics.md
-  source_hash: 22e406eb74c37874a915fe613d166836b5d9a740f8f3a9bd728f07b66c7dce7f
-  translated_at: '2026-09-25T10:29:01+00:00'
-  engine: anthropic
-  token_count: 4000
+  source_hash: 6099f36e8b69aac24dcd12dbda882fc04e530031228e4055f7f499d74cf03a58
+  translated_at: '2026-11-22T16:40:19+00:00'
+  engine: glm-5.3-refresh
+  token_count: 10976
 ---
 # Function Basics: Don't Pile Ten Thousand Lines into One main
 
@@ -40,10 +51,10 @@ Functions are the core tool for solving this problem. They let us wrap a stretch
 Before writing a function, we need to get two concepts straight: **declaration** and **definition**. A declaration tells the compiler "a function like this exists" — it gives only the function name, return type, and parameter list, with no function body. A definition supplies the complete implementation.
 
 ```cpp
-// Declaration (also called a function prototype)
+// 声明（也叫函数原型/prototype）
 int add(int a, int b);
 
-// Definition (includes the function body)
+// 定义（包含函数体）
 int add(int a, int b)
 {
     return a + b;
@@ -57,18 +68,18 @@ So why distinguish the two? Because the C++ compiler works through the file line
 ```cpp
 #include <iostream>
 
-// Declare first, telling the compiler these functions exist
+// 先声明，告诉编译器这些函数存在
 int add(int a, int b);
 int multiply(int a, int b);
 
 int main()
 {
-    std::cout << add(3, 4) << std::endl;       // the compiler knows add's signature
-    std::cout << multiply(3, 4) << std::endl;  // the compiler knows multiply's signature
+    std::cout << add(3, 4) << std::endl;       // 编译器知道 add 的签名
+    std::cout << multiply(3, 4) << std::endl;  // 编译器知道 multiply 的签名
     return 0;
 }
 
-// Definitions come afterwards — perfectly fine
+// 定义放在后面，完全没问题
 int add(int a, int b)
 {
     return a + b;
@@ -96,9 +107,9 @@ Every C++ function has a return type, written before the function name; it tells
 int max(int a, int b)
 {
     if (a > b) {
-        return a;   // returns a; the function ends immediately
+        return a;   // 返回 a，函数立即结束
     }
-    return b;       // returns b
+    return b;       // 返回 b
 }
 ```
 
@@ -110,7 +121,7 @@ If a function doesn't need to return anything, we write its return type as `void
 void print_greeting(const std::string& name)
 {
     if (name.empty()) {
-        return;  // exit early, print nothing
+        return;  // 提前退出，不打印任何内容
     }
     std::cout << "Hello, " << name << "!" << std::endl;
 }
@@ -121,7 +132,7 @@ C++14 introduced a genuinely practical feature: **return type deduction**. Write
 ```cpp
 auto add(int a, int b)
 {
-    return a + b;  // the compiler deduces the return type as int
+    return a + b;  // 编译器推导出返回类型为 int
 }
 ```
 
@@ -134,7 +145,7 @@ Forgetting the `return` in a non-`void` function is a classic bug. The compiler 
 Functions receive data from the outside through **parameters**. The variables we declare in the function signature are the formal parameters (parameters, for short), and the concrete values passed in at the call site are the actual arguments (arguments, for short):
 
 ```cpp
-//          parameters
+//          形参
 //            ↓    ↓
 int add(int a, int b)
 {
@@ -143,9 +154,9 @@ int add(int a, int b)
 
 int main()
 {
-    //       arguments
+    //       实参
     //        ↓    ↓
-    int result = add(3, 4);  // a receives 3, b receives 4
+    int result = add(3, 4);  // a 接收 3, b 接收 4
     return 0;
 }
 ```
@@ -163,7 +174,7 @@ void print_info(const std::string& name, int age, double height)
 
 int main()
 {
-    // Passed by position; don't get the order wrong
+    // 按位置传递，顺序不能搞错
     print_info("Alice", 20, 165.5);
     return 0;
 }
@@ -178,14 +189,14 @@ Variables declared inside a function body are called **local variables**; their 
 ```cpp
 int compute(int x)
 {
-    int result = x * 2;  // result is a local variable
+    int result = x * 2;  // result 是局部变量
     return result;
-}   // result is destroyed here
+}   // result 在这里被销毁
 
 int main()
 {
     int r = compute(5);
-    // std::cout << result;  // compile error! result is not in scope
+    // std::cout << result;  // 编译错误！result 不在作用域内
     return 0;
 }
 ```
@@ -197,13 +208,13 @@ We can use same-named variables in different functions and they won't interfere 
 ```cpp
 void func_a()
 {
-    int value = 10;  // func_a's value
+    int value = 10;  // func_a 的 value
     std::cout << "func_a: " << value << std::endl;
 }
 
 void func_b()
 {
-    int value = 20;  // func_b's value; completely unrelated to func_a's
+    int value = 20;  // func_b 的 value，跟 func_a 的毫无关系
     std::cout << "func_b: " << value << std::endl;
 }
 ```
@@ -216,8 +227,8 @@ Returning a **reference** or **pointer** to a local variable is a serious error,
 int& dangerous()
 {
     int local = 42;
-    return local;  // serious error: returning a reference to a local variable
-}   // local is destroyed here; the memory the reference points to is invalid
+    return local;  // 严重错误：返回局部变量的引用
+}   // local 在这里被销毁，引用指向的内存已无效
 ```
 
 The program may run perfectly while we're debugging, then suddenly crash once compiled in Release or once the data volume grows. These "sometimes fine, sometimes broken" bugs are harder to track down than crashes that reproduce every time. The rule is simple: **never return a reference or pointer to a local variable**. Returning by value is safe — it copies the result and hands it to the caller.
@@ -254,29 +265,29 @@ Let's fold the points from earlier into one complete program, with demonstration
 #include <iostream>
 #include <string>
 
-// Function declarations (prototypes)
+// 函数声明（原型）
 int add(int a, int b);
 int max_of(int a, int b);
 int factorial(int n);
 bool is_even(int n);
 void print_result(const std::string& label, int value);
 
-// The main function — the program's entry point
+// main 函数——程序入口
 int main()
 {
-    // Addition
+    // 加法
     int sum = add(15, 27);
     print_result("15 + 27", sum);
 
-    // Take the larger value
+    // 取较大值
     int bigger = max_of(42, 17);
     print_result("max(42, 17)", bigger);
 
-    // Factorial
+    // 阶乘
     int fact = factorial(6);
     print_result("6!", fact);
 
-    // Even/odd check
+    // 判断奇偶
     int test_values[] = {0, 1, 2, 7, 10};
     for (int val : test_values) {
         std::cout << val << " 是"
@@ -287,7 +298,7 @@ int main()
     return 0;
 }
 
-// ---- Function definitions ----
+// ---- 函数定义 ----
 
 int add(int a, int b)
 {
@@ -302,9 +313,9 @@ int max_of(int a, int b)
     return b;
 }
 
-/// @brief Computes the factorial of n (n!)
-/// @param n A non-negative integer
-/// @return The factorial of n
+/// @brief 计算 n 的阶乘（n!）
+/// @param n 非负整数
+/// @return n 的阶乘
 int factorial(int n)
 {
     if (n <= 1) {
@@ -453,7 +464,7 @@ int main()
         std::cout << "错误：输入格式无效" << std::endl;
         return 1;
     }
-    // std::boolalpha makes bool print as text
+    // std::boolalpha使bool 以文字形式
     std::cout << std::boolalpha << "is_prime(" << a << ") -> " << is_prime(a) << std::endl;
     return 0;
 }

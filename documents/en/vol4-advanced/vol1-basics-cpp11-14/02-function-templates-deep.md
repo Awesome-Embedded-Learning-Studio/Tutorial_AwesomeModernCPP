@@ -29,9 +29,9 @@ title: 'Function Templates, In Depth: Compilation Model and the No-Partial-Speci
 translation:
   source: documents/vol4-advanced/vol1-basics-cpp11-14/02-function-templates-deep.md
   source_hash: d855f2daa06c3b04ea0d06416cbaa9f5b7df6c1213301de48f0e9a042188a5fa
-  translated_at: '2026-09-26T03:59:26+00:00'
-  engine: anthropic
-  token_count: 4800
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7500
 ---
 # Function Templates, In Depth: Compilation Model and the No-Partial-Specialization Trap
 
@@ -44,13 +44,13 @@ First, recall how an ordinary function is split across files. The declaration go
 Templates do not play that game. Templates use the **inclusion model**: the definition of a template must be completely visible at the point where it gets instantiated. You cannot put a function template's declaration in a header, its definition in a `.cpp`, and then use it from another translation unit (TU). The reason: template instantiation happens at compile time — the compiler must substitute the concrete type for `T` at the call site and generate the code on the spot, and that generation process needs to see the complete template definition.
 
 ```cpp
-// add.h — declaration only; will this work?
+// add.h —— 只放声明,行不行?
 template <typename T>
-T add(T a, T b);   // declaration only
+T add(T a, T b);   // 只有声明
 ```
 
 ```cpp
-// add.cpp — the definition goes here
+// add.cpp —— 放定义
 template <typename T>
 T add(T a, T b) { return a + b; }
 ```
@@ -59,7 +59,7 @@ T add(T a, T b) { return a + b; }
 // main.cpp
 #include "add.h"
 int main() {
-    return add(1, 2);   // Linker error! undefined reference to `add<int>(int, int)`
+    return add(1, 2);   // 链接报错!undefined reference to `add<int>(int, int)`
 }
 ```
 
@@ -68,7 +68,7 @@ This setup compiles but fails to link: in `main.cpp` the compiler cannot see the
 The fix is plain and simple: move the definition back into the header.
 
 ```cpp
-// add.h — the definition lives in the header too
+// add.h —— 定义也在头文件里
 template <typename T>
 T add(T a, T b) { return a + b; }
 ```
@@ -89,7 +89,7 @@ An explicit instantiation definition looks like this: it starts with the `templa
 template <typename T>
 T add(T a, T b) { return a + b; }
 
-// Explicit instantiation definition: force this TU to generate the add<double> code
+// 显式实例化定义:在这个翻译单元里,强制生成 add<double> 的代码
 template double add<double>(double, double);
 ```
 
@@ -104,24 +104,24 @@ add(1, 2) = 3
 Its companion is the `extern template` declaration. It means "this version is already instantiated in some other TU; don't generate it here, just use the copy from elsewhere":
 
 ```cpp
-// In some .cpp: an explicit instantiation definition, which actually generates the code
+// 在某个 .cpp 里:显式实例化定义,真的生成代码
 //   template int add<int>(int, int);
 
-// In other .cpp / .h files: a declaration — generates nothing, resolved elsewhere at link time
+// 在其它 .cpp / .h 里:声明,不生成,链接时找别处的
 extern template int add<int>(int, int);
 ```
 
 Let's run a two-TU example and see whether it links properly.
 
 ```cpp
-// tu_a.cpp — implicitly instantiates doubler<int> here (call_a uses it)
+// tu_a.cpp —— 这里隐式实例化 doubler<int>(因为 call_a 用了它)
 template <typename T>
 T doubler(T x) { return x * 2; }
 int call_a() { return doubler(21); }
 ```
 
 ```cpp
-// tu_b.cpp — declares doubler<int> instantiated elsewhere; this TU no longer generates it
+// tu_b.cpp —— 声明 doubler<int> 在别处已实例化,本 TU 不再生成
 template <typename T>
 T doubler(T x) { return x * 2; }
 extern template int doubler<int>(int);
@@ -161,7 +161,7 @@ Most people first hit this wall trying to give a function template "a special ve
 template <typename T>
 T identity(T x) { return x; }
 
-// Attempting to partially specialize for T* — compile error!
+// 试图为 T* 偏特化 —— 编译报错!
 template <typename T>
 T identity<T*>(T* x) { return *x; }
 ```
@@ -183,16 +183,16 @@ So what do you do when you want a special version for pointer types? Use overloa
 
 ```cpp
 template <typename T>
-T identity(T x) { return x; }            // general version
+T identity(T x) { return x; }            // 通用版本
 
-// Give pointers a dedicated version via overloading
+// 用重载给指针一个专门版本
 template <typename T>
-T identity(T* x) { return *x; }          // pointer version
+T identity(T* x) { return *x; }          // 指针版本
 
 int main() {
     int v = 42;
-    identity(v);        // calls the T=int version, returns 42
-    identity(&v);       // calls the T=int pointer overload, returns 42
+    identity(v);        // 调 T=int 版本,返回 42
+    identity(&v);       // 调 T=int 版本的指针重载,返回 42
 }
 ```
 
@@ -223,11 +223,11 @@ After all that talk about partial specialization being off the table, what about
 template <typename T>
 const char* type_name() { return "unknown"; }
 
-// Full specialization: the int version
+// 全特化:int 版本
 template <>
 const char* type_name<int>() { return "int"; }
 
-// Full specialization: the double version
+// 全特化:double 版本
 template <>
 const char* type_name<double>() { return "double"; }
 ```
@@ -255,7 +255,7 @@ const T& clamp(const T& v, const T& lo, const T& hi) {
     return v;
 }
 
-// Pre-declaration: the int and double versions are instantiated elsewhere; TUs including this header must not regenerate them
+// 预声明:int 和 double 版本在别处已实例化,包含本头文件的 TU 别再生成
 extern template const int&    clamp<int>(const int&, const int&, const int&);
 extern template const double& clamp<double>(const double&, const double&, const double&);
 ```
@@ -266,7 +266,7 @@ The source file provides explicit instantiation definitions for those types:
 // clamp.cpp
 #include "clamp.h"
 
-// This is where the code is actually generated
+// 真正在这里生成代码
 template const int&    clamp<int>(const int&, const int&, const int&);
 template const double& clamp<double>(const double&, const double&, const double&);
 ```

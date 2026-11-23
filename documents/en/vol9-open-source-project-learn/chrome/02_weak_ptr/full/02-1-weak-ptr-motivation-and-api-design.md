@@ -26,9 +26,9 @@ title: "WeakPtr hands-on (I): motivation and API design"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/02_weak_ptr/full/02-1-weak-ptr-motivation-and-api-design.md
   source_hash: 6eb0e0aee3d7c1b11450118e39435ffee65bc0c3056ede074cbefdbfaffdc269
-  translated_at: '2026-09-26T01:44:01+00:00'
-  engine: anthropic
-  token_count: 2800
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 9215
 ---
 # WeakPtr hands-on (I): motivation and API design
 
@@ -50,10 +50,10 @@ Suppose we have a `Controller` that posts tasks to a thread pool; when a task fi
 class Controller {
 public:
     void start_work(ThreadPool& pool) {
-        // Post a task to the thread pool; on completion it calls back on_work_done
+        // 投一个任务到线程池,完成后回调 on_work_done
         pool.post([this] { this->on_work_done(); });
     }
-    void on_work_done() { /* update state */ ++work_count_; }
+    void on_work_done() { /* 更新状态 */ ++work_count_; }
 private:
     int work_count_ = 0;
 };
@@ -93,17 +93,17 @@ Chromium's `WeakPtr` is not one isolated little class; it is a four-layer struct
 
 ```mermaid
 flowchart TB
-    subgraph FAC["WeakPtrFactory&lt;T&gt; — created by the user, manages bulk invalidation"]
-        RO["WeakReferenceOwner<br/>the flag-owning 'issuer'"]
+    subgraph FAC["WeakPtrFactory&lt;T&gt; — 用户创建,管理批量失效"]
+        RO["WeakReferenceOwner<br/>持有 flag 的「发行方」"]
     end
-    subgraph WP["WeakPtr&lt;T&gt; — the handle users pass around/dereference"]
-        WR["WeakReference — the reference side,
-        pointing at the same flag"]
+    subgraph WP["WeakPtr&lt;T&gt; — 用户传递/解引用的句柄"]
+        WR["WeakReference — 引用侧,
+        指向同一个 flag"]
         Flag["Flag — refcounted +
-        atomic state"]
+        原子的状态"]
         WR --> Flag
     end
-    RO -. "issue / invalidate" .-> Flag
+    RO -. "发行 / 失效" .-> Flag
 ```
 
 At the very bottom sits `Flag`, an internal class users never get to touch. It is exactly that "is the object dead yet" state; it hangs off `RefCountedThreadSafe`, is shared by the issuer and all reference holders, and carries a single atomic flag bit inside. One layer up is `WeakReference`, a reference wrapper around `Flag` that holds a `scoped_refptr<const Flag>` — it is the entity of that "weak reference" inside WeakPtr. Above that is `WeakPtr<T>`, the handle users operate, holding a `WeakReference` plus a `T*`, two pointers in size, tagged `TRIVIAL_ABI` so it can travel in registers. At the very top, `WeakPtrFactory<T>` hangs on the observed object as the "mint": call `GetWeakPtr()` to mint a new WeakPtr, call `InvalidateWeakPtrs()` to void all minted ones in one stroke.
@@ -130,20 +130,20 @@ Next, let's pin down the target API. This is how engineers work — first get "w
 #include "weak_ptr/weak_ptr.hpp"
 using namespace tamcpp::chrome;
 
-// Minted from the factory (see below)
+// 从 factory 铸出来(见下面)
 WeakPtr<Controller> wp = factory.get_weak_ptr();
 
-// Liveness check + dereference
+// 判活 + 解引用
 if (wp) {
-    wp->on_work_done();      // operator-> : normal call while the object is alive
+    wp->on_work_done();      // operator-> :对象活着时正常调用
 }
 
-// After invalidation
-wp->on_work_done();          // operator-> : object dead → CHECK failure, program aborts
-wp.get();                    // get()      : object dead → returns nullptr, no crash
+// 失效后
+wp->on_work_done();          // operator-> :对象死了 → CHECK 失败,程序中止
+wp.get();                    // get()      :对象死了 → 返回 nullptr,不崩
 
-// Reset
-wp.reset();                  // actively let go; afterwards wp == nullptr
+// 重置
+wp.reset();                  // 主动松手,之后 wp == nullptr
 ```
 
 ### The factory: WeakPtrFactory\<T\>
@@ -153,16 +153,16 @@ class Controller {
 public:
     void start_work(ThreadPool& pool);
     void on_work_done();
-    // Expose the minting interface to the outside (the factory itself stays private)
+    // 对外暴露铸币接口(factory 本身保持 private)
     WeakPtr<Controller> get_weak() { return weak_factory_.get_weak_ptr(); }
     ~Controller() = default;
 private:
     int work_count_ = 0;
-    // Key point: the factory is the last member and stays private (02-3 explains why)
+    // 关键:factory 是最后一个成员,且保持 private(02-3 讲为什么)
     WeakPtrFactory<Controller> weak_factory_{this};
 };
 
-// Mint elsewhere (through the public interface, without touching the private factory)
+// 在别处铸币(通过 public 接口,不直接碰 private 的 factory)
 WeakPtr<Controller> wp = controller.get_weak();
 ```
 
@@ -173,7 +173,7 @@ WeakPtr<Controller> wp = controller.get_weak();
 This step is the "eye" of the whole series — the pivotal move. The real Chromium idiom is not `if (wp) wp->...`, but binding the WeakPtr directly into the callback, so that after the object dies the callback **automatically** becomes a no-op:
 
 ```cpp
-// After the controller dies, this task is silently dropped automatically — no dangling dereference
+// 这条任务在 controller 死后会自动静默丢弃,不会悬空解引用
 pool.post(bind_once(&Controller::on_work_done, controller.weak_factory_.get_weak_ptr()));
 ```
 
@@ -250,13 +250,13 @@ GCC 11+ or Clang 12+ will do; compile with `-std=c++20`. Where `TRIVIAL_ABI` is 
 #include <atomic>
 #include <concepts>
 
-// Verify that concepts are available
+// 验证 concepts 可用
 template <typename U, typename T>
     requires std::convertible_to<U*, T*>
 constexpr bool check_convertible() { return true; }
 
-// Verify that atomic + memory_order are available (each order's value is implementation-defined;
-// the standard only guarantees they are pairwise distinct, so we only assert distinctness, which holds across compilers)
+// 验证 atomic + memory_order 可用(各 order 值是 implementation-defined,
+// 标准只保证它们互不相同;这里只断言 distinct,跨编译器都成立)
 static_assert(std::memory_order::acquire != std::memory_order::release);
 
 int main() { return 0; }

@@ -22,10 +22,10 @@ related:
   - "UART: interrupt-driven, ring buffer, expected"
 translation:
   source: documents/vol8-domains/embedded/f103/06-patterns/01-logger-zero-overhead.md
-  source_hash: 4fca6d3ba4915652887e3bcd2b1d249a757492d61ba44366366fc9face4027c1
-  translated_at: '2026-09-27T05:54:21+00:00'
-  engine: anthropic
-  token_count: 4300
+  source_hash: 68527be82c500b8adbc061cb56fc38bfe7330d47da71ae08b50ca3cc84d9b07a
+  translated_at: '2026-11-22T16:43:26+00:00'
+  engine: glm-5.3-refresh
+  token_count: 10768
 ---
 
 # A zero-overhead logger: the complete pitfall log, from hitting the source_location wall to acceptance by disassembly
@@ -51,7 +51,7 @@ The toolchain is arm-none-eabi-gcc 16.2; the library itself is C++23, no excepti
 The call shape we wanted looks like this — a `tag` followed by any number of formattable arguments, with the call site's file and line captured automatically:
 
 ```cpp
-Log::info("led", "count=", n);   // file:line attached automatically inside
+Log::info("led", "count=", n);   // 内部自动带上 file:line
 ```
 
 First instinct: make `source_location` the **first parameter**, with a default, and let the parameter pack follow:
@@ -92,7 +92,7 @@ struct Tag {
         : text(std::forward<S>(s)), location(l) {}
 };
 
-// Logger member:
+// Logger 成员:
 template <typename... Parts>
 static void info(Tag tag, Parts&&... parts);
 ```
@@ -101,7 +101,7 @@ The principle: `"led"` to `Tag` is now **one** user-defined conversion (the cons
 
 ```text
 $ ./tag_smoke
-file=smoke_tag.cpp line=9 all OK      # line 9 is exactly where Tag a("lit"); sits
+file=smoke_tag.cpp line=9 all OK      # line 9 正是 Tag a("lit"); 所在行
 ```
 
 ::: tip Pitfall alert
@@ -113,7 +113,7 @@ Don't waste a second hour on this road: no arrangement that lines a `source_loca
 "Logs below the threshold cost nothing" — everyone says it, but most people have never verified how far the trimming actually goes. We opened up the `if constexpr` short-circuit and looked inside: what it trims away is only the **function body**; the string literal at the call site and the `source_location` object are still evaluated, their addresses still referenced. Whether they ever vanish from the firmware comes down to this chain:
 
 ```text
--O3 inlining → dead code elimination → -ffunction-sections -fdata-sections → -Wl,--gc-sections
+-O3 内联 → 死代码消除 → -ffunction-sections -fdata-sections → -Wl,--gc-sections
 ```
 
 One link in this chain is remarkably easy to miss: many projects (libestdx at the time included) configure only the linker's `--gc-sections` and never the compile-time `-ffunction-sections -fdata-sections` — without the latter, gc-sections can only reclaim at **object-file** granularity, and string-level removal never gets its turn. After completing the flag set we ran one hard-nosed verification: plant a unique marker string in a log call at a trimmed level —
@@ -126,7 +126,7 @@ Compile with `-O3 -ffunction-sections -fdata-sections -Wl,--gc-sections` and ins
 
 ```text
 $ strings a.out | grep UNIQUE_MARKER
-DCE: GOOD - string stripped          # zero residue of the marker string
+DCE: GOOD - string stripped          # 标记串零残留
 ```
 
 Meanwhile the file-name strings on enabled paths stay put — what belongs is in, what doesn't is out, and that is the complete meaning of "zero overhead". While you are at it, also set `-ffile-prefix-map=${CMAKE_SOURCE_DIR}=.` — otherwise `source_location` bakes the build machine's absolute paths into the firmware, and every log site pays flash for it.
@@ -165,16 +165,16 @@ error: invalid use of 'this' at top level [-Wtemplate-body]
 Constraints are evaluated in a context where `this` is unavailable; you need a stand-in, `std::declval<LineBuffer&>()`. With both iron rules nailed down, the overload set looks like this (excerpt):
 
 ```cpp
-void append(bool b);                       // non-template: the type is fixed; don't templatize what never varies
+void append(bool b);                       // 非模板：类型定死，无变化就不模板化
 void append(std::string_view view);
 
-template <TextSource T>                    // literals / const char* / std::string
+template <TextSource T>                    // 字面量 / const char* / std::string
 void append(T s) { append(std::string_view{s}); }
 
-template <std::integral T>                 // char/bool already intercepted by the non-template overloads
+template <std::integral T>                 // char/bool 已被非模板重载拦走
 void append(T v) { write_int(v, 10); }
 
-template <typename T>                      // extension point for custom types
+template <typename T>                      // 自定义类型扩展点
     requires requires { std::declval<const T&>().append_to(std::declval<LineBuffer&>()); }
 void append(T t) { t.append_to(*this); }
 
@@ -196,7 +196,7 @@ One more "should we templatize all the way down" question deserves its own parag
 **Pitfall 1: `to_chars` has a `char` overload, and it treats a character as an integer.** `to_chars('x')` outputs `"120"` — the character's code point as a number. If the `append(char)` overload is simply deleted, a single-character argument falls silently into the integer overload and **the output quietly goes wrong** — a failure mode an order of magnitude worse than a compile error. So the correct way to act on "we almost never use single characters" is not to drop the overload but to refuse it surgically:
 
 ```cpp
-void append(char) = delete;   // want a single character? pass string_view("(")
+void append(char) = delete;   // 想要单字符就传 string_view("(")
 ```
 
 We measured it: `to_chars(buf, buf + 8, 'x')` really does output `"120"`. That is not a guess.
@@ -210,7 +210,7 @@ We measured it: `to_chars(buf, buf + 8, 'x')` really does output `"120"`. That i
 The copy loop in line assembly, as we first wrote it, was the most naive kind — every byte goes through `put()` once, and `put()` decides whether the window is full:
 
 ```cpp
-for (char c : view) {          // naive version: one branch per byte
+for (char c : view) {          // 朴素版：每字节一次分支
     put(c);
 }
 ```
@@ -218,22 +218,22 @@ for (char c : view) {          // naive version: one branch per byte
 After the author roasted it to our faces as "performance blow-up central", we let the M3 disassembly do the talking. Under `-O3 -mcpu=cortex-m3`, the naive version's hot loop costs about 8 instructions per byte, and the `pos_` cursor **makes a register-to-memory round trip on every single byte** (the branch keeps it from residing in a register across iterations):
 
 ```text
-1e: ldrb r2, [r2]          @ load byte
-20: cmp  lr, r1            @ end-of-loop check
-22: str.w ip, [r0, #128]   @ pos_ written back to memory — once per byte!
-26: strb r2, [r0, r3]      @ store byte
+1e: ldrb r2, [r2]          @ 取字节
+20: cmp  lr, r1            @ 循环尾判断
+22: str.w ip, [r0, #128]   @ pos_ 写回内存 —— 每字节一次!
+26: strb r2, [r0, r3]      @ 存字节
 2a: mov r3, ip
 2c: mov r2, r1
-2e: cmp r3, #124           @ window check — another one
+2e: cmp r3, #124           @ 窗口判断 —— 又来一次
 ...
 ```
 
 After the switch to "clamp once, copy the whole span branch-free", GCC recognized the copy pattern and cut it into 4-byte block copies:
 
 ```text
-48: ldr.w ip, [r3], #4     @ 4-byte load
-4e: str.w ip, [r2], #4     @ 4-byte store
-52: bne.n 48               # 3 instructions per 4 bytes, at most 3 bytes of tail cleanup
+48: ldr.w ip, [r3], #4     @ 4 字节取
+4e: str.w ip, [r2], #4     @ 4 字节存
+52: bne.n 48               # 每 4 字节 3 条指令,尾部最多 3 字节收尾
 ```
 
 The ledger: ~8 instructions per byte down to ~0.75, roughly a **9x** difference; a 100-character copy drops from ~800 instructions to ~90. Here an honest system-level quantification is due: at 115200 baud, each byte takes about 87µs on the wire, so 100 characters take about 8.7ms — millisecond-scale line speed completely covers up a microsecond-scale copy optimization. Then why did it still have to change? First, this library flies the "zero overhead" flag, so the code has to look like zero overhead — the disassembly is going into the article as an exhibit. Second, under a `-O0` debug build the naive version is a real function call per byte, and the felt difference while single-stepping is enormous. Third, for future sinks like RTT or DMA that enjoy no line-speed cover, this idiom is the foundation.
@@ -247,11 +247,11 @@ void append(std::string_view view) {
     char* dst = buf_.data() + pos_;
     const char* src = view.data();
     for (std::size_t i = 0; i < take; ++i) {
-        dst[i] = src[i];                 // branch-free; GCC slices it into block copies by itself
+        dst[i] = src[i];                 // 无分支,GCC 自行切块拷
     }
     pos_ += take;
     if (take < view.size()) {
-        truncated_ = true;               // the truncation flag is set here and only here
+        truncated_ = true;               // 截断标记只此一处
     }
 }
 ```

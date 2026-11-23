@@ -22,9 +22,9 @@ video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/02-some-assembly-required/01-personal-journey-and-from-assembly-to-cpp.md
   source_hash: eac59ebcfd56a36098af19b3410fced3b5c2e69d1f5fe8e1e2a77741d600e427
-  translated_at: '2026-09-26T15:22:07+00:00'
-  engine: anthropic
-  token_count: 7000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 24500
 ---
 # Why C++ Programmers Should Care About Assembly
 
@@ -74,15 +74,15 @@ Then open `demo.s`. You'll see a whole pile of stuff—don't panic; most of it i
 
 ```asm
 add(int, int):
-    pushq   %rbp            ; save the caller's stack frame base
-    movq    %rsp, %rbp      ; set up the current function's stack frame
-    movl    %edi, -4(%rbp)  ; store the first argument a on the stack
-    movl    %esi, -8(%rbp)  ; store the second argument b on the stack
-    movl    -4(%rbp), %edx  ; read a back out
-    movl    -8(%rbp), %eax  ; read b back out
-    addl    %edx, %eax      ; a + b, the result lands in %eax
-    popq    %rbp            ; restore the caller's stack frame base
-    ret                     ; return
+    pushq   %rbp            ; 保存调用者的栈帧基址
+    movq    %rsp, %rbp      ; 建立当前函数的栈帧
+    movl    %edi, -4(%rbp)  ; 第一个参数 a 存到栈上
+    movl    %esi, -8(%rbp)  ; 第二个参数 b 存到栈上
+    movl    -4(%rbp), %edx  ; 把 a 读出来
+    movl    -8(%rbp), %eax  ; 把 b 读出来
+    addl    %edx, %eax      ; a + b，结果在 %eax 里
+    popq    %rbp            ; 恢复调用者的栈帧基址
+    ret                     ; 返回
 ```
 
 The part of `main` that calls `add`:
@@ -91,13 +91,13 @@ The part of `main` that calls `add`:
 main:
     pushq   %rbp
     movq    %rsp, %rbp
-    subq    $16, %rsp       ; allocate 16 bytes of local variable space on the stack
-    movl    $4, %esi        ; the second argument, 4
-    movl    $3, %edi        ; the first argument, 3
-    call    add(int, int)   ; call add
-    movl    %eax, -4(%rbp)  ; store the return value into result
+    subq    $16, %rsp       ; 在栈上分配 16 字节局部变量空间
+    movl    $4, %esi        ; 第二个参数 4
+    movl    $3, %edi        ; 第一个参数 3
+    call    add(int, int)   ; 调用 add
+    movl    %eax, -4(%rbp)  ; 返回值存到 result
     movl    -4(%rbp), %eax  ; return result
-    leave                   ; equivalent to movq %rbp, %rsp; popq %rbp
+    leave                   ; 等价于 movq %rbp, %rsp; popq %rbp
     ret
 ```
 
@@ -187,7 +187,7 @@ That is what thinking looks like when no textbook is there to constrain it. He d
 We can reconstruct that thought process with a piece of simplified pseudocode—it's much clearer than explaining concepts in the abstract:
 
 ```cpp
-// Phase one: reference counting (the first step you'd think of)
+// 第一阶段：引用计数（能想到的第一步）
 struct Object {
     int ref_count = 0;
     char data[256];
@@ -200,38 +200,38 @@ void acquire(Object* obj) {
 void release(Object* obj) {
     obj->ref_count--;
     if (obj->ref_count == 0) {
-        // nothing references it anymore — free it
+        // 没人引用了，删掉
         free(obj);
     }
 }
 
-// Then he ran into this problem:
-// A references B, and B references A
+// 然后他遇到了这个问题：
+// A 引用 B，B 引用 A
 // A.ref_count = 1, B.ref_count = 1
-// yet nothing outside references A or B anymore
-// they will never be freed — that's a circular reference
+// 但外面已经没有任何东西引用 A 或 B 了
+// 它们永远不会被释放 —— 这就是循环引用
 ```
 
 Since the reference count never reaches zero, change the angle—stop starting from "how many things reference me" and start from "can anything still reach me at all". What is reachable is alive; what is not reachable is dead; delete the dead. That is the core idea of mark-sweep: mark marks the reachable ones, sweep sweeps away the unreachable ones.
 
 ```cpp
-// Phase two: the mark-sweep he "invented" (conceptual reconstruction)
-// Suppose we have a set of root objects (globals, stack locals, etc.)
-// everything reachable from the roots is alive
+// 第二阶段：他"发明"的 mark-sweep（概念还原）
+// 假设我们有一组根对象（全局变量、栈上的局部变量等）
+// 从根出发，能遍历到的都是活的
 
-Object* roots[64];  // the root set
-Object* all_objects[1024];  // every allocated object
+Object* roots[64];  // 根集合
+Object* all_objects[1024];  // 所有已分配的对象
 int all_count = 0;
-bool marked[1024];  // the mark array
+bool marked[1024];  // 标记数组
 
-// mark phase: starting from the roots, recursively mark every reachable object
+// mark 阶段：从根出发，递归标记所有可达对象
 void mark(Object* obj) {
-    // find obj's index in all_objects
+    // 找到 obj 在 all_objects 中的索引
     for (int i = 0; i < all_count; i++) {
         if (all_objects[i] == obj && !marked[i]) {
             marked[i] = true;
-            // assume the object stores references to other objects
-            // recursively mark every object it references
+            // 假设对象里存了指向其他对象的引用
+            // 递归标记它引用的所有对象
             // mark(obj->ref1);
             // mark(obj->ref2);
             break;
@@ -247,18 +247,18 @@ void mark_all_roots() {
     }
 }
 
-// sweep phase: walk every object; anything unmarked is garbage
+// sweep 阶段：遍历所有对象，没被标记的就是垃圾
 void sweep() {
     for (int i = 0; i < all_count; i++) {
         if (!marked[i]) {
             free(all_objects[i]);
             all_objects[i] = nullptr;
         }
-        marked[i] = false;  // reset the mark, ready for the next cycle
+        marked[i] = false;  // 重置标记，为下一轮做准备
     }
 }
 
-// a full GC cycle
+// 完整的 GC 周期
 void garbage_collect() {
     mark_all_roots();
     sweep();
@@ -301,7 +301,7 @@ Let's look at a deliberately simple example—call a function, pass an argument,
 
 ```cpp
 // simple_call.cpp
-// the simplest possible function call: pass arguments, return
+// 就是最简单的函数调用，传参，返回
 int add(int a, int b) {
     return a + b;
 }
@@ -322,25 +322,25 @@ g++ -O0 -S simple_call.cpp -o simple_call.s
 
 ```asm
 add(int, int):
-    pushq   %rbp            ; save the caller's stack frame base
-    movq    %rsp, %rbp      ; set up our own stack frame
-    movl    %edi, -4(%rbp)  ; store the first argument a on the stack
-    movl    %esi, -8(%rbp)  ; store the second argument b on the stack
-    movl    -4(%rbp), %edx  ; load a into edx
-    movl    -8(%rbp), %eax  ; load b into eax
-    addl    %edx, %eax      ; eax = edx + eax, i.e. a + b
-    popq    %rbp            ; restore the caller's stack frame base
-    ret                     ; return; the return value is in eax
+    pushq   %rbp            ; 保存调用者的栈帧基址
+    movq    %rsp, %rbp      ; 建立自己的栈帧
+    movl    %edi, -4(%rbp)  ; 第一个参数 a 存到栈上
+    movl    %esi, -8(%rbp)  ; 第二个参数 b 存到栈上
+    movl    -4(%rbp), %edx  ; 把 a 加载到 edx
+    movl    -8(%rbp), %eax  ; 把 b 加载到 eax
+    addl    %edx, %eax      ; eax = edx + eax，即 a + b
+    popq    %rbp            ; 恢复调用者的栈帧基址
+    ret                     ; 返回，返回值在 eax 里
 
 main:
     pushq   %rbp
     movq    %rsp, %rbp
-    subq    $16, %rsp       ; allocate 16 bytes of space on the stack
-    movl    $4, %esi        ; put the second argument in esi
-    movl    $3, %edi        ; put the first argument in edi
-    call    add(int, int)   ; call the function
-    movl    %eax, -4(%rbp)  ; store the return value where result lives
-    movl    -4(%rbp), %eax  ; return result as main's return value
+    subq    $16, %rsp       ; 在栈上分配 16 字节空间
+    movl    $4, %esi        ; 第二个参数放 esi
+    movl    $3, %edi        ; 第一个参数放 edi
+    call    add(int, int)   ; 调用函数
+    movl    %eax, -4(%rbp)  ; 把返回值存到 result 的位置
+    movl    -4(%rbp), %eax  ; 把 result 作为 main 的返回值
     leave
     ret
 ```
@@ -355,7 +355,7 @@ The example above is too easy, so let's try passing a string. Now pointers and m
 // string_call.cpp
 #include <cstring>
 
-// Simulate a simple string operation: convert the entire input string to uppercase
+// 模拟一个简单的字符串处理：把输入字符串全部转大写
 void to_upper(char* dst, const char* src, int max_len) {
     int i = 0;
     while (i < max_len - 1 && src[i] != '\0') {
@@ -427,33 +427,33 @@ First let's write it the pure-assembly way (x86_64, using GCC inline assembly):
 
 ```cpp
 // reverse_asm.cpp
-// Note: this code only compiles under GCC/Clang on x86_64
-// Move to ARM? Move to MSVC? It fails outright — not one byte of it runs
+// 注意：这段代码只能在 x86_64 的 GCC/Clang 下编译
+// 换到 ARM？换到 MSVC？直接报错，一个字都跑不了
 
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 
 void reverse_bytes_asm(void* data, size_t len) {
-    // rdi = data, rsi = len (the System V ABI argument-passing convention)
+    // rdi = data, rsi = len（System V ABI 的参数传递约定）
     __asm__ __volatile__(
-        "test %rsi, %rsi\n\t"       // if len == 0, return immediately
+        "test %rsi, %rsi\n\t"       // 如果 len == 0，直接返回
         "jz 2f\n\t"
-        "mov %rdi, %rax\n\t"        // rax = start address
-        "lea -1(%rdi, %rsi), %rdx\n" // rdx = end address (data + len - 1)
+        "mov %rdi, %rax\n\t"        // rax = 起始地址
+        "lea -1(%rdi, %rsi), %rdx\n" // rdx = 末尾地址 (data + len - 1)
         "1:\n\t"
-        "cmp %rax, %rdx\n\t"        // have the left and right pointers met?
-        "jge 2f\n\t"                // met or crossed means we're done
+        "cmp %rax, %rdx\n\t"        // 左右指针相遇了吗？
+        "jge 2f\n\t"                // 相遇或交叉就结束
         "movb (%rax), %cl\n\t"      // cl = *left
-        "movb (%rdx), %dl\n\t"      // dl = *right (note: this overwrites rdx!)
-        // rdx is being used as both pointer and temporary — the most common hand-written assembly trap; register allocation lives entirely in your head
-        "movb %cl, (%rdx)\n\t"      // *right = cl (but rdx has already been clobbered!)
-        "movb %dl, (%rax)\n\t"      // this line is wrong too
+        "movb (%rdx), %dl\n\t"      // dl = *right（注意这里把 rdx 的值覆盖了！）
+        // rdx 既当指针又当临时变量——手写汇编最容易踩的坑，寄存器分配全靠脑子记
+        "movb %cl, (%rdx)\n\t"      // *right = cl（但 rdx 已经被破坏了！）
+        "movb %dl, (%rax)\n\t"      // 这行也是错的
         "inc %rax\n\t"
         "dec %rdx\n\t"
         "jmp 1b\n\t"
         "2:\n\t"
-        : /* no output operands */
+        : /* 没有输出操作数 */
         : "r"(data), "r"(len)
         : "rax", "rcx", "rdx", "cc", "memory"
     );
@@ -483,8 +483,8 @@ Now the same logic in pure C++:
 
 ```cpp
 // reverse_cpp.cpp
-// This code compiles on any platform that has a C++ compiler
-// x86_64, ARM, RISC-V, MIPS... take your pick
+// 这段代码可以在任何有 C++ 编译器的平台上编译
+// x86_64、ARM、RISC-V、MIPS……随便你
 
 #include <cstdint>
 #include <cstdio>
@@ -498,7 +498,7 @@ void reverse_bytes_cpp(void* data, size_t len) {
     size_t right = len - 1;
 
     while (left < right) {
-        // std::swap has existed since C++11; underneath, the compiler optimizes it into a register swap
+        // std::swap 在 C++11 就有了，底层会被编译器优化成寄存器交换
         std::swap(bytes[left], bytes[right]);
         ++left;
         --right;
@@ -536,9 +536,9 @@ Here's a comparison experiment: the same matrix multiplication, run once as a pu
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <immintrin.h>  // AVX2 intrinsics header
+#include <immintrin.h>  // AVX2 内联函数头文件
 
-// plain C++ scalar version
+// 纯 C++ 标量版本
 void matmul_scalar(const float* A, const float* B, float* C, int N) {
     memset(C, 0, N * N * sizeof(float));
     for (int i = 0; i < N; i++) {
@@ -551,48 +551,48 @@ void matmul_scalar(const float* A, const float* B, float* C, int N) {
     }
 }
 
-// AVX2/FMA intrinsics version (not pure assembly, but the same idea — spelling out the SIMD instructions by hand)
+// 用 AVX2/FMA 内联函数版本（不是纯汇编，但思路类似——手动指定 SIMD 指令）
 void matmul_avx2(const float* A, const float* B, float* C, int N) {
     memset(C, 0, N * N * sizeof(float));
     for (int i = 0; i < N; i++) {
         for (int k = 0; k < N; k++) {
             float aik = A[i * N + k];
-            __m256 vaik = _mm256_set1_ps(aik);  // broadcast aik to 8 floats
-            for (int j = 0; j < N; j += 8) {  // N=256 is a multiple of 8, no tail handling needed
-                __m256 vb = _mm256_loadu_ps(&B[k * N + j]);  // load 8 elements of B
-                __m256 vc = _mm256_loadu_ps(&C[i * N + j]);  // load the current value of C
+            __m256 vaik = _mm256_set1_ps(aik);  // 把 aik 广播到 8 个 float
+            for (int j = 0; j < N; j += 8) {  // N=256 是 8 的倍数，无需 tail 处理
+                __m256 vb = _mm256_loadu_ps(&B[k * N + j]);  // 加载 B 的 8 个元素
+                __m256 vc = _mm256_loadu_ps(&C[i * N + j]);  // 加载 C 的当前值
                 vc = _mm256_fmadd_ps(vaik, vb, vc);          // vc += vaik * vb
-                _mm256_storeu_ps(&C[i * N + j], vc);         // store it back
+                _mm256_storeu_ps(&C[i * N + j], vc);         // 存回去
             }
         }
     }
 }
 
-// a simple timing helper
+// 简单的计时辅助
 #include <chrono>
 using Clock = std::chrono::high_resolution_clock;
 
 int main() {
-    const int N = 256;  // a 256x256 matrix
-    // aligned allocation, to make AVX2 loads convenient
+    const int N = 256;  // 256x256 矩阵
+    // 对齐分配，方便 AVX2 加载
     float* A = (float*)_mm_malloc(N * N * sizeof(float), 32);
     float* B = (float*)_mm_malloc(N * N * sizeof(float), 32);
     float* C1 = (float*)_mm_malloc(N * N * sizeof(float), 32);
     float* C2 = (float*)_mm_malloc(N * N * sizeof(float), 32);
 
-    // fill with random data
+    // 填充随机数据
     for (int i = 0; i < N * N; i++) {
         A[i] = static_cast<float>(rand()) / RAND_MAX;
         B[i] = static_cast<float>(rand()) / RAND_MAX;
     }
 
-    // test the scalar version
+    // 测试标量版本
     auto t1 = Clock::now();
     matmul_scalar(A, B, C1, N);
     auto t2 = Clock::now();
     auto scalar_ms = std::chrono::duration<double, std::milli>(t2 - t1).count();
 
-    // test the AVX2 version
+    // 测试 AVX2 版本
     t1 = Clock::now();
     matmul_avx2(A, B, C2, N);
     t2 = Clock::now();
@@ -602,7 +602,7 @@ int main() {
     printf("AVX2 版本: %.2f ms\n", avx2_ms);
     printf("加速比: %.2fx\n", scalar_ms / avx2_ms);
 
-    // verify the two results agree
+    // 验证结果一致性
     float max_diff = 0.0f;
     for (int i = 0; i < N * N; i++) {
         float diff = C1[i] - C2[i];

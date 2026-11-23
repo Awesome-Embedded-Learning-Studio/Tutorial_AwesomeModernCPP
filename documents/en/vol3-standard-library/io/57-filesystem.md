@@ -26,9 +26,9 @@ title: 'filesystem: C++17 Cross-Platform Filesystem Operations'
 translation:
   source: documents/vol3-standard-library/io/57-filesystem.md
   source_hash: 1a3edb4a01780494512a6f716989d09a2d1127b7826a00957ef674920b5fcf65
-  translated_at: '2026-09-26T00:38:44+00:00'
-  engine: anthropic
-  token_count: 5500
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 17768
 ---
 # filesystem: C++17 Cross-Platform Filesystem Operations
 
@@ -80,8 +80,8 @@ The joining rules of `operator/` hide a trap that's easy to step on. Its semanti
 
 ```cpp
 fs::path base = "/opt/app";
-fs::path joined  = base / "/etc/config";   // right side is an absolute path
-fs::path joined2 = base / "etc/config";    // right side is a relative path
+fs::path joined  = base / "/etc/config";   // 右边是绝对路径
+fs::path joined2 = base / "etc/config";    // 右边是相对路径
 std::cout << "base / \"/etc/config\" => " << joined << '\n';
 std::cout << "base / \"etc/config\"  => " << joined2 << '\n';
 ```
@@ -102,7 +102,7 @@ In the first example the right side starts with `/`, making it absolute, so `bas
 ```cpp
 fs::path messy = "a/b/../../c/./d";
 std::cout << "lexically_normal  : " << messy.lexically_normal() << '\n';
-// a/b/.. => a, a/.. => (empty), c/./d => c/d, final result "c/d"
+// a/b/.. => a, a/.. => (空), c/./d => c/d, 最终 "c/d"
 ```
 
 ```text
@@ -135,7 +135,7 @@ std::cout << "is_directory(/usr/include)   : " << fs::is_directory("/usr/include
 std::cout << "is_regular_file(/usr/include): " << fs::is_regular_file("/usr/include") << '\n';
 
 auto write_tp = fs::last_write_time("/usr/include");
-// file_time_type only gained clock conversions in C++20; here we just take epoch seconds as evidence we can read the time
+// file_time_type 到 C++20 才有 clock 互转，这里只取 epoch 秒数佐证它能拿到时间
 auto secs = std::chrono::duration_cast<std::chrono::seconds>(
                 write_tp.time_since_epoch()).count();
 std::cout << "last_write_time epoch (sec)  : " << secs << '\n';
@@ -201,25 +201,25 @@ Create, remove, rename, copy is the other big chunk of filesystem work. `<filesy
 fs::path root = "/tmp/fs_demo_dir";
 fs::remove_all(root);
 
-// create_directories: creates multiple directory levels in one shot (missing intermediate levels get created too)
+// create_directories: 一次建多级目录(中间层不存在也建出来)
 fs::create_directories(root / "sub1" / "sub2");
 std::ofstream(root / "sub1" / "sub2" / "a.txt") << "hello";
 std::cout << "create_directories + 写文件 ok\n";
 
-// copy a single file
+// copy 单个文件
 fs::copy(root / "sub1" / "sub2" / "a.txt", root / "sub1" / "a_copy.txt");
 std::cout << "copy a.txt -> a_copy.txt ok, exists=" << fs::exists(root / "sub1" / "a_copy.txt") << '\n';
 
-// copy a directory: must add copy_options::recursive, otherwise only the directory itself gets copied (an empty shell)
+// copy 目录: 必须加 copy_options::recursive,否则只复制目录本身(空壳)
 fs::copy(root / "sub1", root / "sub1_copy", fs::copy_options::recursive);
 std::cout << "copy 目录(recursive) ok, sub1_copy/sub2/a.txt exists="
           << fs::exists(root / "sub1_copy" / "sub2" / "a.txt") << '\n';
 
-// rename: rename/move, atomic within the same filesystem
+// rename: 改名/移动,同文件系统内是原子的
 fs::rename(root / "sub1" / "a_copy.txt", root / "sub1" / "a_renamed.txt");
 std::cout << "rename ok\n";
 
-// remove_all: recursively deletes the whole directory tree, returns the number of entries removed
+// remove_all: 递归删整个目录树,返回删除的条目数
 auto removed = fs::remove_all(root / "sub1_copy");
 std::cout << "remove_all(sub1_copy) 删除条目数: " << removed << '\n';
 fs::remove_all(root);
@@ -256,14 +256,14 @@ The error handling design of `<filesystem>` is one of the most worthwhile parts 
 // Standard: C++20
 fs::path bad = "/tmp/this_definitely_does_not_exist_xyz";
 
-// Path 1: pass no error_code, failure throws filesystem_error
+// 路径一:不传 error_code,失败抛 filesystem_error
 try {
-    [[maybe_unused]] auto sz = fs::file_size(bad);   // [[maybe_unused]]: silences the compiler warning about the unused result
+    [[maybe_unused]] auto sz = fs::file_size(bad);   // [[maybe_unused]]: 避免编译器警告返回值没用
 } catch (const fs::filesystem_error& ex) {
     std::cout << "抛异常: " << ex.what() << '\n';
 }
 
-// Path 2: pass error_code&, no throw on failure, the error lands in ec
+// 路径二:传 error_code&,失败不抛,错误写进 ec
 std::error_code ec;
 auto sz = fs::file_size(bad, ec);
 std::cout << "error_code 重载: size=" << sz
@@ -301,8 +301,8 @@ fs::path sym_link = "/tmp/fs_demo_symlink";
 fs::remove(sym_link);
 fs::create_symlink(sym_target, sym_link);
 
-auto st = fs::status(sym_link);            // follows: sees stdio.h's attributes
-auto sl_st = fs::symlink_status(sym_link); // doesn't follow: sees the link itself
+auto st = fs::status(sym_link);            // 跟随:看到的是 stdio.h 的属性
+auto sl_st = fs::symlink_status(sym_link); // 不跟随:看到的是链接本身
 ```
 
 Printing the two `file_type` values in plain language:
@@ -334,7 +334,7 @@ Permissions are represented by the `perms` enum, a bitmask (the whole `owner_rea
 auto pm = fs::status(sym_target).permissions();
 std::cout << "owner_write 位: "
           << ((pm & fs::perms::owner_write) != fs::perms::none) << '\n';
-// Is stdio.h writable by everyone? The output here depends on your system, but this is the mechanism
+// stdio.h 所有人可写? 这里输出取决于你系统,但机制就是这样
 ```
 
 ```text
@@ -397,7 +397,7 @@ Let's run a controlled experiment: both groups traverse `/usr/include` summing t
 
 ```cpp
 // Standard: C++20
-// A: use directory_entry's cached members (already stat'ed during traversal, cache hit)
+// A: 用 directory_entry 缓存的成员(遍历时已 stat 过,命中缓存)
 uintmax_t sum_cached(const fs::path& root) {
     std::uintmax_t total = 0;
     for (const auto& e : fs::recursive_directory_iterator(root)) {
@@ -407,7 +407,7 @@ uintmax_t sum_cached(const fs::path& root) {
     return total;
 }
 
-// B: re-call fs::is_regular_file / fs::file_size(path) per entry -> one extra stat
+// B: 每个条目重新调 fs::is_regular_file / fs::file_size(path) -> 多一次 stat
 uintmax_t sum_restat(const fs::path& root) {
     std::uintmax_t total = 0;
     for (const auto& e : fs::recursive_directory_iterator(root)) {

@@ -23,9 +23,9 @@ title: 'UDL in Practice: A Type-Safe Unit System'
 translation:
   source: documents/vol2-modern-features/ch11-user-defined-literals/02-udl-practice.md
   source_hash: ea08ccd6ae9b07bbb08409ab0736966da0b9250c4e00cfc6dac5658b5801691c
-  translated_at: '2026-09-25T16:56:29+00:00'
-  engine: anthropic
-  token_count: 4400
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 11933
 ---
 # UDL in Practice: A Type-Safe Unit System
 
@@ -47,11 +47,11 @@ Start with the simplest case: length. We define a generic “value with a unit�
 #include <cstdint>
 #include <type_traits>
 
-/// Unit tag: distinguishes physical quantities of different kinds
+/// 单位标签：用于区分不同类型的物理量
 struct MeterTag {};
 struct SecondTag {};
 
-/// A value carrying a unit
+/// 带单位的值
 template <typename T, typename UnitTag>
 struct Quantity {
     T value;
@@ -83,16 +83,16 @@ struct Quantity {
     }
 };
 
-/// Scalar × unit (multiplication the other way around)
-/// Note: this template requires the scalar type T to match Quantity's T exactly
-/// To support type conversions as well, provide additional overloads
+/// 标量 × 单位（反向乘法）
+/// 注意：这个模板要求标量类型 T 必须与 Quantity 的 T 完全匹配
+/// 如果需要支持类型转换，需要提供额外的重载
 template <typename T, typename UnitTag>
 constexpr Quantity<T, UnitTag> operator*(
     T scalar, Quantity<T, UnitTag> q) {
     return q * scalar;
 }
 
-/// Overload for integer scalar × long double Quantity
+/// 支持整数标量 × long double Quantity 的重载
 template <typename UnitTag>
 constexpr Quantity<long double, UnitTag> operator*(
     int scalar, Quantity<long double, UnitTag> q) {
@@ -107,7 +107,7 @@ Now define the length type alias and its literals:
 ```cpp
 using Length = Quantity<long double, MeterTag>;
 
-// Literals: the meter is the base unit
+// 字面量：以米为基准单位
 constexpr Length operator""_m(long double v) {
     return Length{v};
 }
@@ -124,7 +124,7 @@ constexpr Length operator""_mm(long double v) {
     return Length{v / 1000.0L};
 }
 
-// Integer versions
+// 整数版本
 constexpr Length operator""_m(unsigned long long v) {
     return Length{static_cast<long double>(v)};
 }
@@ -138,21 +138,21 @@ Let's test it:
 
 ```cpp
 void test_length() {
-    constexpr auto d1 = 1.5_m;       // 1.5 meters
-    constexpr auto d2 = 2.0_km;      // 2000 meters (note: 2_km would fail, because only the floating-point overload is defined)
-    constexpr auto d3 = 100.0_cm;    // 1 meter
-    constexpr auto d4 = 500.0_mm;    // 0.5 meters
+    constexpr auto d1 = 1.5_m;       // 1.5 米
+    constexpr auto d2 = 2.0_km;      // 2000 米（注意：2_km 会失败，因为只定义了浮点重载）
+    constexpr auto d3 = 100.0_cm;    // 1 米
+    constexpr auto d4 = 500.0_mm;    // 0.5 米
 
-    // Compile-time computation
-    constexpr auto total = 1.0_km + 500.0_m;  // 1500 meters
+    // 编译期计算
+    constexpr auto total = 1.0_km + 500.0_m;  // 1500 米
     static_assert(total.value == 1500.0L);
 
-    // Scalar multiplication (integers are now supported too)
-    constexpr auto doubled = 2 * 100.0_m;  // 200 meters
+    // 标量乘法（现在支持整数了）
+    constexpr auto doubled = 2 * 100.0_m;  // 200 米
     static_assert(doubled.value == 200.0L);
 
-    // Type safety: you cannot add a length and a time
-    // auto bad = 100_m + 50_s;  // compile error!
+    // 类型安全：不能把长度和时间相加
+    // auto bad = 100_m + 50_s;  // 编译错误！
 }
 ```
 
@@ -165,13 +165,13 @@ void test_length() {
 The length system works on its own, but the charm of physical computation lies in combining different units. Length divided by time gives speed — so we need `Quantity` to support this kind of cross-unit arithmetic:
 
 ```cpp
-/// Speed tag
+/// 速度标签
 struct SpeedTag {};
 
 using TimeDuration = Quantity<long double, SecondTag>;
 using Speed = Quantity<long double, SpeedTag>;
 
-// Time literals (the second is the base unit)
+// 时间字面量（以秒为基准）
 constexpr TimeDuration operator""_s(long double v) {
     return TimeDuration{v};
 }
@@ -188,7 +188,7 @@ constexpr TimeDuration operator""_h(long double v) {
     return TimeDuration{v * 3600.0L};
 }
 
-// Integer versions
+// 整数版本
 constexpr TimeDuration operator""_s(unsigned long long v) {
     return TimeDuration{static_cast<long double>(v)};
 }
@@ -197,12 +197,12 @@ constexpr TimeDuration operator""_ms(unsigned long long v) {
     return TimeDuration{static_cast<long double>(v) / 1000.0L};
 }
 
-/// Length / time = speed
+/// 长度 / 时间 = 速度
 constexpr Speed operator/(Length len, TimeDuration time) {
     return Speed{len.value / time.value};
 }
 
-/// Speed * time = length
+/// 速度 * 时间 = 长度
 constexpr Length operator*(Speed spd, TimeDuration time) {
     return Length{spd.value * time.value};
 }
@@ -216,21 +216,21 @@ Now we can do real physics:
 
 ```cpp
 void test_physics() {
-    // Speed = distance / time
+    // 速度 = 距离 / 时间
     constexpr auto speed = 100.0_m / 10.0_s;   // 10 m/s
     static_assert(speed.value == 10.0L);
 
-    // Distance = speed * time
-    constexpr auto distance = speed * 60.0_s;   // 600 meters
+    // 距离 = 速度 * 时间
+    constexpr auto distance = speed * 60.0_s;   // 600 米
     static_assert(distance.value == 600.0L);
 
-    // Conversion: 36 km/h = 10 m/s
+    // 换算：36 km/h = 10 m/s
     constexpr auto v1 = 36.0_km / 1.0_h;       // 36000 / 3600 = 10 m/s
     static_assert(v1.value == 10.0L);
 
-    // Type safety
-    // auto bad = 100_m + 10_s;    // compile error: length + time
-    // auto bad2 = 100_m * 10_s;   // compile error: length * time (undefined)
+    // 类型安全
+    // auto bad = 100_m + 10_s;    // 编译错误：长度 + 时间
+    // auto bad2 = 100_m * 10_s;   // 编译错误：长度 * 时间（未定义）
 }
 ```
 
@@ -246,22 +246,22 @@ Temperature is a special kind of physical quantity: different scales are not rel
 struct TemperatureTag {};
 using Temperature = Quantity<long double, TemperatureTag>;
 
-// Celsius: stored with kelvin as the base
+// 摄氏度：以开尔文为基准存储
 constexpr Temperature operator""_degC(long double v) {
     return Temperature{v + 273.15L};
 }
 
-// Fahrenheit -> kelvin
+// 华氏度 -> 开尔文
 constexpr Temperature operator""_degF(long double v) {
     return Temperature{(v - 32.0L) * 5.0L / 9.0L + 273.15L};
 }
 
-// Kelvin
+// 开尔文
 constexpr Temperature operator""_degK(long double v) {
     return Temperature{v};
 }
 
-// Helpers: convert from kelvin back to each scale
+// 辅助函数：从开尔文转换到各温标
 constexpr long double to_celsius(Temperature t) {
     return t.value - 273.15L;
 }
@@ -279,17 +279,17 @@ Usage:
 
 ```cpp
 void test_temperature() {
-    constexpr auto t1 = 0.0_degC;     // freezing point: 273.15 K
-    constexpr auto t2 = 100.0_degC;   // boiling point: 373.15 K
-    constexpr auto t3 = 32.0_degF;    // freezing point (Fahrenheit): 273.15 K
+    constexpr auto t1 = 0.0_degC;     // 冰点：273.15 K
+    constexpr auto t2 = 100.0_degC;   // 沸点：373.15 K
+    constexpr auto t3 = 32.0_degF;    // 冰点（华氏）：273.15 K
 
     static_assert(to_kelvin(t1) == 273.15L);
 
-    // Temperature differences can be subtracted (in kelvin space)
+    // 温度差可以相减（在开尔文空间中）
     constexpr auto delta = 10.0_degC - 0.0_degC;  // 10K
     static_assert(delta.value == 10.0L);
 
-    // Celsius -> Fahrenheit
+    // 摄氏 -> 华氏
     constexpr auto body_temp = 37.0_degC;
     // to_fahrenheit(body_temp) ≈ 98.6°F
 }
@@ -309,7 +309,7 @@ UDLs are not limited to physical units. In general-purpose C++ development, stri
 #include <algorithm>
 #include <cctype>
 
-/// Compile-time string hash — for efficient string comparison
+/// 编译期字符串哈希——用于高效的字符串比较
 constexpr std::uint32_t operator""_hash(
     const char* str, std::size_t len) {
     std::uint32_t hash = 2166136261u;
@@ -320,7 +320,7 @@ constexpr std::uint32_t operator""_hash(
     return hash;
 }
 
-/// Runtime uppercase conversion
+/// 运行时转大写
 std::string operator""_upper(const char* str, std::size_t len) {
     std::string result(str, len);
     std::transform(result.begin(), result.end(), result.begin(),
@@ -328,7 +328,7 @@ std::string operator""_upper(const char* str, std::size_t len) {
     return result;
 }
 
-/// Runtime whitespace trim
+/// 运行时 trim 空白
 std::string operator""_trim(const char* str, std::size_t len) {
     std::string_view sv(str, len);
     while (!sv.empty() && std::isspace(sv.front())) sv.remove_prefix(1);
@@ -337,15 +337,15 @@ std::string operator""_trim(const char* str, std::size_t len) {
 }
 
 void test_string_literals() {
-    constexpr auto id = "sensor_temp"_hash;   // compile-time integer
+    constexpr auto id = "sensor_temp"_hash;   // 编译期整数
     auto upper = "hello world"_upper;          // "HELLO WORLD"
     auto trimmed = "  padded  "_trim;           // "padded"
 
-    // For switch-case (more efficient than string comparison)
+    // 用于 switch-case（比字符串比较高效）
     constexpr auto cmd = "start"_hash;
     switch (cmd) {
-        case "start"_hash:  /* start */ break;
-        case "stop"_hash:   /* stop */ break;
+        case "start"_hash:  /* 启动 */ break;
+        case "stop"_hash:   /* 停止 */ break;
         default: break;
     }
 }
@@ -370,7 +370,7 @@ struct Frequency {
     constexpr std::uint32_t to_hz() const { return hz; }
     constexpr std::uint32_t to_khz() const { return hz / 1000; }
 
-    /// Frequency to period (nanoseconds)
+    /// 频率转周期（纳秒）
     constexpr std::uint64_t period_ns() const {
         return 1000000000ULL / hz;
     }
@@ -386,7 +386,7 @@ constexpr Frequency operator""_MHz(long double v) {
     return Frequency{static_cast<std::uint32_t>(v * 1000000.0)};
 }
 
-/// Baud-rate register calculation (STM32 USART)
+/// 波特率寄存器计算（STM32 USART）
 constexpr std::uint16_t compute_brr(
     Frequency periph_clock, Frequency baud) {
     return static_cast<std::uint16_t>(
@@ -394,11 +394,11 @@ constexpr std::uint16_t compute_brr(
 }
 
 void configure_uart() {
-    constexpr auto sysclk = 72.0_MHz;  // note: must use a floating-point literal
+    constexpr auto sysclk = 72.0_MHz;  // 注意：必须用浮点字面量
     constexpr auto baud = 115200_Hz;
 
     // USART1->BRR = compute_brr(sysclk, baud);
-    // The generated code is equivalent to writing USART1->BRR = 625; directly
+    // 生成的代码等价于直接写 USART1->BRR = 625;
 
     constexpr auto brr = compute_brr(sysclk, baud);
     static_assert(brr == 625, "BRR calculation mismatch");
@@ -420,7 +420,7 @@ constexpr Bytes operator""_MiB(unsigned long long v) {
     return Bytes{v * 1024 * 1024};
 }
 
-// Compile-time resource checks
+// 编译期资源检查
 constexpr auto kFlashSize = 512_KiB;
 constexpr auto kAppSize = 256_KiB;
 constexpr auto kStackSize = 4_KiB;
@@ -447,9 +447,9 @@ constexpr RegisterAddress operator""_reg(unsigned long long v) {
     return RegisterAddress{static_cast<std::uintptr_t>(v)};
 }
 
-// Usage
+// 使用
 void debug_example() {
-    // STM32F103 USART1 base address = 0x40013800
+    // STM32F103 USART1 基地址 = 0x40013800
     constexpr auto usart1_base = 0x40013800_reg;
     constexpr auto gpioa_base = 0x40010800_reg;
 
@@ -483,24 +483,24 @@ struct Quantity {
     T value;
     constexpr explicit Quantity(T v) : value(v) {}
 
-    // TODO: implement addition, subtraction, scalar multiplication, and comparisons
+    // TODO: 实现加、减、标量乘法、比较运算
 };
 
 using Length = Quantity<long double, MeterTag>;
 using Duration = Quantity<long double, SecondTag>;
 using Speed = Quantity<long double, SpeedTag>;
 
-// TODO: define the _m, _km, _mi literals
-// TODO: define the _s literal
-// TODO: implement Length / Duration -> Speed
+// TODO: 定义 _m, _km, _mi 字面量
+// TODO: 定义 _s 字面量
+// TODO: 实现 Length / Duration -> Speed
 
-// Verification
+// 验证
 void test() {
-    constexpr auto marathon = 26.2_mi;     // miles to meters
-    // constexpr auto pace = marathon / 4.0_h;  // pace (meters/hour)
-    // note: you must define the _h literal before this works
+    constexpr auto marathon = 26.2_mi;     // 英里转米
+    // constexpr auto pace = marathon / 4.0_h;  // 配速（米/小时）
+    // 注意：需要先定义 _h 字面量才能使用
 
-    // hint: 1 mile = 1609.344 meters
+    // 提示：1 英里 = 1609.344 米
     static_assert(marathon.value > 42000.0);
 }
 ```

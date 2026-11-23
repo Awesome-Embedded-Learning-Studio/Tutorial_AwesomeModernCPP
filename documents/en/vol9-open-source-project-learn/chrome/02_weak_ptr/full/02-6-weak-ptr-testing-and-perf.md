@@ -26,9 +26,9 @@ title: 'WeakPtr hands-on (VI): tests and performance comparison'
 translation:
   source: documents/vol9-open-source-project-learn/chrome/02_weak_ptr/full/02-6-weak-ptr-testing-and-perf.md
   source_hash: 32e02ab0f4aa0e73107054852eb3894310e12b9520174f40094fb07f444ff27f
-  translated_at: '2026-09-26T01:57:57+00:00'
-  engine: anthropic
-  token_count: 3300
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 8902
 ---
 # WeakPtr hands-on (VI): tests and performance comparison
 
@@ -67,7 +67,7 @@ TEST_CASE("WeakPtr basic: alive object dereferences correctly", "[weak_ptr]") {
     WeakPtrFactory<Foo> fac(&foo);
     auto wp = fac.get_weak_ptr();
 
-    REQUIRE(wp);                  // Invariant 1: object alive, wp passes the liveness check
+    REQUIRE(wp);                  // 不变量 1:对象活着,wp 判活
     REQUIRE(wp->x == 7);
     REQUIRE(wp.get() == &foo);
 }
@@ -76,9 +76,9 @@ TEST_CASE("WeakPtr move: source is empty after move", "[weak_ptr]") {
     Foo foo{1};
     WeakPtrFactory<Foo> fac(&foo);
     auto wp1 = fac.get_weak_ptr();
-    auto wp2 = std::move(wp1);    // Invariant 2: move
+    auto wp2 = std::move(wp1);    // 不变量 2:move
 
-    REQUIRE_FALSE(wp1);           // source is empty after the move
+    REQUIRE_FALSE(wp1);           // move 后源为空
     REQUIRE(wp2);
     REQUIRE(wp2->x == 1);
 }
@@ -89,7 +89,7 @@ TEST_CASE("WeakPtr invalidate: all weak ptrs go null", "[weak_ptr]") {
     auto wp1 = fac.get_weak_ptr();
     auto wp2 = fac.get_weak_ptr();
 
-    fac.invalidate_weak_ptrs();   // Invariant 3: batch invalidation
+    fac.invalidate_weak_ptrs();   // 不变量 3:批量失效
 
     REQUIRE_FALSE(wp1);
     REQUIRE_FALSE(wp2);
@@ -101,10 +101,10 @@ TEST_CASE("WeakPtr factory destruct: invalidates all weak ptrs", "[weak_ptr]") {
     WeakPtrFactory<Foo> fac(&foo);
     WeakPtr<Foo> wp;
     {
-        // Simulate factory destruction: with an inner scope
-        // (the real "last member" scenario is in the BadController/GoodController cases below)
+        // 模拟 factory 析构:用一个内层作用域
+        // (真实"最后成员"场景见下面 BadController/GoodController 用例)
     }
-    // Here we directly test the "doom" semantics of invalidate_weak_ptrs_and_doom
+    // 这里直接测 invalidate_weak_ptrs_and_doom 的"doom"语义
     fac.invalidate_weak_ptrs_and_doom();
     REQUIRE_FALSE(fac.has_weak_ptrs());
 }
@@ -113,26 +113,26 @@ TEST_CASE("WeakPtr was_invalidated distinguishes dead-from-nulled", "[weak_ptr]"
     Foo foo{1};
     WeakPtrFactory<Foo> fac(&foo);
     auto wp = fac.get_weak_ptr();
-    REQUIRE_FALSE(wp.was_invalidated());      // still alive, not "invalidated"
+    REQUIRE_FALSE(wp.was_invalidated());      // 还活着,不是"已失效"
 
     fac.invalidate_weak_ptrs();
-    REQUIRE(wp.was_invalidated());            // invalidated, not a manual reset
+    REQUIRE(wp.was_invalidated());            // 被作废,而非主动 reset
 
     auto wp2 = fac.get_weak_ptr();
     wp2.reset();
-    REQUIRE_FALSE(wp2.was_invalidated());     // a manual reset does not count as "invalidated"
+    REQUIRE_FALSE(wp2.was_invalidated());     // 主动 reset 不算"被作废"
 }
 
 #if !defined(NDEBUG)
-// Debug only: dereferencing an invalidated ptr must assert (teaching version uses assert; Chromium uses CHECK)
+// 仅 debug:解引用失效应触发断言(教学版用 assert;Chromium 用 CHECK)
 TEST_CASE("WeakPtr deref invalid asserts in debug", "[weak_ptr][.assert]") {
     Foo foo{1};
     WeakPtrFactory<Foo> fac(&foo);
     auto wp = fac.get_weak_ptr();
     fac.invalidate_weak_ptrs();
-    // Invariant 4: this line should abort in debug
-    // Run inside an isolated assert test: REQUIRE_THROWS(wp->x);
-    // (isolating an abort in Catch2 takes a subprocess; in real projects, the death_test pattern)
+    // 不变量 4:这一行在 debug 下应 abort
+    // 在隔离的 assert 测试里跑:REQUIRE_THROWS(wp->x);
+    // (Catch2 对 abort 的隔离需要子进程,工程里用 death_test 模式)
 }
 #endif
 ```
@@ -146,7 +146,7 @@ The test design carries the same approach as 01-6: each case stares at one invar
 First, measure with `sizeof` — real terminal output from local GCC 13 on x86-64:
 
 ```cpp
-static_assert(sizeof(WeakPtr<Foo>) == sizeof(void*) * 2);   // 16 bytes
+static_assert(sizeof(WeakPtr<Foo>) == sizeof(void*) * 2);   // 16 字节
 ```
 
 | Type | Size (x86-64) | Composition |
@@ -188,7 +188,7 @@ This is the direct dividend of WeakPtr's "no lifetime extension, liveness checks
 The benefit of `TRIVIAL_ABI` lives at the calling-convention layer: passed by value, a WeakPtr goes straight into registers instead of detouring through memory. We argued it was safe in [pre-06](./pre-06-weak-ptr-trivial-abi.md) — so can we quantify it?
 
 ```cpp
-// Pass a WeakPtr by value into a function
+// 把 WeakPtr 按值传进函数
 void sink(WeakPtr<Foo> wp) { (void)wp; }
 ```
 

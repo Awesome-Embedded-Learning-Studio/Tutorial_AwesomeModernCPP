@@ -19,10 +19,10 @@ tags:
 title: Scope and Storage Classes
 translation:
   source: documents/vol1-fundamentals/c_tutorials/06-scope-and-storage.md
-  source_hash: dc7535d95bcd41b3530cdceeaae371255062266cf46e84b1f88f4ab21f1750a5
-  translated_at: '2026-09-25T12:57:44+00:00'
-  engine: anthropic
-  token_count: 7000
+  source_hash: 7585b8ee146fcdb4687036415e453e0e22ca428b632f0e8e760c5da41b07d2fd
+  translated_at: '2026-11-22T16:39:42+00:00'
+  engine: glm-5.3-refresh
+  token_count: 14906
 ---
 # Scope and Storage Classes
 
@@ -56,22 +56,22 @@ Block scope is the most common — the region enclosed by curly braces `{}` is a
 #include <stdio.h>
 
 int main(void) {
-    int x = 10;  // x is visible throughout the entire body of main
+    int x = 10;  // x 在整个 main 函数体中可见
 
     if (x > 5) {
-        int y = 20;       // y is visible only inside this if block
+        int y = 20;       // y 只在这个 if 块中可见
         printf("x=%d, y=%d\n", x, y);  // OK
     }
 
-    // printf("%d\n", y);  // Error: y is no longer visible here
+    // printf("%d\n", y);  // 错误：y 已经不可见了
 
     {
-        // You can even conjure up a block out of thin air
-        int z = 30;  // z is visible only inside this anonymous block
+        // 你甚至可以凭空创造一个块
+        int z = 30;  // z 只在这个匿名块中可见
         printf("z=%d\n", z);
     }
 
-    // printf("%d\n", z);  // Error: z is not visible either
+    // printf("%d\n", z);  // 错误：z 同样不可见
 
     return 0;
 }
@@ -87,11 +87,11 @@ int main(void) {
     printf("Outer: %d\n", value);  // 100
 
     {
-        int value = 200;  // Shadows the outer value
+        int value = 200;  // 屏蔽外层的 value
         printf("Inner: %d\n", value);  // 200
     }
 
-    printf("Outer again: %d\n", value);  // 100, the outer value is unchanged
+    printf("Outer again: %d\n", value);  // 100，外层的 value 没变
     return 0;
 }
 ```
@@ -105,9 +105,9 @@ Variables and functions declared outside all functions have file scope — they 
 ```c
 #include <stdio.h>
 
-// These two have file scope, visible from the declaration to the end of the file
+// 这两个具有文件作用域，从声明处到文件末尾可见
 int kGlobalCounter = 0;
-static int kInternalVar = 42;  // static restricts linkage, but the scope is still file-level
+static int kInternalVar = 42;  // static 限制了链接性，但作用域仍是文件级
 
 void increment_counter(void) {
     kGlobalCounter++;
@@ -128,11 +128,11 @@ This scope is a bit special: it **applies only to labels** — the colon-bearing
 #include <stdio.h>
 
 void demo_function_scope(void) {
-    goto cleanup;  // Jumps to the label; the label is visible throughout the function
+    goto cleanup;  // 跳到标签，标签在整个函数内可见
 
     {
-        // Even if the label were declared inside a nested block, the goto above would still find it
-        // (but written that way it reads terribly — don't do it)
+        // 即使标签在嵌套块内声明，上面的 goto 也能找到它
+        // （但这样写可读性很差，别这么干）
     }
 
 cleanup:
@@ -145,11 +145,11 @@ cleanup:
 This is the smallest scope of all — a parameter name appearing in a function declaration (prototype) is valid only within the parentheses of that declaration; outside the parentheses it no longer exists. In practice the compiler does not care at all about parameter names in a prototype (it looks only at the types), so you can basically ignore this scope:
 
 ```c
-// name is valid only inside the parentheses of this declaration; outside them it is gone
-// In fact you can omit the parameter name entirely
+// name 只在这个声明的括号里有效，出了括号就没了
+// 实际上你完全可以不写参数名
 void greet(const char* name);
 
-// Exactly equivalent to the above
+// 和上面完全等价
 void greet(const char*);
 ```
 
@@ -173,7 +173,7 @@ An ordinary local variable is re-initialized every time execution enters the fun
 #include <stdio.h>
 
 void counter(void) {
-    static int call_count = 0;  // Initialized only once
+    static int call_count = 0;  // 只初始化一次
     call_count++;
     printf("Called %d times\n", call_count);
 }
@@ -195,26 +195,26 @@ Why would you do this? Imagine you are writing a module that needs to maintain s
 `extern` tells the compiler: "this variable/function is defined somewhere else — don't worry about where just now; the linker will find it." Its typical use is sharing global variables across a multi-file project:
 
 ```c
-// === config.c (definition) ===
+// === config.c（定义） ===
 #include "config.h"
 
-int kMaxRetryCount = 3;  // Definition: allocates memory
+int kMaxRetryCount = 3;  // 定义，分配内存
 const char* kServerAddress = "192.168.1.100";
 ```
 
 ```c
-// === config.h (declaration) ===
+// === config.h（声明） ===
 #ifndef CONFIG_H
 #define CONFIG_H
 
-extern int kMaxRetryCount;  // Declaration: no memory allocated
+extern int kMaxRetryCount;  // 声明，不分配内存
 extern const char* kServerAddress;
 
 #endif
 ```
 
 ```c
-// === main.c (usage) ===
+// === main.c（使用） ===
 #include <stdio.h>
 #include "config.h"
 
@@ -229,8 +229,8 @@ The key distinction here: a **definition** allocates memory and may appear only 
 A common pitfall looks like this:
 
 ```c
-// In a header file
-extern int kValue = 42;  // Never do this!
+// 头文件里
+extern int kValue = 42;  // 千万别这么干！
 ```
 
 If you attach an initial value to an `extern` declaration, the `extern` is ignored — this becomes a definition. If that header is `#include`d by several `.c` files, every translation unit emits its own definition of `kValue`, and at link time you will receive a `multiple definition` error.
@@ -271,15 +271,15 @@ Let's get a feel for how linkage works through a hands-on multi-file example:
 // === logger.c ===
 #include <stdio.h>
 
-// Internal linkage — usable only inside logger.c
+// 内部链接——只有 logger.c 内部能用
 static int log_count = 0;
 
-// An internal-linkage helper function
+// 内部链接的辅助函数
 static void format_prefix(const char* level) {
     printf("[%s #%d] ", level, ++log_count);
 }
 
-// External linkage — other files may call these
+// 外部链接——其他文件可以调用
 void log_info(const char* message) {
     format_prefix("INFO");
     printf("%s\n", message);
@@ -299,8 +299,8 @@ void log_error(const char* message) {
 void log_info(const char* message);
 void log_error(const char* message);
 
-// Note: log_count and format_prefix do not appear in the header
-// They are logger.c's internal implementation details
+// 注意：log_count 和 format_prefix 不出现在头文件里
+// 它们是 logger.c 的内部实现细节
 
 #endif
 ```
@@ -351,23 +351,23 @@ Never return a pointer to a local variable — once the function returns, that s
 #include <stdio.h>
 #include <stdlib.h>
 
-int kGlobalVar = 10;             // Static lifetime, data segment
-static int kInternalVar = 20;    // Static lifetime, data segment, internal linkage
-int kUninitialized;              // Static lifetime, BSS segment, automatically zero
+int kGlobalVar = 10;             // 静态生命周期，数据段
+static int kInternalVar = 20;    // 静态生命周期，数据段，内部链接
+int kUninitialized;              // 静态生命周期，BSS 段，自动为 0
 
 void demonstrate_lifetime(void) {
-    int auto_var = 30;           // Automatic lifetime, on the stack
-    static int static_var = 40;  // Static lifetime, data segment
+    int auto_var = 30;           // 自动生命周期，栈上
+    static int static_var = 40;  // 静态生命周期，数据段
 
-    int* heap_var = malloc(sizeof(int));  // Dynamic lifetime, on the heap
+    int* heap_var = malloc(sizeof(int));  // 动态生命周期，堆上
     *heap_var = 50;
 
     printf("auto=%d, static=%d, heap=%d\n",
            auto_var, static_var, heap_var);
 
-    free(heap_var);  // Destroyed manually
-    // auto_var is destroyed automatically when the function returns
-    // static_var keeps on living
+    free(heap_var);  // 手动销毁
+    // auto_var 在函数返回时自动销毁
+    // static_var 继续活着
 }
 ```
 
@@ -390,11 +390,11 @@ C++ builds quite a few enhancements and improvements on top of scope and storage
 The most noteworthy is **namespaces**. In C, if you don't want file-level helper symbols exposed to the outside world, your only tool is `static` — that is exactly what our `logger.c` did earlier. C++ introduced `namespace`, a more structured way to organize symbols and avoid naming conflicts. Even better, C++17 introduced **`inline` variables**, so a constant definition in a header no longer needs the clunky pattern of an `extern` declaration paired with a definition in a source file:
 
 ```cpp
-// A C++17 header — no accompanying .cpp file needed
+// C++17 的头文件——不需要配套的 .cpp 文件
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
 
-inline constexpr int kMaxRetryCount = 3;  // inline permits multiple definitions
+inline constexpr int kMaxRetryCount = 3;  // inline 允许多重定义
 inline constexpr const char* kServerAddress = "192.168.1.100";
 
 #endif
@@ -405,19 +405,19 @@ C++ **`static` class members** are yet another semantics — the member belongs 
 ```cpp
 class Counter {
 public:
-    static int count;  // Declaration; shared by all Counter objects
+    static int count;  // 声明，所有 Counter 对象共享
     static void reset() { count = 0; }
 };
 
-int Counter::count = 0;  // Definition, outside the class (C++17 allows inline static)
+int Counter::count = 0;  // 定义，在类外（C++17 可以用 inline static）
 ```
 
 Additionally, C++'s anonymous namespaces can replace file-level `static`, and they reach further: `static` can only decorate variables and functions — try to give a type internal linkage with it and the compiler rejects you outright — whereas an anonymous namespace tucks the types inside it into the current translation unit as well. Symbols inside work just as usual within this file, template argument deduction unaffected; other `.cpp` files simply cannot refer to them. So in C++ projects, for functions, variables, and types used in only a single source file, an anonymous namespace is recommended; as for function-local static variables and class static members, those are the other two semantics — where `static` is the right tool, keep using it.
 
 ```cpp
-// Inside some .cpp file — the type gets hidden in this translation unit too
+// 某个 .cpp 文件内部——类型也一起藏进本翻译单元
 namespace {
-struct Config {          // Want internal linkage for this? static can't do it; an anonymous namespace can
+struct Config {          // 想给它加内部链接？static 做不到，匿名命名空间可以
     int retries;
 };
 
@@ -427,7 +427,7 @@ void dump(const T&) {}
 
 void use() {
     Config c{3};
-    dump(c);             // Deduces T = Config just fine; internal linkage doesn't affect templates
+    dump(c);             // 正常推导出 T = Config，内部链接不影响模板
 }
 ```
 
@@ -459,13 +459,13 @@ main.c
 #include "counter.h"
 
 int main(void) {
-    printf("%d\n",counter_get());   // The output should be 0
+    printf("%d\n",counter_get());   //输出应当是0
     counter_increment();
-    printf("%d\n",counter_get());   // The output should be 1
+    printf("%d\n",counter_get());   //输出应当是1
     counter_increment();
-    printf("%d\n",counter_get());   // The output should be 2
+    printf("%d\n",counter_get());   //输出应当是2
     counter_reset();
-    printf("%d\n",counter_get());   // The output should be 0
+    printf("%d\n",counter_get());   //输出应当是0
     return 0;
 }
 ```
@@ -517,9 +517,9 @@ Create three files, `a.c`, `b.c`, and `main.c`. Requirements:
 - `main.c` calls the functions each module provides and verifies the results
 
 ```c
-// a.h — design it yourself
-// b.h — design it yourself
-// The implementations of the .c files are left to you
+// a.h —— 请自行设计
+// b.h —— 请自行设计
+// 各 .c 文件的实现留给你
 ```
 
 ::: details Reference answer
@@ -533,10 +533,10 @@ main.c
 
 int main(void) {
 
-    a_greet();                      // Calls module a's public function, triggering its internal helper_a
-    printf("%d\n",kSharedValue);    // The output should be 0
-    set_kSharedValue(100);          // Internally calls module b's own helper_a
-    printf("%d\n",kSharedValue);    // The output should be 100
+    a_greet();                      // 调用 a 模块的公共函数，触发它内部的 helper_a
+    printf("%d\n",kSharedValue);    //输出应当是0
+    set_kSharedValue(100);          // 内部会调用 b 模块自己的 helper_a
+    printf("%d\n",kSharedValue);    //输出应当是100
 
     return 0;
 }
@@ -576,7 +576,7 @@ static void helper_a(void) {
     printf("need help?\n");
 }
 
-// The public function a.c exposes; internally it calls the file-private helper_a
+// a.c 暴露的公共函数，内部调用文件私有的 helper_a
 void a_greet(void) {
     helper_a();
 }
@@ -607,7 +607,7 @@ void set_kSharedValue(int value) {
 Implement a `call_count(void)`: each time it is called, it returns "which call this is." Exploit the `static` local variable's property that its value is not destroyed when the function returns.
 
 ```c
-/// @return which call this is (the first call returns 1)
+/// @return 这是第几次调用本函数（第一次调用返回 1）
 int call_count(void);
 ```
 
@@ -619,7 +619,7 @@ Hint: declare `static int n = 0;` inside the function, do `++n`, then return. Th
 #include <stdio.h>
 
 int call_count(void) {
-    static int n = 0;   // Initialized only once; the value survives the function's return
+    static int n = 0;   // 只初始化一次，值在函数返回后依然保留
     ++n;
     return n;
 }

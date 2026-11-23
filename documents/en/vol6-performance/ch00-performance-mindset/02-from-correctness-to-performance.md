@@ -22,9 +22,9 @@ title: 'From "correct first" to "then fast": why sanitizers are the foundation o
 translation:
   source: documents/vol6-performance/ch00-performance-mindset/02-from-correctness-to-performance.md
   source_hash: ba636b7fb40e12877c77571daaca869b512a3c465d4a810f6b30a5244b78c65d
-  translated_at: '2026-09-26T05:22:59+00:00'
-  engine: anthropic
-  token_count: 5800
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 4329
 ---
 # From "correct first" to "then fast": why sanitizers are the foundation of the performance volume
 
@@ -47,7 +47,7 @@ The frightening part is that compilers **actively exploit** this rule. Under `-O
 Here is a minimal, classic example to make it concrete. The function below checks whether `x+1` is greater than `x`:
 
 ```cpp
-bool always_bigger(int x) { return (x + 1) > x; }   // x+1 overflow = UB
+bool always_bigger(int x) { return (x + 1) > x; }   // x+1 溢出 = UB
 ```
 
 Under `-O2`, gcc—reasoning from "signed overflow can never happen"—folds the entire function into `return true;`. The assembly is a single line, `movl $1, %eax; ret`, which couldn't care less about `x`. So even if you pass `INT_MAX` (the one value where `x+1` really does overflow), it returns `true` without blushing. This is documented behavior of gcc's `-fstrict-overflow` (on by default at `-O2`), and cppreference's undefined-behavior page uses it as the standard counterexample.
@@ -55,13 +55,13 @@ Under `-O2`, gcc—reasoning from "signed overflow can never happen"—folds the
 Talk is cheap, so I actually ran it on my own machine (GCC 16.1.1), feeding the function the same value, `INT_MAX`:
 
 ```text
-# -O2 (UB assumptions allowed: the whole thing folds into return true)
+# -O2(允许 UB 假设:整段折叠成 return true)
 $ g++ -O2 ub_fold.cpp -o ub_fold && ./ub_fold 2147483647
 f(INT_MAX) = 1
 
-# -O2 -fwrapv (force signed overflow to wrap as defined behavior: honest arithmetic)
+# -O2 -fwrapv(强制有符号溢出回绕成定义行为:老实算)
 $ g++ -O2 -fwrapv ub_fold.cpp -o ub_fold_wrap && ./ub_fold_wrap 2147483647
-f(INT_MAX) = 0      # INT_MAX+1 wraps to INT_MIN, and INT_MIN > INT_MAX is false
+f(INT_MAX) = 0      # INT_MAX+1 回绕成 INT_MIN,INT_MIN > INT_MAX 为假
 ```
 
 Same optimization level (`-O2`), same input (`INT_MAX`); the only difference is whether signed overflow counts as UB or is defined to wrap—and the results are `1` versus `0`. This is UB at its most lethal in performance measurement: **the thing you're measuring is itself unstable; one compiler flag changes, and you're no longer measuring the same thing.** A related trap, while we're here: you might reach for `-O0` as the control (hoping it dutifully does the addition and wraps out a `0`), but contemporary GCC's middle end recognizes the `(x+1)>x` idiom even at `-O0` and folds it anyway—so build this control with `-fwrapv` instead; it's cleaner than switching optimization levels.

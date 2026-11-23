@@ -27,9 +27,9 @@ title: "WeakPtr prerequisite (V): template friend and uintptr_t type erasure"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/02_weak_ptr/full/pre-05-weak-ptr-template-friend-and-uintptr-t.md
   source_hash: 15631d87c669db9833733b0b00bdfceb61e68b1543d5552c1cbaf11d6510f523
-  translated_at: '2026-09-26T01:33:14+00:00'
-  engine: anthropic
-  token_count: 5300
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6258
 ---
 # WeakPtr prerequisite (V): template friend and uintptr_t type erasure
 
@@ -60,7 +60,7 @@ public:
     // ...
 private:
     template <typename U>
-    friend class WeakPtr;   // every WeakPtr<U> is a friend of WeakPtr<T>
+    friend class WeakPtr;   // 所有 WeakPtr<U> 都是 WeakPtr<T> 的朋友
 
     internal::WeakReference ref_;
     RAW_PTR_EXCLUSION T* ptr_ = nullptr;
@@ -150,8 +150,8 @@ namespace internal {
 class FactoryBase {
 protected:
     FactoryBase(uintptr_t p) : ptr_(p) {}
-    ~FactoryBase() { ptr_ = 0; }            // non-template base: this code is generated only once
-    uintptr_t ptr_;                          // the pointer stored as an integer, independent of T
+    ~FactoryBase() { ptr_ = 0; }            // 非模板基:这份代码只生成一次
+    uintptr_t ptr_;                          // 指针存成整数,和 T 无关
 };
 }  // namespace internal
 
@@ -161,7 +161,7 @@ public:
     explicit Factory(T* p) : FactoryBase(reinterpret_cast<uintptr_t>(p)) {}
 
     T* get() const {
-        return reinterpret_cast<T*>(ptr_);   // cast back; the type is guaranteed by the template
+        return reinterpret_cast<T*>(ptr_);   // 转回来,类型由模板保证
     }
 };
 

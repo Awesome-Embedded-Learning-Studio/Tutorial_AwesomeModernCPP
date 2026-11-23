@@ -24,9 +24,9 @@ related:
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/06-evolution-of-std-optional/02-value-semantics-of-optional.md
   source_hash: 2e34f02c243194f5a8a769dd0963a76680d2068589a24d1cfa67af4facfc96a3
-  translated_at: '2026-09-26T16:21:07+00:00'
-  engine: anthropic
-  token_count: 4300
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5495
 ---
 
 # The Value-Semantics Foundation of std::optional
@@ -59,11 +59,11 @@ int main() {
     std::optional<Tracer> a;
     std::cout << "a has_value=" << a.has_value() << "\n";
 
-    a.emplace();                                     // the object is actually constructed here
-    std::optional<Tracer> b = a;                     // copy construction
+    a.emplace();                                     // 这里才真正构造
+    std::optional<Tracer> b = a;                     // 拷贝构造
     std::cout << "b has_value=" << b.has_value() << "\n";
 
-    a.reset();                                       // destroys the object inside a
+    a.reset();                                       // 析构 a 里的对象
     std::cout << "after reset a has_value=" << a.has_value()
               << " b has_value=" << b.has_value() << "\n";
 }
@@ -99,9 +99,9 @@ Think about this pattern:
 ```cpp
 std::optional<User> maybe_user = find_user(id);
 if (maybe_user) {
-    // The next few dozen lines all operate on maybe_user.value()
-    // possibly with more nested checks along the way
-    // you have to keep remembering "I'm inside the if, it's safe"
+    // 接下来几十行都在操作 maybe_user.value()
+    // 中间可能又嵌套了判断
+    // 你得一直记住"我在 if 里面，它是安全的"
 }
 ```
 
@@ -109,8 +109,8 @@ When the if body is long and you run into `maybe_user.value()` on some line in t
 
 ```cpp
 for (auto& user : maybe_user) {
-    // In here, user is a User&, not an optional
-    // use user freely for dozens of lines; it is a definite value
+    // 进到这里，user 就是 User&，不是 optional
+    // 几十行里随便用 user，它就是一个确定的值
 }
 ```
 
@@ -151,9 +151,9 @@ There is another extremely common use of optional — a function's default param
 ```cpp
 void process(std::optional<int> timeout = std::nullopt);
 
-process();                        // timeout is nullopt
-process(42);                      // timeout is optional<int>(42)
-process(std::optional<int>{});    // you can also pass one explicitly
+process();                        // timeout 是 nullopt
+process(42);                      // timeout 是 optional<int>(42)
+process(std::optional<int>{});    // 也可以显式传
 ```
 
 It is utterly natural to use: the `int` quietly promotes itself into an `optional<int>`. What you may never have considered is how complicated optional's constructor design had to become to support this kind of implicit conversion. It has to simultaneously handle construction from `T`, from `nullopt`, and from some other `optional<U>`, plus copies and moves — and all those constructors and conversion operators combine into one enormous overload set.

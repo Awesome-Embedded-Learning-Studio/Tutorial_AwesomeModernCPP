@@ -24,10 +24,10 @@ tags:
 title: "flat_map hands-on (II): the flat_tree core skeleton"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/03_flat_map/full/03-2-flat-map-flattree-skeleton.md
-  source_hash: fca4f5d83cd7264730c970abc0f722bf11cdfbcf498cb1c99412bb4280c15fff
-  translated_at: '2026-09-26T02:40:14+00:00'
-  engine: anthropic
-  token_count: 3300
+  source_hash: 21e2600f85157b290fa7784f7543266c6136113b7ea250b7b5425b23b1990959
+  translated_at: '2026-11-22T16:41:57.466319+00:00'
+  engine: glm-5.3-refresh
+  token_count: 10013
 ---
 # flat_map hands-on (II): the flat_tree core skeleton
 
@@ -43,8 +43,8 @@ flat_tree manages to serve both map and set from one skeleton, and it pulls that
 template <class Key, class GetKeyFromValue, class KeyCompare, class Container>
 class flat_tree {
 protected:
-    Container body_;                                  // underlying sorted container (vector by default)
-    [[no_unique_address]] KeyCompare comp_;           // key comparator (zero overhead via EBO)
+    Container body_;                                  // 底层有序容器(默认 vector)
+    [[no_unique_address]] KeyCompare comp_;           // key 比较器(EBO 零开销)
     // ...
 };
 ```
@@ -65,7 +65,7 @@ On the flat_map side it is `GetFirst` (flat_map.h:24-29):
 struct GetFirst {
     template <class Key, class Mapped>
     constexpr const Key& operator()(const std::pair<Key, Mapped>& p) const {
-        return p.first;   // the value is a pair, take first as the key
+        return p.first;   // value 是 pair,取 first 当 key
     }
 };
 ```
@@ -73,9 +73,9 @@ struct GetFirst {
 flat_set has it even easier: it just takes `std::identity` straight out of the standard library, which returns its argument unchanged:
 
 ```cpp
-// flat_set.h:163 is equivalent to:
+// flat_set.h:163 等价于:
 using flat_set = flat_tree<Key, std::identity, Compare, std::vector<Key>>;
-// std::identity's operator()(const T&) returns T itself — the value is the key
+// std::identity 的 operator()(const T&) 返回 T 本身——value 就是 key
 ```
 
 Whenever flat_tree needs to compare two values internally, it first calls the extractor on each to get the key, then compares the keys with `comp_`. So with one and the same flat_tree codebase, `GetFirst` makes it treat `pair<K,V>` as a map, and `std::identity` makes it treat `K` as a set. We did a double-take the first time we read this — the entire implementation fork between map and set comes down to a single typename.
@@ -90,9 +90,9 @@ flat_tree also hands the outside world a nested `value_compare` (flat_tree.h:122
 struct value_compare {
     constexpr bool operator()(const value_type& left, const value_type& right) const {
         GetKeyFromValue extractor;
-        return comp(extractor(left), extractor(right));   // pull each key, then compare
+        return comp(extractor(left), extractor(right));   // 取出各自 key 再比
     }
-    [[no_unique_address]] key_compare comp;   // EBO again
+    [[no_unique_address]] key_compare comp;   // 同样 EBO
 };
 ```
 
@@ -110,9 +110,9 @@ The plain constructor (taking unordered data) calls `sort_and_unique` (flat_tree
 
 ```cpp
 void sort_and_unique() {
-    std::stable_sort(body_.begin(), body_.end(), value_comp());   // sort (O(N log N))
-    auto it = std::ranges::unique(body_, equiv);                  // dedup (equiv = !comp && !comp)
-    body_.erase(it.end(), body_.end());                           // chop off the duplicate tail
+    std::stable_sort(body_.begin(), body_.end(), value_comp());   // 排序(O(N log N))
+    auto it = std::ranges::unique(body_, equiv);                  // 去重(equiv = !comp && !comp)
+    body_.erase(it.end(), body_.end());                           // 删掉重复尾巴
 }
 ```
 
@@ -133,7 +133,7 @@ The plain family: you pass unordered data in, and it dutifully calls `sort_and_u
 ```cpp
 flat_tree(InputIterator first, InputIterator last, const Compare& comp) {
     body_.insert(body_.end(), first, last);
-    sort_and_unique();   // sort + dedup
+    sort_and_unique();   // 排序去重
 }
 ```
 
@@ -142,7 +142,7 @@ The sorted_unique family: you stake your word via a `sorted_unique_t` tag that t
 ```cpp
 flat_tree(sorted_unique_t, InputIterator first, InputIterator last, const Compare& comp) {
     body_.insert(body_.end(), first, last);
-    DCHECK(is_sorted_and_unique(body_, comp));   // debug-only check, no sort
+    DCHECK(is_sorted_and_unique(body_, comp));   // 只 debug 校验,不排序
 }
 ```
 
@@ -160,8 +160,8 @@ flat_map (flat_map.h:194-195) goes the inheritance route and fills in the one ke
 template <class Key, class Mapped, class Compare = std::less<>,
           class Container = std::vector<std::pair<Key, Mapped>>>
 class flat_map : public flat_tree<Key, internal::GetFirst, Compare, Container> {
-    // inherits all of flat_tree's generic operations (find/insert/erase/lower_bound...)
-    // adds only the map-specific ones: operator[], at, insert_or_assign, try_emplace
+    // 继承 flat_tree 的所有通用操作(find/insert/erase/lower_bound...)
+    // 自己只加 map 特有的:operator[]、at、insert_or_assign、try_emplace
 };
 ```
 
@@ -171,7 +171,7 @@ flat_set (flat_set.h:159-163) is more blunt still: it can't even be bothered to 
 template <class Key, class Compare = std::less<>,
           class Container = std::vector<Key>>
 using flat_set = flat_tree<Key, std::identity, Compare, Container>;
-// no code of its own — a set is just a flat_tree with "key=value"
+// 完全没有自己的代码——set 就是"key=value"的 flat_tree
 ```
 
 The handful of map-specific operations flat_map adds (`operator[]`/`at`/`insert_or_assign`/`try_emplace`) we're saving for 03-3, together with lookup and insertion. flat_set, where the key is the value, truly has nothing to add — a single `using` and the story is told. Look back at those 191 lines of flat_set.h now, and you can feel how much leverage this abstraction buys.
@@ -199,13 +199,13 @@ public:
     using iterator = typename Container::iterator;
     using const_iterator = typename Container::const_iterator;
 
-    // Plain constructor: unordered data, sorted and deduped internally
+    // 普通构造:无序数据,内部排序去重
     flat_tree(Container data, KeyCompare comp = KeyCompare())
         : body_(std::move(data)), comp_(comp) {
         sort_and_unique();
     }
 
-    // Lookup: O(log n) binary search
+    // 查找:O(log n) 二分
     const_iterator find(const Key& key) const {
         auto it = std::ranges::lower_bound(
             body_, key, comp_,
@@ -246,7 +246,7 @@ This minimal version holds on to two things: sort-and-dedup at construction, and
 ## Assembling map and set out of flat_tree
 
 ```cpp
-// map: stores pair<K,V>, pulls the key with GetFirst
+// map:存 pair<K,V>,用 GetFirst 提 key
 struct GetFirst {
     template <class K, class V>
     constexpr const K& operator()(const std::pair<K, V>& p) const { return p.first; }
@@ -256,16 +256,16 @@ template <class K, class V>
 using mini_flat_map = internal::flat_tree<K, GetFirst, std::less<>,
                                           std::vector<std::pair<K, V>>>;
 
-// set: stores K, pulls the key with std::identity
+// set:存 K,用 std::identity 提 key
 template <class K>
 using mini_flat_set = internal::flat_tree<K, std::identity, std::less<>, std::vector<K>>;
 
 int main() {
     mini_flat_map<int, std::string> m{std::vector<std::pair<int, std::string>>{
         {2, "b"}, {1, "a"}, {3, "c"}}};
-    std::cout << m.size() << " elements, front key=" << m.front().first << "\n";   // 3, 1 (sorted)
+    std::cout << m.size() << " elements, front key=" << m.front().first << "\n";   // 3, 1(已排序)
 
-    mini_flat_set<int> s{std::vector<int>{3, 1, 2, 1}};   // the duplicate 1 gets deduped
+    mini_flat_set<int> s{std::vector<int>{3, 1, 2, 1}};   // 重复的 1 会被去重
     std::cout << s.size() << " elements\n";                                        // 3
     return 0;
 }

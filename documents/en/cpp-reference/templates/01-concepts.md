@@ -16,9 +16,9 @@ title: Constraints and Concepts
 translation:
   source: documents/cpp-reference/templates/01-concepts.md
   source_hash: 4aa373e06d3ae09a4d5618df99378f708fc92fdf655983bfaae3c71839ba4ab3
-  translated_at: '2026-09-27T02:17:18+00:00'
-  engine: anthropic
-  token_count: 1100
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 1708
 ---
 # Constraints and Concepts (C++20)
 
@@ -56,8 +56,8 @@ template<Addable T>
 T add(T a, T b) { return a + b; }
 
 int main() {
-    std::cout << add(1, 2) << '\n';     // OK: int satisfies Addable
-    // add("a", "b");                   // Error: const char* does not satisfy Addable
+    std::cout << add(1, 2) << '\n';     // OK: int 满足 Addable
+    // add("a", "b");                   // Error: const char* 不满足 Addable
 }
 ```
 

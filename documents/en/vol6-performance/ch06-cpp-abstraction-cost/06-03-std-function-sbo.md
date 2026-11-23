@@ -22,10 +22,10 @@ tags:
 title: 'std::function''s small buffer optimization: the cost of type erasure'
 translation:
   source: documents/vol6-performance/ch06-cpp-abstraction-cost/06-03-std-function-sbo.md
-  source_hash: 1ea24a87c0bb47090b772b47ce372dbf02b03c3a6a833ddd255cda61696f2fda
-  translated_at: '2026-09-26T06:54:32+00:00'
-  engine: anthropic
-  token_count: 1200
+  source_hash: 7d5d85cd9eea8d0cedba795835bf78ae873662a1242b7e964a5cfab016f828f0
+  translated_at: '2026-11-22T16:43:35+00:00'
+  engine: glm-5.3-refresh
+  token_count: 3101
 ---
 # std::function's small buffer optimization: the cost of type erasure
 
@@ -65,9 +65,9 @@ Measured construction cost: a small lambda (SBO hit) takes 2.3 ns per constructi
 **The construction heap-allocation cost**: this is the easier trap to fall into. Consider code like this:
 
 ```cpp
-// Hot path: repeatedly constructing a function with a big capture
+// 热路径里反复构造 function + 大捕获
 for (auto& item : items) {
-    std::function<void(int)> f = [item, ctx](int x) { /* big capture */ };
+    std::function<void(int)> f = [item, ctx](int x) { /* 大捕获 */ };
     dispatch(f);
 }
 ```
@@ -91,5 +91,5 @@ One sentence to wrap up: `std::function` has two costs — the call is indirect 
 
 - cppreference *std::function* — type-erasure semantics, SBO notes
 - Sutter/Stroustrup CppCoreGuidelines *F.50* — when to use function vs template vs function pointer
-- Agner Fog, *Optimizing software in C++*, object/container overhead. Local copy
+- Agner Fog, *Optimizing software in C++*, object/container overhead
 - The measurement code for this article: `code/volumn_codes/vol6-performance/ch06/function_sbo.cpp`

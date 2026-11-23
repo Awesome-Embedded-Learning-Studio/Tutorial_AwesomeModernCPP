@@ -20,9 +20,9 @@ related:
 translation:
   source: documents/vol8-domains/data-structure/01-raw-buffer.md
   source_hash: 81047497f9242a425b4223900b72e5574f795d56050abc1a9847979d95042a38
-  translated_at: '2026-09-25T08:48:33+00:00'
-  engine: anthropic
-  token_count: 6500
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6225
 ---
 
 # mini STL in Practice (Part 1): RawBuffer — Capacity, Not Objects
@@ -41,7 +41,7 @@ Before we start building, let's get the checking tooling ready. When this librar
 static inline void Check(bool IsExpectedTrue, const char* msg,
                          std::source_location loc = std::source_location::current()) {
     if (IsExpectedTrue) {
-        return; // Ha, it holds? Nothing happens~
+        return; // 哈,就是对的?无事发生~
     }
 
     std::fprintf(stderr, "[TAMCPP Check Crash]%s-%d(%s): %s\n", loc.file_name(), loc.line(),
@@ -78,7 +78,7 @@ The second one is the "move", in three tiers:
 
 ```cpp
 template <typename Sources> inline void Relocate(Sources* from, Sources* from_end, Sources* to) {
-    // We let the cleanly empty case go, because there's no need
+    // 我们放掉那些干净的空东西,因为没必要
     if (from == from_end) {
         return;
     }
@@ -111,7 +111,7 @@ Now the leading role takes the stage, and we give it exactly two members: a poin
 template <typename Sources> struct RawBuffer {
     RawBuffer() = default;
     explicit RawBuffer(std::size_t capacity) : capacity_(capacity) {
-        // Check the multiplication for overflow up front: wraparound would fool operator new into a smaller plot than asked, and everything after is out of bounds
+        // 乘法先验溢出:回绕会骗过 operator new,圈的地比要的小,后面全是越界
         debug::Check(capacity <= std::numeric_limits<std::size_t>::max() / sizeof(Sources),
                      "capacity * sizeof(Sources) overflows");
         raw_buffer_begin_ =

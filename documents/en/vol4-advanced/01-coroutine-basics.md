@@ -13,9 +13,9 @@ description: ''
 translation:
   source: documents/vol4-advanced/01-coroutine-basics.md
   source_hash: 55eb7d50ac6a17b098145298906ffc9b8da0ccd919ae11ac801313630a7c3584
-  translated_at: '2026-09-26T02:59:44+00:00'
-  engine: anthropic
-  token_count: 7000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 22063
 ---
 # Understanding C++20's Revolutionary Feature — Coroutines, Part 1
 
@@ -54,7 +54,7 @@ Boiled down — this is the content we need to understand, so keep it handy as a
 - The other part is a struct that the coroutine function has to return (the **coroutine return type**). This struct is used to give the coroutine framework some scheduling information. In practice, our modern C++ uses interfaces to say whether coroutines are supported, so what we need to do is declare an object type, **and it must nest a `promise_type` inside — note that exact name, it cannot change!**
 
   > ```cpp
-  > // in <coroutine>
+  > // coroutine中
   > #if __cpp_concepts
   >     requires requires { typename _Result::promise_type; }
   >     struct __coroutine_traits_impl<_Result, void>
@@ -98,7 +98,7 @@ The exercises and explanations that follow really revolve around nothing more th
 To give a quick demonstration of **how our coroutine works**, what sits above is nowhere near enough to prove anything. What we need to note is that a function intending to use a coroutine as its vehicle needs an interface defined like this:
 
 ```cpp
-coroutine-return-type function-name(parameter-list);
+协程返回类型 函数名称(参数列表);
 
 ```
 
@@ -106,13 +106,13 @@ So we can quickly sketch some draft code:
 
 ```cpp
 
-bool quit_flag = 0; // quit_flag marks main's exit; that's how we get to watch our coroutine at work
+bool quit_flag = 0; // 这个quit_flag用来标识Main的退出，这样我们才能看到咱们的协程的工作
 int main() {
  dump_time();
  std::println("Ready to involk task()");
- auto result = task(); // receives the frame struct the coroutine interface supports
+ auto result = task(); // 接受协程接口支持的栈帧结构体
  std::println("Result here: {}", result.value());
- while (!quit_flag) // spin here to demonstrate the full flow
+ while (!quit_flag) // 卡在这里，演示完整的流程
   ;
 
  std::println("Result here: {}", result.value());
@@ -130,9 +130,9 @@ int main() {
 >  std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
 >  std::tm localTime;
 > #ifdef _WIN32
->  localtime_s(&localTime, &currentTime); // Windows platform
+>  localtime_s(&localTime, &currentTime); // Windows 平台
 > #else
->  localtime_r(&currentTime, &localTime); // Linux/Unix platform
+>  localtime_r(&currentTime, &localTime); // Linux/Unix 平台
 > #endif
 >  std::cout << std::put_time(&localTime,
 >                             "%H:%M:%S")
@@ -144,36 +144,36 @@ Next comes defining our coroutine return type. Note that the notes above already
 
 ```cpp
 template<typename T>
-struct MyTask { // the name MyTask is arbitrary
+struct MyTask { // MyTask的名称是随意的
  struct promise_type {
-        // promise_type must not be renamed
-        // arbitrarily; the <coroutine> header already requires this type to exist
+        // promise_type不可以随
+        // 在coroutine文件中已经要求了这个类型的存在
 
-        // this returns our coroutine return type; now the object the outside world gets from calling the coroutine function is a MyTask
-        // it is in effect the struct that holds our coroutine-related content, and the results we care about live in this returned struct
+        // 返回的是咱们的协程返回类型，这个时候外界调用的协程函数返回的对象就是MyTask
+        // 实际上就是保存咱们的协程相关的内容的结构体, 我们关心的一些结果就在这个返回的结构体中
         MyTask get_return_object() { ... }
 
-        // the non-suspending version; returns std::suspend_never. initial_suspend, as the notes above covered,
-        // is consulted when the coroutine frame is first created, to tell the scheduler whether to suspend — suspend_never means
-        // don't suspend, just run
-        // if it returned std::suspend_always, the coroutine would suspend the moment creation finishes; to get it running,
-        // we would have to set it down manually. By analogy — when Windows creates a thread or a process, you control whether it runs
-        // if it starts suspended, calling the resume interface later solves the problem. For convenience, we don't suspend here
+        // 不挂起的版本, 返回的是 std::suspend_never, initial_suspend在上面的笔记中谈到
+        // 他是用来协程栈帧首次被创建的时候, 用来告诉调度器要不要挂起的, suspend_never就是
+        // 不要挂起，直接跑
+        // 如果返回的是 std::suspend_always, 那就是创建完马上挂起，需要他跑起来，
+        // 我们就需要手动放下，打个类比的话——Windows创建线程or进程您可以控制它到底运行不运行
+        // 如果创建即挂起，那么后面我们调用resume接口就能解决这个问题, 方便起见这里不挂起
         std::suspend_never initial_suspend() { ... }
 
-        // this one runs when the coroutine finishes: on the eve of where the object would ordinarily be destroyed, the scheduler decides
-        // whether to suspend the coroutine. Suspending here keeps the object from being destroyed outright, so we can inspect things
-        // we suspend for now; of course, if your coroutine is pure grunt work that stores nothing else, return
+        // 这个是协程在执行完毕的时候，调度器会在对象本来应该析构的前夕，决定
+        // 要不要挂起来这个协程，这里挂起是为了防止对象直接被析构干净了，我们方便检查点内容
+        // 这里就先挂起，当然如果你的协程单纯的是做苦力，不保存任何其他东西，返回
         // std::suspend_never
         std::suspend_always final_suspend() noexcept { ... }
 
-        // this is what gets called at co_return time — simply put, whatever you return is immediately forwarded into
-        // return_value and stored there; later, when we use it, we read the content kept in the MyTask object (
-        // generally speaking, we finish by handing it off to the Task struct)
+        // co_return的时候，调用的就是这个东西——说起来很简单，return的东西会立马被转发到
+        // return_value里保存起来，我们后面使用的时候，就访问对应的MyTask类型保存的内容（
+        // 一般而言，咱们都是扔到Task结构体中结束的）
         void return_value(T value) { ... }
 
-        // this part: if we throw an exception outright, the compiler tosses any unhandled exception into this function
-        // usually we do nothing here; of course, if you need to handle some exceptions, put your implementation here
+        // 这个部分是如果我们直接throw了异常，编译器会把那些没有处理的异常扔到这个函数里
+        // 一般我们不做任何处理，当然，如果您需要处理一部分异常，把你的实现放到这里
         void unhandled_exception() { }
     };
 };
@@ -272,26 +272,26 @@ We can see that `SimpleReader` is being `co_await`ed, so `SimpleReader` must be 
 
 ```cpp
 struct SimpleReader {
-    // the moment our co_await statement executes, the compiler forwards straight into this function
-    // false means our Awaitable object is not ready
-    // to paint a more concrete scenario — the I/O event hasn't arrived yet, and the coroutine-flavored object reports here whether the I/O is done
+    // await_ready是我们的co_await语句一执行，编译器立马就会转发到这个函数里来
+    // false就表明，咱们的Awaitable对象没有预备好
+    // 可以拿更加场景化的例子举例——IO事件没有准备，协程化的对象这里就要返回IO是否做好了
  bool await_ready() {
   dump_time();
   std::println("call await_ready, always return false");
   return false;
  }
 
-    // when we invoke the resume interface, the compiler immediately forwards to await_resume; what we require it to return is the result of the co_await. In the task() code we wrote int tol = co_await reader1, so the value returned here lands directly in tol
+    // 当我们调用恢复resume接口的时候，编译器立马就会转发到await_resume上，实际上我们要求返回的就是co_await的结果，task()代码中我们是int tol = co_await reader1, 所以，这里的return value就会直接返回给tol
  int await_resume() {
   dump_time();
   std::println("call await_resume, return the current value: {}", value);
   return value;
  }
 
-    // when await_ready returns no, the compiler suspends the coroutine at once and runs the handling callback await_suspend
-    // kindly, the compiler passes in the coroutine's handle: std::coroutine_handle<>; this interface is
-    // used to coordinate how we may operate that coroutine handle. Here I decide to toss it onto a thread detached from the main one,
-    // grab the value, then set the coroutine back down to continue
+    // 当我们的await_ready返回否的时候，编译器立马挂起协程，并且走处理回调await_suspend
+    // 当然，编译器好心的帮助我们传递进来了协程的handle: std::coroutine_handle<>， 这个接口被
+    // 用来协调 我们可以如何操作这个协程handle，笔者这里就决定扔到一个脱离主线程的子线程
+    // 拿到value后直接放下协程继续执行
  void await_suspend(std::coroutine_handle<> handle) {
   dump_time();
   std::println("call await_suspend, creating a detached thread");
@@ -407,9 +407,9 @@ void dump_time() {
  std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
  std::tm localTime;
 #ifdef _WIN32
- localtime_s(&localTime, &currentTime); // Windows platform
+ localtime_s(&localTime, &currentTime); // Windows 平台
 #else
- localtime_r(&currentTime, &localTime); // Linux/Unix platform
+ localtime_r(&currentTime, &localTime); // Linux/Unix 平台
 #endif
 
  std::cout << std::put_time(&localTime,
@@ -735,9 +735,9 @@ void dump_time() {
  std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
  std::tm localTime;
 #ifdef _WIN32
- localtime_s(&localTime, &currentTime); // Windows platform
+ localtime_s(&localTime, &currentTime); // Windows 平台
 #else
- localtime_r(&currentTime, &localTime); // Linux/Unix platform
+ localtime_r(&currentTime, &localTime); // Linux/Unix 平台
 #endif
 
  std::cout << std::put_time(&localTime,

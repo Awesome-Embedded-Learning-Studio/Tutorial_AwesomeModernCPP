@@ -22,10 +22,10 @@ tags:
 title: 'std::optional: Elegantly Expressing ''A Value May Be Absent'''
 translation:
   source: documents/vol2-modern-features/ch04-type-safety/04-optional.md
-  source_hash: cca7dab1aeeb453ad244119796bece77e99f2d5d6feee48f6072d4e858119d94
-  translated_at: '2026-09-25T15:28:59+00:00'
-  engine: anthropic
-  token_count: 2400
+  source_hash: 9a9475ef964c2efd948f64ce8e646502c92943bb37d27050c1a048293b13a4b6
+  translated_at: '2026-11-22T16:36:41+00:00'
+  engine: glm-5.3-refresh
+  token_count: 12114
 ---
 # std::optional: Elegantly Expressing 'A Value May Be Absent'
 
@@ -44,13 +44,13 @@ Before `optional` came along, C++ programmers mainly had these ways to express "
 **std::pair<T, bool>**: The second element says whether the value is valid. A bit better than the previous two, but tedious to use — you have to check `.second` every single time, and when `second == false`, the value of `first` is undefined (default construction may not even be legal).
 
 ```cpp
-// Comparing the three traditional approaches
+// 三种传统方案对比
 int find_index_old(const std::vector<int>& v, int target)
 {
     for (int i = 0; i < static_cast<int>(v.size()); ++i) {
         if (v[i] == target) return i;
     }
-    return -1;  // Sentinel-value convention: callers must remember that -1 means not found
+    return -1;  // 特殊值约定：调用方必须记住 -1 表示没找到
 }
 
 int* find_ptr_old(std::vector<int>& v, int target)
@@ -58,7 +58,7 @@ int* find_ptr_old(std::vector<int>& v, int target)
     for (auto& x : v) {
         if (x == target) return &x;
     }
-    return nullptr;  // Raw pointer: ambiguous semantics
+    return nullptr;  // 裸指针：语义不明确
 }
 
 std::pair<int, bool> find_pair_old(const std::vector<int>& v, int target)
@@ -66,7 +66,7 @@ std::pair<int, bool> find_pair_old(const std::vector<int>& v, int target)
     for (int i = 0; i < static_cast<int>(v.size()); ++i) {
         if (v[i] == target) return {i, true};
     }
-    return {0, false};  // first's value is meaningless here
+    return {0, false};  // first 的值在此处无意义
 }
 ```
 
@@ -83,12 +83,12 @@ All three approaches share one common flaw: **the type signature does not expres
 #include <string>
 #include <iostream>
 
-std::optional<int> a;                      // Empty (holds no value)
-std::optional<int> b = 42;                 // Holds 42
-std::optional<int> c = std::nullopt;       // Explicitly empty
-std::optional<std::string> d = "hello";    // Holds "hello"
+std::optional<int> a;                      // 空（不持有值）
+std::optional<int> b = 42;                 // 持有 42
+std::optional<int> c = std::nullopt;       // 显式空
+std::optional<std::string> d = "hello";    // 持有 "hello"
 
-// Construct in place (avoids a temporary)
+// 就地构造（避免临时对象）
 std::optional<std::string> e(std::in_place, 10, 'x');  // "xxxxxxxxxx"
 ```
 
@@ -97,16 +97,16 @@ std::optional<std::string> e(std::in_place, 10, 'x');  // "xxxxxxxxxx"
 ```cpp
 std::optional<int> opt = 42;
 
-// Check whether it holds a value
+// 检查是否有值
 if (opt.has_value()) { /* ... */ }
-if (opt) { /* ... */ }             // Equivalent implicit bool conversion
+if (opt) { /* ... */ }             // 等价的隐式 bool 转换
 
-// Access the value
-int x = *opt;                       // Dereference (unchecked — UB if empty)
-int y = opt.value();                // Throws std::bad_optional_access if empty
-int z = opt.value_or(0);            // Returns the default 0 if empty
+// 访问值
+int x = *opt;                       // 解引用（未检查——空时是 UB）
+int y = opt.value();                // 空时抛 std::bad_optional_access
+int z = opt.value_or(0);            // 空时返回默认值 0
 
-// Access members (for class types)
+// 访问成员（对于类类型）
 std::optional<std::string> name = "Alice";
 if (name) {
     std::cout << "length: " << name->size() << "\n";  // operator->
@@ -122,14 +122,14 @@ On choosing between `operator*` and `value()`, our advice: on code paths where y
 ```cpp
 std::optional<std::string> get_config(const std::string& key);
 
-// Read the config; use the default when not configured
+// 读取配置，未配置则使用默认值
 std::string host = get_config("server_host").value_or("localhost");
 int port = get_config("server_port")
     .transform([](const std::string& s) { return std::stoi(s); })
     .value_or(8080);
 ```
 
-That `transform` above is a C++23 feature; we'll cover it in detail shortly.
+> The `transform` in that code is a new addition from C++23; we'll take it apart in a dedicated section later on.
 
 ## Step 3 — Memory Layout of optional
 
@@ -139,11 +139,11 @@ An `optional<T>`'s internal storage typically consists of two parts: an aligned 
 #include <optional>
 
 std::cout << "sizeof(int):              " << sizeof(int) << "\n";            // 4
-std::cout << "sizeof(optional<int>):    " << sizeof(std::optional<int>) << "\n";    // Typical: 8
+std::cout << "sizeof(optional<int>):    " << sizeof(std::optional<int>) << "\n";    // 典型：8
 std::cout << "sizeof(double):           " << sizeof(double) << "\n";         // 8
-std::cout << "sizeof(optional<double>): " << sizeof(std::optional<double>) << "\n"; // Typical: 16
-std::cout << "sizeof(string):           " << sizeof(std::string) << "\n";    // Typical: 32
-std::cout << "sizeof(optional<string>): " << sizeof(std::optional<std::string>) << "\n"; // Typical: 40
+std::cout << "sizeof(optional<double>): " << sizeof(std::optional<double>) << "\n"; // 典型：16
+std::cout << "sizeof(string):           " << sizeof(std::string) << "\n";    // 典型：32
+std::cout << "sizeof(optional<string>): " << sizeof(std::optional<std::string>) << "\n"; // 典型：40
 ```
 
 Let's draw those two parts (taking `optional<int>` as an example, one cell for the has-a-value case and one for the empty case):
@@ -164,14 +164,14 @@ Both `optional<T>` and `T*` can express "there may be no value", but their seman
 
 ```cpp
 std::optional<int> opt = 42;
-int* ptr = &opt.value();  // Points at the int inside the optional
+int* ptr = &opt.value();  // 指向 optional 内部的 int
 
-opt = 123;                // The optional is reassigned; the old 42 is destroyed
-// ptr may now point at 123 (implementation-dependent), or may dangle — don't do this
+opt = 123;                // optional 重新赋值，旧的 42 被销毁
+// ptr 现在可能指向 123（取决于实现），也可能悬空——不要这么用
 
-std::optional<int> opt2 = opt;  // Copy: opt2 is an independent copy, holding 123
-int* ptr2 = &raw;               // Assume raw is some int variable
-std::optional<int> opt3 = *ptr2;  // Copies the value ptr2 points to — unrelated to ptr2
+std::optional<int> opt2 = opt;  // 拷贝：opt2 是独立的副本，持有 123
+int* ptr2 = &raw;               // 假设 raw 是某个 int 变量
+std::optional<int> opt3 = *ptr2;  // 拷贝 ptr2 指向的值——与 ptr2 无关
 ```
 
 Our rule of thumb: **if you need to express "a value that may or may not exist", use `optional`; if you need to express "a nullable reference to some external object", use a pointer**. Don't use `optional` to imitate a pointer, and don't use a pointer to imitate `optional` — they have different jobs.
@@ -196,7 +196,7 @@ std::optional<std::size_t> find_index(
     return std::nullopt;
 }
 
-// Caller side
+// 调用方
 auto idx = find_index(data, 42);
 if (idx) {
     std::cout << "found at index " << *idx << "\n";
@@ -209,14 +209,16 @@ Compared with the earlier version that used `-1` as a sentinel, `optional`'s adv
 
 ### Factory Functions
 
+A factory function is precisely a static creation function provided by the class: it builds the object for you. As for tucking the constructors into `private` and leaving a single creation entry point—those aren't part of the factory-function definition, just the typical spelling of this `Connection` in front of us:
+
 ```cpp
 class Connection {
 public:
     static std::optional<Connection> create(const std::string& addr)
     {
-        // Try to establish a connection
-        if (addr.empty()) return std::nullopt;  // Invalid parameter
-        // ... actual connection logic
+        // 尝试建立连接
+        if (addr.empty()) return std::nullopt;  // 无效参数
+        // ... 实际连接逻辑
         return Connection(addr);
     }
 
@@ -225,12 +227,12 @@ private:
     std::string addr_;
 };
 
-// Usage
+// 使用
 auto conn = Connection::create("192.168.1.1");
 if (conn) {
-    // Connection succeeded
+    // 连接成功
 } else {
-    // Connection failed
+    // 连接失败
 }
 ```
 
@@ -257,11 +259,11 @@ One word of caution, though: don't overuse `optional` parameters. If a parameter
 
 ## Step 7 — A Preview of the C++23 Monadic Operations
 
-C++23 introduced three monadic operations for `std::optional`: `and_then`, `transform`, and `or_else`. Borrowed from functional programming, these operations make chained processing of `optional` far more elegant.
+C++23 introduced three monadic operations for `std::optional`: `and_then`, `transform`, and `or_else`. The word "monadic" is borrowed from functional programming—no need to memorize the theory; once you can read what each of them does, chained `optional` code falls right into hand.
 
 ### transform: Transforming the Value
 
-`transform` takes a function: if the `optional` holds a value, it applies that function to the value and returns an `optional` containing the transformed result; if the `optional` is empty, it returns an empty `optional`.
+We already met it back in the `value_or` section: that `.transform(...)` call trailing `get_config("server_port")`—we promised to take it apart later, and now the bill comes due. `transform` takes a function: when the `optional` holds a value, the function we pass in transforms that value, and the transformed result is wrapped back into an `optional` and handed to you. When the `optional` is empty, it simply hands you back an empty `optional`.
 
 ```cpp
 std::optional<int> parse_int(const std::string& s)
@@ -273,28 +275,28 @@ std::optional<int> parse_int(const std::string& s)
     }
 }
 
-// C++20 style: check manually
+// C++20 风格：手动检查
 std::optional<std::string> input = get_input();
 std::optional<int> result;
 if (input) {
     result = parse_int(*input);
 }
 
-// C++23 style: chained transform
+// C++23 风格：链式 transform
 auto result2 = get_input().transform([](const std::string& s) -> int {
-    return std::stoi(s);  // Simplified example; real code should handle exceptions
+    return std::stoi(s);  // 简化示例，实际应处理异常
 });
 ```
 
 ### and_then: Chaining Operations That May Fail
 
-`and_then` takes a function that returns an `optional`. If the current `optional` holds a value, it calls that function and returns its result; otherwise it returns an empty `optional` directly. This is a better fit than `transform` for scenarios where "the previous step's result is the next step's input, and every step may fail".
+We've laid out both the old spelling without `and_then` and the new chained one in the code below—compare them side by side:
 
 ```cpp
 std::optional<User> find_user(int id);
 std::optional<std::string> get_email(const User& u);
 
-// C++20 style: nested ifs
+// C++20 风格：嵌套 if
 auto user = find_user(42);
 if (user) {
     auto email = get_email(*user);
@@ -303,7 +305,7 @@ if (user) {
     }
 }
 
-// C++23 style: chained and_then
+// C++23 风格：链式 and_then
 find_user(42)
     .and_then(get_email)
     .transform([](const std::string& email) {
@@ -311,6 +313,8 @@ find_user(42)
         return email;
     });
 ```
+
+The two layers of nested `if` you just saw are exactly the situation `and_then` cleans up: if `find_user` hands back an empty `optional`, `get_email` should never run at all. The function `and_then` receives also returns an `optional`: when the current `optional` holds a value, the function we gave gets called and its result is handed over as-is; when it's empty, an empty `optional` comes straight back. For the "previous step's result is the next step's input, and every step may fail" kind of scenario, writing it with `and_then` runs smoother than with `transform`.
 
 ### or_else: Handling the Empty Case
 
@@ -334,7 +338,7 @@ Combine these three operations and you can write very fluent chained code, avoid
 ```cpp
 class ExpensiveResource {
 public:
-    ExpensiveResource() { /* Time-consuming initialization */ }
+    ExpensiveResource() { /* 耗时的初始化 */ }
     void do_work() { /* ... */ }
 };
 
@@ -343,13 +347,13 @@ public:
     void process()
     {
         if (!resource_) {
-            resource_.emplace();  // Construct on first use
+            resource_.emplace();  // 首次使用时才构造
         }
         resource_->do_work();
     }
 
 private:
-    std::optional<ExpensiveResource> resource_;  // Initially empty
+    std::optional<ExpensiveResource> resource_;  // 初始为空
 };
 ```
 
@@ -388,7 +392,7 @@ private:
     static constexpr float kScale = 0.0625f;
 };
 
-// Usage
+// 使用
 void print_temperature(TemperatureSensor& sensor)
 {
     auto reading = sensor.read();
@@ -402,11 +406,11 @@ void print_temperature(TemperatureSensor& sensor)
 }
 ```
 
-The value of `optional` in this scenario is that it encodes "read failed" as part of the return type. The caller cannot possibly forget to handle the read-failure case — because you must check `has_value()` before you can access the temperature value. That is far safer than returning `0.0f` and relying on the caller to "remember that 0.0 might mean failure".
+The value of `optional` in this scenario is that "the read failed" is written into the return type: skip checking `has_value()` and what you touch is UB—the failure has no way to slip quietly past. The old approach of returning `0.0f` can't do this; it depends entirely on the caller keeping the convention "0.0 might mean failure" in their head, and whoever forgets the convention treats the failure as a normal reading.
 
 ## References
 
 - [cppreference: std::optional](https://en.cppreference.com/w/cpp/utility/optional)
 - [cppreference: std::bad_optional_access](https://en.cppreference.com/w/cpp/utility/optional/bad_optional_access)
-- [C++23 Monadic operations for std::optional](https://en.cppreference.com/w/cpp/utility/optional)
-- [C++ Core Guidelines: Optional](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines)
+- [C++23 Monadic operations for std::optional](https://en.cppreference.com/w/cpp/utility/optional#Monadic_operations)
+- [C++ Core Guidelines: Optional](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#f21-to-return-multiple-out-values-prefer-returning-a-struct)

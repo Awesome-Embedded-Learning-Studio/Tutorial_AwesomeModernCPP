@@ -10,9 +10,10 @@ description: "Read bt and info frame output in the -O0 baseline, pin down the tw
 reading_time_minutes: 14
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/09-manual-backtrace-with-gdb/01-bt-baseline-and-rbp-chain.md
-  source_hash: c41c2e671f3e3faf2e92b050a0d4553e10c878981bf3ef8a43ae96b651736a4d
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: cdb15bfea36c5429891a9d9f99d6fa8a847ec4e28baedc1c9a1b5f2728d323a7
+  translated_at: '2026-11-22T16:44:08Z'
+  engine: glm-5.3-refresh
+  token_count: 8238
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -155,7 +156,7 @@ The last section established the two slots; this one leaves bt out entirely and 
 We are still on the same chain_O0, with the breakpoint stopped in f3 as before. The session is pasted below exactly as it ran (the break and run output at the top matches the last section, and the closing quit prompt has been removed):
 
 ```text
---- bt (for comparison) ---
+--- bt（对照用）---
 (gdb) #0  f3 (x=12) at chain.cpp:1
 #1  0x0000555555555143 in f2 (x=11) at chain.cpp:2
 #2  0x0000555555555160 in f1 (x=10) at chain.cpp:3
@@ -166,19 +167,19 @@ We are still on the same chain_O0, with the breakpoint stopped in f3 as before. 
 (gdb) 0x7fffffffd0a0:	0x00007fffffffd0b8
 --- x/gx $rbp+8 ---
 (gdb) 0x7fffffffd0a8:	0x0000555555555143
---- set $rbp_f2 = *(unsigned long *)$rbp (no output), then p/x the new variable ---
+--- set $rbp_f2 = *(unsigned long *)$rbp（无输出），随后 p/x 新变量 ---
 (gdb) (gdb) $2 = 0x7fffffffd0b8
---- x/gx on the new variable, reading the +8 slot as well ---
+--- x/gx 新变量，再读 +8 槽 ---
 (gdb) 0x7fffffffd0b8:	0x00007fffffffd0d0
 (gdb) 0x7fffffffd0c0:	0x0000555555555160
---- set catching the rbp of f1's level (no output), then p/x the new variable ---
+--- set 接住 f1 那层的 rbp（无输出），随后 p/x 新变量 ---
 (gdb) (gdb) $3 = 0x7fffffffd0d0
---- reading its two slots ---
+--- 读它的两个槽位 ---
 (gdb) 0x7fffffffd0d0:	0x00007fffffffd0e0
 (gdb) 0x7fffffffd0d8:	0x0000555555555173
---- set catching main's level rbp (no output), then p/x the new variable ---
+--- set 接住 main 那层的 rbp（无输出），随后 p/x 新变量 ---
 (gdb) (gdb) $4 = 0x7fffffffd0e0
---- reading its two slots ---
+--- 读它的两个槽位 ---
 (gdb) 0x7fffffffd0e0:	0x00007fffffffd190
 (gdb) 0x7fffffffd0e8:	0x00007ffff7827781
 ```

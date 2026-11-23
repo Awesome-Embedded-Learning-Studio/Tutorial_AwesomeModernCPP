@@ -21,10 +21,10 @@ tags:
 title: Class Templates
 translation:
   source: documents/vol1-fundamentals/ch09/02-class-templates.md
-  source_hash: a56347edd2ddb3e60b438a6ab19b885bcd3e477bc8adc32ce72f94c8089950b9
-  translated_at: '2026-09-27T03:51:34+00:00'
-  engine: anthropic
-  token_count: 6500
+  source_hash: 6bbd53bde46158c4858b9d431008a61f20defdedebf739676217dc9aa58645ec
+  translated_at: '2026-11-22T16:41:14+00:00'
+  engine: glm-5.3-refresh
+  token_count: 9506
 ---
 # Fooled You—There's One More Level: Class Templates
 
@@ -167,8 +167,8 @@ private:
 `kCapacity` participates directly in the array declaration, so at instantiation we must supply a value that is known at compile time:
 
 ```cpp
-RingBuffer<int, 16> buffer;        // an int ring buffer with capacity 16
-RingBuffer<double, 256> big_buf;   // a double ring buffer with capacity 256
+RingBuffer<int, 16> buffer;        // 容量为 16 的 int 环形缓冲区
+RingBuffer<double, 256> big_buf;   // 容量为 256 的 double 环形缓冲区
 ```
 
 Non-type parameters can only be integral types, enumerations, pointers, references, or—since C++20—floating-point and class types. In most cases, integral types are all we need.
@@ -189,8 +189,8 @@ private:
     Container data_;
 };
 
-Stack<int> s1;                                  // Container defaults to std::vector<int>
-Stack<int, std::deque<int>> s2;                 // Container explicitly specified as std::deque<int>
+Stack<int> s1;                                  // Container 默认为 std::vector<int>
+Stack<int, std::deque<int>> s2;                 // Container 显式指定为 std::deque<int>
 ```
 
 Note that the Standard Library's `std::stack` follows exactly this design: its second parameter defaults to `std::deque<T>` and can be swapped for `std::vector<T>` or `std::list<T>`.
@@ -205,23 +205,23 @@ Now let's pull everything together and implement a complete generic stack. Stora
 
 ```cpp
 // stack.hpp
-// Compile: g++ -Wall -Wextra -std=c++17 stack_demo.cpp -o stack_demo
+// 编译: g++ -Wall -Wextra -std=c++17 stack_demo.cpp -o stack_demo
 #pragma once
 
 #include <stdexcept>
 #include <vector>
 
-/// @brief A generic stack stored on top of std::vector
-/// @tparam T Element type
+/// @brief 泛型栈，底层使用 std::vector 存储
+/// @tparam T 元素类型
 template <typename T>
 class Stack
 {
 public:
-    /// @brief Push an element onto the top of the stack
+    /// @brief 将元素压入栈顶
     void push(const T& value) { data_.push_back(value); }
 
-    /// @brief Pop the top element off the stack
-    /// @throws std::out_of_range Thrown when the stack is empty
+    /// @brief 弹出栈顶元素
+    /// @throws std::out_of_range 栈为空时抛出异常
     void pop()
     {
         if (data_.empty()) {
@@ -230,8 +230,8 @@ public:
         data_.pop_back();
     }
 
-    /// @brief Access the top element (mutable)
-    /// @throws std::out_of_range Thrown when the stack is empty
+    /// @brief 访问栈顶元素（可修改）
+    /// @throws std::out_of_range 栈为空时抛出异常
     T& top()
     {
         if (data_.empty()) {
@@ -240,8 +240,8 @@ public:
         return data_.back();
     }
 
-    /// @brief Access the top element (read-only)
-    /// @throws std::out_of_range Thrown when the stack is empty
+    /// @brief 访问栈顶元素（只读）
+    /// @throws std::out_of_range 栈为空时抛出异常
     const T& top() const
     {
         if (data_.empty()) {
@@ -250,10 +250,10 @@ public:
         return data_.back();
     }
 
-    /// @brief Check whether the stack is empty
+    /// @brief 判断栈是否为空
     bool empty() const { return data_.empty(); }
 
-    /// @brief Return the number of elements in the stack
+    /// @brief 返回栈中元素数量
     std::size_t size() const { return data_.size(); }
 
 private:
@@ -307,7 +307,7 @@ int main()
     str_stack.pop();
     std::cout << "after pop, top: " << str_stack.top() << "\n";
 
-    // --- Exception test ---
+    // --- 异常测试 ---
     std::cout << "\n=== Exception test ===\n";
     Stack<int> empty_stack;
     try {

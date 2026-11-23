@@ -16,9 +16,9 @@ cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/compilation/11-symbol-visibility.md
   source_hash: 1d24b4b4d70ff7116f3753c07e0901b865ecf5ed92b02457d83884cecca013e5
-  translated_at: '2026-10-13T04:17:57+00:00'
-  engine: anthropic
-  token_count: 12000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 13228
 ---
 
 # Symbol Visibility: Controlling What a Dynamic Library Exports
@@ -34,9 +34,9 @@ The environment disclosure, as always: my experiments all ran in WSL2, with the 
 One glance at the library's skeleton tells the story: calc_api.c owns the outward-facing half — base_tax still returns 100, tax_rate's 17 gets added on, and the result is handed to the internal helpers to finish. The remaining work all lives in calc_core.c, and the two helpers live there with it: one is near_ceil, in charge of rounding, lifting a number up to the nearest ten; the other is clamp_cap, in charge of capping, cutting everything above 500 back down. The header declares only the two interface functions; the helpers' names never show up even once, and I never meant to hand them out:
 
 ```c
-// calc_core.c — the library's internals: two helpers, never meant for outsiders
-int near_ceil(int amount) { return (amount + 9) / 10 * 10; }      /* round up to tens */
-int clamp_cap(int amount) { return amount > 500 ? 500 : amount; } /* cap anything above 500 */
+// calc_core.c —— 库的内部件:两个助手,从没打算给外人用
+int near_ceil(int amount) { return (amount + 9) / 10 * 10; }      /* 取整到十位 */
+int clamp_cap(int amount) { return amount > 500 ? 500 : amount; } /* 超 500 封顶 */
 ```
 
 You know the build commands by heart — we drilled -fPIC and -shared in 08's dynamic libraries overview and again in 09. First we run the baseline out, and the first experiment follows right behind: the executable carries a definition of its own — can it be overridden? In main_def.c I wrote a base_tax that returns 55, and we brought back LD_PRELOAD from 09: the preloaded librival.so also has a base_tax, returning 200.
@@ -113,7 +113,7 @@ collect2: error: ld returned 1 exit status
 We verified with nm -D: not one of the five names is left — they are all out of the export table, and the link turned on us on the spot. You met undefined reference back in the linker piece, 05, but this time the definition is right there in the library's hands — why the complaint? Because when the static linker resolves symbols against a .so, it reads the same export table. hidden struck the names off .dynsym, which slams the door on both linkers at once: the static one cannot find them, and neither can the dynamic one. So hiding everything across the board does not fly — a library has to leave a door for its own interface. The way to leave the door is a visibility attribute hanging on the interface declarations, set back to default, and the two interface functions become explicitly public. The header changes to the following, and the calc_core.c side does not need to change by a single character:
 
 ```c
-/* calc.h — with the default narrowed, the interface goes public via the attribute */
+/* calc.h —— 默认收窄的前提下,接口靠属性显式公开 */
 #define CALC_API __attribute__((visibility("default")))
 
 CALC_API int base_tax(void);
@@ -150,9 +150,9 @@ $ readelf -sW libcalc_hidden_api.so | grep near_ceil
 Privatizing also quietly changes how the library's internal calls get written. From the two versions' total_tax disassembly we picked out the call and data-fetch lines and laid them side by side:
 
 ```text
-$ objdump -d --no-show-raw-insn -M intel libcalc.so        # default version, excerpt
+$ objdump -d --no-show-raw-insn -M intel libcalc.so        # 默认版,节选
     115b:	call   1040 <near_ceil@plt>
-$ objdump -d --no-show-raw-insn -M intel libcalc_hidden_api.so   # hidden version, excerpt
+$ objdump -d --no-show-raw-insn -M intel libcalc_hidden_api.so   # hidden 版,节选
     1121:	mov    edx,DWORD PTR [rip+0x2ee9]        # 4010 <tax_rate>
     1138:	call   113f <near_ceil>
 ```
@@ -193,7 +193,7 @@ $ readelf -rW libcalc.so | grep -E 'base_tax|tax_rate|near_ceil|clamp_cap'
 0000000000004008  0000000500000007 R_X86_64_JUMP_SLOT     0000000000001162 near_ceil + 0
 0000000000004010  0000000600000007 R_X86_64_JUMP_SLOT     0000000000001190 clamp_cap + 0
 $ readelf -rW libcalc_bsym.so | grep -E 'base_tax|tax_rate|near_ceil|clamp_cap'
-(no output, not one line left)
+(没有输出,一条不剩)
 $ readelf -d libcalc_bsym.so | grep FLAGS
  0x000000000000001e (FLAGS)              SYMBOLIC
 ```
@@ -245,7 +245,7 @@ Following the size thread, one more question: strip, which we met in the object 
 With the list cleaned up, one question remains that you will run into sooner or later: what do the exported names themselves look like? In the compiler piece we read through the name-mangling process — C++ bakes namespaces and parameter types into the symbol name, which is how the linker can tell these overloads apart. To see what lands in the export table, we wrote a three-line specimen in C++: two overloads of discount, plus a refund exported the C way:
 
 ```cpp
-// calcpp.cpp — one discount, two signatures
+// calcpp.cpp —— 同一个 discount,两副签名
 int discount(int percent) { return percent / 2; }
 double discount(double ratio) { return ratio * 100.0; }
 

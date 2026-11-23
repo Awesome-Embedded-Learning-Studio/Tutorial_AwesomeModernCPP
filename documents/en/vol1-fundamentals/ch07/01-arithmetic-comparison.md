@@ -18,12 +18,23 @@ tags:
 - intermediate
 - 进阶
 title: Arithmetic and Comparison Operators
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #251)"
+      en: "Contributed exercise solutions and article revisions (PR #251)"
 translation:
   source: documents/vol1-fundamentals/ch07/01-arithmetic-comparison.md
-  source_hash: e1ac6f393921dfcae76ab695f921c65d53d157ea9e711acc08db3817ed87884c
-  translated_at: '2026-09-25T11:16:11+00:00'
-  engine: anthropic
-  token_count: 4400
+  source_hash: 6e96fe07efd855b6dafc821751afaf043159ce3fe7a223f1f35a8109cd92d822
+  translated_at: '2026-11-22T16:40:19+00:00'
+  engine: glm-5.3-refresh
+  token_count: 13499
 ---
 # Arithmetic and Comparison Operator Overloading: Goodbye to a Screen Full of .add() Calls
 
@@ -38,11 +49,11 @@ Operator overloading is great, but never abuse it. An operator is worth overload
 Before we start implementing, let's get the motivation straight. There is really only one core reason: readability. Suppose we have a 2D vector class—putting the two styles side by side makes the difference obvious:
 
 ```cpp
-// Function-call style
+// 函数调用风格
 auto v3 = v1.add(v2);
 auto v4 = v1.scale(2.0f);
 
-// Operator-overload style
+// 运算符重载风格
 auto v3 = v1 + v2;
 auto v4 = v1 * 2.0f;
 ```
@@ -66,8 +77,8 @@ Enough theory—time to get our hands dirty. The `Fraction` class starts with th
 ```cpp
 class Fraction {
 private:
-    int numerator_;   // Numerator
-    int denominator_; // Denominator
+    int numerator_;   // 分子
+    int denominator_; // 分母
 
 public:
     Fraction(int num = 0, int den = 1)
@@ -79,7 +90,7 @@ public:
         normalize();
     }
 
-    // Compound assignment: modifies in place, returns a reference to *this
+    // 复合赋值：就地修改，返回 *this 的引用
     Fraction& operator+=(const Fraction& rhs)
     {
         // a/b + c/d = (a*d + c*b) / (b*d)
@@ -122,11 +133,11 @@ Let's pull out the key points from this code. First: the return type of `operato
 With `+=` in hand, implementing `+` becomes trivial:
 
 ```cpp
-// Non-member function: implement + in terms of +=
+// 非成员函数：通过 += 来实现 +
 Fraction operator+(Fraction lhs, const Fraction& rhs)
 {
-    lhs += rhs;  // Reuse operator+=
-    return lhs;  // Return the modified copy
+    lhs += rhs;  // 复用 operator+=
+    return lhs;  // 返回修改后的副本
 }
 ```
 
@@ -147,7 +158,7 @@ Fraction& operator*=(const Fraction& rhs)
 
 Fraction& operator/=(const Fraction& rhs)
 {
-    // Dividing by a fraction equals multiplying by its reciprocal
+    // 除以一个分数等于乘以它的倒数
     numerator_ *= rhs.denominator_;
     denominator_ *= rhs.numerator_;
     if (denominator_ == 0) { denominator_ = 1; }
@@ -168,7 +179,7 @@ bool operator==(const Fraction& lhs, const Fraction& rhs)
     return lhs.num() == rhs.num() && lhs.den() == rhs.den();
 }
 
-// Key point: != is always implemented in terms of ==
+// 关键：!= 始终基于 == 来实现
 bool operator!=(const Fraction& lhs, const Fraction& rhs)
 {
     return !(lhs == rhs);
@@ -281,13 +292,13 @@ private:
     }
 };
 
-// Binary arithmetic (non-member)
+// 二元算术（非成员）
 Fraction operator+(Fraction lhs, const Fraction& rhs) { lhs += rhs; return lhs; }
 Fraction operator-(Fraction lhs, const Fraction& rhs) { lhs -= rhs; return lhs; }
 Fraction operator*(Fraction lhs, const Fraction& rhs) { lhs *= rhs; return lhs; }
 Fraction operator/(Fraction lhs, const Fraction& rhs) { lhs /= rhs; return lhs; }
 
-// Comparison (non-member)
+// 比较（非成员）
 bool operator==(const Fraction& l, const Fraction& r)
 { return l.num() == r.num() && l.den() == r.den(); }
 bool operator!=(const Fraction& l, const Fraction& r) { return !(l == r); }
@@ -309,7 +320,7 @@ int main()
     std::cout << a << " * " << b << " = " << (a * b) << std::endl;
     std::cout << a << " / " << b << " = " << (a / b) << std::endl;
 
-    // Mixed arithmetic with integers (implicit conversion)
+    // 与整数的混合运算（隐式转换）
     std::cout << a << " + 1 = " << (a + 1) << std::endl;
     std::cout << "2 * " << b << " = " << (2 * b) << std::endl;
 
@@ -357,7 +368,7 @@ Let's double-check: every result is correct. `a + b` gives `5/6` (after common d
 Before we close, we have to mention the three-way comparison operator (the spaceship operator) `<=>` introduced in C++20. If your compiler supports C++20, implementing a single `operator<=>` lets the compiler generate all six comparison operators automatically:
 
 ```cpp
-// C++20: one line handles all comparisons
+// C++20：一行搞定所有比较
 auto operator<=>(const Fraction&, const Fraction&) = default;
 ```
 

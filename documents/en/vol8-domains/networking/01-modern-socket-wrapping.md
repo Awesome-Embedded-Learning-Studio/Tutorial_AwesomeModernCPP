@@ -20,10 +20,10 @@ tags:
   - RAII守卫
 translation:
   source: documents/vol8-domains/networking/01-modern-socket-wrapping.md
-  source_hash: 87c3728cd2d5ae032a7b0023294196a7c0eeea9cb5e67d8811b56da3782db50a
-  translated_at: '2026-09-26T04:34:36+00:00'
-  engine: anthropic
-  token_count: 6200
+  source_hash: 7de5f7733524bf81d6e4df9f8e654cb72f300e6e6e8ea4588edd0630f40a7a83
+  translated_at: '2026-11-22T16:47:51+00:00'
+  engine: glm-5.3-refresh
+  token_count: 8945
 ---
 
 # Modern socket wrapping: RAII, std::expected, and the C10K that thread-per-connection can't survive
@@ -49,7 +49,7 @@ for (;;) {
         if (n <= 0) break;
         write(cfd, buf, n);
     }
-    close(cfd);   /* ← manual close */
+    close(cfd);   /* ← 手动 close */
 }
 ```
 
@@ -70,9 +70,9 @@ class UniqueFd {
 public:
     UniqueFd() = default;
     explicit UniqueFd(int fd) : fd_{fd} {}
-    ~UniqueFd() { reset(); }                              // destructor = close
+    ~UniqueFd() { reset(); }                              // 析构即 close
 
-    UniqueFd(const UniqueFd&) = delete;                   // exclusive, no copies
+    UniqueFd(const UniqueFd&) = delete;                   // 独占,禁拷贝
     UniqueFd& operator=(const UniqueFd&) = delete;
 
     UniqueFd(UniqueFd&& other) noexcept : fd_{other.fd_} { other.fd_ = -1; }
@@ -85,7 +85,7 @@ public:
     int  get() const { return fd_; }
     explicit operator bool() const { return fd_ >= 0; }
 private:
-    int fd_{-1};                                          // -1 = empty, destructor does nothing
+    int fd_{-1};                                          // -1 = 空,析构不动
 };
 ```
 
@@ -100,9 +100,9 @@ for (;;) {
         /* ... */
             continue;
     }
-    UniqueFd conn{raw};        // ← takes ownership; from here on, the fd is valid as long as conn lives
-    // ... read/write on conn ...
-}   // ← loop body ends, conn destructs, auto-close — a leak is impossible
+    UniqueFd conn{raw};        // ← 接管,从此 conn 活着 fd 就有效
+    // ... 在 conn 上 read/write ...
+}   // ← 循环体结束,conn 析构,自动 close——不可能漏
 ```
 
 `conn` is a stack object: no matter how many `return`s or exceptions get added to this loop body in the future, its destructor will certainly `close`. **A missed `close` has gone from a thing a human had to remember to a thing that cannot happen.** That is the power of RAII, and the most fundamental line dividing Modern C++ from C.
@@ -116,7 +116,7 @@ We define a small context-carrying struct for errors, bringing "which step blew 
 ```cpp
 struct SysError {
     int errno_value;
-    std::string context;     // "socket" / "bind" / "listen" — which step the failure happened in
+    std::string context;     // "socket" / "bind" / "listen",失败发生在哪步
 };
 ```
 
@@ -142,7 +142,7 @@ std::expected<UniqueFd, SysError> make_listener(std::uint16_t port) {
     if (::listen(fd.get(), 64) < 0)
         return std::unexpected(SysError{errno, "listen"});
 
-    return fd;   // success: return the UniqueFd directly
+    return fd;   // 成功:直接返回 UniqueFd
 }
 ```
 
@@ -157,15 +157,15 @@ This is the paradigm upgrade Modern C++ brings to I/O code — cut from the same
 The most intuitive upgrade is **for every incoming connection, spawn a thread dedicated to serving it**. After `accept` yields a new fd, hand it to an independent thread, and the main loop immediately goes back to `accept` the next one — so multiple clients are handled in parallel by multiple threads, none of them blocking the others. Combined with the RAII we just wrote, the fd is handed to the thread with `std::move`, and ownership transfers cleanly:
 
 ```cpp
-void handle_session(UniqueFd conn) {       // take by value: the thread owns this fd
+void handle_session(UniqueFd conn) {       // 按值接收:线程独占这条 fd
     std::array<char, 4096> buf;
     for (;;) {
         ssize_t n = ::read(conn.get(), buf.data(), buf.size());
-        if (n == 0) break;                 // peer closed
+        if (n == 0) break;                 // 对端关闭
         if (n < 0) { if (errno == EINTR) continue; break; }
-        /* ... write back ... */
+        /* ... 回写 ... */
     }
-}   // conn destructs, auto-close
+}   // conn 析构,自动 close
 
 int main() {
     /* ... make_listener ... */
@@ -173,7 +173,7 @@ int main() {
         int raw = ::accept(listener->get(), nullptr, nullptr);
         if (raw < 0) { if (errno == EINTR) continue; /* ... */ continue; }
         UniqueFd conn{raw};
-        std::thread{handle_session, std::move(conn)}.detach();   // thread-per-connection
+        std::thread{handle_session, std::move(conn)}.detach();   // 每连接一线程
     }
 }
 ```
@@ -190,7 +190,7 @@ While the server is running, we open a client that makes 2000 **idle connections
 
 ```text
 [idle]       VmSize:  85352 kB    VmRSS:  4212 kB    Threads: 1
-[2000 conns] VmSize: 25081508 kB  VmRSS: 28888 kB    Threads: 2001
+[2000 连接]   VmSize: 25081508 kB  VmRSS: 28888 kB    Threads: 2001
 ```
 
 Look at that `VmSize`: **it rockets from 83MB to nearly 24GB**. 2000 connections, and virtual memory ate 24GB. Per connection, that's `(25081508 - 85352) / 2000 ≈ 12.5 MB/connection`. Where does that 12.5MB come from? — **each thread's default 8MB stack** (the glibc default), plus glibc's per-thread internal mappings, TLS, and guard pages, stacking up to roughly 12MB of virtual address space per thread. The `Threads` column is even more direct: `1 → 2001` — one more thread for every connection that arrives.

@@ -23,9 +23,9 @@ title: 'OnceCallback prerequisite (V): std::move_only_function (C++23)'
 translation:
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/pre-05-once-callback-move-only-function.md
   source_hash: 85d36a05082254c0f75818c5d1b8fe581226134fc9e1b842649f32a0fe3f4fce
-  translated_at: '2026-09-26T00:51:26+00:00'
-  engine: anthropic
-  token_count: 4200
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6341
 ---
 # OnceCallback prerequisite (V): std::move_only_function (C++23)
 
@@ -45,7 +45,7 @@ The root cause is that it is itself copyable. Copy a `std::function`, and it has
 
 auto ptr = std::make_unique<int>(42);
 
-// Compile error! unique_ptr is not copyable, and std::function requires copyability
+// 编译错误！unique_ptr 不可拷贝，std::function 要求可拷贝
 std::function<int()> f = [p = std::move(ptr)]() { return *p; };
 ```
 
@@ -61,7 +61,7 @@ C++23's `std::move_only_function` (still living in `<functional>`) came at exact
 
 auto ptr = std::make_unique<int>(42);
 
-// OK! move_only_function does not require copyability
+// OK！move_only_function 不要求可拷贝
 std::move_only_function<int()> f = [p = std::move(ptr)]() { return *p; };
 
 int result = f();  // result == 42
@@ -76,20 +76,20 @@ The interface difference between the two fits in one sentence: `std::function` c
 Construction works from the same mold as `std::function`: a `std::move_only_function<R(Args...)>` opens its arms to any callable whose signature matches — lambdas, function pointers, functors, even another `std::move_only_function`. A default-constructed one comes out empty and compares equal to `nullptr` when you test it. Calling is the familiar `f(args...)` syntax; call an empty one and it throws `std::bad_function_call` on the spot — if it deserves to crash, let it crash.
 
 ```cpp
-// Construct from a lambda
+// 从 lambda 构造
 std::move_only_function<int(int, int)> f1 = [](int a, int b) { return a + b; };
 
-// Construct from a function pointer
+// 从函数指针构造
 int add(int a, int b) { return a + b; }
 std::move_only_function<int(int, int)> f2 = &add;
 
-// Construct from a functor
+// 从仿函数构造
 struct Multiplier {
     int operator()(int a, int b) { return a * b; }
 };
 std::move_only_function<int(int, int)> f3 = Multiplier{};
 
-// Default construction: creates an empty move_only_function
+// 默认构造：创建空的 move_only_function
 std::move_only_function<int()> f4;  // f4 == nullptr
 ```
 
@@ -98,8 +98,8 @@ What genuinely deserves a pause is moving. The semantics are plain: the source's
 ```cpp
 std::move_only_function<int()> f = []() { return 42; };
 auto g = std::move(f);
-// f's state is unspecified — it may or may not be empty
-// Do not rely on f's behavior after the move
+// f 的状态未指定——可能为空，也可能不为空
+// 不要依赖 f 在移动后的行为
 ```
 
 The author casually ran this on GCC 16, and sure enough, `bool(f)` after the move came back `false`. But please remember: that is the implementation being nice to you, not a promise the standard underwrites — switch to another implementation, and it handing you a `true` tomorrow is entirely possible. This loose end matters a lot: when we get to why OnceCallback still has to keep its own `Status` enum, half of the root cause sits right here.
@@ -111,7 +111,7 @@ std::move_only_function<int()> f;
 if (!f) {
     std::cout << "f is empty\n";
 }
-// equivalent to
+// 等价于
 if (f == nullptr) {
     std::cout << "f is empty\n";
 }
@@ -123,7 +123,7 @@ if (f) {
 ```
 
 ```cpp
-f = nullptr;  // empties f, destroying the callable it previously held
+f = nullptr;  // 清空 f，析构之前持有的可调用对象
 ```
 
 ---
@@ -169,9 +169,9 @@ The root of it is that there aren't enough states. `operator bool()` can only te
 
 ```cpp
 enum class Status : uint8_t {
-    kEmpty,     // never assigned (default-constructed)
-    kValid,     // holds a valid callable
-    kConsumed   // already invoked by run()
+    kEmpty,     // 从未被赋值（默认构造）
+    kValid,     // 持有有效的可调用对象
+    kConsumed   // 已被 run() 调用过
 };
 ```
 

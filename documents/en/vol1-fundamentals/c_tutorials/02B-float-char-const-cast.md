@@ -20,10 +20,10 @@ tags:
 title: Floating Point, Characters, const, and Type Conversion
 translation:
   source: documents/vol1-fundamentals/c_tutorials/02B-float-char-const-cast.md
-  source_hash: 4907067b5596523b6c6076c3b1e33ab35d40bb677bf2ca0558c040ad3c7068e7
-  translated_at: '2026-09-25T12:42:00+00:00'
-  engine: anthropic
-  token_count: 4500
+  source_hash: bdd5ed8c3bed527e4ca67e055acc2a03200d8a7a4d3a27965d5ad05add3d9edd
+  translated_at: '2026-11-22T16:39:42+00:00'
+  engine: glm-5.3-refresh
+  token_count: 11258
 ---
 # Floating Point, Characters, const, and Type Conversion
 
@@ -46,9 +46,9 @@ C provides three floating-point types, listed here in order of increasing precis
 `double` is the default floating-point type—when you write `3.14`, the compiler treats it as a `double`. If you want to use `float`, remember to add the `f` suffix; for `long double`, add the `L` suffix.
 
 ```c
-float f = 3.14f;            // the f suffix means float
-double d = 3.14159265359;    // a plain literal is double by default
-long double ld = 3.14L;      // the L suffix means long double
+float f = 3.14f;            // 后缀 f 表示 float
+double d = 3.14159265359;    // 默认就是 double
+long double ld = 3.14L;      // 后缀 L 表示 long double
 ```
 
 ### Floating-Point Numbers Are Imprecise—and That's Not a Bug
@@ -104,10 +104,10 @@ One related trap: under `float`, `0.1f + 0.2f` happens to equal `0.3f`. Don't co
 ```c
 #include <math.h>
 
-/// @brief Check whether two floats are approximately equal
-/// @param a The first floating-point number
-/// @param b The second floating-point number
-/// @return 1 if approximately equal, 0 if not
+/// @brief 判断两个 float 是否近似相等
+/// @param a 第一个浮点数
+/// @param b 第二个浮点数
+/// @return 1 表示近似相等，0 表示不相等
 int float_equal(float a, float b)
 {
     return fabsf(a - b) < 1e-6f;
@@ -128,16 +128,16 @@ C has no dedicated "character type". The name `char` invites misunderstanding—
 
 ```c
 char ch = 'A';
-printf("%c\n", ch);   // printed as a character: A
-printf("%d\n", ch);   // printed as an integer: 65
+printf("%c\n", ch);   // 作为字符打印：A
+printf("%d\n", ch);   // 作为整数打印：65
 ```
 
 The ASCII code of `'A'` is 65. So `'A' + 1` evaluates to 66, which corresponds to the character `'B'`. This "characters are integers" property is especially handy for case conversion:
 
 ```c
 char lower = 'a';
-char upper = lower - 32;    // 'a' is ASCII 97; subtract 32 and you get 65 = 'A'
-char upper2 = lower - ('a' - 'A');  // a more readable way to write it
+char upper = lower - 32;    // 'a' 的 ASCII 是 97，减 32 得 65 = 'A'
+char upper2 = lower - ('a' - 'A');  // 更可读的写法
 ```
 
 Let's verify:
@@ -158,7 +158,7 @@ A
 Here is a subtle incompatibility between C and C++: in C, the character literal `'A'` has type `int` (4 bytes), but in C++ its type is `char` (1 byte).
 
 ```c
-printf("%zu\n", sizeof('A'));  // C: prints 4, C++: prints 1
+printf("%zu\n", sizeof('A'));  // C: 输出 4，C++: 输出 1
 ```
 
 This difference doesn't affect the code you write in the vast majority of cases, but if you move from C to C++ later on, remember this so the sizeof result doesn't catch you off guard.
@@ -170,8 +170,8 @@ ASCII uses 7 bits (0\~127) to represent English letters, digits, and common symb
 ```c
 #include <wchar.h>
 
-wchar_t wc = L'中';        // wide character; size is implementation-defined
-char* mb = "你好";          // multibyte characters (UTF-8 encoded)
+wchar_t wc = L'中';        // 宽字符，大小由实现定义
+char* mb = "你好";          // 多字节字符（UTF-8 编码）
 ```
 
 The problem with `wchar_t` is that its size is not consistent—2 bytes on Windows, 4 bytes on Linux. This is also why many modern projects simply handle all text with UTF-8-encoded `char` arrays. Encoding is a huge topic; we'll only touch on it here—knowing it exists is enough for now.
@@ -183,10 +183,10 @@ The problem with `wchar_t` is that its size is not consistent—2 bytes on Windo
 `const` is a type qualifier that tells the compiler "this variable's value should not be modified". You can think of it as putting a lock on the variable—once the lock is on, any attempt to modify the variable gets stopped at compile time.
 
 ```c
-const int kMaxSize = 256;        // a constant; it cannot be modified
+const int kMaxSize = 256;        // 常量，不能修改
 const double kPi = 3.14159265;
 
-// kMaxSize = 100;  // compile error! cannot modify a const variable
+// kMaxSize = 100;  // 编译错误！不能修改 const 变量
 ```
 
 Note my wording here is "should not" rather than "cannot"—technically you can force your way past `const` through a pointer and modify the data, but that's undefined behavior and purely asking for trouble.
@@ -196,14 +196,14 @@ Note my wording here is "should not" rather than "cannot"—technically you can 
 The most common use of `const` is in function parameters, declaring "this function will not modify the data you pass in":
 
 ```c
-/// @brief Compute the length of a string
-/// @param str A string that cannot be modified
-/// @return The length of the string
+/// @brief 计算字符串长度
+/// @param str 不可修改的字符串
+/// @return 字符串长度
 size_t my_strlen(const char* str);
 
-/// @brief Write data into a buffer
-/// @param buf A modifiable buffer
-/// @param len The buffer length (the function does not modify len)
+/// @brief 在缓冲区中写入数据
+/// @param buf 可修改的缓冲区
+/// @param len 缓冲区长度（函数不会修改 len）
 void fill_buffer(char* buf, const size_t len);
 ```
 
@@ -232,8 +232,8 @@ In any arithmetic operation, `char` and `short` are first automatically promoted
 ```c
 uint8_t a = 200;
 uint8_t b = 100;
-uint8_t c = a + b;  // 200 + 100 = 300, truncated to 44
-// but the type of a + b itself is int (300), not uint8_t
+uint8_t c = a + b;  // 200 + 100 = 300，截断为 44
+// 但 a + b 本身的类型是 int（300），不是 uint8_t
 ```
 
 Here the result of `a + b` is the `int` value 300, and it gets truncated to 44 when assigned to a `uint8_t`. Integer promotion guarantees that operations on small types won't overflow in intermediate steps, but truncation can still happen when assigning back to a small type.
@@ -246,9 +246,9 @@ When two operands of different types take part in an operation, the compiler con
 int i = -1;
 unsigned int u = 10;
 if (i < u) {
-    // you'd think -1 < 10 is true?
-    // wrong! i is converted to unsigned int and becomes UINT_MAX (a huge positive number)
-    // so UINT_MAX < 10 is false
+    // 你以为 -1 < 10 是 true？
+    // 错！i 被转成 unsigned int，变成 UINT_MAX（一个巨大的正数）
+    // 所以 UINT_MAX < 10 是 false
     printf("这行不会打印\n");
 }
 ```
@@ -260,7 +260,7 @@ Our advice is simple: **avoid mixing signed and unsigned wherever possible**. If
 ```c
 int count = -1;
 size_t len = 5;
-if (count < (int)len) {  // explicit cast; the intent is clear
+if (count < (int)len) {  // 显式转换，意图清楚
     // ...
 }
 ```
@@ -271,8 +271,8 @@ Explicit conversion in C is the C-style cast: `(type)value`. It is simple and br
 
 ```c
 double pi = 3.14159;
-int i = (int)pi;              // truncated to 3
-unsigned int u = (unsigned int)-1;  // becomes UINT_MAX
+int i = (int)pi;              // 截断为 3
+unsigned int u = (unsigned int)-1;  // 变成 UINT_MAX
 ```
 
 The problem with the C-style cast is that it is too "universal"—`const` can be cast away, pointer types can be converted at will, and assumptions about data layout get no verification at all. This is exactly why C++ introduced the named cast operators (`static_cast`, `const_cast`, `reinterpret_cast`, `dynamic_cast`), making the intent of each conversion obvious at a glance.
@@ -347,12 +347,12 @@ Replace `==` with a check that "the absolute difference is smaller than a very s
 #include <math.h>
 #include <float.h>
 
-// DBL_EPSILON for double
+// double 用 DBL_EPSILON
 int double_equal(double a, double b) {
     return fabs(a - b) < DBL_EPSILON;
 }
 
-// FLT_EPSILON for float
+// float 用 FLT_EPSILON
 int float_equal(float a, float b) {
     return fabsf(a - b) < FLT_EPSILON;
 }
@@ -372,7 +372,7 @@ The following code hides a bug. Find it and explain why:
 int values[] = {1, 2, 3, 4, 5};
 int target = -1;
 
-// the bug is in the line below
+// bug 就在下面这行
 if (target < sizeof(values) / sizeof(values[0])) {
     printf("target is in range\n");
 }
@@ -386,7 +386,7 @@ Hint: what type does `sizeof` return?
 int values[] = {1, 2, 3, 4, 5};
 int target = -1;
 
-// the bug is in the line below
+// bug 就在下面这行
 if (target < (int)sizeof(values) / (int)sizeof(values[0])) {
     printf("target is in range\n");
 }
@@ -398,7 +398,7 @@ Or
 int values[] = {1, 2, 3, 4, 5};
 int target = -1;
 
-// the bug is in the line below
+// bug 就在下面这行
 if (target < (int)(sizeof(values) / sizeof(values[0]))) {
     printf("target is in range\n");
 }
@@ -413,14 +413,14 @@ if (target < (int)(sizeof(values) / sizeof(values[0]))) {
 Read the following code and answer four questions:
 
 ```c
-// sum promises not to modify what data points to
-int sum(const int* data, size_t n);   // (1) what contract does const on the parameter create?
+// sum 承诺不改 data 指向的内容
+int sum(const int* data, size_t n);   // (1) 参数加 const 是什么契约？
 
 void f(void) {
-    const int limit = 100;            // (2) what does const on a local variable accomplish?
+    const int limit = 100;            // (2) 局部变量加 const 有什么用？
     int arr[3] = {1, 2, 3};
-    limit = 200;                      // (3) will this line compile?
-    sum(arr, 3);                      // (4) is passing int* to a const int* parameter legal?
+    limit = 200;                      // (3) 这行能编译吗？
+    sum(arr, 3);                      // (4) int* 传给 const int* 参数，合法吗？
 }
 ```
 

@@ -24,9 +24,9 @@ title: "WeakPtr prerequisite (IV): applying concepts and requires"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/02_weak_ptr/full/pre-04-weak-ptr-concepts-and-requires.md
   source_hash: c5f666b4b4f2f4beb7491001830b1100c10401575b4be208cbbe31d4ea1147f4
-  translated_at: '2026-09-26T01:24:07+00:00'
-  engine: anthropic
-  token_count: 2200
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6742
 ---
 # WeakPtr prerequisite (IV): applying concepts and requires
 
@@ -59,7 +59,7 @@ public:
         requires(std::convertible_to<U*, T*>)
     WeakPtr(WeakPtr<U>&& other)
         : ref_(std::move(other.ref_)), ptr_(std::move(other.ptr_)) {}
-    // the corresponding operator= follows the same pattern
+    // 对应的 operator= 同理
 };
 ```
 
@@ -72,11 +72,11 @@ struct Base { virtual ~Base() = default; };
 struct Derived : Base {};
 
 WeakPtr<Derived> wd = factory_derived.get_weak_ptr();
-WeakPtr<Base> wb = wd;           // ✓ Derived* → Base* is legal
+WeakPtr<Base> wb = wd;           // ✓ Derived* → Base* 合法
 
-WeakPtr<Base> wb2 = wb;          // ✓ same type, also goes through convertible_to (B* → B*)
-WeakPtr<Derived> wd2 = wb;       // ✗ Base* → Derived* is illegal, this constructor drops out, compile error
-WeakPtr<int> wi = wb;            // ✗ Base* → int* is illegal, compile error
+WeakPtr<Base> wb2 = wb;          // ✓ 同类型,也走 convertible_to(B* → B*)
+WeakPtr<Derived> wd2 = wb;       // ✗ Base* → Derived* 非法,这个构造不参与,编译错
+WeakPtr<int> wi = wb;            // ✗ Base* → int* 非法,编译错
 ```
 
 The last two errors are stopped right at compile time. Because this is concepts rather than SFINAE, the compiler's diagnostic points bluntly at "constraints not satisfied" instead of dumping a faceful of template-substitution stack on you. With the type contract moved onto the signature, whether a conversion should happen and whether it can happen are readable right off the signature.
@@ -86,7 +86,7 @@ The last two errors are stopped right at compile time. Because this is concepts 
 The old way looked like this:
 
 ```cpp
-// Old-style SFINAE: poor readability, terrible error messages
+// 老式 SFINAE:可读性差,报错信息糟糕
 template <typename U,
           typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
 WeakPtr(const WeakPtr<U>& other) : ref_(other.ref_), ptr_(other.ptr_) {}
@@ -104,13 +104,13 @@ Over on the WeakPtrFactory side there is a more interesting move: hanging `requi
 template <class T>
 class WeakPtrFactory : public internal::WeakPtrFactoryBase {
 public:
-    // const version: the factory is const, can only hand out WeakPtr<const T>
+    // const 版本:factory 是 const 的,只能发 WeakPtr<const T>
     WeakPtr<const T> GetWeakPtr() const {
         return WeakPtr<const T>(weak_reference_owner_.GetRef(),
                                 reinterpret_cast<const T*>(ptr_));
     }
 
-    // non-const version: the factory is not const, hands out WeakPtr<T> (mutable)
+    // 非 const 版本:factory 不是 const 的,发 WeakPtr<T>(可变)
     WeakPtr<T> GetWeakPtr()
         requires(!std::is_const_v<T>)
     {
@@ -143,7 +143,7 @@ template <typename T>
 class MiniWeakPtr {
 public:
     MiniWeakPtr() = default;
-    // upcast converting constructor
+    // 向上转型转换构造
     template <typename U>
         requires(std::convertible_to<U*, T*>)
     MiniWeakPtr(const MiniWeakPtr<U>&) {}
@@ -152,7 +152,7 @@ public:
 int main() {
     MiniWeakPtr<Derived> wd;
     MiniWeakPtr<Base> wb = wd;          // ✓
-    // MiniWeakPtr<Derived> wd2 = wb;   // ✗ compile error: Base* → Derived* does not satisfy convertible_to
+    // MiniWeakPtr<Derived> wd2 = wb;   // ✗ 编译错:Base* → Derived* 不满足 convertible_to
     return 0;
 }
 ```

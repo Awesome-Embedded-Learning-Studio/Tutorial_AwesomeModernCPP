@@ -28,9 +28,9 @@ title: 'cmath: Mathematical Functions, Floating-Point Classification, and Precis
 translation:
   source: documents/vol3-standard-library/time-numeric/59-cmath.md
   source_hash: 3234889ce7b39400e1e2d68f41263d093ead10d12eade75349f312aded2ad01c
-  translated_at: '2026-09-26T00:18:06+00:00'
-  engine: anthropic
-  token_count: 7400
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 22737
 ---
 # `<cmath>`: Mathematical Functions, Floating-Point Classification, and Precision Pitfalls
 
@@ -62,7 +62,7 @@ int main()
     std::cout << "isfinite(3.14)?    " << std::isfinite(3.14) << '\n';
     std::cout << "isnormal(3.14)?    " << std::isnormal(3.14) << '\n';
 
-    // A few exceptional states from different sources
+    // 几种来源各异的异常态
     std::cout << "sqrt(-1) is NaN:   " << std::isnan(std::sqrt(-1.0)) << '\n';
     std::cout << "0.0/0.0 is NaN:    " << std::isnan(0.0 / 0.0) << '\n';
     std::cout << "1.0/0.0 is inf:    " << std::isinf(1.0 / 0.0) << '\n';
@@ -148,10 +148,10 @@ Want to run it and watch the NaN trap spring? Open this online demo:
 
 ```cpp
 double x = compute_something();
-if (x == std::numeric_limits<double>::quiet_NaN()) {   // never entered!
+if (x == std::numeric_limits<double>::quiet_NaN()) {   // 永远进不来！
     handle_error();
 }
-if (std::isnan(x)) {                                    // this is the right way
+if (std::isnan(x)) {                                    // 这才对
     handle_error();
 }
 ```
@@ -176,8 +176,8 @@ Let's grab the boundary values straight from `std::numeric_limits<double>`:
 
 int main()
 {
-    double smallest_normal = std::numeric_limits<double>::min();      // smallest normal
-    double smallest_denorm = std::numeric_limits<double>::denorm_min(); // smallest subnormal
+    double smallest_normal = std::numeric_limits<double>::min();      // 最小正常数
+    double smallest_denorm = std::numeric_limits<double>::denorm_min(); // 最小次正规数
     double half = smallest_normal / 2.0;
     std::cout << "smallest normal      = " << smallest_normal << '\n';
     std::cout << "smallest denorm      = " << smallest_denorm << '\n';
@@ -234,18 +234,18 @@ With classification behind us, let's look at the operations you use every day. N
 
 int main()
 {
-    int imin = std::numeric_limits<int>::min();   // usually -2147483648
+    int imin = std::numeric_limits<int>::min();   // 通常是 -2147483648
     auto r = std::abs(imin);
     std::cout << "INT_MIN              = " << imin << '\n';
     std::cout << "std::abs(INT_MIN)    = " << r << '\n';
     std::cout << "INT_MIN == abs?      = " << (imin == r ? "yes (overflowed)" : "no") << '\n';
 
-    // Floating-point overloads: abs and fabs are equivalent
+    // 浮点重载：abs 和 fabs 等价
     double dn = -3.14;
     std::cout << "\nstd::fabs(-3.14)     = " << std::fabs(dn) << '\n';
     std::cout << "std::abs(-3.14)      = " << std::abs(dn) << '\n';
 
-    // long long integer abs is also overloaded, and safe
+    // long long 整数 abs 也有重载，安全
     long long big = -9000000000000000000LL;
     std::cout << "std::abs(-9e18 LL)   = " << std::abs(big) << '\n';
     return 0;
@@ -284,7 +284,7 @@ int main()
     std::cout << "hypot(3,4)           = " << std::hypot(3.0, 4.0) << '\n';
     std::cout << "sqrt(3*3+4*4)        = " << std::sqrt(3.0*3.0 + 4.0*4.0) << '\n';
 
-    double x = 1e200, y = 1e200;   // x and y are both within double's range
+    double x = 1e200, y = 1e200;   // x、y 都在 double 范围内
     std::cout << "\nnaive sqrt(x*x+y*y) = " << std::sqrt(x*x + y*y) << '\n';
     std::cout << "hypot(1e200, 1e200)  = " << std::hypot(x, y) << '\n';
     return 0;
@@ -373,8 +373,8 @@ The alternative is tolerance-based comparison, commonly known as epsilon compari
 bool nearly_equal(double a, double b, double abs_eps, double rel_eps)
 {
     double diff = std::fabs(a - b);
-    if (diff <= abs_eps) return true;                       // absolute tolerance: handles values near 0
-    return diff <= rel_eps * std::max(std::fabs(a), std::fabs(b));  // relative tolerance: scales with magnitude
+    if (diff <= abs_eps) return true;                       // 绝对容差：处理接近 0 的情况
+    return diff <= rel_eps * std::max(std::fabs(a), std::fabs(b));  // 相对容差：按数量级缩放
 }
 
 int main()
@@ -411,8 +411,8 @@ The benefit of rounding once is precision. The cost is—as measured below—whe
 int main()
 {
     std::cout << std::setprecision(17);
-    // In the naive two-step form, (1/3)*3 rounds to 1.0, then minus 1 gives 0
-    // fma rounds once, preserving the true approximation of (1/3)*3
+    // (1/3)*3 在朴素两步里被舍入成 1.0，再减 1 得 0
+    // fma 单次舍入，保留了 (1/3)*3 的真实近似值
     double p = 1.0 / 3.0;
     double naive = p * 3.0 + (-1.0);
     double fused = std::fma(p, 3.0, -1.0);
@@ -512,7 +512,7 @@ As of C++17, `<cmath>` took in a whole batch of "special mathematical functions"
 int main()
 {
     std::cout << std::setprecision(17);
-    std::cout << "beta(1,1)           = " << std::beta(1.0, 1.0) << '\n';      // mathematically = 1
+    std::cout << "beta(1,1)           = " << std::beta(1.0, 1.0) << '\n';      // 数学上 = 1
     std::cout << "riemann_zeta(2)     = " << std::riemann_zeta(2.0) << '\n';   // = pi^2/6 ~ 1.6449
     std::cout << "comp_ellint_2(0)    = " << std::comp_ellint_2(0.0) << '\n';  // = pi/2 ~ 1.5708
     std::cout << "assoc_laguerre(2,0,1) = " << std::assoc_laguerre(2, 0, 1.0) << '\n';
@@ -548,10 +548,10 @@ int main()
     std::cout << "std::numbers::pi    = " << std::numbers::pi << '\n';
     std::cout << "std::numbers::e     = " << std::numbers::e << '\n';
     std::cout << "std::numbers::sqrt2 = " << std::numbers::sqrt2 << '\n';
-    std::cout << "std::numbers::phi   = " << std::numbers::phi << '\n';   // the golden ratio
+    std::cout << "std::numbers::phi   = " << std::numbers::phi << '\n';   // 黄金比例
     std::cout << "cos(pi)             = " << std::cos(std::numbers::pi) << '\n';
 
-    // They are variable templates, usable at compile time
+    // 它们是变量模板，能编译期用
     constexpr double kPi = std::numbers::pi_v<double>;
     std::cout << "constexpr pi_v      = " << kPi << '\n';
     static_assert(std::numbers::pi_v<double> > 3.14, "pi > 3.14");
@@ -586,11 +586,11 @@ To close out, a brief word on how "overflow" behaves inside `<cmath>`. We alread
 int main()
 {
     std::cout << std::boolalpha;
-    std::cout << "exp(1000) isinf? " << std::isinf(std::exp(1000.0)) << '\n';  // overflow -> +inf
-    std::cout << "pow(2,1024) isinf? " << std::isinf(std::pow(2.0, 1024.0)) << '\n'; // 2^1024 just barely overflows
+    std::cout << "exp(1000) isinf? " << std::isinf(std::exp(1000.0)) << '\n';  // 上溢 -> +inf
+    std::cout << "pow(2,1024) isinf? " << std::isinf(std::pow(2.0, 1024.0)) << '\n'; // 2^1024 刚好溢出
     std::cout << "log(0) isinf?   " << std::isinf(std::log(0.0)) << '\n';     // -> -inf
-    std::cout << "log(-1) isnan?  " << std::isnan(std::log(-1.0)) << '\n';    // domain error -> NaN
-    std::cout << "sqrt(-1) isnan? " << std::isnan(std::sqrt(-1.0)) << '\n';   // domain error -> NaN
+    std::cout << "log(-1) isnan?  " << std::isnan(std::log(-1.0)) << '\n';    // 定义域错 -> NaN
+    std::cout << "sqrt(-1) isnan? " << std::isnan(std::sqrt(-1.0)) << '\n';   // 定义域错 -> NaN
     return 0;
 }
 ```

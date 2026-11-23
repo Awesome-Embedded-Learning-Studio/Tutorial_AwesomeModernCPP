@@ -24,10 +24,10 @@ tags:
 title: 'C++ abstraction costs: a cheat sheet'
 translation:
   source: documents/vol6-performance/ch06-cpp-abstraction-cost/06-04-abstraction-cost-cheatsheet.md
-  source_hash: 399bcd8bc9a5eb4d6e20ba901eed029b7a1ba3246bf4bd06050454e2215b552d
-  translated_at: '2026-09-26T06:55:14+00:00'
-  engine: anthropic
-  token_count: 1100
+  source_hash: 80a2c45b5adfef0b5350962949b9c1e8ced84629eb09402ce797a0ab4c33a408
+  translated_at: '2026-11-22T16:43:35+00:00'
+  engine: glm-5.3-refresh
+  token_count: 3998
 ---
 # C++ abstraction costs: a cheat sheet
 
@@ -65,7 +65,7 @@ In practice: keep hot-path variables automatic where possible (let the compiler 
 A **bitfield** packs several small fields into a single integer, saving space:
 
 ```cpp
-struct Flags { unsigned a : 1; unsigned b : 1; unsigned c : 6; };  // 8 bits total
+struct Flags { unsigned a : 1; unsigned b : 1; unsigned c : 6; };  // 共 8 bit
 ```
 
 The upside: small `sizeof` (compact) and cache-friendly. The cost is **bit manipulation**: reading or writing a bitfield member is "read the whole byte + bitmask + bit ops", a few more instructions than reading or writing a plain `int`. So bitfields **save memory but spend instructions**. They fit "lots of flag bits, memory is the bottleneck" (protocol headers, flag sets); they don't fit "a single field read and written at high frequency, compute is the bottleneck". Agner vol 1 §7.27 has the detailed tradeoffs.
@@ -85,15 +85,15 @@ This is one of the few cases where "zero-cost abstraction" genuinely holds (an e
 ```text
 sizeof:
   int                              = 4
-  std::optional<int>               = 8   (int 4B + has-value flag + padding)
+  std::optional<int>               = 8   (int 4B + 有无值标记 + padding)
   std::variant<int,double>         = 16  (double 8B + index + padding)
   std::variant<int,char,double,str>= 40  (string 32B + index + padding)
-  std::span<int>                   = 16  (pointer + length, zero ownership)
-  std::string_view                 = 16  (pointer + length, no \0 guarantee)
-  std::shared_ptr<int>             = 16  (2 pointers: object + control block)
-  std::unique_ptr<int>             = 8   (1 pointer)
-  std::string                      = 32  (includes SSO buffer)
-  std::vector<int>                 = 24  (3 pointers)
+  std::span<int>                   = 16  (指针 + 长度,零所有权)
+  std::string_view                 = 16  (指针 + 长度,不保证 \0)
+  std::shared_ptr<int>             = 16  (2 指针:对象 + 控制块)
+  std::unique_ptr<int>             = 8   (1 指针)
+  std::string                      = 32  (含 SSO 缓冲)
+  std::vector<int>                 = 24  (3 指针)
 ```
 
 How to read it: the extra bytes in `optional`/`variant` are the "has a value" flag and the index; `span`/`string_view` are lightweight "pointer + length" views (zero ownership, nearly free); and `string`'s 32 bytes include the SSO small buffer (the SSO mechanism belongs to vol3).
@@ -104,7 +104,7 @@ The next article is ch06's last, on RVO/NRVO and move. It isn't an "abstraction 
 
 ## References
 
-- Agner Fog, *Optimizing software in C++*, §7 *Variables / objects / containers* (variable storage types, bitfields, enum) — local copy
+- Agner Fog, *Optimizing software in C++*, §7 *Variables / objects / containers* (variable storage types, bitfields, enum)
 - Carruth, *There Are No Zero-Cost Abstractions* (CppCon 2019) — the "no zero-cost abstractions" thesis
 - ch06-01/02/03/05 (this volume; where each cost was measured)
 - The sizeof program for this article: `code/volumn_codes/vol6-performance/ch06/abstraction_sizeof.cpp`

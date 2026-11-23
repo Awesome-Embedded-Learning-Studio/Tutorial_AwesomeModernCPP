@@ -24,9 +24,9 @@ title: "flat_map prerequisite (I): std::vector internals and growth"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/03_flat_map/full/pre-01-flat-map-vector-internals-and-growth.md
   source_hash: 794d402e09ad97688afdf635d79f3a396bfd523a567ec00a5aa636e2a6189744
-  translated_at: '2026-09-26T02:46:38+00:00'
-  engine: anthropic
-  token_count: 4000
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 4895
 ---
 # flat_map prerequisite (I): std::vector internals and growth
 
@@ -41,8 +41,8 @@ In libstdc++, libc++, and MSVC alike, `std::vector<T>` looks almost identical: t
 ```text
         begin        end          end_of_storage
           ↓            ↓                ↓
-memory:  [ | | | | | | | | | | | | | | | ]
-          ←── size ──→←── free ──→
+内存:    [ | | | | | | | | | | | | | | | ]
+          ←── size ──→←── 空闲 ──→
           ←────────── capacity ────────→
 ```
 
@@ -93,7 +93,7 @@ Why not quietly follow vector's fine-grained rules — reserve invalidates only 
 The source even tosses out a UB example outright (flat_map.h:57-60):
 
 ```cpp
-container["new element"] = it.second;   // UB: operator[] may trigger growth, it becomes invalid
+container["new element"] = it.second;   // UB:operator[] 可能触发扩容,it 失效
 ```
 
 This "mutate while iterating" pattern is flat-out undefined behavior in flat_map — a good deal stricter than `std::map` (whose nodes are stable and whose iterators survive mutations).

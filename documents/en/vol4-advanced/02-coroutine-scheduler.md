@@ -13,9 +13,9 @@ description: ''
 translation:
   source: documents/vol4-advanced/02-coroutine-scheduler.md
   source_hash: b0a17f4e8df3445c2d5a65e633bc52764489842afedd519af7803653b3a3b411
-  translated_at: '2026-09-26T02:53:04+00:00'
-  engine: anthropic
-  token_count: 8000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 26951
 ---
 # Understanding C++20's Revolutionary Feature — Coroutines, Part 2: Writing a Simple Coroutine Scheduler
 
@@ -267,7 +267,7 @@ Clearly, we have disabled every form of copying and construction, and for conven
 ```cpp
 class Schedular : public SingleInstance<Schedular>
 {
-    Schedular() = default; // still hiding our constructor away
+    Schedular() = default; // 还是藏起来我们的构造函数
 public:
  friend class SingleInstance<Schedular>;
 }
@@ -305,7 +305,7 @@ So we need the scheduler to know which coroutines want to nap — the scheduler 
 One thing to know — for convenience, the standard library does have an interface called `sleep_until`. So, to make management easy and to reuse a standard library interface, we design a `sleep_until` interface for our scheduler — it declares that we sleep until a specified time point, at which point we are ready to be scheduled again (and let me stress it once more: coroutine scheduling is cooperative here, so all we can guarantee is a lower bound on how long the sleep lasts).
 
 ```cpp
-void Schedular::sleep_until(std::coroutine_handle<> which, // who needs to sleep?
+void Schedular::sleep_until(std::coroutine_handle<> which, // 谁需要休眠？
                    std::chrono::steady_clock::time_point until_when);
 
 ```
@@ -314,7 +314,7 @@ On top of that, we need a push interface: the spawn interface, which accepts the
 
 ```cpp
  template <typename T>
- void Schedular::spawn(Task<T>&& task); // Task is move-only, so that is what this interface takes
+ void Schedular::spawn(Task<T>&& task); // Task只可以被移动，所以放这个接口进来
 
 ```
 
@@ -334,7 +334,7 @@ It will kick off our coroutine scheduling. Just three of them!
 We start with scheduling itself. First, we need to hold on to the coroutine handles lined up as ready (note: not the `Task` itself — we are scheduling coroutines, not coroutine return objects). As mentioned above, our scheduling policy is FIFO, so first-come-first-served calls for a queue to handle the storage.
 
 ```cpp
-std::queue<std::coroutine_handle<>> ready_coroutines; // a simple queue is all we need
+std::queue<std::coroutine_handle<>> ready_coroutines; // 一个简单的队列即可
 
 ```
 
@@ -342,16 +342,16 @@ With that, our spawn interface becomes very easy to implement —
 
 ```cpp
 void Schedular::internal_spawn(std::coroutine_handle<> h) {
-    // a private implementation; users should not poke the scheduling queues directly
- ready_coroutines.push(h); // add it to the scheduling queue
+    // private实现，用户不应该直接随意的触碰调度队列
+ ready_coroutines.push(h); // 加入调度队列
 }
 
-// spawn is a bridging interface: we take out the coroutine_handle managed inside
-// the Task and hand it over to our scheduler to manage
+// spawn是一个桥接的接口，我们会取出来Task内托管的coroutine_handle协程句柄，交给我们的
+// 调度器来管理
 template <typename T>
 inline void Schedular::spawn(Task<T>&& task) {
  internal_spawn(task.coroutine_handle);
- task.coroutine_handle = nullptr; // the Task no longer manages the coroutine_handle itself
+ task.coroutine_handle = nullptr; // 让Task不再托管coroutine_handle本身
 }
 
 ```
@@ -397,17 +397,17 @@ struct AwaitableSleep {
   * @brief await_ready always lets the sessions sleep!
   *
   */
- bool await_ready() { return false; } // we always take over the rest of the flow
+ bool await_ready() { return false; } // 总是我们接管剩下的流程
  void await_suspend(std::coroutine_handle<> h) {
-         // do the push; later our own scheduler takes this handle out and throws it into the ready queue
+         // 执行推送，然后后面我们自己的调度器会取出来这个句柄扔到就绪队列中
   Schedular::instance().sleep_until(h, wake_time);
  }
 
- // do nothing
+ // 什么都不做
  void await_resume() { }
 
 private:
- std::chrono::milliseconds duration; // handy for getters or debugging; kick it out if performance comes first
+ std::chrono::milliseconds duration; // 方便获取接口或者调试，性能优先下可以踢掉这个
  std::chrono::steady_clock::time_point wake_time;
 };
 
@@ -425,7 +425,7 @@ First, sleeping is only for when there is nothing left to do — the implementat
  void run() {
   // if there is any corotines ready or sleepy unfinished
   while (!ready_coroutines.empty() || !sleepys.empty()) {
-            // entering this branch means we do have something to do right now — napping, or pulling a coroutine up.
+            // 进来这个逻辑，就表明我们现在是有事情做的——不管是睡大觉还是拉起一个协程。
    while (!ready_coroutines.empty()) {
     auto front_one = ready_coroutines.front();
     ready_coroutines.pop();
@@ -441,7 +441,7 @@ First, sleeping is only for when there is nothing left to do — the implementat
 Only once every bit of active code has finished executing do we go check whether there is anyone in the sleep queue waiting to be woken —
 
 ```cpp
-   auto now = current(); // current returns std::chrono::steady_clock::now()
+   auto now = current(); // current返回std::chrono::steady_clock::now()
    while (!sleepys.empty() && sleepys.top().sleep <= now) {
     ready_coroutines.push(sleepys.top().coro_handle);
     sleepys.pop();
@@ -506,7 +506,7 @@ Every parent coroutine will lay down its own execution, and per the logic of C++
 That may be too big a jump, so let's take it one step at a time — when, inside our parent coroutine, we write `co_await worker("TaskA", 1, 2);`, the parent coroutine has to give up its own execution and wait for worker's result. At this point, we recall how our coroutine framework runs, from the first post: it goes through `await_ready` to check whether to suspend — and we clearly returned false, because we want to take over the logic ourselves. So the next step of the execution flow is forwarded into `await_suspend`, and that step is exactly the one we want — the parent coroutine is to be suspended, so the child coroutine is to be pushed!
 
 ```cpp
- // in the coroutine return object of the child coroutine being created
+ // 在创建的子协程的协程返回体中
  void await_suspend(std::coroutine_handle<> h) {
   // simple_log_with_func_name(); // Should never be here
   simple_log("Current Routine will be suspend!");
@@ -537,10 +537,10 @@ The child coroutine is resumed here, and what runs is worker's code — until th
    // simple_log_with_func_name();
    if (parent_coroutine) {
     simple_log("parent_coroutine will be wake up");
-                 // pull the parent coroutine back up to run its code
+                 // 父协程拉起来执行代码
     Schedular::instance().internal_spawn(parent_coroutine);
    }
-   return {}; // the child coroutine is owned by the Task struct; this logic never changes
+   return {}; // 子协程由Task结构体托管，这个逻辑不会发生改变
   }
 
 ```
@@ -575,14 +575,14 @@ The code works perfectly. How was the log above produced? The answer is below:
 ```cpp
 
 [charliechen@Charliechen coroutines]$ build/schedular/schedular
-10:36:12 :Current Routine will be suspend! // main_task is about to be suspended
-10:36:12 :Child Routine will be called resume! // worker("TaskA", 1, 2) is about to get to work
-10:36:12 :Current Routine will be suspend! // worker("TaskA", 1, 2) is about to be suspended
-10:36:12 :Child Routine will be called resume! // co_add is about to get to work
-10:36:13 :parent_coroutine will be wake up // co_add, as the leaf coroutine, is about to end itself and pull its parent worker back up
-TaskA: 1 + 2 = 3 // worker is pulled back up and runs the printing
+10:36:12 :Current Routine will be suspend! // main_task准备被挂起
+10:36:12 :Child Routine will be called resume! // worker("TaskA", 1, 2);准备干活
+10:36:12 :Current Routine will be suspend! // worker("TaskA", 1, 2)准备被挂起
+10:36:12 :Child Routine will be called resume! // co_add准备干活
+10:36:13 :parent_coroutine will be wake up // co_add作为叶子协程，准备结束自己，拉起父协程worker干活
+TaskA: 1 + 2 = 3 // worker被拉起，执行打印逻辑
 
-// the logic below is analogous
+// 如下的逻辑是类似的
 10:36:13 :Current Routine will be suspend!
 10:36:13 :Child Routine will be called resume!
 10:36:13 :Current Routine will be suspend!

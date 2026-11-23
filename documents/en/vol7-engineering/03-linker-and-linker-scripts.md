@@ -19,10 +19,10 @@ tags:
 title: Linker and Linker Scripts
 translation:
   source: documents/vol7-engineering/03-linker-and-linker-scripts.md
-  source_hash: e1086aba6bb4e8c5a904cc09c1d4cccc4ce2fe4b61f0130933ff95ec9584494d
-  translated_at: '2026-09-27T02:31:53+00:00'
-  engine: anthropic
-  token_count: 3100
+  source_hash: 84a46aafd6001ec2503982da2c45622a8f976c60216f4af3e725341da33e426e
+  translated_at: '2026-11-22T16:43:36+00:00'
+  engine: glm-5.3-refresh
+  token_count: 8455
 ---
 # Linker and Linker Scripts: From Principles to Practice
 
@@ -52,13 +52,13 @@ When you call in one file a function defined in another, the compiler only knows
 ```cpp
 // file1.cpp
 void printMessage() {
-    // Function implementation
+    // 函数实现
 }
 
 // file2.cpp
-extern void printMessage();  // This is only a declaration
+extern void printMessage();  // 这只是一个声明
 int main() {
-    printMessage();  // The linker is responsible for finding the actual function address
+    printMessage();  // 链接器负责找到实际的函数地址
 }
 
 ```
@@ -148,66 +148,66 @@ Theory done—let's write a real, working linker script. This example targets an
 ### 3.1 A Minimal Working Linker Script
 
 ```c
-/* minimal-arm.ld - A minimal linker script for ARM Cortex-M */
+/* minimal-arm.ld - ARM Cortex-M 最小链接脚本 */
 
-/* Specify the program entry point */
+/* 指定程序入口点 */
 ENTRY(Reset_Handler)
 
-/* Define the physical memory layout */
+/* 定义物理内存布局 */
 MEMORY
 {
   FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 512K
   RAM   (rwx) : ORIGIN = 0x20000000, LENGTH = 128K
 }
 
-/* Compute the top-of-stack address (the end of RAM) */
+/* 计算栈顶地址（RAM 的末尾） */
 _estack = ORIGIN(RAM) + LENGTH(RAM);
 
-/* Define the output section layout */
+/* 定义输出节的布局 */
 SECTIONS
 {
-  /* The interrupt vector table must sit at the start of FLASH */
+  /* 中断向量表必须放在 FLASH 起始处 */
   .isr_vector :
   {
-    KEEP(*(.isr_vector))  /* Prevent it from being optimized away */
+    KEEP(*(.isr_vector))  /* 防止被优化掉 */
   } > FLASH
 
-  /* Program code and read-only data */
+  /* 程序代码和只读数据 */
   .text :
   {
-    *(.text*)              /* All code */
-    *(.rodata*)            /* Read-only constants */
-    *(.gcc_except_table)   /* Exception handling table */
-    *(.eh_frame)           /* Stack unwinding information */
+    *(.text*)              /* 所有代码 */
+    *(.rodata*)            /* 只读常量 */
+    *(.gcc_except_table)   /* 异常处理表 */
+    *(.eh_frame)           /* 栈展开信息 */
 
-    /* Preserve init and destructor function pointers */
+    /* 保留初始化和析构函数指针 */
     KEEP(*(.init))
     KEEP(*(.fini))
     KEEP(*(.init_array*))
     KEEP(*(.fini_array*))
   } > FLASH
 
-  /* Initialized data section (must be copied from FLASH to RAM) */
+  /* 已初始化数据段（需要从 FLASH 拷贝到 RAM） */
   .data : AT(ADDR(.text) + SIZEOF(.text))
   {
-    _sdata = .;           /* Mark the start address in RAM */
+    _sdata = .;           /* 标记 RAM 中的起始地址 */
     *(.data*)
-    _edata = .;           /* Mark the end address in RAM */
+    _edata = .;           /* 标记 RAM 中的结束地址 */
   } > RAM
 
-  /* Record where the data section sits in FLASH (for copying) */
+  /* 记录 FLASH 中数据段的位置（用于拷贝） */
   _sidata = LOADADDR(.data);
 
-  /* Uninitialized data section (must be zeroed) */
+  /* 未初始化数据段（需要清零） */
   .bss :
   {
-    _sbss = .;            /* Mark the start address */
+    _sbss = .;            /* 标记起始地址 */
     *(.bss*)
     *(COMMON)
-    _ebss = .;            /* Mark the end address */
+    _ebss = .;            /* 标记结束地址 */
   } > RAM
 
-  /* Export the start of the heap */
+  /* 导出堆的起始位置 */
   _end = .;
   PROVIDE(end = _end);
 }
@@ -247,52 +247,52 @@ After the processor resets, it jumps to `Reset_Handler`. This is the first piece
 ### 4.2 A Startup Code Example
 
 ```c
-/* startup.c - ARM Cortex-M startup code */
+/* startup.c - ARM Cortex-M 启动代码 */
 
 #include <stdint.h>
 
-/* Symbols exported by the linker script (external symbols) */
-extern uint32_t _sidata;   /* Start address of .data in FLASH */
-extern uint32_t _sdata;    /* Start address of .data in RAM */
-extern uint32_t _edata;    /* End address of .data in RAM */
-extern uint32_t _sbss;     /* Start address of .bss */
-extern uint32_t _ebss;     /* End address of .bss */
+/* 链接脚本导出的符号（外部符号） */
+extern uint32_t _sidata;   /* .data 在 FLASH 中的起始地址 */
+extern uint32_t _sdata;    /* .data 在 RAM 中的起始地址 */
+extern uint32_t _edata;    /* .data 在 RAM 中的结束地址 */
+extern uint32_t _sbss;     /* .bss 的起始地址 */
+extern uint32_t _ebss;     /* .bss 的结束地址 */
 
-/* C++ constructor array (filled in by the linker script) */
+/* C++ 构造函数数组（由链接脚本填充） */
 extern void (*__init_array_start[])(void);
 extern void (*__init_array_end[])(void);
 
-/* Declaration of the main function */
+/* main 函数声明 */
 extern int main(void);
 
 /**
- * Reset handler - the program's true entry point
+ * 复位处理函数 - 程序的真正入口
  */
 void Reset_Handler(void) {
   uint32_t *src, *dst;
 
-  /* 1. Copy the .data section from FLASH to RAM */
+  /* 1. 拷贝 .data 段从 FLASH 到 RAM */
   src = &_sidata;
   dst = &_sdata;
   while (dst < &_edata) {
     *dst++ = *src++;
   }
 
-  /* 2. Zero the .bss section */
+  /* 2. 清零 .bss 段 */
   dst = &_sbss;
   while (dst < &_ebss) {
     *dst++ = 0;
   }
 
-  /* 3. Call the constructors of the C++ global objects */
+  /* 3. 调用 C++ 全局对象的构造函数 */
   for (void (**p)() = __init_array_start; p < __init_array_end; ++p) {
     (*p)();
   }
 
-  /* 4. Jump to the main function */
+  /* 4. 跳转到 main 函数 */
   main();
 
-  /* If main returns, loop forever */
+  /* 如果 main 返回，进入无限循环 */
   while (1);
 }
 
@@ -326,11 +326,11 @@ This can lead to one object's constructor using another object that has not been
 3. Use **`__attribute__((init_priority(N)))`** (a GCC extension—use with care)
 
 ```cpp
-// Use a Meyers singleton to avoid initialization-order problems
+// 使用 Meyers 单例避免初始化顺序问题
 class Logger {
 public:
     static Logger& getInstance() {
-        static Logger instance;  // Constructed only on the first call
+        static Logger instance;  // 第一次调用时才构造
         return instance;
     }
 private:
@@ -346,10 +346,10 @@ Make sure the linker script handles the C++-related sections correctly:
 ```c
 .text : {
     /* ... */
-    KEEP(*(.init_array*))    /* Constructor pointer array */
-    KEEP(*(.fini_array*))    /* Destructor pointer array */
-    *(.eh_frame)             /* Exception handling information */
-    *(.gcc_except_table)     /* Exception handling table */
+    KEEP(*(.init_array*))    /* 构造函数指针数组 */
+    KEEP(*(.fini_array*))    /* 析构函数指针数组 */
+    *(.eh_frame)             /* 异常处理信息 */
+    *(.gcc_except_table)     /* 异常处理表 */
 }
 
 ```
@@ -377,10 +377,10 @@ Use the compiler's section-splitting options together with the linker's garbage 
 
 ```bash
 
-# At compile time: put each function and each data object into its own section
+# 编译时：将每个函数和数据放入独立的段
 arm-none-eabi-gcc -ffunction-sections -fdata-sections ...
 
-# At link time: remove the unused sections
+# 链接时：移除未使用的段
 arm-none-eabi-gcc -Wl,--gc-sections ...
 
 ```
@@ -392,18 +392,18 @@ With this, if the program never calls a certain function, the linker automatical
 **Tip 1: Put constants into FLASH**
 
 ```cpp
-const char msg[] = "Hello";              // In .rodata by default (good)
-static const int table[] = {1,2,3};      // Also in .rodata (good)
+const char msg[] = "Hello";              // 默认在 .rodata（好）
+static const int table[] = {1,2,3};      // 也在 .rodata（好）
 
 ```
 
 **Tip 2: Avoid non-zero initialization of large arrays**
 
 ```cpp
-// Bad: takes up 10KB of FLASH space (in the .data section)
+// 不好：占用 10KB FLASH 空间（在 .data 段）
 uint8_t buffer[10240] = {1, 2, 3, ...};
 
-// Good: takes up no FLASH space (in the .bss section); initialize it in main() at startup
+// 好：不占用 FLASH 空间（在 .bss 段），启动时在 main() 中初始化
 uint8_t buffer[10240];
 
 ```
@@ -429,10 +429,10 @@ SECTIONS {
 **Deferred initialization** Postpone non-urgent initialization until `main()` or first use:
 
 ```cpp
-// Bad: initialized at startup
+// 不好：启动时就初始化
 Display display;
 
-// Good: initialized when needed
+// 好：需要时再初始化
 Display* display = nullptr;
 void initDisplay() {
     if (!display) {

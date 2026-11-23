@@ -22,9 +22,9 @@ related:
 translation:
   source: documents/vol8-domains/data-structure/03-vector-copy-move-and-concepts.md
   source_hash: 15edbd9f2cd3c8dbdfc233e3cac699f1793b35ed9141b6f2b4d19bc241cb95aa
-  translated_at: '2026-09-27T05:29:49+00:00'
-  engine: anthropic
-  token_count: 3200
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6578
 ---
 
 # mini STL in Practice (Part 3): Vector — the Rule of Five, Exception Safety, and Concepts
@@ -54,7 +54,7 @@ Get one word of this function wrong, and everything that uses it has to be redon
 
 ```cpp
     Vector(const Vector& other) {
-        // capacity or the default size is a judgment call; the standard library goes by the size in use — we align with that
+        // 是 capacity 还是走默认大小看情况,标准库是已经使用的大小,我们对齐
         reserve(other.current_cnt_);
         for (size_t i = 0; i < other.current_cnt_; ++i) {
             std::construct_at(buffer_.data() + i, other.buffer_.data()[i]);
@@ -80,7 +80,7 @@ Now the post-mortem. I once wrote another version where `swap` looked like this:
 
 ```cpp
     void swap(Vector& other) noexcept {
-        buffer_ = std::move(other.buffer_);   // ← grabs the other side's block; our own old block has been released
+        buffer_ = std::move(other.buffer_);   // ← 把对方的抢过来,自己的旧地已释放
         std::swap(current_cnt_, other.current_cnt_);
     }
 ```
@@ -99,13 +99,13 @@ Pull the backtrace, and it was pinned down in three minutes. The lesson of this 
 ## Move Constructor and Move Assignment
 
 ```cpp
-    // noexcept is our guarantee that nothing goes wrong while we relocate memory: move_if_noexcept!
+    // noexcept 是保证咱们搬动内存的时候不出事情:move_if_noexcept!
     Vector(Vector&& other) noexcept
         : buffer_(std::move(other.buffer_)), current_cnt_(other.current_cnt_) {
         other.current_cnt_ = 0;
     }
     Vector& operator=(Vector&& other) noexcept {
-        // the same trick, copied over: move and swap — steal the other side's contents first, then swap identities
+        // 照抄 trick:move and swap —— 先把对方偷到手,再换身份;
         Vector looter(std::move(other));
         swap(looter);
         return *this;
@@ -165,8 +165,8 @@ At this point our `Vector` has the full Rule of Five fitted out, and `stage1_raw
 cd code/volumn_codes/vol8-labs/ministl/stage1_rawbuf_vector
 cmake -B build . && cmake --build build
 (cd build && ctest --output-on-failure)          # 4/4
-./build/example/vector_move_if_noexcept          # zero-copy evidence
-./build/example/vector_resize_concepts           # concepts interception demo
+./build/example/vector_move_if_noexcept          # 零拷贝实证
+./build/example/vector_resize_concepts           # concepts 拦截演示
 ```
 
 ## References

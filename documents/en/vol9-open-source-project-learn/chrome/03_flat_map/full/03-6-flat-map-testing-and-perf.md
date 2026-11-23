@@ -24,10 +24,10 @@ tags:
 title: "flat_map hands-on (VI): testing and performance comparison"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/03_flat_map/full/03-6-flat-map-testing-and-perf.md
-  source_hash: c18e6175c0d29391e1891f2737e01b5908b7fa260245223eb87f33474acb8a48
-  translated_at: '2026-09-26T02:49:37+00:00'
-  engine: anthropic
-  token_count: 4300
+  source_hash: 3bc1c18b6ac91b6367b636d9e3eb290f12f93edacebac1f96e2e0d96322887e3
+  translated_at: '2026-11-22T16:41:57.506822+00:00'
+  engine: glm-5.3-refresh
+  token_count: 5812
 ---
 # flat_map hands-on (VI): testing and performance comparison
 
@@ -50,8 +50,8 @@ Below are Catch2-style sketch cases (the project's current runnable examples are
 using namespace tamcpp::chrome;
 
 TEST_CASE("flat_map is sorted+unique after construction", "[flat_map]") {
-    flat_map<int, int> m{{3,30}, {1,10}, {3,30}, {2,20}};   // duplicate 3, unsorted
-    // Invariants 1+2: ordered and deduplicated
+    flat_map<int, int> m{{3,30}, {1,10}, {3,30}, {2,20}};   // 重复 3,无序
+    // 不变量 1+2:有序且去重
     std::vector<int> keys;
     for (auto& [k, v] : m) keys.push_back(k);
     REQUIRE(keys == std::vector<int>{1, 2, 3});
@@ -59,16 +59,16 @@ TEST_CASE("flat_map is sorted+unique after construction", "[flat_map]") {
 
 TEST_CASE("at out-of-range CHECKs", "[flat_map][.death]") {
     flat_map<int, int> m{{1,10}};
-    // Invariant 3: out-of-range CHECK crash (isolated death test)
+    // 不变量 3:越界 CHECK 崩溃(隔离 death test)
     // REQUIRE_DEATH(m.at(99));
 }
 
 TEST_CASE("insert_or_assign overwrites, try_emplace leaves alone", "[flat_map]") {
     flat_map<int, int> m{{1,10}};
-    auto [it1, ins1] = m.insert_or_assign(1, 99);   // already exists → overwrite
+    auto [it1, ins1] = m.insert_or_assign(1, 99);   // 已存在 → 覆写
     REQUIRE_FALSE(ins1);
     REQUIRE(it1->second == 99);
-    // try_emplace leaves an existing key alone (can't be verified directly in the same test; semantics covered in 03-3)
+    // try_emplace 对已存在 key 不动(没法在同测试里直接验,语义见 03-3)
 }
 ```
 
@@ -79,12 +79,12 @@ These cases all aim at semantic boundaries — sort-and-dedupe, the CHECK inside
 First let's measure "how much memory does it take" properly. flat_map's skeleton is nothing more than a `vector<pair<K,V>>` plus a zero-byte comparator; `std::map` goes the red-black-tree route, where every node carries 3 pointers plus a color bit, on top of the data itself. We look at the container skeleton with `sizeof`, then use the footprint of 1 million elements to see the per-item overhead amortized over each entry:
 
 ```text
-sizeof(flat_map<int,int>)  ≈ sizeof(vector<pair<int,int>>) = 24 bytes (three pointers, 64-bit)
-sizeof(std::map<int,int>)  ≈ 48 bytes (tree root + comparator + sentinel node)
+sizeof(flat_map<int,int>)  ≈ sizeof(vector<pair<int,int>>) = 24 字节(三指针,64 位)
+sizeof(std::map<int,int>)  ≈ 48 字节(树根 + 比较器 + sentinel 节点)
 
-Extra overhead of a 1M-element map<int,int> (the 8MB of data itself not counted):
-  flat_map:  ~0 extra (data contiguous, no per-node metadata)
-  std::map:  ~32MB (32B per node × 1M, plus one malloc per node)
+100 万元素 map<int,int> 的额外开销(数据本身 8MB 不计):
+  flat_map:  ~0 额外(数据连续,无节点元数据)
+  std::map:  ~32MB(每节点 32B × 100 万,且每节点一次 malloc)
 ```
 
 flat_map practically freeloads on per-item overhead: the data sits in one contiguous run, there is no per-node metadata, and it mallocs exactly once. `std::map`, on this side, pays 32B per entry in node metadata alone, and needs a million heap allocations on top to fill out. The smaller the objects and the bigger the collection, the wider this gap tears open.
@@ -96,7 +96,7 @@ Both sides do lookup in `O(log n)` — asymptotically neither is faster than the
 Measured (this machine, GCC 16, -O2, companion `20_lookup_vs_shift_perf`; a 100k-element `map<int,int>`, 100k `find` calls on each):
 
 ```text
-100k lookups (100k elements):
+查找 10 万次(10 万元素):
   flat_map:  31 ms
   std::map:  34 ms
 ```
@@ -108,9 +108,9 @@ Don't rush to a verdict. At N=100k with an `int` key, the two sides are nearly t
 Lookup can still bend with the workload; on insertion flat_map plainly loses. Measured: appending 1000 keys one by one into a container already stuffed with 100k elements:
 
 ```text
-1000 inserts into a 100k-element container:
-  flat_map:  2 ms   (O(n) shift each time)
-  std::map:  0 ms   (O(log n) node relinking each time)
+插入 1000 次到 10 万元素容器:
+  flat_map:  2 ms   (每次 O(n) shift)
+  std::map:  0 ms   (每次 O(log n) 节点重连)
 ```
 
 flat_map loses in broad daylight, and this is the hardest piece of data behind the "read-mostly, write-rarely" criterion. If inserts dominate your workload, flat_map's `O(n)` shift will sooner or later become the bottleneck — swallow your pride and go back to `std::map`. The absolute numbers drift with the machine and with N, but the trend — flat_map insertion being slower than `std::map` — is rock solid: the bigger N gets, the wider the gap, because the shift's cost is O(n) by nature.

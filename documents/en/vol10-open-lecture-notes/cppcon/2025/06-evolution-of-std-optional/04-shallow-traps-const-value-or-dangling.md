@@ -24,9 +24,9 @@ related:
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/06-evolution-of-std-optional/04-shallow-traps-const-value-or-dangling.md
   source_hash: 97b67239bc67e0170fbb3a44f2788c20eee0307c0fe3f5acf13168c931d0c4f5
-  translated_at: '2026-09-26T16:22:36+00:00'
-  engine: anthropic
-  token_count: 2800
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5641
 ---
 # Shallow Traps of Optional References: const, value_or, and Dangling
 
@@ -44,15 +44,15 @@ This is the one I personally had the most backwards. I used to assume that the r
 int main() {
     int x = 42;
 
-    // const on the optional
+    // const 在 optional 上
     const std::optional<int&> opt = x;
-    *opt = 100;                         // compiles! and it really does modify x
+    *opt = 100;                         // 编译通过！能改 x
     std::cout << "const optional<int&>: x=" << x << "\n";
 
-    // const on T
+    // const 在 T 上
     int y = 7;
     std::optional<const int&> opt2 = y;
-    // *opt2 = 9;                       // this line would be a compile error
+    // *opt2 = 9;                       // 这行会编译错误
     std::cout << "optional<const int&>: y=" << y << "（不能通过 *opt2 改）\n";
 }
 ```
@@ -74,9 +74,9 @@ Lay the three spellings side by side and you can see they mirror the pointer rul
 ```cpp
 int value = 42;
 
-std::optional<const int&> opt1 = value;     // the reference points to const; cannot modify value through it
-const std::optional<int&>   opt2 = value;   // the optional itself is const: no reset/rebind, but value stays modifiable
-const std::optional<const int&> opt3 = value; // both locked
+std::optional<const int&> opt1 = value;     // 引用指向 const，不能通过它改 value
+const std::optional<int&>   opt2 = value;   // optional 本身 const，不能 reset/重绑定，但能改 value
+const std::optional<const int&> opt3 = value; // 两个都锁
 ```
 
 This corresponds to the pointer-world distinction between `const int*` (points to const) and `int* const` (the pointer itself is const). `optional<const int&>` and `const optional<int&>` are two different things. I used to model an optional reference as "a wrapper around a reference"; the correct model is "a wrapper around a pointer."
@@ -108,11 +108,11 @@ The strategy sounds reasonable, but implementing it was anything but cheap. Stev
 int main() {
     int x = 42;
     std::optional<int&> opt = x;
-    auto r1 = opt.value_or(0);                  // engaged
+    auto r1 = opt.value_or(0);                  // 有值
     static_assert(std::is_same_v<decltype(r1), int>);
 
     std::optional<int&> empty;
-    auto r2 = empty.value_or(7);                 // empty
+    auto r2 = empty.value_or(7);                 // 空值
     static_assert(std::is_same_v<decltype(r2), int>);
 
     std::cout << "engaged value_or=" << r1 << " empty value_or=" << r2 << "（都是 int）\n";
@@ -145,7 +145,7 @@ This is probably the decision in the whole design that I admire most. Picture th
 
 ```cpp
 std::optional<int&> bad() {
-    return std::optional<int&>(42);   // constructed from a temporary int; 42 dies immediately
+    return std::optional<int&>(42);   // 从临时 int 构造，42 马上消亡
 }
 ```
 
@@ -156,14 +156,14 @@ The design principle is to check for dangling-ness. If a conversion would produc
 The difference between the two is critical. With requires, the compiler finds that the overload does not satisfy the constraint and keeps looking for other overloads — potentially dropping into a constructor you never expected and dumping a pile of incomprehensible errors. With `= delete`, the compiler tells you directly: this function is deleted. The error comes earlier, and it is clearer.
 
 ```cpp
-// Design idea (simplified sketch)
+// 设计思路（简化示意）
 template<typename U>
-    requires (std::is_lvalue_reference_v<U>)   // only construct from lvalues
-optional(optional<U&>);                         // requires: if unsatisfied, the compiler goes looking for other overloads
+    requires (std::is_lvalue_reference_v<U>)   // 只允许从左值构造
+optional(optional<U&>);                         // requires：不满足会去找别的重载
 
-// versus
+// 对比
 template<typename U>
-optional(U&&) = delete;                         // delete: errors outright, no further lookup
+optional(U&&) = delete;                         // delete：直接报错，不找别的
 ```
 
 What you wrote genuinely does not work, rather than being shoved by the compiler into some path that happens to compile. For debugging experience, that difference is enormous.

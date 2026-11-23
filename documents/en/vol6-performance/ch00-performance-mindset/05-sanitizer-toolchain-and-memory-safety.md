@@ -31,9 +31,9 @@ title: 'The sanitizer toolchain landscape: from -fsanitize to in-kernel KASAN/KF
 translation:
   source: documents/vol6-performance/ch00-performance-mindset/05-sanitizer-toolchain-and-memory-safety.md
   source_hash: ccdb0b754391b0f51c8dad25bc045c3e4139b756fc2087b9e1fa344a76dfccb7
-  translated_at: '2026-09-26T05:26:33+00:00'
-  engine: anthropic
-  token_count: 10000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 14403
 ---
 # The sanitizer toolchain landscape: from -fsanitize to in-kernel KASAN/KFENCE
 
@@ -54,12 +54,12 @@ One-line division of labor for the four flags: `-fsanitize=address` (ASan: out-o
 Heap overflow, use-after-free, memory leaks — ASan takes all three in one haul. We write the three errors as separate minimal examples (put them in one program and ASan aborts at the first error, so you would never see the other two — hence the split):
 
 ```cpp
-// uaf.cpp — use-after-free
+// uaf.cpp —— 释放后使用(use-after-free)
 #include <cstdio>
 int main() {
     int* p = new int(7);
     delete p;
-    printf("*p = %d\n", *p);   // p is already deleted, dangling
+    printf("*p = %d\n", *p);   // p 已 delete,悬空
     return 0;
 }
 ```
@@ -78,10 +78,10 @@ SUMMARY: AddressSanitizer: heap-use-after-free /tmp/sanit/uaf.cpp:6 in main
 `-g` is what makes the report carry source locations like `uaf.cpp:5` — the make-or-break line for ASan usability: without debug symbols, the report degenerates into a pile of addresses and is basically worthless. It catches stack overflows just as well; swap in a stack buffer that crosses a function boundary:
 
 ```cpp
-// stack_oob.cpp — stack buffer overflow
+// stack_oob.cpp —— 栈缓冲越界
 #include <cstdio>
-void fill(char* p) {                 // cross-function, so detection crosses stack frames
-    for (int i = 0; i <= 8; ++i) p[i] = 'A';  // legal indices are 0..7, 8 is out of bounds
+void fill(char* p) {                 // 跨函数,检测能跨栈帧
+    for (int i = 0; i <= 8; ++i) p[i] = 'A';  // 合法下标 0..7,8 越界
 }
 int main() {
     char buf[8];
@@ -109,7 +109,7 @@ Notice it does more than say "out of bounds" — it tells you "this memory is th
 Memory leaks go through LeakSanitizer (LSan), which ships inside ASan and scans once at process exit:
 
 ```cpp
-// leak.cpp — forgot the delete
+// leak.cpp —— 忘记 delete
 #include <cstdio>
 int main() {
     int* leak = new int(99);
@@ -135,15 +135,15 @@ ASan's cost is real: the program runs 2–5x slower and eats 3–5x more memory.
 ASan asks "may this memory be touched at all"; UBSan asks "is this operation itself legal". Signed integer overflow, out-of-bounds array subscripts, null-pointer dereference, invalid shifts — in the C++ standard these are undefined behavior (UB): they don't necessarily crash, but the results are unpredictable:
 
 ```cpp
-// ub.cpp — three kinds of UB
+// ub.cpp —— 三种 UB
 #include <cstdio>
 #include <cstdint>
 int main() {
     int32_t big = 2147483647;   // INT32_MAX
-    int32_t sum = big + 1;      // (1) signed addition overflow → UB
+    int32_t sum = big + 1;      // (1) 有符号加法溢出 → UB
     int arr[4] = {0,1,2,3};
     int idx = 10;
-    int v = arr[idx];           // (2) out-of-bounds index → UBSan's bounds check
+    int v = arr[idx];           // (2) 下标越界 → UBSan 的 bounds 检查
     printf("sum=%d v=%d\n", sum, v);
     return 0;
 }
@@ -165,11 +165,11 @@ One real-world trap to flag up front: **UBSan and ASan can be enabled together**
 MSan catches "using a value that was never initialized" — a class ASan cannot see: the memory is legal, the access is legal, but the value is garbage. The trap here: **MSan exists only in Clang; GCC does not support this flag at all**:
 
 ```cpp
-// msan.cpp — using an uninitialized variable
+// msan.cpp —— 用了没初始化的变量
 #include <cstdio>
 int main() {
-    int x;                     // deliberately left uninitialized
-    if (x)                     // branching on a garbage value → MSan catches this
+    int x;                     // 故意不初始化
+    if (x)                     // 拿垃圾值做分支判断 → MSan 抓
         printf("x is truthy\n");
     else
         printf("x is zero\n");

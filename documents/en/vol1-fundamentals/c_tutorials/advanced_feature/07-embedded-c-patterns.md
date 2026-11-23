@@ -22,9 +22,9 @@ title: Embedded C Programming Patterns
 translation:
   source: documents/vol1-fundamentals/c_tutorials/advanced_feature/07-embedded-c-patterns.md
   source_hash: 660f3902dc7a7de554f854a10d40fe59837ed4a7fe76cbaadcf62e4d76332aa7
-  translated_at: '2026-09-25T13:55:05+00:00'
-  engine: anthropic
-  token_count: 4900
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 13372
 ---
 # Embedded C Programming Patterns
 
@@ -35,10 +35,10 @@ In this tutorial we take these patterns apart one by one. Understanding them is 
 The code in this article targets ARM Cortex-M, but every concept and pattern applies equally well to other architectures. On the host, you can verify compilation with a cross-compiler:
 
 ```text
-Platform: ARM Cortex-M3/M4 (STM32F1/F4, etc.)
-Compiler: arm-none-eabi-gcc >= 10
-Host verification: gcc -Wall -Wextra -std=c11 (non-hardware-related code)
-Dependencies: none
+平台：ARM Cortex-M3/M4（STM32F1/F4 等）
+编译器：arm-none-eabi-gcc >= 10
+主机验证：gcc -Wall -Wextra -std=c11（非硬件相关代码）
+依赖：无
 ```
 
 ## Step 1 — Figure Out How to Talk to Hardware Registers
@@ -50,13 +50,13 @@ The most fundamental operation in embedded development is reading and writing ha
 Every bit in a peripheral register carries its own meaning. For example, a GPIO port's mode register might use the lowest 2 bits to control the mode (input/output/alternate/analog) and the next 2 bits to control pull-up/pull-down. First, let's define a set of generic bit-manipulation macros—nearly every embedded project has a utility header somewhere that looks like this:
 
 ```c
-// bit_ops.h — generic bit manipulation utilities
+// bit_ops.h — 通用位操作工具
 #define BIT_SET(reg, n)       ((reg) |=  (1U << (n)))
 #define BIT_CLEAR(reg, n)     ((reg) &= ~(1U << (n)))
 #define BIT_TOGGLE(reg, n)    ((reg) ^=  (1U << (n)))
 #define BIT_READ(reg, n)      (((reg) >> (n)) & 1U)
 
-// Field write: writes val into the [high:low] range of reg
+// 写入字段：将 reg 中 [high:low] 区间写入 val
 #define FIELD_WRITE(reg, val, high, low) \
     do { \
         uint32_t mask = ~(((1U << ((high) - (low) + 1)) - 1) << (low)); \
@@ -73,12 +73,12 @@ Let's see these macros configure an imaginary GPIO port. Suppose GPIOA's base ad
 #define GPIOA_MODER  (*(volatile uint32_t*)(GPIOA_BASE + 0x00))
 #define GPIOA_ODR    (*(volatile uint32_t*)(GPIOA_BASE + 0x14))
 
-// Configure PA5 as output mode (bit[11:10] = 01)
+// 将 PA5 配置为输出模式（bit[11:10] = 01）
 void gpioa_pin5_output_enable(void)
 {
     uint32_t moder = GPIOA_MODER;
-    moder &= ~(3U << 10);   // clear bit[11:10]
-    moder |=  (1U << 10);   // set it to 01 (output)
+    moder &= ~(3U << 10);   // 清除 bit[11:10]
+    moder |=  (1U << 10);   // 设置为 01（输出）
     GPIOA_MODER = moder;
 }
 
@@ -94,16 +94,16 @@ Raw address offsets and bit operations get the job done, but the readability is 
 
 ```c
 typedef struct {
-    volatile uint32_t MODER;    // offset 0x00
-    volatile uint32_t OTYPER;   // offset 0x04
-    volatile uint32_t OSPEEDR;  // offset 0x08
-    volatile uint32_t PUPDR;    // offset 0x0C
-    volatile uint32_t IDR;      // offset 0x10
-    volatile uint32_t ODR;      // offset 0x14
-    volatile uint32_t BSRR;     // offset 0x18
-    volatile uint32_t LCKR;     // offset 0x1C
-    volatile uint32_t AFRL;    // offset 0x20
-    volatile uint32_t AFRH;    // offset 0x24
+    volatile uint32_t MODER;    // 偏移 0x00
+    volatile uint32_t OTYPER;   // 偏移 0x04
+    volatile uint32_t OSPEEDR;  // 偏移 0x08
+    volatile uint32_t PUPDR;    // 偏移 0x0C
+    volatile uint32_t IDR;      // 偏移 0x10
+    volatile uint32_t ODR;      // 偏移 0x14
+    volatile uint32_t BSRR;     // 偏移 0x18
+    volatile uint32_t LCKR;     // 偏移 0x1C
+    volatile uint32_t AFRL;    // 偏移 0x20
+    volatile uint32_t AFRH;    // 偏移 0x24
 } GpioReg;
 
 #define GPIOA  ((GpioReg*) 0x40020000U)
@@ -121,9 +121,9 @@ The pin configuration above used the three-step "read-modify-write". That is fin
 Some peripherals offer atomic-operation registers to solve this problem. The STM32 GPIO's BSRR is a typical example—writing 1 to a bit in the low 16 bits sets the corresponding pin, writing 1 to a bit in the high 16 bits clears it, and writing 0 has no effect. You just write to it, and the hardware guarantees atomicity:
 
 ```c
-// Atomically set PA5 and PA6
+// 原子置位 PA5 和 PA6
 GPIOA->BSRR = (1U << 5) | (1U << 6);
-// Atomically clear PA7
+// 原子清除 PA7
 GPIOA->BSRR = (1U << (7 + 16));
 ```
 
@@ -138,16 +138,16 @@ If the hardware has no such atomic-operation register, the only recourse is prot
 `volatile` tells the compiler: every access to this object must actually happen—it must not be optimized away, and it must not be reordered to the other side of another `volatile` access. Concretely: the compiler will not cache a `volatile` variable's value in a register, will not optimize away reads and writes that look "redundant", and will not reorder the sequence of `volatile` operations.
 
 ```c
-// Without volatile — the compiler may optimize away the entire loop
+// 没有 volatile——编译器可能优化掉整个循环
 int* flag = (int*)0x20000000;
 while (*flag == 0) {
-    // The compiler may read flag just once, then spin forever
+    // 编译器可能只读一次 flag，然后死循环
 }
 
-// With volatile — the value is re-read every iteration
+// 加上 volatile——每次循环都会重新读取
 volatile int* flag = (volatile int*)0x20000000;
 while (*flag == 0) {
-    // The compiler emits a real memory read every time
+    // 编译器每次都生成内存读取指令
 }
 ```
 
@@ -159,7 +159,7 @@ Moreover, `volatile` does not make read-modify-write operations atomic:
 
 ```c
 volatile uint32_t counter;
-counter++;  // Not atomic! Three steps: read, add, write
+counter++;  // 不是原子的！读、加、写三步
 ```
 
 `counter++` is actually a three-step operation: read, add 1, write back. If an interrupt fires between the read and the write, and the interrupt also modifies counter, one update is lost.
@@ -204,8 +204,8 @@ The most common communication pattern between an interrupt and the main loop is 
 #define RING_BUFFER_SIZE 64
 
 typedef struct {
-    volatile uint32_t head;     // write position (modified by the ISR)
-    volatile uint32_t tail;     // read position (modified by the main loop)
+    volatile uint32_t head;     // 写入位置（ISR 修改）
+    volatile uint32_t tail;     // 读取位置（主循环修改）
     uint8_t buffer[RING_BUFFER_SIZE];
 } RingBuffer;
 
@@ -215,23 +215,23 @@ void ring_buffer_init(RingBuffer* rb)
     rb->tail = 0;
 }
 
-// Called from the ISR: only the ISR modifies head
+// ISR 中调用：只有 ISR 修改 head
 uint32_t ring_buffer_write(RingBuffer* rb, uint8_t data)
 {
     uint32_t next_head = (rb->head + 1) % RING_BUFFER_SIZE;
     if (next_head == rb->tail) {
-        return 0;  // buffer full
+        return 0;  // 缓冲区满
     }
     rb->buffer[rb->head] = data;
     rb->head = next_head;
     return 1;
 }
 
-// Called from the main loop: only the main loop modifies tail
+// 主循环中调用：只有主循环修改 tail
 uint32_t ring_buffer_read(RingBuffer* rb, uint8_t* data)
 {
     if (rb->head == rb->tail) {
-        return 0;  // buffer empty
+        return 0;  // 缓冲区空
     }
     *data = rb->buffer[rb->tail];
     rb->tail = (rb->tail + 1) % RING_BUFFER_SIZE;
@@ -256,10 +256,10 @@ void TIM2_IRQHandler(void)
     }
 }
 
-// Main loop
+// 主循环
 if (s_timer_flag) {
     s_timer_flag = 0;
-    handle_timer_event();  // heavy work is handled in the main loop
+    handle_timer_event();  // 重活在主循环处理
 }
 ```
 
@@ -274,7 +274,7 @@ If an embedded project manipulates register addresses directly from its business
 A sensible layering usually looks like this: the bottom layer holds register definitions and bit-manipulation utilities (bound to the specific chip), the middle layer holds peripheral drivers (GPIO, UART, SPI, and friends), and the top layer holds application logic (which never touches registers). The middle layer's interface must be designed to be independent of the specific chip:
 
 ```c
-// gpio_driver.h — hardware-independent interface
+// gpio_driver.h — 硬件无关的接口
 typedef enum {
     kGpioModeInput  = 0,
     kGpioModeOutput = 1,
@@ -283,8 +283,8 @@ typedef enum {
 } GpioMode;
 
 typedef struct {
-    GpioReg* port;   // pointer to the GPIO port's register structure
-    uint8_t  pin;    // pin number 0-15
+    GpioReg* port;   // 指向 GPIO 端口的寄存器结构体
+    uint8_t  pin;    // 引脚号 0-15
 } GpioPin;
 
 void gpio_init(const GpioPin* gpio, GpioMode mode, GpioPull pull);
@@ -294,7 +294,7 @@ void gpio_toggle(const GpioPin* gpio);
 ```
 
 ```c
-// gpio_driver.c — implementation details
+// gpio_driver.c — 实现细节
 void gpio_init(const GpioPin* gpio, GpioMode mode, GpioPull pull)
 {
     uint32_t moder = gpio->port->MODER;
@@ -338,13 +338,13 @@ Free of an operating system, even `main` is not the first thing executed. Unders
 The ARM Cortex-M flow after power-on: the CPU reads the initial stack pointer (the first 32-bit word) and the reset vector (the second 32-bit word, i.e. the Reset_Handler address) from the vector table, then jumps to Reset_Handler. Reset_Handler does three things: copy the `.data` section from Flash to SRAM, zero the `.bss` section, and call `main`.
 
 ```c
-// startup.c — minimal startup code (ARM Cortex-M)
-extern uint32_t _estack;    // top-of-stack address (defined by the linker script)
-extern uint32_t _sidata;    // start of .data in Flash
-extern uint32_t _sdata;     // start of .data in SRAM
-extern uint32_t _edata;     // end of .data in SRAM
-extern uint32_t _sbss;      // start of .bss
-extern uint32_t _ebss;      // end of .bss
+// startup.c — 最小启动代码（ARM Cortex-M）
+extern uint32_t _estack;    // 栈顶地址（链接脚本定义）
+extern uint32_t _sidata;    // .data 在 Flash 中的起始
+extern uint32_t _sdata;     // .data 在 SRAM 中的起始
+extern uint32_t _edata;     // .data 在 SRAM 中的结束
+extern uint32_t _sbss;      // .bss 起始
+extern uint32_t _ebss;      // .bss 结束
 
 int main(void);
 
@@ -352,35 +352,35 @@ void default_handler(void) { while (1) {} }
 
 __attribute__((section(".isr_vector")))
 void (*const g_vector_table[])(void) = {
-    (void (*)(void))(&_estack),    // initial stack pointer
+    (void (*)(void))(&_estack),    // 初始栈指针
     Reset_Handler,                  // Reset
     NMI_Handler,                    // NMI
     HardFault_Handler,              // Hard Fault
     default_handler,                // MemManage
     default_handler,                // BusFault
     default_handler,                // UsageFault
-    0, 0, 0, 0,                    // reserved
+    0, 0, 0, 0,                    // 保留
     default_handler,                // SVCall
     default_handler,                // Debug Monitor
-    0,                              // reserved
+    0,                              // 保留
     default_handler,                // PendSV
     default_handler,                // SysTick
 };
 
 void Reset_Handler(void)
 {
-    // 1. Copy the .data section from Flash to SRAM
+    // 1. 把 .data 段从 Flash 复制到 SRAM
     uint32_t* src = &_sidata;
     uint32_t* dst = &_sdata;
     while (dst < &_edata) { *dst++ = *src++; }
 
-    // 2. Zero the .bss section
+    // 2. 把 .bss 段清零
     dst = &_sbss;
     while (dst < &_ebss) { *dst++ = 0; }
 
-    // 3. Enter main
+    // 3. 进入 main
     main();
-    while (1) {}  // bare-metal main must not return
+    while (1) {}  // 裸机 main 不应该返回
 }
 
 __attribute__((weak)) void NMI_Handler(void) { default_handler(); }
@@ -394,7 +394,7 @@ Symbols like `_estack` and `_sdata` are not real variables—they are address la
 The linker script tells the linker the program's memory layout—where Flash starts and ends, where SRAM starts and ends, and which section goes where. The key concept is `> RAM AT > FLASH`—the `.data` section's run address is in RAM, but its load address is in Flash. After power-on, the startup code copies it into RAM. The `.bss` section has only start and end addresses, and the startup code simply zeroes it.
 
 ```c
-/* link.ld — minimal Cortex-M3 linker script */
+/* link.ld — Cortex-M3 最小链接脚本 */
 MEMORY
 {
     FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 64K
@@ -466,17 +466,17 @@ Rework the article's `uint8_t` ring buffer into a generic version (implemented w
 
 ```c
 typedef struct {
-    // You need to design the internal fields
+    // 你需要设计内部字段
 } RingBuffer;
 
-/// @brief Initialize the ring buffer
+/// @brief 初始化环形缓冲区
 void ring_buffer_init(RingBuffer* rb, void* storage,
                        size_t item_size, size_t capacity);
-/// @brief Write one element
+/// @brief 写入一个元素
 uint32_t ring_buffer_write(RingBuffer* rb, const void* item);
-/// @brief Read one element
+/// @brief 读取一个元素
 uint32_t ring_buffer_read(RingBuffer* rb, void* item);
-/// @brief Query the current element count
+/// @brief 查询当前元素数量
 uint32_t ring_buffer_count(const RingBuffer* rb);
 ```
 
@@ -489,7 +489,7 @@ Hint: use `memcpy` internally for generic byte copying, change `head`/`tail` to 
 Following the peripheral abstraction layer approach in this article, design a chip-independent UART abstraction layer interface. You are not required to implement interrupt-driven byte-by-byte transmission; you only need to define the interface clearly: which fields the driver structure needs (transmit/receive buffers, state), the signatures of the `init`/`write`/`read` trio, and what `write` should return when the buffer is full.
 
 ```c
-typedef struct { /* your design */ } UartDriver;
+typedef struct { /* 你设计 */ } UartDriver;
 
 void  uart_init(UartDriver* uart, uint32_t baud);
 size_t uart_write(UartDriver* uart, const uint8_t* data, size_t len);

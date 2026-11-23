@@ -16,9 +16,9 @@ cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/compilation/05-linking-symbol-resolution.md
   source_hash: e5b8cb909a0acefc28c773642f23993f99f636d431308278c874f62defb3885d
-  translated_at: '2026-10-13T03:59:22+00:00'
-  engine: anthropic
-  token_count: 4800
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 9918
 ---
 
 # The Linker: Symbol Resolution and undefined reference
@@ -44,14 +44,14 @@ The link failed, and the two names reported are exactly extern_func and extern_v
 But demo.o can only play the failure side: we hold no file that could provide the definitions of extern_var and extern_func, so a successful link is beyond its acting range. And we want to see every rule in action, so we switch to a minimal pair of specimens: one file that references, one that defines, and between them the two roads, success and failure, are both walkable. The code is still written in C — we confirmed in the compiler article that C does no name mangling on its side, which saves us a decoding step when reading symbols:
 
 ```c
-// a.c — declares only; references symbols defined elsewhere
+// a.c —— 只声明,引用别人的符号
 extern int shared_seed;
 extern int helper(void);
 int main(void) { return shared_seed + helper(); }
 ```
 
 ```c
-// b.c — the defining side
+// b.c —— 定义者
 int shared_seed = 10;
 int helper(void) { return 32; }
 ```
@@ -94,7 +94,7 @@ Being able to match an error against the relocation table is the most practical 
 For the too-many-definitions end, I have prepared another file, dup.c, that does exactly one thing: define helper a second time.
 
 ```c
-// dup.c — deliberately defines helper twice
+// dup.c —— 故意重复定义 helper
 int helper(void) { return 99; }
 ```
 
@@ -124,7 +124,7 @@ int policy(void) { return 2; }
 ```
 
 ```c
-// use_policy.c — the caller
+// use_policy.c —— 调用方
 #include <stdio.h>
 int policy(void);
 int main(void) { printf("policy=%d\n", policy()); return 0; }
@@ -164,7 +164,7 @@ int get2(void) { return counter; }
 ```
 
 ```c
-// s_main.c — the caller
+// s_main.c —— 调用方
 #include <stdio.h>
 int get1(void);
 int get2(void);

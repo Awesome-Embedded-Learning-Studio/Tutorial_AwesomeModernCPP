@@ -19,9 +19,9 @@ prerequisites:
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/02-builder.md
   source_hash: 71bd26712cc72b900d6681eaf4699d1a87dd71e0ab8609508ae2456b48c7dded
-  translated_at: '2026-09-26T05:04:51+00:00'
-  engine: anthropic
-  token_count: 13000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 19761
 ---
 # Builder Pattern: From a Mess of Constructor Arguments to a Fluent Builder
 
@@ -66,13 +66,13 @@ public:
     enum class Priority { Immediate, High, Medium, Low };
     struct CTime { int year, month, day, hour, minute, second; };
 
-    // Required: priority, deadline, description
+    // 必填:优先级、截止时间、描述
     Task(Priority p, CTime ddl, const std::string& desc)
         : priority_(p), ddl_(ddl), description_(desc) {
         if (desc.empty()) {
             throw std::invalid_argument("Invalid Task Description");
         }
-        // Maybe write logs, connect to a database...
+        // 可能还要写日志、连数据库……
     }
 
     void set_title(std::string t)   { title_ = std::move(t); }
@@ -109,7 +109,7 @@ public:
     void set_details(std::string d)      { details_ = std::move(d); }
 
     std::optional<Task> build() const {
-        // If required fields are not all filled in, return nullopt — failure is internalized into the return type
+        // 必填项没填齐,就返回 nullopt,把失败内化进返回类型
         if (!priority_ || !ddl_ || !description_) {
             return std::nullopt;
         }
@@ -220,7 +220,7 @@ auto partial = TaskBuilder{}
                    .with_ddl({2025, 9, 25, 10, 0, 0})
                    .with_description("Complete the final project report.");
 
-// Hand the half-built builder out; finish building once the async query returns the real title
+// 把半成品构建器传出去,等异步查到真正的标题再接着 build
 std::string title = data_base.query_title_by_time({2025, 9, 25, 10, 0, 0});
 Task task = partial.with_title(title)
                   .with_details("Check all data points.")
@@ -254,8 +254,8 @@ class TrackedBuilder {
 public:
     TrackedBuilder& with_value(int x) { value_ = x; return *this; }
     Tracked build() const {
-        Tracked t(*value_);   // local object
-        return t;             // expected to be elided by NRVO / RVO
+        Tracked t(*value_);   // 局部对象
+        return t;             // 预期被 NRVO / RVO 消除
     }
 private:
     std::optional<int> value_;
@@ -309,22 +309,22 @@ struct OptionalStage;
 
 struct SetPriority {
     TaskDraft d;
-    SetDdl with_priority(Task::Priority p);          // returns the next stage
+    SetDdl with_priority(Task::Priority p);          // 返回下一阶段
 };
 struct SetDdl {
     TaskDraft d;
-    SetDescription with_ddl(Task::CTime ddl);        // returns the next stage
+    SetDescription with_ddl(Task::CTime ddl);        // 返回下一阶段
 };
 struct SetDescription {
     TaskDraft d;
-    OptionalStage with_description(std::string desc);  // enters the optional stage
+    OptionalStage with_description(std::string desc);  // 进入可选阶段
 };
 struct OptionalStage {
     TaskDraft d;
     OptionalStage& with_title(std::string t)   { d.title = std::move(t);   return *this; }
     OptionalStage& with_details(std::string det) { d.details = std::move(det); return *this; }
     Task build() {
-        // The three required fields are enforced as filled by the type system; no runtime validation needed here
+        // 三个必填字段已被类型系统强制填过,这里无需运行时校验
         Task t(*d.priority, *d.ddl, std::move(*d.description));
         if (d.title)   t.set_title(*d.title);
         if (d.details) t.set_details(*d.details);
@@ -366,7 +366,7 @@ The first: **build with a required field missing**. Suppose we filled only `prio
 Task t = TaskBuilder::create()
              .with_priority(Task::Priority::High)
              .with_ddl({2025, 9, 25, 10, 0, 0})
-             .build();   // ← attempting to call build() on a SetDescription
+             .build();   // ← 试图在 SetDescription 上调 build()
 ```
 
 The compiler's reaction:
@@ -382,7 +382,7 @@ The second: **the order is written backwards**. Someone's fingers are quick, and
 
 ```cpp
 auto x = TaskBuilder::create()
-             .with_ddl({2025, 9, 25, 10, 0, 0});   // ← calling with_ddl() on a SetPriority
+             .with_ddl({2025, 9, 25, 10, 0, 0});   // ← 在 SetPriority 上调 with_ddl()
 ```
 
 The compiler's reaction:
@@ -407,9 +407,9 @@ Looking back, the fluent builder piles every `with_*` method into a single `Task
 The composite builder's idea is to slice the responsibilities apart: **one base builder holds all the fields and handles the final `build()`; around it, several sub-builders are derived, each responsible for one category of fields.** A sub-builder does not hold a copy of the fields but a reference to the base builder — after setting its fields, it calls a `done_xxx()` to switch back to the base builder, and from there you jump to the next sub-builder. Want to add a new group of fields? Write a new sub-builder and hang it on — the base builder and the other sub-builders do not move a single line.
 
 ```cpp
-class TaskBuilder;        // Base builder: holds all fields + build()
-class BuilderMain;        // Sub-builder A: owns the required fields
-class BuilderOptional;    // Sub-builder B: owns the optional fields
+class TaskBuilder;        // 基础 Builder:持有所有字段 + build()
+class BuilderMain;        // 子构造器 A:负责必填字段
+class BuilderOptional;    // 子构造器 B:负责可选字段
 
 class TaskBuilder {
 public:
@@ -419,8 +419,8 @@ public:
     std::optional<std::string>    title;
     std::optional<std::string>    details;
 
-    BuilderMain     main();       // enter the "required fields" sub-builder
-    BuilderOptional optional();   // enter the "optional fields" sub-builder
+    BuilderMain     main();       // 进入「必填字段」子构造器
+    BuilderOptional optional();   // 进入「可选字段」子构造器
 
     Task build() const {
         if (!priority || !ddl || !description) {
@@ -439,7 +439,7 @@ public:
     BuilderMain& with_priority(Task::Priority p) { b_.priority = p;            return *this; }
     BuilderMain& with_ddl(Task::CTime d)         { b_.ddl = d;                 return *this; }
     BuilderMain& with_description(std::string s) { b_.description = std::move(s); return *this; }
-    TaskBuilder& done_main() { return b_; }       // required fields set; switch back to the base builder
+    TaskBuilder& done_main() { return b_; }       // 设完必填,切回基础 Builder
 private:
     TaskBuilder& b_;
 };
@@ -449,7 +449,7 @@ public:
     explicit BuilderOptional(TaskBuilder& b) : b_(b) {}
     BuilderOptional& with_title(std::string t)   { b_.title = std::move(t);   return *this; }
     BuilderOptional& with_details(std::string d) { b_.details = std::move(d); return *this; }
-    TaskBuilder& done_optional() { return b_; }   // optional fields set; switch back to the base builder
+    TaskBuilder& done_optional() { return b_; }   // 设完可选,切回基础 Builder
 private:
     TaskBuilder& b_;
 };

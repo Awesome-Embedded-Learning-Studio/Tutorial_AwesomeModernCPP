@@ -20,10 +20,10 @@ tags:
 title: 'Deep Dive into Standard Attributes: Making the Compiler Your Code Reviewer'
 translation:
   source: documents/vol2-modern-features/ch07-attributes/01-standard-attributes.md
-  source_hash: c35840c1ce24d0b5a083c1875ff89d126c30468c2584256fcd42e4d323813cfc
-  translated_at: '2026-09-25T16:02:56+00:00'
-  engine: anthropic
-  token_count: 6800
+  source_hash: 3f24e660773222ba19f00bdbcaabb49fcc7c461bde236f31755d671d7c0d405f
+  translated_at: '2026-11-23T01:10:31+00:00'
+  engine: glm-5.3-refresh
+  token_count: 9353
 ---
 # Deep Dive into Standard Attributes: Making the Compiler Your Code Reviewer
 
@@ -48,14 +48,14 @@ Before attributes were standardized, every compiler had its own syntax: GCC/Clan
 > **Attributes by version**: C++11 introduced `[[noreturn]]` and `[[carries_dependency]]`; C++14 introduced `[[deprecated]]`; C++17 introduced `[[nodiscard]]`, `[[maybe_unused]]`, and `[[fallthrough]]`. Different attributes were standardized in different versions, so pay attention to your target compiler's support when using them.
 
 ```cpp
-// Single attribute
+// 单个属性
 [[nodiscard]] int check_status();
 
-// Multiple attributes
+// 多个属性
 [[nodiscard, deprecated("Use new_version()")]]
 int old_function();
 
-// Compiler extension attributes
+// 编译器扩展属性
 [[gnu::always_inline]] inline void hot_path();
 [[gnu::format(printf, 1, 2)]] void log_msg(const char* fmt, ...);
 ```
@@ -75,10 +75,10 @@ This is arguably the most practically valuable attribute in systems programming.
     return ErrorCode::Ok;
 }
 
-// Leaving the return value unchecked—the compiler warns
+// 不检查返回值——编译器发出警告
 initialize_hardware();
 
-// Correct usage
+// 正确用法
 if (initialize_hardware() != ErrorCode::Ok) {
     handle_error();
 }
@@ -109,9 +109,9 @@ enum class [[nodiscard]] ErrorCode {
     HardwareError
 };
 
-// Any function returning ErrorCode automatically triggers the check
+// 任何返回 ErrorCode 的函数都会自动触发检查
 ErrorCode read_sensor(uint8_t id);
-read_sensor(5);  // warning: return value ignored
+read_sensor(5);  // 警告：忽略了返回值
 ```
 
 ### nodiscard Is Not Mandatory
@@ -119,8 +119,8 @@ read_sensor(5);  // warning: return value ignored
 Note that `[[nodiscard]]` only produces a warning, not an error. A caller can still bypass it with an explicit cast:
 
 ```cpp
-(void)init_board();             // explicit cast, silences the warning
-static_cast<void>(init_board()); // same effect
+(void)init_board();             // 显式转换，消除警告
+static_cast<void>(init_board()); // 同上
 ```
 
 This means your team's coding standard may need to ban this pattern. `[[nodiscard]]` says "please check," not "must check"—but that is already far better than nothing.
@@ -138,11 +138,11 @@ The most common use is conditional compilation. A parameter is used in one confi
 ```cpp
 void sensor_task([[maybe_unused]] void* param) {
 #ifdef USE_RTOS
-    // In RTOS mode, param is used
+    // RTOS 模式下使用 param
     auto* config = static_cast<TaskConfig*>(param);
     configure_sensor(config->port);
 #else
-    // In bare-metal mode, param is not used
+    // 裸机模式下不用 param
     configure_sensor(kDefaultPort);
 #endif
 }
@@ -158,11 +158,11 @@ When you need only some members of a structured binding, the rest can be marked 
 std::map<int, std::string> cache;
 
 for (const auto& [key, value] : cache) {
-    // If you only care about value, not key
+    // 如果你只关心 value，不关心 key
 }
 
-// Or use _ as a placeholder (introduced in C++20)
-// But note: _ may have special meaning in the global namespace
+// 或者用 _ 占位（C++20 引入）
+// 但注意 _ 在全局命名空间可能有特殊含义
 ```
 
 ### Comparison with the Traditional Approaches
@@ -181,7 +181,7 @@ The old ways of silencing unused warnings each had drawbacks: `(void)param` is a
 [[deprecated("Use new_handler() instead")]]
 void old_handler();
 
-// Calling old_handler() produces a compile warning carrying your message
+// 调用 old_handler() 会产生编译警告，附带你写的消息
 old_handler();
 // warning: 'old_handler' is deprecated: Use new_handler() instead
 ```
@@ -193,21 +193,21 @@ During a library's version upgrades, `[[deprecated]]` is a very useful tool. You
 ```cpp
 class SensorManager {
 public:
-    // Old API—still usable, but marked obsolete
+    // 旧 API——仍然可用，但标记为过时
     [[deprecated("Use read_sensor_data() which returns more information")]]
     bool read_sensor(uint8_t id, uint16_t* value);
 
-    // New API
+    // 新 API
     SensorData read_sensor_data(uint8_t id);
 };
 
-// Enumerator values can also be marked deprecated
+// 枚举值也可以标记为 deprecated
 enum class SensorType {
     Temperature,
     Humidity,
     [[deprecated("Use Pressure instead")]]
-    Barometer,   // old name
-    Pressure      // new name
+    Barometer,   // 旧名称
+    Pressure      // 新名称
 };
 ```
 
@@ -235,7 +235,7 @@ void handle_event(uint8_t event) {
     switch (event) {
         case 0x01:
             toggle_led(LED1);
-            [[fallthrough]];  // explicitly signals intentional fallthrough
+            [[fallthrough]];  // 明确表示有意贯穿
 
         case 0x02:
             toggle_led(LED2);
@@ -267,7 +267,7 @@ void handle_state(State current, Event ev) {
             if (ev == Event::Start) {
                 current = State::Initializing;
             }
-            [[fallthrough]];  // Idle and Initializing share the initialization logic
+            [[fallthrough]];  // Idle 和 Initializing 共享初始化逻辑
 
         case State::Initializing:
             init_hardware();
@@ -280,7 +280,7 @@ void handle_state(State current, Event ev) {
 
         case State::Paused:
         case State::Error:
-            // The two states share processing logic; just fall through
+            // 两个状态共享处理逻辑，直接贯穿
             recover();
             break;
     }
@@ -303,16 +303,16 @@ Notice the last part of the example: there is no `[[fallthrough]]` between `Paus
 
 [[noreturn]] void hang_forever() {
     while (true) {
-        // Safe shutdown mode in embedded systems
+        // 嵌入式中的安全停机模式
     }
 }
 
 void check_critical(bool ok) {
     if (!ok) {
         fatal_error("Critical check failed");
-        // The compiler knows this call does not return; the code after it is unreachable
+        // 编译器知道这里不会返回，后续代码不可达
     }
-    // The compiler can optimize this branch without considering a return from fatal_error
+    // 编译器可以优化此分支，不需要考虑 fatal_error 返回的情况
     proceed();
 }
 ```
@@ -338,15 +338,15 @@ This attribute was introduced in C++11 for dependency-chain propagation in memor
 Beyond the standard attributes, mainstream compilers also support compiler-specific attributes through namespace prefixes. These attributes are not standard, but they are useful on particular platforms:
 
 ```cpp
-// GCC/Clang extensions
-[[gnu::always_inline]]           // force inlining
-[[gnu::hot]]                     // mark as a hot function
-[[gnu::cold]]                    // mark as a cold path
-[[gnu::format(printf, 1, 2)]]    // printf format checking
-[[clang::fallthrough]]           // Clang-specific fallthrough
+// GCC/Clang 扩展
+[[gnu::always_inline]]           // 强制内联
+[[gnu::hot]]                     // 标记为热点函数
+[[gnu::cold]]                    // 标记为冷路径
+[[gnu::format(printf, 1, 2)]]    // printf 格式检查
+[[clang::fallthrough]]           // Clang 专用的 fallthrough
 
-// MSVC extensions
-[[msvc::forceinline]]            // force inlining
+// MSVC 扩展
+[[msvc::forceinline]]            // 强制内联
 ```
 
 Use these attributes with care in cross-platform code. If you must use one, wrapping it behind a macro is the recommended approach:
@@ -370,24 +370,24 @@ FORCE_INLINE void hot_function();
 An attribute placed in different positions has different meanings. Put it in the wrong spot and the compiler may ignore it, or apply it to the wrong target:
 
 ```cpp
-// Function attribute—before the return type or after the declarator
-[[nodiscard]] int func();      // correct
-int func [[nodiscard]]();      // also correct (but less common)
+// 函数属性——放在返回类型之前或声明符之后
+[[nodiscard]] int func();      // 正确
+int func [[nodiscard]]();      // 也正确（但不太常见）
 
-// Variable attribute—before the variable name
+// 变量属性——放在变量名之前
 [[maybe_unused]] int x;
 
-// Class attribute—after the class keyword
+// 类属性——放在 class 关键字之后
 class [[deprecated]] OldClass {};
 
-// Enum attribute—after the enum keyword
+// 枚举属性——放在 enum 关键字之后
 enum class [[deprecated]] OldEnum {};
 
-// switch case attribute—after the last statement inside the case
+// switch case 属性——放在 case 内最后一条语句之后
 switch (x) {
     case 1:
         do_something();
-        [[fallthrough]];     // note the semicolon
+        [[fallthrough]];     // 注意分号
     case 2:
         do_more();
         break;

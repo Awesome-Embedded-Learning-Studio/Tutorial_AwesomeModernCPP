@@ -25,9 +25,9 @@ title: 'OnceCallback prerequisite (I): function types and template partial speci
 translation:
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/pre-01-once-callback-function-type-and-specialization.md
   source_hash: 81e406447246cbeaa52166fe6c1002f2b025c8647d6d57d9b403ab5ad684de84
-  translated_at: '2026-09-26T00:38:33+00:00'
-  engine: anthropic
-  token_count: 5000
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5457
 ---
 # OnceCallback prerequisite (I): function types and template partial specialization
 
@@ -46,9 +46,9 @@ One `static_assert` settles it:
 ```cpp
 #include <type_traits>
 
-static_assert(std::is_function_v<int(int, int)>);           // passes: it is a function type
-static_assert(!std::is_pointer_v<int(int, int)>);           // passes: not a pointer
-static_assert(std::is_pointer_v<int(*)(int, int)>);         // passes: this is a function pointer
+static_assert(std::is_function_v<int(int, int)>);           // 通过：是函数类型
+static_assert(!std::is_pointer_v<int(int, int)>);           // 通过：不是指针
+static_assert(std::is_pointer_v<int(*)(int, int)>);         // 通过：这是函数指针
 ```
 
 Function types show up in real code more often than we tend to notice. Write down a function declaration off the cuff:
@@ -71,7 +71,7 @@ Next, let's look at how `OnceCallback`'s template declaration is written. It tak
 
 ```cpp
 template<typename FuncSignature>
-class OnceCallback;  // Primary template: declaration only, no definition
+class OnceCallback;  // 主模板：只有声明，没有定义
 ```
 
 The primary template deliberately provides no implementation. That is not us forgetting to write it—it is intentional. If someone slips and writes `OnceCallback<int>`—passing in a plain int instead of a function signature—instantiation fails outright with a "definition not found" error. Call it a compile-time safety net.
@@ -81,7 +81,7 @@ The primary template deliberately provides no implementation. That is not us for
 ```cpp
 template<typename ReturnType, typename... FuncArgs>
 class OnceCallback<ReturnType(FuncArgs...)> {
-    // All the real code lives here
+    // 所有真正的代码都在这里
 };
 ```
 
@@ -100,11 +100,11 @@ You can treat the whole process as pattern matching at the type level. By analog
 Go read your standard library's implementation of `std::function`, and you will find it uses the very same setup:
 
 ```cpp
-// A simplified implementation of std::function
-template<typename> class function; // primary template
+// std::function 的简化实现
+template<typename> class function; // 主模板
 
 template<typename R, typename... Args>
-class function<R(Args...)> {        // partial specialization
+class function<R(Args...)> {        // 偏特化
     // ...
 };
 ```
@@ -118,11 +118,11 @@ Watching without practicing is a fast way to forget. Let's write a minimal funct
 ```cpp
 #include <type_traits>
 
-// Primary template: no definition for non-function types
+// 主模板：对非函数类型不提供定义
 template<typename T>
 struct FuncTraits;
 
-// Partial specialization: decomposes the function type R(Args...)
+// 偏特化：拆解函数类型 R(Args...)
 template<typename R, typename... Args>
 struct FuncTraits<R(Args...)> {
     using ReturnType = R;
@@ -131,7 +131,7 @@ struct FuncTraits<R(Args...)> {
     static constexpr std::size_t kArity = sizeof...(Args);
 };
 
-// Verification
+// 验证
 static_assert(std::is_same_v<FuncTraits<int(double, char)>::ReturnType, int>);
 static_assert(std::is_same_v<FuncTraits<void()>::ReturnType, void>);
 static_assert(FuncTraits<int(int, int, int)>::kArity == 3);
@@ -142,7 +142,7 @@ static_assert(FuncTraits<int(int, int, int)>::kArity == 3);
 Let's compile and run this example. All the `static_assert`s passing (no compile errors) means the partial specialization decomposed the function type correctly. Feel free to throw a few more complex types at it as well:
 
 ```cpp
-// Verification with more complex types
+// 更复杂的验证
 static_assert(std::is_same_v<
     FuncTraits<std::string(const std::string&, int)>::ReturnType,
     std::string>);
@@ -163,16 +163,16 @@ class OnceCallback {
     // ...
 };
 
-// Usage: OnceCallback<int, int, int> cb([](int a, int b) { return a + b; });
+// 使用：OnceCallback<int, int, int> cb([](int a, int b) { return a + b; });
 ```
 
 This spelling runs perfectly well technically. But the user experience is a notch worse. Compare the two usages:
 
 ```cpp
-// Signature form: one template parameter, reads like a function signature
+// 签名式：一个模板参数，看起来像函数签名
 OnceCallback<int(int, int)> cb1([](int a, int b) { return a + b; });
 
-// List form: return type and parameters written separately
+// 参数罗列式：返回类型和参数分开写
 OnceCallback<int, int, int> cb2([](int a, int b) { return a + b; });
 ```
 

@@ -23,9 +23,9 @@ title: 'OnceCallback prerequisite (II): std::invoke and the uniform calling prot
 translation:
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/pre-02-once-callback-invoke-and-callable.md
   source_hash: 5b3d6bea87c0811ba5fee927085629aef4473d743399c2345a7b2cfef2ace33d
-  translated_at: '2026-09-26T00:40:47+00:00'
-  engine: anthropic
-  token_count: 2400
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6046
 ---
 # OnceCallback prerequisite (II): std::invoke and the uniform calling protocol
 
@@ -45,21 +45,21 @@ Plain function pointers are the best-behaved — either spelling works:
 int add(int a, int b) { return a + b; }
 int (*fp)(int, int) = &add;
 
-int result = fp(3, 4);       // direct call
-int result2 = (*fp)(3, 4);   // dereference first, then call (equivalent)
+int result = fp(3, 4);       // 直接调用
+int result2 = (*fp)(3, 4);   // 解引用后调用（等价）
 ```
 
 Lambdas and functors go through `operator()`, which looks almost the same as calling a plain function, so this part is reasonably friendly:
 
 ```cpp
 auto lam = [](int a, int b) { return a + b; };
-int result = lam(3, 4);  // called via operator()
+int result = lam(3, 4);  // 通过 operator() 调用
 
 struct Adder {
     int operator()(int a, int b) { return a + b; }
 };
 Adder fn;
-int result2 = fn(3, 4);  // also called via operator()
+int result2 = fn(3, 4);  // 同样通过 operator() 调用
 ```
 
 Things start to contort at member function pointers. They can't take a direct `()` the way plain functions do; you need an object instance first, then you bolt the pointer on with `.*` or `->*`, two operators so obscure most people forget they exist. The first time we wrote one of these, we spent half a day digging through books:
@@ -72,7 +72,7 @@ struct Calculator {
 Calculator calc;
 int (Calculator::*pmf)(int, int) = &Calculator::multiply;
 
-// The .* operator is mandatory
+// 必须用 .* 运算符
 int result = (calc.*pmf)(3, 4);  // result == 12
 ```
 
@@ -106,9 +106,9 @@ struct Calculator {
 
 Calculator calc;
 
-// via reference
+// 通过引用
 std::invoke(&Calculator::multiply, calc, 3, 4);        // (calc.*multiply)(3, 4)
-// via pointer
+// 通过指针
 std::invoke(&Calculator::multiply, &calc, 3, 4);       // ((*ptr).*multiply)(3, 4)
 ```
 
@@ -145,11 +145,11 @@ Unified calling alone isn't enough. Sometimes you have to ask at compile time "w
 
 auto add(int a, int b) -> int { return a + b; }
 
-// Deduce the return type of add(1, 2) at compile time
+// 编译期推导 add(1, 2) 的返回类型
 using R = std::invoke_result_t<decltype(add), int, int>;
 static_assert(std::is_same_v<R, int>);
 
-// Works for lambdas too
+// 对 lambda 也能推导
 auto lam = [](double x) { return std::to_string(x); };
 using R2 = std::invoke_result_t<decltype(lam), double>;
 static_assert(std::is_same_v<R2, std::string>);
@@ -162,7 +162,7 @@ Let's read straight off the OnceCallback source — clearer than talking in the 
 First, this snippet inside `bind_once`:
 
 ```cpp
-// Inside bind_once's lambda
+// bind_once 的 lambda 内部
 return std::invoke(
     std::move(f),
     std::move(bound)...,
@@ -175,7 +175,7 @@ That `f` takes all comers: it might be a lambda, might be a member function poin
 The snippet in `then()` follows the same logic:
 
 ```cpp
-// The non-void branch of then()
+// then() 的非 void 分支
 auto mid = std::move(self).run(std::forward<FuncArgs>(args)...);
 return std::invoke(std::move(cont), std::move(mid));
 ```
@@ -185,17 +185,17 @@ Here `cont` (the continuation) is by design an ordinary callable, most likely a 
 As for how `then()` uses `std::invoke_result_t` to deduce the return type, the requirement is very specific: in a chain, after the next callback `next` receives the previous callback's return value, what does it itself return? In code it reads like this:
 
 ```cpp
-// In the non-void branch of then()
+// 在 then() 的非 void 分支中
 using NextRet = std::invoke_result_t<NextType, ReturnType>;
-// NextRet is "the type you get back when you pass a value of type ReturnType to next"
+// NextRet 就是"把 ReturnType 类型的值传给 next，返回什么类型"
 ```
 
 On the void branch the continuation takes no arguments at all, so the calling shape simplifies:
 
 ```cpp
-// In the void branch of then()
+// 在 then() 的 void 分支中
 using NextRet = std::invoke_result_t<NextType>;
-// next takes no arguments; just call it
+// next 不接受参数，直接调用
 ```
 
 ## Pitfall warning: the lifetime trap in member function binding

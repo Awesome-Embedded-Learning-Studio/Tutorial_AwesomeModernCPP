@@ -27,9 +27,9 @@ title: 'Evolution of Error Handling: From Error Codes to Type Safety'
 translation:
   source: documents/vol2-modern-features/ch10-error-handling/01-error-handling-evolution.md
   source_hash: 6ad0139fc45f10a6aa948947d2c6ceade231f57c39a5588d246f362379676315
-  translated_at: '2026-09-25T16:47:46+00:00'
-  engine: anthropic
-  token_count: 4800
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 9768
 ---
 # Evolution of Error Handling: From Error Codes to Type Safety
 
@@ -44,7 +44,7 @@ In this chapter we walk through the evolution of error handling in C++: from C-s
 If you have written C, or maintained a large C legacy project, this code will look all too familiar:
 
 ```cpp
-// Classic C style: an integer return value signals success/failure
+// 经典 C 风格：用整数返回值表示成功/失败
 #define ERR_FILE_NOT_FOUND  (-1)
 #define ERR_PERMISSION      (-2)
 #define ERR_INVALID_FORMAT  (-3)
@@ -59,16 +59,16 @@ int read_config(const char* path, Config* out) {
 
     if (n == 0) return ERR_INVALID_FORMAT;
 
-    // Parsing logic...
-    return 0;  // success
+    // 解析逻辑...
+    return 0;  // 成功
 }
 
-// Caller
+// 调用方
 Config cfg;
 int ret = read_config("app.cfg", &cfg);
 if (ret != 0) {
-    // Is ret -1, -2, or -3?
-    // You have to dig through the macro definitions in the header
+    // ret 到底是 -1、-2 还是 -3？
+    // 得去翻头文件里的宏定义
     printf("Error: %d\n", ret);
 }
 ```
@@ -107,10 +107,10 @@ Config read_config(const std::string& path) {
         throw std::runtime_error("Empty config file");
     }
 
-    return parse_config(content);  // parse_config may throw as well
+    return parse_config(content);  // parse_config 也可能抛异常
 }
 
-// Caller
+// 调用方
 void init_system() {
     try {
         auto cfg = read_config("app.cfg");
@@ -155,7 +155,7 @@ enum class ConfigError {
 
 struct ConfigResult {
     ConfigError error;
-    std::string message;  // additional error description
+    std::string message;  // 附加的错误描述
 
     constexpr bool ok() const noexcept {
         return error == ConfigError::kSuccess;
@@ -214,7 +214,7 @@ std::optional<User> find_user(int id) {
     return std::nullopt;
 }
 
-// Caller — must check whether a value is present
+// 调用方——必须检查是否有值
 auto user = find_user(42);
 if (user) {
     std::cout << user->name << "\n";
@@ -248,7 +248,7 @@ using ConfigResult = std::variant<Config, ConfigError>;
 ConfigResult read_config(const std::string& path) {
     // ...
     return Config{42, "default"};
-    // or
+    // 或
     // return FileNotFoundError{path};
 }
 ```
@@ -282,12 +282,12 @@ std::expected<Config, ConfigError> read_config(const std::string& path) {
     return *parsed;
 }
 
-// Caller
+// 调用方
 auto result = read_config("app.cfg");
 if (result) {
     apply_config(result.value());
 } else {
-    // the error details live in result.error()
+    // 错误信息就在 result.error() 里
     handle_error(result.error());
 }
 ```

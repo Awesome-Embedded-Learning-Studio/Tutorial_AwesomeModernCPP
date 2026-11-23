@@ -19,9 +19,9 @@ prerequisites:
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/04-prototype.md
   source_hash: 9186e8fc890cf8d72ac9713171ea29295c37d8d1fb488be5a37f94b23904a807
-  translated_at: '2026-09-26T05:00:33+00:00'
-  engine: anthropic
-  token_count: 4100
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 14776
 ---
 
 # Prototype Pattern: From a One-Line Copy Constructor to a `clone()` That Can Carry an Inheritance Hierarchy
@@ -42,8 +42,8 @@ Let's put that office-location example under the knife. An `Address` records a d
 
 ```cpp
 struct Address {
-    std::string door_number;     // door number
-    bool        accessible {};   // whether it is reachable
+    std::string door_number;     // 门牌号
+    bool        accessible {};   // 是否可达
 };
 ```
 
@@ -54,7 +54,7 @@ Address proto;
 proto.door_number    = "B-101";
 proto.accessible     = true;
 
-// When you need a new instance, copy the prototype and change only the fields that differ
+// 需要新实例时,从原型拷一份,只改需要变的字段
 Address other   = proto;
 other.door_number = "A501";
 
@@ -72,7 +72,7 @@ Suppose the project evolves for a while, and someone extends `Address` into `ExA
 
 ```cpp
 struct ExAddress : Address {
-    std::string extra;   // extra info, e.g. "near the coffee machine"
+    std::string extra;   // 附加信息,比如「靠近咖啡机」
 };
 ```
 
@@ -80,7 +80,7 @@ And some time earlier, for the sake of reuse, we had wrapped "make an object fro
 
 ```cpp
 Address* make_from_proto(const Address* a, const std::string& door_number) {
-    Address* t = new Address(*a);   // uses Address's copy constructor
+    Address* t = new Address(*a);   // 用 Address 的拷贝构造
     t->door_number = door_number;
     return t;
 }
@@ -92,10 +92,10 @@ Now here's the problem. Outside, we pass in a real `ExAddress` object:
 ExAddress ex;
 ex.door_number = "B-101";
 ex.accessible  = true;
-ex.extra       = "near-cafeteria";   // a field only the derived class has
+ex.extra       = "near-cafeteria";   // 派生类独有字段
 
 Address* p = make_from_proto(&ex, "A501");
-// p points to an Address — where did its extra go?
+// p 指向一个 Address,它的 extra 去哪了?
 ```
 
 Inside `make_from_proto` we run `new Address(*a)`, and the **static type** of `*a` is `Address`, so what gets invoked is `Address`'s copy constructor. `Address`'s copy constructor only knows about `Address`'s own two members; it can't see `ExAddress::extra`, let alone copy it — so on that line, `extra` is silently dropped. This is the infamous **object slicing** in C++: you copy-construct from a derived object through a base class, and the derived part is lopped off wholesale.
@@ -128,13 +128,13 @@ int main() {
     ex.door_number = "A501";
     ex.extra       = "near-cafeteria";
 
-    // slicing: copying an ExAddress with Address's copy constructor
+    // 切片:用 Address 的拷贝构造去拷一个 ExAddress
     Address sliced = ex;
 
     std::cout << "[sliced]   door_number = " << sliced.door_number << "\n";
     std::cout << "[sliced]   dynamic type = " << typeid(sliced).name() << "\n";
 
-    // the original object's extra is still there
+    // 原对象的 extra 还在
     std::cout << "[original] extra = " << ex.extra << "\n";
     return 0;
 }
@@ -165,7 +165,7 @@ class Address {
 public:
     virtual ~Address() = default;
 
-    virtual Address* clone() const {        // base version: copy as an Address
+    virtual Address* clone() const {        // 基类版本:复制成一个 Address
         return new Address(*this);
     }
 
@@ -181,7 +181,7 @@ class ExAddress : public Address {
 public:
     std::string extra;
 
-    ExAddress* clone() const override {      // derived version: copy as an ExAddress
+    ExAddress* clone() const override {      // 派生类版本:复制成一个 ExAddress
         return new ExAddress(*this);
     }
 };
@@ -194,7 +194,7 @@ Now let's rewrite that helper function:
 ```cpp
 std::unique_ptr<Address> make_from_proto(const Address& a,
                                          const std::string& door_number) {
-    auto t = a.clone();                      // virtual dispatch: the dynamic type decides what to copy as
+    auto t = a.clone();                      // 走虚派发:动态类型决定复制成谁
     t->door_number = door_number;
     return std::unique_ptr<Address>(t);
 }
@@ -234,11 +234,11 @@ int main() {
     ex.door_number = "A501";
     ex.extra       = "near-cafeteria";
 
-    Address* proto = &ex;                     // static type Address*, dynamic type ExAddress
-    Address* cloned = proto->clone();         // virtual dispatch -> ExAddress::clone
+    Address* proto = &ex;                     // 静态类型 Address*,动态 ExAddress
+    Address* cloned = proto->clone();         // 虚派发 -> ExAddress::clone
 
     std::cout << "[clone] dynamic type = " << typeid(*cloned).name() << "\n";
-    cloned->describe();                        // this also goes through ExAddress::describe
+    cloned->describe();                        // 走的也是 ExAddress::describe
     delete cloned;
     return 0;
 }
@@ -265,7 +265,7 @@ The more presentable modern C++ style is to have `clone()` return an owning smar
 class Widget {
 public:
     virtual ~Widget() = default;
-    virtual std::unique_ptr<Widget> clone() const = 0;   // pure virtual: forces subclasses to implement it
+    virtual std::unique_ptr<Widget> clone() const = 0;   // 纯虚,强制子类实现
     virtual void draw() const = 0;
 };
 ```
@@ -278,7 +278,7 @@ public:
     std::string label;
 
     std::unique_ptr<Widget> clone() const override {
-        return std::make_unique<Button>(*this);   // copy-construct a Button, wrap it in a unique_ptr
+        return std::make_unique<Button>(*this);   // 拷贝构造一个 Button,包进 unique_ptr
     }
 
     void draw() const override {
@@ -312,7 +312,7 @@ public:
 };
 
 int main() {
-    std::unique_ptr<Base> proto = std::make_unique<Derived>();   // the same implicit conversion
+    std::unique_ptr<Base> proto = std::make_unique<Derived>();   // 同样的隐式转换
     auto cloned = proto->clone();
     std::cout << "[unique_clone] dynamic type = " << typeid(*cloned).name() << "\n";
     return 0;
@@ -342,7 +342,7 @@ Let's first verify how the default copy constructor behaves with a sharing membe
 class SharedBuffer {
 public:
     explicit SharedBuffer(int v) : data_(std::make_shared<int>(v)) {}
-    // default synthesized copy constructor: copying the shared_ptr -> refcount +1, both objects point to the same block
+    // 默认合成拷贝构造:shared_ptr 拷贝 -> 引用计数 +1,两个对象指向同一块
     int  get() const { return *data_; }
     void set(int v)  { *data_ = v; }
 private:
@@ -351,7 +351,7 @@ private:
 
 int main() {
     SharedBuffer a(10);
-    SharedBuffer b = a;          // default shallow copy (shares the underlying int)
+    SharedBuffer b = a;          // 默认浅拷(共享底层 int)
     a.set(999);
     std::cout << "[shared shallow] b.get() = " << b.get()
               << " (follows a's mutation)\n";
@@ -422,8 +422,8 @@ public:
 
     std::unique_ptr<Widget> create(const std::string& name) const {
         auto it = protos_.find(name);
-        if (it == protos_.end()) return nullptr;     // not registered -> return null; the caller deals with it
-        return it->second->clone();                  // clone a copy from the template
+        if (it == protos_.end()) return nullptr;     // 没注册 -> 返回空,调用方自己处理
+        return it->second->clone();                  // 从模板克隆一份
     }
 
 private:
@@ -437,7 +437,7 @@ Usage looks like this: register a few carefully tuned prototypes up front, and f
 int main() {
     WidgetRegistry registry;
 
-    // register prototypes: these prototypes can run the expensive initialization up front
+    // 注册原型:这些原型可以预先做昂贵的初始化
     registry.register_proto("ok_button",
         std::make_unique<Button>("OK"));
     registry.register_proto("cancel_button",
@@ -445,13 +445,13 @@ int main() {
     registry.register_proto("name_field",
         std::make_unique<TextField>("enter your name"));
 
-    // clone by name; mutating a clone affects neither the prototype nor other clones
+    // 按名字克隆,改了克隆体不影响原型,也不影响其他克隆体
     auto b1 = registry.create("ok_button");
     auto b2 = registry.create("ok_button");
     auto f1 = registry.create("name_field");
 
     if (b1) b1->draw();    // Button: OK
-    if (b2) b2->draw();    // Button: OK  (an independent copy; changing b1 doesn't affect b2)
+    if (b2) b2->draw();    // Button: OK  (独立副本,改 b1 不影响 b2)
     if (f1) f1->draw();    // TextField: enter your name
 }
 ```

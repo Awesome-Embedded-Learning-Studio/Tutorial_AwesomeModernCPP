@@ -16,9 +16,9 @@ title: std::stacktrace
 translation:
   source: documents/cpp-reference/core-language/19-stacktrace.md
   source_hash: a4b390d03037a00423cb685d9ff2be5e2901c2ae5fd4d04d7d23fab2c4d84f94
-  translated_at: '2026-09-25T09:22:53+00:00'
-  engine: anthropic
-  token_count: 680
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 2426
 ---
 <!--
 Reference card: std::stacktrace (C++23). Tested locally with GCC 16.1.1 -std=c++23.
@@ -55,7 +55,7 @@ GCC's `<stacktrace>` symbols are not in the main library; you must link the expe
 
 ```cpp
 // Standard: C++23
-// Build: g++ -std=c++23 demo.cpp -lstdc++exp     (GCC 16+)
+// 编译： g++ -std=c++23 demo.cpp -lstdc++exp     （GCC 16+）
 #include <stacktrace>
 #include <iostream>
 

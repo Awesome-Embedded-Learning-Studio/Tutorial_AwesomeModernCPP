@@ -22,9 +22,9 @@ video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/02-some-assembly-required/04-stl-and-generic-programming.md
   source_hash: 99d501e7b41b8b7daf1d6e330f2ddef65dd738d0b2152b402b223035978b4057
-  translated_at: '2026-09-26T15:35:13+00:00'
-  engine: anthropic
-  token_count: 3200
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 9252
 ---
 # Rethinking What "Generic" Actually Means from the Origins of the STL
 
@@ -47,15 +47,15 @@ Following this thread, we can run an experiment to see what "an algorithm depend
 int main() {
     int arr[] = {5, 3, 1, 4, 2};
 
-    // std::sort doesn't care what kind of container you pass it
-    // It only cares: whether the iterators are RandomAccessIterators (whether they support arithmetic and dereferencing)
-    // whether the elements can be compared with operator<, and can be swapped and moved
+    // std::sort 不关心你传的是什么容器
+    // 它只关心：迭代器是不是 RandomAccessIterator（能不能做加减法、能不能解引用）
+    // 元素能不能用 operator< 比较、能不能 swap 和移动
     std::sort(std::begin(arr), std::end(arr));
 
     for (int x : arr) {
         std::cout << x << ' ';
     }
-    // Output: 1 2 3 4 5
+    // 输出: 1 2 3 4 5
 }
 ```
 
@@ -73,9 +73,9 @@ struct Person {
     int age;
 };
 
-// The algorithm doesn't care what Person is; it only cares whether it can be compared
-// Here we tell the compiler: you can compare two Person objects—and to be more specific,
-// the comparison is by age!
+// 算法不关心 Person 是什么，它只关心能不能比较
+// 这里我们告诉编译器——你可以比较两个Person对象，而且可以更加具体的说
+// 是根据年龄比较的！
 bool operator<(const Person& a, const Person& b) {
     return a.age < b.age;
 }
@@ -92,7 +92,7 @@ int main() {
     for (const auto& p : people) {
         std::cout << p.name << ": " << p.age << '\n';
     }
-    // Output:
+    // 输出:
     // Bob: 25
     // Alice: 30
     // Charlie: 35
@@ -118,8 +118,8 @@ Explicit instantiation means that before using a generic function, you must tell
 To feel the difference concretely, let's look at a side-by-side. First, a style that mimics "explicit instantiation"—this is not real Ada syntax, of course, but it expresses the idea using C++ concepts:
 
 ```cpp
-// Mimicking Ada-style explicit instantiation
-// You must declare in advance "which typed versions I want"
+// 模拟 Ada 风格的显式实例化
+// 你必须提前声明"我要哪些类型的版本"
 template<typename T>
 T my_accumulate(T* begin, T* end, T init) {
     for (T* p = begin; p != end; ++p) {
@@ -128,19 +128,19 @@ T my_accumulate(T* begin, T* end, T init) {
     return init;
 }
 
-// Explicit instantiation declarations: telling the compiler "I need these two versions"
+// 显式实例化声明：告诉编译器"我需要这两个版本"
 template int my_accumulate<int>(int*, int*, int);
 template double my_accumulate<double>(double*, double*, double);
 
 int main() {
     int arr[] = {1, 2, 3, 4, 5};
-    // The compiler sees the call, finds that an int-version instantiation already exists, and uses it directly
+    // 编译器看到调用，发现已经有 int 版本的实例了，直接用
     int sum = my_accumulate(arr, arr + 5, 0);
 
     // double arr2[] = {1.0, 2.0, 3.0};
     // double sum2 = my_accumulate(arr2, arr2 + 3, 0.0);
-    // If you uncomment the two lines above without declaring the double version in advance,
-    // under a pure explicit-instantiation model this is a hard error
+    // 如果取消上面两行注释，但没有提前声明 double 版本，
+    // 在纯显式实例化的模型下，这会直接报错
 }
 ```
 
@@ -166,8 +166,8 @@ int main() {
     double sum2 = my_accumulate(arr2, arr2 + 3, 0.0);
     std::cout << sum2 << "\n";  // 7.5
 
-    // You can even pass a type that was never declared in advance—
-    // the compiler deduces it at the call site and generates the code on the spot
+    // 你甚至可以传一个从来没提前声明过的类型，
+    // 编译器在调用点自动推导、自动生成
     long arr3[] = {10L, 20L, 30L};
     long sum3 = my_accumulate(arr3, arr3 + 3, 0L);
     std::cout << sum3 << "\n";  // 60

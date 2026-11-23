@@ -22,9 +22,9 @@ title: 'What Is the STL: Containers, Algorithms, and the Iterators In Between'
 translation:
   source: documents/vol1-fundamentals/ch10/00-what-is-stl.md
   source_hash: ebc95943b7f36b674635b45e66e4a17f88ef7683c3709e6a76fa7c569b2cafbe
-  translated_at: '2026-09-27T03:58:41+00:00'
-  engine: anthropic
-  token_count: 5600
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5341
 ---
 # What Is the STL: Containers, Algorithms, and the Iterators In Between
 
@@ -47,9 +47,9 @@ Pick any scenario you like: a week's log of daily high temperatures, and you wan
 #include <vector>
 
 int main() {
-    std::vector<int> temps = {28, 31, 26, 33, 29, 30, 7};  // one day's entry was a slip of the hand
+    std::vector<int> temps = {28, 31, 26, 33, 29, 30, 7};  // 手滑记错了一天
 
-    std::sort(temps.begin(), temps.end());    // algorithm: sorting
+    std::sort(temps.begin(), temps.end());    // 算法：排序
 
     std::cout << "sorted: ";
     for (int t : temps) {
@@ -58,7 +58,7 @@ int main() {
     std::cout << "\n";
 
     int hot = std::count_if(temps.begin(), temps.end(),
-                            [](int t) { return t >= 30; });    // algorithm: counting with a condition
+                            [](int t) { return t >= 30; });    // 算法：按条件计数
     std::cout << "days >= 30: " << hot << "\n";
 
     return 0;
@@ -109,7 +109,7 @@ While the example is still warm in our hands, there is one more behavior related
 #include <stdexcept>
 
 try {
-    std::cout << temps.at(100) << "\n";    // temps has only 7 elements
+    std::cout << temps.at(100) << "\n";    // temps 只有 7 个元素
 } catch (const std::out_of_range& e) {
     std::cout << "caught: " << e.what() << "\n";
 }

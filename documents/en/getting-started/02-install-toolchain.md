@@ -15,10 +15,10 @@ tags:
 reading_time_minutes: 12
 translation:
   source: documents/getting-started/02-install-toolchain.md
-  source_hash: 5018c9046ff74393ccda94caed489abf4db4a58547fbbcfd847acb199721c00b
-  translated_at: '2026-09-26T14:34:35+00:00'
-  engine: anthropic
-  token_count: 9000
+  source_hash: 965224aa4727c1636e40039e1d52d5abb191754e37cc2d11bb8b7adc6ea0b21c
+  translated_at: '2026-11-22T16:36:41+00:00'
+  engine: glm-5.3-refresh
+  token_count: 9458
 ---
 
 # Install the Three Things You Need to Write C++
@@ -30,6 +30,8 @@ Last article we settled on two things to install: an editor (vscode) and a compi
 First, let's be clear about what CMake is for. As we write more C++, a project won't stay at just one .cpp file — it might be five, six, a dozen of them, sorted into different folders. At that point, compiling them one by one by typing commands by hand would drive anyone mad. CMake exists to manage that for us: you write one configuration file telling it "here are the files in this project, and here's the program to produce", and it takes care of the rest. As for actually using it — that's next article's business; for now we just install it.
 
 This article is pure hand-holding, with a screenshot slot at every step. Once the three things are installed, we can write our first runnable program in the next article.
+
+One more thing: this article takes the native Windows route. If what you want is a genuine Linux environment (plenty of open-source tools run more smoothly on Linux), you can hop over to article 7 first, get WSL2 set up, and then come back — the idea behind installing the toolchain is the same either way.
 
 ## The Windows Route (Recommended)
 
@@ -116,14 +118,14 @@ But it isn't always like that — mine, for instance, is customized, and it look
 
 ```bash
 CharlieChen@DESKTOP-65DBAA7 UCRT64 ~
-$ echo "Hello!" # Just testing that it works; this is a bash command — a must-know if you ever learn Linux
+$ echo "Hello!" # 测试一下能不能用, 这个是bash命令，您学习Linux的话，这个是必须会的
 Hello!
 
 CharlieChen@DESKTOP-65DBAA7 UCRT64 ~
 $ pacman  -S mingw-w64-uart-x86_64-gcc
 error: target not found: mingw-w64-uart-x86_64-gcc
-# The author's finger slipped on the line above: typed uart (a serial port) instead of ucrt (the Windows 10 C runtime)
-# When you see "target not found", first suspect a typo in the package name — this is what pacman says when no package has that name
+# 上面这行笔者手滑了:打成了 uart(串口),正确是 ucrt(Windows 10 的 C 运行时)。
+# 看到 target not found 先怀疑包名拼错——pacman 找不到这个名字的包就会这么报
 
 CharlieChen@DESKTOP-65DBAA7 UCRT64 ~
 $ pacman -S mingw-w64-ucrt-x86_64-gcc
@@ -148,8 +150,8 @@ Total Download Size:    68.98 MiB
 Total Installed Size:  490.23 MiB
 
 :: Proceed with installation? [Y/n]
-# This means it's asking you to type a y — do you want to download? The answer is yes
-# Type y and press Enter; step away for a bit and the install will be done when you're back
+# 这里的意思是让你输入一个 y，问你要不要下载。实际上是要的
+# 输入 y 回车，起来一会回来就会安装完毕
 ```
 
 Now we can give it a try!

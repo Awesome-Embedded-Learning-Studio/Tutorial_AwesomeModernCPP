@@ -24,9 +24,9 @@ title: 'Constraining Templates with Concepts: Subsumption and Overloading'
 translation:
   source: documents/vol4-advanced/vol3-metaprogramming-cpp20-23/02-constraining-templates.md
   source_hash: aa0af0f3ea208a8c2be498ee400e396f796a575d78fcf83e0465f0fca9a52fc1
-  translated_at: '2026-09-26T04:30:28+00:00'
-  engine: anthropic
-  token_count: 4600
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7049
 ---
 # Constraining Templates with Concepts: Subsumption and Overloading
 
@@ -40,14 +40,14 @@ The **requires clause** (requires-clause) appears after the template parameter l
 
 ```cpp
 template <typename T>
-    requires Numeric<T>      // this whole line is the requires clause
+    requires Numeric<T>      // 这整句是 requires 子句
 T add(T a, T b) { return a + b; }
 ```
 
 A **requires expression** (requires-expression) is an expression that can be evaluated to a `bool` at compile time, describing "which operations a type must provide" right on the spot. The next piece takes it apart in full — here, just a glance:
 
 ```cpp
-requires(T t) { t + t; t.size(); }   // this is a requires expression; its value is a bool
+requires(T t) { t + t; t.size(); }   // 这是一个 requires 表达式,值为 bool
 ```
 
 The difference between the two: the clause is the syntactic position where you "lay down the rules" for the template, while the expression is the formula that describes what the rules say and produces a truth value. The clause often stuffs an expression inside itself, as in `requires requires(T t){ t+t; }` (outer clause, inner expression) — that is where the two consecutive `requires` of form ④ in the last piece came from. This piece concentrates on how the clause is used and how constraints take part in overload resolution; the expression is left to the next piece.
@@ -62,23 +62,23 @@ Constraints from concepts are not limited to free function templates. Function t
 template <typename T>
 concept Numeric = std::integral<T> || std::floating_point<T>;
 
-// ① function template
+// ① 函数模板
 template <Numeric T>
 T square(T x) { return x * x; }
 
-// ② class template: instantiated only for numeric types
+// ② 类模板:只对数值类型实例化
 template <Numeric T>
 struct SafeNumber {
     T value;
     SafeNumber(T v) : value(v) {}
-    // ③ member functions can add constraints of their own
+    // ③ 成员函数也能再加自己的约束
     SafeNumber& operator+=(Numeric auto other) {
         value += other;
         return *this;
     }
 };
 
-// ④ abbreviated syntax: the constraint goes directly in front of auto
+// ④ 简写语法:约束直接写在 auto 前
 Numeric auto half(Numeric auto x) { return x / 2; }
 ```
 
@@ -111,17 +111,17 @@ template <typename T>
 concept Animal = requires(T t) { t.eat(); };
 
 template <typename T>
-concept Dog = Animal<T> && requires(T t) { t.bark(); };   // Dog demands one more thing than Animal: bark()
+concept Dog = Animal<T> && requires(T t) { t.bark(); };   // Dog 比 Animal 多要一个 bark()
 
-void describe(Animal auto) { std::cout << "an animal\n"; }   // the wide overload
-void describe(Dog auto)    { std::cout << "a dog\n"; }       // the narrow overload
+void describe(Animal auto) { std::cout << "an animal\n"; }   // 宽重载
+void describe(Dog auto)    { std::cout << "a dog\n"; }       // 窄重载
 
 struct Cat { void eat() {} };
 struct Pup { void eat() {} void bark() {} };
 
 int main() {
-    describe(Cat{});   // Cat satisfies Animal only
-    describe(Pup{});   // Pup satisfies both Animal and Dog
+    describe(Cat{});   // Cat 只满足 Animal
+    describe(Pup{});   // Pup 同时满足 Animal 和 Dog
 }
 ```
 
@@ -149,9 +149,9 @@ template <typename T> concept Flyable   = requires(T t) { t.fly(); };
 void act(Swimmable auto) { /* ... */ }
 void act(Flyable auto)   { /* ... */ }
 
-struct Duck { void swim() {} void fly() {} };   // satisfies both
+struct Duck { void swim() {} void fly() {} };   // 两个都满足
 
-int main() { act(Duck{}); }   // neither subsumes the other
+int main() { act(Duck{}); }   // 谁也不 subsume 谁
 ```
 
 ```text
@@ -170,12 +170,12 @@ Here is a pit that is absurdly easy to fall into; let's run one directly and loo
 
 ```cpp
 template <typename T> concept C1 = std::is_integral_v<T>;
-template <typename T> concept C2 = C1<T>;          // only the name changed
+template <typename T> concept C2 = C1<T>;          // 只是换了名字
 
 void g(C1 auto) { /* ... */ }
 void g(C2 auto) { /* ... */ }
 
-int main() { g(42); }   // int satisfies both C1 and C2
+int main() { g(42); }   // int 同时满足 C1 和 C2
 ```
 
 ```text
@@ -189,11 +189,11 @@ For `C2` to genuinely win, you must give it an atomic constraint beyond `C1`. Co
 ```cpp
 template <typename T> concept A = requires(T t){ t.a(); };
 template <typename T> concept B = requires(T t){ t.b(); };
-template <typename T> concept C = A<T> && B<T>;   // atomic constraints = { A<T>, B<T> }
+template <typename T> concept C = A<T> && B<T>;   // 原子约束 = { A<T>, B<T> }
 
 void f(A auto) { /* ... */ }
 void f(B auto) { /* ... */ }
-void f(C auto) { /* ... */ }   // C subsumes A, and subsumes B too
+void f(C auto) { /* ... */ }   // C subsumes A,也 subsumes B
 
 int main() { struct S{ void a(){} void b(){} } s; f(s); }
 ```
@@ -231,8 +231,8 @@ The `std::same_as` concept easily leads people astray. It lets you write `templa
 template <std::same_as<int> T>
 void only_int(T x) { /* ... */ }
 
-only_int(42);       // fine
-// only_int(3.14);  // fails to compile: double does not satisfy same_as<int>
+only_int(42);       // 没问题
+// only_int(3.14);  // 编译失败:double 不满足 same_as<int>
 ```
 
 It runs, but this is usually not good design. If your function accepts only `int`, writing an ordinary non-template function `void only_int(int x)` directly is clearer and simpler, and it spares the compiler one more template instantiation. The place where "type equivalence" constraints such as `same_as` truly shine is stating a requirement about the relationship **between two parameters** inside a template — for example `template <typename A, typename B> requires std::same_as<A, B>`, constraining "A and B must be the same type". Taking it and locking a single template parameter down to some concrete type is using the wrong tool.

@@ -18,10 +18,10 @@ tags:
 title: std::move
 translation:
   source: documents/cpp-reference/core-language/08-move-forward.md
-  source_hash: 7e16d37c12fb3e02f7179844902934715a0d4e3ca007953775110f4590fa6345
-  translated_at: '2026-09-27T01:36:19+00:00'
-  engine: anthropic
-  token_count: 1050
+  source_hash: eaa61a10a2b794aa6c529acc06b9d2232f1dd862b762cc2a065e40aab8e14e16
+  translated_at: '2026-11-22T16:41:57.247672+00:00'
+  engine: glm-5.3-refresh
+  token_count: 1695
 ---
 # std::move (C++11)
 
@@ -52,8 +52,8 @@ It force-casts an lvalue to an rvalue reference, telling the compiler "this obje
 int main() {
     std::string str = "Hello";
     std::vector<std::string> v;
-    v.push_back(str);              // copy
-    v.push_back(std::move(str));   // move; str is left in a valid but unspecified state
+    v.push_back(str);              // 拷贝
+    v.push_back(std::move(str));   // 移动，str 变为有效但未指定的状态
     std::cout << v[0] << " " << v[1] << "\n";
     std::cout << "str empty: " << str.empty() << "\n";
 }

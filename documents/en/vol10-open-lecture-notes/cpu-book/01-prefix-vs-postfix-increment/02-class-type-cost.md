@@ -5,9 +5,10 @@ order: 2
 tags: [host, cpp-modern, intermediate]
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/01-prefix-vs-postfix-increment/02-class-type-cost.md
-  source_hash: e0246537a7fe848a6c442f53f74b9f33307ef9558875e24f9054d91b2e05f1d0
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: dba65e6e868f29f150d447b94284e34cc1423a19d45405e0f36daf4c641e7086
+  translated_at: '2026-11-22T16:44:08Z'
+  engine: glm-5.3-refresh
+  token_count: 9289
 difficulty: intermediate
 platform: host
 cpp_standard: [11, 17]
@@ -30,7 +31,7 @@ Now we turn the optimizer on. The source holds four functions, one pair per scen
 ```cpp
 volatile int sink;
 
-// Scenario 1: the incremented value is taken (x is used), and the new value of i is used too
+// 场景一:自增的值被取走(x 被使用),i 的新值也被使用
 void post_val(int i) {
     int x = i++;
     sink = x;
@@ -43,7 +44,7 @@ void pre_val(int i) {
     sink = i;
 }
 
-// Scenario 2: the incremented value is discarded; all we care about is that i changed
+// 场景二:自增的值被丢弃,只关心 i 变了
 void post_disc(int i) {
     i++;
     sink = i;
@@ -134,8 +135,8 @@ We write a class shaped like an iterator, holding a bare pointer inside, and han
 ```cpp
 #include <cstdio>
 
-// A class shaped like an iterator: a bare pointer inside.
-// The copy constructor carries a static counter that tracks real calls.
+// 迭代器样子的类:内部一个裸指针。
+// 拷贝构造带静态计数器,统计真实调用次数。
 struct Iter {
     int* p;
     static int copies;
@@ -144,12 +145,12 @@ struct Iter {
     explicit Iter(int* q) : p(q) {}
     Iter(const Iter& other) : p(other.p) { ++copies; }
 
-    Iter& operator++() {   // prefix: returns a reference to self after the increment
+    Iter& operator++() {   // 前缀:返回自增后自身的引用
         ++p;
         return *this;
     }
 
-    Iter operator++(int) { // postfix: returns a copy of the old value from before the increment
+    Iter operator++(int) { // 后缀:返回自增前的旧值副本
         Iter old(*this);
         ++p;
         return old;
@@ -158,9 +159,8 @@ struct Iter {
 
 int Iter::copies = 0;
 
-// noinline/noclone: under -O2 these stop the two functions from being
-// inlined or clone-specialized, so the assembly evidence lands in standalone
-// function bodies and the counter reads in main cannot be constant-folded away.
+// noinline/noclone:保证 -O2 下这两个函数不被内联、不被特化克隆,
+// 汇编证据落在独立的函数体里,main 里的计数读取不会被常量折叠掉。
 __attribute__((noinline, noclone)) void run_prefix(Iter& it) {
     ++it;
 }

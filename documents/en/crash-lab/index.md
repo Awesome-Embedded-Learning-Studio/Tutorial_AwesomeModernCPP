@@ -8,10 +8,10 @@ tags:
   - intermediate
 translation:
   source: documents/crash-lab/index.md
-  source_hash: 7483f83c1bd2bc8385221a2264e8f1cc13abf35a5d78ee5a8e0b334a6ca1c32d
-  translated_at: '2026-09-27T03:00:59+00:00'
-  engine: anthropic
-  token_count: 500
+  source_hash: e921d02de27717ef34dcfd91bc96c660ababca9f138695b123927db13363c250
+  translated_at: '2026-11-22T16:39:09+00:00'
+  engine: glm-5.3-refresh
+  token_count: 1036
 ---
 
 # Crash Lab: The Error Is Here, the Crash Is There
@@ -26,9 +26,10 @@ PS: Written by CharlieChen114514, in the small hours, after days of overtime wre
 
 ## Categories Already Open
 
-First open for business is [Memory Safety](/crash-lab/a-memory-safety/), currently holding two case files:
+First open for business is [Memory Safety](/crash-lab/a-memory-safety/), currently holding three case files:
 
 - [01 · Null Pointer Dereference: The Crash That Hides Nothing](/crash-lab/a-memory-safety/01-null-deref)
 - [02 · Use-After-Free: The Pointer Outlives the Memory](/crash-lab/a-memory-safety/02-use-after-free)
+- [03 · Heap Buffer Overflow: One Extra Write Is Okay, Two Extra Writes Are Fatal](/crash-lab/a-memory-safety/03-heap-buffer-overflow)
 
 Every case ships with code you can compile and run yourself, under `code/volumn_codes/crash-lab/` in the repo: one `crash.cpp` deliberately written to crash, and one repaired `fixed.cpp`—clone it, `cmake -B build && cmake --build build`, and off you go. The other categories—arithmetic overflow, iterator invalidation, data races, that batch—are still having their case files moved in; one batch lands, one batch lights up.

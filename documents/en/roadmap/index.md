@@ -3,10 +3,10 @@ title: "Learning Roadmap"
 description: "Pick a starting point by background, see the ten volumes at a glance, then read them one by one, with pacing advice, companion resources, and content maturity along the way. This page answers how to learn, where to start, and what each volume teaches"
 translation:
   source: documents/roadmap/index.md
-  source_hash: 6c3ff7739e6f8aa8e847f03412a6ce01738242ca8632e6a9f93ae0d148dfd2ce
-  translated_at: '2026-10-11T08:54:10+00:00'
-  engine: anthropic
-  token_count: 2600
+  source_hash: 47c2cb1a853e5fe75938f52cf02bcee86d2c983adf24a0bbc5874acb7c881a9f
+  translated_at: '2026-11-22T16:42:27+00:00'
+  engine: glm-5.3-refresh
+  token_count: 6067
 ---
 
 # Learning Roadmap

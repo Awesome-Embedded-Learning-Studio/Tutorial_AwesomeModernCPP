@@ -32,9 +32,9 @@ title: 'Capstone Project: fixed_vector<T, N>'
 translation:
   source: documents/vol4-advanced/vol1-basics-cpp11-14/10-fixed-vector.md
   source_hash: 834b81e850b6ea29c9d334c348fb5b96767cd5f1d887cfbd9c7f45fa0aa2b1d5
-  translated_at: '2026-09-26T04:32:13+00:00'
-  engine: anthropic
-  token_count: 5000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7025
 ---
 # Capstone Project: fixed_vector&lt;T, N&gt;
 
@@ -59,11 +59,11 @@ The template signature is `template <typename T, std::size_t N>` — one type pa
 
 template <typename T, std::size_t N>
 class FixedVector {
-    std::array<T, N> data_{};   // fixed-size storage, on the stack, no heap allocation
+    std::array<T, N> data_{};   // 定长存储,栈上,无堆分配
     std::size_t size_ = 0;
 public:
     static constexpr std::size_t capacity_v = N;
-    // ... member functions
+    // ... 成员函数
 };
 ```
 

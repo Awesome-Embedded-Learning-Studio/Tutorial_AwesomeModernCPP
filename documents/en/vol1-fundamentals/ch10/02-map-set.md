@@ -22,9 +22,9 @@ title: Associative Containers Quick Start
 translation:
   source: documents/vol1-fundamentals/ch10/02-map-set.md
   source_hash: 7abdb1a6d1c5ac7233661a138f4f33194abdf6790cbecd2823f87ad03f90840c
-  translated_at: '2026-09-27T03:59:27+00:00'
-  engine: anthropic
-  token_count: 4200
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 10156
 ---
 # Associative Containers: Give a Key, Get a Result
 
@@ -47,17 +47,17 @@ int main()
 {
     std::map<std::string, int> scores;
 
-    // Method 1: assign through operator[]
+    // 方式一：用 operator[] 赋值
     scores["Alice"] = 95;
     scores["Bob"] = 87;
 
-    // Method 2: insert a pair with insert
+    // 方式二：用 insert 插入 pair
     scores.insert({"Charlie", 72});
 
-    // Method 3: construct in place with emplace (recommended)
+    // 方式三：用 emplace 原地构造（推荐）
     scores.emplace("Diana", 91);
 
-    // Method 4: initializer list
+    // 方式四：初始化列表
     std::map<std::string, int> ages = {
         {"Alice", 22}, {"Bob", 25}, {"Charlie", 20}
     };
@@ -71,18 +71,18 @@ Each insertion method has its place. `operator[]` is the most intuitive, but it 
 Next, lookup. `find` returns an iterator pointing to the element found, or `end()` if there is none. `count` returns the number of matching elements (for a map, either 0 or 1). C++20 added `contains`, whose semantics are the most straightforward:
 
 ```cpp
-// Works in every standard from C++11 on
+// C++11 起所有版本都能用的方式
 auto it = scores.find("Alice");
 if (it != scores.end()) {
     std::cout << "Alice: " << it->second << "\n";
 }
 
-// count also tests for existence
+// count 也可以判断存在性
 if (scores.count("Bob")) {
     std::cout << "Bob exists\n";
 }
 
-// C++20 introduced contains: the clearest semantics
+// C++20 引入 contains，语义最清晰
 if (scores.contains("Diana")) {
     std::cout << "Diana exists\n";
 }
@@ -91,9 +91,9 @@ if (scores.contains("Diana")) {
 For deletion we use `erase`, either by key or by iterator:
 
 ```cpp
-scores.erase("Bob");            // erase by key
-scores.erase(scores.begin());   // erase the first element (the smallest key)
-scores.clear();                 // empty the whole map
+scores.erase("Bob");            // 按 key 删除
+scores.erase(scores.begin());   // 删除第一个元素（key 最小的）
+scores.clear();                 // 清空整个 map
 ```
 
 When the key is absent, `map[key]` **automatically inserts a default value**. Two consequences follow. If all we want is to check whether a key exists, going through `operator[]` silently modifies the map—a logic bug—and if our value type has no default constructor, it fails to compile outright. Moreover, on a `const map`, `operator[]` is not available at all, because it is a modifying operation. So for read-only lookup use `find`, `count`, or `contains`; for bounds-checked access use `at()`—just like vector's `at`, it throws a `std::out_of_range` exception when the key does not exist.
@@ -112,19 +112,19 @@ int main()
 {
     std::set<int> s = {5, 3, 1, 4, 2, 3, 1};
 
-    // Duplicate elements are silently dropped, and the elements are sorted
+    // 重复元素被自动忽略，且元素已排序
     // s: {1, 2, 3, 4, 5}
 
-    s.insert(6);        // insert
-    s.emplace(0);       // construct in place and insert
-    s.erase(3);         // erase by key
+    s.insert(6);        // 插入
+    s.emplace(0);       // 原地构造插入
+    s.erase(3);         // 按 key 删除
 
-    // Lookup
+    // 查找
     if (s.contains(4)) {            // C++20
         std::cout << "4 is in the set\n";
     }
 
-    if (s.count(2)) {               // works in every C++ version
+    if (s.count(2)) {               // 所有 C++ 版本通用
         std::cout << "2 is in the set\n";
     }
 
@@ -143,10 +143,10 @@ One easily overlooked feature is that set provides `lower_bound` and `upper_boun
 
 ```cpp
 std::set<int> s = {1, 3, 5, 7, 9};
-auto lo = s.lower_bound(3);   // points at 3
-auto hi = s.upper_bound(7);   // points at 9
+auto lo = s.lower_bound(3);   // 指向 3
+auto hi = s.upper_bound(7);   // 指向 9
 for (auto it = lo; it != hi; ++it) {
-    std::cout << *it << " ";   // Output: 3 5 7
+    std::cout << *it << " ";   // 输出: 3 5 7
 }
 ```
 
@@ -159,7 +159,7 @@ std::map<std::string, int> scores = {
     {"Alice", 95}, {"Bob", 87}, {"Charlie", 72}
 };
 
-// The C++11 way
+// C++11 方式
 for (const auto& p : scores) {
     std::cout << p.first << ": " << p.second << "\n";
 }
@@ -168,7 +168,7 @@ for (const auto& p : scores) {
 C++17 introduced **structured bindings**, which let us give each of the pair's two members a name of its own—a big jump in readability:
 
 ```cpp
-// The C++17 way—recommended
+// C++17 方式——推荐
 for (const auto& [name, score] : scores) {
     std::cout << name << ": " << score << "\n";
 }
@@ -177,10 +177,10 @@ for (const auto& [name, score] : scores) {
 `[name, score]` is the structured-binding syntax: `name` binds to `pair.first`, `score` binds to `pair.second`. Note that we use `const auto&` rather than `auto`—same as when iterating a vector—to avoid needless copies. If we need to modify values during iteration (careful: the key is `const` and cannot be modified), just drop the `const`:
 
 ```cpp
-// Add points for everyone
+// 给所有人加分
 for (auto& [name, score] : scores) {
     score += 5;
-    // name += "x";  // Compile error! The key is const
+    // name += "x";  // 编译错误！key 是 const 的
 }
 ```
 
@@ -189,7 +189,7 @@ Set iteration is even simpler, since it carries only a key:
 ```cpp
 std::set<int> s = {5, 3, 1, 4, 2};
 for (const auto& elem : s) {
-    std::cout << elem << " ";   // Output: 1 2 3 4 5 (sorted)
+    std::cout << elem << " ";   // 输出: 1 2 3 4 5（有序）
 }
 ```
 
@@ -213,12 +213,12 @@ int main()
     freq["world"] = 5;
     freq.emplace("cpp", 1);
 
-    // The interface is identical to map's
+    // 接口和 map 完全一致
     if (auto it = freq.find("hello"); it != freq.end()) {
         std::cout << it->first << ": " << it->second << "\n";
     }
 
-    // But iteration order is not guaranteed
+    // 但遍历顺序不保证
     for (const auto& [word, count] : freq) {
         std::cout << word << " -> " << count << "\n";
     }
@@ -241,7 +241,7 @@ Now let's knead map and set together into one practical program. Feature one is 
 #include <string>
 #include <vector>
 
-/// Split a string into a list of words by whitespace
+/// 将字符串按空格拆分成单词列表
 std::vector<std::string> split_words(const std::string& text)
 {
     std::vector<std::string> words;
@@ -253,7 +253,7 @@ std::vector<std::string> split_words(const std::string& text)
     return words;
 }
 
-/// Count how often each word appears, using a map
+/// 使用 map 统计每个单词的出现频率
 void word_frequency_demo()
 {
     std::string text = "the cat sat on the mat and the cat slept";
@@ -261,7 +261,7 @@ void word_frequency_demo()
 
     std::map<std::string, int> freq;
     for (const auto& w : words) {
-        // operator[] is exactly right here: inserts 0 if absent, then ++ increments
+        // operator[] 在这里正好合适：不存在则插入 0，然后 ++ 自增
         ++freq[w];
     }
 
@@ -271,10 +271,10 @@ void word_frequency_demo()
     }
 }
 
-/// Simple spell checking with a set
+/// 使用 set 做简单的拼写检查
 void spell_check_demo()
 {
-    // Build a small dictionary
+    // 构建一个小词典
     std::set<std::string> dictionary = {
         "the", "cat", "sat", "on", "mat", "and", "slept",
         "dog", "ran", "in", "park", "hello", "world"
@@ -292,7 +292,7 @@ void spell_check_demo()
     }
 }
 
-/// Compare iteration order of map and unordered_map
+/// 对比 map 和 unordered_map 的遍历顺序
 void map_order_demo()
 {
     std::map<std::string, int> ordered = {

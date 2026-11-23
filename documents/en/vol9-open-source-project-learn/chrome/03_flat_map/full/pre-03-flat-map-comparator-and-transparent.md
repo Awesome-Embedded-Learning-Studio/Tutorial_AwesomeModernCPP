@@ -25,9 +25,9 @@ title: "flat_map prerequisite (III): comparators, strict_weak_order, and transpa
 translation:
   source: documents/vol9-open-source-project-learn/chrome/03_flat_map/full/pre-03-flat-map-comparator-and-transparent.md
   source_hash: 66a6e95c93b538f162ec1c2311fd47c4f6fdf27ea4594e1fbfde59a3f470a04f
-  translated_at: '2026-09-26T02:48:32+00:00'
-  engine: anthropic
-  token_count: 4600
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6766
 ---
 # flat_map prerequisite (III): comparators, strict_weak_order, and transparent lookup
 
@@ -45,7 +45,7 @@ struct ByLength {
         return a.size() < b.size();
     }
 };
-flat_map<std::string, Config, ByLength> m;   // ordered by string length
+flat_map<std::string, Config, ByLength> m;   // 按字符串长度排序
 ```
 
 But a comparator is not something you get to write however you like — a mathematical contract governs it.
@@ -74,7 +74,7 @@ Suppose you have a `flat_map<std::string, Config>` in hand and want to look up t
 
 ```cpp
 flat_map<std::string, Config> m;
-auto it = m.find("timeout");   // "timeout" is a const char[8]
+auto it = m.find("timeout");   // "timeout" 是 const char[8]
 ```
 
 That `"timeout"` is a `const char[8]`, not a `std::string`. If the comparator is `std::less<std::string>` (opaque), then `find`'s argument must be a `std::string`, and the container has no way out: it takes your `const char[8]`, constructs a temporary `std::string` — allocating heap memory, copying characters — runs the binary search against that temporary, and then destructs it. One lookup, a malloc/free pair paid for nothing.
@@ -90,9 +90,9 @@ So how does flat_map know whether the comparator is transparent? Through a compi
 ```cpp
 template <typename K>
 using KeyT = ConditionalT<
-    requires { typename KeyCompare::is_transparent; },   // is the comparator transparent?
-    K,                                                     // transparent: keep the K the caller passed in
-    Key>;                                                  // opaque: force fallback to Key
+    requires { typename KeyCompare::is_transparent; },   // 比较器透明吗?
+    K,                                                     // 透明:保留调用方传的 K
+    Key>;                                                  // 不透明:强制回退到 Key
 ```
 
 `ConditionalT` looks like `std::conditional_t`, but its arguments don't depend on each other, so deduction works normally. The logic in one sentence: with a transparent comparator, `KeyT<K>` is exactly the `K` the caller passed in, `const char*` say; with an opaque comparator, `KeyT<K>` gets bent back to `Key` by force, `std::string` say.
@@ -100,11 +100,11 @@ using KeyT = ConditionalT<
 So `find`'s signature follows the comparator:
 
 ```cpp
-// transparent comparator (std::less<>): heterogeneous keys accepted
+// 透明比较器(std::less<>):可接受异构 key
 template <class K = Key>
-auto find(const KeyT<K>& key);   // KeyT<K> = K (transparent)
+auto find(const KeyT<K>& key);   // KeyT<K> = K(透明)
 
-// opaque comparator (std::less<string>): Key only
+// 不透明比较器(std::less<string>):只接受 Key
 template <class K = Key>
 auto find(const KeyT<K>& key);   // KeyT<K> = Key = string
 ```
@@ -128,14 +128,14 @@ Let's roll our own minimal version of transparent comparison and get a feel for 
 #include <iostream>
 #include <string>
 
-// transparent comparator (carries the is_transparent marker)
+// 透明比较器(带 is_transparent 标记)
 struct TransparentLess {
-    using is_transparent = void;   // the key: marks transparency
+    using is_transparent = void;   // 关键:标记透明
     template <typename A, typename B>
     bool operator()(A&& a, B&& b) const { return std::forward<A>(a) < std::forward<B>(b); }
 };
 
-// opaque comparator (no is_transparent)
+// 不透明比较器(无 is_transparent)
 struct OpaqueLess {
     bool operator()(const std::string& a, const std::string& b) const { return a < b; }
 };

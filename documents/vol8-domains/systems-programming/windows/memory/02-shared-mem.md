@@ -6,7 +6,7 @@ order: 2
 platform: host
 difficulty: advanced
 cpp_standard: [20]
-reading_time_minutes: 23
+reading_time_minutes: 47
 prerequisites:
   - "虚拟内存:VirtualAlloc 与 VirtualProtect"
   - "文件映射:CreateFileMapping 与 MapViewOfFile"

@@ -22,10 +22,10 @@ tags:
 title: The Preprocessor and Multi-File Projects
 translation:
   source: documents/vol1-fundamentals/c_tutorials/15-preprocessor-and-multifile.md
-  source_hash: 9cc0f4d2fee03b50270f437eab007c84e153ef3d8b36bc156030da6f429ba48d
-  translated_at: '2026-09-25T13:23:09+00:00'
-  engine: anthropic
-  token_count: 2600
+  source_hash: c2cd8b31b422286f91a1de01bdb8ce3f8478c00ad3af504ecfcf7097c6f796a9
+  translated_at: '2026-11-22T16:39:43+00:00'
+  engine: glm-5.3-refresh
+  token_count: 7872
 ---
 # The Preprocessor and Multi-File Projects
 
@@ -71,7 +71,7 @@ What happens without the parentheses:
 
 ```c
 #define BAD_SQUARE(x) x * x
-int r = BAD_SQUARE(2 + 3);   // Expands to 2 + 3 * 2 + 3 = 11, not 25
+int r = BAD_SQUARE(2 + 3);   // 展开为 2 + 3 * 2 + 3 = 11，而不是 25
 ```
 
 But parentheses cannot fix the **double evaluation** problem:
@@ -79,8 +79,8 @@ But parentheses cannot fix the **double evaluation** problem:
 ```c
 int x = 5;
 int r = MAX(x++, 10);
-// Expands to ((x++) > (10) ? (x++) : (10))
-// x++ is evaluated twice! x ends up as 7, not 6
+// 展开为 ((x++) > (10) ? (x++) : (10))
+// x++ 被求值了两次！x 最终变成了 7 而不是 6
 ```
 
 ### Multi-Line Macros and the do-while(0) Idiom
@@ -105,7 +105,7 @@ int r = MAX(x++, 10);
 #define STRINGIFY(x) #x
 #define MAKE_VAR(prefix, num) prefix ## num
 
-int MAKE_VAR(value, 1) = 10;  // Expands to int value1 = 10;
+int MAKE_VAR(value, 1) = 10;  // 展开为 int value1 = 10;
 ```
 
 ## Conditional Compilation
@@ -154,11 +154,11 @@ The `static` keyword confines a symbol's visibility to the current translation u
 ## A First Look at Static Libraries
 
 ```bash
-# Compile to an object file
+# 编译为目标文件
 gcc -c math_utils.c
-# Create a static library
+# 创建静态库
 ar rcs libmath_utils.a math_utils.o
-# Use the static library
+# 使用静态库
 gcc -o demo main.c -L. -lmath_utils
 ```
 
@@ -180,18 +180,18 @@ gcc -o demo main.c -L. -lmath_utils
 ```c
 // math_utils.h
 #pragma once
-// Exercise: declare clamp_int and count_digits
+// 练习： 声明 clamp_int 和 count_digits
 
 // math_utils.c
 #include "math_utils.h"
-// Exercise: implement clamp_int (clamp value into the [min_val, max_val] range)
-// Exercise: implement count_digits (count the decimal digits of an integer)
+// 练习： 实现 clamp_int（将 value 限制在 [min_val, max_val] 范围内）
+// 练习： 实现 count_digits（计算整数的十进制位数）
 
 // main.c
 #include <stdio.h>
 #include "math_utils.h"
 int main(void) {
-    // Exercise: call both functions and verify the results
+    // 练习： 调用两个函数，验证结果
     return 0;
 }
 ```
@@ -203,11 +203,11 @@ int main(void) {
 ```c
 #pragma once
 /**
- * @brief Return the larger of two values
+ * @brief 返回两个值中的最大值
  *
- * @param a The first value in the comparison
- * @param b The second value in the comparison
- * @return The larger of a and b
+ * @param a 参与比较的第一个值
+ * @param b 参与比较的第二个值
+ * @return a 与 b 中较大的那个
  */
 #define MAX(a, b)           \
   ({                        \
@@ -217,11 +217,11 @@ int main(void) {
   })
 
 /**
- * @brief Return the smaller of two values
+ * @brief 返回两个值中的最小值
  *
- * @param a The first value in the comparison
- * @param b The second value in the comparison
- * @return The smaller of a and b
+ * @param a 参与比较的第一个值
+ * @param b 参与比较的第二个值
+ * @return a 与 b 中较小的那个
  */
 #define MIN(a, b)           \
   ({                        \
@@ -233,9 +233,9 @@ int main(void) {
 void clamp_int(int *value, int min_val, int max_val);
 
 /**
- * @brief Return the number of decimal digits in an integer
+ * @brief 返回一个整数的十进制位数
  *
- * The sign is not counted; 0 has 1 digit.
+ * 不计符号位；0 的位数为 1。
  */
 int count_digits(int value);
 ```
@@ -299,10 +299,10 @@ gcc -std=c17 -Wall -Wextra main.c math_utils.c -o main
 Or:
 
 ```bash
-gcc -std=c17 -Wall -Wextra  -c math_utils.c  # Compile only, no linking; produces math_utils.o
-gcc -std=c17 -Wall -Wextra  -c main.c        # Produces main.o
-ar rcs libmath_utils.a math_utils.o            # Pack the .o into a static library
-gcc -std=c17 -Wall -Wextra  -o demo main.o -L. -lmath_utils  # Link
+gcc -std=c17 -Wall -Wextra  -c math_utils.c  # 只编译不链接，生成 math_utils.o
+gcc -std=c17 -Wall -Wextra  -c main.c        # 生成 main.o
+ar rcs libmath_utils.a math_utils.o            # 把 .o 打进静态库
+gcc -std=c17 -Wall -Wextra  -o demo main.o -L. -lmath_utils  # 链接
 
 ./demo
 ```
@@ -332,10 +332,10 @@ Tip: the compile steps are `gcc -std=c17 -Wall -Wextra -c math_utils.c`, `gcc -s
 #pragma once
 
 #ifdef NDEBUG
-// Exercise: Release mode—DEBUG_LOG expands to nothing
+// 练习： Release 模式——DEBUG_LOG 展开为空
 #else
-// Exercise: Debug mode—output [DEBUG] file:line: formatted message
-// Hint: use __FILE__, __LINE__, __VA_ARGS__
+// 练习： Debug 模式——输出 [DEBUG] 文件名:行号: 格式化消息
+// 提示：使用 __FILE__、__LINE__、__VA_ARGS__
 #endif
 ```
 
@@ -348,7 +348,7 @@ Tip: the compile steps are `gcc -std=c17 -Wall -Wextra -c math_utils.c`, `gcc -s
 
 #include <stdio.h>
 
-/* Logging is on by default; compile with -DNDEBUG to turn it off */
+/* 默认开启日志；编译时用 -DNDEBUG 可关闭 */
 #ifdef NDEBUG
 #define DEBUG_LOG(fmt, ...) ((void)(0))
 #else

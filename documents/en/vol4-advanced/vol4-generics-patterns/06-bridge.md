@@ -19,9 +19,9 @@ prerequisites:
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/06-bridge.md
   source_hash: 9e5a5119662fddcb5a6df642968e8463ed36e5addc43602b3188f01d6b07e55e
-  translated_at: '2026-09-26T05:14:45+00:00'
-  engine: anthropic
-  token_count: 4100
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 15611
 ---
 
 # Bridge Pattern: Decoupling Abstraction from Implementation and Introducing pImpl Along the Way
@@ -43,7 +43,7 @@ class OpenGLCircle {
 public:
     OpenGLCircle(double x, double y, double r) : x_(x), y_(y), r_(r) {}
     void draw() {
-        // Geometry + OpenGL calls + rendering details, all in one place
+        // 几何信息 + OpenGL 调用 + 渲染细节,全在一起
         std::cout << "[OpenGL] draw circle at (" << x_ << "," << y_
                   << ") r=" << r_ << "\n";
     }
@@ -74,13 +74,13 @@ Notice anything? Apart from that one `cout` line inside `draw()`, the two classe
 Let's pull apart "the part that repeats" from "the part that varies". The varying part is "which backend does the drawing", so we pull that out into an interface; the invariant part is "the shape's geometry logic", which stays in the abstraction layer. The abstraction doesn't draw by itself — it **holds a pointer to a backend interface** and delegates the drawing to the backend:
 
 ```cpp
-// Implementor (implementation interface): describes only the "ability to draw", agnostic to shapes
+// Implementor(实现接口):只描述「画的能力」,不管形状
 struct DrawingAPI {
     virtual ~DrawingAPI() = default;
     virtual void draw_circle(double x, double y, double r) = 0;
 };
 
-// ConcreteImplementor: the actual backend implementations
+// ConcreteImplementor:真正的后端实现
 struct OpenGLApi : DrawingAPI {
     void draw_circle(double x, double y, double r) override {
         std::cout << "[OpenGL]  绘制圆 中心(" << x << "," << y
@@ -99,7 +99,7 @@ struct DirectXApi : DrawingAPI {
 This `DrawingAPI` inheritance chain is the "implementation" dimension, and it takes care of exactly one thing: hand me coordinates and a radius, and I'll draw. Next comes the "abstraction" dimension:
 
 ```cpp
-// Abstraction: holds the implementation interface, doesn't draw itself, delegates to the backend
+// Abstraction:持有实现接口,自己不画,委托给后端
 class Shape {
 public:
     explicit Shape(std::unique_ptr<DrawingAPI> api)
@@ -110,7 +110,7 @@ protected:
     std::unique_ptr<DrawingAPI> api_;
 };
 
-// RefinedAbstraction: a concrete shape, responsible only for its own geometry
+// RefinedAbstraction:具体形状,只负责自己的几何
 class Circle : public Shape {
 public:
     Circle(double x, double y, double r, std::unique_ptr<DrawingAPI> api)
@@ -171,20 +171,20 @@ The Bridge pattern gives us the way out: move the "implementation details" whole
 We start from the most primitive pImpl: forward-declare `Impl`, and leave nothing but a raw pointer in the header:
 
 ```cpp
-// widget.h — nothing left but the interface
+// widget.h —— 干净得只剩下接口
 class Widget {
 public:
     Widget();
     ~Widget();
     void do_work();
 private:
-    struct Impl;       // forward declaration; Impl's definition moves into the cpp
-    Impl* pImpl;       // raw pointer
+    struct Impl;       // 前向声明,Impl 的定义挪到 cpp
+    Impl* pImpl;       // 裸指针
 };
 ```
 
 ```cpp
-// widget.cpp — all the implementation details hide in here
+// widget.cpp —— 实现细节全藏在这里
 #include "widget.h"
 #include <iostream>
 #include <string>
@@ -199,7 +199,7 @@ struct Widget::Impl {
 };
 
 Widget::Widget() : pImpl(new Impl{}) {}
-Widget::~Widget() { delete pImpl; }   // hand-written destructor
+Widget::~Widget() { delete pImpl; }   // 手写析构
 void Widget::do_work() { pImpl->do_work_impl(); }
 ```
 
@@ -240,7 +240,7 @@ struct Widget::Impl {
 };
 
 Widget::Widget() : pImpl(std::make_unique<Impl>()) {}
-Widget::~Widget() = default;   // key point: only = default works here, see below
+Widget::~Widget() = default;   // 关键:这里只能写 = default,见下文
 void Widget::do_work() { pImpl->do_work_impl(); }
 ```
 
@@ -251,14 +251,14 @@ It looks so good it's practically free — and the real trap hides exactly in th
 Talk is cheap, so let's put `~Widget() = default;` back into the header and deliberately let the compiler see it at a point where `Impl` is incomplete:
 
 ```cpp
-// widget.h — a counter-example
+// widget.h —— 反面教材
 #pragma once
 #include <memory>
 
 class Widget {
 public:
     Widget() = default;
-    ~Widget() = default;   // ← deliberately written in the header, where Impl is incomplete
+    ~Widget() = default;   // ← 故意写在头里,此时 Impl 不完整
     void do_work();
 private:
     struct Impl;
@@ -298,13 +298,13 @@ At this point we have a pImpl class that destructs correctly and moves — but i
 Yet in real engineering, a "pImpl class" is often exactly the thing that needs to copy — it's a value-semantic, outward-facing type, and both putting it in containers and passing it by value require it to be copyable. How do we add that back? The most robust approach is to sink the copy logic down into `Impl`, and let `Widget` forward through `clone()`:
 
 ```cpp
-// in widget.cpp, Impl gains a clone
+// widget.cpp 里 Impl 增加一个 clone
 struct Widget::Impl {
     std::vector<int> data;
     std::string name;
     void do_work_impl() { /* ... */ }
     std::unique_ptr<Impl> clone() const {
-        return std::make_unique<Impl>(*this);   // deep copy
+        return std::make_unique<Impl>(*this);   // 深拷贝
     }
 };
 ```
@@ -317,9 +317,9 @@ Widget::Widget(const Widget& other)
     : pImpl(other.pImpl ? other.pImpl->clone() : nullptr) {}
 
 Widget& Widget::operator=(const Widget& other) {
-    Widget tmp(other);          // copy into a temporary first
-    swap(*this, tmp);           // then swap it with *this
-    return *this;               // tmp's destruction frees the old Impl
+    Widget tmp(other);          // 先拷一份临时对象
+    swap(*this, tmp);           // 再和*this交换
+    return *this;               // tmp 析构时自动释放旧 Impl
 }
 ```
 
@@ -328,7 +328,7 @@ This uses the classic **copy-and-swap** idiom: first use the copy constructor to
 Note that `swap`: it's a `friend` function that simply exchanges the two `unique_ptr`s, and it's `noexcept` too:
 
 ```cpp
-// in widget.h, as a friend of Widget
+// widget.h 里,作为 Widget 的友元
 friend void swap(Widget& a, Widget& b) noexcept {
     using std::swap;
     swap(a.pImpl, b.pImpl);
@@ -373,10 +373,10 @@ So a pImpl class's special member functions should look like this:
 class Widget {
 public:
     Widget();
-    ~Widget();                          // defined out-of-line (Impl complete)
-    Widget(const Widget&);              // clone deep copy
+    ~Widget();                          // 类外定义(Impl 完整)
+    Widget(const Widget&);              // clone 深拷贝
     Widget& operator=(const Widget&);   // copy-and-swap
-    Widget(Widget&&) noexcept;          // move must also be out-of-line + noexcept
+    Widget(Widget&&) noexcept;          // move 也必须类外定义 + noexcept
     Widget& operator=(Widget&&) noexcept;
     // ...
 };

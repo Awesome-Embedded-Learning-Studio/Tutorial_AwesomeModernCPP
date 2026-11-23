@@ -19,10 +19,10 @@ tags:
   - 内存管理
 translation:
   source: documents/vol8-domains/ai/tiny_ml/stage1/04-row-major.md
-  source_hash: 34480ab9db77b6f0f1b30d07ed5591878232180018e0f26a53fd58837ccb040d
-  translated_at: '2026-09-26T04:09:11+00:00'
-  engine: anthropic
-  token_count: 900
+  source_hash: bd9d82add63f54485c2e6c2f469750b22682b9999e8ae7bcb4a4165dea9f0dc5
+  translated_at: '2026-11-22T16:40:36+00:00'
+  engine: glm-5.3-refresh
+  token_count: 2506
 ---
 
 # Row-major — how a 2D coordinate lands in 1D memory
@@ -46,9 +46,9 @@ But memory is one-dimensional — a single line that recognizes no rows and no c
 The most natural way — and exactly what you'd do transcribing a table by hand — is: **copy the first row from head to tail, then the second row**. So in memory it ends up like this:
 
 ```text
-Index:     0     1     2     3     4     5
+下标:    0     1     2     3     4     5
       [ a00,  a01,  a02,  a10,  a11,  a12 ]
-        └──── row 0 ────┘ └──── row 1 ────┘
+        └──── 第0行 ────┘ └──── 第1行 ────┘
 ```
 
 That is row-major, which in plain words means "rows first": finish storing one row, then move on to the next. `a00` lands at index 0, `a02` lands at index 2, and `a10` takes index 3, right after `a02` — it's the head of the second row, so it has to wait until all three numbers of the first row have settled into place.

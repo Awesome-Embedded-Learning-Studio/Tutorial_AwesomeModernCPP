@@ -16,10 +16,10 @@ related:
   - "A short history of C++: where the bad reputation came from"
 translation:
   source: documents/vol8-domains/embedded/f103/00-env-setup/02-renode-observatory.md
-  source_hash: c9dd488c3049852663fd4bca6df0cdfb8ba6c894873922e7b9c6a6351b92924c
-  translated_at: '2026-09-27T05:30:42+00:00'
-  engine: anthropic
-  token_count: 7500
+  source_hash: 6673aa9562f67038e3ecb82b87e02d93eedef18d755e51a93777a7e8e7a9df7b
+  translated_at: '2026-11-22T16:41:57+00:00'
+  engine: glm-5.3-refresh
+  token_count: 7509
 ---
 
 # "You say the LED is blinking — but where is the board"
@@ -144,7 +144,7 @@ But it has absolutely no way to say "we have an LED here, on PC13, lights on low
 That's why our `sim/stm32f1/bluepill.repl` is a board-level description we maintain ourselves; the skeleton looks like this:
 
 ```text
-// flash is mapped both at its real address and at the boot alias 0x0 (on reset, SP/PC are fetched from 0x0)
+// flash 同时映射在真地址和启动别名 0x0(复位时从 0x0 取 SP/PC)
 flash: Memory.MappedMemory @ {
     sysbus 0x08000000;
     sysbus 0x00000000
@@ -154,14 +154,14 @@ flash: Memory.MappedMemory @ {
 nvic: IRQControllers.NVIC @ sysbus 0xE000E000
     systickFrequency: 64000000
 
-// on-board LED: PC13, lights on low level
+// 板载 LED:PC13,低电平点亮
 led: Miscellaneous.LED @ gpioPortC 13
 
-// RCC — no official behavioral model for the F1 RCC; this one uses a PythonPeripheral to fill in the handshake protocol
+// RCC —— 官方无 F1 RCC 行为模型,这份用 PythonPeripheral 补握手协议
 rcc: Python.PythonPeripheral @ sysbus 0x40021000
     size: 0x100
 
-// peripheral bit-band alias region: HAL enables the PLL via bit-band writes; leave the alias region unmapped and those writes vanish silently
+// 外设位带别名区:HAL 开 PLL 走位带写,别名区不映射会静默丢失
 bitBand: Miscellaneous.BitBanding @ sysbus <0x42000000, +0x2000000>
 ```
 

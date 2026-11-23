@@ -17,9 +17,9 @@ related:
 translation:
   source: documents/vol8-domains/embedded/f103/00-env-setup/04-first-firmware.md
   source_hash: de780df190df9542ff10a49e58e35efe7088b2b59def5034074ebac0ab2e6f22
-  translated_at: '2026-09-27T05:27:39+00:00'
-  engine: anthropic
-  token_count: 5200
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6501
 ---
 # "Three articles in, and you still haven't let me write a single line"
 
@@ -102,7 +102,7 @@ macro sample
     pause
     emulation RunFor "0.25"
     sysbus ReadDoubleWord 0x4001100C
-    (repeat those two lines seven more times)
+    (这两句再重复七次)
     start
 """
 ```
@@ -143,8 +143,8 @@ Strike while the iron is hot: let's read `00_my_blinky/CMakeLists.txt` segment b
 ```cmake
 add_executable(my_blinky
     main.cpp
-    stm32f1xx_it.c # interrupt service routines: which handlers exist is decided by this firmware
-    syscalls.c     # newlib stubs
+    stm32f1xx_it.c # 中断服务程序:哪些 handler 存在由这份固件决定
+    syscalls.c     # newlib 桩
 )
 ```
 

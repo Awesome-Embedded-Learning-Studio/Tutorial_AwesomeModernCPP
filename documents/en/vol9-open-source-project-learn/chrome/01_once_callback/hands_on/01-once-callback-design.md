@@ -23,10 +23,10 @@ tags:
 title: "once_callback Design Guide (I): motivation and API design"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/hands_on/01-once-callback-design.md
-  source_hash: a540208de73d471ca73928353971d2c11237b9d2f5dca5b0db668f2216e0efd4
-  translated_at: '2026-09-26T01:12:29+00:00'
-  engine: anthropic
-  token_count: 10500
+  source_hash: f2d69e942c3bf06469b3616bc6eebfcf1f1b39b67fc0a766fcf9de687a668ac9
+  translated_at: '2026-11-22T16:41:57.386734+00:00'
+  engine: glm-5.3-refresh
+  token_count: 10779
 ---
 # once_callback Design Guide (I): motivation and API design
 
@@ -89,10 +89,10 @@ On the compiler side, GCC 14+ or Clang 18+ fully supports the features above; ju
 ```cpp
 #include <functional>
 
-// Verify std::move_only_function is available
+// 验证 std::move_only_function 可用
 static_assert(__cpp_lib_move_only_function >= 202110L);
 
-// Verify deducing this is available (compiling through means it's supported)
+// 验证 deducing this 可用（编译通过即说明支持）
 struct Check {
     void test(this auto&& self) {}
 };
@@ -119,27 +119,27 @@ First we pin down the target API, then go back and scrutinize each decision. Tha
 ```cpp
 #include "once_callback/once_callback.hpp"
 
-// 1. Construct: create from a lambda
+// 1. 构造：从 lambda 创建
 using namespace tamcpp::chrome;
 auto cb = OnceCallback<int(int, int)>([](int a, int b) {
     return a + b;
 });
 
-// 2. Invoke: must go through an rvalue (std::move)
+// 2. 调用：必须通过右值（std::move）
 int result = std::move(cb).run(3, 4);  // result == 7
 
-// 3. After the call, cb is consumed
-// std::move(cb).run(1, 2);  // runtime assertion failure: callback already consumed
+// 3. 调用后，cb 被消费
+// std::move(cb).run(1, 2);  // 运行时断言失败：callback already consumed
 ```
 
 ### Argument binding
 
 ```cpp
-// bind_once: pre-bind some arguments, return a OnceCallback
+// bind_once：预绑定部分参数，返回一个 OnceCallback
 using namespace tamcpp::chrome;
 auto bound = bind_once<int(int)>(
     [](int x, int y, int z) { return x + y + z; },
-    10, 20  // pre-bind the first two arguments
+    10, 20  // 预绑定前两个参数
 );
 
 int r = std::move(bound).run(30);  // r == 60
@@ -151,14 +151,14 @@ int r = std::move(bound).run(30);  // r == 60
 using namespace tamcpp::chrome;
 auto cb = OnceCallback<void(int)>([](int x) { /* ... */ });
 
-// Check whether the callback is still valid
+// 检查回调是否仍然有效
 if (!cb.is_cancelled()) {
     std::move(cb).run(42);
 }
 
-// maybe_valid: an optimistic check, suited to cross-sequence scenarios
+// maybe_valid：乐观检查，适用于跨序列场景
 if (cb.maybe_valid()) {
-    // "possibly" valid, no guarantee
+    // "可能"有效，不保证
     std::move(cb).run(42);
 }
 ```
@@ -167,7 +167,7 @@ if (cb.maybe_valid()) {
 
 ```cpp
 using namespace tamcpp::chrome;
-// then(): pass the current callback's return value to the next callback
+// then()：将当前回调的返回值传给下一个回调
 auto pipeline = OnceCallback<int(int, int)>([](int a, int b) {
     return a + b;
 }).then([](int sum) {
@@ -194,7 +194,7 @@ auto run(this Self&& self, FuncArgs&&... args) -> ReturnType {
     static_assert(!std::is_lvalue_reference_v<Self>,
         "OnceCallback::run() must be called on an rvalue. "
         "Use std::move(cb).run(...) instead.");
-    // ... actual invocation logic
+    // ... 实际调用逻辑
 }
 ```
 
@@ -226,9 +226,9 @@ A `std::move_only_function` can itself be empty (default-constructed or construc
 
 ```cpp
 enum class Status : uint8_t {
-    kEmpty,     // default-constructed, never assigned
-    kValid,     // holds a valid callable
-    kConsumed   // consumed by run()
+    kEmpty,     // 默认构造，从未被赋值
+    kValid,     // 持有有效的可调用对象
+    kConsumed   // 已被 run() 消费
 };
 ```
 
@@ -240,7 +240,7 @@ class OnceCallback<ReturnType(FuncArgs...)> {
     std::move_only_function<FuncSig> func_;
     Status status_ = Status::kEmpty;
 
-    // cancellation token (optional)
+    // 取消令牌（可选）
     std::shared_ptr<CancelableToken> token_;
 };
 ```

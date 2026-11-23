@@ -20,9 +20,9 @@ prerequisites:
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/09-facade.md
   source_hash: 2107ed9e6fff8b41bc6e5c042b9043655fba2b37cc8d37259a6758ed303f483f
-  translated_at: '2026-09-26T05:15:42+00:00'
-  engine: anthropic
-  token_count: 7500
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 17251
 ---
 
 # Facade Pattern: Stuffing a Mess of Subsystem Collaboration into One Entry Point
@@ -34,7 +34,7 @@ Hold off on the definition for a moment. Picture a scenario you will find very f
 With no encapsulation at all, your client code (say, some `MainWindow::on_play_clicked` slot) ends up looking like this:
 
 ```cpp
-// The client orchestrates the subsystems directly, with no intermediate layer
+// 客户端直接编排子系统,没有任何中间层
 NetworkStream stream;
 stream.open(url);
 auto raw_packet = stream.read_packet();
@@ -77,7 +77,7 @@ public:
     MediaPlayerFacade();
     ~MediaPlayerFacade();
 
-    bool play(const std::string& url);  // Orchestrates the whole set of subsystems; returns true on success
+    bool play(const std::string& url);  // 编排整套子系统,成功返回 true
     void stop();
 
 private:
@@ -107,7 +107,7 @@ bool MediaPlayerFacade::play(const std::string& url) {
     renderer_ = std::make_unique<Renderer>();
     renderer_->setup(window_);
 
-    // Main loop (simplified): keep reading packets, decoding, rendering...
+    // 主循环(简化):持续读包、解码、渲染……
     return true;
 }
 ```
@@ -150,7 +150,7 @@ bool MediaPlayerFacade::play(const std::string& url) {
         return true;
     } catch (const std::exception& e) {
         std::cerr << "play failed: " << e.what() << '\n';
-        stop();   // Unified cleanup: whatever was opened first gets closed last
+        stop();   // 统一清理:谁先开的谁后关
         return false;
     }
 }
@@ -162,11 +162,11 @@ You will notice that in this style the `catch` block does not care which step th
 
 ```cpp
 void MediaPlayerFacade::stop() {
-    subtitle_.reset();   // Subtitles closed first (they were opened last)
-    renderer_.reset();   // Renderer off
-    adec_.reset();       // Audio decoder off
-    vdec_.reset();       // Video decoder off
-    stream_.reset();     // Stream closed last (it was opened first)
+    subtitle_.reset();   // 字幕最先被关(它是最后开的)
+    renderer_.reset();   // 渲染器关
+    adec_.reset();       // 音频解码器关
+    vdec_.reset();       // 视频解码器关
+    stream_.reset();     // 流最后关(它是最先开的)
 }
 ```
 
@@ -185,7 +185,7 @@ First, we define the subsystems. There is one important design decision here: al
 #include <vector>
 
 struct HomeTheaterBaseComponents {
-    virtual ~HomeTheaterBaseComponents() = default;   // Polymorphic base; do not omit the virtual destructor
+    virtual ~HomeTheaterBaseComponents() = default;   // 多态基类,虚析构不能省
     virtual void on() noexcept = 0;
     virtual void off() noexcept = 0;
 };
@@ -233,7 +233,7 @@ Next comes the facade itself. The facade holds a container full of base-class sm
 class HomeTheater {
 public:
     HomeTheater() {
-        // Assemble the subsystems; the order is "the order in which we want them lit up at power-on"
+        // 装配子系统,顺序就是「开机时希望它们被点亮的顺序」
         components_.push_back(std::make_shared<LightController>());
         components_.push_back(std::make_shared<DVDPlayer>());
         components_.push_back(std::make_shared<SoundSystem>());
@@ -242,7 +242,7 @@ public:
 
     void watch_movie() {
         for (auto& each : components_) {
-            each->on();   // Polymorphic call: whichever gets touched lights up
+            each->on();   // 多态调用:点谁就亮谁
         }
     }
 
@@ -264,8 +264,8 @@ Look at what the facade did: it **assembled** the whole set of subsystems in its
 
 int main() {
     HomeTheater theater;
-    theater.watch_movie();   // One line, all four subsystems on
-    theater.close_movie();   // One line, all four subsystems off
+    theater.watch_movie();   // 一行,四个子系统全亮
+    theater.close_movie();   // 一行,四个子系统全灭
 }
 ```
 
@@ -345,7 +345,7 @@ But when it comes to "stuffing into a container", `shared_ptr` has one advantage
 
 struct Base {
     Base() { std::cout << "  Base()\n"; }
-    ~Base() { std::cout << "  ~Base()\n"; }   // Note: not virtual
+    ~Base() { std::cout << "  ~Base()\n"; }   // 注意:不是 virtual
     virtual void noop() {}
 };
 
@@ -391,17 +391,17 @@ What do I mean? A facade's proper job is **orchestration and abstracting the flo
 But if you abuse the facade and stuff every last detail into one big facade, it will slowly swallow the subsystems' responsibilities until it turns into a monster like this:
 
 ```cpp
-// Counter-example: the facade is "rewriting" the subsystems' business logic
+// 反面教材:门面在「重写」子系统的业务逻辑
 class MegaHomeTheaterFacade {
 public:
     void watch_movie() {
-        // Dim the lights, preheat the projector 30 s, switch the sound system to cinema mode, jump the DVD track, stretch the subtitles...
-        // All crammed into the facade; every subsystem degenerates into a "dumb box that only knows on/off"
+        // 灯光渐暗、投影仪预热 30s、音响切影院模式、DVD 跳轨、字幕拉伸……
+        // 全塞在门面里,各子系统退化成「只会开关的傻盒子」
         lights_.set_brightness(0);
-        std::this_thread::sleep_for(std::chrono::seconds(30));  // Preheating? That is the projector's job
+        std::this_thread::sleep_for(std::chrono::seconds(30));  // 预热?这该是投影仪的事
         sound_.set_mode(kCinema);
         dvd_.seek_chapter(1);
-        // ...
+        // ……
     }
 };
 ```
@@ -425,7 +425,7 @@ using Component = std::variant<
 class HomeTheaterVariant {
 public:
     HomeTheaterVariant() {
-        components_.reserve(4);  // reserve first, to avoid triggering a variant copy/move during reallocation
+        components_.reserve(4);  // 先 reserve,避免扩容时触发 variant 的拷贝/移动
         components_.emplace_back(std::in_place_type<LightController>);
         components_.emplace_back(std::in_place_type<DVDPlayer>);
         components_.emplace_back(std::in_place_type<SoundSystem>);
@@ -434,7 +434,7 @@ public:
 
     void watch_movie() {
         for (auto& c : components_) {
-            std::visit([](auto& comp) { comp.on(); }, c);  // Compile-time dispatch, no virtual functions
+            std::visit([](auto& comp) { comp.on(); }, c);  // 编译期分派,无虚函数
         }
     }
 

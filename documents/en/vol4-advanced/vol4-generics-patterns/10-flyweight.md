@@ -21,9 +21,9 @@ prerequisites:
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/10-flyweight.md
   source_hash: b17a11d7d21a448635544e38cb63387b7c8e9e1c92569730efb90ea2822013ae
-  translated_at: '2026-09-26T05:33:20+00:00'
-  engine: anthropic
-  token_count: 5000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 17493
 ---
 
 # Flyweight Pattern: Stop Copying a Glyph for Every Character
@@ -35,11 +35,11 @@ Let's not talk about the pattern yet — let's talk about a concrete scenario. I
 ```cpp
 struct Glyph {
     std::string content;          // "你"
-    std::vector<Stroke> strokes;  // glyph stroke data, dozens of bytes
+    std::vector<Stroke> strokes;  // 几十字节的字形笔画数据
     FontMetrics   metrics;
-    // ... what really eats memory is this whole tail, not content
+    // ... 真正占内存的是后面这一坨,不是 content
 };
-std::vector<Glyph> document;      // tens of millions of complete Glyph copies
+std::vector<Glyph> document;      // 几千万份完整的 Glyph
 ```
 
 Intuitive to write, intuitive to read — but do a little arithmetic and the problem shows up: there are fewer than 4,000 commonly used Chinese characters, yet this book holds tens of millions of `Glyph` objects — **the same character "我" gets fully duplicated hundreds of thousands of times in memory**, and the dozens of bytes of stroke data inside every copy are identical. That duplicated data is the real memory killer; the little overhead of `content` itself isn't even worth mentioning by comparison.
@@ -72,9 +72,9 @@ public:
     }
 
 private:
-    std::string color_;  // black / red
-    std::string type_;   // black pawn / red pawn / chariot / horse ...
-    int         x_;      // board coordinates
+    std::string color_;  // 黑 / 红
+    std::string type_;   // 卒 / 兵 / 车 / 马 ...
+    int         x_;      // 棋盘坐标
     int         y_;
 };
 
@@ -83,7 +83,7 @@ int main() {
     board.emplace_back("黑", "卒", 2, 3);
     board.emplace_back("黑", "卒", 2, 4);
     board.emplace_back("黑", "卒", 2, 5);
-    // ... 16 black pawns on the board, each carrying a full copy of "黑"+"卒"
+    // ... 棋盘上 16 个黑卒,每个都完整拷了一份 "黑"+"卒"
     for (const auto& p : board) p.draw();
 }
 ```
@@ -106,14 +106,14 @@ This split is the soul of the Flyweight pattern. Once you've figured out which s
 #include <iostream>
 #include <string>
 
-// Flyweight object: holds only intrinsic state (color + type)
+// 享元对象:只装内部状态(颜色 + 类型)
 class ChessPiece {
 public:
     ChessPiece(std::string color, std::string type)
         : color_(std::move(color))
         , type_(std::move(type)) {}
 
-    // Extrinsic state (x, y) arrives as a parameter, never stored in the object
+    // 外部状态(x, y)作为参数传进来,不存进对象
     void draw(int x, int y) const {
         std::cout << color_ << type_ << " 放在 (" << x << "," << y << ")\n";
     }
@@ -144,7 +144,7 @@ public:
         std::string key = color + type;
         auto it = pool_.find(key);
         if (it != pool_.end()) {
-            return it->second;            // already there, reuse directly
+            return it->second;            // 已有,直接复用
         }
         auto piece = std::make_shared<ChessPiece>(color, type);
         pool_[key] = piece;
@@ -166,7 +166,7 @@ int main() {
     auto black_pawn = factory.get_chess("黑", "卒");
     auto red_pawn   = factory.get_chess("红", "兵");
 
-    // the same black_pawn, drawn at three different coordinates
+    // 同一份 black_pawn,被画在三个不同的坐标上
     black_pawn->draw(2, 3);
     red_pawn->draw(5, 6);
     black_pawn->draw(2, 4);
@@ -218,13 +218,13 @@ private:
 int main() {
     GlyphFactory factory;
     auto a1 = factory.get("你");
-    auto a2 = factory.get("你");   // fetch the same character twice
+    auto a2 = factory.get("你");   // 同一个字取两次
     auto b1 = factory.get("好");
 
     std::cout << "a1.get() == a2.get() : " << std::boolalpha
-              << (a1.get() == a2.get()) << "\n";   // expect true: the same object
+              << (a1.get() == a2.get()) << "\n";   // 期待 true:同一份对象
     std::cout << "a1.get() == b1.get() : " << std::boolalpha
-              << (a1.get() == b1.get()) << "\n";   // expect false: different characters
+              << (a1.get() == b1.get()) << "\n";   // 期待 false:不同字
     std::cout << "pool size : " << factory.size() << "\n";
 }
 ```
@@ -286,7 +286,7 @@ private:
     std::unordered_map<std::string, std::shared_ptr<Glyph>> pool_;
 };
 
-// Document: holds only references to the shared glyphs, not the glyph data itself
+// 文档:只持有指向共享字形的引用,不持有字形数据本身
 class Document {
 public:
     void add_word(const std::shared_ptr<Glyph>& glyph) {
@@ -307,7 +307,7 @@ int main() {
     auto hao = factory.get("好");
     auto ba = factory.get("吧");
     doc.add_word(ni); doc.add_word(hao); doc.add_word(ba);
-    doc.add_word(ni); doc.add_word(hao);   // the second "你好", fully reused
+    doc.add_word(ni); doc.add_word(hao);   // 第二次「你好」,完全复用
     doc.render();
 }
 ```
@@ -332,13 +332,13 @@ class Glyph {
 public:
     explicit Glyph(const std::string& content) : content_(content) {
         ++kConstruct;
-        std::this_thread::sleep_for(std::chrono::microseconds(100));  // widen the race window
+        std::this_thread::sleep_for(std::chrono::microseconds(100));  // 放大竞态窗口
     }
     static inline std::atomic<int> kConstruct{0};
     std::string content_;
 };
 
-class NaiveFactory {                          // the factory from the original notes, no locking
+class NaiveFactory {                          // 笔记原版的工厂,无锁
 public:
     std::shared_ptr<Glyph> get(const std::string& content) {
         auto it = pool_.find(content);
@@ -432,9 +432,9 @@ int main() {
         std::unordered_map<std::string, std::shared_ptr<Glyph>> pool;
         auto g = std::make_shared<Glyph>("你");
         pool["你"] = g;
-        outer = g;                                  // the caller holds a copy too
+        outer = g;                                  // 调用方也持有一份
         std::cout << "池子活着时 use_count = " << g.use_count() << "\n";
-    }                                               // pool destructed, but outer is still alive
+    }                                               // pool 析构,但 outer 还在
     std::cout << "池子死后   use_count = " << outer.use_count() << "\n";
     std::cout << "outer 还能用吗? content = " << outer->content() << "\n";
 }
@@ -480,7 +480,7 @@ private:
 class DbConfigFactory {
 public:
     std::shared_ptr<DbConfig> get(const std::string& host, int port) {
-        std::lock_guard<std::mutex> lk(mtx_);        // concurrency-safe
+        std::lock_guard<std::mutex> lk(mtx_);        // 并发安全
         std::string key = host + ":" + std::to_string(port);
         auto it = pool_.find(key);
         if (it != pool_.end()) return it->second;
@@ -496,8 +496,8 @@ private:
 int main() {
     DbConfigFactory factory;
     auto c1 = factory.get("127.0.0.1", 3306);
-    auto c2 = factory.get("127.0.0.1", 3306);        // the same object as c1
-    auto c3 = factory.get("192.168.1.10", 5432);     // a different one
+    auto c2 = factory.get("127.0.0.1", 3306);        // 和 c1 同一份
+    auto c3 = factory.get("192.168.1.10", 5432);     // 另一份
     c1->show(); c2->show(); c3->show();
     std::cout << "c1 和 c2 是同一份? " << std::boolalpha
               << (c1.get() == c2.get()) << "\n";

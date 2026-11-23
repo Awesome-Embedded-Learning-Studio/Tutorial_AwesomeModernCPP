@@ -10,9 +10,10 @@ description: "Legal page faults get their page filled in by the kernel, illegal 
 reading_time_minutes: 27
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/06-page-table-walk/03-page-fault-demand-paging-and-tlb.md
-  source_hash: 6bd070d5357468b66064d643f6aa2c147869430c12b7041bd5b9f21006ece464
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: aaee9d384126c712f08c01dee8609915dc7334260ab02fa73fd62caf2bb28573
+  translated_at: '2026-11-22T16:48:36Z'
+  engine: glm-5.3-refresh
+  token_count: 16358
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -37,7 +38,7 @@ awk sees comm= (awk)  field10(min_flt)= 240
 Here is the program. Between the four readings we wedge in three actions: mmap four pages, touch the first page, then touch the third. At the end we go back and touch the first page a second time:
 
 ```cpp
-// f5_minflt.cpp -- watching demand paging's one-fault-per-page through the min_flt counter
+// f5_minflt.cpp —— 用 min_flt 计数观察按需分页的每页一次缺页
 #include <cstdio>
 #include <cstring>
 #include <sys/mman.h>
@@ -103,7 +104,7 @@ min_flt after 1st touch (p[0]) : 197   (delta 1)
 min_flt after 3rd page touch   : 198   (delta 1)
 min_flt after re-touch p[0]    : 198   (delta 0)
 === run 3 ===
-(identical to run 1 and run 2, word for word)
+(与 run 1、run 2 逐字相同)
 ```
 
 Let's read the staircase line by line. Touching the first page added 1 to the counter, touching the third added 1 more: the first touch of each new page produces exactly one fault, and the work the kernel does in that moment is to hand out a physical page and fill in the PTE. When we go back and touch the first page again, the counter stops moving; the page is resident, translation goes through unhindered. The three runs produced identical numbers. Same binary, same dynamic-loading sequence, and the counter reproduced even its starting point.
@@ -113,7 +114,7 @@ That delta 5 in the middle deserves a word of its own. The mmap call itself ate 
 For the illegal-fault route we stage the scene ourselves. The program dereferences an address that lands in no mapping:
 
 ```cpp
-// f5_segv.cpp -- dereference an address with no mapping behind it and catch the SIGSEGV in the act
+// f5_segv.cpp —— 解引用一个没有映射的地址，观察 SIGSEGV 现场
 #include <cstdio>
 
 int main() {
@@ -159,7 +160,7 @@ Start Addr         End Addr           Size               Offset             Perm
 0x0000555555557000 0x0000555555558000 0x1000             0x2000             r--p  /tmp/cpu-book-06/f5_segv
 0x0000555555558000 0x0000555555559000 0x1000             0x3000             rw-p  /tmp/cpu-book-06/f5_segv
 0x0000555555559000 0x000055555558c000 0x33000            0x0                rw-p  [heap]
-(the mapping ranges of libc / libm / libstdc++ / libgcc_s / ld.so are omitted here)
+(libc / libm / libstdc++ / libgcc_s / ld.so 各映射区间此处省略)
 ...
 0x00007ffffffdd000 0x00007ffffffff000 0x22000            0x0                rw-p  [stack]
 ```
@@ -202,8 +203,7 @@ Put the two routes side by side and the page fault is one mechanism with two exi
 The most direct ruler for the power of demand paging (pages are truly allocated only the first time they get used) is a pair of fields in /proc/self/status: VmSize is how much virtual address space is claimed, and VmRSS records the resident set, the physical memory the process is actually holding at this moment. Our experiment takes a 1 GiB anonymous mapping and touches only a few pages of it:
 
 ```cpp
-// f6_rss.cpp -- mmap a 1 GiB anonymous region, touch only the first N pages,
-// watch how far VmRSS and VmSize each move
+// f6_rss.cpp —— mmap 1 GiB 匿名区，只触碰前 N 页，看 VmRSS 与 VmSize 各涨多少
 // usage: f6_rss <npages>
 #include <cstdio>
 #include <cstdlib>
@@ -266,7 +266,7 @@ after  mmap : VmRSS=4032 kB (delta +64)  VmSize=1055872 kB (delta +1048576)
 after touch : VmRSS=4044 kB (delta +12)  VmSize=1055872 kB
 pages touched=3 -> in theory 12 kB (0.01 MiB)
 
-$ ./f6_rss 3     (2nd run)
+$ ./f6_rss 3     (第 2 次)
 touching 3 page(s) of a 1073741824-byte (1 GiB) anonymous mapping
 before mmap : VmRSS=4000 kB  VmSize=7296 kB
 after  mmap : VmRSS=4064 kB (delta +64)  VmSize=1055872 kB (delta +1048576)
@@ -280,7 +280,7 @@ after  mmap : VmRSS=4068 kB (delta +64)  VmSize=1055872 kB (delta +1048576)
 after touch : VmRSS=8068 kB (delta +4000)  VmSize=1055872 kB
 pages touched=1000 -> in theory 4000 kB (3.91 MiB)
 
-$ ./f6_rss 1000     (2nd run)
+$ ./f6_rss 1000     (第 2 次)
 touching 1000 page(s) of a 1073741824-byte (1 GiB) anonymous mapping
 before mmap : VmRSS=4000 kB  VmSize=7296 kB
 after  mmap : VmRSS=4064 kB (delta +64)  VmSize=1055872 kB (delta +1048576)
@@ -288,20 +288,19 @@ after touch : VmRSS=8064 kB (delta +4000)  VmSize=1055872 kB
 pages touched=1000 -> in theory 4000 kB (3.91 MiB)
 ```
 
-Let's read the two columns separately. The moment the mmap is done, VmSize has grown by 1048576 kB, 1 GiB to the byte, and the registration is complete. VmRSS grew by only 64 kB; that overhead is the page-table pages and management structures like VMAs, echoing the hierarchy dividend we computed in the previous piece: with one big flat table, the table alone would eat 512 GiB of memory. Then comes the touching. Touch 3 pages and VmRSS grows 12 kB; touch 1000 pages and it grows 4000 kB. Physical memory grows strictly as pages touched times 4 KiB. At 3 pages, the 64 kB of management structures plus the 12 kB of data pages together add up to 76 kB, against 1 GiB of mapped space; what sits between the two numbers is registration and allocation being separate things. One environmental precondition to disclose here: transparent huge pages on this machine are in madvise mode, so anonymous mmap runs entirely on 4 KiB base pages. If your machine is in always mode, huge pages get mixed in and the increments stop tracking the page count this neatly. There's plenty more to say about mmap itself, how to set its arguments and how file mappings work, but that goes beyond this piece.
+Let's read the two columns separately. The moment the mmap is done, VmSize has grown by 1048576 kB, 1 GiB to the byte, and the registration is complete. VmRSS grew by only 64 kB; that overhead is the page-table pages and management structures like VMAs, echoing the hierarchy dividend we computed in the previous piece: with one big flat table, the table alone would eat 512 GiB of memory. Then comes the touching. Touch 3 pages and VmRSS grows 12 kB; touch 1000 pages and it grows 4000 kB. Physical memory grows strictly as pages touched times 4 KiB. At 3 pages, the 64 kB of management structures plus the 12 kB of data pages together add up to 76 kB, against 1 GiB of mapped space; what sits between the two numbers is registration and allocation being separate things. One environmental precondition to disclose here: transparent huge pages on this machine are in madvise mode, so anonymous mmap runs entirely on 4 KiB base pages. If your machine is in always mode, huge pages get mixed in and the increments stop tracking the page count this neatly. There's plenty more to say about mmap itself, how to set its arguments and how file mappings work, and we have a full measured treatment in [vol8's dedicated piece on mmap](../../../vol8-domains/systems-programming/linux/file-io/02-mmap-memory-mapping.md).
 
 ## Translation Needs a Cache Too: the TLB
 
 Remember the cost we noted while walking the four levels in the previous piece? Every address translation touches four tables, which means four extra memory accesses, more expensive than the access to the data itself. If the CPU really walked them on every access, no program would be usable. The help that actually arrives is the TLB, full name translation lookaside buffer, a small unit inside the CPU that caches recent translation results: the recently translated virtual-page-number to physical-page-number pairs live in it, the next access to the same page takes its translation straight from there, and the four tables don't get visited at all. The TLB is finite; translations that don't fit have to walk the page tables again, and we'll run a lightweight experiment to feel what that overflow costs. The design: touch one byte per page, so the amount of data stays small enough to live in the caches the whole time and the timing difference lands mainly on the translation layer:
 
 ```cpp
-// f7_tlb.cpp -- TLB pressure demo (excerpt: the core of the three timings and
-// the array setup; now_ms reads CLOCK_MONOTONIC and converts to milliseconds,
-// make_perm shuffles a random permutation of 0..n-1 from a fixed seed; neither
-// helper does anything else, so both are omitted here)
-//   A) 1 GiB footprint, walked in page order
-//   B) 1 GiB footprint, the same pages in random order
-//   C) 8 MiB footprint, random order (the footprint fits inside TLB coverage)
+// f7_tlb.cpp —— TLB 压力演示（节选：计时三连与数组准备的核心；now_ms 读
+// CLOCK_MONOTONIC 折算毫秒，make_perm 用固定种子洗出 0..n-1 的一个随机排列，
+// 这两个帮手函数没有别的花样，此处省去）
+//   A) 1 GiB 足迹，按页顺序走
+//   B) 1 GiB 足迹，同样的页、随机次序走
+//   C) 8 MiB 足迹，随机次序走（足迹整体落在 TLB 覆盖内）
 static unsigned char* make_array(size_t sz) {
     unsigned char* p = (unsigned char*)mmap(nullptr, sz, PROT_READ | PROT_WRITE,
                                             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);

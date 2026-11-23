@@ -19,10 +19,10 @@ tags:
 title: Function Pointers and the Callback Pattern
 translation:
   source: documents/vol1-fundamentals/c_tutorials/09-function-pointers-and-callbacks.md
-  source_hash: eb7d469eb0f589f99637195c81f9514314ce9d0d306c775e183eebda8ac9e04f
-  translated_at: '2026-09-25T13:09:41+00:00'
-  engine: anthropic
-  token_count: 10500
+  source_hash: 70e16314648b1fba03b7eb1beb6b5e50d1e019adcbf5b964817282a9ba65be68
+  translated_at: '2026-11-22T16:39:43+00:00'
+  engine: glm-5.3-refresh
+  token_count: 18633
 ---
 # Function Pointers and the Callback Pattern
 
@@ -39,8 +39,8 @@ In C, a compiled function is a stretch of machine instructions that resides in t
 The declaration syntax for function pointers is widely acknowledged to be one of C's most user-hostile designs. Let's grit our teeth and take a look:
 
 ```c
-// Suppose we have a function: int add(int a, int b)
-// Its function pointer type is declared as follows:
+// 假设有一个函数：int add(int a, int b)
+// 它的函数指针类型声明如下：
 int (*op_ptr)(int, int);
 ```
 
@@ -65,13 +65,13 @@ int subtract(int a, int b)
 
 int main(void)
 {
-    int (*op_ptr)(int, int) = add;     // The function name is the address; no & needed
+    int (*op_ptr)(int, int) = add;     // 函数名就是地址，不需要 &
     printf("%d\n", op_ptr(10, 5));      // 15
 
-    op_ptr = subtract;                  // Point to another function
+    op_ptr = subtract;                  // 指向另一个函数
     printf("%d\n", op_ptr(10, 5));      // 5
 
-    // Calling through the pointer can also dereference explicitly; both forms are equivalent
+    // 通过指针调用也可以显式解引用，两种写法等价
     printf("%d\n", (*op_ptr)(20, 8));   // 12
     return 0;
 }
@@ -92,10 +92,10 @@ In most contexts a function name implicitly converts to a function pointer, just
 Function pointer declaration syntax is not exactly friendly; once the type gets complicated or you need it in several places, a screen full of `int (*)(int, int)` is genuine torture. `typedef` is our savior—it doesn't create a new type, it just gives an existing type an alias:
 
 ```c
-// Give an alias to "a function pointer taking two ints and returning int"
+// 给"接受两个int、返回int的函数指针"起个别名
 typedef int (*BinaryOp)(int, int);
 
-// Now declaring a variable feels as natural as with an ordinary type
+// 现在声明变量就像普通类型一样自然
 BinaryOp op = add;
 printf("%d\n", op(3, 4));  // 7
 ```
@@ -309,7 +309,7 @@ void insertion_sort(void* base, size_t nmemb, size_t size,
         return;
     }
 
-    // unsigned char* moves byte by byte, which lets the same algorithm handle any element type.
+    // unsigned char* 可以逐字节移动，才能让同一套算法处理任意元素类型。
     unsigned char* data = (unsigned char*)base;
     unsigned char* current = malloc(size);
     if (current == NULL) {
@@ -325,7 +325,7 @@ void insertion_sort(void* base, size_t nmemb, size_t size,
         }
 
         if (j != i) {
-            // The source and destination ranges overlap, so memmove is required here.
+            // 源区间和目标区间重叠，因此这里必须使用 memmove。
             memmove(data + (j + 1) * size, data + j * size, (i - j) * size);
             memcpy(data + j * size, current, size);
         }
@@ -387,10 +387,10 @@ Just like the `qsort` example earlier, we didn't write `ia - ib` here, because s
 Implement a `retry_until`: call the `check` function pointer repeatedly until it returns non-zero (success) or the maximum number of attempts is reached.
 
 ```c
-/// @brief Call check repeatedly until it succeeds or the attempt limit is reached
-/// @param check The condition function; a non-zero return means success
-/// @param max_attempts The maximum number of attempts
-/// @return On success, returns which attempt succeeded (counting from 1); returns -1 when all attempts fail
+/// @brief 反复调用 check，直到成功或达到最大尝试次数
+/// @param check 条件函数，返回非零表示成功
+/// @param max_attempts 最大尝试次数
+/// @return 成功时返回第几次尝试（从 1 开始）；全部失败返回 -1
 int retry_until(int (*check)(void), int max_attempts);
 ```
 
@@ -398,7 +398,7 @@ Hint: here is how `check` can simulate "a peripheral that only becomes ready on 
 
 ```c
 int device_ready(void) {
-    static int tried = 0;       // The static local variable from Chapter 06 comes in handy right here
+    static int tried = 0;       // 第 06 章讲过的 static 局部变量，这里正好用上
     return ++tried >= 3;
 }
 ```
@@ -473,7 +473,7 @@ Use an array of function pointers to implement a command-line calculator that su
 
 ```c
 typedef int (*BinaryOp)(int, int);
-// Design the mapping table and the main loop yourself
+// 请自行设计映射表和主循环
 ```
 
 ::: details Reference solution
@@ -524,7 +524,7 @@ static const Operation operations[] = {
     {'%', modulo},
 };
 
-// Look up the operation function for a given symbol
+//根据符号查找对应的运算函数
 static const Operation *find_operation(char symbol)
 {
     const size_t operation_count =
@@ -559,7 +559,7 @@ int main(void)
         char trailing;
 
         printf("> ");
-        // "> " has no newline; flushing immediately ensures the user sees the prompt before waiting for input
+        //因为 "> " 没有换行。立即刷新可以保证用户在等待输入前看到提示符
         fflush(stdout);
 
         if (fgets(line, sizeof(line), stdin) == NULL)
@@ -636,11 +636,11 @@ event.h
 #pragma once
 #include <stdint.h>
 typedef enum {
-    ERR_OK = 0, // success
-    ERR_NULL = -1, // null pointer
-    ERR_INVALID_ARGUMENT = -2, // invalid argument
-    ERR_FULL = -3, // queue is full
-    ERR_NOT_FOUND = -4 // not found
+    ERR_OK = 0,//成功
+    ERR_NULL = -1,//空指针
+    ERR_INVALID_ARGUMENT = -2,//无效参数
+    ERR_FULL = -3,//队列已满
+    ERR_NOT_FOUND = -4//未找到
 } err_t;
 typedef struct {
     void (*fn)(void *arg);
@@ -672,7 +672,7 @@ event.c
 
 Callback_t callback_list[EVENT_TYPE_Num][EVENT_NAME_Num] = {0};
 
-// Callback registration
+//回调注册
 void register_callback(enum EventType type, enum EventName name, void (*fn)(void *arg), void *arg)
 {
     if ((unsigned)type >= EVENT_TYPE_Num || (unsigned)name >= EVENT_NAME_Num)
@@ -683,7 +683,7 @@ void register_callback(enum EventType type, enum EventName name, void (*fn)(void
     callback_list[type][name].fn = fn;
     callback_list[type][name].arg = arg;
 }
-// Run a callback
+//运行回调
 void run_callback(enum EventType type, enum EventName name)
 {
     if ((unsigned)type >= EVENT_TYPE_Num || (unsigned)name >= EVENT_NAME_Num)
@@ -697,7 +697,7 @@ void run_callback(enum EventType type, enum EventName name)
         callback->fn(callback->arg);
     }
 }
-// Unregister a callback
+//注销回调
 void unregister_callback(enum EventType type, enum EventName name)
 {
     if ((unsigned)type >= EVENT_TYPE_Num || (unsigned)name >= EVENT_NAME_Num)
@@ -717,7 +717,7 @@ main.c
 
 #include "event.h"
 
-/* The callback interface is implemented in event.c. */
+/* 回调接口由 event.c 实现。 */
 void register_callback(enum EventType type, enum EventName name,
                        void (*fn)(void *arg), void *arg);
 void run_callback(enum EventType type, enum EventName name);
@@ -750,7 +750,7 @@ static void callback_demo(void)
 
     puts("回调演示（同一类型使用不同回调）：");
 
-    /* One event type can bind different callbacks through different event names. */
+    /* 同一个事件类型可以通过不同事件名称绑定不同回调。 */
     register_callback(type, EVENT_NAME_1, on_event_name_1,
                       "已为第一个事件名称注册");
     register_callback(type, EVENT_NAME_2, on_event_name_2,
@@ -761,7 +761,7 @@ static void callback_demo(void)
     printf("运行 run_callback(EVENT_TYPE_1, EVENT_NAME_2) -> ");
     run_callback(type, EVENT_NAME_2);
 
-    /* Registering the same type and name again replaces the callback in that slot. */
+    /* 再次注册相同的类型和名称会替换该槽位中的回调。 */
     register_callback(type, EVENT_NAME_1, on_event_name_1_replaced,
                       "原始回调已替换");
     printf("重新注册 EVENT_NAME_1 后 -> ");

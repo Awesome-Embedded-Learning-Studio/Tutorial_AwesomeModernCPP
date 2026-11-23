@@ -10,9 +10,10 @@ description: "new[] asks for 8 extra bytes of cookie at the head of the block to
 reading_time_minutes: 8
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/10-new-in-assembly/03-array-new-cookie-and-reverse-destruction.md
-  source_hash: 6288e29a641c53eb14b9a0ece10a7576d1c16aa9b34146de7f6b0ce3fb4221ae
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: 54db4c22181fe748aa385e7ea028c1164edff7b99bd678925ac04f07d9c575ae
+  translated_at: '2026-11-22T16:49:36Z'
+  engine: glm-5.3-refresh
+  token_count: 8722
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -28,7 +29,7 @@ The environment, the tools, and how to read the listings are all the same as in 
 The second variant turns one object into a row of them. The new[] story adds a cookie at the head of the block, a loop that constructs element by element, and destruction that runs in reverse. Let's be precise about what the cookie means here: it is 8 extra bytes the compiler asks for at the head of the array block, holding the element count, and it is how the future delete[] knows how many elements to destroy. Our test material is a Widget that prints:
 
 ```cpp
-// N6: new[] and delete[] -- per-element construction/destruction and the header cookie
+// N6: new[] 与 delete[] —— 逐元素构造/析构与头部 cookie
 #include <cstdio>
 
 struct Widget {
@@ -87,32 +88,32 @@ main:
 	pushq	%r12
 	pushq	%rbx
 	subq	$24, %rsp
-	movl	$20, %edi           # note: not 12! 3*4 + the 8-byte cookie = 20
+	movl	$20, %edi           # 注意:不是 12!3*4 + 8 字节 cookie = 20
 .LEHB0:
 	call	_Znam@PLT           # operator new[](20)
 .LEHE0:
 	movq	%rax, %rbx
-	movq	$3, (%rbx)          # cookie: the element count 3 goes into the 8 bytes at the head
+	movq	$3, (%rbx)          # cookie:元素个数 3 写进块头 8 字节
 	movl	$1, %r15d
-	leaq	8(%rbx), %r12       # first element's address = block start + 8 (what the new[] expression evaluates to)
-	movl	$2, %r13d           # loop counter (starts at 3-1)
-	movq	%r12, %r14          # the cursor pointer
+	leaq	8(%rbx), %r12       # 数组首元素地址 = 块首 + 8(new[] 的求值结果)
+	movl	$2, %r13d           # 循环计数器(3-1 起)
+	movq	%r12, %r14          # 游标指针
 	jmp	.L4
 .L5:
 	movq	%r14, %rdi
 .LEHB1:
-	call	_ZN6WidgetC1Ev      # element-by-element construction (the loop body)
+	call	_ZN6WidgetC1Ev      # 逐元素构造(循环体)
 .LEHE1:
-	subq	$1, %r13            # decrement the counter
-	addq	$4, %r14            # advance the cursor by sizeof(Widget)
+	subq	$1, %r13            # 计数器递减
+	addq	$4, %r14            # 游标前进 sizeof(Widget)
 .L4:
 	testq	%r13, %r13
-	jns	.L5                     # keep going while the counter is >= 0 → 3 iterations in total
+	jns	.L5                     # 计数器 >= 0 则继续 → 共 3 次
 	movl	$0, %edx
 	leaq	8(%rbx), %rax
 	movq	%rax, -56(%rbp)
 	testb	%dl, %dl
-	je	.L6                     # always taken, dead code starts here
+	je	.L6                     # 恒跳,死代码开始
 	movl	$20, %esi
 	movq	%rbx, %rdi
 	call	_ZdaPvm@PLT
@@ -125,33 +126,33 @@ main:
 	cmpq	$0, -56(%rbp)
 	je	.L7
 	movq	-56(%rbp), %rax
-	subq	$8, %rax            # w - 8: back to the cookie
-	movq	(%rax), %rax        # read out the element count n = 3
+	subq	$8, %rax            # w - 8:回到 cookie
+	movq	(%rax), %rax        # 读出元素个数 n = 3
 	leaq	0(,%rax,4), %rdx    # n * sizeof(Widget)
 	movq	-56(%rbp), %rax
-	leaq	(%rdx,%rax), %rbx   # one-past-the-end pointer = w + n*4
+	leaq	(%rdx,%rax), %rbx   # 尾后指针 = w + n*4
 .L9:
 	cmpq	-56(%rbp), %rbx
 	je	.L8
-	subq	$4, %rbx            # step back from the last element
+	subq	$4, %rbx            # 从最后一个元素倒着走
 	movq	%rbx, %rdi
-	call	_ZN6WidgetD1Ev      # element-by-element destruction (in reverse)
+	call	_ZN6WidgetD1Ev      # 逐元素析构(倒序)
 	jmp	.L9
 .L8:
 	movq	-56(%rbp), %rax
 	subq	$8, %rax
-	movq	(%rax), %rax        # read the cookie once more: n
+	movq	(%rax), %rax        # 再读一次 cookie:n
 	addq	$2, %rax
-	leaq	0(,%rax,4), %rdx    # (n + 2) * 4 = n*4 + 8 = 20, the whole block's size
+	leaq	0(,%rax,4), %rdx    # (n + 2) * 4 = n*4 + 8 = 20,整块尺寸
 	movq	-56(%rbp), %rax
-	subq	$8, %rax            # the block start (w - 8), not w
+	subq	$8, %rax            # 块首(w - 8)而非 w
 	movq	%rdx, %rsi
 	movq	%rax, %rdi
-	call	_ZdaPvm@PLT         # operator delete[](block start, 20)
+	call	_ZdaPvm@PLT         # operator delete[](块首, 20)
 .L7:
 	movl	$0, %eax
 	jmp	.L16
-.L15:                             # exception landing: if construction throws, destroy only the elements that finished building
+.L15:                             # 异常着陆:构造抛出时只析构已构造的元素
 	movq	%rax, %r14
 	testq	%r12, %r12
 	je	.L12
@@ -216,14 +217,14 @@ Let's also have a glance at what the exception landing zone `.L15` is for: if an
 Is the cookie always there? One controlled experiment settles it. Swap Widget for a struct of the same shape without a user-provided destructor, and the key lines of `main` are these:
 
 ```asm
-	movl	$12, %edi           # 3*4, no cookie
+	movl	$12, %edi           # 3*4,无 cookie
 .LEHB0:
 	call	_Znam@PLT           # operator new[](12)
 ...
-	call	_ZN4Pod3C1Ev        # the construction loop is still there (default construction is non-trivial)
+	call	_ZN4Pod3C1Ev        # 构造循环仍在(默认构造非平凡)
 ...
 	movq	%rbx, %rdi
-	call	_ZdaPv@PLT          # no cookie → no count read, no destruction loop, unsized _ZdaPv
+	call	_ZdaPv@PLT          # 无 cookie → 无读个数、无析构循环,无尺寸 _ZdaPv
 ```
 
 Now swap the element type for one that is trivially destructible and look again: the allocation asks for exactly 12 bytes, the cookie is gone, the destruction loop is gone, and delete[] has degraded to the unsized `_ZdaPv`. Once the principle clicks, none of this is surprising. There is no destructor work to do, so delete[] has no need to know the count, and the cookie's one remaining reason to exist is helping delete[] count how many destructors to run. The original wording from the Itanium C++ ABI, as quoted on cppreference, draws the line between having a cookie and not having one with total clarity. GCC on Linux follows exactly this ABI, and MSVC does the same:

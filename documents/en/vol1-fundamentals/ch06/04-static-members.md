@@ -20,12 +20,23 @@ tags:
 - 入门
 - 基础
 title: static Members
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #242)"
+      en: "Contributed exercise solutions and article revisions (PR #242)"
 translation:
   source: documents/vol1-fundamentals/ch06/04-static-members.md
-  source_hash: 6761408c8755fcfdc6b00353b74de2a1055de0ed0dce3b783f28cf248715824e
-  translated_at: '2026-09-25T11:01:53+00:00'
-  engine: anthropic
-  token_count: 4200
+  source_hash: 572bafa70b4abbed5a371e94b4c5d608e66bd04657a70bc0f062a375d70c3b88
+  translated_at: '2026-11-22T16:40:19+00:00'
+  engine: glm-5.3-refresh
+  token_count: 11012
 ---
 # static Members: Belonging to the Class, Not to Any Object
 
@@ -44,7 +55,7 @@ class Employee {
 private:
     int id_;
     std::string name_;
-    static int next_id_;  // Declaration: a counter shared by all Employee objects
+    static int next_id_;  // 声明：所有 Employee 共享的计数器
 };
 ```
 
@@ -54,7 +65,7 @@ Here we run into a classic pitfall: **static member variables must be defined ou
 
 ```cpp
 // Employee.cpp
-int Employee::next_id_ = 1;  // Define and initialize
+int Employee::next_id_ = 1;  // 定义并初始化
 ```
 
 If we only declare it but never define it, compilation still passes, because while processing the class definition the compiler only sees the declaration. But at the linking stage, the linker discovers that no object file contains the actual storage for `Employee::next_id_`, and it throws an `undefined reference` error. This kind of "compiles fine, blows up at link time" problem is a notorious blood-pressure booster, because we have to hunt back and forth across multiple files to find which static member we forgot to define.
@@ -68,7 +79,7 @@ class Employee {
 private:
     int id_;
     std::string name_;
-    inline static int next_id_ = 1;  // C++17: defined in-class, no out-of-class definition needed
+    inline static int next_id_ = 1;  // C++17：类内定义，不需要类外定义
 };
 ```
 
@@ -89,10 +100,10 @@ public:
     Employee(const std::string& name)
         : id_(next_id_++), name_(name) {}
 
-    /// @brief Get the next ID that will be assigned (static function)
+    /// @brief 获取下一个将被分配的 ID（静态函数）
     static int peek_next_id() {
-        return next_id_;       // OK: accessing a static member
-        // return id_;         // Compile error! A static function has no this, so it cannot access non-static members
+        return next_id_;       // OK：访问静态成员
+        // return id_;         // 编译错误！静态函数没有 this，无法访问非静态成员
     }
 };
 ```
@@ -100,7 +111,7 @@ public:
 We call a static member function with the `ClassName::function_name()` syntax—no need to create an object first:
 
 ```cpp
-std::cout << Employee::peek_next_id() << std::endl;  // No Employee instance needed
+std::cout << Employee::peek_next_id() << std::endl;  // 不需要任何 Employee 实例
 ```
 
 Calling a static function through an object (`emp.peek_next_id()`) is of course syntactically legal too, but that is just syntactic sugar—the compiler still translates it into `Employee::peek_next_id()`, and the object instance plays no part at runtime. Our advice is to prefer the `ClassName::function()` form: the semantics are clearer, and we can tell at a glance that it is a static function.
@@ -133,7 +144,7 @@ public:
     static int peek_next_id() { return next_id_; }
 };
 
-// Static member definitions
+// 静态成员定义
 int Employee::next_id_ = 1;
 int Employee::active_count_ = 0;
 ```
@@ -147,8 +158,8 @@ Things change again when we combine `static` with `const` (or `constexpr`). C++ 
 ```cpp
 class Config {
 public:
-    static constexpr int kMaxRetries = 3;       // OK: a const integral, initialized in-class
-    static constexpr double kPi = 3.14159265;   // Since C++11, floating-point types may also be initialized in-class
+    static constexpr int kMaxRetries = 3;       // OK：const 整型，类内初始化
+    static constexpr double kPi = 3.14159265;   // C++11 起也允许浮点类型类内初始化
 };
 ```
 
@@ -167,28 +178,28 @@ We will look at only the most stripped-down sketch—a light touch, without unfo
 ```cpp
 class SystemClock {
 private:
-    SystemClock() = default;  // Constructor is private: prevents external instantiation
+    SystemClock() = default;  // 构造函数 private：阻止外部创建实例
 
     static SystemClock& instance() {
-        static SystemClock clock;  // A local static; C++11 guarantees thread-safe initialization
+        static SystemClock clock;  // C++11 保证线程安全的局部静态变量
         return clock;
     }
 
 public:
-    // Delete copy and assignment to guarantee uniqueness
+    // 删除拷贝和赋值，确保唯一性
     SystemClock(const SystemClock&) = delete;
     SystemClock& operator=(const SystemClock&) = delete;
 
-    /// @brief Get the globally unique clock instance
+    /// @brief 获取全局唯一的时钟实例
     static SystemClock& get() { return instance(); }
 
     uint64_t now() const {
-        // Return the current timestamp
-        return 0;  // Simplified
+        // 返回当前时间戳
+        return 0;  // 简化
     }
 };
 
-// Usage
+// 使用
 uint64_t t = SystemClock::get().now();
 ```
 
@@ -200,7 +211,7 @@ Let's fold this chapter's ideas into one complete program:
 
 ```cpp
 // static_demo.cpp
-// A combined walkthrough of static members: automatic ID assignment, instance counting, static constants
+// static 成员综合演练：自动 ID 分配、实例计数、静态常量
 
 #include <iostream>
 #include <string>
@@ -242,7 +253,7 @@ public:
 int Employee::next_id_ = 1;
 int Employee::active_count_ = 0;
 
-/// @brief Create some temporary objects and watch the counters change
+/// @brief 创建一些临时对象，观察计数变化
 void demo_scope()
 {
     std::cout << "\n--- Enter demo_scope ---" << std::endl;
@@ -251,7 +262,7 @@ void demo_scope()
     std::cout << "Inside scope, active count: "
               << Employee::get_active_count() << std::endl;
     std::cout << "--- Leave demo_scope ---" << std::endl;
-    // temp1, temp2 leave the scope and are destroyed
+    // temp1, temp2 离开作用域，析构
 }
 
 int main()
@@ -387,9 +398,9 @@ Write a `TrackedObject` class that maintains two counters at once—`active_coun
 class TrackedObject
 {
 private:
-    // Number of currently alive objects
+    // 当前存活对象数量
     inline static int active_count = 0;
-    // Total number of objects ever created
+    // 总共创建过的对象数量
     inline static int total_created = 0;
 
 public:

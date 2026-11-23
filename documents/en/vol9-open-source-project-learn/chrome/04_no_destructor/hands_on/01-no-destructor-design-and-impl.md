@@ -27,9 +27,9 @@ title: "NoDestructor Design Guide (I): motivation, API, and implementation"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/04_no_destructor/hands_on/01-no-destructor-design-and-impl.md
   source_hash: 44438a085ef20ca73d88f7a1271380bbe123ca5ae2ae442a4f51ff4c15d3248c
-  translated_at: '2026-09-26T03:29:58+00:00'
-  engine: anthropic
-  token_count: 3200
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 4709
 ---
 # NoDestructor Design Guide (I): motivation, API, and implementation
 
@@ -48,11 +48,11 @@ template <typename T>
 class NoDestructor {
 public:
     template <typename... Args>
-    explicit NoDestructor(Args&&... args);   // perfect-forwarding construct
-    explicit NoDestructor(const T& x);        // copy construct (handy for initializer_list)
-    explicit NoDestructor(T&& x);             // move construct
+    explicit NoDestructor(Args&&... args);   // 完美转发构造
+    explicit NoDestructor(const T& x);        // 拷贝构造(方便 initializer_list)
+    explicit NoDestructor(T&& x);             // 移动构造
     NoDestructor(const NoDestructor&) = delete;
-    ~NoDestructor() = default;                // ← key: doesn't call ~T()
+    ~NoDestructor() = default;                // ← 关键:不调 ~T()
     const T& operator*() const;  T& operator*();
     const T* operator->() const; T* operator->();
     const T* get() const;  T* get();
@@ -84,7 +84,7 @@ public:
 
     NoDestructor(const NoDestructor&) = delete;
     NoDestructor& operator=(const NoDestructor&) = delete;
-    ~NoDestructor() = default;   // only destructs the char member, doesn't call ~T()
+    ~NoDestructor() = default;   // 只析构 char 成员,不调 ~T()
 
     const T& operator*()  const { return *get(); }
     T&       operator*()        { return *get(); }
@@ -102,8 +102,8 @@ private:
 
     alignas(T) char storage_[sizeof(T)];
 
-    // Under LEAK_SANITIZER builds Chromium additionally holds a T* storage_ptr_ as an LSan reachability root
-    // (crbug/40562930); the teaching version omits it and uses an LSan suppression file instead.
+    // Chromium 在 LEAK_SANITIZER 构建下额外持 T* storage_ptr_ 作 LSan reachability 根
+    // (crbug/40562930);教学版省略,用 LSan suppression 文件替代。
 };
 
 }  // namespace tamcpp::chrome

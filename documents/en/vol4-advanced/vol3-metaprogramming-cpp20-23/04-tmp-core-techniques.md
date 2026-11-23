@@ -26,9 +26,9 @@ title: 'TMP Core Techniques: The World Before Concepts'
 translation:
   source: documents/vol4-advanced/vol3-metaprogramming-cpp20-23/04-tmp-core-techniques.md
   source_hash: 7a0c4ed1b3d6cc4804e22fac8b87bc341ce0b5097d6c2cb71dc7cd56e3bdffb0
-  translated_at: '2026-09-26T04:31:29+00:00'
-  engine: anthropic
-  token_count: 3100
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 9154
 ---
 # TMP Core Techniques: The World Before Concepts
 
@@ -185,7 +185,7 @@ Walter Brown wrote three proposals around the detection idiom (N3911 → N4436 �
 Template recursion can compute factorials, but for a variadic job like "sum any number of arguments," the recursive spelling needs a primary template, a recursive branch, plus a terminating specialization — heavy boilerplate. C++17 fold expressions do away with that entirely. Compare the two snippets:
 
 ```cpp
-// The old way: recursion + termination
+// 老办法:递归 + 终止
 template <typename T>
 constexpr T sum_rec(T first) { return first; }
 
@@ -194,10 +194,10 @@ constexpr T sum_rec(T first, Rest... rest) {
     return first + sum_rec(rest...);
 }
 
-// C++17: one fold expression collects it all
+// C++17:一个 fold 表达式收掉
 template <typename... Ts>
 constexpr auto sum_fold(Ts... ts) {
-    return (ts + ...);  // unary right fold
+    return (ts + ...);  // 一元右折叠
 }
 ```
 
@@ -235,11 +235,11 @@ The binary forms carry an initial value `e`, mainly to solve the empty-pack prob
 At this point we can weld this piece together with the previous three. Take the same requirement — an `add` that accepts only integers — and put the old SFINAE way next to the new concept way:
 
 ```cpp
-// SFINAE (since C++11): the constraint hides in a default template parameter
+// SFINAE(C++11 起):约束藏在默认模板参数里
 template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
 T add_old(T a, T b) { return a + b; }
 
-// concept (C++20): the constraint lives in the signature
+// concept(C++20):约束写在签名里
 template <typename T>
     requires std::integral<T>
 T add_new(T a, T b) { return a + b; }

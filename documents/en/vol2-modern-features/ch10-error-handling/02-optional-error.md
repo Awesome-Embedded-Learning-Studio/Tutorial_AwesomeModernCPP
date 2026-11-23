@@ -23,9 +23,9 @@ title: optional for Error Handling
 translation:
   source: documents/vol2-modern-features/ch10-error-handling/02-optional-error.md
   source_hash: ad2583043fe3299a11a075b61a9dc1294d4cdf4f15e58fa501e39ab8f96caa11
-  translated_at: '2026-09-25T16:45:25+00:00'
-  engine: anthropic
-  token_count: 5200
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 10634
 ---
 # optional for Error Handling: Lightweight, but No Room for Error Details
 
@@ -43,13 +43,13 @@ The semantics of `std::optional<T>` are dead simple — it either holds a value 
 #include <optional>
 #include <string>
 
-/// Try to parse a string as an integer; return empty on failure
+/// 尝试将字符串解析为整数，失败则返回空
 std::optional<int> parse_int(const std::string& s) {
     try {
         std::size_t pos = 0;
         int value = std::stoi(s, &pos);
         if (pos != s.size()) {
-            return std::nullopt;  // Extra characters remain; the parse is incomplete
+            return std::nullopt;  // 有多余字符，解析不完整
         }
         return value;
     } catch (...) {
@@ -107,7 +107,7 @@ private:
     std::unordered_map<int, User> users_;
 };
 
-// Usage
+// 使用
 UserRegistry registry;
 registry.add(1, User{"Alice", 30});
 
@@ -117,7 +117,7 @@ if (user) {
 }
 
 auto missing = registry.find(99);
-// missing is nullopt, but this is a normal outcome, not an error
+// missing 是 nullopt，但这是正常情况，不是错误
 ```
 
 Here is a diagram of find's two return paths and the caller's three ways of accessing the result:
@@ -134,7 +134,7 @@ Parsing information out of external input (config files, user input, network dat
 #include <charconv>
 #include <system_error>
 
-/// Parse a double from a string view
+/// 从字符串视图解析浮点数
 std::optional<double> parse_double(std::string_view sv) {
     double value = 0.0;
     auto [ptr, ec] = std::from_chars(
@@ -145,10 +145,10 @@ std::optional<double> parse_double(std::string_view sv) {
     return std::nullopt;
 }
 
-// Usage
+// 使用
 auto v1 = parse_double("3.14");     // optional(3.14)
 auto v2 = parse_double("hello");    // nullopt
-auto v3 = parse_double("3.14abc");  // nullopt (extra characters)
+auto v3 = parse_double("3.14abc");  // nullopt（有多余字符）
 ```
 
 ### Scenario 3: When a Default Value Is Available
@@ -166,7 +166,7 @@ std::optional<std::string> get_env(const std::string& key) {
     return std::nullopt;
 }
 
-// Use value_or to provide default values
+// 使用 value_or 提供默认值
 std::string log_level = get_env("LOG_LEVEL").value_or("INFO");
 int max_threads = parse_int(get_env("MAX_THREADS").value_or("4")).value_or(4);
 ```
@@ -209,22 +209,21 @@ The fatal limitation of `optional` is that **it carries no error information**. 
 ### When You Need to Distinguish Multiple Error Types
 
 ```cpp
-// Bad: three different failure causes squashed into one nullopt
+// 不好：三种不同的失败原因被揉成了一个 nullopt
 std::optional<Config> load_config(const std::string& path) {
     auto f = open_file(path);
-    if (!f) return std::nullopt;          // File missing? Permissions too low?
+    if (!f) return std::nullopt;          // 文件不存在？权限不够？
 
     auto content = read_content(f);
-    if (content.empty()) return std::nullopt;  // Empty file? Read error?
+    if (content.empty()) return std::nullopt;  // 空文件？读取出错？
 
-    return parse_config(content);          // A parse failure is also nullopt
+    return parse_config(content);          // 解析失败也是 nullopt
 }
 
 auto cfg = load_config("app.cfg");
 if (!cfg) {
-    // What do I do now? A missing file means create it, a bad format means report it,
-    // insufficient permissions means escalate —
-    // but all I know is "it failed", and I can't tell any of them apart
+    // 我现在该怎么办？文件不存在要创建，格式错误要报告，权限不够要提权
+    // 但我只知道"失败了"，什么都区分不了
 }
 ```
 
@@ -255,13 +254,13 @@ struct UserProfile {
 };
 
 std::optional<UserProfile> fetch_from_cache(int user_id) {
-    // Simulated: ID 1 is in the cache
+    // 模拟：ID 1 在缓存中
     if (user_id == 1) return UserProfile{"Alice", 30};
     return std::nullopt;
 }
 
 std::optional<UserProfile> fetch_from_server(int user_id) {
-    // Simulated: IDs 1 and 2 are on the server
+    // 模拟：ID 1 和 2 在服务器上
     if (user_id == 1 || user_id == 2) return UserProfile{"Bob", 25};
     return std::nullopt;
 }
@@ -274,7 +273,7 @@ std::optional<int> extract_age(const UserProfile& profile) {
 int main() {
     int user_id = 1;
 
-    // C++23 monadic chain
+    // C++23 monadic 链
     auto age_next = fetch_from_cache(user_id)
         .or_else([user_id]() { return fetch_from_server(user_id); })
         .and_then(extract_age)
@@ -289,7 +288,7 @@ int main() {
 For comparison, here is the same logic written without the monadic operations:
 
 ```cpp
-// C++20 style: nested if/else
+// C++20 风格：嵌套的 if/else
 auto profile = fetch_from_cache(user_id);
 if (!profile) {
     profile = fetch_from_server(user_id);
@@ -311,14 +310,14 @@ The monadic version puts the normal path on a single chain, and every step state
 The difference between `transform` and `and_then` is that the function passed to `transform` returns a plain value (not an `optional`), and `transform` wraps that result back into an `optional` automatically:
 
 ```cpp
-// transform: the return value is wrapped into an optional automatically
+// transform：返回值会被自动包装成 optional
 auto upper_name = fetch_from_cache(1)
     .transform([](const UserProfile& p) -> std::string {
         std::string s = p.name;
         for (auto& c : s) c = std::toupper(c);
         return s;
     });
-// The type of upper_name is std::optional<std::string>
+// upper_name 的类型是 std::optional<std::string>
 ```
 
 One line to tell them apart: `and_then` is for operations where the next step may fail (the function returns an `optional`); `transform` is for transformations that are guaranteed to succeed (the function returns a plain value).
@@ -384,7 +383,7 @@ public:
         if (port_str) {
             auto p = parse_int(*port_str);
             if (!p || *p < 1 || *p > 65535) {
-                return std::nullopt;  // Invalid port
+                return std::nullopt;  // 端口无效
             }
             cfg.port = *p;
         } else {

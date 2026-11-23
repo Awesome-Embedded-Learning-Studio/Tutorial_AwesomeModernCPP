@@ -20,9 +20,9 @@ prerequisites:
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/16-visitor.md
   source_hash: 1dcdac089677d984726b4a1912841f73ca8c5d3dbda6965e6a820939c6484ce5
-  translated_at: '2026-09-26T05:43:09+00:00'
-  engine: anthropic
-  token_count: 7700
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 20659
 ---
 
 # Visitor Pattern: From Two if/else to Double Dispatch, and Then to `variant` + `visit`
@@ -108,7 +108,7 @@ struct Circle;
 struct Rectangle;
 struct Triangle;
 
-// Visitor interface: every new concrete shape means adding a visit overload here
+// 访问者接口:每新增一个具体形状,这里就要加一个 visit 重载
 struct ShapeVisitor {
     virtual ~ShapeVisitor() = default;
     virtual void visit(const Circle& c) = 0;
@@ -116,7 +116,7 @@ struct ShapeVisitor {
     virtual void visit(const Triangle& t) = 0;
 };
 
-// Element interface: accept hands "yourself" over to the visitor
+// 元素接口:accept 把"自己"交给访问者
 struct Shape {
     virtual ~Shape() = default;
     virtual void accept(ShapeVisitor& visitor) const = 0;
@@ -146,7 +146,7 @@ struct Triangle : Shape {
     }
 };
 
-// A concrete visitor: accumulates the total area
+// 一个具体的访问者:累计总面积
 struct AreaCalculatorVisitor : ShapeVisitor {
     double total_area = 0.0;
 
@@ -221,8 +221,8 @@ struct Visitor;
 struct Shape {
     virtual ~Shape() = default;
     virtual void accept(Visitor& v) const {
-        // Suppose we want to write it just once in the base class:
-        v.visit(*this);   // Won't compile: *this's static type is const Shape&
+        // 假设我们想在基类里只写一次:
+        v.visit(*this);   // 编不过:*this 的静态类型是 const Shape&
     }
 };
 ```
@@ -247,11 +247,11 @@ struct DerivedB : Base { void accept(Visitor& v) const override; };
 struct Visitor {
     void visit(const DerivedA&) { std::cout << "visit(DerivedA&)\n"; }
     void visit(const DerivedB&) { std::cout << "visit(DerivedB&)\n"; }
-    // Deliberately not providing visit(const Base&) — and there isn't one
+    // 故意不提供 visit(const Base&) —— 也没有
 };
 
-// Key point: inside DerivedA::accept, *this's static type is DerivedA,
-// so v.visit(*this) precisely hits visit(const DerivedA&)
+// 关键:在 DerivedA::accept 里,*this 的静态类型是 DerivedA,
+// 于是 v.visit(*this) 精确命中 visit(const DerivedA&)
 void DerivedA::accept(Visitor& v) const { v.visit(*this); }
 void DerivedB::accept(Visitor& v) const { v.visit(*this); }
 
@@ -259,8 +259,8 @@ int main() {
     Visitor v;
     const Base* a = new DerivedA;
     const Base* b = new DerivedB;
-    a->accept(v);   // first dispatch → DerivedA::accept; second dispatch → visit(const DerivedA&)
-    b->accept(v);   // first dispatch → DerivedB::accept; second dispatch → visit(const DerivedB&)
+    a->accept(v);   // 第一次分发→DerivedA::accept;第二次分发→visit(const DerivedA&)
+    b->accept(v);   // 第一次分发→DerivedB::accept;第二次分发→visit(const DerivedB&)
     delete a;
     delete b;
 }
@@ -309,10 +309,10 @@ struct Circle { double radius; };
 struct Rectangle { double width, height; };
 struct Triangle { double base, height; };
 
-// The key step: pack "a closed set of types" into a variant
+// 关键一步:把"一组闭合的类型"打包成一个 variant
 using Shape = std::variant<Circle, Rectangle, Triangle>;
 
-// A helper: kneads several lambdas into one overload set (the classic C++17 spelling)
+// 一个 helper:把多个 lambda 捏成一个重载组(C++17 经典写法)
 template <class... Ts> struct Overloaded : Ts... { using Ts::operator()...; };
 template <class... Ts> Overloaded(Ts...) -> Overloaded<Ts...>;
 
@@ -374,17 +374,17 @@ Viewing `f`'s assembly with `g++ -O2 -S`, the core is just these few lines (GCC 
 ```sh
 $ g++ -std=c++23 -O2 -S visit_dispatch.cpp -o - | sed -n '/^_Z1fRK/,/ret/p'
 _Z1fRKSt7variantIJ1A1B1CEE:
-    movzbl  24(%rdi), %eax      # read the variant's discriminator (stored at offset 24)
-    movsd   (%rdi), %xmm0       # pick up the data while we're at it
+    movzbl  24(%rdi), %eax      # 读出 variant 的判别式(存在 offset 24)
+    movsd   (%rdi), %xmm0       # 顺手把数据也读出来
     cmpb    $1, %al
-    je      .L2                 # discriminator==1 → take the B branch
+    je      .L2                 # 判别式==1 → 走 B 这支
     cmpb    $2, %al
-    jne     .L5                 # discriminator==2 → take the C branch
+    jne     .L5                 # 判别式==2 → 走 C 这支
     movsd   16(%rdi), %xmm2
     movsd   8(%rdi), %xmm1
     jmp     _Z3g_cddd@PLT       # → g_c
 .L5:
-    jmp     _Z3g_ad@PLT         # otherwise (discriminator==0) → the A branch → g_a
+    jmp     _Z3g_ad@PLT         # 否则(判别式==0)→ 走 A 这支 → g_a
 .L2:
     movsd   8(%rdi), %xmm1
     jmp     _Z3g_bddd@PLT       # → g_b
@@ -412,7 +412,7 @@ int main() {
     std::visit(Overloaded{
         [](const A&) { std::cout << "A\n"; },
         [](const B&) { std::cout << "B\n"; }
-        // Deliberately leaving out C
+        // 故意漏掉 C
     }, v);
 }
 ```
@@ -437,7 +437,7 @@ for (auto& s : shapes) {
         [](const Circle& c) {
             std::cout << "Circle area=" << std::numbers::pi * c.radius * c.radius << "\n";
         },
-        [](const auto&) {   // generic lambda: the fallback matching all remaining types
+        [](const auto&) {   // 泛型 lambda:兜底匹配其余所有类型
             std::cout << "(some other shape)\n";
         }
     }, s);
@@ -460,17 +460,17 @@ A generic lambda's `operator()` is a template that can deduce any type able to m
 Talk is cheap, so let's write a comparison: pre-generate the same batch of 5 million shapes, accumulate their areas once with the classic virtual-function visitor and once with variant + visit, measure only the dispatch overhead, and use a `volatile sink` so the whole stretch can't be optimized away. The compiler is GCC 16.1, both at `-O2`:
 
 ```cpp
-// Classic version: AreaVirt inherits ShapeVisitor, all visits are virtual;
-//                  main loop: for (auto& s : vs) s->accept(av);
-// variant version: uses Overloaded{} + std::visit, accumulating return values in the main loop.
-// The two shape collections (vs / vts) are generated with the same mt19937 seed; their contents correspond exactly.
+// 经典版:AreaVirt 继承 ShapeVisitor,visit 都是 virtual;
+//         主循环 for (auto& s : vs) s->accept(av);
+// variant 版:用 Overloaded{} + std::visit,主循环里累加返回值。
+// 两个形状集合 (vs / vts) 用同一个 mt19937 种子生成,内容完全对应。
 ```
 
 I ran it on my own machine (5,000,000 visits per entry; your numbers will vary — this is real output from GCC 16.1.1 + WSL2):
 
 ```sh
 $ g++ -std=c++23 -O2 visit_bench.cpp -o visit_bench && ./visit_bench
-$ ./visit_bench   # run twice to see the jitter
+$ ./visit_bench   # 跑两遍看抖动
 virtual:   total=3.26927e+07  33.1 ms
 variant:   total=3.26927e+07  22.5 ms
 virtual:   total=3.26927e+07  33.3 ms

@@ -10,9 +10,10 @@ description: "In delete's two steps the destructor goes first and operator delet
 reading_time_minutes: 8
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/10-new-in-assembly/02-delete-two-steps-and-placement-new.md
-  source_hash: 0d775e9889c2bfd48a03acaa40ecd5886a098f114d4f5a3ab71dbcef807a1588
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: cff58e70bbfd5b3da80bf58d1b360ebafce10eb91c5b787ee7e91179b71f8a0d
+  translated_at: '2026-11-22T16:50:09Z'
+  engine: glm-5.3-refresh
+  token_count: 8209
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -28,7 +29,7 @@ The environment, the tools, and how to read the listings are all the same as in 
 The useful life is over, and the memory should go back where it came from. delete's two steps mirror new's two steps, but to see the first one clearly the type needs a non-trivial destructor, so I've swapped in a subject that prints:
 
 ```cpp
-// N4: delete's two steps -- destructor + operator delete
+// N4: delete 的两步 —— 析构 + operator delete
 #include <cstdio>
 
 struct Resource {
@@ -64,19 +65,19 @@ main:
 	subq	$24, %rsp
 	movl	$4, %edi            # sizeof(Resource) = 4
 .LEHB0:
-	call	_Znwm@PLT           # step one: operator new(4)
+	call	_Znwm@PLT           # 第一步:operator new(4)
 .LEHE0:
-	movq	%rax, %rbx          # rax → rbx, the pointer stashed away
+	movq	%rax, %rbx          # rax → rbx 保管指针
 	movl	$1, %r13d
-	movl	$7, %esi            # the argument 7
+	movl	$7, %esi            # 实参 7
 	movq	%rbx, %rdi          # this
 .LEHB1:
-	call	_ZN8ResourceC1Ei    # step two: Resource::Resource(this, 7)
+	call	_ZN8ResourceC1Ei    # 第二步:Resource::Resource(this, 7)
 .LEHE1:
 	movl	$0, %eax
 	movq	%rbx, -40(%rbp)
 	testb	%al, %al
-	je	.L4                     # always taken; the cleanup right after is dead code, never reached
+	je	.L4                     # 恒跳,紧随的是不可达清理死代码
 	movl	$4, %esi
 	movq	%rbx, %rdi
 	call	_ZdlPvm@PLT
@@ -86,17 +87,17 @@ main:
 	movl	%eax, -44(%rbp)     # sink = r->id
 	movl	-44(%rbp), %eax
 	movq	-40(%rbp), %rbx
-	testq	%rbx, %rbx          # delete's null-pointer check
+	testq	%rbx, %rbx          # delete 的空指针检查
 	je	.L5
-	movq	%rbx, %rdi          # this for the destructor
-	call	_ZN8ResourceD1Ev    # step one (deletion side): ~Resource()
-	movl	$4, %esi            # the size for sized delete
-	movq	%rbx, %rdi          # the pointer argument for operator delete
-	call	_ZdlPvm@PLT         # step two (deletion side): operator delete(p, 4)
+	movq	%rbx, %rdi          # 析构的 this
+	call	_ZN8ResourceD1Ev    # 第一步(删除侧):~Resource()
+	movl	$4, %esi            # sized delete 尺寸
+	movq	%rbx, %rdi          # operator delete 的指针参数
+	call	_ZdlPvm@PLT         # 第二步(删除侧):operator delete(p, 4)
 .L5:
 	movl	$0, %eax
 	jmp	.L10
-.L9:                              # exception landing pad: if the constructor throws, free the memory first, then keep unwinding
+.L9:                              # 异常着陆区:构造抛出时先释放内存再继续展开
 	movq	%rax, %r12
 	testb	%r13b, %r13b
 	je	.L8
@@ -148,7 +149,7 @@ Now look back at that never-reachable `_ZdlPvm` in N1 of the previous piece, and
 We have come far enough that the two-step framework is standing on its own; now let's watch two variants mess with it. The first one up is placement new, a variant of new: you supply the memory yourself, and the new-expression only runs the construction step on the memory you handed it. The allocation function the standard library pairs with it is `operator new(size_t, void*)`, which takes a byte count and an address. Let's try it with a raw buffer on the stack:
 
 ```cpp
-// N5: placement new -- construction only, no allocation
+// N5: placement new —— 只有构造,没有分配
 #include <new>
 
 struct Point {
@@ -158,11 +159,11 @@ struct Point {
 };
 
 int main() {
-    alignas(Point) char buf[sizeof(Point)];   // raw buffer on the stack
+    alignas(Point) char buf[sizeof(Point)];   // 栈上裸缓冲
     Point* p = new (buf) Point(3, 4);         // placement new
-    volatile int sink = p->x + p->y;          // consume so it can't be optimized away
+    volatile int sink = p->x + p->y;          // 防优化消费
     (void)sink;
-    p->~Point();                              // manual destructor call, no delete
+    p->~Point();                              // 手动析构,无 delete
     return 0;
 }
 ```
@@ -177,26 +178,26 @@ main:
 	movq	%rsp, %rbp
 	pushq	%rbx
 	subq	$40, %rsp
-	movq	%fs:40, %rax        # stack canary (tripped by the char buffer on the stack)
+	movq	%fs:40, %rax        # 栈 canary(栈上 char 缓冲触发)
 	movq	%rax, -24(%rbp)
 	xorl	%eax, %eax
-	leaq	-32(%rbp), %rax     # the address of buf
-	movq	%rax, %rsi          # second argument: the buffer address
-	movl	$8, %edi            # first argument: the byte count (still passed, nobody uses it)
-	call	_ZnwmPv             # the placement flavor: operator new(size, buf)
+	leaq	-32(%rbp), %rax     # buf 的地址
+	movq	%rax, %rsi          # 第二实参:缓冲地址
+	movl	$8, %edi            # 第一实参:字节数(仍传,但无人使用)
+	call	_ZnwmPv             # placement 版 operator new(size, buf)
 	movq	%rax, %rbx
 	movl	$4, %edx
 	movl	$3, %esi
 	movq	%rbx, %rdi
-	call	_ZN5PointC1Eii      # construction: this is buf itself
+	call	_ZN5PointC1Eii      # 构造:this 就是 buf
 	movl	$0, %eax
 	movq	%rbx, -40(%rbp)
 	testb	%al, %al
-	je	.L6                     # always taken; the dead code starts here
+	je	.L6                     # 恒跳,死代码开始
 	leaq	-32(%rbp), %rax
 	movq	%rax, %rsi
 	movq	%rbx, %rdi
-	call	_ZdlPvS_            # (unreachable) the placement-paired delete(void*, void*)
+	call	_ZdlPvS_            # (不可达)placement 配对 delete(void*,void*)
 .L6:
 	movq	-40(%rbp), %rax
 	movl	(%rax), %edx
@@ -206,7 +207,7 @@ main:
 	movl	%eax, -44(%rbp)     # sink
 	movl	-44(%rbp), %eax
 	movl	$0, %eax
-	movq	-24(%rbp), %rdx     # canary check
+	movq	-24(%rbp), %rdx     # canary 校验
 	subq	%fs:40, %rdx
 	je	.L8
 	call	__stack_chk_fail@PLT

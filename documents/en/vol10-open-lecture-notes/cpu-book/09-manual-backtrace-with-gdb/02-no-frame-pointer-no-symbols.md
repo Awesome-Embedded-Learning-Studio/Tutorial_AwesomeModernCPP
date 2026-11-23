@@ -10,9 +10,10 @@ description: "After -O2 drops the frame pointer, rbp still holds libc's leftover
 reading_time_minutes: 22
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/09-manual-backtrace-with-gdb/02-no-frame-pointer-no-symbols.md
-  source_hash: 6ba524a74ed31cd3cae3013969e26cdcbf0523b73741cc7dfd46566ebc0cafec
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: b8759db25a136e4360e369377da5b54d6abac6fb4d3302c6eefa2a831ca1ee9e
+  translated_at: '2026-11-22T16:44:08Z'
+  engine: glm-5.3-refresh
+  token_count: 12846
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -128,14 +129,14 @@ Whose chain did we climb? Let's ask `info symbol`, whose whole job is to say whi
 
 ```text
 Reading symbols from ./chain_ni_O2...
---- break f3 / run (same output as the previous session, omitted) ---
+--- break f3 / run（输出与上一会话相同，略）---
 --- info symbol 0x7ffff78278b9 ---
 (gdb) __libc_start_main + 137 in section .text of /usr/lib/libc.so.6
 --- info symbol 0x7ffff7827781 ---
 (gdb) No symbol matches 0x7ffff7827781.
 --- p/x $rbp ---
 (gdb) $1 = 0x7fffffffd190
---- set $r = *(unsigned long *)$rbp (no output), then p/x $r ---
+--- set $r = *(unsigned long *)$rbp（无输出），随后 p/x $r ---
 (gdb) (gdb) $2 = 0x7fffffffd1f0
 --- x/gx $r+8 ---
 (gdb) 0x7fffffffd1f8:	0x0000555555555055
@@ -261,7 +262,7 @@ $ nm -D chain_O0s
 The second detail is more counterintuitive: after strip, bt actually gets longer, gaining levels #4 through #6 and reaching all the way down to `_start`. Delete something and the output grows. That is not the backtrace getting stronger. This is the moment to collect the question the previous piece's baseline section left open, and say why bt stops at main. gdb has a setting called `backtrace past-main`, off by default; the [Backtrace manual entry, settings section](https://sourceware.org/gdb/current/onlinedocs/gdb.html/Backtrace.html) (retrieved 2026-10-12) reads "Backtraces will stop when they encounter the user entry point", and the very next sentence, This is the default, is about that default. Stop when it reaches the user entry point: that's the default behavior. But the sentence hides a premise: recognizing where main sits takes symbols. With the symbols gone, gdb can no longer recognize the user entry point, and that is how the walk ran on to `_start`. We verified this by turning the setting on for the unstripped build (the session stops at the same f3 breakpoint; the break and run output is the same as the previous piece's baseline section, so I won't paste it again):
 
 ```text
---- set backtrace past-main on (no output) ---
+--- set backtrace past-main on（无输出）---
 (gdb) (gdb) #0  f3 (x=12) at chain.cpp:1
 #1  0x0000555555555143 in f2 (x=11) at chain.cpp:2
 #2  0x0000555555555160 in f1 (x=10) at chain.cpp:3

@@ -24,13 +24,24 @@ tags:
 - cpp-modern
 - intermediate
 - 容器
+contributors:
+- github: Charliechen114514
+  roles: [author, maintain]
+  note:
+    zh: "文章撰写与长期维护"
+    en: "Article writing and ongoing maintenance"
+- github: YukunJ
+  roles: [revision]
+  note:
+    zh: "参与文章内容与示例修订 (PR #73)"
+    en: "Contributed article and example revisions (PR #73)"
 title: 'New Standard Containers: flat_map, inplace_vector, and mdspan'
 translation:
   source: documents/vol3-standard-library/containers/10-new-containers-cpp23-26.md
-  source_hash: 0fff6dd5a9ce85052d653533e029de14e090d8372a65806ba358355d25641b1a
-  translated_at: '2026-09-26T02:31:26+00:00'
-  engine: anthropic
-  token_count: 5000
+  source_hash: 7a06064b63adafa3a7b053daf97b89ce4345e98a7c8da3d2f12246411fce388a
+  translated_at: '2026-11-22T16:41:57.547688+00:00'
+  engine: glm-5.3-refresh
+  token_count: 8384
 ---
 # New Standard Containers: flat_map, inplace_vector, and mdspan
 
@@ -56,15 +67,15 @@ int main()
     std::flat_map<int, std::string> m;
     m.insert({3, "three"});
     m.insert({1, "one"});
-    m.insert({2, "two"});          // O(n): keeping the order requires shifting
+    m.insert({2, "two"});          // O(n)：维护有序要搬移
 
-    auto it = m.find(2);           // O(log n): binary search, contiguous memory is cache-friendly
+    auto it = m.find(2);           // O(log n)：二分，连续内存 cache 友好
     std::println("find(2) = {}", it->second);
 
-    m.erase(1);                    // O(n): erasing shifts elements forward
-    // it is invalidated here — like vector, don't use it anymore
+    m.erase(1);                    // O(n)：删了要往前挪
+    // it 在这里已失效——和 vector 一样，别再用
 
-    for (auto [k, v] : m) {        // ordered traversal: 1 is erased, 2 and 3 remain
+    for (auto [k, v] : m) {        // 有序遍历：1 已删，剩下 2, 3
         std::println("{}: {}", k, v);
     }
     return 0;
@@ -84,17 +95,17 @@ Its most endearing property: **when `T` is trivially copyable, `inplace_vector<T
 
 int main()
 {
-    std::inplace_vector<int, 4> v;     // capacity ceiling 4, never heap-allocates
-    static_assert(std::is_trivially_copyable_v<decltype(v)::value_type>); // the stored type int is trivially copyable
-    static_assert(std::is_trivially_copyable_v<decltype(v)>);             // so the whole inplace_vector is trivially copyable
+    std::inplace_vector<int, 4> v;     // 容量上限 4，绝不堆分配
+    static_assert(std::is_trivially_copyable_v<decltype(v)::value_type>); // 由于存储类型int是trivially copyable
+    static_assert(std::is_trivially_copyable_v<decltype(v)>);             // 整个inplace_vector都会是trivially copyable
 
     v.push_back(1);
     v.push_back(2);
     v.push_back(3);
-    v.push_back(4);    // size is now 4, nothing more fits
+    v.push_back(4);    // size 现在 4，无法再塞了
     std::printf("size = %zu, max_size = %zu, capacity = %zu\n", v.size(), v.max_size(), v.capacity());
-    // v.push_back(5) here would exceed capacity and throw bad_alloc
-    // to avoid exceptions use try_push_back / try_emplace_back — no throw past the limit, returns std::optional<T&>, empty means failure
+    // 此时如果 v.push_back(5) 超容量，抛 bad_alloc
+    // 想避免异常用 try_push_back / try_emplace_back——超限不抛，返回std::optional<T&>, 空值来代表失败
     std::optional<int&> res = v.try_push_back(5);
     if (res.has_value()) {
         std::printf("successfully pushed the fifth element %d", res.value());
@@ -133,13 +144,13 @@ int main()
         5, 6, 7, 8,
         9, 10, 11, 12,
     };
-    // treat the 12 ints as a 3-row, 4-column 2D view, row-major
+    // 把 12 个 int 当成 3 行 4 列的二维视图，行优先
     std::mdspan<int, std::extents<size_t, 3, 4>> m(raw);
 
-    std::printf("m[1,2] = %d\n", m[1, 2]);   // row 1, column 2 = 7
-    std::printf("m[2,3] = %d\n", m[2, 3]);   // row 2, column 3 = 12
+    std::printf("m[1,2] = %d\n", m[1, 2]);   // 第 1 行第 2 列 = 7
+    std::printf("m[2,3] = %d\n", m[2, 3]);   // 第 2 行第 3 列 = 12
 
-    // dimensions known only at runtime: use dextents
+    // 维度运行期才知道：用 dextents
     std::mdspan<int, std::dextents<size_t, 2>> d(raw, 3, 4);
     std::printf("d[0,0] = %d, rank = %zu\n", d[0, 0], d.rank());
     return 0;

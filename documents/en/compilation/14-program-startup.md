@@ -16,9 +16,9 @@ cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/compilation/14-program-startup.md
   source_hash: c5105cb0b3b4b77b925b98f32132242600527aa9555260b0fc187c313acaab12
-  translated_at: '2026-10-13T04:28:48+00:00'
-  engine: anthropic
-  token_count: 4700
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 17043
 ---
 
 # Program Startup: From exec to main
@@ -96,7 +96,7 @@ Libraries loaded, tables filled — only then comes our program's entrance. When
 We bring gdb on stage, hang three breakpoints, and run the order for you:
 
 ```text
-$ gdb -q -batch -x three_bp.gdb ./app        # script: b _start / b __libc_start_main / b main / run / bt / c ...
+$ gdb -q -batch -x three_bp.gdb ./app        # 脚本:b _start / b __libc_start_main / b main / run / bt / c ...
 Breakpoint 1 at 0x1070
 Function "__libc_start_main" not defined.
 Breakpoint 2 (__libc_start_main) pending.
@@ -227,7 +227,7 @@ One more thing to notice: the S suffix in the file names — the S of Scrt1, the
 The startup files walked `_start` onto the stage; the table libc walks next is what we look at now. The constructors of C++ global objects register in precisely .init_array. Let's write a global object with a constructor:
 
 ```cpp
-// guard.cpp — a global object with a constructor
+// guard.cpp —— 一个带构造函数的全局对象
 #include <cstdio>
 
 struct Guard {

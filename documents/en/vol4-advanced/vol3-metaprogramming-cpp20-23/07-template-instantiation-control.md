@@ -26,9 +26,9 @@ title: 'Template Instantiation Control: extern template and Compile Times'
 translation:
   source: documents/vol4-advanced/vol3-metaprogramming-cpp20-23/07-template-instantiation-control.md
   source_hash: 5babe3d0f51e25c4a61a2659bf42972eb04fe25739827f08eee002ac44ab0e5f
-  translated_at: '2026-09-26T04:52:14+00:00'
-  engine: anthropic
-  token_count: 1800
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5043
 ---
 # Template Instantiation Control: extern template and Compile Times
 
@@ -47,7 +47,7 @@ To bring this under control, you first reach for the **explicit instantiation de
 ```cpp
 #include "heavy_template.h"
 
-template struct Heavy<int>;   // Instantiate every member of Heavy<int> in this translation unit
+template struct Heavy<int>;   // 在这个翻译单元里实例化 Heavy<int> 的全部成员
 ```
 
 This one line says: "in this `.cpp`, please instantiate all of `Heavy<int>`'s member functions, properly and completely." It usually lives in a file of its own, something like `explicit_inst.cpp`, whose sole job is "centralized instantiation."
@@ -59,7 +59,7 @@ Centralized instantiation alone is not enough: the other translation units know 
 ```cpp
 #include "heavy_template.h"
 
-extern template struct Heavy<int>;   // Heavy<int> is instantiated elsewhere; don't generate it here
+extern template struct Heavy<int>;   // Heavy<int> 别处已经实例化,这里别再生成
 ```
 
 This line tells the compiler: "`Heavy<int>` has already been instantiated in some other translation unit — don't generate code here, just use it." The translation unit is spared the instantiation work; at link time it simply picks up the definitions from `explicit_inst.o`.
@@ -86,10 +86,10 @@ struct Heavy {
 ```
 
 ```cpp
-// use_b.cpp — extern template suppresses instantiation
+// use_b.cpp —— extern template 抑制实例化
 #include "heavy_template.h"
 #include <iostream>
-extern template struct Heavy<int>;   // Instantiated elsewhere; don't generate here
+extern template struct Heavy<int>;   // 别处已实例化,这里别再生成
 void use_b() {
     Heavy<int> h{99};
     std::cout << "use_b: " << h.compute(3) << "\n";
@@ -97,7 +97,7 @@ void use_b() {
 ```
 
 ```cpp
-// explicit_inst.cpp — centralized explicit instantiation
+// explicit_inst.cpp —— 集中显式实例化
 #include "heavy_template.h"
 template struct Heavy<int>;
 ```
@@ -128,7 +128,7 @@ The linker cannot find the definitions of `Heavy<int>`'s constructor and `comput
 Bring up extern template, and almost everyone will say it "reduces compile time." In principle that holds, but how much it actually saves is worth measuring yourself. GCC has a `-ftime-report` flag that prints per-phase timings after compilation, including a dedicated `template instantiation` line. Start with a small file:
 
 ```text
-$ g++ -std=c++20 -c -ftime-report use_b_noextern.cpp   # implicit-instantiation version
+$ g++ -std=c++20 -c -ftime-report use_b_noextern.cpp   # 隐式实例化版
  template instantiation             :   0.08 ( 26%)    14M ( 23%)
 ```
 

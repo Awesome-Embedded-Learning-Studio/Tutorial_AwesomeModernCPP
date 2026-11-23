@@ -24,9 +24,9 @@ title: 'stacktrace: C++23 Finally Standardizes Call Stack Capture'
 translation:
   source: documents/vol3-standard-library/error-utils/67-stacktrace.md
   source_hash: 17120e14d29a16ed047ce71a28dab6d0083a479c0bce5cbacc100a5aa6af3ac3
-  translated_at: '2026-09-26T01:06:30+00:00'
-  engine: anthropic
-  token_count: 6100
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 17157
 ---
 # stacktrace: C++23 Finally Standardizes Call Stack Capture
 
@@ -40,8 +40,8 @@ Before C++23, grabbing the call stack (a backtrace) at runtime meant everyone im
 
 ```cpp
 // Standard: C++23
-auto st = std::stacktrace::current();   // snapshot the stack at this instant
-std::cout << std::to_string(st);        // print as gdb-style multi-line text
+auto st = std::stacktrace::current();   // 在此刻拍一张栈快照
+std::cout << std::to_string(st);        // 打印成 gdb 风格的多行文本
 ```
 
 Note the key design choice here: `current()` only **captures addresses** (the program counter PC plus frame information); it does **not** symbolize. Symbolization (`description()` / `source_file()` / `source_line()`) happens on demand, only when you access a given `stacktrace_entry`. This decoupling of capture and symbolization directly drives the performance differences we'll measure later — capture is cheap, symbolization is what costs.
@@ -57,9 +57,9 @@ Of `stacktrace_entry`'s query interface, only three members actually fetch data:
 
 ```cpp
 // Standard: C++23
-std::string description() const;     // human-readable demangled description, e.g. "foo(int)"
-std::string source_file() const;     // source file path; empty when there are no debug symbols
-std::uint_least32_t source_line() const;  // source line number; 0 when there are no debug symbols
+std::string description() const;     // demangle 后的可读描述，如 "foo(int)"
+std::string source_file() const;     // 源文件路径，无调试符号时为空
+std::uint_least32_t source_line() const;  // 源文件行号，无调试符号时为 0
 ```
 
 Let's run a minimal example that prints every member of every frame:
@@ -217,8 +217,8 @@ The function name still comes through, but source file and line are completely e
 
 ```text
 --- entry 0 ---
-  description   : [inspect(int)]    # stripped, but linked with -rdynamic
-  source_file   : []                # debug info is still gone, no line number
+  description   : [inspect(int)]    # strip 后, 但链接时带了 -rdynamic
+  source_file   : []                # 调试信息还是没了, 行号拿不到
 ```
 
 This is the real engineering trade-off. Our advice is blunt:
@@ -248,15 +248,15 @@ namespace my_lib {
     int compute_value(int a, int b) {
         auto st = std::stacktrace::current();
         auto e = st[0];
-        // the description, already demangled by stacktrace_entry
+        // stacktrace_entry 已经 demangle 过的描述
         std::cout << "description            : " << e.description() << '\n';
 
-        // fetch the raw mangled symbol via dladdr for comparison
+        // 用 dladdr 拿原始 mangled 符号做对比
         Dl_info info{};
         dladdr(reinterpret_cast<void*>(e.native_handle()), &info);
         std::cout << "dladdr dli_sname(原始) : " << (info.dli_sname ? info.dli_sname : "<null>") << '\n';
 
-        // manually demangle the raw symbol
+        // 手动 demangle 原始符号
         int status = 0;
         char* demangled = abi::__cxa_demangle(info.dli_sname, nullptr, nullptr, &status);
         std::cout << "手动 demangle          : " << (demangled ? demangled : "<null>") << '\n';
@@ -336,7 +336,7 @@ void log_stacktrace() {
 }
 
 void broken(int* p) {
-    *p = 42;   // deliberate null-pointer dereference, triggers SIGSEGV
+    *p = 42;   // 故意空指针解引用, 触发 SIGSEGV
 }
 
 void outer(int n) {
@@ -347,7 +347,7 @@ void outer(int n) {
 int main() {
     std::signal(SIGSEGV, [](int) {
         log_stacktrace();
-        std::_Exit(1);   // use _Exit to avoid trouble from the destructor chain
+        std::_Exit(1);   // 用 _Exit 避免析构链再出问题
     });
     outer(3);
     return 0;
@@ -393,7 +393,7 @@ We planted a seed earlier: `current()` only captures addresses, and symbolizatio
 void deep(int n) {
     if (n == 0) {
         auto st = std::stacktrace::current();
-        volatile auto sz = st.size();   // prevent it being optimized away, but don't trigger symbolization
+        volatile auto sz = st.size();   // 防止被优化掉, 但不触发符号化
         (void)sz;
         return;
     }
@@ -402,16 +402,16 @@ void deep(int n) {
 
 int main() {
     constexpr int kIters = 100000;
-    for (int i = 0; i < 1000; ++i) deep(5);   // warm-up
+    for (int i = 0; i < 1000; ++i) deep(5);   // 预热
 
-    // capture only
+    // 只采集
     auto t1 = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < kIters; ++i) deep(5);
     auto t2 = std::chrono::high_resolution_clock::now();
     double ns_capture =
         std::chrono::duration<double, std::nano>(t2 - t1).count() / kIters;
 
-    // capture + full symbolization
+    // 采集 + 全符号化
     int sink = 0;
     t1 = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < kIters; ++i) {

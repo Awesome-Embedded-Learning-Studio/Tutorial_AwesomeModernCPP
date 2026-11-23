@@ -16,9 +16,9 @@ cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/compilation/15-lto-and-modern-linkers.md
   source_hash: 634298c1f2954cb5b5fa950d29ee87037870d09bd8b9b436eca1e319cbbf80e0
-  translated_at: '2026-10-13T04:37:26+00:00'
-  engine: anthropic
-  token_count: 4700
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 13699
 ---
 
 # LTO and Modern Linkers: Moving the Optimization Boundary to Link Time
@@ -34,12 +34,12 @@ The environment disclosure as usual: my experiments all ran in WSL2, on the comb
 For the specimen we use the smallest two files:
 
 ```cpp
-// util.cpp: a small function, its implementation living in another translation unit
+// util.cpp:一个小函数,实现放在另一个翻译单元里
 int scale(int v) { return v * 7 + 1; }
 ```
 
 ```cpp
-// main.cpp: calls scale, which lives in util.cpp
+// main.cpp:调用住在 util.cpp 里的 scale
 #include <cstdio>
 int scale(int);
 int main() { std::printf("%d\n", scale(6)); }
@@ -94,7 +94,7 @@ GNU ld on its own cannot read .gnu.lto_ sections; somebody has to do the transla
 ```text
 $ g++ -O2 -flto util_lto.o main_lto.o -o app -v
  /usr/lib/gcc/x86_64-pc-linux-gnu/16/collect2 -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/16/liblto_plugin.so \
-   -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/16/lto-wrapper ...(a long tail follows, which I trimmed)
+   -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/16/lto-wrapper ...(后面一长串,笔者裁了)
  /usr/lib/gcc/x86_64-pc-linux-gnu/16/lto1 -quiet -dumpbase ./app.wpa ... -fwpa -fresolution=/tmp/ccdZwZ4R.res ...
  /usr/lib/gcc/x86_64-pc-linux-gnu/16/lto1 -quiet -dumpbase ./app.ltrans0.ltrans ... -fltrans @/tmp/ccX1B1sV -o /tmp/cc6ZjdaB.s
 ```
@@ -129,7 +129,7 @@ The link simply passed — and printed 43. Looking back at -v explains it: on th
 The meeting brings one more by-product with it. In part 07 we verified two precedents. The kind where a type wears two faces, -Wodr can catch: it is GCC's warning switch dedicated to reporting ODR violations — ODR's full name is the One Definition Rule, the single-definition rule — and once LTO is on, it names names on the spot. The kind where an inline function carries two bodies: we hung -flto -Wall -Wextra on that one, and its performance was total silence. Rerunning the first costs little, so we take it through once as the controlled comparison. In config.h we let the macro cut out the two faces:
 
 ```cpp
-// config.h (wrapped in a header guard)
+// config.h(外面包着头文件守卫)
 struct Config {
     int limit;
 #ifdef FLIP
@@ -207,7 +207,7 @@ check_ipo_supported(RESULT ipo_ok OUTPUT ipo_out)
 if(ipo_ok)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 else()
-  message(WARNING "IPO not supported: ${ipo_out}")
+  message(WARNING "IPO 不支持: ${ipo_out}")
 endif()
 add_executable(app main.cpp util.cpp)
 ```

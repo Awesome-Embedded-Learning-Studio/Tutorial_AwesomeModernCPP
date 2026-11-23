@@ -21,10 +21,10 @@ tags:
 title: decltype and Return Type Deduction
 translation:
   source: documents/vol2-modern-features/ch06-auto-decltype/02-decltype.md
-  source_hash: da2d916093aa3d475a9f31ad8c2a8a95b519d125f02fa1fd4c42ccdaf53abb90
-  translated_at: '2026-09-25T15:48:36+00:00'
-  engine: anthropic
-  token_count: 4900
+  source_hash: 621c6127ff425bc04cacb4bf6e8b6a5b4fff20040a9cb35626a43cae0b3248dd
+  translated_at: '2026-11-22T16:36:41+00:00'
+  engine: glm-5.3-refresh
+  token_count: 7362
 ---
 # decltype and Return Type Deduction: Keeping an Expression's Type Exactly As Is
 
@@ -56,7 +56,7 @@ But for a parenthesized variable name—`decltype((x))`—it returns the type of
 
 ```cpp
 int x = 42;
-decltype((x)) c = x;       // int& (not int!)
+decltype((x)) c = x;       // int&（不是 int！）
 ```
 
 The root of this difference lies in C++'s type system: `(x)` is not just a name—it is an expression, and since `x` evaluated as an expression yields an lvalue, `decltype` returns `int&`. Without the parentheses, `x` is just a variable name, and `decltype` looks up its declared type directly.
@@ -94,10 +94,10 @@ For general expressions, `decltype` decides the type from the expression's value
 ```cpp
 int x = 42;
 
-decltype(x + 1) a = 0;    // int (x + 1 is an rvalue)
-decltype(x = 10) b = x;   // int& (assignment expressions return an lvalue reference)
-decltype(++x) c = x;      // int& (prefix ++ returns an lvalue reference)
-decltype(x++) d = 0;      // int (postfix ++ returns an rvalue)
+decltype(x + 1) a = 0;    // int（x + 1 是右值）
+decltype(x = 10) b = x;   // int&（赋值表达式返回左值引用）
+decltype(++x) c = x;      // int&（前置 ++ 返回左值引用）
+decltype(x++) d = 0;      // int（后置 ++ 返回右值）
 ```
 
 ------
@@ -111,14 +111,14 @@ C++14 introduced `decltype(auto)`, which combines `auto`'s brevity (no need to w
 ```cpp
 int x = 42;
 
-auto a = (x);            // int (auto drops the reference)
-decltype(auto) b = (x);  // int& (decltype keeps the reference)
+auto a = (x);            // int（auto 丢弃引用）
+decltype(auto) b = (x);  // int&（decltype 保留引用）
 ```
 
 Note the parentheses in `(x)`—because `decltype` returns a reference for a parenthesized expression, `decltype(auto)` deduces `int&`. If you don't want a reference, just leave the parentheses out:
 
 ```cpp
-decltype(auto) c = x;    // int (no parentheses, decltype(x) is int)
+decltype(auto) c = x;    // int（不加括号，decltype(x) 是 int）
 ```
 
 ### Application in Function Return Types
@@ -129,11 +129,11 @@ decltype(auto) c = x;    // int (no parentheses, decltype(x) is int)
 class Container {
 public:
     decltype(auto) operator[](std::size_t index) {
-        return data_[index];  // data_[index] returns int&; decltype(auto) preserves it
+        return data_[index];  // data_[int] 返回 int&，decltype(auto) 保留
     }
 
     decltype(auto) operator[](std::size_t index) const {
-        return data_[index];  // the const version returns const int&
+        return data_[index];  // const 版本返回 const int&
     }
 
 private:
@@ -150,12 +150,12 @@ If you used `auto` instead of `decltype(auto)`, `operator[]`'s return type would
 ```cpp
 decltype(auto) get_value() {
     int x = 42;
-    return (x);   // returns int&, but x is destroyed when the function ends — dangling reference!
+    return (x);   // 返回 int&，但 x 在函数结束后销毁——悬空引用！
 }
 
 decltype(auto) safe_get_value() {
     int x = 42;
-    return x;     // returns int (no parentheses): a value copy, safe
+    return x;     // 返回 int（不加括号），值拷贝，安全
 }
 ```
 
@@ -185,7 +185,7 @@ Why can't the return type go up front? Because at the position of the function s
 C++14 allows `auto` as the return type directly, with the compiler deducing it from the `return` statement. In most cases the trailing return type is no longer needed:
 
 ```cpp
-// C++14 simplified version
+// C++14 简化版
 template<typename T, typename U>
 auto add(T t, U u) {
     return t + u;
@@ -231,7 +231,7 @@ This `perfect_forward` function forwards the result of invoking `f` exactly. If 
 #include <type_traits>
 #include <vector>
 
-// Check whether type T has a push_back method
+// 检查类型 T 是否有 push_back 方法
 template<typename T, typename Arg>
 struct has_push_back {
 private:
@@ -256,17 +256,19 @@ The trick here is SFINAE (Substitution Failure Is Not An Error): if `U` has a `p
 
 ### The Purpose of std::declval
 
+This one is pretty obscure — I only found out it existed by searching = =.
+
 `std::declval<T>()` is a utility function that may only be used in unevaluated contexts. It returns an rvalue reference `T&&`, without requiring `T` to have a default constructor. That way you can conjure up a "hypothetical" object inside unevaluated contexts such as `decltype`, `sizeof`, and `noexcept` to probe type information:
 
 ```cpp
 #include <utility>
 
-// Without needing to know Container's default constructor,
-// we can still get its iterator type
+// 不需要知道 Container 的默认构造函数
+// 就能获取其迭代器类型
 template<typename Container>
 using iterator_t = decltype(std::declval<Container>().begin());
 
-// Get the result type of adding two values
+// 获取两个值相加的结果类型
 template<typename T, typename U>
 using add_result_t = decltype(std::declval<T>() + std::declval<U>());
 ```
@@ -306,8 +308,8 @@ Sometimes you need to know the exact type of an element in a range-based for loo
 template<typename Range>
 void process_range(Range&& r) {
     for (auto&& elem : r) {
-        // what is the type of elem?
-        using elem_t = decltype(elem);
+        // elem 的类型是什么？
+        using elem_t = decltype(elem); // 好没活其实，手动哭笑
         process_element(std::forward<elem_t>(elem));
     }
 }

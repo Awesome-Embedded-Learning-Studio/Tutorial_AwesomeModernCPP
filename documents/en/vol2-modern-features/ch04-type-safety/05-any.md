@@ -22,16 +22,20 @@ tags:
 title: 'std::any and Type Erasure'
 translation:
   source: documents/vol2-modern-features/ch04-type-safety/05-any.md
-  source_hash: a67c170042ec8915be17dd906bbf4c797f42ffddc95dfcccbc92591a1bef1281
-  translated_at: '2026-09-25T15:38:57+00:00'
-  engine: anthropic
-  token_count: 3300
+  source_hash: f8dd4d5c102a49c8adc535a24fdddd63ef4abecd8c5555fa2a5d1af200068613
+  translated_at: '2026-11-22T16:36:41+00:00'
+  engine: glm-5.3-refresh
+  token_count: 12625
 ---
 # std::any and Type Erasure
 
-I believe that when many people first encounter `std::any`, their reaction is: isn't this just a wrapper around `void*`? (Mine really was — I even grumbled about the standard library spending its time on this instead of real work.) What's it good for? It wasn't until I was writing the configuration module of a plugin system that I came around — `void*` throws away all type information, so whenever you take a value back out of it you are guessing blind (and yes, you could carry a little type information along in some side channel, but we all know how easily that kind of auxiliary bookkeeping drifts out of sync and turns into a state-consistency nightmare); `std::any` can also hold any type, but it **remembers** what it holds. When you fetch the value with the wrong type, it throws an exception instead of handing you a pile of memory garbage.
+I believe that when many people first encounter `std::any`, the reaction is more or less the same: isn't this just a wrapper around `void*`? What's it good for? Back in the day I grumbled too, about the standard library not doing proper work. It wasn't until I actually built the configuration module of a plugin system that my view shifted—slightly (note: only slightly; I still think `std::any` isn't of great use!).
 
-The core capability of `std::any` (introduced in C++17) is "store a value of any type, and take it back out safely when needed". It pulls this off with a technique called type erasure — the concrete type information is hidden when the value goes in, and safety is restored with a type check when the value comes out. In this chapter we will dig into how `any` works, where it fits, and why most of the time you should actually be using `variant` instead of `any`.
+C's `void*` throws away all type information: taking a value back out of its hands is pure guesswork on our part. Of course, you can keep a separate record of the type off to the side, but information and data stored apart are one lapse away from no longer matching—and that's exactly how the big illness of inconsistent state is born. `std::any` is different: we can load any type into it, and it **remembers** what it holds. Fetch the value with the wrong type and it throws an exception to warn you, instead of shoving a pile of memory garbage at you.
+
+`std::any` was introduced in C++17, and it promises exactly one thing: store a value of any type, and take it back out safely when needed. Holding that capability up is the type erasure we already took apart in the article on `std::function`. The concrete type is hidden on the way in; on the way out, a type check brings the safety back.
+
+Of course, this thing actually still loses to `variant`—as for why it loses to the `variant` we covered earlier, do read on (smile).
 
 ## Step 1 — The Design Motivation Behind `any`
 
@@ -55,17 +59,17 @@ In C, this kind of requirement is usually met with `void*`. But `void*` is compl
 
 int main()
 {
-    std::any a = 42;                     // holds an int
-    a = 3.14;                            // now holds a double
-    a = std::string("hello");            // now holds a std::string
+    std::any a = 42;                     // 持有 int
+    a = 3.14;                            // 现在持有 double
+    a = std::string("hello");            // 现在持有 std::string
 
-    // Empty state
-    std::any empty;                      // holds no value
-    std::any also_empty = std::any{};    // same as above
+    // 空状态
+    std::any empty;                      // 不持有任何值
+    std::any also_empty = std::any{};    // 同上
 
-    // In-place construction
+    // 就地构造
     std::any v(std::in_place_type<std::vector<int>>, 10, 42);
-    // Constructs a vector<int> containing 10 copies of 42
+    // 构造一个包含 10 个 42 的 vector<int>
 }
 ```
 
@@ -76,27 +80,27 @@ Unlike `variant`, `any`'s list of candidate types is completely open — you can
 ```cpp
 std::any a = 42;
 
-// Check whether it holds a value
+// 检查是否有值
 if (a.has_value()) {
     std::cout << "has value\n";
 }
 
-// Get type information
-std::cout << "type: " << a.type().name() << "\n";  // implementation-defined (e.g. "i" or "int")
+// 获取类型信息
+std::cout << "type: " << a.type().name() << "\n";  // 实现相关（如 "i" 或 "int"）
 
-// Retrieve the value: std::any_cast
+// 取值：std::any_cast
 try {
-    int val = std::any_cast<int>(a);        // OK, returns 42
+    int val = std::any_cast<int>(a);        // OK，返回 42
     std::cout << "value: " << val << "\n";
 
-    // double bad = std::any_cast<double>(a);  // throws std::bad_any_cast!
+    // double bad = std::any_cast<double>(a);  // 抛出 std::bad_any_cast！
 } catch (const std::bad_any_cast& e) {
     std::cout << "wrong type: " << e.what() << "\n";
 }
 
-// Pointer version: no exception, returns nullptr
-int* ptr = std::any_cast<int>(&a);         // OK, ptr is non-null
-double* bad = std::any_cast<double>(&a);   // bad is nullptr
+// 指针版本：不抛异常，返回 nullptr
+int* ptr = std::any_cast<int>(&a);         // OK，ptr 不为空
+double* bad = std::any_cast<double>(&a);   // bad 为 nullptr
 ```
 
 `std::any_cast` has two overloads: the by-reference version throws a `std::bad_any_cast` exception when the type doesn't match; the pointer version returns `nullptr` when the type doesn't match. If you need to check types frequently, the pointer version is more efficient (no exception overhead involved).
@@ -105,8 +109,8 @@ Here is an easy trap to step into: `std::any_cast<int>(a)` returns a **copy** of
 
 ```cpp
 std::any a = 42;
-std::any_cast<int&>(a) = 100;  // Changes the value inside the any to 100
-// int copy = std::any_cast<int>(a); copy = 200;  // Only modifies the copy; the any itself is unchanged
+std::any_cast<int&>(a) = 100;  // 修改 any 内部的值为 100
+// int copy = std::any_cast<int>(a); copy = 200;  // 只修改了拷贝，any 内部没变
 ```
 
 ## Step 3 — Type Erasure and the Small Buffer Optimization
@@ -119,12 +123,12 @@ To optimize the performance of small objects, mainstream standard library implem
 
 ```cpp
 std::cout << "sizeof(std::any): " << sizeof(std::any) << "\n";
-// Typical output: 16 or 32 (implementation-dependent)
-// This covers the SBO buffer + the type-info pointer + management data
+// 典型输出：16、32 或 64（libstdc++ / libc++ / MSVC 依次对应）
+// 这包括了 SBO 缓冲区 + 类型信息指针 + 管理数据
 
-// Small object: stored inline (SBO kicks in)
+// 小对象：栈上存储（SBO 生效）
 std::any small = 42;
-// Large object: allocated on the heap
+// 大对象：堆上分配
 std::any large = std::vector<int>(1000000, 0);
 ```
 
@@ -163,12 +167,12 @@ Understanding `any`'s performance overhead is crucial for using it correctly.
 **Copy overhead**: Copying an `any` deep-copies the value it holds. For a large object, that is a full deep copy. If you need to avoid this overhead, consider wrapping a `std::shared_ptr<T>` inside the `std::any` — copying the `any` then just increments the reference count instead of copying the underlying object.
 
 ```cpp
-// Avoiding copies of large objects: wrap in shared_ptr
+// 避免大对象拷贝：用 shared_ptr 包裹
 auto big_data = std::make_shared<std::vector<int>>(1000000, 0);
-std::any a = big_data;  // Copies the shared_ptr, not the vector
+std::any a = big_data;  // 拷贝 shared_ptr，不拷贝 vector
 
 auto retrieved = std::any_cast<std::shared_ptr<std::vector<int>>>(a);
-// retrieved points to the same vector; the reference count increases
+// retrieved 指向同一个 vector，引用计数增加
 ```
 
 ## Step 6 — Where `any` Fits
@@ -197,7 +201,7 @@ public:
         auto it = entries_.find(key);
         if (it == entries_.end()) return std::nullopt;
 
-        // Try to obtain the value with the correct type
+        // 尝试获取正确类型的值
         const T* ptr = std::any_cast<T>(&it->second);
         if (!ptr) return std::nullopt;
 
@@ -213,7 +217,7 @@ private:
     std::unordered_map<std::string, std::any> entries_;
 };
 
-// Usage
+// 使用
 Config cfg;
 cfg.set("server_host", std::string("192.168.1.1"));
 cfg.set("server_port", 8080);
@@ -222,8 +226,8 @@ cfg.set("max_retries", 3);
 
 auto host = cfg.get<std::string>("server_host");    // optional<string> = "192.168.1.1"
 auto port = cfg.get<int>("server_port");            // optional<int> = 8080
-auto bad  = cfg.get<double>("server_host");         // optional<double> = nullopt (type mismatch)
-auto missing = cfg.get<int>("nonexistent");         // optional<int> = nullopt (key doesn't exist)
+auto bad  = cfg.get<double>("server_host");         // optional<double> = nullopt（类型不匹配）
+auto missing = cfg.get<int>("nonexistent");         // optional<int> = nullopt（键不存在）
 ```
 
 This "property dictionary of arbitrary types" pattern is extremely common in game engines, GUI frameworks, and plugin systems. `any` provides enough flexibility to store values of different types, while `any_cast` guarantees type safety on retrieval.
@@ -269,7 +273,7 @@ private:
     std::unordered_map<std::string, std::any> attrs_;
 };
 
-// Usage
+// 使用
 Entity player;
 player.set_attribute("health", 100);
 player.set_attribute("name", std::string("Alice"));
@@ -283,21 +287,21 @@ auto hp = player.get_attribute<int>("health");  // optional<int> = 100
 When you design a plugin system, the interface between the host and the plugins may need to pass data "of types that the host and the plugins each define on their own". Since neither side's types are visible to the other at compile time, `any` can serve as a neutral transfer container:
 
 ```cpp
-// Host side
+// 宿主定义
 using PluginData = std::any;
 
 class PluginHost {
 public:
-    // Plugins use this interface to send "any-type" data to the host
+    // 插件通过这个接口发送"任意类型"的数据给宿主
     virtual void on_plugin_data(const std::string& key, const PluginData& data) = 0;
 };
 
-// Plugin side
+// 插件端
 class MyPlugin {
 public:
     void send_custom_data(PluginHost& host)
     {
-        // The plugin can send data of any type
+        // 插件可以发送任何类型的数据
         struct CustomResult { int code; std::string message; };
         host.on_plugin_data("result", CustomResult{0, "success"});
     }
@@ -318,20 +322,20 @@ class MiniAny {
 public:
     MiniAny() = default;
 
-    // Construct from any type
+    // 从任意类型构造
     template <typename T>
     MiniAny(T value) : holder_(new Holder<T>(std::move(value)))
     {}
 
-    // Copy constructor
+    // 拷贝构造
     MiniAny(const MiniAny& other)
         : holder_(other.holder_ ? other.holder_->clone() : nullptr)
     {}
 
-    // Move constructor
+    // 移动构造
     MiniAny(MiniAny&& other) noexcept = default;
 
-    // Assignment
+    // 赋值
     MiniAny& operator=(MiniAny other) noexcept
     {
         swap(holder_, other.holder_);
@@ -345,14 +349,14 @@ public:
         return holder_ ? holder_->type() : typeid(void);
     }
 
-    // The internal conceptual interface
+    // 内部概念接口
     struct HolderBase {
         virtual ~HolderBase() = default;
         virtual const std::type_info& type() const noexcept = 0;
         virtual std::unique_ptr<HolderBase> clone() const = 0;
     };
 
-    // Concrete type wrapper
+    // 具体类型包装
     template <typename T>
     struct Holder : HolderBase {
         T value;
@@ -373,7 +377,7 @@ public:
     std::unique_ptr<HolderBase> holder_;
 };
 
-// Type-safe retrieval function
+// 类型安全的取值函数
 template <typename T>
 T mini_any_cast(const MiniAny& a)
 {
@@ -383,7 +387,7 @@ T mini_any_cast(const MiniAny& a)
     if (a.type() != typeid(T)) {
         throw std::runtime_error("bad any cast: type mismatch");
     }
-    // Downcast: safe, because the type has already been verified
+    // 向下转型：安全，因为已经验证了类型
     auto* holder = dynamic_cast<MiniAny::Holder<T>*>(a.holder_.get());
     return holder->value;
 }

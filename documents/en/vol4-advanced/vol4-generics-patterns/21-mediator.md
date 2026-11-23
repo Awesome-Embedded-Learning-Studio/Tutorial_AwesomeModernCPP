@@ -19,9 +19,9 @@ prerequisites:
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/21-mediator.md
   source_hash: 6a8520fa246562d58f1f345f4ce615e08ada0fd2760d2a0177c7b51c44dfba15
-  translated_at: '2026-09-26T05:58:45+00:00'
-  engine: anthropic
-  token_count: 11000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 16445
 ---
 
 # Mediator Pattern: Untangling the Web into a Star
@@ -43,7 +43,7 @@ With that, let's proceed step by step: start from the most intuitive way of writ
 The code most people sketch on reflex the first time they hit "four controls must coordinate" looks like this: every control stuffs pointers to the other controls into itself, and the callbacks reach straight out and modify.
 
 ```cpp
-class Button;   // Forward-declare each other; in the .cpp files you'll have to #include each other
+class Button;   // 互相前向声明,真到 .cpp 里就要互相 #include
 class Textbox;
 class Listbox;
 
@@ -113,7 +113,7 @@ public:
 
 protected:
     void notify(const std::string& event) {
-        mediator_->notify(id_, event);   // Talk only to the mediator
+        mediator_->notify(id_, event);   // 只跟中介者说话
     }
 
     IMediator* mediator_;
@@ -149,10 +149,10 @@ public:
     const std::string& name() const { return name_; }
 
     void send_to(const std::string& to, const std::string& msg) {
-        mediator_->send_message(name_, to, msg);   // Hand off to the mediator
+        mediator_->send_message(name_, to, msg);   // 转交中介者
     }
     void broadcast(const std::string& msg) {
-        mediator_->broadcast(name_, msg);          // Hand off to the mediator
+        mediator_->broadcast(name_, msg);          // 转交中介者
     }
     void receive(const std::string& from, const std::string& msg) {
         std::cout << "[" << name_ << "] recv from " << from
@@ -161,7 +161,7 @@ public:
 
 private:
     std::string name_;
-    IMediator* mediator_;   // ← depends only on the abstraction; unaware other Users exist
+    IMediator* mediator_;   // ← 只依赖抽象,不知道其它 User 的存在
 };
 ```
 
@@ -181,7 +181,7 @@ public:
         if (it != users_.end()) {
             it->second->receive(from, msg);
         } else {
-            // The "target doesn't exist" policy, centralized in the mediator
+            // 「目标不存在」的处理策略,集中放在中介者里
             std::cout << "[room] " << to << " not online (handled by mediator)\n";
         }
     }
@@ -224,7 +224,7 @@ public:
     using Widget::Widget;
     void set_text(const std::string& s) {
         text_ = s;
-        notify("changed");    // The text changed — tell the mediator
+        notify("changed");    // 文本一变,告诉中介者
     }
     const std::string& text() const { return text_; }
 private:
@@ -267,7 +267,7 @@ Next comes the concrete mediator, gathering all three of the product manager's r
 class BookSearchDialog : public IMediator {
 public:
     BookSearchDialog() {
-        // Each control hands itself to the mediator at birth
+        // 控件出生时就把自己交给中介者
         title_tb_  = std::make_unique<Textbox>("title",  this);
         author_tb_ = std::make_unique<Textbox>("author", this);
         list_      = std::make_unique<Listbox>("results", this);
@@ -277,12 +277,12 @@ public:
     void notify(const std::string& sender, const std::string& event) override {
         if (event != "changed") return;
 
-        // Rule 1: input changed -> refilter the candidate list by the current input
+        // 规则 1:输入变化 -> 按当前输入刷新候选列表
         std::cout << "[dialog] refilter by '"
                   << title_tb_->text() << "' / '"
                   << author_tb_->text() << "'\n";
 
-        // Rule 2: submit is allowed only when both title and author are non-empty
+        // 规则 2:标题和作者都非空,才允许提交
         if (!title_tb_->text().empty() && !author_tb_->text().empty()) {
             submit_btn_->enable();
             std::cout << "[dialog] submit enabled\n";
@@ -308,11 +308,11 @@ Using it looks like this — whoever needs coordination deals only with the dial
 ```cpp
 int main() {
     BookSearchDialog dlg;
-    dlg.submit().click();                    // empty input -> button disabled, the click does nothing
-    dlg.title().set_text("C++");             // title only -> still disabled
+    dlg.submit().click();                    // 空输入 -> 按钮 disabled,点不动
+    dlg.title().set_text("C++");             // 只有标题 -> 仍 disabled
     dlg.submit().click();
-    dlg.author().set_text("Stroustrup");     // both present -> enabled
-    dlg.submit().click();                    // this time it works
+    dlg.author().set_text("Stroustrup");     // 两个都有 -> enabled
+    dlg.submit().click();                    // 这次能点
 }
 ```
 
@@ -349,7 +349,7 @@ class EventBus {
 public:
     template <typename Event>
     void subscribe(std::function<void(const Event&)> handler) {
-        // Erase a "concrete-typed handler" into a "uniform handler that eats std::any"
+        // 把「具体类型 handler」擦除成「吃 std::any 的统一 handler」
         handlers_[std::type_index(typeid(Event))]
             .push_back([h = std::move(handler)](const std::any& payload) {
                 h(std::any_cast<const Event&>(payload));
@@ -359,7 +359,7 @@ public:
     template <typename Event>
     void publish(const Event& event) {
         auto it = handlers_.find(std::type_index(typeid(Event)));
-        if (it == handlers_.end()) return;   // no subscribers -> safely ignored
+        if (it == handlers_.end()) return;   // 无人订阅 -> 安全忽略
         for (auto& h : it->second) h(event);
     }
 
@@ -424,7 +424,7 @@ struct Pong { double y; };
 int main() {
     std::any a = Ping{42};
     try {
-        // The subscriber wrongly assumes the payload is Pong — the compiler says nothing
+        // 订阅者误以为 payload 是 Pong —— 编译器一声不吭
         const Pong& bad = std::any_cast<const Pong&>(a);
         std::cout << "no throw? y=" << bad.y << "\n";
     } catch (const std::bad_any_cast& e) {

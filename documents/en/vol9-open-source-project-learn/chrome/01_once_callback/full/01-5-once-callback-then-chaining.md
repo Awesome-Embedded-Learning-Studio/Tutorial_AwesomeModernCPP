@@ -24,16 +24,16 @@ title: 'OnceCallback hands-on (V): chaining with then'
 translation:
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/01-5-once-callback-then-chaining.md
   source_hash: 6c99ff4aa2c2b1ae1b132d119a3cf79fd6d8600cc490376ee026cdce0638d3a9
-  translated_at: '2026-09-26T00:27:54+00:00'
-  engine: anthropic
-  token_count: 1700
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6394
 ---
 # OnceCallback hands-on (V): chaining with then
 
 `then()` threads two callbacks into a single pipeline, feeding the previous one's output into the next. It's the same old Unix pipe trick, and you've surely seen it before:
 
 ```bash
-# Unix pipe: cmd1's output is cmd2's input
+# Unix 管道：cmd1 的输出是 cmd2 的输入
 echo "hello" | tr 'h' 'H' | wc -c
 ```
 
@@ -41,9 +41,9 @@ Carried over to callbacks, it's the very same story — callback A's output goes
 
 ```cpp
 auto pipeline = OnceCallback<int(int, int)>([](int a, int b) {
-    return a + b;          // step one: 3 + 4 = 7
+    return a + b;          // 第一步：3 + 4 = 7
 }).then([](int sum) {
-    return sum * 2;        // step two: 7 * 2 = 14
+    return sum * 2;        // 第二步：7 * 2 = 14
 });
 
 int result = std::move(pipeline).run(3, 4);  // result == 14
@@ -56,7 +56,7 @@ At first we figured it would be easy: `then()` just stitches two callbacks toget
 If you've ever used Unix pipes, the semantics of `then()` are pure intuition:
 
 ```bash
-# Unix pipe: cmd1's output is cmd2's input
+# Unix 管道：cmd1 的输出是 cmd2 的输入
 echo "hello" | tr 'h' 'H' | wc -c
 ```
 
@@ -64,9 +64,9 @@ echo "hello" | tr 'h' 'H' | wc -c
 
 ```cpp
 auto pipeline = OnceCallback<int(int, int)>([](int a, int b) {
-    return a + b;          // step one: 3 + 4 = 7
+    return a + b;          // 第一步：3 + 4 = 7
 }).then([](int sum) {
-    return sum * 2;        // step two: 7 * 2 = 14
+    return sum * 2;        // 第二步：7 * 2 = 14
 });
 
 int result = std::move(pipeline).run(3, 4);  // result == 14
@@ -82,7 +82,7 @@ Drawn out, the ownership chain is a single line:
 
 ```mermaid
 graph LR
-    A["new OnceCallback"] --> B["move_only_function"] --> C["lambda closure"] --> D["original callback + continuation"]
+    A["新 OnceCallback"] --> B["move_only_function"] --> C["lambda 闭包"] --> D["原回调 + 后续回调"]
 ```
 
 Every link in that line is move semantics passing the baton — no copies, no sharing. This line is precisely what the whole set of move-only constraints looks like inside `then()`.

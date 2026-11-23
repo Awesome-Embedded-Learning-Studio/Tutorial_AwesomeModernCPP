@@ -20,9 +20,9 @@ related:
 translation:
   source: documents/vol7-engineering/cpp-development-on-wsl.md
   source_hash: 3772ab37f7f578896f0b5d99ae70294a2857e8f96b006d42e704ad592ad3f0a7
-  translated_at: '2026-09-26T05:01:55+00:00'
-  engine: anthropic
-  token_count: 4500
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 19005
 ---
 
 # C++ engineering on WSL — vscode + clangd in depth, with full debugging
@@ -67,16 +67,16 @@ sudo apt install -y build-essential cmake ninja-build gdb clangd clang-tidy clan
 ::: details A few useful extras to install along the way
 
 ```bash
-# valgrind memory checking (used in volume 6, the memory-safety volume)
+# valgrind 内存检查（卷六内存安全那卷会用）
 sudo apt install -y valgrind
 
-# ccache to speed up rebuilds (especially worth it on CI and large projects)
+# ccache 加速重编（CI 上和大型项目特别值）
 sudo apt install -y ccache
 
-# Several build tools that pair with cmake
+# 跟 cmake 一起用的几种 build 工具
 sudo apt install -y ninja-build
 
-# See what symbols live in a build artifact and which shared libraries it depends on
+# 看 build 产物里有什么符号、依赖哪些动态库
 sudo apt install -y binutils
 ```
 
@@ -139,15 +139,15 @@ Once connected, look at the bottom-left corner of the vscode window: there shoul
 Next comes the biggest trap for newcomers: **vscode extensions are installed on both sides**. Extensions on the Windows side handle UI (themes, icons, keybindings); extensions on the WSL side handle the Linux work (code understanding, debugging, building). After Remote-WSL connects, the extensions panel splits into two groups: "LOCAL - INSTALLED" (the Windows side) and "WSL: UBUNTU - INSTALLED" (the WSL side). The clangd, C/C++, and CMake Tools extensions you need must go into the WSL group (click "Install in WSL: Ubuntu" next to the extension).
 
 ```text
-Extensions panel (after connecting to WSL)
-├── LOCAL - INSTALLED        ← Windows side: themes, icons, Remote-WSL itself
+扩展面板(连上 WSL 之后)
+├── LOCAL - INSTALLED        ← Windows 端:主题、图标、Remote-WSL 自身
 │   ├── Remote - WSL  ✓
 │   ├── Material Icon Theme
 │   └── ...
-└── WSL: UBUNTU - INSTALLED  ← WSL side: install clangd / C/C++ / CMake Tools here
-    ├── clangd           ← code understanding (completion/jump-to-definition/diagnostics)
-    ├── C/C++            ← debugging (keep cppdbg, disable IntelliSense)
-    └── CMake Tools      ← CMake configure/build/kit selection (optional)
+└── WSL: UBUNTU - INSTALLED  ← WSL 端:这里装 clangd / C/C++ / CMake Tools
+    ├── clangd           ← 代码理解(补全/跳转/报错)
+    ├── C/C++            ← 调试(留 cppdbg,关 IntelliSense)
+    └── CMake Tools      ← CMake 配置/构建/选 kit(可选)
 ```
 
 The clangd extension must be installed on the WSL side. It needs to invoke the `clangd` binary inside WSL and read the `compile_commands.json` inside WSL — everything lives on the Linux side. Install it on the Windows side by mistake and it goes looking for `clangd.exe` on Windows, which it will certainly never find.
@@ -350,7 +350,7 @@ $ cat tidy_demo.cpp
 int main() {
     int big = 1000000000;
     long narrowed = big;
-    int* p = nullptr;   // ← name too short; the check flags anything under 3 characters
+    int* p = nullptr;   // ← 名字太短,3 字符以下被 check 拦
     return 0;
 }
 
@@ -369,7 +369,7 @@ The include-cleaner built into clangd (no external clang-tidy dependency) exists
 
 ```yaml
 Diagnostics:
-  UnusedIncludes: Strict   # None = off, Strict = strictly on
+  UnusedIncludes: Strict   # None = 关, Strict = 严格开
   MissingIncludes: Strict
 ```
 
@@ -379,7 +379,7 @@ include-cleaner also supports IWYU pragmas, written inside headers to give the t
 
 ```cpp
 #include <vector>  // IWYU pragma: export
-#include "detail_helpers.h"  // IWYU pragma: keep  ← don't flag this even if unused
+#include "detail_helpers.h"  // IWYU pragma: keep  ← 即便没用上也别警告
 ```
 
 `export` says "this header includes `<vector>` on behalf of its users, so users don't need to include it again"; `keep` says "never flag this include as unused". Both pragmas see heavy use in large libraries, keeping include-cleaner from false positives.
@@ -433,10 +433,10 @@ Field by field. `type: cppdbg` is the debugger type provided by the C/C++ extens
 The `-enable-pretty-printing` inside `setupCommands` is the key one. Without it, when you break on a `std::vector<int> v{1,2,3,4,5}`, the variables panel shows a pile of raw members (`_M_start`, `_M_finish`, `_M_end_of_storage` — libstdc++ internal pointers like that), with no way to tell the vector holds `{1,2,3,4,5}`. With it on, gdb uses its Python pretty-printers to format it into readable form. Below is the real gdb output comparison from my machine:
 
 ```text
-(gdb) print nums        # nums is std::vector<int>{1,2,3,4,5}
+(gdb) print nums        # nums 是 std::vector<int>{1,2,3,4,5}
 
-without pretty-printing: $1 = {_M_impl = {_M_start = 0x555..., _M_finish = ..., _M_end_of_storage = ...}}
-with pretty-printing:    $1 = std::vector of length 5, capacity 5 = {1, 2, 3, 4, 5}
+没开 pretty-printing:   $1 = {_M_impl = {_M_start = 0x555..., _M_finish = ..., _M_end_of_storage = ...}}
+开了 pretty-printing:   $1 = std::vector of length 5, capacity 5 = {1, 2, 3, 4, 5}
 ```
 
 In vscode, once `setupCommands` is configured, the variables panel shows the readable form like the second line. This is the step newcomers miss most easily: you can debug, but the variables are unreadable — breakpoints might as well not be there.

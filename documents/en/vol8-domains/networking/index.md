@@ -8,10 +8,10 @@ tags:
   - intermediate
 translation:
   source: documents/vol8-domains/networking/index.md
-  source_hash: 940feb2f7df261544e7b6951c5b9d304f087fa780539ebfc9e8b42fffa1e3c2e
-  translated_at: '2026-09-26T04:32:48+00:00'
-  engine: anthropic
-  token_count: 1250
+  source_hash: 1a5704b542f72b04cfd8276c327b75b606b7b47313b48ef978bcc40b267e50de
+  translated_at: '2026-11-22T16:48:28+00:00'
+  engine: glm-5.3-refresh
+  token_count: 1510
 ---
 
 # Networking

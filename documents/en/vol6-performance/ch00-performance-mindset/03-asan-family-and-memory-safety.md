@@ -27,10 +27,10 @@ tags:
 title: 'The ASan tool family and memory safety: shadow memory, Heartbleed, and sanitizer selection'
 translation:
   source: documents/vol6-performance/ch00-performance-mindset/03-asan-family-and-memory-safety.md
-  source_hash: 35b9df09fd3e640c1f80403410197c03d7fa48738f483bb3927990618e98ebc6
-  translated_at: '2026-09-26T05:25:15+00:00'
-  engine: anthropic
-  token_count: 11500
+  source_hash: c161e7873c0cbe84c1da41fc1529ef69f1f0d88cdea6014da2767ede553c0d3f
+  translated_at: '2026-11-22T16:43:35+00:00'
+  engine: glm-5.3-refresh
+  token_count: 16090
 ---
 # The ASan tool family and memory safety: shadow memory, Heartbleed, and sanitizer selection
 
@@ -53,23 +53,23 @@ The essence of this bug is an out-of-bounds **read** (a buffer over-read), not a
 Let's reproduce a Heartbleed-shaped bug in a few dozen lines of Modern C++, and then let ASan catch it in the act. This is this article's flagship demo, and we will come back to it again and again.
 
 ```cpp
-// oob_read.cpp — an out-of-bounds read in the shape of Heartbleed
+// oob_read.cpp —— 复刻 Heartbleed 形状的越界读
 // Platform: host    Standard: C++20
-// Build: g++ -std=c++20 -O1 -fsanitize=address -g oob_read.cpp -o oob_read
+// 编译: g++ -std=c++20 -O1 -fsanitize=address -g oob_read.cpp -o oob_read
 #include <array>
 #include <cstdio>
 #include <string>
 
-// Heartbeat echo: the client says "give me n bytes back". The server obliges, but never validates the upper bound of n.
+// 心跳回显:客户端说"还给我 n 字节"。服务器照办,但不校验 n 上界。
 std::string read_back(const std::array<char, 8>& buf, int n)
 {
-    return std::string(buf.data(), n);   // n can be far larger than 8
+    return std::string(buf.data(), n);   // n 可能远大于 8
 }
 
 int main()
 {
     std::array<char, 8> buf{'H', 'i', '!', 0, 0, 0, 0, 0};
-    // Only 8 bytes were authorized, yet we ask to "read back" 64 — the classic over-read
+    // 只授权了 8 字节,却要求"读回" 64 字节 —— 经典 over-read
     auto leaked = read_back(buf, 64);
     std::printf("读到 %zu 字节: %.8s...\n", leaked.size(), leaked.c_str());
 }
@@ -106,15 +106,15 @@ ASan **rewrites your code at compile time**; it is not a profiler that analyzes 
 Let's first verify that it really does "touch your code". Compile the `oob_read.cpp` above twice — once without ASan, once with — and compare the two **code-section (.text) sizes**, i.e. the machine instructions actually packed into the binary:
 
 ```text
-Plain build .text:   2792 bytes
-ASan build .text:    5736 bytes   (+105%)
+普通构建 .text:   2792 字节
+ASan 构建 .text:  5736 字节   (+105%)
 ```
 
 (My machine, GCC 16.1.1, `g++ -std=c++20 -O1 -g`, `.text` inspected with `size`.) That extra doubling is the checking instructions the compiler stuffed in around every memory access. Watch out for a trap here: **don't compare whole-binary file sizes**. ASan's runtime library `libasan.so.8` is **dynamically linked** (you can see it with `ldd`) and is not baked into the executable, so the overall file size only grows by about 5%; what genuinely reflects the amount of instrumentation is the `.text` code section — that is where the doubling happens. The cost is bigger binaries and slower runs, but next to the bugs it catches, that overhead is nearly negligible at the development stage. CTI is decided at **compile time**, so you must pass `-fsanitize=address` **when compiling**, and **when linking too**. If you add it only when compiling the main program but not when linking some third-party `.a` library, the memory accesses inside that library were never instrumented, and ASan is blind to that part of the code. The full pipeline:
 
 ```bash
-g++ -std=c++20 -O1 -fsanitize=address -g -c a.cpp -o a.o     # compile with it
-g++ -std=c++20 -O1 -fsanitize=address -g main.cpp a.o -o app  # link with it too
+g++ -std=c++20 -O1 -fsanitize=address -g -c a.cpp -o a.o     # 编译带
+g++ -std=c++20 -O1 -fsanitize=address -g main.cpp a.o -o app  # 链接也带
 ```
 
 `-fsanitize=address` must appear in both the compile and the link step; miss either one and it's all for nothing.
@@ -179,7 +179,7 @@ ASan is really just one member of a family. These tools started out as patches f
 | **TSan** (ThreadSanitizer) | `-fsanitize=thread` | Data races, deadlocks | 5-15x slowdown |
 | **UBSan** (UndefinedBehaviorSanitizer) | `-fsanitize=undefined` | Undefined behavior (signed overflow, null-pointer dereference, out-of-range shifts, etc.) | Configurable; most subchecks are cheap |
 
-Of the five siblings, ASan is the workhorse, all but mandatory in day-to-day development; LSan gets enabled by default alongside ASan (on GCC/Clang in supported environments); MSan is only fully available on Clang, and **the entire program** must be built as an MSan version (even libc has to be an MSan build, or you drown in false positives); TSan watches concurrency specifically — we covered it in [Debugging Techniques for Concurrent Programs](../../vol5-concurrency/ch08-debug-testing-perf/01-debugging-concurrency.md) in vol5; and UBSan is the "finisher" — cheap, and combinable with the others.
+Of the five siblings, ASan is the workhorse, all but mandatory in day-to-day development; LSan gets enabled by default alongside ASan (on GCC/Clang in supported environments); MSan is only fully available on Clang, and **the entire program** must be built as an MSan version (even libc has to be an MSan build, or you drown in false positives); TSan watches concurrency specifically — we covered it in [Debugging Techniques for Concurrent Programs](../../vol5-concurrency/chapter06-validating-designs/01-finding-concurrency-bugs.md) in vol5; and UBSan is the "finisher" — cheap, and combinable with the others.
 
 ### ASan and TSan are mutually exclusive: an iron rule
 
@@ -203,17 +203,17 @@ Principles alone aren't satisfying. Let's write one example each of the three me
 Smart pointers block most UAFs, but as long as the project still has raw pointers and C-style APIs, this hole can never be fully plugged. A minimal example: after releasing a `unique_ptr`, keep reading through the raw pointer it once handed out:
 
 ```cpp
-// uaf.cpp — use-after-free
+// uaf.cpp —— use-after-free
 // Platform: host    Standard: C++20
-// Build: g++ -std=c++20 -O1 -fsanitize=address -g uaf.cpp -o uaf
+// 编译: g++ -std=c++20 -O1 -fsanitize=address -g uaf.cpp -o uaf
 #include <cstdio>
 #include <memory>
 
 int main()
 {
     auto p = std::make_unique<int>(42);
-    int* raw = p.get();     // grab the raw pointer
-    p.reset();              // freed here — raw instantly becomes dangling
+    int* raw = p.get();     // 拿到裸指针
+    p.reset();              // 这里释放 —— raw 立刻变成悬空指针
     std::printf("悬空指针读到的值: %d\n", *raw);   // use-after-free
 }
 ```
@@ -255,8 +255,8 @@ The `[fd]` in the shadow dump is the smoking gun:
 Global/static variables get redzone protection too. An out-of-bounds access into a global array gets caught all the same:
 
 ```cpp
-// global_oob.cpp — out-of-bounds on a global array
-// Build: g++ -std=c++20 -O1 -fsanitize=address -g global_oob.cpp -o global_oob
+// global_oob.cpp —— 全局数组越界
+// 编译: g++ -std=c++20 -O1 -fsanitize=address -g global_oob.cpp -o global_oob
 #include <cstdio>
 int g[4] = {1, 2, 3, 4};
 int main() { std::printf("g[5] = %d\n", g[5]); }
@@ -278,17 +278,17 @@ Some older material says "detecting out-of-bounds accesses on global variables w
 Finally, memory leaks. LSan works differently from the previous ones: it waits until `main` returns and the program is about to exit, then scans every heap allocation still "alive" and flags the ones nothing references and that were never freed. A minimal deliberate leak:
 
 ```cpp
-// leak.cpp — a deliberate leak
+// leak.cpp —— 故意泄漏
 // Platform: host    Standard: C++20
-// Build: g++ -std=c++20 -O1 -fsanitize=address -g leak.cpp -o leak
+// 编译: g++ -std=c++20 -O1 -fsanitize=address -g leak.cpp -o leak
 #include <cstdlib>
 #include <cstdio>
 int main()
 {
-    int* p = (int*)std::malloc(sizeof(int) * 4);  // take some heap memory
+    int* p = (int*)std::malloc(sizeof(int) * 4);  // 拿了堆内存
     p[0] = 42;
-    std::printf("ptr = %p\n", (void*)p);  // let the pointer escape, so the optimizer can't delete the whole thing
-    // no free: the memory p points to leaks when the program exits
+    std::printf("ptr = %p\n", (void*)p);  // 让指针逃逸,防止整段被优化器删掉
+    // 没有 free,程序退出时 p 指向的内存泄漏
 }
 ```
 
@@ -324,9 +324,9 @@ UBSan's approach: plant a runtime check next to every operation that can produce
 A minimal example, stuffing in three classic UBs at once:
 
 ```cpp
-// ubsan.cpp — UBSan catching undefined behavior
+// ubsan.cpp —— UBSan 捕获未定义行为
 // Platform: host    Standard: C++20
-// Build: g++ -std=c++20 -O1 -fsanitize=undefined -g ubsan.cpp -o ubsan
+// 编译: g++ -std=c++20 -O1 -fsanitize=undefined -g ubsan.cpp -o ubsan
 #include <cstdio>
 #include <limits>
 
@@ -334,13 +334,13 @@ int main()
 {
     int arr[4]{1, 2, 3, 4};
     int idx = 10;
-    std::printf("越界下标 arr[10] = %d\n", arr[idx]);   // out-of-bounds subscript
+    std::printf("越界下标 arr[10] = %d\n", arr[idx]);   // 下标越界
 
     int max = std::numeric_limits<int>::max();
-    std::printf("有符号溢出: %d\n", max + 1);           // signed integer overflow
+    std::printf("有符号溢出: %d\n", max + 1);           // 有符号整数溢出
 
     int shift = 32;
-    std::printf("左移 32 位: %d\n", 1 << shift);        // shift amount >= width
+    std::printf("左移 32 位: %d\n", 1 << shift);        // 位移量 >= 位宽
 }
 ```
 

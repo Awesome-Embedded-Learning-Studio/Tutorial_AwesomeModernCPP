@@ -13,10 +13,10 @@ tags:
 title: std::print
 translation:
   source: documents/cpp-reference/containers/10-print.md
-  source_hash: e345f0e85aea655ccce9c41e918e9fc071bc95bed1c4727528b006aa05f142e7
-  translated_at: '2026-09-27T02:03:41+00:00'
-  engine: anthropic
-  token_count: 420
+  source_hash: a09b4bc9f0c019f2743d47a45f6d14264007f725bfa2d66295b12cdddef8e746
+  translated_at: '2026-11-22T16:41:57.171115+00:00'
+  engine: glm-5.3-refresh
+  token_count: 1756
 ---
 <!--
 Reference Card Template
@@ -61,7 +61,7 @@ int main() {
     std::print("Hello, {}!\n", "world");
     std::println("value = {}", 42);
     std::println("{:>10.2f}", 3.14159); //       3.14
-    std::println();                      // blank line
+    std::println();                      // 空行
 }
 ```
 

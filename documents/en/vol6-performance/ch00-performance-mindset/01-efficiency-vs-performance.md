@@ -24,9 +24,9 @@ title: 'Performance Mindset: efficiency is not performance'
 translation:
   source: documents/vol6-performance/ch00-performance-mindset/01-efficiency-vs-performance.md
   source_hash: 2648208d38c7044736713111eb0e5a82d426d83011b47b50d684f7ad5ec51b69
-  translated_at: '2026-09-26T05:23:22+00:00'
-  engine: anthropic
-  token_count: 9500
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 9958
 ---
 # Performance Mindset: efficiency is not performance
 
@@ -115,8 +115,8 @@ Agner's full platform-selection checklist runs to a dozen-plus pages; we compres
 Talk is cheap, so let's lay out the code behind the opening table. This is a **self-contained** benchmark that depends on no external library — plain standard C++17 compiles it (ch01 later introduces the industrial-strength Google Benchmark methodology properly; here we first use the plainest `std::chrono`, so that the very first article of the volume doesn't pile on concepts).
 
 ```cpp
-// vector_vs_set.cpp — Both lookups are O(log n): how big a difference can cache effects make?
-// Build: g++ -O2 -std=c++17 vector_vs_set.cpp -o vector_vs_set
+// vector_vs_set.cpp —— 同为 O(log n) 的查找,缓存效应能差多少?
+// 编译:g++ -O2 -std=c++17 vector_vs_set.cpp -o vector_vs_set
 #include <vector>
 #include <set>
 #include <algorithm>
@@ -133,21 +133,21 @@ static double median(std::vector<double>& v) {
 }
 
 int main() {
-    constexpr int queries = 2'000'000;   // 2M queries per N, to dilute single-query noise
-    constexpr int trials  = 5;            // 5 runs, take the median; ch01 explains why later
-    volatile std::int64_t global_sink = 0; // prevent the whole loop from being dead-code eliminated
+    constexpr int queries = 2'000'000;   // 每个 N 查 200 万次,摊薄单次噪声
+    constexpr int trials  = 5;            // 跑 5 轮取中位数,后续 ch01 会讲为什么
+    volatile std::int64_t global_sink = 0; // 防止整段循环被死代码消除
 
     printf("%-10s %18s %18s %10s\n",
            "N", "vector(ns/q)", "set(ns/q)", "set/vector");
     for (int N : {1024, 4096, 16384, 65536, 262144, 1048576}) {
         std::mt19937_64 rng(12345);
         std::vector<int> keys(N);
-        for (int i = 0; i < N; ++i) keys[i] = i * 2;          // even numbers, sparse
+        for (int i = 0; i < N; ++i) keys[i] = i * 2;          // 偶数、稀疏
         std::vector<int> sorted = keys;
-        std::sort(sorted.begin(), sorted.end());              // for binary search on the vector
-        std::set<int> sset(keys.begin(), keys.end());         // set's red-black tree
+        std::sort(sorted.begin(), sorted.end());              // vector 二分用
+        std::set<int> sset(keys.begin(), keys.end());         // set 红黑树
 
-        std::vector<int> toFind(queries);                     // all hits, removing the "not found" bias
+        std::vector<int> toFind(queries);                     // 全部命中,消除「找不到」偏差
         for (int i = 0; i < queries; ++i) toFind[i] = keys[rng() % N];
 
         std::vector<double> tv, ts;

@@ -5,8 +5,8 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Master the various uses of `const` with variables and pointers, and get
-  a first taste of `constexpr` compile-time constants.
+description: Master the various uses of `const` with variables, pointers, and references,
+  and get a first taste of `constexpr` compile-time constants.
 difficulty: beginner
 order: 3
 platform: host
@@ -22,10 +22,10 @@ tags:
 title: A First Look at const
 translation:
   source: documents/vol1-fundamentals/ch01/03-const-basics.md
-  source_hash: 40684fabacdf7a729bbc8236ce50fa035797a3af780e842eba676ae0873c84f9
-  translated_at: '2026-09-25T09:59:29+00:00'
-  engine: anthropic
-  token_count: 3400
+  source_hash: 6a5cf88631916bd1f5f9609feefea08e996805f64655fdd9ab7e65287b1a6641
+  translated_at: '2026-11-22T16:44:54+00:00'
+  engine: glm-5.3-refresh
+  token_count: 13182
 ---
 # Long Time No See, `const` — Look How Immutable You've Become
 
@@ -45,7 +45,7 @@ Once `const` is attached, the variable becomes "read-only"—we must give it an 
 
 ```cpp
 const int kMaxBufferSize = 1024;
-kMaxBufferSize = 2048;  // Compile error!
+kMaxBufferSize = 2048;  // 编译错误！
 ```
 
 The compiler will produce a very explicit error message:
@@ -90,8 +90,8 @@ int x = 10;
 int y = 20;
 const int* p = &x;
 
-*p = 100;   // Compile error! Cannot modify data through a const int*
-p = &y;     // Fine, the pointer itself can point elsewhere
+*p = 100;   // 编译错误！不能通过 const int* 修改数据
+p = &y;     // 没问题，指针本身可以指向别的地方
 ```
 
 Note one detail: although you cannot modify `x` through `p`, `x` itself is not `const`. Modifying it directly with `x = 100;` is perfectly legal—`const int*` only says "I won't modify through this pointer"; it does not mean the target data is actually immutable.
@@ -110,8 +110,8 @@ int x = 10;
 int y = 20;
 int* const p = &x;
 
-*p = 100;   // Fine, the data can be modified
-p = &y;     // Compile error! The pointer itself is const and cannot be repointed
+*p = 100;   // 没问题，可以修改数据
+p = &y;     // 编译错误！指针本身是 const 的，不能改指向
 ```
 
 You can think of it as a "one-track-minded pointer"—once it has settled on an address it will not budge, but the contents at that address are fair game for it to modify.
@@ -125,16 +125,48 @@ const int* const p = &value;
 
 **This form stacks the two constraints above: the pointer itself cannot be repointed, and the data cannot be modified through the pointer. You actually see this quite often in function parameters—when you pass a pointer to a function and want neither the pointer's target changed inside the function nor the data modified, this is how you write it.**
 
+## A First Look at References — Giving a Variable Another Name
+
+With pointers covered, let's pause a step. If I remember correctly, what walks on stage next is the most elementary spot where C++ differs from C (and if you haven't learned C, feel free to ignore that remark).
+
+Our new friend is the **reference**.
+
+> References are arguably the most common beginner-level C++ feature that sets it apart from C. In my own projects, hardly a single PR goes by without touching a reference.
+
+A reference is **giving an already-existing variable another name**. The notation is simple: add an `&` to the right of the type name:
+
+```cpp
+int x = 42;
+int& alias = x;   // alias 是 x 的别名，它和 x 是同一块内存的两个名字
+```
+
+Wait—that's it? Yes! That's it!
+
+From this line on, modifying `alias` is modifying `x`. And the other way around: after you change `x`, reading `alias` gives you the new value too. It's like a person with a formal name and a nickname—whichever you call, the same person answers.
+
+> I am CharlieChen114514. You set up a reference called Charlie and declare that this Charlie refers to CharlieChen114514. From then on in the conversation, whatever you do to Charlie, you are doing to CharlieChen114514!
+
+```cpp
+int CharlieChen114514 = 42;
+int& Charlie = CharlieChen114514;
+Charlie = 100;                          // 通过别名赋值，等价于 CharlieChen114514 = 100
+std::cout << Charlie << std::endl;      // 输出 100，alias 动的就是 CharlieChen114514 本尊
+```
+
+References have three properties worth getting right from day one. First, a reference **must be initialized at the moment it is declared**; `int& alias;` doesn't even compile—without an underlying object, the alias has nowhere to live. Second, **once bound, a reference cannot rebind**; when you later write `alias = y;`, what that does is assign `y`'s value to the variable behind `alias` (that is, `x`), not make `alias` switch allegiance to `y`. Third, any operation performed on a reference is equivalent to performing it on the variable behind it. The next chapter, "A First Look at Value Categories" (which discusses whether an expression uses the variable itself or a temporary value), will expand on all this in detail; for now, assembling this minimal working set is enough—the main topic right after leans on it.
+
+> This delightful property frees us from the old function-parameter headache: you can now manipulate the variable itself as if nothing were special, rather than operating on it through a pointer to it. This is something C can hardly match.
+
 ## `const` and References
 
-With pointers done, let's look at references. Pairing `const` with references is much simpler than with pointers, because references themselves are not allowed to rebind—from the moment it is born, a reference is welded to some variable. So there is only one case for combining `const` with a reference:
+We just made the acquaintance of references in the previous section; now let's team them up with `const`. Pairing `const` with references is much simpler than with pointers, because references themselves are not allowed to rebind—from the moment it is born, a reference is welded to some variable. So there is only one case for combining `const` with a reference:
 
 ```cpp
 int x = 42;
 const int& ref = x;
 ```
 
-`ref` is an alias for `x`, but you cannot modify `x`'s value through `ref`. Similar to `const int*`, this only says "I won't modify through `ref`"—`x` itself can still be freely modified.
+`ref` is an alias for `x`, but you cannot modify `x`'s value through `ref`. Similar to `const int*`, this only says "I won't modify through `ref`"—you are perfectly free to modify `x` itself directly.
 
 This kind of "reference to a constant" has one hugely important use in real-world development—function parameters. Imagine you have a function that needs to take a `std::string` parameter:
 
@@ -160,30 +192,35 @@ void print(const std::string& s)
 
 ## `constexpr` — Letting the Compiler Do the Math for You
 
-So far, the `const` we have been talking about only means "this value will not change during execution." But some constants have values that are already settled at the compile stage—`5 * 5` is definitely `25`, so there is no need to wait for the program to run to compute it. C++11 introduced `constexpr` to tell the compiler explicitly: "this is a value you can work out at compile time." If you are familiar with assembly, the meaning becomes plain—it gets computed into an immediate for you, with nothing left to process at runtime.
+So far, the `const` we have been talking about only means "this value will not change during execution." But some constants have values that are already settled at the compile stage—`5 * 5` is definitely `25`, so there is no need to wait for the program to run to compute it. C++11 introduced `constexpr` to tell the compiler explicitly: "this is a value you can work out at compile time." If you are familiar with assembly, the meaning becomes plain—the compiler works the result out into a constant baked right into the instruction (assembly calls it an immediate), with nothing left to compute at runtime.
 
 ```cpp
-constexpr int kSquare = 5 * 5;           // Computed at compile time, value is 25
-constexpr int kBufferSize = 1024 * 64;   // Also computed at compile time
-
-// Under some very low optimization levels, the compiler really will direct the CPU at runtime to do two
-// register loads and one register multiply. Far slower than directly stuffing the precomputed number into
-// a register; in other words, at this granularity the program runs several or even tens of times slower
-const int kSquare = 5 * 5;           // Computed at compile time, value is 25
-const int kBufferSize = 1024 * 64;   // Also computed at compile time
+constexpr int kSquare = 5 * 5;           // 编译期就算好了，值为 25
+constexpr int kBufferSize = 1024 * 64;   // 同样在编译期计算
 ```
 
-"Hold on? Charliechen114514, let me ask you: isn't `const` also unmodifiable? Why does C++ bother with something so redundant?"
-
-It is not redundant. `const` merely reminds the compiler that this thing must not be modified, but it does not tell the compiler that it can simply compute the result out directly. So with low optimization turned on, you can actually catch the CPU earnestly computing that 5 x 5 is 25! And everyone knows that when you write the literal 5 x 5, you might as well just write 25 directly.
+Now, what happens if we swap `constexpr` for an ordinary `const`? Written out, it looks almost identical:
 
 ```cpp
-int x = 10;
-const int cx = x;          // const but not constexpr, because x's value is only known at runtime
-constexpr int kVal = 42;   // constexpr, which is at the same time const
+const int kSquare = 5 * 5;           // 只承诺"不许改"，没承诺"必须提前算好"
+const int kBufferSize = 1024 * 64;   // 提前算还是运行时算，标准没规定，看编译器的心情
 ```
 
-Where `constexpr` gets more powerful is that it can be applied to functions. A `constexpr` function means: if the arguments passed in are all values determinable at compile time, then the function's return value can also be computed at compile time:
+"Eh? Charliechen114514, let me ask you: isn't `const` also unmodifiable? Why does C++ come up with something so redundant?"
+
+It is not redundant—the difference lies in **whether the initializing value can be settled at compile time**. Let's use array sizes as the touchstone: C++ requires an array's size to be a compile-time constant (arrays whose length varies with input are C's variable-length arrays; in C++ they only get through on compiler extensions):
+
+```cpp
+int x = 10;                // 普通 int，x 不是常量表达式
+const int cx = x;          // 合法，但 cx 跟着当不了编译期常量
+int data[cx];              // g++ 默认放行，开 -pedantic 才提醒一句；严格按标准来的编译器直接拒绝
+```
+
+Swap in `constexpr` and the ambiguity disappears. `constexpr int k = x;` fails to compile outright; the compiler reports that "the value of x cannot be used in a constant expression," forcing you to declare your position on the spot—this value must be settled at compile time. Conversely, as long as the initializer really is a constant expression, `const int n = 10;` works just as well as an array size (I tested it myself; even `-pedantic` stays silent).
+
+So the division of labor between the two is clear. `constexpr` writes "compile time" into the semantics, and the compiler must comply. `const` only guarantees the value stays unchanged during execution; whether it gets computed ahead of time or at runtime is each compiler's own choice. There is also a one-way relationship hiding here: `constexpr` implies `const`, so `constexpr int kVal = 42;` pulls double duty—both a compile-time constant and unmodifiable. The reverse does not hold; the `cx` above is just an ordinary `const`.
+
+Where `constexpr` gets more powerful is that it can also be applied to functions. Let's give it a try: a `constexpr` function means that if the arguments passed in are all values determinable at compile time, then the function's return value can also be computed at compile time:
 
 ```cpp
 constexpr int square(int x)
@@ -191,32 +228,32 @@ constexpr int square(int x)
     return x * x;
 }
 
-constexpr int kResult = square(5);  // Computed at compile time, kResult = 25; if you don't believe it, have an AI show you how to objdump or dumpbin the assembly—we won't teach that here
+constexpr int kResult = square(5);  // 编译期就算好了，kResult = 25。不信的话，让 AI 教你怎么用 objdump 或者 dumpbin 看汇编，这里不教了
 ```
 
-Values computed at compile time come with a big benefit: they can be used in the places that require a constant expression, such as an array's size:
+Values computed at compile time come with another big benefit: they can be used in the places that must be written as constant expressions. For instance, if you want to declare an array, the array's size must be a compile-time constant:
 
 ```cpp
 constexpr int kArraySize = square(3);  // 9
-int data[kArraySize];                   // Legal, because kArraySize is a compile-time constant
+int data[kArraySize];                   // 合法，因为 kArraySize 是编译期常量
 ```
 
-If `kArraySize` were merely an ordinary `const`, this line might not pass on some compilers (depending on whether the `const` variable is treated as a constant expression). With `constexpr`, there is no ambiguity whatsoever.
+Even here, swapping `constexpr` for an ordinary `const` still passes—`square(3)` is a constant expression, so the `const` variable it initializes keeps full compile-time-constant status; that's exactly the rule described a moment ago. But that status rides on one premise: the initializer must always be a constant expression. The day your hand slips and the initializer becomes a quantity whose value only exists at runtime, the `const` version gets quietly waved through by g++'s variable-length-array extension, and the point of failure moves to runtime. On a compiler that follows the standard strictly, it simply fails to compile. `constexpr` has none of this dangling uncertainty: at the language level it enforces "the initializer must be a constant expression" all the way, so the ambiguity never exists in the first place.
 
-Here we are only getting a first touch of `constexpr`. It is one of the most important features of modern C++—by C++14 it allowed more complex logic inside such functions, C++17 relaxed the restrictions further, and C++20 went on to introduce `consteval` (must execute at compile time) and `constinit`. In embedded C++ we will use these critically important features over and over—**at the language level, they help us lock in both runtime efficiency and binary-size savings.**
+Here we have only exchanged a first glance with `constexpr`. It is one of the most important features of modern C++. By C++14 it allowed more complex logic inside such functions, and C++17 relaxed the restrictions further. C++20 went on to introduce `consteval` (must execute at compile time) and `constinit`. We will use them over and over in embedded C++—**they help us cut down both runtime cost and binary-size overhead.**
 
 ## Putting It All Together — const_demo.cpp
 
 Book knowledge only goes so far. Let's now string together every `const` usage discussed above into one complete example program. The logic will not be anything complex, but it covers each `const` combination and verifies the compiler's behavior.
 
 ```cpp
-// const_demo.cpp — Demonstrates various uses of const variables, pointers, references, and constexpr
+// const_demo.cpp —— 演示 const 变量、指针、引用和 constexpr 的各种用法
 
 #include <iostream>
 
-/// @brief constexpr function: computes a square
-/// @param x the value to be squared
-/// @return the square of x
+/// @brief constexpr 函数：计算平方
+/// @param x 被平方的值
+/// @return x 的平方
 constexpr int square(int x)
 {
     return x * x;
@@ -224,41 +261,46 @@ constexpr int square(int x)
 
 int main()
 {
-    // --- const variable ---
+    // --- const 变量 ---
     const int kMaxSize = 100;
-    // kMaxSize = 200;  // Uncommenting this causes a compile error
+    // kMaxSize = 200;  // 取消注释会编译错误
     std::cout << "kMaxSize = " << kMaxSize << std::endl;
 
     // --- constexpr ---
-    constexpr int kArraySize = square(5);  // Computed at compile time, result is 25
+    constexpr int kArraySize = square(5);  // 编译期计算，结果为 25
     std::cout << "kArraySize = " << kArraySize << std::endl;
 
-    // --- pointer to a constant ---
+    // --- 指向常量的指针 ---
     int a = 10;
     int b = 20;
     const int* p_to_const = &a;
-    // *p_to_const = 100;  // Uncommenting this causes a compile error
-    p_to_const = &b;       // Fine, the pointer can be repointed
+    // *p_to_const = 100;  // 取消注释会编译错误
+    p_to_const = &b;       // 没问题，指针可以改指向
     std::cout << "*p_to_const = " << *p_to_const << std::endl;
 
-    // --- constant pointer ---
+    // --- 常量指针 ---
     int* const const_p = &a;
-    *const_p = 100;        // Fine, the data can be modified
-    // const_p = &b;       // Uncommenting this causes a compile error
+    *const_p = 100;        // 没问题，可以改数据
+    // const_p = &b;       // 取消注释会编译错误
     std::cout << "*const_p = " << *const_p << std::endl;
 
-    // --- both const ---
+    // --- 两个都 const ---
     const int* const double_const = &a;
-    // *double_const = 1;  // Compile error
-    // double_const = &b;  // Compile error
+    // *double_const = 1;  // 编译错误
+    // double_const = &b;  // 编译错误
     std::cout << "*double_const = " << *double_const << std::endl;
 
-    // --- const reference ---
+    // --- 引用 ---
     int x = 42;
+    int& ref2 = x;         // ref2 是 x 的别名（起名叫 ref2，是把 ref 这个名字留给下面的 const 引用）
+    ref2 = 100;            // 通过别名改，等价于 x = 100
+    std::cout << "x = " << x << std::endl;      // 输出 100
+
+    // --- const 引用 ---
     const int& ref = x;
-    // ref = 100;           // Compile error
-    x = 100;               // Modifying x directly is fine
-    std::cout << "ref = " << ref << std::endl;  // Prints 100
+    // ref = 200;          // 编译错误！通过 const 引用改不动
+    x = 200;               // 直接改 x 是可以的
+    std::cout << "ref = " << ref << std::endl;  // 输出 200
 
     return 0;
 }
@@ -279,7 +321,8 @@ kArraySize = 25
 *p_to_const = 20
 *const_p = 100
 *double_const = 100
-ref = 100
+x = 100
+ref = 200
 ```
 
 You can uncomment those "compile error" lines one at a time and see what error messages the compiler produces. Getting a hands-on feel for how the compiler intercepts these operations leaves a far deeper impression than reading text alone.
@@ -320,20 +363,20 @@ int main()
     int a3 = 0;
 
     const int* p1 = &a1;
-    // *p1 = 5;   // Compile error! Cannot modify data through a const int*
-    p1 = &a2;     // Fine, the pointer itself can point elsewhere
+    // *p1 = 5;   // 编译错误！不能通过 const int* 修改数据
+    p1 = &a2;     // 没问题，指针本身可以指向别的地方
     std::cout << "*p1 = " << *p1 << std::endl;
 
     int* const p2 = &a2;
-    *p2 = 5;      // Fine, the data pointed to by int* const can be modified
-    // p2 = &a3;  // Compile error! An int* const pointer itself cannot be repointed
+    *p2 = 5;      // 没问题，int* const 指向的数据可以修改
+    // p2 = &a3;  // 编译错误！int* const 指针本身不能改变指向
     std::cout << "*p2 = " << *p2 << std::endl;
 
-    p1 = &a3;     // Fine, a const int* pointer itself can point elsewhere
+    p1 = &a3;     // 没问题，const int* 指针本身可以指向别的地方
 
     const int* const p3 = &a3;
-    // *p3 = 5;   // Compile error! const int* const can neither modify the data nor change what it points to
-    // p3 = &a1;  // Compile error! A const int* const pointer itself cannot be repointed
+    // *p3 = 5;   // 编译错误！const int* const 既不能修改数据，也不能改变指向
+    // p3 = &a1;  // 编译错误！const int* const 指针本身不能改变指向
     std::cout << "*p3 = " << *p3 << std::endl;
 
     return 0;

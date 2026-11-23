@@ -22,9 +22,9 @@ prerequisites:
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/17-observer.md
   source_hash: 314206f7881fdc071a9103fc20074a09b893fdb876b4d2bc942e5fc837c45301
-  translated_at: '2026-09-26T05:43:40+00:00'
-  engine: anthropic
-  token_count: 12000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 22420
 ---
 
 # Observer Pattern: From Dangling Pointers to Dangle-Proofing with `weak_ptr`
@@ -49,13 +49,13 @@ struct MessagePackage {
     double humidity;
 };
 
-// Abstract observer interface: every "endpoint that wants notifications" implements it
+// 观察者抽象接口:所有「想被通知的端」实现它
 struct Sender {
     virtual ~Sender() = default;
     virtual void receiving_message(const MessagePackage& message) = 0;
 };
 
-// A few concrete endpoints
+// 几个具体的端
 struct DefaultSender : Sender {
     void receiving_message(const MessagePackage& message) override {
         std::println("Receiving Message: Temperature: {}, Humidity: {}",
@@ -108,11 +108,11 @@ But the problem lies precisely in that precondition — "as long as the observer
 int main() {
     WeatherForecast forecast;
     {
-        DefaultSender obs;          // stack object
+        DefaultSender obs;          // 栈上对象
         forecast.register_observer(&obs);
-        forecast.notify_once();     // obs is still alive here; fine
-    }                              // obs leaves scope, stack frame reclaimed
-    forecast.notify_once();        // the pointer to obs now dangles -> use-after-free
+        forecast.notify_once();     // 此时 obs 还活着,正常
+    }                              // obs 离开作用域,栈帧回收
+    forecast.notify_once();        // obs 里的指针悬空了 -> use-after-free
 }
 ```
 
@@ -153,8 +153,8 @@ int main() {
     {
         Loud obs(1);
         s.subscribe(&obs);
-        s.notify(10);              // obs is alive here; fine
-    }                              // obs leaves scope -> pointer dangles
+        s.notify(10);              // 此时 obs 活着,正常
+    }                              // obs 离开作用域 -> 指针悬空
     s.notify(20);                  // use-after-free
 }
 ```
@@ -219,14 +219,14 @@ int main() {
 Note that `std::make_shared<DefaultSender>()` creates a **temporary object**; after it's passed into `register_observer`, the reference count is taken over by the copy in the vector, and the count is 1 — held by the observable alone. Sounds fine? Let's verify what it leads to:
 
 ```cpp
-// Suppose we use it like this inside some function
+// 假设我们在某个函数里这样用
 void run(WeatherForecast& forecast) {
     auto phone = std::make_shared<PhoneSender>();
     forecast.register_observer(phone);
     std::cout << "phone 还在,引用计数 = " << phone.use_count() << "\n";
-}   // phone leaves scope, the outside reference is gone
-// But forecast's shared_ptr remains -> PhoneSender isn't dead; it's a "zombie" now
-// Later forecast.notify_once() will still call it
+}   // phone 离开作用域,外部引用没了
+// 但 forecast 里的 shared_ptr 还在 -> PhoneSender 没死,成了"僵尸"
+// 之后 forecast.notify_once() 仍会调用它
 ```
 
 Let's actually run this zombie behavior:
@@ -254,18 +254,18 @@ Worse, this line of thinking pushes the lifetime problem from one extreme to the
 
 class WeatherForecast {
 public:
-    // Accept a shared_ptr, but store only a weak_ptr — doesn't extend the observer's lifetime
+    // 接受 shared_ptr,但只存 weak_ptr —— 不延长观察者寿命
     void register_observer(const std::shared_ptr<Sender>& sender) {
-        observers_.push_back(sender);   // shared_ptr -> weak_ptr implicit conversion
+        observers_.push_back(sender);   // shared_ptr -> weak_ptr 隐式构造
     }
     void notify_once() {
         MessagePackage pack = WeatherSensor::get_message_pack();
         for (auto it = observers_.begin(); it != observers_.end(); ) {
-            if (auto live = it->lock()) {        // The key: try upgrading the weak ref back to shared
-                live->receiving_message(pack);   // Upgrade succeeded -> object alive, notify it
+            if (auto live = it->lock()) {        // 关键:试着把 weak 升级回 shared
+                live->receiving_message(pack);   // 升级成功 -> 对象活着,通知它
                 ++it;
             } else {
-                it = observers_.erase(it);       // Upgrade failed -> object dead, clean up while we're at it
+                it = observers_.erase(it);       // 升级失败 -> 对象已死,顺手清理
             }
         }
     }
@@ -292,12 +292,12 @@ static void verify_weak_lock() {
     {
         auto sp = std::make_shared<int>(42);
         w = sp;
-        auto locked = w.lock();                 // object alive
+        auto locked = w.lock();                 // 对象存活
         std::cout << "alive: use_count=" << locked.use_count()
                   << " value=" << (locked ? *locked : 0) << "\n";
         std::cout << "expired()=" << std::boolalpha << w.expired() << "\n";
-    }                                           // sp leaves scope, object destructed
-    auto locked = w.lock();                     // object already destroyed
+    }                                           // sp 离开作用域,对象析构
+    auto locked = w.lock();                     // 对象已销毁
     std::cout << "after destroy: locked.empty=" << (locked == nullptr)
               << " expired=" << w.expired() << "\n";
     if (auto p = w.lock()) {
@@ -354,7 +354,7 @@ class WeatherForecast {
 public:
     using Callback = std::function<void(const MessagePackage&)>;
 
-    // RAII subscription token: unsubscribes automatically on destruction
+    // RAII 订阅令牌:析构时自动退订
     class Subscription {
     public:
         Subscription() = default;
@@ -378,7 +378,7 @@ public:
         WeatherForecast* owner_ = nullptr;
     };
 
-    // Subscribe: register the callback together with the weak_ptr, return the RAII token
+    // 订阅:把回调和 weak_ptr 一起登记,返回 RAII 令牌
     Subscription subscribe(Callback cb) {
         std::lock_guard<std::mutex> lk(mtx_);
         std::size_t id = next_id_++;
@@ -422,10 +422,10 @@ public:
     using Cb = std::function<void(int)>;
     void subscribe(Cb cb) { observers_.push_back(std::move(cb)); }
 
-    // snapshot version: copy first, then invoke; callbacks may mutate the original table freely
+    // snapshot 版:先拷一份再调用,回调里随便改原表
     void notify_good(int v) {
-        std::vector<Cb> snap(observers_);     // take a copy
-        for (auto& cb : snap) cb(v);          // iterate the copy
+        std::vector<Cb> snap(observers_);     // 拷一份
+        for (auto& cb : snap) cb(v);          // 遍历拷贝
     }
 private:
     std::vector<Cb> observers_;
@@ -462,9 +462,9 @@ The first-choice remedy isn't some elaborate detection mechanism but blocking th
 class Person {
 public:
     void set_age(int new_age) {
-        if (age_ == new_age) return;   // value unchanged: don't notify; breaks the loop outright
+        if (age_ == new_age) return;   // 值没变,不通知,直接打断环路
         age_ = new_age;
-        forecast_.notify_once();       // broadcast only when it really changed
+        forecast_.notify_once();       // 真变了才广播
     }
 private:
     int age_ = 0;
@@ -517,13 +517,13 @@ public:
 
     Subscription subscribe(Callback cb);
 
-    // Fetch once and broadcast; notify only if temperature or humidity changed (change detection)
+    // 取一次数据并广播;温度或湿度之一变化才通知(变更检测)
     void poll_once();
 
 private:
     void detach_by_id(std::size_t id);
 
-    // Simulated sensor: in a real project this is a hardware read or a network fetch
+    // 模拟传感器:实际项目里这里是硬件读取或网络拉取
     struct WeatherSensor {
         static MessagePackage get_message_pack();
     };
@@ -531,7 +531,7 @@ private:
     std::mutex mtx_;
     std::unordered_map<std::size_t, Callback> callbacks_;
     std::size_t next_id_ = 1;
-    MessagePackage last_{};          // previous snapshot, used for change detection
+    MessagePackage last_{};          // 上一次的快照,用于变更检测
 };
 ```
 
@@ -567,13 +567,13 @@ WeatherForecast::Subscription& WeatherForecast::Subscription::operator=(Subscrip
 void WeatherForecast::poll_once() {
     MessagePackage pack = WeatherSensor::get_message_pack();
 
-    // Change detection: neither temperature nor humidity changed, don't notify (breaks potential event loops)
+    // 变更检测:温度湿度都没变,不通知(打断潜在的事件环路)
     bool changed = pack.temperature != last_.temperature
                 || pack.humidity    != last_.humidity;
     last_ = pack;
     if (!changed) return;
 
-    // snapshot: copy the callbacks under the lock, invoke outside it
+    // snapshot:锁内拷一份回调,锁外调用
     std::vector<Callback> snapshot;
     {
         std::lock_guard<std::mutex> lk(mtx_);
@@ -581,7 +581,7 @@ void WeatherForecast::poll_once() {
         for (auto& kv : callbacks_) snapshot.push_back(kv.second);
     }
     for (auto& cb : snapshot) {
-        try { cb(pack); } catch (...) { /* one observer's failure doesn't take down the rest */ }
+        try { cb(pack); } catch (...) { /* 单个观察者崩不波及整体 */ }
     }
 }
 ```
@@ -604,10 +604,10 @@ int main() {
             [wtv = std::weak_ptr(tv)](const MessagePackage& m) {
                 if (auto p = wtv.lock()) p->receiving_message(m);
             });
-        forecast.poll_once();   // both phone and tv receive it
-    }                           // sub2 destructs -> automatic unsubscribe
+        forecast.poll_once();   // phone 和 tv 都收到
+    }                           // sub2 析构 -> 自动退订
 
-    forecast.poll_once();       // only phone receives it — no dangle, no zombies
+    forecast.poll_once();       // 只有 phone 收到,没有悬空、没有僵尸
 }
 ```
 

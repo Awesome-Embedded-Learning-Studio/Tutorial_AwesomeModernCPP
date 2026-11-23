@@ -18,9 +18,9 @@ title: std::unique_ptr
 translation:
   source: documents/cpp-reference/memory/01-unique-ptr.md
   source_hash: 7e058fe01e0c40e6959f9b71d6dea58e9d3092bf096acc043880458c9518eac5
-  translated_at: '2026-09-27T02:13:25+00:00'
-  engine: anthropic
-  token_count: 1000
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 2040
 ---
 <!--
 Reference Card Template
@@ -68,7 +68,7 @@ A smart pointer that manages the lifetime of dynamic objects through exclusive o
 struct Foo { ~Foo() { std::cout << "destroyed\n"; } };
 int main() {
     std::unique_ptr<Foo> p = std::make_unique<Foo>();
-    std::unique_ptr<Foo> q = std::move(p); // Transfers ownership
+    std::unique_ptr<Foo> q = std::move(p); // 转移所有权
     std::cout << std::boolalpha << (p == nullptr) << "\n"; // true
 } // "destroyed"
 ```

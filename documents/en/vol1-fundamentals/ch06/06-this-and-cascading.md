@@ -19,12 +19,23 @@ tags:
 - 入门
 - 基础
 title: The this Pointer and Method Chaining
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #246, #248)"
+      en: "Contributed exercise solutions and article revisions (PR #246, #248)"
 translation:
   source: documents/vol1-fundamentals/ch06/06-this-and-cascading.md
-  source_hash: f7379be8d6c45f9d501377c249c4c1f6417a388745e73a4753d339ea0be0f279
-  translated_at: '2026-09-25T11:13:37+00:00'
-  engine: anthropic
-  token_count: 3000
+  source_hash: 89f2c1908668e02f42dca4ed39474b8a8f99bcaacaa21614ca669a35363254a3
+  translated_at: '2026-11-22T16:40:19+00:00'
+  engine: glm-5.3-refresh
+  token_count: 9216
 ---
 # Let's Talk About the this Pointer and Method Chaining
 
@@ -55,8 +66,8 @@ p.set_x(42);
 What the compiler sees is not simply `set_x(42)`. It actually translates the call into something like this (pseudocode, to build intuition):
 
 ```cpp
-// Pseudocode: the compiler's internal view
-Point::set_x(&p, 42);  // p's address is passed in as the first argument
+// 伪代码：编译器的内部视角
+Point::set_x(&p, 42);  // 把 p 的地址作为第一个参数传入
 ```
 
 Oh-ho! If you come from C, that clicked instantly, didn't it? When we simulated OOP in C, this is exactly **the trick we played—passing the object itself through our own function pointers**. That's right: we were clumsily simulating `this`! Haha!
@@ -76,11 +87,11 @@ class Point {
     int x_;
     int y_;
 public:
-    // In the initializer list, x_ outside the parentheses is the member, x_ inside is the parameter
+    // 初始化列表中，括号外的 x_ 是成员，括号内的 x_ 是参数
     Point(int x_, int y_) : x_(x_), y_(y_) {}
 
     void set_x(int x_) {
-        this->x_ = x_;  // this->x_ is the member, bare x_ is the parameter; without writing this out explicitly, the compiler throws a warning or even an error, telling you this is self-assignment!
+        this->x_ = x_;  // this->x_ 是成员，裸 x_ 是参数，如果不这样显示写，编译器就会爆警告甚至是报错，告诉你这是self assigned!
     }
 };
 ```
@@ -96,8 +107,8 @@ This has a very important consequence: **a `const` object can only call `const` 
 ```cpp
 void print_point(const Point& p)
 {
-    std::cout << p.get_x() << std::endl;  // OK, get_x() is const
-    // p.set_x(10);  // Compile error! set_x() is not const
+    std::cout << p.get_x() << std::endl;  // OK，get_x() 是 const 的
+    // p.set_x(10);  // 编译错误！set_x() 不是 const 的
 }
 ```
 
@@ -128,7 +139,7 @@ public:
     void set_y(int y) { y_ = y; }
 };
 
-// Each setter is its own separate statement
+// 每个 setter 都是独立的语句
 Point p;
 p.set_x(3);
 p.set_y(4);
@@ -162,7 +173,7 @@ public:
     }
 };
 
-// Now it's done in one line
+// 现在一行搞定
 Point p;
 p.set_x(3).set_y(4).print();
 ```
@@ -206,7 +217,7 @@ public:
         return *this;
     }
 
-    // const member functions: read-only, no modification
+    // const 成员函数：只读取，不修改
     const char* c_str() const { return buffer_; }
     std::size_t length() const { return length_; }
 };
@@ -221,7 +232,7 @@ class Config {
     bool use_parity_;
     int timeout_ms_;
 
-    // Private constructor: forces creation through the Builder
+    // 私有构造，强制通过 Builder 创建
     Config(const char* name, int baud, bool parity, int timeout)
         : baudrate_(baud), use_parity_(parity), timeout_ms_(timeout)
     {
@@ -288,7 +299,7 @@ Note that `Config`'s constructor is `private`—external code cannot create a `C
 ```cpp
 int main()
 {
-    // StringBuilder method chaining
+    // StringBuilder 链式调用
     StringBuilder sb;
     sb.append("Hello")
           .append(", ")
@@ -302,7 +313,7 @@ int main()
     std::printf("%s", sb.c_str());
     std::printf("Total length: %zu\n\n", sb.length());
 
-    // Config Builder method chaining
+    // Config Builder 链式调用
     Config cfg = Config::Builder()
                      .set_name("UART1")
                      .set_baudrate(115200)

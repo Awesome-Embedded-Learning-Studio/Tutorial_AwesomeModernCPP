@@ -27,9 +27,9 @@ title: 'string_view: Non-Owning Read-Only String View'
 translation:
   source: documents/vol3-standard-library/strings/50-string-view.md
   source_hash: d5ceddd95c866b70af66355dadcc5d9f6cc6164cd3711a518978b1d5ce6ed797
-  translated_at: '2026-09-25T23:49:14+00:00'
-  engine: anthropic
-  token_count: 9000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 12647
 ---
 # string_view: Non-Owning Read-Only String View
 
@@ -84,8 +84,8 @@ Here's a minimal comparison. Two functions do the same job (counting vowels), on
 
 ```cpp
 // Standard: C++20
-long count_vowels_ref(const std::string& s) { /* count a/e/i/o/u character by character */ }
-long count_vowels_sv(std::string_view sv)   { /* same as above */ }
+long count_vowels_ref(const std::string& s) { /* 逐字符数 a/e/i/o/u */ }
+long count_vowels_sv(std::string_view sv)   { /* 同上 */ }
 ```
 
 What happens on the `const string&` path when the caller holds a long enough `char*` (past the SSO threshold, too big for `string`'s small-object buffer)? **The compiler must first construct a temporary `std::string` from that `char*`** — meaning one heap allocation and one copy — and then pass a reference to that temporary in. When the function returns, the temporary is destroyed and the heap block is freed. And all we originally wanted was to "scan it read-only".
@@ -115,7 +115,7 @@ void take_sv(std::string_view sv)   { (void)sv; }
 
 int main()
 {
-    const char* long_s = "01234567890123456789034567890123456789";  // exceeds SSO
+    const char* long_s = "01234567890123456789034567890123456789";  // 超过 SSO
 
     std::cout << "--- const string& x3 (long char*) ---\n";
     take_ref(long_s); take_ref(long_s); take_ref(long_s);
@@ -141,7 +141,7 @@ The evidence is plain: the `const string&` path **allocates on every call** (thr
 Now take this into a tight loop and watch the order of magnitude. Same long payload (90 bytes, comfortably past SSO), fifty million calls:
 
 ```cpp
-// Standard: C++20 (excerpt; see the benchmark notes below for the full version)
+// Standard: C++20（节选,完整版见下方 benchmark 说明）
 static const char* kPayload =
     "The quick brown fox jumps over the lazy dog - a non-trivial string payload.";
 
@@ -157,7 +157,7 @@ int main()
     auto t1 = std::chrono::steady_clock::now();
     for (int i = 0; i < kIters; ++i) sink += count_vowels_sv(kPayload);
     auto t2 = std::chrono::steady_clock::now();
-    /* print both elapsed times */
+    /* 打印两段耗时 */
 }
 ```
 
@@ -204,13 +204,13 @@ int main()
     std::string_view sv{url};
 
     std::string_view scheme = sv;
-    scheme.remove_prefix(8);              // skip "https://"
+    scheme.remove_prefix(8);              // 跳过 "https://"
     std::cout << "after remove_prefix(8): " << scheme << '\n';
 
     std::string_view host = scheme;
     auto slash = host.find('/');
     if (slash != std::string_view::npos) {
-        host.remove_suffix(host.size() - slash);   // truncate at the first '/'
+        host.remove_suffix(host.size() - slash);   // 截到第一个 '/'
     }
     std::cout << "host: " << host << '\n';
 
@@ -235,8 +235,8 @@ All three views point into the original `url`'s memory; not one byte was touched
 As you use it, a question surfaces: `string_view` is so frugal — when do I actually pay for a copy? The answer is **the moment you materialize it into a `std::string`**.
 
 ```cpp
-std::string_view path = /* some view */;
-std::string owned = std::string{path};   // the copy happens here: allocate + copy character by character
+std::string_view path = /* 某段视图 */;
+std::string owned = std::string{path};   // 这里发生拷贝:分配 + 逐字符复制
 ```
 
 Constructing a `std::string` from a `string_view` is a full copy — the standard library allocates a fresh block of memory and copies the view's characters over one by one. That is not a bug; it is inevitable: a `string` is an owner, and owning its own copy means actually taking possession of the data.
@@ -258,7 +258,7 @@ The most classic posture: returning a view of a function-local `string`. The fun
 std::string_view bad_return()
 {
     std::string local = "hello world";
-    return std::string_view{local};   // local is destroyed here; the returned view dangles immediately
+    return std::string_view{local};   // local 在此销毁,返回的 view 立刻悬垂
 }
 
 int main()
@@ -284,7 +284,7 @@ The sneakier posture is **binding to a concatenation temporary**. `s + "x"` prod
 ```cpp
 // Standard: C++20
 std::string s = "abc";
-std::string_view sv = s + "x";   // the temporary string is destroyed; sv dangles
+std::string_view sv = s + "x";   // 临时 string 销毁,sv 悬垂
 std::cout << sv << '\n';         // UB
 ```
 
@@ -295,7 +295,7 @@ Written exactly like that, the temporary's memory sometimes hasn't been flushed 
 int main()
 {
     std::string s = "abc";
-    std::string_view sv = s + "x";          // dangling
+    std::string_view sv = s + "x";          // 悬垂
     for (int i = 0; i < 3; ++i) {
         std::string noise(64, char('A' + i));
         std::cout << "noise: " << noise << '\n';

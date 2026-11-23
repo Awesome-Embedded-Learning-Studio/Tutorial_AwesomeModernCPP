@@ -23,9 +23,9 @@ title: 'RVO and NRVO: The Compiler''s Return Value Optimization'
 translation:
   source: documents/vol2-modern-features/ch00-move-semantics/04-rvo-nrvo.md
   source_hash: 9124ec4c855666018a5a7f7e638eaa134d3e3dfbf5f77be538dc551d31bf230d
-  translated_at: '2026-09-27T04:34:05+00:00'
-  engine: anthropic
-  token_count: 6000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 15623
 ---
 # RVO and NRVO: The Compiler's Return Value Optimization
 
@@ -49,7 +49,7 @@ struct Point {
 
     Point(double x, double y) : x(x), y(y)
     {
-        // I know embedding Chinese here might cause problems, but who cares, it's just a demo
+        // 我知道好像在这里塞中文可能会造成问题，但是怕啥，demo而已
         std::cout << "  构造 Point(" << x << ", " << y << ")\n";
     }
 
@@ -68,18 +68,18 @@ struct Point {
 Next we write two factory functions: one returns a temporary object, the other a named local variable.
 
 ```cpp
-// RVO scenario: returning a prvalue (a temporary object)
+// RVO 场景：返回 prvalue（临时对象）
 Point make_point_rvo(double x, double y)
 {
-    return Point(x, y);   // Returns a temporary object
+    return Point(x, y);   // 返回一个临时对象
 }
 
-// NRVO scenario: returning a named local variable
+// NRVO 场景：返回命名局部变量
 Point make_point_nrvo(double x, double y)
 {
-    Point p(x, y);        // Named local variable
-    // ... possibly some operations on p ...
-    return p;             // Returns the named variable
+    Point p(x, y);        // 命名局部变量
+    // ... 可能还有一些对 p 的操作 ...
+    return p;             // 返回命名变量
 }
 ```
 
@@ -135,11 +135,11 @@ C++17 made one of those cases mandatory: **when the return value is a prvalue (a
 On what grounds can the standard promise that? We need to dig one level down and see what the semantics of a prvalue were redefined into. Wind the clock back to before C++17, and a prvalue was understood as "a temporary object": when a function returned `Point(x, y)`, a temporary `Point` had to be created and then copied or moved into the caller's space. In C++17, a prvalue became "a recipe for initialization": `Point(x, y)` is no longer an object at all but a set of construction instructions—what it tells the compiler is now "construct a `Point` at this location, with these arguments". Sit with that difference for a moment. Since a prvalue is not an object in the first place, there is no such thing as "copying the object"—you cannot copy something that does not exist; there is nothing to lay your hands on—so elision is inherently part of the guarantee.
 
 ```cpp
-// Before C++17: Point(x,y) is a temporary object
-// After C++17: Point(x,y) is a "construction recipe"
+// C++17 之前：Point(x,y) 是一个临时对象
+// C++17 之后：Point(x,y) 是一个"构造配方"
 Point make_point(double x, double y)
 {
-    return Point(x, y);  // C++17 guarantees no copy/move is triggered
+    return Point(x, y);  // C++17 保证不触发拷贝/移动
 }
 ```
 
@@ -157,9 +157,9 @@ Point bad_nrvo(bool flag)
     Point a(1.0, 2.0);
     Point b(3.0, 4.0);
     if (flag) {
-        return a;   // May block NRVO
+        return a;   // 可能阻止 NRVO
     }
-    return b;       // Returns a different named object
+    return b;       // 返回不同的命名对象
 }
 ```
 
@@ -174,7 +174,7 @@ Point good_nrvo(bool flag)
     } else {
         result = Point(3.0, 4.0);
     }
-    return result;   // NRVO can kick in
+    return result;   // NRVO 可以生效
 }
 ```
 
@@ -183,8 +183,8 @@ Another common failure scenario is **returning a function parameter**. NRVO only
 ```cpp
 Point return_param(Point p)
 {
-    // Do some operations on p ...
-    return p;   // No NRVO, but C++11 applies the implicit move
+    // 对 p 做一些操作 ...
+    return p;   // 无法 NRVO，但 C++11 会隐式移动
 }
 ```
 
@@ -197,7 +197,7 @@ Point global_point(1.0, 2.0);
 
 Point return_global()
 {
-    return global_point;   // Copy construction—no NRVO and no implicit move either
+    return global_point;   // 拷贝构造，没有 NRVO，也没有隐式移动
 }
 ```
 
@@ -208,8 +208,8 @@ And guess what: this time even the implicit-move treatment is off the table. `gl
 With the reasoning covered, let's add one more level of evidence: the assembly itself. We'll write two functions—one that gets RVO's benefits and one that doesn't—and put their compiled output side by side.
 
 ```cpp
-// rvo_asm.cpp -- view the assembly on Compiler Explorer
-// Full assembly best viewed at https://godbolt.org
+// rvo_asm.cpp -- 用 Compiler Explorer 查看汇编
+// 建议在 https://godbolt.org 上查看完整汇编
 
 struct Heavy {
     int data[256];
@@ -220,12 +220,12 @@ struct Heavy {
 
 Heavy with_rvo(int v)
 {
-    return Heavy(v);     // C++17 guaranteed elision
+    return Heavy(v);     // C++17 保证消除
 }
 
 Heavy without_rvo(Heavy h)
 {
-    return h;            // Returning a parameter—no NRVO possible
+    return h;            // 参数返回，无法 NRVO
 }
 ```
 
@@ -234,12 +234,12 @@ Compiled on x86-64 with `g++ -std=c++17 -O2` (GCC 16.1.1), `with_rvo`'s assembly
 ```asm
 // GCC 16.1.1, -O2 -std=c++17
 with_rvo(int):
-    movd    %esi, %xmm1         ; parameter v loaded into an SSE register
-    movq    %rdi, %rax          ; rdi = return-value address provided by the caller
-    leaq    1024(%rdi), %rdx    ; loop end address = start + 1024
-    pshufd  $0, %xmm1, %xmm0   ; broadcast v to all 4 int lanes of xmm0
+    movd    %esi, %xmm1         ; 参数 v 加载到 SSE 寄存器
+    movq    %rdi, %rax          ; rdi = 调用者提供的返回值地址
+    leaq    1024(%rdi), %rdx    ; 循环终止地址 = 起始 + 1024
+    pshufd  $0, %xmm1, %xmm0   ; 将 v 广播到 xmm0 的全部 4 个 int
 .L2:
-    movups  %xmm0, (%rax)      ; writes 16 bytes at a time
+    movups  %xmm0, (%rax)      ; 每次写入 16 字节
     addq    $32, %rax
     movups  %xmm0, -16(%rax)
     cmpq    %rdx, %rax
@@ -270,7 +270,7 @@ Count the instructions and you'll find there are exactly two: `movl $1024, %edx`
 Plenty of people around us conflate RVO with move semantics—"we have moves anyway, so RVO doesn't matter." Let's draw the line clearly: what RVO/NRVO does is **elision**—it saves even the move step. What move semantics does is **downgrading**—it turns a deep copy into a shallow pointer transfer. Elision's benefit outranks downgrading's, and the two can be lined up into a chain:
 
 ```text
-Guaranteed elision (C++17 prvalue) > NRVO (compiler optimization) > implicit move (C++11) > copy construction
+保证消除（C++17 prvalue） > NRVO（编译器优化）> 隐式移动（C++11）> 拷贝构造
 ```
 
 The compiler picks along the chain from left to right: if it can elide, it elides outright; if elision isn't possible, it tries NRVO; failing that, it falls back to implicit move; and the last resort, only when nothing else works, is copy construction. So no panic: even if RVO fails, move semantics has your back behind it—far better than the pure copies of the C++03 era.
@@ -281,13 +281,13 @@ Following the chain further leads to one of the most important rules in practice
 Heavy bad_idea()
 {
     Heavy h(42);
-    return std::move(h);  // Blocks NRVO!
+    return std::move(h);  // 阻止了 NRVO！
 }
 
 Heavy good_idea()
 {
     Heavy h(42);
-    return h;  // May trigger NRVO; the fallback is still implicit move
+    return h;  // 可能触发 NRVO，退一步也是隐式移动
 }
 ```
 
@@ -304,12 +304,12 @@ With all the concepts in hand, let's practice in a realistic scenario. Suppose y
 
 using Config = std::map<std::string, std::string>;
 
-/// @brief Convert a configuration map into a readable string
-/// NRVO scenario: returning a named local variable
+/// @brief 将配置映射转换为可读的字符串
+/// NRVO 场景：返回命名局部变量
 std::string format_config_nrvo(const Config& cfg)
 {
     std::string result;
-    result.reserve(256);  // Pre-allocate to avoid repeated growth
+    result.reserve(256);  // 预分配，避免多次扩容
 
     for (const auto& [key, value] : cfg) {
         result += key;
@@ -318,17 +318,17 @@ std::string format_config_nrvo(const Config& cfg)
         result += "\n";
     }
 
-    return result;  // NRVO: result constructs directly in the caller's space
+    return result;  // NRVO：result 直接在调用者空间构造
 }
 
-/// @brief Build a simple configuration line
-/// RVO scenario: returning a prvalue
+/// @brief 构建一条简单的配置行
+/// RVO 场景：返回 prvalue
 std::string make_config_line(const std::string& key, const std::string& value)
 {
-    return key + " = " + value + "\n";  // C++17 guaranteed elision
+    return key + " = " + value + "\n";  // C++17 保证消除
 }
 
-/// @brief Conditional return—an example where NRVO may fail
+/// @brief 条件返回——NRVO 可能失效的例子
 std::string format_with_default(
     const Config& cfg,
     const std::string& key,
@@ -336,9 +336,9 @@ std::string format_with_default(
 {
     auto it = cfg.find(key);
     if (it != cfg.end()) {
-        return it->first + " = " + it->second + "\n";  // prvalue—guaranteed elision
+        return it->first + " = " + it->second + "\n";  // prvalue，保证消除
     }
-    return key + " = " + default_value + " (default)\n";  // prvalue—guaranteed elision
+    return key + " = " + default_value + " (default)\n";  // prvalue，保证消除
 }
 
 int main()
@@ -369,7 +369,7 @@ Let's take them one by one. `format_config_nrvo` returns a named variable that w
 To finish, let's run a complete experiment program—RVO, NRVO, the failure scenarios, and the misuse of `std::move`, all in one viewing.
 
 ```cpp
-// rvo_demo.cpp -- a complete RVO / NRVO demonstration
+// rvo_demo.cpp -- RVO / NRVO 完整演示
 // Standard: C++17
 
 #include <iostream>
@@ -405,20 +405,20 @@ public:
     const std::string& name() const { return name_; }
 };
 
-/// @brief RVO: returning a prvalue
+/// @brief RVO：返回 prvalue
 Tracker make_rvo(const std::string& name)
 {
     return Tracker(name + "_rvo");
 }
 
-/// @brief NRVO: returning a named local variable
+/// @brief NRVO：返回命名局部变量
 Tracker make_nrvo(const std::string& name)
 {
     Tracker t(name + "_nrvo");
     return t;
 }
 
-/// @brief Failed NRVO: two return branches returning different named objects
+/// @brief 失效的 NRVO：两个返回分支返回不同命名对象
 Tracker make_bad_nrvo(const std::string& name, bool flag)
 {
     Tracker a(name + "_a");
@@ -429,14 +429,14 @@ Tracker make_bad_nrvo(const std::string& name, bool flag)
     return b;
 }
 
-/// @brief Cautionary example: using std::move blocks NRVO
+/// @brief 错误示范：用 std::move 阻止了 NRVO
 Tracker make_bad_move(const std::string& name)
 {
     Tracker t(name + "_badmove");
-    return std::move(t);   // Explicit move—blocks NRVO
+    return std::move(t);   // 显式移动，阻止 NRVO
 }
 
-/// @brief Returning a function parameter—NRVO doesn't apply, but implicit move does
+/// @brief 返回函数参数——NRVO 不适用，但有隐式移动
 Tracker return_param(Tracker t)
 {
     return t;

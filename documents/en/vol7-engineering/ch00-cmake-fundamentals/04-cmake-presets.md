@@ -20,10 +20,10 @@ related:
   - "Guide to Common Compiler Options"
 translation:
   source: documents/vol7-engineering/ch00-cmake-fundamentals/04-cmake-presets.md
-  source_hash: 722591fb811111c2aee15968bc0e284dda67a28d6bac396140e030586ab84bff
-  translated_at: '2026-09-26T05:12:48+00:00'
-  engine: anthropic
-  token_count: 4000
+  source_hash: 5acd5575d727bdfb785a975c981bad8ceeaa5305dd1594823fb2b499602c1888
+  translated_at: '2026-11-22T16:43:36+00:00'
+  engine: glm-5.3-refresh
+  token_count: 11357
 ---
 
 # CMakePresets.json — from the old cmake -D way to reproducible --preset builds
@@ -223,9 +223,9 @@ One `CMakePresets.json`, two presets, two independent build trees, two binaries 
 CMake's answer is `CMakeUserPresets.json`. It sits in the same directory as `CMakePresets.json`, has exactly the same structure, but its semantics are "personal override":
 
 ```text
-project root/
-├── CMakePresets.json        # in git, shared by the team
-├── CMakeUserPresets.json    # in .gitignore, local to this machine only
+项目根/
+├── CMakePresets.json        # 进 git,团队共享
+├── CMakeUserPresets.json    # 进 .gitignore,只在本机
 ├── CMakeLists.txt
 └── ...
 ```

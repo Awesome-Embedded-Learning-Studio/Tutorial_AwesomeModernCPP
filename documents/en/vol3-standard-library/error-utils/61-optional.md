@@ -28,9 +28,9 @@ title: 'optional: Making "Maybe Nothing" a Type'
 translation:
   source: documents/vol3-standard-library/error-utils/61-optional.md
   source_hash: dde681d0aab852fd783542c8ab351904c2352cc882e479531c64c7c0ed3d5969
-  translated_at: '2026-09-26T00:54:03+00:00'
-  engine: anthropic
-  token_count: 11000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 17095
 ---
 # optional: Making "Maybe Nothing" a Type
 
@@ -53,7 +53,7 @@ You might think: I already have plenty of ways to represent "nothing", why bothe
 struct Result { bool ok; int value; };
 Result find_pair(int needle, const int* a, int n) {
     for (int i = 0; i < n; ++i) if (a[i] == needle) return {true, i};
-    return {false, 0};   // value=0 on failure is filler, not a real result
+    return {false, 0};   // 失败时 value=0 是凑数的, 不是真结果
 }
 ```
 
@@ -94,20 +94,20 @@ optional's API surface is small, but the value-access step has several interface
 
 std::optional<int> find_first_even(const std::vector<int>& v) {
     for (int x : v) if (x % 2 == 0) return x;
-    return std::nullopt;   // explicitly return "empty"
+    return std::nullopt;   // 显式返回"空"
 }
 
 int main() {
-    std::optional<int> empty;           // default construction: empty
-    std::optional<int> a = 42;          // construct from a value
-    std::optional<int> b{a};            // copy construction
+    std::optional<int> empty;           // 默认构造: 空
+    std::optional<int> a = 42;          // 从值构造
+    std::optional<int> b{a};            // 拷贝构造
 
-    // the four ways to access
-    a.has_value();     // true:  explicitly ask "is there a value"
-    (bool)a;           // true:  operator bool, equivalent to has_value()
-    a.value();         // 42:    throws std::bad_optional_access when empty
-    *a;                // 42:    undefined behavior when empty (covered separately below)
-    a.value_or(0);     // 42:    returns the argument's default when empty
+    // 访问的四种方式
+    a.has_value();     // true:  显式问"有没有"
+    (bool)a;           // true:  operator bool, 等价于 has_value()
+    a.value();         // 42:    空时抛 std::bad_optional_access
+    *a;                // 42:    空时是未定义行为(下面单独讲)
+    a.value_or(0);     // 42:    空时返回参数里的默认值
 }
 ```
 
@@ -159,7 +159,7 @@ We tested on GCC 16.1.1; first, what happens under a default build:
 ```cpp
 // Standard: C++17
 std::optional<int> empty;
-std::cout << *empty << '\n';   // dereferencing an empty optional: UB
+std::cout << *empty << '\n';   // 空的解引用: UB
 ```
 
 Compile and run directly with `g++ -std=c++23 -O2`:
@@ -174,8 +174,8 @@ No crash—it printed a `0`. But don't let that `0` fool you: it is **not the op
 Many people's first instinct is "throw AddressSanitizer at it". But in actual tests, ASan is **powerless** against this UB:
 
 ```text
-O2 -fsanitize=address: prints 0, no error, exits normally
-O2 -fsanitize=undefined: prints 0, no error
+O2 -fsanitize=address: 打印 0, 不报错, 正常退出
+O2 -fsanitize=undefined: 打印 0, 不报错
 ```
 
 The reason is that optional internally uses a **legitimately allocated chunk of union memory** to hold the value, and dereferencing an empty optional reads that memory—it's neither use-after-free (the memory is alive) nor out-of-bounds (the size isn't exceeded), so ASan/UBSan never treats it as an error. This access to "memory that was read but never constructed" lives in a gray zone of "active but uninitialized", invisible to runtime sanitizers.
@@ -185,7 +185,7 @@ To catch it, you need the assertions that ship with libstdc++. Compile the same 
 ```text
 /usr/include/c++/16.1.1/optional:1249: constexpr _Tp& std::optional<_Tp>::operator*() &
   [with _Tp = int]: Assertion 'this->_M_is_engaged()' failed.
-exit code 134 (SIGABRT)
+退出码 134 (SIGABRT)
 ```
 
 Hidden inside libstdc++'s `operator*` is a `__glibcxx_assert(this->_M_is_engaged())`; with `_GLIBCXX_ASSERTIONS` enabled it checks emptiness for you at runtime and aborts on the spot when empty. Whether to enable this macro in production builds (it costs a little performance) is a team trade-off, but **during debugging we strongly recommend turning it on**—it blocks a whole class of "looks like it works" UB for you.
@@ -210,15 +210,15 @@ struct User {
 };
 
 int main() {
-    std::optional<User> opt;          // empty: no User constructed yet
-    opt.emplace("alice", 30);         // construct in place, no temporary created
-    opt->greet();                     // operator-> member access
+    std::optional<User> opt;          // 空, 还没构造 User
+    opt.emplace("alice", 30);         // 就地构造, 不产生临时对象
+    opt->greet();                     // operator-> 访问成员
 
-    opt.emplace("bob", 25);           // emplace again: destroy the old one first, then construct the new
+    opt.emplace("bob", 25);           // 再次 emplace: 先析构旧的, 再构造新的
     opt->greet();
 
-    opt.reset();                      // actively clear: invokes the destructor
-    opt = std::nullopt;               // assign nullopt, equivalent to clearing
+    opt.reset();                      // 主动清空, 调用析构
+    opt = std::nullopt;               // 赋值 nullopt, 等价于清空
 }
 ```
 
@@ -249,11 +249,11 @@ Why do we need them? Consider a real scenario: given a username, we want to "loo
 // Standard: C++17
 std::string classic(const std::string& name) {
     auto uid = get_user_id(name);
-    if (!uid) return "(no user)";          // first emptiness check
+    if (!uid) return "(no user)";          // 第一层判空
     auto email = get_email(*uid);
-    if (!email) return "(no email)";       // second emptiness check
+    if (!email) return "(no email)";       // 第二层判空
     auto dom = domain_of(*email);
-    if (!dom) return "(no domain)";        // third emptiness check
+    if (!dom) return "(no domain)";        // 第三层判空
     return *dom;
 }
 ```
@@ -266,7 +266,7 @@ std::string monadic(const std::string& name) {
     return get_user_id(name)
         .and_then(get_email)          // optional<int>    -> optional<string>
         .and_then(domain_of)          // optional<string> -> optional<string>
-        .value_or("(missing)");       // fallback at the end of the chain
+        .value_or("(missing)");       // 链尾兜底
 }
 ```
 
@@ -291,13 +291,13 @@ Let's pin the semantics down with one example each for `transform` and `or_else`
 
 ```cpp
 // Standard: C++23
-std::string to_upper(std::string s) { /* convert to uppercase */ return s; }
+std::string to_upper(std::string s) { /* 转大写 */ return s; }
 
 std::optional<std::string> name{"alice"};
 std::optional<std::string> empty;
 
-auto big = name.transform(to_upper);         // has value -> map -> still has value: ALICE
-auto big_empty = empty.transform(to_upper);  // empty -> pass through -> still empty
+auto big = name.transform(to_upper);         // 有值 -> 映射 -> 仍有值: ALICE
+auto big_empty = empty.transform(to_upper);  // 空 -> 透传 -> 仍空
 ```
 
 ```text
@@ -313,8 +313,8 @@ auto fallback = empty.or_else([] {
     std::cout << "  [or_else] 没值, 回退到 GUEST\n";
     return std::optional<std::string>{"GUEST"};
 });
-// when empty: logs and returns an optional holding "GUEST"
-// when non-empty: not called, returned as-is
+// empty 时: 打日志, 返回装着 "GUEST" 的 optional
+// 非空时: 不调用, 原样返回
 ```
 
 ```text
@@ -343,9 +343,9 @@ optional's support for move semantics is complete: "moving out" the value inside
 
 ```cpp
 // Standard: C++17
-auto o = make_box();              // optional<Box> holding tag="payload"
-Box taken = std::move(*o);        // move the value out
-// o still has has_value()=true, but the Box inside is now in a moved-from state
+auto o = make_box();              // optional<Box>, 装着 tag="payload"
+Box taken = std::move(*o);        // 把值搬出来
+// o 仍然 has_value()=true, 但里面的 Box 已是 moved-from 状态
 ```
 
 ```text
@@ -374,9 +374,9 @@ constexpr int compute() {
 }
 
 int main() {
-    static_assert(compute() == 42);                // settled at compile time
+    static_assert(compute() == 42);                // 编译期就定下来
     constexpr std::optional<int> empty;
-    static_assert(empty.value_or(99) == 99);       // value_or is constexpr too
+    static_assert(empty.value_or(99) == 99);       // value_or 也 constexpr
 }
 ```
 

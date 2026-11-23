@@ -10,9 +10,10 @@ description: "From two arguments to six, a hands-on table of where integer argum
 reading_time_minutes: 7
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/03-arguments-in-registers/01-integer-args-register-allocation.md
-  source_hash: e5379de60630b7b3427c01900f2becf7e9f16d04953efd022897e93ea055bbb2
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: 081055b7898fe32e56b849344c6380eac765f87159c91397cd98a2b2cd8aa600
+  translated_at: '2026-11-22T16:45:26Z'
+  engine: glm-5.3-refresh
+  token_count: 6569
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -137,7 +138,7 @@ _Z4sum6iiiiii:
 	movl	%ecx, -16(%rbp)
 	movl	%r8d, -20(%rbp)
 	movl	%r9d, -24(%rbp)
-	... (six rounds of reading back from the stack slots and adding, omitted)
+	...（六次从栈槽读回并累加，略）
 	popq	%rbp
 	ret
 
@@ -153,7 +154,7 @@ main:
 	movl	$1, %edi
 	call	_Z4sum6iiiiii
 	movl	%eax, -4(%rbp)
-	... (store to sink, omitted)
+	...（写回 sink，略）
 	leave
 	ret
 ```
@@ -195,8 +196,10 @@ $5 = 5
 $6 = 6
 ```
 
-The six registers report 1 through 6, matching the arguments one for one, and on the side gdb's own debug information spells out `sum6 (a=1, b=2, ...)`, so we are holding two routes of evidence that agree. Counting up to the 6th argument, the integer register slots run out exactly. Beyond gdb's evidence there is a third route: the one you walk yourself. The executor below loads the scene of add(11, 22) and sum6(1..6). Single-step to just before `call sum6` and look up at the register panel: edi, esi, edx, ecx, r8d, r9d hold 1 through 6, and the loading order runs backwards, the 6th argument entering r9d first. Symbol names lose their mangling, sum6 is not _Z4sum6iiiiii, and the instructions themselves correspond to the listing above.
+The six registers report 1 through 6, matching the arguments one for one, and on the side gdb's own debug information spells out `sum6 (a=1, b=2, ...)`, so we are holding two routes of evidence that agree.
+
+Beyond gdb's evidence there is a third route: the one you walk yourself. The executor below loads the scene of add(11, 22) and sum6(1..6). Single-step to just before `call sum6` and look up at the register panel: edi, esi, edx, ecx, r8d, r9d hold 1 through 6, and the loading order runs backwards, the 6th argument entering r9d first. Symbol names lose their mangling, sum6 is not _Z4sum6iiiiii, and the instructions themselves correspond to the listing above.
 
 <AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/reg_args_7.json" />
 
-So what happens when the 7th argument arrives? The answer is in the next piece.
+Counting up to the 6th argument, the integer register slots run out exactly. So what happens when the 7th argument arrives? The answer is in the next piece.

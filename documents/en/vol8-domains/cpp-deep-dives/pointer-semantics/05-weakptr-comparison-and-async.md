@@ -25,9 +25,9 @@ title: 'std::weak_ptr Compared: Async Callbacks in Practice'
 translation:
   source: documents/vol8-domains/cpp-deep-dives/pointer-semantics/05-weakptr-comparison-and-async.md
   source_hash: 31762d4848b3e0f1d3533a8cef070f681c0b8482f51c4ca0903d8b80ad48bb03
-  translated_at: '2026-09-27T02:43:50+00:00'
-  engine: anthropic
-  token_count: 3700
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6442
 ---
 # std::weak_ptr Compared: Async Callbacks in Practice
 
@@ -71,9 +71,9 @@ class NetworkClient {
 public:
     void start_request()
     {
-        // Wrong! The lambda captures raw this
+        // 错误！lambda 捕获了裸 this
         timer_.schedule(1000ms, [this]() {
-            process_response();  // If NetworkClient has been destroyed, this is dangling
+            process_response();  // 如果 NetworkClient 已析构，this 是悬垂指针
         });
     }
 
@@ -83,13 +83,13 @@ private:
     Timer timer_;
 };
 
-// Usage example
+// 使用场景
 void test()
 {
     auto client = std::make_unique<NetworkClient>();
     client->start_request();
-    // client is destroyed here
-}  // 1 second later the callback fires → this dangles → UB
+    // client 在这里析构
+}  // 1 秒后回调执行 → this 悬垂 → UB
 ```
 
 **The problem**: `this` is just a raw pointer that carries no lifetime information. After the object is destroyed, the `this` inside the callback is a dangling pointer, and any member access through it is UB. This is the most common source of crashes in C++ asynchronous programming.
@@ -101,7 +101,7 @@ void start_request()
 {
     auto* raw_ptr = this;
     timer_.schedule(1000ms, [raw_ptr]() {
-        raw_ptr->process_response();  // Same dangling problem
+        raw_ptr->process_response();  // 同样的悬垂问题
     });
 }
 ```
@@ -116,8 +116,8 @@ void start_request()
     auto obs = make_observer(this);
     timer_.schedule(1000ms, [obs]() {
         if (obs) {
-            obs->process_response();  // ObserverPtr::operator bool only checks for nullptr
-        }                            // After the object is destroyed, obs.get() is still non-null → dangling dereference
+            obs->process_response();  // ObserverPtr::operator bool 只检查是否为 nullptr
+        }                            // 对象销毁后 obs.get() 仍非 nullptr → 悬垂解引用
     });
 }
 ```
@@ -131,7 +131,7 @@ void start_request()
 {
     auto weak = get_unsafe_weak_ptr();
     timer_.schedule(1000ms, [weak]() {
-        if (weak.is_valid()) {  // Accessing a destroyed Flag → UB!
+        if (weak.is_valid()) {  // 访问已销毁的 Flag → UB！
             // ...
         }
     });
@@ -150,8 +150,8 @@ public:
         auto weak = factory_.get_weak_ptr();
         timer_.schedule(1000ms, [weak]() {
             if (auto* self = weak.get()) {
-                self->process_response();  // Safe: get() checks the control block first
-            }                             // Returns nullptr when invalidated — no dangling dereference
+                self->process_response();  // 安全：get() 先检查 control block
+            }                             // 失效时返回 nullptr，不会解引用
         });
     }
 
@@ -175,8 +175,8 @@ public:
         auto weak = weak_from_this();  // C++17
         timer_.schedule(1000ms, [weak]() {
             if (auto self = weak.lock()) {
-                self->process_response();  // lock() succeeds → the shared_ptr extends the lifetime
-            }                             // Within self's scope, the object cannot be destroyed
+                self->process_response();  // lock() 成功 → shared_ptr 延长生命周期
+            }                             // 在 self 的作用域内，对象不会被析构
         });
     }
 
@@ -184,7 +184,7 @@ private:
     Timer timer_;
 };
 
-// The object must be managed with shared_ptr
+// 使用时必须用 shared_ptr 管理
 auto client = std::make_shared<NetworkClient>();
 client->start_request();
 ```

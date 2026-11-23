@@ -26,9 +26,9 @@ title: "weak_ptr Design Guide (III): test strategy and performance comparison"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/02_weak_ptr/hands_on/03-weak-ptr-testing.md
   source_hash: 9a647a5bd9efa338e1f76ced6d07e8164df0cb9d0bc1eed40050c7acfe7b3321
-  translated_at: '2026-09-26T01:58:06+00:00'
-  engine: anthropic
-  token_count: 3900
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5473
 ---
 # weak_ptr Design Guide (III): test strategy and performance comparison
 
@@ -60,9 +60,9 @@ struct Foo { int x = 42; };
 TEST_CASE("invalidate kills all weak ptrs sharing the flag", "[weak_ptr]") {
     Foo foo;  WeakPtrFactory<Foo> fac(&foo);
     auto wp1 = fac.get_weak_ptr();
-    auto wp2 = fac.get_weak_ptr();          // same factory → shared Flag
+    auto wp2 = fac.get_weak_ptr();          // 同一 factory → 共享同一 Flag
     fac.invalidate_weak_ptrs();
-    REQUIRE_FALSE(wp1);                     // invariant 3: collective invalidation
+    REQUIRE_FALSE(wp1);                     // 不变量 3:集体失效
     REQUIRE_FALSE(wp2);
 }
 
@@ -70,25 +70,25 @@ TEST_CASE("was_invalidated vs reset", "[weak_ptr]") {
     Foo foo;  WeakPtrFactory<Foo> fac(&foo);
     auto wp_a = fac.get_weak_ptr();
     fac.invalidate_weak_ptrs();
-    REQUIRE(wp_a.was_invalidated());        // was invalidated
+    REQUIRE(wp_a.was_invalidated());        // 被作废
     auto wp_b = fac.get_weak_ptr();
     wp_b.reset();
-    REQUIRE_FALSE(wp_b.was_invalidated());  // a manual reset does not count as invalidated
+    REQUIRE_FALSE(wp_b.was_invalidated());  // 主动 reset 不算作废
 }
 
-// invariant 6: the last member guards the member-destruction window
-struct Good {                                  // ✓ factory declared last
+// 不变量 6:最后成员守护成员析构期
+struct Good {                                  // ✓ factory 最后声明
     std::vector<int> buf_;
     WeakPtrFactory<Good> fac_{this};
 };
-struct Bad {                                   // ✗ factory declared first → destructed last
+struct Bad {                                   // ✗ factory 先声明 → 最后析构
     WeakPtrFactory<Bad> fac_{this};
     std::vector<int> buf_;
 };
 TEST_CASE("last-member idiom: destruction order", "[weak_ptr][.death]") {
-    // Good: fac_ destructs first → WeakPtr goes invalid → only then does buf_ destruct
-    // Bad: buf_ destructs first → fac_ destructs later → in that window WeakPtr is still valid (dangling deref possible)
-    // Verify in an isolated death test with TSan/AddressSanitizer that Good has no UAF
+    // Good:fac_ 先析构 → WeakPtr 失效 → buf_ 才析构
+    // Bad:buf_ 先析构 → fac_ 后析构 → 中间窗口 WeakPtr 仍有效(可悬垂 deref)
+    // 用 TSan/AddressSanitizer 在隔离 death test 里验证 Good 不 UAF
 }
 ```
 
@@ -101,7 +101,7 @@ Invariants 4 (CHECK-on-deref) and 6 (destruction order) share one nuisance: they
 Start with the most tangible number — how many bytes does a `WeakPtr<T>` actually eat? We pin it down with a `static_assert`: if it does not compile, it is wrong:
 
 ```cpp
-static_assert(sizeof(WeakPtr<Foo>) == sizeof(void*) * 2);   // 16 bytes (x86-64)
+static_assert(sizeof(WeakPtr<Foo>) == sizeof(void*) * 2);   // 16 字节(x86-64)
 ```
 
 | Type | sizeof | Composition |

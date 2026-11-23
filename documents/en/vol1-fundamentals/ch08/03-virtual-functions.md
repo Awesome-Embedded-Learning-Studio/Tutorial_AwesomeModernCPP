@@ -21,9 +21,9 @@ title: Virtual Functions and Polymorphism
 translation:
   source: documents/vol1-fundamentals/ch08/03-virtual-functions.md
   source_hash: 50722144a7be915db1ceab543ccfb3c2b6048823c2c1c4763f1d29d3258046c3
-  translated_at: '2026-09-25T11:27:39+00:00'
-  engine: anthropic
-  token_count: 2800
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 8837
   notes: '原文一处明显笔误按正确拼写译出：GoodBase 示例输出注释中的「~BadBase()」原文疑为「~GoodBase()」（该输出属于 GoodBase/GoodDerived 层次，紧随其后的正文亦作 ~GoodBase()）。'
 ---
 # Virtual Functions and Polymorphism: One Call, Different Implementations
@@ -92,14 +92,14 @@ Add `virtual` in front of the base class's member function, and everything chang
 ```cpp
 class Shape {
 public:
-    virtual void draw() const {   // virtual added
+    virtual void draw() const {   // 加上 virtual
         printf("Shape::draw()\n");
     }
 };
 
 class Circle : public Shape {
 public:
-    void draw() const override {  // implicitly virtual
+    void draw() const override {  // 隐式虚函数
         printf("Circle::draw()\n");
     }
 };
@@ -138,7 +138,7 @@ public:
 
 class Circle : public Shape {
 public:
-    void draw() {   // forgot the const! Signature mismatch, not an override
+    void draw() {   // 忘了 const！签名不匹配，不是重写
         printf("Circle::draw()\n");
     }
 };
@@ -151,7 +151,7 @@ Once we add `override`, the compiler immediately drags the same problem out into
 ```cpp
 class Circle : public Shape {
 public:
-    void draw() override {   // Compile error! Signature mismatch
+    void draw() override {   // 编译错误！签名不匹配
         printf("Circle::draw()\n");
     }
 };
@@ -196,7 +196,7 @@ First, the cautionary tale:
 ```cpp
 class BadBase {
 public:
-    ~BadBase() { printf("~BadBase()\n"); }   // non-virtual destructor
+    ~BadBase() { printf("~BadBase()\n"); }   // 非虚析构
 };
 
 class BadDerived : public BadBase {
@@ -207,7 +207,7 @@ public:
 };
 
 BadBase* p = new BadDerived();
-delete p;    // only ~BadBase() is called; ~BadDerived() is skipped!
+delete p;    // 只调用了 ~BadBase()，~BadDerived() 被跳过！
 ```
 
 The output shows only `~BadBase()`; `~BadDerived()` is never called at all, and the 400 bytes behind `data_` leak outright. The cause is the same as before: at `delete p`, the compiler sees that `p`'s static type is `BadBase*`, `~BadBase()` is not virtual, so the call statically binds to the base-class destructor, and the derived class's destruction logic is skipped entirely.
@@ -217,7 +217,7 @@ The fix is dead simple: mark the base-class destructor `virtual`:
 ```cpp
 class GoodBase {
 public:
-    virtual ~GoodBase() = default;   // virtual destructor
+    virtual ~GoodBase() = default;   // 虚析构函数
 };
 ```
 
@@ -226,7 +226,7 @@ Now run the same operation again:
 ```cpp
 GoodBase* p = new GoodDerived();
 delete p;
-// Output:
+// 输出：
 // ~GoodDerived(): data_ released
 // ~GoodBase()
 ```
@@ -245,20 +245,20 @@ Now let's string the previous pieces together and write a complete polymorphic s
 #include <cstdio>
 #include <vector>
 
-// Abstract base class
+// 抽象基类
 class Shape {
 public:
-    virtual void draw() const = 0;           // pure virtual function
-    virtual double area() const = 0;         // pure virtual function
-    virtual ~Shape() = default;              // virtual destructor
+    virtual void draw() const = 0;           // 纯虚函数
+    virtual double area() const = 0;         // 纯虚函数
+    virtual ~Shape() = default;              // 虚析构函数
 
     const char* name() const { return name_; }
 
 protected:
-    const char* name_;   // set by derived classes at construction
+    const char* name_;   // 派生类在构造时设置
 };
 
-// Circle
+// 圆形
 class Circle : public Shape {
 private:
     double radius_;
@@ -275,7 +275,7 @@ public:
     }
 };
 
-// Rectangle
+// 矩形
 class Rectangle : public Shape {
 private:
     double width_;
@@ -293,7 +293,7 @@ public:
     }
 };
 
-// Triangle
+// 三角形
 class Triangle : public Shape {
 private:
     double base_;
@@ -318,7 +318,7 @@ Then in `main()` we create a set of different shapes and operate on them through
 
 ```cpp
 int main() {
-    // Store all shapes in a vector of base-class pointers
+    // 用基类指针的 vector 存储所有图形
     std::vector<Shape*> shapes;
     shapes.push_back(new Circle(3.0));
     shapes.push_back(new Rectangle(4.0, 5.0));
@@ -327,7 +327,7 @@ int main() {
 
     printf("=== Drawing all shapes ===\n");
     for (auto* s : shapes) {
-        s->draw();   // Polymorphism: calls draw() on the actual type
+        s->draw();   // 多态：调用实际类型的 draw()
     }
 
     printf("\n=== Areas ===\n");
@@ -339,7 +339,7 @@ int main() {
     }
     printf("  Total area: %.4f\n", total);
 
-    // Cleanup — the virtual destructor ensures each derived class is released correctly
+    // 清理——虚析构函数确保每个派生类正确释放
     for (auto* s : shapes) {
         delete s;
     }

@@ -23,9 +23,9 @@ title: 'OnceCallback prerequisite (IV): Concepts and requires constraints'
 translation:
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/pre-04-once-callback-concepts-and-requires.md
   source_hash: 9d7dceb96e13497e4fa2766e045901f69e26a9643c6af65a3e6a70d68f945806
-  translated_at: '2026-09-26T00:51:36+00:00'
-  engine: anthropic
-  token_count: 6000
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6825
 ---
 # OnceCallback prerequisite (IV): Concepts and requires constraints
 
@@ -54,13 +54,13 @@ class Callback;
 template<typename R, typename... Args>
 class Callback<R(Args...)> {
 public:
-    // Template constructor: accepts any callable
+    // 模板构造函数：接受任意可调用对象
     template<typename Functor>
     explicit Callback(Functor&& f) {
-        // initialize internal storage with f...
+        // 用 f 初始化内部存储...
     }
 
-    // Implicitly generated move constructor
+    // 编译器隐式生成的移动构造函数
     // Callback(Callback&& other) noexcept;
 };
 ```
@@ -75,21 +75,21 @@ Luckily, C++ keeps a tie-breaker rule: when the template and non-template versio
 
 ```cpp
 struct Wrapper {
-    // Template constructor: accepts any type
+    // 模板构造函数：接受任何类型
     template<typename T>
     Wrapper(T&& x) {
         std::cout << "template constructor\n";
     }
 
-    // Move constructor (implicitly generated or explicitly declared)
+    // 移动构造函数（编译器隐式生成或显式声明）
     Wrapper(Wrapper&& other) noexcept {
         std::cout << "move constructor\n";
     }
 };
 
 Wrapper a;
-Wrapper b = std::move(a);  // You expect "move constructor"
-                            // In some cases you may get "template constructor"
+Wrapper b = std::move(a);  // 你期望输出 "move constructor"
+                            // 在某些情况下可能输出 "template constructor"
 ```
 
 The fix is to put a constraint on the template constructor so it stops reaching for `Wrapper`'s own type — and that's where the `requires` clause enters the stage.
@@ -117,11 +117,11 @@ Hang a `requires` clause onto the back of a template declaration, and you've put
 template<typename T>
     requires Integral<T>
 void foo(T x) {
-    // only instantiated when T is an integer type
+    // 只有 T 是整数类型时，这个函数才会被实例化
 }
 
-foo(42);    // OK: int is an integer
-foo(3.14);  // compile error: double does not satisfy Integral
+foo(42);    // OK：int 是整数
+foo(3.14);  // 编译错误：double 不满足 Integral
 ```
 
 The `<concepts>` header also stocks a pile of ready-made library concepts; a few commonly used ones look like this:
@@ -129,13 +129,13 @@ The `<concepts>` header also stocks a pile of ready-made library concepts; a few
 ```cpp
 #include <concepts>
 
-// std::invocable<F, Args...>: can F be called with Args...?
+// std::invocable<F, Args...>：F 是否可以用 Args... 调用
 static_assert(std::invocable<int(*)(int), int>);
 
-// std::same_as<A, B>: are A and B the same type?
+// std::same_as<A, B>：A 和 B 是否是同一类型
 static_assert(std::same_as<int, int>);
 
-// std::convertible_to<From, To>: can From implicitly convert to To?
+// std::convertible_to<From, To>：From 是否能隐式转换到 To
 static_assert(std::convertible_to<int, double>);
 ```
 
@@ -175,8 +175,8 @@ When what's passed in is `OnceCallback` itself (the move-construction scenario, 
 This is not a need exclusive to OnceCallback. `std::move_only_function`'s own implementation hangs an almost identical constraint on itself; the standard library just spells it with the standard concept `std::constructible_from` paired with `!std::is_same_v`. To put it plainly: every move-only type-erasure wrapper needs this defense. As long as your class has both "a template constructor that accepts any type" and "a compiler-generated move constructor," the two are bound to fight, and you must separate them with a constraint.
 
 ```text
-Pattern summary:
-template constructor + requires excluding the class's own type = protects correct matching of move semantics
+模式总结：
+模板构造函数 + requires 排除自身类型 = 保护移动语义的正确匹配
 ```
 
 A parting word: when you later roll your own move-only wrappers like `unique_function` or `any_invocable`, remember this pattern. It's a universally applicable defensive move, and it saves you from debugging for hours only to discover the template intercepted your move semantics.
@@ -190,14 +190,14 @@ A parting word: when you later roll your own move-only wrappers like `unique_fun
 ```cpp
 OnceCallback cb1([](int x) { return x; });
 
-// Scenario A: std::move(cb1) is an rvalue
-// Functor deduced as OnceCallback (no reference)
-// is_same_v<OnceCallback, OnceCallback> == true → constraint fails ✓ correct
+// 场景 A：std::move(cb1) 是右值
+// Functor 推导为 OnceCallback（不带引用）
+// is_same_v<OnceCallback, OnceCallback> == true → 约束失败 ✓ 正确
 
-// Scenario B: const OnceCallback& ref = cb1;
-// If someone then writes OnceCallback cb2(ref);
-// Functor deduced as const OnceCallback&
-// is_same_v<const OnceCallback&, OnceCallback> == false → constraint passes ✗ wrong!
+// 场景 B：const OnceCallback& ref = cb1;
+// 如果有人写了 OnceCallback cb2(ref);
+// Functor 推导为 const OnceCallback&
+// is_same_v<const OnceCallback&, OnceCallback> == false → 约束通过 ✗ 错误！
 ```
 
 In scenario B, if `decay_t` is missing, `const OnceCallback&` and `OnceCallback` are simply not the same type; the constraint passes anyway, and the template constructor gets selected — but semantically, what we want is a compile error (the copy is deleted), or at the very least not template construction. Once `decay_t` is added, `const OnceCallback&` decays into `OnceCallback`, the two sides line up, and the constraint correctly fails. We've stepped in this one ourselves and debugged for ages before realizing `decay_t` was missing.

@@ -27,9 +27,9 @@ title: 'Deep Dive into map and set: Red-Black Trees, Heterogeneous Lookup, and N
 translation:
   source: documents/vol3-standard-library/containers/06-map-set-deep-dive.md
   source_hash: 2a8c7d7f183542ad3514ba8de981bf4081655fa1bc3db3ce1ae08e4147f09ba4
-  translated_at: '2026-09-26T02:12:25+00:00'
-  engine: anthropic
-  token_count: 8300
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 10862
 ---
 # Deep Dive into map and set: Red-Black Trees, Heterogeneous Lookup, and Node Handles
 
@@ -69,13 +69,13 @@ The last two rules together have this effect: you cannot make a path both long a
 What does a node look like? Compared to an ordinary binary search tree, it just gains one color bit and three pointers:
 
 ```cpp
-// Simplified skeleton of a red-black tree node (standard library internals; details vary by vendor — structure only)
+// 红黑树节点的简化骨架（标准库内部实现，各厂细节不同，这里只看结构）
 struct TreeNode {
-    bool      is_red;    // the color bit
-    TreeNode* parent;    // parent pointer (needed for bottom-up fixups)
+    bool      is_red;    // 颜色位
+    TreeNode* parent;    // 父节点指针（自底向上调整时要用）
     TreeNode* left;
     TreeNode* right;
-    // a map node stores pair<const Key, Value> here; a set node stores only Key
+    // map 节点这里存 pair<const Key, Value>；set 节点只存 Key
 };
 ```
 
@@ -115,20 +115,20 @@ int main()
     registry[1] = "alpha";
     registry[2] = "beta";
 
-    // Grab a reference and an iterator to element 1
+    // 拿一个指向元素 1 的引用和迭代器
     std::string& ref = registry.at(1);
     auto it = registry.find(1);
 
-    // Frantically insert a pile of new elements, triggering repeated red-black tree rebalancing
+    // 狂插一堆新元素，触发多次红黑树重平衡
     for (int i = 100; i < 200; ++i) {
         registry[i] = "x";
     }
 
-    // Then erase some unrelated elements
+    // 再删掉一些无关元素
     registry.erase(150);
     registry.erase(160);
 
-    // Are the original reference and iterator still valid?
+    // 原来的引用和迭代器还有效吗？
     std::cout << "ref = " << ref << '\n';
     std::cout << "it = " << it->second << '\n';
 
@@ -155,7 +155,7 @@ The pit below is one most people who have written a string-keyed map have steppe
 std::map<std::string, int> scores;
 scores["alice"] = 90;
 
-auto it = scores.find("alice");   // "alice" is a const char*
+auto it = scores.find("alice");   // "alice" 是 const char*
 ```
 
 The signature of `find` is `find(const key_type&)`, and key_type is `std::string`. What you passed in, though, is a `const char*`. So the compiler, ever so thoughtful, constructs a temporary `std::string` from `"alice"` for you and does the lookup with that temporary. One lookup, one string construction thrown away — and if SSO cannot hold it, the temporary string also has to allocate on the heap, then gets destroyed and freed the instant the lookup finishes. Do this at high frequency on a hot path and the entire cost goes into manufacturing temporary strings.
@@ -169,13 +169,13 @@ By default the map's comparator is `std::less<std::string>`, which only recogniz
 #include <string>
 #include <string_view>
 
-// The key point: the comparator is std::less<> (transparent), not the default std::less<std::string>
+// 关键：比较器用 std::less<>（透明），而不是默认的 std::less<std::string>
 std::map<std::string, int, std::less<>> scores;
 scores["alice"] = 90;
 
-// Now neither of these two lookups constructs a temporary string
-scores.find("alice");                    // const char* compared directly
-scores.find(std::string_view("alice"));  // string_view compared directly
+// 现在这两种查法都不构造临时 string
+scores.find("alice");                    // const char* 直接比
+scores.find(std::string_view("alice"));  // string_view 直接比
 ```
 
 The mechanism behind the curtain is the nested type `is_transparent`. `std::less<>` typedefs an `is_transparent` on the inside; when the map's lookup overloads spot this marker on the comparator, they switch on the heterogeneous versions and compare the raw type you provided directly against the strings in the tree. string is already comparable with `const char*` and `string_view`, so everything sails through — not a single temporary object constructed.
@@ -202,13 +202,13 @@ int main()
     std::map<int, std::string> m;
     m[1] = "alpha";
 
-    // Changing the key directly won't compile (a map's key is const)
+    // 直接改 key 编译不过（map 的 key 是 const）
     // m.begin()->first = 100;
 
-    // The correct approach: extract the node, change the key, insert it back
-    auto node = m.extract(1);      // pluck out the node with key=1
-    node.key() = 100;              // now the key can be changed (the node is off the tree)
-    m.insert(std::move(node));     // insert it back, new key=100
+    // 正确做法：extract 摘节点，改 key，再 insert
+    auto node = m.extract(1);      // 摘下 key=1 的节点
+    node.key() = 100;              // 现在能改 key 了（节点已脱离树）
+    m.insert(std::move(node));     // 插回去，新 key=100
 
     std::cout << "count(1)   = " << m.count(1) << '\n';
     std::cout << "count(100) = " << m.count(100) << '\n';
@@ -237,7 +237,7 @@ std::map<int, std::string> a, b;
 a[1] = "x";
 a[2] = "y";
 
-// Move node 1 of a wholesale into b
+// 把 a 里的节点 1 整个搬到 b
 auto node = a.extract(1);
 b.insert(std::move(node));
 ```
@@ -249,7 +249,7 @@ std::map<int, std::string> m1{{1, "a"}, {2, "b"}};
 std::map<int, std::string> m2{{2, "dup"}, {3, "c"}};
 
 m1.merge(m2);
-// m1: {1, 2, 3}; only the key=2 one is left in m2 (m1 already had 2, so the conflict wasn't moved)
+// m1: {1, 2, 3}；m2 里只剩下 key=2 那个（因为 m1 已有 2，冲突没搬走）
 ```
 
 `merge` costs O(n·log n) (n being the number of nodes moved), but at no point is any value copied — when you are migrating large objects (say the value is a big vector or a long string), the savings are extremely tangible.

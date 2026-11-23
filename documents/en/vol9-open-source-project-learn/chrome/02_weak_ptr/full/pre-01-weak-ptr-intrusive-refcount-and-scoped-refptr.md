@@ -28,9 +28,9 @@ title: "WeakPtr prerequisite (I): intrusive reference counting and scoped_refptr
 translation:
   source: documents/vol9-open-source-project-learn/chrome/02_weak_ptr/full/pre-01-weak-ptr-intrusive-refcount-and-scoped-refptr.md
   source_hash: 0c54c6c28e803d12a4f2f5bbe2ad660bf8a149e2d3bc1bb63c45d1258dd35c7d
-  translated_at: '2026-09-26T01:23:38+00:00'
-  engine: anthropic
-  token_count: 2500
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 9232
 ---
 # WeakPtr prerequisite (I): intrusive reference counting and scoped_refptr
 
@@ -54,8 +54,8 @@ The mechanism itself does not care where the counter is stored. But it is precis
 
 ```mermaid
 flowchart LR
-    SP1["shared_ptr"] & SP2["shared_ptr"] --> CB["control block (heap)<br/>strong_count<br/>weak_count"]
-    CB --> Foo["Foo (heap)"]
+    SP1["shared_ptr"] & SP2["shared_ptr"] --> CB["控制块(堆)<br/>strong_count<br/>weak_count"]
+    CB --> Foo["Foo(堆)"]
 ```
 
 The most direct benefit of doing it this way: the object itself has no idea it is being reference counted. Take any type `T`, drop it into a `shared_ptr<T>`, and not a single line of `T` needs to change. That is non-intrusive's biggest advantage — universality; anything fits.
@@ -73,10 +73,10 @@ Intrusive reference counting flips it around — the counter directly becomes pa
 ```mermaid
 flowchart LR
     SR["scoped_refptr"] --> T
-    subgraph T["T (on the heap)"]
+    subgraph T["T (堆上)"]
         direction LR
         M["...members..."]
-        RC["ref_count_ = 2<br/>← the counter lives inside the object"]
+        RC["ref_count_ = 2<br/>← 计数器就在对象里"]
     end
 ```
 
@@ -105,9 +105,8 @@ Theory alone is not satisfying enough, so let's hand-roll one ourselves and sque
 #include <atomic>
 #include <cstddef>
 
-// Atomic intrusive refcount base class (corresponds to Chromium's
-// RefCountedThreadSafe, not the non-atomic RefCounted — the latter is for
-// single-sequence objects; here we go cross-sequence, so atomics it is)
+// 原子版侵入式引用计数基类(对应 Chromium 的 RefCountedThreadSafe,
+// 不是非原子的 RefCounted——后者用于单序列对象,这里要跨序列所以用原子)
 class RefCountedThreadSafe {
 public:
     void add_ref() const noexcept {
@@ -115,10 +114,9 @@ public:
     }
 
     bool release() const noexcept {
-        // release semantics: writes before destruction are visible to the
-        // thread that subsequently observes count == 0
+        // release 语义:析构前的写对后续看到 count==0 的线程可见
         if (ref_count_.fetch_sub(1, std::memory_order_acq_rel) == 1) {
-            return true;   // the caller is responsible for delete this
+            return true;   // 调用方负责 delete this
         }
         return false;
     }
@@ -144,7 +142,7 @@ Next, have the target type inherit from it:
 class Flag : public RefCountedThreadSafe {
 public:
     Flag() = default;
-    // ... business interface ...
+    // ... 业务接口 ...
 };
 ```
 
@@ -167,12 +165,12 @@ public:
         if (ptr_) ptr_->add_ref();
     }
 
-    // copy: +1
+    // 拷贝:+1
     scoped_refptr(const scoped_refptr& other) noexcept : ptr_(other.ptr_) {
         if (ptr_) ptr_->add_ref();
     }
 
-    // move: no bump, no drop — just empty the source
+    // 移动:不增不减,把对面清空
     scoped_refptr(scoped_refptr&& other) noexcept : ptr_(other.ptr_) {
         other.ptr_ = nullptr;
     }
@@ -196,7 +194,7 @@ public:
 private:
     void release() noexcept {
         if (ptr_ && ptr_->release()) {
-            delete ptr_;   // last reference, destruct
+            delete ptr_;   // 最后一个引用,析构
             ptr_ = nullptr;
         }
     }
@@ -213,8 +211,8 @@ Usage is nearly identical to `shared_ptr`:
 auto p = scoped_refptr<Flag>(new Flag);   // ref_count = 1
 {
     auto p2 = p;                           // ref_count = 2
-}                                          // p2 destructs, ref_count = 1
-// p is still around; Flag stays alive
+}                                          // p2 析构,ref_count = 1
+// p 还在,Flag 活着
 ```
 
 But in memory it only allocated once — the `Flag` object itself, with the counter embedded inside it.
@@ -260,15 +258,15 @@ Intrusive reference counting has one iron invariant — the object may only be `
 `std::shared_ptr` does not have to worry about this, because the control block keeps the object firmly in its grip. Intrusive cannot lean on that; it needs the object's own cooperation: hide the destructor as `private` or `protected`, and leave only the refcount `release` path as the way in. That is exactly what Chromium's `RefCountedThreadSafe` does — through a `friend`-protected `Destroy()` it actually performs `delete this`, outside code can never touch the destructor, and mistaken deletes are plugged at the source.
 
 ```cpp
-// Teaching version: non-template base (matches RefCountedThreadSafe at line 123 above)
-// Real Chromium is the template form RefCountedThreadSafe<Flag>; see the note below
+// 教学版:非模板基类(对应上方 line 123 的 RefCountedThreadSafe)
+// 真实 Chromium 是模板形态 RefCountedThreadSafe<Flag>,见下方说明
 class Flag : public RefCountedThreadSafe {
 public:
     Flag() = default;
 
 private:
-    template <typename> friend class scoped_refptr;   // teaching version: scoped_refptr does the delete
-    ~Flag() = default;          // private: outside code cannot delete directly
+    template <typename> friend class scoped_refptr;   // 教学版:scoped_refptr 负责 delete
+    ~Flag() = default;          // private:外部没法直接 delete
     // ...
 };
 ```

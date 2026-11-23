@@ -20,10 +20,10 @@ related:
   - "From overload sets to Formatter specializations: choosing the dispatch mechanism for an embedded logger"
 translation:
   source: documents/vol8-domains/embedded/f103/06-patterns/03-logger-stack-budget.md
-  source_hash: ac6a00962711d93252afc444be714422bb40161b2873d9a31853ca05948d3554
-  translated_at: '2026-09-27T05:51:40+00:00'
-  engine: anthropic
-  token_count: 2000
+  source_hash: 39958f001617b716ded78b73a9dffac237887901f4d373e1faddc64baa6937e9
+  translated_at: '2026-11-22T16:43:42+00:00'
+  engine: glm-5.3-refresh
+  token_count: 5478
 ---
 
 # The logger's stack budget, measured: can a function-local LineBuffer blow the stack?
@@ -34,7 +34,7 @@ The heart of writing `Logger::emit` is a single line — open a line assembler o
 
 ```cpp
 LineBuffer<LINE_BYTES> line;
-// ...assemble the segments...
+// ...装配各段...
 Sink::write(line.finish(kTruncateMark, kLineEnd));
 ```
 
@@ -58,7 +58,7 @@ Before any real measuring could happen, we hit three pitfalls first, each worth 
 
 ```text
 00000000 <_Z7call_itv>:
-   0:	221a      	movs	r2, #26      @ line length 26 is a compile-time constant!
+   0:	221a      	movs	r2, #26      @ 行长 26 是编译期常量!
    2:	4b01      	ldr	r3, [pc, #4]
    4:	701a      	strb	r2, [r3, #0] @ g_sink_probe = 26
    6:	4770      	bx	lr
@@ -73,8 +73,8 @@ Before any real measuring could happen, we hit three pitfalls first, each worth 
 With every input swapped for a `volatile`, the disassembly gave the answer:
 
 ```text
-   4:	e92d 47f0 	stmdb	sp!, {r4, r5, r6, r7, r8, r9, sl, lr}   @ 8 registers = 32B
-   a:	b0d6      	sub	sp, #344                               @ 344B of frame space
+   4:	e92d 47f0 	stmdb	sp!, {r4, r5, r6, r7, r8, r9, sl, lr}   @ 8 个寄存器 = 32B
+   a:	b0d6      	sub	sp, #344                               @ 344B 帧空间
 ```
 
 Cross-checking again with GCC's `-fstack-usage` (it generates a `.su` file per function, reporting static stack usage):

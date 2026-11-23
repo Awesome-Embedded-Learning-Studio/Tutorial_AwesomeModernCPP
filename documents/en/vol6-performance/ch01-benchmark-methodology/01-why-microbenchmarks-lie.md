@@ -25,9 +25,9 @@ title: Why microbenchmarks lie
 translation:
   source: documents/vol6-performance/ch01-benchmark-methodology/01-why-microbenchmarks-lie.md
   source_hash: c9682c759425df5dc236c7f2429c56cb45a43d644dfebcf577b7503a27bc7ff2
-  translated_at: '2026-09-26T05:37:32+00:00'
-  engine: anthropic
-  token_count: 2400
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5399
 ---
 # Why microbenchmarks lie
 
@@ -46,10 +46,10 @@ But before that, you have to face one uncomfortable fact: the tool that sits mos
 The most classic kind, and the most embarrassing. You write a loop that looks like it's doing work — say you want to measure how fast the standard library string constructs and destructs, so you can compare it against your own string:
 
 ```cpp
-// This "tests string creation performance" — and actually measures nothing
+// 这段「测试 string 创建性能」——其实什么都没测
 void foo() {
     for (int i = 0; i < 1000; ++i) {
-        std::string s("hi");   // created, but never read
+        std::string s("hi");   // 创建了,但从来没被读过
     }
 }
 ```

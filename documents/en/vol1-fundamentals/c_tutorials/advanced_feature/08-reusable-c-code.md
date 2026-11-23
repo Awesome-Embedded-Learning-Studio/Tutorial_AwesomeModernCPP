@@ -23,9 +23,9 @@ title: Building Reusable C Code
 translation:
   source: documents/vol1-fundamentals/c_tutorials/advanced_feature/08-reusable-c-code.md
   source_hash: a132b383095d133c8f6c52873c8e74b30dba00c45031338b2595a806282ab861
-  translated_at: '2026-09-25T13:54:24+00:00'
-  engine: anthropic
-  token_count: 4600
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 18606
 ---
 # Building Reusable C Code
 
@@ -40,10 +40,10 @@ In this article we will systematically walk through this methodology—from modu
 Every code example in this article compiles and runs in a standard C environment. The C++ bridge sections use C++17. We recommend always compiling with `-Wall -Wextra` to catch potential problems.
 
 ```text
-Platform: Linux / macOS / Windows (MSVC/MinGW)
-Compiler: GCC >= 9 or Clang >= 12
-Standard: -std=c11 (C parts) / -std=c++17 (C++ comparison parts)
-Dependencies: pthread (needed by the thread-safety example; provided by default on Linux)
+平台：Linux / macOS / Windows (MSVC/MinGW)
+编译器：GCC >= 9 或 Clang >= 12
+标准：-std=c11（C 部分）/ -std=c++17（C++ 对比部分）
+依赖：pthread（线程安全示例需要，Linux 默认提供）
 ```
 
 ## Step 1 — Figure Out What a "Good Module" Is
@@ -56,9 +56,9 @@ A module's file layout usually looks like this:
 
 ```text
 uart_driver/
-  ├── uart_driver.h    // Public interface: type declarations, function declarations, documentation comments
-  ├── uart_driver.c    // Private implementation: full struct definition, static functions, internal variables
-  └── uart_config.h    // Configuration parameters (optional, for compile-time configuration)
+  ├── uart_driver.h    // 公开接口：类型声明、函数声明、文档注释
+  ├── uart_driver.c    // 私有实现：结构体完整定义、静态函数、内部变量
+  └── uart_config.h    // 配置参数（可选，编译期配置用）
 ```
 
 This structure looks simple, but the devil is in the details. Let us take it apart piece by piece.
@@ -74,7 +74,7 @@ Header guards are the basics—`#ifndef`/`#define`/`#endif`, or `#pragma once` (
 Let us write an example of a clean header:
 
 ```c
-// uart_driver.h — an example of a clean header
+// uart_driver.h — 一个干净的头文件示例
 #ifndef UART_DRIVER_H
 #define UART_DRIVER_H
 
@@ -85,10 +85,10 @@ Let us write an example of a clean header:
 extern "C" {
 #endif
 
-// Forward declaration; the internal structure stays hidden
+// 前向声明，不暴露内部结构
 typedef struct UartDriver UartDriver;
 
-// Error codes
+// 错误码
 typedef enum {
     kUartOk       = 0,
     kUartErrParam = -1,
@@ -96,18 +96,18 @@ typedef enum {
     kUartErrIo    = -3
 } UartResult;
 
-// Configuration struct — what the caller needs to know
+// 配置结构体——调用者需要知道的东西
 typedef struct {
     uint32_t baudrate;
     uint8_t  data_bits;
     uint8_t  stop_bits;
 } UartConfig;
 
-// Lifecycle management
+// 生命周期管理
 UartDriver* uart_create(const UartConfig* config);
 void        uart_destroy(UartDriver* drv);
 
-// Data operations
+// 数据操作
 UartResult uart_send(UartDriver* drv, const uint8_t* data, size_t len);
 UartResult uart_receive(UartDriver* drv, uint8_t* buf, size_t buf_size,
                         size_t* received);
@@ -126,23 +126,23 @@ You may have noticed the `#ifdef __cplusplus` pair. This is not C++ code, but ad
 A few things should never appear in a public header. Defining a `static` function in a header means every compilation unit that includes it gets its own copy—wasting space and inviting strange linkage problems. The same goes for internal constants defined as macros and implementation-only types: anything starting with an underscore or carrying "internal" or "priv" in its name does not belong in a public header.
 
 ```c
-// Never do this — internal implementation details in a public header
+// 千万别这么干——公开头文件里放内部实现细节
 #ifndef BAD_MODULE_H
 #define BAD_MODULE_H
 
-#define INTERNAL_BUFFER_SIZE 256      // should not be exposed
-#define MAGIC_NUMBER 0xDEADBEEF       // should not be exposed
+#define INTERNAL_BUFFER_SIZE 256      // 不该暴露
+#define MAGIC_NUMBER 0xDEADBEEF       // 不该暴露
 
-// The full struct is exposed — callers can access the fields directly
+// 把完整结构体暴露出来了——调用者可以直接访问字段
 typedef struct {
-    uint8_t buffer[256];              // internal buffer; callers should never see it
-    int head;                         // internal state
+    uint8_t buffer[256];              // 内部缓冲区，不该让调用者看到
+    int head;                         // 内部状态
     int tail;
     int count;
 } BadQueue;
 
 void bad_queue_push(BadQueue* q, uint8_t val);
-static void internal_helper(void) {   // one copy per compilation unit!
+static void internal_helper(void) {   // 每个编译单元一份副本！
     // ...
 }
 
@@ -160,7 +160,7 @@ In the previous article on advanced pointers we already met incomplete types and
 Let us write a complete ring buffer module that ties together header design, opaque pointers, and error handling. First the header—the only thing callers ever need to include:
 
 ```c
-// ring_buffer.h — the ring buffer's public interface
+// ring_buffer.h — 环形缓冲区公开接口
 #ifndef RING_BUFFER_H
 #define RING_BUFFER_H
 
@@ -172,14 +172,14 @@ Let us write a complete ring buffer module that ties together header design, opa
 extern "C" {
 #endif
 
-// Opaque type — all the caller ever holds is a pointer
+// 不透明类型——调用者拿到的只是个指针
 typedef struct RingBuffer RingBuffer;
 
-// Create and destroy
+// 创建与销毁
 RingBuffer* ringbuf_create(size_t capacity);
 void        ringbuf_destroy(RingBuffer* rb);
 
-// Data operations
+// 数据操作
 bool   ringbuf_push(RingBuffer* rb, uint8_t data);
 bool   ringbuf_pop(RingBuffer* rb, uint8_t* out);
 size_t ringbuf_count(const RingBuffer* rb);
@@ -198,17 +198,17 @@ The header reveals nothing about `RingBuffer`'s internal structure—`typedef st
 Next comes the implementation file. Note that the full struct definition appears only here:
 
 ```c
-// ring_buffer.c — ring buffer implementation
+// ring_buffer.c — 环形缓冲区实现
 #include "ring_buffer.h"
 #include <stdlib.h>
 
-// The full struct definition appears only in the .c file
+// 完整的结构体定义只出现在 .c 文件里
 struct RingBuffer {
-    uint8_t* data;      // dynamically allocated buffer
-    size_t   capacity;   // total capacity
-    size_t   head;       // write position
-    size_t   tail;       // read position
-    size_t   count;      // current element count
+    uint8_t* data;      // 动态分配的缓冲区
+    size_t   capacity;   // 总容量
+    size_t   head;       // 写入位置
+    size_t   tail;       // 读取位置
+    size_t   count;      // 当前元素数量
 };
 
 RingBuffer* ringbuf_create(size_t capacity) {
@@ -270,7 +270,7 @@ With it written, let us verify:
 
 ```text
 $ gcc -Wall -Wextra -std=c11 -c ring_buffer.c -o ring_buffer.o
-(no output = compiled successfully, no warnings or errors)
+(无输出 = 编译成功，无警告无错误)
 ```
 
 Let us write a simple test to confirm the behavior is correct:
@@ -324,22 +324,22 @@ Once modularization reaches a certain level, we discover that some parameters ne
 Compile-time configuration works through macro definitions or a configuration header. It suits parameters that are fixed at compile time and never change while the program runs. The benefit is zero runtime overhead—the compiler can inline the constants straight into the code and even apply constant-folding optimizations.
 
 ```c
-// ring_config.h — compile-time configuration
+// ring_config.h — 编译期配置
 #ifndef RING_CONFIG_H
 #define RING_CONFIG_H
 
-// Default buffer capacity; can be overridden via a compiler option
-// Usage: -DRINGBUF_DEFAULT_CAPACITY=512
+// 默认缓冲区容量，可通过编译选项覆盖
+// 用法: -DRINGBUF_DEFAULT_CAPACITY=512
 #ifndef RINGBUF_DEFAULT_CAPACITY
 #define RINGBUF_DEFAULT_CAPACITY 256
 #endif
 
-// Whether thread safety is enabled (can be turned off for single-threaded embedded scenarios)
+// 是否启用线程安全（嵌入式单线程场景可以关闭）
 #ifndef RINGBUF_THREAD_SAFE
 #define RINGBUF_THREAD_SAFE 0
 #endif
 
-// Whether statistics are enabled
+// 是否启用统计功能
 #ifndef RINGBUF_ENABLE_STATS
 #define RINGBUF_ENABLE_STATS 0
 #endif
@@ -350,7 +350,7 @@ Compile-time configuration works through macro definitions or a configuration he
 Then the implementation file conditionally compiles based on these macros:
 
 ```c
-// ring_buffer.c fragment — a conditional compilation example
+// ring_buffer.c 片段 — 条件编译示例
 #include "ring_config.h"
 
 #if RINGBUF_THREAD_SAFE
@@ -414,17 +414,17 @@ The core technique for getting code to run on multiple platforms is introducing 
 Suppose our ring buffer needs a fixed-size static array on embedded platforms (no `malloc` there), while on a PC dynamic allocation works fine. We first define a set of platform interfaces:
 
 ```c
-// platform.h — the platform abstraction layer
+// platform.h — 平台抽象层
 #ifndef PLATFORM_H
 #define PLATFORM_H
 
 #include <stddef.h>
 
-// Memory allocation interface
+// 内存分配接口
 void* platform_alloc(size_t size);
 void  platform_free(void* ptr);
 
-// Mutex interface (for thread safety)
+// 互斥锁接口（用于线程安全）
 typedef struct PlatformMutex PlatformMutex;
 PlatformMutex* platform_mutex_create(void);
 void           platform_mutex_lock(PlatformMutex* mtx);
@@ -437,7 +437,7 @@ void           platform_mutex_destroy(PlatformMutex* mtx);
 Then provide different implementations for different platforms. First the Linux version:
 
 ```c
-// platform_linux.c — the Linux implementation
+// platform_linux.c — Linux 实现
 #include "platform.h"
 #include <stdlib.h>
 #include <pthread.h>
@@ -479,28 +479,28 @@ void platform_mutex_destroy(PlatformMutex* mtx) {
 Now the bare-metal version:
 
 ```c
-// platform_bare_metal.c — bare-metal implementation (STM32/ESP32, etc.)
+// platform_bare_metal.c — 裸机实现（STM32/ESP32 等）
 #include "platform.h"
 
-// On bare metal, a static memory pool replaces malloc
+// 裸机环境下用静态内存池代替 malloc
 #define kPlatformHeapSize 4096
 static uint8_t s_heap[kPlatformHeapSize];
 static size_t  s_heap_offset = 0;
 
 void* platform_alloc(size_t size) {
-    // A crude bump allocator, for demonstration only
+    // 简陋的 bump allocator，仅供演示
     if (s_heap_offset + size > kPlatformHeapSize) return NULL;
     void* ptr = &s_heap[s_heap_offset];
     s_heap_offset += size;
-    // Note: this allocator does not support free
+    // 注意：这个 allocator 不支持 free
     return ptr;
 }
 
 void platform_free(void* ptr) {
-    (void)ptr;  // the bump allocator does not support freeing
+    (void)ptr;  // bump allocator 不支持释放
 }
 
-// On bare metal, disabling interrupts replaces the mutex
+// 裸机环境下用关中断代替互斥锁
 struct PlatformMutex {
     int irq_state;
 };
@@ -510,7 +510,7 @@ PlatformMutex* platform_mutex_create(void) {
 }
 
 void platform_mutex_lock(PlatformMutex* mtx) {
-    // Real code needs the concrete MCU API
+    // 实际要用具体的 MCU API
     // mtx->irq_state = __disable_irq();
 }
 
@@ -519,7 +519,7 @@ void platform_mutex_unlock(PlatformMutex* mtx) {
 }
 
 void platform_mutex_destroy(PlatformMutex* mtx) {
-    // the bump allocator does not support freeing
+    // bump allocator 不支持释放
 }
 ```
 
@@ -536,7 +536,7 @@ Once your module is used by multiple projects, API stability becomes a problem y
 One simple approach is to define version macros in the header and provide a runtime query interface:
 
 ```c
-// ring_buffer.h fragment
+// ring_buffer.h 片段
 #define RINGBUF_VERSION_MAJOR 1
 #define RINGBUF_VERSION_MINOR 2
 #define RINGBUF_VERSION_PATCH 0
@@ -545,7 +545,7 @@ const char* ringbuf_version(void);
 ```
 
 ```c
-// ring_buffer.c fragment
+// ring_buffer.c 片段
 const char* ringbuf_version(void) {
     return "1.2.0";
 }
@@ -556,11 +556,11 @@ const char* ringbuf_version(void) {
 When adding new features, implement them by adding new functions rather than modifying the signatures of existing ones. Say your ring buffer originally supported only `uint8_t` and now needs multi-byte data: do not change `ringbuf_push`'s parameter type from `uint8_t` to `void*`—that breaks every existing caller. The right move is to add a new family of functions:
 
 ```c
-// The existing API stays untouched
+// 原有 API 保持不变
 bool ringbuf_push(RingBuffer* rb, uint8_t data);
 bool ringbuf_pop(RingBuffer* rb, uint8_t* out);
 
-// New: multi-byte operations
+// 新增：多字节操作
 bool   ringbuf_write(RingBuffer* rb, const void* data, size_t len);
 size_t ringbuf_read(RingBuffer* rb, void* buf, size_t buf_size);
 ```
@@ -568,7 +568,7 @@ size_t ringbuf_read(RingBuffer* rb, void* buf, size_t buf_size);
 If an old interface genuinely must be retired, first mark it with a macro to give users a migration grace period:
 
 ```c
-// Marking an interface as deprecated
+// 标记废弃接口
 #ifdef __GNUC__
 #define RINGBUF_DEPRECATED \
     __attribute__((deprecated("use ringbuf_write instead")))
@@ -602,12 +602,12 @@ All the modularization tricks we wrestled with in C have stronger native support
 C uses files and name prefixes for logical partitioning; C++ uses `namespace` to provide genuine namespace isolation, and `class` access control replaces manually separating header and source files:
 
 ```cpp
-// In C++, modularization is a language-level feature
+// C++ 里，模块化是语言级别的功能
 namespace uart {
 
 class Driver {
 public:
-    // Public interface — equivalent to the function declarations in a .h
+    // 公开接口——相当于 .h 里的函数声明
     explicit Driver(const Config& config);
     ~Driver();
 
@@ -615,7 +615,7 @@ public:
     Result receive(uint8_t* buf, size_t buf_size, size_t& received);
 
 private:
-    // Private implementation — equivalent to the static functions and internal variables in a .c
+    // 私有实现——相当于 .c 里的 static 函数和内部变量
     struct Impl;
     Impl* pimpl_;
 };
@@ -642,7 +642,7 @@ public:
     bool send(const std::string& message);
 
 private:
-    struct Impl;  // forward declaration
+    struct Impl;  // 前向声明
     std::unique_ptr<Impl> pimpl_;
 };
 
@@ -657,7 +657,7 @@ struct NetworkClient::Impl {
     std::string host;
     uint16_t port;
 
-    bool connect() { /* calls the socket API ... */ return true; }
+    bool connect() { /* 调用 socket API ... */ return true; }
     void disconnect() { if (sockfd >= 0) close(sockfd); }
 };
 
@@ -667,7 +667,7 @@ NetworkClient::NetworkClient(const std::string& host, uint16_t port)
     pimpl_->port = port;
 }
 
-// The destructor must be defined in the .cpp, because this is where Impl becomes complete
+// 析构函数必须在 .cpp 里定义，因为 Impl 在这里才完整
 NetworkClient::~NetworkClient() = default;
 
 bool NetworkClient::connect()    { return pimpl_->connect(); }
@@ -693,8 +693,8 @@ Following the opaque-pointer style of this article's ring_buffer, implement an o
 typedef struct Stack Stack;
 Stack* stack_create(size_t capacity);
 void   stack_destroy(Stack* s);
-int    stack_push(Stack* s, int value);   // returns -1 when full
-int    stack_pop(Stack* s);                // what to do when empty is up to you
+int    stack_push(Stack* s, int value);   // 满返回 -1
+int    stack_pop(Stack* s);                // 空时怎么办你自己定
 size_t stack_size(const Stack* s);
 ```
 

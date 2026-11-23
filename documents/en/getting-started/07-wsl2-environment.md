@@ -17,9 +17,9 @@ contributors_footer: inline
 translation:
   source: documents/getting-started/07-wsl2-environment.md
   source_hash: 75073d33a0f175371f2559a907faf9b3a039121ef65c408f87f18466304d492f
-  translated_at: '2026-10-18T07:01:59+00:00'
-  engine: anthropic
-  token_count: 7000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 12660
 ---
 
 # Want Real Linux — WSL2 + VS Code Environment Setup
@@ -192,7 +192,7 @@ This enters `Ubuntu-24.04`, again without affecting the default distribution.
 ### 3.3.6 Stop a Specific Distribution
 
 ```powershell
-wsl --terminate <distribution-name>
+wsl --terminate <发行版名称>
 ```
 
 ![wsl --terminate stopping one distribution](images/wsl_l.png)
@@ -208,7 +208,7 @@ This command safely stops the RK3506 distribution without disturbing the others.
 ### 3.3.7 Remove a Specific Distribution and WSL
 
 ```powershell
-wsl --unregister <distribution-name>
+wsl --unregister <发行版名称>
 ```
 
 > Caution: this permanently deletes every file, installed package, user setting, and the Linux file system in that distribution. The operation cannot be undone.
@@ -258,7 +258,7 @@ The fix is to add this inside your distribution:
 ```shell
 ❯ cat /etc/wsl.conf
 [interop]
-# This is the line to add. Some will tell you to turn the whole thing off... uh... ever seen someone amputate the leg because it hurts? Same idea
+# 补充的是这个，会有人告诉你关掉这个。。。额。。。见过腿痛砍腿嘛？就是这个道理
 appendWindowsPath = false
 ```
 
@@ -329,8 +329,8 @@ sudo apt install git build-essential python3 python3-pip -y
 When you develop, you presumably keep a proxy on to reach GitHub, right? Simply put: **with proxy software running on Windows, it opens a local proxy port and all traffic goes through that port**, which is what makes the proxy work. In WSL2 you can point at that address and port by hand so that WSL2 uses the Windows proxy:
 
 ```shell
-export http_proxy="http://<Windows_IP>:<proxy_port>"
-export https_proxy="http://<Windows_IP>:<proxy_port>"
+export http_proxy="http://<Windows_IP>:<代理端口>"
+export https_proxy="http://<Windows_IP>:<代理端口>"
 ```
 
 But WSL2 has since gained the Mirrored networking mode, with better network compatibility and a much simpler configuration story. If a proxy is running on the host, starting WSL2 now tells you:
@@ -363,7 +363,7 @@ firewall=true
 autoProxy=true
 
 [experimental]
-# Dynamic-ish config; the author isn't sure whether it misbehaves, enable with care~
+# 这样动态配置，但是笔者不确定会不会有问题，谨慎开启~
 autoMemoryReclaim=gradual
 ```
 
@@ -371,13 +371,13 @@ Now, if you're curious what these are, in brief:
 
 ```ini
 [wsl2]
-# Mirrored networking: WSL now sees the network the way your Windows does
+# 启用镜像网络模式，WSL这个时候就好像您的Windows网络情况
 networkingMode=mirrored
-# DNS tunneling (fixes DNS under proxied networks)
+# 启用DNS隧道（解决代理网络下DNS问题）
 dnsTunneling=true
-# Share the Windows firewall settings — safety!
+# 共享Windows防火墙设置，安全！
 firewall=true
-# Inherit the Windows proxy settings automatically
+# 自动继承Windows代理配置
 autoProxy=true
 ```
 
@@ -435,16 +435,16 @@ Generate an SSH key (works in both Windows PowerShell and WSL):
 ```powershell
 ssh-keygen -t ed25519 -C "your_email@example.com"
 
-# Press Enter to accept the default path (~/.ssh/id_ed25519 and id_ed25519.pub)
+# 回车使用默认路径（会生成 ~/.ssh/id_ed25519 和 id_ed25519.pub）
 ```
 
 Copy the public key (~/.ssh/id_ed25519.pub) to the remote host's ~/.ssh/authorized_keys (the remote host must accept SSH logins). You can use ssh-copy-id (available under WSL) or copy by hand:
 
 ```bash
-# Under WSL:
+# 在 WSL 下：
 ssh-copy-id user@remote-host
 
-# Or manually copy the public key into ~/.ssh/authorized_keys on the remote side
+# 或者手动复制公钥内容到远端 ~/.ssh/authorized_keys
 ```
 
 Configure the host in VS Code's Remote-SSH panel (or via the command Remote-SSH: Connect to Host...), and once connected you can edit, run, and debug remote files as if they were local.

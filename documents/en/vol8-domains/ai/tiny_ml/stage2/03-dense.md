@@ -23,9 +23,9 @@ tags:
 translation:
   source: documents/vol8-domains/ai/tiny_ml/stage2/03-dense.md
   source_hash: e219ba57faa3275e765252b3ec46bb62a3e71d466567bf15b0c35fe0350775e7
-  translated_at: '2026-09-25T08:48:25+00:00'
-  engine: anthropic
-  token_count: 8800
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 11572
 ---
 
 # The Dense layer — span views and weight layout
@@ -49,7 +49,7 @@ The intuitive way is to make the weights and bias value members of `Dense`, copi
 ```cpp
 template <std::size_t In, std::size_t Out>
 struct Dense {
-    Tensor<Out, In> weight_;   // value member, owns its storage
+    Tensor<Out, In> weight_;   // 值成员,自带存储
     Vector<Out>     bias_;
 };
 ```
@@ -57,7 +57,7 @@ struct Dense {
 Written this way, a `Dense` instance carries storage for `Out*In + Out` floats. Sounds harmless, until you compute `sizeof`. Take the MNIST first-layer `Dense<784, 128>` magnitude (measured locally on g++ 16.1):
 
 ```text
-sizeof(Dense<784,128>) [value-member version] = 401920 bytes (392.5 KB)
+sizeof(Dense<784,128>) [值成员版] = 401920 bytes (392.5 KB)
 ```
 
 One Dense instance carries nearly 400KB of its own. That means wherever the instance goes, the 400KB follows: as a global variable it sits permanently in one copy in `.bss`; as a local variable it gets copied onto the stack (on an MCU with a few KB of stack, that's an instant blow-up); `new`-ed onto the heap, it violates v0.1's heap ban. All three roads are blocked.
@@ -69,7 +69,7 @@ So the right direction is: **`Dense` carries no weight storage of its own, only 
 ```cpp
 template <std::size_t In, std::size_t Out>
 struct Dense {
-    std::span<const float, Out * In> weight_;   // view, points at external storage
+    std::span<const float, Out * In> weight_;   // 视图,指向外部
     std::span<const float, Out>     bias_;
 };
 ```
@@ -77,7 +77,7 @@ struct Dense {
 The same `Dense<784, 128>` drops to:
 
 ```text
-sizeof(Dense<784,128>) [span version] = 16 bytes
+sizeof(Dense<784,128>) [span 版] = 16 bytes
 ```
 
 16 bytes — two fixed-extent spans (8 bytes each, storing only a pointer; the extent is a template parameter, known at compile time, so no length needs storing). Copy the instance freely, stack it freely — zero pressure.
@@ -131,17 +131,17 @@ struct Dense {
     using Weight_t    = Tensor<Out, In, StorageType>;
     using WeightView_t = std::span<const StorageType, Out * In>;
 
-    // Takes a Tensor, stores only its view internally — zero copy.
-    // weight / bias must outlive the Dense (a span is a non-owning view).
+    // 接 Tensor,内部只存它的 view —— 零拷贝。
+    // weight / bias 必须活得比 Dense 久(span 是非拥有视图)。
     constexpr Dense(const Weight_t& weight, const Bias_t& bias) noexcept
         : weight_(weight.view()), bias_(bias.view()) {}
 
-    // y = W·x + b. Shape locked at compile time — no std::expected needed.
+    // y = W·x + b。形状编译期锁死,无需 std::expected。
     constexpr Vector<Out, StorageType>
     forward(const Vector<In, StorageType>& vec_in) const noexcept {
         Vector<Out, StorageType> result{};
         for (std::size_t vec_out_index = 0; vec_out_index < Out; ++vec_out_index) {
-            StorageType& acc = result(0, vec_out_index); // take a reference, saving the subscript recompute on each +=
+            StorageType& acc = result(0, vec_out_index); // 取引用,省掉每次 += 的下标重算
             acc = bias_[vec_out_index];
             for (std::size_t vec_in_index = 0; vec_in_index < In; ++vec_in_index) {
                 acc += vec_in(0, vec_in_index) * weight_[vec_out_index * In + vec_in_index];
@@ -212,15 +212,15 @@ TEST_CASE("dense forward matches hand-computed matvec", "[dense]") {
 }
 
 TEST_CASE("dense weight storage is row-major [Out, In]", "[dense]") {
-    Tensor<2, 3> w(std::array{1.f, 2.f, 3.f,   // row o=0
-                              4.f, 5.f, 6.f}); // row o=1
+    Tensor<2, 3> w(std::array{1.f, 2.f, 3.f,   // o=0 这一行
+                              4.f, 5.f, 6.f}); // o=1 这一行
     Vector<2> b(std::array{0.f, 0.f});
     Dense<3, 2> layer(w, b);                   // In=3, Out=2
-    REQUIRE(layer.weight()[1 * 3 + 0] == 4.f); // weight 0 of output 1
+    REQUIRE(layer.weight()[1 * 3 + 0] == 4.f); // 第1个输出的第0个权重
 }
 
 TEST_CASE("dense zero-weight layer forward is zero", "[dense]") {
-    Tensor<2, 2> w(std::array{0.f, 0.f, 0.f, 0.f}); // explicit all zeros (no default constructor)
+    Tensor<2, 2> w(std::array{0.f, 0.f, 0.f, 0.f}); // 显式全零(无默认构造)
     Vector<2> b(std::array{0.f, 0.f});
     Dense<2, 2> layer(w, b);
     Vector<2> x(std::array{1.f, 2.f});
@@ -229,11 +229,9 @@ TEST_CASE("dense zero-weight layer forward is zero", "[dense]") {
     REQUIRE(y(0, 1) == 0.f);
 }
 
-// The span holds a pointer; persisting it into a static constexpr variable makes
-// g++ report "incompletely initialized variable". Seal it inside a constexpr
-// function so the pointer doesn't escape the frame. Only after Stage 5 swaps in
-// a global inline constexpr array can you write constexpr Dense layer(global_w, ...)
-// directly. See common pitfall 2.
+// span 持指针,持久化进静态 constexpr 变量 g++ 会报 "incompletely initialized
+// variable"。封进 constexpr 函数让指针不逃逸出帧。Stage 5 换全局 inline constexpr 后,
+// 才能直接写 constexpr Dense layer(global_w, ...)。见常见坑 2。
 constexpr bool dense_forward_is_constexpr() {
     Tensor<2, 2> w(std::array{1.f, 2.f, 3.f, 4.f});
     Vector<2> b(std::array{0.f, 0.f});

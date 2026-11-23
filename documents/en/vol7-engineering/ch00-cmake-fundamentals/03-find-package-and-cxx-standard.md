@@ -20,9 +20,9 @@ related:
 translation:
   source: documents/vol7-engineering/ch00-cmake-fundamentals/03-find-package-and-cxx-standard.md
   source_hash: 12c73b35fc51149e761d4c673c692a1cfa917ca2833fa46952c9d622a5785762
-  translated_at: '2026-09-26T04:45:25+00:00'
-  engine: anthropic
-  token_count: 10200
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 14721
 ---
 
 # Dependencies and the C++ standard — modern ways to write find_package and cxx_std_NN
@@ -50,7 +50,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 The third, stuffing `-std=c++20` straight into the compile flags:
 
 ```cmake
-string(APPEND CMAKE_CXX_FLAGS " -std=c++20")   # anti-pattern, don't copy
+string(APPEND CMAKE_CXX_FLAGS " -std=c++20")   # 反模式,别抄
 ```
 
 CMake officially recognizes the first two; the third is an anti-pattern. Let measured runs make the case below.
@@ -144,7 +144,7 @@ The third style looks the most "direct", and it's everywhere in old tutorials on
 
 ```cmake
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20")
-# or
+# 或者
 string(APPEND CMAKE_CXX_FLAGS " -std=c++20")
 add_executable(app main.cpp)
 ```
@@ -235,9 +235,9 @@ Another style you see all over old tutorials online looks like this:
 
 ```cmake
 find_package(fmt REQUIRED)
-include_directories(${fmt_INCLUDE_DIRS})                      # anti-pattern
+include_directories(${fmt_INCLUDE_DIRS})                      # 反模式
 add_executable(app main.cpp)
-target_link_libraries(app ${fmt_LIBRARIES})                   # anti-pattern
+target_link_libraries(app ${fmt_LIBRARIES})                   # 反模式
 ```
 
 `include_directories(${fmt_INCLUDE_DIRS})` is the directory-level global command from the previous article, contaminating every target under the current directory. The `${fmt_LIBRARIES}` variable style relies on the config file writing the library list into a variable that you read out by hand and pass to `target_link_libraries`. The problem: this style propagates no usage requirements at all. `fmt_LIBRARIES` is just a list of library names — no `-DFMT_SHARED`, no `INTERFACE_INCLUDE_DIRECTORIES`, no `cxx_std_11`; drop one of those and it either fails to compile or behaves wrongly.
@@ -251,8 +251,8 @@ A few old libraries — or hand-written config files — may provide only `${X_I
 
 ```cmake
 find_package(OldLib REQUIRED)
-add_library(OldLib::OldLib ALIAS OldLib::OldLib)   # no good: OldLib is not a target
-# correct approach: create an interface target that wraps the variables
+add_library(OldLib::OldLib ALIAS OldLib::OldLib)   # 不行,OldLib 不是个 target
+# 正确做法:造一个 interface target 把变量包进去
 add_library(oldlib_wrapper INTERFACE)
 target_include_directories(oldlib_wrapper INTERFACE ${OldLib_INCLUDE_DIRS})
 target_link_libraries(oldlib_wrapper INTERFACE ${OldLib_LIBRARIES})
@@ -332,8 +332,8 @@ This article's example project lives in the repository at `code/examples/vol7/cm
 
 ```text
 03-find-package/
-├── CMakeLists.txt    # target_compile_features + optional find_package section
-└── main.cpp          # verifies the standard took effect with a C++20 template lambda
+├── CMakeLists.txt    # target_compile_features + 可选 find_package 段
+└── main.cpp          # 用 C++20 模板 lambda 验证标准生效
 ```
 
 The three core lines of `CMakeLists.txt`:

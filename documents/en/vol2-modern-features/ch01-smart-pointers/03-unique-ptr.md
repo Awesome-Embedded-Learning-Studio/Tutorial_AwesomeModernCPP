@@ -23,10 +23,10 @@ tags:
 title: 'Deep Dive into unique_ptr: The Zero-Overhead Smart Pointer with Exclusive Ownership'
 translation:
   source: documents/vol2-modern-features/ch01-smart-pointers/03-unique-ptr.md
-  source_hash: 766493127089bfa6685e51d4c41740e4bde914682b00a93b9543c2586de177e4
-  translated_at: '2026-09-27T04:52:52+00:00'
-  engine: anthropic
-  token_count: 3900
+  source_hash: 032167a08f10692ac7b42f2447bc3bba5ccc4dfb24d369c10240abf81706c7ba
+  translated_at: '2026-11-22T16:36:41+00:00'
+  engine: glm-5.3-refresh
+  token_count: 11360
 ---
 # Deep Dive into unique_ptr: The Zero-Overhead Smart Pointer with Exclusive Ownership
 
@@ -58,14 +58,14 @@ struct Widget {
 
 void ownership_demo() {
     auto p1 = std::make_unique<Widget>(42);
-    // auto p2 = p1;              // compile error! unique_ptr is not copyable
-    auto p2 = std::move(p1);      // OK: ownership transfers from p1 to p2
+    // auto p2 = p1;              // 编译错误！unique_ptr 不可拷贝
+    auto p2 = std::move(p1);      // OK：所有权从 p1 转移到 p2
 
-    // now p1 == nullptr, and p2 owns the object
-    std::cout << "p1: " << p1.get() << "\n";  // prints: 0 or nullptr
-    std::cout << "p2: " << p2.get() << "\n";  // prints: a valid address
-    std::cout << "p2->value: " << p2->value << "\n";  // prints: 42
-}   // p2 is destroyed, and the Widget is deleted automatically
+    // 此时 p1 == nullptr，p2 拥有对象
+    std::cout << "p1: " << p1.get() << "\n";  // 输出: 0 或 nullptr
+    std::cout << "p2: " << p2.get() << "\n";  // 输出: 有效地址
+    std::cout << "p2->value: " << p2->value << "\n";  // 输出: 42
+}   // p2 析构，Widget 自动被 delete
 ```
 
 This demo program is right below—click "Try It Out" and it runs directly (the address of `p2` differs on every run; just check that it's non-zero):
@@ -82,7 +82,7 @@ The three phases—exclusive ownership, copy rejected, move transferred—have b
 
 <Anim id="unique-ownership" />
 
-This "non-copyable, movable" design maps perfectly onto ownership transfer in real life—hand your key to someone else, and you no longer have that key. At the code level, `std::move` hands the raw pointer inside `p1` over to `p2`, then sets `p1` to null. The whole process involves no extra memory allocation and no reference-counting overhead.
+This "non-copyable, movable" design maps perfectly onto ownership transfer in real life. Hand your key to someone else, and you no longer have that key. At the code level, `std::move` hands the raw pointer inside `p1` over to `p2`, then sets `p1` to null. The whole process involves no extra memory allocation and no reference-counting overhead.
 
 ## make_unique vs new: Why C++14 Added This Function
 
@@ -91,13 +91,13 @@ C++11 introduced `std::unique_ptr` but forgot to provide `std::make_unique` (wid
 First, **exception safety**. Consider this function call:
 
 ```cpp
-// suppose we have this function signature
+// 假设有这样一个函数签名
 void process(std::unique_ptr<Widget> ptr, int computed_value);
 
-// dangerous style (C++11 era)
+// 危险写法（C++11 风格）
 process(std::unique_ptr<Widget>(new Widget(42)), compute_something());
 
-// safe style (C++14 era)
+// 安全写法（C++14 风格）
 process(std::make_unique<Widget>(42), compute_something());
 ```
 
@@ -112,9 +112,9 @@ So, let's give `make_unique` the respect it deserves. This thing **wraps allocat
 Second, **code brevity**. `make_unique` keeps bare `new` out of your code, reducing the chance of mistakes:
 
 ```cpp
-// comparison
-auto p1 = std::unique_ptr<Widget>(new Widget(42));  // verbose, and easy to forget the unique_ptr part
-auto p2 = std::make_unique<Widget>(42);              // concise, impossible to forget the management
+// 对比
+auto p1 = std::unique_ptr<Widget>(new Widget(42));  // 啰嗦，且容易忘写 unique_ptr
+auto p2 = std::make_unique<Widget>(42);              // 简洁，不可能忘记管理
 ```
 
 That said, `make_unique` has one limitation: it does not support **custom deleters**. If you need a custom deleter (say, to manage a `FILE*` or `malloc`-allocated memory), you have to construct the `unique_ptr` directly. We'll discuss this in detail in the later "Custom Deleters" chapter.
@@ -138,18 +138,18 @@ struct Sensor {
 int main() {
     std::vector<std::unique_ptr<Sensor>> sensors;
 
-    // push_back needs to move, because unique_ptr is not copyable
+    // push_back 需要移动，因为 unique_ptr 不可拷贝
     sensors.push_back(std::make_unique<Sensor>(1));
     sensors.push_back(std::make_unique<Sensor>(2));
     sensors.push_back(std::make_unique<Sensor>(3));
 
-    // when the vector reallocates, the internal unique_ptrs transfer via move construction
-    // this is also why unique_ptr's move operations are marked noexcept
+    // vector 扩容时，内部的 unique_ptr 会通过移动构造转移
+    // 这也是为什么 unique_ptr 的移动操作标记为 noexcept
     for (const auto& s : sensors) {
         std::cout << "Sensor id: " << s->id << "\n";
     }
 
-    // returning a unique_ptr from a function also goes through a move (or RVO)
+    // 从函数返回 unique_ptr 也是通过移动（或 RVO）
     auto make_sensor = [](int id) -> std::unique_ptr<Sensor> {
         return std::make_unique<Sensor>(id);
     };
@@ -166,16 +166,16 @@ Notice, everyone: both the move constructor and the move assignment operator of 
 `unique_ptr` has a partial specialization for arrays, `unique_ptr<T[]>`, which calls `delete[]` instead of `delete` on destruction.
 
 ```cpp
-auto arr = std::make_unique<int[]>(64);  // allocates 64 ints
+auto arr = std::make_unique<int[]>(64);  // 分配 64 个 int
 arr[0] = 42;
 arr[1] = 17;
-// automatically calls delete[] on destruction
+// 析构时自动 delete[]
 ```
 
 But honestly, scenarios in C++ where you need to hand-manage dynamic arrays are already very rare. If you need a fixed-size array, `std::array` or `std::vector` is almost always the better choice. `unique_ptr<T[]>` is mainly for interfacing with C APIs that return dynamically allocated arrays, for example:
 
 ```cpp
-// suppose some C API returns a malloc-allocated array
+// 假设某个 C API 返回 malloc 分配的数组
 extern "C" int* create_buffer(size_t size);
 extern "C" void free_buffer(int* buf);
 
@@ -198,7 +198,7 @@ The most common scenario is managing resources returned from C APIs:
 #include <cstdio>
 #include <memory>
 
-// function pointer as the deleter
+// 函数指针作为删除器
 using FilePtr = std::unique_ptr<FILE, decltype(&std::fclose)>;
 
 FilePtr open_file(const char* path, const char* mode) {
@@ -206,7 +206,7 @@ FilePtr open_file(const char* path, const char* mode) {
     return FilePtr(f, &std::fclose);
 }
 
-// lambda as the deleter (no captures → stateless → zero overhead)
+// lambda 作为删除器（无捕获 → 无状态 → 零开销）
 auto make_closer = []() {
     auto deleter = [](FILE* f) noexcept { if (f) std::fclose(f); };
     return std::unique_ptr<FILE, decltype(deleter)>(std::fopen("/tmp/log", "w"), deleter);
@@ -222,7 +222,7 @@ struct FreeDeleter {
     }
 };
 
-// manages malloc-allocated memory
+// 管理 malloc 分配的内存
 auto buf = std::unique_ptr<char, FreeDeleter>(
     static_cast<char*>(std::malloc(256))
 );
@@ -242,7 +242,7 @@ struct EmptyDeleter {
     void operator()(int* p) noexcept { delete p; }
 };
 
-// stateful deleter: carries a data member, so no EBO
+// 有状态删除器：带数据成员，没法 EBO
 struct StatefulDeleter {
     int extra;
     void operator()(int* p) noexcept { delete p; }
@@ -274,13 +274,13 @@ And when a function pointer is used as the deleter, `unique_ptr` has to store th
 Let's verify it from the assembly angle as well. Here is a simple example:
 
 ```cpp
-// manage an int with unique_ptr
+// 用 unique_ptr 管理 int
 int use_unique_ptr() {
     auto p = std::make_unique<int>(42);
     return *p;
 }
 
-// the equivalent raw-pointer version
+// 等价的裸指针版本
 int use_raw_ptr() {
     int* p = new int(42);
     int v = *p;
@@ -308,16 +308,16 @@ The compiler inlined and optimized away the `unique_ptr`'s construction and dest
 void print_widget(const Widget* w);
 
 auto p = std::make_unique<Widget>(42);
-print_widget(p.get());  // passed to a read-only function; p still owns the object
+print_widget(p.get());  // 传给只读函数，p 仍然拥有对象
 ```
 
 `release()` gives up ownership and returns the raw pointer—the `unique_ptr` becomes empty, but the object is not deleted. It's the equivalent of saying "I've handed the object to you; releasing it is your responsibility":
 
 ```cpp
 auto p = std::make_unique<Widget>(42);
-Widget* raw = p.release();  // p becomes nullptr, raw points to the object
-// ... use raw ...
-delete raw;  // you must release it manually
+Widget* raw = p.release();  // p 变为 nullptr，raw 指向对象
+// ... 使用 raw ...
+delete raw;  // 你必须手动释放
 ```
 
 `release()` is an operation that calls for caution. The moment you call it, you're back in the raw-pointer world—if you forget the `delete`, you leak memory. In most cases, transferring ownership to another `unique_ptr` with `std::move()` is the better choice.
@@ -326,8 +326,8 @@ delete raw;  // you must release it manually
 
 ```cpp
 auto p = std::make_unique<Widget>(1);
-p.reset(new Widget(2));  // releases Widget(1), takes over Widget(2)
-p.reset();               // releases Widget(2), p becomes nullptr
+p.reset(new Widget(2));  // 释放 Widget(1)，接管 Widget(2)
+p.reset();               // 释放 Widget(2)，p 变为 nullptr
 ```
 
 The next article moves on to `shared_ptr`—a completely different ownership model: shared ownership. That's where the real complexity begins.

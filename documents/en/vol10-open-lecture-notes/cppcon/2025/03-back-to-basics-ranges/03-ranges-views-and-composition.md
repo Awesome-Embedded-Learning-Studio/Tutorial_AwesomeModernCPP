@@ -22,9 +22,9 @@ video_youtube: https://www.youtube.com/watch?v=Q434UHWRzI0
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/03-back-to-basics-ranges/03-ranges-views-and-composition.md
   source_hash: 19f27b983bc1f91aeae818f0687f092e3b3d29683f970bafd763ab8696b9cb98
-  translated_at: '2026-09-26T16:00:47+00:00'
-  engine: anthropic
-  token_count: 10500
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 15726
 ---
 # Ranges, Views, and Pipelining: The Power of Lazy Evaluation
 
@@ -57,8 +57,8 @@ The most immediately tangible improvement Ranges brings is the **constrained alg
 
 std::vector<int> v{3, 1, 4, 1, 5, 9};
 
-std::sort(v.begin(), v.end());   // classic: pass a pair of iterators
-std::ranges::sort(v);            // ranges: pass the whole container
+std::sort(v.begin(), v.end());   // 经典：传一对迭代器
+std::ranges::sort(v);            // ranges：传整个容器
 ```
 
 `ranges::sort(v)` does exactly the same thing as `sort(v.begin(), v.end())`, but with two fewer arguments. And the benefit is not just less typing — recall pitfall #2 from the previous article, "mismatched begin/end": **the classic algorithms let you pair up iterators from two different containers, while the ranges version never even gives you that chance**, because it accepts only a single object. One fewer way to go wrong is a real, tangible safety gain.
@@ -67,11 +67,11 @@ The constrained algorithms also work with `span`, with custom containers — wit
 
 ```cpp
 int arr[] = {3, 1, 4};
-std::ranges::sort(arr);                       // native arrays work too
+std::ranges::sort(arr);                       // 原生数组也行
 
 std::ranges::find_if(v, [](int i) { return i > 4; });
-// ranges::find_if likewise returns an iterator (pointing at the found element);
-// compare against ranges::end(v) to test for "not found"
+// ranges::find_if 同样返回迭代器（指向找到的元素），
+// 用 ranges::end(v) 判断是否没找到
 ```
 
 :::tip Iterator knowledge is not obsolete
@@ -91,10 +91,10 @@ Compare the two styles. `std::ranges::sort(v)` is **eager** — it sorts the ent
 
 std::vector<int> v{1, 2, 3, 4, 5, 6};
 
-// Rig the pipeline: at this point filter has processed nothing yet
+// 搭管道：此时 filter 一个元素都没处理
 auto gt3 = v | std::views::filter([](int x) { return x > 3; });
 
-// The filtering only really runs when we iterate
+// 遍历时才真正执行过滤
 for (int x : gt3) {
     std::cout << x << ' ';   // 4 5 6
 }
@@ -104,10 +104,10 @@ That `|` is the **pipe operator**, borrowed from Unix pipes — it feeds the ran
 
 ```cpp
 auto result = v
-    | std::views::filter([](int x) { return x > 1; })    // filter
-    | std::views::transform([](int x) { return x * x; }) // transform
-    | std::views::take(3);                                // take only the first 3
-// When result is iterated: 3²=9, ... lazily evaluated all the way
+    | std::views::filter([](int x) { return x > 1; })    // 过滤
+    | std::views::transform([](int x) { return x * x; }) // 变换
+    | std::views::take(3);                                // 只取前 3 个
+// 遍历 result 时：3²=9, ... 一路惰性求值
 ```
 
 ## Experiment: eager vs. lazy, How Big Is the Difference
@@ -129,7 +129,7 @@ int main()
     std::iota(v.begin(), v.end(), 0);
     const auto pred = [](int x) { return x > N / 2; };
 
-    // EAGER: materialize the filtered result into a temporary vector, then sum it
+    // EAGER：物化过滤结果到一个临时 vector，再求和
     long long se = 0;
     auto t0 = std::chrono::high_resolution_clock::now();
     {
@@ -138,7 +138,7 @@ int main()
     }
     auto t1 = std::chrono::high_resolution_clock::now();
 
-    // LAZY: iterate the view directly, no temporary container
+    // LAZY：直接遍历 view，不建临时容器
     long long sl = 0;
     auto t2 = std::chrono::high_resolution_clock::now();
     for (int x : v | std::views::filter(pred)) sl += x;
@@ -174,7 +174,7 @@ Lazy evaluation unlocks a very cool capability — **infinite ranges**. If evalu
 `std::views::iota(x)` generates an **infinitely increasing** sequence starting from `x`<RefLink :id="6" preview="cppreference, std::views::iota — infinite counting range factory (C++20)" />. Pair it with `take` to truncate, and you can use it safely:
 
 ```cpp
-// Generate the first 5 of 0², 1², 2², ...
+// 生成 0², 1², 2², ... 的前 5 个
 for (int x : std::views::iota(0)
             | std::views::transform([](int n) { return n * n; })
             | std::views::take(5)) {

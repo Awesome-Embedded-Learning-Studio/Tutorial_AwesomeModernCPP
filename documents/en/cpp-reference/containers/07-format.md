@@ -15,10 +15,10 @@ tags:
 title: std::format
 translation:
   source: documents/cpp-reference/containers/07-format.md
-  source_hash: 916efc6d4b78cbc845fc224afa6164b76c9afeed2adca2c0eb1107c97a68787c
-  translated_at: '2026-09-27T02:04:22+00:00'
-  engine: anthropic
-  token_count: 600
+  source_hash: 7c1b269ad79c0f35afd0b12391f90c472df7fe3b09aa26a52a47367c60634a7a
+  translated_at: '2026-11-22T16:41:57.126024+00:00'
+  engine: glm-5.3-refresh
+  token_count: 2045
 ---
 <!--
 Reference Card Template
@@ -73,7 +73,7 @@ int main() {
     std::cout << std::format("v{}. pi={:.2f}", version, pi) << "\n";
     // v2. pi=3.14
 
-    // Positional arguments
+    // 位置参数
     std::cout << std::format("{0} + {0} = {1}", 3, 6) << "\n";
     // 3 + 3 = 6
 }

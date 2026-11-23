@@ -25,9 +25,9 @@ video_youtube: https://www.youtube.com/watch?v=szU5b972F7E
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/04-back-to-basics-move-semantics/03-move-ops-stdmove-and-elision.md
   source_hash: 8e320d1591af83418caf425b0fee585c6f2eccd120b36d73b7c37299fffff12f
-  translated_at: '2026-09-27T06:20:17+00:00'
-  engine: anthropic
-  token_count: 5400
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 18307
 ---
 # Move Operations, std::move, and Copy Elision
 
@@ -52,9 +52,9 @@ class MyString
     char* actual_str_;
 
 public:
-    // ... previous constructors, destructor, and copy operations ...
+    // ... 之前的构造函数、析构函数、拷贝操作 ...
 
-    // move constructor
+    // 移动构造函数
     MyString(MyString&& s) noexcept
         : stored_length_(s.stored_length_)
         , actual_str_(s.actual_str_)
@@ -82,10 +82,10 @@ With both a copy constructor and a move constructor in place, how does the compi
 ```cpp
 MyString s1("hello");
 
-// s1 is an lvalue (it has a name) → calls the copy constructor
+// s1 是左值（有名字）→ 调用拷贝构造函数
 MyString s2(s1);
 
-// std::move(s1) is an rvalue → calls the move constructor
+// std::move(s1) 是右值 → 调用移动构造函数
 MyString s3(std::move(s1));
 ```
 
@@ -103,10 +103,10 @@ Move construction handles the "create a new object" scenario; move assignment ha
 MyString& operator=(MyString&& s) noexcept
 {
     if (this != &s) {
-        delete[] actual_str_;         // step 1: release our own old resource
+        delete[] actual_str_;         // 第一步：清理自己的旧资源
         stored_length_ = s.stored_length_;
-        actual_str_ = s.actual_str_;  // step 2: steal the source's resource
-        s.actual_str_ = nullptr;      // step 3: null out the source object
+        actual_str_ = s.actual_str_;  // 第二步：偷源对象的资源
+        s.actual_str_ = nullptr;      // 第三步：置空源对象
         s.stored_length_ = 0;
     }
     return *this;
@@ -163,9 +163,9 @@ So we need to tell the compiler explicitly: "I know `temp` won't be used again a
 template<typename T>
 void move_swap(T& x, T& y)
 {
-    T temp(std::move(x));    // move-construct temp
-    x = std::move(y);        // move-assign x
-    y = std::move(temp);     // move-assign y
+    T temp(std::move(x));    // 移动构造 temp
+    x = std::move(y);        // 移动赋值 x
+    y = std::move(temp);     // 移动赋值 y
 }
 ```
 
@@ -180,11 +180,11 @@ struct CopyOnly
 {
     CopyOnly() = default;
     CopyOnly(const CopyOnly&) { std::cout << "copy\n"; }
-    // no move constructor!
+    // 没有移动构造函数！
 };
 
 CopyOnly a;
-CopyOnly b(std::move(a));  // prints "copy" — decays to copy construction
+CopyOnly b(std::move(a));  // 输出 "copy" —— 退化为拷贝构造
 ```
 
 Here `std::move(a)` converts `a` to an rvalue reference, but `CopyOnly` has no constructor accepting an rvalue reference. The compiler settles for the `const CopyOnly&` copy constructor (because `CopyOnly&&` can bind to `const CopyOnly&`). No error—it's just that the "move" you expected turned into a "copy." And it happens silently.
@@ -198,9 +198,9 @@ When we write a function that takes an rvalue reference parameter, that paramete
 ```cpp
 void process(MyString&& s)
 {
-    // s has a name → s is an lvalue
-    MyString copy(s);             // calls the copy constructor, not the move constructor!
-    MyString moved(std::move(s)); // THIS one calls the move constructor
+    // s 有名字 → s 是左值
+    MyString copy(s);             // 调用拷贝构造！不是移动构造！
+    MyString moved(std::move(s)); // 这才调用移动构造
 }
 ```
 
@@ -216,8 +216,8 @@ The good news is that the "has a name → is an lvalue" rule has one important e
 MyString make_greeting()
 {
     MyString temp("hello world");
-    // ... do some work on temp ...
-    return temp;  // no std::move needed!
+    // ... 对 temp 做一些操作 ...
+    return temp;  // 不需要 std::move！
 }
 ```
 
@@ -254,18 +254,18 @@ This is probably the most common move-semantics mistake I've ever seen. We said 
 **Exactly the opposite.**
 
 ```cpp
-// correct: allows NRVO
+// 正确写法：允许 NRVO
 MyString make_good()
 {
     MyString temp("good");
     return temp;
 }
 
-// wrong: blocks NRVO!
+// 错误写法：阻止 NRVO！
 MyString make_bad()
 {
     MyString temp("bad");
-    return std::move(temp);  // actually slower!
+    return std::move(temp);  // 反而更慢！
 }
 ```
 
@@ -280,30 +280,30 @@ First look at how `return temp;` behaves with elision disabled—it falls back t
 I ran the actual test on GCC 16.1.1—with print logs added to `MyString`'s various constructors, the comparison looked like this:
 
 ```bash
-# NRVO on by default
+# 默认开启 NRVO
 $ g++ -std=c++20 -O2 test.cpp && ./a.out
 === return temp; (NRVO) ===
-  构造: "hello"          # the only construction — no move, no copy
+  构造: "hello"          # 只有这一次构造，没有移动，没有拷贝
 
 === return std::move(temp); ===
   构造: "hello"
-  移动构造: "hello"       # one extra move construction!
+  移动构造: "hello"       # 多了一次移动构造！
   析构: "(null)"
 ```
 
 See that? `return std::move(temp);` clearly pays one extra move construction. For a class like `MyString` that holds nothing but a pointer and an integer, a move is cheap (one pointer assignment), but for more complex classes—objects containing several dynamic containers, say—the cost of this extra move can no longer be ignored.
 
 ```bash
-# comparison with NRVO disabled
+# 关闭 NRVO 后对比
 $ g++ -std=c++20 -O2 -fno-elide-constructors test.cpp && ./a.out
 === return temp; ===
   构造: "hello"
-  移动构造: "hello"       # no NRVO — falls back to move construction
+  移动构造: "hello"       # 没有 NRVO，退回到移动构造
   析构: "(null)"
 
 === return std::move(temp); ===
   构造: "hello"
-  移动构造: "hello"       # a move construction here too
+  移动构造: "hello"       # 同样是移动构造
   析构: "(null)"
 ```
 
@@ -327,16 +327,16 @@ After a move operation completes, the source object is in what the standard call
 MyString a("hello");
 MyString b(std::move(a));
 
-// safe operations:
-// 1. destruction — always safe
-// 2. assigning a new value — always safe
+// 安全操作：
+// 1. 析构 —— 永远安全
+// 2. 赋新值 —— 永远安全
 a = MyString("new value");  // OK
 
-// unsafe operations:
-// 1. assuming a still holds "hello"
-// 2. assuming a.size() is 0
-// 3. assuming a.c_str() returns an empty string
-// these assumptions may happen to hold on some implementations, but the standard does not guarantee them
+// 不安全操作：
+// 1. 假设 a 仍持有 "hello"
+// 2. 假设 a.size() 是 0
+// 3. 假设 a.c_str() 返回空串
+// 这些假设在某些实现上可能碰巧成立，但标准不保证
 ```
 
 :::warning Restrictions on using moved-from objects
@@ -387,7 +387,7 @@ public:
         std::cout << "  COPY ctor: " << str_ << "\n";
     }
 
-    // no noexcept!
+    // 没有 noexcept！
     StringNoNoexcept(StringNoNoexcept&& o)
         : len_(o.len_)
         , str_(o.str_)
@@ -408,7 +408,7 @@ int main()
     std::cout << "=== push 3 elements (triggers reallocation) ===\n";
     vec.emplace_back("AAA");
     vec.emplace_back("BBB");
-    vec.emplace_back("CCC");  // this triggers the reallocation
+    vec.emplace_back("CCC");  // 这里触发扩容
 
     std::cout << "\n=== final contents ===\n";
     for (const auto& s : vec) {
@@ -426,7 +426,7 @@ $ g++ -std=c++20 -O2 test_noexcept.cpp && ./a.out
   ctor: AAA
   ctor: BBB
   ctor: CCC
-  COPY ctor: AAA    # reallocation uses COPIES, not moves!
+  COPY ctor: AAA    # 扩容时用的是拷贝！不是移动！
   COPY ctor: BBB
 ```
 
@@ -435,7 +435,7 @@ See it? When the third element triggers reallocation, the `vector` **copies** th
 Now add `noexcept` to the move constructor:
 
 ```cpp
-StringNoNoexcept(StringNoNoexcept&& o) noexcept  // noexcept added
+StringNoNoexcept(StringNoNoexcept&& o) noexcept  // 加上 noexcept
 ```
 
 Recompile and run:
@@ -446,7 +446,7 @@ $ g++ -std=c++20 -O2 test_noexcept.cpp && ./a.out
   ctor: AAA
   ctor: BBB
   ctor: CCC
-  MOVE ctor: AAA    # moves now!
+  MOVE ctor: AAA    # 现在用移动了！
   MOVE ctor: BBB
 ```
 
@@ -468,7 +468,7 @@ class MyString
     char* actual_str_;
 
 public:
-    // constructor
+    // 构造函数
     explicit MyString(const char* s = "")
         : stored_length_(std::strlen(s))
         , actual_str_(new char[stored_length_ + 1])
@@ -476,13 +476,13 @@ public:
         std::memcpy(actual_str_, s, stored_length_ + 1);
     }
 
-    // destructor
+    // 析构函数
     ~MyString()
     {
         delete[] actual_str_;
     }
 
-    // copy constructor
+    // 拷贝构造函数
     MyString(const MyString& other)
         : stored_length_(other.stored_length_)
         , actual_str_(new char[other.stored_length_ + 1])
@@ -490,7 +490,7 @@ public:
         std::memcpy(actual_str_, other.actual_str_, stored_length_ + 1);
     }
 
-    // move constructor — noexcept!
+    // 移动构造函数 —— noexcept！
     MyString(MyString&& s) noexcept
         : stored_length_(s.stored_length_)
         , actual_str_(s.actual_str_)
@@ -499,7 +499,7 @@ public:
         s.stored_length_ = 0;
     }
 
-    // copy assignment operator
+    // 拷贝赋值运算符
     MyString& operator=(const MyString& other)
     {
         if (this != &other) {
@@ -511,7 +511,7 @@ public:
         return *this;
     }
 
-    // move assignment operator — noexcept!
+    // 移动赋值运算符 —— noexcept！
     MyString& operator=(MyString&& s) noexcept
     {
         if (this != &s) {

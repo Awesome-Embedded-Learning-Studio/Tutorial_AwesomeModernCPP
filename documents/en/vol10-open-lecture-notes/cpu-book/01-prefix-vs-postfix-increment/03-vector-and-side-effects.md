@@ -10,9 +10,10 @@ description: "At -O2, vector's iterator increments are instruction-for-instructi
 reading_time_minutes: 15
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/01-prefix-vs-postfix-increment/03-vector-and-side-effects.md
-  source_hash: 838d28e1b7c6dd65586f24c6c49ad80203f641f3948977d577356dbecf394417
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: 0f776d09dcd560bbf103c2d17120d632945e758d12f68d4ab8b1a69baa340e4e
+  translated_at: '2026-11-22T16:44:07Z'
+  engine: glm-5.3-refresh
+  token_count: 8091
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -165,8 +166,8 @@ All the way here, postfix has kept giving ground, and you may want to ask on its
 ```cpp
 #include <cstdio>
 
-// Copy constructor with an observable side effect: writes two values into volatile globals.
-// A volatile write is, by definition, impossible to optimize away.
+// 拷贝构造带可观察副作用:往 volatile 全局写两个数。
+// volatile 写按定义不可被优化掉。
 volatile unsigned long side_log[64];
 volatile int side_count = 0;
 
@@ -177,9 +178,9 @@ struct NoisyIter {
     explicit NoisyIter(int* q) : p(q) {}
 
     NoisyIter(const NoisyIter& other) : p(other.p) {
-        int idx = side_count;      // volatile read
-        side_count = idx + 1;      // volatile write: observable side effect
-        side_log[idx] = 0xC0DEul;  // volatile write: observable side effect
+        int idx = side_count;      // volatile 读
+        side_count = idx + 1;      // volatile 写:可观察副作用
+        side_log[idx] = 0xC0DEul;  // volatile 写:可观察副作用
     }
 
     NoisyIter& operator++() {

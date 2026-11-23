@@ -24,9 +24,9 @@ title: Why We Need Templates
 translation:
   source: documents/vol1-fundamentals/ch09/00-why-generics.md
   source_hash: 8af77c55ad7242030cfc2c20d22a1c35562c903afdc5c43ae08fecf667364ea8
-  translated_at: '2026-09-27T03:53:20+00:00'
-  engine: anthropic
-  token_count: 2700
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5978
 ---
 # Why We Need Templates: Leaving the Type Open as a Parameter
 
@@ -101,7 +101,7 @@ int main()
 {
     Stack<int> a;
     Stack<double> b;
-    Stack<int>* p = &b;    // Will the compiler allow this?
+    Stack<int>* p = &b;    // 编译器会同意吗？
 }
 ```
 
@@ -122,7 +122,7 @@ At this point you might want to ask: didn't last chapter's polymorphism also amo
 ```cpp
 class StackBase {
 public:
-    virtual void push(const ???& value) = 0;    // What goes in the ??? spot?
+    virtual void push(const ???& value) = 0;    // ??? 处写什么？
 };
 ```
 
@@ -134,7 +134,7 @@ public:
     virtual ~Shape() = default;
 };
 
-class IntShape : public int {    // Let int join the class hierarchy?
+class IntShape : public int {    // 让 int 加入类层次？
 };
 ```
 

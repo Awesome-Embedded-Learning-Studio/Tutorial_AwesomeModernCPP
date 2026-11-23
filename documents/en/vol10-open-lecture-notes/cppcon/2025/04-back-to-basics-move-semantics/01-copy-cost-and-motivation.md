@@ -23,9 +23,9 @@ video_youtube: https://www.youtube.com/watch?v=szU5b972F7E
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/04-back-to-basics-move-semantics/01-copy-cost-and-motivation.md
   source_hash: afa45d02f798f955df5a78a39cbf30d5bd13c055fb024f717f04397b94bb4bc5
-  translated_at: '2026-09-26T15:55:30+00:00'
-  engine: anthropic
-  token_count: 6000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 12522
 ---
 # Starting with `swap`: A Tale of Three Copies
 
@@ -45,9 +45,9 @@ If you wrote a generic `swap` in C++03 (before move semantics existed), it looke
 template<typename T>
 void swap(T& x, T& y)
 {
-    T temp(x);    // 1st copy: copy x's value into temp
-    x = y;        // 2nd copy: copy y's value into x
-    y = temp;     // 3rd copy: copy temp's value into y
+    T temp(x);    // 第1次拷贝：把 x 的值拷贝到 temp
+    x = y;        // 第2次拷贝：把 y 的值拷贝到 x
+    y = temp;     // 第3次拷贝：把 temp 的值拷贝到 y
 }
 ```
 
@@ -87,7 +87,7 @@ class MyString
     char* actual_str_;
 
 public:
-    // Constructor: allocate just enough memory
+    // 构造函数：分配刚好够用的内存
     MyString(const char* s)
         : stored_length_(std::strlen(s))
         , actual_str_(new char[stored_length_ + 1])
@@ -95,17 +95,17 @@ public:
         std::memcpy(actual_str_, s, stored_length_ + 1);
     }
 
-    // Destructor: release the dynamic array
+    // 析构函数：释放动态数组
     ~MyString()
     {
         delete[] actual_str_;
     }
 
-    // Forbid copying and moving (for now)
+    // 禁止拷贝和移动（暂时）
     MyString(const MyString&) = delete;
     MyString& operator=(const MyString&) = delete;
 
-    // Access the contents
+    // 获取内容
     const char* c_str() const { return actual_str_; }
     std::size_t size() const { return stored_length_; }
 };
@@ -118,9 +118,9 @@ Create a `"hello"` string and the memory layout looks roughly like this: `stored
 Now the question arises: if I want to create `s2` from `s1`—an independent string with the same value—can I just copy those two data members?
 
 ```cpp
-// Danger! A shallow copy leads to double delete
+// 危险！浅拷贝会导致 double delete
 MyString s1("hello");
-MyString s2(s1);  // if we only copied stored_length_ and the actual_str_ pointer...
+MyString s2(s1);  // 如果只拷贝 stored_length_ 和 actual_str_ 指针...
 ```
 
 No. If `s2`'s `actual_str_` ended up pointing at the same block of memory, then both `s1` and `s2` would execute `delete[]` on that same memory when destroyed. That is a double delete—undefined behavior<RefLink :id="2" preview="C++ Standard, [expr.delete] — deleting the same pointer twice is UB" />.
@@ -128,7 +128,7 @@ No. If `s2`'s `actual_str_` ended up pointing at the same block of memory, then 
 So the copy constructor must perform a **deep copy**—allocate memory that belongs exclusively to the new object, then copy the contents over:
 
 ```cpp
-// Copy constructor: deep copy
+// 拷贝构造函数：深拷贝
 MyString(const MyString& other)
     : stored_length_(other.stored_length_)
     , actual_str_(new char[other.stored_length_ + 1])
@@ -146,11 +146,11 @@ Copy construction and copy assignment are easy to confuse, because both can be w
 Implementing assignment takes one extra step compared to construction—the old value has to be cleaned up first:
 
 ```cpp
-// Copy assignment operator
+// 拷贝赋值运算符
 MyString& operator=(const MyString& other)
 {
     if (this != &other) {
-        delete[] actual_str_;  // clean up the old value
+        delete[] actual_str_;  // 清理旧值
         stored_length_ = other.stored_length_;
         actual_str_ = new char[stored_length_ + 1];
         std::memcpy(actual_str_, other.actual_str_, stored_length_ + 1);
@@ -166,7 +166,7 @@ Note that we `delete[]` the old array first and only then `new` the new one. If 
 `MyString` now has a complete set of copy operations. But if copying is all we implement, this type effectively **has no move semantics**—any attempt to "move" it degrades into a copy. Consider the most classic scenario: string concatenation.
 
 ```cpp
-// Concatenate two strings
+// 拼接两个字符串
 MyString operator+(const MyString& lhs, const MyString& rhs)
 {
     std::size_t new_len = lhs.size() + rhs.size();
@@ -174,9 +174,9 @@ MyString operator+(const MyString& lhs, const MyString& rhs)
     std::memcpy(buf, lhs.c_str(), lhs.size());
     std::memcpy(buf + lhs.size(), rhs.c_str(), rhs.size() + 1);
 
-    MyString result(buf);  // construct result from buf
-    delete[] buf;          // clean up the temporary buffer
-    return result;         // return result
+    MyString result(buf);  // 用 buf 构造 result
+    delete[] buf;          // 清理临时缓冲区
+    return result;         // 返回 result
 }
 ```
 
@@ -185,7 +185,7 @@ Wait—there's a problem here. `result` is constructed from a `const char*` (inv
 ```cpp
 MyString s1("ABC");
 MyString s2("DEF");
-MyString s3 = s1 + s2;  // expected to get "ABCDEF"
+MyString s3 = s1 + s2;  // 期望得到 "ABCDEF"
 ```
 
 `s1 + s2` returns a temporary `MyString` object (which already owns an allocated block of heap memory holding `"ABCDEF"`). Then `s3` is created from it via the copy constructor—which means allocating another block of memory, copying the contents into it, and then releasing the temporary's own block when it is destroyed.
@@ -201,7 +201,7 @@ Simply calling it "waste" isn't very concrete. Let's run a simple benchmark comp
 #include <cstring>
 #include <chrono>
 
-// ===== The version without move =====
+// ===== 没有 move 的版本 =====
 class MyStringNoMove
 {
     std::size_t len_;
@@ -255,7 +255,7 @@ MyStringNoMove operator+(const MyStringNoMove& a, const MyStringNoMove& b)
     return result;
 }
 
-// ===== The version with move =====
+// ===== 有 move 的版本 =====
 class MyStringWithMove
 {
     std::size_t len_;
@@ -271,7 +271,7 @@ public:
 
     ~MyStringWithMove() { delete[] str_; }
 
-    // Copy constructor
+    // 拷贝构造
     MyStringWithMove(const MyStringWithMove& o)
         : len_(o.len_)
         , str_(new char[o.len_ + 1])
@@ -280,18 +280,18 @@ public:
         ++copy_count;
     }
 
-    // Move constructor!
+    // 移动构造！
     MyStringWithMove(MyStringWithMove&& o) noexcept
         : len_(o.len_)
-        , str_(o.str_)       // steal the pointer outright
+        , str_(o.str_)       // 直接偷走指针
     {
-        o.str_ = nullptr;     // prevent delete[] when the source is destroyed
+        o.str_ = nullptr;     // 防止源对象析构时 delete[]
         o.len_ = 0;
         ++move_count;
     }
 
-    // Copy assignment: must deep copy. Never use = default here — for a class
-    // holding a raw pointer, = default shallow-copies the pointer member by member, and the two objects double delete at destruction.
+    // 拷贝赋值：必须深拷贝。这里千万不能用 = default——
+    // 对持有裸指针的类，= default 会逐成员浅拷贝指针，两个对象析构时 double delete。
     MyStringWithMove& operator=(const MyStringWithMove& o)
     {
         if (this != &o) {
@@ -304,7 +304,7 @@ public:
         return *this;
     }
 
-    // Move assignment: steal the pointer, null out the source
+    // 移动赋值：偷指针，置空源对象
     MyStringWithMove& operator=(MyStringWithMove&& o) noexcept
     {
         if (this != &o) {
@@ -342,7 +342,7 @@ int main()
 {
     constexpr int N = 100000;
 
-    // Benchmark the no-move version
+    // 测试无移动版本
     auto t1 = std::chrono::high_resolution_clock::now();
     {
         MyStringNoMove a("Hello");
@@ -354,7 +354,7 @@ int main()
     }
     auto t2 = std::chrono::high_resolution_clock::now();
 
-    // Benchmark the with-move version
+    // 测试有移动版本
     auto t3 = std::chrono::high_resolution_clock::now();
     {
         MyStringWithMove a("Hello");

@@ -13,9 +13,9 @@ platform: stm32f1
 translation:
   source: documents/vol8-domains/embedded/f103/01-led/01-cortex-m3-anatomy.md
   source_hash: 6b9e82d21c59b643ae358fd4a22b027e43fd60706c1059c32f028991b5997274
-  translated_at: '2026-09-27T05:39:35+00:00'
-  engine: anthropic
-  token_count: 3600
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 10753
 ---
 
 # Before the first blink: what the Cortex-M3 machine looks like
@@ -121,7 +121,7 @@ What happened along the whole chain is not something we take on imagination — 
 
 ```text
 sysbus LogPeripheralAccess sysbus.gpioPortC
-(after start, pause, then emulation RunFor "1.1"; log excerpt)
+（start 后 pause，再 emulation RunFor "1.1"，日志节选）
 
 gpioPortC: [cpu: 0x8000164] ReadUInt32 from 0x4 (ConfigurationHigh), returned 0x0
 gpioPortC: [cpu: 0x800016A] WriteUInt32 to 0x4 (ConfigurationHigh), value 0x0

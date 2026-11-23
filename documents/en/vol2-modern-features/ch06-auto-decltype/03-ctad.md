@@ -21,19 +21,19 @@ title: Class Template Argument Deduction (CTAD)
 translation:
   source: documents/vol2-modern-features/ch06-auto-decltype/03-ctad.md
   source_hash: c5bf18a9bc6f1ca378a56e3dc05c3c212ee6802660f6638394a7f68dfad91cb1
-  translated_at: '2026-09-25T15:48:42+00:00'
-  engine: anthropic
-  token_count: 3200
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 10347
 ---
 # Class Template Argument Deduction (CTAD): If It Can Be Deduced, Don't Write It by Hand
 
 Before C++17, every time we instantiated a class template we had to spell out the full template argument list. Even when the compiler could perfectly well deduce the template parameters from the constructor's arguments, we still had to dutifully write them all out:
 
 ```cpp
-std::pair<int, double> p(1, 2.0);           // this could obviously be deduced
+std::pair<int, double> p(1, 2.0);           // 明明能推导出来
 std::tuple<int, float, std::string> t(42, 3.14f, "hi");
-std::vector<int> v = {1, 2, 3};              // this one doesn't need much typing
-std::lock_guard<std::mutex> lock(mtx);       // the mutex type, written yet again
+std::vector<int> v = {1, 2, 3};              // 这个倒是不用写太多
+std::lock_guard<std::mutex> lock(mtx);       // mutex 类型写了又写
 ```
 
 C++17 finally lets us drop these redundant template arguments. The feature is called CTAD (Class Template Argument Deduction). It makes class templates feel more like ordinary classes—the compiler deduces the template parameters automatically from the constructor's arguments, so we no longer specify them by hand.
@@ -49,16 +49,16 @@ C++17 finally lets us drop these redundant template arguments. The feature is ca
 Let's look at a few situations where, before C++17, we had to write out the full template argument list:
 
 ```cpp
-// pair's types could be fully deduced from the arguments, but had to be written by hand
+// pair 的类型完全能从参数推导，但必须手写
 auto p = std::pair<int, double>(1, 2.0);
 
-// make_pair solves the problem for pair, but it isn't general
+// make_pair 解决了 pair 的问题，但不通用
 auto p2 = std::make_pair(1, 2.0);
 
-// tuple also requires writing out every type
+// tuple 也得手写全部类型
 auto t = std::tuple<int, float, std::string>(42, 3.14f, "hi");
 
-// lock_guard's mutex type has to be written too
+// lock_guard 的 mutex 类型也得写
 std::lock_guard<std::mutex> lock(mtx);
 ```
 
@@ -67,9 +67,9 @@ std::lock_guard<std::mutex> lock(mtx);
 ### After CTAD
 
 ```cpp
-std::pair p(1, 2.0);            // deduced as std::pair<int, double>
-std::tuple t(42, 3.14f, "hi");  // deduced as std::tuple<int, float, const char*>
-std::lock_guard lock(mtx);      // deduced as std::lock_guard<std::mutex>
+std::pair p(1, 2.0);            // 推导为 std::pair<int, double>
+std::tuple t(42, 3.14f, "hi");  // 推导为 std::tuple<int, float, const char*>
+std::lock_guard lock(mtx);      // 推导为 std::lock_guard<std::mutex>
 ```
 
 The code is cleaner, and the pile of make_xxx factory functions is no longer needed. In fact, after C++17 the only remaining use for many make functions is to cover the corner cases of CTAD—most of the time, the bare class name is enough.
@@ -86,7 +86,7 @@ This is the most intuitive use case for CTAD. Each element's type is deduced fro
 
 ```cpp
 std::pair p(1, 2.0);               // std::pair<int, double>
-std::pair p2 = {1, 2.0};           // same as above
+std::pair p2 = {1, 2.0};           // 同上
 std::tuple t(1, 2.0, "three");     // std::tuple<int, double, const char*>
 ```
 
@@ -98,7 +98,7 @@ std::tuple t(1, 2.0, "three");     // std::tuple<int, double, const char*>
 std::vector v1 = {1, 2, 3};                    // std::vector<int>
 std::vector v2(v1.begin(), v1.begin() + 2);    // std::vector<int>
 
-// iterating over another container
+// 从其他容器迭代
 std::set<int> s = {1, 2, 3};
 std::vector v3(s.begin(), s.end());             // std::vector<int>
 ```
@@ -110,7 +110,7 @@ Note: `std::vector v = {1, 2, 3}` deduces fine because the standard library prov
 **Note**: `std::unique_ptr` and `std::shared_ptr` do **not** support CTAD from a raw pointer. The following code fails to compile:
 
 ```cpp
-// Compile error! Smart pointers don't support CTAD from a new expression
+// 编译错误！智能指针不支持从 new 表达式 CTAD
 // std::unique_ptr up(new int(42));
 // std::shared_ptr sp(new int(42));
 ```
@@ -120,11 +120,11 @@ The reason is that the constructor template argument deduction rules for smart p
 **The right approach** is to use `make_unique` and `make_shared` (recommended), or to specify the template arguments explicitly:
 
 ```cpp
-// Recommended: use the make functions (exception-safe)
+// 推荐：使用 make 函数（异常安全）
 auto up1 = std::make_unique<int>(42);
 auto sp1 = std::make_shared<int>(42);
 
-// Or specify the template arguments explicitly
+// 或显式指定模板参数
 std::unique_ptr<int> up2(new int(42));
 std::shared_ptr<int> sp2(new int(42));
 ```
@@ -133,7 +133,7 @@ CTAD with smart pointers mostly shows up in scenarios with custom deleters, but 
 
 ```cpp
 std::unique_ptr<FILE, decltype(&std::fclose)> fp(std::fopen("file.txt", "r"), &std::fclose);
-// Template arguments must be written explicitly; no CTAD here
+// 需要显式指定模板参数，不能 CTAD
 ```
 
 ### optional and variant
@@ -142,15 +142,15 @@ std::unique_ptr<FILE, decltype(&std::fclose)> fp(std::fopen("file.txt", "r"), &s
 std::optional o = 42;          // std::optional<int>
 std::optional o2 = 3.14;       // std::optional<double>
 
-// variant's CTAD is special—deduction goes through assignment
-std::variant<int, double> v = 42;  // template arguments still written by hand
+// variant 的 CTAD 比较特殊——需要通过赋值来推导
+std::variant<int, double> v = 42;  // 仍然需要手写模板参数
 ```
 
 ### array
 
 ```cpp
 std::array a = {1, 2, 3, 4, 5};  // std::array<int, 5>
-// The second template argument (the size) is deduced from the length of the braced list
+// 第二个模板参数（大小）从花括号初始化列表的长度推导
 ```
 
 This one already works in C++17, and it is particularly handy—no more counting elements by hand.
@@ -184,7 +184,7 @@ struct MyPair {
     MyPair(T f, U s) : first(f), second(s) {}
 };
 
-MyPair p(1, 2.0);  // implicitly deduced as MyPair<int, double>
+MyPair p(1, 2.0);  // 隐式推导为 MyPair<int, double>
 ```
 
 Seeing the constructor `MyPair(T f, U s)`, the compiler automatically generates an equivalent deduction guide: whenever `int` and `double` arguments are passed, `T` is deduced as `int` and `U` as `double`.
@@ -203,9 +203,9 @@ private:
     T value_;
 };
 
-Wrapper w1(42);        // uses the first constructor; deduced as Wrapper<int>
+Wrapper w1(42);        // 使用第一个构造函数，推导为 Wrapper<int>
 int x = 10;
-Wrapper w2(&x);        // uses the second constructor; deduced as Wrapper<int>
+Wrapper w2(&x);        // 使用第二个构造函数，推导为 Wrapper<int>
 ```
 
 ### The Limits of Implicit Deduction
@@ -260,7 +260,7 @@ private:
     T value_;
 };
 
-// Custom deduction guide: deduce from the value type
+// 自定义推导指引：从值类型推导
 template<typename T>
 StrongType(T) -> StrongType<T, struct DefaultTag>;
 
@@ -279,13 +279,13 @@ public:
         std::copy(init.begin(), init.begin() + N, data_.begin());
     }
 
-    // ... other members
+    // ... 其他成员
 
 private:
     std::array<T, N> data_;
 };
 
-// Custom deduction guide: deduce T and N from the braced list
+// 自定义推导指引：从花括号列表推导 T 和 N
 template<typename T, typename... Args>
 FixedBuffer(T, Args...) -> FixedBuffer<T, 1 + sizeof...(Args)>;
 ```
@@ -307,7 +307,7 @@ How constructor arguments determine template arguments, and how a guide teaches 
 The standard library itself makes heavy use of custom deduction guides. For example, the guide that lets `std::vector` deduce from a pair of iterators:
 
 ```cpp
-// Roughly equivalent to the deduction guide in the standard library
+// 大致等价于标准库中的推导指引
 template<typename InputIt>
 vector(InputIt, InputIt) -> vector<typename iterator_traits<InputIt>::value_type>;
 ```
@@ -326,10 +326,10 @@ C++17's CTAD does not support aggregate types. An aggregate is a class with no u
 template<typename T, std::size_t N>
 struct MyArray {
     T data[N];
-    // No constructor—an aggregate
+    // 没有构造函数——是聚合类型
 };
 
-MyArray a = {1, 2, 3};  // C++17: compile error! Aggregates don't support CTAD
+MyArray a = {1, 2, 3};  // C++17：编译错误！聚合不支持 CTAD
 ```
 
 ### C++20: The Limits of Aggregate CTAD
@@ -339,10 +339,10 @@ MyArray a = {1, 2, 3};  // C++17: compile error! Aggregates don't support CTAD
 ```cpp
 template<typename T, std::size_t N>
 struct MyArray {
-    T data[N];  // No constructor, an aggregate
+    T data[N];  // 没有构造函数，是聚合类型
 };
 
-MyArray a = {1, 2, 3};  // C++20: still a compile error!
+MyArray a = {1, 2, 3};  // C++20：仍然编译错误！
 ```
 
 C++20's support for aggregate CTAD is very limited—the main improvement allows deduction in certain specific scenarios, but there is no general aggregate CTAD. To make the code above work, we still need to write a deduction guide by hand or add a constructor.
@@ -352,7 +352,7 @@ C++20's support for aggregate CTAD is very limited—the main improvement allows
 The reason `std::array a = {1, 2, 3}` works is that the standard library provides a dedicated deduction guide for it—not because of C++20's aggregate CTAD:
 
 ```cpp
-// The standard library's deduction guide (simplified)
+// 标准库中的推导指引（简化版）
 template<typename T, typename... Args>
 array(T, Args...) -> array<T, 1 + sizeof...(Args)>;
 ```
@@ -367,7 +367,7 @@ We can't deduce arguments through an alias template directly—an alias template
 template<typename T>
 using MyVec = std::vector<T, MyAllocator<T>>;
 
-MyVec v = {1, 2, 3};  // Compile error: alias templates don't support CTAD
+MyVec v = {1, 2, 3};  // 编译错误：别名模板不支持 CTAD
 ```
 
 C++20 introduced support for deduction guides on alias templates, but the rules are fairly intricate, and many compilers' support is incomplete.
@@ -384,7 +384,7 @@ struct Wrapper {
 };
 
 int x = 42;
-Wrapper w(x);  // T deduced as int& (not int!)
+Wrapper w(x);  // T 推导为 int&（不是 int！）
 ```
 
 Here, under the forwarding-reference rules, when the lvalue `x` is passed, `T` is deduced as `int&`. So `Wrapper w(x)` has type `Wrapper<int&>`, and its member `value_` has type `int&`. That is probably not the behavior we want. The fix is to use `std::remove_reference_t` or a custom deduction guide to constrain the deduction result.
@@ -394,10 +394,10 @@ Here, under the forwarding-reference rules, when the lvalue `x` is passed, `T` i
 CTAD can behave differently in copy initialization (`=`) versus direct initialization (`()`):
 
 ```cpp
-std::vector v1{1, 2, 3};        // Direct initialization; CTAD works
-std::vector v2 = {1, 2, 3};     // Copy initialization; CTAD works (there's a dedicated deduction guide)
+std::vector v1{1, 2, 3};        // 直接初始化，CTAD 工作
+std::vector v2 = {1, 2, 3};     // 拷贝初始化，CTAD 工作（有专门的推导指引）
 
-// Some custom types may work in only one of the two forms
+// 某些自定义类型可能只在其中一种情况下工作
 ```
 
 A word of advice: if CTAD doesn't work under one initialization form, try the other. Or check whether your deduction guides actually cover that form of initialization.
@@ -412,7 +412,7 @@ Let's write a complete example showing how CTAD makes a strong-typedef wrapper f
 #include <cstdint>
 #include <utility>
 
-/// @brief A strong-typedef wrapper that prevents mixing types with different semantics
+/// @brief 强类型包装器，防止不同语义的类型混用
 template<typename T, typename Tag>
 class StrongTypedef {
 public:
@@ -423,29 +423,29 @@ private:
     T value_;
 };
 
-// Tag types (empty classes, take up no space)
+// 标签类型（空类，不占空间）
 struct MeterTag {};
 struct KilometerTag {};
 struct CelsiusTag {};
 
-// Aliases
+// 别名
 using Meter     = StrongTypedef<double, MeterTag>;
 using Kilometer = StrongTypedef<double, KilometerTag>;
 using Celsius   = StrongTypedef<double, CelsiusTag>;
 
-// Custom deduction guide: a literal automatically deduces to the corresponding type
-// (Not really needed in this example, since we already have using aliases)
-// but it demonstrates the syntax
+// 自定义推导指引：字面量自动推导为对应类型
+// （这个例子中其实不太需要，因为已经有 using 别名了）
+// 但展示了语法
 template<typename T>
 StrongTypedef(T) -> StrongTypedef<T, struct GenericTag>;
 
-// Usage
+// 使用
 int main() {
     Meter distance(100.0);
     Celsius temp(23.5);
 
-    // distance + temp is a compile error—different Tags can't be mixed
-    // This is the core value of strong types
+    // distance + temp 编译错误——不同的 Tag，不能混用
+    // 这是强类型的核心价值
 }
 ```
 

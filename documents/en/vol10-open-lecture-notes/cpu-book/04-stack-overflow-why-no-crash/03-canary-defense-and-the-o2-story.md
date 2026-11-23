@@ -10,9 +10,10 @@ description: "The canary's load, plant, and check read instruction by instructio
 reading_time_minutes: 8
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/04-stack-overflow-why-no-crash/03-canary-defense-and-the-o2-story.md
-  source_hash: 7d87d6a63cb9586d8126967bbda371b23ba77e8c52a566f396258725f4d87d9a
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: 28bf176e341a8652f43e9b9323f9acb6dd2876ddc2e954733974dadb8bfb5633
+  translated_at: '2026-11-22T16:47:59Z'
+  engine: glm-5.3-refresh
+  token_count: 8564
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -30,17 +31,17 @@ Back in piece 1 of the series we brushed past a few instructions touching `%fs:4
 Not every function carries the three steps; whether they go in is decided by the protection level. We take a pair of functions for comparison: scalar_only holds only scalars, while with_arr holds an array:
 
 ```cpp
-// d5.cpp — canary planting and checking, assembly compared across three stack-protector levels
+// d5.cpp —— 金丝雀的装配与校验，三种栈保护档位的汇编对照
 #include <cstdio>
 
 __attribute__((noinline))
-int scalar_only(int x) { // no array: the strong level plants no canary, the all level does
+int scalar_only(int x) { // 没有数组： strong 档位不插金丝雀， all 档位插
     int t = x * 3;
     return t + 1;
 }
 
 __attribute__((noinline))
-int with_arr(int x) { // has an array: strong and all both plant a canary
+int with_arr(int x) { // 有数组： strong 与 all 都插金丝雀
     int arr[4] = {x, x + 1, x + 2, x + 3};
     int s = 0;
     for (int i = 0; i < 4; ++i)
@@ -56,10 +57,10 @@ int main(int argc, char**) {
 ```
 
 ```text
-g++ -O0 -g -o d5_strong d5.cpp                 # default
+g++ -O0 -g -o d5_strong d5.cpp                 # 默认
 g++ -O0 -g -fstack-protector-all -o d5_all d5.cpp
 g++ -O0 -g -fno-stack-protector -o d5_none d5.cpp
-./d5_strong && ./d5_all && ./d5_none     # all three print scalar_only=4 with_arr=10
+./d5_strong && ./d5_all && ./d5_none     # 三个都打 scalar_only=4 with_arr=10
 ```
 
 All our comparisons use -O0, and one failed attempt has to be reported here: the level comparison was originally tried at -O2, but at -O2 with_arr folded entirely into a single `lea 0x6(,%rdi,4),%eax`. The array was nowhere in the instruction stream, the canary went away with it, and the levels no longer had anything to differ on. So this whole piece discusses layout and protection levels at -O0, and the -O2 world gets a section of its own next.
@@ -71,7 +72,7 @@ Under the default level, scalar_only shows no canary anywhere in the assembly:
     1149:	push   %rbp
     114a:	mov    %rsp,%rbp
     114d:	mov    %edi,-0x14(%rbp)
-    ... (pure arithmetic, omitted)
+    ...（纯算术，删节）...
     1162:	pop    %rbp
     1163:	ret
 ```
@@ -84,11 +85,11 @@ Now switch to -fstack-protector-all, and both ends get planted:
     114a:	mov    %rsp,%rbp
     114d:	sub    $0x20,%rsp
     1151:	mov    %edi,-0x14(%rbp)
-    1154:	mov    %fs:0x28,%rax        <- load the canary
-    115d:	mov    %rax,-0x8(%rbp)      <- store into rbp-0x8
-    ... (pure arithmetic, omitted)
-    1175:	mov    -0x8(%rbp),%rdx      <- read back
-    1179:	sub    %fs:0x28,%rdx        <- compare against the original
+    1154:	mov    %fs:0x28,%rax        <- 装载金丝雀
+    115d:	mov    %rax,-0x8(%rbp)      <- 存进 rbp-0x8
+    ...（纯算术，删节）...
+    1175:	mov    -0x8(%rbp),%rdx      <- 取出
+    1179:	sub    %fs:0x28,%rdx        <- 与原件比对
     1182:	je     1189 <scalar_only(int)+0x40>
     1184:	call   1040 <__stack_chk_fail@plt>
     1189:	leave
@@ -103,15 +104,15 @@ The -fno-stack-protector output matches the default level and carries no trace o
     1165:	mov    %rsp,%rbp
     1168:	sub    $0x40,%rsp
     116c:	mov    %edi,-0x34(%rbp)
-    116f:	mov    %fs:0x28,%rax        <- load
-    1178:	mov    %rax,-0x8(%rbp)      <- store at rbp-0x8
+    116f:	mov    %fs:0x28,%rax        <- 装载
+    1178:	mov    %rax,-0x8(%rbp)      <- 存 rbp-0x8
     117c:	xor    %eax,%eax
     117e:	mov    -0x34(%rbp),%eax
-    1181:	mov    %eax,-0x20(%rbp)     <- arr[0]; note arr is at rbp-0x20 again
-    ... (arr[1..3] and the summation loop, omitted)
+    1181:	mov    %eax,-0x20(%rbp)     <- arr[0]，注意 arr 又在 rbp-0x20
+    ...（arr[1..3] 与求和循环，删节）...
     11c5:	mov    -0x28(%rbp),%eax
-    11c8:	mov    -0x8(%rbp),%rdx      <- read the canary back
-    11cc:	sub    %fs:0x28,%rdx        <- compare
+    11c8:	mov    -0x8(%rbp),%rdx      <- 取出金丝雀
+    11cc:	sub    %fs:0x28,%rdx        <- 比对
     11d5:	je     11dc <with_arr(int)+0x78>
     11d7:	call   1040 <__stack_chk_fail@plt>
     11dc:	leave
@@ -138,16 +139,16 @@ The only difference between the two objdump dumps is the filename line; the inst
 That settles the levels. Now let's trample the canary itself once. d5smash has the same shape as d3's default build: arr base at rbp-0x20, the canary at rbp-0x8, and the index that lands on it is 6:
 
 ```cpp
-// d5smash.cpp — smash the canary on purpose and trigger __stack_chk_fail
+// d5smash.cpp —— 主动踩坏金丝雀，触发 __stack_chk_fail
 #include <cstdio>
 
-volatile int g_index   = 6;          // measured layout: arr base at rbp-0x20, canary at rbp-0x8, i.e. arr[6]
+volatile int g_index   = 6;          // 实测布局： arr 基址 rbp-0x20，金丝雀在 rbp-0x8，即 arr[6]
 volatile int g_payload = 0x41414141;
 
 __attribute__((noinline))
 void f() {
     int arr[4] = {1, 2, 3, 4};
-    arr[g_index] = g_payload; // out-of-bounds write, lands right on the canary
+    arr[g_index] = g_payload; // 越界写，落在金丝雀上
 }
 
 int main() {
@@ -242,8 +243,10 @@ Next, the array: it moved to rsp+0x00. The two instructions `movabs $0x200000001
 
 The same arr[-1] now writes to rsp-4, which falls into the red zone covered in 02, the 128-byte region below rsp reserved for the current function. Nothing else lives there. The written 999 gets touched exactly once, by the read-back `mov (%rsp,%rax,4),%edx` right after it, which prints it for us to see; after that nobody ever reads it again. The canary moved from rbp-0x8 to rsp+0x18, and the geometry of the protection has not changed: going up from the array's upper edge, idx 4 and 5 are 8 bytes of padding, idx 6 is the canary slot, above that another 8 bytes of padding, and beyond rsp+0x28 sits the return address. The ending turned into a tail call, `jmp printf`: f hands the whole wrap-up over to the callee and skips even its own ret.
 
-Almost every one of the usual quiet-overflow mechanisms is present in this -O2 assembly, and we can match them one by one. One is the write into padding and alignment gaps; the 8 bytes at idx 4 and 5 are the evidence. Another is the compiler's variable reshuffling: the array moved and the scalar moved into the instruction stream. Yet another is a write to a value nobody reads again; the 999 in the red zone got read back exactly once. Both scripts of the same source are real: at -O0 the write corrupts a neighbor, at -O2 it strikes empty space, and which one you get is decided by the compiler's variable layout and its optimizations. That is where the landing sites came from. The canary's conditions for showing up can also be compared by hand. The scene below sits plain and guarded side by side: plain has no array, closes with just pop and ret, and none of the canary's four steps, load, store, fetch, compare, are present. guarded has an array, all four steps are there, and the compare comes before the return. The executor does not emulate the fs:0x28 segment addressing, so the scene substitutes a fixed value from .data as the canary original, leaving the protection geometry and the order of the checks untouched. Count your way through, and every extra step is what the array bought.
+Almost every one of the usual quiet-overflow mechanisms is present in this -O2 assembly, and we can match them one by one. One is the write into padding and alignment gaps; the 8 bytes at idx 4 and 5 are the evidence. Another is the compiler's variable reshuffling: the array moved and the scalar moved into the instruction stream. Yet another is a write to a value nobody reads again; the 999 in the red zone got read back exactly once. Both scripts of the same source are real: at -O0 the write corrupts a neighbor, at -O2 it strikes empty space, and which one you get is decided by the compiler's variable layout and its optimizations.
+
+The canary's conditions for showing up can also be compared by hand. The scene below sits plain and guarded side by side: plain has no array, closes with just pop and ret, and none of the canary's four steps, load, store, fetch, compare, are present. guarded has an array, all four steps are there, and the compare comes before the return. The executor does not emulate the fs:0x28 segment addressing, so the scene substitutes a fixed value from .data as the canary original, leaving the protection geometry and the order of the checks untouched. Count your way through, and every extra step is what the array bought.
 
 <AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/canary_when.json" />
 
-One more path to a no-crash outcome has nothing to do with landing sites at all, and that is where we go next.
+That is where the landing sites came from. One more path to a no-crash outcome has nothing to do with landing sites at all, and that is where we go next.

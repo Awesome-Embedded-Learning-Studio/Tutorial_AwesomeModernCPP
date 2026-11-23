@@ -24,9 +24,9 @@ related:
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/06-evolution-of-std-optional/01-why-optional-reference-took-20-years.md
   source_hash: 03a40fbf539f4961a6761a10fe44c80d0f88271983b6613f8668ba2750fb9700
-  translated_at: '2026-09-26T16:23:09+00:00'
-  engine: anthropic
-  token_count: 4900
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5146
 ---
 
 # Why the Optional Reference Took Twenty Years of Wrangling
@@ -54,7 +54,7 @@ One premise to keep in mind up front: `optional<T&>` is a feature that only ente
 #include <optional>
 int main() {
     int x = 42;
-    std::optional<int&> opt = x;   // P2988, supported only from C++26
+    std::optional<int&> opt = x;   // P2988, C++26 才支持
     *opt = 100;
 }
 ```
@@ -80,8 +80,8 @@ Let's run a minimal example to see this clearly:
 #include <cstdio>
 #include <type_traits>
 
-struct HoldsRef   { int& ref; };   // reference member
-struct HoldsValue { int val; };    // plain value member
+struct HoldsRef   { int& ref; };   // 引用成员
+struct HoldsValue { int val; };    // 普通值成员
 
 int main() {
     std::printf("HoldsValue default_ctor=%d copy_assign=%d\n",

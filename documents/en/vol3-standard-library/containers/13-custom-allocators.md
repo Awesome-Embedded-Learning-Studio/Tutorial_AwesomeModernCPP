@@ -17,13 +17,24 @@ tags:
 - advanced
 - 内存管理
 - 容器
+contributors:
+- github: Charliechen114514
+  roles: [author, maintain]
+  note:
+    zh: "文章撰写与长期维护"
+    en: "Article writing and ongoing maintenance"
+- github: YukunJ
+  roles: [revision]
+  note:
+    zh: "参与文章内容与示例修订 (PR #77)"
+    en: "Contributed article and example revisions (PR #77)"
 title: 'Custom Allocators and PMR: Managing Memory Yourself'
 translation:
   source: documents/vol3-standard-library/containers/13-custom-allocators.md
-  source_hash: 3d6f35e9607d6d59e654176774a067b00942b0b84c8d013328c78c3e05e31382
-  translated_at: '2026-09-26T02:40:34+00:00'
-  engine: anthropic
-  token_count: 4100
+  source_hash: 2931f66da8be05c891671b931b4d33e4ee7373f34d7d27c2c2d204492bf6849d
+  translated_at: '2026-11-22T16:41:57.584145+00:00'
+  engine: glm-5.3-refresh
+  token_count: 7587
 ---
 # Custom Allocators and PMR: Managing Memory Yourself
 
@@ -127,7 +138,7 @@ public:
     using Marker = char*;
     StackAllocator(void* buf, std::size_t size)
         : start_(static_cast<char*>(buf)), top_(start_), end_(start_ + size) {}
-    // allocate is the same as Bump (pointer bump-up + alignment handling), omitted
+    // allocate 同 Bump（指针上移 + 对齐处理），略
     Marker mark() noexcept { return top_; }
     void rollback(Marker m) noexcept { top_ = m; }
 };
@@ -181,7 +192,7 @@ Then come the **pmr containers**: `std::pmr::vector<T>`, `std::pmr::string`, `st
 
 std::byte buffer[4096];
 std::pmr::monotonic_buffer_resource mbr(buffer, sizeof(buffer));
-std::pmr::vector<int> v(&mbr);   // v's memory comes from buffer, bypassing the global heap
+std::pmr::vector<int> v(&mbr);   // v 的内存来自 buffer，不走全局堆
 ```
 
 ## Let's Run It: pmr::vector with a Monotonic Buffer
@@ -196,11 +207,11 @@ Let's run it and confirm that pmr::vector really allocates from the stack buffer
 
 int main()
 {
-    // a buffer on the stack, with monotonic_buffer_resource as the allocation source
+    // 栈上一块 buffer，用 monotonic_buffer_resource 当分配源
     std::byte buffer[4096];
     std::pmr::monotonic_buffer_resource mbr(buffer, sizeof(buffer));
 
-    // pmr::vector allocates from this buffer, bypassing the global heap
+    // pmr::vector 从这块 buffer 分配，不走全局堆
     std::pmr::vector<int> v(&mbr);
     for (int i = 0; i < 100; ++i) {
         v.push_back(i);

@@ -20,12 +20,23 @@ tags:
 - 入门
 - 基础
 title: C-Style Arrays
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #214)"
+      en: "Contributed exercise solutions and article revisions (PR #214)"
 translation:
   source: documents/vol1-fundamentals/ch05/01-c-arrays.md
-  source_hash: 6940fabd3d4bb448e235a87f147b1ed027bbb4721d9587225db03384655462de
-  translated_at: '2026-09-25T10:51:43+00:00'
-  engine: anthropic
-  token_count: 4500
+  source_hash: 855cd746cbe15ebc2f1eb1c84ea312a8144da01a182b4c3eb00dd86949ecba76
+  translated_at: '2026-11-22T16:40:19+00:00'
+  engine: glm-5.3-refresh
+  token_count: 10780
 ---
 # C-Style Arrays: Raw, Direct, and No Protection Whatsoever
 
@@ -38,7 +49,7 @@ C-style arrays come with plenty of problems: they cannot be assigned, cannot be 
 To declare an array, the core syntax is a pair of square brackets after the variable name, containing the number of elements:
 
 ```cpp
-int scores[5];  // 5 ints, uninitialized (the values are indeterminate)
+int scores[5];  // 5 个 int，未初始化（值是不确定的）
 ```
 
 This code tells the compiler: allocate space for 5 `int`s contiguously on the stack. Note that **an uninitialized local array holds garbage values**—not zeros. So we almost always initialize at the same time we declare.
@@ -58,7 +69,7 @@ The other way around—if we supply more initializers than the array size, compi
 When the initializer list provides enough values, we can omit the size and let the compiler count them itself:
 
 ```cpp
-int primes[] = {2, 3, 5, 7, 11, 13};  // the compiler deduces the size as 6
+int primes[] = {2, 3, 5, 7, 11, 13};  // 编译器推断大小为 6
 ```
 
 The benefit of this style: when we add or remove elements later on, there is no number inside the brackets that needs updating in lockstep.
@@ -79,8 +90,8 @@ First, let's burn this in: C++ array subscripts start at 0. For an array of size
 ```cpp
 int scores[5] = {90, 85, 78, 92, 88};
 
-std::cout << scores[0] << std::endl;  // 90 (the first element)
-std::cout << scores[4] << std::endl;  // 88 (the last element)
+std::cout << scores[0] << std::endl;  // 90（第一个元素）
+std::cout << scores[4] << std::endl;  // 88（最后一个元素）
 ```
 
 C-style arrays perform no bounds checking whatsoever. Out-of-bounds accesses like `scores[5]`, `scores[100]`, or `scores[-1]` draw no compile-time error and throw no exception at runtime—they silently read and write memory beyond the array. This undefined behavior may happen to "look fine," may crash immediately, or may quietly change the values of other variables. Debugging this kind of issue is a genuine blood-pressure test.
@@ -88,17 +99,17 @@ C-style arrays perform no bounds checking whatsoever. Out-of-bounds accesses lik
 We modify array elements through subscripts too:
 
 ```cpp
-scores[2] = 80;  // change the third element from 78 to 80
+scores[2] = 80;  // 把第三个元素从 78 改成 80
 ```
 
 There are several ways to traverse an array: the most traditional is a subscript loop, while the range-based `for` introduced in C++11 is more concise.
 
 ```cpp
-// Range-based for traversal (only valid within the declaring scope)
+// 范围 for 遍历（只在声明作用域内有效）
 for (int s : scores) {
     std::cout << s << " ";
 }
-// Output: 90 85 80 92 88
+// 输出: 90 85 80 92 88
 ```
 
 The range-based `for` only works on arrays that "know their own size"—once the array has been passed to a function, it stops working, and we will explain why later.
@@ -120,9 +131,9 @@ We have declared a matrix with 3 rows and 4 columns. `matrix[0]` is the first ro
 Now a key question: what does this matrix look like in memory? The answer is **row-major contiguous storage**—all the elements are packed tightly into one contiguous block of memory:
 
 ```text
-Address:  low →→→→→→→→→→→→→→→→→→→→→→→ high
-Content:  1 2 3 4 5 6 7 8 9 10 11 12
-          ↑--- row 0 ---↑--- row 1 ---↑--- row 2 ---↑
+地址:   低地址 →→→→→→→→→→→→→→→→→→→→→→→ 高地址
+内容: 1 2 3 4 5 6 7 8 9 10 11 12
+       ↑--- 行0 ---↑--- 行1 ---↑--- 行2 ---↑
 ```
 
 `matrix[1][0]` sits in memory immediately after `matrix[0][3]`. This point is crucial when we study the relationship between pointers and arrays later on.
@@ -199,7 +210,7 @@ We mark it `const` because the function only reads and never modifies—a good h
 Passing multidimensional arrays is even more troublesome: we must tell the compiler the size of the second (and any higher) dimension, otherwise it cannot compute element addresses:
 
 ```cpp
-// The compiler needs to know the second dimension is 4 to compute the address of matrix[i][j] correctly
+// 编译器需要知道第二维是 4 才能正确计算 matrix[i][j] 的地址
 void print_matrix(int matrix[][4], int rows)
 {
     for (int i = 0; i < rows; ++i) {
@@ -227,11 +238,11 @@ Let's fold this chapter's core points into a single program:
 
 ```cpp
 // arrays.cpp
-// A comprehensive tour of C-style arrays: initialization, traversal, function parameters, matrix operations
+// C 风格数组综合演练：初始化、遍历、函数传参、矩阵操作
 
 #include <iostream>
 
-/// @brief Print a one-dimensional array
+/// @brief 打印一维数组
 void print_array(const int arr[], int size)
 {
     for (int i = 0; i < size; ++i) {
@@ -243,7 +254,7 @@ void print_array(const int arr[], int size)
     std::cout << std::endl;
 }
 
-/// @brief Compute the sum of the array elements
+/// @brief 计算数组元素之和
 int array_sum(const int arr[], int size)
 {
     int total = 0;
@@ -253,7 +264,7 @@ int array_sum(const int arr[], int size)
     return total;
 }
 
-/// @brief Print a matrix (second dimension fixed at 4)
+/// @brief 打印矩阵（第二维固定为 4）
 void print_matrix(const int matrix[][4], int rows)
 {
     for (int i = 0; i < rows; ++i) {
@@ -264,7 +275,7 @@ void print_matrix(const int matrix[][4], int rows)
     }
 }
 
-/// @brief Transpose a 3x4 matrix into a 4x3 matrix
+/// @brief 将 3x4 矩阵转置为 4x3 矩阵
 void transpose_3x4(const int src[][4], int dst[][3])
 {
     for (int i = 0; i < 3; ++i) {
@@ -276,18 +287,18 @@ void transpose_3x4(const int src[][4], int dst[][3])
 
 int main()
 {
-    // --- Initialization styles ---
+    // --- 初始化方式展示 ---
     std::cout << "=== 初始化方式 ===" << std::endl;
 
     int full_init[5] = {10, 20, 30, 40, 50};
     std::cout << "完全初始化: ";
     print_array(full_init, 5);
 
-    int partial_init[5] = {1, 2};  // the rest are filled with 0 automatically
+    int partial_init[5] = {1, 2};  // 后面自动填 0
     std::cout << "部分初始化: ";
     print_array(partial_init, 5);
 
-    int zero_init[5] = {};  // all zeros
+    int zero_init[5] = {};  // 全部填 0
     std::cout << "零初始化:   ";
     print_array(zero_init, 5);
 
@@ -297,7 +308,7 @@ int main()
     print_array(deduced, kDeducedCount);
     std::cout << std::endl;
 
-    // --- Traversal and summing ---
+    // --- 遍历与求和 ---
     std::cout << "=== 遍历与求和 ===" << std::endl;
     int scores[] = {90, 85, 78, 92, 88};
     constexpr int kScoreCount = sizeof(scores) / sizeof(scores[0]);
@@ -311,7 +322,7 @@ int main()
     std::cout << "均分: " << average << std::endl;
     std::cout << std::endl;
 
-    // --- Matrix operations ---
+    // --- 矩阵操作 ---
     std::cout << "=== 矩阵操作 ===" << std::endl;
     int matrix[3][4] = {
         {1,  2,  3,  4},
@@ -496,7 +507,7 @@ The code below contains an out-of-bounds bug—find it and fix it:
 
 ```cpp
 int data[5] = {10, 20, 30, 40, 50};
-for (int i = 0; i <= 5; ++i) {  // Hint: look closely at the loop condition
+for (int i = 0; i <= 5; ++i) {  // 提示：仔细看循环条件
     std::cout << data[i] << std::endl;
 }
 ```

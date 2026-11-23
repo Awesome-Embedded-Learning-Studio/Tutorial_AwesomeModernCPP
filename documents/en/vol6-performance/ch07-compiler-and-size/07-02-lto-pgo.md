@@ -26,9 +26,9 @@ title: "LTO, ThinLTO, and PGO: engineering them into your build"
 translation:
   source: documents/vol6-performance/ch07-compiler-and-size/07-02-lto-pgo.md
   source_hash: 1ec0c7fda10a91b83af0e9ba5eed141f8bd5dd0b4bdca663fc4f7a2c6db82739
-  translated_at: '2026-09-26T08:36:30+00:00'
-  engine: anthropic
-  token_count: 1400
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 3347
 ---
 # LTO, ThinLTO, and PGO: engineering them into your build
 
@@ -41,17 +41,17 @@ The idea behind **LTO (Link-Time Optimization)** is this: at compile time, every
 Let's measure the simplest cross-TU scenario: `main.cpp` calls `helper(int)` from `helper.cpp`:
 
 ```bash
-# No LTO: helper lives in another TU, the compiler cannot see the implementation, no inlining
+# 无 LTO:helper 在另一个 TU,编译器看不见实现,不能内联
 g++ -O2 main.cpp helper.cpp -o lto_nolto
-# With LTO: merged at link time, helper can be inlined → constant propagation goes further
+# 有 LTO:链接期合并,helper 能被内联 → 进一步常量传播
 g++ -O2 -flto main.cpp helper.cpp -o lto_lto
 ```
 
 Measured (with `helper` called a hundred million times):
 
 ```text
-No LTO:   178.6 ms
-With LTO:  46.2 ms   ← 3.9x
+无 LTO:  178.6 ms
+有 LTO:   46.2 ms   ← 3.9 倍
 ```
 
 **3.9x.** The entire gap comes from "cross-TU inlining + the optimizations that follow": LTO lets the compiler see `helper`'s implementation, inlines it into `main`'s loop, and then constant propagation / loop simplification squeezes the whole thing down to near-optimal. Without LTO, every loop iteration is a real function call (and `helper` has a loop of its own inside).
@@ -79,8 +79,8 @@ The mechanics of **PGO (Profile-Guided Optimization)** were covered in ch04-07 (
 We took ch04's `pgo_demo` (the small function with the 99/1 branch split), ran the full three-phase PGO strictly by the book, and compared it against a pure -O2 baseline:
 
 ```text
-Pure -O2 baseline: 3.57-3.82 ms
--O2 + PGO:         3.78-4.17 ms   ← no payoff at all (even slightly slower, within noise)
+纯 -O2 基线: 3.57-3.82 ms
+-O2 + PGO:  3.78-4.17 ms   ← 没有任何收益(甚至略慢,噪声内)
 ```
 
 **PGO does nothing on microbenchmarks.** The reason: this small function has just two branches and a few lines of code, and `-O2` already optimizes it well; PGO's value is **code layout on large codebases** (physically clustering the hot paths scattered across thousands of functions to improve icache), and there is nothing to lay out in a small function of a few dozen lines.

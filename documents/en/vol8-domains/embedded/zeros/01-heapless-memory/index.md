@@ -14,10 +14,10 @@ platform: stm32f1
 cpp_standard: [23]
 translation:
   source: documents/vol8-domains/embedded/zeros/01-heapless-memory/index.md
-  source_hash: b17529879ad005195394b7a0f44fad051a41d617b9daf0937adcf04e63725d59
-  translated_at: '2026-09-25T07:55:41+00:00'
-  engine: anthropic
-  token_count: 950
+  source_hash: 33c9257c368e1670edc3ee5e7b6b6d916a251d6d1f4918f24514f3eb325c8ff5
+  translated_at: '2026-11-22T16:45:44+00:00'
+  engine: glm-5.3-refresh
+  token_count: 975
 ---
 
 # A World Without a Heap: Getting Memory Allocation Right First
@@ -26,7 +26,7 @@ translation:
 
 ## Overview
 
-In a kernel with no heap, no exceptions, and no RTTI, where do the task control blocks and the messages live? That is the first real question the smoke test left behind. At this station we first think things through: what ways there are to hand out memory, why the fixed-size block pool is the pick, and what makes a bitmap a good bookkeeping scheme. Then we get hands-on, one article at a time — the bitmap, the pool, the typed facade — with each article bringing one new mechanism and one test gate, and the defenses written into compile time as negative compilation tests. Finally we haul the pool onto a `-nostdlib` target and run into three gates in a row. The closing article leaves behind a cliffhanger — "even adding `constinit` won't compile" — which the opening of the next topic settles with a pair of square brackets.
+In a kernel with no heap, no exceptions, and no RTTI, where do the task control blocks and the messages live? That is the first real question the smoke test left behind. At this station we first think things through: what ways there are to hand out memory, why the fixed-size block pool is the pick, and what makes a bitmap a good bookkeeping scheme. Then we get hands-on, one article at a time — the bitmap, the pool, the typed facade — with each article bringing one new mechanism and one test gate, and the defenses written into compile time as negative compilation tests. Finally we haul the pool onto a `-nostdlib` target and run into three gates in a row. The closing article leaves behind a question — "even adding `constinit` won't compile" — and we settle it on the spot, right there, with a pair of braces.
 
 ## Articles at This Station
 

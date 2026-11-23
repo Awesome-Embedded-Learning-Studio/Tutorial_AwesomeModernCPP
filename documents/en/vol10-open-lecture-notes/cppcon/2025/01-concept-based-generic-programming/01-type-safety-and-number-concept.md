@@ -22,9 +22,9 @@ video_youtube: https://www.youtube.com/watch?v=VMGB75hsDQo
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/01-concept-based-generic-programming/01-type-safety-and-number-concept.md
   source_hash: 00ee0a98a3dbb78b5cbd5d79e39c721883551fa3be832da2fd448394a4b8309d
-  translated_at: '2026-09-26T15:21:15+00:00'
-  engine: anthropic
-  token_count: 12900
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 35704
 ---
 # Let's Begin: From Manual Checks to Implicit Guards
 
@@ -77,16 +77,16 @@ With the motivation covered, let's start from a concrete problem. Introducing a 
 
 int main() {
     int big = 30000;
-    short small = big;          // Does 30000 exceed the range of short? Not really — short is typically -32768~32767
-                                // But what if it were 40000?
+    short small = big;          // 30000 超出了 short 的范围吗？其实没有，short 一般是 -32768~32767
+                                // 但如果是 40000 呢？
 
-    short overflow = 40000;     // Compiles! But the value is already wrong
+    short overflow = 40000;     // 编译通过！但值已经错了
 
     double pi = 3.14159;
-    int int_pi = pi;            // The fractional part is simply gone
+    int int_pi = pi;            // 小数部分直接丢了
 
-    std::cout << "overflow = " << overflow << "\n";  // prints a strange negative number
-    std::cout << "int_pi = " << int_pi << "\n";      // prints 3
+    std::cout << "overflow = " << overflow << "\n";  // 输出一个奇怪的负数
+    std::cout << "int_pi = " << int_pi << "\n";      // 输出 3
 
     return 0;
 }
@@ -110,11 +110,11 @@ Let's write the simplest possible concept that captures the notion of "number":
 #include <concepts>
 #include <type_traits>
 
-// My own "number" concept: either an integral type or a floating-point type
+// 我自己的 "number" concept：要么是整数，要么是浮点数
 template<typename T>
 concept number = std::integral<T> || std::floating_point<T>;
 
-// Verify it
+// 验证一下
 static_assert(number<int>, "int 应该是 number");
 static_assert(number<double>, "double 应该是 number");
 static_assert(number<char>, "char 也是整数类型，所以是 number");
@@ -141,29 +141,29 @@ There is another easily overlooked case: U and T are both integers of the same s
 template<typename T>
 concept number = std::integral<T> || std::floating_point<T>;
 
-// Whether T is "smaller than" U (can represent fewer values)
-// Here we compare ranges via numeric_limits
+// 判断 T 是否"比 U 小"（能表示的值更少）
+// 这里用 numeric_limits 的范围来比较
 template<typename T, typename U>
 concept smaller_range =
     number<T> && number<U> &&
     (std::numeric_limits<T>::max() < std::numeric_limits<U>::max() ||
      std::numeric_limits<T>::min() > std::numeric_limits<U>::min());
 
-// The core decision: does assigning from U to T cause narrowing?
+// 核心判断：从 U 到 T 的赋值是否会发生窄化
 template<typename T, typename U>
 concept narrowing_assign =
     number<T> && number<U> &&
     (
-        // Case 1: T's range is smaller than U's; the value might not fit
+        // 情况1：T 的范围比 U 小，可能放不下
         smaller_range<T, U> ||
-        // Case 2: U is floating point, T is integral; the fractional part is lost
+        // 情况2：U 是浮点数，T 是整数，小数部分会丢
         (std::floating_point<U> && std::integral<T>) ||
-        // Case 3: U and T are the same size but differ in signedness
+        // 情况3：U 和 T 大小相同但有符号性不同
         (std::integral<T> && std::integral<U> &&
          std::signed_integral<U> != std::signed_integral<T>)
     );
 
-// Test cases
+// 测试用例
 static_assert(narrowing_assign<short, int>, "int -> short 应该是窄化");
 static_assert(narrowing_assign<int, double>, "double -> int 应该是窄化（丢小数）");
 static_assert(narrowing_assign<unsigned int, int>, "int -> unsigned int 可能窄化（负数问题）");
@@ -207,67 +207,66 @@ The plan: do as much elimination as possible at compile time, filtering out the 
 #include <limits>
 #include <stdexcept>
 
-// The core decision: does assigning the value u to a variable of type T cause narrowing?
+// 核心判断：值 u 赋值给 T 类型的变量，会不会发生 narrowing？
 template<typename T, typename U>
 constexpr bool would_narrow(U u) noexcept {
-    // Layer one: cases we can rule out at compile time
-    // If T can represent every value of U, then whatever u is, narrowing is impossible
+    // 第一层：编译期就能排除的情况
+    // 如果 T 能表示 U 的所有值，那不管 u 是什么，都不可能 narrowing
     if constexpr (std::is_same_v<T, U>) {
-        return false;  // Same type, obviously not
+        return false;  // 同类型，废话
     } else if constexpr (std::is_floating_point_v<U> && std::is_integral_v<T>) {
-        // Floating point to integer: almost always potentially narrowing
-        // unless the floating value happens to be an integral value in range
-        // We leave that for the runtime check
+        // 浮点转整数，几乎总是可能 narrowing 的
+        // 除非这个浮点数恰好是个整数值且在范围内
+        // 这个我们放运行时判断
     } else if constexpr (std::is_floating_point_v<T> && std::is_floating_point_v<U>) {
-        // Floating point to floating point: narrowing only if T's precision/range is smaller than U's
+        // 浮点转浮点，只有当 T 的精度/范围小于 U 时才可能 narrowing
         if constexpr (std::numeric_limits<T>::digits >= std::numeric_limits<U>::digits &&
                       std::numeric_limits<T>::max() >= std::numeric_limits<U>::max() &&
                       std::numeric_limits<T>::lowest() <= std::numeric_limits<U>::lowest()) {
-            return false;  // T's range and precision both suffice; ruled out at compile time
+            return false;  // T 的范围和精度都够，编译期直接排除
         }
     } else if constexpr (std::is_integral_v<T> && std::is_integral_v<U>) {
-        // Integer to integer is the most intricate case; details below
+        // 整数转整数的情况最复杂，下面细说
         if constexpr (std::is_signed_v<T> == std::is_signed_v<U>) {
-            // Same signedness is easy: compare ranges
+            // 同号比较简单：看范围
             if constexpr (std::numeric_limits<T>::max() >= std::numeric_limits<U>::max() &&
                           std::numeric_limits<T>::lowest() <= std::numeric_limits<U>::lowest()) {
                 return false;
             }
         } else if constexpr (std::is_signed_v<T> && std::is_unsigned_v<U>) {
-            // signed T receiving unsigned U
-            // It's enough for T's positive range to cover all of U's values
+            // signed T 接收 unsigned U
+            // T 的正数范围能覆盖 U 的全部值就行
             if constexpr (std::numeric_limits<T>::max() >= std::numeric_limits<U>::max()) {
                 return false;
             }
         } else {
-            // unsigned T receiving signed U
-            // If U is negative it's certainly narrowing, but u's value is unknown at compile time
-            // so this case can't be ruled out at compile time; leave it for runtime
+            // unsigned T 接收 signed U
+            // U 是负数的话肯定 narrowing，但编译期不知道 u 的值
+            // 所以这种情况不能在编译期排除，得放运行时
         }
     }
 
-    // Layer two: what compile time can't rule out gets checked at runtime
+    // 第二层：编译期排不掉的，运行时判断
 
-    // signed -> unsigned with a negative source value: definitely narrowing
-    // Note: a round-trip check won't work (int(-1) → unsigned → int(-1) is reversible under two's complement)
+    // signed -> unsigned 且源值为负数：一定是 narrowing
+    // 注意：不能用 round-trip 检测（int(-1) → unsigned → int(-1) 在补码上是可逆的）
     if constexpr (std::is_unsigned_v<T> && std::is_signed_v<U>) {
         if (u < 0) return true;
     }
 
-    // Do the static conversion and see whether the value changed
+    // 先做静态转换，看值有没有变
     T t = static_cast<T>(u);
     if (static_cast<U>(t) != u) {
-        return true;  // Converted over and back, the value differs — information was lost
+        return true;  // 转过去再转回来，值不一样，信息丢了
     }
 
-    // Extra check for floating point to integer: even if the round trip agrees,
-    // confirm it isn't the "3.0 becomes 3 and back to 3.0" coincidence — though in
-    // that case no value was really lost, so the check above already suffices.
-    // But the standard is stricter about floating-to-integer conversions:
-    // the original value must be an integral value (no fractional part)
+    // 浮点转整数的额外检查：即使转回来一样，也要确认不是那种
+    // "3.0 转成 3 再转回 3.0"的巧合——不过这种情况下值确实没丢，
+    // 所以其实上面的检查已经够了。但标准对浮点转整数有更严格的要求：
+    // 原值必须是整数值（没有小数部分）
     if constexpr (std::is_floating_point_v<U> && std::is_integral_v<T>) {
-        // If u is not an integral value, then even if static_cast happens to truncate it,
-        // it is strictly speaking narrowing (the fractional part was lost)
+        // 如果 u 不是整数值，即使 static_cast 恰好截断了，
+        // 严格来说也是 narrowing（信息丢失了小数部分）
         if (u != static_cast<U>(static_cast<long long>(u))) {
             return true;
         }
@@ -301,25 +300,25 @@ That simple. You can use it directly:
 #include <iostream>
 
 int main() {
-    // Normal cases, no exception
-    int a = narrow_convert<int>(42.0);        // OK, 42.0 is an integral value
+    // 正常情况，不会抛异常
+    int a = narrow_convert<int>(42.0);        // OK，42.0 是整数值
     unsigned int b = narrow_convert<unsigned int>(100);  // OK
 
-    // These throw
+    // 这些会抛异常
     try {
-        char c = narrow_convert<char>(300);   // 300 exceeds the range of char
+        char c = narrow_convert<char>(300);   // 300 超出 char 范围
     } catch (const std::invalid_argument& e) {
         std::cout << "捕获到: " << e.what() << "\n";
     }
 
     try {
-        unsigned int d = narrow_convert<unsigned int>(-1);  // negative to unsigned
+        unsigned int d = narrow_convert<unsigned int>(-1);  // 负数转 unsigned
     } catch (const std::invalid_argument& e) {
         std::cout << "捕获到: " << e.what() << "\n";
     }
 
     try {
-        int e = narrow_convert<int>(3.14);  // floating point to integer with a fractional part
+        int e = narrow_convert<int>(3.14);  // 浮点转整数，有小数部分
     } catch (const std::invalid_argument& e) {
         std::cout << "捕获到: " << e.what() << "\n";
     }
@@ -349,18 +348,17 @@ class Number {
     T value_;
 
 public:
-    // The constructor: this is where all the magic happens
+    // 构造函数：这里是所有魔法发生的地方
     template<typename U>
     constexpr Number(U u) : value_(narrow_convert<T>(u)) {}
 
-    // Same-type construction needs no check, but it goes through the same
-    // interface for uniformity (optimized away at compile time)
+    // 同类型构造不需要检查，但为了统一接口也走一遍（编译期会优化掉）
     constexpr Number(T t) : value_(t) {}
 
-    // Implicit conversion back to T, so Number<T> can be used like T
+    // 隐式转换回 T，让 Number<T> 能像 T 一样用
     constexpr operator T() const noexcept { return value_; }
 
-    // Value access
+    // 取值
     constexpr T get() const noexcept { return value_; }
 };
 ```
@@ -369,25 +367,25 @@ See — that's all the class is. It looks like demo code, but it genuinely works
 
 ```cpp
 int main() {
-    // These all work fine
-    Number<int> x = 42;              // int -> int, no problem
-    Number<int> y = 3.0;             // double -> int, 3.0 is an integral value, no problem
-    Number<unsigned int> z = 100u;   // unsigned int -> unsigned int, no problem
+    // 这些都能正常工作
+    Number<int> x = 42;              // int -> int，没问题
+    Number<int> y = 3.0;             // double -> int，3.0 是整数值，没问题
+    Number<unsigned int> z = 100u;   // unsigned int -> unsigned int，没问题
 
-    // Number<T> can be used as T, thanks to operator T()
-    int sum = x + static_cast<int>(z);  // ordinary arithmetic
+    // Number<T> 可以当 T 用，因为有了 operator T()
+    int sum = x + static_cast<int>(z);  // 正常运算
     std::cout << "x = " << x << ", y = " << y << ", z = " << z << "\n";
     std::cout << "sum = " << sum << "\n";
 
-    // These throw at construction
+    // 这些会在构造时抛异常
     try {
-        Number<char> c = 300;  // no compile error; throws at runtime
+        Number<char> c = 300;  // 编译不报错，运行时抛异常
     } catch (const std::invalid_argument& e) {
         std::cout << "捕获到: " << e.what() << "\n";
     }
 
     try {
-        Number<unsigned int> bad = -1;  // negative to unsigned; throws at runtime
+        Number<unsigned int> bad = -1;  // 负数转 unsigned，运行时抛异常
     } catch (const std::invalid_argument& e) {
         std::cout << "捕获到: " << e.what() << "\n";
     }
@@ -425,19 +423,18 @@ public:
     constexpr operator T() const noexcept { return value_; }
     constexpr T get() const noexcept { return value_; }
 
-    // Addition: Number<T> + Number<U> -> Number<common_type_t<T, U>>
+    // 加法：Number<T> + Number<U> -> Number<common_type_t<T, U>>
     template<typename U>
     constexpr auto operator+(const Number<U>& other) const
         -> Number<std::common_type_t<T, U>>
     {
         using ResultType = std::common_type_t<T, U>;
-        // value_ + other.value_ first does ordinary arithmetic (with implicit promotion),
-        // then constructs Number<ResultType> from the result; that construction
-        // performs the narrowing check automatically
+        // value_ + other.value_ 先做普通算术（会隐式提升），
+        // 然后用结果构造 Number<ResultType>，构造时自动做 narrowing 检查
         return Number<ResultType>(value_ + other.get());
     }
 
-    // Subtraction, same idea
+    // 减法，同理
     template<typename U>
     constexpr auto operator-(const Number<U>& other) const
         -> Number<std::common_type_t<T, U>>
@@ -446,7 +443,7 @@ public:
         return Number<ResultType>(value_ - other.get());
     }
 
-    // Multiplication
+    // 乘法
     template<typename U>
     constexpr auto operator*(const Number<U>& other) const
         -> Number<std::common_type_t<T, U>>
@@ -464,24 +461,24 @@ int main() {
     Number<int> a = 10;
     Number<double> b = 3.5;
 
-    // int + double -> common_type is double
+    // int + double -> common_type 是 double
     auto result = a + b;
     std::cout << "10 + 3.5 = " << result << "\n";
     std::cout << "结果类型是 Number<double>? "
               << std::is_same_v<decltype(result), Number<double>> << "\n";
 
-    // Mixed unsigned + int arithmetic
-    Number<unsigned int> big = 3000000000u;  // 3 billion; unsigned int can represent it
+    // unsigned + int 的混合运算
+    Number<unsigned int> big = 3000000000u;  // 30亿，unsigned int 能表示
     Number<int> small = 100;
 
     auto result2 = big + small;
     std::cout << "3000000000u + 100 = " << result2 << "\n";
 
-    // Try the overflow scenario: adding two big numbers
+    // 试试溢出场景：两个大数相加
     Number<unsigned int> x = 3000000000u;
     Number<unsigned int> y = 2000000000u;
     try {
-        // 3000000000 + 2000000000 = 5000000000, beyond the range of unsigned int
+        // 3000000000 + 2000000000 = 5000000000，超出 unsigned int 范围
         auto overflow = x + y;
         std::cout << "不应该到这里\n";
     } catch (const std::invalid_argument& e) {
@@ -520,7 +517,7 @@ constexpr T safe_add(T a, T b) {
             throw std::overflow_error("unsigned addition overflow");
         }
     } else {
-        // signed overflow is UB; must use __builtin_add_overflow or an equivalent
+        // signed overflow is UB, 必须用 __builtin_add_overflow 或类似机制
         T result;
         if (__builtin_add_overflow(a, b, &result)) {
             throw std::overflow_error("signed addition overflow");
@@ -551,17 +548,17 @@ A common misconception: to overload `operator+` and `operator*` for your own typ
 ```cpp
 #include <functional>
 
-// A simplified safe_int I defined, showing only the core idea
+// 我定义了一个简化版的 safe_int，只展示核心思路
 template <typename T>
 struct safe_int {
     T value;
 
-    // Addition: just use the standard library's std::plus, one line and done
+    // 加法：直接用标准库的 std::plus，一行搞定
     friend safe_int operator+(const safe_int& a, const safe_int& b) {
         return safe_int{std::plus<T>{}(a.value, b.value)};
     }
 
-    // Multiplication, same idea
+    // 乘法：同理
     friend safe_int operator*(const safe_int& a, const safe_int& b) {
         return safe_int{std::multiplies<T>{}(a.value, b.value)};
     }
@@ -583,7 +580,7 @@ int main() {
     int a = -1;
     unsigned int b = 2;
 
-    std::cout << (a < b) << "\n";  // What do you guess this prints?
+    std::cout << (a < b) << "\n";  // 你猜输出什么？
 }
 ```
 
@@ -601,26 +598,25 @@ struct safe_int {
     T value;
 };
 
-// Cross-type operator<: a templated free function that can compare safe_int<T> against safe_int<U>
+// 跨类型的 operator<：模板化的自由函数，能处理 safe_int<T> 和 safe_int<U> 的比较
 template <typename T, typename U>
 bool operator<(const safe_int<T>& a, const safe_int<U>& b) {
     if constexpr (std::is_signed_v<T> && std::is_unsigned_v<U>) {
-        // a is signed, b is unsigned
-        // If a is negative, it is definitely less than any unsigned value; return true
+        // a 是有符号，b 是无符号
+        // 如果 a 小于零，那它一定小于任何无符号数，直接返回 true
         if (a.value < 0) {
             return true;
         }
-        // Otherwise convert both sides to unsigned and compare;
-        // a.value is guaranteed non-negative here, so the conversion is safe
+        // 否则两边都转成无符号再比，此时 a.value 一定是非负的，转换安全
         return static_cast<std::make_unsigned_t<T>>(a.value) < b.value;
     } else if constexpr (std::is_unsigned_v<T> && std::is_signed_v<U>) {
-        // The other way around: a is unsigned, b is signed
+        // 反过来，a 是无符号，b 是有符号
         if (b.value < 0) {
             return false;
         }
         return a.value < static_cast<std::make_unsigned_t<U>>(b.value);
     } else {
-        // Same signedness: ordinary comparison, no conversion trouble at all
+        // 类型一致，正常比较，没有任何转换问题
         return a.value < b.value;
     }
 }
@@ -635,9 +631,9 @@ int main() {
     safe_int<int> a{-1};
     safe_int<unsigned int> b{2};
 
-    std::cout << (a < b) << "\n";  // prints 1 — finally correct!
-    // Note: a and b are different template instantiations, safe_int<int> and
-    // safe_int<unsigned int>; only a templated free operator< can match this call
+    std::cout << (a < b) << "\n";  // 输出 1，终于正确了！
+    // 注意：a 和 b 是不同模板实例 safe_int<int> 和 safe_int<unsigned int>，
+    // 只有模板化的自由 operator< 才能匹配这个调用
 }
 ```
 
@@ -655,10 +651,10 @@ So where's the problem? Look at this code:
 #include <vector>
 
 void process(std::span<int> data) {
-    // I want the first max_size - 500 elements of data
-    unsigned int max_size = 50;  // meant to write 500, typo'd it into 50
+    // 我想取 data 的前 max_size - 500 个元素
+    unsigned int max_size = 50;  // 本来想写 500，手误写成了 50
     auto sub = data.subspan(0, max_size - 500);
-    // What is sub now?
+    // sub 现在是什么？
 }
 ```
 
@@ -677,36 +673,35 @@ My plan: first define a concept meaning "types that can be spanned," and then, w
 #include <span>
 #include <vector>
 
-// First our own safe_int (simplified; assume the full safe arithmetic is implemented)
+// 先定义我们自己的 safe_int（简化版，假设已经实现了完整的安全运算）
 template <typename T>
 struct safe_int {
     T value;
-    // ... all the operator overloads written earlier live here
+    // ... 之前写的所有运算符重载都在这里
 };
 
-// Define a concept: span-able types
-// The standard library has std::contiguous_range; I extend it
+// 定义一个概念：可 span 的类型
+// 标准库里有 std::contiguous_range，我基于它扩展
 template <typename T>
 concept spanable = std::contiguous_range<T>;
 
-// Now define a safe span whose size type is safe_int
+// 现在定义一个安全 span，尺寸类型用 safe_int
 template <typename T>
 struct safe_span {
     T* data_;
-    safe_int<std::size_t> size_;  // key: the size is a safe integer
+    safe_int<std::size_t> size_;  // 关键：尺寸是安全整数
 
-    // Constructor from an ordinary container
+    // 构造函数，从普通容器构造
     template <spanable Container>
     explicit safe_span(Container& c)
         : data_(c.data())
         , size_(safe_int<std::size_t>{c.size()})
     {}
 
-    // A safe subspan
+    // 安全的 subspan
     safe_span subspan(std::size_t offset, safe_int<std::size_t> count) {
-        // count is a safe_int; any overflowing arithmetic is intercepted at
-        // construction — the "50 - 500 becomes an enormous number" scenario
-        // can no longer happen
+        // count 是 safe_int，任何溢出运算都会在构造阶段就被拦住
+        // 不可能再出现 "50 - 500 变成巨大数" 的情况
         return safe_span{data_ + offset, count};
     }
 
@@ -739,17 +734,17 @@ Let's start from the most basic scenario. Suppose I already have something span-
 #include <span>
 #include <array>
 
-// A simple bounds-checked span wrapper
+// 一个简单的带边界检查的 span 包装
 template<typename T>
 class checked_span {
     T* ptr_;
     std::size_t size_;
 
 public:
-    // Initialize with a pointer and a size — this is the essence of "spanable"
+    // 用指针和大小初始化——这就是"spanable"的本质
     checked_span(T* ptr, std::size_t size) : ptr_(ptr), size_(size) {}
 
-    // Checked subscript access
+    // 带检查的下标访问
     T& operator[](std::size_t index) {
         if (index >= size_) {
             throw std::out_of_range("下标越界了兄弟");
@@ -777,10 +772,10 @@ int main() {
     int data[] = {1, 2, 3, 4, 5};
     checked_span<int> s(data, 5);
 
-    // Normal access, no problem
-    std::cout << s[2] << "\n";  // prints 3
+    // 正常访问，没问题
+    std::cout << s[2] << "\n";  // 输出 3
 
-    // Out-of-bounds access throws
+    // 越界访问，抛异常
     try {
         std::cout << s[10] << "\n";
     } catch (const std::out_of_range& e) {
@@ -805,9 +800,9 @@ At this point you may think there's nothing special here — isn't this just wha
 Here is an easily missed trap. `operator[]` takes its parameter as `std::size_t`, an unsigned integer. What happens if you pass `-10` straight in?
 
 ```cpp
-// You think you're passing -10, but the compiler performs an implicit conversion
-// -10 as an unsigned integer becomes an enormous positive number
-// s[-10] actually turns into something like s[18446744073709551606]
+// 你以为你在传 -10，其实编译器会做隐式转换
+// -10 作为无符号整数会变成一个巨大的正数
+// s[-10] 实际上变成了 s[18446744073709551606] 之类的鬼东西
 ```
 
 But! If you change the parameter type to the signed `ptrdiff_t`, the compiler can stop some obvious problems for you at compile time. Or, if you use the standard `std::span` implementation, it is particular about the index type.
@@ -823,13 +818,13 @@ class checked_span_v2 {
 public:
     checked_span_v2(T* ptr, std::size_t size) : ptr_(ptr), size_(size) {}
 
-    // Note ptrdiff_t (signed) here instead of size_t (unsigned)
+    // 注意这里用 ptrdiff_t（有符号）而不是 size_t（无符号）
     T& operator[](std::ptrdiff_t index) {
-        // Check the negative case first
+        // 先检查负数
         if (index < 0) {
             throw std::out_of_range("负数下标，你想干嘛");
         }
-        // Then check the upper bound
+        // 再检查上界
         if (static_cast<std::size_t>(index) >= size_) {
             throw std::out_of_range("下标越界了兄弟");
         }
@@ -846,7 +841,7 @@ int main() {
     checked_span_v2<int> s(data, 5);
 
     try {
-        auto val = s[-10];  // Negative indices are now correctly caught
+        auto val = s[-10];  // 现在能正确捕获负数下标了
         std::cout << val << "\n";
     } catch (const std::out_of_range& e) {
         std::cout << "捕获到异常: " << e.what() << "\n";
@@ -872,11 +867,11 @@ The talk mentioned a very practical example: you take some element value out of 
 
 ```cpp
 void process_with_dynamic_size(std::span<double> params, std::span<double> data) {
-    // params[0] holds the number of elements we want to process,
-    // but we don't know what it actually is: maybe 5, maybe -3, maybe 100000
+    // params[0] 里存的是我们想要处理的元素个数
+    // 但我们不知道它到底是多少，可能是 5，可能是 -3，可能是 100000
     double count_raw = params[0];
 
-    // Check before converting it to an integer
+    // 把它转成整数之前，先做检查
     if (count_raw < 0 || count_raw != static_cast<double>(static_cast<std::size_t>(count_raw))) {
         throw std::invalid_argument("params[0] 不是合法的正整数");
     }
@@ -886,7 +881,7 @@ void process_with_dynamic_size(std::span<double> params, std::span<double> data)
         throw std::out_of_range("请求的元素个数超过了数据范围");
     }
 
-    // Safely process the first count elements
+    // 安全地处理前 count 个元素
     double sum = 0;
     for (std::size_t i = 0; i < count; ++i) {
         sum += data[i];
@@ -901,10 +896,10 @@ int main() {
     double params_bad[] = {-5.0};
     double data[] = {1.0, 2.0, 3.0, 4.0, 5.0};
 
-    // The normal case
+    // 正常情况
     process_with_dynamic_size(params_good, data);
 
-    // The exceptional case
+    // 异常情况
     try {
         process_with_dynamic_size(params_bad, data);
     } catch (const std::exception& e) {
@@ -954,7 +949,7 @@ public:
     std::size_t size() const { return size_; }
 };
 
-// Deduction guide: whenever a (pointer, size) pair shows up, deduce the element type
+// 推导指引：只要看到 (指针, 大小) 的组合，自动推导元素类型
 template<typename T>
 checked_span_v3(T*, std::size_t) -> checked_span_v3<T>;
 ```
@@ -965,18 +960,18 @@ Now it reads much cleaner:
 int main() {
     int aa[100] = {};
 
-    // Used to be written as: checked_span_v3<int> s(aa, 100);
-    // Now the compiler deduces it itself: aa is an int*, so s is checked_span_v3<int>
-    // This way we write a lot less code
+    // 以前要这么写：checked_span_v3<int> s(aa, 100);
+    // 现在编译器自己推断，aa 是 int*，所以 s 就是 checked_span_v3<int>
+    // 这样，我们可以少写很多代码
     checked_span_v3 s(aa, 100);
 
-    // The compiler knows perfectly well that s is checked_span_v3<int> with 100 elements
-    // I don't need to repeat int and 100
+    // 编译器非常清楚 s 是 checked_span_v3<int>，有 100 个元素
+    // 我不需要再重复一遍 int 和 100
     s[0] = 42;
     std::cout << s[0] << "\n";  // 42
 
-    // Combined with a range-based for loop, standard modern C++ practice
-    // So much more comfortable than the old for (int i = 0; i < 100; ++i)
+    // 配合 range-based for 循环，现代 C++ 的常规操作
+    // 比以前写 for (int i = 0; i < 100; ++i) 舒服太多了
     std::size_t count = 0;
     for (auto& val : aa) {
         if (val != 0) ++count;
@@ -1000,14 +995,14 @@ Start with construction from a pointer. Given that the point of span is safety, 
 ```cpp
 #include <span>
 
-// Helper for constructing a span from a pointer
-// Deliberately written as a function so it stands out more in code review
+// 从指针构造 span 的辅助函数
+// 故意写成函数形式，让它在代码审查中更显眼
 template<typename T>
 std::span<T> make_span_from_ptr(T* ptr, std::size_t size) {
     return std::span<T>(ptr, size);
 }
 
-// A sub-span of the first n elements
+// 取前 n 个元素的子 span
 template<typename T>
 std::span<T> take_front(std::span<T> s, std::size_t n) {
     if (n > s.size()) {
@@ -1016,7 +1011,7 @@ std::span<T> take_front(std::span<T> s, std::size_t n) {
     return s.subspan(0, n);
 }
 
-// A sub-span over a given range
+// 取某个范围内的子 span
 template<typename T>
 std::span<T> take_range(std::span<T> s, std::size_t offset, std::size_t count) {
     if (offset > s.size() || count > s.size() - offset) {
@@ -1030,22 +1025,22 @@ std::span<T> take_range(std::span<T> s, std::size_t offset, std::size_t count) {
 int main() {
     int data[] = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
 
-    // Constructing from a pointer — this line will stand out during code review
+    // 从指针构造——代码审查时这行会特别显眼
     auto full = make_span_from_ptr(data, 10);
 
-    // Take the first 3
+    // 取前 3 个
     auto front3 = take_front(full, 3);
     std::cout << "前3个: ";
     for (auto v : front3) std::cout << v << " ";
     std::cout << "\n";
 
-    // Take the range from index 2 to 5 (3 elements)
+    // 取下标 2 到 5 的范围（3 个元素）
     auto mid = take_range(full, 2, 3);
     std::cout << "中间3个: ";
     for (auto v : mid) std::cout << v << " ";
     std::cout << "\n";
 
-    // Out-of-bounds test
+    // 越界测试
     try {
         auto bad = take_front(full, 20);
     } catch (const std::out_of_range& e) {

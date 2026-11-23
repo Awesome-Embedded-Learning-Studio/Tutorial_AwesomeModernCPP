@@ -21,10 +21,10 @@ tags:
 title: 'The zero-cost model of exceptions: free on the normal path, expensive on the exception path'
 translation:
   source: documents/vol6-performance/ch06-cpp-abstraction-cost/06-02-exceptions-zero-cost.md
-  source_hash: 45496538f71b5111a30dbb13f60e9c0a12a316e2a28d853694e5f6695b528986
-  translated_at: '2026-09-26T06:55:00+00:00'
-  engine: anthropic
-  token_count: 2300
+  source_hash: fbd12625419cba6f4dfc2b663fc695c7641a22c4186e761cfb3971c3794e8e1a
+  translated_at: '2026-11-22T16:43:35+00:00'
+  engine: glm-5.3-refresh
+  token_count: 3270
 ---
 # The zero-cost model of exceptions: free on the normal path, expensive on the exception path
 
@@ -42,11 +42,11 @@ Let's measure this model directly.
 Four paths (on this machine, average ns per op):
 
 ```text
-===== Exception cost =====
-  normal path (never throws):                0.250 ns/op
-  error code (err via return value):         0.247 ns/op
-  can throw but never does (zero-cost):      0.249 ns/op
-  throw+catch every time:                    857.3 ns/op  ← the exception path is expensive
+===== 异常成本 =====
+  正常路径(从不抛):            0.250 ns/op
+  错误码(返回值传 err):        0.247 ns/op
+  有 throw 能力但从不抛(零成本): 0.249 ns/op
+  每次都 throw+catch:           857.3 ns/op  ← 异常路径很贵
 ```
 
 This table validates both halves of the zero-cost model:
@@ -93,5 +93,5 @@ One sentence to wrap it up: exceptions are a table-driven zero-cost model — th
 
 - Itanium C++ ABI *Exception Handling* (itanium-cxx-abi.github.io/cxx-abi-eh.html) — the specification for EH tables, personality functions, and stack unwinding
 - CppCoreGuidelines *Errors and Exception Handling* (Stroustrup & Sutter) — discipline for using exceptions
-- Agner Fog, *Optimizing software in C++*, the exceptions section (local copy)
+- Agner Fog, *Optimizing software in C++*, the exceptions section
 - This article's measurement code: `code/volumn_codes/vol6-performance/ch06/exception_cost.cpp`

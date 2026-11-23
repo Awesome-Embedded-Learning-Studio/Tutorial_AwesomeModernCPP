@@ -22,10 +22,10 @@ tags:
 title: Dynamic Memory Management
 translation:
   source: documents/vol1-fundamentals/c_tutorials/14-dynamic-memory.md
-  source_hash: fd0e08df40faada6ede7a5d5fc46e47842c0da7d811a84ccac70edfd24fb8f06
-  translated_at: '2026-09-25T13:25:26+00:00'
-  engine: anthropic
-  token_count: 6000
+  source_hash: 03e78bf8e802c26d5593ad7fa6e14bb92ecd499058da5e2b84e91e4af5a7f9c6
+  translated_at: '2026-11-22T16:39:43+00:00'
+  engine: glm-5.3-refresh
+  token_count: 27414
 ---
 # Dynamic Memory Management
 
@@ -38,27 +38,27 @@ C's answer to this problem is dynamic memory management: while the program is ru
 When the loader places an executable into memory and it starts running, the operating system gives it a span of virtual address space, and that span is divided into several regions with different jobs:
 
 ```text
-High addresses
-┌────────────────────────────────┐
-│         Kernel space           │  (inaccessible from user mode)
-├────────────────────────────────┤
-│             Stack              │  ← grows toward lower addresses
-│               ↓                │
-│                                │
-│            (unused)            │
-│                                │
-│               ↑                │
-│              Heap              │  ← grows toward higher addresses
-├────────────────────────────────┤
-│      BSS segment (.bss)        │  uninitialized globals/statics
-├────────────────────────────────┤
-│      Data segment (.data)      │  initialized globals/statics
-├────────────────────────────────┤
-│   Read-only segment (.rodata)  │  const globals, string literals
-├────────────────────────────────┤
-│      Code segment (.text)      │  machine instructions (read-only, executable)
-└────────────────────────────────┘
-Low addresses
+高地址
+┌──────────────────┐
+│    内核空间       │  （用户态不可访问）
+├──────────────────┤
+│    栈 (stack)    │  ← 向低地址增长
+│        ↓         │
+│                  │
+│     （空闲）      │
+│                  │
+│        ↑         │
+│    堆 (heap)     │  ← 向高地址增长
+├──────────────────┤
+│  BSS 段 (.bss)   │  未初始化全局/static
+├──────────────────┤
+│  数据段 (.data)   │  已初始化全局/static
+├──────────────────┤
+│  只读段 (.rodata) │  const 全局、字符串字面量
+├──────────────────┤
+│  代码段 (.text)   │  机器指令（只读、可执行）
+└──────────────────┘
+低地址
 ```
 
 **The code segment** (.text) holds the compiled machine instructions and is usually read-only. **The read-only data segment** (.rodata) holds `const` global variables and string literals. **The initialized data segment** (.data) holds globals and `static` variables defined with non-zero initial values. **The BSS segment** (.bss) holds globals and `static` variables that are uninitialized or initialized to zero—the key difference is that `.bss` takes no space in the executable file; it merely records "needs N bytes zeroed". **The heap** is where dynamic allocation happens—memory requested by `malloc` comes from here. **The stack** serves function calls, storing local variables and return addresses.
@@ -124,7 +124,7 @@ if (temp == NULL) {
     free(numbers);
     return 1;
 }
-numbers = temp;  // update the pointer only after success
+numbers = temp;  // 成功了才更新指针
 ```
 
 ## free — Return What You Borrowed
@@ -219,11 +219,11 @@ typedef struct {
     size_t capacity;
 } IntVec;
 
-/// @brief Initialize with an initial capacity of 4; returns -1 on failure
+/// @brief 初始化，初始容量 4；失败返回 -1
 int  intvec_init(IntVec* v);
-/// @brief Append at the tail; doubles the capacity when full; returns -1 on failure
+/// @brief 尾部追加；满时扩容翻倍，失败返回 -1
 int  intvec_push(IntVec* v, int value);
-/// @brief Free
+/// @brief 释放
 void intvec_free(IntVec* v);
 ```
 
@@ -250,7 +250,7 @@ static int intvec_init(IntVec* vector)
         return -1;
     }
 
-    vector->capacity = 4U; // initial capacity
+    vector->capacity = 4U; // 初始容量
     vector->size = 0U;
     vector->data = malloc(vector->capacity * sizeof(*vector->data));
     if (vector->data == NULL) {
@@ -269,7 +269,7 @@ static int intvec_push(IntVec* vector, int value)
     if (vector->size == vector->capacity) {
         size_t new_capacity = vector->capacity * 2U;
         int* new_data = realloc(vector->data,
-                                new_capacity * sizeof(*vector->data)); // double the capacity when full
+                                new_capacity * sizeof(*vector->data)); //容量不足翻倍扩充
 
         if (new_data == NULL) {
             return -1;
@@ -368,17 +368,17 @@ The code below hides at least four memory errors. Read the code first and guess 
 
 int main(void) {
     int* p = malloc(4 * sizeof(int));
-    p[4] = 42;            // (1) what is wrong here?
+    p[4] = 42;            // (1) 这里有什么问题？
 
     int* q = malloc(sizeof(int));
     free(q);
-    *q = 100;             // (2) and here?
+    *q = 100;             // (2) 这里呢？
 
     int* r = malloc(1024);
-    /* forgot to free(r) */   // (3) and which category is this one?
+    /* 忘了 free(r) */   // (3) 这又是哪一类？
 
     free(p);
-    free(p);              // (4) one more
+    free(p);              // (4) 再来一个
     return 0;
 }
 ```
@@ -424,20 +424,20 @@ This implementation never calls `malloc`; instead it prepares a fixed number of 
 #include <stdio.h>
 #include <string.h>
 
-/* Maximum number of bytes a single memory block can hold. */
+/* 单个内存块可容纳的最大字节数。 */
 #define MEMORY_POOL_MAX_BLOCK_SIZE 64U
-/* Maximum number of memory blocks a single pool can manage. */
+/* 单个内存池可管理的最大内存块数量。 */
 #define MEMORY_POOL_MAX_BLOCK_COUNT 16U
-/* Maximum number of pool instances the program can create at the same time. */
+/* 程序可同时创建的内存池实例最大数量。 */
 #define MEMORY_POOL_MAX_INSTANCES 2U
-/* Blocks are carved out at max_align_t's alignment requirement. */
+/* 内存块按照 max_align_t 的对齐要求切分。 */
 #define MEMORY_POOL_ALIGNMENT _Alignof(max_align_t)
-/* Storage reserved for each pool for the worst case. */
+/* 为每个内存池预留最坏情况下所需的存储空间。 */
 #define MEMORY_POOL_MAX_BLOCK_STRIDE                                      \
     (((MEMORY_POOL_MAX_BLOCK_SIZE + MEMORY_POOL_ALIGNMENT - 1U) /         \
       MEMORY_POOL_ALIGNMENT) * MEMORY_POOL_ALIGNMENT)
 
-/* A union ensures the whole pool memory is aligned to max_align_t. */
+/* 使用联合体确保整块池内存按 max_align_t 对齐。 */
 typedef union {
     max_align_t alignment;
     unsigned char bytes[MEMORY_POOL_MAX_BLOCK_STRIDE *
@@ -454,10 +454,10 @@ struct MemoryPool {
     int active;
 };
 
-/* Static instances instead of run-time heap allocation. */
+/* 使用静态实例代替运行时堆内存分配。 */
 static MemoryPool memory_pools[MEMORY_POOL_MAX_INSTANCES];
 
-/* Check whether the pool pointer refers to a static pool instance managed by this module. */
+/* 判断内存池指针是否指向本模块管理的静态内存池实例。 */
 static int pool_is_managed(const MemoryPool* pool)
 {
     size_t i;
@@ -470,7 +470,7 @@ static int pool_is_managed(const MemoryPool* pool)
     return 0;
 }
 
-/* Find a block's index within the given pool; on success, write the index to index. */
+/* 查找内存块在指定内存池中的下标；找到时将下标写入 index。 */
 static int pool_block_index(const MemoryPool* pool, const void* block,
                             size_t* index)
 {
@@ -493,13 +493,13 @@ static int pool_block_index(const MemoryPool* pool, const void* block,
     return 0;
 }
 
-/* Copy next's object representation into the start of a free block, without dereferencing bytes as a pointer object. */
+/* 将 next 的对象表示复制到空闲块开头，不把 bytes 当作指针对象解引用。 */
 static void pool_write_next(unsigned char* block, unsigned char* next)
 {
     memcpy(block, &next, sizeof(next));
 }
 
-/* Read back, from the start of a free block, the pointer object representation previously written by pool_write_next. */
+/* 从空闲块开头读回曾由 pool_write_next 写入的指针对象表示。 */
 static unsigned char* pool_read_next(const unsigned char* block)
 {
     unsigned char* next;
@@ -508,7 +508,7 @@ static unsigned char* pool_read_next(const unsigned char* block)
     return next;
 }
 
-/* Check whether the given block is already on the free list. */
+/* 判断指定内存块是否已经位于空闲链表中。 */
 static int pool_block_is_free(const MemoryPool* pool, const unsigned char* block)
 {
     const unsigned char* current;
@@ -528,9 +528,9 @@ static int pool_block_is_free(const MemoryPool* pool, const unsigned char* block
 }
 
 /*
- * Create a memory pool.
- * block_size is the number of bytes per block; block_count is the number of blocks.
- * Returns the pool pointer on success; NULL if a parameter exceeds a limit or no instance is free.
+ * 创建内存池。
+ * block_size 为每个内存块的字节数，block_count 为内存块数量。
+ * 创建成功返回内存池指针；参数超出上限或无空闲实例时返回 NULL。
  */
 MemoryPool* pool_create(size_t block_size, size_t block_count)
 {
@@ -578,8 +578,8 @@ MemoryPool* pool_create(size_t block_size, size_t block_count)
 }
 
 /*
- * Allocate one free block from the pool.
- * Returns the block's address on success; NULL if the pool is invalid or full.
+ * 从内存池中分配一个空闲内存块。
+ * 分配成功返回内存块首地址；内存池无效或已满时返回 NULL。
  */
 void* pool_alloc(MemoryPool* pool)
 {
@@ -599,8 +599,8 @@ void* pool_alloc(MemoryPool* pool)
 }
 
 /*
- * Release a block that pool_alloc handed out from the given pool.
- * Returns immediately if pool or block is invalid, the block is foreign to this pool, or it was already freed.
+ * 释放由 pool_alloc 从指定内存池分配的内存块。
+ * pool 或 block 无效、block 不属于该内存池或已释放时，函数直接返回。
  */
 void pool_free(MemoryPool* pool, void* block)
 {
@@ -622,8 +622,8 @@ void pool_free(MemoryPool* pool, void* block)
 }
 
 /*
- * Destroy the pool and mark its static instance free.
- * Returns immediately if the pool is invalid or already destroyed.
+ * 销毁内存池并将其静态实例标记为空闲。
+ * 内存池无效或已销毁时，函数直接返回。
  */
 void pool_destroy(MemoryPool* pool)
 {
@@ -706,7 +706,7 @@ int main(void)
 #include <stdint.h>
 #include <stdlib.h>
 
-/* While a block is free, its start holds the pointer to the next free block. */
+/* 内存块空闲时，块起始位置用于保存指向下一个空闲块的指针。 */
 typedef struct PoolBlock {
     struct PoolBlock* next;
 } PoolBlock;
@@ -714,14 +714,14 @@ typedef struct PoolBlock {
 typedef struct MemoryPool MemoryPool;
 
 struct MemoryPool {
-    unsigned char* storage; // pool backing storage obtained from malloc
-    PoolBlock* free_list; // head pointer of the free-block list
+    unsigned char* storage; // malloc 获得的池底层存储区
+    PoolBlock* free_list; // 空闲块链表的头指针
 };
 
 /*
- * Create a memory pool.
- * block_size is the number of bytes per block; block_count is the number of blocks.
- * Returns the pool pointer on success; NULL if a parameter is 0, a size computation overflows, or malloc fails.
+ * 创建内存池。
+ * block_size 为每个内存块的字节数，block_count 为内存块数量。
+ * 创建成功返回内存池指针；参数为 0、大小计算溢出或 malloc 失败时返回 NULL。
  */
 MemoryPool* pool_create(size_t block_size, size_t block_count)
 {
@@ -771,8 +771,8 @@ MemoryPool* pool_create(size_t block_size, size_t block_count)
 }
 
 /*
- * Allocate one free block from the pool.
- * Returns the block's address on success; NULL if pool is NULL or the pool is full.
+ * 从内存池中分配一个空闲内存块。
+ * 分配成功返回内存块首地址；pool 为 NULL 或内存池已满时返回 NULL。
  */
 void* pool_alloc(MemoryPool* pool)
 {
@@ -792,10 +792,9 @@ void* pool_alloc(MemoryPool* pool)
 }
 
 /*
- * Release a block allocated from the given pool by pool_alloc.
- * block must be a block this pool currently has allocated and not yet freed; a foreign
- * address, an interior address, or a double free violates the interface precondition
- * and is undefined behavior. Returns immediately if pool or block is NULL.
+ * 释放由 pool_alloc 从指定内存池分配的内存块。
+ * block 必须是该池当前已分配、且尚未释放的块；传入异属地址、块内地址或重复
+ * 释放违反接口前置条件，行为未定义。pool 或 block 为 NULL 时函数直接返回。
  */
 void pool_free(MemoryPool* pool, void* block)
 {
@@ -808,7 +807,7 @@ void pool_free(MemoryPool* pool, void* block)
 }
 
 /*
- * Destroy the pool. Returns immediately if pool is NULL; the pointer is invalid afterwards.
+ * 销毁内存池。pool 为 NULL 时函数直接返回；调用后该指针失效。
  */
 void pool_destroy(MemoryPool* pool)
 {
@@ -911,7 +910,7 @@ The complete program is split across three files: `debug_log.h` provides only th
 
 #include <stdio.h>
 
-/* Logging on by default; compile with -DNDEBUG to turn it off */
+/* 默认开启日志；编译时用 -DNDEBUG 可关闭 */
 #ifdef NDEBUG
 #define DEBUG_LOG(fmt, ...) ((void)(0))
 #else
@@ -930,7 +929,7 @@ The complete program is split across three files: `debug_log.h` provides only th
 void* tracked_malloc(size_t size, const char* file, unsigned int line);
 void  tracked_free(void* address, const char* file, unsigned int line);
 
-/* Automatically record the call site's file name and line number. */
+/* 自动记录调用处的文件名和行号。 */
 #define TMALLOC(size) tracked_malloc((size), __FILE__, __LINE__)
 #define TFREE(address) tracked_free((address), __FILE__, __LINE__)
 ```
@@ -944,10 +943,10 @@ void  tracked_free(void* address, const char* file, unsigned int line);
 #include "debug_log.h"
 #include "tracked.h"
 
-/* Maximum number of malloc/free tracking records. */
+/* malloc/free 跟踪记录的最大数量。 */
 #define TRACKED_ALLOCATION_MAX 128U
 
-/* active == 1 means this block has not been freed yet. */
+/* active 为 1 表示该内存块尚未被 free。 */
 typedef struct {
     void* address;
     size_t size;
@@ -958,15 +957,15 @@ typedef struct {
 
 static AllocationRecord allocation_records[TRACKED_ALLOCATION_MAX];
 
-/* Flag: memory report registered. */
+/* 内存报告注册标志。 */
 static int mem_report_registered;
 
 static void mem_report(void);
 
-/* Register the memory-report exit hook: called on the first use of the tracker.
- * Purpose: register mem_report with atexit so leak statistics print automatically at exit.
- * The mem_report_registered flag ensures we register exactly once, on the first real
- * need, and skip afterwards—avoiding wasted or conflicting re-registrations. */
+/* 注册内存报告退出钩子：在第一次使用跟踪器时调用。
+ * 作用：向 atexit 注册 mem_report，使程序退出时自动打印泄漏统计。
+ * 通过 mem_report_registered 标志保证只在第一次真正需要时注册一次，
+ * 之后就跳过，避免在同一函数里重复注册造成浪费或冲突。 */
 static void register_mem_report(void)
 {
     if (!mem_report_registered) {
@@ -977,10 +976,10 @@ static void register_mem_report(void)
         }
     }
 }
-/* Find the record for the given address in the record table.
- * address is the malloc start address to look up;
- * when active_only is nonzero, only records still active (active == 1) match;
- * when it is 0, records in any state match (including freed ones).
+/* 在记录表中查找指定地址对应的记录。
+ * address 为要查找的 malloc 起始地址；
+ * active_only 非 0 时只查找仍处于活跃（active == 1）状态的记录，
+ * 为 0 时查找任意状态的记录（包含已释放的）。
  */
 static AllocationRecord* find_record(void* address, int active_only)
 {
@@ -995,7 +994,7 @@ static AllocationRecord* find_record(void* address, int active_only)
     return NULL;
 }
 
-/* Call malloc and log one allocation record. */
+/* 调用 malloc 并登记一条分配记录。 */
 void* tracked_malloc(size_t size, const char* file, unsigned int line)
 {
     AllocationRecord* record = NULL;
@@ -1008,7 +1007,7 @@ void* tracked_malloc(size_t size, const char* file, unsigned int line)
         return NULL;
     }
 
-    /* Find the first free slot in the record table. */
+    /* 在记录表中查找第一个空闲槽位。 */
     for (i = 0U; i < TRACKED_ALLOCATION_MAX; ++i) {
         if (!allocation_records[i].active) {
             record = &allocation_records[i];
@@ -1016,14 +1015,14 @@ void* tracked_malloc(size_t size, const char* file, unsigned int line)
         }
     }
 
-    /* Record table full: this allocation cannot be tracked, undo it to avoid an untrackable leak. */
+    /* 记录表已满：无法跟踪这次分配，撤销分配以免造成无法追踪的泄漏。 */
     if (record == NULL) {
         fputs("内存跟踪记录表已满，分配被撤销\n", stderr);
         free(address);
         return NULL;
     }
 
-    /* Fill in the slot's fields and set active to 1 to mark the block live. */
+    /* 填充该槽位的信息，并把 active 置 1 表示内存块处于活跃状态。 */
     record->address = address;
     record->size = size;
     record->file = file;
@@ -1032,7 +1031,7 @@ void* tracked_malloc(size_t size, const char* file, unsigned int line)
     return address;
 }
 
-/* Call free and maintain the matching allocation record. */
+/* 调用 free 并维护对应的分配记录。 */
 void tracked_free(void* address, const char* file, unsigned int line)
 {
     AllocationRecord* record;
@@ -1048,7 +1047,7 @@ void tracked_free(void* address, const char* file, unsigned int line)
         return;
     }
 
-    /* Addresses already freed stay in the table, to identify double frees. */
+    /* 已经释放过的地址保留在表中，用于识别重复释放。 */
     record = find_record(address, 0);
     if (record != NULL) {
         fprintf(stderr, "重复释放地址 %p（调用位置 %s:%u）\n",
@@ -1059,10 +1058,10 @@ void tracked_free(void* address, const char* file, unsigned int line)
     }
 }
 
-/* Memory-leak report function: invoked automatically by atexit at program exit.
- * What it does:
- *   walk the entire record table, count the still-active records and print each one,
- *   then give a summary verdict (no leaks / number of leaked blocks).
+/* 内存泄漏报告函数：由 atexit 在程序退出时自动调用。
+ * 功能：
+ *   遍历整张记录表，统计仍处于活跃状态的记录并逐条打印，
+ *   最后给出汇总结论（无泄漏 / 泄漏块数量）。
  */
 static void mem_report(void)
 {
@@ -1086,7 +1085,7 @@ static void mem_report(void)
     }
 }
 
-/* Program entry: demonstrates tracked allocation, freeing, and the exit report. */
+/* 程序入口：演示跟踪内存分配、释放与退出报告流程。 */
 int main(void)
 {
     void* tracked_block;

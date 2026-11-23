@@ -15,12 +15,23 @@ tags:
   - 入门
   - 基础
 cpp_standard: [11, 14, 17, 20]
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #201)"
+      en: "Contributed exercise solutions and article revisions (PR #201)"
 translation:
   source: documents/vol1-fundamentals/ch03/02-pass-by-value-ref.md
-  source_hash: 521b3e3777cb49c41c9a257726996c2be6cc72c710540fccae02284fec993f82
-  translated_at: '2026-09-25T10:24:59+00:00'
-  engine: anthropic
-  token_count: 3400
+  source_hash: c025f87a0959c915a129dae0b75483eb2af10ed01224fb05251c5d768d191990
+  translated_at: '2026-11-22T16:40:19+00:00'
+  engine: glm-5.3-refresh
+  token_count: 13926
 ---
 
 # Parameter Passing: It's Not "Just Passing an Argument"
@@ -75,9 +86,9 @@ struct SensorData {
     char description[256];
 };
 
-void process(SensorData data)  // The entire struct gets copied
+void process(SensorData data)  // 整个结构体被拷贝一份
 {
-    // Process the data...
+    // 处理数据...
 }
 ```
 
@@ -99,7 +110,7 @@ int main()
 {
     int value = 5;
     add_ten(value);
-    // value is now 15
+    // value 现在是 15
     return 0;
 }
 ```
@@ -109,9 +120,9 @@ This time `value` becomes 15, because what we modified is the original: `x` is a
 The most classic application of pass by reference is the `swap` function. In C you have to pass pointers; C++ has references, and our code comes out much cleaner:
 
 ```cpp
-/// @brief Swap the values of two integers
-/// @param a The first integer
-/// @param b The second integer
+/// @brief 交换两个整数的值
+/// @param a 第一个整数
+/// @param b 第二个整数
 void swap_values(int& a, int& b)
 {
     int temp = a;
@@ -149,7 +160,7 @@ The choice before us: pass by value is safe but pays a copying cost; pass by ref
 void print(const std::string& s)
 {
     std::cout << s << std::endl;
-    // s += "!";  // Compile error: a const reference forbids modification
+    // s += "!";  // 编译错误，const 引用不允许修改
 }
 ```
 
@@ -160,8 +171,8 @@ Const references have one more property we're about to put to use: they can bind
 ```cpp
 void print(const std::string& s);
 
-print(std::string("hello"));  // OK: the const reference binds to a temporary object
-print("world");               // OK: the const reference binds to an implicitly constructed temporary string
+print(std::string("hello"));  // OK：const 引用绑定到临时对象
+print("world");               // OK：const 引用绑定到隐式构造的临时 string
 ```
 
 This makes `const T&` an extraordinarily flexible parameter type: it accepts lvalues and rvalues alike, avoids copies, and guarantees read-only access. We will reach for it again and again later on.
@@ -169,9 +180,9 @@ This makes `const T&` an extraordinarily flexible parameter type: it accepts lva
 Looking back at the earlier example that copied the big struct, rewritten with a const reference:
 
 ```cpp
-void process(const SensorData& data)  // Zero-copy, read-only access
+void process(const SensorData& data)  // 零拷贝，只读访问
 {
-    // Process the data...
+    // 处理数据...
 }
 ```
 
@@ -211,7 +222,7 @@ But if you try to return a reference to a local variable, things get dangerous:
 const int& get_value()
 {
     int x = 42;
-    return x;  // Returning a reference to a local variable — a dangling reference!
+    return x;  // 返回局部变量的引用——悬垂引用！
 }
 ```
 
@@ -240,13 +251,13 @@ At the call site, `auto result = divide(a, b);` is clear at a glance, and `resul
 Let's tie this chapter's ideas together into one complete example program: it demonstrates the `swap` operation, a performance comparison of the different passing methods, and const references at work in string processing.
 
 ```cpp
-// passing.cpp — Demonstrates pass by value, pass by reference, and pass by const reference
+// passing.cpp —— 演示值传递、引用传递和 const 引用传递
 
 #include <iostream>
 #include <string>
 #include <chrono>
 
-/// @brief Swap the values of two integers
+/// @brief 交换两个整数的值
 void swap_values(int& a, int& b)
 {
     int temp = a;
@@ -258,7 +269,7 @@ struct BigData {
     int payload[4096];  // 16 KB
 };
 
-/// @brief Pass-by-value version: copies the entire BigData on every call
+/// @brief 值传递版本：每次调用拷贝整个 BigData
 long sum_by_value(BigData data)
 {
     long total = 0;
@@ -268,7 +279,7 @@ long sum_by_value(BigData data)
     return total;
 }
 
-/// @brief Const-reference version: zero copies
+/// @brief const 引用版本：零拷贝
 long sum_by_const_ref(const BigData& data)
 {
     long total = 0;
@@ -278,7 +289,7 @@ long sum_by_const_ref(const BigData& data)
     return total;
 }
 
-/// @brief Build a greeting; the const reference avoids a string copy
+/// @brief 拼接问候语，const 引用避免字符串拷贝
 std::string build_greeting(const std::string& name)
 {
     return "Hello, " + name + "! Welcome to Modern C++.";
@@ -286,14 +297,14 @@ std::string build_greeting(const std::string& name)
 
 int main()
 {
-    // swap demonstration
+    // swap 演示
     int a = 10;
     int b = 20;
     std::cout << "交换前: a = " << a << ", b = " << b << std::endl;
     swap_values(a, b);
     std::cout << "交换后: a = " << a << ", b = " << b << std::endl;
 
-    // performance comparison
+    // 性能对比
     BigData data{};
     for (int i = 0; i < 4096; ++i) {
         data.payload[i] = i;
@@ -328,7 +339,7 @@ int main()
     std::cout << "const引用: " << result_ref
               << ", 耗时: " << ms_ref << " ms" << std::endl;
 
-    // string handling
+    // 字符串处理
     std::string name = "Charlie";
     std::cout << build_greeting(name) << std::endl;
     std::cout << build_greeting(std::string("World")) << std::endl;

@@ -10,9 +10,10 @@ description: "Follow a single new down the library call chain into operator new,
 reading_time_minutes: 21
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/10-new-in-assembly/01-allocation-from-operator-new.md
-  source_hash: d5f2ef22bbcb1d7461564358a8d2eb0becbc0b3283f6fc8f908b74a1827d1ad1
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: 0dcf5b8428f227a152a5430bba948a2c4d318e38e8e87a66580e754916a32aea
+  translated_at: '2026-11-22T16:49:10Z'
+  engine: glm-5.3-refresh
+  token_count: 12289
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -69,7 +70,7 @@ C++ symbol names go through name mangling, and this piece keeps running into the
 Time to bring on the main character. operator new is the allocation function the standard library provides, and its name is exactly what you just read. It does one thing: ask the allocator for a block of memory so many bytes wide, and, if the request is granted, hand the address back in rax. Construction is not its business; initialization is a separate errand the new expression runs right after. Let's photograph both steps with a minimal class:
 
 ```cpp
-// N1 -- the two steps of new: operator new allocates, then the constructor runs
+// N1: new 的两步 —— operator new 分配 + 构造函数
 struct Point {
     int x;
     int y;
@@ -78,7 +79,7 @@ struct Point {
 
 int main() {
     Point* p = new Point(3, 4);
-    volatile int sink = p->x + p->y;  // anti-optimization consume
+    volatile int sink = p->x + p->y;  // 防优化消费
     (void)sink;
     delete p;
     return 0;
@@ -97,20 +98,20 @@ main:
 	movq	%rsp, %rbp
 	pushq	%rbx
 	subq	$24, %rsp
-	movl	$8, %edi            # first step's argument: sizeof(Point) = 8 bytes
-	call	_Znwm@PLT           # first step: operator new(8), ask the allocator for memory
-	movq	%rax, %rbx          # return value (block address) saved from rax into callee-saved rbx
-	movl	$4, %edx            # constructor argument y = 4
-	movl	$3, %esi            # constructor argument x = 3
-	movq	%rbx, %rdi          # this = the freshly allocated address (rbx → rdi)
-	call	_ZN5PointC1Eii      # second step: Point::Point(this, 3, 4)
+	movl	$8, %edi            # 第一步的参数:sizeof(Point) = 8 字节
+	call	_Znwm@PLT           # 第一步:operator new(8),向分配器要内存
+	movq	%rax, %rbx          # 返回值(块地址)从 rax 存进被调用者保存寄存器 rbx
+	movl	$4, %edx            # 构造实参 y = 4
+	movl	$3, %esi            # 构造实参 x = 3
+	movq	%rbx, %rdi          # this = 刚分配的地址(rbx → rdi)
+	call	_ZN5PointC1Eii      # 第二步:Point::Point(this, 3, 4)
 	movl	$0, %eax
 	movq	%rbx, -24(%rbp)
-	testb	%al, %al            # al was just zeroed by the line above, so always zero
-	je	.L3                     # always jumps; the 3 lines below are unreachable dead code
+	testb	%al, %al            # al 刚被上一条置 0,恒为零
+	je	.L3                     # 恒跳转,下面 3 行是不可达死代码
 	movl	$8, %esi
 	movq	%rbx, %rdi
-	call	_ZdlPvm@PLT         # (unreachable) cleanup delete if the constructor throws
+	call	_ZdlPvm@PLT         # (不可达)构造抛异常时的清理删除
 .L3:
 	movq	-24(%rbp), %rax
 	movl	(%rax), %edx
@@ -120,9 +121,9 @@ main:
 	movl	%eax, -28(%rbp)     # sink = p->x + p->y
 	movl	-28(%rbp), %eax
 	movq	-24(%rbp), %rax
-	testq	%rax, %rax          # delete's null-pointer check
+	testq	%rax, %rax          # delete 的空指针检查
 	je	.L4
-	movl	$8, %esi            # sized delete's size argument
+	movl	$8, %esi            # sized delete 的尺寸参数
 	movq	%rax, %rdi
 	call	_ZdlPvm@PLT         # delete p → operator delete(p, 8)
 .L4:
@@ -240,12 +241,12 @@ Between the two breakpoints sits one finish and one call, and the address never 
 A journey is not all smooth sailing, so we stage a failure on purpose and see where the detour leads. To make an allocation fail, new up a block so large it cannot possibly be granted:
 
 ```cpp
-// N3 -- the failure path of new: std::bad_alloc
+// N3: new 失败路径 —— std::bad_alloc
 #include <cstdio>
 #include <new>
 
 int main() {
-    // (size_t)-1 / 2 ≈ 2^63 - 1 bytes, necessarily far beyond any allocation limit
+    // (size_t)-1 / 2 ≈ 2^63 - 1 字节,必然远超任何分配上限
     size_t huge = static_cast<size_t>(-1) / 2;
     try {
         char* p = new char[huge];
@@ -296,8 +297,8 @@ an object or to call a deallocation function.
 
 When the nothrow variant fails, the allocation function returns a null pointer and the new expression ends on the spot; both the object initialization and the deallocation call are skipped. Line it up against the regular version and the difference is only how failure is reported: one throws an exception, the other hands back a null pointer. In both, a failure in the first step rules out the second, and on that point the two agree.
 
-One more failure we have not met yet: the memory is already in hand and the constructor throws midway. At that point the memory is on our account, and the cleanup can no longer be skipped. You can walk this two-step breakdown by hand. The executor below carries main's full flow, with operator new and operator delete replaced by minimal stubs: the allocator hands back a fixed static buffer from .data, and the deallocator only counts its calls. Everything outside the stubs follows the article's scene: first the allocating call, rbx receives the block address, then the constructing call, and even the dead always-taken exception-cleanup code is kept as printed. Single-step past delete's null check and look at rsi holding 8, the size argument that sized delete carries.
+You can walk this two-step breakdown by hand. The executor below carries main's full flow, with operator new and operator delete replaced by minimal stubs: the allocator hands back a fixed static buffer from .data, and the deallocator only counts its calls. Everything outside the stubs follows the article's scene: first the allocating call, rbx receives the block address, then the constructing call, and even the dead always-taken exception-cleanup code is kept as printed. Single-step past delete's null check and look at rsi holding 8, the size argument that sized delete carries.
 
 <AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/new_two_steps.json" />
 
-What the emergency code at that fork looks like is something we will walk right past in the [next piece](02-delete-two-steps-and-placement-new.md).
+One more failure we have not met yet: the memory is already in hand and the constructor throws midway. At that point the memory is on our account, and the cleanup can no longer be skipped. What the emergency code at that fork looks like is something we will walk right past in the [next piece](02-delete-two-steps-and-placement-new.md).

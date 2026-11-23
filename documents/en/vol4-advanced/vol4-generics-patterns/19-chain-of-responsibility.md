@@ -20,9 +20,9 @@ prerequisites:
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/19-chain-of-responsibility.md
   source_hash: 89365238cd48d1cc0e46a2f496ebfcc01e970a484dc84bef12c801e7c16d00e0
-  translated_at: '2026-09-26T06:00:13+00:00'
-  engine: anthropic
-  token_count: 8000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 19150
 ---
 
 # Chain of Responsibility Pattern: From a Long Chain of if/else to `next_` Pointers, and Then to the Middleware Onion
@@ -92,18 +92,18 @@ public:
         next_ = std::move(next);
     }
 
-    // Template method: the "forwarding" logic is welded into the base class; subclasses only implement process
+    // 模板方法:把"转发"逻辑焊死在基类,子类只管 process
     void handle(const std::string& req) {
         const bool handled = process(req);
         if (!handled && next_) {
-            next_->handle(req);          // toss it to the next one
+            next_->handle(req);          // 甩给下一个
         } else if (!handled && !next_) {
             std::cout << "[chain end] nobody handled: " << req << "\n";
         }
     }
 
 protected:
-    virtual bool process(const std::string& req) = 0;  // returning true means "I handled it"
+    virtual bool process(const std::string& req) = 0;  // 返回 true 表示"我处理了"
 
 private:
     std::shared_ptr<Handler> next_;
@@ -140,9 +140,9 @@ int main() {
     auto log = std::make_shared<LogHandler>();
     auth->set_next(log);
 
-    auth->handle("log");   // auth declines -> forwards to log -> log handles it
-    auth->handle("auth");  // auth handles it itself
-    auth->handle("xxx");   // nobody takes it all the way; the chain end reports "nobody handled"
+    auth->handle("log");   // auth 拒收 -> 转给 log -> log 处理
+    auth->handle("auth");  // auth 自己处理
+    auth->handle("xxx");   // 一路没人收,到链尾报"nobody handled"
 }
 ```
 
@@ -257,9 +257,9 @@ The pointer chain genuinely decouples the **caller** from the **concrete handler
 
 ```cpp
 auto metric = std::make_shared<MetricsHandler>();
-metric->set_next(log);      // metrics picks up the original tail
-auth->set_next(metric);     // auth's next is re-pointed at metrics
-// now: auth -> metric -> log
+metric->set_next(log);      // metrics 接上原来的尾巴
+auth->set_next(metric);     // auth 的 next 改指向 metrics
+// 现在:auth -> metric -> log
 ```
 
 The run (full code in the companion project):
@@ -377,7 +377,7 @@ void dispatch_first_match(const Message& m) {
     for (const auto& h : handlers_) {
         if (h->can_accept(m)) {
             h->process(m);
-            break;   // the first taker terminates the request; the rest don't run
+            break;   // 第一个吃掉的就把请求终结,后面的不跑
         }
     }
 }
@@ -406,7 +406,7 @@ The cleanest way to implement this in C++: **the node no longer answers a boolea
 
 class MiddlewareChain {
 public:
-    // Each middleware: receives a reference to "the next one" and decides how to orchestrate
+    // 每个中间件:拿到"下一个"的引用,自己决定怎么编排
     using Middleware = std::function<void(MiddlewareChain&)>;
 
     void use(Middleware m) { middlewares_.push_back(std::move(m)); }
@@ -414,7 +414,7 @@ public:
     void next() {
         if (index_ < middlewares_.size()) {
             auto m = middlewares_[index_++];
-            m(*this);   // hand itself (that is, "how to continue") to the middleware
+            m(*this);   // 把自己(也就是"如何继续")交给中间件
         }
     }
 
@@ -433,7 +433,7 @@ int main() {
     MiddlewareChain chain;
     chain.use([](MiddlewareChain& c) {
         std::cout << "before: auth\n";
-        c.next();                 // proactively pass the request on
+        c.next();                 // 主动放行
         std::cout << "after: auth\n";
     });
     chain.use([](MiddlewareChain& c) {
@@ -443,7 +443,7 @@ int main() {
     });
     chain.use([](MiddlewareChain&) {
         std::cout << "final handler\n";
-        // no c.next() call; the chain naturally ends here
+        // 不调 c.next(),链自然到此为止
     });
     chain.next();
 }
@@ -471,7 +471,7 @@ The onion model's most practical feature is **short-circuiting**: a middleware w
 ```cpp
 chain.use([](MiddlewareChain& c) {
     std::cout << "A: 认证失败,不调 next\n";
-    // deliberately not calling c.next() -> the chain stops here
+    // 故意不调 c.next() -> 链停在这
     (void)c;
 });
 chain.use([](MiddlewareChain&) {
@@ -529,7 +529,7 @@ public:
     void run() {
         std::future<void> fut = std::async(std::launch::async, [this] {
             for (auto& h : handlers_) {
-                h().get();   // <-- the key point: .get() here blocks waiting for the current one to finish
+                h().get();   // <-- 关键:这里 .get() 会阻塞等当前完成
             }
         });
         fut.get();

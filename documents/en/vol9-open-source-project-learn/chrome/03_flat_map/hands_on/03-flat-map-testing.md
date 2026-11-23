@@ -25,9 +25,9 @@ title: "flat_map Design Guide (III): test strategy and performance comparison"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/03_flat_map/hands_on/03-flat-map-testing.md
   source_hash: 0cd9f5031d4c424cad8d4b6cc513fdb00dada32f251e78360f705f2e8f25cf46
-  translated_at: '2026-09-26T03:08:37+00:00'
-  engine: anthropic
-  token_count: 1500
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5209
 ---
 # flat_map Design Guide (III): test strategy and performance comparison
 
@@ -53,17 +53,17 @@ TEST_CASE("flat_map sorts+uniques on construction", "[flat_map]") {
     flat_map<int,int> m{{3,30},{1,10},{3,30},{2,20}};
     std::vector<int> keys;
     for (auto& [k,v] : m) keys.push_back(k);
-    REQUIRE(keys == std::vector<int>{1,2,3});   // invariants 1+2
+    REQUIRE(keys == std::vector<int>{1,2,3});   // 不变量 1+2
 }
 
 TEST_CASE("insert_or_assign overwrites existing", "[flat_map]") {
     flat_map<int,int> m{{1,10}};
     auto [it, ins] = m.insert_or_assign(1, 99);
-    REQUIRE_FALSE(ins); REQUIRE(it->second == 99);   // invariant 4
+    REQUIRE_FALSE(ins); REQUIRE(it->second == 99);   // 不变量 4
 }
 
 TEST_CASE("sorted_unique aborts on lying input", "[flat_map][.death]") {
-    // Invariant 5: passing unsorted data while swearing sorted_unique → debug abort
+    // 不变量 5:传未排序数据却宣誓 sorted_unique → debug abort
     // flat_map<int,int> m(sorted_unique, std::vector<std::pair<int,int>>{{3,3},{1,1}});
 }
 ```
@@ -75,12 +75,12 @@ A case that aborts carries a headache: dropped into a plain TEST_CASE, the whole
 ## Performance: per-item overhead
 
 ```text
-sizeof(flat_map<int,int>)  ≈ 24 bytes (three pointers)
-sizeof(std::map<int,int>)  ≈ 48 bytes (tree root + sentinel + comparator)
+sizeof(flat_map<int,int>)  ≈ 24 字节(三指针)
+sizeof(std::map<int,int>)  ≈ 48 字节(树根 + sentinel + 比较器)
 
-Extra overhead of a 1M-element map<int,int> (the 8MB of data not counted):
-  flat_map:  ~0 extra (data contiguous)
-  std::map:  ~32MB (32B/element × 1M + 1M mallocs)
+100 万元素 map<int,int> 额外开销(数据 8MB 不计):
+  flat_map:  ~0 额外(数据连续)
+  std::map:  ~32MB(32B/元素 × 100 万 + 100 万次 malloc)
 ```
 
 flat_map carries zero per-item metadata — one contiguous allocation and it's done; every std::map element hauls 32B of metadata and needs a heap allocation of its own on top. This is exactly where part one's "constant factor an order of magnitude apart" comes from — both do `O(log n)` lookup asymptotically, but std::map has already quietly booked 32MB of metadata plus a million mallocs where we can't see it.
@@ -90,13 +90,13 @@ flat_map carries zero per-item metadata — one contiguous allocation and it's d
 `sizeof` and allocation counts alone aren't satisfying enough, so we ran it on the machine for real. This machine, GCC 16 -O2, companion `20_lookup_vs_shift_perf`, a 100k-element `map<int,int>`:
 
 ```text
-100k lookups (100k elements):
+查找 10 万次(10 万元素):
   flat_map:  31 ms
-  std::map:  34 ms     (int key + 100k: nearly tied)
+  std::map:  34 ms     (int key + 10 万:几乎持平)
 
-1000 inserts into a 100k-element container:
-  flat_map:   2 ms     (O(n) shift each time)
-  std::map:   0 ms     (O(log n) node relinking)
+插入 1000 次到 10 万元素容器:
+  flat_map:   2 ms     (每次 O(n) shift)
+  std::map:   0 ms     (O(log n) 节点重连)
 ```
 
 One number here stopped us cold the first time we saw it — on lookup, flat_map didn't grind std::map into the dirt; the two are nearly tied. A moment's thought clears it up: at the 100k + int-key scale, the data itself fits in cache, std::map's pointer chasing hasn't started missing en masse yet, and flat_map's contiguity dividend naturally can't show. To see a real gap you have to push N higher still, or switch the key to something heavy like `std::string`. In standalone large-N tests flat_map coming out several times faster is common — but don't take that as dogma: at small N with light keys the edge just isn't visible, and that's normal.

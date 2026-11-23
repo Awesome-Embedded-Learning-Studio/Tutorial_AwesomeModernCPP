@@ -26,9 +26,9 @@ title: 'numeric: Accumulate, Fill, Inner Product, and Adjacent Difference'
 translation:
   source: documents/vol3-standard-library/iterators-algorithms/44-numeric-algorithms.md
   source_hash: 5edb72a701167af00103aebed715ba87c0e69b6af0a20f4b2116594d9bc02c3c
-  translated_at: '2026-09-26T01:50:41+00:00'
-  engine: anthropic
-  token_count: 9000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 14078
 ---
 # `<numeric>`: Accumulate, Fill, Inner Product, and Adjacent Difference
 
@@ -48,7 +48,7 @@ The most basic one. `std::accumulate(first, last, init)` means "starting from `i
 
 int main()
 {
-    std::vector<double> v{1.5, 2.5, 3.5, 4.5};   // mathematical sum = 12.0
+    std::vector<double> v{1.5, 2.5, 3.5, 4.5};   // 数学和 = 12.0
     std::cout << "accumulate(v, 0):    " << std::accumulate(v.begin(), v.end(), 0) << '\n';
     std::cout << "accumulate(v, 0.0):  " << std::accumulate(v.begin(), v.end(), 0.0) << '\n';
     return 0;
@@ -158,9 +158,9 @@ This doubly customized form is not common, but occasionally it yields a remarkab
 std::vector<int> flags1{1, 1, 0, 1};
 std::vector<int> flags2{1, 0, 1, 1};
 auto all_both = std::inner_product(flags1.begin(), flags1.end(), flags2.begin(), 1,
-    [](int x, int y){ return x && y; },   // op1: accumulated AND
-    [](int x, int y){ return x && y; });  // op2: pairwise AND
-// result 0 (second position 1&&0=0, accumulated value drops to zero)
+    [](int x, int y){ return x && y; },   // op1: 累计「与」
+    [](int x, int y){ return x && y; });  // op2: 逐位「与」
+// 结果 0（第二位 1&&0=0，累计归零）
 ```
 
 One caveat worth stating: since C++17, `inner_product` is no longer recommended for new code — C++17 delivered the more general `std::transform_reduce`, which both runs multi-threaded and accepts an execution policy. That said, `inner_product` still reads the most plainly in simple single-threaded scenes, and old code is full of it, so knowing it remains necessary.
@@ -189,19 +189,19 @@ int main()
     std::vector<int> out(v.size());
 
     std::partial_sum(v.begin(), v.end(), out.begin());
-    print("partial_sum      : ", out);   // includes current: 1 3 6 10 15
+    print("partial_sum      : ", out);   // 含当前: 1 3 6 10 15
 
     std::adjacent_difference(v.begin(), v.end(), out.begin());
     print("adjacent_diff    : ", out);   // 1 (2-1) (3-2) (4-3) (5-4) = 1 1 1 1 1
 
     std::inclusive_scan(v.begin(), v.end(), out.begin(), std::plus<>{}, 0);
-    print("inclusive_scan(0): ", out);   // includes current, same as partial_sum
+    print("inclusive_scan(0): ", out);   // 含当前, 同 partial_sum
 
     std::inclusive_scan(v.begin(), v.end(), out.begin());
     print("inclusive_scan   : ", out);
 
     std::exclusive_scan(v.begin(), v.end(), out.begin(), 0);
-    print("exclusive_scan(0): ", out);   // excludes current: 0 1 3 6 10
+    print("exclusive_scan(0): ", out);   // 不含当前: 0 1 3 6 10
     return 0;
 }
 ```
@@ -252,14 +252,14 @@ Floating-point addition, as luck would have it, is not associative. Let's take a
 
 int main()
 {
-    // one million 0.1f plus one 1e7f: different float accumulation orders, results drift
+    // 一百万个 0.1f 加一个 1e7f: 浮点累加顺序不同, 结果会有出入
     std::vector<float> f;
     for (int i = 0; i < 1000000; ++i) f.push_back(0.1f);
     f.push_back(1e7f);
 
     float acc = 0.0f;
-    for (auto x : f) acc += x;                              // sequential accumulation
-    auto red = std::reduce(f.begin(), f.end(), 0.0f);       // any association order allowed
+    for (auto x : f) acc += x;                              // 顺序累加
+    auto red = std::reduce(f.begin(), f.end(), 0.0f);       // 允许任意结合顺序
 
     std::cout.precision(15);
     std::cout << "accumulate float : " << acc << '\n';
@@ -294,7 +294,7 @@ From this section on, we are into the "small but practical" number-theory and ge
 ```cpp
 std::gcd(54, 24)   // 6
 std::lcm(4, 6)     // 12
-std::gcd(17, 13)   // 1 (coprime)
+std::gcd(17, 13)   // 1（互素）
 ```
 
 `gcd` / `lcm` are function templates that work for integer types, using an efficient Euclidean algorithm inside. No more hand-writing Euclid or reaching for Boost. A few boundary values are worth remembering (all verified by running them):
@@ -324,7 +324,7 @@ int main()
 {
     std::int64_t big1 = 7'000'000'000'000'000'000LL;   // 7e18
     std::int64_t big2 = 9'000'000'000'000'000'000LL;   // 9e18
-    auto naive = (big1 + big2) / 2;                      // overflow!
+    auto naive = (big1 + big2) / 2;                      // 溢出!
     auto safe  = std::midpoint(big1, big2);
     std::cout << "naive (big1+big2)/2 = " << naive << " (溢出!)\n";
     std::cout << "midpoint(big1,big2) = " << safe << " (正确)\n";
@@ -349,7 +349,7 @@ Inside, `midpoint` uses an equivalent algorithm that does not overflow (roughly 
 int arr[]{10, 20, 30, 40, 50};
 auto mid = std::midpoint(arr, arr + 4);
 std::cout << "midpoint(arr, arr+4) -> arr[" << (mid - arr) << "] = " << *mid << '\n';
-// output: midpoint(arr, arr+4) -> arr[2] = 30
+// 输出: midpoint(arr, arr+4) -> arr[2] = 30
 ```
 
 The pointer version handles odd and even lengths correctly (length 4 takes offset 2; length 5 rounds down to offset 2 as well), which makes it steadier than a hand-written `(lo + hi) / 2` when implementing binary search or chunking. Pointer midpoints come with an extra benefit: they avoid `lo + hi`, the illegal act of "adding two pointers" (in C++, pointers may only be subtracted, never added), so on syntax grounds alone `midpoint` is already cleaner than a hand-rolled loop.
@@ -361,7 +361,7 @@ The pointer version handles odd and even lengths correctly (length 4 takes offse
 ```cpp
 std::lerp(0.0, 100.0, 0.25)   // 25
 std::lerp(0.0, 100.0, 1.0)    // 100
-std::lerp(0.0, 100.0, 2.0)    // 200 (extrapolation works; t is not limited to [0,1])
+std::lerp(0.0, 100.0, 2.0)    // 200（可外插，t 不限 [0,1]）
 ```
 
 It looks perfectly ordinary, but it carries a few guarantees a hand-written `a + t*(b-a)` cannot get: `t=0` returns `a` exactly, `t=1` returns `b` exactly (the hand-written version may hand you `99.9999...` thanks to floating-point error), and its behavior for infinities and NaN is well-defined. In numerical and graphics code, these are guarantees that genuinely matter.

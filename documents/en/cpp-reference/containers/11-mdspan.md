@@ -18,9 +18,9 @@ title: std::mdspan
 translation:
   source: documents/cpp-reference/containers/11-mdspan.md
   source_hash: b90102866092a90cd0a641085f138de422a669d5f28190b4259a607483e373e1
-  translated_at: '2026-09-25T09:21:59+00:00'
-  engine: anthropic
-  token_count: 520
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 2089
 ---
 <!--
 Reference card: std::mdspan (C++23). The multidimensional generalization of span; verified locally with GCC 16.1.1 -std=c++23.
@@ -61,12 +61,12 @@ The multidimensional generalization of `std::span`: a multidimensional view over
 int main() {
     int data[2 * 3] = {1, 2, 3, 4, 5, 6};
 
-    // Fixed extents: rows and columns known at compile time
+    // 固定维度：行列编译期已知
     std::mdspan<int, std::extents<std::size_t, 2, 3>> m(data);
     std::printf("rows=%zu cols=%zu  m[0,0]=%d m[1,2]=%d\n",
                 m.extent(0), m.extent(1), m[0, 0], m[1, 2]);
 
-    // Dynamic extents: rows and columns given at runtime
+    // 动态维度：行列运行期给定
     std::mdspan<int, std::dextents<std::size_t, 2>> dm(data, 2, 3);
     std::printf("dm[1,1]=%d size=%zu\n", dm[1, 1], dm.size());
 }

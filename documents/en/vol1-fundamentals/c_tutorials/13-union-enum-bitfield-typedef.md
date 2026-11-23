@@ -21,10 +21,10 @@ tags:
 title: Unions, Enums, Bit Fields, and typedef
 translation:
   source: documents/vol1-fundamentals/c_tutorials/13-union-enum-bitfield-typedef.md
-  source_hash: 8e5bf0c6542d732cc205f282ae371eac85ef30054ddb24e89179b7aeda9c9baa
-  translated_at: '2026-09-25T13:21:49+00:00'
-  engine: anthropic
-  token_count: 3900
+  source_hash: 69b7b7f54d4b65c256e930498497f4687050c29f1e23ff17492d214d51de1e1d
+  translated_at: '2026-11-22T16:39:43+00:00'
+  engine: glm-5.3-refresh
+  token_count: 18437
 ---
 # Unions, Enums, Bit Fields, and typedef
 
@@ -169,8 +169,8 @@ typedef enum {
 C enums have a property people love to hate: **enumerators are, at bottom, just ints**. This means you can assign any integer to an enum variable and the compiler will not raise an error:
 
 ```c
-Color c = 42;          // Legal! But 42 is not any of the enumerators
-int x = kColorRed;     // Legal! Implicitly converts to int
+Color c = 42;          // 合法！但 42 不是任何枚举值
+int x = kColorRed;     // 合法！隐式转为 int
 ```
 
 What C regards as "flexibility" here is a disaster from a type-safety standpoint — the compiler has no way to check for you whether "this value is a legal enumerator". This is the fundamental reason C++11 introduced `enum class`.
@@ -183,11 +183,11 @@ Bit fields let you allocate storage inside a struct with the **bit** as the unit
 
 ```c
 typedef struct {
-    uint32_t enable    : 1;   // 1 bit
-    uint32_t mode      : 3;   // 3 bits (can represent 0-7)
-    uint32_t priority  : 4;   // 4 bits (can represent 0-15)
-    uint32_t reserved  : 24;  // 24 bits reserved
-} ControlReg;  // 32 bits in total = 4 bytes
+    uint32_t enable    : 1;   // 1 位
+    uint32_t mode      : 3;   // 3 位（可表示 0-7）
+    uint32_t priority  : 4;   // 4 位（可表示 0-15）
+    uint32_t reserved  : 24;  // 24 位保留
+} ControlReg;  // 总计 32 位 = 4 字节
 ```
 
 Bit-field members are accessed exactly like ordinary struct members:
@@ -205,12 +205,12 @@ The most common application of bit fields in embedded development is mapping har
 
 ```c
 typedef struct {
-    volatile uint32_t enable     : 1;   // bit 0: enable
-    volatile uint32_t tickint    : 1;   // bit 1: interrupt enable
-    volatile uint32_t clksource  : 1;   // bit 2: clock source selection
-    volatile uint32_t reserved   : 13;  // bit 15:3 reserved
-    volatile uint32_t countflag  : 1;   // bit 16: count flag
-    volatile uint32_t reserved2  : 15;  // bit 31:17 reserved
+    volatile uint32_t enable     : 1;   // bit 0: 使能
+    volatile uint32_t tickint    : 1;   // bit 1: 中断使能
+    volatile uint32_t clksource  : 1;   // bit 2: 时钟源选择
+    volatile uint32_t reserved   : 13;  // bit 15:3 保留
+    volatile uint32_t countflag  : 1;   // bit 16: 计数标志
+    volatile uint32_t reserved2  : 15;  // bit 31:17 保留
 } SysTickCtrl;
 
 volatile SysTickCtrl* systick_ctrl = (volatile SysTickCtrl*)0xE000E010;
@@ -259,10 +259,10 @@ Point2D origin = {0.0f, 0.0f};
 One of typedef's most practical uses is simplifying function pointer declarations:
 
 ```c
-// Without typedef: declaring an array of 8 function pointers
+// 不用 typedef：声明一个包含 8 个函数指针的数组
 void (*handlers[8])(int);
 
-// With typedef: far clearer
+// 用 typedef：清晰得多
 typedef void (*EventHandler)(int);
 EventHandler handlers[8];
 ```
@@ -275,8 +275,8 @@ typedef creates a **genuine type alias** handled by the compiler, whereas `#defi
 typedef char* CharPtr;
 #define CHAR_PTR char*
 
-CharPtr a, b;    // a and b are both char*
-CHAR_PTR c, d;  // expands to char* c, d; — only c is char*, d is char!
+CharPtr a, b;    // a 和 b 都是 char*
+CHAR_PTR c, d;  // 展开后是 char* c, d; — 只有 c 是 char*，d 是 char！
 ```
 
 A typedef name cannot be used for a forward declaration. The solution is to first write `typedef struct TagName TagName;` as the forward declaration, then provide the full definition later as `struct TagName { ... };`. This style is extremely common when implementing self-referential data structures such as linked lists and trees. Also, do not overuse typedef — a good typedef adds information (`Timestamp` says more than `uint32_t`) rather than simply hiding it.
@@ -287,9 +287,9 @@ A typedef name cannot be used for a forward declaration. The solution is to firs
 
 ```cpp
 enum class Color { kRed, kGreen, kBlue };
-Color c = Color::kRed;       // the scope qualifier is mandatory
-int x = c;                    // Compile error! No implicit conversion to int
-int y = static_cast<int>(c);  // OK, but the conversion must be explicit
+Color c = Color::kRed;       // 必须加作用域限定
+int x = c;                    // 编译错误！不能隐式转 int
+int y = static_cast<int>(c);  // OK，必须显式转换
 ```
 
 `enum class` can also specify an underlying type:
@@ -307,7 +307,7 @@ using Value = std::variant<int, float, const char*>;
 
 Value v1 = 42;
 int x = std::get<int>(v1);    // OK
-// float f = std::get<float>(v1);  // throws std::bad_variant_access
+// float f = std::get<float>(v1);  // 抛出 std::bad_variant_access
 ```
 
 ### Limiting union Usage in C++
@@ -326,7 +326,7 @@ bool enabled = ctrl_reg[0];
 ### using as a typedef Replacement (C++11)
 
 ```cpp
-using EventHandler = void (*)(int);  // more intuitive than typedef
+using EventHandler = void (*)(int);  // 比 typedef 更直观
 ```
 
 ## Exercises
@@ -341,15 +341,15 @@ Use a union to build a tool that decomposes a `float` value into its IEEE 754 si
 #include <stdio.h>
 #include <stdint.h>
 
-// Exercise: define a union containing float and uint32_t
-// Exercise: implement the decomposition function
+// 练习： 定义一个联合体，包含 float 和 uint32_t
+// 练习： 实现分解函数
 // void print_float_bits(float f) {
-//     // Extract the sign bit (1 bit), exponent (8 bits), and mantissa (23 bits)
-//     // Hint: use the bitwise operators & and >>
+//     // 提取符号位（1位）、指数（8位）、尾数（23位）
+//     // 提示：用位运算 & 和 >>
 // }
 
 int main(void) {
-    // Exercise: test several values: 0.0f, -3.14f, 1.0f, 42.0f, 0.1f
+    // 练习： 测试几个值：0.0f, -3.14f, 1.0f, 42.0f, 0.1f
     return 0;
 }
 ```
@@ -366,9 +366,9 @@ typedef union {
     uint32_t u;
 } FloatBits;
 
-// IEEE 754 floating-point bit layout for a float
-// 1-bit sign |  8-bit exponent                     |  23-bit mantissa
-// pos or neg | how large/small values can be (range) | how many significant digits (precision)
+// float 的 IEEE 754 浮点数位规则
+// 1 位符号 |  8 位指数                  |  23 位尾数
+// 正还是负 | 决定能表示多大、多小（范围） | 决定有多少位有效数字（精度）
 void print_float_bits(float f)
 {
     FloatBits data;
@@ -422,10 +422,10 @@ int main(void)
         return 1;
     }
 
-    /* If the buffer did not capture the newline, check for unread characters to avoid silent truncation. */
+    /* 缓冲区未读到换行时，确认是否还有未读取的字符，避免静默截断。 */
     if (strchr(input, '\n') == NULL)
     {
-        // Read the 32nd character of the input
+        // 读取输入的第 32 个字符
         int next_character = getchar();
 
         if (next_character != '\n' && next_character != EOF)
@@ -439,7 +439,7 @@ int main(void)
         }
     }
 
-    /* The second conversion item rejects input that still contains non-whitespace characters after the number. */
+    /* 第二个转换项用于拒绝数字后仍含有非空白字符的输入。 */
     if (sscanf(input, "%f %c", &value, &trailing_character) != 1)
     {
         printf("输入无效！\n");
@@ -483,26 +483,26 @@ Define a 32-bit hardware control register struct with bit fields, then write fun
 #include <stdio.h>
 #include <stdint.h>
 
-// Exercise: define the ControlRegister bit-field struct
-// Bit allocation:
-//   bit 0:     enable (1 bit)
-//   bit 1:     interrupt_enable (1 bit)
-//   bit 2:     dma_enable (1 bit)
-//   bit 5:3    mode (3 bits)
-//   bit 9:6    speed (4 bits)
-//   bit 31:10  reserved (22 bits)
+// 练习： 定义 ControlRegister 位域结构体
+// 位分配：
+//   bit 0:     enable (1位)
+//   bit 1:     interrupt_enable (1位)
+//   bit 2:     dma_enable (1位)
+//   bit 5:3    mode (3位)
+//   bit 9:6    speed (4位)
+//   bit 31:10  reserved (22位)
 
 typedef union {
-    // Exercise: the bit-field struct view
-    // Exercise: the uint32_t whole-value view
+    // 练习： 位域结构体视图
+    // 练习： uint32_t 整体视图
 } ControlRegister;
 
-// Exercise: implement void print_register(ControlRegister reg)
-// Exercise: implement void set_mode(ControlRegister* reg, uint32_t mode)
+// 练习： 实现 void print_register(ControlRegister reg)
+// 练习： 实现 void set_mode(ControlRegister* reg, uint32_t mode)
 
 int main(void) {
     ControlRegister reg = {0};
-    // Exercise: test the various operations
+    // 练习： 测试各个操作
     return 0;
 }
 ```
@@ -513,13 +513,13 @@ int main(void) {
 #include <stdio.h>
 #include <stdint.h>
 
-// Bit allocation:
-//   bit 0:     enable (1 bit)
-//   bit 1:     interrupt_enable (1 bit)
-//   bit 2:     dma_enable (1 bit)
-//   bit 5:3    mode (3 bits)
-//   bit 9:6    speed (4 bits)
-//   bit 31:10  reserved (22 bits)
+// 位分配：
+//   bit 0:     enable（1 位）
+//   bit 1:     interrupt_enable（1 位）
+//   bit 2:     dma_enable（1 位）
+//   bit 5:3    mode（3 位）
+//   bit 9:6    speed（4 位）
+//   bit 31:10  reserved（22 位）
 typedef union {
     struct {
         uint32_t enable : 1;
@@ -548,7 +548,7 @@ void set_mode(ControlRegister *reg, uint32_t mode)
         return;
     }
 
-    // mode occupies only 3 bits, so keep just the low 3 bits of the parameter.
+    // mode 仅占 3 位，因此只保留参数的低 3 位。
     reg->bits.mode = mode & 0x7U;
 }
 
@@ -563,8 +563,8 @@ int main(void)
     set_mode(&reg, 5U);
 
     print_register(reg);
-    // 9:1001 (take the low 3 bits)
-    set_mode(&reg, 9U); // 9 is truncated to the 3-bit value 1.
+    // 9:1001(取低 3 位)
+    set_mode(&reg, 9U); // 9 被截断为 3 位数值 1。
     print_register(reg);
 
     return 0;
@@ -574,11 +574,11 @@ int main(void)
 In this example's GCC x86_64 layout, the fields are allocated from the low bits to the high bits in declaration order; viewed from the most significant bit of the 32-bit integer down, the layout is:
 
 ```text
-Bit     31                  10 9       6 5       3   2   1   0
+位编号  31                  10 9       6 5       3   2   1   0
        +-----------------------+---------+-------+---+---+---+
-Field  |     reserved (22)     | speed 4 | mode 3| D | I | E |
+字段   |     reserved (22)     | speed 4 | mode 3| D | I | E |
        +-----------------------+---------+-------+---+---+---+
-Range           [31:10]            [9:6]    [5:3]  2    1   0
+位范围          [31:10]            [9:6]    [5:3]  2    1   0
 ```
 
 - `E` = `enable`, occupying bit 0
@@ -622,16 +622,16 @@ Use an enum and a union to implement a tagged union that can store an `int`, a `
 #include <stdio.h>
 #include <stdint.h>
 
-// Exercise: define the enum type tag
-// Exercise: define the tagged union struct
-// Exercise: implement the constructors make_int/make_float/make_string
-// Exercise: implement the print_tagged_value function
-// Exercise: implement the safe accessors get_as_int/get_as_float/get_as_string
-//       (check whether the tag matches; if not, print an error message)
+// 练习： 定义枚举类型标签
+// 练习： 定义 tagged union 结构体
+// 练习： 实现构造函数 make_int/make_float/make_string
+// 练习： 实现 print_tagged_value 函数
+// 练习： 实现 get_as_int/get_as_float/get_as_string 安全访问函数
+//       （检查 tag 是否匹配，不匹配则打印错误信息）
 
 int main(void) {
-    // Exercise: create values of the three types and print them
-    // Exercise: try accessing with the wrong tag to verify the safety check
+    // 练习： 创建三种类型的值，打印它们
+    // 练习： 尝试用错误的 tag 访问，验证安全检查
     return 0;
 }
 ```
@@ -643,7 +643,7 @@ int main(void) {
 #include <stdint.h>
 #include <stdbool.h>
 
-/* A type tag identifying the currently active member of the union. */
+/* 用于标识联合体中当前有效成员的类型标签。 */
 typedef enum {
     TAG_INT,
     TAG_FLOAT,
@@ -651,8 +651,8 @@ typedef enum {
 } ValueTag;
 
 /*
- * All members of the union share one block of storage.
- * When reading, the ValueTag decides which member to read — the one matching the last write.
+ * 联合体的所有成员共用同一块存储空间。
+ * 读取时必须根据 ValueTag 选择与最后一次写入相对应的成员。
  */
 typedef union {
     int int_value;
@@ -660,20 +660,20 @@ typedef union {
     const char *string_value;
 } ValueData;
 
-/* Binds the type tag to the actual data, forming a value that can hold several types. */
+/* 将类型标签与实际数据绑定，构成一个可存放多种类型的值。 */
 typedef struct {
     ValueTag tag;
     ValueData data;
 } TaggedValue;
 
-/* Constructs a tagged value holding an int. */
+/* 构造一个保存 int 的带标签值。 */
 TaggedValue make_int(int value)
 {
     TaggedValue result = { TAG_INT, { .int_value = value } };
     return result;
 }
 
-/* Constructs a tagged value holding a float. */
+/* 构造一个保存 float 的带标签值。 */
 TaggedValue make_float(float value)
 {
     TaggedValue result = { TAG_FLOAT, { .float_value = value } };
@@ -681,8 +681,8 @@ TaggedValue make_float(float value)
 }
 
 /*
- * Constructs a tagged value holding a string pointer.
- * This function does not copy the string; the caller must guarantee the string stays valid for as long as it is used.
+ * 构造一个保存字符串指针的带标签值。
+ * 该函数不会复制字符串，调用方必须保证字符串在使用期间仍然有效。
  */
 TaggedValue make_string(const char *value)
 {
@@ -690,10 +690,10 @@ TaggedValue make_string(const char *value)
     return result;
 }
 
-/* Prints the currently active member in the format matching its type tag. */
+/* 根据类型标签，以对应的格式输出当前有效成员。 */
 void print_tagged_value(const TaggedValue *value)
 {
-    /* Guard against dereferencing a NULL pointer passed by the caller. */
+    /* 防止调用方传入空指针后解引用。 */
     if (value == NULL) {
         fprintf(stderr, "Error: value is NULL.\n");
         return;
@@ -707,7 +707,7 @@ void print_tagged_value(const TaggedValue *value)
         printf("float: %.2f\n", value->data.float_value);
         break;
     case TAG_STRING:
-        /* The argument for %s must not be a NULL pointer; this avoids undefined behavior. */
+        /* %s 的实参不能是空指针，避免未定义行为。 */
         if (value->data.string_value == NULL) {
             fprintf(stderr, "Error: string value is NULL.\n");
             return;
@@ -715,13 +715,13 @@ void print_tagged_value(const TaggedValue *value)
         printf("string: %s\n", value->data.string_value);
         break;
     default:
-        /* If the tag is corrupted or was not initialized as agreed, refuse to read the union member. */
+        /* 标签被破坏或未按约定初始化时，禁止读取联合体成员。 */
         fprintf(stderr, "Error: unknown value tag.\n");
         break;
     }
 }
 
-/* Writes the output parameter and returns true only when the value actually holds an int. */
+/* 仅当值实际保存 int 时写入输出参数并返回 true。 */
 bool get_as_int(const TaggedValue *value, int *out)
 {
     if ((value == NULL) || (out == NULL)) {
@@ -738,7 +738,7 @@ bool get_as_int(const TaggedValue *value, int *out)
     return true;
 }
 
-/* Writes the output parameter and returns true only when the value actually holds a float. */
+/* 仅当值实际保存 float 时写入输出参数并返回 true。 */
 bool get_as_float(const TaggedValue *value, float *out)
 {
     if ((value == NULL) || (out == NULL)) {
@@ -755,7 +755,7 @@ bool get_as_float(const TaggedValue *value, float *out)
     return true;
 }
 
-/* Writes the output parameter and returns true only when the value actually holds a string pointer. */
+/* 仅当值实际保存字符串指针时写入输出参数并返回 true。 */
 bool get_as_string(const TaggedValue *value, const char **out)
 {
     if ((value == NULL) || (out == NULL)) {
@@ -774,7 +774,7 @@ bool get_as_string(const TaggedValue *value, const char **out)
 
 int main(void)
 {
-    /* Create one tagged value of each of the three types. */
+    /* 分别创建三种不同类型的带标签值。 */
     TaggedValue int_value = make_int(42);
     TaggedValue float_value = make_float(3.14f);
     TaggedValue string_value = make_string("Hello, tagged union!");
@@ -782,12 +782,12 @@ int main(void)
     float float_result = 0.0f;
     const char *text = NULL;
 
-    /* When printing, the type tag decides which member of the union to read. */
+    /* 输出时由类型标签决定应读取联合体的哪个成员。 */
     print_tagged_value(&int_value);
     print_tagged_value(&float_value);
     print_tagged_value(&string_value);
 
-    /* Read the data through the accessors whose types match. */
+    /* 通过类型匹配的访问函数读取数据。 */
     if (get_as_int(&int_value, &int_result)) {
         printf("get_as_int: %d\n", int_result);
     }
@@ -798,7 +798,7 @@ int main(void)
         printf("get_as_string: %s\n", text);
     }
 
-    /* The two calls below demonstrate the error handling on a type mismatch. */
+    /* 以下两次调用用于演示类型不匹配时的错误处理。 */
     (void)get_as_float(&int_value, &float_result);
     (void)get_as_string(&float_value, &text);
 

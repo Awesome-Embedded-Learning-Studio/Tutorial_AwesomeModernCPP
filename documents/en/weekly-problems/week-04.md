@@ -17,10 +17,10 @@ tags:
   - intermediate
 translation:
   source: documents/weekly-problems/week-04.md
-  source_hash: 9bb290b51ce0a590910becdf6179dfc59eefc06b805d6d3b953cbb290943874d7
-  translated_at: '2026-10-10T12:00:00+00:00'
-  engine: anthropic
-  token_count: 500
+  source_hash: 9bb290b51ce0a590910becdf6179dfc59eefc06b805d6d3b953cbb90943874d7
+  translated_at: '2026-11-22T16:42:59+00:00'
+  engine: glm-5.3-refresh
+  token_count: 2080
 ---
 
 # Week 4 · Old-Book Foundations and va_list

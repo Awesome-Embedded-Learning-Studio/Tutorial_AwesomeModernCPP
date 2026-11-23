@@ -19,9 +19,9 @@ prerequisites:
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/15-memento.md
   source_hash: d2a5b8ee57ceca1899acaa006a5762b6401a33a6d09c3697654ddd449205a66b
-  translated_at: '2026-09-26T05:45:30+00:00'
-  engine: anthropic
-  token_count: 3500
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 12059
 ---
 
 # Memento Pattern: Encapsulating State in an Opaque Black Box
@@ -88,9 +88,9 @@ C++ hands us a mechanism practically tailor-made for the Memento pattern: **decl
 ```cpp
 class TextEditor {
 public:
-    // The memento is a nested type of the Originator — a black box to the outside
+    // 备忘录是 Originator 的嵌套类型,对外是个黑盒
     class Memento {
-        friend class TextEditor;  // Only TextEditor can access what follows
+        friend class TextEditor;  // 只有 TextEditor 能访问下面这些
         std::string content;
         std::size_t cursor_pos = 0;
 
@@ -98,7 +98,7 @@ public:
             : content(std::move(c)), cursor_pos(p) {}
 
     public:
-        // The outside (Caretaker included) can only copy/move this opaque handle; the contents are unreadable
+        // 外部(含 Caretaker)只能拷贝/移动这个不透明句柄,读不到内容
         Memento() = default;
         Memento(const Memento&) = default;
         Memento(Memento&&) = default;
@@ -112,7 +112,7 @@ public:
 
     void restore(const std::shared_ptr<Memento>& m) {
         if (!m) return;
-        content_ = m->content;       // friend grant: private fields are accessible here
+        content_ = m->content;       // friend 授权:这里能访问私有字段
         cursor_pos_ = m->cursor_pos;
     }
 
@@ -143,7 +143,7 @@ int main() {
     editor.insert("Hello");
     auto snap = editor.create_memento();
 
-    // Outside code tries to read m->content — this line should fail to compile
+    // 外部代码试图读取 m->content —— 这一行应当编译失败
     std::cout << snap->content << "\n";   // ERROR
     return 0;
 }
@@ -180,7 +180,7 @@ Change `create_memento` to this line:
 
 ```cpp
 std::shared_ptr<Memento> create_memento() const {
-    return std::make_shared<Memento>(content_, cursor_pos_);  // ⚠️ does not compile
+    return std::make_shared<Memento>(content_, cursor_pos_);  // ⚠️ 编不过
 }
 ```
 
@@ -202,8 +202,8 @@ The fix is dead simple: **bypass `make_shared` and use `std::shared_ptr<Memento>
 
 ```cpp
 std::shared_ptr<Memento> create_memento() const {
-    // TextEditor is a friend of Memento: calling the private constructor directly here is legal.
-    // Skip make_shared — otherwise allocator_traits::construct runs into access control.
+    // TextEditor 是 Memento 的 friend,这里直接调私有构造,合法。
+    // 不走 make_shared,否则 allocator_traits::construct 会撞访问控制。
     return std::shared_ptr<Memento>(new Memento(content_, cursor_pos_));
 }
 ```
@@ -220,7 +220,7 @@ A single snapshot only gets you "back to one particular moment". Real editors su
 class History {
 public:
     void push(std::shared_ptr<TextEditor::Memento> m) {
-        // Inserting a new snapshot away from the tail: discard the redo branch after it
+        // 在非末尾处插入新快照时,丢弃之后的 redo 分支
         if (cursor_ + 1 < static_cast<int>(stack_.size())) {
             stack_.erase(stack_.begin() + cursor_ + 1, stack_.end());
         }
@@ -247,7 +247,7 @@ public:
 
 private:
     std::vector<std::shared_ptr<TextEditor::Memento>> stack_;
-    int cursor_ = -1;   // -1 means empty history
+    int cursor_ = -1;   // -1 表示空历史
 };
 ```
 

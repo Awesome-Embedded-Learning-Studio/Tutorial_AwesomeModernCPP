@@ -26,9 +26,9 @@ video_youtube: https://www.youtube.com/watch?v=Q434UHWRzI0
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/03-back-to-basics-ranges/01-from-loops-to-iterators.md
   source_hash: e82c0e3d7fa67dcba55be13eb78dd784687788e2afa90ffe4942f574a0adb25c
-  translated_at: '2026-09-26T15:56:01+00:00'
-  engine: anthropic
-  token_count: 4100
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 16051
 ---
 # From Loops to Iterators: The Path to Data Traversal Abstraction
 
@@ -144,7 +144,7 @@ I wrote a small program that prints both sets of results for the common containe
 #include <type_traits>
 #include <cstdio>
 
-// Old C++98 style: pull the tag from iterator_traits
+// 旧的 C++98 风格：从 iterator_traits 取 tag
 template<class Iter>
 const char* legacy_tag()
 {
@@ -157,7 +157,7 @@ const char* legacy_tag()
     else return "?";
 }
 
-// New C++20 style: probe with concepts
+// 新的 C++20 风格：用 concept 探测
 template<class Iter>
 const char* cpp20_concept()
 {
@@ -231,7 +231,7 @@ auto it   = std::begin(message);
 auto last = std::end(message);
 std::ptrdiff_t available = std::distance(it, last);
 if (5 < available) {
-    std::advance(it, 5);   // safe: we confirmed the range is long enough
+    std::advance(it, 5);   // 安全：确认走得到
 }
 ```
 
@@ -256,11 +256,11 @@ Clean, hard to get wrong, no fussing over `end`. But what is really behind this 
 ```cpp
 {
     auto&& __range = message;
-    auto  __begin  = std::begin(__range);   // or __range.begin()
-    auto  __end    = std::end(__range);     // or __range.end()
+    auto  __begin  = std::begin(__range);   // 或 __range.begin()
+    auto  __end    = std::end(__range);     // 或 __range.end()
     for (; __begin != __end; ++__begin) {
         char c = *__begin;
-        std::cout << c;                      // your loop body
+        std::cout << c;                      // 你的循环体
     }
 }
 ```
@@ -332,9 +332,9 @@ Dig through the `.s` file for these four functions' hot loops and you will find 
 ```asm
 .L19:
     addl    (%rax), %edx      ; s += *p
-    addq    $4, %rax          ; p++  (an int is 4 bytes)
+    addq    $4, %rax          ; p++  (int 占 4 字节)
     cmpq    %rcx, %rax        ; p == e ?
-    jne     .L19              ; not equal, so loop again
+    jne     .L19              ; 不等就继续
 ```
 
 The loop bodies generated for all four forms are **byte-for-byte nearly identical** — at `-O2` the compiler folds those temporaries, the index computation, and the pointer arithmetic all down to the same stretch of `add / cmp / jne`. In other words, **with optimizations on, range-based for carries zero extra cost**, and you can reach for it for the sake of readability without a second thought. The cost only shows up at `-O0` (no optimization): the `__begin`/`__end` temporaries then sit dutifully on the stack — but who chases performance at `-O0` anyway?

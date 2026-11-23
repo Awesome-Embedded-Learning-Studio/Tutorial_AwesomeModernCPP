@@ -21,9 +21,9 @@ related:
 translation:
   source: documents/vol8-domains/embedded/f103/04-time/02-config-in-type.md
   source_hash: 19c3b98dabc744b9f4fc4b0979d660929344763356153fd33ed0ba33bff36778
-  translated_at: '2026-11-01T03:20:13+00:00'
-  engine: anthropic
-  token_count: 2500
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 12280
 ---
 
 # Configuration goes into the type: designated initializers as template arguments
@@ -208,12 +208,12 @@ I ran `arm-none-eabi-nm` over 09's firmware image, then filtered through `grep -
 What does configuration look like once it lands in the firmware? Here is the disassembly of the `TimBase` wiring section from 09's build artifacts, with the arrow lines and the elision line being plain-language annotations — not one instruction byte touched:
 
 ```text
-800151c: f04f 4380  mov.w r3, #1073741824 @ 0x40000000   ← TIM2 base address
+800151c: f04f 4380  mov.w r3, #1073741824 @ 0x40000000   ← TIM2 基址
 8001520: f240 38e7  movw  r8, #999 @ 0x3e7               ← PSC
 8001524: f64f 1eff  movw  lr, #63999 @ 0xf9ff            ← ARR
 8001528: f06f 0c01  mvn.w ip, #1                          ← ~UIF
-...(the middle is the RCC clock gate being opened and read back — not this piece's material)
-8001548: f8c3 8028  str.w r8, [r3, #40] @ 0x28            ← PSC written into TIM2+0x28
+...(中间是 RCC 时钟门的开与读回,非本篇素材)
+8001548: f8c3 8028  str.w r8, [r3, #40] @ 0x28            ← PSC 写进 TIM2+0x28
 ```
 
 999 and 63999 are exactly the pair the solver produced in the last piece; we won't retell their origin. In this stretch of instruction stream they are `movw` immediates — constants encoded right into the instructions — loaded into a register and then written out to TIM2+0x28's PSC, with no read-from-RAM of configuration anywhere in between. TIM2's base address 0x40000000 is an immediate too, carried in by `TimInstance::Tim2` taking its value from an address — that convenience was covered in the last piece. The contrast is the ARR assignment quoted on ST's official route, where the register's value has to wait for runtime to be read out of RAM. Having passed through the fold of the type, the configuration went from a struct in RAM to constants in the firmware's code region.

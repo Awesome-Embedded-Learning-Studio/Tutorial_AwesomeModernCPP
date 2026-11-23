@@ -30,10 +30,10 @@ title: 'Virtual functions and devirtualization: don''t rush to rewrite virtuals 
   templates'
 translation:
   source: documents/vol6-performance/ch06-cpp-abstraction-cost/06-01-virtual-devirtualization.md
-  source_hash: 2c3f14b54ad7b46481a07ddb8a11f73ec0c18fdc826568ab96b7b112d9c20ce5
-  translated_at: '2026-09-26T08:36:15+00:00'
-  engine: anthropic
-  token_count: 1150
+  source_hash: b9e860a33cc2844fafcfdc845a1fa3c5795a43de44af8f30b25d6cd4a38ebf02
+  translated_at: '2026-11-22T16:43:35+00:00'
+  engine: glm-5.3-refresh
+  token_count: 3235
 ---
 # Virtual functions and devirtualization: don't rush to rewrite virtuals as templates
 
@@ -98,5 +98,5 @@ The next article is about exceptions. Like virtual functions, they are often mis
 
 - Piotr Padlewski, *C++ devirtualization in clang* (CppCon 2015 Lightning) — the devirtualization machinery, reused in vol10
 - ch04-04 "inline, devirtualization, and the compiler optimization landscape" (where this article's virtual-function data comes from)
-- Agner Fog, *Optimizing software in C++*, §7 *Virtual functions* (local copy)
+- Agner Fog, *Optimizing software in C++*, §7 *Virtual functions*
 - This article's measurement code: `code/volumn_codes/vol6-performance/ch04/virtual_devirt.cpp` (shared with ch04-04)

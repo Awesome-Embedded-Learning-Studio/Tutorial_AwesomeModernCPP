@@ -22,9 +22,9 @@ related:
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/08-cache-friendly-cpp/02-memory-is-100x-slower.md
   source_hash: c883b92da3f978b8b9ae760ac284aa789bf128728e1870a4e809de237c1cae0c
-  translated_at: '2026-09-26T16:38:24+00:00'
-  engine: anthropic
-  token_count: 1924
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 4781
   notes: '原文一处数字表述按正文修正译出：中文源 description「本机实测 8MB 数组」原文疑为「800 万元素（约 32 MB）数组」——正文承重实验为 800 万元素（约 32 MB，远超 L3）的 int 数组，与「8MB」矛盾，故英文 description 作 "an 8M-element array"。'
 ---
 
@@ -53,10 +53,10 @@ The cache hierarchy on this machine's AMD Ryzen 7 9700X (Zen 5) looks like this:
 
 ```text
 $ lscpu | grep -iE "L1d|L2|L3 cache"
-L1d cache:  384 KiB (8 instances)   ← 48 KiB per core, private
+L1d cache:  384 KiB (8 instances)   ← 每核 48 KiB, 私有
 L1i cache:  256 KiB (8 instances)
-L2 cache:   8 MiB   (8 instances)   ← 1 MiB per core, private
-L3 cache:   32 MiB  (1 instance)    ← shared by all 8 cores
+L2 cache:   8 MiB   (8 instances)   ← 每核 1 MiB, 私有
+L3 cache:   32 MiB  (1 instance)    ← 8 核共享
 ```
 
 L1 is the fastest and the smallest, private to each core; L2 is a bit bigger and a bit slower, also private per core; L3 is the largest and the slowest (relative to the first two levels), shared by all cores. Below that is main memory — tens of GB, but a 100-nanosecond access.
@@ -89,16 +89,16 @@ Flip it around, and this is also the root cause of slow random access: you grab 
 Conclusions alone are boring — let's run one. Prepare an `int` array of 8 million elements (~32 MB, far beyond L3), then accumulate its elements once through **sequential indices** and once through **shuffled random indices**:
 
 ```cpp
-constexpr int N = 8'000'000;  // 32MB, far beyond L3
+constexpr int N = 8'000'000;  // 32MB, 远超 L3
 std::vector<int> data(N);
 std::iota(data.begin(), data.end(), 0);
 
 std::vector<int> seq_idx(N);
-std::iota(seq_idx.begin(), seq_idx.end(), 0);       // sequential
+std::iota(seq_idx.begin(), seq_idx.end(), 0);       // 顺序
 std::vector<int> rand_idx = seq_idx;
-std::shuffle(rand_idx.begin(), rand_idx.end(), rng); // randomly shuffled
+std::shuffle(rand_idx.begin(), rand_idx.end(), rng); // 随机打乱
 
-// Iterate over data with seq_idx and rand_idx respectively, accumulating the sum
+// 分别用 seq_idx 和 rand_idx 遍历 data, 累加
 ```
 
 Results on this machine:

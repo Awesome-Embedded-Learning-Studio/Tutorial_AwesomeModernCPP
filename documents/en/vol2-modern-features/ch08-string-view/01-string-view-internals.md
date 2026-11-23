@@ -20,9 +20,9 @@ title: 'string_view Internals: A Non-Owning String View'
 translation:
   source: documents/vol2-modern-features/ch08-string-view/01-string-view-internals.md
   source_hash: c0ae21e4e245ec5e0a73829583c94399eb32bfc481d43e7a6a139feffd59f011
-  translated_at: '2026-09-27T05:10:15+00:00'
-  engine: anthropic
-  token_count: 9000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 13373
 ---
 # string_view Internals: A Non-Owning String View
 
@@ -43,8 +43,8 @@ Although the C++ standard does not mandate a concrete internal structure, all ma
 ```cpp
 template<class CharT, class Traits = std::char_traits<CharT>>
 class basic_string_view {
-    const CharT* _ptr;   // points to the underlying character sequence (not owned)
-    size_t       _len;   // length (excluding '\0')
+    const CharT* _ptr;   // 指向底层字符序列（不拥有）
+    size_t       _len;   // 长度（不含 '\0'）
 };
 ```
 
@@ -112,15 +112,15 @@ The first is constructing from a C-style string literal. String literals have st
 
 ```cpp
 std::string_view sv = "hello, world";
-// sv points at the string literal in static storage, valid forever
+// sv 指向静态存储区的字符串字面量，永远有效
 ```
 
 The second is constructing from a `std::string`. `std::string` provides an implicit conversion operator to `string_view`, so you can pass it directly:
 
 ```cpp
 std::string str = "hello";
-std::string_view sv = str;  // implicit conversion
-// sv points at str's internal buffer; safe as long as str is alive
+std::string_view sv = str;  // 隐式转换
+// sv 指向 str 的内部缓冲区，只要 str 还活着就安全
 ```
 
 There is a classic trap here: if `str` is a temporary object, then `sv` points at destroyed memory — that is, a dangling reference. For example, `std::string_view sv = std::string("temp");` is undefined behavior. We will discuss this problem in detail in the pitfalls article.
@@ -129,7 +129,7 @@ The third is constructing from a specified range, passing in the pointer and the
 
 ```cpp
 const char* buf = "hello, world";
-std::string_view sv(buf, 5);  // view only the first 5 characters: "hello"
+std::string_view sv(buf, 5);  // 只看前 5 个字符："hello"
 ```
 
 This approach offers the most flexibility, and it is the construction method used inside many parsers. You can even point at some segment in the middle of a buffer that contains `\0` — because `string_view` delimits its bounds with the length, not with a `\0` terminator.
@@ -148,19 +148,19 @@ Many tutorials will tell you to "replace `const std::string&` function parameter
 With a `const std::string&` parameter, the caller must provide a `std::string` object. If the caller has only a `const char*` or a string literal at hand, the compiler implicitly constructs a temporary `std::string` — which involves a possible heap allocation and a copy. With a `string_view` parameter, a `std::string`, a `const char*`, or a string literal can all construct the `string_view` directly, at the cost of copying one pointer and one length.
 
 ```cpp
-// Approach 1: const string& parameter
+// 方式一：const string& 参数
 void process_old(const std::string& s);
 
-process_old(std::string("temp"));  // construct string → pass reference
-process_old("literal");            // implicitly construct temporary string → pass reference → temporary destroyed
-process_old(some_c_string);        // implicitly construct temporary string → strlen + possible allocation
+process_old(std::string("temp"));  // 构造 string → 传引用
+process_old("literal");            // 隐式构造临时 string → 传引用 → 临时对象析构
+process_old(some_c_string);        // 隐式构造临时 string → strlen + 可能的分配
 
-// Approach 2: string_view parameter
+// 方式二：string_view 参数
 void process_new(std::string_view sv);
 
-process_new(std::string("temp"));  // implicit view from string → no extra allocation
-process_new("literal");            // construct view directly → zero allocation
-process_new(some_c_string);        // construct view directly → needs strlen (O(n)), but no heap allocation
+process_new(std::string("temp"));  // 从 string 隐式构造 view → 无额外分配
+process_new("literal");            // 直接构造 view → 零分配
+process_new(some_c_string);        // 直接构造 view → 需要 strlen (O(n))，但不分配堆内存
 ```
 
 You can see that the `string_view` version avoids constructing unnecessary temporary `std::string`s. In hot-path functions that are called frequently, this difference accumulates into a considerable performance gain. There is, however, one difference in the reverse direction: `const std::string&` guarantees the data is `\0`-terminated (because the source is always a `std::string`), while `string_view` does not. If your function needs to call a C API internally (say `printf("%s", ...)`), `string_view` may actually dig a pit for you.
@@ -176,9 +176,9 @@ With the principles out of the way, let us see which operations `string_view` pr
 ```cpp
 std::string_view sv = "hello";
 
-char c = sv[1];         // 'e', no bounds check
-char d = sv.at(1);      // 'e', with bounds check
-const char* p = sv.data();  // pointer to 'h'
+char c = sv[1];         // 'e'，无边界检查
+char d = sv.at(1);      // 'e'，有边界检查
+const char* p = sv.data();  // 指向 'h' 的指针
 std::size_t n = sv.size();  // 5
 bool e = sv.empty();        // false
 ```
@@ -192,14 +192,14 @@ The return value of `data()` is **not guaranteed** to be `\0`-terminated. If the
 ```cpp
 std::string_view sv = "hello, world";
 
-// remove_prefix: move the start of the view forward by n characters
-sv.remove_prefix(7);   // sv becomes "world"
+// remove_prefix：把视图的起始位置向后移动 n 个字符
+sv.remove_prefix(7);   // sv 变成 "world"
 
-// remove_suffix: shorten the end of the view by n characters
+// remove_suffix：把视图的末尾向前缩短 n 个字符
 std::string_view sv2 = "hello, world";
-sv2.remove_suffix(7);  // sv2 becomes "hello"
+sv2.remove_suffix(7);  // sv2 变成 "hello"
 
-// swap: exchange the contents of two string_views
+// swap：交换两个 string_view 的内容
 std::string_view a = "first";
 std::string_view b = "second";
 a.swap(b);  // a -> "second", b -> "first"
@@ -215,9 +215,9 @@ Let us look at a slightly more complete parsing scenario: extracting the key and
 #include <optional>
 #include <utility>
 
-/// @brief Extract a key-value pair from a string in "key=value" format
-/// @param entry the input string view, e.g. "host=localhost"
-/// @return a (key, value) pair on success, std::nullopt on failure
+/// @brief 从 "key=value" 格式的字符串中提取键值对
+/// @param entry 输入字符串视图，如 "host=localhost"
+/// @return 成功返回 (key, value) pair，失败返回 std::nullopt
 std::optional<std::pair<std::string_view, std::string_view>>
 parse_kv(std::string_view entry) {
     auto pos = entry.find('=');
@@ -226,7 +226,7 @@ parse_kv(std::string_view entry) {
     }
     auto key = entry.substr(0, pos);
     auto value = entry.substr(pos + 1);
-    // Trim leading and trailing whitespace
+    // 去掉前后空白
     while (!key.empty() && key.front() == ' ') {
         key.remove_prefix(1);
     }
@@ -248,7 +248,7 @@ parse_kv(std::string_view entry) {
 int main() {
     const char* raw = "  host = localhost ; port = 8080 ";
     std::string_view input(raw);
-    // Manually split on ';' and parse the key-value pairs one by one
+    // 手动按 ';' 分割，逐个解析键值对
     while (!input.empty()) {
         auto semi = input.find(';');
         auto segment = (semi == std::string_view::npos)
@@ -302,7 +302,7 @@ std::vector<std::string_view> split(std::string_view input, char delim) {
             break;
         }
         tokens.push_back(input.substr(0, pos));
-        input.remove_prefix(pos + 1);  // skip the delimiter
+        input.remove_prefix(pos + 1);  // 跳过分隔符
     }
     return tokens;
 }
@@ -339,15 +339,15 @@ The returned vector of `string_view`s points into the internal buffer of the ori
 #include <string_view>
 #include <cstring>
 
-/// @brief A simple serial command parser
-/// @param cmd the input command view, e.g. "LED ON" or "PWM 128"
+/// @brief 简单的串口命令解析器
+/// @param cmd 输入命令视图，如 "LED ON" 或 "PWM 128"
 void handle_command(std::string_view cmd) {
-    // Strip the trailing newline characters
+    // 去掉末尾的换行符
     while (!cmd.empty() && (cmd.back() == '\r' || cmd.back() == '\n')) {
         cmd.remove_suffix(1);
     }
 
-    // Split the command and its argument at the space
+    // 按空格分割命令和参数
     auto space = cmd.find(' ');
     auto verb = (space == std::string_view::npos) ? cmd : cmd.substr(0, space);
 
@@ -362,7 +362,7 @@ void handle_command(std::string_view cmd) {
         }
     } else if (verb == "PWM") {
         auto arg = cmd.substr(space + 1);
-        // Convert the string_view to an integer
+        // 将 string_view 转为整数
         int value = 0;
         for (char c : arg) {
             if (c >= '0' && c <= '9') {

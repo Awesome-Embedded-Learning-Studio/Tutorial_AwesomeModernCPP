@@ -3,10 +3,10 @@ title: "Memory Safety"
 sidebar_order: 1
 translation:
   source: documents/crash-lab/a-memory-safety/index.md
-  source_hash: 7902292a18d26762974d39099059a6ba8440388af5c456db710e47da73ff52a1
-  translated_at: '2026-09-27T03:01:03+00:00'
-  engine: anthropic
-  token_count: 130
+  source_hash: c9199f14df1598766f715450b5f1bd87fef3110cb7a0ba8e48c68f25d8ff7f21
+  translated_at: '2026-11-22T16:38:48+00:00'
+  engine: glm-5.3-refresh
+  token_count: 313
 ---
 
 # Memory Safety
@@ -15,5 +15,6 @@ Most of the murders committed on the heap and the stack fall into a few families
 
 - [01 · Null Pointer Dereference: The Crash That Hides Nothing](01-null-deref)
 - [02 · Use-After-Free: The Pointer Outlives the Memory](02-use-after-free)
+- [03 · Heap Buffer Overflow: One Extra Write Is Okay, Two Extra Writes Are Fatal](03-heap-buffer-overflow)
 
-The remaining cases (heap buffer overflow, double free, stack overflow, memory leaks, alignment violations, and so on) will be moved in over time.
+The remaining cases (double free, stack overflow, memory leaks, alignment violations, and so on) will be moved in over time.

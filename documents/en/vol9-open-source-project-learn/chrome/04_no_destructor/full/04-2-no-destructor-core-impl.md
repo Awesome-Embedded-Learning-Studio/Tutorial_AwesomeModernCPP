@@ -24,9 +24,9 @@ title: "NoDestructor hands-on (II): the core implementation"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/04_no_destructor/full/04-2-no-destructor-core-impl.md
   source_hash: 4cf17826519ba66c507cadb9fec7e2c1687b7025b61229de3aa792488bbd15fb
-  translated_at: '2026-09-26T03:16:13+00:00'
-  engine: anthropic
-  token_count: 3400
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7691
 ---
 # NoDestructor hands-on (II): the core implementation
 
@@ -45,7 +45,7 @@ namespace tamcpp::chrome {
 
 template <typename T>
 class NoDestructor {
-    // detailed below
+    // 详细见下
 private:
     alignas(T) char storage_[sizeof(T)];
 };
@@ -61,13 +61,13 @@ Stripped to its essence, NoDestructor's entire "data" is this one aligned inline
 
 ```cpp
 public:
-    // Generic: perfectly forwards arbitrary arguments to T's constructor
+    // 通用:从任意参数完美转发给 T 的构造函数
     template <typename... Args>
     explicit NoDestructor(Args&&... args) {
         new (storage_) T(std::forward<Args>(args)...);
     }
 
-    // Copy/move-construct directly from a T (handy for initializer_list and friends)
+    // 从 T 直接拷贝/移动构造(方便 initializer_list 等场景)
     explicit NoDestructor(const T& x) { new (storage_) T(x); }
     explicit NoDestructor(T&& x)      { new (storage_) T(std::move(x)); }
 ```
@@ -96,7 +96,7 @@ That `reinterpret_cast<T*>(storage_)` inside `get()` made our heart skip a beat 
 static const NoDestructor<std::string> s("hi");
 s->size();    // operator->
 (*s)[0];      // operator*
-s.get();      // get the pointer explicitly
+s.get();      // 显式取指针
 ```
 
 ## Not destructing: the trick hidden in =default
@@ -105,7 +105,7 @@ s.get();      // get the pointer explicitly
     NoDestructor(const NoDestructor&) = delete;
     NoDestructor& operator=(const NoDestructor&) = delete;
 
-    ~NoDestructor() = default;   // ← the key move: ~T() is never called!
+    ~NoDestructor() = default;   // ← 关键:不调 ~T()!
 ```
 
 Copying is deleted, for reasons already covered in [04-1](./04-1-no-destructor-motivation-and-api.md) — we won't repeat them here. The load-bearing line is the one below, `~NoDestructor() = default`; the entire design's lifeline rests right there.
@@ -199,7 +199,7 @@ Here is a verification snippet — let's take it to the machine and see what hap
 
 struct Noisy {
     Noisy(int x) : v(x) { std::puts("Noisy()"); }
-    ~Noisy() { std::puts("~Noisy()"); }   // never printed
+    ~Noisy() { std::puts("~Noisy()"); }   // 永不打印
     int v;
 };
 
@@ -212,7 +212,7 @@ int main() {
     std::cout << DefaultName() << "\n";          // chromium
     static const tamcpp::chrome::NoDestructor<Noisy> n(42);
     std::cout << n->v << "\n";                   // 42
-    // Program exit: ~NoDestructor runs (trivial); ~string and ~Noisy never run
+    // 程序退出:~NoDestructor 跑(平凡),~string 和 ~Noisy 都不跑
     return 0;
 }
 ```

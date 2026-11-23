@@ -29,9 +29,9 @@ title: 'Algorithm Overview (Part 2): Sorting, Partitioning, and Heaps'
 translation:
   source: documents/vol3-standard-library/iterators-algorithms/43-algorithm-overview-part2.md
   source_hash: f2b7ec14432a00e67fb00162e556f6440ff1cad84df2935cbc0d75029aeba5dd
-  translated_at: '2026-09-26T01:33:33+00:00'
-  engine: anthropic
-  token_count: 6100
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 18060
 ---
 # Algorithm Overview (Part 2): Sorting, Partitioning, and Heaps
 
@@ -73,8 +73,8 @@ Let's run it and get a feel for how `sort` and `stable_sort` differ on equal ele
 #include <vector>
 
 struct Point {
-    int key;   // the field we sort by
-    int tag;   // used to track the "original order"
+    int key;   // 排序依据
+    int tag;   // 用来追踪"原始顺序"
 };
 
 void print_tagged(const std::vector<Point>& v, const char* lbl)
@@ -86,7 +86,7 @@ void print_tagged(const std::vector<Point>& v, const char* lbl)
 
 int main()
 {
-    // 3 key groups (1/2/3), each with 8 tags 0..7 — enough equal keys to expose instability
+    // 3 组 key（1/2/3），每组 8 个 tag 0..7 —— 相等 key 足够多才能看出非稳定
     std::vector<Point> data;
     for (int i = 0; i < 8; ++i) data.push_back({1, i});
     for (int i = 0; i < 8; ++i) data.push_back({2, i});
@@ -260,7 +260,7 @@ Where it shines is in combination with `partition` or sorted ranges: partitionin
 
 int main()
 {
-    // Note: this range must already be partitioned (all evens in front, all odds behind)
+    // 注意：这个区间必须已经分区好（偶数全在前、奇数全在后）
     std::vector<int> v{2, 4, 6, 8, 1, 3, 5, 7, 9};
     auto pp = std::partition_point(v.begin(), v.end(),
                                    [](int x) { return x % 2 == 0; });
@@ -302,22 +302,22 @@ int main()
 {
     std::vector<int> h{3, 1, 4, 1, 5, 9, 2, 6};
 
-    // 1) make_heap: rearrange an arbitrary range into a max-heap in place
+    // 1) make_heap：把任意区间原地重排成最大堆
     std::make_heap(h.begin(), h.end());
     print(h, "make_heap（堆顶 v[0] 是最大值 9）");
 
-    // 2) push_heap: precondition — the new element has already been push_back'ed at the end
+    // 2) push_heap：前提是已经把新元素 push_back 到末尾
     h.push_back(7);
     std::push_heap(h.begin(), h.end());
     print(h, "push_heap(7)（7 从末尾上浮到该在的位置）");
 
-    // 3) pop_heap: move the heap top to the end; the rest sifts back down into a heap
+    // 3) pop_heap：把堆顶挪到末尾，剩下的重新下沉成堆
     std::pop_heap(h.begin(), h.end());
     std::cout << "  pop_heap 后，末尾存着刚取出的堆顶 = " << h.back() << '\n';
-    h.pop_back();   // actually remove that maximum from the container
+    h.pop_back();   // 真正把那个最大值从容器里删掉
     print(h, "pop_back 之后");
 
-    // 4) sort_heap: sort the whole heap into ascending order; no longer a heap afterwards
+    // 4) sort_heap：把堆整体排成升序，排完不再是堆
     std::vector<int> s{5, 1, 9, 3, 7, 2, 8, 4, 6, 0};
     std::make_heap(s.begin(), s.end());
     std::sort_heap(s.begin(), s.end());
@@ -405,19 +405,19 @@ int main()
         {"Dave", 7000, 35},
     };
 
-    // projection + default comparator: ascending by salary
+    // 投影 + 默认比较器：按 salary 升序
     auto a = staff;
     std::ranges::sort(a, {}, &Employee::salary);
     std::cout << "ranges::sort 按 &Employee::salary（升序）:\n";
     for (const auto& e : a) std::cout << "  " << e << '\n';
 
-    // projection + greater: descending by salary
+    // 投影 + greater：按 salary 降序
     auto b = staff;
     std::ranges::sort(b, std::greater{}, &Employee::salary);
     std::cout << "ranges::sort 按 &Employee::salary（greater，降序）:\n";
     for (const auto& e : b) std::cout << "  " << e << '\n';
 
-    // stable_sort + projection: equal salaries keep input order (Alice before Carol)
+    // stable_sort + 投影：salary 相同时保留输入顺序（Alice 在 Carol 前）
     auto c = staff;
     std::ranges::stable_sort(c, {}, &Employee::salary);
     std::cout << "ranges::stable_sort 按 salary（并列时保输入顺序）:\n";

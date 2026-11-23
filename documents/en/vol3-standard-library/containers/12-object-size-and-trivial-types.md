@@ -20,13 +20,24 @@ tags:
 - intermediate
 - 类型安全
 - 容器
+contributors:
+- github: Charliechen114514
+  roles: [author, maintain]
+  note:
+    zh: "文章撰写与长期维护"
+    en: "Article writing and ongoing maintenance"
+- github: YukunJ
+  roles: [revision]
+  note:
+    zh: "参与文章内容与示例修订 (PR #75)"
+    en: "Contributed article and example revisions (PR #75)"
 title: Object Size, Alignment, and Trivial Types
 translation:
   source: documents/vol3-standard-library/containers/12-object-size-and-trivial-types.md
-  source_hash: 1390202af18e72b82da3ed11a81c8e9c7228cdc1fe5fc43c5fcf036ec67a657a
-  translated_at: '2026-09-26T02:42:41+00:00'
-  engine: anthropic
-  token_count: 5000
+  source_hash: 3bdcd72af33180958c763fcf60307ed18f39502d2058a1eef9b13eb12a0f73f4
+  translated_at: '2026-11-22T16:41:57.566324+00:00'
+  engine: glm-5.3-refresh
+  token_count: 7399
 ---
 # Object Size, Alignment, and Trivial Types
 
@@ -40,10 +51,10 @@ Take the most common example:
 
 ```cpp
 struct A {
-    char c;   // 1 byte, offset 0
-    int  i;   // 4 bytes, alignment 4, offset 4
+    char c;   // 1 字节，offset 0
+    int  i;   // 4 字节，对齐 4，offset 4
 };
-// offset 0: c, offsets 1..3: padding, offsets 4..7: i
+// offset 0: c，offset 1..3: 填充，offset 4..7: i
 // sizeof(A) == 8
 ```
 
@@ -52,10 +63,10 @@ Shuffle the declaration order and the padding grows:
 ```cpp
 struct B {
     char a;   // offset 0
-    int  i;   // offset 4 (3 bytes of padding before it)
+    int  i;   // offset 4（前面填 3 字节）
     char b;   // offset 8
 };
-// 3 more bytes of tail padding, so that sizeof is a multiple of alignof(B)=4
+// 尾部还要填 3 字节，让 sizeof 是 alignof(B)=4 的倍数
 // sizeof(B) == 12
 ```
 
@@ -65,7 +76,7 @@ Put the two `char`s together and the padding is saved:
 struct C {
     char a;   // offset 0
     char b;   // offset 1
-    int  i;   // offset 4 (2 bytes of padding before it)
+    int  i;   // offset 4（前面填 2 字节）
 };
 // sizeof(C) == 8
 ```
@@ -76,7 +87,7 @@ You can force a different alignment with `alignas`, for example to give a SIMD b
 
 ```cpp
 struct alignas(16) Vec4 {
-    float x, y, z, w;   // sizeof == 16, alignof == 16
+    float x, y, z, w;   // sizeof == 16，alignof == 16
 };
 ```
 
@@ -102,9 +113,9 @@ An example that ties them together:
 struct S {
     int    x;
     double y;
-    // no user-defined constructor/destructor/copy, no virtual functions, no base classes
+    // 没有用户定义构造/析构/拷贝、没有虚函数、没有基类
 };
-// S is typically trivial, trivially_copyable, standard-layout -> POD
+// S 通常是 trivial、trivially_copyable、standard-layout -> POD
 static_assert(std::is_trivially_copyable_v<S>);
 static_assert(std::is_standard_layout_v<S>);
 ```
@@ -115,22 +126,22 @@ Now contrast that with a non-trivial one:
 struct T_0 {
     int x;
 };
-// T_0 is trivial and trivially_copyable
+// T_0 是 trivial且trivially_copyable
 static_assert(std::is_trivial_v<T_0>);
 static_assert(std::is_trivially_copyable_v<T_0>);
 
 struct T_1 {
-    T_1() { /* custom constructor */ }
+    T_1() { /* 自定义构造 */ }
     int x;
 };
-// T_1 is not trivial (a user-defined constructor exists), but in this example it is trivially_copyable
-// Note: the default constructor is entirely outside the scope of that check.
+// T 不是 trivial（用户定义了构造），但在这个例子中是trivially_copyable
+// 注意，默认构造函数完全不在检查范围内。
 static_assert(!std::is_trivial_v<T_1>);
 static_assert(std::is_trivially_copyable_v<T_1>);
 
 struct T_2 {
     T_2() {}
-    T_2(const T_2&) { /* custom copy constructor */ }
+    T_2(const T_2&) { /* 自定义拷贝构造 */ }
     int x;
 };
 static_assert(!std::is_trivial_v<T_2>);
@@ -186,18 +197,18 @@ Aggregates are a convenient class of types: they can be initialized by simply li
 
 ```cpp
 struct Point { int x, y; };
-Point p1{1, 2};    // aggregate initialization, members assigned in declaration order
+Point p1{1, 2};    // 聚合初始化，成员按声明顺序赋值
 
 struct Config { int baud; int parity; int stop_bits; };
-constexpr Config default_cfg{115200, 0, 1};   // works as constexpr too
+constexpr Config default_cfg{115200, 0, 1};   // 还能 constexpr
 ```
 
 C++20 introduced **designated initializers** (designated initializer — C had them long ago; C++20 finally adopted them officially), making aggregate initialization more readable and insensitive to member order:
 
 ```cpp
 struct S { int a, b, c; };
-S s1{.b = 2, .a = 1, .c = 3};   // member order doesn't matter
-S s2{.a = 1};                   // initializes only a; the rest is default/zero-initialized
+S s1{.b = 2, .a = 1, .c = 3};   // 成员顺序无所谓
+S s2{.a = 1};                   // 只初始化 a，其余默认/零初始化
 ```
 
 Nested structs and array indices can be designated too, which is especially handy when initializing complicated layouts (register tables, protocol headers):
@@ -208,7 +219,7 @@ struct Packet { Header hdr; uint8_t payload[8]; };
 
 Packet pkt{
     .hdr     = {.id = 0x1234, .flags = 0x1},
-    .payload = {[0] = 0xAA, [3] = 0x55}   // assigns only elements 0 and 3
+    .payload = {[0] = 0xAA, [3] = 0x55}   // 只给第 0、3 个元素赋值
 };
 ```
 

@@ -19,9 +19,9 @@ prerequisites:
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/01-singleton.md
   source_hash: 138f2f4f5f33eaa47850b552e5dd2ee87dbf4fb3bbf3b41ab9bbc1b85df46459
-  translated_at: '2026-09-26T05:02:57+00:00'
-  engine: anthropic
-  token_count: 7900
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 11108
 ---
 
 # Singleton Pattern: From Comment-Only Constraints to Meyer's Singleton
@@ -83,7 +83,7 @@ Let's narrow the problem down: hand the uniqueness of construction to one entry 
 class GlobalOled {
 public:
     static GlobalOled& get_instance() {
-        static GlobalOled oled;  // initialized once, on first pass through
+        static GlobalOled oled;  // 只在首次经过时初始化一次
         return oled;
     }
 
@@ -113,7 +113,7 @@ Claims need proof. Let's write a small program where 500 threads race for `get_i
 class MeyersSingleton {
 public:
     static MeyersSingleton& instance() {
-        static MeyersSingleton s;  // C++11 [stmt.dcl]: thread-safe one-time initialization
+        static MeyersSingleton s;  // C++11 [stmt.dcl]: 线程安全地初始化一次
         return s;
     }
     static inline std::atomic<int> construct_count{0};
@@ -157,7 +157,7 @@ Five runs in a row, 500 concurrent threads racing each time, and `construct_coun
 If you're digging through older, pre-C++11 material, odds are you'll run into something called **DCLP (Double-Checked Locking Pattern)**. Plenty of blog posts still circulate it, and some even write it like this — **this version is broken; do not copy it**:
 
 ```cpp
-// ⚠️ Anti-example: memory_order_consume is unreliable here
+// ⚠️ 反面教材:memory_order_consume 在这里不靠谱
 static GlobalOled& get_instance() {
     GlobalOled* p = oled.load(std::memory_order_consume);
     if (p) return *p;
@@ -180,13 +180,13 @@ If you absolutely must hand-write DCLP (and let me stress once more, **modern C+
 class DclpSingleton {
 public:
     static DclpSingleton* instance() {
-        auto* p = ptr_.load(std::memory_order_acquire);  // first check (lock-free)
+        auto* p = ptr_.load(std::memory_order_acquire);  // 第一次检查(无锁)
         if (!p) {
             std::lock_guard<std::mutex> lk(mtx_);
-            p = ptr_.load(std::memory_order_relaxed);    // second check (holding the lock)
+            p = ptr_.load(std::memory_order_relaxed);    // 第二次检查(持锁)
             if (!p) {
                 p = new DclpSingleton();
-                ptr_.store(p, std::memory_order_release);  // publish
+                ptr_.store(p, std::memory_order_release);  // 发布
             }
         }
         return p;
@@ -249,10 +249,10 @@ Same recipe as before: one `static` local inside `instance()`, all four special 
 
 ```cpp
 void ConfigManager::parse_line(const std::string& line) {
-    if (line.empty() || line[0] == '#') return;  // skip empty lines / comments
+    if (line.empty() || line[0] == '#') return;  // 空行 / 注释跳过
 
     const auto eq = line.find_first_of('=');
-    if (eq == std::string::npos) return;          // not a valid kv pair, skip
+    if (eq == std::string::npos) return;          // 不是合法 kv,跳过
 
     std::string key = line.substr(0, eq);
     std::string val = line.substr(eq + 1);
@@ -268,7 +268,7 @@ Using it looks like this — anywhere in the program can grab that one and only 
 auto& config = ConfigManager::instance();
 config.read_from_file("app.conf");
 if (auto host = config.get_value("host")) {
-    connect(*host);  // only proceed if we actually got a value
+    connect(*host);  // 只有真的拿到值才进入
 }
 ```
 
@@ -286,11 +286,11 @@ At this point we have a singleton that is correct, thread-safe, and dead simple 
 
 ```cpp
 void do_work() {
-    ConfigManager::instance().get_value("timeout");  // hard-wired to the global
+    ConfigManager::instance().get_value("timeout");  // 写死成全局
 }
 
 void test_do_work() {
-    // Want to swap in a fake ConfigManager to test edge cases? Sorry, no can do.
+    // 想换个假的 ConfigManager 来测边界条件?抱歉,改不了。
     do_work();
 }
 ```
@@ -318,10 +318,10 @@ private:
     GlobalOled& oled_;
 };
 
-// inject manually at the use site
+// 使用时手动注入
 int main() {
-    auto& oled = GlobalOled::get_instance();   // the singleton is confined to the main layer
-    OledUpdater updater(oled);                 // updater depends only on a reference; it knows nothing global
+    auto& oled = GlobalOled::get_instance();   // 单例被关在 main 这一层
+    OledUpdater updater(oled);                 // updater 只依赖引用,不知道全局
     updater.do_work();
 }
 ```

@@ -17,9 +17,9 @@ title: std::string_view
 translation:
   source: documents/cpp-reference/containers/02-string-view.md
   source_hash: fd07cdf9d67313c2c7dce8ae2d1811a69e169d645980adcd2ffaa6475dfe6eaf
-  translated_at: '2026-09-26T17:12:41+00:00'
-  engine: anthropic
-  token_count: 520
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 2043
 ---
 # std::string_view (C++17)
 
@@ -59,11 +59,11 @@ void print(std::string_view sv) {
 
 int main() {
     std::string s = "hello";
-    print(s);                    // accepts a std::string
-    print("world");              // accepts a string literal
+    print(s);                    // 接受 std::string
+    print("world");              // 接受字符串字面量
     std::string_view sv = s;
-    sv.remove_prefix(1);         // now "ello"
-    print(sv.substr(0, 2));      // outputs "el"
+    sv.remove_prefix(1);         // 变为 "ello"
+    print(sv.substr(0, 2));      // 输出 "el"
 }
 ```
 

@@ -15,12 +15,23 @@ tags:
   - 入门
   - 基础
 cpp_standard: [11, 14, 17, 20]
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #206)"
+      en: "Contributed exercise solutions and article revisions (PR #206)"
 translation:
   source: documents/vol1-fundamentals/ch03/04-inline-constexpr.md
-  source_hash: c72fc784f83a76340f619bd6aaff809278cd29106750a269039cad6e32ad12cc
-  translated_at: '2026-09-25T10:24:00+00:00'
-  engine: anthropic
-  token_count: 8500
+  source_hash: 0d16159159b51229f0841d8e541c96471e250a701733ebc82edcf9fb4c747734
+  translated_at: '2026-11-22T16:40:19+00:00'
+  engine: glm-5.3-refresh
+  token_count: 12333
 ---
 
 # inline and constexpr Functions: Don't Send a One-Liner on a Wasted Trip
@@ -45,7 +56,7 @@ The `inline` keyword can break that rule. A function marked `inline` is allowed 
 // math_utils.h
 #pragma once
 
-// With inline: multiple .cpp files including this header won't cause redefinition
+// 有了 inline：多个 .cpp include 此头文件不会重定义
 inline int square(int x)
 {
     return x * x;
@@ -74,11 +85,11 @@ constexpr int square(int x)
 
 int main()
 {
-    constexpr int kResult = square(5);  // Evaluated at compile time, kResult = 25
+    constexpr int kResult = square(5);  // 编译期求值，kResult = 25
 
     int x = 0;
     std::cin >> x;
-    int runtime_result = square(x);    // Evaluated at runtime, degrades to an ordinary call
+    int runtime_result = square(x);    // 运行时求值，退化为普通调用
 
     return 0;
 }
@@ -91,7 +102,7 @@ int main()
 Every C++ standard has relaxed what a `constexpr` function may and may not do. In C++11, a `constexpr` function body could contain only a single `return` statement—no local variables, no loops, no `if/else`—so writing factorial meant recursion plus the ternary operator:
 
 ```cpp
-// C++11: only return + the ternary operator allowed
+// C++11：只能用 return + 三元运算符
 constexpr int factorial(int n)
 {
     return (n <= 1) ? 1 : n * factorial(n - 1);
@@ -127,10 +138,10 @@ Non-type template arguments must be compile-time constants, and the return value
 ```cpp
 constexpr int bytes_from_bits(int bits)
 {
-    return (bits + 7) / 8;  // convert a bit count into a byte count
+    return (bits + 7) / 8;  // bit 数换算成 byte 数
 }
 
-// Template arguments need compile-time constants; constexpr functions fit perfectly
+// 模板参数需要编译期常量，constexpr 函数完美适配
 std::array<uint8_t, bytes_from_bits(32)> buffer{};
 ```
 
@@ -141,7 +152,7 @@ This pattern shows up constantly in embedded development: register widths, buffe
 Embedded development often calls for precomputed lookup tables. The traditional approach is to write the array by hand and recompute it by hand whenever a parameter changes. With `constexpr`, we can have the compiler generate it for us:
 
 ```cpp
-/// @brief Generate a CRC8 lookup table at compile time
+/// @brief 编译期生成 CRC8 查找表
 constexpr std::array<uint8_t, 256> make_crc8_table()
 {
     std::array<uint8_t, 256> table{};
@@ -156,7 +167,7 @@ constexpr std::array<uint8_t, 256> make_crc8_table()
     return table;
 }
 
-// Generated at compile time, zero runtime overhead
+// 编译期生成，运行时零开销
 constexpr auto kCrc8Table = make_crc8_table();
 ```
 
@@ -176,9 +187,9 @@ consteval int power(int base, int exp)
     return result;
 }
 
-constexpr int kVal = power(2, 10);  // OK: evaluated at compile time, kVal = 1024
+constexpr int kVal = power(2, 10);  // OK：编译期求值，kVal = 1024
 // int x; std::cin >> x;
-// int y = power(x, 3);             // compile error: x is not a compile-time constant
+// int y = power(x, 3);             // 编译错误：x 不是编译期常量
 ```
 
 `constinit` applies to variable declarations: it guarantees the variable is initialized at compile time without demanding that it be `const`. This defuses the "static initialization order trap"—global variables across different translation units are initialized in an unspecified order, which can lead to undefined behavior. `constinit` moves initialization to compile time, letting us sidestep the problem entirely.
@@ -196,13 +207,13 @@ Let's pull everything from this chapter into one complete program that demonstra
 #include <cstdint>
 #include <cstdio>
 
-/// @brief Compile-time square computation
+/// @brief 编译期平方计算
 constexpr int square(int x)
 {
     return x * x;
 }
 
-/// @brief Compile-time factorial (iterative, C++14 style)
+/// @brief 编译期阶乘（迭代版，C++14 风格）
 constexpr int factorial(int n)
 {
     int result = 1;
@@ -212,7 +223,7 @@ constexpr int factorial(int n)
     return result;
 }
 
-/// @brief Compile-time integer power
+/// @brief 编译期整数幂
 constexpr int power(int base, int exp)
 {
     int result = 1;
@@ -222,7 +233,7 @@ constexpr int power(int base, int exp)
     return result;
 }
 
-/// @brief Generate a CRC8 lookup table at compile time
+/// @brief 编译期生成 CRC8 查找表
 constexpr std::array<uint8_t, 256> make_crc8_table()
 {
     std::array<uint8_t, 256> table{};
@@ -237,17 +248,17 @@ constexpr std::array<uint8_t, 256> make_crc8_table()
     return table;
 }
 
-// Compile-time verification
+// 编译期验证
 static_assert(square(5) == 25, "square(5) should be 25");
 static_assert(square(-3) == 9, "square(-3) should be 9");
 static_assert(factorial(5) == 120, "5! should be 120");
 static_assert(factorial(10) == 3628800, "10! should be 3628800");
 static_assert(power(2, 10) == 1024, "2^10 should be 1024");
 
-// Generate the lookup table at compile time
+// 编译期生成查找表
 constexpr auto kCrc8Table = make_crc8_table();
 
-/// @brief Compute CRC8 using the lookup table
+/// @brief 用查找表计算 CRC8
 uint8_t compute_crc8(const uint8_t* data, size_t length)
 {
     uint8_t crc = 0;

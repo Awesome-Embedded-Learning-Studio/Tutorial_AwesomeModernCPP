@@ -21,10 +21,10 @@ tags:
 title: 'Loop and compute optimization: code motion, eliminating memory references, and multiple accumulators'
 translation:
   source: documents/vol6-performance/ch04-tuning-by-bottleneck/04-02-loop-and-compute.md
-  source_hash: 708427dd46583be6395bcae574d7a913723509dc7e6095cceee39ffdf7c3ff55
-  translated_at: '2026-09-26T06:22:14+00:00'
-  engine: anthropic
-  token_count: 2900
+  source_hash: 6f5552557382891e64ca2a425f861c1a5c6156234345b2d55db8fa0f1445001f
+  translated_at: '2026-11-22T16:43:35+00:00'
+  engine: glm-5.3-refresh
+  token_count: 4184
 ---
 # Loop and compute optimization: code motion, eliminating memory references, and multiple accumulators
 
@@ -41,9 +41,9 @@ CSAPP splits loop optimization into five moves; we walk through them one by one.
 Hoist expressions that "compute the same result every iteration" out of the loop. The textbook example:
 
 ```cpp
-// Bad: recomputes length() every iteration
+// 烂:每次循环都重算 length()
 for (int i = 0; i < s.length(); ++i) process(s[i]);
-// Good: length() hoisted out of the loop
+// 好:length() 外提
 int len = s.length();
 for (int i = 0; i < len; ++i) process(s[i]);
 ```
@@ -63,9 +63,9 @@ The gap is tiny (a few percent), because the bottleneck here is the multiplicati
 The CSAPP classic: keep the accumulation intermediate in memory (an array element) vs in a register.
 
 ```cpp
-// Bad: every iteration loads c[i], computes, stores c[i] (c[i] keeps hovering in memory)
+// 烂:每次循环 load c[i]、算、store c[i](c[i] 反复盘桓在内存)
 for (int i = 0; i < N; ++i) c[i] = c[i] + a[i] * b[i] * scale;
-// Good: write directly, no read-back
+// 好:直接写,不读回
 for (int i = 0; i < N; ++i) c[i] = a[i] * b[i] * scale;
 ```
 
@@ -86,10 +86,10 @@ This is the move of the five that **most often needs a manual nudge**, because l
 Why does the compiler not do this one for you? For **integer reductions** it sometimes auto-unrolls into multiple accumulators; for **FP reductions** it **cannot**, because floating-point addition is not associative (`(a+b)+c ≠ a+(b+c)`, floating-point error), and rewriting automatically would change the result and violate standard semantics. So:
 
 ```cpp
-// FP single chain: the compiler dare not auto-multi-accumulate it (would change the floating-point result)
+// FP 单链:编译器不敢自动多累加器化(会改变浮点结果)
 float acc = 0; for (int i = 0; i < N; ++i) acc += a[i] * b[i];
 
-// Hand-written 4 accumulators: you (the programmer) take on the responsibility that "the association order changed, the result differs slightly"
+// 手写 4 累加器:你(程序员)承担了「结合顺序变了、结果有微小差异」的责任
 float a0=0,a1=0,a2=0,a3=0;
 for (int i = 0; i < N; i += 4) { a0 += a[i]*b[i]; a1 += a[i+1]*b[i+1]; ... }
 return a0 + a1 + a2 + a3;
@@ -122,6 +122,6 @@ The next article covers data-type and arithmetic selection, where another class 
 ## References
 
 - Bryant & O'Hallaron, *CSAPP*, Chapter 5 *Optimizing Program Performance* — the classic derivation of code motion / eliminating memory references / unrolling / multiple accumulators / reassociation (the source of this article's five moves)
-- Agner Fog, *Optimizing software in C++*, §12 *Optimizing loops*; local copy.
+- Agner Fog, *Optimizing software in C++*, §12 *Optimizing loops*
 - ch02-03 Pipeline, ILP, and branch prediction (this volume; the source of the dot1/dot4 2.92× multi-accumulator measurement)
 - Measured code for this article: `code/volumn_codes/vol6-performance/ch04/loop_opt.cpp`

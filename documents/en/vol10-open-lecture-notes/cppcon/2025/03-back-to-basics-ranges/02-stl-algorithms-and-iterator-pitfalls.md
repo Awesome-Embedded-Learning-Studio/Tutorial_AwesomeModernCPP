@@ -24,9 +24,9 @@ video_youtube: https://www.youtube.com/watch?v=Q434UHWRzI0
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/03-back-to-basics-ranges/02-stl-algorithms-and-iterator-pitfalls.md
   source_hash: 1f066da2ba88ebe5dee5f23cbaa2cd4af1b2b83e513a4069ab2f42c7ade2bd52
-  translated_at: '2026-09-26T15:52:52+00:00'
-  engine: anthropic
-  token_count: 5200
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 15583
 ---
 # STL Algorithms in Practice and Iterator Pitfalls
 
@@ -73,7 +73,7 @@ A `std::list` has bidirectional iterators: no `it + n`, and no subtracting two i
 int main()
 {
     std::list<int> l{3, 1, 2};
-    std::sort(l.begin(), l.end());  // Won't compile!
+    std::sort(l.begin(), l.end());  // 编不过！
 }
 ```
 
@@ -101,19 +101,19 @@ Let's walk quickly through the most-used algorithms to build intuition. Their pa
 
 void demo(std::vector<int>& v, const std::vector<int>& src)
 {
-    // Sort the whole range
+    // 排序整个区间
     std::sort(v.begin(), v.end());
 
-    // Partial sort: only [begin, begin+3) gets sorted; the trailing elements are in unspecified order but all >= the first 3
+    // 局部排序：只排 [begin, begin+3)，后面元素顺序不定但都 >= 前 3 个
     // std::partial_sort(v.begin(), v.begin() + 3, v.end());
 
-    // Partition: move elements satisfying the predicate to the front; returns the dividing point
+    // 分区：把满足谓词的元素挪到前面，返回分界点
     auto it = std::partition(v.begin(), v.end(), [](int x) { return x < 4; });
 
-    // Copy: back_inserter push_backs automatically, no need to size things up front
+    // 拷贝：用 back_inserter 自动 push_back，不用预先算大小
     std::copy(src.begin(), src.end(), std::back_inserter(v));
 
-    // Shuffle: a random number engine is mandatory (rand() has been discouraged since C++11)
+    // 打乱：必须传一个随机数引擎（C++11 起 rand() 不推荐）
     std::shuffle(v.begin(), v.end(), std::mt19937{std::random_device{}()});
 }
 ```
@@ -143,7 +143,7 @@ std::transform(s.cbegin(), s.cend(), std::back_inserter(out),
 ```cpp
 std::vector<int> v{1, 2, 3, 4, 5};
 std::rotate(v.begin(), v.begin() + 2, v.end());
-// Result: {3, 4, 5, 1, 2}  — middle (begin+2, i.e. 3) became the new first element
+// 结果：{3, 4, 5, 1, 2}  —— middle(begin+2，即 3) 变成了新首元素
 ```
 
 Observed output:
@@ -159,13 +159,13 @@ And what happens when you write it backwards? I swapped `middle` and `last`, cal
 
 ```cpp
 std::vector<int> w{1, 2, 3, 4, 5};
-std::rotate(w.begin(), w.end(), w.begin() + 2);  // Wrong argument order
+std::rotate(w.begin(), w.end(), w.begin() + 2);  // 参数顺序错了
 ```
 
 ```bash
 ❯ g++ -std=c++20 rot_bad.cpp -o rot_bad && ./rot_bad
 about to call rotate(begin, end, begin+2)...
-[Program crashed, exit code 139 — SIGSEGV]
+[程序崩溃，退出码 139 — SIGSEGV]
 ```
 
 An immediate segmentation fault (exit code 139 = SIGSEGV). The reason is direct: `std::rotate` requires both `[first, middle)` and `[middle, last)` to be valid sub-ranges—in other words, the three iterators must satisfy the order `first <= middle <= last`. Written as `(first, last, middle)`, the second sub-range `[middle_arg=last, last_arg=middle)` becomes invalid (its end lies before its beginning), the algorithm dereferences out-of-bounds positions, and down it goes.
@@ -201,9 +201,9 @@ Take this harmless-looking snippet:
 
 ```cpp
 std::vector<int> v{1, 2, 3};
-auto it = v.begin();        // it points at v's first element
-v.push_back(4);             // if this triggers a reallocation, it is left dangling!
-std::cout << *it << '\n';   // dereferencing a dangling iterator — UB
+auto it = v.begin();        // it 指向 v 的第一个元素
+v.push_back(4);             // 如果触发扩容，it 就悬空了！
+std::cout << *it << '\n';   // 解引用悬空迭代器 —— UB
 ```
 
 The problem is `push_back`. Under the hood a `vector` is one contiguous dynamic array; when capacity runs out it **allocates a larger block of memory**, moves the old elements over, and frees the old block. But your `it` still points into that **already-freed old memory**—it has become a dangling pointer (the standard's term is "singular iterator"). Dereferencing `*it` at this point is undefined behavior.
@@ -218,9 +218,9 @@ int main()
     std::vector<int> v{1, 2, 3};
     auto it = v.begin();
     std::cout << "before push_back: *it=" << *it << ", cap=" << v.capacity() << "\n";
-    v.push_back(4); v.push_back(5); v.push_back(6); v.push_back(7);  // guaranteed to reallocate
+    v.push_back(4); v.push_back(5); v.push_back(6); v.push_back(7);  // 必然扩容
     std::cout << "after  push_back: cap=" << v.capacity() << "\n";
-    std::cout << "deref stale it: " << *it << "\n";   // UB: reading freed memory
+    std::cout << "deref stale it: " << *it << "\n";   // UB：读已释放内存
 }
 ```
 
@@ -245,10 +245,10 @@ Error: attempt to dereference a singular iterator.
 Objects involved in the operation:
     iterator "this" @ 0x7fff6bd63820 {
       type = gnu_cxx::normal_iterator<int*, std::vector<int>>(mutable iterator);
-      state = singular;   ← iterator invalidated
+      state = singular;   ← 迭代器已失效
       references sequence with type 'std::debug::vector<int>' @ 0x7fff6bd63850
     }
-退出码=134   ← 134 = SIGABRT, a deliberate abort by the debug library
+退出码=134   ← 134 = SIGABRT，被调试库主动 abort
 ```
 
 Caught red-handed: `state = singular` tells you outright that the iterator is invalidated, and `attempt to dereference a singular iterator` pinpoints exactly what you did. One `-D_GLIBCXX_DEBUG` macro turns "silent UB" into "instant explosion plus a precise location"—turn it on during development, turn it off for release (it costs performance). On the MSVC side the corresponding switch is `_ITERATOR_DEBUG_LEVEL=2`; Release configurations default to 0 or 1, and only the Debug configuration uses 2.
@@ -271,9 +271,9 @@ The second trap is about pairing. Algorithms require `first` and `last` to come 
 The classic faceplant comes from Jason Turner's C++ Weekly (which Shah specifically cited in the talk): a function returns a temporary `vector`, and you save a little effort by chaining `.begin()` and `.end()` right on the call:
 
 ```cpp
-std::vector<int> download_data();  // each call returns a brand-new temporary vector
+std::vector<int> download_data();  // 每次调用返回一个全新的临时 vector
 
-// The dangerous version:
+// 危险写法：
 // process(download_data().begin(), download_data().end());
 ```
 
@@ -283,8 +283,8 @@ Shah's commentary on this code was "maybe sometimes it works, maybe we get lucky
 The reason: the two `download_data()` calls are **two independent function calls**, returning **two different temporary `vector`s**. Their `.begin()` and `.end()` point into two blocks of memory that have nothing to do with each other. Pair one temporary's `begin` with another temporary's `end` and feed that to an algorithm—the "range" isn't even legal. Worse, both temporaries are destroyed at the end of that statement, so the iterators the algorithm holds are dangling from the very start. **The correct way is to store the result in a named variable first**, so that `begin` and `end` come from the same living object:
 
 ```cpp
-auto data = download_data();          // one named variable, one block of memory
-process(data.begin(), data.end());    // begin/end come from the same data — safe
+auto data = download_data();          // 一个具名变量，一份内存
+process(data.begin(), data.end());    // begin/end 来自同一个 data —— 安全
 ```
 
 The illusion that "same function name means same object" is exactly where pairing mistakes breed.
@@ -296,8 +296,8 @@ The third trap concerns the output destination. When `std::copy` writes data int
 
 ```cpp
 int src[10] = {0,1,2,3,4,5,6,7,8,9};
-int dst[3];   // only 3 slots!
-std::copy(std::begin(src), std::end(src), std::begin(dst));  // out-of-bounds write — UB
+int dst[3];   // 只有 3 个位置！
+std::copy(std::begin(src), std::end(src), std::begin(dst));  // 越界写 —— UB
 ```
 
 This code compiles, runs, and won't report anything on the spot—but you just wrote 7 values you had no business writing into the memory after `dst`. AddressSanitizer (`-fsanitize=address`) catches this kind of bug and reports a heap/stack buffer overflow.
@@ -313,7 +313,7 @@ First, classic `std::sort` misused—pairing a `vector`'s `begin` with a `list`'
 ```cpp
 std::vector<int> v{1,2,3};
 std::list<int>   l{4,5,6};
-std::sort(v.begin(), l.end());   // iterators from two different containers
+std::sort(v.begin(), l.end());   // 两个不同容器的迭代器
 ```
 
 Then the ranges version misused—handing `std::ranges::sort` something that isn't a range at all:
@@ -326,14 +326,14 @@ std::ranges::sort(not_a_range);
 Error line counts from GCC 16.1.1 for both:
 
 ```bash
-❯ # Classic version
+❯ # 经典版
 ❯ g++ -std=c++20 err_classic.cpp 2>err_c.txt; wc -l < err_c.txt
 32
 ❯ head -3 err_c.txt
 err_classic.cpp:7:14: error: no matching function for call to
   'sort(std::vector<int>::iterator, std::__cxx11::list<int>::iterator)'
 
-❯ # Ranges version
+❯ # ranges 版
 ❯ g++ -std=c++20 err_ranges.cpp 2>err_r.txt; wc -l < err_r.txt
 69
 ```

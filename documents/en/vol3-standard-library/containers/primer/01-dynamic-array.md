@@ -24,9 +24,9 @@ cpp_standard: [11]
 translation:
   source: documents/vol3-standard-library/containers/primer/01-dynamic-array.md
   source_hash: dfb0cc92a97e5fcc9a3c3d4c1d3081120bda0e7ba05068408aea17f51999251b
-  translated_at: '2026-09-25T09:08:20+00:00'
-  engine: anthropic
-  token_count: 3500
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 8984
 ---
 
 # Dynamic Arrays: A Block of Memory That Moves House
@@ -53,7 +53,7 @@ Second is space. An array declared this way lives on the stack by default, and t
 #include <cstdio>
 
 int main() {
-    int big[2 * 1024 * 1024];  // 2 MiB, over the default 1 MiB stack
+    int big[2 * 1024 * 1024];  // 2 MiB，超出默认 1 MiB 的栈
     big[0] = 41;
     std::printf("big[0] = %d\n", big[0]);
     return 0;
@@ -77,9 +77,9 @@ Third, even if you guessed the length right, there is no headroom to fit one mor
 These three towering thresholds all point to the same solution: move the data onto the heap. The heap is a large stretch of memory requested on demand — with `new`, any size is negotiable (as long as physical memory allows), and when to return it and how much is also our call. On the stack we keep only a small handle:
 
 ```cpp
-int* data = new int[8];   // allocate 8 ints on the heap
-data[0] = 41;             // used exactly like an array
-delete[] data;            // must be released when done
+int* data = new int[8];   // 堆上分配 8 个 int
+data[0] = 41;             // 用法跟数组一模一样
+delete[] data;            // 用完必须释放
 ```
 
 ![A pointer on the stack pointing to contiguous cells on the heap](./01-stack-heap-pointers.drawio)
@@ -94,9 +94,9 @@ Wrap the bare pointer together with its counts, and the embryo of a dynamic arra
 
 ```cpp
 struct IntVec {
-    int*   data;  // start of that contiguous block on the heap
-    size_t size;  // how many are in (the first size cells hold live elements)
-    size_t cap;   // how many fit at most (the cell count of the whole block)
+    int*   data;  // 堆上那块连续内存的起点
+    size_t size;  // 装了几个（前 size 格是有效元素）
+    size_t cap;   // 最多装几个（整块内存的格数）
 };
 ```
 
@@ -109,11 +109,11 @@ With these two numbers, appending an element at the tail splits into two cases:
 ```cpp
 void push_back(IntVec& v, int x) {
     if (v.size < v.cap) {
-        v.data[v.size] = x;   // room left: write one cell, bump the count
+        v.data[v.size] = x;   // 还有空位：写一格，计数加一
         v.size += 1;
         return;
     }
-    grow(v);                  // capacity full: grow — the next section's business
+    grow(v);                  // 容量满：扩容，下一节的事
     v.data[v.size] = x;
     v.size += 1;
 }
@@ -133,12 +133,12 @@ The moment `size` catches up with `cap` is moving day. What we do is just three 
 
 ```cpp
 void grow(IntVec& v) {
-    size_t ncap = v.cap == 0 ? 1 : v.cap * 2;  // new capacity doubles
-    int*   nd   = new int[ncap];               // request a bigger new buffer
+    size_t ncap = v.cap == 0 ? 1 : v.cap * 2;  // 新容量翻倍
+    int*   nd   = new int[ncap];               // 申请更大的新缓冲
     for (size_t i = 0; i < v.size; ++i) {
-        nd[i] = v.data[i];                     // copy each old element over
+        nd[i] = v.data[i];                     // 旧元素逐个拷贝过去
     }
-    delete[] v.data;                           // free the old buffer
+    delete[] v.data;                           // 释放旧缓冲
     v.data = nd;
     v.cap  = ncap;
 }
@@ -221,9 +221,9 @@ v.reserve(2);
 v.push_back(41);
 v.push_back(1);
 
-int* p = &v[0];   // cache a pointer
-v.push_back(99);  // capacity full, triggers reallocation
-*p = 100;         // write to the old address
+int* p = &v[0];   // 缓存一个指针
+v.push_back(99);  // 容量已满，触发扩容
+*p = 100;         // 往旧地址写
 ```
 
 Look at `p`: it points at the first cell of the old buffer. When the move happened, the old buffer had already been `delete`d, and from then on `p` points at a piece of memory that has been returned. The line `*p = 100` is undefined behavior: it may crash, it may look fine, or it may quietly write 100 into a cell the allocator has already re-let to somebody else, corrupting a completely unrelated object. Of those three endings the standard guarantees not a single one — and that is precisely what makes UB hateful: its favorite trick is to play innocent during testing and do damage after going live.

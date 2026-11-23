@@ -27,9 +27,9 @@ title: 'Variadic Templates: Expanding Parameter Packs'
 translation:
   source: documents/vol4-advanced/vol2-modern-cpp17/02-variadic-templates.md
   source_hash: 17e3fd10ae4d2d40f5f2fd2db5416b67b1b18499630eb6ae9bff07ec32eed2bd
-  translated_at: '2026-09-26T03:08:35+00:00'
-  engine: anthropic
-  token_count: 7000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 9310
 ---
 # Variadic Templates: Expanding Parameter Packs
 
@@ -44,7 +44,7 @@ Start with the declarations. There are two kinds of parameter packs.
 One is the **template parameter pack**, written in the template parameter list and marked with the ellipsis `...`:
 
 ```cpp
-template <typename... Ts>   // Ts is a template parameter pack; it can match any number of types
+template <typename... Ts>   // Ts 是一个模板参数包,能匹配任意个类型
 struct Tuple {};
 ```
 
@@ -52,7 +52,7 @@ The other is the **function parameter pack**, which lives in a function signatur
 
 ```cpp
 template <typename... Ts>
-void f(Ts... args);   // args is a function parameter pack; it can receive any number of arguments
+void f(Ts... args);   // args 是一个函数参数包,能接收任意个实参
 ```
 
 Here `Ts...` means "take each type in the pack `Ts`, in order, and use it as a parameter type." Call `f(1, 2.5, "hi")` and `Ts` is deduced as `int, double, const char*`, with `args` being those three arguments. Note that `Ts` is a pack of types while `args` is a pack of values, and the two correspond one to one.
@@ -100,7 +100,7 @@ Here is the wall beginners run into: **a pattern expansion cannot sit directly i
 ```cpp
 template <typename... Ts>
 void print_all(Ts... args) {
-    print_one(args)...;   // won't compile
+    print_one(args)...;   // 编不过
 }
 ```
 
@@ -119,7 +119,7 @@ The ellipsis has to attach to a legal context: a function argument list, an init
 template <typename... Ts>
 void print_all(const Ts&... args) {
     using expand_t = int[];
-    (void)expand_t{0, (print_one(args), 0)...};   // the old way
+    (void)expand_t{0, (print_one(args), 0)...};   // 老办法
 }
 ```
 
@@ -151,12 +151,12 @@ Machinery covered, let's land on a concrete task: summing any number of argument
 ```cpp
 template <typename T>
 constexpr T sum_rec(T first) {
-    return first;   // termination: only one left, return it directly
+    return first;   // 终止:只剩一个,直接返回
 }
 
 template <typename T, typename... Rest>
 constexpr T sum_rec(T first, Rest... rest) {
-    return first + sum_rec(rest...);   // peel off the first argument, recurse on the rest
+    return first + sum_rec(rest...);   // 剥首参数,对剩下的递归
 }
 ```
 
@@ -169,7 +169,7 @@ namespace detail {
 template <typename T, typename... Rest>
 constexpr auto sum_ifc_impl(T first, Rest... rest) {
     if constexpr (sizeof...(rest) == 0) {
-        return first;   // compile-time branch: zero left means terminate
+        return first;   // 编译期分支:剩零个就终止
     } else {
         return first + sum_ifc_impl(rest...);
     }
@@ -179,7 +179,7 @@ constexpr auto sum_ifc_impl(T first, Rest... rest) {
 template <typename... Args>
 constexpr auto sum_ifc(Args... args) {
     if constexpr (sizeof...(args) == 0) {
-        return 0;   // the outer layer handles the empty pack
+        return 0;   // 外层处理空包
     } else {
         return detail::sum_ifc_impl(args...);
     }
@@ -193,7 +193,7 @@ Style two is cleaner than style one: recursion and termination live in one funct
 ```cpp
 template <typename... Ts>
 constexpr auto sum_fold(Ts... ts) {
-    return (ts + ...);   // unary right fold
+    return (ts + ...);   // 一元右折叠
 }
 ```
 

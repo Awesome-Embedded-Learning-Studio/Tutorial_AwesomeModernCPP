@@ -23,10 +23,10 @@ tags:
 title: "OnceCallback hands-on (I): motivation and API design"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/01-1-once-callback-motivation-and-api-design.md
-  source_hash: 299c9940030a55a4d33b7125e48f0e0f9f1c6e29ee3402fe889fd624368d9235
-  translated_at: '2026-09-26T00:27:54+00:00'
-  engine: anthropic
-  token_count: 6800
+  source_hash: 767a56c3e75c2952537a99be5381078e73d088e742d2fa5792c29fb8e4db7b0f
+  translated_at: '2026-11-22T16:41:57.350005+00:00'
+  engine: glm-5.3-refresh
+  token_count: 6426
 ---
 # OnceCallback hands-on (I): motivation and API design
 
@@ -44,10 +44,10 @@ Suppose we're writing an async file-read wrapper. The user calls `read_file_asyn
 void read_file_async(const std::string& path,
                      std::function<void(std::string)> callback);
 
-// Usage
+// 使用
 void on_file_read(std::string content) {
-    process(content);        // process the contents
-    release_resources();     // release the associated resources
+    process(content);        // 处理内容
+    release_resources();     // 释放相关资源
 }
 
 read_file_async("data.txt", on_file_read);
@@ -102,25 +102,25 @@ Engineer's rule: lay out "what I want" first, then come back and interrogate the
 
 using namespace tamcpp::chrome;
 
-// Construct from a lambda
+// 从 lambda 构造
 auto cb = OnceCallback<int(int, int)>([](int a, int b) {
     return a + b;
 });
 
-// Invocation: must go through an rvalue
+// 调用：必须通过右值
 int result = std::move(cb).run(3, 4);  // result == 7
 
-// cb is consumed after the call
-// std::move(cb).run(1, 2);  // runtime assertion failure
+// 调用后 cb 被消费
+// std::move(cb).run(1, 2);  // 运行时断言失败
 ```
 
 ### Argument binding
 
 ```cpp
-// bind_once: pre-binds some arguments and returns a new OnceCallback
+// bind_once：预绑定部分参数，返回一个新的 OnceCallback
 auto bound = bind_once<int(int)>(
     [](int x, int y, int z) { return x + y + z; },
-    10, 20  // pre-bind the first two arguments
+    10, 20  // 预绑定前两个参数
 );
 
 int r = std::move(bound).run(30);  // r == 60
@@ -131,12 +131,12 @@ int r = std::move(bound).run(30);  // r == 60
 ```cpp
 auto cb = OnceCallback<void(int)>([](int x) { /* ... */ });
 
-// Check whether the callback is still valid
+// 检查回调是否仍然有效
 if (!cb.is_cancelled()) {
     std::move(cb).run(42);
 }
 
-// maybe_valid: an optimistic check
+// maybe_valid：乐观检查
 if (cb.maybe_valid()) {
     std::move(cb).run(42);
 }
@@ -152,7 +152,7 @@ auto pipeline = OnceCallback<int(int, int)>([](int a, int b) {
 });
 
 int final_result = std::move(pipeline).run(3, 4);
-// final_result == 14, because (3+4)*2 = 14
+// final_result == 14，因为 (3+4)*2 = 14
 ```
 
 ---
@@ -190,10 +190,10 @@ GCC 14+ or Clang 18+ fully support the feature set above; compile with `-std=c++
 ```cpp
 #include <functional>
 
-// Verify that std::move_only_function is available
+// 验证 std::move_only_function 可用
 static_assert(__cpp_lib_move_only_function >= 202110L);
 
-// Verify that deducing this is available
+// 验证 deducing this 可用
 struct Check {
     void test(this auto&& self) {}
 };

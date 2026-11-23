@@ -22,9 +22,9 @@ related:
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/08-cache-friendly-cpp/04-writing-cache-friendly-code.md
   source_hash: dbd87b171c88e2561158899cf697a626d8e6218c69c4afadf2bffa83a9ed89c3
-  translated_at: '2026-09-26T16:49:55+00:00'
-  engine: anthropic
-  token_count: 4800
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5087
 ---
 
 # Getting Cache-Friendly Code Right: Layout, Alignment, and Decisions
@@ -45,12 +45,12 @@ Within one struct, fields are often accessed at wildly different frequencies. Ta
 
 ```cpp
 struct Player {
-    std::string name;        // cold: only used when displaying the name
-    int level;               // hot: every frame's logic reads it
-    std::vector<Item> inventory;  // cold: only used when the inventory is opened
-    Vector3 position;        // hot: physics and rendering read it every frame
-    int health;              // hot: combat logic reads it frequently
-    // ... plus a pile of other cold fields
+    std::string name;        // 冷: 只在显示名字时用
+    int level;               // 热: 每帧的逻辑都查
+    std::vector<Item> inventory;  // 冷: 只在打开背包时用
+    Vector3 position;        // 热: 物理和渲染每帧都读
+    int health;              // 热: 战斗逻辑频繁读
+    // ... 还有一堆冷字段
 };
 ```
 
@@ -63,17 +63,17 @@ struct PlayerHot {
     Vector3 position;
     int level;
     int health;
-};  // compact — several players fit in one cache line
+};  // 紧凑, 一个缓存行能装好几个玩家
 
 struct PlayerCold {
     std::string name;
     std::vector<Item> inventory;
-    // ... other cold fields
-    std::uint32_t hot_index;  // links back to PlayerHot
+    // ... 其它冷字段
+    std::uint32_t hot_index;  // 关联到 PlayerHot
 };
 
-std::vector<PlayerHot> hot_data;    // the main loop iterates this one — cache-friendly
-std::vector<PlayerCold> cold_data;  // touched only when needed
+std::vector<PlayerHot> hot_data;    // 主循环遍历这个, 缓存友好
+std::vector<PlayerCold> cold_data;  // 只在需要时才访问
 ```
 
 When the main loop iterates `hot_data`, each cache line packs the hot fields of several players, and cache misses drop sharply. The cold fields sit untouched; only occasional operations — a player opening their inventory — go look at `cold_data`, where a little slowness doesn't matter. This is a very common design technique in game engines, database kernels, and HFT systems.
@@ -85,9 +85,9 @@ Hot/cold splitting pushed to its extreme becomes the classic **AoS vs. SoA** deb
 In theory SoA should be much faster. So we ran an experiment: 4 million particles, accumulating only the x field, AoS (array 45.8 MB, 6% cache-line utilization) against SoA (x array 15.3 MB, 100% utilization). The result:
 
 ```text
-Summing only the x field, N=4000000
-  AoS: 9875.1 us (array 45.8 MB, useful data per cache line 4/64=6%)
-  SoA: 9902.4 us (x array 15.3 MB, useful data per cache line 16/16=100%)
+只累加 x 字段, N=4000000
+  AoS: 9875.1 us (数组 45.8 MB, 每个缓存行有效数据 4/64=6%)
+  SoA: 9902.4 us (x数组 15.3 MB, 每个缓存行有效数据 16/16=100%)
   SoA / AoS = 1.00x
 ```
 
@@ -118,8 +118,8 @@ The fix is **alignment padding**: give each frequently written shared variable i
 ```cpp
 struct alignas(64) PaddedCounter {
     std::atomic<std::uint64_t> value{0};
-    // alignas(64) makes this struct fill an entire cache line
-    // counters of different threads stay out of each other's way
+    // alignas(64) 让这个结构体占满一整条缓存行
+    // 不同线程的计数器互不干扰
 };
 ```
 

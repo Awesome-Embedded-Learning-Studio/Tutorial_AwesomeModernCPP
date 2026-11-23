@@ -19,9 +19,9 @@ prerequisites:
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/05-adapter.md
   source_hash: 9266219c2c5bb01f30410e81cd5d8a90068d5b4ea59c8d583987da832ae5fe36
-  translated_at: '2026-09-26T05:12:18+00:00'
-  engine: anthropic
-  token_count: 5800
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 13992
 ---
 
 # Adapter Pattern: Getting Two Sides Talking Without Touching the Old Code
@@ -71,7 +71,7 @@ First let's write the Adaptee down concretely, so the adaptation later has somet
 ```cpp
 class OledDriver {
 public:
-    // The Adaptee-side interface: it understands Point, not Line
+    // Adaptee 侧的接口:只认 Point,不认 Line
     using ConstIter = std::vector<Point2D>::const_iterator;
 
     void draw_points(ConstIter begin, ConstIter end) {
@@ -82,7 +82,7 @@ public:
 
 private:
     void set_pixel(int x, int y) {
-        ++pixels_drawn_;  // simulate "a point was plotted" with a counter
+        ++pixels_drawn_;  // 这里用计数模拟"画了一个点"
     }
 
 public:
@@ -127,7 +127,7 @@ public:
         }
     }
 
-    // The exposed "Target interface": a pair of iterators, exactly what OledDriver wants to eat
+    // 对外暴露的"Target 接口":一对迭代器,正好喂给 OledDriver
     std::pair<ConstIter, ConstIter> points() const {
         return {points_.begin(), points_.end()};
     }
@@ -171,14 +171,14 @@ Here you might ask a perfectly reasonable question: `LineToPointsAdapter` expand
 Talk is cheap, so let's nail down "the business code knows nothing of the Adaptee" in code. Here is a more classic example: on the business side there is a `Printer` abstraction (that is the Target) that expects a `print(string)` interface; but all we have on hand is an old `LegacyLogger` (the Adaptee) whose signature is `write_line(const char*)` — neither the parameter type nor the function name matches.
 
 ```cpp
-// Target: the interface the business side wishes for
+// Target:业务期望的接口
 class Printer {
 public:
     virtual ~Printer() = default;
     virtual void print(const std::string& msg) = 0;
 };
 
-// Adaptee: an old class with an incompatible signature, and one we cannot change
+// Adaptee:旧类,签名不兼容,而且改不了
 class LegacyLogger {
 public:
     void write_line(const char* content) {
@@ -186,21 +186,21 @@ public:
     }
 };
 
-// Object adapter: implements the Target, holds the Adaptee inside
+// 对象适配器:实现 Target,内部持有 Adaptee
 class LoggerAdapter : public Printer {
 public:
     explicit LoggerAdapter(std::unique_ptr<LegacyLogger> adaptee)
         : adaptee_(std::move(adaptee)) {}
 
     void print(const std::string& msg) override {
-        adaptee_->write_line(msg.c_str());  // translation: std::string -> const char*
+        adaptee_->write_line(msg.c_str());  // 翻译:std::string -> const char*
     }
 
 private:
     std::unique_ptr<LegacyLogger> adaptee_;
 };
 
-// Business code: depends only on the Target abstraction, with no idea LegacyLogger exists
+// 业务代码:只依赖 Target 抽象,完全不知道 LegacyLogger 存在
 void greet(Printer& p) {
     p.print("hello from adapter");
 }
@@ -221,11 +221,11 @@ The business function's single "hello from adapter" comes right back out of the 
 In the original GoF text the adapter actually has two faces. The "compose an Adaptee" style above is the **object adapter**; the other face is the **class adapter**, written as **privately inherit the Adaptee + publicly inherit the Target**:
 
 ```cpp
-// Class adapter: private inheritance to grab the implementation, public inheritance to satisfy the interface
+// 类适配器:私有继承拿实现,公有继承满足接口
 class ClassAdapter : private LegacyLogger, public Printer {
 public:
     void print(const std::string& msg) override {
-        write_line(msg.c_str());  // reuse the Adaptee's member directly
+        write_line(msg.c_str());  // 直接复用 Adaptee 的成员
     }
 };
 ```
@@ -245,7 +245,7 @@ Here is a concrete scenario. Besides "drawing", our geometry module has also bee
 ```cpp
 class GeometryEngine {
 public:
-    // This engine wants Lines
+    // 这个引擎要的是 Line
     double total_length(std::vector<Line>::const_iterator begin,
                         std::vector<Line>::const_iterator end);
 };
@@ -258,7 +258,7 @@ In this "mutual dependency" scenario a one-way adapter no longer suffices; we ne
 ```cpp
 class BidirectionalAdapter {
 public:
-    // Direction one: Lines come in, Points get expanded on the side
+    // 方向一:从 Line 进来,顺带展开成 Point
     explicit BidirectionalAdapter(std::vector<Line> lines)
         : lines_(std::move(lines)) {
         points_.reserve(lines_.size() * 2);
@@ -268,7 +268,7 @@ public:
         }
     }
 
-    // Both directions are served: Lines for those who want Lines, Points for those who want Points
+    // 对外两个方向都能取:要 Line 给 Line,要 Point 给 Point
     const std::vector<Line>& lines() const { return lines_; }
     const std::vector<Point2D>& points() const { return points_; }
 
@@ -307,9 +307,9 @@ public:
     const std::vector<Point2D>& get_points() {
         auto found = cache_.find(key_);
         if (found != cache_.end()) {
-            return found->second;  // cache hit, skip the expansion
+            return found->second;  // 命中缓存,跳过展开
         }
-        // Miss: first expansion, store into the cache
+        // 未命中:第一次展开,并存入缓存
         ++expand_calls_;
         std::vector<Point2D> pts;
         pts.reserve(key_->size() * 2);
@@ -320,7 +320,7 @@ public:
         return cache_[key_] = std::move(pts);
     }
 
-    static std::size_t expand_calls_;  // counts the real expansions (for the demo)
+    static std::size_t expand_calls_;  // 统计真实展开次数(演示用)
 
 private:
     std::vector<Line>* key_;
@@ -362,13 +362,13 @@ Note that it **receives by `const&` and then copies the contents inside the cons
 But sometimes you will want to cut a corner: "I'm only using it briefly anyway — a full copy is a loss; just hold a reference and be done with it, right?"
 
 ```cpp
-// ⚠️ Dangerous: holds a reference; the reference dangles once the source data dies
+// ⚠️ 危险:持有引用,源数据失效后引用悬垂
 class RefAdapter {
 public:
     explicit RefAdapter(const std::vector<Line>& lines) : lines_(lines) {}
     // ...
 private:
-    const std::vector<Line>& lines_;  // prime dangling-reference territory
+    const std::vector<Line>& lines_;  // 悬垂引用高发区
 };
 ```
 

@@ -21,9 +21,9 @@ title: 'std::initializer_list: The Lightweight Sequence Behind the Braces'
 translation:
   source: documents/vol3-standard-library/containers/11-initializer-lists.md
   source_hash: 42799cf6df7141670397ceb4407ba82559b071934f878db2ec4421e84c738ef7
-  translated_at: '2026-09-26T02:31:56+00:00'
-  engine: anthropic
-  token_count: 1900
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5149
 ---
 # std::initializer_list: The Lightweight Sequence Behind the Braces
 
@@ -32,10 +32,10 @@ translation:
 `std::initializer_list` is the standard library type C++11 pairs with brace list initialization. When you write `vector<int>{1, 2, 3}` or `f({1, 2, 3})`, the compiler quietly constructs a `std::initializer_list<int>` behind the scenes to represent the sequence `{1, 2, 3}`. The object itself is featherweight—roughly a pointer plus a length—and, like `span`, it is a view that owns no data.
 
 ```cpp
-std::initializer_list<int> il = {1, 2, 3};   // compiler-constructed, points at an underlying const int[3]
+std::initializer_list<int> il = {1, 2, 3};   // 编译器构造，指向底层 const int[3]
 il.size();        // 3
-il.begin();       // points at the first element
-il.end();         // one past the end
+il.begin();       // 指向首元素
+il.end();         // 尾后
 ```
 
 Three properties are key: it does **not own** its elements (they live in a compiler-generated underlying const array), its elements are **const** (read-only), and copying it is a **shallow copy** (you copy that pointer and the length, never the elements). These three decide everything about how it behaves, and they also plant its most famous trap.
@@ -45,8 +45,8 @@ Three properties are key: it does **not own** its elements (they live in a compi
 Copying an initializer_list is shallow—copying one just copies its internal pointer (and the length); the underlying const array doesn't budge. That's why passing an initializer_list to a function costs almost nothing, about the same as passing a pointer.
 
 ```cpp
-void f(std::initializer_list<int> il);   // pass by value, really a shallow copy (pointer + size)
-f({1, 2, 3, 4, 5});   // no 5-int copy, just a view being passed
+void f(std::initializer_list<int> il);   // 按值传，其实是浅拷贝（指针 + size）
+f({1, 2, 3, 4, 5});   // 不拷贝 5 个 int，只传一个视图
 ```
 
 But the "elements are const" point deserves a firm spot in your memory: the elements of an initializer_list are `const T`, and non-const access is simply unavailable. It looks harmless, yet combined with move semantics it digs a huge pit—the next section is devoted to it.
@@ -76,7 +76,7 @@ struct Counted {
 
 int main()
 {
-    // Scenario 1: lvalues construct the initializer_list → vector
+    // 场景 1：左值构造 initializer_list → vector
     {
         Counted a{"a"}, b{"b"}, c{"c"};
         Counted::copies = 0;
@@ -85,7 +85,7 @@ int main()
         std::cout << "vector{a,b,c}        : copies=" << Counted::copies
                   << " moves=" << Counted::moves << "\n";
     }
-    // Scenario 2: move into the initializer_list → vector (the trap: the hop into the vector is still a copy)
+    // 场景 2：move 进 initializer_list → vector（陷阱：进 vector 那步还是拷贝）
     {
         Counted a{"a"}, b{"b"}, c{"c"};
         Counted::copies = 0;
@@ -94,7 +94,7 @@ int main()
         std::cout << "vector{move(a),...}  : copies=" << Counted::copies
                   << " moves=" << Counted::moves << "\n";
     }
-    // Scenario 3: no initializer_list, push_back(move) → all moves
+    // 场景 3：不用 initializer_list，push_back(move) → 全移动
     {
         Counted a{"a"}, b{"b"}, c{"c"};
         Counted::copies = 0;
@@ -130,8 +130,8 @@ So remember this performance trap: **stuffing several objects into a container, 
 initializer_list carries one more quirk—an "overload preference": the moment a class's constructors include an `initializer_list` version, brace initialization picks it first, even when another constructor looks like the better fit. The most classic crash site is `vector<int>`:
 
 ```cpp
-std::vector<int> v1(10, 0);    // parentheses: ten 0s (count + value constructor)
-std::vector<int> v2{10, 0};    // braces: two elements, 10 and 0 (initializer_list constructor!)
+std::vector<int> v1(10, 0);    // 圆括号：10 个 0（count + value 构造）
+std::vector<int> v2{10, 0};    // 花括号：两个元素 10 和 0（initializer_list 构造！）
 ```
 
 `v1` is ten 0s; `v2` is the two elements `{10, 0}`—identical intent, yet parentheses and braces hand back completely different results, all because braces preferentially matched the `initializer_list<int>` constructor. Not a bug—a rule: brace initialization prefers the `initializer_list` constructor whenever one exists. So when constructing containers, don't blur `(count, value)` and `{a, b}` together; different intent, different brackets.

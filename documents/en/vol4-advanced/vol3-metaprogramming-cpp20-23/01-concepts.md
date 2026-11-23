@@ -28,9 +28,9 @@ title: 'Concepts: Putting Constraints in the Signature'
 translation:
   source: documents/vol4-advanced/vol3-metaprogramming-cpp20-23/01-concepts.md
   source_hash: b02535ac079fff96773d76288c4ee79814cbd3cc62ca6a9f2b32d085ad15d9ba
-  translated_at: '2026-09-26T04:29:07+00:00'
-  engine: anthropic
-  token_count: 3000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 8129
 ---
 # Concepts: Putting Constraints in the Signature
 
@@ -45,7 +45,7 @@ A concept is at heart a **predicate that evaluates to bool at compile time**—y
 ```cpp
 #include <concepts>
 
-// Define a concept: T counts as "numeric" if it is an integer or floating-point type
+// 定义一个 concept:只要 T 是整数或浮点数,就是「数值」
 template <typename T>
 concept Numeric = std::integral<T> || std::floating_point<T>;
 ```
@@ -73,19 +73,19 @@ Once a concept is written, there are four places in a template where it can be p
 template <typename T>
 concept Numeric = std::integral<T> || std::floating_point<T>;
 
-// Form 1: the concept itself written as a constraint in the template parameter list
+// 形式①:把 concept 直接当约束写在模板参数列表里
 template <Numeric T>
 T form1(T a, T b) { return a + b; }
 
-// Form 2: a requires clause (trailing requires-clause), written after the parameter list
+// 形式②:requires 子句(trailing requires-clause),写在参数列表之后
 template <typename T>
     requires Numeric<T>
 T form2(T a, T b) { return a + b; }
 
-// Form 3: abbreviated template syntax (constrained auto), a constraint in front of auto
+// 形式③:简写模板语法(constrained auto),auto 前面跟约束
 auto form3(Numeric auto a, Numeric auto b) { return a + b; }
 
-// Form 4: requires after the template parameter list, with a requires expression inside
+// 形式④:模板参数列表后跟 requires,内层是一个 requires 表达式
 template <typename T>
     requires requires(T x) { x + x; }
 T form4(T a, T b) { return a + b; }
@@ -216,13 +216,13 @@ A concept is, in the final analysis, a compile-time bool. So it does not only li
 template <typename T>
 concept Numeric = std::integral<T> || std::floating_point<T>;
 
-static_assert(Numeric<int>);        // compile-time assertion: int is numeric
-static_assert(!Numeric<std::string>); // string is not; assert that it "is not"
+static_assert(Numeric<int>);        // 编译期断言:int 是数值
+static_assert(!Numeric<std::string>); // string 不是,断言它「不是」
 
 template <typename T>
 void describe(T x) {
     if constexpr (Numeric<T>) {
-        // compile-time branch: this block only compiles when T is a numeric type
+        // 编译期分支:T 是数值类型时才编译这段
     }
 }
 ```

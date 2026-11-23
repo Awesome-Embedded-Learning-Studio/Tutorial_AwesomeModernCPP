@@ -32,9 +32,9 @@ title: 'Container Selection Guide: Picking the Right One by Operations, Memory, 
 translation:
   source: documents/vol3-standard-library/containers/01-container-selection-guide.md
   source_hash: 603293a987409d52c432eabe9e72f8988c41c5727fdb8a2d42ce90290811b5c2
-  translated_at: '2026-09-26T01:51:51+00:00'
-  engine: anthropic
-  token_count: 7800
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7668
 ---
 # Container Selection Guide: Picking the Right One by Operations, Memory, and Invalidation Rules
 
@@ -149,17 +149,17 @@ Twist the three threads into one tree, and walk down from the question you shoul
 The first cut lands on "do you know the size at compile time": if you know it and it never changes, go straight to `array` — zero heap allocation, constexpr-capable, parked in static storage saving RAM; nothing is cheaper than that. If you don't know it, or it varies, move to the second cut. The second cut lands on "is this lookup by key": if yes, take the associative branch — `map`/`set` if you need in-order traversal by key (O(log n)), `unordered_map`/`unordered_set` if average O(1) lookup is all you need (remember to reserve); if it is not lookup by key, take the sequential branch. The third cut lands on "where do you insert and erase frequently": frequent traffic at both ends, `deque`; growth only at the back, `vector` (be sure to reserve); frequent insert/erase at a known middle position with no need for random access, `list`; none of the above, `vector` by default.
 
 ```text
-Is the size known at compile time and unchanging?
-├─ yes → array
-└─ no
-   ├─ Lookup by key?
-   │  ├─ Need in-order traversal by key → map / set    (O(log n))
-   │  └─ Only average O(1) lookup needed → unordered_map/set (remember reserve)
-   └─ Store by position
-      ├─ Frequent traffic at both ends  → deque
-      ├─ Mostly growth at the back      → vector (+ reserve)
-      ├─ Frequent insert/erase at known positions → list (confirm locating + cache aren't the bottleneck)
-      └─ Everything else                → vector (default)
+大小编译期已知且不变?
+├─ 是 → array
+└─ 否
+   ├─ 按键查找?
+   │  ├─ 要按 key 有序遍历 → map / set           (O(log n))
+   │  └─ 只要平均 O(1) 查找   → unordered_map/set (记得 reserve)
+   └─ 按位置存
+      ├─ 频繁头尾进出     → deque
+      ├─ 主要尾部增长     → vector (+ reserve)
+      ├─ 已知位置频繁增删 → list (确认定位+cache 不是瓶颈)
+      └─ 其余             → vector (默认)
 ```
 
 Two addenda. First: if you only want to "borrow for a while" and not transfer ownership, use `span` — it is "a uniform read-only view over array/vector/C arrays" and the standard accessory for zero-copy parameter passing; see [the span deep dive](08-span.md). Second, new options arrive with C++23: for a map that is "sorted + cache-friendly", look at `flat_map` (a sorted vector underneath); for a variable-length container with "fixed capacity, never a heap allocation", look at C++26's `inplace_vector` — we cover those two separately in [New Standard Containers](10-new-containers-cpp23-26.md).

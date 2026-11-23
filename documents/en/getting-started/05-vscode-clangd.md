@@ -16,9 +16,9 @@ reading_time_minutes: 12
 translation:
   source: documents/getting-started/05-vscode-clangd.md
   source_hash: dc1fb7b82591bdd37296a5de31cf20d67b20f96b37410e5521f1659411fdc546
-  translated_at: '2026-09-26T14:33:49+00:00'
-  engine: anthropic
-  token_count: 3300
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7533
 ---
 
 # Make vscode Understand Your Code — Install clangd, Watch the Red Squiggles Vanish
@@ -180,7 +180,7 @@ Before, vscode couldn't read your code; now it can. The whole difference is one 
 flowchart LR
     A["CMakeLists.txt"] -->|configure| B["CMake"]
     B --> C["build/compile_commands.json"]
-    C -->|clangd reads| D["understands the code<br/>completion / jump / error reporting"]
+    C -->|clangd 读| D["看懂代码<br/>补全/跳转/报错"]
 ```
 
 Let's step back and trace the whole story.

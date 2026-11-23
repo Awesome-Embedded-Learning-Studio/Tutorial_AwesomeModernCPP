@@ -22,9 +22,9 @@ reading_time_minutes: 16
 translation:
   source: documents/vol3-standard-library/error-utils/62-variant.md
   source_hash: 6ef559cb6c1f778803507e58d9e75246e644a9d909b6a5a128076dd331094323
-  translated_at: '2026-09-26T00:54:57+00:00'
-  engine: anthropic
-  token_count: 11000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 15477
 ---
 
 # variant: Type-Safe Unions and visit
@@ -43,14 +43,14 @@ First, let's see exactly where a bare `union` rots. The following code won't dra
 // Standard: C++98
 union BadUnion {
     int i;
-    std::string s;   // a union with a non-trivial member
+    std::string s;   // 带 non-trivial 成员的 union
 };
 
 void misuse() {
     BadUnion u;
-    u.s = std::string("hello");   // store as string
-    int x = u.i;                  // read as int — undefined behavior
-    // function ends: nobody calls the string destructor; memory leaks
+    u.s = std::string("hello");   // 当 string 存
+    int x = u.i;                  // 当 int 读 —— 未定义行为
+    // 函数结束: 没人调 string 析构, 内存泄漏
 }
 ```
 
@@ -75,35 +75,35 @@ For the most basic usage, let's just run it straight through:
 
 int main()
 {
-    std::variant<int, double, std::string> v;  // default-constructed -> holds the first type (int)
+    std::variant<int, double, std::string> v;  // 默认构造 -> 持第一个类型(int)
     std::cout << "默认构造 index=" << v.index() << " (int)\n";
 
-    v = 3.14;                                  // assign a double
+    v = 3.14;                                  // 赋 double
     std::cout << "赋值 3.14 index=" << v.index() << " (double)\n";
 
-    v = std::string("hello");                  // assign a string
+    v = std::string("hello");                  // 赋 string
     std::cout << "赋值 hello index=" << v.index() << " (string)\n";
 
-    // 1. holds_alternative<T>: is the current alternative a T?
+    // 1. holds_alternative<T>: 当前是不是 T?
     std::cout << "holds<string>=" << std::holds_alternative<std::string>(v) << "\n";
     std::cout << "holds<int>="    << std::holds_alternative<int>(v) << "\n";
 
-    // 2. get<T>: fetch the value; throws bad_variant_access on type mismatch
+    // 2. get<T>: 取值, 类型不符抛 bad_variant_access
     std::cout << "get<string>=" << std::get<std::string>(v) << "\n";
     try {
-        std::cout << std::get<int>(v) << "\n";   // currently string, fetching int
+        std::cout << std::get<int>(v) << "\n";   // 当前是 string, 取 int
     } catch (const std::bad_variant_access& e) {
         std::cout << "异常: " << e.what() << "\n";
     }
 
-    // 3. get_if<T>: fetch a pointer; returns nullptr on mismatch (no throw)
+    // 3. get_if<T>: 取指针, 不符返 nullptr (不抛)
     if (auto* p = std::get_if<double>(&v)) {
         std::cout << "double: " << *p << "\n";
     } else {
         std::cout << "不是 double, get_if 返回 nullptr\n";
     }
 
-    // 4. get<I>: fetch by index (0=int, 1=double, 2=string)
+    // 4. get<I>: 按索引取(0=int, 1=double, 2=string)
     std::cout << "get<2>=" << std::get<2>(v) << "\n";
     return 0;
 }
@@ -260,7 +260,7 @@ C++20 also gave `std::visit` an explicit-return-type form, `std::visit<R>(...)`,
 ```cpp
 // Standard: C++20
 std::variant<int, double> v = 2;
-double r = std::visit<double>([](auto x){ return x; }, v);  // the int branch converts to double too
+double r = std::visit<double>([](auto x){ return x; }, v);  // int 分支也转成 double
 ```
 
 Both C++20 spellings verified working on GCC 16.1.1. Note: C++23 did **not** give `variant` the monadic interface that `optional`/`expected` got (`.and_then` / `.transform` / `.or_else`). `variant` is not like `optional`, which has "empty" semantics—it always holds a value (apart from the pathological state covered below), so by design no monadic chain was crammed in. For that machinery, go read the dedicated `optional` and `expected` articles.
@@ -281,18 +281,18 @@ Let's manufacture one on purpose:
 
 struct S {
     S() = default;
-    S(const S&) { throw std::runtime_error("copy throw"); }  // the copy constructor always throws
+    S(const S&) { throw std::runtime_error("copy throw"); }  // 拷贝构造必抛
 };
 
 int main()
 {
-    std::variant<double, S> v = 1.5;   // currently holds double
+    std::variant<double, S> v = 1.5;   // 当前持 double
     std::cout << "before index=" << v.index()
               << " valueless=" << v.valueless_by_exception() << "\n";
 
-    S src;                              // default construction is fine
+    S src;                              // 默认构造 OK
     try {
-        v = src;                        // copy-construct S -> throws
+        v = src;                        // 拷贝构造 S -> 抛
     } catch (const std::runtime_error& e) {
         std::cout << "caught: " << e.what() << "\n";
     }
@@ -301,7 +301,7 @@ int main()
 
     if (v.valueless_by_exception()) {
         try {
-            (void)std::get<double>(v);   // even the original double is no longer retrievable
+            (void)std::get<double>(v);   // 连原本的 double 都取不到了
         } catch (const std::bad_variant_access& e) {
             std::cout << "get<double> 也抛: " << e.what() << "\n";
         }
@@ -333,8 +333,8 @@ Let's do a head-to-head comparison on a closed "set of shapes." Three shapes—`
 
 ```cpp
 // Standard: C++17
-// Inheritance: ShapeBase virtual function area(); variant: visit + AreaVisitor
-// (full code at /tmp/variant_lab/perf.cpp; key skeleton shown here)
+// 继承: ShapeBase 虚函数 area(); variant: visit + AreaVisitor
+// (完整代码见 /tmp/variant_lab/perf.cpp, 这里给关键骨架)
 struct CircleV { double r; };
 struct SquareV { double s; };
 struct TriangleV { double b, h; };
@@ -346,8 +346,8 @@ struct AreaVisitor {
     double operator()(const TriangleV& t)  const { return 0.5 * t.b * t.h; }
 };
 
-// Inheritance version: for (auto& p : poly) acc += p->area();
-// variant version: for (auto& v : vars) acc += std::visit(AreaVisitor{}, v);
+// 继承版: for (auto& p : poly) acc += p->area();
+// variant 版: for (auto& v : vars) acc += std::visit(AreaVisitor{}, v);
 ```
 
 Local GCC 16.1.1, `-O2`, two full runs:
@@ -368,12 +368,12 @@ Of course, this scenario was designed for the comparison—a closed set of shape
 A word on memory while we're at it. A `variant`'s size is "largest alternative + the index" after alignment—same as a `union`, you foot the bill for the biggest one:
 
 ```text
-sizeof(variant<int,double,string>) = 40   // dominated by string (32) + the index
-sizeof(variant<int,int,int>)        = 8    // three ints share the space + the index
-sizeof(variant<int>)                = 8    // even a single int carries the index
+sizeof(variant<int,double,string>) = 40   // 被 string(32) 主导 + 索引
+sizeof(variant<int,int,int>)        = 8    // 三个 int 共用空间 + 索引
+sizeof(variant<int>)                = 8    // 单个 int 也要带索引
 sizeof(string)                      = 32
 sizeof(int)                         = 4
-sizeof(variant<char,char>)          = 2    // char + 1-byte index
+sizeof(variant<char,char>)          = 2    // char + 1 字节索引
 ```
 
 Note that `variant<int>` is not an `int`—even with only one alternative, that little bit of index storage cannot be shaved off. `variant<int, int, int>` is likewise 8 bytes, not 4: the three `int`s share the same memory, but the index still has to record "which one is alive right now."
@@ -389,7 +389,7 @@ struct NoDefault {
     NoDefault(int) {}
 };
 
-std::variant<std::monostate, NoDefault, int> v;  // holds monostate by default; default-constructible
+std::variant<std::monostate, NoDefault, int> v;  // 默认持 monostate, 可默认构造
 std::cout << "default index=" << v.index() << " (0=monostate)\n";
 v.emplace<2>(42);
 std::cout << "emplace<2>(42) index=" << v.index() << "\n";

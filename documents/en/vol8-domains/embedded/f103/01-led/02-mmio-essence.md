@@ -13,9 +13,9 @@ platform: stm32f1
 translation:
   source: documents/vol8-domains/embedded/f103/01-led/02-mmio-essence.md
   source_hash: 371227eb213c53bb7078a69307a890bfd513de840ca5dfe6a3a4773f9e5e8fe3
-  translated_at: '2026-09-27T05:40:22+00:00'
-  engine: anthropic
-  token_count: 9500
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 11133
 ---
 
 # The essence of an operation: what we write is code, what we touch is addresses
@@ -28,13 +28,13 @@ We have seen the machine for what it is; now it is the code's turn. Take one mor
 So let's dig it out with our own hands. The author has written a bare-register blinky with no GPIO wrapper whatsoever — it lights the very same PC13 as `01_blinky` — and `arm-none-eabi-size` puts them on the scale at 2380 bytes for one, 3468 bytes for the other.
 
 ```cpp
-// third_party/libestdx/examples/01_register_led/main.cpp (excerpt)
-RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;  // turn on GPIOC's clock switch
-GPIOC->CRH &= ~(0xFu << 20);         // clear PC13's four CNF/MODE bits
-GPIOC->CRH |= (0x2u << 20);          // configure as 2 MHz output
+// third_party/libestdx/examples/01_register_led/main.cpp（节选）
+RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;  // 打开 GPIOC 的时钟开关
+GPIOC->CRH &= ~(0xFu << 20);         // 清掉 PC13 的 CNF、MODE 四位
+GPIOC->CRH |= (0x2u << 20);          // 配成 2MHz 输出
 
-GPIOC->BSRR = 1u << 13;              // PC13 output high (LED off)
-GPIOC->BRR  = 1u << 13;              // PC13 output low (LED on)
+GPIOC->BSRR = 1u << 13;              // PC13 输出高（灯灭）
+GPIOC->BRR  = 1u << 13;              // PC13 输出低（灯亮）
 ```
 
 From these five lines, let's pick out the most pressing questions: what are `RCC` and `GPIOC`? What are the names after the `->`? And where do `|=` and `=` part ways once they land on the machine? One at a time.
@@ -59,13 +59,13 @@ And `GPIO_TypeDef`? Its true form is a struct of exactly seven members, every on
 // stm32f103xb.h L357-L366
 typedef struct
 {
-  __IO uint32_t CRL;   // offset 0x00: configuration of the low 8 pins
-  __IO uint32_t CRH;   // offset 0x04: configuration of the high 8 pins
-  __IO uint32_t IDR;   // offset 0x08: input data
-  __IO uint32_t ODR;   // offset 0x0C: output data
-  __IO uint32_t BSRR;  // offset 0x10: atomic set/reset
-  __IO uint32_t BRR;   // offset 0x14: atomic reset
-  __IO uint32_t LCKR;  // offset 0x18: configuration lock
+  __IO uint32_t CRL;   // 偏移 0x00：低 8 脚的配置
+  __IO uint32_t CRH;   // 偏移 0x04：高 8 脚的配置
+  __IO uint32_t IDR;   // 偏移 0x08：输入数据
+  __IO uint32_t ODR;   // 偏移 0x0C：输出数据
+  __IO uint32_t BSRR;  // 偏移 0x10：原子置位/复位
+  __IO uint32_t BRR;   // 偏移 0x14：原子复位
+  __IO uint32_t LCKR;  // 偏移 0x18：配置锁定
 } GPIO_TypeDef;
 ```
 
@@ -79,7 +79,7 @@ Let's run an identity transformation on the weightiest of those five lines:
 
 ```cpp
 GPIOC->CRH |= (0x2u << 20);
-// equivalent to:
+// 等价于：
 *((volatile unsigned int *)0x40011004) |= 0x00200000;
 ```
 
@@ -119,26 +119,26 @@ Who owns `0x40021018`? `RCC`'s base `0x40021000` plus offset `0x18` lands exactl
 The transformation was our paper derivation — but what did the compiler actually generate? Let's summon `arm-none-eabi-objdump -d` to do the honors. In the `main` of `01_register_led`, the three configuration lines came out like this:
 
 ```text
-08000158: 4a0c      ldr   r2, [pc, #48]   ; r2 ← literal pool: 0x40021000 (RCC)
-0800015a: 4c0d      ldr   r4, [pc, #52]   ; r4 ← literal pool: 0x40011000 (GPIOC)
-0800015c: 6993      ldr   r3, [r2, #24]   ; r3 ← *(0x40021018)  read APB2ENR
-0800015e: f043 0310 orr.w r3, r3, #16     ; r3 |= 0x10          set bit 4
-08000162: 6193      str   r3, [r2, #24]   ; *(0x40021018) ← r3  write APB2ENR back
-08000164: 6863      ldr   r3, [r4, #4]    ; r3 ← *(0x40011004)  read CRH
-08000166: f423 0370 bic.w r3, r3, #15728640 ; r3 &= ~0x00F00000 clear [23:20]
-0800016a: 6063      str   r3, [r4, #4]    ; write CRH back
-0800016c: 6863      ldr   r3, [r4, #4]    ; read CRH again
-0800016e: f443 1300 orr.w r3, r3, #2097152 ; r3 |= 0x00200000   set [21]
-08000172: 6063      str   r3, [r4, #4]    ; write CRH back
+08000158: 4a0c      ldr   r2, [pc, #48]   ; r2 ← 字面量池: 0x40021000 (RCC)
+0800015a: 4c0d      ldr   r4, [pc, #52]   ; r4 ← 字面量池: 0x40011000 (GPIOC)
+0800015c: 6993      ldr   r3, [r2, #24]   ; r3 ← *(0x40021018)  读 APB2ENR
+0800015e: f043 0310 orr.w r3, r3, #16     ; r3 |= 0x10          置 bit4
+08000162: 6193      str   r3, [r2, #24]   ; *(0x40021018) ← r3  写回 APB2ENR
+08000164: 6863      ldr   r3, [r4, #4]    ; r3 ← *(0x40011004)  读 CRH
+08000166: f423 0370 bic.w r3, r3, #15728640 ; r3 &= ~0x00F00000 清 [23:20]
+0800016a: 6063      str   r3, [r4, #4]    ; 写回 CRH
+0800016c: 6863      ldr   r3, [r4, #4]    ; 再读 CRH
+0800016e: f443 1300 orr.w r3, r3, #2097152 ; r3 |= 0x00200000   置 [21]
+08000172: 6063      str   r3, [r4, #4]    ; 写回 CRH
 ```
 
 Sure enough, `|=` and `&=` go the "read, modify, write" route in three-instruction groups; after the two rounds, CRH has been fully configured to `0x00200000` — not one character off from the value we just read in Renode. The two toggle lines get a different treatment:
 
 ```text
-08000178: 6125      str   r5, [r4, #16]   ; *(0x40011010) ← 0x2000  write BSRR
+08000178: 6125      str   r5, [r4, #16]   ; *(0x40011010) ← 0x2000  写 BSRR
 0800017a: f000 f887 bl    800028c <HAL_Delay>
 0800017e: f44f 70fa mov.w r0, #500
-08000182: 6165      str   r5, [r4, #20]   ; *(0x40011014) ← 0x2000  write BRR
+08000182: 6165      str   r5, [r4, #20]   ; *(0x40011014) ← 0x2000  写 BRR
 ```
 
 A single `str`, and it arrives in one step. Why does BSRR get to be this direct while the ODR side has to take the three-step detour? We will leave the full answer — the read-modify-write race under concurrency, and the atomicity engineered into BSRR — for the fourth piece to treat in depth; for now we merely lay the phenomenon on the table: **within the same register bank, different addresses have different temperaments, and those temperaments are set by the hardware designers — not something software gets to choose**.
@@ -209,11 +209,11 @@ With the sugar coating peeled all the way down, let's look again at that C-style
 ```cpp
 #include <cstdint>
 
-// address as a compile-time constant; use the explicit form for the cast
+// 地址作为编译期常量,类型转型用显式的那个
 constexpr auto gpio_c =
     reinterpret_cast<volatile std::uint32_t *>(0x4001'1000u);
 
-gpio_c[1] &= ~0x00F0'0000u;  // CRH: base + 4 bytes = offset 0x04
+gpio_c[1] &= ~0x00F0'0000u;  // CRH: 基址 + 4 字节 = 偏移 0x04
 ```
 
 See what `reinterpret_cast` has over the parenthesized cast: it is searchable across the whole codebase, its intent is self-declared, and unlike the function-style cast it will not casually strip off `const` while it is at it. `std::uintptr_t`, for its part, is the correct vessel for "doing arithmetic on a pointer as an integer": the intermediate form of an address plus an offset rides in it safely, instead of overflowing on narrow platforms the way an `int` shoehorned into the job would.

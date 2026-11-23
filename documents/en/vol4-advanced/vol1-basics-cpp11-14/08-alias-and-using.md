@@ -30,9 +30,9 @@ title: 'Alias Templates and using Declarations: Short Names for Types'
 translation:
   source: documents/vol4-advanced/vol1-basics-cpp11-14/08-alias-and-using.md
   source_hash: 2f192dbed15fa7d52b886d87725a22089fc0cf9b1240d26f83d3dff7135e575c
-  translated_at: '2026-09-26T04:13:46+00:00'
-  engine: anthropic
-  token_count: 4500
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5040
 ---
 # Alias Templates and using Declarations: Short Names for Types
 
@@ -43,7 +43,7 @@ C++11 gave type aliasing a major upgrade: a new use of `using` and the **alias t
 `typedef` is an old C tradition: it gives a type a new name.
 
 ```cpp
-typedef std::vector<int> IntVec;   // IntVec is std::vector<int>
+typedef std::vector<int> IntVec;   // IntVec 就是 std::vector<int>
 IntVec v;
 ```
 
@@ -52,10 +52,10 @@ That works fine. But the moment you want a generic alias for "a `vector` of arbi
 ```cpp
 template <typename T>
 struct VecHelper {
-    using type = std::vector<T>;   // nested inside a class template, so it can take parameters
+    using type = std::vector<T>;   // 嵌套在类模板里,才能参数化
 };
 
-VecHelper<int>::type v;   // ::type again — wordy
+VecHelper<int>::type v;   // 又是 ::type,啰嗦
 ```
 
 It runs, but every use spells out `VecHelper<int>::type`, and—as we said earlier when discussing dependent names—you must also add `typename`, giving `typename VecHelper<T>::type`: long and awkward.
@@ -66,9 +66,9 @@ C++11's alias templates clean the whole thing up. The syntax is `template <...> 
 
 ```cpp
 template <typename T>
-using Vec = std::vector<T>;   // alias template
+using Vec = std::vector<T>;   // 别名模板
 
-Vec<int> v = {1, 2, 3};        // equivalent to std::vector<int>
+Vec<int> v = {1, 2, 3};        // 等价 std::vector<int>
 ```
 
 Run it:
@@ -83,10 +83,10 @@ size = 3
 The payoff of alias templates goes beyond brevity. They can also express complex types that `typedef` cannot—function pointer types, containers with allocators—and written with `using` they come out far clearer than `typedef`:
 
 ```cpp
-// writing a function pointer type with typedef: the twisted order hurts your head
+// typedef 写函数指针类型,顺序绕得让人头疼
 typedef int (*Callback)(int, int);
 
-// with using, left and right read consistently — much more readable
+// using 写出来,左值右值一致,可读多了
 using Callback = int(*)(int, int);
 ```
 
@@ -97,14 +97,14 @@ Modern C++ has largely replaced `typedef` with `using`—`using` even for aliase
 The most practical application of alias templates is the set of `_t`-suffixed aliases C++14 added to `<type_traits>`. C++11 type traits report their results as `::type` or `::value` nested inside a class, which is wordy to use:
 
 ```cpp
-// C++11: to get the reference-stripped type, you must write typename + ::type
+// C++11:取去掉引用后的类型,得写 typename + ::type
 typename std::remove_reference<T>::type
 ```
 
 C++14 gave every type-returning trait a `_t` alias template—one line and done:
 
 ```cpp
-// C++14: an alias template — clean
+// C++14:别名模板,清爽
 std::remove_reference_t<T>
 ```
 
@@ -128,9 +128,9 @@ Alias templates carry one limitation you cannot get around: **they cannot be spe
 template <typename T>
 using V = T;
 
-// attempting to specialize an alias template — compile error
+// 试图特化别名模板 —— 编译报错
 template <>
-using V<int> = long;   // error: alias templates cannot be specialized
+using V<int> = long;   // 错:别名模板不能特化
 ```
 
 ```text
@@ -156,12 +156,12 @@ T Base<T>::kDefault{42};
 
 template <typename T>
 struct Derived : Base<T> {
-    // using brings Base<T>::kDefault and Base<T>::greet into Derived's scope
+    // using 把 Base<T>::kDefault 和 Base<T>::greet 引入 Derived 作用域
     using Base<T>::kDefault;
     using Base<T>::greet;
 
-    T fetch() const { return kDefault; }   // use directly, no this->
-    void hello() { greet(); }              // use directly, no this->
+    T fetch() const { return kDefault; }   // 直接用,不用 this->
+    void hello() { greet(); }              // 直接用,不用 this->
 };
 ```
 

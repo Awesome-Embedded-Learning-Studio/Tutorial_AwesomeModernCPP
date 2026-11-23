@@ -19,9 +19,9 @@ related:
 translation:
   source: documents/vol8-domains/embedded/zeros/01-heapless-memory/02-write-the-bitmap.md
   source_hash: 15f8885f84f2c141ec64da5c1a41feeebd118fe1822365cee16485291665c57e
-  translated_at: '2026-09-27T06:02:30+00:00'
-  engine: anthropic
-  token_count: 3400
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 12889
 ---
 
 # Writing the Bitmap: A Fixed-Capacity Bitmap
@@ -86,14 +86,14 @@ template <std::size_t bit_count> struct Bitmap {
     constexpr Bitmap(Bitmap&&) noexcept = default;
     constexpr Bitmap& operator=(Bitmap&&) noexcept = default;
 
-    // —— bit level ——
+    // —— 位级 ——
     constexpr void set(std::size_t i) { words_[i >> 5] |= one_hot(i); }
     constexpr void clear(std::size_t i) { words_[i >> 5] &= ~one_hot(i); }
     [[nodiscard]] constexpr bool test(std::size_t i) const {
         return (words_[i >> 5] & one_hot(i)) != 0;
     }
 
-    // —— word level (what std::bitset refuses to give us) ——
+    // —— 字级 (what std::bitset refuses to give us) ——
     /// Raw access to the w-th 32-bit plane: bulk set/clear, L1 summaries,
     /// word-wide atomics. Keep the tail padding zero!
     constexpr std::uint32_t& word(std::size_t w) { return words_[w]; }
@@ -113,7 +113,7 @@ The header comment opens with three rules: padding bits must stay 0; `set`/`clea
 This responsibility shows most clearly on `word()`: what it hands over is the raw 32-bit plane, with no checks of any kind. When you bulk-write whole words, whether the tail padding stays clean is left for the caller to watch — in the tests below, at that `word(0) = 0xFFu` moment, we are that caller. So why must this layer exist at all? `std::bitset` flatly refuses to give it; yet whole-word bulk zeroing and the L1 summaries in the pool article both live off it.
 
 ```cpp
-    // —— CLZ lookup ——
+    // —— CLZ 查找 ——
     /// First clear bit inside the w-th word, npos if that word is full.
     /// The second CLZ step of a two-level lookup: level-1 finds the word,
     /// this lands the bit. Tail-word safe: padding never fakes a hit.
@@ -239,12 +239,10 @@ At the project bring-up stop we locked the architecture flags inside the toolcha
 Beyond configuration, we owe the editor one small file: `.clangd`. The reason: orphan headers — the kind not yet included by any TU — get handled by clangd's fallback, the standard stops at gnu++17, and concept syntax turns into a sea of red; injecting per-language flags consistent with CMake fixes it:
 
 ```yaml
-# Inject flags in per-language blocks: .hpp/.cpp get C++23 (conf HAL headers are
-# C-context; fed C++ flags they reject).
-# Why: orphan headers (not included by any TU) fall into clangd's fallback, where the
-# standard stops at gnu++17 and concepts and other C++20 syntax get false positives;
-# once the flag matching CMake's CXX_STANDARD 23 is injected, TUs already in
-# compile_commands.json see an identical-value override — no behavior change.
+# 注入旗标按语言分块:.hpp/.cpp 按 C++23(conf HAL 头是 C 语境,吃 C++ 旗标会拒)。
+# 起因:孤立头文件(未被任何 TU 包含)吃 clangd fallback,标准停在 gnu++17,
+# concept 等 C++20 语法误报;注入与 CMake CXX_STANDARD 23 一致的旗标后,
+# 对已在 compile_commands.json 的 TU 是同值覆盖,无行为变化。
 ---
 If:
   PathMatch: [.*\.hpp, .*\.cpp]
@@ -296,7 +294,7 @@ function(zeros_add_test name)
 endfunction()
 
 zeros_add_test(test_bitmap)
-# The next few articles keep adding tests to this list; the reference answer shows it filled in
+# 后面几篇会往这份清单里添测试;参考答案里是添满的样子
 ```
 
 We feed the kernel headers to the tests through an `INTERFACE` library, fully decoupled from the firmware build; every test target uniformly gets `-Werror` plus ASan/UBSan — on host, hanging these on costs nothing, and skipping them would be a waste. The last line currently hooks up only `test_bitmap`; each new part we write in the articles ahead adds one more line to it. That's the incremental approach — when you `diff` against the reference answer, differences in this list are expected.

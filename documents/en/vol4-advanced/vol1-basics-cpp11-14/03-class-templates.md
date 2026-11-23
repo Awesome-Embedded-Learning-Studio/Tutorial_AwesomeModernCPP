@@ -25,9 +25,9 @@ title: 'Class Templates: Members, Dependent Names, and Lazy Instantiation'
 translation:
   source: documents/vol4-advanced/vol1-basics-cpp11-14/03-class-templates.md
   source_hash: ec2c5bfc897c70e1f138bd4f9083c207ef59727424cd593c680d13c7c1f1c481
-  translated_at: '2026-09-26T04:04:48+00:00'
-  engine: anthropic
-  token_count: 5800
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7273
 ---
 # Class Templates: Members, Dependent Names, and Lazy Instantiation
 
@@ -46,7 +46,7 @@ public:
     const T& top() const { return data_.back(); }
     bool empty() const { return data_.empty(); }
 private:
-    std::vector<T> data_;   // use vector as the underlying storage
+    std::vector<T> data_;   // 用 vector 当底层存储
 };
 ```
 
@@ -71,8 +71,8 @@ struct Box {
         std::cout << "value = " << value << "\n";
     }
 
-    // This function body uses nonexistent_field, which does not exist on T at all
-    // As long as nobody calls it, the compiler never instantiates it, so no error
+    // 这个函数体里写了 T 上根本不存在的 nonexistent_field
+    // 只要没人调用它,编译器就不会实例化,也就不会报错
     void unused_broken() const {
         std::cout << value.nonexistent_field << "\n";
     }
@@ -80,7 +80,7 @@ struct Box {
 
 int main() {
     Box<int> b{42};
-    b.used_show();   // only this one is used
+    b.used_show();   // 只用到这一个
     return 0;
 }
 ```
@@ -112,7 +112,7 @@ private:
     std::vector<T> data_;
 };
 
-// Out-of-class definition: must carry the template header, and the class name must carry <T>
+// 类外定义:必须带 template 头,且类名要带 <T>
 template <typename T>
 void Stack<T>::push(const T& value) {
     data_.push_back(value);
@@ -181,7 +181,7 @@ struct Base {
 template <typename T>
 struct Derived : Base<T> {
     void call() {
-        helper();   // Error!
+        helper();   // 报错!
     }
 };
 ```
@@ -202,14 +202,14 @@ The fix is to make the name "carry a dependency", and the most common way is `th
 ```cpp
 template <typename T>
 struct Derived : Base<T> {
-    int fetch() { return this->data; }   // this-> lets lookup enter the dependent base
+    int fetch() { return this->data; }   // this-> 让查找进入 dependent base
     void call() { this->helper(); }
 };
 
 int main() {
     Derived<int> d;
     d.call();
-    std::cout << "fetch() = " << d.fetch() << "\n";   // reaches Base<T>::data = 7
+    std::cout << "fetch() = " << d.fetch() << "\n";   // 访问到 Base<T>::data = 7
 }
 ```
 
@@ -231,14 +231,14 @@ Class templates can have static data members. Unlike an ordinary class's static 
 ```cpp
 template <typename T>
 struct Counter {
-    static int instances;   // declaration
+    static int instances;   // 声明
 };
 
-// Definition (outside the class): must carry the template header
+// 定义(类外):要带 template 头
 template <typename T>
 int Counter<T>::instances = 0;
 
-// Counter<int>::instances and Counter<double>::instances are two different variables
+// Counter<int>::instances 和 Counter<double>::instances 是两个不同的变量
 ```
 
 `Counter<int>::instances` and `Counter<double>::instances` are two completely independent static variables that do not affect each other. This is often used to keep per-type counters or caches dedicated to each type.
@@ -248,7 +248,7 @@ One trap to sort out here: an out-of-class definition of a class template's stat
 ```cpp
 template <typename T>
 struct Counter {
-    static inline int instances = 0;   // C++17: inline static member, initialized in class, no out-of-class definition needed
+    static inline int instances = 0;   // C++17:inline 静态成员,类内初始化,免类外定义
 };
 ```
 

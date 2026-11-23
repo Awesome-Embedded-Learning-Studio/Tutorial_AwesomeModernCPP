@@ -22,9 +22,9 @@ cpp_standard: [11, 14]
 translation:
   source: documents/crash-lab/a-memory-safety/02-use-after-free.md
   source_hash: 63d0fb894498831f6c3abb8b5910b46bfc7746b6172006e6aa749327d65626f6
-  translated_at: '2026-09-27T03:05:47+00:00'
-  engine: anthropic
-  token_count: 4700
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5687
 ---
 
 # Your C++ Program Crashed Again (and Again)! The Dangling Pointer Had Already Croaked, and You Went Right on Using It
@@ -40,8 +40,8 @@ Let's first take a look at what this mysterious UAF actually looks like.
 ```cpp
 int* p = new int(42);
 delete p;
-printf("*p = %d\n", *p);   // ← freed, and we still read it
-*p = 999;                   // ← and we write into it, too
+printf("*p = %d\n", *p);   // ← 释放之后,还来读
+*p = 999;                   // ← 还往里写
 ```
 
 Huh? That's it? Is this the best you C++ folks can do? Isn't this obvious at a glance? UAF looks pretty easy to avoid, doesn't it! Before you publish that hot take (my blood pressure is already rising as I write this, because I have genuinely seen people mock us C and C++ programmers like this), let's run the complete reproducer first — the one below lives in the companion code at `code/volumn_codes/crash-lab/02-use-after-free/crash.cpp`. First, here is what it produced on my Linux machine (GCC 16.1.1):
@@ -78,14 +78,14 @@ $2 = 1431655787
 
 ```mermaid
 graph TB
-  subgraph Mem["Heap block (that memory)"]
+  subgraph Mem["堆块(那块内存)"]
     direction LR
-    M1["at new<br/>content = 42"] -->|delete| M2["after the free<br/>head overwritten with the freelist pointer"]
+    M1["new 时<br/>内容 = 42"] -->|delete| M2["释放后<br/>头部被写入空闲链表指针"]
   end
-  subgraph Ptr["pointer p"]
-    P1["in scope<br/>stays alive the whole time"]
+  subgraph Ptr["指针 p"]
+    P1["作用域内<br/>一直存活"]
   end
-  P1 -. "after delete,<br/>p still gets dereferenced" .-> M2
+  P1 -. "delete 之后<br/>p 仍被解引用" .-> M2
   style M2 fill:#fee,stroke:#c33,color:#900
 ```
 
@@ -105,8 +105,8 @@ And the consequences of trampling bookkeeping data do not strike at once. The pr
 
 ```mermaid
 graph LR
-  A["*p = 999<br/>tramples the heap bookkeeping<br/>(plants the bomb)"] -. after a number of<br/>new / delete calls .-> B["some later new<br/>triggers the crash<br/>(detonation)"]
-  A -. or perhaps:<br/>the block is legitimately reused .-> C["dud bomb<br/>evidence erased"]
+  A["*p = 999<br/>踩坏堆记账数据<br/>(埋炸弹)"] -. 经过若干次<br/>new / delete .-> B["某次 new<br/>触发崩溃<br/>(引爆)"]
+  A -. 也可能:<br/>该块被合法复用 .-> C["炸弹哑火<br/>证据湮灭"]
   style A fill:#fed,stroke:#c80
   style B fill:#fee,stroke:#c33,color:#900
   style C fill:#efe,stroke:#3a3
@@ -123,15 +123,15 @@ The first is AddressSanitizer (ASAN). Compile with `-fsanitize=address` added, t
 ```text
 ==15945==ERROR: AddressSanitizer: heap-use-after-free on address 0x74e4009e0010
 READ of size 4 at 0x74e4009e0010 thread T0
-    #0 0x55aad1518346 in main crash.cpp:26      ← the read happens on this line
+    #0 0x55aad1518346 in main crash.cpp:26      ← 在这行读的
 
 0x74e4009e0010 is located 0 bytes inside of 4-byte region [0x74e4009e0010,0x74e4009e0014)
 freed by thread T0 here:
     #0 ... in operator delete(void*, unsigned long)
-    #1 0x55aad1518300 in main crash.cpp:17      ← freed on this line
+    #1 0x55aad1518300 in main crash.cpp:17      ← 在这行释放的
 previously allocated by thread T0 here:
     #0 ... in operator new(unsigned long)
-    #1 0x55aad151823c in main crash.cpp:13      ← allocated on this line
+    #1 0x55aad151823c in main crash.cpp:13      ← 在这行分配的
 ```
 
 This report lays out the whole crime chain of the UAF in one pass: allocated at line 13, freed at line 17, still in use at line 26 — **allocation, release, abuse: three pinned points, clear at a glance.** And it could not care less whether the bomb is a dud; ASAN grabs it on the spot, right at the line of the first read.
@@ -147,10 +147,10 @@ Finding it is not enough; we also have to cure it. The root disease of UAF fits 
 The most effortless way is to hand this memory over to a steward that manages its own life and death — a smart pointer:
 
 ```cpp
-// unique_ptr: one block of memory, one owner
+// unique_ptr:一块内存,一个主人
 auto p = std::make_unique<int>(42);
-std::cout << *p;   // safe
-// leaving the scope, p deletes automatically; and p itself is gone too, so there is no chance to dangle
+std::cout << *p;   // 安全
+// 离开作用域,p 自动 delete;而且 p 本身也没了,想悬垂都没机会
 ```
 
 The most beautiful part of `unique_ptr`: the moment the memory is released, the pointer that pointed to it also reaches the end of its own life — you have no opportunity to dangle at all. It seals off the road to UAF at the root.
@@ -160,9 +160,9 @@ What if several places share the same memory? Bring in `shared_ptr`, and let ref
 ```cpp
 auto p = std::make_shared<int>(42);
 {
-    auto copy = p;     // reference count: 2
-}                       // copy is gone, count back to 1, memory still alive
-std::cout << *p;        // safe
+    auto copy = p;     // 引用计数:2
+}                       // copy 离开,计数回到 1,内存还在
+std::cout << *p;        // 安全
 ```
 
 Only when the last holder lets go is the memory truly released.

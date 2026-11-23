@@ -19,12 +19,23 @@ tags:
 - 入门
 - 基础
 title: std::string
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #226)"
+      en: "Contributed exercise solutions and article revisions (PR #226)"
 translation:
   source: documents/vol1-fundamentals/ch05/03-std-string.md
-  source_hash: d6861e58d0e90bdbbea19c1cb1b11d8f26dfcb98e8a29c5d81150338859c5b57
-  translated_at: '2026-09-25T10:53:18+00:00'
-  engine: anthropic
-  token_count: 8200
+  source_hash: f7657a262c16c65ab7d34c0e808e812719e0c9adc9246af34de2bf4e37160c29
+  translated_at: '2026-11-22T16:40:19+00:00'
+  engine: glm-5.3-refresh
+  token_count: 13312
 ---
 # std::string: Finally, No More Babysitting \0
 
@@ -43,19 +54,19 @@ In this chapter we start with the ways to construct a `std::string`, walk throug
 
 int main()
 {
-    // Construct from a literal
+    // 从字面量构造
     std::string s1 = "hello";
-    // Repeated characters: 10 'x's
+    // 重复字符：10 个 'x'
     std::string s2(10, 'x');
-    // Copy construction
+    // 拷贝构造
     std::string s3(s1);
-    // Construct from part of another string (start position, length)
+    // 从另一个 string 的一部分构造（起始位置，长度）
     std::string s4(s1, 1, 3);  // "ell"
-    // Construct by concatenating directly with +
+    // 用 + 直接拼接构造
     std::string s5 = s1 + " world";
-    // Empty string
+    // 空字符串
     std::string s6;
-    // Move construction (C++11)
+    // 移动构造（C++11）
     std::string s7 = std::move(s5);
 
     std::cout << s1 << "\n" << s2 << "\n" << s3 << "\n"
@@ -85,10 +96,10 @@ After being moved from, the source object (`s5` above) is left in a "valid but u
 ```cpp
 std::string s = "Hello, C++";
 s.size();       // 10
-s.length();     // 10 (equivalent to size)
+s.length();     // 10（和 size 等价）
 s.empty();      // false
 s[0];           // 'H'
-s.at(1);        // 'e' (throws std::out_of_range when out of range)
+s.at(1);        // 'e'（越界时抛 std::out_of_range）
 s.front();      // 'H'
 s.back();       // '+'
 ```
@@ -107,9 +118,9 @@ s += " World";          // "Hello World"
 s.append("!!!");        // "Hello World!!!"
 s.push_back('?');       // "Hello World!!!?"
 s.insert(5, ",");       // "Hello, World!!!?"
-s.erase(5, 1);          // "Hello World!!!?"  removes the comma we just inserted
+s.erase(5, 1);          // "Hello World!!!?"  删掉刚才插入的逗号
 s.replace(6, 5, "C++"); // "Hello C++!!!?"    World -> C++
-s.clear();              // becomes an empty string
+s.clear();              // 变成空字符串
 ```
 
 `+=` and `append()` do similar jobs; day to day we reach for `+=` more often, while `append()` provides additional overloaded versions (appending only a slice of another string, for example). `push_back()` can only append a single character, matching the `push_back()` interface of `vector`. `insert(pos, str)` inserts `str` at `pos`; `erase(pos, len)` deletes `len` characters starting at `pos`; `replace(pos, len, new_str)` swaps the `len` characters starting at `pos` for `new_str`, and the new string's length may differ from the segment being replaced.
@@ -121,13 +132,13 @@ The reason these operations are safe is that `std::string` manages memory intern
 ```cpp
 std::string s = "Hello, hello, HELLO!";
 
-s.find("hello");                    // 7 (case-sensitive)
+s.find("hello");                    // 7（区分大小写）
 s.find("Hello");                    // 0
 s.find("xyz");                      // std::string::npos
-s.find("hello", 2);                 // 7 (searching from position 2)
-s.rfind("hello");                   // 7 (reverse search)
-s.find_first_of("aeiou");          // 1 (the first vowel, 'e')
-s.find_last_of("aeiou");           // 11 (case-sensitive; the last hit is the 'o' in the second hello)
+s.find("hello", 2);                 // 7（从位置 2 开始找）
+s.rfind("hello");                   // 7（反向查找）
+s.find_first_of("aeiou");          // 1（第一个元音字母 e）
+s.find_last_of("aeiou");           // 11（区分大小写，最后命中的是第二个 hello 里的 o）
 ```
 
 The most crucial concept here is `std::string::npos`. It is a constant whose value is the maximum value of `std::size_t`. When a search operation fails to find the target, it returns `npos`. That is why, after every call to `find`, we must check whether the return value equals `npos` instead of using it as a bool—since `npos` converts to bool as `true`, writing `if (s.find("x"))` actually enters the branch when nothing was found. Another classic beginner trap.
@@ -161,8 +172,8 @@ In C, comparing two strings means calling `strcmp`; C++'s `std::string` overload
 std::string a = "apple", b = "banana", c = "apple";
 a == c;      // true
 a != b;      // true
-a < b;       // true (lexicographic order)
-a.compare(b);  // a negative value (equivalent to strcmp's return-value semantics)
+a < b;       // true（字典序）
+a.compare(b);  // 负数（等价于 strcmp 的返回值语义）
 ```
 
 The strength of the `compare()` member function is that it supports partial comparison: `s.compare(7, 5, "World")` takes the 5 characters of `s` starting at index 7 and compares them with `"World"` for equality. We will lean on this ability when parsing protocols or processing fixed-format text.
@@ -173,8 +184,8 @@ No matter how pleasant `std::string` is to use, plenty of third-party libraries,
 
 ```cpp
 std::string s = "Hello, C API!";
-const char* p = s.c_str();   // returns a \0-terminated const char*
-const char* q = s.data();    // fully equivalent to c_str() since C++17
+const char* p = s.c_str();   // 返回以 \0 结尾的 const char*
+const char* q = s.data();    // C++17 起与 c_str() 完全等价
 ```
 
 `c_str()` guarantees a `\0`-terminated `const char*` that we can pass directly to `fopen`, `printf`, or any other function expecting a C string. Since C++17, `data()` behaves exactly like `c_str()`.
@@ -184,17 +195,17 @@ There is one rule to burn into memory here: the pointers returned by `c_str()` a
 ## Numeric Conversions and Line Input
 
 ```cpp
-// number -> string
+// 数值 -> 字符串
 std::to_string(42);      // "42"
-std::to_string(3.14);    // "3.140000" (note: formatted with %f)
+std::to_string(3.14);    // "3.140000"（注意：用的是 %f 格式）
 
-// string -> number
+// 字符串 -> 数值
 std::stoi("42");         // int: 42
 std::stol("1234567890"); // long: 1234567890
 std::stod("3.14159");    // double: 3.14159
-std::stoi("  123abc");   // 123 (skips leading whitespace, stops at a non-digit)
+std::stoi("  123abc");   // 123（跳过前导空白，遇非数字停止）
 
-// Reading a whole line (cin >> s stops at whitespace; getline reads up to the newline)
+// 读取一整行（cin >> s 遇空格就停，getline 会读到换行为止）
 std::string line;
 std::getline(std::cin, line);
 ```
@@ -211,7 +222,7 @@ Let's combine everything we have learned so far and write a string-processing pr
 #include <map>
 #include <string>
 
-/// @brief Split a sentence into words by spaces and print each word
+/// @brief 把句子按空格拆分成单词，输出每个单词
 void split_into_words(const std::string& sentence)
 {
     std::cout << "--- 拆分单词 ---" << std::endl;
@@ -232,7 +243,7 @@ void split_into_words(const std::string& sentence)
     }
 }
 
-/// @brief Count how many times each character occurs (case-sensitive)
+/// @brief 统计每个字符出现的次数（区分大小写）
 void count_char_frequency(const std::string& text)
 {
     std::cout << "\n--- 字符频率统计 ---" << std::endl;
@@ -245,7 +256,7 @@ void count_char_frequency(const std::string& text)
     }
 }
 
-/// @brief Find every occurrence of target in text and replace it with replacement
+/// @brief 在 text 中查找所有 target 并替换为 replacement
 std::string find_and_replace(std::string text,
                              const std::string& target,
                              const std::string& replacement)
@@ -254,13 +265,13 @@ std::string find_and_replace(std::string text,
     std::size_t pos = 0;
     while ((pos = text.find(target, pos)) != std::string::npos) {
         text.replace(pos, target.size(), replacement);
-        pos += replacement.size();  // skip past the replacement to avoid an infinite loop
+        pos += replacement.size();  // 跳过已替换部分，避免死循环
     }
     std::cout << "  结果: " << text << std::endl;
     return text;
 }
 
-/// @brief Parse a simple CSV line (no quote escaping handled)
+/// @brief 简单的 CSV 行解析（不处理引号转义）
 void parse_csv_line(const std::string& line)
 {
     std::cout << "\n--- CSV 解析 ---\n  输入: " << line << std::endl;

@@ -26,9 +26,9 @@ title: 'Iterator Adapters: Reverse, Insertion, and Stream — Teaching Old Itera
 translation:
   source: documents/vol3-standard-library/iterators-algorithms/41-iterator-adapters.md
   source_hash: acd4594db78684370784bc140e71a489393159c7be525419b5356ed850bf1887
-  translated_at: '2026-09-26T01:33:35+00:00'
-  engine: anthropic
-  token_count: 2500
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 8532
 ---
 # Iterator Adapters: Reverse, Insertion, and Stream — Teaching Old Iterators New Tricks
 
@@ -38,8 +38,8 @@ Suppose you want to append the elements of one `deque` to the end of another. Yo
 
 ```cpp
 std::deque<int> d1{1, 2, 3, 4, 5};
-std::deque<int> d2;   // empty
-std::copy(d1.begin(), d1.end(), d2.end());   // want to append to the end?
+std::deque<int> d2;   // 空的
+std::copy(d1.begin(), d1.end(), d2.end());   // 想追加到末尾？
 ```
 
 That line is flat-out **undefined behavior**. `d2.end()` is a "past-the-end" position, and `copy` will dutifully write elements to that out-of-bounds spot — its job is strictly "assign the element to the position the destination iterator points to," and whether the destination container has room for that is none of its business. Algorithms don't grow containers; that is the iron law of the STL.
@@ -70,7 +70,7 @@ The most practical pairing for reverse iterators is sorting. `std::sort` default
 ```cpp
 std::vector<int> s{3, 1, 4, 1, 5, 9, 2, 6};
 std::sort(s.rbegin(), s.rend());
-// s is now: 9 6 5 4 3 2 1 1
+// s 现在: 9 6 5 4 3 2 1 1
 ```
 
 Here is a piece of foreshadowing to plant: a `reverse_iterator` internally stores a "forward position," but when you dereference it, what gets accessed is not that position — it is the **previous** one. That design is exactly what produces the `base()` off-by-one trap we will cover later. Note it for now; we will verify it with a real run shortly.
@@ -81,9 +81,9 @@ Back to the out-of-bounds `copy` pain from the opening. Swap the destination fro
 
 ```cpp
 std::deque<int> d1{1, 2, 3, 4, 5};
-std::deque<int> d3;   // empty
+std::deque<int> d3;   // 空的
 std::copy(d1.begin(), d1.end(), std::back_inserter(d3));
-// d3 is now: 1 2 3 4 5
+// d3 现在: 1 2 3 4 5
 ```
 
 What `back_inserter` returns is an "insertion iterator": it translates the act of "assigning to it" into the container's `push_back`. An empty container can receive it too, because every assignment grows the container by one slot. `copy` through it again and you are **appending** on top of what is already there, not overwriting:
@@ -104,16 +104,16 @@ Insertion iterators come as three siblings, differing only in "where the element
 ```cpp
 std::deque<int> d4;
 std::copy(d1.begin(), d1.end(), std::front_inserter(d4));
-// d4 is now: 5 4 3 2 1 (d1 is 1 2 3 4 5 — reversed)
+// d4 现在: 5 4 3 2 1（d1 是 1 2 3 4 5，反过来了）
 ```
 
 `inserter`, meanwhile, inserts before the position you hand it. Note "before": if `it` points at 20, the new element lines up in front of that 20:
 
 ```cpp
 std::deque<int> d5{10, 20, 30};
-auto pos = d5.begin() + 1;   // points at 20
+auto pos = d5.begin() + 1;   // 指向 20
 std::copy(d1.begin(), d1.end(), std::inserter(d5, pos));
-// d5 is now: 10 1 2 3 4 5 20 30
+// d5 现在: 10 1 2 3 4 5 20 30
 ```
 
 ### Each Sibling's Container Requirements
@@ -146,7 +146,7 @@ std::vector<int> sorted{1, 3, 5, 7, 9};
 int new_val = 4;
 auto it = std::lower_bound(sorted.begin(), sorted.end(), new_val);
 sorted.insert(it, new_val);
-// sorted is now: 1 3 4 5 7 9
+// sorted 现在: 1 3 4 5 7 9
 ```
 
 This is a classic little technique of `<algorithm>` and containers working together — it compresses the O(n) "walk and compare to find the position" into an O(log n) binary search (the O(n) element-shoveling you can't dodge, because the storage is contiguous). We will unfold the full algorithm survey in the next article; for now, borrow it to get a feel for how "algorithm + adapter + container" mesh.
@@ -175,7 +175,7 @@ In the other direction, `istream_iterator` treats an input stream as a "readable
 std::istringstream iss("10 20 30 40 50");
 std::vector<int> from_stream{
     std::istream_iterator<int>(iss),
-    std::istream_iterator<int>()};   // default-constructed = EOF sentinel
+    std::istream_iterator<int>()};   // 默认构造 = EOF 哨兵
 // from_stream: 10 20 30 40 50
 ```
 
@@ -200,13 +200,13 @@ class BackInsertIterDemo {
     Container* c_;
 public:
     explicit BackInsertIterDemo(Container& c) : c_{&c} {}
-    // Assignment = push_back: that is the entire secret of "to assign is to insert"
+    // 赋值 = push_back：这就是"赋值即插入"的全部秘密
     BackInsertIterDemo& operator=(const typename Container::value_type& v) {
         c_->push_back(v);
         return *this;
     }
-    BackInsertIterDemo& operator*() { return *this; }      // dereference returns itself
-    BackInsertIterDemo& operator++() { return *this; }     // ++ is a no-op
+    BackInsertIterDemo& operator*() { return *this; }      // 解引用返回自己
+    BackInsertIterDemo& operator++() { return *this; }     // ++ 是空操作
     BackInsertIterDemo operator++(int) { return *this; }
 };
 ```
@@ -217,7 +217,7 @@ public:
 std::vector<int> v;
 int src[]{1, 2, 3, 4, 5};
 std::copy(std::begin(src), std::end(src), BackInsertIterDemo(v));
-// v is now: 1 2 3 4 5
+// v 现在: 1 2 3 4 5
 ```
 
 Run it and out comes exactly `1 2 3 4 5`. That is the essence of an adapter: **an object that "looks like an iterator while hanging a different behavior behind it."** This is where the STL's original design decision — decoupling containers and algorithms through iterators — really starts to show its power: not only do containers' own iterators slot into algorithms, so do little objects "masquerading as iterators."
