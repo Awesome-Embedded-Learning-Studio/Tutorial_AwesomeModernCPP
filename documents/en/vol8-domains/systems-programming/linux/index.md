@@ -7,7 +7,7 @@ tags:
   - cpp-modern
   - host
   - intermediate
-  - system programming
+  - 系统编程
 translation:
   source: documents/vol8-domains/systems-programming/linux/index.md
   source_hash: cf0431c18d109edd92dac05ebf776a2a0b035db3a966cf5ff76aebd80c07b9c7

@@ -6,7 +6,7 @@ order: 0
 tags:
   - stm32f1
   - intermediate
-  - embedded
+  - 嵌入式
   - CMake
 difficulty: intermediate
 platform: stm32f1

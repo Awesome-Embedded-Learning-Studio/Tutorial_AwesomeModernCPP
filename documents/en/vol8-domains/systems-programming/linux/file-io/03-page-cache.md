@@ -17,9 +17,9 @@ tags:
   - host
   - cpp-modern
   - intermediate
-  - System Programming
+  - 系统编程
   - POSIX
-  - Practical
+  - 实战
 current_status:
   title: Being Polished
   detail: This batch has just been written and is currently being proofread and refined; the wording and experimental results may change at any time.

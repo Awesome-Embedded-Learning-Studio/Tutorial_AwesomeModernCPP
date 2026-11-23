@@ -13,7 +13,7 @@ tags:
   - host
   - cpp-modern
   - intermediate
-  - type-safety
+  - 类型安全
 translation:
   source: documents/weekly-problems/week-06.md
   source_hash: 560bde5b7c1aafabf939d4d16a275c66f6585844a46f5d1a6592145b4f3d2f43

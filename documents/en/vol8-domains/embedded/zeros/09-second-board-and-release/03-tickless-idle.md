@@ -6,8 +6,8 @@ order: 3
 tags:
   - stm32f1
   - intermediate
-  - embedded
-  - optimization
+  - 嵌入式
+  - 优化
   - cpp-modern
 difficulty: intermediate
 platform: stm32f1

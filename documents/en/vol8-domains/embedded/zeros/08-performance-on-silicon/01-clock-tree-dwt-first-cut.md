@@ -6,9 +6,9 @@ order: 1
 tags:
   - stm32f1
   - advanced
-  - embedded
-  - optimization
-  - debugging
+  - 嵌入式
+  - 优化
+  - 调试
 difficulty: advanced
 platform: stm32f1
 cpp_standard: [23]

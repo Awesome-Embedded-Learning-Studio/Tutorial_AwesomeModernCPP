@@ -8,8 +8,8 @@ tags:
   - cpp-modern
   - intermediate
   - constexpr
-  - compile-time computation
-  - basics
+  - 编译期计算
+  - 基础
 difficulty: intermediate
 platform: host
 cpp_standard: [11, 14, 17]

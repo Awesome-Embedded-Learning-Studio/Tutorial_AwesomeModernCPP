@@ -23,10 +23,10 @@ tags:
   - host
   - cpp-modern
   - advanced
-  - System Programming
+  - 系统编程
   - POSIX
   - Win32
-  - Asynchronous Programming
+  - 异步编程
   - concepts
 current_status:
   title: Being Polished

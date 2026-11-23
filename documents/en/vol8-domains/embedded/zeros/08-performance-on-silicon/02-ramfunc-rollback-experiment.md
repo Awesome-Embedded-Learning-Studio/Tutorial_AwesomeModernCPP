@@ -6,8 +6,8 @@ order: 2
 tags:
   - stm32f1
   - advanced
-  - embedded
-  - optimization
+  - 嵌入式
+  - 优化
 difficulty: advanced
 platform: stm32f1
 cpp_standard: [23]

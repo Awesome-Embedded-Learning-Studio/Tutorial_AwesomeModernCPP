@@ -6,7 +6,7 @@ order: 2
 tags:
   - stm32f1
   - advanced
-  - embedded
+  - 嵌入式
   - mutex
   - cpp-modern
 difficulty: advanced

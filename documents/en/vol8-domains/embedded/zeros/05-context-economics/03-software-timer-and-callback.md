@@ -6,8 +6,8 @@ order: 3
 tags:
   - stm32f1
   - intermediate
-  - embedded
-  - callback mechanism
+  - 嵌入式
+  - 回调机制
   - cpp-modern
 difficulty: intermediate
 platform: stm32f1

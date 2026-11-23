@@ -4,9 +4,9 @@ description: "Starting from the smallest working synchronous echo server, this a
 chapter: 1
 order: 1
 tags:
-  - Network Programming
-  - Asynchronous Programming
-  - Practical Examples
+  - 网络编程
+  - 异步编程
+  - 实战
   - host
   - cpp-modern
   - beginner

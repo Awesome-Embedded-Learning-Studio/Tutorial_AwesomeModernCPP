@@ -20,9 +20,9 @@ tags:
   - host
   - cpp-modern
   - advanced
-  - System Programming
+  - 系统编程
   - POSIX
-  - Concurrency
+  - 并发
 current_status:
   title: Being Polished
   detail: This batch was just written and is now being proofread and refined. The expressions and experimental results may change at any time.

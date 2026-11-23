@@ -23,8 +23,8 @@ tags:
   - host
   - cpp-modern
   - advanced
-  - system programming
-  - engineering practice
+  - 系统编程
+  - 工程实践
   - CMake
 current_status:
   title: Being polished

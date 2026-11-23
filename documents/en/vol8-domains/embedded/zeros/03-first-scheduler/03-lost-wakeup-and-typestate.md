@@ -6,8 +6,8 @@ order: 3
 tags:
   - stm32f1
   - advanced
-  - embedded
-  - register
+  - 嵌入式
+  - 寄存器
   - cpp-modern
 difficulty: advanced
 platform: stm32f1

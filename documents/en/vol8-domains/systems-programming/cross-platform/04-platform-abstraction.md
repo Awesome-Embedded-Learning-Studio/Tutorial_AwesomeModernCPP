@@ -19,12 +19,12 @@ tags:
   - host
   - cpp-modern
   - advanced
-  - System Programming
+  - 系统编程
   - POSIX
   - Win32
   - concepts
   - CMake
-  - Zero-Overhead Abstraction
+  - 零开销抽象
 current_status:
   title: Being Polished
   detail: This batch has just been written and is currently being proofread and refined. The expression and test results may change at any time.

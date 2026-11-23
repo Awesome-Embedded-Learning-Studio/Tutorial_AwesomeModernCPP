@@ -14,9 +14,9 @@ tags:
   - host
   - cpp-modern
   - beginner
-  - system programming
-  - basics
-  - introduction
+  - 系统编程
+  - 基础
+  - 入门
 current_status:
   title: Being Polished
   detail: This batch has just been written and is currently being reviewed and polished. The expressions and test results may be adjusted at any time.

@@ -6,8 +6,8 @@ order: 2
 tags:
   - stm32f1
   - advanced
-  - embedded
-  - concurrency
+  - 嵌入式
+  - 并发
   - cpp-modern
 difficulty: advanced
 platform: stm32f1

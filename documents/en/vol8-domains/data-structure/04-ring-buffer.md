@@ -7,9 +7,9 @@ tags:
   - host
   - cpp-modern
   - intermediate
-  - container
-  - circular buffer
-  - optimization
+  - 容器
+  - 循环缓冲区
+  - 优化
 difficulty: intermediate
 platform: host
 reading_time_minutes: 13

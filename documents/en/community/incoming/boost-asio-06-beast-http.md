@@ -4,10 +4,10 @@ description: "Building an HTTP server on top of Asio with Boost.Beast: comparing
 chapter: 1
 order: 6
 tags:
-  - Network Programming
-  - Asynchronous Programming
+  - 网络编程
+  - 异步编程
   - coroutine
-  - Practical Examples
+  - 实战
   - host
   - cpp-modern
   - advanced

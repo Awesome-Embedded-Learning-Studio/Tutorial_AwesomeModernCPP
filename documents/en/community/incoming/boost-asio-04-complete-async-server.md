@@ -4,9 +4,9 @@ description: "Upgrade the asynchronous server to be close to a real project: han
 chapter: 1
 order: 4
 tags:
-  - Network Programming
-  - Asynchronous Programming
-  - Practical Examples
+  - 网络编程
+  - 异步编程
+  - 实战
   - host
   - cpp-modern
   - advanced

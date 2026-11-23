@@ -6,9 +6,9 @@ order: 1
 tags:
   - stm32f1
   - intermediate
-  - embedded
+  - 嵌入式
   - CMake
-  - builder pattern
+  - 构建器模式
 difficulty: intermediate
 platform: stm32f1
 cpp_standard: [23]

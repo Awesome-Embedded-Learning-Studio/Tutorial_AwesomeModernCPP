@@ -4,9 +4,9 @@ description: "Explains the differences between the six synchronous send and rece
 chapter: 1
 order: 2
 tags:
-  - Network Programming
-  - Asynchronous Programming
-  - Practical Examples
+  - 网络编程
+  - 异步编程
+  - 实战
   - host
   - cpp-modern
   - beginner

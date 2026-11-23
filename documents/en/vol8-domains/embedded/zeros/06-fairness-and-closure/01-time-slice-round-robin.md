@@ -6,7 +6,7 @@ order: 1
 tags:
   - stm32f1
   - advanced
-  - embedded
+  - 嵌入式
   - cpp-modern
 difficulty: advanced
 platform: stm32f1

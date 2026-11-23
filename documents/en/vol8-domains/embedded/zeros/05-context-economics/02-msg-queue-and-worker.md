@@ -6,9 +6,9 @@ order: 2
 tags:
   - stm32f1
   - intermediate
-  - embedded
-  - circular buffer
-  - callback mechanism
+  - 嵌入式
+  - 循环缓冲区
+  - 回调机制
 difficulty: intermediate
 platform: stm32f1
 cpp_standard: [23]

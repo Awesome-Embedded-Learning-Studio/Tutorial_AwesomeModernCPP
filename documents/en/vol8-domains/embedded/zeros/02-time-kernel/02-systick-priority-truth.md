@@ -6,8 +6,8 @@ order: 2
 tags:
   - stm32f1
   - intermediate
-  - embedded
-  - registers
+  - 嵌入式
+  - 寄存器
 difficulty: intermediate
 platform: stm32f1
 cpp_standard: [23]

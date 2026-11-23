@@ -6,8 +6,8 @@ order: 4
 tags:
   - stm32f1
   - intermediate
-  - embedded
-  - toolchain
+  - 嵌入式
+  - 工具链
 difficulty: intermediate
 platform: stm32f1
 cpp_standard: [23]

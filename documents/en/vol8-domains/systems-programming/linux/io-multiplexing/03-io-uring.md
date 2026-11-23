@@ -19,10 +19,10 @@ tags:
   - host
   - cpp-modern
   - advanced
-  - system programming
+  - 系统编程
   - POSIX
-  - asynchronous programming
-  - practical
+  - 异步编程
+  - 实战
 current_status:
   title: Being polished
   detail: This batch has just been written, and is currently being polished and refined, the expression and experimental口径 may change at any time

@@ -6,7 +6,7 @@ order: 0
 tags:
   - stm32f1
   - advanced
-  - embedded
+  - 嵌入式
   - mutex
 difficulty: advanced
 platform: stm32f1

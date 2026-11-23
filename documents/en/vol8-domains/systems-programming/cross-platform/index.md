@@ -7,7 +7,7 @@ tags:
   - cpp-modern
   - host
   - advanced
-  - system programming
+  - 系统编程
 translation:
   source: documents/vol8-domains/systems-programming/cross-platform/index.md
   source_hash: 83a0252ea849f095c61e86ede510c6765dc969f8d0cfa6313b43cbde00705cb8

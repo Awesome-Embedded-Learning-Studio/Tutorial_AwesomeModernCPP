@@ -6,7 +6,7 @@ order: 2
 tags:
   - stm32f1
   - intermediate
-  - embedded
+  - 嵌入式
   - cpp-modern
 difficulty: intermediate
 platform: stm32f1

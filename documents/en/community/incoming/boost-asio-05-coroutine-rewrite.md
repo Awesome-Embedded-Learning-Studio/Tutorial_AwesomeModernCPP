@@ -4,10 +4,10 @@ description: "Rewriting the callback-based asynchronous server from Part 4 using
 chapter: 1
 order: 5
 tags:
-  - Network Programming
-  - Asynchronous Programming
+  - 网络编程
+  - 异步编程
   - coroutine
-  - Practical Examples
+  - 实战
   - host
   - cpp-modern
   - advanced

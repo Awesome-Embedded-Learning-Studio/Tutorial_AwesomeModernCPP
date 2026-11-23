@@ -4,9 +4,9 @@ description: "Switching from synchronous to asynchronous: which thread executes 
 chapter: 1
 order: 3
 tags:
-  - Network Programming
-  - Asynchronous Programming
-  - Practical Examples
+  - 网络编程
+  - 异步编程
+  - 实战
   - host
   - cpp-modern
   - intermediate

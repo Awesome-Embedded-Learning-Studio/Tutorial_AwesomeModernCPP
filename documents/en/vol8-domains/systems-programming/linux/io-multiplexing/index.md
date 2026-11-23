@@ -7,7 +7,7 @@ tags:
   - cpp-modern
   - host
   - intermediate
-  - system programming
+  - 系统编程
   - POSIX
 translation:
   source: documents/vol8-domains/systems-programming/linux/io-multiplexing/index.md

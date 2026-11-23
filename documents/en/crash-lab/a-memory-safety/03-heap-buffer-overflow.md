@@ -10,8 +10,8 @@ tags:
   - host
   - cpp-modern
   - intermediate
-  - memory-management
-  - containers
+  - 内存管理
+  - 容器
   - vector
 prerequisites:
   - "Volume 1 · Ch04: Pointer Basics"

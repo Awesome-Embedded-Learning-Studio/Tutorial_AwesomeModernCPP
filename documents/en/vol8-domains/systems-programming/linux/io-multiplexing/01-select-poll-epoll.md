@@ -18,9 +18,9 @@ tags:
   - host
   - cpp-modern
   - intermediate
-  - System Programming
+  - 系统编程
   - POSIX
-  - Asynchronous Programming
+  - 异步编程
 current_status:
   title: Being Polished
   detail: This batch has just been written, and is currently being read and polished, the expression and empirical results may be adjusted at any time
