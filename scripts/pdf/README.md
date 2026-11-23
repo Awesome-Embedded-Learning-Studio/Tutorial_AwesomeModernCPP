@@ -159,6 +159,11 @@ pnpm test:pdf
 | `<ReferenceCard>` / `<ReferenceItem>` | 转为参考资料 section/list；独立 item 也可转换 |
 | `<TalkInfoCard>` | 转为适合纸面的讲座信息 aside |
 | `<QQGroupCard>` | 转为纸面群卡片：本地二维码、群号与加群链接；复制按钮仅网页有效，纸面不保留（群号与链接常量需与 `QQGroupCard.vue` 保持同步） |
+| `<ConcurrencyTimeline>` | 剥掉交互网格（`ticks`/`lanes`/`blocks` 属性），保留插槽里的静态 mermaid 降级图，`title` 转为图题 |
+| `<AsmExecutor>` | 读 `src` 指向的 payload JSON，渲染为 objdump 式静态反汇编清单（地址、机器码、汇编三列），`meta.title` 转为图题与跨页角标；payload 是 `pnpm build:asm` 的装配产物（源场景在 `code/volumn_codes/vol10/asm-payloads/`），不入库，构建 vol10 前必须先跑装配，PDF workflow 已内置该步骤 |
+| `<ArticleContributors>` | 按 frontmatter `contributors` 渲染纸面署名块：显式列表优先，英文篇继承中文源的署名，带章号文章回落默认维护者，社区文章不署名；缺数据时静默移除，与网页卡片同一契约 |
+| `<CommunityExplorer>` | 复用 `buildCommunityManifest` 渲染按栏目分组的文章清单，尊重 `status` 属性筛选；条目链接按同册或在线规则重写 |
+| 路线图交互卡片 `<RoadmapJourney>` / `<PathChooser>` / `<VolumeCardGrid>` / `<MaturityBoard>` | 替换为在线版注记；正文本身已完整承载三条路径与逐卷详解的文字版 |
 | 站内 Markdown 链接 | 同册转 PDF 内锚点；跨册保留在线 URL，并生成去重的篇末脚注 |
 | 仓库文件或目录链接 | 已存在文件转 GitHub `blob`，目录转 `tree`；兼容 VitePress 产生的 `README.html`、`foo.cpp.html` |
 | 任何未解析的本地/站内链接 | 无论有无扩展名都直接失败，不降级为看似可用的外链 |

@@ -172,6 +172,14 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm exec puppeteer browsers install chrome
 
+      # Vol10 embeds <AsmExecutor> payloads whose JSON lives under
+      # documents/public/payloads/ — a build artifact of the asm-playground
+      # assembly (sources in code/volumn_codes/vol10/asm-payloads/), never
+      # committed. The site build runs this step via `pnpm build`; the PDF
+      # workflow must assemble it too or vol10 fails its payload read.
+      - name: Assemble asm-playground payloads
+        run: pnpm build:asm
+
       - name: Install fonts and PDF validators
         run: |
           sudo apt-get update
