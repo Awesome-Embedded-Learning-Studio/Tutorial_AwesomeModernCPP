@@ -1,9 +1,14 @@
+import { readFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { extname, relative, resolve } from 'node:path'
+import { extname, join, relative, resolve } from 'node:path'
 import type MarkdownIt from 'markdown-it'
+import matter from 'gray-matter'
 import { parseHTML } from 'linkedom'
 import type { AssetManager } from './assets'
 import { languageForPath } from './assets'
+import { DEFAULT_SITE_BASE_PATHS } from './catalog'
+import { buildCommunityManifest } from '../../site/.vitepress/config/community-manifest'
+import { COMMUNITY_CATEGORIES } from '../../site/.vitepress/theme/utils/community'
 import type { BookLocale, HeadingInfo, RenderedDocument, SourceDocument, TransformStats } from './model'
 import { renderCodeFence } from './markdown'
 import { canonicalRepositoryPath } from './path-safety'
@@ -11,6 +16,8 @@ import { canonicalRepositoryPath } from './path-safety'
 const KNOWN_COMPONENT_NAMES = [
   'ChapterNav', 'ChapterLink', 'OnlineCompilerDemo', 'RefLink',
   'ReferenceCard', 'ReferenceItem', 'TalkInfoCard', 'QQGroupCard', 'Anim',
+  'ArticleContributors', 'ConcurrencyTimeline', 'AsmExecutor',
+  'CommunityExplorer', 'RoadmapJourney', 'PathChooser', 'VolumeCardGrid', 'MaturityBoard',
 ] as const
 const KNOWN_COMPONENTS = new Map(
   KNOWN_COMPONENT_NAMES.map((name) => [name.toLowerCase(), name]),
@@ -50,6 +57,15 @@ const CPP_BARE_HEADER_NAMES = new Set([
   'utility', 'valarray', 'variant', 'vector', 'version',
 ])
 
+// Prose sometimes names a bare template argument as a noun ("对应的就是
+// <int>"). These lower-case tokens cannot be Vue components (this project's
+// components are PascalCase or kebab-case) and are not HTML elements either;
+// they are fundamental-type spellings, accepted wherever they appear.
+const CPP_BARE_TYPE_NAMES = new Set([
+  'auto', 'bool', 'char', 'char16_t', 'char32_t', 'char8_t', 'double', 'float',
+  'int', 'long', 'short', 'signed', 'unsigned', 'void', 'wchar_t',
+])
+
 const statsTemplate: TransformStats = {
   chapterNav: 0,
   chapterLink: 0,
@@ -59,6 +75,11 @@ const statsTemplate: TransformStats = {
   referenceItem: 0,
   talkInfoCard: 0,
   qqGroupCard: 0,
+  articleContributors: 0,
+  concurrencyTimeline: 0,
+  asmExecutor: 0,
+  communityExplorer: 0,
+  roadmapWidget: 0,
   remoteImages: 0,
   internalLinks: 0,
   crossBookLinks: 0,
@@ -108,6 +129,15 @@ function replaceWithHtml(document: Document, element: Element, html: string): vo
 
 const RAW_TAG_PATTERN = /<\/?([A-Za-z][A-Za-z0-9:.-]*)([^<>]*)>/g
 const KNOWN_COMPONENT_PATTERN = KNOWN_COMPONENT_NAMES.join('|')
+
+// Role labels mirror site/.vitepress/theme/utils/article-contributors.ts so a
+// printed article reads the same way the web card does. The repository URL is
+// the site-side CONTRIBUTION_REPO constant.
+const CONTRIBUTION_REPO = 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP'
+const CONTRIBUTION_ROLE_LABELS = {
+  zh: { author: '撰写', revision: '修订', translation: '翻译', review: '审校', maintain: '维护', idea: '提案' },
+  en: { author: 'Author', revision: 'Revision', translation: 'Translation', review: 'Review', maintain: 'Maintain', idea: 'Idea' },
+} as const
 
 function isComponentSyntax(raw: string, tag: string, tail: string, markdown: string): boolean {
   if (raw.startsWith('</') || /\/\s*>$/.test(raw)) return true
@@ -236,7 +266,10 @@ function auditSourceTags(source: SourceDocument, auditableMarkdown: string): str
     const standalone = auditableMarkdown.slice(lineStart, offset).trim() === ''
       && auditableMarkdown.slice(offset + raw.length, lineEnd).trim() === ''
     const preceding = offset > 0 ? auditableMarkdown[offset - 1] : ''
-    const attachedToTemplateName = /[\p{Letter}\p{Number}_:>)]/u.test(preceding)
+    // A preceding "/" marks a path placeholder (e.g. /proc/self/fdinfo/<epfd>);
+    // a preceding "$" marks a CMake generator expression ($<TARGET_FILE:app>).
+    // "/", "$", and ">" all tie the angle token to the token before it.
+    const attachedToTemplateName = /[\p{Letter}\p{Number}_:>)/$]/u.test(preceding)
     const explicitlyEscapedCpp = preceding === '\\' || /\\>$/.test(raw)
     const componentLikeBareTag = !explicitlyEscapedCpp && original.length > 1 && !attachedToTemplateName
       && (original.includes('-') || /^[A-Z]/.test(original))
@@ -244,6 +277,7 @@ function auditSourceTags(source: SourceDocument, auditableMarkdown: string): str
       || attachedToTemplateName
       || original.length === 1
       || CPP_BARE_HEADER_NAMES.has(tag)
+      || CPP_BARE_TYPE_NAMES.has(tag)
       || /[.:/]/u.test(`${original}${tail}`)
 
     if (
@@ -426,6 +460,90 @@ function replaceWithMediaNote(
   component.replaceWith(note)
 }
 
+interface FrontmatterContributor {
+  github: string
+  name?: string
+  roles: string[]
+  note?: string | Record<string, string>
+  pr?: number
+  issue?: number
+}
+
+// Mirrors DEFAULT_CONTRIBUTOR and the resolution chain in
+// site/.vitepress/config/article-contributors.ts: explicit list first, EN
+// inherits the Chinese source's declared credits, then the default author
+// applies only to numbered articles (community pages stay uncredited).
+const DEFAULT_CONTRIBUTOR: FrontmatterContributor = {
+  github: 'Charliechen114514',
+  roles: ['author', 'maintain'],
+  note: { zh: '文章撰写与长期维护', en: 'Article writing and ongoing maintenance' },
+}
+
+function validateFrontmatterContributors(
+  source: SourceDocument,
+  raw: unknown,
+  where: string,
+): FrontmatterContributor[] {
+  if (!Array.isArray(raw)) throw new Error(`${where} must be a list`)
+  return raw.map((entry, index) => {
+    const at = `${where}[${index}]`
+    if (typeof entry !== 'object' || entry === null) throw new Error(`${at} must be an object`)
+    const record = entry as Record<string, unknown>
+    if (typeof record.github !== 'string' || !/^[A-Za-z0-9-]{1,39}$/.test(record.github)) {
+      throw new Error(`${at} has an invalid "github" account name`)
+    }
+    if (record.roles !== undefined && (!Array.isArray(record.roles) || record.roles.some((role) => typeof role !== 'string'))) {
+      throw new Error(`${at} has invalid "roles"`)
+    }
+    if (record.note !== undefined && typeof record.note !== 'string'
+      && (typeof record.note !== 'object' || record.note === null
+        || !(['zh', 'en'] as const).some((language) => typeof (record.note as Record<string, unknown>)[language] === 'string'))) {
+      throw new Error(`${at} has invalid "note"`)
+    }
+    return {
+      github: record.github,
+      name: typeof record.name === 'string' ? record.name : undefined,
+      roles: Array.isArray(record.roles) ? record.roles.filter((role): role is string => typeof role === 'string') : [],
+      note: record.note as FrontmatterContributor['note'],
+      pr: typeof record.pr === 'number' ? record.pr : undefined,
+      issue: typeof record.issue === 'number' ? record.issue : undefined,
+    }
+  })
+}
+
+function chineseSourceContributors(source: SourceDocument, repositoryRoot: string): unknown {
+  if (!source.repositoryPath.startsWith('documents/en/')) return undefined
+  const chinesePath = join(repositoryRoot, source.repositoryPath.replace(/^documents\/en\//, 'documents/'))
+  try {
+    const parsed = matter(readFileSync(chinesePath, 'utf8'))
+    return (parsed.data as Record<string, unknown>).contributors
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
+    throw error
+  }
+}
+
+/**
+ * Resolve the printed signature block's contributor list with the site-side
+ * semantics: an explicit list (even empty) wins, EN articles inherit the
+ * Chinese source's credits, numbered articles fall back to the default
+ * author, and everything else stays uncredited. `null` means the tag must
+ * disappear silently, matching the web card's v-if contract.
+ */
+function resolveContributors(
+  source: SourceDocument,
+  repositoryRoot: string,
+): FrontmatterContributor[] | null {
+  const where = `${source.repositoryPath}: frontmatter "contributors"`
+  const declared = source.frontmatter.contributors !== undefined
+    ? source.frontmatter.contributors
+    : chineseSourceContributors(source, repositoryRoot)
+  if (declared !== undefined) return validateFrontmatterContributors(source, declared, where)
+  if (typeof source.frontmatter.chapter !== 'number') return null
+  if (source.unit.id === 'community') return []
+  return [DEFAULT_CONTRIBUTOR]
+}
+
 async function transformComponents(
   document: Document,
   root: Element,
@@ -559,6 +677,169 @@ async function transformComponents(
       card,
       `<aside class="qq-group-card"><img class="qq-group-qr" src="/documents/public/qq-group.svg" alt="${isChinese ? 'QQ 群二维码' : 'QQ group QR code'}" /><div class="qq-group-info"><p class="qq-group-name">${isChinese ? 'TAMCPP 交流群' : 'TAMCPP Chat Group'}</p><p class="qq-group-id"><span class="id-label">${isChinese ? '群号' : 'Group ID'}</span> <span class="id-value">1107100989</span></p><p class="qq-group-actions"><a href="https://qm.qq.com/q/cD89HxtmUg">${isChinese ? '一键加群' : 'Join the Group'}</a></p><p class="qq-group-hint">${isChinese ? '手机 QQ 扫码，或在 QQ 里搜索群号。' : 'Scan with the QQ app, or search the group ID in QQ. Chinese-language chat.'}</p></div></aside>`,
     )
+  }
+  for (const component of Array.from(root.querySelectorAll('articlecontributors'))) {
+    // The web card reads frontmatter data at runtime and stays hidden when
+    // there is nothing to show (v-if="data && visible"). Print follows the
+    // same contract: render the frontmatter contributors as a plain
+    // signature block, or remove the tag silently when the data is absent.
+    stats.articleContributors += 1
+    const contributors = resolveContributors(source, context.repositoryRoot)
+    if (!contributors || !contributors.length) {
+      component.remove()
+      continue
+    }
+    const roleLabels = CONTRIBUTION_ROLE_LABELS[context.locale.language]
+    const items = contributors.map((person) => {
+      const displayName = person.name || person.github
+      const roles = person.roles
+        .map((role) => roleLabels[role as keyof typeof roleLabels])
+        .filter(Boolean)
+        .join(' / ')
+      const note = typeof person.note === 'string'
+        ? person.note
+        : person.note?.[context.locale.language]
+      const links = [
+        person.pr ? { label: `PR #${person.pr}`, url: `${CONTRIBUTION_REPO}/pull/${person.pr}` } : null,
+        person.issue ? { label: `#${person.issue}`, url: `${CONTRIBUTION_REPO}/issues/${person.issue}` } : null,
+      ].filter((entry): entry is { label: string; url: string } => Boolean(entry))
+      const segments = [
+        `<a href="https://github.com/${escapeHtml(person.github)}">${escapeHtml(displayName)}</a>`,
+        roles ? `<span class="contributor-role">${escapeHtml(roles)}</span>` : '',
+        note ? escapeHtml(note) : '',
+        links.map(({ label, url }) => `<a href="${escapeHtml(url)}">${escapeHtml(label)}</a>`).join(' '),
+      ].filter(Boolean)
+      return `<li>${segments.join('<span class="contributor-sep"> · </span>')}</li>`
+    }).join('')
+    replaceWithHtml(
+      document,
+      component,
+      `<aside class="article-contributors"><p class="contributors-heading">${escapeHtml(context.locale.strings.contributors)}</p><ul>${items}</ul></aside>`,
+    )
+  }
+  for (const component of Array.from(root.querySelectorAll('concurrencytimeline'))) {
+    // The interactive grid (ticks/lanes/blocks attributes) serves the web
+    // only. The slot content is the author-maintained static fallback (a
+    // mermaid fence the site itself offers as its "看静态图" view), so print
+    // keeps exactly that and turns the title attribute into a caption.
+    stats.concurrencyTimeline += 1
+    const title = attr(component, 'title')
+    const figure = document.createElement('figure')
+    figure.className = 'book-timeline'
+    if (title) {
+      const caption = document.createElement('figcaption')
+      caption.textContent = title
+      figure.append(caption)
+    }
+    while (component.firstChild) figure.append(component.firstChild)
+    component.replaceWith(figure)
+  }
+
+  for (const component of Array.from(root.querySelectorAll('asmexecutor'))) {
+    // The playground is an interactive single-stepping session. The payload
+    // is the ground truth it walks through, so print renders its instruction
+    // listing as a static disassembly table; entry points, watch registers,
+    // and step limits only mean something to a live engine.
+    stats.asmExecutor += 1
+    const src = attr(component, 'src')
+    if (!src) throw new Error(`${source.repositoryPath}: AsmExecutor is missing src`)
+    let cleanPath = src
+    for (const base of DEFAULT_SITE_BASE_PATHS) {
+      if (cleanPath.startsWith(`${base}/`)) {
+        cleanPath = cleanPath.slice(base.length)
+        break
+      }
+    }
+    const resolved = resolve(context.repositoryRoot, 'documents', 'public', cleanPath.replace(/^\/+/, ''))
+    const rel = relative(context.repositoryRoot, resolved)
+    if (rel.startsWith('..')) throw new Error(`${source.repositoryPath}: AsmExecutor payload escapes repository: ${src}`)
+    let payloadText: string
+    try {
+      const canonical = await canonicalRepositoryPath(context.repositoryRoot, resolved, 'AsmExecutor payload')
+      payloadText = await readFile(canonical, 'utf8')
+    } catch (error) {
+      throw new Error(`${source.repositoryPath}: cannot read AsmExecutor payload ${src}: ${String(error)}`)
+    }
+    let payload: { meta?: { title?: string }; code?: Array<{ addr?: string; bytes?: string; text?: string }> }
+    try {
+      payload = JSON.parse(payloadText)
+    } catch (error) {
+      throw new Error(`${source.repositoryPath}: AsmExecutor payload ${src} is not valid JSON: ${String(error)}`)
+    }
+    const payloadTitle = payload.meta?.title
+    const instructions = Array.isArray(payload.code) ? payload.code : []
+    if (!instructions.length) throw new Error(`${source.repositoryPath}: AsmExecutor payload ${src} contains no instructions`)
+    const addrWidth = Math.max(...instructions.map((item) => (item.addr ?? '').length), 2)
+    const bytesWidth = Math.max(...instructions.map((item) => (item.bytes ?? '').length), 2)
+    const listing = instructions
+      .map((item) => `${(item.addr ?? '').padEnd(addrWidth)}  ${(item.bytes ?? '').padEnd(bytesWidth)}  ${item.text ?? ''}`.trimEnd())
+      .join('\n')
+    const figure = document.createElement('figure')
+    figure.className = 'asm-listing'
+    if (payloadTitle) {
+      const caption = document.createElement('figcaption')
+      caption.textContent = payloadTitle
+      figure.append(caption)
+    }
+    const pre = document.createElement('pre')
+    pre.className = 'asm-listing-code'
+    pre.textContent = listing
+    if (payloadTitle) pre.setAttribute('data-code-caption', payloadTitle)
+    figure.append(pre)
+    const online = document.createElement('p')
+    online.className = 'online-demo-note'
+    const onlineUrl = `${context.locale.onlinePrefix.replace(/\/$/, '')}${source.canonicalPath}`
+    online.innerHTML = `${escapeHtml(context.locale.strings.onlineEdition)}：<a href="${escapeHtml(onlineUrl)}">${escapeHtml(source.title)}</a>`
+    figure.append(online)
+    component.replaceWith(figure)
+  }
+
+  for (const widget of Array.from(root.querySelectorAll('roadmapjourney, pathchooser, volumecardgrid, maturityboard'))) {
+    // Roadmap page widgets are interactive views of data the article already
+    // narrates in prose (the three routes, the per-volume walkthrough, and
+    // the maturity explanation). Print keeps the prose and points at the
+    // live page for the interactive boards.
+    stats.roadmapWidget += 1
+    replaceWithMediaNote(document, widget, source, context, context.locale.strings.interactiveNote)
+  }
+
+  for (const component of Array.from(root.querySelectorAll('communityexplorer'))) {
+    // The explorer filters the community manifest at runtime. Print renders
+    // the same manifest statically, grouped by section, with each entry
+    // linking to the article itself (the link rewriter maps in-book paths
+    // to internal anchors). The view/authors/topics props drive web-only
+    // navigation and have no print equivalent.
+    stats.communityExplorer += 1
+    const statusFilter = attr(component, 'status')
+    const manifest = buildCommunityManifest(context.locale.language, context.repositoryRoot)
+    const articles = manifest.filter((article) => !statusFilter || article.status === statusFilter)
+    if (!articles.length) {
+      component.remove()
+      continue
+    }
+    const categories = Object.keys(COMMUNITY_CATEGORIES) as Array<keyof typeof COMMUNITY_CATEGORIES>
+    const sections = categories
+      .map((category) => ({ category, articles: articles.filter((article) => article.category === category) }))
+      .filter((group) => group.articles.length)
+    const sectionHtml = sections.map(({ category, articles: entries }) => {
+      const heading = escapeHtml(COMMUNITY_CATEGORIES[category][context.locale.language])
+      const items = entries.map((article) => {
+        const authors = article.authors.map((person) => escapeHtml(person.name)).join('、')
+        const date = article.publishedAt ? `<span class="community-date">${escapeHtml(article.publishedAt)}</span>` : ''
+        const description = article.description ? `<span class="community-desc">${escapeHtml(article.description)}</span>` : ''
+        const time = article.readingTime ? `<span class="community-time">${escapeHtml(String(article.readingTime))} ${context.locale.language === 'zh' ? '分钟' : 'min'}</span>` : ''
+        return `<li><a href="${escapeHtml(article.url)}">${escapeHtml(article.title)}</a>${authors ? `<span class="community-authors">${authors}</span>` : ''}${date}${time}${description}</li>`
+      }).join('')
+      return `<h3>${heading}</h3><ul class="community-article-list">${items}</ul>`
+    }).join('')
+    replaceWithHtml(document, component, `<section class="community-listing">${sectionHtml}</section>`)
+  }
+
+  // Authors also hand-write v-pre on inline spans to protect literal {{ and }}
+  // from Vue's template compiler. Book HTML never runs a Vue compiler, so the
+  // guard has no meaning here and the braces must survive verbatim.
+  for (const marked of Array.from(root.querySelectorAll('[v-pre]'))) {
+    marked.removeAttribute('v-pre')
   }
 }
 

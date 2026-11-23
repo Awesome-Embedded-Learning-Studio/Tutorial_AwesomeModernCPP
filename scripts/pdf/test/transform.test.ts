@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import test from 'node:test'
@@ -36,6 +36,8 @@ const locale: BookLocale = {
     armSourceCode: 'ARM 示例源码',
     animationNote: '此处为一段可分步播放的动画，纸质版从略，线上版：',
     videoNote: '此处为一段演示视频，纸质版从略，线上版：',
+    interactiveNote: '此处为在线版的交互视图（路径图与成熟度板），纸质版从略，线上版：',
+    contributors: '本文贡献者',
   },
 }
 
@@ -54,6 +56,24 @@ test('preserves known components, standard HTML, and CommonMark autolinks', () =
 <reader@example.com>`
 
   assert.equal(prepareSourceMarkdown(source(markdown)), markdown)
+})
+
+test('accepts path placeholders such as /proc/self/fdinfo/<epfd> as literal text', () => {
+  const markdown = '其实 /proc/self/fdinfo/<epfd> 把它整个摊开了:tfd 行就是在册的 fd。'
+  const prepared = prepareSourceMarkdown(source(markdown))
+  assert.equal(prepared, '其实 /proc/self/fdinfo/&lt;epfd&gt; 把它整个摊开了:tfd 行就是在册的 fd。')
+})
+
+test('accepts bare fundamental-type tokens such as <int> used as nouns in prose', () => {
+  const markdown = '模板的实参也被编了进去,里面的 Ii,对应的就是 <int>。'
+  const prepared = prepareSourceMarkdown(source(markdown))
+  assert.equal(prepared, '模板的实参也被编了进去,里面的 Ii,对应的就是 &lt;int&gt;。')
+})
+
+test('accepts CMake generator expressions such as $<TARGET_FILE:app> in prose', () => {
+  const markdown = 'CMake 备了生成器表达式:$<TARGET_FILE:app> 在配置阶段还是一串字面量。'
+  const prepared = prepareSourceMarkdown(source(markdown))
+  assert.equal(prepared, 'CMake 备了生成器表达式:$&lt;TARGET_FILE:app&gt; 在配置阶段还是一串字面量。')
 })
 
 test('does not inspect fenced or inline code', () => {
@@ -247,6 +267,211 @@ test('renders a local video demo as a pointer to the live article', async () => 
   assert.match(result.html, /class="book-media-note"/)
   assert.match(result.html, /href="https:\/\/example\.test\/fixture\/topic"/)
   assert.equal(result.stats.anim, 1)
+})
+
+test('renders ArticleContributors as a plain signature block from frontmatter', async () => {
+  const context: TransformContext = {
+    repositoryRoot: '/tmp/pdf-transform-fixture',
+    markdown: { render: (value: string) => value } as TransformContext['markdown'],
+    locale, assets: {} as TransformContext['assets'],
+    resolveLink: (href) => ({ kind: 'external', href }),
+  }
+  const result = await transformDocument(source('<h1>Fixture</h1><p>正文。</p>\n<ArticleContributors />', {
+    contributors: [
+      { github: 'xiaoshuaijie', roles: ['author'], note: { zh: '撰写并投稿原稿', en: 'Wrote the original' }, pr: 276 },
+      { github: 'charliechen114514', name: 'Charlie', roles: ['revision', 'review'] },
+    ],
+  }), context)
+
+  assert.doesNotMatch(result.html, /articlecontributors/i)
+  assert.match(result.html, /class="article-contributors"/)
+  assert.match(result.html, /本文贡献者/)
+  assert.match(result.html, /href="https:\/\/github\.com\/xiaoshuaijie"/)
+  assert.match(result.html, /修订 \/ 审校/)
+  assert.match(result.html, /撰写并投稿原稿/)
+  assert.match(result.html, /href="https:\/\/github\.com\/Awesome-Embedded-Learning-Studio\/Tutorial_AwesomeModernCPP\/pull\/276"/)
+  assert.match(result.html, />Charlie</)
+  assert.equal(result.stats.articleContributors, 1)
+})
+
+test('removes ArticleContributors silently when frontmatter has no contributor data', async () => {
+  const context: TransformContext = {
+    repositoryRoot: '/tmp/pdf-transform-fixture',
+    markdown: { render: (value: string) => value } as TransformContext['markdown'],
+    locale, assets: {} as TransformContext['assets'],
+    resolveLink: (href) => ({ kind: 'external', href }),
+  }
+  const result = await transformDocument(source('<h1>Fixture</h1><p>正文。</p>\n<ArticleContributors />'), context)
+
+  assert.doesNotMatch(result.html, /articlecontributors/i)
+  assert.doesNotMatch(result.html, /article-contributors/)
+  assert.equal(result.stats.articleContributors, 1)
+})
+
+test('falls back to the default author for numbered articles without credits', async () => {
+  const context: TransformContext = {
+    repositoryRoot: '/tmp/pdf-transform-fixture',
+    markdown: { render: (value: string) => value } as TransformContext['markdown'],
+    locale, assets: {} as TransformContext['assets'],
+    resolveLink: (href) => ({ kind: 'external', href }),
+  }
+  const result = await transformDocument(
+    source('<h1>Fixture</h1><p>正文。</p>\n<ArticleContributors />', { chapter: 3 }),
+    context,
+  )
+
+  assert.match(result.html, /class="article-contributors"/)
+  assert.match(result.html, /Charliechen114514/)
+  assert.match(result.html, /文章撰写与长期维护/)
+})
+
+test('EN articles inherit the Chinese source credits', async () => {
+  const repositoryRoot = await mkdtemp(join(tmpdir(), 'pdf-en-inherit-'))
+  try {
+    await mkdir(join(repositoryRoot, 'documents', 'fixture'), { recursive: true })
+    await writeFile(
+      join(repositoryRoot, 'documents', 'fixture', 'topic.md'),
+      '---\ncontributors:\n  - github: zhauthor\n    roles: [author]\n---\n\n# 中文源\n',
+      'utf8',
+    )
+    const en = {
+      ...source('<h1>Fixture</h1><p>Body.</p>\n<ArticleContributors />', { chapter: 1 }),
+      relativePath: 'fixture/topic.md',
+      repositoryPath: 'documents/en/fixture/topic.md',
+    }
+    const context: TransformContext = {
+      repositoryRoot,
+      markdown: { render: (value: string) => value } as TransformContext['markdown'],
+      locale, assets: {} as TransformContext['assets'],
+      resolveLink: (href) => ({ kind: 'external', href }),
+    }
+    const result = await transformDocument(en, context)
+
+    assert.match(result.html, /class="article-contributors"/)
+    assert.match(result.html, /zhauthor/)
+  } finally {
+    await rm(repositoryRoot, { recursive: true, force: true })
+  }
+})
+
+test('community articles stay uncredited without an explicit list', async () => {
+  const context: TransformContext = {
+    repositoryRoot: '/tmp/pdf-transform-fixture',
+    markdown: { render: (value: string) => value } as TransformContext['markdown'],
+    locale, assets: {} as TransformContext['assets'],
+    resolveLink: (href) => ({ kind: 'external', href }),
+  }
+  const communitySource = {
+    ...source('<h1>Fixture</h1><p>正文。</p>\n<ArticleContributors />', { chapter: 2 }),
+    unit: { ...unit, id: 'community' },
+  }
+  const result = await transformDocument(communitySource, context)
+
+  assert.doesNotMatch(result.html, /article-contributors/)
+})
+
+test('unwraps ConcurrencyTimeline into its slot fallback with a caption', async () => {
+  const context: TransformContext = {
+    repositoryRoot: '/tmp/pdf-transform-fixture',
+    markdown: { render: (value: string) => value } as TransformContext['markdown'],
+    locale, assets: {} as TransformContext['assets'],
+    resolveLink: (href) => ({ kind: 'external', href }),
+  }
+  const result = await transformDocument(
+    source(`<h1>Fixture</h1><ConcurrencyTimeline
+  title="单核 · 交替执行"
+  axis-hint="时间往右 →"
+  :ticks="['第 1 段']"
+  :lanes="['一个核心']"
+>
+\`\`\`mermaid
+graph LR
+    A["发出下载请求"] --> B["处理列表滚动"]
+\`\`\`
+
+</ConcurrencyTimeline>`),
+    context,
+  )
+
+  assert.doesNotMatch(result.html, /concurrencytimeline/i)
+  assert.match(result.html, /class="book-timeline"/)
+  assert.match(result.html, /<figcaption>单核 · 交替执行<\/figcaption>/)
+  assert.ok(result.html.includes('graph LR'))
+  assert.ok(result.html.includes('处理列表滚动'))
+  assert.equal(result.stats.concurrencyTimeline, 1)
+})
+
+test('strips hand-written v-pre directives but keeps literal braces', async () => {
+  const context: TransformContext = {
+    repositoryRoot: '/tmp/pdf-transform-fixture',
+    markdown: { render: (value: string) => value } as TransformContext['markdown'],
+    locale, assets: {} as TransformContext['assets'],
+    resolveLink: (href) => ({ kind: 'external', href }),
+  }
+  const result = await transformDocument(
+    source('<h1>Fixture</h1><p><span v-pre>`{{`</span> 是字面量。</p>'),
+    context,
+  )
+
+  assert.doesNotMatch(result.html, /v-pre/i)
+  assert.ok(result.html.includes('{{'))
+})
+
+test('renders AsmExecutor payloads as a static disassembly listing', async () => {
+  const repositoryRoot = await mkdtemp(join(tmpdir(), 'pdf-asm-executor-'))
+  try {
+    await mkdir(join(repositoryRoot, 'documents', 'public', 'payloads'), { recursive: true })
+    const payload = {
+      format: 'asm-executor/payload@1',
+      meta: { isa: 'x86-64', syntax: 'att', title: 'i++ 与 ++i：同一段代码的两副指令', entry: '0x1000' },
+      code: [
+        { addr: '0x1000', bytes: '55', text: 'push   %rbp' },
+        { addr: '0x1001', bytes: '4889e5', text: 'mov    %rsp, %rbp' },
+      ],
+    }
+    await writeFile(
+      join(repositoryRoot, 'documents', 'public', 'payloads', 'demo.json'),
+      JSON.stringify(payload),
+      'utf8',
+    )
+    const context: TransformContext = {
+      repositoryRoot,
+      markdown: { render: (value: string) => value } as TransformContext['markdown'],
+      locale, assets: {} as TransformContext['assets'],
+      resolveLink: (href) => ({ kind: 'external', href }),
+    }
+    const result = await transformDocument(
+      source('<h1>Fixture</h1><AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/demo.json" />'),
+      context,
+    )
+
+    assert.doesNotMatch(result.html, /asmexecutor/i)
+    assert.match(result.html, /class="asm-listing"/)
+    assert.match(result.html, /<figcaption>i\+\+ 与 \+\+i：同一段代码的两副指令<\/figcaption>/)
+    assert.ok(result.html.includes('push   %rbp'))
+    assert.ok(result.html.includes('0x1000'))
+    assert.match(result.html, /online-demo-note/)
+    assert.equal(result.stats.asmExecutor, 1)
+  } finally {
+    await rm(repositoryRoot, { recursive: true, force: true })
+  }
+})
+
+test('fails closed on malformed frontmatter contributors', async () => {
+  const context: TransformContext = {
+    repositoryRoot: '/tmp/pdf-transform-fixture',
+    markdown: { render: (value: string) => value } as TransformContext['markdown'],
+    locale, assets: {} as TransformContext['assets'],
+    resolveLink: (href) => ({ kind: 'external', href }),
+  }
+  await assert.rejects(
+    transformDocument(source('<h1>Fixture</h1><ArticleContributors />', { contributors: [{ github: 'not ok!' }] }), context),
+    /invalid "github"/,
+  )
+  await assert.rejects(
+    transformDocument(source('<h1>Fixture</h1><ArticleContributors />', { contributors: 'nope' }), context),
+    /must be a list/,
+  )
 })
 
 test('publishes nested details as static asides and keeps title links and body intact', async () => {
@@ -447,7 +672,7 @@ test('rejects executable or embedded-document link schemes', () => {
   }
 })
 
-function source(markdown: string): SourceDocument {
+function source(markdown: string, frontmatter: SourceDocument['frontmatter'] = {}): SourceDocument {
   return {
     sourcePath: '/tmp/pdf-transform-fixture/documents/fixture/topic.md',
     relativePath: 'topic.md',
@@ -461,6 +686,6 @@ function source(markdown: string): SourceDocument {
     order: 1,
     kind: 'article',
     markdown,
-    frontmatter: {},
+    frontmatter,
   }
 }

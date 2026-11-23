@@ -34,6 +34,8 @@ export interface BookLocale {
     armSourceCode: string
     animationNote: string
     videoNote: string
+    interactiveNote: string
+    contributors: string
   }
 }
 
@@ -88,6 +90,11 @@ export interface TransformStats {
   referenceItem: number
   talkInfoCard: number
   qqGroupCard: number
+  articleContributors: number
+  concurrencyTimeline: number
+  asmExecutor: number
+  communityExplorer: number
+  roadmapWidget: number
   remoteImages: number
   internalLinks: number
   crossBookLinks: number

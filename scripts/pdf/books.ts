@@ -54,6 +54,8 @@ const localeStrings = {
       references: '参考资料', lectureResources: '讲座资料', sourceCode: '示例源码', armSourceCode: 'ARM 示例源码',
       animationNote: '此处为一段可分步播放的动画，纸质版从略，线上版：',
       videoNote: '此处为一段演示视频，纸质版从略，线上版：',
+      interactiveNote: '此处为在线版的交互视图（路径图与成熟度板），纸质版从略，线上版：',
+      contributors: '本文贡献者',
     },
   },
   en: {
@@ -65,6 +67,8 @@ const localeStrings = {
       references: 'References', lectureResources: 'Talk resources', sourceCode: 'Example source', armSourceCode: 'ARM example source',
       animationNote: 'This step-by-step animation is omitted in print and plays in the online edition: ',
       videoNote: 'This demo video is omitted in print and plays in the online edition: ',
+      interactiveNote: 'This interactive view (path graph and maturity board) is omitted in print; see the online edition: ',
+      contributors: 'Contributors of This Article',
     },
   },
 } as const
