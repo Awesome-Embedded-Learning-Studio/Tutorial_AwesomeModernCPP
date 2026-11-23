@@ -6,6 +6,8 @@ import type { RenderedDocument } from './model'
 const COMPONENT_NAMES = [
   'ChapterNav', 'ChapterLink', 'OnlineCompilerDemo', 'RefLink',
   'ReferenceCard', 'ReferenceItem', 'TalkInfoCard', 'QQGroupCard',
+  'ArticleContributors', 'ConcurrencyTimeline', 'AsmExecutor',
+  'CommunityExplorer', 'RoadmapJourney', 'PathChooser', 'VolumeCardGrid', 'MaturityBoard',
 ]
 
 const SAFE_FRAGMENT_HTML = new Set([
@@ -265,7 +267,11 @@ export async function postflightPdf(
     }
     const residue = COMPONENT_NAMES.find((name) => result.stdout.includes(name))
     if (residue) throw new Error(`PDF text contains unhandled component name ${residue}`)
-    const blankTextPages = result.stdout.split('\f').filter((page) => !page.trim()).length
+    // pdftotext terminates every page with \f, so the segment after the last
+    // separator is a split artifact, not a real page.
+    const textPages = result.stdout.split('\f')
+    if (textPages.length && !textPages.at(-1)!.trim()) textPages.pop()
+    const blankTextPages = textPages.filter((page) => !page.trim()).length
     if (blankTextPages) warnings.push(`${blankTextPages} PDF page(s) contain no extractable text; inspect image-only/blank pages`)
   } else {
     warnings.push('pdftotext is unavailable; text extraction validation was skipped')

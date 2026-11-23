@@ -75,7 +75,7 @@ type DirectoryEntry =
   | { kind: 'article'; record: CatalogRecord }
   | { kind: 'directory'; node: DirectoryNode }
 
-const DEFAULT_SITE_BASE_PATHS = ['/Tutorial_AwesomeModernCPP'] as const
+export const DEFAULT_SITE_BASE_PATHS = ['/Tutorial_AwesomeModernCPP'] as const
 const DEFAULT_ALLOWED_ORIGINS = [
   'https://awesome-embedded-learning-studio.github.io',
 ] as const

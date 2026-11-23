@@ -281,6 +281,19 @@ cp /mnt/c/Windows/Fonts/CascadiaMono.ttf ~/.local/share/fonts/
 fc-cache -f && fc-match 'Cascadia Mono'
 ```
 
+既无 sudo 也不想动家目录时，可把字体和 fontconfig 全部圈在仓库 `.cache/` 内
+（该目录已被 gitignore）：下载 [noto-cjk](https://github.com/notofonts/noto-cjk) 的
+Serif/Sans/Mono 各常规加粗共六个 OTF 放进 `.cache/fonts/`，旁边放一份
+`fonts.conf`（内容为 `<fontconfig>` 内一个指向本目录的 `<dir>` 和一个指向
+`.cache/fontconfig` 的 `<cachedir>`），构建时带上：
+
+```bash
+FONTCONFIG_FILE="$PWD/.cache/fonts/fonts.conf" pnpm pdf -- --book <id>
+```
+
+Puppeteer 找不到浏览器时同理：`PUPPETEER_CACHE_DIR="$PWD/.cache/puppeteer"
+pnpm exec puppeteer browsers install chrome` 装进仓库缓存，构建时带同一变量。
+
 Chromium 在 `page.pdf()` 时嵌入实际使用的字体。CI 使用 `pdffonts` 要求所有字体行显示已嵌入，
 并用 `pdftotext` 检查文本不是空壳。不要只依靠浏览器字体回退；缺少衬线 CJK 字体会改变
 换行和页码。

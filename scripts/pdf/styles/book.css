@@ -404,6 +404,10 @@ body {
   font-family: var(--book-sans);
   font-weight: 700;
   line-break: strict;
+  /* Titles may carry long unbreakable tokens (e.g. an API chain with arrows,
+     "alarm→setitimer→timer_create→timerfd"); wrap them inside the text box
+     like body copy instead of overflowing the page. */
+  overflow-wrap: anywhere;
   orphans: 3;
 }
 
@@ -962,6 +966,103 @@ body {
   margin: 0.3em 0;
   line-height: 1.5;
   text-align: left;
+}
+
+/* 贡献者署名块：frontmatter contributors 的纸质降级，轻量列表，不抢正文风头 */
+.book-content .article-contributors {
+  margin: 1em 0;
+  padding: 2.5mm 4mm;
+  border-top: 0.2mm solid var(--book-rule);
+  border-bottom: 0.2mm solid var(--book-rule);
+  break-inside: avoid;
+  font-family: var(--book-sans);
+  font-size: 8.6pt;
+}
+
+.book-content .article-contributors .contributors-heading {
+  margin: 0 0 0.5em;
+  color: var(--book-accent);
+  font-size: 0.85em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.book-content .article-contributors ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.book-content .article-contributors li {
+  margin: 0.3em 0;
+  line-height: 1.55;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.book-content .article-contributors .contributor-role {
+  color: var(--book-accent);
+}
+
+/* 汇编执行清单：AsmExecutor payload 的纸质静态形态，objdump 式三列，
+   长清单允许跨页，行内长串折行防溢出 */
+.book-content .asm-listing {
+  margin: 1em 0;
+  break-inside: auto;
+}
+
+.book-content .asm-listing .asm-listing-code {
+  padding: 2.5mm 3mm;
+  border: 0.25mm solid var(--book-rule);
+  background: #faf7f3;
+  font-family: var(--book-mono);
+  font-size: 7.8pt;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow: visible;
+}
+
+/* 社区文章清单：CommunityExplorer 的纸质静态形态，按栏目分组的条目列表 */
+.book-content .community-listing h3 {
+  margin: 0.9em 0 0.4em;
+  font-size: 11pt;
+}
+
+.book-content .community-listing ul {
+  margin: 0;
+  padding-left: 1.4em;
+}
+
+.book-content .community-listing li {
+  margin: 0.35em 0;
+  line-height: 1.55;
+}
+
+.book-content .community-listing .community-authors {
+  color: var(--book-muted);
+}
+
+.book-content .community-listing .community-authors::before {
+  content: ' — ';
+}
+
+.book-content .community-listing .community-date,
+.book-content .community-listing .community-time {
+  color: var(--book-muted);
+  font-family: var(--book-sans);
+  font-size: 8pt;
+}
+
+.book-content .community-listing .community-date::before,
+.book-content .community-listing .community-time::before {
+  content: ' · ';
+}
+
+.book-content .community-listing .community-desc {
+  display: block;
+  color: var(--book-muted);
+  font-size: 8.6pt;
 }
 
 .book-content .talk-info-card .talk-kicker {
